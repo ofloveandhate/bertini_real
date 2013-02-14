@@ -162,5 +162,59 @@ for (_i = 0; _i < _r; _i++) (_a)->entry[_i] = (_comp_d *)bmalloc((_c) * sizeof(_
 #define clear_mat_d(_a)  { int _i; for (_i = (_a)->alloc_rows - 1; _i >= 0; _i--) { free((_a)->entry[_i]); } free((_a)->entry); (_a)->entry = NULL; \
 (_a)->alloc_rows = (_a)->alloc_cols = (_a)->rows = (_a)->cols = 0; }
 
-#endif  
+
+
+
+
+
+// divide
+#define div_d(_r,_a,_b) { double _s = 1 / ((_b)->r*(_b)->r + (_b)->i*(_b)->i);\
+double _rt = _s * ((_a)->r*(_b)->r + (_a)->i*(_b)->i);\
+(_r)->i = _s * ((_a)->i*(_b)->r - (_a)->r*(_b)->i); (_r)->r = _rt; }
+#define div_d2(_r,_a,_b, _s, _rt) { _s = 1 / ((_b)->r*(_b)->r + (_b)->i*(_b)->i); _rt = _s * ((_a)->r*(_b)->r + (_a)->i*(_b)->i);\
+(_r)->i = _s * ((_a)->i*(_b)->r - (_a)->r*(_b)->i); (_r)->r = _rt; }
+
+#define div_mp(_r, _a, _b) { int _oid = thread_num(); \
+mpf_mul(_tempMPF1[_oid], (_b)->r, (_b)->r); mpf_mul(_tempMPF2[_oid], (_b)->i, (_b)->i); mpf_add(_tempMPF1[_oid], _tempMPF1[_oid], _tempMPF2[_oid]); \
+mpf_ui_div(_tempMPF1[_oid], 1, _tempMPF1[_oid]); \
+mpf_mul(_tempMPF2[_oid], (_a)->r, (_b)->r); mpf_mul(_tempMPF3[_oid], (_a)->i, (_b)->i); \
+mpf_add(_tempMPF2[_oid], _tempMPF2[_oid], _tempMPF3[_oid]); mpf_mul(_tempMPF2[_oid], _tempMPF2[_oid], _tempMPF1[_oid]); \
+mpf_mul(_tempMPF3[_oid], (_a)->i, (_b)->r); mpf_mul((_r)->i, (_a)->r, (_b)->i); mpf_sub((_r)->i, _tempMPF3[_oid], (_r)->i); mpf_mul((_r)->i, (_r)->i, _tempMPF1[_oid]); \
+mpf_set((_r)->r, _tempMPF2[_oid]); }
+#define div_omp_mp(_r, _a, _b, _oid) { \
+mpf_mul(_tempMPF1[_oid], (_b)->r, (_b)->r); mpf_mul(_tempMPF2[_oid], (_b)->i, (_b)->i); mpf_add(_tempMPF1[_oid], _tempMPF1[_oid], _tempMPF2[_oid]); \
+mpf_ui_div(_tempMPF1[_oid], 1, _tempMPF1[_oid]); \
+mpf_mul(_tempMPF2[_oid], (_a)->r, (_b)->r); mpf_mul(_tempMPF3[_oid], (_a)->i, (_b)->i); \
+mpf_add(_tempMPF2[_oid], _tempMPF2[_oid], _tempMPF3[_oid]); mpf_mul(_tempMPF2[_oid], _tempMPF2[_oid], _tempMPF1[_oid]); \
+mpf_mul(_tempMPF3[_oid], (_a)->i, (_b)->r); mpf_mul((_r)->i, (_a)->r, (_b)->i); mpf_sub((_r)->i, _tempMPF3[_oid], (_r)->i); mpf_mul((_r)->i, (_r)->i, _tempMPF1[_oid]); \
+mpf_set((_r)->r, _tempMPF2[_oid]); }
+#define div_mp2(_r, _a, _b) { int _oid = thread_num(), _prec = mpf_get_prec((_a)->r), _prec2 = mpf_get_prec((_b)->r), _curr_prec[3]; \
+if (_prec > _prec2) _prec = _prec2;\
+_curr_prec[0] = mpf_get_prec(_tempMPF1[_oid]); _curr_prec[1] = mpf_get_prec(_tempMPF2[_oid]); _curr_prec[2] = mpf_get_prec(_tempMPF3[_oid]);\
+if (_prec > _curr_prec[0]) mpf_set_prec(_tempMPF1[_oid], _prec);\
+if (_prec > _curr_prec[1]) mpf_set_prec(_tempMPF2[_oid], _prec);\
+if (_prec > _curr_prec[2]) mpf_set_prec(_tempMPF3[_oid], _prec);\
+mpf_mul(_tempMPF1[_oid], (_b)->r, (_b)->r); mpf_mul(_tempMPF2[_oid], (_b)->i, (_b)->i); mpf_add(_tempMPF1[_oid], _tempMPF1[_oid], _tempMPF2[_oid]); \
+mpf_ui_div(_tempMPF1[_oid], 1, _tempMPF1[_oid]); \
+mpf_mul(_tempMPF2[_oid], (_a)->r, (_b)->r); mpf_mul(_tempMPF3[_oid], (_a)->i, (_b)->i); \
+mpf_add(_tempMPF2[_oid], _tempMPF2[_oid], _tempMPF3[_oid]); mpf_mul(_tempMPF2[_oid], _tempMPF2[_oid], _tempMPF1[_oid]); \
+mpf_mul(_tempMPF3[_oid], (_a)->i, (_b)->r); mpf_mul((_r)->i, (_a)->r, (_b)->i); mpf_sub((_r)->i, _tempMPF3[_oid], (_r)->i); mpf_mul((_r)->i, (_r)->i, _tempMPF1[_oid]); \
+mpf_set((_r)->r, _tempMPF2[_oid]); \
+if (_prec > _curr_prec[0]) mpf_set_prec(_tempMPF1[_oid], _curr_prec[0]);\
+if (_prec > _curr_prec[1]) mpf_set_prec(_tempMPF1[_oid], _curr_prec[1]);\
+if (_prec > _curr_prec[2]) mpf_set_prec(_tempMPF1[_oid], _curr_prec[2]); }
+
+// reciprocate
+#define recip_d(_r, _a) { double _s = 1 / ((_a)->r*(_a)->r + (_a)->i*(_a)->i); (_r)->r = (_a)->r * _s; (_r)->i = - (_a)->i * _s; }
+#define recip_d2(_r, _a, _s) { _s = 1 / ((_a)->r*(_a)->r + (_a)->i*(_a)->i); (_r)->r = (_a)->r * _s; (_r)->i = - (_a)->i * _s; }
+#define recip_mp(_r, _a) { int _oid = thread_num(); \
+mpf_mul(_tempMPF1[_oid], (_a)->r, (_a)->r); mpf_mul(_tempMPF2[_oid], (_a)->i, (_a)->i); \
+mpf_add(_tempMPF1[_oid], _tempMPF1[_oid], _tempMPF2[_oid]); mpf_ui_div(_tempMPF1[_oid], 1, _tempMPF1[_oid]); \
+mpf_mul((_r)->r, (_a)->r, _tempMPF1[_oid]); mpf_neg(_tempMPF1[_oid], _tempMPF1[_oid]); mpf_mul((_r)->i, (_a)->i, _tempMPF1[_oid]); }
+#define recip_rat(_r, _a) { mpq_t _t1, _t2; mpq_init(_t1); mpq_init(_t2); \
+mpq_mul(_t1, (_a)[0], (_a)[0]); mpq_mul(_t1, (_a)[1], (_a)[1]); mpq_add(_t1, _t1, _t1); mpq_inv(_t1, _t1); \
+mpq_mul((_r)[0], (_r)[0], _t1); mpq_neg(_t1, _t1); mpq_mul((_r)[1], (_a)[1], _t1); mpq_clear(_t1); mpq_clear(_t2); }
+
+
+#endif
 

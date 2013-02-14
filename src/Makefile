@@ -11,15 +11,17 @@ ifeq ($(MACHINENAME),MACBRAKE)
     INC:=$(INC) 
     BISON=bison# bison in path already
     LIBS=# brake has libraries in path for linking, via brew.  no need to specify here
-    COMP=gcc  
+    COMP=gcc 
+		COMPpp = g++ 
     STATICFLAG=#  on brake's macintosh, do not static compile (get missing lcrt0.o problem)
-
+	  INSTALLPATH:=$(HOME)/bin
 else ifeq ($(MACHINE),yourmachinenamehere)
     #use something like this to configure for your machine
     INC:=$(INC) #put your -I inclusions 
     BISON=bison# #path to bison
     LIBS=# #your libs
-	COMP=gcc  #compiler
+		COMP=gcc  #compiler
+		COMPpp = g++
     STATICFLAG=-static#  need static?
 	
 else
@@ -28,6 +30,7 @@ else
     BISON=/home/jhauenst/bison/bison23/bin/bison
     LIBS=-L/opt/mpfr/3.0.0/lib -L/opt/gmp/5.0.1/lib /opt/mpfr/3.0.0/lib/libmpfr.a /opt/gmp/5.0.1/lib/libgmp.a
     COMP=gcc #-cc=gcc4 
+		COMPpp = g++
     STATICFLAG=-static
 endif
 
@@ -35,19 +38,35 @@ endif
 
 
 ARGS=$(INC) $(OPT) 
-OBJFILES=memory.o isosingular.o Curve_NotSelfConj.o Curve_SelfConj.o witnessSetParse.o programStartup.o checkSelfConjugate.o
+OBJFILES=memory.o isosingular.o Curve_NotSelfConj.o Curve_SelfConj.o witnessSetParse.o programStartup.o checkSelfConjugate.o 
 POBJFILES=lex.partitionParse.o 
 FLEX=flex
 
 
-all : $(OBJFILES) $(POBJFILES) bertini_real ;
+all : bertini_real data_to_set;
 
+
+#makes the bertini_real program
 bertini_real : bertini_real.c $(OBJFILES) $(POBJFILES) ;
 	$(COMP) $(ARGS) -o bertini_real bertini_real.c $(OBJFILES) $(POBJFILES) $(STATICFLAG) $(LIBS) -lm -lmpfr -lgmp
+
+
+#makes the data2set program.
+data_to_set: dataToSet.cpp
+	$(COMPpp) $(ARGS) -o data2set dataToSet.cpp $(OBJFILES) $(POBJFILES) $(STATICFLAG) $(LIBS) -lm -lmpfr -lgmp
+
+
+
+#simply copy the executables to the installpath
+install: bertini_real data_to_set
+	cp bertini_real data2set $(INSTALLPATH)
 
 .c.o : 
 	$(COMP) $(ARGS) -c $*.c 
 
+.cpp.o : 
+	$(COMPpp) $(ARGS) -c $*.cpp 
+	
 lex.partitionParse.o:	lex.partitionParse.c
 	$(COMP) $(ARGS) -c lex.partitionParse.c
 
