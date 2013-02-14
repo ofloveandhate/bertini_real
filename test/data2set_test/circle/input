@@ -1,0 +1,19 @@
+CONFIG
+
+tracktype: 1;
+
+
+END;
+
+
+
+
+INPUT
+
+function f1;
+
+variable_group x, y;
+
+f1 = x^2 + y^2-1;
+
+END;
