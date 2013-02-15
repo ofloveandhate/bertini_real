@@ -1,9 +1,18 @@
 
+#choose some options.  by default, compiler optimization is turned off
 OPT=-Wall -g# -O3 -funroll-loops -fexpensive-optimizations  #-D_HAVE_MPI #-D_REACTIVE#-Wno-deprecated
 
-INC:=-I../include #this includes the header files for bertini_real, etc   
 
-#machine-specific configuration setup
+
+###
+# machine-specific configuration setup
+###
+
+
+#initialize a some variables
+INSTALLPATH:=UNDEFINED
+BERTINIHEADERS:=UNDEFINED
+BERTINILIB:=UNDEFINED
 
   #check environment variable $(MACHINENAME), if defined
 ifeq ($(MACHINENAME),MACBRAKE)
@@ -13,8 +22,12 @@ ifeq ($(MACHINENAME),MACBRAKE)
     LIBS=# brake has libraries in path for linking, via brew.  no need to specify here
     COMP=gcc 
 		COMPpp = g++ 
-    STATICFLAG=#  on brake's macintosh, do not static compile (get missing lcrt0.o problem)
+    STATICFLAG=#  on macintosh, do not static compile (get missing lcrt0.o problem)
+		BERTINILIB:=$(HOME)/lib/libbertini.a
 	  INSTALLPATH:=$(HOME)/bin
+		BERTINIHEADERS:=$(HOME)/bertini_source/include
+		
+		
 else ifeq ($(MACHINE),yourmachinenamehere)
     #use something like this to configure for your machine
     INC:=$(INC) #put your -I inclusions 
@@ -30,30 +43,46 @@ else
     BISON=/home/jhauenst/bison/bison23/bin/bison
     LIBS=-L/opt/mpfr/3.0.0/lib -L/opt/gmp/5.0.1/lib /opt/mpfr/3.0.0/lib/libmpfr.a /opt/gmp/5.0.1/lib/libgmp.a
     COMP=gcc #-cc=gcc4 
-		COMPpp = g++
+		COMPpp=g++
     STATICFLAG=-static
 endif
 
   #note: you can export an env variable of MACHINE to the string of your choice, and do configuration like above.  
 
+###
+# end machine specific configuration
+###
+
+
+
+
+
+#a few last definitions
+INC:=-I../include  -I$(BERTINIHEADERS) #this includes the header files for bertini_real, etc   
 
 ARGS=$(INC) $(OPT) 
-OBJFILES=memory.o isosingular.o Curve_NotSelfConj.o Curve_SelfConj.o witnessSetParse.o programStartup.o checkSelfConjugate.o 
+OBJFILES= isosingular.o Curve_NotSelfConj.o Curve_SelfConj.o witnessSetParse.o programStartup.o checkSelfConjugate.o 
 POBJFILES=lex.partitionParse.o 
 FLEX=flex
+#memory.o
 
 
-all : bertini_real data_to_set;
+###
+#BEGIN MAKE RULES
+###
+
+#all comes first, so is the default rule when you `make'
+all : bertini_real data_to_set;    
 
 
 #makes the bertini_real program
 bertini_real : bertini_real.c $(OBJFILES) $(POBJFILES) ;
-	$(COMP) $(ARGS) -o bertini_real bertini_real.c $(OBJFILES) $(POBJFILES) $(STATICFLAG) $(LIBS) -lm -lmpfr -lgmp
+	$(COMP) $(ARGS) -o bertini_real bertini_real.c $(OBJFILES) $(POBJFILES) $(STATICFLAG) $(LIBS) -lm -lmpfr -lgmp $(BERTINILIB)
 
 
 #makes the data2set program.
 data_to_set: dataToSet.cpp
-	$(COMPpp) $(ARGS) -o data2set dataToSet.cpp $(OBJFILES) $(POBJFILES) $(STATICFLAG) $(LIBS) -lm -lmpfr -lgmp
+	$(COMPpp) $(ARGS) -o data2set dataToSet.cpp $(OBJFILES) $(POBJFILES) $(STATICFLAG) $(LIBS) -lm -lmpfr -lgmp $(BERTINILIB)
 
 
 
@@ -61,8 +90,9 @@ data_to_set: dataToSet.cpp
 install: bertini_real data_to_set
 	cp bertini_real data2set $(INSTALLPATH)
 
+
 .c.o : 
-	$(COMP) $(ARGS) -c $*.c 
+	$(COMP) $(ARGS) -c $*.c
 
 .cpp.o : 
 	$(COMPpp) $(ARGS) -c $*.cpp 
@@ -74,7 +104,7 @@ lex.partitionParse.c:	partitionParse.l
 	$(FLEX) -PpartitionParse partitionParse.l
 
 clean : 
-	rm -f $(OBJFILES) $(POBJFILES) bertini_real  
+	rm -f $(OBJFILES) $(POBJFILES) bertini_real data2set
 	rm -f par.out paramDerivs.out arr.out eval.out eval2.out const.out finalFile.out jacV.out jacP.out num.out
 	rm -f tempBertiniFile lex.partitionParse.c 
 	rm -rf *.dSYM

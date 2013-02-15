@@ -14,20 +14,23 @@
 
 
 
-#include "checkSelfConjugate.h"
-#include "Curve_NotSelfConj.h"
-#include "Curve_SelfConj.h"
-#include "data_type.h"
-#include "isosingular.h"
-#include "memory.h"
-#include "programStartup.h"
-#include "witnessSetParse.h"
 
 
 #ifndef _BERTINI_REAL_H
 #define _BERTINI_REAL_H
 
+#include "polysolve.h"
 
+
+#include "checkSelfConjugate.h"
+#include "Curve_NotSelfConj.h"
+#include "Curve_SelfConj.h"
+
+#include "data_type.h"
+
+#include "isosingular.h"
+#include "programStartup.h"
+#include "witnessSetParse.h"
 
 #endif
 

@@ -11,8 +11,8 @@
 #include <mpf2mpfr.h>
 
 #include "partitionParse.h"
-#include "memory.h"
 #include "data_type.h"
+#include "polysolve.h"
 
 
 #ifndef _CHECK_SELFCONJUGATE_H

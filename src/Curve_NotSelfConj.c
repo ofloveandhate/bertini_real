@@ -1,28 +1,7 @@
 #include "Curve_NotSelfConj.h"
 
 
-double get_comp_rand_d(comp_d x)
-/***************************************************************\
-* USAGE: obtain a complex random number in double precision     *
-* ARGUMENTS:                                                    *
-* RETURN VALUES: modulus of the complex random number           *
-* NOTES:                                                        *
-\***************************************************************/
-{
-  double tempMod;
 
-  // random numbers in [-1, 1]
-  set_double_d(x, 2 * (rand() / (RAND_MAX + 1.0) - 0.5), 2 * (rand() / (RAND_MAX + 1.0) - 0.5));
-
-  // find the sqrt of the modulus - the modulus of the complex random number that is returned
-  tempMod = sqrt(d_abs_d(x));
-
-  // divide by the sqrt of the modulus to keep it sufficiently away from zero
-  x->r /= tempMod;
-  x->i /= tempMod;
-
-  return tempMod;
-}
 
 
 void get_random_mat_d(mat_d A, 

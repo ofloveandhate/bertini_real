@@ -10,7 +10,8 @@
 #include <mpfr.h>
 #include <mpf2mpfr.h>
 
-#include "memory.h"
+#include "polysolve.h"
+
 #include "data_type.h"
 #include "partitionParse.h"
 

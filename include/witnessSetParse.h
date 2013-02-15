@@ -1,5 +1,5 @@
-#include "memory.h"
 #include "data_type.h"
+#include "polysolve.h"
 
 #ifndef _WITNESS_SET_PARSE
 #define _WITNESS_SET_PARSE

@@ -34,9 +34,12 @@
 #define _DATA_TO_SET_H
 
 extern "C" {
-	#include "memory.h"
+	#include "polysolve.h"
 }
-
+//extern "C" {
+//	#include "memory.h"
+//}
+//
 extern "C" {
 	#include "data_type.h"
 }
