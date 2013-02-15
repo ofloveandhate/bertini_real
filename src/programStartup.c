@@ -64,30 +64,3 @@ int startup(int argC, char *args[], char **inputName, char **startName)
 		return 0;
 }
 
-int checkWritePrivilege()
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES: 0 - have write privilege, 1- no write privilege*
- * NOTES: determines if this run of Bertini has write privileges *
- \***************************************************************/
-{
-  int retVal = 0;
-  FILE *TEMP = NULL;
-	
-  TEMP = fopen("tempFile", "w");
-	
-  if (TEMP == NULL)
-  { // cannot write
-    retVal = 1;
-  }
-  else
-  { // can write
-    retVal = 0;
-    fclose(TEMP);
-    remove("tempFile");
-  }
-	
-  return retVal;
-}
-

@@ -1,5 +1,5 @@
 #include "data_type.h"
-#include "memory.h"
+#include "polysolve.h"
 
 #ifndef _CURVE_SELFCONJ_H
 #define _CURVE_SELFCONJ_H

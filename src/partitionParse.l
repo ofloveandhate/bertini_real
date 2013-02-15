@@ -1,13 +1,15 @@
 %{
 /* This will take an input file and partition it into a configurations file and a function file */
-#include "bertini_real.h"
+
+	#include "polysolve.h"
+
 
 // settings to switch between config & function
-int configFound = 0, endOfConfig = 1, endOfFunc = 0;
+int configFoundPartition = 0, endofConfigPartition = 1, endofFuncPartition = 0;
 // number of times the statement appears
 int num_variable_group = 0, num_hom_variable_group = 0, num_variable = 0, num_pathvariable = 0, num_parameter = 0, num_definedSubfunction = 0, num_random = 0, num_random_real = 0, num_constant = 0, num_function = 0;
 // files for config & function
-FILE *CONFIGFILE = NULL, *FUNCFILE = NULL;
+FILE *CONFIGFILEPARTITION = NULL, *FUNCFILEPARTITION = NULL;
 
 /* %option nounput - do not warn about unput */
 %}
@@ -39,119 +41,119 @@ other .
 %%
 
 {end}|{ends} { // end of something
-             if (!endOfConfig)
+             if (!endofConfigPartition)
              { // end config
-               endOfConfig = 1;
+               endofConfigPartition = 1;
              }
-             else if (!endOfFunc)
+             else if (!endofFuncPartition)
              { // end func
-               endOfFunc = 1;
+               endofFuncPartition = 1;
              }
            }
 {comments}|{white} { // ignore comments and whitespace
            }
 {config}   { // start of config found - print there until reach END or INPUT
-             configFound = 1;
-             endOfConfig = 0;
+             configFoundPartition = 1;
+             endofConfigPartition = 0;
            }
 {input}    { // start of input found - print there until reach END or EOF
-             endOfConfig = 1;
-             endOfFunc = 0;
+             endofConfigPartition = 1;
+             endofFuncPartition = 0;
            }
 {param}    { // declare parameter
-             if (endOfConfig && !endOfFunc)
-             { // print to FUNCFILE
+             if (endofConfigPartition && !endofFuncPartition)
+             { // print to FUNCFILEPARTITION
                num_parameter++;
-               fprintf(FUNCFILE, "%s ", partitionParsetext);
+               fprintf(FUNCFILEPARTITION, "%s ", partitionParsetext);
              }
            }
 {homvargp} { // declare hom_variable_group
-             if (endOfConfig && !endOfFunc)
-             { // print to FUNCFILE
+             if (endofConfigPartition && !endofFuncPartition)
+             { // print to FUNCFILEPARTITION
                num_hom_variable_group++;
-               fprintf(FUNCFILE, "%s ", partitionParsetext);
+               fprintf(FUNCFILEPARTITION, "%s ", partitionParsetext);
              }
            }
 {vargp}    { // declare variable_group
-             if (endOfConfig && !endOfFunc)
-             { // print to FUNCFILE
+             if (endofConfigPartition && !endofFuncPartition)
+             { // print to FUNCFILEPARTITION
                num_variable_group++;
-               fprintf(FUNCFILE, "%s ", partitionParsetext);
+               fprintf(FUNCFILEPARTITION, "%s ", partitionParsetext);
              }
            }
 {var}      { // declare variable
-             if (endOfConfig && !endOfFunc)
-             { // print to FUNCFILE
+             if (endofConfigPartition && !endofFuncPartition)
+             { // print to FUNCFILEPARTITION
                num_variable++;
-               fprintf(FUNCFILE, "%s ", partitionParsetext);
+               fprintf(FUNCFILEPARTITION, "%s ", partitionParsetext);
              }
            }
 {pathvar}  { // declare pathvariable
-             if (endOfConfig && !endOfFunc)
-             { // print to FUNCFILE
+             if (endofConfigPartition && !endofFuncPartition)
+             { // print to FUNCFILEPARTITION
                num_pathvariable++;
-               fprintf(FUNCFILE, "%s ", partitionParsetext);
+               fprintf(FUNCFILEPARTITION, "%s ", partitionParsetext);
              }
            }
 {const}    { // declare constant
-             if (endOfConfig && !endOfFunc)
-             { // print to FUNCFILE
+             if (endofConfigPartition && !endofFuncPartition)
+             { // print to FUNCFILEPARTITION
                num_constant++;
-               fprintf(FUNCFILE, "%s ", partitionParsetext);
+               fprintf(FUNCFILEPARTITION, "%s ", partitionParsetext);
              }
            }
 {func}     { // declare function
-             if (endOfConfig && !endOfFunc)
-             { // print to FUNCFILE
+             if (endofConfigPartition && !endofFuncPartition)
+             { // print to FUNCFILEPARTITION
                num_function++;
-               fprintf(FUNCFILE, "%s ", partitionParsetext);
+               fprintf(FUNCFILEPARTITION, "%s ", partitionParsetext);
              }
            }
 {subfunc}  { // declare definedSubfunction
-             if (endOfConfig && !endOfFunc)
-             { // print to FUNCFILE
+             if (endofConfigPartition && !endofFuncPartition)
+             { // print to FUNCFILEPARTITION
                num_definedSubfunction++;
-               fprintf(FUNCFILE, "%s ", partitionParsetext);
+               fprintf(FUNCFILEPARTITION, "%s ", partitionParsetext);
              }
            }
 {rand}     { // declare random
-             if (endOfConfig && !endOfFunc)
-             { // print to FUNCFILE
+             if (endofConfigPartition && !endofFuncPartition)
+             { // print to FUNCFILEPARTITION
                num_random++;
-               fprintf(FUNCFILE, "%s ", partitionParsetext);
+               fprintf(FUNCFILEPARTITION, "%s ", partitionParsetext);
              }
            }
 {randReal} { // declare random_real
-             if (endOfConfig && !endOfFunc)
-             { // print to FUNCFILE
+             if (endofConfigPartition && !endofFuncPartition)
+             { // print to FUNCFILEPARTITION
                num_random_real++;
-               fprintf(FUNCFILE, "%s ", partitionParsetext);
+               fprintf(FUNCFILEPARTITION, "%s ", partitionParsetext);
              }
            }
 {colon}    { // a colon
-             if (!endOfConfig)
+             if (!endofConfigPartition)
              { // add a space after a colon in configurations
-               fprintf(CONFIGFILE, ": ");
+               fprintf(CONFIGFILEPARTITION, ": ");
              }
            }
 {eol}      { // end of line
-             if (!endOfConfig)
-             { // print to CONFIGFILE
-  	       fprintf(CONFIGFILE, ";\n");
+             if (!endofConfigPartition)
+             { // print to CONFIGFILEPARTITION
+  	       fprintf(CONFIGFILEPARTITION, ";\n");
              }
-             else if (!endOfFunc)
-             { // print to FUNCFILE
-               fprintf(FUNCFILE, ";\n");
+             else if (!endofFuncPartition)
+             { // print to FUNCFILEPARTITION
+               fprintf(FUNCFILEPARTITION, ";\n");
              }
            }
 {number}|{I}|{name}|{other}   { // other symbol
-             if (!endOfConfig)
-             { // print to CONFIGFILE
-               fprintf(CONFIGFILE, "%s", partitionParsetext);
+             if (!endofConfigPartition)
+             { // print to CONFIGFILEPARTITION
+               fprintf(CONFIGFILEPARTITION, "%s", partitionParsetext);
              }
-             else if (!endOfFunc)
-             { // print to FUNCFILE
-               fprintf(FUNCFILE, "%s", partitionParsetext);
+             else if (!endofFuncPartition)
+             { // print to FUNCFILEPARTITION
+               fprintf(FUNCFILEPARTITION, "%s", partitionParsetext);
              }
            }
 %%
@@ -167,15 +169,15 @@ int partitionParse(int **declarations, FILE *fp, char *funcName, char *configNam
 {
   int rV = 0;
 
-  // setup FUNCFILE & CONFIGFILE
-  FUNCFILE = fopen(funcName, "w");
-  CONFIGFILE = fopen(configName, "w");
-  if (FUNCFILE == NULL)
+  // setup FUNCFILEPARTITION & CONFIGFILEPARTITION
+  FUNCFILEPARTITION = fopen(funcName, "w");
+  CONFIGFILEPARTITION = fopen(configName, "w");
+  if (FUNCFILEPARTITION == NULL)
   {
     printf("ERROR: The name %s is not valid!\n\n", funcName);
     bexit(ERROR_INPUT_SYNTAX);
   }
-  if (CONFIGFILE == NULL)
+  if (CONFIGFILEPARTITION == NULL)
   {
     printf("ERROR: The name %s is not valid!\n\n", configName);
     bexit(ERROR_INPUT_SYNTAX);
@@ -198,14 +200,14 @@ int partitionParse(int **declarations, FILE *fp, char *funcName, char *configNam
   (*declarations)[8] = num_constant;
   (*declarations)[9] = num_function;
 
-  // close FUNCFILE & CONFIGFILE
-  if (!endOfFunc)
-    fprintf(FUNCFILE, "\nEND;\n\n");
+  // close FUNCFILEPARTITION & CONFIGFILEPARTITION
+  if (!endofFuncPartition)
+    fprintf(FUNCFILEPARTITION, "\nEND;\n\n");
 
-  fclose(FUNCFILE);
-  fclose(CONFIGFILE);
-  FUNCFILE = NULL;
-  CONFIGFILE = NULL;
+  fclose(FUNCFILEPARTITION);
+  fclose(CONFIGFILEPARTITION);
+  FUNCFILEPARTITION = NULL;
+  CONFIGFILEPARTITION = NULL;
 
   return rV;
 }

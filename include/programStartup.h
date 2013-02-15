@@ -11,8 +11,8 @@
 #include <mpfr.h>
 #include <mpf2mpfr.h>
 
+#include "polysolve.h"
 
-#include "memory.h"
 #include "data_type.h"
 
 #define BERTINI_REAL_VERSION_STRING "1.0"
@@ -24,7 +24,6 @@
 
 int startup(int argC, char *args[], char **inputName, char **startName);
 
-int checkWritePrivilege();
 
 #endif
 
