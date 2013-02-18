@@ -1,0 +1,7 @@
+CONFIG
+END;
+INPUT
+ variable_group x,y;
+ function f;
+ f = (x^3 + y^3)^2;
+END;
