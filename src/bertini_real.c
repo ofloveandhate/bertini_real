@@ -18,19 +18,45 @@ int main(int argC, char *args[])
 	int ii;  // counters
 	
 	
+	// essentials for using the bertini parser
+	prog_t SLP;
+  unsigned int currentSeed;
+	int trackType, genType = 0, MPType, userHom, sharpenOnly, needToDiff, remove_temp, useParallelDiff = 0;
+  int my_id, num_processes, headnode = 0; // headnode is always 0
+	int precision = 53;
+	num_processes = 1;
+	//end parser-bertini essentials
+	
+	
+	
+	////
+	//  begin the actual program
+	////
+	
+	
   startup(argC, args, &inputName, &witnessSetName);  //prints the welcome message,
 	   //also gets the inputName, witnessSetName
 		//default inputName = "input"
 		//default witnessSetName = "witness_set"
   
 
-    num_vars=2; //hardcoded here until we program to parse the function file.
-    
+
+
+	
+
+	
+		parse_input(inputName, &trackType, &MPType, &genType, &userHom, &currentSeed, &sharpenOnly, &needToDiff, &remove_temp, useParallelDiff, my_id, num_processes, headnode);
+		MPType = 0;
+	
+	num_vars = setupProg(&SLP, precision, MPType); // numbers change for MP.
+	printf("there are %d variables in the problem\n", num_vars);
+	
+  
     printf("parsing witness set\n");
     witnessSetParse(&Wuser,witnessSetName,num_vars);
     witnessSetParse(&Wnew,witnessSetName,num_vars);  // Wnew same as Wuser, except for functions.
 	
-//		getFunctions(&Wuser);
+//		getFunctions(&Wuser,inputName);
     printf("done reading witness set\n");
     
     
@@ -61,7 +87,7 @@ int main(int argC, char *args[])
 	
 
 	//temp answer:  the functions, but not the points, or the slices.
-//		getFunctions(&Wnew);
+//		getFunctions(&Wnew,"input_deflated");
 	
 	
 	//now need to get new system produced by isosingular_deflation into bertini_real's memory.
