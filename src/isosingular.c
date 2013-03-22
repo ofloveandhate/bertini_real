@@ -1,12 +1,8 @@
 #include "isosingular.h"
 
-void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs, FILE *IN, int minorSize, int *degrees, int deflation_number);
-void addItems(int *numItems, char ***itemNames, int **itemLines, FILE *IN, int lineNumber);
-void parse_names(int *numItems, char ***itemNames, int **itemLines, FILE *IN, char *name, int num_declarations);
-void isosingular_deflation_iteration(int *declarations, char *inputOutputName, char *matlab_command, int nullSpace, int deflation_number);
-void stabilization_input_file(char *outputFile, char *funcInput, char *configInput);
 
-int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *inputFile, char *point, char *bertini_command, char *matlab_command, int max_deflations)
+
+int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *inputFile, char *witness_point_filename, char *bertini_command, char *matlab_command, int max_deflations)
 /***************************************************************\
 * USAGE: Perform isosingular deflation for system at given point*
 * ARGUMENTS: name of file for polynomial system, point, command *
@@ -16,76 +12,91 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *i
 * NOTES:                                                        *
 \***************************************************************/
 {
-  int i, success = 0, strLength = 0, nullSpace = 0, *declarations = NULL;
+  int i,ii, success = 0, strLength = 0, nullSpace = 0, *declarations = NULL;
   char ch, *strStabilizationTest = NULL;
   FILE *IN = NULL, *OUT = NULL;
 
   // partition the input file into the configurations and the polynomial system
-  IN = fopen(inputFile, "r");
-  if (IN == NULL)
-  {
-    printf("\n\nERROR: '%s' does not exist!!!\n\n\n", inputFile);
-    bexit(ERROR_FILE_NOT_EXIST);
-  }
-  partitionParse(&declarations, IN, "func_input_real", "config_real");
+//  IN = fopen(inputFile, "r");
+//  if (IN == NULL)
+//  {
+//    printf("\n\nERROR: '%s' does not exist!!!\n\n\n", inputFile);
+//    bexit(ERROR_FILE_NOT_EXIST);
+//  }
+	
+	remove("isosingular_summary");
+	remove("func_input_real");
+	remove("config_real");
+	remove("input_stabilization_test");
+	
+	
+	IN = safe_fopen_read(inputFile);	
+  partitionParse(&declarations, IN, "func_input_real", "config_real",0); // the 0 means not self conjugate mode
   fclose(IN);
 
-  // error check based on declarations
-  if (declarations[0] + declarations[1] > 1)
-  { // multiple variable groups
-    printf("\n\nERROR: Please use either one 'variable_group' or one 'hom_variable_group'!\n\n");
-    bexit(ERROR_CONFIGURATION);
-  }
-  else if (declarations[2] > 0)
-  { // 'variable' 
-    printf("\n\nERROR: The system needs to be defined using either 'variable_group' or 'hom_variable_group'.\n\n");
-    bexit(ERROR_CONFIGURATION);
-  }
-  else if (declarations[3] > 0)
-  { // 'pathvariable' 
-    printf("\n\nERROR: The system should not depend on pathvariables!\n\n");
-    bexit(ERROR_CONFIGURATION);
-  }
-  else if (declarations[4] > 0)
-  { // 'parameter'
-    printf("\n\nERROR: The system should not depend on parameters!\n\n");
-    bexit(ERROR_CONFIGURATION);
-  }
-  else if (declarations[5] > 0)
-  { // 'definedSubfunction'
-    printf("\n\nERROR: The system should not depend on defined subfunctions!\n\n");
-    bexit(ERROR_CONFIGURATION);
-  }
-  else if (declarations[6] > 0)
-  { // 'random'
-    printf("\n\nERROR: The system should not involve 'random' numbers!\n\n");
-    bexit(ERROR_CONFIGURATION);
-  }
-  else if (declarations[7] > 0)
-  { // 'random_real'
-    printf("\n\nERROR: The system should not involve 'random_real' numbers!\n\n");
-    bexit(ERROR_CONFIGURATION);
-  }
+
 
   // setup input file to test for stabilization
   stabilization_input_file("input_stabilization_test", "func_input_real", "config_real");
 
+	
+
+	
   // perform stabilization test
   printf("\nPerforming a stabilization test\n");
-  strLength = 1 + snprintf(NULL, 0, "%s input_stabilization_test %s", bertini_command, point);
+  strLength = 1 + snprintf(NULL, 0, "%s input_stabilization_test %s", bertini_command, witness_point_filename);
   strStabilizationTest = (char *)bmalloc(strLength * sizeof(char));
-  sprintf(strStabilizationTest, "%s input_stabilization_test %s", bertini_command, point);
-  system(strStabilizationTest);
+  sprintf(strStabilizationTest, "%s input_stabilization_test %s", bertini_command, witness_point_filename);
+	
+	
+	
+//	ii=0;
+//	while (ii<10) {
+//		ii++;
+		remove("isosingular_summary");
+		
+		printf("running system command '%s'\n",strStabilizationTest);
 
-  // read in the file
-  IN = fopen("isosingular_summary", "r");
-  if (IN == NULL)
-  {
-    printf("\n\nERROR: Bertini was unable to perform the stabilization test.\n\n\n");
-    bexit(ERROR_CONFIGURATION);
-  }
+		
+		if (system(strStabilizationTest)!=0){
+			bexit(ERROR_CONFIGURATION);
+		}
+
+
+//		system("grep 'unable' grepme > check_if_im_empty");
+//
+//		
+//		
+//		IN = fopen("check_if_im_empty","r");
+//		if ((ch = fgetc(IN)) != EOF){
+//			system("more grepme");
+//
+//
+//			printf("\n******\nstabilization test FAILED.  trying again.\n\n");
+//			remove("grepme");
+//			remove("check_if_im_empty");
+//
+//		}
+//		else{
+//			remove("grepme");
+//			remove("check_if_im_empty");
+//			break;
+//		}
+//		fclose(IN);
+//		
+//	}
+//	
+
+	
+	
+	
+  // read in the file	
+	
+	IN = safe_fopen_read("isosingular_summary");
   fscanf(IN, "%d%d", &nullSpace, &success);  
-
+	fclose(IN);
+	
+	
   // setup the first entry in the deflation sequence
   *num_deflations = 0;
   *deflation_sequence = (int *)bmalloc((*num_deflations + 1) * sizeof(int));
@@ -101,15 +112,13 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *i
 
     // perform stabilization test
     printf("\nPerforming a stabilization test\n");
-    system(strStabilizationTest);    
-
+    if (system(strStabilizationTest)!=0){
+			bexit(ERROR_CONFIGURATION);
+		}
+		
+		
     // read in the file
-    IN = fopen("isosingular_summary", "r");
-    if (IN == NULL)
-    {
-      printf("\n\nERROR: Bertini was unable to perform the stabilization test.\n\n\n");
-      bexit(ERROR_CONFIGURATION);
-    }
+		IN = safe_fopen_read("isosingular_summary");
     fscanf(IN, "%d%d", &nullSpace, &success);
 
     // setup the next entry in the deflation sequence
@@ -140,12 +149,12 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *i
     sprintf(strStabilizationTest, "%s_deflated", inputFile);
     OUT = fopen(strStabilizationTest, "w");
     fprintf(OUT, "CONFIG\n");
-    IN = fopen("config_real", "r");
+		IN = safe_fopen_read("config_real");
     while ((ch = fgetc(IN)) != EOF)
       fprintf(OUT, "%c", ch);
     fclose(IN);
     fprintf(OUT, "END;\nINPUT\n");
-    IN = fopen("func_input_real", "r");
+		IN = safe_fopen_read("func_input_real");
     while ((ch = fgetc(IN)) != EOF)
       fprintf(OUT, "%c", ch);
     fclose(IN);
@@ -171,6 +180,15 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *i
   return success;
 }
 
+
+
+
+
+
+
+
+
+
 void isosingular_deflation_iteration(int *declarations, char *inputOutputName, char *matlab_command, int nullSpaceDim, int deflation_number)
 /***************************************************************\
 * USAGE: setup input file for one deflation iteration           *
@@ -186,18 +204,12 @@ void isosingular_deflation_iteration(int *declarations, char *inputOutputName, c
   FILE *IN = NULL, *OUT = NULL;
 
   // test for existence of input file
-  IN = fopen(inputOutputName, "r");
-  if (IN == NULL)
-  {
-    printf("\n\nERROR: '%s' does not exist!!!\n\n\n", inputOutputName);
-    bexit(ERROR_FILE_NOT_EXIST);
-  }
+	IN = safe_fopen_read(inputOutputName);
   fclose(IN);
    
   // move the file & open it
   rename(inputOutputName, "deflation_input_file");
-  IN = fopen("deflation_input_file", "r");
-
+	IN = safe_fopen_read("deflation_input_file");
   // setup variables
   if (declarations[0] > 0)
   { // using variable_group
@@ -218,19 +230,15 @@ void isosingular_deflation_iteration(int *declarations, char *inputOutputName, c
 
   // read in the degrees
   degrees = (int *)bmalloc(numFuncs * sizeof(int));
-  OUT = fopen("deg.out", "r");
-  if (OUT == NULL)
-  {
-    printf("\n\nERROR: 'deg.out' does not exist!!!\n\n\n");
-    bexit(ERROR_FILE_NOT_EXIST);
-  }
+	OUT = safe_fopen_read("deg.out");
   for (i = 0; i < numFuncs; i++)
     fscanf(OUT, "%d", &degrees[i]);
   fclose(OUT);;
 
   // setup Matlab script
   rewind(IN);
-  OUT = fopen("matlab_deflate.m", "w");
+//  OUT = fopen("matlab_deflate.m", "w");
+	OUT = safe_fopen_write("matlab_deflate.m");
   minorSize = numVars - declarations[1] - nullSpaceDim + 1;
   createMatlabDeflation(OUT, numVars, vars, lineVars, numConstants, consts, lineConstants, numFuncs, funcs, lineFuncs, IN, minorSize, degrees, deflation_number);
   fclose(OUT);  
@@ -258,13 +266,15 @@ void isosingular_deflation_iteration(int *declarations, char *inputOutputName, c
   while ((ch = fgetc(IN)) != EOF) 
     fprintf(OUT, "%c", ch);
   fclose(IN);
-  IN = fopen("deflation_polynomials", "r");
-  if (IN == NULL)
-  {
-    printf("\n\nERROR: 'deflation_polynomials' does not exist!!!\n\n\n");
-    bexit(ERROR_FILE_NOT_EXIST);
-  }
-  while ((ch = fgetc(IN)) != EOF) 
+	
+	IN = safe_fopen_read("deflation_polynomials");
+//  IN = fopen("deflation_polynomials", "r");
+//  if (IN == NULL)
+//  {
+//    printf("\n\nERROR: 'deflation_polynomials' does not exist!!!\n\n\n");
+//    bexit(ERROR_FILE_NOT_EXIST);
+//  }
+  while ((ch = fgetc(IN)) != EOF)
     fprintf(OUT, "%c", ch);
   fclose(IN);
   fclose(OUT);
@@ -571,7 +581,7 @@ void stabilization_input_file(char *outputFile, char *funcInput, char *configInp
   FILE *OUT = fopen(outputFile, "w"), *IN = NULL;
   if (OUT == NULL)
   {
-    printf("\n\nERROR: '%s' is an inproper name of a file!!\n\n\n", outputFile);
+    printf("\n\nERROR: '%s' is an improper name of a file!!\n\n\n", outputFile);
     bexit(ERROR_FILE_NOT_EXIST);
   }
 
@@ -590,13 +600,14 @@ void stabilization_input_file(char *outputFile, char *funcInput, char *configInp
   fprintf(OUT, "TrackType: 6;\nReducedOnly: 1;\nDeleteTempFiles: 0;\nEND;\nINPUT\n");
 
   // setup system in OUT
-  IN = fopen(funcInput, "r");
-  if (IN == NULL)
-  {
-    fclose(OUT);
-    printf("\n\nERROR: '%s' does not exist!!!\n\n\n", funcInput);
-    bexit(ERROR_FILE_NOT_EXIST);
-  }
+//  IN = fopen(funcInput, "r");
+	IN = safe_fopen_read(funcInput);
+//  if (IN == NULL)
+//  {
+//    fclose(OUT);
+//    printf("\n\nERROR: '%s' does not exist!!!\n\n\n", funcInput);
+//    bexit(ERROR_FILE_NOT_EXIST);
+//  }
   while ((ch = fgetc(IN)) != EOF)
     fprintf(OUT, "%c", ch);
   fclose(IN);
@@ -604,5 +615,50 @@ void stabilization_input_file(char *outputFile, char *funcInput, char *configInp
   fclose(OUT);
 
   return;
+}
+
+
+
+
+
+void check_declarations(char *declarations){
+	
+  // error check based on declarations
+  if (declarations[0] + declarations[1] > 1)
+  { // multiple variable groups
+    printf("\n\nERROR: Please use either one 'variable_group' or one 'hom_variable_group'!\n\n");
+    bexit(ERROR_CONFIGURATION);
+  }
+  else if (declarations[2] > 0)
+  { // 'variable'
+    printf("\n\nERROR: The system needs to be defined using either 'variable_group' or 'hom_variable_group'.\n\n");
+    bexit(ERROR_CONFIGURATION);
+  }
+  else if (declarations[3] > 0)
+  { // 'pathvariable'
+    printf("\n\nERROR: The system should not depend on pathvariables!\n\n");
+    bexit(ERROR_CONFIGURATION);
+  }
+  else if (declarations[4] > 0)
+  { // 'parameter'
+    printf("\n\nERROR: The system should not depend on parameters!\n\n");
+    bexit(ERROR_CONFIGURATION);
+  }
+  else if (declarations[5] > 0)
+  { // 'definedSubfunction'
+    printf("\n\nERROR: The system should not depend on defined subfunctions!\n\n");
+    bexit(ERROR_CONFIGURATION);
+  }
+  else if (declarations[6] > 0)
+  { // 'random'
+    printf("\n\nERROR: The system should not involve 'random' numbers!\n\n");
+    bexit(ERROR_CONFIGURATION);
+  }
+  else if (declarations[7] > 0)
+  { // 'random_real'
+    printf("\n\nERROR: The system should not involve 'random_real' numbers!\n\n");
+    bexit(ERROR_CONFIGURATION);
+  }
+	
 }
 

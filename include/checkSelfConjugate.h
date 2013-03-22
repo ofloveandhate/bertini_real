@@ -10,24 +10,27 @@
 #include <mpfr.h>
 #include <mpf2mpfr.h>
 
-#include "partitionParse.h"
-#include "data_type.h"
-#include "polysolve.h"
 
 
 #ifndef _CHECK_SELFCONJUGATE_H
 #define _CHECK_SELFCONJUGATE_H
+
+
+#include "partitionParse.h"
+#include "data_type.h"
+#include "polysolve.h"
+#include "fileops.h"
+
 
 void membership_test_input_file(char *outputFile,
                                 char *funcInput,
                                 char *configInput,
                                 int  tracktype);
 
-int write_member_points(point_d coord, int num_vars, char * fmt);
+int write_member_points(point_d, char * fmt);
 
-int write_member_points_conjugated(point_d point_to_write, int num_vars, char * fmt);
 
-int read_incidence_matrix();
+void read_incidence_matrix(int component_numbers[]);
 
 
 int checkSelfConjugate(witness_set_d W,

@@ -5,6 +5,10 @@
 
 int main(int argC, char *args[]){
 	
+	bool dehomogenize = false;
+	
+	using mpfr::mpreal;
+	
 	
 	std::string inputName, directoryName, outputName;
 	
@@ -32,8 +36,11 @@ int main(int argC, char *args[]){
 	double condition_number,
 	smallest_nonsing_value,
 	largest_nonsing_value,
-	real,imag,
 	hom_variable_constant_r, hom_variable_constant_i;
+	
+
+	std::string real,imag;
+	
 	
 	std::string tmpstr;
 	std::stringstream converter;
@@ -65,21 +72,18 @@ int main(int argC, char *args[]){
 	converter.clear();
 	converter.str("");
 	
-
-
-	vec_d solution, prev_approx, dehomogenized_solution;
-	init_vec_d(solution,num_vars);
-	init_vec_d(prev_approx,num_vars);
-	init_vec_d(dehomogenized_solution,num_vars-1);
 	
+	vec_d prev_approx;
+	init_vec_d(prev_approx,num_vars);
+
 	
 	int component_counter[num_nonempty_codims]; // initialize these both to 0.
 	memset( component_counter, 0, num_nonempty_codims*sizeof(int) );
 	int codim_indicator[num_nonempty_codims];
 	memset( codim_indicator, 0, num_nonempty_codims*sizeof(int) );
-
 	
-
+	
+	
 	std::map< std::pair < int, int >, witness_set> gathered_data;
 	
 	
@@ -98,7 +102,7 @@ int main(int argC, char *args[]){
 		converter.clear();
 		converter.str("");
 		
-
+		
 		codim_indicator[ii] = current_codimension;
 		
 		for (jj=0; jj<num_points_this_dim; jj++) {
@@ -109,13 +113,13 @@ int main(int argC, char *args[]){
 			converter.clear();
 			converter.str("");
 			
-					
-			std::vector < std::pair < double, double > > new_solution;
+			
+			std::vector < std::pair < std::string, std::string > > new_solution;
 			new_solution.resize(num_vars);
 			
 			for (kk=0; kk<num_vars; kk++) {
 				//here we get the actual solutions we are after.
-
+				
 				getline(IN,tmpstr);
 				converter << tmpstr;
 				converter >> real;
@@ -123,10 +127,12 @@ int main(int argC, char *args[]){
 				converter.clear();
 				converter.str("");
 				
-				new_solution[kk] = std::pair < double, double > (real,imag);
+				new_solution[kk] = std::pair < std::string, std::string > (real,imag);
+				real.clear();
+				imag.clear();
 			}
 			
-
+			
 			//now have the solution in memory.
 			
 			
@@ -140,13 +146,16 @@ int main(int argC, char *args[]){
 			for (kk=0; kk<num_vars; kk++) {
 				// the previous approximations to the solutions
 				getline(IN,tmpstr);
+				
+				
+				
 				converter << tmpstr;
 				converter >> real;
 				converter >> imag;
 				converter.clear();
 				converter.str("");
-				prev_approx->coord[kk].r = real;
-				prev_approx->coord[kk].i = imag;
+//				prev_approx->coord[kk].r = real.toDouble();
+//				prev_approx->coord[kk].i = imag.toDouble();
 			}
 			
 			getline(IN,tmpstr);
@@ -197,7 +206,7 @@ int main(int argC, char *args[]){
 			converter.clear();
 			converter.str("");
 			
-			gathered_data[std::pair< int, int> (current_codimension, component_number)].add_raw_solution(current_codimension, component_number, new_solution);
+			gathered_data[std::pair< int, int> (num_vars-1-current_codimension, component_number)].add_raw_solution(num_vars-1- current_codimension, component_number, new_solution);
 			
 			if (component_number+1 > component_counter[ii]) {
 				component_counter[ii]  = component_number+1;  // keeps track of the number of components per dimension
@@ -209,46 +218,58 @@ int main(int argC, char *args[]){
 	}//  re: first loop, to get points.
 	
 	
-
-
+	
+	
 	getline(IN,tmpstr);
 	converter << tmpstr;
 	converter >> garbage;
 	converter.clear();
 	converter.str("");
 	
+	if (garbage!=(-1)) {
+		std::cerr << "did not parse top of file correctly.  got " << garbage << " instead of -1\n";
+		exit(-1);
+	}
+	
 	getline(IN,tmpstr);//waste a line
-
+	
+	
 	getline(IN,tmpstr);
 	converter << tmpstr;
 	converter >> numbertype;
 	converter.clear();
 	converter.str("");
 	
-
 	
 	
-
+	if (numbertype!=2) {
+		std::cerr << "this program not yet built to handle non-rational numbers.  program it!\n";
+		exit(-3);
+	}
+	
+	
+	
+	
 	
 	for (mm=0; mm<num_nonempty_codims; mm++) {
 		//BEGIN REPEATING BLOCK, one per nonempty codimension
 		
+		current_codimension = codim_indicator[mm];
 		
 		
 		
-		
-		//initialize scope data members.
+		//initialize scoped data members.
 		std::vector < std::string > randomization_matrix,
-				homogenization_matrix,
-				homogenization_patch_eqn,
-				linear_slice,
-				patch_coefficents;
+		homogenization_matrix,
+		homogenization_patch_eqn,
+		linear_slice,
+		patch_coefficents;
 		std::string tmpstr;
 		
 		
-
 		
-
+		
+		
 		// the cursor must be at the correct position here, or things get messed up.
 		getline(IN,tmpstr);
 		converter << tmpstr;
@@ -260,31 +281,43 @@ int main(int argC, char *args[]){
 		for (ii = 0; ii < num_rows_randomization*num_cols_randomization; ii++) {
 			getline(IN,tmpstr);
 			randomization_matrix.push_back(tmpstr);
+			
+			//#ifdef verbose
+			//			std::cout << "r_m " << tmpstr << std::endl;
+			//#endif
+			
 		}
 		
-
+		
+		getline(IN,tmpstr);// burn a line
 		
 		
 		
 		//MATRIX W FOR HOMOGENIZATION
 		//  same length as A, the randomization matrix
 		int A[num_rows_randomization][num_cols_randomization];
-
+		
 		
 		for (ii=0; ii<num_rows_randomization; ii++) {
-			getline(IN,tmpstr);
-			converter << tmpstr;
-				
+			
+			
 			for (jj=0; jj<num_cols_randomization; jj++) {
-
+				getline(IN,tmpstr);
+				converter << tmpstr;
 				converter >> A[ii][jj];
+				converter.clear();
+				converter.str("");
+				//#ifdef verbose
+				//				std::cout << "A[" << ii << "][" << jj << "]=" << A[ii][jj] << std::endl;
+				//#endif
 			}
-			converter.clear();
-			converter.str("");
+			
 		}
-
 		
-		getline(IN,tmpstr);//waste the blank line
+		
+		
+		
+		
 		
 		getline(IN,tmpstr);
 		converter << tmpstr;
@@ -292,35 +325,48 @@ int main(int argC, char *args[]){
 		converter.clear();
 		converter.str("");
 		
-//		//VECTOR H FOR HOMOGENIZATION
+		//		//VECTOR H FOR HOMOGENIZATION
 		for (ii = 0; ii<garbage; ii++) {
 			getline(IN,tmpstr);
 			homogenization_patch_eqn.push_back(tmpstr);
+#ifdef verbose
+			std::cout << "hom_p_eqn " << tmpstr << std::endl;
+#endif
 		}
-
-
 		
 		
 		
-//		//   HOMVARCONST
+		
+		
+		//		//   HOMVARCONST
 		getline(IN,tmpstr);
-
+		
 		getline(IN,tmpstr);
 		converter << tmpstr;
 		converter >> hom_variable_constant_r;
 		converter >> hom_variable_constant_i;
 		converter.clear();
 		converter.str("");
-
-//		//MATRIX B FOR LINEAR SLICE COEFFICIENTS
+		
+#ifdef verbose
+		std::cout << "hom_var_const " << hom_variable_constant_r << " " << hom_variable_constant_i << std::endl;
+#endif
+		
+		
+		//		//MATRIX B FOR LINEAR SLICE COEFFICIENTS
 		getline(IN,tmpstr);
 		converter << tmpstr;
 		converter >> num_linears;
-		converter >> garbage;
+		converter >> garbage; // should reflect the number of variables in the problem.
 		converter.clear();
 		converter.str("");
-
-//		// the cursor must be at the correct position here, or things get messed up.
+		
+#ifdef verbose
+		std::cout << "will have " << num_linears << " linears" << std::endl;
+#endif
+		
+		
+		
 		
 		for (ii = 0; ii < num_linears; ii++) {
 			std::vector< std::string >  tmpslice;
@@ -329,32 +375,60 @@ int main(int argC, char *args[]){
 				tmpslice.push_back(tmpstr);
 			}
 			
-			gathered_data[std::pair< int, int> (current_codimension, component_number)].add_linear_slice(current_codimension, component_number, tmpslice);
+			
+			
+			for (jj=0; jj<component_counter[mm]; jj++) {
+				gathered_data[std::pair< int, int> (num_vars-1-current_codimension, jj)].add_linear_slice(num_vars-1-current_codimension, jj, tmpslice,numbertype);
+			}
+			
 		}
 		
-
+		getline(IN,tmpstr);
 		
-		getline(IN,tmpstr);//waste blank line
-
 		
-//		// PATCH COEFFICIENTS
-		for (ii = 0; ii<num_vars; ii++) {
+		int num_patch_coefficients;
+		getline(IN,tmpstr);//waste the blank line
+		converter << tmpstr;
+		converter >> num_patch_coefficients;
+		converter.clear();
+		converter.str("");
+		
+		
+		
+		//		// PATCH COEFFICIENTS
+		for (ii = 0; ii<num_patch_coefficients; ii++) {
 			getline(IN,tmpstr);
 			patch_coefficents.push_back(tmpstr);
+#ifdef verbose
+			std::cout << "p_coeff " << tmpstr << std::endl;
+#endif
 		}
-	
+		
+		for (jj=0; jj<component_counter[mm]; jj++) {
+			gathered_data[std::pair< int, int> (num_vars-1-current_codimension, jj)].add_patch_equation(num_vars-1-current_codimension, jj, patch_coefficents,numbertype);
+		}
+		
+		
+		getline(IN,tmpstr);
 		//END REPEATED BLOCK (ONE FOR EACH NONEMPTY CODIM).
-
+		
 	}
 	
 	
 	std::map < std::pair < int, int >, witness_set >::iterator iter;
 	for (iter=gathered_data.begin(); iter!=gathered_data.end();  iter++) {
-		iter->second.dehomogenize_and_write(directoryName);
+		iter->second.write_to_file(directoryName,dehomogenize);
 	}
 	
-	
 	std::cout << std::endl;
+	
+	write_summary(gathered_data,
+								component_counter,
+								codim_indicator,
+								num_nonempty_codims,
+								directoryName);
+	
+	
 	
 	return 0;
 }  //re: main
@@ -363,14 +437,44 @@ int main(int argC, char *args[]){
 
 
 
+void write_summary(std::map< std::pair < int, int >, witness_set> gathered_data,
+									 int component_counter[],
+									 int codim_indicator[],
+									 int num_nonempty_codims,
+									 const std::string directoryName){
+
+	std::stringstream filename;
+	filename <<  directoryName << "/summary.txt";
+	
+	std::ofstream OUT;
+	open_output_file(filename.str(), OUT);
+	
+	OUT << "there are " << num_nonempty_codims << " non-empty codimensions:\n";
+	
+	for (int ii = 0; ii< num_nonempty_codims; ii++) {
+		OUT << "codimension " << codim_indicator[ii] << " has " << component_counter[ii] << " components.\n";
+	}
+	
+	OUT << "\ndim   comp   deg\n------------------\n";
+	
+	std::map < std::pair < int, int >, witness_set >::iterator iter;
+	for (iter=gathered_data.begin(); iter!=gathered_data.end();  iter++) {
+		OUT << iter->first.first << "      " << iter->first.second << "      " << iter->second.degree() << "\n";
+	}
+	
+	OUT.close();
+	
+	return;
+}
 
 
 
 
-void make_specific_output_name(std::string *outputName, std::string directoryName, int current_codimension,int component_number){
+
+void make_specific_output_name(std::string *outputName, std::string directoryName, int current_dimension,int component_number){
 	
 	std::stringstream converter;
-	converter << directoryName << "/" << "codim_" << current_codimension << "_comp_" << component_number;
+	converter << directoryName << "/" << "dim_" << current_dimension << "_comp_" << component_number;
 	*outputName = converter.str();
 	return;
 }
@@ -389,7 +493,7 @@ int dataToSetStartup(int argC, char *args[], std::string *inputName, std::string
 	
 	
 	std::cout << "\n\n\nthis is data2set, a utility for turning witness_data into " << std::endl <<
-		"witness_set files, to be used with BertiniReal\n\n\n" << std::endl;
+	"witness_set files, to be used with BertiniReal\n\n\n" << std::endl;
 	
 	
 	// setup inputName & directoryName
@@ -405,13 +509,13 @@ int dataToSetStartup(int argC, char *args[], std::string *inputName, std::string
 		}
 		else
 		{ // default to 'start'
-			*directoryName = "witness_set";
+			*directoryName = "witness_set_extracted";
 		}
 	}
 	else
 	{ // default to 'input' & 'start'
 		*inputName = "witness_data";
-		*directoryName = "witness_set";
+		*directoryName = "witness_set_extracted";
 	}
 	
 	return 0;
@@ -431,7 +535,9 @@ int open_input_file(std::string inputName, std::ifstream & IN){
 		bexit(ERROR_FILE_NOT_EXIST);
 	}
 	else{
-//		std::cout << "successfully opened input " << inputName << std::endl;
+#ifdef verbose
+		std::cout << "successfully opened input " << inputName << std::endl;
+#endif
 	}
 	
 	return 0;
@@ -492,12 +598,13 @@ void purge_previous_directory(char *directoryName)
 		
 		
 		(void) closedir (dp);
-//		std::cout << "\ndone deleting previous files\n\n\n";
-		
+#ifdef verbose
+		std::cout << "\ndone deleting previous files\n\n\n";
+#endif
 	}
   else
 	{
-//    printf ("no previous directory to delete\n");
+		
 	}
 	
 	

@@ -19,19 +19,20 @@
 #ifndef _BERTINI_REAL_H
 #define _BERTINI_REAL_H
 
+
+#include "fileops.h"
 #include "polysolve.h"
-
-
 #include "checkSelfConjugate.h"
-#include "Curve_NotSelfConj.h"
-#include "Curve_SelfConj.h"
-
+#include "curveNotSelfConj.h"
+#include "curveSelfConj.h"
 #include "data_type.h"
-
 #include "isosingular.h"
 #include "programStartup.h"
 #include "witnessSetParse.h"
+#include "output.h"
+
 
 #endif
+
 
 
