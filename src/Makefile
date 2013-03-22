@@ -1,6 +1,6 @@
 
 #choose some options.  by default, compiler optimization is turned off
-OPT=-Wall -g# -O3 -funroll-loops -fexpensive-optimizations  #-D_HAVE_MPI #-D_REACTIVE#-Wno-deprecated
+OPT= -Dverbose -Wall -g# -O3 -funroll-loops -fexpensive-optimizations
 
 
 
@@ -17,18 +17,29 @@ BERTINILIB:=UNDEFINED
   #check environment variable $(MACHINENAME), if defined
 ifeq ($(MACHINENAME),MACBRAKE)
     #dan brake's machine.  he uses different places for his includes, etc.
-    INC:=$(INC) 
+    INC:=-I/usr/local/include  $(INC) 
     BISON=bison# bison in path already
-    LIBS=# brake has libraries in path for linking, via brew.  no need to specify here
+    LIBS=-lm -lmpfr -lgmp# brake has libraries in path for linking, via brew.  no need to specify here
     COMP=gcc 
-		COMPpp = g++ 
+		COMPpp = clang++ -std=c++11 
     STATICFLAG=#  on macintosh, do not static compile (get missing lcrt0.o problem)
 		BERTINILIB:=$(HOME)/lib/libbertini.a
 	  INSTALLPATH:=$(HOME)/bin
 		BERTINIHEADERS:=$(HOME)/bertini_source/include
-		
-		
-else ifeq ($(MACHINE),yourmachinenamehere)
+endif
+
+ifeq ($(MACHINENAME),wenrui)
+    INC:= $(INC) -I/opt/mpfr/3.0.0/include -I/opt/gmp/5.0.1/include
+    LIBS= -lm -L/usr/lib -L/opt/mpfr/3.0.0/lib -L/opt/gmp/5.0.1/lib /opt/mpfr/3.0.0/lib/libmpfr.a /opt/gmp/5.0.1/lib/libgmp.a
+    COMP=gcc
+    COMPpp=g++
+    STATICFLAG=-static#no?
+    BERTINILIB:=$(HOME)/lib/libbertini.a
+    INSTALLPATH:=$(HOME)/bin
+    BERTINIHEADERS:=/home/whao/bertini1.4/bertini/include
+endif
+
+ifeq ($(MACHINE),yourmachinenamehere)
     #use something like this to configure for your machine
     INC:=$(INC) #put your -I inclusions 
     BISON=bison# #path to bison
@@ -36,15 +47,6 @@ else ifeq ($(MACHINE),yourmachinenamehere)
 		COMP=gcc  #compiler
 		COMPpp = g++
     STATICFLAG=-static#  need static?
-	
-else
-    #default configuration.  for now, appears to be jon's computer.
-    INC:=$(INC) -I/opt/mpfr/3.0.0/include -I/opt/gmp/5.0.1/include -I/opt/mpich2/include -I$(PETSC_DIR)/linux-gnu-c-debug/include -I$(PETSC_DIR)/include -I/usr/X11R6/include -I/bin/mpich2-install/include
-    BISON=/home/jhauenst/bison/bison23/bin/bison
-    LIBS=-L/opt/mpfr/3.0.0/lib -L/opt/gmp/5.0.1/lib /opt/mpfr/3.0.0/lib/libmpfr.a /opt/gmp/5.0.1/lib/libgmp.a
-    COMP=gcc #-cc=gcc4 
-		COMPpp=g++
-    STATICFLAG=-static
 endif
 
   #note: you can export an env variable of MACHINE to the string of your choice, and do configuration like above.  
@@ -58,10 +60,10 @@ endif
 
 
 #a few last definitions
-INC:=-I../include  -I$(BERTINIHEADERS) #this includes the header files for bertini_real, etc   
+INC:=$(INC) -I../include  -I$(BERTINIHEADERS) #this includes the header files for bertini_real, etc   
 
 ARGS=$(INC) $(OPT) 
-OBJFILES= isosingular.o Curve_NotSelfConj.o Curve_SelfConj.o witnessSetParse.o programStartup.o checkSelfConjugate.o 
+OBJFILES= output.o data_type.o linprodtodetjacSolver.o lintolinSolver.o fileops.o isosingular.o curveNotSelfConj.o curveSelfConj.o witnessSetParse.o programStartup.o checkSelfConjugate.o 
 POBJFILES=lex.partitionParse.o 
 FLEX=flex
 #memory.o
@@ -77,12 +79,13 @@ all : bertini_real data_to_set;
 
 #makes the bertini_real program
 bertini_real : bertini_real.c $(OBJFILES) $(POBJFILES) ;
-	$(COMP) $(ARGS) -o bertini_real bertini_real.c $(OBJFILES) $(POBJFILES) $(STATICFLAG) $(LIBS) -lm -lmpfr -lgmp $(BERTINILIB)
+	$(COMP) $(ARGS) -o bertini_real bertini_real.c $(OBJFILES) $(POBJFILES) $(BERTINILIB)  $(LIBS)  $(STATICFLAG)
 
 
 #makes the data2set program.
-data_to_set: dataToSet.cpp
-	$(COMPpp) $(ARGS) -o data2set dataToSet.cpp $(OBJFILES) $(POBJFILES) $(STATICFLAG) $(LIBS) -lm -lmpfr -lgmp $(BERTINILIB)
+data_to_set: 
+	$(COMPpp) $(ARGS) -o data2set dataToSet.cpp $(BERTINILIB) $(LIBS)  $(STATICFLAG)
+#   
 
 
 
@@ -95,8 +98,8 @@ install: bertini_real data_to_set
 	$(COMP) $(ARGS) -c $*.c
 
 .cpp.o : 
-	$(COMPpp) $(ARGS) -c $*.cpp 
-	
+	$(COMPpp) $(ARGS) -c $*.cpp
+
 lex.partitionParse.o:	lex.partitionParse.c
 	$(COMP) $(ARGS) -c lex.partitionParse.c
 

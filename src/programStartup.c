@@ -61,6 +61,18 @@ int startup(int argC, char *args[], char **inputName, char **startName)
     }
 
 	}
+	
+	
+	//test for presence of inputname and startname files
+	
+	FILE *IN;
+	IN = safe_fopen_read(*inputName);
+	fclose(IN);
+	
+	IN = safe_fopen_read(*startName);
+	fclose(IN);
+	
+	
 		return 0;
 }
 

@@ -1,4 +1,4 @@
-#include "Curve_NotSelfConj.h"
+#include "curveNotSelfConj.h"
 
 
 
@@ -80,8 +80,6 @@ void diag_homotopy_input_file(char  *outputFile,
     printf("\n\nERROR: '%s' does not exist!!!\n\n\n", configInput);
     bexit(ERROR_FILE_NOT_EXIST);
   }
-  while ((ch = fgetc(IN)) != EOF)
-    fprintf(OUT, "%c", ch);
   fclose(IN);
   fprintf(OUT, "USERHOMOTOPY: 1;\nDeleteTempFiles: 1;\nEND;\nINPUT\n");
 
@@ -93,58 +91,11 @@ void diag_homotopy_input_file(char  *outputFile,
     printf("\n\nERROR: '%s' does not exist!!!\n\n\n", funcInputx);
     bexit(ERROR_FILE_NOT_EXIST);
   }
-  fprintf(OUT, "variable ");
-  while ((ch = fgetc(IN)) != ' ');
-  i=0;j=0;
-  //store variables in str strucutre. str[i] for i-th variable.
-  while ((ch = fgetc(IN)) != '\n')
-  {
-    if(ch!=',' && ch!=';')
-    { 
-      str[i][j++]=ch;
-      fprintf(OUT, "%c", ch);
-    }
-    else
-    {
-      str[i++][j]='\0';
-      j=0;
-      fprintf(OUT, ","); 
-    }
-  }
-  for(i=0;i<num_vars;i++)
-  {
-    fprintf(OUT, "%sb", str[i]);
-    if(i!=num_vars-1)
-      fprintf(OUT,",");
-    else
-      fprintf(OUT,";\n");
-  }
 
-  // setup system in OUT
-  //setup the function name in OUT
-  while ((ch = fgetc(IN)) != ';')
-    fprintf(OUT, "%c", ch);
-  fprintf(OUT, ",");
-  rewind(IN);
-  while ((ch = fgetc(IN)) != '\n');
-  while ((ch = fgetc(IN)) != ' ');
-  while ((ch = fgetc(IN)) != '\n')
-  {
-    if(ch==',' || ch==';')
-      fprintf(OUT, "b,");
-    else
-      fprintf(OUT, "%c", ch);
-  }
-  fprintf(OUT, "L,Lb;\n");	  
-
-  fprintf(OUT,"pathvariable s;\n");
-  fprintf(OUT,"parameter t;\n");
-  fprintf(OUT,"t = s;\n\n");
-  //output f(x) in OUT
-  
-  while ( (ch = fgetc(IN)) != EOF)
+  while ((ch = fgetc(IN)) != EOF )
     fprintf(OUT, "%c", ch);
   fclose(IN);
+
   IN = fopen(funcInputy, "r");
   if (IN == NULL)
   {
@@ -153,11 +104,27 @@ void diag_homotopy_input_file(char  *outputFile,
     bexit(ERROR_FILE_NOT_EXIST);
   }
   //setup the function name in OUT
-  while ((ch = fgetc(IN)) != '\n');
-  while ((ch = fgetc(IN)) != '\n');
   while ((ch = fgetc(IN)) != EOF )
     fprintf(OUT, "%c", ch);
   fclose(IN);
+  IN = fopen("var_names", "r");
+  if (IN == NULL)
+  {
+    fclose(OUT);
+    printf("\n\nERROR: var_names does not exist!!!\n\n\n");
+    bexit(ERROR_FILE_NOT_EXIST);
+  }
+  i=0;j=0;
+  while ((ch = fgetc(IN)) != EOF)
+  {
+    if(ch!='\n')
+      str[i][j++]=ch;
+    else
+    {
+      str[i++][j]='\0';
+      j=0;
+    }
+  }
   //setup the linear equations 
   // find the size needed
   size = 1 + snprintf(NULL, 0, "%%.%de+%%.%de*I", 15, 15);
@@ -173,7 +140,7 @@ void diag_homotopy_input_file(char  *outputFile,
     fprintf(OUT, fmt, L->coord[i].r, L->coord[i].i); 
     fprintf(OUT, ";\n");
 
-    fprintf(OUT, "Lb%d = ",i);
+    fprintf(OUT, "Lbar%d = ",i);
     // print output
     fprintf(OUT, fmt, L->coord[i].r, -L->coord[i].i); 
     fprintf(OUT, ";\n");
@@ -204,14 +171,14 @@ void diag_homotopy_input_file(char  *outputFile,
   {
     fprintf(OUT, "A0%d*", i);
     fprintf(OUT, "(%s-%s", str[i],str[i]);
-    fprintf(OUT, "b)+");
+    fprintf(OUT, "bar)+");
   }
   //(L_bar x_bar-1)*t+(1-t)*A[1]*(x-x_bar)
-  fprintf(OUT, "0);\nLb=t*(");
+  fprintf(OUT, "0);\nLbar=t*(");
   for(i=0;i<num_vars;i++)
   {
-    fprintf(OUT, "Lb%d*", i);
-    fprintf(OUT, "%sb", str[i]);
+    fprintf(OUT, "Lbar%d*", i);
+    fprintf(OUT, "%sbar", str[i]);
     fprintf(OUT, "+");
   }
   fprintf(OUT, "-1)+(1-t)*(");
@@ -219,7 +186,7 @@ void diag_homotopy_input_file(char  *outputFile,
   {
     fprintf(OUT, "A1%d*", i);
     fprintf(OUT, "(%s-%s", str[i],str[i]);
-    fprintf(OUT, "b)+");
+    fprintf(OUT, "bar)+");
   }
   fprintf(OUT, "0);\nEND;");
   fclose(OUT);
@@ -231,6 +198,7 @@ void diag_homotopy_input_file(char  *outputFile,
   clear_mat_d(A);
   return;
 }
+
 void diag_homotopy_start_file(char                 *startFile, 
                               witness_point_set_d  W, 
                               int                  num_vars)
@@ -240,14 +208,13 @@ void diag_homotopy_start_file(char                 *startFile,
 * RETURN VALUES: none                                           *
 * NOTES:                                                        *
 \***************************************************************/
-
 {
   FILE *OUT = fopen(startFile, "w");
   char *fmt = NULL;
   int i,j,size,digits=15;
   if (OUT == NULL)
   {
-    printf("\n\nERROR: '%s' is an inproper name of a file!!\n\n\n", startFile);
+    printf("\n\nERROR: '%s' is an improper name of a file!!\n\n\n", startFile);
     bexit(ERROR_FILE_NOT_EXIST);
   }
   size = 1 + snprintf(NULL, 0, "%%.%de %%.%de\n", digits, digits);
@@ -255,20 +222,29 @@ void diag_homotopy_start_file(char                 *startFile,
   fmt = (char *)bmalloc(size * sizeof(char));
   // setup fmt & fmtb
   sprintf(fmt, "%%.%de %%.%de\n", digits, digits);
-   // output the number of start points	
+   // output the number of start points
   fprintf(OUT,"%d\n\n",W.num_pts);
   for (i = 0; i < W.num_pts; i++)
   { // output {w \bar{w}}'
+    vec_d result;
+    init_vec_d(result,0);
+    dehomogenize(&result,W.pts[i]);
+
     for(j=0; j<num_vars;j++)
-      fprintf(OUT, fmt, W.pts[i]->coord[j].r, W.pts[i]->coord[j].i);
-    for(j=0; j<num_vars;j++)
-      fprintf(OUT, fmt, W.pts[i]->coord[j].r, -W.pts[i]->coord[j].i);
+    {
+      fprintf(OUT, fmt, result->coord[j].r, result->coord[j].i);
+      fprintf(OUT, fmt, result->coord[j].r, -result->coord[j].i);
+    }
+
     fprintf(OUT,"\n");
   }
+
   free(fmt);
   fclose(OUT);
-
 }
+
+
+
 void computeCurveNotSelfConj(witness_set_d Wnew, 
                              vec_d         pi, 
                              curveDecomp_d *C,
@@ -291,18 +267,23 @@ void computeCurveNotSelfConj(witness_set_d Wnew,
   init_vec_d(cur_sol_bar,num_vars);
    
   IN = fopen(input_file, "r");
-  partitionParse(&declarations, IN, "func_input_real", "config_real");
+  partitionParse(&declarations, IN, "func_input_nsc", "config_nsc",1);
 
   printf("\nCompute Non Self Conjugate Curve\n");
   //generate input file
-  diag_homotopy_input_file("input_NSC", "func_input_real","func_inputb","config_real",Wnew.L,num_vars);
+  diag_homotopy_input_file("input_NSC", "func_input_nsc","func_inputbar","config_nsc",Wnew.L[0],num_vars);
   //generate start file
   diag_homotopy_start_file("start", Wnew.W, num_vars);
   strLength = 1 + snprintf(NULL, 0, "%s input_NSC", bertini_command);
   strSys = (char *)bmalloc(strLength * sizeof(char));
   sprintf(strSys, "%s input_NSC", bertini_command);
   //run bertini
-  system(strSys);
+	
+	system("cp witness_data witness_data_0");
+	
+	printf("%s\n",strSys);
+  system(strSys);  
+	
   //read the real solutions
   IN = fopen("real_solutions", "r");
   if (IN == NULL)
@@ -369,8 +350,11 @@ void computeCurveNotSelfConj(witness_set_d Wnew,
   free(declarations);
   
    // delete temporary files
-  remove("func_input_real");
-  remove("config_real");
+  remove("func_input_nsc");
+  remove("config_nsc");
+  remove("func_inputbar");
+  remove("var_names");
+
 
 }
 

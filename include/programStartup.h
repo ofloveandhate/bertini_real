@@ -11,9 +11,7 @@
 #include <mpfr.h>
 #include <mpf2mpfr.h>
 
-#include "polysolve.h"
 
-#include "data_type.h"
 
 #define BERTINI_REAL_VERSION_STRING "1.0"
 
@@ -21,6 +19,11 @@
 
 #ifndef _PROGRAM_STARTUP_H
 #define _PROGRAM_STARTUP_H
+
+#include "polysolve.h"
+#include "fileops.h"
+#include "data_type.h"
+
 
 int startup(int argC, char *args[], char **inputName, char **startName);
 
