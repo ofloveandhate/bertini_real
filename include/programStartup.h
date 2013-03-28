@@ -26,7 +26,7 @@
 
 
 int startup(int argC, char *args[], char **inputName, char **startName);
-
+void get_tracker_config(tracker_config_t *T,int MPType);
 
 #endif
 

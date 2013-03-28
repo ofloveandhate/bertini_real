@@ -38,27 +38,75 @@ typedef struct
 typedef struct
 {
   char *func;  //symbolic representation of function (straight from input file).
-}function_d;
+} function;
 
+
+//typedef struct
+//{
+//  function *funcs; //probably not used for now.
+//  //prog_t slp; //SLP -- we'll use this primarily, at least at first.
+//  char *fName; //system can be given in a file -- this is its name.
+//}system;
+
+////begin mp types
+typedef struct
+{
+  int num_pts;
+  point_mp *pts;
+  int dim;
+  int deg;
+} witness_point_set_mp;
+//end mp types
 
 typedef struct
 {
-  function_d *funcs; //probably not used for now.
-  //prog_t slp; //SLP -- we'll use this primarily, at least at first.
-  char *fName; //system can be given in a file -- this is its name.
-}system_d;
-
-typedef struct
-{
-  system_d sys;
+//  system sys;
   vec_d *L;
 	vec_d *patch;
   witness_point_set_d W;
+	
+	vec_mp *L_mp;
+	vec_mp *patch_mp;
+  witness_point_set_mp W_mp;
+	
 	int num_variables;
 	int num_linears;
 	int num_patches;
 	int patch_size;
-}witness_set_d;  //For a single irreducible component!  Need num. irred. decomp. type later.
+	int MPType; //  will indicate the type of the solve.  both fields will have data, but one will be used.
+} witness_set_d;  //For a single irreducible component!  Need num. irred. decomp. type later.
+// end the double types
+
+
+
+//
+//
+//typedef struct
+//{
+//  char *func;  //symbolic representation of function (straight from input file).
+//}function_mp;
+//
+//
+//typedef struct
+//{
+//  function_mp *funcs; //probably not used for now.
+//  //prog_t slp; //SLP -- we'll use this primarily, at least at first.
+//  char *fName; //system can be given in a file -- this is its name.
+//}system_mp;
+//
+//typedef struct
+//{
+//  system_mp sys;
+//  vec_mp *L;
+//	vec_mp *patch;
+//  witness_point_set_mp W;
+//	int num_variables;
+//	int num_linears;
+//	int num_patches;
+//	int patch_size;
+//}witness_set_mp;  //For a single irreducible component!  Need num. irred. decomp. type later.
+////end mp types
+
 
 
 // CURVE CELL DECOMP DATA TYPES
@@ -104,18 +152,27 @@ enum {CRITICAL=0, NEW=1, MIDPOINT=2};
 
 
 //function prototypes for bertini_real data clearing etc.
+void merge_witness_sets(witness_set_d *W_out,witness_set_d W_left,witness_set_d W_right);
+
 void cp_patches_d(witness_set_d *W_out, witness_set_d W_in);
 void init_witness_set_d(witness_set_d *W);
 
 void dot_product_d(comp_d result, vec_d one, vec_d two);
+void dot_product_mp(comp_mp result, vec_mp one, vec_mp two);
+
 void write_dehomogenized_coordinates(witness_set_d W, char filename[]);
 void dehomogenize(vec_d *result, vec_d dehom_me);
-
+void dehomogenize_mp(vec_mp *result, vec_mp dehom_me);
 
 void clear_witness_set(witness_set_d W);
 void print_witness_set_to_screen(witness_set_d W);
 void print_point_to_screen_matlab(vec_d M, char name[]);
+void print_point_to_screen_matlab_mp(vec_mp M, char name[]);
 void print_matrix_to_screen_matlab(mat_d M, char name[]);
+void print_matrix_to_screen_matlab_mp(mat_mp M, char name[]);
+
+void print_comp_mp_matlab(comp_mp M,char name[]);
+
 
 void print_path_retVal_message(int retVal);
 
