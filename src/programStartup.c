@@ -76,3 +76,17 @@ int startup(int argC, char *args[], char **inputName, char **startName)
 		return 0;
 }
 
+
+void get_tracker_config(tracker_config_t *T,int MPType)
+{
+
+	//necessary for the setupConfig call
+	double midpoint_tol, intrinsicCutoffMultiplier;
+	int userHom = 0, useRegen = 0, regenStartLevel = 0, maxCodim = 0, specificCodim = 0, pathMod = 0, reducedOnly = 0, supersetOnly = 0, paramHom = 0;
+	//end necessaries for the setupConfig call.
+	
+	
+  setupConfig(T, &midpoint_tol, &userHom, &useRegen, &regenStartLevel, &maxCodim, &specificCodim, &pathMod, &intrinsicCutoffMultiplier, &reducedOnly, &supersetOnly, &paramHom, MPType);
+
+	return;
+}

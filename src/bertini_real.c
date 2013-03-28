@@ -38,7 +38,7 @@ int main(int argC, char *args[])
 	unsigned int currentSeed;
 	int trackType, genType = 0, MPType,  sharpenOnly, needToDiff, remove_temp, useParallelDiff = 0;
   int my_id, num_processes, headnode = 0; // headnode is always 0
-	int precision = 53;
+//	int precision = 53;
 	num_processes = 1;
 	int num_var_gps = 0, userHom = 0;
 	
@@ -48,28 +48,40 @@ int main(int argC, char *args[])
 	
 	parse_input(inputName, &trackType, &MPType, &genType, &userHom, &currentSeed, &sharpenOnly, &needToDiff, &remove_temp, useParallelDiff, my_id, num_processes, headnode);
 	
-	if (MPType==2) {
-		printf("bertini_real is not equipped for adaptive multiple precision (AMP).\ndefaulting to fixed non-double precision\n");
-		mypause();
-		MPType=1;
-	}
+//	if (MPType==2) {
+//		printf("bertini_real is not equipped for adaptive multiple precision (AMP).\ndefaulting to fixed MP precision\n");
+////		MPType=1;
+//	}
 	
 	preproc_data PPD;
 	setupPreProcData("preproc_data", &PPD);
 	
+	tracker_config_t T;
+	get_tracker_config(&T,MPType);
+	
+	initMP(T.Precision);
+#ifdef _OPENMP
+#pragma omp parallel
+#endif
+  { // set precision for each thread - all threads will execute this and set the precision correctly on each thread
+    initMP(T.Precision);
+  }
+	
 	
 	num_var_gps = PPD.num_var_gp;
-	num_vars = setupProg(&SLP, precision, MPType); // num_vars includes the number of homogeneous coordinates.
+	num_vars = setupProg(&SLP, T.Precision, MPType); // num_vars includes the number of homogeneous coordinates.
 	// the number of homogeneous coordinates is the num_var_gps.
 	
 	
 	printf("parsing witness set\n");
 	witnessSetParse(&Wuser,witnessSetName,num_vars);
-	witnessSetParse(&Wnew, witnessSetName,num_vars);  // Wnew same as Wuser, except for functions.
+	Wuser.MPType =MPType;
+	witnessSetParse(&Wnew, witnessSetName,num_vars);  // Wnew same as Wuser, except for functions. (needs to be updated)
+	Wnew.MPType =MPType;
 	
 	write_dehomogenized_coordinates(Wuser, "witness_points_dehomogenized");
 	
-	
+
 	printf("performing isosingular deflation\n");
 	// perform an isosingular deflation
 	rV = isosingular_deflation(&num_deflations, &deflation_sequence, inputName, "witness_points_dehomogenized", "bertini", "matlab", max_deflations);

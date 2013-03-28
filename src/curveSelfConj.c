@@ -45,15 +45,6 @@ void computeCurveSelfConj(char * inputFile,
 							&intrinsicCutoffMultiplier, &reducedOnly, &supersetOnly,
 							&paramHom, MPType); // Opens the file "config" and stores data in tracker_config_t.
 	
-	
-	//manually override for now, since bertini_real is not yet MP enabled.
-	T.MPType = 0;
-	T.Precision = 52;
-	
-	
-	// setup the precision structures
-  initMP(T.Precision); // initialize MP based on T.Precision
-	
 	preproc_data PPD;
 	setupPreProcData("preproc_data", &PPD);
 	
@@ -66,6 +57,57 @@ void computeCurveSelfConj(char * inputFile,
 	printf("%d is precision\n%d is MPTYPE\n",T.Precision,T.MPType);
 	printf("there are %d variables in the problem\nthere are %d vargrps\n", T.numVars,num_var_gps);
 #endif
+	
+	
+
+	
+	
+	//get the random complex projection, which we will use to find the crit pts
+	vec_mp b_mp; init_vec_mp(b_mp,SLP_num_vars); b_mp->size = SLP_num_vars;
+	vec_d b; init_vec_d(b,SLP_num_vars); b->size = SLP_num_vars;
+	for (ii=0; ii<SLP_num_vars; ii++) {
+		get_comp_rand_mp(&b_mp->coord[ii]);
+	}
+	vec_mp_to_d(b,b_mp);
+
+
+	
+	
+	
+	//need degree of g...  get from deg.out file
+	int degprod = get_prod_degrees("deg.out",PPD.num_funcs);
+	int deg_g = degprod - PPD.num_funcs;
+	deg_g = deg_g - 1;
+#ifdef verbose
+	printf("the number of new linears will be %d\n",deg_g);
+#endif
+	
+	
+
+
+	
+	vec_mp *new_linears_mp; new_linears_mp = (vec_mp *) malloc(deg_g*sizeof(vec_mp));
+	vec_d *new_linears; new_linears = (vec_d *) malloc(deg_g*sizeof(vec_d));
+
+	for (ii=0; ii<deg_g; ii++) {
+		init_vec_mp(new_linears_mp[ii],SLP_num_vars);
+		change_size_vec_mp(new_linears_mp[ii],SLP_num_vars); new_linears_mp[ii]->size = SLP_num_vars;
+		for (kk=0; kk<SLP_num_vars; kk++) {
+			get_comp_rand_mp(&new_linears_mp[ii]->coord[kk]);
+		}
+	}
+	// copy the mp into the d
+	for (ii=0; ii<deg_g; ii++) {
+		init_vec_d(new_linears[ii],SLP_num_vars);
+		change_size_vec_d(new_linears[ii],SLP_num_vars); new_linears[ii]->size = SLP_num_vars;
+		vec_mp_to_d(new_linears[ii],new_linears_mp[ii]);
+	}
+	
+	
+//	print_point_to_screen_matlab(new_linears[0],"new_linears[0]");
+	
+	
+	
 	
 	
 	//end initialize
@@ -81,58 +123,9 @@ void computeCurveSelfConj(char * inputFile,
 	//
 	//
 	
-	//get the random complex projection, which we will use to find the crit pts
-	vec_d b;
-	init_vec_d(b,SLP_num_vars);
-	b->size = SLP_num_vars;
-	for (ii=0; ii<SLP_num_vars; ii++) {
-		get_comp_rand_d(&b->coord[ii]);
-	}
-	
-	
-	//need degree of g...  get from deg.out file
-	int degprod = get_prod_degrees("deg.out",PPD.num_funcs);
-	int deg_g = degprod - PPD.num_funcs;
-	deg_g = deg_g - 1;
-#ifdef verbose
-	printf("%d\n",deg_g);
-#endif
-	
-	
-	vec_d *new_linears;
-	new_linears = (vec_d *) malloc(deg_g*sizeof(vec_d));
-	for (ii=0; ii<deg_g; ii++) {
-		init_vec_d(new_linears[ii],SLP_num_vars);
-		change_size_vec_d(new_linears[ii],SLP_num_vars);
-		new_linears[ii]->size = SLP_num_vars;
-		
-//		for (kk=0; kk<num_var_gps; kk++) {
-//			set_one_d(&new_linears[ii]->coord[kk]);
-//		}
-		
-		for (kk=0; kk<SLP_num_vars; kk++) {
-
-			get_comp_rand_d(&new_linears[ii]->coord[kk]);
-		
-		}
-		
-	}
-	
-	print_point_to_screen_matlab(new_linears[0],"new_linears[0]");
-	
-	
-//	init_mat_d(new_linears,1,1);
-//	make_matrix_random_d(new_linears,deg_g-1,num_vars);  // assigns the random complex linears for performing the critical point calculation via det(Jf\\b)
 	
 	
 	
-//	vec_d random_real_linear;
-//	// initialize the projection pi.  for now, get random projection.
-//	init_vec_d(random_real_linear,num_vars);
-//	random_real_linear->size = num_vars;
-//	for (ii=0; ii<num_vars; ii++) {
-//		get_comp_rand_real_d(&random_real_linear->coord[ii]);
-//	}
 
 	
 // 2) randomize down to N-1 equations
@@ -140,25 +133,25 @@ void computeCurveSelfConj(char * inputFile,
 
 //actually, just assign a random real nearly orthogonal matrix.
 
-	mat_d n_minusone_randomizer_matrix;
-	init_mat_d(n_minusone_randomizer_matrix,1,1);
 	
+	mat_mp n_minusone_randomizer_matrix_mp;
+	init_mat_mp(n_minusone_randomizer_matrix_mp,1,1);
 	if (PPD.num_funcs>num_vars-1-num_var_gps){
-		//		get_real_orthogonal_matrix(n_minusone_randomizer_matrix,num_vars-1,PPD.num_funcs); //  prepare a matrix, which we will use for left multiplication to get the correct dimensions
-		//		printf("%d %d",num_vars-1,PPD.num_funcs);
-		make_matrix_random_real_d(n_minusone_randomizer_matrix,num_vars-1-num_var_gps,PPD.num_funcs);
-//		print_matrix_to_screen_matlab(n_minusone_randomizer_matrix, "nminus1	");
+		//  prepare a matrix, which we will use for left multiplication to get the correct dimensions
+		make_matrix_random_real_mp(n_minusone_randomizer_matrix_mp,num_vars-1-num_var_gps,PPD.num_funcs,mpf_get_default_prec());
 	}
 	else if(PPD.num_funcs<num_vars-1-num_var_gps){
 		printf("system has no one-dimensional components based on dimensions!\n");
 		bexit(ERROR_CONFIGURATION);
 	}
 	else
-	{
-		make_matrix_ID_d(n_minusone_randomizer_matrix, num_vars-1-num_var_gps, num_vars-1);
-		//no need, already have correct dimensions
+	{ //no need, already have correct dimensions
+		make_matrix_ID_mp(n_minusone_randomizer_matrix_mp, num_vars-1-num_var_gps, num_vars-1);
 	}
-	
+	// copy the mp into the d
+	mat_d n_minusone_randomizer_matrix;
+	init_mat_d(n_minusone_randomizer_matrix,1,1);
+	mat_mp_to_d(n_minusone_randomizer_matrix,n_minusone_randomizer_matrix_mp);
 	
 	
 	
@@ -185,29 +178,10 @@ void computeCurveSelfConj(char * inputFile,
 	
 	
 //	// now need to get determinant of jacobian.
-//	double det;
-//	int rank;
-//	determinant_jacobian_d(e_d.Jv,&rank,&det);
-	
+
 
   
 
-	
-
-	
-	// copy into larger matrix.  do not use Jv again, cuz may need elsewhere.  leave intact
-	//put in 'b'
-	//do gaussian elimination
-	//multiply diagonal entries.
-	
-	//higher level evaluator will use this new low-level evaluator.
-	
-	
-	
-	
-
-	
-	
 	
 
 
@@ -225,27 +199,58 @@ void computeCurveSelfConj(char * inputFile,
 	
 			// for each variable direction, compute projections of crit points onto that axis.
 	
-	witness_set_d Wnew;
-	init_witness_set_d(&Wnew);
-	cp_patches_d(&Wnew,W);
+	witness_set_d Wtemp;
+	init_witness_set_d(&Wtemp);
+	cp_patches_d(&Wtemp,W); // copy the patches over from the original witness set
 	
+	witness_set_d W_lintolin;
+	init_witness_set_d(&W_lintolin);
+	cp_patches_d(&W_lintolin,W); // copy the patches over from the original witness set
+
     // if have box, intersect box with C
-	lin_to_lin_solver_d(MPType, 0, currentSeed,  //mptype parse_time, current_seed
-											W,         // witness_set
-											n_minusone_randomizer_matrix,
-											new_linears, //  the set of linears we will solve at.
-											deg_g, // the number of new linears.
-											&Wnew,
-											0, 1, 0);  //these numbers represent: myid, num_processes, headnode.
+	if (T.MPType==1) {
+		printf("running mptype1 solver");
+		lin_to_lin_solver_mp(MPType, 0, currentSeed,  //mptype parse_time, current_seed
+												 W,         // witness_set
+												 n_minusone_randomizer_matrix_mp,
+												 new_linears_mp, //  the set of linears we will solve at.
+												 deg_g, // the number of new linears.
+												 &Wtemp,
+												 0, 1, 0);  //these numbers represent: myid, num_processes, headnode.
+
+		
+	}
+	else {
+		printf("running mptype0 solver");
+
+		lin_to_lin_solver_d(MPType, 0, currentSeed,  //mptype parse_time, current_seed
+												W,         // witness_set
+												n_minusone_randomizer_matrix,
+												new_linears, //  the set of linears we will solve at.
+												deg_g, // the number of new linears.
+												&Wtemp,
+												0, 1, 0);  //these numbers represent: myid, num_processes, headnode.
+	}
 	printf("made it out of the lin_to_lin solver\n");
+	
+	//add the W to Wnew.
+	merge_witness_sets(&W_lintolin,Wtemp,W);
+	clear_witness_set(Wtemp);
+	
 	
 	witness_set_d W_linprod;
 	init_witness_set_d(&W_linprod);
-	cp_patches_d(&W_linprod,W);
-//	mypause();
+
+	print_witness_set_to_screen(W_lintolin);
+
+	if (T.MPType==2) {
+		printf("bertini_real not fully equipped for mptype 2 yet.  please change to  0 or 1.\nyou may continue, but the program will probably crash.\n\n");
+		mypause();
+	}
+	
 	
 	linprod_to_detjac_solver_d(MPType, 0, currentSeed,  //mptype parse_time, current_seed
-														 Wnew,         // witness_set
+														 W_lintolin,         // witness_set
 														 n_minusone_randomizer_matrix,
 														 b,  // the random complex vector we are using as a projection.
 														 &W_linprod,
@@ -344,7 +349,7 @@ void computeCurveSelfConj(char * inputFile,
 //	zero_dim_main(MPType, parse_time, currentSeed, startName, my_id, num_processes, headnode);
 	
 	clear_witness_set(W_linprod);
-		clear_witness_set(Wnew);
+	clear_witness_set(W_lintolin);
 	
 	
   // 5) compute h_o, get critical points
