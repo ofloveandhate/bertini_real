@@ -86,22 +86,22 @@ void computeCurveSelfConj(char * inputFile,
 
 
 	
-	vec_mp *new_linears_mp; new_linears_mp = (vec_mp *) malloc(deg_g*sizeof(vec_mp));
-	vec_d *new_linears; new_linears = (vec_d *) malloc(deg_g*sizeof(vec_d));
+	vec_mp *new_linears_full_prec; new_linears_full_prec = (vec_mp *) malloc(deg_g*sizeof(vec_mp));
+//	vec_d *new_linears; new_linears = (vec_d *) malloc(deg_g*sizeof(vec_d));
 
 	for (ii=0; ii<deg_g; ii++) {
-		init_vec_mp(new_linears_mp[ii],SLP_num_vars);
-		change_size_vec_mp(new_linears_mp[ii],SLP_num_vars); new_linears_mp[ii]->size = SLP_num_vars;
+		init_vec_mp2(new_linears_full_prec[ii],SLP_num_vars,T.AMP_max_prec);
+		change_size_vec_mp(new_linears_full_prec[ii],SLP_num_vars); new_linears_full_prec[ii]->size = SLP_num_vars;
 		for (kk=0; kk<SLP_num_vars; kk++) {
-			get_comp_rand_mp(&new_linears_mp[ii]->coord[kk]);
+			get_comp_rand_mp(&new_linears_full_prec[ii]->coord[kk]);
 		}
 	}
 	// copy the mp into the d
-	for (ii=0; ii<deg_g; ii++) {
-		init_vec_d(new_linears[ii],SLP_num_vars);
-		change_size_vec_d(new_linears[ii],SLP_num_vars); new_linears[ii]->size = SLP_num_vars;
-		vec_mp_to_d(new_linears[ii],new_linears_mp[ii]);
-	}
+//	for (ii=0; ii<deg_g; ii++) {
+//		init_vec_d(new_linears[ii],SLP_num_vars);
+//		change_size_vec_d(new_linears[ii],SLP_num_vars); new_linears[ii]->size = SLP_num_vars;
+//		vec_mp_to_d(new_linears[ii],new_linears_mp[ii]);
+//	}
 	
 	
 //	print_point_to_screen_matlab(new_linears[0],"new_linears[0]");
@@ -134,11 +134,11 @@ void computeCurveSelfConj(char * inputFile,
 //actually, just assign a random real nearly orthogonal matrix.
 
 	
-	mat_mp n_minusone_randomizer_matrix_mp;
-	init_mat_mp(n_minusone_randomizer_matrix_mp,1,1);
+	mat_mp n_minusone_randomizer_matrix_full_prec;
+	init_mat_mp2(n_minusone_randomizer_matrix_full_prec,1,1,T.AMP_max_prec); // note: AMP_max_prec = 1024;
 	if (PPD.num_funcs>num_vars-1-num_var_gps){
 		//  prepare a matrix, which we will use for left multiplication to get the correct dimensions
-		make_matrix_random_real_mp(n_minusone_randomizer_matrix_mp,num_vars-1-num_var_gps,PPD.num_funcs,mpf_get_default_prec());
+		make_matrix_random_real_mp(n_minusone_randomizer_matrix_full_prec,num_vars-1-num_var_gps,PPD.num_funcs,T.AMP_max_prec);
 	}
 	else if(PPD.num_funcs<num_vars-1-num_var_gps){
 		printf("system has no one-dimensional components based on dimensions!\n");
@@ -146,12 +146,12 @@ void computeCurveSelfConj(char * inputFile,
 	}
 	else
 	{ //no need, already have correct dimensions
-		make_matrix_ID_mp(n_minusone_randomizer_matrix_mp, num_vars-1-num_var_gps, num_vars-1);
+		make_matrix_ID_mp(n_minusone_randomizer_matrix_full_prec, num_vars-1-num_var_gps, num_vars-1);
 	}
 	// copy the mp into the d
 	mat_d n_minusone_randomizer_matrix;
 	init_mat_d(n_minusone_randomizer_matrix,1,1);
-	mat_mp_to_d(n_minusone_randomizer_matrix,n_minusone_randomizer_matrix_mp);
+	mat_mp_to_d(n_minusone_randomizer_matrix,n_minusone_randomizer_matrix_full_prec);
 	
 	
 	
@@ -201,40 +201,25 @@ void computeCurveSelfConj(char * inputFile,
 	
 	witness_set_d Wtemp;
 	init_witness_set_d(&Wtemp);
-	cp_patches_d(&Wtemp,W); // copy the patches over from the original witness set
+	cp_patches(&Wtemp,W); // copy the patches over from the original witness set
 	
 	witness_set_d W_lintolin;
 	init_witness_set_d(&W_lintolin);
-	cp_patches_d(&W_lintolin,W); // copy the patches over from the original witness set
+	cp_patches(&W_lintolin,W); // copy the patches over from the original witness set
 
     // if have box, intersect box with C
-	if (T.MPType==1) {
-		printf("running mptype1 solver");
-		lin_to_lin_solver_mp(MPType, 0, currentSeed,  //mptype parse_time, current_seed
-												 W,         // witness_set
-												 n_minusone_randomizer_matrix_mp,
-												 new_linears_mp, //  the set of linears we will solve at.
-												 deg_g, // the number of new linears.
-												 &Wtemp,
-												 0, 1, 0);  //these numbers represent: myid, num_processes, headnode.
+	
+	lin_to_lin_solver_main(MPType,
+														 W,
+														 n_minusone_randomizer_matrix_full_prec,
+														 new_linears_full_prec, deg_g,
+														 &Wtemp);
 
-		
-	}
-	else {
-		printf("running mptype0 solver");
-
-		lin_to_lin_solver_d(MPType, 0, currentSeed,  //mptype parse_time, current_seed
-												W,         // witness_set
-												n_minusone_randomizer_matrix,
-												new_linears, //  the set of linears we will solve at.
-												deg_g, // the number of new linears.
-												&Wtemp,
-												0, 1, 0);  //these numbers represent: myid, num_processes, headnode.
-	}
 	printf("made it out of the lin_to_lin solver\n");
 	
 	//add the W to Wnew.
 	merge_witness_sets(&W_lintolin,Wtemp,W);
+	printf("merged witness sets\n");
 	clear_witness_set(Wtemp);
 	
 	

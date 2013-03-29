@@ -154,7 +154,7 @@ enum {CRITICAL=0, NEW=1, MIDPOINT=2};
 //function prototypes for bertini_real data clearing etc.
 void merge_witness_sets(witness_set_d *W_out,witness_set_d W_left,witness_set_d W_right);
 
-void cp_patches_d(witness_set_d *W_out, witness_set_d W_in);
+void cp_patches(witness_set_d *W_out, witness_set_d W_in);
 void init_witness_set_d(witness_set_d *W);
 
 void dot_product_d(comp_d result, vec_d one, vec_d two);

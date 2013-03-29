@@ -14,19 +14,19 @@ void merge_witness_sets(witness_set_d *W_out,witness_set_d W_left,witness_set_d 
 	}
 	
 	if (W_left.patch_size != W_right.patch_size) {
-		printf("merging two witness sets with differing numbers of patch equations.\n");
+		printf("merging two witness sets with differing sizes of patch(es).\n");
 		exit(-343);
 	}
 	
-	if (W_left.num_linears == 0) {
-		printf("left witness_set has no linears.\n");
-		exit(-344);
-	}
-	
-	if (W_right.num_linears == 0) {
-		printf("right witness_set has no linears.\n");
-		exit(-345);
-	}
+//	if (W_left.num_linears == 0) { // should this be allowable?  i think yes...
+//		printf("left witness_set has no linears.\n");
+//		exit(-344);
+//	}
+//	
+//	if (W_right.num_linears == 0) { // should this be allowable?  i think yes...
+//		printf("right witness_set has no linears.\n");
+//		exit(-345);
+//	}
 	
 	int ii;
 	//initialize the structure for holding the produced data
@@ -61,6 +61,7 @@ void merge_witness_sets(witness_set_d *W_out,witness_set_d W_left,witness_set_d 
 	W_out->W.num_pts  = W_left.W.num_pts+W_right.W.num_pts;
 	W_out->W_mp.num_pts = W_left.W.num_pts+W_right.W.num_pts;
 	
+
   W_out->W.pts=(point_d *)bmalloc(W_out->W.num_pts*sizeof(point_d));
 	W_out->W_mp.pts=(point_mp *)bmalloc(W_out->W.num_pts*sizeof(point_mp));
 	
@@ -83,13 +84,12 @@ void merge_witness_sets(witness_set_d *W_out,witness_set_d W_left,witness_set_d 
 		counter++;
 	}
 
-
-	cp_patches_d(W_out,W_left); // copy the patches over from the original witness set
+	cp_patches(W_out,W_left); // copy the patches over from the original witness set
 	
 	return;
 }//re: merge_witness_sets
 
-void cp_patches_d(witness_set_d *W_out, witness_set_d W_in){
+void cp_patches(witness_set_d *W_out, witness_set_d W_in){
 	int ii;
 	
 	
@@ -132,11 +132,14 @@ void cp_patches_d(witness_set_d *W_out, witness_set_d W_in){
 	return;
 }
 
+
+// initializes witness set, both the mp data and double.
+//only call this on new witness sets, otherwise you will leak memory when you set the pointers to NULL.
 void init_witness_set_d(witness_set_d *W){
 	W->num_variables = W->num_patches = W->num_linears = 0;
 	W->patch = W->L = W->W.pts = NULL;
 	W->patch_mp = W->L_mp = W->W_mp.pts = NULL;
-	
+	W->W.num_pts = W->W_mp.num_pts = 0;
 	return;
 }
 
@@ -178,7 +181,6 @@ void write_dehomogenized_coordinates(witness_set_d W, char filename[]){
 
 	int ii,jj;
 	
-//	printf("%%dehomogenizing %d points, writing to %s",W.W.num_pts,filename);
 	
 	fprintf(OUT,"%d\n\n",W.W.num_pts);
 	
@@ -191,7 +193,6 @@ void write_dehomogenized_coordinates(witness_set_d W, char filename[]){
 			for (jj=0; jj<W.num_variables-1; jj++) {
 				print_mp(OUT, 0, &result->coord[jj]);
 				fprintf(OUT, "\n");
-				//				fprintf(OUT,"%.15le %.15le\n",result->coord[jj].r,result->coord[jj].i);
 			}
 		}
 		else{
@@ -206,8 +207,7 @@ void write_dehomogenized_coordinates(witness_set_d W, char filename[]){
 		
 		
 		fprintf(OUT,"\n");
-//		print_point_to_screen_matlab(W.W.pts[ii],"witnesspoint");
-//		print_point_to_screen_matlab(result,"result");
+
 	}
 	
 	fclose(OUT);
@@ -256,7 +256,7 @@ void clear_witness_set(witness_set_d W){
 	int ii;
 	
 	
-	printf("freeing %d patches\n",W.num_patches);
+//	printf("freeing %d patches\n",W.num_patches);
 	for (ii=0; ii<W.num_patches; ii++) {
 		clear_vec_d(W.patch[ii]);
 	}
@@ -265,7 +265,7 @@ void clear_witness_set(witness_set_d W){
 	}
 	
 	
-	printf("freeing %d linears\n",W.num_linears);
+//	printf("freeing %d linears\n",W.num_linears);
 	for (ii=0; ii<W.num_linears; ii++) {
 		clear_vec_d(W.L[ii]);
 	}
@@ -273,12 +273,37 @@ void clear_witness_set(witness_set_d W){
 		free(W.L);
 	}
 	
-	printf("freeing %d points\n",W.W.num_pts);
+//	printf("freeing %d points\n",W.W.num_pts);
 	for (ii=0; ii<W.W.num_pts; ii++) {
 		clear_point_d(W.W.pts[ii]);
 	}
 	free(W.W.pts);
 	
+	
+	//now clear the mp structures.
+	
+//	printf("freeing %d patches\n",W.num_patches);
+	for (ii=0; ii<W.num_patches; ii++) {
+		clear_vec_mp(W.patch_mp[ii]);
+	}
+	if (W.num_patches>0) {
+		free(W.patch_mp);
+	}
+	
+	
+//	printf("freeing %d linears\n",W.num_linears);
+	for (ii=0; ii<W.num_linears; ii++) {
+		clear_vec_d(W.L_mp[ii]);
+	}
+	if (W.num_linears>0) {
+		free(W.L_mp);
+	}
+	
+//	printf("freeing %d points\n",W.W_mp.num_pts);
+	for (ii=0; ii<W.W_mp.num_pts; ii++) {
+		clear_point_mp(W.W_mp.pts[ii]);
+	}
+	free(W.W_mp.pts);
 	
 	
 	
