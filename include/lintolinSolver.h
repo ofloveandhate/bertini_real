@@ -33,11 +33,16 @@ typedef struct
 //  basic_eval_data_mp *BED_mp; // used only for AMP
 	//  eqData_t *EqD;              // for equation-by-equation  ???
 	prog_t *SLP;
+	
+	mpq_t *gamma_rat;
 	comp_mp gamma;
 	mat_mp n_minusone_randomizer_matrix;
+	mat_mp n_minusone_randomizer_matrix_full_prec;
 	
 	vec_mp current_linear;
+	vec_mp current_linear_full_prec;
 	vec_mp old_linear;
+	vec_mp old_linear_full_prec;
 	
 	int num_variables;
 	int curr_prec;
@@ -81,20 +86,28 @@ typedef struct
 
 /** the main function for finding critical conditions WRT a projection
  */
-int lin_to_lin_solver_d(int MPType, double parse_time, unsigned int	currentSeed,
+int lin_to_lin_solver_main(int MPType,
+													 witness_set_d W,
+													 mat_mp n_minusone_randomizer_matrix_full_prec,
+													 vec_mp *new_linears_full_prec, int num_new_linears,
+													 witness_set_d *W_new);
+
+
+
+
+int lin_to_lin_solver_d(int MPType,
 												witness_set_d W,  // should include the old linear
-												mat_d n_minusone_randomizer_matrix,
-												vec_d *new_linears,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
+												mat_mp n_minusone_randomizer_matrix_full_prec,
+												vec_mp *new_linears_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 												int num_new_linears,
-												witness_set_d *W_new,
-												int my_id, int num_processes, int headnode);
+												witness_set_d *W_new);
 
 
 
 void lin_to_lin_track_d(trackingStats *trackCount,
 												FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
 												witness_set_d W,
-												vec_d *new_linears,
+												vec_mp *new_linears_full_prec,
 												int num_new_linears,
 												witness_set_d *W_new,
 												FILE *FAIL,
@@ -129,7 +142,7 @@ int lin_to_lin_setup_d(FILE **OUT, char *outName,
 											 int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 											 char *preprocFile, char *degreeFile,
 											 int findStartPts, char *pointsIN, char *pointsOUT,
-											 mat_d n_minusone_randomizer_matrix,
+											 mat_mp n_minusone_randomizer_matrix_full_prec,
 											 witness_set_d W);
 
 //the new custom evaluator for this solver
@@ -158,11 +171,12 @@ void clear_lintolin_omp_d(int max_threads, endgame_data_t **EG, trackingStats **
 
 
 
-void setuplintolinEval_d(char preprocFile[], char degreeFile[],
+void setuplintolinEval_d(tracker_config_t *T,
+												 char preprocFile[], char degreeFile[],
 											 prog_t *dummyProg, int squareSize, int patchType, int ssType, int MPType,
 											 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
 											 lintolin_eval_data_d *BED, int adjustDegrees,
-												 mat_d n_minusone_randomizer_matrix,
+												 mat_mp n_minusone_randomizer_matrix_full_prec,
 												 witness_set_d W);
 
 
@@ -188,18 +202,17 @@ void change_lintolin_eval_prec_mp(int new_prec, lintolin_eval_data_mp *BED);
 
 
 
-int lin_to_lin_solver_mp(int MPType, double parse_time, unsigned int currentSeed,
+int lin_to_lin_solver_mp(int MPType,
 												 witness_set_d W,  // includes the initial linear.
-												 mat_mp n_minusone_randomizer_matrix,  // for randomizing down to N-1 equations.
-												 vec_mp *new_linears,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
+												 mat_mp n_minusone_randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
+												 vec_mp *new_linears_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 												 int num_new_linears,
-												 witness_set_d *W_new,
-												 int my_id, int num_processes, int headnode);
+												 witness_set_d *W_new);
 
 void lin_to_lin_track_mp(trackingStats *trackCount,
 												 FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
 												 witness_set_d W,
-												 vec_mp *new_linears,
+												 vec_mp *new_linears_full_prec,
 												 int num_new_linears,
 												 witness_set_d *W_new,
 												 FILE *FAIL,
@@ -231,22 +244,27 @@ int lin_to_lin_setup_mp(FILE **OUT, char *outName,
 												int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 												char *preprocFile, char *degreeFile,
 												int findStartPts, char *pointsIN, char *pointsOUT,
-												mat_mp n_minusone_randomizer_matrix,
+												mat_mp n_minusone_randomizer_matrix_full_prec,
 												witness_set_d W);
+
 int lin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED);
+
 void lintolin_eval_clear_mp(lintolin_eval_data_mp *ED, int clearRegen, int MPType);
+
 void setup_lin_to_lin_omp_mp(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount,
 														 FILE ***OUT_copy, FILE *OUT, FILE ***RAWOUT_copy, FILE *RAWOUT,
 														 FILE ***MIDOUT_copy, FILE *MIDOUT, FILE ***FAIL_copy, FILE *FAIL,
 														 FILE ***NONSOLN_copy, FILE *NONSOLN,
 														 tracker_config_t **T_copy, tracker_config_t *T,
 														 lintolin_eval_data_mp **BED_copy, lintolin_eval_data_mp *ED_mp);
+
 void clear_lintolin_omp_mp(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount, FILE ***OUT_copy, FILE *OUT, FILE ***RAWOUT_copy, FILE *RAWOUT, FILE ***MIDOUT_copy, FILE *MIDOUT, FILE ***FAIL_copy, FILE *FAIL, FILE ***NONSOLN_copy, FILE *NONSOLN, tracker_config_t **T_copy, lintolin_eval_data_mp **BED_copy);
+
 void setuplintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *dummyProg,
 													int squareSize, int patchType, int ssType, int prec,
 													void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
 													lintolin_eval_data_mp *BED, int adjustDegrees,
-													mat_mp n_minusone_randomizer_matrix,
+													mat_mp n_minusone_randomizer_matrix_full_prec,
 													witness_set_d W);
 
 
