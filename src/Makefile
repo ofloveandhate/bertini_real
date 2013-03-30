@@ -63,7 +63,7 @@ endif
 INC:=$(INC) -I../include  -I$(BERTINIHEADERS) #this includes the header files for bertini_real, etc   
 
 ARGS=$(INC) $(OPT) 
-OBJFILES= output.o data_type.o linprodtodetjacSolver.o lintolinSolver.o fileops.o isosingular.o curveNotSelfConj.o curveSelfConj.o witnessSetParse.o programStartup.o checkSelfConjugate.o 
+OBJFILES= output.o data_type.o detjactodetjacSolver.o linprodtodetjacSolver.o lintolinSolver.o fileops.o isosingular.o curveNotSelfConj.o curveSelfConj.o witnessSetParse.o programStartup.o checkSelfConjugate.o 
 POBJFILES=lex.partitionParse.o 
 FLEX=flex
 #memory.o
