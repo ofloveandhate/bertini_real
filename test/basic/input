@@ -1,4 +1,7 @@
 CONFIG
+
+tracktype: 1;
+
 END;
 INPUT
  variable_group x,y;
