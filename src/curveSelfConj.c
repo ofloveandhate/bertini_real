@@ -75,9 +75,9 @@ void computeCurveSelfConj(char * inputFile,
 	
 	
 	//need degree of g...  get from deg.out file
-	int degprod = get_prod_degrees("deg.out",PPD.num_funcs);
-	int deg_g = degprod - PPD.num_funcs;
-	deg_g = deg_g - 1;
+	int degsum = get_sum_degrees("deg.out",PPD.num_funcs);
+	int deg_g = degsum - PPD.num_funcs;
+	deg_g = deg_g - 1; // subtract one because already have one linear.  
 #ifdef verbose
 	printf("the number of new linears will be %d\n",deg_g);
 #endif
@@ -365,33 +365,6 @@ void computeCurveSelfConj(char * inputFile,
 
 
 
-//	point_d funcVals, point_d parVals;
-//	vec_d parDer, mat_d Jv, mat_d Jp, point_d vars;
-//	comp_d pathVars;
-//	void const *ED;
-
-//	*eval_func_d = &basic_eval_d;
-//
-
-//	eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, PD->point, PD->time, ED, eval_func_d);
-
-
-//	eval_struct_d e;
-//	init_eval_struct_d(e, 0, 0, 0);
-////
-//	basic_eval_data_d ED;
-////
-//	comp_d time;
-//	time->r = 0;
-//	time->i = 0;
-//////	basic_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, PD->point, PD->time, void const *ED);
-////
-//	basic_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, Wnew.W.pts[0], time , ED);
-////
-//	clear_eval_struct_d(e);
-//
-//
-//
 
 
 
@@ -405,73 +378,21 @@ void get_jacobian(point_d current_values,
 									mat_d jacobian)
 {
 	
-	int jj;  // counters.  i always use double letter for counters.
-	
-	
-	
-	// the prototype for eval_struct_d
-//	// these contain all of the data structures that are returned when doing function evaluation
-//	typedef struct
-//	{
-//		point_d funcVals;
-//		point_d parVals;
-//		vec_d parDer;
-//		mat_d Jv;
-//		mat_d Jp;
-//	} eval_struct_d;
-	
-	
 	//initialize
 	eval_struct_d e_d;
 	init_eval_struct_d(e_d, 0, 0, 0);
 	
 	comp_d zerotime;
 	set_zero_d(zerotime);
+
 	
-	
-	//initialize temp data
-	point_d current_witness_point;
-	init_point_d(current_witness_point,T.numVars);
-	
-//	//homogenize
-//	for (jj=0; jj<num_var_gps; jj++) {
-//		set_one_d(&current_witness_point->coord[jj]);
-//	}
-	
-	for (jj=0; jj<T.numVars; jj++) {
-		current_witness_point->coord[jj].r = current_values->coord[jj].r;
-		current_witness_point->coord[jj].i = current_values->coord[jj].i;
-	}
-	
-//	evalProg_d(temp_function_values, parVals, parDer, temp_jacobian_functions, temp_jacobian_parameters, current_variable_values, pathVars, BED->SLP);
-	
-	evalProg_d(e_d.funcVals, e_d.parVals, e_d.parDer, e_d.Jv, e_d.Jp, current_witness_point, zerotime, &SLP);
+	evalProg_d(e_d.funcVals, e_d.parVals, e_d.parDer, jacobian, e_d.Jp, current_values, zerotime, &SLP);
 	// the result of this, most importantly, is e_d.Jv, which contains the (complex) jacobian Jv for the system.
 	// this jacobian Jv = \frac{\partial f_i}{\partial x_j} ( current_witness_point, zerotime)
 	
-//	printf("returned from evalProg_d() Jv has %d rows, %d cols\n",e_d.Jv->rows,e_d.Jv->cols);
+//TODO: NEED TO CLEAR THE EVALDATA, or leak memory.
 	
-//	change_size_mat_d(jacobian,e_d.funcVals->size,T.numVars-num_var_gps);//initialize the jacobian to be the correct size
-//	jacobian->cols = T.numVars-num_var_gps;
-//	jacobian->rows = e_d.funcVals->size;     // why aren't these set in the change_size_mat_d???
-//	
-	
-//	printf("%d funcvals\n",e_d.funcVals->size);
-	
-	
-	//put into place from temp structures.
-	mat_cp_d(jacobian,e_d.Jv);
-//	for (kk = 0; kk < e_d.Jv->rows; kk++)
-//	{ // print kth row
-//		for (jj = num_var_gps; jj < e_d.Jv->cols; jj++)
-//		{
-//			{ // assign jth column
-//				jacobian->entry[kk][jj-num_var_gps].r = e_d.Jv->entry[kk][jj].r;
-//				jacobian->entry[kk][jj-num_var_gps].i = e_d.Jv->entry[kk][jj].i;
-//			}
-//		}
-//	}
-	
+
 	return;
 	
 }
@@ -481,8 +402,8 @@ void get_jacobian(point_d current_values,
 
 
 
-int get_prod_degrees(char filename[], int num_funcs){
-	int degprod = 0, tmpdeg, ii;
+int get_sum_degrees(char filename[], int num_funcs){
+	int degsum = 0, tmpdeg, ii;
 	
 	FILE *IN;
 	
@@ -490,13 +411,13 @@ int get_prod_degrees(char filename[], int num_funcs){
 	
 	for (ii = 0; ii<num_funcs; ii++) {
 		fscanf(IN,"%d",&tmpdeg);
-		degprod += tmpdeg;
+		degsum += tmpdeg;
 	}
 
 	fclose(IN);
 	
 	
-	return degprod;
+	return degsum;
 }
 
 
