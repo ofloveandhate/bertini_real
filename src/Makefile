@@ -74,7 +74,7 @@ FLEX=flex
 ###
 
 #all comes first, so is the default rule when you `make'
-all : bertini_real data_to_set;    
+all : bertini_real data_to_set sampler;    
 
 
 #makes the bertini_real program
@@ -87,11 +87,15 @@ data_to_set:
 	$(COMPpp) $(ARGS) -o data2set dataToSet.cpp $(BERTINILIB) $(LIBS)  $(STATICFLAG)
 #   
 
+#makes the sampler program.
+sampler: 
+	$(COMP) $(ARGS) -o sampler sampler.c  $(OBJFILES) $(POBJFILES) $(BERTINILIB)  $(LIBS)  $(STATICFLAG)
+#   
 
 
 #simply copy the executables to the installpath
-install: bertini_real data_to_set
-	cp bertini_real data2set $(INSTALLPATH)
+install: bertini_real data_to_set sampler
+	cp bertini_real data2set sampler $(INSTALLPATH)
 
 
 .c.o : 
@@ -107,7 +111,7 @@ lex.partitionParse.c:	partitionParse.l
 	$(FLEX) -PpartitionParse partitionParse.l
 
 clean : 
-	rm -f $(OBJFILES) $(POBJFILES) bertini_real data2set
+	rm -f $(OBJFILES) $(POBJFILES) bertini_real data2set sampler
 	rm -f par.out paramDerivs.out arr.out eval.out eval2.out const.out finalFile.out jacV.out jacP.out num.out
 	rm -f tempBertiniFile lex.partitionParse.c 
 	rm -rf *.dSYM
