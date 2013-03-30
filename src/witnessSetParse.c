@@ -4,7 +4,9 @@
 
 
 //use:  call to parse the file witness_set_file, into the struc W.  fills the values W, and L, patch, as well as their _mp counterparts
+
 // the functions will be parsed elsewhere.
+// this function has been be rewritten to use MP
 
 // this function has been be rewritten to use MP
 int witnessSetParse(witness_set_d *W, char *witness_set_file, const int num_vars){

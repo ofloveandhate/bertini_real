@@ -1561,6 +1561,7 @@ void setuplinprodtodetjacEval_d(char preprocFile[], char degreeFile[], prog_t *d
 	
 	
 	BED->num_linears = W.num_linears;
+
 	BED->linears = (vec_d *)malloc(W.num_linears*sizeof(vec_d));
 	for (ii=0; ii<W.num_linears; ++ii) {
 		init_vec_d(BED->linears[ii],0);
