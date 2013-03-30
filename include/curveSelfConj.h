@@ -26,6 +26,7 @@
 #include "linprodtodetjacSolver.h"
 #include "detjactodetjacSolver.h"
 
+//the main function for computing cell decom for a curve.  only for use on a self-conjugate component.  
 void computeCurveSelfConj(char * inputFile,
 													witness_set_d,
 													vec_d,
@@ -34,7 +35,7 @@ void computeCurveSelfConj(char * inputFile,
 													int num_var_gps,
 													unsigned int currentSeed);
 
-
+// gets the jacobian (homogeneous) of the functions at the point current_values.  returns mat_d jacobian.  primarily for testing.
 void get_jacobian(point_d current_values,
 									int MPType,
 									int num_var_gps,
@@ -43,10 +44,8 @@ void get_jacobian(point_d current_values,
 									mat_d jacobian);
 
 
-void determinant_jacobian_d(mat_d m, int * rank, double * det );
-
-
-int get_prod_degrees(char filename[], int num_funcs);
+//read the file "deg.out" and takes the sum of the numbers appearing there. used for determining the number of lintolin solves to perform to get the critical points WRT the projection and coordinate axes (bounding box).
+int get_sum_degrees(char filename[], int num_funcs);
 
 
 
