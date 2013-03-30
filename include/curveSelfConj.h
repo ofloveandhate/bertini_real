@@ -24,6 +24,7 @@
 
 #include "lintolinSolver.h"
 #include "linprodtodetjacSolver.h"
+#include "detjactodetjacSolver.h"
 
 void computeCurveSelfConj(char * inputFile,
 													witness_set_d,
