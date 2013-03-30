@@ -95,8 +95,6 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *i
 	IN = safe_fopen_read("isosingular_summary");
   fscanf(IN, "%d%d", &nullSpace, &success);  
 	fclose(IN);
-	
-	
   // setup the first entry in the deflation sequence
   *num_deflations = 0;
   *deflation_sequence = (int *)bmalloc((*num_deflations + 1) * sizeof(int));
@@ -139,14 +137,14 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *i
     printf("\nIsosingular deflation was successful!\n\n");
     printf("Number of deflations: %d\n", *num_deflations);
     printf("Deflation sequence: ");
-    for (i = 0; i <= *num_deflations; i++)
+    for (i = 0; i < *num_deflations; i++)
       printf("%d, ", (*deflation_sequence)[i]);
     printf("%d, ...\n\n", (*deflation_sequence)[*num_deflations]);
 
     // create deflated system
-    strLength = 1 + snprintf(NULL, 0, "%s_deflated", inputFile);
+    strLength = 1 + snprintf(NULL, 0, "%s_comp%d_deflated", inputFile,nullSpace);
     strStabilizationTest = (char *)bmalloc(strLength * sizeof(char));
-    sprintf(strStabilizationTest, "%s_deflated", inputFile);
+    sprintf(strStabilizationTest, "%s_comp_%d_deflated", inputFile,nullSpace);
     OUT = fopen(strStabilizationTest, "w");
     fprintf(OUT, "CONFIG\n");
 		IN = safe_fopen_read("config_real");
@@ -168,7 +166,6 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *i
   {
     printf("ERROR: The maximum number of deflations (%d) was exceeded without stabilization!\n\n", max_deflations);
   }
-
   // delete temporary files
   remove("func_input_real");
   remove("config_real");

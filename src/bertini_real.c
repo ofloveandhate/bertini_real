@@ -9,11 +9,11 @@ int main(int argC, char *args[])
  \***************************************************************/
 {
   int rV,num_vars=0,sc;  //1=self-conjugate; 0=not
-  char *inputName = NULL, *witnessSetName = NULL;
+  char *inputName = NULL, *witnessSetName = NULL,*input_deflated_Name=NULL;
   curveDecomp_d C;  //new data type; stores vertices, edges, etc.
   vec_d pi;  //random projection
   witness_set_d Wuser, Wnew;
-	int max_deflations = 10;
+	int max_deflations = 10,strLength;
 	int num_deflations, *deflation_sequence = NULL;
 	int ii;  // counters
 	
@@ -48,10 +48,6 @@ int main(int argC, char *args[])
 	
 	parse_input(inputName, &trackType, &MPType, &genType, &userHom, &currentSeed, &sharpenOnly, &needToDiff, &remove_temp, useParallelDiff, my_id, num_processes, headnode);
 	
-//	if (MPType==2) {
-//		printf("bertini_real is not equipped for adaptive multiple precision (AMP).\ndefaulting to fixed MP precision\n");
-////		MPType=1;
-//	}
 	
 	preproc_data PPD;
 	setupPreProcData("preproc_data", &PPD);
@@ -86,17 +82,14 @@ int main(int argC, char *args[])
 	// perform an isosingular deflation
 	rV = isosingular_deflation(&num_deflations, &deflation_sequence, inputName, "witness_points_dehomogenized", "bertini", "matlab", max_deflations);
   
+	 strLength = 1 + snprintf(NULL, 0, "%s_comp_%d_deflated", inputName,deflation_sequence[0]);
+         input_deflated_Name = (char *)bmalloc(strLength * sizeof(char));
+         sprintf(input_deflated_Name, "%s_comp_%d_deflated", inputName,deflation_sequence[0]);
 	
 	
 	
 	
-	
-	
-	
-	
-	
-	
-	// initialize the projection pi.  for now, get random projection.
+	// initialize the projection pi.  for now, get random projection.  would prefer to get it from a file.
 	init_vec_d(pi,num_vars);
 	pi->size = num_vars;
 	for (ii=0; ii<num_vars; ii++) {
@@ -105,15 +98,11 @@ int main(int argC, char *args[])
 	
 	
 	
-	
-  
-	
-	
-	
+
 	
 	
 	printf("checking if component is self-conjugate\n");
-	sc = checkSelfConjugate(Wuser,num_vars,"input_deflated");  //later:  could be passed in from user, if we want
+	sc = checkSelfConjugate(Wuser,num_vars,input_deflated_Name);  //later:  could be passed in from user, if we want
 	if (sc==0) {
 		printf("component is NOT self conjugate\n");
 	}
@@ -130,7 +119,7 @@ int main(int argC, char *args[])
 	
 	
 	
-	parse_input("input_deflated", &trackType, &MPType, &genType, &userHom, &currentSeed, &sharpenOnly, &needToDiff, &remove_temp, useParallelDiff, my_id, num_processes, headnode);
+	parse_input(input_deflated_Name, &trackType, &MPType, &genType, &userHom, &currentSeed, &sharpenOnly, &needToDiff, &remove_temp, useParallelDiff, my_id, num_processes, headnode);
 	
 	
 	
@@ -145,8 +134,8 @@ int main(int argC, char *args[])
 	//temp answer:  the functions, but not the points, or the slices.
 	
 	
-	
-	
+	printf("init C\n");
+	init_curveDecomp_d(&C);
 	if (sc==0)  //C is not self-conjugate
 	{
 		//Call non-self-conjugate case code
@@ -158,13 +147,53 @@ int main(int argC, char *args[])
 	{
 		//Call self-conjugate case code
 		printf("\n\nentering self-conjugate case\n\n");
-		computeCurveSelfConj("input_deflated",
-												 Wnew,pi,&C,num_vars,num_var_gps,currentSeed);  //This is Dans', at least at first !!!
+		computeCurveSelfConj(input_deflated_Name,Wnew,pi,&C,num_vars,num_var_gps,currentSeed);  //This is Dans', at least at first !!!
 	}
+	printf("\n*\ndone with case\n*\n");
+
+	
+        set_zero_d(&(pi->coord[0]));
+        set_one_d(&(pi->coord[1]));
+        set_zero_d(&(pi->coord[2]));
   
 	
-	printf("\n*\ndone with case\n*\n");
+        printf("before V1"); fflush(stdout);
+        C.num_V1=2;
+        C.V1=(vertex_d *)bmalloc(C.num_V1*sizeof(vertex_d));
+
+        init_point_d(C.V1[0].pt,num_vars);
+        set_one_d(&(C.V1[0].pt->coord[0]));
+        set_one_d(&(C.V1[0].pt->coord[1]));
+        set_zero_d(&(C.V1[0].pt->coord[2]));
+
+        init_point_d(C.V1[1].pt,num_vars);
+        set_one_d(&(C.V1[1].pt->coord[0]));
+        set_neg_one_d(&(C.V1[1].pt->coord[1]));
+        set_zero_d(&(C.V1[1].pt->coord[2]));
+
+        printf("after V1");fflush(stdout);
+        C.num_E=2;
+
+        C.E=(edge_d *)bmalloc(C.num_E*sizeof(edge_d));
+        C.E[0].left=0;        C.E[0].right=1;
+        init_point_d(C.E[0].midpt,num_vars);
+        set_one_d(&(C.E[0].midpt->coord[0]));
+        set_zero_d(&(C.E[0].midpt->coord[1]));
+        set_one_d(&(C.E[0].midpt->coord[2]));
+        init_point_d(C.E[1].pi,num_vars);
+        point_cp_d(C.E[0].pi,pi);
+
+
+        C.E[1].left=0;        C.E[1].right=1;
+        init_point_d(C.E[1].midpt,num_vars);
+        set_one_d(&(C.E[1].midpt->coord[0]));
+        set_zero_d(&(C.E[1].midpt->coord[1]));
+        set_neg_one_d(&(C.E[1].midpt->coord[2]));
+        init_point_d(C.E[1].pi,num_vars);
+        point_cp_d(C.E[1].pi,pi);
+
 	
+	Output_Main(inputName, input_deflated_Name,deflation_sequence, num_vars, C);
 	
 	
 	// clear memory

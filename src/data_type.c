@@ -1,5 +1,46 @@
 #include "data_type.h"
 
+
+
+void init_curveDecomp_d(curveDecomp_d *C){
+	
+	C->num_V0=C->num_V1=C->num_E=0;
+	C->V0=C->V1=C->E=NULL;
+	return;
+}
+void clear_curveDecomp_d(curveDecomp_d *C){
+	
+	int ii;
+	for(ii=0;ii<C->num_V0;ii++)
+		clear_vec_d(C->V0[ii].pt);
+	free(C->V0);
+	for(ii=0;ii<C->num_V1;ii++)
+		clear_vec_d(C->V1[ii].pt);
+	free(C->V1);
+	for(ii=0;ii<C->num_E;ii++)
+	{
+		clear_vec_d(C->E[ii].midpt);
+		clear_vec_d(C->E[ii].pi);
+		clear_witness_set(C->E[ii].W);
+	}
+	free(C->E);
+	
+}
+void clear_sample_d(sample_d *S){
+	
+	int ii;
+	for(ii=0;ii<S->num_E;ii++)
+	{
+		clear_vec_d(S->pV[ii]);
+		clear_mat_d(S->V[ii]);
+	}
+	free(S->pV);
+	free(S->V);
+	
+}
+
+
+
 void merge_witness_sets(witness_set_d *W_out,witness_set_d W_left,witness_set_d W_right){
 	
 	//error checking first
