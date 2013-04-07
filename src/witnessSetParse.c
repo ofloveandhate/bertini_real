@@ -23,7 +23,7 @@ int witnessSetParse(witness_set_d *W, char *witness_set_file, const int num_vars
   int num_vars_in_linears;
 	
 	
-  fscanf(IN, "%d", &num_pts);
+  fscanf(IN, "%d", &num_pts); // should here read the rest of the line
   W->W.num_pts=num_pts;
   W->W.pts=(point_d *)bmalloc(W->W.num_pts*sizeof(point_d));
   W->num_variables = num_vars;
@@ -107,23 +107,23 @@ int witnessSetParse(witness_set_d *W, char *witness_set_file, const int num_vars
   for (ii=0; ii < num_pts; ii++) {
 		
     //initialize the memory
-    init_point_mp(W->W_mp.pts[ii],num_vars);
+    init_point_mp2(W->W_mp.pts[ii],num_vars,1024);
 		change_size_vec_mp(W->W_mp.pts[ii],num_vars);
 		W->W_mp.pts[ii]->size = num_vars;
     //read the witness points into memory
     for (jj=0; jj < num_vars; jj=jj+1) {
-			mpf_inp_str(W->W_mp.pts[ii]->coord[jj].r, IN, 10);
+			mpf_inp_str(W->W_mp.pts[ii]->coord[jj].r, IN, 10); // 10 is the base
 			mpf_inp_str(W->W_mp.pts[ii]->coord[jj].i, IN, 10);      
     }
   }
   
 
-	fscanf(IN, "%d %d", &num_linears, &num_vars_in_linears);
+	fscanf(IN, "%d %d", &num_linears, &num_vars_in_linears); // should read the rest of the line
 
 	W->L_mp = (vec_mp *)bmalloc(num_linears*sizeof(vec_mp));
 	
   for (ii=0; ii < num_linears; ii++) {
-		init_vec_mp(W->L_mp[ii],num_vars_in_linears);
+		init_vec_mp2(W->L_mp[ii],num_vars_in_linears,1024);
 		
 		change_size_vec_mp(W->L_mp[ii],num_vars_in_linears);
 		W->L_mp[ii]->size = num_vars_in_linears;
@@ -135,12 +135,12 @@ int witnessSetParse(witness_set_d *W, char *witness_set_file, const int num_vars
   }
   
 	
-	fscanf(IN, "%d %d", &num_patches, &patch_size);
+	fscanf(IN, "%d %d", &num_patches, &patch_size); // should read the rest of the line
 	
 	W->patch_mp = (vec_mp *)bmalloc(num_patches*sizeof(vec_mp));
 	
   for (ii=0; ii < num_patches; ii++) {
-		init_vec_mp(W->patch_mp[ii],patch_size);
+		init_vec_mp2(W->patch_mp[ii],patch_size,1024);//default max_prec is 1024
 		
 		change_size_vec_mp(W->patch_mp[ii],patch_size);
 		W->patch_mp[ii]->size = patch_size;
@@ -153,8 +153,25 @@ int witnessSetParse(witness_set_d *W, char *witness_set_file, const int num_vars
 	
   fclose(IN);
 	
+	
+	IN = safe_fopen_read("names.out");
+
+	init_variable_names(W,num_vars);
+	
+	for (ii=0; ii<num_vars; ++ii){
+		fscanf(IN,"%s\n",W->variable_names[ii]);
+	}
+	fclose(IN);
+	
+
+
   return 0;
+	
+	
+	
+	
 }
+
 
 
 

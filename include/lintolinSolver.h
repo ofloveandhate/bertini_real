@@ -64,10 +64,13 @@ typedef struct
 	prog_t *SLP;
 	comp_d gamma;
 	mat_d n_minusone_randomizer_matrix;
-
+	
 	vec_d current_linear;
 	vec_d old_linear;
 	int num_variables;
+	
+	FILE *FOUT;
+	
 } lintolin_eval_data_d;
 
 

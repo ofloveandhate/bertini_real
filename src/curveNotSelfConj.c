@@ -246,7 +246,7 @@ void diag_homotopy_start_file(char                 *startFile,
 
 
 void computeCurveNotSelfConj(witness_set_d Wnew, 
-                             vec_d         pi, 
+                             vec_mp         pi_mp,
                              curveDecomp_d *C,
                              int           num_vars,
                              char          *input_file)
@@ -257,6 +257,9 @@ void computeCurveNotSelfConj(witness_set_d Wnew,
 * NOTES:                                                        *
 \***************************************************************/
 {
+	vec_d pi; init_vec_d(pi,pi_mp->size); pi->size = pi_mp->size;
+	vec_mp_to_d(pi,pi_mp);
+	
   int i,j,k,m,strLength,num_sols,*declarations = NULL,isadd;
   char *strSys,*bertini_command="bertini";
   FILE *IN = NULL;

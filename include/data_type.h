@@ -70,6 +70,9 @@ typedef struct
 	vec_mp *patch_mp;
   witness_point_set_mp W_mp;
 	
+	char ** variable_names;
+	int incidence_number;
+	int num_var_gps;
 	int num_variables;
 	int num_linears;
 	int num_patches;
@@ -135,10 +138,15 @@ enum {CRITICAL=0, NEW=1, MIDPOINT=2};
 //function prototypes for bertini_real data clearing etc.
 void merge_witness_sets(witness_set_d *W_out,witness_set_d W_left,witness_set_d W_right);
 
+void init_variable_names(witness_set_d *W, int num_vars);
+
+void cp_names(witness_set_d *W_out, witness_set_d W_in);
+void cp_linears(witness_set_d *W_out, witness_set_d W_in);
 void cp_patches(witness_set_d *W_out, witness_set_d W_in);
 void init_witness_set_d(witness_set_d *W);
 void init_curveDecomp_d(curveDecomp_d *C);
 
+void dot_product_d(comp_d result, vec_d one, vec_d two);
 void dot_product_mp(comp_mp result, vec_mp one, vec_mp two);
 
 

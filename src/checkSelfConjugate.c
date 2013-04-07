@@ -20,10 +20,6 @@ int checkSelfConjugate(witness_set_d W,
   char *SysStr = NULL,*fmt = NULL, *bertini_command="bertini";
   FILE *IN = NULL, *OUT=NULL;
 	
-//	mkdir("check_self_conj",0777);
-//	chdir("check_self_conj");
-//
-//	chdir("..");
 	
 	//make the command string to run
 	strLength = 1 + snprintf(NULL, 0, "%s input_membership_test", bertini_command);
@@ -63,18 +59,20 @@ int checkSelfConjugate(witness_set_d W,
 	
 	
 	//setup  member_points file, including both the first witness point, and its complex-conjugate
-	write_member_points(W.W.pts[0],fmt);
+	write_member_points_sc(W.W.pts[0],fmt);
 	
 	// Do membership test
 	printf("*\n%s\n*\n",SysStr);
   system(SysStr);
 	
-	int component_numbers[2];
+	int *component_numbers;
+	component_numbers = (int *)bmalloc(2*sizeof(int));
+	
 	read_incidence_matrix(component_numbers);
 
-	
-	
   free(declarations);
+	free(component_numbers);
+	
 	
   // delete temporary files
   remove("func_input_real");
@@ -89,24 +87,131 @@ int checkSelfConjugate(witness_set_d W,
 		return 0;
 	}
 
+	
 }
 
 
 
 
 
-int write_member_points(point_d point_to_write, char * fmt){
+int get_component_number(witness_set_d W,
+												 int           num_vars,
+												 char          *input_file)
+/***************************************************************\
+ * USAGE: check if component is self conjugate                  *
+ * ARGUMENTS: witness set, # of variables and name of input file*
+ * RETURN VALUES: 1-self conjugate; 0-non self conjugate   *
+ * NOTES:                                                        *
+ \***************************************************************/
+{
+  int strLength = 0, digits = 15, *declarations = NULL;
+  char *SysStr = NULL,*fmt = NULL, *bertini_command="bertini";
+  FILE *IN = NULL, *OUT=NULL;
+	
+	
+	//make the command string to run
+	strLength = 1 + snprintf(NULL, 0, "%s input_membership_test", bertini_command);
+  SysStr = (char *)bmalloc(strLength * sizeof(char));
+  sprintf(SysStr, "%s input_membership_test", bertini_command);
+	
+	
+	
+	// make the format to write the member_points file
+  strLength = 1 + snprintf(NULL, 0, "%%.%dle %%.%dle\n", digits, digits);
+  // allocate size
+  fmt = (char *)bmalloc(strLength * sizeof(char));
+  // setup fmt
+  sprintf(fmt, "%%.%dle %%.%dle\n", digits, digits);
+	
+	
+  // setup input file
+	IN = safe_fopen_read(input_file);
+  partitionParse(&declarations, IN, "func_input_real", "config_real",0); // the 0 means not self conjugate
+	fclose(IN);
+	
+	
+	
+	//check existence of the required witness_data file.
+	IN = safe_fopen_read("witness_data");
+	fclose(IN);
+	
+	//perhaps this could be used to get the witness_data file, but there would be problems
+	//  membership_test_input_file("input_membership_test", "func_input_real", "config_real",1);
+	
+	
+	
+	
+	
+	//only need to do this once.  we put the point and its conjugate into the same member points file and run the membership test simultaneously with one bertini call.
+  membership_test_input_file("input_membership_test", "func_input_real", "config_real",3);
+	
+	
+	//setup  member_points file, including both the first witness point, and its complex-conjugate
+	write_member_points_singlept(W.W.pts[0],fmt);
+	
+	// Do membership test
+	printf("*\n%s\n*\n",SysStr);
+  system(SysStr);
+	
+	int *component_numbers;
+	component_numbers = (int *)bmalloc(2*sizeof(int));
+	
+	read_incidence_matrix(component_numbers);
+	
+  free(declarations);
+	free(component_numbers);
+	
+	
+  // delete temporary files
+  remove("func_input_real");
+  remove("config_real");
+	remove("incidence_matrix");
+	remove("member_points");
+	return component_numbers[0];
+	
+	
+	
+}
+
+
+
+int write_member_points_singlept(point_d point_to_write, char * fmt){
 	FILE *OUT = NULL;
 	int ii;
 	
 	
 	remove("member_points");
-	OUT = fopen("member_points", "w");
-	if (OUT == NULL)
+	OUT = safe_fopen_write("member_points");
+
+	
+	vec_d result;
+	init_vec_d(result,0);
+	dehomogenize(&result,point_to_write);
+	
+	fprintf(OUT,"1\n\n");
+	for(ii=0;ii<result->size;ii++)
 	{
-		printf("\n\nERROR: Can not open 'member_points' to write points!\n");
-		bexit(ERROR_FILE_NOT_EXIST);
+		fprintf(OUT, fmt, result->coord[ii].r, result->coord[ii].i);
 	}
+	
+	fclose(OUT);
+	
+	
+	clear_vec_d(result);
+	
+	return 0;
+}
+
+
+
+int write_member_points_sc(point_d point_to_write, char * fmt){
+	FILE *OUT = NULL;
+	int ii;
+	
+	
+	remove("member_points");
+	OUT = safe_fopen_write("member_points");
+
 	
 	vec_d result;
 	init_vec_d(result,0);
@@ -125,6 +230,7 @@ int write_member_points(point_d point_to_write, char * fmt){
 	}
 	fclose(OUT);
 	
+	clear_vec_d(result);
 	
 	return 0;
 }
@@ -132,7 +238,7 @@ int write_member_points(point_d point_to_write, char * fmt){
 
 
 
-void read_incidence_matrix(int component_numbers[]){
+void read_incidence_matrix(int *component_numbers){
 	FILE *IN = NULL;
 	int ii,jj;
 	int num_nonempty_codims, num_components, num_pts, codim;
@@ -176,7 +282,7 @@ void read_incidence_matrix(int component_numbers[]){
 		}
 		if (component_number==-10) {
 			printf("it appears the membership test FAILED.\n");
-			exit(-1);
+//			exit(-1);
 		}
 		component_numbers[jj]=component_number;
 	}
@@ -187,6 +293,64 @@ void read_incidence_matrix(int component_numbers[]){
 	
 	return;
 }
+
+
+
+void read_incidence_matrix_wrt_number(int *component_numbers, int given_incidence_number){
+	FILE *IN = NULL;
+	int ii,jj;
+	int num_nonempty_codims, num_components, num_pts, codim;
+	int component_indicator, component_number,total_num_components=0;
+	
+  //read incidence_matrix and see if it is self-conjugate
+  IN = fopen("incidence_matrix", "r");
+  if (IN == NULL)
+  {
+    printf("\n\nERROR: indicence_matrix file not produced.\n");
+    bexit(ERROR_FILE_NOT_EXIST);
+  }
+	
+	
+  fscanf(IN, "%d",&num_nonempty_codims);      // number of nonempty codimensions
+	
+	for (ii = 0; ii<num_nonempty_codims; ii++) {
+		fscanf(IN, "%d",&codim);      // codimension  (iterated for each codimension?)
+		fscanf(IN, "%d",&num_components);  // number of components (is whatever)
+		total_num_components = total_num_components+num_components;
+	}
+	
+	
+  fscanf(IN, "%d",&num_pts);    // number of points (should be 1)
+	
+	
+	//and then a binary matrix indicating membership on which component
+	//from the appendices of the book:
+	//	% Binary matrix with one row per point, columns corresponding to components.
+	//	%                0 if given point is not on given component;
+	//	%                1 else .
+	for (jj=0; jj<num_pts; jj++) {
+		component_number=-10;
+		for(ii=0;ii<total_num_components;ii++)  // i don't know if this is correct if there is more than one nonempty codimension.
+		{
+			fscanf(IN, "%d", &component_indicator);
+			if (component_indicator==1 && given_incidence_number==ii) {  //then is on this component
+				component_number = 1;
+			}
+		}
+		if (component_number==-10) {
+			printf("it appears the membership test FAILED.\n");
+			//			exit(-1);
+		}
+		component_numbers[jj]=component_number;
+	}
+	
+	fclose(IN);
+
+	
+	return;
+}
+
+
 
 
 
