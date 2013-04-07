@@ -41,6 +41,8 @@ void clear_sample_d(sample_d *S){
 
 
 
+
+
 void merge_witness_sets(witness_set_d *W_out,witness_set_d W_left,witness_set_d W_right){
 	
 	//error checking first
@@ -58,6 +60,7 @@ void merge_witness_sets(witness_set_d *W_out,witness_set_d W_left,witness_set_d 
 		printf("merging two witness sets with differing sizes of patch(es).\n");
 		exit(-343);
 	}
+	
 	
 //	if (W_left.num_linears == 0) { // should this be allowable?  i think yes...
 //		printf("left witness_set has no linears.\n");
@@ -80,10 +83,10 @@ void merge_witness_sets(witness_set_d *W_out,witness_set_d W_left,witness_set_d 
 	// merge the left and right linears into the output.
 	int counter = 0;
 	for (ii=0; ii<W_left.num_linears; ii++) {
-		init_vec_d(W_out->L[counter],W_out->num_variables);
+		init_vec_d(W_out->L[counter],W_out->num_variables); W_out->L[counter]->size = W_out->num_variables;
 		vec_cp_d(W_out->L[counter],W_left.L[ii]);
 		
-		init_vec_mp(W_out->L_mp[counter],W_out->num_variables);
+		init_vec_mp(W_out->L_mp[counter],W_out->num_variables); W_out->L_mp[counter]->size = W_out->num_variables;
 		vec_cp_mp(W_out->L_mp[counter],W_left.L_mp[ii]);
 		counter++;
 	}
@@ -108,10 +111,10 @@ void merge_witness_sets(witness_set_d *W_out,witness_set_d W_left,witness_set_d 
 	
 	counter = 0;
 	for (ii=0; ii<W_left.W.num_pts; ii++) {
-		init_vec_d(W_out->W.pts[counter],W_out->num_variables);
+		init_vec_d(W_out->W.pts[counter],W_out->num_variables); W_out->W.pts[counter]->size = W_out->num_variables;
 		vec_cp_d(W_out->W.pts[counter],W_left.W.pts[ii]);
 		
-		init_vec_mp(W_out->W_mp.pts[counter],W_out->num_variables);
+		init_vec_mp(W_out->W_mp.pts[counter],W_out->num_variables); W_out->W_mp.pts[counter]->size = W_out->num_variables;
 		vec_cp_mp(  W_out->W_mp.pts[counter],W_left.W_mp.pts[ii]);
 		counter++;
 	}
@@ -129,6 +132,99 @@ void merge_witness_sets(witness_set_d *W_out,witness_set_d W_left,witness_set_d 
 	
 	return;
 }//re: merge_witness_sets
+
+
+void init_variable_names(witness_set_d *W, int num_vars){
+	int ii;
+	
+	if (W->variable_names!=NULL) {
+		printf("attempting to initialize non-null variable names\n");
+		exit(-1);
+	}
+	
+	W->variable_names = (char **)bmalloc(num_vars*sizeof(char*));
+	for (ii=0; ii<num_vars; ++ii) {
+		W->variable_names[ii] = (char*) bmalloc(64*sizeof(char));
+	}
+	
+	return;
+}
+
+//copies names from old to new
+void cp_names(witness_set_d *W_out, witness_set_d W_in){
+	int ii;
+	
+	if (W_in.num_variables==0 || W_in.variable_names==NULL) {
+		printf("attempting to copy variable names from witness_set with no variables");
+		exit(1333);
+	}
+	
+	if (W_out->variable_names==NULL) {
+		init_variable_names(W_out,W_in.num_variables);
+	}
+	
+	for (ii=0; ii<W_in.num_variables; ++ii) {
+		strcpy(W_out->variable_names[ii],  W_in.variable_names[ii]);
+	}
+	
+//	printf("copied these variable names:\n");
+//	for (ii=0; ii<W_in.num_variables; ++ii) {
+//		printf("%s\n",W_out->variable_names[ii]);
+//	}
+//	mypause();
+}
+
+
+
+
+//copies the mp and d linears from in to out.
+void cp_linears(witness_set_d *W_out, witness_set_d W_in){
+	int ii;
+	
+	
+	W_out->num_linears = W_in.num_linears;
+	printf("%d linears to copy.\n",W_in.num_linears);
+
+
+	//
+	// DOUBLE COPIES
+	//
+	if (W_out->L==NULL) {
+		W_out->L = (vec_d *)bmalloc(W_in.num_linears * sizeof(vec_d));
+	}
+	else
+	{
+		W_out->L = (vec_d *)brealloc(W_out->L, W_in.num_linears * sizeof(vec_d));
+	}
+	
+	for (ii=0; ii<W_in.num_linears; ++ii) {
+		init_vec_d(W_out->L[ii],W_in.L[ii]->size);
+		vec_cp_d(W_out->L[ii],W_in.L[ii]);
+		W_out->L[ii]->size = W_in.L[ii]->size;
+	}
+	
+	//
+	// MP COPIES
+	//
+	
+	if (W_out->L_mp==NULL) {
+		W_out->L_mp = (vec_mp *)bmalloc(W_in.num_linears * sizeof(vec_mp));
+	}
+	else
+	{
+		W_out->L_mp = (vec_mp *)brealloc(W_out->L_mp, W_in.num_linears * sizeof(vec_mp));
+	}
+	
+	for (ii=0; ii<W_in.num_linears; ++ii) {
+		init_vec_mp(W_out->L_mp[ii],W_in.L_mp[ii]->size);
+		vec_cp_mp(W_out->L_mp[ii],W_in.L_mp[ii]);
+		W_out->L_mp[ii]->size = W_in.L_mp[ii]->size;
+	}
+	
+	
+	return;
+}
+
 
 void cp_patches(witness_set_d *W_out, witness_set_d W_in){
 	int ii;
@@ -180,7 +276,9 @@ void init_witness_set_d(witness_set_d *W){
 	W->num_variables = W->num_patches = W->num_linears = 0;
 	W->patch = W->L = W->W.pts = NULL;
 	W->patch_mp = W->L_mp = W->W_mp.pts = NULL;
+	W->variable_names = NULL;
 	W->W.num_pts = W->W_mp.num_pts = 0;
+	W->incidence_number = -1;
 	return;
 }
 
@@ -212,6 +310,7 @@ void dot_product_mp(comp_mp result, vec_mp one, vec_mp two){
 		mul_mp(temp,&one->coord[ii],&two->coord[ii]);
 		add_mp(result,result,temp);
 	}
+	clear_mp(temp);
 }
 
 
@@ -353,13 +452,14 @@ void clear_witness_set(witness_set_d W){
 
 void print_witness_set_to_screen(witness_set_d W){
 	int ii;
-	printf("******\n%d points\n******\n",W.W.num_pts);
+	printf("******\n%d points in double, %d points in mp\n******\n",W.W.num_pts,W.W_mp.num_pts);
 	for (ii=0; ii<W.W.num_pts; ii++) {
 		printf("the%dth",ii);
 		print_point_to_screen_matlab(W.W.pts[ii],"point");
 	}
 		
 	printf("******\n%d linears\n******\n",W.num_linears);
+	
 	for (ii=0; ii<W.num_linears; ii++) {
 		printf("the%dth",ii);
 		print_point_to_screen_matlab(W.L[ii],"linear");
@@ -459,6 +559,10 @@ void print_comp_mp_matlab(comp_mp M,char name[]){
 
 void print_path_retVal_message(int retVal){
 	
+	
+	if (retVal==100) {
+		printf("max_prec_reached\n");
+	}
 	if (retVal==-50) {
 		printf("reached_minTrackT\n");
 	}
@@ -483,7 +587,7 @@ void print_path_retVal_message(int retVal){
 	else if (retVal==-20){
 		printf("refining_failed\n");
 	}
-	else if (retVal==100){
+	else if (retVal==-100){
 		printf("higher_prec_needed\n");
 	}
 	else if (retVal==-99){

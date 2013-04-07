@@ -76,7 +76,8 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
   // setup T
   setupConfig(&T, &midpoint_tol, &userHom, &useRegen, &regenStartLevel, &maxCodim, &specificCodim, &pathMod, &intrinsicCutoffMultiplier, &reducedOnly, &supersetOnly, &paramHom, MPType);
 	
-
+//	printf("maxNewtonIts: %d\n",T.maxNewtonIts);
+//	mypause();
 	
 	//  // call the setup function
 	// setup for standard tracking - 'useRegen' is used to determine whether or not to setup 'start'
@@ -350,7 +351,7 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 		}
 		
 		//copy the linears into the new witness_set
-		init_vec_d(W_new->L[kk],0); init_vec_mp(W_new->L_mp[kk],0);
+		init_vec_d(W_new->L[kk],0); init_vec_mp2(W_new->L_mp[kk],0,T->AMP_max_prec);
 		vec_mp_to_d(   W_new->L[kk],new_linears_full_prec[kk]);
 		vec_cp_mp(W_new->L_mp[kk],new_linears_full_prec[kk]);
 			
@@ -395,6 +396,8 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 			if (EG->retVal!=0) {
 				printf("\nretVal = %d\nthere was a path failure tracking linear %d, witness point %d\n\n",EG->retVal,kk,ii);
 				print_path_retVal_message(EG->retVal);
+				print_point_to_screen_matlab(BED_copy->old_linear,"old");
+				print_point_to_screen_matlab(BED_copy->current_linear,"new");
 				exit(EG->retVal);
 			}
 			
@@ -402,7 +405,7 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 			//copy the solutions out of EG.
 			
 			if (T->MPType==2) {
-				printf("%d\n",EG->prec);
+//				printf("%d\n",EG->prec);
 				if (EG->prec<64) {
 //					printf("copying from double?\n");
 					vec_d_to_mp(W_new->W_mp.pts[witness_point_counter],EG->PD_d.point);
@@ -603,7 +606,7 @@ int lin_to_lin_setup_d(FILE **OUT, char *outName,
  * NOTES: setup for zero dimensional tracking                    *
  \***************************************************************/
 { // need to create the homotopy
-	printf("entering setup_d\n");
+//	printf("entering lin_to_lin_setup_d 606\n");
   int rank, patchType, ssType, numOrigVars, adjustDegrees, numGps;
 	
   *eval_d = &lin_to_lin_eval_d;   //DAB
@@ -628,9 +631,10 @@ int lin_to_lin_setup_d(FILE **OUT, char *outName,
 	
 	
 	
-  numGps = ED->preProcData.num_var_gp + ED->preProcData.num_hom_var_gp;
+  numGps = ED->preProcData.num_var_gp + ED->preProcData.num_hom_var_gp;//this should probably be removed
   // find the rank
-  rank = rank_finder_d(&ED->preProcData, dummyProg, T, T->numVars);
+  rank = rank_finder_d(&ED->preProcData, dummyProg, T, T->numVars); //this should probably be removed
+	
   // check to make sure that it is possible to have a zero dimensional component
 //  if (T->numVars > rank + numGps)
 //		//  {
@@ -641,7 +645,7 @@ int lin_to_lin_setup_d(FILE **OUT, char *outName,
 //		
 //		//AM I ACUTALLY SUPPOSED TO DO THIS? !!! HERE
 //		// adjust the number of variables based on the rank
-		T->numVars = rank + numGps;
+//		T->numVars = rank + numGps;
 	
 	
 	
@@ -650,8 +654,8 @@ int lin_to_lin_setup_d(FILE **OUT, char *outName,
 //  if (numGps == 1)
 //  { // 1-hom
     patchType = 2; // 1-hom patch
-    ssType = 0;    // with 1-hom, we use total degree start system
-    adjustDegrees = 0; // if the system does not need its degrees adjusted, then that is okay
+    ssType = 0;    // with 1-hom, we use total degree start system  // in BR, this is irrelevant
+    adjustDegrees = 0; // if the system does not need its degrees adjusted, then that is okay  // irrelevant in BR
     setuplintolinEval_d(T,preprocFile, degreeFile, dummyProg, rank, patchType, ssType, T->MPType, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix_full_prec, W);
 //  }
 //  else
@@ -662,7 +666,7 @@ int lin_to_lin_setup_d(FILE **OUT, char *outName,
 //    setuplintolinEval_d(T,preprocFile, degreeFile, dummyProg, rank, patchType, ssType, T->MPType, &ED->preProcData, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix_full_prec, W);
 //  }
 	
-	printf("leaving setup_d");
+//	printf("leaving setup_d");
 	
   return numOrigVars;
 }
@@ -692,26 +696,24 @@ int lin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv,
 	
 	vec_d patchValues; init_vec_d(patchValues, 0);
 	vec_d temp_function_values; init_vec_d(temp_function_values,0);
-	vec_d AtimesF; init_vec_d(AtimesF,0); // declare  // initialize
-	vec_d vars_times_curr_linear; init_vec_d(vars_times_curr_linear,0); 
-	vec_d vars_times_old_linear; init_vec_d(vars_times_old_linear,0); 
-	vec_d one_minus_s_times_current_linear; init_vec_d(one_minus_s_times_current_linear,0);
-	vec_d gamma_s_times_old_linear; init_vec_d(gamma_s_times_old_linear,0);
+	vec_d AtimesF; init_vec_d(AtimesF,BED->n_minusone_randomizer_matrix->rows); AtimesF->size = BED->n_minusone_randomizer_matrix->rows;// declare  // initialize
+	vec_d vars_times_curr_linear; init_vec_d(vars_times_curr_linear,BED->num_variables);  vars_times_curr_linear->size = BED->num_variables;
+	vec_d vars_times_old_linear; init_vec_d(vars_times_old_linear,BED->num_variables);  vars_times_old_linear->size =  BED->num_variables;
+	vec_d one_minus_s_times_current_linear; init_vec_d(one_minus_s_times_current_linear,BED->num_variables); one_minus_s_times_current_linear->size = BED->num_variables;
+	vec_d gamma_s_times_old_linear; init_vec_d(gamma_s_times_old_linear,BED->num_variables); gamma_s_times_old_linear->size = BED->num_variables;
 	
-	mat_d temp_jacobian_functions; init_mat_d(temp_jacobian_functions,0,0);
+	mat_d temp_jacobian_functions; init_mat_d(temp_jacobian_functions,BED->n_minusone_randomizer_matrix->cols,BED->num_variables);
+		temp_jacobian_functions->rows = BED->n_minusone_randomizer_matrix->cols; temp_jacobian_functions->cols = BED->num_variables;
 	mat_d temp_jacobian_parameters; init_mat_d(temp_jacobian_parameters,0,0);
 	mat_d Jv_Patch; init_mat_d(Jv_Patch, 0, 0);
-	mat_d AtimesJ; init_mat_d(AtimesJ,1,1);
-	
+	mat_d AtimesJ; init_mat_d(AtimesJ,BED->n_minusone_randomizer_matrix->rows,BED->num_variables);
+		AtimesJ->rows = BED->n_minusone_randomizer_matrix->rows; AtimesJ->cols = BED->num_variables;
 	
 	
 	//set the sizes
-	change_size_vec_d(vars_times_old_linear,BED->num_variables); vars_times_old_linear->size =  BED->num_variables;
-	change_size_vec_d(vars_times_curr_linear,BED->num_variables); vars_times_curr_linear->size = BED->num_variables;
 	change_size_vec_d(funcVals,BED->num_variables); funcVals->size = BED->num_variables;
   change_size_mat_d(Jv, BED->num_variables, BED->num_variables); Jv->rows = Jv->cols = BED->num_variables; //  -> this should be square!!!
-	change_size_vec_d(one_minus_s_times_current_linear,BED->num_variables); one_minus_s_times_current_linear->size = BED->num_variables;
-	change_size_vec_d(gamma_s_times_old_linear,BED->num_variables); gamma_s_times_old_linear->size = BED->num_variables;
+
 	
 	
 
@@ -832,21 +834,11 @@ int lin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv,
 	// Jp = -current_linear_times_vars + gamma*old_linear_times_vars
 	set_zero_d(&Jp->entry[BED->num_variables-2][0]);
 	
-	for (ii=0; ii<BED->num_variables; ii++) {
-		
-		
-		mul_d(temp,&BED->current_linear->coord[ii],&current_variable_values->coord[ii]);
-		neg_d(temp,temp);
-		
-		
-		mul_d(temp2,&BED->old_linear->coord[ii],&current_variable_values->coord[ii]);
-		mul_d(temp2,BED->gamma,temp2);
-		
-		add_d(temp,temp,temp2); // add the two temps together.
-		
-		//add to the Jp entry
-		add_d(&Jp->entry[BED->num_variables-2][0],&Jp->entry[BED->num_variables-2][0],temp);
-	}
+	dot_product_d(temp,BED->current_linear,current_variable_values);
+	neg_d(temp,temp);
+	dot_product_d(temp2,BED->old_linear,current_variable_values);
+	mul_d(temp2,temp2,BED->gamma);
+	add_d(&Jp->entry[BED->num_variables-2][0],temp,temp2);
 	
 	
 	
@@ -869,7 +861,7 @@ int lin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv,
 	
 	//uncomment to see screen output of important variables at each solve step.
 //	printf("gamma = %lf+1i*%lf;\n", BED->gamma->r, BED->gamma->i);
-//
+//	printf("time = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
 //	print_matrix_to_screen_matlab( temp_jacobian_functions,"jac");
 //	print_point_to_screen_matlab(current_variable_values,"currvars");
 //	print_point_to_screen_matlab(BED->current_linear,"new");
@@ -880,8 +872,9 @@ int lin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv,
 //	print_matrix_to_screen_matlab(BED->n_minusone_randomizer_matrix,"n_minusone_randomizer_matrix");
 //
 //	mypause();
-//	
+//
 
+//	fprintf(BED->FOUT,"jamesbrown\n");
 	
 	clear_vec_d(patchValues);
 	clear_vec_d(temp_function_values);
@@ -956,6 +949,7 @@ void lintolin_eval_clear_d(lintolin_eval_data_d *ED, int clearRegen, int MPType)
 	clear_mat_d(ED->n_minusone_randomizer_matrix);
 	
 	
+//	fclose(ED->FOUT);
 	
   return;
 }
@@ -1258,26 +1252,7 @@ void setuplintolinEval_d(tracker_config_t *T,char preprocFile[], char degreeFile
 	}
 
 	
-//	print_matrix_to_screen_matlab(BED->patch.patchCoeff,"userpatch");
 
-//     this commented code is for checking that the first point solves the patch equation.   it damn well should!
-//	vec_d patchValues;
-//	init_vec_d(patchValues,0);
-//	point_d parVals;
-//	init_vec_d(parVals,0);
-//	vec_d parDer;
-//	init_vec_d(parDer,0);
-//	mat_d Jv_Patch;
-//	init_mat_d(Jv_Patch,0,0);
-//	mat_d Jp;
-//	init_mat_d(Jp,0,0);
-//	comp_d pathVars;
-//	set_one_d(pathVars);
-//	patch_eval_d(    patchValues, parVals, parDer, Jv_Patch, Jp, W.W.pts[0], pathVars, &BED->patch);  // Jp is ignored
-//	
-//	print_point_to_screen_matlab(patchValues,"patchvalues");
-//	print_point_to_screen_matlab(W.W.pts[0],"initialpoint");
-////	mypause();
 	
 	
 	BED->SLP = dummyProg;
@@ -1308,7 +1283,7 @@ void setuplintolinEval_d(tracker_config_t *T,char preprocFile[], char degreeFile
 
 	
 	get_comp_rand_d(BED->gamma); // set gamma to be random complex value
-
+//	set_one_d(BED->gamma);
 	
 	if (MPType == 2)
   { // using AMP - initialize using 16 digits & 64-bit precison
@@ -1356,10 +1331,41 @@ void setuplintolinEval_d(tracker_config_t *T,char preprocFile[], char degreeFile
 			set_mp(&BED->BED_mp->patch.patchCoeff->entry[0][ii],&W.patch_mp[0]->coord[ii]);
 			mp_to_rat(BED->BED_mp->patch.patchCoeff_rat[0][ii],&W.patch_mp[0]->coord[ii]);
 		}
-
+		for (ii = 0; ii < BED->num_variables ; ii++)
+		{
+			mp_to_d(&BED->patch.patchCoeff->entry[0][ii],&W.patch_mp[0]->coord[ii]);
+		}
 		
   }//re: if mptype==2
 
+	
+	
+	//	//     this commented code is for checking that the first point solves the patch equation.   it damn well should!
+//	print_matrix_to_screen_matlab(BED->patch.patchCoeff,"userpatch");
+//	
+//	vec_d patchValues;
+//	init_vec_d(patchValues,0);
+//	point_d parVals;
+//	init_vec_d(parVals,0);
+//	vec_d parDer;
+//	init_vec_d(parDer,0);
+//	mat_d Jv_Patch;
+//	init_mat_d(Jv_Patch,0,0);
+//	mat_d Jp;
+//	init_mat_d(Jp,0,0);
+//	comp_d pathVars;
+//	set_one_d(pathVars);
+//	patch_eval_d(    patchValues, parVals, parDer, Jv_Patch, Jp, W.W.pts[0], pathVars, &BED->patch);  // Jp is ignored
+//
+//	print_point_to_screen_matlab(patchValues,"patchvalues");
+//	print_point_to_screen_matlab(W.W.pts[0],"initialpoint");
+//	mypause();
+	
+	
+	
+//	BED->FOUT = safe_fopen_write("pathhistory_lintolin");
+//	printf("opened pathhistory\n");
+//	mypause();
 	
 	
   return;
@@ -1484,12 +1490,19 @@ void change_lintolin_eval_prec_mp(int new_prec, lintolin_eval_data_mp *BED)
 		setprec_mp(BED->gamma, new_prec);
 		mpf_set_q(BED->gamma->r, BED->gamma_rat[0]);
 		mpf_set_q(BED->gamma->i, BED->gamma_rat[1]);
+		
+		change_prec_point_mp(BED->current_linear,new_prec);
+		vec_cp_mp(BED->current_linear, BED->current_linear_full_prec);
+		
+		change_prec_point_mp(BED->old_linear,new_prec);
+		vec_cp_mp(BED->old_linear, BED->old_linear_full_prec);
+		
+		change_prec_mat_mp(BED->n_minusone_randomizer_matrix,new_prec);
+		mat_cp_mp(BED->n_minusone_randomizer_matrix,BED->n_minusone_randomizer_matrix_full_prec);
+		
 	}
 	
-	
-	vec_cp_mp(BED->current_linear, BED->current_linear_full_prec);
-	vec_cp_mp(BED->old_linear, BED->old_linear_full_prec);
-	mat_cp_mp(BED->n_minusone_randomizer_matrix,BED->n_minusone_randomizer_matrix_full_prec);
+
 	
 
 
@@ -2220,22 +2233,26 @@ int lin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_m
 	
 	// Jp = -current_linear_times_vars + gamma*old_linear_times_vars
 	set_zero_mp(&Jp->entry[BED->num_variables-2][0]);
-	
-	for (ii=0; ii<BED->num_variables; ii++) {
-		
-		
-		mul_mp(temp,&BED->current_linear->coord[ii],&current_variable_values->coord[ii]);
-		neg_mp(temp,temp);
-		
-		
-		mul_mp(temp2,&BED->old_linear->coord[ii],&current_variable_values->coord[ii]);
-		mul_mp(temp2,BED->gamma,temp2);
-		
-		add_mp(temp,temp,temp2); // add the two temps together.
-		
-		//add to the Jp entry
-		add_mp(&Jp->entry[BED->num_variables-2][0],&Jp->entry[BED->num_variables-2][0],temp);
-	}
+	dot_product_mp(temp,BED->current_linear,current_variable_values);
+	neg_mp(temp,temp);
+	dot_product_mp(temp2,BED->old_linear,current_variable_values);
+	mul_mp(temp2,temp2,BED->gamma);
+	add_mp(&Jp->entry[BED->num_variables-2][0],temp,temp2);
+//	for (ii=0; ii<BED->num_variables; ii++) {
+//		
+//		
+//		mul_mp(temp,&BED->current_linear->coord[ii],&current_variable_values->coord[ii]);
+//		neg_mp(temp,temp);
+//		
+//		
+//		mul_mp(temp2,&BED->old_linear->coord[ii],&current_variable_values->coord[ii]);
+//		mul_mp(temp2,BED->gamma,temp2);
+//		
+//		add_mp(temp,temp,temp2); // add the two temps together.
+//		
+//		//add to the Jp entry
+//		add_mp(&Jp->entry[BED->num_variables-2][0],&Jp->entry[BED->num_variables-2][0],temp);
+//	}
 	
 	
 	
@@ -2263,8 +2280,7 @@ int lin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_m
 	
 	//	printf("gamma = %lf+1i*%lf;\n", BED->gamma->r, BED->gamma->i);
 	//
-//	printf("alloc = %d",parVals->alloc_size);
-	
+
 //	print_point_to_screen_matlab_mp(parVals,"parVals");
 //	print_matrix_to_screen_matlab_mp( temp_jacobian_functions,"jac");
 //	print_point_to_screen_matlab_mp(current_variable_values,"currvars");

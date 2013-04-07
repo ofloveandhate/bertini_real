@@ -11,14 +11,14 @@ int main(int argC, char *args[])
   int rV,num_vars=0,sc;  //1=self-conjugate; 0=not
   char *inputName = NULL, *witnessSetName = NULL,*input_deflated_Name=NULL;
   curveDecomp_d C;  //new data type; stores vertices, edges, etc.
-  vec_d pi;  //random projection
+  vec_mp pi;  //random projection
   witness_set_d Wuser, Wnew;
 	int max_deflations = 10,strLength;
 	int num_deflations, *deflation_sequence = NULL;
 	int ii;  // counters
 	
 	
-	
+
 	////
 	//  begin the actual program
 	////
@@ -29,8 +29,8 @@ int main(int argC, char *args[])
 	//default inputName = "input"
 	//default witnessSetName = "witness_set"
   
-	
-	srand(time(NULL));
+	srand(0);
+//	srand(time(NULL));
 	// essentials for using the bertini parser
 	prog_t SLP;
 	
@@ -71,9 +71,11 @@ int main(int argC, char *args[])
 	
 	printf("parsing witness set\n");
 	witnessSetParse(&Wuser,witnessSetName,num_vars);
-	Wuser.MPType =MPType;
+	Wuser.num_var_gps = num_var_gps;
+	Wuser.MPType = MPType;
 	witnessSetParse(&Wnew, witnessSetName,num_vars);  // Wnew same as Wuser, except for functions. (needs to be updated)
-	Wnew.MPType =MPType;
+	Wnew.MPType = MPType;
+	Wnew.num_var_gps = num_var_gps;
 	
 	write_dehomogenized_coordinates(Wuser, "witness_points_dehomogenized");
 	
@@ -89,16 +91,14 @@ int main(int argC, char *args[])
 	
 	
 	
-	// initialize the projection pi.  for now, get random projection.  would prefer to get it from a file.
-	init_vec_d(pi,num_vars);
-	pi->size = num_vars;
-	for (ii=0; ii<num_vars; ii++) {
-		get_comp_rand_real_d(&pi->coord[ii]);
-	}
+
 	
 	
 	
 
+	Wuser.incidence_number = get_component_number(Wuser,num_vars,input_deflated_Name);
+	Wnew.incidence_number = Wuser.incidence_number;
+	
 	
 	
 	printf("checking if component is self-conjugate\n");
@@ -118,7 +118,7 @@ int main(int argC, char *args[])
 	
 	
 	
-	
+	//regenerate the various files, since we ran bertini since then
 	parse_input(input_deflated_Name, &trackType, &MPType, &genType, &userHom, &currentSeed, &sharpenOnly, &needToDiff, &remove_temp, useParallelDiff, my_id, num_processes, headnode);
 	
 	
@@ -132,6 +132,34 @@ int main(int argC, char *args[])
 	//q: what could change?
 	
 	//temp answer:  the functions, but not the points, or the slices.
+	
+	
+	// initialize the projection pi.  for now, get random projection.  would prefer to get it from a file.
+	init_vec_mp(pi,num_vars);
+	pi->size = num_vars; // should include the homogeneous variable
+	
+	
+//	if (num_vars==3){
+//		for (ii=0; ii<num_vars; ii++) {
+//			get_comp_rand_real_d(&pi->coord[ii]);
+//		}
+//	}
+//	else
+//	{
+		comp_d t; t->r = 2.0; t->i = 0;
+		d_to_mp(&pi->coord[0],t);
+		
+		set_zero_mp(&pi->coord[1]);
+		set_one_mp(&pi->coord[2]);
+	for (ii=3; ii<num_vars; ii++) {
+		set_zero_mp(&pi->coord[3]);
+	}
+//	}
+
+	
+	
+
+
 	
 	
 	printf("init C\n");
@@ -152,12 +180,15 @@ int main(int argC, char *args[])
 	printf("\n*\ndone with case\n*\n");
 
 	
-        set_zero_d(&(pi->coord[0]));
-        set_one_d(&(pi->coord[1]));
-        set_zero_d(&(pi->coord[2]));
-  
+//        set_zero_d(&(pi->coord[0]));
+//        set_one_d(&(pi->coord[1]));
+//        set_zero_d(&(pi->coord[2]));
+		
 	
-        printf("before V1"); fflush(stdout);
+	vec_d pi_d; init_vec_d(pi_d,num_vars); pi_d->size = num_vars;
+	vec_mp_to_d(pi_d,pi);
+	
+        printf("before V1\n"); fflush(stdout);
         C.num_V1=2;
         C.V1=(vertex_d *)bmalloc(C.num_V1*sizeof(vertex_d));
 
@@ -171,7 +202,7 @@ int main(int argC, char *args[])
         set_neg_one_d(&(C.V1[1].pt->coord[1]));
         set_zero_d(&(C.V1[1].pt->coord[2]));
 
-        printf("after V1");fflush(stdout);
+        printf("after V1\n");fflush(stdout);
         C.num_E=2;
 
         C.E=(edge_d *)bmalloc(C.num_E*sizeof(edge_d));
@@ -181,7 +212,7 @@ int main(int argC, char *args[])
         set_zero_d(&(C.E[0].midpt->coord[1]));
         set_one_d(&(C.E[0].midpt->coord[2]));
         init_point_d(C.E[1].pi,num_vars);
-        point_cp_d(C.E[0].pi,pi);
+        point_cp_d(C.E[0].pi,pi_d);
 
 
         C.E[1].left=0;        C.E[1].right=1;
@@ -190,7 +221,7 @@ int main(int argC, char *args[])
         set_zero_d(&(C.E[1].midpt->coord[1]));
         set_neg_one_d(&(C.E[1].midpt->coord[2]));
         init_point_d(C.E[1].pi,num_vars);
-        point_cp_d(C.E[1].pi,pi);
+        point_cp_d(C.E[1].pi,pi_d);
 
 	
 	Output_Main(inputName, input_deflated_Name,deflation_sequence, num_vars, C);
