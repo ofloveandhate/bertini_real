@@ -19,8 +19,17 @@ int detjac_to_detjac_solver_main(int MPType,
 																 vec_mp new_projection_full_prec,
 																 witness_set_d *W_new)
 {
+	W_new->num_variables = W.num_variables;
 	
 	cp_patches(W_new,W); // copy the patches over from the original witness set.  for completeness
+	
+	W_new->num_linears = (1);
+	W_new->L = (vec_d *)bmalloc((1)*sizeof(vec_d)); init_vec_d(W_new->L[0],W.num_variables);
+	W_new->L_mp = (vec_mp *)bmalloc((1)*sizeof(vec_mp)); init_vec_mp(W_new->L_mp[0],W.num_variables);
+	
+	
+	vec_cp_mp(W_new->L_mp[0],new_projection_full_prec);
+	vec_mp_to_d(W_new->L[0],new_projection_full_prec);
 	
 	
 	if (MPType==1){
@@ -315,19 +324,16 @@ void detjac_to_detjac_track_d(trackingStats *trackCount,
 	
 	
 	//initialize the structure for holding the produced data
-	W_new->num_linears = (1);
-	W_new->L = (vec_d *)bmalloc((1)*sizeof(vec_d));
-	W_new->L_mp = (vec_mp *)bmalloc((1)*sizeof(vec_mp));
-	
+
 	
 	W_new->W.num_pts = 0;
   W_new->W.pts=(point_d *)bmalloc(W.W.num_pts*sizeof(point_d));
 	
 	W_new->W_mp.num_pts = 0;
   W_new->W_mp.pts=(point_mp *)bmalloc(W.W.num_pts*sizeof(point_mp));
+
 	
-	
-  W_new->num_variables = W.num_variables;
+
 	
 	
 	trackCount->numPoints = W.W.num_pts;
@@ -394,7 +400,7 @@ void detjac_to_detjac_track_d(trackingStats *trackCount,
 		
 		
 		if (EG->retVal!=0) {
-			printf("\nretVal = %d\nthere was a path failure tracking witness point %d\n\n",EG->retVal,ii);
+			printf("\nretVal = %d\nthere was a path failure tracking witness point %d in detjac_to_detjac\n\n",EG->retVal,ii);
 			print_path_retVal_message(EG->retVal);
 			
 			//			exit(EG->retVal);
@@ -466,7 +472,7 @@ void detjac_to_detjac_track_d(trackingStats *trackCount,
 	
 	
 	W_new->W.num_pts=solution_counter;
-	printf("found %d solutions after the regeneration step\n",solution_counter);
+	printf("found %d solutions after the detjac_to_detjac regeneration step\n",solution_counter);
 	
 	
 	//should i re-size the W_new->W_*.pts structures according to the number of solutions???
@@ -679,7 +685,7 @@ int detjac_to_detjac_setup_d(FILE **OUT, char *outName,
 //this derived from basic_eval_d
 int detjac_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp, point_d current_variable_values, comp_d pathVars, void const *ED)
 { // evaluates a special homotopy type, built for bertini_real
-	printf("t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
+//	printf("t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
 	
   detjactodetjac_eval_data_d *BED = (detjactodetjac_eval_data_d *)ED; // to avoid having to cast every time
 	
@@ -782,8 +788,7 @@ int detjac_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat
 	//now TAKE THE DETERMINANT of tempmat.
 //	print_matrix_to_screen_matlab(tempmat,"det2");
 	take_determinant_d(detjac_new,tempmat); // the determinant goes into detjac
-	mul_d(temp,detjac_new,one_minus_s);
-	
+	mul_d(temp2,detjac_new,one_minus_s);
 	
 	add_d(&funcVals->coord[BED->num_variables-2],temp,temp2);  // (1-s)detjac_new + gamma*s detjac_old
 
@@ -816,9 +821,9 @@ int detjac_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat
 																BED->SLP,
 																BED->n_minusone_randomizer_matrix); // input parameters for the method
 
-	print_point_to_screen_matlab(current_variable_values,"current_variable_values");
+//	print_point_to_screen_matlab(current_variable_values,"current_variable_values");
 	
-	print_matrix_to_screen_matlab(Jv_detjac_new,"Jv_new");
+//	print_matrix_to_screen_matlab(Jv_detjac_new,"Jv_new");
 //	printf("%lf %lf\n",Jv_detjac_old->entry[0][0].r, Jv_detjac_old->entry[0][0].i);
 //	printf("%lf %lf\n",Jv_detjac_new->entry[0][0].r, Jv_detjac_new->entry[0][0].i);
 //	mypause();
@@ -911,10 +916,10 @@ int detjac_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat
 //	print_matrix_to_screen_matlab( AtimesJ,"jac");
 //	print_point_to_screen_matlab(current_variable_values,"currvars");
 
-	print_point_to_screen_matlab(BED->new_projection,"projnew");
+//	print_point_to_screen_matlab(BED->new_projection,"projnew");
 //	print_matrix_to_screen_matlab(Jv_detjac,"Jv_detjac");
 //	print_point_to_screen_matlab(linprod_derivative,"linprod_derivative");
-	print_point_to_screen_matlab(funcVals,"F");
+//	print_point_to_screen_matlab(funcVals,"F");
 //	print_point_to_screen_matlab(parVals,"parVals");
 //	print_point_to_screen_matlab(parDer,"parDer");
 //	print_matrix_to_screen_matlab(Jv,"Jv");
@@ -924,7 +929,7 @@ int detjac_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat
 	//these values are set in this function:  point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp
 //	print_matrix_to_screen_matlab(BED->n_minusone_randomizer_matrix,"n_minusone_randomizer_matrix");
 //
-	mypause();
+//	mypause();
 //
 
 	
@@ -1805,7 +1810,7 @@ void detjac_to_detjac_track_mp(trackingStats *trackCount,
 	
   int (*curr_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = NULL;
 	
-  curr_eval_mp = &detjac_to_detjac_eval_mp; // DAB  // lol send them to the same place for now.
+  curr_eval_mp = &detjac_to_detjac_eval_mp; //
 	
 	
 	point_data_mp *startPts = NULL;
@@ -1841,15 +1846,6 @@ void detjac_to_detjac_track_mp(trackingStats *trackCount,
 	
 	
 	//initialize the structure for holding the produced data
-	W_new->num_linears = 1;
-	W_new->L_mp = (vec_mp *)bmalloc(1*sizeof(vec_mp));
-	W_new->L = (vec_d *)bmalloc(1*sizeof(vec_d));
-	init_vec_d(W_new->L[0],W_new->num_variables); W_new->L[0]->size = W_new->num_variables;
-	
-	init_vec_mp(W_new->L_mp[0],W_new->num_variables); W_new->L_mp[0]->size = W_new->num_variables;
-	
-	vec_cp_mp(W_new->L_mp[0],ED->old_projection);
-	vec_mp_to_d(W_new->L[0],ED->old_projection);
 	
 	W_new->W.num_pts=0;
   W_new->W.pts=(point_d *)bmalloc(W.W.num_pts*sizeof(point_d));
@@ -1946,7 +1942,7 @@ void detjac_to_detjac_track_mp(trackingStats *trackCount,
 	
 	
 	W_new->W.num_pts=solution_counter;
-	printf("found %d solutions after the regeneration step\n",solution_counter);
+	printf("found %d solutions after the detjac_to_detjac regeneration step\n",solution_counter);
 	
 	
 	
@@ -2205,12 +2201,11 @@ int detjac_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer,
 	//now TAKE THE DETERMINANT of tempmat.
 	//	print_matrix_to_screen_matlab(tempmat,"det2");
 	take_determinant_mp(detjac_new,tempmat); // the determinant goes into detjac
-	mul_mp(temp,detjac_new,one_minus_s);
+	mul_mp(temp2,detjac_new,one_minus_s);
 	
 	
 	add_mp(&funcVals->coord[BED->num_variables-2],temp,temp2);  // (1-s)detjac_new + gamma*s detjac_old
-	
-	
+
 	
 	
 	//set the PATCH values
@@ -2239,11 +2234,8 @@ int detjac_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer,
 																BED->SLP,
 																BED->n_minusone_randomizer_matrix); // input parameters for the method
 	
-	print_point_to_screen_matlab_mp(current_variable_values,"current_variable_values");
-	print_matrix_to_screen_matlab_mp(Jv_detjac_new,"Jv_new");
-	//	printf("%lf %lf\n",Jv_detjac_old->entry[0][0].r, Jv_detjac_old->entry[0][0].i);
-	//	printf("%lf %lf\n",Jv_detjac_new->entry[0][0].r, Jv_detjac_new->entry[0][0].i);
-	//	mypause();
+
+	
 	//////////////
 	//
 	// SET THE FINAL RETURNED JACOBIAN ENTRIES.
@@ -2332,15 +2324,14 @@ int detjac_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer,
 	
 //	print_matrix_to_screen_matlab( AtimesJ,"jac");
 //	print_point_to_screen_matlab(current_variable_values,"currvars");
-print_comp_mp_matlab(pathVars,"pathvars");
+//print_comp_mp_matlab(pathVars,"pathvars");
 
 
 //	print_matrix_to_screen_matlab(Jv_detjac,"Jv_detjac");
-//	print_point_to_screen_matlab(linprod_derivative,"linprod_derivative");
-//	print_point_to_screen_matlab(funcVals,"F");
+//	print_point_to_screen_matlab_mp(funcVals,"F");
 //	print_point_to_screen_matlab(parVals,"parVals");
 //	print_point_to_screen_matlab(parDer,"parDer");
-//	print_matrix_to_screen_matlab(Jv,"Jv");
+//	print_matrix_to_screen_matlab_mp(Jv,"Jv");
 //	print_matrix_to_screen_matlab(Jp,"Jp");
 
 

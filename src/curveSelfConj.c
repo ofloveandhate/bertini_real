@@ -244,17 +244,11 @@ void computeCurveSelfConj(char * inputFile,
 	
 	printf("done sorting membership\n");
 	
-	print_witness_set_to_screen(W_linprod_good);
+//	print_witness_set_to_screen(W_linprod_good);
 	
 //	W_linprod_good should have only the points from W_in which lie on the correct component.
 	
-//	mypause();
-	
-	
-//	check_detjac( W_linprod, SLP, T, n_minusone_randomizer_matrix, b);
-	
-//	printf("bertini_real poorly developed after this point\nyou may proceed, but\nprogram will probably crash.\n\n");
-//	mypause();
+
 	
 	
 	
@@ -265,13 +259,19 @@ void computeCurveSelfConj(char * inputFile,
 															 pi,
 															 &W_detjacdetjac);
 	
+//	print_witness_set_to_screen(W_detjacdetjac);
+	write_dehomogenized_coordinates(W_detjacdetjac,"detjac_solns");
+	
+	vec_d pi_d;  init_vec_d(pi_d,W.num_variables);
+	vec_mp_to_d(pi_d,pi);
+	check_detjac( W_detjacdetjac, SLP, T, n_minusone_randomizer_matrix, pi_d);
 	
 	clear_witness_set(W_linprod);
 	clear_witness_set(W_lintolin);
-	
+	clear_witness_set(W_detjacdetjac);
 	
   // 5) compute h_o, get critical points
-  // isn't this what we are doing in 4)?
+	
 	
 	
 	
@@ -396,7 +396,7 @@ void check_detjac(witness_set_d W, prog_t SLP, tracker_config_t T, mat_d n_minus
 			set_d(&tempmat->entry[W.num_variables-2][jj],&projection->coord[jj]); // copy in the projection
 		}
 		
-		//copy in the jacocian of the patch equation
+		//copy in the jacobian of the patch equation
 		for (jj=0; jj<W.num_variables; ++jj) {
 			set_d(&tempmat->entry[W.num_variables-1][jj],&Jv_Patch->entry[0][jj]); //  copy in the patch jacobian
 		}
