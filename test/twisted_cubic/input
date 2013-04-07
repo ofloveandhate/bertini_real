@@ -1,0 +1,23 @@
+CONFIG
+
+endgamenum: 1;
+ODEPREDICTOR: 5;
+tracktype:1;
+mptype: 0;
+%tracktolbeforeeg: 1e-10;
+%precision: 1024;
+%minstepsizebeforeeg: 1e-16;
+%minstepsizeduringeg: 1e-16;
+%maxNewtonIts: 4;
+END;
+
+INPUT
+
+variable_group x,y,z;
+function f1, f2, f3;
+
+f1=(y-x^2);
+f2=(z-x^3);
+f3=(z-x^3)*(y-x^2); %y^2-x*z
+
+END;
