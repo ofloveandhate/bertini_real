@@ -146,11 +146,11 @@ int main(int argC, char *args[])
 //	}
 //	else
 //	{
-		comp_d t; t->r = 2.0; t->i = 0;
-		d_to_mp(&pi->coord[0],t);
-		
-		set_zero_mp(&pi->coord[1]);
-		set_one_mp(&pi->coord[2]);
+	comp_d t; t->r = 2.0; t->i = 0;
+	d_to_mp(&pi->coord[0],t);
+	
+	set_zero_mp(&pi->coord[1]);
+	set_one_mp(&pi->coord[2]);
 	for (ii=3; ii<num_vars; ii++) {
 		set_zero_mp(&pi->coord[3]);
 	}
@@ -211,7 +211,7 @@ int main(int argC, char *args[])
         set_one_d(&(C.E[0].midpt->coord[0]));
         set_zero_d(&(C.E[0].midpt->coord[1]));
         set_one_d(&(C.E[0].midpt->coord[2]));
-        init_point_d(C.E[1].pi,num_vars);
+        init_point_d(C.E[0].pi,num_vars);
         point_cp_d(C.E[0].pi,pi_d);
 
 
@@ -224,12 +224,14 @@ int main(int argC, char *args[])
         point_cp_d(C.E[1].pi,pi_d);
 
 	
-	Output_Main(inputName, input_deflated_Name,deflation_sequence, num_vars, C);
+//	Output_Main(inputName, input_deflated_Name,deflation_sequence, num_vars, C);
 	
 	
 	// clear memory
 	free(inputName);
 	free(witnessSetName);
+	
+//	printf("clearing witness sets\n");
 	
 	clear_witness_set(Wuser);
 	clear_witness_set(Wnew);
