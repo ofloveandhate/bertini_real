@@ -371,7 +371,7 @@ void detjac_to_detjac_track_d(trackingStats *trackCount,
 	{ // get current thread number
 		oid = thread_num();
 		
-		printf("detjac_to_detjac tracking path %d\n",ii);
+		printf("detjac_to_detjac tracking path %d of %d\n",ii,W.W.num_pts);
 		startPointIndex = ii;
 		
 		
@@ -1873,7 +1873,7 @@ void detjac_to_detjac_track_mp(trackingStats *trackCount,
 	for (ii = 0; ii < W.W_mp.num_pts; ii++)
 	{ // get current thread number
 		oid = thread_num();
-		printf("detjac_to_detjac tracking path %d\n",ii);
+		printf("detjac_to_detjac tracking path %d of %d\n",ii,W.W.num_pts);
 		// print the header of the path to OUT
 		//			printPathHeader_mp(OUT_copy[oid], &startPts[startPointIndex], &T_copy[oid], solution_counter, &BED_copy[oid], eval_func_mp);
 		detjac_to_detjac_track_path_mp(solution_counter, &EG[oid], &startPts[ii], OUT_copy[oid], MIDOUT_copy[oid], &T_copy[oid], &BED_copy[oid], curr_eval_mp, change_prec, find_dehom); //curr_eval_d,

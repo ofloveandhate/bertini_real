@@ -209,7 +209,7 @@ void computeCurveSelfConj(char * inputFile,
 
 	//add the W to Wnew.
 	merge_witness_sets(&W_lintolin,Wtemp,W);
-	printf("merged witness sets\n");
+
 	clear_witness_set(Wtemp);
 	
 //	check_patch_values(W_lintolin);
@@ -217,11 +217,10 @@ void computeCurveSelfConj(char * inputFile,
 	
 	
 	witness_set_d W_linprod; init_witness_set_d(&W_linprod);
-	
+
 	witness_set_d W_detjacdetjac; init_witness_set_d(&W_detjacdetjac);
 	
-	// a temporary warning.
-	
+
 	cp_names(&W_lintolin,W);
 	
 	linprod_to_detjac_solver_main(T.MPType,
@@ -235,25 +234,28 @@ void computeCurveSelfConj(char * inputFile,
 	//
 	//	print_witness_set_to_screen(W_linprod);
 	write_dehomogenized_coordinates(W_linprod,"member_points");
-	
+	write_dehomogenized_coordinates(W_linprod,"linprod_solns");
 	witness_set_d W_linprod_good;
 	init_witness_set_d(&W_linprod_good);
-	W_linprod.incidence_number = W.incidence_number;
+	W_linprod.incidence_number = W.incidence_number; // copy over from the input.  note that the incidence number may be different from the component number
 	
+	
+	//	W_linprod_good should have only the points from W_in which lie on the correct component.
 	sort_for_membership(inputFile, &W_linprod_good, W_linprod);
 	
 	printf("done sorting membership\n");
 	
 //	print_witness_set_to_screen(W_linprod_good);
 	
-//	W_linprod_good should have only the points from W_in which lie on the correct component.
 	
+	
+
 
 	
 	
 	
 	detjac_to_detjac_solver_main(T.MPType,
-															 W_linprod,
+															 W_linprod_good,
 															 n_minusone_randomizer_matrix_full_prec,
 															 b_mp,
 															 pi,
@@ -374,7 +376,6 @@ void check_detjac(witness_set_d W, prog_t SLP, tracker_config_t T, mat_d n_minus
 	
 	set_zero_d(pathVars);
 	
-	printf("found %d points\n",W.W.num_pts);
 	for (ii=0; ii<W.W.num_pts; ii++) {
 		
 		
@@ -403,20 +404,10 @@ void check_detjac(witness_set_d W, prog_t SLP, tracker_config_t T, mat_d n_minus
 		
 		//now TAKE THE DETERMINANT of tempmat.
 		printf("point %d\n",ii);
-		print_matrix_to_screen_matlab( tempmat,"detjac");
+		print_matrix_to_screen_matlab( tempmat,"detjac is det of");
 		take_determinant_d(detjac,tempmat); // the determinant goes into detjac
-		printf("%le+1i*%le\n",detjac->r,detjac->i);
-		mypause();
-		//#ifdef verbose
-		//		print_point_to_screen_matlab(W.W.pts[0], "W0");
-		//
-		//		printf("\n\njacobian values at witness point 0:\n");
-		//		print_matrix_to_screen_matlab(Jv, "jacobian");
-		//		//working out of function_main.c inside function_eval_main
-		//
-		//		print_point_to_screen_matlab(pi, "pi");
-		//
-		//#endif
+		printf("detjac = %le+1i*%le\n",detjac->r,detjac->i);
+//		mypause();
 		
 	}
 	return;
@@ -620,10 +611,11 @@ void sort_for_membership(char * input_file,
 	is_unique  = (int *)bmalloc(num_pts_on_component*sizeof(int));
 	for (ii = 0; ii<num_pts_on_component; ++ii) {
 		curr_uniqueness = 1;
-		if (ii!= (num_pts_on_component-1) ) { // the last point in unique...  always
+		if (ii!= (num_pts_on_component-1) ) { // the last point is unique...  always
 			for (jj=ii+1; jj<num_pts_on_component; ++jj) {
 				if (isSamePoint(points_on_component[ii],NULL,52,points_on_component[jj],NULL,52,1e-8)){
 					curr_uniqueness = 0;
+					printf("the following two points are not unique:\n");
 					print_point_to_screen_matlab(points_on_component[ii],"left");
 					print_point_to_screen_matlab(points_on_component[jj],"right");
 				}
@@ -670,10 +662,16 @@ void sort_for_membership(char * input_file,
 		}
 	}
 	
+	printf("check: %d\n",counter==num_good_pts);
+
+		//clear the memory
 	
+	for (ii=0; ii<num_pts_on_component; ++ii) {
+		clear_vec_d(points_on_component[ii]);
+	}
+	free(points_on_component);
 	
-	
-	//clear the memory
+
 	free(is_unique);
   free(declarations);
 	
@@ -683,7 +681,7 @@ void sort_for_membership(char * input_file,
 	remove("incidence_matrix");
 //	remove("member_points");
 
-	
+	//move files back into place
 	rename("config.bak","config");
 	rename("arr.out.bak","arr.out");
 	rename("num.out.bak","num.out");
