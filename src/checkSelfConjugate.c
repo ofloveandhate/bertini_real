@@ -329,16 +329,16 @@ void read_incidence_matrix_wrt_number(int *component_numbers, int given_incidenc
 	//	%                0 if given point is not on given component;
 	//	%                1 else .
 	for (jj=0; jj<num_pts; jj++) {
-		component_number=-10;
+		component_number=0;
 		for(ii=0;ii<total_num_components;ii++)  // i don't know if this is correct if there is more than one nonempty codimension.
 		{
 			fscanf(IN, "%d", &component_indicator);
 			if (component_indicator==1 && given_incidence_number==ii) {  //then is on this component
-				component_number = 1;
+				component_number++;
 			}
 		}
-		if (component_number==-10) {
-			printf("it appears the membership test FAILED.\n");
+		if (component_number==0) {
+			printf("test point did not lie on any component at all.\n");
 			//			exit(-1);
 		}
 		component_numbers[jj]=component_number;
