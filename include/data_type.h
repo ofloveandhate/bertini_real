@@ -168,5 +168,14 @@ void print_comp_mp_matlab(comp_mp M,char name[]);
 
 void print_path_retVal_message(int retVal);
 
+
+
+void endgamedate_to_endpoint(post_process_t *endPoint, endgame_data_t *EG);
+
+int BRfindSingularSolns(post_process_t *endPoints,
+												int num_sols, int num_vars,
+												tracker_config_t *T );
+
+
 #endif
 

@@ -279,7 +279,8 @@ void cp_linprodtodetjac_eval_data_mp(linprodtodetjac_eval_data_mp *BED, linprodt
 
 
 
-
+void check_linprod_evaluator(point_mp current_values,
+														 void const *ED);
 
 
 
