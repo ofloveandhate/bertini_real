@@ -400,10 +400,9 @@ void detjac_to_detjac_track_d(trackingStats *trackCount,
 		
 		
 		if (EG->retVal!=0) {
-			printf("\nretVal = %d\nthere was a path failure tracking witness point %d in detjac_to_detjac\n\n",EG->retVal,ii);
+			printf("retVal = %d -- there was a path failure tracking witness point %d\n",EG->retVal,ii);
 			print_path_retVal_message(EG->retVal);
-			
-			//			exit(EG->retVal);
+			printf("\n");
 		}
 		else
 		{
@@ -706,7 +705,7 @@ int detjac_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat
 	
 	
 	mat_d Jv_Patch; init_mat_d(Jv_Patch, 0, 0);
-	mat_d tempmat; init_mat_d(tempmat,0,0);
+	mat_d tempmat; init_mat_d(tempmat,BED->num_variables-1,BED->num_variables-1); tempmat->rows = tempmat->cols = BED->num_variables-1;
 	mat_d AtimesJ; init_mat_d(AtimesJ,1,1);
 	mat_d Jv_detjac_old; init_mat_d(Jv_detjac_old,0,0);
 	mat_d Jv_detjac_new; init_mat_d(Jv_detjac_new,0,0);
@@ -759,21 +758,27 @@ int detjac_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat
 	
 	//the determinant of the jacobian, with the projection.
 	
-	mat_cp_d(tempmat,AtimesJ);// copy into the matrix of which we will take the determinant
+//	mat_cp_d(tempmat,AtimesJ);// copy into the matrix of which we will take the determinant
+//	
+//	increase_size_mat_d(tempmat,BED->num_variables,BED->num_variables); // make it bigger to accomodate more entries.  make square
+//	tempmat->rows = tempmat->cols = BED->num_variables; // change the size indicators
+//	
+//	//copy in the jacobian of the patch equation
+//	for (ii=0; ii<BED->num_variables; ++ii) {
+//		set_d(&tempmat->entry[BED->num_variables-1][ii],&Jv_Patch->entry[0][ii]); //  copy in the patch jacobian
+//	}
 	
-	increase_size_mat_d(tempmat,BED->num_variables,BED->num_variables); // make it bigger to accomodate more entries.  make square
-	tempmat->rows = tempmat->cols = BED->num_variables; // change the size indicators
-	
-	//copy in the jacocian of the patch equation
-	for (ii=0; ii<BED->num_variables; ++ii) {
-		set_d(&tempmat->entry[BED->num_variables-1][ii],&Jv_Patch->entry[0][ii]); //  copy in the patch jacobian
-	}
-	
+	for (jj=0; jj<BED->num_variables-2; jj++) {
+		for (ii=0; ii<BED->num_variables-1; ++ii) {
+			set_d(&tempmat->entry[jj][ii],&AtimesJ->entry[jj][ii+1]); // copy in the projection
+		}
+	}	
 
 	//copy in the OLD projection from BED
-	for (ii=0; ii<BED->num_variables; ++ii) {
-		set_d(&tempmat->entry[BED->num_variables-2][ii],&BED->old_projection->coord[ii]); // copy in the old_projection
+	for (ii=0; ii<BED->num_variables-1; ++ii) {
+		set_d(&tempmat->entry[BED->num_variables-2][ii],&BED->old_projection->coord[ii+1]); // copy in the old_projection
 	}
+	
 	//now TAKE THE DETERMINANT of tempmat.
 //	print_matrix_to_screen_matlab(tempmat,"det1");
 	take_determinant_d(detjac_old,tempmat); // the determinant goes into detjac
@@ -782,8 +787,8 @@ int detjac_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat
 	
 	
 	//copy in the NEW projection from BED
-	for (ii=0; ii<BED->num_variables; ++ii) {
-		set_d(&tempmat->entry[BED->num_variables-2][ii],&BED->new_projection->coord[ii]); // copy in the old_projection
+	for (ii=0; ii<BED->num_variables-1; ++ii) {
+		set_d(&tempmat->entry[BED->num_variables-2][ii],&BED->new_projection->coord[ii+1]); // copy in the new_projection
 	}
 	//now TAKE THE DETERMINANT of tempmat.
 //	print_matrix_to_screen_matlab(tempmat,"det2");
@@ -806,18 +811,20 @@ int detjac_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat
 	
 	
 	//now for the NUMERICAL DERIVATIVE.
-	
+
+//	BED->patch,
+
 	detjac_numerical_derivative_d(Jv_detjac_old, // return value
 																current_variable_values, pathVars, BED->old_projection,
 																BED->num_variables,
-																BED->patch,
 																BED->SLP,
 																BED->n_minusone_randomizer_matrix); // input parameters for the method
 	
+	//																	BED->patch,
+
 	detjac_numerical_derivative_d(Jv_detjac_new, // return value
 																current_variable_values, pathVars, BED->new_projection,
 																BED->num_variables,
-																BED->patch,
 																BED->SLP,
 																BED->n_minusone_randomizer_matrix); // input parameters for the method
 
@@ -1889,8 +1896,9 @@ void detjac_to_detjac_track_mp(trackingStats *trackCount,
 		
 		
 		if (EG->retVal!=0) {
-			printf("\nretVal = %d\nthere was a path failure tracking witness point %d\n",EG->retVal,ii);
+			printf("retVal = %d -- there was a path failure tracking witness point %d\n",EG->retVal,ii);
 			print_path_retVal_message(EG->retVal);
+			printf("\n");
 		}
 		else
 		{
@@ -2121,7 +2129,8 @@ int detjac_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer,
 	
 	
 	mat_mp Jv_Patch; init_mat_mp(Jv_Patch, 0, 0);
-	mat_mp tempmat; init_mat_mp(tempmat,0,0);
+	mat_mp tempmat; init_mat_mp(tempmat,BED->num_variables-1,BED->num_variables-1);
+		tempmat->rows = tempmat->cols = BED->num_variables-1;
 	mat_mp AtimesJ; init_mat_mp(AtimesJ,1,1);
 	mat_mp Jv_detjac_old; init_mat_mp(Jv_detjac_old,0,0);
 	mat_mp Jv_detjac_new; init_mat_mp(Jv_detjac_new,0,0);
@@ -2172,21 +2181,43 @@ int detjac_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer,
 	
 	//the determinant of the jacobian, with the projection.
 	
-	mat_cp_mp(tempmat,AtimesJ);// copy into the matrix of which we will take the determinant
-	
-	increase_size_mat_mp(tempmat,BED->num_variables,BED->num_variables); // make it bigger to accomodate more entries.  make square
-	tempmat->rows = tempmat->cols = BED->num_variables; // change the size indicators
-	
-	//copy in the jacocian of the patch equation
-	for (ii=0; ii<BED->num_variables; ++ii) {
-		set_mp(&tempmat->entry[BED->num_variables-1][ii],&Jv_Patch->entry[0][ii]); //  copy in the patch jacobian
+//	mat_cp_mp(tempmat,AtimesJ);// copy into the matrix of which we will take the determinant
+//	
+//	increase_size_mat_mp(tempmat,BED->num_variables,BED->num_variables); // make it bigger to accomodate more entries.  make square
+//	tempmat->rows = tempmat->cols = BED->num_variables; // change the size indicators
+//	
+//	//copy in the jacocian of the patch equation
+//	for (ii=0; ii<BED->num_variables; ++ii) {
+//		set_mp(&tempmat->entry[BED->num_variables-1][ii],&Jv_Patch->entry[0][ii]); //  copy in the patch jacobian
+//	}
+//	
+//	
+//	//copy in the OLD projection from BED
+//	for (ii=0; ii<BED->num_variables; ++ii) {
+//		set_mp(&tempmat->entry[BED->num_variables-2][ii],&BED->old_projection->coord[ii]); // copy in the old_projection
+//	}
+//	//now TAKE THE DETERMINANT of tempmat.
+//	//	print_matrix_to_screen_matlab(tempmat,"det1");
+//	take_determinant_mp(detjac_old,tempmat); // the determinant goes into detjac
+//	mul_mp(temp,detjac_old,gamma_s);
+//	
+//	
+//	
+//	//copy in the NEW projection from BED
+//	for (ii=0; ii<BED->num_variables; ++ii) {
+//		set_mp(&tempmat->entry[BED->num_variables-2][ii],&BED->new_projection->coord[ii]); // copy in the old_projection
+//	}
+	for (jj=0; jj<BED->num_variables-2; jj++) {
+		for (ii=0; ii<BED->num_variables-1; ++ii) {
+			set_mp(&tempmat->entry[jj][ii],&AtimesJ->entry[jj][ii+1]); // copy in the projection
+		}
 	}
-	
 	
 	//copy in the OLD projection from BED
-	for (ii=0; ii<BED->num_variables; ++ii) {
-		set_mp(&tempmat->entry[BED->num_variables-2][ii],&BED->old_projection->coord[ii]); // copy in the old_projection
+	for (ii=0; ii<BED->num_variables-1; ++ii) {
+		set_mp(&tempmat->entry[BED->num_variables-2][ii],&BED->old_projection->coord[ii+1]); // copy in the old_projection
 	}
+	
 	//now TAKE THE DETERMINANT of tempmat.
 	//	print_matrix_to_screen_matlab(tempmat,"det1");
 	take_determinant_mp(detjac_old,tempmat); // the determinant goes into detjac
@@ -2195,9 +2226,10 @@ int detjac_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer,
 	
 	
 	//copy in the NEW projection from BED
-	for (ii=0; ii<BED->num_variables; ++ii) {
-		set_mp(&tempmat->entry[BED->num_variables-2][ii],&BED->new_projection->coord[ii]); // copy in the old_projection
+	for (ii=0; ii<BED->num_variables-1; ++ii) {
+		set_mp(&tempmat->entry[BED->num_variables-2][ii],&BED->new_projection->coord[ii+1]); // copy in the new_projection
 	}
+	
 	//now TAKE THE DETERMINANT of tempmat.
 	//	print_matrix_to_screen_matlab(tempmat,"det2");
 	take_determinant_mp(detjac_new,tempmat); // the determinant goes into detjac
@@ -2219,18 +2251,17 @@ int detjac_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer,
 	
 	
 	//now for the NUMERICAL DERIVATIVE.
-	
+	//																	BED->patch,
+
 	detjac_numerical_derivative_mp(Jv_detjac_old, // return value
 																current_variable_values, pathVars, BED->old_projection,
 																BED->num_variables,
-																BED->patch,
 																BED->SLP,
 																BED->n_minusone_randomizer_matrix); // input parameters for the method
 	
 	detjac_numerical_derivative_mp(Jv_detjac_new, // return value
 																current_variable_values, pathVars, BED->new_projection,
 																BED->num_variables,
-																BED->patch,
 																BED->SLP,
 																BED->n_minusone_randomizer_matrix); // input parameters for the method
 	
@@ -2286,11 +2317,11 @@ int detjac_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer,
 	//Jp[N-2][0] = -detjac_new + gamma*detjac_old
 	
 	
-	set_mp(&Jp->entry[BED->num_variables-2][0],detjac_new);
-	neg_mp(&Jp->entry[BED->num_variables-2][0],&Jp->entry[BED->num_variables-2][0]);
+//	set_mp(&Jp->entry[BED->num_variables-2][0],detjac_new);
+	neg_mp(temp2,detjac_new);
 	
 	mul_mp(temp,BED->gamma,detjac_old);  // gamma * detjac_old
-	add_mp(&Jp->entry[BED->num_variables-2][0],&Jp->entry[BED->num_variables-2][0],temp);
+	add_mp(&Jp->entry[BED->num_variables-2][0],temp2,temp);
 	
 	
 	
@@ -2306,7 +2337,6 @@ int detjac_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer,
 		{
 			set_mp(&Jv->entry[ii+offset][jj], &Jv_Patch->entry[ii][jj]);
 		}
-		
 	}
 	
 	
@@ -2324,7 +2354,7 @@ int detjac_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer,
 	
 //	print_matrix_to_screen_matlab( AtimesJ,"jac");
 //	print_point_to_screen_matlab(current_variable_values,"currvars");
-//print_comp_mp_matlab(pathVars,"pathvars");
+//	print_comp_mp_matlab(pathVars,"pathvars");
 
 
 //	print_matrix_to_screen_matlab(Jv_detjac,"Jv_detjac");

@@ -31,18 +31,18 @@
 int take_determinant_d(comp_d determinant, mat_d source_matrix);
 int take_determinant_mp(comp_mp determinant, mat_mp source_matrix);
 
+//patch_eval_data_d patch,
 
 int detjac_numerical_derivative_d(mat_d Jv, point_d current_variable_values, comp_d pathVars, vec_d projection,
 																	int num_variables,
-																	patch_eval_data_d patch,
 																	prog_t *SLP,
 																	mat_d n_minusone_randomizer_matrix);
 
+//																	 patch_eval_data_mp patch,
 
 int detjac_numerical_derivative_mp(mat_mp Jv, //  the returned value
 																	 point_mp current_variable_values, comp_mp pathVars, vec_mp projection,
 																	 int num_variables,
-																	 patch_eval_data_mp patch,
 																	 prog_t *SLP,
 																	 mat_mp n_minusone_randomizer_matrix); // inputs
 

@@ -278,6 +278,13 @@ void cp_lintolin_eval_data_mp(lintolin_eval_data_mp *BED, lintolin_eval_data_mp 
 
 
 
+int check_issoln_lintolin_d(endgame_data_t *EG,
+														tracker_config_t *T,
+														void const *ED);
+int check_issoln_lintolin_mp(endgame_data_t *EG,
+														 tracker_config_t *T,
+														 void const *ED);
+
 
 
 #endif

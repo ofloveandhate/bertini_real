@@ -138,22 +138,27 @@ int main(int argC, char *args[])
 	init_vec_mp(pi,num_vars);
 	pi->size = num_vars; // should include the homogeneous variable
 	
-	
+	set_zero_mp(&pi->coord[0]);
+	for (ii=1; ii<num_vars; ii++) {
+		set_one_mp(&pi->coord[ii]);
+	}
+//		set_one_mp(&pi->coord[1]);
+
 //	if (num_vars==3){
 //		for (ii=0; ii<num_vars; ii++) {
-//			get_comp_rand_real_d(&pi->coord[ii]);
+//			get_comp_rand_real_mp(&pi->coord[ii]);
 //		}
 //	}
 //	else
 //	{
-	comp_d t; t->r = 2.0; t->i = 0;
-	d_to_mp(&pi->coord[0],t);
-	
-	set_zero_mp(&pi->coord[1]);
-	set_one_mp(&pi->coord[2]);
-	for (ii=3; ii<num_vars; ii++) {
-		set_zero_mp(&pi->coord[3]);
-	}
+//	comp_d t; t->r = 2.0; t->i = 0;
+//	d_to_mp(&pi->coord[0],t);
+//	
+//	set_zero_mp(&pi->coord[1]);
+//	set_one_mp(&pi->coord[2]);
+//	for (ii=3; ii<num_vars; ii++) {
+//		set_zero_mp(&pi->coord[3]);
+//	}
 //	}
 
 	
@@ -179,7 +184,8 @@ int main(int argC, char *args[])
 	}
 	printf("\n*\ndone with case\n*\n");
 
-	
+	printf("your projection was:\n");
+	print_point_to_screen_matlab_mp(pi,"pi");
 //        set_zero_d(&(pi->coord[0]));
 //        set_one_d(&(pi->coord[1]));
 //        set_zero_d(&(pi->coord[2]));

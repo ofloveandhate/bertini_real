@@ -170,9 +170,7 @@ void computeCurveSelfConj(char * inputFile,
 	
 	
   
-	
-	
-	
+
 	
 	
 	
@@ -213,7 +211,7 @@ void computeCurveSelfConj(char * inputFile,
 	clear_witness_set(Wtemp);
 	
 //	check_patch_values(W_lintolin);
-//	print_witness_set_to_screen(W_lintolin);
+	write_dehomogenized_coordinates(W_lintolin,"lintolin_points");
 	
 	
 	witness_set_d W_linprod; init_witness_set_d(&W_linprod);
@@ -242,7 +240,7 @@ void computeCurveSelfConj(char * inputFile,
 	
 	//	W_linprod_good should have only the points from W_in which lie on the correct component.
 	sort_for_membership(inputFile, &W_linprod_good, W_linprod);
-	
+	write_dehomogenized_coordinates(W_linprod_good,"linprod_solns_postmembership");
 	printf("done sorting membership\n");
 	
 //	print_witness_set_to_screen(W_linprod_good);

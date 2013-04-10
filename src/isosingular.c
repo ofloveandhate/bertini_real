@@ -16,20 +16,19 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *i
   char ch, *strStabilizationTest = NULL;
   FILE *IN = NULL, *OUT = NULL;
 
-  // partition the input file into the configurations and the polynomial system
-//  IN = fopen(inputFile, "r");
-//  if (IN == NULL)
-//  {
-//    printf("\n\nERROR: '%s' does not exist!!!\n\n\n", inputFile);
-//    bexit(ERROR_FILE_NOT_EXIST);
-//  }
+	// create the string for running system()
+  strLength = 1 + snprintf(NULL, 0, "%s input_stabilization_test %s", bertini_command, witness_point_filename);
+  strStabilizationTest = (char *)bmalloc(strLength * sizeof(char));
+  sprintf(strStabilizationTest, "%s input_stabilization_test %s", bertini_command, witness_point_filename);
 	
+	
+	// remove previous files.
 	remove("isosingular_summary");
 	remove("func_input_real");
 	remove("config_real");
 	remove("input_stabilization_test");
 	
-	
+	//open the input file.
 	IN = safe_fopen_read(inputFile);	
   partitionParse(&declarations, IN, "func_input_real", "config_real",0); // the 0 means not self conjugate mode
   fclose(IN);
@@ -42,40 +41,32 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *i
 	
 
 	
-  // perform stabilization test
+  
   printf("\nPerforming a stabilization test\n");
-  strLength = 1 + snprintf(NULL, 0, "%s input_stabilization_test %s", bertini_command, witness_point_filename);
-  strStabilizationTest = (char *)bmalloc(strLength * sizeof(char));
-  sprintf(strStabilizationTest, "%s input_stabilization_test %s", bertini_command, witness_point_filename);
-	
+
 	
 	
 //	ii=0;
 //	while (ii<10) {
 //		ii++;
+	//remove the previous file.
 		remove("isosingular_summary");
 		
-		printf("running system command '%s'\n",strStabilizationTest);
+	//print the command to the screen
+	printf("running system command '%s'\n",strStabilizationTest);
+	
+	// perform stabilization test
+	if (system(strStabilizationTest)!=0){
+		bexit(ERROR_CONFIGURATION);
+	}
 
-		
-		if (system(strStabilizationTest)!=0){
-			bexit(ERROR_CONFIGURATION);
-		}
-
-
+	//come code for checking if the stabilization test was successful.
 //		system("grep 'unable' grepme > check_if_im_empty");
-//
-//		
-//		
 //		IN = fopen("check_if_im_empty","r");
 //		if ((ch = fgetc(IN)) != EOF){
 //			system("more grepme");
-//
-//
 //			printf("\n******\nstabilization test FAILED.  trying again.\n\n");
-//			remove("grepme");
-//			remove("check_if_im_empty");
-//
+//			remove("grepme"); remove("check_if_im_empty");
 //		}
 //		else{
 //			remove("grepme");
@@ -83,9 +74,7 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *i
 //			break;
 //		}
 //		fclose(IN);
-//		
 //	}
-//	
 
 	
 	
@@ -108,6 +97,7 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *i
     // setup input file to test for stabilization
     stabilization_input_file("input_stabilization_test", "func_input_real", "config_real");
 
+		mypause();
     // perform stabilization test
     printf("\nPerforming a stabilization test\n");
     if (system(strStabilizationTest)!=0){
@@ -117,7 +107,7 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *i
 		
     // read in the file
 		IN = safe_fopen_read("isosingular_summary");
-    fscanf(IN, "%d%d", &nullSpace, &success);
+    fscanf(IN, "%d%d", &nullSpace, &success); // get the success indicator
 
     // setup the next entry in the deflation sequence
     (*num_deflations)++;

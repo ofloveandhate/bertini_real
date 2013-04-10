@@ -329,6 +329,8 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 	
   W_new->num_variables = W.num_variables;
 	
+	post_process_t *endPoints = (post_process_t *)bmalloc(W.W.num_pts*(num_new_linears) * sizeof(post_process_t));
+	
 	
 	trackCount->numPoints = W.W.num_pts*(num_new_linears);
 	int witness_point_counter = 0;
@@ -365,7 +367,7 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 		{ // get current thread number
 			oid = thread_num();
 			
-
+			printf("\t\tpoint %d\n",ii);
 			startPointIndex = ii;
 
 			
@@ -384,63 +386,58 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 			}
 			
 			
-			init_vec_d(W_new->W.pts[witness_point_counter],0);
-			init_vec_mp(W_new->W_mp.pts[witness_point_counter],0);
-			
-			change_size_vec_d(W_new->W.pts[witness_point_counter],W.num_variables);
-			W_new->W.pts[witness_point_counter]->size = W.num_variables;
+			int issoln;
+			if (EG->prec<64){
+				issoln = check_issoln_lintolin_d(&EG[oid],  &T_copy[oid], &BED_copy[oid]); }
+			else {
+				issoln = check_issoln_lintolin_mp(&EG[oid], &T_copy[oid], BED_copy[oid].BED_mp); }
 
-					
-			
 
-			if (EG->retVal!=0) {
-				printf("\nretVal = %d\nthere was a path failure tracking linear %d, witness point %d\n\n",EG->retVal,kk,ii);
+			//get the terminal time in double form
+			comp_d time_to_compare;
+			if (EG->prec < 64) {
+				set_d(time_to_compare,EG->PD_d.time);}
+			else {
+				mp_to_d(time_to_compare, EG->PD_mp.time); }
+			
+			
+			if ((EG->retVal != 0 && time_to_compare->r > T->minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
+
+				trackCount->failures++;
+				printf("\nretVal = %d\nthere was a fatal path failure tracking linear %d, witness point %d\n\n",EG->retVal,kk,ii);
 				print_path_retVal_message(EG->retVal);
 				print_point_to_screen_matlab(BED_copy->old_linear,"old");
 				print_point_to_screen_matlab(BED_copy->current_linear,"new");
 				exit(EG->retVal);
 			}
-			
-			
-			//copy the solutions out of EG.
-			
-			if (T->MPType==2) {
-//				printf("%d\n",EG->prec);
+			else
+			{
+				//otherwise converged, but may have still had non-zero retval due to other reasons.
+				
+				init_vec_d(W_new->W.pts[witness_point_counter],W.num_variables);
+				init_vec_mp(W_new->W_mp.pts[witness_point_counter],W.num_variables);
+				
+				W_new->W.pts[witness_point_counter]->size = W_new->W_mp.pts[witness_point_counter]->size = W.num_variables;
+				
+				
+				endgamedate_to_endpoint(&endPoints[witness_point_counter], EG);
+				trackCount->successes++;
+//				printf("%d was precision, %d success\n",endPoints[witness_point_counter].sol_prec,endPoints[witness_point_counter].success);
+//				
+//				mypause();
+				
+				//copy the solutions out of EG.
 				if (EG->prec<64) {
-//					printf("copying from double?\n");
 					vec_d_to_mp(W_new->W_mp.pts[witness_point_counter],EG->PD_d.point);
+					vec_cp_d( W_new->W.pts[witness_point_counter], EG->PD_d.point);
 				}
 				else{
-//					printf("copying from mp?\n");
 					vec_cp_mp(W_new->W_mp.pts[witness_point_counter],EG->PD_mp.point);
+					vec_mp_to_d(W_new->W.pts[witness_point_counter], EG->PD_mp.point);
 				}
 				
-				vec_mp_to_d(W_new->W.pts[witness_point_counter],W_new->W_mp.pts[witness_point_counter]);
-				// verification, if needed
-//				comp_mp result;
-//				init_mp(result);
-//				dot_product_mp(result, W_new->W_mp.pts[witness_point_counter], ED_mp->current_linear);
-//				print_comp_mp_matlab(result,"res");
+				witness_point_counter++;
 			}
-			else{ // MPType == 0
-				vec_cp_d( W_new->W.pts[witness_point_counter], EG->PD_d.point);
-				vec_d_to_mp(W_new->W_mp.pts[witness_point_counter], EG->PD_d.point);
-				
-				// verification, if needed.
-//				comp_d result;
-//				dot_product_d(result, W_new->W.pts[witness_point_counter], ED_d->current_linear);
-//				printf("dot_prod=%le+1i*%le;\n",result->r,result->i);
-			}
-			
-//			mypause();
-			
-
-
-
-			
-			witness_point_counter++;
-
-			
 			//				print_point_to_screen_matlab(startPts[startPointIndex].point,"start");
 			//				print_point_to_screen_matlab(ED_d->old_linear,"old");
 			//
@@ -465,9 +462,13 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 	} // for each new linear
 	
 	
+//	printf("%lf\n",T_copy[oid].finiteThreshold);
+	findMultSol(endPoints, witness_point_counter, W.num_variables, BED_copy[oid].preProcData, T->final_tol_times_mult);// T_copy[oid].finiteThreshold
+	int num_singular_solns = BRfindSingularSolns(endPoints, witness_point_counter, W.num_variables,
+													T);
 	
-	
-	
+	printf("%d singular solutions\n",num_singular_solns);
+	mypause();
 	
 	
 	//clear the data structures.
@@ -488,7 +489,7 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 	//    fclose(NONSOLN);
 	//  }
 	
-	
+//TODO: CLEAR MORE MEMORY
 	
 	
 	
@@ -539,6 +540,8 @@ void lin_to_lin_track_path_d(int pathNum, endgame_data_t *EG_out,
 		
 		EG_out->retVal = endgame_amp(T->endgameNumber, EG_out->pathNum, &EG_out->prec, &EG_out->first_increase, &EG_out->PD_d, &EG_out->PD_mp, &EG_out->last_approx_prec, EG_out->last_approx_d, EG_out->last_approx_mp, Pin, T, OUT, MIDOUT, ED_d, ED_mp, eval_func_d, eval_func_mp, change_prec, find_dehom);
 		
+		
+		
     if (EG_out->prec == 52)
     { // copy over values in double precision
       EG_out->latest_newton_residual_d = T->latest_newton_residual_d;
@@ -548,6 +551,7 @@ void lin_to_lin_track_path_d(int pathNum, endgame_data_t *EG_out,
     }
     else
     { // make sure that the other MP things are set to the correct precision
+			printf("%d prec in track_path\n",EG_out->prec);
       mpf_clear(EG_out->function_residual_mp);
       mpf_init2(EG_out->function_residual_mp, EG_out->prec);
 			
@@ -2754,6 +2758,161 @@ void cp_lintolin_eval_data_mp(lintolin_eval_data_mp *BED, lintolin_eval_data_mp 
 }
 
 
+
+
+
+
+
+int check_issoln_lintolin_d(endgame_data_t *EG,
+													 tracker_config_t *T,
+													 void const *ED)
+{
+  lintolin_eval_data_d *LPED = (lintolin_eval_data_d *)ED; // to avoid having to cast every time
+	
+	
+	int ii;
+	double tol;
+	double n1, n2, zero_thresh, max_rat;
+	point_d f;
+	eval_struct_d e;
+	//
+	//	mpf_init(n1); mpf_init(n2); mpf_init(zero_thresh); mpf_init(max_rat);
+	init_point_d(f, 1);
+	init_eval_struct_d(e,0, 0, 0);
+	
+	max_rat = T->ratioTol;
+	
+	// setup threshold based on given threshold and precision
+	//	if (num_digits > 300)
+	//		num_digits = 300;
+	//	num_digits -= 2;
+	zero_thresh = MAX(T->funcResTol, 1e-15);
+	
+	
+	if (EG->prec>=64){
+		vec_d terminal_pt;  init_vec_d(terminal_pt,1);
+		vec_mp_to_d(terminal_pt,EG->PD_mp.point);
+		lin_to_lin_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, terminal_pt, EG->PD_d.time, ED);
+		clear_vec_d(terminal_pt);}
+	else{
+		lin_to_lin_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_d.point, EG->PD_d.time, ED); }
+	
+	
+	if (EG->last_approx_prec>=64) {
+		vec_d prev_pt;  init_vec_d(prev_pt,1);
+		vec_mp_to_d(prev_pt,EG->PD_mp.point);
+		lin_to_lin_eval_d(f, e.parVals, e.parDer, e.Jv, e.Jp, prev_pt, EG->PD_d.time, ED); 
+		clear_vec_d(prev_pt);}
+	else{
+		lin_to_lin_eval_d(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_d, EG->PD_d.time, ED);}
+	
+	// compare the function values
+	int isSoln = 1;
+	for (ii = 0; ii < LPED->SLP->numFuncs && isSoln; ii++)
+	{
+		n1 = d_abs_d( &e.funcVals->coord[ii]);
+		n2 = d_abs_d( &f->coord[ii]);
+		
+		if (tol <= n1 && n1 <= n2)
+		{ // compare ratio
+			if (n1 > max_rat * n2)
+				isSoln = 0;
+		}
+		else if (tol <= n2 && n2 <= n1)
+		{ // compare ratio
+			if (n2 > max_rat * n1)
+				isSoln = 0;
+		}
+	}
+	
+	
+	
+	
+	clear_eval_struct_d(e);
+	clear_vec_d(f);
+	
+	return isSoln;
+	
+}
+
+
+int check_issoln_lintolin_mp(endgame_data_t *EG,
+														tracker_config_t *T,
+														void const *ED)
+{
+  lintolin_eval_data_mp *LPED = (lintolin_eval_data_mp *)ED; // to avoid having to cast every time
+	
+	int ii;
+	
+	for (ii = 0; ii < T->numVars; ii++)
+	{
+    if (!(mpfr_number_p(EG->PD_mp.point->coord[ii].r) && mpfr_number_p(EG->PD_mp.point->coord[ii].i)))
+		{
+			printf("got not a number\n");
+			print_point_to_screen_matlab_mp(EG->PD_mp.point,"bad solution");
+      return 0;
+		}
+	}
+	
+	int num_digits = prec_to_digits((int) mpf_get_default_prec());
+	double tol;
+	mpf_t n1, n2, zero_thresh, max_rat;
+	point_mp f;
+	eval_struct_mp e;
+	
+	mpf_init(n1); mpf_init(n2); mpf_init(zero_thresh); mpf_init(max_rat);
+	init_point_mp(f, 1);
+	init_eval_struct_mp(e,0, 0, 0);
+	
+	mpf_set_d(max_rat, T->ratioTol);
+	
+	// setup threshold based on given threshold and precision
+	if (num_digits > 300)
+		num_digits = 300;
+	num_digits -= 2;
+	tol = MAX(T->funcResTol, pow(10,-num_digits));
+	mpf_set_d(zero_thresh, tol);
+	
+	//this one guaranteed by entry condition
+	lin_to_lin_eval_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, ED);
+	
+	if (EG->last_approx_prec < 64)
+	{ // copy to _mp
+		point_d_to_mp(EG->last_approx_mp, EG->last_approx_d);
+	}
+	
+	lin_to_lin_eval_mp(f,          e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_mp, EG->PD_mp.time, ED);
+	// compare the function values
+	int isSoln = 1;
+	for (ii = 0; ii < LPED->SLP->numFuncs && isSoln; ii++)
+	{
+		mpf_abs_mp(n1, &e.funcVals->coord[ii]);
+		mpf_abs_mp(n2, &f->coord[ii]);
+		
+		if (mpf_cmp(zero_thresh, n1) <= 0 && mpf_cmp(n1, n2) <= 0)
+		{ // compare ratio
+			mpf_mul(n2, max_rat, n2);
+			if (mpf_cmp(n1, n2) > 0)
+				isSoln = 0;
+		}
+		else if (mpf_cmp(zero_thresh, n2) <= 0 && mpf_cmp(n2, n1) <= 0)
+		{ // compare ratio
+			mpf_mul(n1, max_rat, n1);
+			if (mpf_cmp(n2, n1) > 0)
+				isSoln = 0;
+		}
+	}
+	
+	
+	mpf_clear(n1); mpf_clear(n2); mpf_clear(zero_thresh); mpf_clear(max_rat);
+	
+	
+	clear_eval_struct_mp(e);
+	clear_vec_mp(f);
+	
+	return isSoln;
+	
+}
 
 
 

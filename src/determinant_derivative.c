@@ -164,6 +164,7 @@ int take_determinant_mp(comp_mp determinant, mat_mp source_matrix){
 
 
 
+//																	patch_eval_data_d patch,
 
 
 // output: Jv.
@@ -171,7 +172,6 @@ int take_determinant_mp(comp_mp determinant, mat_mp source_matrix){
 int detjac_numerical_derivative_d(mat_d Jv, //  the returned value
 																	point_d current_variable_values, comp_d pathVars, vec_d projection,
 																	int num_variables,
-																	patch_eval_data_d patch,
 																	prog_t *SLP,
 																	mat_d n_minusone_randomizer_matrix) // inputs
 {
@@ -206,8 +206,7 @@ int detjac_numerical_derivative_d(mat_d Jv, //  the returned value
 	perturbation->r = PERTURBATION_VALUE;
 	perturbation->i = PERTURBATION_VALUE;
 	
-	mat_d AtimesJ;
-	init_mat_d(AtimesJ,1,1); // size will be properly set later.
+	mat_d AtimesJ; init_mat_d(AtimesJ,1,1); // size will be properly set later.
 	
 	comp_d det_backward, det_forward;
 	//	//get the baseline values at the current variable values.
@@ -223,11 +222,11 @@ int detjac_numerical_derivative_d(mat_d Jv, //  the returned value
 	
 	
 	mat_d perturbed_forward_detme,perturbed_backward_detme; // create matrices
-	init_mat_d(perturbed_forward_detme,num_variables,num_variables);
-	init_mat_d(perturbed_backward_detme,num_variables,num_variables);
+	init_mat_d(perturbed_forward_detme,num_variables-1,num_variables-1);
+	init_mat_d(perturbed_backward_detme,num_variables-1,num_variables-1);
 	
-	perturbed_forward_detme->rows = perturbed_forward_detme->cols = perturbed_backward_detme->rows = perturbed_backward_detme->cols = num_variables; // set the size indicators
-	
+	perturbed_forward_detme->rows = perturbed_forward_detme->cols = perturbed_backward_detme->rows = perturbed_backward_detme->cols = num_variables-1; // set the size indicators
+	set_zero_d(&Jv->entry[0][0]);
 	//for each variable, we need the derivative.  we will put them in the Jv matrix.
 	for (ii=0; ii<num_variables; ++ii) {
 		
@@ -248,24 +247,24 @@ int detjac_numerical_derivative_d(mat_d Jv, //  the returned value
 							 unused_Jp, //unused output
 							 perturbed_forward_variables, pathVars, SLP); // input
 		
-		patch_eval_d(unused_function_values, unused_parVals, unused_parDer, //  unused output
-								 perturbed_forward_Jv_Patch, // <---- the output we need
-								 unused_Jp, // unused output
-								 perturbed_forward_variables, pathVars, &patch);  // input
+//		patch_eval_d(unused_function_values, unused_parVals, unused_parDer, //  unused output
+//								 perturbed_forward_Jv_Patch, // <---- the output we need
+//								 unused_Jp, // unused output
+//								 perturbed_forward_variables, pathVars, &patch);  // input
 		
 		mat_mul_d(AtimesJ,n_minusone_randomizer_matrix,perturbed_forward_Jv);
 		
 		for (kk=0; kk<num_variables-2; ++kk) { // for each (randomized) equation
-			for (mm=0; mm<num_variables; ++mm) { //  for each variable
-				set_d(&perturbed_forward_detme->entry[kk][mm],&AtimesJ->entry[kk][mm]);
+			for (mm=0; mm<num_variables-1; ++mm) { //  for each variable
+				set_d(&perturbed_forward_detme->entry[kk][mm],&AtimesJ->entry[kk][mm+1]);
 			}
 		}
-		for (kk=0; kk<num_variables;++kk) { // second to last row corresponds to the projection
-			set_d(&perturbed_forward_detme->entry[num_variables-2][kk],&projection->coord[kk]);
+		for (kk=0; kk<num_variables-1;++kk) { // second to last row corresponds to the projection
+			set_d(&perturbed_forward_detme->entry[num_variables-2][kk],&projection->coord[kk+1]);
 		}
-		for (kk=0; kk<num_variables;++kk) {// the last row corresponds to the patch
-			set_d(&perturbed_forward_detme->entry[num_variables-1][kk],&perturbed_forward_Jv_Patch->entry[0][kk]);
-		}
+//		for (kk=0; kk<num_variables-1;++kk) {// the last row corresponds to the patch
+//			set_d(&perturbed_forward_detme->entry[num_variables-1][kk],&perturbed_forward_Jv_Patch->entry[0][kk]);
+//		}
 		
 		//now take the determinant;
 		
@@ -277,28 +276,28 @@ int detjac_numerical_derivative_d(mat_d Jv, //  the returned value
 							 unused_Jp, //unused output
 							 perturbed_backward_variables, pathVars, SLP); // input
 		
-		patch_eval_d(unused_function_values, unused_parVals, unused_parDer, //  unused output
-								 perturbed_backward_Jv_Patch, // <---- the output we need
-								 unused_Jp, // unused output
-								 perturbed_backward_variables, pathVars, &patch);  // input
+//		patch_eval_d(unused_function_values, unused_parVals, unused_parDer, //  unused output
+//								 perturbed_backward_Jv_Patch, // <---- the output we need
+//								 unused_Jp, // unused output
+//								 perturbed_backward_variables, pathVars, &patch);  // input
 		//now have the pieces of the puzzle.
 		
 		mat_mul_d(AtimesJ,n_minusone_randomizer_matrix,perturbed_backward_Jv);
 		
 		//copy in the jacobian WRT variables
 		for (kk=0; kk<num_variables-2; ++kk) { // for each (randomized) equation
-			for (mm=0; mm<num_variables; ++mm) { // for each variable
-				set_d(&perturbed_backward_detme->entry[kk][mm],&AtimesJ->entry[kk][mm]);
+			for (mm=0; mm<num_variables-1; ++mm) { // for each variable
+				set_d(&perturbed_backward_detme->entry[kk][mm],&AtimesJ->entry[kk][mm+1]);
 			}
 		}
 		//copy in the projection
-		for (kk=0; kk<num_variables;++kk) {
-			set_d(&perturbed_backward_detme->entry[num_variables-2][kk],&projection->coord[kk]);
+		for (kk=0; kk<num_variables-1;++kk) {
+			set_d(&perturbed_backward_detme->entry[num_variables-2][kk],&projection->coord[kk+1]);
 		}
-		//copy in the patch
-		for (kk=0; kk<num_variables;++kk) {
-			set_d(&perturbed_backward_detme->entry[num_variables-1][kk],&perturbed_backward_Jv_Patch->entry[0][kk]);
-		}
+//		//copy in the patch
+//		for (kk=0; kk<num_variables;++kk) {
+//			set_d(&perturbed_backward_detme->entry[num_variables-1][kk],&perturbed_backward_Jv_Patch->entry[0][kk]);
+//		}
 		
 		//now take the determinant;
 		
@@ -318,18 +317,18 @@ int detjac_numerical_derivative_d(mat_d Jv, //  the returned value
 	
 	clear_mat_d(AtimesJ);
 	clear_mat_d(perturbed_backward_detme);clear_mat_d(perturbed_forward_detme);
-	//HERE forgetting to clear some vectors.  losing memory.
+//TODO: HERE forgetting to clear some vectors.  losing memory.
 	return 0;
 }
 
 
+//																	 patch_eval_data_mp patch,
 
 // output: Jv.
 // input: current_variable_values, pathvars, ED
 int detjac_numerical_derivative_mp(mat_mp Jv, //  the returned value
 																	 point_mp current_variable_values, comp_mp pathVars, vec_mp projection,
 																	 int num_variables,
-																	 patch_eval_data_mp patch,
 																	 prog_t *SLP,
 																	 mat_mp n_minusone_randomizer_matrix) // inputs
 {
@@ -363,7 +362,7 @@ int detjac_numerical_derivative_mp(mat_mp Jv, //  the returned value
 	comp_d p; p->r = PERTURBATION_VALUE_mp; p->i = PERTURBATION_VALUE_mp;
 	d_to_mp(perturbation,p);
 	
-	
+	comp_mp temp, temp2; init_mp(temp); init_mp(temp2);
 	comp_mp two; init_mp(two);
 	comp_d t; t->r = 2.0; t->i = 0;
 	d_to_mp(two,t);
@@ -383,11 +382,12 @@ int detjac_numerical_derivative_mp(mat_mp Jv, //  the returned value
 	//							 current_variable_values, pathVars, &patch);  // input
 	
 	mat_mp perturbed_forward_detme,perturbed_backward_detme; // create matrices
-	init_mat_mp(perturbed_forward_detme,num_variables,num_variables);
-	init_mat_mp(perturbed_backward_detme,num_variables,num_variables);
+	init_mat_mp(perturbed_forward_detme,num_variables-1,num_variables-1);
+	init_mat_mp(perturbed_backward_detme,num_variables-1,num_variables-1);
 	
-	perturbed_forward_detme->rows = perturbed_forward_detme->cols = perturbed_backward_detme->rows = perturbed_backward_detme->cols = num_variables; // set the size indicators
+	perturbed_forward_detme->rows = perturbed_forward_detme->cols = perturbed_backward_detme->rows = perturbed_backward_detme->cols = num_variables-1; // set the size indicators
 	
+//	set_zero_mp(&Jv->entry[0][0]);
 	//for each variable, we need the derivative.  we will put them in the Jv matrix.
 	for (ii=0; ii<num_variables; ++ii) {
 		
@@ -408,24 +408,24 @@ int detjac_numerical_derivative_mp(mat_mp Jv, //  the returned value
 								unused_Jp, //unused output
 								perturbed_forward_variables, pathVars, SLP); // input
 		
-		patch_eval_mp(unused_function_values, unused_parVals, unused_parDer, //  unused output
-									perturbed_forward_Jv_Patch, // <---- the output we need
-									unused_Jp, // unused output
-									perturbed_forward_variables, pathVars, &patch);  // input
+//		patch_eval_mp(unused_function_values, unused_parVals, unused_parDer, //  unused output
+//									perturbed_forward_Jv_Patch, // <---- the output we need
+//									unused_Jp, // unused output
+//									perturbed_forward_variables, pathVars, &patch);  // input
 		
 		mat_mul_mp(AtimesJ,n_minusone_randomizer_matrix,perturbed_forward_Jv);
 		
 		for (kk=0; kk<num_variables-2; ++kk) { // for each (randomized) equation
-			for (mm=0; mm<num_variables; ++mm) { //  for each variable
-				set_mp(&perturbed_forward_detme->entry[kk][mm],&AtimesJ->entry[kk][mm]);
+			for (mm=0; mm<num_variables-1; ++mm) { //  for each variable
+				set_mp(&perturbed_forward_detme->entry[kk][mm],&AtimesJ->entry[kk][mm+1]);
 			}
 		}
-		for (kk=0; kk<num_variables;++kk) { // second to last row corresponds to the projection
-			set_mp(&perturbed_forward_detme->entry[num_variables-2][kk],&projection->coord[kk]);
+		for (kk=0; kk<num_variables-1;++kk) { // second to last row corresponds to the projection
+			set_mp(&perturbed_forward_detme->entry[num_variables-2][kk],&projection->coord[kk+1]);
 		}
-		for (kk=0; kk<num_variables;++kk) {// the last row corresponds to the patch
-			set_mp(&perturbed_forward_detme->entry[num_variables-1][kk],&perturbed_forward_Jv_Patch->entry[0][kk]);
-		}
+//		for (kk=0; kk<num_variables;++kk) {// the last row corresponds to the patch
+//			set_mp(&perturbed_forward_detme->entry[num_variables-1][kk],&perturbed_forward_Jv_Patch->entry[0][kk]);
+//		}
 		
 		//now take the determinant;
 		
@@ -437,37 +437,35 @@ int detjac_numerical_derivative_mp(mat_mp Jv, //  the returned value
 								unused_Jp, //unused output
 								perturbed_backward_variables, pathVars, SLP); // input
 		
-		patch_eval_mp(unused_function_values, unused_parVals, unused_parDer, //  unused output
-									perturbed_backward_Jv_Patch, // <---- the output we need
-									unused_Jp, // unused output
-									perturbed_backward_variables, pathVars, &patch);  // input
+//		patch_eval_mp(unused_function_values, unused_parVals, unused_parDer, //  unused output
+//									perturbed_backward_Jv_Patch, // <---- the output we need
+//									unused_Jp, // unused output
+//									perturbed_backward_variables, pathVars, &patch);  // input
 		//now have the pieces of the puzzle.
 		
 		mat_mul_mp(AtimesJ,n_minusone_randomizer_matrix,perturbed_backward_Jv);
 		
 		//copy in the jacobian WRT variables
 		for (kk=0; kk<num_variables-2; ++kk) { // for each (randomized) equation
-			for (mm=0; mm<num_variables; ++mm) { // for each variable
-				set_mp(&perturbed_backward_detme->entry[kk][mm],&AtimesJ->entry[kk][mm]);
+			for (mm=0; mm<num_variables-1; ++mm) { // for each variable
+				set_mp(&perturbed_backward_detme->entry[kk][mm],&AtimesJ->entry[kk][mm+1]);
 			}
 		}
 		//copy in the projection
-		for (kk=0; kk<num_variables;++kk) {
-			set_mp(&perturbed_backward_detme->entry[num_variables-2][kk],&projection->coord[kk]);
+		for (kk=0; kk<num_variables-1;++kk) {
+			set_mp(&perturbed_backward_detme->entry[num_variables-2][kk],&projection->coord[kk+1]);
 		}
 		//copy in the patch
-		for (kk=0; kk<num_variables;++kk) {
-			set_mp(&perturbed_backward_detme->entry[num_variables-1][kk],&perturbed_backward_Jv_Patch->entry[0][kk]);
-		}
+//		for (kk=0; kk<num_variables;++kk) {
+//			set_mp(&perturbed_backward_detme->entry[num_variables-1][kk],&perturbed_backward_Jv_Patch->entry[0][kk]);
+//		}
 		
 		//now take the determinant;
 		
 		take_determinant_mp(det_backward, perturbed_backward_detme);
-		
-		sub_mp(&Jv->entry[0][ii],det_forward,det_backward);  // Jv = (forward-backward)/(2h)
-		div_mp(&Jv->entry[0][ii],&Jv->entry[0][ii],perturbation);
-		
-		div_mp(&Jv->entry[0][ii],&Jv->entry[0][ii],two);
+		sub_mp(temp,det_forward,det_backward);  // Jv = (forward-backward)/(2h)
+		div_mp(temp2,temp,perturbation);
+		div_mp(&Jv->entry[0][ii],temp2,two);
 		
 		//		print_matrix_to_screen_matlab(perturbed_forward_detme,"forwarddetme");
 		//		print_matrix_to_screen_matlab(perturbed_backward_detme,"backwarddetme");
@@ -493,10 +491,9 @@ int detjac_numerical_derivative_mp(mat_mp Jv, //  the returned value
 	clear_mp(two);
 	
 	clear_mat_mp(AtimesJ);
-	//set up the perturbed jacobians
 	clear_mp(det_backward);
 	clear_mp(det_forward);
-	//initialize the jacobians we will work with.
+	clear_mp(temp); clear_mp(temp2);
 	
 	clear_mat_mp(perturbed_backward_detme);clear_mat_mp(perturbed_forward_detme);
 	

@@ -4,6 +4,7 @@
 
 
 
+
 //the main wrapper function for chaining into the linprod_to_detjac solver.
 // pass in:
 //     •
@@ -173,7 +174,7 @@ int linprod_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int c
   // we report how we did with all paths:
   bclock(&time2);
   totalTime(&track_time, time1, time2);
-  if (T.screenOut)
+  if (1)  //(T.screenOut)
   {
     printf("Number of failures:  %d\n", trackCount.failures);
     printf("Number of successes:  %d\n", trackCount.successes);
@@ -206,7 +207,12 @@ int linprod_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int c
   // do the standard post-processing
 	//  sort_points(num_crossings, &convergence_failures, &sharpening_failures, &sharpening_singular, inputName, num_sols, num_variables, midpoint_tol, T.final_tol_times_mult, &T, &ED.preProcData, useRegen == 1 && userHom == 0, userHom == -59);
 	
+	if (num_crossings>0) {
+		printf("there were %d path crossings in linprod_to_detjac, according to midpoint checker\n",num_crossings);
+		mypause();
+	}
 	
+//	zeroDimPostProcess(OUT, endPoints, num_sols, num_vars, final_tol, T, PPD, num_crossings, *convergence_failures, inputName, regenToggle, eqbyeqToggle);
 	
   // print the failure summary
 	//  printFailureSummary(&trackCount, convergence_failures, sharpening_failures, sharpening_singular);
@@ -265,6 +271,7 @@ void linprod_to_detjac_track_d(trackingStats *trackCount,
 	
   // top of RAWOUT - number of variables and that we are doing zero dimensional
   fprintf(RAWOUT, "%d\n%d\n", T->numVars, 0);
+	
 	
 	
 	
@@ -443,13 +450,17 @@ void linprod_to_detjac_track_d(trackingStats *trackCount,
 					}
 					
 					//			mypause();
+			
+
+
+			
 					solution_counter++;
 		}
 		
 		
 		
 
-		
+
 		
 		//				print_point_to_screen_matlab(startPts[startPointIndex].point,"start");
 		//				print_point_to_screen_matlab(ED_d->old_linear,"old");
@@ -706,7 +717,7 @@ int linprod_to_detjac_setup_d(FILE **OUT, char *outName,
 //this derived from basic_eval_d
 int linprod_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp, point_d current_variable_values, comp_d pathVars, void const *ED)
 { // evaluates a special homotopy type, built for bertini_real
-	//	printf("t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
+//	printf("t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
 	
   linprodtodetjac_eval_data_d *BED = (linprodtodetjac_eval_data_d *)ED; // to avoid having to cast every time
 
@@ -729,7 +740,9 @@ int linprod_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, ma
 	
 
 	mat_d Jv_Patch; init_mat_d(Jv_Patch, 0, 0);
-	mat_d tempmat; init_mat_d(tempmat,0,0);
+	mat_d tempmat; init_mat_d(tempmat,BED->num_variables-1,BED->num_variables-1);
+		tempmat->rows = tempmat->cols = BED->num_variables-1; // change the size indicators
+
 	mat_d AtimesJ; init_mat_d(AtimesJ,1,1);
 	mat_d Jv_detjac; init_mat_d(Jv_detjac,0,0);
 	mat_d temp_jacobian_functions, temp_jacobian_parameters; init_mat_d(temp_jacobian_functions,0,0); init_mat_d(temp_jacobian_parameters,0,0);
@@ -782,9 +795,9 @@ int linprod_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, ma
 	// the product of the linears
 	set_one_d(linprod); // initialize to 1 for multiplication
 	for (ii=0; ii<BED->num_linears; ++ii) {
-		
+		set_d(temp,linprod);
 		dot_product_d(&lin_func_vals->coord[ii],BED->linears[ii],current_variable_values); // save into a buffer for calculating the derivative later.
-		mul_d(linprod,linprod,&lin_func_vals->coord[ii]);// multiply.
+		mul_d(linprod,temp,&lin_func_vals->coord[ii]);// multiply.
 	}
 	//done with the loop over the linears.  now set the value
 	
@@ -795,27 +808,35 @@ int linprod_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, ma
 	
 	//the determinant of the jacobian, with the projection.
 	
-	mat_cp_d(tempmat,AtimesJ);// copy into the matrix of which we will take the determinant
 	
-	increase_size_mat_d(tempmat,BED->num_variables,BED->num_variables); // make it bigger to accomodate more entries.  make square
-	tempmat->rows = tempmat->cols = BED->num_variables; // change the size indicators
+//	increase_size_mat_d(tempmat,,BED->num_variables-1); // make it bigger to accomodate more entries.  make square
+	
+//	mat_cp_d(tempmat,AtimesJ);// copy into the matrix of which we will take the determinant
+	
+	for (jj=0; jj<BED->num_variables-2; jj++) {
+		for (ii=0; ii<BED->num_variables-1; ++ii) {
+			set_d(&tempmat->entry[jj][ii],&AtimesJ->entry[jj][ii+1]); // copy in the projection
+		}
+	}
 	
 	//copy in the projection from BED
-	for (ii=0; ii<BED->num_variables; ++ii) {
-		set_d(&tempmat->entry[BED->num_variables-2][ii],&BED->projection->coord[ii]); // copy in the projection
+	for (ii=0; ii<BED->num_variables-1; ++ii) {
+		set_d(&tempmat->entry[BED->num_variables-2][ii],&BED->projection->coord[ii+1]); // copy in the projection
 	}
 	
-	//copy in the jacocian of the patch equation
-	for (ii=0; ii<BED->num_variables; ++ii) {
-		set_d(&tempmat->entry[BED->num_variables-1][ii],&Jv_Patch->entry[0][ii]); //  copy in the patch jacobian
-	}
+	//don't do this anymore
+//	//copy in the jacocian of the patch equation
+//	for (ii=0; ii<BED->num_variables; ++ii) {
+//		set_d(&tempmat->entry[BED->num_variables-1][ii],&Jv_Patch->entry[0][ii]); //  copy in the patch jacobian
+//	}
 	
 	//now TAKE THE DETERMINANT of tempmat.
+//	print_matrix_to_screen_matlab(tempmat,"tempmat");
 	take_determinant_d(detjac,tempmat); // the determinant goes into detjac
 	
 	set_d(&funcVals->coord[BED->num_variables-2],detjac);
-	mul_d(&funcVals->coord[BED->num_variables-2],&funcVals->coord[BED->num_variables-2],one_minus_s);//  (1-s)*detjac
-	add_d(&funcVals->coord[BED->num_variables-2],&funcVals->coord[BED->num_variables-2],linprod_times_gamma_s);
+	mul_d(temp,detjac,one_minus_s);//  (1-s)*detjac
+	add_d(&funcVals->coord[BED->num_variables-2],temp,linprod_times_gamma_s);
 	
 	
 	
@@ -836,12 +857,13 @@ int linprod_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, ma
 	detjac_numerical_derivative_d(Jv_detjac, // return value
 																current_variable_values, pathVars, BED->projection,
 																BED->num_variables,
-																BED->patch,
 																BED->SLP,
 																BED->n_minusone_randomizer_matrix); // input parameters for the method
+	//																	BED->patch,
+
 	
-	
-	
+//	print_matrix_to_screen_matlab(Jv_detjac,"Jv_detjac");
+
 	//////////////
 	//
 	// SET THE FINAL RETURNED JACOBIAN ENTRIES.
@@ -875,17 +897,19 @@ int linprod_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, ma
 		set_zero_d(&linprod_derivative->coord[kk]); // initialize to 0 for the sum
 		for (ii=0; ii<BED->num_linears; ++ii) { //  for each linear
 			
+			set_d(temp2,&linprod_derivative->coord[kk]);
 			set_one_d(running_prod);// initialize to 1 for the product
 			for (jj=0; jj<BED->num_linears; jj++) {
+				set_d(temp,running_prod);
 				if (jj==ii) {
-					mul_d(running_prod,running_prod,&BED->linears[ii]->coord[kk]);// the coordinate IS the derivative of the linear function
+					mul_d(running_prod,temp,&BED->linears[ii]->coord[kk]);// the coordinate IS the derivative of the linear function
 				}
 				else{
-					mul_d(running_prod,running_prod,&lin_func_vals->coord[jj]); // the linear evaluated at curr_var_vals
+					mul_d(running_prod,temp,&lin_func_vals->coord[jj]); // the linear evaluated at curr_var_vals
 				}
 			}//re: jj
 			
-			add_d(&linprod_derivative->coord[kk],&linprod_derivative->coord[kk],running_prod);
+			add_d(&linprod_derivative->coord[kk],temp2,running_prod);
 		}// re:ii
 		
 	}//re: kk
@@ -914,11 +938,11 @@ int linprod_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, ma
 	
 	//initialize
 	//Jp[N-2][0] = -detjac + gamma*linprod
-	
-	set_d(&Jp->entry[BED->num_variables-2][0],detjac);
-	neg_d(&Jp->entry[BED->num_variables-2][0],&Jp->entry[BED->num_variables-2][0]);
+//	
+//	set_d(&Jp->entry[BED->num_variables-2][0],detjac);
+	neg_d(temp2,detjac);
 	mul_d(temp,BED->gamma,linprod);
-	add_d(&Jp->entry[BED->num_variables-2][0],&Jp->entry[BED->num_variables-2][0],temp);
+	add_d(&Jp->entry[BED->num_variables-2][0],temp2,temp);
 	
 	
 
@@ -1388,9 +1412,10 @@ void setuplinprodtodetjacEval_d(tracker_config_t *T,char preprocFile[], char deg
 	
 	
 	get_comp_rand_d(BED->gamma); // set gamma to be random complex value
+//
+//	set_one_d(BED->gamma);
+//TODO: HERE
 	
-
-
 	if (MPType == 2)
   { // using AMP - initialize using 16 digits & 64-bit precison
 		
@@ -1409,7 +1434,14 @@ void setuplinprodtodetjacEval_d(tracker_config_t *T,char preprocFile[], char deg
 		BED->BED_mp->gamma_rat = (mpq_t *)bmalloc(2 * sizeof(mpq_t));
 		//		init_rat(BED->BED_mp->gamma_rat);
 		
+		
 		get_comp_rand_rat(BED->gamma, BED->BED_mp->gamma, BED->BED_mp->gamma_rat, prec, T->AMP_max_prec, 1, 1);
+//TODO:HERE
+//		init_rat(BED->BED_mp->gamma_rat);  init_mp(BED->BED_mp->gamma);
+//		set_one_rat(BED->BED_mp->gamma_rat);
+//		set_one_mp(BED->BED_mp->gamma);
+		
+		
 		BED->BED_mp->num_variables = W.num_variables;
 		
 		
@@ -1617,7 +1649,7 @@ void change_linprodtodetjac_eval_prec_mp(int new_prec, linprodtodetjac_eval_data
 		
 		BED->curr_prec = new_prec;
 		
-//		printf("changing to precision %d\n",new_prec);
+		printf("changing to precision %d\n",new_prec);
 		
 		
 		setprec_mp(BED->gamma, new_prec);
@@ -1896,7 +1928,7 @@ void linprod_to_detjac_track_mp(trackingStats *trackCount,
 		set_one_mp(startPts[ii].time);
 	}
 	
-	
+
 	T->endgameOnly = 0;
 	
 	
@@ -2070,6 +2102,10 @@ void linprod_to_detjac_track_path_mp(int pathNum, endgame_data_t *EG_out,
  \***************************************************************/
 {
 	
+//	check_linprod_evaluator(Pin->point,ED);
+//	mypause();
+//	
+	
 	EG_out->pathNum = pathNum;
   EG_out->codim = 0; // zero dimensional - this is ignored
 	
@@ -2215,7 +2251,7 @@ int linprod_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer
 	comp_mp detjac; init_mp(detjac);
 
 	
-	mat_mp tempmat; init_mat_mp(tempmat,BED->num_variables,BED->num_variables);
+	mat_mp tempmat; init_mat_mp(tempmat,BED->num_variables-1,BED->num_variables-1);
 
 	vec_mp temp_function_values; init_vec_mp(temp_function_values,BED->n_minusone_randomizer_matrix->cols);
 	mat_mp temp_jacobian_functions; init_mat_mp(temp_jacobian_functions,BED->n_minusone_randomizer_matrix->cols,BED->num_variables);
@@ -2276,9 +2312,9 @@ int linprod_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer
 	// the product of the linears
 	set_one_mp(linprod); // initialize to 1 for multiplication
 	for (ii=0; ii<BED->num_linears; ++ii) {
-		
+		set_mp(temp,linprod);
 		dot_product_mp(&lin_func_vals->coord[ii],BED->linears[ii],current_variable_values); // save into a buffer for calculating the derivative later.
-		mul_mp(linprod,linprod,&lin_func_vals->coord[ii]);// multiply.
+		mul_mp(linprod,temp,&lin_func_vals->coord[ii]);// multiply.
 	}
 	//done with the loop over the linears.  now set the value
 	
@@ -2289,29 +2325,45 @@ int linprod_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer
 	
 	//the determinant of the jacobian, with the projection.
 	
-	mat_cp_mp(tempmat,AtimesJ);// copy into the matrix of which we will take the determinant
-	
-	increase_size_mat_mp(tempmat,BED->num_variables,BED->num_variables); // make it bigger to accomodate more entries.  make square
-	tempmat->rows = tempmat->cols = BED->num_variables; // change the size indicators
+//	mat_cp_mp(tempmat,AtimesJ);// copy into the matrix of which we will take the determinant
+//	
+//	increase_size_mat_mp(tempmat,BED->num_variables,BED->num_variables); // make it bigger to accomodate more entries.  make square
+	tempmat->rows = tempmat->cols = BED->num_variables-1; // change the size indicators
+//
+//	//copy in the projection from BED
+//	for (ii=0; ii<BED->num_variables; ++ii) {
+//		set_mp(&tempmat->entry[BED->num_variables-2][ii],&BED->projection->coord[ii]); // copy in the projection
+//	}
+	for (jj=0; jj<BED->num_variables-2; jj++) {
+		for (ii=0; ii<BED->num_variables-1; ++ii) {
+			set_mp(&tempmat->entry[jj][ii],&AtimesJ->entry[jj][ii+1]); // copy in the projection
+		}
+	}
 	
 	//copy in the projection from BED
-	for (ii=0; ii<BED->num_variables; ++ii) {
-		set_mp(&tempmat->entry[BED->num_variables-2][ii],&BED->projection->coord[ii]); // copy in the projection
+	for (ii=0; ii<BED->num_variables-1; ++ii) {
+		set_mp(&tempmat->entry[BED->num_variables-2][ii],&BED->projection->coord[ii+1]); // copy in the projection
 	}
 	
-	//copy in the jacocian of the patch equation
-	for (ii=0; ii<BED->num_variables; ++ii) {
-		set_mp(&tempmat->entry[BED->num_variables-1][ii],&Jv_Patch->entry[0][ii]); //  copy in the patch jacobian
-	}
-	
+//	//copy in the jacocian of the patch equation
+//	for (ii=0; ii<BED->num_variables; ++ii) {
+//		set_mp(&tempmat->entry[BED->num_variables-1][ii],&Jv_Patch->entry[0][ii]); //  copy in the patch jacobian
+//	}
+//	print_matrix_to_screen_matlab_mp(tempmat,"detme");
+//	mypause();
 	//now TAKE THE DETERMINANT of tempmat.
 	take_determinant_mp(detjac,tempmat); // the determinant goes into detjac
+//	print_comp_mp_matlab(detjac,"detjac");
+	mul_mp(temp,detjac,one_minus_s);
+	add_mp(&funcVals->coord[BED->num_variables-2],temp,linprod_times_gamma_s);
 	
-	set_mp(&funcVals->coord[BED->num_variables-2],detjac);
-	mul_mp(&funcVals->coord[BED->num_variables-2],&funcVals->coord[BED->num_variables-2],one_minus_s);//  (1-s)*detjac
-	add_mp(&funcVals->coord[BED->num_variables-2],&funcVals->coord[BED->num_variables-2],linprod_times_gamma_s);
+//	set_mp(&funcVals->coord[BED->num_variables-2],detjac);
+//	mul_mp(&funcVals->coord[BED->num_variables-2],&funcVals->coord[BED->num_variables-2],one_minus_s);//  (1-s)*detjac
+//	add_mp(&funcVals->coord[BED->num_variables-2],&funcVals->coord[BED->num_variables-2],linprod_times_gamma_s);
 	
-	
+//	print_comp_mp_matlab(one_minus_s,"one_minus_s");
+//	print_comp_mp_matlab(pathVars,"path");
+//	print_point_to_screen_matlab_mp(funcVals,"f_maybe");
 	
 	
 	
@@ -2326,15 +2378,15 @@ int linprod_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer
 	
 	
 	//now for the numerical derivative.
-	
+	//																	 BED->patch,
+
 	detjac_numerical_derivative_mp(Jv_detjac, // return value
 																 current_variable_values, pathVars, BED->projection,
 																 BED->num_variables,
-																 BED->patch,
 																 BED->SLP,
 																 BED->n_minusone_randomizer_matrix); // input parameters for the method
 	
-	
+//	print_matrix_to_screen_matlab_mp(Jv_detjac,"Jv_detjac");
 	
 	//////////////
 	//
@@ -2371,16 +2423,18 @@ int linprod_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer
 		for (ii=0; ii<BED->num_linears; ++ii) { //  for each linear
 			
 			set_one_mp(running_prod);// initialize to 1 for the product
+			set_mp(temp2,&linprod_derivative->coord[kk]);
 			for (jj=0; jj<BED->num_linears; jj++) {
+				set_mp(temp,running_prod);
 				if (jj==ii) {
-					mul_mp(running_prod,running_prod,&BED->linears[ii]->coord[kk]);// the coordinate IS the derivative of the linear function
+					mul_mp(running_prod,temp,&BED->linears[ii]->coord[kk]);// the coordinate IS the derivative of the linear function
 				}
 				else{
-					mul_mp(running_prod,running_prod,&lin_func_vals->coord[jj]); // the linear evaluated at curr_var_vals
+					mul_mp(running_prod,temp,&lin_func_vals->coord[jj]); // the linear evaluated at curr_var_vals
 				}
 			}//re: jj
 			
-			add_mp(&linprod_derivative->coord[kk],&linprod_derivative->coord[kk],running_prod);
+			add_mp(&linprod_derivative->coord[kk],temp2,running_prod);
 		}// re:ii
 		
 	}//re: kk
@@ -2388,9 +2442,9 @@ int linprod_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer
 	
 	offset = BED->num_variables-2;
 	for (ii=0; ii<BED->num_variables; ii++) {
-		mul_mp(temp,&linprod_derivative->coord[ii],gamma_s); // temp = d/dx linprod * gamma * s
-		mul_mp(temp2,&Jv_detjac->entry[0][ii],one_minus_s);
-		add_mp(&Jv->entry[offset][ii],temp, temp2);  // Jv = (1-s)d/dx(detjac) + s*gamma*d/dx linprod
+		mul_mp(temp, &linprod_derivative->coord[ii], gamma_s); // temp = d/dx linprod * gamma * s
+		mul_mp(temp2, &Jv_detjac->entry[0][ii], one_minus_s);
+		add_mp(&Jv->entry[offset][ii], temp, temp2);  // Jv = (1-s)d/dx(detjac) + s*gamma*d/dx linprod
 	}
 	//&&&&&&&&&&&
 	
@@ -2412,12 +2466,10 @@ int linprod_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer
 	//initialize
 	//Jp[N-2][0] = -detjac + gamma*linprod
 	
-	set_mp(&Jp->entry[BED->num_variables-2][0],detjac);
-	neg_mp(&Jp->entry[BED->num_variables-2][0],&Jp->entry[BED->num_variables-2][0]);
-	
+//	set_mp(&Jp->entry[BED->num_variables-2][0],detjac);
+	neg_mp(temp2,detjac);
 	mul_mp(temp,BED->gamma,linprod);
-	
-	add_mp(&Jp->entry[BED->num_variables-2][0],&Jp->entry[BED->num_variables-2][0],temp);
+	add_mp(&Jp->entry[BED->num_variables-2][0],temp2,temp);
 	
 	
 	
@@ -2494,14 +2546,14 @@ int linprod_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer
 	BED->num_steps++;
 	vec_mp dehommed; init_vec_mp(dehommed,BED->num_variables-1); dehommed->size = BED->num_variables-1;
 	dehomogenize_mp(&dehommed,current_variable_values);
-	mpf_out_str (BED->FOUT, 10, 32, pathVars->r);
+	mpf_out_str (BED->FOUT, 10, 15, pathVars->r);
 	fprintf(BED->FOUT," ");
-	mpf_out_str (BED->FOUT, 10, 32, pathVars->i);
+	mpf_out_str (BED->FOUT, 10, 15, pathVars->i);
 	fprintf(BED->FOUT," ");
 	for (ii=0; ii<BED->num_variables-1; ++ii) {
-		mpf_out_str (BED->FOUT, 10, 32, dehommed->coord[ii].r);
+		mpf_out_str (BED->FOUT, 10, 15, dehommed->coord[ii].r);
 		fprintf(BED->FOUT," ");
-		mpf_out_str (BED->FOUT, 10, 32, dehommed->coord[ii].i);
+		mpf_out_str (BED->FOUT, 10, 15, dehommed->coord[ii].i);
 		fprintf(BED->FOUT," ");
 		
 //		fprintf(BED->FOUT,"%.15lf %.15lf ",dehommed->coord[ii].r,dehommed->coord[ii].i);
@@ -2957,6 +3009,124 @@ void cp_linprodtodetjac_eval_data_mp(linprodtodetjac_eval_data_mp *BED, linprodt
 
 
 
+int check_issoln_linprod_d(endgame_data_t *EG,
+														tracker_config_t *T,
+														void const *ED)
+{
+  linprodtodetjac_eval_data_d *LPED = (linprodtodetjac_eval_data_d *)ED; // to avoid having to cast every time
+	
+	
+	int ii;
+	double tol;
+	double n1, n2, zero_thresh, max_rat;
+	point_d f;
+	eval_struct_d e;
+//	
+//	mpf_init(n1); mpf_init(n2); mpf_init(zero_thresh); mpf_init(max_rat);
+	init_point_d(f, 1);
+	init_eval_struct_d(e,0, 0, 0);
+	
+	max_rat = T->ratioTol;
+	
+	// setup threshold based on given threshold and precision
+//	if (num_digits > 300)
+//		num_digits = 300;
+//	num_digits -= 2;
+	zero_thresh = MAX(T->funcResTol, 1e-15);
+	
+	
+	linprod_to_detjac_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_d.point, EG->PD_d.time, ED);
+	linprod_to_detjac_eval_d(f,          e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_d, EG->PD_d.time, ED);
+	// compare the function values
+	int isSoln = 1;
+	for (ii = 0; ii < LPED->SLP->numFuncs && isSoln; ii++)
+	{
+		n1 = d_abs_d( &e.funcVals->coord[ii]);
+		n2 = d_abs_d( &f->coord[ii]);
+		
+		if (tol <= n1 && n1 <= n2)
+		{ // compare ratio
+			if (n1 > max_rat * n2)
+				isSoln = 0;
+		}
+		else if (tol <= n2 && n2 <= n1)
+		{ // compare ratio
+			if (n2 > max_rat * n1)
+				isSoln = 0;
+		}
+	}
+	
+	
+
+	
+	clear_eval_struct_d(e);
+	clear_vec_d(f);
+	
+	return isSoln;
+	
+}
+
+
+int check_issoln_linprod_mp(endgame_data_t *EG,
+														 tracker_config_t *T,
+														 void const *ED)
+{
+  linprodtodetjac_eval_data_mp *LPED = (linprodtodetjac_eval_data_mp *)ED; // to avoid having to cast every time
+
+	
+	int ii, num_digits = prec_to_digits((int) mpf_get_default_prec());
+	double tol;
+	mpf_t n1, n2, zero_thresh, max_rat;
+	point_mp f;
+	eval_struct_mp e;
+	
+	mpf_init(n1); mpf_init(n2); mpf_init(zero_thresh); mpf_init(max_rat);
+	init_point_mp(f, 1);
+	init_eval_struct_mp(e,0, 0, 0);
+	
+	mpf_set_d(max_rat, T->ratioTol);
+	
+	// setup threshold based on given threshold and precision
+	if (num_digits > 300)
+		num_digits = 300;
+	num_digits -= 2;
+		tol = MAX(T->funcResTol, pow(10,-num_digits));
+	mpf_set_d(zero_thresh, tol);
+	
+	
+	linprod_to_detjac_eval_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, ED);
+	linprod_to_detjac_eval_mp(f,          e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_mp, EG->PD_mp.time, ED);
+	// compare the function values
+	int isSoln = 1;
+	for (ii = 0; ii < LPED->SLP->numFuncs && isSoln; ii++)
+	{
+		mpf_abs_mp(n1, &e.funcVals->coord[ii]);
+		mpf_abs_mp(n2, &f->coord[ii]);
+		
+		if (mpf_cmp(zero_thresh, n1) <= 0 && mpf_cmp(n1, n2) <= 0)
+		{ // compare ratio
+			mpf_mul(n2, max_rat, n2);
+			if (mpf_cmp(n1, n2) > 0)
+				isSoln = 0;
+		}
+		else if (mpf_cmp(zero_thresh, n2) <= 0 && mpf_cmp(n2, n1) <= 0)
+		{ // compare ratio
+			mpf_mul(n1, max_rat, n1);
+			if (mpf_cmp(n2, n1) > 0)
+				isSoln = 0;
+		}
+	}
+	
+	
+	mpf_clear(n1); mpf_clear(n2); mpf_clear(zero_thresh); mpf_clear(max_rat);
+	
+	
+	clear_eval_struct_mp(e);
+	clear_vec_mp(f);
+
+	return isSoln;
+	
+}
 
 
 
@@ -2965,6 +3135,64 @@ void cp_linprodtodetjac_eval_data_mp(linprodtodetjac_eval_data_mp *BED, linprodt
 
 
 
+void check_linprod_evaluator(point_mp current_values,
+														 void const *ED)
+{
+	printf("checking homogeneousness of evaluator\n");
+  linprodtodetjac_eval_data_mp *LPED = (linprodtodetjac_eval_data_mp *)ED; // to avoid having to cast every time
+	int ii;
+	//initialize
+	eval_struct_mp e_d; init_eval_struct_mp(e_d, 0, 0, 0);
+	eval_struct_mp e_d2; init_eval_struct_mp(e_d2, 0, 0, 0);
+	
+	
+	comp_mp result; init_mp(result);
+	comp_mp zerotime; init_mp(zerotime);
+	
+	comp_d timed; timed->r = 0.5; timed->i = 0.0;
+	d_to_mp(zerotime,timed); // set zero
+	
+	comp_mp lambda; init_mp(lambda); get_comp_rand_mp(lambda);
+	
+	linprod_to_detjac_eval_mp(e_d.funcVals, e_d.parVals, e_d.parDer, e_d.Jv, e_d.Jp, current_values, zerotime, ED);
+	// the result of this, most importantly, is e_d.Jv, which contains the (complex) jacobian Jv for the system.
+	// this jacobian Jv = \frac{\partial f_i}{\partial x_j} ( current_witness_point, zerotime)
+	vec_mp curr_times_lambda;  init_vec_mp(curr_times_lambda,LPED->num_variables); curr_times_lambda->size = LPED->num_variables;
+	
+	
+	for (ii=0; ii<LPED->num_variables; ii++) {
+		mul_mp(&curr_times_lambda->coord[ii],&current_values->coord[ii],lambda);
+	}
+	
+	
+	linprod_to_detjac_eval_mp(e_d2.funcVals, e_d2.parVals, e_d2.parDer, e_d2.Jv, e_d2.Jp, curr_times_lambda, zerotime, ED);
+
+	
+	for (ii=0; ii<LPED->num_linears; ii++) {
+		print_point_to_screen_matlab_mp(LPED->linears[ii],"l");
+	}
+	
+	
+	
+	
+	print_comp_mp_matlab(zerotime,"t");
+	
+	dot_product_mp(result,LPED->linears[0],current_values);
+	print_comp_mp_matlab(result,"dot_p");
+	print_comp_mp_matlab(LPED->gamma,"gamma");
+	print_point_to_screen_matlab_mp(current_values,"currvals");
+	print_point_to_screen_matlab_mp(LPED->projection,"proj");
+	print_comp_mp_matlab(lambda,"lambda");
+	print_point_to_screen_matlab_mp(e_d.funcVals,"f");
+	print_point_to_screen_matlab_mp(e_d2.funcVals,"f2");
+	
+	print_matrix_to_screen_matlab_mp(e_d.Jv,"Jv");
+	print_matrix_to_screen_matlab_mp(e_d2.Jv,"Jv2");
+	//TODO: NEED TO CLEAR THE EVALDATA, or leak memory.
+	
+	return;
+	
+}
 
 
 
