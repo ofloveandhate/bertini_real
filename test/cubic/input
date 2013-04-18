@@ -1,0 +1,17 @@
+CONFIG
+
+tracktype: 1;
+ODEPREDICTOR: 5;% 5 is default;
+endgamenum: 2;
+mptype: 2;
+minstepsizebeforeeg: 1e-32;
+minstepsizeduringeg: 1e-32;
+END;
+
+INPUT
+
+variable_group x,y;
+function f1;
+f1=x^2+y^2-1;
+
+END;
