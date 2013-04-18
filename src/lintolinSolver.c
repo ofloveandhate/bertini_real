@@ -17,11 +17,27 @@ int lin_to_lin_solver_main(int MPType,
 													 witness_set_d *W_new){
 	
 	cp_patches(W_new,W); // copy the patches over from the original witness set
+	W_new->num_variables = W.num_variables;
+	
+	
 	if (num_new_linears==0) {
+		W_new->num_linears = 0;
 		printf("\nno new linears at which to solve.  returning out of lin_to_lin\n");
-		W_new->num_variables = W.num_variables;
 		return 0;
 	}
+	
+	
+	W_new->num_linears = (num_new_linears);
+	W_new->L = (vec_d *)bmalloc((num_new_linears)*sizeof(vec_d));
+	W_new->L_mp = (vec_mp *)bmalloc((num_new_linears)*sizeof(vec_mp));
+	int ii;
+	for (ii=0; ii<num_new_linears; ii++) {
+		//copy the linears into the new witness_set
+		init_vec_d(W_new->L[ii],0); init_vec_mp2(W_new->L_mp[ii],0,1024); //the 1024 here is incorrect
+		vec_mp_to_d(   W_new->L[ii],new_linears_full_prec[ii]);
+		vec_cp_mp(W_new->L_mp[ii],new_linears_full_prec[ii]);
+	}
+	
 	
 	if (MPType==1){
 		lin_to_lin_solver_mp(MPType,W,n_minusone_randomizer_matrix_full_prec,new_linears_full_prec,num_new_linears,W_new);
@@ -76,11 +92,9 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
   // setup T
   setupConfig(&T, &midpoint_tol, &userHom, &useRegen, &regenStartLevel, &maxCodim, &specificCodim, &pathMod, &intrinsicCutoffMultiplier, &reducedOnly, &supersetOnly, &paramHom, MPType);
 	
-//	printf("maxNewtonIts: %d\n",T.maxNewtonIts);
-//	mypause();
+
 	
 	//  // call the setup function
-	// setup for standard tracking - 'useRegen' is used to determine whether or not to setup 'start'
 	num_variables = lin_to_lin_setup_d(&OUT, "output",
 																		 &midOUT, "midpath_data",
 																		 &T, &ED,
@@ -125,6 +139,7 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
   }
 	
 	
+	post_process_t *endPoints = (post_process_t *)bmalloc(W.W.num_pts*(num_new_linears) * sizeof(post_process_t)); //overallocate, expecting full number of solutions.
 	
 	
 	if (T.endgameNumber == 3)
@@ -139,19 +154,14 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
 											 W,  // was the startpts file pointer.
 											 new_linears_full_prec,
 											 num_new_linears,
-											 W_new,
+											 endPoints,
 											 FAIL, pathMod,
 											 &T, &ED, ED.BED_mp,
 											 ptr_to_eval_d, ptr_to_eval_mp,
 											 change_prec, dehom);
 	}
 	
-	
-
-	
 	fclose(midOUT);
-	
-	
 	
 
 	// finish the output to rawOUT
@@ -182,7 +192,7 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
   fprintf(OUT, "Track Time = %fs\n", track_time);
 	
   // print the system to rawOUT
-//  printlintolinRelevantData(&ED, ED.BED_mp, T.MPType, usedEq, rawOUT);
+	//  printlintolinRelevantData(&ED, ED.BED_mp, T.MPType, usedEq, rawOUT);
 	//	printZeroDimRelevantData(&ED, ED.BED_mp, T.MPType, usedEq, rawOUT);// legacy
 	
   // close all of the files
@@ -191,23 +201,14 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
   fprintf(FAIL, "\n");
   fclose(FAIL);
 	
-  // reproduce the input file needed for this run
-//  reproduceInputFile(inputName, "func_input", &T, 0, 0, currentSeed, pathMod, userHom, useRegen, regenStartLevel, maxCodim, specificCodim, intrinsicCutoffMultiplier, reducedOnly, supersetOnly, paramHom);
-	
-	//  // print the output
-	
 
-  // do the standard post-processing
-//  sort_points(num_crossings, &convergence_failures, &sharpening_failures, &sharpening_singular, inputName, num_sols, num_variables, midpoint_tol, T.final_tol_times_mult, &T, &ED.preProcData, useRegen == 1 && userHom == 0, userHom == -59);
 	
+	BRpostProcessing(endPoints, W_new, trackCount.successes, ED.preProcData, &T);
 	
-	
-  // print the failure summary
-//  printFailureSummary(&trackCount, convergence_failures, sharpening_failures, sharpening_singular);
 	
 
 	
-	//DAB is there other stuff which should be cleared here?
+//TODO: DAB is there other stuff which should be cleared here?
 	
     free(startSub);
     free(endSub);
@@ -229,15 +230,12 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
 
 
 
-//												vec_d *new_witness_points,
-//												int *num_total_witness_points, // this will be set in this function
-
 void lin_to_lin_track_d(trackingStats *trackCount,
 												FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
 												witness_set_d W,
 												vec_mp *new_linears_full_prec,
 												int num_new_linears,
-												witness_set_d *W_new,
+												post_process_t *endPoints,
 												FILE *FAIL,
 												int pathMod, tracker_config_t *T,
 												lintolin_eval_data_d *ED_d,
@@ -265,14 +263,6 @@ void lin_to_lin_track_d(trackingStats *trackCount,
   fprintf(RAWOUT, "%d\n%d\n", T->numVars, 0);
 	
 	
-	
-	// setup NONSOLN
-	//  if (!ED_d->squareSystem.noChanges)
-	//  { // setup NONSOLN
-	//    NONSOLN = fopen("nonsolutions", "w");
-	//    fprintf(NONSOLN, "                                    \n\n");
-	//  }
-	
 	int (*curr_eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *) = NULL;
   int (*curr_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = NULL;
 	
@@ -283,8 +273,6 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 	
 	point_data_d *startPts = NULL;
 	startPts = (point_data_d *)bmalloc(W.W.num_pts * sizeof(point_data_d));
-	
-	
 	
 	for (ii = 0; ii < W.W.num_pts; ii++)
 	{ // setup startPts[ii]
@@ -312,28 +300,10 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 												 &OUT_copy, OUT, &RAWOUT_copy, RAWOUT, &MIDOUT_copy, MIDOUT, &FAIL_copy, FAIL, &NONSOLN_copy, NONSOLN,
 												 &T_copy, T,
 												 &BED_copy, ED_d, ED_mp);
-	
-	
-	//initialize the structure for holding the produced data
-	W_new->num_linears = (num_new_linears);
-	W_new->L = (vec_d *)bmalloc((num_new_linears)*sizeof(vec_d));
-	W_new->L_mp = (vec_mp *)bmalloc((num_new_linears)*sizeof(vec_mp));
-	
-	
-	W_new->W.num_pts=W.W.num_pts*(num_new_linears);
-  W_new->W.pts=(point_d *)bmalloc(W_new->W.num_pts*sizeof(point_d));
-	
-	W_new->W_mp.num_pts=W.W_mp.num_pts*(num_new_linears);
-  W_new->W_mp.pts=(point_mp *)bmalloc(W_new->W_mp.num_pts*sizeof(point_mp));
-	
-	
-  W_new->num_variables = W.num_variables;
-	
-	post_process_t *endPoints = (post_process_t *)bmalloc(W.W.num_pts*(num_new_linears) * sizeof(post_process_t));
-	
+
 	
 	trackCount->numPoints = W.W.num_pts*(num_new_linears);
-	int witness_point_counter = 0;
+	int solution_counter = 0;
 	
 	
 	for (kk = 0; kk< num_new_linears; kk++)
@@ -347,16 +317,12 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 		vec_mp_to_d(     ED_d->current_linear,new_linears_full_prec[kk]);
 		
 		if (T->MPType==2) {
+			//should i reset the precision here?
 			vec_cp_mp(ED_d->BED_mp->current_linear,new_linears_full_prec[kk]);
 			vec_cp_mp(ED_d->BED_mp->current_linear_full_prec,new_linears_full_prec[kk]);
-//			point_d_to_mp(ED_d->BED_mp->current_linear,ED_d->current_linear);
 		}
 		
-		//copy the linears into the new witness_set
-		init_vec_d(W_new->L[kk],0); init_vec_mp2(W_new->L_mp[kk],0,T->AMP_max_prec);
-		vec_mp_to_d(   W_new->L[kk],new_linears_full_prec[kk]);
-		vec_cp_mp(W_new->L_mp[kk],new_linears_full_prec[kk]);
-			
+
 
 		
 		// track each of the start points
@@ -370,12 +336,12 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 			printf("\t\tpoint %d\n",ii);
 			startPointIndex = ii;
 
-			
+//TODO: eliminate this header stuff
 			// print the header of the path to OUT
 			printPathHeader_d(OUT_copy[oid], &startPts[startPointIndex], &T_copy[oid], ii, &BED_copy[oid], eval_func_d);
 			
 			// track the path
-			lin_to_lin_track_path_d(witness_point_counter, &EG[oid], &startPts[startPointIndex], OUT_copy[oid], MIDOUT_copy[oid], &T_copy[oid], &BED_copy[oid], BED_copy[oid].BED_mp, curr_eval_d, curr_eval_mp, change_prec, find_dehom);
+			lin_to_lin_track_path_d(solution_counter, &EG[oid], &startPts[startPointIndex], OUT_copy[oid], MIDOUT_copy[oid], &T_copy[oid], &BED_copy[oid], BED_copy[oid].BED_mp, curr_eval_d, curr_eval_mp, change_prec, find_dehom);
 			
 			
 			
@@ -401,74 +367,24 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 				mp_to_d(time_to_compare, EG->PD_mp.time); }
 			
 			
-			if ((EG->retVal != 0 && time_to_compare->r > T->minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
+			if ( (EG->retVal != 0 && time_to_compare->r > T->minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
 
 				trackCount->failures++;
 				printf("\nretVal = %d\nthere was a fatal path failure tracking linear %d, witness point %d\n\n",EG->retVal,kk,ii);
 				print_path_retVal_message(EG->retVal);
 				print_point_to_screen_matlab(BED_copy->old_linear,"old");
 				print_point_to_screen_matlab(BED_copy->current_linear,"new");
-				exit(EG->retVal);
+				exit(EG->retVal); //failure intolerable in this solver.
 			}
 			else
 			{
 				//otherwise converged, but may have still had non-zero retval due to other reasons.
-				
-				init_vec_d(W_new->W.pts[witness_point_counter],W.num_variables);
-				init_vec_mp(W_new->W_mp.pts[witness_point_counter],W.num_variables);
-				
-				W_new->W.pts[witness_point_counter]->size = W_new->W_mp.pts[witness_point_counter]->size = W.num_variables;
-				
-				
-				endgamedate_to_endpoint(&endPoints[witness_point_counter], EG);
+				endgamedata_to_endpoint(&endPoints[solution_counter], EG);
 				trackCount->successes++;
-//				printf("%d was precision, %d success\n",endPoints[witness_point_counter].sol_prec,endPoints[witness_point_counter].success);
-//				
-//				mypause();
-				
-				//copy the solutions out of EG.
-				if (EG->prec<64) {
-					vec_d_to_mp(W_new->W_mp.pts[witness_point_counter],EG->PD_d.point);
-					vec_cp_d( W_new->W.pts[witness_point_counter], EG->PD_d.point);
-				}
-				else{
-					vec_cp_mp(W_new->W_mp.pts[witness_point_counter],EG->PD_mp.point);
-					vec_mp_to_d(W_new->W.pts[witness_point_counter], EG->PD_mp.point);
-				}
-				
-				witness_point_counter++;
+				solution_counter++; // probably this could be eliminated
 			}
-			//				print_point_to_screen_matlab(startPts[startPointIndex].point,"start");
-			//				print_point_to_screen_matlab(ED_d->old_linear,"old");
-			//
-			//				print_point_to_screen_matlab(EG->PD_d.point,"vend"); // the actual solution!!!
-			//				print_point_to_screen_matlab(ED_d->current_linear,"curr");
-			
-			
-			//    if (EG[oid].prec < 64)
-			//    { // print footer in double precision
-			//      printPathFooter_d(&trackCount_copy[oid], &EG[oid], &T_copy[oid], OUT_copy[oid], RAWOUT_copy[oid], FAIL_copy[oid], NONSOLN_copy[oid], &BED_copy[oid]);
-			//    }
-			//    else
-			//    { // print footer in multi precision
-			//      printPathFooter_mp(&trackCount_copy[oid], &EG[oid], &T_copy[oid], OUT_copy[oid], RAWOUT_copy[oid], FAIL_copy[oid], NONSOLN_copy[oid], BED_copy[oid].BED_mp);
-			//    }
-			
-			
-
-			
-			
 		}// re: for (ii=0; ii<W.W.num_pts ;ii++)
 	} // for each new linear
-	
-	
-//	printf("%lf\n",T_copy[oid].finiteThreshold);
-	findMultSol(endPoints, witness_point_counter, W.num_variables, BED_copy[oid].preProcData, T->final_tol_times_mult);// T_copy[oid].finiteThreshold
-	int num_singular_solns = BRfindSingularSolns(endPoints, witness_point_counter, W.num_variables,
-													T);
-	
-	printf("%d singular solutions\n",num_singular_solns);
-	mypause();
 	
 	
 	//clear the data structures.
@@ -482,12 +398,6 @@ void lin_to_lin_track_d(trackingStats *trackCount,
   // clear the structures
   clear_lintolin_omp_d(max, &EG, &trackCount_copy, trackCount, &OUT_copy, OUT, &RAWOUT_copy, RAWOUT, &MIDOUT_copy, MIDOUT, &FAIL_copy, FAIL, &NONSOLN_copy, NONSOLN, &T_copy, &BED_copy);
 	
-	//  if (!ED_d->squareSystem.noChanges)
-	//  { // complete NONSOLN
-	//    rewind(NONSOLN);
-	//    fprintf(NONSOLN, "%d", trackCount->junkCount);
-	//    fclose(NONSOLN);
-	//  }
 	
 //TODO: CLEAR MORE MEMORY
 	
@@ -1609,6 +1519,9 @@ int lin_to_lin_solver_mp(int MPType,
   }
 	
 	
+	post_process_t *endPoints = (post_process_t *)bmalloc(W.W.num_pts*(num_new_linears) * sizeof(post_process_t)); //overallocate, expecting full number of solutions.
+	
+	
 	
 	if (T.endgameNumber == 3)
 	{ // use the track-back endgame
@@ -1622,7 +1535,7 @@ int lin_to_lin_solver_mp(int MPType,
 											 W,  // was the startpts file pointer.
 											 new_linears,
 											 num_new_linears,
-											 W_new,
+											 endPoints,
 											 FAIL, pathMod,
 											 &T, &ED,
 											 ptr_to_eval_mp, //ptr_to_eval_d,
@@ -1663,29 +1576,18 @@ int lin_to_lin_solver_mp(int MPType,
   fprintf(OUT, "Parse Time = %fs\n", parse_time);
   fprintf(OUT, "Track Time = %fs\n", track_time);
 	
-  // print the system to rawOUT
-//  printlintolinRelevantData(NULL, &ED, T.MPType, usedEq, rawOUT);
-	//	printZeroDimRelevantData(&ED, ED.BED_mp, T.MPType, usedEq, rawOUT);// legacy
-	
+
   // close all of the files
   fclose(OUT);
   fclose(rawOUT);
   fprintf(FAIL, "\n");
   fclose(FAIL);
 	
-  // reproduce the input file needed for this run
-//  reproduceInputFile(inputName, "func_input", &T, 0, 0, currentSeed, pathMod, userHom, useRegen, regenStartLevel, maxCodim, specificCodim, intrinsicCutoffMultiplier, reducedOnly, supersetOnly, paramHom);
+
+	BRpostProcessing(endPoints, W_new, trackCount.successes, ED.preProcData, &T);
+	
 	
 
-	
-  // do the standard post-processing
-//  sort_points(num_crossings, &convergence_failures, &sharpening_failures, &sharpening_singular, inputName, num_sols, num_variables, midpoint_tol, T.final_tol_times_mult, &T, &ED.preProcData, useRegen == 1 && userHom == 0, userHom == -59);
-	
-	
-	
-  // print the failure summary
-//  printFailureSummary(&trackCount, convergence_failures, sharpening_failures, sharpening_singular);
-	
 
 	free(startSub);
 	free(endSub);
@@ -1712,7 +1614,7 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 												witness_set_d W,
 												vec_mp *new_linears,
 												int num_new_linears,
-												witness_set_d *W_new,
+												post_process_t *endPoints,
 												FILE *FAIL,
 												int pathMod, tracker_config_t *T,
 												lintolin_eval_data_mp *ED,
@@ -1748,13 +1650,11 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 	
 
   int (*curr_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = NULL;
-	
-  curr_eval_mp = &lin_to_lin_eval_mp; // DAB  // lol send them to the same place for now.
+  curr_eval_mp = &lin_to_lin_eval_mp; // custom evaluator for this method
 	
 	
 	point_data_mp *startPts = NULL;
 	startPts = (point_data_mp *)bmalloc(W.W_mp.num_pts * sizeof(point_data_mp));
-	
 	
 	
 	for (ii = 0; ii < W.W_mp.num_pts; ii++)
@@ -1784,22 +1684,9 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 												 &BED_copy, ED);
 	
 	
-	//initialize the structure for holding the produced data
-	W_new->num_linears = (num_new_linears);
-	W_new->L_mp = (vec_mp *)bmalloc((num_new_linears)*sizeof(vec_mp));
-	W_new->L = (vec_d *)bmalloc((num_new_linears)*sizeof(vec_d));
-	
-	
-	W_new->W.num_pts=W.W.num_pts*(num_new_linears);
-  W_new->W.pts=(point_d *)bmalloc(W_new->W.num_pts*sizeof(point_d));
-	
-	W_new->W_mp.num_pts=W.W_mp.num_pts*(num_new_linears);
-  W_new->W_mp.pts=(point_mp *)bmalloc(W_new->W_mp.num_pts*sizeof(point_mp));
-  W_new->num_variables = W.num_variables;
-	
 	
 	trackCount->numPoints = W.W.num_pts*(num_new_linears);
-	int witness_point_counter = 0;
+	int solution_counter = 0;
 	
 	
 	for (kk = 0; kk< num_new_linears; kk++)
@@ -1811,16 +1698,7 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 //		//set current linear in the evaluator data
 		vec_cp_mp(ED->current_linear,new_linears[kk]);
 
-		//and now into the witness_set
-		init_vec_mp(W_new->L_mp[kk],W.num_variables);
-		init_vec_d(W_new->L[kk],W.num_variables);
-		vec_cp_mp(W_new->L_mp[kk],new_linears[kk]);
-		vec_mp_to_d(W_new->L[kk],new_linears[kk])
 
-		
-		
-		// we pass the particulars of the information for this solve mode via the ED.
-		
 		
 		// track each of the start points
 #ifdef _OPENMP
@@ -1831,8 +1709,8 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 			oid = thread_num();
 			
 			// print the header of the path to OUT
-//			printPathHeader_mp(OUT_copy[oid], &startPts[startPointIndex], &T_copy[oid], witness_point_counter, &BED_copy[oid], eval_func_mp);
-			lin_to_lin_track_path_mp(witness_point_counter, &EG[oid], &startPts[ii], OUT_copy[oid], MIDOUT_copy[oid], &T_copy[oid], &BED_copy[oid], curr_eval_mp, change_prec, find_dehom); //curr_eval_d,
+//			printPathHeader_mp(OUT_copy[oid], &startPts[startPointIndex], &T_copy[oid], solution_counter, &BED_copy[oid], eval_func_mp);
+			lin_to_lin_track_path_mp(solution_counter, &EG[oid], &startPts[ii], OUT_copy[oid], MIDOUT_copy[oid], &T_copy[oid], &BED_copy[oid], curr_eval_mp, change_prec, find_dehom); //curr_eval_d,
 			
 	
 			
@@ -1843,63 +1721,36 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 				// DAB - replaced curr_eval_d with NULL
 			}
 			
-			
-			if (EG->retVal!=0) {
-				printf("retVal = %d\nthere was a path failure tracking linear %d, witness point %d\n",EG->retVal,kk,ii);
-				print_path_retVal_message(EG->retVal);
-				exit(EG->retVal);
-			}
-			
-			
-			//copy the solutions out of EG.
-			
-			init_vec_mp(W_new->W_mp.pts[witness_point_counter],0);
-			init_vec_d(W_new->W.pts[witness_point_counter],0);
-			
-			
-			vec_cp_mp( W_new->W_mp.pts[witness_point_counter],
-							 EG->PD_mp.point);
-			vec_mp_to_d(W_new->W.pts[witness_point_counter],
-									EG->PD_mp.point)
-			
-			
-//			comp_mp result; init_mp(result);
-//			dot_product_mp(result, W_new->W_mp.pts[witness_point_counter], ED->current_linear);
-//			print_point_to_screen_matlab( W_new->W.pts[witness_point_counter],"newwitnesspoint");
-//			print_point_to_screen_matlab( ED_d->current_linear,"newlinear");
-//
-//			printf("dot_prod=%le+1i*%le;\n",result->r,result->i);
-			
 
+			int issoln = check_issoln_lintolin_mp(&EG[oid], &T_copy[oid], &BED_copy[oid]);
 			
 			
-			witness_point_counter++;
+			//get the terminal time in double form
+			comp_d time_to_compare;
+			mp_to_d(time_to_compare, EG->PD_mp.time); 
 			
 			
-			//				print_point_to_screen_matlab(startPts[startPointIndex].point,"start");
-			//				print_point_to_screen_matlab(ED_d->old_linear,"old");
-			//
-			//				print_point_to_screen_matlab(EG->PD_d.point,"vend"); // the actual solution!!!
-			//				print_point_to_screen_matlab(ED_d->current_linear,"curr");
-			
-			
-//    if (EG[oid].prec < 64)
-//    { // print footer in double precision
-//      printPathFooter_d(&trackCount_copy[oid], &EG[oid], &T_copy[oid], OUT_copy[oid], RAWOUT_copy[oid], FAIL_copy[oid], NONSOLN_copy[oid], &BED_copy[oid]);
-//    }
-//    else
-//    { // print footer in multi precision
-//      printPathFooter_mp(&trackCount_copy[oid], &EG[oid], &T_copy[oid], OUT_copy[oid], RAWOUT_copy[oid], FAIL_copy[oid], NONSOLN_copy[oid], BED_copy[oid].BED_mp);
-//    }
-			
+			if ((EG->retVal != 0 && time_to_compare->r > T->minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
+				trackCount->failures++;
+				printf("\nretVal = %d\nthere was a fatal path failure tracking linear %d, witness point %d\n\n",EG->retVal,kk,ii);
+				print_path_retVal_message(EG->retVal);
+				print_point_to_screen_matlab_mp(BED_copy->old_linear,"old");
+				print_point_to_screen_matlab_mp(BED_copy->current_linear,"new");
+				exit(EG->retVal); //failure intolerable in this solver.
+			}
+			else
+			{
+				//otherwise converged, but may have still had non-zero retval due to other reasons.
+				endgamedata_to_endpoint(&endPoints[solution_counter], EG);
+				trackCount->successes++;
+				solution_counter++; // probably this could be eliminated
+			}
 			
 		}// re: for (ii=0; ii<W.W.num_pts ;ii++)
 	} // for each new linear
 	
 	
-	
-	
-	
+
 	
 	
 	//clear the data structures.
@@ -1917,8 +1768,6 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 }
 
 
-
-//int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
 
 // derived from zero_dim_track_path_d
 void lin_to_lin_track_path_mp(int pathNum, endgame_data_t *EG_out,
@@ -2030,10 +1879,8 @@ int lin_to_lin_setup_mp(FILE **OUT, char *outName,
   }
   else
   { // m-hom, m > 1
-    patchType = 0; // random patch based on m-hom variable structure
-    ssType = 1;    // with m-hom, we use the mhom structure for start system
-    adjustDegrees = 0; // if the system does not need its degrees adjusted, then that is okay
-    setuplintolinEval_mp(preprocFile, degreeFile, dummyProg, rank, patchType, ssType, T->Precision, &ED->preProcData, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix, W);
+		printf("there cannot be more than one variable group in bertini_real\n");
+		exit(-11011);
   }
 	
 	

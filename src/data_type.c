@@ -269,6 +269,59 @@ void cp_patches(witness_set_d *W_out, witness_set_d W_in){
 	return;
 }
 
+void cp_witness_set(witness_set_d *W_out, witness_set_d W_in){
+	int ii;
+	
+	W_out->codim = W_in.codim;
+	W_out->comp_num = W_in.comp_num;
+	W_out->incidence_number = W_in.incidence_number;
+	W_out->num_variables = W_in.num_variables;
+	W_out->num_var_gps = W_in.num_var_gps;
+	W_out->num_linears = W_in.num_linears;
+	W_out->num_patches = W_in.num_patches;
+	W_out->patch_size = W_in.patch_size;
+	W_out->MPType = W_in.MPType;
+	
+	cp_patches(W_out,W_in);
+	cp_linears(W_out,W_in);
+	cp_names(W_out,W_in);
+	
+	
+	
+	
+	W_out->L = (vec_d *)bmalloc(W_in.num_linears*sizeof(vec_d));
+	W_out->L_mp = (vec_mp *)bmalloc(W_in.num_linears*sizeof(vec_mp));
+	// merge the left and right linears into the output.
+	for (ii=0; ii<W_in.num_linears; ii++) {
+		init_vec_d(W_out->L[ii],W_out->num_variables); W_out->L[ii]->size = W_out->num_variables;
+		vec_cp_d(W_out->L[ii],W_in.L[ii]);
+		
+		init_vec_mp(W_out->L_mp[ii],W_out->num_variables); W_out->L_mp[ii]->size = W_out->num_variables;
+		vec_cp_mp(W_out->L_mp[ii],W_in.L_mp[ii]);
+	}
+
+	
+	
+	
+	//set the number of points
+	W_out->W.num_pts  = W_in.W.num_pts;
+	W_out->W_mp.num_pts = W_in.W.num_pts;
+	
+	
+  W_out->W.pts=(point_d *)bmalloc(W_out->W.num_pts*sizeof(point_d));
+	W_out->W_mp.pts=(point_mp *)bmalloc(W_out->W.num_pts*sizeof(point_mp));
+	
+	for (ii=0; ii<W_in.W.num_pts; ii++) {
+		init_vec_d(W_out->W.pts[ii],W_out->num_variables); W_out->W.pts[ii]->size = W_out->num_variables;
+		vec_cp_d(W_out->W.pts[ii],W_in.W.pts[ii]);
+		
+		init_vec_mp(W_out->W_mp.pts[ii],W_out->num_variables); W_out->W_mp.pts[ii]->size = W_out->num_variables;
+		vec_cp_mp(  W_out->W_mp.pts[ii],W_in.W_mp.pts[ii]);
+	}
+	
+	return;
+	
+}
 
 // initializes witness set, both the mp data and double.
 //only call this on new witness sets, otherwise you will leak memory when you set the pointers to NULL.
@@ -401,52 +454,41 @@ void clear_witness_set(witness_set_d W){
 //	printf("freeing %d patches\n",W.num_patches);
 	for (ii=0; ii<W.num_patches; ii++) {
 		clear_vec_d(W.patch[ii]);
-	}
-	if (W.num_patches>0) {
-		free(W.patch);
-	}
-	
-	
-//	printf("freeing %d linears\n",W.num_linears);
-	for (ii=0; ii<W.num_linears; ii++) {
-		clear_vec_d(W.L[ii]);
-	}
-	if (W.num_linears>0) {
-		free(W.L);
-	}
-	
-//	printf("freeing %d points\n",W.W.num_pts);
-	for (ii=0; ii<W.W.num_pts; ii++) {
-		clear_point_d(W.W.pts[ii]);
-	}
-	free(W.W.pts);
-	
-	
-	//now clear the mp structures.
-	
-//	printf("freeing %d patches\n",W.num_patches);
-	for (ii=0; ii<W.num_patches; ii++) {
 		clear_vec_mp(W.patch_mp[ii]);
 	}
 	if (W.num_patches>0) {
+		free(W.patch);
 		free(W.patch_mp);
 	}
 	
 	
 //	printf("freeing %d linears\n",W.num_linears);
 	for (ii=0; ii<W.num_linears; ii++) {
-		clear_vec_d(W.L_mp[ii]);
+		clear_vec_d(W.L[ii]);
+		clear_vec_mp(W.L_mp[ii]);
 	}
 	if (W.num_linears>0) {
+		free(W.L);
 		free(W.L_mp);
 	}
 	
-//	printf("freeing %d points\n",W.W_mp.num_pts);
-	for (ii=0; ii<W.W_mp.num_pts; ii++) {
+	if (W.W.num_pts!=W.W_mp.num_pts) {
+		printf("there was a mismatch in the number of points in the witness set being cleared\n");
+	}
+	
+//	printf("freeing %d points\n",W.W.num_pts);
+	for (ii=0; ii<W.W.num_pts; ii++) {
+		clear_point_d(W.W.pts[ii]);
 		clear_point_mp(W.W_mp.pts[ii]);
 	}
+	free(W.W.pts);
 	free(W.W_mp.pts);
 	
+
+	
+	
+//TODO: clear variable names
+
 	
 	
 	return;
@@ -618,7 +660,7 @@ void print_path_retVal_message(int retVal){
 
 
 
-void endgamedate_to_endpoint(post_process_t *endPoint, endgame_data_t *EG){
+void endgamedata_to_endpoint(post_process_t *endPoint, endgame_data_t *EG){
 	
 	int num_vars, ii;
 	endPoint->path_num = EG->pathNum;
@@ -749,19 +791,14 @@ int BRfindSingularSolns(post_process_t *endPoints, int num_sols, int num_vars,
 	int ii, sing_count=0;
 	
 	for (ii = 0; ii < num_sols; ii++){
-		printf("endpoint %d has multiplicity %d\n",ii,endPoints[ii].multiplicity);
-    if (endPoints[ii].multiplicity > 0)
-			
-    { // regeneration endpoints are always non-singular
+    if (endPoints[ii].multiplicity > 0) { 
       if ( (endPoints[ii].cond_est >  T->cond_num_threshold) || (endPoints[ii].cond_est < 0.0) || (endPoints[ii].multiplicity > 1))
         endPoints[ii].isSing = 1;
       else
         endPoints[ii].isSing = 0;
 			
       if (endPoints[ii].isSing)
-      { // print info to SINGU
-				
-        // increment the number of singular solutions printed
+      {
         sing_count++;
 			}
 		}
@@ -770,164 +807,280 @@ int BRfindSingularSolns(post_process_t *endPoints, int num_sols, int num_vars,
 	return sing_count;
 }
 
-//void BRPostProcess(FILE *OUT, post_process_t *endPoints, int num_sols, int num_vars, double final_tol, tracker_config_t *T, preproc_data *PPD, int num_crossings, int convergence_failures, char *inputName, int regenToggle, int eqbyeqToggle)
-///***************************************************************\
-// * USAGE:                                                        *
-// * ARGUMENTS:                                                    *
-// * RETURN VALUES:                                                *
-// * NOTES: does the actual post processing for a zero dim run     *
-// \***************************************************************/
-//{
-//  int i, num_good_sols = 0, size = 0;
-//  FILE *NAMES = NULL;
-//  char ch, **name_table = (char **)bmalloc(num_vars * sizeof(char *));
-//  int *origErrorIsInf = (int *)bmalloc(num_sols * sizeof(int));
-//  double *origErrorEst = (double *)bmalloc(num_sols * sizeof(double));
-//  point_d *dehomPoints_d = T->MPType == 1 ? NULL : (point_d *)bmalloc(num_sols * sizeof(point_d));
-//  point_mp *dehomPoints_mp = T->MPType == 0 ? NULL : (point_mp *)bmalloc(num_sols * sizeof(point_mp));
-//	
-//  // Reading in the names of the variables.
-//  NAMES = fopen("names.out", "r");
-//  if (NAMES == NULL)
-//  {
-//    printf("ERROR: 'names.out' does not exist!\n");
-//    bexit(ERROR_FILE_NOT_EXIST);
-//  }
-//  for (i = 0; i < num_vars; i++)
-//  { // initial allocation
-//    size = 1;
-//    name_table[i] = (char *)bmalloc(size * sizeof(char));
-//    // read in name
-//    while ((name_table[i][size - 1] = fgetc(NAMES)) != '\n')
-//    {
-//      size++;
-//      name_table[i] = (char *)brealloc(name_table[i], size * sizeof(char));
-//    }
-//    name_table[i][size - 1] = '\0';
-//  }
-//  fclose(NAMES);
-//	
-//  // setup the dehomogenized points and error estimates
-//  for (i = 0; i < num_sols; i++)
-//  { // setup dehom
-//    if (endPoints[i].sol_prec < 64)
-//    { // setup _d
-//      init_point_d(dehomPoints_d[i], 0);
-//      getDehomPoint_comp_d(dehomPoints_d[i], &origErrorIsInf[i], &origErrorEst[i], endPoints[i].sol_d, num_vars, PPD, endPoints[i].accuracy_estimate);
-//    }
-//    else
-//    { // setup _mp
-//      initMP(endPoints[i].sol_prec);
-//      init_point_mp(dehomPoints_mp[i], 0);
-//      getDehomPoint_comp_mp(dehomPoints_mp[i], &origErrorIsInf[i], &origErrorEst[i], endPoints[i].sol_mp, num_vars, PPD, endPoints[i].accuracy_estimate);
-//    }
-//  }
-//	
-//  // print top of main_data
-//  printFileHeader(OUT, num_vars, PPD, name_table);
-//	
-//  // create various output from this data
-//  zeroDimOutputChart(endPoints, dehomPoints_d, dehomPoints_mp, name_table, num_sols, num_vars, PPD, T->finiteThreshold, T->real_threshold, final_tol, T->cond_num_threshold, regenToggle, eqbyeqToggle);
-//  createRawSoln(endPoints, dehomPoints_d, dehomPoints_mp, num_sols, num_vars, PPD);
-//	
-//  // Now we sort the points - and write the body of main_data
-//  if (regenToggle)
-//    fprintf(OUT, "\nNOTE: Since regeneration is being used, only non-singular solutions are printed.\n\n");
-//  else if (eqbyeqToggle)
-//    fprintf(OUT, "\nNOTE: Since equation-by-equation is being used, only non-singular solutions are printed.\n\n");
-//	
-//  for (i = 0; i < num_sols; i++)
-//    if (endPoints[i].multiplicity > 0 && (!(regenToggle || eqbyeqToggle) || ((regenToggle || eqbyeqToggle) && endPoints[i].isSing == 0)))  // print only for regen/eqbyeq if non-singular
-//    {
-//      if (endPoints[i].sol_prec < 64)
-//      { // print header for the solution
-//        printMainDataPointHeader_d(OUT, endPoints[i].sol_num, endPoints[i].path_num, endPoints[i].cond_est, endPoints[i].function_resid_d, endPoints[i].newton_resid_d, endPoints[i].final_t, endPoints[i].accuracy_estimate, endPoints[i].sol_prec, endPoints[i].first_increase, endPoints[i].cycle_num, endPoints[i].success, origErrorIsInf[i], origErrorEst[i]);
-//        // print the point
-//        printRefinedPoint_d(OUT, dehomPoints_d[i]);
-//      }
-//      else
-//      { // print header for the solution
-//        printMainDataPointHeader_mp(OUT, endPoints[i].sol_num, endPoints[i].path_num, endPoints[i].cond_est, endPoints[i].function_resid_mp, endPoints[i].newton_resid_mp, endPoints[i].final_t, endPoints[i].accuracy_estimate, endPoints[i].sol_prec, endPoints[i].first_increase, endPoints[i].cycle_num, endPoints[i].success, origErrorIsInf[i], origErrorEst[i]);
-//        // print the point
-//        printRefinedPoint_mp(OUT, dehomPoints_mp[i]);
-//      }
+
+int BRfindFiniteSolns(post_process_t *endPoints, int num_sols, int num_vars,
+												tracker_config_t *T ){
+	int ii, jj, finite_count=0;
+	
+	//initialize temp stuffs
+	comp_d dehom_coord_recip_d;
+	comp_mp dehom_coord_recip_mp; init_mp(dehom_coord_recip_mp);	
+	vec_d dehom_d;   init_vec_d(dehom_d,num_vars-1);   dehom_d->size = num_vars-1;
+	vec_mp dehom_mp; init_vec_mp(dehom_mp,num_vars-1); dehom_mp->size = num_vars-1;
+	
+	
+	
+	for (ii = 0; ii < num_sols; ii++){
+		if (endPoints[ii].sol_prec<64) {
+			set_d(dehom_coord_recip_d,endPoints[ii].sol_d[0]);
+			recip_d(dehom_coord_recip_d,dehom_coord_recip_d);
+			for (jj=0; jj<num_vars-1; ++jj) {
+				//do the division.
+				mul_d(&dehom_d->coord[jj],dehom_coord_recip_d,endPoints[ii].sol_d[jj])
+			}
+			
+			if (infNormVec_d(dehom_d) < T->finiteThreshold){
+				endPoints[ii].isFinite = 1;
+				finite_count++;
+			}
+			else{
+				endPoints[ii].isFinite = 0;
+			}
+			
+		}
+		else // high precision, do mp
+		{
+			change_prec_point_mp(dehom_mp,endPoints[ii].sol_prec);
+			setprec_mp(dehom_coord_recip_mp,endPoints[ii].sol_prec);
+			set_mp(dehom_coord_recip_mp,endPoints[ii].sol_mp[0]);
+			for (jj=0; jj<num_vars-1; ++jj) {
+				//do the division.
+				mul_mp(&dehom_mp->coord[jj],dehom_coord_recip_mp,endPoints[ii].sol_mp[jj])
+			}
+			
+			if (infNormVec_mp(dehom_mp) < T->finiteThreshold){
+				endPoints[ii].isFinite = 1;
+				finite_count++;
+			}
+			else{
+				endPoints[ii].isFinite = 0;
+			}
+			
+		}
+	}
+	
+	clear_vec_d(dehom_d);
+	clear_vec_mp(dehom_mp);
+	clear_mp(dehom_coord_recip_mp);
+	
+	return finite_count;
+}
+
+
+
+
+//assumes that W has the number of variables already set, and the pts NOT allocated yet.  should be NULL
+void BRpostProcessing(post_process_t *endPoints, witness_set_d *W_new, int num_pts, preproc_data preProcData, tracker_config_t *T)
+/***************************************************************\
+ * USAGE:                                                        *
+ * ARGUMENTS:                                                    *
+ * RETURN VALUES:                                                *
+ * NOTES: does the actual post processing for a zero dim run     *
+ \***************************************************************/
+{
+	
+	int ii, jj;
+	//	printf("%lf\n",T_copy[oid].finiteThreshold);
+	//direct from the bertini library:
+	findMultSol(endPoints, num_pts, W_new->num_variables, preProcData, T->final_tol_times_mult);
+	// sets the multiplicity and solution number in the endPoints data
+	
+	//custom, derived from bertini's analagous call.
+	int num_singular_solns = BRfindSingularSolns(endPoints, num_pts, W_new->num_variables, T);
+	//sets the singularity flag in endPoints.
+	
+	int num_finite_solns = BRfindFiniteSolns(endPoints, num_pts, W_new->num_variables, T);
+	
+	printf("%d singular solutions\n",num_singular_solns);
+	printf("%d finite solutions\n",num_finite_solns);
+	
+	for (ii=0; ii<num_pts; ++ii) {
+		//		int success;      // success flag
+		//		int multiplicity; // multiplicity
+		//		int isReal;       // real flag:  0 - not real, 1 - real
+		//		int isFinite;     // finite flag: -1 - no finite/infinite distinction, 0 - infinite, 1 - finite
+		//		int isSing;       // singular flag: 0 - non-sigular, 1 - singular
+		
+		printf("solution %d, success %d, multi %d, isFinite %d, isSing %d\n",ii,endPoints[ii].success,endPoints[ii].multiplicity,endPoints[ii].isFinite,endPoints[ii].isSing);
+	}
+	
+	int num_actual_solns = 0;
+	for (ii=0; ii<num_pts; ii++) {
+		if (endPoints[ii].isFinite && (!endPoints[ii].isSing) && (endPoints[ii].multiplicity==1) && (endPoints[ii].success==1) ) {
+			num_actual_solns++;
+		}
+	}
+	
+//TODO: here, get the good points, so can copy them
+	
+	//initialize the structures for holding the produced data
+
+	W_new->W.num_pts=num_actual_solns; W_new->W_mp.num_pts=num_actual_solns;
+  W_new->W.pts=(point_d *)bmalloc(num_actual_solns*sizeof(point_d));
+  W_new->W_mp.pts=(point_mp *)bmalloc(num_actual_solns*sizeof(point_mp));
+	
+	
+	
+	for (ii=0; ii<num_actual_solns; ++ii) {
+		init_vec_d(W_new->W.pts[ii],W_new->num_variables); init_vec_mp(W_new->W_mp.pts[ii],W_new->num_variables);
+		W_new->W.pts[ii]->size = W_new->W_mp.pts[ii]->size = W_new->num_variables;
+		
+		if (endPoints[ii].sol_prec<64) {
+			//copy out of the double structure.
+			for (jj=0; jj<W_new->num_variables; jj++) {
+				set_d(&W_new->W.pts[ii]->coord[jj],endPoints[ii].sol_d[jj]);
+			}
+			vec_d_to_mp(W_new->W_mp.pts[ii],W_new->W.pts[ii]);
+		}
+		else{
+		//copy out of the mp structure.
+			for (jj=0; jj<W_new->num_variables; jj++) {
+				set_mp(&W_new->W_mp.pts[ii]->coord[jj],endPoints[ii].sol_mp[jj]);
+			}
+			vec_mp_to_d(W_new->W.pts[ii],W_new->W_mp.pts[ii]);
+		}
+	}
+	
+	
+	
+  return;
+}
+
+
+
+
+
+
+
+void insert_randomization_matrix_witness_data(int rows, int cols, int codim_index){
+	
+	
+	size_t len = 0;
+	int ii,jj,kk;
+	
+	
+	//make the matrix
+	mat_mp randomizer_matrix; init_mat_mp2(randomizer_matrix,rows,cols,1024);
+	randomizer_matrix->rows = rows; randomizer_matrix->cols = cols;
+	make_matrix_random_mp(randomizer_matrix,rows,cols,1024);
+	
+	
+	
+	//rename the witness_data file for re-use later.
+	rename("witness_data","witness_data_predeflation");
+	
+	FILE *IN = NULL, *OUT = NULL;
+	
+	IN = safe_fopen_read("witness_data_predeflation");
+	
+	OUT = safe_fopen_write("witness_data_newrand");
+	
+	
+	int *nonempty_codimensions;
+	
+	char ch;
+	int num_variables, num_nonempty_codims, num_pts_this_codim, current_codimension;
+	int bytes_read;
+	fscanf(IN,"%d\n",&num_variables); fprintf(OUT,"%d\n",num_variables);
+	fscanf(IN,"%d\n",&num_nonempty_codims);fprintf(OUT,"%d\n",num_nonempty_codims);
+	char *line = NULL;  // getline will alloc
+	
+	
+	for (ii=0; ii<num_nonempty_codims; ii++) {
+		fscanf(IN,"%d\n",&current_codimension); fprintf(OUT,"%d\n",current_codimension);
+		fscanf(IN,"%d\n",&num_pts_this_codim); fprintf(OUT,"%d\n",num_pts_this_codim);
+		
+		
+		for (jj=0; jj<num_pts_this_codim; jj++) {
+			bytes_read = getline(&line, &len, IN); fprintf(OUT,"%s",line);  free(line); line=NULL; // precision of soln
+			
+			//copy the solution itself.
+			for (kk=0; kk<num_variables; kk++) {
+				bytes_read = getline(&line, &len, IN); fprintf(OUT,"%s",line);  free(line); line=NULL; // precision of soln
+			}
+			
+			bytes_read = getline(&line, &len, IN); fprintf(OUT,"%s",line);  free(line); line=NULL; // precision of soln
+			
+			//copy the previous approximation
+			for (kk=0; kk<num_variables; kk++) {
+				bytes_read = getline(&line, &len, IN); fprintf(OUT,"%s",line);  free(line); line=NULL; // precision of soln
+			}
+			
+			for (kk=0; kk<8; kk++) { //  copy the next 8 lines.
+				bytes_read = getline(&line, &len, IN); fprintf(OUT,"%s",line);  free(line); line=NULL; // precision of soln
+			}
+			
+			// then do it again!
+		}
+	}
+	
+	int checker;
+	fscanf(IN,"%d\n",&checker); fprintf(OUT,"-1\n\n");
+	if (checker!=-1) {
+		printf("the check integer was not -1\n");
+		exit(-1);
+	}
+	
+	int num_type;
+	fscanf(IN,"%d\n",&num_type);
+	
+//	for (ii=0; ii<num_nonempty_codims; ++ii) {
+//		//for each nonempty codimension, copy the rest of the info, unless codimen matches our target.
+//		if (codim_index == ) {
 //			
-//      // print footer for the solution
-//      printMainDataPointFooter(OUT, i, num_sols, endPoints);
-//			
-//      num_good_sols++;
-//    }
-//	
-//  fprintf(OUT, "-------------------------\n");
-//	
-//  if (num_good_sols == 1)
-//    fprintf(OUT, "At tol=%.12e, there appears to be a unique solution.\n", final_tol);
-//  else
-//    fprintf(OUT, "At tol=%.12e, there appear to be %d solutions.\n", final_tol, num_good_sols);
-//	
-//  if (num_crossings > 0)
-//  {
-//    printf("\nIt appears that %d path crossing(s) occurred prior to t=tEndgame\n\n", num_crossings);
-//    fprintf(OUT, "\nIt appears that %d path crossing(s) occurred prior to t=tEndgame\n\n", num_crossings);
-//    printf("   Try adjusting TRACKTOLBEFOREEG in the input file\n\n");
-//  }
-//	
-//  if (convergence_failures == 1)
-//  {
-//    fprintf(OUT, "\nThere is 1 path that was tracked near the target time which did not converge. Try adjusting FinalTol or NbhdRadius in the input file.\n");
-//    fprintf(OUT, "This path is marked with '#' after its path number.\n");
-//  }
-//  else if (convergence_failures > 1)
-//  {
-//    fprintf(OUT, "\nThere are %d paths that were tracked near the target time which did not converge. Try adjusting FinalTol or NbhdRadius in the input file.\n", convergence_failures);
-//    fprintf(OUT, "These paths are marked with '#' after the path numbers.\n");
-//  }
-//	
-//  // print the input onto the bottom of refined solutions
-//  NAMES = fopen(inputName, "r");
-//  if (NAMES == NULL)
-//  {
-//    printf("ERROR: '%s' does not exist!\n", inputName);
-//    bexit(ERROR_FILE_NOT_EXIST);
-//  }
-//	
-//  while((ch = fgetc(NAMES)) != EOF)
-//    fputc(ch, OUT);
-//  fclose(NAMES);
-//  remove(inputName);
-//	
-//  // clear memory
-//  for (i = num_vars - 1; i >= 0; i--)
-//    free(name_table[i]);
-//  free(name_table);
-//  for (i = 0; i < num_sols; i++)
-//  {
-//    if (endPoints[i].sol_prec < 64)
-//    {
-//      clear_point_d(dehomPoints_d[i]);
-//    }
-//    else
-//    {
-//      clear_point_mp(dehomPoints_mp[i]);
-//    }
-//  }
-//  if (T->MPType != 1)
-//    free(dehomPoints_d);
-//  if (T->MPType != 0)
-//    free(dehomPoints_mp);
-//  free(origErrorEst);
-//  free(origErrorIsInf);
-//	
-//  return;
-//}
+//		}
+//	}
 
+	
+	fclose(IN); fclose(OUT);
+	clear_mat_mp(randomizer_matrix);
+	
+	//rename the witness_data file for re-use later.
+	rename("witness_data_predeflation","witness_data");
+	
+	
+	return;
+}
 
-
-
-
-
-
-
+void sort_increasing_by_real(vec_mp *sorted, vec_mp input){
+	
+	comp_mp large; init_mp(large);
+	comp_d l; l->r = 1e9; l->i = 0;
+	d_to_mp(large,l);
+	
+	
+	vec_mp raw; init_vec_mp(raw,1);
+	vec_cp_mp(raw,input);
+	
+	change_size_vec_mp( (*sorted), raw->size);
+	(*sorted)->size = raw->size;
+	int ii,jj;
+//	comp_mp temp1, temp2; init_mp(temp1); init_mp(temp2);
+	
+	double min;
+	double curr;
+	int indicator = -1;
+	for (ii=0; ii<raw->size; ii++) {
+		min = 1e7;
+		
+		for (jj=0; jj<raw->size; jj++) {
+			curr = mpf_get_d(raw->coord[jj].r);
+			if ( curr < min) {
+				printf("old min %lf, new min %lf\n",min,curr);
+				indicator = jj;
+				min = curr;
+			}
+		}
+		if (indicator==-1) {
+			printf("min projection value was insanely large\n");
+			exit(1111);
+		}
+		
+		set_mp( &(*sorted)->coord[ii],&raw->coord[indicator]);
+		set_mp( &raw->coord[indicator],large);
+	}
+	return;
+}
 
 
 

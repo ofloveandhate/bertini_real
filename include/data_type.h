@@ -30,8 +30,6 @@ typedef struct
 {
   int num_pts;
   point_d *pts;
-  int dim;
-  int deg;
 } witness_point_set_d;
 
 
@@ -53,8 +51,6 @@ typedef struct
 {
   int num_pts;
   point_mp *pts;
-  int dim;
-  int deg;
 } witness_point_set_mp;
 //end mp types
 
@@ -69,6 +65,9 @@ typedef struct
 	vec_mp *L_mp;
 	vec_mp *patch_mp;
   witness_point_set_mp W_mp;
+	
+	int codim;
+  int comp_num;
 	
 	char ** variable_names;
 	int incidence_number;
@@ -143,6 +142,7 @@ void init_variable_names(witness_set_d *W, int num_vars);
 void cp_names(witness_set_d *W_out, witness_set_d W_in);
 void cp_linears(witness_set_d *W_out, witness_set_d W_in);
 void cp_patches(witness_set_d *W_out, witness_set_d W_in);
+void cp_witness_set(witness_set_d *W_out, witness_set_d W_in);
 void init_witness_set_d(witness_set_d *W);
 void init_curveDecomp_d(curveDecomp_d *C);
 
@@ -170,11 +170,20 @@ void print_path_retVal_message(int retVal);
 
 
 
-void endgamedate_to_endpoint(post_process_t *endPoint, endgame_data_t *EG);
+void endgamedata_to_endpoint(post_process_t *endPoint, endgame_data_t *EG);
 
 int BRfindSingularSolns(post_process_t *endPoints,
 												int num_sols, int num_vars,
 												tracker_config_t *T );
+int BRfindFiniteSolns(post_process_t *endPoints, int num_sols, int num_vars,
+											tracker_config_t *T );
+
+void BRpostProcessing(post_process_t *endPoints, witness_set_d *W_new, int num_pts, preproc_data preProcData, tracker_config_t *T);
+
+
+void insert_randomization_matrix_witness_data(int rows, int cols, int codim_index);
+
+void sort_increasing_by_real(vec_mp *sorted, vec_mp input);
 
 
 #endif

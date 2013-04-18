@@ -117,7 +117,7 @@ int linprod_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int c
 void linprod_to_detjac_track_d(trackingStats *trackCount,
 															 FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
 															 witness_set_d W,
-															 witness_set_d *W_new,  // for holding the produced data.
+															 post_process_t *endPoints,  // for holding the produced data.
 															 FILE *FAIL,
 															 int pathMod, tracker_config_t *T,
 															 linprodtodetjac_eval_data_d *ED_d,
@@ -277,6 +277,14 @@ void setuplinprodtodetjacEval_mp(char preprocFile[], char degreeFile[], prog_t *
 
 void cp_linprodtodetjac_eval_data_mp(linprodtodetjac_eval_data_mp *BED, linprodtodetjac_eval_data_mp *BED_mp_input, int MPType);
 
+
+
+int check_issoln_linprodtodetjac_d(endgame_data_t *EG,
+																	 tracker_config_t *T,
+																	 void const *ED);
+int check_issoln_linprodtodetjac_mp(endgame_data_t *EG,
+																	 tracker_config_t *T,
+																		void const *ED);
 
 
 void check_linprod_evaluator(point_mp current_values,

@@ -1,45 +1,24 @@
-//
-//#include <stdio>
-//#include <stdlib.h>
-//
+
 #include <dirent.h>
-//
-//
-//
-//
-//
-//#include <errno.h>
-//#include <sys/wait.h>
+
 #include <sys/stat.h>
-//#include <sys/types.h>
-//#include <list>
-//
+
 #include <iostream>
 #include <ios>
 #include <string>
 #include <fstream>
-//#include <unistd.h>
-//#include <stdlib.h>
+
 #include <vector>
 #include <map>
 #include <sstream>
-//#include <cmath>
 
-//#include <gmp.h>
-//
-//#include <mpfr.h>
-//#include <mpf2mpfr.h>
-
-
-#include "mpreal.h"
-
-//#include <gmpxx.h>
-
+#include "mpreal.h"  // <---- this software graciously free to use for free projects, which this is.
 
 
 #ifndef _DATA_TO_SET_H
 #define _DATA_TO_SET_H
 
+#define DTSVERSION 1e-16
 extern "C" {
 #include "polysolve.h"
 }
@@ -64,6 +43,13 @@ int open_output_file(std::string outputName, std::ofstream & OUT);
 int open_output_file_append(std::string outputName, std::ofstream & OUT);
 
 
+/**
+ *  @class "witness_set"
+ *
+ * contains a parsed witness_data file from Bertini's tracktype: 1 solver.
+ *
+ * \brief parsed witness_data file from Bertini's tracktype: 1 solver
+ **/
 class witness_set {
 	
 public:
@@ -150,12 +136,12 @@ void witness_set::write_to_file(std::string directoryName, bool dehomogenize){
 	open_output_file(specificOutputName, OUT);
 	OUT.setf(std::ios_base::scientific);
 	
-#ifdef verbose
+
 	std::cout << "writing data to " << specificOutputName <<  std::endl;
-#endif
+
 	
 	
-	OUT << this->solutions_raw.size();
+	OUT << this->solutions_raw.size() << " " << this->codimension << " " << this->component_number;
 	OUT << std::endl << std::endl;  // print the number of solutions, and the number of variables.
 	
 	
@@ -222,24 +208,24 @@ void witness_set::write_to_file(std::string directoryName, bool dehomogenize){
 	}
 	OUT << std::endl << std::endl;
 	
+	std::string tmpstr_real, tmpstr_imag;
+	
 	for (int ii=0; ii< int(this->linear_slice.size()) ; ii++) {
 		for (int jj = 0; jj<int(linear_slice[ii].size()); jj++) {
-			
-
-			std::string tmpstr_real, tmpstr_imag, convertme_numerator, convertme_denomenator;
-			std::string searchforme = "/";
-			
-			
-			size_t found;
-			std::string crap;
-			
-			
-			mpreal numerator, denomenator;
-
-			
+		
 			
 			if (this->numtype==2)
 			{
+
+				std::string convertme_numerator, convertme_denomenator;
+				std::string searchforme = "/";
+				
+				
+				size_t found;
+				std::string crap;
+				
+				
+				mpreal numerator, denomenator;
 				
 				converter << linear_slice[ii][jj];
 				converter >> tmpstr_real;
@@ -276,9 +262,6 @@ void witness_set::write_to_file(std::string directoryName, bool dehomogenize){
 				converter.clear();
 				converter.str("");
 				
-//				mpz_class a(convertme_numerator);
-//				mpz_class b(convertme_denomenator);
-//				mpz_class lin_real = a/b;
 				OUT.precision(digits);
 				OUT << numerator/denomenator << " ";
 				
@@ -296,12 +279,9 @@ void witness_set::write_to_file(std::string directoryName, bool dehomogenize){
 					convertme_denomenator[mm-found-1] = tmpstr_imag[mm];
 				}
 				
-//				std::cout << convertme_numerator << " " << convertme_denomenator << std::endl;
-				
+
 				digits = std::max(convertme_denomenator.size(),convertme_numerator.size());
-//				std::cout.setf (std::ios_base::scientific);
-				
-				
+
 				converter << convertme_numerator;
 				converter >> numerator;
 				converter.clear();
@@ -320,9 +300,13 @@ void witness_set::write_to_file(std::string directoryName, bool dehomogenize){
 				
 			}
 			else
-			{
-				std::cerr << "unprogrammed numtype.  cannot properly print out the linears.  please program this.\n";
-				exit(-100);
+			{ // simply write the strings, no need to convert data types or set precision.
+				converter << linear_slice[ii][jj];
+				converter >> tmpstr_real;
+				converter >> tmpstr_imag;
+				converter.clear();
+				converter.str("");
+				OUT << tmpstr_real << " " << tmpstr_imag << std::endl;
 			}
 			
 			
@@ -350,8 +334,8 @@ void witness_set::write_to_file(std::string directoryName, bool dehomogenize){
 	for (int ii=0; ii< int(this->patch_equation.size()) ; ii++) {
 		for (int jj = 0; jj<int(patch_equation[ii].size()); jj++) {
 			
-			std::stringstream converter;
-			std::string tmpstr_real, tmpstr_imag, convertme_numerator, convertme_denomenator;
+
+			std::string convertme_numerator, convertme_denomenator;
 			std::string searchforme = "/";
 			
 			
@@ -402,9 +386,7 @@ void witness_set::write_to_file(std::string directoryName, bool dehomogenize){
 				converter.clear();
 				converter.str("");
 				
-				//				mpz_class a(convertme_numerator);
-				//				mpz_class b(convertme_denomenator);
-				//				mpz_class lin_real = a/b;
+
 				OUT.precision(digits);
 				OUT << numerator/denomenator << " ";
 				
@@ -422,13 +404,10 @@ void witness_set::write_to_file(std::string directoryName, bool dehomogenize){
 					convertme_denomenator[mm-found-1] = tmpstr_imag[mm];
 				}
 				
-				//				std::cout << convertme_numerator << " " << convertme_denomenator << std::endl;
-				
+	
 				digits = std::max(convertme_denomenator.size(),convertme_numerator.size());
 				mpreal::set_default_prec(mpfr::digits2bits(digits));
-				//				std::cout.setf (std::ios_base::scientific);
-				
-				
+
 				converter << convertme_numerator;
 				converter >> numerator;
 				converter.clear();
@@ -447,9 +426,13 @@ void witness_set::write_to_file(std::string directoryName, bool dehomogenize){
 				
 			}
 			else
-			{
-				std::cerr << "unprogrammed numtype.  cannot properly print out the patch equations.  please program this.\n";
-				exit(-100);
+			{ // simply write the strings, no need to convert data types or set precision.
+				converter << patch_equation[ii][jj];
+				converter >> tmpstr_real;
+				converter >> tmpstr_imag;
+				converter.clear();
+				converter.str("");
+				OUT << tmpstr_real << " " << tmpstr_imag << std::endl;
 			}
 			
 			
