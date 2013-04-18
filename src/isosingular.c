@@ -97,7 +97,7 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *i
     // setup input file to test for stabilization
     stabilization_input_file("input_stabilization_test", "func_input_real", "config_real");
 
-		mypause();
+
     // perform stabilization test
     printf("\nPerforming a stabilization test\n");
     if (system(strStabilizationTest)!=0){
@@ -238,29 +238,23 @@ void isosingular_deflation_iteration(int *declarations, char *inputOutputName, c
   system(str);
   printf("\n");
 
+	
   // setup new file
-  OUT = fopen(inputOutputName, "w");
+  OUT = safe_fopen_write(inputOutputName);
   rewind(IN);
   while ((ch = fgetc(IN)) != EOF) 
     fprintf(OUT, "%c", ch);
   fclose(IN);
-  IN = fopen("deflation_polynomials_declaration", "r");
-  if (IN == NULL)
-  {
-    printf("\n\nERROR: 'deflation_polynomials_declaration' does not exist!!!\n\n\n");
-    bexit(ERROR_FILE_NOT_EXIST);
-  }
+
+  
+	IN = safe_fopen_read("deflation_polynomials_declaration");
   while ((ch = fgetc(IN)) != EOF) 
     fprintf(OUT, "%c", ch);
   fclose(IN);
 	
+	
+	
 	IN = safe_fopen_read("deflation_polynomials");
-//  IN = fopen("deflation_polynomials", "r");
-//  if (IN == NULL)
-//  {
-//    printf("\n\nERROR: 'deflation_polynomials' does not exist!!!\n\n\n");
-//    bexit(ERROR_FILE_NOT_EXIST);
-//  }
   while ((ch = fgetc(IN)) != EOF)
     fprintf(OUT, "%c", ch);
   fclose(IN);
@@ -411,7 +405,7 @@ void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
   fprintf(OUT, "J = jacobian(F,X);\n");
 
   // find the combinations of the rows & columns
-  fprintf(OUT, "R = combnk(1:%d,%d);\nC = combnk(1:%d,%d);\n", numFuncs, minorSize, numVars, minorSize);
+  fprintf(OUT, "R = nchoosek(1:%d,%d);\nC = nchoosek(1:%d,%d);\n", numFuncs, minorSize, numVars, minorSize); // changed to nchoosek april 16, 2013 DAB.
   fprintf(OUT, "r = size(R,1);\nc = size(C,1);\n");
 
   // loop over rows & columns printing the nonzero minors to a file

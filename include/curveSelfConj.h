@@ -60,5 +60,8 @@ void sort_for_membership(char * input_file,
 												 witness_set_d *W_out,
 												 witness_set_d W_in);
 
+void sort_for_real(witness_set_d *W_out,
+									 witness_set_d W_in,
+									 tracker_config_t T);
 
 #endif

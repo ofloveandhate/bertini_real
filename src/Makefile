@@ -1,6 +1,6 @@
 
 #choose some options.  by default, compiler optimization is turned off
-OPT= -Dverbose -Dprintpathlinprod -g# -Wall -O3 -funroll-loops -fexpensive-optimizations
+OPT= -Dverbose  -g  -Dprintpathlinprod # -Wall -O3 -funroll-loops -fexpensive-optimizations
 
 
 

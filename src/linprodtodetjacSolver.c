@@ -21,6 +21,9 @@ int linprod_to_detjac_solver_main(int MPType,
 {
 	
 	cp_patches(W_new,W); // copy the patches over from the original witness set
+	W_new->num_variables = W.num_variables;
+	W_new->num_linears = (0);
+		
 	
 	
 	if (MPType==1){
@@ -134,6 +137,9 @@ int linprod_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int c
   }
 	
 	
+	post_process_t *endPoints = (post_process_t *)bmalloc(W.W.num_pts * sizeof(post_process_t)); //overallocate, expecting full number of solutions.
+	
+	
 	
 	
 	if (T.endgameNumber == 3)
@@ -146,7 +152,7 @@ int linprod_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int c
 	{ // use regular endgame
 		linprod_to_detjac_track_d(&trackCount, OUT, rawOUT, midOUT,
 															W,  // was the startpts file pointer.
-															W_new,
+															endPoints,
 															FAIL, pathMod,
 															&T, &ED, ED.BED_mp,
 															ptr_to_eval_d, ptr_to_eval_mp,
@@ -188,35 +194,20 @@ int linprod_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int c
   fprintf(OUT, "Parse Time = %fs\n", parse_time);
   fprintf(OUT, "Track Time = %fs\n", track_time);
 	
-  // print the system to rawOUT
-	//  printlinprodtodetjacRelevantData(&ED, ED.BED_mp, T.MPType, usedEq, rawOUT);
-	//	printZeroDimRelevantData(&ED, ED.BED_mp, T.MPType, usedEq, rawOUT);// legacy
-	
-  // close all of the files
+
   fclose(OUT);
   fclose(rawOUT);
   fprintf(FAIL, "\n");
   fclose(FAIL);
 	
-  // reproduce the input file needed for this run
-	//  reproduceInputFile(inputName, "func_input", &T, 0, 0, currentSeed, pathMod, userHom, useRegen, regenStartLevel, maxCodim, specificCodim, intrinsicCutoffMultiplier, reducedOnly, supersetOnly, paramHom);
-	
-	//  // print the output
-	
-	
-  // do the standard post-processing
-	//  sort_points(num_crossings, &convergence_failures, &sharpening_failures, &sharpening_singular, inputName, num_sols, num_variables, midpoint_tol, T.final_tol_times_mult, &T, &ED.preProcData, useRegen == 1 && userHom == 0, userHom == -59);
-	
+
 	if (num_crossings>0) {
 		printf("there were %d path crossings in linprod_to_detjac, according to midpoint checker\n",num_crossings);
 		mypause();
 	}
 	
-//	zeroDimPostProcess(OUT, endPoints, num_sols, num_vars, final_tol, T, PPD, num_crossings, *convergence_failures, inputName, regenToggle, eqbyeqToggle);
-	
-  // print the failure summary
-	//  printFailureSummary(&trackCount, convergence_failures, sharpening_failures, sharpening_singular);
-	
+
+	BRpostProcessing(endPoints, W_new, trackCount.successes, ED.preProcData, &T);
 	
 	
 	//DAB is there other stuff which should be cleared here?
@@ -245,7 +236,7 @@ int linprod_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int c
 void linprod_to_detjac_track_d(trackingStats *trackCount,
 															 FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
 															 witness_set_d W,
-															 witness_set_d *W_new,  // for holding the produced data.
+															 post_process_t *endPoints,  // for holding the produced data.
 															 FILE *FAIL,
 															 int pathMod, tracker_config_t *T,
 															 linprodtodetjac_eval_data_d *ED_d,
@@ -317,51 +308,15 @@ void linprod_to_detjac_track_d(trackingStats *trackCount,
 																&BED_copy, ED_d, ED_mp);
 	
 	
-	//initialize the structure for holding the produced data
-	W_new->num_linears = (0);
-//	W_new->L = (vec_d *)bmalloc((1)*sizeof(vec_d));
-//	W_new->L_mp = (vec_mp *)bmalloc((1)*sizeof(vec_mp));
-//	init_vec_d(W_new->L[0],W.num_variables);
-//	init_vec_mp2(W_new->L_mp[0],W.num_variables,T->AMP_max_prec);
-//	
-//	vec_cp_mp();
+
 	
-	W_new->W.num_pts = 0; //overallocate
-  W_new->W.pts=(point_d *)bmalloc(W.W.num_pts*sizeof(point_d));
-	
-	W_new->W_mp.num_pts = 0;
-  W_new->W_mp.pts=(point_mp *)bmalloc(W.W.num_pts*sizeof(point_mp));
-	
-	
-  W_new->num_variables = W.num_variables;
+
 	
 	
 	trackCount->numPoints = W.W.num_pts;
 	int solution_counter = 0;
 	
 	
-	//	for (kk = 0; kk< num_new_linears; kk++)
-	//	{
-	//#ifdef verbose
-	//		printf("solving for linear %d\n",kk);
-	//#endif
-	//		// we pass the particulars of the information for this solve mode via the ED.
-	//
-	//		//set current linear in the evaluator data's
-	//		vec_mp_to_d(     ED_d->current_linear,new_linears_full_prec[kk]);
-	//
-	//		if (T->MPType==2) {
-	//			vec_cp_mp(ED_d->BED_mp->current_linear,new_linears_full_prec[kk]);
-	//			vec_cp_mp(ED_d->BED_mp->current_linear_full_prec,new_linears_full_prec[kk]);
-	//			//			point_d_to_mp(ED_d->BED_mp->current_linear,ED_d->current_linear);
-	//		}
-	//
-	//		//copy the linears into the new witness_set
-	//		init_vec_d(W_new->L[kk],0); init_vec_mp(W_new->L_mp[kk],0);
-	//		vec_mp_to_d(   W_new->L[kk],new_linears_full_prec[kk]);
-	//		vec_cp_mp(W_new->L_mp[kk],new_linears_full_prec[kk]);
-	//
-	//
 	
 	// track each of the start points
 #ifdef _OPENMP
@@ -401,119 +356,51 @@ void linprod_to_detjac_track_d(trackingStats *trackCount,
 		}
 		
 		
-		init_vec_d(W_new->W.pts[solution_counter],0);
-		init_vec_mp(W_new->W_mp.pts[solution_counter],0);
 		
-		change_size_vec_d(W_new->W.pts[solution_counter],W.num_variables);
-		W_new->W.pts[solution_counter]->size = W.num_variables;
+		int issoln;
+		if (EG->prec<64){
+			issoln = check_issoln_linprodtodetjac_d(&EG[oid],  &T_copy[oid], &BED_copy[oid]); }
+		else {
+			issoln = check_issoln_linprodtodetjac_mp(&EG[oid], &T_copy[oid], BED_copy[oid].BED_mp); }
 		
 		
+		//get the terminal time in double form
+		comp_d time_to_compare;
+		if (EG->prec < 64) {
+			set_d(time_to_compare,EG->PD_d.time);}
+		else {
+			mp_to_d(time_to_compare, EG->PD_mp.time); }
 		
 		
-		if (EG->retVal!=0) {
-			printf("\nretVal = %d\nthere was a path failure tracking witness point %d\n\n",EG->retVal,ii);
-			print_path_retVal_message(EG->retVal);
+		if ((EG->retVal != 0 && time_to_compare->r > T->minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
 			
-//			exit(EG->retVal);
+			trackCount->failures++;
+			printf("\nretVal = %d\nthere was a path failure linprod tracking witness point %d\n\n",EG->retVal,ii);
+			print_path_retVal_message(EG->retVal);
+//			exit(EG->retVal); //failure is tolerable in this solver, i believe
 		}
 		else
 		{
-					
-					//copy the solutions out of EG.
-					
-					if (T->MPType==2) {
-						printf("%d\n",EG->prec);
-						if (EG->prec<64) {
-							//					printf("copying from double?\n");
-							vec_d_to_mp(W_new->W_mp.pts[solution_counter],EG->PD_d.point);
-						}
-						else{
-							//					printf("copying from mp?\n");
-							vec_cp_mp(W_new->W_mp.pts[solution_counter],EG->PD_mp.point);
-						}
-						
-						vec_mp_to_d(W_new->W.pts[solution_counter],W_new->W_mp.pts[solution_counter]);
-						// verification, if needed
-						//				comp_mp result;
-						//				init_mp(result);
-						//				dot_product_mp(result, W_new->W_mp.pts[solution_counter], ED_mp->current_linear);
-						//				print_comp_mp_matlab(result,"res");
-					}
-					else{ // MPType == 0
-						vec_cp_d( W_new->W.pts[solution_counter], EG->PD_d.point);
-						vec_d_to_mp(W_new->W_mp.pts[solution_counter], EG->PD_d.point);
-						
-						// verification, if needed.
-						//				comp_d result;
-						//				dot_product_d(result, W_new->W.pts[solution_counter], ED_d->current_linear);
-						//				printf("dot_prod=%le+1i*%le;\n",result->r,result->i);
-					}
-					
-					//			mypause();
-			
-
-
-			
-					solution_counter++;
+			//otherwise converged, but may have still had non-zero retval due to other reasons.
+			endgamedata_to_endpoint(&endPoints[solution_counter], EG);
+			trackCount->successes++;
+			solution_counter++; // probably this could be eliminated
 		}
-		
-		
-		
-
-
-		
-		//				print_point_to_screen_matlab(startPts[startPointIndex].point,"start");
-		//				print_point_to_screen_matlab(ED_d->old_linear,"old");
-		//
-		//				print_point_to_screen_matlab(EG->PD_d.point,"vend"); // the actual solution!!!
-		//				print_point_to_screen_matlab(ED_d->current_linear,"curr");
-		
-		
-		//    if (EG[oid].prec < 64)
-		//    { // print footer in double precision
-		//      printPathFooter_d(&trackCount_copy[oid], &EG[oid], &T_copy[oid], OUT_copy[oid], RAWOUT_copy[oid], FAIL_copy[oid], NONSOLN_copy[oid], &BED_copy[oid]);
-		//    }
-		//    else
-		//    { // print footer in multi precision
-		//      printPathFooter_mp(&trackCount_copy[oid], &EG[oid], &T_copy[oid], OUT_copy[oid], RAWOUT_copy[oid], FAIL_copy[oid], NONSOLN_copy[oid], BED_copy[oid].BED_mp);
-		//    }
-		
-		
-		
-		
 		
 	}// re: for (ii=0; ii<W.W.num_pts ;ii++)
 	
 	
 	
-	W_new->W.num_pts=solution_counter;
-	printf("found %d solutions after the regeneration step\n",solution_counter);
-	
-	
-	//should i re-size the W_new->W_*.pts structures according to the number of solutions???
-	
-	
 	//clear the data structures.
-	
   for (ii = 0; ii >W.W.num_pts; ii++)
   { // clear startPts[ii]
     clear_point_data_d(&startPts[ii]);
   }
   free(startPts);
 	
-  // clear the structures
   clear_linprodtodetjac_omp_d(max, &EG, &trackCount_copy, trackCount, &OUT_copy, OUT, &RAWOUT_copy, RAWOUT, &MIDOUT_copy, MIDOUT, &FAIL_copy, FAIL, &NONSOLN_copy, NONSOLN, &T_copy, &BED_copy);
 	
-	//  if (!ED_d->squareSystem.noChanges)
-	//  { // complete NONSOLN
-	//    rewind(NONSOLN);
-	//    fprintf(NONSOLN, "%d", trackCount->junkCount);
-	//    fclose(NONSOLN);
-	//  }
-	
-	
-	
-	
+
 	
   return;
 }
@@ -2272,7 +2159,8 @@ int linprod_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer
 	
 	
 	
-	evalProg_mp(temp_function_values, parVals, parDer, temp_jacobian_functions, temp_jacobian_parameters, current_variable_values, pathVars, BED->SLP);
+	evalProg_mp(temp_function_values, parVals, parDer, temp_jacobian_functions, temp_jacobian_parameters,
+							current_variable_values, pathVars, BED->SLP);
 	
 
 	
@@ -3008,8 +2896,7 @@ void cp_linprodtodetjac_eval_data_mp(linprodtodetjac_eval_data_mp *BED, linprodt
 
 
 
-
-int check_issoln_linprod_d(endgame_data_t *EG,
+int check_issoln_linprodtodetjac_d(endgame_data_t *EG,
 														tracker_config_t *T,
 														void const *ED)
 {
@@ -3021,22 +2908,39 @@ int check_issoln_linprod_d(endgame_data_t *EG,
 	double n1, n2, zero_thresh, max_rat;
 	point_d f;
 	eval_struct_d e;
-//	
-//	mpf_init(n1); mpf_init(n2); mpf_init(zero_thresh); mpf_init(max_rat);
+	//
+	//	mpf_init(n1); mpf_init(n2); mpf_init(zero_thresh); mpf_init(max_rat);
 	init_point_d(f, 1);
 	init_eval_struct_d(e,0, 0, 0);
 	
 	max_rat = T->ratioTol;
 	
 	// setup threshold based on given threshold and precision
-//	if (num_digits > 300)
-//		num_digits = 300;
-//	num_digits -= 2;
+	//	if (num_digits > 300)
+	//		num_digits = 300;
+	//	num_digits -= 2;
 	zero_thresh = MAX(T->funcResTol, 1e-15);
 	
 	
-	linprod_to_detjac_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_d.point, EG->PD_d.time, ED);
-	linprod_to_detjac_eval_d(f,          e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_d, EG->PD_d.time, ED);
+	if (EG->prec>=64){
+		vec_d terminal_pt;  init_vec_d(terminal_pt,1);
+		vec_mp_to_d(terminal_pt,EG->PD_mp.point);
+		linprod_to_detjac_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, terminal_pt, EG->PD_d.time, ED);
+		clear_vec_d(terminal_pt);}
+	else{
+		linprod_to_detjac_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_d.point, EG->PD_d.time, ED); }
+	
+	
+	print_point_to_screen_matlab(e.funcVals,"post_soln_func_vals");
+
+	if (EG->last_approx_prec>=64) {
+		vec_d prev_pt;  init_vec_d(prev_pt,1);
+		vec_mp_to_d(prev_pt,EG->PD_mp.point);
+		linprod_to_detjac_eval_d(f, e.parVals, e.parDer, e.Jv, e.Jp, prev_pt, EG->PD_d.time, ED);
+		clear_vec_d(prev_pt);}
+	else{
+		linprod_to_detjac_eval_d(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_d, EG->PD_d.time, ED);}
+	
 	// compare the function values
 	int isSoln = 1;
 	for (ii = 0; ii < LPED->SLP->numFuncs && isSoln; ii++)
@@ -3057,7 +2961,7 @@ int check_issoln_linprod_d(endgame_data_t *EG,
 	}
 	
 	
-
+	
 	
 	clear_eval_struct_d(e);
 	clear_vec_d(f);
@@ -3067,21 +2971,32 @@ int check_issoln_linprod_d(endgame_data_t *EG,
 }
 
 
-int check_issoln_linprod_mp(endgame_data_t *EG,
+int check_issoln_linprodtodetjac_mp(endgame_data_t *EG,
 														 tracker_config_t *T,
 														 void const *ED)
 {
   linprodtodetjac_eval_data_mp *LPED = (linprodtodetjac_eval_data_mp *)ED; // to avoid having to cast every time
-
 	
-	int ii, num_digits = prec_to_digits((int) mpf_get_default_prec());
+	int ii;
+	
+	for (ii = 0; ii < T->numVars; ii++)
+	{
+    if (!(mpfr_number_p(EG->PD_mp.point->coord[ii].r) && mpfr_number_p(EG->PD_mp.point->coord[ii].i)))
+		{
+			printf("got not a number\n");
+			print_point_to_screen_matlab_mp(EG->PD_mp.point,"bad_solution");
+      return 0;
+		}
+	}
+	
+	int num_digits = prec_to_digits((int) mpf_get_default_prec());
 	double tol;
 	mpf_t n1, n2, zero_thresh, max_rat;
 	point_mp f;
 	eval_struct_mp e;
 	
 	mpf_init(n1); mpf_init(n2); mpf_init(zero_thresh); mpf_init(max_rat);
-	init_point_mp(f, 1);
+	init_point_mp(f, T->numVars); f->size = T->numVars;
 	init_eval_struct_mp(e,0, 0, 0);
 	
 	mpf_set_d(max_rat, T->ratioTol);
@@ -3090,12 +3005,21 @@ int check_issoln_linprod_mp(endgame_data_t *EG,
 	if (num_digits > 300)
 		num_digits = 300;
 	num_digits -= 2;
-		tol = MAX(T->funcResTol, pow(10,-num_digits));
+	tol = MAX(T->funcResTol, pow(10,-num_digits));
 	mpf_set_d(zero_thresh, tol);
 	
-	
+	//this one guaranteed by entry condition
 	linprod_to_detjac_eval_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, ED);
+	
+	print_point_to_screen_matlab_mp(e.funcVals,"post_soln_func_vals");
+	if (EG->last_approx_prec < 64)
+	{ // copy to _mp
+		point_d_to_mp(EG->last_approx_mp, EG->last_approx_d);
+	}
+	
 	linprod_to_detjac_eval_mp(f,          e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_mp, EG->PD_mp.time, ED);
+	
+	
 	// compare the function values
 	int isSoln = 1;
 	for (ii = 0; ii < LPED->SLP->numFuncs && isSoln; ii++)
@@ -3123,10 +3047,11 @@ int check_issoln_linprod_mp(endgame_data_t *EG,
 	
 	clear_eval_struct_mp(e);
 	clear_vec_mp(f);
-
+	
 	return isSoln;
 	
 }
+
 
 
 

@@ -471,6 +471,7 @@ void detjac_to_detjac_track_d(trackingStats *trackCount,
 	
 	
 	W_new->W.num_pts=solution_counter;
+	W_new->W_mp.num_pts=solution_counter;
 	printf("found %d solutions after the detjac_to_detjac regeneration step\n",solution_counter);
 	
 	

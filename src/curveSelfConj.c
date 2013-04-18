@@ -15,7 +15,8 @@ void computeCurveSelfConj(char * inputFile,
 													curveDecomp_d *C,
 													int num_vars,
 													int num_var_gps,
-													unsigned int currentSeed){
+													unsigned int currentSeed)
+{
 	//IN DEVELOPMENT
   
 	prog_t SLP;
@@ -120,7 +121,7 @@ void computeCurveSelfConj(char * inputFile,
 		make_matrix_random_real_mp(n_minusone_randomizer_matrix_full_prec,num_vars-1-num_var_gps,PPD.num_funcs,T.AMP_max_prec);
 	}
 	else if(PPD.num_funcs<num_vars-1-num_var_gps){
-		printf("system has no one-dimensional components based on dimensions!\n");
+		printf("system does not have any one-dimensional components based on dimensions!\n");
 		bexit(ERROR_CONFIGURATION);
 	}
 	else
@@ -176,7 +177,7 @@ void computeCurveSelfConj(char * inputFile,
 	
 	
   // 3) initalize data structures
-	// is this initialization performed before -this- function?
+	//  this initialization is performed before -this- function?
   
 	
 	
@@ -261,31 +262,257 @@ void computeCurveSelfConj(char * inputFile,
 	
 //	print_witness_set_to_screen(W_detjacdetjac);
 	write_dehomogenized_coordinates(W_detjacdetjac,"detjac_solns");
+
 	
-	vec_d pi_d;  init_vec_d(pi_d,W.num_variables);
-	vec_mp_to_d(pi_d,pi);
-	check_detjac( W_detjacdetjac, SLP, T, n_minusone_randomizer_matrix, pi_d);
+//	check_detjac( W_detjacdetjac, SLP, T, n_minusone_randomizer_matrix, pi_d);
+
+	witness_set_d W_crit_real; init_witness_set_d(&W_crit_real);
+	sort_for_real(&W_crit_real, W_detjacdetjac,T);
 	
-	clear_witness_set(W_linprod);
-	clear_witness_set(W_lintolin);
-	clear_witness_set(W_detjacdetjac);
+	
+
+	
+	printf("completed detjac2detjac solve\n\n");
+	
+	
+
 	
   // 5) compute h_o, get critical points
 	
 	
+	vec_mp projection_values; init_vec_mp(projection_values,W_crit_real.W_mp.num_pts); projection_values->size = W_crit_real.W_mp.num_pts;
+	vec_mp dehom; init_vec_mp(dehom,W_crit_real.num_variables-1); dehom->size = W_crit_real.num_variables-1;
+	
+	vec_mp pi_no_hom; init_vec_mp(pi_no_hom,W_crit_real.num_variables-1); pi_no_hom->size = W_crit_real.num_variables-1;
+	for (ii=0; ii<W_crit_real.num_variables-1; ii++) {
+		set_mp(&pi_no_hom->coord[ii],&pi->coord[ii+1]);
+	}
+	
+	for (ii=0; ii<W_crit_real.W_mp.num_pts; ii++) {
+		
+		dehomogenize_mp(&dehom,W_crit_real.W_mp.pts[ii]);
+		dot_product_mp(&projection_values->coord[ii],dehom,pi_no_hom);
+		
+	}
+	
+	vec_mp sorted; init_vec_mp(sorted,W_crit_real.W_mp.num_pts); sorted->size = W_crit_real.W_mp.num_pts;
+	sort_increasing_by_real(&sorted, projection_values);
+	
+	print_point_to_screen_matlab_mp(projection_values,"projection_values");
+	print_point_to_screen_matlab_mp(sorted,"sorted_projection_values");
+	
+	// sorted
 	
 	
 	
+	
+	
+	//5 find crit (the projection values)
+
+	
+	double left = mpf_get_d(sorted->coord[0].r)-1;
+	double right = mpf_get_d(sorted->coord[W_crit_real.W_mp.num_pts-1].r)+1;
+	
+
+	
+	
+	
+	witness_set_d left_endpoint; init_witness_set_d(&left_endpoint);
+	witness_set_d right_endpoint; init_witness_set_d(&right_endpoint);
+	witness_set_d mcreallerson; init_witness_set_d(&mcreallerson);
+	
+	comp_d temp;
+  vec_mp particular_projection;  init_vec_mp(particular_projection,W.num_variables); particular_projection->size = W.num_variables;
+	vec_cp_mp(particular_projection,pi);
+
+	
+	
+	
+	temp->r = -left; temp->i = 0;
+	d_to_mp(&particular_projection->coord[0],temp);
+	
+	lin_to_lin_solver_main(T.MPType,
+												 W,
+												 n_minusone_randomizer_matrix_full_prec,
+												 &particular_projection, 1,
+												 &left_endpoint);
+	
+	sort_for_real(&mcreallerson,left_endpoint,T);
+	int left_has_real_soln;
+	if (mcreallerson.W.num_pts>0){
+		left_has_real_soln = 1;
+//		merge_witness_sets(mcreallerson);
+	}
+	else{
+		left_has_real_soln = 0;
+	}
+	clear_witness_set(mcreallerson); init_witness_set_d(&mcreallerson);
+	
+	
+	
+	
+	//set the value of the projection to which we wish to homotope.
+	temp->r = -right; temp->i = 0;
+	d_to_mp(&particular_projection->coord[0],temp);
+	
+	lin_to_lin_solver_main(T.MPType,
+												 W,
+												 n_minusone_randomizer_matrix_full_prec,
+												 &particular_projection, 1,
+												 &right_endpoint);
+	
+	
+	
+	
+	sort_for_real(&mcreallerson, right_endpoint,T);
+	int right_has_real_soln;
+	if (mcreallerson.W.num_pts>0){
+		right_has_real_soln = 1;
+//		merge_witness_sets(mcreallerson);
+	}
+	else{
+		right_has_real_soln = 0;
+	}
+	
+	clear_witness_set(mcreallerson);
+	
+	
+	
+	
+	
+	
+	
+	
+//	double *crit_downstairs;
+//	int estimated_number_crit;
+//	estimated_number_crit = W_crit_real.W_mp.num_pts +2;
+//	crit_downstairs = (double *)bmalloc(estimated_number_crit*sizeof(double));
+//	
+//	
+//	if (W_crit_real.W_mp.num_pts==1) {
+//		crit_downstairs[0] = left-1;
+//		crit_downstairs[1] = mpf_get_d(sorted->coord[0].r);
+//		crit_downstairs[2] = right+1;
+//	}
+//	else{
+//		crit_downstairs[0] = left-(right-left)/(2*W_crit_real.W_mp.num_pts);
+//		crit_downstairs[estimated_number_crit-1] = right+(right-left)/(2*W_crit_real.W_mp.num_pts);
+//		
+//		for (ii=0; ii<W_crit_real.W_mp.num_pts; ii++) {
+//			crit_downstairs[ii+1] = mpf_get_d(sorted->coord[ii].r);
+//		}
+//	}
+//	
+//	
+//	printf("crit_downstairs:\n");
+//	//print out the crit set of projection values.
+//	for (ii=0; ii<estimated_number_crit; ii++) {
+//		printf("%lf ",crit_downstairs[ii]);
+//	}
+//	
+	
+	
+	
+	
+/// dehomogenize the points to perform the projections using \pi.  the points we
+	vec_d mcdehom;  init_vec_d(mcdehom,W.num_variables-1); mcdehom->size = W.num_variables-1;
+
+	int num_midpoints = W_crit_real.W_mp.num_pts-1 + left_has_real_soln + right_has_real_soln;
+	double *midpoints_downstairs = (double *) bmalloc(num_midpoints*sizeof(double));
+	
+	if (left_has_real_soln==1) {
+		midpoints_downstairs[0] = (left+mpf_get_d(sorted->coord[0].r))/2;
+	}
+
+	
+	
+	int offset = left_has_real_soln;
+	if (W_crit_real.W_mp.num_pts-1) {
+		for (ii=0; ii<W_crit_real.W_mp.num_pts; ii++) {
+			midpoints_downstairs[ii+offset] = (mpf_get_d(sorted->coord[ii].r)+mpf_get_d(sorted->coord[ii+1].r))/2;
+		}
+	}
+	
+	if (right_has_real_soln==1) {
+		midpoints_downstairs[num_midpoints-1] = (right+ mpf_get_d(sorted->coord[W_crit_real.W_mp.num_pts-1].r) )/2;
+	}
+	
+//	for (ii=0; ii<num_midpoints; ii++) {
+//		printf("%lf\n",midpoints_downstairs[ii]);
+//	}
+	
+
   // 6) find points P
 	// T = \pi(crit)
 	// S = midpoints of T
   
 	// for ( s \in S)
 	//find P
+	
+	OUT = safe_fopen_write("midpoints_upstairs");
+	
+	for (ii=0; ii<num_midpoints; ii++) {
+		init_witness_set_d(&Wtemp); cp_patches(&Wtemp,W);
+		
+		temp->i = 0;
+		temp->r = -midpoints_downstairs[ii];
+		d_to_mp(&particular_projection->coord[0],temp);
+		
+		//make the projection we will solve at.
+		
+		
+		lin_to_lin_solver_main(T.MPType,
+													 W,
+													 n_minusone_randomizer_matrix_full_prec,
+													 &particular_projection, 1,
+													 &Wtemp);
+		
+		
+		init_witness_set_d(&mcreallerson);
+		sort_for_real(&mcreallerson, Wtemp,T);
+		
+		
+		fprintf(OUT,"upstairs points for midpoint value %lf (index %d):\n",midpoints_downstairs[ii],ii);
+		for (jj=0; jj<mcreallerson.W.num_pts; jj++) {
+			
+			dehomogenize_mp(&dehom,mcreallerson.W_mp.pts[jj]);
+			
+			for (kk=0; kk<W.num_variables-1; kk++) {
+				mpf_out_str (OUT, 10, 16, dehom->coord[kk].r);
+				fprintf(OUT," ");
+				mpf_out_str (OUT, 10, 16, dehom->coord[kk].i);
+				fprintf(OUT,"\n");
+//				fprintf(OUT,"%lf %lf\n",mcreallerson.W.pts[jj]->coord[kk].r,mcreallerson.W.pts[jj]->coord[kk].i);
+			}
+			fprintf(OUT,"\n");
+		}
+		
+		fprintf(OUT,"\n");
+		
+		
+		
+		clear_witness_set(mcreallerson);
+		
+		clear_witness_set(Wtemp);
+	}
+	
+	fclose(OUT);
   
-  
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
   // 7) find edge endpoints
   
+	
+	
+	
 	// track left/right
 	// start at (x,t) = (p,1)
 	// call endpoint q.
@@ -293,6 +520,17 @@ void computeCurveSelfConj(char * inputFile,
   
   //set C->V_0, C->V_1, C->E
 	
+	
+	
+	
+//	vec_d pi_d;  init_vec_d(pi_d,W.num_variables);
+//	vec_mp_to_d(pi_d,pi);
+//	
+	clear_witness_set(W_linprod);
+	clear_witness_set(W_lintolin);
+	clear_witness_set(W_detjacdetjac);
+	
+//TODO: clear memory
 	return;
 }
 
@@ -687,3 +925,70 @@ void sort_for_membership(char * input_file,
 	rename("preproc_data.bak","preproc_data");
 	return;
 }
+
+
+
+
+
+
+
+
+void sort_for_real(witness_set_d *W_out,
+									 witness_set_d W_in,
+									 tracker_config_t T)
+{
+	printf("sorting points for real-ness\n%d points mp %d points d\n",W_in.W_mp.num_pts,W_in.W.num_pts);
+	int ii;
+	
+//	if (W_in.incidence_number==-1) {
+//		printf("input witness_set has unset incidence_number for comparison.\n");
+//		exit(-1112);
+//	}
+	
+	W_out->MPType = W_in.MPType;
+	W_out->incidence_number = W_in.incidence_number;
+	W_out->num_variables = W_in.num_variables;
+	W_out->num_var_gps = W_in.num_var_gps;
+	
+	//copy the linears, patches from old to new
+	cp_patches(W_out, W_in);
+	cp_linears(W_out, W_in);
+	
+//	
+	
+	int real_indicator[W_in.W.num_pts];	
+	int counter = 0;
+	vec_mp result; init_vec_mp(result,1);
+	for (ii=0; ii<W_in.W_mp.num_pts; ii++) {
+		dehomogenize_mp(&result, W_in.W_mp.pts[ii]);
+		print_point_to_screen_matlab_mp(result,"isreal?");
+		real_indicator[ii] = checkForReal_mp(result, T.real_threshold);
+		printf("isreal is %d\n",real_indicator[ii]);
+		if (real_indicator[ii]==1) {
+			counter++;
+		}
+	}
+	
+	
+	W_out->W_mp.pts = (point_mp *)bmalloc(counter*sizeof(point_mp));
+	W_out->W.pts    = (point_d  *)bmalloc(counter*sizeof(point_d));
+	W_out->W_mp.num_pts = W_out->W.num_pts = counter;
+	for (ii=0; ii<W_in.W_mp.num_pts; ii++) {
+		if (real_indicator[ii]==1) {
+			init_vec_mp(W_out->W_mp.pts[ii],1); init_vec_d(W_out->W.pts[ii],1);
+			vec_cp_mp(W_out->W_mp.pts[ii],W_in.W_mp.pts[ii]);
+			vec_mp_to_d(W_out->W.pts[ii],W_in.W_mp.pts[ii]);
+		}
+	}
+	
+
+	clear_vec_mp(result);
+	
+	
+	return;
+}
+
+
+
+
+

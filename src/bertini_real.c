@@ -56,26 +56,44 @@ int main(int argC, char *args[])
 	get_tracker_config(&T,MPType);
 	
 	initMP(T.Precision);
-#ifdef _OPENMP
-#pragma omp parallel
-#endif
-  { // set precision for each thread - all threads will execute this and set the precision correctly on each thread
-    initMP(T.Precision);
-  }
+	
+//#ifdef _OPENMP
+//#pragma omp parallel
+//#endif
+//  { // set precision for each thread - all threads will execute this and set the precision correctly on each thread
+//    initMP(T.Precision);
+//  }
 	
 	
 	num_var_gps = PPD.num_var_gp;
+	int orig_num_func = PPD.num_funcs;
 	num_vars = setupProg(&SLP, T.Precision, MPType); // num_vars includes the number of homogeneous coordinates.
 	// the number of homogeneous coordinates is the num_var_gps.
 	
 	
 	printf("parsing witness set\n");
+	init_witness_set_d(&Wuser);
 	witnessSetParse(&Wuser,witnessSetName,num_vars);
 	Wuser.num_var_gps = num_var_gps;
 	Wuser.MPType = MPType;
-	witnessSetParse(&Wnew, witnessSetName,num_vars);  // Wnew same as Wuser, except for functions. (needs to be updated)
-	Wnew.MPType = MPType;
-	Wnew.num_var_gps = num_var_gps;
+	
+	get_variable_names(&Wuser);
+
+	
+//	witnessSetParse(&Wnew, witnessSetName,num_vars);  // Wnew same as Wuser, except for functions. (needs to be updated)
+//	Wnew.MPType = MPType;
+//	Wnew.num_var_gps = num_var_gps;
+	
+	printf("getting component number\n");
+	Wuser.incidence_number = get_component_number(Wuser,num_vars,inputName);
+//	Wnew.incidence_number = Wuser.incidence_number;
+	
+	
+//	printf("inserting new randomization matrix\n");
+//	insert_randomization_matrix_witness_data(1,1,1);// move me to after isosingular deflation.
+//	exit(0);
+	
+	
 	
 	write_dehomogenized_coordinates(Wuser, "witness_points_dehomogenized");
 	
@@ -84,25 +102,27 @@ int main(int argC, char *args[])
 	// perform an isosingular deflation
 	rV = isosingular_deflation(&num_deflations, &deflation_sequence, inputName, "witness_points_dehomogenized", "bertini", "matlab", max_deflations);
   
-	 strLength = 1 + snprintf(NULL, 0, "%s_comp_%d_deflated", inputName,deflation_sequence[0]);
-         input_deflated_Name = (char *)bmalloc(strLength * sizeof(char));
-         sprintf(input_deflated_Name, "%s_comp_%d_deflated", inputName,deflation_sequence[0]);
+	strLength = 1 + snprintf(NULL, 0, "%s_comp_%d_deflated", inputName,deflation_sequence[num_deflations]);
+	input_deflated_Name = (char *)bmalloc(strLength * sizeof(char));
+	sprintf(input_deflated_Name, "%s_comp_%d_deflated", inputName,deflation_sequence[num_deflations]);
 	
 	
+	
+	
+	parse_input(inputName, &trackType, &MPType, &genType, &userHom, &currentSeed, &sharpenOnly, &needToDiff, &remove_temp, useParallelDiff, my_id, num_processes, headnode);
+	preproc_data_clear(&PPD);
+	setupPreProcData("preproc_data", &PPD);
+	int defl_num_func = PPD.num_funcs;
 	
 	
 
-	
-	
-	
 
-	Wuser.incidence_number = get_component_number(Wuser,num_vars,input_deflated_Name);
-	Wnew.incidence_number = Wuser.incidence_number;
+
 	
 	
 	
 	printf("checking if component is self-conjugate\n");
-	sc = checkSelfConjugate(Wuser,num_vars,input_deflated_Name);  //later:  could be passed in from user, if we want
+	sc = checkSelfConjugate(Wuser,num_vars,inputName);  //later:  could be passed in from user, if we want
 	if (sc==0) {
 		printf("component is NOT self conjugate\n");
 	}
@@ -173,14 +193,14 @@ int main(int argC, char *args[])
 	{
 		//Call non-self-conjugate case code
 		printf("\n\nentering not-self-conjugate case\n\n");
-		computeCurveNotSelfConj(Wnew, pi, &C,num_vars-1,"input_deflated");//This is Wenrui's !!!
+		computeCurveNotSelfConj(Wuser, pi, &C,num_vars-1,"input_deflated");//This is Wenrui's !!!
 		printf("Bertini_real found %d vertices (vertex)\n",C.num_V0);
 	}
 	else
 	{
 		//Call self-conjugate case code
 		printf("\n\nentering self-conjugate case\n\n");
-		computeCurveSelfConj(input_deflated_Name,Wnew,pi,&C,num_vars,num_var_gps,currentSeed);  //This is Dans', at least at first !!!
+		computeCurveSelfConj(input_deflated_Name,Wuser,pi,&C,num_vars,num_var_gps,currentSeed);  //This is Dans', at least at first !!!
 	}
 	printf("\n*\ndone with case\n*\n");
 
@@ -239,8 +259,10 @@ int main(int argC, char *args[])
 	
 //	printf("clearing witness sets\n");
 	
+	preproc_data_clear(&PPD);
+	
 	clear_witness_set(Wuser);
-	clear_witness_set(Wnew);
+//	clear_witness_set(Wnew);
 	
 	
 	

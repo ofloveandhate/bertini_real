@@ -242,11 +242,7 @@ int main(int argC, char *args[]){
 	
 	
 	
-	if (numbertype!=2) {
-		std::cerr << "this program not yet built to handle non-rational numbers.  program it!\n";
-		exit(-3);
-	}
-	
+
 	
 	
 	
@@ -282,7 +278,7 @@ int main(int argC, char *args[]){
 			getline(IN,tmpstr);
 			randomization_matrix.push_back(tmpstr);
 			
-			//#ifdef verbose
+			//#ifdef verbose_datatoset
 			//			std::cout << "r_m " << tmpstr << std::endl;
 			//#endif
 			
@@ -307,7 +303,7 @@ int main(int argC, char *args[]){
 				converter >> A[ii][jj];
 				converter.clear();
 				converter.str("");
-				//#ifdef verbose
+				//#ifdef verbose_datatoset
 				//				std::cout << "A[" << ii << "][" << jj << "]=" << A[ii][jj] << std::endl;
 				//#endif
 			}
@@ -329,7 +325,7 @@ int main(int argC, char *args[]){
 		for (ii = 0; ii<garbage; ii++) {
 			getline(IN,tmpstr);
 			homogenization_patch_eqn.push_back(tmpstr);
-#ifdef verbose
+#ifdef verbose_datatoset
 			std::cout << "hom_p_eqn " << tmpstr << std::endl;
 #endif
 		}
@@ -348,7 +344,7 @@ int main(int argC, char *args[]){
 		converter.clear();
 		converter.str("");
 		
-#ifdef verbose
+#ifdef verbose_datatoset
 		std::cout << "hom_var_const " << hom_variable_constant_r << " " << hom_variable_constant_i << std::endl;
 #endif
 		
@@ -361,7 +357,7 @@ int main(int argC, char *args[]){
 		converter.clear();
 		converter.str("");
 		
-#ifdef verbose
+#ifdef verbose_datatoset
 		std::cout << "will have " << num_linears << " linears" << std::endl;
 #endif
 		
@@ -399,7 +395,7 @@ int main(int argC, char *args[]){
 		for (ii = 0; ii<num_patch_coefficients; ii++) {
 			getline(IN,tmpstr);
 			patch_coefficents.push_back(tmpstr);
-#ifdef verbose
+#ifdef verbose_datatoset
 			std::cout << "p_coeff " << tmpstr << std::endl;
 #endif
 		}
@@ -492,13 +488,27 @@ int dataToSetStartup(int argC, char *args[], std::string *inputName, std::string
 {
 	
 	
-	std::cout << "\n\n\nthis is data2set, a utility for turning witness_data into " << std::endl <<
-	"witness_set files, to be used with BertiniReal\n\n\n" << std::endl;
+	std::cout << "\n\n\n* * *\ndata2set\n* * *\na utility for turning witness_data into " << std::endl <<
+	"witness_set files, possibly to be used with BertiniReal\n\nthis software uses mpreal, a c++ package for mp data types.\n\n" << std::endl;
 	
 	
 	// setup inputName & directoryName
 	if (argC >= 2 && args[1] != NULL)
 	{ // inputName is args[1]
+		
+		if ( strcmp(args[1],"--help") ||  strcmp(args[1],"-help") ) {
+			
+			std::cout << "\ndata2set witness_data_name foldername\n\n";
+			std::cout << "version " << DTSVERSION << "\n";
+			std::cout << "there are two arguments to pass in:\n" <<
+				"first is the name of the witness_data file\n" <<
+				"second is the name of the folder to write data to\n" <<
+				"\n" <<
+				"data2set does NOT de-homogenize the variables.\n" <<
+				"for support, write to danielthebrake@gmail.com\n" << std::endl;
+			
+			exit(0);
+		}
 		
 		*inputName = args[1];
 		
@@ -535,7 +545,7 @@ int open_input_file(std::string inputName, std::ifstream & IN){
 		bexit(ERROR_FILE_NOT_EXIST);
 	}
 	else{
-#ifdef verbose
+#ifdef verbose_datatoset
 		std::cout << "successfully opened input " << inputName << std::endl;
 #endif
 	}
@@ -598,7 +608,7 @@ void purge_previous_directory(char *directoryName)
 		
 		
 		(void) closedir (dp);
-#ifdef verbose
+#ifdef verbose_datatoset
 		std::cout << "\ndone deleting previous files\n\n\n";
 #endif
 	}

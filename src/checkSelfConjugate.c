@@ -20,6 +20,8 @@ int checkSelfConjugate(witness_set_d W,
   char *SysStr = NULL,*fmt = NULL, *bertini_command="bertini";
   FILE *IN = NULL, *OUT=NULL;
 	
+	preproc_data PPD;
+	setupPreProcData("preproc_data", &PPD); // gets the number of functions, etc.
 	
 	//make the command string to run
 	strLength = 1 + snprintf(NULL, 0, "%s input_membership_test", bertini_command);
@@ -71,19 +73,23 @@ int checkSelfConjugate(witness_set_d W,
 	read_incidence_matrix(component_numbers);
 
   free(declarations);
-	free(component_numbers);
+	
 	
 	
   // delete temporary files
-  remove("func_input_real");
-  remove("config_real");
-	remove("incidence_matrix");
-	remove("member_points");
+//  remove("func_input_real");
+//  remove("config_real");
+//	remove("incidence_matrix");
+//	remove("member_points");
+	preproc_data_clear(&PPD);
+	
 	if (component_numbers[0]==component_numbers[1]) {
+		free(component_numbers);
 		return 1;
 	}
 	else
 	{
+		free(component_numbers);
 		return 0;
 	}
 
@@ -153,13 +159,12 @@ int get_component_number(witness_set_d W,
 	printf("*\n%s\n*\n",SysStr);
   system(SysStr);
 	
-	int *component_numbers;
-	component_numbers = (int *)bmalloc(2*sizeof(int));
+	int component_number;
+//	component_numbers = (int *)bmalloc(1*sizeof(int));
 	
-	read_incidence_matrix(component_numbers);
+	read_incidence_matrix(&component_number);
 	
   free(declarations);
-	free(component_numbers);
 	
 	
   // delete temporary files
@@ -167,7 +172,10 @@ int get_component_number(witness_set_d W,
   remove("config_real");
 	remove("incidence_matrix");
 	remove("member_points");
-	return component_numbers[0];
+	
+
+	
+	return component_number;
 	
 	
 	
@@ -263,8 +271,8 @@ void read_incidence_matrix(int *component_numbers){
 
 	
   fscanf(IN, "%d",&num_pts);    // number of points (should be 1)
-	
-	
+	printf("reading incidence for %d pts\n",num_pts);
+
 	//and then a binary matrix indicating membership on which component
 	//from the appendices of the book:
 	//	% Binary matrix with one row per point, columns corresponding to components.
@@ -280,9 +288,9 @@ void read_incidence_matrix(int *component_numbers){
 				component_number = ii;
 			}
 		}
+		
 		if (component_number==-10) {
-			printf("it appears the membership test FAILED.\n");
-//			exit(-1);
+			printf("it appears the candidate point lies on NO COMPONENT.\n");
 		}
 		component_numbers[jj]=component_number;
 	}
@@ -321,7 +329,6 @@ void read_incidence_matrix_wrt_number(int *component_numbers, int given_incidenc
 	
 	
   fscanf(IN, "%d",&num_pts);    // number of points (should be 1)
-	
 	
 	//and then a binary matrix indicating membership on which component
 	//from the appendices of the book:
@@ -407,8 +414,6 @@ void membership_test_input_file(char *outputFile,
 	
   return;
 }
-
-
 
 
 
