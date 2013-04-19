@@ -81,11 +81,15 @@ typedef struct
 // end the double types
 
 
+
+
 // CURVE CELL DECOMP DATA TYPES
 typedef struct
 {
   point_d pt;
+  point_mp pt_mp;
   comp_d projVal; //Value of projection pi applied to pt; used for easy comparison of projected values later....
+  comp_mp projVal_mp;
   int type;  //See enum below.
   int num_left;  //this and next line track how often this vertex appears in
   int num_right; //edges;  good for sanity check AND determining V0.
@@ -96,32 +100,35 @@ typedef struct
   int left;  //index from V1
   int right; //index from V1
   point_d midpt; //the midPts
+  point_mp midpt_mp;//multiple precision
   witness_set_d W; //contains functions; IS THIS OVERKILL????  Could just be a system_d....
   vec_d pi;  //projection
+  vec_mp pi_mp;
 }edge_d;
 
 typedef struct
 {
   vertex_d *V0;  //Isolated real points.
   vertex_d *V1;  //Critical points AND new non-critical endpoints of edges.
-//  vertex_d *midPts;  //Midpoints of edges.
+	//  vertex_d *midPts;  //Midpoints of edges.
   edge_d *E;
   int      num_V0;
   int      num_V1;
-//  int      num_midPts;
+	//  int      num_midPts;
   int      num_E;
 }curveDecomp_d;
 
 
 typedef struct
 {
-  mat_d    *V;  //points
-  vec_d    *pV; //projection of points   
+  vec_d    **V;  //points
+  vec_d    *pV; //projection of points
+  vec_mp   **V_mp;
+  vec_mp   *pV_mp;
+  int      **refine;
   int      num_E;// number of edges
-  int      num_pts;// number of points
+  int      *num_pts;// number of points
 }sample_d;
-
-
 
 //The following lets us use words instead of numbers to indicate vertex types.
 enum {CRITICAL=0, NEW=1, MIDPOINT=2};
@@ -135,6 +142,7 @@ enum {CRITICAL=0, NEW=1, MIDPOINT=2};
 
 
 //function prototypes for bertini_real data clearing etc.
+void init_curveDecomp_d(curveDecomp_d *C);
 void merge_witness_sets(witness_set_d *W_out,witness_set_d W_left,witness_set_d W_right);
 
 void init_variable_names(witness_set_d *W, int num_vars);
@@ -144,18 +152,20 @@ void cp_linears(witness_set_d *W_out, witness_set_d W_in);
 void cp_patches(witness_set_d *W_out, witness_set_d W_in);
 void cp_witness_set(witness_set_d *W_out, witness_set_d W_in);
 void init_witness_set_d(witness_set_d *W);
-void init_curveDecomp_d(curveDecomp_d *C);
+
+
+void dehomogenize(vec_d *result, vec_d dehom_me);
+void dehomogenize_mp(vec_mp *result, vec_mp dehom_me);
 
 void dot_product_d(comp_d result, vec_d one, vec_d two);
 void dot_product_mp(comp_mp result, vec_mp one, vec_mp two);
 
 
 void write_dehomogenized_coordinates(witness_set_d W, char filename[]);
-void dehomogenize(vec_d *result, vec_d dehom_me);
-void dehomogenize_mp(vec_mp *result, vec_mp dehom_me);
 
-void clear_curveDecomp_d(curveDecomp_d *C);
-void clear_sample_d(sample_d *S);
+
+void clear_curveDecomp_d(curveDecomp_d *C, int MPType);
+void clear_sample_d(sample_d *S, int MPType);
 void clear_witness_set(witness_set_d W);
 void print_witness_set_to_screen(witness_set_d W);
 void print_point_to_screen_matlab(vec_d M, char name[]);
