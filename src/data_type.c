@@ -2,41 +2,99 @@
 
 
 
+
 void init_curveDecomp_d(curveDecomp_d *C){
 	
 	C->num_V0=C->num_V1=C->num_E=0;
 	C->V0=C->V1=C->E=NULL;
 	return;
 }
-void clear_curveDecomp_d(curveDecomp_d *C){
+
+
+void clear_curveDecomp_d(curveDecomp_d *C, int MPType){
 	
 	int ii;
 	for(ii=0;ii<C->num_V0;ii++)
-		clear_vec_d(C->V0[ii].pt);
+	{
+		if(MPType == 0)
+		{
+			clear_vec_d(C->V0[ii].pt);
+		}
+		else
+		{
+			clear_vec_mp(C->V0[ii].pt_mp);
+		}
+	}
 	free(C->V0);
 	for(ii=0;ii<C->num_V1;ii++)
-		clear_vec_d(C->V1[ii].pt);
+	{
+		if(MPType == 0)
+		{
+			clear_vec_d(C->V1[ii].pt);
+		}
+		else
+		{
+			clear_vec_mp(C->V1[ii].pt_mp);
+		}
+	}
 	free(C->V1);
 	for(ii=0;ii<C->num_E;ii++)
 	{
-		clear_vec_d(C->E[ii].midpt);
-		clear_vec_d(C->E[ii].pi);
+		if(MPType == 0)
+		{
+			clear_vec_d(C->E[ii].midpt);
+			clear_vec_d(C->E[ii].pi);
+		}
+		else
+		{
+			clear_vec_mp(C->E[ii].midpt_mp);
+			clear_vec_mp(C->E[ii].pi_mp);
+		}
 		clear_witness_set(C->E[ii].W);
 	}
 	free(C->E);
 	
 }
-void clear_sample_d(sample_d *S){
+
+
+
+void clear_sample_d(sample_d *S, int MPType){
 	
-	int ii;
+	int ii, jj;
 	for(ii=0;ii<S->num_E;ii++)
 	{
-		clear_vec_d(S->pV[ii]);
-		clear_mat_d(S->V[ii]);
+		if(MPType == 0)
+		{
+			clear_vec_d(S->pV[ii]);
+		}
+		else
+		{
+			clear_vec_mp(S->pV_mp[ii]);
+		}
+		for(jj=0; jj<S->num_pts[ii];jj++)
+		{
+			if(MPType == 0)
+			{
+		    clear_vec_d(S->V[ii][jj]);
+			}
+			else
+			{
+				clear_vec_mp(S->V_mp[ii][jj]);
+			}
+		}
+		free(S->refine[ii]);
 	}
-	free(S->pV);
-	free(S->V);
-	
+	if(MPType == 0)
+	{
+		free(S->pV);
+		free(S->V);
+	}
+	else
+	{
+		free(S->pV_mp);
+		free(S->V_mp);
+	}
+	free(S->refine);
 }
 
 
@@ -335,6 +393,44 @@ void init_witness_set_d(witness_set_d *W){
 	return;
 }
 
+void dehomogenize(vec_d *result, vec_d dehom_me){
+	comp_d denom;
+	change_size_vec_d(*result,dehom_me->size-1);
+	(*result)->size = dehom_me->size-1;
+	set_d(denom, &dehom_me->coord[0]);
+	
+	int ii;
+	for (ii=0; ii<dehom_me->size-1; ++ii) {
+		set_d( &(*result)->coord[ii],&(dehom_me)->coord[ii+1]);
+		div_d(&(*result)->coord[ii],&(*result)->coord[ii],denom); //  result[ii] = dehom_me[ii+1]/dehom_me[0].
+	}
+	
+	return;
+}
+
+void dehomogenize_mp(vec_mp *result, vec_mp dehom_me){
+	comp_mp denom; init_mp(denom);
+	change_size_vec_mp((*result),dehom_me->size-1);
+	
+	(*result)->size = dehom_me->size-1;
+	
+	//	mpf_out_str (NULL, 10, 10, dehom_me->coord[0].r);
+	
+	//	gmp
+	//	gmp_printf ("dehom_me[0].r  %Zd\n", dehom_me->coord[0].r);
+	//
+	
+	set_mp(denom, &dehom_me->coord[0]);
+	int ii;
+	for (ii=0; ii<dehom_me->size-1; ++ii) {
+		set_mp( &(*result)->coord[ii],&(dehom_me)->coord[ii+1]);
+		div_mp(&(*result)->coord[ii],&(*result)->coord[ii],denom); //  result[ii] = dehom_me[ii+1]/dehom_me[0].
+	}
+	
+
+	return;
+}
+
 
 void dot_product_d(comp_d result, vec_d one, vec_d two){
 	if (one->size!=two->size) {
@@ -409,42 +505,6 @@ void write_dehomogenized_coordinates(witness_set_d W, char filename[]){
 }
 
 
-void dehomogenize(vec_d *result, vec_d dehom_me){
-	comp_d denom;
-	change_size_vec_d(*result,dehom_me->size-1);
-	(*result)->size = dehom_me->size-1;
-	set_d(denom, &dehom_me->coord[0]);
-	
-	int ii;
-	for (ii=0; ii<dehom_me->size-1; ++ii) {
-		set_d( &(*result)->coord[ii],&(dehom_me)->coord[ii+1]);
-		div_d(&(*result)->coord[ii],&(*result)->coord[ii],denom); //  result[ii] = dehom_me[ii+1]/dehom_me[0].
-	}
-	
-	return;
-}
-void dehomogenize_mp(vec_mp *result, vec_mp dehom_me){
-	comp_mp denom;
-	init_mp(denom);
-	change_size_vec_mp((*result),dehom_me->size-1);
-
-	(*result)->size = dehom_me->size-1;
-	
-//	mpf_out_str (NULL, 10, 10, dehom_me->coord[0].r);
-	
-//	gmp
-//	gmp_printf ("dehom_me[0].r  %Zd\n", dehom_me->coord[0].r);
-//	
-	
-	set_mp(denom, &dehom_me->coord[0]);
-	int ii;
-	for (ii=0; ii<dehom_me->size-1; ++ii) {
-		set_mp( &(*result)->coord[ii],&(dehom_me)->coord[ii+1]);
-		div_mp(&(*result)->coord[ii],&(*result)->coord[ii],denom); //  result[ii] = dehom_me[ii+1]/dehom_me[0].
-	}
-	
-	return;
-}
 
 
 void clear_witness_set(witness_set_d W){
