@@ -216,7 +216,7 @@ int linprod_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int 
 void linprod_to_detjac_track_mp(trackingStats *trackCount,
 																FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
 																witness_set_d W,
-																witness_set_d *W_new,
+																post_process_t *endPoints,
 																FILE *FAIL,
 																int pathMod, tracker_config_t *T,
 																linprodtodetjac_eval_data_mp *ED,

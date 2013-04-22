@@ -1656,7 +1656,7 @@ int linprod_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int 
     }
   }
 	
-	
+	post_process_t *endPoints = (post_process_t *)bmalloc(W.W.num_pts * sizeof(post_process_t)); //overallocate, expecting full
 	
 	if (T.endgameNumber == 3)
 	{ // use the track-back endgame
@@ -1668,7 +1668,7 @@ int linprod_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int 
 	{ // use regular endgame
 		linprod_to_detjac_track_mp(&trackCount, OUT, rawOUT, midOUT,
 															 W,  // was the startpts file pointer.
-															 W_new,
+															 endPoints,
 															 FAIL, pathMod,
 															 &T, &ED,
 															 ptr_to_eval_mp, //ptr_to_eval_d,
@@ -1709,9 +1709,9 @@ int linprod_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int 
   fprintf(OUT, "Parse Time = %fs\n", parse_time);
   fprintf(OUT, "Track Time = %fs\n", track_time);
 	
-  // print the system to rawOUT
-	//  printlinprodtodetjacRelevantData(NULL, &ED, T.MPType, usedEq, rawOUT);
-	//	printZeroDimRelevantData(&ED, ED.BED_mp, T.MPType, usedEq, rawOUT);// legacy
+
+	BRpostProcessing(endPoints, W_new, trackCount.successes, ED.preProcData, &T);
+	
 	
   // close all of the files
   fclose(OUT);
@@ -1756,7 +1756,7 @@ int linprod_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int 
 void linprod_to_detjac_track_mp(trackingStats *trackCount,
 																FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
 																witness_set_d W,
-																witness_set_d *W_new,
+																post_process_t *endPoints,
 																FILE *FAIL,
 																int pathMod, tracker_config_t *T,
 																linprodtodetjac_eval_data_mp *ED,
@@ -1828,24 +1828,24 @@ void linprod_to_detjac_track_mp(trackingStats *trackCount,
 																 &BED_copy, ED);
 	
 	
-	//initialize the structure for holding the produced data
-	W_new->num_linears = 0;
-//	W_new->L_mp = (vec_mp *)bmalloc(1*sizeof(vec_mp));
-//	W_new->L = (vec_d *)bmalloc(1*sizeof(vec_d));
-//	init_vec_d(W_new->L[0],W_new->num_variables); W_new->L[0]->size = W_new->num_variables;
+//	//initialize the structure for holding the produced data
+//	W_new->num_linears = 0;
+////	W_new->L_mp = (vec_mp *)bmalloc(1*sizeof(vec_mp));
+////	W_new->L = (vec_d *)bmalloc(1*sizeof(vec_d));
+////	init_vec_d(W_new->L[0],W_new->num_variables); W_new->L[0]->size = W_new->num_variables;
+////	
+////	init_vec_mp(W_new->L_mp[0],W_new->num_variables); W_new->L_mp[0]->size = W_new->num_variables;
+////	
+////	vec_cp_mp(W_new->L_mp[0],ED->projection);
+////	vec_mp_to_d(W_new->L[0],ED->projection);
 //	
-//	init_vec_mp(W_new->L_mp[0],W_new->num_variables); W_new->L_mp[0]->size = W_new->num_variables;
+//	W_new->W.num_pts=0;
+//  W_new->W.pts=(point_d *)bmalloc(W.W.num_pts*sizeof(point_d));
 //	
-//	vec_cp_mp(W_new->L_mp[0],ED->projection);
-//	vec_mp_to_d(W_new->L[0],ED->projection);
-	
-	W_new->W.num_pts=0;
-  W_new->W.pts=(point_d *)bmalloc(W.W.num_pts*sizeof(point_d));
-	
-	W_new->W_mp.num_pts=0;
-  W_new->W_mp.pts=(point_mp *)bmalloc(W.W_mp.num_pts*sizeof(point_mp));
-  W_new->num_variables = W.num_variables;
-	
+//	W_new->W_mp.num_pts=0;
+//  W_new->W_mp.pts=(point_mp *)bmalloc(W.W_mp.num_pts*sizeof(point_mp));
+//  W_new->num_variables = W.num_variables;
+//	
 	
 	trackCount->numPoints = W.W.num_pts;
 	int solution_counter = 0;
@@ -1884,6 +1884,8 @@ void linprod_to_detjac_track_mp(trackingStats *trackCount,
 		fprintf(BED_copy[oid].FOUT,"\n%d\n\n",EG->retVal);
 #endif
 		
+		
+		
 		// check to see if it should be sharpened
 		if (EG[oid].retVal == 0 && T_copy[oid].sharpenDigits > 0)
 		{ // use the sharpener for after an endgame
@@ -1892,25 +1894,31 @@ void linprod_to_detjac_track_mp(trackingStats *trackCount,
 		}
 		
 		
-		if (EG->retVal!=0) {
-			printf("\nretVal = %d\nthere was a path failure tracking witness point %d\n",EG->retVal,ii);
+		int issoln = check_issoln_linprodtodetjac_mp(&EG[oid], &T_copy[oid], &BED_copy[oid]);
+		
+		
+		//get the terminal time in double form
+		comp_d time_to_compare;
+		mp_to_d(time_to_compare, EG->PD_mp.time);
+		
+		
+		if ((EG->retVal != 0 && time_to_compare->r > T->minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
+			trackCount->failures++;
+			printf("\nretVal = %d\nthere was a fatal path failure tracking witness point %d\n\n",EG->retVal,ii);
 			print_path_retVal_message(EG->retVal);
+//			print_point_to_screen_matlab_mp(BED_copy->old_linear,"old");
+//			print_point_to_screen_matlab_mp(BED_copy->current_linear,"new");
+//			exit(EG->retVal); //failure intolerable in this solver.
 		}
 		else
 		{
-		
-			//copy the solutions out of EG.
-			
-			init_vec_mp(W_new->W_mp.pts[solution_counter],0);
-			init_vec_d(W_new->W.pts[solution_counter],0);
-			
-			
-			vec_cp_mp( W_new->W_mp.pts[solution_counter],
-								EG->PD_mp.point);
-			vec_mp_to_d(W_new->W.pts[solution_counter],
-								EG->PD_mp.point)
-			solution_counter++;
+			//otherwise converged, but may have still had non-zero retval due to other reasons.
+			endgamedata_to_endpoint(&endPoints[solution_counter], EG);
+			trackCount->successes++;
+			solution_counter++; // probably this could be eliminated
 		}
+
+		
 		
 		//			comp_mp result; init_mp(result);
 		//			dot_product_mp(result, W_new->W_mp.pts[solution_counter], ED->current_linear);
@@ -1945,9 +1953,9 @@ void linprod_to_detjac_track_mp(trackingStats *trackCount,
 	}// re: for (ii=0; ii<W.W.num_pts ;ii++)
 	
 	
-	W_new->W.num_pts=solution_counter;
-	printf("found %d solutions after the regeneration step\n",solution_counter);
-	
+//	W_new->W.num_pts=solution_counter;
+//	printf("found %d solutions after the regeneration step\n",solution_counter);
+
 	
 	
 	
@@ -1956,8 +1964,7 @@ void linprod_to_detjac_track_mp(trackingStats *trackCount,
 	
 	//clear the data structures.
 	
-  for (ii = 0; ii >W.W_mp.num_pts; ii++)
-  { // clear startPts[ii]
+  for (ii = 0; ii >W.W_mp.num_pts; ii++) { // clear startPts[ii]
     clear_point_data_mp(&startPts[ii]);
   }
   free(startPts);

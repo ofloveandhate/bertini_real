@@ -203,7 +203,7 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
 	
 
 	
-	BRpostProcessing(endPoints, W_new, trackCount.successes, ED.preProcData, &T);
+	BRpostProcessing_AllowDuplicates(endPoints, W_new, trackCount.successes, ED.preProcData, &T);
 	
 	
 

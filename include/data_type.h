@@ -99,9 +99,9 @@ typedef struct
 {
   int left;  //index from V1
   int right; //index from V1
-  point_d midpt; //the midPts
-  point_mp midpt_mp;//multiple precision
-  witness_set_d W; //contains functions; IS THIS OVERKILL????  Could just be a system_d....
+  point_d midpt; //the midpoint
+  point_mp midpt_mp;//the midpoint in multiple precision
+//  witness_set_d W; //contains functions; IS THIS OVERKILL????  Could just be a system_d....
   vec_d pi;  //projection
   vec_mp pi_mp;
 }edge_d;
@@ -111,22 +111,22 @@ typedef struct
   vertex_d *V0;  //Isolated real points.
   vertex_d *V1;  //Critical points AND new non-critical endpoints of edges.
 	//  vertex_d *midPts;  //Midpoints of edges.
-  edge_d *E;
+  edge_d *edges;
   int      num_V0;
   int      num_V1;
 	//  int      num_midPts;
-  int      num_E;
+  int      num_edges;
 }curveDecomp_d;
 
 
 typedef struct
 {
-  vec_d    **V;  //points
-  vec_d    *pV; //projection of points
-  vec_mp   **V_mp;
-  vec_mp   *pV_mp;
+  vec_d    **vertices;  //points
+  vec_d    *proj_vertices; //projection of points
+  vec_mp   **vertices_mp;
+  vec_mp   *proj_vertices_mp;
   int      **refine;
-  int      num_E;// number of edges
+  int      num_edges;// number of edges
   int      *num_pts;// number of points
 }sample_d;
 
@@ -136,9 +136,13 @@ enum {CRITICAL=0, NEW=1, MIDPOINT=2};
 
 
 
+int index_in_V1(curveDecomp_d *C, vec_mp testpoint, comp_mp projection_value, tracker_config_t T, int sidedness);
+void add_point_to_V0(curveDecomp_d *C, vertex_d new_vertex);
+void add_point_to_V1(curveDecomp_d *C, vertex_d new_vertex);
 
-
-
+void init_vertex_mp(vertex_d *curr_vertex);
+void cp_vertex_mp(vertex_d *target_vertex, vertex_d new_vertex);
+void add_edge_mp(curveDecomp_d *C, edge_d new_edge);
 
 
 //function prototypes for bertini_real data clearing etc.
@@ -193,7 +197,6 @@ void BRpostProcessing(post_process_t *endPoints, witness_set_d *W_new, int num_p
 
 void insert_randomization_matrix_witness_data(int rows, int cols, int codim_index);
 
-void sort_increasing_by_real(vec_mp *sorted, vec_mp input);
 
 
 #endif

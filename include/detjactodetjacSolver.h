@@ -109,7 +109,7 @@ int detjac_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int cu
 void detjac_to_detjac_track_d(trackingStats *trackCount,
 															FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
 															witness_set_d W,
-															witness_set_d *W_new,  // for holding the produced data.
+															post_process_t *endPoints,  // for holding the produced data.
 															FILE *FAIL,
 															int pathMod, tracker_config_t *T,
 															detjactodetjac_eval_data_d *ED_d,
@@ -210,7 +210,7 @@ int detjac_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int c
 void detjac_to_detjac_track_mp(trackingStats *trackCount,
 															 FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
 															 witness_set_d W,
-															 witness_set_d *W_new,
+															 post_process_t *endPoints,
 															 FILE *FAIL,
 															 int pathMod, tracker_config_t *T,
 															 detjactodetjac_eval_data_mp *ED,
