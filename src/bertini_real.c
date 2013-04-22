@@ -12,7 +12,7 @@ int main(int argC, char *args[])
   char *inputName = NULL, *witnessSetName = NULL,*input_deflated_Name=NULL;
   curveDecomp_d C;  //new data type; stores vertices, edges, etc.
   vec_mp pi_mp;  //random projection
-  witness_set_d Wuser, Wnew;
+  witness_set_d Wuser;
 	int max_deflations = 10,strLength;
 	int num_deflations, *deflation_sequence = NULL;
 	int ii;  // counters
@@ -100,7 +100,7 @@ int main(int argC, char *args[])
 
 	printf("performing isosingular deflation\n");
 	// perform an isosingular deflation
-	rV = isosingular_deflation(&num_deflations, &deflation_sequence, inputName, "witness_points_dehomogenized", "bertini", "matlab", max_deflations);
+	rV = isosingular_deflation(&num_deflations, &deflation_sequence, inputName, "witness_points_dehomogenized", "bertini", "matlab -nosplash", max_deflations);
   
 	strLength = 1 + snprintf(NULL, 0, "%s_comp_%d_deflated", inputName,deflation_sequence[num_deflations]);
 	input_deflated_Name = (char *)bmalloc(strLength * sizeof(char));
@@ -183,103 +183,31 @@ int main(int argC, char *args[])
 		printf("\n\nentering self-conjugate case\n\n");
 		computeCurveSelfConj(input_deflated_Name,Wuser,pi_mp,&C,num_vars,num_var_gps,currentSeed);  //This is Dans', at least at first !!!
 	}
+	
+	
+	
 	printf("\n*\ndone with case\n*\n");
 
 	printf("your projection was:\n");
 	print_point_to_screen_matlab_mp(pi_mp,"pi");
 //        set_zero_d(&(pi->coord[0]));
-//        set_one_d(&(pi->coord[1]));
+//        set_one_d( &(pi->coord[1]));
 //        set_zero_d(&(pi->coord[2]));
 		
 	
-	vec_d pi; init_vec_d(pi,num_vars); pi->size = num_vars;
-	vec_mp_to_d(pi,pi_mp);
+
 	
-	C.num_V1=2;
-	C.V1=(vertex_d *)bmalloc(C.num_V1*sizeof(vertex_d));
-	
-	comp_d temp;
-	
-	//point = (1 0) for x^2+y^2-a^=0 x=a,y=0;
-	init_point_d(C.V1[0].pt,num_vars);
-	set_zero_d(&(C.V1[0].pt->coord[2]));
-	set_one_d(&(C.V1[0].pt->coord[0]));
-	add_d(temp,&(Wuser.patch[0]->coord[0]),&(Wuser.patch[0]->coord[1]));
-	div_d(&(C.V1[0].pt->coord[0]),&(C.V1[0].pt->coord[0]),temp);
-	set_d(&(C.V1[0].pt->coord[1]),&(C.V1[0].pt->coord[0]));
-	
-	//point=(-1 0) for x=-a,y=0
-	init_point_d(C.V1[1].pt,num_vars);
-	set_zero_d(&(C.V1[1].pt->coord[2]));
-	set_one_d(&(C.V1[1].pt->coord[0]));
-	sub_d(temp,&(Wuser.patch[0]->coord[0]),&(Wuser.patch[0]->coord[1]));
-	div_d(&(C.V1[1].pt->coord[0]),&(C.V1[1].pt->coord[0]),temp);
-	neg_d(&(C.V1[1].pt->coord[1]),&(C.V1[1].pt->coord[0]));
-	C.V1[1].pt->size=num_vars;
-	C.V1[0].pt->size=num_vars;
-	C.num_E=2;
-	
-	C.E=(edge_d *)bmalloc(C.num_E*sizeof(edge_d));
-	C.E[0].left=0;        C.E[0].right=1;
-	
-	//mid point (0 1)
-	init_point_d(C.E[0].midpt,num_vars);
-	C.E[0].midpt->size=num_vars;
-	set_zero_d(&(C.E[0].midpt->coord[1]));
-	set_one_d(&(C.E[0].midpt->coord[0]));
-	add_d(temp,&(Wuser.patch[0]->coord[0]),&(Wuser.patch[0]->coord[2]));
-	div_d(&(C.E[0].midpt->coord[0]),&(C.E[0].midpt->coord[0]),temp);
-	set_d(&(C.E[0].midpt->coord[2]),&(C.E[0].midpt->coord[0]));
-	init_point_d(C.E[0].pi,num_vars);
-	point_cp_d(C.E[0].pi,pi);
-	
-	C.E[1].left=0;        C.E[1].right=1;
-	//mid point (0 -1)
-	init_point_d(C.E[1].midpt,num_vars);
-	C.E[1].midpt->size=num_vars;
-	set_zero_d(&(C.E[1].midpt->coord[1]));
-	set_one_d(&(C.E[1].midpt->coord[0]));
-	sub_d(temp,&(Wuser.patch[0]->coord[0]),&(Wuser.patch[0]->coord[2]));
-	div_d(&(C.E[1].midpt->coord[0]),&(C.E[1].midpt->coord[0]),temp);
-	neg_d(&(C.E[1].midpt->coord[2]),&(C.E[1].midpt->coord[0]));
-	
-	init_point_d(C.E[1].pi,num_vars);
-	point_cp_d(C.E[1].pi,pi);
+	Output_Main("output", input_deflated_Name,Wuser.comp_num, num_vars, C, 2);
 	
 	
-	init_point_mp(C.V1[0].pt_mp,num_vars);
-	C.V1[0].pt_mp->size=num_vars;
-	point_d_to_mp(C.V1[0].pt_mp,C.V1[0].pt);
-	init_point_mp(C.V1[1].pt_mp,num_vars);
-	C.V1[1].pt_mp->size=num_vars;
-	point_d_to_mp(C.V1[1].pt_mp,C.V1[1].pt);
-	
-	
-	init_point_mp(C.E[0].midpt_mp,num_vars);
-	C.E[0].midpt_mp->size=num_vars;
-	point_d_to_mp(C.E[0].midpt_mp,C.E[0].midpt);
-	init_point_mp(C.E[0].pi_mp,num_vars);
-	C.E[0].pi_mp->size=num_vars;
-	point_d_to_mp(C.E[0].pi_mp,C.E[0].pi);
-	
-	init_point_mp(C.E[1].midpt_mp,num_vars);
-	C.E[1].midpt_mp->size=num_vars;
-	point_d_to_mp(C.E[1].midpt_mp,C.E[1].midpt);
-	C.E[1].midpt_mp->size=num_vars;
-	init_point_mp(C.E[1].pi_mp,num_vars);
-	C.E[1].pi_mp->size=num_vars;
-	point_d_to_mp(C.E[1].pi_mp,C.E[1].pi);
-	
-	
-	Output_Main(inputName, input_deflated_Name,deflation_sequence, num_vars, C, MPType);
-	
+	printf("clearing data\n");
 	// clear memory
 	free(inputName);
 	free(witnessSetName);
 	
 	clear_witness_set(Wuser);
-	clear_witness_set(Wnew);
-	clear_curveDecomp_d(&C,MPType);
+//	clear_witness_set(Wnew);
+	clear_curveDecomp_d(&C,2);
 	
 	
   //TMP END

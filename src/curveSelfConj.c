@@ -288,20 +288,45 @@ void computeCurveSelfConj(char * inputFile,
 		set_mp(&pi_no_hom->coord[ii],&pi->coord[ii+1]);
 	}
 	
+	
 	for (ii=0; ii<W_crit_real.W_mp.num_pts; ii++) {
-		
 		dehomogenize_mp(&dehom,W_crit_real.W_mp.pts[ii]);
 		dot_product_mp(&projection_values->coord[ii],dehom,pi_no_hom);
-		
 	}
 	
-	vec_mp sorted; init_vec_mp(sorted,W_crit_real.W_mp.num_pts); sorted->size = W_crit_real.W_mp.num_pts;
-	sort_increasing_by_real(&sorted, projection_values);
 	
+		
+	int *index_tracker = (int *)bmalloc(W_crit_real.W_mp.num_pts*sizeof(vec_mp)*sizeof(int));
+	
+	vec_mp projections_sorted;
+	init_vec_mp(projections_sorted,W_crit_real.W_mp.num_pts); projections_sorted->size = W_crit_real.W_mp.num_pts;
+	
+	sort_increasing_by_real(&projections_sorted, &index_tracker, projection_values);
+	
+	
+//	vec_mp *projections_sorted, vec_mp **points_sorted, int **index_tracker, vec_mp projections_input
 	print_point_to_screen_matlab_mp(projection_values,"projection_values");
-	print_point_to_screen_matlab_mp(sorted,"sorted_projection_values");
+	print_point_to_screen_matlab_mp(projections_sorted,"sorted_projection_values");
 	
-	// sorted
+	// projections_sorted
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	
 	
@@ -309,25 +334,29 @@ void computeCurveSelfConj(char * inputFile,
 	
 	//5 find crit (the projection values)
 
+	printf("***\n computing crit\n***");
 	
-	double left = mpf_get_d(sorted->coord[0].r)-1;
-	double right = mpf_get_d(sorted->coord[W_crit_real.W_mp.num_pts-1].r)+1;
-	
+	double left = mpf_get_d(projections_sorted->coord[0].r)-1;
+	double right = mpf_get_d(projections_sorted->coord[W_crit_real.W_mp.num_pts-1].r)+1;
+//TODO: make these '1' better;
 
 	
 	
 	
 	witness_set_d left_endpoint; init_witness_set_d(&left_endpoint);
 	witness_set_d right_endpoint; init_witness_set_d(&right_endpoint);
-	witness_set_d mcreallerson; init_witness_set_d(&mcreallerson);
 	
 	comp_d temp;
   vec_mp particular_projection;  init_vec_mp(particular_projection,W.num_variables); particular_projection->size = W.num_variables;
 	vec_cp_mp(particular_projection,pi);
 
 	
-	
-	
+	/////
+	//
+	// go left
+	//
+	////////
+	init_witness_set_d(&Wtemp);
 	temp->r = -left; temp->i = 0;
 	d_to_mp(&particular_projection->coord[0],temp);
 	
@@ -335,113 +364,117 @@ void computeCurveSelfConj(char * inputFile,
 												 W,
 												 n_minusone_randomizer_matrix_full_prec,
 												 &particular_projection, 1,
-												 &left_endpoint);
+												 &Wtemp);
 	
-	sort_for_real(&mcreallerson,left_endpoint,T);
+	sort_for_real(&left_endpoint,Wtemp,T);
 	int left_has_real_soln;
-	if (mcreallerson.W.num_pts>0){
+	if (left_endpoint.W.num_pts>0){
 		left_has_real_soln = 1;
 //		merge_witness_sets(mcreallerson);
 	}
 	else{
 		left_has_real_soln = 0;
 	}
-	clear_witness_set(mcreallerson); init_witness_set_d(&mcreallerson);
+	clear_witness_set(Wtemp); 
 	
-	
-	
+	/////
+	//
+	// go right
+	//
+	////////
 	
 	//set the value of the projection to which we wish to homotope.
 	temp->r = -right; temp->i = 0;
 	d_to_mp(&particular_projection->coord[0],temp);
-	
+	init_witness_set_d(&Wtemp);
 	lin_to_lin_solver_main(T.MPType,
 												 W,
 												 n_minusone_randomizer_matrix_full_prec,
 												 &particular_projection, 1,
-												 &right_endpoint);
+												 &Wtemp);
 	
-	
-	
-	
-	sort_for_real(&mcreallerson, right_endpoint,T);
+	sort_for_real(&right_endpoint, Wtemp, T);
 	int right_has_real_soln;
-	if (mcreallerson.W.num_pts>0){
+	if (right_endpoint.W.num_pts>0){
 		right_has_real_soln = 1;
-//		merge_witness_sets(mcreallerson);
 	}
 	else{
 		right_has_real_soln = 0;
 	}
 	
-	clear_witness_set(mcreallerson);
+	clear_witness_set(Wtemp);
+	
+	
+
 	
 	
 	
-	
-	
-	
-	
-	
-//	double *crit_downstairs;
-//	int estimated_number_crit;
-//	estimated_number_crit = W_crit_real.W_mp.num_pts +2;
-//	crit_downstairs = (double *)bmalloc(estimated_number_crit*sizeof(double));
-//	
-//	
-//	if (W_crit_real.W_mp.num_pts==1) {
-//		crit_downstairs[0] = left-1;
-//		crit_downstairs[1] = mpf_get_d(sorted->coord[0].r);
-//		crit_downstairs[2] = right+1;
-//	}
-//	else{
-//		crit_downstairs[0] = left-(right-left)/(2*W_crit_real.W_mp.num_pts);
-//		crit_downstairs[estimated_number_crit-1] = right+(right-left)/(2*W_crit_real.W_mp.num_pts);
-//		
-//		for (ii=0; ii<W_crit_real.W_mp.num_pts; ii++) {
-//			crit_downstairs[ii+1] = mpf_get_d(sorted->coord[ii].r);
-//		}
-//	}
-//	
-//	
-//	printf("crit_downstairs:\n");
-//	//print out the crit set of projection values.
-//	for (ii=0; ii<estimated_number_crit; ii++) {
-//		printf("%lf ",crit_downstairs[ii]);
-//	}
-//	
-	
-	
-	
-	
-/// dehomogenize the points to perform the projections using \pi.  the points we
+
+	/// dehomogenize the points to perform the projections using \pi.  the points we
 	vec_d mcdehom;  init_vec_d(mcdehom,W.num_variables-1); mcdehom->size = W.num_variables-1;
+
+	
+	double *crit_downstairs; int num_crit;
+	
+	num_crit = W_crit_real.W_mp.num_pts + left_has_real_soln + right_has_real_soln;
+	crit_downstairs = (double *)bmalloc(num_crit*sizeof(double));
+	
 
 	int num_midpoints = W_crit_real.W_mp.num_pts-1 + left_has_real_soln + right_has_real_soln;
 	double *midpoints_downstairs = (double *) bmalloc(num_midpoints*sizeof(double));
 	
+
+
 	if (left_has_real_soln==1) {
-		midpoints_downstairs[0] = (left+mpf_get_d(sorted->coord[0].r))/2;
+		midpoints_downstairs[0] = (left+mpf_get_d(projections_sorted->coord[0].r))/2; //halfway between the endpoint and the leftmost critical point.
+		crit_downstairs[0] = left;
 	}
 
-	
 	
 	int offset = left_has_real_soln;
-	if (W_crit_real.W_mp.num_pts-1) {
-		for (ii=0; ii<W_crit_real.W_mp.num_pts; ii++) {
-			midpoints_downstairs[ii+offset] = (mpf_get_d(sorted->coord[ii].r)+mpf_get_d(sorted->coord[ii+1].r))/2;
-		}
+	for (ii=0; ii<projections_sorted->size-1; ii++) {
+		midpoints_downstairs[ii+offset] = (mpf_get_d(projections_sorted->coord[ii].r)+mpf_get_d(projections_sorted->coord[ii+1].r))/2;
 	}
-	
+	for (ii=0; ii<W_crit_real.W_mp.num_pts; ii++) {
+		crit_downstairs[ii+offset] = mpf_get_d(projections_sorted->coord[ii].r);
+	}
+
 	if (right_has_real_soln==1) {
-		midpoints_downstairs[num_midpoints-1] = (right+ mpf_get_d(sorted->coord[W_crit_real.W_mp.num_pts-1].r) )/2;
+		midpoints_downstairs[num_midpoints-1] = (right+ mpf_get_d(projections_sorted->coord[W_crit_real.W_mp.num_pts-1].r) )/2;
+		crit_downstairs[num_crit-1] = right;
 	}
 	
-//	for (ii=0; ii<num_midpoints; ii++) {
-//		printf("%lf\n",midpoints_downstairs[ii]);
-//	}
+	printf("midpoints:\n");
+	for (ii=0; ii<num_midpoints; ii++) {
+		printf("%lf\n",midpoints_downstairs[ii]);
+	}
+
+
+	printf("crit_downstairs:\n");
+	//print out the crit set of projection values.
+	for (ii=0; ii<num_crit; ii++) {
+		printf("%lf ",crit_downstairs[ii]);
+	}
 	
 
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
   // 6) find points P
 	// T = \pi(crit)
 	// S = midpoints of T
@@ -449,10 +482,16 @@ void computeCurveSelfConj(char * inputFile,
 	// for ( s \in S)
 	//find P
 	
+	int edge_counter = 0; // set the counter
+	
 	OUT = safe_fopen_write("midpoints_upstairs");
+	fprintf(OUT,"                                            \n\n",midpoints_downstairs[ii],ii+1,num_midpoints);
+	witness_set_d *midpoint_witness_sets;
+	midpoint_witness_sets = (witness_set_d *)bmalloc(num_midpoints*sizeof(witness_set_d));
 	
 	for (ii=0; ii<num_midpoints; ii++) {
-		init_witness_set_d(&Wtemp); cp_patches(&Wtemp,W);
+		init_witness_set_d(&midpoint_witness_sets[ii]);
+		init_witness_set_d(&Wtemp);
 		
 		temp->i = 0;
 		temp->r = -midpoints_downstairs[ii];
@@ -465,39 +504,28 @@ void computeCurveSelfConj(char * inputFile,
 													 W,
 													 n_minusone_randomizer_matrix_full_prec,
 													 &particular_projection, 1,
-													 &Wtemp);
+													 &Wtemp); //sets this value
 		
 		
-		init_witness_set_d(&mcreallerson);
-		sort_for_real(&mcreallerson, Wtemp,T);
 		
+		sort_for_real(&midpoint_witness_sets[ii], Wtemp, T);
+		edge_counter += midpoint_witness_sets[ii].W.num_pts;
 		
-		fprintf(OUT,"upstairs points for midpoint value %lf (index %d):\n",midpoints_downstairs[ii],ii);
-		for (jj=0; jj<mcreallerson.W.num_pts; jj++) {
-			
-			dehomogenize_mp(&dehom,mcreallerson.W_mp.pts[jj]);
-			
+		for (jj=0; jj<midpoint_witness_sets[ii].W.num_pts; jj++) {
+			dehomogenize_mp(&dehom,midpoint_witness_sets[ii].W_mp.pts[jj]);
 			for (kk=0; kk<W.num_variables-1; kk++) {
-				mpf_out_str (OUT, 10, 16, dehom->coord[kk].r);
-				fprintf(OUT," ");
-				mpf_out_str (OUT, 10, 16, dehom->coord[kk].i);
-				fprintf(OUT,"\n");
-//				fprintf(OUT,"%lf %lf\n",mcreallerson.W.pts[jj]->coord[kk].r,mcreallerson.W.pts[jj]->coord[kk].i);
+				mpf_out_str (OUT, 10, 16, dehom->coord[kk].r); fprintf(OUT," ");
+				mpf_out_str (OUT, 10, 16, dehom->coord[kk].i); fprintf(OUT,"\n");
 			}
-			fprintf(OUT,"\n");
+			fprintf(OUT,"\n"); // print the line separating values
 		}
-		
-		fprintf(OUT,"\n");
-		
-		
-		
-		clear_witness_set(mcreallerson);
-		
+		fprintf(OUT,"\n");// print the line separating solutions
 		clear_witness_set(Wtemp);
 	}
-	
+	rewind(OUT);
+	fprintf(OUT,"%d",edge_counter);
 	fclose(OUT);
-  
+													 
 	
 	
 	
@@ -505,27 +533,223 @@ void computeCurveSelfConj(char * inputFile,
 	
 	
 	
+	//copy the points from witness sets into curve decomposition V0;
+	
+	
+	vertex_d temp_vertex;  init_vertex_mp(&temp_vertex);
+	
+	for (ii=0; ii<left_endpoint.W.num_pts; ii++) {
+		printf("adding left endpoints\n");
+		dehomogenize_mp(&dehom,left_endpoint.W_mp.pts[ii]);
+		dot_product_mp(temp_vertex.projVal_mp,dehom,pi_no_hom);
+		
+		vec_cp_mp(temp_vertex.pt_mp,left_endpoint.W_mp.pts[ii]);
+		
+		add_point_to_V1(C,temp_vertex);
+	}
+	
+	
+	for (ii=0; ii<right_endpoint.W.num_pts; ii++) {
+		printf("adding right endpoints\n");
+		dehomogenize_mp(&dehom,right_endpoint.W_mp.pts[ii]);
+		dot_product_mp(temp_vertex.projVal_mp,dehom,pi_no_hom);
+		
+		vec_cp_mp(temp_vertex.pt_mp,right_endpoint.W_mp.pts[ii]);
+		
+		add_point_to_V1(C,temp_vertex);
+	}
+
+	
+	for (ii=0; ii< projections_sorted->size; ii++){
+		printf("adding point %d from crit_real to V1\n",ii);
+		set_mp(temp_vertex.projVal_mp,  &projections_sorted->coord[ii]);
+		
+		
+		vec_cp_mp(temp_vertex.pt_mp,W_crit_real.W_mp.pts[index_tracker[ii]]);
+		add_point_to_V1(C,temp_vertex);
+	}
+	
+	
+	printf("there are a total of %d points to vertex set\n",C->num_V1);
+
+	//set C->V_0, C->V_1, C->E
 	
 	
 	
   // 7) find edge endpoints
   
 	
+	//we assume the particular_projection is set above.
+	
+	witness_set_d Wleft, Wright;
+	
+	edge_d temp_edge;  init_edge_mp(&temp_edge, W.num_variables);
+	for (ii=0; ii<num_midpoints; ++ii) {
+		
+
+		
+		init_witness_set_d(&Wleft); init_witness_set_d(&Wright);
+		
+		
+		temp->r = -crit_downstairs[ii]; temp->i = 0;
+		d_to_mp(&particular_projection->coord[0],temp);
+		
+		comp_mp left_check; init_mp(left_check);
+		comp_mp right_check; init_mp(right_check);
+		
+		d_to_mp(left_check,temp);
+		
+		lin_to_lin_solver_main(T.MPType,
+													 midpoint_witness_sets[ii], //the input
+													 n_minusone_randomizer_matrix_full_prec,
+													 &particular_projection, 1,
+													 &Wleft); // the output
+		
+		temp->r = -crit_downstairs[ii+1]; temp->i = 0;
+		d_to_mp(right_check,temp);
+		
+		d_to_mp(&particular_projection->coord[0],temp);
+		
+		
+		lin_to_lin_solver_main(T.MPType,
+													 midpoint_witness_sets[ii], //the input
+													 n_minusone_randomizer_matrix_full_prec,
+													 &particular_projection, 1,
+													 &Wright); // the output
+		//each member of Wtemp should real.  if a member of V0 already, mark index.  else, add to V0, and mark.
+	
+//		printf("found %d points left\n",Wleft.W_mp.num_pts);
+//		printf("found %d points right\n",Wright.W_mp.num_pts);
+		
+		print_witness_set_to_screen(Wleft);
+		print_witness_set_to_screen(Wright);
+		
+		vec_cp_mp(temp_edge.pi_mp, pi);
+		for (kk=0; kk<midpoint_witness_sets[ii].W_mp.num_pts; kk++) {
+//			print_point_to_screen_matlab_mp(Wleft.W_mp.pts[kk],"left");
+			vec_cp_mp(temp_edge.midpt_mp,midpoint_witness_sets[ii].W_mp.pts[kk]);
+			temp_edge.left  = index_in_V1(C,Wleft.W_mp.pts[kk], left_check, T,-1);
+			temp_edge.right = index_in_V1(C,Wright.W_mp.pts[kk],right_check,T, 1);
+			
+			add_edge_mp(C, temp_edge);
+		}
+		
+		clear_mp(left_check); clear_mp(right_check);
+		clear_witness_set(Wleft); clear_witness_set(Wright);
+	}//for ii
 	
 	
+	printf("C->num_edges = %d\n",C->num_edges);
 	// track left/right
 	// start at (x,t) = (p,1)
 	// call endpoint q.
 	//perform check on q \in crit,
   
-  //set C->V_0, C->V_1, C->E
+
 	
 	
 	
 	
-//	vec_d pi_d;  init_vec_d(pi_d,W.num_variables);
-//	vec_mp_to_d(pi_d,pi);
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 //	
+//	
+//	
+//	vec_d pi; init_vec_d(pi,num_vars); pi->size = num_vars;
+//	vec_mp_to_d(pi,pi_mp);
+//	
+//	C.num_V1=2;
+//	C.V1=(vertex_d *)bmalloc(C.num_V1*sizeof(vertex_d));
+//	
+//	comp_d temp;
+//	
+//	//point = (1 0) for x^2+y^2-a^=0 x=a,y=0;
+//	init_point_d(C.V1[0].pt,num_vars);
+//	set_zero_d(&(C.V1[0].pt->coord[2]));
+//	set_one_d(&(C.V1[0].pt->coord[0]));
+//	add_d(temp,&(Wuser.patch[0]->coord[0]),&(Wuser.patch[0]->coord[1]));
+//	div_d(&(C.V1[0].pt->coord[0]),&(C.V1[0].pt->coord[0]),temp);
+//	set_d(&(C.V1[0].pt->coord[1]),&(C.V1[0].pt->coord[0]));
+//	
+//	//point=(-1 0) for x=-a,y=0
+//	init_point_d(C.V1[1].pt,num_vars);
+//	set_zero_d(&(C.V1[1].pt->coord[2]));
+//	set_one_d(&(C.V1[1].pt->coord[0]));
+//	sub_d(temp,&(Wuser.patch[0]->coord[0]),&(Wuser.patch[0]->coord[1]));
+//	div_d(&(C.V1[1].pt->coord[0]),&(C.V1[1].pt->coord[0]),temp);
+//	neg_d(&(C.V1[1].pt->coord[1]),&(C.V1[1].pt->coord[0]));
+//	C.V1[1].pt->size=num_vars;
+//	C.V1[0].pt->size=num_vars;
+//	C.num_edges=2;
+//	
+//	C.E=(edge_d *)bmalloc(C.num_edges*sizeof(edge_d));
+//	C.E[0].left=0;        C.E[0].right=1;
+//	
+//	//mid point (0 1)
+//	init_point_d(C.E[0].midpt,num_vars);
+//	C.E[0].midpt->size=num_vars;
+//	set_zero_d(&(C.E[0].midpt->coord[1]));
+//	set_one_d(&(C.E[0].midpt->coord[0]));
+//	add_d(temp,&(Wuser.patch[0]->coord[0]),&(Wuser.patch[0]->coord[2]));
+//	div_d(&(C.E[0].midpt->coord[0]),&(C.E[0].midpt->coord[0]),temp);
+//	set_d(&(C.E[0].midpt->coord[2]),&(C.E[0].midpt->coord[0]));
+//	init_point_d(C.E[0].pi,num_vars);
+//	point_cp_d(C.E[0].pi,pi);
+//	
+//	C.E[1].left=0;        C.E[1].right=1;
+//	//mid point (0 -1)
+//	init_point_d(C.E[1].midpt,num_vars);
+//	C.E[1].midpt->size=num_vars;
+//	set_zero_d(&(C.E[1].midpt->coord[1]));
+//	set_one_d(&(C.E[1].midpt->coord[0]));
+//	sub_d(temp,&(Wuser.patch[0]->coord[0]),&(Wuser.patch[0]->coord[2]));
+//	div_d(&(C.E[1].midpt->coord[0]),&(C.E[1].midpt->coord[0]),temp);
+//	neg_d(&(C.E[1].midpt->coord[2]),&(C.E[1].midpt->coord[0]));
+//	
+//	init_point_d(C.E[1].pi,num_vars);
+//	point_cp_d(C.E[1].pi,pi);
+//	
+//	
+//	init_point_mp(C.V1[0].pt_mp,num_vars);
+//	C.V1[0].pt_mp->size=num_vars;
+//	point_d_to_mp(C.V1[0].pt_mp,C.V1[0].pt);
+//	init_point_mp(C.V1[1].pt_mp,num_vars);
+//	C.V1[1].pt_mp->size=num_vars;
+//	point_d_to_mp(C.V1[1].pt_mp,C.V1[1].pt);
+//	
+//	
+//	init_point_mp(C.E[0].midpt_mp,num_vars);
+//	C.E[0].midpt_mp->size=num_vars;
+//	point_d_to_mp(C.E[0].midpt_mp,C.E[0].midpt);
+//	init_point_mp(C.E[0].pi_mp,num_vars);
+//	C.E[0].pi_mp->size=num_vars;
+//	point_d_to_mp(C.E[0].pi_mp,C.E[0].pi);
+//	
+//	init_point_mp(C.E[1].midpt_mp,num_vars);
+//	C.E[1].midpt_mp->size=num_vars;
+//	point_d_to_mp(C.E[1].midpt_mp,C.E[1].midpt);
+//	C.E[1].midpt_mp->size=num_vars;
+//	init_point_mp(C.E[1].pi_mp,num_vars);
+//	C.E[1].pi_mp->size=num_vars;
+//	point_d_to_mp(C.E[1].pi_mp,C.E[1].pi);
+//	
+//	
+	
+	
+	
+
 	clear_witness_set(W_linprod);
 	clear_witness_set(W_lintolin);
 	clear_witness_set(W_detjacdetjac);
@@ -712,7 +936,7 @@ int get_sum_degrees(char filename[], int num_funcs){
 void sort_for_membership(char * input_file,
 												 witness_set_d *W_out,
 												 witness_set_d W_in){
-	printf("sorting points for membership\n");
+//	printf("sorting points for membership\n");
 	
 	
 	if (W_in.incidence_number==-1) {
@@ -741,10 +965,7 @@ void sort_for_membership(char * input_file,
   char *SysStr = NULL,*fmt = NULL, *bertini_command="bertini";
   FILE *IN = NULL, *OUT=NULL;
 	
-	//	mkdir("check_self_conj",0777);
-	//	chdir("check_self_conj");
-	//
-	//	chdir("..");
+
 	
 	//make the command string to run
 	strLength = 1 + snprintf(NULL, 0, "%s input_membership_test", bertini_command);
@@ -961,9 +1182,9 @@ void sort_for_real(witness_set_d *W_out,
 	vec_mp result; init_vec_mp(result,1);
 	for (ii=0; ii<W_in.W_mp.num_pts; ii++) {
 		dehomogenize_mp(&result, W_in.W_mp.pts[ii]);
-		print_point_to_screen_matlab_mp(result,"isreal?");
+//		print_point_to_screen_matlab_mp(result,"isreal?");
 		real_indicator[ii] = checkForReal_mp(result, T.real_threshold);
-		printf("isreal is %d\n",real_indicator[ii]);
+//		printf("isreal is %d\n",real_indicator[ii]);
 		if (real_indicator[ii]==1) {
 			counter++;
 		}
@@ -985,6 +1206,53 @@ void sort_for_real(witness_set_d *W_out,
 	clear_vec_mp(result);
 	
 	
+	return;
+}
+
+
+
+
+
+void sort_increasing_by_real(vec_mp *projections_sorted, int **index_tracker, vec_mp projections_input){
+	
+	comp_mp large; init_mp(large);
+	comp_d l; l->r = 1e9; l->i = 0;
+	d_to_mp(large,l);
+	
+	
+	vec_mp raw; init_vec_mp(raw,1);
+	vec_cp_mp(raw,projections_input);
+	
+	change_size_vec_mp( (*projections_sorted), raw->size);
+	(*projections_sorted)->size = raw->size;
+	int ii,jj;
+	//	comp_mp temp1, temp2; init_mp(temp1); init_mp(temp2);
+	
+	double min;
+	double curr;
+	int indicator = -1;
+	for (ii=0; ii<raw->size; ii++) {
+		min = 1e7;
+		
+		for (jj=0; jj<raw->size; jj++) {
+			curr = mpf_get_d(raw->coord[jj].r);
+			if ( curr < min) {
+				printf("old min %lf, new min %lf\n",min,curr);
+				indicator = jj;
+				min = curr;
+			}
+		}
+		if (indicator==-1) {
+			printf("min projection value was insanely large\n");
+			exit(1111);
+		}
+		
+		
+		
+		(*index_tracker)[ii] = indicator;
+		set_mp( &(*projections_sorted)->coord[ii],&raw->coord[indicator]);
+		set_mp( &raw->coord[indicator],large);
+	}
 	return;
 }
 

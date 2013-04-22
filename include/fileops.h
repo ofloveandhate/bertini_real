@@ -14,6 +14,7 @@
 #include <sys/types.h>
 
 
+#include <dirent.h>
 
 
 
@@ -25,7 +26,7 @@
 #include "polysolve.h"
 
 
-
+void purge_previous_directory(char *directoryName);
 
 FILE *safe_fopen_read(char * filename);
 

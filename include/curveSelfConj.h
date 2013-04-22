@@ -64,4 +64,7 @@ void sort_for_real(witness_set_d *W_out,
 									 witness_set_d W_in,
 									 tracker_config_t T);
 
+void sort_increasing_by_real(vec_mp *projections_sorted, int **index_tracker, vec_mp projections_input);
+
+
 #endif

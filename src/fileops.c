@@ -1,5 +1,28 @@
 #include "fileops.h"
 
+//will remove all files which do not start with a . from directory.
+void purge_previous_directory(char *directoryName)
+{
+	DIR *dp;
+	struct dirent *ep;
+	char tempname[1000];
+	
+	
+	dp = opendir (directoryName);
+	if (dp != NULL)
+	{
+		while ( (ep = readdir (dp)) )
+			if (ep->d_name[0] != '.')
+	    {
+				sprintf(tempname,"%s/%s",directoryName, ep->d_name);
+				remove(tempname);
+			}
+		
+		
+		(void) closedir (dp);
+	}
+	return;
+}
 
 
 

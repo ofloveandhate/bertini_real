@@ -27,10 +27,10 @@
 
 void copyfile(char *INfile,char *OUTfile);
 
-void print_vertices(vertex_d *V, int num_V, int num_vars,char *outputfile, int MPType);
-void print_edges(edge_d *E, int num_E, int num_vars,char *input_deflated_Name,char *outputfile, int MPType);
-void print_each_edge(edge_d E,int num_vars,FILE *OUT, int MPType);
-void Output_Main(char *inputName, char *input_deflated_Name,int *deflation_sequence,int num_vars, curveDecomp_d C, int MPType);
+void print_vertices(vertex_d *pts, int num_V, int num_vars,char *outputfile, int MPType);
+void print_edges(edge_d *E, int num_edges, int num_vars,char *input_deflated_Name,char *outputfile, int MPType);
+void print_individual_edge(edge_d E,int num_vars,FILE *OUT, int MPType);
+void Output_Main(char *outputName, char *input_deflated_Name,int component_number,int num_vars, curveDecomp_d C, int MPType);
 
 #endif
 

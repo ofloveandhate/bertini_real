@@ -113,23 +113,23 @@ void generate_new_sampling_pts_d(sample_d *S_new,mat_mp n_minusone_randomizer_ma
 	mid_pt->size = num_vars;
 	
 	
-	S_new->num_E = S_old.num_E;
-	S_new->V = (vec_d **)bmalloc(S_new->num_E * sizeof(vec_d*));
-	S_new->pV = (vec_d *)bmalloc(S_new->num_E * sizeof(vec_d));
-	S_new->refine = (int **)bmalloc(S_new->num_E * sizeof(int*));
-	S_new->num_pts = (int *) bmalloc(S_new->num_E * sizeof(int));
+	S_new->num_edges = S_old.num_edges;
+	S_new->vertices = (vec_d **)bmalloc(S_new->num_edges * sizeof(vec_d*));
+	S_new->proj_vertices = (vec_d *)bmalloc(S_new->num_edges * sizeof(vec_d));
+	S_new->refine = (int **)bmalloc(S_new->num_edges * sizeof(int*));
+	S_new->num_pts = (int *) bmalloc(S_new->num_edges * sizeof(int));
 	
-	for(i=0;i<S_old.num_E;i++)
+	for(i=0;i<S_old.num_edges;i++)
 	{
-		Edge_samp_old = S_old.V[i];
+		Edge_samp_old = S_old.vertices[i];
 		num_samp_old = S_old.num_pts[i];
 		init_vec_d(Edge_proj_old,S_old.num_pts[i]);
-		vec_cp_d(Edge_proj_old, S_old.pV[i]);
+		vec_cp_d(Edge_proj_old, S_old.proj_vertices[i]);
 		refine_old = S_old.refine[i];
 		while(1)
 		{
 			Edge_samp_new = (vec_d *)bmalloc(2*num_samp_old * sizeof(vec_d));
-			init_vec_d(Edge_proj_new,2*num_samp_old); // what is pV?
+			init_vec_d(Edge_proj_new,2*num_samp_old); // what is proj_vertices?
 			//Edge_proj_new->size=2*num_samp_old;
 			refine_new = (int * )bmalloc(2*num_samp_old * sizeof(int));
 			//copy left point
@@ -141,7 +141,7 @@ void generate_new_sampling_pts_d(sample_d *S_new,mat_mp n_minusone_randomizer_ma
 			{
 				if(refine_old[j])
 				{
-					vec_cp_d(L,C.E[i].pi);
+					vec_cp_d(L,C.edges[i].pi);
 					point_d_to_mp(new_linears,L);
 					if(j==0)
 					{
@@ -162,7 +162,7 @@ void generate_new_sampling_pts_d(sample_d *S_new,mat_mp n_minusone_randomizer_ma
 					div_d(&(mid_pt->coord[0]),temp,&(mid_pt->coord[0]));
 					temp->r=2.0; temp->i=0.0;
 					mul_d(&(mid_pt->coord[0]),temp,&(mid_pt->coord[0]));
-					mul_d(pi_end,&(mid_pt->coord[0]),&(C.E[i].pi->coord[0]));
+					mul_d(pi_end,&(mid_pt->coord[0]),&(C.edges[i].pi->coord[0]));
 					
 					for(k=1;k<num_vars;k++)
 					{
@@ -174,11 +174,11 @@ void generate_new_sampling_pts_d(sample_d *S_new,mat_mp n_minusone_randomizer_ma
 						temp->r=0.5; temp->i=0.0;
 						mul_d(&(mid_pt->coord[k]),temp,&(mid_pt->coord[k]));
 						mul_d(&(mid_pt->coord[k]),&(mid_pt->coord[0]),&(mid_pt->coord[k]));
-						mul_d(temp,&(mid_pt->coord[k]),&(C.E[i].pi->coord[k]));
+						mul_d(temp,&(mid_pt->coord[k]),&(C.edges[i].pi->coord[k]));
 						add_d(pi_end,pi_end,temp);
 					}
 					div_d(pi_end,pi_end,&(mid_pt->coord[0]));
-					sub_d(temp,&(C.E[i].pi->coord[0]),pi_end);
+					sub_d(temp,&(C.edges[i].pi->coord[0]),pi_end);
 					d_to_mp(&(new_linears->coord[0]),temp);
 					// copy in the data to the source witness set?
 					set_witness_set_d(&W, L,startpt,num_vars);
@@ -252,10 +252,10 @@ void generate_new_sampling_pts_d(sample_d *S_new,mat_mp n_minusone_randomizer_ma
 			refine_old = refine_new;
 			if(num_samp_new == num_samp_old)
 			{
-				S_new->V[i] = Edge_samp_old;
+				S_new->vertices[i] = Edge_samp_old;
 				S_new->num_pts[i] = num_samp_old;
-				init_vec_d(S_new->pV[i],num_samp_old);
-				vec_cp_d(S_new->pV[i],Edge_proj_old);
+				init_vec_d(S_new->proj_vertices[i],num_samp_old);
+				vec_cp_d(S_new->proj_vertices[i],Edge_proj_old);
 				clear_vec_d(Edge_proj_old);
 				S_new->refine[i] = refine_old;
 				break;
@@ -300,17 +300,17 @@ void generate_new_sampling_pts_mp(sample_d *S_new,mat_mp n_minusone_randomizer_m
 	mid_pt->size = num_vars;
 	
 	init_mp(temp); init_mp(pi_end); init_mp(temp1);
-	S_new->num_E = S_old.num_E;
-	S_new->V_mp = (vec_mp **)bmalloc(S_new->num_E * sizeof(vec_mp*));
-	S_new->pV_mp = (vec_mp *)bmalloc(S_new->num_E * sizeof(vec_mp));
-	S_new->refine = (int **)bmalloc(S_new->num_E * sizeof(int*));
-	S_new->num_pts = (int *) bmalloc(S_new->num_E * sizeof(int));
-	for(i=0;i<S_old.num_E;i++)
+	S_new->num_edges = S_old.num_edges;
+	S_new->vertices_mp = (vec_mp **)bmalloc(S_new->num_edges * sizeof(vec_mp*));
+	S_new->proj_vertices_mp = (vec_mp *)bmalloc(S_new->num_edges * sizeof(vec_mp));
+	S_new->refine = (int **)bmalloc(S_new->num_edges * sizeof(int*));
+	S_new->num_pts = (int *) bmalloc(S_new->num_edges * sizeof(int));
+	for(i=0;i<S_old.num_edges;i++)
 	{
-		Edge_samp_old = S_old.V_mp[i];
+		Edge_samp_old = S_old.vertices_mp[i];
 		num_samp_old = S_old.num_pts[i];
 		init_vec_mp(Edge_proj_old,S_old.num_pts[i]);
-		vec_cp_mp(Edge_proj_old, S_old.pV_mp[i]);
+		vec_cp_mp(Edge_proj_old, S_old.proj_vertices_mp[i]);
 		refine_old = S_old.refine[i];
 		while(1)
 		{
@@ -327,7 +327,7 @@ void generate_new_sampling_pts_mp(sample_d *S_new,mat_mp n_minusone_randomizer_m
 			{
 				if(refine_old[j])
 				{
-					vec_cp_mp(L,C.E[i].pi_mp);
+					vec_cp_mp(L,C.edges[i].pi_mp);
 					vec_cp_mp(new_linears,L);
 					if(j==0)
 					{
@@ -347,7 +347,7 @@ void generate_new_sampling_pts_mp(sample_d *S_new,mat_mp n_minusone_randomizer_m
 					div_mp(&(mid_pt->coord[0]),temp,&(mid_pt->coord[0]));
 					mpf_set_d(temp->r, 2.0); mpf_set_d(temp->i, 0.0);
 					mul_mp(&(mid_pt->coord[0]),temp,&(mid_pt->coord[0]));
-					mul_mp(pi_end,&(mid_pt->coord[0]),&(C.E[i].pi_mp->coord[0]));
+					mul_mp(pi_end,&(mid_pt->coord[0]),&(C.edges[i].pi_mp->coord[0]));
 					for(k=1;k<num_vars;k++)
 					{
 						div_mp(&(mid_pt->coord[k]),&(Edge_samp_old[j]->coord[k]),
@@ -359,11 +359,11 @@ void generate_new_sampling_pts_mp(sample_d *S_new,mat_mp n_minusone_randomizer_m
 						mpf_set_d(temp->r, 0.5); mpf_set_d(temp->i, 0.0);
 						mul_mp(&(mid_pt->coord[k]),temp,&(mid_pt->coord[k]));
 						mul_mp(&(mid_pt->coord[k]),&(mid_pt->coord[0]),&(mid_pt->coord[k]));
-						mul_mp(temp,&(mid_pt->coord[k]),&(C.E[i].pi_mp->coord[k]));
+						mul_mp(temp,&(mid_pt->coord[k]),&(C.edges[i].pi_mp->coord[k]));
 						add_mp(pi_end,pi_end,temp);
 					}
 					div_mp(pi_end,pi_end,&(mid_pt->coord[0]));
-					sub_mp(temp,&(C.E[i].pi_mp->coord[0]),pi_end);
+					sub_mp(temp,&(C.edges[i].pi_mp->coord[0]),pi_end);
 					
 					set_mp(&(new_linears->coord[0]),temp);
 					set_witness_set_mp(&W, L,startpt,num_vars);
@@ -428,10 +428,10 @@ void generate_new_sampling_pts_mp(sample_d *S_new,mat_mp n_minusone_randomizer_m
 			refine_old = refine_new;
 			if(num_samp_new == num_samp_old)
 			{
-				S_new->V_mp[i] = Edge_samp_old;
+				S_new->vertices_mp[i] = Edge_samp_old;
 				S_new->num_pts[i] = num_samp_old;
-				init_vec_mp(S_new->pV_mp[i],num_samp_old);
-				vec_cp_mp(S_new->pV_mp[i],Edge_proj_old);
+				init_vec_mp(S_new->proj_vertices_mp[i],num_samp_old);
+				vec_cp_mp(S_new->proj_vertices_mp[i],Edge_proj_old);
 				clear_vec_mp(Edge_proj_old);
 				S_new->refine[i] = refine_old;
 				break;
@@ -547,23 +547,23 @@ void  output_sampling_data(sample_d S,char *samplingName,int num_vars,int MPType
 	FILE *OUT =  fopen(samplingName, "w");
 	int i,j,k;
 	// output the number of vertices
-	fprintf(OUT,"%d\n\n",S.num_E);
-	for(i=0;i<S.num_E;i++)
+	fprintf(OUT,"%d\n\n",S.num_edges);
+	for(i=0;i<S.num_edges;i++)
 	{
 		fprintf(OUT,"%d\n\n",S.num_pts[i]);
 		for(j=0;j<S.num_pts[i];j++)
 		{
 			if(MPType==0)
-				print_d(OUT,0,&(S.pV[i]->coord[j]));
+				print_d(OUT,0,&(S.proj_vertices[i]->coord[j]));
 			else
-				print_mp(OUT,0,&(S.pV_mp[i]->coord[j]));
+				print_mp(OUT,0,&(S.proj_vertices_mp[i]->coord[j]));
 			fprintf(OUT,"\n");
 			for(k=0;k<num_vars;k++)
 			{
 				if(MPType==0)
-					print_d(OUT, 0, &(S.V[i][j]->coord[k]));
+					print_d(OUT, 0, &(S.vertices[i][j]->coord[k]));
 				else
-					print_mp(OUT, 0, &(S.V_mp[i][j]->coord[k]));
+					print_mp(OUT, 0, &(S.vertices_mp[i][j]->coord[k]));
 				
 				fprintf(OUT,"\n");
 			}
@@ -578,102 +578,102 @@ int  Load_sampling_data(sample_d *S, curveDecomp_d C,int num_vars,int MPType)
 	
 	comp_d temp;
 	comp_mp temp_mp;
-	S->num_E = C.num_E;
-	S->num_pts = (int *)bmalloc(C.num_E * sizeof(int));
-	for(i=0;i<C.num_E;i++)
+	S->num_edges = C.num_edges;
+	S->num_pts = (int *)bmalloc(C.num_edges * sizeof(int));
+	for(i=0;i<C.num_edges;i++)
 		S->num_pts[i]=3;
 	if(MPType==0)
 	{
-		S->V = (vec_d **)bmalloc(C.num_E * sizeof(vec_d*));
-		S->refine = (int **)bmalloc(C.num_E * sizeof(int*));
-		S->pV = (vec_d *)bmalloc(C.num_E * sizeof(vec_d));
+		S->vertices = (vec_d **)bmalloc(C.num_edges * sizeof(vec_d*));
+		S->refine = (int **)bmalloc(C.num_edges * sizeof(int*));
+		S->proj_vertices = (vec_d *)bmalloc(C.num_edges * sizeof(vec_d));
 	}
 	else
 	{
 		init_mp(temp_mp);
-		S->V_mp = (vec_mp **)bmalloc(C.num_E * sizeof(vec_mp*));
-		S->refine = (int **)bmalloc(C.num_E * sizeof(int*));
-		S->pV_mp = (vec_mp *)bmalloc(C.num_E * sizeof(vec_mp));
+		S->vertices_mp = (vec_mp **)bmalloc(C.num_edges * sizeof(vec_mp*));
+		S->refine = (int **)bmalloc(C.num_edges * sizeof(int*));
+		S->proj_vertices_mp = (vec_mp *)bmalloc(C.num_edges * sizeof(vec_mp));
 	}
-	for(i=0;i<S->num_E;i++)
+	for(i=0;i<S->num_edges;i++)
 	{
 		if(MPType==0)
 		{
-			S->V[i] = (vec_d *)bmalloc(S->num_pts[i] * sizeof(vec_d));
+			S->vertices[i] = (vec_d *)bmalloc(S->num_pts[i] * sizeof(vec_d));
 			S->refine[i] = (int *)bmalloc(S->num_pts[i] * sizeof(int));
 			for(j=0;j<S->num_pts[i];j++)
 			{
-				init_vec_d(S->V[i][j],num_vars);//three points: left mid right
+				init_vec_d(S->vertices[i][j],num_vars);//three points: left mid right
 				S->refine[i][j]=1;
 			}
-			index = C.E[i].left;
+			index = C.edges[i].left;
 			//left point
-			init_vec_d(S->pV[i],S->num_pts[i]);
-			set_zero_d(&(S->pV[i]->coord[0]));
-			vec_cp_d(S->V[i][0],C.V1[index].pt);
+			init_vec_d(S->proj_vertices[i],S->num_pts[i]);
+			set_zero_d(&(S->proj_vertices[i]->coord[0]));
+			vec_cp_d(S->vertices[i][0],C.V1[index].pt);
 			for(j=0;j<num_vars;j++)
 			{
-				mul_d(temp,&(S->V[i][0]->coord[j]),&(C.E[i].pi->coord[j]));
-				add_d(&(S->pV[i]->coord[0]),&(S->pV[i]->coord[0]),temp);
+				mul_d(temp,&(S->vertices[i][0]->coord[j]),&(C.edges[i].pi->coord[j]));
+				add_d(&(S->proj_vertices[i]->coord[0]),&(S->proj_vertices[i]->coord[0]),temp);
 			}
 			//mid point
-			set_zero_d(&(S->pV[i]->coord[1]));
-			vec_cp_d(S->V[i][1],C.E[i].midpt);
+			set_zero_d(&(S->proj_vertices[i]->coord[1]));
+			vec_cp_d(S->vertices[i][1],C.edges[i].midpt);
 			
 			for(j=0;j<num_vars;j++)
 			{
-				mul_d(temp,&(S->V[i][1]->coord[j]),&(C.E[i].pi->coord[j]));
-				add_d(&(S->pV[i]->coord[1]),&(S->pV[i]->coord[1]),temp);
+				mul_d(temp,&(S->vertices[i][1]->coord[j]),&(C.edges[i].pi->coord[j]));
+				add_d(&(S->proj_vertices[i]->coord[1]),&(S->proj_vertices[i]->coord[1]),temp);
 			}
 			//right point
-			set_zero_d(&(S->pV[i]->coord[2]));
-			index = C.E[i].right;
-			vec_cp_d(S->V[i][2],C.V1[index].pt);
+			set_zero_d(&(S->proj_vertices[i]->coord[2]));
+			index = C.edges[i].right;
+			vec_cp_d(S->vertices[i][2],C.V1[index].pt);
 			
 			for(j=0;j<num_vars;j++)
 			{
-				mul_d(temp,&(S->V[i][2]->coord[j]),&(C.E[i].pi->coord[j]));
-				add_d(&(S->pV[i]->coord[2]),&(S->pV[i]->coord[2]),temp);
+				mul_d(temp,&(S->vertices[i][2]->coord[j]),&(C.edges[i].pi->coord[j]));
+				add_d(&(S->proj_vertices[i]->coord[2]),&(S->proj_vertices[i]->coord[2]),temp);
 			}
 		}
 		else
 		{
-			S->V_mp[i] = (vec_mp *)bmalloc(S->num_pts[i] * sizeof(vec_mp));
+			S->vertices_mp[i] = (vec_mp *)bmalloc(S->num_pts[i] * sizeof(vec_mp));
 			S->refine[i] = (int *)bmalloc(S->num_pts[i] * sizeof(int));
 			for(j=0;j<S->num_pts[i];j++)
 			{
-				init_vec_mp(S->V_mp[i][j],num_vars);//three points: left mid right
+				init_vec_mp(S->vertices_mp[i][j],num_vars);//three points: left mid right
 				S->refine[i][j]=1;
 			}
-			index = C.E[i].left;
+			index = C.edges[i].left;
 			//left point
-			init_vec_mp(S->pV_mp[i],S->num_pts[i]);
-			S->pV_mp[i]->size=S->num_pts[i];
-			set_zero_mp(&(S->pV_mp[i]->coord[0]));
-			vec_cp_mp(S->V_mp[i][0],C.V1[index].pt_mp);
+			init_vec_mp(S->proj_vertices_mp[i],S->num_pts[i]);
+			S->proj_vertices_mp[i]->size=S->num_pts[i];
+			set_zero_mp(&(S->proj_vertices_mp[i]->coord[0]));
+			vec_cp_mp(S->vertices_mp[i][0],C.V1[index].pt_mp);
 			for(j=0;j<num_vars;j++)
 			{
-				mul_mp(temp_mp,&(S->V_mp[i][0]->coord[j]),&(C.E[i].pi_mp->coord[j]));
-				add_mp(&(S->pV_mp[i]->coord[0]),&(S->pV_mp[i]->coord[0]),temp_mp);
+				mul_mp(temp_mp,&(S->vertices_mp[i][0]->coord[j]),&(C.edges[i].pi_mp->coord[j]));
+				add_mp(&(S->proj_vertices_mp[i]->coord[0]),&(S->proj_vertices_mp[i]->coord[0]),temp_mp);
 			}
 			//mid point
-			set_zero_mp(&(S->pV_mp[i]->coord[1]));
-			vec_cp_mp(S->V_mp[i][1],C.E[i].midpt_mp);
+			set_zero_mp(&(S->proj_vertices_mp[i]->coord[1]));
+			vec_cp_mp(S->vertices_mp[i][1],C.edges[i].midpt_mp);
 			
 			for(j=0;j<num_vars;j++)
 			{
-				mul_mp(temp_mp,&(S->V_mp[i][1]->coord[j]),&(C.E[i].pi_mp->coord[j]));
-				add_mp(&(S->pV_mp[i]->coord[1]),&(S->pV_mp[i]->coord[1]),temp_mp);
+				mul_mp(temp_mp,&(S->vertices_mp[i][1]->coord[j]),&(C.edges[i].pi_mp->coord[j]));
+				add_mp(&(S->proj_vertices_mp[i]->coord[1]),&(S->proj_vertices_mp[i]->coord[1]),temp_mp);
 			}
 			//right point
-			set_zero_mp(&(S->pV_mp[i]->coord[2]));
-			index = C.E[i].right;
-			vec_cp_mp(S->V_mp[i][2],C.V1[index].pt_mp);
+			set_zero_mp(&(S->proj_vertices_mp[i]->coord[2]));
+			index = C.edges[i].right;
+			vec_cp_mp(S->vertices_mp[i][2],C.V1[index].pt_mp);
 			
 			for(j=0;j<num_vars;j++)
 			{
-				mul_mp(temp_mp,&(S->V_mp[i][2]->coord[j]),&(C.E[i].pi_mp->coord[j]));
-				add_mp(&(S->pV_mp[i]->coord[2]),&(S->pV_mp[i]->coord[2]),temp_mp);
+				mul_mp(temp_mp,&(S->vertices_mp[i][2]->coord[j]),&(C.edges[i].pi_mp->coord[j]));
+				add_mp(&(S->proj_vertices_mp[i]->coord[2]),&(S->proj_vertices_mp[i]->coord[2]),temp_mp);
 			}
 		}
 		
@@ -723,7 +723,7 @@ int  setup_curveDecomp(int argC, char *args[], char **inputName, char **witnessS
 	
 	//setup E structure from E.edge
 	sprintf(tmp_file,  "%s/E.edge", directoryName);
-	C->num_E = setup_edges(&(C->E),tmp_file,num_vars,inputName,directoryName,MPType);
+	C->num_edges = setup_edges(&(C->edges),tmp_file,num_vars,inputName,directoryName,MPType);
 	//setup V0 structure from V0.vert
 	sprintf(tmp_file,  "%s/V0.vert", directoryName);
 	C->num_V0 = setup_vertices(&(C->V0),tmp_file,*num_vars,MPType);
@@ -743,16 +743,16 @@ int  setup_curveDecomp(int argC, char *args[], char **inputName, char **witnessS
 	strLength = 1 + snprintf(NULL, 0, "%s/samp.dat", directoryName);
 	*samplingNamenew = (char *)bmalloc(strLength * sizeof(char));
 	sprintf(*samplingNamenew, "%s/samp.dat", directoryName);
-	if(! C->num_E)
+	if(! C->num_edges)
 	{
-		printf("sampler will not generate sampling data since there is no edges\n");
+		printf("sampler will not generate sampling data since there are no edges\n");
 		return 1;
 	}
 	
 	return 0;
 }
 
-int setup_edges(edge_d **E,char *INfile,int *num_vars, char **inputName, char *directoryName, int MPType)
+int setup_edges(edge_d **edges,char *INfile,int *num_vars, char **inputName, char *directoryName, int MPType)
 //setup the vertex structure
 {
 	FILE *IN = safe_fopen_read(INfile);
@@ -770,42 +770,42 @@ int setup_edges(edge_d **E,char *INfile,int *num_vars, char **inputName, char *d
 	*inputName = (char *)bmalloc(strLength * sizeof(char));
 	sprintf(*inputName,  "%s/%s", directoryName,input_deflated_Name);
 	
-	*E=(edge_d*) bmalloc(num*sizeof(edge_d));
+	*edges=(edge_d*) bmalloc(num*sizeof(edge_d));
 	for(i=0;i<num;i++)
 	{
-		fscanf(IN,"%d\n",&((*E)[i].left));
-		fscanf(IN,"%d\n",&((*E)[i].right));
+		fscanf(IN,"%d\n",&((*edges)[i].left));
+		fscanf(IN,"%d\n",&((*edges)[i].right));
 		if(MPType==0)
 		{
-			init_point_d((*E)[i].midpt,*num_vars);
-			(*E)[i].midpt->size=*num_vars;
+			init_point_d((*edges)[i].midpt,*num_vars);
+			(*edges)[i].midpt->size=*num_vars;
 			for(j=0;j<*num_vars;j++)
-				fscanf(IN, "%lf %lf", &((*E)[i].midpt->coord[j].r), &((*E)[i].midpt->coord[j].i));
+				fscanf(IN, "%lf %lf", &((*edges)[i].midpt->coord[j].r), &((*edges)[i].midpt->coord[j].i));
 			
-			init_point_d((*E)[i].pi,*num_vars);
-			(*E)[i].pi->size=*num_vars;
+			init_point_d((*edges)[i].pi,*num_vars);
+			(*edges)[i].pi->size=*num_vars;
 			for(j=0;j<*num_vars;j++)
-				fscanf(IN, "%lf %lf", &((*E)[i].pi->coord[j].r), &((*E)[i].pi->coord[j].i));
+				fscanf(IN, "%lf %lf", &((*edges)[i].pi->coord[j].r), &((*edges)[i].pi->coord[j].i));
 		}
 		else
 		{
-			init_point_mp((*E)[i].midpt_mp,*num_vars);
-			(*E)[i].midpt_mp->size=*num_vars;
+			init_point_mp((*edges)[i].midpt_mp,*num_vars);
+			(*edges)[i].midpt_mp->size=*num_vars;
 			for(j=0;j<*num_vars;j++)
 			{
-				mpf_inp_str((*E)[i].midpt_mp->coord[j].r, IN, 10);
-				mpf_inp_str((*E)[i].midpt_mp->coord[j].i, IN, 10);
+				mpf_inp_str((*edges)[i].midpt_mp->coord[j].r, IN, 10);
+				mpf_inp_str((*edges)[i].midpt_mp->coord[j].i, IN, 10);
 			}
-			init_point_mp((*E)[i].pi_mp,*num_vars);
-			(*E)[i].pi_mp->size=*num_vars;
+			init_point_mp((*edges)[i].pi_mp,*num_vars);
+			(*edges)[i].pi_mp->size=*num_vars;
 			for(j=0;j<*num_vars;j++)
 			{
-				mpf_inp_str((*E)[i].pi_mp->coord[j].r, IN, 10);
-				mpf_inp_str((*E)[i].pi_mp->coord[j].i, IN, 10);
+				mpf_inp_str((*edges)[i].pi_mp->coord[j].r, IN, 10);
+				mpf_inp_str((*edges)[i].pi_mp->coord[j].i, IN, 10);
 			}
 			printf("i = %d",i);
-			printVec_mp(stdout,0,(*E)[i].pi_mp);
-			printVec_mp(stdout,0,(*E)[i].midpt_mp);
+			printVec_mp(stdout,0,(*edges)[i].pi_mp);
+			printVec_mp(stdout,0,(*edges)[i].midpt_mp);
 		}
 	}
 	fclose(IN);
@@ -813,32 +813,32 @@ int setup_edges(edge_d **E,char *INfile,int *num_vars, char **inputName, char *d
 }
 
 
-int setup_vertices(vertex_d **V,char *INfile,int num_vars, int MPType)
+int setup_vertices(vertex_d **vertices,char *INfile,int num_vars, int MPType)
 //setup the vertex structure
 {
 	FILE *IN = safe_fopen_read(INfile);
 	int num,i,j;
 	fscanf(IN, "%d\n\n", &num);
-	*V=(vertex_d* )bmalloc(num*sizeof(vertex_d));
+	*vertices=(vertex_d* )bmalloc(num*sizeof(vertex_d));
 	for(i=0;i<num;i++)
 	{
 		if(MPType==0)
 		{
-			init_point_d((*V)[i].pt,num_vars);
-			(*V)[i].pt->size=num_vars;
+			init_point_d((*vertices)[i].pt,num_vars);
+			(*vertices)[i].pt->size=num_vars;
 			for(j=0;j<num_vars;j++)
 			{
-				fscanf(IN, "%lf %lf", &((*V)[i].pt->coord[j].r), &((*V)[i].pt->coord[j].i));
+				fscanf(IN, "%lf %lf", &((*vertices)[i].pt->coord[j].r), &((*vertices)[i].pt->coord[j].i));
 			}
 		}
 		else
 		{
-			init_point_mp((*V)[i].pt_mp,num_vars);
-			(*V)[i].pt_mp->size=num_vars;
+			init_point_mp((*vertices)[i].pt_mp,num_vars);
+			(*vertices)[i].pt_mp->size=num_vars;
 			for(j=0;j<num_vars;j++)
 			{
-				mpf_inp_str((*V)[i].pt_mp->coord[j].r, IN, 10);
-				mpf_inp_str((*V)[i].pt_mp->coord[j].i, IN, 10);
+				mpf_inp_str((*vertices)[i].pt_mp->coord[j].r, IN, 10);
+				mpf_inp_str((*vertices)[i].pt_mp->coord[j].i, IN, 10);
 			}
 			
 		}
