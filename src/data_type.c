@@ -1,70 +1,46 @@
 #include "data_type.h"
 
 
-int index_in_V1(curveDecomp_d *C, vec_mp testpoint, comp_mp projection_value, tracker_config_t T, int sidedness){
-	int ii;
 
-	
-//	sidedness = -1 if from left, 1 if from right.
-	int index = -1;
+void init_configuration(program_configuration *options) {
 	
 	
-		
+	options->user_projection = 0;
+	options->projection_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
+	options->projection_filename = "";
 	
-	for (ii=0; ii<C->num_V1; ii++) {		
-		if (isSamePoint(NULL,C->V1[ii].pt_mp,65,NULL,testpoint,65,1e-6)){
-			print_point_to_screen_matlab_mp(testpoint,"testpoint");
-			print_point_to_screen_matlab_mp(C->V1[ii].pt_mp,"candidate");
-			index = ii;
-			break;
-		}
-	}
+	options->user_randomization = 0;
+	options->randomization_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
+	options->randomization_filename = "";
 	
+	options->input_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
+	options->input_filename = "input\0";
 	
+	options->witness_set_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
+	options->witness_set_filename = "witness_set\0";
+	
+	options->input_deflated_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
+	//this must be set after deflation is run.
+	return;
+}
 
+void clear_configuration(program_configuration *options) {
 	
+	free(options->projection_filename);
+	free(options->randomization_filename);
+	free(options->input_filename);
+	free(options->input_deflated_filename);
 	
-	if (index==-1) {
-		printf("vertex not found; adding to V1\n");
-		vertex_d temp_vertex;  init_vertex_mp(&temp_vertex);
-		set_mp(temp_vertex.projVal_mp,  projection_value);
-		vec_cp_mp(temp_vertex.pt_mp, testpoint);
-		
-		add_point_to_V1(C,temp_vertex);
-		index = C->num_V1-1;
-	}
-	
-	if (sidedness==-1) {
-		C->V1[index].num_left++;
-	}
-	else{
-		C->V1[index].num_right++;
-	}
-	
-//	printf("index = %d\n",index);
-//	mypause();
-	
-	return index;
-//	typedef struct
-//	{
-//		vertex_d *V0;  //Isolated real points.
-//		vertex_d *V1;  //Critical points AND new non-critical endpoints of edges.
-//		//  vertex_d *midPts;  //Midpoints of edges.
-//		edge_d *edges;
-//		int      num_V0;
-//		int      num_V1;
-//		//  int      num_midPts;
-//		int      num_edges;
-//	}curveDecomp_d;
-	
+	return;
 }
 
 
 
-void add_point_to_V0(curveDecomp_d *C, vertex_d new_vertex){
+
+void add_vertex_to_V0(curveDecomp_d *C, vertex_d new_vertex){
 	
 	if ( ( C->num_V0==0 && C->V0!=NULL ) || ( C->num_V0!=0 && C->V0==NULL ) ) {
-		printf("intialization error in add_point_to_V0\n");
+		printf("intialization error in add_vertex_to_V0\n");
 		exit(-1);
 	}
 	
@@ -85,32 +61,102 @@ void add_point_to_V0(curveDecomp_d *C, vertex_d new_vertex){
 
 
 
-void add_point_to_V1(curveDecomp_d *C, vertex_d new_vertex){
+void add_vertex_to_V1(curveDecomp_d *C, vertex_d new_vertex){
 	
-	if ( ( C->num_V1==0 && C->V1!=NULL ) || ( C->num_V1!=0 && C->V1==NULL ) ) {
-		printf("intialization error in add_point_to_V0\n");
+	if ( ( (C->num_V1==0) && (C->V1!=NULL) ) || ( (C->num_V1!=0) && (C->V1==NULL) ) ) {
+		printf("intialization error in add_vertex_to_V1\n");
+		printf("C->num_V1 = %d\n",C->num_V1);
 		exit(-1);
 	}
 	
 	C->num_V1++;
 	
 	if (C->num_V1==1) {
+		printf("initializing V1\n");
 		C->V1 = (vertex_d *)bmalloc( C->num_V1*sizeof(vertex_d));
 	}
 	else{
+		printf("adding point to already initialized V1\n");
+		printf("%d\n",C->num_V1);
 		C->V1 = (vertex_d *)brealloc(C->V1, C->num_V1*sizeof(vertex_d));
+		printf("after realloc\n");
 	}
 	
 	init_vertex_mp(&C->V1[C->num_V1-1]);
+	printf("after init\n");
 	cp_vertex_mp(&C->V1[C->num_V1-1],new_vertex);
 	
 	return;
 }
 
 
+
+int index_in_V1(curveDecomp_d *C, vec_mp testpoint, comp_mp projection_value, tracker_config_t T, int sidedness){
+	int ii;
+	
+	
+	//	sidedness = -1 if from left, 1 if from right.
+	int index = -1;
+	
+	
+	
+	
+	for (ii=0; ii<C->num_V1; ii++) {
+		if (isSamePoint(NULL,C->V1[ii].pt_mp,65,NULL,testpoint,65,1e-6)){
+			print_point_to_screen_matlab_mp(testpoint,"testpoint");
+			print_point_to_screen_matlab_mp(C->V1[ii].pt_mp,"candidate");
+			index = ii;
+			break;
+		}
+	}
+	
+	
+	
+	
+	
+	if (index==-1) {
+		printf("vertex not found; adding to V1\n");
+		vertex_d temp_vertex;  init_vertex_mp(&temp_vertex);
+		set_mp(temp_vertex.projVal_mp,  projection_value);
+		vec_cp_mp(temp_vertex.pt_mp, testpoint);
+		
+		add_vertex_to_V1(C,temp_vertex);
+		index = C->num_V1-1;
+	}
+	
+	if (sidedness==-1) {
+		C->V1[index].num_left++;
+	}
+	else{
+		C->V1[index].num_right++;
+	}
+	
+	//	printf("index = %d\n",index);
+	//	mypause();
+	
+	return index;
+	//	typedef struct
+	//	{
+	//		vertex_d *V0;  //Isolated real points.
+	//		vertex_d *V1;  //Critical points AND new non-critical endpoints of edges.
+	//		//  vertex_d *midPts;  //Midpoints of edges.
+	//		edge_d *edges;
+	//		int      num_V0;
+	//		int      num_V1;
+	//		//  int      num_midPts;
+	//		int      num_edges;
+	//	}curveDecomp_d;
+	
+}
+
+
+
+/**
+ copy in a vertex
+ */
 void cp_vertex_mp(vertex_d *target_vertex, vertex_d new_vertex){
 //assume the vertex is initialized
-	
+//	printf("copying vertex\n");
 	vec_cp_mp(target_vertex->pt_mp,new_vertex.pt_mp);
 	set_mp(target_vertex->projVal_mp, new_vertex.projVal_mp);
 	target_vertex->num_left = new_vertex.num_left; target_vertex->num_right = new_vertex.num_right;
@@ -124,13 +170,15 @@ void cp_vertex_mp(vertex_d *target_vertex, vertex_d new_vertex){
 
 void init_vertex_mp(vertex_d *curr_vertex){
 	
-	init_vec_mp(curr_vertex->pt_mp,1); curr_vertex->pt_mp->size = 1;
+	printf("inside init_vertex_mp\n");
+	init_vec_mp(curr_vertex->pt_mp,1); curr_vertex->pt_mp->size = 1; // this is the line giving us trouble.
+	printf("here\n");
 	init_mp(curr_vertex->projVal_mp);
 	
 	curr_vertex->type = -1;
 	curr_vertex->num_left = 0;
 	curr_vertex->num_right = 0;
-	
+	printf("exiting init_vertex_mp\n");
 	return;
 }
 
@@ -184,8 +232,12 @@ void add_edge_mp(curveDecomp_d *C, edge_d new_edge){
 
 void init_curveDecomp_d(curveDecomp_d *C){
 	
-	C->num_V0=C->num_V1=C->num_edges=0;
-	C->V0=C->V1=NULL;
+	C->num_V0=0;
+	C->num_V1=0;
+	C->num_edges=0;
+	
+	C->V0=NULL;
+	C->V1=NULL;
 	
 	C->edges=NULL;
 	return;
@@ -590,6 +642,14 @@ void dehomogenize(vec_d *result, vec_d dehom_me){
 }
 
 void dehomogenize_mp(vec_mp *result, vec_mp dehom_me){
+	printf("dehomogenizing\n");
+	print_point_to_screen_matlab_mp(dehom_me,"dehom_me");
+	
+	if (dehom_me->size==0 || dehom_me->size==1) {
+		printf("attempting to dehomogenize a vector of length 0 or 1\n");
+		exit(977);
+	}
+	
 	comp_mp denom; init_mp(denom);
 	change_size_vec_mp((*result),dehom_me->size-1);
 	
@@ -608,7 +668,7 @@ void dehomogenize_mp(vec_mp *result, vec_mp dehom_me){
 		div_mp(&(*result)->coord[ii],&(*result)->coord[ii],denom); //  result[ii] = dehom_me[ii+1]/dehom_me[0].
 	}
 	
-
+	clear_mp(denom);
 	return;
 }
 
@@ -627,6 +687,7 @@ void dot_product_d(comp_d result, vec_d one, vec_d two){
 		add_d(result,result,temp);
 	}
 }
+
 void dot_product_mp(comp_mp result, vec_mp one, vec_mp two){
 	if (one->size!=two->size) {
 		printf("attempting to dot two vectors not of the same size! (%d!=%d)\n",one->size,two->size);
@@ -645,20 +706,35 @@ void dot_product_mp(comp_mp result, vec_mp one, vec_mp two){
 	clear_mp(temp);clear_mp(temp2);
 }
 
-
-void write_dehomogenized_coordinates(witness_set_d W, char filename[]){
-	
-	FILE *OUT;
-	OUT = safe_fopen_write(filename);
-
+void write_homogeneous_coordinates(witness_set_d W, char filename[])
+{
 	int ii,jj;
 	
+	FILE *OUT  = safe_fopen_write(filename); // open the output file
 	
-	fprintf(OUT,"%d\n\n",W.W.num_pts);
 	
+	fprintf(OUT,"%d\n\n",W.W_mp.num_pts); // print the header line
+	
+	for (ii=0; ii<W.W_mp.num_pts; ++ii) {
+		for (jj=0; jj<W.num_variables; jj++) {
+			fprintf(OUT,"%.15le %.15le\n",W.W.pts[ii]->coord[jj].r,W.W.pts[ii]->coord[jj].i);
+		}
+		fprintf(OUT,"\n");
+	}
+	
+	fclose(OUT); // close the output file
+	
+	return;
+}
+
+void write_dehomogenized_coordinates(witness_set_d W, char filename[]){
+	int ii,jj;
+	
+	FILE *OUT = safe_fopen_write(filename); // open the output file.
+	
+	fprintf(OUT,"%d\n\n",W.W.num_pts); // print the header line
 	for (ii=0; ii<W.W.num_pts; ++ii) {
-		if (W.MPType==1){
-			
+		if (W.MPType==1){ // both fields should be populated anyway?
 			vec_mp result;
 			init_vec_mp(result,1);
 			dehomogenize_mp(&result,W.W_mp.pts[ii]);
@@ -676,15 +752,36 @@ void write_dehomogenized_coordinates(witness_set_d W, char filename[]){
 			}
 
 		}
-		
-		
 		fprintf(OUT,"\n");
-
 	}
 	
 	fclose(OUT);
+	
+	return;
 }
 
+
+
+void write_linears(witness_set_d W, char filename[])
+{
+	int ii,jj;
+	
+	FILE *OUT  = safe_fopen_write(filename); // open the output file
+	
+	
+	fprintf(OUT,"%d\n\n",W.num_linears); // print the header line
+	
+	for (ii=0; ii<W.num_linears; ++ii) {
+		for (jj=0; jj<W.num_variables; jj++) {
+				fprintf(OUT,"%.15le %.15le\n",W.L[ii]->coord[jj].r,W.L[ii]->coord[jj].i);
+		}
+		fprintf(OUT,"\n");
+	}
+	
+	fclose(OUT); // close the output file
+	
+	return;
+}
 
 
 
@@ -726,12 +823,7 @@ void clear_witness_set(witness_set_d W){
 	free(W.W_mp.pts);
 	
 
-	
-	
 //TODO: clear variable names
-
-	
-	
 	return;
 }
 
@@ -1159,8 +1251,7 @@ void BRpostProcessing_AllowDuplicates(post_process_t *endPoints, witness_set_d *
 		}
 	}
 	
-	//TODO: here, get the good points, so can copy them
-	
+
 	//initialize the structures for holding the produced data
 	
 	W_new->W.num_pts=num_actual_solns; W_new->W_mp.num_pts=num_actual_solns;
@@ -1235,8 +1326,13 @@ void BRpostProcessing(post_process_t *endPoints, witness_set_d *W_new, int num_p
 	}
 	
 	int num_actual_solns = 0;
+	int *actual_solns_indices;
+	actual_solns_indices = (int *)bmalloc(num_pts*sizeof(int));
+	
+	
 	for (ii=0; ii<num_pts; ii++) {
 		if (endPoints[ii].isFinite && (!endPoints[ii].isSing) && (endPoints[ii].multiplicity==1) && (endPoints[ii].success==1) ) {
+			actual_solns_indices[num_actual_solns] = ii;
 			num_actual_solns++;
 		}
 	}
@@ -1256,21 +1352,24 @@ void BRpostProcessing(post_process_t *endPoints, witness_set_d *W_new, int num_p
 		init_vec_d(W_new->W.pts[ii],W_new->num_variables); init_vec_mp(W_new->W_mp.pts[ii],W_new->num_variables);
 		W_new->W.pts[ii]->size = W_new->W_mp.pts[ii]->size = W_new->num_variables;
 		
-		if (endPoints[ii].sol_prec<64) {
+		if (endPoints[actual_solns_indices[ii]].sol_prec<64) {
 			//copy out of the double structure.
 			for (jj=0; jj<W_new->num_variables; jj++) {
-				set_d(&W_new->W.pts[ii]->coord[jj],endPoints[ii].sol_d[jj]);
+				set_d(&W_new->W.pts[ii]->coord[jj],endPoints[actual_solns_indices[ii]].sol_d[jj]);
 			}
 			vec_d_to_mp(W_new->W_mp.pts[ii],W_new->W.pts[ii]);
 		}
 		else{
-		//copy out of the mp structure.
+			//copy out of the mp structure.
 			for (jj=0; jj<W_new->num_variables; jj++) {
-				set_mp(&W_new->W_mp.pts[ii]->coord[jj],endPoints[ii].sol_mp[jj]);
+				set_mp(&W_new->W_mp.pts[ii]->coord[jj],endPoints[actual_solns_indices[ii]].sol_mp[jj]);
 			}
 			vec_mp_to_d(W_new->W.pts[ii],W_new->W_mp.pts[ii]);
 		}
 	}
+	
+	free(actual_solns_indices);
+
 	
 	
 	

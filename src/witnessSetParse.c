@@ -4,9 +4,7 @@
 
 
 //use:  call to parse the file witness_set_file, into the struct W.  fills the values W, and L, patch, as well as their _mp counterparts
-
-// the functions will be parsed elsewhere.
-// this function has been be rewritten to use MP
+	
 
 
 int witnessSetParse(witness_set_d *W, char *witness_set_file, const int num_vars){
@@ -30,7 +28,7 @@ int witnessSetParse(witness_set_d *W, char *witness_set_file, const int num_vars
 		
 
 	
-  fscanf(IN, "%d %d %d", &num_pts, &codim, &comp_num);
+  fscanf(IN, "%d %d %d", &num_pts, &codim, &comp_num); scanRestOfLine(IN);
 	W->codim = codim;
 	W->comp_num = comp_num;
   W->W.num_pts = W->W_mp.num_pts = num_pts;
@@ -46,7 +44,8 @@ int witnessSetParse(witness_set_d *W, char *witness_set_file, const int num_vars
     //read the witness points into memory
     for (jj=0; jj < num_vars; jj=jj+1) {
 			mpf_inp_str(W->W_mp.pts[ii]->coord[jj].r, IN, 10); // 10 is the base
-			mpf_inp_str(W->W_mp.pts[ii]->coord[jj].i, IN, 10);      
+			mpf_inp_str(W->W_mp.pts[ii]->coord[jj].i, IN, 10);
+			scanRestOfLine(IN);
     }
 		vec_mp_to_d(W->W.pts[ii],W->W_mp.pts[ii]);
   }
@@ -68,6 +67,7 @@ int witnessSetParse(witness_set_d *W, char *witness_set_file, const int num_vars
     for (jj=0; jj < num_vars_in_linears; jj++) {
 			mpf_inp_str(W->L_mp[ii]->coord[jj].r, IN, 10);
 			mpf_inp_str(W->L_mp[ii]->coord[jj].i, IN, 10);
+			scanRestOfLine(IN);
     }
 		vec_mp_to_d(W->L[ii],W->L_mp[ii]);
   }
@@ -90,6 +90,7 @@ int witnessSetParse(witness_set_d *W, char *witness_set_file, const int num_vars
     for (jj=0; jj < patch_size; jj++) {
 			mpf_inp_str(W->patch_mp[ii]->coord[jj].r, IN, 10);
 			mpf_inp_str(W->patch_mp[ii]->coord[jj].i, IN, 10);
+			scanRestOfLine(IN);
     }
 		vec_mp_to_d(W->patch[ii],W->patch_mp[ii]);
   }

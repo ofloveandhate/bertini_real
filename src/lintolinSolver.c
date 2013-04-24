@@ -39,6 +39,7 @@ int lin_to_lin_solver_main(int MPType,
 	}
 	
 	
+
 	if (MPType==1){
 		lin_to_lin_solver_mp(MPType,W,n_minusone_randomizer_matrix_full_prec,new_linears_full_prec,num_new_linears,W_new);
 	}
@@ -351,6 +352,7 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 				sharpen_endpoint_endgame(&EG[oid], &T_copy[oid], OUT_copy[oid], &BED_copy[oid], BED_copy[oid].BED_mp, curr_eval_d, curr_eval_mp, change_prec);
 			}
 			
+			printf("retval: %d\n",EG->retVal);
 			
 			int issoln;
 			if (EG->prec<64){
@@ -446,7 +448,7 @@ void lin_to_lin_track_path_d(int pathNum, endgame_data_t *EG_out,
 //		print_matrix_to_screen_matlab_mp(LtLED->patch.patchCoeff,"patch");
 //		printf("patch precision %d\n",LtLED->patch.curr_prec);
 		
-    EG_out->prec = EG_out->last_approx_prec = 52;
+    EG_out->prec = EG_out->last_approx_prec = 1;
 		
 		EG_out->retVal = endgame_amp(T->endgameNumber, EG_out->pathNum, &EG_out->prec, &EG_out->first_increase, &EG_out->PD_d, &EG_out->PD_mp, &EG_out->last_approx_prec, EG_out->last_approx_d, EG_out->last_approx_mp, Pin, T, OUT, MIDOUT, ED_d, ED_mp, eval_func_d, eval_func_mp, change_prec, find_dehom);
 		
@@ -1584,7 +1586,7 @@ int lin_to_lin_solver_mp(int MPType,
   fclose(FAIL);
 	
 
-	BRpostProcessing(endPoints, W_new, trackCount.successes, ED.preProcData, &T);
+	BRpostProcessing_AllowDuplicates(endPoints, W_new, trackCount.successes, ED.preProcData, &T);
 	
 	
 
@@ -2703,13 +2705,13 @@ int check_issoln_lintolin_mp(endgame_data_t *EG,
 	
 	int num_digits = prec_to_digits((int) mpf_get_default_prec());
 	double tol;
-	mpf_t n1, n2, zero_thresh, max_rat;
-	point_mp f;
-	eval_struct_mp e;
 	
+	
+	mpf_t n1, n2, zero_thresh, max_rat;
 	mpf_init(n1); mpf_init(n2); mpf_init(zero_thresh); mpf_init(max_rat);
-	init_point_mp(f, 1);
-	init_eval_struct_mp(e,0, 0, 0);
+	
+	point_mp f; init_point_mp(f, 1);f->size = 1;
+	eval_struct_mp e; init_eval_struct_mp(e, 0, 0, 0);
 	
 	mpf_set_d(max_rat, T->ratioTol);
 	
@@ -2723,8 +2725,14 @@ int check_issoln_lintolin_mp(endgame_data_t *EG,
 	//this one guaranteed by entry condition
 	lin_to_lin_eval_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, ED);
 	
+	
 	if (EG->last_approx_prec < 64)
 	{ // copy to _mp
+		printf("last precision (%d) is less than 64\n",EG->last_approx_prec);
+		mypause();
+//		print_point_to_screen_matlab_mp(EG->last_approx_mp,"lastapprox_mp");
+		print_point_to_screen_matlab(EG->last_approx_d,"lastapprox_d");
+		
 		point_d_to_mp(EG->last_approx_mp, EG->last_approx_d);
 	}
 	

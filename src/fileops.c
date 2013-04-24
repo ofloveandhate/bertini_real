@@ -1,5 +1,24 @@
 #include "fileops.h"
 
+
+void rename_bertini_files_dotbak(){
+	
+	rename("arr.out","arr.out.bak");
+	rename("num.out","num.out.bak");
+	rename("deg.out","deg.out.bak");
+	rename("config","config.bak");
+	rename("preproc_data","preproc_data.bak");
+}
+
+void restore_bertini_files_dotbak(){
+	rename("config.bak","config");
+	rename("arr.out.bak","arr.out");
+	rename("num.out.bak","num.out");
+	rename("deg.out.bak","deg.out");
+	rename("preproc_data.bak","preproc_data");
+	
+}
+
 //will remove all files which do not start with a . from directory.
 void purge_previous_directory(char *directoryName)
 {
