@@ -110,8 +110,8 @@ int take_determinant_mp(comp_mp determinant, mat_mp source_matrix){
 	mpf_t tol;  mpfr_init(tol); // = 1e-14
 	mpf_t largeChange; mpfr_init(largeChange); //  = 1e11
 	
-	mpf_set_d(tol, 1e-20); // tol is the minimum acceptable 1-norm for each row during decomposition
-	mpf_set_d(largeChange, 1e20);
+	mpf_set_d(tol, 1e-30); // tol is the minimum acceptable 1-norm for each row during decomposition
+	mpf_set_d(largeChange, 1e40);
 	
 	
 	

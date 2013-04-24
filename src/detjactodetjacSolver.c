@@ -57,9 +57,8 @@ int detjac_to_detjac_solver_main(int MPType,
 int detjac_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int currentSeed
 															witness_set_d W,  // includes the initial linear.
 															mat_mp n_minusone_randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
-															vec_mp old_projection_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
-															vec_mp new_projection_full_prec,
-															
+															vec_mp old_projection_full_prec,   // a single random complex linear. 
+															vec_mp new_projection_full_prec, // a single particular real linear with homogeneous term=0. 
 															witness_set_d *W_new)
 /***************************************************************\
  * USAGE:                                                        *
@@ -224,8 +223,8 @@ int detjac_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int cu
 	
   // print the failure summary
 	//  printFailureSummary(&trackCount, convergence_failures, sharpening_failures, sharpening_singular);
-	
-	BRpostProcessing(endPoints, W_new, trackCount.successes, ED.preProcData, &T);
+	BRpostProcessing_AllowDuplicates(endPoints, W_new, trackCount.successes, ED.preProcData, &T);
+//	BRpostProcessing(endPoints, W_new, trackCount.successes, ED.preProcData, &T);
 	
 	
 	//DAB is there other stuff which should be cleared here?
@@ -1667,8 +1666,9 @@ int detjac_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int c
   fprintf(FAIL, "\n");
   fclose(FAIL);
 	
-	BRpostProcessing(endPoints, W_new, trackCount.successes, ED.preProcData, &T);
-	
+//	BRpostProcessing(endPoints, W_new, trackCount.successes, ED.preProcData, &T);
+	BRpostProcessing_AllowDuplicates(endPoints, W_new, trackCount.successes, ED.preProcData, &T);
+
 	
 	free(startSub);
 	free(endSub);

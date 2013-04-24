@@ -34,7 +34,7 @@ void computeCurveSelfConj(char * inputFile,
 													curveDecomp_d*,
 													int num_vars,
 													int num_var_gps,
-													unsigned int currentSeed);
+													program_configuration options);
 
 
 void check_patch_values(witness_set_d W);
@@ -65,6 +65,10 @@ void sort_for_real(witness_set_d *W_out,
 									 tracker_config_t T);
 
 void sort_increasing_by_real(vec_mp *projections_sorted, int **index_tracker, vec_mp projections_input);
+
+void make_randomization_matrix_based_on_degrees(mat_mp randomization_matrix, int ** randomized_degrees,
+																								int num_variables, int num_funcs);
+int compare_integers_decreasing(const void * left_in, const void * right_in);
 
 
 #endif

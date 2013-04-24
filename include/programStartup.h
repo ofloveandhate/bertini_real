@@ -11,9 +11,9 @@
 #include <mpfr.h>
 #include <mpf2mpfr.h>
 
+#include <getopt.h> 
 
-
-#define BERTINI_REAL_VERSION_STRING "1.0"
+#define BERTINI_REAL_VERSION_STRING "0.0.101"
 
 
 
@@ -24,8 +24,9 @@
 #include "fileops.h"
 #include "data_type.h"
 
+int parse_options(int argC, char *args[], program_configuration *options);
+int startup(program_configuration options);
 
-int startup(int argC, char *args[], char **inputName, char **startName);
 void get_tracker_config(tracker_config_t *T,int MPType);
 
 #endif

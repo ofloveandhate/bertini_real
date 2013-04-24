@@ -112,9 +112,15 @@ typedef struct
   vertex_d *V1;  //Critical points AND new non-critical endpoints of edges.
 	//  vertex_d *midPts;  //Midpoints of edges.
   edge_d *edges;
+	
   int      num_V0;
   int      num_V1;
-	//  int      num_midPts;
+  int      num_midpts;
+	
+	int *V0_indices;
+	int *V1_indices;
+	int *midpt_indices;
+	
   int      num_edges;
 }curveDecomp_d;
 
@@ -130,8 +136,36 @@ typedef struct
   int      *num_pts;// number of points
 }sample_d;
 
+
+
+
+
+
+#define MAX_STRLEN 200
+
+typedef struct
+{
+	int user_projection;
+	char *projection_filename;
+	
+	int user_randomization;
+	char *randomization_filename;
+	
+	char *input_filename;
+	
+	char *witness_set_filename;
+	
+	char *input_deflated_filename;
+} program_configuration;
+
+
+void init_configuration(program_configuration *options);
+void clear_configuration(program_configuration *options);
+
+
 //The following lets us use words instead of numbers to indicate vertex types.
 enum {CRITICAL=0, NEW=1, MIDPOINT=2};
+
 
 
 
@@ -166,7 +200,7 @@ void dot_product_mp(comp_mp result, vec_mp one, vec_mp two);
 
 
 void write_dehomogenized_coordinates(witness_set_d W, char filename[]);
-
+void write_linears(witness_set_d W, char filename[]);
 
 void clear_curveDecomp_d(curveDecomp_d *C, int MPType);
 void clear_sample_d(sample_d *S, int MPType);

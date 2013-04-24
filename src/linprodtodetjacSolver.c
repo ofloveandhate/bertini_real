@@ -22,8 +22,16 @@ int linprod_to_detjac_solver_main(int MPType,
 	
 	cp_patches(W_new,W); // copy the patches over from the original witness set
 	W_new->num_variables = W.num_variables;
-	W_new->num_linears = (0);
+	W_new->num_linears = (1);
 		
+	
+	W_new->L = (vec_d *)bmalloc(1*sizeof(vec_d));
+	W_new->L_mp = (vec_mp *)bmalloc(1*sizeof(vec_mp));
+		init_vec_d(W_new->L[0],W.num_variables); init_vec_mp2(W_new->L_mp[0],W.num_variables,1024); //the 1024 here is incorrect
+		vec_mp_to_d(   W_new->L[0],projection_full_prec);
+		vec_cp_mp(W_new->L_mp[0],projection_full_prec);
+	
+	write_linears(*W_new,"rand_comp_proj");
 	
 	
 	if (MPType==1){
@@ -206,7 +214,7 @@ int linprod_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int c
 		mypause();
 	}
 	
-
+//	BRpostProcessing_AllowDuplicates(endPoints, W_new, trackCount.successes, ED.preProcData, &T);
 	BRpostProcessing(endPoints, W_new, trackCount.successes, ED.preProcData, &T);
 	
 	
@@ -375,9 +383,14 @@ void linprod_to_detjac_track_d(trackingStats *trackCount,
 		if ((EG->retVal != 0 && time_to_compare->r > T->minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
 			
 			trackCount->failures++;
-			printf("\nretVal = %d\nthere was a path failure linprod tracking witness point %d\n\n",EG->retVal,ii);
-			print_path_retVal_message(EG->retVal);
-//			exit(EG->retVal); //failure is tolerable in this solver, i believe
+			
+			if (issoln==0) {
+				printf("point %d was a non-solution junk point\n",ii);
+			}
+			else{
+				printf("\nretVal = %d; issoln = %d\nthere was a path failure linprod tracking witness point %d\n\n",EG->retVal, issoln,ii);
+				print_path_retVal_message(EG->retVal);
+			}
 		}
 		else
 		{
@@ -1536,7 +1549,7 @@ void change_linprodtodetjac_eval_prec_mp(int new_prec, linprodtodetjac_eval_data
 		
 		BED->curr_prec = new_prec;
 		
-		printf("changing to precision %d\n",new_prec);
+//		printf("changing to precision %d\n",new_prec);
 		
 		
 		setprec_mp(BED->gamma, new_prec);
@@ -1709,7 +1722,7 @@ int linprod_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int 
   fprintf(OUT, "Parse Time = %fs\n", parse_time);
   fprintf(OUT, "Track Time = %fs\n", track_time);
 	
-
+//	BRpostProcessing_AllowDuplicates(endPoints, W_new, trackCount.successes, ED.preProcData, &T);
 	BRpostProcessing(endPoints, W_new, trackCount.successes, ED.preProcData, &T);
 	
 	
@@ -1904,11 +1917,13 @@ void linprod_to_detjac_track_mp(trackingStats *trackCount,
 		
 		if ((EG->retVal != 0 && time_to_compare->r > T->minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
 			trackCount->failures++;
-			printf("\nretVal = %d\nthere was a fatal path failure tracking witness point %d\n\n",EG->retVal,ii);
-			print_path_retVal_message(EG->retVal);
-//			print_point_to_screen_matlab_mp(BED_copy->old_linear,"old");
-//			print_point_to_screen_matlab_mp(BED_copy->current_linear,"new");
-//			exit(EG->retVal); //failure intolerable in this solver.
+			if (issoln==0) {
+				printf("point %d was a non-solution junk point\n",ii);
+			}
+			else{
+				printf("\nretVal = %d; issoln = %d\nthere was a path failure linprod tracking witness point %d\n\n",EG->retVal, issoln,ii);
+				print_path_retVal_message(EG->retVal);
+			}
 		}
 		else
 		{
@@ -1998,7 +2013,7 @@ void linprod_to_detjac_track_path_mp(int pathNum, endgame_data_t *EG_out,
 	
 //	check_linprod_evaluator(Pin->point,ED);
 //	mypause();
-//	
+	
 	
 	EG_out->pathNum = pathNum;
   EG_out->codim = 0; // zero dimensional - this is ignored
@@ -2850,7 +2865,7 @@ void setuplinprodtodetjacEval_mp(char preprocFile[], char degreeFile[], prog_t *
 	
 	init_mp2(BED->gamma,prec);
 	get_comp_rand_mp(BED->gamma); // set gamma to be random complex value
-	
+	set_one_mp(BED->gamma);
 	
 	BED->num_linears = W.num_linears;
 	
@@ -3081,7 +3096,7 @@ void check_linprod_evaluator(point_mp current_values,
 	comp_mp result; init_mp(result);
 	comp_mp zerotime; init_mp(zerotime);
 	
-	comp_d timed; timed->r = 0.5; timed->i = 0.0;
+	comp_d timed; timed->r = 1; timed->i = 0.0;
 	d_to_mp(zerotime,timed); // set zero
 	
 	comp_mp lambda; init_mp(lambda); get_comp_rand_mp(lambda);
@@ -3089,37 +3104,39 @@ void check_linprod_evaluator(point_mp current_values,
 	linprod_to_detjac_eval_mp(e_d.funcVals, e_d.parVals, e_d.parDer, e_d.Jv, e_d.Jp, current_values, zerotime, ED);
 	// the result of this, most importantly, is e_d.Jv, which contains the (complex) jacobian Jv for the system.
 	// this jacobian Jv = \frac{\partial f_i}{\partial x_j} ( current_witness_point, zerotime)
-	vec_mp curr_times_lambda;  init_vec_mp(curr_times_lambda,LPED->num_variables); curr_times_lambda->size = LPED->num_variables;
 	
 	
-	for (ii=0; ii<LPED->num_variables; ii++) {
-		mul_mp(&curr_times_lambda->coord[ii],&current_values->coord[ii],lambda);
-	}
-	
-	
-	linprod_to_detjac_eval_mp(e_d2.funcVals, e_d2.parVals, e_d2.parDer, e_d2.Jv, e_d2.Jp, curr_times_lambda, zerotime, ED);
 
 	
-	for (ii=0; ii<LPED->num_linears; ii++) {
-		print_point_to_screen_matlab_mp(LPED->linears[ii],"l");
-	}
+//	for (ii=0; ii<LPED->num_linears; ii++) {
+//		print_point_to_screen_matlab_mp(LPED->linears[ii],"l");
+//	}
 	
 	
 	
 	
 	print_comp_mp_matlab(zerotime,"t");
 	
-	dot_product_mp(result,LPED->linears[0],current_values);
-	print_comp_mp_matlab(result,"dot_p");
+//	dot_product_mp(result,LPED->linears[0],current_values);
+//	print_comp_mp_matlab(result,"dot_p");
 	print_comp_mp_matlab(LPED->gamma,"gamma");
 	print_point_to_screen_matlab_mp(current_values,"currvals");
 	print_point_to_screen_matlab_mp(LPED->projection,"proj");
-	print_comp_mp_matlab(lambda,"lambda");
 	print_point_to_screen_matlab_mp(e_d.funcVals,"f");
-	print_point_to_screen_matlab_mp(e_d2.funcVals,"f2");
-	
 	print_matrix_to_screen_matlab_mp(e_d.Jv,"Jv");
-	print_matrix_to_screen_matlab_mp(e_d2.Jv,"Jv2");
+
+	
+	
+	
+//	vec_mp curr_times_lambda;  init_vec_mp(curr_times_lambda,LPED->num_variables); curr_times_lambda->size = LPED->num_variables;
+//	for (ii=0; ii<LPED->num_variables; ii++) {
+//		mul_mp(&curr_times_lambda->coord[ii],&current_values->coord[ii],lambda);
+//	}
+//	linprod_to_detjac_eval_mp(e_d2.funcVals, e_d2.parVals, e_d2.parDer, e_d2.Jv, e_d2.Jp, curr_times_lambda, zerotime, ED);
+//	print_comp_mp_matlab(lambda,"lambda");
+//	print_point_to_screen_matlab_mp(e_d2.funcVals,"f2");
+//	print_matrix_to_screen_matlab_mp(e_d2.Jv,"Jv2");
+	
 	//TODO: NEED TO CLEAR THE EVALDATA, or leak memory.
 	
 	return;
