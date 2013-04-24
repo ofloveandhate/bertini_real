@@ -1,6 +1,6 @@
 
 #choose some options.  by default, compiler optimization is turned off
-OPT= -Dverbose  -g  -Dprintpathlinprod # -Wall -O3 -funroll-loops -fexpensive-optimizations
+OPT= -Dverbose  -g   # -Dprintpathlinprod -Wall -O3 -funroll-loops -fexpensive-optimizations
 
 
 
@@ -83,12 +83,12 @@ bertini_real : bertini_real.c $(OBJFILES) $(POBJFILES) ;
 
 
 #makes the data2set program.
-data_to_set: 
+data_to_set: dataToSet.cpp
 	$(COMPpp) $(ARGS) -o data2set dataToSet.cpp $(BERTINILIB) $(LIBS)  $(STATICFLAG)
 #   
 
 #makes the sampler program.
-sampler: 
+sampler: sampler.c $(OBJFILES) $(POBJFILES);
 	$(COMP) $(ARGS) -o sampler sampler.c  $(OBJFILES) $(POBJFILES) $(BERTINILIB)  $(LIBS)  $(STATICFLAG)
 #   
 
