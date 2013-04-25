@@ -22,30 +22,47 @@
 #include "fileops.h"
 
 
-//returns 1 if self-conjugate, 0 else.
-int checkSelfConjugate(witness_set_d W,
+/**
+ returns 1 if self-conjugate, 0 else.
+ */
+int checkSelfConjugate(witness_set W,
                        int           num_vars,
-                       char          *input_file);
-
+                       char          *input_file,
+											  char *stifle_text);
+/**
 // returns the component number according to the incidence matrix
-int get_component_number(witness_set_d W,
+ */
+int get_component_number(witness_set W,
 												 int           num_vars,
-												 char          *input_file);
+												 char          *input_file,
+												  char *stifle_text);
 
+/**
 //write a single point to "member_points"
+ */
 int write_member_points_singlept(point_d point_to_write, char * fmt);
 
+/**
 //write a single point, and its complex conjugate, to "member_points"
+ */
 int write_member_points_sc(point_d, char * fmt);
 
+/**
 //write the input file to feed bertini to perform membership testing
+ */
 void membership_test_input_file(char *outputFile,
                                 char *funcInput,
                                 char *configInput,
                                 int  tracktype);
 
+/**
 //read the incicence matrix
+ */
 void read_incidence_matrix(int *component_numbers);
+
+/**
+ //read the incicence matrix
+ */
 void read_incidence_matrix_wrt_number(int *component_numbers, int given_incidence_number);
 
 

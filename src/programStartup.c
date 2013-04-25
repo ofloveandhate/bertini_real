@@ -28,6 +28,7 @@ void display_current_options(program_configuration options){
 	printf("input_filename: %s\n",options.input_filename);
 	printf("witness_set_filename: %s\n",options.witness_set_filename);
 	
+	printf("stifle_text: %s\n",options.stifle_text);
 	mypause();
 }
 
@@ -39,6 +40,7 @@ void print_usage(){
 	printf("-r -randomization \t\t'filename'\n");
 	printf("-w -witness\t\t\t'filename'\n");
 	printf("-i -input\t\t\t'filename'\n");
+	printf("-ns -nostifle\t\t\t   --\n");
 	printf("-v -version\t\t\t   -- \n");
 	printf("-h -help\t\t\t   --");
 	
@@ -48,8 +50,9 @@ void print_usage(){
 }
 
 
+
 /* Flag set by ‘--verbose’. */
-static int verbose_flag;
+//static int nostifle_flag;
 
 int parse_options(int argc, char **argv, program_configuration *options){
 	 // this code created based on gnu.org's description of getopt_long
@@ -60,8 +63,9 @@ int parse_options(int argc, char **argv, program_configuration *options){
 		static struct option long_options[] =
 		{
 			/* These options set a flag. */
-			{"verbose", no_argument,       &verbose_flag, 1},
-			{"brief",   no_argument,       &verbose_flag, 0},
+			{"nostifle", no_argument,       0, 's'},
+			{"ns", no_argument,					0, 's'},
+//			{"stifle",   no_argument,       &verbose_flag, 0},
 			{"projection",		required_argument,			 0, 'p'},
 			{"p",		required_argument,			 0, 'p'},
 			{"randomization",		required_argument,			 0, 'r'},
@@ -74,20 +78,12 @@ int parse_options(int argc, char **argv, program_configuration *options){
 			{"h",		no_argument,			 0, 'h'},
 			{"version",		no_argument,			 0, 'v'},
 			{"v",		no_argument,			 0, 'v'},
-//			{"allnew",	no_argument,			 &reuseflag, 0},
-			/* These options don't set a flag.
-			 We distinguish them by their indices. */
-//			{"add",     no_argument,       0, 'a'},
-//			{"append",  no_argument,       0, 'b'},
-//			{"delete",  required_argument, 0, 'd'},
-//			{"create",  required_argument, 0, 'choice'},
-//			{"file",    required_argument, 0, 'f'},
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
 		
-		choice = getopt_long_only (argc, argv, "r:p:v:i:w:h:v",
+		choice = getopt_long_only (argc, argv, "r:p:v:i:w:h:v:s",
 										 long_options, &option_index);
 		
 		/* Detect the end of the options. */
@@ -96,14 +92,8 @@ int parse_options(int argc, char **argv, program_configuration *options){
 		
 		switch (choice)
 		{
-			case 0:
-				/* If this option set a flag, do nothing else now. */
-				if (long_options[option_index].flag != 0)
-					break;
-				printf ("option %s", long_options[option_index].name);
-				if (optarg)
-					printf (" with arg %s", optarg);
-				printf ("\n");
+			case 's':
+				options->stifle_text = "\0";
 				break;
 				
 			case 'r':
@@ -147,12 +137,8 @@ int parse_options(int argc, char **argv, program_configuration *options){
 		}
 	}
 	
-	/* Instead of reporting ‘--verbose’
-	 and ‘--brief’ as they are encountered,
-	 we report the final status resulting from them. */
-	if (verbose_flag)
-		puts ("verbose flag is set");
-	
+
+
 	
 	/* Print any remaining command line arguments (not options). */
 	if (optind < argc)
@@ -212,16 +198,173 @@ int startup(program_configuration options)
 }
 
 
-void get_tracker_config(tracker_config_t *T,int MPType)
+void parse_input_file(char filename[], int *MPType)
+{
+	
+	unsigned int currentSeed;
+	int trackType, genType = 0,  sharpenOnly, needToDiff, remove_temp, useParallelDiff = 0,userHom = 0;
+  int my_id = 0, num_processes = 1, headnode = 0; // headnode is always 0
+
+	
+	
+	//end parser-bertini essentials
+	
+	
+	
+	parse_input(filename, &trackType, MPType, &genType, &userHom, &currentSeed, &sharpenOnly, &needToDiff, &remove_temp, useParallelDiff, my_id, num_processes, headnode);
+
+}
+
+void get_tracker_config(solver_configuration *solve_options,int MPType)
 {
 
 	//necessary for the setupConfig call
-	double midpoint_tol, intrinsicCutoffMultiplier;
+	double intrinsicCutoffMultiplier;
 	int userHom = 0, useRegen = 0, regenStartLevel = 0, maxCodim = 0, specificCodim = 0, pathMod = 0, reducedOnly = 0, supersetOnly = 0, paramHom = 0;
 	//end necessaries for the setupConfig call.
 	
 	
-  setupConfig(T, &midpoint_tol, &userHom, &useRegen, &regenStartLevel, &maxCodim, &specificCodim, &pathMod, &intrinsicCutoffMultiplier, &reducedOnly, &supersetOnly, &paramHom, MPType);
+  setupConfig(&solve_options->T, &solve_options->midpoint_tol, &userHom, &useRegen, &regenStartLevel, &maxCodim, &specificCodim, &pathMod, &intrinsicCutoffMultiplier, &reducedOnly, &supersetOnly, &paramHom, MPType);
 
 	return;
 }
+
+
+
+void get_projection(vec_mp pi,
+										program_configuration program_options,
+										solver_configuration solve_options,
+										int num_vars)
+{
+	change_size_vec_mp(pi, num_vars);  pi->size = num_vars;
+	
+	
+	//assumes the vector pi is already initialized
+	if (program_options.user_projection==1) {
+		FILE *IN = safe_fopen_read(program_options.projection_filename); // we are already assured this file exists, but safe fopen anyway.
+		int tmp_num_vars;
+		fscanf(IN,"%d",&tmp_num_vars); scanRestOfLine(IN);
+		if (tmp_num_vars!=num_vars-1) {
+			printf("the number of variables appearing in the projection\nis not equal to the number of variables in the problem\n");
+			printf("please modify file to have %d coordinate pairs.\n",num_vars-1);
+			abort();
+		}
+		
+		
+		set_zero_mp(&pi->coord[0]);
+		int ii;
+		for (ii=0; ii < num_vars-1; ii++) {
+			mpf_inp_str(pi->coord[ii+1].r, IN, 10);
+			mpf_inp_str(pi->coord[ii+1].i, IN, 10);
+			scanRestOfLine(IN);
+    }
+		fclose(IN);
+	}
+	else{
+		int ii;
+		for (ii=0; ii<num_vars; ii++) {
+			set_zero_mp(&pi->coord[ii]);
+		}
+		set_one_mp(&pi->coord[1]);
+	}
+	
+	return;
+}
+
+
+
+void sampler_splash_screen(){
+	printf("\n Sampler module for BertiniReal(TM) v%s\n\n", BERTINI_REAL_VERSION_STRING);
+	printf(" D.J. Bates, D. Brake,\n W. Hao, J.D. Hauenstein,\n A.J. Sommese, C.W. Wampler\n\n");
+	printf("(using GMP v%d.%d.%d, MPFR v%s)\n\n",
+				 __GNU_MP_VERSION, __GNU_MP_VERSION_MINOR, __GNU_MP_VERSION_PATCHLEVEL, mpfr_get_version());
+	
+	printf("Send email to brake@math.colostate.edu for details.\n\n");
+}
+
+
+void sampler_print_usage(){
+	printf("bertini_real has the following options:\n");
+	printf("option name(s)\t\t\targument\n\n");
+	printf("-ns -nostifle\t\t\t   --\n");
+	printf("-v -version\t\t\t   -- \n");
+	printf("-h -help\t\t\t   --");
+	
+	
+	printf("\n\n\n");
+	return;
+}
+
+int sampler_parse_options(int argc, char **argv, sampler_configuration *options){
+	// this code created based on gnu.org's description of getopt_long
+	int choice;
+	
+	while (1)
+	{
+		static struct option long_options[] =
+		{
+			/* These options set a flag. */
+			{"nostifle", no_argument,       0, 's'},
+			{"ns", no_argument,       0, 's'},
+			{"help",		no_argument,			 0, 'h'},
+			{"h",		no_argument,			 0, 'h'},
+			{"version",		no_argument,			 0, 'v'},
+			{"v",		no_argument,			 0, 'v'},
+			{0, 0, 0, 0}
+		};
+		/* getopt_long stores the option index here. */
+		int option_index = 0;
+		
+		choice = getopt_long_only (argc, argv, "h:v:s",
+															 long_options, &option_index);
+		
+		/* Detect the end of the options. */
+		if (choice == -1)
+			break;
+		
+		switch (choice)
+		{
+			case 's':
+				options->stifle_text = "\0";
+				break;
+				
+			case 'v':
+				printf("\n Sampler module for BertiniReal(TM) v %s\n\n", BERTINI_REAL_VERSION_STRING);
+				exit(0);
+				break;
+				
+			case 'h':
+				
+				sampler_print_usage();
+				exit(0);
+				break;
+				
+			case '?':
+				/* getopt_long already printed an error message. */
+				break;
+				
+			default:
+				sampler_print_usage();
+				exit(0);
+		}
+	}
+	
+	/* Instead of reporting ‘--verbose’
+	 and ‘--brief’ as they are encountered,
+	 we report the final status resulting from them. */
+
+	
+	/* Print any remaining command line arguments (not options). */
+	if (optind < argc)
+	{
+		printf ("non-option ARGV-elements: ");
+		while (optind < argc)
+			printf ("%s ", argv[optind++]);
+		putchar ('\n');
+	}
+	
+	return 0;
+}
+
+
+

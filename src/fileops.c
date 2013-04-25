@@ -127,3 +127,18 @@ FILE *safe_fopen_append(char * filename)
 
 
 
+
+void copyfile(char *INfile,char *OUTfile)
+{
+	char ch;
+	FILE *IN,*OUT;
+	
+	IN  = safe_fopen_read(INfile);
+	OUT = safe_fopen_write(OUTfile);
+	
+	while ((ch = fgetc(IN)) != EOF)
+		fprintf(OUT, "%c", ch);
+	
+	fclose(IN);
+	fclose(OUT);
+}

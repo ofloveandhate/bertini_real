@@ -99,24 +99,26 @@ typedef struct
  */
 
 int linprod_to_detjac_solver_main(int MPType,
-																	witness_set_d W, // carries with it the start points, and the linears.
+																	witness_set W, // carries with it the start points, and the linears.
 																	mat_mp n_minusone_randomizer_matrix_full_prec,
 																	vec_mp projection,
-																	witness_set_d *W_new);
+																	witness_set *W_new,
+																	solver_configuration *solve_options);
 
 
 
 int linprod_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int currentSeed
-															 witness_set_d W,  // includes the initial linear.
+															 witness_set W,  // includes the initial linear.
 															 mat_mp n_minusone_randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
 															 vec_mp projection,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
-															 witness_set_d *W_new);
+															 witness_set *W_new,
+															 solver_configuration *solve_options);
 
 
 
 void linprod_to_detjac_track_d(trackingStats *trackCount,
 															 FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
-															 witness_set_d W,
+															 witness_set W,
 															 post_process_t *endPoints,  // for holding the produced data.
 															 FILE *FAIL,
 															 int pathMod, tracker_config_t *T,
@@ -149,7 +151,7 @@ int linprod_to_detjac_setup_d(FILE **OUT, char *outName,
 															char *preprocFile, char *degreeFile,
 															int findStartPts, char *pointsIN, char *pointsOUT,
 															mat_mp n_minusone_randomizer_matrix_full_prec,
-															witness_set_d W,
+															witness_set W,
 															vec_mp projection);
 
 //the new custom evaluator for this solver
@@ -183,7 +185,7 @@ void setuplinprodtodetjacEval_d(tracker_config_t *T,char preprocFile[], char deg
 																void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,// what are these supposed to point to?
 																linprodtodetjac_eval_data_d *BED, int adjustDegrees,
 																mat_mp n_minusone_randomizer_matrix_full_prec,
-																witness_set_d W,
+																witness_set W,
 																vec_mp projection);
 
 
@@ -206,16 +208,17 @@ int change_linprodtodetjac_eval_prec(void const *ED, int prec);
 void change_linprodtodetjac_eval_prec_mp(int new_prec, linprodtodetjac_eval_data_mp *BED);
 
 int linprod_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int currentSeed
-																witness_set_d W,  // includes the initial linear.
+																witness_set W,  // includes the initial linear.
 																mat_mp n_minusone_randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
 																vec_mp projection,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
-																witness_set_d *W_new);
+																witness_set *W_new,
+																solver_configuration *solve_options);
 
 
 
 void linprod_to_detjac_track_mp(trackingStats *trackCount,
 																FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
-																witness_set_d W,
+																witness_set W,
 																post_process_t *endPoints,
 																FILE *FAIL,
 																int pathMod, tracker_config_t *T,
@@ -245,7 +248,7 @@ int linprod_to_detjac_setup_mp(FILE **OUT, char *outName,
 															 char *preprocFile, char *degreeFile,
 															 int findStartPts, char *pointsIN, char *pointsOUT,
 															 mat_mp n_minusone_randomizer_matrix,
-															 witness_set_d W,
+															 witness_set W,
 															 vec_mp projection_full_prec);
 
 
@@ -272,7 +275,7 @@ void setuplinprodtodetjacEval_mp(char preprocFile[], char degreeFile[], prog_t *
 																 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
 																 linprodtodetjac_eval_data_mp *BED, int adjustDegrees,
 																 mat_mp n_minusone_randomizer_matrix,
-																 witness_set_d W,
+																 witness_set W,
 																 vec_mp projection_full_prec);
 
 void cp_linprodtodetjac_eval_data_mp(linprodtodetjac_eval_data_mp *BED, linprodtodetjac_eval_data_mp *BED_mp_input, int MPType);

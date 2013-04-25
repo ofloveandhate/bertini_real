@@ -57,6 +57,10 @@ FILE *safe_fopen_write(char * filename);
  */
 FILE *safe_fopen_append(char * filename);
 
+/**
+ copies a file character by character.
+ */
+void copyfile(char *INfile,char *OUTfile);
 
 #endif
 

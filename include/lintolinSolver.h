@@ -90,26 +90,28 @@ typedef struct
 /** the main function for finding critical conditions WRT a projection
  */
 int lin_to_lin_solver_main(int MPType,
-													 witness_set_d W,
+													 witness_set W,
 													 mat_mp n_minusone_randomizer_matrix_full_prec,
 													 vec_mp *new_linears_full_prec, int num_new_linears,
-													 witness_set_d *W_new);
+													 witness_set *W_new,
+													 solver_configuration *solve_options);
 
 
 
 
 int lin_to_lin_solver_d(int MPType,
-												witness_set_d W,  // should include the old linear
+												witness_set W,  // should include the old linear
 												mat_mp n_minusone_randomizer_matrix_full_prec,
 												vec_mp *new_linears_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 												int num_new_linears,
-												witness_set_d *W_new);
+												witness_set *W_new,
+												solver_configuration *solve_options);
 
 
 
 void lin_to_lin_track_d(trackingStats *trackCount,
 												FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
-												witness_set_d W,
+												witness_set W,
 												vec_mp *new_linears_full_prec,
 												int num_new_linears,
 												post_process_t *endPoints,
@@ -146,7 +148,7 @@ int lin_to_lin_setup_d(FILE **OUT, char *outName,
 											 char *preprocFile, char *degreeFile,
 											 int findStartPts, char *pointsIN, char *pointsOUT,
 											 mat_mp n_minusone_randomizer_matrix_full_prec,
-											 witness_set_d W);
+											 witness_set W);
 
 //the new custom evaluator for this solver
 
@@ -180,7 +182,7 @@ void setuplintolinEval_d(tracker_config_t *T,
 											 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
 											 lintolin_eval_data_d *BED, int adjustDegrees,
 												 mat_mp n_minusone_randomizer_matrix_full_prec,
-												 witness_set_d W);
+												 witness_set W);
 
 
 void start_system_eval_data_clear_d(start_system_eval_data_d *SSED);//actually lives in bertini library...  testing if this works.
@@ -206,15 +208,16 @@ void change_lintolin_eval_prec_mp(int new_prec, lintolin_eval_data_mp *BED);
 
 
 int lin_to_lin_solver_mp(int MPType,
-												 witness_set_d W,  // includes the initial linear.
+												 witness_set W,  // includes the initial linear.
 												 mat_mp n_minusone_randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
 												 vec_mp *new_linears_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 												 int num_new_linears,
-												 witness_set_d *W_new);
+												 witness_set *W_new,
+												 solver_configuration *solve_options);
 
 void lin_to_lin_track_mp(trackingStats *trackCount,
 												 FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
-												 witness_set_d W,
+												 witness_set W,
 												 vec_mp *new_linears_full_prec,
 												 int num_new_linears,
 												 post_process_t *endPoints,
@@ -248,7 +251,7 @@ int lin_to_lin_setup_mp(FILE **OUT, char *outName,
 												char *preprocFile, char *degreeFile,
 												int findStartPts, char *pointsIN, char *pointsOUT,
 												mat_mp n_minusone_randomizer_matrix_full_prec,
-												witness_set_d W);
+												witness_set W);
 
 int lin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED);
 
@@ -268,7 +271,7 @@ void setuplintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *dummyPr
 													void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
 													lintolin_eval_data_mp *BED, int adjustDegrees,
 													mat_mp n_minusone_randomizer_matrix_full_prec,
-													witness_set_d W);
+													witness_set W);
 
 
 //void cp_lintolin_eval_data_d(lintolin_eval_data_d *BED, lintolin_eval_data_d *BED_d_input, basic_eval_data_mp *BED_mp_input, int MPType);

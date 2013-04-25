@@ -6,9 +6,10 @@
 
 
 
-int checkSelfConjugate(witness_set_d W,
+int checkSelfConjugate(witness_set W,
                        int           num_vars,
-                       char          *input_file)
+                       char          *input_file,
+											  char *stifle_text)
 /***************************************************************\
  * USAGE: check if component is self conjugate                  *
  * ARGUMENTS: witness set, # of variables and name of input file*
@@ -18,15 +19,14 @@ int checkSelfConjugate(witness_set_d W,
 {
   int strLength = 0, digits = 15, *declarations = NULL;
   char *SysStr = NULL,*fmt = NULL, *bertini_command="bertini";
-  FILE *IN = NULL, *OUT=NULL;
+  FILE *IN = NULL;
 	
-	preproc_data PPD;
-	setupPreProcData("preproc_data", &PPD); // gets the number of functions, etc.
-	
+
 	//make the command string to run
-	strLength = 1 + snprintf(NULL, 0, "%s input_membership_test", bertini_command);
+	strLength = 1 + snprintf(NULL, 0, "%s input_membership_test %s", bertini_command,stifle_text);
   SysStr = (char *)bmalloc(strLength * sizeof(char));
-  sprintf(SysStr, "%s input_membership_test", bertini_command);
+  sprintf(SysStr, "%s input_membership_test %s",
+					bertini_command,stifle_text);
 	
 	
 	
@@ -49,9 +49,8 @@ int checkSelfConjugate(witness_set_d W,
 	IN = safe_fopen_read("witness_data");
 	fclose(IN);
 	
-	//perhaps this could be used to get the witness_data file, but there would be problems
-//  membership_test_input_file("input_membership_test", "func_input_real", "config_real",1);
-
+	
+	
 	
 	
 	
@@ -61,7 +60,7 @@ int checkSelfConjugate(witness_set_d W,
 	
 	
 	//setup  member_points file, including both the first witness point, and its complex-conjugate
-	write_member_points_sc(W.W.pts[0],fmt);
+	write_member_points_sc(W.pts_d[0],fmt);
 	
 	// Do membership test
 	printf("*\n%s\n*\n",SysStr);
@@ -81,14 +80,17 @@ int checkSelfConjugate(witness_set_d W,
 //  remove("config_real");
 //	remove("incidence_matrix");
 //	remove("member_points");
-	preproc_data_clear(&PPD);
+
+
 	
 	if (component_numbers[0]==component_numbers[1]) {
+		printf("component is NOT self conjugate\n");
 		free(component_numbers);
 		return 1;
 	}
 	else
 	{
+		printf("component IS self conjugate\n");
 		free(component_numbers);
 		return 0;
 	}
@@ -100,9 +102,10 @@ int checkSelfConjugate(witness_set_d W,
 
 
 
-int get_component_number(witness_set_d W,
+int get_component_number(witness_set W,
 												 int           num_vars,
-												 char          *input_file)
+												 char          *input_file,
+												 char *stifle_text)
 /***************************************************************\
  * USAGE: check if component is self conjugate                  *
  * ARGUMENTS: witness set, # of variables and name of input file*
@@ -112,13 +115,13 @@ int get_component_number(witness_set_d W,
 {
   int strLength = 0, digits = 15, *declarations = NULL;
   char *SysStr = NULL,*fmt = NULL, *bertini_command="bertini";
-  FILE *IN = NULL, *OUT=NULL;
+  FILE *IN = NULL;
 	
 	
 	//make the command string to run
-	strLength = 1 + snprintf(NULL, 0, "%s input_membership_test", bertini_command);
+	strLength = 1 + snprintf(NULL, 0, "%s input_membership_test %s ", bertini_command, stifle_text);
   SysStr = (char *)bmalloc(strLength * sizeof(char));
-  sprintf(SysStr, "%s input_membership_test", bertini_command);
+  sprintf(SysStr, "%s input_membership_test %s ", bertini_command, stifle_text);
 	
 	
 	
@@ -153,7 +156,7 @@ int get_component_number(witness_set_d W,
 	
 	
 	//setup  member_points file, including both the first witness point, and its complex-conjugate
-	write_member_points_singlept(W.W.pts[0],fmt);
+	write_member_points_singlept(W.pts_d[0],fmt);
 	
 	// Do membership test
 	printf("*\n%s\n*\n",SysStr);
@@ -194,7 +197,7 @@ int write_member_points_singlept(point_d point_to_write, char * fmt){
 	
 	vec_d result;
 	init_vec_d(result,0);
-	dehomogenize(&result,point_to_write);
+	dehomogenize_d(&result,point_to_write);
 	
 	fprintf(OUT,"1\n\n");
 	for(ii=0;ii<result->size;ii++)
@@ -223,7 +226,7 @@ int write_member_points_sc(point_d point_to_write, char * fmt){
 	
 	vec_d result;
 	init_vec_d(result,0);
-	dehomogenize(&result,point_to_write);
+	dehomogenize_d(&result,point_to_write);
 	
 	fprintf(OUT,"2\n\n");
 	for(ii=0;ii<result->size;ii++)

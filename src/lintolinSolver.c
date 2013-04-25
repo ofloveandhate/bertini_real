@@ -9,12 +9,13 @@
 // you will get out: W_new populated in both mp and double types, with the linears we moved TO, and the new points,
 //  in corresponding order.
 
-
+//solve_options has both a tracker_config_t and a preproc_data.
 int lin_to_lin_solver_main(int MPType,
-													 witness_set_d W,
+													 witness_set W,
 													 mat_mp n_minusone_randomizer_matrix_full_prec,
 													 vec_mp *new_linears_full_prec, int num_new_linears,
-													 witness_set_d *W_new){
+													 witness_set *W_new,
+													 solver_configuration *solve_options){
 	
 	cp_patches(W_new,W); // copy the patches over from the original witness set
 	W_new->num_variables = W.num_variables;
@@ -41,10 +42,10 @@ int lin_to_lin_solver_main(int MPType,
 	
 
 	if (MPType==1){
-		lin_to_lin_solver_mp(MPType,W,n_minusone_randomizer_matrix_full_prec,new_linears_full_prec,num_new_linears,W_new);
+		lin_to_lin_solver_mp(MPType,W,n_minusone_randomizer_matrix_full_prec,new_linears_full_prec,num_new_linears,W_new,solve_options);
 	}
 	else{
-		lin_to_lin_solver_d( MPType,W,n_minusone_randomizer_matrix_full_prec,new_linears_full_prec,num_new_linears,W_new);
+		lin_to_lin_solver_d( MPType,W,n_minusone_randomizer_matrix_full_prec,new_linears_full_prec,num_new_linears,W_new,solve_options);
 	}
 		
 	
@@ -53,11 +54,12 @@ int lin_to_lin_solver_main(int MPType,
 
 
 int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentSeed
-												witness_set_d W,  // includes the initial linear.
+												witness_set W,  // includes the initial linear.
 												mat_mp n_minusone_randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
 												vec_mp *new_linears_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 												int num_new_linears,
-												witness_set_d *W_new)
+												witness_set *W_new,
+												solver_configuration *solve_options)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -70,30 +72,27 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
   tracker_config_t T;
   prog_t dummyProg;
   bclock_t time1, time2;
-  int num_variables = 0, convergence_failures = 0, sharpening_failures = 0, sharpening_singular = 0, num_crossings = 0, num_sols = 0;
+  int num_variables = 0, num_sols = 0;
 	
-	//necessary for the setupConfig call
-	double midpoint_tol, intrinsicCutoffMultiplier;
-	int userHom = 0, useRegen = 0, regenStartLevel = 0, maxCodim = 0, specificCodim = 0, pathMod = 0, reducedOnly = 0, supersetOnly = 0, paramHom = 0;
-	//end necessaries for the setupConfig call.
 	
-  int usedEq = 0;
   int *startSub = NULL, *endSub = NULL, *startFunc = NULL, *endFunc = NULL, *startJvsub = NULL, *endJvsub = NULL, *startJv = NULL, *endJv = NULL, **subFuncsBelow = NULL;
   int (*ptr_to_eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *) = NULL;
   int (*ptr_to_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = NULL;
 	
   lintolin_eval_data_d ED;
   trackingStats trackCount;
-  char inputName[] = "func_input";
   double track_time;
 	
   bclock(&time1); // initialize the clock.
   init_trackingStats(&trackCount); // initialize trackCount to all 0
 	
-  // setup T
-  setupConfig(&T, &midpoint_tol, &userHom, &useRegen, &regenStartLevel, &maxCodim, &specificCodim, &pathMod, &intrinsicCutoffMultiplier, &reducedOnly, &supersetOnly, &paramHom, MPType);
+	//necessary for later whatnot
+	int userHom = 0, useRegen = 0, pathMod = 0, paramHom = 0;
 	
-
+	cp_tracker_config_t(&T, &solve_options->T);
+	
+	
+	
 	
 	//  // call the setup function
 	num_variables = lin_to_lin_setup_d(&OUT, "output",
@@ -140,7 +139,7 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
   }
 	
 	
-	post_process_t *endPoints = (post_process_t *)bmalloc(W.W.num_pts*(num_new_linears) * sizeof(post_process_t)); //overallocate, expecting full number of solutions.
+	post_process_t *endPoints = (post_process_t *)bmalloc(W.num_pts*(num_new_linears) * sizeof(post_process_t)); //overallocate, expecting full number of solutions.
 	
 	
 	if (T.endgameNumber == 3)
@@ -170,7 +169,8 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
 	
 
 	// check for path crossings
-	midpoint_checker(trackCount.numPoints, num_variables, midpoint_tol, &num_crossings);
+//	int num_crossings = 0;
+//	midpoint_checker(trackCount.numPoints, num_variables, solve_options->midpoint_tol, &num_crossings);
 	
 	// setup num_sols
 	num_sols = trackCount.successes;
@@ -204,7 +204,7 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
 	
 
 	
-	BRpostProcessing_AllowDuplicates(endPoints, W_new, trackCount.successes, ED.preProcData, &T);
+	BRpostProcessing(endPoints, W_new, trackCount.successes, &ED.preProcData, &T,solve_options);
 	
 	
 
@@ -233,7 +233,7 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
 
 void lin_to_lin_track_d(trackingStats *trackCount,
 												FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
-												witness_set_d W,
+												witness_set W,
 												vec_mp *new_linears_full_prec,
 												int num_new_linears,
 												post_process_t *endPoints,
@@ -273,9 +273,9 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 
 	
 	point_data_d *startPts = NULL;
-	startPts = (point_data_d *)bmalloc(W.W.num_pts * sizeof(point_data_d));
+	startPts = (point_data_d *)bmalloc(W.num_pts * sizeof(point_data_d));
 	
-	for (ii = 0; ii < W.W.num_pts; ii++)
+	for (ii = 0; ii < W.num_pts; ii++)
 	{ // setup startPts[ii]
 		init_point_data_d(&startPts[ii], W.num_variables); // also performs initialization on the point inside startPts
 		change_size_vec_d(startPts[ii].point,W.num_variables);
@@ -285,8 +285,8 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 	
 		//1 set the coordinates
 		for (jj = 0; jj<W.num_variables; jj++) {
-			startPts[ii].point->coord[jj].r = W.W.pts[ii]->coord[jj].r;
-			startPts[ii].point->coord[jj].i = W.W.pts[ii]->coord[jj].i;
+			startPts[ii].point->coord[jj].r = W.pts_d[ii]->coord[jj].r;
+			startPts[ii].point->coord[jj].i = W.pts_d[ii]->coord[jj].i;
 		}
 		//2 set the start time to 1.
 		set_one_d(startPts[ii].time);
@@ -303,7 +303,7 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 												 &BED_copy, ED_d, ED_mp);
 
 	
-	trackCount->numPoints = W.W.num_pts*(num_new_linears);
+	trackCount->numPoints = W.num_pts*(num_new_linears);
 	int solution_counter = 0;
 	
 	
@@ -330,7 +330,7 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 #ifdef _OPENMP
 #pragma omp parallel for private(ii, oid, startPointIndex) schedule(runtime)
 #endif
-		for (ii = 0; ii < W.W.num_pts; ii++)
+		for (ii = 0; ii < W.num_pts; ii++)
 		{ // get current thread number
 			oid = thread_num();
 			
@@ -352,14 +352,6 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 				sharpen_endpoint_endgame(&EG[oid], &T_copy[oid], OUT_copy[oid], &BED_copy[oid], BED_copy[oid].BED_mp, curr_eval_d, curr_eval_mp, change_prec);
 			}
 			
-			printf("retval: %d\n",EG->retVal);
-			
-			int issoln;
-			if (EG->prec<64){
-				issoln = check_issoln_lintolin_d(&EG[oid],  &T_copy[oid], &BED_copy[oid]); }
-			else {
-				issoln = check_issoln_lintolin_mp(&EG[oid], &T_copy[oid], BED_copy[oid].BED_mp); }
-
 
 			//get the terminal time in double form
 			comp_d time_to_compare;
@@ -369,11 +361,29 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 				mp_to_d(time_to_compare, EG->PD_mp.time); }
 			
 			
-			if ( (EG->retVal != 0 && time_to_compare->r > T->minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
+			int issoln;
+			if (EG->prec<64){
+				issoln = check_issoln_lintolin_d(&EG[oid],  &T_copy[oid], &BED_copy[oid]); }
+			else {
+				issoln = check_issoln_lintolin_mp(&EG[oid], &T_copy[oid], BED_copy[oid].BED_mp); }
 
+
+
+			
+			
+			if ( (EG->retVal != 0 && time_to_compare->r > T->minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
 				trackCount->failures++;
 				printf("\nretVal = %d\nthere was a fatal path failure tracking linear %d, witness point %d\n\n",EG->retVal,kk,ii);
 				print_path_retVal_message(EG->retVal);
+				if (!issoln) {
+					printf("the following was labeled as not a solution\n");
+					if (EG->prec < 64) {
+						print_point_to_screen_matlab(EG->PD_d.point,"variablevalues");
+					}
+					else{
+						print_point_to_screen_matlab_mp(EG->PD_mp.point,"variablevalues");
+					}
+				}
 				print_point_to_screen_matlab(BED_copy->old_linear,"old");
 				print_point_to_screen_matlab(BED_copy->current_linear,"new");
 				exit(EG->retVal); //failure intolerable in this solver.
@@ -385,13 +395,13 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 				trackCount->successes++;
 				solution_counter++; // probably this could be eliminated
 			}
-		}// re: for (ii=0; ii<W.W.num_pts ;ii++)
+		}// re: for (ii=0; ii<W.num_pts ;ii++)
 	} // for each new linear
 	
 	
 	//clear the data structures.
 	
-  for (ii = 0; ii >W.W.num_pts; ii++)
+  for (ii = 0; ii >W.num_pts; ii++)
   { // clear startPts[ii]
     clear_point_data_d(&startPts[ii]);
   }
@@ -514,7 +524,7 @@ int lin_to_lin_setup_d(FILE **OUT, char *outName,
 											 char *preprocFile, char *degreeFile,
 											 int findStartPts, char *pointsIN, char *pointsOUT,
 											 mat_mp n_minusone_randomizer_matrix_full_prec,
-											 witness_set_d W)
+											 witness_set W)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -1153,7 +1163,7 @@ void setuplintolinEval_d(tracker_config_t *T,char preprocFile[], char degreeFile
 												 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,// what are these supposed to point to?
 												 lintolin_eval_data_d *BED, int adjustDegrees,
 												 mat_mp n_minusone_randomizer_matrix_full_prec,
-												 witness_set_d W)
+												 witness_set W)
 {
   int ii;
 	BED->num_variables = W.num_variables;
@@ -1271,10 +1281,10 @@ void setuplintolinEval_d(tracker_config_t *T,char preprocFile[], char degreeFile
 //	init_mat_d(Jp,0,0);
 //	comp_d pathVars;
 //	set_one_d(pathVars);
-//	patch_eval_d(    patchValues, parVals, parDer, Jv_Patch, Jp, W.W.pts[0], pathVars, &BED->patch);  // Jp is ignored
+//	patch_eval_d(    patchValues, parVals, parDer, Jv_Patch, Jp, W.pts_d[0], pathVars, &BED->patch);  // Jp is ignored
 //
 //	print_point_to_screen_matlab(patchValues,"patchvalues");
-//	print_point_to_screen_matlab(W.W.pts[0],"initialpoint");
+//	print_point_to_screen_matlab(W.pts_d[0],"initialpoint");
 //	mypause();
 	
 	
@@ -1440,11 +1450,12 @@ void change_lintolin_eval_prec_mp(int new_prec, lintolin_eval_data_mp *BED)
 
 
 int lin_to_lin_solver_mp(int MPType,
-												 witness_set_d W,  // includes the initial linear.
-												mat_mp n_minusone_randomizer_matrix,  // for randomizing down to N-1 equations.
-												vec_mp *new_linears,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
-												int num_new_linears,
-												witness_set_d *W_new)
+												 witness_set W,  // includes the initial linear.
+												 mat_mp n_minusone_randomizer_matrix,  // for randomizing down to N-1 equations.
+												 vec_mp *new_linears,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
+												 int num_new_linears,
+												 witness_set *W_new,
+												 solver_configuration *solve_options)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -1457,29 +1468,27 @@ int lin_to_lin_solver_mp(int MPType,
   tracker_config_t T;
   prog_t dummyProg;
   bclock_t time1, time2;
-  int num_variables = 0, convergence_failures = 0, sharpening_failures = 0, sharpening_singular = 0, num_crossings = 0, num_sols = 0;
+  int num_variables = 0, num_sols = 0;
 	
-	//necessary for the setupConfig call
-	double midpoint_tol, intrinsicCutoffMultiplier;
-	int userHom = 0, useRegen = 0, regenStartLevel = 0, maxCodim = 0, specificCodim = 0, pathMod = 0, reducedOnly = 0, supersetOnly = 0, paramHom = 0;
-	//end necessaries for the setupConfig call.
 	
-  int usedEq = 0;
   int *startSub = NULL, *endSub = NULL, *startFunc = NULL, *endFunc = NULL, *startJvsub = NULL, *endJvsub = NULL, *startJv = NULL, *endJv = NULL, **subFuncsBelow = NULL;
   int (*ptr_to_eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *) = NULL;
   int (*ptr_to_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = NULL;
 	
   lintolin_eval_data_mp ED;  // was basic_eval_data_d  DAB
   trackingStats trackCount;
-  char inputName[] = "func_input";
   double track_time;
 	
   bclock(&time1); // initialize the clock.
   init_trackingStats(&trackCount); // initialize trackCount to all 0
 	
-  // setup T
-  setupConfig(&T, &midpoint_tol, &userHom, &useRegen, &regenStartLevel, &maxCodim, &specificCodim, &pathMod, &intrinsicCutoffMultiplier, &reducedOnly, &supersetOnly, &paramHom, 1);
+	//necessary for later whatnot
+	int userHom = 0, useRegen = 0, pathMod = 0, paramHom = 0;
 	
+	cp_tracker_config_t(&T, &solve_options->T);
+	
+
+//	
 	// initialize latest_newton_residual_mp
   mpf_init(T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 	
@@ -1521,7 +1530,7 @@ int lin_to_lin_solver_mp(int MPType,
   }
 	
 	
-	post_process_t *endPoints = (post_process_t *)bmalloc(W.W.num_pts*(num_new_linears) * sizeof(post_process_t)); //overallocate, expecting full number of solutions.
+	post_process_t *endPoints = (post_process_t *)bmalloc(W.num_pts*(num_new_linears) * sizeof(post_process_t)); //overallocate, expecting full number of solutions.
 	
 	
 	
@@ -1556,7 +1565,8 @@ int lin_to_lin_solver_mp(int MPType,
 	fprintf(rawOUT, "%d\n\n", -1);  // bottom of rawOUT
 	
 	// check for path crossings
-	midpoint_checker(trackCount.numPoints, num_variables, midpoint_tol, &num_crossings);
+//	int num_crossings = 0;
+//	midpoint_checker(trackCount.numPoints, num_variables, solve_options->midpoint_tol, &num_crossings);
 	
 	// setup num_sols
 	num_sols = trackCount.successes;
@@ -1586,7 +1596,7 @@ int lin_to_lin_solver_mp(int MPType,
   fclose(FAIL);
 	
 
-	BRpostProcessing_AllowDuplicates(endPoints, W_new, trackCount.successes, ED.preProcData, &T);
+	BRpostProcessing(endPoints, W_new, trackCount.successes, &ED.preProcData, &T,solve_options);
 	
 	
 
@@ -1613,7 +1623,7 @@ int lin_to_lin_solver_mp(int MPType,
 
 void lin_to_lin_track_mp(trackingStats *trackCount,
 												FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
-												witness_set_d W,
+												witness_set W,
 												vec_mp *new_linears,
 												int num_new_linears,
 												post_process_t *endPoints,
@@ -1632,7 +1642,7 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
  \***************************************************************/
 {
 	
-  int ii,jj,kk, oid, startPointIndex, max = max_threads();
+  int ii,kk, oid, max = max_threads();
   tracker_config_t *T_copy = NULL;
   lintolin_eval_data_mp *BED_copy = NULL;
   trackingStats *trackCount_copy = NULL;
@@ -1656,10 +1666,10 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 	
 	
 	point_data_mp *startPts = NULL;
-	startPts = (point_data_mp *)bmalloc(W.W_mp.num_pts * sizeof(point_data_mp));
+	startPts = (point_data_mp *)bmalloc(W.num_pts * sizeof(point_data_mp));
 	
 	
-	for (ii = 0; ii < W.W_mp.num_pts; ii++)
+	for (ii = 0; ii < W.num_pts; ii++)
 	{ // setup startPts[ii]
 		init_point_data_mp2(&startPts[ii], W.num_variables, T->Precision);
 		startPts[ii].point->size = W.num_variables;
@@ -1667,7 +1677,7 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 		//NEED TO COPY IN THE WITNESS POINT
 		
 		//1 set the coordinates
-		vec_cp_mp(startPts[ii].point, W.W_mp.pts[ii] );
+		vec_cp_mp(startPts[ii].point, W.pts_mp[ii] );
 
 		//2 set the start time to 1.
 		set_one_mp(startPts[ii].time);
@@ -1687,7 +1697,7 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 	
 	
 	
-	trackCount->numPoints = W.W.num_pts*(num_new_linears);
+	trackCount->numPoints = W.num_pts*(num_new_linears);
 	int solution_counter = 0;
 	
 	
@@ -1706,7 +1716,7 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 #ifdef _OPENMP
 #pragma omp parallel for private(ii, oid, startPointIndex) schedule(runtime)
 #endif
-		for (ii = 0; ii < W.W_mp.num_pts; ii++)
+		for (ii = 0; ii < W.num_pts; ii++)
 		{ // get current thread number
 			oid = thread_num();
 			
@@ -1748,7 +1758,7 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 				solution_counter++; // probably this could be eliminated
 			}
 			
-		}// re: for (ii=0; ii<W.W.num_pts ;ii++)
+		}// re: for (ii=0; ii<W.num_pts ;ii++)
 	} // for each new linear
 	
 	
@@ -1757,7 +1767,7 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 	
 	//clear the data structures.
 	
-  for (ii = 0; ii >W.W_mp.num_pts; ii++)
+  for (ii = 0; ii >W.num_pts; ii++)
   { // clear startPts[ii]
     clear_point_data_mp(&startPts[ii]);
   }
@@ -1824,7 +1834,7 @@ int lin_to_lin_setup_mp(FILE **OUT, char *outName,
 											 char *preprocFile, char *degreeFile,
 											 int findStartPts, char *pointsIN, char *pointsOUT,
 											 mat_mp n_minusone_randomizer_matrix,
-											 witness_set_d W)
+											 witness_set W)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -2144,7 +2154,6 @@ int lin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_m
 //	print_matrix_to_screen_matlab_mp(Jp,"Jp");
 //	print_matrix_to_screen_matlab_mp(BED->n_minusone_randomizer_matrix,"n_minusone_randomizer_matrix");
 //
-//	mypause();
 	//
 	
 	
@@ -2281,7 +2290,6 @@ void setup_lin_to_lin_omp_mp(int max_threads, endgame_data_t **EG, trackingStats
   else // max_threads > 1
   { // allocate memory
 		printf("more than one thread? prolly gonna crap out here in a sec\n");
-		mypause();
 		
     *trackCount_copy = (trackingStats *)bmalloc(max_threads * sizeof(trackingStats));
     *T_copy = (tracker_config_t *)bmalloc(max_threads * sizeof(tracker_config_t));
@@ -2496,7 +2504,7 @@ void setuplintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *dummyPr
 												 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
 												 lintolin_eval_data_mp *BED, int adjustDegrees,
 												 mat_mp n_minusone_randomizer_matrix,
-												 witness_set_d W)
+												 witness_set W)
 {
   int ii;
 	int digits = prec_to_digits(mpf_get_default_prec());
@@ -2533,11 +2541,10 @@ void setuplintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *dummyPr
 //	init_mat_mp(Jp,0,0);
 //	comp_mp pathVars;
 //	set_one_mp(pathVars);
-//	patch_eval_mp(    patchValues, parVals, parDer, Jv_Patch, Jp, W.W.pts[0], pathVars, &BED->patch);  // Jp is ignored
+//	patch_eval_mp(    patchValues, parVals, parDer, Jv_Patch, Jp, W.pts_d[0], pathVars, &BED->patch);  // Jp is ignored
 //	
 //	print_point_to_screen_matlab(patchValues,"patchvalues");
-//	print_point_to_screen_matlab(W.W.pts[0],"initialpoint");
-	//	mypause();
+//	print_point_to_screen_matlab(W.pts_d[0],"initialpoint");
 	
 	
 	BED->SLP = dummyProg;
@@ -2620,8 +2627,11 @@ int check_issoln_lintolin_d(endgame_data_t *EG,
 	
 	
 	int ii;
-	double tol;
-	double n1, n2, zero_thresh, max_rat;
+	
+	
+	
+	
+	double n1, n2, max_rat;
 	point_d f;
 	eval_struct_d e;
 	//
@@ -2635,7 +2645,7 @@ int check_issoln_lintolin_d(endgame_data_t *EG,
 	//	if (num_digits > 300)
 	//		num_digits = 300;
 	//	num_digits -= 2;
-	zero_thresh = MAX(T->funcResTol, 1e-15);
+	double tol = MAX(T->funcResTol, 1e-15);
 	
 	
 	if (EG->prec>=64){
@@ -2657,26 +2667,36 @@ int check_issoln_lintolin_d(endgame_data_t *EG,
 	
 	// compare the function values
 	int isSoln = 1;
-	for (ii = 0; ii < LPED->SLP->numFuncs && isSoln; ii++)
+	for (ii = 0; (ii < LPED->SLP->numFuncs) && isSoln; ii++)
 	{
-		n1 = d_abs_d( &e.funcVals->coord[ii]);
-		n2 = d_abs_d( &f->coord[ii]);
+		n1 = d_abs_d( &e.funcVals->coord[ii]); // corresponds to final point
+		n2 = d_abs_d( &f->coord[ii]); // corresponds to the previous point
 		
 		if (tol <= n1 && n1 <= n2)
 		{ // compare ratio
-			if (n1 > max_rat * n2)
+			if (n1 > max_rat * n2){ // seriously what is the point of this?
 				isSoln = 0;
+				printf("labeled as non_soln due to max_rat (d) 1 coord %d\n",ii);
+			}
 		}
 		else if (tol <= n2 && n2 <= n1)
 		{ // compare ratio
-			if (n2 > max_rat * n1)
+			if (n2 > max_rat * n1){
 				isSoln = 0;
+				printf("labeled as non_soln due to max_rat (d) 2 coord %d\n",ii);
+			}
 		}
 	}
 	
+	if (!isSoln) {
+		
+		print_point_to_screen_matlab(e.funcVals,"terminal");
+		print_point_to_screen_matlab(f,"prev");
+		printf("tol was %le\nmax_rat was %le\n",tol,max_rat);
+	}
 	
-	
-	
+
+//	mypause();
 	clear_eval_struct_d(e);
 	clear_vec_d(f);
 	
@@ -2703,9 +2723,7 @@ int check_issoln_lintolin_mp(endgame_data_t *EG,
 		}
 	}
 	
-	int num_digits = prec_to_digits((int) mpf_get_default_prec());
-	double tol;
-	
+
 	
 	mpf_t n1, n2, zero_thresh, max_rat;
 	mpf_init(n1); mpf_init(n2); mpf_init(zero_thresh); mpf_init(max_rat);
@@ -2715,11 +2733,13 @@ int check_issoln_lintolin_mp(endgame_data_t *EG,
 	
 	mpf_set_d(max_rat, T->ratioTol);
 	
+	
+	int num_digits = prec_to_digits((int) mpf_get_default_prec());
 	// setup threshold based on given threshold and precision
 	if (num_digits > 300)
 		num_digits = 300;
-	num_digits -= 2;
-	tol = MAX(T->funcResTol, pow(10,-num_digits));
+	num_digits -= 4;
+	double tol = MAX(T->funcResTol, pow(10,-num_digits));
 	mpf_set_d(zero_thresh, tol);
 	
 	//this one guaranteed by entry condition
@@ -2729,7 +2749,7 @@ int check_issoln_lintolin_mp(endgame_data_t *EG,
 	if (EG->last_approx_prec < 64)
 	{ // copy to _mp
 		printf("last precision (%d) is less than 64\n",EG->last_approx_prec);
-		mypause();
+
 //		print_point_to_screen_matlab_mp(EG->last_approx_mp,"lastapprox_mp");
 		print_point_to_screen_matlab(EG->last_approx_d,"lastapprox_d");
 		
@@ -2744,17 +2764,21 @@ int check_issoln_lintolin_mp(endgame_data_t *EG,
 		mpf_abs_mp(n1, &e.funcVals->coord[ii]);
 		mpf_abs_mp(n2, &f->coord[ii]);
 		
-		if (mpf_cmp(zero_thresh, n1) <= 0 && mpf_cmp(n1, n2) <= 0)
+		if ( (mpf_cmp(zero_thresh, n1) <= 0) &&  (mpf_cmp(n1, n2) <= 0) )
 		{ // compare ratio
 			mpf_mul(n2, max_rat, n2);
-			if (mpf_cmp(n1, n2) > 0)
+			if (mpf_cmp(n1, n2) > 0){
 				isSoln = 0;
+				printf("labeled as non_soln due to max_rat (mp) 1\n");
+			}
 		}
-		else if (mpf_cmp(zero_thresh, n2) <= 0 && mpf_cmp(n2, n1) <= 0)
+		else if ( (mpf_cmp(zero_thresh, n2) <= 0) &&  (mpf_cmp(n2, n1) <= 0) )
 		{ // compare ratio
 			mpf_mul(n1, max_rat, n1);
-			if (mpf_cmp(n2, n1) > 0)
+			if (mpf_cmp(n2, n1) > 0){
 				isSoln = 0;
+				printf("labeled as non_soln due to max_rat (mp) 2\n");
+			}
 		}
 	}
 	
