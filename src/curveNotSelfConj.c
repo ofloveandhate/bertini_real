@@ -3,6 +3,150 @@
 
 
 
+void computeCurveNotSelfConj(witness_set W_in,
+                             vec_mp         pi_mp,
+                             curveDecomp_d *C,
+                             int           num_vars,
+                             char          *input_file)
+/***************************************************************\
+ * USAGE: compute the isolated points for Non-Self-Conjugate case            *
+ * ARGUMENTS: witness set, projection, # of variables, name of input file*
+ * RETURN VALUES: Curve decomposition*
+ * NOTES:                                                        *
+ \***************************************************************/
+{
+	vec_d pi; init_vec_d(pi,pi_mp->size); pi->size = pi_mp->size;
+	vec_mp_to_d(pi,pi_mp);
+	
+  int i,j,k,m,strLength,num_sols,*declarations = NULL,isadd;
+  char *strSys,*bertini_command="bertini";
+  FILE *IN = NULL;
+  vec_d cur_sol,cur_sol_bar;
+  double d_norm=0.0,TOL=1e-15,tempD;
+  comp_d temp;
+  init_vec_d(cur_sol,num_vars);
+  init_vec_d(cur_sol_bar,num_vars);
+	
+  IN = fopen(input_file, "r");
+  partitionParse(&declarations, IN, "func_input_nsc", "config_nsc",1);
+	
+
+  //generate input file
+  diag_homotopy_input_file("input_NSC", "func_input_nsc","func_inputbar","config_nsc",W_in.L[0],num_vars);
+  //generate start file
+  diag_homotopy_start_file("start", W_in, num_vars);
+  strLength = 1 + snprintf(NULL, 0, "%s input_NSC", bertini_command);
+  strSys = (char *)bmalloc(strLength * sizeof(char));
+  sprintf(strSys, "%s input_NSC", bertini_command);
+  //run bertini
+	
+	copyfile("witness_data","witness_data_0");
+	
+	printf("%s\n",strSys);
+  system(strSys);
+	
+  //read the real solutions
+  IN = fopen("real_solutions", "r");
+  if (IN == NULL)
+  {
+    printf("\n\nERROR: Bertini was unable to compute the diagonal homotopy.\n\n\n");
+    bexit(ERROR_CONFIGURATION);
+  }
+  fscanf(IN, "%d", &num_sols);
+  //insert the real solutions into V0
+  C->vertices=(vertex *)bmalloc(num_sols*sizeof(vertex));
+	
+	
+	vertex temp_vertex; init_vertex_d(&temp_vertex);
+	
+	//some left over test code
+	//	vertex_d temp_vertex;  
+	////	set_mp(temp_vertex.projVal_mp,  );
+	//	get_comp_rand_mp(temp_vertex.projVal_mp);
+	//	make_vec_random_mp(temp_vertex.pt_mp,num_vars);
+	////	vec_cp_mp(temp_vertex.pt_mp,W_crit_real.W_mp.pts[index_tracker[ii]]);
+	//
+	//	for (ii=0;  ii<5; ii++){
+	//		add_vertex_to_V1(&C,temp_vertex);
+	//	}
+	
+	
+  for(i=0,k=0;i<num_sols;i++)
+  {
+    for(j=0;j<num_vars;j++)
+      fscanf(IN, "%lf %lf", &(cur_sol->coord[j].r), &(cur_sol->coord[j].i));
+    for(j=0;j<num_vars;j++)
+      fscanf(IN, "%lf %lf", &(cur_sol_bar->coord[j].r), &(cur_sol_bar->coord[j].i));
+    //check if x=x_bar
+    for(j=0;j<num_vars;j++)
+    {
+      sub_d(&(cur_sol_bar->coord[j]), &(cur_sol_bar->coord[j]), &(cur_sol->coord[j]));
+      if(d_norm<d_abs_d(&(cur_sol_bar->coord[j])))
+        d_norm=d_abs_d(&(cur_sol_bar->coord[j]));
+    }
+    if(d_norm<TOL)//x=x_bar
+    {
+      // check if V0 has current vertex already.
+      isadd=1;
+      for(j=0;j<k;j++)
+      {
+        d_norm=0.0;
+        for(m=0;m<num_vars;m++)
+        {
+          sub_d(&(cur_sol_bar->coord[m]), &(cur_sol->coord[m]), &(C->vertices[j].pt->coord[m]));
+          if(d_norm<d_abs_d(&(cur_sol_bar->coord[m])))
+            d_norm=d_abs_d(&(cur_sol_bar->coord[m]));
+        }
+        if(d_norm<TOL)
+        {
+          isadd=0;break;//V0 has this point already.
+        }
+      }//re: for jj
+			
+			
+			
+      if(isadd)
+      {
+				// add points to V0
+				
+//        init_point_d(C->vertices[k].pt,num_vars);
+//        point_cp_d(C->vertices[k].pt,cur_sol);
+//				
+				point_cp_d(temp_vertex.pt,cur_sol);
+				
+        //compute the projection
+        set_zero_d(temp_vertex.projVal); // intialize
+        for(j=0;j<num_vars;j++)
+        {
+          mul_d2(temp,&(cur_sol->coord[j]),&(pi->coord[j]),tempD);
+          add_d(temp_vertex.projVal,temp,temp_vertex.projVal);
+        }
+				temp_vertex.type = ISOLATED;
+				add_vertex(C,temp_vertex);
+				
+        k++;
+      }
+    }
+  }
+  //set the number of vertices
+  C->num_vertices=k;
+  fclose(IN);
+  //clear
+  clear_vec_d(cur_sol);
+  clear_vec_d(cur_sol_bar);
+  free(declarations);
+  
+	// delete temporary files
+  remove("func_input_nsc");
+  remove("config_nsc");
+  remove("func_inputbar");
+  remove("var_names");
+	
+	printf("renaming\n");
+	rename("witness_data_0","witness_data");
+}
+
+
 
 void get_random_mat_d(mat_d A, 
                       int   n,
@@ -200,7 +344,7 @@ void diag_homotopy_input_file(char  *outputFile,
 }
 
 void diag_homotopy_start_file(char                 *startFile, 
-                              witness_point_set_d  W, 
+                              witness_set  W, 
                               int                  num_vars)
 /***************************************************************\
 * USAGE: setup start file to do diagonal homotopy             *
@@ -228,7 +372,7 @@ void diag_homotopy_start_file(char                 *startFile,
   { // output {w \bar{w}}'
     vec_d result;
     init_vec_d(result,0);
-    dehomogenize(&result,W.pts[i]);
+    dehomogenize_d(&result,W.pts_d[i]);
 
     for(j=0; j<num_vars;j++)
     {
@@ -243,123 +387,6 @@ void diag_homotopy_start_file(char                 *startFile,
   fclose(OUT);
 }
 
-
-
-void computeCurveNotSelfConj(witness_set_d Wnew, 
-                             vec_mp         pi_mp,
-                             curveDecomp_d *C,
-                             int           num_vars,
-                             char          *input_file)
-/***************************************************************\
-* USAGE: compute the isolated points for Non-Self-Conjugate case            *
-* ARGUMENTS: witness set, projection, # of variables, name of input file*
-* RETURN VALUES: Curve decomposition*
-* NOTES:                                                        *
-\***************************************************************/
-{
-	vec_d pi; init_vec_d(pi,pi_mp->size); pi->size = pi_mp->size;
-	vec_mp_to_d(pi,pi_mp);
-	
-  int i,j,k,m,strLength,num_sols,*declarations = NULL,isadd;
-  char *strSys,*bertini_command="bertini";
-  FILE *IN = NULL;
-  vec_d cur_sol,cur_sol_bar;
-  double d_norm=0.0,TOL=1e-15,tempD;
-  comp_d temp;
-  init_vec_d(cur_sol,num_vars);
-  init_vec_d(cur_sol_bar,num_vars);
-   
-  IN = fopen(input_file, "r");
-  partitionParse(&declarations, IN, "func_input_nsc", "config_nsc",1);
-
-  printf("\nCompute Non Self Conjugate Curve\n");
-  //generate input file
-  diag_homotopy_input_file("input_NSC", "func_input_nsc","func_inputbar","config_nsc",Wnew.L[0],num_vars);
-  //generate start file
-  diag_homotopy_start_file("start", Wnew.W, num_vars);
-  strLength = 1 + snprintf(NULL, 0, "%s input_NSC", bertini_command);
-  strSys = (char *)bmalloc(strLength * sizeof(char));
-  sprintf(strSys, "%s input_NSC", bertini_command);
-  //run bertini
-	
-	system("cp witness_data witness_data_0");
-	
-	printf("%s\n",strSys);
-  system(strSys);  
-	
-  //read the real solutions
-  IN = fopen("real_solutions", "r");
-  if (IN == NULL)
-  {
-    printf("\n\nERROR: Bertini was unable to compute the diagonal homotopy.\n\n\n");
-    bexit(ERROR_CONFIGURATION);
-  }
-  fscanf(IN, "%d", &num_sols);
-  //insert the real solutions into V0
-  C->V0=(vertex_d *)bmalloc(num_sols*sizeof(vertex_d));
-  for(i=0,k=0;i<num_sols;i++)
-  {
-    for(j=0;j<num_vars;j++)
-      fscanf(IN, "%lf %lf", &(cur_sol->coord[j].r), &(cur_sol->coord[j].i));
-    for(j=0;j<num_vars;j++)
-      fscanf(IN, "%lf %lf", &(cur_sol_bar->coord[j].r), &(cur_sol_bar->coord[j].i));
-    //check if x=x_bar
-    for(j=0;j<num_vars;j++)
-    {
-      sub_d(&(cur_sol_bar->coord[j]), &(cur_sol_bar->coord[j]), &(cur_sol->coord[j]));
-      if(d_norm<d_abs_d(&(cur_sol_bar->coord[j])))
-        d_norm=d_abs_d(&(cur_sol_bar->coord[j]));
-    }
-    if(d_norm<TOL)//x=x_bar
-    {
-      // check if V0 has current vertex already.
-      isadd=1;
-      for(j=0;j<k;j++) 
-      {
-        d_norm=0.0;
-        for(m=0;m<num_vars;m++)
-        {
-          sub_d(&(cur_sol_bar->coord[m]), &(cur_sol->coord[m]), &(C->V0[j].pt->coord[m]));
-          if(d_norm<d_abs_d(&(cur_sol_bar->coord[m])))
-            d_norm=d_abs_d(&(cur_sol_bar->coord[m]));
-        }
-        if(d_norm<TOL)
-        {
-          isadd=0;break;//V0 has this point already.
-        }
-      }
-      if(isadd)
-      {
-         // add points to V0
-        init_point_d(C->V0[k].pt,num_vars);
-        point_cp_d(C->V0[k].pt,cur_sol);
-        //compute the projection
-        set_zero_d(C->V0[k].projVal);
-        for(j=0;j<num_vars;j++)
-        {
-          mul_d2(temp,&(C->V0[k].pt->coord[j]),&(pi->coord[j]),tempD);
-          add_d(C->V0[k].projVal,temp,C->V0[k].projVal);
-        }
-        k++;
-      }
-    }
-  }
-  //set the number of vertices
-  C->num_V0=k;
-  fclose(IN);
-  //clear
-  clear_vec_d(cur_sol);
-  clear_vec_d(cur_sol_bar);
-  free(declarations);
-  
-   // delete temporary files
-  remove("func_input_nsc");
-  remove("config_nsc");
-  remove("func_inputbar");
-  remove("var_names");
-
-
-}
 
 
 

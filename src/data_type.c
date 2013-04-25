@@ -1,8 +1,22 @@
 #include "data_type.h"
 
 
+void init_sampler_config(sampler_configuration *options) {
+	options->stifle_membership_screen = 1;
+	options->stifle_text = (char *)bmalloc(MAX_STRLEN*sizeof(char));
+	options->stifle_text = " > /dev/null ";
+	return;
+}
 
-void init_configuration(program_configuration *options) {
+void clear_sampler_config(sampler_configuration *options) {
+	
+	
+	return;
+}
+
+
+
+void init_program_config(program_configuration *options) {
 	
 	
 	options->user_projection = 0;
@@ -21,77 +35,157 @@ void init_configuration(program_configuration *options) {
 	
 	options->input_deflated_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
 	//this must be set after deflation is run.
+	
+	
+	options->stifle_membership_screen = 1;
+	options->stifle_text = (char *)bmalloc(MAX_STRLEN*sizeof(char));
+	options->stifle_text = " > /dev/null ";
 	return;
 }
 
-void clear_configuration(program_configuration *options) {
+void clear_program_config(program_configuration *options) {
 	
-	free(options->projection_filename);
-	free(options->randomization_filename);
+	if (options->user_projection) {
+		free(options->projection_filename);
+	}
+	
+	if (options->user_randomization) {
+		free(options->randomization_filename);
+	}
+	
 	free(options->input_filename);
 	free(options->input_deflated_filename);
 	
 	return;
 }
 
+void init_solver_config(solver_configuration *options){
+	options->allow_multiplicity = 0;
+	options->allow_singular = 0;
+	options->allow_infinite = 0;
+	options->allow_unsuccess = 0;
+	
+	options->show_status_summary = 0;
+	
+}
 
 
-
-void add_vertex_to_V0(curveDecomp_d *C, vertex_d new_vertex){
-	
-	if ( ( C->num_V0==0 && C->V0!=NULL ) || ( C->num_V0!=0 && C->V0==NULL ) ) {
-		printf("intialization error in add_vertex_to_V0\n");
-		exit(-1);
-	}
-	
-	C->num_V0++;
-	
-	if (C->num_V0==1) {
-		C->V0 = (vertex_d *)bmalloc( C->num_V0*sizeof(vertex_d));
-	}
-	else{
-		C->V0 = (vertex_d *)brealloc(C->V0, C->num_V0*sizeof(vertex_d));
-	}
-	
-	init_vertex_mp(&C->V0[C->num_V0-1]);
-	cp_vertex_mp(&C->V0[C->num_V0-1],new_vertex);
-	
+void clear_solver_config(solver_configuration *options){
+	//has no fields which require clearing.
 	return;
 }
 
 
 
-void add_vertex_to_V1(curveDecomp_d *C, vertex_d new_vertex){
+
+int add_vertex(curveDecomp_d *C, vertex source_vertex){
 	
-	if ( ( (C->num_V1==0) && (C->V1!=NULL) ) || ( (C->num_V1!=0) && (C->V1==NULL) ) ) {
-		printf("intialization error in add_vertex_to_V1\n");
-		printf("C->num_V1 = %d\n",C->num_V1);
+	
+	
+	if ( ( (C->num_vertices==0) && (C->vertices!=NULL) ) || ( (C->num_vertices!=0) && (C->vertices==NULL) ) ) {
+		printf("intialization error in add_vertex\n");
+		printf("C->num_vertices = %d\n",C->num_vertices);
 		exit(-1);
 	}
 	
-	C->num_V1++;
+	C->num_vertices++;
 	
-	if (C->num_V1==1) {
-		printf("initializing V1\n");
-		C->V1 = (vertex_d *)bmalloc( C->num_V1*sizeof(vertex_d));
+//	printf("\n**************\nadding vertex:\n");
+//	print_point_to_screen_matlab_mp(source_vertex.pt_mp,"adding");
+//	printf("\n---------------------\n");
+	
+	
+	if (C->num_vertices==1) {
+//		printf("initializing C.vertices\n");
+		C->vertices = (vertex *)bmalloc( C->num_vertices*sizeof(vertex));
 	}
 	else{
-		printf("adding point to already initialized V1\n");
-		printf("%d\n",C->num_V1);
-		C->V1 = (vertex_d *)brealloc(C->V1, C->num_V1*sizeof(vertex_d));
-		printf("after realloc\n");
+//		printf("adding point to already initialized vertex set\n");
+//		printf("%d\n",C->num_vertices);
+		C->vertices = (vertex *)brealloc(C->vertices, C->num_vertices*sizeof(vertex));
+//		printf("after realloc\n");
 	}
 	
-	init_vertex_mp(&C->V1[C->num_V1-1]);
-	printf("after init\n");
-	cp_vertex_mp(&C->V1[C->num_V1-1],new_vertex);
+	int current_index = C->num_vertices-1;
 	
-	return;
+	init_vertex_mp(&C->vertices[current_index]);
+
+	cp_vertex_mp(&C->vertices[current_index],source_vertex);
+	
+	switch (source_vertex.type) { // if you add a type to the enum, ensure it gets a case here!
+		case CRITICAL:
+			C->num_V1++; // increment number of points of this type
+			
+			if (C->num_V1==1)
+				C->V1_indices = (int *)bmalloc(C->num_V1*sizeof(int));
+			else
+				C->V1_indices = (int *)brealloc(C->V1_indices, (C->num_V1)*sizeof(int));
+			
+			C->V1_indices[C->num_V1-1] = current_index; // the number in C having already been incremented, we -1;
+			
+			break;
+			
+		case NEW:
+			C->num_new++; // increment number of points of this type
+			C->num_V1++;  // increment number of points of this type
+			
+			
+			if (C->num_V1==1)
+				C->V1_indices = (int *)bmalloc(C->num_V1*sizeof(int));
+			else
+				C->V1_indices = (int *)brealloc(C->V1_indices, (C->num_V1)*sizeof(int));
+			
+			C->V1_indices[C->num_V1-1] = current_index; // the number in C having already been incremented, we -1;
+			
+			
+			if (C->num_new==1)
+				C->new_indices = (int *)bmalloc(C->num_new*sizeof(int));
+			else
+				C->new_indices = (int *)brealloc(C->new_indices, (C->num_new)*sizeof(int));
+			
+			C->new_indices[C->num_new-1] = current_index; // the number in C having already been incremented, we -1;
+			
+			break;
+			
+		case ISOLATED:
+			C->num_V0++; // increment number of points of this type
+			
+			if (C->num_V0==1)
+				C->V0_indices = (int *)bmalloc(C->num_V0*sizeof(int)); // if the first, allocate
+			else
+				C->V0_indices = (int *)brealloc(C->V0_indices, (C->num_V0)*sizeof(int));  // reallocate
+			
+			C->V0_indices[C->num_V0-1] = current_index; // the number in C having already been incremented, we -1;
+
+			
+			break;
+			
+		case MIDPOINT:
+			C->num_midpts++; // increment number of points of this type
+			
+			
+			if (C->num_midpts==1)
+				C->midpt_indices = (int *)bmalloc(C->num_midpts*sizeof(int)); // if the first, allocate
+			else
+				C->midpt_indices = (int *)brealloc(C->midpt_indices, (C->num_midpts)*sizeof(int));  // reallocate
+			
+			C->midpt_indices[C->num_midpts-1] = current_index; // the number in C having already been incremented, we -1;
+			
+			break;
+			
+		default:
+			
+			printf("attempting to add a vertex of unset or invalid type (%d)\n",source_vertex.type);
+			exit(-220);
+			break;
+	}
+	
+	return current_index;
 }
 
 
 
-int index_in_V1(curveDecomp_d *C, vec_mp testpoint, comp_mp projection_value, tracker_config_t T, int sidedness){
+int index_in_vertices(curveDecomp_d *C, vec_mp testpoint, comp_mp projection_value, tracker_config_t T, int sidedness){
 	int ii;
 	
 	
@@ -101,10 +195,12 @@ int index_in_V1(curveDecomp_d *C, vec_mp testpoint, comp_mp projection_value, tr
 	
 	
 	
-	for (ii=0; ii<C->num_V1; ii++) {
-		if (isSamePoint(NULL,C->V1[ii].pt_mp,65,NULL,testpoint,65,1e-6)){
-			print_point_to_screen_matlab_mp(testpoint,"testpoint");
-			print_point_to_screen_matlab_mp(C->V1[ii].pt_mp,"candidate");
+	for (ii=0; ii<C->num_vertices; ii++) {
+		if (isSamePoint_homogeneous_input_mp(C->vertices[ii].pt_mp, testpoint)){
+			//formerly (isSamePoint(NULL,C->vertices[ii].pt_mp,65,NULL,testpoint,65,1e-6)){
+//			printf("these two points are the same when dehomogenized\n");
+//			print_point_to_screen_matlab_mp(testpoint,"testpoint");
+//			print_point_to_screen_matlab_mp(C->vertices[ii].pt_mp,"candidate");
 			index = ii;
 			break;
 		}
@@ -112,35 +208,43 @@ int index_in_V1(curveDecomp_d *C, vec_mp testpoint, comp_mp projection_value, tr
 	
 	
 	
-	
-	
 	if (index==-1) {
-		printf("vertex not found; adding to V1\n");
-		vertex_d temp_vertex;  init_vertex_mp(&temp_vertex);
+		printf("vertex not found; adding to vertex set\n");
+		vertex temp_vertex;  init_vertex_mp(&temp_vertex);
 		set_mp(temp_vertex.projVal_mp,  projection_value);
 		vec_cp_mp(temp_vertex.pt_mp, testpoint);
+		temp_vertex.type = NEW;
+		add_vertex(C,temp_vertex);
+		index = C->num_vertices-1;
+	}
+	
+	switch (sidedness) {
+		case -1:
+			C->vertices[index].num_left++;
+			break;
 		
-		add_vertex_to_V1(C,temp_vertex);
-		index = C->num_V1-1;
+		case 1:
+			C->vertices[index].num_right++;
+			break;
+		
+		case 0: // midpoint
+//			C->vertices[index].num_left++;
+			break;
+			
+		default:
+			break;
 	}
 	
-	if (sidedness==-1) {
-		C->V1[index].num_left++;
-	}
-	else{
-		C->V1[index].num_right++;
-	}
-	
-	//	printf("index = %d\n",index);
-	//	mypause();
+
+
 	
 	return index;
 	//	typedef struct
 	//	{
-	//		vertex_d *V0;  //Isolated real points.
-	//		vertex_d *V1;  //Critical points AND new non-critical endpoints of edges.
-	//		//  vertex_d *midPts;  //Midpoints of edges.
-	//		edge_d *edges;
+	//		vertex *V0;  //Isolated real points.
+	//		vertex *V1;  //Critical points AND new non-critical endpoints of edges.
+	//		//  vertex *midPts;  //Midpoints of edges.
+	//		edge *edges;
 	//		int      num_V0;
 	//		int      num_V1;
 	//		//  int      num_midPts;
@@ -154,76 +258,100 @@ int index_in_V1(curveDecomp_d *C, vec_mp testpoint, comp_mp projection_value, tr
 /**
  copy in a vertex
  */
-void cp_vertex_mp(vertex_d *target_vertex, vertex_d new_vertex){
+void cp_vertex_mp(vertex *target_vertex, vertex source_vertex){
 //assume the vertex is initialized
 //	printf("copying vertex\n");
-	vec_cp_mp(target_vertex->pt_mp,new_vertex.pt_mp);
-	set_mp(target_vertex->projVal_mp, new_vertex.projVal_mp);
-	target_vertex->num_left = new_vertex.num_left; target_vertex->num_right = new_vertex.num_right;
-	target_vertex->type = new_vertex.type;
+	vec_cp_mp(target_vertex->pt_mp,source_vertex.pt_mp);
+	set_mp(target_vertex->projVal_mp, source_vertex.projVal_mp);
+	target_vertex->num_left = source_vertex.num_left; target_vertex->num_right = source_vertex.num_right;
+	target_vertex->type = source_vertex.type;
 	
 	return;
 }
 
 
 
-
-void init_vertex_mp(vertex_d *curr_vertex){
+void init_vertex_d(vertex *curr_vertex){
 	
-	printf("inside init_vertex_mp\n");
-	init_vec_mp(curr_vertex->pt_mp,1); curr_vertex->pt_mp->size = 1; // this is the line giving us trouble.
-	printf("here\n");
-	init_mp(curr_vertex->projVal_mp);
+//	printf("inside init_vertex_d\n");
+	init_vec_d(curr_vertex->pt,1); curr_vertex->pt->size = 1; // this is the line giving us trouble.
+//	printf("here\n");
 	
-	curr_vertex->type = -1;
+	curr_vertex->type = -100;
 	curr_vertex->num_left = 0;
 	curr_vertex->num_right = 0;
-	printf("exiting init_vertex_mp\n");
+//	printf("exiting init_vertex_d\n");
 	return;
 }
 
 
-void init_edge_mp(edge_d *curr_edge, int num_variables){
-	curr_edge->left = curr_edge->right = -1; // initialize to impossible value.
-	init_vec_mp(curr_edge->midpt_mp,num_variables); curr_edge->midpt_mp->size = num_variables;
-	init_vec_mp(curr_edge->pi_mp,num_variables); curr_edge->pi_mp->size = num_variables;
-	return;
-}
-
-void init_edge_d(edge_d *curr_edge){
+void init_vertex_mp(vertex *curr_vertex){
 	
-
-	curr_edge->left = curr_edge->right = -1; // initialize to impossible value.
+//	printf("inside init_vertex_mp\n");
+	init_vec_mp(curr_vertex->pt_mp,1); curr_vertex->pt_mp->size = 1; // this is the line giving us trouble.
+//	printf("here\n");
+	init_mp(curr_vertex->projVal_mp);
 	
-	init_vec_d(curr_edge->midpt,1); curr_edge->midpt->size = 1;
-	init_vec_d(curr_edge->pi,1); curr_edge->pi->size = 1;
-	
+	curr_vertex->type = -100;
+	curr_vertex->num_left = 0;
+	curr_vertex->num_right = 0;
+//	printf("exiting init_vertex_mp\n");
 	return;
 }
 
 
+void init_edge(edge *curr_edge){
+	
+	curr_edge->left = curr_edge->right = curr_edge->midpt = -1; // initialize to impossible value.
+//	init_vec_mp(curr_edge->midpt_mp,num_variables); curr_edge->midpt_mp->size = num_variables;
+//	init_vec_mp(curr_edge->pi_mp,num_variables); curr_edge->pi_mp->size = num_variables;
+	return;
+}
 
-void add_edge_mp(curveDecomp_d *C, edge_d new_edge){
+//void init_edge(edge *curr_edge, int num_variables){
+//	
+//	curr_edge->left = curr_edge->right = -1; // initialize to impossible value.
+//	init_vec_d(curr_edge->midpt,num_variables); curr_edge->midpt->size = num_variables;
+//	init_vec_d(curr_edge->pi,num_variables); curr_edge->pi->size = num_variables;
+//	
+//	return;
+//}
+
+
+void cp_edge(edge *new_edge, edge source_edge){
+	
+	new_edge->left = source_edge.left;
+	new_edge->right= source_edge.right;
+	new_edge->midpt = source_edge.midpt;
+	return;
+	
+}
+
+void add_edge(curveDecomp_d *C, edge new_edge){
 	
 	if ( ( C->num_edges==0 && C->edges!=NULL ) || ( C->num_edges!=0 && C->edges==NULL ) ) {
 		printf("intialization error in curve decomposition\n");
 		exit(-1);
 	}
 	
-	if (C->num_edges==0) {
-		C->edges = (edge_d *)bmalloc(1*sizeof(edge_d));
+	C->num_edges++;
+	
+	if (C->num_edges==1) {
+		C->edges = (edge *)bmalloc(C->num_edges*sizeof(edge));
 	}
 	else{
-		C->edges = (edge_d *)brealloc(C->edges, C->num_edges+1*sizeof(edge_d));
+		C->edges = (edge *)brealloc(C->edges, C->num_edges*sizeof(edge));
 	}
 	
-	C->num_edges++;
-	init_edge_mp(&C->edges[C->num_edges-1],new_edge.midpt_mp->size);
-//	C->edges[C->num_edges-1].size = new_edge.midpt_mp->size;
-	vec_cp_mp(C->edges[C->num_edges-1].midpt_mp,new_edge.midpt_mp);
-	vec_cp_mp(C->edges[C->num_edges-1].pi_mp,new_edge.pi_mp);
-	C->edges[C->num_edges-1].left = new_edge.left;
-	C->edges[C->num_edges-1].right = new_edge.right;
+	
+	init_edge(&C->edges[C->num_edges-1]); // intialize the new edge
+
+	cp_edge(&C->edges[C->num_edges-1], new_edge);
+	
+//	vec_cp_mp(C->edges[C->num_edges-1].midpt_mp,new_edge.midpt_mp);
+//	vec_cp_mp(C->edges[C->num_edges-1].pi_mp,new_edge.pi_mp);
+//	C->edges[C->num_edges-1].left = new_edge.left;
+//	C->edges[C->num_edges-1].right = new_edge.right;
 	return;
 }
 
@@ -232,14 +360,19 @@ void add_edge_mp(curveDecomp_d *C, edge_d new_edge){
 
 void init_curveDecomp_d(curveDecomp_d *C){
 	
-	C->num_V0=0;
-	C->num_V1=0;
-	C->num_edges=0;
+	C->num_V0 = C->num_V1 = C->num_new = C->num_midpts = 0;
 	
-	C->V0=NULL;
-	C->V1=NULL;
+	C->num_edges = C->num_vertices = 0;
 	
+	C->vertices=NULL;
 	C->edges=NULL;
+	
+	C->V0_indices = NULL;
+	C->V1_indices = NULL;
+	C->midpt_indices = NULL;
+	C->new_indices = NULL;
+	
+	
 	return;
 }
 
@@ -247,44 +380,45 @@ void init_curveDecomp_d(curveDecomp_d *C){
 void clear_curveDecomp_d(curveDecomp_d *C, int MPType){
 	
 	int ii;
-	for(ii=0;ii<C->num_V0;ii++)
+	for(ii=0;ii<C->num_vertices;ii++)
 	{
 		if(MPType == 0)
 		{
-			clear_vec_d(C->V0[ii].pt);
+			clear_vec_d(C->vertices[ii].pt);
 		}
 		else
 		{
-			clear_vec_mp(C->V0[ii].pt_mp);
+			clear_vec_mp(C->vertices[ii].pt_mp);
 		}
 	}
-	free(C->V0);
-	for(ii=0;ii<C->num_V1;ii++)
-	{
-		if(MPType == 0)
-		{
-			clear_vec_d(C->V1[ii].pt);
-		}
-		else
-		{
-			clear_vec_mp(C->V1[ii].pt_mp);
-		}
-	}
-	free(C->V1);
-	for(ii=0;ii<C->num_edges;ii++)
-	{
-		if(MPType == 0)
-		{
-			clear_vec_d(C->edges[ii].midpt);
-			clear_vec_d(C->edges[ii].pi);
-		}
-		else
-		{
-			clear_vec_mp(C->edges[ii].midpt_mp);
-			clear_vec_mp(C->edges[ii].pi_mp);
-		}
-//		clear_witness_set(C->edges[ii].W);
-	}
+	free(C->vertices);
+//	
+//	for(ii=0;ii<C->num_V1;ii++)
+//	{
+//		if(MPType == 0)
+//		{
+//			clear_vec_d(C->V1[ii].pt);
+//		}
+//		else
+//		{
+//			clear_vec_mp(C->V1[ii].pt_mp);
+//		}
+//	}
+//	free(C->V1);
+//	for(ii=0;ii<C->num_edges;ii++)
+//	{
+//		if(MPType == 0)
+//		{
+//			clear_vec_d(C->edges[ii].midpt);
+//			clear_vec_d(C->edges[ii].pi);
+//		}
+//		else
+//		{
+//			clear_vec_mp(C->edges[ii].midpt_mp);
+//			clear_vec_mp(C->edges[ii].pi_mp);
+//		}
+////		clear_witness_set(C->edges[ii].W);
+//	}
 	free(C->edges);
 	
 }
@@ -298,11 +432,11 @@ void clear_sample_d(sample_d *S, int MPType){
 	{
 		if(MPType == 0)
 		{
-			clear_vec_d(S->proj_vertices[ii]);
+			clear_vec_d(S->projection_values[ii]);
 		}
 		else
 		{
-			clear_vec_mp(S->proj_vertices_mp[ii]);
+			clear_vec_mp(S->projection_values_mp[ii]);
 		}
 		for(jj=0; jj<S->num_pts[ii];jj++)
 		{
@@ -319,12 +453,12 @@ void clear_sample_d(sample_d *S, int MPType){
 	}
 	if(MPType == 0)
 	{
-		free(S->proj_vertices);
+		free(S->projection_values);
 		free(S->vertices);
 	}
 	else
 	{
-		free(S->proj_vertices_mp);
+		free(S->projection_values_mp);
 		free(S->vertices_mp);
 	}
 	free(S->refine);
@@ -334,7 +468,7 @@ void clear_sample_d(sample_d *S, int MPType){
 
 
 
-void merge_witness_sets(witness_set_d *W_out,witness_set_d W_left,witness_set_d W_right){
+void merge_witness_sets(witness_set *W_out,witness_set W_left,witness_set W_right){
 	
 	//error checking first
 	if (W_left.num_variables != W_right.num_variables) {
@@ -393,29 +527,29 @@ void merge_witness_sets(witness_set_d *W_out,witness_set_d W_left,witness_set_d 
 	
 	
 	//set the number of points
-	W_out->W.num_pts  = W_left.W.num_pts+W_right.W.num_pts;
-	W_out->W_mp.num_pts = W_left.W.num_pts+W_right.W.num_pts;
+	W_out->num_pts  = W_left.num_pts+W_right.num_pts;
+//	W_out->num_pts = W_left.num_pts+W_right.num_pts;
 	
 
-  W_out->W.pts=(point_d *)bmalloc(W_out->W.num_pts*sizeof(point_d));
-	W_out->W_mp.pts=(point_mp *)bmalloc(W_out->W.num_pts*sizeof(point_mp));
+  W_out->pts_d =  (point_d *)bmalloc(W_out->num_pts*sizeof(point_d));
+	W_out->pts_mp = (point_mp *)bmalloc(W_out->num_pts*sizeof(point_mp));
 	
 	counter = 0;
-	for (ii=0; ii<W_left.W.num_pts; ii++) {
-		init_vec_d(W_out->W.pts[counter],W_out->num_variables); W_out->W.pts[counter]->size = W_out->num_variables;
-		vec_cp_d(W_out->W.pts[counter],W_left.W.pts[ii]);
+	for (ii=0; ii<W_left.num_pts; ii++) {
+		init_vec_d(W_out->pts_d[counter],W_out->num_variables); W_out->pts_d[counter]->size = W_out->num_variables;
+		vec_cp_d(W_out->pts_d[counter],W_left.pts_d[ii]);
 		
-		init_vec_mp(W_out->W_mp.pts[counter],W_out->num_variables); W_out->W_mp.pts[counter]->size = W_out->num_variables;
-		vec_cp_mp(  W_out->W_mp.pts[counter],W_left.W_mp.pts[ii]);
+		init_vec_mp(W_out->pts_mp[counter],W_out->num_variables); W_out->pts_mp[counter]->size = W_out->num_variables;
+		vec_cp_mp(  W_out->pts_mp[counter],W_left.pts_mp[ii]);
 		counter++;
 	}
 	
-	for (ii=0; ii<W_right.W.num_pts; ii++) {
-		init_vec_d(W_out->W.pts[counter],W_out->num_variables);
-		vec_cp_d(W_out->W.pts[counter],W_right.W.pts[ii]);
+	for (ii=0; ii<W_right.num_pts; ii++) {
+		init_vec_d(W_out->pts_d[counter],W_out->num_variables);
+		vec_cp_d(W_out->pts_d[counter],W_right.pts_d[ii]);
 		
-		init_vec_mp(W_out->W_mp.pts[counter],W_out->num_variables);
-		vec_cp_mp(  W_out->W_mp.pts[counter],W_right.W_mp.pts[ii]);
+		init_vec_mp(W_out->pts_mp[counter],W_out->num_variables);
+		vec_cp_mp(  W_out->pts_mp[counter],W_right.pts_mp[ii]);
 		counter++;
 	}
 
@@ -425,7 +559,7 @@ void merge_witness_sets(witness_set_d *W_out,witness_set_d W_left,witness_set_d 
 }//re: merge_witness_sets
 
 
-void init_variable_names(witness_set_d *W, int num_vars){
+void init_variable_names(witness_set *W, int num_vars){
 	int ii;
 	
 	if (W->variable_names!=NULL) {
@@ -442,7 +576,7 @@ void init_variable_names(witness_set_d *W, int num_vars){
 }
 
 //copies names from old to new
-void cp_names(witness_set_d *W_out, witness_set_d W_in){
+void cp_names(witness_set *W_out, witness_set W_in){
 	int ii;
 	
 	if (W_in.num_variables==0 || W_in.variable_names==NULL) {
@@ -469,13 +603,11 @@ void cp_names(witness_set_d *W_out, witness_set_d W_in){
 
 
 //copies the mp and d linears from in to out.
-void cp_linears(witness_set_d *W_out, witness_set_d W_in){
+void cp_linears(witness_set *W_out, witness_set W_in){
 	int ii;
 	
 	
 	W_out->num_linears = W_in.num_linears;
-	printf("%d linears to copy.\n",W_in.num_linears);
-
 
 	//
 	// DOUBLE COPIES
@@ -517,7 +649,7 @@ void cp_linears(witness_set_d *W_out, witness_set_d W_in){
 }
 
 
-void cp_patches(witness_set_d *W_out, witness_set_d W_in){
+void cp_patches(witness_set *W_out, witness_set W_in){
 	int ii;
 	
 	
@@ -560,7 +692,7 @@ void cp_patches(witness_set_d *W_out, witness_set_d W_in){
 	return;
 }
 
-void cp_witness_set(witness_set_d *W_out, witness_set_d W_in){
+void cp_witness_set(witness_set *W_out, witness_set W_in){
 	int ii;
 	
 	W_out->codim = W_in.codim;
@@ -595,19 +727,19 @@ void cp_witness_set(witness_set_d *W_out, witness_set_d W_in){
 	
 	
 	//set the number of points
-	W_out->W.num_pts  = W_in.W.num_pts;
-	W_out->W_mp.num_pts = W_in.W.num_pts;
+	W_out->num_pts  = W_in.num_pts;
+	W_out->num_pts = W_in.num_pts;
 	
 	
-  W_out->W.pts=(point_d *)bmalloc(W_out->W.num_pts*sizeof(point_d));
-	W_out->W_mp.pts=(point_mp *)bmalloc(W_out->W.num_pts*sizeof(point_mp));
+  W_out->pts_d=(point_d *)bmalloc(W_out->num_pts*sizeof(point_d));
+	W_out->pts_mp=(point_mp *)bmalloc(W_out->num_pts*sizeof(point_mp));
 	
-	for (ii=0; ii<W_in.W.num_pts; ii++) {
-		init_vec_d(W_out->W.pts[ii],W_out->num_variables); W_out->W.pts[ii]->size = W_out->num_variables;
-		vec_cp_d(W_out->W.pts[ii],W_in.W.pts[ii]);
+	for (ii=0; ii<W_in.num_pts; ii++) {
+		init_vec_d(W_out->pts_d[ii],W_out->num_variables); W_out->pts_d[ii]->size = W_out->num_variables;
+		vec_cp_d(W_out->pts_d[ii],W_in.pts_d[ii]);
 		
-		init_vec_mp(W_out->W_mp.pts[ii],W_out->num_variables); W_out->W_mp.pts[ii]->size = W_out->num_variables;
-		vec_cp_mp(  W_out->W_mp.pts[ii],W_in.W_mp.pts[ii]);
+		init_vec_mp(W_out->pts_mp[ii],W_out->num_variables); W_out->pts_mp[ii]->size = W_out->num_variables;
+		vec_cp_mp(  W_out->pts_mp[ii],W_in.pts_mp[ii]);
 	}
 	
 	return;
@@ -616,17 +748,17 @@ void cp_witness_set(witness_set_d *W_out, witness_set_d W_in){
 
 // initializes witness set, both the mp data and double.
 //only call this on new witness sets, otherwise you will leak memory when you set the pointers to NULL.
-void init_witness_set_d(witness_set_d *W){
+void init_witness_set_d(witness_set *W){
 	W->num_variables = W->num_patches = W->num_linears = 0;
-	W->patch = W->L = W->W.pts = NULL;
-	W->patch_mp = W->L_mp = W->W_mp.pts = NULL;
+	W->patch = W->L = W->pts_d = NULL;
+	W->patch_mp = W->L_mp = W->pts_mp = NULL;
 	W->variable_names = NULL;
-	W->W.num_pts = W->W_mp.num_pts = 0;
+	W->num_pts = W->num_pts = 0;
 	W->incidence_number = -1;
 	return;
 }
 
-void dehomogenize(vec_d *result, vec_d dehom_me){
+void dehomogenize_d(vec_d *result, vec_d dehom_me){
 	comp_d denom;
 	change_size_vec_d(*result,dehom_me->size-1);
 	(*result)->size = dehom_me->size-1;
@@ -642,8 +774,8 @@ void dehomogenize(vec_d *result, vec_d dehom_me){
 }
 
 void dehomogenize_mp(vec_mp *result, vec_mp dehom_me){
-	printf("dehomogenizing\n");
-	print_point_to_screen_matlab_mp(dehom_me,"dehom_me");
+//	printf("dehomogenizing\n");
+//	print_point_to_screen_matlab_mp(dehom_me,"dehom_me");
 	
 	if (dehom_me->size==0 || dehom_me->size==1) {
 		printf("attempting to dehomogenize a vector of length 0 or 1\n");
@@ -706,18 +838,18 @@ void dot_product_mp(comp_mp result, vec_mp one, vec_mp two){
 	clear_mp(temp);clear_mp(temp2);
 }
 
-void write_homogeneous_coordinates(witness_set_d W, char filename[])
+void write_homogeneous_coordinates(witness_set W, char filename[])
 {
 	int ii,jj;
 	
 	FILE *OUT  = safe_fopen_write(filename); // open the output file
 	
 	
-	fprintf(OUT,"%d\n\n",W.W_mp.num_pts); // print the header line
+	fprintf(OUT,"%d\n\n",W.num_pts); // print the header line
 	
-	for (ii=0; ii<W.W_mp.num_pts; ++ii) {
+	for (ii=0; ii<W.num_pts; ++ii) {
 		for (jj=0; jj<W.num_variables; jj++) {
-			fprintf(OUT,"%.15le %.15le\n",W.W.pts[ii]->coord[jj].r,W.W.pts[ii]->coord[jj].i);
+			fprintf(OUT,"%.15le %.15le\n",W.pts_d[ii]->coord[jj].r,W.pts_d[ii]->coord[jj].i);
 		}
 		fprintf(OUT,"\n");
 	}
@@ -727,17 +859,17 @@ void write_homogeneous_coordinates(witness_set_d W, char filename[])
 	return;
 }
 
-void write_dehomogenized_coordinates(witness_set_d W, char filename[]){
+void write_dehomogenized_coordinates(witness_set W, char filename[]){
 	int ii,jj;
 	
 	FILE *OUT = safe_fopen_write(filename); // open the output file.
 	
-	fprintf(OUT,"%d\n\n",W.W.num_pts); // print the header line
-	for (ii=0; ii<W.W.num_pts; ++ii) {
+	fprintf(OUT,"%d\n\n",W.num_pts); // print the header line
+	for (ii=0; ii<W.num_pts; ++ii) {
 		if (W.MPType==1){ // both fields should be populated anyway?
 			vec_mp result;
 			init_vec_mp(result,1);
-			dehomogenize_mp(&result,W.W_mp.pts[ii]);
+			dehomogenize_mp(&result,W.pts_mp[ii]);
 			for (jj=0; jj<W.num_variables-1; jj++) {
 				print_mp(OUT, 0, &result->coord[jj]);
 				fprintf(OUT, "\n");
@@ -746,7 +878,7 @@ void write_dehomogenized_coordinates(witness_set_d W, char filename[]){
 		else{
 			vec_d result;
 			init_vec_d(result,0);
-			dehomogenize(&result,W.W.pts[ii]);
+			dehomogenize_d(&result,W.pts_d[ii]);
 			for (jj=0; jj<W.num_variables-1; jj++) {
 				fprintf(OUT,"%.15le %.15le\n",result->coord[jj].r,result->coord[jj].i);
 			}
@@ -761,8 +893,101 @@ void write_dehomogenized_coordinates(witness_set_d W, char filename[]){
 }
 
 
+void projection_value_homogeneous_input_d(comp_d result, vec_d input, vec_d projection){
+	
+	if (projection->size != input->size) {
+		printf("computing projection values of incompatibly sized vectors\n");
+		exit(1024);
+	}
+	
+	vec_d dehom;
+	init_vec_d(dehom,input->size-1); dehom->size = input->size-1;
+	
+	vec_d pi_no_hom;
+	init_vec_d(pi_no_hom,input->size-1); pi_no_hom->size = input->size-1;
+	int ii;
+	for (ii=0; ii<input->size-1; ii++) {
+		set_d(&pi_no_hom->coord[ii],&projection->coord[ii+1]);
+	}
+	
+	dehomogenize_d(&dehom,input);
+	dot_product_d(result,dehom,pi_no_hom); // set projection value
+	
+	clear_vec_d(dehom); clear_vec_d(pi_no_hom);
+	
+	return;
+}
 
-void write_linears(witness_set_d W, char filename[])
+// MP version
+void projection_value_homogeneous_input(comp_mp result, vec_mp input, vec_mp projection){
+	
+	if (projection->size != input->size) {
+		printf("computing projection values of incompatibly sized vectors\n");
+		exit(1024);
+	}
+	
+	vec_mp dehom;
+	init_vec_mp(dehom,input->size-1); dehom->size = input->size-1;
+	
+	vec_mp pi_no_hom;
+	init_vec_mp(pi_no_hom,input->size-1); pi_no_hom->size = input->size-1;
+	int ii;
+	for (ii=0; ii<input->size-1; ii++) {
+		set_mp(&pi_no_hom->coord[ii],&projection->coord[ii+1]);
+	}
+	
+	dehomogenize_mp(&dehom,input);
+	dot_product_mp(result,dehom,pi_no_hom); // set projection value
+	
+	clear_vec_mp(dehom); clear_vec_mp(pi_no_hom);
+	return;
+}
+
+
+
+int isSamePoint_homogeneous_input_d(point_d left, point_d right){
+	
+	if (left->size!=right->size) {
+		printf("attempting to isSamePoint_hom_d with disparate sized points.\n");
+		exit(-287);
+	}
+	
+	vec_d dehom_left;  init_vec_d(dehom_left,left->size-1);  dehom_left->size = left->size-1;
+	vec_d dehom_right; init_vec_d(dehom_right,right->size-1); dehom_right->size = right->size-1;
+	
+	dehomogenize_d(&dehom_left,left);
+	dehomogenize_d(&dehom_right,right);
+	
+	int indicator = isSamePoint(dehom_left,NULL,52,dehom_right,NULL,52,1e-6);
+	
+	clear_vec_d(dehom_left); clear_vec_d(dehom_right);
+	
+	return indicator;
+}
+
+
+int isSamePoint_homogeneous_input_mp(point_mp left, point_mp right){
+	
+	if (left->size!=right->size) {
+		printf("attempting to isSamePoint_hom_mp with disparate sized points.\n");
+		exit(-287);
+	}
+	
+	vec_mp dehom_left;  init_vec_mp(dehom_left,left->size-1);  dehom_left->size = left->size-1;
+	vec_mp dehom_right; init_vec_mp(dehom_right,right->size-1); dehom_right->size = right->size-1;
+	
+	dehomogenize_mp(&dehom_left,left);
+	dehomogenize_mp(&dehom_right,right);
+	
+	int indicator = isSamePoint(NULL,dehom_left,65,NULL,dehom_right,65,1e-6); // make the bertini library call
+	
+	clear_vec_mp(dehom_left); clear_vec_mp(dehom_right);
+	
+	return indicator;
+}
+
+
+void write_linears(witness_set W, char filename[])
 {
 	int ii,jj;
 	
@@ -785,7 +1010,7 @@ void write_linears(witness_set_d W, char filename[])
 
 
 
-void clear_witness_set(witness_set_d W){
+void clear_witness_set(witness_set W){
 	int ii;
 	
 	
@@ -810,29 +1035,29 @@ void clear_witness_set(witness_set_d W){
 		free(W.L_mp);
 	}
 	
-	if (W.W.num_pts!=W.W_mp.num_pts) {
+	if (W.num_pts!=W.num_pts) {
 		printf("there was a mismatch in the number of points in the witness set being cleared\n");
 	}
 	
-//	printf("freeing %d points\n",W.W.num_pts);
-	for (ii=0; ii<W.W.num_pts; ii++) {
-		clear_point_d(W.W.pts[ii]);
-		clear_point_mp(W.W_mp.pts[ii]);
+//	printf("freeing %d points\n",W.num_pts);
+	for (ii=0; ii<W.num_pts; ii++) {
+		clear_point_d(W.pts_d[ii]);
+		clear_point_mp(W.pts_mp[ii]);
 	}
-	free(W.W.pts);
-	free(W.W_mp.pts);
+	free(W.pts_d);
+	free(W.pts_mp);
 	
 
 //TODO: clear variable names
 	return;
 }
 
-void print_witness_set_to_screen(witness_set_d W){
+void print_witness_set_to_screen(witness_set W){
 	int ii;
-	printf("******\n%d points in double, %d points in mp\n******\n",W.W.num_pts,W.W_mp.num_pts);
-	for (ii=0; ii<W.W.num_pts; ii++) {
+	printf("******\n%d points in double, %d points in mp\n******\n",W.num_pts,W.num_pts);
+	for (ii=0; ii<W.num_pts; ii++) {
 		printf("the%dth",ii);
-		print_point_to_screen_matlab(W.W.pts[ii],"point");
+		print_point_to_screen_matlab(W.pts_d[ii],"point");
 	}
 		
 	printf("******\n%d linears\n******\n",W.num_linears);
@@ -993,6 +1218,22 @@ void print_path_retVal_message(int retVal){
 
 
 
+int get_num_vars_PPD(preproc_data PPD){
+	int num_vars = 0; // initialize
+	
+	int ii;
+	
+	//run through each variable group
+	for (ii=0; ii<(PPD.num_var_gp+PPD.num_hom_var_gp); ii++) {
+		num_vars+= PPD.size[ii];
+		num_vars+= PPD.type[ii];
+	}
+	
+	return num_vars;
+	
+}
+
+
 void endgamedata_to_endpoint(post_process_t *endPoint, endgame_data_t *EG){
 	
 	int num_vars, ii;
@@ -1124,8 +1365,7 @@ int BRfindSingularSolns(post_process_t *endPoints, int num_sols, int num_vars,
 	int ii, sing_count=0;
 	
 	for (ii = 0; ii < num_sols; ii++){
-//    if (endPoints[ii].multiplicity > 0) { 
-      if ( (endPoints[ii].cond_est >  T->cond_num_threshold) || (endPoints[ii].cond_est < 0.0) )//|| (endPoints[ii].multiplicity > 1)
+      if ( (endPoints[ii].cond_est >  T->cond_num_threshold) || (endPoints[ii].cond_est < 0.0) )
         endPoints[ii].isSing = 1;
       else
         endPoints[ii].isSing = 0;
@@ -1134,7 +1374,6 @@ int BRfindSingularSolns(post_process_t *endPoints, int num_sols, int num_vars,
       {
         sing_count++;
 			}
-//		}
 	}
 	
 	return sing_count;
@@ -1202,96 +1441,34 @@ int BRfindFiniteSolns(post_process_t *endPoints, int num_sols, int num_vars,
 
 
 
-
-
-//assumes that W has the number of variables already set, and the pts NOT allocated yet.  should be NULL
-void BRpostProcessing_AllowDuplicates(post_process_t *endPoints, witness_set_d *W_new, int num_pts, preproc_data preProcData, tracker_config_t *T)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: does the actual post processing for a zero dim run     *
- \***************************************************************/
-{
+int is_acceptable_solution(post_process_t endPoint, solver_configuration *solve_options){
+	int indicator = 1;
 	
-	int ii, jj;
-	//	printf("%lf\n",T_copy[oid].finiteThreshold);
-	//direct from the bertini library:
-	findMultSol(endPoints, num_pts, W_new->num_variables, preProcData, T->final_tol_times_mult);
-	// sets the multiplicity and solution number in the endPoints data
-	
-	//custom, derived from bertini's analagous call.
-	int num_singular_solns = BRfindSingularSolns(endPoints, num_pts, W_new->num_variables, T);
-	//sets the singularity flag in endPoints.
-	
-	int num_finite_solns = BRfindFiniteSolns(endPoints, num_pts, W_new->num_variables, T);
-	
-	printf("%d singular solutions\n",num_singular_solns);
-	printf("%d finite solutions\n",num_finite_solns);
-	
-	for (ii=0; ii<num_pts; ++ii) {
-		//		int success;      // success flag
-		//		int multiplicity; // multiplicity
-		//		int isReal;       // real flag:  0 - not real, 1 - real
-		//		int isFinite;     // finite flag: -1 - no finite/infinite distinction, 0 - infinite, 1 - finite
-		//		int isSing;       // singular flag: 0 - non-sigular, 1 - singular
-		
-		printf("solution %d, success %d, multi %d, isFinite %d, isSing %d\n",ii,endPoints[ii].success,endPoints[ii].multiplicity,endPoints[ii].isFinite,endPoints[ii].isSing);
+	if ( (endPoint.multiplicity!=1) && (solve_options->allow_multiplicity==0) ) {
+		indicator = 0;
 	}
 	
-	int *actual_solns_indices;
-	actual_solns_indices = (int *)bmalloc(num_pts*sizeof(int));
-	
-	
-	int num_actual_solns = 0;
-	for (ii=0; ii<num_pts; ii++) {
-		if (endPoints[ii].isFinite &&  (endPoints[ii].success==1) ) { //(!endPoints[ii].isSing) && (endPoints[ii].multiplicity==1) &&
-			actual_solns_indices[num_actual_solns] = ii;
-			num_actual_solns++;
-		}
+	if ( (endPoint.isSing==1) && (solve_options->allow_singular==0) ) {
+		indicator = 0;
 	}
 	
-
-	//initialize the structures for holding the produced data
-	
-	W_new->W.num_pts=num_actual_solns; W_new->W_mp.num_pts=num_actual_solns;
-  W_new->W.pts=(point_d *)bmalloc(num_actual_solns*sizeof(point_d));
-  W_new->W_mp.pts=(point_mp *)bmalloc(num_actual_solns*sizeof(point_mp));
-	
-	
-	
-	for (ii=0; ii<num_actual_solns; ++ii) {
-		printf("setting the actual solution %d\n",ii);
-		init_vec_d(W_new->W.pts[ii],W_new->num_variables); init_vec_mp(W_new->W_mp.pts[ii],W_new->num_variables);
-		W_new->W.pts[ii]->size = W_new->W_mp.pts[ii]->size = W_new->num_variables;
-		
-		if (endPoints[actual_solns_indices[ii]].sol_prec<64) {
-			//copy out of the double structure.
-			for (jj=0; jj<W_new->num_variables; jj++) {
-				set_d(&W_new->W.pts[ii]->coord[jj],endPoints[actual_solns_indices[ii]].sol_d[jj]);
-			}
-			vec_d_to_mp(W_new->W_mp.pts[ii],W_new->W.pts[ii]);
-		}
-		else{
-			//copy out of the mp structure.
-			for (jj=0; jj<W_new->num_variables; jj++) {
-				set_mp(&W_new->W_mp.pts[ii]->coord[jj],endPoints[actual_solns_indices[ii]].sol_mp[jj]);
-			}
-			vec_mp_to_d(W_new->W.pts[ii],W_new->W_mp.pts[ii]);
-		}
+	if ( (endPoint.isFinite!=1) && (solve_options->allow_infinite==0) ) {
+		indicator = 0;
 	}
 	
-	free(actual_solns_indices);
+	if ( (endPoint.success!=1) && (solve_options->allow_unsuccess==0) ) {
+		indicator = 0;
+	}
 	
-  return;
+	
+	return indicator;
 }
 
 
-
-
-
 //assumes that W has the number of variables already set, and the pts NOT allocated yet.  should be NULL
-void BRpostProcessing(post_process_t *endPoints, witness_set_d *W_new, int num_pts, preproc_data preProcData, tracker_config_t *T)
+void BRpostProcessing(post_process_t *endPoints, witness_set *W_new, int num_pts,
+											preproc_data *preProcData, tracker_config_t *T,
+											solver_configuration *solve_options)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -1300,71 +1477,80 @@ void BRpostProcessing(post_process_t *endPoints, witness_set_d *W_new, int num_p
  \***************************************************************/
 {
 	
+//	options->allow_multiplicity = 0;
+//	options->allow_singular = 0;
+//	options->allow_infinite = 0;
+//	options->allow_unsuccess = 0;
+	
 	int ii, jj;
-	//	printf("%lf\n",T_copy[oid].finiteThreshold);
+
+	
+	// sets the multiplicity and solution number in the endPoints data
 	//direct from the bertini library:
 	findMultSol(endPoints, num_pts, W_new->num_variables, preProcData, T->final_tol_times_mult);
-	// sets the multiplicity and solution number in the endPoints data
 	
+	//sets the singularity flag in endPoints.
 	//custom, derived from bertini's analagous call.
 	int num_singular_solns = BRfindSingularSolns(endPoints, num_pts, W_new->num_variables, T);
-	//sets the singularity flag in endPoints.
 	
+	//sets the finite flag in endPoints.
+	//custom, derived from bertini's analagous call.
 	int num_finite_solns = BRfindFiniteSolns(endPoints, num_pts, W_new->num_variables, T);
 	
-	printf("%d singular solutions\n",num_singular_solns);
-	printf("%d finite solutions\n",num_finite_solns);
 	
-	for (ii=0; ii<num_pts; ++ii) {
-		//		int success;      // success flag
-		//		int multiplicity; // multiplicity
-		//		int isReal;       // real flag:  0 - not real, 1 - real
-		//		int isFinite;     // finite flag: -1 - no finite/infinite distinction, 0 - infinite, 1 - finite
-		//		int isSing;       // singular flag: 0 - non-sigular, 1 - singular
+	
+	if (solve_options->show_status_summary==1) {
+		printf("%d singular solutions\n",num_singular_solns);
+		printf("%d finite solutions\n",num_finite_solns);
 		
-		printf("solution %d, success %d, multi %d, isFinite %d, isSing %d\n",ii,endPoints[ii].success,endPoints[ii].multiplicity,endPoints[ii].isFinite,endPoints[ii].isSing);
+		for (ii=0; ii<num_pts; ++ii) {
+			//		int success;      // success flag
+			//		int multiplicity; // multiplicity
+			//		int isReal;       // real flag:  0 - not real, 1 - real
+			//		int isFinite;     // finite flag: -1 - no finite/infinite distinction, 0 - infinite, 1 - finite
+			//		int isSing;       // singular flag: 0 - non-sigular, 1 - singular
+			printf("solution %d, success %d, multi %d, isFinite %d, isSing %d\n",ii,endPoints[ii].success,endPoints[ii].multiplicity,endPoints[ii].isFinite,endPoints[ii].isSing);
+		}
 	}
-	
 	int num_actual_solns = 0;
 	int *actual_solns_indices;
 	actual_solns_indices = (int *)bmalloc(num_pts*sizeof(int));
 	
 	
+	
 	for (ii=0; ii<num_pts; ii++) {
-		if (endPoints[ii].isFinite && (!endPoints[ii].isSing) && (endPoints[ii].multiplicity==1) && (endPoints[ii].success==1) ) {
+		if ( is_acceptable_solution(endPoints[ii],solve_options) )//determine if acceptable based on current configuration
+		{
 			actual_solns_indices[num_actual_solns] = ii;
 			num_actual_solns++;
 		}
 	}
-	
-//TODO: here, get the good points, so can copy them
-	
-	//initialize the structures for holding the produced data
 
-	W_new->W.num_pts=num_actual_solns; W_new->W_mp.num_pts=num_actual_solns;
-  W_new->W.pts=(point_d *)bmalloc(num_actual_solns*sizeof(point_d));
-  W_new->W_mp.pts=(point_mp *)bmalloc(num_actual_solns*sizeof(point_mp));
+	//initialize the structures for holding the produced data
+	W_new->num_pts=num_actual_solns; W_new->num_pts=num_actual_solns;
+  W_new->pts_d=(point_d *)bmalloc(num_actual_solns*sizeof(point_d));
+  W_new->pts_mp=(point_mp *)bmalloc(num_actual_solns*sizeof(point_mp));
 	
 	
 	
 	for (ii=0; ii<num_actual_solns; ++ii) {
-		printf("setting the actual solution %d\n",ii);
-		init_vec_d(W_new->W.pts[ii],W_new->num_variables); init_vec_mp(W_new->W_mp.pts[ii],W_new->num_variables);
-		W_new->W.pts[ii]->size = W_new->W_mp.pts[ii]->size = W_new->num_variables;
+
+		init_vec_d(W_new->pts_d[ii],W_new->num_variables); init_vec_mp(W_new->pts_mp[ii],W_new->num_variables);
+		W_new->pts_d[ii]->size = W_new->pts_mp[ii]->size = W_new->num_variables;
 		
 		if (endPoints[actual_solns_indices[ii]].sol_prec<64) {
 			//copy out of the double structure.
 			for (jj=0; jj<W_new->num_variables; jj++) {
-				set_d(&W_new->W.pts[ii]->coord[jj],endPoints[actual_solns_indices[ii]].sol_d[jj]);
+				set_d(&W_new->pts_d[ii]->coord[jj],endPoints[actual_solns_indices[ii]].sol_d[jj]);
 			}
-			vec_d_to_mp(W_new->W_mp.pts[ii],W_new->W.pts[ii]);
+			vec_d_to_mp(W_new->pts_mp[ii],W_new->pts_d[ii]);
 		}
 		else{
 			//copy out of the mp structure.
 			for (jj=0; jj<W_new->num_variables; jj++) {
-				set_mp(&W_new->W_mp.pts[ii]->coord[jj],endPoints[actual_solns_indices[ii]].sol_mp[jj]);
+				set_mp(&W_new->pts_mp[ii]->coord[jj],endPoints[actual_solns_indices[ii]].sol_mp[jj]);
 			}
-			vec_mp_to_d(W_new->W.pts[ii],W_new->W_mp.pts[ii]);
+			vec_mp_to_d(W_new->pts_d[ii],W_new->pts_mp[ii]);
 		}
 	}
 	
@@ -1374,102 +1560,6 @@ void BRpostProcessing(post_process_t *endPoints, witness_set_d *W_new, int num_p
 	
 	
   return;
-}
-
-
-
-
-
-
-
-void insert_randomization_matrix_witness_data(int rows, int cols, int codim_index){
-	
-	
-	size_t len = 0;
-	int ii,jj,kk;
-	
-	
-	//make the matrix
-	mat_mp randomizer_matrix; init_mat_mp2(randomizer_matrix,rows,cols,1024);
-	randomizer_matrix->rows = rows; randomizer_matrix->cols = cols;
-	make_matrix_random_mp(randomizer_matrix,rows,cols,1024);
-	
-	
-	
-	//rename the witness_data file for re-use later.
-	rename("witness_data","witness_data_predeflation");
-	
-	FILE *IN = NULL, *OUT = NULL;
-	
-	IN = safe_fopen_read("witness_data_predeflation");
-	
-	OUT = safe_fopen_write("witness_data_newrand");
-	
-	
-	int *nonempty_codimensions;
-	
-	char ch;
-	int num_variables, num_nonempty_codims, num_pts_this_codim, current_codimension;
-	int bytes_read;
-	fscanf(IN,"%d\n",&num_variables); fprintf(OUT,"%d\n",num_variables);
-	fscanf(IN,"%d\n",&num_nonempty_codims);fprintf(OUT,"%d\n",num_nonempty_codims);
-	char *line = NULL;  // getline will alloc
-	
-	
-	for (ii=0; ii<num_nonempty_codims; ii++) {
-		fscanf(IN,"%d\n",&current_codimension); fprintf(OUT,"%d\n",current_codimension);
-		fscanf(IN,"%d\n",&num_pts_this_codim); fprintf(OUT,"%d\n",num_pts_this_codim);
-		
-		
-		for (jj=0; jj<num_pts_this_codim; jj++) {
-			bytes_read = getline(&line, &len, IN); fprintf(OUT,"%s",line);  free(line); line=NULL; // precision of soln
-			
-			//copy the solution itself.
-			for (kk=0; kk<num_variables; kk++) {
-				bytes_read = getline(&line, &len, IN); fprintf(OUT,"%s",line);  free(line); line=NULL; // precision of soln
-			}
-			
-			bytes_read = getline(&line, &len, IN); fprintf(OUT,"%s",line);  free(line); line=NULL; // precision of soln
-			
-			//copy the previous approximation
-			for (kk=0; kk<num_variables; kk++) {
-				bytes_read = getline(&line, &len, IN); fprintf(OUT,"%s",line);  free(line); line=NULL; // precision of soln
-			}
-			
-			for (kk=0; kk<8; kk++) { //  copy the next 8 lines.
-				bytes_read = getline(&line, &len, IN); fprintf(OUT,"%s",line);  free(line); line=NULL; // precision of soln
-			}
-			
-			// then do it again!
-		}
-	}
-	
-	int checker;
-	fscanf(IN,"%d\n",&checker); fprintf(OUT,"-1\n\n");
-	if (checker!=-1) {
-		printf("the check integer was not -1\n");
-		exit(-1);
-	}
-	
-	int num_type;
-	fscanf(IN,"%d\n",&num_type);
-	
-//	for (ii=0; ii<num_nonempty_codims; ++ii) {
-//		//for each nonempty codimension, copy the rest of the info, unless codimen matches our target.
-//		if (codim_index == ) {
-//			
-//		}
-//	}
-
-	
-	fclose(IN); fclose(OUT);
-	clear_mat_mp(randomizer_matrix);
-	
-	//rename the witness_data file for re-use later.
-	rename("witness_data_predeflation","witness_data");
-	
-	
-	return;
 }
 
 

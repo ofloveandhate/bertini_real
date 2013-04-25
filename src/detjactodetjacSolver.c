@@ -13,11 +13,12 @@
 
 
 int detjac_to_detjac_solver_main(int MPType,
-																 witness_set_d W, // carries with it the start points, and the linears.
+																 witness_set W, // carries with it the start points, and the linears.
 																 mat_mp n_minusone_randomizer_matrix_full_prec,
 																 vec_mp old_projection_full_prec,
 																 vec_mp new_projection_full_prec,
-																 witness_set_d *W_new)
+																 witness_set *W_new,
+																 solver_configuration *solve_options)
 {
 	W_new->num_variables = W.num_variables;
 	
@@ -33,10 +34,10 @@ int detjac_to_detjac_solver_main(int MPType,
 	
 	
 	if (MPType==1){
-		detjac_to_detjac_solver_mp(MPType,W,n_minusone_randomizer_matrix_full_prec,old_projection_full_prec,new_projection_full_prec, W_new);
+		detjac_to_detjac_solver_mp(MPType,W,n_minusone_randomizer_matrix_full_prec,old_projection_full_prec,new_projection_full_prec, W_new,solve_options);
 	}
 	else{
-		detjac_to_detjac_solver_d( MPType,W,n_minusone_randomizer_matrix_full_prec,old_projection_full_prec,new_projection_full_prec,W_new);
+		detjac_to_detjac_solver_d( MPType,W,n_minusone_randomizer_matrix_full_prec,old_projection_full_prec,new_projection_full_prec,W_new,solve_options);
 	}
 	
 	
@@ -47,19 +48,20 @@ int detjac_to_detjac_solver_main(int MPType,
 
 
 //int detjac_to_detjac_solver_d(int MPType,
-//															 witness_set_d W,  // includes the initial linear.
+//															 witness_set W,  // includes the initial linear.
 //															 mat_d n_minusone_randomizer_matrix,  // for randomizing down to N-1 equations.
 //															 vec_d projection,
-//															 witness_set_d *W_new // for passing the data back out of this function tree
+//															 witness_set *W_new // for passing the data back out of this function tree
 //															 )
 
 
 int detjac_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int currentSeed
-															witness_set_d W,  // includes the initial linear.
+															witness_set W,  // includes the initial linear.
 															mat_mp n_minusone_randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
 															vec_mp old_projection_full_prec,   // a single random complex linear. 
 															vec_mp new_projection_full_prec, // a single particular real linear with homogeneous term=0. 
-															witness_set_d *W_new)
+															witness_set *W_new,
+															solver_configuration *solve_options)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -72,28 +74,24 @@ int detjac_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int cu
   tracker_config_t T;
   prog_t dummyProg;
   bclock_t time1, time2;
-  int num_variables = 0, convergence_failures = 0, sharpening_failures = 0, sharpening_singular = 0, num_crossings = 0, num_sols = 0;
+  int num_variables = 0, num_crossings = 0, num_sols = 0;
+
 	
-	//necessary for the setupConfig call
-	double midpoint_tol, intrinsicCutoffMultiplier;
-	int userHom = 0, useRegen = 0, regenStartLevel = 0, maxCodim = 0, specificCodim = 0, pathMod = 0, reducedOnly = 0, supersetOnly = 0, paramHom = 0;
-	//end necessaries for the setupConfig call.
-	
-  int usedEq = 0;
-  int *startSub = NULL, *endSub = NULL, *startFunc = NULL, *endFunc = NULL, *startJvsub = NULL, *endJvsub = NULL, *startJv = NULL, *endJv = NULL, **subFuncsBelow = NULL;
+	int *startSub = NULL, *endSub = NULL, *startFunc = NULL, *endFunc = NULL, *startJvsub = NULL, *endJvsub = NULL, *startJv = NULL, *endJv = NULL, **subFuncsBelow = NULL;
   int (*ptr_to_eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *) = NULL;
   int (*ptr_to_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = NULL;
 	
   detjactodetjac_eval_data_d ED;
   trackingStats trackCount;
-  char inputName[] = "func_input";
   double track_time;
 	
   bclock(&time1); // initialize the clock.
   init_trackingStats(&trackCount); // initialize trackCount to all 0
 	
-  // setup T
-  setupConfig(&T, &midpoint_tol, &userHom, &useRegen, &regenStartLevel, &maxCodim, &specificCodim, &pathMod, &intrinsicCutoffMultiplier, &reducedOnly, &supersetOnly, &paramHom, MPType);
+	
+	//necessary for later whatnot
+	int userHom = 0, useRegen = 0, pathMod = 0, paramHom = 0;
+	cp_tracker_config_t(&T, &solve_options->T);
 	
 	
 	
@@ -143,7 +141,7 @@ int detjac_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int cu
     // initialize latest_newton_residual_mp to the maximum precision
     mpf_init2(T.latest_newton_residual_mp, T.AMP_max_prec);
   }
-	post_process_t *endPoints = (post_process_t *)bmalloc(W.W.num_pts * sizeof(post_process_t)); //overallocate, expecting full
+	post_process_t *endPoints = (post_process_t *)bmalloc(W.num_pts * sizeof(post_process_t)); //overallocate, expecting full
 	
 	
 	
@@ -178,7 +176,7 @@ int detjac_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int cu
 	
 	
 	// check for path crossings
-	midpoint_checker(trackCount.numPoints, num_variables, midpoint_tol, &num_crossings);
+	midpoint_checker(trackCount.numPoints, num_variables, solve_options->midpoint_tol, &num_crossings);
 	
 	// setup num_sols
 	num_sols = trackCount.successes;
@@ -223,7 +221,7 @@ int detjac_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int cu
 	
   // print the failure summary
 	//  printFailureSummary(&trackCount, convergence_failures, sharpening_failures, sharpening_singular);
-	BRpostProcessing_AllowDuplicates(endPoints, W_new, trackCount.successes, ED.preProcData, &T);
+	BRpostProcessing(endPoints, W_new, trackCount.successes, &ED.preProcData, &T, solve_options);
 //	BRpostProcessing(endPoints, W_new, trackCount.successes, ED.preProcData, &T);
 	
 	
@@ -252,7 +250,7 @@ int detjac_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int cu
 
 void detjac_to_detjac_track_d(trackingStats *trackCount,
 															FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
-															witness_set_d W,
+															witness_set W,
 															post_process_t *endPoints,  // for holding the produced data.
 															FILE *FAIL,
 															int pathMod, tracker_config_t *T,
@@ -271,7 +269,7 @@ void detjac_to_detjac_track_d(trackingStats *trackCount,
  \***************************************************************/
 {
 	
-  int ii,jj,kk, oid, startPointIndex, max = max_threads();
+  int ii,jj, oid, startPointIndex, max = max_threads();
   tracker_config_t *T_copy = NULL;
   detjactodetjac_eval_data_d *BED_copy = NULL;
   trackingStats *trackCount_copy = NULL;
@@ -292,11 +290,11 @@ void detjac_to_detjac_track_d(trackingStats *trackCount,
 	
 	
 	point_data_d *startPts = NULL;
-	startPts = (point_data_d *)bmalloc(W.W.num_pts * sizeof(point_data_d));
+	startPts = (point_data_d *)bmalloc(W.num_pts * sizeof(point_data_d));
 	
 	
 	
-	for (ii = 0; ii < W.W.num_pts; ii++)
+	for (ii = 0; ii < W.num_pts; ii++)
 	{ // setup startPts[ii]
 		init_point_data_d(&startPts[ii], W.num_variables); // also performs initialization on the point inside startPts
 		change_size_vec_d(startPts[ii].point,W.num_variables);
@@ -306,8 +304,8 @@ void detjac_to_detjac_track_d(trackingStats *trackCount,
 		
 		//1 set the coordinates
 		for (jj = 0; jj<W.num_variables; jj++) {
-			startPts[ii].point->coord[jj].r = W.W.pts[ii]->coord[jj].r;
-			startPts[ii].point->coord[jj].i = W.W.pts[ii]->coord[jj].i;
+			startPts[ii].point->coord[jj].r = W.pts_d[ii]->coord[jj].r;
+			startPts[ii].point->coord[jj].i = W.pts_d[ii]->coord[jj].i;
 		}
 		//2 set the start time to 1.
 		set_one_d(startPts[ii].time);
@@ -326,7 +324,7 @@ void detjac_to_detjac_track_d(trackingStats *trackCount,
 
 	
 	
-	trackCount->numPoints = W.W.num_pts;
+	trackCount->numPoints = W.num_pts;
 	int solution_counter = 0;
 	
 	
@@ -335,11 +333,11 @@ void detjac_to_detjac_track_d(trackingStats *trackCount,
 #ifdef _OPENMP
 #pragma omp parallel for private(ii, oid, startPointIndex) schedule(runtime)
 #endif
-	for (ii = 0; ii < W.W.num_pts; ii++)
+	for (ii = 0; ii < W.num_pts; ii++)
 	{ // get current thread number
 		oid = thread_num();
 		
-		printf("detjac_to_detjac tracking path %d of %d\n",ii,W.W.num_pts);
+		printf("detjac_to_detjac tracking path %d of %d\n",ii,W.num_pts);
 		startPointIndex = ii;
 		
 		
@@ -388,19 +386,14 @@ void detjac_to_detjac_track_d(trackingStats *trackCount,
 			trackCount->successes++;
 			solution_counter++; // probably this could be eliminated
 		}
-	}// re: for (ii=0; ii<W.W.num_pts ;ii++)
+	}// re: for (ii=0; ii<W.num_pts ;ii++)
 	
 	
 
-	printf("found %d solutions after the detjac_to_detjac regeneration step\n",solution_counter);
-	
-	
-	//should i re-size the W_new->W_*.pts structures according to the number of solutions???
-	
-	
+
 	//clear the data structures.
 	
-  for (ii = 0; ii >W.W.num_pts; ii++)
+  for (ii = 0; ii >W.num_pts; ii++)
   { // clear startPts[ii]
     clear_point_data_d(&startPts[ii]);
   }
@@ -409,13 +402,7 @@ void detjac_to_detjac_track_d(trackingStats *trackCount,
   // clear the structures
   clear_detjactodetjac_omp_d(max, &EG, &trackCount_copy, trackCount, &OUT_copy, OUT, &RAWOUT_copy, RAWOUT, &MIDOUT_copy, MIDOUT, &FAIL_copy, FAIL, &NONSOLN_copy, NONSOLN, &T_copy, &BED_copy);
 	
-	//  if (!ED_d->squareSystem.noChanges)
-	//  { // complete NONSOLN
-	//    rewind(NONSOLN);
-	//    fprintf(NONSOLN, "%d", trackCount->junkCount);
-	//    fclose(NONSOLN);
-	//  }
-	
+
 	
 	
 	
@@ -526,7 +513,7 @@ int detjac_to_detjac_setup_d(FILE **OUT, char *outName,
 														 char *preprocFile, char *degreeFile,
 														 int findStartPts, char *pointsIN, char *pointsOUT,
 														 mat_mp n_minusone_randomizer_matrix_full_prec,
-														 witness_set_d W,
+														 witness_set W,
 														 vec_mp old_projection_full_prec,
 														 vec_mp new_projection_full_prec)
 /***************************************************************\
@@ -609,7 +596,7 @@ int detjac_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat
 	
   detjactodetjac_eval_data_d *BED = (detjactodetjac_eval_data_d *)ED; // to avoid having to cast every time
 	
-  int ii, jj, kk;
+  int ii, jj;
   comp_d one_minus_s, gamma_s;
 	
 	set_one_d(one_minus_s);
@@ -1218,13 +1205,13 @@ void setupdetjactodetjacEval_d(tracker_config_t *T,char preprocFile[], char degr
 															 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,// what are these supposed to point to?
 															 detjactodetjac_eval_data_d *BED, int adjustDegrees,
 															 mat_mp n_minusone_randomizer_matrix_full_prec,
-															 witness_set_d W,
+															 witness_set W,
 															 vec_mp old_projection_full_prec,
 															 vec_mp new_projection_full_prec)
 {
   int ii;
 	BED->num_variables = W.num_variables;
-	printf("setup detjactodetjac_d 1295\n");
+
 	
   setupPreProcData(preprocFile, &BED->preProcData);
 	//  setupSquareSystem_d(dummyProg, squareSize, &BED->preProcData, degreeFile, &BED->squareSystem, adjustDegrees); // NOTE: squareSystem must be setup before the patch!!!
@@ -1331,7 +1318,7 @@ void setupdetjactodetjacEval_d(tracker_config_t *T,char preprocFile[], char degr
 		}
 		
 		
-		print_matrix_to_screen_matlab_mp(BED->BED_mp->patch.patchCoeff,"userpatch_mp");
+//		print_matrix_to_screen_matlab_mp(BED->BED_mp->patch.patchCoeff,"userpatch_mp");
 		
   }//re: if mptype==2
 	
@@ -1468,7 +1455,6 @@ void change_detjactodetjac_eval_prec_mp(int new_prec, detjactodetjac_eval_data_m
  \***************************************************************/
 {
 	
-	int ii;
 	
   // change the precision for the patch
   changePatchPrec_mp(new_prec, &BED->patch);
@@ -1476,7 +1462,7 @@ void change_detjactodetjac_eval_prec_mp(int new_prec, detjactodetjac_eval_data_m
 	
 	if (new_prec != BED->curr_prec){
 		
-		printf("prec now %d\n",new_prec);
+//		printf("prec now %d\n",new_prec);
 		
 		BED->SLP->precision = new_prec;
 		
@@ -1519,11 +1505,12 @@ void change_detjactodetjac_eval_prec_mp(int new_prec, detjactodetjac_eval_data_m
 
 
 int detjac_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int currentSeed
-															 witness_set_d W,  // includes the initial linear.
+															 witness_set W,  // includes the initial linear.
 															 mat_mp n_minusone_randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
 															 vec_mp old_projection_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 															 vec_mp new_projection_full_prec,
-															 witness_set_d *W_new)
+															 witness_set *W_new,
+															 solver_configuration *solve_options)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -1536,28 +1523,25 @@ int detjac_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int c
   tracker_config_t T;
   prog_t dummyProg;
   bclock_t time1, time2;
-  int num_variables = 0, convergence_failures = 0, sharpening_failures = 0, sharpening_singular = 0, num_crossings = 0, num_sols = 0;
+  int num_variables = 0, num_crossings = 0, num_sols = 0;
 	
-	//necessary for the setupConfig call
-	double midpoint_tol, intrinsicCutoffMultiplier;
-	int userHom = 0, useRegen = 0, regenStartLevel = 0, maxCodim = 0, specificCodim = 0, pathMod = 0, reducedOnly = 0, supersetOnly = 0, paramHom = 0;
-	//end necessaries for the setupConfig call.
 	
-  int usedEq = 0;
   int *startSub = NULL, *endSub = NULL, *startFunc = NULL, *endFunc = NULL, *startJvsub = NULL, *endJvsub = NULL, *startJv = NULL, *endJv = NULL, **subFuncsBelow = NULL;
   int (*ptr_to_eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *) = NULL;
   int (*ptr_to_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = NULL;
 	
   detjactodetjac_eval_data_mp ED;  // was basic_eval_data_d  DAB
   trackingStats trackCount;
-  char inputName[] = "func_input";
   double track_time;
 	
   bclock(&time1); // initialize the clock.
   init_trackingStats(&trackCount); // initialize trackCount to all 0
 	
-  // setup T
-  setupConfig(&T, &midpoint_tol, &userHom, &useRegen, &regenStartLevel, &maxCodim, &specificCodim, &pathMod, &intrinsicCutoffMultiplier, &reducedOnly, &supersetOnly, &paramHom, 1);
+	//necessary for later whatnot
+	int userHom = 0, useRegen = 0, pathMod = 0, paramHom = 0;
+	
+	cp_tracker_config_t(&T, &solve_options->T);
+	
 	
 	// initialize latest_newton_residual_mp
   mpf_init(T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
@@ -1601,7 +1585,7 @@ int detjac_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int c
     }
   }
 	
-	post_process_t *endPoints = (post_process_t *)bmalloc(W.W.num_pts * sizeof(post_process_t)); //overallocate, expecting full
+	post_process_t *endPoints = (post_process_t *)bmalloc(W.num_pts * sizeof(post_process_t)); //overallocate, expecting full
 	
 	
 	
@@ -1634,7 +1618,7 @@ int detjac_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int c
 	fprintf(rawOUT, "%d\n\n", -1);  // bottom of rawOUT
 	
 	// check for path crossings
-	midpoint_checker(trackCount.numPoints, num_variables, midpoint_tol, &num_crossings);
+	midpoint_checker(trackCount.numPoints, num_variables, solve_options->midpoint_tol, &num_crossings);
 	
 	// setup num_sols
 	num_sols = trackCount.successes;
@@ -1667,7 +1651,7 @@ int detjac_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int c
   fclose(FAIL);
 	
 //	BRpostProcessing(endPoints, W_new, trackCount.successes, ED.preProcData, &T);
-	BRpostProcessing_AllowDuplicates(endPoints, W_new, trackCount.successes, ED.preProcData, &T);
+	BRpostProcessing(endPoints, W_new, trackCount.successes, &ED.preProcData, &T, solve_options);
 
 	
 	free(startSub);
@@ -1692,7 +1676,7 @@ int detjac_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int c
 
 void detjac_to_detjac_track_mp(trackingStats *trackCount,
 															 FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
-															 witness_set_d W,
+															 witness_set W,
 															 post_process_t *endPoints,
 															 FILE *FAIL,
 															 int pathMod, tracker_config_t *T,
@@ -1709,7 +1693,7 @@ void detjac_to_detjac_track_mp(trackingStats *trackCount,
  \***************************************************************/
 {
 	
-  int ii,jj,kk, oid, startPointIndex, max = max_threads();
+  int ii, oid, max = max_threads();
   tracker_config_t *T_copy = NULL;
   detjactodetjac_eval_data_mp *BED_copy = NULL;
   trackingStats *trackCount_copy = NULL;
@@ -1720,25 +1704,17 @@ void detjac_to_detjac_track_mp(trackingStats *trackCount,
 	
 	
 	
-	// setup NONSOLN
-	//  if (!ED_d->squareSystem.noChanges)
-	//  { // setup NONSOLN
-	//    NONSOLN = fopen("nonsolutions", "w");
-	//    fprintf(NONSOLN, "                                    \n\n");
-	//  }
-	
-	
   int (*curr_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = NULL;
 	
   curr_eval_mp = &detjac_to_detjac_eval_mp; //
 	
 	
 	point_data_mp *startPts = NULL;
-	startPts = (point_data_mp *)bmalloc(W.W_mp.num_pts * sizeof(point_data_mp));
+	startPts = (point_data_mp *)bmalloc(W.num_pts * sizeof(point_data_mp));
 	
 	
 	
-	for (ii = 0; ii < W.W_mp.num_pts; ii++)
+	for (ii = 0; ii < W.num_pts; ii++)
 	{ // setup startPts[ii]
 		init_point_data_mp2(&startPts[ii], W.num_variables, T->Precision);
 		startPts[ii].point->size = W.num_variables;
@@ -1746,7 +1722,7 @@ void detjac_to_detjac_track_mp(trackingStats *trackCount,
 		//NEED TO COPY IN THE WITNESS POINT
 		
 		//1 set the coordinates
-		vec_cp_mp(startPts[ii].point, W.W_mp.pts[ii] );
+		vec_cp_mp(startPts[ii].point, W.pts_mp[ii] );
 		
 		//2 set the start time to 1.
 		set_one_mp(startPts[ii].time);
@@ -1766,16 +1742,9 @@ void detjac_to_detjac_track_mp(trackingStats *trackCount,
 	
 	
 	//initialize the structure for holding the produced data
+
 	
-//	W_new->W.num_pts=0;
-//  W_new->W.pts=(point_d *)bmalloc(W.W.num_pts*sizeof(point_d));
-//	
-//	W_new->W_mp.num_pts=0;
-//  W_new->W_mp.pts=(point_mp *)bmalloc(W.W_mp.num_pts*sizeof(point_mp));
-//  W_new->num_variables = W.num_variables;
-//	
-	
-	trackCount->numPoints = W.W.num_pts;
+	trackCount->numPoints = W.num_pts;
 	int solution_counter = 0;
 	
 	
@@ -1790,12 +1759,10 @@ void detjac_to_detjac_track_mp(trackingStats *trackCount,
 #ifdef _OPENMP
 #pragma omp parallel for private(ii, oid, startPointIndex) schedule(runtime)
 #endif
-	for (ii = 0; ii < W.W_mp.num_pts; ii++)
+	for (ii = 0; ii < W.num_pts; ii++)
 	{ // get current thread number
 		oid = thread_num();
-		printf("detjac_to_detjac tracking path %d of %d\n",ii,W.W.num_pts);
-		// print the header of the path to OUT
-		//			printPathHeader_mp(OUT_copy[oid], &startPts[startPointIndex], &T_copy[oid], solution_counter, &BED_copy[oid], eval_func_mp);
+		printf("detjac_to_detjac tracking path %d of %d\n",ii,W.num_pts);
 		detjac_to_detjac_track_path_mp(solution_counter, &EG[oid], &startPts[ii], OUT_copy[oid], MIDOUT_copy[oid], &T_copy[oid], &BED_copy[oid], curr_eval_mp, change_prec, find_dehom); //curr_eval_d,
 		
 		
@@ -1832,53 +1799,14 @@ void detjac_to_detjac_track_mp(trackingStats *trackCount,
 			solution_counter++; // probably this could be eliminated
 		}
 		
-		
-		
-		//			comp_mp result; init_mp(result);
-		//			dot_product_mp(result, W_new->W_mp.pts[solution_counter], ED->current_linear);
-		//			print_point_to_screen_matlab( W_new->W.pts[solution_counter],"newwitnesspoint");
-		//			print_point_to_screen_matlab( ED_d->current_linear,"newlinear");
-		//
-		//			printf("dot_prod=%le+1i*%le;\n",result->r,result->i);
-		
-		
-		
-		
-		
-		
-		
-		//				print_point_to_screen_matlab(startPts[startPointIndex].point,"start");
-		//				print_point_to_screen_matlab(ED_d->old_linear,"old");
-		//
-		//				print_point_to_screen_matlab(EG->PD_d.point,"vend"); // the actual solution!!!
-		//				print_point_to_screen_matlab(ED_d->current_linear,"curr");
-		
-		
-		//    if (EG[oid].prec < 64)
-		//    { // print footer in double precision
-		//      printPathFooter_d(&trackCount_copy[oid], &EG[oid], &T_copy[oid], OUT_copy[oid], RAWOUT_copy[oid], FAIL_copy[oid], NONSOLN_copy[oid], &BED_copy[oid]);
-		//    }
-		//    else
-		//    { // print footer in multi precision
-		//      printPathFooter_mp(&trackCount_copy[oid], &EG[oid], &T_copy[oid], OUT_copy[oid], RAWOUT_copy[oid], FAIL_copy[oid], NONSOLN_copy[oid], BED_copy[oid].BED_mp);
-		//    }
-		
-		
-	}// re: for (ii=0; ii<W.W.num_pts ;ii++)
-	
-	
-//	W_new->W.num_pts=solution_counter;
-	printf("found %d solutions after the detjac_to_detjac regeneration step\n",solution_counter);
-	
-	
-	
+	}// re: for (ii=0; ii<W.num_pts ;ii++)
 	
 	
 	
 	
 	//clear the data structures.
 	
-  for (ii = 0; ii >W.W_mp.num_pts; ii++)
+  for (ii = 0; ii >W.num_pts; ii++)
   { // clear startPts[ii]
     clear_point_data_mp(&startPts[ii]);
   }
@@ -1891,8 +1819,6 @@ void detjac_to_detjac_track_mp(trackingStats *trackCount,
 }
 
 
-
-//int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
 
 // derived from zero_dim_track_path_d
 void detjac_to_detjac_track_path_mp(int pathNum, endgame_data_t *EG_out,
@@ -1947,7 +1873,7 @@ int detjac_to_detjac_setup_mp(FILE **OUT, char *outName,
 															char *preprocFile, char *degreeFile,
 															int findStartPts, char *pointsIN, char *pointsOUT,
 															mat_mp n_minusone_randomizer_matrix,
-															witness_set_d W,
+															witness_set W,
 															vec_mp old_projection_full_prec,
 															vec_mp new_projection_full_prec)
 /***************************************************************\
@@ -2026,7 +1952,7 @@ int detjac_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer,
 //	printf("entering detjacdetjac_eval_mp\n");
   detjactodetjac_eval_data_mp *BED = (detjactodetjac_eval_data_mp *)ED; // to avoid having to cast every time
 	
-	int ii, jj, kk;
+	int ii, jj;
   comp_mp one_minus_s, gamma_s; init_mp(one_minus_s); init_mp(gamma_s);
 	comp_mp detjac_old;  init_mp(detjac_old);
 	comp_mp detjac_new;  init_mp(detjac_new);
@@ -2639,7 +2565,7 @@ void setupdetjactodetjacEval_mp(char preprocFile[], char degreeFile[], prog_t *d
 																void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
 																detjactodetjac_eval_data_mp *BED, int adjustDegrees,
 																mat_mp n_minusone_randomizer_matrix,
-																witness_set_d W,
+																witness_set W,
 																vec_mp old_projection_full_prec,
 																vec_mp new_projection_full_prec)
 {
@@ -2648,9 +2574,8 @@ void setupdetjactodetjacEval_mp(char preprocFile[], char degreeFile[], prog_t *d
   setupPreProcData(preprocFile, &BED->preProcData);
 	
 	setupPatch_mp(patchType, &BED->patch, digits, prec, ptr1, ptr2);
-	//
+
 	
-	printf("setup detjac_mp 3237 \n");
 	BED->num_variables = W.num_variables;
 	
 	
@@ -2678,10 +2603,10 @@ void setupdetjactodetjacEval_mp(char preprocFile[], char degreeFile[], prog_t *d
 	//	init_mat_mp(Jp,0,0);
 	//	comp_mp pathVars; init_mp(pathVars);
 	//	set_one_mp(pathVars);
-	//	patch_eval_mp(    patchValues, parVals, parDer, Jv_Patch, Jp, W.W_mp.pts[0], pathVars, &BED->patch);  // Jp is ignored
+	//	patch_eval_mp(    patchValues, parVals, parDer, Jv_Patch, Jp, W.pts_mp[0], pathVars, &BED->patch);  // Jp is ignored
 	//
 	//	print_point_to_screen_matlab_mp(patchValues,"patchvalues");
-	//	print_point_to_screen_matlab_mp(W.W_mp.pts[0],"initialpoint");
+	//	print_point_to_screen_matlab_mp(W.pts_mp[0],"initialpoint");
 	//	mypause();
 	
 	
@@ -2708,10 +2633,7 @@ void setupdetjactodetjacEval_mp(char preprocFile[], char degreeFile[], prog_t *d
 	init_mp2(BED->gamma,prec);
 	get_comp_rand_mp(BED->gamma); // set gamma to be random complex value
 	
-	
 
-	
-	printf("exit setup_mp\n");
 	
   return;
 }
@@ -2807,7 +2729,7 @@ int check_issoln_detjactodetjac_d(endgame_data_t *EG,
 		detjac_to_detjac_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_d.point, EG->PD_d.time, ED); }
 	
 	
-	print_point_to_screen_matlab(e.funcVals,"post_soln_func_vals");
+//	print_point_to_screen_matlab(e.funcVals,"post_soln_func_vals");
 	
 	if (EG->last_approx_prec>=64) {
 		vec_d prev_pt;  init_vec_d(prev_pt,1);
@@ -2887,7 +2809,7 @@ int check_issoln_detjactodetjac_mp(endgame_data_t *EG,
 	//this one guaranteed by entry condition
 	detjac_to_detjac_eval_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, ED);
 	
-	print_point_to_screen_matlab_mp(e.funcVals,"post_soln_func_vals");
+//	print_point_to_screen_matlab_mp(e.funcVals,"post_soln_func_vals");
 	if (EG->last_approx_prec < 64)
 	{ // copy to _mp
 		point_d_to_mp(EG->last_approx_mp, EG->last_approx_d);

@@ -10,6 +10,8 @@
 #include "polysolve.h"
 #include "fileops.h"
 
-int witnessSetParse(witness_set_d *W, char *witness_set_file, int num_vars);
+void get_variable_names(witness_set *W);
+
+int witnessSetParse(witness_set *W, char *witness_set_file, int num_vars);
 
 #endif

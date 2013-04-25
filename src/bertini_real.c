@@ -9,227 +9,165 @@ int main(int argC, char *args[])
  \***************************************************************/
 {
   int rV,num_vars=0,sc;  //1=self-conjugate; 0=not
-//  char *inputName = NULL, *witnessSetName = NULL,
-//	char *input_deflated_Name=NULL;
+
   curveDecomp_d C;  //new data type; stores vertices, edges, etc.
   vec_mp pi_mp;  //random projection
-  witness_set_d Wuser;
+  witness_set Wuser;
 	int max_deflations = 10,strLength;
 	int num_deflations, *deflation_sequence = NULL;
-	int ii;  // counters
-	
+	int MPType;
 	
 
 	////
-	//  begin the actual program
+	//  INITIALIZATION
 	////
-	
-	program_configuration options;  init_configuration(&options);
 	
 	splash_screen();
 	
-	parse_options(argC, args, &options);
+	//instantiate options
+	program_configuration program_options;  init_program_config(&program_options);
+	parse_options(argC, args, &program_options);
 	
-	startup(options);
+	//parse the options
+	startup(program_options); // tests for existence of necessary files, etc.
 	
-//	display_current_options(options);
-	//also gets the inputName, witnessSetName
-	//default inputName = "input"
-	//default witnessSetName = "witness_set"
+	//if desired, display the options
+//	display_current_options(program_options);
+	
   
 	srand(0);
 //	srand(time(NULL));
 	// essentials for using the bertini parser
-	prog_t SLP;
+
 	
 	
-	unsigned int currentSeed;
-	int trackType, genType = 0, MPType,  sharpenOnly, needToDiff, remove_temp, useParallelDiff = 0;
-  int my_id, num_processes, headnode = 0; // headnode is always 0
-//	int precision = 53;
-	num_processes = 1;
-	int num_var_gps = 0, userHom = 0;
-	
-	//end parser-bertini essentials
+	//split the input_file
+	parse_input_file(program_options.input_filename, &MPType);
 	
 	
+	// set up the solver configuration
+	solver_configuration solve_options;  init_solver_config(&solve_options);
+	get_tracker_config(&solve_options,MPType);
+	setupPreProcData("preproc_data", &solve_options.PPD);
 	
-	parse_input(options.input_filename, &trackType, &MPType, &genType, &userHom, &currentSeed, &sharpenOnly, &needToDiff, &remove_temp, useParallelDiff, my_id, num_processes, headnode);
+	initMP(solve_options.T.Precision);
 	
-	
-	preproc_data PPD;
-	setupPreProcData("preproc_data", &PPD);
-	
-	tracker_config_t T;
-	get_tracker_config(&T,MPType);
-	
-	initMP(T.Precision);
-	
-//#ifdef _OPENMP
-//#pragma omp parallel
-//#endif
-//  { // set precision for each thread - all threads will execute this and set the precision correctly on each thread
-//    initMP(T.Precision);
-//  }
+
 	
 	
-	num_var_gps = PPD.num_var_gp;
-	int orig_num_func = PPD.num_funcs;
-	num_vars = setupProg(&SLP, T.Precision, MPType); // num_vars includes the number of homogeneous coordinates.
-	// the number of homogeneous coordinates is the num_var_gps.
+	num_vars = get_num_vars_PPD(solve_options.PPD);
 	
-	
-	printf("parsing witness set\n");
+
 	init_witness_set_d(&Wuser);
-	witnessSetParse(&Wuser,options.witness_set_filename,num_vars);
-	Wuser.num_var_gps = num_var_gps;
+	witnessSetParse(&Wuser,program_options.witness_set_filename,num_vars);
+	Wuser.num_var_gps = solve_options.PPD.num_var_gp;
 	Wuser.MPType = MPType;
 	
 	get_variable_names(&Wuser);
 
+
+	Wuser.incidence_number = get_component_number(Wuser,num_vars,
+																								program_options.input_filename,
+																								program_options.stifle_text);
 	
-//	witnessSetParse(&Wnew, witnessSetName,num_vars);  // Wnew same as Wuser, except for functions. (needs to be updated)
-//	Wnew.MPType = MPType;
-//	Wnew.num_var_gps = num_var_gps;
-	
-	printf("getting component number\n");
-	Wuser.incidence_number = get_component_number(Wuser,num_vars,options.input_filename);
-//	Wnew.incidence_number = Wuser.incidence_number;
-	
-//	printf("inserting new randomization matrix\n");
-//	insert_randomization_matrix_witness_data(1,1,1);// move me to after isosingular deflation.
-//	exit(0);
-	
-	
-	
-	write_dehomogenized_coordinates(Wuser, "witness_points_dehomogenized");
 	
 
 	printf("performing isosingular deflation\n");
 	// perform an isosingular deflation
-	rV = isosingular_deflation(&num_deflations, &deflation_sequence, options.input_filename, "witness_points_dehomogenized", "bertini", "matlab -nosplash", max_deflations);
+	write_dehomogenized_coordinates(Wuser, "witness_points_dehomogenized"); // write the points to file
+	
+	rV = isosingular_deflation(&num_deflations, &deflation_sequence, program_options.input_filename, "witness_points_dehomogenized", "bertini", "matlab -nosplash", max_deflations);
   
-	strLength = 1 + snprintf(NULL, 0, "%s_comp_%d_deflated", options.input_filename,deflation_sequence[num_deflations]);
-//	input_deflated_Name = (char *)bmalloc(strLength * sizeof(char));
-	sprintf(options.input_deflated_filename, "%s_comp_%d_deflated", options.input_filename,deflation_sequence[num_deflations]);
+	//this should be made a function
+	strLength = 1 + snprintf(NULL, 0, "%s_comp_%d_deflated", program_options.input_filename,deflation_sequence[num_deflations]);
+	sprintf(program_options.input_deflated_filename, "%s_comp_%d_deflated", program_options.input_filename,deflation_sequence[num_deflations]);
 	
 	
 	
 	
-	// this is a bertini routine
-	parse_input(options.input_filename, &trackType, &MPType, &genType, &userHom, &currentSeed, &sharpenOnly, &needToDiff, &remove_temp, useParallelDiff, my_id, num_processes, headnode);
-	preproc_data_clear(&PPD);
-	setupPreProcData("preproc_data", &PPD);
-	int defl_num_func = PPD.num_funcs;
+	// this wraps around a bertini routine
+	parse_input_file(program_options.input_deflated_filename, &MPType);
+	
+	preproc_data_clear(&solve_options.PPD);
+	setupPreProcData("preproc_data", &solve_options.PPD);
+
 	
 	
 
-
-
-	
 	
 	
 	printf("checking if component is self-conjugate\n");
-	sc = checkSelfConjugate(Wuser,num_vars,options.input_filename);  //later:  could be passed in from user, if we want
-	if (sc==0) {
-		printf("component is NOT self conjugate\n");
-	}
-	else{
-		printf("component IS self conjugate\n");
-	}
+	sc = checkSelfConjugate(Wuser,num_vars,program_options.input_filename, program_options.stifle_text);  //later:  could be passed in from user, if we want
+
 	
 	
 	
+	//regenerate the various files, since we ran bertini since then.  
+	parse_input_file(program_options.input_deflated_filename, &MPType);
 	
 	
-	
-	
-	
-	
-	//regenerate the various files, since we ran bertini since then
-	parse_input(options.input_deflated_filename, &trackType, &MPType, &genType, &userHom, &currentSeed, &sharpenOnly, &needToDiff, &remove_temp, useParallelDiff, my_id, num_processes, headnode);
-	
-	
-	
-	//now need to get new system produced by isosingular_deflation into bertini_real's memory.
-	
-	
-	
-	//need to convert Wuser to Wnew here
-	
-	//q: what could change?
-	
-	//temp answer:  the functions, but not the points, or the slices.
-	
-	
-	// initialize the projection pi.  for now, get random projection.  would prefer to get it from a file.
-	init_vec_mp(pi_mp,num_vars);
-	pi_mp->size = num_vars; // should include the homogeneous variable
+	//get the random projection \pi
+	init_vec_mp(pi_mp,num_vars); pi_mp->size = num_vars; // should include the homogeneous variable
+	get_projection(pi_mp, program_options, solve_options, num_vars);
 	
 
-	for (ii=0; ii<num_vars; ii++) {
-		set_zero_mp(&pi_mp->coord[ii]);
-	}
-	set_one_mp(&pi_mp->coord[1]);
+	
 	
 
+	
 
-
+	//initialize the data structure which collets the output
 	init_curveDecomp_d(&C);
 	
 	
-	
-//	vertex_d temp_vertex;  init_vertex_mp(&temp_vertex);
-////	set_mp(temp_vertex.projVal_mp,  );
-//	get_comp_rand_mp(temp_vertex.projVal_mp);
-//	make_vec_random_mp(temp_vertex.pt_mp,num_vars);
-////	vec_cp_mp(temp_vertex.pt_mp,W_crit_real.W_mp.pts[index_tracker[ii]]);
-//	
-//	for (ii=0;  ii<5; ii++){
-//		add_vertex_to_V1(&C,temp_vertex);
-//	}
+
 	
 	if (sc==0)  //C is not self-conjugate
 	{
 		//Call non-self-conjugate case code
 		printf("\n\nentering not-self-conjugate case\n\n");
-		computeCurveNotSelfConj(Wuser, pi_mp, &C,num_vars-1,options.input_deflated_filename);//This is Wenrui's !!!
+		computeCurveNotSelfConj(Wuser, pi_mp, &C,num_vars-1,program_options.input_deflated_filename);//This is Wenrui's !!!
 		printf("Bertini_real found %d vertices (vertex)\n",C.num_V0);
 	}
 	else
 	{
 		//Call self-conjugate case code
 		printf("\n\nentering self-conjugate case\n\n");
-		computeCurveSelfConj(options.input_deflated_filename,Wuser,pi_mp,&C,num_vars,num_var_gps,options);  //This is Dans', at least at first !!!
+		computeCurveSelfConj(program_options.input_deflated_filename,Wuser,pi_mp,&C,
+												 num_vars,Wuser.num_var_gps,
+												 &program_options, &solve_options);  //This is Dans', at least at first !!!
 	}
 	
 	
 	
 	printf("\n*\ndone with case\n*\n");
 
-	printf("your projection was:\n");
-	print_point_to_screen_matlab_mp(pi_mp,"pi");
 		
 	
+	C.num_variables = num_vars;
+	if (MPType==0) {
+		init_vec_d(C.pi_d, Wuser.num_variables); C.pi_d->size = Wuser.num_variables;
+		vec_mp_to_d(C.pi_d, pi_mp);
+	}
+	else
+	{
+		init_vec_mp(C.pi, Wuser.num_variables); C.pi->size = Wuser.num_variables;
+		vec_cp_mp(C.pi, pi_mp);
+	}
 
+	printf("outputting data\n");
+	Output_Main("output", program_options.input_deflated_filename,Wuser.comp_num, num_vars, C, 2);
 	
-	Output_Main("output", options.input_deflated_filename,Wuser.comp_num, num_vars, C, 2);
 	
-	
-	printf("clearing data\n");
-	// clear memory
-//	free(inputName);
-//	free(witnessSetName);
-	
+
 	printf("clearing witness_set\n");
 	clear_witness_set(Wuser);
-//	clear_witness_set(Wnew);
-	
+
 	printf("clearing C\n");
 	clear_curveDecomp_d(&C,2);
 	
-	printf("clearing options\n");
-	clear_configuration(&options);
+//	printf("clearing program_options\n");
+//	clear_program_config(&program_options);
 	
   //TMP END
   return 0;

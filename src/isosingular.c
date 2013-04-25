@@ -12,7 +12,7 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *i
 * NOTES:                                                        *
 \***************************************************************/
 {
-  int i,ii, success = 0, strLength = 0, nullSpace = 0, *declarations = NULL;
+  int ii, success = 0, strLength = 0, nullSpace = 0, *declarations = NULL;
   char ch, *strStabilizationTest = NULL;
   FILE *IN = NULL, *OUT = NULL;
 
@@ -127,8 +127,8 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *i
     printf("\nIsosingular deflation was successful!\n\n");
     printf("Number of deflations: %d\n", *num_deflations);
     printf("Deflation sequence: ");
-    for (i = 0; i < *num_deflations; i++)
-      printf("%d, ", (*deflation_sequence)[i]);
+    for (ii = 0; ii < *num_deflations; ii++)
+      printf("%d, ", (*deflation_sequence)[ii]);
     printf("%d, ...\n\n", (*deflation_sequence)[*num_deflations]);
 
     // create deflated system
@@ -185,7 +185,7 @@ void isosingular_deflation_iteration(int *declarations, char *inputOutputName, c
 * NOTES:                                                        *
 \***************************************************************/
 {
-  int i, numVars = 0, numFuncs = 0, numConstants = 0, minorSize = 0, strLength = 0;
+  int ii, numVars = 0, numFuncs = 0, numConstants = 0, minorSize = 0, strLength = 0;
   int *lineVars = NULL, *lineFuncs = NULL, *lineConstants = NULL, *degrees = NULL;
   char ch, *str = NULL, **vars = NULL, **funcs = NULL, **consts = NULL;
   FILE *IN = NULL, *OUT = NULL;
@@ -218,8 +218,8 @@ void isosingular_deflation_iteration(int *declarations, char *inputOutputName, c
   // read in the degrees
   degrees = (int *)bmalloc(numFuncs * sizeof(int));
 	OUT = safe_fopen_read("deg.out");
-  for (i = 0; i < numFuncs; i++)
-    fscanf(OUT, "%d", &degrees[i]);
+  for (ii = 0; ii < numFuncs; ii++)
+    fscanf(OUT, "%d", &degrees[ii]);
   fclose(OUT);;
 
   // setup Matlab script
@@ -266,16 +266,16 @@ void isosingular_deflation_iteration(int *declarations, char *inputOutputName, c
   // clear memory
   free(str);
   free(degrees);
-  for (i = 0; i < numVars; i++)
-    free(vars[i]);
+  for (ii = 0; ii < numVars; ii++)
+    free(vars[ii]);
   free(vars);
   free(lineVars);
-  for (i = 0; i < numConstants; i++)
-    free(consts[i]);
+  for (ii = 0; ii < numConstants; ii++)
+    free(consts[ii]);
   free(consts);
   free(lineConstants);
-  for (i = 0; i < numFuncs; i++)
-    free(funcs[i]);
+  for (ii = 0; ii < numFuncs; ii++)
+    free(funcs[ii]);
   free(funcs);
   free(lineFuncs);
 
@@ -290,7 +290,7 @@ void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 * NOTES:                                                        *
 \***************************************************************/
 {
-  int i, lineNumber = 1, cont = 1, declares = 0, strLength = 0, strSize = 1;
+  int ii, lineNumber = 1, cont = 1, declares = 0, strLength = 0, strSize = 1;
   char ch;
   char *str = (char *)bmalloc(strSize * sizeof(char));
 
@@ -299,40 +299,40 @@ void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 
   // setup variables
   fprintf(OUT, "syms");
-  for (i = 0; i < numVars; i++)
-    fprintf(OUT, " %s", vars[i]);
+  for (ii = 0; ii < numVars; ii++)
+    fprintf(OUT, " %s", vars[ii]);
   fprintf(OUT, ";\nX = [");
-  for (i = 0; i < numVars; i++)
-    fprintf(OUT, " %s", vars[i]);
+  for (ii = 0; ii < numVars; ii++)
+    fprintf(OUT, " %s", vars[ii]);
   fprintf(OUT, "];\n");
 
   // setup constants
   if (numConstants > 0)
   {
     fprintf(OUT, "syms");
-    for (i = 0; i < numConstants; i++)
-      fprintf(OUT, " %s", consts[i]);
+    for (ii = 0; ii < numConstants; ii++)
+      fprintf(OUT, " %s", consts[ii]);
     fprintf(OUT, ";\n");
   }
 
   // setup degrees
   fprintf(OUT, "deg = [");
-  for (i = 0; i < numFuncs; i++)
-    fprintf(OUT, " %d", degrees[i]);
+  for (ii = 0; ii < numFuncs; ii++)
+    fprintf(OUT, " %d", degrees[ii]);
   fprintf(OUT, "];\n");
 
   // copy lines which do not declare items or define constants (keep these as symbolic objects)
   while (cont)
   { // see if this line number declares items
     declares = 0;
-    for (i = 0; i < numVars; i++)
-      if (lineNumber == lineVars[i])
+    for (ii = 0; ii < numVars; ii++)
+      if (lineNumber == lineVars[ii])
         declares = 1;
-    for (i = 0; i < numConstants; i++)
-      if (lineNumber == lineConstants[i])
+    for (ii = 0; ii < numConstants; ii++)
+      if (lineNumber == lineConstants[ii])
         declares = 1;
-    for (i = 0; i < numFuncs; i++)
-      if (lineNumber == lineFuncs[i])
+    for (ii = 0; ii < numFuncs; ii++)
+      if (lineNumber == lineFuncs[ii])
         declares = 1;
 
     if (declares)
@@ -363,8 +363,8 @@ void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 
         // compare against constants
         declares = 0;
-        for (i = 0; i < numConstants; i++)
-          if (strcmp(str, consts[i]) == 0)
+        for (ii = 0; ii < numConstants; ii++)
+          if (strcmp(str, consts[ii]) == 0)
             declares = 1;
 
         if (declares)
@@ -397,8 +397,8 @@ void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 
   // setup functions
   fprintf(OUT, "\nF = [");
-  for (i = 0; i < numFuncs; i++)
-    fprintf(OUT, " %s", funcs[i]);
+  for (ii = 0; ii < numFuncs; ii++)
+    fprintf(OUT, " %s", funcs[ii]);
   fprintf(OUT, "];\n");
 
   // compute the jacobian
