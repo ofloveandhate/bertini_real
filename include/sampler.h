@@ -34,17 +34,40 @@ void  output_sampling_data(sample_d S,char *samplingName,int num_vars, int MPTyp
 void  set_witness_set_d(witness_set *W, vec_d L,vec_d pts,int num_vars);
 void set_witness_set_mp(witness_set *W, vec_mp L,vec_mp pts,int num_vars);
 
-void generate_new_sampling_pts(sample_d *S_new,mat_mp n_minusone_randomizer_matrix,sample_d S_old, curveDecomp_d C,witness_set W, int num_vars,unsigned int currentSeed,int  MPType, solver_configuration *solve_options);
+void generate_new_sampling_pts(sample_d *S_new,
+															 mat_mp n_minusone_randomizer_matrix,
+															 sample_d S_old,
+															 curveDecomp_d C,
+															 witness_set W,
+															 int  MPType,
+															 sampler_configuration *sampler_options,
+															 solver_configuration *solve_options);
 
-void generate_new_sampling_pts_d(sample_d *S_new,mat_mp n_minusone_randomizer_matrix,sample_d S_old, curveDecomp_d C,witness_set W, int num_vars,unsigned int currentSeed,int  MPType, solver_configuration *solve_options);
+void generate_new_sampling_pts_d(sample_d *S_new,
+																 mat_mp n_minusone_randomizer_matrix,
+																 sample_d S_old,
+																 curveDecomp_d C,
+																 witness_set W,
+																 int  MPType,
+																 sampler_configuration *sampler_options,
+																 solver_configuration *solve_options);
 
-void generate_new_sampling_pts_mp(sample_d *S_new,mat_mp n_minusone_randomizer_matrix,sample_d S_old, curveDecomp_d C,witness_set W, int num_vars,unsigned int currentSeed,int  MPType, solver_configuration *solve_options);
+void generate_new_sampling_pts_mp(sample_d *S_new,
+																	mat_mp n_minusone_randomizer_matrix,
+																	sample_d S_old,
+																	curveDecomp_d C,
+																	witness_set W,
+																	int  MPType,
+																	sampler_configuration *sampler_options,
+																	solver_configuration *solve_options);
 
 void read_rand_matrix(char *INfile, mat_mp n_minusone_randomizer_matrix);
 
 
 int setup_curve(curveDecomp_d *C,char *INfile, int MPType);
 
+
+void estimate_new_projection_value(comp_mp result, vec_mp left, vec_mp right, vec_mp pi);
 #endif
 
 

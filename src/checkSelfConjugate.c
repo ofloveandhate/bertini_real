@@ -84,13 +84,13 @@ int checkSelfConjugate(witness_set W,
 
 	
 	if (component_numbers[0]==component_numbers[1]) {
-		printf("component is NOT self conjugate\n");
+		printf("component IS self conjugate\n");
 		free(component_numbers);
 		return 1;
 	}
 	else
 	{
-		printf("component IS self conjugate\n");
+		printf("component is NOT self conjugate\n");
 		free(component_numbers);
 		return 0;
 	}

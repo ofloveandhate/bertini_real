@@ -31,7 +31,6 @@
 #include "witnessSetParse.h"
 #include "output.h"
 
-
 #endif
 
 

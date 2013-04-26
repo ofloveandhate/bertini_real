@@ -19,9 +19,8 @@
 
 #include "fileops.h"
 #include "data_type.h"
-
-//#include "partitionParse.h"
-
+#include "programStartup.h"
+#include "postProcessing.h"
 
 // the mp version
 typedef struct

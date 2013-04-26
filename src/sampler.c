@@ -15,7 +15,7 @@ int main(int argC, char *args[])
 	witness_set W;
 	sample_d   S_old,S_new;
 
-	
+	sampler_splash_screen();
 	sampler_configuration sampler_options;  init_sampler_config(&sampler_options);
 	sampler_parse_options(argC, args, &sampler_options);
 	
@@ -27,13 +27,9 @@ int main(int argC, char *args[])
 		return 1;
 	
 	
-	
-	//< prints the welcome message, also gets the inputName, witnessSetName and C
-	srand(time(NULL));
-	// essentials for using the bertini parser
 
+	srand(time(NULL));
 	
-	unsigned int currentSeed;
 	int MPType;
 
 
@@ -60,8 +56,7 @@ int main(int argC, char *args[])
 	W.num_var_gps = solve_options.PPD.num_var_gp;
 	W.MPType = MPType;
 	get_variable_names(&W);
-//	W.incidence_number = get_component_number(W,num_vars,inputName, sampler_options.stifle_text);
-	
+
 	
 	printf("getting randomizer matrix\n");
 	read_rand_matrix(RandMatName, n_minusone_randomizer_matrix);
@@ -71,14 +66,35 @@ int main(int argC, char *args[])
 	
 	
 	
-	/////////////
+	/////////
+	////////
+	//////
+	////
 	//
 	//  Generate new sampling data
 	//
-	//////////////////
+
 	
 	printf("generate_new_sampling_pts\n");
-	generate_new_sampling_pts(&S_new,n_minusone_randomizer_matrix,S_old, C,W, num_vars,currentSeed,MPType, &solve_options);
+	generate_new_sampling_pts(&S_new,
+														n_minusone_randomizer_matrix,
+														S_old,
+														C,
+														W,
+														MPType,
+														&sampler_options,
+														&solve_options);
+	
+	
+
+	//
+	//   done with the main call
+	////
+	/////
+	///////
+	////////
+	
+	
 	
 	//output
 	output_sampling_data(S_new,samplingNamenew,num_vars,MPType);
@@ -94,8 +110,11 @@ int main(int argC, char *args[])
 	clear_mat_mp(n_minusone_randomizer_matrix);
 	clear_witness_set(W);
 	
-	clear_sample_d(&S_old, MPType);
+	
 	clear_sample_d(&S_new, MPType);
+	
+//	clear_sample_d(&S_old, MPType);
+	
 	clear_curveDecomp_d(&C, MPType);
 	clearMP();
 	return 0;
@@ -107,35 +126,48 @@ int main(int argC, char *args[])
 
 
 
-void generate_new_sampling_pts(sample_d *S_new,mat_mp n_minusone_randomizer_matrix,sample_d S_old, curveDecomp_d C,witness_set W, int num_vars,unsigned int currentSeed, int MPType , solver_configuration *solve_options)
+void generate_new_sampling_pts(sample_d *S_new,
+															 mat_mp n_minusone_randomizer_matrix,
+															 sample_d S_old,
+															 curveDecomp_d C,
+															 witness_set W,
+															 int MPType ,
+															 sampler_configuration *sampler_options,
+															 solver_configuration *solve_options)
 {
 	if(MPType==0)
-		generate_new_sampling_pts_d(S_new, n_minusone_randomizer_matrix, S_old, C, W, num_vars, currentSeed, MPType, solve_options);
+		generate_new_sampling_pts_d(S_new, n_minusone_randomizer_matrix, S_old, C, W, MPType, sampler_options,solve_options);
 	else
-		generate_new_sampling_pts_mp(S_new, n_minusone_randomizer_matrix, S_old, C, W, num_vars, currentSeed, MPType, solve_options);
+		generate_new_sampling_pts_mp(S_new, n_minusone_randomizer_matrix, S_old, C, W, MPType, sampler_options, solve_options);
 	return;
 }
 
 
-void generate_new_sampling_pts_d(sample_d *S_new,mat_mp n_minusone_randomizer_matrix,
-																 sample_d S_old, curveDecomp_d C,witness_set W, int num_vars,
-																 unsigned int currentSeed, int MPType, solver_configuration *solve_options)
+void generate_new_sampling_pts_d(sample_d *S_new,
+																 mat_mp n_minusone_randomizer_matrix,
+																 sample_d S_old,
+																 curveDecomp_d C
+																 ,witness_set W,
+																 int MPType,
+																 sampler_configuration *sampler_options,
+																 solver_configuration *solve_options)
 {
 	witness_set		Wnew;
-	vec_mp         new_linears;
-	vec_d          L,startpt,mid_pt;
+	vec_mp         target_projection;
+	vec_d          start_projection,startpt,mid_pt;
 	int            ii,jj,k;
 	comp_d         pi_end,temp,temp1;
 	vec_d          *previous_points, *new_points, previous_projection_values, new_projection_values;
-	int            num_samp_old, num_samp_new;
-	int            *refine_old, *refine_new;
+	int            prev_num_samp, sample_counter;
+	int            *refine_current, *refine_next;
 	double         max_norm, TOL=1e-1;
 	
+	int num_vars =  W.num_variables;
 
 	
-	init_vec_mp(new_linears,num_vars); new_linears->size = num_vars;
+	init_vec_mp(target_projection,num_vars); target_projection->size = num_vars;
 	
-	init_vec_d(L,num_vars);  L->size = num_vars; // what is L?
+	init_vec_d(start_projection,num_vars);  start_projection->size = num_vars;
 	
 	init_vec_d(startpt,num_vars);
 	startpt->size = num_vars;
@@ -156,42 +188,42 @@ void generate_new_sampling_pts_d(sample_d *S_new,mat_mp n_minusone_randomizer_ma
 	for(ii=0;ii<S_old.num_edges;ii++) // for each edge, refine it.
 	{
 		previous_points = S_old.vertices[ii]; // copy pointer
-		num_samp_old = S_old.num_pts[ii]; // copy number of points
+		prev_num_samp = S_old.num_pts[ii]; // copy number of points
 		
 		
 		init_vec_d(previous_projection_values,S_old.num_pts[ii]);
 		previous_projection_values->size = S_old.num_pts[ii];
 		
 		vec_cp_d(previous_projection_values, S_old.projection_values[ii]);
-		refine_old = S_old.refine[ii];
+		refine_current = S_old.refine[ii];
 		
 		
 		while(1) {
-			new_points = (vec_d *)bmalloc(2*num_samp_old * sizeof(vec_d)); // why the 2?
-			init_vec_d(new_projection_values,2*num_samp_old); // what is projection_values?
-			//new_projection_values->size=2*num_samp_old;
-			refine_new = (int * )bmalloc(2*num_samp_old * sizeof(int));
+			new_points = (vec_d *)bmalloc(2*prev_num_samp * sizeof(vec_d)); // why the 2?
+			init_vec_d(new_projection_values,2*prev_num_samp); // what is projection_values?
+			//new_projection_values->size=2*prev_num_samp;
+			refine_next = (int * )bmalloc(2*prev_num_samp * sizeof(int));
 			//copy left point
 			set_d(&(new_projection_values->coord[0]),&(previous_projection_values->coord[0]));
-			num_samp_new = 1;
+			sample_counter = 1;
 			init_vec_d(new_points[0],num_vars);
 			vec_cp_d(new_points[0],previous_points[0]);
-			for(jj=0;jj<num_samp_old-1;jj++)
+			for(jj=0;jj<prev_num_samp-1;jj++)
 			{
-				if(refine_old[jj])
+				if(refine_current[jj])
 				{
 //TODO: resolve this discrepancy
-					vec_cp_d(L,C.pi_d);
-					point_d_to_mp(new_linears,L);
+					vec_cp_d(start_projection,C.pi_d);
+					point_d_to_mp(target_projection,start_projection);
 					if(jj==0)
 					{
 						vec_cp_d(startpt,previous_points[jj+1]);
-						sub_d(&(L->coord[0]),&(L->coord[0]),&(previous_projection_values->coord[jj+1]));
+						sub_d(&(start_projection->coord[0]),&(start_projection->coord[0]),&(previous_projection_values->coord[jj+1]));
 					}
 					else
 					{
 						vec_cp_d(startpt,previous_points[jj]);
-						sub_d(&(L->coord[0]),&(L->coord[0]),&(previous_projection_values->coord[jj]));
+						sub_d(&(start_projection->coord[0]),&(start_projection->coord[0]),&(previous_projection_values->coord[jj]));
 					}
 					//tracking end point pi_end = \pi (si+s_{ii+1})/2
 					//w=2w1w2/(w1+w2)
@@ -219,37 +251,37 @@ void generate_new_sampling_pts_d(sample_d *S_new,mat_mp n_minusone_randomizer_ma
 					}
 					div_d(pi_end,pi_end,&(mid_pt->coord[0]));
 					sub_d(temp,&C.pi_d->coord[0],pi_end);
-					d_to_mp(&(new_linears->coord[0]),temp);
+					d_to_mp(&(target_projection->coord[0]),temp);
 					
 					// copy in the data to the source witness set?
-					set_witness_set_d(&W, L,startpt,num_vars);
+					set_witness_set_d(&W, start_projection,startpt,num_vars);
 					//printVec_d(stdout,0,mid_pt);
 					//print_d(stdout,0,pi_end);
-					//printf("L\n");
-					//printVec_d(stdout,0,L);
+					//printf("start_projection\n");
+					//printVec_d(stdout,0,start_projection);
 					//printf("newlinears\n");
-					//printVec_mp(stdout,0,new_linears);
+					//printVec_mp(stdout,0,target_projection);
 					
 					lin_to_lin_solver_main(MPType,
 																 W,         // witness_set
 																 n_minusone_randomizer_matrix,
-																 &new_linears, //  the set of linears we will solve at.
+																 &target_projection, //  the set of linears we will solve at.
 																 1, // the number of new linears.
 																 &Wnew,// the new data is put here!
 																 solve_options);
 					//printVec_d(stdout,0,mid_pt);
 					
-					set_zero_d(&(new_projection_values->coord[num_samp_new]));
-					init_vec_d(new_points[num_samp_new],num_vars);
-					vec_cp_d(new_points[num_samp_new],Wnew.pts_d[0]);
+					set_zero_d(&(new_projection_values->coord[sample_counter]));
+					init_vec_d(new_points[sample_counter],num_vars);
+					vec_cp_d(new_points[sample_counter],Wnew.pts_d[0]);
 					
 					//printVec_d(stdout,0,Wnew.pts_d[0]);
 					//printVec_d(stdout,0,mid_pt);
 					max_norm=0.0;
 					for(k=1;k<num_vars;k++)
 					{
-						div_d(temp1,&(new_points[num_samp_new]->coord[k]),
-									&(new_points[num_samp_new]->coord[0]));
+						div_d(temp1,&(new_points[sample_counter]->coord[k]),
+									&(new_points[sample_counter]->coord[0]));
 						div_d(temp,&(mid_pt->coord[k]),&(mid_pt->coord[0]));
 						sub_d(temp,temp1,temp);
 						if(max_norm<d_abs_d(temp))
@@ -257,89 +289,94 @@ void generate_new_sampling_pts_d(sample_d *S_new,mat_mp n_minusone_randomizer_ma
 					}
 					//printf("pi_end");
 					//print_d(stdout,0,pi_end);
-					set_d(&(new_projection_values->coord[num_samp_new]),pi_end);
+					set_d(&(new_projection_values->coord[sample_counter]),pi_end);
 					
 					if(max_norm<TOL)
 					{
-						refine_new[num_samp_new-1] = 0;
-						refine_new[num_samp_new++] = 0;
+						refine_next[sample_counter-1] = 0;
+						refine_next[sample_counter++] = 0;
 					}
 					else
 					{
-						refine_new[num_samp_new-1] = 1;
-						refine_new[num_samp_new++] = 1;
+						refine_next[sample_counter-1] = 1;
+						refine_next[sample_counter++] = 1;
 					}
-					set_d(&(new_projection_values->coord[num_samp_new]),&(previous_projection_values->coord[jj+1]));
-					init_vec_d(new_points[num_samp_new],num_vars);
-					vec_cp_d(new_points[num_samp_new],previous_points[jj+1]);
-					num_samp_new++;
+					set_d(&(new_projection_values->coord[sample_counter]),&(previous_projection_values->coord[jj+1]));
+					init_vec_d(new_points[sample_counter],num_vars);
+					vec_cp_d(new_points[sample_counter],previous_points[jj+1]);
+					sample_counter++;
 					
 				}
 				else
 				{
-					refine_new[num_samp_new-1] = 0;
-					set_d(&(new_projection_values->coord[num_samp_new]),&(previous_projection_values->coord[jj+1]));
-					init_vec_d(new_points[num_samp_new],num_vars);
-					vec_cp_d(new_points[num_samp_new],previous_points[jj+1]);
-					num_samp_new++;
+					refine_next[sample_counter-1] = 0;
+					set_d(&(new_projection_values->coord[sample_counter]),&(previous_projection_values->coord[jj+1]));
+					init_vec_d(new_points[sample_counter],num_vars);
+					vec_cp_d(new_points[sample_counter],previous_points[jj+1]);
+					sample_counter++;
 				}
 			}
-			new_points = (vec_d *)brealloc(new_points,num_samp_new*sizeof(vec_d));
-			new_projection_values->size=num_samp_new;
-			refine_new = (int * )brealloc(refine_new,num_samp_new * sizeof(int));
+			new_points = (vec_d *)brealloc(new_points,sample_counter*sizeof(vec_d));
+			new_projection_values->size=sample_counter;
+			refine_next = (int * )brealloc(refine_next,sample_counter * sizeof(int));
 			
 			previous_points = new_points;
 			vec_cp_d(previous_projection_values,new_projection_values);
 			clear_vec_d(new_projection_values);
-			refine_old = refine_new;
-			if(num_samp_new == num_samp_old)
+			refine_current = refine_next;
+			if(sample_counter == prev_num_samp)
 			{
 				S_new->vertices[ii] = previous_points;
-				S_new->num_pts[ii] = num_samp_old;
-				init_vec_d(S_new->projection_values[ii],num_samp_old);
+				S_new->num_pts[ii] = prev_num_samp;
+				init_vec_d(S_new->projection_values[ii],prev_num_samp);
 				vec_cp_d(S_new->projection_values[ii],previous_projection_values);
 				clear_vec_d(previous_projection_values);
-				S_new->refine[ii] = refine_old;
+				S_new->refine[ii] = refine_current;
 				break;
 			}
 			else
-				num_samp_old=num_samp_new;
+				prev_num_samp=sample_counter;
 		}
 	}
 	
 	clear_witness_set(Wnew);
-	clear_vec_d(L);
-	clear_vec_d(new_linears);
+	clear_vec_d(start_projection);
+	clear_vec_d(target_projection);
 }
 
 
 
-void generate_new_sampling_pts_mp(sample_d *S_new,mat_mp n_minusone_randomizer_matrix,
-																	sample_d S_old, curveDecomp_d C,witness_set W,
-																	int num_vars,unsigned int currentSeed, int MPType, solver_configuration *solve_options)
+void generate_new_sampling_pts_mp(sample_d *S_new,
+																	mat_mp n_minusone_randomizer_matrix,
+																	sample_d S_old,
+																	curveDecomp_d C,
+																	witness_set W,
+																	int MPType,
+																	sampler_configuration *sampler_options,
+																	solver_configuration *solve_options)
 {
 	witness_set  Wnew;
-	vec_mp         new_linears;
-	vec_mp          L,startpt,mid_pt;
-	int            ii,jj,k;
-	comp_mp         pi_end,temp,temp1;
+	vec_mp         target_projection;
+	vec_mp          start_projection,startpt;
+	int            ii,jj;
+	comp_mp         temp, temp1, target_projection_value;
 	vec_mp          *previous_points, *new_points, previous_projection_values, new_projection_values;
-	int            num_samp_old, num_samp_new;
-	int            *refine_old, *refine_new;
-	double         max_norm, TOL=1e-1;
+	int            prev_num_samp, sample_counter;
+	int            *refine_current, *refine_next;
 	
+	int num_vars = W.num_variables;
 	
+	init_vec_mp(target_projection,num_vars); target_projection->size = num_vars;
+	vec_cp_mp(target_projection,C.pi); // copy the projection into target_projection
 	
-	init_vec_mp(new_linears,num_vars); new_linears->size = num_vars;
+	init_vec_mp(start_projection,num_vars);  start_projection->size = num_vars; 	
+	vec_cp_mp(start_projection,C.pi); // grab the projection, copy it into start_projection
 	
-	init_vec_mp(L,num_vars); // what is the purpose of this?
-	L->size = num_vars; // what is L?
-	
+	init_vec_mp(new_projection_values,1); new_projection_values->size = 1;
 	init_vec_mp(startpt,num_vars); startpt->size = num_vars;
 	
-	init_vec_mp(mid_pt,num_vars); mid_pt->size = num_vars;
-	
-	init_mp(temp); init_mp(pi_end); init_mp(temp1);
+	init_mp(temp);  init_mp(temp1); init_mp(target_projection_value);
+
 	S_new->num_edges = S_old.num_edges;
 	S_new->vertices_mp = (vec_mp **)bmalloc(S_new->num_edges * sizeof(vec_mp*));
 	S_new->projection_values_mp = (vec_mp *)bmalloc(S_new->num_edges * sizeof(vec_mp));
@@ -347,181 +384,223 @@ void generate_new_sampling_pts_mp(sample_d *S_new,mat_mp n_minusone_randomizer_m
 	S_new->num_pts = (int *) bmalloc(S_new->num_edges * sizeof(int));
 	
 	
-	
+	int num_refinements;
 	for(ii=0;ii<S_old.num_edges;ii++) // for each of the edges
 	{
+		//copy the initial projection values
+		init_vec_mp(previous_projection_values,S_old.num_pts[ii]); previous_projection_values->size = S_old.num_pts[ii]; // inititalize
+		
+		num_refinements = 2; // one for each, right and left
+		
+		vec_cp_mp(previous_projection_values, S_old.projection_values_mp[ii]); // set projection values
+		refine_current = S_old.refine[ii]; // change the pointer of refine_current to be S_old.refine[ii]
 		previous_points = S_old.vertices_mp[ii]; // does this copy a pointer?
-		num_samp_old = S_old.num_pts[ii]; // grab the number of points from the array of integers
+		prev_num_samp = S_old.num_pts[ii]; // grab the number of points from the array of integers
 		
-		init_vec_mp(previous_projection_values,S_old.num_pts[ii]);
-		previous_projection_values->size = S_old.num_pts[ii]; //
-		
-		
-		
-		vec_cp_mp(previous_projection_values, S_old.projection_values_mp[ii]); // set the edge_proj_old to be the old set of projections???
-		
-		refine_old = S_old.refine[ii]; // change the pointer of refine_old to be S_old.refine[ii]
-		
-		
+		int pass_number  = 0;
 		while(1) // breaking condition is all samples being less than TOL away from each other (in the infty norm sense).
 		{
-			new_points = (vec_mp *)bmalloc(2*num_samp_old * sizeof(vec_mp));
+			pass_number++;
+			printf("on pass %d\n\n",pass_number);
 			
-			init_vec_mp(new_projection_values,2*num_samp_old); new_projection_values->size=2*num_samp_old; // hold the values of the projections in new_projection_values???
+			new_points = (vec_mp *)bmalloc((prev_num_samp+num_refinements)* sizeof(vec_mp));
+			// will hold the collected data
 			
-			refine_new = (int * )bmalloc(2*num_samp_old * sizeof(int)); // what is this?
+			refine_next = (int * )bmalloc((prev_num_samp+num_refinements-1) * sizeof(int)); // refinement flag 
+			memset (refine_next, 0, (prev_num_samp+num_refinements-1) *sizeof(int));
+			
+			change_size_vec_mp(new_projection_values,prev_num_samp+num_refinements);
+			new_projection_values->size=(prev_num_samp+num_refinements); // hold the values of the projections in new_projection_values???
+			
+			
 			
 			//copy left point and projection value
 			set_mp(&(new_projection_values->coord[0]),&(previous_projection_values->coord[0]));//leftmost point always the same?
 			init_vec_mp(new_points[0],num_vars); new_points[0]->size = num_vars; // initialize the first of the samples???
 			vec_cp_mp(new_points[0],previous_points[0]);
 			
+			//now we can always set the point to the right as well as the new point
 			
-			num_samp_new = 1; // initialize a counter???
-			print_point_to_screen_matlab_mp(previous_projection_values,"old_projections");
-			
+			sample_counter = 1; // this will be incremented every time we put a point into new_points 
+			// starts at 1 because already committed one.
 	
-			for(jj=0;jj<num_samp_old-1;jj++) // for each sample in the previous set
+//			for (jj=0; jj<prev_num_samp; jj++) {
+//				print_comp_mp_matlab(&previous_projection_values->coord[jj],"proj");
+//			}
+//			printf("\n");
+//			for (jj=0; jj<prev_num_samp-1; jj++) {
+//				printf("%d\n",refine_next[jj]);
+//			}
+//			printf("\n");
+			
+			num_refinements = 0;
+			for(jj=0;jj<prev_num_samp-1;jj++) // for each sample in the previous set
 			{
-				if(refine_old[jj]) // 
+				if(refine_current[jj]) // 
 				{
-					vec_cp_mp(L,C.pi); // grab the projection, copy it into L
-					vec_cp_mp(new_linears,C.pi); // copy the projection into new_linears
+									
 					
-					if(jj==0)// if on the first sample???
+
+					int index_of_current_startpoint;
+					// set the starting projection and point.
+					if(jj==0)// if on the first sample, go the right
 					{
-						vec_cp_mp(startpt,previous_points[jj+1]);
-						set_mp(&(L->coord[0]),&(previous_projection_values->coord[jj+1]));
-						neg_mp(&(L->coord[0]),&(L->coord[0]));
-//						sub_mp(&(L->coord[0]),&(L->coord[0]),&(previous_projection_values->coord[jj+1]));// L[0]= L[0]-projection???
+						index_of_current_startpoint = 1; //right!
 					}
-					else
+					else //go to the left
 					{
-						vec_cp_mp(startpt,previous_points[jj]);
-						set_mp(&(L->coord[0]),&(previous_projection_values->coord[jj+1]));
-						neg_mp(&(L->coord[0]),&(L->coord[0]));
+						index_of_current_startpoint = jj; // left!
 					}
+
 					
-					 //HERE!!!
-					//DAB -- I have no idea what is going on here...???
-					add_mp(&(mid_pt->coord[0]),&(previous_points[jj]->coord[0]),
-								 &(previous_points[jj+1]->coord[0]));
-					mul_mp(temp,&(previous_points[jj]->coord[0]),
-								 &(previous_points[jj+1]->coord[0]));
-					div_mp(&(mid_pt->coord[0]),temp,&(mid_pt->coord[0]));
-					mpf_set_d(temp->r, 2.0); mpf_set_d(temp->i, 0.0);
-					mul_mp(&(mid_pt->coord[0]),temp,&(mid_pt->coord[0]));
-					mul_mp(pi_end,&(mid_pt->coord[0]),&(C.pi->coord[0]));
-					for(k=1;k<num_vars;k++)
-					{
-						div_mp(&(mid_pt->coord[k]),&(previous_points[jj]->coord[k]),
-									 &(previous_points[jj]->coord[0]));
-						div_mp(temp,&(previous_points[jj+1]->coord[k]),
-									 &(previous_points[jj+1]->coord[0]));
-						add_mp(&(mid_pt->coord[k]),temp,&(mid_pt->coord[k]));
-						
-						mpf_set_d(temp->r, 0.5); mpf_set_d(temp->i, 0.0);
-						mul_mp(&(mid_pt->coord[k]),temp,&(mid_pt->coord[k]));
-						mul_mp(&(mid_pt->coord[k]),&(mid_pt->coord[0]),&(mid_pt->coord[k]));
-						mul_mp(temp,&(mid_pt->coord[k]),&(C.pi->coord[k]));
-						add_mp(pi_end,pi_end,temp);
-					}
-					div_mp(pi_end,pi_end,&(mid_pt->coord[0]));
-					sub_mp(temp,&(C.pi->coord[0]),pi_end);
-					
-					set_mp(&(new_linears->coord[0]),temp); // set the value of the projection we want to move to.
-					set_witness_set_mp(&W, L,startpt,num_vars); // set the witness point and linear in the input for the lintolin solver.
+					vec_cp_mp(startpt,previous_points[index_of_current_startpoint]);
+					set_mp(&(start_projection->coord[0]),&(previous_projection_values->coord[index_of_current_startpoint]));
+					neg_mp(&(start_projection->coord[0]),&(start_projection->coord[0]));
 					
 					
-					init_witness_set_d(&Wnew);
+					estimate_new_projection_value(target_projection_value, // the new value
+																				previous_points[jj], previous_points[jj+1], // two points input
+																				C.pi); // projection (in homogeneous coordinates)
 					
+					neg_mp(&target_projection->coord[0],target_projection_value); // take the opposite :)
+			
+					
+					set_witness_set_mp(&W, start_projection,startpt,num_vars); // set the witness point and linear in the input for the lintolin solver.
+					
+					
+//					print_comp_mp_matlab(&W.L_mp[0]->coord[0],"initial_projection_value");
+//					print_comp_mp_matlab(target_projection_value,"target_projection_value");
 //					print_point_to_screen_matlab_mp(W.L_mp[0],"initial_projection");
-//					print_point_to_screen_matlab_mp(new_linears,"destination");
+//					print_point_to_screen_matlab_mp(target_projection,"destination");
+//					print_point_to_screen_matlab_mp(W.pts_mp[0],"startpt");
+//					print_matrix_to_screen_matlab_mp(n_minusone_randomizer_matrix,"randomizer");
+//					printf("just prior to lintolin\n");
 //					mypause(); 
-					
-					
+//
+					init_witness_set_d(&Wnew);
 					lin_to_lin_solver_main(MPType,
 																 W,         // witness_set
 																 n_minusone_randomizer_matrix,
-																 &new_linears, //  the set of linears we will solve at.
+																 &target_projection, //  the set of linears we will solve at.
 																 1, // the number of new linears.
 																 &Wnew, // the new data is put here!
 																 solve_options);
-					set_zero_mp(&(new_projection_values->coord[num_samp_new]));
-					init_vec_mp(new_points[num_samp_new],num_vars);
-					vec_cp_mp(new_points[num_samp_new],Wnew.pts_mp[0]);
-					clear_witness_set(Wnew);
 					
 					
-					max_norm=0.0; // initialize
-					for(k=1;k<num_vars;k++)
-					{
-						div_mp(temp1,&(new_points[num_samp_new]->coord[k]),
-									 &(new_points[num_samp_new]->coord[0]));
-						div_mp(temp,&(mid_pt->coord[k]),&(mid_pt->coord[0]));
-						sub_mp(temp,temp1,temp);
-						if(max_norm<d_abs_mp(temp))
-							max_norm = d_abs_mp(temp);
+
+					
+					
+					
+//					print_point_to_screen_matlab_mp(Wnew.pts_mp[0], "new_solution");
+					mpf_t dist_away; mpf_init(dist_away);
+					
+					
+					// check how far away we were from the left interval point
+					norm_of_difference(dist_away,
+														 Wnew.pts_mp[0], // the current new point
+														 previous_points[jj]);// jj is left, jj+1 is right
+//					mpf_out_str (NULL, 10, 9, dist_away); printf("\n");
+					
+					if ( mpf_cmp(dist_away, sampler_options->TOL )>0 ){
+//						printf("gotta refine left again\n");
+						refine_next[sample_counter-1] = 1; // we started at 1, so to get 0 must -1
+						num_refinements++;
 					}
-					set_mp(&(new_projection_values->coord[num_samp_new]),pi_end);
-					//printf("pi_end=");print_mp(stdout,0,pi_end);
-					if(max_norm<TOL)
-					{
-						refine_new[num_samp_new-1] = 0;
-						refine_new[num_samp_new++] = 0;
+					
+					
+					
+					// check how far away we were from the right interval point
+					norm_of_difference(dist_away,
+														 Wnew.pts_mp[0], // the current new point
+														 previous_points[jj+1]);// jj is left, jj+1 is right
+					
+					if (mpf_cmp(dist_away, sampler_options->TOL ) > 0){
+//						printf("gotta refine right again\n");
+						refine_next[sample_counter] = 1; // we started at 1, so to get 0 must -1
+						num_refinements++;
 					}
-					else
-					{
-						refine_new[num_samp_new-1] = 1;
-						refine_new[num_samp_new++] = 1;
-					}
-					set_mp(&(new_projection_values->coord[num_samp_new]),&(previous_projection_values->coord[jj+1]));
-					//printf("new_projection_values=");print_mp(stdout,0,&(new_projection_values->coord[num_samp_new]));
-					init_vec_mp(new_points[num_samp_new],num_vars);
-					vec_cp_mp(new_points[num_samp_new],previous_points[jj+1]);
-					num_samp_new++;
+					
+
+//					printf("adding sample %d, projection value size %d\n",sample_counter,new_projection_values->size);
+					set_mp(&(new_projection_values->coord[sample_counter]),target_projection_value);
+					init_vec_mp(new_points[sample_counter],num_vars); // add the midpoint we just solved at
+					vec_cp_mp(new_points[sample_counter],Wnew.pts_mp[0]);
+					
+//					printf("adding sample %d, projection value size %d\n",sample_counter+1,new_projection_values->size);
+					set_mp(&(new_projection_values->coord[sample_counter+1]),&(previous_projection_values->coord[jj+1])); //copy the right point
+					init_vec_mp(new_points[sample_counter+1],num_vars);
+					vec_cp_mp(new_points[sample_counter+1],previous_points[jj+1]); // copy in the point
+					clear_witness_set(Wnew); // clear the temporary witness set
+					
+					
+					sample_counter++;
+					sample_counter++;
 					
 				}
 				else
 				{
-					refine_new[num_samp_new-1] = 0;
-					set_mp(&(new_projection_values->coord[num_samp_new]),&(previous_projection_values->coord[jj+1]));
-					init_vec_mp(new_points[num_samp_new],num_vars);
-					vec_cp_mp(new_points[num_samp_new],previous_points[jj+1]);
-					num_samp_new++;
+//					printf("adding sample %d, projection value size %d\n",sample_counter,new_projection_values->size);
+					//simply copy in the right point
+					set_mp(&(new_projection_values->coord[sample_counter]),&(previous_projection_values->coord[jj+1]));
+					init_vec_mp(new_points[sample_counter],num_vars);
+					vec_cp_mp(new_points[sample_counter],previous_points[jj+1]);
+					sample_counter++;
 				}
+				
+				
 			}
-			new_points = (vec_mp *)brealloc(new_points,num_samp_new*sizeof(vec_mp));
-			//printVec_mp(stdout,0,new_projection_values);printf("==%d==%d\n",num_samp_new,num_samp_old);
-			//change_size_vec_mp(new_projection_values,num_samp_new); // what is pV?
-			new_projection_values->size=num_samp_new;
-			refine_new = (int * )brealloc(refine_new,num_samp_new * sizeof(int));
 			
-			//printVec_mp(stdout,0,new_projection_values);
-			previous_points = new_points;
-			vec_cp_mp(previous_projection_values,new_projection_values);
-			//printVec_mp(stdout,0,previous_projection_values);
-			clear_vec_mp(new_projection_values);
-			refine_old = refine_new;
-			if(num_samp_new == num_samp_old) // if had no new samples???
+			
+			
+//			printf("prev_num_samp %d\n",prev_num_samp);
+			//free some memory
+			for (jj=0; jj<prev_num_samp; jj++) {
+//				printf("clearing previous_points[%d]\n",jj);
+				clear_vec_mp(previous_points[jj]);
+			}
+			free(previous_points);//frees the malloc above
+			
+			// copy previous_points as a pointer
+			
+			
+
+			
+			
+			printf("\n\n");
+			
+			if(num_refinements == 0) // if have no need for new samples
 			{
-				S_new->vertices_mp[ii] = previous_points;
-				S_new->num_pts[ii] = num_samp_old;
-				init_vec_mp(S_new->projection_values_mp[ii],num_samp_old);
-				vec_cp_mp(S_new->projection_values_mp[ii],previous_projection_values);
-				clear_vec_mp(previous_projection_values);
-				S_new->refine[ii] = refine_old;
+				printf("breaking\nsample_counter = %d\n",sample_counter);
+				
+				S_new->vertices_mp[ii] = (vec_mp *)bmalloc(sample_counter*sizeof(vec_mp));
+				S_new->vertices_mp[ii] = new_points;  // this should be a pointer reassignment
+				S_new->num_pts[ii] = sample_counter;
+				
+				init_vec_mp(S_new->projection_values_mp[ii],new_projection_values->size);
+				vec_cp_mp(S_new->projection_values_mp[ii],new_projection_values);
+				
+				S_new->refine[ii] = refine_next; // will get freed later
 				break; // BREAKS THE WHILE LOOP
 			}
-			else
-				num_samp_old=num_samp_new; // update the number of samples
-		}
+			else{
+				refine_current = refine_next; // reassign this pointer
+				vec_cp_mp(previous_projection_values,new_projection_values);
+				previous_points = new_points; // this has gotta fail???  leaking memory?
+				prev_num_samp=sample_counter; // update the number of samples
+			}
+			
+		}//while loop
+		printf("exiting while loop\n");
 	}
-	clear_mp(temp); clear_mp(pi_end); clear_mp(temp1);
 	
 	
-	clear_vec_mp(L);
-	clear_vec_mp(new_linears);
+
+	
+	
+	
+	clear_mp(temp); clear_mp(temp1);
+	clear_vec_mp(start_projection);
+	clear_vec_mp(target_projection);
 }
 
 
@@ -529,31 +608,26 @@ void read_rand_matrix(char *INfile, mat_mp n_minusone_randomizer_matrix)
 {
 	int ii,jj,rows,cols,cur_precision;
 	FILE *IN= safe_fopen_read(INfile);
-	fscanf(IN,"%d\n",&rows);
-	fscanf(IN,"%d\n",&cols);
-	fscanf(IN,"%d\n",&cur_precision);
-	init_mat_mp2(n_minusone_randomizer_matrix,0,0,cur_precision);
-	increase_size_mat_mp(n_minusone_randomizer_matrix, rows, cols);
-	n_minusone_randomizer_matrix->rows=rows;
-	n_minusone_randomizer_matrix->cols=cols;
+	fscanf(IN,"%d %d",&rows,&cols); scanRestOfLine(IN);
+	fscanf(IN,"%d",&cur_precision); scanRestOfLine(IN);
+	init_mat_mp2(n_minusone_randomizer_matrix,rows,cols,cur_precision);
+	n_minusone_randomizer_matrix->rows=rows; n_minusone_randomizer_matrix->cols=cols;
+	
 	for(ii=0;ii<n_minusone_randomizer_matrix->rows;ii++)
 		for(jj=0;jj<n_minusone_randomizer_matrix->cols;jj++)
 		{
-			fscanf(IN,"<");
 			mpf_inp_str(n_minusone_randomizer_matrix->entry[ii][jj].r, IN, 10);
 			mpf_inp_str(n_minusone_randomizer_matrix->entry[ii][jj].i, IN, 10);
-			fscanf(IN,">");
+			scanRestOfLine(IN);
 		}
 	
 	fclose(IN);
 }
 
-void set_witness_set_d(witness_set *W, vec_d L,vec_d pts,int num_vars)
+void set_witness_set_d(witness_set *W, vec_d new_linear,vec_d pts,int num_vars)
 {
 	
-	
 	W->num_variables = num_vars;
-	
 	
 	W->num_pts=1;
 	W->pts_mp=(point_mp *)bmalloc(sizeof(point_mp)); // apparently you can only pass in a single point to copy in.
@@ -578,12 +652,12 @@ void set_witness_set_d(witness_set *W, vec_d L,vec_d pts,int num_vars)
 	init_vec_d( W->L[0],   num_vars); W->L[0]->size = num_vars;
 	init_vec_mp(W->L_mp[0],num_vars); W->L_mp[0]->size = num_vars;
 	
-	vec_cp_d(W->L[0],L);
-	vec_d_to_mp(W->L_mp[0],L);
+	vec_cp_d(W->L[0],new_linear);
+	vec_d_to_mp(W->L_mp[0],new_linear);
 	
 }
 
-void set_witness_set_mp(witness_set *W, vec_mp L,vec_mp pts,int num_vars)
+void set_witness_set_mp(witness_set *W, vec_mp new_linear,vec_mp pts,int num_vars)
 {
 	
 	
@@ -613,8 +687,8 @@ void set_witness_set_mp(witness_set *W, vec_mp L,vec_mp pts,int num_vars)
 	init_vec_d( W->L[0],   num_vars); W->L[0]->size = num_vars;
 	init_vec_mp(W->L_mp[0],num_vars); W->L_mp[0]->size = num_vars;
 	
-	vec_cp_mp(W->L_mp[0],L);
-	vec_mp_to_d(W->L[0],L);
+	vec_cp_mp(W->L_mp[0],new_linear);
+	vec_mp_to_d(W->L[0],new_linear);
 	
 }
 
@@ -722,42 +796,44 @@ int  Load_sampling_data(sample_d *S, curveDecomp_d C,int num_vars,int MPType)
 			for(jj=0;jj<S->num_pts[ii];jj++)
 			{
 				init_vec_mp(S->vertices_mp[ii][jj],num_vars);//three points: left mid right
-				S->refine[ii][jj]=1;
+				S->refine[ii][jj]=1; // initially set the refine flag
 			}
 			
 			init_vec_mp(S->projection_values_mp[ii],S->num_pts[ii]); S->projection_values_mp[ii]->size=S->num_pts[ii];
 			
 			
-			vec_mp pi_nohom;  init_vec_mp(pi_nohom,num_vars-1); pi_nohom->size = num_vars-1;
-			int mm;
-			for (mm=0; mm<num_vars-1; mm++) {
-				set_mp(&pi_nohom->coord[mm],& C.pi->coord[mm]);
-			}
-			
-			vec_mp dehom; init_vec_mp(dehom,num_vars-1); dehom->size = num_vars-1;
-			
-			
 			//left point
 			index = C.edges[ii].left;
 			vec_cp_mp(S->vertices_mp[ii][0],C.vertices[index].pt_mp);
-			dehomogenize_mp(&dehom,C.vertices[index].pt_mp);
-			dot_product_mp(&(S->projection_values_mp[ii]->coord[0]), dehom,pi_nohom);
-
+			set_mp(&(S->projection_values_mp[ii]->coord[0]),C.vertices[index].projVal_mp);
+//			projection_value_homogeneous_input(&(S->projection_values_mp[ii]->coord[0]), // destination
+//																					 C.vertices[index].pt_mp, C.pi); //source
+//			
+//			
+//			print_comp_mp_matlab(&S->projection_values_mp[ii]->coord[0],"computed");
+//			print_comp_mp_matlab(C.vertices[index].projVal_mp,"stored");									 
 			
 			//mid point
-			vec_cp_mp(S->vertices_mp[ii][1],C.vertices[C.edges[ii].midpt].pt_mp);
-			dehomogenize_mp(&dehom,S->vertices_mp[ii][1]);
-			dot_product_mp(&(S->projection_values_mp[ii]->coord[1]), dehom,pi_nohom);
+			index = C.edges[ii].midpt;
+			vec_cp_mp(S->vertices_mp[ii][1],C.vertices[index].pt_mp);
+			set_mp(&(S->projection_values_mp[ii]->coord[1]),C.vertices[index].projVal_mp);
+//			projection_value_homogeneous_input(&(S->projection_values_mp[ii]->coord[1]), // destination
+//																					 C.vertices[index].pt_mp, C.pi); //source
 			
+			
+//			print_comp_mp_matlab(&S->projection_values_mp[ii]->coord[1],"computed");
+//			print_comp_mp_matlab(C.vertices[index].projVal_mp,"stored");
 			
 			//right point
 			index = C.edges[ii].right;
 			vec_cp_mp(S->vertices_mp[ii][2],C.vertices[index].pt_mp);
-			dehomogenize_mp(&dehom,C.vertices[index].pt_mp);
-			dot_product_mp(&(S->projection_values_mp[ii]->coord[1]), dehom,pi_nohom);
-
-			clear_vec_mp(pi_nohom);
-			clear_vec_mp(dehom);
+			set_mp(&(S->projection_values_mp[ii]->coord[2]),C.vertices[index].projVal_mp);
+//			projection_value_homogeneous_input(&(S->projection_values_mp[ii]->coord[2]), // destination
+//																					 C.vertices[index].pt_mp, C.pi); //source
+//			
+//			print_comp_mp_matlab(&S->projection_values_mp[ii]->coord[2],"computed");
+//			print_comp_mp_matlab(C.vertices[index].projVal_mp,"stored");
+//			mypause();
 		}
 		
 	}
@@ -958,6 +1034,61 @@ int setup_curve(curveDecomp_d *C,char *INfile, int MPType)
 	fclose(IN);
 	return num_vertices;
 }
+
+
+
+
+//dehomogenizes, takes the average, computes the projection.
+//takes in the full projection \pi, including the homogenizing coordinate.
+void estimate_new_projection_value(comp_mp result, vec_mp left, vec_mp right, vec_mp pi){
+	int ii;
+	
+	if (left->size != right->size) {
+		printf("attempting to estimate_new_projection_value on vectors of different size\n");
+		exit(8776);
+	}
+	
+	vec_mp dehom_left, dehom_right;
+	init_vec_mp(dehom_left,left->size-1);   dehom_left->size  = left->size-1;
+	init_vec_mp(dehom_right,right->size-1); dehom_right->size = right->size-1;
+	
+	dehomogenize_mp(&dehom_left,left);
+	dehomogenize_mp(&dehom_right,right);
+	comp_mp temp, temp2, half; init_mp(temp); init_mp(temp2);  init_mp(half);
+	
+	mpf_set_d(half->r, 0.5); mpf_set_d(half->i, 0.0);
+	
+	 
+	set_zero_mp(result);                                           // result = 0;  initialize
+	
+	for (ii = 0; ii<dehom_left->size; ii++) {
+		add_mp(temp,&dehom_left->coord[ii],&dehom_right->coord[ii]); //  a = (x+y)
+		mul_mp(temp2, temp, half);                                   //  b = a/2
+		mul_mp(temp,&pi->coord[ii+1],temp2);                          //  a = b.pi
+		set_mp(temp2,result);                                        //  b = result
+		add_mp(result, temp, temp2);                                  //  result = a+b
+	}
+
+	
+	// in other words, result += (x+y)/2 . pi
+
+	mpf_t zerothresh; mpf_init(zerothresh);
+	mpf_set_d(zerothresh, 1e-9);
+	if (mpf_cmp(result->i, zerothresh) < 0){
+		mpf_set_d(result->i, 0.0);
+	}
+	
+	clear_mp(temp); clear_mp(temp2); clear_mp(half);
+	mpf_clear(zerothresh);
+	clear_vec_mp(dehom_right);clear_vec_mp(dehom_left);
+	
+	return;
+}
+
+
+
+
+
 
 
 

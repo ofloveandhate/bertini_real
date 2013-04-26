@@ -1,5 +1,53 @@
 #include "programStartup.h"
 
+
+
+
+
+void get_projection(vec_mp pi,
+										program_configuration program_options,
+										solver_configuration solve_options,
+										int num_vars)
+{
+	change_size_vec_mp(pi, num_vars);  pi->size = num_vars;
+	
+	
+	//assumes the vector pi is already initialized
+	if (program_options.user_projection==1) {
+		FILE *IN = safe_fopen_read(program_options.projection_filename); // we are already assured this file exists, but safe fopen anyway.
+		int tmp_num_vars;
+		fscanf(IN,"%d",&tmp_num_vars); scanRestOfLine(IN);
+		if (tmp_num_vars!=num_vars-1) {
+			printf("the number of variables appearing in the projection\nis not equal to the number of variables in the problem\n");
+			printf("please modify file to have %d coordinate pairs.\n",num_vars-1);
+			abort();
+		}
+		
+		
+		set_zero_mp(&pi->coord[0]);
+		int ii;
+		for (ii=0; ii < num_vars-1; ii++) {
+			mpf_inp_str(pi->coord[ii+1].r, IN, 10);
+			mpf_inp_str(pi->coord[ii+1].i, IN, 10);
+			scanRestOfLine(IN);
+    }
+		fclose(IN);
+	}
+	else{
+		int ii;
+		for (ii=0; ii<num_vars; ii++) {
+			set_zero_mp(&pi->coord[ii]);
+		}
+		set_one_mp(&pi->coord[1]);
+	}
+	
+	return;
+}
+
+
+
+
+
 void splash_screen(){
 	printf("\n BertiniReal(TM) v%s\n\n", BERTINI_REAL_VERSION_STRING);
   printf(" D.J. Bates, D. Brake,\n W. Hao, J.D. Hauenstein,\n A.J. Sommese, C.W. Wampler\n\n");
@@ -65,7 +113,6 @@ int parse_options(int argc, char **argv, program_configuration *options){
 			/* These options set a flag. */
 			{"nostifle", no_argument,       0, 's'},
 			{"ns", no_argument,					0, 's'},
-//			{"stifle",   no_argument,       &verbose_flag, 0},
 			{"projection",		required_argument,			 0, 'p'},
 			{"p",		required_argument,			 0, 'p'},
 			{"randomization",		required_argument,			 0, 'r'},
@@ -97,13 +144,14 @@ int parse_options(int argc, char **argv, program_configuration *options){
 				break;
 				
 			case 'r':
-				options->user_projection=1;
-				options->projection_filename = optarg;
-				break;
-				
-			case 'p':
 				options->user_randomization=1;
 				options->randomization_filename = optarg;
+				break;
+				
+				
+			case 'p':
+				options->user_projection=1;
+				options->projection_filename = optarg;
 				break;
 				
 				
@@ -231,47 +279,6 @@ void get_tracker_config(solver_configuration *solve_options,int MPType)
 
 
 
-void get_projection(vec_mp pi,
-										program_configuration program_options,
-										solver_configuration solve_options,
-										int num_vars)
-{
-	change_size_vec_mp(pi, num_vars);  pi->size = num_vars;
-	
-	
-	//assumes the vector pi is already initialized
-	if (program_options.user_projection==1) {
-		FILE *IN = safe_fopen_read(program_options.projection_filename); // we are already assured this file exists, but safe fopen anyway.
-		int tmp_num_vars;
-		fscanf(IN,"%d",&tmp_num_vars); scanRestOfLine(IN);
-		if (tmp_num_vars!=num_vars-1) {
-			printf("the number of variables appearing in the projection\nis not equal to the number of variables in the problem\n");
-			printf("please modify file to have %d coordinate pairs.\n",num_vars-1);
-			abort();
-		}
-		
-		
-		set_zero_mp(&pi->coord[0]);
-		int ii;
-		for (ii=0; ii < num_vars-1; ii++) {
-			mpf_inp_str(pi->coord[ii+1].r, IN, 10);
-			mpf_inp_str(pi->coord[ii+1].i, IN, 10);
-			scanRestOfLine(IN);
-    }
-		fclose(IN);
-	}
-	else{
-		int ii;
-		for (ii=0; ii<num_vars; ii++) {
-			set_zero_mp(&pi->coord[ii]);
-		}
-		set_one_mp(&pi->coord[1]);
-	}
-	
-	return;
-}
-
-
 
 void sampler_splash_screen(){
 	printf("\n Sampler module for BertiniReal(TM) v%s\n\n", BERTINI_REAL_VERSION_STRING);
@@ -365,6 +372,89 @@ int sampler_parse_options(int argc, char **argv, sampler_configuration *options)
 	
 	return 0;
 }
+
+
+
+
+
+void init_sampler_config(sampler_configuration *options) {
+	options->stifle_membership_screen = 1;
+	options->stifle_text = (char *)bmalloc(MAX_STRLEN*sizeof(char));
+	options->stifle_text = " > /dev/null ";
+	
+	mpf_init(options->TOL);
+	mpf_set_d(options->TOL, 1e-1);
+
+	return;
+}
+
+void clear_sampler_config(sampler_configuration *options) {
+	
+	mpf_clear(options->TOL);
+	return;
+}
+
+
+
+void init_program_config(program_configuration *options) {
+	
+	
+	options->user_projection = 0;
+	options->projection_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
+	options->projection_filename = "";
+	
+	options->user_randomization = 0;
+	options->randomization_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
+	options->randomization_filename = "";
+	
+	options->input_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
+	options->input_filename = "input\0";
+	
+	options->witness_set_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
+	options->witness_set_filename = "witness_set\0";
+	
+	options->input_deflated_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
+	//this must be set after deflation is run.
+	
+	
+	options->stifle_membership_screen = 1;
+	options->stifle_text = (char *)bmalloc(MAX_STRLEN*sizeof(char));
+	options->stifle_text = " > /dev/null ";
+	return;
+}
+
+void clear_program_config(program_configuration *options) {
+	
+	if (options->user_projection) {
+		free(options->projection_filename);
+	}
+	
+	if (options->user_randomization) {
+		free(options->randomization_filename);
+	}
+	
+	free(options->input_filename);
+	free(options->input_deflated_filename);
+	
+	return;
+}
+
+void init_solver_config(solver_configuration *options){
+	options->allow_multiplicity = 0;
+	options->allow_singular = 0;
+	options->allow_infinite = 0;
+	options->allow_unsuccess = 0;
+	
+	options->show_status_summary = 0;
+	
+}
+
+
+void clear_solver_config(solver_configuration *options){
+	//has no fields which require clearing.
+	return;
+}
+
 
 
 
