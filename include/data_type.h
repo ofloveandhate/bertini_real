@@ -154,80 +154,6 @@ typedef struct
 
 
 
-///////////
-//
-//    PROGRAM CONFIGURATION
-//
-//////////
-
-#define MAX_STRLEN 200
-
-typedef struct
-{
-	int user_projection;
-	char *projection_filename;
-	
-	int user_randomization;
-	char *randomization_filename;
-	
-	char *input_filename;
-	
-	char *witness_set_filename;
-	
-	char *input_deflated_filename;
-	
-	
-	
-	int stifle_membership_screen;
-	char *stifle_text;
-} program_configuration;
-
-
-void init_program_config(program_configuration *options);
-void clear_program_config(program_configuration *options);
-
-
-
-typedef struct
-{
-	int stifle_membership_screen;
-	char *stifle_text;
-} sampler_configuration;
-void init_sampler_config(sampler_configuration *options);
-void clear_sampler_config(sampler_configuration *options);
-
-///////////
-//
-//    SOLVER CONFIGURATION
-//
-//////////
-
-
-typedef struct
-{
-	
-	tracker_config_t T;
-	preproc_data PPD;
-	
-	int allow_multiplicity;
-	int allow_singular;
-	int allow_infinite;
-	int allow_unsuccess;
-	
-	int show_status_summary;
-	
-	
-	double midpoint_tol;
-
-} solver_configuration;
-
-void init_solver_config(solver_configuration *options);
-void clear_solver_config(solver_configuration *options);
-
-
-
-
-
 
 //int index_in_V1(curveDecomp_d *C, vec_mp testpoint, comp_mp projection_value, tracker_config_t T, int sidedness);
 //void add_point_to_V0(curveDecomp_d *C, vertex new_vertex);
@@ -260,6 +186,7 @@ void cp_patches(witness_set *W_out, witness_set W_in);
 void cp_witness_set(witness_set *W_out, witness_set W_in);
 void init_witness_set_d(witness_set *W);
 
+void norm_of_difference(mpf_t result, vec_mp left, vec_mp right);
 
 void dehomogenize_d(vec_d *result, vec_d dehom_me);
 void dehomogenize_mp(vec_mp *result, vec_mp dehom_me);
@@ -296,55 +223,6 @@ void print_path_retVal_message(int retVal);
 retrieves the number of variables from the PPD by taking the sum of the sizes, plus the sum of the types.
 */
 int get_num_vars_PPD(preproc_data PPD);
-
-
-/**
- from the bertini library.  the prototype is not in any header file.
- */
-int checkForReal_d(point_d Pt, double realTol);
-/**
- from the bertini library.  the prototype is not in any header file.
- */
-int checkForReal_mp(point_mp Pt, double realTol);
-
-
-/** 
- from the bertini library.  the prototype is not in any header file.
- */
-void findMultSol(post_process_t *endPoints, int num_sols, int num_vars, preproc_data *PPD, double finalTol);
-
-/**
- conversion function for turning endgame_data_t into post_process_t.
- */
-void endgamedata_to_endpoint(post_process_t *endPoint, endgame_data_t *EG);
-
-/**
- bertini_real's own method of finding SINGULAR solutions among a collection of post_process_t's.
- this singular detection does NOT declare a point singular based on multiplicity -- just on the basis of condition number.
- */
-int BRfindSingularSolns(post_process_t *endPoints,
-												int num_sols, int num_vars,
-												tracker_config_t *T );
-
-/**
- bertini_real's own method of finding FINITE solutions among a collection of post_process_t's.
- */
-int BRfindFiniteSolns(post_process_t *endPoints, int num_sols, int num_vars,
-											tracker_config_t *T );
-
-/**
- determines if a solution is allowable.  based on solver_configuration.
- */
-int is_acceptable_solution(post_process_t endPoint, solver_configuration *solve_options);
-
-
-/**
- bertini_real's version of post-processing.  options are set via the solver_configuration.
- */
-void BRpostProcessing(post_process_t *endPoints, witness_set *W_new, int num_pts,
-											preproc_data *preProcData, tracker_config_t *T,
-											solver_configuration *solve_options);
-
 
 
 

@@ -24,6 +24,17 @@
 
 
 #include "polysolve.h"
+#include "programStartup.h" 
+
+
+/**
+ splits the bertini input file into several files for later use.
+ */
+void parse_input_file(char filename[], int *MPType);
+
+
+
+
 
 
 /**
@@ -61,6 +72,10 @@ FILE *safe_fopen_append(char * filename);
  copies a file character by character.
  */
 void copyfile(char *INfile,char *OUTfile);
+
+
+
+
 
 #endif
 

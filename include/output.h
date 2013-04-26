@@ -35,6 +35,7 @@ void Output_Main(char *outputName, char *input_deflated_Name,
 
 void print_curve(curveDecomp_d C, int num_vars, char *outputfile, int MPType);
 
+void print_matrix_to_file_mp(FILE *OUT, int digits, mat_mp );
 #endif
 
 

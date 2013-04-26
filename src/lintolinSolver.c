@@ -310,7 +310,7 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 	for (kk = 0; kk< num_new_linears; kk++)
 	{
 #ifdef verbose
-		printf("solving for linear %d\n",kk);
+//		printf("solving for linear %d\n",kk);
 #endif
 		// we pass the particulars of the information for this solve mode via the ED.
 		
@@ -334,7 +334,7 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 		{ // get current thread number
 			oid = thread_num();
 			
-			printf("\t\tpoint %d\n",ii);
+//			printf("\t\tpoint %d\n",ii);
 			startPointIndex = ii;
 
 //TODO: eliminate this header stuff
@@ -362,10 +362,24 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 			
 			
 			int issoln;
-			if (EG->prec<64){
-				issoln = check_issoln_lintolin_d(&EG[oid],  &T_copy[oid], &BED_copy[oid]); }
-			else {
-				issoln = check_issoln_lintolin_mp(&EG[oid], &T_copy[oid], BED_copy[oid].BED_mp); }
+			if (EG->last_approx_prec!=1) {
+				if (EG->prec<64){
+					issoln = check_issoln_lintolin_d(&EG[oid],  &T_copy[oid], &BED_copy[oid]); }
+				else {
+					issoln = check_issoln_lintolin_mp(&EG[oid], &T_copy[oid], BED_copy[oid].BED_mp); }
+			}
+			else{
+				
+				if (EG->prec<64){
+					print_point_to_screen_matlab(EG->PD_d.point,"solution");}
+				else {
+					print_point_to_screen_matlab_mp(EG->PD_mp.point,"solution");}
+				
+				printf("the last approximation was of precision %d\n",EG->last_approx_prec);
+				
+				mypause();
+			}
+
 
 
 
@@ -2696,7 +2710,6 @@ int check_issoln_lintolin_d(endgame_data_t *EG,
 	}
 	
 
-//	mypause();
 	clear_eval_struct_d(e);
 	clear_vec_d(f);
 	

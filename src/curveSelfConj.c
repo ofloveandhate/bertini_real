@@ -100,10 +100,10 @@ void computeCurveSelfConj(char * inputFile,
 	
 	FILE *OUT=NULL;
 	OUT = safe_fopen_write("Rand_matrix");
-	fprintf(OUT,"%d\n",n_minusone_randomizer_matrix_full_prec->rows);
-	fprintf(OUT,"%d\n",n_minusone_randomizer_matrix_full_prec->cols);
+	fprintf(OUT,"%d %d\n",n_minusone_randomizer_matrix_full_prec->rows,n_minusone_randomizer_matrix_full_prec->cols);
 	fprintf(OUT,"%d\n",solve_options->T.AMP_max_prec);
-	printMat_mp(OUT, 0, n_minusone_randomizer_matrix_full_prec);
+	fprintf(OUT,"\n");
+	print_matrix_to_file_mp(OUT, 0, n_minusone_randomizer_matrix_full_prec);
 	fclose(OUT);
 	
 	
