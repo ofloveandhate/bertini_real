@@ -20,6 +20,7 @@ int lin_to_lin_solver_main(int MPType,
 	cp_patches(W_new,W); // copy the patches over from the original witness set
 	W_new->num_variables = W.num_variables;
 	
+	cp_names(W_new,W);
 	
 	if (num_new_linears==0) {
 		W_new->num_linears = 0;
@@ -27,6 +28,10 @@ int lin_to_lin_solver_main(int MPType,
 		return 0;
 	}
 	
+	if (W.num_linears==0) {
+		printf("input witness set had 0 linears!\n");
+		exit(01);
+	}
 	
 	W_new->num_linears = (num_new_linears);
 	W_new->L = (vec_d *)bmalloc((num_new_linears)*sizeof(vec_d));
@@ -158,7 +163,8 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
 											 FAIL, pathMod,
 											 &T, &ED, ED.BED_mp,
 											 ptr_to_eval_d, ptr_to_eval_mp,
-											 change_prec, dehom);
+											 change_prec, dehom,
+											 solve_options);
 	}
 	
 	fclose(midOUT);
@@ -244,7 +250,8 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 												int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
 												int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 												int (*change_prec)(void const *, int),
-												int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *))
+												int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
+												solver_configuration *solve_options)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -309,16 +316,17 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 	
 	for (kk = 0; kk< num_new_linears; kk++)
 	{
-#ifdef verbose
-//		printf("solving for linear %d\n",kk);
-#endif
+		if (solve_options->verbose_level>=1)
+			printf("solving for linear %d\n",kk);
+		
 		// we pass the particulars of the information for this solve mode via the ED.
 		
 		//set current linear in the evaluator data's
 		vec_mp_to_d(     ED_d->current_linear,new_linears_full_prec[kk]);
 		
+		
 		if (T->MPType==2) {
-			//should i reset the precision here?
+			//q: should i reset the precision here?
 			vec_cp_mp(ED_d->BED_mp->current_linear,new_linears_full_prec[kk]);
 			vec_cp_mp(ED_d->BED_mp->current_linear_full_prec,new_linears_full_prec[kk]);
 		}
@@ -334,7 +342,9 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 		{ // get current thread number
 			oid = thread_num();
 			
-//			printf("\t\tpoint %d\n",ii);
+			if (solve_options->verbose_level>=1)
+				printf("\t\tpoint %d\n",ii);
+			
 			startPointIndex = ii;
 
 //TODO: eliminate this header stuff
@@ -361,7 +371,7 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 				mp_to_d(time_to_compare, EG->PD_mp.time); }
 			
 			
-			int issoln;
+			int issoln = 0;
 			if (EG->last_approx_prec!=1) {
 				if (EG->prec<64){
 					issoln = check_issoln_lintolin_d(&EG[oid],  &T_copy[oid], &BED_copy[oid]); }
@@ -376,7 +386,7 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 					print_point_to_screen_matlab_mp(EG->PD_mp.point,"solution");}
 				
 				printf("the last approximation was of precision %d\n",EG->last_approx_prec);
-				
+				printf("this is probably a problem\n");
 				mypause();
 			}
 
@@ -487,7 +497,7 @@ void lin_to_lin_track_path_d(int pathNum, endgame_data_t *EG_out,
     }
     else
     { // make sure that the other MP things are set to the correct precision
-			printf("%d prec in track_path\n",EG_out->prec);
+//			printf("%d prec in track_path\n",EG_out->prec);
       mpf_clear(EG_out->function_residual_mp);
       mpf_init2(EG_out->function_residual_mp, EG_out->prec);
 			
@@ -1564,7 +1574,8 @@ int lin_to_lin_solver_mp(int MPType,
 											 FAIL, pathMod,
 											 &T, &ED,
 											 ptr_to_eval_mp, //ptr_to_eval_d,
-											 change_prec, dehom);
+												change_prec, dehom,
+												solve_options);
 	}
 	
 	
@@ -1646,7 +1657,8 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 												lintolin_eval_data_mp *ED,
 												int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 												int (*change_prec)(void const *, int),
-												int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *))
+												 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
+												 solver_configuration *solve_options)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -1717,9 +1729,8 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 	
 	for (kk = 0; kk< num_new_linears; kk++)
 	{
-#ifdef verbose
-		printf("solving for linear %d\n",kk);
-#endif
+		if (solve_options->verbose_level>=1)
+			printf("solving for linear %d\n",kk);
 		
 //		//set current linear in the evaluator data
 		vec_cp_mp(ED->current_linear,new_linears[kk]);
@@ -1738,22 +1749,47 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 //			printPathHeader_mp(OUT_copy[oid], &startPts[startPointIndex], &T_copy[oid], solution_counter, &BED_copy[oid], eval_func_mp);
 			lin_to_lin_track_path_mp(solution_counter, &EG[oid], &startPts[ii], OUT_copy[oid], MIDOUT_copy[oid], &T_copy[oid], &BED_copy[oid], curr_eval_mp, change_prec, find_dehom); //curr_eval_d,
 			
-	
+			if (solve_options->verbose_level>=1)
+				printf("path %d\n",ii);
 			
 			// check to see if it should be sharpened
 			if (EG[oid].retVal == 0 && T_copy[oid].sharpenDigits > 0)
 			{ // use the sharpener for after an endgame
 				sharpen_endpoint_endgame(&EG[oid], &T_copy[oid], OUT_copy[oid], NULL, &BED_copy[oid], NULL, curr_eval_mp, NULL);
-				// DAB - replaced curr_eval_d with NULL
 			}
 			
 
-			int issoln = check_issoln_lintolin_mp(&EG[oid], &T_copy[oid], &BED_copy[oid]);
 			
 			
 			//get the terminal time in double form
 			comp_d time_to_compare;
-			mp_to_d(time_to_compare, EG->PD_mp.time); 
+			if (EG->prec < 64) {
+				set_d(time_to_compare,EG->PD_d.time);}
+			else {
+				mp_to_d(time_to_compare, EG->PD_mp.time); }
+			
+			
+			int issoln = 0;
+			if (EG->last_approx_prec!=1) {
+//				if (EG->prec<64){
+//					issoln = check_issoln_lintolin_d(&EG[oid],  &T_copy[oid], &BED_copy[oid]); }
+//				else {
+					issoln = check_issoln_lintolin_mp(&EG[oid], &T_copy[oid], &BED_copy[oid]);
+//			}
+			}
+			else{
+				
+//				if (EG->prec<64){
+//					print_point_to_screen_matlab(EG->PD_d.point,"solution");}
+//				else {
+					print_point_to_screen_matlab_mp(EG->PD_mp.point,"solution");
+//				}
+				
+				printf("the last approximation was of precision %d\n",EG->last_approx_prec);
+				printf("this is probably a problem\n");
+				mypause();
+			}
+			
 			
 			
 			if ((EG->retVal != 0 && time_to_compare->r > T->minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
@@ -1771,6 +1807,12 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 				trackCount->successes++;
 				solution_counter++; // probably this could be eliminated
 			}
+			
+			
+			
+
+			
+			
 			
 		}// re: for (ii=0; ii<W.num_pts ;ii++)
 	} // for each new linear

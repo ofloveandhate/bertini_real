@@ -156,7 +156,7 @@ void computeCurveSelfConj(char * inputFile,
 	//
 	/////////////
 	
-	
+	// if have box, intersect box with C
 
 	init_witness_set_d(&Wtemp);
 	cp_patches(&Wtemp,W); // copy the patches over from the original witness set
@@ -165,8 +165,10 @@ void computeCurveSelfConj(char * inputFile,
 	init_witness_set_d(&W_lintolin);
 	cp_patches(&W_lintolin,W); // copy the patches over from the original witness set
 	
-	// if have box, intersect box with C
-	
+	//set some solver options.  these will have to be reset later;
+	solve_options->show_status_summary = 1;
+	solve_options->allow_multiplicity = 1;
+	solve_options->allow_singular = 1;
 	lin_to_lin_solver_main(solve_options->T.MPType,
 												 W,
 												 n_minusone_randomizer_matrix_full_prec,
@@ -174,7 +176,7 @@ void computeCurveSelfConj(char * inputFile,
 												 &Wtemp,
 												 solve_options);
 	
-	printf("made it out of the lin_to_lin solver\n");
+	
 	
 
 	//add the W to Wnew.
@@ -188,7 +190,7 @@ void computeCurveSelfConj(char * inputFile,
 	write_linears(W_lintolin,"lintolin_linears");
 	
 	
-	
+	printf("done with initial use of lin_to_lin solver\n");
 	
 	
 	
@@ -201,9 +203,11 @@ void computeCurveSelfConj(char * inputFile,
 	/////////////
 	
 	witness_set W_linprod; init_witness_set_d(&W_linprod);
-	cp_names(&W_lintolin,W);
 	
 	
+	solve_options->show_status_summary = 1;
+	solve_options->allow_multiplicity = 1;
+	solve_options->allow_singular = 1;
 	linprod_to_detjac_solver_main(solve_options->T.MPType,
 																W_lintolin,
 																n_minusone_randomizer_matrix_full_prec,
@@ -226,7 +230,7 @@ void computeCurveSelfConj(char * inputFile,
 	sort_for_membership(inputFile, &W_linprod_good, W_linprod, program_options->stifle_text);
 	write_dehomogenized_coordinates(W_linprod_good,"linprod_solns_postmembership");
 	
-	printf("done sorting membership\n");
+//	printf("done sorting membership\n");
 	
 //	print_witness_set_to_screen(W_linprod_good);
 	
@@ -251,6 +255,9 @@ void computeCurveSelfConj(char * inputFile,
 	witness_set W_detjacdetjac; init_witness_set_d(&W_detjacdetjac);
 	cp_names(&W_detjacdetjac,W);
 	
+	solve_options->show_status_summary = 1;
+	solve_options->allow_multiplicity = 1;
+	solve_options->allow_singular = 1;
 	
 	detjac_to_detjac_solver_main(solve_options->T.MPType,
 															 W_linprod_good,
@@ -424,6 +431,8 @@ void computeCurveSelfConj(char * inputFile,
 	/////////
 	
 
+
+	
 	/// dehomogenize the points to perform the projections using \pi.  the points we
 	vec_d mcdehom;  init_vec_d(mcdehom,W.num_variables-1); mcdehom->size = W.num_variables-1;
 
@@ -434,16 +443,20 @@ void computeCurveSelfConj(char * inputFile,
 	crit_downstairs = (double *)bmalloc(num_crit*sizeof(double));
 	
 	int num_midpoints = W_crit_real.num_pts-1 + left_has_real_soln + right_has_real_soln;
-	double *midpoints_downstairs = (double *) bmalloc(num_midpoints*sizeof(double));
 	
 	if (num_midpoints<1) {
 		printf("no midpoints to work with :(\n");
-		printf("please program exiting setting C\n");
+		printf("please program exiting setting C (start at line 449 in curveSelfConj() )\n");
 		exit(-1);
 	}
 	else{
 		printf("%d midpoints\n",num_midpoints);
 	}
+	
+	
+	double *midpoints_downstairs = (double *) bmalloc(num_midpoints*sizeof(double));
+	
+
 
 
 	if (left_has_real_soln==1) {
@@ -687,7 +700,7 @@ void computeCurveSelfConj(char * inputFile,
 		for (kk=0; kk<midpoint_witness_sets[ii].num_pts; kk++) {
 			
 			
-			set_mp(temp_vertex.projVal_mp, &midpoint_witness_sets[ii].L_mp[0]->coord[0]  ); // set projection value
+			neg_mp(temp_vertex.projVal_mp, &midpoint_witness_sets[ii].L_mp[0]->coord[0]  ); // set projection value
 			vec_cp_mp(temp_vertex.pt_mp,midpoint_witness_sets[ii].pts_mp[kk]);// set point
 			temp_vertex.type = MIDPOINT; // set type
 			
@@ -926,6 +939,7 @@ void sort_for_membership(char * input_file,
 	//copy the linears, patches from old to new
 	cp_patches(W_out, W_in);
 	cp_linears(W_out, W_in);
+	cp_names(W_out, W_in);
 	
 	//more important files out of the way.  this will probably crash the program if it is called without these files being present.
 	rename_bertini_files_dotbak();
@@ -981,7 +995,7 @@ void sort_for_membership(char * input_file,
 	int on_component_indicator[W_in.num_pts];
 	read_incidence_matrix_wrt_number(on_component_indicator,W_in.incidence_number);
 	
-	printf("done reading incidence_matrix\n");
+//	printf("done reading incidence_matrix\n");
 	
 	int *is_on_component;
 	is_on_component = (int *)bmalloc(W_in.num_pts*sizeof(int));
@@ -1143,7 +1157,7 @@ void sort_for_unique(witness_set *W_out,
 	//copy the linears, patches from old to new
 	cp_patches(W_out, W_in);
 	cp_linears(W_out, W_in);
-	
+	cp_names(W_out, W_in);
 	//
 	int curr_uniqueness;
 	int num_good_pts = 0;
@@ -1231,7 +1245,7 @@ void sort_for_real(witness_set *W_out,
 	//copy the linears, patches from old to new
 	cp_patches(W_out, W_in);
 	cp_linears(W_out, W_in);
-	
+	cp_names(W_out, W_in);
 //	
 	
 	int real_indicator[W_in.num_pts];	

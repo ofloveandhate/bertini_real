@@ -3,29 +3,30 @@
 
 
 
-void Output_Main(char *outputName, char *input_deflated_Name,int component_number,int num_vars, curveDecomp_d C, int MPType)
+void Output_Main(program_configuration program_options, witness_set W, curveDecomp_d C)
 {
 	int  strLength = 0;
 	char *directoryName=NULL,tmp_file[1000];
 	FILE *OUT;
-	strLength = 1 + snprintf(NULL, 0, "%s_comp%d_curve", outputName, component_number);
+	strLength = 1 + snprintf(NULL, 0, "%s_comp%d_curve", program_options.output_basename, W.comp_num);
 	directoryName = (char *)bmalloc(strLength * sizeof(char));
-	sprintf(directoryName,  "%s_comp%d_curve", outputName, component_number);
+	sprintf(directoryName,  "%s_comp%d_curve", program_options.output_basename, W.comp_num);
 	
 	mkdir(directoryName,0777);
 	purge_previous_directory(directoryName);
 	
 	//Do we need witness_data?
-	
+	printf("right before copying data\n");
+	mypause();
 	sprintf(tmp_file,  "%s/witness_data", directoryName);
 	copyfile("witness_data",tmp_file);
 //	printf("before witness_set\n");fflush(stdout);
 	
 	sprintf(tmp_file,  "%s/witness_set", directoryName);
-	copyfile("witness_set",tmp_file);
+	copyfile(program_options.witness_set_filename,tmp_file);
 	
-	sprintf(tmp_file,  "%s/%s", directoryName,input_deflated_Name);
-	copyfile(input_deflated_Name,tmp_file);
+	sprintf(tmp_file,  "%s/%s", directoryName,program_options.input_deflated_filename);
+	copyfile(program_options.input_deflated_filename,tmp_file);
 //	printf("after input_deflated_Name\n");fflush(stdout);
 	sprintf(tmp_file,  "%s/Rand_Matrix", directoryName);
 	copyfile("Rand_matrix",tmp_file);
@@ -33,17 +34,17 @@ void Output_Main(char *outputName, char *input_deflated_Name,int component_numbe
 //	sprintf(tmp_file,  "%s/V0.vert", directoryName);
 //	print_vertices(C.V0,C.num_V0,num_vars,tmp_file, MPType);
 	sprintf(tmp_file,  "%s/V.vert", directoryName);
-	print_vertices(C.vertices,C.num_vertices,num_vars,tmp_file, MPType);
+	print_vertices(C.vertices,C.num_vertices,W.num_variables,tmp_file, program_options.MPType);
 	sprintf(tmp_file,  "%s/E.edge", directoryName);
-	print_edges(C.edges,C.num_edges,num_vars,input_deflated_Name,tmp_file,MPType);
+	print_edges(C.edges,C.num_edges,W.num_variables,program_options.input_deflated_filename,tmp_file,program_options.MPType);
 	
 	sprintf(tmp_file,  "%s/C.curve", directoryName);
-	print_curve(C, num_vars, tmp_file, MPType);
+	print_curve(C, W.num_variables, tmp_file, program_options.MPType);
 	
 	OUT = safe_fopen_write("Dir_Name");
 	fprintf(OUT,"%d\n",strLength);
 	fprintf(OUT,"%s\n",directoryName);
-	fprintf(OUT,"%d\n",MPType);
+	fprintf(OUT,"%d\n",program_options.MPType);
 	fclose(OUT);
 	
 	
@@ -168,7 +169,7 @@ void print_curve(curveDecomp_d C, int num_vars, char *outputfile, int MPType)
 	fprintf(OUT,"%d %d %d\n",num_vars, C.num_vertices, C.num_edges);
 	fprintf(OUT,"%d %d %d %d\n",C.num_V0, C.num_V1, C.num_midpts, C.num_new);
 	
-
+	
 //	int			*V0_indices;
 	for (ii=0; ii<C.num_V0; ii++) {
 		fprintf(OUT,"%d\n",C.V0_indices[ii]);

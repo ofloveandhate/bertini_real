@@ -26,7 +26,7 @@ int main(int argC, char *args[])
 	
 	//instantiate options
 	program_configuration program_options;  init_program_config(&program_options);
-	parse_options(argC, args, &program_options);
+	BR_parse_commandline(argC, args, &program_options);
 	
 	//parse the options
 	startup(program_options); // tests for existence of necessary files, etc.
@@ -45,6 +45,7 @@ int main(int argC, char *args[])
 	parse_input_file(program_options.input_filename, &MPType);
 	
 	
+	mypause();
 	// set up the solver configuration
 	solver_configuration solve_options;  init_solver_config(&solve_options);
 	get_tracker_config(&solve_options,MPType);
@@ -61,7 +62,7 @@ int main(int argC, char *args[])
 	init_witness_set_d(&Wuser);
 	witnessSetParse(&Wuser,program_options.witness_set_filename,num_vars);
 	Wuser.num_var_gps = solve_options.PPD.num_var_gp;
-	Wuser.MPType = MPType;
+	Wuser.MPType = program_options.MPType = MPType;
 	
 	get_variable_names(&Wuser);
 
@@ -156,7 +157,7 @@ int main(int argC, char *args[])
 	}
 
 	printf("outputting data\n");
-	Output_Main("output", program_options.input_deflated_filename,Wuser.comp_num, num_vars, C, 2);
+	Output_Main(program_options, Wuser, C);
 	
 	
 

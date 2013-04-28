@@ -24,9 +24,15 @@
 
 
 //the amount by which to perturb for numerical derivative
-#define PERTURBATION_VALUE 1e-5;
-#define PERTURBATION_VALUE_mp 1e-8;
+#define PERTURBATION_VALUE 1e-5
+#define PERTURBATION_VALUE_mp 1e-8
 
+#define TOL_DOUBLE_PRECISION 1e-40
+#define LARGECHANGE_DOUBLEPRECISION 1e15
+
+
+#define TOL_MP 1e-50
+#define LARGECHANGE_MP 1e50
 
 int take_determinant_d(comp_d determinant, mat_d source_matrix);
 int take_determinant_mp(comp_mp determinant, mat_mp source_matrix);

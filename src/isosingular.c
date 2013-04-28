@@ -24,8 +24,8 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *i
 	
 	// remove previous files.
 	remove("isosingular_summary");
-	remove("func_input_real");
-	remove("config_real");
+//	remove("func_input_real");
+//	remove("config_real");
 	remove("input_stabilization_test");
 	
 	//open the input file.
@@ -34,7 +34,7 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *i
   fclose(IN);
 
 
-
+	mypause();
   // setup input file to test for stabilization
   stabilization_input_file("input_stabilization_test", "func_input_real", "config_real");
 
@@ -82,7 +82,7 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *i
   // read in the file	
 	
 	IN = safe_fopen_read("isosingular_summary");
-  fscanf(IN, "%d%d", &nullSpace, &success);  
+  fscanf(IN, "%d%d", &nullSpace, &success);     // set the success flag
 	fclose(IN);
   // setup the first entry in the deflation sequence
   *num_deflations = 0;

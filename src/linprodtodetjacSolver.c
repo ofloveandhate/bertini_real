@@ -25,6 +25,7 @@ int linprod_to_detjac_solver_main(int MPType,
 	W_new->num_variables = W.num_variables;
 	W_new->num_linears = (1);
 		
+	cp_names(W_new,W);
 	
 	W_new->L = (vec_d *)bmalloc(1*sizeof(vec_d));
 	W_new->L_mp = (vec_mp *)bmalloc(1*sizeof(vec_mp));
@@ -562,26 +563,11 @@ int linprod_to_detjac_setup_d(FILE **OUT, char *outName,
   numGps = ED->preProcData.num_var_gp + ED->preProcData.num_hom_var_gp;
   // find the rank
   rank = rank_finder_d(&ED->preProcData, dummyProg, T, T->numVars);
-  // check to make sure that it is possible to have a zero dimensional component
-	//  if (T->numVars > rank + numGps)
-	//		//  {
-	//		//    printf("The system has no zero dimensional solutions based on its rank!\n");
-	//		//    printf("The rank of the system including the patches is %d while the total number of variables is %d.\n\n", rank + numGps, T->numVars);
-	//		//    bexit(ERROR_INPUT_SYSTEM);
-	//		//  }
-	//
-	//		//AM I ACUTALLY SUPPOSED TO DO THIS? !!! HERE
-	//		// adjust the number of variables based on the rank
-//	T->numVars = rank + numGps;
-	
-	
-	
-	
-	//  // now that we know the rank, we can setup the rest of ED
-	//  if (numGps == 1)
-	//  { // 1-hom
+
 	patchType = 2; // 1-hom patch
 	ssType = 0;    // with 1-hom, we use total degree start system
+	
+	
 	
 #ifdef printpathlinprod
 	int ii;
@@ -598,17 +584,7 @@ int linprod_to_detjac_setup_d(FILE **OUT, char *outName,
 	
 	adjustDegrees = 0; // if the system does not need its degrees adjusted, then that is okay
 	setuplinprodtodetjacEval_d(T,preprocFile, degreeFile, dummyProg, rank, patchType, ssType, T->MPType, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix_full_prec, W,projection);
-	//  }
-	//  else
-	//  { // m-hom, m > 1
-	//    patchType = 0; // random patch based on m-hom variable structure
-	//    ssType = 1;    // with m-hom, we use the mhom structure for start system
-	//    adjustDegrees = 0; // if the system does not need its degrees adjusted, then that is okay
-	//    setuplinprodtodetjacEval_d(T,preprocFile, degreeFile, dummyProg, rank, patchType, ssType, T->MPType, &ED->preProcData, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix_full_prec, W);
-	//  }
-	
-//	printf("leaving setup_linprod_d 667\n");
-	
+
 
 	
 	

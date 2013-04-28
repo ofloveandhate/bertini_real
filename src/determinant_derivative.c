@@ -38,8 +38,8 @@ int take_determinant_d(comp_d determinant, mat_d source_matrix)
 	
 	
 	
-	double tol = 1e-20; //  these should be for realsies
-	double largeChange = 1e20;
+	double tol = TOL_DOUBLE_PRECISION; //  these should be for realsies
+	double largeChange = LARGECHANGE_DOUBLEPRECISION;
 	
 	// returns x, intermediate.
 	
@@ -110,8 +110,8 @@ int take_determinant_mp(comp_mp determinant, mat_mp source_matrix){
 	mpf_t tol;  mpfr_init(tol); // = 1e-14
 	mpf_t largeChange; mpfr_init(largeChange); //  = 1e11
 	
-	mpf_set_d(tol, 1e-30); // tol is the minimum acceptable 1-norm for each row during decomposition
-	mpf_set_d(largeChange, 1e40);
+	mpf_set_d(tol, TOL_MP); // tol is the minimum acceptable 1-norm for each row during decomposition
+	mpf_set_d(largeChange, LARGECHANGE_MP);
 	
 	
 	

@@ -413,6 +413,7 @@ void merge_witness_sets(witness_set *W_out,witness_set W_left,witness_set W_righ
 		exit(-343);
 	}
 	
+	cp_names(W_out, W_right);
 	
 //	if (W_left.num_linears == 0) { // should this be allowable?  i think yes...
 //		printf("left witness_set has no linears.\n");
@@ -506,9 +507,14 @@ void init_variable_names(witness_set *W, int num_vars){
 void cp_names(witness_set *W_out, witness_set W_in){
 	int ii;
 	
-	if (W_in.num_variables==0 || W_in.variable_names==NULL) {
-		printf("attempting to copy variable names from witness_set with no variables");
+	if (W_in.num_variables==0) {
+		printf("\nattempting to copy variable names from witness_set with no variables\n");
 		exit(1333);
+	}
+	
+	if (W_in.variable_names==NULL) {
+		printf("\nattempting to copy variable names from witness_set unset variable names\n");
+		exit(1334);
 	}
 	
 	if (W_out->variable_names==NULL) {
@@ -1072,7 +1078,7 @@ void print_matrix_to_screen_matlab(mat_d M, char name[])
 	{ // print kth row
 		for (jj = 0; jj < M->cols; jj++)
 		{
-			printf(" %.15le+1i*%.15le",M->entry[kk][jj].r,M->entry[kk][jj].i);
+			printf(" %.7le+1i*%.7le",M->entry[kk][jj].r,M->entry[kk][jj].i);
 		}
 		printf(";\n");
 	}

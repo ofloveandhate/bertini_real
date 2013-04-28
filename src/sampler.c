@@ -16,8 +16,10 @@ int main(int argC, char *args[])
 	sample_d   S_old,S_new;
 
 	sampler_splash_screen();
+	
 	sampler_configuration sampler_options;  init_sampler_config(&sampler_options);
-	sampler_parse_options(argC, args, &sampler_options);
+	
+	sampler_parse_commandline(argC, args, &sampler_options);
 	
 	////
 	//  begin the actual program
@@ -51,20 +53,20 @@ int main(int argC, char *args[])
 	num_vars = get_num_vars_PPD(solve_options.PPD);		
 	
 	
-	printf("parsing witness set\n");
+//	printf("parsing witness set\n");
 	witnessSetParse(&W, witnessSetName,num_vars);
 	W.num_var_gps = solve_options.PPD.num_var_gp;
 	W.MPType = MPType;
 	get_variable_names(&W);
 
 	
-	printf("getting randomizer matrix\n");
+//	printf("getting randomizer matrix\n");
 	read_rand_matrix(RandMatName, n_minusone_randomizer_matrix);
 	
-	printf("loading sampling data\n");
+//	printf("loading sampling data\n");
 	Load_sampling_data(&S_old,C,num_vars,MPType);
 	
-	
+	solve_options.T.ratioTol = 1;
 	
 	/////////
 	////////
@@ -75,7 +77,7 @@ int main(int argC, char *args[])
 	//
 
 	
-	printf("generate_new_sampling_pts\n");
+//	printf("generate_new_sampling_pts\n");
 	generate_new_sampling_pts(&S_new,
 														n_minusone_randomizer_matrix,
 														S_old,
@@ -135,6 +137,10 @@ void generate_new_sampling_pts(sample_d *S_new,
 															 sampler_configuration *sampler_options,
 															 solver_configuration *solve_options)
 {
+	
+	
+	solve_options->verbose_level = sampler_options->verbose_level;
+	
 	if(MPType==0)
 		generate_new_sampling_pts_d(S_new, n_minusone_randomizer_matrix, S_old, C, W, MPType, sampler_options,solve_options);
 	else
@@ -400,8 +406,10 @@ void generate_new_sampling_pts_mp(sample_d *S_new,
 		int pass_number  = 0;
 		while(1) // breaking condition is all samples being less than TOL away from each other (in the infty norm sense).
 		{
-			pass_number++;
-			printf("on pass %d\n\n",pass_number);
+			
+			if (sampler_options->verbose_level>=0){ // print by default
+				printf("edge %d,\tpass %d,\t%d refinements\n",ii,pass_number,num_refinements);
+			}
 			
 			new_points = (vec_mp *)bmalloc((prev_num_samp+num_refinements)* sizeof(vec_mp));
 			// will hold the collected data
@@ -410,7 +418,7 @@ void generate_new_sampling_pts_mp(sample_d *S_new,
 			memset (refine_next, 0, (prev_num_samp+num_refinements-1) *sizeof(int));
 			
 			change_size_vec_mp(new_projection_values,prev_num_samp+num_refinements);
-			new_projection_values->size=(prev_num_samp+num_refinements); // hold the values of the projections in new_projection_values???
+			new_projection_values->size=(prev_num_samp+num_refinements); // hold the values of the projections in new_projection_values
 			
 			
 			
@@ -421,25 +429,41 @@ void generate_new_sampling_pts_mp(sample_d *S_new,
 			
 			//now we can always set the point to the right as well as the new point
 			
+			
 			sample_counter = 1; // this will be incremented every time we put a point into new_points 
 			// starts at 1 because already committed one.
+			// this should be the only place this counter is reset.
 	
-//			for (jj=0; jj<prev_num_samp; jj++) {
-//				print_comp_mp_matlab(&previous_projection_values->coord[jj],"proj");
-//			}
-//			printf("\n");
-//			for (jj=0; jj<prev_num_samp-1; jj++) {
-//				printf("%d\n",refine_next[jj]);
-//			}
-//			printf("\n");
 			
-			num_refinements = 0;
+			if (sampler_options->verbose_level>=2) {
+				printf("the current projection values are:\n");
+				for (jj=0; jj<prev_num_samp; jj++) {
+					print_comp_mp_matlab(&previous_projection_values->coord[jj],"proj");
+				}
+				printf("\n\n");
+			}
+			
+			if (sampler_options->verbose_level>=1) {
+				printf("will refine these at these interval indices:\n");
+				for (jj=0; jj<prev_num_samp-1; jj++) {
+					if (refine_current[jj]) {
+						printf("%d ",jj);
+					}
+				}
+				printf("\n\n");
+			}
+			
+			
+			num_refinements = 0; // reset this counter.  this should be the only place this is reset
 			for(jj=0;jj<prev_num_samp-1;jj++) // for each sample in the previous set
 			{
-				if(refine_current[jj]) // 
+				
+				if (sampler_options->verbose_level>=2) {
+					printf("interval %d of %d\n",jj,prev_num_samp-1);
+				}
+				
+				if(refine_current[jj]) //
 				{
-									
-					
 
 					int index_of_current_startpoint;
 					// set the starting projection and point.
@@ -452,7 +476,6 @@ void generate_new_sampling_pts_mp(sample_d *S_new,
 						index_of_current_startpoint = jj; // left!
 					}
 
-					
 					vec_cp_mp(startpt,previous_points[index_of_current_startpoint]);
 					set_mp(&(start_projection->coord[0]),&(previous_projection_values->coord[index_of_current_startpoint]));
 					neg_mp(&(start_projection->coord[0]),&(start_projection->coord[0]));
@@ -467,16 +490,13 @@ void generate_new_sampling_pts_mp(sample_d *S_new,
 					
 					set_witness_set_mp(&W, start_projection,startpt,num_vars); // set the witness point and linear in the input for the lintolin solver.
 					
+					if (sampler_options->verbose_level>=3) {
+						print_comp_mp_matlab(&W.L_mp[0]->coord[0],"initial_projection_value");
+						print_comp_mp_matlab(target_projection_value,"target_projection_value");
+						print_point_to_screen_matlab_mp(W.pts_mp[0],"startpt");
+					}
+				
 					
-//					print_comp_mp_matlab(&W.L_mp[0]->coord[0],"initial_projection_value");
-//					print_comp_mp_matlab(target_projection_value,"target_projection_value");
-//					print_point_to_screen_matlab_mp(W.L_mp[0],"initial_projection");
-//					print_point_to_screen_matlab_mp(target_projection,"destination");
-//					print_point_to_screen_matlab_mp(W.pts_mp[0],"startpt");
-//					print_matrix_to_screen_matlab_mp(n_minusone_randomizer_matrix,"randomizer");
-//					printf("just prior to lintolin\n");
-//					mypause(); 
-//
 					init_witness_set_d(&Wnew);
 					lin_to_lin_solver_main(MPType,
 																 W,         // witness_set
@@ -490,8 +510,9 @@ void generate_new_sampling_pts_mp(sample_d *S_new,
 
 					
 					
-					
-//					print_point_to_screen_matlab_mp(Wnew.pts_mp[0], "new_solution");
+					if (sampler_options->verbose_level>=3) {
+						print_point_to_screen_matlab_mp(Wnew.pts_mp[0], "new_solution");
+					}
 					mpf_t dist_away; mpf_init(dist_away);
 					
 					
@@ -502,7 +523,6 @@ void generate_new_sampling_pts_mp(sample_d *S_new,
 //					mpf_out_str (NULL, 10, 9, dist_away); printf("\n");
 					
 					if ( mpf_cmp(dist_away, sampler_options->TOL )>0 ){
-//						printf("gotta refine left again\n");
 						refine_next[sample_counter-1] = 1; // we started at 1, so to get 0 must -1
 						num_refinements++;
 					}
@@ -515,18 +535,23 @@ void generate_new_sampling_pts_mp(sample_d *S_new,
 														 previous_points[jj+1]);// jj is left, jj+1 is right
 					
 					if (mpf_cmp(dist_away, sampler_options->TOL ) > 0){
-//						printf("gotta refine right again\n");
 						refine_next[sample_counter] = 1; // we started at 1, so to get 0 must -1
 						num_refinements++;
 					}
 					
 
-//					printf("adding sample %d, projection value size %d\n",sample_counter,new_projection_values->size);
+					if (sampler_options->verbose_level>=2) {
+						printf("adding sample %d\n",sample_counter);
+					}
+					
 					set_mp(&(new_projection_values->coord[sample_counter]),target_projection_value);
 					init_vec_mp(new_points[sample_counter],num_vars); // add the midpoint we just solved at
 					vec_cp_mp(new_points[sample_counter],Wnew.pts_mp[0]);
 					
-//					printf("adding sample %d, projection value size %d\n",sample_counter+1,new_projection_values->size);
+					if (sampler_options->verbose_level>=2) {
+						printf("adding sample %d\n",sample_counter+1);
+					}
+					
 					set_mp(&(new_projection_values->coord[sample_counter+1]),&(previous_projection_values->coord[jj+1])); //copy the right point
 					init_vec_mp(new_points[sample_counter+1],num_vars);
 					vec_cp_mp(new_points[sample_counter+1],previous_points[jj+1]); // copy in the point
@@ -539,7 +564,9 @@ void generate_new_sampling_pts_mp(sample_d *S_new,
 				}
 				else
 				{
-//					printf("adding sample %d, projection value size %d\n",sample_counter,new_projection_values->size);
+					if (sampler_options->verbose_level>=2) {
+						printf("adding sample %d\n",sample_counter);
+					}
 					//simply copy in the right point
 					set_mp(&(new_projection_values->coord[sample_counter]),&(previous_projection_values->coord[jj+1]));
 					init_vec_mp(new_points[sample_counter],num_vars);
@@ -565,12 +592,13 @@ void generate_new_sampling_pts_mp(sample_d *S_new,
 			
 
 			
+			if (sampler_options->verbose_level>=0) // print by default
+				printf("\n\n");
 			
-			printf("\n\n");
-			
-			if(num_refinements == 0) // if have no need for new samples
+			if( (num_refinements == 0) || (pass_number >= sampler_options->maximum_num_iterations) ) // if have no need for new samples
 			{
-				printf("breaking\nsample_counter = %d\n",sample_counter);
+				if (sampler_options->verbose_level>=1) // print by default
+					printf("breaking\nsample_counter = %d\n",sample_counter);
 				
 				S_new->vertices_mp[ii] = (vec_mp *)bmalloc(sample_counter*sizeof(vec_mp));
 				S_new->vertices_mp[ii] = new_points;  // this should be a pointer reassignment
@@ -587,10 +615,14 @@ void generate_new_sampling_pts_mp(sample_d *S_new,
 				vec_cp_mp(previous_projection_values,new_projection_values);
 				previous_points = new_points; // this has gotta fail???  leaking memory?
 				prev_num_samp=sample_counter; // update the number of samples
+				pass_number++;
 			}
 			
 		}//while loop
-		printf("exiting while loop\n");
+		if (sampler_options->verbose_level>=2) {
+			printf("exiting while loop\n");
+		}
+		
 	}
 	
 	
