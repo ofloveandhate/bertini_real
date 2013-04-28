@@ -36,9 +36,10 @@ void get_projection(vec_mp pi,
 	else{
 		int ii;
 		for (ii=0; ii<num_vars; ii++) {
-			set_zero_mp(&pi->coord[ii]);
+			get_comp_rand_mp(&pi->coord[ii]);
+//			set_one_mp(&pi->coord[ii]);
 		}
-		set_one_mp(&pi->coord[1]);
+//		set_one_mp(&pi->coord[1]);
 	}
 	
 	return;
@@ -84,7 +85,7 @@ void display_current_options(program_configuration options){
 void print_usage(){
 	printf("bertini_real has the following options:\n");
 	printf("option name(s)\t\t\targument\n\n");
-	printf("-p -projection \t\t\t'filename'\n");
+	printf("-p -pi -projection \t\t\t'filename'\n");
 	printf("-r -randomization \t\t'filename'\n");
 	printf("-w -witness\t\t\t'filename'\n");
 	printf("-i -input\t\t\t'filename'\n");
@@ -102,7 +103,7 @@ void print_usage(){
 /* Flag set by ‘--verbose’. */
 //static int nostifle_flag;
 
-int parse_options(int argc, char **argv, program_configuration *options){
+int BR_parse_commandline(int argc, char **argv, program_configuration *options){
 	 // this code created based on gnu.org's description of getopt_long
 	int choice;
 	
@@ -115,6 +116,7 @@ int parse_options(int argc, char **argv, program_configuration *options){
 			{"ns", no_argument,					0, 's'},
 			{"projection",		required_argument,			 0, 'p'},
 			{"p",		required_argument,			 0, 'p'},
+			{"pi",		required_argument,			 0, 'p'},
 			{"randomization",		required_argument,			 0, 'r'},
 			{"r",		required_argument,			 0, 'r'},
 			{"input",		required_argument,			 0, 'i'},
@@ -295,14 +297,14 @@ void sampler_print_usage(){
 	printf("option name(s)\t\t\targument\n\n");
 	printf("-ns -nostifle\t\t\t   --\n");
 	printf("-v -version\t\t\t   -- \n");
-	printf("-h -help\t\t\t   --");
-	
-	
+	printf("-h -help\t\t\t   --\n");
+	printf("-t -tol -tolerance \t\tdouble\n");
+	printf("-verb\t\t\t\tint\n");
 	printf("\n\n\n");
 	return;
 }
 
-int sampler_parse_options(int argc, char **argv, sampler_configuration *options){
+int sampler_parse_commandline(int argc, char **argv, sampler_configuration *options){
 	// this code created based on gnu.org's description of getopt_long
 	int choice;
 	
@@ -317,12 +319,18 @@ int sampler_parse_options(int argc, char **argv, sampler_configuration *options)
 			{"h",		no_argument,			 0, 'h'},
 			{"version",		no_argument,			 0, 'v'},
 			{"v",		no_argument,			 0, 'v'},
+			{"verb",		required_argument,			 0, 'V'},
+			{"tolerance",		required_argument,			 0, 't'},
+			{"tol",		required_argument,			 0, 't'},
+			{"t",		required_argument,			 0, 't'},
+			{"m",		required_argument,			 0, 'm'},
+			{"maxits",		required_argument,			 0, 'm'},
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
 		
-		choice = getopt_long_only (argc, argv, "h:v:s",
+		choice = getopt_long_only (argc, argv, "h:v:s:ve",
 															 long_options, &option_index);
 		
 		/* Detect the end of the options. */
@@ -338,6 +346,19 @@ int sampler_parse_options(int argc, char **argv, sampler_configuration *options)
 			case 'v':
 				printf("\n Sampler module for BertiniReal(TM) v %s\n\n", BERTINI_REAL_VERSION_STRING);
 				exit(0);
+				break;
+				
+			case 't':
+				
+				mpf_set_str(options->TOL,optarg,10);
+				break;
+				
+			case 'V':
+				options->verbose_level = atoi(optarg);
+				break;
+				
+			case 'm':
+				options->maximum_num_iterations = atoi(optarg);
 				break;
 				
 			case 'h':
@@ -382,8 +403,12 @@ void init_sampler_config(sampler_configuration *options) {
 	options->stifle_text = (char *)bmalloc(MAX_STRLEN*sizeof(char));
 	options->stifle_text = " > /dev/null ";
 	
+	options->verbose_level = 0; // default to 0
+	
+	options->maximum_num_iterations = 10;
+	
 	mpf_init(options->TOL);
-	mpf_set_d(options->TOL, 1e-1);
+	mpf_set_d(options->TOL, 1e-1); // this should be made adaptive to the span of the projection values or the endpoints
 
 	return;
 }
@@ -413,6 +438,9 @@ void init_program_config(program_configuration *options) {
 	options->witness_set_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
 	options->witness_set_filename = "witness_set\0";
 	
+	options->output_basename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
+	options->output_basename = "output";
+	
 	options->input_deflated_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
 	//this must be set after deflation is run.
 	
@@ -420,6 +448,10 @@ void init_program_config(program_configuration *options) {
 	options->stifle_membership_screen = 1;
 	options->stifle_text = (char *)bmalloc(MAX_STRLEN*sizeof(char));
 	options->stifle_text = " > /dev/null ";
+	
+	options->verbose_level = 0; // default to 0
+	
+	options->MPType = 2;
 	return;
 }
 
@@ -446,7 +478,7 @@ void init_solver_config(solver_configuration *options){
 	options->allow_unsuccess = 0;
 	
 	options->show_status_summary = 0;
-	
+	options->verbose_level = 0; // default to 1.  higher is more verbose
 }
 
 

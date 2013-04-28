@@ -38,22 +38,26 @@
 
 typedef struct
 {
-	int user_projection;
+	
+	
+	int user_projection; // bool
+	int stifle_membership_screen; // bool
+	int user_randomization; // bool
+	
+	int MPType;
+	
+	// all these char* should be boost::filesystem::path
 	char *projection_filename;
-	
-	int user_randomization;
 	char *randomization_filename;
-	
 	char *input_filename;
-	
 	char *witness_set_filename;
-	
 	char *input_deflated_filename;
+	char *output_basename; 
 	
+	char *stifle_text; // std::string
 	
+	int verbose_level;
 	
-	int stifle_membership_screen;
-	char *stifle_text;
 } program_configuration;
 
 
@@ -63,6 +67,10 @@ typedef struct
 {
 	int stifle_membership_screen;
 	char *stifle_text;
+	
+	int verbose_level;
+	
+	int maximum_num_iterations;
 	
 	mpf_t TOL;
 } sampler_configuration;
@@ -86,6 +94,7 @@ typedef struct
 	int allow_infinite;
 	int allow_unsuccess;
 	
+	int verbose_level;
 	int show_status_summary;
 	
 	
@@ -119,12 +128,12 @@ void get_projection(vec_mp pi_mp,
 /**
  get the program_configuration from the command line.
  */
-int parse_options(int argC, char *args[], program_configuration *options);
+int BR_parse_commandline(int argC, char *args[], program_configuration *options);
 
 /**
  get the sampler_configuration from the command line.
  */
-int sampler_parse_options(int argc, char **argv, sampler_configuration *options);
+int sampler_parse_commandline(int argc, char **argv, sampler_configuration *options);
 
 /**
  check to make sure files are in place, etc.

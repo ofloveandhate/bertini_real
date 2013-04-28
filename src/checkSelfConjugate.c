@@ -348,7 +348,7 @@ void read_incidence_matrix_wrt_number(int *component_numbers, int given_incidenc
 			}
 		}
 		if (component_number==0) {
-			printf("test point did not lie on any component at all.\n");
+//			printf("test point did not lie on any component at all.\n");
 			//			exit(-1);
 		}
 		component_numbers[jj]=component_number;

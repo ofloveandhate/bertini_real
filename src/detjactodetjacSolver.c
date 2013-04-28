@@ -23,6 +23,7 @@ int detjac_to_detjac_solver_main(int MPType,
 	W_new->num_variables = W.num_variables;
 	
 	cp_patches(W_new,W); // copy the patches over from the original witness set.  for completeness
+	cp_names(W_new,W);
 	
 	W_new->num_linears = (1);
 	W_new->L = (vec_d *)bmalloc((1)*sizeof(vec_d)); init_vec_d(W_new->L[0],W.num_variables);
@@ -176,7 +177,7 @@ int detjac_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int cu
 	
 	
 	// check for path crossings
-	midpoint_checker(trackCount.numPoints, num_variables, solve_options->midpoint_tol, &num_crossings);
+//	midpoint_checker(trackCount.numPoints, num_variables, solve_options->midpoint_tol, &num_crossings);
 	
 	// setup num_sols
 	num_sols = trackCount.successes;
@@ -1618,7 +1619,7 @@ int detjac_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int c
 	fprintf(rawOUT, "%d\n\n", -1);  // bottom of rawOUT
 	
 	// check for path crossings
-	midpoint_checker(trackCount.numPoints, num_variables, solve_options->midpoint_tol, &num_crossings);
+//	midpoint_checker(trackCount.numPoints, num_variables, solve_options->midpoint_tol, &num_crossings);
 	
 	// setup num_sols
 	num_sols = trackCount.successes;

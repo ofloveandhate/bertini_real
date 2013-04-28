@@ -1,6 +1,6 @@
 
 #choose some options.  by default, compiler optimization is turned off
-OPT= -Dverbose  -g   # -Dprintpathlinprod -Wall -O3 -funroll-loops -fexpensive-optimizations
+OPT= -Dverbose  -g  -Wall # -Dprintpathlinprod  -O3 -funroll-loops -fexpensive-optimizations
 
 
 
@@ -63,7 +63,7 @@ endif
 INC:=$(INC) -I../include  -I$(BERTINIHEADERS) #this includes the header files for bertini_real, etc   
 
 ARGS=$(INC) $(OPT) 
-OBJFILES= determinant_derivative.o output.o data_type.o detjactodetjacSolver.o linprodtodetjacSolver.o lintolinSolver.o fileops.o isosingular.o curveNotSelfConj.o curveSelfConj.o witnessSetParse.o programStartup.o checkSelfConjugate.o 
+OBJFILES= data_type.o	programStartup.o determinant_derivative.o output.o  detjactodetjacSolver.o linprodtodetjacSolver.o lintolinSolver.o fileops.o isosingular.o curveNotSelfConj.o curveSelfConj.o witnessSetParse.o  postProcessing.o	checkSelfConjugate.o 
 POBJFILES=lex.partitionParse.o 
 FLEX=flex
 #memory.o
