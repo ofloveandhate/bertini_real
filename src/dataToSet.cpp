@@ -84,7 +84,7 @@ int main(int argC, char *args[]){
 	
 	
 	
-	std::map< std::pair < int, int >, witness_set> gathered_data;
+	std::map< std::pair < int, int >, witness_data> gathered_data;
 	
 	
 	//enter the loop for the points.
@@ -411,7 +411,7 @@ int main(int argC, char *args[]){
 	}
 	
 	
-	std::map < std::pair < int, int >, witness_set >::iterator iter;
+	std::map < std::pair < int, int >, witness_data >::iterator iter;
 	for (iter=gathered_data.begin(); iter!=gathered_data.end();  iter++) {
 		iter->second.write_to_file(directoryName,dehomogenize);
 	}
@@ -433,7 +433,7 @@ int main(int argC, char *args[]){
 
 
 
-void write_summary(std::map< std::pair < int, int >, witness_set> gathered_data,
+void write_summary(std::map< std::pair < int, int >, witness_data> gathered_data,
 									 int component_counter[],
 									 int codim_indicator[],
 									 int num_nonempty_codims,
@@ -453,7 +453,7 @@ void write_summary(std::map< std::pair < int, int >, witness_set> gathered_data,
 	
 	OUT << "\ndim   comp   deg\n------------------\n";
 	
-	std::map < std::pair < int, int >, witness_set >::iterator iter;
+	std::map < std::pair < int, int >, witness_data >::iterator iter;
 	for (iter=gathered_data.begin(); iter!=gathered_data.end();  iter++) {
 		OUT << iter->first.first << "      " << iter->first.second << "      " << iter->second.degree() << "\n";
 	}
