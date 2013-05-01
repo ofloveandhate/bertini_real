@@ -36,7 +36,7 @@ void get_projection(vec_mp pi,
 	else{
 		int ii;
 		for (ii=0; ii<num_vars; ii++) {
-			get_comp_rand_mp(&pi->coord[ii]);
+			get_comp_rand_real_mp(&pi->coord[ii]);
 //			set_one_mp(&pi->coord[ii]);
 		}
 //		set_one_mp(&pi->coord[1]);
@@ -127,6 +127,10 @@ int BR_parse_commandline(int argc, char **argv, program_configuration *options){
 			{"h",		no_argument,			 0, 'h'},
 			{"version",		no_argument,			 0, 'v'},
 			{"v",		no_argument,			 0, 'v'},
+			{"output",		required_argument,			 0, 'o'},
+			{"out",		required_argument,			 0, 'o'},
+			{"o",		required_argument,			 0, 'o'},
+			{"verb",		required_argument,			 0, 'V'},
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
@@ -141,6 +145,14 @@ int BR_parse_commandline(int argc, char **argv, program_configuration *options){
 		
 		switch (choice)
 		{
+			case 'V':
+				options->verbose_level = atoi(optarg);
+				break;
+				
+			case 'o':
+				options->output_basename = optarg;
+				break;
+				
 			case 's':
 				options->stifle_text = "\0";
 				break;
@@ -476,9 +488,9 @@ void init_solver_config(solver_configuration *options){
 	options->allow_singular = 0;
 	options->allow_infinite = 0;
 	options->allow_unsuccess = 0;
-	
+	options->use_midpoint_checker = 1;
 	options->show_status_summary = 0;
-	options->verbose_level = 0; // default to 1.  higher is more verbose
+	options->verbose_level = 0; // default to 0.  higher is more verbose
 }
 
 

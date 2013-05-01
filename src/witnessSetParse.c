@@ -10,22 +10,15 @@
 int witnessSetParse(witness_set *W, char *witness_set_file, const int num_vars){
   
 
-  int ii=0, jj=0, num_linears, num_pts;
+  int ii, jj;
 	
-  FILE *IN = NULL;
-  
-  IN = safe_fopen_read(witness_set_file);
+  FILE *IN = safe_fopen_read(witness_set_file);
   
   
-  int num_vars_in_linears;
-	
 	int codim, comp_num;
-	int num_patches, patch_size;
+	int num_patches, patch_size, num_linears, num_pts, num_vars_in_linears;
 
 	
-	
-		
-
 	
   fscanf(IN, "%d %d %d", &num_pts, &codim, &comp_num); scanRestOfLine(IN);
 	W->codim = codim;

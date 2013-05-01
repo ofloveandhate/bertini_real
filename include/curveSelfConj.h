@@ -27,6 +27,7 @@
 #include "linprodtodetjacSolver.h"
 #include "detjactodetjacSolver.h"
 
+#include "output.h"
 /**
 //the main function for computing cell decom for a curve.  only for use on a self-conjugate component.  
  */
@@ -38,6 +39,20 @@ void computeCurveSelfConj(char * inputFile,
 													int num_var_gps,
 													program_configuration *options,
 													solver_configuration *solve_options);
+
+
+
+/**
+ the linprodtodetjac method for getting the critical points
+ */
+void compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
+																	witness_set W,
+																	mat_mp n_minusone_randomizer_matrix,
+																	vec_mp random_complex_projection,
+																	vec_mp pi,
+																	int num_new_linears,
+																	program_configuration *program_options,
+																	solver_configuration *solve_options);
 
 /**
  

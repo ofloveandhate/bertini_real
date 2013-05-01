@@ -135,7 +135,7 @@ int index_in_vertices(curveDecomp_d *C, vec_mp testpoint, comp_mp projection_val
 	
 	
 	if (index==-1) {
-		printf("vertex not found; adding to vertex set\n");
+//		printf("vertex not found; adding to vertex set\n");
 		vertex temp_vertex;  init_vertex_mp(&temp_vertex);
 		set_mp(temp_vertex.projVal_mp,  projection_value);
 		vec_cp_mp(temp_vertex.pt_mp, testpoint);
@@ -146,37 +146,23 @@ int index_in_vertices(curveDecomp_d *C, vec_mp testpoint, comp_mp projection_val
 	
 	switch (sidedness) {
 		case -1:
-			C->vertices[index].num_left++;
+			C->vertices[index].num_left++; // increase the number of times this vertex has been a left vertex
 			break;
 		
 		case 1:
-			C->vertices[index].num_right++;
+			C->vertices[index].num_right++;// increase the number of times this vertex has been a right vertex
 			break;
 		
 		case 0: // midpoint
-//			C->vertices[index].num_left++;
+
 			break;
 			
 		default:
 			break;
 	}
 	
-
-
 	
-	return index;
-	//	typedef struct
-	//	{
-	//		vertex *V0;  //Isolated real points.
-	//		vertex *V1;  //Critical points AND new non-critical endpoints of edges.
-	//		//  vertex *midPts;  //Midpoints of edges.
-	//		edge *edges;
-	//		int      num_V0;
-	//		int      num_V1;
-	//		//  int      num_midPts;
-	//		int      num_edges;
-	//	}curveDecomp_d;
-	
+	return index;	
 }
 
 
@@ -993,9 +979,7 @@ void clear_witness_set(witness_set W){
 		free(W.L_mp);
 	}
 	
-	if (W.num_pts!=W.num_pts) {
-		printf("there was a mismatch in the number of points in the witness set being cleared\n");
-	}
+
 	
 //	printf("freeing %d points\n",W.num_pts);
 	for (ii=0; ii<W.num_pts; ii++) {

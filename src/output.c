@@ -16,8 +16,8 @@ void Output_Main(program_configuration program_options, witness_set W, curveDeco
 	purge_previous_directory(directoryName);
 	
 	//Do we need witness_data?
-	printf("right before copying data\n");
-	mypause();
+//	printf("right before copying data\n");
+//	mypause();
 	sprintf(tmp_file,  "%s/witness_data", directoryName);
 	copyfile("witness_data",tmp_file);
 //	printf("before witness_set\n");fflush(stdout);
@@ -138,7 +138,7 @@ void print_vertices(vertex *current_vertex, int num_V, int num_vars,char *output
 		{
 			for(jj=0;jj<num_vars;jj++)
 			{
-				print_mp(OUT, 0, &(current_vertex[ii].pt_mp->coord[jj]));
+				print_mp(OUT, 10, &(current_vertex[ii].pt_mp->coord[jj]));
 				fprintf(OUT,"\n");
 			}
 			print_mp(OUT, 0, current_vertex[ii].projVal_mp);
@@ -200,7 +200,7 @@ void print_curve(curveDecomp_d C, int num_vars, char *outputfile, int MPType)
 		}
 	}
 	else{
-		for(ii=0;ii<num_vars;ii++)
+		for(ii=1;ii<num_vars;ii++)
 		{
 			print_mp(OUT, 0, &(C.pi->coord[ii]));
 			fprintf(OUT,"\n");

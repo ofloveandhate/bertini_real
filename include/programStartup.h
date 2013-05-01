@@ -97,7 +97,7 @@ typedef struct
 	int verbose_level;
 	int show_status_summary;
 	
-	
+	int use_midpoint_checker;
 	double midpoint_tol;
 	
 } solver_configuration;

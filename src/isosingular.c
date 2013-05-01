@@ -23,34 +23,26 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *i
 	
 	
 	// remove previous files.
-	remove("isosingular_summary");
 //	remove("func_input_real");
 //	remove("config_real");
-	remove("input_stabilization_test");
+//	remove("input_stabilization_test");
 	
 	//open the input file.
 	IN = safe_fopen_read(inputFile);	
   partitionParse(&declarations, IN, "func_input_real", "config_real",0); // the 0 means not self conjugate mode
+//	check_declarations(declarations);
   fclose(IN);
 
 
-	mypause();
   // setup input file to test for stabilization
   stabilization_input_file("input_stabilization_test", "func_input_real", "config_real");
 
 	
-
-	
-  
   printf("\nPerforming a stabilization test\n");
 
 	
-	
-//	ii=0;
-//	while (ii<10) {
-//		ii++;
-	//remove the previous file.
-		remove("isosingular_summary");
+
+	remove("isosingular_summary");
 		
 	//print the command to the screen
 	printf("running system command '%s'\n",strStabilizationTest);
@@ -60,24 +52,7 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *i
 		bexit(ERROR_CONFIGURATION);
 	}
 
-	//come code for checking if the stabilization test was successful.
-//		system("grep 'unable' grepme > check_if_im_empty");
-//		IN = fopen("check_if_im_empty","r");
-//		if ((ch = fgetc(IN)) != EOF){
-//			system("more grepme");
-//			printf("\n******\nstabilization test FAILED.  trying again.\n\n");
-//			remove("grepme"); remove("check_if_im_empty");
-//		}
-//		else{
-//			remove("grepme");
-//			remove("check_if_im_empty");
-//			break;
-//		}
-//		fclose(IN);
-//	}
 
-	
-	
 	
   // read in the file	
 	
@@ -602,12 +577,12 @@ void stabilization_input_file(char *outputFile, char *funcInput, char *configInp
 
 
 
-void check_declarations(char *declarations){
+void check_declarations(int *declarations){
 	
   // error check based on declarations
-  if (declarations[0] + declarations[1] > 1)
+  if ( (declarations[0] + declarations[1]) > 1)
   { // multiple variable groups
-    printf("\n\nERROR: Please use either one 'variable_group' or one 'hom_variable_group'!\n\n");
+    printf("\n\n%d variable_groups, %d hom_variable_groups\nERROR: Please use either one 'variable_group' or one 'hom_variable_group'!\n\n",declarations[0],declarations[1]);
     bexit(ERROR_CONFIGURATION);
   }
   else if (declarations[2] > 0)

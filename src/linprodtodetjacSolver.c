@@ -29,9 +29,10 @@ int linprod_to_detjac_solver_main(int MPType,
 	
 	W_new->L = (vec_d *)bmalloc(1*sizeof(vec_d));
 	W_new->L_mp = (vec_mp *)bmalloc(1*sizeof(vec_mp));
-		init_vec_d(W_new->L[0],W.num_variables); init_vec_mp2(W_new->L_mp[0],W.num_variables,1024); //the 1024 here is incorrect
-		vec_mp_to_d(   W_new->L[0],projection_full_prec);
-		vec_cp_mp(W_new->L_mp[0],projection_full_prec);
+	
+	init_vec_d(W_new->L[0],W.num_variables); init_vec_mp2(W_new->L_mp[0],W.num_variables,1024); //the 1024 here is incorrect
+	vec_mp_to_d(   W_new->L[0],projection_full_prec);
+	vec_cp_mp(W_new->L_mp[0],projection_full_prec);
 	
 	write_linears(*W_new,"rand_comp_proj");
 	
@@ -117,11 +118,9 @@ int linprod_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int c
 																						n_minusone_randomizer_matrix_full_prec,W,
 																						projection_full_prec);
   
-	int (*change_prec)(void const *, int) = NULL;
-	change_prec = &change_linprodtodetjac_eval_prec;
 	
-	int (*dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *) = NULL;
-	dehom = &linprodtodetjac_dehom;
+	int (*change_prec)(void const *, int) = &change_linprodtodetjac_eval_prec;
+	int (*dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *) = &linprodtodetjac_dehom;
 	
 	
 	
@@ -169,32 +168,31 @@ int linprod_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int c
 															FAIL, pathMod,
 															&T, &ED, ED.BED_mp,
 															ptr_to_eval_d, ptr_to_eval_mp,
-															change_prec, dehom);
+															change_prec, dehom,
+															solve_options);
 	}
-	
-	
 	
 	
 	fclose(midOUT);
 	
-	
-	
-	
+
 	// finish the output to rawOUT
 	fprintf(rawOUT, "%d\n\n", -1);  // bottom of rawOUT
-	
+
 	
 	// check for path crossings
-	midpoint_checker(trackCount.numPoints, num_variables,solve_options->midpoint_tol, &num_crossings);
-	
+	if (solve_options->use_midpoint_checker==1) {
+		midpoint_checker(trackCount.numPoints, num_variables,solve_options->midpoint_tol, &num_crossings);
+	}
 	// setup num_sols
 	num_sols = trackCount.successes;
 	
   // we report how we did with all paths:
   bclock(&time2);
   totalTime(&track_time, time1, time2);
-  if (1)  //(T.screenOut)
+  if (solve_options->verbose_level>=1)
   {
+		printf("linprod report:\n");
     printf("Number of failures:  %d\n", trackCount.failures);
     printf("Number of successes:  %d\n", trackCount.successes);
     printf("Number of paths:  %d\n", trackCount.numPoints);
@@ -257,7 +255,8 @@ void linprod_to_detjac_track_d(trackingStats *trackCount,
 															 int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
 															 int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 															 int (*change_prec)(void const *, int),
-															 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *))
+															 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
+															 solver_configuration *solve_options)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -338,8 +337,9 @@ void linprod_to_detjac_track_d(trackingStats *trackCount,
 	for (ii = 0; ii < W.num_pts; ii++)
 	{ // get current thread number
 		oid = thread_num();
+		if (solve_options->verbose_level>=1)
+			printf("linprod_to_detjac tracking path %d of %d\n",ii,W.num_pts);
 		
-		printf("linprod_to_detjac tracking path %d of %d\n",ii,W.num_pts);
 		startPointIndex = ii;
 		
 		
@@ -535,7 +535,6 @@ int linprod_to_detjac_setup_d(FILE **OUT, char *outName,
  * NOTES: setup for zero dimensional tracking                    *
  \***************************************************************/
 { // need to create the homotopy
-	printf("entering linprod_to_detjac_setup_d 608\n");
   int rank, patchType, ssType, numOrigVars, adjustDegrees, numGps;
 	
   *eval_d = &linprod_to_detjac_eval_d;   //DAB
@@ -1663,7 +1662,8 @@ int linprod_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int 
 															 FAIL, pathMod,
 															 &T, &ED,
 															 ptr_to_eval_mp, //ptr_to_eval_d,
-															 change_prec, dehom);
+															 change_prec, dehom,
+															 solve_options);
 	}
 	
 	
@@ -1678,7 +1678,9 @@ int linprod_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int 
 	fprintf(rawOUT, "%d\n\n", -1);  // bottom of rawOUT
 	
 	// check for path crossings
-	midpoint_checker(trackCount.numPoints, num_variables, solve_options->midpoint_tol, &num_crossings);
+	if (solve_options->use_midpoint_checker==1) {
+		midpoint_checker(trackCount.numPoints, num_variables,solve_options->midpoint_tol, &num_crossings);
+	}
 	
 	// setup num_sols
 	num_sols = trackCount.successes;
@@ -1686,8 +1688,9 @@ int linprod_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int 
   // we report how we did with all paths:
   bclock(&time2);
   totalTime(&track_time, time1, time2);
-  if (T.screenOut)
+  if (solve_options->verbose_level>=1)
   {
+		printf("linprod report:\n");
     printf("Number of failures:  %d\n", trackCount.failures);
     printf("Number of successes:  %d\n", trackCount.successes);
     printf("Number of paths:  %d\n", trackCount.numPoints);
@@ -1753,7 +1756,8 @@ void linprod_to_detjac_track_mp(trackingStats *trackCount,
 																linprodtodetjac_eval_data_mp *ED,
 																int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 																int (*change_prec)(void const *, int),
-																int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *))
+																int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
+																solver_configuration *solve_options)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -1818,25 +1822,7 @@ void linprod_to_detjac_track_mp(trackingStats *trackCount,
 																 &T_copy, T,
 																 &BED_copy, ED);
 	
-	
-//	//initialize the structure for holding the produced data
-//	W_new->num_linears = 0;
-////	W_new->L_mp = (vec_mp *)bmalloc(1*sizeof(vec_mp));
-////	W_new->L = (vec_d *)bmalloc(1*sizeof(vec_d));
-////	init_vec_d(W_new->L[0],W_new->num_variables); W_new->L[0]->size = W_new->num_variables;
-////	
-////	init_vec_mp(W_new->L_mp[0],W_new->num_variables); W_new->L_mp[0]->size = W_new->num_variables;
-////	
-////	vec_cp_mp(W_new->L_mp[0],ED->projection);
-////	vec_mp_to_d(W_new->L[0],ED->projection);
-//	
-//	W_new->W.num_pts=0;
-//  W_new->pts_d=(point_d *)bmalloc(W.num_pts*sizeof(point_d));
-//	
-//	W_new->W_mp.num_pts=0;
-//  W_new->pts_mp=(point_mp *)bmalloc(W.num_pts*sizeof(point_mp));
-//  W_new->num_variables = W.num_variables;
-//	
+
 	
 	trackCount->numPoints = W.num_pts;
 	int solution_counter = 0;
@@ -1844,10 +1830,7 @@ void linprod_to_detjac_track_mp(trackingStats *trackCount,
 	
 	
 	
-	
-	
-	// we pass the particulars of the information for this solve mode via the ED.
-	
+
 	
 	// track each of the start points
 #ifdef _OPENMP
@@ -1856,7 +1839,8 @@ void linprod_to_detjac_track_mp(trackingStats *trackCount,
 	for (ii = 0; ii < W.num_pts; ii++)
 	{ // get current thread number
 		oid = thread_num();
-		printf("linprod_to_detjac tracking path %d of %d\n",ii,W.num_pts);
+		if (solve_options->verbose_level>=1)
+			printf("linprod_to_detjac tracking path %d of %d\n",ii,W.num_pts);
 		// print the header of the path to OUT
 		//			printPathHeader_mp(OUT_copy[oid], &startPts[startPointIndex], &T_copy[oid], solution_counter, &BED_copy[oid], eval_func_mp);
 		
@@ -1912,45 +1896,7 @@ void linprod_to_detjac_track_mp(trackingStats *trackCount,
 		}
 
 		
-		
-		//			comp_mp result; init_mp(result);
-		//			dot_product_mp(result, W_new->pts_mp[solution_counter], ED->current_linear);
-		//			print_point_to_screen_matlab( W_new->pts_d[solution_counter],"newwitnesspoint");
-		//			print_point_to_screen_matlab( ED_d->current_linear,"newlinear");
-		//
-		//			printf("dot_prod=%le+1i*%le;\n",result->r,result->i);
-		
-		
-		
-		
-
-		
-		
-		//				print_point_to_screen_matlab(startPts[startPointIndex].point,"start");
-		//				print_point_to_screen_matlab(ED_d->old_linear,"old");
-		//
-		//				print_point_to_screen_matlab(EG->PD_d.point,"vend"); // the actual solution!!!
-		//				print_point_to_screen_matlab(ED_d->current_linear,"curr");
-		
-		
-		//    if (EG[oid].prec < 64)
-		//    { // print footer in double precision
-		//      printPathFooter_d(&trackCount_copy[oid], &EG[oid], &T_copy[oid], OUT_copy[oid], RAWOUT_copy[oid], FAIL_copy[oid], NONSOLN_copy[oid], &BED_copy[oid]);
-		//    }
-		//    else
-		//    { // print footer in multi precision
-		//      printPathFooter_mp(&trackCount_copy[oid], &EG[oid], &T_copy[oid], OUT_copy[oid], RAWOUT_copy[oid], FAIL_copy[oid], NONSOLN_copy[oid], BED_copy[oid].BED_mp);
-		//    }
-		
-		
 	}// re: for (ii=0; ii<W.num_pts ;ii++)
-	
-	
-//	W_new->W.num_pts=solution_counter;
-//	printf("found %d solutions after the regeneration step\n",solution_counter);
-
-	
-	
 	
 	
 	
