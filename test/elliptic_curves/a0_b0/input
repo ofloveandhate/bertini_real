@@ -1,0 +1,19 @@
+CONFIG
+
+
+tracktype: 1;
+END;
+
+
+
+INPUT
+
+variable_group x, y;
+function f1;
+
+constant a, b;
+a=0;
+b=0;
+f1 = x^3+a*x+b-y^2;
+
+END;
