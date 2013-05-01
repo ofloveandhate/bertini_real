@@ -146,7 +146,8 @@ int detjac_to_detjac_setup_d(FILE **OUT, char *outName,
 														 mat_mp n_minusone_randomizer_matrix_full_prec,
 														 witness_set W,
 														 vec_mp old_projection_full_prec,
-														 vec_mp new_projection_full_prec);
+														 vec_mp new_projection_full_prec,
+														 solver_configuration *solve_options);
 
 //the new custom evaluator for this solver
 
@@ -180,7 +181,8 @@ void setupdetjactodetjacEval_d(tracker_config_t *T,char preprocFile[], char degr
 															 mat_mp n_minusone_randomizer_matrix_full_prec,
 															 witness_set W,
 															 vec_mp old_projection_full_prec,
-															 vec_mp new_projection_full_prec);
+															 vec_mp new_projection_full_prec,
+															 solver_configuration *solve_options);
 
 
 
@@ -246,7 +248,8 @@ int detjac_to_detjac_setup_mp(FILE **OUT, char *outName,
 															mat_mp n_minusone_randomizer_matrix,
 															witness_set W,
 															vec_mp old_projection_full_prec,
-															vec_mp new_projection_full_prec);
+															vec_mp new_projection_full_prec,
+															solver_configuration *solve_options);
 
 
 int detjac_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED);
@@ -273,7 +276,8 @@ void setupdetjactodetjacEval_mp(char preprocFile[], char degreeFile[], prog_t *d
 																mat_mp n_minusone_randomizer_matrix,
 																witness_set W,
 																vec_mp old_projection_full_prec,
-																vec_mp new_projection_full_prec);
+																vec_mp new_projection_full_prec,
+																solver_configuration *solve_options);
 
 void cp_detjactodetjac_eval_data_mp(detjactodetjac_eval_data_mp *BED, detjactodetjac_eval_data_mp *BED_mp_input, int MPType);
 

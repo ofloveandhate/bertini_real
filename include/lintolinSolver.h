@@ -147,7 +147,8 @@ int lin_to_lin_setup_d(FILE **OUT, char *outName,
 											 char *preprocFile, char *degreeFile,
 											 int findStartPts, char *pointsIN, char *pointsOUT,
 											 mat_mp n_minusone_randomizer_matrix_full_prec,
-											 witness_set W);
+											 witness_set W,
+											 solver_configuration *solve_options);
 
 //the new custom evaluator for this solver
 
@@ -181,7 +182,8 @@ void setuplintolinEval_d(tracker_config_t *T,
 											 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
 											 lintolin_eval_data_d *BED, int adjustDegrees,
 												 mat_mp n_minusone_randomizer_matrix_full_prec,
-												 witness_set W);
+												 witness_set W,
+												 solver_configuration *solve_options);
 
 
 void start_system_eval_data_clear_d(start_system_eval_data_d *SSED);//actually lives in bertini library...  testing if this works.
@@ -251,7 +253,8 @@ int lin_to_lin_setup_mp(FILE **OUT, char *outName,
 												char *preprocFile, char *degreeFile,
 												int findStartPts, char *pointsIN, char *pointsOUT,
 												mat_mp n_minusone_randomizer_matrix_full_prec,
-												witness_set W);
+												witness_set W,
+												solver_configuration *solve_options);
 
 int lin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED);
 
@@ -271,7 +274,8 @@ void setuplintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *dummyPr
 													void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
 													lintolin_eval_data_mp *BED, int adjustDegrees,
 													mat_mp n_minusone_randomizer_matrix_full_prec,
-													witness_set W);
+													witness_set W,
+													solver_configuration *solve_options);
 
 
 //void cp_lintolin_eval_data_d(lintolin_eval_data_d *BED, lintolin_eval_data_d *BED_d_input, basic_eval_data_mp *BED_mp_input, int MPType);

@@ -12,7 +12,7 @@ int main(int argC, char *args[])
 	int num_vars=0;
 	char *inputName = NULL, *RandMatName = NULL, *witnessSetName = NULL, *samplingNamenew = NULL;
 	curveDecomp_d C;  //new data type; stores vertices, edges, etc.
-	witness_set W;
+	witness_set W; init_witness_set_d(&W);
 	sample_d   S_old,S_new;
 	mat_mp n_minusone_randomizer_matrix;
 	
@@ -60,15 +60,16 @@ int main(int argC, char *args[])
 	W.num_var_gps = solve_options.PPD.num_var_gp;
 	W.MPType = MPType;
 	get_variable_names(&W);
-	
+
 	read_rand_matrix(RandMatName, n_minusone_randomizer_matrix);
 	Load_sampling_data(&S_old,C,num_vars,MPType);
 	
 	
 	
 	solve_options.verbose_level = sampler_options.verbose_level;
-	solve_options.T.ratioTol = 1; // manually assert to be more permissive.
+	solve_options.T.ratioTol = 0.999999999999999; // manually assert to be more permissive.
 	solve_options.use_midpoint_checker = 0;
+	solve_options.use_gamma_trick = 0;
 	
 	/////////
 	////////
@@ -94,7 +95,7 @@ int main(int argC, char *args[])
 	
 
 	//
-	//   done with the main call
+	//   Done with the main call
 	////
 	/////
 	///////
@@ -905,7 +906,7 @@ int  setup_curveDecomp(int argC, char *args[], char **inputName, char **witnessS
 	FILE *IN;
 	int strLength, MPType;
 	char *directoryName=NULL,tmp_file[1000];
-	
+//	tmp_file = (char *)bmalloc(1000*sizeof(char));
 
 	
 	//setup the name of directory

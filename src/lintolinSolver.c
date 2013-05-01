@@ -19,7 +19,7 @@ int lin_to_lin_solver_main(int MPType,
 	
 	cp_patches(W_new,W); // copy the patches over from the original witness set
 	W_new->num_variables = W.num_variables;
-	
+	W_new->MPType = MPType;
 	cp_names(W_new,W);
 	
 	if (num_new_linears==0) {
@@ -106,10 +106,11 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
 																		 &dummyProg,  //arg 7
 																		 &startSub, &endSub, &startFunc, &endFunc,
 																		 &startJvsub, &endJvsub, &startJv, &endJv, &subFuncsBelow,
-																		 &ptr_to_eval_d, &ptr_to_eval_mp,  //args 17,18
+																		 &ptr_to_eval_d, &ptr_to_eval_mp,
 																		 "preproc_data", "deg.out",
 																		 !useRegen, "nonhom_start", "start",
-																		 n_minusone_randomizer_matrix_full_prec,W);
+																		 n_minusone_randomizer_matrix_full_prec,W,
+																		 solve_options);
   
 	int (*change_prec)(void const *, int) = NULL;
 	change_prec = &change_lintolin_eval_prec;
@@ -550,7 +551,8 @@ int lin_to_lin_setup_d(FILE **OUT, char *outName,
 											 char *preprocFile, char *degreeFile,
 											 int findStartPts, char *pointsIN, char *pointsOUT,
 											 mat_mp n_minusone_randomizer_matrix_full_prec,
-											 witness_set W)
+											 witness_set W,
+											 solver_configuration *solve_options)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -587,38 +589,12 @@ int lin_to_lin_setup_d(FILE **OUT, char *outName,
   // find the rank
   rank = rank_finder_d(&ED->preProcData, dummyProg, T, T->numVars); //this should probably be removed
 	
-  // check to make sure that it is possible to have a zero dimensional component
-//  if (T->numVars > rank + numGps)
-//		//  {
-//		//    printf("The system has no zero dimensional solutions based on its rank!\n");
-//		//    printf("The rank of the system including the patches is %d while the total number of variables is %d.\n\n", rank + numGps, T->numVars);
-//		//    bexit(ERROR_INPUT_SYSTEM);
-//		//  }
-//		
-//		//AM I ACUTALLY SUPPOSED TO DO THIS? !!! HERE
-//		// adjust the number of variables based on the rank
-//		T->numVars = rank + numGps;
-	
-	
-	
-	
-//  // now that we know the rank, we can setup the rest of ED
-//  if (numGps == 1)
-//  { // 1-hom
+
     patchType = 2; // 1-hom patch
     ssType = 0;    // with 1-hom, we use total degree start system  // in BR, this is irrelevant
     adjustDegrees = 0; // if the system does not need its degrees adjusted, then that is okay  // irrelevant in BR
-    setuplintolinEval_d(T,preprocFile, degreeFile, dummyProg, rank, patchType, ssType, T->MPType, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix_full_prec, W);
-//  }
-//  else
-//  { // m-hom, m > 1
-//    patchType = 0; // random patch based on m-hom variable structure
-//    ssType = 1;    // with m-hom, we use the mhom structure for start system
-//    adjustDegrees = 0; // if the system does not need its degrees adjusted, then that is okay
-//    setuplintolinEval_d(T,preprocFile, degreeFile, dummyProg, rank, patchType, ssType, T->MPType, &ED->preProcData, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix_full_prec, W);
-//  }
-	
-//	printf("leaving setup_d");
+    setuplintolinEval_d(T,preprocFile, degreeFile, dummyProg, rank, patchType, ssType, T->MPType, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix_full_prec, W,solve_options);
+
 	
   return numOrigVars;
 }
@@ -1189,24 +1165,21 @@ void setuplintolinEval_d(tracker_config_t *T,char preprocFile[], char degreeFile
 												 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,// what are these supposed to point to?
 												 lintolin_eval_data_d *BED, int adjustDegrees,
 												 mat_mp n_minusone_randomizer_matrix_full_prec,
-												 witness_set W)
+												 witness_set W,
+												 solver_configuration *solve_options)
 {
   int ii;
 	BED->num_variables = W.num_variables;
 	
 	
   setupPreProcData(preprocFile, &BED->preProcData);
-	//  setupSquareSystem_d(dummyProg, squareSize, &BED->preProcData, degreeFile, &BED->squareSystem, adjustDegrees); // NOTE: squareSystem must be setup before the patch!!!
+
   setupPatch_d(patchType, &BED->patch, ptr1, ptr2);
 	for (ii = 0; ii < BED->num_variables ; ii++)
-	{
 		set_d(&BED->patch.patchCoeff->entry[0][ii],&W.patch[0]->coord[ii]);
-	}
-
 	
 
-	
-	
+
 	BED->SLP = dummyProg;
 
 	
@@ -1232,25 +1205,34 @@ void setuplintolinEval_d(tracker_config_t *T,char preprocFile[], char degreeFile
 
 	vec_cp_d(BED->old_linear,W.L[0]);
 
-
 	
-	get_comp_rand_d(BED->gamma); // set gamma to be random complex value
-//	set_one_d(BED->gamma);
+	if (solve_options->use_gamma_trick==1)
+		get_comp_rand_d(BED->gamma); // set gamma to be random complex value
+	else
+		set_one_d(BED->gamma);
+	
 	
 	if (MPType == 2)
   { // using AMP - initialize using 16 digits & 64-bit precison
     int digits = 16, prec = 64;
 		initMP(prec);
-//		init_mp2(BED->BED_mp->gamma,prec);
-//		init_mp2(BED->BED_mp->gamma,max_precision);
-//		get_comp_rand_mp(BED->BED_mp->gamma);
-//		mp_to_d(BED->gamma,BED->BED_mp->gamma);
 		BED->BED_mp->curr_prec = prec;
 		
-		BED->BED_mp->gamma_rat = (mpq_t *)bmalloc(2 * sizeof(mpq_t));
-//		init_rat(BED->BED_mp->gamma_rat);
 		
-		get_comp_rand_rat(BED->gamma, BED->BED_mp->gamma, BED->BED_mp->gamma_rat, prec, T->AMP_max_prec, 1, 1);
+		
+		BED->BED_mp->gamma_rat = (mpq_t *)bmalloc(2 * sizeof(mpq_t));
+		if (solve_options->use_gamma_trick==1){
+			get_comp_rand_rat(BED->gamma, BED->BED_mp->gamma, BED->BED_mp->gamma_rat, prec, T->AMP_max_prec, 1, 1);
+		}
+		else{
+			init_rat(BED->BED_mp->gamma_rat);
+			init_mp(BED->BED_mp->gamma);
+			set_one_d(BED->gamma);
+			set_one_mp(BED->BED_mp->gamma);
+			set_one_rat(BED->BED_mp->gamma_rat);
+		}
+		
+		
 		BED->BED_mp->num_variables = W.num_variables;
 
 		
@@ -1283,10 +1265,10 @@ void setuplintolinEval_d(tracker_config_t *T,char preprocFile[], char degreeFile
 			set_mp(&BED->BED_mp->patch.patchCoeff->entry[0][ii],&W.patch_mp[0]->coord[ii]);
 			mp_to_rat(BED->BED_mp->patch.patchCoeff_rat[0][ii],&W.patch_mp[0]->coord[ii]);
 		}
+		
 		for (ii = 0; ii < BED->num_variables ; ii++)
-		{
 			mp_to_d(&BED->patch.patchCoeff->entry[0][ii],&W.patch_mp[0]->coord[ii]);
-		}
+		
 		
   }//re: if mptype==2
 
@@ -1530,7 +1512,8 @@ int lin_to_lin_solver_mp(int MPType,
 																		 &ptr_to_eval_d, &ptr_to_eval_mp,  //args 17,18
 																		 "preproc_data", "deg.out",
 																		 !useRegen, "nonhom_start", "start",
-																		 n_minusone_randomizer_matrix,W);
+																		 n_minusone_randomizer_matrix,W,
+																			solve_options);
   
 	int (*change_prec)(void const *, int) = NULL;
 	change_prec = &change_basic_eval_prec;
@@ -1894,7 +1877,8 @@ int lin_to_lin_setup_mp(FILE **OUT, char *outName,
 											 char *preprocFile, char *degreeFile,
 											 int findStartPts, char *pointsIN, char *pointsOUT,
 											 mat_mp n_minusone_randomizer_matrix,
-											 witness_set W)
+												witness_set W,
+												solver_configuration *solve_options)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -1924,21 +1908,6 @@ int lin_to_lin_setup_mp(FILE **OUT, char *outName,
 	
 	
   numGps = ED->preProcData.num_var_gp + ED->preProcData.num_hom_var_gp;
-  // find the rank
-//  rank = rank_finder_mp(&ED->preProcData, dummyProg, T, T->numVars);
-//  // check to make sure that it is possible to have a zero dimensional component
-//  if (T->numVars > rank + numGps)
-//		//  {
-//		//    printf("The system has no zero dimensional solutions based on its rank!\n");
-//		//    printf("The rank of the system including the patches is %d while the total number of variables is %d.\n\n", rank + numGps, T->numVars);
-//		//    bexit(ERROR_INPUT_SYSTEM);
-//		//  }
-//		
-//		//AM I ACUTALLY SUPPOSED TO DO THIS? !!! HERE
-//		// adjust the number of variables based on the rank
-//		T->numVars = rank + numGps;
-	
-	
 	
 	
   // now that we know the rank, we can setup the rest of ED
@@ -1947,7 +1916,7 @@ int lin_to_lin_setup_mp(FILE **OUT, char *outName,
     patchType = 2; // 1-hom patch
     ssType = 0;    // with 1-hom, we use total degree start system
     adjustDegrees = 0; // if the system does not need its degrees adjusted, then that is okay
-    setuplintolinEval_mp(preprocFile, degreeFile, dummyProg, rank, patchType, ssType, T->Precision, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix, W);
+    setuplintolinEval_mp(preprocFile, degreeFile, dummyProg, rank, patchType, ssType, T->Precision, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix, W,solve_options);
   }
   else
   { // m-hom, m > 1
@@ -2566,7 +2535,8 @@ void setuplintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *dummyPr
 												 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
 												 lintolin_eval_data_mp *BED, int adjustDegrees,
 												 mat_mp n_minusone_randomizer_matrix,
-												 witness_set W)
+													witness_set W,
+													solver_configuration *solve_options)
 {
   int ii;
 	int digits = prec_to_digits(mpf_get_default_prec());
@@ -2579,34 +2549,10 @@ void setuplintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *dummyPr
 	BED->num_variables = W.num_variables;
 	
 
-//	print_matrix_to_screen_matlab(BED->patch.patchCoeff,"stockpatch");
-	//	print_point_to_screen_matlab(
-	//	printf("%d\n",W.patch_size);
 	
 	for (ii = 0; ii < BED->num_variables ; ii++)
-	{
 		set_mp(&BED->patch.patchCoeff->entry[0][ii],&W.patch_mp[0]->coord[ii]);
-	}
 	
-//	print_matrix_to_screen_matlab(BED->patch.patchCoeff,"userpatch");
-	
-	
-//	vec_mp patchValues;
-//	init_vec_mp(patchValues,0);
-//	point_mp parVals;
-//	init_vec_mp(parVals,0);
-//	vec_mp parDer;
-//	init_vec_mp(parDer,0);
-//	mat_mp Jv_Patch;
-//	init_mat_mp(Jv_Patch,0,0);
-//	mat_mp Jp;
-//	init_mat_mp(Jp,0,0);
-//	comp_mp pathVars;
-//	set_one_mp(pathVars);
-//	patch_eval_mp(    patchValues, parVals, parDer, Jv_Patch, Jp, W.pts_d[0], pathVars, &BED->patch);  // Jp is ignored
-//	
-//	print_point_to_screen_matlab(patchValues,"patchvalues");
-//	print_point_to_screen_matlab(W.pts_d[0],"initialpoint");
 	
 	
 	BED->SLP = dummyProg;
@@ -2635,11 +2581,13 @@ void setuplintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *dummyPr
 
 	vec_cp_mp(BED->old_linear,W.L_mp[0]);
 	
+
 	
 	init_mp2(BED->gamma,prec);
-	get_comp_rand_mp(BED->gamma); // set gamma to be random complex value
-	
-	
+	if (solve_options->use_gamma_trick==1)
+		get_comp_rand_mp(BED->gamma); // set gamma to be random complex value
+	else
+		set_one_mp(BED->gamma);
 	
 	
   return;
@@ -2685,7 +2633,7 @@ int check_issoln_lintolin_d(endgame_data_t *EG,
 													 tracker_config_t *T,
 													 void const *ED)
 {
-  lintolin_eval_data_d *LPED = (lintolin_eval_data_d *)ED; // to avoid having to cast every time
+  lintolin_eval_data_d *BED = (lintolin_eval_data_d *)ED; // to avoid having to cast every time
 	
 	
 	int ii;
@@ -2713,12 +2661,12 @@ int check_issoln_lintolin_d(endgame_data_t *EG,
 	if (EG->prec>=64){
 		vec_d terminal_pt;  init_vec_d(terminal_pt,1);
 		vec_mp_to_d(terminal_pt,EG->PD_mp.point);
-		evalProg_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, terminal_pt, EG->PD_d.time, LPED->SLP);
+		evalProg_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, terminal_pt, EG->PD_d.time, BED->SLP);
 //		lin_to_lin_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, terminal_pt, EG->PD_d.time, ED);
 		clear_vec_d(terminal_pt);
 	}
 	else{
-		evalProg_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_d.point, EG->PD_d.time, LPED->SLP);
+		evalProg_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_d.point, EG->PD_d.time, BED->SLP);
 //		lin_to_lin_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_d.point, EG->PD_d.time, ED);
 	}
 	
@@ -2726,18 +2674,18 @@ int check_issoln_lintolin_d(endgame_data_t *EG,
 	if (EG->last_approx_prec>=64) {
 		vec_d prev_pt;  init_vec_d(prev_pt,1);
 		vec_mp_to_d(prev_pt,EG->PD_mp.point);
-		evalProg_d(f, e.parVals, e.parDer, e.Jv, e.Jp, prev_pt, EG->PD_d.time, LPED->SLP);
+		evalProg_d(f, e.parVals, e.parDer, e.Jv, e.Jp, prev_pt, EG->PD_d.time, BED->SLP);
 //		lin_to_lin_eval_d(f, e.parVals, e.parDer, e.Jv, e.Jp, prev_pt, EG->PD_d.time, ED); 
 		clear_vec_d(prev_pt);}
 	else{
-		evalProg_d(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_d, EG->PD_d.time, LPED->SLP);
+		evalProg_d(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_d, EG->PD_d.time, BED->SLP);
 //		lin_to_lin_eval_d(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_d, EG->PD_d.time, ED);}
 	}
 	
 //	print_point_to_screen_matlab(e.funcVals,"howfaroff");
 	// compare the function values
 	int isSoln = 1;
-	for (ii = 0; (ii < LPED->SLP->numFuncs) && isSoln; ii++)
+	for (ii = 0; (ii < BED->SLP->numFuncs) && isSoln; ii++)
 	{
 		n1 = d_abs_d( &e.funcVals->coord[ii]); // corresponds to final point
 		n2 = d_abs_d( &f->coord[ii]); // corresponds to the previous point
@@ -2780,7 +2728,7 @@ int check_issoln_lintolin_mp(endgame_data_t *EG,
 														tracker_config_t *T,
 														void const *ED)
 {
-  lintolin_eval_data_mp *LPED = (lintolin_eval_data_mp *)ED; // to avoid having to cast every time
+  lintolin_eval_data_mp *BED = (lintolin_eval_data_mp *)ED; // to avoid having to cast every time
 	
 	int ii;
 	
@@ -2815,7 +2763,7 @@ int check_issoln_lintolin_mp(endgame_data_t *EG,
 	
 	//this one guaranteed by entry condition
 //	lin_to_lin_eval_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, ED);
-	evalProg_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, LPED->SLP);
+	evalProg_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, BED->SLP);
 //	print_point_to_screen_matlab_mp(e.funcVals,"howfaroff");
 	
 	if (EG->last_approx_prec < 64)
@@ -2828,11 +2776,11 @@ int check_issoln_lintolin_mp(endgame_data_t *EG,
 		point_d_to_mp(EG->last_approx_mp, EG->last_approx_d);
 	}
 	
-	evalProg_mp(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_mp, EG->PD_mp.time, LPED->SLP);
+	evalProg_mp(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_mp, EG->PD_mp.time, BED->SLP);
 //	lin_to_lin_eval_mp(f,          e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_mp, EG->PD_mp.time, ED);
 	// compare the function values
 	int isSoln = 1;
-	for (ii = 0; ii < LPED->SLP->numFuncs && isSoln; ii++)
+	for (ii = 0; ii < BED->SLP->numFuncs && isSoln; ii++)
 	{
 		mpf_abs_mp(n1, &e.funcVals->coord[ii]);
 		mpf_abs_mp(n2, &f->coord[ii]);

@@ -116,7 +116,8 @@ int linprod_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int c
 																						"preproc_data", "deg.out",
 																						!useRegen, "nonhom_start", "start",
 																						n_minusone_randomizer_matrix_full_prec,W,
-																						projection_full_prec);
+																						projection_full_prec,
+																						solve_options);
   
 	
 	int (*change_prec)(void const *, int) = &change_linprodtodetjac_eval_prec;
@@ -527,7 +528,8 @@ int linprod_to_detjac_setup_d(FILE **OUT, char *outName,
 															int findStartPts, char *pointsIN, char *pointsOUT,
 															mat_mp n_minusone_randomizer_matrix_full_prec,
 															witness_set W,
-															vec_mp projection)
+															vec_mp projection,
+															solver_configuration *solve_options)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -582,7 +584,7 @@ int linprod_to_detjac_setup_d(FILE **OUT, char *outName,
 	
 	
 	adjustDegrees = 0; // if the system does not need its degrees adjusted, then that is okay
-	setuplinprodtodetjacEval_d(T,preprocFile, degreeFile, dummyProg, rank, patchType, ssType, T->MPType, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix_full_prec, W,projection);
+	setuplinprodtodetjacEval_d(T,preprocFile, degreeFile, dummyProg, rank, patchType, ssType, T->MPType, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix_full_prec, W,projection,solve_options);
 
 
 	
@@ -1246,7 +1248,8 @@ void setuplinprodtodetjacEval_d(tracker_config_t *T,char preprocFile[], char deg
 																linprodtodetjac_eval_data_d *BED, int adjustDegrees,
 																mat_mp n_minusone_randomizer_matrix_full_prec,
 																witness_set W,
-																vec_mp projection_full_prec)
+																vec_mp projection_full_prec,
+																solver_configuration *solve_options)
 {
   int ii;
 	BED->num_variables = W.num_variables;
@@ -1289,12 +1292,12 @@ void setuplinprodtodetjacEval_d(tracker_config_t *T,char preprocFile[], char deg
 		vec_cp_d(BED->linears[ii], W.L[ii]);
 	}
 	
+	if (solve_options->use_gamma_trick==1)
+		get_comp_rand_d(BED->gamma); // set gamma to be random complex value
+	else
+		set_one_d(BED->gamma);
 	
-	get_comp_rand_d(BED->gamma); // set gamma to be random complex value
-//
-//	set_one_d(BED->gamma);
-//TODO: HERE
-	
+
 	if (MPType == 2)
   { // using AMP - initialize using 16 digits & 64-bit precison
 		
@@ -1304,21 +1307,21 @@ void setuplinprodtodetjacEval_d(tracker_config_t *T,char preprocFile[], char deg
 		
     int digits = 16, prec = 64;
 		initMP(prec);
-		//		init_mp2(BED->BED_mp->gamma,prec);
-		//		init_mp2(BED->BED_mp->gamma,max_precision);
-		//		get_comp_rand_mp(BED->BED_mp->gamma);
-		//		mp_to_d(BED->gamma,BED->BED_mp->gamma);
+
 		BED->BED_mp->curr_prec = prec;
 		
 		BED->BED_mp->gamma_rat = (mpq_t *)bmalloc(2 * sizeof(mpq_t));
-		//		init_rat(BED->BED_mp->gamma_rat);
+		if (solve_options->use_gamma_trick==1){
+			get_comp_rand_rat(BED->gamma, BED->BED_mp->gamma, BED->BED_mp->gamma_rat, prec, T->AMP_max_prec, 1, 1);
+		}
+		else{
+			init_rat(BED->BED_mp->gamma_rat);
+			init_mp(BED->BED_mp->gamma);
+			set_one_d(BED->gamma);
+			set_one_mp(BED->BED_mp->gamma);
+			set_one_rat(BED->BED_mp->gamma_rat);
+		}
 		
-		
-		get_comp_rand_rat(BED->gamma, BED->BED_mp->gamma, BED->BED_mp->gamma_rat, prec, T->AMP_max_prec, 1, 1);
-//TODO:HERE
-//		init_rat(BED->BED_mp->gamma_rat);  init_mp(BED->BED_mp->gamma);
-//		set_one_rat(BED->BED_mp->gamma_rat);
-//		set_one_mp(BED->BED_mp->gamma);
 		
 		
 		BED->BED_mp->num_variables = W.num_variables;
@@ -1621,7 +1624,8 @@ int linprod_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int 
 																						 "preproc_data", "deg.out",
 																						 !useRegen, "nonhom_start", "start",
 																						 n_minusone_randomizer_matrix_full_prec,W,
-																						 projection_full_prec);
+																						 projection_full_prec,
+																						 solve_options);
   
 	int (*change_prec)(void const *, int) = NULL;
 	change_prec = &change_basic_eval_prec;
@@ -1976,7 +1980,8 @@ int linprod_to_detjac_setup_mp(FILE **OUT, char *outName,
 															 int findStartPts, char *pointsIN, char *pointsOUT,
 															 mat_mp n_minusone_randomizer_matrix,
 															 witness_set W,
-															 vec_mp projection_full_prec)
+															 vec_mp projection_full_prec,
+															 solver_configuration *solve_options)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -2006,40 +2011,14 @@ int linprod_to_detjac_setup_mp(FILE **OUT, char *outName,
 	
 	
   numGps = ED->preProcData.num_var_gp + ED->preProcData.num_hom_var_gp;
-  // find the rank
-	//  rank = rank_finder_mp(&ED->preProcData, dummyProg, T, T->numVars);
-	//  // check to make sure that it is possible to have a zero dimensional component
-	//  if (T->numVars > rank + numGps)
-	//		//  {
-	//		//    printf("The system has no zero dimensional solutions based on its rank!\n");
-	//		//    printf("The rank of the system including the patches is %d while the total number of variables is %d.\n\n", rank + numGps, T->numVars);
-	//		//    bexit(ERROR_INPUT_SYSTEM);
-	//		//  }
-	//
-	//		//AM I ACUTALLY SUPPOSED TO DO THIS? !!! HERE
-	//		// adjust the number of variables based on the rank
-	//		T->numVars = rank + numGps;
-	
-	
-	
-	
-  // now that we know the rank, we can setup the rest of ED
-	//  if (numGps == 1)// this should ALWAYS be the case in this solver.
-	//  { // 1-hom
+ 
 	patchType = 2; // 1-hom patch
 	ssType = 0;    // with 1-hom, we use total degree start system
 	adjustDegrees = 0; // if the system does not need its degrees adjusted, then that is okay
-	setuplinprodtodetjacEval_mp(preprocFile, degreeFile, dummyProg, rank, patchType, ssType, T->Precision, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix, W,projection_full_prec);
+	setuplinprodtodetjacEval_mp(preprocFile, degreeFile, dummyProg, rank, patchType, ssType, T->Precision, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix, W,projection_full_prec,solve_options);
 	
 	
-	//  }
-	//  else
-	//  { // m-hom, m > 1
-	//    patchType = 0; // random patch based on m-hom variable structure
-	//    ssType = 1;    // with m-hom, we use the mhom structure for start system
-	//    adjustDegrees = 0; // if the system does not need its degrees adjusted, then that is okay
-	//    setuplinprodtodetjacEval_mp(preprocFile, degreeFile, dummyProg, rank, patchType, ssType, T->Precision, &ED->preProcData, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix, W,);
-	//  }
+
 	
 #ifdef printpathlinprod
 	int ii;
@@ -2729,49 +2708,22 @@ void setuplinprodtodetjacEval_mp(char preprocFile[], char degreeFile[], prog_t *
 																 linprodtodetjac_eval_data_mp *BED, int adjustDegrees,
 																 mat_mp n_minusone_randomizer_matrix,
 																 witness_set W,
-																 vec_mp projection_full_prec)
+																 vec_mp projection_full_prec,
+																 solver_configuration *solve_options)
 {
   int ii;
 	int digits = prec_to_digits(mpf_get_default_prec());
   setupPreProcData(preprocFile, &BED->preProcData);
 	
 	setupPatch_mp(patchType, &BED->patch, digits, prec, ptr1, ptr2);
-	//
 	
-	printf("setup linprod_mp 3237 \n");
 	BED->num_variables = W.num_variables;
 	
-	
-	//	print_matrix_to_screen_matlab(BED->patch.patchCoeff,"stockpatch");
-	//	print_point_to_screen_matlab(
-	//	printf("%d\n",W.patch_size);
-	
+
 	for (ii = 0; ii < BED->num_variables ; ii++)
-	{
 		set_mp(&BED->patch.patchCoeff->entry[0][ii],&W.patch_mp[0]->coord[ii]);
-	}
 	
-	//	print_matrix_to_screen_matlab(BED->patch.patchCoeff,"userpatch");
-	
-	
-//	vec_mp patchValues;
-//	init_vec_mp(patchValues,0);
-//	point_mp parVals;
-//	init_vec_mp(parVals,0);
-//	vec_mp parDer;
-//	init_vec_mp(parDer,0);
-//	mat_mp Jv_Patch;
-//	init_mat_mp(Jv_Patch,0,0);
-//	mat_mp Jp;
-//	init_mat_mp(Jp,0,0);
-//	comp_mp pathVars; init_mp(pathVars);
-//	set_one_mp(pathVars);
-//	patch_eval_mp(    patchValues, parVals, parDer, Jv_Patch, Jp, W.pts_mp[0], pathVars, &BED->patch);  // Jp is ignored
-//
-//	print_point_to_screen_matlab_mp(patchValues,"patchvalues");
-//	print_point_to_screen_matlab_mp(W.pts_mp[0],"initialpoint");
-//	mypause();
-	
+
 	
 	BED->SLP = dummyProg;
 	
@@ -2787,9 +2739,17 @@ void setuplinprodtodetjacEval_mp(char preprocFile[], char degreeFile[], prog_t *
 	init_vec_mp(BED->projection,BED->num_variables); BED->projection->size = BED->num_variables;
 	vec_cp_mp(BED->projection,projection_full_prec);
 	
+	
 	init_mp2(BED->gamma,prec);
-	get_comp_rand_mp(BED->gamma); // set gamma to be random complex value
-	set_one_mp(BED->gamma);
+	if (solve_options->use_gamma_trick==1){
+		get_comp_rand_mp(BED->gamma); // set gamma to be random complex value
+	}
+	else{
+		set_one_mp(BED->gamma);
+	}
+	
+	
+	
 	
 	BED->num_linears = W.num_linears;
 	
@@ -2842,16 +2802,20 @@ void cp_linprodtodetjac_eval_data_mp(linprodtodetjac_eval_data_mp *BED, linprodt
 
 
 
+
 int check_issoln_linprodtodetjac_d(endgame_data_t *EG,
 														tracker_config_t *T,
 														void const *ED)
 {
-  linprodtodetjac_eval_data_d *LPED = (linprodtodetjac_eval_data_d *)ED; // to avoid having to cast every time
+  linprodtodetjac_eval_data_d *BED = (linprodtodetjac_eval_data_d *)ED; // to avoid having to cast every time
 	
 	
 	int ii;
-	double tol;
-	double n1, n2, zero_thresh, max_rat;
+	
+	
+	
+	
+	double n1, n2, max_rat;
 	point_d f;
 	eval_struct_d e;
 	//
@@ -2865,48 +2829,65 @@ int check_issoln_linprodtodetjac_d(endgame_data_t *EG,
 	//	if (num_digits > 300)
 	//		num_digits = 300;
 	//	num_digits -= 2;
-	zero_thresh = MAX(T->funcResTol, 1e-15);
+	double tol = MAX(T->funcResTol, 1e-15);
 	
 	
 	if (EG->prec>=64){
 		vec_d terminal_pt;  init_vec_d(terminal_pt,1);
 		vec_mp_to_d(terminal_pt,EG->PD_mp.point);
-		linprod_to_detjac_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, terminal_pt, EG->PD_d.time, ED);
-		clear_vec_d(terminal_pt);}
+		evalProg_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, terminal_pt, EG->PD_d.time, BED->SLP);
+		//		lin_to_lin_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, terminal_pt, EG->PD_d.time, ED);
+		clear_vec_d(terminal_pt);
+	}
 	else{
-		linprod_to_detjac_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_d.point, EG->PD_d.time, ED); }
-	
-	
-//	print_point_to_screen_matlab(e.funcVals,"post_soln_func_vals");
-
-	if (EG->last_approx_prec>=64) {
-		vec_d prev_pt;  init_vec_d(prev_pt,1);
-		vec_mp_to_d(prev_pt,EG->PD_mp.point);
-		linprod_to_detjac_eval_d(f, e.parVals, e.parDer, e.Jv, e.Jp, prev_pt, EG->PD_d.time, ED);
-		clear_vec_d(prev_pt);}
-	else{
-		linprod_to_detjac_eval_d(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_d, EG->PD_d.time, ED);}
-	
-	// compare the function values
-	int isSoln = 1;
-	for (ii = 0; ii < LPED->SLP->numFuncs && isSoln; ii++)
-	{
-		n1 = d_abs_d( &e.funcVals->coord[ii]);
-		n2 = d_abs_d( &f->coord[ii]);
-		
-		if (tol <= n1 && n1 <= n2)
-		{ // compare ratio
-			if (n1 > max_rat * n2)
-				isSoln = 0;
-		}
-		else if (tol <= n2 && n2 <= n1)
-		{ // compare ratio
-			if (n2 > max_rat * n1)
-				isSoln = 0;
-		}
+		evalProg_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_d.point, EG->PD_d.time, BED->SLP);
+		//		lin_to_lin_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_d.point, EG->PD_d.time, ED);
 	}
 	
 	
+	if (EG->last_approx_prec>=64) {
+		vec_d prev_pt;  init_vec_d(prev_pt,1);
+		vec_mp_to_d(prev_pt,EG->PD_mp.point);
+		evalProg_d(f, e.parVals, e.parDer, e.Jv, e.Jp, prev_pt, EG->PD_d.time, BED->SLP);
+		//		lin_to_lin_eval_d(f, e.parVals, e.parDer, e.Jv, e.Jp, prev_pt, EG->PD_d.time, ED);
+		clear_vec_d(prev_pt);}
+	else{
+		evalProg_d(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_d, EG->PD_d.time, BED->SLP);
+		//		lin_to_lin_eval_d(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_d, EG->PD_d.time, ED);}
+	}
+	
+	//	print_point_to_screen_matlab(e.funcVals,"howfaroff");
+	// compare the function values
+	int isSoln = 1;
+	for (ii = 0; (ii < BED->SLP->numFuncs) && isSoln; ii++)
+	{
+		n1 = d_abs_d( &e.funcVals->coord[ii]); // corresponds to final point
+		n2 = d_abs_d( &f->coord[ii]); // corresponds to the previous point
+		
+		//		printf("%lf\n",n1);
+		
+		if (tol <= n1 && n1 <= n2)
+		{ // compare ratio
+			if (n1 > max_rat * n2){ // seriously what is the point of this?
+				isSoln = 0;
+				printf("labeled as non_soln due to max_rat (d) 1 coord %d\n",ii);
+			}
+		}
+		else if (tol <= n2 && n2 <= n1)
+		{ // compare ratio
+			if (n2 > max_rat * n1){
+				isSoln = 0;
+				printf("labeled as non_soln due to max_rat (d) 2 coord %d\n",ii);
+			}
+		}
+	}
+	
+	if (!isSoln) {
+		
+		print_point_to_screen_matlab(e.funcVals,"terminal");
+		print_point_to_screen_matlab(f,"prev");
+		printf("tol was %le\nmax_rat was %le\n",tol,max_rat);
+	}
 	
 	
 	clear_eval_struct_d(e);
@@ -2921,7 +2902,7 @@ int check_issoln_linprodtodetjac_mp(endgame_data_t *EG,
 														 tracker_config_t *T,
 														 void const *ED)
 {
-  linprodtodetjac_eval_data_mp *LPED = (linprodtodetjac_eval_data_mp *)ED; // to avoid having to cast every time
+  linprodtodetjac_eval_data_mp *BED = (linprodtodetjac_eval_data_mp *)ED; // to avoid having to cast every time
 	
 	int ii;
 	
@@ -2930,60 +2911,71 @@ int check_issoln_linprodtodetjac_mp(endgame_data_t *EG,
     if (!(mpfr_number_p(EG->PD_mp.point->coord[ii].r) && mpfr_number_p(EG->PD_mp.point->coord[ii].i)))
 		{
 			printf("got not a number\n");
-			print_point_to_screen_matlab_mp(EG->PD_mp.point,"bad_solution");
+			print_point_to_screen_matlab_mp(EG->PD_mp.point,"bad solution");
       return 0;
 		}
 	}
 	
-	int num_digits = prec_to_digits((int) mpf_get_default_prec());
-	double tol;
-	mpf_t n1, n2, zero_thresh, max_rat;
-	point_mp f;
-	eval_struct_mp e;
 	
+	
+	mpf_t n1, n2, zero_thresh, max_rat;
 	mpf_init(n1); mpf_init(n2); mpf_init(zero_thresh); mpf_init(max_rat);
-	init_point_mp(f, T->numVars); f->size = T->numVars;
-	init_eval_struct_mp(e,0, 0, 0);
+	
+	point_mp f; init_point_mp(f, 1);f->size = 1;
+	eval_struct_mp e; init_eval_struct_mp(e, 0, 0, 0);
 	
 	mpf_set_d(max_rat, T->ratioTol);
 	
+	
+	int num_digits = prec_to_digits((int) mpf_get_default_prec());
 	// setup threshold based on given threshold and precision
 	if (num_digits > 300)
 		num_digits = 300;
-	num_digits -= 2;
-	tol = MAX(T->funcResTol, pow(10,-num_digits));
+	num_digits -= 4;
+	double tol = MAX(T->funcResTol, pow(10,-num_digits));
 	mpf_set_d(zero_thresh, tol);
 	
 	//this one guaranteed by entry condition
-	linprod_to_detjac_eval_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, ED);
+	//	lin_to_lin_eval_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, ED);
+	evalProg_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, BED->SLP);
+	//	print_point_to_screen_matlab_mp(e.funcVals,"howfaroff");
 	
-//	print_point_to_screen_matlab_mp(e.funcVals,"post_soln_func_vals");
 	if (EG->last_approx_prec < 64)
 	{ // copy to _mp
+		printf("last precision (%d) is less than 64\n",EG->last_approx_prec);
+		
+		//		print_point_to_screen_matlab_mp(EG->last_approx_mp,"lastapprox_mp");
+		print_point_to_screen_matlab(EG->last_approx_d,"lastapprox_d");
+		
 		point_d_to_mp(EG->last_approx_mp, EG->last_approx_d);
 	}
 	
-	linprod_to_detjac_eval_mp(f,          e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_mp, EG->PD_mp.time, ED);
-	
-	
+	evalProg_mp(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_mp, EG->PD_mp.time, BED->SLP);
+	//	lin_to_lin_eval_mp(f,          e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_mp, EG->PD_mp.time, ED);
 	// compare the function values
 	int isSoln = 1;
-	for (ii = 0; ii < LPED->SLP->numFuncs && isSoln; ii++)
+	for (ii = 0; ii < BED->SLP->numFuncs && isSoln; ii++)
 	{
 		mpf_abs_mp(n1, &e.funcVals->coord[ii]);
 		mpf_abs_mp(n2, &f->coord[ii]);
 		
-		if (mpf_cmp(zero_thresh, n1) <= 0 && mpf_cmp(n1, n2) <= 0)
+		//		mpf_out_str(NULL,10,9,n1);
+		
+		if ( (mpf_cmp(zero_thresh, n1) <= 0) &&  (mpf_cmp(n1, n2) <= 0) )
 		{ // compare ratio
 			mpf_mul(n2, max_rat, n2);
-			if (mpf_cmp(n1, n2) > 0)
+			if (mpf_cmp(n1, n2) > 0){
 				isSoln = 0;
+				printf("labeled as non_soln due to max_rat (mp) 1\n");
+			}
 		}
-		else if (mpf_cmp(zero_thresh, n2) <= 0 && mpf_cmp(n2, n1) <= 0)
+		else if ( (mpf_cmp(zero_thresh, n2) <= 0) &&  (mpf_cmp(n2, n1) <= 0) )
 		{ // compare ratio
 			mpf_mul(n1, max_rat, n1);
-			if (mpf_cmp(n2, n1) > 0)
+			if (mpf_cmp(n2, n1) > 0){
 				isSoln = 0;
+				printf("labeled as non_soln due to max_rat (mp) 2\n");
+			}
 		}
 	}
 	
@@ -2999,6 +2991,173 @@ int check_issoln_linprodtodetjac_mp(endgame_data_t *EG,
 }
 
 
+
+
+
+
+//int check_issoln_linprodtodetjac_d(endgame_data_t *EG,
+//														tracker_config_t *T,
+//														void const *ED)
+//{
+//  linprodtodetjac_eval_data_d *LPED = (linprodtodetjac_eval_data_d *)ED; // to avoid having to cast every time
+//	
+//	
+//	int ii;
+//	double tol;
+//	double n1, n2, zero_thresh, max_rat;
+//	point_d f;
+//	eval_struct_d e;
+//	//
+//	//	mpf_init(n1); mpf_init(n2); mpf_init(zero_thresh); mpf_init(max_rat);
+//	init_point_d(f, 1);
+//	init_eval_struct_d(e,0, 0, 0);
+//	
+//	max_rat = T->ratioTol;
+//	
+//	// setup threshold based on given threshold and precision
+//	//	if (num_digits > 300)
+//	//		num_digits = 300;
+//	//	num_digits -= 2;
+//	zero_thresh = MAX(T->funcResTol, 1e-15);
+//	
+//	
+//	if (EG->prec>=64){
+//		vec_d terminal_pt;  init_vec_d(terminal_pt,1);
+//		vec_mp_to_d(terminal_pt,EG->PD_mp.point);
+//		linprod_to_detjac_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, terminal_pt, EG->PD_d.time, ED);
+//		clear_vec_d(terminal_pt);}
+//	else{
+//		linprod_to_detjac_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_d.point, EG->PD_d.time, ED); }
+//	
+//	
+////	print_point_to_screen_matlab(e.funcVals,"post_soln_func_vals");
+//
+//	if (EG->last_approx_prec>=64) {
+//		vec_d prev_pt;  init_vec_d(prev_pt,1);
+//		vec_mp_to_d(prev_pt,EG->PD_mp.point);
+//		linprod_to_detjac_eval_d(f, e.parVals, e.parDer, e.Jv, e.Jp, prev_pt, EG->PD_d.time, ED);
+//		clear_vec_d(prev_pt);}
+//	else{
+//		linprod_to_detjac_eval_d(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_d, EG->PD_d.time, ED);}
+//	
+//	// compare the function values
+//	int isSoln = 1;
+//	for (ii = 0; ii < LPED->SLP->numFuncs && isSoln; ii++)
+//	{
+//		n1 = d_abs_d( &e.funcVals->coord[ii]);
+//		n2 = d_abs_d( &f->coord[ii]);
+//		
+//		if (tol <= n1 && n1 <= n2)
+//		{ // compare ratio
+//			if (n1 > max_rat * n2)
+//				isSoln = 0;
+//		}
+//		else if (tol <= n2 && n2 <= n1)
+//		{ // compare ratio
+//			if (n2 > max_rat * n1)
+//				isSoln = 0;
+//		}
+//	}
+//	
+//	
+//	
+//	
+//	clear_eval_struct_d(e);
+//	clear_vec_d(f);
+//	
+//	return isSoln;
+//	
+//}
+//
+//
+//
+//
+//
+
+//
+//
+//int check_issoln_linprodtodetjac_mp(endgame_data_t *EG,
+//														 tracker_config_t *T,
+//														 void const *ED)
+//{
+//  linprodtodetjac_eval_data_mp *LPED = (linprodtodetjac_eval_data_mp *)ED; // to avoid having to cast every time
+//	
+//	int ii;
+//	
+//	for (ii = 0; ii < T->numVars; ii++)
+//	{
+//    if (!(mpfr_number_p(EG->PD_mp.point->coord[ii].r) && mpfr_number_p(EG->PD_mp.point->coord[ii].i)))
+//		{
+//			printf("got not a number\n");
+//			print_point_to_screen_matlab_mp(EG->PD_mp.point,"bad_solution");
+//      return 0;
+//		}
+//	}
+//	
+//	int num_digits = prec_to_digits((int) mpf_get_default_prec());
+//	double tol;
+//	mpf_t n1, n2, zero_thresh, max_rat;
+//	point_mp f;
+//	eval_struct_mp e;
+//	
+//	mpf_init(n1); mpf_init(n2); mpf_init(zero_thresh); mpf_init(max_rat);
+//	init_point_mp(f, T->numVars); f->size = T->numVars;
+//	init_eval_struct_mp(e,0, 0, 0);
+//	
+//	mpf_set_d(max_rat, T->ratioTol);
+//	
+//	// setup threshold based on given threshold and precision
+//	if (num_digits > 300)
+//		num_digits = 300;
+//	num_digits -= 2;
+//	tol = MAX(T->funcResTol, pow(10,-num_digits));
+//	mpf_set_d(zero_thresh, tol);
+//	
+//	//this one guaranteed by entry condition
+//	linprod_to_detjac_eval_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, ED);
+//	
+////	print_point_to_screen_matlab_mp(e.funcVals,"post_soln_func_vals");
+//	if (EG->last_approx_prec < 64)
+//	{ // copy to _mp
+//		point_d_to_mp(EG->last_approx_mp, EG->last_approx_d);
+//	}
+//	
+//	linprod_to_detjac_eval_mp(f,          e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_mp, EG->PD_mp.time, ED);
+//	
+//	
+//	// compare the function values
+//	int isSoln = 1;
+//	for (ii = 0; ii < LPED->SLP->numFuncs && isSoln; ii++)
+//	{
+//		mpf_abs_mp(n1, &e.funcVals->coord[ii]);
+//		mpf_abs_mp(n2, &f->coord[ii]);
+//		
+//		if (mpf_cmp(zero_thresh, n1) <= 0 && mpf_cmp(n1, n2) <= 0)
+//		{ // compare ratio
+//			mpf_mul(n2, max_rat, n2);
+//			if (mpf_cmp(n1, n2) > 0)
+//				isSoln = 0;
+//		}
+//		else if (mpf_cmp(zero_thresh, n2) <= 0 && mpf_cmp(n2, n1) <= 0)
+//		{ // compare ratio
+//			mpf_mul(n1, max_rat, n1);
+//			if (mpf_cmp(n2, n1) > 0)
+//				isSoln = 0;
+//		}
+//	}
+//	
+//	
+//	mpf_clear(n1); mpf_clear(n2); mpf_clear(zero_thresh); mpf_clear(max_rat);
+//	
+//	
+//	clear_eval_struct_mp(e);
+//	clear_vec_mp(f);
+//	
+//	return isSoln;
+//	
+//}
+//
+//
 
 
 

@@ -153,7 +153,8 @@ int linprod_to_detjac_setup_d(FILE **OUT, char *outName,
 															int findStartPts, char *pointsIN, char *pointsOUT,
 															mat_mp n_minusone_randomizer_matrix_full_prec,
 															witness_set W,
-															vec_mp projection);
+															vec_mp projection,
+															solver_configuration *solve_options);
 
 //the new custom evaluator for this solver
 
@@ -187,7 +188,8 @@ void setuplinprodtodetjacEval_d(tracker_config_t *T,char preprocFile[], char deg
 																linprodtodetjac_eval_data_d *BED, int adjustDegrees,
 																mat_mp n_minusone_randomizer_matrix_full_prec,
 																witness_set W,
-																vec_mp projection);
+																vec_mp projection,
+																solver_configuration *solve_options);
 
 
 
@@ -251,7 +253,8 @@ int linprod_to_detjac_setup_mp(FILE **OUT, char *outName,
 															 int findStartPts, char *pointsIN, char *pointsOUT,
 															 mat_mp n_minusone_randomizer_matrix,
 															 witness_set W,
-															 vec_mp projection_full_prec);
+															 vec_mp projection_full_prec,
+															 solver_configuration *solve_options);
 
 
 int linprod_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED);
@@ -278,7 +281,8 @@ void setuplinprodtodetjacEval_mp(char preprocFile[], char degreeFile[], prog_t *
 																 linprodtodetjac_eval_data_mp *BED, int adjustDegrees,
 																 mat_mp n_minusone_randomizer_matrix,
 																 witness_set W,
-																 vec_mp projection_full_prec);
+																 vec_mp projection_full_prec,
+																 solver_configuration *solve_options);
 
 void cp_linprodtodetjac_eval_data_mp(linprodtodetjac_eval_data_mp *BED, linprodtodetjac_eval_data_mp *BED_mp_input, int MPType);
 

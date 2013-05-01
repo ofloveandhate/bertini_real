@@ -491,6 +491,7 @@ void init_solver_config(solver_configuration *options){
 	options->use_midpoint_checker = 1;
 	options->show_status_summary = 0;
 	options->verbose_level = 0; // default to 0.  higher is more verbose
+	options->use_gamma_trick = 1;
 }
 
 

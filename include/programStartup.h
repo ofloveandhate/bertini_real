@@ -100,6 +100,7 @@ typedef struct
 	int use_midpoint_checker;
 	double midpoint_tol;
 	
+	int use_gamma_trick;
 } solver_configuration;
 
 
