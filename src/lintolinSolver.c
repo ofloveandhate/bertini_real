@@ -175,8 +175,10 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
 	
 
 	// check for path crossings
-//	int num_crossings = 0;
-//	midpoint_checker(trackCount.numPoints, num_variables, solve_options->midpoint_tol, &num_crossings);
+	int num_crossings = 0;
+	if (solve_options->use_midpoint_checker==1) {
+		midpoint_checker(trackCount.numPoints, num_variables,solve_options->midpoint_tol, &num_crossings);
+	}
 	
 	// setup num_sols
 	num_sols = trackCount.successes;
@@ -1590,8 +1592,10 @@ int lin_to_lin_solver_mp(int MPType,
 	fprintf(rawOUT, "%d\n\n", -1);  // bottom of rawOUT
 	
 	// check for path crossings
-//	int num_crossings = 0;
-//	midpoint_checker(trackCount.numPoints, num_variables, solve_options->midpoint_tol, &num_crossings);
+	int num_crossings = 0;
+	if (solve_options->use_midpoint_checker==1) {
+		midpoint_checker(trackCount.numPoints, num_variables,solve_options->midpoint_tol, &num_crossings);
+	}
 	
 	// setup num_sols
 	num_sols = trackCount.successes;
@@ -1974,12 +1978,18 @@ int lin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_m
   comp_mp one_minus_s, gamma_s; init_mp(one_minus_s); init_mp(gamma_s);
 	
 	comp_mp temp, temp2; init_mp(temp); init_mp(temp2);
-	vec_mp one_minus_s_times_current_linear; init_vec_mp(one_minus_s_times_current_linear,0);
 	
+	vec_mp one_minus_s_times_current_linear;
+	init_vec_mp(one_minus_s_times_current_linear,BED->num_variables);
+	one_minus_s_times_current_linear->size = BED->num_variables;
 	
 	vec_mp patchValues; init_vec_mp(patchValues, 0);
-	vec_mp vars_times_curr_linear; init_vec_mp(vars_times_curr_linear,0);
-	vec_mp vars_times_old_linear; init_vec_mp(vars_times_old_linear,0);
+	
+	vec_mp vars_times_curr_linear; init_vec_mp(vars_times_curr_linear,BED->num_variables);
+	vec_mp vars_times_old_linear; init_vec_mp(vars_times_old_linear,BED->num_variables);
+	vars_times_old_linear->size = vars_times_curr_linear->size = BED->num_variables;
+	
+	
 	vec_mp temp_function_values; init_vec_mp(temp_function_values,0);
 	vec_mp AtimesF; init_vec_mp(AtimesF,0);  // declare  // initialize
 	vec_mp gamma_s_times_old_linear; init_vec_mp(gamma_s_times_old_linear,BED->num_variables);
@@ -1991,22 +2001,18 @@ int lin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_m
 	mat_mp AtimesJ; init_mat_mp(AtimesJ,1,1);
 	
 	
-	init_vec_mp(funcVals,0); 
+	init_vec_mp(funcVals,BED->num_variables); funcVals->size = BED->num_variables;
 
 	
 	//set the sizes
 	gamma_s_times_old_linear->size = BED->num_variables;
-	change_size_vec_mp(funcVals,BED->num_variables); funcVals->size = BED->num_variables;
-	change_size_vec_mp(vars_times_curr_linear,BED->num_variables);
-	change_size_vec_mp(vars_times_old_linear,BED->num_variables);
-	change_size_vec_mp(one_minus_s_times_current_linear,BED->num_variables);
-	one_minus_s_times_current_linear->size = BED->num_variables;
 	
 	
-	vars_times_old_linear->size = vars_times_curr_linear->size = BED->num_variables;
 	
 	
-	change_size_mat_mp(Jv, BED->num_variables, BED->num_variables);
+
+	
+	change_size_mat_mp(Jv, BED->num_variables, BED->num_variables); // this is an input
 	Jv->rows = Jv->cols = BED->num_variables;  //  -> this should be square!!!
 	
 	
@@ -2707,26 +2713,36 @@ int check_issoln_lintolin_d(endgame_data_t *EG,
 	if (EG->prec>=64){
 		vec_d terminal_pt;  init_vec_d(terminal_pt,1);
 		vec_mp_to_d(terminal_pt,EG->PD_mp.point);
-		lin_to_lin_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, terminal_pt, EG->PD_d.time, ED);
-		clear_vec_d(terminal_pt);}
+		evalProg_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, terminal_pt, EG->PD_d.time, LPED->SLP);
+//		lin_to_lin_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, terminal_pt, EG->PD_d.time, ED);
+		clear_vec_d(terminal_pt);
+	}
 	else{
-		lin_to_lin_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_d.point, EG->PD_d.time, ED); }
+		evalProg_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_d.point, EG->PD_d.time, LPED->SLP);
+//		lin_to_lin_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_d.point, EG->PD_d.time, ED);
+	}
 	
 	
 	if (EG->last_approx_prec>=64) {
 		vec_d prev_pt;  init_vec_d(prev_pt,1);
 		vec_mp_to_d(prev_pt,EG->PD_mp.point);
-		lin_to_lin_eval_d(f, e.parVals, e.parDer, e.Jv, e.Jp, prev_pt, EG->PD_d.time, ED); 
+		evalProg_d(f, e.parVals, e.parDer, e.Jv, e.Jp, prev_pt, EG->PD_d.time, LPED->SLP);
+//		lin_to_lin_eval_d(f, e.parVals, e.parDer, e.Jv, e.Jp, prev_pt, EG->PD_d.time, ED); 
 		clear_vec_d(prev_pt);}
 	else{
-		lin_to_lin_eval_d(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_d, EG->PD_d.time, ED);}
+		evalProg_d(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_d, EG->PD_d.time, LPED->SLP);
+//		lin_to_lin_eval_d(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_d, EG->PD_d.time, ED);}
+	}
 	
+//	print_point_to_screen_matlab(e.funcVals,"howfaroff");
 	// compare the function values
 	int isSoln = 1;
 	for (ii = 0; (ii < LPED->SLP->numFuncs) && isSoln; ii++)
 	{
 		n1 = d_abs_d( &e.funcVals->coord[ii]); // corresponds to final point
 		n2 = d_abs_d( &f->coord[ii]); // corresponds to the previous point
+		
+//		printf("%lf\n",n1);
 		
 		if (tol <= n1 && n1 <= n2)
 		{ // compare ratio
@@ -2798,8 +2814,9 @@ int check_issoln_lintolin_mp(endgame_data_t *EG,
 	mpf_set_d(zero_thresh, tol);
 	
 	//this one guaranteed by entry condition
-	lin_to_lin_eval_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, ED);
-	
+//	lin_to_lin_eval_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, ED);
+	evalProg_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, LPED->SLP);
+//	print_point_to_screen_matlab_mp(e.funcVals,"howfaroff");
 	
 	if (EG->last_approx_prec < 64)
 	{ // copy to _mp
@@ -2811,13 +2828,16 @@ int check_issoln_lintolin_mp(endgame_data_t *EG,
 		point_d_to_mp(EG->last_approx_mp, EG->last_approx_d);
 	}
 	
-	lin_to_lin_eval_mp(f,          e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_mp, EG->PD_mp.time, ED);
+	evalProg_mp(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_mp, EG->PD_mp.time, LPED->SLP);
+//	lin_to_lin_eval_mp(f,          e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_mp, EG->PD_mp.time, ED);
 	// compare the function values
 	int isSoln = 1;
 	for (ii = 0; ii < LPED->SLP->numFuncs && isSoln; ii++)
 	{
 		mpf_abs_mp(n1, &e.funcVals->coord[ii]);
 		mpf_abs_mp(n2, &f->coord[ii]);
+		
+//		mpf_out_str(NULL,10,9,n1);
 		
 		if ( (mpf_cmp(zero_thresh, n1) <= 0) &&  (mpf_cmp(n1, n2) <= 0) )
 		{ // compare ratio

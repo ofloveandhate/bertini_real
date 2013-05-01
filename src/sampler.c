@@ -14,31 +14,28 @@ int main(int argC, char *args[])
 	curveDecomp_d C;  //new data type; stores vertices, edges, etc.
 	witness_set W;
 	sample_d   S_old,S_new;
-
+	mat_mp n_minusone_randomizer_matrix;
+	
+	
+	
+	
 	sampler_splash_screen();
-	
 	sampler_configuration sampler_options;  init_sampler_config(&sampler_options);
-	
 	sampler_parse_commandline(argC, args, &sampler_options);
-	
-	////
-	//  begin the actual program
-	////
+
 	
 	if (setup_curveDecomp(argC, args, &inputName, &witnessSetName,&RandMatName,&samplingNamenew,&C,&num_vars))
 		return 1;
 	
-	
-
-	srand(time(NULL));
+	srand(0);
+//	srand(time(NULL));
 	
 	int MPType;
 
 
 	
-	mat_mp n_minusone_randomizer_matrix;
-	
-	//end parser-bertini essentials
+
+
 	
 	parse_input_file(inputName, &MPType);
 
@@ -53,20 +50,25 @@ int main(int argC, char *args[])
 	num_vars = get_num_vars_PPD(solve_options.PPD);		
 	
 	
-//	printf("parsing witness set\n");
+
+
+	
+	if (solve_options.verbose_level>=1)
+		printf("loading curve decomposition\n");
+	
 	witnessSetParse(&W, witnessSetName,num_vars);
 	W.num_var_gps = solve_options.PPD.num_var_gp;
 	W.MPType = MPType;
 	get_variable_names(&W);
-
 	
-//	printf("getting randomizer matrix\n");
 	read_rand_matrix(RandMatName, n_minusone_randomizer_matrix);
-	
-//	printf("loading sampling data\n");
 	Load_sampling_data(&S_old,C,num_vars,MPType);
 	
-	solve_options.T.ratioTol = 1;
+	
+	
+	solve_options.verbose_level = sampler_options.verbose_level;
+	solve_options.T.ratioTol = 1; // manually assert to be more permissive.
+	solve_options.use_midpoint_checker = 0;
 	
 	/////////
 	////////
@@ -76,8 +78,10 @@ int main(int argC, char *args[])
 	//  Generate new sampling data
 	//
 
+	if (solve_options.verbose_level>=1)
+		printf("generating new_sample points\n");
+
 	
-//	printf("generate_new_sampling_pts\n");
 	generate_new_sampling_pts(&S_new,
 														n_minusone_randomizer_matrix,
 														S_old,
@@ -137,9 +141,6 @@ void generate_new_sampling_pts(sample_d *S_new,
 															 sampler_configuration *sampler_options,
 															 solver_configuration *solve_options)
 {
-	
-	
-	solve_options->verbose_level = sampler_options->verbose_level;
 	
 	if(MPType==0)
 		generate_new_sampling_pts_d(S_new, n_minusone_randomizer_matrix, S_old, C, W, MPType, sampler_options,solve_options);
@@ -366,9 +367,9 @@ void generate_new_sampling_pts_mp(sample_d *S_new,
 	vec_mp          start_projection,startpt;
 	int            ii,jj;
 	comp_mp         temp, temp1, target_projection_value;
-	vec_mp          *previous_points, *new_points, previous_projection_values, new_projection_values;
+	vec_mp          *previous_points = NULL, *new_points = NULL, previous_projection_values, new_projection_values;
 	int            prev_num_samp, sample_counter;
-	int            *refine_current, *refine_next;
+	int            *refine_current = NULL, *refine_next = NULL;
 	
 	int num_vars = W.num_variables;
 	
@@ -394,21 +395,31 @@ void generate_new_sampling_pts_mp(sample_d *S_new,
 	for(ii=0;ii<S_old.num_edges;ii++) // for each of the edges
 	{
 		//copy the initial projection values
-		init_vec_mp(previous_projection_values,S_old.num_pts[ii]); previous_projection_values->size = S_old.num_pts[ii]; // inititalize
-		
-		num_refinements = 2; // one for each, right and left
-		
+		init_vec_mp(previous_projection_values,S_old.num_pts[ii]);
+		previous_projection_values->size = S_old.num_pts[ii]; // inititalize
 		vec_cp_mp(previous_projection_values, S_old.projection_values_mp[ii]); // set projection values
-		refine_current = S_old.refine[ii]; // change the pointer of refine_current to be S_old.refine[ii]
-		previous_points = S_old.vertices_mp[ii]; // does this copy a pointer?
+		
+		
+
+		
+		previous_points = (vec_mp *)bmalloc(S_old.num_pts[ii]*sizeof(vec_mp));
+		for (jj=0; jj<S_old.num_pts[ii]; ++jj) {
+			init_vec_mp(previous_points[jj],1);  previous_points[jj]->size = 1;
+			vec_cp_mp(previous_points[jj], S_old.vertices_mp[ii][jj]);
+		}
+		
+		
+		set_initial_refinement_flags(&num_refinements,&refine_current, S_old.vertices_mp[ii], S_old.num_pts[ii], sampler_options);
+
 		prev_num_samp = S_old.num_pts[ii]; // grab the number of points from the array of integers
 		
-		int pass_number  = 0;
+		
+		int pass_number  = 0;//this should be the only place this is reset.
 		while(1) // breaking condition is all samples being less than TOL away from each other (in the infty norm sense).
 		{
 			
 			if (sampler_options->verbose_level>=0){ // print by default
-				printf("edge %d,\tpass %d,\t%d refinements\n",ii,pass_number,num_refinements);
+				printf("edge %d, pass %d, %d refinements\n",ii,pass_number,num_refinements);
 			}
 			
 			new_points = (vec_mp *)bmalloc((prev_num_samp+num_refinements)* sizeof(vec_mp));
@@ -476,6 +487,12 @@ void generate_new_sampling_pts_mp(sample_d *S_new,
 						index_of_current_startpoint = jj; // left!
 					}
 
+					
+					
+//					vec_cp_mp(startpt,S_old.vertices_mp[ii][1]);
+//					set_mp(&(start_projection->coord[0]),&S_old.projection_values_mp[ii]->coord[1]);
+//					neg_mp(&(start_projection->coord[0]),&(start_projection->coord[0]));
+					
 					vec_cp_mp(startpt,previous_points[index_of_current_startpoint]);
 					set_mp(&(start_projection->coord[0]),&(previous_projection_values->coord[index_of_current_startpoint]));
 					neg_mp(&(start_projection->coord[0]),&(start_projection->coord[0]));
@@ -491,9 +508,10 @@ void generate_new_sampling_pts_mp(sample_d *S_new,
 					set_witness_set_mp(&W, start_projection,startpt,num_vars); // set the witness point and linear in the input for the lintolin solver.
 					
 					if (sampler_options->verbose_level>=3) {
+						print_point_to_screen_matlab_mp(W.pts_mp[0],"startpt");
 						print_comp_mp_matlab(&W.L_mp[0]->coord[0],"initial_projection_value");
 						print_comp_mp_matlab(target_projection_value,"target_projection_value");
-						print_point_to_screen_matlab_mp(W.pts_mp[0],"startpt");
+						
 					}
 				
 					
@@ -592,11 +610,12 @@ void generate_new_sampling_pts_mp(sample_d *S_new,
 			
 
 			
-			if (sampler_options->verbose_level>=0) // print by default
+			if (sampler_options->verbose_level>=1) // print by default
 				printf("\n\n");
 			
 			if( (num_refinements == 0) || (pass_number >= sampler_options->maximum_num_iterations) ) // if have no need for new samples
 			{
+				
 				if (sampler_options->verbose_level>=1) // print by default
 					printf("breaking\nsample_counter = %d\n",sample_counter);
 				
@@ -608,6 +627,8 @@ void generate_new_sampling_pts_mp(sample_d *S_new,
 				vec_cp_mp(S_new->projection_values_mp[ii],new_projection_values);
 				
 				S_new->refine[ii] = refine_next; // will get freed later
+				free(refine_current);
+				refine_current = NULL;
 				break; // BREAKS THE WHILE LOOP
 			}
 			else{
@@ -622,8 +643,8 @@ void generate_new_sampling_pts_mp(sample_d *S_new,
 		if (sampler_options->verbose_level>=2) {
 			printf("exiting while loop\n");
 		}
-		
-	}
+		printf("\n");
+	}  // re: ii (for each edge)
 	
 	
 
@@ -998,7 +1019,13 @@ int setup_vertices(vertex **vertices,char *INfile,int num_vars, int MPType)
 			init_mp((*vertices)[ii].projVal_mp);
 			mpf_inp_str((*vertices)[ii].projVal_mp->r, IN, 10);
 			mpf_inp_str((*vertices)[ii].projVal_mp->i, IN, 10);
+			
+//			printf("vertex %d:\n",ii);
+//			print_comp_mp_matlab((*vertices)[ii].projVal_mp,"a");
+//			mypause();
+			
 		}
+		
 		
 		//regardless of mptype, read the type of the vertex
 		fscanf(IN,"%d\n",&(*vertices)[ii].type);
@@ -1055,7 +1082,8 @@ int setup_curve(curveDecomp_d *C,char *INfile, int MPType)
 	else
 	{
 		init_point_mp(C->pi,C->num_variables); C->pi->size=C->num_variables;
-		for(ii=0;ii<C->num_variables;ii++)
+		set_zero_mp(&C->pi->coord[0]);
+		for(ii=1;ii<C->num_variables;ii++)
 		{
 			mpf_inp_str(C->pi->coord[ii].r, IN, 10);
 			mpf_inp_str(C->pi->coord[ii].i, IN, 10);
@@ -1119,7 +1147,43 @@ void estimate_new_projection_value(comp_mp result, vec_mp left, vec_mp right, ve
 
 
 
-
+int set_initial_refinement_flags(int *num_refinements, int **refine_flags, vec_mp *vertices, int num_pts, sampler_configuration *sampler_options)
+{
+//	printf("setting refinement flags\n");
+	*num_refinements = 0;
+	
+	if (*refine_flags==NULL) {
+		(* refine_flags) = (int *)bmalloc((num_pts-1)*sizeof(int));
+//		printf("fresh\n");
+	}
+	else {
+		(* refine_flags) = (int *)brealloc((refine_flags), (num_pts-1)*sizeof(int));
+//		printf("realloc\n");
+	}
+	
+//	printf("%d refinements to compute flags for\n",(num_pts-1));
+	
+	int ii;
+	mpf_t dist_away;  mpf_init(dist_away);
+	for (ii=0; ii<num_pts-1; ii++) {
+		
+		norm_of_difference(dist_away, vertices[ii], vertices[ii+1]); // get the distance between the two adjacent points.
+		if ( mpf_cmp(dist_away, sampler_options->TOL)<0 ){
+			((*refine_flags)[ii]) = 0;
+		}
+		else{
+			((*refine_flags)[ii]) = 1;
+			(*num_refinements)++;
+		}
+//		mpf_out_str (NULL, 10, 9, dist_away);
+//		printf(" flag %d: %d\n",ii,(*refine_flags)[ii]);
+	}
+	
+	
+//	printf("exiting refinement detection. %d\n",*num_refinements);
+	mpf_clear(dist_away);
+	return num_pts;
+}
 
 
 

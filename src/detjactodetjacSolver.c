@@ -75,7 +75,7 @@ int detjac_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int cu
   tracker_config_t T;
   prog_t dummyProg;
   bclock_t time1, time2;
-  int num_variables = 0, num_crossings = 0, num_sols = 0;
+  int num_variables = 0, num_sols = 0;
 
 	
 	int *startSub = NULL, *endSub = NULL, *startFunc = NULL, *endFunc = NULL, *startJvsub = NULL, *endJvsub = NULL, *startJv = NULL, *endJv = NULL, **subFuncsBelow = NULL;
@@ -161,7 +161,8 @@ int detjac_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int cu
 														 FAIL, pathMod,
 														 &T, &ED, ED.BED_mp,
 														 ptr_to_eval_d, ptr_to_eval_mp,
-														 change_prec, dehom);
+														 change_prec, dehom,
+														 solve_options);
 	}
 	
 	
@@ -177,7 +178,10 @@ int detjac_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int cu
 	
 	
 	// check for path crossings
-//	midpoint_checker(trackCount.numPoints, num_variables, solve_options->midpoint_tol, &num_crossings);
+	int num_crossings = 0;
+	if (solve_options->use_midpoint_checker==1) {
+		midpoint_checker(trackCount.numPoints, num_variables,solve_options->midpoint_tol, &num_crossings);
+	}
 	
 	// setup num_sols
 	num_sols = trackCount.successes;
@@ -215,10 +219,7 @@ int detjac_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int cu
 	//  // print the output
 	
 	
-  // do the standard post-processing
-	//  sort_points(num_crossings, &convergence_failures, &sharpening_failures, &sharpening_singular, inputName, num_sols, num_variables, midpoint_tol, T.final_tol_times_mult, &T, &ED.preProcData, useRegen == 1 && userHom == 0, userHom == -59);
-	
-	
+
 	
   // print the failure summary
 	//  printFailureSummary(&trackCount, convergence_failures, sharpening_failures, sharpening_singular);
@@ -260,7 +261,8 @@ void detjac_to_detjac_track_d(trackingStats *trackCount,
 															int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
 															int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 															int (*change_prec)(void const *, int),
-															int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *))
+															int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
+															solver_configuration *solve_options)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -337,8 +339,9 @@ void detjac_to_detjac_track_d(trackingStats *trackCount,
 	for (ii = 0; ii < W.num_pts; ii++)
 	{ // get current thread number
 		oid = thread_num();
+		if (solve_options->verbose_level>=1)
+			printf("detjac_to_detjac tracking path %d of %d\n",ii,W.num_pts);
 		
-		printf("detjac_to_detjac tracking path %d of %d\n",ii,W.num_pts);
 		startPointIndex = ii;
 		
 		
@@ -1524,7 +1527,7 @@ int detjac_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int c
   tracker_config_t T;
   prog_t dummyProg;
   bclock_t time1, time2;
-  int num_variables = 0, num_crossings = 0, num_sols = 0;
+  int num_variables = 0, num_sols = 0;
 	
 	
   int *startSub = NULL, *endSub = NULL, *startFunc = NULL, *endFunc = NULL, *startJvsub = NULL, *endJvsub = NULL, *startJv = NULL, *endJv = NULL, **subFuncsBelow = NULL;
@@ -1604,7 +1607,8 @@ int detjac_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int c
 															FAIL, pathMod,
 															&T, &ED,
 															ptr_to_eval_mp, //ptr_to_eval_d,
-															change_prec, dehom);
+															change_prec, dehom,
+															solve_options);
 	}
 	
 	
@@ -1619,7 +1623,10 @@ int detjac_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int c
 	fprintf(rawOUT, "%d\n\n", -1);  // bottom of rawOUT
 	
 	// check for path crossings
-//	midpoint_checker(trackCount.numPoints, num_variables, solve_options->midpoint_tol, &num_crossings);
+	int num_crossings = 0;
+	if (solve_options->use_midpoint_checker==1) {
+		midpoint_checker(trackCount.numPoints, num_variables,solve_options->midpoint_tol, &num_crossings);
+	}
 	
 	// setup num_sols
 	num_sols = trackCount.successes;
@@ -1651,7 +1658,6 @@ int detjac_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int c
   fprintf(FAIL, "\n");
   fclose(FAIL);
 	
-//	BRpostProcessing(endPoints, W_new, trackCount.successes, ED.preProcData, &T);
 	BRpostProcessing(endPoints, W_new, trackCount.successes, &ED.preProcData, &T, solve_options);
 
 	
@@ -1684,7 +1690,8 @@ void detjac_to_detjac_track_mp(trackingStats *trackCount,
 															 detjactodetjac_eval_data_mp *ED,
 															 int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 															 int (*change_prec)(void const *, int),
-															 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *))
+															 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
+															 solver_configuration *solve_options)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -1763,7 +1770,8 @@ void detjac_to_detjac_track_mp(trackingStats *trackCount,
 	for (ii = 0; ii < W.num_pts; ii++)
 	{ // get current thread number
 		oid = thread_num();
-		printf("detjac_to_detjac tracking path %d of %d\n",ii,W.num_pts);
+		if (solve_options->verbose_level>=1)
+			printf("detjac_to_detjac tracking path %d of %d\n",ii,W.num_pts);
 		detjac_to_detjac_track_path_mp(solution_counter, &EG[oid], &startPts[ii], OUT_copy[oid], MIDOUT_copy[oid], &T_copy[oid], &BED_copy[oid], curr_eval_mp, change_prec, find_dehom); //curr_eval_d,
 		
 		

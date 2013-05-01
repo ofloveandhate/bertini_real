@@ -41,11 +41,14 @@ int main(int argC, char *args[])
 
 	
 	
-	//split the input_file
+//	//split the input_file
 	parse_input_file(program_options.input_filename, &MPType);
+//	FILE *IN = safe_fopen_read(program_options.input_filename);
+//	int *declarations;
+//	partitionParse(&declarations, IN, "func_input", "config",0);
+//	fclose(IN);
+
 	
-	
-	mypause();
 	// set up the solver configuration
 	solver_configuration solve_options;  init_solver_config(&solve_options);
 	get_tracker_config(&solve_options,MPType);
@@ -72,11 +75,12 @@ int main(int argC, char *args[])
 																								program_options.stifle_text);
 	
 	
-
-	printf("performing isosingular deflation\n");
+	if (program_options.verbose_level>=2) {
+		printf("performing isosingular deflation\n");
+	}
+	
 	// perform an isosingular deflation
 	write_dehomogenized_coordinates(Wuser, "witness_points_dehomogenized"); // write the points to file
-	
 	rV = isosingular_deflation(&num_deflations, &deflation_sequence, program_options.input_filename, "witness_points_dehomogenized", "bertini", "matlab -nosplash", max_deflations);
   
 	//this should be made a function
@@ -96,8 +100,9 @@ int main(int argC, char *args[])
 	
 
 	
-	
-	printf("checking if component is self-conjugate\n");
+	if (program_options.verbose_level>=2) {
+		printf("checking if component is self-conjugate\n");
+	}
 	sc = checkSelfConjugate(Wuser,num_vars,program_options.input_filename, program_options.stifle_text);  //later:  could be passed in from user, if we want
 
 	
@@ -120,8 +125,22 @@ int main(int argC, char *args[])
 	//initialize the data structure which collets the output
 	init_curveDecomp_d(&C);
 	
+	C.num_variables = num_vars;
+	if (MPType==0) {
+		init_vec_d(C.pi_d, Wuser.num_variables); C.pi_d->size = Wuser.num_variables;
+		vec_mp_to_d(C.pi_d, pi_mp);
+	}
+	else
+	{
+		init_vec_mp(C.pi, Wuser.num_variables); C.pi->size = Wuser.num_variables;
+		vec_cp_mp(C.pi, pi_mp);
+	}
 	
 
+	
+	solve_options.verbose_level = program_options.verbose_level;
+	solve_options.T.ratioTol = 1; // manually assert to be more permissive.
+	
 	
 	if (sc==0)  //C is not self-conjugate
 	{
@@ -140,32 +159,25 @@ int main(int argC, char *args[])
 	}
 	
 	
-	
-	printf("\n*\ndone with case\n*\n");
 
 		
 	
-	C.num_variables = num_vars;
-	if (MPType==0) {
-		init_vec_d(C.pi_d, Wuser.num_variables); C.pi_d->size = Wuser.num_variables;
-		vec_mp_to_d(C.pi_d, pi_mp);
-	}
-	else
-	{
-		init_vec_mp(C.pi, Wuser.num_variables); C.pi->size = Wuser.num_variables;
-		vec_cp_mp(C.pi, pi_mp);
-	}
 
-	printf("outputting data\n");
+	if (program_options.verbose_level>=2) {
+		printf("outputting data\n");
+	}
 	Output_Main(program_options, Wuser, C);
 	
 	
-
-	printf("clearing witness_set\n");
+	if (program_options.verbose_level>=2) {
+		printf("clearing witness_set\n");
+	}
 	clear_witness_set(Wuser);
 
-	printf("clearing C\n");
-	clear_curveDecomp_d(&C,2);
+	if (program_options.verbose_level>=2) {
+		printf("clearing C\n");
+	}
+	clear_curveDecomp_d(&C,solve_options.T.MPType);
 	
 //	printf("clearing program_options\n");
 //	clear_program_config(&program_options);

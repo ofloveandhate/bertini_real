@@ -71,4 +71,6 @@ void estimate_new_projection_value(comp_mp result, vec_mp left, vec_mp right, ve
 #endif
 
 
+int set_initial_refinement_flags(int *num_refinements, int **refine_flags, vec_mp *vertices, int num_pts, sampler_configuration *sampler_options);
+
 

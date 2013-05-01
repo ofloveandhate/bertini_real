@@ -174,14 +174,10 @@ int get_component_number(witness_set W,
   remove("func_input_real");
   remove("config_real");
 	remove("incidence_matrix");
-	remove("member_points");
+//	remove("member_points");
 	
 
-	
 	return component_number;
-	
-	
-	
 }
 
 
@@ -274,7 +270,7 @@ void read_incidence_matrix(int *component_numbers){
 
 	
   fscanf(IN, "%d",&num_pts);    // number of points (should be 1)
-	printf("reading incidence for %d pts\n",num_pts);
+//	printf("reading incidence for %d pts\n",num_pts);
 
 	//and then a binary matrix indicating membership on which component
 	//from the appendices of the book:

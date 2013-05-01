@@ -31,7 +31,7 @@ void isosingular_deflation_iteration(int *declarations, char *inputOutputName, c
 void stabilization_input_file(char *outputFile, char *funcInput, char *configInput);
 
 
-void check_declarations(char *declarations);
+void check_declarations(int *declarations);
 
 #endif
 
