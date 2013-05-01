@@ -28,12 +28,25 @@ ifeq ($(MACHINENAME),MACBRAKE)
 		BERTINIHEADERS:=$(HOME)/bertini_source/include
 endif
 
+ifeq ($(MACHINENAME),sam)
+    #sam
+    INC:=-I/usr/local/include/   $(INC) 
+    BISON=bison 
+    LIBS=-lm -L/usr/local/lib -lmpfr  -lgmp #
+    COMP=gcc 
+		COMPpp = g++  
+    STATICFLAG= -static
+		BERTINILIB:=$(HOME)/lib/libbertini.a
+	  INSTALLPATH:=$(HOME)/bin
+		BERTINIHEADERS:= $(HOME)/code/darpa/bertini_source/include
+endif
+
 ifeq ($(MACHINENAME),wenrui)
     INC:= $(INC) -I/opt/mpfr/3.0.0/include -I/opt/gmp/5.0.1/include
     LIBS= -lm -L/usr/lib -L/opt/mpfr/3.0.0/lib -L/opt/gmp/5.0.1/lib /opt/mpfr/3.0.0/lib/libmpfr.a /opt/gmp/5.0.1/lib/libgmp.a
     COMP=gcc
     COMPpp=g++
-    STATICFLAG=-static#no?
+    STATICFLAG=-static
     BERTINILIB:=$(HOME)/lib/libbertini.a
     INSTALLPATH:=$(HOME)/bin
     BERTINIHEADERS:=/home/whao/bertini1.4/bertini/include
@@ -60,7 +73,7 @@ endif
 
 
 #a few last definitions
-INC:=$(INC) -I../include  -I$(BERTINIHEADERS) #this includes the header files for bertini_real, etc   
+INC:=$(INC) -I../include/  -I$(BERTINIHEADERS) #this includes the header files for bertini_real, etc   
 
 ARGS=$(INC) $(OPT) 
 OBJFILES= data_type.o	programStartup.o determinant_derivative.o output.o  detjactodetjacSolver.o linprodtodetjacSolver.o lintolinSolver.o fileops.o isosingular.o curveNotSelfConj.o curveSelfConj.o witnessSetParse.o  postProcessing.o	checkSelfConjugate.o 

@@ -990,7 +990,15 @@ void clear_witness_set(witness_set W){
 	free(W.pts_mp);
 	
 
-//TODO: clear variable names
+	if (W.variable_names!=NULL) {
+		for (ii=0; ii<W.num_variables; ++ii) {
+			free(W.variable_names[ii]);
+		}
+		free(W.variable_names);
+		W.variable_names=NULL;
+	}
+	
+	
 	return;
 }
 

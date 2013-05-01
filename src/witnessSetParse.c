@@ -90,7 +90,6 @@ int witnessSetParse(witness_set *W, char *witness_set_file, const int num_vars){
   fclose(IN);
 	
 	
-//TODO: check for mem leaks here.
 
 
   return 0;

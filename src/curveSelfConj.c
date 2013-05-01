@@ -36,7 +36,7 @@ void computeCurveSelfConj(char * inputFile,
 	else
 		solve_options->show_status_summary = 0;
 	
-	
+	solve_options->use_gamma_trick = 0;
 		
 	
 	//get the random complex projection, which we will use to find the crit pts
