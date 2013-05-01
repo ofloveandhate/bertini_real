@@ -1,7 +1,7 @@
 CONFIG
 
 tracktype: 1;
-mptype: 1;
+mptype: 2;
 END;
 
 INPUT
