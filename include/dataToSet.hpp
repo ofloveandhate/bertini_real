@@ -44,17 +44,17 @@ int open_output_file_append(std::string outputName, std::ofstream & OUT);
 
 
 /**
- *  @class "witness_set"
+ *  @class "witness_data"
  *
  * contains a parsed witness_data file from Bertini's tracktype: 1 solver.
  *
  * \brief parsed witness_data file from Bertini's tracktype: 1 solver
  **/
-class witness_set {
+class witness_data {
 	
 public:
 	
-	witness_set(){
+	witness_data(){
 		this->component_number = -10;
 		this->codimension = -10;
 	}
@@ -116,7 +116,7 @@ complex_number complex_divide(complex_number z, complex_number w){
 }
 
 
-void witness_set::write_to_file(std::string directoryName, bool dehomogenize){
+void witness_data::write_to_file(std::string directoryName, bool dehomogenize){
 	
 	using mpfr::mpreal;
 
@@ -449,7 +449,7 @@ void witness_set::write_to_file(std::string directoryName, bool dehomogenize){
 
 
 
-void write_summary(std::map< std::pair < int, int >, witness_set> gathered_data,
+void write_summary(std::map< std::pair < int, int >, witness_data> gathered_data,
 									 int component_counter[],
 									 int codim_indicator[],
 									 int num_nonempty_codims,
