@@ -27,11 +27,11 @@
 #define PERTURBATION_VALUE 1e-5
 #define PERTURBATION_VALUE_mp 1e-8
 
-#define TOL_DOUBLE_PRECISION 1e-40
+#define TOL_DOUBLE_PRECISION 1e-50
 #define LARGECHANGE_DOUBLEPRECISION 1e15
 
 
-#define TOL_MP 1e-50
+#define TOL_MP 1e-80
 #define LARGECHANGE_MP 1e50
 
 int take_determinant_d(comp_d determinant, mat_d source_matrix);

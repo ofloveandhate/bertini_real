@@ -58,6 +58,8 @@ typedef struct
 	
 	int verbose_level;
 	
+	int use_gamma_trick; // bool
+	int use_bounding_box; // bool
 } program_configuration;
 
 
@@ -72,6 +74,7 @@ typedef struct
 	
 	int maximum_num_iterations;
 	
+	int use_gamma_trick;
 	mpf_t TOL;
 } sampler_configuration;
 
@@ -104,6 +107,10 @@ typedef struct
 } solver_configuration;
 
 
+typedef struct
+{
+	
+} multilin_configuration;
 
 
 /**

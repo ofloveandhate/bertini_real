@@ -42,7 +42,7 @@ typedef struct
 //typedef struct
 //{
 //  function *funcs; //probably not used for now.
-//  //prog_t slp; //SLP -- we'll use this primarily, at least at first.
+//  //
 //  char *fName; //system can be given in a file -- this is its name.
 //}system;
 

@@ -35,18 +35,14 @@ int main(int argC, char *args[])
 //	display_current_options(program_options);
 	
   
-	srand(0);
-//	srand(time(NULL));
+//	srand(0);
+	srand(time(NULL));
 	// essentials for using the bertini parser
 
 	
 	
 //	//split the input_file
 	parse_input_file(program_options.input_filename, &MPType);
-//	FILE *IN = safe_fopen_read(program_options.input_filename);
-//	int *declarations;
-//	partitionParse(&declarations, IN, "func_input", "config",0);
-//	fclose(IN);
 
 	
 	// set up the solver configuration
@@ -140,7 +136,7 @@ int main(int argC, char *args[])
 	
 	solve_options.verbose_level = program_options.verbose_level;
 	solve_options.T.ratioTol = 1; // manually assert to be more permissive.
-	
+	solve_options.use_gamma_trick = program_options.use_gamma_trick;
 	
 	if (sc==0)  //C is not self-conjugate
 	{

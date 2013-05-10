@@ -25,12 +25,11 @@
 // the mp version
 typedef struct
 {
-	//  square_system_eval_data_d squareSystem;
-  patch_eval_data_mp patch; // ???
-	//  start_system_eval_data_d startSystem;// ???
+	
+	
+  patch_eval_data_mp patch;
   preproc_data preProcData;
-//  basic_eval_data_mp *BED_mp; // used only for AMP
-	//  eqData_t *EqD;              // for equation-by-equation  ???
+
 	prog_t *SLP;
 	
 	mpq_t *gamma_rat;
@@ -43,8 +42,16 @@ typedef struct
 	vec_mp old_linear;
 	vec_mp old_linear_full_prec;
 	
+	int num_linears;
 	int num_variables;
 	int curr_prec;
+	
+	
+#ifdef printpathlintolin
+	FILE *FOUT;
+	int num_steps;
+#endif
+	
 } lintolin_eval_data_mp;
 
 //derived from basic_eval_data_d
@@ -67,8 +74,12 @@ typedef struct
 	vec_d current_linear;
 	vec_d old_linear;
 	int num_variables;
+	int num_linears;
 	
+#ifdef printpathlintolin
 	FILE *FOUT;
+	int num_steps;
+#endif
 	
 } lintolin_eval_data_d;
 

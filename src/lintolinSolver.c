@@ -13,7 +13,8 @@
 int lin_to_lin_solver_main(int MPType,
 													 witness_set W,
 													 mat_mp n_minusone_randomizer_matrix_full_prec,
-													 vec_mp *new_linears_full_prec, int num_new_linears,
+													 vec_mp *new_linears_full_prec,
+													 int num_new_linears,
 													 witness_set *W_new,
 													 solver_configuration *solve_options){
 	
@@ -354,9 +355,21 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 			// print the header of the path to OUT
 			printPathHeader_d(OUT_copy[oid], &startPts[startPointIndex], &T_copy[oid], ii, &BED_copy[oid], eval_func_d);
 			
+			
+#ifdef printpathlintolin
+			BED_copy[oid].num_steps = 0;
+#endif
+			
 			// track the path
 			lin_to_lin_track_path_d(solution_counter, &EG[oid], &startPts[startPointIndex], OUT_copy[oid], MIDOUT_copy[oid], &T_copy[oid], &BED_copy[oid], BED_copy[oid].BED_mp, curr_eval_d, curr_eval_mp, change_prec, find_dehom);
 			
+#ifdef printpathlintolin
+			fprintf(BED_copy[oid].FOUT,"-100 %d ",BED_copy[oid].num_steps);
+			for (mm=0; mm<BED_copy[oid].num_variables-1; ++mm) {
+				fprintf(BED_copy[oid].FOUT,"0 0 ");
+			}
+			fprintf(BED_copy[oid].FOUT,"\n%d\n\n",EG->retVal);
+#endif
 			
 			
 			// check to see if it should be sharpened
@@ -596,6 +609,20 @@ int lin_to_lin_setup_d(FILE **OUT, char *outName,
     setuplintolinEval_d(T,preprocFile, degreeFile, dummyProg, rank, patchType, ssType, T->MPType, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix_full_prec, W,solve_options);
 
 	
+	
+#ifdef printpathlintolin
+	int ii;
+	ED->FOUT = safe_fopen_append("pathtrack_lintolin");
+	fprintf(ED->FOUT,"%d ",W.num_variables);
+	for (ii=0; ii<W.num_variables; ii++) {
+		fprintf(ED->FOUT,"%s ",W.variable_names[ii]);
+	}
+	fprintf(ED->FOUT,"\n%d ",W.num_pts);
+	fprintf(ED->FOUT,"%d %d %d ",T->MPType, T->odePredictor, T->endgameNumber);
+	fprintf(ED->FOUT,"\n");
+#endif
+	
+	
   return numOrigVars;
 }
 
@@ -740,10 +767,9 @@ int lin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv,
 	
 	offset = BED->num_variables-2;
 	for (ii=0; ii<BED->num_variables; ii++) {
-		add_d(temp,&gamma_s_times_old_linear->coord[ii], &one_minus_s_times_current_linear->coord[ii]);
-		set_d(&Jv->entry[offset][ii], temp); // HERE DAB!!!
-	}
-	
+			add_d(temp,&gamma_s_times_old_linear->coord[ii], &one_minus_s_times_current_linear->coord[ii]);
+			set_d(&Jv->entry[offset][ii], temp); // HERE DAB!!!
+		}
 
 	
 	offset = BED->num_variables-1;
@@ -761,7 +787,7 @@ int lin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv,
 
 	// Jp = -current_linear_times_vars + gamma*old_linear_times_vars
 	set_zero_d(&Jp->entry[BED->num_variables-2][0]);
-	
+//TODO:  this goes in to a loop over the number of linears
 	dot_product_d(temp,BED->current_linear,current_variable_values);
 	neg_d(temp,temp);
 	dot_product_d(temp2,BED->old_linear,current_variable_values);
@@ -817,7 +843,17 @@ int lin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv,
 	clear_mat_d(Jv_Patch);
 	clear_mat_d(AtimesJ);
 	
-	
+#ifdef printpathlintolin
+	BED->num_steps++;
+	vec_d dehommed; init_vec_d(dehommed,BED->num_variables-1); dehommed->size = BED->num_variables-1;
+	dehomogenize(&dehommed,current_variable_values);
+	fprintf(BED->FOUT,"%.15lf %.15lf ", pathVars->r, pathVars->i);
+	for (ii=0; ii<BED->num_variables-1; ++ii) {
+		fprintf(BED->FOUT,"%.15lf %.15lf ",dehommed->coord[ii].r,dehommed->coord[ii].i);
+	}
+	fprintf(BED->FOUT,"\n");
+	clear_vec_d(dehommed);
+#endif
 	
 	
   return 0;
@@ -877,8 +913,9 @@ void lintolin_eval_clear_d(lintolin_eval_data_d *ED, int clearRegen, int MPType)
 	clear_mat_d(ED->n_minusone_randomizer_matrix);
 	
 	
-//	fclose(ED->FOUT);
-	
+#ifdef printpathlintolin
+	fclose(ED->FOUT);
+#endif
   return;
 }
 
@@ -1218,6 +1255,10 @@ void setuplintolinEval_d(tracker_config_t *T,char preprocFile[], char degreeFile
 		initMP(prec);
 		BED->BED_mp->curr_prec = prec;
 		
+		
+#ifdef printpathlintolin
+		BED->BED_mp->FOUT = BED->FOUT;
+#endif
 		
 		
 		BED->BED_mp->gamma_rat = (mpq_t *)bmalloc(2 * sizeof(mpq_t));
@@ -1732,12 +1773,29 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 		{ // get current thread number
 			oid = thread_num();
 			
+			if (solve_options->verbose_level>=1)
+				printf("path %d\n",ii);
+			
+#ifdef printpathlintolin
+			BED_copy[oid].num_steps = 0;
+#endif
+			
+			
 			// print the header of the path to OUT
 //			printPathHeader_mp(OUT_copy[oid], &startPts[startPointIndex], &T_copy[oid], solution_counter, &BED_copy[oid], eval_func_mp);
 			lin_to_lin_track_path_mp(solution_counter, &EG[oid], &startPts[ii], OUT_copy[oid], MIDOUT_copy[oid], &T_copy[oid], &BED_copy[oid], curr_eval_mp, change_prec, find_dehom); //curr_eval_d,
 			
-			if (solve_options->verbose_level>=1)
-				printf("path %d\n",ii);
+
+			
+#ifdef printpathlintolin
+			int mm;
+			fprintf(BED_copy[oid].FOUT,"-100 %d ",BED_copy[oid].num_steps);
+			for (mm=0; mm<BED_copy[oid].num_variables-1; ++mm) {
+				fprintf(BED_copy[oid].FOUT,"0 0 ");
+			}
+			fprintf(BED_copy[oid].FOUT,"\n%d\n\n",EG->retVal);
+#endif
+			
 			
 			// check to see if it should be sharpened
 			if (EG[oid].retVal == 0 && T_copy[oid].sharpenDigits > 0)
@@ -1923,6 +1981,18 @@ int lin_to_lin_setup_mp(FILE **OUT, char *outName,
 		printf("there cannot be more than one variable group in bertini_real\n");
 		exit(-11011);
   }
+	
+#ifdef printpathlintolin
+	int ii;
+	ED->FOUT = safe_fopen_append("pathtrack_lintolin");
+	fprintf(ED->FOUT,"%d ",W.num_variables);
+	for (ii=0; ii<W.num_variables; ii++) {
+		fprintf(ED->FOUT,"%s ",W.variable_names[ii]);
+	}
+	fprintf(ED->FOUT,"\n%d ",W.num_pts);
+	fprintf(ED->FOUT,"%d %d %d ",T->MPType, T->odePredictor, T->endgameNumber);
+	fprintf(ED->FOUT,"\n");
+#endif
 	
 	
   return numOrigVars;
@@ -2132,25 +2202,7 @@ int lin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_m
 	dot_product_mp(temp2,BED->old_linear,current_variable_values);
 	mul_mp(temp2,temp2,BED->gamma);
 	add_mp(&Jp->entry[BED->num_variables-2][0],temp,temp2);
-//	for (ii=0; ii<BED->num_variables; ii++) {
-//		
-//		
-//		mul_mp(temp,&BED->current_linear->coord[ii],&current_variable_values->coord[ii]);
-//		neg_mp(temp,temp);
-//		
-//		
-//		mul_mp(temp2,&BED->old_linear->coord[ii],&current_variable_values->coord[ii]);
-//		mul_mp(temp2,BED->gamma,temp2);
-//		
-//		add_mp(temp,temp,temp2); // add the two temps together.
-//		
-//		//add to the Jp entry
-//		add_mp(&Jp->entry[BED->num_variables-2][0],&Jp->entry[BED->num_variables-2][0],temp);
-//	}
-	
-	
-	
-	
+
 	
 	
 	
@@ -2208,6 +2260,24 @@ int lin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_m
 	clear_mat_mp(Jv_Patch);
 	clear_mat_mp(AtimesJ);
 	
+	
+#ifdef printpathlintolin
+	BED->num_steps++;
+	vec_mp dehommed; init_vec_mp(dehommed,BED->num_variables-1); dehommed->size = BED->num_variables-1;
+	dehomogenize_mp(&dehommed,current_variable_values);
+	mpf_out_str (BED->FOUT, 10, 15, pathVars->r);
+	fprintf(BED->FOUT," ");
+	mpf_out_str (BED->FOUT, 10, 15, pathVars->i);
+	fprintf(BED->FOUT," ");
+	for (ii=0; ii<BED->num_variables-1; ++ii) {
+		mpf_out_str (BED->FOUT, 10, 15, dehommed->coord[ii].r);
+		fprintf(BED->FOUT," ");
+		mpf_out_str (BED->FOUT, 10, 15, dehommed->coord[ii].i);
+		fprintf(BED->FOUT," ");
+	}
+	fprintf(BED->FOUT,"\n");
+	clear_vec_d(dehommed);
+#endif
 
   return 0;
 }
@@ -2240,7 +2310,9 @@ void lintolin_eval_clear_mp(lintolin_eval_data_mp *ED, int clearRegen, int MPTyp
 	clear_vec_mp(ED->old_linear);
 	clear_mat_mp(ED->n_minusone_randomizer_matrix);
 	
-	
+#ifdef printpathlintolin
+	fclose(ED->FOUT);
+#endif
 	
   return;
 }
@@ -2655,19 +2727,17 @@ int check_issoln_lintolin_d(endgame_data_t *EG,
 	//	if (num_digits > 300)
 	//		num_digits = 300;
 	//	num_digits -= 2;
-	double tol = MAX(T->funcResTol, 1e-15);
+	double tol = MAX(T->funcResTol, 1e-10);
 	
 	
 	if (EG->prec>=64){
 		vec_d terminal_pt;  init_vec_d(terminal_pt,1);
 		vec_mp_to_d(terminal_pt,EG->PD_mp.point);
 		evalProg_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, terminal_pt, EG->PD_d.time, BED->SLP);
-//		lin_to_lin_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, terminal_pt, EG->PD_d.time, ED);
 		clear_vec_d(terminal_pt);
 	}
 	else{
 		evalProg_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_d.point, EG->PD_d.time, BED->SLP);
-//		lin_to_lin_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_d.point, EG->PD_d.time, ED);
 	}
 	
 	
@@ -2675,22 +2745,17 @@ int check_issoln_lintolin_d(endgame_data_t *EG,
 		vec_d prev_pt;  init_vec_d(prev_pt,1);
 		vec_mp_to_d(prev_pt,EG->PD_mp.point);
 		evalProg_d(f, e.parVals, e.parDer, e.Jv, e.Jp, prev_pt, EG->PD_d.time, BED->SLP);
-//		lin_to_lin_eval_d(f, e.parVals, e.parDer, e.Jv, e.Jp, prev_pt, EG->PD_d.time, ED); 
 		clear_vec_d(prev_pt);}
 	else{
 		evalProg_d(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_d, EG->PD_d.time, BED->SLP);
-//		lin_to_lin_eval_d(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_d, EG->PD_d.time, ED);}
 	}
 	
-//	print_point_to_screen_matlab(e.funcVals,"howfaroff");
 	// compare the function values
 	int isSoln = 1;
 	for (ii = 0; (ii < BED->SLP->numFuncs) && isSoln; ii++)
 	{
 		n1 = d_abs_d( &e.funcVals->coord[ii]); // corresponds to final point
 		n2 = d_abs_d( &f->coord[ii]); // corresponds to the previous point
-		
-//		printf("%lf\n",n1);
 		
 		if (tol <= n1 && n1 <= n2)
 		{ // compare ratio
@@ -2709,7 +2774,6 @@ int check_issoln_lintolin_d(endgame_data_t *EG,
 	}
 	
 	if (!isSoln) {
-		
 		print_point_to_screen_matlab(e.funcVals,"terminal");
 		print_point_to_screen_matlab(f,"prev");
 		printf("tol was %le\nmax_rat was %le\n",tol,max_rat);
@@ -2768,11 +2832,6 @@ int check_issoln_lintolin_mp(endgame_data_t *EG,
 	
 	if (EG->last_approx_prec < 64)
 	{ // copy to _mp
-		printf("last precision (%d) is less than 64\n",EG->last_approx_prec);
-
-//		print_point_to_screen_matlab_mp(EG->last_approx_mp,"lastapprox_mp");
-		print_point_to_screen_matlab(EG->last_approx_d,"lastapprox_d");
-		
 		point_d_to_mp(EG->last_approx_mp, EG->last_approx_d);
 	}
 	

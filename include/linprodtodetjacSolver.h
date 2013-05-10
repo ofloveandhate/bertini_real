@@ -54,7 +54,7 @@ typedef struct
 	int num_variables;
 	
 #ifdef printpathlinprod	
-	FILE *FOUT; //remove me
+	FILE *FOUT; 
 	int num_steps;
 #endif
 	
@@ -81,7 +81,7 @@ typedef struct
 	int num_variables;
 	
 #ifdef printpathlinprod	
-	FILE *FOUT; //remove me
+	FILE *FOUT; 
 	int num_steps;
 #endif
 	

@@ -45,7 +45,7 @@ void computeCurveSelfConj(char * inputFile,
 /**
  the linprodtodetjac method for getting the critical points
  */
-void compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
+int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
 																	witness_set W,
 																	mat_mp n_minusone_randomizer_matrix,
 																	vec_mp random_complex_projection,

@@ -92,16 +92,13 @@ void print_usage(){
 	printf("-ns -nostifle\t\t\t   --\n");
 	printf("-v -version\t\t\t   -- \n");
 	printf("-h -help\t\t\t   --");
-	
+	printf("-box -b\t\t\t   bool");
 	
 	printf("\n\n\n");
 	return;
 }
 
 
-
-/* Flag set by ‘--verbose’. */
-//static int nostifle_flag;
 
 int BR_parse_commandline(int argc, char **argv, program_configuration *options){
 	 // this code created based on gnu.org's description of getopt_long
@@ -112,25 +109,17 @@ int BR_parse_commandline(int argc, char **argv, program_configuration *options){
 		static struct option long_options[] =
 		{
 			/* These options set a flag. */
-			{"nostifle", no_argument,       0, 's'},
-			{"ns", no_argument,					0, 's'},
-			{"projection",		required_argument,			 0, 'p'},
-			{"p",		required_argument,			 0, 'p'},
-			{"pi",		required_argument,			 0, 'p'},
-			{"randomization",		required_argument,			 0, 'r'},
-			{"r",		required_argument,			 0, 'r'},
-			{"input",		required_argument,			 0, 'i'},
-			{"i",		required_argument,			 0, 'i'},
-			{"witness",		required_argument,			 0, 'w'},
-			{"w",		required_argument,			 0, 'w'},
-			{"help",		no_argument,			 0, 'h'},
-			{"h",		no_argument,			 0, 'h'},
-			{"version",		no_argument,			 0, 'v'},
-			{"v",		no_argument,			 0, 'v'},
-			{"output",		required_argument,			 0, 'o'},
-			{"out",		required_argument,			 0, 'o'},
-			{"o",		required_argument,			 0, 'o'},
+			{"nostifle", no_argument,       0, 's'}, {"ns", no_argument,					0, 's'},
+			{"projection",		required_argument,			 0, 'p'}, {"p",		required_argument,			 0, 'p'}, {"pi",		required_argument,			 0, 'p'},
+			{"randomization",		required_argument,			 0, 'r'}, {"r",		required_argument,			 0, 'r'},
+			{"input",		required_argument,			 0, 'i'}, {"i",		required_argument,			 0, 'i'},
+			{"witness",		required_argument,			 0, 'w'}, {"w",		required_argument,			 0, 'w'},
+			{"help",		no_argument,			 0, 'h'}, {"h",		no_argument,			 0, 'h'},
+			{"version",		no_argument,			 0, 'v'}, {"v",		no_argument,			 0, 'v'},
+			{"output",		required_argument,			 0, 'o'}, {"out",		required_argument,			 0, 'o'}, {"o",		required_argument,			 0, 'o'},
 			{"verb",		required_argument,			 0, 'V'},
+			{"box",		required_argument,			 0, 'b'}, {"b",		required_argument,			 0, 'b'},
+			{"gammatrick",		required_argument,			 0, 'g'}, {"g",		required_argument,			 0, 'g'},
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
@@ -145,6 +134,22 @@ int BR_parse_commandline(int argc, char **argv, program_configuration *options){
 		
 		switch (choice)
 		{
+			case 'g':
+				options->use_gamma_trick = atoi(optarg);
+				if (! (options->use_gamma_trick==0 || options->use_gamma_trick==1) ) {
+					printf("value for 'gammatrick' or 'g' must be 1 or 0\n");
+					exit(689);
+				}
+				break;
+			
+				
+			case 'b':
+				options->use_bounding_box = atoi(optarg);
+				if (! (options->use_bounding_box==0 || options->use_bounding_box==1) ) {
+					printf("value for 'box' must be 1 or 0\n");
+					exit(689);
+				}
+				
 			case 'V':
 				options->verbose_level = atoi(optarg);
 				break;
@@ -310,8 +315,10 @@ void sampler_print_usage(){
 	printf("-ns -nostifle\t\t\t   --\n");
 	printf("-v -version\t\t\t   -- \n");
 	printf("-h -help\t\t\t   --\n");
-	printf("-t -tol -tolerance \t\tdouble\n");
+	printf("-t -tol -tolerance \t\tdouble > 0\n");
 	printf("-verb\t\t\t\tint\n");
+	printf("-maxits -m \t\t\tint\n");
+	printf("-gammatrick -g \t\t\tbool\n");
 	printf("\n\n\n");
 	return;
 }
@@ -337,6 +344,8 @@ int sampler_parse_commandline(int argc, char **argv, sampler_configuration *opti
 			{"t",		required_argument,			 0, 't'},
 			{"m",		required_argument,			 0, 'm'},
 			{"maxits",		required_argument,			 0, 'm'},
+			{"gammatrick",		required_argument,			 0, 'g'},
+			{"g",		required_argument,			 0, 'g'},
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
@@ -363,6 +372,14 @@ int sampler_parse_commandline(int argc, char **argv, sampler_configuration *opti
 			case 't':
 				
 				mpf_set_str(options->TOL,optarg,10);
+				break;
+				
+			case 'g':
+				options->use_gamma_trick = atoi(optarg);
+				if (! (options->use_gamma_trick==0 || options->use_gamma_trick==1) ) {
+					printf("value for 'gammatrick' or 'g' must be 1 or 0\n");
+					exit(689);
+				}
 				break;
 				
 			case 'V':
@@ -422,6 +439,8 @@ void init_sampler_config(sampler_configuration *options) {
 	mpf_init(options->TOL);
 	mpf_set_d(options->TOL, 1e-1); // this should be made adaptive to the span of the projection values or the endpoints
 
+	options->use_gamma_trick = 0;
+	
 	return;
 }
 
@@ -464,6 +483,9 @@ void init_program_config(program_configuration *options) {
 	options->verbose_level = 0; // default to 0
 	
 	options->MPType = 2;
+	
+	options->use_bounding_box = 1;
+	options->use_gamma_trick = 1;
 	return;
 }
 
