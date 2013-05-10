@@ -3,7 +3,7 @@
 
 int add_vertex(curveDecomp_d *C, vertex source_vertex){
 	
-	
+	printf("adding vertex\n");
 	
 	if ( ( (C->num_vertices==0) && (C->vertices!=NULL) ) || ( (C->num_vertices!=0) && (C->vertices==NULL) ) ) {
 		printf("intialization error in add_vertex\n");
@@ -19,14 +19,10 @@ int add_vertex(curveDecomp_d *C, vertex source_vertex){
 	
 	
 	if (C->num_vertices==1) {
-		//		printf("initializing C.vertices\n");
 		C->vertices = (vertex *)bmalloc( C->num_vertices*sizeof(vertex));
 	}
 	else{
-		//		printf("adding point to already initialized vertex set\n");
-		//		printf("%d\n",C->num_vertices);
 		C->vertices = (vertex *)brealloc(C->vertices, C->num_vertices*sizeof(vertex));
-		//		printf("after realloc\n");
 	}
 	
 	int current_index = C->num_vertices-1;
@@ -123,7 +119,6 @@ int index_in_vertices(curveDecomp_d *C, vec_mp testpoint, comp_mp projection_val
 	
 	for (ii=0; ii<C->num_vertices; ii++) {
 		if (isSamePoint_homogeneous_input_mp(C->vertices[ii].pt_mp, testpoint)){
-			//formerly (isSamePoint(NULL,C->vertices[ii].pt_mp,65,NULL,testpoint,65,1e-6)){
 //			printf("these two points are the same when dehomogenized\n");
 //			print_point_to_screen_matlab_mp(testpoint,"testpoint");
 //			print_point_to_screen_matlab_mp(C->vertices[ii].pt_mp,"candidate");
@@ -185,29 +180,23 @@ void cp_vertex_mp(vertex *target_vertex, vertex source_vertex){
 
 void init_vertex_d(vertex *curr_vertex){
 	
-//	printf("inside init_vertex_d\n");
 	init_vec_d(curr_vertex->pt,1); curr_vertex->pt->size = 1; // this is the line giving us trouble.
-//	printf("here\n");
 	
 	curr_vertex->type = -100;
 	curr_vertex->num_left = 0;
 	curr_vertex->num_right = 0;
-//	printf("exiting init_vertex_d\n");
 	return;
 }
 
 
 void init_vertex_mp(vertex *curr_vertex){
 	
-//	printf("inside init_vertex_mp\n");
 	init_vec_mp(curr_vertex->pt_mp,1); curr_vertex->pt_mp->size = 1; // this is the line giving us trouble.
-//	printf("here\n");
 	init_mp(curr_vertex->projVal_mp);
 	
 	curr_vertex->type = -100;
 	curr_vertex->num_left = 0;
 	curr_vertex->num_right = 0;
-//	printf("exiting init_vertex_mp\n");
 	return;
 }
 
@@ -215,19 +204,9 @@ void init_vertex_mp(vertex *curr_vertex){
 void init_edge(edge *curr_edge){
 	
 	curr_edge->left = curr_edge->right = curr_edge->midpt = -1; // initialize to impossible value.
-//	init_vec_mp(curr_edge->midpt_mp,num_variables); curr_edge->midpt_mp->size = num_variables;
-//	init_vec_mp(curr_edge->pi_mp,num_variables); curr_edge->pi_mp->size = num_variables;
 	return;
 }
 
-//void init_edge(edge *curr_edge, int num_variables){
-//	
-//	curr_edge->left = curr_edge->right = -1; // initialize to impossible value.
-//	init_vec_d(curr_edge->midpt,num_variables); curr_edge->midpt->size = num_variables;
-//	init_vec_d(curr_edge->pi,num_variables); curr_edge->pi->size = num_variables;
-//	
-//	return;
-//}
 
 
 void cp_edge(edge *new_edge, edge source_edge){
@@ -260,10 +239,6 @@ void add_edge(curveDecomp_d *C, edge new_edge){
 
 	cp_edge(&C->edges[C->num_edges-1], new_edge);
 	
-//	vec_cp_mp(C->edges[C->num_edges-1].midpt_mp,new_edge.midpt_mp);
-//	vec_cp_mp(C->edges[C->num_edges-1].pi_mp,new_edge.pi_mp);
-//	C->edges[C->num_edges-1].left = new_edge.left;
-//	C->edges[C->num_edges-1].right = new_edge.right;
 	return;
 }
 
@@ -304,33 +279,7 @@ void clear_curveDecomp_d(curveDecomp_d *C, int MPType){
 		}
 	}
 	free(C->vertices);
-//	
-//	for(ii=0;ii<C->num_V1;ii++)
-//	{
-//		if(MPType == 0)
-//		{
-//			clear_vec_d(C->V1[ii].pt);
-//		}
-//		else
-//		{
-//			clear_vec_mp(C->V1[ii].pt_mp);
-//		}
-//	}
-//	free(C->V1);
-//	for(ii=0;ii<C->num_edges;ii++)
-//	{
-//		if(MPType == 0)
-//		{
-//			clear_vec_d(C->edges[ii].midpt);
-//			clear_vec_d(C->edges[ii].pi);
-//		}
-//		else
-//		{
-//			clear_vec_mp(C->edges[ii].midpt_mp);
-//			clear_vec_mp(C->edges[ii].pi_mp);
-//		}
-////		clear_witness_set(C->edges[ii].W);
-//	}
+
 	free(C->edges);
 	
 }
@@ -358,7 +307,6 @@ void clear_sample_d(sample_d *S, int MPType){
 			}
 			else
 			{
-//				printf("clearing vector [%d][%d] of [%d][%d]\n",ii,jj,S->num_edges,S->num_pts[ii]);
 				clear_vec_mp(S->vertices_mp[ii][jj]);
 			}
 		}
@@ -401,15 +349,6 @@ void merge_witness_sets(witness_set *W_out,witness_set W_left,witness_set W_righ
 	
 	cp_names(W_out, W_right);
 	
-//	if (W_left.num_linears == 0) { // should this be allowable?  i think yes...
-//		printf("left witness_set has no linears.\n");
-//		exit(-344);
-//	}
-//	
-//	if (W_right.num_linears == 0) { // should this be allowable?  i think yes...
-//		printf("right witness_set has no linears.\n");
-//		exit(-345);
-//	}
 	
 	int ii;
 	//initialize the structure for holding the produced data
@@ -442,7 +381,6 @@ void merge_witness_sets(witness_set *W_out,witness_set W_left,witness_set W_righ
 	
 	//set the number of points
 	W_out->num_pts  = W_left.num_pts+W_right.num_pts;
-//	W_out->num_pts = W_left.num_pts+W_right.num_pts;
 	
 
   W_out->pts_d =  (point_d *)bmalloc(W_out->num_pts*sizeof(point_d));
@@ -510,12 +448,6 @@ void cp_names(witness_set *W_out, witness_set W_in){
 	for (ii=0; ii<W_in.num_variables; ++ii) {
 		strcpy(W_out->variable_names[ii],  W_in.variable_names[ii]);
 	}
-	
-//	printf("copied these variable names:\n");
-//	for (ii=0; ii<W_in.num_variables; ++ii) {
-//		printf("%s\n",W_out->variable_names[ii]);
-//	}
-//	mypause();
 }
 
 
@@ -626,28 +558,10 @@ void cp_witness_set(witness_set *W_out, witness_set W_in){
 	
 	cp_patches(W_out,W_in);
 	cp_linears(W_out,W_in);
-	cp_names(W_out,W_in);
-	
-	
-	
-	
-	W_out->L = (vec_d *)bmalloc(W_in.num_linears*sizeof(vec_d));
-	W_out->L_mp = (vec_mp *)bmalloc(W_in.num_linears*sizeof(vec_mp));
-	// merge the left and right linears into the output.
-	for (ii=0; ii<W_in.num_linears; ii++) {
-		init_vec_d(W_out->L[ii],W_out->num_variables); W_out->L[ii]->size = W_out->num_variables;
-		vec_cp_d(W_out->L[ii],W_in.L[ii]);
-		
-		init_vec_mp(W_out->L_mp[ii],W_out->num_variables); W_out->L_mp[ii]->size = W_out->num_variables;
-		vec_cp_mp(W_out->L_mp[ii],W_in.L_mp[ii]);
-	}
-
-	
-	
+	cp_names(W_out,W_in);	
 	
 	//set the number of points
 	W_out->num_pts  = W_in.num_pts;
-	W_out->num_pts = W_in.num_pts;
 	
 	
   W_out->pts_d=(point_d *)bmalloc(W_out->num_pts*sizeof(point_d));
@@ -717,10 +631,7 @@ void dehomogenize_d(vec_d *result, vec_d dehom_me){
 	return;
 }
 
-void dehomogenize_mp(vec_mp *result, vec_mp dehom_me){
-//	printf("dehomogenizing\n");
-//	print_point_to_screen_matlab_mp(dehom_me,"dehom_me");
-	
+void dehomogenize_mp(vec_mp *result, vec_mp dehom_me){	
 	if (dehom_me->size==0 || dehom_me->size==1) {
 		printf("attempting to dehomogenize a vector of length 0 or 1\n");
 		exit(977);
@@ -730,12 +641,6 @@ void dehomogenize_mp(vec_mp *result, vec_mp dehom_me){
 	change_size_vec_mp((*result),dehom_me->size-1);
 	
 	(*result)->size = dehom_me->size-1;
-	
-	//	mpf_out_str (NULL, 10, 10, dehom_me->coord[0].r);
-	
-	//	gmp
-	//	gmp_printf ("dehom_me[0].r  %Zd\n", dehom_me->coord[0].r);
-	//
 	
 	set_mp(denom, &dehom_me->coord[0]);
 	int ii;
@@ -958,7 +863,6 @@ void clear_witness_set(witness_set W){
 	int ii;
 	
 	
-//	printf("freeing %d patches\n",W.num_patches);
 	for (ii=0; ii<W.num_patches; ii++) {
 		clear_vec_d(W.patch[ii]);
 		clear_vec_mp(W.patch_mp[ii]);
@@ -969,7 +873,6 @@ void clear_witness_set(witness_set W){
 	}
 	
 	
-//	printf("freeing %d linears\n",W.num_linears);
 	for (ii=0; ii<W.num_linears; ii++) {
 		clear_vec_d(W.L[ii]);
 		clear_vec_mp(W.L_mp[ii]);
@@ -979,15 +882,14 @@ void clear_witness_set(witness_set W){
 		free(W.L_mp);
 	}
 	
-
-	
-//	printf("freeing %d points\n",W.num_pts);
 	for (ii=0; ii<W.num_pts; ii++) {
 		clear_point_d(W.pts_d[ii]);
 		clear_point_mp(W.pts_mp[ii]);
 	}
-	free(W.pts_d);
-	free(W.pts_mp);
+	if (W.num_pts>0) {
+		free(W.pts_d);
+		free(W.pts_mp);
+	}
 	
 
 	if (W.variable_names!=NULL) {
@@ -997,7 +899,6 @@ void clear_witness_set(witness_set W){
 		free(W.variable_names);
 		W.variable_names=NULL;
 	}
-	
 	
 	return;
 }
@@ -1053,7 +954,6 @@ void print_point_to_screen_matlab_mp(vec_mp M, char name[])
 		printf("+1i*");
 		mpf_out_str (NULL, 10, 16, M->coord[kk].i);
 		printf(";\n");
-//		printf(" %le+1i*%le;\n",M->coord[kk].r,M->coord[kk].i);
 	}
 	printf("];\n\n");
 }

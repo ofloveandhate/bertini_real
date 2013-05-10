@@ -54,6 +54,11 @@ typedef struct
 	
 	
 	int curr_prec;
+	
+#ifdef printpathdetjac
+	FILE *FOUT;
+	int num_steps;
+#endif
 } detjactodetjac_eval_data_mp;
 
 
@@ -76,6 +81,11 @@ typedef struct
 	vec_d new_projection;
 	
 	int num_variables;
+	
+#ifdef printpathdetjac
+	FILE *FOUT;
+	int num_steps;
+#endif
 } detjactodetjac_eval_data_d;
 //derived from basic_eval_data_d
 

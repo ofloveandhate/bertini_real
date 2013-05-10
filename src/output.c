@@ -15,9 +15,7 @@ void Output_Main(program_configuration program_options, witness_set W, curveDeco
 	mkdir(directoryName,0777);
 	purge_previous_directory(directoryName);
 	
-	//Do we need witness_data?
-//	printf("right before copying data\n");
-//	mypause();
+
 	sprintf(tmp_file,  "%s/witness_data", directoryName);
 	copyfile("witness_data",tmp_file);
 //	printf("before witness_set\n");fflush(stdout);
@@ -27,12 +25,10 @@ void Output_Main(program_configuration program_options, witness_set W, curveDeco
 	
 	sprintf(tmp_file,  "%s/%s", directoryName,program_options.input_deflated_filename);
 	copyfile(program_options.input_deflated_filename,tmp_file);
-//	printf("after input_deflated_Name\n");fflush(stdout);
+
 	sprintf(tmp_file,  "%s/Rand_Matrix", directoryName);
 	copyfile("Rand_matrix",tmp_file);
 	
-//	sprintf(tmp_file,  "%s/V0.vert", directoryName);
-//	print_vertices(C.V0,C.num_V0,num_vars,tmp_file, MPType);
 	sprintf(tmp_file,  "%s/V.vert", directoryName);
 	print_vertices(C.vertices,C.num_vertices,W.num_variables,tmp_file, program_options.MPType);
 	sprintf(tmp_file,  "%s/E.edge", directoryName);

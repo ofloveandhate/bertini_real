@@ -2667,12 +2667,10 @@ int check_issoln_detjactodetjac_d(endgame_data_t *EG,
 		vec_d terminal_pt;  init_vec_d(terminal_pt,1);
 		vec_mp_to_d(terminal_pt,EG->PD_mp.point);
 		evalProg_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, terminal_pt, EG->PD_d.time, BED->SLP);
-		//		lin_to_lin_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, terminal_pt, EG->PD_d.time, ED);
 		clear_vec_d(terminal_pt);
 	}
 	else{
 		evalProg_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_d.point, EG->PD_d.time, BED->SLP);
-		//		lin_to_lin_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_d.point, EG->PD_d.time, ED);
 	}
 	
 	
@@ -2680,11 +2678,9 @@ int check_issoln_detjactodetjac_d(endgame_data_t *EG,
 		vec_d prev_pt;  init_vec_d(prev_pt,1);
 		vec_mp_to_d(prev_pt,EG->PD_mp.point);
 		evalProg_d(f, e.parVals, e.parDer, e.Jv, e.Jp, prev_pt, EG->PD_d.time, BED->SLP);
-		//		lin_to_lin_eval_d(f, e.parVals, e.parDer, e.Jv, e.Jp, prev_pt, EG->PD_d.time, ED);
 		clear_vec_d(prev_pt);}
 	else{
 		evalProg_d(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_d, EG->PD_d.time, BED->SLP);
-		//		lin_to_lin_eval_d(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_d, EG->PD_d.time, ED);}
 	}
 	
 	//	print_point_to_screen_matlab(e.funcVals,"howfaroff");
@@ -2773,11 +2769,6 @@ int check_issoln_detjactodetjac_mp(endgame_data_t *EG,
 	
 	if (EG->last_approx_prec < 64)
 	{ // copy to _mp
-		printf("last precision (%d) is less than 64\n",EG->last_approx_prec);
-		
-		//		print_point_to_screen_matlab_mp(EG->last_approx_mp,"lastapprox_mp");
-		print_point_to_screen_matlab(EG->last_approx_d,"lastapprox_d");
-		
 		point_d_to_mp(EG->last_approx_mp, EG->last_approx_d);
 	}
 	

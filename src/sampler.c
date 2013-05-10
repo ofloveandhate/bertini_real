@@ -27,8 +27,8 @@ int main(int argC, char *args[])
 	if (setup_curveDecomp(argC, args, &inputName, &witnessSetName,&RandMatName,&samplingNamenew,&C,&num_vars))
 		return 1;
 	
-	srand(0);
-//	srand(time(NULL));
+//	srand(0);
+	srand(time(NULL));
 	
 	int MPType;
 
@@ -69,7 +69,7 @@ int main(int argC, char *args[])
 	solve_options.verbose_level = sampler_options.verbose_level;
 	solve_options.T.ratioTol = 0.999999999999999; // manually assert to be more permissive.
 	solve_options.use_midpoint_checker = 0;
-	solve_options.use_gamma_trick = 0;
+	solve_options.use_gamma_trick = sampler_options.use_gamma_trick;
 	
 	/////////
 	////////

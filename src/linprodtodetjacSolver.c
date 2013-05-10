@@ -394,7 +394,7 @@ void linprod_to_detjac_track_d(trackingStats *trackCount,
 				printf("point %d was a non-solution junk point\n",ii);
 			}
 			else{
-				printf("\nretVal = %d; issoln = %d\nthere was a path failure linprod tracking witness point %d\n\n",EG->retVal, issoln,ii);
+				printf("\nretVal = %d; issoln = %d\nthere was a path failure linprod tracking witness point %d\n",EG->retVal, issoln,ii);
 				print_path_retVal_message(EG->retVal);
 			}
 		}
@@ -2942,11 +2942,6 @@ int check_issoln_linprodtodetjac_mp(endgame_data_t *EG,
 	
 	if (EG->last_approx_prec < 64)
 	{ // copy to _mp
-		printf("last precision (%d) is less than 64\n",EG->last_approx_prec);
-		
-		//		print_point_to_screen_matlab_mp(EG->last_approx_mp,"lastapprox_mp");
-		print_point_to_screen_matlab(EG->last_approx_d,"lastapprox_d");
-		
 		point_d_to_mp(EG->last_approx_mp, EG->last_approx_d);
 	}
 	
