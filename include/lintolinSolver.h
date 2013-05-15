@@ -21,6 +21,8 @@
 #include "data_type.h"
 #include "programStartup.h"
 #include "postProcessing.h"
+#include "witnessSet.h"
+
 
 // the mp version
 typedef struct

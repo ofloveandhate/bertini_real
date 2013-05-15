@@ -35,7 +35,8 @@ void get_projection(vec_mp pi,
 	}
 	else{
 		int ii;
-		for (ii=0; ii<num_vars; ii++) {
+		set_zero_mp(&pi->coord[0]);
+		for (ii=1; ii<num_vars; ii++) {
 			get_comp_rand_real_mp(&pi->coord[ii]);
 //			set_one_mp(&pi->coord[ii]);
 		}
@@ -49,7 +50,89 @@ void get_projection(vec_mp pi,
 
 
 
-void splash_screen(){
+
+
+
+
+void parse_input_file(char filename[], int *MPType)
+{
+	
+	unsigned int currentSeed;
+	int trackType, genType = 0,  sharpenOnly, needToDiff, remove_temp, useParallelDiff = 0,userHom = 0;
+  int my_id = 0, num_processes = 1, headnode = 0; // headnode is always 0
+	
+	
+	
+	//end parser-bertini essentials
+	
+	
+	
+	parse_input(filename, &trackType, MPType, &genType, &userHom, &currentSeed, &sharpenOnly, &needToDiff, &remove_temp, useParallelDiff, my_id, num_processes, headnode);
+	
+}
+
+void get_tracker_config(solver_configuration *solve_options,int MPType)
+{
+
+	//necessary for the setupConfig call
+	double intrinsicCutoffMultiplier;
+	int userHom = 0, useRegen = 0, regenStartLevel = 0, maxCodim = 0, specificCodim = 0, pathMod = 0, reducedOnly = 0, supersetOnly = 0, paramHom = 0;
+	//end necessaries for the setupConfig call.
+	
+	
+  setupConfig(&solve_options->T, &solve_options->midpoint_tol, &userHom, &useRegen, &regenStartLevel, &maxCodim, &specificCodim, &pathMod, &intrinsicCutoffMultiplier, &reducedOnly, &supersetOnly, &paramHom, MPType);
+
+	return;
+}
+
+
+
+
+
+
+
+int BR_startup(program_configuration options)
+/***************************************************************\
+ * USAGE:    prepares the variables inputname and startname
+ *      for use later in the program
+ * ARGUMENTS:                                                    *
+ * RETURN VALUES:           an integer                           *
+ * NOTES:                                                        *
+ \***************************************************************/
+{
+	
+	
+	
+	// check for write privilege
+  if (checkWritePrivilege())
+  {
+    printf("ERROR: BertiniReal does not have write privileges!\n");
+    bexit(ERROR_WRITE_PRIVILEGE);
+  }
+	
+	
+	//test for presence of necessary files
+	FILE *IN;
+	IN = safe_fopen_read(options.input_filename);
+	fclose(IN);
+	
+	IN = safe_fopen_read(options.witness_set_filename);
+	fclose(IN);
+	
+	if (options.user_randomization) {
+		IN = safe_fopen_read(options.randomization_filename);
+		fclose(IN);
+	}
+	
+	if (options.user_projection) {
+		IN = safe_fopen_read(options.projection_filename);
+		fclose(IN);
+	}
+	
+	return 0;
+}
+
+void BR_splash_screen(){
 	printf("\n BertiniReal(TM) v%s\n\n", BERTINI_REAL_VERSION_STRING);
   printf(" D.J. Bates, D. Brake,\n W. Hao, J.D. Hauenstein,\n A.J. Sommese, C.W. Wampler\n\n");
   printf("(using GMP v%d.%d.%d, MPFR v%s)\n\n", __GNU_MP_VERSION, __GNU_MP_VERSION_MINOR, __GNU_MP_VERSION_PATCHLEVEL, mpfr_get_version());
@@ -58,11 +141,11 @@ void splash_screen(){
 
 
 
-void display_current_options(program_configuration options){
+void BR_display_current_options(program_configuration options){
 	printf("current options:\n\n");
 	
 	printf("user_projection: %d",options.user_projection);
-	if (options.user_projection) 
+	if (options.user_projection)
 		printf(", %s\n",options.projection_filename);
 	else
 		printf("\n");
@@ -82,7 +165,7 @@ void display_current_options(program_configuration options){
 }
 
 
-void print_usage(){
+void BR_print_usage(){
 	printf("bertini_real has the following options:\n");
 	printf("option name(s)\t\t\targument\n\n");
 	printf("-p -pi -projection \t\t\t'filename'\n");
@@ -100,8 +183,8 @@ void print_usage(){
 
 
 
-int BR_parse_commandline(int argc, char **argv, program_configuration *options){
-	 // this code created based on gnu.org's description of getopt_long
+int  BR_parse_commandline(int argc, char **argv, program_configuration *options){
+	// this code created based on gnu.org's description of getopt_long
 	int choice;
 	
 	while (1)
@@ -126,7 +209,7 @@ int BR_parse_commandline(int argc, char **argv, program_configuration *options){
 		int option_index = 0;
 		
 		choice = getopt_long_only (argc, argv, "r:p:v:i:w:h:v:s",
-										 long_options, &option_index);
+															 long_options, &option_index);
 		
 		/* Detect the end of the options. */
 		if (choice == -1)
@@ -141,7 +224,7 @@ int BR_parse_commandline(int argc, char **argv, program_configuration *options){
 					exit(689);
 				}
 				break;
-			
+				
 				
 			case 'b':
 				options->use_bounding_box = atoi(optarg);
@@ -190,7 +273,7 @@ int BR_parse_commandline(int argc, char **argv, program_configuration *options){
 			case 'h':
 				printf("\nThis is BertiniReal v %s, developed by\nDan J. Bates, Daniel Brake,\nWenrui Hao, Jonathan D. Hauenstein,\nAndrew J. Sommmese, and Charles W. Wampler.\n\n", BERTINI_REAL_VERSION_STRING);
 				printf("Send email to brake@math.colostate.edu for details about BertiniReal.\n\n");
-				print_usage();
+				BR_print_usage();
 				exit(0);
 				break;
 				
@@ -199,18 +282,18 @@ int BR_parse_commandline(int argc, char **argv, program_configuration *options){
 				break;
 				
 			default:
-				print_usage();
+				BR_print_usage();
 				exit(0);
 		}
 	}
 	
-
-
+	
+	
 	
 	/* Print any remaining command line arguments (not options). */
 	if (optind < argc)
 	{
-		printf ("non-option ARGV-elements: ");
+		printf ("these options not processed: ");
 		while (optind < argc)
 			printf ("%s ", argv[optind++]);
 		putchar ('\n');
@@ -220,81 +303,60 @@ int BR_parse_commandline(int argc, char **argv, program_configuration *options){
 }
 
 
-
-
-
-int startup(program_configuration options)
-/***************************************************************\
- * USAGE:    prepares the variables inputname and startname
- *      for use later in the program
- * ARGUMENTS:                                                    *
- * RETURN VALUES:           an integer                           *
- * NOTES:                                                        *
- \***************************************************************/
-{
-
-
-	
-	// check for write privilege
-  if (checkWritePrivilege())
-  {
-    printf("ERROR: BertiniReal does not have write privileges!\n");
-    bexit(ERROR_WRITE_PRIVILEGE);
-  }
+void BR_init_config(program_configuration *options) {
 	
 	
-	//test for presence of necessary files
-	FILE *IN;
-	IN = safe_fopen_read(options.input_filename);
-	fclose(IN);
+	options->user_projection = 0;
+	options->projection_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
+	options->projection_filename = "";
 	
-	IN = safe_fopen_read(options.witness_set_filename);
-	fclose(IN);
+	options->user_randomization = 0;
+	options->randomization_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
+	options->randomization_filename = "";
 	
-	if (options.user_randomization) {
-		IN = safe_fopen_read(options.randomization_filename);
-		fclose(IN);
-	}
+	options->input_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
+	options->input_filename = "input\0";
 	
-	if (options.user_projection) {
-		IN = safe_fopen_read(options.projection_filename);
-		fclose(IN);
-	}
+	options->witness_set_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
+	options->witness_set_filename = "witness_set\0";
 	
-	return 0;
-}
-
-
-void parse_input_file(char filename[], int *MPType)
-{
+	options->output_basename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
+	options->output_basename = "output";
 	
-	unsigned int currentSeed;
-	int trackType, genType = 0,  sharpenOnly, needToDiff, remove_temp, useParallelDiff = 0,userHom = 0;
-  int my_id = 0, num_processes = 1, headnode = 0; // headnode is always 0
-
+	options->input_deflated_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
+	//this must be set after deflation is run.
 	
 	
-	//end parser-bertini essentials
+	options->stifle_membership_screen = 1;
+	options->stifle_text = (char *)bmalloc(MAX_STRLEN*sizeof(char));
+	options->stifle_text = " > /dev/null ";
 	
+	options->verbose_level = 0; // default to 0
 	
+	options->MPType = 2;
 	
-	parse_input(filename, &trackType, MPType, &genType, &userHom, &currentSeed, &sharpenOnly, &needToDiff, &remove_temp, useParallelDiff, my_id, num_processes, headnode);
-
-}
-
-void get_tracker_config(solver_configuration *solve_options,int MPType)
-{
-
-	//necessary for the setupConfig call
-	double intrinsicCutoffMultiplier;
-	int userHom = 0, useRegen = 0, regenStartLevel = 0, maxCodim = 0, specificCodim = 0, pathMod = 0, reducedOnly = 0, supersetOnly = 0, paramHom = 0;
-	//end necessaries for the setupConfig call.
-	
-	
-  setupConfig(&solve_options->T, &solve_options->midpoint_tol, &userHom, &useRegen, &regenStartLevel, &maxCodim, &specificCodim, &pathMod, &intrinsicCutoffMultiplier, &reducedOnly, &supersetOnly, &paramHom, MPType);
-
+	options->use_bounding_box = 1;
+	options->use_gamma_trick = 1;
 	return;
 }
+
+void BR_clear_config(program_configuration *options) {
+	
+	if (options->user_projection) {
+		free(options->projection_filename);
+	}
+	
+	if (options->user_randomization) {
+		free(options->randomization_filename);
+	}
+	
+	free(options->input_filename);
+	free(options->input_deflated_filename);
+	
+	return;
+}
+
+
 
 
 
@@ -323,7 +385,7 @@ void sampler_print_usage(){
 	return;
 }
 
-int sampler_parse_commandline(int argc, char **argv, sampler_configuration *options){
+int  sampler_parse_commandline(int argc, char **argv, sampler_configuration *options){
 	// this code created based on gnu.org's description of getopt_long
 	int choice;
 	
@@ -409,7 +471,7 @@ int sampler_parse_commandline(int argc, char **argv, sampler_configuration *opti
 	/* Instead of reporting ‘--verbose’
 	 and ‘--brief’ as they are encountered,
 	 we report the final status resulting from them. */
-
+	
 	
 	/* Print any remaining command line arguments (not options). */
 	if (optind < argc)
@@ -425,9 +487,7 @@ int sampler_parse_commandline(int argc, char **argv, sampler_configuration *opti
 
 
 
-
-
-void init_sampler_config(sampler_configuration *options) {
+void sampler_init_config(sampler_configuration *options) {
 	options->stifle_membership_screen = 1;
 	options->stifle_text = (char *)bmalloc(MAX_STRLEN*sizeof(char));
 	options->stifle_text = " > /dev/null ";
@@ -444,7 +504,7 @@ void init_sampler_config(sampler_configuration *options) {
 	return;
 }
 
-void clear_sampler_config(sampler_configuration *options) {
+void sampler_clear_config(sampler_configuration *options) {
 	
 	mpf_clear(options->TOL);
 	return;
@@ -452,60 +512,12 @@ void clear_sampler_config(sampler_configuration *options) {
 
 
 
-void init_program_config(program_configuration *options) {
-	
-	
-	options->user_projection = 0;
-	options->projection_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
-	options->projection_filename = "";
-	
-	options->user_randomization = 0;
-	options->randomization_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
-	options->randomization_filename = "";
-	
-	options->input_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
-	options->input_filename = "input\0";
-	
-	options->witness_set_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
-	options->witness_set_filename = "witness_set\0";
-	
-	options->output_basename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
-	options->output_basename = "output";
-	
-	options->input_deflated_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
-	//this must be set after deflation is run.
-	
-	
-	options->stifle_membership_screen = 1;
-	options->stifle_text = (char *)bmalloc(MAX_STRLEN*sizeof(char));
-	options->stifle_text = " > /dev/null ";
-	
-	options->verbose_level = 0; // default to 0
-	
-	options->MPType = 2;
-	
-	options->use_bounding_box = 1;
-	options->use_gamma_trick = 1;
-	return;
-}
 
-void clear_program_config(program_configuration *options) {
-	
-	if (options->user_projection) {
-		free(options->projection_filename);
-	}
-	
-	if (options->user_randomization) {
-		free(options->randomization_filename);
-	}
-	
-	free(options->input_filename);
-	free(options->input_deflated_filename);
-	
-	return;
-}
 
-void init_solver_config(solver_configuration *options){
+
+
+
+void solver_init_config(solver_configuration *options){
 	options->allow_multiplicity = 0;
 	options->allow_singular = 0;
 	options->allow_infinite = 0;
@@ -514,10 +526,12 @@ void init_solver_config(solver_configuration *options){
 	options->show_status_summary = 0;
 	options->verbose_level = 0; // default to 0.  higher is more verbose
 	options->use_gamma_trick = 1;
+	
+	options->complete_witness_set = 1;
 }
 
 
-void clear_solver_config(solver_configuration *options){
+void solver_clear_config(solver_configuration *options){
 	//has no fields which require clearing.
 	return;
 }

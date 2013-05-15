@@ -56,7 +56,7 @@ FILE *safe_fopen_read(char * filename)
 	
 	if (S_ISDIR(stat_p.st_mode)){
 		printf("trying to open directory %s as a file!\n",filename);
-		bexit(ERROR_FILE_NOT_EXIST);
+		br_exit(ERROR_FILE_NOT_EXIST);
 	}
 	
 	
@@ -65,7 +65,7 @@ FILE *safe_fopen_read(char * filename)
 	
 	if (IN == NULL) {
 		printf("unable to open specified file to read: %s\n",filename);
-		bexit(ERROR_FILE_NOT_EXIST);
+		br_exit(ERROR_FILE_NOT_EXIST);
 	}
 	else{
 	}
@@ -86,7 +86,7 @@ FILE *safe_fopen_write(char * filename)
 	
 	if (OUT == NULL) {
 		printf("unable to open specified file to write: %s\n",filename);
-		bexit(ERROR_FILE_NOT_EXIST);
+		br_exit(ERROR_FILE_NOT_EXIST);
 	}
 	else{
 	}
@@ -108,7 +108,7 @@ FILE *safe_fopen_append(char * filename)
 	
 	if (S_ISDIR(stat_p.st_mode)){
 		printf("trying to open directory %s as a file!\n",filename);
-		bexit(ERROR_FILE_NOT_EXIST);
+		br_exit(ERROR_FILE_NOT_EXIST);
 	}
 	
 	
@@ -117,7 +117,7 @@ FILE *safe_fopen_append(char * filename)
 	
 	if (OUT == NULL) {
 		printf("unable to open specified file to write: %s\n",filename);
-		bexit(ERROR_FILE_NOT_EXIST);
+		br_exit(ERROR_FILE_NOT_EXIST);
 	}
 	else{
 	}

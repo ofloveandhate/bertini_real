@@ -4,6 +4,9 @@ OPT= -Dverbose  -g  -Wall # -Dprintpathlinprod  -O3 -funroll-loops -fexpensive-o
 
 
 
+
+
+
 ###
 # machine-specific configuration setup
 ###
@@ -76,7 +79,8 @@ endif
 INC:=$(INC) -I../include/  -I$(BERTINIHEADERS) #this includes the header files for bertini_real, etc   
 
 ARGS=$(INC) $(OPT) 
-OBJFILES= data_type.o	programStartup.o determinant_derivative.o output.o  detjactodetjacSolver.o linprodtodetjacSolver.o lintolinSolver.o fileops.o isosingular.o curveNotSelfConj.o curveSelfConj.o witnessSetParse.o  postProcessing.o	checkSelfConjugate.o 
+OBJFILES= data_type.o	programStartup.o determinant_derivative.o output.o fileops.o isosingular.o curveNotSelfConj.o curveSelfConj.o witnessSet.o  postProcessing.o	checkSelfConjugate.o 
+SOLVERS= detjactodetjacSolver.o linprodtodetjacSolver.o multilintolinSolver.o lintolinSolver.o 
 POBJFILES=lex.partitionParse.o 
 FLEX=flex
 #memory.o
@@ -91,8 +95,8 @@ all : bertini_real data_to_set sampler;
 
 
 #makes the bertini_real program
-bertini_real : bertini_real.c $(OBJFILES) $(POBJFILES) ;
-	$(COMP) $(ARGS) -o bertini_real bertini_real.c $(OBJFILES) $(POBJFILES) $(BERTINILIB)  $(LIBS)  $(STATICFLAG)
+bertini_real : bertini_real.c $(OBJFILES) $(POBJFILES) $(SOLVERS);
+	$(COMP) $(ARGS) -o bertini_real bertini_real.c $(OBJFILES) $(POBJFILES) $(SOLVERS) $(BERTINILIB)  $(LIBS)  $(STATICFLAG)
 
 
 #makes the data2set program.
@@ -101,8 +105,8 @@ data_to_set: dataToSet.cpp
 #   
 
 #makes the sampler program.
-sampler: sampler.c $(OBJFILES) $(POBJFILES);
-	$(COMP) $(ARGS) -o sampler sampler.c  $(OBJFILES) $(POBJFILES) $(BERTINILIB)  $(LIBS)  $(STATICFLAG)
+sampler: sampler.c $(OBJFILES) $(POBJFILES) $(SOLVERS)
+	$(COMP) $(ARGS) -o sampler sampler.c  $(OBJFILES) $(POBJFILES) $(SOLVERS) $(BERTINILIB)  $(LIBS)  $(STATICFLAG)
 #   
 
 
@@ -124,7 +128,7 @@ lex.partitionParse.c:	partitionParse.l
 	$(FLEX) -PpartitionParse partitionParse.l
 
 clean : 
-	rm -f $(OBJFILES) $(POBJFILES) bertini_real data2set sampler
+	rm -f $(OBJFILES) $(POBJFILES) $(SOLVERS) bertini_real data2set sampler
 	rm -f par.out paramDerivs.out arr.out eval.out eval2.out const.out finalFile.out jacV.out jacP.out num.out
 	rm -f tempBertiniFile lex.partitionParse.c 
 	rm -rf *.dSYM

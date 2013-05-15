@@ -17,60 +17,86 @@
 #ifndef _SAMPLER_H
 #define _SAMPLER_H
 
+#include "multilintolinSolver.h"
 #include "fileops.h"
 #include "polysolve.h"
 #include "data_type.h"
 #include "programStartup.h"
-#include "witnessSetParse.h"
+#include "witnessSet.h"
 #include "lintolinSolver.h"
 #include "checkSelfConjugate.h"
 
-int  setup_curveDecomp(int argC, char *args[], char **inputName, char **witnessSetName, char **RandMatName,  char **samplingNamenew, curveDecomp_d *C,int *num_vars);
-int setup_edges(edge **E,char *INfile,int *num_vars, char **inputName, char *directoryName, int MPType);
-int setup_vertices(vertex **V,char *INfile,int num_vars, int MPType);
 
-int  Load_sampling_data(sample_d *S, curveDecomp_d C,int num_vars,int MPType);
-void  output_sampling_data(sample_d S,char *samplingName,int num_vars, int MPType);
+int  curve_sampler_startup(int argC, char *args[],
+													 char directoryName[], char **inputName,
+													 char **witnessSetName, char **RandMatName,
+													 char **samplingNamenew,
+													 curveDecomp_d *C,
+													 vertex_set *V,
+													 int *num_vars ,
+													 int MPType);
+
+
+
+
+
+int get_dir_mptype(char ** Dir_Name, int * MPType);
+
+int curve_setup_edges(curveDecomp_d *C,
+											char *INfile);
+
+int setup_vertices(vertex_set *V,char *INfile);
+
+int  set_initial_sample_data(sample_data *S, curveDecomp_d C, vertex_set V,
+													int num_vars);
+
+void  output_sampling_data(sample_data S,  vertex_set V,
+													 char *samplingName,int num_vars, int MPType);
 void  set_witness_set_d(witness_set *W, vec_d L,vec_d pts,int num_vars);
 void set_witness_set_mp(witness_set *W, vec_mp L,vec_mp pts,int num_vars);
 
-void generate_new_sampling_pts(sample_d *S_new,
+void generate_new_sampling_pts(sample_data *S_new,
 															 mat_mp n_minusone_randomizer_matrix,
-															 sample_d S_old,
+															 sample_data S_old,
 															 curveDecomp_d C,
+															 vertex_set *V,
 															 witness_set W,
 															 int  MPType,
 															 sampler_configuration *sampler_options,
 															 solver_configuration *solve_options);
 
-void generate_new_sampling_pts_d(sample_d *S_new,
-																 mat_mp n_minusone_randomizer_matrix,
-																 sample_d S_old,
-																 curveDecomp_d C,
-																 witness_set W,
-																 int  MPType,
-																 sampler_configuration *sampler_options,
-																 solver_configuration *solve_options);
+//void generate_new_sampling_pts_d(sample_data *S_new,
+//																 mat_mp n_minusone_randomizer_matrix,
+//																 sample_data S_old,
+//																 curveDecomp_d C,
+//																 vertex_set *V,
+//																 witness_set W,
+//																 int  MPType,
+//																 sampler_configuration *sampler_options,
+//																 solver_configuration *solve_options);
 
-void generate_new_sampling_pts_mp(sample_d *S_new,
-																	mat_mp n_minusone_randomizer_matrix,
-																	sample_d S_old,
-																	curveDecomp_d C,
-																	witness_set W,
-																	int  MPType,
-																	sampler_configuration *sampler_options,
-																	solver_configuration *solve_options);
+//void generate_new_sampling_pts_mp(sample_data *S_new,
+//																	mat_mp n_minusone_randomizer_matrix,
+//																	sample_data S_old,
+//																	curveDecomp_d C,
+//																	vertex_set *V,
+//																	witness_set W,
+//																	int  MPType,
+//																	sampler_configuration *sampler_options,
+//																	solver_configuration *solve_options);
 
 void read_rand_matrix(char *INfile, mat_mp n_minusone_randomizer_matrix);
 
 
-int setup_curve(curveDecomp_d *C,char *INfile, int MPType);
+int setup_curve(curveDecomp_d *C,char *INfile, int MPType, char **inputName, char *directoryName);
 
 
 void estimate_new_projection_value(comp_mp result, vec_mp left, vec_mp right, vec_mp pi);
 #endif
 
 
-int set_initial_refinement_flags(int *num_refinements, int **refine_flags, vec_mp *vertices, int num_pts, sampler_configuration *sampler_options);
+void set_initial_refinement_flags(int *num_refinements, int **refine_flags, int **current_indices,
+																 sample_data S, vertex_set *V,
+																 int current_edge, sampler_configuration *sampler_options);
 
 

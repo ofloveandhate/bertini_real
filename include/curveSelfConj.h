@@ -34,7 +34,8 @@
 void computeCurveSelfConj(char * inputFile,
 													witness_set,
 													vec_mp,
-													curveDecomp_d*,
+													curveDecomp_d *C,
+													vertex_set *V,
 													int num_vars,
 													int num_var_gps,
 													program_configuration *options,
@@ -53,6 +54,18 @@ int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
 																	int num_new_linears,
 																	program_configuration *program_options,
 																	solver_configuration *solve_options);
+
+
+
+int compute_crit_nullspace(witness_set *W_crit_real, // the returned value
+													 witness_set W,
+													 mat_mp n_minusone_randomizer_matrix,
+													 vec_mp random_complex_projection,
+													 vec_mp pi,
+													 program_configuration *program_options,
+													 solver_configuration *solve_options);
+
+
 
 /**
  
@@ -100,6 +113,13 @@ void sort_increasing_by_real(vec_mp *projections_sorted, int **index_tracker, ve
 void make_randomization_matrix_based_on_degrees(mat_mp randomization_matrix, int ** randomized_degrees,
 																								int num_variables, int num_funcs);
 int compare_integers_decreasing(const void * left_in, const void * right_in);
+
+
+
+int verify_projection_ok(witness_set W,
+												 mat_mp n_minusone_randomizer_matrix,
+												 vec_mp projection,
+												 solver_configuration *solve_options);
 
 
 #endif

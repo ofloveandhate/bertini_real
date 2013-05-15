@@ -43,7 +43,8 @@ int take_determinant_d(comp_d determinant, mat_d source_matrix)
 	
 	// returns x, intermediate.
 	
-	//	print_matrix_to_screen_matlab(tempmat,"tempmat");
+//	print_matrix_to_screen_matlab(source_matrix,"detme");
+	
 	int sign;
 	
 	int retval = LU_matrixSolve_d(garbage, intermediate, &rwnm, &sign, source_matrix, zerovec,tol,largeChange);
@@ -51,22 +52,20 @@ int take_determinant_d(comp_d determinant, mat_d source_matrix)
 	//error check.  solution failed if retval!=0
 	if (retval!=0) {
 		printf("LU decomposition failed (d)\n");
-		print_matrix_to_screen_matlab(intermediate,"failed_result");
+//		print_matrix_to_screen_matlab(intermediate,"failed_result");
 		print_matrix_to_screen_matlab(source_matrix,"source_matrix");
+//		deliberate_segfault();
 		set_zero_d(determinant);
 	}
-	
-	
-	
-	
-	//compute the determinant
-	set_one_d(determinant); // initialize
-	for (ii=0; ii<num_variables; ii++) {
-		mul_d(determinant,determinant,&intermediate->entry[rwnm[ii]][ii]);
+	else{
+		//compute the determinant
+		set_one_d(determinant); // initialize
+		for (ii=0; ii<num_variables; ii++) {
+			mul_d(determinant,determinant,&intermediate->entry[rwnm[ii]][ii]);
+		}
+		determinant->r = determinant->r*sign;
+		determinant->i = determinant->i*sign;
 	}
-	determinant->r = determinant->r*sign;
-	determinant->i = determinant->i*sign;
-	
 	//	print_matrix_to_screen_matlab(source_matrix,"detme");
 	//	printf("candidate=%lf+1i*%lf;det(detme)\n",determinant->r,determinant->i);
 	//	mypause();
@@ -133,22 +132,21 @@ int take_determinant_mp(comp_mp determinant, mat_mp source_matrix){
 	//error check.  solution failed if retval!=0
 	if (retval!=0) {
 		printf("LU decomposition failed (mp)\n");
-		print_matrix_to_screen_matlab_mp(intermediate,"failed_result");
+//		print_matrix_to_screen_matlab_mp(intermediate,"failed_result");
 		print_matrix_to_screen_matlab_mp(source_matrix,"source_matrix");
+//		deliberate_segfault();
 		set_zero_mp(determinant);
 	}
-	
-	
-	
-	
-	//compute the determinant
-	set_one_mp(determinant); // initialize
-	for (ii=0; ii<num_variables; ii++) {
-		mul_mp(determinant,determinant,&intermediate->entry[rwnm[ii]][ii]);
-	}
-	if (sign==-1)
-	{
-		neg_mp(determinant,determinant);
+	else{
+		//compute the determinant
+		set_one_mp(determinant); // initialize
+		for (ii=0; ii<num_variables; ii++) {
+			mul_mp(determinant,determinant,&intermediate->entry[rwnm[ii]][ii]);
+		}
+		if (sign==-1)
+		{
+			neg_mp(determinant,determinant);
+		}
 	}
 	//	print_matrix_to_screen_matlab(source_matrix,"detme");
 	//	printf("candidate=%lf+1i*%lf;det(detme)\n",determinant->r,determinant->i);

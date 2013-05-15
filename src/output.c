@@ -3,7 +3,7 @@
 
 
 
-void Output_Main(program_configuration program_options, witness_set W, curveDecomp_d C)
+void Output_Main(program_configuration program_options, witness_set W, curveDecomp_d C, vertex_set V)
 {
 	int  strLength = 0;
 	char *directoryName=NULL,tmp_file[1000];
@@ -29,13 +29,14 @@ void Output_Main(program_configuration program_options, witness_set W, curveDeco
 	sprintf(tmp_file,  "%s/Rand_Matrix", directoryName);
 	copyfile("Rand_matrix",tmp_file);
 	
-	sprintf(tmp_file,  "%s/V.vert", directoryName);
-	print_vertices(C.vertices,C.num_vertices,W.num_variables,tmp_file, program_options.MPType);
+	sprintf(tmp_file,  "%s/V.vertex", directoryName);
+	print_vertices(V, W.num_variables,tmp_file, program_options.MPType);
 	sprintf(tmp_file,  "%s/E.edge", directoryName);
-	print_edges(C.edges,C.num_edges,W.num_variables,program_options.input_deflated_filename,tmp_file,program_options.MPType);
+	print_edges(C.edges,C.num_edges,W.num_variables,
+							tmp_file,program_options.MPType);
 	
 	sprintf(tmp_file,  "%s/C.curve", directoryName);
-	print_curve(C, W.num_variables, tmp_file, program_options.MPType);
+	print_curve(C, W.num_variables, program_options.input_deflated_filename, tmp_file, program_options.MPType);
 	
 	OUT = safe_fopen_write("Dir_Name");
 	fprintf(OUT,"%d\n",strLength);
@@ -51,7 +52,7 @@ void Output_Main(program_configuration program_options, witness_set W, curveDeco
 
 
 
-void print_edges(edge *set_of_edges, int num_edges, int num_vars,char *input_deflated_Name,char *outputfile,int MPType)
+void print_edges(edge *set_of_edges, int num_edges, int num_vars,char *outputfile,int MPType)
 /**Output edge structure as follows:
  # variables
  # edges
@@ -74,29 +75,23 @@ void print_edges(edge *set_of_edges, int num_edges, int num_vars,char *input_def
 	FILE *OUT = safe_fopen_write(outputfile);
 	
 	// output the number of vertices
-	fprintf(OUT,"%d\n",num_vars);
-	fprintf(OUT,"%d\n",num_edges);
-	fprintf(OUT,"%zu\n",strlen(input_deflated_Name));
-	fprintf(OUT,"%s\n",input_deflated_Name);
+	fprintf(OUT,"%d\n\n",num_edges);
+
 	for(ii=0;ii<num_edges;ii++)
-		print_individual_edge(set_of_edges[ii],num_vars,OUT,MPType);
+		fprintf(OUT,"%d %d %d \n",set_of_edges[ii].left,
+															set_of_edges[ii].midpt,
+															set_of_edges[ii].right);
 	
+	
+
 	fclose(OUT);
 	
 }
 
-void print_individual_edge(edge curr_edge,int num_vars,FILE *OUT, int MPType)
-/**
- for each edge, output the following information:
- index to left vertex in vertices
- index to right vertex in vertices
- index to midpoint in vertices
- **/
-{
-	fprintf(OUT,"%d\n%d\n%d\n\n",curr_edge.left,curr_edge.midpt,curr_edge.right);
-}
+\
 
-void print_vertices(vertex *current_vertex, int num_V, int num_vars,char *outputfile, int MPType)
+void print_vertices(vertex_set V, int num_vars,
+										char *outputfile, int MPType)
 /**Output vertex structure as follows:
  # pts
  pt.1
@@ -115,33 +110,20 @@ void print_vertices(vertex *current_vertex, int num_V, int num_vars,char *output
 
 	
 	// output the number of vertices
-	fprintf(OUT,"%d\n\n",num_V);
+	fprintf(OUT,"%d %d\n\n",V.num_vertices,num_vars);
 	
-	for (ii = 0; ii < num_V; ii++)
+	for (ii = 0; ii < V.num_vertices; ii++)
 	{ // output points
-		if(MPType==0)
-		{
-			for(jj=0;jj<num_vars;jj++)
-			{
-				print_d(OUT, 0, &(current_vertex[ii].pt->coord[jj]));
+			for(jj=0;jj<num_vars;jj++) {
+				print_mp(OUT, 0, &(V.vertices[ii].pt_mp->coord[jj]));
 				fprintf(OUT,"\n");
 			}
-			print_d(OUT, 0, current_vertex[ii].projVal);
+			print_mp(OUT, 0, V.vertices[ii].projVal_mp);
 			fprintf(OUT,"\n");
-			
-		}
-		else
-		{
-			for(jj=0;jj<num_vars;jj++)
-			{
-				print_mp(OUT, 10, &(current_vertex[ii].pt_mp->coord[jj]));
-				fprintf(OUT,"\n");
-			}
-			print_mp(OUT, 0, current_vertex[ii].projVal_mp);
-			fprintf(OUT,"\n");
-		}
 		
-		fprintf(OUT,"%d\n",current_vertex[ii].type);
+		
+		
+		fprintf(OUT,"%d\n",V.vertices[ii].type);
 		
 		
 		fprintf(OUT,"\n"); // the line after the vertex is written
@@ -156,17 +138,19 @@ void print_vertices(vertex *current_vertex, int num_V, int num_vars,char *output
  Output curve overall info as follows:
  
  **/
-void print_curve(curveDecomp_d C, int num_vars, char *outputfile, int MPType)
+void print_curve(curveDecomp_d C, int num_vars, char *input_deflated_Name, char *outputfile, int MPType)
 
 {
 	int ii;
 	
 	FILE *OUT = safe_fopen_write(outputfile);
-	fprintf(OUT,"%d %d %d\n",num_vars, C.num_vertices, C.num_edges);
-	fprintf(OUT,"%d %d %d %d\n",C.num_V0, C.num_V1, C.num_midpts, C.num_new);
+	fprintf(OUT,"%zu\n",strlen(input_deflated_Name));
+	fprintf(OUT,"%s\n",input_deflated_Name);
+	
+	fprintf(OUT,"%d %d\n",num_vars, C.num_edges);
+	fprintf(OUT,"%d %d %d %d %d\n",C.num_V0, C.num_V1, C.num_midpts, C.num_new, C.num_isolated);
 	
 	
-//	int			*V0_indices;
 	for (ii=0; ii<C.num_V0; ii++) {
 		fprintf(OUT,"%d\n",C.V0_indices[ii]);
 	}
@@ -187,20 +171,10 @@ void print_curve(curveDecomp_d C, int num_vars, char *outputfile, int MPType)
 	}
 	fprintf(OUT,"\n");
 
-	// and finally the projection
-	if (MPType==0) {
-		for(ii=0;ii<num_vars;ii++)
-		{
-			print_d(OUT, 0, &(C.pi_d->coord[ii]));
-			fprintf(OUT,"\n");
-		}
-	}
-	else{
-		for(ii=1;ii<num_vars;ii++)
-		{
-			print_mp(OUT, 0, &(C.pi->coord[ii]));
-			fprintf(OUT,"\n");
-		}
+	for(ii=0;ii<num_vars;ii++)
+	{
+		print_mp(OUT, 0, &(C.pi_mp->coord[ii]));
+		fprintf(OUT,"\n");
 	}
 	
 	fclose(OUT);

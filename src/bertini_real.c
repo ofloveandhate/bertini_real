@@ -10,6 +10,7 @@ int main(int argC, char *args[])
 {
   int rV,num_vars=0,sc;  //1=self-conjugate; 0=not
 
+	vertex_set V;
   curveDecomp_d C;  //new data type; stores vertices, edges, etc.
   vec_mp pi_mp;  //random projection
   witness_set Wuser;
@@ -22,14 +23,14 @@ int main(int argC, char *args[])
 	//  INITIALIZATION
 	////
 	
-	splash_screen();
+	BR_splash_screen();
 	
 	//instantiate options
-	program_configuration program_options;  init_program_config(&program_options);
+	program_configuration program_options;  BR_init_config(&program_options);
 	BR_parse_commandline(argC, args, &program_options);
 	
 	//parse the options
-	startup(program_options); // tests for existence of necessary files, etc.
+	BR_startup(program_options); // tests for existence of necessary files, etc.
 	
 	//if desired, display the options
 //	display_current_options(program_options);
@@ -46,7 +47,7 @@ int main(int argC, char *args[])
 
 	
 	// set up the solver configuration
-	solver_configuration solve_options;  init_solver_config(&solve_options);
+	solver_configuration solve_options;  solver_init_config(&solve_options);
 	get_tracker_config(&solve_options,MPType);
 	setupPreProcData("preproc_data", &solve_options.PPD);
 	
@@ -119,18 +120,18 @@ int main(int argC, char *args[])
 	
 
 	//initialize the data structure which collets the output
-	init_curveDecomp_d(&C);
+	init_curveDecomp_d(&C, MPType);
+	init_vertex_set(&V);
+	
 	
 	C.num_variables = num_vars;
-	if (MPType==0) {
+
 		init_vec_d(C.pi_d, Wuser.num_variables); C.pi_d->size = Wuser.num_variables;
 		vec_mp_to_d(C.pi_d, pi_mp);
-	}
-	else
-	{
-		init_vec_mp(C.pi, Wuser.num_variables); C.pi->size = Wuser.num_variables;
-		vec_cp_mp(C.pi, pi_mp);
-	}
+
+		init_vec_mp(C.pi_mp, Wuser.num_variables); C.pi_mp->size = Wuser.num_variables;
+		vec_cp_mp(C.pi_mp, pi_mp);
+
 	
 
 	
@@ -142,14 +143,18 @@ int main(int argC, char *args[])
 	{
 		//Call non-self-conjugate case code
 		printf("\n\nentering not-self-conjugate case\n\n");
-		computeCurveNotSelfConj(Wuser, pi_mp, &C,num_vars-1,program_options.input_deflated_filename);//This is Wenrui's !!!
+		computeCurveNotSelfConj(Wuser, pi_mp, &C, &V, num_vars-1,program_options.input_deflated_filename,
+														&program_options, &solve_options);//This is Wenrui's !!!
 		printf("Bertini_real found %d vertices (vertex)\n",C.num_V0);
 	}
 	else
 	{
 		//Call self-conjugate case code
 		printf("\n\nentering self-conjugate case\n\n");
-		computeCurveSelfConj(program_options.input_deflated_filename,Wuser,pi_mp,&C,
+		computeCurveSelfConj(program_options.input_deflated_filename,
+												 Wuser,
+												 pi_mp,
+												 &C,&V,
 												 num_vars,Wuser.num_var_gps,
 												 &program_options, &solve_options);  //This is Dans', at least at first !!!
 	}
@@ -162,7 +167,7 @@ int main(int argC, char *args[])
 	if (program_options.verbose_level>=2) {
 		printf("outputting data\n");
 	}
-	Output_Main(program_options, Wuser, C);
+	Output_Main(program_options, Wuser, C, V);
 	
 	
 	if (program_options.verbose_level>=2) {
@@ -173,7 +178,7 @@ int main(int argC, char *args[])
 	if (program_options.verbose_level>=2) {
 		printf("clearing C\n");
 	}
-	clear_curveDecomp_d(&C,solve_options.T.MPType);
+	clear_curveDecomp_d(&C);
 	
 //	printf("clearing program_options\n");
 //	clear_program_config(&program_options);

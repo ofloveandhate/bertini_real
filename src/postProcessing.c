@@ -4,6 +4,8 @@
 
 void endgamedata_to_endpoint(post_process_t *endPoint, endgame_data_t *EG){
 	
+	
+//	printf("endgame2endpoint\n");
 	int num_vars, ii;
 	endPoint->path_num = EG->pathNum;
 	
@@ -152,6 +154,10 @@ int BRfindFiniteSolns(post_process_t *endPoints, int num_sols, int num_vars,
 											tracker_config_t *T ){
 	int ii, jj, finite_count=0;
 	
+	
+	
+//	printf("BR find Finite\n");
+	
 	//initialize temp stuffs
 	comp_d dehom_coord_recip_d;
 	comp_mp dehom_coord_recip_mp; init_mp(dehom_coord_recip_mp);
@@ -244,7 +250,7 @@ void BRpostProcessing(post_process_t *endPoints, witness_set *W_new, int num_pts
  * NOTES: does the actual post processing for a zero dim run     *
  \***************************************************************/
 {
-	
+//	printf("BR post processing\n");
 	//	options->allow_multiplicity = 0;
 	//	options->allow_singular = 0;
 	//	options->allow_infinite = 0;
@@ -257,14 +263,18 @@ void BRpostProcessing(post_process_t *endPoints, witness_set *W_new, int num_pts
 	//direct from the bertini library:
 	findMultSol(endPoints, num_pts, W_new->num_variables, preProcData, T->final_tol_times_mult);
 	
+//	printf("post findMultSol\n");
+	
 	//sets the singularity flag in endPoints.
 	//custom, derived from bertini's analagous call.
 	int num_singular_solns = BRfindSingularSolns(endPoints, num_pts, W_new->num_variables, T);
-	
+//	printf("post BRfindSingular\n");
+
 	//sets the finite flag in endPoints.
 	//custom, derived from bertini's analagous call.
 	int num_finite_solns = BRfindFiniteSolns(endPoints, num_pts, W_new->num_variables, T);
-	
+//	printf("post BRfindFinite\n");
+
 	
 	
 	if (solve_options->show_status_summary==1) {
