@@ -27,27 +27,24 @@
 /**
  
  */
-void Output_Main(program_configuration program_options, witness_set W, curveDecomp_d C);
+void Output_Main(program_configuration program_options, witness_set W, curveDecomp_d C, vertex_set V);
 
 /**
  
  */
-void print_vertices(vertex *pts, int num_V, int num_vars,char *outputfile, int MPType);
+void print_vertices(vertex_set V, int num_vars,
+										char *outputfile, int MPType);
 
 /**
  
  */
-void print_edges(edge *E, int num_edges, int num_vars,char *input_deflated_Name,char *outputfile, int MPType);
+void print_edges(edge *E, int num_edges, int num_vars, char *outputfile, int MPType);
+
 
 /**
  
  */
-void print_individual_edge(edge E,int num_vars,FILE *OUT, int MPType);
-
-/**
- 
- */
-void print_curve(curveDecomp_d C, int num_vars, char *outputfile, int MPType);
+void print_curve(curveDecomp_d C, int num_vars, char *input_deflated_Name, char *outputfile, int MPType);
 
 /**
  

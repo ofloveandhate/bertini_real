@@ -13,6 +13,7 @@ void computeCurveSelfConj(char * inputFile,
 													witness_set W,
 													vec_mp pi,
 													curveDecomp_d *C,
+													vertex_set *V,
 													int num_vars,
 													int num_var_gps,
 													program_configuration *program_options,
@@ -236,7 +237,9 @@ void computeCurveSelfConj(char * inputFile,
 	
 	//copy the points from witness sets into curve decomposition V0;
 	
-	vertex temp_vertex;  init_vertex_mp(&temp_vertex);
+	vertex temp_vertex;  
+	
+	init_vertex(&temp_vertex);
 	
 	
 	for (ii=0; ii< projections_sorted->size; ii++){
@@ -244,11 +247,18 @@ void computeCurveSelfConj(char * inputFile,
 			printf("adding point %d of %d from crit_real to vertices\n",ii,projections_sorted->size);
 		}
 		
-		
-		set_mp(temp_vertex.projVal_mp,  &projections_sorted->coord[ii]); // set projection value
-		vec_cp_mp(temp_vertex.pt_mp,W_crit_real.pts_mp[index_tracker[ii]]);// set point
+//		if (solve_options->T.MPType==0) {
+//			mp_to_d(temp_vertex.projVal_d,  &projections_sorted->coord[ii]); // set projection value
+//			vec_cp_d(temp_vertex.pt_d,W_crit_real.pts_d[index_tracker[ii]]);// set point
+//		}
+//		else{
+			set_mp(temp_vertex.projVal_mp,  &projections_sorted->coord[ii]); // set projection value
+			vec_cp_mp(temp_vertex.pt_mp,W_crit_real.pts_mp[index_tracker[ii]]);// set point
+//		}
 		temp_vertex.type = CRITICAL; // set type
-		add_vertex(C,temp_vertex);
+		
+		
+		curve_add_vertex(C,V,temp_vertex);
 	}
 	
 	
@@ -319,27 +329,9 @@ void computeCurveSelfConj(char * inputFile,
 		sort_for_unique(&midpoint_witness_sets[ii], Wtemp2, solve_options->T);
 		edge_counter += midpoint_witness_sets[ii].num_pts;
 		
-//		//print the midpoints upstairs to the file.
-//		for (jj=0; jj<midpoint_witness_sets[ii].num_pts; jj++) { // iterate over all current new midpoint witness points
-//			//print them to a file
-//			init_vec_mp(dehom,W.num_variables);  dehom->size = W.num_variables;
-//			dehomogenize_mp(&dehom,midpoint_witness_sets[ii].pts_mp[jj]);
-//			for (kk=0; kk<W.num_variables-1; kk++) {
-//				mpf_out_str (OUT, 10, 16, dehom->coord[kk].r); fprintf(OUT," ");
-//				mpf_out_str (OUT, 10, 16, dehom->coord[kk].i); fprintf(OUT,"\n");
-//			}
-//			fprintf(OUT,"\n"); // print the line separating values
-//			clear_vec_mp(dehom);
-//		}
-//		fprintf(OUT,"\n");// print the line separating solutions
 		clear_witness_set(Wtemp);
 		clear_witness_set(Wtemp2);
 	}
-//	rewind(OUT);
-//	fprintf(OUT,"%d",edge_counter);
-//	fclose(OUT);
-		
-	
 
 	if (program_options->verbose_level>=1) {
 		printf("done finding midpoints upstairs\n");
@@ -394,8 +386,6 @@ void computeCurveSelfConj(char * inputFile,
 													 solve_options); // the output
 		//each member of Wtemp should real.  if a member of V1 already, mark index.  else, add to V1, and mark.
 	
-//		printf("found %d points left\n",Wleft.num_pts);
-//		printf("found %d points right\n",Wright.num_pts);
 		
 		int keep_going = 1;
 		if (Wright.num_pts!=midpoint_witness_sets[ii].num_pts) {
@@ -409,25 +399,29 @@ void computeCurveSelfConj(char * inputFile,
 		if (!keep_going) {
 			exit(3999);
 		}
-//		print_witness_set_to_screen(Wleft);
-//		print_witness_set_to_screen(Wright);
+
 		
 		for (kk=0; kk<midpoint_witness_sets[ii].num_pts; kk++) {
-			neg_mp(temp_vertex.projVal_mp, &midpoint_witness_sets[ii].L_mp[0]->coord[0]  ); // set projection value
-			vec_cp_mp(temp_vertex.pt_mp,midpoint_witness_sets[ii].pts_mp[kk]);// set point
+			
+			
+				neg_mp(temp_vertex.projVal_mp, &midpoint_witness_sets[ii].L_mp[0]->coord[0]  ); // set projection value
+				vec_cp_mp(temp_vertex.pt_mp,midpoint_witness_sets[ii].pts_mp[kk]);// set point
+			
+			
+			
 			temp_vertex.type = MIDPOINT; // set type
 			
-			temp_edge.midpt = add_vertex(C,temp_vertex); // gets the index of the new midpoint
-			temp_edge.left  = index_in_vertices(C,Wleft.pts_mp[kk], left_check, solve_options->T,-1); // the trailing integer indicates the side
-			temp_edge.right = index_in_vertices(C,Wright.pts_mp[kk],right_check,solve_options->T, 1);
+			temp_edge.midpt = curve_add_vertex(C,V,temp_vertex); // gets the index of the new midpoint
+			temp_edge.left  = curve_index_in_vertices_with_add(C,V,Wleft.pts_mp[kk], left_check, solve_options->T); // the trailing integer indicates the side
+			temp_edge.right = curve_index_in_vertices_with_add(C,V,Wright.pts_mp[kk], right_check, solve_options->T);
 			
 			add_edge(C, temp_edge);
 			
 			if (program_options->verbose_level>=3) {
 				printf("upstairs midpoint %d\n",kk);
-				print_comp_mp_matlab(C->vertices[temp_edge.left].projVal_mp,"left");
-				print_comp_mp_matlab(C->vertices[temp_edge.midpt].projVal_mp,"mid");
-				print_comp_mp_matlab(C->vertices[temp_edge.right].projVal_mp,"right");
+				print_comp_mp_matlab(V->vertices[temp_edge.left].projVal_mp,"left");
+				print_comp_mp_matlab(V->vertices[temp_edge.midpt].projVal_mp,"mid");
+				print_comp_mp_matlab(V->vertices[temp_edge.right].projVal_mp,"right");
 				printf("indices of left, mid, right: %d %d %d\n",temp_edge.left,temp_edge.midpt,temp_edge.right);
 				printf("\n\n");
 			}
@@ -562,7 +556,7 @@ int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
 	witness_set W_linprod; init_witness_set_d(&W_linprod);
 	Wtemp.incidence_number = W.incidence_number; // copy over from the input.  note that the incidence number may be different from the component number
 
-	sort_for_membership(program_options->input_deflated_filename, &W_linprod, Wtemp, program_options->stifle_text);
+	sort_for_unique(&W_linprod, Wtemp, solve_options->T);
 	write_dehomogenized_coordinates(W_linprod,"linprod_solns_postmembership");
 
 	clear_witness_set(Wtemp);
@@ -999,222 +993,222 @@ int get_sum_degrees(char filename[], int num_funcs){
 }
 
 
-
-
-void sort_for_membership(char * input_file,
-												 witness_set *W_out,
-												 witness_set W_in,
-												 char *stifle_text){
-//	printf("sorting points for membership\n");
-	
-	
-	if (W_in.incidence_number==-1) {
-		printf("input witness_set has unset incidence_number for comparison.\n");
-		exit(-1112);
-	}
-	
-	W_out->MPType = W_in.MPType;
-	W_out->incidence_number = W_in.incidence_number;
-	W_out->num_variables = W_in.num_variables;
-	W_out->num_var_gps = W_in.num_var_gps;
-	
-	//copy the linears, patches from old to new
-	cp_patches(W_out, W_in);
-	cp_linears(W_out, W_in);
-	cp_names(W_out, W_in);
-	
-	//more important files out of the way.  this will probably crash the program if it is called without these files being present.
-	rename_bertini_files_dotbak();
-	
-	
-	int strLength = 0, digits = 15, *declarations = NULL;
-  char *SysStr = NULL,*fmt = NULL, *bertini_command="bertini";
-  FILE *IN = NULL;
-	
-
-	
-	//make the command string to run
-	strLength = 1 + snprintf(NULL, 0, "%s input_membership_test %s ", bertini_command, stifle_text);
-  SysStr = (char *)bmalloc(strLength * sizeof(char));
-  sprintf(SysStr, "%s input_membership_test %s ", bertini_command, stifle_text);
-	
-	
-	
-	// make the format to write the member_points file
-  strLength = 1 + snprintf(NULL, 0, "%%.%dle %%.%dle\n", digits, digits);
-  // allocate size
-  fmt = (char *)bmalloc(strLength * sizeof(char));
-  // setup fmt
-  sprintf(fmt, "%%.%dle %%.%dle\n", digits, digits);
-	
-	
-  // setup input file
-	IN = safe_fopen_read(input_file);
-  partitionParse(&declarations, IN, "func_input_real", "config_real",0); // the 0 means not self conjugate
-	fclose(IN);
-	
-	
-	//check existence of the required witness_data file.
-	IN = safe_fopen_read("witness_data");
-	fclose(IN);
-	
-	
-	
-	
-	
-	
-	//only need to do this once.  we put the point and its conjugate into the same member points file and run the membership test simultaneously with one bertini call.
-  membership_test_input_file("input_membership_test", "func_input_real", "config_real",3);
-	
-
-	
-	
-	// Do membership test
-	printf("*\n%s\n*\n",SysStr);
-  system(SysStr);
-	
-	
-	int on_component_indicator[W_in.num_pts];
-	read_incidence_matrix_wrt_number(on_component_indicator,W_in.incidence_number);
-	
-//	printf("done reading incidence_matrix\n");
-	
-	int *is_on_component;
-	is_on_component = (int *)bmalloc(W_in.num_pts*sizeof(int));
-	
-
-	
-	int num_pts_on_component =0;
-	int ii,jj;
-	for (ii=0; ii<W_in.num_pts; ii++) {
-//		printf("%d\n",on_component_indicator[ii]);
-		
-		if (on_component_indicator[ii]==1) {
-			num_pts_on_component++;
-			is_on_component[ii]=1;
-		}
-		else{
-			is_on_component[ii]=0;
-		}
-		
-	}
-	
-	if (num_pts_on_component==0) {
-		printf("found 0 points out of %d candidates, on component.\n",W_in.num_pts);
-		restore_bertini_files_dotbak();
-		return;
-	}
-	
-	
-	vec_d *points_on_component;
-	points_on_component =(point_d *)bmalloc(num_pts_on_component*sizeof(point_d));
-
-	int *indices_on_component;
-	indices_on_component = (int *)bmalloc(num_pts_on_component*sizeof(int));
-	
-	int counter =0;
-	for (ii=0; ii<W_in.num_pts; ii++) {
-		if (on_component_indicator[ii]==1) {
-			init_vec_d(points_on_component[counter],W_in.pts_d[ii]->size);
-			points_on_component[counter]->size = W_in.pts_d[ii]->size;
-			vec_cp_d(points_on_component[counter],W_in.pts_d[ii]);
-			
-			indices_on_component[counter] = ii;
-
-			counter++;
-		}
-	}
-	
-	
-	
-	//now remove duplicates
-
-	
-	
-	int *is_unique; int curr_uniqueness; int num_good_pts = 0;
-	is_unique  = (int *)bmalloc(num_pts_on_component*sizeof(int));
-	for (ii = 0; ii<num_pts_on_component; ++ii) {
-		curr_uniqueness = 1;
-		if (ii!= (num_pts_on_component-1) ) { // the last point is unique...  always
-			for (jj=ii+1; jj<num_pts_on_component; ++jj) {
-				if (isSamePoint_homogeneous_input_d(points_on_component[ii],points_on_component[jj])){
-					//formerly (isSamePoint(points_on_component[ii],NULL,52,points_on_component[jj],NULL,52,1e-8)){
-					curr_uniqueness = 0;
-//					printf("the following two points are not distinct:\n");
-//					print_point_to_screen_matlab(points_on_component[ii],"left");
-//					print_point_to_screen_matlab(points_on_component[jj],"right");
-				}
-			}
-		}
-
-				
-		if (curr_uniqueness==1) {
-			is_unique[ii] = 1;
-			num_good_pts++;
-		}
-		else
-		{
-			is_unique[ii] = 0;
-		}
-		
-	}
-
-	
-	
-
-	
-	
-	
-	
-	//allocate the memory
-	W_out->pts_d=(point_d *)bmalloc(num_good_pts*sizeof(point_d));
-	W_out->pts_mp=(point_mp *)bmalloc(num_good_pts*sizeof(point_mp));
-	W_out->num_pts = num_good_pts;
-	W_out->num_pts = num_good_pts;
-	
-	
-	
-	//copy in the distinct points lying on the correct component
-	counter = 0;
-	for (ii=0; ii<num_pts_on_component; ++ii) {
-		if (is_unique[ii]==1) {
-			init_vec_d(W_out->pts_d[counter],W_in.num_variables); W_out->pts_d[counter]->size = W_in.num_variables;
-			init_vec_mp2(W_out->pts_mp[counter],W_in.num_variables,1024);  W_out->pts_mp[counter]->size = W_in.num_variables;
-			
-			vec_cp_d(W_out->pts_d[counter], W_in.pts_d[indices_on_component[ii]]);
-			vec_cp_mp(W_out->pts_mp[counter], W_in.pts_mp[indices_on_component[ii]]);
-			counter++;
-		}
-	}
-	
-	if (!counter==num_good_pts){
-		printf("counter mismatch; counter!=num_good_pts in sort_for_membership\n");
-		exit(169);
-	}
-
-		//clear the memory
-	
-	for (ii=0; ii<num_pts_on_component; ++ii) {
-		clear_vec_d(points_on_component[ii]);
-	}
-	free(points_on_component);
-	
-
-	free(is_unique);
-  free(declarations);
-	
-  // delete temporary files
-  remove("func_input_real");
-  remove("config_real");
-	remove("incidence_matrix");
-//	remove("member_points");
-
-	//move files back into place
-	restore_bertini_files_dotbak();
-	return;
-}
-
-
+//
+//
+//void sort_for_membership(char * input_file,
+//												 witness_set *W_out,
+//												 witness_set W_in,
+//												 char *stifle_text){
+////	printf("sorting points for membership\n");
+//	
+//	
+//	if (W_in.incidence_number==-1) {
+//		printf("input witness_set has unset incidence_number for comparison.\n");
+//		exit(-1112);
+//	}
+//	
+//	W_out->MPType = W_in.MPType;
+//	W_out->incidence_number = W_in.incidence_number;
+//	W_out->num_variables = W_in.num_variables;
+//	W_out->num_var_gps = W_in.num_var_gps;
+//	
+//	//copy the linears, patches from old to new
+//	cp_patches(W_out, W_in);
+//	cp_linears(W_out, W_in);
+//	cp_names(W_out, W_in);
+//	
+//	//more important files out of the way.  this will probably crash the program if it is called without these files being present.
+//	rename_bertini_files_dotbak();
+//	
+//	
+//	int strLength = 0, digits = 15, *declarations = NULL;
+//  char *SysStr = NULL,*fmt = NULL, *bertini_command="bertini";
+//  FILE *IN = NULL;
+//	
+//
+//	
+//	//make the command string to run
+//	strLength = 1 + snprintf(NULL, 0, "%s input_membership_test %s ", bertini_command, stifle_text);
+//  SysStr = (char *)bmalloc(strLength * sizeof(char));
+//  sprintf(SysStr, "%s input_membership_test %s ", bertini_command, stifle_text);
+//	
+//	
+//	
+//	// make the format to write the member_points file
+//  strLength = 1 + snprintf(NULL, 0, "%%.%dle %%.%dle\n", digits, digits);
+//  // allocate size
+//  fmt = (char *)bmalloc(strLength * sizeof(char));
+//  // setup fmt
+//  sprintf(fmt, "%%.%dle %%.%dle\n", digits, digits);
+//	
+//	
+//  // setup input file
+//	IN = safe_fopen_read(input_file);
+//  partitionParse(&declarations, IN, "func_input_real", "config_real",0); // the 0 means not self conjugate
+//	fclose(IN);
+//	
+//	
+//	//check existence of the required witness_data file.
+//	IN = safe_fopen_read("witness_data");
+//	fclose(IN);
+//	
+//	
+//	
+//	
+//	
+//	
+//	//only need to do this once.  we put the point and its conjugate into the same member points file and run the membership test simultaneously with one bertini call.
+//  membership_test_input_file("input_membership_test", "func_input_real", "config_real",3);
+//	
+//
+//	
+//	
+//	// Do membership test
+//	printf("*\n%s\n*\n",SysStr);
+//  system(SysStr);
+//	
+//	
+//	int on_component_indicator[W_in.num_pts];
+//	read_incidence_matrix_wrt_number(on_component_indicator,W_in.incidence_number);
+//	
+////	printf("done reading incidence_matrix\n");
+//	
+//	int *is_on_component;
+//	is_on_component = (int *)bmalloc(W_in.num_pts*sizeof(int));
+//	
+//
+//	
+//	int num_pts_on_component =0;
+//	int ii,jj;
+//	for (ii=0; ii<W_in.num_pts; ii++) {
+////		printf("%d\n",on_component_indicator[ii]);
+//		
+//		if (on_component_indicator[ii]==1) {
+//			num_pts_on_component++;
+//			is_on_component[ii]=1;
+//		}
+//		else{
+//			is_on_component[ii]=0;
+//		}
+//		
+//	}
+//	
+//	if (num_pts_on_component==0) {
+//		printf("found 0 points out of %d candidates, on component.\n",W_in.num_pts);
+//		restore_bertini_files_dotbak();
+//		return;
+//	}
+//	
+//	
+//	vec_d *points_on_component;
+//	points_on_component =(point_d *)bmalloc(num_pts_on_component*sizeof(point_d));
+//
+//	int *indices_on_component;
+//	indices_on_component = (int *)bmalloc(num_pts_on_component*sizeof(int));
+//	
+//	int counter =0;
+//	for (ii=0; ii<W_in.num_pts; ii++) {
+//		if (on_component_indicator[ii]==1) {
+//			init_vec_d(points_on_component[counter],W_in.pts_d[ii]->size);
+//			points_on_component[counter]->size = W_in.pts_d[ii]->size;
+//			vec_cp_d(points_on_component[counter],W_in.pts_d[ii]);
+//			
+//			indices_on_component[counter] = ii;
+//
+//			counter++;
+//		}
+//	}
+//	
+//	
+//	
+//	//now remove duplicates
+//
+//	
+//	
+//	int *is_unique; int curr_uniqueness; int num_good_pts = 0;
+//	is_unique  = (int *)bmalloc(num_pts_on_component*sizeof(int));
+//	for (ii = 0; ii<num_pts_on_component; ++ii) {
+//		curr_uniqueness = 1;
+//		if (ii!= (num_pts_on_component-1) ) { // the last point is unique...  always
+//			for (jj=ii+1; jj<num_pts_on_component; ++jj) {
+//				if (isSamePoint_homogeneous_input_d(points_on_component[ii],points_on_component[jj])){
+//					//formerly (isSamePoint(points_on_component[ii],NULL,52,points_on_component[jj],NULL,52,1e-8)){
+//					curr_uniqueness = 0;
+////					printf("the following two points are not distinct:\n");
+////					print_point_to_screen_matlab(points_on_component[ii],"left");
+////					print_point_to_screen_matlab(points_on_component[jj],"right");
+//				}
+//			}
+//		}
+//
+//				
+//		if (curr_uniqueness==1) {
+//			is_unique[ii] = 1;
+//			num_good_pts++;
+//		}
+//		else
+//		{
+//			is_unique[ii] = 0;
+//		}
+//		
+//	}
+//
+//	
+//	
+//
+//	
+//	
+//	
+//	
+//	//allocate the memory
+//	W_out->pts_d=(point_d *)bmalloc(num_good_pts*sizeof(point_d));
+//	W_out->pts_mp=(point_mp *)bmalloc(num_good_pts*sizeof(point_mp));
+//	W_out->num_pts = num_good_pts;
+//	W_out->num_pts = num_good_pts;
+//	
+//	
+//	
+//	//copy in the distinct points lying on the correct component
+//	counter = 0;
+//	for (ii=0; ii<num_pts_on_component; ++ii) {
+//		if (is_unique[ii]==1) {
+//			init_vec_d(W_out->pts_d[counter],W_in.num_variables); W_out->pts_d[counter]->size = W_in.num_variables;
+//			init_vec_mp2(W_out->pts_mp[counter],W_in.num_variables,1024);  W_out->pts_mp[counter]->size = W_in.num_variables;
+//			
+//			vec_cp_d(W_out->pts_d[counter], W_in.pts_d[indices_on_component[ii]]);
+//			vec_cp_mp(W_out->pts_mp[counter], W_in.pts_mp[indices_on_component[ii]]);
+//			counter++;
+//		}
+//	}
+//	
+//	if (!counter==num_good_pts){
+//		printf("counter mismatch; counter!=num_good_pts in sort_for_membership\n");
+//		exit(169);
+//	}
+//
+//		//clear the memory
+//	
+//	for (ii=0; ii<num_pts_on_component; ++ii) {
+//		clear_vec_d(points_on_component[ii]);
+//	}
+//	free(points_on_component);
+//	
+//
+//	free(is_unique);
+//  free(declarations);
+//	
+//  // delete temporary files
+//  remove("func_input_real");
+//  remove("config_real");
+//	remove("incidence_matrix");
+////	remove("member_points");
+//
+//	//move files back into place
+//	restore_bertini_files_dotbak();
+//	return;
+//}
+//
+//
 
 
 //send in an initialized but empty witness_set.
@@ -1581,8 +1575,7 @@ int verify_projection_ok(witness_set W,
 	int ii,jj;
 	
 	
-	comp_mp zerotime;
-	set_zero_mp(zerotime);
+	
 	
 	vec_mp temp_rand_point;  init_vec_mp(temp_rand_point,W.num_variables); temp_rand_point->size = W.num_variables;
 	set_one_mp(&temp_rand_point->coord[0]); // first coordinate must be 1
@@ -1593,37 +1586,90 @@ int verify_projection_ok(witness_set W,
 	prog_t SLP;
 	setupProg(&SLP, solve_options->T.Precision, solve_options->T.MPType);
 	
-	eval_struct_mp ED;
-	init_eval_struct_mp(ED, 0, 0, 0);
-	evalProg_mp(ED.funcVals, ED.parVals, ED.parDer, ED.Jv, ED.Jp, temp_rand_point, zerotime, &SLP);
+	int invalid_flag;
 	
-	mat_mp AtimesJ; init_mat_mp(AtimesJ, 1, 1); AtimesJ->rows = AtimesJ->cols = 1;
-	
-	mat_mul_mp(AtimesJ, n_minusone_randomizer_matrix, ED.Jv);
-	
-	//inflate the matrix
-	
-	mat_mp detme;  init_mat_mp(detme, W.num_variables-1, W.num_variables-1);
-	detme->cols = detme->rows= W.num_variables-1;
-	for (ii=0; ii<W.num_variables-2; ++ii) {
-		for (jj=0; jj<W.num_variables-1; ++jj) {
-			set_mp(&detme->entry[ii][jj],&AtimesJ->entry[ii][jj+1]); // omit the homogeneous coordinate's columns
+	if (solve_options->T.MPType==1 || solve_options->T.MPType==2) {
+		
+		comp_mp zerotime;
+		set_zero_mp(zerotime);
+		
+		eval_struct_mp ED;
+		init_eval_struct_mp(ED, 0, 0, 0);
+		evalProg_mp(ED.funcVals, ED.parVals, ED.parDer, ED.Jv, ED.Jp, temp_rand_point, zerotime, &SLP);
+		
+		mat_mp AtimesJ; init_mat_mp(AtimesJ, 1, 1); AtimesJ->rows = AtimesJ->cols = 1;
+		
+		mat_mul_mp(AtimesJ, n_minusone_randomizer_matrix, ED.Jv);
+		
+		//inflate the matrix
+		
+		mat_mp detme;  init_mat_mp(detme, W.num_variables-1, W.num_variables-1);
+		detme->cols = detme->rows= W.num_variables-1;
+		for (ii=0; ii<W.num_variables-2; ++ii) {
+			for (jj=0; jj<W.num_variables-1; ++jj) {
+				set_mp(&detme->entry[ii][jj],&AtimesJ->entry[ii][jj+1]); // omit the homogeneous coordinate's columns
+			}
 		}
+		
+		for (ii=0; ii<W.num_variables-1; ii++) {
+			set_mp(&detme->entry[W.num_variables-2][ii],&projection->coord[ii+1]);
+		}
+		
+		comp_mp determinant; init_mp(determinant);
+		take_determinant_mp(determinant,detme); // the determinant goes into detjac
+		
+		if (d_abs_mp(determinant)< 1e-14)
+			invalid_flag = 0;
+		else
+			invalid_flag = 1;
 	}
-	
-	for (ii=0; ii<W.num_variables-1; ii++) {
-		set_mp(&detme->entry[W.num_variables-2][ii],&projection->coord[ii+1]);
+	else{
+		vec_d proj; init_vec_d(proj,W.num_variables); proj->size = W.num_variables;
+		vec_mp_to_d(proj, projection);
+		
+		mat_d R;
+		init_mat_d(R,1,1);
+		mat_mp_to_d(R,n_minusone_randomizer_matrix);
+		comp_d zerotime;
+		set_zero_d(zerotime);
+		
+		
+		vec_d p; init_vec_d(p,W.num_variables); p->size = W.num_variables;
+		vec_mp_to_d(p,temp_rand_point);
+		
+		eval_struct_d ED;
+		init_eval_struct_d(ED, 0, 0, 0);
+		evalProg_d(ED.funcVals, ED.parVals, ED.parDer, ED.Jv, ED.Jp, p, zerotime, &SLP);
+		
+		mat_d AtimesJ; init_mat_d(AtimesJ, 1, 1); AtimesJ->rows = AtimesJ->cols = 1;
+		
+		mat_mul_d(AtimesJ, R, ED.Jv);
+		
+		//inflate the matrix
+		
+		mat_d D;  init_mat_d(D, W.num_variables-1, W.num_variables-1);
+		D->cols = D->rows= W.num_variables-1;
+		for (ii=0; ii<n_minusone_randomizer_matrix->rows; ++ii) {
+			for (jj=0; jj<W.num_variables-1; ++jj) {
+				set_d(&D->entry[ii][jj],&AtimesJ->entry[ii][jj+1]); // omit the homogeneous coordinate's columns
+			}
+		}
+		
+		for (ii=0; ii<W.num_variables-1; ii++) {
+			set_d(&D->entry[W.num_variables-2][ii],&proj->coord[ii+1]);
+		}
+		
+		comp_d determinant;
+		take_determinant_d(determinant,D); // the determinant goes into detjac
+		
+		if (d_abs_d(determinant)< 1e-14)
+			invalid_flag = 0;
+		else
+			invalid_flag = 1;
+		
 	}
-	
-	comp_mp determinant; init_mp(determinant);
-	take_determinant_mp(determinant,detme); // the determinant goes into detjac
 
-	if (d_abs_mp(determinant)< 1e-14)
-		return 0;
-	else
-		return 1;
-	
-
+	return invalid_flag;
 }
 
 

@@ -22,7 +22,7 @@
 #include "data_type.h"
 #include "programStartup.h"
 #include "postProcessing.h"
-
+#include "witnessSet.h"
 
 // the mp version
 typedef struct
@@ -41,9 +41,6 @@ typedef struct
 	mat_mp n_minusone_randomizer_matrix_full_prec;
 	
 	
-//	vec_mp *linears;
-//	vec_mp *linears_full_prec;
-//	int num_linears;
 	vec_mp old_projection;
 	vec_mp old_projection_full_prec;
 	
@@ -65,18 +62,17 @@ typedef struct
 
 typedef struct
 {
-	//  square_system_eval_data_d squareSystem;
+
   patch_eval_data_d patch; // ???
-	//  start_system_eval_data_d startSystem;// ???
+
   preproc_data preProcData;
   detjactodetjac_eval_data_mp *BED_mp; // used only for AMP
-	//  eqData_t *EqD;              // for equation-by-equation  ???
+
 	prog_t *SLP;
 	comp_d gamma;
 	mat_d n_minusone_randomizer_matrix;
-//	
-//	vec_d *linears;
-//	int num_linears;
+
+	
 	vec_d old_projection;
 	vec_d new_projection;
 	
@@ -92,8 +88,7 @@ typedef struct
 
 
 
-
-
+void integrity_display_detjac(detjactodetjac_eval_data_d * BED);
 
 /** the main function for finding critical conditions WRT a projection
  */

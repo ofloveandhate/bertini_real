@@ -40,9 +40,12 @@ typedef struct
 {
 	
 	
-	int user_projection; // bool
-	int stifle_membership_screen; // bool
+	
+	int stifle_membership_screen; //< boolean controlling whether stifle_text is empty or " > /dev/null"
+	char *stifle_text; // std::string
+	
 	int user_randomization; // bool
+	int user_projection; // bool
 	
 	int MPType;
 	
@@ -54,7 +57,6 @@ typedef struct
 	char *input_deflated_filename;
 	char *output_basename; 
 	
-	char *stifle_text; // std::string
 	
 	int verbose_level;
 	
@@ -67,7 +69,7 @@ typedef struct
 
 typedef struct
 {
-	int stifle_membership_screen;
+	int stifle_membership_screen; //< boolean controlling whether stifle_text is empty or " > /dev/null"
 	char *stifle_text;
 	
 	int verbose_level;
@@ -104,25 +106,22 @@ typedef struct
 	double midpoint_tol;
 	
 	int use_gamma_trick;
+	
+	int complete_witness_set;
 } solver_configuration;
 
 
-typedef struct
-{
-	
-} multilin_configuration;
 
 
-/**
- reads the tracker_config_t from file.
- */
+
+/** reads the tracker_config_t from file. */
 void get_tracker_config(solver_configuration *solve_options,int MPType);
 
 
 /**
  reads in projection from file if user specified, creates one otherwise.
  --
- currently hardcoded to project onto the first coordinate for the decomposition.
+// currently defaults to create a random real projection with homogeneous value 0;
  */
 void get_projection(vec_mp pi_mp,
 										program_configuration program_options,
@@ -132,51 +131,46 @@ void get_projection(vec_mp pi_mp,
 
 
 
+/** display options to user. */
+void BR_print_usage();
 
-/**
- get the program_configuration from the command line.
- */
+
+/** get the program_configuration from the command line. */
 int BR_parse_commandline(int argC, char *args[], program_configuration *options);
 
-/**
- get the sampler_configuration from the command line.
- */
-int sampler_parse_commandline(int argc, char **argv, sampler_configuration *options);
 
-/**
- check to make sure files are in place, etc.
- */
-int startup(program_configuration options);
+/** check to make sure files are in place, etc.  */
+int BR_startup(program_configuration options);
 
 
+/** displays the bertini_real splash screen */
+void BR_splash_screen();
+
+/** prints the current configuration to the screen, and pauses. */
+void BR_display_current_options(program_configuration options);
+
+
+void BR_init_config(program_configuration *options);
+void BR_clear_config(program_configuration *options);
 
 
 
-/**
- displays the bertini_real splash screen
- */
-void splash_screen();
-
-/**
- prints the current configuration to the screen, and pauses.
- */
-void display_current_options(program_configuration options);
-
-
-void init_program_config(program_configuration *options);
-void clear_program_config(program_configuration *options);
-
-void init_solver_config(solver_configuration *options);
-void clear_solver_config(solver_configuration *options);
-
-
+/** get the sampler_configuration from the command line. */
+int  sampler_parse_commandline(int argc, char **argv, sampler_configuration *options);
 void sampler_splash_screen();
 void sampler_print_usage();
-int sampler_parse_options(int argc, char **argv, sampler_configuration *options);
+int  sampler_parse_options(int argc, char **argv, sampler_configuration *options);
 
 
-void init_sampler_config(sampler_configuration *options);
-void clear_sampler_config(sampler_configuration *options);
+void sampler_init_config(sampler_configuration *options);
+void sampler_clear_config(sampler_configuration *options);
+
+
+
+
+
+void solver_init_config(solver_configuration *options);
+void solver_clear_config(solver_configuration *options);
 
 
 

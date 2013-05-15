@@ -5,9 +5,12 @@
 
 void computeCurveNotSelfConj(witness_set W_in,
                              vec_mp         pi_mp,
-                             curveDecomp_d *C,
+                             curveDecomp_d	*C,
+														 vertex_set			*V,
                              int           num_vars,
-                             char          *input_file)
+                             char          *input_file,
+														 program_configuration * program_options,
+														 solver_configuration * solve_options)
 /***************************************************************\
  * USAGE: compute the isolated points for Non-Self-Conjugate case            *
  * ARGUMENTS: witness set, projection, # of variables, name of input file*
@@ -15,17 +18,21 @@ void computeCurveNotSelfConj(witness_set W_in,
  * NOTES:                                                        *
  \***************************************************************/
 {
-	vec_d pi; init_vec_d(pi,pi_mp->size); pi->size = pi_mp->size;
-	vec_mp_to_d(pi,pi_mp);
+	vec_d tmp; init_vec_d(tmp,pi_mp->size); tmp->size = pi_mp->size;
+	vec_mp_to_d(tmp,pi_mp);
+	vec_d pi; init_vec_d(pi, pi_mp->size-1); pi->size = pi_mp->size-1;
+	dehomogenize_d(&pi,tmp);
 	
-  int i,j,k,m,strLength,num_sols,*declarations = NULL,isadd;
+	
+  int i,j,k,strLength,num_sols,*declarations = NULL;
   char *strSys,*bertini_command="bertini";
   FILE *IN = NULL;
-  vec_d cur_sol,cur_sol_bar;
-  double d_norm=0.0,TOL=1e-15,tempD;
-  comp_d temp;
-  init_vec_d(cur_sol,num_vars);
-  init_vec_d(cur_sol_bar,num_vars);
+  vec_mp cur_sol,cur_sol_bar;
+  init_vec_mp(cur_sol,num_vars); cur_sol->size = num_vars;
+	set_one_mp(&cur_sol->coord[0]);
+	
+  init_vec_mp(cur_sol_bar,num_vars); cur_sol_bar->size = num_vars;
+	set_one_mp(&cur_sol_bar->coord[0]);
 	
   IN = fopen(input_file, "r");
   partitionParse(&declarations, IN, "func_input_nsc", "config_nsc",1);
@@ -53,83 +60,51 @@ void computeCurveNotSelfConj(witness_set W_in,
     bexit(ERROR_CONFIGURATION);
   }
   fscanf(IN, "%d", &num_sols);
-  //insert the real solutions into V0
-  C->vertices=(vertex *)bmalloc(num_sols*sizeof(vertex));
+
 	
 	
-	vertex temp_vertex; init_vertex_d(&temp_vertex);
-	
-	//some left over test code
-	//	vertex_d temp_vertex;  
-	////	set_mp(temp_vertex.projVal_mp,  );
-	//	get_comp_rand_mp(temp_vertex.projVal_mp);
-	//	make_vec_random_mp(temp_vertex.pt_mp,num_vars);
-	////	vec_cp_mp(temp_vertex.pt_mp,W_crit_real.W_mp.pts[index_tracker[ii]]);
-	//
-	//	for (ii=0;  ii<5; ii++){
-	//		add_vertex_to_V1(&C,temp_vertex);
-	//	}
+	vertex temp_vertex;
+	init_vertex(&temp_vertex);
+	change_size_vec_mp(temp_vertex.pt_mp,num_vars);temp_vertex.pt_mp->size = num_vars;
+
+	temp_vertex.type = ISOLATED;
 	
 	
-  for(i=0,k=0;i<num_sols;i++)
+	comp_mp projection_value;  init_mp(projection_value);
+	
+	for(i=0,k=0;i<num_sols;i++)
   {
-    for(j=0;j<num_vars;j++)
-      fscanf(IN, "%lf %lf", &(cur_sol->coord[j].r), &(cur_sol->coord[j].i));
-    for(j=0;j<num_vars;j++)
-      fscanf(IN, "%lf %lf", &(cur_sol_bar->coord[j].r), &(cur_sol_bar->coord[j].i));
+		for(j=0;j<num_vars-1;j++){
+			mpf_inp_str(cur_sol->coord[j+1].r, IN, 10);
+			mpf_inp_str(cur_sol->coord[j+1].i, IN, 10);
+		}
+//      fscanf(IN, "%lf %lf", &(cur_sol->coord[j+1].r), &(cur_sol->coord[j+1].i));
+    for(j=0;j<num_vars;j++){
+			mpf_inp_str(cur_sol_bar->coord[j+1].r, IN, 10);
+			mpf_inp_str(cur_sol_bar->coord[j+1].i, IN, 10);
+		}
+//      fscanf(IN, "%lf %lf", &(cur_sol_bar->coord[j+1].r), &(cur_sol_bar->coord[j+1].i));
+    
     //check if x=x_bar
-    for(j=0;j<num_vars;j++)
-    {
-      sub_d(&(cur_sol_bar->coord[j]), &(cur_sol_bar->coord[j]), &(cur_sol->coord[j]));
-      if(d_norm<d_abs_d(&(cur_sol_bar->coord[j])))
-        d_norm=d_abs_d(&(cur_sol_bar->coord[j]));
-    }
-    if(d_norm<TOL)//x=x_bar
-    {
-      // check if V0 has current vertex already.
-      isadd=1;
-      for(j=0;j<k;j++)
-      {
-        d_norm=0.0;
-        for(m=0;m<num_vars;m++)
-        {
-          sub_d(&(cur_sol_bar->coord[m]), &(cur_sol->coord[m]), &(C->vertices[j].pt->coord[m]));
-          if(d_norm<d_abs_d(&(cur_sol_bar->coord[m])))
-            d_norm=d_abs_d(&(cur_sol_bar->coord[m]));
-        }
-        if(d_norm<TOL)
-        {
-          isadd=0;break;//V0 has this point already.
-        }
-      }//re: for jj
+  
+    if (isSamePoint_homogeneous_input_mp(cur_sol,cur_sol_bar)) { // x=x_bar
 			
+			vec_cp_mp(temp_vertex.pt_mp,cur_sol);
 			
+			dot_product_mp(projection_value, temp_vertex.pt_mp, pi_mp);
 			
-      if(isadd)
-      {
-				// add points to V0
-				
-//        init_point_d(C->vertices[k].pt,num_vars);
-//        point_cp_d(C->vertices[k].pt,cur_sol);
-//				
-				point_cp_d(temp_vertex.pt,cur_sol);
-				
-        //compute the projection
-        set_zero_d(temp_vertex.projVal); // intialize
-        for(j=0;j<num_vars;j++)
-        {
-          mul_d2(temp,&(cur_sol->coord[j]),&(pi->coord[j]),tempD);
-          add_d(temp_vertex.projVal,temp,temp_vertex.projVal);
-        }
-				temp_vertex.type = ISOLATED;
-				add_vertex(C,temp_vertex);
-				
-        k++;
-      }
-    }
-  }
+			if (curve_index_in_vertices(C,V,
+																	temp_vertex.pt_mp,
+																	projection_value,
+																	solve_options->T)
+					==-1)
+				curve_add_vertex(C,V,temp_vertex);      
+		}
+		
+	}
+	
+	clear_mp(projection_value);
   //set the number of vertices
-  C->num_vertices=k;
   fclose(IN);
   //clear
   clear_vec_d(cur_sol);

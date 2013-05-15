@@ -28,7 +28,7 @@
 #include "data_type.h"
 #include "isosingular.h"
 #include "programStartup.h"
-#include "witnessSetParse.h"
+#include "witnessSet.h"
 #include "output.h"
 
 #endif

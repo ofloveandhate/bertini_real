@@ -12,6 +12,9 @@
 //TODO: FINISH THIS EXPLANATION
 
 
+
+
+
 int detjac_to_detjac_solver_main(int MPType,
 																 witness_set W, // carries with it the start points, and the linears.
 																 mat_mp n_minusone_randomizer_matrix_full_prec,
@@ -349,6 +352,10 @@ void detjac_to_detjac_track_d(trackingStats *trackCount,
 		// print the header of the path to OUT
 		printPathHeader_d(OUT_copy[oid], &startPts[startPointIndex], &T_copy[oid], ii, &BED_copy[oid], eval_func_d);
 		
+		
+		integrity_display_detjac(&BED_copy[oid]);
+		
+		
 		// track the path
 		detjac_to_detjac_track_path_d(solution_counter, &EG[oid], &startPts[startPointIndex], OUT_copy[oid], MIDOUT_copy[oid], &T_copy[oid], &BED_copy[oid], BED_copy[oid].BED_mp, curr_eval_d, curr_eval_mp, change_prec, find_dehom);
 		
@@ -574,7 +581,7 @@ int detjac_to_detjac_setup_d(FILE **OUT, char *outName,
 //this derived from basic_eval_d
 int detjac_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp, point_d current_variable_values, comp_d pathVars, void const *ED)
 { // evaluates a special homotopy type, built for bertini_real
-//	printf("t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
+	printf("t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
 	
   detjactodetjac_eval_data_d *BED = (detjactodetjac_eval_data_d *)ED; // to avoid having to cast every time
 	
@@ -2817,187 +2824,13 @@ int check_issoln_detjactodetjac_mp(endgame_data_t *EG,
 
 
 
+void integrity_display_detjac(detjactodetjac_eval_data_d * BED){
+	print_point_to_screen_matlab(BED->old_projection,"old_projection");
+	print_point_to_screen_matlab(BED->new_projection,"new_projection");
+	print_matrix_to_screen_matlab(BED->n_minusone_randomizer_matrix,"R");
+}
 
 
-
-
-
-
-
-
-//
-//
-//int check_issoln_detjactodetjac_d(endgame_data_t *EG,
-//																	 tracker_config_t *T,
-//																	 void const *ED)
-//{
-//  detjactodetjac_eval_data_d *BED = (detjactodetjac_eval_data_d *)ED; // to avoid having to cast every time
-//	
-//	
-//	int ii;
-//	double tol;
-//	double n1, n2, zero_thresh, max_rat;
-//	point_d f;
-//	eval_struct_d e;
-//	//
-//	//	mpf_init(n1); mpf_init(n2); mpf_init(zero_thresh); mpf_init(max_rat);
-//	init_point_d(f, 1);
-//	init_eval_struct_d(e,0, 0, 0);
-//	
-//	max_rat = T->ratioTol;
-//	
-//	// setup threshold based on given threshold and precision
-//	//	if (num_digits > 300)
-//	//		num_digits = 300;
-//	//	num_digits -= 2;
-//	zero_thresh = MAX(T->funcResTol, 1e-15);
-//	
-//	
-//	if (EG->prec>=64){
-//		vec_d terminal_pt;  init_vec_d(terminal_pt,1);
-//		vec_mp_to_d(terminal_pt,EG->PD_mp.point);
-//		detjac_to_detjac_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, terminal_pt, EG->PD_d.time, ED);
-//		clear_vec_d(terminal_pt);}
-//	else{
-//		detjac_to_detjac_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_d.point, EG->PD_d.time, ED); }
-//	
-//	
-////	print_point_to_screen_matlab(e.funcVals,"post_soln_func_vals");
-//	
-//	if (EG->last_approx_prec>=64) {
-//		vec_d prev_pt;  init_vec_d(prev_pt,1);
-//		vec_mp_to_d(prev_pt,EG->PD_mp.point);
-//		detjac_to_detjac_eval_d(f, e.parVals, e.parDer, e.Jv, e.Jp, prev_pt, EG->PD_d.time, ED);
-//		clear_vec_d(prev_pt);}
-//	else{
-//		detjac_to_detjac_eval_d(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_d, EG->PD_d.time, ED);}
-//	
-//	// compare the function values
-//	int isSoln = 1;
-//	for (ii = 0; ii < BED->SLP->numFuncs && isSoln; ii++)
-//	{
-//		n1 = d_abs_d( &e.funcVals->coord[ii]);
-//		n2 = d_abs_d( &f->coord[ii]);
-//		
-//		if (tol <= n1 && n1 <= n2)
-//		{ // compare ratio
-//			if (n1 > max_rat * n2)
-//				isSoln = 0;
-//		}
-//		else if (tol <= n2 && n2 <= n1)
-//		{ // compare ratio
-//			if (n2 > max_rat * n1)
-//				isSoln = 0;
-//		}
-//	}
-//	
-//	
-//	
-//	
-//	clear_eval_struct_d(e);
-//	clear_vec_d(f);
-//	
-//	return isSoln;
-//	
-//}
-//
-//
-//int check_issoln_detjactodetjac_mp(endgame_data_t *EG,
-//																		tracker_config_t *T,
-//																		void const *ED)
-//{
-//  detjactodetjac_eval_data_mp *BED = (detjactodetjac_eval_data_mp *)ED; // to avoid having to cast every time
-//	
-//	int ii;
-//	
-//	for (ii = 0; ii < T->numVars; ii++)
-//	{
-//    if (!(mpfr_number_p(EG->PD_mp.point->coord[ii].r) && mpfr_number_p(EG->PD_mp.point->coord[ii].i)))
-//		{
-//			printf("got not a number\n");
-//			print_point_to_screen_matlab_mp(EG->PD_mp.point,"bad_solution");
-//      return 0;
-//		}
-//	}
-//	
-//	int num_digits = prec_to_digits((int) mpf_get_default_prec());
-//	double tol;
-//	mpf_t n1, n2, zero_thresh, max_rat;
-//	point_mp f;
-//	eval_struct_mp e;
-//	
-//	mpf_init(n1); mpf_init(n2); mpf_init(zero_thresh); mpf_init(max_rat);
-//	init_point_mp(f, T->numVars); f->size = T->numVars;
-//	init_eval_struct_mp(e,0, 0, 0);
-//	
-//	mpf_set_d(max_rat, T->ratioTol);
-//	
-//	// setup threshold based on given threshold and precision
-//	if (num_digits > 300)
-//		num_digits = 300;
-//	num_digits -= 2;
-//	tol = MAX(T->funcResTol, pow(10,-num_digits));
-//	mpf_set_d(zero_thresh, tol);
-//	
-//	//this one guaranteed by entry condition
-//	detjac_to_detjac_eval_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, ED);
-//	
-////	print_point_to_screen_matlab_mp(e.funcVals,"post_soln_func_vals");
-//	if (EG->last_approx_prec < 64)
-//	{ // copy to _mp
-//		point_d_to_mp(EG->last_approx_mp, EG->last_approx_d);
-//	}
-//	
-//	detjac_to_detjac_eval_mp(f,          e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_mp, EG->PD_mp.time, ED);
-//	
-//	
-//	// compare the function values
-//	int isSoln = 1;
-//	for (ii = 0; ii < BED->SLP->numFuncs && isSoln; ii++)
-//	{
-//		mpf_abs_mp(n1, &e.funcVals->coord[ii]);
-//		mpf_abs_mp(n2, &f->coord[ii]);
-//		
-//		if (mpf_cmp(zero_thresh, n1) <= 0 && mpf_cmp(n1, n2) <= 0)
-//		{ // compare ratio
-//			mpf_mul(n2, max_rat, n2);
-//			if (mpf_cmp(n1, n2) > 0)
-//				isSoln = 0;
-//		}
-//		else if (mpf_cmp(zero_thresh, n2) <= 0 && mpf_cmp(n2, n1) <= 0)
-//		{ // compare ratio
-//			mpf_mul(n1, max_rat, n1);
-//			if (mpf_cmp(n2, n1) > 0)
-//				isSoln = 0;
-//		}
-//	}
-//	
-//	
-//	mpf_clear(n1); mpf_clear(n2); mpf_clear(zero_thresh); mpf_clear(max_rat);
-//	
-//	
-//	clear_eval_struct_mp(e);
-//	clear_vec_mp(f);
-//	
-//	return isSoln;
-//	
-//}
-//
-//
-//
-//
-
-
-
-
-
-
-
-
-
-
-
-//
 
 
 

@@ -9,7 +9,7 @@
 #include <limits.h>
 #include <mpfr.h>
 #include <mpf2mpfr.h>
-
+#include <signal.h>
 
 
 
@@ -24,14 +24,16 @@
 /*** low-level data types. ***/
 
 
+//The following lets us use words instead of numbers to indicate vertex type.
+enum {CRITICAL=0, NEW=1, MIDPOINT=2, ISOLATED=-1, SAMPLE_POINT=3};
 
 
-//typedef struct
-//{
-//  int num_pts;
-//  point_d *pts;
-//} witness_point_set_d;
 
+void * br_malloc(size_t size);
+
+void br_exit(int errorCode);
+
+void deliberate_segfault();
 
 typedef struct
 {
@@ -39,20 +41,8 @@ typedef struct
 } function;
 
 
-//typedef struct
-//{
-//  function *funcs; //probably not used for now.
-//  //
-//  char *fName; //system can be given in a file -- this is its name.
-//}system;
 
-////begin mp types
-//typedef struct
-//{
-//  int num_pts;
-//  point_mp *pts;
-//} witness_point_set_mp;
-////end mp types
+
 
 
 typedef struct
@@ -91,18 +81,24 @@ typedef struct
 // CURVE CELL DECOMP DATA TYPES
 typedef struct
 {
-  point_d pt;
+  point_d  pt_d;
   point_mp pt_mp;
-  comp_d projVal; //Value of projection pi applied to pt; used for easy comparison of projected values later....
-  comp_mp projVal_mp;
-  int type;  //See enum below.
-  int num_left;  //this and next line track how often this vertex appears in
-  int num_right; //edges;  good for sanity check AND determining V0.
-}vertex;
+	
+  comp_d   projVal_d; //Value of projection pi applied to pt;
+  comp_mp  projVal_mp;
+	
+  int      type;  //See enum above.
+} vertex;
 
-//The following lets us use words instead of numbers to indicate vertex type.
-enum {CRITICAL=0, NEW=1, MIDPOINT=2, ISOLATED=-1};
 
+typedef struct
+{
+	vertex *vertices;  //Isolated real points.
+	
+	int num_vertices;
+	
+	
+} vertex_set;
 
 typedef struct
 {
@@ -115,57 +111,78 @@ typedef struct
 {
 	int num_variables;
 	
-  vertex *vertices;  //Isolated real points.
   edge *edges;
 	
 	//these counters keep track of the number of things
-	int			 num_vertices;
+	
+	
 	int      num_edges;
 	
+	
+	int			 num_isolated;
   int      num_V0;
   int      num_V1;
   int      num_midpts;
 	int			 num_new;
+	int			 num_samples;
+	
 
-	// these arrays of integers index the points.
+	// these arrays of integers index the vertices.
+	int			*isolated_indices;
 	int			*V0_indices;
 	int			*V1_indices;
 	int			*midpt_indices;
 	int			*new_indices;
-
-	vec_mp	pi; // the projection
+	int			*sample_indices;
+	
+	vec_mp	pi_mp; // the projection
 	vec_d		pi_d; // the projection
 	mat_mp n_minus_one_randomizer_matrix;
+	
+	int MPType;
 	
 } curveDecomp_d;
 
 
 typedef struct
 {
-  vec_d    **vertices;  //points
-  vec_d    *projection_values; //projection of points
-  vec_mp   **vertices_mp;
-  vec_mp   *projection_values_mp;
-  int      **refine;
-  int      num_edges;// number of edges
-  int      *num_pts;// number of points
-}sample_d;
+	int num_variables;
+	
+	int num_edges;
+	
+	int *num_samples_each_edge;
+	
+	int **sample_indices;
+
+}
+sample_data;
 
 
 
 
+void init_vertex_set(vertex_set *V);
+int add_vertex(vertex_set *V, vertex new_vertex);
 
-//int index_in_V1(curveDecomp_d *C, vec_mp testpoint, comp_mp projection_value, tracker_config_t T, int sidedness);
-//void add_point_to_V0(curveDecomp_d *C, vertex new_vertex);
-//void add_point_to_V1(curveDecomp_d *C, vertex new_vertex);
+int curve_add_vertex(curveDecomp_d *C, vertex_set *V, vertex source_vertex);
 
-int add_vertex(curveDecomp_d *C, vertex new_vertex);
+int curve_index_in_vertices(curveDecomp_d *C,  vertex_set *V,
+														vec_mp testpoint, comp_mp projection_value,
+														tracker_config_t T);
 
-int index_in_vertices(curveDecomp_d *C, vec_mp testpoint, comp_mp projection_value, tracker_config_t T, int sidedness);
+int curve_index_in_vertices_with_add(curveDecomp_d *C, vertex_set *V,
+																		 vec_mp testpoint, comp_mp projection_value,
+																		 tracker_config_t T);
 
-void init_vertex_d( vertex *curr_vertex);
-void init_vertex_mp(vertex *curr_vertex);
-void cp_vertex_mp(vertex *target_vertex, vertex new_vertex);
+void vertex_set_print_to_screen(vertex_set *V);
+
+
+void init_vertex(vertex *curr_vertex);
+
+/**
+ copy in a vertex
+ */
+void cp_vertex(vertex *target_vertex, vertex source_vertex);
+
 
 void init_edge(edge *curr_edge);
 //void init_edge_mp(edge *curr_edge, int num_variables);
@@ -175,17 +192,7 @@ void add_edge(curveDecomp_d *C, edge new_edge);
 
 
 //function prototypes for bertini_real data clearing etc.
-void init_curveDecomp_d(curveDecomp_d *C);
-void merge_witness_sets(witness_set *W_out,witness_set W_left,witness_set W_right);
-
-void init_variable_names(witness_set *W, int num_vars);
-
-void cp_names(witness_set *W_out, witness_set W_in);
-void cp_linears(witness_set *W_out, witness_set W_in);
-void cp_patches(witness_set *W_out, witness_set W_in);
-void cp_witness_set(witness_set *W_out, witness_set W_in);
-void init_witness_set_d(witness_set *W);
-
+void init_curveDecomp_d(curveDecomp_d *C, int MPType);
 void norm_of_difference(mpf_t result, vec_mp left, vec_mp right);
 
 void dehomogenize_d(vec_d *result, vec_d dehom_me);
@@ -197,18 +204,19 @@ void dot_product_mp(comp_mp result, vec_mp one, vec_mp two);
 void projection_value_homogeneous_input_d(comp_d result, vec_d input, vec_d projection);
 void projection_value_homogeneous_input(comp_mp result, vec_mp input, vec_mp projection);
 
+
+int isSamePoint_inhomogeneous_input_d(point_d left, point_d right);
+int isSamePoint_inhomogeneous_input_mp(point_mp left, point_mp right);
+
+
+
 int isSamePoint_homogeneous_input_d(point_d left, point_d right);
 
 int isSamePoint_homogeneous_input_mp(point_mp left, point_mp right);
 
-void write_homogeneous_coordinates(witness_set W, char filename[]);
-void write_dehomogenized_coordinates(witness_set W, char filename[]);
-void write_linears(witness_set W, char filename[]);
+void clear_curveDecomp_d(curveDecomp_d *C);
+void clear_sample_d(sample_data *S, int MPType);
 
-void clear_curveDecomp_d(curveDecomp_d *C, int MPType);
-void clear_sample_d(sample_d *S, int MPType);
-void clear_witness_set(witness_set W);
-void print_witness_set_to_screen(witness_set W);
 void print_point_to_screen_matlab(vec_d M, char name[]);
 void print_point_to_screen_matlab_mp(vec_mp M, char name[]);
 void print_matrix_to_screen_matlab(mat_d M, char name[]);
