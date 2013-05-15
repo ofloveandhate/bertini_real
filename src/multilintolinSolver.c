@@ -1,6 +1,6 @@
-#include "lintolinSolver.h"
+#include "multilintolinSolver.h"
 
-//the main wrapper function for chaining into the lin_to_lin solver.
+//the main wrapper function for chaining into the multilin_to_lin solver.
 // pass in:
 //     • the MPType, witness_set with the linear and points to move FROM (as well as the patch equation),
 //     • max_precision randomizer matrix and linears,
@@ -10,59 +10,61 @@
 //  in corresponding order.
 
 //solve_options has both a tracker_config_t and a preproc_data.
-int lin_to_lin_solver_main(int MPType,
+int multilintolin_solver_main(int MPType,
 													 witness_set W,
 													 mat_mp n_minusone_randomizer_matrix_full_prec,
-													 vec_mp *new_linears_full_prec, int num_new_linears,
+													 vec_mp *new_linears_full_prec,
 													 witness_set *W_new,
 													 solver_configuration *solve_options){
 	
-	cp_patches(W_new,W); // copy the patches over from the original witness set
-	W_new->num_variables = W.num_variables;
-	W_new->MPType = MPType;
-	cp_names(W_new,W);
 	
-	if (num_new_linears==0) {
-		W_new->num_linears = 0;
-		printf("\nno new linears at which to solve.  returning out of lin_to_lin\n");
-		return 0;
-	}
 	
 	if (W.num_linears==0) {
 		printf("input witness set had 0 linears!\n");
 		exit(01);
 	}
 	
-	W_new->num_linears = (num_new_linears);
-	W_new->L = (vec_d *)bmalloc((num_new_linears)*sizeof(vec_d));
-	W_new->L_mp = (vec_mp *)bmalloc((num_new_linears)*sizeof(vec_mp));
-	int ii;
-	for (ii=0; ii<num_new_linears; ii++) {
-		//copy the linears into the new witness_set
-		init_vec_d(W_new->L[ii],0); init_vec_mp2(W_new->L_mp[ii],0,1024); //the 1024 here is incorrect
-		vec_mp_to_d(   W_new->L[ii],new_linears_full_prec[ii]);
-		vec_cp_mp(W_new->L_mp[ii],new_linears_full_prec[ii]);
-	}
+	W_new->num_variables = W.num_variables;
+	
+	
+	
 	
 	
 
 	if (MPType==1){
-		lin_to_lin_solver_mp(MPType,W,n_minusone_randomizer_matrix_full_prec,new_linears_full_prec,num_new_linears,W_new,solve_options);
+		multilin_to_lin_solver_mp(MPType,W,n_minusone_randomizer_matrix_full_prec,
+															new_linears_full_prec,W_new,solve_options);
 	}
 	else{
-		lin_to_lin_solver_d( MPType,W,n_minusone_randomizer_matrix_full_prec,new_linears_full_prec,num_new_linears,W_new,solve_options);
+		multilin_to_lin_solver_d( MPType,W,n_minusone_randomizer_matrix_full_prec,new_linears_full_prec,W_new,solve_options);
 	}
 		
+	
+	W_new->MPType = MPType;
+	if (solve_options->complete_witness_set==1){
+		W_new->num_linears = W.num_linears;
+		W_new->L = (vec_d *)br_malloc(W.num_linears*sizeof(vec_d));
+		W_new->L_mp = (vec_mp *)br_malloc(W.num_linears*sizeof(vec_mp));
+		int ii;
+		for (ii=0; ii<W.num_linears; ii++) {
+			//copy the linears into the new witness_set
+			init_vec_d(W_new->L[ii],0); init_vec_mp2(W_new->L_mp[ii],0,1024); //the 1024 here is incorrect
+			vec_mp_to_d(   W_new->L[ii],new_linears_full_prec[ii]);
+			vec_cp_mp(W_new->L_mp[ii],new_linears_full_prec[ii]);
+		}
+		
+		cp_patches(W_new,W); // copy the patches over from the original witness set
+		cp_names(W_new,W);
+	}
 	
 	return 0;
 }
 
 
-int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentSeed
+int multilin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentSeed
 												witness_set W,  // includes the initial linear.
 												mat_mp n_minusone_randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
 												vec_mp *new_linears_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
-												int num_new_linears,
 												witness_set *W_new,
 												solver_configuration *solve_options)
 /***************************************************************\
@@ -84,7 +86,7 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
   int (*ptr_to_eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *) = NULL;
   int (*ptr_to_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = NULL;
 	
-  lintolin_eval_data_d ED;
+  multilintolin_eval_data_d ED;
   trackingStats trackCount;
   double track_time;
 	
@@ -100,7 +102,7 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
 	
 	
 	//  // call the setup function
-	num_variables = lin_to_lin_setup_d(&OUT, "output",
+	num_variables = multilin_to_lin_setup_d(&OUT, "output",
 																		 &midOUT, "midpath_data",
 																		 &T, &ED,
 																		 &dummyProg,  //arg 7
@@ -113,10 +115,10 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
 																		 solve_options);
   
 	int (*change_prec)(void const *, int) = NULL;
-	change_prec = &change_lintolin_eval_prec;
+	change_prec = &change_multilintolin_eval_prec;
 	
 	int (*dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *) = NULL;
-	dehom = &lintolin_dehom;
+	dehom = &multilintolin_dehom;
 	
 	
 	
@@ -126,12 +128,12 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
     if (dummyProg.numPathVars > 0)
     { // path variable present
       printf("ERROR: Bertini does not expect path variables when user-defined homotopies are not being used!\n");
-      bexit(ERROR_INPUT_SYSTEM);
+      br_exit(ERROR_INPUT_SYSTEM);
     }
     if (dummyProg.numPars > 0)
     { // parameter present
       printf("ERROR: Bertini does not expect parameters when user-defined homotopies are not being used!\n");
-      bexit(ERROR_INPUT_SYSTEM);
+      br_exit(ERROR_INPUT_SYSTEM);
     }
   }
 	
@@ -145,7 +147,7 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
   }
 	
 	
-	post_process_t *endPoints = (post_process_t *)bmalloc(W.num_pts*(num_new_linears) * sizeof(post_process_t)); //overallocate, expecting full number of solutions.
+	post_process_t *endPoints = (post_process_t *)br_malloc(W.num_pts* sizeof(post_process_t)); //overallocate, expecting full number of solutions.
 	
 	
 	if (T.endgameNumber == 3)
@@ -156,10 +158,9 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
 	}
 	else
 	{ // use regular endgame
-		lin_to_lin_track_d(&trackCount, OUT, rawOUT, midOUT,
+		multilin_to_lin_track_d(&trackCount, OUT, rawOUT, midOUT,
 											 W,  // was the startpts file pointer.
 											 new_linears_full_prec,
-											 num_new_linears,
 											 endPoints,
 											 FAIL, pathMod,
 											 &T, &ED, ED.BED_mp,
@@ -170,7 +171,7 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
 	
 	fclose(midOUT);
 	
-
+//	printf("posttrack\n");
 	// finish the output to rawOUT
 	fprintf(rawOUT, "%d\n\n", -1);  // bottom of rawOUT
 	
@@ -181,6 +182,8 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
 		midpoint_checker(trackCount.numPoints, num_variables,solve_options->midpoint_tol, &num_crossings);
 	}
 	
+	
+//	printf("post midpoint checker\n");
 	// setup num_sols
 	num_sols = trackCount.successes;
 	
@@ -202,7 +205,7 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
   fprintf(OUT, "Track Time = %fs\n", track_time);
 	
   // print the system to rawOUT
-	//  printlintolinRelevantData(&ED, ED.BED_mp, T.MPType, usedEq, rawOUT);
+	//  printmultilintolinRelevantData(&ED, ED.BED_mp, T.MPType, usedEq, rawOUT);
 	//	printZeroDimRelevantData(&ED, ED.BED_mp, T.MPType, usedEq, rawOUT);// legacy
 	
   // close all of the files
@@ -214,7 +217,7 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
 
 	
 	BRpostProcessing(endPoints, W_new, trackCount.successes, &ED.preProcData, &T,solve_options);
-	
+//	printf("post post processing\n");
 	
 
 	
@@ -231,7 +234,7 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
 
 	
 	
-  lintolin_eval_clear_d(&ED, userHom, T.MPType);
+  multilintolin_eval_clear_d(&ED, userHom, T.MPType);
   tracker_config_clear(&T);
 
   return 0;
@@ -240,16 +243,15 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
 
 
 
-void lin_to_lin_track_d(trackingStats *trackCount,
+void multilin_to_lin_track_d(trackingStats *trackCount,
 												FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
 												witness_set W,
 												vec_mp *new_linears_full_prec,
-												int num_new_linears,
 												post_process_t *endPoints,
 												FILE *FAIL,
 												int pathMod, tracker_config_t *T,
-												lintolin_eval_data_d *ED_d,
-												lintolin_eval_data_mp *ED_mp,
+												multilintolin_eval_data_d *ED_d,
+												multilintolin_eval_data_mp *ED_mp,
 												int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
 												int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 												int (*change_prec)(void const *, int),
@@ -263,10 +265,10 @@ void lin_to_lin_track_d(trackingStats *trackCount,
  *  in either double precision or adaptive precision             *
  \***************************************************************/
 {
-	
+//	printf("multilin_track_d\n");
   int ii,jj,kk, oid, startPointIndex, max = max_threads();
   tracker_config_t *T_copy = NULL;
-  lintolin_eval_data_d *BED_copy = NULL;
+  multilintolin_eval_data_d *BED_copy = NULL;
   trackingStats *trackCount_copy = NULL;
   FILE **OUT_copy = NULL, **MIDOUT_copy = NULL, **RAWOUT_copy = NULL, **FAIL_copy = NULL, *NONSOLN = NULL, **NONSOLN_copy = NULL;
 	
@@ -277,13 +279,13 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 	int (*curr_eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *) = NULL;
   int (*curr_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = NULL;
 	
-	curr_eval_d = &lin_to_lin_eval_d;   //DAB
-  curr_eval_mp = &lin_to_lin_eval_mp; // DAB 
+	curr_eval_d = &multilin_to_lin_eval_d;   //DAB
+  curr_eval_mp = &multilin_to_lin_eval_mp; // DAB 
 	
 
 	
 	point_data_d *startPts = NULL;
-	startPts = (point_data_d *)bmalloc(W.num_pts * sizeof(point_data_d));
+	startPts = (point_data_d *)br_malloc(W.num_pts * sizeof(point_data_d));
 	
 	for (ii = 0; ii < W.num_pts; ii++)
 	{ // setup startPts[ii]
@@ -306,148 +308,144 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 	
   // setup the rest of the structures
 	endgame_data_t *EG = NULL; //this will hold the temp solution data produced for each individual track
-  setup_lin_to_lin_omp_d(max,
+  setup_multilin_to_lin_omp_d(max,
 												 &EG, &trackCount_copy, trackCount,
 												 &OUT_copy, OUT, &RAWOUT_copy, RAWOUT, &MIDOUT_copy, MIDOUT, &FAIL_copy, FAIL, &NONSOLN_copy, NONSOLN,
 												 &T_copy, T,
 												 &BED_copy, ED_d, ED_mp);
 
 	
-	trackCount->numPoints = W.num_pts*(num_new_linears);
+	trackCount->numPoints = W.num_pts;
 	int solution_counter = 0;
 	
 	
-	for (kk = 0; kk< num_new_linears; kk++)
+	for (kk = 0; kk< W.num_linears; kk++)
 	{
-		if (solve_options->verbose_level>=1)
-			printf("solving for linear %d\n",kk);
-		
+
 		// we pass the particulars of the information for this solve mode via the ED.
 		
-		//set current linear in the evaluator data's
-		vec_mp_to_d(     ED_d->current_linear,new_linears_full_prec[kk]);
+		// SET NEW LINEARs
 		
-		
-		if (T->MPType==2) {
-			//q: should i reset the precision here?
-			vec_cp_mp(ED_d->BED_mp->current_linear,new_linears_full_prec[kk]);
-			vec_cp_mp(ED_d->BED_mp->current_linear_full_prec,new_linears_full_prec[kk]);
+		vec_mp_to_d(ED_d->current_linear[kk],new_linears_full_prec[kk]);
+		if (solve_options->T.MPType==2) {
+			vec_cp_mp(ED_d->BED_mp->current_linear[kk],new_linears_full_prec[kk]);
+			vec_cp_mp(ED_d->BED_mp->current_linear_full_prec[kk],new_linears_full_prec[kk]);
 		}
 		
-
-
 		
-		// track each of the start points
+	} // for each new linear
+	
+	// track each of the start points
 #ifdef _OPENMP
 #pragma omp parallel for private(ii, oid, startPointIndex) schedule(runtime)
 #endif
-		for (ii = 0; ii < W.num_pts; ii++)
-		{ // get current thread number
-			oid = thread_num();
-			
-			if (solve_options->verbose_level>=1)
-				printf("\t\tpoint %d\n",ii);
-			
-			startPointIndex = ii;
+	for (ii = 0; ii < W.num_pts; ii++)
+	{
+		
+		// get current thread number
+		oid = thread_num();
+		
+		if (solve_options->verbose_level>=1)
+			printf("multilintolin\tpoint %d\n",ii);
+		
+		startPointIndex = ii;
 
 //TODO: eliminate this header stuff
-			// print the header of the path to OUT
-			printPathHeader_d(OUT_copy[oid], &startPts[startPointIndex], &T_copy[oid], ii, &BED_copy[oid], eval_func_d);
-			
-			
-#ifdef printpathlintolin
-			BED_copy[oid].num_steps = 0;
+		// print the header of the path to OUT
+		printPathHeader_d(OUT_copy[oid], &startPts[startPointIndex], &T_copy[oid], ii, &BED_copy[oid], eval_func_d);
+		
+		
+#ifdef printpathmultilintolin
+		BED_copy[oid].num_steps = 0;
 #endif
-			
-			// track the path
-			lin_to_lin_track_path_d(solution_counter, &EG[oid], &startPts[startPointIndex], OUT_copy[oid], MIDOUT_copy[oid], &T_copy[oid], &BED_copy[oid], BED_copy[oid].BED_mp, curr_eval_d, curr_eval_mp, change_prec, find_dehom);
-			
-#ifdef printpathlintolin
-			fprintf(BED_copy[oid].FOUT,"-100 %d ",BED_copy[oid].num_steps);
-			for (mm=0; mm<BED_copy[oid].num_variables-1; ++mm) {
-				fprintf(BED_copy[oid].FOUT,"0 0 ");
-			}
-			fprintf(BED_copy[oid].FOUT,"\n%d\n\n",EG->retVal);
-#endif
-			
-			
-			// check to see if it should be sharpened
-			if (EG[oid].retVal == 0 && T_copy[oid].sharpenDigits > 0)
-			{ // use the sharpener for after an endgame
-				sharpen_endpoint_endgame(&EG[oid], &T_copy[oid], OUT_copy[oid], &BED_copy[oid], BED_copy[oid].BED_mp, curr_eval_d, curr_eval_mp, change_prec);
-			}
-			
+		
+		
 
-			//get the terminal time in double form
-			comp_d time_to_compare;
-			if (EG->prec < 64) {
-				set_d(time_to_compare,EG->PD_d.time);}
+		// track the path
+		multilin_to_lin_track_path_d(solution_counter, &EG[oid], &startPts[startPointIndex], OUT_copy[oid], MIDOUT_copy[oid], &T_copy[oid], &BED_copy[oid], BED_copy[oid].BED_mp, curr_eval_d, curr_eval_mp, change_prec, find_dehom);
+		
+#ifdef printpathmultilintolin
+		fprintf(BED_copy[oid].FOUT,"-100 %d ",BED_copy[oid].num_steps);
+		for (mm=0; mm<BED_copy[oid].num_variables-1; ++mm) {
+			fprintf(BED_copy[oid].FOUT,"0 0 ");
+		}
+		fprintf(BED_copy[oid].FOUT,"\n%d\n\n",EG->retVal);
+#endif
+		
+		
+		// check to see if it should be sharpened
+		if (EG[oid].retVal == 0 && T_copy[oid].sharpenDigits > 0)
+		{ // use the sharpener for after an endgame
+			sharpen_endpoint_endgame(&EG[oid], &T_copy[oid], OUT_copy[oid], &BED_copy[oid], BED_copy[oid].BED_mp, curr_eval_d, curr_eval_mp, change_prec);
+		}
+		
+
+		//get the terminal time in double form
+		comp_d time_to_compare;
+		if (EG->prec < 64) {
+			set_d(time_to_compare,EG->PD_d.time);}
+		else {
+			mp_to_d(time_to_compare, EG->PD_mp.time); }
+		
+		
+		int issoln = 0;
+		if (EG->last_approx_prec!=1) {
+			if (EG->prec<64){
+				issoln = check_issoln_multilintolin_d(&EG[oid],  &T_copy[oid], &BED_copy[oid]); }
 			else {
-				mp_to_d(time_to_compare, EG->PD_mp.time); }
+				issoln = check_issoln_multilintolin_mp(&EG[oid], &T_copy[oid], BED_copy[oid].BED_mp); }
+		}
+		else{
 			
+			if (EG->prec<64){
+				print_point_to_screen_matlab(EG->PD_d.point,"solution");}
+			else {
+				print_point_to_screen_matlab_mp(EG->PD_mp.point,"solution");}
 			
-			int issoln = 0;
-			if (EG->last_approx_prec!=1) {
-				if (EG->prec<64){
-					issoln = check_issoln_lintolin_d(&EG[oid],  &T_copy[oid], &BED_copy[oid]); }
-				else {
-					issoln = check_issoln_lintolin_mp(&EG[oid], &T_copy[oid], BED_copy[oid].BED_mp); }
-			}
-			else{
-				
-				if (EG->prec<64){
-					print_point_to_screen_matlab(EG->PD_d.point,"solution");}
-				else {
-					print_point_to_screen_matlab_mp(EG->PD_mp.point,"solution");}
-				
-				printf("the last approximation was of precision %d\n",EG->last_approx_prec);
-				printf("this is probably a problem\n");
-				mypause();
-			}
-
-
-
-
-			
-			
-			if ( (EG->retVal != 0 && time_to_compare->r > T->minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
-				trackCount->failures++;
-				printf("\nretVal = %d\nthere was a fatal path failure tracking linear %d, witness point %d\n\n",EG->retVal,kk,ii);
-				print_path_retVal_message(EG->retVal);
-				if (!issoln) {
-					printf("the following was labeled as not a solution\n");
-					if (EG->prec < 64) {
-						print_point_to_screen_matlab(EG->PD_d.point,"variablevalues");
-					}
-					else{
-						print_point_to_screen_matlab_mp(EG->PD_mp.point,"variablevalues");
-					}
+			printf("the last approximation was of precision %d\n",EG->last_approx_prec);
+			printf("this is probably a problem\n");
+			mypause();
+		}
+		
+		if ( (EG->retVal != 0 && time_to_compare->r > T->minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
+			trackCount->failures++;
+			printf("\nretVal = %d\nthere was a fatal path failure tracking linear %d, witness point %d\n\n",EG->retVal,kk,ii);
+			print_path_retVal_message(EG->retVal);
+			if (!issoln) {
+				printf("the following was labeled as not a solution\n");
+				if (EG->prec < 64) {
+					print_point_to_screen_matlab(EG->PD_d.point,"variablevalues");
 				}
-				print_point_to_screen_matlab(BED_copy->old_linear,"old");
-				print_point_to_screen_matlab(BED_copy->current_linear,"new");
-				exit(EG->retVal); //failure intolerable in this solver.
+				else{
+					print_point_to_screen_matlab_mp(EG->PD_mp.point,"variablevalues");
+				}
 			}
-			else
-			{
-				//otherwise converged, but may have still had non-zero retval due to other reasons.
-				endgamedata_to_endpoint(&endPoints[solution_counter], EG);
-				trackCount->successes++;
-				solution_counter++; // probably this could be eliminated
-			}
-		}// re: for (ii=0; ii<W.num_pts ;ii++)
-	} // for each new linear
+			print_point_to_screen_matlab(BED_copy->old_linear[0],"old");
+			print_point_to_screen_matlab(BED_copy->current_linear[0],"new");
+			exit(EG->retVal); //failure intolerable in this solver.
+		}
+		else
+		{
+			//otherwise converged, but may have still had non-zero retval due to other reasons.
+			endgamedata_to_endpoint(&endPoints[solution_counter], EG);
+			trackCount->successes++;
+			solution_counter++; // probably this could be eliminated
+		}
+		
+	}// re: for (ii=0; ii<W.num_pts ;ii++)
+
 	
 	
 	//clear the data structures.
 	
-  for (ii = 0; ii >W.num_pts; ii++)
+  for (ii = 0; ii <W.num_pts; ii++)
   { // clear startPts[ii]
     clear_point_data_d(&startPts[ii]);
   }
   free(startPts);
 	
   // clear the structures
-  clear_lintolin_omp_d(max, &EG, &trackCount_copy, trackCount, &OUT_copy, OUT, &RAWOUT_copy, RAWOUT, &MIDOUT_copy, MIDOUT, &FAIL_copy, FAIL, &NONSOLN_copy, NONSOLN, &T_copy, &BED_copy);
+  clear_multilintolin_omp_d(max, &EG, &trackCount_copy, trackCount, &OUT_copy, OUT, &RAWOUT_copy, RAWOUT, &MIDOUT_copy, MIDOUT, &FAIL_copy, FAIL, &NONSOLN_copy, NONSOLN, &T_copy, &BED_copy);
 	
 	
 //TODO: CLEAR MORE MEMORY
@@ -461,7 +459,7 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 
 
 // derived from zero_dim_track_path_d
-void lin_to_lin_track_path_d(int pathNum, endgame_data_t *EG_out,
+void multilin_to_lin_track_path_d(int pathNum, endgame_data_t *EG_out,
 														 point_data_d *Pin,
 														 FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
 														 void const *ED_d, void const *ED_mp,
@@ -477,25 +475,16 @@ void lin_to_lin_track_path_d(int pathNum, endgame_data_t *EG_out,
  *  up EG_out                                                    *
  \***************************************************************/
 {
-
 	
+
 	
 	EG_out->pathNum = pathNum;
   EG_out->codim = 0; // zero dimensional - this is ignored
 	
   T->first_step_of_path = 1;
 	
-//	printf("mytype %d\n",T->MPType);
   if (T->MPType == 2)
   { // track using AMP
-		
-		//verification code:  
-//		lintolin_eval_data_mp *LtLED = (lintolin_eval_data_mp *)ED_mp; // to avoid having to cast every time
-//		print_matrix_to_screen_matlab_mp(LtLED->n_minusone_randomizer_matrix,"nminus1");
-//		print_point_to_screen_matlab_mp(LtLED->old_linear,"old");
-//		print_point_to_screen_matlab_mp(LtLED->current_linear,"curr");
-//		print_matrix_to_screen_matlab_mp(LtLED->patch.patchCoeff,"patch");
-//		printf("patch precision %d\n",LtLED->patch.curr_prec);
 		
     EG_out->prec = EG_out->last_approx_prec = 1;
 		
@@ -512,7 +501,6 @@ void lin_to_lin_track_path_d(int pathNum, endgame_data_t *EG_out,
     }
     else
     { // make sure that the other MP things are set to the correct precision
-//			printf("%d prec in track_path\n",EG_out->prec);
       mpf_clear(EG_out->function_residual_mp);
       mpf_init2(EG_out->function_residual_mp, EG_out->prec);
 			
@@ -552,10 +540,10 @@ void lin_to_lin_track_path_d(int pathNum, endgame_data_t *EG_out,
 
 
 // derived from zero_dim_basic_setup_d
-int lin_to_lin_setup_d(FILE **OUT, char *outName,
+int multilin_to_lin_setup_d(FILE **OUT, char *outName,
 											 FILE **midOUT, char *midName,
 											 tracker_config_t *T,
-											 lintolin_eval_data_d *ED,
+											 multilintolin_eval_data_d *ED,
 											 prog_t *dummyProg,
 											 int **startSub, int **endSub, int **startFunc, int **endFunc, int **startJvsub, int **endJvsub, int **startJv, int **endJv, int ***subFuncsBelow,
 											 int (**eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
@@ -572,19 +560,19 @@ int lin_to_lin_setup_d(FILE **OUT, char *outName,
  * NOTES: setup for zero dimensional tracking                    *
  \***************************************************************/
 { // need to create the homotopy
-//	printf("entering lin_to_lin_setup_d 606\n");
+//	printf("entering multilin_to_lin_setup_d 606\n");
   int rank, patchType, ssType, numOrigVars, adjustDegrees, numGps;
 	
-  *eval_d = &lin_to_lin_eval_d;   //DAB
-  *eval_mp = &lin_to_lin_eval_mp; // DAB  // lol send them to the same place for now.
+  *eval_d = &multilin_to_lin_eval_d;   //DAB
+  *eval_mp = &multilin_to_lin_eval_mp; // DAB  // lol send them to the same place for now.
 	
-	//  *eval_mp = &lintolin_eval_mp; // DAB
+	//  *eval_mp = &multilintolin_eval_mp; // DAB
 	
   *OUT = fopen(outName, "w");  // open the main output files.
   *midOUT = fopen(midName, "w");
 	
   if (T->MPType == 2) // using AMP - need to allocate space to store BED_mp
-    ED->BED_mp = (lintolin_eval_data_mp *)bmalloc(1 * sizeof(lintolin_eval_data_mp));
+    ED->BED_mp = (multilintolin_eval_data_mp *)br_malloc(1 * sizeof(multilintolin_eval_data_mp));
   else
     ED->BED_mp = NULL;
 	
@@ -605,13 +593,13 @@ int lin_to_lin_setup_d(FILE **OUT, char *outName,
     patchType = 2; // 1-hom patch
     ssType = 0;    // with 1-hom, we use total degree start system  // in BR, this is irrelevant
     adjustDegrees = 0; // if the system does not need its degrees adjusted, then that is okay  // irrelevant in BR
-    setuplintolinEval_d(T,preprocFile, degreeFile, dummyProg, rank, patchType, ssType, T->MPType, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix_full_prec, W,solve_options);
+    setupmultilintolinEval_d(T,preprocFile, degreeFile, dummyProg, rank, patchType, ssType, T->MPType, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix_full_prec, W,solve_options);
 
 	
 	
-#ifdef printpathlintolin
+#ifdef printpathmultilintolin
 	int ii;
-	ED->FOUT = safe_fopen_append("pathtrack_lintolin");
+	ED->FOUT = safe_fopen_append("pathtrack_multilintolin");
 	fprintf(ED->FOUT,"%d ",W.num_variables);
 	for (ii=0; ii<W.num_variables; ii++) {
 		fprintf(ED->FOUT,"%s ",W.variable_names[ii]);
@@ -630,31 +618,65 @@ int lin_to_lin_setup_d(FILE **OUT, char *outName,
 
 
 //this derived from basic_eval_d
-int lin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp, point_d current_variable_values, comp_d pathVars, void const *ED)
+int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp, point_d current_variable_values, comp_d pathVars, void const *ED)
 { // evaluates a special homotopy type, build for bertini_real
 	
 	// uncomment to see the time at each step.
 //	printf("t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
 
-  lintolin_eval_data_d *BED = (lintolin_eval_data_d *)ED; // to avoid having to cast every time
+  multilintolin_eval_data_d *BED = (multilintolin_eval_data_d *)ED; // to avoid having to cast every time
 	
-  int ii, jj; // counters
+  int ii, jj, mm; // counters
+	int offset;
   comp_d one_minus_s, gamma_s;
-
+	comp_d temp, temp2;
+	
 	
   set_one_d(one_minus_s);
   sub_d(one_minus_s, one_minus_s, pathVars);  // one_minus_s = (1 - s)
   mul_d(gamma_s, BED->gamma, pathVars);       // gamma_s = gamma * s
 	
-	comp_d temp, temp2;
 	
 	vec_d patchValues; init_vec_d(patchValues, 0);
 	vec_d temp_function_values; init_vec_d(temp_function_values,0);
 	vec_d AtimesF; init_vec_d(AtimesF,BED->n_minusone_randomizer_matrix->rows); AtimesF->size = BED->n_minusone_randomizer_matrix->rows;// declare  // initialize
-	vec_d vars_times_curr_linear; init_vec_d(vars_times_curr_linear,BED->num_variables);  vars_times_curr_linear->size = BED->num_variables;
-	vec_d vars_times_old_linear; init_vec_d(vars_times_old_linear,BED->num_variables);  vars_times_old_linear->size =  BED->num_variables;
-	vec_d one_minus_s_times_current_linear; init_vec_d(one_minus_s_times_current_linear,BED->num_variables); one_minus_s_times_current_linear->size = BED->num_variables;
-	vec_d gamma_s_times_old_linear; init_vec_d(gamma_s_times_old_linear,BED->num_variables); gamma_s_times_old_linear->size = BED->num_variables;
+	
+	vec_d *vars_times_curr_linear = (vec_d *)br_malloc(BED->num_linears*sizeof(vec_d));
+	for (ii=0; ii<BED->num_linears; ii++) {
+		init_vec_d(vars_times_curr_linear[ii],BED->num_variables);
+		vars_times_curr_linear[ii]->size = BED->num_variables;
+	}
+	
+	
+	
+	vec_d *vars_times_old_linear = (vec_d *)br_malloc(BED->num_linears*sizeof(vec_d));
+	for (ii=0; ii<BED->num_linears; ii++) {
+		init_vec_d(vars_times_old_linear[ii],BED->num_variables);
+		vars_times_old_linear[ii]->size = BED->num_variables;
+	}
+	
+	
+	vec_d *one_minus_s_times_current_linear = (vec_d *)br_malloc(BED->num_linears*sizeof(vec_d));
+	for (ii=0; ii<BED->num_linears; ii++) {
+		init_vec_d(one_minus_s_times_current_linear[ii],BED->num_variables);
+		one_minus_s_times_current_linear[ii]->size = BED->num_variables;
+	}
+	
+	
+	vec_d *gamma_s_times_old_linear = (vec_d *)br_malloc(BED->num_linears*sizeof(vec_d));
+	for (ii=0; ii<BED->num_linears; ii++) {
+		init_vec_d(gamma_s_times_old_linear[ii],BED->num_variables);
+		gamma_s_times_old_linear[ii]->size = BED->num_variables;
+	}
+	
+	
+	for (ii=0; ii<BED->num_linears; ii++) {
+		init_vec_d(gamma_s_times_old_linear[ii],BED->num_variables);
+		gamma_s_times_old_linear[ii]->size = BED->num_variables;
+	}
+
+		
+	
 	
 	mat_d temp_jacobian_functions; init_mat_d(temp_jacobian_functions,BED->n_minusone_randomizer_matrix->cols,BED->num_variables);
 		temp_jacobian_functions->rows = BED->n_minusone_randomizer_matrix->cols; temp_jacobian_functions->cols = BED->num_variables;
@@ -681,8 +703,10 @@ int lin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv,
 	
 	
 	// we assume that the only parameter is s = t and setup parVals & parDer accordingly.
-	// note that you can only really do this after you are done calling other evaluators.
+	// note that you can only really do this AFTER you are done calling other evaluators.
   // set parVals & parDer correctly
+	
+	// i.e. these must remain here.  \/
   change_size_point_d(parVals, 1);
   change_size_vec_d(parDer, 1);
 	change_size_mat_d(Jp, BED->num_variables, 1); Jp->rows = BED->num_variables; Jp->cols = 1;
@@ -706,37 +730,62 @@ int lin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv,
 	}
 	
 
+	
+	
+	
+	
 
+	//////////////
 	//
 	// function values for the linears
 	//
+	////////////////////
 	
-	// multiply vars times the new linear, with (1-s)
-	for (ii=0; ii<BED->num_variables; ii++) { // for each variable, including the homogeneous ones.
-		mul_d(&one_minus_s_times_current_linear->coord[ii], &BED->current_linear->coord[ii], one_minus_s);
-		mul_d(&vars_times_curr_linear->coord[ii], &one_minus_s_times_current_linear->coord[ii], &current_variable_values->coord[ii]);
+		
+	offset = BED->num_variables-(BED->num_linears+1);
+	for (mm=0; mm<BED->num_linears; ++mm) {
+		// multiply vars times the new linear, with (1-s)
+		for (ii=0; ii<BED->num_variables; ii++) { // for each variable, including the homogeneous ones.
+			mul_d(&one_minus_s_times_current_linear[mm]->coord[ii], &BED->current_linear[mm]->coord[ii], one_minus_s);
+			mul_d(&vars_times_curr_linear[mm]->coord[ii], &one_minus_s_times_current_linear[mm]->coord[ii], &current_variable_values->coord[ii]);
+		}
+		// multiply vars times the old linear, with gamma*s
+		for (ii=0; ii<BED->num_variables; ii++) { // for each variable, including the homogeneous ones.
+			mul_d(&gamma_s_times_old_linear[mm]->coord[ii], &BED->old_linear[mm]->coord[ii], gamma_s);
+			mul_d(&vars_times_old_linear[mm]->coord[ii],&gamma_s_times_old_linear[mm]->coord[ii],&current_variable_values->coord[ii]);
+		}
+		// add the old and the new
+		set_zero_d(temp);  //  initialize to 0
+		for (ii=0; ii<BED->num_variables; ii++) {  // for each variable, including the homogenizing ones.
+			add_d(temp2, &vars_times_old_linear[mm]->coord[ii], &vars_times_curr_linear[mm]->coord[ii]);
+			add_d(temp,temp,temp2); //  tested correct, does not overwrite values in temp before accessed for read.
+		}
+		//finally set the value of the linears we are homotoping.
+		
+		
+		set_d(&funcVals->coord[mm+offset],temp); // this is the entry for the linear's homotopy.
+		
 	}
-	// multiply vars times the old linear, with gamma*s
-	for (ii=0; ii<BED->num_variables; ii++) { // for each variable, including the homogeneous ones.
-		mul_d(&gamma_s_times_old_linear->coord[ii], &BED->old_linear->coord[ii], gamma_s);
-		mul_d(&vars_times_old_linear->coord[ii],&gamma_s_times_old_linear->coord[ii],&current_variable_values->coord[ii]);
-	}
-	// add the old and the new
-	set_zero_d(temp);  //  initialize to 0
-	for (ii=0; ii<BED->num_variables; ii++) {  // for each variable, including the homogenizing ones.
-		add_d(temp2, &vars_times_old_linear->coord[ii], &vars_times_curr_linear->coord[ii]);
-		add_d(temp,temp,temp2); //  tested correct, does not overwrite values in temp before accessed for read.
-	}
-	//finally set the value of the linears we are homotoping.
-	set_d(&funcVals->coord[BED->num_variables-2],temp); // this is the entry for the linear's homotopy.
+
 	
 	
 	
+	
+	
+	
+	
+	//////////////
+	//
 	//set the function PATCH values
-	int offset = BED->num_variables-1;
-	for (ii=0; ii<BED->patch.num_patches; ii++) {
+	//
+	////////////////////
+	
+	
+	
+	offset = BED->num_variables-1;
+	for (ii=0; ii<BED->patch.num_patches; ii++)
 		set_d(&funcVals->coord[ii+offset], &patchValues->coord[ii]);
-	}
+	
 	
 	
 	
@@ -750,30 +799,29 @@ int lin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv,
 	//first, the entries related to the functions
 	
   for (ii = 0; ii < BED->n_minusone_randomizer_matrix->rows; ii++)
-  {
 		for (jj = 0; jj < BED->num_variables; jj++)
-		{
 			set_d(&Jv->entry[ii][jj],&AtimesJ->entry[ii][jj]);
-		}
-  }
+		
+  
 	
 
-	
-
-	
-	// second, the entries for the linears we are homotoping
+	//////////////
+	//
+	// Entries for the linears we are homotoping
+	//
+	////////////////////
 	
 	
 	offset = BED->num_variables-2;
-	for (<#initialization#>; <#condition#>; <#increment#>) {
+	for (mm=0; mm<BED->num_linears; ++mm) {
 		for (ii=0; ii<BED->num_variables; ii++) {
-			add_d(temp,&gamma_s_times_old_linear[]->coord[ii], &one_minus_s_times_current_linear[]->coord[ii]);
-			set_d(&Jv->entry[offset][ii], temp); // HERE DAB!!!
+			add_d(temp,&gamma_s_times_old_linear[mm]->coord[ii], &one_minus_s_times_current_linear[mm]->coord[ii]);
+			set_d(&Jv->entry[offset+mm][ii], temp); 
 		}
 	}
 
 	
-	offset = BED->num_variables-1;
+	offset = BED->num_variables - 2+BED->num_linears;
 	for (ii=0; ii<BED->num_variables; ii++) {
 		set_d(&Jv->entry[offset][ii],&Jv_Patch->entry[0][ii]);
 	}
@@ -785,34 +833,41 @@ int lin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv,
 		set_zero_d(&Jp->entry[ii][0]);  // no parameter dependence means zero derivative for these functions
 	}
 	
-
+	
+	
+	
 	// Jp = -current_linear_times_vars + gamma*old_linear_times_vars
-	set_zero_d(&Jp->entry[BED->num_variables-2][0]);
-//TODO:  this goes in to a loop over the number of linears
-	dot_product_d(temp,BED->current_linear,current_variable_values);
-	neg_d(temp,temp);
-	dot_product_d(temp2,BED->old_linear,current_variable_values);
-	mul_d(temp2,temp2,BED->gamma);
-	add_d(&Jp->entry[BED->num_variables-2][0],temp,temp2);
 	
+	offset = BED->num_variables-2;
+	for (ii=0; ii<BED->num_linears; ii++) {
+		set_zero_d(&Jp->entry[offset+ii][0]);
+		dot_product_d(temp,
+									BED->current_linear[ii],current_variable_values);
+		neg_d(temp,temp);
+		dot_product_d(temp2,BED->old_linear[ii],current_variable_values);
+		mul_d(temp2,temp2,BED->gamma);
+		add_d(&Jp->entry[offset+ii][0],temp,temp2);
+	}
+
 	
-	
-	
+	//////////////
+	//
 	// the entries in the jacobian for the patch equations.
-	offset = BED->num_variables-1;
+	//
+	////////////////////
+	
+	offset = BED->num_variables - 2+BED->num_linears;
 	for (ii = 0; ii<BED->patch.num_patches; ii++)  // for each patch equation
 	{ // funcVals = patchValues
 		// Jp = 0
 		set_zero_d(&Jp->entry[ii+offset][0]);
 		// Jv = Jv_Patch
 		for (jj = 0; jj<BED->num_variables; jj++) // for each variable
-		{
 			set_d(&Jv->entry[ii+offset][jj], &Jv_Patch->entry[ii][jj]);
-		}
+		
 	}
 	
 	// done!  yay!
-	
 	
 	//uncomment to see screen output of important variables at each solve step.
 //	printf("gamma = %lf+1i*%lf;\n", BED->gamma->r, BED->gamma->i);
@@ -831,20 +886,25 @@ int lin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv,
 
 //	fprintf(BED->FOUT,"jamesbrown\n");
 	
+	for (ii=0; ii<BED->num_linears; ii++) {
+		clear_vec_d(vars_times_curr_linear[ii]);
+		clear_vec_d(vars_times_old_linear[ii]);
+		clear_vec_d(one_minus_s_times_current_linear[ii]);
+		clear_vec_d(gamma_s_times_old_linear[ii]);
+	}
+	
+	
 	clear_vec_d(patchValues);
 	clear_vec_d(temp_function_values);
 	clear_vec_d(AtimesF); 
-	clear_vec_d(vars_times_curr_linear);
-	clear_vec_d(vars_times_old_linear);
-	clear_vec_d(one_minus_s_times_current_linear);
-	clear_vec_d(gamma_s_times_old_linear);
+	
 	
 	clear_mat_d(temp_jacobian_functions);
 	clear_mat_d(temp_jacobian_parameters);
 	clear_mat_d(Jv_Patch);
 	clear_mat_d(AtimesJ);
 	
-#ifdef printpathlintolin
+#ifdef printpathmultilintolin
 	BED->num_steps++;
 	vec_d dehommed; init_vec_d(dehommed,BED->num_variables-1); dehommed->size = BED->num_variables-1;
 	dehomogenize(&dehommed,current_variable_values);
@@ -863,7 +923,7 @@ int lin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv,
 
 
 
-void printlintolinRelevantData(lintolin_eval_data_d *ED_d, lintolin_eval_data_mp *ED_mp, int MPType, int eqbyeqMethod, FILE *FP)
+void printmultilintolinRelevantData(multilintolin_eval_data_d *ED_d, multilintolin_eval_data_mp *ED_mp, int MPType, int eqbyeqMethod, FILE *FP)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -889,7 +949,7 @@ void printlintolinRelevantData(lintolin_eval_data_d *ED_d, lintolin_eval_data_mp
 
 
 
-void lintolin_eval_clear_d(lintolin_eval_data_d *ED, int clearRegen, int MPType)
+void multilintolin_eval_clear_d(multilintolin_eval_data_d *ED, int clearRegen, int MPType)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -901,20 +961,25 @@ void lintolin_eval_clear_d(lintolin_eval_data_d *ED, int clearRegen, int MPType)
   patch_eval_data_clear_d(&ED->patch);
   preproc_data_clear(&ED->preProcData);
 	
+	int ii;
 	
 	
   if (MPType == 2)
   { // clear the MP stuff
-    lintolin_eval_clear_mp(ED->BED_mp, 0, 0);
+    multilintolin_eval_clear_mp(ED->BED_mp, 0, 0);
   }
 	
-	//specifics for the lintolin method.
-	clear_vec_d(ED->current_linear);
-	clear_vec_d(ED->old_linear);
+	//specifics for the multilintolin method.
+	for (ii=0; ii<ED->num_linears; ii++) {
+		clear_vec_d(ED->current_linear[ii]);
+		clear_vec_d(ED->old_linear[ii]);
+	}
+	
 	clear_mat_d(ED->n_minusone_randomizer_matrix);
+
 	
 	
-#ifdef printpathlintolin
+#ifdef printpathmultilintolin
 	fclose(ED->FOUT);
 #endif
   return;
@@ -925,12 +990,12 @@ void lintolin_eval_clear_d(lintolin_eval_data_d *ED, int clearRegen, int MPType)
 
 
 
-void setup_lin_to_lin_omp_d(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount,
+void setup_multilin_to_lin_omp_d(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount,
 														FILE ***OUT_copy, FILE *OUT, FILE ***RAWOUT_copy, FILE *RAWOUT,
 														FILE ***MIDOUT_copy, FILE *MIDOUT, FILE ***FAIL_copy, FILE *FAIL,
 														FILE ***NONSOLN_copy, FILE *NONSOLN,
 														tracker_config_t **T_copy, tracker_config_t *T,
-														lintolin_eval_data_d **BED_copy, lintolin_eval_data_d *ED_d, lintolin_eval_data_mp *ED_mp)
+														multilintolin_eval_data_d **BED_copy, multilintolin_eval_data_d *ED_d, multilintolin_eval_data_mp *ED_mp)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -946,14 +1011,14 @@ void setup_lin_to_lin_omp_d(int max_threads, endgame_data_t **EG, trackingStats 
   if (max_threads <= 0)
   {
     printf("\n\nERROR: The number of threads (%d) needs to be positive when setting up for tracking!\n", max_threads);
-    bexit(ERROR_CONFIGURATION);
+    br_exit(ERROR_CONFIGURATION);
   }
 	
 	
 	
 	
   // allocate space for EG
-  *EG = (endgame_data_t *)bmalloc(max_threads * sizeof(endgame_data_t));
+  *EG = (endgame_data_t *)br_malloc(max_threads * sizeof(endgame_data_t));
 	
 	// initialize
   for (ii = 0; ii < max_threads; ii++)
@@ -969,11 +1034,11 @@ void setup_lin_to_lin_omp_d(int max_threads, endgame_data_t **EG, trackingStats 
 	}
 	
   // allocate space to hold pointers to the files
-  *OUT_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
-  *MIDOUT_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
-  *RAWOUT_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
-  *FAIL_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
-  *NONSOLN_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
+  *OUT_copy = (FILE **)br_malloc(max_threads * sizeof(FILE *));
+  *MIDOUT_copy = (FILE **)br_malloc(max_threads * sizeof(FILE *));
+  *RAWOUT_copy = (FILE **)br_malloc(max_threads * sizeof(FILE *));
+  *FAIL_copy = (FILE **)br_malloc(max_threads * sizeof(FILE *));
+  *NONSOLN_copy = (FILE **)br_malloc(max_threads * sizeof(FILE *));
 	
   if (max_threads == 1)
   { // setup the pointers
@@ -990,16 +1055,16 @@ void setup_lin_to_lin_omp_d(int max_threads, endgame_data_t **EG, trackingStats 
   }
   else // max_threads > 1
   { // allocate memory
-    *trackCount_copy = (trackingStats *)bmalloc(max_threads * sizeof(trackingStats));
-    *T_copy = (tracker_config_t *)bmalloc(max_threads * sizeof(tracker_config_t));
-    *BED_copy = (lintolin_eval_data_d *)bmalloc(max_threads * sizeof(lintolin_eval_data_d));
+    *trackCount_copy = (trackingStats *)br_malloc(max_threads * sizeof(trackingStats));
+    *T_copy = (tracker_config_t *)br_malloc(max_threads * sizeof(tracker_config_t));
+    *BED_copy = (multilintolin_eval_data_d *)br_malloc(max_threads * sizeof(multilintolin_eval_data_d));
 		
     // copy T, ED_d, ED_mp, & trackCount
     for (ii = 0; ii < max_threads; ii++)
     { // copy T
       cp_tracker_config_t(&(*T_copy)[ii], T);
       // copy ED_d & ED_mp
-      cp_lintolin_eval_data_d(&(*BED_copy)[ii], ED_d, ED_mp, T->MPType);
+      cp_multilintolin_eval_data_d(&(*BED_copy)[ii], ED_d, ED_mp, T->MPType);
       // initialize trackCount_copy
       init_trackingStats(&(*trackCount_copy)[ii]);
       (*trackCount_copy)[ii].numPoints = trackCount->numPoints;
@@ -1042,7 +1107,7 @@ void setup_lin_to_lin_omp_d(int max_threads, endgame_data_t **EG, trackingStats 
   return;
 }
 
-void clear_lintolin_omp_d(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount, FILE ***OUT_copy, FILE *OUT, FILE ***RAWOUT_copy, FILE *RAWOUT, FILE ***MIDOUT_copy, FILE *MIDOUT, FILE ***FAIL_copy, FILE *FAIL, FILE ***NONSOLN_copy, FILE *NONSOLN, tracker_config_t **T_copy, lintolin_eval_data_d **BED_copy)
+void clear_multilintolin_omp_d(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount, FILE ***OUT_copy, FILE *OUT, FILE ***RAWOUT_copy, FILE *RAWOUT, FILE ***MIDOUT_copy, FILE *MIDOUT, FILE ***FAIL_copy, FILE *FAIL, FILE ***NONSOLN_copy, FILE *NONSOLN, tracker_config_t **T_copy, multilintolin_eval_data_d **BED_copy)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -1088,7 +1153,7 @@ void clear_lintolin_omp_d(int max_threads, endgame_data_t **EG, trackingStats **
     // clear the copies T, ED_d & ED_mp
     for (ii = max_threads - 1; ii >= 0; ii--)
     { // clear BED_copy - 0 since not using regeneration
-      lintolin_eval_clear_d(&(*BED_copy)[ii], 0, (*T_copy)[ii].MPType);
+      multilintolin_eval_clear_d(&(*BED_copy)[ii], 0, (*T_copy)[ii].MPType);
 			// clear T_copy
       tracker_config_clear(&(*T_copy)[ii]);
     }
@@ -1198,10 +1263,10 @@ void clear_lintolin_omp_d(int max_threads, endgame_data_t **EG, trackingStats **
 
 
 
-void setuplintolinEval_d(tracker_config_t *T,char preprocFile[], char degreeFile[], prog_t *dummyProg,
+void setupmultilintolinEval_d(tracker_config_t *T,char preprocFile[], char degreeFile[], prog_t *dummyProg,
 												 int squareSize, int patchType, int ssType, int MPType,
 												 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,// what are these supposed to point to?
-												 lintolin_eval_data_d *BED, int adjustDegrees,
+												 multilintolin_eval_data_d *BED, int adjustDegrees,
 												 mat_mp n_minusone_randomizer_matrix_full_prec,
 												 witness_set W,
 												 solver_configuration *solve_options)
@@ -1227,22 +1292,20 @@ void setuplintolinEval_d(tracker_config_t *T,char preprocFile[], char degreeFile
 	
 	
 	// set up the vectors to hold the two linears.
+	BED->num_linears = W.num_linears;
+	BED->current_linear = (vec_d *) br_malloc(W.num_linears*sizeof(vec_d));
+	BED->old_linear = (vec_d *) br_malloc(W.num_linears*sizeof(vec_d));
+	for (ii=0;  ii<W.num_linears; ii++){
+		init_vec_d(BED->current_linear[ii],W.num_variables);
+		BED->current_linear[ii]->size =  W.num_variables;
+		
+		init_vec_d(BED->old_linear[ii],W.num_variables);
+		BED->old_linear[ii]->size =  W.num_variables;
+		
+		vec_mp_to_d(BED->old_linear[ii],W.L_mp[ii]);
+	}
 	
 	
-	init_vec_d(BED->current_linear,0);
-	change_size_vec_d(BED->current_linear, W.num_variables);
-	BED->current_linear->size =  W.num_variables;
-	
-	
-	
-	
-	
-	init_vec_d(BED->old_linear,0);
-	change_size_vec_d(BED->old_linear, dummyProg->numVars);
-	BED->old_linear->size =  dummyProg->numVars; // seriously, why is this not in the bertini method?
-
-	vec_cp_d(BED->old_linear,W.L[0]);
-
 	
 	if (solve_options->use_gamma_trick==1)
 		get_comp_rand_d(BED->gamma); // set gamma to be random complex value
@@ -1257,12 +1320,12 @@ void setuplintolinEval_d(tracker_config_t *T,char preprocFile[], char degreeFile
 		BED->BED_mp->curr_prec = prec;
 		
 		
-#ifdef printpathlintolin
+#ifdef printpathmultilintolin
 		BED->BED_mp->FOUT = BED->FOUT;
 #endif
 		
 		
-		BED->BED_mp->gamma_rat = (mpq_t *)bmalloc(2 * sizeof(mpq_t));
+		BED->BED_mp->gamma_rat = (mpq_t *)br_malloc(2 * sizeof(mpq_t));
 		if (solve_options->use_gamma_trick==1){
 			get_comp_rand_rat(BED->gamma, BED->BED_mp->gamma, BED->BED_mp->gamma_rat, prec, T->AMP_max_prec, 1, 1);
 		}
@@ -1274,19 +1337,41 @@ void setuplintolinEval_d(tracker_config_t *T,char preprocFile[], char degreeFile
 			set_one_rat(BED->BED_mp->gamma_rat);
 		}
 		
-		
+		BED->num_linears = W.num_linears;
 		BED->BED_mp->num_variables = W.num_variables;
-
-		
 		BED->BED_mp->SLP = BED->SLP; // assign the SLP pointer
 
-		init_vec_mp2(BED->BED_mp->old_linear,W.num_variables,prec);
-		init_vec_mp2(BED->BED_mp->old_linear_full_prec,W.num_variables,T->AMP_max_prec);
-		vec_cp_mp(BED->BED_mp->old_linear,W.L_mp[0]); //copy in the old linear
-		vec_cp_mp(BED->BED_mp->old_linear_full_prec,W.L_mp[0]); //copy in the old linear
+		
+		
+		// set up the vectors to hold the two linears.
+		BED->BED_mp->current_linear = (vec_mp *) br_malloc(W.num_linears*sizeof(vec_mp));
+		BED->BED_mp->current_linear_full_prec = (vec_mp *) br_malloc(W.num_linears*sizeof(vec_mp));
+		BED->BED_mp->old_linear = (vec_mp *) br_malloc(W.num_linears*sizeof(vec_mp));
+		BED->BED_mp->old_linear_full_prec = (vec_mp *) br_malloc(W.num_linears*sizeof(vec_mp));
+		
+		for (ii=0;  ii<W.num_linears; ii++){
+			//initialize and copy the old linears.
+			init_vec_mp2(BED->BED_mp->old_linear[ii],W.num_variables,prec);
+			BED->BED_mp->old_linear[ii]->size =  W.num_variables;
+			vec_cp_mp(BED->BED_mp->old_linear[ii],W.L_mp[ii]);
+			
+			//now the old at full precision
+			init_vec_mp2(BED->BED_mp->old_linear_full_prec[ii],W.num_variables,T->AMP_max_prec);
+			BED->BED_mp->old_linear_full_prec[ii]->size =  W.num_variables;
+			vec_cp_mp(BED->BED_mp->old_linear_full_prec[ii],W.L_mp[ii]); //copy in the old linear
 
-		init_vec_mp2(BED->BED_mp->current_linear,W.num_variables,prec); //initialize the new linear container
-		init_vec_mp2(BED->BED_mp->current_linear_full_prec,W.num_variables,T->AMP_max_prec); //initialize the new linear container
+			
+			//initialize but do not fill the 'current' linears
+			init_vec_mp2(BED->BED_mp->current_linear[ii],W.num_variables,prec); //initialize the new linear container
+			BED->BED_mp->current_linear[ii]->size =  W.num_variables;
+			init_vec_mp2(BED->BED_mp->current_linear_full_prec[ii],W.num_variables,T->AMP_max_prec); //initialize the new linear container
+			BED->BED_mp->current_linear_full_prec[ii]->size =  W.num_variables;
+		}
+		
+		
+		
+
+
 		
 		init_mat_mp2(BED->BED_mp->n_minusone_randomizer_matrix,0,0,prec); // initialize the randomizer matrix
 		init_mat_mp2(BED->BED_mp->n_minusone_randomizer_matrix_full_prec,0,0,T->AMP_max_prec); // initialize the randomizer matrix
@@ -1339,7 +1424,7 @@ void setuplintolinEval_d(tracker_config_t *T,char preprocFile[], char degreeFile
 	
 	
 	
-//	BED->FOUT = safe_fopen_write("pathhistory_lintolin");
+//	BED->FOUT = safe_fopen_write("pathhistory_multilintolin");
 //	printf("opened pathhistory\n");
 //	mypause();
 	
@@ -1349,7 +1434,7 @@ void setuplintolinEval_d(tracker_config_t *T,char preprocFile[], char degreeFile
 
 
 
-void cp_lintolin_eval_data_d(lintolin_eval_data_d *BED, lintolin_eval_data_d *BED_d_input, lintolin_eval_data_mp *BED_mp_input, int MPType)
+void cp_multilintolin_eval_data_d(multilintolin_eval_data_d *BED, multilintolin_eval_data_d *BED_d_input, multilintolin_eval_data_mp *BED_mp_input, int MPType)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -1357,13 +1442,13 @@ void cp_lintolin_eval_data_d(lintolin_eval_data_d *BED, lintolin_eval_data_d *BE
  * NOTES: stores a copy of BED_(t)_input to BED                  *
  \***************************************************************/
 {
-	printf("entering cp lintolin_eval_data_d\nthis function needs much attention, as things which should be copied are not!\n");
+	printf("entering cp multilintolin_eval_data_d\nthis function needs much attention, as things which should be copied are not!\n");
 	exit(-1);
   cp_preproc_data(&BED->preProcData, &BED_d_input->preProcData);
 	//  cp_square_system_d(&BED->squareSystem, &BED_d_input->squareSystem);
   cp_patch_d(&BED->patch, &BED_d_input->patch);
 	//  cp_start_system_d(&BED->startSystem, &BED_d_input->startSystem);
-	BED->SLP = (prog_t *)bmalloc(1 * sizeof(prog_t));
+	BED->SLP = (prog_t *)br_malloc(1 * sizeof(prog_t));
   cp_prog_t(BED->SLP, BED_d_input->SLP);
 	
 	
@@ -1372,7 +1457,7 @@ void cp_lintolin_eval_data_d(lintolin_eval_data_d *BED, lintolin_eval_data_d *BE
 	set_d(BED->gamma, BED_d_input->gamma);
   if (MPType == 2)
   { // need to also setup MP versions since using AMP
-    BED->BED_mp = (lintolin_eval_data_mp *)bmalloc(1 * sizeof(lintolin_eval_data_mp));
+    BED->BED_mp = (multilintolin_eval_data_mp *)br_malloc(1 * sizeof(multilintolin_eval_data_mp));
 		
     cp_preproc_data(&BED->BED_mp->preProcData, &BED_mp_input->preProcData);
     // simply point to the SLP that was setup in BED
@@ -1389,7 +1474,7 @@ void cp_lintolin_eval_data_d(lintolin_eval_data_d *BED, lintolin_eval_data_d *BE
 
 
 
-int lintolin_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d in_d, point_mp in_mp, int in_prec, void const *ED_d, void const *ED_mp)
+int multilintolin_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d in_d, point_mp in_mp, int in_prec, void const *ED_d, void const *ED_mp)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -1433,7 +1518,7 @@ int lintolin_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d in_d, 
 
 
 
-int change_lintolin_eval_prec(void const *ED, int prec)
+int change_multilintolin_eval_prec(void const *ED, int prec)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -1441,11 +1526,11 @@ int change_lintolin_eval_prec(void const *ED, int prec)
  * NOTES: change precision for standard zero dimensional solving *
  \***************************************************************/
 {
-  change_lintolin_eval_prec_mp(prec, (lintolin_eval_data_mp *)ED);
+  change_multilintolin_eval_prec_mp(prec, (multilintolin_eval_data_mp *)ED);
   return 0;
 }
 
-void change_lintolin_eval_prec_mp(int new_prec, lintolin_eval_data_mp *BED)
+void change_multilintolin_eval_prec_mp(int new_prec, multilintolin_eval_data_mp *BED)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -1467,12 +1552,14 @@ void change_lintolin_eval_prec_mp(int new_prec, lintolin_eval_data_mp *BED)
 		mpf_set_q(BED->gamma->r, BED->gamma_rat[0]);
 		mpf_set_q(BED->gamma->i, BED->gamma_rat[1]);
 		
-		change_prec_point_mp(BED->current_linear,new_prec);
-		vec_cp_mp(BED->current_linear, BED->current_linear_full_prec);
-		
-		change_prec_point_mp(BED->old_linear,new_prec);
-		vec_cp_mp(BED->old_linear, BED->old_linear_full_prec);
-		
+		int ii;
+		for(ii=0; ii<BED->num_linears; ++ii){
+			change_prec_point_mp(BED->current_linear[ii],new_prec);
+			vec_cp_mp(BED->current_linear[ii], BED->current_linear_full_prec[ii]);
+			
+			change_prec_point_mp(BED->old_linear[ii],new_prec);
+			vec_cp_mp(BED->old_linear[ii], BED->old_linear_full_prec[ii]);
+		}
 		change_prec_mat_mp(BED->n_minusone_randomizer_matrix,new_prec);
 		mat_cp_mp(BED->n_minusone_randomizer_matrix,BED->n_minusone_randomizer_matrix_full_prec);
 		
@@ -1499,11 +1586,10 @@ void change_lintolin_eval_prec_mp(int new_prec, lintolin_eval_data_mp *BED)
 
 
 
-int lin_to_lin_solver_mp(int MPType,
+int multilin_to_lin_solver_mp(int MPType,
 												 witness_set W,  // includes the initial linear.
 												 mat_mp n_minusone_randomizer_matrix,  // for randomizing down to N-1 equations.
 												 vec_mp *new_linears,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
-												 int num_new_linears,
 												 witness_set *W_new,
 												 solver_configuration *solve_options)
 /***************************************************************\
@@ -1525,7 +1611,7 @@ int lin_to_lin_solver_mp(int MPType,
   int (*ptr_to_eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *) = NULL;
   int (*ptr_to_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = NULL;
 	
-  lintolin_eval_data_mp ED;  // was basic_eval_data_d  DAB
+  multilintolin_eval_data_mp ED;  // was basic_eval_data_d  DAB
   trackingStats trackCount;
   double track_time;
 	
@@ -1545,7 +1631,7 @@ int lin_to_lin_solver_mp(int MPType,
 	
 	//  // call the setup function
 	// setup for standard tracking - 'useRegen' is used to determine whether or not to setup 'start'
-	num_variables = lin_to_lin_setup_mp(&OUT, "output",
+	num_variables = multilin_to_lin_setup_mp(&OUT, "output",
 																		 &midOUT, "midpath_data",
 																		 &T, &ED,
 																		 &dummyProg,  //arg 7
@@ -1561,7 +1647,7 @@ int lin_to_lin_solver_mp(int MPType,
 	change_prec = &change_basic_eval_prec;
 	
 	int (*dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *) = NULL;
-	dehom = &lintolin_dehom;
+	dehom = &multilintolin_dehom;
 	
 	
 	
@@ -1571,17 +1657,17 @@ int lin_to_lin_solver_mp(int MPType,
     if (dummyProg.numPathVars > 0)
     { // path variable present
       printf("ERROR: Bertini does not expect path variables when user-defined homotopies are not being used!\n");
-      bexit(ERROR_INPUT_SYSTEM);
+      br_exit(ERROR_INPUT_SYSTEM);
     }
     if (dummyProg.numPars > 0)
     { // parameter present
       printf("ERROR: Bertini does not expect parameters when user-defined homotopies are not being used!\n");
-      bexit(ERROR_INPUT_SYSTEM);
+      br_exit(ERROR_INPUT_SYSTEM);
     }
   }
 	
 	
-	post_process_t *endPoints = (post_process_t *)bmalloc(W.num_pts*(num_new_linears) * sizeof(post_process_t)); //overallocate, expecting full number of solutions.
+	post_process_t *endPoints = (post_process_t *)br_malloc(W.num_pts* sizeof(post_process_t)); //overallocate, expecting full number of solutions.
 	
 	
 	
@@ -1593,10 +1679,9 @@ int lin_to_lin_solver_mp(int MPType,
 	}
 	else
 	{ // use regular endgame
-		lin_to_lin_track_mp(&trackCount, OUT, rawOUT, midOUT,
+		multilin_to_lin_track_mp(&trackCount, OUT, rawOUT, midOUT,
 											 W,  // was the startpts file pointer.
 											 new_linears,
-											 num_new_linears,
 											 endPoints,
 											 FAIL, pathMod,
 											 &T, &ED,
@@ -1666,7 +1751,7 @@ int lin_to_lin_solver_mp(int MPType,
 
 	
 	
-  lintolin_eval_clear_mp(&ED, userHom, T.MPType);
+  multilintolin_eval_clear_mp(&ED, userHom, T.MPType);
   tracker_config_clear(&T);
 	
   return 0;
@@ -1675,15 +1760,14 @@ int lin_to_lin_solver_mp(int MPType,
 
 
 
-void lin_to_lin_track_mp(trackingStats *trackCount,
+void multilin_to_lin_track_mp(trackingStats *trackCount,
 												FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
 												witness_set W,
 												vec_mp *new_linears,
-												int num_new_linears,
 												post_process_t *endPoints,
 												FILE *FAIL,
 												int pathMod, tracker_config_t *T,
-												lintolin_eval_data_mp *ED,
+												multilintolin_eval_data_mp *ED,
 												int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 												int (*change_prec)(void const *, int),
 												 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
@@ -1699,7 +1783,7 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 	
   int ii,kk, oid, max = max_threads();
   tracker_config_t *T_copy = NULL;
-  lintolin_eval_data_mp *BED_copy = NULL;
+  multilintolin_eval_data_mp *BED_copy = NULL;
   trackingStats *trackCount_copy = NULL;
   FILE **OUT_copy = NULL, **MIDOUT_copy = NULL, **RAWOUT_copy = NULL, **FAIL_copy = NULL, *NONSOLN = NULL, **NONSOLN_copy = NULL;
 	
@@ -1717,11 +1801,11 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 	
 
   int (*curr_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = NULL;
-  curr_eval_mp = &lin_to_lin_eval_mp; // custom evaluator for this method
+  curr_eval_mp = &multilin_to_lin_eval_mp; // custom evaluator for this method
 	
 	
 	point_data_mp *startPts = NULL;
-	startPts = (point_data_mp *)bmalloc(W.num_pts * sizeof(point_data_mp));
+	startPts = (point_data_mp *)br_malloc(W.num_pts * sizeof(point_data_mp));
 	
 	
 	for (ii = 0; ii < W.num_pts; ii++)
@@ -1744,7 +1828,7 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 	
   // setup the rest of the structures
 	endgame_data_t *EG = NULL;
-  setup_lin_to_lin_omp_mp(max,
+  setup_multilin_to_lin_omp_mp(max,
 												 &EG, &trackCount_copy, trackCount,
 												 &OUT_copy, OUT, &RAWOUT_copy, RAWOUT, &MIDOUT_copy, MIDOUT, &FAIL_copy, FAIL, &NONSOLN_copy, NONSOLN,
 												 &T_copy, T,
@@ -1752,17 +1836,17 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 	
 	
 	
-	trackCount->numPoints = W.num_pts*(num_new_linears);
+	trackCount->numPoints = W.num_pts;
 	int solution_counter = 0;
 	
 	
-	for (kk = 0; kk< num_new_linears; kk++)
+	for (kk = 0; kk< W.num_linears; kk++)
 	{
 		if (solve_options->verbose_level>=1)
 			printf("solving for linear %d\n",kk);
 		
 //		//set current linear in the evaluator data
-		vec_cp_mp(ED->current_linear,new_linears[kk]);
+		vec_cp_mp(ED->current_linear[kk],new_linears[kk]);
 
 
 		
@@ -1777,18 +1861,18 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 			if (solve_options->verbose_level>=1)
 				printf("path %d\n",ii);
 			
-#ifdef printpathlintolin
+#ifdef printpathmultilintolin
 			BED_copy[oid].num_steps = 0;
 #endif
 			
 			
 			// print the header of the path to OUT
 //			printPathHeader_mp(OUT_copy[oid], &startPts[startPointIndex], &T_copy[oid], solution_counter, &BED_copy[oid], eval_func_mp);
-			lin_to_lin_track_path_mp(solution_counter, &EG[oid], &startPts[ii], OUT_copy[oid], MIDOUT_copy[oid], &T_copy[oid], &BED_copy[oid], curr_eval_mp, change_prec, find_dehom); //curr_eval_d,
+			multilin_to_lin_track_path_mp(solution_counter, &EG[oid], &startPts[ii], OUT_copy[oid], MIDOUT_copy[oid], &T_copy[oid], &BED_copy[oid], curr_eval_mp, change_prec, find_dehom); //curr_eval_d,
 			
 
 			
-#ifdef printpathlintolin
+#ifdef printpathmultilintolin
 			int mm;
 			fprintf(BED_copy[oid].FOUT,"-100 %d ",BED_copy[oid].num_steps);
 			for (mm=0; mm<BED_copy[oid].num_variables-1; ++mm) {
@@ -1818,9 +1902,9 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 			int issoln = 0;
 			if (EG->last_approx_prec!=1) {
 //				if (EG->prec<64){
-//					issoln = check_issoln_lintolin_d(&EG[oid],  &T_copy[oid], &BED_copy[oid]); }
+//					issoln = check_issoln_multilintolin_d(&EG[oid],  &T_copy[oid], &BED_copy[oid]); }
 //				else {
-					issoln = check_issoln_lintolin_mp(&EG[oid], &T_copy[oid], &BED_copy[oid]);
+					issoln = check_issoln_multilintolin_mp(&EG[oid], &T_copy[oid], &BED_copy[oid]);
 //			}
 			}
 			else{
@@ -1842,8 +1926,8 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 				trackCount->failures++;
 				printf("\nretVal = %d\nthere was a fatal path failure tracking linear %d, witness point %d\n\n",EG->retVal,kk,ii);
 				print_path_retVal_message(EG->retVal);
-				print_point_to_screen_matlab_mp(BED_copy->old_linear,"old");
-				print_point_to_screen_matlab_mp(BED_copy->current_linear,"new");
+				print_point_to_screen_matlab_mp(BED_copy->old_linear[0],"old");
+				print_point_to_screen_matlab_mp(BED_copy->current_linear[0],"new");
 				exit(EG->retVal); //failure intolerable in this solver.
 			}
 			else
@@ -1876,7 +1960,7 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
   free(startPts);
 	
   // clear the structures
-  clear_lintolin_omp_mp(max, &EG, &trackCount_copy, trackCount, &OUT_copy, OUT, &RAWOUT_copy, RAWOUT, &MIDOUT_copy, MIDOUT, &FAIL_copy, FAIL, &NONSOLN_copy, NONSOLN, &T_copy, &BED_copy);
+  clear_multilintolin_omp_mp(max, &EG, &trackCount_copy, trackCount, &OUT_copy, OUT, &RAWOUT_copy, RAWOUT, &MIDOUT_copy, MIDOUT, &FAIL_copy, FAIL, &NONSOLN_copy, NONSOLN, &T_copy, &BED_copy);
 	
   return;
 }
@@ -1884,7 +1968,7 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 
 
 // derived from zero_dim_track_path_d
-void lin_to_lin_track_path_mp(int pathNum, endgame_data_t *EG_out,
+void multilin_to_lin_track_path_mp(int pathNum, endgame_data_t *EG_out,
 														 point_data_mp *Pin,
 														 FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
 														 void const *ED,
@@ -1925,10 +2009,10 @@ void lin_to_lin_track_path_mp(int pathNum, endgame_data_t *EG_out,
 
 
 // derived from zero_dim_basic_setup_d
-int lin_to_lin_setup_mp(FILE **OUT, char *outName,
+int multilin_to_lin_setup_mp(FILE **OUT, char *outName,
 											 FILE **midOUT, char *midName,
 											 tracker_config_t *T,
-											 lintolin_eval_data_mp *ED,
+											 multilintolin_eval_data_mp *ED,
 											 prog_t *dummyProg,
 											 int **startSub, int **endSub, int **startFunc, int **endFunc, int **startJvsub, int **endJvsub, int **startJv, int **endJv, int ***subFuncsBelow,
 											 int (**eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
@@ -1948,8 +2032,8 @@ int lin_to_lin_setup_mp(FILE **OUT, char *outName,
 	
   int rank, patchType, ssType, numOrigVars, adjustDegrees, numGps;
 	
-  *eval_d = &lin_to_lin_eval_d;   
-  *eval_mp = &lin_to_lin_eval_mp;
+  *eval_d = &multilin_to_lin_eval_d;   
+  *eval_mp = &multilin_to_lin_eval_mp;
 	
   *OUT = fopen(outName, "w");  // open the main output files.
   *midOUT = fopen(midName, "w");
@@ -1975,7 +2059,7 @@ int lin_to_lin_setup_mp(FILE **OUT, char *outName,
     patchType = 2; // 1-hom patch
     ssType = 0;    // with 1-hom, we use total degree start system
     adjustDegrees = 0; // if the system does not need its degrees adjusted, then that is okay
-    setuplintolinEval_mp(preprocFile, degreeFile, dummyProg, rank, patchType, ssType, T->Precision, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix, W,solve_options);
+    setupmultilintolinEval_mp(preprocFile, degreeFile, dummyProg, rank, patchType, ssType, T->Precision, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix, W,solve_options);
   }
   else
   { // m-hom, m > 1
@@ -1983,9 +2067,9 @@ int lin_to_lin_setup_mp(FILE **OUT, char *outName,
 		exit(-11011);
   }
 	
-#ifdef printpathlintolin
+#ifdef printpathmultilintolin
 	int ii;
-	ED->FOUT = safe_fopen_append("pathtrack_lintolin");
+	ED->FOUT = safe_fopen_append("pathtrack_multilintolin");
 	fprintf(ED->FOUT,"%d ",W.num_variables);
 	for (ii=0; ii<W.num_variables; ii++) {
 		fprintf(ED->FOUT,"%s ",W.variable_names[ii]);
@@ -2004,105 +2088,117 @@ int lin_to_lin_setup_mp(FILE **OUT, char *outName,
 
 
 //this derived from basic_eval_d
-int lin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED)
+int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED)
 { // evaluates a special homotopy type, build for bertini_real
 
-	//	print_comp_mp_matlab(pathVars,"pathvars");
-
-	
-  lintolin_eval_data_mp *BED = (lintolin_eval_data_mp *)ED; // to avoid having to cast every time
-	
+//	print_comp_mp_matlab(pathVars,"pathvars");
 
 
-  int ii, jj;
+  multilintolin_eval_data_mp *BED = (multilintolin_eval_data_mp *)ED; // to avoid having to cast every time
+
+
+
   comp_mp one_minus_s, gamma_s; init_mp(one_minus_s); init_mp(gamma_s);
-	
 	comp_mp temp, temp2; init_mp(temp); init_mp(temp2);
-	
-	vec_mp one_minus_s_times_current_linear;
-	init_vec_mp(one_minus_s_times_current_linear,BED->num_variables);
-	one_minus_s_times_current_linear->size = BED->num_variables;
-	
-	vec_mp patchValues; init_vec_mp(patchValues, 0);
-	
-	vec_mp vars_times_curr_linear; init_vec_mp(vars_times_curr_linear,BED->num_variables);
-	vec_mp vars_times_old_linear; init_vec_mp(vars_times_old_linear,BED->num_variables);
-	vars_times_old_linear->size = vars_times_curr_linear->size = BED->num_variables;
-	
-	
-	vec_mp temp_function_values; init_vec_mp(temp_function_values,0);
-	vec_mp AtimesF; init_vec_mp(AtimesF,0);  // declare  // initialize
-	vec_mp gamma_s_times_old_linear; init_vec_mp(gamma_s_times_old_linear,BED->num_variables);
-	
-	
-	mat_mp temp_jacobian_functions; init_mat_mp(temp_jacobian_functions,0,0);
-	mat_mp temp_jacobian_parameters; init_mat_mp(temp_jacobian_parameters,0,0);
-	mat_mp Jv_Patch; init_mat_mp(Jv_Patch, 0, 0);
-	mat_mp AtimesJ; init_mat_mp(AtimesJ,1,1);
-	
-	
-	init_vec_mp(funcVals,BED->num_variables); funcVals->size = BED->num_variables;
 
-	
-	//set the sizes
-	gamma_s_times_old_linear->size = BED->num_variables;
-	
-	
-	
-	
+  int ii, jj, mm; // counters
+	int offset;
 
-	
-	change_size_mat_mp(Jv, BED->num_variables, BED->num_variables); // this is an input
-	Jv->rows = Jv->cols = BED->num_variables;  //  -> this should be square!!!
 	
 	
   set_one_mp(one_minus_s);
   sub_mp(one_minus_s, one_minus_s, pathVars);  // one_minus_s = (1 - s)
   mul_mp(gamma_s, BED->gamma, pathVars);       // gamma_s = gamma * s
 	
-
-	//the SLP evaluation
+	
+	vec_mp patchValues; init_vec_mp(patchValues, 0);
+	vec_mp temp_function_values; init_vec_mp(temp_function_values,0);
+	vec_mp AtimesF; init_vec_mp(AtimesF,BED->n_minusone_randomizer_matrix->rows); AtimesF->size = BED->n_minusone_randomizer_matrix->rows;// declare  // initialize
+	
+	vec_mp *vars_times_curr_linear = (vec_mp *)br_malloc(BED->num_linears*sizeof(vec_mp));
+	for (ii=0; ii<BED->num_linears; ii++) {
+		init_vec_mp(vars_times_curr_linear[ii],BED->num_variables);
+		vars_times_curr_linear[ii]->size = BED->num_variables;
+	}
+	
+	
+	
+	vec_mp *vars_times_old_linear = (vec_mp *)br_malloc(BED->num_linears*sizeof(vec_mp));
+	for (ii=0; ii<BED->num_linears; ii++) {
+		init_vec_mp(vars_times_old_linear[ii],BED->num_variables);
+		vars_times_old_linear[ii]->size = BED->num_variables;
+	}
+	
+	
+	vec_mp *one_minus_s_times_current_linear = (vec_mp *)br_malloc(BED->num_linears*sizeof(vec_mp));
+	for (ii=0; ii<BED->num_linears; ii++) {
+		init_vec_mp(one_minus_s_times_current_linear[ii],BED->num_variables);
+		one_minus_s_times_current_linear[ii]->size = BED->num_variables;
+	}
+	
+	
+	vec_mp *gamma_s_times_old_linear = (vec_mp *)br_malloc(BED->num_linears*sizeof(vec_mp));
+	for (ii=0; ii<BED->num_linears; ii++) {
+		init_vec_mp(gamma_s_times_old_linear[ii],BED->num_variables);
+		gamma_s_times_old_linear[ii]->size = BED->num_variables;
+	}
+	
+	
+	for (ii=0; ii<BED->num_linears; ii++) {
+		init_vec_mp(gamma_s_times_old_linear[ii],BED->num_variables);
+		gamma_s_times_old_linear[ii]->size = BED->num_variables;
+	}
+	
+	
+	
+	
+	mat_mp temp_jacobian_functions; init_mat_mp(temp_jacobian_functions,BED->n_minusone_randomizer_matrix->cols,BED->num_variables);
+	temp_jacobian_functions->rows = BED->n_minusone_randomizer_matrix->cols; temp_jacobian_functions->cols = BED->num_variables;
+	mat_mp temp_jacobian_parameters; init_mat_mp(temp_jacobian_parameters,0,0);
+	mat_mp Jv_Patch; init_mat_mp(Jv_Patch, 0, 0);
+	mat_mp AtimesJ; init_mat_mp(AtimesJ,BED->n_minusone_randomizer_matrix->rows,BED->num_variables);
+	AtimesJ->rows = BED->n_minusone_randomizer_matrix->rows; AtimesJ->cols = BED->num_variables;
+	
+	
+	//set the sizes
+	change_size_vec_mp(funcVals,BED->num_variables); funcVals->size = BED->num_variables;
+  change_size_mat_mp(Jv, BED->num_variables, BED->num_variables); Jv->rows = Jv->cols = BED->num_variables; //  -> this should be square!!!
+	
+	
+	
+	
+	
+	// evaluate the SLP to get the system's whatnot.
 	evalProg_mp(temp_function_values, parVals, parDer, temp_jacobian_functions, temp_jacobian_parameters, current_variable_values, pathVars, BED->SLP);
 	
 	
   // evaluate the patch
-  patch_eval_mp(patchValues, parVals, parDer, Jv_Patch, Jp, current_variable_values, pathVars, &BED->patch);  // Jp is ignored
+  patch_eval_mp(    patchValues, parVals, parDer, Jv_Patch, Jp, current_variable_values, pathVars, &BED->patch);  // Jp is ignored
 	
-
+	
 	// we assume that the only parameter is s = t and setup parVals & parDer accordingly.
-	
+	// note that you can only really do this AFTER you are done calling other evaluators.
   // set parVals & parDer correctly
-	change_size_mat_mp(Jp, BED->num_variables, 1);
-	Jp->rows = BED->num_variables; Jp->cols = 1;
 	
+	// i.e. these must remain here.  \/
   change_size_point_mp(parVals, 1);
   change_size_vec_mp(parDer, 1);
+	change_size_mat_mp(Jp, BED->num_variables, 1); Jp->rows = BED->num_variables; Jp->cols = 1;
 	
   parVals->size = parDer->size = 1;
   set_mp(&parVals->coord[0], pathVars); // s = t
   set_one_mp(&parDer->coord[0]);       // ds/dt = 1
 	
+	
+	
+	///////// / / / /  /   /
   // combine everything
+	///////// / / / /  /   /
 	
-	
-	
-  
-  
-	
-	
-  
-	
-	
-	
-	
+	//perform the randomization multiplications
 	mat_mul_mp(AtimesJ,BED->n_minusone_randomizer_matrix,temp_jacobian_functions);
-	
-	
 	mul_mat_vec_mp(AtimesF,BED->n_minusone_randomizer_matrix, temp_function_values ); // set values of AtimesF (A is randomization matrix)
 	
-	
-
-
 	for (ii=0; ii<AtimesF->size; ii++) { // for each function, after (real orthogonal) randomization
 		set_mp(&funcVals->coord[ii], &AtimesF->coord[ii]);
 	}
@@ -2110,44 +2206,60 @@ int lin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_m
 	
 	
 	
-
 	
-	// multiply vars times the new linear, with (1-s)
-	for (ii=0; ii<BED->num_variables; ii++) { // for each variable, including the homogeneous ones.
-		mul_mp(&one_minus_s_times_current_linear->coord[ii], &BED->current_linear->coord[ii], one_minus_s);
-		mul_mp(&vars_times_curr_linear->coord[ii], &one_minus_s_times_current_linear->coord[ii], &current_variable_values->coord[ii]);
+	
+	
+	//////////////
+	//
+	// function values for the linears
+	//
+	////////////////////
+	
+	
+	offset = BED->num_variables-(BED->num_linears+1);
+	for (mm=0; mm<BED->num_linears; ++mm) {
+		// multiply vars times the new linear, with (1-s)
+		for (ii=0; ii<BED->num_variables; ii++) { // for each variable, including the homogeneous ones.
+			mul_mp(&one_minus_s_times_current_linear[mm]->coord[ii], &BED->current_linear[mm]->coord[ii], one_minus_s);
+			mul_mp(&vars_times_curr_linear[mm]->coord[ii], &one_minus_s_times_current_linear[mm]->coord[ii], &current_variable_values->coord[ii]);
+		}
+		// multiply vars times the old linear, with gamma*s
+		for (ii=0; ii<BED->num_variables; ii++) { // for each variable, including the homogeneous ones.
+			mul_mp(&gamma_s_times_old_linear[mm]->coord[ii], &BED->old_linear[mm]->coord[ii], gamma_s);
+			mul_mp(&vars_times_old_linear[mm]->coord[ii],&gamma_s_times_old_linear[mm]->coord[ii],&current_variable_values->coord[ii]);
+		}
+		// add the old and the new
+		set_zero_mp(temp);  //  initialize to 0
+		for (ii=0; ii<BED->num_variables; ii++) {  // for each variable, including the homogenizing ones.
+			add_mp(temp2, &vars_times_old_linear[mm]->coord[ii], &vars_times_curr_linear[mm]->coord[ii]);
+			add_mp(temp,temp,temp2); //  tested correct, does not overwrite values in temp before accessed for read.
+		}
+		//finally set the value of the linears we are homotoping.
+		
+		
+		set_mp(&funcVals->coord[mm+offset],temp); // this is the entry for the linear's homotopy.
+		
 	}
 	
-
-
-	
-	
-	// multiply vars times the old linear, with gamma*s
-	for (ii=0; ii<BED->num_variables; ii++) { // for each variable, including the homogeneous ones.
-		mul_mp(&gamma_s_times_old_linear->coord[ii], &BED->old_linear->coord[ii], gamma_s);
-		mul_mp(&vars_times_old_linear->coord[ii],&gamma_s_times_old_linear->coord[ii],&current_variable_values->coord[ii]);
-	}
-	
- 
-	// add the old and the new
-	set_zero_mp(temp);  //  initialize to 0
-	for (ii=0; ii<BED->num_variables; ii++) {  // for each variable, including the homogenizing ones.
-		add_mp(temp2, &vars_times_old_linear->coord[ii], &vars_times_curr_linear->coord[ii]);
-		add_mp(temp,temp,temp2); //  tested correct, does not overwrite values in temp before accessed for read.
-	}
 	
 	
 	
-	//set the value of the linears we are homotoping.
-	set_mp(&funcVals->coord[BED->num_variables-2],temp); // this is the entry for the linear's homotopy.
-
 	
 	
-	//set the PATCH values
-	int offset = BED->num_variables-1;
-	for (ii=0; ii<BED->patch.num_patches; ii++) {
+	
+	
+	//////////////
+	//
+	//set the function PATCH values
+	//
+	////////////////////
+	
+	
+	
+	offset = BED->num_variables-1;
+	for (ii=0; ii<BED->patch.num_patches; ii++)
 		set_mp(&funcVals->coord[ii+offset], &patchValues->coord[ii]);
-	}
+	
 	
 	
 	
@@ -2161,29 +2273,29 @@ int lin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_m
 	//first, the entries related to the functions
 	
   for (ii = 0; ii < BED->n_minusone_randomizer_matrix->rows; ii++)
-  {
 		for (jj = 0; jj < BED->num_variables; jj++)
-		{
 			set_mp(&Jv->entry[ii][jj],&AtimesJ->entry[ii][jj]);
-		}
-  }
+	
+  
 	
 	
-	
-	
-	
-	// the entries for the linears we are homotoping
+	//////////////
+	//
+	// Entries for the linears we are homotoping
+	//
+	////////////////////
 	
 	
 	offset = BED->num_variables-2;
-	for (ii=0; ii<BED->num_variables; ii++) {
-		add_mp(temp,&gamma_s_times_old_linear->coord[ii], &one_minus_s_times_current_linear->coord[ii]);
-		set_mp(&Jv->entry[offset][ii], temp); // HERE DAB!!!
+	for (mm=0; mm<BED->num_linears; ++mm) {
+		for (ii=0; ii<BED->num_variables; ii++) {
+			add_mp(temp,&gamma_s_times_old_linear[mm]->coord[ii], &one_minus_s_times_current_linear[mm]->coord[ii]);
+			set_mp(&Jv->entry[offset+mm][ii], temp);
+		}
 	}
 	
 	
-	
-	offset = BED->num_variables-1;
+	offset = BED->num_variables - 2+BED->num_linears;
 	for (ii=0; ii<BED->num_variables; ii++) {
 		set_mp(&Jv->entry[offset][ii],&Jv_Patch->entry[0][ii]);
 	}
@@ -2196,64 +2308,76 @@ int lin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_m
 	}
 	
 	
+	
+	
 	// Jp = -current_linear_times_vars + gamma*old_linear_times_vars
-	set_zero_mp(&Jp->entry[BED->num_variables-2][0]);
-	dot_product_mp(temp,BED->current_linear,current_variable_values);
-	neg_mp(temp,temp);
-	dot_product_mp(temp2,BED->old_linear,current_variable_values);
-	mul_mp(temp2,temp2,BED->gamma);
-	add_mp(&Jp->entry[BED->num_variables-2][0],temp,temp2);
-
+	
+	offset = BED->num_variables-2;
+	for (ii=0; ii<BED->num_linears; ii++) {
+		set_zero_mp(&Jp->entry[offset+ii][0]);
+		dot_product_mp(temp,
+									BED->current_linear[ii],current_variable_values);
+		neg_mp(temp,temp);
+		dot_product_mp(temp2,BED->old_linear[ii],current_variable_values);
+		mul_mp(temp2,temp2,BED->gamma);
+		add_mp(&Jp->entry[offset+ii][0],temp,temp2);
+	}
 	
 	
-	
-	
+	//////////////
+	//
 	// the entries in the jacobian for the patch equations.
-	offset = BED->num_variables-1;
+	//
+	////////////////////
+	
+	offset = BED->num_variables - 2+BED->num_linears;
 	for (ii = 0; ii<BED->patch.num_patches; ii++)  // for each patch equation
 	{ // funcVals = patchValues
 		// Jp = 0
 		set_zero_mp(&Jp->entry[ii+offset][0]);
 		// Jv = Jv_Patch
 		for (jj = 0; jj<BED->num_variables; jj++) // for each variable
-		{
 			set_mp(&Jv->entry[ii+offset][jj], &Jv_Patch->entry[ii][jj]);
-		}
 		
 	}
 	
+	// done!  yay!
 	
-	//done!  yay!
-	
+	//uncomment to see screen output of important variables at each solve step.
 	//	printf("gamma = %lf+1i*%lf;\n", BED->gamma->r, BED->gamma->i);
+	//	printf("time = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
+	//	print_matrix_to_screen_matlab( temp_jacobian_functions,"jac");
+	//	print_point_to_screen_matlab(current_variable_values,"currvars");
+	//	print_point_to_screen_matlab(BED->current_linear,"new");
+	//	print_point_to_screen_matlab(BED->old_linear,"old");
+	//	print_point_to_screen_matlab(funcVals,"F");
+	//	print_matrix_to_screen_matlab(Jv,"Jv");
+	//	print_matrix_to_screen_matlab(Jp,"Jp");
+	//	print_matrix_to_screen_matlab(BED->n_minusone_randomizer_matrix,"n_minusone_randomizer_matrix");
 	//
-
-//	print_point_to_screen_matlab_mp(parVals,"parVals");
-//	print_matrix_to_screen_matlab_mp( temp_jacobian_functions,"jac");
-//	print_point_to_screen_matlab_mp(current_variable_values,"currvars");
-//	print_point_to_screen_matlab_mp(BED->current_linear,"new");
-//	print_point_to_screen_matlab_mp(BED->old_linear,"old");
-//	print_point_to_screen_matlab_mp(funcVals,"F");
-//	print_matrix_to_screen_matlab_mp(Jv,"Jv");
-//	print_matrix_to_screen_matlab_mp(Jp,"Jp");
-//	print_matrix_to_screen_matlab_mp(BED->n_minusone_randomizer_matrix,"n_minusone_randomizer_matrix");
-//
+	//	mypause();
 	//
+	
+	//	fprintf(BED->FOUT,"jamesbrown\n");
+	
+	for (ii=0; ii<BED->num_linears; ii++) {
+		clear_vec_mp(vars_times_curr_linear[ii]);
+		clear_vec_mp(vars_times_old_linear[ii]);
+		clear_vec_mp(one_minus_s_times_current_linear[ii]);
+		clear_vec_mp(gamma_s_times_old_linear[ii]);
+	}
+	
 	
 	
 	clear_mp(one_minus_s);
 	clear_mp(gamma_s);
 	clear_mp(temp);
 	clear_mp(temp2);
-	clear_vec_mp(one_minus_s_times_current_linear);
 	
 	
 	clear_vec_mp(patchValues);
-	clear_vec_mp(vars_times_curr_linear);
-	clear_vec_mp(vars_times_old_linear);
 	clear_vec_mp(temp_function_values);
-	clear_vec_mp(AtimesF);  // declare  // initialize
-	clear_vec_mp(gamma_s_times_old_linear);
+	clear_vec_mp(AtimesF);
 	
 	
 	clear_mat_mp(temp_jacobian_functions);
@@ -2261,8 +2385,7 @@ int lin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_m
 	clear_mat_mp(Jv_Patch);
 	clear_mat_mp(AtimesJ);
 	
-	
-#ifdef printpathlintolin
+#ifdef printpathmultilintolin
 	BED->num_steps++;
 	vec_mp dehommed; init_vec_mp(dehommed,BED->num_variables-1); dehommed->size = BED->num_variables-1;
 	dehomogenize_mp(&dehommed,current_variable_values);
@@ -2280,6 +2403,9 @@ int lin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_m
 	clear_vec_d(dehommed);
 #endif
 
+
+
+
   return 0;
 }
 
@@ -2289,7 +2415,7 @@ int lin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_m
 
 
 
-void lintolin_eval_clear_mp(lintolin_eval_data_mp *ED, int clearRegen, int MPType)
+void multilintolin_eval_clear_mp(multilintolin_eval_data_mp *ED, int clearRegen, int MPType)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -2305,15 +2431,20 @@ void lintolin_eval_clear_mp(lintolin_eval_data_mp *ED, int clearRegen, int MPTyp
 	//SOME OTHER THINGS OUGHT TO BE CLEARED HERE  DAB
 	
 	
-	//specifics for the lintolin method.
+	//specifics for the multilintolin method.
 	clear_mp(ED->gamma);
-	clear_vec_mp(ED->current_linear);
-	clear_vec_mp(ED->old_linear);
+	int ii;
+	for (ii=0; ii<ED->num_linears; ++ii) {
+		clear_vec_mp(ED->current_linear[ii]);
+		clear_vec_mp(ED->old_linear[ii]);
+	}
+	
 	clear_mat_mp(ED->n_minusone_randomizer_matrix);
 	
-#ifdef printpathlintolin
+#ifdef printpathmultilintolin
 	fclose(ED->FOUT);
 #endif
+	
 	
   return;
 }
@@ -2323,12 +2454,12 @@ void lintolin_eval_clear_mp(lintolin_eval_data_mp *ED, int clearRegen, int MPTyp
 
 
 
-void setup_lin_to_lin_omp_mp(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount,
+void setup_multilin_to_lin_omp_mp(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount,
 														FILE ***OUT_copy, FILE *OUT, FILE ***RAWOUT_copy, FILE *RAWOUT,
 														FILE ***MIDOUT_copy, FILE *MIDOUT, FILE ***FAIL_copy, FILE *FAIL,
 														FILE ***NONSOLN_copy, FILE *NONSOLN,
 														tracker_config_t **T_copy, tracker_config_t *T,
-														lintolin_eval_data_mp **BED_copy, lintolin_eval_data_mp *ED_mp)
+														multilintolin_eval_data_mp **BED_copy, multilintolin_eval_data_mp *ED_mp)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -2344,39 +2475,23 @@ void setup_lin_to_lin_omp_mp(int max_threads, endgame_data_t **EG, trackingStats
   if (max_threads <= 0)
   {
     printf("\n\nERROR: The number of threads (%d) needs to be positive when setting up for tracking!\n", max_threads);
-    bexit(ERROR_CONFIGURATION);
+    br_exit(ERROR_CONFIGURATION);
   }
 	
 	
 // allocate space for EG
-	*EG = (endgame_data_t *)bmalloc(max_threads * sizeof(endgame_data_t));
+	*EG = (endgame_data_t *)br_malloc(max_threads * sizeof(endgame_data_t));
   for (ii = 0; ii < max_threads; ii++)
   {
     init_endgame_data(&(*EG)[ii], T->Precision);
   }
 	
-	
-//  *EG = (endgame_data_t *)bmalloc(max_threads * sizeof(endgame_data_t));
-//	
-//	// initialize
-//  for (ii = 0; ii < max_threads; ii++)
-//	{
-//    if (T->MPType == 2)
-//    { // initialize for AMP tracking
-//      init_endgame_data(&(*EG)[ii], 64);
-//    }
-//    else
-//    { // initialize for double precision tracking
-//      init_endgame_data(&(*EG)[ii], 52);
-//    }
-//	}
-	
   // allocate space to hold pointers to the files
-  *OUT_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
-  *MIDOUT_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
-  *RAWOUT_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
-  *FAIL_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
-  *NONSOLN_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
+  *OUT_copy = (FILE **)br_malloc(max_threads * sizeof(FILE *));
+  *MIDOUT_copy = (FILE **)br_malloc(max_threads * sizeof(FILE *));
+  *RAWOUT_copy = (FILE **)br_malloc(max_threads * sizeof(FILE *));
+  *FAIL_copy = (FILE **)br_malloc(max_threads * sizeof(FILE *));
+  *NONSOLN_copy = (FILE **)br_malloc(max_threads * sizeof(FILE *));
 	
   if (max_threads == 1)
   { // setup the pointers
@@ -2395,16 +2510,16 @@ void setup_lin_to_lin_omp_mp(int max_threads, endgame_data_t **EG, trackingStats
   { // allocate memory
 		printf("more than one thread? prolly gonna crap out here in a sec\n");
 		
-    *trackCount_copy = (trackingStats *)bmalloc(max_threads * sizeof(trackingStats));
-    *T_copy = (tracker_config_t *)bmalloc(max_threads * sizeof(tracker_config_t));
-    *BED_copy = (lintolin_eval_data_mp *)bmalloc(max_threads * sizeof(lintolin_eval_data_mp));
+    *trackCount_copy = (trackingStats *)br_malloc(max_threads * sizeof(trackingStats));
+    *T_copy = (tracker_config_t *)br_malloc(max_threads * sizeof(tracker_config_t));
+    *BED_copy = (multilintolin_eval_data_mp *)br_malloc(max_threads * sizeof(multilintolin_eval_data_mp));
 		
     // copy T, ED_d, ED_mp, & trackCount
     for (ii = 0; ii < max_threads; ii++)
     { // copy T
       cp_tracker_config_t(&(*T_copy)[ii], T);
       // copy ED_d & ED_mp
-      cp_lintolin_eval_data_mp(&(*BED_copy)[ii], ED_mp, T->MPType);
+      cp_multilintolin_eval_data_mp(&(*BED_copy)[ii], ED_mp, T->MPType);
       // initialize trackCount_copy
       init_trackingStats(&(*trackCount_copy)[ii]);
       (*trackCount_copy)[ii].numPoints = trackCount->numPoints;
@@ -2447,7 +2562,7 @@ void setup_lin_to_lin_omp_mp(int max_threads, endgame_data_t **EG, trackingStats
   return;
 }
 
-void clear_lintolin_omp_mp(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount, FILE ***OUT_copy, FILE *OUT, FILE ***RAWOUT_copy, FILE *RAWOUT, FILE ***MIDOUT_copy, FILE *MIDOUT, FILE ***FAIL_copy, FILE *FAIL, FILE ***NONSOLN_copy, FILE *NONSOLN, tracker_config_t **T_copy, lintolin_eval_data_mp **BED_copy)
+void clear_multilintolin_omp_mp(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount, FILE ***OUT_copy, FILE *OUT, FILE ***RAWOUT_copy, FILE *RAWOUT, FILE ***MIDOUT_copy, FILE *MIDOUT, FILE ***FAIL_copy, FILE *FAIL, FILE ***NONSOLN_copy, FILE *NONSOLN, tracker_config_t **T_copy, multilintolin_eval_data_mp **BED_copy)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -2493,7 +2608,7 @@ void clear_lintolin_omp_mp(int max_threads, endgame_data_t **EG, trackingStats *
     // clear the copies T, ED_d & ED_mp
     for (ii = max_threads - 1; ii >= 0; ii--)
     { // clear BED_copy - 0 since not using regeneration
-      lintolin_eval_clear_mp(&(*BED_copy)[ii], 0, (*T_copy)[ii].MPType);
+      multilintolin_eval_clear_mp(&(*BED_copy)[ii], 0, (*T_copy)[ii].MPType);
 			// clear T_copy
       tracker_config_clear(&(*T_copy)[ii]);
     }
@@ -2603,58 +2718,95 @@ void clear_lintolin_omp_mp(int max_threads, endgame_data_t **EG, trackingStats *
 
 
 
-void setuplintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *dummyProg,
+void setupmultilintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *dummyProg,
 												 int squareSize, int patchType, int ssType, int prec,
 												 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
-												 lintolin_eval_data_mp *BED, int adjustDegrees,
+												 multilintolin_eval_data_mp *BED, int adjustDegrees,
 												 mat_mp n_minusone_randomizer_matrix,
 													witness_set W,
 													solver_configuration *solve_options)
 {
+//	printf("setupmultilintolinEval_mp\n");
   int ii;
+	
+	// the standard setup
 	int digits = prec_to_digits(mpf_get_default_prec());
   setupPreProcData(preprocFile, &BED->preProcData);
-
 	setupPatch_mp(patchType, &BED->patch, digits, prec, ptr1, ptr2);
-//
-
-	
 	BED->num_variables = W.num_variables;
-	
-
-	
 	for (ii = 0; ii < BED->num_variables ; ii++)
 		set_mp(&BED->patch.patchCoeff->entry[0][ii],&W.patch_mp[0]->coord[ii]);
-	
-	
-	
 	BED->SLP = dummyProg;
 
-	
-	init_mat_mp(BED->n_minusone_randomizer_matrix,0,0);
+	init_mat_mp(BED->n_minusone_randomizer_matrix,1,1);
 	mat_cp_mp(BED->n_minusone_randomizer_matrix,
 					 n_minusone_randomizer_matrix);
 	
 	
+	
+	
+	// the stuff proprietary to this solver
+	
 	// set up the vectors to hold the two linears.
+	BED->num_linears =  W.num_linears;
+
 	
-	
-	init_vec_mp(BED->current_linear,0);
-	change_size_vec_mp(BED->current_linear, n_minusone_randomizer_matrix->cols);
-	BED->current_linear->size =  n_minusone_randomizer_matrix->cols;
-	
-	
-	
-	
-	
-	init_vec_mp(BED->old_linear,0);
-	change_size_vec_mp(BED->old_linear, dummyProg->numVars);
-	BED->old_linear->size =  dummyProg->numVars; // seriously, why is this not in the bertini method?
+	BED->current_linear = (vec_mp *) br_malloc(W.num_linears*sizeof(vec_mp));
+	BED->old_linear = (vec_mp *) br_malloc(W.num_linears*sizeof(vec_mp));
+	for (ii=0;  ii<W.num_linears; ii++){
+		init_vec_mp(BED->current_linear[ii],W.num_variables);
+		BED->current_linear[ii]->size =  W.num_variables;
+		
+		init_vec_mp(BED->old_linear[ii],W.num_variables);
+		BED->old_linear[ii]->size =  W.num_variables;
+		
+		vec_cp_mp(BED->old_linear[ii],W.L_mp[ii]);
+	}
 	
 
-	vec_cp_mp(BED->old_linear,W.L_mp[0]);
 	
-
+//	
+//	
+//	// set up the vectors to hold the two linears.
+//	BED->current_linear = (vec_mp *)br_malloc(W.num_linears*sizeof(vec_mp));
+//	for (ii = 0; ii<W.num_linears; ii++) {
+//		init_vec_mp(BED->current_linear[ii],n_minusone_randomizer_matrix->cols);
+//		BED->current_linear[ii]->size =  n_minusone_randomizer_matrix->cols;
+//		// these will be copied down further in the chain, where we copy based on the indices
+//	}
+//	
+//	
+//	
+//	BED->old_linear = (vec_mp *)br_malloc(W.old_linear*sizeof(vec_mp));
+//	for (ii = 0; ii<W.num_linears; ii++) {
+//		init_vec_mp(BED->old_linear[ii],n_minusone_randomizer_matrix->cols);
+//		BED->old_linear[ii]->size =  n_minusone_randomizer_matrix->cols;
+//		
+//		vec_cp_mp(BED->old_linear[ii],W.L_mp[ii]);
+//	}
+//	
+//	
+//	int *fixed_flag = (int *)br_malloc(W.num_linears*sizeof(int));
+//	for (ii=0; ii<W.num_linears; ii++)
+//		fixed_flag[ii] = 1;
+//	
+////	if (num_moving>0) {  <------ this condition guaranteed earlier in the function chain
+//	BED->moving_index = (int *)br_malloc(num_moving*sizeof(int));
+//	for (ii=0; ii<num_moving; ii++) {
+//		BED->moving_index[ii] = moving_index[ii];
+//		fixed_flag[moving_index[ii]] = 0;
+//	}
+//	
+//	
+//	if (num_moving<W.num_linears) {
+//		BED->fixed_index = (int *)br_malloc((W.num_linears-num_moving)*sizeof(int));
+//																			
+//		int counter = 0;
+//		for (ii=0; ii<W.num_linears; ii++) {
+//			if (fixed_flag[ii]==1)
+//				BED->fixed_index[counter] = ii;
+//		}
+//	}
 	
 	init_mp2(BED->gamma,prec);
 	if (solve_options->use_gamma_trick==1)
@@ -2668,7 +2820,7 @@ void setuplintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *dummyPr
 
 
 
-void cp_lintolin_eval_data_mp(lintolin_eval_data_mp *BED, lintolin_eval_data_mp *BED_mp_input, int MPType)
+void cp_multilintolin_eval_data_mp(multilintolin_eval_data_mp *BED, multilintolin_eval_data_mp *BED_mp_input, int MPType)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -2676,13 +2828,13 @@ void cp_lintolin_eval_data_mp(lintolin_eval_data_mp *BED, lintolin_eval_data_mp 
  * NOTES: stores a copy of BED_(t)_input to BED                  *
  \***************************************************************/
 {
-	printf("entering cp_lintolin_eval_data_mp\nthis function is likely broken\n");
+	printf("entering cp_multilintolin_eval_data_mp\nthis function is likely broken\n");
 	exit(-1);
   cp_preproc_data(&BED->preProcData, &BED_mp_input->preProcData);
 	//  cp_square_system_d(&BED->squareSystem, &BED_d_input->squareSystem);
   cp_patch_mp(&BED->patch, &BED_mp_input->patch);
 	//  cp_start_system_d(&BED->startSystem, &BED_d_input->startSystem);
-	BED->SLP = (prog_t *)bmalloc(1 * sizeof(prog_t));
+	BED->SLP = (prog_t *)br_malloc(1 * sizeof(prog_t));
   cp_prog_t(BED->SLP, BED_mp_input->SLP);
 	
 	
@@ -2702,11 +2854,11 @@ void cp_lintolin_eval_data_mp(lintolin_eval_data_mp *BED, lintolin_eval_data_mp 
 
 
 
-int check_issoln_lintolin_d(endgame_data_t *EG,
+int check_issoln_multilintolin_d(endgame_data_t *EG,
 													 tracker_config_t *T,
 													 void const *ED)
 {
-  lintolin_eval_data_d *BED = (lintolin_eval_data_d *)ED; // to avoid having to cast every time
+  multilintolin_eval_data_d *BED = (multilintolin_eval_data_d *)ED; // to avoid having to cast every time
 	
 	
 	int ii;
@@ -2789,11 +2941,11 @@ int check_issoln_lintolin_d(endgame_data_t *EG,
 }
 
 
-int check_issoln_lintolin_mp(endgame_data_t *EG,
+int check_issoln_multilintolin_mp(endgame_data_t *EG,
 														tracker_config_t *T,
 														void const *ED)
 {
-  lintolin_eval_data_mp *BED = (lintolin_eval_data_mp *)ED; // to avoid having to cast every time
+  multilintolin_eval_data_mp *BED = (multilintolin_eval_data_mp *)ED; // to avoid having to cast every time
 	
 	int ii;
 	
@@ -2827,7 +2979,7 @@ int check_issoln_lintolin_mp(endgame_data_t *EG,
 	mpf_set_d(zero_thresh, tol);
 	
 	//this one guaranteed by entry condition
-//	lin_to_lin_eval_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, ED);
+//	multilin_to_lin_eval_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, ED);
 	evalProg_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, BED->SLP);
 //	print_point_to_screen_matlab_mp(e.funcVals,"howfaroff");
 	
@@ -2837,7 +2989,7 @@ int check_issoln_lintolin_mp(endgame_data_t *EG,
 	}
 	
 	evalProg_mp(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_mp, EG->PD_mp.time, BED->SLP);
-//	lin_to_lin_eval_mp(f,          e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_mp, EG->PD_mp.time, ED);
+//	multilin_to_lin_eval_mp(f,          e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_mp, EG->PD_mp.time, ED);
 	// compare the function values
 	int isSoln = 1;
 	for (ii = 0; ii < BED->SLP->numFuncs && isSoln; ii++)
@@ -2875,6 +3027,49 @@ int check_issoln_lintolin_mp(endgame_data_t *EG,
 	return isSoln;
 	
 }
+
+
+
+////pass in a NULL double-pointer to vec_mp in which to return the data.
+//// \param moving_index the indices of the linears we will be moving.
+//// \param num_moving, the number of linears which are moving.
+//// \param style an integer indicating which from an ENUM structure we are performing.
+//// \param asdf the structure containing the linears to choose from.
+//void determine_new_linears(vec_mp ** new_linears, vec_mp *** asdf, int * moving_index, int num_moving, int style){
+//	
+//	
+//	
+//	switch (style) {
+//		case MESHSTYLE:
+//			
+//			break;
+//			
+//		case LISTSTYLE:
+//			
+//			//set current linear in the evaluator data's
+//			vec_mp_to_d(     ED_d->current_linear,new_linears_full_prec[kk]);
+//			
+//			
+//			if (T->MPType==2) {
+//				//q: should i reset the precision here?
+//				vec_cp_mp(ED_d->BED_mp->current_linear,new_linears_full_prec[kk]);
+//				vec_cp_mp(ED_d->BED_mp->current_linear_full_prec,new_linears_full_prec[kk]);
+//			}
+//			
+//			
+//			break;
+//			
+//			
+//		default:
+//			break;
+//	}
+//	
+//	
+//}
+
+
+
+
 
 
 
