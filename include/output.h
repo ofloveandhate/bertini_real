@@ -19,6 +19,9 @@
 #include "cascade.h"
 #include "polysolve.h"  // the bertini  eval_funcs
 
+
+#include "witnessSet.h"
+
 #include "fileops.h"
 #include "data_type.h"
 

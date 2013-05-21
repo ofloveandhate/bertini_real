@@ -18,6 +18,7 @@
 #ifndef _POST_PROCESSING_H
 #define _POST_PROCESSING_H
 
+#include "witnessSet.h"
 #include "polysolve.h"
 #include "fileops.h"
 #include "data_type.h"

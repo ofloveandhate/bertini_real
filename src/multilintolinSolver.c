@@ -43,13 +43,13 @@ int multilintolin_solver_main(int MPType,
 	W_new->MPType = MPType;
 	if (solve_options->complete_witness_set==1){
 		W_new->num_linears = W.num_linears;
-		W_new->L = (vec_d *)br_malloc(W.num_linears*sizeof(vec_d));
+		W_new->L_d = (vec_d *)br_malloc(W.num_linears*sizeof(vec_d));
 		W_new->L_mp = (vec_mp *)br_malloc(W.num_linears*sizeof(vec_mp));
 		int ii;
 		for (ii=0; ii<W.num_linears; ii++) {
 			//copy the linears into the new witness_set
-			init_vec_d(W_new->L[ii],0); init_vec_mp2(W_new->L_mp[ii],0,1024); //the 1024 here is incorrect
-			vec_mp_to_d(   W_new->L[ii],new_linears_full_prec[ii]);
+			init_vec_d(W_new->L_d[ii],0); init_vec_mp2(W_new->L_mp[ii],0,1024); //the 1024 here is incorrect
+			vec_mp_to_d(   W_new->L_d[ii],new_linears_full_prec[ii]);
 			vec_cp_mp(W_new->L_mp[ii],new_linears_full_prec[ii]);
 		}
 		
@@ -872,19 +872,19 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	//uncomment to see screen output of important variables at each solve step.
 //	printf("gamma = %lf+1i*%lf;\n", BED->gamma->r, BED->gamma->i);
 //	printf("time = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
-//	print_matrix_to_screen_matlab( temp_jacobian_functions,"jac");
+//	print_matrix_to_screen_matlab( AtimesJ,"R*jac");
 //	print_point_to_screen_matlab(current_variable_values,"currvars");
-//	print_point_to_screen_matlab(BED->current_linear,"new");
-//	print_point_to_screen_matlab(BED->old_linear,"old");
+//	print_point_to_screen_matlab(BED->current_linear[0],"new");
+//	print_point_to_screen_matlab(BED->old_linear[0],"old");
 //	print_point_to_screen_matlab(funcVals,"F");
 //	print_matrix_to_screen_matlab(Jv,"Jv");
 //	print_matrix_to_screen_matlab(Jp,"Jp");
 //	print_matrix_to_screen_matlab(BED->n_minusone_randomizer_matrix,"n_minusone_randomizer_matrix");
-//
-//	mypause();
-//
 
-//	fprintf(BED->FOUT,"jamesbrown\n");
+//	mypause();
+
+
+
 	
 	for (ii=0; ii<BED->num_linears; ii++) {
 		clear_vec_d(vars_times_curr_linear[ii]);
@@ -1279,7 +1279,7 @@ void setupmultilintolinEval_d(tracker_config_t *T,char preprocFile[], char degre
 
   setupPatch_d(patchType, &BED->patch, ptr1, ptr2);
 	for (ii = 0; ii < BED->num_variables ; ii++)
-		set_d(&BED->patch.patchCoeff->entry[0][ii],&W.patch[0]->coord[ii]);
+		mp_to_d(&BED->patch.patchCoeff->entry[0][ii],&W.patch_mp[0]->coord[ii]);
 	
 
 
@@ -1337,7 +1337,7 @@ void setupmultilintolinEval_d(tracker_config_t *T,char preprocFile[], char degre
 			set_one_rat(BED->BED_mp->gamma_rat);
 		}
 		
-		BED->num_linears = W.num_linears;
+		BED->BED_mp->num_linears = W.num_linears;
 		BED->BED_mp->num_variables = W.num_variables;
 		BED->BED_mp->SLP = BED->SLP; // assign the SLP pointer
 
@@ -1546,6 +1546,8 @@ void change_multilintolin_eval_prec_mp(int new_prec, multilintolin_eval_data_mp 
 	
 
 	if (new_prec != BED->curr_prec){
+//		printf("increasing precision from %d to %d\n",BED->curr_prec, new_prec);
+//		mypause();
 		BED->curr_prec = new_prec;
 		
 		setprec_mp(BED->gamma, new_prec);
@@ -2238,7 +2240,7 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 		
 		
 		set_mp(&funcVals->coord[mm+offset],temp); // this is the entry for the linear's homotopy.
-		
+//		printf("setting F[%d]\n",mm+offset);
 	}
 	
 	
@@ -2256,7 +2258,7 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	
 	
 	
-	offset = BED->num_variables-1;
+	offset = BED->num_variables-BED->patch.num_patches;
 	for (ii=0; ii<BED->patch.num_patches; ii++)
 		set_mp(&funcVals->coord[ii+offset], &patchValues->coord[ii]);
 	
@@ -2344,21 +2346,20 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	// done!  yay!
 	
 	//uncomment to see screen output of important variables at each solve step.
-	//	printf("gamma = %lf+1i*%lf;\n", BED->gamma->r, BED->gamma->i);
-	//	printf("time = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
-	//	print_matrix_to_screen_matlab( temp_jacobian_functions,"jac");
-	//	print_point_to_screen_matlab(current_variable_values,"currvars");
-	//	print_point_to_screen_matlab(BED->current_linear,"new");
-	//	print_point_to_screen_matlab(BED->old_linear,"old");
-	//	print_point_to_screen_matlab(funcVals,"F");
-	//	print_matrix_to_screen_matlab(Jv,"Jv");
-	//	print_matrix_to_screen_matlab(Jp,"Jp");
-	//	print_matrix_to_screen_matlab(BED->n_minusone_randomizer_matrix,"n_minusone_randomizer_matrix");
-	//
-	//	mypause();
-	//
+//	printf("BED->num_linears = %d\n",BED->num_linears);
+//	print_point_to_screen_matlab_mp(parVals,"parVals_mp");
+//	print_matrix_to_screen_matlab_mp( AtimesJ,"R*jac_mp");
+//	print_point_to_screen_matlab_mp(current_variable_values,"currvars_mp");
+//	print_point_to_screen_matlab_mp(BED->current_linear[0],"new_mp");
+//	print_point_to_screen_matlab_mp(BED->old_linear[0],"old_mp");
+//	print_point_to_screen_matlab_mp(funcVals,"F_mp");
+//	print_matrix_to_screen_matlab_mp(Jv,"Jv_mp");
+//	print_matrix_to_screen_matlab_mp(Jp,"Jp_mp");
+//	print_matrix_to_screen_matlab_mp(BED->n_minusone_randomizer_matrix,"randomizer_matrix_mp");
+
+
 	
-	//	fprintf(BED->FOUT,"jamesbrown\n");
+	
 	
 	for (ii=0; ii<BED->num_linears; ii++) {
 		clear_vec_mp(vars_times_curr_linear[ii]);

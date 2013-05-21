@@ -72,18 +72,17 @@ endif
 ###
 
 
-
+FLEX=flex
 
 
 #a few last definitions
 INC:=$(INC) -I../include/  -I$(BERTINIHEADERS) #this includes the header files for bertini_real, etc   
 
 ARGS=$(INC) $(OPT) 
-OBJFILES= data_type.o	programStartup.o determinant_derivative.o output.o fileops.o isosingular.o curveNotSelfConj.o curveSelfConj.o witnessSet.o  postProcessing.o	checkSelfConjugate.o 
-SOLVERS= detjactodetjacSolver.o linprodtodetjacSolver.o multilintolinSolver.o lintolinSolver.o 
-POBJFILES=lex.partitionParse.o 
-FLEX=flex
-#memory.o
+OBJFILES= data_type.o	programStartup.o determinant_derivative.o output.o fileops.o isosingular.o curveNotSelfConj.o curveSelfConj.o witnessSet.o  postProcessing.o	checkSelfConjugate.o nullspace.o
+SOLVERS=   solverNullspace.o detjactodetjacSolver.o linprodtodetjacSolver.o multilintolinSolver.o lintolinSolver.o
+FLEXFILES=lex.partitionParse.o 
+
 
 
 ###
@@ -95,8 +94,8 @@ all : bertini_real data_to_set sampler;
 
 
 #makes the bertini_real program
-bertini_real : bertini_real.c $(OBJFILES) $(POBJFILES) $(SOLVERS);
-	$(COMP) $(ARGS) -o bertini_real bertini_real.c $(OBJFILES) $(POBJFILES) $(SOLVERS) $(BERTINILIB)  $(LIBS)  $(STATICFLAG)
+bertini_real : bertini_real.c $(OBJFILES)  $(SOLVERS) $(FLEXFILES);
+	$(COMP) $(ARGS) -o bertini_real bertini_real.c $(OBJFILES)  $(SOLVERS)  $(FLEXFILES) $(BERTINILIB)  $(LIBS)  $(STATICFLAG)
 
 
 #makes the data2set program.
@@ -105,8 +104,8 @@ data_to_set: dataToSet.cpp
 #   
 
 #makes the sampler program.
-sampler: sampler.c $(OBJFILES) $(POBJFILES) $(SOLVERS)
-	$(COMP) $(ARGS) -o sampler sampler.c  $(OBJFILES) $(POBJFILES) $(SOLVERS) $(BERTINILIB)  $(LIBS)  $(STATICFLAG)
+sampler: sampler.c $(OBJFILES) $(FLEXFILES) $(SOLVERS)
+	$(COMP) $(ARGS) -o sampler sampler.c  $(SOLVERS) $(OBJFILES)   $(BERTINILIB) $(FLEXFILES)  $(LIBS)  $(STATICFLAG)
 #   
 
 
@@ -128,7 +127,7 @@ lex.partitionParse.c:	partitionParse.l
 	$(FLEX) -PpartitionParse partitionParse.l
 
 clean : 
-	rm -f $(OBJFILES) $(POBJFILES) $(SOLVERS) bertini_real data2set sampler
+	rm -f $(OBJFILES) $(FLEXFILES) $(SOLVERS) sampler.o bertini.o data2set.o bertini_real data2set sampler
 	rm -f par.out paramDerivs.out arr.out eval.out eval2.out const.out finalFile.out jacV.out jacP.out num.out
 	rm -f tempBertiniFile lex.partitionParse.c 
 	rm -rf *.dSYM

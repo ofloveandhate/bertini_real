@@ -29,12 +29,12 @@ int detjac_to_detjac_solver_main(int MPType,
 	cp_names(W_new,W);
 	
 	W_new->num_linears = (1);
-	W_new->L = (vec_d *)bmalloc((1)*sizeof(vec_d)); init_vec_d(W_new->L[0],W.num_variables);
+	W_new->L_d = (vec_d *)bmalloc((1)*sizeof(vec_d)); init_vec_d(W_new->L_d[0],W.num_variables);
 	W_new->L_mp = (vec_mp *)bmalloc((1)*sizeof(vec_mp)); init_vec_mp(W_new->L_mp[0],W.num_variables);
 	
 	
 	vec_cp_mp(W_new->L_mp[0],new_projection_full_prec);
-	vec_mp_to_d(W_new->L[0],new_projection_full_prec);
+	vec_mp_to_d(W_new->L_d[0],new_projection_full_prec);
 	
 	
 	if (MPType==1){
@@ -353,7 +353,7 @@ void detjac_to_detjac_track_d(trackingStats *trackCount,
 		printPathHeader_d(OUT_copy[oid], &startPts[startPointIndex], &T_copy[oid], ii, &BED_copy[oid], eval_func_d);
 		
 		
-		integrity_display_detjac(&BED_copy[oid]);
+//		integrity_display_detjac(&BED_copy[oid]);
 		
 		
 		// track the path
@@ -581,7 +581,7 @@ int detjac_to_detjac_setup_d(FILE **OUT, char *outName,
 //this derived from basic_eval_d
 int detjac_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp, point_d current_variable_values, comp_d pathVars, void const *ED)
 { // evaluates a special homotopy type, built for bertini_real
-	printf("t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
+//	printf("dj t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
 	
   detjactodetjac_eval_data_d *BED = (detjactodetjac_eval_data_d *)ED; // to avoid having to cast every time
 	
@@ -1208,7 +1208,7 @@ void setupdetjactodetjacEval_d(tracker_config_t *T,char preprocFile[], char degr
   setupPatch_d(patchType, &BED->patch, ptr1, ptr2);
 	for (ii = 0; ii < BED->num_variables ; ii++)
 	{
-		set_d(&BED->patch.patchCoeff->entry[0][ii],&W.patch[0]->coord[ii]);
+		mp_to_d(&BED->patch.patchCoeff->entry[0][ii],&W.patch_mp[0]->coord[ii]);
 	}
 	
 	

@@ -1,6 +1,6 @@
 #include "lintolinSolver.h"
 
-//the main wrapper function for chaining into the lin_to_lin solver.
+//the main wrapper function for chaining into the lintolin solver.
 // pass in:
 //     • the MPType, witness_set with the linear and points to move FROM (as well as the patch equation),
 //     • max_precision randomizer matrix and linears,
@@ -10,7 +10,7 @@
 //  in corresponding order.
 
 //solve_options has both a tracker_config_t and a preproc_data.
-int lin_to_lin_solver_main(int MPType,
+int lintolin_solver_main(int MPType,
 													 witness_set W,
 													 mat_mp n_minusone_randomizer_matrix_full_prec,
 													 vec_mp *new_linears_full_prec,
@@ -25,7 +25,7 @@ int lin_to_lin_solver_main(int MPType,
 	
 	if (num_new_linears==0) {
 		W_new->num_linears = 0;
-		printf("\nno new linears at which to solve.  returning out of lin_to_lin\n");
+		printf("\nno new linears at which to solve.  returning out of lintolin\n");
 		return 0;
 	}
 	
@@ -35,23 +35,23 @@ int lin_to_lin_solver_main(int MPType,
 	}
 	
 	W_new->num_linears = (num_new_linears);
-	W_new->L = (vec_d *)bmalloc((num_new_linears)*sizeof(vec_d));
+	W_new->L_d = (vec_d *)bmalloc((num_new_linears)*sizeof(vec_d));
 	W_new->L_mp = (vec_mp *)bmalloc((num_new_linears)*sizeof(vec_mp));
 	int ii;
 	for (ii=0; ii<num_new_linears; ii++) {
 		//copy the linears into the new witness_set
-		init_vec_d(W_new->L[ii],0); init_vec_mp2(W_new->L_mp[ii],0,1024); //the 1024 here is incorrect
-		vec_mp_to_d(   W_new->L[ii],new_linears_full_prec[ii]);
+		init_vec_d(W_new->L_d[ii],0); init_vec_mp2(W_new->L_mp[ii],0,1024); //the 1024 here is incorrect
+		vec_mp_to_d(   W_new->L_d[ii],new_linears_full_prec[ii]);
 		vec_cp_mp(W_new->L_mp[ii],new_linears_full_prec[ii]);
 	}
 	
 	
 
 	if (MPType==1){
-		lin_to_lin_solver_mp(MPType,W,n_minusone_randomizer_matrix_full_prec,new_linears_full_prec,num_new_linears,W_new,solve_options);
+		lintolin_solver_mp(MPType,W,n_minusone_randomizer_matrix_full_prec,new_linears_full_prec,num_new_linears,W_new,solve_options);
 	}
 	else{
-		lin_to_lin_solver_d( MPType,W,n_minusone_randomizer_matrix_full_prec,new_linears_full_prec,num_new_linears,W_new,solve_options);
+		lintolin_solver_d( MPType,W,n_minusone_randomizer_matrix_full_prec,new_linears_full_prec,num_new_linears,W_new,solve_options);
 	}
 		
 	
@@ -59,7 +59,7 @@ int lin_to_lin_solver_main(int MPType,
 }
 
 
-int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentSeed
+int lintolin_solver_d(int MPType, //, double parse_time, unsigned int currentSeed
 												witness_set W,  // includes the initial linear.
 												mat_mp n_minusone_randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
 												vec_mp *new_linears_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
@@ -101,7 +101,7 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
 	
 	
 	//  // call the setup function
-	num_variables = lin_to_lin_setup_d(&OUT, "output",
+	num_variables = lintolin_setup_d(&OUT, "output",
 																		 &midOUT, "midpath_data",
 																		 &T, &ED,
 																		 &dummyProg,  //arg 7
@@ -157,7 +157,7 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
 	}
 	else
 	{ // use regular endgame
-		lin_to_lin_track_d(&trackCount, OUT, rawOUT, midOUT,
+		lintolin_track_d(&trackCount, OUT, rawOUT, midOUT,
 											 W,  // was the startpts file pointer.
 											 new_linears_full_prec,
 											 num_new_linears,
@@ -241,7 +241,7 @@ int lin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentS
 
 
 
-void lin_to_lin_track_d(trackingStats *trackCount,
+void lintolin_track_d(trackingStats *trackCount,
 												FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
 												witness_set W,
 												vec_mp *new_linears_full_prec,
@@ -278,8 +278,8 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 	int (*curr_eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *) = NULL;
   int (*curr_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = NULL;
 	
-	curr_eval_d = &lin_to_lin_eval_d;   //DAB
-  curr_eval_mp = &lin_to_lin_eval_mp; // DAB 
+	curr_eval_d = &lintolin_eval_d;   //DAB
+  curr_eval_mp = &lintolin_eval_mp; // DAB 
 	
 
 	
@@ -307,7 +307,7 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 	
   // setup the rest of the structures
 	endgame_data_t *EG = NULL; //this will hold the temp solution data produced for each individual track
-  setup_lin_to_lin_omp_d(max,
+  setup_lintolin_omp_d(max,
 												 &EG, &trackCount_copy, trackCount,
 												 &OUT_copy, OUT, &RAWOUT_copy, RAWOUT, &MIDOUT_copy, MIDOUT, &FAIL_copy, FAIL, &NONSOLN_copy, NONSOLN,
 												 &T_copy, T,
@@ -361,7 +361,7 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 #endif
 			
 			// track the path
-			lin_to_lin_track_path_d(solution_counter, &EG[oid], &startPts[startPointIndex], OUT_copy[oid], MIDOUT_copy[oid], &T_copy[oid], &BED_copy[oid], BED_copy[oid].BED_mp, curr_eval_d, curr_eval_mp, change_prec, find_dehom);
+			lintolin_track_path_d(solution_counter, &EG[oid], &startPts[startPointIndex], OUT_copy[oid], MIDOUT_copy[oid], &T_copy[oid], &BED_copy[oid], BED_copy[oid].BED_mp, curr_eval_d, curr_eval_mp, change_prec, find_dehom);
 			
 #ifdef printpathlintolin
 			fprintf(BED_copy[oid].FOUT,"-100 %d ",BED_copy[oid].num_steps);
@@ -462,7 +462,7 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 
 
 // derived from zero_dim_track_path_d
-void lin_to_lin_track_path_d(int pathNum, endgame_data_t *EG_out,
+void lintolin_track_path_d(int pathNum, endgame_data_t *EG_out,
 														 point_data_d *Pin,
 														 FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
 														 void const *ED_d, void const *ED_mp,
@@ -553,7 +553,7 @@ void lin_to_lin_track_path_d(int pathNum, endgame_data_t *EG_out,
 
 
 // derived from zero_dim_basic_setup_d
-int lin_to_lin_setup_d(FILE **OUT, char *outName,
+int lintolin_setup_d(FILE **OUT, char *outName,
 											 FILE **midOUT, char *midName,
 											 tracker_config_t *T,
 											 lintolin_eval_data_d *ED,
@@ -573,11 +573,11 @@ int lin_to_lin_setup_d(FILE **OUT, char *outName,
  * NOTES: setup for zero dimensional tracking                    *
  \***************************************************************/
 { // need to create the homotopy
-//	printf("entering lin_to_lin_setup_d 606\n");
+//	printf("entering lintolin_setup_d 606\n");
   int rank, patchType, ssType, numOrigVars, adjustDegrees, numGps;
 	
-  *eval_d = &lin_to_lin_eval_d;   //DAB
-  *eval_mp = &lin_to_lin_eval_mp; // DAB  // lol send them to the same place for now.
+  *eval_d = &lintolin_eval_d;   //DAB
+  *eval_mp = &lintolin_eval_mp; // DAB  // lol send them to the same place for now.
 	
 	//  *eval_mp = &lintolin_eval_mp; // DAB
 	
@@ -631,7 +631,7 @@ int lin_to_lin_setup_d(FILE **OUT, char *outName,
 
 
 //this derived from basic_eval_d
-int lin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp, point_d current_variable_values, comp_d pathVars, void const *ED)
+int lintolin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp, point_d current_variable_values, comp_d pathVars, void const *ED)
 { // evaluates a special homotopy type, build for bertini_real
 	
 	// uncomment to see the time at each step.
@@ -924,7 +924,7 @@ void lintolin_eval_clear_d(lintolin_eval_data_d *ED, int clearRegen, int MPType)
 
 
 
-void setup_lin_to_lin_omp_d(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount,
+void setup_lintolin_omp_d(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount,
 														FILE ***OUT_copy, FILE *OUT, FILE ***RAWOUT_copy, FILE *RAWOUT,
 														FILE ***MIDOUT_copy, FILE *MIDOUT, FILE ***FAIL_copy, FILE *FAIL,
 														FILE ***NONSOLN_copy, FILE *NONSOLN,
@@ -1213,7 +1213,7 @@ void setuplintolinEval_d(tracker_config_t *T,char preprocFile[], char degreeFile
 
   setupPatch_d(patchType, &BED->patch, ptr1, ptr2);
 	for (ii = 0; ii < BED->num_variables ; ii++)
-		set_d(&BED->patch.patchCoeff->entry[0][ii],&W.patch[0]->coord[ii]);
+		mp_to_d(&BED->patch.patchCoeff->entry[0][ii],&W.patch_mp[0]->coord[ii]);
 	
 
 
@@ -1240,7 +1240,7 @@ void setuplintolinEval_d(tracker_config_t *T,char preprocFile[], char degreeFile
 	change_size_vec_d(BED->old_linear, dummyProg->numVars);
 	BED->old_linear->size =  dummyProg->numVars; // seriously, why is this not in the bertini method?
 
-	vec_cp_d(BED->old_linear,W.L[0]);
+	vec_cp_d(BED->old_linear,W.L_d[0]);
 
 	
 	if (solve_options->use_gamma_trick==1)
@@ -1498,7 +1498,7 @@ void change_lintolin_eval_prec_mp(int new_prec, lintolin_eval_data_mp *BED)
 
 
 
-int lin_to_lin_solver_mp(int MPType,
+int lintolin_solver_mp(int MPType,
 												 witness_set W,  // includes the initial linear.
 												 mat_mp n_minusone_randomizer_matrix,  // for randomizing down to N-1 equations.
 												 vec_mp *new_linears,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
@@ -1544,7 +1544,7 @@ int lin_to_lin_solver_mp(int MPType,
 	
 	//  // call the setup function
 	// setup for standard tracking - 'useRegen' is used to determine whether or not to setup 'start'
-	num_variables = lin_to_lin_setup_mp(&OUT, "output",
+	num_variables = lintolin_setup_mp(&OUT, "output",
 																		 &midOUT, "midpath_data",
 																		 &T, &ED,
 																		 &dummyProg,  //arg 7
@@ -1592,7 +1592,7 @@ int lin_to_lin_solver_mp(int MPType,
 	}
 	else
 	{ // use regular endgame
-		lin_to_lin_track_mp(&trackCount, OUT, rawOUT, midOUT,
+		lintolin_track_mp(&trackCount, OUT, rawOUT, midOUT,
 											 W,  // was the startpts file pointer.
 											 new_linears,
 											 num_new_linears,
@@ -1674,7 +1674,7 @@ int lin_to_lin_solver_mp(int MPType,
 
 
 
-void lin_to_lin_track_mp(trackingStats *trackCount,
+void lintolin_track_mp(trackingStats *trackCount,
 												FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
 												witness_set W,
 												vec_mp *new_linears,
@@ -1716,7 +1716,7 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 	
 
   int (*curr_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = NULL;
-  curr_eval_mp = &lin_to_lin_eval_mp; // custom evaluator for this method
+  curr_eval_mp = &lintolin_eval_mp; // custom evaluator for this method
 	
 	
 	point_data_mp *startPts = NULL;
@@ -1743,7 +1743,7 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 	
   // setup the rest of the structures
 	endgame_data_t *EG = NULL;
-  setup_lin_to_lin_omp_mp(max,
+  setup_lintolin_omp_mp(max,
 												 &EG, &trackCount_copy, trackCount,
 												 &OUT_copy, OUT, &RAWOUT_copy, RAWOUT, &MIDOUT_copy, MIDOUT, &FAIL_copy, FAIL, &NONSOLN_copy, NONSOLN,
 												 &T_copy, T,
@@ -1783,7 +1783,7 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 			
 			// print the header of the path to OUT
 //			printPathHeader_mp(OUT_copy[oid], &startPts[startPointIndex], &T_copy[oid], solution_counter, &BED_copy[oid], eval_func_mp);
-			lin_to_lin_track_path_mp(solution_counter, &EG[oid], &startPts[ii], OUT_copy[oid], MIDOUT_copy[oid], &T_copy[oid], &BED_copy[oid], curr_eval_mp, change_prec, find_dehom); //curr_eval_d,
+			lintolin_track_path_mp(solution_counter, &EG[oid], &startPts[ii], OUT_copy[oid], MIDOUT_copy[oid], &T_copy[oid], &BED_copy[oid], curr_eval_mp, change_prec, find_dehom); //curr_eval_d,
 			
 
 			
@@ -1883,7 +1883,7 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 
 
 // derived from zero_dim_track_path_d
-void lin_to_lin_track_path_mp(int pathNum, endgame_data_t *EG_out,
+void lintolin_track_path_mp(int pathNum, endgame_data_t *EG_out,
 														 point_data_mp *Pin,
 														 FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
 														 void const *ED,
@@ -1924,7 +1924,7 @@ void lin_to_lin_track_path_mp(int pathNum, endgame_data_t *EG_out,
 
 
 // derived from zero_dim_basic_setup_d
-int lin_to_lin_setup_mp(FILE **OUT, char *outName,
+int lintolin_setup_mp(FILE **OUT, char *outName,
 											 FILE **midOUT, char *midName,
 											 tracker_config_t *T,
 											 lintolin_eval_data_mp *ED,
@@ -1947,8 +1947,8 @@ int lin_to_lin_setup_mp(FILE **OUT, char *outName,
 	
   int rank, patchType, ssType, numOrigVars, adjustDegrees, numGps;
 	
-  *eval_d = &lin_to_lin_eval_d;   
-  *eval_mp = &lin_to_lin_eval_mp;
+  *eval_d = &lintolin_eval_d;   
+  *eval_mp = &lintolin_eval_mp;
 	
   *OUT = fopen(outName, "w");  // open the main output files.
   *midOUT = fopen(midName, "w");
@@ -2003,7 +2003,7 @@ int lin_to_lin_setup_mp(FILE **OUT, char *outName,
 
 
 //this derived from basic_eval_d
-int lin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED)
+int lintolin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED)
 { // evaluates a special homotopy type, build for bertini_real
 
 	//	print_comp_mp_matlab(pathVars,"pathvars");
@@ -2224,8 +2224,6 @@ int lin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_m
 	
 	//done!  yay!
 	
-	//	printf("gamma = %lf+1i*%lf;\n", BED->gamma->r, BED->gamma->i);
-	//
 
 //	print_point_to_screen_matlab_mp(parVals,"parVals");
 //	print_matrix_to_screen_matlab_mp( temp_jacobian_functions,"jac");
@@ -2322,7 +2320,7 @@ void lintolin_eval_clear_mp(lintolin_eval_data_mp *ED, int clearRegen, int MPTyp
 
 
 
-void setup_lin_to_lin_omp_mp(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount,
+void setup_lintolin_omp_mp(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount,
 														FILE ***OUT_copy, FILE *OUT, FILE ***RAWOUT_copy, FILE *RAWOUT,
 														FILE ***MIDOUT_copy, FILE *MIDOUT, FILE ***FAIL_copy, FILE *FAIL,
 														FILE ***NONSOLN_copy, FILE *NONSOLN,
@@ -2826,7 +2824,7 @@ int check_issoln_lintolin_mp(endgame_data_t *EG,
 	mpf_set_d(zero_thresh, tol);
 	
 	//this one guaranteed by entry condition
-//	lin_to_lin_eval_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, ED);
+//	lintolin_eval_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, ED);
 	evalProg_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, BED->SLP);
 //	print_point_to_screen_matlab_mp(e.funcVals,"howfaroff");
 	
@@ -2836,7 +2834,7 @@ int check_issoln_lintolin_mp(endgame_data_t *EG,
 	}
 	
 	evalProg_mp(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_mp, EG->PD_mp.time, BED->SLP);
-//	lin_to_lin_eval_mp(f,          e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_mp, EG->PD_mp.time, ED);
+//	lintolin_eval_mp(f,          e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_mp, EG->PD_mp.time, ED);
 	// compare the function values
 	int isSoln = 1;
 	for (ii = 0; ii < BED->SLP->numFuncs && isSoln; ii++)

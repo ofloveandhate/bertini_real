@@ -52,7 +52,7 @@ void br_exit(int errorCode)
 void deliberate_segfault(){
 
 	int faulty[2];
-	printf("%d\n",faulty[2]);
+	printf("%d\n",faulty[-1]);
 	
 }
 
@@ -416,7 +416,7 @@ void clear_curveDecomp_d(curveDecomp_d *C){
 
 void clear_sample_d(sample_data *S, int MPType){
 	
-	int ii, jj;
+	int ii;
 	for(ii=0;ii<S->num_edges;ii++)
 	{
 		free(S->sample_indices[ii]);
@@ -652,7 +652,7 @@ void print_point_to_screen_matlab(vec_d M, char name[])
 	
 	if (M->size==0) {
 		printf("requested to print a vector '%s' which had size==0.  exiting\n",name);
-		exit(-1);
+//		exit(-1);
 	}
 	
 	printf("%s = [...\n",name);
@@ -668,7 +668,7 @@ void print_point_to_screen_matlab_mp(vec_mp M, char name[])
 	
 	if (M->size==0) {
 		printf("requested to print a vector '%s' which had size==0.  exiting\n",name);
-		exit(-1);
+//		exit(-1);
 	}
 	
 	printf("%s = [...\n",name);

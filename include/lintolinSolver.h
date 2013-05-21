@@ -11,8 +11,8 @@
 #include <mpf2mpfr.h>
 
 
-#ifndef _CRITICALSOLVER_H
-#define _CRITICALSOLVER_H
+#ifndef _LINTOLINSOLVER_H
+#define _LINTOLINSOLVER_H
 
 #include "cascade.h"
 #include "polysolve.h"  // the bertini  eval_funcs
@@ -101,17 +101,18 @@ typedef struct
 
 /** the main function for finding critical conditions WRT a projection
  */
-int lin_to_lin_solver_main(int MPType,
+int lintolin_solver_main(int MPType,
 													 witness_set W,
 													 mat_mp n_minusone_randomizer_matrix_full_prec,
-													 vec_mp *new_linears_full_prec, int num_new_linears,
+													 vec_mp *new_linears_full_prec,
+													 int num_new_linears,
 													 witness_set *W_new,
 													 solver_configuration *solve_options);
 
 
 
 
-int lin_to_lin_solver_d(int MPType,
+int lintolin_solver_d(int MPType,
 												witness_set W,  // should include the old linear
 												mat_mp n_minusone_randomizer_matrix_full_prec,
 												vec_mp *new_linears_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
@@ -121,7 +122,7 @@ int lin_to_lin_solver_d(int MPType,
 
 
 
-void lin_to_lin_track_d(trackingStats *trackCount,
+void lintolin_track_d(trackingStats *trackCount,
 												FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
 												witness_set W,
 												vec_mp *new_linears_full_prec,
@@ -135,7 +136,7 @@ void lin_to_lin_track_d(trackingStats *trackCount,
 												int (*change_prec)(void const *, int),
 												int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),solver_configuration *solve_options);
 
-void lin_to_lin_track_path_d(int pathNum,
+void lintolin_track_path_d(int pathNum,
 														 endgame_data_t *EG_out, point_data_d *Pin, FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
 														 void const *ED_d, void const *ED_mp,
 														 int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
@@ -145,7 +146,7 @@ void lin_to_lin_track_path_d(int pathNum,
 
 
 
-int lin_to_lin_setup_d(FILE **OUT, char *outName,
+int lintolin_setup_d(FILE **OUT, char *outName,
 											 FILE **midOUT, char *midName,
 											 tracker_config_t *T,
 											 lintolin_eval_data_d *ED,
@@ -165,7 +166,7 @@ int lin_to_lin_setup_d(FILE **OUT, char *outName,
 
 //the new custom evaluator for this solver
 
-int lin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp, point_d vars, comp_d pathVars, void const *ED);
+int lintolin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp, point_d vars, comp_d pathVars, void const *ED);
 
 
 
@@ -176,7 +177,7 @@ void lintolin_eval_clear_d(lintolin_eval_data_d *ED, int clearRegen, int MPType)
 
 
 
-void setup_lin_to_lin_omp_d(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount,
+void setup_lintolin_omp_d(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount,
 														FILE ***OUT_copy, FILE *OUT, FILE ***RAWOUT_copy, FILE *RAWOUT,
 														FILE ***MIDOUT_copy, FILE *MIDOUT, FILE ***FAIL_copy, FILE *FAIL,
 														FILE ***NONSOLN_copy, FILE *NONSOLN,
@@ -221,7 +222,7 @@ void change_lintolin_eval_prec_mp(int new_prec, lintolin_eval_data_mp *BED);
 
 
 
-int lin_to_lin_solver_mp(int MPType,
+int lintolin_solver_mp(int MPType,
 												 witness_set W,  // includes the initial linear.
 												 mat_mp n_minusone_randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
 												 vec_mp *new_linears_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
@@ -229,7 +230,7 @@ int lin_to_lin_solver_mp(int MPType,
 												 witness_set *W_new,
 												 solver_configuration *solve_options);
 
-void lin_to_lin_track_mp(trackingStats *trackCount,
+void lintolin_track_mp(trackingStats *trackCount,
 												 FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
 												 witness_set W,
 												 vec_mp *new_linears_full_prec,
@@ -245,7 +246,7 @@ void lin_to_lin_track_mp(trackingStats *trackCount,
 
 //												 int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
 
-void lin_to_lin_track_path_mp(int pathNum, endgame_data_t *EG_out,
+void lintolin_track_path_mp(int pathNum, endgame_data_t *EG_out,
 															point_data_mp *Pin,
 															FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
 															void const *ED_mp,
@@ -255,7 +256,7 @@ void lin_to_lin_track_path_mp(int pathNum, endgame_data_t *EG_out,
 
 //int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
 
-int lin_to_lin_setup_mp(FILE **OUT, char *outName,
+int lintolin_setup_mp(FILE **OUT, char *outName,
 												FILE **midOUT, char *midName,
 												tracker_config_t *T,
 												lintolin_eval_data_mp *ED,
@@ -269,11 +270,11 @@ int lin_to_lin_setup_mp(FILE **OUT, char *outName,
 												witness_set W,
 												solver_configuration *solve_options);
 
-int lin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED);
+int lintolin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED);
 
 void lintolin_eval_clear_mp(lintolin_eval_data_mp *ED, int clearRegen, int MPType);
 
-void setup_lin_to_lin_omp_mp(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount,
+void setup_lintolin_omp_mp(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount,
 														 FILE ***OUT_copy, FILE *OUT, FILE ***RAWOUT_copy, FILE *RAWOUT,
 														 FILE ***MIDOUT_copy, FILE *MIDOUT, FILE ***FAIL_copy, FILE *FAIL,
 														 FILE ***NONSOLN_copy, FILE *NONSOLN,

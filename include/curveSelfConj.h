@@ -19,7 +19,7 @@
 
 #include "fileops.h"
 #include "data_type.h"
-
+#include "witnessSet.h"
 #include "partitionParse.h"
 
 #include "checkSelfConjugate.h"
@@ -27,13 +27,25 @@
 #include "linprodtodetjacSolver.h"
 #include "detjactodetjacSolver.h"
 
+#include "nullspace.h"
+
 #include "output.h"
 /**
 //the main function for computing cell decom for a curve.  only for use on a self-conjugate component.  
+ 
+ \param inputFile the name of the input file.
+ \param W	witness_set containing linears, patches, points, etc.  much info and calculation performed from this little guy.
+ \param pi the set of projections to use.  in this case, there should be only 1.
+ \param C		curve decomposition structure into which to place computed data.
+ \param V		vertex set structure into which to place collected data.
+ \param num_vars		the total number of variables for the problem.
+ \param num_var_gps	the number of variable groups.  should be 1.
+ \param options program configuration.
+ \param solve_options solver configuration.
  */
 void computeCurveSelfConj(char * inputFile,
-													witness_set,
-													vec_mp,
+													witness_set W,
+													vec_mp *pi,
 													curveDecomp_d *C,
 													vertex_set *V,
 													int num_vars,
@@ -55,15 +67,6 @@ int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
 																	program_configuration *program_options,
 																	solver_configuration *solve_options);
 
-
-
-int compute_crit_nullspace(witness_set *W_crit_real, // the returned value
-													 witness_set W,
-													 mat_mp n_minusone_randomizer_matrix,
-													 vec_mp random_complex_projection,
-													 vec_mp pi,
-													 program_configuration *program_options,
-													 solver_configuration *solve_options);
 
 
 

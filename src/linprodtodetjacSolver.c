@@ -27,11 +27,11 @@ int linprod_to_detjac_solver_main(int MPType,
 		
 	cp_names(W_new,W);
 	
-	W_new->L = (vec_d *)bmalloc(1*sizeof(vec_d));
+	W_new->L_d = (vec_d *)bmalloc(1*sizeof(vec_d));
 	W_new->L_mp = (vec_mp *)bmalloc(1*sizeof(vec_mp));
 	
-	init_vec_d(W_new->L[0],W.num_variables); init_vec_mp2(W_new->L_mp[0],W.num_variables,1024); //the 1024 here is incorrect
-	vec_mp_to_d(   W_new->L[0],projection_full_prec);
+	init_vec_d(W_new->L_d[0],W.num_variables); init_vec_mp2(W_new->L_mp[0],W.num_variables,1024); //the 1024 here is incorrect
+	vec_mp_to_d(   W_new->L_d[0],projection_full_prec);
 	vec_cp_mp(W_new->L_mp[0],projection_full_prec);
 	
 	write_linears(*W_new,"rand_comp_proj");
@@ -1260,7 +1260,7 @@ void setuplinprodtodetjacEval_d(tracker_config_t *T,char preprocFile[], char deg
   setupPatch_d(patchType, &BED->patch, ptr1, ptr2);
 	for (ii = 0; ii < BED->num_variables ; ii++)
 	{
-		set_d(&BED->patch.patchCoeff->entry[0][ii],&W.patch[0]->coord[ii]);
+		mp_to_d(&BED->patch.patchCoeff->entry[0][ii],&W.patch_mp[0]->coord[ii]);
 	}
 	
 	
@@ -1288,8 +1288,8 @@ void setuplinprodtodetjacEval_d(tracker_config_t *T,char preprocFile[], char deg
 	
 	
 	for (ii=0; ii<W.num_linears; ++ii) {
-		init_vec_d(BED->linears[ii],W.L[ii]->size); BED->linears[ii]->size = W.L[ii]->size;
-		vec_cp_d(BED->linears[ii], W.L[ii]);
+		init_vec_d(BED->linears[ii],W.L_d[ii]->size); BED->linears[ii]->size = W.L_d[ii]->size;
+		vec_cp_d(BED->linears[ii], W.L_d[ii]);
 	}
 	
 	if (solve_options->use_gamma_trick==1)
@@ -1349,12 +1349,12 @@ void setuplinprodtodetjacEval_d(tracker_config_t *T,char preprocFile[], char deg
 		BED->BED_mp->linears_full_prec = (vec_mp *)malloc(W.num_linears*sizeof(vec_mp));
 		
 		for (ii=0; ii<W.num_linears; ++ii) {
-			init_vec_mp2(BED->BED_mp->linears[ii],W.L[ii]->size,prec);  // copy in the limited-precision linears
-			BED->BED_mp->linears[ii]->size = W.L[ii]->size;
+			init_vec_mp2(BED->BED_mp->linears[ii],W.L_d[ii]->size,prec);  // copy in the limited-precision linears
+			BED->BED_mp->linears[ii]->size = W.L_d[ii]->size;
 			vec_cp_mp(BED->BED_mp->linears[ii], W.L_mp[ii]);
 			
-			init_vec_mp2(BED->BED_mp->linears_full_prec[ii],W.L[ii]->size,T->AMP_max_prec);  //copy in the full precision linears
-			BED->BED_mp->linears_full_prec[ii]->size = W.L[ii]->size;
+			init_vec_mp2(BED->BED_mp->linears_full_prec[ii],W.L_d[ii]->size,T->AMP_max_prec);  //copy in the full precision linears
+			BED->BED_mp->linears_full_prec[ii]->size = W.L_d[ii]->size;
 			vec_cp_mp(BED->BED_mp->linears_full_prec[ii], W.L_mp[ii]);
 			
 		}
@@ -2755,7 +2755,7 @@ void setuplinprodtodetjacEval_mp(char preprocFile[], char degreeFile[], prog_t *
 	
 	BED->linears = (vec_mp *)malloc(W.num_linears*sizeof(vec_mp));
 	for (ii=0; ii<W.num_linears; ++ii) {
-		init_vec_mp(BED->linears[ii],W.L[ii]->size); BED->linears[ii]->size = W.L[ii]->size;
+		init_vec_mp(BED->linears[ii],W.L_d[ii]->size); BED->linears[ii]->size = W.L_d[ii]->size;
 		vec_cp_mp(BED->linears[ii], W.L_mp[ii]);
 	}
 	

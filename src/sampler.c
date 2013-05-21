@@ -14,7 +14,7 @@ int main(int argC, char *args[])
 	
 	vertex_set V;
 	curveDecomp_d C;   //new data type; stores vertices, edges, etc.
-	witness_set W; init_witness_set_d(&W);
+	witness_set W; init_witness_set(&W);
 	sample_data   S_old,S_new;
 	mat_mp n_minusone_randomizer_matrix;
 	
@@ -351,7 +351,21 @@ void generate_new_sampling_pts(sample_data *S_new,
 					}
 					
 					
-					init_witness_set_d(&Wnew);
+					init_witness_set(&Wnew);
+					
+					
+//					lintolin_solver_main(MPType,
+//															 W,         // witness_set
+//															 n_minusone_randomizer_matrix,
+//															 &target_projection, 1,//  the set of linears we will solve at.
+//															 &Wnew, // the new data is put here!
+//															 solve_options); // already a pointer
+					
+					
+
+					
+					
+					
 					multilintolin_solver_main(MPType,
 																		W,         // witness_set
 																		n_minusone_randomizer_matrix,
@@ -637,7 +651,7 @@ void generate_new_sampling_pts(sample_data *S_new,
 //					}
 //				
 //					printf("W.num_linears = %d\n", W.num_linears);
-//					init_witness_set_d(&Wnew);
+//					init_witness_set(&Wnew);
 //					multilintolin_solver_main(MPType,
 //																 W,         // witness_set
 //																 n_minusone_randomizer_matrix,
@@ -820,13 +834,13 @@ void set_witness_set_d(witness_set *W, vec_d new_linear,vec_d pts,int num_vars)
 	point_d_to_mp(W->pts_mp[0],pts);
 	
 	W->num_linears = 1;
-	W->L = (vec_d *)bmalloc(sizeof(vec_d));
+	W->L_d = (vec_d *)bmalloc(sizeof(vec_d));
 	W->L_mp = (vec_mp *)bmalloc(sizeof(vec_mp));
 	
-	init_vec_d( W->L[0],   num_vars); W->L[0]->size = num_vars;
+	init_vec_d( W->L_d[0],   num_vars); W->L_d[0]->size = num_vars;
 	init_vec_mp(W->L_mp[0],num_vars); W->L_mp[0]->size = num_vars;
 	
-	vec_cp_d(W->L[0],new_linear);
+	vec_cp_d(W->L_d[0],new_linear);
 	vec_d_to_mp(W->L_mp[0],new_linear);
 	
 }
@@ -855,14 +869,14 @@ void set_witness_set_mp(witness_set *W, vec_mp new_linear,vec_mp pts,int num_var
 	point_mp_to_d(W->pts_d[0],pts);
 	
 	W->num_linears = 1;
-	W->L = (vec_d *)bmalloc(sizeof(vec_d));
+	W->L_d = (vec_d *)bmalloc(sizeof(vec_d));
 	W->L_mp = (vec_mp *)bmalloc(sizeof(vec_mp));
 	
-	init_vec_d( W->L[0],   num_vars); W->L[0]->size = num_vars;
+	init_vec_d( W->L_d[0],   num_vars); W->L_d[0]->size = num_vars;
 	init_vec_mp(W->L_mp[0],num_vars); W->L_mp[0]->size = num_vars;
 	
 	vec_cp_mp(W->L_mp[0],new_linear);
-	vec_mp_to_d(W->L[0],new_linear);
+	vec_mp_to_d(W->L_d[0],new_linear);
 	
 }
 
@@ -1013,12 +1027,9 @@ int setup_vertices(vertex_set *V,
 		mpf_inp_str(temp_vertex.projVal_mp->i, IN, 10);
 		
 		fscanf(IN,"%d\n",&temp_vertex.type);
+
 		
-		
-		int index = add_vertex(V, temp_vertex);
-//		print_point_to_screen_matlab_mp(V->vertices[index].pt_mp,"added");
-		//regardless of mptype, read the type of the vertex
-		
+		add_vertex(V, temp_vertex);		
 	}
 	
 	
@@ -1226,11 +1237,6 @@ void set_initial_refinement_flags(int *num_refinements, int **refine_flags, int 
 	(* current_indices)[0] = S.sample_indices[current_edge][0];
 	for (ii=0; ii<(S.num_samples_each_edge[current_edge]-1); ii++) {
 		(* current_indices)[ii+1] = S.sample_indices[current_edge][ii+1];
-		
-//		printf("%d %d\n",S.sample_indices[current_edge][ii], S.sample_indices[current_edge][ii+1]);
-		
-//		print_point_to_screen_matlab_mp(V->vertices[S.sample_indices[current_edge][ii]].pt_mp,"asdf");
-//		print_point_to_screen_matlab_mp(V->vertices[S.sample_indices[current_edge][ii+1]].pt_mp,"qwer");
 		
 		norm_of_difference(dist_away, V->vertices[S.sample_indices[current_edge][ii]].pt_mp,
 																	V->vertices[S.sample_indices[current_edge][ii+1]].pt_mp); // get the distance between the two adjacent points.

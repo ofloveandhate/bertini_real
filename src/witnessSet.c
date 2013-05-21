@@ -3,7 +3,7 @@
 
 
 
-//use:  call to parse the file witness_set_file, into the struct W.  fills the values W, and L, patch, as well as their _mp counterparts
+//use:  call to parse the file witness_set_file, into the struct W.  fills the values W, and L_d, patch, as well as their _mp counterparts
 	
 
 
@@ -47,13 +47,13 @@ int witnessSetParse(witness_set *W, char *witness_set_file, const int num_vars){
 	fscanf(IN, "%d %d", &num_linears, &num_vars_in_linears);  scanRestOfLine(IN);
 //	printf("%d %d\n",num_linears, num_vars_in_linears);
 	W->num_linears = num_linears;
-	W->L = (vec_d *)bmalloc(num_linears*sizeof(vec_d));
+	W->L_d = (vec_d *)bmalloc(num_linears*sizeof(vec_d));
 	W->L_mp = (vec_mp *)bmalloc(num_linears*sizeof(vec_mp));
 	
   for (ii=0; ii < num_linears; ii++) {
-		init_vec_mp2(W->L_mp[ii],num_vars_in_linears,1024); init_vec_d(W->L[ii],num_vars_in_linears);
+		init_vec_mp2(W->L_mp[ii],num_vars_in_linears,1024); init_vec_d(W->L_d[ii],num_vars_in_linears);
 		
-		W->L[ii]->size =  W->L_mp[ii]->size = num_vars_in_linears;
+		W->L_d[ii]->size =  W->L_mp[ii]->size = num_vars_in_linears;
 		
     //read the witness linears into memory
     for (jj=0; jj < num_vars_in_linears; jj++) {
@@ -61,22 +61,22 @@ int witnessSetParse(witness_set *W, char *witness_set_file, const int num_vars){
 			mpf_inp_str(W->L_mp[ii]->coord[jj].i, IN, 10);
 			scanRestOfLine(IN);
     }
-		vec_mp_to_d(W->L[ii],W->L_mp[ii]);
+		vec_mp_to_d(W->L_d[ii],W->L_mp[ii]);
   }
   
 	
 	fscanf(IN, "%d %d", &num_patches, &patch_size); scanRestOfLine(IN);
-	W->patch_size = patch_size;
+//	W->patch_size = patch_size;
 	W->num_patches = num_patches;
 	
-	W->patch = (vec_d *)bmalloc(num_patches*sizeof(vec_d));
+	W->patch_d = (vec_d *)bmalloc(num_patches*sizeof(vec_d));
 	W->patch_mp = (vec_mp *)bmalloc(num_patches*sizeof(vec_mp));
 	
   for (ii=0; ii < num_patches; ii++) {
 		init_vec_mp2(W->patch_mp[ii],patch_size,1024);//default max_prec is 1024
-		init_vec_d(W->patch[ii],patch_size);
+		init_vec_d(W->patch_d[ii],patch_size);
 		
-		W->patch_mp[ii]->size = W->patch[ii]->size = patch_size;
+		W->patch_mp[ii]->size = W->patch_d[ii]->size = patch_size;
 		
     //read the patch into memory
     for (jj=0; jj < patch_size; jj++) {
@@ -84,7 +84,7 @@ int witnessSetParse(witness_set *W, char *witness_set_file, const int num_vars){
 			mpf_inp_str(W->patch_mp[ii]->coord[jj].i, IN, 10);
 			scanRestOfLine(IN);
     }
-		vec_mp_to_d(W->patch[ii],W->patch_mp[ii]);
+		vec_mp_to_d(W->patch_d[ii],W->patch_mp[ii]);
   }
 	
   fclose(IN);
@@ -97,6 +97,95 @@ int witnessSetParse(witness_set *W, char *witness_set_file, const int num_vars){
 
 
 
+void add_patch_to_witness_set(witness_set *W, vec_mp new_patch){
+	
+	if (W->num_patches!=0 && W->patch_mp==NULL) {
+		printf("trying to add patch to witness set with non-zero num_patches and NULL container!\n");
+		deliberate_segfault();
+	}
+	
+	if (W->num_patches==0 && W->patch_mp!=NULL) {
+		printf("trying to add point to witness set with num_pts==0 and non-NULL container!\n");
+		deliberate_segfault();
+	}
+	
+	
+	if (W->num_patches==0) {
+		W->patch_mp = (vec_mp *)br_malloc(sizeof(vec_mp));
+	}
+	else{
+		W->patch_mp = (vec_mp *)brealloc(W->patch_mp, (W->num_patches+1) * sizeof(vec_mp));
+	}
+	
+	init_vec_mp(W->patch_mp[W->num_patches], new_patch->size);
+	W->patch_mp[W->num_patches]->size = new_patch->size;
+	vec_cp_mp(W->patch_mp[W->num_patches], new_patch);
+	
+	W->num_patches++;
+	
+	return;
+}
+
+
+
+void add_point_to_witness_set(witness_set *W, vec_mp new_point){
+	
+	if (W->num_pts!=0 && W->pts_mp==NULL) {
+		printf("trying to add point to witness set with non-zero num_pts and NULL container!\n");
+		deliberate_segfault();
+	}
+	
+	if (W->num_pts==0 && W->pts_mp!=NULL) {
+		printf("trying to add point to witness set with num_pts==0 and non-NULL container!\n");
+		deliberate_segfault();
+	}
+	
+	
+	if (W->num_pts==0) {
+		W->pts_mp = (vec_mp *)br_malloc(sizeof(vec_mp));
+	}
+	else{
+		W->pts_mp = (vec_mp *)brealloc(W->pts_mp, (W->num_pts+1) * sizeof(vec_mp));
+	}
+	
+	init_vec_mp(W->pts_mp[W->num_pts], new_point->size);
+	W->pts_mp[W->num_pts]->size = new_point->size;
+	vec_cp_mp(W->pts_mp[W->num_pts], new_point);
+	
+	W->num_pts++;
+	
+	return;
+}
+
+
+void add_linear_to_witness_set(witness_set *W, vec_mp new_linear){
+	
+	if (W->num_linears!=0 && W->L_mp==NULL) {
+		printf("trying to add linear to witness set with non-zero num_linears and NULL container!\n");
+		deliberate_segfault();
+	}
+	
+	if (W->num_linears==0 && W->L_mp!=NULL) {
+		printf("trying to add linear to witness set with num_linears==0 and non-NULL container!\n");
+		deliberate_segfault();
+	}
+	
+	
+	if (W->num_linears==0) {
+		W->L_mp = (vec_mp *)br_malloc(sizeof(vec_mp));
+	}
+	else{
+		W->L_mp = (vec_mp *)brealloc(W->L_mp, (W->num_linears+1) * sizeof(vec_mp));
+	}
+	
+	init_vec_mp(W->L_mp[W->num_linears], new_linear->size);
+	W->L_mp[W->num_linears]->size = new_linear->size;
+	vec_cp_mp(W->L_mp[W->num_linears], new_linear);
+	
+	W->num_linears++;
+	
+	return;
+}
 
 
 void merge_witness_sets(witness_set *W_out,witness_set W_left,witness_set W_right){
@@ -112,10 +201,7 @@ void merge_witness_sets(witness_set *W_out,witness_set W_left,witness_set W_righ
 		exit(-342);
 	}
 	
-	if (W_left.patch_size != W_right.patch_size) {
-		printf("merging two witness sets with differing sizes of patch(es).\n");
-		exit(-343);
-	}
+
 	
 	cp_names(W_out, W_right);
 	
@@ -126,21 +212,21 @@ void merge_witness_sets(witness_set *W_out,witness_set W_left,witness_set W_righ
 	
 	
 	W_out->num_linears = W_left.num_linears+W_right.num_linears;
-	W_out->L = (vec_d *)bmalloc((W_left.num_linears+W_right.num_linears)*sizeof(vec_d));
+	W_out->L_d = (vec_d *)bmalloc((W_left.num_linears+W_right.num_linears)*sizeof(vec_d));
 	W_out->L_mp = (vec_mp *)bmalloc((W_left.num_linears + W_right.num_linears)*sizeof(vec_mp));
 	// merge the left and right linears into the output.
 	int counter = 0;
 	for (ii=0; ii<W_left.num_linears; ii++) {
-		init_vec_d(W_out->L[counter],W_out->num_variables); W_out->L[counter]->size = W_out->num_variables;
-		vec_cp_d(W_out->L[counter],W_left.L[ii]);
+		init_vec_d(W_out->L_d[counter],W_out->num_variables); W_out->L_d[counter]->size = W_out->num_variables;
+		vec_cp_d(W_out->L_d[counter],W_left.L_d[ii]);
 		
 		init_vec_mp(W_out->L_mp[counter],W_out->num_variables); W_out->L_mp[counter]->size = W_out->num_variables;
 		vec_cp_mp(W_out->L_mp[counter],W_left.L_mp[ii]);
 		counter++;
 	}
 	for (ii=0; ii<W_right.num_linears; ii++) {
-		init_vec_d(W_out->L[counter],W_out->num_variables);
-		vec_cp_d(W_out->L[counter],W_right.L[ii]);
+		init_vec_d(W_out->L_d[counter],W_out->num_variables);
+		vec_cp_d(W_out->L_d[counter],W_right.L_d[ii]);
 		
 		init_vec_mp(W_out->L_mp[counter],W_out->num_variables);
 		vec_cp_mp(W_out->L_mp[counter],W_right.L_mp[ii]);
@@ -233,18 +319,18 @@ void cp_linears(witness_set *W_out, witness_set W_in){
 	//
 	// DOUBLE COPIES
 	//
-	if (W_out->L==NULL) {
-		W_out->L = (vec_d *)bmalloc(W_in.num_linears * sizeof(vec_d));
+	if (W_out->L_d==NULL) {
+		W_out->L_d = (vec_d *)bmalloc(W_in.num_linears * sizeof(vec_d));
 	}
 	else
 	{
-		W_out->L = (vec_d *)brealloc(W_out->L, W_in.num_linears * sizeof(vec_d));
+		W_out->L_d = (vec_d *)brealloc(W_out->L_d, W_in.num_linears * sizeof(vec_d));
 	}
 	
 	for (ii=0; ii<W_in.num_linears; ++ii) {
-		init_vec_d(W_out->L[ii],W_in.L[ii]->size);
-		vec_cp_d(W_out->L[ii],W_in.L[ii]);
-		W_out->L[ii]->size = W_in.L[ii]->size;
+		init_vec_d(W_out->L_d[ii],W_in.L_d[ii]->size);
+		vec_cp_d(W_out->L_d[ii],W_in.L_d[ii]);
+		W_out->L_d[ii]->size = W_in.L_d[ii]->size;
 	}
 	
 	//
@@ -274,23 +360,22 @@ void cp_patches(witness_set *W_out, witness_set W_in){
 	int ii;
 	
 	
-	W_out->patch_size = W_in.patch_size;
 	W_out->num_patches = W_in.num_patches;
 	
 	
-	if (W_out->patch==NULL) {
-		W_out->patch = (vec_d *)bmalloc(W_in.num_patches * sizeof(vec_d));
+	if (W_out->patch_d==NULL) {
+		W_out->patch_d = (vec_d *)bmalloc(W_in.num_patches * sizeof(vec_d));
 	}
 	else
 	{
-		W_out->patch = (vec_d *)brealloc(W_out->patch, W_in.num_patches * sizeof(vec_d));
+		W_out->patch_d = (vec_d *)brealloc(W_out->patch_d, W_in.num_patches * sizeof(vec_d));
 	}
 	
 	for (ii=0; ii<W_in.num_patches; ++ii) {
-		init_vec_d(W_out->patch[ii],0);
-		change_size_vec_d(W_out->patch[ii],W_in.patch[ii]->size);
-		vec_cp_d(W_out->patch[ii],W_in.patch[ii]);
-		W_out->patch[ii]->size = W_in.patch[ii]->size;
+		init_vec_d(W_out->patch_d[ii],0);
+		change_size_vec_d(W_out->patch_d[ii],W_in.patch_d[ii]->size);
+		vec_cp_d(W_out->patch_d[ii],W_in.patch_d[ii]);
+		W_out->patch_d[ii]->size = W_in.patch_d[ii]->size;
 	}
 	
 	
@@ -323,7 +408,6 @@ void cp_witness_set(witness_set *W_out, witness_set W_in){
 	W_out->num_var_gps = W_in.num_var_gps;
 	W_out->num_linears = W_in.num_linears;
 	W_out->num_patches = W_in.num_patches;
-	W_out->patch_size = W_in.patch_size;
 	W_out->MPType = W_in.MPType;
 	
 	cp_patches(W_out,W_in);
@@ -351,9 +435,9 @@ void cp_witness_set(witness_set *W_out, witness_set W_in){
 
 // initializes witness set, both the mp data and double.
 //only call this on new witness sets, otherwise you will leak memory when you set the pointers to NULL.
-void init_witness_set_d(witness_set *W){
+void init_witness_set(witness_set *W){
 	W->num_variables = W->num_patches = W->num_linears = 0;
-	W->patch = W->L = W->pts_d = NULL;
+	W->patch_d = W->L_d = W->pts_d = NULL;
 	W->patch_mp = W->L_mp = W->pts_mp = NULL;
 	W->variable_names = NULL;
 	W->num_pts = W->num_pts = 0;
@@ -452,7 +536,7 @@ void write_linears(witness_set W, char filename[])
 	
 	for (ii=0; ii<W.num_linears; ++ii) {
 		for (jj=0; jj<W.num_variables; jj++) {
-			fprintf(OUT,"%.15le %.15le\n",W.L[ii]->coord[jj].r,W.L[ii]->coord[jj].i);
+			fprintf(OUT,"%.15le %.15le\n",W.L_d[ii]->coord[jj].r,W.L_d[ii]->coord[jj].i);
 		}
 		fprintf(OUT,"\n");
 	}
@@ -469,21 +553,21 @@ void clear_witness_set(witness_set W){
 	
 	
 	for (ii=0; ii<W.num_patches; ii++) {
-		clear_vec_d(W.patch[ii]);
+		clear_vec_d(W.patch_d[ii]);
 		clear_vec_mp(W.patch_mp[ii]);
 	}
 	if (W.num_patches>0) {
-		free(W.patch);
+		free(W.patch_d);
 		free(W.patch_mp);
 	}
 	
 	
 	for (ii=0; ii<W.num_linears; ii++) {
-		clear_vec_d(W.L[ii]);
+		clear_vec_d(W.L_d[ii]);
 		clear_vec_mp(W.L_mp[ii]);
 	}
 	if (W.num_linears>0) {
-		free(W.L);
+		free(W.L_d);
 		free(W.L_mp);
 	}
 	
@@ -510,17 +594,17 @@ void clear_witness_set(witness_set W){
 
 void print_witness_set_to_screen(witness_set W){
 	int ii;
-	printf("******\n%d points in double, %d points in mp\n******\n",W.num_pts,W.num_pts);
+	printf("******\n%d points\n******\n",W.num_pts);
 	for (ii=0; ii<W.num_pts; ii++) {
 		printf("the%dth",ii);
-		print_point_to_screen_matlab(W.pts_d[ii],"point");
+		print_point_to_screen_matlab_mp(W.pts_mp[ii],"point");
 	}
 	
 	printf("******\n%d linears\n******\n",W.num_linears);
 	
 	for (ii=0; ii<W.num_linears; ii++) {
 		printf("the%dth",ii);
-		print_point_to_screen_matlab(W.L[ii],"linear");
+		print_point_to_screen_matlab(W.L_d[ii],"linear");
 	}
 	
 	printf("\n\n");

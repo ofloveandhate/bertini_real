@@ -11,8 +11,8 @@
 #include <mpf2mpfr.h>
 
 
-#ifndef _CRITICALSOLVER_H
-#define _CRITICALSOLVER_H
+#ifndef _MULTILINSOLVER_H
+#define _MULTILINSOLVER_H
 
 #include "cascade.h"
 #include "polysolve.h"  // the bertini  eval_funcs

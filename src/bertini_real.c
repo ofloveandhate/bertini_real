@@ -59,7 +59,7 @@ int main(int argC, char *args[])
 	num_vars = get_num_vars_PPD(solve_options.PPD);
 	
 
-	init_witness_set_d(&Wuser);
+	init_witness_set(&Wuser);
 	witnessSetParse(&Wuser,program_options.witness_set_filename,num_vars);
 	Wuser.num_var_gps = solve_options.PPD.num_var_gp;
 	Wuser.MPType = program_options.MPType = MPType;
@@ -153,7 +153,7 @@ int main(int argC, char *args[])
 		printf("\n\nentering self-conjugate case\n\n");
 		computeCurveSelfConj(program_options.input_deflated_filename,
 												 Wuser,
-												 pi_mp,
+												 &pi_mp,
 												 &C,&V,
 												 num_vars,Wuser.num_var_gps,
 												 &program_options, &solve_options);  //This is Dans', at least at first !!!

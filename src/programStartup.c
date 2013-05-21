@@ -525,7 +525,7 @@ void solver_init_config(solver_configuration *options){
 	options->use_midpoint_checker = 1;
 	options->show_status_summary = 0;
 	options->verbose_level = 0; // default to 0.  higher is more verbose
-	options->use_gamma_trick = 1;
+	options->use_gamma_trick = 0;
 	
 	options->complete_witness_set = 1;
 }
