@@ -14,17 +14,22 @@
 
 
 
-#ifndef _SAMPLER_H
-#define _SAMPLER_H
-
-#include "multilintolinSolver.h"
 #include "fileops.h"
 #include "polysolve.h"
 #include "data_type.h"
 #include "programStartup.h"
 #include "witnessSet.h"
-#include "lintolinSolver.h"
 #include "checkSelfConjugate.h"
+
+#include "lintolinSolver.h"
+#include "multilintolinSolver.h"
+
+#ifndef _SAMPLER_H
+#define _SAMPLER_H
+
+
+
+
 
 
 int  curve_sampler_startup(int argC, char *args[],

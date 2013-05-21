@@ -39,7 +39,7 @@ void computeCurveNotSelfConj(witness_set W_in,
 	
 
   //generate input file
-  diag_homotopy_input_file("input_NSC", "func_input_nsc","func_inputbar","config_nsc",W_in.L[0],num_vars);
+  diag_homotopy_input_file("input_NSC", "func_input_nsc","func_inputbar","config_nsc",W_in.L_d[0],num_vars);
   //generate start file
   diag_homotopy_start_file("start", W_in, num_vars);
   strLength = 1 + snprintf(NULL, 0, "%s input_NSC", bertini_command);

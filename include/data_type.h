@@ -27,7 +27,7 @@
 //The following lets us use words instead of numbers to indicate vertex type.
 enum {CRITICAL=0, NEW=1, MIDPOINT=2, ISOLATED=-1, SAMPLE_POINT=3};
 
-
+enum {SUCCESSFUL=1, CRITICAL_FAILURE=-10, TOLERABLE_FAILURE=-1};
 
 void * br_malloc(size_t size);
 
@@ -42,38 +42,6 @@ typedef struct
 
 
 
-
-
-
-typedef struct
-{
-//  system sys;
-  vec_d *L;
-	vec_d *patch;
-  point_d *pts_d;
-	
-	vec_mp *L_mp;
-	vec_mp *patch_mp;
-  point_mp *pts_mp;
-	
-	
-	
-	int codim;
-  int comp_num;
-	
-	
-	int incidence_number;
-	int num_pts;
-	int num_var_gps;
-	int num_variables;
-	int num_linears;
-	int num_patches;
-	int patch_size;
-	int MPType; //  will indicate the type of the solve.  both fields will have data, but one will be used.
-	
-	char ** variable_names;
-} witness_set;  //For a single irreducible component!  Need num. irred. decomp. type later.
-// end the double types
 
 
 
