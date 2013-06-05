@@ -23,7 +23,7 @@
 #include "programStartup.h"
 #include "postProcessing.h"
 #include "witnessSet.h"
-
+#include "missing_bertini_headers.h"
 // the mp version
 typedef struct
 {
@@ -190,12 +190,6 @@ void setupdetjactodetjacEval_d(tracker_config_t *T,char preprocFile[], char degr
 															 solver_configuration *solve_options);
 
 
-
-void start_system_eval_data_clear_d(start_system_eval_data_d *SSED);//actually lives in bertini library...  testing if this works.
-
-void patch_eval_data_clear_d(patch_eval_data_d *PED);//another which lives in bertini
-void patch_eval_data_clear_mp(patch_eval_data_mp *PED);//another which lives in bertini
-void changePatchPrec_mp(int new_prec, patch_eval_data_mp *PED); // in bertini
 
 
 void cp_detjactodetjac_eval_data_d(detjactodetjac_eval_data_d *BED, detjactodetjac_eval_data_d *BED_d_input, detjactodetjac_eval_data_mp *BED_mp_input, int MPType);

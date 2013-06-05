@@ -22,16 +22,18 @@
 #include "fileops.h"
 #include "data_type.h"
 
+#include "missing_bertini_headers.h"
+
 
 //the amount by which to perturb for numerical derivative
 #define PERTURBATION_VALUE 1e-5
 #define PERTURBATION_VALUE_mp 1e-8
 
-#define TOL_DOUBLE_PRECISION 1e-50
-#define LARGECHANGE_DOUBLEPRECISION 1e15
+#define TOL_DOUBLE_PRECISION 1e-13
+#define LARGECHANGE_DOUBLEPRECISION 1e14
 
 
-#define TOL_MP 1e-80
+#define TOL_MP 1e-40
 #define LARGECHANGE_MP 1e50
 
 int take_determinant_d(comp_d determinant, mat_d source_matrix);

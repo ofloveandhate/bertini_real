@@ -22,7 +22,7 @@
 #include "programStartup.h"
 #include "postProcessing.h"
 #include "witnessSet.h"
-
+#include "missing_bertini_headers.h"
 
 // the mp version
 typedef struct
@@ -199,12 +199,6 @@ void setuplintolinEval_d(tracker_config_t *T,
 												 witness_set W,
 												 solver_configuration *solve_options);
 
-
-void start_system_eval_data_clear_d(start_system_eval_data_d *SSED);//actually lives in bertini library...  testing if this works.
-
-void patch_eval_data_clear_d(patch_eval_data_d *PED);//another which lives in bertini
-void patch_eval_data_clear_mp(patch_eval_data_mp *PED);//another which lives in bertini
-void changePatchPrec_mp(int new_prec, patch_eval_data_mp *PED); // in bertini
 
 
 

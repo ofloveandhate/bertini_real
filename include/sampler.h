@@ -23,7 +23,7 @@
 
 #include "lintolinSolver.h"
 #include "multilintolinSolver.h"
-
+#include "missing_bertini_headers.h"
 #ifndef _SAMPLER_H
 #define _SAMPLER_H
 

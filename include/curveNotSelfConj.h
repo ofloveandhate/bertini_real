@@ -12,7 +12,7 @@
 #include "polysolve.h"
 #include "partitionParse.h"
 #include "fileops.h"
-
+#include "missing_bertini_headers.h"
 
 
 /**

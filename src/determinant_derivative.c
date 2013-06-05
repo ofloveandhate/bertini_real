@@ -276,10 +276,7 @@ int detjac_numerical_derivative_d(mat_d Jv, //  the returned value
 							 unused_Jp, //unused output
 							 perturbed_backward_variables, pathVars, SLP); // input
 		
-//		patch_eval_d(unused_function_values, unused_parVals, unused_parDer, //  unused output
-//								 perturbed_backward_Jv_Patch, // <---- the output we need
-//								 unused_Jp, // unused output
-//								 perturbed_backward_variables, pathVars, &patch);  // input
+
 		//now have the pieces of the puzzle.
 		
 		mat_mul_d(AtimesJ,n_minusone_randomizer_matrix,perturbed_backward_Jv);

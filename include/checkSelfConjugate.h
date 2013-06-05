@@ -20,7 +20,7 @@
 #include "data_type.h"
 #include "polysolve.h"
 #include "fileops.h"
-
+#include "missing_bertini_headers.h"
 
 /**
  main function for performing self-conjugacy check.

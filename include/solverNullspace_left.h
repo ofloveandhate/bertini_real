@@ -24,30 +24,64 @@
 #include "programStartup.h"
 #include "postProcessing.h"
 #include "witnessSet.h"
-
+#include "missing_bertini_headers.h"
 
 typedef struct
 {
-	int target_dim;
+	int target_dim;   // r			the dimension of the real set we are looking for
+	int ambient_dim;  // k			the dimension of the complex component we are looking IN.  
+	int target_crit_codim;    // \ell.  must be at least one (1), and at most target_dim (r).
+	int num_jac_equations;    // the number of equations (after the randomization)
 	
-	int num_randomized_eqns;
-	int *jac_degrees;
-	vec_mp **starting_linears; // outer layer should have as many as there are randomized equations
-	// inside layer has number corresponding to randomized_degrees
+	int num_v_vars;  // N   number of variables in original problem statement (including homogenizing variables)
+	int num_x_vars;  // N-k+\ell
 	
-	int num_v_linears;
-	vec_mp *v_linears;         // should be as many in here as there are randomized equations
+	int num_randomized_eqns;	// N-k (N-ambient_dim)
+	int max_degree;						// the max degree of differentiated (randomized) functions
+	vec_mp **starting_linears;	// outer layer should have as many as there are randomized equations (N-k)
+															// inside layer has number corresponding to max of randomized_degrees
 	
-	vec_mp v_patch;
+	int num_additional_linears;
+	vec_mp *additional_linears_terminal;
+	vec_mp *additional_linears_starting;
 	
-	vec_mp *source_projection;
-	vec_mp *target_projection; // # of these should be target_dim (for now)
 	
-	mat_mp randomizer_matrix;
+	int num_v_linears;   // # is  (N), cause there are N equations in the subsystem. 
+	vec_mp *v_linears;
+	
+	vec_mp v_patch; // length of this should be N-k+\ell
+	
+//	vec_mp *source_projection; // # of these should be \ell
+	vec_mp *target_projection; // # of these should be \ell
+	
+	mat_mp randomizer_matrix;  // R, the main randomizer matrix, which was passed in.  randomizes f and Jf down to N-k equations.
+	
+	mat_mp post_randomizer_matrix;  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
 } nullspace_config;
 
-
-
+//
+//void cp_nullspace_config(nullspace_config *ns_out, nullspace_config ns_in){
+//	int ii;
+//	ns_out->target_dim = ns_in.target_dim;
+//	ns_out->ambient_dim = ns_in.ambient_dim;
+//	ns_out->target_crit_codim = ns_in.target_crit_codim;
+//	
+//	ns_out->num_v_vars = ns_in->num_v_vars;
+//	ns_out->num_x_vars = ns_in->num_x_vars;
+//	
+//	ns_out->num_randomized_eqns = ns_in.num_randomized_eqns;
+//	ns_out->max_degree = ns_in.max_degree;
+//	
+//	ns_out->starting_linears = (vec_mp **) br_malloc(ns_in.num_x_vars*sizeof(vec_mp *));
+//	for (ii=0; ii<ns_in.num_x_vars; ii++) {
+//		ns_out->starting_linears[ii] = (vec_mp *) br_malloc(ns_in.max_degree*sizeof(vec_mp));
+//		for (jj=0; jj<ns_in.max_degree; jj++) {
+////			init_vec_mp();
+//		}
+//	}
+//	
+//	
+//}
 
 
 
@@ -56,23 +90,44 @@ typedef struct
 typedef struct
 {
 	
-  patch_eval_data_mp patch;
+  patch_eval_data_mp patch; // patch in x
 	
-  preproc_data preProcData;
+  preproc_data preProcData; // information related to the SLP for system
 	
-	prog_t *SLP;
+	prog_t *SLP; // the SLP
 	
-	mpq_t *gamma_rat;
-	comp_mp gamma;
+	mpq_t *gamma_rat; // randomizer
+	comp_mp gamma;    // randomizer
 	
-	mat_mp randomizer_matrix;
-	mat_mp randomizer_matrix_full_prec;
+	mat_mp randomizer_matrix;     // randomizer
+	mat_mp randomizer_matrix_full_prec;  // randomizer
+	
+	int num_jac_equations;
+	int target_dim;   // r			the dimension of the real set we are looking for
+	int ambient_dim;  // k			the dimension of the complex component we are looking IN.
+	int target_crit_codim;    // \ell.  must be at least one (1), and at most target_dim (r).
+	
+	int num_v_vars;  // N   number of variables in original problem statement (including homogenizing variables)
+	int num_x_vars;  // N-k+\ell
+	
+	int num_randomized_eqns;	// N-k (N-ambient_dim)
+	int max_degree;						// the max degree of differentiated (randomized) functions
+
+
+	
+	int num_additional_linears;
+	vec_mp *additional_linears_terminal;
+	vec_mp *additional_linears_terminal_full_prec;
+
+	vec_mp *additional_linears_starting;
+	vec_mp *additional_linears_starting_full_prec;
 	
 	
-	int target_dim;
+	mat_mp post_randomizer_matrix;  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
+	mat_mp post_randomizer_matrix_full_prec;  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
 	
-	int num_randomized_eqns;
-	int *jac_degrees;
+	
+	
 	
 	vec_mp **starting_linears; // outer layer should have as many as there are randomized equations
 	// inside layer has number corresponding to randomized_degrees
@@ -85,11 +140,21 @@ typedef struct
 	vec_mp *v_linears_full_prec;         // should be as many in here as there are randomized equations
 
 	vec_mp v_patch;
+	vec_mp v_patch_full_prec;
 	
-	vec_mp *source_projection;
+	
+	mat_mp jac_with_proj;
+	mat_mp jac_with_proj_full_prec;
+	
+	
+	comp_mp perturbation;
+	comp_mp perturbation_full_prec;
+	comp_mp half;
+	comp_mp half_full_prec;
+////	vec_mp *source_projection;
 	vec_mp *target_projection; // # of these should be target_dim (for now)
-	
-	vec_mp *source_projection_full_prec;
+//
+////	vec_mp *source_projection_full_prec;
 	vec_mp *target_projection_full_prec; // # of these should be target_dim (for now)
 	
 	int num_variables;
@@ -115,32 +180,50 @@ typedef struct
 	prog_t *SLP;
 	
 	comp_d gamma;
-	mat_d randomizer_matrix;
+
+	mat_d randomizer_matrix;     // randomizer
 	
-	int num_variables;
+	int num_jac_equations;
+	int target_dim;   // r			the dimension of the real set we are looking for
+	int ambient_dim;  // k			the dimension of the complex component we are looking IN.
+	int target_crit_codim;    // \ell.  must be at least one (1), and at most target_dim (r).
+	
+	int num_v_vars;  // N   number of variables in original problem statement (including homogenizing variables)
+	int num_x_vars;  // N-k+\ell
+	
+	int num_randomized_eqns;	// N-k (N-ambient_dim)
+	int max_degree;						// the max degree of differentiated (randomized) functions
 	
 	
 	
-	int target_dim;
+	int num_additional_linears;
+	vec_d *additional_linears_terminal;
+	vec_d *additional_linears_starting;
 	
-	int num_randomized_eqns;
-	int *jac_degrees;
+	mat_d post_randomizer_matrix;  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
+
+	
+	
 	
 	vec_d **starting_linears; // outer layer should have as many as there are randomized equations
 	// inside layer has number corresponding to randomized_degrees
-
+	vec_d **starting_linears_full_prec; // outer layer should have as many as there are randomized equations
+	// inside layer has number corresponding to randomized_degrees
+	
 	
 	int num_v_linears;
 	vec_d *v_linears;         // should be as many in here as there are randomized equations
 	
 	vec_d v_patch;
 	
-	vec_d *source_projection;
-	vec_d *target_projection; // # of these should be target_dim (for now)
+	mat_d jac_with_proj;
+	vec_d *target_projection; // 
 	
-	
-	
-	
+
+	int num_variables;
+
+	comp_d perturbation;
+	comp_d half;
 	
 #ifdef printpathlinprod
 	FILE *FOUT;
@@ -250,11 +333,7 @@ void setupnullspacejacEval_d(tracker_config_t *T,char preprocFile[], char degree
 
 
 
-void start_system_eval_data_clear_d(start_system_eval_data_d *SSED);//actually lives in bertini library...  testing if this works.
 
-void patch_eval_data_clear_d(patch_eval_data_d *PED);//another which lives in bertini
-void patch_eval_data_clear_mp(patch_eval_data_mp *PED);//another which lives in bertini
-void changePatchPrec_mp(int new_prec, patch_eval_data_mp *PED); // in bertini
 
 
 void cp_nullspacejac_eval_data_d(nullspacejac_eval_data_d *BED, nullspacejac_eval_data_d *BED_d_input, nullspacejac_eval_data_mp *BED_mp_input, int MPType);

@@ -26,7 +26,7 @@
 #include "data_type.h"
 
 #include "partitionParse.h"
-
+#include "missing_bertini_headers.h"
 /**
  
  */

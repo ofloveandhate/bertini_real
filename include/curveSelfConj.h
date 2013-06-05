@@ -27,8 +27,8 @@
 #include "linprodtodetjacSolver.h"
 #include "detjactodetjacSolver.h"
 
-#include "nullspace.h"
-
+#include "nullspace_left.h"
+#include "missing_bertini_headers.h"
 #include "output.h"
 /**
 //the main function for computing cell decom for a curve.  only for use on a self-conjugate component.  
@@ -76,7 +76,7 @@ int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
 void check_patch_values(witness_set W);
 
 /**
-// checks to see what the determinant of the jacobian is at the points in W.
+ checks to see what the determinant of the jacobian is at the points in W.
  */
 void check_detjac(witness_set W, prog_t SLP, tracker_config_t T, mat_d n_minusone_randomizer_matrix, vec_d projection);
 
@@ -91,7 +91,7 @@ void get_jacobian(point_d current_values,
 									mat_d jacobian);
 
 /**
-//read the file "deg.out" and takes the sum of the numbers appearing there. used for determining the number of lintolin solves to perform to get the critical points WRT the projection and coordinate axes (bounding box).
+ read the file "deg.out" and takes the sum of the numbers appearing there. used for determining the number of lintolin solves to perform to get the critical points WRT the projection and coordinate axes (bounding box).
  */
 int get_sum_degrees(char filename[], int num_funcs);
 
@@ -107,9 +107,6 @@ void sort_for_unique(witness_set *W_out,
 										 tracker_config_t T);
 
 
-void sort_for_real(witness_set *W_out,
-									 witness_set W_in,
-									 tracker_config_t T);
 
 void sort_increasing_by_real(vec_mp *projections_sorted, int **index_tracker, vec_mp projections_input);
 

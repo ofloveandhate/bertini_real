@@ -19,7 +19,7 @@
 #include "data_type.h"
 #include "partitionParse.h"
 #include "fileops.h"
-
+#include "missing_bertini_headers.h"
 // isosingular.c
 int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *inputFile, char *point, char *bertini_command, char *matlab_command, int max_deflations);
 

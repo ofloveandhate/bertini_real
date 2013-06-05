@@ -79,8 +79,8 @@ FLEX=flex
 INC:=$(INC) -I../include/  -I$(BERTINIHEADERS) #this includes the header files for bertini_real, etc   
 
 ARGS=$(INC) $(OPT) 
-OBJFILES= data_type.o	programStartup.o determinant_derivative.o output.o fileops.o isosingular.o curveNotSelfConj.o curveSelfConj.o witnessSet.o  postProcessing.o	checkSelfConjugate.o nullspace.o
-SOLVERS=   solverNullspace.o detjactodetjacSolver.o linprodtodetjacSolver.o multilintolinSolver.o lintolinSolver.o
+OBJFILES= data_type.o	programStartup.o determinant_derivative.o output.o fileops.o isosingular.o curveNotSelfConj.o curveSelfConj.o witnessSet.o  postProcessing.o	checkSelfConjugate.o nullspace_left.o
+SOLVERS=   solverNullspace_left.o detjactodetjacSolver.o linprodtodetjacSolver.o multilintolinSolver.o lintolinSolver.o
 FLEXFILES=lex.partitionParse.o 
 
 

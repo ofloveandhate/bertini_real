@@ -19,7 +19,7 @@
 #include "fileops.h"
 #include "cascade.h"
 #include "polysolve.h"
-
+#include "missing_bertini_headers.h"
 
 /*** low-level data types. ***/
 
@@ -29,15 +29,24 @@ enum {CRITICAL=0, NEW=1, MIDPOINT=2, ISOLATED=-1, SAMPLE_POINT=3};
 
 enum {SUCCESSFUL=1, CRITICAL_FAILURE=-10, TOLERABLE_FAILURE=-1};
 
+
+
+
 void * br_malloc(size_t size);
 
 void br_exit(int errorCode);
 
 void deliberate_segfault();
 
+
+
+
+
+
 typedef struct
 {
   char *func;  //symbolic representation of function (straight from input file).
+	//should be a std::string
 } function;
 
 
@@ -59,15 +68,22 @@ typedef struct
 } vertex;
 
 
+
+/**
+ the main structure for storing vertices.  
+ there are methods in place to add vertices, and perform lookups.
+ */
 typedef struct
 {
 	vertex *vertices;  //Isolated real points.
-	
 	int num_vertices;
-	
-	
 } vertex_set;
 
+
+
+/**
+ the edge data type.  has three indices: left, right, midpt.
+ */
 typedef struct
 {
   int left;  //index into vertices
@@ -75,6 +91,12 @@ typedef struct
 	int midpt; // index into vertices
 } edge;
 
+
+/**
+ a curve decomposition.
+
+ includes methods to add vertices, look up vertices, etc
+*/
 typedef struct
 {
 	int num_variables;
@@ -86,7 +108,7 @@ typedef struct
 	
 	int      num_edges;
 	
-	
+	// counters for the vertex indices.
 	int			 num_isolated;
   int      num_V0;
   int      num_V1;
@@ -95,7 +117,7 @@ typedef struct
 	int			 num_samples;
 	
 
-	// these arrays of integers index the vertices.
+	// these arrays of integers index into the vertices.
 	int			*isolated_indices;
 	int			*V0_indices;
 	int			*V1_indices;
@@ -121,7 +143,6 @@ typedef struct
 	int *num_samples_each_edge;
 	
 	int **sample_indices;
-
 }
 sample_data;
 

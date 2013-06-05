@@ -76,13 +76,12 @@ int main(int argC, char *args[])
 	set_initial_sample_data(&S_old,C,V,
 											 num_vars);
 	
-//	vertex_set_print_to_screen(&V);
-	
+
 	solve_options.verbose_level = sampler_options.verbose_level-1;
-	solve_options.T.ratioTol = 0.999999999999999; // manually assert to be more permissive.
+	solve_options.T.ratioTol = 1; // manually assert to be more permissive.  i don't really like this.
 	solve_options.use_midpoint_checker = 0;
 	solve_options.use_gamma_trick = sampler_options.use_gamma_trick;
-	
+	solve_options.allow_singular = 1;
 	/////////
 	////////
 	//////
@@ -363,7 +362,6 @@ void generate_new_sampling_pts(sample_data *S_new,
 					
 					
 
-					
 					
 					
 					multilintolin_solver_main(MPType,
