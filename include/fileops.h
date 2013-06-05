@@ -25,7 +25,7 @@
 
 #include "polysolve.h"
 #include "programStartup.h" 
-
+#include "missing_bertini_headers.h"
 
 /**
  splits the bertini input file into several files for later use.

@@ -22,7 +22,7 @@
 #include "programStartup.h"
 #include "postProcessing.h"
 #include "witnessSet.h"
-
+#include "missing_bertini_headers.h"
 
 enum {MESHSTYLE=0, LISTSTYLE=1};
 

@@ -30,7 +30,7 @@
 #include "programStartup.h"
 #include "witnessSet.h"
 #include "output.h"
-
+#include "missing_bertini_headers.h"
 #endif
 
 

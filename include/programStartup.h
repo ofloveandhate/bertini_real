@@ -23,7 +23,7 @@
 #include "polysolve.h"
 //#include "fileops.h"
 #include "data_type.h"
-
+#include "missing_bertini_headers.h"
 
 
 

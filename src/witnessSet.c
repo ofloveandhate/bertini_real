@@ -45,7 +45,7 @@ int witnessSetParse(witness_set *W, char *witness_set_file, const int num_vars){
 	
 
 	fscanf(IN, "%d %d", &num_linears, &num_vars_in_linears);  scanRestOfLine(IN);
-//	printf("%d %d\n",num_linears, num_vars_in_linears);
+
 	W->num_linears = num_linears;
 	W->L_d = (vec_d *)bmalloc(num_linears*sizeof(vec_d));
 	W->L_mp = (vec_mp *)bmalloc(num_linears*sizeof(vec_mp));
@@ -496,7 +496,6 @@ void write_dehomogenized_coordinates(witness_set W, char filename[]){
 	
 	fprintf(OUT,"%d\n\n",W.num_pts); // print the header line
 	for (ii=0; ii<W.num_pts; ++ii) {
-		if (W.MPType==1){ // both fields should be populated anyway?
 			vec_mp result;
 			init_vec_mp(result,1);
 			dehomogenize_mp(&result,W.pts_mp[ii]);
@@ -504,16 +503,6 @@ void write_dehomogenized_coordinates(witness_set W, char filename[]){
 				print_mp(OUT, 0, &result->coord[jj]);
 				fprintf(OUT, "\n");
 			}
-		}
-		else{
-			vec_d result;
-			init_vec_d(result,0);
-			dehomogenize_d(&result,W.pts_d[ii]);
-			for (jj=0; jj<W.num_variables-1; jj++) {
-				fprintf(OUT,"%.15le %.15le\n",result->coord[jj].r,result->coord[jj].i);
-			}
-			
-		}
 		fprintf(OUT,"\n");
 	}
 	
@@ -553,30 +542,30 @@ void clear_witness_set(witness_set W){
 	
 	
 	for (ii=0; ii<W.num_patches; ii++) {
-		clear_vec_d(W.patch_d[ii]);
+//		clear_vec_d(W.patch_d[ii]);
 		clear_vec_mp(W.patch_mp[ii]);
 	}
 	if (W.num_patches>0) {
-		free(W.patch_d);
+//		free(W.patch_d);
 		free(W.patch_mp);
 	}
 	
 	
 	for (ii=0; ii<W.num_linears; ii++) {
-		clear_vec_d(W.L_d[ii]);
+//		clear_vec_d(W.L_d[ii]);
 		clear_vec_mp(W.L_mp[ii]);
 	}
 	if (W.num_linears>0) {
-		free(W.L_d);
+//		free(W.L_d);
 		free(W.L_mp);
 	}
 	
 	for (ii=0; ii<W.num_pts; ii++) {
-		clear_point_d(W.pts_d[ii]);
+//		clear_point_d(W.pts_d[ii]);
 		clear_point_mp(W.pts_mp[ii]);
 	}
 	if (W.num_pts>0) {
-		free(W.pts_d);
+//		free(W.pts_d);
 		free(W.pts_mp);
 	}
 	
@@ -609,6 +598,103 @@ void print_witness_set_to_screen(witness_set W){
 	
 	printf("\n\n");
 }
+
+
+
+
+
+
+//send in an initialized but empty witness_set.
+// T is necessary for the tolerances.
+void sort_for_real(witness_set *W_out,
+									 witness_set W_in,
+									 tracker_config_t T)
+{
+	//	printf("sorting points for real-ness; %d points\n",W_in.num_pts);
+	int ii;
+	
+	//	if (W_in.incidence_number==-1) {
+	//		printf("input witness_set has unset incidence_number for comparison.\n");
+	//		exit(-1112);
+	//	}
+	
+	W_out->MPType = W_in.MPType;
+	W_out->incidence_number = W_in.incidence_number;
+	W_out->num_variables = W_in.num_variables;
+	W_out->num_var_gps = W_in.num_var_gps;
+	
+	//copy the linears, patches from old to new
+	cp_patches(W_out, W_in);
+	cp_linears(W_out, W_in);
+	cp_names(W_out, W_in);
+	//
+	
+	int real_indicator[W_in.num_pts];
+	int counter = 0;
+	vec_mp result; init_vec_mp(result,1);
+	for (ii=0; ii<W_in.num_pts; ii++) {
+		dehomogenize_mp(&result, W_in.pts_mp[ii]);
+		real_indicator[ii] = checkForReal_mp(result, T.real_threshold);
+		if (real_indicator[ii]==1) {
+			counter++;
+		}
+	}
+	
+	
+	W_out->num_pts = counter;
+	
+	W_out->pts_mp = (point_mp *)bmalloc(counter*sizeof(point_mp));
+	W_out->pts_d  = (point_d  *)bmalloc(counter*sizeof(point_d));
+	
+	if ( (W_out->pts_d == NULL) && (counter!=0) )
+		printf("WTF\n");
+	
+	//	printf("here, W_in.numpts %d, counter:%d\n",W_in.num_pts,counter);
+	
+	counter = 0;  // reset
+	for (ii=0; ii<W_in.num_pts; ii++) {
+		//		printf("%d",ii);
+		if (real_indicator[ii]==1) {
+			//			printf("\treal\n");
+			
+			
+			init_vec_d( W_out->pts_d[counter],   W_in.num_variables);
+			//			printf("b!\n");
+			W_out->pts_d[counter]->size = W_in.num_variables;
+			//			printf("b!\n");
+			
+			
+			init_vec_mp(W_out->pts_mp[counter],W_in.num_variables);
+			//			printf("a!\n");
+			W_out->pts_mp[counter]->size = W_in.num_variables;
+			//			printf("a!\n");
+			
+			
+			
+			vec_cp_mp(W_out->pts_mp[counter],W_in.pts_mp[ii]);
+			//			printf("c!\n");
+			vec_mp_to_d(W_out->pts_d[counter],W_in.pts_mp[ii]);
+			//			printf("c!\n");
+			counter++;
+			
+		}
+		else{
+			//			printf("\tnot real \n");
+		}
+		
+		//		printf("counter %d\n",counter);
+		
+	}
+	
+	//	printf("here2\n");
+	clear_vec_mp(result);
+	
+	
+	return;
+}
+
+
+
 
 
 

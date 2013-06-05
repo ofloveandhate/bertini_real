@@ -335,8 +335,8 @@ void BR_init_config(program_configuration *options) {
 	
 	options->MPType = 2;
 	
-	options->use_bounding_box = 1;
-	options->use_gamma_trick = 1;
+	options->use_bounding_box = 0;
+	options->use_gamma_trick = 0;
 	return;
 }
 

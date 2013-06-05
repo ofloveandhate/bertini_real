@@ -9,7 +9,7 @@
 #include "data_type.h"
 #include "polysolve.h"
 #include "fileops.h"
-
+#include "missing_bertini_headers.h"
 
 
 
@@ -84,6 +84,10 @@ void write_homogeneous_coordinates(witness_set W, char filename[]);
 void write_dehomogenized_coordinates(witness_set W, char filename[]);
 void write_linears(witness_set W, char filename[]);
 
+
+void sort_for_real(witness_set *W_out,
+										witness_set W_in,
+										tracker_config_t T);
 
 
 #endif

@@ -23,23 +23,9 @@
 #include "fileops.h"
 #include "data_type.h"
 #include "programStartup.h"
+#include "missing_bertini_headers.h"
 
 
-
-/**
- from the bertini library.  the prototype is not in any header file.
- */
-int checkForReal_d(point_d Pt, double realTol);
-/**
- from the bertini library.  the prototype is not in any header file.
- */
-int checkForReal_mp(point_mp Pt, double realTol);
-
-
-/**
- from the bertini library.  the prototype is not in any header file.
- */
-void findMultSol(post_process_t *endPoints, int num_sols, int num_vars, preproc_data *PPD, double finalTol);
 
 /**
  conversion function for turning endgame_data_t into post_process_t.

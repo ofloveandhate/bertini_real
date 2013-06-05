@@ -2913,7 +2913,7 @@ int check_issoln_multilintolin_d(endgame_data_t *EG,
 		
 		if (tol <= n1 && n1 <= n2)
 		{ // compare ratio
-			if (n1 > max_rat * n2){ // seriously what is the point of this?
+			if (n1 > max_rat * n2){ 
 				isSoln = 0;
 				printf("labeled as non_soln due to max_rat (d) 1 coord %d\n",ii);
 			}

@@ -12,7 +12,7 @@
 #include <map>
 #include <sstream>
 
-#include "mpreal.h"  // <---- this software graciously free to use for free projects, which this is.
+#include "mpreal.h"  // <---- this header-only software graciously free to use for free projects, which this is.
 
 
 #ifndef _DATA_TO_SET_H
