@@ -25,8 +25,8 @@
 #include "data_type.h"
 #include "missing_bertini_headers.h"
 
-
-
+// enum for crit solver choice
+enum {NULLSPACE, LINPRODTODETJAC};
 
 ///////////
 //
@@ -62,6 +62,8 @@ typedef struct
 	
 	int use_gamma_trick; // bool
 	int use_bounding_box; // bool
+	
+	int crit_solver;
 } program_configuration;
 
 

@@ -31,6 +31,10 @@
 #include "witnessSet.h"
 #include "output.h"
 #include "missing_bertini_headers.h"
+#include "surface.h"
+#include "curve.h"
+
+
 #endif
 
 

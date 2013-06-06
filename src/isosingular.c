@@ -2,7 +2,8 @@
 
 
 
-int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *inputFile, char *witness_point_filename, char *bertini_command, char *matlab_command, int max_deflations)
+int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *inputFile, char *witness_point_filename, char *bertini_command, char *matlab_command, int max_deflations,
+													int dim, int component_number)
 /***************************************************************\
 * USAGE: Perform isosingular deflation for system at given point*
 * ARGUMENTS: name of file for polynomial system, point, command *
@@ -23,9 +24,7 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *i
 	
 	
 	// remove previous files.
-//	remove("func_input_real");
-//	remove("config_real");
-//	remove("input_stabilization_test");
+
 	
 	//open the input file.
 	IN = safe_fopen_read(inputFile);	
@@ -107,9 +106,9 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *i
     printf("%d, ...\n\n", (*deflation_sequence)[*num_deflations]);
 
     // create deflated system
-    strLength = 1 + snprintf(NULL, 0, "%s_comp%d_deflated", inputFile,nullSpace);
+    strLength = 1 + snprintf(NULL, 0, "%s_dim_%d_comp_%d_deflated", inputFile, dim, component_number);
     strStabilizationTest = (char *)bmalloc(strLength * sizeof(char));
-    sprintf(strStabilizationTest, "%s_comp_%d_deflated", inputFile,nullSpace);
+    sprintf(strStabilizationTest, "%s_dim_%d_comp_%d_deflated", inputFile, dim, component_number);
     OUT = fopen(strStabilizationTest, "w");
     fprintf(OUT, "CONFIG\n");
 		IN = safe_fopen_read("config_real");

@@ -8,12 +8,10 @@ int main(int argC, char *args[])
  * NOTES:                                                        *
  \***************************************************************/
 {
-  int rV,num_vars=0,sc;  //1=self-conjugate; 0=not
+  int rV,num_vars=0,self_conjugate;  //1=self-conjugate; 0=not
 
-	vertex_set V;
-  curveDecomp_d C;  //new data type; stores vertices, edges, etc.
-  vec_mp pi_mp;  //random projection
-  witness_set Wuser;
+	
+  witness_set W;
 	int max_deflations = 10,strLength;
 	int num_deflations, *deflation_sequence = NULL;
 	int MPType;
@@ -33,16 +31,14 @@ int main(int argC, char *args[])
 	BR_startup(program_options); // tests for existence of necessary files, etc.
 	
 	//if desired, display the options
-//	display_current_options(program_options);
+	if (program_options.verbose_level>=3)
+		BR_display_current_options(program_options);
 	
   
-//	srand(0);
 	srand(time(NULL));
-	// essentials for using the bertini parser
 
-	
-	
-//	//split the input_file
+
+	// split the input_file.  this must be called before setting up the solver config.
 	parse_input_file(program_options.input_filename, &MPType);
 
 	
@@ -51,23 +47,22 @@ int main(int argC, char *args[])
 	get_tracker_config(&solve_options,MPType);
 	setupPreProcData("preproc_data", &solve_options.PPD);
 	
-	initMP(solve_options.T.Precision);
 	
-
+	initMP(solve_options.T.Precision); // set up some globals.
 	
 	
 	num_vars = get_num_vars_PPD(solve_options.PPD);
 	
 
-	init_witness_set(&Wuser);
-	witnessSetParse(&Wuser,program_options.witness_set_filename,num_vars);
-	Wuser.num_var_gps = solve_options.PPD.num_var_gp;
-	Wuser.MPType = program_options.MPType = MPType;
+	init_witness_set(&W);
+	witnessSetParse(&W,program_options.witness_set_filename,num_vars);
+	W.num_var_gps = solve_options.PPD.num_var_gp;
+	W.MPType = program_options.MPType = MPType;
 	
-	get_variable_names(&Wuser);
+	get_variable_names(&W);
 
 
-	Wuser.incidence_number = get_component_number(Wuser,num_vars,
+	W.incidence_number = get_incidence_number(W,num_vars,
 																								program_options.input_filename,
 																								program_options.stifle_text);
 	
@@ -77,12 +72,12 @@ int main(int argC, char *args[])
 	}
 	
 	// perform an isosingular deflation
-	write_dehomogenized_coordinates(Wuser, "witness_points_dehomogenized"); // write the points to file
-	rV = isosingular_deflation(&num_deflations, &deflation_sequence, program_options.input_filename, "witness_points_dehomogenized", "bertini", "matlab -nosplash", max_deflations);
+	write_dehomogenized_coordinates(W, "witness_points_dehomogenized"); // write the points to file
+	rV = isosingular_deflation(&num_deflations, &deflation_sequence, program_options.input_filename, "witness_points_dehomogenized", "bertini", "matlab -nosplash", max_deflations, W.dim, W.comp_num);
   
 	//this should be made a function
-	strLength = 1 + snprintf(NULL, 0, "%s_comp_%d_deflated", program_options.input_filename,deflation_sequence[num_deflations]);
-	sprintf(program_options.input_deflated_filename, "%s_comp_%d_deflated", program_options.input_filename,deflation_sequence[num_deflations]);
+	strLength = 1 + snprintf(NULL, 0, "%s_dim_%d_comp_%d_deflated", program_options.input_filename, W.dim, W.comp_num);
+	sprintf(program_options.input_deflated_filename, "%s_dim_%d_comp_%d_deflated", program_options.input_filename, W.dim, W.comp_num);
 	
 	
 	
@@ -100,7 +95,7 @@ int main(int argC, char *args[])
 	if (program_options.verbose_level>=2) {
 		printf("checking if component is self-conjugate\n");
 	}
-	sc = checkSelfConjugate(Wuser,num_vars,program_options.input_filename, program_options.stifle_text);  //later:  could be passed in from user, if we want
+	self_conjugate = checkSelfConjugate(W,num_vars,program_options.input_filename, program_options.stifle_text);  //later:  could be passed in from user, if we want
 
 	
 	
@@ -109,82 +104,20 @@ int main(int argC, char *args[])
 	parse_input_file(program_options.input_deflated_filename, &MPType);
 	
 	
-	//get the random projection \pi
-	init_vec_mp(pi_mp,num_vars); pi_mp->size = num_vars; // should include the homogeneous variable
-	get_projection(pi_mp, program_options, solve_options, num_vars);
 	
-
-	
-	
-
-	
-
-	//initialize the data structure which collets the output
-	init_curveDecomp_d(&C, MPType);
-	init_vertex_set(&V);
-	
-	
-	C.num_variables = num_vars;
-
-		init_vec_d(C.pi_d, Wuser.num_variables); C.pi_d->size = Wuser.num_variables;
-		vec_mp_to_d(C.pi_d, pi_mp);
-
-		init_vec_mp(C.pi_mp, Wuser.num_variables); C.pi_mp->size = Wuser.num_variables;
-		vec_cp_mp(C.pi_mp, pi_mp);
-
-	
-
-	
-	solve_options.verbose_level = program_options.verbose_level;
-	solve_options.T.ratioTol = 1; // manually assert to be more permissive.
-	solve_options.use_gamma_trick = program_options.use_gamma_trick;
-	
-	if (sc==0)  //C is not self-conjugate
-	{
-		//Call non-self-conjugate case code
-		printf("\n\nentering not-self-conjugate case\n\n");
-		computeCurveNotSelfConj(Wuser, pi_mp, &C, &V, num_vars-1,program_options.input_deflated_filename,
-														&program_options, &solve_options);//This is Wenrui's !!!
-		printf("Bertini_real found %d vertices (vertex)\n",C.num_V0);
+	switch (W.dim) {
+		case 1:
+			//curve
+			curve_main(W, self_conjugate, &program_options, &solve_options);
+			break;
+			
+		case 2:
+			surface_main(W, self_conjugate, &program_options, &solve_options);
+			break;
+		default:
+			break;
 	}
-	else
-	{
-		//Call self-conjugate case code
-		printf("\n\nentering self-conjugate case\n\n");
-		computeCurveSelfConj(program_options.input_deflated_filename,
-												 Wuser,
-												 &pi_mp,
-												 &C,&V,
-												 num_vars,Wuser.num_var_gps,
-												 &program_options, &solve_options);  //This is Dans', at least at first !!!
-	}
-	
-	
-
-		
-	
-
-	if (program_options.verbose_level>=2) {
-		printf("outputting data\n");
-	}
-	Output_Main(program_options, Wuser, C, V);
-	
-	
-	if (program_options.verbose_level>=2) {
-		printf("clearing witness_set\n");
-	}
-	clear_witness_set(Wuser);
-
-	if (program_options.verbose_level>=2) {
-		printf("clearing C\n");
-	}
-	clear_curveDecomp_d(&C);
-	
-//	printf("clearing program_options\n");
-//	clear_program_config(&program_options);
-	
-  //TMP END
-  return 0;
+	  return 0;
 }
 
 

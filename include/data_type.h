@@ -126,10 +126,10 @@ typedef struct
 	int			*sample_indices;
 	
 	vec_mp	pi_mp; // the projection
-	vec_d		pi_d; // the projection
+//	vec_d		pi_d; // the projection
 	mat_mp n_minus_one_randomizer_matrix;
 	
-	int MPType;
+//	int MPType;
 	
 } curveDecomp_d;
 
@@ -181,7 +181,7 @@ void add_edge(curveDecomp_d *C, edge new_edge);
 
 
 //function prototypes for bertini_real data clearing etc.
-void init_curveDecomp_d(curveDecomp_d *C, int MPType);
+void init_curveDecomp_d(curveDecomp_d *C);
 void norm_of_difference(mpf_t result, vec_mp left, vec_mp right);
 
 void dehomogenize_d(vec_d *result, vec_d dehom_me);

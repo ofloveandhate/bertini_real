@@ -3,8 +3,7 @@
 
 
 
-//use:  call to parse the file witness_set_file, into the struct W.  fills the values W, and L_d, patch, as well as their _mp counterparts
-	
+//use:  call to parse the file witness_set_file, into the struct W.	
 
 
 int witnessSetParse(witness_set *W, char *witness_set_file, const int num_vars){
@@ -15,13 +14,13 @@ int witnessSetParse(witness_set *W, char *witness_set_file, const int num_vars){
   FILE *IN = safe_fopen_read(witness_set_file);
   
   
-	int codim, comp_num;
+	int dim, comp_num;
 	int num_patches, patch_size, num_linears, num_pts, num_vars_in_linears;
 
 	
 	
-  fscanf(IN, "%d %d %d", &num_pts, &codim, &comp_num); scanRestOfLine(IN);
-	W->codim = codim;
+  fscanf(IN, "%d %d %d", &num_pts, &dim, &comp_num); scanRestOfLine(IN);
+	W->dim = dim;
 	W->comp_num = comp_num;
   W->num_pts = W->num_pts = num_pts;
   W->pts_d=(point_d *)bmalloc(W->num_pts*sizeof(point_d));
@@ -401,7 +400,7 @@ void cp_patches(witness_set *W_out, witness_set W_in){
 void cp_witness_set(witness_set *W_out, witness_set W_in){
 	int ii;
 	
-	W_out->codim = W_in.codim;
+	W_out->dim = W_in.dim;
 	W_out->comp_num = W_in.comp_num;
 	W_out->incidence_number = W_in.incidence_number;
 	W_out->num_variables = W_in.num_variables;
