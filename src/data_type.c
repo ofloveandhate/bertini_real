@@ -367,9 +367,9 @@ void add_edge(curveDecomp_d *C, edge new_edge){
 
 
 
-void init_curveDecomp_d(curveDecomp_d *C, int MPType){
+void init_curveDecomp_d(curveDecomp_d *C){
 	
-	C->MPType = MPType;
+//	C->MPType = MPType;
 	C->num_V0 = C->num_V1 = C->num_new = C->num_midpts = C->num_isolated = 0;
 	
 	C->num_edges = 0;

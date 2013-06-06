@@ -21,7 +21,8 @@
 #include "fileops.h"
 #include "missing_bertini_headers.h"
 // isosingular.c
-int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *inputFile, char *point, char *bertini_command, char *matlab_command, int max_deflations);
+int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *inputFile, char *point, char *bertini_command, char *matlab_command, int max_deflations,
+													int dim, int component_number);
 
 
 void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs, FILE *IN, int minorSize, int *degrees, int deflation_number);

@@ -445,10 +445,26 @@ void write_summary(std::map< std::pair < int, int >, witness_data> gathered_data
 	std::ofstream OUT;
 	open_output_file(filename.str(), OUT);
 	
-	OUT << "there are " << num_nonempty_codims << " non-empty codimensions:\n";
+	OUT << "there ";
+	if (num_nonempty_codims==1)
+		OUT << "is ";
+	else
+		OUT << "are ";
+	
+	OUT << num_nonempty_codims << " non-empty codimension";
+
+	if (num_nonempty_codims!=1)
+		OUT << "s";
+	
+	OUT << ":\n";
 	
 	for (int ii = 0; ii< num_nonempty_codims; ii++) {
-		OUT << "codimension " << codim_indicator[ii] << " has " << component_counter[ii] << " components.\n";
+		OUT << "codimension " << codim_indicator[ii] << " has " << component_counter[ii] << " component";
+		
+		if (component_counter[ii]!=1)
+			OUT << "s";
+		
+		OUT << ".\n";
 	}
 	
 	OUT << "\ndim   comp   deg\n------------------\n";
@@ -467,7 +483,7 @@ void write_summary(std::map< std::pair < int, int >, witness_data> gathered_data
 
 
 
-void make_specific_output_name(std::string *outputName, std::string directoryName, int current_dimension,int component_number){
+void make_specific_output_name(std::string *outputName, std::string directoryName, int current_dimension, int component_number){
 	
 	std::stringstream converter;
 	converter << directoryName << "/" << "dim_" << current_dimension << "_comp_" << component_number;

@@ -32,7 +32,7 @@ int main(int argC, char *args[])
 	get_dir_mptype( &Dir_Name, &MPType);
 	
 	
-	init_curveDecomp_d(&C, MPType);
+	init_curveDecomp_d(&C);
 	init_vertex_set(&V);
 	
 	
@@ -1102,8 +1102,8 @@ int setup_curve(curveDecomp_d *C,char *INfile, int MPType, char **inputName, cha
 		mpf_inp_str(C->pi_mp->coord[ii].i, IN, 10);
 	}
 	
-	init_point_d(C->pi_d,C->num_variables); C->pi_d->size=C->num_variables;
-	vec_mp_to_d(C->pi_d,C->pi_mp)
+//	init_point_d(C->pi_d,C->num_variables); C->pi_d->size=C->num_variables;
+//	vec_mp_to_d(C->pi_d,C->pi_mp)
 	
 
 	

@@ -102,7 +102,7 @@ int checkSelfConjugate(witness_set W,
 
 
 
-int get_component_number(witness_set W,
+int get_incidence_number(witness_set W,
 												 int           num_vars,
 												 char          *input_file,
 												 char *stifle_text)

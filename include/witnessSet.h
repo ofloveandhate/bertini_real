@@ -27,7 +27,7 @@ typedef struct
 	
 	
 	
-	int codim;
+	int dim;
   int comp_num;
 	
 	

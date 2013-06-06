@@ -51,9 +51,9 @@ int take_determinant_d(comp_d determinant, mat_d source_matrix)
 	//the solution is in intermediate.
 	//error check.  solution failed if retval!=0
 	if (retval!=0) {
-		printf("LU decomposition failed (d)\n");
+//		printf("LU decomposition failed (d)\n");
 //		print_matrix_to_screen_matlab(intermediate,"failed_result");
-		print_matrix_to_screen_matlab(source_matrix,"source_matrix");
+//		print_matrix_to_screen_matlab(source_matrix,"source_matrix");
 //		deliberate_segfault();
 		set_zero_d(determinant);
 	}
@@ -131,9 +131,9 @@ int take_determinant_mp(comp_mp determinant, mat_mp source_matrix){
 	//the solution is in intermediate.
 	//error check.  solution failed if retval!=0
 	if (retval!=0) {
-		printf("LU decomposition failed (mp)\n");
+//		printf("LU decomposition failed (mp)\n");
 //		print_matrix_to_screen_matlab_mp(intermediate,"failed_result");
-		print_matrix_to_screen_matlab_mp(source_matrix,"source_matrix");
+//		print_matrix_to_screen_matlab_mp(source_matrix,"source_matrix");
 //		deliberate_segfault();
 		set_zero_mp(determinant);
 	}

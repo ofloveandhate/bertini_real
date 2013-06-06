@@ -39,6 +39,10 @@ int checkSelfConjugate(witness_set W,
                        int           num_vars,
                        char          *input_file,
 											  char *stifle_text);
+
+
+
+
 /**
  returns the incidence number according to the incidence matrix
  
@@ -47,7 +51,7 @@ int checkSelfConjugate(witness_set W,
  \param input_file the name of the bertini input file
  \param stifle_text text to append to the command to stifle screen output.
  */
-int get_component_number(witness_set W,
+int get_incidence_number(witness_set W,
 												 int           num_vars,
 												 char          *input_file,
 												  char *stifle_text);

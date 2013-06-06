@@ -56,7 +56,7 @@ public:
 	
 	witness_data(){
 		this->component_number = -10;
-		this->codimension = -10;
+		this->dimension = -10;
 	}
 	
 	
@@ -64,20 +64,20 @@ public:
 	void add_raw_solution(int _dimmy, int _pony, std::vector < std::pair < std::string, std::string > > new_solution){
 		this->solutions_raw.push_back(new_solution);
 		this->component_number = _pony;
-		this->codimension = _dimmy;
+		this->dimension = _dimmy;
 	};
 	
 	void add_linear_slice( int _dimmy, int _pony, std::vector < std::string > new_slice, int _numtype){
 		this->linear_slice.push_back(new_slice);
 		this->component_number = _pony;
-		this->codimension = _dimmy;
+		this->dimension = _dimmy;
 		this->numtype = _numtype;
 	};
 	
 	void add_patch_equation( int _dimmy, int _pony, std::vector < std::string > new_patch, int _numtype){
 		this->patch_equation.push_back(new_patch);
 		this->component_number = _pony;
-		this->codimension = _dimmy;
+		this->dimension = _dimmy;
 		this->numtype = _numtype;
 	};
 	
@@ -90,7 +90,7 @@ public:
 	
 private:
 	int component_number;
-	int codimension;
+	int dimension;
 	int numtype;
 	std::vector < std::vector < std::string > > linear_slice;
 	std::vector < std::vector < std::string > > patch_equation;
@@ -131,7 +131,7 @@ void witness_data::write_to_file(std::string directoryName, bool dehomogenize){
 	std::string specificOutputName;
 	std::ofstream OUT;
 	
-	make_specific_output_name(&specificOutputName, directoryName, this->codimension, this->component_number);
+	make_specific_output_name(&specificOutputName, directoryName, this->dimension, this->component_number);
 	
 	open_output_file(specificOutputName, OUT);
 	OUT.setf(std::ios_base::scientific);
@@ -141,7 +141,7 @@ void witness_data::write_to_file(std::string directoryName, bool dehomogenize){
 
 	
 	
-	OUT << this->solutions_raw.size() << " " << this->codimension << " " << this->component_number;
+	OUT << this->solutions_raw.size() << " " << this->dimension << " " << this->component_number;
 	OUT << std::endl << std::endl;  // print the number of solutions, and the number of variables.
 	
 	

@@ -121,7 +121,7 @@ void computeCurveSelfConj(char * inputFile,
 	
 	
 	
-	if (0)
+	if (program_options->crit_solver == LINPRODTODETJAC)
 	{
 		//compute the number of linears we will need to move to, to perform the regeneration for linprodtodetjac method.
 		int num_new_linears = 0;

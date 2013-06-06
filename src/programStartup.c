@@ -203,6 +203,7 @@ int  BR_parse_commandline(int argc, char **argv, program_configuration *options)
 			{"verb",		required_argument,			 0, 'V'},
 			{"box",		required_argument,			 0, 'b'}, {"b",		required_argument,			 0, 'b'},
 			{"gammatrick",		required_argument,			 0, 'g'}, {"g",		required_argument,			 0, 'g'},
+			{"detjac",		no_argument,			 0, 'd'},
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
@@ -217,6 +218,9 @@ int  BR_parse_commandline(int argc, char **argv, program_configuration *options)
 		
 		switch (choice)
 		{
+			case 'd':
+				options->crit_solver = LINPRODTODETJAC;
+				break;
 			case 'g':
 				options->use_gamma_trick = atoi(optarg);
 				if (! (options->use_gamma_trick==0 || options->use_gamma_trick==1) ) {
@@ -326,6 +330,7 @@ void BR_init_config(program_configuration *options) {
 	options->input_deflated_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
 	//this must be set after deflation is run.
 	
+	options->crit_solver = NULLSPACE;
 	
 	options->stifle_membership_screen = 1;
 	options->stifle_text = (char *)bmalloc(MAX_STRLEN*sizeof(char));
