@@ -92,6 +92,10 @@ typedef struct
 } edge;
 
 
+
+
+
+
 /**
  a curve decomposition.
 
@@ -132,6 +136,75 @@ typedef struct
 //	int MPType;
 	
 } curveDecomp_d;
+
+
+
+
+/**
+ the face data type..
+ */
+typedef struct
+{
+  int *left;  //index into vertices
+  int *right; //index into vertices
+	int top; // index into edges
+	int bottom; // index into edges
+	
+	int num_left;  // counters
+	int num_right;
+	
+	comp_mp left_crit_val;
+	comp_mp right_crit_val;
+	
+	int interior_pt; // index into vertex set
+	
+} face;
+
+
+
+/**
+ surface decomposition.
+ 
+ includes methods to add vertices, look up vertices, etc
+ */
+typedef struct
+{
+	int num_variables;
+	
+  edge *edges;
+	face *faces;
+	//these counters keep track of the number of things
+	
+	int      num_edges;
+	int      num_faces;
+	// counters for the vertex indices.
+	int			 num_isolated;
+  int      num_V0;
+  int      num_V1;
+	int			 num_V2;
+  int      num_midpts;
+	int			 num_new;
+	int			 num_samples;
+	
+	// these arrays of integers index into the vertices.
+	int			*isolated_indices;
+	int			*V0_indices;
+	int			*V1_indices;
+	int			*V2_indices;
+	int			*midpt_indices;
+	int			*new_indices;
+	int			*sample_indices;
+	
+	vec_mp	*pi_mp; // the projections
+	
+	mat_mp randomizer_matrix;
+	
+
+} surface_decomposition;
+
+
+
+
 
 
 typedef struct

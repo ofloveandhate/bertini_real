@@ -89,5 +89,9 @@ void sort_for_real(witness_set *W_out,
 										witness_set W_in,
 										tracker_config_t T);
 
+void sort_for_unique(witness_set *W_out,
+										 witness_set W_in,
+										 tracker_config_t T);
+
 
 #endif

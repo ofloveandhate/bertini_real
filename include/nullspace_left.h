@@ -22,8 +22,8 @@
 #include "data_type.h"
 #include "witnessSet.h"
 #include "partitionParse.h"
-#include "multilintolinSolver.h"
-#include "solverNullspace_left.h"
+#include "solver_multilintolin.h"
+#include "solver_nullspace_left.h"
 #include "output.h"
 #include "missing_bertini_headers.h"
 

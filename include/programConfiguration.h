@@ -125,10 +125,11 @@ void get_tracker_config(solver_configuration *solve_options,int MPType);
  --
 // currently defaults to create a random real projection with homogeneous value 0;
  */
-void get_projection(vec_mp pi_mp,
+void get_projection(vec_mp *pi,
 										program_configuration program_options,
 										solver_configuration solve_options,
-										int num_var);
+										int num_vars,
+										int num_projections);
 
 
 

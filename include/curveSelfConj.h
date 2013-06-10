@@ -23,9 +23,9 @@
 #include "partitionParse.h"
 
 #include "checkSelfConjugate.h"
-#include "lintolinSolver.h"
-#include "linprodtodetjacSolver.h"
-#include "detjactodetjacSolver.h"
+#include "solver_lintolin.h"
+#include "solver_linprodtodetjac.h"
+#include "solver_detjactodetjac.h"
 
 #include "nullspace_left.h"
 #include "missing_bertini_headers.h"
@@ -60,8 +60,7 @@ void computeCurveSelfConj(char * inputFile,
  */
 int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
 																	witness_set W,
-																	mat_mp n_minusone_randomizer_matrix,
-																	vec_mp random_complex_projection,
+																	mat_mp n_minusone_randomizer_matrix, 
 																	vec_mp pi,
 																	int num_new_linears,
 																	program_configuration *program_options,
@@ -102,9 +101,6 @@ void sort_for_membership(char * input_file,
 												 char *stifle_text);
 
 
-void sort_for_unique(witness_set *W_out,
-										 witness_set W_in,
-										 tracker_config_t T);
 
 
 

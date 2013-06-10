@@ -21,7 +21,7 @@
 #include "data_type.h"
 
 #include "determinant_derivative.h"
-#include "programStartup.h"
+#include "programConfiguration.h"
 #include "postProcessing.h"
 #include "witnessSet.h"
 #include "missing_bertini_headers.h"

@@ -19,7 +19,7 @@
 
 #include "fileops.h"
 #include "data_type.h"
-#include "programStartup.h"
+#include "programConfiguration.h"
 #include "postProcessing.h"
 #include "witnessSet.h"
 #include "missing_bertini_headers.h"
@@ -57,8 +57,8 @@ typedef struct
 	mpq_t *gamma_rat;
 	comp_mp gamma;
 	
-	mat_mp n_minusone_randomizer_matrix;
-	mat_mp n_minusone_randomizer_matrix_full_prec;
+	mat_mp randomizer_matrix;
+	mat_mp randomizer_matrix_full_prec;
 	
 	
 #ifdef printpathmultilintolin
@@ -86,7 +86,7 @@ typedef struct
 
 	prog_t *SLP;													// straight-line program
 	comp_d gamma;													// \gamma randomizer
-	mat_d n_minusone_randomizer_matrix;		// for reducing the number of equations via randomization
+	mat_d randomizer_matrix;		// for reducing the number of equations via randomization
 	
 
 
@@ -106,7 +106,7 @@ typedef struct
  */
 int multilintolin_solver_main(int MPType,
 															witness_set W,
-															mat_mp n_minusone_randomizer_matrix_full_prec,
+															mat_mp randomizer_matrix_full_prec,
 															vec_mp *new_linears_full_prec,
 															witness_set *W_new,
 															solver_configuration *solve_options);
@@ -116,7 +116,7 @@ int multilintolin_solver_main(int MPType,
 
 int multilin_to_lin_solver_d(int MPType,
 												witness_set W,  // should include the old linear
-												mat_mp n_minusone_randomizer_matrix_full_prec,
+												mat_mp randomizer_matrix_full_prec,
 												vec_mp *new_linears_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 												witness_set *W_new,
 												solver_configuration *solve_options);
@@ -160,7 +160,7 @@ int multilin_to_lin_setup_d(FILE **OUT, char *outName,
 											 int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 											 char *preprocFile, char *degreeFile,
 											 int findStartPts, char *pointsIN, char *pointsOUT,
-											 mat_mp n_minusone_randomizer_matrix_full_prec,
+											 mat_mp randomizer_matrix_full_prec,
 											 witness_set W,
 											 solver_configuration *solve_options);
 
@@ -195,7 +195,7 @@ void setupmultilintolinEval_d(tracker_config_t *T,
 											 prog_t *dummyProg, int squareSize, int patchType, int ssType, int MPType,
 											 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
 											 multilintolin_eval_data_d *BED, int adjustDegrees,
-												 mat_mp n_minusone_randomizer_matrix_full_prec,
+												 mat_mp randomizer_matrix_full_prec,
 												 witness_set W,
 												 solver_configuration *solve_options);
 
@@ -224,7 +224,7 @@ void change_multilintolin_eval_prec_mp(int new_prec, multilintolin_eval_data_mp 
 
 int multilin_to_lin_solver_mp(int MPType,
 												 witness_set W,  // includes the initial linear.
-												 mat_mp n_minusone_randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
+												 mat_mp randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
 												 vec_mp *new_linears_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 												 witness_set *W_new,
 												 solver_configuration *solve_options);
@@ -264,7 +264,7 @@ int multilin_to_lin_setup_mp(FILE **OUT, char *outName,
 												int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 												char *preprocFile, char *degreeFile,
 												int findStartPts, char *pointsIN, char *pointsOUT,
-												mat_mp n_minusone_randomizer_matrix_full_prec,
+												mat_mp randomizer_matrix_full_prec,
 												witness_set W,
 												solver_configuration *solve_options);
 
@@ -285,7 +285,7 @@ void setupmultilintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *du
 													int squareSize, int patchType, int ssType, int prec,
 													void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
 													multilintolin_eval_data_mp *BED, int adjustDegrees,
-													mat_mp n_minusone_randomizer_matrix_full_prec,
+													mat_mp randomizer_matrix_full_prec,
 													witness_set W,
 													solver_configuration *solve_options);
 

@@ -6,7 +6,7 @@
 #define _CURVE_NOTSELFCONJ_H
 
 
-#include "programStartup.h"
+#include "programConfiguration.h"
 #include "witnessSet.h"
 #include "data_type.h"
 #include "polysolve.h"
