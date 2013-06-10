@@ -1,6 +1,6 @@
 
 
-#include "linprodtodetjacSolver.h"
+#include "solver_linprodtodetjac.h"
 
 
 
@@ -666,10 +666,7 @@ int linprod_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, ma
 	}
 	
 	
-	
 
-	
-	
 	
 	
 	
@@ -689,11 +686,7 @@ int linprod_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, ma
 	
 	//the determinant of the jacobian, with the projection.
 	
-	
-//	increase_size_mat_d(tempmat,,BED->num_variables-1); // make it bigger to accomodate more entries.  make square
-	
-//	mat_cp_d(tempmat,AtimesJ);// copy into the matrix of which we will take the determinant
-	
+
 	for (jj=0; jj<BED->num_variables-2; jj++) {
 		for (ii=0; ii<BED->num_variables-1; ++ii) {
 			set_d(&tempmat->entry[jj][ii],&AtimesJ->entry[jj][ii+1]); // copy in the projection
@@ -705,14 +698,9 @@ int linprod_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, ma
 		set_d(&tempmat->entry[BED->num_variables-2][ii],&BED->projection->coord[ii+1]); // copy in the projection
 	}
 	
-	//don't do this anymore
-//	//copy in the jacocian of the patch equation
-//	for (ii=0; ii<BED->num_variables; ++ii) {
-//		set_d(&tempmat->entry[BED->num_variables-1][ii],&Jv_Patch->entry[0][ii]); //  copy in the patch jacobian
-//	}
+
 	
 	//now TAKE THE DETERMINANT of tempmat.
-//	print_matrix_to_screen_matlab(tempmat,"tempmat");
 	take_determinant_d(detjac,tempmat); // the determinant goes into detjac
 	
 	set_d(&funcVals->coord[BED->num_variables-2],detjac);
@@ -743,8 +731,6 @@ int linprod_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, ma
 	//																	BED->patch,
 
 	
-//	print_matrix_to_screen_matlab(Jv_detjac,"Jv_detjac");
-
 	//////////////
 	//
 	// SET THE FINAL RETURNED JACOBIAN ENTRIES.
@@ -754,13 +740,11 @@ int linprod_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, ma
 	
 	
 	//first, the entries related to the functions
-  for (ii = 0; ii < BED->num_variables-2; ii++)
-  {
-		for (jj = 0; jj < BED->num_variables; jj++)
-		{
+  for (ii = 0; ii < BED->num_variables-2; ii++) 
+		for (jj = 0; jj < BED->num_variables; jj++) 
 			set_d(&Jv->entry[ii][jj],&AtimesJ->entry[ii][jj]);
-		}
-  }
+		
+  
 	
 	
 	

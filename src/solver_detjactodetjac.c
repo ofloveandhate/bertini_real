@@ -1,6 +1,4 @@
-
-
-#include "detjactodetjacSolver.h"
+#include "solver_detjactodetjac.h"
 
 
 
@@ -297,6 +295,8 @@ void detjac_to_detjac_track_d(trackingStats *trackCount,
 	
 	
 	point_data_d *startPts = NULL;
+	
+	
 	startPts = (point_data_d *)bmalloc(W.num_pts * sizeof(point_data_d));
 	
 	
@@ -425,7 +425,7 @@ void detjac_to_detjac_track_d(trackingStats *trackCount,
 
 
 
-// derived from zero_dim_track_path_d
+
 void detjac_to_detjac_track_path_d(int pathNum, endgame_data_t *EG_out,
 																	 point_data_d *Pin,
 																	 FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
@@ -446,22 +446,12 @@ void detjac_to_detjac_track_path_d(int pathNum, endgame_data_t *EG_out,
 	
 	
 	EG_out->pathNum = pathNum;
-  EG_out->codim = 0; // zero dimensional - this is ignored
+  EG_out->codim = 0; // this is ignored
 	
   T->first_step_of_path = 1;
 	
-	//	printf("mytype %d\n",T->MPType);
   if (T->MPType == 2)
   { // track using AMP
-		
-		//verification code:
-		//		detjactodetjac_eval_data_mp *LtLED = (detjactodetjac_eval_data_mp *)ED_mp; // to avoid having to cast every time
-		//		print_matrix_to_screen_matlab_mp(LtLED->n_minusone_randomizer_matrix,"nminus1");
-		//		print_point_to_screen_matlab_mp(LtLED->old_linear,"old");
-		//		print_point_to_screen_matlab_mp(LtLED->current_linear,"curr");
-		//		print_matrix_to_screen_matlab_mp(LtLED->patch.patchCoeff,"patch");
-		//		printf("patch precision %d\n",LtLED->patch.curr_prec);
-		
     EG_out->prec = EG_out->last_approx_prec = 52;
 		
 		EG_out->retVal = endgame_amp(T->endgameNumber, EG_out->pathNum, &EG_out->prec, &EG_out->first_increase, &EG_out->PD_d, &EG_out->PD_mp, &EG_out->last_approx_prec, EG_out->last_approx_d, EG_out->last_approx_mp, Pin, T, OUT, MIDOUT, ED_d, ED_mp, eval_func_d, eval_func_mp, change_prec, find_dehom);

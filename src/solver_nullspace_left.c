@@ -1,6 +1,4 @@
-
-
-#include "solverNullspace_left.h"
+#include "solver_nullspace_left.h"
 
 
 
@@ -201,9 +199,8 @@ int nullspacejac_solver_d(int MPType,
 		mypause();
 	}
 	
-	printf("entering post-processing from double\n");
 	BRpostProcessing(endPoints, W_new, trackCount.successes, &ED.preProcData, &T, solve_options);
-	printf("done with post-processing d\n");
+
 	
 	//DAB is there other stuff which should be cleared here?
 	
@@ -318,9 +315,10 @@ void nullspacejac_track_d(trackingStats *trackCount,
 	for (ii = 0; ii < W.num_pts; ii++)
 	{ // get current thread number
 		oid = thread_num();
-		if (solve_options->verbose_level>=1)
+		if (solve_options->verbose_level>=0)
 			printf("nullspacejac tracking path %d of %d\n",ii,W.num_pts);
 		
+//		mypause();
 		startPointIndex = ii;
 		
 		
@@ -581,7 +579,7 @@ int nullspacejac_setup_d(FILE **OUT, char *outName,
 //this derived from basic_eval_d
 int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp, point_d current_variable_values, comp_d pathVars, void const *ED)
 { // evaluates a special homotopy type, built for bertini_real
-//	printf("t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
+
 	
 	
 	
@@ -598,8 +596,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
   sub_d(one_minus_s, one_minus_s, pathVars);  // one_minus_s = (1 - s)
   mul_d(gamma_s, BED->gamma, pathVars);       // gamma_s = gamma * s
 	
-  // we assume that the only parameter is s = t and setup parVals & parDer accordingly.
-	
+
 	vec_d curr_x_vars; init_vec_d(curr_x_vars, BED->num_x_vars);
 	curr_x_vars->size = BED->num_x_vars;
 	for (ii=0; ii<BED->num_x_vars; ii++) 
@@ -613,47 +610,77 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	vec_d patchValues; init_vec_d(patchValues, 0);
 	vec_d temp_function_values; init_vec_d(temp_function_values,0);
 	
-	mat_d linprod_derivative;
-	init_mat_d(linprod_derivative, BED->num_jac_equations, BED->num_x_vars);
-	linprod_derivative->rows = BED->num_jac_equations;
-	linprod_derivative->cols = BED->num_x_vars;
-	
-	
+
 	vec_d AtimesF;  init_vec_d(AtimesF,0);
+	vec_d linprod;  init_vec_d(linprod, BED->num_jac_equations);
+		linprod->size = BED->num_jac_equations;
+	vec_d linprod_times_gamma_s; init_vec_d(linprod_times_gamma_s,BED->num_jac_equations);
+		linprod_times_gamma_s->size = BED->num_jac_equations;
+	vec_d tempvec; init_vec_d(tempvec,0);
+	vec_d tempvec2; init_vec_d(tempvec2,0);
+	
 	
 	
 	mat_d Jv_Patch; init_mat_d(Jv_Patch, 0, 0);
 	mat_d tempmat; init_mat_d(tempmat,BED->num_variables-1,BED->num_variables-1);
-	tempmat->rows = tempmat->cols = BED->num_variables-1; // change the size indicators
-	
-	
+		tempmat->rows = tempmat->cols = BED->num_variables-1; // change the size indicators
+
 	mat_d lin_func_vals; init_mat_d(lin_func_vals,BED->num_jac_equations, BED->max_degree);
-	lin_func_vals->rows = BED->num_jac_equations;
-	lin_func_vals->cols = BED->max_degree;
+		lin_func_vals->rows = BED->num_jac_equations; lin_func_vals->cols = BED->max_degree;
 	
-	vec_d tempvec; init_vec_d(tempvec,0);
 	
-	vec_d tempvec2; init_vec_d(tempvec2,0);
+	
 	
 	
 	mat_d AtimesJ; init_mat_d(AtimesJ,1,1);
 	mat_d Jv_jac; init_mat_d(Jv_jac,0,0);
-	
 	mat_d temp_jacobian_functions, temp_jacobian_parameters;
-	init_mat_d(temp_jacobian_functions,0,0); init_mat_d(temp_jacobian_parameters,0,0);
+		init_mat_d(temp_jacobian_functions,0,0); init_mat_d(temp_jacobian_parameters,0,0);
 	
-	vec_d linprod;  init_vec_d(linprod, BED->num_jac_equations);
-	linprod->size = BED->num_jac_equations;
-	vec_d linprod_times_gamma_s; init_vec_d(linprod_times_gamma_s,BED->num_jac_equations);
-	linprod_times_gamma_s->size = BED->num_jac_equations;
+	mat_d linprod_derivative;
+		init_mat_d(linprod_derivative, BED->num_jac_equations, BED->num_x_vars);
+		linprod_derivative->rows = BED->num_jac_equations; linprod_derivative->cols = BED->num_x_vars;
 	
 	
 	comp_d running_prod;
-	
 	comp_d temp, temp2, temp3;
 	
 	
 	
+	mat_d S_times_Jf_pi;  init_mat_d(S_times_Jf_pi, BED->post_randomizer_matrix->rows, BED->num_v_vars); // set up temp matrix
+		S_times_Jf_pi->rows = BED->post_randomizer_matrix->rows; S_times_Jf_pi->cols = BED->num_v_vars;
+	vec_d target_function_values;  init_vec_d(target_function_values,0);
+	vec_d target_function_values_times_oneminus_s;  init_vec_d(target_function_values_times_oneminus_s,0);
+	
+	
+	//initialize some containers, for the unused stuff from the called evaluators.
+	point_d unused_function_values, unused_parVals;
+		init_vec_d(unused_function_values,0);init_vec_d(unused_parVals,0);
+	vec_d unused_parDer; init_vec_d(unused_parDer,0);
+	mat_d unused_Jp; init_mat_d(unused_Jp,0,0);
+	mat_d perturbed_Jv; init_mat_d(perturbed_Jv,0,0);
+	
+	
+	mat_d perturbed_AtimesJ, tempmat3; // create matrices
+		init_mat_d(perturbed_AtimesJ,0,0); init_mat_d(tempmat3,0,0);
+	
+	
+	mat_d tempmat1,tempmat2; // create temp matrices
+		init_mat_d(tempmat1,BED->num_jac_equations,BED->num_v_vars);
+		tempmat1->rows = BED->num_jac_equations; tempmat1->cols = BED->num_v_vars;
+	
+		init_mat_d(tempmat2,BED->num_jac_equations,BED->num_v_vars);
+		tempmat2->rows = BED->num_jac_equations; tempmat2->cols = BED->num_v_vars;
+	
+	//initialize the jacobians we will work with.
+	point_d perturbed_forward_variables, perturbed_backward_variables;
+	init_vec_d(perturbed_forward_variables,0); init_vec_d(perturbed_backward_variables,0);
+	change_size_vec_d(perturbed_forward_variables,BED->num_x_vars);
+	change_size_vec_d(perturbed_backward_variables,BED->num_x_vars);
+	perturbed_backward_variables->size = perturbed_forward_variables->size = BED->num_x_vars;
+	
+	
+	// the main evaluations for $x$
 	evalProg_d(temp_function_values, parVals, parDer, temp_jacobian_functions, temp_jacobian_parameters, curr_x_vars, pathVars, BED->SLP);
 	
 	
@@ -673,15 +700,13 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
   Jv->cols = BED->num_variables;  //  -> this must be square
   Jp->cols = 1;
 	
-	for (ii=0; ii<Jv->rows; ii++) {
-		for (jj=0; jj<Jv->cols; jj++) {
+	for (ii=0; ii<Jv->rows; ii++) 
+		for (jj=0; jj<Jv->cols; jj++) 
 			set_zero_d(&Jv->entry[ii][jj]);
-		}
-	}
 	
-	for (ii = 0; ii<BED->num_variables; ii++) {
+	for (ii = 0; ii<BED->num_variables; ii++) 
 		set_zero_d(&Jp->entry[ii][0]);  // initialize entire matrix to 0
-	}
+	
 
 	
 	mul_mat_vec_d(AtimesF,BED->randomizer_matrix, temp_function_values); // set values of AtimesF (A is randomization matrix)
@@ -697,18 +722,16 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	//  randomize the original functions and jacobian
 	mat_mul_d(AtimesJ,BED->randomizer_matrix,temp_jacobian_functions);
 	
-	for (ii=0; ii< (BED->num_x_vars - BED->ambient_dim - BED->patch.num_patches); ii++) {
-		for (jj=0; jj<BED->num_x_vars; jj++) {
+	for (ii=0; ii< (BED->num_x_vars - BED->ambient_dim - BED->patch.num_patches); ii++) 
+		for (jj=0; jj<BED->num_x_vars; jj++) 
 			set_d(&Jv->entry[ii][jj],&AtimesJ->entry[ii][jj]); // copy the jacobian into the return value for the evaluator
-		}
-	}
+
 	
 	
-	for (ii=0; ii< (BED->num_x_vars - BED->ambient_dim - BED->patch.num_patches); ii++) {
-		for (jj=BED->patch.num_patches; jj<BED->num_x_vars; jj++) {
+	for (ii=0; ii< (BED->num_x_vars - BED->ambient_dim - BED->patch.num_patches); ii++) 
+		for (jj=BED->patch.num_patches; jj<BED->num_x_vars; jj++) 
 			set_d(&BED->jac_with_proj->entry[jj - BED->patch.num_patches][ii],&AtimesJ->entry[ii][jj]); // copy in the transpose of the (randomized) jacobian
-		}
-	}
+
 	
 	
 	
@@ -727,8 +750,6 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 		
 		mul_d(temp2, temp, gamma_s);
 		
-		
-		
 		add_d(&funcVals->coord[offset+ii],temp2, temp3);
 		
 		for (jj=0; jj<BED->num_x_vars; jj++) {
@@ -744,23 +765,14 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 
 	//set the X PATCH values
 	offset = BED->num_x_vars - BED->ambient_dim - BED->patch.num_patches + BED->num_additional_linears;
-	for (ii=0; ii<BED->patch.num_patches; ii++)
-//		printf("setting patch in F[%d]\n", offset);
-		set_d(&funcVals->coord[ii+offset], &patchValues->coord[ii]);
 	
-	
-	// the entries in the jacobian for the patch equations.
 	for (ii = 0; ii<BED->patch.num_patches; ii++)  // for each patch equation
 	{ // funcVals = patchValues
-		// Jp = 0
-		set_zero_d(&Jp->entry[ii+offset][0]);
+		set_d(&funcVals->coord[ii+offset], &patchValues->coord[ii]);
+		
 		// Jv = Jv_Patch
 		for (jj = 0; jj<BED->num_x_vars; jj++) // for each variable
 			set_d(&Jv->entry[ii+offset][jj], &Jv_Patch->entry[ii][jj]);
-		
-		for (jj=0; jj<BED->num_v_vars; jj++)
-			set_zero_d(&Jv->entry[ii+offset][jj+BED->num_x_vars]);
-		
 	}
 	
 	
@@ -768,16 +780,8 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	
 	// NOW WE WILL WORK ON THE TARGET SYSTEM'S FUNCTION VALUES
-	mat_d S_times_Jf_pi;  init_mat_d(S_times_Jf_pi, BED->post_randomizer_matrix->rows, BED->num_v_vars); // set up temp matrix
-	S_times_Jf_pi->rows = BED->post_randomizer_matrix->rows; S_times_Jf_pi->cols = BED->num_v_vars;
 	
-//	print_matrix_to_screen_matlab(BED->jac_with_proj,"jacwithproj");
-//	print_matrix_to_screen_matlab(BED->post_randomizer_matrix,"post_randomizer_matrix");
 	mat_mul_d(S_times_Jf_pi, BED->post_randomizer_matrix, BED->jac_with_proj); // jac with proj having been set above with unperturbed values
-	
-	vec_d target_function_values;  init_vec_d(target_function_values,0);
-	vec_d target_function_values_times_oneminus_s;  init_vec_d(target_function_values_times_oneminus_s,0);
-	
 	
 	mul_mat_vec_d(target_function_values, S_times_Jf_pi, curr_v_vars);
 	vec_mulcomp_d(target_function_values_times_oneminus_s, target_function_values, one_minus_s);
@@ -814,8 +818,9 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 		
 	}
 	
+	
 	// DERIVATIVES OF THE HOMOTOPY WRT V
-	offset = BED->num_x_vars-BED->target_dim; // N-r
+	offset = BED->num_x_vars - BED->target_dim; // N-r
 	for (ii=0; ii<BED->num_jac_equations; ii++) {
 		for (jj=0; jj<BED->num_v_vars; jj++) {
 			mul_d(temp, &BED->v_linears[ii]->coord[jj], &linprod->coord[ii]);  // temp = M_ij * linprod(x)
@@ -837,17 +842,15 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	// now the x derivatives corresponding to the linprod start system
 	
-	
-	
 	// an implementation of the product rule
-	for (mm=0; mm< BED->num_jac_equations; mm++)
-	{
+	for (mm=0; mm< BED->num_jac_equations; mm++) {
 		for (kk=0; kk<BED->num_x_vars; kk++) {
 			set_zero_d(&linprod_derivative->entry[mm][kk]); // initialize to 0 for the sum
+			
 			for (ii=0; ii<BED->max_degree; ++ii) { //  for each linear
-				
 				set_d(temp2,&linprod_derivative->entry[mm][kk]); // copy for safety
 				set_one_d(running_prod);// initialize to 1 for the product
+				
 				for (jj=0; jj<BED->max_degree; jj++) {
 					set_d(temp,running_prod); // copy value for safety
 					if (jj==ii) {
@@ -855,7 +858,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 					}
 					else{
 						mul_d(running_prod,temp,&lin_func_vals->entry[mm][jj]); // the linear evaluated at curr_var_vals
-					} // something is wrong above here
+					}
 				}//re: jj
 				
 				add_d(&linprod_derivative->entry[mm][kk],temp2,running_prod);
@@ -869,148 +872,99 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	
 	
-	// NUMERICALLY DIFFERENTIATE THE derivative of the target jacobian system wrt $x$.
-	{
 	
-		//initialize some containers, for the unused stuff from the called evaluators.
-		point_d unused_function_values, unused_parVals; init_vec_d(unused_function_values,0);init_vec_d(unused_parVals,0);
-		vec_d unused_parDer; init_vec_d(unused_parDer,0);
-		mat_d unused_Jp; init_mat_d(unused_Jp,0,0);
+	
+	// NUMERICALLY DIFFERENTIATE THE derivative of the target jacobian system wrt $x$.
+
+	mat_cp_d(tempmat1, BED->jac_with_proj);
+	mat_cp_d(tempmat2, BED->jac_with_proj);
+	
+	offset = BED->num_x_vars - BED->target_dim;
+	for (ii=0; ii<BED->num_x_vars; ii++) {
+		
+		//first, we assign the perturbed variables.  some of these calls could be eliminated
+		vec_cp_d(perturbed_forward_variables, curr_x_vars);
+		vec_cp_d(perturbed_backward_variables, curr_x_vars);
+		
+		add_d( &perturbed_forward_variables->coord[ii], &perturbed_forward_variables->coord[ii],BED->perturbation);
+		sub_d(&perturbed_backward_variables->coord[ii] ,&perturbed_backward_variables->coord[ii],BED->perturbation);
 		
 		
-		//set up the perturbed jacobians
-		mat_d perturbed_forward_Jv, perturbed_forward_Jv_Patch, perturbed_backward_Jv, perturbed_backward_Jv_Patch; //, base_Jv, base_Jv_Patch
-		init_mat_d(perturbed_backward_Jv,0,0);init_mat_d(perturbed_forward_Jv,0,0);
-		init_mat_d(perturbed_backward_Jv_Patch,0,0);init_mat_d(perturbed_forward_Jv_Patch,0,0);
-		//the sizes for these variables will be set in the evalmethod calls below.  only need to init them here.
-		
-		//initialize the jacobians we will work with.
-		point_d perturbed_forward_variables, perturbed_backward_variables;
-		init_vec_d(perturbed_forward_variables,0); init_vec_d(perturbed_backward_variables,0);
-		change_size_vec_d(perturbed_forward_variables,BED->num_x_vars);
-		change_size_vec_d(perturbed_backward_variables,BED->num_x_vars);
-		perturbed_backward_variables->size = perturbed_forward_variables->size = BED->num_x_vars;
-		
-		
-		
-		
-		mat_d perturbed_forward_AtimesJ,perturbed_backward_AtimesJ, tempmat3; // create matrices
-		init_mat_d(perturbed_forward_AtimesJ,0,0);
-		init_mat_d(perturbed_backward_AtimesJ,0,0);
-		init_mat_d(tempmat3,0,0);
-		
-		
-		mat_d tempmat1,tempmat2; // create matrices
-		
-		init_mat_d(tempmat1,BED->num_jac_equations,BED->num_v_vars);
-		tempmat1->rows = BED->num_jac_equations;
-		tempmat1->cols = BED->num_v_vars;
-		mat_cp_d(tempmat1, BED->jac_with_proj);
-		
-		init_mat_d(tempmat2,BED->num_jac_equations,BED->num_v_vars);
-		tempmat2->rows = BED->num_jac_equations;
-		tempmat2->cols = BED->num_v_vars;
-		mat_cp_d(tempmat2, BED->jac_with_proj);
-		
-		for (ii=0; ii<BED->num_x_vars; ii++) {
-			
-			
-			//first, we assign the perturbed variables.  some of these calls could be eliminated
-			for (jj=0; jj<BED->num_x_vars; ++jj) {
-				set_d(&perturbed_forward_variables->coord[jj],&curr_x_vars->coord[jj]);
+		// evaluate perturbed forwards
+		evalProg_d(unused_function_values, unused_parVals, unused_parDer,  //  unused output
+							 perturbed_Jv,  // <---- the output we need
+							 unused_Jp, //unused output
+							 perturbed_forward_variables, pathVars, BED->SLP); // input
+		mat_mul_d(perturbed_AtimesJ,BED->randomizer_matrix,perturbed_Jv);
+		for (mm=0; mm< (BED->num_x_vars - BED->ambient_dim - BED->patch.num_patches); mm++) {
+			for (jj=BED->patch.num_patches; jj<BED->num_x_vars; jj++) {
+				set_d(&tempmat1->entry[jj - BED->patch.num_patches][mm],&perturbed_AtimesJ->entry[mm][jj]); // copy in the transpose of the (randomized) jacobian
 			}
-			for (jj=0; jj<BED->num_x_vars; ++jj) {
-				set_d(&perturbed_backward_variables->coord[jj],&curr_x_vars->coord[jj]);
+		}
+		
+		mat_mul_d(tempmat3, BED->post_randomizer_matrix, tempmat1);
+		mul_mat_vec_d(tempvec, tempmat3, curr_v_vars);
+		
+		
+		// evaluate perturbed back
+		evalProg_d(unused_function_values, unused_parVals, unused_parDer,  //  unused output
+							 perturbed_Jv,  // <---- the output we need
+							 unused_Jp, //unused output
+							 perturbed_backward_variables, pathVars, BED->SLP); // input
+		
+		mat_mul_d(perturbed_AtimesJ,BED->randomizer_matrix,perturbed_Jv);
+		for (mm=0; mm< (BED->num_x_vars - BED->ambient_dim - BED->patch.num_patches); mm++) {
+			for (jj=BED->patch.num_patches; jj<BED->num_x_vars; jj++) {
+				set_d(&tempmat2->entry[jj - BED->patch.num_patches][mm],&perturbed_AtimesJ->entry[mm][jj]); // copy in the transpose of the (randomized) jacobian
 			}
-			add_d( &perturbed_forward_variables->coord[ii], &perturbed_forward_variables->coord[ii],BED->perturbation);
-			sub_d(&perturbed_backward_variables->coord[ii] ,&perturbed_backward_variables->coord[ii],BED->perturbation);
-			
-			
-			evalProg_d(unused_function_values, unused_parVals, unused_parDer,  //  unused output
-								 perturbed_forward_Jv,  // <---- the output we need
-								 unused_Jp, //unused output
-								 perturbed_forward_variables, pathVars, BED->SLP); // input
-			mat_mul_d(perturbed_forward_AtimesJ,BED->randomizer_matrix,perturbed_forward_Jv);
-			for (mm=0; mm< (BED->num_x_vars - BED->ambient_dim - BED->patch.num_patches); mm++) {
-				for (jj=BED->patch.num_patches; jj<BED->num_x_vars; jj++) {
-					set_d(&tempmat1->entry[jj - BED->patch.num_patches][mm],&perturbed_forward_AtimesJ->entry[mm][jj]); // copy in the transpose of the (randomized) jacobian
-				}
-			}
-			mat_mul_d(tempmat3, BED->post_randomizer_matrix, tempmat1);
-			
-			mul_mat_vec_d(tempvec, tempmat3, curr_v_vars);
-			
-			
-			
-			evalProg_d(  unused_function_values, unused_parVals, unused_parDer,  //  unused output
-								 perturbed_backward_Jv,  // <---- the output we need
-								 unused_Jp, //unused output
-								 perturbed_backward_variables, pathVars, BED->SLP); // input
-			mat_mul_d(perturbed_backward_AtimesJ,BED->randomizer_matrix,perturbed_backward_Jv);
-			for (mm=0; mm< (BED->num_x_vars - BED->ambient_dim - BED->patch.num_patches); mm++) {
-				for (jj=BED->patch.num_patches; jj<BED->num_x_vars; jj++) {
-					set_d(&tempmat2->entry[jj - BED->patch.num_patches][mm],&perturbed_backward_AtimesJ->entry[mm][jj]); // copy in the transpose of the (randomized) jacobian
-				}
-			}
-			mat_mul_d(tempmat3, BED->post_randomizer_matrix, tempmat2);
-			
-			mul_mat_vec_d(tempvec2, tempmat3, curr_v_vars);
-			
-			
-			vec_sub_d(tempvec, tempvec, tempvec2);
-			
-			div_d(temp, BED->half, BED->perturbation); // MOVE THIS
-			vec_mulcomp_d(tempvec, tempvec, temp); 
-			vec_mulcomp_d(tempvec, tempvec, one_minus_s);// now tempvec has the numerical derivatives wrt $x$ variable ii. (for all jac eqns)
-			
-			// now, combine this numerical derivative and the linprod derivative to get the exact values for the $x$ portion of the jacobian matrix to return
-			offset = BED->num_x_vars - BED->target_dim;
-			for (mm=0; mm<BED->num_jac_equations; mm++) {
-				mul_d(temp, gamma_s, &linprod_derivative->entry[mm][ii]);
-				add_d(&Jv->entry[mm+offset][ii], temp, &tempvec->coord[mm] );
-			}
-			
-		}//re: ii for numerical diff
-	} // re: numerical differentiation
+		}
+		
+		mat_mul_d(tempmat3, BED->post_randomizer_matrix, tempmat2);
+		mul_mat_vec_d(tempvec2, tempmat3, curr_v_vars);
+		vec_sub_d(tempvec, tempvec, tempvec2); // tempvec = forward - backward
+		
+		
+		div_d(temp, BED->half, BED->perturbation);   // MOVE THIS -- it is repetitively wasteful
+		vec_mulcomp_d(tempvec, tempvec, temp); //tempvec = (forward-backward)/(2h)
+		vec_mulcomp_d(tempvec, tempvec, one_minus_s);// now tempvec has the numerical derivatives wrt $x$ variable ii. (for all jac eqns)
+		
+		// now, combine this numerical derivative and the linprod derivative to get the exact values for the $x$ portion of the jacobian matrix to return
+		
+		for (mm=0; mm<BED->num_jac_equations; mm++) {
+			mul_d(temp, gamma_s, &linprod_derivative->entry[mm][ii]);
+			add_d(&Jv->entry[mm+offset][ii], temp, &tempvec->coord[mm] );
+		}
+		
+	}//re: ii for numerical diff
+
+	// END NUMERICAL DIFF wrt x
+	
 	
 
 	
-	
-	
-	
-	
-	
+	// V patch
 	set_one_d(temp2);
 	dot_product_d(temp, BED->v_patch, curr_v_vars);
 	sub_d(&funcVals->coord[BED->num_variables-1], temp, temp2);  // f = patch*v-1
-	
 
 	for (ii=0; ii<BED->num_v_vars; ii++) 
 		set_d(&Jv->entry[BED->num_variables-1][BED->num_x_vars+ii], &BED->v_patch->coord[ii]);
 	
 	
 	
-
-	
-	
-	
-	
 	// finally, set parVals & parDer correctly
-  change_size_point_d(parVals, 1);
-  change_size_vec_d(parDer, 1);
 	
+  change_size_point_d(parVals, 1);  change_size_vec_d(parDer, 1);
   parVals->size = parDer->size = 1;
+	
   set_d(&parVals->coord[0], pathVars); // s = t
   set_one_d(&parDer->coord[0]);       // ds/dt = 1
 	
 	
-	
-	//	print_matrix_to_screen_matlab( AtimesJ,"jac");
+//	printf("t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
+//	print_matrix_to_screen_matlab( AtimesJ,"jac");
 //	print_point_to_screen_matlab(curr_x_vars,"currxvars");
-	//	print_point_to_screen_matlab(linprod_derivative,"linprod_derivative");
 //	print_point_to_screen_matlab(funcVals,"F");
-//	print_point_to_screen_matlab(parVals,"parVals");
-//	print_point_to_screen_matlab(parDer,"parDer");
 //	print_matrix_to_screen_matlab(Jv,"Jv");
 //	print_matrix_to_screen_matlab(Jp,"Jp");
 	
@@ -1023,19 +977,57 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	
 	
+	clear_vec_d(curr_x_vars);
+	clear_vec_d(curr_v_vars);
+	clear_vec_d(patchValues);
+	clear_vec_d(temp_function_values);
+
 	
-//	clear_mat_d(temp_jacobian_functions);
-//	clear_mat_d(temp_jacobian_parameters);
-//	clear_mat_d(AtimesJ);
-//	clear_mat_d(tempmat);
-//	clear_mat_d(Jv_detjac);
-//	clear_mat_d(Jv_Patch);
-//	
-//	clear_vec_d(patchValues);
-//	clear_vec_d(temp_function_values);
-//	clear_vec_d(AtimesF);
-//	clear_vec_d(lin_func_vals);
-//	clear_vec_d(linprod_derivative);
+	clear_vec_d(AtimesF);
+	clear_vec_d(linprod);
+	clear_vec_d(linprod_times_gamma_s);
+	clear_vec_d(tempvec);
+	clear_vec_d(tempvec2);
+	
+
+	clear_mat_d(Jv_Patch);
+	clear_mat_d(tempmat);
+	clear_mat_d(lin_func_vals);
+	
+
+	
+	clear_mat_d(AtimesJ);
+	clear_mat_d(Jv_jac);
+	clear_mat_d(temp_jacobian_functions);
+	clear_mat_d(temp_jacobian_parameters);
+	clear_mat_d(linprod_derivative);
+
+	
+//	comp_d running_prod;
+//	comp_d temp, temp2, temp3;
+	
+	
+	clear_vec_d(target_function_values);
+	clear_vec_d(target_function_values_times_oneminus_s);
+	clear_mat_d(S_times_Jf_pi);
+	
+	
+	clear_vec_d(unused_function_values);
+	clear_vec_d(unused_parVals);
+	clear_vec_d(unused_parDer);
+
+	
+	clear_mat_d(unused_Jp);
+	clear_mat_d(perturbed_Jv);
+	clear_mat_d(perturbed_AtimesJ);
+	clear_mat_d(tempmat3);
+	clear_mat_d(tempmat1);
+	clear_mat_d(tempmat2);
+
+	clear_vec_d(perturbed_forward_variables);
+	clear_vec_d(perturbed_backward_variables);
+
+	
 	
 #ifdef printpathnullspace_left
 	BED->num_steps++;
@@ -1793,7 +1785,7 @@ int nullspacejac_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d in
 
 
 
-int change_nullspacejac_eval_prec(void const *ED, int prec)
+int change_nullspacejac_eval_prec(void const *ED, int new_prec)
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -1801,18 +1793,7 @@ int change_nullspacejac_eval_prec(void const *ED, int prec)
  * NOTES: change precision for standard zero dimensional solving *
  \***************************************************************/
 {
-  change_nullspacejac_eval_prec_mp(prec, (nullspacejac_eval_data_mp *)ED);
-  return 0;
-}
-
-void change_nullspacejac_eval_prec_mp(int new_prec, nullspacejac_eval_data_mp *BED)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: change precision for the main part of BED              *
- \***************************************************************/
-{
+	nullspacejac_eval_data_mp *BED = (nullspacejac_eval_data_mp *)ED; // to avoid having to cast every time
 	
 	int ii, jj;
 	
@@ -1822,13 +1803,12 @@ void change_nullspacejac_eval_prec_mp(int new_prec, nullspacejac_eval_data_mp *B
 	
 	
 	if (new_prec != BED->curr_prec){
+//		printf("changing precision from %d to %d\n",BED->curr_prec, new_prec);
+
 		BED->SLP->precision = new_prec;
 		
 		BED->curr_prec = new_prec;
 		
-		printf("changing to precision %d\n",new_prec);
-
-
 		setprec_mp(BED->gamma, new_prec);
 		mpf_set_q(BED->gamma->r, BED->gamma_rat[0]);
 		mpf_set_q(BED->gamma->i, BED->gamma_rat[1]);
@@ -1867,24 +1847,19 @@ void change_nullspacejac_eval_prec_mp(int new_prec, nullspacejac_eval_data_mp *B
 		
 		change_prec_point_mp(BED->v_patch,new_prec);
 		vec_cp_mp(BED->v_patch,BED->v_patch_full_prec);
-
+		
 		change_prec_mat_mp(BED->jac_with_proj,new_prec);
 		mat_cp_mp(BED->jac_with_proj,BED->jac_with_proj_full_prec);
-
+		
 		change_prec_mp(BED->perturbation,new_prec);
 		change_prec_mp(BED->half,new_prec);
-
+		
 		
 	}
 	
 	
-	
-	
-  return;
+  return 0;
 }
-
-
-
 
 
 
@@ -2388,49 +2363,87 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	for (ii=0; ii<BED->num_v_vars; ii++)
 		set_mp(&curr_v_vars->coord[ii], &current_variable_values->coord[ii+BED->num_x_vars]);
 	
+	
+	
+	
+	
+	
+	
+	
 	vec_mp patchValues; init_vec_mp(patchValues, 0);
 	vec_mp temp_function_values; init_vec_mp(temp_function_values,0);
 	
-	mat_mp linprod_derivative;
-	init_mat_mp(linprod_derivative, BED->num_jac_equations, BED->num_x_vars);
-	linprod_derivative->rows = BED->num_jac_equations;
-	linprod_derivative->cols = BED->num_x_vars;
-	
 	
 	vec_mp AtimesF;  init_vec_mp(AtimesF,0);
+	vec_mp linprod;  init_vec_mp(linprod, BED->num_jac_equations);
+	linprod->size = BED->num_jac_equations;
+	vec_mp linprod_times_gamma_s; init_vec_mp(linprod_times_gamma_s,BED->num_jac_equations);
+	linprod_times_gamma_s->size = BED->num_jac_equations;
+	vec_mp tempvec; init_vec_mp(tempvec,0);
+	vec_mp tempvec2; init_vec_mp(tempvec2,0);
+	
 	
 	
 	mat_mp Jv_Patch; init_mat_mp(Jv_Patch, 0, 0);
 	mat_mp tempmat; init_mat_mp(tempmat,BED->num_variables-1,BED->num_variables-1);
 	tempmat->rows = tempmat->cols = BED->num_variables-1; // change the size indicators
 	
-	
 	mat_mp lin_func_vals; init_mat_mp(lin_func_vals,BED->num_jac_equations, BED->max_degree);
-	lin_func_vals->rows = BED->num_jac_equations;
-	lin_func_vals->cols = BED->max_degree;
+	lin_func_vals->rows = BED->num_jac_equations; lin_func_vals->cols = BED->max_degree;
 	
-	vec_mp tempvec; init_vec_mp(tempvec,0);
 	
-	vec_mp tempvec2; init_vec_mp(tempvec2,0);
+	
 	
 	
 	mat_mp AtimesJ; init_mat_mp(AtimesJ,1,1);
 	mat_mp Jv_jac; init_mat_mp(Jv_jac,0,0);
-	
 	mat_mp temp_jacobian_functions, temp_jacobian_parameters;
 	init_mat_mp(temp_jacobian_functions,0,0); init_mat_mp(temp_jacobian_parameters,0,0);
 	
-	vec_mp linprod;  init_vec_mp(linprod, BED->num_jac_equations);
-	linprod->size = BED->num_jac_equations;
-	vec_mp linprod_times_gamma_s; init_vec_mp(linprod_times_gamma_s,BED->num_jac_equations);
-	linprod_times_gamma_s->size = BED->num_jac_equations;
+	mat_mp linprod_derivative;
+	init_mat_mp(linprod_derivative, BED->num_jac_equations, BED->num_x_vars);
+	linprod_derivative->rows = BED->num_jac_equations; linprod_derivative->cols = BED->num_x_vars;
 	
 	
 	comp_mp running_prod;  init_mp(running_prod);
-	
 	comp_mp temp, temp2, temp3; init_mp(temp); init_mp(temp2); init_mp(temp3);
 	
 	
+	
+	mat_mp S_times_Jf_pi;  init_mat_mp(S_times_Jf_pi, BED->post_randomizer_matrix->rows, BED->num_v_vars); // set up temp matrix
+	S_times_Jf_pi->rows = BED->post_randomizer_matrix->rows; S_times_Jf_pi->cols = BED->num_v_vars;
+	vec_mp target_function_values;  init_vec_mp(target_function_values,0);
+	vec_mp target_function_values_times_oneminus_s;  init_vec_mp(target_function_values_times_oneminus_s,0);
+	
+	
+	//initialize some containers, for the unused stuff from the called evaluators.
+	point_mp unused_function_values, unused_parVals;
+	init_vec_mp(unused_function_values,0);init_vec_mp(unused_parVals,0);
+	vec_mp unused_parDer; init_vec_mp(unused_parDer,0);
+	mat_mp unused_Jp; init_mat_mp(unused_Jp,0,0);
+	mat_mp perturbed_Jv; init_mat_mp(perturbed_Jv,0,0);
+	
+	
+	mat_mp perturbed_AtimesJ, tempmat3; // create matrices
+	init_mat_mp(perturbed_AtimesJ,0,0); init_mat_mp(tempmat3,0,0);
+	
+	
+	mat_mp tempmat1,tempmat2; // create temp matrices
+	init_mat_mp(tempmat1,BED->num_jac_equations,BED->num_v_vars);
+	tempmat1->rows = BED->num_jac_equations; tempmat1->cols = BED->num_v_vars;
+	
+	init_mat_mp(tempmat2,BED->num_jac_equations,BED->num_v_vars);
+	tempmat2->rows = BED->num_jac_equations; tempmat2->cols = BED->num_v_vars;
+	
+	//initialize the jacobians we will work with.
+	point_mp perturbed_forward_variables, perturbed_backward_variables;
+	init_vec_mp(perturbed_forward_variables,0); init_vec_mp(perturbed_backward_variables,0);
+	change_size_vec_mp(perturbed_forward_variables,BED->num_x_vars);
+	change_size_vec_mp(perturbed_backward_variables,BED->num_x_vars);
+	perturbed_backward_variables->size = perturbed_forward_variables->size = BED->num_x_vars;
+	
+	
+	// the main evaluations for $x$
 	evalProg_mp(temp_function_values, parVals, parDer, temp_jacobian_functions, temp_jacobian_parameters, curr_x_vars, pathVars, BED->SLP);
 	
 	
@@ -2450,15 +2463,13 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
   Jv->cols = BED->num_variables;  //  -> this must be square
   Jp->cols = 1;
 	
-	for (ii=0; ii<Jv->rows; ii++) {
-		for (jj=0; jj<Jv->cols; jj++) {
+	for (ii=0; ii<Jv->rows; ii++)
+		for (jj=0; jj<Jv->cols; jj++)
 			set_zero_mp(&Jv->entry[ii][jj]);
-		}
-	}
 	
-	for (ii = 0; ii<BED->num_variables; ii++) {
+	for (ii = 0; ii<BED->num_variables; ii++)
 		set_zero_mp(&Jp->entry[ii][0]);  // initialize entire matrix to 0
-	}
+	
 	
 	
 	mul_mat_vec_mp(AtimesF,BED->randomizer_matrix, temp_function_values); // set values of AtimesF (A is randomization matrix)
@@ -2474,18 +2485,16 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	//  randomize the original functions and jacobian
 	mat_mul_mp(AtimesJ,BED->randomizer_matrix,temp_jacobian_functions);
 	
-	for (ii=0; ii< (BED->num_x_vars - BED->ambient_dim - BED->patch.num_patches); ii++) {
-		for (jj=0; jj<BED->num_x_vars; jj++) {
+	for (ii=0; ii< (BED->num_x_vars - BED->ambient_dim - BED->patch.num_patches); ii++)
+		for (jj=0; jj<BED->num_x_vars; jj++)
 			set_mp(&Jv->entry[ii][jj],&AtimesJ->entry[ii][jj]); // copy the jacobian into the return value for the evaluator
-		}
-	}
 	
 	
-	for (ii=0; ii< (BED->num_x_vars - BED->ambient_dim - BED->patch.num_patches); ii++) {
-		for (jj=BED->patch.num_patches; jj<BED->num_x_vars; jj++) {
+	
+	for (ii=0; ii< (BED->num_x_vars - BED->ambient_dim - BED->patch.num_patches); ii++)
+		for (jj=BED->patch.num_patches; jj<BED->num_x_vars; jj++)
 			set_mp(&BED->jac_with_proj->entry[jj - BED->patch.num_patches][ii],&AtimesJ->entry[ii][jj]); // copy in the transpose of the (randomized) jacobian
-		}
-	}
+	
 	
 	
 	
@@ -2504,8 +2513,6 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 		
 		mul_mp(temp2, temp, gamma_s);
 		
-		
-		
 		add_mp(&funcVals->coord[offset+ii],temp2, temp3);
 		
 		for (jj=0; jj<BED->num_x_vars; jj++) {
@@ -2521,23 +2528,14 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	
 	//set the X PATCH values
 	offset = BED->num_x_vars - BED->ambient_dim - BED->patch.num_patches + BED->num_additional_linears;
-	for (ii=0; ii<BED->patch.num_patches; ii++)
-		//		printf("setting patch in F[%d]\n", offset);
-		set_mp(&funcVals->coord[ii+offset], &patchValues->coord[ii]);
 	
-	
-	// the entries in the jacobian for the patch equations.
 	for (ii = 0; ii<BED->patch.num_patches; ii++)  // for each patch equation
 	{ // funcVals = patchValues
-		// Jp = 0
-		set_zero_mp(&Jp->entry[ii+offset][0]);
+		set_mp(&funcVals->coord[ii+offset], &patchValues->coord[ii]);
+		
 		// Jv = Jv_Patch
 		for (jj = 0; jj<BED->num_x_vars; jj++) // for each variable
 			set_mp(&Jv->entry[ii+offset][jj], &Jv_Patch->entry[ii][jj]);
-		
-		for (jj=0; jj<BED->num_v_vars; jj++)
-			set_zero_mp(&Jv->entry[ii+offset][jj+BED->num_x_vars]);
-		
 	}
 	
 	
@@ -2545,16 +2543,8 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	
 	
 	// NOW WE WILL WORK ON THE TARGET SYSTEM'S FUNCTION VALUES
-	mat_mp S_times_Jf_pi;  init_mat_mp(S_times_Jf_pi, BED->post_randomizer_matrix->rows, BED->num_v_vars); // set up temp matrix
-	S_times_Jf_pi->rows = BED->post_randomizer_matrix->rows; S_times_Jf_pi->cols = BED->num_v_vars;
 	
-	//	print_matrix_to_screen_matlab(BED->jac_with_proj,"jacwithproj");
-	//	print_matrix_to_screen_matlab(BED->post_randomizer_matrix,"post_randomizer_matrix");
 	mat_mul_mp(S_times_Jf_pi, BED->post_randomizer_matrix, BED->jac_with_proj); // jac with proj having been set above with unperturbed values
-	
-	vec_mp target_function_values;  init_vec_mp(target_function_values,0);
-	vec_mp target_function_values_times_oneminus_s;  init_vec_mp(target_function_values_times_oneminus_s,0);
-	
 	
 	mul_mat_vec_mp(target_function_values, S_times_Jf_pi, curr_v_vars);
 	vec_mulcomp_mp(target_function_values_times_oneminus_s, target_function_values, one_minus_s);
@@ -2566,7 +2556,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	
 	//  THE LINPROD START SYSTEM FUNCTION VALUES
 	offset = BED->num_x_vars - BED->target_dim;   // offset = N-r
-	// the product of the linears
+																								// the product of the linears
 	for (jj=0; jj<BED->num_jac_equations; jj++) {
 		
 		//perform the $x$ evaluation
@@ -2591,8 +2581,9 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 		
 	}
 	
+	
 	// DERIVATIVES OF THE HOMOTOPY WRT V
-	offset = BED->num_x_vars-BED->target_dim; // N-r
+	offset = BED->num_x_vars - BED->target_dim; // N-r
 	for (ii=0; ii<BED->num_jac_equations; ii++) {
 		for (jj=0; jj<BED->num_v_vars; jj++) {
 			mul_mp(temp, &BED->v_linears[ii]->coord[jj], &linprod->coord[ii]);  // temp = M_ij * linprod(x)
@@ -2614,17 +2605,15 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	
 	// now the x derivatives corresponding to the linprod start system
 	
-	
-	
 	// an implementation of the product rule
-	for (mm=0; mm< BED->num_jac_equations; mm++)
-	{
+	for (mm=0; mm< BED->num_jac_equations; mm++) {
 		for (kk=0; kk<BED->num_x_vars; kk++) {
 			set_zero_mp(&linprod_derivative->entry[mm][kk]); // initialize to 0 for the sum
+			
 			for (ii=0; ii<BED->max_degree; ++ii) { //  for each linear
-				
 				set_mp(temp2,&linprod_derivative->entry[mm][kk]); // copy for safety
 				set_one_mp(running_prod);// initialize to 1 for the product
+				
 				for (jj=0; jj<BED->max_degree; jj++) {
 					set_mp(temp,running_prod); // copy value for safety
 					if (jj==ii) {
@@ -2632,7 +2621,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 					}
 					else{
 						mul_mp(running_prod,temp,&lin_func_vals->entry[mm][jj]); // the linear evaluated at curr_var_vals
-					} // something is wrong above here
+					}
 				}//re: jj
 				
 				add_mp(&linprod_derivative->entry[mm][kk],temp2,running_prod);
@@ -2646,109 +2635,73 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	
 	
 	
+	
+	
 	// NUMERICALLY DIFFERENTIATE THE derivative of the target jacobian system wrt $x$.
-	{
+	
+	mat_cp_mp(tempmat1, BED->jac_with_proj);
+	mat_cp_mp(tempmat2, BED->jac_with_proj);
+	
+	offset = BED->num_x_vars - BED->target_dim;
+	for (ii=0; ii<BED->num_x_vars; ii++) {
 		
-		//initialize some containers, for the unused stuff from the called evaluators.
-		point_mp unused_function_values, unused_parVals; init_vec_mp(unused_function_values,0);init_vec_mp(unused_parVals,0);
-		vec_mp unused_parDer; init_vec_mp(unused_parDer,0);
-		mat_mp unused_Jp; init_mat_mp(unused_Jp,0,0);
+		//first, we assign the perturbed variables.  some of these calls could be eliminated
+		vec_cp_mp(perturbed_forward_variables, curr_x_vars);
+		vec_cp_mp(perturbed_backward_variables, curr_x_vars);
 		
-		
-		//set up the perturbed jacobians
-		mat_mp perturbed_forward_Jv, perturbed_forward_Jv_Patch, perturbed_backward_Jv, perturbed_backward_Jv_Patch; //, base_Jv, base_Jv_Patch
-		init_mat_mp(perturbed_backward_Jv,0,0);init_mat_mp(perturbed_forward_Jv,0,0);
-		init_mat_mp(perturbed_backward_Jv_Patch,0,0);init_mat_mp(perturbed_forward_Jv_Patch,0,0);
-		//the sizes for these variables will be set in the evalmethod calls below.  only need to init them here.
-		
-		//initialize the jacobians we will work with.
-		point_mp perturbed_forward_variables, perturbed_backward_variables;
-		init_vec_mp(perturbed_forward_variables,0); init_vec_mp(perturbed_backward_variables,0);
-		change_size_vec_mp(perturbed_forward_variables,BED->num_x_vars);
-		change_size_vec_mp(perturbed_backward_variables,BED->num_x_vars);
-		perturbed_backward_variables->size = perturbed_forward_variables->size = BED->num_x_vars;
+		add_mp( &perturbed_forward_variables->coord[ii], &perturbed_forward_variables->coord[ii],BED->perturbation);
+		sub_mp(&perturbed_backward_variables->coord[ii] ,&perturbed_backward_variables->coord[ii],BED->perturbation);
 		
 		
-		
-		
-		mat_mp perturbed_forward_AtimesJ,perturbed_backward_AtimesJ, tempmat3; // create matrices
-		init_mat_mp(perturbed_forward_AtimesJ,0,0);
-		init_mat_mp(perturbed_backward_AtimesJ,0,0);
-		init_mat_mp(tempmat3,0,0);
-		
-		
-		mat_mp tempmat1,tempmat2; // create matrices
-		
-		init_mat_mp(tempmat1,BED->num_jac_equations,BED->num_v_vars);
-		tempmat1->rows = BED->num_jac_equations;
-		tempmat1->cols = BED->num_v_vars;
-		mat_cp_mp(tempmat1, BED->jac_with_proj);
-		
-		init_mat_mp(tempmat2,BED->num_jac_equations,BED->num_v_vars);
-		tempmat2->rows = BED->num_jac_equations;
-		tempmat2->cols = BED->num_v_vars;
-		mat_cp_mp(tempmat2, BED->jac_with_proj);
-		
-		for (ii=0; ii<BED->num_x_vars; ii++) {
-			
-			
-			//first, we assign the perturbed variables.  some of these calls could be eliminated
-			for (jj=0; jj<BED->num_x_vars; ++jj) {
-				set_mp(&perturbed_forward_variables->coord[jj],&curr_x_vars->coord[jj]);
+		// evaluate perturbed forwards
+		evalProg_mp(unused_function_values, unused_parVals, unused_parDer,  //  unused output
+							 perturbed_Jv,  // <---- the output we need
+							 unused_Jp, //unused output
+							 perturbed_forward_variables, pathVars, BED->SLP); // input
+		mat_mul_mp(perturbed_AtimesJ,BED->randomizer_matrix,perturbed_Jv);
+		for (mm=0; mm< (BED->num_x_vars - BED->ambient_dim - BED->patch.num_patches); mm++) {
+			for (jj=BED->patch.num_patches; jj<BED->num_x_vars; jj++) {
+				set_mp(&tempmat1->entry[jj - BED->patch.num_patches][mm],&perturbed_AtimesJ->entry[mm][jj]); // copy in the transpose of the (randomized) jacobian
 			}
-			for (jj=0; jj<BED->num_x_vars; ++jj) {
-				set_mp(&perturbed_backward_variables->coord[jj],&curr_x_vars->coord[jj]);
+		}
+		
+		mat_mul_mp(tempmat3, BED->post_randomizer_matrix, tempmat1);
+		mul_mat_vec_mp(tempvec, tempmat3, curr_v_vars);
+		
+		
+		// evaluate perturbed back
+		evalProg_mp(unused_function_values, unused_parVals, unused_parDer,  //  unused output
+							 perturbed_Jv,  // <---- the output we need
+							 unused_Jp, //unused output
+							 perturbed_backward_variables, pathVars, BED->SLP); // input
+		
+		mat_mul_mp(perturbed_AtimesJ,BED->randomizer_matrix,perturbed_Jv);
+		for (mm=0; mm< (BED->num_x_vars - BED->ambient_dim - BED->patch.num_patches); mm++) {
+			for (jj=BED->patch.num_patches; jj<BED->num_x_vars; jj++) {
+				set_mp(&tempmat2->entry[jj - BED->patch.num_patches][mm],&perturbed_AtimesJ->entry[mm][jj]); // copy in the transpose of the (randomized) jacobian
 			}
-			add_mp( &perturbed_forward_variables->coord[ii], &perturbed_forward_variables->coord[ii],BED->perturbation);
-			sub_mp(&perturbed_backward_variables->coord[ii] ,&perturbed_backward_variables->coord[ii],BED->perturbation);
-			
-			
-			evalProg_mp(unused_function_values, unused_parVals, unused_parDer,  //  unused output
-								 perturbed_forward_Jv,  // <---- the output we need
-								 unused_Jp, //unused output
-								 perturbed_forward_variables, pathVars, BED->SLP); // input
-			mat_mul_mp(perturbed_forward_AtimesJ,BED->randomizer_matrix,perturbed_forward_Jv);
-			for (mm=0; mm< (BED->num_x_vars - BED->ambient_dim - BED->patch.num_patches); mm++) {
-				for (jj=BED->patch.num_patches; jj<BED->num_x_vars; jj++) {
-					set_mp(&tempmat1->entry[jj - BED->patch.num_patches][mm],&perturbed_forward_AtimesJ->entry[mm][jj]); // copy in the transpose of the (randomized) jacobian
-				}
-			}
-			mat_mul_mp(tempmat3, BED->post_randomizer_matrix, tempmat1);
-			
-			mul_mat_vec_mp(tempvec, tempmat3, curr_v_vars);
-			
-			
-			
-			evalProg_mp(  unused_function_values, unused_parVals, unused_parDer,  //  unused output
-								 perturbed_backward_Jv,  // <---- the output we need
-								 unused_Jp, //unused output
-								 perturbed_backward_variables, pathVars, BED->SLP); // input
-			mat_mul_mp(perturbed_backward_AtimesJ,BED->randomizer_matrix,perturbed_backward_Jv);
-			for (mm=0; mm< (BED->num_x_vars - BED->ambient_dim - BED->patch.num_patches); mm++) {
-				for (jj=BED->patch.num_patches; jj<BED->num_x_vars; jj++) {
-					set_mp(&tempmat2->entry[jj - BED->patch.num_patches][mm],&perturbed_backward_AtimesJ->entry[mm][jj]); // copy in the transpose of the (randomized) jacobian
-				}
-			}
-			mat_mul_mp(tempmat3, BED->post_randomizer_matrix, tempmat2);
-			
-			mul_mat_vec_mp(tempvec2, tempmat3, curr_v_vars);
-			
-			
-			vec_sub_mp(tempvec, tempvec, tempvec2);
-			
-			div_mp(temp, BED->half, BED->perturbation); // MOVE THIS
-			vec_mulcomp_mp(tempvec, tempvec, temp);
-			vec_mulcomp_mp(tempvec, tempvec, one_minus_s);// now tempvec has the numerical derivatives wrt $x$ variable ii. (for all jac eqns)
-			
-			// now, combine this numerical derivative and the linprod derivative to get the exact values for the $x$ portion of the jacobian matrix to return
-			offset = BED->num_x_vars - BED->target_dim;
-			for (mm=0; mm<BED->num_jac_equations; mm++) {
-				mul_mp(temp, gamma_s, &linprod_derivative->entry[mm][ii]);
-				add_mp(&Jv->entry[mm+offset][ii], temp, &tempvec->coord[mm] );
-			}
-			
-		}//re: ii for numerical diff
-	} // re: numerical differentiation
+		}
+		
+		mat_mul_mp(tempmat3, BED->post_randomizer_matrix, tempmat2);
+		mul_mat_vec_mp(tempvec2, tempmat3, curr_v_vars);
+		vec_sub_mp(tempvec, tempvec, tempvec2); // tempvec = forward - backward
+		
+		
+		div_mp(temp, BED->half, BED->perturbation);   // MOVE THIS -- it is repetitively wasteful
+		vec_mulcomp_mp(tempvec, tempvec, temp); //tempvec = (forward-backward)/(2h)
+		vec_mulcomp_mp(tempvec, tempvec, one_minus_s);// now tempvec has the numerical derivatives wrt $x$ variable ii. (for all jac eqns)
+		
+		// now, combine this numerical derivative and the linprod derivative to get the exact values for the $x$ portion of the jacobian matrix to return
+		
+		for (mm=0; mm<BED->num_jac_equations; mm++) {
+			mul_mp(temp, gamma_s, &linprod_derivative->entry[mm][ii]);
+			add_mp(&Jv->entry[mm+offset][ii], temp, &tempvec->coord[mm] );
+		}
+		
+	}//re: ii for numerical diff
+	
+	// END NUMERICAL DIFF wrt x
+	
 	
 	
 	
@@ -2782,14 +2735,13 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	
 	
 	
-//	print_matrix_to_screen_matlab( AtimesJ,"jac");
+//	print_matrix_to_screen_matlab_mp( AtimesJ,"jac");
 //	print_point_to_screen_matlab_mp(curr_x_vars,"currxvars");
-//	print_point_to_screen_matlab(linprod_derivative,"linprod_derivative");
-//	print_point_to_screen_matlab(funcVals,"F");
-//	print_point_to_screen_matlab(parVals,"parVals");
-//	print_point_to_screen_matlab(parDer,"parDer");
-//	print_matrix_to_screen_matlab(Jv,"Jv");
-//	print_matrix_to_screen_matlab(Jp,"Jp");
+//	print_point_to_screen_matlab_mp(funcVals,"F_mp");
+//	print_point_to_screen_matlab_mp(parVals,"parVals");
+//	print_point_to_screen_matlab_mp(parDer,"parDer");
+//	print_matrix_to_screen_matlab_mp(Jv,"Jv_mp");
+//	print_matrix_to_screen_matlab_mp(Jp,"Jp");
 	
 //	print_matrix_to_screen_matlab_mp(BED->jac_with_proj,"jacwithproj");
 	//these values are set in this function:  point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp
@@ -2801,18 +2753,62 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	
 	
 	
-//	clear_mat_d(temp_jacobian_functions);
-//	clear_mat_d(temp_jacobian_parameters);
-//	clear_mat_d(AtimesJ);
-//	clear_mat_d(tempmat);
-//	clear_mat_d(Jv_detjac);
-//	clear_mat_d(Jv_Patch);
-//
-//	clear_vec_d(patchValues);
-//	clear_vec_d(temp_function_values);
-//	clear_vec_d(AtimesF);
-//	clear_vec_d(lin_func_vals);
-//	clear_vec_d(linprod_derivative);
+	
+	clear_vec_mp(curr_x_vars);
+	clear_vec_mp(curr_v_vars);
+	clear_vec_mp(patchValues);
+	clear_vec_mp(temp_function_values);
+	
+	
+	clear_vec_mp(AtimesF);
+	clear_vec_mp(linprod);
+	clear_vec_mp(linprod_times_gamma_s);
+	clear_vec_mp(tempvec);
+	clear_vec_mp(tempvec2);
+	
+	
+	clear_mat_mp(Jv_Patch);
+	clear_mat_mp(tempmat);
+	clear_mat_mp(lin_func_vals);
+	
+	
+	
+	clear_mat_mp(AtimesJ);
+	clear_mat_mp(Jv_jac);
+	clear_mat_mp(temp_jacobian_functions);
+	clear_mat_mp(temp_jacobian_parameters);
+	clear_mat_mp(linprod_derivative);
+	
+	clear_mp(running_prod);
+	clear_mp(temp);
+	clear_mp(temp2);
+	clear_mp(temp3);
+	
+	
+	clear_vec_mp(target_function_values);
+	clear_vec_mp(target_function_values_times_oneminus_s);
+	clear_mat_mp(S_times_Jf_pi);
+	
+	
+	clear_vec_mp(unused_function_values);
+	clear_vec_mp(unused_parVals);
+	clear_vec_mp(unused_parDer);
+	
+	
+	clear_mat_mp(unused_Jp);
+	clear_mat_mp(perturbed_Jv);
+	clear_mat_mp(perturbed_AtimesJ);
+	clear_mat_mp(tempmat3);
+	clear_mat_mp(tempmat1);
+	clear_mat_mp(tempmat2);
+	
+	clear_vec_mp(perturbed_forward_variables);
+	clear_vec_mp(perturbed_backward_variables);
+
+	
+	
+	
+
 	
 
 	

@@ -1,4 +1,4 @@
-#include "lintolinSolver.h"
+#include "solver_lintolin.h"
 
 //the main wrapper function for chaining into the lintolin solver.
 // pass in:

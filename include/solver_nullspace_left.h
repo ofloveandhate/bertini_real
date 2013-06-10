@@ -21,7 +21,7 @@
 #include "data_type.h"
 
 #include "determinant_derivative.h"
-#include "programStartup.h"
+#include "programConfiguration.h"
 #include "postProcessing.h"
 #include "witnessSet.h"
 #include "missing_bertini_headers.h"
@@ -343,11 +343,10 @@ int nullspacejac_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d in
 
 
 
-int change_nullspacejac_eval_prec(void const *ED, int prec);
-void change_nullspacejac_eval_prec_mp(int new_prec, nullspacejac_eval_data_mp *BED);
+int change_nullspacejac_eval_prec(void const *ED, int new_prec);
 
-int nullspacejac_solver_mp(int MPType, //, double parse_time, unsigned int currentSeed
-													 witness_set W,  // includes the initial linear.
+int nullspacejac_solver_mp(int MPType,  
+													 witness_set W,  // includes the initial linears.
 													 witness_set *W_new,
 													 nullspace_config *ns_config,
 													 solver_configuration *solve_options);

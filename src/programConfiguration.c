@@ -1,15 +1,21 @@
-#include "programStartup.h"
+#include "programConfiguration.h"
 
 
 
 
 
-void get_projection(vec_mp pi,
+void get_projection(vec_mp *pi,
 										program_configuration program_options,
 										solver_configuration solve_options,
-										int num_vars)
+										int num_vars,
+										int num_projections)
 {
-	change_size_vec_mp(pi, num_vars);  pi->size = num_vars;
+	
+	int ii,jj;
+	for (ii=0; ii<num_projections; ii++) {
+		change_size_vec_mp(pi[ii], num_vars);  pi[ii]->size = num_vars;
+	}
+	
 	
 	
 	//assumes the vector pi is already initialized
@@ -18,29 +24,28 @@ void get_projection(vec_mp pi,
 		int tmp_num_vars;
 		fscanf(IN,"%d",&tmp_num_vars); scanRestOfLine(IN);
 		if (tmp_num_vars!=num_vars-1) {
-			printf("the number of variables appearing in the projection\nis not equal to the number of variables in the problem\n");
+			printf("the number of variables appearing in the projection\nis not equal to the number of non-homogeneous variables in the problem\n");
 			printf("please modify file to have %d coordinate pairs.\n",num_vars-1);
 			abort();
 		}
 		
-		
-		set_zero_mp(&pi->coord[0]);
-		int ii;
-		for (ii=0; ii < num_vars-1; ii++) {
-			mpf_inp_str(pi->coord[ii+1].r, IN, 10);
-			mpf_inp_str(pi->coord[ii+1].i, IN, 10);
-			scanRestOfLine(IN);
-    }
+		for (ii=0; ii<num_projections; ii++) {
+			set_zero_mp(&pi[ii]->coord[0]);
+			for (jj=1; jj<num_vars; jj++) {
+				mpf_inp_str(pi[ii]->coord[jj].r, IN, 10);
+				mpf_inp_str(pi[ii]->coord[jj].i, IN, 10);
+				scanRestOfLine(IN);
+			}
+		}
 		fclose(IN);
 	}
 	else{
-		int ii;
-		set_zero_mp(&pi->coord[0]);
-		for (ii=1; ii<num_vars; ii++) {
-			get_comp_rand_real_mp(&pi->coord[ii]);
-//			set_one_mp(&pi->coord[ii]);
+		for (ii=0; ii<num_projections; ii++) {
+			set_zero_mp(&pi[ii]->coord[0]);
+			for (jj=1; jj<num_vars; jj++) 
+				get_comp_rand_real_mp(&pi[ii]->coord[jj]);
+			
 		}
-//		set_one_mp(&pi->coord[1]);
 	}
 	
 	return;

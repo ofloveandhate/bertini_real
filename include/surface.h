@@ -26,7 +26,7 @@
 #include "curveSelfConj.h"
 #include "data_type.h"
 #include "isosingular.h"
-#include "programStartup.h"
+#include "programConfiguration.h"
 #include "witnessSet.h"
 #include "output.h"
 #include "missing_bertini_headers.h"

@@ -14,8 +14,8 @@
 #ifndef _DETERMINANT_DERIVATIVE_H
 #define _DETERMINANT_DERIVATIVE_H
 
-#include "linprodtodetjacSolver.h"
-#include "detjactodetjacSolver.h"
+#include "solver_linprodtodetjac.h"
+#include "solver_detjactodetjac.h"
 #include "cascade.h"
 #include "polysolve.h"  // the bertini  eval_funcs
 

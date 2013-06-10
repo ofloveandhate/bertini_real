@@ -1,4 +1,4 @@
-#include "multilintolinSolver.h"
+#include "solver_multilintolin.h"
 
 //the main wrapper function for chaining into the multilin_to_lin solver.
 // pass in:
@@ -12,7 +12,7 @@
 //solve_options has both a tracker_config_t and a preproc_data.
 int multilintolin_solver_main(int MPType,
 													 witness_set W,
-													 mat_mp n_minusone_randomizer_matrix_full_prec,
+													 mat_mp randomizer_matrix_full_prec,
 													 vec_mp *new_linears_full_prec,
 													 witness_set *W_new,
 													 solver_configuration *solve_options){
@@ -32,11 +32,11 @@ int multilintolin_solver_main(int MPType,
 	
 
 	if (MPType==1){
-		multilin_to_lin_solver_mp(MPType,W,n_minusone_randomizer_matrix_full_prec,
+		multilin_to_lin_solver_mp(MPType,W,randomizer_matrix_full_prec,
 															new_linears_full_prec,W_new,solve_options);
 	}
 	else{
-		multilin_to_lin_solver_d( MPType,W,n_minusone_randomizer_matrix_full_prec,new_linears_full_prec,W_new,solve_options);
+		multilin_to_lin_solver_d( MPType,W,randomizer_matrix_full_prec,new_linears_full_prec,W_new,solve_options);
 	}
 		
 	
@@ -63,7 +63,7 @@ int multilintolin_solver_main(int MPType,
 
 int multilin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentSeed
 												witness_set W,  // includes the initial linear.
-												mat_mp n_minusone_randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
+												mat_mp randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
 												vec_mp *new_linears_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 												witness_set *W_new,
 												solver_configuration *solve_options)
@@ -111,7 +111,7 @@ int multilin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int cur
 																		 &ptr_to_eval_d, &ptr_to_eval_mp,
 																		 "preproc_data", "deg.out",
 																		 !useRegen, "nonhom_start", "start",
-																		 n_minusone_randomizer_matrix_full_prec,W,
+																		 randomizer_matrix_full_prec,W,
 																		 solve_options);
   
 	int (*change_prec)(void const *, int) = NULL;
@@ -550,7 +550,7 @@ int multilin_to_lin_setup_d(FILE **OUT, char *outName,
 											 int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 											 char *preprocFile, char *degreeFile,
 											 int findStartPts, char *pointsIN, char *pointsOUT,
-											 mat_mp n_minusone_randomizer_matrix_full_prec,
+											 mat_mp randomizer_matrix_full_prec,
 											 witness_set W,
 											 solver_configuration *solve_options)
 /***************************************************************\
@@ -593,7 +593,7 @@ int multilin_to_lin_setup_d(FILE **OUT, char *outName,
     patchType = 2; // 1-hom patch
     ssType = 0;    // with 1-hom, we use total degree start system  // in BR, this is irrelevant
     adjustDegrees = 0; // if the system does not need its degrees adjusted, then that is okay  // irrelevant in BR
-    setupmultilintolinEval_d(T,preprocFile, degreeFile, dummyProg, rank, patchType, ssType, T->MPType, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix_full_prec, W,solve_options);
+    setupmultilintolinEval_d(T,preprocFile, degreeFile, dummyProg, rank, patchType, ssType, T->MPType, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, randomizer_matrix_full_prec, W,solve_options);
 
 	
 	
@@ -639,7 +639,7 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	
 	vec_d patchValues; init_vec_d(patchValues, 0);
 	vec_d temp_function_values; init_vec_d(temp_function_values,0);
-	vec_d AtimesF; init_vec_d(AtimesF,BED->n_minusone_randomizer_matrix->rows); AtimesF->size = BED->n_minusone_randomizer_matrix->rows;// declare  // initialize
+	vec_d AtimesF; init_vec_d(AtimesF,BED->randomizer_matrix->rows); AtimesF->size = BED->randomizer_matrix->rows;// declare  // initialize
 	
 	vec_d *vars_times_curr_linear = (vec_d *)br_malloc(BED->num_linears*sizeof(vec_d));
 	for (ii=0; ii<BED->num_linears; ii++) {
@@ -678,19 +678,23 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 		
 	
 	
-	mat_d temp_jacobian_functions; init_mat_d(temp_jacobian_functions,BED->n_minusone_randomizer_matrix->cols,BED->num_variables);
-		temp_jacobian_functions->rows = BED->n_minusone_randomizer_matrix->cols; temp_jacobian_functions->cols = BED->num_variables;
+	mat_d temp_jacobian_functions; init_mat_d(temp_jacobian_functions,BED->randomizer_matrix->cols,BED->num_variables);
+		temp_jacobian_functions->rows = BED->randomizer_matrix->cols; temp_jacobian_functions->cols = BED->num_variables;
 	mat_d temp_jacobian_parameters; init_mat_d(temp_jacobian_parameters,0,0);
 	mat_d Jv_Patch; init_mat_d(Jv_Patch, 0, 0);
-	mat_d AtimesJ; init_mat_d(AtimesJ,BED->n_minusone_randomizer_matrix->rows,BED->num_variables);
-		AtimesJ->rows = BED->n_minusone_randomizer_matrix->rows; AtimesJ->cols = BED->num_variables;
+	mat_d AtimesJ; init_mat_d(AtimesJ,BED->randomizer_matrix->rows,BED->num_variables);
+		AtimesJ->rows = BED->randomizer_matrix->rows; AtimesJ->cols = BED->num_variables;
 	
 	
 	//set the sizes
 	change_size_vec_d(funcVals,BED->num_variables); funcVals->size = BED->num_variables;
   change_size_mat_d(Jv, BED->num_variables, BED->num_variables); Jv->rows = Jv->cols = BED->num_variables; //  -> this should be square!!!
 
-	
+	for (ii=0; ii<BED->num_variables; ii++) {
+		for (jj=0; jj<BED->num_variables; jj++) {
+			set_zero_d(&Jv->entry[ii][jj]);
+		}
+	}
 	
 
 	
@@ -710,7 +714,10 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
   change_size_point_d(parVals, 1);
   change_size_vec_d(parDer, 1);
 	change_size_mat_d(Jp, BED->num_variables, 1); Jp->rows = BED->num_variables; Jp->cols = 1;
-
+	for (ii=0; ii<BED->num_variables; ii++) 
+		set_zero_d(&Jp->entry[ii][0]);
+	
+	
   parVals->size = parDer->size = 1;
   set_d(&parVals->coord[0], pathVars); // s = t
   set_one_d(&parDer->coord[0]);       // ds/dt = 1
@@ -722,12 +729,12 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	///////// / / / /  /   /
 	
 	//perform the randomization multiplications
-	mat_mul_d(AtimesJ,BED->n_minusone_randomizer_matrix,temp_jacobian_functions);
-	mul_mat_vec_d(AtimesF,BED->n_minusone_randomizer_matrix, temp_function_values ); // set values of AtimesF (A is randomization matrix)
+	mat_mul_d(AtimesJ,BED->randomizer_matrix,temp_jacobian_functions);
+	mul_mat_vec_d(AtimesF,BED->randomizer_matrix, temp_function_values ); // set values of AtimesF (A is randomization matrix)
 	
-	for (ii=0; ii<AtimesF->size; ii++) { // for each function, after (real orthogonal) randomization
+	for (ii=0; ii<AtimesF->size; ii++)  // for each function, after (real orthogonal) randomization
 		set_d(&funcVals->coord[ii], &AtimesF->coord[ii]);
-	}
+	
 	
 
 	
@@ -742,7 +749,7 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	////////////////////
 	
 		
-	offset = BED->num_variables-(BED->num_linears+1);
+	offset = BED->num_variables-1-BED->num_linears;
 	for (mm=0; mm<BED->num_linears; ++mm) {
 		// multiply vars times the new linear, with (1-s)
 		for (ii=0; ii<BED->num_variables; ii++) { // for each variable, including the homogeneous ones.
@@ -782,7 +789,7 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	
 	
 	
-	offset = BED->num_variables-1;
+	offset = BED->num_variables-BED->patch.num_patches;
 	for (ii=0; ii<BED->patch.num_patches; ii++)
 		set_d(&funcVals->coord[ii+offset], &patchValues->coord[ii]);
 	
@@ -798,7 +805,7 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	
 	//first, the entries related to the functions
 	
-  for (ii = 0; ii < BED->n_minusone_randomizer_matrix->rows; ii++)
+  for (ii = 0; ii < BED->randomizer_matrix->rows; ii++)
 		for (jj = 0; jj < BED->num_variables; jj++)
 			set_d(&Jv->entry[ii][jj],&AtimesJ->entry[ii][jj]);
 		
@@ -812,7 +819,7 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	////////////////////
 	
 	
-	offset = BED->num_variables-2;
+	offset = BED->num_variables-BED->patch.num_patches-BED->num_linears;
 	for (mm=0; mm<BED->num_linears; ++mm) {
 		for (ii=0; ii<BED->num_variables; ii++) {
 			add_d(temp,&gamma_s_times_old_linear[mm]->coord[ii], &one_minus_s_times_current_linear[mm]->coord[ii]);
@@ -821,24 +828,22 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	}
 
 	
-	offset = BED->num_variables - 2+BED->num_linears;
-	for (ii=0; ii<BED->num_variables; ii++) {
-		set_d(&Jv->entry[offset][ii],&Jv_Patch->entry[0][ii]);
+	offset = BED->num_variables - BED->patch.num_patches;
+	for (jj=0; jj<BED->patch.num_patches; jj++){
+		for (ii=0; ii<BED->num_variables; ii++) {
+			set_d(&Jv->entry[offset+jj][ii],&Jv_Patch->entry[jj][ii]);
+		}
 	}
-	
 
-	
-	
-	for (ii = 0; ii<BED->num_variables-2; ii++) {
-		set_zero_d(&Jp->entry[ii][0]);  // no parameter dependence means zero derivative for these functions
-	}
+
+
 	
 	
 	
 	
 	// Jp = -current_linear_times_vars + gamma*old_linear_times_vars
 	
-	offset = BED->num_variables-2;
+	offset = BED->num_variables-BED->patch.num_patches-BED->num_linears;
 	for (ii=0; ii<BED->num_linears; ii++) {
 		set_zero_d(&Jp->entry[offset+ii][0]);
 		dot_product_d(temp,
@@ -856,15 +861,11 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	//
 	////////////////////
 	
-	offset = BED->num_variables - 2+BED->num_linears;
+	offset = BED->num_variables - BED->patch.num_patches;
 	for (ii = 0; ii<BED->patch.num_patches; ii++)  // for each patch equation
-	{ // funcVals = patchValues
-		// Jp = 0
-		set_zero_d(&Jp->entry[ii+offset][0]);
-		// Jv = Jv_Patch
+	{  // Jv = Jv_Patch
 		for (jj = 0; jj<BED->num_variables; jj++) // for each variable
 			set_d(&Jv->entry[ii+offset][jj], &Jv_Patch->entry[ii][jj]);
-		
 	}
 	
 	// done!  yay!
@@ -879,7 +880,7 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 //	print_point_to_screen_matlab(funcVals,"F");
 //	print_matrix_to_screen_matlab(Jv,"Jv");
 //	print_matrix_to_screen_matlab(Jp,"Jp");
-//	print_matrix_to_screen_matlab(BED->n_minusone_randomizer_matrix,"n_minusone_randomizer_matrix");
+//	print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
 
 //	mypause();
 
@@ -975,7 +976,7 @@ void multilintolin_eval_clear_d(multilintolin_eval_data_d *ED, int clearRegen, i
 		clear_vec_d(ED->old_linear[ii]);
 	}
 	
-	clear_mat_d(ED->n_minusone_randomizer_matrix);
+	clear_mat_d(ED->randomizer_matrix);
 
 	
 	
@@ -1267,7 +1268,7 @@ void setupmultilintolinEval_d(tracker_config_t *T,char preprocFile[], char degre
 												 int squareSize, int patchType, int ssType, int MPType,
 												 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,// what are these supposed to point to?
 												 multilintolin_eval_data_d *BED, int adjustDegrees,
-												 mat_mp n_minusone_randomizer_matrix_full_prec,
+												 mat_mp randomizer_matrix_full_prec,
 												 witness_set W,
 												 solver_configuration *solve_options)
 {
@@ -1286,9 +1287,9 @@ void setupmultilintolinEval_d(tracker_config_t *T,char preprocFile[], char degre
 	BED->SLP = dummyProg;
 
 	
-	init_mat_d(BED->n_minusone_randomizer_matrix,0,0);
-	mat_mp_to_d(BED->n_minusone_randomizer_matrix,
-					 n_minusone_randomizer_matrix_full_prec);
+	init_mat_d(BED->randomizer_matrix,0,0);
+	mat_mp_to_d(BED->randomizer_matrix,
+					 randomizer_matrix_full_prec);
 	
 	
 	// set up the vectors to hold the two linears.
@@ -1373,11 +1374,11 @@ void setupmultilintolinEval_d(tracker_config_t *T,char preprocFile[], char degre
 
 
 		
-		init_mat_mp2(BED->BED_mp->n_minusone_randomizer_matrix,0,0,prec); // initialize the randomizer matrix
-		init_mat_mp2(BED->BED_mp->n_minusone_randomizer_matrix_full_prec,0,0,T->AMP_max_prec); // initialize the randomizer matrix
+		init_mat_mp2(BED->BED_mp->randomizer_matrix,0,0,prec); // initialize the randomizer matrix
+		init_mat_mp2(BED->BED_mp->randomizer_matrix_full_prec,0,0,T->AMP_max_prec); // initialize the randomizer matrix
 		
-		mat_cp_mp(BED->BED_mp->n_minusone_randomizer_matrix_full_prec,n_minusone_randomizer_matrix_full_prec);
-		mat_cp_mp(BED->BED_mp->n_minusone_randomizer_matrix,n_minusone_randomizer_matrix_full_prec);
+		mat_cp_mp(BED->BED_mp->randomizer_matrix_full_prec,randomizer_matrix_full_prec);
+		mat_cp_mp(BED->BED_mp->randomizer_matrix,randomizer_matrix_full_prec);
 		
 		
     // setup preProcData
@@ -1562,8 +1563,8 @@ void change_multilintolin_eval_prec_mp(int new_prec, multilintolin_eval_data_mp 
 			change_prec_point_mp(BED->old_linear[ii],new_prec);
 			vec_cp_mp(BED->old_linear[ii], BED->old_linear_full_prec[ii]);
 		}
-		change_prec_mat_mp(BED->n_minusone_randomizer_matrix,new_prec);
-		mat_cp_mp(BED->n_minusone_randomizer_matrix,BED->n_minusone_randomizer_matrix_full_prec);
+		change_prec_mat_mp(BED->randomizer_matrix,new_prec);
+		mat_cp_mp(BED->randomizer_matrix,BED->randomizer_matrix_full_prec);
 		
 	}
 	
@@ -1590,7 +1591,7 @@ void change_multilintolin_eval_prec_mp(int new_prec, multilintolin_eval_data_mp 
 
 int multilin_to_lin_solver_mp(int MPType,
 												 witness_set W,  // includes the initial linear.
-												 mat_mp n_minusone_randomizer_matrix,  // for randomizing down to N-1 equations.
+												 mat_mp randomizer_matrix,  // for randomizing down to N-1 equations.
 												 vec_mp *new_linears,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 												 witness_set *W_new,
 												 solver_configuration *solve_options)
@@ -1642,7 +1643,7 @@ int multilin_to_lin_solver_mp(int MPType,
 																		 &ptr_to_eval_d, &ptr_to_eval_mp,  //args 17,18
 																		 "preproc_data", "deg.out",
 																		 !useRegen, "nonhom_start", "start",
-																		 n_minusone_randomizer_matrix,W,
+																		 randomizer_matrix,W,
 																			solve_options);
   
 	int (*change_prec)(void const *, int) = NULL;
@@ -2021,7 +2022,7 @@ int multilin_to_lin_setup_mp(FILE **OUT, char *outName,
 											 int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 											 char *preprocFile, char *degreeFile,
 											 int findStartPts, char *pointsIN, char *pointsOUT,
-											 mat_mp n_minusone_randomizer_matrix,
+											 mat_mp randomizer_matrix,
 												witness_set W,
 												solver_configuration *solve_options)
 /***************************************************************\
@@ -2061,7 +2062,7 @@ int multilin_to_lin_setup_mp(FILE **OUT, char *outName,
     patchType = 2; // 1-hom patch
     ssType = 0;    // with 1-hom, we use total degree start system
     adjustDegrees = 0; // if the system does not need its degrees adjusted, then that is okay
-    setupmultilintolinEval_mp(preprocFile, degreeFile, dummyProg, rank, patchType, ssType, T->Precision, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix, W,solve_options);
+    setupmultilintolinEval_mp(preprocFile, degreeFile, dummyProg, rank, patchType, ssType, T->Precision, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, randomizer_matrix, W,solve_options);
   }
   else
   { // m-hom, m > 1
@@ -2115,7 +2116,7 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	
 	vec_mp patchValues; init_vec_mp(patchValues, 0);
 	vec_mp temp_function_values; init_vec_mp(temp_function_values,0);
-	vec_mp AtimesF; init_vec_mp(AtimesF,BED->n_minusone_randomizer_matrix->rows); AtimesF->size = BED->n_minusone_randomizer_matrix->rows;// declare  // initialize
+	vec_mp AtimesF; init_vec_mp(AtimesF,BED->randomizer_matrix->rows); AtimesF->size = BED->randomizer_matrix->rows;// declare  // initialize
 	
 	vec_mp *vars_times_curr_linear = (vec_mp *)br_malloc(BED->num_linears*sizeof(vec_mp));
 	for (ii=0; ii<BED->num_linears; ii++) {
@@ -2154,20 +2155,22 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	
 	
 	
-	mat_mp temp_jacobian_functions; init_mat_mp(temp_jacobian_functions,BED->n_minusone_randomizer_matrix->cols,BED->num_variables);
-	temp_jacobian_functions->rows = BED->n_minusone_randomizer_matrix->cols; temp_jacobian_functions->cols = BED->num_variables;
+	mat_mp temp_jacobian_functions; init_mat_mp(temp_jacobian_functions,BED->randomizer_matrix->cols,BED->num_variables);
+	temp_jacobian_functions->rows = BED->randomizer_matrix->cols; temp_jacobian_functions->cols = BED->num_variables;
 	mat_mp temp_jacobian_parameters; init_mat_mp(temp_jacobian_parameters,0,0);
 	mat_mp Jv_Patch; init_mat_mp(Jv_Patch, 0, 0);
-	mat_mp AtimesJ; init_mat_mp(AtimesJ,BED->n_minusone_randomizer_matrix->rows,BED->num_variables);
-	AtimesJ->rows = BED->n_minusone_randomizer_matrix->rows; AtimesJ->cols = BED->num_variables;
+	mat_mp AtimesJ; init_mat_mp(AtimesJ,BED->randomizer_matrix->rows,BED->num_variables);
+	AtimesJ->rows = BED->randomizer_matrix->rows; AtimesJ->cols = BED->num_variables;
 	
 	
 	//set the sizes
 	change_size_vec_mp(funcVals,BED->num_variables); funcVals->size = BED->num_variables;
   change_size_mat_mp(Jv, BED->num_variables, BED->num_variables); Jv->rows = Jv->cols = BED->num_variables; //  -> this should be square!!!
 	
-	
-	
+	for (ii=0; ii<BED->num_variables; ii++) 
+		for (jj=0; jj<BED->num_variables; jj++) 
+			set_zero_mp(&Jv->entry[ii][jj]);
+
 	
 	
 	// evaluate the SLP to get the system's whatnot.
@@ -2187,6 +2190,10 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
   change_size_vec_mp(parDer, 1);
 	change_size_mat_mp(Jp, BED->num_variables, 1); Jp->rows = BED->num_variables; Jp->cols = 1;
 	
+	for (ii=0; ii<BED->num_variables; ii++)
+		set_zero_mp(&Jp->entry[ii][0]);
+	
+	
   parVals->size = parDer->size = 1;
   set_mp(&parVals->coord[0], pathVars); // s = t
   set_one_mp(&parDer->coord[0]);       // ds/dt = 1
@@ -2198,8 +2205,8 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	///////// / / / /  /   /
 	
 	//perform the randomization multiplications
-	mat_mul_mp(AtimesJ,BED->n_minusone_randomizer_matrix,temp_jacobian_functions);
-	mul_mat_vec_mp(AtimesF,BED->n_minusone_randomizer_matrix, temp_function_values ); // set values of AtimesF (A is randomization matrix)
+	mat_mul_mp(AtimesJ,BED->randomizer_matrix,temp_jacobian_functions);
+	mul_mat_vec_mp(AtimesF,BED->randomizer_matrix, temp_function_values ); // set values of AtimesF (A is randomization matrix)
 	
 	for (ii=0; ii<AtimesF->size; ii++) { // for each function, after (real orthogonal) randomization
 		set_mp(&funcVals->coord[ii], &AtimesF->coord[ii]);
@@ -2218,7 +2225,7 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	////////////////////
 	
 	
-	offset = BED->num_variables-(BED->num_linears+1);
+	offset = BED->num_variables - BED->patch.num_patches - BED->num_linears;
 	for (mm=0; mm<BED->num_linears; ++mm) {
 		// multiply vars times the new linear, with (1-s)
 		for (ii=0; ii<BED->num_variables; ii++) { // for each variable, including the homogeneous ones.
@@ -2274,7 +2281,7 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	
 	//first, the entries related to the functions
 	
-  for (ii = 0; ii < BED->n_minusone_randomizer_matrix->rows; ii++)
+  for (ii = 0; ii < BED->randomizer_matrix->rows; ii++)
 		for (jj = 0; jj < BED->num_variables; jj++)
 			set_mp(&Jv->entry[ii][jj],&AtimesJ->entry[ii][jj]);
 	
@@ -2288,7 +2295,7 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	////////////////////
 	
 	
-	offset = BED->num_variables-2;
+	offset = BED->num_variables-BED->patch.num_patches-BED->num_linears;
 	for (mm=0; mm<BED->num_linears; ++mm) {
 		for (ii=0; ii<BED->num_variables; ii++) {
 			add_mp(temp,&gamma_s_times_old_linear[mm]->coord[ii], &one_minus_s_times_current_linear[mm]->coord[ii]);
@@ -2297,24 +2304,21 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	}
 	
 	
-	offset = BED->num_variables - 2+BED->num_linears;
-	for (ii=0; ii<BED->num_variables; ii++) {
-		set_mp(&Jv->entry[offset][ii],&Jv_Patch->entry[0][ii]);
+	offset = BED->num_variables - BED->patch.num_patches;
+	for (jj=0; jj<BED->patch.num_patches; jj++){
+		for (ii=0; ii<BED->num_variables; ii++) {
+			set_mp(&Jv->entry[offset+jj][ii],&Jv_Patch->entry[jj][ii]);
+		}
 	}
 	
 	
-	
-	
-	for (ii = 0; ii<BED->num_variables-2; ii++) {
-		set_zero_mp(&Jp->entry[ii][0]);  // no parameter dependence means zero derivative for these functions
-	}
 	
 	
 	
 	
 	// Jp = -current_linear_times_vars + gamma*old_linear_times_vars
 	
-	offset = BED->num_variables-2;
+	offset = BED->num_variables-BED->patch.num_patches-BED->num_linears;
 	for (ii=0; ii<BED->num_linears; ii++) {
 		set_zero_mp(&Jp->entry[offset+ii][0]);
 		dot_product_mp(temp,
@@ -2332,7 +2336,7 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	//
 	////////////////////
 	
-	offset = BED->num_variables - 2+BED->num_linears;
+	offset = BED->num_variables - BED->patch.num_patches;
 	for (ii = 0; ii<BED->patch.num_patches; ii++)  // for each patch equation
 	{ // funcVals = patchValues
 		// Jp = 0
@@ -2355,9 +2359,9 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 //	print_point_to_screen_matlab_mp(funcVals,"F_mp");
 //	print_matrix_to_screen_matlab_mp(Jv,"Jv_mp");
 //	print_matrix_to_screen_matlab_mp(Jp,"Jp_mp");
-//	print_matrix_to_screen_matlab_mp(BED->n_minusone_randomizer_matrix,"randomizer_matrix_mp");
+//	print_matrix_to_screen_matlab_mp(BED->randomizer_matrix,"randomizer_matrix_mp");
 
-
+//	mypause();
 	
 	
 	
@@ -2440,7 +2444,7 @@ void multilintolin_eval_clear_mp(multilintolin_eval_data_mp *ED, int clearRegen,
 		clear_vec_mp(ED->old_linear[ii]);
 	}
 	
-	clear_mat_mp(ED->n_minusone_randomizer_matrix);
+	clear_mat_mp(ED->randomizer_matrix);
 	
 #ifdef printpathmultilintolin
 	fclose(ED->FOUT);
@@ -2723,7 +2727,7 @@ void setupmultilintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *du
 												 int squareSize, int patchType, int ssType, int prec,
 												 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
 												 multilintolin_eval_data_mp *BED, int adjustDegrees,
-												 mat_mp n_minusone_randomizer_matrix,
+												 mat_mp randomizer_matrix,
 													witness_set W,
 													solver_configuration *solve_options)
 {
@@ -2739,9 +2743,9 @@ void setupmultilintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *du
 		set_mp(&BED->patch.patchCoeff->entry[0][ii],&W.patch_mp[0]->coord[ii]);
 	BED->SLP = dummyProg;
 
-	init_mat_mp(BED->n_minusone_randomizer_matrix,1,1);
-	mat_cp_mp(BED->n_minusone_randomizer_matrix,
-					 n_minusone_randomizer_matrix);
+	init_mat_mp(BED->randomizer_matrix,1,1);
+	mat_cp_mp(BED->randomizer_matrix,
+					 randomizer_matrix);
 	
 	
 	
@@ -2771,8 +2775,8 @@ void setupmultilintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *du
 //	// set up the vectors to hold the two linears.
 //	BED->current_linear = (vec_mp *)br_malloc(W.num_linears*sizeof(vec_mp));
 //	for (ii = 0; ii<W.num_linears; ii++) {
-//		init_vec_mp(BED->current_linear[ii],n_minusone_randomizer_matrix->cols);
-//		BED->current_linear[ii]->size =  n_minusone_randomizer_matrix->cols;
+//		init_vec_mp(BED->current_linear[ii],randomizer_matrix->cols);
+//		BED->current_linear[ii]->size =  randomizer_matrix->cols;
 //		// these will be copied down further in the chain, where we copy based on the indices
 //	}
 //	
@@ -2780,8 +2784,8 @@ void setupmultilintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *du
 //	
 //	BED->old_linear = (vec_mp *)br_malloc(W.old_linear*sizeof(vec_mp));
 //	for (ii = 0; ii<W.num_linears; ii++) {
-//		init_vec_mp(BED->old_linear[ii],n_minusone_randomizer_matrix->cols);
-//		BED->old_linear[ii]->size =  n_minusone_randomizer_matrix->cols;
+//		init_vec_mp(BED->old_linear[ii],randomizer_matrix->cols);
+//		BED->old_linear[ii]->size =  randomizer_matrix->cols;
 //		
 //		vec_cp_mp(BED->old_linear[ii],W.L_mp[ii]);
 //	}
@@ -2840,8 +2844,8 @@ void cp_multilintolin_eval_data_mp(multilintolin_eval_data_mp *BED, multilintoli
 	
 	
 	//HERE COPY THE MATRICES  DAB !!!
-	init_mat_mp(BED->n_minusone_randomizer_matrix,0,0);
-	mat_cp_mp(BED->n_minusone_randomizer_matrix,BED_mp_input->n_minusone_randomizer_matrix);
+	init_mat_mp(BED->randomizer_matrix,0,0);
+	mat_cp_mp(BED->randomizer_matrix,BED_mp_input->randomizer_matrix);
 	
 	set_mp(BED->gamma, BED_mp_input->gamma);
 

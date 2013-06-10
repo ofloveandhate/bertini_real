@@ -161,7 +161,7 @@ int compute_crit_nullspace(witness_set *W_crit_real, // the returned value
 			printf("\n");
 			
 			for (ii=0; ii<ambient_dim; ii++) 
-				print_point_to_screen_matlab_mp(multilin_linears[ii],"lin");
+				print_point_to_screen_matlab_mp(multilin_linears[ii],"newlin");
 		}
 		
 		
@@ -173,6 +173,8 @@ int compute_crit_nullspace(witness_set *W_crit_real, // the returned value
 		
 		
 		{
+			solve_options->allow_singular = 1;
+			solve_options->complete_witness_set = 1;
 			init_witness_set(&Wtemp); // intialize for holding the data
 			// actually solve WRT the linears
 			multilintolin_solver_main(W.MPType,
@@ -182,12 +184,13 @@ int compute_crit_nullspace(witness_set *W_crit_real, // the returned value
 																&Wtemp, // the new data is put here!
 																solve_options); // already a pointer
 			
-			
-//			print_witness_set_to_screen(Wtemp);
+
 			// merge into previously obtained data
 			init_witness_set(&Wtemp2);
 			cp_witness_set(&Wtemp2, W_step_one);   // i dislike this pattern of copy and merge.  it seems wasteful
 			clear_witness_set(W_step_one); init_witness_set(&W_step_one);
+			
+			
 			merge_witness_sets(&W_step_one, Wtemp2, Wtemp);
 			clear_witness_set(Wtemp);  clear_witness_set(Wtemp2);
 		}
@@ -253,14 +256,12 @@ int compute_crit_nullspace(witness_set *W_crit_real, // the returned value
 	clear_vec_mp(temppoint);
 	
 	
-//	print_witness_set_to_screen(W_linprod);
-//	mypause();
-	
 	cp_patches(&W_linprod, W);
 	cp_names(&W_linprod, W);
 	
-	solve_options->complete_witness_set = 0;
 	//set some solver options
+	
+	solve_options->complete_witness_set = 0;
 	solve_options->allow_multiplicity = 1;
 	solve_options->allow_singular = 1;
 	solve_options->use_midpoint_checker = 0;
@@ -274,8 +275,7 @@ int compute_crit_nullspace(witness_set *W_crit_real, // the returned value
 													 &ns_config,
 													 solve_options);
 	
-	printf("done with nullspace solver\n");
-//TODO: stuff with Wtemp here
+
 	
 	
 	
@@ -295,13 +295,18 @@ int compute_crit_nullspace(witness_set *W_crit_real, // the returned value
 	clear_witness_set(Wtemp);
 	
 	
+	init_witness_set(&Wtemp);
 	
 	
+	sort_for_real(&Wtemp, Wtemp2,solve_options->T); // get only the real solutions.
+	clear_witness_set(Wtemp2);
+
 	W_crit_real->num_variables = W.num_variables;
 	cp_patches(W_crit_real, W);
 	cp_names(W_crit_real, W);
-	sort_for_real(W_crit_real, Wtemp2,solve_options->T); // get only the real solutions.
-	clear_witness_set(Wtemp2);
+	sort_for_unique(W_crit_real, Wtemp,solve_options->T); // get only the real solutions.
+	
+	clear_witness_set(Wtemp);
 	
 
 	
@@ -346,7 +351,7 @@ int increment_subindices(int **function_indices,
 		if (carry==1)
 			(*subindices)[ii]++;
 		
-		if ( (*subindices)[ii]>=(degrees[ (*function_indices)[ii]]-1) ) {
+		if ( (*subindices)[ii]>=(degrees[ (*function_indices)[ii]]) ) {
 			(*subindices)[ii] = 0;
 			carry = 1;
 		}
@@ -457,7 +462,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	
 	
 	// make the post-randomizer matrix $S$
-	int num_jac_equations = ns_config->num_v_vars + target_dim - 1;//N-k+l+r-1;
+	int num_jac_equations = ns_config->num_v_vars + target_dim - 1;//N-k+l+r-1;  the subtraction of 1 is for the 1 hom-var
 	
 	init_mat_mp2(ns_config->post_randomizer_matrix,
 							 num_jac_equations, W.num_variables-1,

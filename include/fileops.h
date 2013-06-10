@@ -24,7 +24,7 @@
 
 
 #include "polysolve.h"
-#include "programStartup.h" 
+#include "programConfiguration.h" 
 #include "missing_bertini_headers.h"
 
 /**

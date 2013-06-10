@@ -17,12 +17,12 @@
 #include "fileops.h"
 #include "polysolve.h"
 #include "data_type.h"
-#include "programStartup.h"
+#include "programConfiguration.h"
 #include "witnessSet.h"
 #include "checkSelfConjugate.h"
 
-#include "lintolinSolver.h"
-#include "multilintolinSolver.h"
+#include "solver_lintolin.h"
+#include "solver_multilintolin.h"
 #include "missing_bertini_headers.h"
 #ifndef _SAMPLER_H
 #define _SAMPLER_H

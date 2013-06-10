@@ -192,12 +192,13 @@ void merge_witness_sets(witness_set *W_out,witness_set W_left,witness_set W_righ
 	//error checking first
 	if (W_left.num_variables != W_right.num_variables) {
 		printf("merging two witness sets with differing numbers of variables.\n");
-		exit(-341);
+		deliberate_segfault();
 	}
 	
 	if (W_left.num_patches != W_right.num_patches) {
-		printf("merging two witness sets with differing numbers of patch equations.\n");
-		exit(-342);
+		printf("merging two witness sets with differing numbers of patch equations. %d left, %d right\n",
+					 W_left.num_patches, W_right.num_patches);
+		deliberate_segfault();
 	}
 	
 
@@ -693,6 +694,94 @@ void sort_for_real(witness_set *W_out,
 }
 
 
+
+
+
+
+//send in an initialized but empty witness_set.
+// T is necessary for the tolerances.
+void sort_for_unique(witness_set *W_out,
+										 witness_set W_in,
+										 tracker_config_t T)
+{
+	//	printf("sorting points for unique-ness\n%d points in \n",W_in.num_pts);
+	int ii, jj;
+	
+	//	if (W_in.incidence_number==-1) {
+	//		printf("input witness_set has unset incidence_number for comparison.\n");
+	//		exit(-1112);
+	//	}
+	
+	W_out->MPType = W_in.MPType;
+	W_out->incidence_number = W_in.incidence_number;
+	W_out->num_variables = W_in.num_variables;
+	W_out->num_var_gps = W_in.num_var_gps;
+	
+	//copy the linears, patches from old to new
+	cp_patches(W_out, W_in);
+	cp_linears(W_out, W_in);
+	cp_names(W_out, W_in);
+	//
+	int curr_uniqueness;
+	int num_good_pts = 0;
+	int *is_unique  = (int *)bmalloc(W_in.num_pts*sizeof(int));
+	
+	for (ii = 0; ii<W_in.num_pts; ++ii) {
+		curr_uniqueness = 1;
+		if (ii!= (W_in.num_pts-1) ) { // the last point is unique...  always
+																	//			printf("a");
+			for (jj=ii+1; jj<W_in.num_pts; ++jj) {
+				if ( isSamePoint_homogeneous_input_d(W_in.pts_d[ii],W_in.pts_d[jj]) ){
+					curr_uniqueness = 0;
+					
+					//					printf("the following two points are not distinct:\n");
+					//					print_point_to_screen_matlab(W_in.pts_d[ii],"left");
+					//					print_point_to_screen_matlab(W_in.pts_d[jj],"right");
+				}
+			}
+		}
+		
+		//		printf("%d curr_uniqueness\n",curr_uniqueness);
+		
+		if (curr_uniqueness==1) {
+			is_unique[ii] = 1;
+			num_good_pts++;
+		}
+		else
+		{
+			is_unique[ii] = 0;
+		}
+		
+	}
+	
+	
+	W_out->num_pts = num_good_pts;
+	
+	W_out->pts_mp = (vec_mp *)bmalloc(num_good_pts*sizeof(vec_mp));
+	W_out->pts_d = (vec_d *)bmalloc(num_good_pts*sizeof(vec_d));
+	int counter = 0;
+	for (ii=0; ii<W_in.num_pts; ++ii) {
+		if (is_unique[ii]==1) {
+			init_vec_d(W_out->pts_d[counter],W_in.num_variables); W_out->pts_d[counter]->size = W_in.num_variables;
+			init_vec_mp2(W_out->pts_mp[counter],W_in.num_variables,1024);  W_out->pts_mp[counter]->size = W_in.num_variables;
+			
+			vec_cp_d(W_out->pts_d[counter], W_in.pts_d[ii]);
+			vec_cp_mp(W_out->pts_mp[counter], W_in.pts_mp[ii]);
+			counter++;
+		}
+	}
+	
+	if (counter!= num_good_pts) {
+		printf("counter mismatch\n");
+		exit(270);
+	}
+	
+	free(is_unique);
+	
+	
+	//	printf("%d points out\n",W_out->num_pts);
+	return;
+}
 
 
 

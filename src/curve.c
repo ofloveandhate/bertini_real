@@ -8,13 +8,13 @@ void curve_main(witness_set W,
 {
 	vertex_set V;
   curveDecomp_d C;  //new data type; stores vertices, edges, etc.
-  vec_mp pi_mp;  //random projection
+  vec_mp *pi = (vec_mp *) br_malloc(1*sizeof(vec_mp));  //random projection
 
 	
 	int num_vars = W.num_variables;
 	//get the random projection \pi
-	init_vec_mp(pi_mp,num_vars); pi_mp->size = num_vars; // should include the homogeneous variable
-	get_projection(pi_mp, *program_options, *solve_options, num_vars);
+	init_vec_mp(pi[0],num_vars); pi[0]->size = num_vars; // should include the homogeneous variable
+	get_projection(pi, *program_options, *solve_options, num_vars, 1);
 	
 	
 	
@@ -29,11 +29,9 @@ void curve_main(witness_set W,
 	
 	C.num_variables = num_vars;
 	
-//	init_vec_d(C.pi_d, W.num_variables); C.pi_d->size = W.num_variables;
-//	vec_mp_to_d(C.pi_d, pi_mp);
 	
 	init_vec_mp(C.pi_mp, W.num_variables); C.pi_mp->size = W.num_variables;
-	vec_cp_mp(C.pi_mp, pi_mp);
+	vec_cp_mp(C.pi_mp, pi[0]);
 	
 	
 	
@@ -46,7 +44,7 @@ void curve_main(witness_set W,
 	{
 		//Call non-self-conjugate case code
 		printf("\n\nentering not-self-conjugate case\n\n");
-		computeCurveNotSelfConj(W, pi_mp, &C, &V, num_vars-1,program_options->input_deflated_filename,
+		computeCurveNotSelfConj(W, pi[0], &C, &V, num_vars-1,program_options->input_deflated_filename,
 														program_options, solve_options);//This is Wenrui's !!!
 		printf("Bertini_real found %d vertices (vertex)\n",C.num_V0);
 	}
@@ -56,7 +54,7 @@ void curve_main(witness_set W,
 		printf("\n\nentering self-conjugate case\n\n");
 		computeCurveSelfConj(program_options->input_deflated_filename,
 												 W,
-												 &pi_mp,
+												 pi,
 												 &C,&V,
 												 num_vars,W.num_var_gps,
 												 program_options, solve_options);  //This is Dans', at least at first !!!

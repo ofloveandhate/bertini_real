@@ -18,7 +18,7 @@ void * br_malloc(size_t size)
     if (x == NULL)
     {
 //			raise(SIGINT);
-      printf("ERROR: malloc was unable to allocate memory (%d)!\n", (int) size);
+      printf("ERROR: bertini_real's malloc was unable to allocate memory (%d)!\n", (int) size);
       br_exit(ERROR_MEMORY_ALLOCATION);
     }
     return x;
@@ -50,9 +50,9 @@ void br_exit(int errorCode)
 
 
 void deliberate_segfault(){
-
-	int faulty[2];
-	printf("%d\n",faulty[-1]);
+	printf("the following segfault is deliberate\n");
+	int *faulty = NULL;
+	faulty[-10] = faulty[10]+faulty[0];
 	
 }
 
