@@ -38,6 +38,8 @@ typedef struct
 	
 	int num_randomized_eqns;	// N-k (N-ambient_dim)
 	int max_degree;						// the max degree of differentiated (randomized) functions
+	int *randomized_degrees; // the degrees of the randomized functions (not derivatives)
+	
 	vec_mp **starting_linears;	// outer layer should have as many as there are randomized equations (N-k)
 															// inside layer has number corresponding to max of randomized_degrees
 	
@@ -57,6 +59,7 @@ typedef struct
 	mat_mp randomizer_matrix;  // R, the main randomizer matrix, which was passed in.  randomizes f and Jf down to N-k equations.
 	
 	mat_mp post_randomizer_matrix;  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
+	
 } nullspace_config;
 
 //
@@ -112,7 +115,7 @@ typedef struct
 	
 	int num_randomized_eqns;	// N-k (N-ambient_dim)
 	int max_degree;						// the max degree of differentiated (randomized) functions
-
+	int *randomized_degrees;
 
 	
 	int num_additional_linears;
@@ -193,7 +196,7 @@ typedef struct
 	
 	int num_randomized_eqns;	// N-k (N-ambient_dim)
 	int max_degree;						// the max degree of differentiated (randomized) functions
-	
+	int *randomized_degrees;
 	
 	
 	int num_additional_linears;

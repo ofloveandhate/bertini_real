@@ -147,6 +147,7 @@ void computeCurveSelfConj(char * inputFile,
 		
 		write_dehomogenized_coordinates(W_crit_real,"W_before_additional");
 		
+		// now get the bounding box critical points and ends of the interval
 		curve_get_additional_critpts(&W_crit_real,
 																 W,
 																 randomizer_matrix,
@@ -154,6 +155,7 @@ void computeCurveSelfConj(char * inputFile,
 																 randomized_degrees,
 																 program_options,
 																 solve_options);
+		
 	}
 	
 	
@@ -692,6 +694,8 @@ int curve_get_additional_critpts(witness_set *W_crit_real,
 	
 	clear_vec_mp(variable_projection);
 	clear_mp(one);
+	
+	
 	
 	
 	

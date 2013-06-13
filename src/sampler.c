@@ -240,8 +240,6 @@ void generate_new_sampling_pts(sample_data *S_new,
 		while(1) // breaking condition is all samples being less than TOL away from each other (in the infty norm sense).
 		{
 
-			
-
 			refine_next = (int * )br_malloc((prev_num_samp+num_refinements-1) * sizeof(int)); // refinement flag
 //			memset (refine_next, 0, (prev_num_samp+num_refinements-1) *sizeof(int)); // uncomment me and remove set=0 statements later
 			
