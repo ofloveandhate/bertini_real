@@ -102,7 +102,8 @@ void nullspace_config_setup(nullspace_config *ns_config,
 														int ambient_dim,
 														int target_dim,
 														int target_crit_codim,
-														int max_degree,
+														int *max_degree, // a pointer to the value
+														int *randomized_degrees, // an array of randomized degrees
 														mat_mp randomizer_matrix,
 														witness_set W,
 														solver_configuration *solve_options);

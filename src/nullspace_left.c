@@ -14,18 +14,14 @@ int compute_crit_nullspace(witness_set *W_crit_real, // the returned value
 {
 	//many of the 1's here should be replaced by the number of patch equations, or the number of variable_groups
 	
-	int ii, jj, kk;
+	int ii, jj;
 	int offset;
 	witness_set Wtemp, Wtemp2;
 	
 	nullspace_config ns_config;
 	
 	// get the max degree of the derivative functions.  this is unique to the left formulation
-	int max_degree = 0;
-	for (ii=0; ii<randomizer_matrix->rows; ii++	) {
-		if ( (randomized_degrees[ii]-1) > max_degree)
-			max_degree = randomized_degrees[ii]-1; // minus one for the derivative
-	}
+	int max_degree;
 	
 	
 	nullspace_config_setup(&ns_config,
@@ -33,7 +29,8 @@ int compute_crit_nullspace(witness_set *W_crit_real, // the returned value
 												 ambient_dim,
 												 target_dim,
 												 target_crit_codim,
-												 max_degree,
+												 &max_degree,
+												 randomized_degrees,
 												 randomizer_matrix,
 												 W,
 												 solve_options);
@@ -436,13 +433,26 @@ void nullspace_config_setup(nullspace_config *ns_config,
 														int ambient_dim,
 														int target_dim,
 														int target_crit_codim,
-														int max_degree,
+														int *max_degree, // a pointer to the value
+														int *randomized_degrees, // an array of randomized degrees
 														mat_mp randomizer_matrix,
 														witness_set W,
 														solver_configuration *solve_options)
 {
 
 	int ii, jj, kk;
+	
+	
+	int maxiii = 0;
+	ns_config->randomized_degrees = (int *)br_malloc(randomizer_matrix->rows * sizeof(int));
+	for (ii=0; ii<randomizer_matrix->rows; ii++	) {
+		ns_config->randomized_degrees[ii] = randomized_degrees[ii]; // store the full degree (not derivative).
+		if ( (randomized_degrees[ii]-1) > maxiii)
+			maxiii = randomized_degrees[ii]-1; // minus one for the derivative
+	}
+	*max_degree = maxiii;
+	
+	
 	
 	// set some integers
 	ns_config->num_v_vars = W.num_variables-1 - ambient_dim + target_crit_codim; //  N-k+l
@@ -451,7 +461,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	ns_config->ambient_dim = ambient_dim;
 	ns_config->target_dim = target_dim;
 	ns_config->target_crit_codim = target_crit_codim;
-	ns_config->max_degree = max_degree;
+	ns_config->max_degree = (*max_degree);
 
 	ns_config->target_projection = (vec_mp *) br_malloc(target_crit_codim * sizeof(vec_mp));
 	for (ii=0; ii<target_crit_codim; ii++) {
@@ -470,13 +480,17 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	
 	ns_config->post_randomizer_matrix->rows = num_jac_equations;
 	ns_config->post_randomizer_matrix->cols = W.num_variables-1;
+	if (ns_config->post_randomizer_matrix->rows == ns_config->post_randomizer_matrix->cols) {
+		make_matrix_ID_mp(ns_config->post_randomizer_matrix,num_jac_equations,num_jac_equations);
+	}
+	else{
 	make_matrix_random_real_mp(ns_config->post_randomizer_matrix,
 														 num_jac_equations,W.num_variables-1,
 														 solve_options->T.AMP_max_prec);
-	
+	}
 	ns_config->num_jac_equations = num_jac_equations;
 	
-	
+	ns_config->num_randomized_eqns = W.num_variables-1-ambient_dim;
 	
 	ns_config->num_v_linears = ns_config->num_jac_equations;
 	
@@ -524,8 +538,8 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	//the 'ns_config->starting_linears' will be used for the x variables.  we will homotope to these $r$ at a time
 	ns_config->starting_linears = (vec_mp **)br_malloc( num_jac_equations*sizeof(vec_mp *));
 	for (ii=0; ii<num_jac_equations; ii++) {
-		ns_config->starting_linears[ii] = (vec_mp *) br_malloc(max_degree*sizeof(vec_mp)); //subtract 1 for differentiation
-		for (jj=0; jj<max_degree; jj++) {
+		ns_config->starting_linears[ii] = (vec_mp *) br_malloc((*max_degree)*sizeof(vec_mp)); //subtract 1 for differentiation
+		for (jj=0; jj<(*max_degree); jj++) {
 			init_vec_mp2(ns_config->starting_linears[ii][jj],W.num_variables,solve_options->T.AMP_max_prec);
 			ns_config->starting_linears[ii][jj]->size = W.num_variables;
 			//			set_zero_mp(&ns_config->starting_linears[ii][jj]->coord[0]);  // maybe? but prolly not

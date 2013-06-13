@@ -59,16 +59,17 @@ void 	diag_homotopy_input_file(char  *outputFile,
 															 int   num_vars);
 
 
+
+
 /**
  writes the start file for the diagonal homotopy used in curve case to find the intersection points.
  
  \param startFile the name of the start file to write
  \param W the input witness set
- \param num_vars		the number of variables in the problem, including the homogeneous ones.
  */
-void 	diag_homotopy_start_file(char                 *startFile,
-															 witness_set  W,
-															 int                  num_vars);
+void 	diag_homotopy_start_file(char					*startFile,
+															 witness_set  W);
+
 
 
 

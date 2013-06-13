@@ -18,13 +18,11 @@ void computeCurveNotSelfConj(witness_set W_in,
  * NOTES:                                                        *
  \***************************************************************/
 {
-	vec_d tmp; init_vec_d(tmp,pi_mp->size); tmp->size = pi_mp->size;
-	vec_mp_to_d(tmp,pi_mp);
-	vec_d pi; init_vec_d(pi, pi_mp->size-1); pi->size = pi_mp->size-1;
-	dehomogenize_d(&pi,tmp);
+	
+	// num_vars includes the homogeneous variable
 	
 	
-  int i,j,k,strLength,num_sols,*declarations = NULL;
+  int ii,jj,strLength,num_sols,*declarations = NULL;
   char *strSys,*bertini_command="bertini";
   FILE *IN = NULL;
   vec_mp cur_sol,cur_sol_bar;
@@ -39,9 +37,10 @@ void computeCurveNotSelfConj(witness_set W_in,
 	
 
   //generate input file
-  diag_homotopy_input_file("input_NSC", "func_input_nsc","func_inputbar","config_nsc",W_in.L_d[0],num_vars);
+  diag_homotopy_input_file("input_NSC", "func_input_nsc","func_inputbar","config_nsc",W_in.L_d[0],num_vars-1);
   //generate start file
-  diag_homotopy_start_file("start", W_in, num_vars);
+	diag_homotopy_start_file("start",  W_in);
+
   strLength = 1 + snprintf(NULL, 0, "%s input_NSC", bertini_command);
   strSys = (char *)bmalloc(strLength * sizeof(char));
   sprintf(strSys, "%s input_NSC", bertini_command);
@@ -53,37 +52,29 @@ void computeCurveNotSelfConj(witness_set W_in,
   system(strSys);
 	
   //read the real solutions
-  IN = fopen("real_solutions", "r");
-  if (IN == NULL)
-  {
-    printf("\n\nERROR: Bertini was unable to compute the diagonal homotopy.\n\n\n");
-    bexit(ERROR_CONFIGURATION);
-  }
-  fscanf(IN, "%d", &num_sols);
+  IN = safe_fopen_read("real_solutions");
+  
+  fscanf(IN, "%d\n\n", &num_sols);
 
 	
 	
-	vertex temp_vertex;
-	init_vertex(&temp_vertex);
-	change_size_vec_mp(temp_vertex.pt_mp,num_vars);temp_vertex.pt_mp->size = num_vars;
+	vertex temp_vertex; init_vertex(&temp_vertex);
+	change_size_vec_mp(temp_vertex.pt_mp,num_vars); temp_vertex.pt_mp->size = num_vars;
 
 	temp_vertex.type = ISOLATED;
 	
 	
 	comp_mp projection_value;  init_mp(projection_value);
 	
-	for(i=0,k=0;i<num_sols;i++)
-  {
-		for(j=0;j<num_vars-1;j++){
-			mpf_inp_str(cur_sol->coord[j+1].r, IN, 10);
-			mpf_inp_str(cur_sol->coord[j+1].i, IN, 10);
+	
+	for(ii=0;ii<num_sols;ii++) {
+		for(jj=0;jj<num_vars-1;jj++){
+			mpf_inp_str(cur_sol->coord[jj+1].r, IN, 10);
+			mpf_inp_str(cur_sol->coord[jj+1].i, IN, 10);
+
+			mpf_inp_str(cur_sol_bar->coord[jj+1].r, IN, 10);
+			mpf_inp_str(cur_sol_bar->coord[jj+1].i, IN, 10);
 		}
-//      fscanf(IN, "%lf %lf", &(cur_sol->coord[j+1].r), &(cur_sol->coord[j+1].i));
-    for(j=0;j<num_vars;j++){
-			mpf_inp_str(cur_sol_bar->coord[j+1].r, IN, 10);
-			mpf_inp_str(cur_sol_bar->coord[j+1].i, IN, 10);
-		}
-//      fscanf(IN, "%lf %lf", &(cur_sol_bar->coord[j+1].r), &(cur_sol_bar->coord[j+1].i));
     
     //check if x=x_bar
   
@@ -123,43 +114,6 @@ void computeCurveNotSelfConj(witness_set W_in,
 
 
 
-void get_random_mat_d(mat_d A, 
-                      int   n,
-                      int   m)
-/***************************************************************\
-* USAGE: obtain a complex random matrix in double precision     *
-* ARGUMENTS:                                                    *
-* RETURN VALUES: a complex random matrix A. The size is n by m          *
-* NOTES:                                                        *
-\***************************************************************/
-{ 
-  if (n > 0 && m>0)
-  { 
-    int i,j;
-    double sum=0.0;
-    // set sum to 0
-    for (i = 0; i < n; i++)
-		for(j = 0; j< m;j++)
-	    { // get a random number
-    	  get_comp_rand_d(&A->entry[i][j]);
-      	  // add on norm squared
-      	  sum=A->entry[i][j].r ;
-  	      sum += (A->entry[i][j].r) * (A->entry[i][j].r) 
-		  	   + (A->entry[i][j].i) * (A->entry[i][j].i);
-    } 
-    // compute 1/norm of vector
-    sum=1/sqrt(sum);
-    // normalize
-    for (i = 0; i < n; i++)
-      for(j = 0; j < m; j++)
-      {
-        (A->entry[i][j]).r *= sum;
-        (A->entry[i][j]).i *= sum;
-      }
-  }
-  return;
-}
-
 
 // MISC. FUNCTIONS
 
@@ -178,7 +132,7 @@ void diag_homotopy_input_file(char  *outputFile,
 \***************************************************************/
 {
   char ch,**str,*fmt = NULL;
-  int i,j,size;
+  int ii,jj,size;
   mat_d A;
   FILE *OUT = fopen(outputFile, "w"), *IN = NULL;
   if (OUT == NULL)
@@ -187,8 +141,8 @@ void diag_homotopy_input_file(char  *outputFile,
     bexit(ERROR_FILE_NOT_EXIST);
   }
   str=(char **)bmalloc(num_vars*sizeof(char *));
-  for(i=0;i<num_vars;i++)
-    str[i]=(char*)bmalloc(sizeof(char)*256);
+  for(ii=0;ii<num_vars;ii++)
+    str[ii]=(char*)bmalloc(sizeof(char)*256);
   
   // setup configurations in OUT
   fprintf(OUT, "CONFIG\n");
@@ -233,104 +187,108 @@ void diag_homotopy_input_file(char  *outputFile,
     printf("\n\nERROR: var_names does not exist!!!\n\n\n");
     bexit(ERROR_FILE_NOT_EXIST);
   }
-  i=0;j=0;
+  ii=0;jj=0;
   while ((ch = fgetc(IN)) != EOF)
   {
     if(ch!='\n')
-      str[i][j++]=ch;
+      str[ii][jj++]=ch;
     else
     {
-      str[i++][j]='\0';
-      j=0;
+      str[ii++][jj]='\0';
+      jj=0;
     }
   }
   //setup the linear equations 
   // find the size needed
-  size = 1 + snprintf(NULL, 0, "%%.%de+%%.%de*I", 15, 15);
+  size = 1 + snprintf(NULL, 0, "%%.%dlf+%%.%dlf*I", 15, 15);
   // allocate size
   fmt = (char *)bmalloc(size * sizeof(char));
   // setup fmt
-  sprintf(fmt, "%%.%de+%%.%de*I", 15, 15);
+  sprintf(fmt, "%%.%dlf+%%.%dlf*I", 15, 15);
   // output the linear function L and L_bar
-  for (i = 0; i < L->size; i++)
+  for (ii = 0; ii < L->size; ii++)
   {
-    fprintf(OUT, "L%d = ",i);
+    fprintf(OUT, "L%d = ",ii);
     // print output
-    fprintf(OUT, fmt, L->coord[i].r, L->coord[i].i); 
+    fprintf(OUT, fmt, L->coord[ii].r, L->coord[ii].i); 
     fprintf(OUT, ";\n");
 
-    fprintf(OUT, "Lbar%d = ",i);
+    fprintf(OUT, "Lbar%d = ",ii);
     // print output
-    fprintf(OUT, fmt, L->coord[i].r, -L->coord[i].i); 
+    fprintf(OUT, fmt, L->coord[ii].r, -L->coord[ii].i); 
     fprintf(OUT, ";\n");
   } 
   fprintf(OUT, "\n");
   //Generate a random matrix A and output to input file.
   init_mat_d(A, 2, num_vars);
-  get_random_mat_d(A,2, num_vars);
-  for (i = 0; i < 2; i++)
-    for(j=0;j<num_vars;j++)
+	make_matrix_random_d(A, 2, num_vars);
+	print_matrix_to_screen_matlab(A,"A");
+//  get_random_mat_d(A,2, num_vars);
+  for (ii = 0; ii < 2; ii++)
+    for(jj=0;jj<num_vars;jj++)
     {
-      fprintf(OUT, "A%d%d = ",i,j);
+      fprintf(OUT, "A%d%d = ",ii,jj);
       // print output
-      fprintf(OUT, fmt, A->entry[i][j].r, A->entry[i][j].i); 
+      fprintf(OUT, fmt, A->entry[ii][jj].r, A->entry[ii][jj].i); 
       fprintf(OUT, ";\n");
     } 
   //setup the diagonal homotopy functions
   fprintf(OUT, "\nL=t*(");
   //(Lx-1)*t+(1-t)*A[0]*(x-x_bar)
-  for(i=0;i<num_vars;i++)
+  for(ii=0;ii<num_vars;ii++)
   {
-    fprintf(OUT, "L%d*", i);
-    fprintf(OUT, "%s", str[i]);
+    fprintf(OUT, "L%d*", ii);
+    fprintf(OUT, "%s", str[ii]);
     fprintf(OUT, "+");
   }
   fprintf(OUT, "-1)+(1-t)*(");
-  for(i=0;i<num_vars;i++)
+  for(ii=0;ii<num_vars;ii++)
   {
-    fprintf(OUT, "A0%d*", i);
-    fprintf(OUT, "(%s-%s", str[i],str[i]);
+    fprintf(OUT, "A0%d*", ii);
+    fprintf(OUT, "(%s-%s", str[ii],str[ii]);
     fprintf(OUT, "bar)+");
   }
   //(L_bar x_bar-1)*t+(1-t)*A[1]*(x-x_bar)
   fprintf(OUT, "0);\nLbar=t*(");
-  for(i=0;i<num_vars;i++)
+  for(ii=0;ii<num_vars;ii++)
   {
-    fprintf(OUT, "Lbar%d*", i);
-    fprintf(OUT, "%sbar", str[i]);
+    fprintf(OUT, "Lbar%d*", ii);
+    fprintf(OUT, "%sbar", str[ii]);
     fprintf(OUT, "+");
   }
   fprintf(OUT, "-1)+(1-t)*(");
-  for(i=0;i<num_vars;i++)
+  for(ii=0;ii<num_vars;ii++)
   {
-    fprintf(OUT, "A1%d*", i);
-    fprintf(OUT, "(%s-%s", str[i],str[i]);
+    fprintf(OUT, "A1%d*", ii);
+    fprintf(OUT, "(%s-%s", str[ii],str[ii]);
     fprintf(OUT, "bar)+");
   }
   fprintf(OUT, "0);\nEND;");
   fclose(OUT);
   //free
-  for(i=0;i<num_vars;i++)
-    free(str[i]);
+  for(ii=0;ii<num_vars;ii++)
+    free(str[ii]);
   free(str);
   free(fmt);
   clear_mat_d(A);
   return;
 }
 
-void diag_homotopy_start_file(char                 *startFile, 
-                              witness_set  W, 
-                              int                  num_vars)
+
+
+void diag_homotopy_start_file(char                 *startFile,
+                              witness_set  W)
 /***************************************************************\
-* USAGE: setup start file to do diagonal homotopy             *
-* ARGUMENTS: name of output file, start points & number of variables*
-* RETURN VALUES: none                                           *
-* NOTES:                                                        *
-\***************************************************************/
+ * USAGE: setup start file to do diagonal homotopy             *
+ * ARGUMENTS: name of output file, start points & number of variables*
+ * RETURN VALUES: none                                           *
+ * NOTES:                                                        *
+ \***************************************************************/
 {
   FILE *OUT = fopen(startFile, "w");
   char *fmt = NULL;
-  int i,j,size,digits=15;
+  int ii,jj,kk;
+	int size,digits=15;
   if (OUT == NULL)
   {
     printf("\n\nERROR: '%s' is an improper name of a file!!\n\n\n", startFile);
@@ -341,26 +299,42 @@ void diag_homotopy_start_file(char                 *startFile,
   fmt = (char *)bmalloc(size * sizeof(char));
   // setup fmt & fmtb
   sprintf(fmt, "%%.%de %%.%de\n", digits, digits);
-   // output the number of start points
-  fprintf(OUT,"%d\n\n",W.num_pts);
-  for (i = 0; i < W.num_pts; i++)
-  { // output {w \bar{w}}'
-    vec_d result;
-    init_vec_d(result,0);
-    dehomogenize_d(&result,W.pts_d[i]);
-
-    for(j=0; j<num_vars;j++)
-    {
-      fprintf(OUT, fmt, result->coord[j].r, result->coord[j].i);
-      fprintf(OUT, fmt, result->coord[j].r, -result->coord[j].i);
+	// output the number of start points
+  fprintf(OUT,"%d\n\n",W.num_pts*W.num_pts);
+	
+	
+	comp_mp temp; init_mp(temp);
+	
+	
+	for (kk=0; kk<W.num_pts; kk++){
+  for (ii=0; ii<W.num_pts; ii++) { // output {w \bar{w}}'
+		
+    vec_mp result; init_vec_mp(result,0);
+		vec_mp result2; init_vec_mp(result2,0);
+		
+    dehomogenize_mp(&result,W.pts_mp[ii]);
+		dehomogenize_mp(&result2,W.pts_mp[kk]);
+		
+		
+    for(jj=0; jj<W.num_variables-1;jj++) {
+			print_mp(OUT, 15, &result->coord[jj]); fprintf(OUT, "\n");
+			
+			conjugate_mp(temp, &result2->coord[jj] )
+			print_mp(OUT, 15, temp); fprintf(OUT, "\n");
+//      fprintf(OUT, fmt, result->coord[jj].r,  result->coord[jj].i);
     }
-
+		
+	
+		
     fprintf(OUT,"\n");
-  }
-
+  }// re: ii
+	}// re: kk
+	
   free(fmt);
   fclose(OUT);
 }
+
+
 
 
 
