@@ -51,7 +51,6 @@ void surface_main(witness_set W,
 												 solve_options);
 	
 	write_dehomogenized_coordinates(W_crit_real, "W_crit_real"); // write the points to file
-	
 	//
 	
 	

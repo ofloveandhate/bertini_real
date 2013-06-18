@@ -658,7 +658,7 @@ void print_point_to_screen_matlab(vec_d M, char name[])
 	printf("%s = [...\n",name);
 	for (kk = 0; kk < M->size; kk++)
 	{ // print kth coordinate
-		printf(" %.10le+1i*%.10le;\n",M->coord[kk].r,M->coord[kk].i);
+		printf(" %.15le+1i*%.15le;\n",M->coord[kk].r,M->coord[kk].i);
 	}
 	printf("];\n\n");
 }
@@ -694,7 +694,7 @@ void print_matrix_to_screen_matlab(mat_d M, char name[])
 	{ // print kth row
 		for (jj = 0; jj < M->cols; jj++)
 		{
-			printf(" %.7le+1i*%.7le",M->entry[kk][jj].r,M->entry[kk][jj].i);
+			printf(" %.15le+1i*%.15le",M->entry[kk][jj].r,M->entry[kk][jj].i);
 		}
 		printf(";\n");
 	}
