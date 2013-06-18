@@ -13,17 +13,22 @@
 #include <mpf2mpfr.h>
 
 
-
-#include "fileops.h"
+extern "C" {
+#include "cascade.h"
+}
+extern "C" {
 #include "polysolve.h"
-#include "data_type.h"
-#include "programConfiguration.h"
-#include "witnessSet.h"
-#include "checkSelfConjugate.h"
+}
 
-#include "solver_lintolin.h"
-#include "solver_multilintolin.h"
-#include "missing_bertini_headers.h"
+#include "fileops.hpp"
+#include "data_type.hpp"
+#include "programConfiguration.hpp"
+#include "witnessSet.hpp"
+#include "checkSelfConjugate.hpp"
+
+#include "solver_lintolin.hpp"
+#include "solver_multilintolin.hpp"
+#include "missing_bertini_headers.hpp"
 #ifndef _SAMPLER_H
 #define _SAMPLER_H
 

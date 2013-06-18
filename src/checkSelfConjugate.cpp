@@ -1,4 +1,4 @@
-#include "checkSelfConjugate.h"
+#include "checkSelfConjugate.hpp"
 
 
 

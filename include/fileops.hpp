@@ -23,9 +23,12 @@
 #define _FILEOPS_H
 
 
+extern "C" {
 #include "polysolve.h"
-#include "programConfiguration.h" 
-#include "missing_bertini_headers.h"
+}
+
+#include "programConfiguration.hpp" 
+#include "missing_bertini_headers.hpp"
 
 /**
  splits the bertini input file into several files for later use.

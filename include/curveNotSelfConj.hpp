@@ -5,14 +5,22 @@
 #ifndef _CURVE_NOTSELFCONJ_H
 #define _CURVE_NOTSELFCONJ_H
 
-
-#include "programConfiguration.h"
-#include "witnessSet.h"
-#include "data_type.h"
+#include <gmp.h>
+extern "C" {
 #include "polysolve.h"
+}
+
+
+
+#include "programConfiguration.hpp"
+#include "witnessSet.hpp"
+#include "data_type.hpp"
+extern "C" {
 #include "partitionParse.h"
-#include "fileops.h"
-#include "missing_bertini_headers.h"
+}
+
+#include "fileops.hpp"
+#include "missing_bertini_headers.hpp"
 
 
 /**

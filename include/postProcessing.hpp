@@ -18,12 +18,16 @@
 #ifndef _POST_PROCESSING_H
 #define _POST_PROCESSING_H
 
-#include "witnessSet.h"
+
+extern "C" {
 #include "polysolve.h"
-#include "fileops.h"
-#include "data_type.h"
-#include "programConfiguration.h"
-#include "missing_bertini_headers.h"
+}
+
+#include "witnessSet.hpp"
+#include "fileops.hpp"
+#include "data_type.hpp"
+#include "programConfiguration.hpp"
+#include "missing_bertini_headers.hpp"
 
 
 

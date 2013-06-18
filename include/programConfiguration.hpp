@@ -20,10 +20,12 @@
 #ifndef _PROGRAM_STARTUP_H
 #define _PROGRAM_STARTUP_H
 
+
+extern "C" {
 #include "polysolve.h"
-//#include "fileops.h"
-#include "data_type.h"
-#include "missing_bertini_headers.h"
+}
+#include "data_type.hpp"
+#include "missing_bertini_headers.hpp"
 
 // enum for crit solver choice
 enum {NULLSPACE, LINPRODTODETJAC};

@@ -1,13 +1,17 @@
 
 
+extern "C" {
 #include "cascade.h"
-#include "polysolve.h"  // the bertini  eval_funcs
+}
+extern "C" {
+#include "polysolve.h"
+}
 
 
 #ifndef MISSING_BERTINI_HEADERS_H
 #define MISSING_BERTINI_HEADERS_H
 
-
+extern "C" {
 void start_system_eval_data_clear_d(start_system_eval_data_d *SSED);//actually lives in bertini library...  testing if this works.
 
 void patch_eval_data_clear_d(patch_eval_data_d *PED);//another which lives in bertini
@@ -29,7 +33,7 @@ int checkForReal_mp(point_mp Pt, double realTol);
  from the bertini library.  the prototype is not in any header file.
  */
 void findMultSol(post_process_t *endPoints, int num_sols, int num_vars, preproc_data *PPD, double finalTol);
-
+}
 
 
 #endif

@@ -1,4 +1,4 @@
-#include "curve.h"
+#include "curve.hpp"
 
 
 void curve_main(witness_set W,

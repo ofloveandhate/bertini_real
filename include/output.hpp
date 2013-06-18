@@ -16,17 +16,20 @@
 #ifndef _BR_OUTPUT_H
 #define _BR_OUTPUT_H
 
+extern "C" {
 #include "cascade.h"
-#include "polysolve.h"  // the bertini  eval_funcs
+}
+extern "C" {
+#include "polysolve.h"
+}
 
+#include "witnessSet.hpp"
 
-#include "witnessSet.h"
-
-#include "fileops.h"
-#include "data_type.h"
+#include "fileops.hpp"
+#include "data_type.hpp"
 
 #include "partitionParse.h"
-#include "missing_bertini_headers.h"
+#include "missing_bertini_headers.hpp"
 /**
  
  */

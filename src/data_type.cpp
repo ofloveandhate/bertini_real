@@ -1,4 +1,4 @@
-#include "data_type.h"
+#include "data_type.hpp"
 
 void * br_malloc(size_t size)
 /***************************************************************\

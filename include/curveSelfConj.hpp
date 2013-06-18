@@ -14,22 +14,28 @@
 #ifndef _CURVE_SELFCONJ_H
 #define _CURVE_SELFCONJ_H
 
+extern "C" {
 #include "cascade.h"
-#include "polysolve.h"  // the bertini  eval_funcs
+}
+extern "C" {
+#include "polysolve.h"
+}
 
-#include "fileops.h"
-#include "data_type.h"
-#include "witnessSet.h"
+#include "fileops.hpp"
+#include "data_type.hpp"
+#include "witnessSet.hpp"
+extern "C" {
 #include "partitionParse.h"
+}
 
-#include "checkSelfConjugate.h"
-#include "solver_lintolin.h"
-#include "solver_linprodtodetjac.h"
-#include "solver_detjactodetjac.h"
+#include "checkSelfConjugate.hpp"
+#include "solver_lintolin.hpp"
+#include "solver_linprodtodetjac.hpp"
+#include "solver_detjactodetjac.hpp"
 
-#include "nullspace_left.h"
-#include "missing_bertini_headers.h"
-#include "output.h"
+#include "nullspace_left.hpp"
+#include "missing_bertini_headers.hpp"
+#include "output.hpp"
 /**
 //the main function for computing cell decom for a curve.  only for use on a self-conjugate component.  
  
@@ -67,6 +73,15 @@ int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
 																	solver_configuration *solve_options);
 
 
+
+
+int curve_get_additional_critpts(witness_set *W_crit_real,
+							 witness_set W,
+							 mat_mp randomizer_matrix,
+							 vec_mp pi,
+							 int *randomized_degrees,
+							 program_configuration *program_options,
+							 solver_configuration *solve_options);
 
 
 /**

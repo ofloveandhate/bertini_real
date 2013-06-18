@@ -20,15 +20,15 @@ BERTINILIB:=UNDEFINED
   #check environment variable $(MACHINENAME), if defined
 ifeq ($(MACHINENAME),MACBRAKE)
     #dan brake's machine.  he uses different places for his includes, etc.
-    INC:=-I/usr/local/include  $(INC) 
+    INC:= -I/usr/local/include  $(INC) 
     BISON=bison# bison in path already
     LIBS=-lm -lmpfr -lgmp# brake has libraries in path for linking, via brew.  no need to specify here
-    COMP=gcc 
-		COMPpp = clang++ -std=c++11 
+    COMPcc=gcc 
+	COMPpp = clang++
     STATICFLAG=#  on macintosh, do not static compile (get missing lcrt0.o problem)
-		BERTINILIB:=$(HOME)/lib/libbertini.a
-	  INSTALLPATH:=$(HOME)/bin
-		BERTINIHEADERS:=$(HOME)/bertini_source/include
+	BERTINILIB:=$(HOME)/lib/libbertini.a
+	INSTALLPATH:=$(HOME)/bin
+	BERTINIHEADERS:=$(HOME)/bertini_source/include
 endif
 
 ifeq ($(MACHINENAME),sam)
@@ -36,18 +36,18 @@ ifeq ($(MACHINENAME),sam)
     INC:=-I/usr/local/include/   $(INC) 
     BISON=bison 
     LIBS=-lm -L/usr/local/lib -lmpfr  -lgmp #
-    COMP=gcc 
-		COMPpp = g++  
+    COMPcc=gcc 
+	COMPpp = g++  
     STATICFLAG= -static
-		BERTINILIB:=$(HOME)/lib/libbertini.a
-	  INSTALLPATH:=$(HOME)/bin
-		BERTINIHEADERS:= $(HOME)/code/darpa/bertini_source/include
+	BERTINILIB:=$(HOME)/lib/libbertini.a
+	INSTALLPATH:=$(HOME)/bin
+	BERTINIHEADERS:= $(HOME)/code/darpa/bertini_source/include
 endif
 
 ifeq ($(MACHINENAME),wenrui)
     INC:= $(INC) -I/opt/mpfr/3.0.0/include -I/opt/gmp/5.0.1/include
     LIBS= -lm -L/usr/lib -L/opt/mpfr/3.0.0/lib -L/opt/gmp/5.0.1/lib /opt/mpfr/3.0.0/lib/libmpfr.a /opt/gmp/5.0.1/lib/libgmp.a
-    COMP=gcc
+    COMPcc=gcc
     COMPpp=g++
     STATICFLAG=-static
     BERTINILIB:=$(HOME)/lib/libbertini.a
@@ -60,8 +60,8 @@ ifeq ($(MACHINE),yourmachinenamehere)
     INC:=$(INC) #put your -I inclusions 
     BISON=bison# #path to bison
     LIBS=# #your libs
-		COMP=gcc  #compiler
-		COMPpp = g++
+	COMPcc=gcc  #compiler
+	COMPpp = g++
     STATICFLAG=-static#  need static?
 endif
 
@@ -75,6 +75,7 @@ endif
 FLEX=flex
 
 
+LIBS:=$(LIBS) ./libpartitionparse.a 
 #a few last definitions
 INC:=$(INC) -I../include/  -I$(BERTINIHEADERS) #this includes the header files for bertini_real, etc   
 
@@ -90,12 +91,14 @@ FLEXFILES=lex.partitionParse.o
 ###
 
 #all comes first, so is the default rule when you `make'
-all : bertini_real data_to_set sampler;    
+all : libpartitionparse bertini_real data_to_set sampler;    
 
+libpartitionparse: lex.partitionParse.o
+	ar rcs libpartitionparse.a lex.partitionParse.o
 
 #makes the bertini_real program
-bertini_real : bertini_real.c $(OBJFILES)  $(SOLVERS) $(FLEXFILES);
-	$(COMP) $(ARGS) -o bertini_real bertini_real.c $(OBJFILES)  $(SOLVERS)  $(FLEXFILES) $(BERTINILIB)  $(LIBS)  $(STATICFLAG)
+bertini_real : bertini_real.cpp $(OBJFILES)  $(SOLVERS) $(FLEXFILES);
+	$(COMPpp) $(ARGS) -o bertini_real bertini_real.cpp $(OBJFILES)  $(SOLVERS)  $(FLEXFILES) $(BERTINILIB)  $(LIBS)  $(STATICFLAG)
 
 
 #makes the data2set program.
@@ -104,8 +107,8 @@ data_to_set: dataToSet.cpp
 #   
 
 #makes the sampler program.
-sampler: sampler.c $(OBJFILES) $(FLEXFILES) $(SOLVERS)
-	$(COMP) $(ARGS) -o sampler sampler.c  $(SOLVERS) $(OBJFILES)   $(BERTINILIB) $(FLEXFILES)  $(LIBS)  $(STATICFLAG)
+sampler: sampler.cpp $(OBJFILES) $(FLEXFILES) $(SOLVERS)
+	$(COMPpp) $(ARGS) -o sampler sampler.cpp  $(SOLVERS) $(OBJFILES)   $(BERTINILIB) $(FLEXFILES)  $(LIBS)  $(STATICFLAG)
 #   
 
 
@@ -115,13 +118,13 @@ install: bertini_real data_to_set sampler
 
 
 .c.o : 
-	$(COMP) $(ARGS) -c $*.c
+	$(COMPcc) $(ARGS) -c $*.c
 
 .cpp.o : 
 	$(COMPpp) $(ARGS) -c $*.cpp
 
 lex.partitionParse.o:	lex.partitionParse.c
-	$(COMP) $(ARGS) -c lex.partitionParse.c
+	$(COMPcc) $(ARGS) -c lex.partitionParse.c
 
 lex.partitionParse.c:	partitionParse.l
 	$(FLEX) -PpartitionParse partitionParse.l
