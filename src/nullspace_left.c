@@ -39,7 +39,7 @@ int compute_crit_nullspace(witness_set *W_crit_real, // the returned value
 	
 	printf("max_degree: %d\nnum_jac_equations: %d\n",max_degree,ns_config.num_jac_equations);
 	
-//	mypause();
+
 	//
 	///
 	/////        end setup
@@ -201,12 +201,6 @@ int compute_crit_nullspace(witness_set *W_crit_real, // the returned value
 		// if it's time to move on to next function combo, must commit the points
 		if (ticked_new_functions==1)
 		{
-			
-//			printf("ticked new functions\n");
-			// the patch was set in the bottom row up top.
-
-//			printf("num_v_vars: %d\n",ns_config.num_v_vars);
-//			printf("num_jac_eqns: %d\n",ns_config.num_jac_equations);
 			//set the v_linears (M_i).
 			for (ii=0; ii<ns_config.num_v_vars-1; ii++) // deficient one because of the patch equation
 				for (jj=0; jj<ns_config.num_v_vars; jj++)
@@ -245,7 +239,6 @@ int compute_crit_nullspace(witness_set *W_crit_real, // the returned value
 			reached_end = increment_function_indices(&function_indices, &unused_function_indices,
 																							 num_funcs_atatime,
 																							 ns_config.num_jac_equations);
-//			printf("reached_end = %d\n",reached_end);
 		}
 	}
 	
@@ -501,7 +494,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 		init_vec_mp2(ns_config->v_linears[ii],ns_config->num_v_vars,solve_options->T.AMP_max_prec);
 		ns_config->v_linears[ii]->size = ns_config->num_v_vars;
 		for (jj=0; jj<ns_config->num_v_vars; jj++){
-			get_comp_rand_real_mp(&ns_config->v_linears[ii]->coord[jj]); // should this be real?
+			get_comp_rand_mp(&ns_config->v_linears[ii]->coord[jj]); // should this be real?
 		}
 	}
 	
@@ -529,7 +522,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	init_vec_mp2(ns_config->v_patch,ns_config->num_v_vars,solve_options->T.AMP_max_prec);
 	ns_config->v_patch->size = ns_config->num_v_vars;
 	for (ii=0; ii<ns_config->num_v_vars; ii++) {
-		get_comp_rand_real_mp(&ns_config->v_patch->coord[ii]);
+		get_comp_rand_mp(&ns_config->v_patch->coord[ii]);
 	}
 	
 	

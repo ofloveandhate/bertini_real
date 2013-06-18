@@ -51,21 +51,22 @@ void computeCurveNotSelfConj(witness_set W_in,
 	printf("%s\n",strSys);
   system(strSys);
 	
+	
+	rename("witness_data_0","witness_data");
+	
+	
   //read the real solutions
   IN = safe_fopen_read("real_solutions");
   
   fscanf(IN, "%d\n\n", &num_sols);
 
-	
-	
+
 	vertex temp_vertex; init_vertex(&temp_vertex);
 	change_size_vec_mp(temp_vertex.pt_mp,num_vars); temp_vertex.pt_mp->size = num_vars;
 
 	temp_vertex.type = ISOLATED;
 	
-	
 	comp_mp projection_value;  init_mp(projection_value);
-	
 	
 	for(ii=0;ii<num_sols;ii++) {
 		for(jj=0;jj<num_vars-1;jj++){
@@ -82,13 +83,13 @@ void computeCurveNotSelfConj(witness_set W_in,
 			
 			vec_cp_mp(temp_vertex.pt_mp,cur_sol);
 			
-			dot_product_mp(projection_value, temp_vertex.pt_mp, pi_mp);
+			dot_product_mp(temp_vertex.projVal_mp, temp_vertex.pt_mp, pi_mp);
 			
 			if (curve_index_in_vertices(C,V,
 																	temp_vertex.pt_mp,
-																	projection_value,
-																	solve_options->T)
-					==-1)
+																	temp_vertex.projVal_mp,
+																	solve_options->T) ==-1
+					)
 				curve_add_vertex(C,V,temp_vertex);      
 		}
 		
@@ -108,8 +109,7 @@ void computeCurveNotSelfConj(witness_set W_in,
   remove("func_inputbar");
   remove("var_names");
 	
-	printf("renaming\n");
-	rename("witness_data_0","witness_data");
+	
 }
 
 
