@@ -1,0 +1,3 @@
+to generate the documentation for bertini_real, run
+
+doxygen bertini_real.doxy.config
