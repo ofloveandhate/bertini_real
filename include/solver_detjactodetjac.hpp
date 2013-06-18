@@ -14,16 +14,14 @@
 #ifndef _detjac_to_detjac_H
 #define _detjac_to_detjac_H
 
-#include "determinant_derivative.h"
-#include "cascade.h"
-#include "polysolve.h"  // the bertini  eval_funcs
+#include "determinant_derivative.hpp"
 
-#include "fileops.h"
-#include "data_type.h"
-#include "programConfiguration.h"
-#include "postProcessing.h"
-#include "witnessSet.h"
-#include "missing_bertini_headers.h"
+#include "fileops.hpp"
+#include "data_type.hpp"
+#include "programConfiguration.hpp"
+#include "postProcessing.hpp"
+#include "witnessSet.hpp"
+#include "missing_bertini_headers.hpp"
 // the mp version
 typedef struct
 {

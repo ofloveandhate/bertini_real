@@ -15,17 +15,19 @@
 #ifndef NULLSPACE_H_
 #define NULLSPACE_H_
 
+extern "C" {
 #include "cascade.h"
-#include "polysolve.h"  // the bertini  eval_funcs
-
-#include "fileops.h"
-#include "data_type.h"
-#include "witnessSet.h"
-#include "partitionParse.h"
-#include "solver_multilintolin.h"
-#include "solver_nullspace_left.h"
-#include "output.h"
-#include "missing_bertini_headers.h"
+}
+extern "C" {
+#include "polysolve.h"
+}
+#include "fileops.hpp"
+#include "data_type.hpp"
+#include "witnessSet.hpp"
+#include "solver_multilintolin.hpp"
+#include "solver_nullspace_left.hpp"
+#include "output.hpp"
+#include "missing_bertini_headers.hpp"
 
 
 

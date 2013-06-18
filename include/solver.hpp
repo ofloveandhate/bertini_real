@@ -14,29 +14,39 @@
 #ifndef SOLVER_MAIN_HEADER_H
 #define SOLVER_MAIN_HEADER_H
 
+extern "C" {
 #include "cascade.h"
-#include "polysolve.h"  // the bertini  eval_funcs
+}
+extern "C" {
+#include "polysolve.h"
+}
+#include "fileops.hpp"
+#include "data_type.hpp"
 
-#include "fileops.h"
-#include "data_type.h"
-
-#include "determinant_derivative.h"
-#include "programConfiguration.h"
-#include "postProcessing.h"
-#include "witnessSet.h"
-#include "missing_bertini_headers.h"
+#include "determinant_derivative.hpp"
+#include "programConfiguration.hpp"
+#include "postProcessing.hpp"
+#include "witnessSet.hpp"
+#include "missing_bertini_headers.hpp"
 
 
-typedef struct
+class solver
 {
-	void *asdf;
+public:
+	
+	// these virtual functions will need to be programmed into the derived classes.
+	
+//	virtual evaluator_d();
+//	virtual evaluator_mp();
+//	virtual change_precision();
+//	
 	
 	int (*evaluator_function_d) (point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *); // function handle to evaluator to use
-  int (*evaluator_function_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *);
+	int (*evaluator_function_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *);
 	
 	int (*precision_changer)(void const *ED, int new_prec);
 	
-} solver_handle_struct;
+};
 
 
 

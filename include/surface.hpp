@@ -18,18 +18,21 @@
 #ifndef SURFACE_H
 #define SURFACE_H
 
-
-#include "fileops.h"
+extern "C" {
 #include "polysolve.h"
-#include "checkSelfConjugate.h"
-#include "curveNotSelfConj.h"
-#include "curveSelfConj.h"
-#include "data_type.h"
-#include "isosingular.h"
-#include "programConfiguration.h"
-#include "witnessSet.h"
-#include "output.h"
-#include "missing_bertini_headers.h"
+}
+
+#include "fileops.hpp"
+
+#include "checkSelfConjugate.hpp"
+#include "curveNotSelfConj.hpp"
+#include "curveSelfConj.hpp"
+#include "data_type.hpp"
+#include "isosingular.hpp"
+#include "programConfiguration.hpp"
+#include "witnessSet.hpp"
+#include "output.hpp"
+#include "missing_bertini_headers.hpp"
 
 void surface_main(witness_set W,
 									int self_conjugate,

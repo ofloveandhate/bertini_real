@@ -1,4 +1,4 @@
-#include "sampler.h"
+#include "sampler.hpp"
 
 
 int main(int argC, char *args[])

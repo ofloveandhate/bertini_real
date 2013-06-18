@@ -1,4 +1,4 @@
-#include "nullspace_left.h"
+#include "nullspace_left.hpp"
 
 
 int compute_crit_nullspace(witness_set *W_crit_real, // the returned value
@@ -60,7 +60,7 @@ int compute_crit_nullspace(witness_set *W_crit_real, // the returned value
 	
 	// setup for the multilin moves
 	//  these are for feeding into the multilin solver -- and that's it.  they'll be set in the while loop
-	vec_mp *multilin_linears = br_malloc(ambient_dim*sizeof(vec_mp)); // target dim is the number of linears in the input witness set
+	vec_mp *multilin_linears = (vec_mp *) br_malloc(ambient_dim*sizeof(vec_mp)); // target dim is the number of linears in the input witness set
 	for (ii=0; ii<ambient_dim; ii++) {
 		init_vec_mp(multilin_linears[ii],W.num_variables); multilin_linears[ii]->size = W.num_variables;
 		vec_cp_mp(multilin_linears[ii], W.L_mp[ii]);
@@ -489,7 +489,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	
 	
 	// set up the linears in $v$  ( the M_i linears)
-	ns_config->v_linears = br_malloc(ns_config->num_v_linears*sizeof(vec_mp));
+	ns_config->v_linears = (vec_mp *)br_malloc(ns_config->num_v_linears*sizeof(vec_mp));
 	for (ii=0; ii<ns_config->num_v_linears; ii++) {
 		init_vec_mp2(ns_config->v_linears[ii],ns_config->num_v_vars,solve_options->T.AMP_max_prec);
 		ns_config->v_linears[ii]->size = ns_config->num_v_vars;

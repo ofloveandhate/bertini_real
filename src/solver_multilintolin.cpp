@@ -1,4 +1,4 @@
-#include "solver_multilintolin.h"
+#include "solver_multilintolin.hpp"
 
 //the main wrapper function for chaining into the multilin_to_lin solver.
 // pass in:

@@ -14,15 +14,22 @@
 #ifndef _DETERMINANT_DERIVATIVE_H
 #define _DETERMINANT_DERIVATIVE_H
 
-#include "solver_linprodtodetjac.h"
-#include "solver_detjactodetjac.h"
+extern "C" {
 #include "cascade.h"
-#include "polysolve.h"  // the bertini  eval_funcs
+}
+extern "C" {
+#include "polysolve.h"
+}
 
-#include "fileops.h"
-#include "data_type.h"
 
-#include "missing_bertini_headers.h"
+
+#include "solver_linprodtodetjac.hpp"
+#include "solver_detjactodetjac.hpp"
+
+#include "fileops.hpp"
+#include "data_type.hpp"
+
+#include "missing_bertini_headers.hpp"
 
 
 //the amount by which to perturb for numerical derivative

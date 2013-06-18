@@ -14,15 +14,13 @@
 #ifndef _MULTILINSOLVER_H
 #define _MULTILINSOLVER_H
 
-#include "cascade.h"
-#include "polysolve.h"  // the bertini  eval_funcs
-
-#include "fileops.h"
-#include "data_type.h"
-#include "programConfiguration.h"
-#include "postProcessing.h"
-#include "witnessSet.h"
-#include "missing_bertini_headers.h"
+#include "solver.hpp"
+#include "fileops.hpp"
+#include "data_type.hpp"
+#include "programConfiguration.hpp"
+#include "postProcessing.hpp"
+#include "witnessSet.hpp"
+#include "missing_bertini_headers.hpp"
 
 enum {MESHSTYLE=0, LISTSTYLE=1};
 

@@ -1,4 +1,4 @@
-#include "bertini_real.h"
+#include "bertini_real.hpp"
 
 int main(int argC, char *args[])
 /***************************************************************\

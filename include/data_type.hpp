@@ -16,10 +16,18 @@
 #ifndef _DATA_TYPE_H
 #define _DATA_TYPE_H
 
-#include "fileops.h"
+extern "C" {
 #include "cascade.h"
+}
+extern "C" {
 #include "polysolve.h"
-#include "missing_bertini_headers.h"
+}
+
+
+
+#include "fileops.hpp"
+
+#include "missing_bertini_headers.hpp"
 
 /*** low-level data types. ***/
 

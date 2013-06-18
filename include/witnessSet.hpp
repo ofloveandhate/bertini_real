@@ -6,10 +6,16 @@
 #ifndef WITNESS_SET_H_
 #define WITNESS_SET_H_
 
-#include "data_type.h"
+
+extern "C" {
 #include "polysolve.h"
-#include "fileops.h"
-#include "missing_bertini_headers.h"
+}
+
+
+#include "data_type.hpp"
+
+#include "fileops.hpp"
+#include "missing_bertini_headers.hpp"
 
 
 

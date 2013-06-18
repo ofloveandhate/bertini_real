@@ -15,12 +15,19 @@
 #ifndef _CHECK_SELFCONJUGATE_H
 #define _CHECK_SELFCONJUGATE_H
 
-#include "witnessSet.h"
-#include "partitionParse.h"
-#include "data_type.h"
+
+extern "C" {
 #include "polysolve.h"
-#include "fileops.h"
-#include "missing_bertini_headers.h"
+}
+
+
+#include "witnessSet.hpp"
+extern "C" {
+#include "partitionParse.h"
+}
+#include "data_type.hpp"
+#include "fileops.hpp"
+#include "missing_bertini_headers.hpp"
 
 /**
  main function for performing self-conjugacy check.

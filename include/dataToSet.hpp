@@ -12,7 +12,7 @@
 #include <map>
 #include <sstream>
 
-#include "mpreal.h"  // <---- this header-only software graciously free to use for free projects, which this is.
+#include "mpreal.hpp"  // <---- this header-only software graciously free to use for free projects, which this is.
 
 
 #ifndef _DATA_TO_SET_H
@@ -23,9 +23,7 @@ extern "C" {
 #include "polysolve.h"
 }
 
-extern "C" {
-#include "data_type.h"
-}
+#include "data_type.hpp"
 
 
 void purge_previous_directory(char *directoryName);

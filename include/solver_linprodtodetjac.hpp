@@ -14,17 +14,15 @@
 #ifndef _LINPROD_TO_DETJAC_H
 #define _LINPROD_TO_DETJAC_H
 
-#include "cascade.h"
-#include "polysolve.h"  // the bertini  eval_funcs
+#include "solver.hpp"
+#include "fileops.hpp"
+#include "data_type.hpp"
 
-#include "fileops.h"
-#include "data_type.h"
-
-#include "determinant_derivative.h"
-#include "programConfiguration.h"
-#include "postProcessing.h"
-#include "witnessSet.h"
-#include "missing_bertini_headers.h"
+#include "determinant_derivative.hpp"
+#include "programConfiguration.hpp"
+#include "postProcessing.hpp"
+#include "witnessSet.hpp"
+#include "missing_bertini_headers.hpp"
 
 
 // the mp version

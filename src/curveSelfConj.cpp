@@ -1,4 +1,4 @@
-#include "curveSelfConj.h"
+#include "curveSelfConj.hpp"
 
 
 
