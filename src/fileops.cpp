@@ -2,6 +2,26 @@
 
 
 
+int partition_parse(int **declarations,
+										boost::filesystem::path input_filename,
+										boost::filesystem::path functions_filename,
+										boost::filesystem::path config_filename,
+										int not_sc_flag)
+{
+	
+	FILE *IN = safe_fopen_read(input_filename.c_str());
+	
+	int retval = partitionParse(declarations, IN,
+															const_cast<char *> (functions_filename.c_str()),
+															const_cast<char *> (config_filename.c_str()),
+															not_sc_flag); // the 0 means not self conjugate.
+	fclose(IN);
+	
+	return retval;
+}
+
+
+
 void rename_bertini_files_dotbak(){
 	
 	rename("arr.out","arr.out.bak");

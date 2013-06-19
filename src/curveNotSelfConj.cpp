@@ -34,8 +34,7 @@ void computeCurveNotSelfConj(witness_set W_in,
   init_vec_mp(cur_sol_bar,num_vars); cur_sol_bar->size = num_vars;
 	set_one_mp(&cur_sol_bar->coord[0]);
 	
-  IN = safe_fopen_read(input_file.c_str());
-  partitionParse(&declarations, IN, const_cast<char *>("func_input_nsc"), const_cast<char *>("config_nsc"),1);
+  partition_parse(&declarations, input_file, "func_input_nsc", "config_nsc",1);
 	
 
   //generate input file

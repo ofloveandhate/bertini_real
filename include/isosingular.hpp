@@ -24,11 +24,9 @@ extern "C" {
 
 #include "data_type.hpp"
 
-extern "C" {
-#include "partitionParse.h"
-}
 #include "fileops.hpp"
 #include "missing_bertini_headers.hpp"
+
 // isosingular.c
 int isosingular_deflation(int *num_deflations, int **deflation_sequence,
 													boost::filesystem::path inputFile,

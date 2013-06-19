@@ -3,10 +3,12 @@
 #include <stdarg.h>
 #include <string.h>
 #include <math.h>
-#include <gmp.h>
+
 #include <time.h>
 #include <float.h>
 #include <limits.h>
+
+#include <gmp.h>
 #include <mpfr.h>
 #include <mpf2mpfr.h>
 
@@ -27,9 +29,21 @@ extern "C" {
 #include "polysolve.h"
 }
 
+extern "C" {
+#include "partitionParse.h"
+}
+
+
 #include "data_type.hpp"
 #include "missing_bertini_headers.hpp"
 #include <boost/filesystem/path.hpp>
+
+
+int partition_parse(int **declarations,
+										boost::filesystem::path input_filename,
+										boost::filesystem::path functions_filename,
+										boost::filesystem::path config_filename,
+										int not_sc_flag);
 
 
 /**

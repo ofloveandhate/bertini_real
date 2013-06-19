@@ -36,9 +36,7 @@ int checkSelfConjugate(witness_set W,
 	
 	
   // setup input file
-	IN = safe_fopen_read(input_file);
-  partitionParse(&declarations, IN, "func_input_real", "config_real",0); // the 0 means not self conjugate
-	fclose(IN);
+  partition_parse(&declarations, input_file, "func_input_real", "config_real",0); // the 0 means not self conjugate
 
 	
 	
@@ -123,15 +121,12 @@ int get_incidence_number(witness_set W,
 	
 	
   // setup input file
-	IN = safe_fopen_read(input_file);
-  partitionParse(&declarations, IN, "func_input_real", "config_real",0); // the 0 means not self conjugate
-	fclose(IN);
+  partition_parse(&declarations, input_file, "func_input_real", "config_real",0); // the 0 means not self conjugate
 	
 	
 	
 	//check existence of the required witness_data file.
-	IN = safe_fopen_read("witness_data");
-	fclose(IN);
+	IN = safe_fopen_read("witness_data"); fclose(IN);
 	
 	//perhaps this could be used to get the witness_data file, but there would be problems
 	//  membership_test_input_file("input_membership_test", "func_input_real", "config_real",1);
