@@ -8,8 +8,8 @@
 
 int checkSelfConjugate(witness_set W,
                        int           num_vars,
-                       char          *input_file,
-											  char *stifle_text)
+                       boost::filesystem::path input_file,
+											 std::string stifle_text)
 /***************************************************************\
  * USAGE: check if component is self conjugate                  *
  * ARGUMENTS: witness set, # of variables and name of input file*
@@ -18,15 +18,12 @@ int checkSelfConjugate(witness_set W,
  \***************************************************************/
 {
   int strLength = 0, digits = 15, *declarations = NULL;
-  char *SysStr = NULL,*fmt = NULL, *bertini_command="bertini";
+  char *fmt = NULL;
+	std::string bertini_command="bertini input_membership_test ";
+	bertini_command.append(stifle_text);
   FILE *IN = NULL;
 	
 
-	//make the command string to run
-	strLength = 1 + snprintf(NULL, 0, "%s input_membership_test %s", bertini_command,stifle_text);
-  SysStr = (char *)bmalloc(strLength * sizeof(char));
-  sprintf(SysStr, "%s input_membership_test %s",
-					bertini_command,stifle_text);
 	
 	
 	
@@ -63,8 +60,8 @@ int checkSelfConjugate(witness_set W,
 	write_member_points_sc(W.pts_d[0],fmt);
 	
 	// Do membership test
-	printf("*\n%s\n*\n",SysStr);
-  system(SysStr);
+	std::cout << "*\n" << bertini_command << "\n*" << std::endl;
+  system(bertini_command.c_str());
 	
 	int *component_numbers;
 	component_numbers = (int *)bmalloc(2*sizeof(int));
@@ -76,11 +73,6 @@ int checkSelfConjugate(witness_set W,
 	
 	
   // delete temporary files
-//  remove("func_input_real");
-//  remove("config_real");
-//	remove("incidence_matrix");
-//	remove("member_points");
-
 
 	
 	if (component_numbers[0]==component_numbers[1]) {
@@ -104,8 +96,8 @@ int checkSelfConjugate(witness_set W,
 
 int get_incidence_number(witness_set W,
 												 int           num_vars,
-												 char          *input_file,
-												 char *stifle_text)
+												 boost::filesystem::path input_file,
+												 std::string stifle_text)
 /***************************************************************\
  * USAGE: check if component is self conjugate                  *
  * ARGUMENTS: witness set, # of variables and name of input file*
@@ -114,16 +106,13 @@ int get_incidence_number(witness_set W,
  \***************************************************************/
 {
   int strLength = 0, digits = 15, *declarations = NULL;
-  char *SysStr = NULL,*fmt = NULL, *bertini_command="bertini";
-  FILE *IN = NULL;
+  char *fmt = NULL;
+	std::string bertini_command="bertini input_membership_test ";
+	bertini_command.append(stifle_text);
+  
+	FILE *IN = NULL;
 	
-	
-	//make the command string to run
-	strLength = 1 + snprintf(NULL, 0, "%s input_membership_test %s ", bertini_command, stifle_text);
-  SysStr = (char *)bmalloc(strLength * sizeof(char));
-  sprintf(SysStr, "%s input_membership_test %s ", bertini_command, stifle_text);
-	
-	
+
 	
 	// make the format to write the member_points file
   strLength = 1 + snprintf(NULL, 0, "%%.%dle %%.%dle\n", digits, digits);
@@ -159,24 +148,15 @@ int get_incidence_number(witness_set W,
 	write_member_points_singlept(W.pts_d[0],fmt);
 	
 	// Do membership test
-	printf("*\n%s\n*\n",SysStr);
-  system(SysStr);
+	std::cout << "*\n" << bertini_command << "\n*" << std::endl;
+  system(bertini_command.c_str());
 	
 	int component_number;
-//	component_numbers = (int *)bmalloc(1*sizeof(int));
 	
 	read_incidence_matrix(&component_number);
 	
   free(declarations);
 	
-	
-  // delete temporary files
-  remove("func_input_real");
-  remove("config_real");
-	remove("incidence_matrix");
-//	remove("member_points");
-	
-
 	return component_number;
 }
 
@@ -197,9 +177,8 @@ int write_member_points_singlept(point_d point_to_write, char * fmt){
 	
 	fprintf(OUT,"1\n\n");
 	for(ii=0;ii<result->size;ii++)
-	{
 		fprintf(OUT, fmt, result->coord[ii].r, result->coord[ii].i);
-	}
+	
 	
 	fclose(OUT);
 	
@@ -360,9 +339,9 @@ void read_incidence_matrix_wrt_number(int *component_numbers, int given_incidenc
 
 
 
-void membership_test_input_file(char *outputFile,
-                                char *funcInput,
-                                char *configInput,
+void membership_test_input_file(boost::filesystem::path outputFile,
+                                boost::filesystem::path funcInput,
+                                boost::filesystem::path configInput,
                                 int  tracktype)
 /***************************************************************\
  * USAGE: setup input file to membership test                    *
@@ -372,22 +351,13 @@ void membership_test_input_file(char *outputFile,
  \***************************************************************/
 {
   char ch;
-  FILE *OUT = fopen(outputFile, "w"), *IN = NULL;
-  if (OUT == NULL)
-  {
-    printf("\n\nERROR: could not open '%s' to write!\n\n\n", outputFile);
-    bexit(ERROR_FILE_NOT_EXIST);
-  }
+  FILE *OUT = safe_fopen_write(outputFile), *IN = NULL;
+
 	
   // setup configurations in OUT
   fprintf(OUT, "CONFIG\n");
-  IN = fopen(configInput, "r");
-  if (IN == NULL)
-  {
-    fclose(OUT);
-    printf("\n\nERROR: '%s' does not exist!!!\n\n\n", funcInput);
-    bexit(ERROR_FILE_NOT_EXIST);
-  }
+  IN = safe_fopen_read(configInput);
+
 	
 	while ((ch = fgetc(IN)) != EOF)
     fprintf(OUT, "%c", ch);
@@ -398,13 +368,8 @@ void membership_test_input_file(char *outputFile,
     fprintf(OUT, "TrackType: %d;\nDeleteTempFiles: 1;\nEND;\nINPUT\n",tracktype);
 	
   // setup system in OUT
-  IN = fopen(funcInput, "r");
-  if (IN == NULL)
-  {
-    fclose(OUT);
-    printf("\n\nERROR: '%s' does not exist!!!\n\n\n", funcInput);
-    bexit(ERROR_FILE_NOT_EXIST);
-  }
+  IN = safe_fopen_read(funcInput);
+
   while ((ch = fgetc(IN)) != EOF)
     fprintf(OUT, "%c", ch);
   fclose(IN);

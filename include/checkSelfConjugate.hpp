@@ -44,8 +44,8 @@ extern "C" {
  */
 int checkSelfConjugate(witness_set W,
                        int           num_vars,
-                       char          *input_file,
-											  char *stifle_text);
+                      boost::filesystem::path input_file,
+											 std::string stifle_text);
 
 
 
@@ -60,8 +60,8 @@ int checkSelfConjugate(witness_set W,
  */
 int get_incidence_number(witness_set W,
 												 int           num_vars,
-												 char          *input_file,
-												  char *stifle_text);
+												 boost::filesystem::path input_file,
+												 std::string stifle_text);
 
 /**
  write a single point to "member_points"
@@ -87,9 +87,9 @@ int write_member_points_sc(point_d point_to_write, char * fmt);
  \param configInput the name of the config file
  \param tracktype bertini track type.  should be 3.
  */
-void membership_test_input_file(char *outputFile,
-                                char *funcInput,
-                                char *configInput,
+void membership_test_input_file(boost::filesystem::path outputFile,
+                                boost::filesystem::path funcInput,
+                                boost::filesystem::path configInput,
                                 int  tracktype);
 
 /**

@@ -6,12 +6,12 @@
 //use:  call to parse the file witness_set_file, into the struct W.	
 
 
-int witnessSetParse(witness_set *W, char *witness_set_file, const int num_vars){
+int witnessSetParse(witness_set *W, boost::filesystem::path witness_set_file, const int num_vars){
   
 
   int ii, jj;
 	
-  FILE *IN = safe_fopen_read(witness_set_file);
+  FILE *IN = safe_fopen_read(witness_set_file.c_str());
   
   
 	int dim, comp_num;
@@ -468,11 +468,11 @@ void get_variable_names(witness_set *W){
 
 
 
-void write_homogeneous_coordinates(witness_set W, char filename[])
+void write_homogeneous_coordinates(witness_set W, boost::filesystem::path filename)
 {
 	int ii,jj;
 	
-	FILE *OUT  = safe_fopen_write(filename); // open the output file
+	FILE *OUT  = safe_fopen_write(filename.c_str()); // open the output file
 	
 	
 	fprintf(OUT,"%d\n\n",W.num_pts); // print the header line
@@ -489,10 +489,10 @@ void write_homogeneous_coordinates(witness_set W, char filename[])
 	return;
 }
 
-void write_dehomogenized_coordinates(witness_set W, char filename[]){
+void write_dehomogenized_coordinates(witness_set W, boost::filesystem::path filename){
 	int ii,jj;
 	
-	FILE *OUT = safe_fopen_write(filename); // open the output file.
+	FILE *OUT = safe_fopen_write(filename.c_str()); // open the output file.
 	
 	fprintf(OUT,"%d\n\n",W.num_pts); // print the header line
 	for (ii=0; ii<W.num_pts; ++ii) {
@@ -514,18 +514,20 @@ void write_dehomogenized_coordinates(witness_set W, char filename[]){
 
 
 
-void write_linears(witness_set W, char filename[])
+void write_linears(witness_set W, boost::filesystem::path filename)
 {
 	int ii,jj;
 	
-	FILE *OUT  = safe_fopen_write(filename); // open the output file
+	FILE *OUT  = safe_fopen_write(filename.c_str()); // open the output file
 	
 	
 	fprintf(OUT,"%d\n\n",W.num_linears); // print the header line
 	
 	for (ii=0; ii<W.num_linears; ++ii) {
 		for (jj=0; jj<W.num_variables; jj++) {
-			fprintf(OUT,"%.15le %.15le\n",W.L_d[ii]->coord[jj].r,W.L_d[ii]->coord[jj].i);
+			print_mp(OUT, 0, &W.L_mp[ii]->coord[jj]);
+			fprintf(OUT, "\n");
+//			fprintf(OUT,"%.15le %.15le\n",W.L_mp[ii]->coord[jj].r,W.L_mp[ii]->coord[jj].i);
 		}
 		fprintf(OUT,"\n");
 	}

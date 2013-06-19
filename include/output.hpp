@@ -12,6 +12,7 @@
 #include <mpfr.h>
 #include <mpf2mpfr.h>
 
+#include <boost/filesystem/path.hpp>
 
 #ifndef _BR_OUTPUT_H
 #define _BR_OUTPUT_H
@@ -30,6 +31,7 @@ extern "C" {
 
 #include "partitionParse.h"
 #include "missing_bertini_headers.hpp"
+#include "programConfiguration.hpp"
 /**
  
  */
@@ -50,7 +52,7 @@ void print_edges(edge *E, int num_edges, int num_vars, char *outputfile, int MPT
 /**
  
  */
-void print_curve(curveDecomp_d C, int num_vars, char *input_deflated_Name, char *outputfile, int MPType);
+void print_curve(curveDecomp_d C, int num_vars, boost::filesystem::path input_deflated_Name, boost::filesystem::path  outputfile, int MPType);
 
 /**
  

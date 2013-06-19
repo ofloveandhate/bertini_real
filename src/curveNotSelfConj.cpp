@@ -8,7 +8,7 @@ void computeCurveNotSelfConj(witness_set W_in,
                              curveDecomp_d	*C,
 														 vertex_set			*V,
                              int           num_vars,
-                             char          *input_file,
+                             boost::filesystem::path input_file,
 														 program_configuration * program_options,
 														 solver_configuration * solve_options)
 /***************************************************************\
@@ -22,8 +22,10 @@ void computeCurveNotSelfConj(witness_set W_in,
 	// num_vars includes the homogeneous variable
 	
 	
-  int ii,jj,strLength,num_sols,*declarations = NULL;
-  char *strSys,*bertini_command="bertini";
+  int ii,jj,num_sols,*declarations = NULL;
+  
+	std::string bertini_system_command = "bertini input_NSC";
+	
   FILE *IN = NULL;
   vec_mp cur_sol,cur_sol_bar;
   init_vec_mp(cur_sol,num_vars); cur_sol->size = num_vars;
@@ -32,8 +34,8 @@ void computeCurveNotSelfConj(witness_set W_in,
   init_vec_mp(cur_sol_bar,num_vars); cur_sol_bar->size = num_vars;
 	set_one_mp(&cur_sol_bar->coord[0]);
 	
-  IN = fopen(input_file, "r");
-  partitionParse(&declarations, IN, "func_input_nsc", "config_nsc",1);
+  IN = safe_fopen_read(input_file.c_str());
+  partitionParse(&declarations, IN, const_cast<char *>("func_input_nsc"), const_cast<char *>("config_nsc"),1);
 	
 
   //generate input file
@@ -41,17 +43,13 @@ void computeCurveNotSelfConj(witness_set W_in,
   //generate start file
 	diag_homotopy_start_file("start",  W_in);
 
-  strLength = 1 + snprintf(NULL, 0, "%s input_NSC", bertini_command);
-  strSys = (char *)bmalloc(strLength * sizeof(char));
-  sprintf(strSys, "%s input_NSC", bertini_command);
+
   //run bertini
-	
+		
 	copyfile("witness_data","witness_data_0");
 	
-	printf("%s\n",strSys);
-  system(strSys);
-	
-	
+  system(bertini_system_command.c_str());
+
 	rename("witness_data_0","witness_data");
 	
 	
@@ -118,10 +116,10 @@ void computeCurveNotSelfConj(witness_set W_in,
 // MISC. FUNCTIONS
 
 
-void diag_homotopy_input_file(char  *outputFile, 
-                              char  *funcInputx,
-                              char  *funcInputy, 
-                              char  *configInput,
+void diag_homotopy_input_file(boost::filesystem::path outputFile,
+                              boost::filesystem::path funcInputx,
+                              boost::filesystem::path funcInputy, 
+                              boost::filesystem::path configInput,
                               vec_d L,
                               int   num_vars)
 /***************************************************************\
@@ -134,59 +132,37 @@ void diag_homotopy_input_file(char  *outputFile,
   char ch,**str,*fmt = NULL;
   int ii,jj,size;
   mat_d A;
-  FILE *OUT = fopen(outputFile, "w"), *IN = NULL;
-  if (OUT == NULL)
-  {
-    printf("\n\nERROR: '%s' is an inproper name of a file!!\n\n\n", outputFile);
-    bexit(ERROR_FILE_NOT_EXIST);
-  }
+	
+	FILE *IN = NULL;
+	
+
   str=(char **)bmalloc(num_vars*sizeof(char *));
   for(ii=0;ii<num_vars;ii++)
     str[ii]=(char*)bmalloc(sizeof(char)*256);
   
+	FILE *OUT = safe_fopen_write(outputFile.c_str());
+	
   // setup configurations in OUT
   fprintf(OUT, "CONFIG\n");
-  IN = fopen(configInput, "r");
-  if (IN == NULL)
-  {
-    fclose(OUT);
-    printf("\n\nERROR: '%s' does not exist!!!\n\n\n", configInput);
-    bexit(ERROR_FILE_NOT_EXIST);
-  }
+  IN = safe_fopen_read(configInput.c_str());
   fclose(IN);
+	
   fprintf(OUT, "USERHOMOTOPY: 1;\nDeleteTempFiles: 1;\nEND;\nINPUT\n");
 
   // setup variables in OUT
-  IN = fopen(funcInputx, "r");
-  if (IN == NULL)
-  {
-    fclose(OUT);
-    printf("\n\nERROR: '%s' does not exist!!!\n\n\n", funcInputx);
-    bexit(ERROR_FILE_NOT_EXIST);
-  }
-
+  IN = safe_fopen_read(funcInputx.c_str());
   while ((ch = fgetc(IN)) != EOF )
     fprintf(OUT, "%c", ch);
   fclose(IN);
 
-  IN = fopen(funcInputy, "r");
-  if (IN == NULL)
-  {
-    fclose(OUT);
-    printf("\n\nERROR: '%s' does not exist!!!\n\n\n", funcInputy);
-    bexit(ERROR_FILE_NOT_EXIST);
-  }
-  //setup the function name in OUT
+	//setup the function name in OUT
+	IN = safe_fopen_read(funcInputy.c_str());
   while ((ch = fgetc(IN)) != EOF )
     fprintf(OUT, "%c", ch);
   fclose(IN);
-  IN = fopen("var_names", "r");
-  if (IN == NULL)
-  {
-    fclose(OUT);
-    printf("\n\nERROR: var_names does not exist!!!\n\n\n");
-    bexit(ERROR_FILE_NOT_EXIST);
-  }
+	
+	
+  IN = safe_fopen_read("var_names");
   ii=0;jj=0;
   while ((ch = fgetc(IN)) != EOF)
   {
@@ -198,6 +174,7 @@ void diag_homotopy_input_file(char  *outputFile,
       jj=0;
     }
   }
+	
   //setup the linear equations 
   // find the size needed
   size = 1 + snprintf(NULL, 0, "%%.%dlf+%%.%dlf*I", 15, 15);
@@ -219,11 +196,10 @@ void diag_homotopy_input_file(char  *outputFile,
     fprintf(OUT, ";\n");
   } 
   fprintf(OUT, "\n");
+	
   //Generate a random matrix A and output to input file.
   init_mat_d(A, 2, num_vars);
 	make_matrix_random_d(A, 2, num_vars);
-	print_matrix_to_screen_matlab(A,"A");
-//  get_random_mat_d(A,2, num_vars);
   for (ii = 0; ii < 2; ii++)
     for(jj=0;jj<num_vars;jj++)
     {
@@ -276,7 +252,7 @@ void diag_homotopy_input_file(char  *outputFile,
 
 
 
-void diag_homotopy_start_file(char                 *startFile,
+void diag_homotopy_start_file(boost::filesystem::path startFile,
                               witness_set  W)
 /***************************************************************\
  * USAGE: setup start file to do diagonal homotopy             *
@@ -285,15 +261,14 @@ void diag_homotopy_start_file(char                 *startFile,
  * NOTES:                                                        *
  \***************************************************************/
 {
-  FILE *OUT = fopen(startFile, "w");
+  
   char *fmt = NULL;
   int ii,jj,kk;
 	int size,digits=15;
-  if (OUT == NULL)
-  {
-    printf("\n\nERROR: '%s' is an improper name of a file!!\n\n\n", startFile);
-    bexit(ERROR_FILE_NOT_EXIST);
-  }
+	
+	
+	FILE *OUT = safe_fopen_write(startFile.c_str());
+  
   size = 1 + snprintf(NULL, 0, "%%.%de %%.%de\n", digits, digits);
   // allocate size
   fmt = (char *)bmalloc(size * sizeof(char));

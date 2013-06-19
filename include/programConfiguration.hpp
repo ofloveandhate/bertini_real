@@ -13,6 +13,10 @@
 
 #include <getopt.h> 
 
+#include <boost/filesystem/path.hpp>
+#include <iostream>
+
+
 #define BERTINI_REAL_VERSION_STRING "0.0.101"
 
 
@@ -24,6 +28,11 @@
 extern "C" {
 #include "polysolve.h"
 }
+extern "C" {
+#include "cascade.h"
+}
+
+#include "solver.hpp"
 #include "data_type.hpp"
 #include "missing_bertini_headers.hpp"
 
@@ -44,7 +53,7 @@ typedef struct
 	
 	
 	int stifle_membership_screen; //< boolean controlling whether stifle_text is empty or " > /dev/null"
-	char *stifle_text; // std::string
+	std::string stifle_text; // std::string
 	
 	int user_randomization; // bool
 	int user_projection; // bool
@@ -52,12 +61,12 @@ typedef struct
 	int MPType;
 	
 	// all these char* should be boost::filesystem::path
-	char *projection_filename;
-	char *randomization_filename;
-	char *input_filename;
-	char *witness_set_filename;
-	char *input_deflated_filename;
-	char *output_basename; 
+	boost::filesystem::path projection_filename;
+	boost::filesystem::path randomization_filename;
+	boost::filesystem::path input_filename;
+	boost::filesystem::path witness_set_filename;
+	boost::filesystem::path input_deflated_filename;
+	boost::filesystem::path output_basename; 
 	
 	
 	int verbose_level;
@@ -74,7 +83,7 @@ typedef struct
 typedef struct
 {
 	int stifle_membership_screen; //< boolean controlling whether stifle_text is empty or " > /dev/null"
-	char *stifle_text;
+	std::string stifle_text;
 	
 	int verbose_level;
 	
@@ -85,41 +94,18 @@ typedef struct
 } sampler_configuration;
 
 
-///////////
-//
-//    SOLVER CONFIGURATION
-//
-//////////
-
-
-typedef struct
-{
-	
-	tracker_config_t T;
-	preproc_data PPD;
-	
-	int allow_multiplicity;
-	int allow_singular;
-	int allow_infinite;
-	int allow_unsuccess;
-	
-	int verbose_level;
-	int show_status_summary;
-	
-	int use_midpoint_checker;
-	double midpoint_tol;
-	
-	int use_gamma_trick;
-	
-	int complete_witness_set;
-} solver_configuration;
 
 
 
 
+/**
+ splits the bertini input file into several files for later use.
+ */
+void parse_input_file(boost::filesystem::path filename, int *MPType);
 
-/** reads the tracker_config_t from file. */
-void get_tracker_config(solver_configuration *solve_options,int MPType);
+
+void parse_preproc_data(boost::filesystem::path filename, preproc_data *PPD);
+
 
 
 /**
@@ -174,8 +160,7 @@ void sampler_clear_config(sampler_configuration *options);
 
 
 
-void solver_init_config(solver_configuration *options);
-void solver_clear_config(solver_configuration *options);
+
 
 
 

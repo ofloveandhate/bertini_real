@@ -1,6 +1,6 @@
 
 #choose some options.  by default, compiler optimization is turned off
-OPT= -Dverbose  -g  -Wall # -Dprintpathlinprod  -O3 -funroll-loops -fexpensive-optimizations
+OPT= -Dverbose  -g  -Wall #-Wdeprecated # -Dprintpathlinprod  -O3 -funroll-loops -fexpensive-optimizations
 
 
 
@@ -13,9 +13,13 @@ OPT= -Dverbose  -g  -Wall # -Dprintpathlinprod  -O3 -funroll-loops -fexpensive-o
 
 
 #initialize a some variables
-INSTALLPATH:=UNDEFINED
-BERTINIHEADERS:=UNDEFINED
-BERTINILIB:=UNDEFINED
+INSTALLPATH:=UNDEFINEDinstallpath
+BERTINIHEADERS:=UNDEFINEDbertiniheaders
+BERTINILIB:=UNDEFINEDbertinilib
+COMPcc:=UNDEFINEDcompcc
+COMPpp:=UNDEFINEDcomppp
+BOOSTLOC := UNDEFINEDboostloc
+BOOSTSUFFIX:=UNDEFINEDboostsuffix
 
   #check environment variable $(MACHINENAME), if defined
 ifeq ($(MACHINENAME),MACBRAKE)
@@ -29,6 +33,10 @@ ifeq ($(MACHINENAME),MACBRAKE)
 	BERTINILIB:=$(HOME)/lib/libbertini.a
 	INSTALLPATH:=$(HOME)/bin
 	BERTINIHEADERS:=$(HOME)/bertini_source/include
+	
+	BOOSTLOC := /usr/local/Cellar/boost/1.53.0/lib/
+	BOOSTSUFFIX:=-mt
+
 endif
 
 ifeq ($(MACHINENAME),sam)
@@ -60,7 +68,7 @@ ifeq ($(MACHINE),yourmachinenamehere)
     INC:=$(INC) #put your -I inclusions 
     BISON=bison# #path to bison
     LIBS=# #your libs
-	COMPcc=gcc  #compiler
+	COMPcc = gcc  #compiler
 	COMPpp = g++
     STATICFLAG=-static#  need static?
 endif
@@ -72,10 +80,13 @@ endif
 ###
 
 
+
 FLEX=flex
 
+LIBSboost := $(BOOSTLOC)libboost_system$(BOOSTSUFFIX).a $(BOOSTLOC)libboost_filesystem$(BOOSTSUFFIX).a   $(BOOSTLOC)libboost_regex$(BOOSTSUFFIX).a
 
-LIBS:=$(LIBS) ./libpartitionparse.a 
+LIBS:=$(LIBS) ./libpartitionparse.a $(LIBSboost)
+
 #a few last definitions
 INC:=$(INC) -I../include/  -I$(BERTINIHEADERS) #this includes the header files for bertini_real, etc   
 

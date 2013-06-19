@@ -16,7 +16,7 @@
 
 #include <dirent.h>
 
-
+#include <string>
 
 
 #ifndef _FILEOPS_H
@@ -27,17 +27,9 @@ extern "C" {
 #include "polysolve.h"
 }
 
-#include "programConfiguration.hpp" 
+#include "data_type.hpp"
 #include "missing_bertini_headers.hpp"
-
-/**
- splits the bertini input file into several files for later use.
- */
-void parse_input_file(char filename[], int *MPType);
-
-
-
-
+#include <boost/filesystem/path.hpp>
 
 
 /**
@@ -59,24 +51,24 @@ void purge_previous_directory(char *directoryName);
 /**
  opens a file to read, giving fatal error if cannot.
  */
-FILE *safe_fopen_read(char * filename);
+FILE *safe_fopen_read(boost::filesystem::path filename);
 
 /**
  opens a file to write, giving fatal error if cannot.
  */
-FILE *safe_fopen_write(char * filename);
+FILE *safe_fopen_write(boost::filesystem::path filename);
 
 /**
  opens a file to append, giving fatal error if cannot.
  */
-FILE *safe_fopen_append(char * filename);
+FILE *safe_fopen_append(boost::filesystem::path filename);
 
 /**
  copies a file character by character.
  */
-void copyfile(char *INfile,char *OUTfile);
+//void copyfile(char *INfile,char *OUTfile);
 
-
+void copyfile(boost::filesystem::path input_file, boost::filesystem::path OUTfile);
 
 
 
