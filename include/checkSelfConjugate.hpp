@@ -22,9 +22,9 @@ extern "C" {
 
 
 #include "witnessSet.hpp"
-extern "C" {
-#include "partitionParse.h"
-}
+//extern "C" {
+//#include "partitionParse.h"
+//}
 #include "data_type.hpp"
 #include "fileops.hpp"
 #include "missing_bertini_headers.hpp"

@@ -31,10 +31,8 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
 
 	
 	//open the input file.
-	IN = safe_fopen_read(inputFile);	
-  partitionParse(&declarations, IN,const_cast< char *>("func_input_real"),const_cast< char *>("config_real"),0); // the 0 means not self conjugate mode
-//	check_declarations(declarations);
-  fclose(IN);
+  partition_parse(&declarations, inputFile, "func_input_real" , "config_real" ,0); // the 0 means not self conjugate mode
+
 
 
   // setup input file to test for stabilization
