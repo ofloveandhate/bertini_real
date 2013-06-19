@@ -9,7 +9,7 @@
 
 
 
-void computeCurveSelfConj(char * inputFile,
+void computeCurveSelfConj(boost::filesystem::path inputFile,
 													witness_set W,
 													vec_mp *pi,
 													curveDecomp_d *C,
@@ -26,7 +26,7 @@ void computeCurveSelfConj(char * inputFile,
 	
 	witness_set Wtemp,Wtemp2;
 	
-	FILE *IN = safe_fopen_read(inputFile);
+	FILE *IN = safe_fopen_read(inputFile.c_str());
 	int *declarations = NULL;
 	partitionParse(&declarations, IN, "func_input", "config",0); // the 0 means not self conjugate.
 	

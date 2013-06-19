@@ -20,7 +20,7 @@ void get_projection(vec_mp *pi,
 	
 	//assumes the vector pi is already initialized
 	if (program_options.user_projection==1) {
-		FILE *IN = safe_fopen_read(program_options.projection_filename); // we are already assured this file exists, but safe fopen anyway.
+		FILE *IN = safe_fopen_read(program_options.projection_filename.c_str()); // we are already assured this file exists, but safe fopen anyway.
 		int tmp_num_vars;
 		fscanf(IN,"%d",&tmp_num_vars); scanRestOfLine(IN);
 		if (tmp_num_vars!=num_vars-1) {
@@ -55,11 +55,15 @@ void get_projection(vec_mp *pi,
 
 
 
+void parse_preproc_data(boost::filesystem::path filename,  preproc_data *PPD)
+{
+
+	setupPreProcData(const_cast< char*> (filename.c_str()), PPD);
+}
 
 
 
-
-void parse_input_file(char filename[], int *MPType)
+void parse_input_file(boost::filesystem::path filename, int *MPType)
 {
 	
 	unsigned int currentSeed;
@@ -70,25 +74,11 @@ void parse_input_file(char filename[], int *MPType)
 	
 	//end parser-bertini essentials
 	
-	
-	
-	parse_input(filename, &trackType, MPType, &genType, &userHom, &currentSeed, &sharpenOnly, &needToDiff, &remove_temp, useParallelDiff, my_id, num_processes, headnode);
+
+	parse_input(const_cast< char*> (filename.c_str()), &trackType, MPType, &genType, &userHom, &currentSeed, &sharpenOnly, &needToDiff, &remove_temp, useParallelDiff, my_id, num_processes, headnode);
 	
 }
 
-void get_tracker_config(solver_configuration *solve_options,int MPType)
-{
-
-	//necessary for the setupConfig call
-	double intrinsicCutoffMultiplier;
-	int userHom = 0, useRegen = 0, regenStartLevel = 0, maxCodim = 0, specificCodim = 0, pathMod = 0, reducedOnly = 0, supersetOnly = 0, paramHom = 0;
-	//end necessaries for the setupConfig call.
-	
-	
-  setupConfig(&solve_options->T, &solve_options->midpoint_tol, &userHom, &useRegen, &regenStartLevel, &maxCodim, &specificCodim, &pathMod, &intrinsicCutoffMultiplier, &reducedOnly, &supersetOnly, &paramHom, MPType);
-
-	return;
-}
 
 
 
@@ -118,19 +108,19 @@ int BR_startup(program_configuration options)
 	
 	//test for presence of necessary files
 	FILE *IN;
-	IN = safe_fopen_read(options.input_filename);
+	IN = safe_fopen_read(options.input_filename.c_str());
 	fclose(IN);
 	
-	IN = safe_fopen_read(options.witness_set_filename);
+	IN = safe_fopen_read(options.witness_set_filename.c_str());
 	fclose(IN);
 	
 	if (options.user_randomization) {
-		IN = safe_fopen_read(options.randomization_filename);
+		IN = safe_fopen_read(options.randomization_filename.c_str());
 		fclose(IN);
 	}
 	
 	if (options.user_projection) {
-		IN = safe_fopen_read(options.projection_filename);
+		IN = safe_fopen_read(options.projection_filename.c_str());
 		fclose(IN);
 	}
 	
@@ -151,21 +141,21 @@ void BR_display_current_options(program_configuration options){
 	
 	printf("user_projection: %d",options.user_projection);
 	if (options.user_projection)
-		printf(", %s\n",options.projection_filename);
+		printf(", %s\n",options.projection_filename.c_str());
 	else
 		printf("\n");
 	
 	
 	printf("user_randomization: %d",options.user_randomization);
 	if (options.user_randomization)
-		printf(", %s\n",options.randomization_filename);
+		printf(", %s\n",options.randomization_filename.c_str());
 	else
 		printf("\n");
 	
-	printf("input_filename: %s\n",options.input_filename);
-	printf("witness_set_filename: %s\n",options.witness_set_filename);
+	printf("input_filename: %s\n",options.input_filename.c_str());
+	printf("witness_set_filename: %s\n",options.witness_set_filename.c_str());
 	
-	printf("stifle_text: %s\n",options.stifle_text);
+	std::cout << "stifle_text: " << options.stifle_text << std::endl;
 	mypause();
 }
 
@@ -247,7 +237,7 @@ int  BR_parse_commandline(int argc, char **argv, program_configuration *options)
 				break;
 				
 			case 'o':
-				options->output_basename = optarg;
+				options->output_basename = boost::filesystem::path(optarg);
 				break;
 				
 			case 's':
@@ -352,17 +342,7 @@ void BR_init_config(program_configuration *options) {
 
 void BR_clear_config(program_configuration *options) {
 	
-	if (options->user_projection) {
-		free(options->projection_filename);
-	}
-	
-	if (options->user_randomization) {
-		free(options->randomization_filename);
-	}
-	
-	free(options->input_filename);
-	free(options->input_deflated_filename);
-	
+
 	return;
 }
 
@@ -526,25 +506,6 @@ void sampler_clear_config(sampler_configuration *options) {
 
 
 
-
-void solver_init_config(solver_configuration *options){
-	options->allow_multiplicity = 0;
-	options->allow_singular = 0;
-	options->allow_infinite = 0;
-	options->allow_unsuccess = 0;
-	options->use_midpoint_checker = 1;
-	options->show_status_summary = 0;
-	options->verbose_level = 0; // default to 0.  higher is more verbose
-	options->use_gamma_trick = 0;
-	
-	options->complete_witness_set = 1;
-}
-
-
-void solver_clear_config(solver_configuration *options){
-	//has no fields which require clearing.
-	return;
-}
 
 
 

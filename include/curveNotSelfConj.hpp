@@ -41,7 +41,7 @@ void 	computeCurveNotSelfConj(witness_set		W,
 															curveDecomp_d *C,
 															vertex_set		*V,
 															int						num_vars,
-															char					*input_file,
+															boost::filesystem::path input_file,
 															program_configuration *program_options,
 															solver_configuration * solve_options);
 
@@ -59,10 +59,10 @@ void  get_random_mat_d(mat_d, int,int);
  \param L			the linears for the problem
  \param num_vars		the number of variables in the problem, including the homogeneous ones.
  */
-void 	diag_homotopy_input_file(char  *outputFile,
-															 char  *funcInputx,
-															 char  *funcInputy,
-															 char  *configInput,
+void 	diag_homotopy_input_file(boost::filesystem::path outputFile,
+															 boost::filesystem::path funcInputx,
+															 boost::filesystem::path funcInputy,
+															 boost::filesystem::path configInput,
 															 vec_d L,
 															 int   num_vars);
 
@@ -75,7 +75,7 @@ void 	diag_homotopy_input_file(char  *outputFile,
  \param startFile the name of the start file to write
  \param W the input witness set
  */
-void 	diag_homotopy_start_file(char					*startFile,
+void 	diag_homotopy_start_file(boost::filesystem::path startFile,
 															 witness_set  W);
 
 

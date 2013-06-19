@@ -54,7 +54,7 @@ typedef struct
 
 
 
-int witnessSetParse(witness_set *W, char *witness_set_file, int num_vars);
+int witnessSetParse(witness_set *W, boost::filesystem::path witness_set_file, int num_vars);
 
 
 void add_patch_to_witness_set(witness_set *W, vec_mp new_patch);
@@ -86,9 +86,9 @@ void print_witness_set_to_screen(witness_set W);
 
 
 
-void write_homogeneous_coordinates(witness_set W, char filename[]);
-void write_dehomogenized_coordinates(witness_set W, char filename[]);
-void write_linears(witness_set W, char filename[]);
+void write_homogeneous_coordinates(witness_set W, boost::filesystem::path filename);
+void write_dehomogenized_coordinates(witness_set W, boost::filesystem::path filename);
+void write_linears(witness_set W, boost::filesystem::path filename);
 
 
 void sort_for_real(witness_set *W_out,

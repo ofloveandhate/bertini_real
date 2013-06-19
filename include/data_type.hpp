@@ -11,7 +11,7 @@
 #include <mpf2mpfr.h>
 #include <signal.h>
 
-
+#include <string>
 
 #ifndef _DATA_TYPE_H
 #define _DATA_TYPE_H
@@ -287,12 +287,12 @@ int isSamePoint_homogeneous_input_mp(point_mp left, point_mp right);
 void clear_curveDecomp_d(curveDecomp_d *C);
 void clear_sample_d(sample_data *S, int MPType);
 
-void print_point_to_screen_matlab(vec_d M, char name[]);
-void print_point_to_screen_matlab_mp(vec_mp M, char name[]);
-void print_matrix_to_screen_matlab(mat_d M, char name[]);
-void print_matrix_to_screen_matlab_mp(mat_mp M, char name[]);
+void print_point_to_screen_matlab(vec_d M, std::string name);
+void print_point_to_screen_matlab_mp(vec_mp M, std::string name);
+void print_matrix_to_screen_matlab(mat_d M, std::string name);
+void print_matrix_to_screen_matlab_mp(mat_mp M, std::string name);
 
-void print_comp_mp_matlab(comp_mp M,char name[]);
+void print_comp_mp_matlab(comp_mp M,std::string name);
 
 
 void print_path_retVal_message(int retVal);

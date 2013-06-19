@@ -2,7 +2,12 @@
 
 
 
-int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *inputFile, char *witness_point_filename, char *bertini_command, char *matlab_command, int max_deflations,
+int isosingular_deflation(int *num_deflations, int **deflation_sequence,
+													boost::filesystem::path inputFile,
+													boost::filesystem::path witness_point_filename,
+													std::string bertini_command,
+													std::string matlab_command,
+													int max_deflations,
 													int dim, int component_number)
 /***************************************************************\
 * USAGE: Perform isosingular deflation for system at given point*
@@ -13,22 +18,21 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *i
 * NOTES:                                                        *
 \***************************************************************/
 {
-  int ii, success = 0, strLength = 0, nullSpace = 0, *declarations = NULL;
+  int ii, success = 0, nullSpace = 0, *declarations = NULL;
   char ch, *strStabilizationTest = NULL;
   FILE *IN = NULL, *OUT = NULL;
 
-	// create the string for running system()
-  strLength = 1 + snprintf(NULL, 0, "%s input_stabilization_test %s", bertini_command, witness_point_filename);
-  strStabilizationTest = (char *)bmalloc(strLength * sizeof(char));
-  sprintf(strStabilizationTest, "%s input_stabilization_test %s", bertini_command, witness_point_filename);
-	
+	std::stringstream converter;
+	converter << bertini_command << " input_stabilization_test " << witness_point_filename;
+	std::string bertini_system_command = converter.str();
+	converter.clear(); converter.str("");
 	
 	// remove previous files.
 
 	
 	//open the input file.
 	IN = safe_fopen_read(inputFile);	
-  partitionParse(&declarations, IN, "func_input_real", "config_real",0); // the 0 means not self conjugate mode
+  partitionParse(&declarations, IN,const_cast< char *>("func_input_real"),const_cast< char *>("config_real"),0); // the 0 means not self conjugate mode
 //	check_declarations(declarations);
   fclose(IN);
 
@@ -44,10 +48,10 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *i
 	remove("isosingular_summary");
 		
 	//print the command to the screen
-	printf("running system command '%s'\n",strStabilizationTest);
+	std::cout << "running system command " << bertini_system_command << std::endl;
 	
 	// perform stabilization test
-	if (system(strStabilizationTest)!=0){
+	if (system(bertini_system_command.c_str())!=0){
 		bexit(ERROR_CONFIGURATION);
 	}
 
@@ -105,11 +109,15 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *i
       printf("%d, ", (*deflation_sequence)[ii]);
     printf("%d, ...\n\n", (*deflation_sequence)[*num_deflations]);
 
+		
     // create deflated system
-    strLength = 1 + snprintf(NULL, 0, "%s_dim_%d_comp_%d_deflated", inputFile, dim, component_number);
-    strStabilizationTest = (char *)bmalloc(strLength * sizeof(char));
-    sprintf(strStabilizationTest, "%s_dim_%d_comp_%d_deflated", inputFile, dim, component_number);
-    OUT = fopen(strStabilizationTest, "w");
+		
+		converter << "_dim_" << dim << "_comp_" << component_number << "_deflated";
+		boost::filesystem::path stab_test_file = inputFile;
+		stab_test_file += converter.str();
+		converter.clear(); converter.str("");
+		
+    OUT = safe_fopen_write(stab_test_file.c_str());
     fprintf(OUT, "CONFIG\n");
 		IN = safe_fopen_read("config_real");
     while ((ch = fgetc(IN)) != EOF)
@@ -123,7 +131,7 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *i
     fprintf(OUT, "END;\n\n");
     fclose(OUT);
 
-    printf("Deflated system printed to '%s'.\n\n", strStabilizationTest);
+		std::cout << "Deflated system printed to '" << stab_test_file.string() << "'." << std::endl << std::endl;
 
   }
   else if (*num_deflations >= max_deflations)
@@ -150,7 +158,11 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence, char *i
 
 
 
-void isosingular_deflation_iteration(int *declarations, char *inputOutputName, char *matlab_command, int nullSpaceDim, int deflation_number)
+void isosingular_deflation_iteration(int *declarations,
+																		 boost::filesystem::path inputOutputName,
+																		 std::string matlab_command,
+																		 int nullSpaceDim,
+																		 int deflation_number)
 /***************************************************************\
 * USAGE: setup input file for one deflation iteration           *
 * ARGUMENTS: number of declaration statments, name of file,     *
@@ -159,35 +171,35 @@ void isosingular_deflation_iteration(int *declarations, char *inputOutputName, c
 * NOTES:                                                        *
 \***************************************************************/
 {
-  int ii, numVars = 0, numFuncs = 0, numConstants = 0, minorSize = 0, strLength = 0;
+  int ii, numVars = 0, numFuncs = 0, numConstants = 0, minorSize = 0;
   int *lineVars = NULL, *lineFuncs = NULL, *lineConstants = NULL, *degrees = NULL;
   char ch, *str = NULL, **vars = NULL, **funcs = NULL, **consts = NULL;
   FILE *IN = NULL, *OUT = NULL;
 
   // test for existence of input file
-	IN = safe_fopen_read(inputOutputName);
+	IN = safe_fopen_read(inputOutputName.c_str());
   fclose(IN);
    
   // move the file & open it
-  rename(inputOutputName, "deflation_input_file");
+  rename(inputOutputName.c_str(), "deflation_input_file");
 	IN = safe_fopen_read("deflation_input_file");
   // setup variables
   if (declarations[0] > 0)
   { // using variable_group
-    parse_names(&numVars, &vars, &lineVars, IN, "variable_group", declarations[0]);
+    parse_names(&numVars, &vars, &lineVars, IN,const_cast< char *>("variable_group"), declarations[0]);
   }
   else
   { // using hom_variable_group
-    parse_names(&numVars, &vars, &lineVars, IN, "hom_variable_group", declarations[1]);
+    parse_names(&numVars, &vars, &lineVars, IN,const_cast< char *>("hom_variable_group"), declarations[1]);
   }
 
   // setup constants 
   rewind(IN);
-  parse_names(&numConstants, &consts, &lineConstants, IN, "constant", declarations[8]);
+  parse_names(&numConstants, &consts, &lineConstants, IN,const_cast< char *>("constant"), declarations[8]);
 
   // setup functions
   rewind(IN);
-  parse_names(&numFuncs, &funcs, &lineFuncs, IN, "function", declarations[9]);
+  parse_names(&numFuncs, &funcs, &lineFuncs, IN, const_cast< char *>("function"), declarations[9]);
 
   // read in the degrees
   degrees = (int *)bmalloc(numFuncs * sizeof(int));
@@ -206,15 +218,17 @@ void isosingular_deflation_iteration(int *declarations, char *inputOutputName, c
 
   // run Matlab script
   printf("\nPerforming an isosingular deflation\n");
-  strLength = 1 + snprintf(NULL, 0, "%s < matlab_deflate.m", matlab_command);
-  str = (char *)bmalloc(strLength * sizeof(char));
-  sprintf(str, "%s < matlab_deflate.m", matlab_command);
-  system(str);
-  printf("\n");
+
+	std::stringstream converter;
+	converter << matlab_command << " < matlab_deflate.m";
+	system(converter.str().c_str());
+	converter.clear(); converter.str("");
+  
+  
 
 	
   // setup new file
-  OUT = safe_fopen_write(inputOutputName);
+  OUT = safe_fopen_write(inputOutputName.c_str());
   rewind(IN);
   while ((ch = fgetc(IN)) != EOF) 
     fprintf(OUT, "%c", ch);
@@ -524,7 +538,9 @@ void addItems(int *numItems, char ***itemNames, int **itemLines, FILE *IN, int l
   return;
 }
 
-void stabilization_input_file(char *outputFile, char *funcInput, char *configInput)
+void stabilization_input_file(boost::filesystem::path outputFile,
+															boost::filesystem::path funcInput,
+															boost::filesystem::path configInput)
 /***************************************************************\
 * USAGE: setup input file to test for stabilization             *
 * ARGUMENTS: name of output file, function & configuration input*
@@ -533,36 +549,19 @@ void stabilization_input_file(char *outputFile, char *funcInput, char *configInp
 \***************************************************************/
 {
   char ch;
-  FILE *OUT = fopen(outputFile, "w"), *IN = NULL;
-  if (OUT == NULL)
-  {
-    printf("\n\nERROR: '%s' is an improper name of a file!!\n\n\n", outputFile);
-    bexit(ERROR_FILE_NOT_EXIST);
-  }
+  FILE *OUT = safe_fopen_write(outputFile.c_str());
 
   // setup configurations in OUT
   fprintf(OUT, "CONFIG\n");
-  IN = fopen(configInput, "r");
-  if (IN == NULL)
-  {
-    fclose(OUT);
-    printf("\n\nERROR: '%s' does not exist!!!\n\n\n", funcInput);
-    bexit(ERROR_FILE_NOT_EXIST);
-  }
+	
+	FILE *IN = safe_fopen_read(configInput.c_str());
   while ((ch = fgetc(IN)) != EOF)
     fprintf(OUT, "%c", ch);
   fclose(IN);
   fprintf(OUT, "TrackType: 6;\nReducedOnly: 1;\nDeleteTempFiles: 0;\nEND;\nINPUT\n");
 
   // setup system in OUT
-//  IN = fopen(funcInput, "r");
-	IN = safe_fopen_read(funcInput);
-//  if (IN == NULL)
-//  {
-//    fclose(OUT);
-//    printf("\n\nERROR: '%s' does not exist!!!\n\n\n", funcInput);
-//    bexit(ERROR_FILE_NOT_EXIST);
-//  }
+	IN = safe_fopen_read(funcInput.c_str());
   while ((ch = fgetc(IN)) != EOF)
     fprintf(OUT, "%c", ch);
   fclose(IN);

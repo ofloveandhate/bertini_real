@@ -11,7 +11,7 @@
 #include <limits.h>
 #include <mpfr.h>
 #include <mpf2mpfr.h>
-
+#include <sstream>
 
 
 

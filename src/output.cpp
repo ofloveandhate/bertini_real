@@ -8,9 +8,9 @@ void Output_Main(program_configuration program_options, witness_set W, curveDeco
 	int  strLength = 0;
 	char *directoryName=NULL,tmp_file[1000];
 	FILE *OUT;
-	strLength = 1 + snprintf(NULL, 0, "%s_comp%d_curve", program_options.output_basename, W.comp_num);
+	strLength = 1 + snprintf(NULL, 0, "%s_comp%d_curve", program_options.output_basename.c_str(), W.comp_num);
 	directoryName = (char *)bmalloc(strLength * sizeof(char));
-	sprintf(directoryName,  "%s_comp%d_curve", program_options.output_basename, W.comp_num);
+	sprintf(directoryName,  "%s_comp%d_curve", program_options.output_basename.c_str(), W.comp_num);
 	
 	mkdir(directoryName,0777);
 	purge_previous_directory(directoryName);
@@ -23,7 +23,7 @@ void Output_Main(program_configuration program_options, witness_set W, curveDeco
 	sprintf(tmp_file,  "%s/witness_set", directoryName);
 	copyfile(program_options.witness_set_filename,tmp_file);
 	
-	sprintf(tmp_file,  "%s/%s", directoryName,program_options.input_deflated_filename);
+	sprintf(tmp_file,  "%s/%s", directoryName,program_options.input_deflated_filename.c_str());
 	copyfile(program_options.input_deflated_filename,tmp_file);
 
 	sprintf(tmp_file,  "%s/Rand_Matrix", directoryName);
@@ -36,7 +36,7 @@ void Output_Main(program_configuration program_options, witness_set W, curveDeco
 							tmp_file,program_options.MPType);
 	
 	sprintf(tmp_file,  "%s/C.curve", directoryName);
-	print_curve(C, W.num_variables, program_options.input_deflated_filename, tmp_file, program_options.MPType);
+	print_curve(C, W.num_variables, program_options.input_deflated_filename.c_str(), tmp_file, program_options.MPType);
 	
 	OUT = safe_fopen_write("Dir_Name");
 	fprintf(OUT,"%d\n",strLength);
@@ -138,14 +138,14 @@ void print_vertices(vertex_set V, int num_vars,
  Output curve overall info as follows:
  
  **/
-void print_curve(curveDecomp_d C, int num_vars, char *input_deflated_Name, char *outputfile, int MPType)
+void print_curve(curveDecomp_d C, int num_vars, boost::filesystem::path input_deflated_Name, boost::filesystem::path outputfile, int MPType)
 
 {
 	int ii;
 	
-	FILE *OUT = safe_fopen_write(outputfile);
-	fprintf(OUT,"%zu\n",strlen(input_deflated_Name));
-	fprintf(OUT,"%s\n",input_deflated_Name);
+	FILE *OUT = safe_fopen_write(outputfile.c_str());
+	fprintf(OUT,"%zu\n",strlen(input_deflated_Name.c_str()));
+	fprintf(OUT,"%s\n",input_deflated_Name.c_str());
 	
 	fprintf(OUT,"%d %d\n",num_vars, C.num_edges);
 	fprintf(OUT,"%d %d %d %d %d\n",C.num_V0, C.num_V1, C.num_midpts, C.num_new, C.num_isolated);

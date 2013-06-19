@@ -646,32 +646,32 @@ int isSamePoint_homogeneous_input_mp(point_mp left, point_mp right){
 
 
 
-void print_point_to_screen_matlab(vec_d M, char name[])
+void print_point_to_screen_matlab(vec_d M, std::string name)
 {
 	int kk;
 	
 	if (M->size==0) {
-		printf("requested to print a vector '%s' which had size==0.  exiting\n",name);
+		printf("requested to print a vector '%s' which had size==0.  exiting\n",name.c_str());
 //		exit(-1);
 	}
 	
-	printf("%s = [...\n",name);
+	printf("%s = [...\n",name.c_str());
 	for (kk = 0; kk < M->size; kk++)
 	{ // print kth coordinate
 		printf(" %.15le+1i*%.15le;\n",M->coord[kk].r,M->coord[kk].i);
 	}
 	printf("];\n\n");
 }
-void print_point_to_screen_matlab_mp(vec_mp M, char name[])
+void print_point_to_screen_matlab_mp(vec_mp M, std::string name)
 {
 	int kk;
 	
 	if (M->size==0) {
-		printf("requested to print a vector '%s' which had size==0.  exiting\n",name);
+		printf("requested to print a vector '%s' which had size==0.  exiting\n",name.c_str());
 //		exit(-1);
 	}
 	
-	printf("%s = [...\n",name);
+	printf("%s = [...\n",name.c_str());
 	for (kk = 0; kk < M->size; kk++)
 	{ // print kth coordinate
 		mpf_out_str (NULL, 10, 16, M->coord[kk].r);
@@ -684,12 +684,12 @@ void print_point_to_screen_matlab_mp(vec_mp M, char name[])
 
 
 
-void print_matrix_to_screen_matlab(mat_d M, char name[])
+void print_matrix_to_screen_matlab(mat_d M, std::string name)
 {
 	int jj,kk;
 	
-	printf("%%matrix '%s' has dimensions %dx%d\n",name, M->rows,M->cols);
-	printf("%s = [...\n",name);
+	printf("%%matrix '%s' has dimensions %dx%d\n", name.c_str(), M->rows,M->cols);
+	printf("%s = [...\n",name.c_str());
 	for (kk = 0; kk < M->rows; kk++)
 	{ // print kth row
 		for (jj = 0; jj < M->cols; jj++)
@@ -700,12 +700,12 @@ void print_matrix_to_screen_matlab(mat_d M, char name[])
 	}
 	printf("];\n\n");
 }
-void print_matrix_to_screen_matlab_mp(mat_mp M, char name[])
+void print_matrix_to_screen_matlab_mp(mat_mp M, std::string name)
 {
 	int jj,kk;
 	
-	printf("%%matrix '%s' has dimensions %dx%d\n",name, M->rows,M->cols);
-	printf("%s = [...\n",name);
+	printf("%%matrix '%s' has dimensions %dx%d\n",name.c_str(), M->rows,M->cols);
+	printf("%s = [...\n",name.c_str());
 	for (kk = 0; kk < M->rows; kk++)
 	{ // print kth row
 		for (jj = 0; jj < M->cols; jj++)
@@ -724,8 +724,8 @@ void print_matrix_to_screen_matlab_mp(mat_mp M, char name[])
 }
 
 
-void print_comp_mp_matlab(comp_mp M,char name[]){
-	printf("%s=",name);
+void print_comp_mp_matlab(comp_mp M, std::string name){
+	printf("%s=",name.c_str());
 	mpf_out_str (NULL, 10, 6, M->r);
 	printf("+1i*");
 	mpf_out_str (NULL, 10, 6, M->i); // base 10, 6 digits

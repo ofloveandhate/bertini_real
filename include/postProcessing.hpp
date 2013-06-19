@@ -26,7 +26,10 @@ extern "C" {
 #include "witnessSet.hpp"
 #include "fileops.hpp"
 #include "data_type.hpp"
+#include "solver.hpp"
+
 #include "programConfiguration.hpp"
+
 #include "missing_bertini_headers.hpp"
 
 

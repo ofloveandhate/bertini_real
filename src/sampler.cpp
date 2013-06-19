@@ -53,7 +53,7 @@ int main(int argC, char *args[])
 	// set up the solver configuration
 	solver_configuration solve_options;  solver_init_config(&solve_options);
 	get_tracker_config(&solve_options,MPType);
-	setupPreProcData("preproc_data", &solve_options.PPD);
+	parse_preproc_data("preproc_data", &solve_options.PPD);
 	
 	initMP(solve_options.T.Precision);
 	
@@ -1053,7 +1053,7 @@ int setup_curve(curveDecomp_d *C,char *INfile, int MPType, char **inputName, cha
 	
 	
 	FILE *IN = safe_fopen_read(INfile);
-	int num_vertices;
+	int num_vertices = 0;
 	fscanf(IN, "%d\n", &strLength);
 	
 	input_deflated_Name = (char *)bmalloc((strLength+1) * sizeof(char));
@@ -1093,16 +1093,14 @@ int setup_curve(curveDecomp_d *C,char *INfile, int MPType, char **inputName, cha
 	
 	
 	init_point_mp(C->pi_mp,C->num_variables); C->pi_mp->size=C->num_variables;
-//	set_zero_mp(&C->pi_mp->coord[0]);
+
 	for(ii=0;ii<C->num_variables;ii++)
 	{
 		mpf_inp_str(C->pi_mp->coord[ii].r, IN, 10);
 		mpf_inp_str(C->pi_mp->coord[ii].i, IN, 10);
 	}
 	
-//	init_point_d(C->pi_d,C->num_variables); C->pi_d->size=C->num_variables;
-//	vec_mp_to_d(C->pi_d,C->pi_mp)
-	
+
 
 	
 	fclose(IN);
