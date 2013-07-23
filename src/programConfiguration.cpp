@@ -5,7 +5,7 @@
 
 
 void get_projection(vec_mp *pi,
-										program_configuration program_options,
+										BR_configuration program_options,
 										solver_configuration solve_options,
 										int num_vars,
 										int num_projections)
@@ -63,7 +63,26 @@ void parse_preproc_data(boost::filesystem::path filename,  preproc_data *PPD)
 
 
 
-void parse_input_file(boost::filesystem::path filename, int *MPType)
+void parse_input_file(boost::filesystem::path filename)
+{
+	
+	unsigned int currentSeed;
+	int trackType, genType = 0,  sharpenOnly, needToDiff, remove_temp, useParallelDiff = 0,userHom = 0;
+  int my_id = 0, num_processes = 1, headnode = 0; // headnode is always 0
+	int MPType;
+	
+	
+	//end parser-bertini essentials
+	
+
+	parse_input(const_cast< char*> (filename.c_str()), &trackType, &MPType, &genType, &userHom, &currentSeed, &sharpenOnly, &needToDiff, &remove_temp, useParallelDiff, my_id, num_processes, headnode);
+	
+}
+
+
+
+
+void parse_input_file(boost::filesystem::path filename, int * MPType)
 {
 	
 	unsigned int currentSeed;
@@ -71,10 +90,9 @@ void parse_input_file(boost::filesystem::path filename, int *MPType)
   int my_id = 0, num_processes = 1, headnode = 0; // headnode is always 0
 	
 	
-	
 	//end parser-bertini essentials
 	
-
+	
 	parse_input(const_cast< char*> (filename.c_str()), &trackType, MPType, &genType, &userHom, &currentSeed, &sharpenOnly, &needToDiff, &remove_temp, useParallelDiff, my_id, num_processes, headnode);
 	
 }
@@ -83,10 +101,35 @@ void parse_input_file(boost::filesystem::path filename, int *MPType)
 
 
 
+void prog_config::move_to_temp()
+{
+	if (!boost::filesystem::exists(this->working_dir)) {
+		boost::filesystem::create_directory(this->working_dir);
+	}
+	
+	if (!boost::filesystem::is_directory(this->working_dir)) {
+		std::cerr << "trying to move into a directory which is a regular file!" << std::endl;
+		// add error code here
+	}
+	
+	chdir(this->working_dir.c_str());
+	
+	if (this->verbose_level>=3)
+		std::cout << "moved to working_dir '" << this->working_dir.string() << "'" << std::endl;
+}
+
+void prog_config::move_to_called()
+{
+	
+	chdir(this->called_dir.c_str());
+	
+	if (this->verbose_level>=3)
+		std::cout << "moved to called_dir '" << this->called_dir.string() << "'" << std::endl;
+}
 
 
 
-int BR_startup(program_configuration options)
+int BR_configuration::startup()
 /***************************************************************\
  * USAGE:    prepares the variables inputname and startname
  *      for use later in the program
@@ -108,26 +151,27 @@ int BR_startup(program_configuration options)
 	
 	//test for presence of necessary files
 	FILE *IN;
-	IN = safe_fopen_read(options.input_filename.c_str());
+	IN = safe_fopen_read(this->input_filename.c_str());
 	fclose(IN);
 	
-	IN = safe_fopen_read(options.witness_set_filename.c_str());
+	IN = safe_fopen_read(this->witness_set_filename.c_str());
 	fclose(IN);
 	
-	if (options.user_randomization) {
-		IN = safe_fopen_read(options.randomization_filename.c_str());
+	if (this->user_randomization) {
+		IN = safe_fopen_read(this->randomization_filename.c_str());
 		fclose(IN);
 	}
 	
-	if (options.user_projection) {
-		IN = safe_fopen_read(options.projection_filename.c_str());
+	if (this->user_projection) {
+		IN = safe_fopen_read(this->projection_filename.c_str());
 		fclose(IN);
 	}
 	
 	return 0;
 }
 
-void BR_splash_screen(){
+void BR_configuration::splash_screen()
+{
 	printf("\n BertiniReal(TM) v%s\n\n", BERTINI_REAL_VERSION_STRING);
   printf(" D.J. Bates, D. Brake,\n W. Hao, J.D. Hauenstein,\n A.J. Sommese, C.W. Wampler\n\n");
   printf("(using GMP v%d.%d.%d, MPFR v%s)\n\n", __GNU_MP_VERSION, __GNU_MP_VERSION_MINOR, __GNU_MP_VERSION_PATCHLEVEL, mpfr_get_version());
@@ -136,31 +180,33 @@ void BR_splash_screen(){
 
 
 
-void BR_display_current_options(program_configuration options){
+void BR_configuration::display_current_options()
+{
 	printf("current options:\n\n");
 	
-	printf("user_projection: %d",options.user_projection);
-	if (options.user_projection)
-		printf(", %s\n",options.projection_filename.c_str());
+	printf("user_projection: %d",this->user_projection);
+	if (this->user_projection)
+		printf(", %s\n",this->projection_filename.c_str());
 	else
 		printf("\n");
 	
 	
-	printf("user_randomization: %d",options.user_randomization);
-	if (options.user_randomization)
-		printf(", %s\n",options.randomization_filename.c_str());
+	printf("user_randomization: %d",this->user_randomization);
+	if (this->user_randomization)
+		printf(", %s\n",this->randomization_filename.c_str());
 	else
 		printf("\n");
 	
-	printf("input_filename: %s\n",options.input_filename.c_str());
-	printf("witness_set_filename: %s\n",options.witness_set_filename.c_str());
+	printf("input_filename: %s\n",this->input_filename.c_str());
+	printf("witness_set_filename: %s\n",this->witness_set_filename.c_str());
 	
-	std::cout << "stifle_text: " << options.stifle_text << std::endl;
-	mypause();
+	std::cout << "stifle_text: " << this->stifle_text << std::endl;
+
 }
 
 
-void BR_print_usage(){
+void BR_configuration::print_usage()
+{
 	printf("bertini_real has the following options:\n");
 	printf("option name(s)\t\t\targument\n\n");
 	printf("-p -pi -projection \t\t\t'filename'\n");
@@ -169,8 +215,8 @@ void BR_print_usage(){
 	printf("-i -input\t\t\t'filename'\n");
 	printf("-ns -nostifle\t\t\t   --\n");
 	printf("-v -version\t\t\t   -- \n");
-	printf("-h -help\t\t\t   --");
-	printf("-box -b\t\t\t   bool");
+	printf("-h -help\t\t\t   --\n");
+	printf("-box -b\t\t\t   bool\n");
 	
 	printf("\n\n\n");
 	return;
@@ -178,7 +224,8 @@ void BR_print_usage(){
 
 
 
-int  BR_parse_commandline(int argc, char **argv, program_configuration *options){
+int  BR_configuration::parse_commandline(int argc, char **argv)
+{
 	// this code created based on gnu.org's description of getopt_long
 	int choice;
 	
@@ -214,11 +261,11 @@ int  BR_parse_commandline(int argc, char **argv, program_configuration *options)
 		switch (choice)
 		{
 			case 'd':
-				options->crit_solver = LINPRODTODETJAC;
+				this->crit_solver = LINPRODTODETJAC;
 				break;
 			case 'g':
-				options->use_gamma_trick = atoi(optarg);
-				if (! (options->use_gamma_trick==0 || options->use_gamma_trick==1) ) {
+				this->use_gamma_trick = atoi(optarg);
+				if (! (this->use_gamma_trick==0 || this->use_gamma_trick==1) ) {
 					printf("value for 'gammatrick' or 'g' must be 1 or 0\n");
 					exit(689);
 				}
@@ -226,42 +273,42 @@ int  BR_parse_commandline(int argc, char **argv, program_configuration *options)
 				
 				
 			case 'b':
-				options->use_bounding_box = atoi(optarg);
-				if (! (options->use_bounding_box==0 || options->use_bounding_box==1) ) {
+				this->use_bounding_box = atoi(optarg);
+				if (! (this->use_bounding_box==0 || this->use_bounding_box==1) ) {
 					printf("value for 'box' must be 1 or 0\n");
 					exit(689);
 				}
 				
 			case 'V':
-				options->verbose_level = atoi(optarg);
+				this->verbose_level = atoi(optarg);
 				break;
 				
 			case 'o':
-				options->output_basename = boost::filesystem::path(optarg);
+				this->output_dir = boost::filesystem::absolute(optarg);
 				break;
 				
 			case 's':
-				options->stifle_text = "\0";
+				this->stifle_text = "\0";
 				break;
 				
 			case 'r':
-				options->user_randomization=1;
-				options->randomization_filename = optarg;
+				this->user_randomization=1;
+				this->randomization_filename = optarg;
 				break;
 				
 				
 			case 'p':
-				options->user_projection=1;
-				options->projection_filename = optarg;
+				this->user_projection=1;
+				this->projection_filename = optarg;
 				break;
 				
 				
 			case 'w': // witness_set_filename
-				options->witness_set_filename = optarg;
+				this->witness_set_filename = optarg;
 				break;
 				
 			case 'i': // input filename
-				options->input_filename = optarg;
+				this->input_filename = optarg;
 				break;
 				
 			case 'v':
@@ -272,7 +319,7 @@ int  BR_parse_commandline(int argc, char **argv, program_configuration *options)
 			case 'h':
 				printf("\nThis is BertiniReal v %s, developed by\nDan J. Bates, Daniel Brake,\nWenrui Hao, Jonathan D. Hauenstein,\nAndrew J. Sommmese, and Charles W. Wampler.\n\n", BERTINI_REAL_VERSION_STRING);
 				printf("Send email to brake@math.colostate.edu for details about BertiniReal.\n\n");
-				BR_print_usage();
+				BR_configuration::print_usage();
 				exit(0);
 				break;
 				
@@ -281,13 +328,18 @@ int  BR_parse_commandline(int argc, char **argv, program_configuration *options)
 				break;
 				
 			default:
-				BR_print_usage();
+				BR_configuration::print_usage();
 				exit(0);
 		}
 	}
 	
 	
+	this->current_working_filename = this->input_filename;
 	
+	this->called_dir = boost::filesystem::absolute(boost::filesystem::current_path());
+	this->output_dir = boost::filesystem::absolute(this->output_dir);
+	this->working_dir = this->called_dir;
+	this->working_dir/="temp";
 	
 	/* Print any remaining command line arguments (not options). */
 	if (optind < argc)
@@ -302,56 +354,16 @@ int  BR_parse_commandline(int argc, char **argv, program_configuration *options)
 }
 
 
-void BR_init_config(program_configuration *options) {
-	
-	
-	options->user_projection = 0;
-	options->projection_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
-	options->projection_filename = "";
-	
-	options->user_randomization = 0;
-	options->randomization_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
-	options->randomization_filename = "";
-	
-	options->input_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
-	options->input_filename = "input\0";
-	
-	options->witness_set_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
-	options->witness_set_filename = "witness_set\0";
-	
-	options->output_basename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
-	options->output_basename = "output";
-	
-	options->input_deflated_filename = (char *)bmalloc(MAX_STRLEN*sizeof(char));
-	//this must be set after deflation is run.
-	
-	options->crit_solver = NULLSPACE;
-	
-	options->stifle_membership_screen = 1;
-	options->stifle_text = (char *)bmalloc(MAX_STRLEN*sizeof(char));
-	options->stifle_text = " > /dev/null ";
-	
-	options->verbose_level = 0; // default to 0
-	
-	options->MPType = 2;
-	
-	options->use_bounding_box = 0;
-	options->use_gamma_trick = 0;
-	return;
-}
-
-void BR_clear_config(program_configuration *options) {
-	
-
-	return;
-}
 
 
 
 
 
 
-void sampler_splash_screen(){
+
+
+void sampler_configuration::splash_screen()
+{
 	printf("\n Sampler module for BertiniReal(TM) v%s\n\n", BERTINI_REAL_VERSION_STRING);
 	printf(" D.J. Bates, D. Brake,\n W. Hao, J.D. Hauenstein,\n A.J. Sommese, C.W. Wampler\n\n");
 	printf("(using GMP v%d.%d.%d, MPFR v%s)\n\n",
@@ -361,7 +373,8 @@ void sampler_splash_screen(){
 }
 
 
-void sampler_print_usage(){
+void sampler_configuration::print_usage()
+{
 	printf("bertini_real has the following options:\n");
 	printf("option name(s)\t\t\targument\n\n");
 	printf("-ns -nostifle\t\t\t   --\n");
@@ -375,7 +388,8 @@ void sampler_print_usage(){
 	return;
 }
 
-int  sampler_parse_commandline(int argc, char **argv, sampler_configuration *options){
+int  sampler_configuration::parse_commandline(int argc, char **argv)
+{
 	// this code created based on gnu.org's description of getopt_long
 	int choice;
 	
@@ -413,7 +427,7 @@ int  sampler_parse_commandline(int argc, char **argv, sampler_configuration *opt
 		switch (choice)
 		{
 			case 's':
-				options->stifle_text = "\0";
+				this->stifle_text = "\0";
 				break;
 				
 			case 'v':
@@ -423,28 +437,28 @@ int  sampler_parse_commandline(int argc, char **argv, sampler_configuration *opt
 				
 			case 't':
 				
-				mpf_set_str(options->TOL,optarg,10);
+				mpf_set_str(this->TOL,optarg,10);
 				break;
 				
 			case 'g':
-				options->use_gamma_trick = atoi(optarg);
-				if (! (options->use_gamma_trick==0 || options->use_gamma_trick==1) ) {
+				this->use_gamma_trick = atoi(optarg);
+				if (! (this->use_gamma_trick==0 || this->use_gamma_trick==1) ) {
 					printf("value for 'gammatrick' or 'g' must be 1 or 0\n");
 					exit(689);
 				}
 				break;
 				
 			case 'V':
-				options->verbose_level = atoi(optarg);
+				this->verbose_level = atoi(optarg);
 				break;
 				
 			case 'm':
-				options->maximum_num_iterations = atoi(optarg);
+				this->maximum_num_iterations = atoi(optarg);
 				break;
 				
 			case 'h':
 				
-				sampler_print_usage();
+				sampler_configuration::print_usage();
 				exit(0);
 				break;
 				
@@ -453,7 +467,7 @@ int  sampler_parse_commandline(int argc, char **argv, sampler_configuration *opt
 				break;
 				
 			default:
-				sampler_print_usage();
+				sampler_configuration::print_usage();
 				exit(0);
 		}
 	}
@@ -477,28 +491,8 @@ int  sampler_parse_commandline(int argc, char **argv, sampler_configuration *opt
 
 
 
-void sampler_init_config(sampler_configuration *options) {
-	options->stifle_membership_screen = 1;
-	options->stifle_text = (char *)bmalloc(MAX_STRLEN*sizeof(char));
-	options->stifle_text = " > /dev/null ";
-	
-	options->verbose_level = 0; // default to 0
-	
-	options->maximum_num_iterations = 10;
-	
-	mpf_init(options->TOL);
-	mpf_set_d(options->TOL, 1e-1); // this should be made adaptive to the span of the projection values or the endpoints
 
-	options->use_gamma_trick = 0;
-	
-	return;
-}
 
-void sampler_clear_config(sampler_configuration *options) {
-	
-	mpf_clear(options->TOL);
-	return;
-}
 
 
 

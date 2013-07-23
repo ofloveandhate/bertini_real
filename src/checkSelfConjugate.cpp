@@ -6,7 +6,7 @@
 
 
 
-int checkSelfConjugate(witness_set W,
+int checkSelfConjugate(witness_set & W,
                        int           num_vars,
                        boost::filesystem::path input_file,
 											 std::string stifle_text)
@@ -17,22 +17,12 @@ int checkSelfConjugate(witness_set W,
  * NOTES:                                                        *
  \***************************************************************/
 {
-  int strLength = 0, digits = 15, *declarations = NULL;
-  char *fmt = NULL;
+  int *declarations = NULL;
 	std::string bertini_command="bertini input_membership_test ";
 	bertini_command.append(stifle_text);
   FILE *IN = NULL;
 	
 
-	
-	
-	
-	// make the format to write the member_points file
-  strLength = 1 + snprintf(NULL, 0, "%%.%dle %%.%dle\n", digits, digits);
-  // allocate size
-  fmt = (char *)bmalloc(strLength * sizeof(char));
-  // setup fmt
-  sprintf(fmt, "%%.%dle %%.%dle\n", digits, digits);
 	
 	
   // setup input file
@@ -55,7 +45,7 @@ int checkSelfConjugate(witness_set W,
 	
 	
 	//setup  member_points file, including both the first witness point, and its complex-conjugate
-	write_member_points_sc(W.pts_d[0],fmt);
+	write_member_points_sc(W.pts_mp[0]);//,fmt
 	
 	// Do membership test
 	std::cout << "*\n" << bertini_command << "\n*" << std::endl;
@@ -92,7 +82,7 @@ int checkSelfConjugate(witness_set W,
 
 
 
-int get_incidence_number(witness_set W,
+int get_incidence_number(const witness_set & W,
 												 int           num_vars,
 												 boost::filesystem::path input_file,
 												 std::string stifle_text)
@@ -103,45 +93,28 @@ int get_incidence_number(witness_set W,
  * NOTES:                                                        *
  \***************************************************************/
 {
-  int strLength = 0, digits = 15, *declarations = NULL;
-  char *fmt = NULL;
+  
 	std::string bertini_command="bertini input_membership_test ";
 	bertini_command.append(stifle_text);
   
-	FILE *IN = NULL;
-	
-
-	
-	// make the format to write the member_points file
-  strLength = 1 + snprintf(NULL, 0, "%%.%dle %%.%dle\n", digits, digits);
-  // allocate size
-  fmt = (char *)bmalloc(strLength * sizeof(char));
-  // setup fmt
-  sprintf(fmt, "%%.%dle %%.%dle\n", digits, digits);
-	
 	
   // setup input file
+	int *declarations = NULL;
   partition_parse(&declarations, input_file, "func_input_real", "config_real",0); // the 0 means not self conjugate
-	
+	free(declarations);
 	
 	
 	//check existence of the required witness_data file.
+	FILE *IN = NULL;
 	IN = safe_fopen_read("witness_data"); fclose(IN);
 	
-	//perhaps this could be used to get the witness_data file, but there would be problems
-	//  membership_test_input_file("input_membership_test", "func_input_real", "config_real",1);
-	
-	
-	
-	
+
 	
 	//only need to do this once.  we put the point and its conjugate into the same member points file and run the membership test simultaneously with one bertini call.
   membership_test_input_file("input_membership_test", "func_input_real", "config_real",3);
 	
-	
 	//setup  member_points file, including both the first witness point, and its complex-conjugate
-	write_member_points_singlept(W.pts_d[0],fmt);
-	
+	write_member_points_singlept(W.pts_mp[0]);//,fmt
 	// Do membership test
 	std::cout << "*\n" << bertini_command << "\n*" << std::endl;
   system(bertini_command.c_str());
@@ -150,14 +123,12 @@ int get_incidence_number(witness_set W,
 	
 	read_incidence_matrix(&component_number);
 	
-  free(declarations);
-	
 	return component_number;
 }
 
 
 
-int write_member_points_singlept(point_d point_to_write, char * fmt){
+int write_member_points_singlept(point_mp point_to_write){
 	FILE *OUT = NULL;
 	int ii;
 	
@@ -166,26 +137,29 @@ int write_member_points_singlept(point_d point_to_write, char * fmt){
 	OUT = safe_fopen_write("member_points");
 
 	
-	vec_d result;
-	init_vec_d(result,0);
-	dehomogenize_d(&result,point_to_write);
+	vec_mp result;
+	init_vec_mp(result,0);
+	dehomogenize(&result,point_to_write);
 	
 	fprintf(OUT,"1\n\n");
-	for(ii=0;ii<result->size;ii++)
-		fprintf(OUT, fmt, result->coord[ii].r, result->coord[ii].i);
+	for(ii=0;ii<result->size;ii++){
+		print_mp(OUT,0,&result->coord[ii]);
+		fprintf(OUT,"\n");
+	}
+//		fprintf(OUT, fmt, result->coord[ii].r, result->coord[ii].i);
 	
 	
 	fclose(OUT);
 	
 	
-	clear_vec_d(result);
+	clear_vec_mp(result);
 	
 	return 0;
 }
 
 
 
-int write_member_points_sc(point_d point_to_write, char * fmt){
+int write_member_points_sc(point_mp point_to_write){
 	FILE *OUT = NULL;
 	int ii;
 	
@@ -194,24 +168,29 @@ int write_member_points_sc(point_d point_to_write, char * fmt){
 	OUT = safe_fopen_write("member_points");
 
 	
-	vec_d result;
-	init_vec_d(result,0);
-	dehomogenize_d(&result,point_to_write);
+	vec_mp result;
+	init_vec_mp(result,0);
+	dehomogenize(&result,point_to_write);
 	
 	fprintf(OUT,"2\n\n");
 	for(ii=0;ii<result->size;ii++)
 	{
-		fprintf(OUT, fmt, result->coord[ii].r, result->coord[ii].i);
+//		fprintf(OUT, fmt, result->coord[ii].r, result->coord[ii].i);
+		print_mp(OUT,0,&result->coord[ii]);  fprintf(OUT,"\n");
 	}
 	
+	
+	comp_mp temp; init_mp(temp);
 	fprintf(OUT,"\n");
 	for(ii=0;ii<result->size;ii++)
 	{
-		fprintf(OUT, fmt, result->coord[ii].r, -result->coord[ii].i);
+		conjugate_mp(temp, &result->coord[ii]);
+		print_mp(OUT,0,temp);  fprintf(OUT,"\n");
+//		fprintf(OUT, fmt, result->coord[ii].r, -result->coord[ii].i);
 	}
 	fclose(OUT);
 	
-	clear_vec_d(result);
+	clear_vec_mp(result);  clear_mp(temp);
 	
 	return 0;
 }

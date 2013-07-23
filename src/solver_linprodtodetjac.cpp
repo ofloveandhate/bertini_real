@@ -13,7 +13,7 @@
 
 
 int linprod_to_detjac_solver_main(int MPType,
-																	witness_set W, // carries with it the start points, and the linears.
+																	witness_set & W, // carries with it the start points, and the linears.
 																	
 																	mat_mp n_minusone_randomizer_matrix_full_prec,
 																	vec_mp projection_full_prec,
@@ -21,20 +21,9 @@ int linprod_to_detjac_solver_main(int MPType,
 																	solver_configuration *solve_options)
 {
 	
-	cp_patches(W_new,W); // copy the patches over from the original witness set
 	W_new->num_variables = W.num_variables;
-	W_new->num_linears = (1);
-		
-	cp_names(W_new,W);
 	
-	W_new->L_d = (vec_d *)bmalloc(1*sizeof(vec_d));
-	W_new->L_mp = (vec_mp *)bmalloc(1*sizeof(vec_mp));
-	
-	init_vec_d(W_new->L_d[0],W.num_variables); init_vec_mp2(W_new->L_mp[0],W.num_variables,1024); //the 1024 here is incorrect
-	vec_mp_to_d(   W_new->L_d[0],projection_full_prec);
-	vec_cp_mp(W_new->L_mp[0],projection_full_prec);
-	
-	write_linears(*W_new,"rand_comp_proj");
+//	write_linears(*W_new,"rand_comp_proj");
 	
 	
 	if (MPType==1){
@@ -47,6 +36,19 @@ int linprod_to_detjac_solver_main(int MPType,
 	}
 	
 	
+	if (solve_options->complete_witness_set==1){
+		
+		cp_patches(W_new,W); // copy the patches over from the original witness set
+		W_new->num_linears = (1);
+		
+		cp_names(W_new,W);
+		
+		W_new->L_mp = (vec_mp *)bmalloc(1*sizeof(vec_mp));
+		
+		init_vec_mp2(W_new->L_mp[0],W.num_variables,1024); //the 1024 here is incorrect
+		vec_cp_mp(W_new->L_mp[0],projection_full_prec);
+	}
+	
 	return 0;
 }
 
@@ -54,7 +56,7 @@ int linprod_to_detjac_solver_main(int MPType,
 
 
 //int linprod_to_detjac_solver_d(int MPType,
-//															 witness_set W,  // includes the initial linear.
+//															 witness_set & W,  // includes the initial linear.
 //															 mat_d n_minusone_randomizer_matrix,  // for randomizing down to N-1 equations.
 //															 vec_d projection,
 //															 witness_set *W_new // for passing the data back out of this function tree
@@ -62,7 +64,7 @@ int linprod_to_detjac_solver_main(int MPType,
 
 
 int linprod_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int currentSeed
-															 witness_set W,  // includes the initial linear.
+															 witness_set & W,  // includes the initial linear.
 															 mat_mp n_minusone_randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
 															 vec_mp projection_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 															 witness_set *W_new,
@@ -247,7 +249,7 @@ int linprod_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int c
 
 void linprod_to_detjac_track_d(trackingStats *trackCount,
 															 FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
-															 witness_set W,
+															 witness_set & W,
 															 post_process_t *endPoints,  // for holding the produced data.
 															 FILE *FAIL,
 															 int pathMod, tracker_config_t *T,
@@ -267,7 +269,7 @@ void linprod_to_detjac_track_d(trackingStats *trackCount,
  \***************************************************************/
 {
 	
-  int ii,jj, oid, startPointIndex, max = max_threads();
+  int ii, oid, startPointIndex, max = max_threads();
   tracker_config_t *T_copy = NULL;
   linprodtodetjac_eval_data_d *BED_copy = NULL;
   trackingStats *trackCount_copy = NULL;
@@ -289,26 +291,8 @@ void linprod_to_detjac_track_d(trackingStats *trackCount,
 	
 	
 	point_data_d *startPts = NULL;
-	startPts = (point_data_d *)bmalloc(W.num_pts * sizeof(point_data_d));
+	generic_set_start_pts(&startPts, W);
 	
-	
-	
-	for (ii = 0; ii < W.num_pts; ii++)
-	{ // setup startPts[ii]
-		init_point_data_d(&startPts[ii], W.num_variables); // also performs initialization on the point inside startPts
-		change_size_vec_d(startPts[ii].point,W.num_variables);
-		startPts[ii].point->size = W.num_variables;
-		
-		//NEED TO COPY IN THE WITNESS POINT
-		
-		//1 set the coordinates
-		for (jj = 0; jj<W.num_variables; jj++) {
-			startPts[ii].point->coord[jj].r = W.pts_d[ii]->coord[jj].r;
-			startPts[ii].point->coord[jj].i = W.pts_d[ii]->coord[jj].i;
-		}
-		//2 set the start time to 1.
-		set_one_d(startPts[ii].time);
-	}
 	T->endgameOnly = 0;
 	
 	
@@ -458,10 +442,10 @@ void linprod_to_detjac_track_path_d(int pathNum, endgame_data_t *EG_out,
 		
 		//verification code:
 		//		linprodtodetjac_eval_data_mp *LtLED = (linprodtodetjac_eval_data_mp *)ED_mp; // to avoid having to cast every time
-		//		print_matrix_to_screen_matlab_mp(LtLED->n_minusone_randomizer_matrix,"nminus1");
-		//		print_point_to_screen_matlab_mp(LtLED->old_linear,"old");
-		//		print_point_to_screen_matlab_mp(LtLED->current_linear,"curr");
-		//		print_matrix_to_screen_matlab_mp(LtLED->patch.patchCoeff,"patch");
+		//		print_matrix_to_screen_matlab(LtLED->n_minusone_randomizer_matrix,"nminus1");
+		//		print_point_to_screen_matlab(LtLED->old_linear,"old");
+		//		print_point_to_screen_matlab(LtLED->current_linear,"curr");
+		//		print_matrix_to_screen_matlab(LtLED->patch.patchCoeff,"patch");
 		//		printf("patch precision %d\n",LtLED->patch.curr_prec);
 		
     EG_out->prec = EG_out->last_approx_prec = 52;
@@ -515,19 +499,23 @@ void linprod_to_detjac_track_path_d(int pathNum, endgame_data_t *EG_out,
 
 
 
+
+
+
+
 // derived from zero_dim_basic_setup_d
-int linprod_to_detjac_setup_d(FILE **OUT, char *outName,
-															FILE **midOUT, char *midName,
+int linprod_to_detjac_setup_d(FILE **OUT, boost::filesystem::path outName,
+															FILE **midOUT, boost::filesystem::path midName,
 															tracker_config_t *T,
 															linprodtodetjac_eval_data_d *ED,
 															prog_t *dummyProg,
 															int **startSub, int **endSub, int **startFunc, int **endFunc, int **startJvsub, int **endJvsub, int **startJv, int **endJv, int ***subFuncsBelow,
 															int (**eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
 															int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-															char *preprocFile, char *degreeFile,
-															int findStartPts, char *pointsIN, char *pointsOUT,
+															boost::filesystem::path preprocFile, boost::filesystem::path degreeFile,
+															int findStartPts, boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
 															mat_mp n_minusone_randomizer_matrix_full_prec,
-															witness_set W,
+															witness_set & W,
 															vec_mp projection,
 															solver_configuration *solve_options)
 /***************************************************************\
@@ -544,8 +532,8 @@ int linprod_to_detjac_setup_d(FILE **OUT, char *outName,
 	
 	//  *eval_mp = &linprodtodetjac_eval_mp; // DAB
 	
-  *OUT = fopen(outName, "w");  // open the main output files.
-  *midOUT = fopen(midName, "w");
+  *OUT = safe_fopen_write(outName);  // open the main output files.
+  *midOUT = safe_fopen_write(midName);
 	
   if (T->MPType == 2) // using AMP - need to allocate space to store BED_mp
     ED->BED_mp = (linprodtodetjac_eval_data_mp *)bmalloc(1 * sizeof(linprodtodetjac_eval_data_mp));
@@ -557,7 +545,7 @@ int linprod_to_detjac_setup_d(FILE **OUT, char *outName,
   T->numVars = numOrigVars = setupProg_count(dummyProg, T->Precision, T->MPType, startSub, endSub, startFunc, endFunc, startJvsub, endJvsub, startJv, endJv, subFuncsBelow);
 	
   // setup preProcData
-  setupPreProcData(preprocFile, &ED->preProcData);
+  setupPreProcData(const_cast<char *>(preprocFile.c_str()), &ED->preProcData);
 	
 	
 	
@@ -584,7 +572,7 @@ int linprod_to_detjac_setup_d(FILE **OUT, char *outName,
 	
 	
 	adjustDegrees = 0; // if the system does not need its degrees adjusted, then that is okay
-	setuplinprodtodetjacEval_d(T,preprocFile, degreeFile, dummyProg, rank, patchType, ssType, T->MPType, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix_full_prec, W,projection,solve_options);
+	setuplinprodtodetjacEval_d(T,const_cast<char *>(preprocFile.c_str()), const_cast<char *>(degreeFile.c_str()), dummyProg, rank, patchType, ssType, T->MPType, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix_full_prec, W,projection,solve_options);
 
 
 	
@@ -1231,7 +1219,7 @@ void setuplinprodtodetjacEval_d(tracker_config_t *T,char preprocFile[], char deg
 																void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,// what are these supposed to point to?
 																linprodtodetjac_eval_data_d *BED, int adjustDegrees,
 																mat_mp n_minusone_randomizer_matrix_full_prec,
-																witness_set W,
+																witness_set & W,
 																vec_mp projection_full_prec,
 																solver_configuration *solve_options)
 {
@@ -1272,8 +1260,8 @@ void setuplinprodtodetjacEval_d(tracker_config_t *T,char preprocFile[], char deg
 	
 	
 	for (ii=0; ii<W.num_linears; ++ii) {
-		init_vec_d(BED->linears[ii],W.L_d[ii]->size); BED->linears[ii]->size = W.L_d[ii]->size;
-		vec_cp_d(BED->linears[ii], W.L_d[ii]);
+		init_vec_d(BED->linears[ii],W.L_mp[ii]->size); BED->linears[ii]->size = W.L_mp[ii]->size;
+		vec_mp_to_d(BED->linears[ii], W.L_mp[ii]);
 	}
 	
 	if (solve_options->use_gamma_trick==1)
@@ -1333,12 +1321,12 @@ void setuplinprodtodetjacEval_d(tracker_config_t *T,char preprocFile[], char deg
 		BED->BED_mp->linears_full_prec = (vec_mp *)malloc(W.num_linears*sizeof(vec_mp));
 		
 		for (ii=0; ii<W.num_linears; ++ii) {
-			init_vec_mp2(BED->BED_mp->linears[ii],W.L_d[ii]->size,prec);  // copy in the limited-precision linears
-			BED->BED_mp->linears[ii]->size = W.L_d[ii]->size;
+			init_vec_mp2(BED->BED_mp->linears[ii],W.L_mp[ii]->size,prec);  // copy in the limited-precision linears
+			BED->BED_mp->linears[ii]->size = W.L_mp[ii]->size;
 			vec_cp_mp(BED->BED_mp->linears[ii], W.L_mp[ii]);
 			
-			init_vec_mp2(BED->BED_mp->linears_full_prec[ii],W.L_d[ii]->size,T->AMP_max_prec);  //copy in the full precision linears
-			BED->BED_mp->linears_full_prec[ii]->size = W.L_d[ii]->size;
+			init_vec_mp2(BED->BED_mp->linears_full_prec[ii],W.L_mp[ii]->size,T->AMP_max_prec);  //copy in the full precision linears
+			BED->BED_mp->linears_full_prec[ii]->size = W.L_mp[ii]->size;
 			vec_cp_mp(BED->BED_mp->linears_full_prec[ii], W.L_mp[ii]);
 			
 		}
@@ -1364,7 +1352,7 @@ void setuplinprodtodetjacEval_d(tracker_config_t *T,char preprocFile[], char deg
 		}
 		
 		
-//		print_matrix_to_screen_matlab_mp(BED->BED_mp->patch.patchCoeff,"userpatch_mp");
+//		print_matrix_to_screen_matlab(BED->BED_mp->patch.patchCoeff,"userpatch_mp");
 		
   }//re: if mptype==2
 	
@@ -1555,7 +1543,7 @@ void change_linprodtodetjac_eval_prec_mp(int new_prec, linprodtodetjac_eval_data
 
 
 int linprod_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int currentSeed
-																witness_set W,  // includes the initial linear.
+																witness_set & W,  // includes the initial linear.
 																mat_mp n_minusone_randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
 																vec_mp projection_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 																witness_set *W_new,
@@ -1737,7 +1725,7 @@ int linprod_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int 
 
 void linprod_to_detjac_track_mp(trackingStats *trackCount,
 																FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
-																witness_set W,
+																witness_set & W,
 																post_process_t *endPoints,
 																FILE *FAIL,
 																int pathMod, tracker_config_t *T,
@@ -1780,25 +1768,7 @@ void linprod_to_detjac_track_mp(trackingStats *trackCount,
 	
 	
 	point_data_mp *startPts = NULL;
-	startPts = (point_data_mp *)bmalloc(W.num_pts * sizeof(point_data_mp));
-	
-	
-	
-	for (ii = 0; ii < W.num_pts; ii++)
-	{ // setup startPts[ii]
-		init_point_data_mp2(&startPts[ii], W.num_variables, T->Precision);
-		startPts[ii].point->size = W.num_variables;
-		
-		//NEED TO COPY IN THE WITNESS POINT
-		
-		//1 set the coordinates
-		vec_cp_mp(startPts[ii].point, W.pts_mp[ii] );
-		
-		//2 set the start time to 1.
-		set_one_mp(startPts[ii].time);
-	}
-	
-
+	generic_set_start_pts(&startPts, W);
 	T->endgameOnly = 0;
 	
 	
@@ -1952,18 +1922,18 @@ void linprod_to_detjac_track_path_mp(int pathNum, endgame_data_t *EG_out,
 
 
 // derived from zero_dim_basic_setup_d
-int linprod_to_detjac_setup_mp(FILE **OUT, char *outName,
-															 FILE **midOUT, char *midName,
+int linprod_to_detjac_setup_mp(FILE **OUT, boost::filesystem::path outName,
+															 FILE **midOUT, boost::filesystem::path midName,
 															 tracker_config_t *T,
 															 linprodtodetjac_eval_data_mp *ED,
 															 prog_t *dummyProg,
 															 int **startSub, int **endSub, int **startFunc, int **endFunc, int **startJvsub, int **endJvsub, int **startJv, int **endJv, int ***subFuncsBelow,
 															 int (**eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
 															 int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-															 char *preprocFile, char *degreeFile,
-															 int findStartPts, char *pointsIN, char *pointsOUT,
+															 boost::filesystem::path preprocFile, boost::filesystem::path degreeFile,
+															 int findStartPts, boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
 															 mat_mp n_minusone_randomizer_matrix,
-															 witness_set W,
+															 witness_set & W,
 															 vec_mp projection_full_prec,
 															 solver_configuration *solve_options)
 /***************************************************************\
@@ -1974,13 +1944,13 @@ int linprod_to_detjac_setup_mp(FILE **OUT, char *outName,
  \***************************************************************/
 { // need to create the homotopy
 	
-  int rank, patchType, ssType, numOrigVars, adjustDegrees, numGps;
+  int rank = 0, patchType, ssType, numOrigVars, adjustDegrees, numGps;
 	
   *eval_d = &linprod_to_detjac_eval_d;
   *eval_mp = &linprod_to_detjac_eval_mp;
 	
-  *OUT = fopen(outName, "w");  // open the main output files.
-  *midOUT = fopen(midName, "w");
+  *OUT = safe_fopen_write(outName);  // open the main output files.
+  *midOUT = safe_fopen_write(midName);
 	
 	
 	
@@ -1990,7 +1960,7 @@ int linprod_to_detjac_setup_mp(FILE **OUT, char *outName,
 	
 	
   // setup preProcData
-  setupPreProcData(preprocFile, &ED->preProcData);
+  setupPreProcData(const_cast<char *>(preprocFile.c_str()), &ED->preProcData);
 	
 	
 	
@@ -1999,7 +1969,7 @@ int linprod_to_detjac_setup_mp(FILE **OUT, char *outName,
 	patchType = 2; // 1-hom patch
 	ssType = 0;    // with 1-hom, we use total degree start system
 	adjustDegrees = 0; // if the system does not need its degrees adjusted, then that is okay
-	setuplinprodtodetjacEval_mp(preprocFile, degreeFile, dummyProg, rank, patchType, ssType, T->Precision, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix, W,projection_full_prec,solve_options);
+	setuplinprodtodetjacEval_mp(const_cast<char *>(preprocFile.c_str()), const_cast<char *>(degreeFile.c_str()), dummyProg, rank, patchType, ssType, T->Precision, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix, W,projection_full_prec,solve_options);
 	
 	
 
@@ -2146,7 +2116,7 @@ int linprod_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer
 //	for (ii=0; ii<BED->num_variables; ++ii) {
 //		set_mp(&tempmat->entry[BED->num_variables-1][ii],&Jv_Patch->entry[0][ii]); //  copy in the patch jacobian
 //	}
-//	print_matrix_to_screen_matlab_mp(tempmat,"detme");
+//	print_matrix_to_screen_matlab(tempmat,"detme");
 //	mypause();
 	//now TAKE THE DETERMINANT of tempmat.
 	take_determinant_mp(detjac,tempmat); // the determinant goes into detjac
@@ -2160,7 +2130,7 @@ int linprod_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer
 	
 //	print_comp_mp_matlab(one_minus_s,"one_minus_s");
 //	print_comp_mp_matlab(pathVars,"path");
-//	print_point_to_screen_matlab_mp(funcVals,"f_maybe");
+//	print_point_to_screen_matlab(funcVals,"f_maybe");
 	
 	
 	
@@ -2183,7 +2153,7 @@ int linprod_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer
 																 BED->SLP,
 																 BED->n_minusone_randomizer_matrix); // input parameters for the method
 	
-//	print_matrix_to_screen_matlab_mp(Jv_detjac,"Jv_detjac");
+//	print_matrix_to_screen_matlab(Jv_detjac,"Jv_detjac");
 	
 	//////////////
 	//
@@ -2300,15 +2270,15 @@ int linprod_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer
 	
 
 //	print_comp_mp_matlab(pathVars,"pathvars");
-//	print_matrix_to_screen_matlab_mp( AtimesJ,"jac");
-//	print_point_to_screen_matlab_mp(current_variable_values,"currvars");
-//	print_matrix_to_screen_matlab_mp(Jv_detjac,"Jv_detjac");
-//	print_point_to_screen_matlab_mp(linprod_derivative,"linprod_derivative");
-//	print_point_to_screen_matlab_mp(funcVals,"F");
-//	print_point_to_screen_matlab_mp(parVals,"parVals");
-//	print_point_to_screen_matlab_mp(parDer,"parDer");
-//	print_matrix_to_screen_matlab_mp(Jv,"Jv");
-//	print_matrix_to_screen_matlab_mp(Jp,"Jp");
+//	print_matrix_to_screen_matlab( AtimesJ,"jac");
+//	print_point_to_screen_matlab(current_variable_values,"currvars");
+//	print_matrix_to_screen_matlab(Jv_detjac,"Jv_detjac");
+//	print_point_to_screen_matlab(linprod_derivative,"linprod_derivative");
+//	print_point_to_screen_matlab(funcVals,"F");
+//	print_point_to_screen_matlab(parVals,"parVals");
+//	print_point_to_screen_matlab(parDer,"parDer");
+//	print_matrix_to_screen_matlab(Jv,"Jv");
+//	print_matrix_to_screen_matlab(Jp,"Jp");
 
 
 //these values are set in this function:  point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp
@@ -2691,7 +2661,7 @@ void setuplinprodtodetjacEval_mp(char preprocFile[], char degreeFile[], prog_t *
 																 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
 																 linprodtodetjac_eval_data_mp *BED, int adjustDegrees,
 																 mat_mp n_minusone_randomizer_matrix,
-																 witness_set W,
+																 witness_set & W,
 																 vec_mp projection_full_prec,
 																 solver_configuration *solve_options)
 {
@@ -2739,7 +2709,7 @@ void setuplinprodtodetjacEval_mp(char preprocFile[], char degreeFile[], prog_t *
 	
 	BED->linears = (vec_mp *)malloc(W.num_linears*sizeof(vec_mp));
 	for (ii=0; ii<W.num_linears; ++ii) {
-		init_vec_mp(BED->linears[ii],W.L_d[ii]->size); BED->linears[ii]->size = W.L_d[ii]->size;
+		init_vec_mp(BED->linears[ii],W.L_mp[ii]->size); BED->linears[ii]->size = W.L_mp[ii]->size;
 		vec_cp_mp(BED->linears[ii], W.L_mp[ii]);
 	}
 	
@@ -2895,7 +2865,7 @@ int check_issoln_linprodtodetjac_mp(endgame_data_t *EG,
     if (!(mpfr_number_p(EG->PD_mp.point->coord[ii].r) && mpfr_number_p(EG->PD_mp.point->coord[ii].i)))
 		{
 			printf("got not a number\n");
-			print_point_to_screen_matlab_mp(EG->PD_mp.point,"bad solution");
+			print_point_to_screen_matlab(EG->PD_mp.point,"bad solution");
       return 0;
 		}
 	}
@@ -2922,7 +2892,7 @@ int check_issoln_linprodtodetjac_mp(endgame_data_t *EG,
 	//this one guaranteed by entry condition
 	//	lin_to_lin_eval_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, ED);
 	evalProg_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, BED->SLP);
-	//	print_point_to_screen_matlab_mp(e.funcVals,"howfaroff");
+	//	print_point_to_screen_matlab(e.funcVals,"howfaroff");
 	
 	if (EG->last_approx_prec < 64)
 	{ // copy to _mp
@@ -3068,7 +3038,7 @@ int check_issoln_linprodtodetjac_mp(endgame_data_t *EG,
 //    if (!(mpfr_number_p(EG->PD_mp.point->coord[ii].r) && mpfr_number_p(EG->PD_mp.point->coord[ii].i)))
 //		{
 //			printf("got not a number\n");
-//			print_point_to_screen_matlab_mp(EG->PD_mp.point,"bad_solution");
+//			print_point_to_screen_matlab(EG->PD_mp.point,"bad_solution");
 //      return 0;
 //		}
 //	}
@@ -3095,7 +3065,7 @@ int check_issoln_linprodtodetjac_mp(endgame_data_t *EG,
 //	//this one guaranteed by entry condition
 //	linprod_to_detjac_eval_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, ED);
 //	
-////	print_point_to_screen_matlab_mp(e.funcVals,"post_soln_func_vals");
+////	print_point_to_screen_matlab(e.funcVals,"post_soln_func_vals");
 //	if (EG->last_approx_prec < 64)
 //	{ // copy to _mp
 //		point_d_to_mp(EG->last_approx_mp, EG->last_approx_d);
@@ -3170,7 +3140,7 @@ void check_linprod_evaluator(point_mp current_values,
 
 	
 //	for (ii=0; ii<LPED->num_linears; ii++) {
-//		print_point_to_screen_matlab_mp(LPED->linears[ii],"l");
+//		print_point_to_screen_matlab(LPED->linears[ii],"l");
 //	}
 	
 	
@@ -3181,10 +3151,10 @@ void check_linprod_evaluator(point_mp current_values,
 //	dot_product_mp(result,LPED->linears[0],current_values);
 //	print_comp_mp_matlab(result,"dot_p");
 	print_comp_mp_matlab(LPED->gamma,"gamma");
-	print_point_to_screen_matlab_mp(current_values,"currvals");
-	print_point_to_screen_matlab_mp(LPED->projection,"proj");
-	print_point_to_screen_matlab_mp(e_d.funcVals,"f");
-	print_matrix_to_screen_matlab_mp(e_d.Jv,"Jv");
+	print_point_to_screen_matlab(current_values,"currvals");
+	print_point_to_screen_matlab(LPED->projection,"proj");
+	print_point_to_screen_matlab(e_d.funcVals,"f");
+	print_matrix_to_screen_matlab(e_d.Jv,"Jv");
 
 	
 	
@@ -3195,8 +3165,8 @@ void check_linprod_evaluator(point_mp current_values,
 //	}
 //	linprod_to_detjac_eval_mp(e_d2.funcVals, e_d2.parVals, e_d2.parDer, e_d2.Jv, e_d2.Jp, curr_times_lambda, zerotime, ED);
 //	print_comp_mp_matlab(lambda,"lambda");
-//	print_point_to_screen_matlab_mp(e_d2.funcVals,"f2");
-//	print_matrix_to_screen_matlab_mp(e_d2.Jv,"Jv2");
+//	print_point_to_screen_matlab(e_d2.funcVals,"f2");
+//	print_matrix_to_screen_matlab(e_d2.Jv,"Jv2");
 	
 	//TODO: NEED TO CLEAR THE EVALDATA, or leak memory.
 	

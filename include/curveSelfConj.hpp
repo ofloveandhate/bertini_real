@@ -50,13 +50,12 @@ extern "C" {
  \param solve_options solver configuration.
  */
 void computeCurveSelfConj(boost::filesystem::path inputFile,
-													witness_set W,
+													witness_set & W,
 													vec_mp *pi,
-													curveDecomp_d *C,
-													vertex_set *V,
+													curve_decomposition &C,
+													vertex_set &V,
 													int num_vars,
-													int num_var_gps,
-													program_configuration *options,
+													BR_configuration *options,
 													solver_configuration *solve_options);
 
 
@@ -65,44 +64,44 @@ void computeCurveSelfConj(boost::filesystem::path inputFile,
  the linprodtodetjac method for getting the critical points
  */
 int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
-																	witness_set W,
+																	witness_set & W,
 																	mat_mp n_minusone_randomizer_matrix, 
 																	vec_mp pi,
 																	int num_new_linears,
-																	program_configuration *program_options,
+																	BR_configuration *program_options,
 																	solver_configuration *solve_options);
 
 
 
 
 int curve_get_additional_critpts(witness_set *W_crit_real,
-							 witness_set W,
+							 witness_set & W,
 							 mat_mp randomizer_matrix,
 							 vec_mp pi,
 							 int *randomized_degrees,
-							 program_configuration *program_options,
+							 BR_configuration *program_options,
 							 solver_configuration *solve_options);
 
+//
+///**
+// 
+// */
+//void check_patch_values(witness_set W);
 
-/**
- 
- */
-void check_patch_values(witness_set W);
-
-/**
- checks to see what the determinant of the jacobian is at the points in W.
- */
-void check_detjac(witness_set W, prog_t SLP, tracker_config_t T, mat_d n_minusone_randomizer_matrix, vec_d projection);
-
-/**
-// gets the jacobian (homogeneous) of the functions at the point current_values.  returns mat_d jacobian.  primarily for testing.
- */
-void get_jacobian(point_d current_values,
-									int MPType,
-									int num_var_gps,
-									prog_t SLP,
-									tracker_config_t T,
-									mat_d jacobian);
+///**
+// checks to see what the determinant of the jacobian is at the points in W.
+// */
+//void check_detjac(witness_set W, prog_t SLP, tracker_config_t T, mat_d n_minusone_randomizer_matrix, vec_d projection);
+//
+///**
+//// gets the jacobian (homogeneous) of the functions at the point current_values.  returns mat_d jacobian.  primarily for testing.
+// */
+//void get_jacobian(point_d current_values,
+//									int MPType,
+//									int num_var_gps,
+//									prog_t SLP,
+//									tracker_config_t T,
+//									mat_d jacobian);
 
 /**
  read the file "deg.out" and takes the sum of the numbers appearing there. used for determining the number of lintolin solves to perform to get the critical points WRT the projection and coordinate axes (bounding box).
@@ -112,7 +111,7 @@ int get_sum_degrees(char filename[], int num_funcs);
 
 void sort_for_membership(char * input_file,
 												 witness_set *W_out,
-												 witness_set W_in,
+												 witness_set & W_in,
 												 char *stifle_text);
 
 
@@ -127,10 +126,13 @@ int compare_integers_decreasing(const void * left_in, const void * right_in);
 
 
 
-int verify_projection_ok(witness_set W,
-												 mat_mp n_minusone_randomizer_matrix,
+int verify_projection_ok(witness_set & W,
 												 vec_mp projection,
 												 solver_configuration *solve_options);
 
+int verify_projection_ok(witness_set & W,
+												 mat_mp randomizer_matrix,
+												 vec_mp projection,
+												 solver_configuration *solve_options);
 
 #endif

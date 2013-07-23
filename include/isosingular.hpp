@@ -26,6 +26,8 @@ extern "C" {
 
 #include "fileops.hpp"
 #include "missing_bertini_headers.hpp"
+#include "derivative_systems.hpp"
+
 
 // isosingular.c
 int isosingular_deflation(int *num_deflations, int **deflation_sequence,
@@ -38,9 +40,7 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
 
 void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs, FILE *IN, int minorSize, int *degrees, int deflation_number);
 
-void addItems(int *numItems, char ***itemNames, int **itemLines, FILE *IN, int lineNumber);
 
-void parse_names(int *numItems, char ***itemNames, int **itemLines, FILE *IN, char *name, int num_declarations);
 
 void isosingular_deflation_iteration(int *declarations,
 																		 boost::filesystem::path inputOutputName,

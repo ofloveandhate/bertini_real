@@ -80,9 +80,14 @@ FILE *safe_fopen_append(boost::filesystem::path filename);
 /**
  copies a file character by character.
  */
-//void copyfile(char *INfile,char *OUTfile);
+
 
 void copyfile(boost::filesystem::path input_file, boost::filesystem::path OUTfile);
+
+void copyfile(FILE *IN,FILE *OUT);
+
+void read_matrix(boost::filesystem::path INfile, mat_mp matrix);
+
 
 
 

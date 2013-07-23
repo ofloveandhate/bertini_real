@@ -91,7 +91,7 @@ LIBS:=$(LIBS) ./libpartitionparse.a $(LIBSboost)
 INC:=$(INC) -I../include/  -I$(BERTINIHEADERS) #this includes the header files for bertini_real, etc   
 
 ARGS=$(INC) $(OPT) 
-OBJFILES= data_type.o	programConfiguration.o determinant_derivative.o output.o fileops.o isosingular.o curveNotSelfConj.o curveSelfConj.o witnessSet.o  postProcessing.o	checkSelfConjugate.o nullspace_left.o surface.o curve.o
+OBJFILES= witnessSet.o   derivative_systems.o data_type.o	programConfiguration.o determinant_derivative.o output.o fileops.o isosingular.o curveNotSelfConj.o curveSelfConj.o postProcessing.o	checkSelfConjugate.o nullspace_left.o surface.o curve.o
 SOLVERS= solver.o  solver_nullspace_left.o solver_detjactodetjac.o solver_linprodtodetjac.o solver_multilintolin.o solver_lintolin.o
 FLEXFILES=lex.partitionParse.o 
 

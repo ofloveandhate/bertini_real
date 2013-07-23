@@ -3,13 +3,13 @@
 
 
 
-void computeCurveNotSelfConj(witness_set W_in,
+void computeCurveNotSelfConj(witness_set & W_in,
                              vec_mp         pi_mp,
-                             curveDecomp_d	*C,
-														 vertex_set			*V,
+                             curve_decomposition	&C,
+														 vertex_set			&V,
                              int           num_vars,
                              boost::filesystem::path input_file,
-														 program_configuration * program_options,
+														 BR_configuration * program_options,
 														 solver_configuration * solve_options)
 /***************************************************************\
  * USAGE: compute the isolated points for Non-Self-Conjugate case            *
@@ -38,7 +38,7 @@ void computeCurveNotSelfConj(witness_set W_in,
 	
 
   //generate input file
-  diag_homotopy_input_file("input_NSC", "func_input_nsc","func_inputbar","config_nsc",W_in.L_d[0],num_vars-1);
+  diag_homotopy_input_file("input_NSC", "func_input_nsc","func_inputbar","config_nsc",W_in.L_mp[0],num_vars-1);
   //generate start file
 	diag_homotopy_start_file("start",  W_in);
 
@@ -58,7 +58,8 @@ void computeCurveNotSelfConj(witness_set W_in,
   fscanf(IN, "%d\n\n", &num_sols);
 
 
-	vertex temp_vertex; init_vertex(&temp_vertex);
+	vertex temp_vertex;
+//	init_vertex(&temp_vertex);
 	change_size_vec_mp(temp_vertex.pt_mp,num_vars); temp_vertex.pt_mp->size = num_vars;
 
 	temp_vertex.type = ISOLATED;
@@ -76,18 +77,16 @@ void computeCurveNotSelfConj(witness_set W_in,
     
     //check if x=x_bar
   
-    if (isSamePoint_homogeneous_input_mp(cur_sol,cur_sol_bar)) { // x=x_bar
+    if (isSamePoint_homogeneous_input(cur_sol,cur_sol_bar)) { // x=x_bar
 			
 			vec_cp_mp(temp_vertex.pt_mp,cur_sol);
 			
 			dot_product_mp(temp_vertex.projVal_mp, temp_vertex.pt_mp, pi_mp);
 			
-			if (curve_index_in_vertices(C,V,
-																	temp_vertex.pt_mp,
-																	temp_vertex.projVal_mp,
-																	solve_options->T) ==-1
+			if (C.index_in_vertices(V, temp_vertex.pt_mp, temp_vertex.projVal_mp,
+															solve_options->T) ==-1
 					)
-				curve_add_vertex(C,V,temp_vertex);      
+				C.add_vertex(V,temp_vertex);
 		}
 		
 	}
@@ -119,7 +118,7 @@ void diag_homotopy_input_file(boost::filesystem::path outputFile,
                               boost::filesystem::path funcInputx,
                               boost::filesystem::path funcInputy, 
                               boost::filesystem::path configInput,
-                              vec_d L,
+                              vec_mp L,
                               int   num_vars)
 /***************************************************************\
 * USAGE: setup input file to do diagonal homotopy             *
@@ -182,19 +181,25 @@ void diag_homotopy_input_file(boost::filesystem::path outputFile,
   // setup fmt
   sprintf(fmt, "%%.%dlf+%%.%dlf*I", 15, 15);
   // output the linear function L and L_bar
+	
+	comp_mp temp;  init_mp(temp);
   for (ii = 0; ii < L->size; ii++)
   {
     fprintf(OUT, "L%d = ",ii);
     // print output
-    fprintf(OUT, fmt, L->coord[ii].r, L->coord[ii].i); 
+		print_mp(OUT, 0, &L->coord[ii]); fprintf(OUT, "\n");
+//    fprintf(OUT, fmt, L->coord[ii].r, L->coord[ii].i); 
     fprintf(OUT, ";\n");
 
     fprintf(OUT, "Lbar%d = ",ii);
+		conjugate_mp(temp, &L->coord[ii]);
     // print output
-    fprintf(OUT, fmt, L->coord[ii].r, -L->coord[ii].i); 
+		print_mp(OUT, 0, temp); fprintf(OUT, "\n");
+//    fprintf(OUT, fmt, L->coord[ii].r, -L->coord[ii].i); 
     fprintf(OUT, ";\n");
   } 
   fprintf(OUT, "\n");
+	clear_mp(temp);
 	
   //Generate a random matrix A and output to input file.
   init_mat_d(A, 2, num_vars);
@@ -252,7 +257,7 @@ void diag_homotopy_input_file(boost::filesystem::path outputFile,
 
 
 void diag_homotopy_start_file(boost::filesystem::path startFile,
-                              witness_set  W)
+                              witness_set & W)
 /***************************************************************\
  * USAGE: setup start file to do diagonal homotopy             *
  * ARGUMENTS: name of output file, start points & number of variables*
@@ -286,8 +291,8 @@ void diag_homotopy_start_file(boost::filesystem::path startFile,
     vec_mp result; init_vec_mp(result,0);
 		vec_mp result2; init_vec_mp(result2,0);
 		
-    dehomogenize_mp(&result,W.pts_mp[ii]);
-		dehomogenize_mp(&result2,W.pts_mp[kk]);
+    dehomogenize(&result,W.pts_mp[ii]);
+		dehomogenize(&result2,W.pts_mp[kk]);
 		
 		
     for(jj=0; jj<W.num_variables-1;jj++) {

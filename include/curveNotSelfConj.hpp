@@ -36,18 +36,18 @@ extern "C" {
  \param	solve_options			structure holding options to pass to a solver.
  
  */
-void 	computeCurveNotSelfConj(witness_set		W,
+void 	computeCurveNotSelfConj(witness_set		& W,
 															vec_mp				pi,
-															curveDecomp_d *C,
-															vertex_set		*V,
+															curve_decomposition &C,
+															vertex_set		&V,
 															int						num_vars,
 															boost::filesystem::path input_file,
-															program_configuration *program_options,
+															BR_configuration *program_options,
 															solver_configuration * solve_options);
 
 
 
-void  get_random_mat_d(mat_d, int,int);
+//void  get_random_mat_d(mat_d, int,int);
 
 /** 
  writes the input file for the diagonal homotopy used in curve case to find the intersection points.
@@ -63,7 +63,7 @@ void 	diag_homotopy_input_file(boost::filesystem::path outputFile,
 															 boost::filesystem::path funcInputx,
 															 boost::filesystem::path funcInputy,
 															 boost::filesystem::path configInput,
-															 vec_d L,
+															 vec_mp L,
 															 int   num_vars);
 
 
@@ -76,7 +76,7 @@ void 	diag_homotopy_input_file(boost::filesystem::path outputFile,
  \param W the input witness set
  */
 void 	diag_homotopy_start_file(boost::filesystem::path startFile,
-															 witness_set  W);
+															 witness_set & W);
 
 
 

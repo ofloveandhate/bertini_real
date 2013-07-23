@@ -71,11 +71,16 @@ FILE *safe_fopen_read(boost::filesystem::path filename)
 	
 	FILE* IN;
 	
-	struct stat stat_p;
-	stat (filename.c_str(), &stat_p);
+	if (boost::filesystem::is_directory(filename)){
+		std::cerr << "trying to open directory " << filename.string() << " as a file!" << std::endl;
+		deliberate_segfault();
+		br_exit(ERROR_FILE_NOT_EXIST);
+	}
 	
-	if (S_ISDIR(stat_p.st_mode)){
-		printf("trying to open directory %s as a file!\n",filename.c_str());
+	if (!boost::filesystem::exists(filename)){
+		std::cerr << "unable to open specified file to read: " << filename.string() << std::endl;
+		std::cerr << boost::filesystem::current_path().string() << " is the current directory" << std::endl;
+		deliberate_segfault();
 		br_exit(ERROR_FILE_NOT_EXIST);
 	}
 	
@@ -83,8 +88,9 @@ FILE *safe_fopen_read(boost::filesystem::path filename)
 	IN = fopen(filename.c_str(),"r");
 
 	if (IN == NULL) {
-		printf("unable to open specified file to read: %s\n",filename.c_str());
+		std::cerr << "failed to open file: " << filename.string() << std::endl;
 		fclose(IN);
+		deliberate_segfault();
 		br_exit(ERROR_FILE_NOT_EXIST);
 	}
 	else{
@@ -162,17 +168,33 @@ void copyfile(boost::filesystem::path input_file, boost::filesystem::path OUTfil
 
 
 
-//void copyfile(INfile,char *OUTfile)
-//{
-//	char ch;
-//	FILE *IN,*OUT;
-//	
-//	IN  = safe_fopen_read(INfile);
-//	OUT = safe_fopen_write(OUTfile);
-//	
-//	while ((ch = fgetc(IN)) != EOF)
-//		fprintf(OUT, "%c", ch);
-//	
-//	fclose(IN);
-//	fclose(OUT);
-//}
+void copyfile(FILE *IN,FILE *OUT)
+{
+	char ch;
+	while ((ch = fgetc(IN)) != EOF)
+		fprintf(OUT, "%c", ch);
+
+}
+
+
+
+
+void read_matrix(boost::filesystem::path INfile, mat_mp matrix)
+{
+	int rows,cols, precision;
+	FILE *IN= safe_fopen_read(INfile);
+	fscanf(IN,"%d %d", &rows, &cols); scanRestOfLine(IN);
+	fscanf(IN,"%d", &precision); scanRestOfLine(IN);
+	init_mat_mp2(matrix,rows,cols,precision);
+	matrix->rows=rows; matrix->cols=cols;
+	
+	for (int ii=0;ii<matrix->rows;ii++)
+		for (int jj=0;jj<matrix->cols;jj++)
+		{
+			mpf_inp_str(matrix->entry[ii][jj].r, IN, 10);
+			mpf_inp_str(matrix->entry[ii][jj].i, IN, 10);
+			scanRestOfLine(IN);
+		}
+	
+	fclose(IN);
+}
