@@ -49,30 +49,52 @@ void solver_clear_config(solver_configuration *options){
  \param W the witness_set input
  
  */
-void generic_set_start_pts_d(point_data_d * startPts,
-							 witness_set W)
+void generic_set_start_pts(point_data_d ** startPts,
+							 witness_set & W)
 {
 	int ii; // counters
 	
-	startPts = (point_data_d *)bmalloc(W.num_pts * sizeof(point_data_d));
+	*startPts = (point_data_d *)br_malloc(W.num_pts * sizeof(point_data_d));
 	
 	for (ii = 0; ii < W.num_pts; ii++)
 	{ // setup startPts[ii]
-		init_point_data_d(&startPts[ii], W.num_variables); // also performs initialization on the point inside startPts
-		change_size_vec_d(startPts[ii].point,W.num_variables);
-		startPts[ii].point->size = W.num_variables;
+		init_point_data_d(&(*startPts)[ii], W.num_variables); // also performs initialization on the point inside startPts
+		change_size_vec_d((*startPts)[ii].point,W.num_variables);
+		(*startPts)[ii].point->size = W.num_variables;
 		
 		//1 set the coordinates
-		vec_mp_to_d(startPts[ii].point, W.pts_mp[ii]);
+		vec_mp_to_d((*startPts)[ii].point, W.pts_mp[ii]);
 		
 		//2 set the start time to 1.
-		set_one_d(startPts[ii].time);
+		set_one_d((*startPts)[ii].time);
 	}
 }
 
 
 
-void solver::track_path_d(int pathNum, endgame_data_t *EG_out,
+void generic_set_start_pts(point_data_mp ** startPts,
+													 witness_set & W)
+{
+	int ii; // counters
+	
+	(*startPts) = (point_data_mp *)br_malloc(W.num_pts * sizeof(point_data_mp));
+	
+	for (ii = 0; ii < W.num_pts; ii++)
+	{ // setup startPts[ii]
+		init_point_data_mp(&(*startPts)[ii], W.num_variables); // also performs initialization on the point inside startPts
+		change_size_vec_mp((*startPts)[ii].point,W.num_variables);
+		(*startPts)[ii].point->size = W.num_variables;
+		
+		//1 set the coordinates
+		vec_cp_mp((*startPts)[ii].point, W.pts_mp[ii]);
+		
+		//2 set the start time to 1.
+		set_one_mp((*startPts)[ii].time);
+	}
+}
+
+
+void generic_track_path_d(int pathNum, endgame_data_t *EG_out,
 				  point_data_d *Pin,
 				  FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
 				  void const *ED_d, void const *ED_mp,
@@ -149,9 +171,64 @@ void solver::track_path_d(int pathNum, endgame_data_t *EG_out,
 
 
 
+void generic_setup_patch(patch_eval_data_d *P, const witness_set & W)
+{
+	int ii;
+	P->num_patches = W.num_patches;
+	init_mat_d(P->patchCoeff, W.num_patches, W.num_variables);
+	P->patchCoeff->rows = W.num_patches; P->patchCoeff->cols = W.num_variables;
+	
+	int varcounter = 0;
+	for (int jj=0; jj<W.num_patches; jj++) {
+		for (ii=0; ii<varcounter; ii++) {
+			set_zero_d(&P->patchCoeff->entry[jj][ii]);
+		}
+		
+		int offset = varcounter;
+		for (ii = 0; ii < W.patch_mp[jj]->size ; ii++){
+			mp_to_d(&P->patchCoeff->entry[jj][ii+offset],&W.patch_mp[jj]->coord[ii]);
+			varcounter++;
+		}
+		
+		for (ii=varcounter; ii<W.num_variables; ii++) {
+			set_zero_d(&P->patchCoeff->entry[jj][ii]);
+		}
+	}
+}
 
 
-
-
-
+void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W)
+{
+	int ii;
+	init_mat_rat(P->patchCoeff_rat, W.num_patches, W.num_variables);
+	
+	init_mat_mp2(P->patchCoeff, W.num_patches, W.num_variables, mpf_get_default_prec());
+	P->curr_prec = mpf_get_default_prec();
+	P->num_patches = W.num_patches;
+	P->patchCoeff->rows = W.num_patches;
+	P->patchCoeff->cols = W.num_variables;
+	
+	
+	int varcounter = 0;
+	for (int jj=0; jj<W.num_patches; jj++) {
+		
+		for (ii=0; ii<varcounter; ii++) {
+			set_zero_mp(&P->patchCoeff->entry[jj][ii]);
+			mp_to_rat(P->patchCoeff_rat[jj][ii], &P->patchCoeff->entry[jj][ii]);
+		}
+		
+		int offset = varcounter;
+		for (ii = 0; ii < W.patch_mp[jj]->size; ii++){
+			set_mp(&P->patchCoeff->entry[jj][ii+offset],&W.patch_mp[jj]->coord[ii]);
+			mp_to_rat(P->patchCoeff_rat[jj][ii+offset],
+								&P->patchCoeff->entry[jj][ii+offset]);
+			varcounter++;
+		}
+		
+		for (ii=varcounter; ii<W.num_variables; ii++) {
+			set_zero_mp(&P->patchCoeff->entry[jj][ii]);
+			mp_to_rat(P->patchCoeff_rat[jj][ii], &P->patchCoeff->entry[jj][ii]);
+		}
+	}
+}
 

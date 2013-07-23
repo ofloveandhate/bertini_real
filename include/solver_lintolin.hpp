@@ -100,7 +100,7 @@ typedef struct
 /** the main function for finding critical conditions WRT a projection
  */
 int lintolin_solver_main(int MPType,
-													 witness_set W,
+													 witness_set & W,
 													 mat_mp n_minusone_randomizer_matrix_full_prec,
 													 vec_mp *new_linears_full_prec,
 													 int num_new_linears,
@@ -111,7 +111,7 @@ int lintolin_solver_main(int MPType,
 
 
 int lintolin_solver_d(int MPType,
-												witness_set W,  // should include the old linear
+												witness_set & W,  // should include the old linear
 												mat_mp n_minusone_randomizer_matrix_full_prec,
 												vec_mp *new_linears_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 												int num_new_linears,
@@ -122,7 +122,7 @@ int lintolin_solver_d(int MPType,
 
 void lintolin_track_d(trackingStats *trackCount,
 												FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
-												witness_set W,
+												witness_set & W,
 												vec_mp *new_linears_full_prec,
 												int num_new_linears,
 												post_process_t *endPoints,
@@ -134,33 +134,29 @@ void lintolin_track_d(trackingStats *trackCount,
 												int (*change_prec)(void const *, int),
 												int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),solver_configuration *solve_options);
 
-void lintolin_track_path_d(int pathNum,
-														 endgame_data_t *EG_out, point_data_d *Pin, FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
-														 void const *ED_d, void const *ED_mp,
-														 int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
-														 int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-														 int (*change_prec)(void const *, int),
-														 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *));
+//void lintolin_track_path_d(int pathNum,
+//														 endgame_data_t *EG_out, point_data_d *Pin, FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
+//														 void const *ED_d, void const *ED_mp,
+//														 int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
+//														 int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
+//														 int (*change_prec)(void const *, int),
+//														 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *));
 
 
 
-int lintolin_setup_d(FILE **OUT, char *outName,
-											 FILE **midOUT, char *midName,
-											 tracker_config_t *T,
-											 lintolin_eval_data_d *ED,
-											 prog_t *dummyProg,  // arg7
-											 int **startSub, int **endSub,
-											 int **startFunc, int **endFunc,
-											 int **startJvsub, int **endJvsub,
-											 int **startJv, int **endJv,
-											 int ***subFuncsBelow,
-											 int (**eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
-											 int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-											 char *preprocFile, char *degreeFile,
-											 int findStartPts, char *pointsIN, char *pointsOUT,
-											 mat_mp n_minusone_randomizer_matrix_full_prec,
-											 witness_set W,
-											 solver_configuration *solve_options);
+int lintolin_setup_d(FILE **OUT, boost::filesystem::path outName,
+										 FILE **midOUT, boost::filesystem::path midName,
+										 tracker_config_t *T,
+										 lintolin_eval_data_d *ED,
+										 prog_t *dummyProg,
+										 int **startSub, int **endSub, int **startFunc, int **endFunc, int **startJvsub, int **endJvsub, int **startJv, int **endJv, int ***subFuncsBelow,
+										 int (**eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
+										 int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
+										 boost::filesystem::path preprocFile, boost::filesystem::path degreeFile,
+										 int findStartPts, boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
+										 mat_mp n_minusone_randomizer_matrix_full_prec,
+										 witness_set & W,
+										 solver_configuration *solve_options);
 
 //the new custom evaluator for this solver
 
@@ -194,7 +190,7 @@ void setuplintolinEval_d(tracker_config_t *T,
 											 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
 											 lintolin_eval_data_d *BED, int adjustDegrees,
 												 mat_mp n_minusone_randomizer_matrix_full_prec,
-												 witness_set W,
+												 witness_set & W,
 												 solver_configuration *solve_options);
 
 
@@ -215,7 +211,7 @@ void change_lintolin_eval_prec_mp(int new_prec, lintolin_eval_data_mp *BED);
 
 
 int lintolin_solver_mp(int MPType,
-												 witness_set W,  // includes the initial linear.
+												 witness_set & W,  // includes the initial linear.
 												 mat_mp n_minusone_randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
 												 vec_mp *new_linears_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 												 int num_new_linears,
@@ -224,7 +220,7 @@ int lintolin_solver_mp(int MPType,
 
 void lintolin_track_mp(trackingStats *trackCount,
 												 FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
-												 witness_set W,
+												 witness_set & W,
 												 vec_mp *new_linears_full_prec,
 												 int num_new_linears,
 												 post_process_t *endPoints,
@@ -248,19 +244,19 @@ void lintolin_track_path_mp(int pathNum, endgame_data_t *EG_out,
 
 //int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
 
-int lintolin_setup_mp(FILE **OUT, char *outName,
-												FILE **midOUT, char *midName,
-												tracker_config_t *T,
-												lintolin_eval_data_mp *ED,
-												prog_t *dummyProg,
-												int **startSub, int **endSub, int **startFunc, int **endFunc, int **startJvsub, int **endJvsub, int **startJv, int **endJv, int ***subFuncsBelow,
-												int (**eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
-												int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-												char *preprocFile, char *degreeFile,
-												int findStartPts, char *pointsIN, char *pointsOUT,
-												mat_mp n_minusone_randomizer_matrix_full_prec,
-												witness_set W,
-												solver_configuration *solve_options);
+int lintolin_setup_mp(FILE **OUT, boost::filesystem::path outName,
+											FILE **midOUT, boost::filesystem::path midName,
+											tracker_config_t *T,
+											lintolin_eval_data_mp *ED,
+											prog_t *dummyProg,
+											int **startSub, int **endSub, int **startFunc, int **endFunc, int **startJvsub, int **endJvsub, int **startJv, int **endJv, int ***subFuncsBelow,
+											int (**eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
+											int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
+											boost::filesystem::path preprocFile, boost::filesystem::path degreeFile,
+											int findStartPts, boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
+											mat_mp n_minusone_randomizer_matrix,
+											witness_set & W,
+											solver_configuration *solve_options);
 
 int lintolin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED);
 
@@ -280,7 +276,7 @@ void setuplintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *dummyPr
 													void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
 													lintolin_eval_data_mp *BED, int adjustDegrees,
 													mat_mp n_minusone_randomizer_matrix_full_prec,
-													witness_set W,
+													witness_set & W,
 													solver_configuration *solve_options);
 
 

@@ -306,29 +306,31 @@ void BRpostProcessing(post_process_t *endPoints, witness_set *W_new, int num_pts
 	
 	//initialize the structures for holding the produced data
 	W_new->num_pts=num_actual_solns; W_new->num_pts=num_actual_solns;
-  W_new->pts_d=(point_d *)bmalloc(num_actual_solns*sizeof(point_d));
+//  W_new->pts_d=(point_d *)bmalloc(num_actual_solns*sizeof(point_d));
   W_new->pts_mp=(point_mp *)bmalloc(num_actual_solns*sizeof(point_mp));
 	
 	
 	
 	for (ii=0; ii<num_actual_solns; ++ii) {
 		
-		init_vec_d(W_new->pts_d[ii],W_new->num_variables); init_vec_mp(W_new->pts_mp[ii],W_new->num_variables);
-		W_new->pts_d[ii]->size = W_new->pts_mp[ii]->size = W_new->num_variables;
+//		init_vec_d(W_new->pts_d[ii],W_new->num_variables);
+		init_vec_mp(W_new->pts_mp[ii],W_new->num_variables);
+//		W_new->pts_d[ii]->size =
+		W_new->pts_mp[ii]->size = W_new->num_variables;
 		
 		if (endPoints[actual_solns_indices[ii]].sol_prec<64) {
 			//copy out of the double structure.
 			for (jj=0; jj<W_new->num_variables; jj++) {
-				set_d(&W_new->pts_d[ii]->coord[jj],endPoints[actual_solns_indices[ii]].sol_d[jj]);
+				d_to_mp(&W_new->pts_mp[ii]->coord[jj],endPoints[actual_solns_indices[ii]].sol_d[jj]);
 			}
-			vec_d_to_mp(W_new->pts_mp[ii],W_new->pts_d[ii]);
+//			vec_d_to_mp(W_new->pts_mp[ii],W_new->pts_d[ii]);
 		}
 		else{
 			//copy out of the mp structure.
 			for (jj=0; jj<W_new->num_variables; jj++) {
 				set_mp(&W_new->pts_mp[ii]->coord[jj],endPoints[actual_solns_indices[ii]].sol_mp[jj]);
 			}
-			vec_mp_to_d(W_new->pts_d[ii],W_new->pts_mp[ii]);
+//			vec_mp_to_d(W_new->pts_d[ii],W_new->pts_mp[ii]);
 		}
 	}
 	

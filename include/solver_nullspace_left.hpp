@@ -24,8 +24,10 @@
 #include "witnessSet.hpp"
 #include "missing_bertini_headers.hpp"
 
-typedef struct
+class nullspace_config
 {
+	
+public:
 	int target_dim;   // r			the dimension of the real set we are looking for
 	int ambient_dim;  // k			the dimension of the complex component we are looking IN.  
 	int target_crit_codim;    // \ell.  must be at least one (1), and at most target_dim (r).
@@ -51,14 +53,35 @@ typedef struct
 	
 	vec_mp v_patch; // length of this should be N-k+\ell
 	
-//	vec_mp *source_projection; // # of these should be \ell
 	vec_mp *target_projection; // # of these should be \ell
 	
 	mat_mp randomizer_matrix;  // R, the main randomizer matrix, which was passed in.  randomizes f and Jf down to N-k equations.
 	
 	mat_mp post_randomizer_matrix;  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
 	
-} nullspace_config;
+	void clear();
+	
+	nullspace_config(){
+		target_dim = ambient_dim = target_crit_codim = num_jac_equations = -1;
+		num_x_vars = num_v_vars = -1;
+		num_randomized_eqns = max_degree = -1;
+		
+		randomized_degrees = NULL;
+		
+		starting_linears = NULL;
+		
+		additional_linears_starting = additional_linears_terminal = NULL;
+		
+		num_v_linears = -1;
+		v_linears = NULL;
+		
+		target_projection = NULL;
+	}
+	
+	void print();
+};
+
+
 
 //
 //void cp_nullspace_config(nullspace_config *ns_out, nullspace_config ns_in){
@@ -244,7 +267,7 @@ typedef struct
  */
 
 int nullspacejac_solver_main(int										MPType,
-														 witness_set						W, // carries with it the start points, and the linears.
+														 witness_set						& W, // carries with it the start points, and the linears.
 														 witness_set						*W_new, // new data goes in here
 														 nullspace_config				*ns_config,
 														 solver_configuration		*solve_options);
@@ -252,7 +275,7 @@ int nullspacejac_solver_main(int										MPType,
 
 
 int nullspacejac_solver_d(int											MPType, //, double parse_time, unsigned int currentSeed
-													witness_set							W,  // includes the initial linear.
+													witness_set							& W,  // includes the initial linear.
 													witness_set							*W_new,
 													nullspace_config				*ns_config,
 													solver_configuration		*solve_options);
@@ -261,7 +284,7 @@ int nullspacejac_solver_d(int											MPType, //, double parse_time, unsigned 
 
 void nullspacejac_track_d(trackingStats *trackCount,
 													FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
-													witness_set W,
+													witness_set & W,
 													post_process_t *endPoints,  // for holding the produced data.
 													FILE *FAIL,
 													int pathMod, tracker_config_t *T,
@@ -284,17 +307,17 @@ void nullspacejac_track_path_d(int pathNum, endgame_data_t *EG_out,
 
 
 
-int nullspacejac_setup_d(FILE **OUT, char *outName,
-												 FILE **midOUT, char *midName,
+int nullspacejac_setup_d(FILE **OUT, boost::filesystem::path outName,
+												 FILE **midOUT, boost::filesystem::path midName,
 												 tracker_config_t *T,
 												 nullspacejac_eval_data_d *ED,
 												 prog_t *dummyProg,
 												 int **startSub, int **endSub, int **startFunc, int **endFunc, int **startJvsub, int **endJvsub, int **startJv, int **endJv, int ***subFuncsBelow,
 												 int (**eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
 												 int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-												 char *preprocFile, char *degreeFile,
-												 int findStartPts, char *pointsIN, char *pointsOUT,
-												 witness_set W,
+												 boost::filesystem::path preprocFile, boost::filesystem::path degreeFile,
+												 int findStartPts, boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
+												 witness_set & W,
 												 nullspace_config				*ns_config,
 												 solver_configuration *solve_options);
 
@@ -328,7 +351,7 @@ void setupnullspacejacEval_d(tracker_config_t *T,char preprocFile[], char degree
 														 int squareSize, int patchType, int ssType, int MPType,
 														 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,// what are these supposed to point to?
 														 nullspacejac_eval_data_d *BED, int adjustDegrees,
-														 witness_set W,
+														 witness_set & W,
 														 nullspace_config *ns_config,
 														 solver_configuration *solve_options);
 
@@ -347,7 +370,7 @@ int nullspacejac_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d in
 int change_nullspacejac_eval_prec(void const *ED, int new_prec);
 
 int nullspacejac_solver_mp(int MPType,  
-													 witness_set W,  // includes the initial linears.
+													 witness_set & W,  // includes the initial linears.
 													 witness_set *W_new,
 													 nullspace_config *ns_config,
 													 solver_configuration *solve_options);
@@ -356,7 +379,7 @@ int nullspacejac_solver_mp(int MPType,
 
 void nullspacejac_track_mp(trackingStats *trackCount,
 													 FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
-													 witness_set W,
+													 witness_set & W,
 													 post_process_t *endPoints,
 													 FILE *FAIL,
 													 int pathMod, tracker_config_t *T,
@@ -376,19 +399,20 @@ void nullspacejac_track_path_mp(int pathNum, endgame_data_t *EG_out,
 																int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *));
 
 
-int nullspacejac_setup_mp(FILE **OUT, char *outName,
-													FILE **midOUT, char *midName,
+int nullspacejac_setup_mp(FILE **OUT, boost::filesystem::path outName,
+													FILE **midOUT, boost::filesystem::path midName,
 													tracker_config_t *T,
 													nullspacejac_eval_data_mp *ED,
 													prog_t *dummyProg,
 													int **startSub, int **endSub, int **startFunc, int **endFunc, int **startJvsub, int **endJvsub, int **startJv, int **endJv, int ***subFuncsBelow,
 													int (**eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
 													int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-													char *preprocFile, char *degreeFile,
-													int findStartPts, char *pointsIN, char *pointsOUT,
-													witness_set W,
-													nullspace_config				*ns_config,
-													solver_configuration *solve_options);
+													boost::filesystem::path preprocFile, boost::filesystem::path degreeFile,
+													int findStartPts,
+													boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
+													witness_set & W,
+													nullspace_config *ns_config,
+													solver_configuration *solve_optionss);
 
 
 int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED);
@@ -413,7 +437,7 @@ void setupnullspacejacEval_mp(char preprocFile[], char degreeFile[], prog_t *dum
 															int squareSize, int patchType, int ssType, int prec,
 															void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
 															nullspacejac_eval_data_mp *BED, int adjustDegrees,
-															witness_set W,
+															witness_set & W,
 															nullspace_config				*ns_config,
 															solver_configuration *solve_options);
 
@@ -425,6 +449,10 @@ int check_issoln_nullspacejac_d(endgame_data_t *EG,
 																tracker_config_t *T,
 																void const *ED);
 int check_issoln_nullspacejac_mp(endgame_data_t *EG,
+																 tracker_config_t *T,
+																 void const *ED);
+
+int check_isstart_nullspacejac_d(point_d testpoint,
 																 tracker_config_t *T,
 																 void const *ED);
 

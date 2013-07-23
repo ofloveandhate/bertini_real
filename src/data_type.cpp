@@ -57,144 +57,119 @@ void deliberate_segfault(){
 }
 
 
-void init_vertex_set(vertex_set *V){
-	V->vertices = NULL;  //Isolated real points.
-	V->num_vertices = 0;
+
+
+int vertex_set::add_vertex(const vertex source_vertex){
+	
+	this->num_vertices++;
+	this->vertices.push_back(source_vertex);
+	
+	return this->num_vertices-1;
 }
 
-int add_vertex(vertex_set *V, vertex source_vertex){
-	
-//	printf("adding vertex\n");
-	
-	if ( (V->num_vertices==0) && (V->vertices!=NULL) ) {
-		printf("initalization error in add_vertex\n");
-		printf("V->num_vertices==%d && V->vertices!=NULL\n",V->num_vertices);
-		exit(-1);
+
+void vertex_set::print_to_screen()
+{
+	printf("vertex set has %d vertices:\n\n",this->num_vertices);
+	for (int ii=0; ii<this->num_vertices; ++ii) {
+		print_point_to_screen_matlab(this->vertices[ii].pt_mp,"vert");
+		print_comp_mp_matlab(this->vertices[ii].projVal_mp,"proj");
+		printf("type: %d\n", this->vertices[ii].type);
 	}
+}
+
+
+int vertex_set::setup_vertices(boost::filesystem::path INfile)
+//setup the vertex structure
+{
+	FILE *IN = safe_fopen_read(INfile);
+	int num_vertices;
+	int num_vars;
+	fscanf(IN, "%d %d\n\n", &num_vertices, &num_vars);
 	
+	vertex temp_vertex;
+	change_size_vec_mp(temp_vertex.pt_mp,num_vars); temp_vertex.pt_mp->size = num_vars;
 	
-	if
-		( (V->num_vertices!=0) && (V->vertices==NULL) ) {
-		printf("initalization error in add_vertex\n");
-		printf("NULL vertices with positive num_vertices\n");
-		exit(-1);
-	}
-	
-	
-	
-	
-	V->num_vertices++;
-	
-	//	printf("\n**************\nadding vertex:\n");
-	//	print_point_to_screen_matlab_mp(source_vertex.pt_mp,"adding");
-	//	printf("\n---------------------\n");
-	
-	
-	if (V->num_vertices==1) {
-		V->vertices = (vertex *)bmalloc( sizeof(vertex));
-	}
-	else{
-		V->vertices = (vertex *)brealloc(V->vertices, V->num_vertices*sizeof(vertex));
-	}
-	
-	int current_index = V->num_vertices-1;
-	
-	init_vertex(&V->vertices[current_index]);
-	cp_vertex(&V->vertices[current_index],source_vertex);
-	
+	for(int ii=0;ii<num_vertices;ii++)
+	{
+		for(int jj=0;jj<num_vars;jj++)
+		{
+			mpf_inp_str(temp_vertex.pt_mp->coord[jj].r, IN, 10);
+			mpf_inp_str(temp_vertex.pt_mp->coord[jj].i, IN, 10);
+		}
 		
-	return current_index;
-}
-
-
-
-
-int curve_add_vertex(curveDecomp_d *C, vertex_set *V, vertex source_vertex){
-	
-	
-	int current_index = add_vertex(V, source_vertex);
-	
-	
-	switch (source_vertex.type) { // if you add a type to the enum, ensure it gets a case here!
-		case CRITICAL:
-			C->num_V1++; // increment number of points of this type
-			
-			if (C->num_V1==1)
-				C->V1_indices = (int *)bmalloc(C->num_V1*sizeof(int));
-			else
-				C->V1_indices = (int *)brealloc(C->V1_indices, (C->num_V1)*sizeof(int));
-			
-			C->V1_indices[C->num_V1-1] = current_index; // the number in C having already been incremented, we -1;
-			
-			break;
-			
-		case NEW:
-			C->num_new++; // increment number of points of this type
-			C->num_V1++;  // increment number of points of this type
-			
-			
-			if (C->num_V1==1)
-				C->V1_indices = (int *)bmalloc(C->num_V1*sizeof(int));
-			else
-				C->V1_indices = (int *)brealloc(C->V1_indices, (C->num_V1)*sizeof(int));
-			
-			C->V1_indices[C->num_V1-1] = current_index; // the number in C having already been incremented, we -1;
-			
-			
-			if (C->num_new==1)
-				C->new_indices = (int *)bmalloc(C->num_new*sizeof(int));
-			else
-				C->new_indices = (int *)brealloc(C->new_indices, (C->num_new)*sizeof(int));
-			
-			C->new_indices[C->num_new-1] = current_index; // the number in C having already been incremented, we -1;
-			
-			break;
-			
-		case ISOLATED:
-			C->num_V0++; // increment number of points of this type
-			
-			if (C->num_V0==1)
-				C->V0_indices = (int *)bmalloc(C->num_V0*sizeof(int)); // if the first, allocate
-			else
-				C->V0_indices = (int *)brealloc(C->V0_indices, (C->num_V0)*sizeof(int));  // reallocate
-			
-			C->V0_indices[C->num_V0-1] = current_index; // the number in C having already been incremented, we -1;
-			
-			
-			break;
-			
-		case MIDPOINT:
-			C->num_midpts++; // increment number of points of this type
-			
-			
-			if (C->num_midpts==1)
-				C->midpt_indices = (int *)br_malloc(C->num_midpts*sizeof(int)); // if the first, allocate
-			else
-				C->midpt_indices = (int *)brealloc(C->midpt_indices, (C->num_midpts)*sizeof(int));  // reallocate
-			
-			C->midpt_indices[C->num_midpts-1] = current_index; // the number in C having already been incremented, we -1;
-			
-			break;
-			
-		case SAMPLE_POINT:
-			C->num_samples++; // increment number of points of this type
-			
-			
-			if (C->num_samples==1)
-				C->sample_indices = (int *)br_malloc(sizeof(int)); // if the first, allocate
-			else
-				C->sample_indices = (int *)brealloc(C->sample_indices, (C->num_samples)*sizeof(int));  // reallocate
-			
-			C->sample_indices[C->num_samples-1] = current_index; // the number in C having already been incremented, we -1;
-			
-			break;
-			
-		default:
-			
-			printf("attempting to add a vertex of unset or invalid type (%d)\n",source_vertex.type);
-			exit(-220);
-			break;
+		mpf_inp_str(temp_vertex.projVal_mp->r, IN, 10);
+		mpf_inp_str(temp_vertex.projVal_mp->i, IN, 10);
+		
+		fscanf(IN,"%d\n",&temp_vertex.type);
+		
+		
+		vertex_set::add_vertex(temp_vertex);
 	}
+	
+	
+	fclose(IN);
+	
+	if (this->num_vertices!=num_vertices) {
+		printf("parity error in num_vertices.\n\texpected: %d\tactual: %d\n",this->num_vertices,num_vertices);
+		exit(25943);
+	}
+	
+	return num_vertices;
+}
+
+
+
+
+
+
+/**
+ 
+ //assumes all vertices have the same number of variables in them.
+ 
+ Output vertex structure as follows:
+ # pts
+ pt.1
+ 
+ pt.2
+ 
+ .
+ .
+ .
+ **/
+void vertex_set::print(boost::filesystem::path outputfile)
+{
+	
+	FILE *OUT = safe_fopen_write(outputfile);
+	
+	// output the number of vertices
+	fprintf(OUT,"%d %d\n\n",num_vertices, vertices[0].pt_mp->size);
+	for (int ii = 0; ii < num_vertices; ii++)
+	{ // output points
+		for(int jj=0;jj<vertices[ii].pt_mp->size;jj++) {
+			print_mp(OUT, 0, &vertices[ii].pt_mp->coord[jj]);
+			fprintf(OUT,"\n");
+		}
+		print_mp(OUT, 0, vertices[ii].projVal_mp);
+		fprintf(OUT,"\n");
+		fprintf(OUT,"%d\n\n",vertices[ii].type);
+	}
+	
+	fclose(OUT);
+	
+}
+
+
+
+
+
+int decomposition::add_vertex(vertex_set &V, vertex source_vertex){
+	
+	
+	int current_index = V.add_vertex(source_vertex);
+	
+	this->counters[source_vertex.type]++;
+	this->indices[source_vertex.type].push_back(current_index);
 
 	return current_index;
 }
@@ -204,217 +179,241 @@ int curve_add_vertex(curveDecomp_d *C, vertex_set *V, vertex source_vertex){
 
 
 
-int curve_index_in_vertices(curveDecomp_d *C, vertex_set *V,
+int decomposition::index_in_vertices(vertex_set &V,
 														vec_mp testpoint, comp_mp projection_value,
 														tracker_config_t T)
 {
 	int ii;
-	
-	
 	int index = -1;
-	
-	
-	for (ii=0; ii<C->num_V1; ii++) {
 		
-		int current_index = C->V1_indices[ii];
-
-		if (isSamePoint_homogeneous_input_mp(V->vertices[current_index].pt_mp, testpoint)){
-			index = ii;
-			break;
-		}
-		
-	}
+	V.print_to_screen();
 	
-	for (ii=0; ii<C->num_V0; ii++) {
-		
-		int current_index = C->V0_indices[ii];
-
-		if (isSamePoint_homogeneous_input_mp(V->vertices[current_index].pt_mp, testpoint)){
-			index = ii;
-			break;
-		}
-		
-	}
+	std::map< int , int >::iterator type_iter;
 	
-	
-	for (ii=0; ii<C->num_isolated; ii++) {
-		
-		int current_index = C->isolated_indices[ii];
-		if (isSamePoint_homogeneous_input_mp(V->vertices[current_index].pt_mp, testpoint)){
-			index = ii;
-			break;
-		}
-		
-	}
-	
-	
-	for (ii=0; ii<C->num_new; ii++) {
-		
-		int current_index = C->new_indices[ii];
-		if (isSamePoint_homogeneous_input_mp(V->vertices[current_index].pt_mp, testpoint)){
-			index = ii;
-			break;
+	for (type_iter = this->counters.begin(); type_iter!= this->counters.end(); type_iter++) {
+		for (ii=0; ii<type_iter->second; ii++) {
+			int current_index = this->indices[type_iter->first][ii];
+			std::cout << current_index << " " << type_iter->first << " " << ii << std::endl;
+			if (isSamePoint_homogeneous_input(V.vertices[current_index].pt_mp, testpoint)){
+				index = current_index;
+				break;
+			}
 		}
 	}
-	
 
 	return index;	
 }
 
 
 
-int curve_index_in_vertices_with_add(curveDecomp_d *C, vertex_set *V,
+int decomposition::index_in_vertices_with_add(vertex_set &V,
 																		 vec_mp testpoint, comp_mp projection_value,
 																		 tracker_config_t T)
 {
-	int index = curve_index_in_vertices(C, V, testpoint, projection_value, T);
+	int index = decomposition::index_in_vertices(V, testpoint, projection_value, T);
 	
 	if (index==-1) {
-		vertex temp_vertex; init_vertex(&temp_vertex);
+		vertex temp_vertex;
 		
 		set_mp(temp_vertex.projVal_mp,  projection_value);
 		vec_cp_mp(temp_vertex.pt_mp, testpoint);
 		
 		
 		temp_vertex.type = NEW;
-		index = add_vertex(V,temp_vertex);
+		index = V.add_vertex(temp_vertex);
 	}
 	
 	return index;
 
 }
 
-void vertex_set_print_to_screen(vertex_set *V){
-	int ii;
-	printf("vertex set has %d vertices:\n\n",V->num_vertices);
-	for (ii=0; ii<V->num_vertices; ++ii) {
-		print_point_to_screen_matlab_mp(V->vertices[ii].pt_mp,"vert");
-		print_comp_mp_matlab(V->vertices[ii].projVal_mp,"proj");
-		printf("type: %d\n", V->vertices[ii].type);
+
+
+
+
+
+
+
+
+
+
+
+int decomposition::setup(boost::filesystem::path INfile,
+								boost::filesystem::path & inputName,
+								boost::filesystem::path directoryName)
+//setup the vertex structure
+{
+	
+
+	boost::filesystem::path input_deflated_Name;
+	
+	std::stringstream converter;
+	std::string tempstr;
+	std::ifstream fin(INfile.c_str());
+	
+	int num_vertices = 0;
+	
+	getline(fin, tempstr);
+	input_deflated_Name = tempstr;
+	inputName = directoryName / input_deflated_Name;
+
+	getline(fin, tempstr);
+	converter << tempstr;
+	converter >> this->num_variables >> this->dimension;
+	converter.clear(); converter.str("");
+	
+	int num_types;
+	fin >> num_types;
+	
+	for (int ii =0; ii<num_types; ii++) {
+		int current_type, num_this_type, current_index;
+		fin >> current_type >> num_this_type;
+		std::cout << current_type << " " << num_this_type << std::endl;
+		this->counters[current_type] = num_this_type;
+		
+		for (int jj=0; jj<num_this_type; jj++) {
+			fin >> current_index;
+			this->indices[current_type].push_back(current_index);
+		}
 	}
 	
+	vec_mp tempvec; init_vec_mp(tempvec, this->num_variables);
+	tempvec->size = this->num_variables;
+	
+	getline(fin,tempstr); // burn two lines as a consequence of using getline.
+	getline(fin,tempstr);
+	for (int ii=0; ii<dimension; ii++) {
+		for (int jj=0;jj<this->num_variables;jj++)
+		{
+			getline(fin,tempstr);
+			converter << tempstr;
+			std::string re, im;
+			converter >> re >> im; // this line is correct
+			converter.clear(); converter.str("");
+			
+			mpf_set_str(tempvec->coord[jj].r, const_cast<char *>(re.c_str()), 10);
+			mpf_set_str(tempvec->coord[jj].i, const_cast<char *>(im.c_str()), 10);
+		}
+		
+		decomposition::add_projection(tempvec);
+	}
+
+	fin.close();
+	
+	return num_vertices;
 }
+
 
 
 
 
 /**
- copy in a vertex
- */
-void cp_vertex(vertex *target_vertex, vertex source_vertex){
-
-	vec_cp_mp(target_vertex->pt_mp,source_vertex.pt_mp);
-	set_mp(target_vertex->projVal_mp, source_vertex.projVal_mp);
-
-	target_vertex->type = source_vertex.type;
-	
-	return;
-}
-
-
-
-void init_vertex(vertex *curr_vertex){
-	
-	init_vec_mp(curr_vertex->pt_mp,1); curr_vertex->pt_mp->size = 1; // this is the line giving us trouble.
-	init_mp(curr_vertex->projVal_mp);
-	
-	curr_vertex->type = -100;
-	return;
-}
-
-
-void init_edge(edge *curr_edge){
-	
-	curr_edge->left = curr_edge->right = curr_edge->midpt = -1; // initialize to impossible value.
-	return;
-}
-
-
-
-void cp_edge(edge *new_edge, edge source_edge){
-	
-	new_edge->left = source_edge.left;
-	new_edge->right= source_edge.right;
-	new_edge->midpt = source_edge.midpt;
-	return;
-	
-}
-
-void add_edge(curveDecomp_d *C, edge new_edge){
-	
-	if ( ( C->num_edges==0 && C->edges!=NULL ) || ( C->num_edges!=0 && C->edges==NULL ) ) {
-		printf("intialization error in curve decomposition\n");
-		exit(-1);
-	}
-	
-	C->num_edges++;
-	
-	if (C->num_edges==1) {
-		C->edges = (edge *)bmalloc(C->num_edges*sizeof(edge));
-	}
-	else{
-		C->edges = (edge *)brealloc(C->edges, C->num_edges*sizeof(edge));
-	}
-	
-	
-	init_edge(&C->edges[C->num_edges-1]); // intialize the new edge
-
-	cp_edge(&C->edges[C->num_edges-1], new_edge);
-	
-	return;
-}
-
-
-
-
-void init_curveDecomp_d(curveDecomp_d *C){
-	
-//	C->MPType = MPType;
-	C->num_V0 = C->num_V1 = C->num_new = C->num_midpts = C->num_isolated = 0;
-	
-	C->num_edges = 0;
-	
-	C->edges							= NULL;
-	C->V0_indices					= NULL;
-	C->V1_indices					= NULL;
-	C->midpt_indices			= NULL;
-	C->new_indices				= NULL;
-	C->isolated_indices		= NULL;
-	
-	
-	return;
-}
-
-
-
-void clear_vertex_set_d(vertex_set *V){
+ Output curve overall info as follows:
+ 
+ **/
+void decomposition::print(boost::filesystem::path input_deflated_Name, boost::filesystem::path outputfile)
+{
 	int ii;
-	for(ii=0;ii<V->num_vertices;ii++)
-	{
-//		if(C->MPType == 0)
-//		{
-//			clear_vec_d(V->vertices[ii].pt_d);
-//		}
-//		else
-//		{
-			clear_vec_mp(V->vertices[ii].pt_mp);
-//		}
+	
+	FILE *OUT = safe_fopen_write(outputfile.c_str());
+	fprintf(OUT,"%s\n",input_deflated_Name.c_str());
+	
+	fprintf(OUT,"%d %d\n",num_variables, dimension);
+	
+	fprintf(OUT, "%d\n", int(this->counters.size()));
+	
+	std::map< int, int>::iterator type_iter;
+	for (type_iter = this->counters.begin(); type_iter!= this->counters.end(); type_iter++) {
+		fprintf(OUT, "%d %d\n",type_iter->first, type_iter->second);
+		
+		for (int jj = 0; jj<type_iter->second; jj++) {
+			fprintf(OUT, "%d\n", indices[type_iter->first][jj]);
+		}
+		fprintf(OUT,"\n");
 	}
+	
+	for (ii=0; ii<dimension; ii++) {
+		for(int jj=0;jj<num_variables;jj++)
+		{
+			print_mp(OUT, 0, &pi_mp[ii]->coord[jj]);
+			fprintf(OUT,"\n");
+		}
+	}
+	
+	fclose(OUT);
 }
-void clear_curveDecomp_d(curveDecomp_d *C){
+
+
+
+
+int curve_decomposition::setup_edges(boost::filesystem::path INfile)
+//setup the vertex structure
+{
+	FILE *IN = safe_fopen_read(INfile);
 	
-	free(C->edges);
+	fscanf(IN, "%d\n", &this->num_edges);
+	int left, midpt, right;
+	for(int ii=0;ii<this->num_edges;ii++) {
+		fscanf(IN,"%d %d %d",&left, &midpt, &right); scanRestOfLine(IN);
+		this->edges.push_back(edge(left, midpt, right));
+	}
 	
-	
-	free(C->isolated_indices);
-	free(C->V0_indices);
-	free(C->V1_indices);
-	free(C->new_indices);
+	fclose(IN);
+	return this->num_edges;
 }
 
 
 
-void clear_sample_d(sample_data *S, int MPType){
+
+
+void curve_decomposition::add_edge(edge new_edge)
+{
+	this->num_edges++;
+	this->edges.push_back(new_edge);
+	return;
+}
+
+void curve_decomposition::print_edges(boost::filesystem::path outputfile)
+/**Output edge structure as follows:
+ # variables
+ # edges
+ name of input file
+ edge 1
+ 
+ edge 2
+ .
+ .
+ .
+ 
+ for each edge, output the following information:
+ index to left vertex in vertices
+ index to right vertex in vertices
+ index to midpoint vertex in vertices
+ 
+ **/
+{
+	int ii;
+	FILE *OUT = safe_fopen_write(outputfile.c_str());
+	
+	// output the number of vertices
+	fprintf(OUT,"%d\n\n",num_edges);
+	
+	for(ii=0;ii<num_edges;ii++)
+		fprintf(OUT,"%d %d %d \n",edges[ii].left,
+						edges[ii].midpt,
+						edges[ii].right);
+	fclose(OUT);
+}
+
+
+
+
+
+
+
+
+void clear_sample(sample_data *S, int MPType)
+{
 	
 	int ii;
 	for(ii=0;ii<S->num_edges;ii++)
@@ -426,7 +425,8 @@ void clear_sample_d(sample_data *S, int MPType){
 
 
 
-void norm_of_difference(mpf_t result, vec_mp left, vec_mp right){
+void norm_of_difference(mpf_t result, vec_mp left, vec_mp right)
+{
 	if (left->size!=right->size || left->size == 0) {
 		printf("attempting to dot two vectors not of the same size! (%d!=%d)\n",left->size,right->size);
 		exit(-78);
@@ -450,7 +450,8 @@ void norm_of_difference(mpf_t result, vec_mp left, vec_mp right){
 }
 
 
-void dehomogenize_d(vec_d *result, vec_d dehom_me){
+void dehomogenize(point_d *result, point_d dehom_me)
+{
 	comp_d denom;
 	change_size_vec_d(*result,dehom_me->size-1);
 	(*result)->size = dehom_me->size-1;
@@ -465,7 +466,8 @@ void dehomogenize_d(vec_d *result, vec_d dehom_me){
 	return;
 }
 
-void dehomogenize_mp(vec_mp *result, vec_mp dehom_me){	
+void dehomogenize(point_mp *result, point_mp dehom_me)
+{
 	if (dehom_me->size==0 || dehom_me->size==1) {
 		printf("attempting to dehomogenize a vector of length 0 or 1\n");
 		exit(977);
@@ -487,12 +489,70 @@ void dehomogenize_mp(vec_mp *result, vec_mp dehom_me){
 	return;
 }
 
+void dehomogenize(point_mp *result, point_mp dehom_me, int num_variables)
+{
+	if (dehom_me->size==0 || dehom_me->size==1) {
+		printf("attempting to dehomogenize a vector of length 0 or 1\n");
+		exit(977);
+	}
+	
+	comp_mp denom; init_mp(denom);
+	change_size_vec_mp((*result),dehom_me->size-1);
+	
+	(*result)->size = dehom_me->size-1;
+	
+	set_mp(denom, &dehom_me->coord[0]);
+	int ii;
+	for (ii=0; ii<num_variables-1; ++ii) {
+		set_mp( &(*result)->coord[ii],&(dehom_me)->coord[ii+1]);
+		div_mp(&(*result)->coord[ii],&(*result)->coord[ii],denom); //  result[ii] = dehom_me[ii+1]/dehom_me[0].
+	}
+	
+	for (ii=num_variables-1; ii<dehom_me->size-1; ++ii) {
+		set_mp( &(*result)->coord[ii],&(dehom_me)->coord[ii+1]);
+	}
+	
+	clear_mp(denom);
+	return;
+}
+
+
+
+
+void dehomogenize(point_d *result, point_d dehom_me, int num_variables)
+{
+	if (dehom_me->size==0 || dehom_me->size==1) {
+		printf("attempting to dehomogenize a vector of length 0 or 1\n");
+		exit(977);
+	}
+	
+	comp_d denom;
+	change_size_point_d((*result),dehom_me->size-1);
+	
+	(*result)->size = dehom_me->size-1;
+	
+	set_d(denom, &dehom_me->coord[0]);
+	int ii;
+	for (ii=0; ii<num_variables-1; ++ii) {
+		set_d( &(*result)->coord[ii],&(dehom_me)->coord[ii+1]);
+		div_d(&(*result)->coord[ii],&(*result)->coord[ii],denom); //  result[ii] = dehom_me[ii+1]/dehom_me[0].
+	}
+	
+	for (ii=num_variables-1; ii<dehom_me->size-1; ++ii) {
+		set_d( &(*result)->coord[ii],&(dehom_me)->coord[ii+1]);
+	}
+	
+	return;
+}
+
+
 
 void dot_product_d(comp_d result, vec_d left, vec_d right){
 	if (left->size!=right->size) {
 		printf("attempting to dot_d two vectors not of the same size! (%d!=%d)\n",left->size,right->size);
-		raise(-78);
+		deliberate_segfault();
 	}
+	
 	set_zero_d(result);
 	
 	comp_d temp;
@@ -506,10 +566,10 @@ void dot_product_d(comp_d result, vec_d left, vec_d right){
 void dot_product_mp(comp_mp result, vec_mp left, vec_mp right){
 	if (left->size!=right->size) {
 		printf("attempting to dot_mp two vectors not of the same size! (%d!=%d)\n",left->size,right->size);
-		raise(-79);
+		deliberate_segfault();
 	}
-	set_zero_mp(result);
 	
+	set_zero_mp(result);
 	comp_mp temp; init_mp(temp);
 	comp_mp temp2; init_mp(temp2);
 	int ii;
@@ -522,63 +582,49 @@ void dot_product_mp(comp_mp result, vec_mp left, vec_mp right){
 }
 
 
-void projection_value_homogeneous_input_d(comp_d result, vec_d input, vec_d projection){
-	
-	if (projection->size != input->size) {
-		printf("computing projection values of incompatibly sized vectors\n");
-		exit(1024);
+/**
+ computes the projection value given a homogeneous input.
+ 
+ double type
+ */
+void projection_value_homogeneous_input(comp_d result, vec_d input, vec_d projection){
+	set_zero_d(result);
+	comp_d temp;
+	for (int ii=0; ii<projection->size; ii++) {
+		mul_d(temp, &input->coord[ii], &projection->coord[ii]);
+		add_d(result, result, temp);
 	}
-	
-	vec_d dehom;
-	init_vec_d(dehom,input->size-1); dehom->size = input->size-1;
-	
-	vec_d pi_no_hom;
-	init_vec_d(pi_no_hom,input->size-1); pi_no_hom->size = input->size-1;
-	int ii;
-	for (ii=0; ii<input->size-1; ii++) {
-		set_d(&pi_no_hom->coord[ii],&projection->coord[ii+1]);
-	}
-	
-	dehomogenize_d(&dehom,input);
-	dot_product_d(result,dehom,pi_no_hom); // set projection value
-	
-	clear_vec_d(dehom); clear_vec_d(pi_no_hom);
-	
+	set_d(temp, result);
+	div_d(result, temp, &input->coord[0])
 	return;
 }
 
-// MP version
+/**
+ computes the projection value given a homogeneous input.
+ 
+ mp type
+*/
 void projection_value_homogeneous_input(comp_mp result, vec_mp input, vec_mp projection){
-	
-	if (projection->size != input->size) {
-		printf("computing projection values of incompatibly sized vectors\n");
-		exit(1024);
+	set_zero_mp(result);
+	comp_mp temp; init_mp(temp);
+	for (int ii=0; ii<projection->size; ii++) {
+		mul_mp(temp, &input->coord[ii], &projection->coord[ii]);
+		add_mp(result, result, temp);
 	}
-	
-	vec_mp dehom;
-	init_vec_mp(dehom,input->size-1); dehom->size = input->size-1;
-	
-	vec_mp pi_no_hom;
-	init_vec_mp(pi_no_hom,input->size-1); pi_no_hom->size = input->size-1;
-	int ii;
-	for (ii=0; ii<input->size-1; ii++) {
-		set_mp(&pi_no_hom->coord[ii],&projection->coord[ii+1]);
-	}
-	
-	dehomogenize_mp(&dehom,input);
-	dot_product_mp(result,dehom,pi_no_hom); // set projection value
-	
-	clear_vec_mp(dehom); clear_vec_mp(pi_no_hom);
+	set_mp(temp, result);
+	div_mp(result, temp, &input->coord[0])
 	return;
 }
 
 
 
-int isSamePoint_inhomogeneous_input_d(point_d left, point_d right){
+int isSamePoint_inhomogeneous_input(point_d left, point_d right){
 	
 	if (left->size!=right->size) {
-		printf("attempting to isSamePoint_hom_d with disparate sized points.\n");
-		exit(-287);
+		printf("attempting to isSamePoint_inhom_d with disparate sized points.\n");
+		std::cout << "left: " << left->size << "\t right: " << right->size << std::endl;
+		deliberate_segfault();
+//		exit(-287);
 	}
 	
 	
@@ -589,11 +635,13 @@ int isSamePoint_inhomogeneous_input_d(point_d left, point_d right){
 }
 
 
-int isSamePoint_inhomogeneous_input_mp(point_mp left, point_mp right){
+int isSamePoint_inhomogeneous_input(point_mp left, point_mp right){
 	
 	if (left->size!=right->size) {
-		printf("attempting to isSamePoint_hom_mp with disparate sized points.\n");
-		exit(-287);
+		printf("attempting to isSamePoint_inhom_mp with disparate sized points.\n");
+		std::cout << "left: " << left->size << "\t right: " << right->size << std::endl;
+		deliberate_segfault();
+//		exit(-287);
 	}
 	
 	int indicator = isSamePoint(NULL,left,65,NULL,right,65,1e-6); // make the bertini library call
@@ -604,18 +652,20 @@ int isSamePoint_inhomogeneous_input_mp(point_mp left, point_mp right){
 
 
 
-int isSamePoint_homogeneous_input_d(point_d left, point_d right){
+int isSamePoint_homogeneous_input(point_d left, point_d right){
 	
 	if (left->size!=right->size) {
 		printf("attempting to isSamePoint_hom_d with disparate sized points.\n");
-		exit(-287);
+		std::cout << "left: " << left->size << "\t right: " << right->size << std::endl;
+		deliberate_segfault();
+//		exit(-287);
 	}
 	
 	vec_d dehom_left;  init_vec_d(dehom_left,left->size-1);  dehom_left->size = left->size-1;
 	vec_d dehom_right; init_vec_d(dehom_right,right->size-1); dehom_right->size = right->size-1;
 	
-	dehomogenize_d(&dehom_left,left);
-	dehomogenize_d(&dehom_right,right);
+	dehomogenize(&dehom_left,left);
+	dehomogenize(&dehom_right,right);
 	
 	int indicator = isSamePoint(dehom_left,NULL,52,dehom_right,NULL,52,1e-6);
 	
@@ -623,18 +673,22 @@ int isSamePoint_homogeneous_input_d(point_d left, point_d right){
 	
 	return indicator;
 }
-int isSamePoint_homogeneous_input_mp(point_mp left, point_mp right){
+
+
+int isSamePoint_homogeneous_input(point_mp left, point_mp right){
 	
 	if (left->size!=right->size) {
 		printf("attempting to isSamePoint_hom_mp with disparate sized points.\n");
-		exit(-287);
+		std::cout << "left: " << left->size << "\t right: " << right->size << std::endl;
+		deliberate_segfault();
+//		exit(-287);
 	}
 	
 	vec_mp dehom_left;  init_vec_mp(dehom_left,left->size-1);  dehom_left->size = left->size-1;
 	vec_mp dehom_right; init_vec_mp(dehom_right,right->size-1); dehom_right->size = right->size-1;
 	
-	dehomogenize_mp(&dehom_left,left);
-	dehomogenize_mp(&dehom_right,right);
+	dehomogenize(&dehom_left,left);
+	dehomogenize(&dehom_right,right);
 	
 	int indicator = isSamePoint(NULL,dehom_left,65,NULL,dehom_right,65,1e-6); // make the bertini library call
 	
@@ -652,7 +706,6 @@ void print_point_to_screen_matlab(vec_d M, std::string name)
 	
 	if (M->size==0) {
 		printf("requested to print a vector '%s' which had size==0.  exiting\n",name.c_str());
-//		exit(-1);
 	}
 	
 	printf("%s = [...\n",name.c_str());
@@ -662,13 +715,13 @@ void print_point_to_screen_matlab(vec_d M, std::string name)
 	}
 	printf("];\n\n");
 }
-void print_point_to_screen_matlab_mp(vec_mp M, std::string name)
+
+void print_point_to_screen_matlab(vec_mp M, std::string name)
 {
 	int kk;
 	
 	if (M->size==0) {
 		printf("requested to print a vector '%s' which had size==0.  exiting\n",name.c_str());
-//		exit(-1);
 	}
 	
 	printf("%s = [...\n",name.c_str());
@@ -694,13 +747,13 @@ void print_matrix_to_screen_matlab(mat_d M, std::string name)
 	{ // print kth row
 		for (jj = 0; jj < M->cols; jj++)
 		{
-			printf(" %.15le+1i*%.15le",M->entry[kk][jj].r,M->entry[kk][jj].i);
+			printf(" %.5le+1i*%.5le",M->entry[kk][jj].r,M->entry[kk][jj].i);
 		}
 		printf(";\n");
 	}
 	printf("];\n\n");
 }
-void print_matrix_to_screen_matlab_mp(mat_mp M, std::string name)
+void print_matrix_to_screen_matlab(mat_mp M, std::string name)
 {
 	int jj,kk;
 	

@@ -42,7 +42,7 @@ extern "C" {
  \return boolean integer indicating whether the component is self-conjugate.
  
  */
-int checkSelfConjugate(witness_set W,
+int checkSelfConjugate(witness_set & W,
                        int           num_vars,
                       boost::filesystem::path input_file,
 											 std::string stifle_text);
@@ -58,7 +58,7 @@ int checkSelfConjugate(witness_set W,
  \param input_file the name of the bertini input file
  \param stifle_text text to append to the command to stifle screen output.
  */
-int get_incidence_number(witness_set W,
+int get_incidence_number(const witness_set & W,
 												 int           num_vars,
 												 boost::filesystem::path input_file,
 												 std::string stifle_text);
@@ -69,7 +69,7 @@ int get_incidence_number(witness_set W,
  \param point_to_write the homogeneous point to write
  \param the format
  */
-int write_member_points_singlept(point_d point_to_write, char * fmt);
+int write_member_points_singlept(point_mp point_to_write);
 
 /**
   write a single point, and its complex conjugate, to "member_points"
@@ -77,7 +77,7 @@ int write_member_points_singlept(point_d point_to_write, char * fmt);
  \param point_to_write the point to write
  \param fmt the format of the string.
  */
-int write_member_points_sc(point_d point_to_write, char * fmt);
+int write_member_points_sc(point_mp point_to_write);
 
 /**
   write the input file to feed bertini to perform membership testing

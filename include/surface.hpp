@@ -12,7 +12,7 @@
 #include <mpf2mpfr.h>
 
 
-
+#include <boost/filesystem.hpp>
 
 
 #ifndef SURFACE_H
@@ -25,8 +25,7 @@ extern "C" {
 #include "fileops.hpp"
 
 #include "checkSelfConjugate.hpp"
-#include "curveNotSelfConj.hpp"
-#include "curveSelfConj.hpp"
+#include "curve.hpp"
 #include "data_type.hpp"
 #include "isosingular.hpp"
 #include "programConfiguration.hpp"
@@ -34,9 +33,11 @@ extern "C" {
 #include "output.hpp"
 #include "missing_bertini_headers.hpp"
 
-void surface_main(witness_set W,
-									int self_conjugate,
-									program_configuration *program_options,
+void surface_main(vertex_set & V,
+									surface_decomposition & surf,
+									witness_set & W,
+									vec_mp *pi,
+									BR_configuration *program_options,
 									solver_configuration *solve_options);
 
 

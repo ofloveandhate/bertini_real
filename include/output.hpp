@@ -35,24 +35,12 @@ extern "C" {
 /**
  
  */
-void Output_Main(program_configuration program_options, witness_set W, curveDecomp_d C, vertex_set V);
-
-/**
- 
- */
-void print_vertices(vertex_set V, int num_vars,
-										char *outputfile, int MPType);
-
-/**
- 
- */
-void print_edges(edge *E, int num_edges, int num_vars, char *outputfile, int MPType);
+void Output_Main(BR_configuration program_options, witness_set & W, curve_decomposition & C, vertex_set & V);
 
 
-/**
- 
- */
-void print_curve(curveDecomp_d C, int num_vars, boost::filesystem::path input_deflated_Name, boost::filesystem::path  outputfile, int MPType);
+
+
+
 
 /**
  

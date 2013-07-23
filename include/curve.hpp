@@ -42,9 +42,11 @@ extern "C" {
 
 
 
-void curve_main(witness_set W,
-								int self_conjugate,
-								program_configuration *program_options,
+void curve_main(vertex_set & V,
+								curve_decomposition & C,
+								witness_set & W,
+								vec_mp *pi,
+								BR_configuration *program_options,
 								solver_configuration *solve_options);
 
 

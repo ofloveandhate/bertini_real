@@ -208,7 +208,7 @@ void isosingular_deflation_iteration(int *declarations,
 
   // setup Matlab script
   rewind(IN);
-//  OUT = fopen("matlab_deflate.m", "w");
+
 	OUT = safe_fopen_write("matlab_deflate.m");
   minorSize = numVars - declarations[1] - nullSpaceDim + 1;
   createMatlabDeflation(OUT, numVars, vars, lineVars, numConstants, consts, lineConstants, numFuncs, funcs, lineFuncs, IN, minorSize, degrees, deflation_number);
@@ -426,115 +426,6 @@ void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
   return;
 }
 
-void parse_names(int *numItems, char ***itemNames, int **itemLines, FILE *IN, char *name, int num_declarations)
-/***************************************************************\
-* USAGE: find the lines where items are declared and find names *
-* ARGUMENTS: input file, declaration name, and number of lines  *
-* RETURN VALUES: number of items, names, and line numbers       *
-* NOTES:                                                        *
-\***************************************************************/
-{
-  int lineNumber = 1, lengthName = strlen(name), strLength = 0, strSize = 1;
-  char ch;
-  char *str = (char *)bmalloc(strSize * sizeof(char));
-
-  // move through the file looking for the items
-  while ((ch = fgetc(IN)) != EOF)
-  { // add to str
-    if (strLength + 1 == strSize)
-    { // increase strSize
-      strSize *= 2;
-      str = (char *)brealloc(str, strSize * sizeof(char));
-    }
-    str[strLength] = ch;
-    strLength++;
-
-    if (strLength == lengthName)
-    { // compare against name
-      str[strLength] = '\0';
-      if (strcmp(str, name) == 0)
-      { // we have a good line -- add the items
-        ch = fgetc(IN); // skip the space
-        addItems(numItems, itemNames, itemLines, IN, lineNumber);
-      }
-    }
-
-    if (ch == '\n')
-    { // new line - reset data
-      lineNumber++;
-      strLength = 0;
-    }
-  }
-
-  // clear memory
-  free(str);
-
-  return;
-}
-
-void addItems(int *numItems, char ***itemNames, int **itemLines, FILE *IN, int lineNumber)
-/***************************************************************\
-* USAGE: add the items in the current line                      *
-* ARGUMENTS: input file and current line number                 *
-* RETURN VALUES: number of items, names, and line numbers       *
-* NOTES:                                                        *
-\***************************************************************/
-{
-  int strLength = 0, strSize = 1, cont = 1;
-  char ch;
-  char *str = (char *)bmalloc(strSize * sizeof(char));
-
-  // initialize ch
-  ch = fgetc(IN);
-  do
-  { // read in next character
-    if (ch == ';')
-    { // end loop
-      cont = 0;
-    }
-    else
-    { // we have a new item to add
-      (*numItems)++;
-      *itemNames = (char **)brealloc(*itemNames, *numItems * sizeof(char *));
-      *itemLines = (int *)brealloc(*itemLines, *numItems * sizeof(int));
-
-      // read in the name
-      do
-      { // save the character 
-        if (strLength + 1 == strSize)
-        { // increase strSize
-          strSize *= 2;
-          str = (char *)brealloc(str, strSize * sizeof(char));
-        }
-        str[strLength] = ch;
-        strLength++;
-
-        // read in the next character
-        ch = fgetc(IN);
-
-      } while (ch != ',' && ch != ';');
-
-      // save the information
-      str[strLength] = '\0';
-      strLength++;
-      (*itemNames)[*numItems - 1] = (char *)bmalloc(strLength * sizeof(char));
-      strcpy((*itemNames)[*numItems - 1], str);
-      (*itemLines)[*numItems - 1] = lineNumber;
-
-      // reset strLength
-      strLength = 0;
-
-      if (ch == ',')
-      { // read in the next character
-        ch = fgetc(IN);
-      }
-    }
-  } while (cont);  
-
-  free(str);
-
-  return;
-}
 
 void stabilization_input_file(boost::filesystem::path outputFile,
 															boost::filesystem::path funcInput,
