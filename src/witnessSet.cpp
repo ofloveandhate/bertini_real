@@ -288,32 +288,92 @@ void witness_set::write_linears(boost::filesystem::path filename)
 
 
 
+void witness_set::print_patches(boost::filesystem::path filename)
+{
+	int ii,jj;
+	
+	FILE *OUT  = safe_fopen_write(filename); // open the output file
+	
+	
+	fprintf(OUT,"%d\n\n",this->num_patches); // print the header line
+	
+	for (ii=0; ii<this->num_patches; ++ii) {
+		fprintf(OUT,"%d\n",this->patch_mp[ii]->size);
+		for (jj=0; jj<this->patch_mp[ii]->size; jj++) {
+			print_mp(OUT, 0, &this->patch_mp[ii]->coord[jj]);
+			fprintf(OUT, "\n");
+		}
+		fprintf(OUT,"\n");
+	}
+	
+	fclose(OUT); // close the output file
+	
+	return;
+}
+
+void witness_set::read_patches_from_file(boost::filesystem::path filename)
+{
+
+	FILE *IN = safe_fopen_read(filename);
+	
+	witness_set::reset_patches();
+	int curr_num_patches;
+	fscanf(IN,"%d\n",&curr_num_patches);
+	
+	vec_mp temp_patch; init_vec_mp2(temp_patch,1,1024); temp_patch->size = 1;
+	for (int ii=0; ii<curr_num_patches; ii++) {
+		int curr_size;
+		fscanf(IN,"%d\n",&curr_size);
+		change_size_vec_mp(temp_patch,curr_size); temp_patch->size = curr_size;
+		
+		for (int jj=0; jj<curr_size; jj++) {
+			mpf_inp_str(temp_patch->coord[jj].r, IN, 10);
+			mpf_inp_str(temp_patch->coord[jj].i, IN, 10);
+			scanRestOfLine(IN);
+		}
+		
+		witness_set::add_patch(temp_patch);
+	}
+	
+	clear_vec_mp(temp_patch);
+	fclose(IN);
+	
+	return;
+}
+
 
 
 void witness_set::print_to_screen()
 {
+	
+	std::stringstream varname;
+	
 	std::cout << "witness set has " << num_variables << " total variables, " << num_synth_vars << " synthetic vars." << std::endl;
 	int ii;
 	printf("******\n%d points\n******\n",this->num_pts);
 	for (ii=0; ii<this->num_pts; ii++) {
-		printf("the%dth",ii);
-		print_point_to_screen_matlab(this->pts_mp[ii],"point");
+		varname << "point_" << ii;
+		print_point_to_screen_matlab(this->pts_mp[ii],varname.str());
+		varname.str("");
 	}
 	
 	printf("******\n%d linears\n******\n",this->num_linears);
 	
 	for (ii=0; ii<this->num_linears; ii++) {
-		printf("the%dth",ii);
-		print_point_to_screen_matlab(this->L_mp[ii],"linear");
+		varname << "linear_" << ii;
+		print_point_to_screen_matlab(this->L_mp[ii],varname.str());
+		varname.str("");
 	}
 	
 	printf("******\n%d patches\n******\n",this->num_patches);
 	
 	for (ii=0; ii<this->num_patches; ii++) {
-		printf("the%dth",ii);
-		print_point_to_screen_matlab(this->patch_mp[ii],"patch");
+		varname << "patch_" << ii;
+		print_point_to_screen_matlab(this->patch_mp[ii],varname.str());
+		varname.str("");
 	}
 	
+	std::cout << "variable names:\n";
 	for (ii=0; ii<this->variable_names.size(); ii++) {
 		std::cout << this->variable_names[ii] << "\n";
 	}
@@ -341,7 +401,7 @@ void witness_set::only_first_vars(int num_vars)
 	}
 	
 //TODO: fix this line
-	this->num_synth_vars = 0; // this line is wrong
+	this->num_synth_vars = this->num_synth_vars - (this->num_variables - num_vars); // is this line correct?
 	this->num_variables = num_vars;
 	
 	
@@ -362,9 +422,20 @@ void witness_set::sort_for_real(tracker_config_t T)
 	int real_indicator[this->num_pts];
 	int counter = 0;
 	
-	vec_mp result; init_vec_mp(result,1);
+//	std::cout << "sorting for real\n\n" << num_synth_vars << " synth vars " << num_variables-num_synth_vars << " is diff" << std::endl;
+	
+	
+	vec_mp result; init_vec_mp(result,num_variables-num_synth_vars-1);
+	result->size = num_variables-num_synth_vars-1;
+	
 	for (ii=0; ii<this->num_pts; ii++) {
-		dehomogenize(&result, this->pts_mp[ii]);
+		for (int jj=1; jj<this->num_variables-this->num_synth_vars; jj++) {
+			div_mp(&result->coord[jj-1], &this->pts_mp[ii]->coord[jj], &this->pts_mp[ii]->coord[0]);
+		}
+//		dehomogenize(&result,this->pts_mp[ii], num_variables-num_synth_vars);
+		
+//		print_point_to_screen_matlab(result,"isthisreal???");
+//		dehomogenize(&result, this->pts_mp[ii]);
 		real_indicator[ii] = checkForReal_mp(result, T.real_threshold);
 		if (real_indicator[ii]==1) {
 			counter++;
@@ -622,141 +693,141 @@ void cp_patches(witness_set *W_out, witness_set & W_in)
 	return;
 }
 
-
-//send in an initialized but empty witness_set.
-// T is necessary for the tolerances.
-void sort_for_real(witness_set *W_out,
-									 witness_set & W_in,
-									 tracker_config_t T)
-{
-	int ii;
-	
-	
-	W_out->MPType = W_in.MPType;
-	W_out->incidence_number = W_in.incidence_number;
-	W_out->num_variables = W_in.num_variables;
-
-	
-	//copy the linears, patches from old to new
-	cp_patches(W_out, W_in);
-	cp_linears(W_out, W_in);
-	cp_names(W_out, W_in);
-	
-	int real_indicator[W_in.num_pts];
-	int counter = 0;
-	vec_mp result; init_vec_mp(result,1);
-	for (ii=0; ii<W_in.num_pts; ii++) {
-		dehomogenize(&result, W_in.pts_mp[ii]);
-		real_indicator[ii] = checkForReal_mp(result, T.real_threshold);
-		if (real_indicator[ii]==1) {
-			counter++;
-		}
-	}
-	
-	
-	W_out->num_pts = counter;
-	
-	W_out->pts_mp = (point_mp *)bmalloc(counter*sizeof(point_mp));
-
-	
-	
-
-	counter = 0;  // reset
-	for (ii=0; ii<W_in.num_pts; ii++) {
-		if (real_indicator[ii]==1) {
-
-			init_vec_mp(W_out->pts_mp[counter],W_in.num_variables);
-			W_out->pts_mp[counter]->size = W_in.num_variables;
-
-			vec_cp_mp(W_out->pts_mp[counter],W_in.pts_mp[ii]);
-
-			counter++;
-			
-		}
-		else{
-
-		}
-	}
-	
-	clear_vec_mp(result);
-	
-	
-	return;
-}
-
-
-
-
-
-
-//send in an initialized but empty witness_set.
-// T is necessary for the tolerances.
-void sort_for_unique(witness_set *W_out,
-										 witness_set & W_in,
-										 tracker_config_t T)
-{
-
-	int ii, jj;
-	
-
-	
-	W_out->MPType = W_in.MPType;
-	W_out->incidence_number = W_in.incidence_number;
-	W_out->num_variables = W_in.num_variables;
-	
-	//copy the linears, patches from old to new
-	cp_patches(W_out, W_in);
-	cp_linears(W_out, W_in);
-	cp_names(W_out, W_in);
-
-	int curr_uniqueness;
-	int num_good_pts = 0;
-	int *is_unique  = (int *)bmalloc(W_in.num_pts*sizeof(int));
-	
-	for (ii = 0; ii<W_in.num_pts; ++ii) {
-		curr_uniqueness = 1;
-		if (ii!= (W_in.num_pts-1) ) { // the last point is unique...  always
-																	//			printf("a");
-			for (jj=ii+1; jj<W_in.num_pts; ++jj) {
-				if ( isSamePoint_homogeneous_input(W_in.pts_mp[ii],W_in.pts_mp[jj]) ){
-					curr_uniqueness = 0;
-				}
-			}
-		}
-		
-		if (curr_uniqueness==1) {
-			is_unique[ii] = 1;
-			num_good_pts++;
-		}
-		else
-		{
-			is_unique[ii] = 0;
-		}
-		
-	}
-	
-	
-	W_out->num_pts = num_good_pts;
-	
-	W_out->pts_mp = (vec_mp *)bmalloc(num_good_pts*sizeof(vec_mp));
-	int counter = 0;
-	for (ii=0; ii<W_in.num_pts; ++ii) {
-		if (is_unique[ii]==1) {
-			init_vec_mp2(W_out->pts_mp[counter],W_in.num_variables,1024);  W_out->pts_mp[counter]->size = W_in.num_variables;
-			vec_cp_mp(W_out->pts_mp[counter], W_in.pts_mp[ii]);
-			counter++;
-		}
-	}
-	
-	if (counter!= num_good_pts) {
-		printf("counter mismatch\n");
-		exit(270);
-	}
-	
-	free(is_unique);
-	return;
-}
-
+//
+////send in an initialized but empty witness_set.
+//// T is necessary for the tolerances.
+//void sort_for_real(witness_set *W_out,
+//									 witness_set & W_in,
+//									 tracker_config_t T)
+//{
+//	int ii;
+//	
+//	
+//	W_out->MPType = W_in.MPType;
+//	W_out->incidence_number = W_in.incidence_number;
+//	W_out->num_variables = W_in.num_variables;
+//
+//	
+//	//copy the linears, patches from old to new
+//	cp_patches(W_out, W_in);
+//	cp_linears(W_out, W_in);
+//	cp_names(W_out, W_in);
+//	
+//	int real_indicator[W_in.num_pts];
+//	int counter = 0;
+//	vec_mp result; init_vec_mp(result,1);
+//	for (ii=0; ii<W_in.num_pts; ii++) {
+//		dehomogenize(&result, W_in.pts_mp[ii]);
+//		real_indicator[ii] = checkForReal_mp(result, T.real_threshold);
+//		if (real_indicator[ii]==1) {
+//			counter++;
+//		}
+//	}
+//	
+//	
+//	W_out->num_pts = counter;
+//	
+//	W_out->pts_mp = (point_mp *)bmalloc(counter*sizeof(point_mp));
+//
+//	
+//	
+//
+//	counter = 0;  // reset
+//	for (ii=0; ii<W_in.num_pts; ii++) {
+//		if (real_indicator[ii]==1) {
+//
+//			init_vec_mp(W_out->pts_mp[counter],W_in.num_variables);
+//			W_out->pts_mp[counter]->size = W_in.num_variables;
+//
+//			vec_cp_mp(W_out->pts_mp[counter],W_in.pts_mp[ii]);
+//
+//			counter++;
+//			
+//		}
+//		else{
+//
+//		}
+//	}
+//	
+//	clear_vec_mp(result);
+//	
+//	
+//	return;
+//}
+//
+//
+//
+//
+//
+//
+////send in an initialized but empty witness_set.
+//// T is necessary for the tolerances.
+//void sort_for_unique(witness_set *W_out,
+//										 witness_set & W_in,
+//										 tracker_config_t T)
+//{
+//
+//	int ii, jj;
+//	
+//
+//	
+//	W_out->MPType = W_in.MPType;
+//	W_out->incidence_number = W_in.incidence_number;
+//	W_out->num_variables = W_in.num_variables;
+//	
+//	//copy the linears, patches from old to new
+//	cp_patches(W_out, W_in);
+//	cp_linears(W_out, W_in);
+//	cp_names(W_out, W_in);
+//
+//	int curr_uniqueness;
+//	int num_good_pts = 0;
+//	int *is_unique  = (int *)bmalloc(W_in.num_pts*sizeof(int));
+//	
+//	for (ii = 0; ii<W_in.num_pts; ++ii) {
+//		curr_uniqueness = 1;
+//		if (ii!= (W_in.num_pts-1) ) { // the last point is unique...  always
+//																	//			printf("a");
+//			for (jj=ii+1; jj<W_in.num_pts; ++jj) {
+//				if ( isSamePoint_homogeneous_input(W_in.pts_mp[ii],W_in.pts_mp[jj]) ){
+//					curr_uniqueness = 0;
+//				}
+//			}
+//		}
+//		
+//		if (curr_uniqueness==1) {
+//			is_unique[ii] = 1;
+//			num_good_pts++;
+//		}
+//		else
+//		{
+//			is_unique[ii] = 0;
+//		}
+//		
+//	}
+//	
+//	
+//	W_out->num_pts = num_good_pts;
+//	
+//	W_out->pts_mp = (vec_mp *)bmalloc(num_good_pts*sizeof(vec_mp));
+//	int counter = 0;
+//	for (ii=0; ii<W_in.num_pts; ++ii) {
+//		if (is_unique[ii]==1) {
+//			init_vec_mp2(W_out->pts_mp[counter],W_in.num_variables,1024);  W_out->pts_mp[counter]->size = W_in.num_variables;
+//			vec_cp_mp(W_out->pts_mp[counter], W_in.pts_mp[ii]);
+//			counter++;
+//		}
+//	}
+//	
+//	if (counter!= num_good_pts) {
+//		printf("counter mismatch\n");
+//		exit(270);
+//	}
+//	
+//	free(is_unique);
+//	return;
+//}
+//
 
 
 

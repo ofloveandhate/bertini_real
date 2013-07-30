@@ -61,6 +61,8 @@ typedef struct
 	int num_steps;
 #endif
 	
+	int verbose_level;
+	
 } multilintolin_eval_data_mp;
 
 
@@ -91,6 +93,8 @@ typedef struct
 	FILE *FOUT;
 	int num_steps;
 #endif
+	
+	int verbose_level;
 	
 } multilintolin_eval_data_d;
 
@@ -130,14 +134,6 @@ void multilin_to_lin_track_d(trackingStats *trackCount,
 												int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 												int (*change_prec)(void const *, int),
 												int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),solver_configuration *solve_options);
-
-void multilin_to_lin_track_path_d(int pathNum,
-														 endgame_data_t *EG_out, point_data_d *Pin, FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
-														 void const *ED_d, void const *ED_mp,
-														 int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
-														 int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-														 int (*change_prec)(void const *, int),
-														 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *));
 
 
 
@@ -224,13 +220,6 @@ void multilin_to_lin_track_mp(trackingStats *trackCount,
 												 solver_configuration *solve_options);
 
 
-void multilin_to_lin_track_path_mp(int pathNum, endgame_data_t *EG_out,
-															point_data_mp *Pin,
-															FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
-															void const *ED_mp,
-															int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-															int (*change_prec)(void const *, int),
-															int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *));
 
 
 int multilin_to_lin_setup_mp(FILE **OUT, boost::filesystem::path outName,

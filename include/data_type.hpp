@@ -62,7 +62,7 @@ void deliberate_segfault();
 class function
 {
 	std::string func;  //symbolic representation of function (straight from input file).
-	//should be a std::string
+										 // this class is woefully incomplete.
 };
 
 
@@ -183,20 +183,24 @@ public:
 	int num_variables;
 	int dimension;
 	
-	vec_mp	*pi_mp; // the projection
-	mat_mp randomizer_matrix;
 	int num_curr_projections;
+	vec_mp	*pi_mp; // the projections
 	
 	
+	mat_mp randomizer_matrix;
+	
+	int num_patches;
+	vec_mp *patch;
 
 	
 	
 	decomposition(){
 		pi_mp = NULL;
+		patch = NULL;
 		init_mat_mp(randomizer_matrix, 0, 0);
 		randomizer_matrix->rows = randomizer_matrix->cols = 0;
 		
-		num_curr_projections = 0;
+		num_curr_projections = num_patches = 0;
 		num_variables = 0;
 		dimension = -1;
 	}
@@ -207,6 +211,12 @@ public:
 		for (int ii=0; ii<num_curr_projections; ii++) 
 			clear_vec_mp(pi_mp[ii]);
 		free(pi_mp);
+		}
+		
+		if (num_patches>0){
+			for (int ii=0; ii<num_patches; ii++)
+				clear_vec_mp(patch[ii]);
+			free(patch);
 		}
 		
 		counters.clear();
@@ -232,6 +242,13 @@ public:
 			vec_cp_mp(this->pi_mp[ii], other.pi_mp[ii])
 		}
 		
+		this->num_patches = other.num_patches;
+		this->patch = (vec_mp *) br_malloc(other.num_patches * sizeof(vec_mp));
+		for (int ii = 0; ii<other.num_patches; ii++) {
+			init_vec_mp(this->patch[ii],other.patch[ii]->size);
+			this->patch[ii]->size = other.patch[ii]->size;
+			vec_cp_mp(this->patch[ii], other.patch[ii])
+		}
 		return *this;
 	}
 	
@@ -250,6 +267,14 @@ public:
 			this->pi_mp[ii]->size = other.pi_mp[ii]->size;
 			vec_cp_mp(this->pi_mp[ii], other.pi_mp[ii])
 		}
+		
+		this->num_patches = other.num_patches;
+		this->patch = (vec_mp *) br_malloc(other.num_patches * sizeof(vec_mp));
+		for (int ii = 0; ii<other.num_patches; ii++) {
+			init_vec_mp(this->patch[ii],other.patch[ii]->size);
+			this->patch[ii]->size = other.patch[ii]->size;
+			vec_cp_mp(this->patch[ii], other.patch[ii])
+		}
 	}
 	
 	void add_projection(vec_mp proj){
@@ -265,6 +290,24 @@ public:
 		
 		vec_cp_mp(pi_mp[num_curr_projections], proj);
 		num_curr_projections++;
+	}
+	
+	
+	
+	void add_patch(vec_mp new_patch){
+		if (this->num_patches==0) {
+			this->patch = (vec_mp *) br_malloc(sizeof(vec_mp));
+		}
+		else{
+			this->patch = (vec_mp *)brealloc(this->patch, (this->num_patches+1) * sizeof(vec_mp));
+		}
+		
+		init_vec_mp(this->patch[num_patches],new_patch->size);
+		this->patch[this->num_patches]->size = new_patch->size;
+		
+		vec_cp_mp(this->patch[this->num_patches], new_patch);
+		this->num_patches++;
+		std::cout << "adding " << this->num_patches << "th patch to decomp\n";
 	}
 	
 	
@@ -451,8 +494,8 @@ void print_point_to_screen_matlab(vec_mp M, std::string name);
 void print_matrix_to_screen_matlab(mat_d M, std::string name);
 void print_matrix_to_screen_matlab(mat_mp M, std::string name);
 
-void print_comp_mp_matlab(comp_mp M,std::string name);
-
+void print_comp_matlab(comp_mp M,std::string name);
+void print_comp_matlab(comp_d M,std::string name);
 
 void print_path_retVal_message(int retVal);
 

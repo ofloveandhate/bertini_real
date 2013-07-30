@@ -266,6 +266,22 @@ public:
 		this->comp_num = this->dim = -1;
 	};
 	
+	void reset_patches()
+	{
+				
+		
+		for (int ii =0; ii<this->num_patches; ii++) {
+			clear_vec_mp(this->patch_mp[ii]);
+		}
+		if (this->num_patches>0) {
+			free(this->patch_mp);
+		}
+		
+		this->num_patches = 0;
+		
+		this->patch_mp = NULL;
+	};
+	
 	
 	
 	void add_patch(vec_mp new_patch);
@@ -285,12 +301,18 @@ public:
 	 */
 	void print_to_screen();
 	
+	void print_to_file();
+	
+	
 	/**
 	 writes the linears in point form to file filename
 	 
 	 \param filename the name of the file to be written.
 	 */
 	void write_linears(boost::filesystem::path filename);
+	void print_patches(boost::filesystem::path filename);
+	void read_patches_from_file(boost::filesystem::path filename);
+	
 	
 	void write_homogeneous_coordinates(boost::filesystem::path filename);
 	void write_dehomogenized_coordinates(boost::filesystem::path filename);
@@ -312,14 +334,14 @@ void cp_patches(witness_set *W_out, witness_set & W_in);
 
 
 
-
-void sort_for_real(witness_set *W_out,
-										witness_set & W_in,
-										tracker_config_t T);
-
-void sort_for_unique(witness_set *W_out,
-										 witness_set & W_in,
-										 tracker_config_t T);
+//
+//void sort_for_real(witness_set *W_out,
+//										witness_set & W_in,
+//										tracker_config_t T);
+//
+//void sort_for_unique(witness_set *W_out,
+//										 witness_set & W_in,
+//										 tracker_config_t T);
 
 
 #endif

@@ -42,6 +42,7 @@ int main(int argC, char *args[])
 		return -445;
 	
 	
+	
 	parse_input_file(inputName);
 	
 
@@ -65,13 +66,21 @@ int main(int argC, char *args[])
 	W.witnessSetParse(witnessSetName,num_vars);
 	W.MPType = MPType;
 	W.get_variable_names();
-
+	
+	W.reset_patches();
+	for (int ii=0; ii<C.num_patches; ii++) {
+		W.add_patch(C.patch[ii]);
+	}
+//	W.read_patches_from_file(Dir_Name / "patches");
 	read_matrix(RandMatName, randomizer_matrix);
 	
 	set_initial_sample_data(&S_old,C,V,
 											 num_vars);
 
-	solve_options.verbose_level = sampler_options.verbose_level-1;
+	solve_options.verbose_level = sampler_options.verbose_level;
+	if (solve_options.verbose_level>=2) {
+		solve_options.show_status_summary=1;
+	}
 	solve_options.T.ratioTol = 1; // manually assert to be more permissive.  i don't really like this.
 	solve_options.use_midpoint_checker = 0;
 	solve_options.use_gamma_trick = sampler_options.use_gamma_trick;
@@ -84,9 +93,6 @@ int main(int argC, char *args[])
 	//
 	//  Generate new sampling data
 	//
-
-	if (solve_options.verbose_level>=1)
-		printf("generating new_sample points\n");
 
 	
 	generate_new_sampling_pts(&S_new,
@@ -260,7 +266,7 @@ void generate_new_sampling_pts(sample_data *S_new,
 			if (sampler_options->verbose_level>=1) {
 				printf("the current projection values are:\n");
 				for (jj=0; jj<prev_num_samp; jj++) {
-					print_comp_mp_matlab(V.vertices[current_indices[jj]].projVal_mp,"proj");
+					print_comp_matlab(V.vertices[current_indices[jj]].projVal_mp,"proj");
 				}
 				printf("\n\n");
 			}
@@ -316,9 +322,9 @@ void generate_new_sampling_pts(sample_data *S_new,
 					
 					
 					
-//					print_comp_mp_matlab(V.vertices[left_index].projVal_mp,"left");
-//					print_comp_mp_matlab(V.vertices[right_index].projVal_mp,"right");
-//					print_comp_mp_matlab(target_projection_value,"target");
+//					print_comp_matlab(V.vertices[left_index].projVal_mp,"left");
+//					print_comp_matlab(V.vertices[right_index].projVal_mp,"right");
+//					print_comp_matlab(target_projection_value,"target");
 //					
 //					printf("\n\n");
 					
@@ -330,8 +336,10 @@ void generate_new_sampling_pts(sample_data *S_new,
 					
 					if (sampler_options->verbose_level>=3) {
 						print_point_to_screen_matlab(W.pts_mp[0],"startpt");
-						print_comp_mp_matlab(&W.L_mp[0]->coord[0],"initial_projection_value");
-						print_comp_mp_matlab(target_projection_value,"target_projection_value");
+						print_comp_matlab(&W.L_mp[0]->coord[0],"initial_projection_value");
+						print_comp_matlab(target_projection_value,"target_projection_value");
+						
+//						W.print_to_screen();
 					}
 					
 					

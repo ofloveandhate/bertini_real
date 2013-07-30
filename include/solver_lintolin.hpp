@@ -34,8 +34,8 @@ typedef struct
 	
 	mpq_t *gamma_rat;
 	comp_mp gamma;
-	mat_mp n_minusone_randomizer_matrix;
-	mat_mp n_minusone_randomizer_matrix_full_prec;
+	mat_mp randomizer_matrix;
+	mat_mp randomizer_matrix_full_prec;
 	
 	vec_mp current_linear;
 	vec_mp current_linear_full_prec;
@@ -51,6 +51,8 @@ typedef struct
 	FILE *FOUT;
 	int num_steps;
 #endif
+	
+	int verbose_level;
 	
 } lintolin_eval_data_mp;
 
@@ -69,7 +71,7 @@ typedef struct
 //  eqData_t *EqD;              // for equation-by-equation  ???
 	prog_t *SLP;
 	comp_d gamma;
-	mat_d n_minusone_randomizer_matrix;
+	mat_d randomizer_matrix;
 	
 	vec_d current_linear;
 	vec_d old_linear;
@@ -80,6 +82,8 @@ typedef struct
 	FILE *FOUT;
 	int num_steps;
 #endif
+	
+	int verbose_level;
 	
 } lintolin_eval_data_d;
 
@@ -101,7 +105,7 @@ typedef struct
  */
 int lintolin_solver_main(int MPType,
 													 witness_set & W,
-													 mat_mp n_minusone_randomizer_matrix_full_prec,
+													 mat_mp randomizer_matrix_full_prec,
 													 vec_mp *new_linears_full_prec,
 													 int num_new_linears,
 													 witness_set *W_new,
@@ -112,7 +116,7 @@ int lintolin_solver_main(int MPType,
 
 int lintolin_solver_d(int MPType,
 												witness_set & W,  // should include the old linear
-												mat_mp n_minusone_randomizer_matrix_full_prec,
+												mat_mp randomizer_matrix_full_prec,
 												vec_mp *new_linears_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 												int num_new_linears,
 												witness_set *W_new,
@@ -154,7 +158,7 @@ int lintolin_setup_d(FILE **OUT, boost::filesystem::path outName,
 										 int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 										 boost::filesystem::path preprocFile, boost::filesystem::path degreeFile,
 										 int findStartPts, boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
-										 mat_mp n_minusone_randomizer_matrix_full_prec,
+										 mat_mp randomizer_matrix_full_prec,
 										 witness_set & W,
 										 solver_configuration *solve_options);
 
@@ -189,7 +193,7 @@ void setuplintolinEval_d(tracker_config_t *T,
 											 prog_t *dummyProg, int squareSize, int patchType, int ssType, int MPType,
 											 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
 											 lintolin_eval_data_d *BED, int adjustDegrees,
-												 mat_mp n_minusone_randomizer_matrix_full_prec,
+												 mat_mp randomizer_matrix_full_prec,
 												 witness_set & W,
 												 solver_configuration *solve_options);
 
@@ -212,7 +216,7 @@ void change_lintolin_eval_prec_mp(int new_prec, lintolin_eval_data_mp *BED);
 
 int lintolin_solver_mp(int MPType,
 												 witness_set & W,  // includes the initial linear.
-												 mat_mp n_minusone_randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
+												 mat_mp randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
 												 vec_mp *new_linears_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 												 int num_new_linears,
 												 witness_set *W_new,
@@ -254,7 +258,7 @@ int lintolin_setup_mp(FILE **OUT, boost::filesystem::path outName,
 											int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 											boost::filesystem::path preprocFile, boost::filesystem::path degreeFile,
 											int findStartPts, boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
-											mat_mp n_minusone_randomizer_matrix,
+											mat_mp randomizer_matrix,
 											witness_set & W,
 											solver_configuration *solve_options);
 
@@ -275,7 +279,7 @@ void setuplintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *dummyPr
 													int squareSize, int patchType, int ssType, int prec,
 													void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
 													lintolin_eval_data_mp *BED, int adjustDegrees,
-													mat_mp n_minusone_randomizer_matrix_full_prec,
+													mat_mp randomizer_matrix_full_prec,
 													witness_set & W,
 													solver_configuration *solve_options);
 

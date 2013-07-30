@@ -73,7 +73,7 @@ void vertex_set::print_to_screen()
 	printf("vertex set has %d vertices:\n\n",this->num_vertices);
 	for (int ii=0; ii<this->num_vertices; ++ii) {
 		print_point_to_screen_matlab(this->vertices[ii].pt_mp,"vert");
-		print_comp_mp_matlab(this->vertices[ii].projVal_mp,"proj");
+		print_comp_matlab(this->vertices[ii].projVal_mp,"proj");
 		printf("type: %d\n", this->vertices[ii].type);
 	}
 }
@@ -163,10 +163,20 @@ void vertex_set::print(boost::filesystem::path outputfile)
 
 
 
-int decomposition::add_vertex(vertex_set &V, vertex source_vertex){
+int decomposition::add_vertex(vertex_set & V, vertex source_vertex){
 	
 	
 	int current_index = V.add_vertex(source_vertex);
+	
+	std::cout << "vertex type to add: " << source_vertex.type << std::endl;
+	
+	
+	if (this->counters.find(source_vertex.type) == this->counters.end()) {
+		this->counters[source_vertex.type] = 0;
+	}
+	
+		
+	std::cout << "counters[vertex_type]: " << this->counters[source_vertex.type] << std::endl;
 	
 	this->counters[source_vertex.type]++;
 	this->indices[source_vertex.type].push_back(current_index);
@@ -180,39 +190,58 @@ int decomposition::add_vertex(vertex_set &V, vertex source_vertex){
 
 
 int decomposition::index_in_vertices(vertex_set &V,
-														vec_mp testpoint, comp_mp projection_value,
-														tracker_config_t T)
+																		 vec_mp testpoint, comp_mp projection_value,
+																		 tracker_config_t T)
 {
 	int ii;
 	int index = -1;
 		
-	V.print_to_screen();
+//	V.print_to_screen();
 	
 	std::map< int , int >::iterator type_iter;
 	
 	for (type_iter = this->counters.begin(); type_iter!= this->counters.end(); type_iter++) {
 		for (ii=0; ii<type_iter->second; ii++) {
 			int current_index = this->indices[type_iter->first][ii];
-			std::cout << current_index << " " << type_iter->first << " " << ii << std::endl;
+//			std::cout << "current_index: " << current_index << " type: " << type_iter->first << " " << ii << std::endl;
 			if (isSamePoint_homogeneous_input(V.vertices[current_index].pt_mp, testpoint)){
+//				std::cout << "these two points are the SAME:\n";
+//				print_point_to_screen_matlab(V.vertices[current_index].pt_mp,"candidate");
+//				print_point_to_screen_matlab(testpoint,"testpoint");
+//				mypause();
+				
 				index = current_index;
 				break;
 			}
+//			else{
+//				std::cout << "these two points are DIFFERENT:\n";
+//				print_point_to_screen_matlab(V.vertices[current_index].pt_mp,"candidate");
+//				print_point_to_screen_matlab(testpoint,"testpoint");
+//				mypause();
+//			}
+			
+		}
+		if (index!=-1) {
+			break;
 		}
 	}
 
+		
+	
 	return index;	
 }
 
 
 
 int decomposition::index_in_vertices_with_add(vertex_set &V,
-																		 vec_mp testpoint, comp_mp projection_value,
-																		 tracker_config_t T)
+																							vec_mp testpoint, comp_mp projection_value,
+																							tracker_config_t T)
 {
 	int index = decomposition::index_in_vertices(V, testpoint, projection_value, T);
 	
 	if (index==-1) {
+		std::cout << "adding vertex to set.  type: " << NEW << "\n\n";
+		
 		vertex temp_vertex;
 		
 		set_mp(temp_vertex.projVal_mp,  projection_value);
@@ -220,7 +249,9 @@ int decomposition::index_in_vertices_with_add(vertex_set &V,
 		
 		
 		temp_vertex.type = NEW;
-		index = V.add_vertex(temp_vertex);
+		
+		index = decomposition::add_vertex(V, temp_vertex);
+		
 	}
 	
 	return index;
@@ -239,8 +270,8 @@ int decomposition::index_in_vertices_with_add(vertex_set &V,
 
 
 int decomposition::setup(boost::filesystem::path INfile,
-								boost::filesystem::path & inputName,
-								boost::filesystem::path directoryName)
+												 boost::filesystem::path & inputName,
+												 boost::filesystem::path directoryName)
 //setup the vertex structure
 {
 	
@@ -268,7 +299,7 @@ int decomposition::setup(boost::filesystem::path INfile,
 	for (int ii =0; ii<num_types; ii++) {
 		int current_type, num_this_type, current_index;
 		fin >> current_type >> num_this_type;
-		std::cout << current_type << " " << num_this_type << std::endl;
+		std::cout << "vertex type: " << current_type << ", # vertices: " << num_this_type << std::endl;
 		this->counters[current_type] = num_this_type;
 		
 		for (int jj=0; jj<num_this_type; jj++) {
@@ -298,7 +329,55 @@ int decomposition::setup(boost::filesystem::path INfile,
 		decomposition::add_projection(tempvec);
 	}
 
+	
+	
+	
+	int curr_num_patches;
+	
+	getline(fin,tempstr); std::cout << tempstr << std::endl;
+	getline(fin,tempstr); std::cout << tempstr << std::endl;
+	converter << tempstr;
+	converter >> curr_num_patches;
+	converter.clear(); converter.str("");
+	
+//	std::cout << "during setup, num_patches is to be " << curr_num_patches << std::endl;
+//	mypause();
+	
+	vec_mp temp_patch; init_vec_mp2(temp_patch,1,1024); temp_patch->size = 1;
+	for (int ii=0; ii<curr_num_patches; ii++) {
+		
+		getline(fin,tempstr); //std::cout << tempstr << std::endl;
+		getline(fin,tempstr); //std::cout << tempstr << " <--- supposed to have the size in it" << std::endl;
+		
+		int curr_size;
+		
+		converter << tempstr;
+		converter >> curr_size;
+		converter.clear(); converter.str("");
+		
+		change_size_vec_mp(temp_patch,curr_size); temp_patch->size = curr_size;
+		
+		for (int jj=0; jj<curr_size; jj++) {
+			getline(fin,tempstr);
+			converter << tempstr;
+			std::string re, im;
+			converter >> re >> im; // this line is correct
+			converter.clear(); converter.str("");
+			
+			mpf_set_str(temp_patch->coord[jj].r, const_cast<char *>(re.c_str()), 10);
+			mpf_set_str(temp_patch->coord[jj].i, const_cast<char *>(im.c_str()), 10);
+		}
+		
+		decomposition::add_patch(temp_patch);
+	}
+	
+//	std::cout << "correct number patches: " << curr_num_patches << " vs memory-num_patches " << this->num_patches << std::endl;
+//	mypause();
+	clear_vec_mp(temp_patch);
+	
 	fin.close();
+	
+	
 	
 	return num_vertices;
 }
@@ -315,8 +394,9 @@ void decomposition::print(boost::filesystem::path input_deflated_Name, boost::fi
 {
 	int ii;
 	
-	FILE *OUT = safe_fopen_write(outputfile.c_str());
-	fprintf(OUT,"%s\n",input_deflated_Name.c_str());
+	FILE *OUT = safe_fopen_write(outputfile);
+	
+	fprintf(OUT,"%s\n",input_deflated_Name.filename().c_str());
 	
 	fprintf(OUT,"%d %d\n",num_variables, dimension);
 	
@@ -324,7 +404,7 @@ void decomposition::print(boost::filesystem::path input_deflated_Name, boost::fi
 	
 	std::map< int, int>::iterator type_iter;
 	for (type_iter = this->counters.begin(); type_iter!= this->counters.end(); type_iter++) {
-		fprintf(OUT, "%d %d\n",type_iter->first, type_iter->second);
+		fprintf(OUT, "%d %d\n",type_iter->first, type_iter->second);  // print the number corresponding to the type, and the number of that type.
 		
 		for (int jj = 0; jj<type_iter->second; jj++) {
 			fprintf(OUT, "%d\n", indices[type_iter->first][jj]);
@@ -338,6 +418,18 @@ void decomposition::print(boost::filesystem::path input_deflated_Name, boost::fi
 			print_mp(OUT, 0, &pi_mp[ii]->coord[jj]);
 			fprintf(OUT,"\n");
 		}
+	}
+	fprintf(OUT,"\n");
+	
+	fprintf(OUT,"%d\n\n",this->num_patches); // print the header line
+	
+	for (ii=0; ii<this->num_patches; ++ii) {
+		fprintf(OUT,"%d\n",this->patch[ii]->size);
+		for (int jj=0; jj<this->patch[ii]->size; jj++) {
+			print_mp(OUT, 0, &this->patch[ii]->coord[jj]);
+			fprintf(OUT, "\n");
+		}
+		fprintf(OUT,"\n");
 	}
 	
 	fclose(OUT);
@@ -747,7 +839,7 @@ void print_matrix_to_screen_matlab(mat_d M, std::string name)
 	{ // print kth row
 		for (jj = 0; jj < M->cols; jj++)
 		{
-			printf(" %.5le+1i*%.5le",M->entry[kk][jj].r,M->entry[kk][jj].i);
+			printf("%.8le+1i*%.8le\t",M->entry[kk][jj].r,M->entry[kk][jj].i);
 		}
 		printf(";\n");
 	}
@@ -764,12 +856,10 @@ void print_matrix_to_screen_matlab(mat_mp M, std::string name)
 		for (jj = 0; jj < M->cols; jj++)
 		{
 			
-			mpf_out_str (NULL, 10, 7, M->entry[kk][jj].r);
+			mpf_out_str (NULL, 10, 15, M->entry[kk][jj].r);
 			printf("+1i*");
-			mpf_out_str (NULL, 10, 7, M->entry[kk][jj].i); // base 10 , 7 digits
-			printf(" ");
-			
-//			printf(" %.15le+1i*%.15le",M->entry[kk][jj].r,M->entry[kk][jj].i);
+			mpf_out_str (NULL, 10, 15, M->entry[kk][jj].i); // base 10 , 7 digits
+			printf("\t");
 		}
 		printf(";\n");
 	}
@@ -777,7 +867,7 @@ void print_matrix_to_screen_matlab(mat_mp M, std::string name)
 }
 
 
-void print_comp_mp_matlab(comp_mp M, std::string name){
+void print_comp_matlab(comp_mp M, std::string name){
 	printf("%s=",name.c_str());
 	mpf_out_str (NULL, 10, 6, M->r);
 	printf("+1i*");
@@ -786,6 +876,10 @@ void print_comp_mp_matlab(comp_mp M, std::string name){
 	return;
 }
 
+void print_comp_matlab(comp_d M, std::string name){
+	printf("%s=%.5le+1i*%.5le\n",name.c_str(),M->r,M->i);
+	return;
+}
 
 void print_path_retVal_message(int retVal){
 	
@@ -794,7 +888,7 @@ void print_path_retVal_message(int retVal){
 		printf("max_prec_reached\n");
 	}
 	if (retVal==-50) {
-		printf("reached_minTrackT\n");
+		printf("reached_minTrackT\nrelevant setting name is 'NbhdRadius'\n");
 	}
 	else if (retVal==-200){
 		printf("cycle_num_too_high\n");

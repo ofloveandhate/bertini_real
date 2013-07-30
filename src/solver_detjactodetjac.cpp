@@ -15,29 +15,35 @@
 
 int detjac_to_detjac_solver_main(int MPType,
 																 witness_set & W, // carries with it the start points, and the linears.
-																 mat_mp n_minusone_randomizer_matrix_full_prec,
+																 mat_mp randomizer_matrix_full_prec,
 																 vec_mp old_projection_full_prec,
 																 vec_mp new_projection_full_prec,
 																 witness_set *W_new,
 																 solver_configuration *solve_options)
 {
 	W_new->num_variables = W.num_variables;
+	W_new->num_synth_vars = W.num_synth_vars;
 	
-	cp_patches(W_new,W); // copy the patches over from the original witness set.  for completeness
-	cp_names(W_new,W);
 	
-	W_new->num_linears = (1);
-	W_new->L_mp = (vec_mp *)bmalloc((1)*sizeof(vec_mp)); init_vec_mp(W_new->L_mp[0],W.num_variables);
-	vec_cp_mp(W_new->L_mp[0],new_projection_full_prec);
+
 	
 	
 	if (MPType==1){
-		detjac_to_detjac_solver_mp(MPType,W,n_minusone_randomizer_matrix_full_prec,old_projection_full_prec,new_projection_full_prec, W_new,solve_options);
+		detjac_to_detjac_solver_mp(MPType,W,randomizer_matrix_full_prec,old_projection_full_prec,new_projection_full_prec, W_new,solve_options);
 	}
 	else{
-		detjac_to_detjac_solver_d( MPType,W,n_minusone_randomizer_matrix_full_prec,old_projection_full_prec,new_projection_full_prec,W_new,solve_options);
+		detjac_to_detjac_solver_d( MPType,W,randomizer_matrix_full_prec,old_projection_full_prec,new_projection_full_prec,W_new,solve_options);
 	}
 	
+	
+	if (solve_options->complete_witness_set==1){
+		cp_patches(W_new,W); // copy the patches over from the original witness set.  for completeness
+		cp_names(W_new,W);
+		
+		W_new->num_linears = (1);
+		W_new->L_mp = (vec_mp *)bmalloc((1)*sizeof(vec_mp)); init_vec_mp(W_new->L_mp[0],W.num_variables);
+		vec_cp_mp(W_new->L_mp[0],new_projection_full_prec);
+	}
 	
 	return 0;
 }
@@ -47,7 +53,7 @@ int detjac_to_detjac_solver_main(int MPType,
 
 //int detjac_to_detjac_solver_d(int MPType,
 //															 witness_set & W,  // includes the initial linear.
-//															 mat_d n_minusone_randomizer_matrix,  // for randomizing down to N-1 equations.
+//															 mat_d randomizer_matrix,  // for randomizing down to N-1 equations.
 //															 vec_d projection,
 //															 witness_set *W_new // for passing the data back out of this function tree
 //															 )
@@ -55,7 +61,7 @@ int detjac_to_detjac_solver_main(int MPType,
 
 int detjac_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int currentSeed
 															witness_set & W,  // includes the initial linear.
-															mat_mp n_minusone_randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
+															mat_mp randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
 															vec_mp old_projection_full_prec,   // a single random complex linear. 
 															vec_mp new_projection_full_prec, // a single particular real linear with homogeneous term=0. 
 															witness_set *W_new,
@@ -104,7 +110,7 @@ int detjac_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int cu
 																					 &ptr_to_eval_d, &ptr_to_eval_mp,  //args 17,18
 																					 "preproc_data", "deg.out",
 																					 !useRegen, "nonhom_start", "start",
-																					 n_minusone_randomizer_matrix_full_prec,W,
+																					 randomizer_matrix_full_prec,W,
 																					 old_projection_full_prec,
 																					 new_projection_full_prec,
 																					 solve_options);
@@ -326,6 +332,10 @@ void detjac_to_detjac_track_d(trackingStats *trackCount,
 		startPointIndex = ii;
 		
 		
+		if (T->MPType==2) {
+			ED_d->BED_mp->curr_prec = 64;
+		}
+		
 		// print the header of the path to OUT
 		printPathHeader_d(OUT_copy[oid], &startPts[startPointIndex], &T_copy[oid], ii, &BED_copy[oid], eval_func_d);
 		
@@ -491,7 +501,7 @@ int detjac_to_detjac_setup_d(FILE **OUT, boost::filesystem::path outName,
 														 int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 														 boost::filesystem::path preprocFile, boost::filesystem::path degreeFile,
 														 int findStartPts, boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
-														 mat_mp n_minusone_randomizer_matrix_full_prec,
+														 mat_mp randomizer_matrix_full_prec,
 														 witness_set & W,
 														 vec_mp old_projection_full_prec,
 														 vec_mp new_projection_full_prec,
@@ -535,7 +545,7 @@ int detjac_to_detjac_setup_d(FILE **OUT, boost::filesystem::path outName,
 	patchType = 2; // 1-hom patch
 	ssType = 0;    // with 1-hom, we use total degree start system
 	adjustDegrees = 0; // if the system does not need its degrees adjusted, then that is okay
-	setupdetjactodetjacEval_d(T,const_cast<char *>(preprocFile.c_str()), const_cast<char *>(degreeFile.c_str()), dummyProg, rank, patchType, ssType, T->MPType, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix_full_prec, W,old_projection_full_prec,new_projection_full_prec,solve_options);
+	setupdetjactodetjacEval_d(T,const_cast<char *>(preprocFile.c_str()), const_cast<char *>(degreeFile.c_str()), dummyProg, rank, patchType, ssType, T->MPType, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, randomizer_matrix_full_prec, W,old_projection_full_prec,new_projection_full_prec,solve_options);
 
 	
 	
@@ -603,10 +613,10 @@ int detjac_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat
   Jv->cols = BED->num_variables;  //  -> this should be square!!!
   Jp->cols = 1;
 	
-	mat_mul_d(AtimesJ,BED->n_minusone_randomizer_matrix,temp_jacobian_functions);
+	mat_mul_d(AtimesJ,BED->randomizer_matrix,temp_jacobian_functions);
 	
 	
-	mul_mat_vec_d(AtimesF,BED->n_minusone_randomizer_matrix, temp_function_values ); // set values of AtimesF (A is randomization matrix)
+	mul_mat_vec_d(AtimesF,BED->randomizer_matrix, temp_function_values ); // set values of AtimesF (A is randomization matrix)
 	
 	for (ii=0; ii<AtimesF->size; ii++) { // for each function, after (real orthogonal) randomization
 		set_d(&funcVals->coord[ii], &AtimesF->coord[ii]);
@@ -682,7 +692,7 @@ int detjac_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat
 																current_variable_values, pathVars, BED->old_projection,
 																BED->num_variables,
 																BED->SLP,
-																BED->n_minusone_randomizer_matrix); // input parameters for the method
+																BED->randomizer_matrix); // input parameters for the method
 	
 	//																	BED->patch,
 
@@ -690,7 +700,7 @@ int detjac_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat
 																current_variable_values, pathVars, BED->new_projection,
 																BED->num_variables,
 																BED->SLP,
-																BED->n_minusone_randomizer_matrix); // input parameters for the method
+																BED->randomizer_matrix); // input parameters for the method
 
 //	print_point_to_screen_matlab(current_variable_values,"current_variable_values");
 	
@@ -798,7 +808,7 @@ int detjac_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat
 
 	
 	//these values are set in this function:  point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp
-//	print_matrix_to_screen_matlab(BED->n_minusone_randomizer_matrix,"n_minusone_randomizer_matrix");
+//	print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
 //
 //	mypause();
 //
@@ -871,7 +881,7 @@ void detjactodetjac_eval_clear_d(detjactodetjac_eval_data_d *ED, int clearRegen,
 	//specifics for the detjactodetjac method.
 	clear_vec_d(ED->old_projection);
 	clear_vec_d(ED->new_projection);
-	clear_mat_d(ED->n_minusone_randomizer_matrix);
+	clear_mat_d(ED->randomizer_matrix);
 	
 	
 	
@@ -1160,7 +1170,7 @@ void setupdetjactodetjacEval_d(tracker_config_t *T,char preprocFile[], char degr
 															 int squareSize, int patchType, int ssType, int MPType,
 															 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,// what are these supposed to point to?
 															 detjactodetjac_eval_data_d *BED, int adjustDegrees,
-															 mat_mp n_minusone_randomizer_matrix_full_prec,
+															 mat_mp randomizer_matrix_full_prec,
 															 witness_set & W,
 															 vec_mp old_projection_full_prec,
 															 vec_mp new_projection_full_prec,
@@ -1171,11 +1181,11 @@ void setupdetjactodetjacEval_d(tracker_config_t *T,char preprocFile[], char degr
 
 	
   setupPreProcData(preprocFile, &BED->preProcData);
-	//  setupSquareSystem_d(dummyProg, squareSize, &BED->preProcData, degreeFile, &BED->squareSystem, adjustDegrees); // NOTE: squareSystem must be setup before the patch!!!
-  setupPatch_d(patchType, &BED->patch, ptr1, ptr2);
-	for (ii = 0; ii < BED->num_variables ; ii++)
-	{
-		mp_to_d(&BED->patch.patchCoeff->entry[0][ii],&W.patch_mp[0]->coord[ii]);
+	BED->verbose_level = solve_options->verbose_level;
+	
+  generic_setup_patch(&BED->patch,W);
+	if (T->MPType==2) {
+		generic_setup_patch(&BED->BED_mp->patch, W);
 	}
 	
 	
@@ -1185,13 +1195,13 @@ void setupdetjactodetjacEval_d(tracker_config_t *T,char preprocFile[], char degr
 	BED->SLP = dummyProg;
 	
 	
-	init_mat_d(BED->n_minusone_randomizer_matrix,
-							n_minusone_randomizer_matrix_full_prec->rows,n_minusone_randomizer_matrix_full_prec->cols);
-	BED->n_minusone_randomizer_matrix->rows = n_minusone_randomizer_matrix_full_prec->rows;
-	BED->n_minusone_randomizer_matrix->cols = n_minusone_randomizer_matrix_full_prec->cols;
+	init_mat_d(BED->randomizer_matrix,
+							randomizer_matrix_full_prec->rows,randomizer_matrix_full_prec->cols);
+	BED->randomizer_matrix->rows = randomizer_matrix_full_prec->rows;
+	BED->randomizer_matrix->cols = randomizer_matrix_full_prec->cols;
 	
-	mat_mp_to_d(BED->n_minusone_randomizer_matrix,
-							n_minusone_randomizer_matrix_full_prec);
+	mat_mp_to_d(BED->randomizer_matrix,
+							randomizer_matrix_full_prec);
 	
 	
 	// set up the vectors to hold the two linears.
@@ -1215,7 +1225,7 @@ void setupdetjactodetjacEval_d(tracker_config_t *T,char preprocFile[], char degr
   { // using AMP - initialize using 16 digits & 64-bit precison
     int digits = 16, prec = 64;
 		initMP(prec);
-
+		BED->BED_mp->verbose_level = solve_options->verbose_level;
 		BED->BED_mp->curr_prec = prec;
 		
 		BED->BED_mp->gamma_rat = (mpq_t *)bmalloc(2 * sizeof(mpq_t));
@@ -1252,38 +1262,18 @@ void setupdetjactodetjacEval_d(tracker_config_t *T,char preprocFile[], char degr
 		
 		
 		
-		init_mat_mp2(BED->BED_mp->n_minusone_randomizer_matrix,1,1,prec); // initialize the randomizer matrix
-		init_mat_mp2(BED->BED_mp->n_minusone_randomizer_matrix_full_prec,1,1,T->AMP_max_prec); // initialize the randomizer matrix
+		init_mat_mp2(BED->BED_mp->randomizer_matrix,1,1,prec); // initialize the randomizer matrix
+		init_mat_mp2(BED->BED_mp->randomizer_matrix_full_prec,1,1,T->AMP_max_prec); // initialize the randomizer matrix
 		
-		mat_cp_mp(BED->BED_mp->n_minusone_randomizer_matrix_full_prec,n_minusone_randomizer_matrix_full_prec);
-		mat_cp_mp(BED->BED_mp->n_minusone_randomizer_matrix,n_minusone_randomizer_matrix_full_prec);
+		mat_cp_mp(BED->BED_mp->randomizer_matrix_full_prec,randomizer_matrix_full_prec);
+		mat_cp_mp(BED->BED_mp->randomizer_matrix,randomizer_matrix_full_prec);
 		
 		
 		
 
 		
-		
-		
-		
     // setup preProcData
     setupPreProcData(preprocFile, &BED->BED_mp->preProcData);
-		
-		
-		
-		// setup the patch
-    setupPatch_d_to_mp(&BED->patch, &BED->BED_mp->patch, digits, prec, patchType, dummyProg->numVars, ptr3, ptr4); // i question whether this is necessary.
-		for (ii = 0; ii < BED->num_variables ; ii++)
-		{
-			mp_to_d(&BED->patch.patchCoeff->entry[0][ii],&W.patch_mp[0]->coord[ii]);
-		}
-		for (ii = 0; ii < BED->num_variables ; ii++)
-		{
-			set_mp(&BED->BED_mp->patch.patchCoeff->entry[0][ii],&W.patch_mp[0]->coord[ii]);
-			mp_to_rat(BED->BED_mp->patch.patchCoeff_rat[0][ii],&W.patch_mp[0]->coord[ii]);
-		}
-		
-		
-//		print_matrix_to_screen_matlab(BED->BED_mp->patch.patchCoeff,"userpatch_mp");
 		
   }//re: if mptype==2
 	
@@ -1427,7 +1417,9 @@ void change_detjactodetjac_eval_prec_mp(int new_prec, detjactodetjac_eval_data_m
 	
 	if (new_prec != BED->curr_prec){
 		
-//		printf("prec now %d\n",new_prec);
+		if (BED->verbose_level >=4)
+			printf("prec  %d\t-->\t%d\n",BED->curr_prec, new_prec);
+		
 		
 		BED->SLP->precision = new_prec;
 		
@@ -1439,8 +1431,8 @@ void change_detjactodetjac_eval_prec_mp(int new_prec, detjactodetjac_eval_data_m
 		mpf_set_q(BED->gamma->i, BED->gamma_rat[1]);
 		
 		
-		change_prec_mat_mp(BED->n_minusone_randomizer_matrix,new_prec);
-		mat_cp_mp(BED->n_minusone_randomizer_matrix,BED->n_minusone_randomizer_matrix_full_prec);
+		change_prec_mat_mp(BED->randomizer_matrix,new_prec);
+		mat_cp_mp(BED->randomizer_matrix,BED->randomizer_matrix_full_prec);
 		
 		change_prec_point_mp(BED->old_projection,new_prec);
 		vec_cp_mp(BED->old_projection, BED->old_projection_full_prec);
@@ -1471,7 +1463,7 @@ void change_detjactodetjac_eval_prec_mp(int new_prec, detjactodetjac_eval_data_m
 
 int detjac_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int currentSeed
 															 witness_set & W,  // includes the initial linear.
-															 mat_mp n_minusone_randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
+															 mat_mp randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
 															 vec_mp old_projection_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 															 vec_mp new_projection_full_prec,
 															 witness_set *W_new,
@@ -1523,7 +1515,7 @@ int detjac_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int c
 																						&ptr_to_eval_d, &ptr_to_eval_mp,  //args 17,18
 																						"preproc_data", "deg.out",
 																						!useRegen, "nonhom_start", "start",
-																						n_minusone_randomizer_matrix_full_prec,W,
+																						randomizer_matrix_full_prec,W,
 																						old_projection_full_prec,
 																						new_projection_full_prec,
 																						solve_options);
@@ -1826,7 +1818,7 @@ int detjac_to_detjac_setup_mp(FILE **OUT, boost::filesystem::path outName,
 															int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 															boost::filesystem::path preprocFile, boost::filesystem::path degreeFile,
 															int findStartPts, boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
-															mat_mp n_minusone_randomizer_matrix,
+															mat_mp randomizer_matrix,
 															witness_set & W,
 															vec_mp old_projection_full_prec,
 															vec_mp new_projection_full_prec,
@@ -1864,7 +1856,7 @@ int detjac_to_detjac_setup_mp(FILE **OUT, boost::filesystem::path outName,
 	patchType = 2; // 1-hom patch
 	ssType = 0;    // with 1-hom, we use total degree start system
 	adjustDegrees = 0; // if the system does not need its degrees adjusted, then that is okay
-	setupdetjactodetjacEval_mp(const_cast<char *>(preprocFile.c_str()), const_cast<char *>(degreeFile.c_str()), dummyProg, rank, patchType, ssType, T->Precision, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, n_minusone_randomizer_matrix, W,old_projection_full_prec,new_projection_full_prec,solve_options);
+	setupdetjactodetjacEval_mp(const_cast<char *>(preprocFile.c_str()), const_cast<char *>(degreeFile.c_str()), dummyProg, rank, patchType, ssType, T->Precision, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, randomizer_matrix, W,old_projection_full_prec,new_projection_full_prec,solve_options);
 
 	
   return numOrigVars;
@@ -1934,10 +1926,10 @@ int detjac_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer,
   Jv->cols = BED->num_variables;  //  -> this should be square!!!
   Jp->cols = 1;
 	
-	mat_mul_mp(AtimesJ,BED->n_minusone_randomizer_matrix,temp_jacobian_functions);
+	mat_mul_mp(AtimesJ,BED->randomizer_matrix,temp_jacobian_functions);
 	
 	
-	mul_mat_vec_mp(AtimesF,BED->n_minusone_randomizer_matrix, temp_function_values ); // set values of AtimesF (A is randomization matrix)
+	mul_mat_vec_mp(AtimesF,BED->randomizer_matrix, temp_function_values ); // set values of AtimesF (A is randomization matrix)
 	
 	for (ii=0; ii<AtimesF->size; ii++) { // for each function, after (real orthogonal) randomization
 		set_mp(&funcVals->coord[ii], &AtimesF->coord[ii]);
@@ -2029,13 +2021,13 @@ int detjac_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer,
 																current_variable_values, pathVars, BED->old_projection,
 																BED->num_variables,
 																BED->SLP,
-																BED->n_minusone_randomizer_matrix); // input parameters for the method
+																BED->randomizer_matrix); // input parameters for the method
 	
 	detjac_numerical_derivative_mp(Jv_detjac_new, // return value
 																current_variable_values, pathVars, BED->new_projection,
 																BED->num_variables,
 																BED->SLP,
-																BED->n_minusone_randomizer_matrix); // input parameters for the method
+																BED->randomizer_matrix); // input parameters for the method
 	
 
 	
@@ -2138,7 +2130,7 @@ int detjac_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer,
 
 
 	//these values are set in this function:  point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp
-//	print_matrix_to_screen_matlab(BED->n_minusone_randomizer_matrix,"n_minusone_randomizer_matrix");
+//	print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
 //
 //	mypause();
 //
@@ -2195,7 +2187,7 @@ void detjactodetjac_eval_clear_mp(detjactodetjac_eval_data_mp *ED, int clearRege
 	clear_mp(ED->gamma);
 	clear_vec_mp(ED->old_projection);
 	clear_vec_mp(ED->new_projection);
-	clear_mat_mp(ED->n_minusone_randomizer_matrix);
+	clear_mat_mp(ED->randomizer_matrix);
 	
 	
 	
@@ -2492,7 +2484,7 @@ void setupdetjactodetjacEval_mp(char preprocFile[], char degreeFile[], prog_t *d
 																int squareSize, int patchType, int ssType, int prec,
 																void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
 																detjactodetjac_eval_data_mp *BED, int adjustDegrees,
-																mat_mp n_minusone_randomizer_matrix,
+																mat_mp randomizer_matrix,
 																witness_set & W,
 																vec_mp old_projection_full_prec,
 																vec_mp new_projection_full_prec,
@@ -2502,24 +2494,18 @@ void setupdetjactodetjacEval_mp(char preprocFile[], char degreeFile[], prog_t *d
 	int digits = prec_to_digits(mpf_get_default_prec());
   setupPreProcData(preprocFile, &BED->preProcData);
 	
-	setupPatch_mp(patchType, &BED->patch, digits, prec, ptr1, ptr2);
-
+	BED->verbose_level = solve_options->verbose_level;
 	
 	BED->num_variables = W.num_variables;
 	
-
-	
-	for (ii = 0; ii < BED->num_variables ; ii++)
-	{
-		set_mp(&BED->patch.patchCoeff->entry[0][ii],&W.patch_mp[0]->coord[ii]);
-	}
+	generic_setup_patch(&BED->patch,W);
 	
 	BED->SLP = dummyProg;
 	
 	
-	init_mat_mp(BED->n_minusone_randomizer_matrix,0,0);
-	mat_cp_mp(BED->n_minusone_randomizer_matrix,
-						n_minusone_randomizer_matrix);
+	init_mat_mp(BED->randomizer_matrix,0,0);
+	mat_cp_mp(BED->randomizer_matrix,
+						randomizer_matrix);
 	
 	
 	// set up the vectors to hold the two linears.
@@ -2568,8 +2554,8 @@ void cp_detjactodetjac_eval_data_mp(detjactodetjac_eval_data_mp *BED, detjactode
 	
 	
 	//HERE COPY THE MATRICES  DAB !!!
-	init_mat_mp(BED->n_minusone_randomizer_matrix,0,0);
-	mat_cp_mp(BED->n_minusone_randomizer_matrix,BED_mp_input->n_minusone_randomizer_matrix);
+	init_mat_mp(BED->randomizer_matrix,0,0);
+	mat_cp_mp(BED->randomizer_matrix,BED_mp_input->randomizer_matrix);
 	
 	set_mp(BED->gamma, BED_mp_input->gamma);
 	
@@ -2777,7 +2763,7 @@ int check_issoln_detjactodetjac_mp(endgame_data_t *EG,
 void integrity_display_detjac(detjactodetjac_eval_data_d * BED){
 	print_point_to_screen_matlab(BED->old_projection,"old_projection");
 	print_point_to_screen_matlab(BED->new_projection,"new_projection");
-	print_matrix_to_screen_matlab(BED->n_minusone_randomizer_matrix,"R");
+	print_matrix_to_screen_matlab(BED->randomizer_matrix,"R");
 }
 
 
