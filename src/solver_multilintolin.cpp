@@ -26,7 +26,7 @@ int multilintolin_solver_main(int MPType,
 	}
 	
 	W_new->num_variables = W.num_variables;
-	
+	W_new->num_synth_vars = W.num_synth_vars;
 	
 	
 	
@@ -189,7 +189,7 @@ int multilin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int cur
   // we report how we did with all paths:
   bclock(&time2);
   totalTime(&track_time, time1, time2);
-  if (T.screenOut)
+  if (solve_options->verbose_level>=2)
   {
     printf("Number of failures:  %d\n", trackCount.failures);
     printf("Number of successes:  %d\n", trackCount.successes);
@@ -334,17 +334,19 @@ void multilin_to_lin_track_d(trackingStats *trackCount,
 
 //TODO: eliminate this header stuff
 		// print the header of the path to OUT
-		printPathHeader_d(OUT_copy[oid], &startPts[startPointIndex], &T_copy[oid], ii, &BED_copy[oid], eval_func_d);
+//		printPathHeader_d(OUT_copy[oid], &startPts[startPointIndex], &T_copy[oid], ii, &BED_copy[oid], eval_func_d);
 		
 		
 #ifdef printpathmultilintolin
 		BED_copy[oid].num_steps = 0;
 #endif
 		
-		
+		if (T->MPType==2) {
+			ED_d->BED_mp->curr_prec = 64;
+		}
 
 		// track the path
-		multilin_to_lin_track_path_d(solution_counter, &EG[oid], &startPts[startPointIndex], OUT_copy[oid], MIDOUT_copy[oid], &T_copy[oid], &BED_copy[oid], BED_copy[oid].BED_mp, curr_eval_d, curr_eval_mp, change_prec, find_dehom);
+		generic_track_path_d(solution_counter, &EG[oid], &startPts[startPointIndex], OUT_copy[oid], MIDOUT_copy[oid], &T_copy[oid], &BED_copy[oid], BED_copy[oid].BED_mp, curr_eval_d, curr_eval_mp, change_prec, find_dehom);
 		
 #ifdef printpathmultilintolin
 		fprintf(BED_copy[oid].FOUT,"-100 %d ",BED_copy[oid].num_steps);
@@ -437,86 +439,6 @@ void multilin_to_lin_track_d(trackingStats *trackCount,
   return;
 }
 
-
-
-
-// derived from zero_dim_track_path_d
-void multilin_to_lin_track_path_d(int pathNum, endgame_data_t *EG_out,
-														 point_data_d *Pin,
-														 FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
-														 void const *ED_d, void const *ED_mp,
-														 int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
-														 int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-														 int (*change_prec)(void const *, int),
-														 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *))
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: actually does the zero-dimensional tracking and sets   *
- *  up EG_out                                                    *
- \***************************************************************/
-{
-	
-
-	
-	EG_out->pathNum = pathNum;
-  EG_out->codim = 0; // zero dimensional - this is ignored
-	
-  T->first_step_of_path = 1;
-	
-  if (T->MPType == 2)
-  { // track using AMP
-		
-    EG_out->prec = EG_out->last_approx_prec = 1;
-		
-		EG_out->retVal = endgame_amp(T->endgameNumber, EG_out->pathNum, &EG_out->prec, &EG_out->first_increase, &EG_out->PD_d, &EG_out->PD_mp, &EG_out->last_approx_prec, EG_out->last_approx_d, EG_out->last_approx_mp, Pin, T, OUT, MIDOUT, ED_d, ED_mp, eval_func_d, eval_func_mp, change_prec, find_dehom);
-		
-		
-		
-    if (EG_out->prec == 52)
-    { // copy over values in double precision
-      EG_out->latest_newton_residual_d = T->latest_newton_residual_d;
-      EG_out->t_val_at_latest_sample_point_d = T->t_val_at_latest_sample_point;
-      EG_out->error_at_latest_sample_point_d = T->error_at_latest_sample_point;
-      findFunctionResidual_conditionNumber_d(&EG_out->function_residual_d, &EG_out->condition_number, &EG_out->PD_d, ED_d, eval_func_d);
-    }
-    else
-    { // make sure that the other MP things are set to the correct precision
-      mpf_clear(EG_out->function_residual_mp);
-      mpf_init2(EG_out->function_residual_mp, EG_out->prec);
-			
-      mpf_clear(EG_out->latest_newton_residual_mp);
-      mpf_init2(EG_out->latest_newton_residual_mp, EG_out->prec);
-			
-      mpf_clear(EG_out->t_val_at_latest_sample_point_mp);
-      mpf_init2(EG_out->t_val_at_latest_sample_point_mp, EG_out->prec);
-			
-      mpf_clear(EG_out->error_at_latest_sample_point_mp);
-      mpf_init2(EG_out->error_at_latest_sample_point_mp, EG_out->prec);
-			
-      // copy over the values
-      mpf_set(EG_out->latest_newton_residual_mp, T->latest_newton_residual_mp);
-      mpf_set_d(EG_out->t_val_at_latest_sample_point_mp, T->t_val_at_latest_sample_point);
-      mpf_set_d(EG_out->error_at_latest_sample_point_mp, T->error_at_latest_sample_point);
-      findFunctionResidual_conditionNumber_mp(EG_out->function_residual_mp, &EG_out->condition_number, &EG_out->PD_mp, ED_mp, eval_func_mp);
-    }
-  }
-  else
-  { // track using double precision
-    EG_out->prec = EG_out->last_approx_prec = 52;
-		
-    EG_out->retVal = endgame_d(T->endgameNumber, EG_out->pathNum, &EG_out->PD_d, EG_out->last_approx_d, Pin, T, OUT, MIDOUT, ED_d, eval_func_d, find_dehom);  // WHERE THE ACTUAL TRACKING HAPPENS
-    EG_out->first_increase = 0;
-    // copy over values in double precision
-    EG_out->latest_newton_residual_d = T->latest_newton_residual_d;
-    EG_out->t_val_at_latest_sample_point_d = T->t_val_at_latest_sample_point;
-    EG_out->error_at_latest_sample_point_d = T->error_at_latest_sample_point;
-    findFunctionResidual_conditionNumber_d(&EG_out->function_residual_d, &EG_out->condition_number, &EG_out->PD_d, ED_d, eval_func_d);
-  }
-	
-  return;
-}
 
 
 
@@ -1258,7 +1180,7 @@ void setupmultilintolinEval_d(tracker_config_t *T,
 	BED->num_variables = W.num_variables; // total number of variables
 	
   setupPreProcData(preprocFile, &BED->preProcData);
-	
+	BED->verbose_level = solve_options->verbose_level;
 	generic_setup_patch(&BED->patch,W);
 	if (T->MPType==2) {
 		generic_setup_patch(&BED->BED_mp->patch, W);
@@ -1306,7 +1228,7 @@ void setupmultilintolinEval_d(tracker_config_t *T,
 		int prec = 64;
 		initMP(prec);
 		BED->BED_mp->curr_prec = prec;
-		
+		BED->BED_mp->verbose_level = solve_options->verbose_level;
 		
 #ifdef printpathmultilintolin
 		BED->BED_mp->FOUT = BED->FOUT;
@@ -1563,7 +1485,9 @@ int change_multilintolin_eval_prec(void const *ED, int new_prec)
 	
 	if (new_prec != BED->curr_prec){
 
-		std::cout << "prec " << BED->curr_prec << " ---> " << new_prec << std::endl;
+		if (BED->verbose_level >=4)
+			printf("prec  %d\t-->\t%d\n",BED->curr_prec, new_prec);
+		
 		BED->curr_prec = new_prec;
 		
 		setprec_mp(BED->gamma, new_prec);
@@ -1845,7 +1769,7 @@ void multilin_to_lin_track_mp(trackingStats *trackCount,
 			
 			// print the header of the path to OUT
 //			printPathHeader_mp(OUT_copy[oid], &startPts[startPointIndex], &T_copy[oid], solution_counter, &BED_copy[oid], eval_func_mp);
-			multilin_to_lin_track_path_mp(solution_counter, &EG, &startPts[ii],
+			generic_track_path_mp(solution_counter, &EG, &startPts[ii],
 																		OUT, MIDOUT, T, &BED, curr_eval_mp, change_prec, find_dehom); //curr_eval_d,
 			
 
@@ -1877,20 +1801,10 @@ void multilin_to_lin_track_mp(trackingStats *trackCount,
 			
 			int issoln = 0;
 			if (EG.last_approx_prec!=1) {
-//				if (EG->prec<64){
-//					issoln = check_issoln_multilintolin_d(&EG[oid],  &T_copy[oid], &BED_copy[oid]); }
-//				else {
-					issoln = check_issoln_multilintolin_mp(&EG, T, &BED);
-//			}
+				issoln = check_issoln_multilintolin_mp(&EG, T, &BED);
 			}
 			else{
-				
-//				if (EG->prec<64){
-//					print_point_to_screen_matlab(EG->PD_d.point,"solution");}
-//				else {
-					print_point_to_screen_matlab(EG.PD_mp.point,"solution");
-//				}
-				
+				print_point_to_screen_matlab(EG.PD_mp.point,"solution");
 				printf("the last approximation was of precision %d\n",EG.last_approx_prec);
 				printf("this is probably a problem\n");
 				mypause();
@@ -1936,44 +1850,6 @@ void multilin_to_lin_track_mp(trackingStats *trackCount,
 }
 
 
-
-// derived from zero_dim_track_path_d
-void multilin_to_lin_track_path_mp(int pathNum, endgame_data_t *EG_out,
-														 point_data_mp *Pin,
-														 FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
-														 void const *ED,
-														 int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-														 int (*change_prec)(void const *, int),
-														 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *))
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: actually does the zero-dimensional tracking and sets   *
- *  up EG_out                                                    *
- \***************************************************************/
-{
-
-	EG_out->pathNum = pathNum;
-  EG_out->codim = 0; // zero dimensional - this is ignored
-	
-  T->first_step_of_path = 1;
-	
-  // track using MP
-  EG_out->retVal = endgame_mp(T->endgameNumber, EG_out->pathNum, &EG_out->PD_mp, EG_out->last_approx_mp, Pin, T, OUT, MIDOUT, ED, eval_func_mp, find_dehom);
-
-
-  EG_out->prec = EG_out->last_approx_prec = T->Precision;
-  EG_out->first_increase = 0;
-	
-  // copy over the values
-  mpf_set(EG_out->latest_newton_residual_mp, T->latest_newton_residual_mp);
-  mpf_set_d(EG_out->t_val_at_latest_sample_point_mp, T->t_val_at_latest_sample_point);
-  mpf_set_d(EG_out->error_at_latest_sample_point_mp, T->error_at_latest_sample_point);
-  findFunctionResidual_conditionNumber_mp(EG_out->function_residual_mp, &EG_out->condition_number, &EG_out->PD_mp, ED, eval_func_mp);
-	
-  return;
-}
 
 
 
@@ -2443,7 +2319,8 @@ void setupmultilintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *du
 	
 	// the standard setup
   setupPreProcData(preprocFile, &BED->preProcData);
-
+	BED->verbose_level = solve_options->verbose_level;
+	
 	generic_setup_patch(&BED->patch, W);
 	
 	BED->SLP = dummyProg;

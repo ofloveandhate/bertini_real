@@ -38,8 +38,8 @@ typedef struct
 	
 	mpq_t *gamma_rat;
 	comp_mp gamma;
-	mat_mp n_minusone_randomizer_matrix;
-	mat_mp n_minusone_randomizer_matrix_full_prec;
+	mat_mp randomizer_matrix;
+	mat_mp randomizer_matrix_full_prec;
 	
 	
 	vec_mp *linears;
@@ -57,6 +57,8 @@ typedef struct
 #endif
 	
 	int curr_prec;
+	int verbose_level;
+	
 } linprodtodetjac_eval_data_mp;
 
 
@@ -71,7 +73,7 @@ typedef struct
 	//  eqData_t *EqD;              // for equation-by-equation  ???
 	prog_t *SLP;
 	comp_d gamma;
-	mat_d n_minusone_randomizer_matrix;
+	mat_d randomizer_matrix;
 	
 	vec_d *linears;
 	int num_linears;
@@ -83,6 +85,7 @@ typedef struct
 	int num_steps;
 #endif
 	
+	int verbose_level;
 	
 } linprodtodetjac_eval_data_d;
 //derived from basic_eval_data_d
@@ -98,7 +101,7 @@ typedef struct
 
 int linprod_to_detjac_solver_main(int MPType,
 																	witness_set & W, // carries with it the start points, and the linears.
-																	mat_mp n_minusone_randomizer_matrix_full_prec,
+																	mat_mp randomizer_matrix_full_prec,
 																	vec_mp projection,
 																	witness_set *W_new,
 																	solver_configuration *solve_options);
@@ -107,7 +110,7 @@ int linprod_to_detjac_solver_main(int MPType,
 
 int linprod_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int currentSeed
 															 witness_set & W,  // includes the initial linear.
-															 mat_mp n_minusone_randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
+															 mat_mp randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
 															 vec_mp projection,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 															 witness_set *W_new,
 															 solver_configuration *solve_options);
@@ -149,7 +152,7 @@ int linprod_to_detjac_setup_d(FILE **OUT, boost::filesystem::path outName,
 															int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 															boost::filesystem::path preprocFile, boost::filesystem::path degreeFile,
 															int findStartPts, boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
-															mat_mp n_minusone_randomizer_matrix_full_prec,
+															mat_mp randomizer_matrix_full_prec,
 															witness_set & W,
 															vec_mp projection,
 															solver_configuration *solve_options);
@@ -184,7 +187,7 @@ void setuplinprodtodetjacEval_d(tracker_config_t *T,char preprocFile[], char deg
 																int squareSize, int patchType, int ssType, int MPType,
 																void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,// what are these supposed to point to?
 																linprodtodetjac_eval_data_d *BED, int adjustDegrees,
-																mat_mp n_minusone_randomizer_matrix_full_prec,
+																mat_mp randomizer_matrix_full_prec,
 																witness_set & W,
 																vec_mp projection,
 																solver_configuration *solve_options);
@@ -205,7 +208,7 @@ void change_linprodtodetjac_eval_prec_mp(int new_prec, linprodtodetjac_eval_data
 
 int linprod_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int currentSeed
 																witness_set & W,  // includes the initial linear.
-																mat_mp n_minusone_randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
+																mat_mp randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
 																vec_mp projection,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 																witness_set *W_new,
 																solver_configuration *solve_options);
@@ -244,7 +247,7 @@ int linprod_to_detjac_setup_mp(FILE **OUT, boost::filesystem::path outName,
 															 int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 															 boost::filesystem::path preprocFile, boost::filesystem::path degreeFile,
 															 int findStartPts, boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
-															 mat_mp n_minusone_randomizer_matrix,
+															 mat_mp randomizer_matrix,
 															 witness_set & W,
 															 vec_mp projection_full_prec,
 															 solver_configuration *solve_options);
@@ -272,7 +275,7 @@ void setuplinprodtodetjacEval_mp(char preprocFile[], char degreeFile[], prog_t *
 																 int squareSize, int patchType, int ssType, int prec,
 																 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
 																 linprodtodetjac_eval_data_mp *BED, int adjustDegrees,
-																 mat_mp n_minusone_randomizer_matrix,
+																 mat_mp randomizer_matrix,
 																 witness_set & W,
 																 vec_mp projection_full_prec,
 																 solver_configuration *solve_options);

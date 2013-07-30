@@ -63,6 +63,7 @@ void endgamedata_to_endpoint(post_process_t *endPoint, endgame_data_t *EG){
 		endPoint->success = retVal_sharpening_singular_endpoint;
 	}
 	else{
+		std::cout << "setting endPoint->success = -1 because retVal==" << EG->retVal << std::endl;
 		endPoint->success = -1;
 	}
 	

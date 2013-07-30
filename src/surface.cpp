@@ -90,8 +90,14 @@ void surface_main(vertex_set & V,
 	
 	W_crit.write_dehomogenized_coordinates("W_crit"); // write the points to file
 	
-
+	std::cout << "nullspace calc complete\n";
+	
+#ifdef usetempfolders
 	program_options->move_to_temp();
+#endif
+	
+	
+	
 	
 	create_nullspace_system("nullspace_jac_system",
 													boost::filesystem::path(program_options->called_dir) /= program_options->input_filename,
@@ -109,12 +115,13 @@ void surface_main(vertex_set & V,
 //														 "witness_points_dehomogenized", "bertini", "matlab -nosplash", program_options->max_deflations, W.dim, W.comp_num);
 //	free(deflation_sequence);
 	
-	program_options->current_working_filename = "nullspace_jac_system";
+	program_options->current_working_filename = boost::filesystem::absolute("nullspace_jac_system");
+	
 	
 	vec_mp temp_proj; init_vec_mp(temp_proj,0);
 	vec_cp_mp(temp_proj, pi[1]);
 	std::cout << temp_proj->size << std::endl;
-	change_size_vec_mp(temp_proj, W_crit.num_variables); temp_proj->size = W_crit.num_variables;
+	increase_size_vec_mp(temp_proj, W_crit.num_variables); temp_proj->size = W_crit.num_variables;
 	for (int ii=W.num_variables; ii<W_crit.num_variables; ii++) {
 		set_zero_mp(&temp_proj->coord[ii]);
 	}
@@ -129,8 +136,11 @@ void surface_main(vertex_set & V,
 	
 
 	W_crit.print_to_screen();
-	std::cout << "about to enter curve decomp for critical curve\n";
-//	mypause();
+	print_point_to_screen_matlab(temp_proj,"temp_proj");
+	
+	std::cout << "*+*+*+*+*+*+**+*+*+*+*+*+*+\n\nabout to enter curve decomp for critical curve\n";
+	
+	
 	
 	curve_main(V,
 						 surf.crit_curve,
@@ -139,13 +149,14 @@ void surface_main(vertex_set & V,
 						 program_options,
 						 solve_options);
 	
+#ifdef usetempfolders
 	program_options->move_to_called();
-	
+#endif
 	// now we have a file named 'nullspace_jac_system' which can be used to generate the curve decomposition
 	
 
-	std::cout << "done with critical curve" << std::endl;
-	exit(0);
+	std::cout << "*+*+*+*+*+*+**+*+*+*+*+*+*+\n\ndone with critical curve" << std::endl;
+	return;
 	
 		
 	// 2(c) Find singular points \emph{not} on the critical curve, and keep them in the set of vertices.
@@ -167,14 +178,17 @@ void surface_main(vertex_set & V,
 	
 	W_crit_real2.write_dehomogenized_coordinates("W_crit_real2"); // write the points to file
 	
+#ifdef usetempfolders
 	program_options->move_to_temp();
+#endif
+	
 	
 	create_nullspace_system("nullspace_jac_system2", boost::filesystem::path(program_options->called_dir) /= program_options->input_filename, program_options, &ns_config);
 	ns_config.clear();
 	
-	
+#ifdef usetempfolders
 	program_options->move_to_called();
-	
+#endif
 	
 	
 	

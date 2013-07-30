@@ -167,18 +167,18 @@ public:
 	};
 	
 	void print(){
-		std::cout << "";
+		std::cout << "active: ";
 		for (int ii=0; ii<num_active_registers; ii++) 
 			std::cout << active_registers[ii] << " ";
 		std::cout << "\t|\t";
 		
 		
-		std::cout << "";
+		std::cout << "inactive: ";
 		for (int ii=0; ii<num_inactive_registers; ii++)
 			std::cout << inactive_registers[ii] << " ";
 		std::cout << "\t|\t";
 		
-		std::cout << "";
+		std::cout << "registers values: ";
 		for (int ii=0; ii<num_active_registers; ii++)
 			std::cout << registers[ii] << " ";
 		std::cout << "\n";

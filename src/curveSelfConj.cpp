@@ -26,7 +26,7 @@ void computeCurveSelfConj(boost::filesystem::path inputFile,
 	
 	int ii,kk;
 	
-	witness_set Wtemp,Wtemp2;
+	witness_set Wtemp;
 	
 	
 	int *declarations = NULL;
@@ -34,7 +34,7 @@ void computeCurveSelfConj(boost::filesystem::path inputFile,
 	
 	
 	
-
+	
 	
 	
 	
@@ -45,7 +45,9 @@ void computeCurveSelfConj(boost::filesystem::path inputFile,
 	
 	//create the matrix
 	mat_mp randomizer_matrix;
-	init_mat_mp2(randomizer_matrix,W.num_variables-W.num_patches-ambient_dim,solve_options->PPD.num_funcs,solve_options->T.AMP_max_prec);
+	init_mat_mp2(randomizer_matrix,
+							 W.num_variables-W.num_patches-ambient_dim,solve_options->PPD.num_funcs,
+							 solve_options->T.AMP_max_prec);
 	
 	//create the array of integers
 	int *randomized_degrees = (int *)br_malloc((W.num_variables-W.num_patches-ambient_dim)*sizeof(int));
@@ -119,13 +121,23 @@ void computeCurveSelfConj(boost::filesystem::path inputFile,
 													 &ns_config);
 		ns_config.clear();
 		
+//		W_crit_real.print_to_screen();
+		
+		
+		
+//		W_crit_real.write_dehomogenized_coordinates("W_crit_curve");
+		
 		cp_patches(&W_crit_real, W);
 		cp_linears(&W_crit_real, W);
-		W_crit_real.only_first_vars(num_vars);
+		W_crit_real.only_first_vars(num_vars); // trim the fat, since we are at the lowest level.
+		
+//		W_crit_real.print_to_screen();
+		
+//		W_crit_real.write_dehomogenized_coordinates("W_crit_curve_real_only_first");
+		
 		W_crit_real.sort_for_real(solve_options->T);
 		
-		
-		W_crit_real.write_dehomogenized_coordinates("W_before_additional");
+//		W_crit_real.write_dehomogenized_coordinates("W_before_additional");
 		
 		// now get the bounding box critical points and ends of the interval
 		curve_get_additional_critpts(&W_crit_real,
@@ -303,7 +315,7 @@ void computeCurveSelfConj(boost::filesystem::path inputFile,
 												 W,
 												 randomizer_matrix,
 												 &particular_projection, 1,
-												 &Wtemp,
+												 &midpoint_witness_sets[ii],
 												 solve_options); //sets this value
 		
 		
@@ -311,11 +323,11 @@ void computeCurveSelfConj(boost::filesystem::path inputFile,
 			printf("sorting midpoint witness set %d for realness\n",ii);
 		}
 		
-		sort_for_real(&Wtemp2, Wtemp, solve_options->T);
-		sort_for_unique(&midpoint_witness_sets[ii], Wtemp2, solve_options->T);
+		midpoint_witness_sets[ii].sort_for_real(solve_options->T);
+		midpoint_witness_sets[ii].sort_for_unique(solve_options->T);
+		
 		edge_counter += midpoint_witness_sets[ii].num_pts;
 		
-		Wtemp.reset(); Wtemp2.reset();
 	}
 	
 	if (program_options->verbose_level>=1) {
@@ -334,8 +346,8 @@ void computeCurveSelfConj(boost::filesystem::path inputFile,
 	witness_set Wleft, Wright;
 	
 	edge temp_edge;
-	comp_mp left_check; init_mp(left_check);
-	comp_mp right_check; init_mp(right_check);
+	comp_mp left_proj_val; init_mp(left_proj_val);
+	comp_mp right_proj_val; init_mp(right_proj_val);
 	
 	for (ii=0; ii<num_midpoints; ++ii) {
 		if (program_options->verbose_level>=1) {
@@ -344,7 +356,7 @@ void computeCurveSelfConj(boost::filesystem::path inputFile,
 		
 		
 		temp->r = crit_downstairs[ii]; temp->i = 0;
-		d_to_mp(left_check,temp);
+		d_to_mp(left_proj_val,temp);
 		d_to_mp(&particular_projection->coord[0],temp);
 		neg_mp(&particular_projection->coord[0],&particular_projection->coord[0]);
 		
@@ -357,7 +369,7 @@ void computeCurveSelfConj(boost::filesystem::path inputFile,
 		
 		
 		temp->r = crit_downstairs[ii+1]; temp->i = 0;
-		d_to_mp(right_check,temp);
+		d_to_mp(right_proj_val,temp);
 		d_to_mp(&particular_projection->coord[0],temp);
 		neg_mp(&particular_projection->coord[0],&particular_projection->coord[0]);
 		
@@ -393,16 +405,16 @@ void computeCurveSelfConj(boost::filesystem::path inputFile,
 			temp_vertex.type = MIDPOINT; // set type
 			
 			temp_edge.midpt = C.add_vertex(V,temp_vertex); // gets the index of the new midpoint as it is added
-			temp_edge.left  = C.index_in_vertices_with_add(V,Wleft.pts_mp[kk],  left_check,  solve_options->T); 
-			temp_edge.right = C.index_in_vertices_with_add(V,Wright.pts_mp[kk], right_check, solve_options->T);
+			temp_edge.left  = C.index_in_vertices_with_add(V, Wleft.pts_mp[kk],  left_proj_val,  solve_options->T); 
+			temp_edge.right = C.index_in_vertices_with_add(V, Wright.pts_mp[kk], right_proj_val, solve_options->T);
 			
 			C.add_edge(temp_edge);
 			
 			if (program_options->verbose_level>=3) {
 				printf("upstairs midpoint %d\n",kk);
-				print_comp_mp_matlab(V.vertices[temp_edge.left].projVal_mp,"left");
-				print_comp_mp_matlab(V.vertices[temp_edge.midpt].projVal_mp,"mid");
-				print_comp_mp_matlab(V.vertices[temp_edge.right].projVal_mp,"right");
+				print_comp_matlab(V.vertices[temp_edge.left].projVal_mp,"left");
+				print_comp_matlab(V.vertices[temp_edge.midpt].projVal_mp,"mid");
+				print_comp_matlab(V.vertices[temp_edge.right].projVal_mp,"right");
 				printf("indices of left, mid, right: %d %d %d\n",temp_edge.left,temp_edge.midpt,temp_edge.right);
 				printf("\n\n");
 			}
@@ -411,13 +423,16 @@ void computeCurveSelfConj(boost::filesystem::path inputFile,
 		Wright.reset();
 
 	}//re: for ii
-	clear_mp(left_check); clear_mp(right_check);
+	clear_mp(left_proj_val); clear_mp(right_proj_val);
 	
 	if (program_options->verbose_level>=0) {
 		printf("C.num_edges = %d\n",C.num_edges);
 	}
 	
 	
+	for (ii=0; ii<W.num_patches; ii++) {
+		C.add_patch(W.patch_mp[ii]);
+	}
 	
 	
 	return;
@@ -444,7 +459,7 @@ int curve_get_additional_critpts(witness_set *W_crit_real,
 	
 	int ii, jj;
 	
-	witness_set Wtemp, Wtemp2;
+	witness_set Wtemp;
 	
 	/////now compute the bounds, whether bounding box or bounding the interval
 	
@@ -537,7 +552,7 @@ int curve_get_additional_critpts(witness_set *W_crit_real,
 		// for each variable direction, compute projections of crit points onto that axis.
 		
 		
-		for (ii=0; ii<W.num_variables-1; ++ii)
+		for (ii=0; ii<W.num_variables - W.num_synth_vars - 1; ++ii)
 		{
 			if (program_options->verbose_level>=1) {
 				printf("projecting onto variable %d\n",ii);
@@ -577,24 +592,23 @@ int curve_get_additional_critpts(witness_set *W_crit_real,
 														 &ns_config);
 			ns_config.clear();
 			
-			sort_for_real(&Wtemp2, Wtemp, solve_options->T); // have the real points now.
-			
-			
-			if (Wtemp2.num_pts>0)
+			Wtemp.sort_for_real(solve_options->T);
+
+			if (Wtemp.num_pts>0)
 			{
 				//compute the projections, go outside a bit, find points.
-				vec_mp projection_values; init_vec_mp(projection_values,Wtemp2.num_pts); projection_values->size=Wtemp2.num_pts;
-				for (jj=0; jj<Wtemp2.num_pts; jj++) {
-					projection_value_homogeneous_input(&projection_values->coord[jj], Wtemp2.pts_mp[jj],variable_projection);
+				vec_mp projection_values; init_vec_mp(projection_values,Wtemp.num_pts); projection_values->size=Wtemp.num_pts;
+				for (jj=0; jj<Wtemp.num_pts; jj++) {
+					projection_value_homogeneous_input(&projection_values->coord[jj], Wtemp.pts_mp[jj],variable_projection);
 				}
 				
 				
 				vec_mp projections_sorted;
-				init_vec_mp(projections_sorted,Wtemp2.num_pts); projections_sorted->size = Wtemp2.num_pts;
-				int *index_tracker = (int *)br_malloc(Wtemp2.num_pts*sizeof(int));
+				init_vec_mp(projections_sorted,Wtemp.num_pts); projections_sorted->size = Wtemp.num_pts;
+				int *index_tracker = (int *)br_malloc(Wtemp.num_pts*sizeof(int));
 				sort_increasing_by_real(&projections_sorted, &index_tracker, projection_values);
 				
-				Wtemp.reset(); Wtemp2.reset();
+				Wtemp.reset();
 
 				
 				set_mp(&variable_projection->coord[0],&projections_sorted->coord[0]); // the first one
@@ -638,19 +652,15 @@ int curve_get_additional_critpts(witness_set *W_crit_real,
 			}
 			
 			Wtemp.reset();
-			Wtemp2.reset();
 		}
 		
 		
 		if (program_options->verbose_level>=0)
 			printf("completed detjac2detjac solve, have %d real solutions to work with\n\n", W_crit_real->num_pts);
+
 		
-		Wtemp2 = *W_crit_real;
-//		cp_witness_set(&Wtemp2, *W_crit_real);
-		W_crit_real->reset();
-//		clear_witness_set(*W_crit_real); init_witness_set(W_crit_real); // prep for the merge
-		sort_for_unique(W_crit_real, Wtemp2, solve_options->T);
-		Wtemp2.reset();
+		W_crit_real->sort_for_unique(solve_options->T);
+
 		// if have box, intersect box with C
 	} // re: bounding box calc
 	
@@ -719,7 +729,6 @@ int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
 	}
 	
 	
-	witness_set Wtemp2;
 	witness_set Wtemp;
 	witness_set W_lintolin = W;
 	
@@ -753,7 +762,7 @@ int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
 		printf("done with initial use of lintolin solver\n");
 	
 	
-	W_lintolin.print_to_screen();
+//	W_lintolin.print_to_screen();
 	
 	
 	//////////////
@@ -767,32 +776,32 @@ int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
 	solve_options->allow_multiplicity = 1;
 	solve_options->allow_singular = 1;
 	
+	witness_set W_linprod;
+	
 	double initial_bound_on_degree = solve_options->T.AMP_bound_on_degree;
 	solve_options->T.AMP_bound_on_degree = (double) num_new_linears+1;
 	linprod_to_detjac_solver_main(solve_options->T.MPType,
 																W_lintolin,
 																randomizer_matrix,
 																random_complex_projection,
-																&Wtemp,
+																&W_linprod,
 																solve_options);
 	solve_options->T.AMP_bound_on_degree = initial_bound_on_degree;
 	
 	
 	//
 	//	print_witness_set_to_screen(W_linprod);
-	Wtemp.write_dehomogenized_coordinates("member_points");
-	Wtemp.write_dehomogenized_coordinates("linprod_solns");
+	W_linprod.write_dehomogenized_coordinates("member_points");
+	W_linprod.write_dehomogenized_coordinates("linprod_solns");
 	
 	
 	
-	//	W_linprod_good should have only the points from W_in which lie on the correct component.
-	witness_set W_linprod; 
-	Wtemp.incidence_number = W.incidence_number; // copy over from the input.  note that the incidence number may be different from the component number
+	//	W_linprod should have only the points from W_in which lie on the correct component.
+	W_linprod.incidence_number = W.incidence_number; // copy over from the input.  note that the incidence number may be different from the component number
 	
-	sort_for_unique(&W_linprod, Wtemp, solve_options->T);
+	W_linprod.sort_for_unique(solve_options->T);
 	W_linprod.write_dehomogenized_coordinates("linprod_solns_postmembership");
 	
-	Wtemp.reset();
 	
 	
 	if (program_options->verbose_level>=1)
@@ -819,24 +828,20 @@ int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
 															 randomizer_matrix,
 															 random_complex_projection, // move from
 															 pi,  // move to
-															 &W_detjacdetjac,
+															 W_crit_real,
 															 solve_options);
 	
 	solve_options->T.AMP_bound_on_degree = initial_bound_on_degree;
-	W_detjacdetjac.write_dehomogenized_coordinates("detjac_solns");
 	
+	W_crit_real->write_dehomogenized_coordinates("detjac_solns");
 	
-	sort_for_real(W_crit_real, W_detjacdetjac,solve_options->T); // get only the real solutions.
+	W_crit_real->sort_for_real(solve_options->T); // get only the real solutions.
 	
 	
 	
 	
 	
 	// NOW WE HAVE THE CRITICAL POINTS
-	
-	
-	
-	
 	
 	
 	
@@ -931,7 +936,7 @@ int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
 		// for each variable direction, compute projections of crit points onto that axis.
 		
 		
-		for (ii=0; ii<W.num_variables-1; ++ii)
+		for (ii=0; ii<W.num_variables - W.num_synth_vars -1; ++ii)
 		{
 			if (program_options->verbose_level>=1) {
 				printf("projecting onto variable %d\n",ii);
@@ -968,24 +973,24 @@ int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
 																	 solve_options);
 			solve_options->T.AMP_bound_on_degree = initial_bound_on_degree;
 			
-			sort_for_real(&Wtemp2, Wtemp, solve_options->T); // have the real points now.
+			Wtemp.sort_for_real(solve_options->T);
 			
 			
-			if (Wtemp2.num_pts>0)
+			if (Wtemp.num_pts>0)
 			{
 				//compute the projections, go outside a bit, find points.
-				vec_mp projection_values; init_vec_mp(projection_values,Wtemp2.num_pts); projection_values->size=Wtemp2.num_pts;
-				for (jj=0; jj<Wtemp2.num_pts; jj++) {
-					projection_value_homogeneous_input(&projection_values->coord[jj], Wtemp2.pts_mp[jj],variable_projection);
+				vec_mp projection_values; init_vec_mp(projection_values,Wtemp.num_pts); projection_values->size=Wtemp.num_pts;
+				for (jj=0; jj<Wtemp.num_pts; jj++) {
+					projection_value_homogeneous_input(&projection_values->coord[jj], Wtemp.pts_mp[jj],variable_projection);
 				}
 				
 				
 				vec_mp projections_sorted;
-				init_vec_mp(projections_sorted,Wtemp2.num_pts); projections_sorted->size = Wtemp2.num_pts;
-				int *index_tracker = (int *)br_malloc(Wtemp2.num_pts*sizeof(int));
+				init_vec_mp(projections_sorted,Wtemp.num_pts); projections_sorted->size = Wtemp.num_pts;
+				int *index_tracker = (int *)br_malloc(Wtemp.num_pts*sizeof(int));
 				sort_increasing_by_real(&projections_sorted, &index_tracker, projection_values);
 				
-				Wtemp.reset(); Wtemp2.reset();
+				Wtemp.reset();
 
 				
 				set_mp(&variable_projection->coord[0],&projections_sorted->coord[0]); // the first one
@@ -1029,18 +1034,14 @@ int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
 			}
 			
 			Wtemp.reset();
-			Wtemp2.reset();
 		}
 		
 		
 		if (program_options->verbose_level>=0)
 			printf("completed detjac2detjac solve, have %d real solutions to work with\n\n", W_crit_real->num_pts);
 		
-		Wtemp2 = *W_crit_real;
-//		cp_witness_set(&Wtemp2, *W_crit_real);
-		W_crit_real->reset();
-		sort_for_unique(W_crit_real, Wtemp2, solve_options->T);
-		Wtemp2.reset();
+		W_crit_real->sort_for_unique(solve_options->T);
+
 		// if have box, intersect box with C
 	} // re: bounding box calc
 	
@@ -1525,11 +1526,11 @@ int verify_projection_ok(witness_set & W,
 	set_zero_mp(zerotime);
 	
 	
-	std::cout << "in verify_projection, SLP has " << SLP.numVars << " variables\n";
-	std::cout << solve_options->T.MPType << " is MPType\n";
+//	std::cout << "in verify_projection, SLP has " << SLP.numVars << " variables\n";
+//	std::cout << solve_options->T.MPType << " is MPType\n";
 	
-	print_point_to_screen_matlab(temp_rand_point,"temp_rand_point");
-	print_comp_mp_matlab(zerotime,"zerotime");
+//	print_point_to_screen_matlab(temp_rand_point,"temp_rand_point");
+//	print_comp_matlab(zerotime,"zerotime");
 	
 	
 	

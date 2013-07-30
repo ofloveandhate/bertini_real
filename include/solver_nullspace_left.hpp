@@ -32,6 +32,7 @@ public:
 	int ambient_dim;  // k			the dimension of the complex component we are looking IN.  
 	int target_crit_codim;    // \ell.  must be at least one (1), and at most target_dim (r).
 	int num_jac_equations;    // the number of equations (after the randomization)
+	int num_projections;
 	
 	int num_v_vars;  // N   number of variables in original problem statement (including homogenizing variables)
 	int num_x_vars;  // N-k+\ell
@@ -183,12 +184,13 @@ typedef struct
 	
 	int num_variables;
 	
-#ifdef printpathlinprod
+#ifdef printpathnullspace_left
 	FILE *FOUT;
 	int num_steps;
 #endif
 	
 	int curr_prec;
+	int verbose_level;
 } nullspacejac_eval_data_mp;
 
 
@@ -249,12 +251,12 @@ typedef struct
 	comp_d perturbation;
 	comp_d half;
 	
-#ifdef printpathlinprod
+#ifdef printpathnullspace_left
 	FILE *FOUT;
 	int num_steps;
 #endif
 	
-	
+	int verbose_level;
 } nullspacejac_eval_data_d;
 
 

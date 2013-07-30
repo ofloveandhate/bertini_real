@@ -22,7 +22,7 @@ void Output_Main(BR_configuration program_options, witness_set & W, curve_decomp
 	
 	copyfile(program_options.witness_set_filename, base / "witness_set"); 
 // TODO:  this should be a write call, not a copy
-	copyfile(program_options.input_deflated_filename,base / program_options.input_deflated_filename);
+	copyfile(program_options.input_deflated_filename, base / program_options.input_deflated_filename.filename());
 
 	copyfile("Rand_matrix", base / "Rand_Matrix");
 	
@@ -32,6 +32,7 @@ void Output_Main(BR_configuration program_options, witness_set & W, curve_decomp
 	
 	C.print(program_options.input_deflated_filename, base / "C.curve");
 	
+//	W.print_patches(base / "patches");
 	OUT = safe_fopen_write("Dir_Name");
 	fprintf(OUT,"%s\n",base.c_str());
 	fprintf(OUT,"%d\n",program_options.MPType);

@@ -100,12 +100,6 @@ void curve_main(vertex_set & V,
 	}
 	
 
-	if (program_options->verbose_level>=2) 
-		printf("outputting data\n");
-	
-	
-	
-	
 	
 }
 

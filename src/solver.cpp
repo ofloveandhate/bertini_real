@@ -171,6 +171,47 @@ void generic_track_path_d(int pathNum, endgame_data_t *EG_out,
 
 
 
+void generic_track_path_mp(int pathNum, endgame_data_t *EG_out,
+																	 point_data_mp *Pin,
+																	 FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
+																	 void const *ED,
+																	 int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
+																	 int (*change_prec)(void const *, int),
+																	 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *))
+/***************************************************************\
+ * USAGE:                                                        *
+ * ARGUMENTS:                                                    *
+ * RETURN VALUES:                                                *
+ * NOTES: actually does the zero-dimensional tracking and sets   *
+ *  up EG_out                                                    *
+ \***************************************************************/
+{
+	
+	EG_out->pathNum = pathNum;
+  EG_out->codim = 0; // zero dimensional - this is ignored
+	
+  T->first_step_of_path = 1;
+	
+  // track using MP
+  EG_out->retVal = endgame_mp(T->endgameNumber, EG_out->pathNum, &EG_out->PD_mp, EG_out->last_approx_mp, Pin, T, OUT, MIDOUT, ED, eval_func_mp, find_dehom);
+	
+	
+  EG_out->prec = EG_out->last_approx_prec = T->Precision;
+  EG_out->first_increase = 0;
+	
+  // copy over the values
+  mpf_set(EG_out->latest_newton_residual_mp, T->latest_newton_residual_mp);
+  mpf_set_d(EG_out->t_val_at_latest_sample_point_mp, T->t_val_at_latest_sample_point);
+  mpf_set_d(EG_out->error_at_latest_sample_point_mp, T->error_at_latest_sample_point);
+  findFunctionResidual_conditionNumber_mp(EG_out->function_residual_mp, &EG_out->condition_number, &EG_out->PD_mp, ED, eval_func_mp);
+	
+  return;
+}
+
+
+
+
+
 void generic_setup_patch(patch_eval_data_d *P, const witness_set & W)
 {
 	int ii;
@@ -207,6 +248,11 @@ void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W)
 	P->num_patches = W.num_patches;
 	P->patchCoeff->rows = W.num_patches;
 	P->patchCoeff->cols = W.num_variables;
+	
+	if (W.num_patches==0) {
+		std::cerr << "the number of patches in input W is 0.  this is not allowed, the number must be positive.\n" << std::endl;
+		deliberate_segfault();
+	}
 	
 	
 	int varcounter = 0;

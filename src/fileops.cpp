@@ -113,7 +113,8 @@ FILE *safe_fopen_write(boost::filesystem::path filename)
 	if (OUT == NULL) {
 		printf("unable to open specified file to write: %s\n",filename.c_str());
 		fclose(OUT);
-		br_exit(ERROR_FILE_NOT_EXIST);
+		deliberate_segfault();
+//		br_exit(ERROR_FILE_NOT_EXIST);
 	}
 	else{
 	}
@@ -132,7 +133,8 @@ FILE *safe_fopen_append(boost::filesystem::path filename)
 	
 	if (S_ISDIR(stat_p.st_mode)){
 		printf("trying to open directory %s as a file!\n",filename.c_str());
-		br_exit(ERROR_FILE_NOT_EXIST);
+		deliberate_segfault();
+//		br_exit(ERROR_FILE_NOT_EXIST);
 	}
 	
 	

@@ -38,7 +38,6 @@ int main(int argC, char *args[])
 	
 	srand(time(NULL));
 	
-
 	
 	// split the input_file.  this must be called before setting up the solver config.
 	parse_input_file(program_options.input_filename, &MPType);
@@ -94,10 +93,17 @@ int main(int argC, char *args[])
 	}
 	get_projection(pi, program_options, solve_options, W.num_variables, W.dim);
 	
+//	for (int ii=0; ii<W.dim; ii++) {
+//		print_point_to_screen_matlab(pi[ii],"pi");
+//	}
+	
 	switch (W.dim) {
 		case 1:
 			// curve
 			curve_main(V, C, W, pi, &program_options, &solve_options);
+			
+			if (program_options.verbose_level>=2)
+				printf("outputting data\n");
 			
 			Output_Main(program_options, W, C, V);
 			
@@ -108,11 +114,12 @@ int main(int argC, char *args[])
 			// surface
 			surface_main(V, S, W, pi, &program_options, &solve_options);
 
-			
+			Output_Main(program_options, W, S.crit_curve, V);// temporarily using the curve output.
 			
 			break;
+			
 		default:
-			std::cout << "bertini_real not programmed for components of dimenson " << W.dim << std::endl;
+			std::cout << "bertini_real not programmed for components of dimension " << W.dim << std::endl;
 			break;
 	}
 	
