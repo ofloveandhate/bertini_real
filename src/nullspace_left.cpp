@@ -117,7 +117,7 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	int increment_status = 0;
 	while (increment_status!=-1) { // current_absolute_index incremented at the bottom of loop
 		
-		if (program_options->verbose_level>=3) {
+		if (program_options->verbose_level>=6) {
 			odo.print();
 		}
 		
@@ -137,13 +137,12 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 			for (ii=0; ii<W.num_linears; ii++) {
 				print_point_to_screen_matlab(multilin_linears[ii],"ELL");
 			}
-			mypause();
 		}
 		
 		solve_options->allow_singular = 0;
 		solve_options->complete_witness_set = 1;
 		solve_options->allow_multiplicity = 0;
-		
+		solve_options->allow_unsuccess = 1;
 		// actually solve WRT the linears
 		multilintolin_solver_main(W.MPType,
 															W,         // witness_set
@@ -226,11 +225,11 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	
 	if (program_options->verbose_level>=2)
 		ns_config->print();
-	if (program_options->verbose_level>=3)
-		mypause();
-
+	
 	if (program_options->verbose_level>=4)
 		W_linprod.print_to_screen();
+	
+	
 	
 	nullspacejac_solver_main(W.MPType,
 													 W_linprod, // carries with it the start points, but not the linears.

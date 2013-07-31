@@ -16,6 +16,7 @@
 #include <boost/filesystem.hpp>
 #include <iostream>
 
+#include <mpi.h>
 
 #define BERTINI_REAL_VERSION_STRING "0.0.101"
 
@@ -32,12 +33,15 @@ extern "C" {
 #include "cascade.h"
 }
 
-#include "solver.hpp"
+//#include "solver.hpp"
 #include "data_type.hpp"
 #include "missing_bertini_headers.hpp"
 
-// enum for crit solver choice
-enum {NULLSPACE, LINPRODTODETJAC};
+// enum for solver choice
+enum {NULLSPACE = 300, LINPRODTODETJAC, DETJACTODETJAC, LINTOLIN, MULTILIN};
+
+enum {TYPE_CONFIRMATION = 100, DATA_TRANSMISSION};
+
 
 ///////////
 //
@@ -46,6 +50,44 @@ enum {NULLSPACE, LINPRODTODETJAC};
 //////////
 
 #define MAX_STRLEN 200
+
+class parallelism_config
+{
+	
+public:
+	
+	
+	parallelism_config(){
+		
+		my_communicator = MPI_COMM_WORLD;
+		
+		
+		MPI_Comm_size(my_communicator, &this->numprocs);
+		MPI_Comm_rank(my_communicator, &this->my_id);
+		
+		
+		if (my_id==0)
+			worker_level = 0;
+		else
+			worker_level = 1;
+		
+	}
+	
+	
+	
+	
+	int my_id;
+	int numprocs;
+	MPI_Comm   my_communicator;
+	
+	int worker_level; // higher worker level means more tedious work, in a sense.  worker_level 0 is uber-master.  worker_level 1 will be the next level down in management, etc.  the exact usage of this is relative to the process being run.
+	
+	void abort(int why){
+		MPI_Abort(my_communicator,why);
+	}
+};
+
+
 
 
 class prog_config
@@ -56,6 +98,9 @@ private:
 	
 	
 public:
+	
+	parallelism_config mpi_config;
+	
 	int verbose_level;
 	
 	boost::filesystem::path called_dir;
@@ -229,16 +274,7 @@ void parse_preproc_data(boost::filesystem::path filename, preproc_data *PPD);
 
 
 
-/**
- reads in projection from file if user specified, creates one otherwise.
- --
-// currently defaults to create a random real projection with homogeneous value 0;
- */
-void get_projection(vec_mp *pi,
-										BR_configuration program_options,
-										solver_configuration solve_options,
-										int num_vars,
-										int num_projections);
+
 
 
 

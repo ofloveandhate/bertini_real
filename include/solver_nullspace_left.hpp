@@ -112,32 +112,21 @@ public:
 
 // the mp version
 // this must be defined before the double version, because double has mp.
-typedef struct
+class nullspacejac_eval_data_mp : public solver_mp
 {
-	
-  patch_eval_data_mp patch; // patch in x
-	
-  preproc_data preProcData; // information related to the SLP for system
-	
-	prog_t *SLP; // the SLP
-	
-	mpq_t *gamma_rat; // randomizer
-	comp_mp gamma;    // randomizer
-	
-	mat_mp randomizer_matrix;     // randomizer
-	mat_mp randomizer_matrix_full_prec;  // randomizer
+public:
 	
 	int num_jac_equations;
 	int target_dim;   // r			the dimension of the real set we are looking for
 	int ambient_dim;  // k			the dimension of the complex component we are looking IN.
 	int target_crit_codim;    // \ell.  must be at least one (1), and at most target_dim (r).
 	
-	int num_v_vars;  // N   number of variables in original problem statement (including homogenizing variables)
-	int num_x_vars;  // N-k+\ell
+	int num_x_vars;  // N   number of variables in original problem statement (including homogenizing variables)
+	int num_v_vars;  // (N-k) + (k-\ell+1)
 	
 	int num_randomized_eqns;	// N-k (N-ambient_dim)
 	int max_degree;						// the max degree of differentiated (randomized) functions
-	int *randomized_degrees;
+	std::vector<int> randomized_degrees;
 
 	
 	int num_additional_linears;
@@ -176,22 +165,280 @@ typedef struct
 	comp_mp perturbation_full_prec;
 	comp_mp half;
 	comp_mp half_full_prec;
-////	vec_mp *source_projection;
+
+	int num_projections;
 	vec_mp *target_projection; // # of these should be target_dim (for now)
-//
-////	vec_mp *source_projection_full_prec;
 	vec_mp *target_projection_full_prec; // # of these should be target_dim (for now)
+	  
 	
-	int num_variables;
+	// default initializer
+	nullspacejac_eval_data_mp() : solver_mp(){
+		
+		reset_counters();
+		
+		init();
+	}
 	
-#ifdef printpathnullspace_left
-	FILE *FOUT;
-	int num_steps;
-#endif
 	
-	int curr_prec;
-	int verbose_level;
-} nullspacejac_eval_data_mp;
+	~nullspacejac_eval_data_mp(){
+
+		nullspacejac_eval_data_mp::clear();
+		// no need to reset the counters.
+	}
+	
+	void reset_counters(){
+		num_jac_equations = 0;
+		target_dim = 0;   // r			the dimension of the real set we are looking for
+		ambient_dim = 0;  // k			the dimension of the complex component we are looking IN.
+		target_crit_codim = 0;    // \ell.  must be at least one (1), and at most target_dim (r).
+		
+		num_v_vars = 0;  // N   number of variables in original problem statement (including homogenizing variables)
+		num_x_vars = 0;  // N-k+\ell
+		
+		num_randomized_eqns = 0;	// N-k (N-ambient_dim)
+		max_degree = 0;						// the max degree of differentiated (randomized) functions
+		
+		
+		num_projections = 0;
+		num_v_linears = 0;
+		num_additional_linears = 0;
+	} // re: reset_counters
+	
+	
+	void clear(){
+		if (num_additional_linears>0) {
+			for (int ii=0; ii<num_additional_linears; ii++) {
+				clear_vec_mp(additional_linears_terminal[ii]);
+				clear_vec_mp(additional_linears_terminal_full_prec[ii]);
+			}
+			free(additional_linears_terminal_full_prec);
+			free(additional_linears_terminal);
+			
+			for (int ii=0; ii<num_additional_linears; ii++) {
+				clear_vec_mp(additional_linears_starting[ii]);
+				clear_vec_mp(additional_linears_starting_full_prec[ii]);
+			}
+			free(additional_linears_starting_full_prec);
+			free(additional_linears_starting);
+		}
+		
+		clear_mat_mp(post_randomizer_matrix);  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
+		clear_mat_mp(post_randomizer_matrix_full_prec);  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
+		
+		
+		
+		for (int ii=0; ii<num_jac_equations; ii++) {
+			for (int jj=0; jj<max_degree; jj++) {
+				clear_vec_mp(starting_linears[ii][jj]);
+				clear_vec_mp(starting_linears_full_prec[ii][jj]);
+			}
+			free(starting_linears_full_prec);
+			free(starting_linears);
+		}
+		
+		for (int ii=0; ii<num_v_linears; ii++) {
+			clear_vec_mp(v_linears[ii]);
+			clear_vec_mp(v_linears_full_prec[ii]);
+		}
+		free(v_linears);
+		free(v_linears_full_prec);
+		
+		clear_vec_mp(v_patch);
+		clear_vec_mp(v_patch_full_prec);
+		
+		
+		clear_mat_mp(jac_with_proj);
+		clear_mat_mp(jac_with_proj_full_prec);
+		
+		
+		clear_mp(perturbation);
+		clear_mp(perturbation_full_prec);
+		
+		clear_mp(half);
+		clear_mp(half_full_prec);
+		
+		
+		if (num_projections>0) {
+			for (int ii=0; ii<num_projections; ii++) {
+				clear_vec_mp(target_projection[ii]);
+				clear_vec_mp(target_projection_full_prec[ii]);
+			}
+			free(target_projection);
+			free(target_projection_full_prec);
+		}
+		
+	} // re: clear
+	
+	void init(){
+		additional_linears_terminal = NULL;
+		additional_linears_terminal_full_prec = NULL;
+		
+		additional_linears_starting = NULL;
+		additional_linears_starting_full_prec = NULL;
+		
+		
+		init_mat_mp(post_randomizer_matrix,0,0);  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
+		init_mat_mp2(post_randomizer_matrix_full_prec,0,0,1024);  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
+		
+		starting_linears = NULL; // outer layer should have as many as there are randomized equations
+														 // inside layer has number corresponding to randomized_degrees
+		starting_linears_full_prec = NULL; // outer layer should have as many as there are randomized equations
+																			 // inside layer has number corresponding to randomized_degrees
+		
+		v_linears = NULL;         // should be as many in here as there are randomized equations
+		v_linears_full_prec = NULL;         // should be as many in here as there are randomized equations
+		
+		init_vec_mp(v_patch,0);
+		init_vec_mp2(v_patch_full_prec,0,1024);
+		
+		
+		init_mat_mp(jac_with_proj,0,0);
+		init_mat_mp2(jac_with_proj_full_prec,0,0,1024);
+		
+		init_mp(perturbation);
+		init_mp2(perturbation_full_prec,1024);
+		init_mp(half);
+		init_mp2(half_full_prec,1024);
+		
+		target_projection = NULL; //
+		target_projection_full_prec = NULL; //
+	}
+	
+	
+	nullspacejac_eval_data_mp & operator=(const nullspacejac_eval_data_mp & other){
+		clear(); // this is wasteful, but safe for now
+		reset_counters();// this is wasteful, but safe for now
+		
+		copy(other);
+		return *this;
+	}
+	
+	
+	
+	nullspacejac_eval_data_mp(const nullspacejac_eval_data_mp & other){
+		
+		
+		solver_mp();
+		nullspacejac_eval_data_mp();
+		
+		//no need to clear or reset counters, as this is a new object.
+		copy(other);
+	}
+	
+	void copy(const nullspacejac_eval_data_mp & other){
+		
+		clear();
+		reset_counters();
+		
+		
+		if (other.num_additional_linears>0) {
+			
+			this->randomized_degrees = other.randomized_degrees;
+			
+			this->additional_linears_terminal						= (vec_mp *) br_malloc(other.num_additional_linears*sizeof(vec_mp));
+			this->additional_linears_terminal_full_prec = (vec_mp *) br_malloc(other.num_additional_linears*sizeof(vec_mp));
+			this->additional_linears_starting						= (vec_mp *) br_malloc(other.num_additional_linears*sizeof(vec_mp));
+			this->additional_linears_starting_full_prec = (vec_mp *) br_malloc(other.num_additional_linears*sizeof(vec_mp));
+			
+			for (int ii=0; ii<other.num_additional_linears; ii++) {
+				vec_cp_mp(this->additional_linears_terminal[ii],						other.additional_linears_terminal[ii]);
+				vec_cp_mp(this->additional_linears_terminal_full_prec[ii],	other.additional_linears_terminal_full_prec[ii]);
+				
+				vec_cp_mp(this->additional_linears_starting[ii],						other.additional_linears_starting[ii]);
+				vec_cp_mp(this->additional_linears_starting_full_prec[ii],	other.additional_linears_starting_full_prec[ii]);
+			}
+		}
+		else {} // other.num_additional_linears == 0
+		
+		this->num_additional_linears = other.num_additional_linears;
+		
+		
+		mat_cp_mp(this->post_randomizer_matrix, other.post_randomizer_matrix);
+		mat_cp_mp(this->post_randomizer_matrix_full_prec, other.post_randomizer_matrix_full_prec);
+		
+		
+		if (other.num_jac_equations) {
+			this->starting_linears_full_prec = (vec_mp **) br_malloc(other.num_jac_equations*sizeof(vec_mp *));
+			this->starting_linears = (vec_mp **) br_malloc(other.num_jac_equations*sizeof(vec_mp *));
+			
+			for (int ii=0; ii<other.num_jac_equations; ii++) {
+				this->starting_linears_full_prec[ii] = (vec_mp *) br_malloc(other.max_degree*sizeof(vec_mp ));
+				this->starting_linears[ii] = (vec_mp *) br_malloc(other.max_degree*sizeof(vec_mp ));
+				for (int jj=0; jj<other.max_degree; jj++) {
+					init_vec_mp(this->starting_linears[ii][jj],0);
+					init_vec_mp2(this->starting_linears_full_prec[ii][jj],0,1024);
+					vec_cp_mp(this->starting_linears[ii][jj],other.starting_linears[ii][jj]);
+					vec_cp_mp(this->starting_linears_full_prec[ii][jj],other.starting_linears_full_prec[ii][jj]);
+				}
+			}
+		}
+		else{}
+		
+		
+		
+		this->num_jac_equations = other.num_jac_equations;
+		this->max_degree = other.max_degree;
+		
+		
+		if (other.num_v_linears) {
+			this->v_linears = (vec_mp *) br_malloc(other.num_v_linears*sizeof(vec_mp));
+			this->v_linears_full_prec = (vec_mp *) br_malloc(other.num_v_linears*sizeof(vec_mp));
+			for (int ii=0; ii<num_v_linears; ii++) {
+				init_vec_mp(this->v_linears[ii],0);
+				init_vec_mp2(this->v_linears_full_prec[ii],0,1024);
+				vec_cp_mp(this->v_linears[ii],other.v_linears[ii]);
+				vec_cp_mp(this->v_linears_full_prec[ii],other.v_linears_full_prec[ii]);
+			}
+		}
+		else{}
+		
+		vec_cp_mp(this->v_patch, other.v_patch);
+		vec_cp_mp(this->v_patch_full_prec, other.v_patch_full_prec);
+		
+		mat_cp_mp(this->jac_with_proj, other.jac_with_proj);
+		mat_cp_mp(this->jac_with_proj_full_prec, other.jac_with_proj_full_prec);
+		
+		set_mp(this->perturbation,other.perturbation);
+		set_mp(this->perturbation_full_prec,other.perturbation_full_prec);
+
+		set_mp(this->half,other.half);
+		set_mp(this->half_full_prec, other.half_full_prec);
+
+		
+		
+		if (other.num_projections>0) {
+			this->target_projection = (vec_mp *) br_malloc(other.num_projections*sizeof(vec_mp));
+			this->target_projection_full_prec = (vec_mp *) br_malloc(other.num_projections*sizeof(vec_mp));
+			
+			for (int ii=0; ii<num_projections; ii++) {
+				init_vec_mp(this->target_projection[ii],0);
+				init_vec_mp2(this->target_projection[ii],0,1024);
+				vec_cp_mp(this->target_projection[ii],other.target_projection[ii]);
+				vec_cp_mp(this->target_projection_full_prec[ii],other.target_projection_full_prec[ii]);
+			}
+		}
+		else{}
+	} // re: copy
+	
+	
+	// MPI SENDS AND RECEIVES
+	
+	int send(int target_id, parallelism_config & mpi_config);
+	
+	int receive(parallelism_config & mpi_config);
+	
+};
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -243,6 +490,8 @@ typedef struct
 	vec_d v_patch;
 	
 	mat_d jac_with_proj;
+	
+	int num_projections;
 	vec_d *target_projection; // 
 	
 
@@ -298,14 +547,6 @@ void nullspacejac_track_d(trackingStats *trackCount,
 													int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
 													solver_configuration *solve_options);
 
-void nullspacejac_track_path_d(int pathNum, endgame_data_t *EG_out,
-															 point_data_d *Pin,
-															 FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
-															 void const *ED_d, void const *ED_mp,
-															 int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
-															 int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-															 int (*change_prec)(void const *, int),
-															 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *));
 
 
 
@@ -392,13 +633,6 @@ void nullspacejac_track_mp(trackingStats *trackCount,
 													 solver_configuration *solve_options);
 
 
-void nullspacejac_track_path_mp(int pathNum, endgame_data_t *EG_out,
-																point_data_mp *Pin,
-																FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
-																void const *ED,
-																int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-																int (*change_prec)(void const *, int),
-																int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *));
 
 
 int nullspacejac_setup_mp(FILE **OUT, boost::filesystem::path outName,

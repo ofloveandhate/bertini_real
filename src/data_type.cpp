@@ -955,3 +955,63 @@ int get_num_vars_PPD(preproc_data PPD){
 }
 
 
+
+
+
+
+
+
+void cp_patch_mp(patch_eval_data_mp *PED, patch_eval_data_mp PED_input)
+/***************************************************************\
+ * USAGE:                                                        *
+ * ARGUMENTS:                                                    *
+ * RETURN VALUES:                                                *
+ * NOTES: stores a copy of PED_input to PED                      *
+ \***************************************************************/
+{
+  PED->num_patches = PED_input.num_patches;
+	
+  // set the current precision
+  PED->curr_prec = PED_input.curr_prec;
+	
+  // initialize patchCoeff to this preicision
+  init_mat_mp2(PED->patchCoeff, PED_input.patchCoeff->rows, PED_input.patchCoeff->cols, PED->curr_prec);
+  init_mat_rat(PED->patchCoeff_rat, PED_input.patchCoeff->rows, PED_input.patchCoeff->cols);
+	
+  // setup patchCoeff
+  mat_cp_mp_rat(PED->patchCoeff, PED->patchCoeff_rat, PED_input.patchCoeff, PED_input.patchCoeff_rat);
+	
+  return;
+}
+
+
+void cp_preproc_data(preproc_data *PPD, preproc_data PPD_input)
+/***************************************************************\
+ * USAGE:                                                        *
+ * ARGUMENTS:                                                    *
+ * RETURN VALUES:                                                *
+ * NOTES: stores a copy of PPD_input to PPD                      *
+ \***************************************************************/
+{
+  int i, total_gp;
+	
+  PPD->num_funcs = PPD_input.num_funcs;
+  PPD->num_hom_var_gp = PPD_input.num_hom_var_gp;
+  PPD->num_var_gp = PPD_input.num_var_gp;
+	
+  total_gp = PPD->num_hom_var_gp + PPD->num_var_gp;
+	
+  PPD->size = (int *)bmalloc(total_gp * sizeof(int));
+  PPD->type = (int *)bmalloc(total_gp * sizeof(int));
+	
+  for (i = 0; i < total_gp; i++)
+  {
+    PPD->size[i] = PPD_input.size[i];
+    PPD->type[i] = PPD_input.type[i];
+  }
+	
+  return;
+}
+
+
+

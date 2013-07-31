@@ -505,6 +505,9 @@ retrieves the number of variables from the PPD by taking the sum of the sizes, p
 int get_num_vars_PPD(preproc_data PPD);
 
 
+void cp_patch_mp(patch_eval_data_mp *PED, patch_eval_data_mp PED_input);
+void cp_preproc_data(preproc_data *PPD, preproc_data PPD_input);
+
 
 
 #endif
