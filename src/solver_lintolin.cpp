@@ -1746,9 +1746,7 @@ void lintolin_track_mp(trackingStats *trackCount,
 
 		
 		// track each of the start points
-#ifdef _OPENMP
-#pragma omp parallel for private(ii, oid, startPointIndex) schedule(runtime)
-#endif
+
 		for (ii = 0; ii < W.num_pts; ii++)
 		{ // get current thread number
 			oid = thread_num();

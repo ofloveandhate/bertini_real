@@ -19,7 +19,7 @@ int main(int argC, char *args[])
 	////
 	//  INITIALIZATION
 	////
-	
+	MPI_Init(&argC,&args);
 	
 	
 	//instantiate options
@@ -126,6 +126,11 @@ int main(int argC, char *args[])
 	
 	for (int ii=0; ii<W.dim; ii++)
 		clear_vec_mp(pi[ii]);
+	
+	
+	
+	MPI_Finalize();
+	
 	
 	return 0;
 }

@@ -62,6 +62,13 @@ int witness_set::witnessSetParse(const boost::filesystem::path witness_set_file,
 	fscanf(IN, "%d %d", &num_patches, &patch_size); scanRestOfLine(IN);
 	this->num_patches = num_patches;
 	
+	if (this->num_patches>3) {
+		std::cerr << num_patches << " patches detected.  this probably indicates a problem." << std::endl;
+		std::cerr << "the file being read: " << witness_set_file << std::endl;
+		std::cerr << "trying to read " << num_vars << " variables." << std::endl;
+		mypause();
+	}
+	
 	this->patch_mp = (vec_mp *)bmalloc(num_patches*sizeof(vec_mp));
 	
   for (ii=0; ii < num_patches; ii++) {

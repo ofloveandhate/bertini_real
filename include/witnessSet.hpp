@@ -125,6 +125,9 @@ public:
 	
 	// assignment
 	witness_set& operator=( const witness_set& other) {
+		
+		// i am pretty sure that this code has leaks /  errors, in that when you assign a non-empty witness set, this attempts to br_malloc, not br_realloc.
+		
 		this->dim = other.dim;
 		this->comp_num = other.comp_num;
 		this->incidence_number = other.incidence_number;

@@ -278,3 +278,59 @@ void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W)
 	}
 }
 
+
+
+
+
+void get_projection(vec_mp *pi,
+										BR_configuration program_options,
+										solver_configuration solve_options,
+										int num_vars,
+										int num_projections)
+{
+	
+	int ii,jj;
+	for (ii=0; ii<num_projections; ii++) {
+		change_size_vec_mp(pi[ii], num_vars);  pi[ii]->size = num_vars;
+	}
+	
+	
+	
+	//assumes the vector pi is already initialized
+	if (program_options.user_projection==1) {
+		FILE *IN = safe_fopen_read(program_options.projection_filename.c_str()); // we are already assured this file exists, but safe fopen anyway.
+		int tmp_num_vars;
+		fscanf(IN,"%d",&tmp_num_vars); scanRestOfLine(IN);
+		if (tmp_num_vars!=num_vars-1) {
+			printf("the number of variables appearing in the projection\nis not equal to the number of non-homogeneous variables in the problem\n");
+			printf("please modify file to have %d coordinate pairs.\n",num_vars-1);
+			abort();
+		}
+		
+		for (ii=0; ii<num_projections; ii++) {
+			set_zero_mp(&pi[ii]->coord[0]);
+			for (jj=1; jj<num_vars; jj++) {
+				mpf_inp_str(pi[ii]->coord[jj].r, IN, 10);
+				mpf_inp_str(pi[ii]->coord[jj].i, IN, 10);
+				scanRestOfLine(IN);
+			}
+		}
+		fclose(IN);
+	}
+	else{
+		for (ii=0; ii<num_projections; ii++) {
+			set_zero_mp(&pi[ii]->coord[0]);
+			for (jj=1; jj<num_vars; jj++)
+				get_comp_rand_real_mp(&pi[ii]->coord[jj]);
+			
+		}
+	}
+	
+	return;
+}
+
+
+
+
+
+

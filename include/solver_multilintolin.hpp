@@ -157,23 +157,10 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 
 
 
-void printmultilintolinRelevantData(multilintolin_eval_data_d *ED_d, multilintolin_eval_data_mp *ED_mp, int MPType, int eqbyeqMethod, FILE *FP);
 
 
 void multilintolin_eval_clear_d(multilintolin_eval_data_d *ED, int clearRegen, int MPType);
 
-
-
-void setup_multilin_to_lin_omp_d(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount,
-														FILE ***OUT_copy, FILE *OUT, FILE ***RAWOUT_copy, FILE *RAWOUT,
-														FILE ***MIDOUT_copy, FILE *MIDOUT, FILE ***FAIL_copy, FILE *FAIL,
-														FILE ***NONSOLN_copy, FILE *NONSOLN,
-														tracker_config_t **T_copy, tracker_config_t *T,
-														multilintolin_eval_data_d **BED_copy,
-														multilintolin_eval_data_d *ED_d, multilintolin_eval_data_mp *ED_mp);
-
-
-void clear_multilintolin_omp_d(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount, FILE ***OUT_copy, FILE *OUT, FILE ***RAWOUT_copy, FILE *RAWOUT, FILE ***MIDOUT_copy, FILE *MIDOUT, FILE ***FAIL_copy, FILE *FAIL, FILE ***NONSOLN_copy, FILE *NONSOLN, tracker_config_t **T_copy, multilintolin_eval_data_d **BED_copy);
 
 
 

@@ -203,9 +203,6 @@ int multilin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int cur
   fprintf(OUT, "Parse Time = %fs\n", parse_time);
   fprintf(OUT, "Track Time = %fs\n", track_time);
 	
-  // print the system to rawOUT
-	//  printmultilintolinRelevantData(&ED, ED.BED_mp, T.MPType, usedEq, rawOUT);
-	//	printZeroDimRelevantData(&ED, ED.BED_mp, T.MPType, usedEq, rawOUT);// legacy
 	
   // close all of the files
   fclose(OUT);
@@ -216,11 +213,8 @@ int multilin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int cur
 
 	
 	BRpostProcessing(endPoints, W_new, trackCount.successes, &ED.preProcData, &T,solve_options);
-//	printf("post post processing\n");
 	
 
-	
-//TODO: DAB is there other stuff which should be cleared here?
 	
     free(startSub);
     free(endSub);
@@ -249,8 +243,8 @@ void multilin_to_lin_track_d(trackingStats *trackCount,
 												post_process_t *endPoints,
 												FILE *FAIL,
 												int pathMod, tracker_config_t *T,
-												multilintolin_eval_data_d *ED_d,
-												multilintolin_eval_data_mp *ED_mp,
+												multilintolin_eval_data_d *BED,
+												multilintolin_eval_data_mp *BED_mp,
 												int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
 												int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 												int (*change_prec)(void const *, int),
@@ -264,13 +258,8 @@ void multilin_to_lin_track_d(trackingStats *trackCount,
  *  in either double precision or adaptive precision             *
  \***************************************************************/
 {
-//	printf("multilin_track_d\n");
-  int ii,kk, oid, startPointIndex, max = max_threads();
-  tracker_config_t *T_copy = NULL;
-  multilintolin_eval_data_d *BED_copy = NULL;
-  trackingStats *trackCount_copy = NULL;
-  FILE **OUT_copy = NULL, **MIDOUT_copy = NULL, **RAWOUT_copy = NULL, **FAIL_copy = NULL, *NONSOLN = NULL, **NONSOLN_copy = NULL;
-	
+  int ii,kk, startPointIndex;
+
   // top of RAWOUT - number of variables and that we are doing zero dimensional
   fprintf(RAWOUT, "%d\n%d\n", T->numVars, 0);
 	
@@ -278,8 +267,8 @@ void multilin_to_lin_track_d(trackingStats *trackCount,
 	int (*curr_eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *) = NULL;
   int (*curr_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = NULL;
 	
-	curr_eval_d = &multilin_to_lin_eval_d;   //DAB
-  curr_eval_mp = &multilin_to_lin_eval_mp; // DAB 
+	curr_eval_d = &multilin_to_lin_eval_d;   
+  curr_eval_mp = &multilin_to_lin_eval_mp; 
 	
 
 	
@@ -289,12 +278,8 @@ void multilin_to_lin_track_d(trackingStats *trackCount,
 	
 	
   // setup the rest of the structures
-	endgame_data_t *EG = NULL; //this will hold the temp solution data produced for each individual track
-  setup_multilin_to_lin_omp_d(max,
-												 &EG, &trackCount_copy, trackCount,
-												 &OUT_copy, OUT, &RAWOUT_copy, RAWOUT, &MIDOUT_copy, MIDOUT, &FAIL_copy, FAIL, &NONSOLN_copy, NONSOLN,
-												 &T_copy, T,
-												 &BED_copy, ED_d, ED_mp);
+	endgame_data_t EG; //this will hold the temp solution data produced for each individual track
+	init_endgame_data(&EG, T->Precision);
 
 	
 	trackCount->numPoints = W.num_pts;
@@ -308,110 +293,101 @@ void multilin_to_lin_track_d(trackingStats *trackCount,
 		
 		// SET NEW LINEARs
 		
-		vec_mp_to_d(ED_d->current_linear[kk],new_linears_full_prec[kk]);
+		vec_mp_to_d(BED->current_linear[kk],new_linears_full_prec[kk]);
 		if (solve_options->T.MPType==2) {
-			vec_cp_mp(ED_d->BED_mp->current_linear[kk],new_linears_full_prec[kk]);
-			vec_cp_mp(ED_d->BED_mp->current_linear_full_prec[kk],new_linears_full_prec[kk]);
+			vec_cp_mp(BED->BED_mp->current_linear[kk],new_linears_full_prec[kk]);
+			vec_cp_mp(BED->BED_mp->current_linear_full_prec[kk],new_linears_full_prec[kk]);
 		}
 		
 		
 	} // for each new linear
 	
 	// track each of the start points
-#ifdef _OPENMP
-#pragma omp parallel for private(ii, oid, startPointIndex) schedule(runtime)
-#endif
 	for (ii = 0; ii < W.num_pts; ii++)
 	{
-		
-		// get current thread number
-		oid = thread_num();
 		
 		if (solve_options->verbose_level>=1)
 			printf("multilintolin\tpoint %d\n",ii);
 		
 		startPointIndex = ii;
 
-//TODO: eliminate this header stuff
-		// print the header of the path to OUT
-//		printPathHeader_d(OUT_copy[oid], &startPts[startPointIndex], &T_copy[oid], ii, &BED_copy[oid], eval_func_d);
-		
+
 		
 #ifdef printpathmultilintolin
-		BED_copy[oid].num_steps = 0;
+		BED.num_steps = BED_mp.num_steps = 0;
 #endif
 		
 		if (T->MPType==2) {
-			ED_d->BED_mp->curr_prec = 64;
+			BED->BED_mp->curr_prec = 64;
 		}
 
 		// track the path
-		generic_track_path_d(solution_counter, &EG[oid], &startPts[startPointIndex], OUT_copy[oid], MIDOUT_copy[oid], &T_copy[oid], &BED_copy[oid], BED_copy[oid].BED_mp, curr_eval_d, curr_eval_mp, change_prec, find_dehom);
+		generic_track_path_d(solution_counter, &EG, &startPts[startPointIndex], OUT, MIDOUT, T, BED, BED->BED_mp, curr_eval_d, curr_eval_mp, change_prec, find_dehom);
 		
 #ifdef printpathmultilintolin
-		fprintf(BED_copy[oid].FOUT,"-100 %d ",BED_copy[oid].num_steps);
-		for (mm=0; mm<BED_copy[oid].num_variables-1; ++mm) {
-			fprintf(BED_copy[oid].FOUT,"0 0 ");
+		fprintf(BED.FOUT,"-100 %d ",BED.num_steps);
+		for (mm=0; mm<BED.num_variables-1; ++mm) {
+			fprintf(BED.FOUT,"0 0 ");
 		}
-		fprintf(BED_copy[oid].FOUT,"\n%d\n\n",EG->retVal);
+		fprintf(BED.FOUT,"\n%d\n\n",EG->retVal);
 #endif
 		
 		
 		// check to see if it should be sharpened
-		if (EG[oid].retVal == 0 && T_copy[oid].sharpenDigits > 0)
+		if (EG.retVal == 0 && T->sharpenDigits > 0)
 		{ // use the sharpener for after an endgame
-			sharpen_endpoint_endgame(&EG[oid], &T_copy[oid], OUT_copy[oid], &BED_copy[oid], BED_copy[oid].BED_mp, curr_eval_d, curr_eval_mp, change_prec);
+			sharpen_endpoint_endgame(&EG, T, OUT, BED, BED->BED_mp, curr_eval_d, curr_eval_mp, change_prec);
 		}
 		
 
 		//get the terminal time in double form
 		comp_d time_to_compare;
-		if (EG->prec < 64) {
-			set_d(time_to_compare,EG->PD_d.time);}
+		if (EG.prec < 64) {
+			set_d(time_to_compare,EG.PD_d.time);}
 		else {
-			mp_to_d(time_to_compare, EG->PD_mp.time); }
+			mp_to_d(time_to_compare, EG.PD_mp.time); }
 		
 		
 		int issoln = 0;
-		if (EG->last_approx_prec!=1) {
-			if (EG->prec<64){
-				issoln = check_issoln_multilintolin_d(&EG[oid],  &T_copy[oid], &BED_copy[oid]); }
+		if (EG.last_approx_prec!=1) {
+			if (EG.prec<64){
+				issoln = check_issoln_multilintolin_d(&EG,  T, BED); }
 			else {
-				issoln = check_issoln_multilintolin_mp(&EG[oid], &T_copy[oid], BED_copy[oid].BED_mp); }
+				issoln = check_issoln_multilintolin_mp(&EG, T, BED->BED_mp); }
 		}
 		else{
 			
-			if (EG->prec<64){
-				print_point_to_screen_matlab(EG->PD_d.point,"solution");}
+			if (EG.prec<64){
+				print_point_to_screen_matlab(EG.PD_d.point,"solution");}
 			else {
-				print_point_to_screen_matlab(EG->PD_mp.point,"solution");}
+				print_point_to_screen_matlab(EG.PD_mp.point,"solution");}
 			
-			printf("the last approximation was of precision %d\n",EG->last_approx_prec);
+			printf("the last approximation was of precision %d\n",EG.last_approx_prec);
 			printf("this is probably a problem\n");
 			mypause();
 		}
 		
-		if ( (EG->retVal != 0 && time_to_compare->r > T->minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
+		if ( (EG.retVal != 0 && time_to_compare->r > T->minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
 			trackCount->failures++;
-			printf("\nretVal = %d\nthere was a fatal path failure tracking linear %d, witness point %d\n\n",EG->retVal,kk,ii);
-			print_path_retVal_message(EG->retVal);
+			printf("\nretVal = %d\nthere was a fatal path failure tracking linear %d, witness point %d\n\n",EG.retVal,kk,ii);
+			print_path_retVal_message(EG.retVal);
 			if (!issoln) {
 				printf("the following was labeled as not a solution\n");
-				if (EG->prec < 64) {
-					print_point_to_screen_matlab(EG->PD_d.point,"variablevalues");
+				if (EG.prec < 64) {
+					print_point_to_screen_matlab(EG.PD_d.point,"variablevalues");
 				}
 				else{
-					print_point_to_screen_matlab(EG->PD_mp.point,"variablevalues");
+					print_point_to_screen_matlab(EG.PD_mp.point,"variablevalues");
 				}
 			}
-			print_point_to_screen_matlab(BED_copy->old_linear[0],"old");
-			print_point_to_screen_matlab(BED_copy->current_linear[0],"new");
-			exit(EG->retVal); //failure intolerable in this solver.
+			print_point_to_screen_matlab(BED->old_linear[0],"old");
+			print_point_to_screen_matlab(BED->current_linear[0],"new");
+			exit(EG.retVal); //failure intolerable in this solver.
 		}
 		else
 		{
 			//otherwise converged, but may have still had non-zero retval due to other reasons.
-			endgamedata_to_endpoint(&endPoints[solution_counter], EG);
+			endgamedata_to_endpoint(&endPoints[solution_counter], &EG);
 			trackCount->successes++;
 			solution_counter++; // probably this could be eliminated
 		}
@@ -428,13 +404,8 @@ void multilin_to_lin_track_d(trackingStats *trackCount,
   }
   free(startPts);
 	
-  // clear the structures
-  clear_multilintolin_omp_d(max, &EG, &trackCount_copy, trackCount, &OUT_copy, OUT, &RAWOUT_copy, RAWOUT, &MIDOUT_copy, MIDOUT, &FAIL_copy, FAIL, &NONSOLN_copy, NONSOLN, &T_copy, &BED_copy);
-	
-	
-//TODO: CLEAR MORE MEMORY
-	
-	
+
+
 	
   return;
 }
@@ -443,7 +414,6 @@ void multilin_to_lin_track_d(trackingStats *trackCount,
 
 
 
-// derived from zero_dim_basic_setup_d
 int multilin_to_lin_setup_d(FILE **OUT, boost::filesystem::path outName,
 														FILE **midOUT, boost::filesystem::path midName,
 														tracker_config_t *T,
@@ -828,30 +798,6 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 
 
 
-void printmultilintolinRelevantData(multilintolin_eval_data_d *ED_d, multilintolin_eval_data_mp *ED_mp, int MPType, int eqbyeqMethod, FILE *FP)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: prints the relevant data to FP so that we can recover  *
- * the system if needed for sharpening                           *
- \***************************************************************/
-{
-  // print the MPType and if an eq-by-eq method (diagona/regen) was used
-//  fprintf(FP, "%d %d\n", MPType, eqbyeqMethod);
-	//
-	//  // print the patch
-//  printPatchCoeff(FP, MPType, ED_d, ED_mp);
-	//
-	//  // print the start system
-	//  printStartSystem(FP, MPType, ED_d, ED_mp);
-	//
-	//  // print the square system
-	//  printSquareSystem(FP, MPType, ED_d, ED_mp);
-	
-  return;
-}
-
 
 
 void multilintolin_eval_clear_d(multilintolin_eval_data_d *ED, int clearRegen, int MPType)
@@ -894,276 +840,6 @@ void multilintolin_eval_clear_d(multilintolin_eval_data_d *ED, int clearRegen, i
 
 
 
-
-void setup_multilin_to_lin_omp_d(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount,
-														FILE ***OUT_copy, FILE *OUT, FILE ***RAWOUT_copy, FILE *RAWOUT,
-														FILE ***MIDOUT_copy, FILE *MIDOUT, FILE ***FAIL_copy, FILE *FAIL,
-														FILE ***NONSOLN_copy, FILE *NONSOLN,
-														tracker_config_t **T_copy, tracker_config_t *T,
-														multilintolin_eval_data_d **BED_copy, multilintolin_eval_data_d *ED_d, multilintolin_eval_data_mp *ED_mp)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: setup everything needed to do zero dimensional tracking*
- *  using OpenMP                                                 *
- \***************************************************************/
-// if max_threads == 1, things are only pointers to the actual values,
-// otherwise, they are copies
-{
-  int ii;
-  // error checking
-  if (max_threads <= 0)
-  {
-    printf("\n\nERROR: The number of threads (%d) needs to be positive when setting up for tracking!\n", max_threads);
-    br_exit(ERROR_CONFIGURATION);
-  }
-	
-	
-	
-	
-  // allocate space for EG
-  *EG = (endgame_data_t *)br_malloc(max_threads * sizeof(endgame_data_t));
-	
-	// initialize
-  for (ii = 0; ii < max_threads; ii++)
-	{
-    if (T->MPType == 2)
-    { // initialize for AMP tracking
-      init_endgame_data(&(*EG)[ii], 64);
-    }
-    else
-    { // initialize for double precision tracking
-      init_endgame_data(&(*EG)[ii], 52);
-    }
-	}
-	
-  // allocate space to hold pointers to the files
-  *OUT_copy = (FILE **)br_malloc(max_threads * sizeof(FILE *));
-  *MIDOUT_copy = (FILE **)br_malloc(max_threads * sizeof(FILE *));
-  *RAWOUT_copy = (FILE **)br_malloc(max_threads * sizeof(FILE *));
-  *FAIL_copy = (FILE **)br_malloc(max_threads * sizeof(FILE *));
-  *NONSOLN_copy = (FILE **)br_malloc(max_threads * sizeof(FILE *));
-	
-  if (max_threads == 1)
-  { // setup the pointers
-    *trackCount_copy = trackCount;
-    *T_copy = T;
-    *BED_copy = ED_d;
-    (*BED_copy)->BED_mp = ED_mp; // make sure that this is pointed to inside of ED_d
-		
-    (*OUT_copy)[0] = OUT;
-    (*RAWOUT_copy)[0] = RAWOUT;
-    (*MIDOUT_copy)[0] = MIDOUT;
-    (*FAIL_copy)[0] = FAIL;
-    (*NONSOLN_copy)[0] = NONSOLN;
-  }
-  else // max_threads > 1
-  { // allocate memory
-    *trackCount_copy = (trackingStats *)br_malloc(max_threads * sizeof(trackingStats));
-    *T_copy = (tracker_config_t *)br_malloc(max_threads * sizeof(tracker_config_t));
-    *BED_copy = (multilintolin_eval_data_d *)br_malloc(max_threads * sizeof(multilintolin_eval_data_d));
-		
-    // copy T, ED_d, ED_mp, & trackCount
-    for (ii = 0; ii < max_threads; ii++)
-    { // copy T
-      cp_tracker_config_t(&(*T_copy)[ii], T);
-      // copy ED_d & ED_mp
-      cp_multilintolin_eval_data_d(&(*BED_copy)[ii], ED_d, ED_mp, T->MPType);
-      // initialize trackCount_copy
-      init_trackingStats(&(*trackCount_copy)[ii]);
-      (*trackCount_copy)[ii].numPoints = trackCount->numPoints;
-    }
-		
-    // setup the files
-    char *str = NULL;
-    int size;
-    for (ii = 0; ii < max_threads; ii++)
-    {
-      size = 1 + snprintf(NULL, 0, "output_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "output_%d", ii);
-      (*OUT_copy)[ii] = fopen(str, "w+");
-			
-      size = 1 + snprintf(NULL, 0, "midout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "midout_%d", ii);
-      (*MIDOUT_copy)[ii] = fopen(str, "w+");
-			
-      size = 1 + snprintf(NULL, 0, "rawout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "rawout_%d", ii);
-      (*RAWOUT_copy)[ii] = fopen(str, "w+");
-			
-      size = 1 + snprintf(NULL, 0, "fail_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "fail_%d", ii);
-      (*FAIL_copy)[ii] = fopen(str, "w+");
-			
-      size = 1 + snprintf(NULL, 0, "nonsolutions_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "nonsolutions_%d", ii);
-      (*NONSOLN_copy)[ii] = fopen(str, "w+");
-    }
-    free(str);
-  }
-	
-	
-  return;
-}
-
-void clear_multilintolin_omp_d(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount, FILE ***OUT_copy, FILE *OUT, FILE ***RAWOUT_copy, FILE *RAWOUT, FILE ***MIDOUT_copy, FILE *MIDOUT, FILE ***FAIL_copy, FILE *FAIL, FILE ***NONSOLN_copy, FILE *NONSOLN, tracker_config_t **T_copy, multilintolin_eval_data_d **BED_copy)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: copy the relevant data back to the standard spot and   *
- *  clear the allocated data that was used by OpenMP             *
- \***************************************************************/
-// if max_threads == 1, things are only pointers to the actual values,
-// otherwise, they are copies
-{
-  int ii;
-	
-  // clear EG
-  for (ii = max_threads - 1; ii >= 0; ii--)
-  {
-    clear_endgame_data(&(*EG)[ii]);
-  }
-  free(*EG);
-	
-  if (max_threads == 1)
-  { // set the pointers to NULL since they just pointed to the actual values
-    *trackCount_copy = NULL;
-    *T_copy = NULL;
-    *BED_copy = NULL;
-		
-    *OUT_copy[0] = NULL;
-    *RAWOUT_copy[0] = NULL;
-    *MIDOUT_copy[0] = NULL;
-    *FAIL_copy[0] = NULL;
-		
-    // free the memory of the file pointers
-    free(*OUT_copy);
-    free(*MIDOUT_copy);
-    free(*RAWOUT_copy);
-    free(*FAIL_copy);
-    free(*NONSOLN_copy);
-  }
-  else if (max_threads > 1)
-  {
-    // combine trackCount_copy
-    add_trackingStats(trackCount, *trackCount_copy, max_threads);
-		
-    // clear the copies T, ED_d & ED_mp
-    for (ii = max_threads - 1; ii >= 0; ii--)
-    { // clear BED_copy - 0 since not using regeneration
-      multilintolin_eval_clear_d(&(*BED_copy)[ii], 0, (*T_copy)[ii].MPType);
-			// clear T_copy
-      tracker_config_clear(&(*T_copy)[ii]);
-    }
-		
-    // free the memory
-    free(*trackCount_copy);
-    free(*T_copy);
-    free(*BED_copy);
-		
-    // copy all of the files to the appropriate place
-    char ch, *str = NULL;
-    int size;
-    for (ii = 0; ii < max_threads; ii++)
-    {
-      // rewind to beginning for reading
-      rewind((*OUT_copy)[ii]);
-      // copy over to OUT
-      ch = fgetc((*OUT_copy)[ii]);
-      while (ch != EOF)
-      {
-        fprintf(OUT, "%c", ch);
-        ch = fgetc((*OUT_copy)[ii]);
-      }
-      // close file & delete
-      fclose((*OUT_copy)[ii]);
-      size = 1 + snprintf(NULL, 0, "output_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "output_%d", ii);
-      remove(str);
-			
-      // rewind to beginning for reading
-      rewind((*MIDOUT_copy)[ii]);
-      // copy over to MIDOUT
-      ch = fgetc((*MIDOUT_copy)[ii]);
-      while (ch != EOF)
-      {
-        fprintf(MIDOUT, "%c", ch);
-        ch = fgetc((*MIDOUT_copy)[ii]);
-      }
-      // close file & delete
-      fclose((*MIDOUT_copy)[ii]);
-      size = 1 + snprintf(NULL, 0, "midout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "midout_%d", ii);
-      remove(str);
-			
-      // rewind to beginning for reading
-      rewind((*RAWOUT_copy)[ii]);
-      // copy over to RAWOUT
-      ch = fgetc((*RAWOUT_copy)[ii]);
-      while (ch != EOF)
-      {
-        fprintf(RAWOUT, "%c", ch);
-        ch = fgetc((*RAWOUT_copy)[ii]);
-      }
-      // close file & delete
-      fclose((*RAWOUT_copy)[ii]);
-      size = 1 + snprintf(NULL, 0, "rawout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "rawout_%d", ii);
-      remove(str);
-			
-      // rewind to beginning for reading
-      rewind((*FAIL_copy)[ii]);
-      // copy over to FAIL
-      ch = fgetc((*FAIL_copy)[ii]);
-      while (ch != EOF)
-      {
-        fprintf(FAIL, "%c", ch);
-        ch = fgetc((*FAIL_copy)[ii]);
-      }
-      // close file & delete
-      fclose((*FAIL_copy)[ii]);
-      size = 1 + snprintf(NULL, 0, "fail_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "fail_%d", ii);
-      remove(str);
-			
-      // rewind to beginning for reading
-      rewind((*NONSOLN_copy)[ii]);
-      // copy over to NONSOLN
-      ch = fgetc((*NONSOLN_copy)[ii]);
-      while (ch != EOF)
-      {
-        fprintf(NONSOLN, "%c", ch);
-        ch = fgetc((*NONSOLN_copy)[ii]);
-      }
-      // close file & delete
-      fclose((*NONSOLN_copy)[ii]);
-      size = 1 + snprintf(NULL, 0, "nonsolutions_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "nonsolutions_%d", ii);
-      remove(str);
-    }
-    free(str);
-    // free file memory
-    free(*OUT_copy);
-    free(*MIDOUT_copy);
-    free(*RAWOUT_copy);
-    free(*FAIL_copy);
-    free(*NONSOLN_copy);
-  }
-	
-  return;
-}
 
 
 
@@ -1299,9 +975,6 @@ void setupmultilintolinEval_d(tracker_config_t *T,
 		
   }//re: if mptype==2
 
-//	print_matrix_to_screen_matlab(BED->patch.patchCoeff,"d");
-//	print_matrix_to_screen_matlab(BED->BED_mp->patch.patchCoeff,"mp");
-//	mypause();
   return;
 }
 
@@ -1748,36 +1421,31 @@ void multilin_to_lin_track_mp(trackingStats *trackCount,
 	
 	for (kk = 0; kk< W.num_linears; kk++)
 	{
-		if (solve_options->verbose_level>=1)
-			printf("solving for linear %d\n",kk);
-		
-//		//set current linear in the evaluator data
+		// set current linears in the evaluator data
 		vec_cp_mp(BED->current_linear[kk],new_linears[kk]);
 
-
+	}
 		
 		for (ii = 0; ii < W.num_pts; ii++)
-		{ // get current thread number
-
+		{ 
+			
+			
 			if (solve_options->verbose_level>=1)
-				printf("path %d\n",ii);
+				printf("multilintolin path %d of %d\n",ii, W.num_pts);
 			
 #ifdef printpathmultilintolin
 			BED->num_steps = 0;
 #endif
 			
-			
-			// print the header of the path to OUT
-//			printPathHeader_mp(OUT_copy[oid], &startPts[startPointIndex], &T_copy[oid], solution_counter, &BED_copy[oid], eval_func_mp);
 			generic_track_path_mp(solution_counter, &EG, &startPts[ii],
-																		OUT, MIDOUT, T, &BED, curr_eval_mp, change_prec, find_dehom); //curr_eval_d,
+														OUT, MIDOUT, T, BED, curr_eval_mp, change_prec, find_dehom);
 			
 
 			
 #ifdef printpathmultilintolin
 			int mm;
 			fprintf(BED->FOUT,"-100 %d ",BED->num_steps);
-			for (mm=0; mm<BED.num_variables-1; ++mm) {
+			for (mm=0; mm<BED->num_variables-1; ++mm) {
 				fprintf(BED->FOUT,"0 0 ");
 			}
 			fprintf(BED->FOUT,"\n%d\n\n",EG.retVal);
@@ -1787,7 +1455,7 @@ void multilin_to_lin_track_mp(trackingStats *trackCount,
 			// check to see if it should be sharpened
 			if (EG.retVal == 0 && T->sharpenDigits > 0)
 			{ // use the sharpener for after an endgame
-				sharpen_endpoint_endgame(&EG, T, OUT, NULL, &BED, NULL, curr_eval_mp, NULL);
+				sharpen_endpoint_endgame(&EG, T, OUT, NULL, BED, NULL, curr_eval_mp, NULL);
 			}
 			
 
@@ -1801,7 +1469,7 @@ void multilin_to_lin_track_mp(trackingStats *trackCount,
 			
 			int issoln = 0;
 			if (EG.last_approx_prec!=1) {
-				issoln = check_issoln_multilintolin_mp(&EG, T, &BED);
+				issoln = check_issoln_multilintolin_mp(&EG, T, BED);
 			}
 			else{
 				print_point_to_screen_matlab(EG.PD_mp.point,"solution");
@@ -1830,7 +1498,7 @@ void multilin_to_lin_track_mp(trackingStats *trackCount,
 			
 
 		}// re: for (ii=0; ii<W.num_pts ;ii++)
-	} // for each new linear
+	
 	
 	
 
@@ -1956,7 +1624,7 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	
 	
   set_one_mp(one_minus_s);
-  sub_mp(one_minus_s, one_minus_s, pathVars);  // one_minus_s = (1 - s)
+  sub_mp(one_minus_s, one_minus_s, pathVars);  // one_minus_s = (1 - s)	
   mul_mp(gamma_s, BED->gamma, pathVars);       // gamma_s = gamma * s
 	
 	
@@ -2196,17 +1864,20 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	// done!  yay!
 	
 	//uncomment to see screen output of important variables at each solve step.
+//	print_comp_matlab(pathVars, "t");
 //	printf("BED->num_linears = %d\n",BED->num_linears);
 //	print_point_to_screen_matlab(parVals,"parVals_mp");
 //	print_matrix_to_screen_matlab( AtimesJ,"R*jac_mp");
 //	print_point_to_screen_matlab(current_variable_values,"currvars_mp");
-//	print_point_to_screen_matlab(BED->current_linear[0],"new_mp");
-//	print_point_to_screen_matlab(BED->old_linear[0],"old_mp");
+//	for (ii=0; ii<BED->num_linears; ii++) {
+//		print_point_to_screen_matlab(BED->current_linear[ii],"new_mp");
+//		print_point_to_screen_matlab(BED->old_linear[ii],"old_mp");
+//	}
 //	print_point_to_screen_matlab(funcVals,"F_mp");
 //	print_matrix_to_screen_matlab(Jv,"Jv_mp");
 //	print_matrix_to_screen_matlab(Jp,"Jp_mp");
 //	print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix_mp");
-
+//
 //	mypause();
 	
 	
@@ -2315,29 +1986,34 @@ void setupmultilintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *du
 													witness_set & W,
 													solver_configuration *solve_options)
 {
-  int ii;
 	
-	// the standard setup
+	int ii;
+	BED->num_variables = W.num_variables; // total number of variables
+	
   setupPreProcData(preprocFile, &BED->preProcData);
 	BED->verbose_level = solve_options->verbose_level;
-	
-	generic_setup_patch(&BED->patch, W);
+	generic_setup_patch(&BED->patch,W);
+
 	
 	BED->SLP = dummyProg;
-
-	init_mat_mp(BED->randomizer_matrix,1,1);
+	
+	init_mp(BED->gamma);
+	if (solve_options->use_gamma_trick==1)
+		get_comp_rand_mp(BED->gamma); // set gamma to be random complex value
+	else
+		set_one_mp(BED->gamma);
+	
+	
+	
+	init_mat_mp(BED->randomizer_matrix,0,0);
 	mat_cp_mp(BED->randomizer_matrix,
-					 randomizer_matrix);
+							randomizer_matrix);
 	
 	
 	
-	
-	// the stuff proprietary to this solver
 	
 	// set up the vectors to hold the two linears.
-	BED->num_linears =  W.num_linears;
-
-	
+	BED->num_linears = W.num_linears;
 	BED->current_linear = (vec_mp *) br_malloc(W.num_linears*sizeof(vec_mp));
 	BED->old_linear = (vec_mp *) br_malloc(W.num_linears*sizeof(vec_mp));
 	for (ii=0;  ii<W.num_linears; ii++){
@@ -2350,14 +2026,52 @@ void setupmultilintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *du
 		vec_cp_mp(BED->old_linear[ii],W.L_mp[ii]);
 	}
 	
-	
-	init_mp2(BED->gamma,prec);
-	if (solve_options->use_gamma_trick==1)
-		get_comp_rand_mp(BED->gamma); // set gamma to be random complex value
-	else
-		set_one_mp(BED->gamma);
+
 	
 	
+//  int ii;
+//	
+//	// the standard setup
+//  setupPreProcData(preprocFile, &BED->preProcData);
+//	BED->verbose_level = solve_options->verbose_level;
+//
+//	generic_setup_patch(&BED->patch, W);
+//	
+//	BED->SLP = dummyProg;
+//
+//	init_mat_mp(BED->randomizer_matrix,1,1);
+//	mat_cp_mp(BED->randomizer_matrix,
+//					 randomizer_matrix);
+//	
+//	
+//	
+//	
+//	// the stuff proprietary to this solver
+//	
+//	// set up the vectors to hold the two linears.
+//	BED->num_linears =  W.num_linears;
+//
+//	
+//	BED->current_linear = (vec_mp *) br_malloc(W.num_linears*sizeof(vec_mp));
+//	BED->old_linear = (vec_mp *) br_malloc(W.num_linears*sizeof(vec_mp));
+//	for (ii=0;  ii<W.num_linears; ii++){
+//		init_vec_mp(BED->current_linear[ii],W.num_variables);
+//		BED->current_linear[ii]->size =  W.num_variables;
+//		
+//		init_vec_mp(BED->old_linear[ii],W.num_variables);
+//		BED->old_linear[ii]->size =  W.num_variables;
+//		
+//		vec_cp_mp(BED->old_linear[ii],W.L_mp[ii]);
+//	}
+//	
+//	
+//	init_mp2(BED->gamma,prec);
+//	if (solve_options->use_gamma_trick==1)
+//		get_comp_rand_mp(BED->gamma); // set gamma to be random complex value
+//	else
+//		set_one_mp(BED->gamma);
+//	
+//	
   return;
 }
 

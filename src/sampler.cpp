@@ -9,12 +9,16 @@ int main(int argC, char *args[])
  * NOTES:                                                        *
  \***************************************************************/
 {
+	
+	MPI_Init(&argC,&args);
+	
+	
 	int num_vars=0;
 	boost::filesystem::path inputName, RandMatName, witnessSetName, samplingNamenew;
 	
 	vertex_set V;
 	curve_decomposition C;   //new data type; stores vertices, edges, etc.
-	witness_set W;
+	
 	sample_data   S_old,S_new;
 	mat_mp randomizer_matrix;
 	
@@ -63,9 +67,13 @@ int main(int argC, char *args[])
 	if (solve_options.verbose_level>=1)
 		printf("loading curve decomposition\n");
 	
-	W.witnessSetParse(witnessSetName,num_vars);
+	witness_set W;
+	W.num_variables = num_vars;
 	W.MPType = MPType;
 	W.get_variable_names();
+	
+//	W.witnessSetParse(witnessSetName,num_vars);
+	
 	
 	W.reset_patches();
 	for (int ii=0; ii<C.num_patches; ii++) {
@@ -124,13 +132,13 @@ int main(int argC, char *args[])
 
 	
 	clear_mat_mp(randomizer_matrix);
-	
-	W.reset();
-	
+		
 	clear_sample(&S_new, MPType);
 	
 	
 	clearMP();
+	
+	MPI_Finalize();
 	return 0;
 }
 

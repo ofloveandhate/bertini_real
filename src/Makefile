@@ -20,6 +20,7 @@ COMPcc:=UNDEFINEDcompcc
 COMPpp:=UNDEFINEDcomppp
 BOOSTLOC := UNDEFINEDboostloc
 BOOSTSUFFIX:=UNDEFINEDboostsuffix
+MACHINE_SPECIFICS:= 
 
   #check environment variable $(MACHINENAME), if defined
 ifeq ($(MACHINENAME),MACBRAKE)
@@ -28,7 +29,7 @@ ifeq ($(MACHINENAME),MACBRAKE)
     BISON=bison# bison in path already
     LIBS=-lm -lmpfr -lgmp# brake has libraries in path for linking, via brew.  no need to specify here
     COMPcc=gcc 
-	COMPpp = clang++
+	COMPpp = mpic++ -cxx=clang++
     STATICFLAG=#  on macintosh, do not static compile (get missing lcrt0.o problem)
 	BERTINILIB:=$(HOME)/lib/libbertini.a
 	INSTALLPATH:=$(HOME)/bin
@@ -36,7 +37,7 @@ ifeq ($(MACHINENAME),MACBRAKE)
 	
 	BOOSTLOC := /usr/local/Cellar/boost/1.53.0/lib/
 	BOOSTSUFFIX:=-mt
-
+	MACHINESPECIFICS:= 
 endif
 
 ifeq ($(MACHINENAME),sam)
@@ -83,15 +84,15 @@ endif
 
 FLEX=flex
 
-LIBSboost := $(BOOSTLOC)libboost_system$(BOOSTSUFFIX).a $(BOOSTLOC)libboost_filesystem$(BOOSTSUFFIX).a   $(BOOSTLOC)libboost_regex$(BOOSTSUFFIX).a
+LIBSboost := $(BOOSTLOC)libboost_system$(BOOSTSUFFIX).a $(BOOSTLOC)libboost_filesystem$(BOOSTSUFFIX).a   $(BOOSTLOC)libboost_regex$(BOOSTSUFFIX).a 
 
 LIBS:=$(LIBS) ./libpartitionparse.a $(LIBSboost)
 
 #a few last definitions
 INC:=$(INC) -I../include/  -I$(BERTINIHEADERS) #this includes the header files for bertini_real, etc   
 
-ARGS=$(INC) $(OPT) 
-OBJFILES= witnessSet.o   derivative_systems.o data_type.o	programConfiguration.o determinant_derivative.o output.o fileops.o isosingular.o curveNotSelfConj.o curveSelfConj.o postProcessing.o	checkSelfConjugate.o nullspace_left.o surface.o curve.o
+ARGS= $(OPT) $(MACHINESPECIFICS) $(INC)
+OBJFILES= parallelism.o witnessSet.o   derivative_systems.o data_type.o	programConfiguration.o determinant_derivative.o output.o fileops.o isosingular.o curveNotSelfConj.o curveSelfConj.o postProcessing.o	checkSelfConjugate.o nullspace_left.o surface.o curve.o
 SOLVERS= solver.o  solver_nullspace_left.o solver_detjactodetjac.o solver_linprodtodetjac.o solver_multilintolin.o solver_lintolin.o
 FLEXFILES=lex.partitionParse.o 
 
@@ -128,11 +129,14 @@ install: bertini_real data_to_set sampler
 	cp bertini_real data2set sampler $(INSTALLPATH)
 
 
-.c.o : 
+
+
+%.c.o : %.h
 	$(COMPcc) $(ARGS) -c $*.c
 
-.cpp.o : 
+%.o : %.cpp ../include/%.hpp
 	$(COMPpp) $(ARGS) -c $*.cpp
+
 
 lex.partitionParse.o:	lex.partitionParse.c
 	$(COMPcc) $(ARGS) -c lex.partitionParse.c

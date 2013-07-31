@@ -11,7 +11,7 @@ extern "C" {
 }
 
 
-
+#include "solver.hpp"
 #include "programConfiguration.hpp"
 #include "witnessSet.hpp"
 #include "data_type.hpp"

@@ -39,7 +39,7 @@ extern "C" {
 #include "missing_bertini_headers.hpp"
 #include "surface.hpp"
 #include "curve.hpp"
-
+#include "parallelism.hpp"
 
 #endif
 

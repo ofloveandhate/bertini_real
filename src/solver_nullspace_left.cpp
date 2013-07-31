@@ -98,6 +98,29 @@ void nullspace_config::print()
 
 
 
+int nullspacejac_eval_data_mp::send(int target_id, parallelism_config & mpi_config)
+{
+	// need to send the data to a worker
+//	MPI_Send(MPICH2_CONST void*, int, MPI_Datatype, int, int, MPI_Comm) MPICH_ATTR_POINTER_WITH_TYPE_TAG(1,3);
+	int solver_choice = NULLSPACE;
+	MPI_Send(&solver_choice, 1, MPI_INT, target_id, TYPE_CONFIRMATION, mpi_config.my_communicator);
+	
+	return SUCCESSFUL;
+}
+
+int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
+{
+	MPI_Status status;
+	int confirmation_buffer;
+	MPI_Recv(&confirmation_buffer, 1, MPI_INT, 0, MPI_ANY_TAG,
+					 MPI_COMM_WORLD, &status);
+	
+	if (confirmation_buffer != NULLSPACE) {
+		mpi_config.abort(777);
+	}
+	
+	return SUCCESSFUL;
+}
 
 
 
@@ -339,7 +362,7 @@ void nullspacejac_track_d(trackingStats *trackCount,
  \***************************************************************/
 {
 	
-  int ii,jj, oid, startPointIndex, max = max_threads();
+  int ii, oid, startPointIndex, max = max_threads();
   tracker_config_t *T_copy = NULL;
   nullspacejac_eval_data_d *BED_copy = NULL;
   trackingStats *trackCount_copy = NULL;
@@ -417,7 +440,7 @@ void nullspacejac_track_d(trackingStats *trackCount,
 		
 		
 		// track the path
-		nullspacejac_track_path_d(solution_counter, &EG[oid], &startPts[startPointIndex],
+		generic_track_path_d(solution_counter, &EG[oid], &startPts[startPointIndex],
 															OUT_copy[oid], MIDOUT_copy[oid],
 															&T_copy[oid], &BED_copy[oid], BED_copy[oid].BED_mp,
 															curr_eval_d, curr_eval_mp, change_prec, find_dehom);
@@ -457,16 +480,10 @@ void nullspacejac_track_d(trackingStats *trackCount,
 		if ((EG->retVal != 0 && time_to_compare->r > T->minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
 			
 			trackCount->failures++;
+		
+			printf("\nthere was a path failure nullspace_left tracking witness point %d\nretVal = %d; issoln = %d\n",ii,EG->retVal, issoln);
 			
-//			if (issoln==0) {
-//				printf("point %d was a non-solution junk point\n",ii);
-//			}
-//			
-			{
-				printf("\nthere was a path failure nullspace_left tracking witness point %d\nretVal = %d; issoln = %d\n",ii,EG->retVal, issoln);
-				
-				print_path_retVal_message(EG->retVal);
-			}
+			print_path_retVal_message(EG->retVal);
 			
 			if (solve_options->verbose_level > 0) {
 				if (EG->prec < 64)
@@ -484,7 +501,6 @@ void nullspacejac_track_d(trackingStats *trackCount,
 			solution_counter++; // probably this could be eliminated
 		}
 		
-//		mypause();
 	}// re: for (ii=0; ii<W.num_pts ;ii++)
 	
 	
@@ -505,91 +521,6 @@ void nullspacejac_track_d(trackingStats *trackCount,
 
 
 
-
-// derived from zero_dim_track_path_d
-void nullspacejac_track_path_d(int pathNum, endgame_data_t *EG_out,
-															 point_data_d *Pin,
-															 FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
-															 void const *ED_d, void const *ED_mp,
-															 int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
-															 int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-															 int (*change_prec)(void const *, int),
-															 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *))
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: actually does the zero-dimensional tracking and sets   *
- *  up EG_out                                                    *
- \***************************************************************/
-{
-	
-	
-	
-	EG_out->pathNum = pathNum;
-  EG_out->codim = 0; // zero dimensional - this is ignored
-	
-  T->first_step_of_path = 1;
-	
-	//	printf("mytype %d\n",T->MPType);
-  if (T->MPType == 2)
-  { // track using AMP
-		
-		//verification code:
-		//		nullspacejac_eval_data_mp *LtLED = (nullspacejac_eval_data_mp *)ED_mp; // to avoid having to cast every time
-		//		print_matrix_to_screen_matlab(LtLED->randomizer_matrix,"nminus1");
-		//		print_point_to_screen_matlab(LtLED->old_linear,"old");
-		//		print_point_to_screen_matlab(LtLED->current_linear,"curr");
-		//		print_matrix_to_screen_matlab(LtLED->patch.patchCoeff,"patch");
-		//		printf("patch precision %d\n",LtLED->patch.curr_prec);
-		
-    EG_out->prec = EG_out->last_approx_prec = 52;
-		
-		EG_out->retVal = endgame_amp(T->endgameNumber, EG_out->pathNum, &EG_out->prec, &EG_out->first_increase, &EG_out->PD_d, &EG_out->PD_mp, &EG_out->last_approx_prec, EG_out->last_approx_d, EG_out->last_approx_mp, Pin, T, OUT, MIDOUT, ED_d, ED_mp, eval_func_d, eval_func_mp, change_prec, find_dehom);
-		
-    if (EG_out->prec == 52)
-    { // copy over values in double precision
-      EG_out->latest_newton_residual_d = T->latest_newton_residual_d;
-      EG_out->t_val_at_latest_sample_point_d = T->t_val_at_latest_sample_point;
-      EG_out->error_at_latest_sample_point_d = T->error_at_latest_sample_point;
-      findFunctionResidual_conditionNumber_d(&EG_out->function_residual_d, &EG_out->condition_number, &EG_out->PD_d, ED_d, eval_func_d);
-    }
-    else
-    { // make sure that the other MP things are set to the correct precision
-      mpf_clear(EG_out->function_residual_mp);
-      mpf_init2(EG_out->function_residual_mp, EG_out->prec);
-			
-      mpf_clear(EG_out->latest_newton_residual_mp);
-      mpf_init2(EG_out->latest_newton_residual_mp, EG_out->prec);
-			
-      mpf_clear(EG_out->t_val_at_latest_sample_point_mp);
-      mpf_init2(EG_out->t_val_at_latest_sample_point_mp, EG_out->prec);
-			
-      mpf_clear(EG_out->error_at_latest_sample_point_mp);
-      mpf_init2(EG_out->error_at_latest_sample_point_mp, EG_out->prec);
-			
-      // copy over the values
-      mpf_set(EG_out->latest_newton_residual_mp, T->latest_newton_residual_mp);
-      mpf_set_d(EG_out->t_val_at_latest_sample_point_mp, T->t_val_at_latest_sample_point);
-      mpf_set_d(EG_out->error_at_latest_sample_point_mp, T->error_at_latest_sample_point);
-      findFunctionResidual_conditionNumber_mp(EG_out->function_residual_mp, &EG_out->condition_number, &EG_out->PD_mp, ED_mp, eval_func_mp);
-    }
-  }
-  else
-  { // track using double precision
-    EG_out->prec = EG_out->last_approx_prec = 52;
-		
-    EG_out->retVal = endgame_d(T->endgameNumber, EG_out->pathNum, &EG_out->PD_d, EG_out->last_approx_d, Pin, T, OUT, MIDOUT, ED_d, eval_func_d, find_dehom);  // WHERE THE ACTUAL TRACKING HAPPENS
-    EG_out->first_increase = 0;
-    // copy over values in double precision
-    EG_out->latest_newton_residual_d = T->latest_newton_residual_d;
-    EG_out->t_val_at_latest_sample_point_d = T->t_val_at_latest_sample_point;
-    EG_out->error_at_latest_sample_point_d = T->error_at_latest_sample_point;
-    findFunctionResidual_conditionNumber_d(&EG_out->function_residual_d, &EG_out->condition_number, &EG_out->PD_d, ED_d, eval_func_d);
-  }
-	
-  return;
-}
 
 
 
@@ -1057,8 +988,8 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
   set_one_d(&parDer->coord[0]);       // ds/dt = 1
 	
 	
-	
-//	printf("t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
+	if (BED->verbose_level>=3) {
+	printf("t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
 //	print_matrix_to_screen_matlab(jac_homogenizing_matrix,"jac_hom_1044");
 //	print_matrix_to_screen_matlab(BED->post_randomizer_matrix,"S");
 //	print_matrix_to_screen_matlab(BED->randomizer_matrix,"R");
@@ -1067,8 +998,8 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 //	print_matrix_to_screen_matlab( AtimesJ,"jac");
 //	print_point_to_screen_matlab(curr_x_vars,"currxvars");
 //	print_point_to_screen_matlab(current_variable_values,"curr_vars");
-//	print_point_to_screen_matlab(funcVals,"F");
-//	print_matrix_to_screen_matlab(Jv,"Jv");
+	print_point_to_screen_matlab(funcVals,"F");
+	print_matrix_to_screen_matlab(Jv,"Jv");
 //	print_matrix_to_screen_matlab(Jp,"Jp");
 //	print_matrix_to_screen_matlab(BED->jac_with_proj,"jacwithproj");
 	//these values are set in this function:  point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp
@@ -1076,7 +1007,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 
 //	std::cout << "\n\n**************\n\n";
 //	mypause();
-
+	}
 	
 	
 	
@@ -1621,6 +1552,7 @@ void setupnullspacejacEval_d(tracker_config_t *T,char preprocFile[], char degree
 	
 	
 	// set up the vectors to hold the linears.
+	BED->num_projections = ns_config->num_projections;
 	BED->target_projection = (vec_d *)br_malloc(ns_config->num_projections * sizeof(vec_d));
 	init_mat_d(BED->jac_with_proj, ns_config->num_x_vars-1, ns_config->num_v_vars);
 	BED->jac_with_proj->rows = ns_config->num_x_vars-1;
@@ -1742,7 +1674,8 @@ void setupnullspacejacEval_d(tracker_config_t *T,char preprocFile[], char degree
 		BED->BED_mp->num_randomized_eqns = ns_config->num_randomized_eqns;
 		BED->BED_mp->max_degree = ns_config->max_degree;
 		
-		BED->BED_mp->randomized_degrees = (int *) br_malloc(ns_config->num_randomized_eqns*sizeof(int));
+		
+		BED->BED_mp->randomized_degrees.resize(ns_config->num_randomized_eqns);
 		for (ii=0; ii<ns_config->randomizer_matrix->rows; ii++)
 			BED->BED_mp->randomized_degrees[ii] = ns_config->randomized_degrees[ii]; // store the full degree (not derivative).
 		
@@ -1782,6 +1715,7 @@ void setupnullspacejacEval_d(tracker_config_t *T,char preprocFile[], char degree
 		offset = ns_config->num_randomized_eqns;
 		
 		// set up the vectors to hold the  linears.
+		BED->BED_mp->num_projections = ns_config->num_projections;
 		BED->BED_mp->target_projection = (vec_mp *)br_malloc(ns_config->num_projections * sizeof(vec_mp));		
 		BED->BED_mp->target_projection_full_prec = (vec_mp *)br_malloc(ns_config->num_projections * sizeof(vec_mp));
 		
@@ -2339,9 +2273,6 @@ void nullspacejac_track_mp(trackingStats *trackCount,
 	
 	
 	// track each of the start points
-#ifdef _OPENMP
-#pragma omp parallel for private(ii, oid, startPointIndex) schedule(runtime)
-#endif
 	for (ii = 0; ii < W.num_pts; ii++)
 	{ // get current thread number
 		oid = thread_num();
@@ -2354,7 +2285,7 @@ void nullspacejac_track_mp(trackingStats *trackCount,
 		BED_copy[oid].num_steps = 0;
 #endif
 		
-		nullspacejac_track_path_mp(solution_counter, &EG[oid], &startPts[ii], OUT_copy[oid], MIDOUT_copy[oid], &T_copy[oid], &BED_copy[oid], curr_eval_mp, change_prec, find_dehom); //curr_eval_d,
+		generic_track_path_mp(solution_counter, &EG[oid], &startPts[ii], OUT_copy[oid], MIDOUT_copy[oid], &T_copy[oid], &BED_copy[oid], curr_eval_mp, change_prec, find_dehom); //curr_eval_d,
 		
 #ifdef printpathnullspace_left
 		int mm;
@@ -2415,49 +2346,6 @@ void nullspacejac_track_mp(trackingStats *trackCount,
 	
   // clear the structures
   clear_nullspacejac_omp_mp(max, &EG, &trackCount_copy, trackCount, &OUT_copy, OUT, &RAWOUT_copy, RAWOUT, &MIDOUT_copy, MIDOUT, &FAIL_copy, FAIL, &NONSOLN_copy, NONSOLN, &T_copy, &BED_copy);
-	
-  return;
-}
-
-
-
-// derived from zero_dim_track_path_d
-void nullspacejac_track_path_mp(int pathNum, endgame_data_t *EG_out,
-																point_data_mp *Pin,
-																FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
-																void const *ED,
-																int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-																int (*change_prec)(void const *, int),
-																int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *))
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES:                                                    *
- \***************************************************************/
-{
-	
-	//	check_linprod_evaluator(Pin->point,ED);
-	//	mypause();
-	
-	
-	EG_out->pathNum = pathNum;
-  EG_out->codim = 0; // zero dimensional - this is ignored
-	
-  T->first_step_of_path = 1;
-	
-  // track using MP
-  EG_out->retVal = endgame_mp(T->endgameNumber, EG_out->pathNum, &EG_out->PD_mp, EG_out->last_approx_mp, Pin, T, OUT, MIDOUT, ED, eval_func_mp, find_dehom);
-	
-	
-  EG_out->prec = EG_out->last_approx_prec = T->Precision;
-  EG_out->first_increase = 0;
-	
-  // copy over the values
-  mpf_set(EG_out->latest_newton_residual_mp, T->latest_newton_residual_mp);
-  mpf_set_d(EG_out->t_val_at_latest_sample_point_mp, T->t_val_at_latest_sample_point);
-  mpf_set_d(EG_out->error_at_latest_sample_point_mp, T->error_at_latest_sample_point);
-  findFunctionResidual_conditionNumber_mp(EG_out->function_residual_mp, &EG_out->condition_number, &EG_out->PD_mp, ED, eval_func_mp);
 	
   return;
 }
@@ -2991,21 +2879,23 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
   set_one_mp(&parDer->coord[0]);       // ds/dt = 1
 
 	
+
+	
+	if (BED->verbose_level>=3) {
 //	print_matrix_to_screen_matlab( AtimesJ,"jac");
 //	print_point_to_screen_matlab(curr_x_vars,"currxvars");
-//	print_point_to_screen_matlab(funcVals,"F_mp");
+		print_point_to_screen_matlab(funcVals,"F_mp");
 //	print_point_to_screen_matlab(parVals,"parVals");
 //	print_point_to_screen_matlab(parDer,"parDer");
-//	print_matrix_to_screen_matlab(Jv,"Jv_mp");
+		print_matrix_to_screen_matlab(Jv,"Jv_mp");
 //	print_matrix_to_screen_matlab(Jp,"Jp");
-	
+
 //	print_matrix_to_screen_matlab(BED->jac_with_proj,"jacwithproj");
-	//these values are set in this function:  point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp
+//these values are set in this function:  point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp
 //	print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
-	
+
 //	mypause();
-	
-	
+	}
 	
 	
 	
@@ -3431,9 +3321,10 @@ void setupnullspacejacEval_mp(char preprocFile[], char degreeFile[], prog_t *dum
 	
 	BED->num_randomized_eqns = ns_config->num_randomized_eqns;
 	BED->max_degree = ns_config->max_degree;
-	BED->randomized_degrees = (int *) br_malloc(ns_config->num_randomized_eqns*sizeof(int));
+	BED->randomized_degrees.resize(ns_config->num_randomized_eqns);
 	for (ii=0; ii<ns_config->randomizer_matrix->rows; ii++)
 		BED->randomized_degrees[ii] = ns_config->randomized_degrees[ii]; // store the full degree (not derivative).
+	
 	
 	BED->num_v_linears = ns_config->num_v_linears;   //
 	
@@ -3454,6 +3345,7 @@ void setupnullspacejacEval_mp(char preprocFile[], char degreeFile[], prog_t *dum
 	
 	
 	// set up the vectors to hold the linears.
+	BED->num_projections = ns_config->num_projections;
 	BED->target_projection = (vec_mp *)br_malloc(ns_config->num_projections * sizeof(vec_mp));
 	init_mat_mp(BED->jac_with_proj, ns_config->num_x_vars-1, ns_config->num_v_vars);
 	BED->jac_with_proj->rows = ns_config->num_x_vars-1;
@@ -3676,43 +3568,43 @@ int check_issoln_nullspacejac_d(endgame_data_t *EG,
 	
 	
 	
-	mat_d AtimesJ; init_mat_d(AtimesJ,0,0);  AtimesJ->rows = AtimesJ->cols = 0;
-	mat_d jac_homogenizing_matrix;  init_mat_d(jac_homogenizing_matrix,0,0);
-	jac_homogenizing_matrix->rows = jac_homogenizing_matrix->cols = 0;
-	mat_d tempmat; init_mat_d(tempmat,0,0); tempmat->rows = tempmat->cols = 0;
-	
-	mat_d Jf_pi; init_mat_d(Jf_pi,0,0); Jf_pi->rows = Jf_pi->cols = 0;
-	vec_d target_function_values; init_vec_d(target_function_values,0); target_function_values->size = 0;
-	
-	mat_mul_d(AtimesJ,BED->randomizer_matrix,e.Jv);
-	for (ii=0; ii< AtimesJ->rows; ii++)
-		for (int jj=1; jj<BED->num_x_vars; jj++)
-			set_d(&BED->jac_with_proj->entry[jj - 1][ii],&AtimesJ->entry[ii][jj]); // copy in the transpose of the (randomized) jacobian, omitting the homogenizing variables
-	
-	make_matrix_ID_d(jac_homogenizing_matrix,BED->num_v_vars,BED->num_v_vars);
-	
-	for (ii=0; ii<BED->num_randomized_eqns; ii++)
-		for (int jj=0; jj<(BED->max_degree - (BED->randomized_degrees[ii]-1)); jj++)
-			mul_d(&jac_homogenizing_matrix->entry[ii][ii], &jac_homogenizing_matrix->entry[ii][ii], &curr_x_vars->coord[0]);
-	
-	for (ii=BED->num_randomized_eqns; ii<BED->num_v_vars; ii++)
-		for (int jj=0; jj<(BED->max_degree); jj++) // these are all degree 1
-			mul_d(&jac_homogenizing_matrix->entry[ii][ii], &jac_homogenizing_matrix->entry[ii][ii], &curr_x_vars->coord[0]);
-	
-	mat_mul_d(Jf_pi, BED->jac_with_proj, jac_homogenizing_matrix);
-	
-	mul_mat_vec_d(target_function_values, Jf_pi, curr_v_vars);
-	
-	mul_mat_vec_d(target_function_values, BED->post_randomizer_matrix, target_function_values);
-
-	
-	for (ii=0; ii<target_function_values->size; ii++) {
-		if (d_abs_d(&target_function_values->coord[ii]) > tol) {
-			isSoln = 0;
-			print_point_to_screen_matlab(target_function_values,"target_func_vals");
-			break;
-		}
-	}
+//	mat_d AtimesJ; init_mat_d(AtimesJ,0,0);  AtimesJ->rows = AtimesJ->cols = 0;
+//	mat_d jac_homogenizing_matrix;  init_mat_d(jac_homogenizing_matrix,0,0);
+//	jac_homogenizing_matrix->rows = jac_homogenizing_matrix->cols = 0;
+//	mat_d tempmat; init_mat_d(tempmat,0,0); tempmat->rows = tempmat->cols = 0;
+//	
+//	mat_d Jf_pi; init_mat_d(Jf_pi,0,0); Jf_pi->rows = Jf_pi->cols = 0;
+//	vec_d target_function_values; init_vec_d(target_function_values,0); target_function_values->size = 0;
+//	
+//	mat_mul_d(AtimesJ,BED->randomizer_matrix,e.Jv);
+//	for (ii=0; ii< AtimesJ->rows; ii++)
+//		for (int jj=1; jj<BED->num_x_vars; jj++)
+//			set_d(&BED->jac_with_proj->entry[jj - 1][ii],&AtimesJ->entry[ii][jj]); // copy in the transpose of the (randomized) jacobian, omitting the homogenizing variables
+//	
+//	make_matrix_ID_d(jac_homogenizing_matrix,BED->num_v_vars,BED->num_v_vars);
+//	
+//	for (ii=0; ii<BED->num_randomized_eqns; ii++)
+//		for (int jj=0; jj<(BED->max_degree - (BED->randomized_degrees[ii]-1)); jj++)
+//			mul_d(&jac_homogenizing_matrix->entry[ii][ii], &jac_homogenizing_matrix->entry[ii][ii], &curr_x_vars->coord[0]);
+//	
+//	for (ii=BED->num_randomized_eqns; ii<BED->num_v_vars; ii++)
+//		for (int jj=0; jj<(BED->max_degree); jj++) // these are all degree 1
+//			mul_d(&jac_homogenizing_matrix->entry[ii][ii], &jac_homogenizing_matrix->entry[ii][ii], &curr_x_vars->coord[0]);
+//	
+//	mat_mul_d(Jf_pi, BED->jac_with_proj, jac_homogenizing_matrix);
+//	
+//	mul_mat_vec_d(target_function_values, Jf_pi, curr_v_vars);
+//	
+//	mul_mat_vec_d(target_function_values, BED->post_randomizer_matrix, target_function_values);
+//
+//	
+//	for (ii=0; ii<target_function_values->size; ii++) {
+//		if (d_abs_d(&target_function_values->coord[ii]) > tol) {
+//			isSoln = 0;
+//			print_point_to_screen_matlab(target_function_values,"target_func_vals");
+//			break;
+//		}
+//	}
 	
 	clear_eval_struct_d(e);
 	clear_vec_d(f);
@@ -3820,40 +3712,43 @@ int check_issoln_nullspacejac_mp(endgame_data_t *EG,
 	}
 	
 	
-	mat_mp AtimesJ; init_mat_mp(AtimesJ,0,0);  AtimesJ->rows = AtimesJ->cols = 0;
-	mat_mp jac_homogenizing_matrix;  init_mat_mp(jac_homogenizing_matrix,0,0);
-	jac_homogenizing_matrix->rows = jac_homogenizing_matrix->cols = 0;
-	mat_mp tempmat; init_mat_mp(tempmat,0,0); tempmat->rows = tempmat->cols = 0;
-	mat_mp S_times_Jf_pi; init_mat_mp(S_times_Jf_pi,0,0); S_times_Jf_pi->rows = S_times_Jf_pi->cols = 0;
-	vec_mp target_function_values; init_vec_mp(target_function_values,0); target_function_values->size = 0;
-	
-	mat_mul_mp(AtimesJ,BED->randomizer_matrix,e.Jv);
-	for (ii=0; ii< AtimesJ->rows; ii++)
-		for (int jj=1; jj<BED->num_x_vars; jj++)
-			set_mp(&BED->jac_with_proj->entry[jj - 1][ii],&AtimesJ->entry[ii][jj]); // copy in the transpose of the (randomized) jacobian, omitting the homogenizing variables
-	make_matrix_ID_mp(jac_homogenizing_matrix,BED->num_v_vars,BED->num_v_vars);
-	
-	for (ii=0; ii<BED->num_randomized_eqns; ii++)
-		for (int jj=0; jj<(BED->max_degree - (BED->randomized_degrees[ii]-1)); jj++)
-			mul_mp(&jac_homogenizing_matrix->entry[ii][ii], &jac_homogenizing_matrix->entry[ii][ii], &curr_x_vars->coord[0]);
-	
-	for (ii=BED->num_randomized_eqns; ii<BED->num_v_vars; ii++)
-		for (int jj=0; jj<(BED->max_degree); jj++) // these are all degree 1
-			mul_mp(&jac_homogenizing_matrix->entry[ii][ii], &jac_homogenizing_matrix->entry[ii][ii], &curr_x_vars->coord[0]);
-	
-	mat_mul_mp(tempmat, BED->post_randomizer_matrix, BED->jac_with_proj); // jac with proj having been set above with unperturbed values
-	mat_mul_mp(S_times_Jf_pi, tempmat, jac_homogenizing_matrix); // jac with proj having been set above with unperturbed values
-	mul_mat_vec_mp(target_function_values, S_times_Jf_pi, curr_v_vars);
-	
-	
-	for (ii=0; ii<target_function_values->size; ii++) {
-		mpf_abs_mp(n1, &target_function_values->coord[ii]);
-		if (mpf_cmp(n1,zero_thresh)>0) {
-			isSoln = 0;
-			print_point_to_screen_matlab(target_function_values,"target_func_vals");
-			break;
-		}
-	}
+//	mat_mp AtimesJ; init_mat_mp(AtimesJ,0,0);  AtimesJ->rows = AtimesJ->cols = 0;
+//	mat_mp jac_homogenizing_matrix;  init_mat_mp(jac_homogenizing_matrix,0,0);
+//	jac_homogenizing_matrix->rows = jac_homogenizing_matrix->cols = 0;
+//	mat_mp tempmat; init_mat_mp(tempmat,0,0); tempmat->rows = tempmat->cols = 0;
+//	mat_mp S_times_Jf_pi; init_mat_mp(S_times_Jf_pi,0,0); S_times_Jf_pi->rows = S_times_Jf_pi->cols = 0;
+//	vec_mp target_function_values; init_vec_mp(target_function_values,0); target_function_values->size = 0;
+//	
+//	mat_mul_mp(AtimesJ,BED->randomizer_matrix,e.Jv);
+//	for (ii=0; ii< AtimesJ->rows; ii++)
+//		for (int jj=1; jj<BED->num_x_vars; jj++)
+//			set_mp(&BED->jac_with_proj->entry[jj - 1][ii],&AtimesJ->entry[ii][jj]); // copy in the transpose of the (randomized) jacobian, omitting the homogenizing variables
+//	make_matrix_ID_mp(jac_homogenizing_matrix,BED->num_v_vars,BED->num_v_vars);
+//	
+//	for (ii=0; ii<BED->num_randomized_eqns; ii++)
+//		for (int jj=0; jj<(BED->max_degree - (BED->randomized_degrees[ii]-1)); jj++)
+//			mul_mp(&jac_homogenizing_matrix->entry[ii][ii], &jac_homogenizing_matrix->entry[ii][ii], &curr_x_vars->coord[0]);
+//	
+//	for (ii=BED->num_randomized_eqns; ii<BED->num_v_vars; ii++)
+//		for (int jj=0; jj<(BED->max_degree); jj++) // these are all degree 1
+//			mul_mp(&jac_homogenizing_matrix->entry[ii][ii], &jac_homogenizing_matrix->entry[ii][ii], &curr_x_vars->coord[0]);
+//	
+//	mat_mul_mp(tempmat, BED->post_randomizer_matrix, BED->jac_with_proj); // jac with proj having been set above with unperturbed values
+//	mat_mul_mp(S_times_Jf_pi, tempmat, jac_homogenizing_matrix); // jac with proj having been set above with unperturbed values
+//	mul_mat_vec_mp(target_function_values, S_times_Jf_pi, curr_v_vars);
+//	
+//	
+//	for (ii=0; ii<target_function_values->size; ii++) {
+//		mpf_abs_mp(n1, &target_function_values->coord[ii]);
+//		if (mpf_cmp(n1,zero_thresh)>0) {
+//			isSoln = 0;
+//			std::cout << T->funcResTol << " " <<  pow(10,-num_digits) << std::endl;
+//			mpf_out_str (NULL, 10, 6, zero_thresh); // base 10, 6 digits
+//			std::cout << std::endl;
+//			print_point_to_screen_matlab(target_function_values,"target_func_vals");
+//			break;
+//		}
+//	}
 	
 	
 	
