@@ -2,15 +2,6 @@
 
 
 
-//the main wrapper function for chaining into the detjac_to_detjac solver.
-// pass in:
-//     •
-//
-// you will get out: W_new populated in both mp and double types, ...
-//TODO: FINISH THIS EXPLANATION
-
-
-
 
 
 int detjac_to_detjac_solver_main(int MPType,
@@ -19,7 +10,7 @@ int detjac_to_detjac_solver_main(int MPType,
 																 vec_mp old_projection_full_prec,
 																 vec_mp new_projection_full_prec,
 																 witness_set *W_new,
-																 solver_configuration *solve_options)
+																 solver_configuration & solve_options)
 {
 	W_new->num_variables = W.num_variables;
 	W_new->num_synth_vars = W.num_synth_vars;
@@ -36,7 +27,7 @@ int detjac_to_detjac_solver_main(int MPType,
 	}
 	
 	
-	if (solve_options->complete_witness_set==1){
+	if (solve_options.complete_witness_set==1){
 		cp_patches(W_new,W); // copy the patches over from the original witness set.  for completeness
 		cp_names(W_new,W);
 		
@@ -51,13 +42,6 @@ int detjac_to_detjac_solver_main(int MPType,
 
 
 
-//int detjac_to_detjac_solver_d(int MPType,
-//															 witness_set & W,  // includes the initial linear.
-//															 mat_d randomizer_matrix,  // for randomizing down to N-1 equations.
-//															 vec_d projection,
-//															 witness_set *W_new // for passing the data back out of this function tree
-//															 )
-
 
 int detjac_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int currentSeed
 															witness_set & W,  // includes the initial linear.
@@ -65,13 +49,7 @@ int detjac_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int cu
 															vec_mp old_projection_full_prec,   // a single random complex linear. 
 															vec_mp new_projection_full_prec, // a single particular real linear with homogeneous term=0. 
 															witness_set *W_new,
-															solver_configuration *solve_options)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES:                                                        *
- \***************************************************************/
+															solver_configuration & solve_options)
 {
 	double parse_time = 0;
   FILE *OUT = NULL, *FAIL = safe_fopen_write("failed_paths"), *midOUT = NULL, *rawOUT = safe_fopen_write("raw_data");
@@ -95,7 +73,7 @@ int detjac_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int cu
 	
 	//necessary for later whatnot
 	int userHom = 0, useRegen = 0, pathMod = 0, paramHom = 0;
-	cp_tracker_config_t(&T, &solve_options->T);
+	cp_tracker_config_t(&T, &solve_options.T);
 	
 	
 	
@@ -183,8 +161,8 @@ int detjac_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int cu
 	
 	// check for path crossings
 	int num_crossings = 0;
-	if (solve_options->use_midpoint_checker==1) {
-		midpoint_checker(trackCount.numPoints, num_variables,solve_options->midpoint_tol, &num_crossings);
+	if (solve_options.use_midpoint_checker==1) {
+		midpoint_checker(trackCount.numPoints, num_variables,solve_options.midpoint_tol, &num_crossings);
 	}
 	
 	// setup num_sols
@@ -266,14 +244,7 @@ void detjac_to_detjac_track_d(trackingStats *trackCount,
 															int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 															int (*change_prec)(void const *, int),
 															int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
-															solver_configuration *solve_options)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: does standard zero dimensional tracking                *
- *  in either double precision or adaptive precision             *
- \***************************************************************/
+															solver_configuration & solve_options)
 {
 	
   int ii,oid, startPointIndex, max = max_threads();
@@ -326,7 +297,7 @@ void detjac_to_detjac_track_d(trackingStats *trackCount,
 	for (ii = 0; ii < W.num_pts; ii++)
 	{ // get current thread number
 		oid = thread_num();
-		if (solve_options->verbose_level>=1)
+		if (solve_options.verbose_level>=1)
 			printf("detjac_to_detjac tracking path %d of %d\n",ii,W.num_pts);
 		
 		startPointIndex = ii;
@@ -421,13 +392,6 @@ void detjac_to_detjac_track_path_d(int pathNum, endgame_data_t *EG_out,
 																	 int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 																	 int (*change_prec)(void const *, int),
 																	 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *))
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: actually does the zero-dimensional tracking and sets   *
- *  up EG_out                                                    *
- \***************************************************************/
 {
 	
 	
@@ -505,13 +469,7 @@ int detjac_to_detjac_setup_d(FILE **OUT, boost::filesystem::path outName,
 														 witness_set & W,
 														 vec_mp old_projection_full_prec,
 														 vec_mp new_projection_full_prec,
-														 solver_configuration *solve_options)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES: number of original variables                   *
- * NOTES: setup for zero dimensional tracking                    *
- \***************************************************************/
+														 solver_configuration & solve_options)
 { // need to create the homotopy
 //	printf("entering detjac_to_detjac_setup_d 613\n");
   int rank, patchType, ssType, numOrigVars, adjustDegrees, numGps;
@@ -834,13 +792,6 @@ int detjac_to_detjac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat
 
 
 void printdetjactodetjacRelevantData(detjactodetjac_eval_data_d *ED_d, detjactodetjac_eval_data_mp *ED_mp, int MPType, int eqbyeqMethod, FILE *FP)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: prints the relevant data to FP so that we can recover  *
- * the system if needed for sharpening                           *
- \***************************************************************/
 {
   // print the MPType and if an eq-by-eq method (diagona/regen) was used
 	//  fprintf(FP, "%d %d\n", MPType, eqbyeqMethod);
@@ -860,12 +811,6 @@ void printdetjactodetjacRelevantData(detjactodetjac_eval_data_d *ED_d, detjactod
 
 
 void detjactodetjac_eval_clear_d(detjactodetjac_eval_data_d *ED, int clearRegen, int MPType)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: clear ED                                               *
- \***************************************************************/
 {
 	//clear the patch
   patch_eval_data_clear_d(&ED->patch);
@@ -899,15 +844,6 @@ void setup_detjac_to_detjac_omp_d(int max_threads, endgame_data_t **EG, tracking
 																	FILE ***NONSOLN_copy, FILE *NONSOLN,
 																	tracker_config_t **T_copy, tracker_config_t *T,
 																	detjactodetjac_eval_data_d **BED_copy, detjactodetjac_eval_data_d *ED_d, detjactodetjac_eval_data_mp *ED_mp)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: setup everything needed to do zero dimensional tracking*
- *  using OpenMP                                                 *
- \***************************************************************/
-// if max_threads == 1, things are only pointers to the actual values,
-// otherwise, they are copies
 {
   int ii;
   // error checking
@@ -1011,15 +947,6 @@ void setup_detjac_to_detjac_omp_d(int max_threads, endgame_data_t **EG, tracking
 }
 
 void clear_detjactodetjac_omp_d(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount, FILE ***OUT_copy, FILE *OUT, FILE ***RAWOUT_copy, FILE *RAWOUT, FILE ***MIDOUT_copy, FILE *MIDOUT, FILE ***FAIL_copy, FILE *FAIL, FILE ***NONSOLN_copy, FILE *NONSOLN, tracker_config_t **T_copy, detjactodetjac_eval_data_d **BED_copy)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: copy the relevant data back to the standard spot and   *
- *  clear the allocated data that was used by OpenMP             *
- \***************************************************************/
-// if max_threads == 1, things are only pointers to the actual values,
-// otherwise, they are copies
 {
   int ii;
 	
@@ -1174,14 +1101,14 @@ void setupdetjactodetjacEval_d(tracker_config_t *T,char preprocFile[], char degr
 															 witness_set & W,
 															 vec_mp old_projection_full_prec,
 															 vec_mp new_projection_full_prec,
-															 solver_configuration *solve_options)
+															 solver_configuration & solve_options)
 {
   int ii;
 	BED->num_variables = W.num_variables;
 
 	
   setupPreProcData(preprocFile, &BED->preProcData);
-	BED->verbose_level = solve_options->verbose_level;
+	BED->verbose_level = solve_options.verbose_level;
 	
   generic_setup_patch(&BED->patch,W);
 	if (T->MPType==2) {
@@ -1215,7 +1142,7 @@ void setupdetjactodetjacEval_d(tracker_config_t *T,char preprocFile[], char degr
 	
 	
 	
-	if (solve_options->use_gamma_trick==1)
+	if (solve_options.use_gamma_trick==1)
 		get_comp_rand_d(BED->gamma); // set gamma to be random complex value
 	else
 		set_one_d(BED->gamma);
@@ -1225,11 +1152,11 @@ void setupdetjactodetjacEval_d(tracker_config_t *T,char preprocFile[], char degr
   { // using AMP - initialize using 16 digits & 64-bit precison
     int digits = 16, prec = 64;
 		initMP(prec);
-		BED->BED_mp->verbose_level = solve_options->verbose_level;
+		BED->BED_mp->verbose_level = solve_options.verbose_level;
 		BED->BED_mp->curr_prec = prec;
 		
 		BED->BED_mp->gamma_rat = (mpq_t *)bmalloc(2 * sizeof(mpq_t));
-		if (solve_options->use_gamma_trick==1){
+		if (solve_options.use_gamma_trick==1){
 			get_comp_rand_rat(BED->gamma, BED->BED_mp->gamma, BED->BED_mp->gamma_rat, prec, T->AMP_max_prec, 1, 1);
 		}
 		else{
@@ -1306,12 +1233,6 @@ void setupdetjactodetjacEval_d(tracker_config_t *T,char preprocFile[], char degr
 
 
 void cp_detjactodetjac_eval_data_d(detjactodetjac_eval_data_d *BED, detjactodetjac_eval_data_d *BED_d_input, detjactodetjac_eval_data_mp *BED_mp_input, int MPType)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: stores a copy of BED_(t)_input to BED                  *
- \***************************************************************/
 {
 	printf("entering cp_detjactodetjac_eval_data_d\nthis function needs much attention, as things which should be copied are not!\n");
 	exit(-1);
@@ -1346,12 +1267,6 @@ void cp_detjactodetjac_eval_data_d(detjactodetjac_eval_data_d *BED, detjactodetj
 
 
 int detjactodetjac_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d in_d, point_mp in_mp, int in_prec, void const *ED_d, void const *ED_mp)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: compute the dehom point                                *
- \***************************************************************/
 {
 	//  basic_eval_data_d *BED_d = NULL;
 	//  basic_eval_data_mp *BED_mp = NULL;
@@ -1390,24 +1305,12 @@ int detjactodetjac_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d 
 
 
 int change_detjactodetjac_eval_prec(void const *ED, int prec)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: change precision for standard zero dimensional solving *
- \***************************************************************/
 {
   change_detjactodetjac_eval_prec_mp(prec, (detjactodetjac_eval_data_mp *)ED);
   return 0;
 }
 
 void change_detjactodetjac_eval_prec_mp(int new_prec, detjactodetjac_eval_data_mp *BED)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: change precision for the main part of BED              *
- \***************************************************************/
 {
 	
 	
@@ -1467,13 +1370,7 @@ int detjac_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int c
 															 vec_mp old_projection_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 															 vec_mp new_projection_full_prec,
 															 witness_set *W_new,
-															 solver_configuration *solve_options)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES:                                                        *
- \***************************************************************/
+															 solver_configuration & solve_options)
 {
 	double parse_time = 0;
   FILE *OUT = NULL, *FAIL = fopen("failed_paths", "w"), *midOUT = NULL, *rawOUT = fopen("raw_data", "w");
@@ -1497,7 +1394,7 @@ int detjac_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int c
 	//necessary for later whatnot
 	int userHom = 0, useRegen = 0, pathMod = 0, paramHom = 0;
 	
-	cp_tracker_config_t(&T, &solve_options->T);
+	cp_tracker_config_t(&T, &solve_options.T);
 	
 	
 	// initialize latest_newton_residual_mp
@@ -1578,8 +1475,8 @@ int detjac_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int c
 	
 	// check for path crossings
 	int num_crossings = 0;
-	if (solve_options->use_midpoint_checker==1) {
-		midpoint_checker(trackCount.numPoints, num_variables,solve_options->midpoint_tol, &num_crossings);
+	if (solve_options.use_midpoint_checker==1) {
+		midpoint_checker(trackCount.numPoints, num_variables,solve_options.midpoint_tol, &num_crossings);
 	}
 	
 	// setup num_sols
@@ -1645,14 +1542,7 @@ void detjac_to_detjac_track_mp(trackingStats *trackCount,
 															 int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 															 int (*change_prec)(void const *, int),
 															 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
-															 solver_configuration *solve_options)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: does standard zero dimensional tracking                *
- *  in either double precision or adaptive precision             *
- \***************************************************************/
+															 solver_configuration & solve_options)
 {
 	
   int ii, oid, max = max_threads();
@@ -1705,7 +1595,7 @@ void detjac_to_detjac_track_mp(trackingStats *trackCount,
 	for (ii = 0; ii < W.num_pts; ii++)
 	{ // get current thread number
 		oid = thread_num();
-		if (solve_options->verbose_level>=1)
+		if (solve_options.verbose_level>=1)
 			printf("detjac_to_detjac tracking path %d of %d\n",ii,W.num_pts);
 		detjac_to_detjac_track_path_mp(solution_counter, &EG[oid], &startPts[ii], OUT_copy[oid], MIDOUT_copy[oid], &T_copy[oid], &BED_copy[oid], curr_eval_mp, change_prec, find_dehom); //curr_eval_d,
 		
@@ -1764,7 +1654,6 @@ void detjac_to_detjac_track_mp(trackingStats *trackCount,
 
 
 
-// derived from zero_dim_track_path_d
 void detjac_to_detjac_track_path_mp(int pathNum, endgame_data_t *EG_out,
 																		point_data_mp *Pin,
 																		FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
@@ -1772,13 +1661,6 @@ void detjac_to_detjac_track_path_mp(int pathNum, endgame_data_t *EG_out,
 																		int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 																		int (*change_prec)(void const *, int),
 																		int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *))
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: actually does the zero-dimensional tracking and sets   *
- *  up EG_out                                                    *
- \***************************************************************/
 {
 	
 	EG_out->pathNum = pathNum;
@@ -1805,7 +1687,6 @@ void detjac_to_detjac_track_path_mp(int pathNum, endgame_data_t *EG_out,
 
 
 
-// derived from zero_dim_basic_setup_d
 int detjac_to_detjac_setup_mp(FILE **OUT, boost::filesystem::path outName,
 															FILE **midOUT, boost::filesystem::path midName,
 															tracker_config_t *T,
@@ -1820,13 +1701,7 @@ int detjac_to_detjac_setup_mp(FILE **OUT, boost::filesystem::path outName,
 															witness_set & W,
 															vec_mp old_projection_full_prec,
 															vec_mp new_projection_full_prec,
-															solver_configuration *solve_options)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES: number of original variables                   *
- * NOTES: setup for zero dimensional tracking                    *
- \***************************************************************/
+															solver_configuration & solve_options)
 { // need to create the homotopy
 	
   int rank = 0, patchType, ssType, numOrigVars, adjustDegrees, numGps;
@@ -1864,7 +1739,6 @@ int detjac_to_detjac_setup_mp(FILE **OUT, boost::filesystem::path outName,
 
 
 
-//this derived from basic_eval_d
 int detjac_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED)
 { // evaluates a special homotopy type, built for bertini_real
 //	printf("entering detjacdetjac_eval_mp\n");
@@ -2166,12 +2040,6 @@ int detjac_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer,
 
 
 void detjactodetjac_eval_clear_mp(detjactodetjac_eval_data_mp *ED, int clearRegen, int MPType)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: clear ED                                               *
- \***************************************************************/
 {
 	
   patch_eval_data_clear_mp(&ED->patch);
@@ -2203,15 +2071,6 @@ void setup_detjac_to_detjac_omp_mp(int max_threads, endgame_data_t **EG, trackin
 																	 FILE ***NONSOLN_copy, FILE *NONSOLN,
 																	 tracker_config_t **T_copy, tracker_config_t *T,
 																	 detjactodetjac_eval_data_mp **BED_copy, detjactodetjac_eval_data_mp *ED_mp)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: setup everything needed to do zero dimensional tracking*
- *  using OpenMP                                                 *
- \***************************************************************/
-// if max_threads == 1, things are only pointers to the actual values,
-// otherwise, they are copies
 {
   int ii;
   // error checking
@@ -2323,15 +2182,6 @@ void setup_detjac_to_detjac_omp_mp(int max_threads, endgame_data_t **EG, trackin
 }
 
 void clear_detjactodetjac_omp_mp(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount, FILE ***OUT_copy, FILE *OUT, FILE ***RAWOUT_copy, FILE *RAWOUT, FILE ***MIDOUT_copy, FILE *MIDOUT, FILE ***FAIL_copy, FILE *FAIL, FILE ***NONSOLN_copy, FILE *NONSOLN, tracker_config_t **T_copy, detjactodetjac_eval_data_mp **BED_copy)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: copy the relevant data back to the standard spot and   *
- *  clear the allocated data that was used by OpenMP             *
- \***************************************************************/
-// if max_threads == 1, things are only pointers to the actual values,
-// otherwise, they are copies
 {
   int ii;
 	
@@ -2486,13 +2336,13 @@ void setupdetjactodetjacEval_mp(char preprocFile[], char degreeFile[], prog_t *d
 																witness_set & W,
 																vec_mp old_projection_full_prec,
 																vec_mp new_projection_full_prec,
-																solver_configuration *solve_options)
+																solver_configuration & solve_options)
 {
   int ii;
 	int digits = prec_to_digits(mpf_get_default_prec());
   setupPreProcData(preprocFile, &BED->preProcData);
 	
-	BED->verbose_level = solve_options->verbose_level;
+	BED->verbose_level = solve_options.verbose_level;
 	
 	BED->num_variables = W.num_variables;
 	
@@ -2519,7 +2369,7 @@ void setupdetjactodetjacEval_mp(char preprocFile[], char degreeFile[], prog_t *d
 	
 	
 	init_mp2(BED->gamma,prec);
-	if (solve_options->use_gamma_trick==1){
+	if (solve_options.use_gamma_trick==1){
 		get_comp_rand_mp(BED->gamma); // set gamma to be random complex value
 	}
 	else{
@@ -2534,12 +2384,6 @@ void setupdetjactodetjacEval_mp(char preprocFile[], char degreeFile[], prog_t *d
 
 
 void cp_detjactodetjac_eval_data_mp(detjactodetjac_eval_data_mp *BED, detjactodetjac_eval_data_mp *BED_mp_input, int MPType)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: stores a copy of BED_(t)_input to BED                  *
- \***************************************************************/
 {
 	printf("entering cp_detjactodetjac_eval_data_mp\nthis function is likely broken\n");
 	exit(-1);

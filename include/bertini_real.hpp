@@ -19,12 +19,7 @@
 #ifndef _BERTINI_REAL_H
 #define _BERTINI_REAL_H
 
-extern "C" {
-#include "cascade.h"
-}
-extern "C" {
-#include "polysolve.h"
-}
+#include "missing_bertini_headers.hpp"
 
 
 #include "fileops.hpp"
@@ -36,7 +31,7 @@ extern "C" {
 #include "programConfiguration.hpp"
 #include "witnessSet.hpp"
 #include "output.hpp"
-#include "missing_bertini_headers.hpp"
+
 #include "surface.hpp"
 #include "curve.hpp"
 #include "parallelism.hpp"

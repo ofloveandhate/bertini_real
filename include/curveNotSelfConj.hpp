@@ -6,9 +6,8 @@
 #define _CURVE_NOTSELFCONJ_H
 
 #include <gmp.h>
-extern "C" {
-#include "polysolve.h"
-}
+
+#include "missing_bertini_headers.hpp"
 
 
 #include "solver.hpp"
@@ -20,7 +19,7 @@ extern "C" {
 }
 
 #include "fileops.hpp"
-#include "missing_bertini_headers.hpp"
+
 
 
 /**
@@ -42,8 +41,8 @@ void 	computeCurveNotSelfConj(witness_set		& W,
 															vertex_set		&V,
 															int						num_vars,
 															boost::filesystem::path input_file,
-															BR_configuration *program_options,
-															solver_configuration * solve_options);
+															BR_configuration & program_options,
+															solver_configuration & solve_options);
 
 
 

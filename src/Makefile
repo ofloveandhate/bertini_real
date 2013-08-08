@@ -25,17 +25,17 @@ MACHINE_SPECIFICS:=
   #check environment variable $(MACHINENAME), if defined
 ifeq ($(MACHINENAME),MACBRAKE)
     #dan brake's machine.  he uses different places for his includes, etc.
-    INC:= -I/usr/local/include  $(INC) 
+    INC:= -I/usr/local/include  -I/usr/local/Cellar/mpich2/3.0.4/include $(INC) 
     BISON=bison# bison in path already
     LIBS=-lm -lmpfr -lgmp# brake has libraries in path for linking, via brew.  no need to specify here
-    COMPcc=gcc 
+    COMPcc=mpicc -cc=clang 
 	COMPpp = mpic++ -cxx=clang++
     STATICFLAG=#  on macintosh, do not static compile (get missing lcrt0.o problem)
 	BERTINILIB:=$(HOME)/lib/libbertini.a
 	INSTALLPATH:=$(HOME)/bin
 	BERTINIHEADERS:=$(HOME)/bertini_source/include
 	
-	BOOSTLOC := /usr/local/Cellar/boost/1.53.0/lib/
+	BOOSTLOC := /usr/local/Cellar/boost/1.54.0/lib/
 	BOOSTSUFFIX:=-mt
 	MACHINESPECIFICS:= 
 endif
@@ -89,9 +89,9 @@ LIBSboost := $(BOOSTLOC)libboost_system$(BOOSTSUFFIX).a $(BOOSTLOC)libboost_file
 LIBS:=$(LIBS) ./libpartitionparse.a $(LIBSboost)
 
 #a few last definitions
-INC:=$(INC) -I../include/  -I$(BERTINIHEADERS) #this includes the header files for bertini_real, etc   
+INC:=$(INC) -I../include  -I$(BERTINIHEADERS) #this includes the header files for bertini_real, etc   
 
-ARGS= $(OPT) $(MACHINESPECIFICS) $(INC)
+ARGS= $(OPT) -D_HAVE_MPI $(MACHINESPECIFICS) $(INC)
 OBJFILES= parallelism.o witnessSet.o   derivative_systems.o data_type.o	programConfiguration.o determinant_derivative.o output.o fileops.o isosingular.o curveNotSelfConj.o curveSelfConj.o postProcessing.o	checkSelfConjugate.o nullspace_left.o surface.o curve.o
 SOLVERS= solver.o  solver_nullspace_left.o solver_detjactodetjac.o solver_linprodtodetjac.o solver_multilintolin.o solver_lintolin.o
 FLEXFILES=lex.partitionParse.o 
@@ -103,13 +103,13 @@ FLEXFILES=lex.partitionParse.o
 ###
 
 #all comes first, so is the default rule when you `make'
-all : libpartitionparse bertini_real data_to_set sampler;    
+all : libpartitionparse bertini_real data_to_set sampler
 
 libpartitionparse: lex.partitionParse.o
 	ar rcs libpartitionparse.a lex.partitionParse.o
 
 #makes the bertini_real program
-bertini_real : bertini_real.cpp $(OBJFILES)  $(SOLVERS) $(FLEXFILES);
+bertini_real : bertini_real.cpp $(OBJFILES)  $(SOLVERS) $(FLEXFILES)
 	$(COMPpp) $(ARGS) -o bertini_real bertini_real.cpp $(OBJFILES)  $(SOLVERS)  $(FLEXFILES) $(BERTINILIB)  $(LIBS)  $(STATICFLAG)
 
 

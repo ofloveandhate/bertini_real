@@ -8,8 +8,8 @@
 
 int checkSelfConjugate(witness_set & W,
                        int           num_vars,
-                       boost::filesystem::path input_file,
-											 std::string stifle_text)
+											 BR_configuration & program_options,
+											 boost::filesystem::path input_file)
 /***************************************************************\
  * USAGE: check if component is self conjugate                  *
  * ARGUMENTS: witness set, # of variables and name of input file*
@@ -18,8 +18,9 @@ int checkSelfConjugate(witness_set & W,
  \***************************************************************/
 {
   int *declarations = NULL;
-	std::string bertini_command="bertini input_membership_test ";
-	bertini_command.append(stifle_text);
+	std::string bertini_command=program_options.bertini_command;
+	bertini_command.append(" input_membership_test ");
+	bertini_command.append(program_options.stifle_text);
   FILE *IN = NULL;
 	
 
@@ -48,7 +49,7 @@ int checkSelfConjugate(witness_set & W,
 	write_member_points_sc(W.pts_mp[0]);//,fmt
 	
 	// Do membership test
-	std::cout << "*\n" << bertini_command << "\n*" << std::endl;
+	std::cout << "*\n" << program_options.bertini_command << "\n*" << std::endl;
   system(bertini_command.c_str());
 	
 	int *component_numbers;
@@ -84,8 +85,8 @@ int checkSelfConjugate(witness_set & W,
 
 int get_incidence_number(const witness_set & W,
 												 int           num_vars,
-												 boost::filesystem::path input_file,
-												 std::string stifle_text)
+												 BR_configuration & program_options,
+												 boost::filesystem::path input_file)
 /***************************************************************\
  * USAGE: check if component is self conjugate                  *
  * ARGUMENTS: witness set, # of variables and name of input file*
@@ -94,8 +95,9 @@ int get_incidence_number(const witness_set & W,
  \***************************************************************/
 {
   
-	std::string bertini_command="bertini input_membership_test ";
-	bertini_command.append(stifle_text);
+	std::string system_command=program_options.bertini_command;
+	system_command.append(" input_membership_test ");
+	system_command.append(program_options.stifle_text);
   
 	
   // setup input file
@@ -116,8 +118,8 @@ int get_incidence_number(const witness_set & W,
 	//setup  member_points file, including both the first witness point, and its complex-conjugate
 	write_member_points_singlept(W.pts_mp[0]);//,fmt
 	// Do membership test
-	std::cout << "*\n" << bertini_command << "\n*" << std::endl;
-  system(bertini_command.c_str());
+	std::cout << "*\n" << system_command << "\n*" << std::endl;
+  system(system_command.c_str());
 	
 	int component_number;
 	

@@ -18,15 +18,13 @@
 #define WITNESS_SET_H_
 
 
-extern "C" {
-#include "polysolve.h"
-}
+#include "missing_bertini_headers.hpp"
+
 
 
 #include "data_type.hpp"
 
 #include "fileops.hpp"
-#include "missing_bertini_headers.hpp"
 
 
 
@@ -223,7 +221,7 @@ public:
 	};
 	
 
-	
+	void only_natural_vars();
 	void only_first_vars(int num_vars);
 	void sort_for_real(tracker_config_t T);
 	void sort_for_unique(tracker_config_t T);

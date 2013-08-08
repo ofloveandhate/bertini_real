@@ -24,7 +24,7 @@ void Output_Main(BR_configuration program_options, witness_set & W, curve_decomp
 // TODO:  this should be a write call, not a copy
 	copyfile(program_options.input_deflated_filename, base / program_options.input_deflated_filename.filename());
 
-	copyfile("Rand_matrix", base / "Rand_Matrix");
+//	copyfile("Rand_matrix", base / "Rand_Matrix");
 	
 	V.print(base / "V.vertex");
 	

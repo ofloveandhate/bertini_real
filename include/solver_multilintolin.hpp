@@ -14,13 +14,16 @@
 #ifndef _MULTILINSOLVER_H
 #define _MULTILINSOLVER_H
 
+#include "missing_bertini_headers.hpp"
+
+
+
 #include "solver.hpp"
 #include "fileops.hpp"
 #include "data_type.hpp"
 #include "programConfiguration.hpp"
 #include "postProcessing.hpp"
 #include "witnessSet.hpp"
-#include "missing_bertini_headers.hpp"
 
 
 
@@ -108,7 +111,7 @@ int multilintolin_solver_main(int MPType,
 															mat_mp randomizer_matrix_full_prec,
 															vec_mp *new_linears_full_prec,
 															witness_set *W_new,
-															solver_configuration *solve_options);
+															solver_configuration & solve_options);
 
 
 
@@ -118,7 +121,7 @@ int multilin_to_lin_solver_d(int MPType,
 												mat_mp randomizer_matrix_full_prec,
 												vec_mp *new_linears_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 												witness_set *W_new,
-												solver_configuration *solve_options);
+												solver_configuration & solve_options);
 
 
 
@@ -133,7 +136,7 @@ void multilin_to_lin_track_d(trackingStats *trackCount,
 												int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
 												int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 												int (*change_prec)(void const *, int),
-												int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),solver_configuration *solve_options);
+												int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),solver_configuration & solve_options);
 
 
 
@@ -149,7 +152,7 @@ int multilin_to_lin_setup_d(FILE **OUT, boost::filesystem::path outName,
 														int findStartPts, boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
 														mat_mp randomizer_matrix_full_prec,
 														witness_set & W,
-														solver_configuration *solve_options);
+														solver_configuration & solve_options);
 
 //the new custom evaluator for this solver
 
@@ -170,7 +173,7 @@ void setupmultilintolinEval_d(tracker_config_t *T,
 															multilintolin_eval_data_d *BED,
 															mat_mp randomizer_matrix_full_prec,
 															witness_set & W,
-															solver_configuration *solve_options);
+															solver_configuration & solve_options);
 
 
 
@@ -191,7 +194,7 @@ int multilin_to_lin_solver_mp(int MPType,
 												 mat_mp randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
 												 vec_mp *new_linears_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 												 witness_set *W_new,
-												 solver_configuration *solve_options);
+												 solver_configuration & solve_options);
 
 void multilin_to_lin_track_mp(trackingStats *trackCount,
 												 FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
@@ -204,7 +207,7 @@ void multilin_to_lin_track_mp(trackingStats *trackCount,
 												 int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 												 int (*change_prec)(void const *, int),
 												 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
-												 solver_configuration *solve_options);
+												 solver_configuration & solve_options);
 
 
 
@@ -222,7 +225,7 @@ int multilin_to_lin_setup_mp(FILE **OUT, boost::filesystem::path outName,
 														 boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
 												mat_mp randomizer_matrix_full_prec,
 												witness_set & W,
-												solver_configuration *solve_options);
+												solver_configuration & solve_options);
 
 int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED);
 
@@ -235,7 +238,7 @@ void setupmultilintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *du
 													multilintolin_eval_data_mp *BED, int adjustDegrees,
 													mat_mp randomizer_matrix_full_prec,
 													witness_set & W,
-													solver_configuration *solve_options);
+													solver_configuration & solve_options);
 
 
 int check_issoln_multilintolin_d(endgame_data_t *EG,

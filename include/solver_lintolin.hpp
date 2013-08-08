@@ -14,13 +14,16 @@
 #ifndef _LINTOLINSOLVER_H
 #define _LINTOLINSOLVER_H
 
+#include "missing_bertini_headers.hpp"
+
+
+
 #include "solver.hpp"
 #include "fileops.hpp"
 #include "data_type.hpp"
 #include "programConfiguration.hpp"
 #include "postProcessing.hpp"
 #include "witnessSet.hpp"
-#include "missing_bertini_headers.hpp"
 
 // the mp version
 typedef struct
@@ -109,7 +112,7 @@ int lintolin_solver_main(int MPType,
 													 vec_mp *new_linears_full_prec,
 													 int num_new_linears,
 													 witness_set *W_new,
-													 solver_configuration *solve_options);
+													 solver_configuration & solve_options);
 
 
 
@@ -120,7 +123,7 @@ int lintolin_solver_d(int MPType,
 												vec_mp *new_linears_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 												int num_new_linears,
 												witness_set *W_new,
-												solver_configuration *solve_options);
+												solver_configuration & solve_options);
 
 
 
@@ -136,7 +139,7 @@ void lintolin_track_d(trackingStats *trackCount,
 												int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
 												int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 												int (*change_prec)(void const *, int),
-												int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),solver_configuration *solve_options);
+												int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),solver_configuration & solve_options);
 
 //void lintolin_track_path_d(int pathNum,
 //														 endgame_data_t *EG_out, point_data_d *Pin, FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
@@ -160,7 +163,7 @@ int lintolin_setup_d(FILE **OUT, boost::filesystem::path outName,
 										 int findStartPts, boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
 										 mat_mp randomizer_matrix_full_prec,
 										 witness_set & W,
-										 solver_configuration *solve_options);
+										 solver_configuration & solve_options);
 
 //the new custom evaluator for this solver
 
@@ -195,7 +198,7 @@ void setuplintolinEval_d(tracker_config_t *T,
 											 lintolin_eval_data_d *BED, int adjustDegrees,
 												 mat_mp randomizer_matrix_full_prec,
 												 witness_set & W,
-												 solver_configuration *solve_options);
+												 solver_configuration & solve_options);
 
 
 
@@ -208,8 +211,6 @@ int lintolin_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d in_d, 
 
 
 int change_lintolin_eval_prec(void const *ED, int prec);
-void change_lintolin_eval_prec_mp(int new_prec, lintolin_eval_data_mp *BED);
-
 
 
 
@@ -220,7 +221,7 @@ int lintolin_solver_mp(int MPType,
 												 vec_mp *new_linears_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 												 int num_new_linears,
 												 witness_set *W_new,
-												 solver_configuration *solve_options);
+												 solver_configuration & solve_options);
 
 void lintolin_track_mp(trackingStats *trackCount,
 												 FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
@@ -234,7 +235,7 @@ void lintolin_track_mp(trackingStats *trackCount,
 												 int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 												 int (*change_prec)(void const *, int),
 												 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
-												 solver_configuration *solve_options);
+												 solver_configuration & solve_options);
 
 //												 int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
 
@@ -260,7 +261,7 @@ int lintolin_setup_mp(FILE **OUT, boost::filesystem::path outName,
 											int findStartPts, boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
 											mat_mp randomizer_matrix,
 											witness_set & W,
-											solver_configuration *solve_options);
+											solver_configuration & solve_options);
 
 int lintolin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED);
 
@@ -281,7 +282,7 @@ void setuplintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *dummyPr
 													lintolin_eval_data_mp *BED, int adjustDegrees,
 													mat_mp randomizer_matrix_full_prec,
 													witness_set & W,
-													solver_configuration *solve_options);
+													solver_configuration & solve_options);
 
 
 //void cp_lintolin_eval_data_d(lintolin_eval_data_d *BED, lintolin_eval_data_d *BED_d_input, basic_eval_data_mp *BED_mp_input, int MPType);

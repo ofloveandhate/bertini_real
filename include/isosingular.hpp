@@ -17,23 +17,21 @@
 #define _ISOSINGULAR_H
 
 
-extern "C" {
-#include "polysolve.h"
-}
+#include "missing_bertini_headers.hpp"
+
 
 
 #include "data_type.hpp"
 
 #include "fileops.hpp"
-#include "missing_bertini_headers.hpp"
 #include "derivative_systems.hpp"
 
 
 // isosingular.c
 int isosingular_deflation(int *num_deflations, int **deflation_sequence,
+													BR_configuration & program_options,
 													boost::filesystem::path inputFile,
-													boost::filesystem::path point,
-													std::string bertini_command, std::string matlab_command,
+													boost::filesystem::path witness_point_filename,
 													int max_deflations,
 													int dim, int component_number);
 

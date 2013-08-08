@@ -390,6 +390,11 @@ void witness_set::print_to_screen()
 
 
 
+void witness_set::only_natural_vars()
+{
+	witness_set::only_first_vars(this->num_variables - this->num_synth_vars);
+}
+
 
 void witness_set::only_first_vars(int num_vars)
 {
@@ -407,11 +412,30 @@ void witness_set::only_first_vars(int num_vars)
 		vec_cp_mp(this->pts_mp[ii], tempvec);
 	}
 	
-//TODO: fix this line
+
 	this->num_synth_vars = this->num_synth_vars - (this->num_variables - num_vars); // is this line correct?
 	this->num_variables = num_vars;
 	
+	int patch_size_counter = 0, trim_from_here =  0;
+	for (int ii=0; ii<this->num_patches; ii++) {
+		patch_size_counter += this->patch_mp[ii]->size;
+		if (patch_size_counter == num_vars)
+		{
+			trim_from_here = ii+1;
+		}
+	}
 	
+	if (trim_from_here==0) {
+		std::cerr << "problem: the sum of the patche sizes never equalled the number of variables to trim to...\nhence, the trimming operation could not complete." << std::endl;
+		deliberate_segfault();
+	}
+	
+	for (int ii=0; ii<this->num_patches; ii++) {
+		clear_vec_mp(this->patch_mp[ii]);
+	}
+	
+	this->patch_mp = (vec_mp *) brealloc(this->patch_mp, trim_from_here* sizeof(vec_mp));
+	this->num_patches = trim_from_here;
 	
 	clear_vec_mp(tempvec);
 	return;
@@ -572,7 +596,7 @@ void witness_set::merge(const witness_set & W_in){
 //	}
 	
 	if (W_in.num_synth_vars != this->num_synth_vars) {
-		printf("merging two witness sets with differing numbers of synthetic variables. %d left, %d right\n",
+		printf("merging two witness sets with differing numbers of synthetic variables. %d merging set, %d existing\n",
 					 W_in.num_synth_vars, this->num_synth_vars);
 		deliberate_segfault();
 	}

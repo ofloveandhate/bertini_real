@@ -24,18 +24,13 @@
 #ifndef _DATA_TYPE_H
 #define _DATA_TYPE_H
 
-extern "C" {
-#include "cascade.h"
-}
-extern "C" {
-#include "polysolve.h"
-}
+#include "missing_bertini_headers.hpp"
 
 
 #include "boost/filesystem.hpp"
 #include "fileops.hpp"
 
-#include "missing_bertini_headers.hpp"
+
 
 /*** low-level data types. ***/
 
@@ -132,16 +127,108 @@ public:
 	std::vector<vertex> vertices;  //Isolated real points.
 	int num_vertices;
 	
-	void print_to_screen();
+	int num_natural_variables;  ///< the number of natural variables appearing in the problem to solve.
+	
+	void print_to_screen(); ///< operator for displaying information to screen
 	
 	int add_vertex(const vertex new_vertex);
 	int setup_vertices(boost::filesystem::path INfile);
 	
+	mpf_t abs;
+	mpf_t zerothresh;
+	comp_mp diff;
+	vec_mp checker_1;
+	vec_mp checker_2;
+	
 	vertex_set(){
-		this->num_vertices = 0;
+		init();
 	}
 	
+	vertex_set(int num_vars){
+		init();
+		
+		this->num_natural_variables = num_vars;
+		
+		change_size_vec_mp(checker_1, num_vars);
+		change_size_vec_mp(checker_2, num_vars);
+		checker_1->size = checker_2->size = num_vars;
+	}
+	
+
+	
+
+	
+	
+	vertex_set & operator=( const vertex_set& other) {
+		copy(other);
+		return *this;
+	}
+	
+	vertex_set(const vertex_set &other)
+	{
+		init();
+		copy(other);
+	}
+	
+	~vertex_set()
+	{
+		clear();
+	}
+	
+	
 	void print(boost::filesystem::path outputfile);
+	
+	
+private:
+	
+	void init()
+	{
+		this->num_vertices = 0;
+		this->num_natural_variables = 0;
+		
+		init_vec_mp(checker_1,0);
+		init_vec_mp(checker_2,0);
+		
+		
+		
+		init_mp(this->diff);
+
+		mpf_init(abs);
+		mpf_init(zerothresh);
+		mpf_set_d(zerothresh, 1e-8);
+	}
+	
+	
+	void copy(const vertex_set &other)
+	{
+		this->num_vertices = other.num_vertices;
+		this->num_natural_variables = other.num_natural_variables;
+		
+		vec_cp_mp(this->checker_1,other.checker_1);
+		vec_cp_mp(this->checker_2,other.checker_2);
+		
+	}
+	
+	void clear()
+	{
+		clear_vec_mp(checker_1);
+		clear_vec_mp(checker_2);
+	}
+
+};
+
+
+
+
+class cell
+{
+	
+private:
+//	int n;
+//	function homotopy;
+	
+public:
+	
 };
 
 
@@ -149,12 +236,12 @@ public:
 /**
  the edge data type.  has three indices: left, right, midpt.
  */
-class edge
+class edge : public cell
 {
 public:
-  int left;  //index into vertices
-  int right; //index into vertices
-	int midpt; // index into vertices
+  int left;  ///< index into vertices
+  int right; ///< index into vertices
+	int midpt; ///<  index into vertices
 	
 	edge() {
 		left = right = midpt = -1;
@@ -169,6 +256,53 @@ public:
 	// other defaults are correct for this type.
 	
 };
+
+
+
+
+/**
+ the face data type..
+ */
+class face : public cell
+{
+public:
+	
+  std::vector<int>	left;  ///< index into vertices
+  std::vector<int>	right; ///< index into vertices
+	int top; ///<  index into edges
+	int bottom; ///<  index into edges
+	
+	int num_left;  ///<  counters
+	int num_right; ///< 
+	
+	comp_mp left_crit_val; ///< 
+	comp_mp right_crit_val; ///< 
+	
+	int interior_pt; ///< index into vertex set
+	
+	face(){init_mp(left_crit_val); init_mp(right_crit_val);} ///<  constructor
+	~face(){clear_mp(left_crit_val); clear_mp(right_crit_val);}  ///<  destructor
+	
+	face(const face & other){ ///<  copy
+		init_mp(left_crit_val); init_mp(right_crit_val);
+		
+		set_mp(this->left_crit_val, other.left_crit_val);
+		set_mp(this->right_crit_val, other.right_crit_val);
+	}
+	
+	face& operator=(const face & other){ ///<  assignment
+		init_mp(left_crit_val); init_mp(right_crit_val);
+		
+		set_mp(this->left_crit_val, other.left_crit_val);
+		set_mp(this->right_crit_val, other.right_crit_val);
+		return *this;
+	}
+	
+	
+};
+
+
+
 
 
 
@@ -359,47 +493,6 @@ public:
 
 
 
-/**
- the face data type..
- */
-class face
-{
-public:
-	
-  std::vector<int>	left;  //index into vertices
-  std::vector<int>	right; //index into vertices
-	int top; // index into edges
-	int bottom; // index into edges
-	
-	int num_left;  // counters
-	int num_right;
-	
-	comp_mp left_crit_val;
-	comp_mp right_crit_val;
-	
-	int interior_pt; // index into vertex set
-	
-	face(){init_mp(left_crit_val); init_mp(right_crit_val);} // constructor
-	~face(){clear_mp(left_crit_val); clear_mp(right_crit_val);}  // destructor
-	
-	face(const face & other){ // copy
-		init_mp(left_crit_val); init_mp(right_crit_val);
-		
-		set_mp(this->left_crit_val, other.left_crit_val);
-		set_mp(this->right_crit_val, other.right_crit_val);
-	}
-	
-	face& operator=(const face & other){ // assignment
-		init_mp(left_crit_val); init_mp(right_crit_val);
-		
-		set_mp(this->left_crit_val, other.left_crit_val);
-		set_mp(this->right_crit_val, other.right_crit_val);
-		return *this;
-	}
-	
-	
-};
-
 
 
 /**
@@ -414,7 +507,7 @@ class surface_decomposition : public decomposition
 	std::vector<face> faces;
 	//these counters keep track of the number of things
 	
-	int      num_edges;
+	int      num_edges;  
 	int      num_faces;
 
 
@@ -506,9 +599,24 @@ int get_num_vars_PPD(preproc_data PPD);
 
 
 void cp_patch_mp(patch_eval_data_mp *PED, patch_eval_data_mp PED_input);
+void cp_patch_d(patch_eval_data_d *PED, patch_eval_data_d PED_input);
 void cp_preproc_data(preproc_data *PPD, preproc_data PPD_input);
 
+void sort_increasing_by_real(vec_mp *projections_sorted, int **index_tracker, vec_mp projections_input);
+
+void make_randomization_matrix_based_on_degrees(mat_mp randomization_matrix, int ** randomized_degrees,
+																								int num_variables, int num_funcs);
+int compare_integers_decreasing(const void * left_in, const void * right_in);
+
+void send_patch_mp   (patch_eval_data_mp * patch);
+void receive_patch_mp(patch_eval_data_mp * patch);
 
 
+void send_patch_d   (patch_eval_data_d * patch);
+void receive_patch_d(patch_eval_data_d * patch);
+
+
+void send_preproc_data(preproc_data *PPD);
+void receive_preproc_data(preproc_data *PPD);
 #endif
 

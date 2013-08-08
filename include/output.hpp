@@ -17,12 +17,8 @@
 #ifndef _BR_OUTPUT_H
 #define _BR_OUTPUT_H
 
-extern "C" {
-#include "cascade.h"
-}
-extern "C" {
-#include "polysolve.h"
-}
+#include "missing_bertini_headers.hpp"
+
 
 #include "witnessSet.hpp"
 
@@ -30,7 +26,6 @@ extern "C" {
 #include "data_type.hpp"
 
 #include "partitionParse.h"
-#include "missing_bertini_headers.hpp"
 #include "programConfiguration.hpp"
 /**
  

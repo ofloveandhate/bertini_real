@@ -9,8 +9,8 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 													 int ambient_dim,
 													 int target_dim,
 													 int target_crit_codim,
-													 BR_configuration *program_options,
-													 solver_configuration *solve_options,
+													 BR_configuration & program_options,
+													 solver_configuration & solve_options,
 													 nullspace_config *ns_config)
 {
 	//many of the 1's here should be replaced by the number of patch equations, or the number of variable_groups
@@ -36,7 +36,7 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 												 W,
 												 solve_options);
 	
-	solve_options->T.AMP_bound_on_degree = (double) max_degree+1;
+	solve_options.T.AMP_bound_on_degree = (double) max_degree+1;
 	
 	printf("max_degree: %d\nnum_jac_equations: %d\n",max_degree,ns_config->num_jac_equations);
 	
@@ -63,7 +63,7 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	//  these are for feeding into the multilin solver -- and that's it.  they'll be set in the while loop
 	vec_mp *multilin_linears = (vec_mp *) br_malloc(ambient_dim*sizeof(vec_mp)); // target dim is the number of linears in the input witness set
 	for (ii=0; ii<ambient_dim; ii++) {
-		init_vec_mp2(multilin_linears[ii],W.num_variables, solve_options->T.AMP_max_prec);
+		init_vec_mp2(multilin_linears[ii],W.num_variables, solve_options.T.AMP_max_prec);
 		multilin_linears[ii]->size = W.num_variables;
 		vec_cp_mp(multilin_linears[ii], W.L_mp[ii]);
 	}
@@ -112,12 +112,12 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	
 	
 	
-	double_odometer odo(ns_config->num_jac_equations, ambient_dim - target_dim + target_crit_codim, max_degree);
+	double_odometer odo(ns_config->num_jac_equations, target_crit_codim, max_degree);
 	
 	int increment_status = 0;
 	while (increment_status!=-1) { // current_absolute_index incremented at the bottom of loop
 		
-		if (program_options->verbose_level>=6) {
+		if (program_options.verbose_level>=6) {
 			odo.print();
 		}
 		
@@ -128,7 +128,7 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 		}
 		// the remainder of the linears are left alone (stay stationary).
 		
-		if (program_options->verbose_level>=5) {
+		if (program_options.verbose_level>=5) {
 			std::cout << "moving FROM this set:\n";
 			for (ii=0; ii<W.num_linears; ii++) {
 				print_point_to_screen_matlab(W.L_mp[ii],"L");
@@ -139,10 +139,10 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 			}
 		}
 		
-		solve_options->allow_singular = 0;
-		solve_options->complete_witness_set = 1;
-		solve_options->allow_multiplicity = 0;
-		solve_options->allow_unsuccess = 1;
+		solve_options.allow_singular = 0;
+		solve_options.complete_witness_set = 1;
+		solve_options.allow_multiplicity = 0;
+		solve_options.allow_unsuccess = 1;
 		// actually solve WRT the linears
 		multilintolin_solver_main(W.MPType,
 															W,         // witness_set
@@ -161,7 +161,7 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 		
 		for (ii=0; ii<ns_config->num_v_vars-1; ii++) { // deficient one because of the patch equation
 			
-			if (program_options->verbose_level>=5) {
+			if (program_options.verbose_level>=5) {
 				std::cout << "copy into tempmat v_linears[" << odo.inact_reg(ii) << "]\n";
 				print_point_to_screen_matlab(ns_config->v_linears[odo.inact_reg(ii)], "v_linears");
 			}
@@ -218,20 +218,29 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	
 	//set some solver options
 	
-	solve_options->complete_witness_set = 0;
-	solve_options->allow_multiplicity = 0;
-	solve_options->allow_singular = 0;
-	solve_options->use_midpoint_checker = 0;
+	solve_options.complete_witness_set = 0;
 	
-	if (program_options->verbose_level>=2)
+	if (ambient_dim==1) {
+		solve_options.allow_multiplicity = 1;
+		solve_options.allow_singular = 1;
+	}
+	else
+	{
+		solve_options.allow_multiplicity = 0;
+		solve_options.allow_singular = 0;
+	}
+	
+	solve_options.use_midpoint_checker = 0;
+	
+	if (program_options.verbose_level>=2)
 		ns_config->print();
 	
-	if (program_options->verbose_level>=4)
+	if (program_options.verbose_level>=4)
 		W_linprod.print_to_screen();
 	
 	
 	
-	nullspacejac_solver_main(W.MPType,
+	nullspacejac_solver_master_entry_point(W.MPType,
 													 W_linprod, // carries with it the start points, but not the linears.
 													 W_crit,   // the created data goes in here.
 													 ns_config,
@@ -243,7 +252,7 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	
 	cp_patches(W_crit, W);
 	cp_names(W_crit, W);
-	W_crit->sort_for_unique(solve_options->T); // get only the unique solutions.
+	W_crit->sort_for_unique(solve_options.T); // get only the unique solutions.
 	
 	W_crit->add_patch(ns_config->v_patch);
 	
@@ -289,7 +298,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 														int *randomized_degrees, // an array of randomized degrees
 														mat_mp randomizer_matrix,
 														witness_set & W,
-														solver_configuration *solve_options)
+														solver_configuration & solve_options)
 {
 
 	int ii, jj, kk;
@@ -307,7 +316,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	
 	
 	// set some integers
-	ns_config->num_v_vars = W.num_variables - W.num_patches - ambient_dim + (ambient_dim - target_crit_codim + 1); //  N-k+l
+	ns_config->num_v_vars = W.num_variables - 1 - target_crit_codim + 1; //  N-k+l
 	ns_config->num_x_vars = W.num_variables;
 	
 	ns_config->ambient_dim = ambient_dim;
@@ -318,18 +327,18 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	ns_config->num_projections = ambient_dim - target_crit_codim + 1;
 	ns_config->target_projection = (vec_mp *) br_malloc(ns_config->num_projections * sizeof(vec_mp));
 	for (ii=0; ii<ns_config->num_projections; ii++) {
-		init_vec_mp2(ns_config->target_projection[ii], W.num_variables,solve_options->T.AMP_max_prec);
+		init_vec_mp2(ns_config->target_projection[ii], W.num_variables,solve_options.T.AMP_max_prec);
 		ns_config->target_projection[ii]->size = W.num_variables;
 		vec_cp_mp(ns_config->target_projection[ii], pi[ii]);
 	}
 	
 	
 	// make the post-randomizer matrix $S$
-	int num_jac_equations = (ns_config->num_x_vars - W.num_patches) + ambient_dim - target_dim;//N-1;  the subtraction of 1 is for the 1 hom-var
+	int num_jac_equations = (ns_config->num_x_vars - 1);//N-1;  the subtraction of 1 is for the 1 hom-var
 	
 	init_mat_mp2(ns_config->post_randomizer_matrix,
 							 num_jac_equations, W.num_variables-1,
-							 solve_options->T.AMP_max_prec);
+							 solve_options.T.AMP_max_prec);
 	
 	ns_config->post_randomizer_matrix->rows = num_jac_equations;
 	ns_config->post_randomizer_matrix->cols = W.num_variables-1;
@@ -343,11 +352,11 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	else{
 	make_matrix_random_real_mp(ns_config->post_randomizer_matrix,
 														 num_jac_equations,W.num_variables-1,
-														 solve_options->T.AMP_max_prec);
+														 solve_options.T.AMP_max_prec);
 	}
 	
 	// copy the main randomizer matrix
-	init_mat_mp2(ns_config->randomizer_matrix,randomizer_matrix->rows, randomizer_matrix->cols,solve_options->T.AMP_max_prec);
+	init_mat_mp2(ns_config->randomizer_matrix,randomizer_matrix->rows, randomizer_matrix->cols,solve_options.T.AMP_max_prec);
 	ns_config->randomizer_matrix->rows = randomizer_matrix->rows;
 	ns_config->randomizer_matrix->cols = randomizer_matrix->cols;
 	mat_cp_mp(ns_config->randomizer_matrix, randomizer_matrix);
@@ -367,7 +376,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	// set up the linears in $v$  ( the M_i linears)
 	ns_config->v_linears = (vec_mp *)br_malloc(ns_config->num_v_linears*sizeof(vec_mp));
 	for (ii=0; ii<ns_config->num_v_linears; ii++) {
-		init_vec_mp2(ns_config->v_linears[ii],ns_config->num_v_vars,solve_options->T.AMP_max_prec);
+		init_vec_mp2(ns_config->v_linears[ii],ns_config->num_v_vars,solve_options.T.AMP_max_prec);
 		ns_config->v_linears[ii]->size = ns_config->num_v_vars;
 		for (jj=0; jj<ns_config->num_v_vars; jj++){
 			get_comp_rand_mp(&ns_config->v_linears[ii]->coord[jj]); // should this be real?
@@ -383,7 +392,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	ns_config->additional_linears_starting = (vec_mp *)br_malloc((ns_config->num_additional_linears)*sizeof(vec_mp));
 	
 	for (ii=0; ii<ns_config->num_additional_linears; ii++) {
-		init_vec_mp2(ns_config->additional_linears_terminal[ii],W.num_variables,solve_options->T.AMP_max_prec);
+		init_vec_mp2(ns_config->additional_linears_terminal[ii],W.num_variables,solve_options.T.AMP_max_prec);
 		ns_config->additional_linears_terminal[ii]->size = W.num_variables;
 		for (jj=0; jj<W.num_variables - W.num_synth_vars; jj++){
 			get_comp_rand_mp(&ns_config->additional_linears_terminal[ii]->coord[jj]); // should this be real?
@@ -392,14 +401,14 @@ void nullspace_config_setup(nullspace_config *ns_config,
 			set_zero_mp(&ns_config->additional_linears_terminal[ii]->coord[jj]);
 		}
 		
-		init_vec_mp2(ns_config->additional_linears_starting[ii],W.num_variables,solve_options->T.AMP_max_prec);
+		init_vec_mp2(ns_config->additional_linears_starting[ii],W.num_variables,solve_options.T.AMP_max_prec);
 		ns_config->additional_linears_starting[ii]->size = W.num_variables;
 		vec_cp_mp(ns_config->additional_linears_starting[ii], W.L_mp[ii+offset]);
 	}
 	
 	
 	// set up the patch in $v$.  we will include this in an inversion matrix to get the starting $v$ values.
-	init_vec_mp2(ns_config->v_patch,ns_config->num_v_vars,solve_options->T.AMP_max_prec);
+	init_vec_mp2(ns_config->v_patch,ns_config->num_v_vars,solve_options.T.AMP_max_prec);
 	ns_config->v_patch->size = ns_config->num_v_vars;
 	for (ii=0; ii<ns_config->num_v_vars; ii++) {
 		get_comp_rand_mp(&ns_config->v_patch->coord[ii]);
@@ -413,7 +422,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	for (ii=0; ii<num_jac_equations; ii++) {
 		ns_config->starting_linears[ii] = (vec_mp *) br_malloc((*max_degree)*sizeof(vec_mp)); //subtract 1 for differentiation
 		for (jj=0; jj<(*max_degree); jj++) {
-			init_vec_mp2(ns_config->starting_linears[ii][jj],W.num_variables,solve_options->T.AMP_max_prec);
+			init_vec_mp2(ns_config->starting_linears[ii][jj],W.num_variables,solve_options.T.AMP_max_prec);
 			ns_config->starting_linears[ii][jj]->size = W.num_variables;
 			//			set_zero_mp(&ns_config->starting_linears[ii][jj]->coord[0]);  // maybe? but prolly not
 			for (kk=0; kk<W.num_variables - W.num_synth_vars; kk++) {
@@ -445,7 +454,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 
 void create_nullspace_system(boost::filesystem::path output_name,
 														 boost::filesystem::path input_name,
-														 BR_configuration * program_options,
+														 BR_configuration & program_options,
 														 nullspace_config *ns_config)
 /***************************************************************\
  * USAGE: setup input file for one deflation iteration           *
@@ -502,7 +511,7 @@ void create_nullspace_system(boost::filesystem::path output_name,
 	
   // run Matlab script
 	std::stringstream converter;
-	converter << program_options->matlab_command << " < matlab_nullspace_system.m";
+	converter << program_options.matlab_command << " < matlab_nullspace_system.m";
 	system(converter.str().c_str());
 	converter.clear(); converter.str("");
   

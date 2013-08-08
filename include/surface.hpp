@@ -18,9 +18,8 @@
 #ifndef SURFACE_H
 #define SURFACE_H
 
-extern "C" {
-#include "polysolve.h"
-}
+#include "missing_bertini_headers.hpp"
+
 
 #include "fileops.hpp"
 
@@ -31,14 +30,13 @@ extern "C" {
 #include "programConfiguration.hpp"
 #include "witnessSet.hpp"
 #include "output.hpp"
-#include "missing_bertini_headers.hpp"
 
 void surface_main(vertex_set & V,
 									surface_decomposition & surf,
 									witness_set & W,
 									vec_mp *pi,
-									BR_configuration *program_options,
-									solver_configuration *solve_options);
+									BR_configuration & program_options,
+									solver_configuration solve_options);
 
 
 

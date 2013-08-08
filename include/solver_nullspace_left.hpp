@@ -14,6 +14,10 @@
 #ifndef SOLVER_NULLSPACE_H
 #define SOLVER_NULLSPACE_H
 
+#include "missing_bertini_headers.hpp"
+
+
+
 #include "solver.hpp"
 #include "fileops.hpp"
 #include "data_type.hpp"
@@ -22,43 +26,42 @@
 #include "programConfiguration.hpp"
 #include "postProcessing.hpp"
 #include "witnessSet.hpp"
-#include "missing_bertini_headers.hpp"
 
 class nullspace_config
 {
 	
 public:
-	int target_dim;   // r			the dimension of the real set we are looking for
-	int ambient_dim;  // k			the dimension of the complex component we are looking IN.  
+	int target_dim;   ///< r			the dimension of the real set we are looking for
+	int ambient_dim;  ///< k			the dimension of the complex component we are looking IN.
 	int target_crit_codim;    // \ell.  must be at least one (1), and at most target_dim (r).
 	int num_jac_equations;    // the number of equations (after the randomization)
 	int num_projections;
 	
-	int num_v_vars;  // N   number of variables in original problem statement (including homogenizing variables)
-	int num_x_vars;  // N-k+\ell
+	int num_v_vars;  ///< N   number of variables in original problem statement (including homogenizing variables)
+	int num_x_vars;  ///< N-k+\ell
 	
-	int num_randomized_eqns;	// N-k (N-ambient_dim)
-	int max_degree;						// the max degree of differentiated (randomized) functions
-	int *randomized_degrees; // the degrees of the randomized functions (not derivatives)
+	int num_randomized_eqns;	///< N-k (N-ambient_dim)
+	int max_degree;						///< the max degree of differentiated (randomized) functions
+	int *randomized_degrees; ///< the degrees of the randomized functions (not derivatives)
 	
-	vec_mp **starting_linears;	// outer layer should have as many as there are randomized equations (N-k)
-															// inside layer has number corresponding to max of randomized_degrees
+	vec_mp **starting_linears;	///< outer layer should have as many as there are randomized equations (N-k)
+															///< inside layer has number corresponding to max of randomized_degrees
 	
-	int num_additional_linears;
-	vec_mp *additional_linears_terminal;
-	vec_mp *additional_linears_starting;
+	int num_additional_linears; ///<
+	vec_mp *additional_linears_terminal; ///<
+	vec_mp *additional_linears_starting; ///<
 	
 	
-	int num_v_linears;   // # is  (N), cause there are N equations in the subsystem. 
-	vec_mp *v_linears;
+	int num_v_linears;   ///< # is  (N), cause there are N equations in the subsystem.
+	vec_mp *v_linears;    ///<
 	
-	vec_mp v_patch; // length of this should be N-k+\ell
+	vec_mp v_patch; ///< length of this should be N-k+\ell
 	
-	vec_mp *target_projection; // # of these should be \ell
+	vec_mp *target_projection; ///< # of these should be \ell
 	
-	mat_mp randomizer_matrix;  // R, the main randomizer matrix, which was passed in.  randomizes f and Jf down to N-k equations.
+	mat_mp randomizer_matrix;  ///< R, the main randomizer matrix, which was passed in.  randomizes f and Jf down to N-k equations.
 	
-	mat_mp post_randomizer_matrix;  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
+	mat_mp post_randomizer_matrix;  ///< S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
 	
 	void clear();
 	
@@ -84,29 +87,6 @@ public:
 
 
 
-//
-//void cp_nullspace_config(nullspace_config *ns_out, nullspace_config ns_in){
-//	int ii;
-//	ns_out->target_dim = ns_in.target_dim;
-//	ns_out->ambient_dim = ns_in.ambient_dim;
-//	ns_out->target_crit_codim = ns_in.target_crit_codim;
-//	
-//	ns_out->num_v_vars = ns_in->num_v_vars;
-//	ns_out->num_x_vars = ns_in->num_x_vars;
-//	
-//	ns_out->num_randomized_eqns = ns_in.num_randomized_eqns;
-//	ns_out->max_degree = ns_in.max_degree;
-//	
-//	ns_out->starting_linears = (vec_mp **) br_malloc(ns_in.num_x_vars*sizeof(vec_mp *));
-//	for (ii=0; ii<ns_in.num_x_vars; ii++) {
-//		ns_out->starting_linears[ii] = (vec_mp *) br_malloc(ns_in.max_degree*sizeof(vec_mp));
-//		for (jj=0; jj<ns_in.max_degree; jj++) {
-////			init_vec_mp();
-//		}
-//	}
-//	
-//	
-//}
 
 
 
@@ -121,18 +101,19 @@ public:
 	int ambient_dim;  // k			the dimension of the complex component we are looking IN.
 	int target_crit_codim;    // \ell.  must be at least one (1), and at most target_dim (r).
 	
+	int num_natural_vars;
 	int num_x_vars;  // N   number of variables in original problem statement (including homogenizing variables)
 	int num_v_vars;  // (N-k) + (k-\ell+1)
 	
 	int num_randomized_eqns;	// N-k (N-ambient_dim)
 	int max_degree;						// the max degree of differentiated (randomized) functions
 	std::vector<int> randomized_degrees;
-
+	
 	
 	int num_additional_linears;
 	vec_mp *additional_linears_terminal;
 	vec_mp *additional_linears_terminal_full_prec;
-
+	
 	vec_mp *additional_linears_starting;
 	vec_mp *additional_linears_starting_full_prec;
 	
@@ -144,15 +125,15 @@ public:
 	
 	
 	vec_mp **starting_linears; // outer layer should have as many as there are randomized equations
-	// inside layer has number corresponding to randomized_degrees
+														 // inside layer has number corresponding to randomized_degrees
 	vec_mp **starting_linears_full_prec; // outer layer should have as many as there are randomized equations
-	// inside layer has number corresponding to randomized_degrees
+																			 // inside layer has number corresponding to randomized_degrees
 	
 	
 	int num_v_linears;
 	vec_mp *v_linears;         // should be as many in here as there are randomized equations
 	vec_mp *v_linears_full_prec;         // should be as many in here as there are randomized equations
-
+	
 	vec_mp v_patch;
 	vec_mp v_patch_full_prec;
 	
@@ -165,11 +146,11 @@ public:
 	comp_mp perturbation_full_prec;
 	comp_mp half;
 	comp_mp half_full_prec;
-
+	
 	int num_projections;
 	vec_mp *target_projection; // # of these should be target_dim (for now)
 	vec_mp *target_projection_full_prec; // # of these should be target_dim (for now)
-	  
+	
 	
 	// default initializer
 	nullspacejac_eval_data_mp() : solver_mp(){
@@ -179,19 +160,43 @@ public:
 		init();
 	}
 	
+	nullspacejac_eval_data_mp(int mp) : solver_mp(mp){
+		
+		this->MPType = mp;
+		reset_counters();
+		
+		init();
+	}
 	
 	~nullspacejac_eval_data_mp(){
-
+		
 		nullspacejac_eval_data_mp::clear();
 		// no need to reset the counters.
 	}
 	
-	void reset_counters(){
+	void print()
+	{
+		std::cout << "num_jac_equations " << num_jac_equations << std::endl;
+		std::cout << "target_dim " << target_dim << std::endl;
+		
+		std::cout << "ambient_dim " << ambient_dim << std::endl;
+		std::cout << "target_crit_codim " << target_crit_codim << std::endl;
+		
+		std::cout << "num_natural_vars " << num_natural_vars << std::endl;
+		std::cout << "num_x_vars " << num_x_vars << std::endl;
+		std::cout << "num_v_vars " << num_v_vars << std::endl;
+		std::cout << "num_randomized_eqns " << num_randomized_eqns << std::endl;
+		std::cout << "max_degree " << max_degree << std::endl;
+	};
+	
+	void reset_counters()
+	{
 		num_jac_equations = 0;
 		target_dim = 0;   // r			the dimension of the real set we are looking for
 		ambient_dim = 0;  // k			the dimension of the complex component we are looking IN.
 		target_crit_codim = 0;    // \ell.  must be at least one (1), and at most target_dim (r).
 		
+		num_natural_vars = 0;
 		num_v_vars = 0;  // N   number of variables in original problem statement (including homogenizing variables)
 		num_x_vars = 0;  // N-k+\ell
 		
@@ -205,107 +210,8 @@ public:
 	} // re: reset_counters
 	
 	
-	void clear(){
-		if (num_additional_linears>0) {
-			for (int ii=0; ii<num_additional_linears; ii++) {
-				clear_vec_mp(additional_linears_terminal[ii]);
-				clear_vec_mp(additional_linears_terminal_full_prec[ii]);
-			}
-			free(additional_linears_terminal_full_prec);
-			free(additional_linears_terminal);
-			
-			for (int ii=0; ii<num_additional_linears; ii++) {
-				clear_vec_mp(additional_linears_starting[ii]);
-				clear_vec_mp(additional_linears_starting_full_prec[ii]);
-			}
-			free(additional_linears_starting_full_prec);
-			free(additional_linears_starting);
-		}
-		
-		clear_mat_mp(post_randomizer_matrix);  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
-		clear_mat_mp(post_randomizer_matrix_full_prec);  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
-		
-		
-		
-		for (int ii=0; ii<num_jac_equations; ii++) {
-			for (int jj=0; jj<max_degree; jj++) {
-				clear_vec_mp(starting_linears[ii][jj]);
-				clear_vec_mp(starting_linears_full_prec[ii][jj]);
-			}
-			free(starting_linears_full_prec);
-			free(starting_linears);
-		}
-		
-		for (int ii=0; ii<num_v_linears; ii++) {
-			clear_vec_mp(v_linears[ii]);
-			clear_vec_mp(v_linears_full_prec[ii]);
-		}
-		free(v_linears);
-		free(v_linears_full_prec);
-		
-		clear_vec_mp(v_patch);
-		clear_vec_mp(v_patch_full_prec);
-		
-		
-		clear_mat_mp(jac_with_proj);
-		clear_mat_mp(jac_with_proj_full_prec);
-		
-		
-		clear_mp(perturbation);
-		clear_mp(perturbation_full_prec);
-		
-		clear_mp(half);
-		clear_mp(half_full_prec);
-		
-		
-		if (num_projections>0) {
-			for (int ii=0; ii<num_projections; ii++) {
-				clear_vec_mp(target_projection[ii]);
-				clear_vec_mp(target_projection_full_prec[ii]);
-			}
-			free(target_projection);
-			free(target_projection_full_prec);
-		}
-		
-	} // re: clear
-	
-	void init(){
-		additional_linears_terminal = NULL;
-		additional_linears_terminal_full_prec = NULL;
-		
-		additional_linears_starting = NULL;
-		additional_linears_starting_full_prec = NULL;
-		
-		
-		init_mat_mp(post_randomizer_matrix,0,0);  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
-		init_mat_mp2(post_randomizer_matrix_full_prec,0,0,1024);  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
-		
-		starting_linears = NULL; // outer layer should have as many as there are randomized equations
-														 // inside layer has number corresponding to randomized_degrees
-		starting_linears_full_prec = NULL; // outer layer should have as many as there are randomized equations
-																			 // inside layer has number corresponding to randomized_degrees
-		
-		v_linears = NULL;         // should be as many in here as there are randomized equations
-		v_linears_full_prec = NULL;         // should be as many in here as there are randomized equations
-		
-		init_vec_mp(v_patch,0);
-		init_vec_mp2(v_patch_full_prec,0,1024);
-		
-		
-		init_mat_mp(jac_with_proj,0,0);
-		init_mat_mp2(jac_with_proj_full_prec,0,0,1024);
-		
-		init_mp(perturbation);
-		init_mp2(perturbation_full_prec,1024);
-		init_mp(half);
-		init_mp2(half_full_prec,1024);
-		
-		target_projection = NULL; //
-		target_projection_full_prec = NULL; //
-	}
-	
-	
-	nullspacejac_eval_data_mp & operator=(const nullspacejac_eval_data_mp & other){
+	nullspacejac_eval_data_mp & operator=(const nullspacejac_eval_data_mp & other)
+	{
 		clear(); // this is wasteful, but safe for now
 		reset_counters();// this is wasteful, but safe for now
 		
@@ -313,9 +219,8 @@ public:
 		return *this;
 	}
 	
-	
-	
-	nullspacejac_eval_data_mp(const nullspacejac_eval_data_mp & other){
+	nullspacejac_eval_data_mp(const nullspacejac_eval_data_mp & other)
+	{
 		
 		
 		solver_mp();
@@ -325,10 +230,133 @@ public:
 		copy(other);
 	}
 	
-	void copy(const nullspacejac_eval_data_mp & other){
+	
+	// MPI SENDS AND RECEIVES
+	
+	int send(parallelism_config & mpi_config);
+	
+	int receive(parallelism_config & mpi_config);
+	
+	
+	
+	int setup(prog_t * _SLP,
+						nullspace_config *ns_config,
+						 witness_set & W,
+						 solver_configuration & solve_options);
+	
+	
+	
+private:
+	
+	
+	void clear()
+	{
+		if (num_additional_linears>0) {
+			for (int ii=0; ii<num_additional_linears; ii++) {
+				clear_vec_mp(additional_linears_terminal[ii]);
+			}
+			free(additional_linears_terminal);
+			
+			for (int ii=0; ii<num_additional_linears; ii++) {
+				clear_vec_mp(additional_linears_starting[ii]);
+			}
+			free(additional_linears_starting);
+		}
+		
+		clear_mat_mp(post_randomizer_matrix);  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
+		
+		
+		if (num_jac_equations>0) {
+			for (int ii=0; ii<num_jac_equations; ii++) {
+				for (int jj=0; jj<max_degree; jj++) {
+					clear_vec_mp(starting_linears[ii][jj]);
+				}
+				free(starting_linears[ii]);
+			}
+		}
+		
+		if (num_v_linears>0) {
+			for (int ii=0; ii<num_v_linears; ii++) {
+				clear_vec_mp(v_linears[ii]);
+			}
+			free(v_linears);
+		}
+		
+		
+		clear_vec_mp(v_patch);
+		
+		clear_mat_mp(jac_with_proj);
+		
+		clear_mp(perturbation);
+		clear_mp(half);
+		
+		
+		if (num_projections>0) {
+			for (int ii=0; ii<num_projections; ii++) {
+				clear_vec_mp(target_projection[ii]);
+			}
+			free(target_projection);
+		}
+		
+		
+		
+		if (this->MPType==2) {
+			
+			if (num_additional_linears>0) {
+				for (int ii=0; ii<num_additional_linears; ii++) {
+					clear_vec_mp(additional_linears_terminal_full_prec[ii]);
+				}
+				free(additional_linears_terminal_full_prec);
+				
+				for (int ii=0; ii<num_additional_linears; ii++) {
+					clear_vec_mp(additional_linears_starting_full_prec[ii]);
+				}
+				free(additional_linears_starting_full_prec);
+			}
+			
+			clear_mat_mp(post_randomizer_matrix_full_prec);  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
+			
+			
+			
+			for (int ii=0; ii<num_jac_equations; ii++){
+				for (int jj=0; jj<max_degree; jj++) {
+					clear_vec_mp(starting_linears_full_prec[ii][jj]);
+				}
+				free(starting_linears_full_prec[ii]);
+			}
+			
+			
+			for (int ii=0; ii<num_v_linears; ii++)
+				clear_vec_mp(v_linears_full_prec[ii]);
+			
+			free(v_linears_full_prec);
+			
+			clear_vec_mp(v_patch_full_prec);
+			clear_mat_mp(jac_with_proj_full_prec);
+			clear_mp(perturbation_full_prec);
+			clear_mp(half_full_prec);
+			
+			
+			if (num_projections>0) {
+				for (int ii=0; ii<num_projections; ii++) {
+					clear_vec_mp(target_projection_full_prec[ii]);
+				}
+				free(target_projection_full_prec);
+			}
+		}
+		
+		
+	} // re: clear
+	
+	void init();
+	
+	void copy(const nullspacejac_eval_data_mp & other)
+	{
 		
 		clear();
 		reset_counters();
+		
+		
 		
 		
 		if (other.num_additional_linears>0) {
@@ -400,10 +428,10 @@ public:
 		
 		set_mp(this->perturbation,other.perturbation);
 		set_mp(this->perturbation_full_prec,other.perturbation_full_prec);
-
+		
 		set_mp(this->half,other.half);
 		set_mp(this->half_full_prec, other.half_full_prec);
-
+		
 		
 		
 		if (other.num_projections>0) {
@@ -418,16 +446,33 @@ public:
 			}
 		}
 		else{}
+		
+		
+		this->num_jac_equations = other.num_jac_equations;
+		this->target_dim = other.target_dim;   // r			the dimension of the real set we are looking for
+		this->ambient_dim = other.ambient_dim;  // k			the dimension of the complex component we are looking IN.
+		this->target_crit_codim = other.target_crit_codim;    // \ell.  must be at least one (1), and at most target_dim (r).
+		
+		this->num_natural_vars = other.num_natural_vars;
+		this->num_v_vars = other.num_v_vars;  // N   number of variables in original problem statement (including homogenizing variables)
+		this->num_x_vars = other.num_x_vars;  // N-k+\ell
+		
+		this->num_randomized_eqns = other.num_randomized_eqns;	// N-k (N-ambient_dim)
+		this->max_degree = other.max_degree;						// the max degree of differentiated (randomized) functions
+		
+		
+		this->num_projections = other.num_projections;
+		this->num_v_linears = other.num_v_linears;
+		this->num_additional_linears = other.num_additional_linears;
+		
+		
+		
 	} // re: copy
 	
 	
-	// MPI SENDS AND RECEIVES
+
 	
-	int send(int target_id, parallelism_config & mpi_config);
-	
-	int receive(parallelism_config & mpi_config);
-	
-};
+}; // re: class nullspace_eval_data_mp
 
 
 
@@ -438,50 +483,41 @@ public:
 
 
 
-
-
-
-
-typedef struct
+// the double version
+// this must be defined after the mp version, because double has mp.
+class nullspacejac_eval_data_d : public solver_d
 {
+public:
 	
 	nullspacejac_eval_data_mp *BED_mp; // used only for AMP
-	
-	
-  patch_eval_data_d patch;
-	preproc_data preProcData;
-	prog_t *SLP;
-	
-	comp_d gamma;
-
-	mat_d randomizer_matrix;     // randomizer
 	
 	int num_jac_equations;
 	int target_dim;   // r			the dimension of the real set we are looking for
 	int ambient_dim;  // k			the dimension of the complex component we are looking IN.
 	int target_crit_codim;    // \ell.  must be at least one (1), and at most target_dim (r).
 	
-	int num_v_vars;  // N   number of variables in original problem statement (including homogenizing variables)
-	int num_x_vars;  // N-k+\ell
+	int num_natural_vars;
+	int num_x_vars;  // N   number of variables in original problem statement (including homogenizing variables)
+	int num_v_vars;  // (N-k) + (k-\ell+1)
 	
 	int num_randomized_eqns;	// N-k (N-ambient_dim)
 	int max_degree;						// the max degree of differentiated (randomized) functions
-	int *randomized_degrees;
+	std::vector<int> randomized_degrees;
 	
 	
 	int num_additional_linears;
 	vec_d *additional_linears_terminal;
+	
 	vec_d *additional_linears_starting;
 	
+	
 	mat_d post_randomizer_matrix;  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
-
+	
 	
 	
 	
 	vec_d **starting_linears; // outer layer should have as many as there are randomized equations
-	// inside layer has number corresponding to randomized_degrees
-	vec_d **starting_linears_full_prec; // outer layer should have as many as there are randomized equations
-	// inside layer has number corresponding to randomized_degrees
+														 // inside layer has number corresponding to randomized_degrees
 	
 	
 	int num_v_linears;
@@ -489,24 +525,343 @@ typedef struct
 	
 	vec_d v_patch;
 	
+	
 	mat_d jac_with_proj;
 	
-	int num_projections;
-	vec_d *target_projection; // 
 	
-
-	int num_variables;
-
 	comp_d perturbation;
 	comp_d half;
 	
-#ifdef printpathnullspace_left
-	FILE *FOUT;
-	int num_steps;
-#endif
+	int num_projections;
+	vec_d *target_projection; // # of these should be target_dim (for now)
 	
-	int verbose_level;
-} nullspacejac_eval_data_d;
+	
+	// default initializer
+	nullspacejac_eval_data_d() : solver_d(){
+		
+		reset_counters();
+		
+		init();
+	}
+	
+	nullspacejac_eval_data_d(int mp) : solver_d(mp){
+		
+		this->MPType = mp;
+		reset_counters();
+		
+		init();
+	}
+	
+	~nullspacejac_eval_data_d(){
+		
+		nullspacejac_eval_data_d::clear();
+		// no need to reset the counters.
+	}
+	
+	void print()
+	{
+		std::cout << "num_jac_equations " << num_jac_equations << std::endl;
+		std::cout << "target_dim " << target_dim << std::endl;
+		
+		std::cout << "ambient_dim " << ambient_dim << std::endl;
+		std::cout << "target_crit_codim " << target_crit_codim << std::endl;
+		
+		std::cout << "num_natural_vars " << num_natural_vars << std::endl;
+		std::cout << "num_x_vars " << num_x_vars << std::endl;
+		std::cout << "num_v_vars " << num_v_vars << std::endl;
+		std::cout << "num_randomized_eqns " << num_randomized_eqns << std::endl;
+		std::cout << "max_degree " << max_degree << std::endl;
+	};
+	
+	void reset_counters()
+	{
+		num_jac_equations = 0;
+		target_dim = 0;   // r			the dimension of the real set we are looking for
+		ambient_dim = 0;  // k			the dimension of the complex component we are looking IN.
+		target_crit_codim = 0;    // \ell.  must be at least one (1), and at most target_dim (r).
+		
+		num_natural_vars = 0;
+		num_v_vars = 0;  // N   number of variables in original problem statement (including homogenizing variables)
+		num_x_vars = 0;  // N-k+\ell
+		
+		num_randomized_eqns = 0;	// N-k (N-ambient_dim)
+		max_degree = 0;						// the max degree of differentiated (randomized) functions
+		
+		
+		num_projections = 0;
+		num_v_linears = 0;
+		num_additional_linears = 0;
+	} // re: reset_counters
+	
+	
+	nullspacejac_eval_data_d & operator=(const nullspacejac_eval_data_d & other)
+	{
+		clear(); // this is wasteful, but safe for now
+		reset_counters();// this is wasteful, but safe for now
+		
+		copy(other);
+		return *this;
+	}
+	
+	nullspacejac_eval_data_d(const nullspacejac_eval_data_d & other)
+	{
+		
+		
+		solver_d();
+		nullspacejac_eval_data_d();
+		
+		//no need to clear or reset counters, as this is a new object.
+		copy(other);
+	}
+	
+	
+	// MPI SENDS AND RECEIVES
+	
+	int send(parallelism_config & mpi_config);
+	
+	int receive(parallelism_config & mpi_config);
+	
+	
+	
+	int setup(prog_t * _SLP,
+						nullspace_config *ns_config,
+						witness_set & W,
+						solver_configuration & solve_options);
+	
+	
+private:
+	
+	
+	void clear()
+	{
+		if (num_additional_linears>0) {
+			for (int ii=0; ii<num_additional_linears; ii++) {
+				clear_vec_d(additional_linears_terminal[ii]);
+			}
+			free(additional_linears_terminal);
+			
+			for (int ii=0; ii<num_additional_linears; ii++) {
+				clear_vec_d(additional_linears_starting[ii]);
+			}
+			free(additional_linears_starting);
+		}
+		
+		clear_mat_d(post_randomizer_matrix);  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
+		
+		
+		if (num_jac_equations>0) {
+			for (int ii=0; ii<num_jac_equations; ii++) {
+				for (int jj=0; jj<max_degree; jj++) {
+					clear_vec_d(starting_linears[ii][jj]);
+				}
+				free(starting_linears[ii]);
+			}
+		}
+		
+		if (num_v_linears>0) {
+			for (int ii=0; ii<num_v_linears; ii++) {
+				clear_vec_d(v_linears[ii]);
+			}
+			free(v_linears);
+		}
+		
+		
+		clear_vec_d(v_patch);
+		
+		clear_mat_d(jac_with_proj);
+		
+		clear_d(perturbation);
+		clear_d(half);
+		
+		
+		if (num_projections>0) {
+			for (int ii=0; ii<num_projections; ii++) {
+				clear_vec_d(target_projection[ii]);
+			}
+			free(target_projection);
+		}
+		
+		
+		
+		if (this->MPType==2) {
+			
+			delete this->BED_mp;
+		}
+	} // re: clear
+	
+	void init();
+	
+	void copy(const nullspacejac_eval_data_d & other)
+	{
+		
+		clear();
+		reset_counters();
+		
+		
+		
+		
+		if (other.num_additional_linears>0) {
+			
+			this->randomized_degrees = other.randomized_degrees;
+			
+			this->additional_linears_terminal						= (vec_d *) br_malloc(other.num_additional_linears*sizeof(vec_d));
+			this->additional_linears_starting						= (vec_d *) br_malloc(other.num_additional_linears*sizeof(vec_d));
+			
+			for (int ii=0; ii<other.num_additional_linears; ii++) {
+				vec_cp_d(this->additional_linears_terminal[ii],						other.additional_linears_terminal[ii]);
+				
+				vec_cp_d(this->additional_linears_starting[ii],						other.additional_linears_starting[ii]);
+			}
+		}
+		else {} // other.num_additional_linears == 0
+		
+		this->num_additional_linears = other.num_additional_linears;
+		
+		
+		mat_cp_d(this->post_randomizer_matrix, other.post_randomizer_matrix);
+		
+		
+		if (other.num_jac_equations) {
+			this->starting_linears = (vec_d **) br_malloc(other.num_jac_equations*sizeof(vec_d *));
+			
+			for (int ii=0; ii<other.num_jac_equations; ii++) {
+				this->starting_linears[ii] = (vec_d *) br_malloc(other.max_degree*sizeof(vec_d ));
+				for (int jj=0; jj<other.max_degree; jj++) {
+					init_vec_d(this->starting_linears[ii][jj],0);
+					vec_cp_d(this->starting_linears[ii][jj],other.starting_linears[ii][jj]);
+				}
+			}
+		}
+		else{}
+		
+		
+		
+		this->num_jac_equations = other.num_jac_equations;
+		this->max_degree = other.max_degree;
+		
+		
+		if (other.num_v_linears) {
+			this->v_linears = (vec_d *) br_malloc(other.num_v_linears*sizeof(vec_d));
+			for (int ii=0; ii<num_v_linears; ii++) {
+				init_vec_d(this->v_linears[ii],0);
+				vec_cp_d(this->v_linears[ii],other.v_linears[ii]);
+			}
+		}
+		else{}
+		
+		vec_cp_d(this->v_patch, other.v_patch);
+		
+		mat_cp_d(this->jac_with_proj, other.jac_with_proj);
+		
+		set_d(this->perturbation,other.perturbation);
+		
+		set_d(this->half,other.half);
+		
+		
+		
+		if (other.num_projections>0) {
+			this->target_projection = (vec_d *) br_malloc(other.num_projections*sizeof(vec_d));
+			
+			for (int ii=0; ii<num_projections; ii++) {
+				init_vec_d(this->target_projection[ii],0);
+				vec_cp_d(this->target_projection[ii],other.target_projection[ii]);
+			}
+		}
+		else{}
+		
+		
+		this->num_jac_equations = other.num_jac_equations;
+		this->target_dim = other.target_dim;   // r			the dimension of the real set we are looking for
+		this->ambient_dim = other.ambient_dim;  // k			the dimension of the complex component we are looking IN.
+		this->target_crit_codim = other.target_crit_codim;    // \ell.  must be at least one (1), and at most target_dim (r).
+		
+		this->num_natural_vars = other.num_natural_vars;
+		this->num_v_vars = other.num_v_vars;  // N   number of variables in original problem statement (including homogenizing variables)
+		this->num_x_vars = other.num_x_vars;  // N-k+\ell
+		
+		this->num_randomized_eqns = other.num_randomized_eqns;	// N-k (N-ambient_dim)
+		this->max_degree = other.max_degree;						// the max degree of differentiated (randomized) functions
+		
+		
+		this->num_projections = other.num_projections;
+		this->num_v_linears = other.num_v_linears;
+		this->num_additional_linears = other.num_additional_linears;
+		
+		
+		
+	} // re: copy
+	
+};
+
+
+
+
+//typedef struct
+//{
+//	
+//	nullspacejac_eval_data_mp *BED_mp; // used only for AMP
+//	
+//	
+//  patch_eval_data_d patch;
+//	preproc_data preProcData;
+//	prog_t *SLP;
+//	
+//	comp_d gamma;
+//	
+//	mat_d randomizer_matrix;     // randomizer
+//	
+//	int num_jac_equations;
+//	int target_dim;   // r			the dimension of the real set we are looking for
+//	int ambient_dim;  // k			the dimension of the complex component we are looking IN.
+//	int target_crit_codim;    // \ell.  must be at least one (1), and at most target_dim (r).
+//	
+//	int num_natural_vars;
+//	int num_v_vars;  // N   number of variables in original problem statement (including homogenizing variables)
+//	int num_x_vars;  // N-k+\ell
+//	
+//	int num_randomized_eqns;	// N-k (N-ambient_dim)
+//	int max_degree;						// the max degree of differentiated (randomized) functions
+//	int *randomized_degrees;
+//	
+//	
+//	int num_additional_linears;
+//	vec_d *additional_linears_terminal;
+//	vec_d *additional_linears_starting;
+//	
+//	mat_d post_randomizer_matrix;  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
+//	
+//	
+//	
+//	
+//	vec_d **starting_linears; // outer layer should have as many as there are randomized equations
+//														// inside layer has number corresponding to randomized_degrees
+//	vec_d **starting_linears_full_prec; // outer layer should have as many as there are randomized equations
+//																			// inside layer has number corresponding to randomized_degrees
+//	
+//	
+//	int num_v_linears;
+//	vec_d *v_linears;         // should be as many in here as there are randomized equations
+//	
+//	vec_d v_patch;
+//	
+//	mat_d jac_with_proj;
+//	
+//	int num_projections;
+//	vec_d *target_projection; //
+//	
+//	
+//	int num_variables;
+//	
+//	comp_d perturbation;
+//	comp_d half;
+//	
+//#ifdef printpathnullspace_left
+//	FILE *FOUT;
+//	int num_steps;
+//#endif
+//	
+//	int verbose_level;
+//} nullspacejac_eval_data_d;
 
 
 
@@ -517,93 +872,31 @@ typedef struct
 /** the main function for finding critical conditions WRT a projection
  */
 
-int nullspacejac_solver_main(int										MPType,
-														 witness_set						& W, // carries with it the start points, and the linears.
-														 witness_set						*W_new, // new data goes in here
-														 nullspace_config				*ns_config,
-														 solver_configuration		*solve_options);
+int nullspacejac_solver_master_entry_point(int										MPType,
+																					 witness_set						& W, // carries with it the start points, and the linears.
+																					 witness_set						*W_new, // new data goes in here
+																					 nullspace_config				*ns_config,
+																					 solver_configuration		& solve_options);
 
 
 
-int nullspacejac_solver_d(int											MPType, //, double parse_time, unsigned int currentSeed
-													witness_set							& W,  // includes the initial linear.
-													witness_set							*W_new,
-													nullspace_config				*ns_config,
-													solver_configuration		*solve_options);
-
-
-
-void nullspacejac_track_d(trackingStats *trackCount,
-													FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
-													witness_set & W,
-													post_process_t *endPoints,  // for holding the produced data.
-													FILE *FAIL,
-													int pathMod, tracker_config_t *T,
-													nullspacejac_eval_data_d *ED_d,
-													nullspacejac_eval_data_mp *ED_mp,
-													int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
-													int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-													int (*change_prec)(void const *, int),
-													int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
-													solver_configuration *solve_options);
+int nullspacejac_solver(int MPType,
+												witness_set & W,
+												witness_set *W_new,
+												nullspace_config				*ns_config,
+												solver_configuration & solve_options);
 
 
 
 
-int nullspacejac_setup_d(FILE **OUT, boost::filesystem::path outName,
-												 FILE **midOUT, boost::filesystem::path midName,
-												 tracker_config_t *T,
-												 nullspacejac_eval_data_d *ED,
-												 prog_t *dummyProg,
-												 int **startSub, int **endSub, int **startFunc, int **endFunc, int **startJvsub, int **endJvsub, int **startJv, int **endJv, int ***subFuncsBelow,
-												 int (**eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
-												 int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-												 boost::filesystem::path preprocFile, boost::filesystem::path degreeFile,
-												 int findStartPts, boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
-												 witness_set & W,
-												 nullspace_config				*ns_config,
-												 solver_configuration *solve_options);
 
-//the new custom evaluator for this solver
 
 int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp, point_d current_variable_values, comp_d pathVars, void const *ED);
 
+int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED);
 
 
 
-void printnullspacejacRelevantData(nullspacejac_eval_data_d *ED_d, nullspacejac_eval_data_mp *ED_mp, int MPType, int eqbyeqMethod, FILE *FP);
-
-
-void nullspacejac_eval_clear_d(nullspacejac_eval_data_d *ED, int clearRegen, int MPType);
-
-
-
-void setup_nullspacejac_omp_d(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount,
-															FILE ***OUT_copy, FILE *OUT, FILE ***RAWOUT_copy, FILE *RAWOUT,
-															FILE ***MIDOUT_copy, FILE *MIDOUT, FILE ***FAIL_copy, FILE *FAIL,
-															FILE ***NONSOLN_copy, FILE *NONSOLN,
-															tracker_config_t **T_copy, tracker_config_t *T,
-															nullspacejac_eval_data_d **BED_copy, nullspacejac_eval_data_d *ED_d, nullspacejac_eval_data_mp *ED_mp);
-
-
-void clear_nullspacejac_omp_d(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount, FILE ***OUT_copy, FILE *OUT, FILE ***RAWOUT_copy, FILE *RAWOUT, FILE ***MIDOUT_copy, FILE *MIDOUT, FILE ***FAIL_copy, FILE *FAIL, FILE ***NONSOLN_copy, FILE *NONSOLN, tracker_config_t **T_copy, nullspacejac_eval_data_d **BED_copy);
-
-
-
-void setupnullspacejacEval_d(tracker_config_t *T,char preprocFile[], char degreeFile[], prog_t *dummyProg,
-														 int squareSize, int patchType, int ssType, int MPType,
-														 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,// what are these supposed to point to?
-														 nullspacejac_eval_data_d *BED, int adjustDegrees,
-														 witness_set & W,
-														 nullspace_config *ns_config,
-														 solver_configuration *solve_options);
-
-
-
-
-
-
-void cp_nullspacejac_eval_data_d(nullspacejac_eval_data_d *BED, nullspacejac_eval_data_d *BED_d_input, nullspacejac_eval_data_mp *BED_mp_input, int MPType);
 
 
 int nullspacejac_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d in_d, point_mp in_mp, int in_prec, void const *ED_d, void const *ED_mp);
@@ -611,73 +904,6 @@ int nullspacejac_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d in
 
 
 int change_nullspacejac_eval_prec(void const *ED, int new_prec);
-
-int nullspacejac_solver_mp(int MPType,  
-													 witness_set & W,  // includes the initial linears.
-													 witness_set *W_new,
-													 nullspace_config *ns_config,
-													 solver_configuration *solve_options);
-
-
-
-void nullspacejac_track_mp(trackingStats *trackCount,
-													 FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
-													 witness_set & W,
-													 post_process_t *endPoints,
-													 FILE *FAIL,
-													 int pathMod, tracker_config_t *T,
-													 nullspacejac_eval_data_mp *ED,
-													 int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-													 int (*change_prec)(void const *, int),
-													 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
-													 solver_configuration *solve_options);
-
-
-
-
-int nullspacejac_setup_mp(FILE **OUT, boost::filesystem::path outName,
-													FILE **midOUT, boost::filesystem::path midName,
-													tracker_config_t *T,
-													nullspacejac_eval_data_mp *ED,
-													prog_t *dummyProg,
-													int **startSub, int **endSub, int **startFunc, int **endFunc, int **startJvsub, int **endJvsub, int **startJv, int **endJv, int ***subFuncsBelow,
-													int (**eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
-													int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-													boost::filesystem::path preprocFile, boost::filesystem::path degreeFile,
-													int findStartPts,
-													boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
-													witness_set & W,
-													nullspace_config *ns_config,
-													solver_configuration *solve_optionss);
-
-
-int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED);
-
-
-
-void nullspacejac_eval_clear_mp(nullspacejac_eval_data_mp *ED, int clearRegen, int MPType);
-
-
-void setup_nullspacejac_omp_mp(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount,
-															 FILE ***OUT_copy, FILE *OUT, FILE ***RAWOUT_copy, FILE *RAWOUT,
-															 FILE ***MIDOUT_copy, FILE *MIDOUT, FILE ***FAIL_copy, FILE *FAIL,
-															 FILE ***NONSOLN_copy, FILE *NONSOLN,
-															 tracker_config_t **T_copy, tracker_config_t *T,
-															 nullspacejac_eval_data_mp **BED_copy, nullspacejac_eval_data_mp *ED_mp);
-
-
-void clear_nullspacejac_omp_mp(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount, FILE ***OUT_copy, FILE *OUT, FILE ***RAWOUT_copy, FILE *RAWOUT, FILE ***MIDOUT_copy, FILE *MIDOUT, FILE ***FAIL_copy, FILE *FAIL, FILE ***NONSOLN_copy, FILE *NONSOLN, tracker_config_t **T_copy, nullspacejac_eval_data_mp **BED_copy);
-
-
-void setupnullspacejacEval_mp(char preprocFile[], char degreeFile[], prog_t *dummyProg,
-															int squareSize, int patchType, int ssType, int prec,
-															void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
-															nullspacejac_eval_data_mp *BED, int adjustDegrees,
-															witness_set & W,
-															nullspace_config				*ns_config,
-															solver_configuration *solve_options);
-
-void cp_nullspacejac_eval_data_mp(nullspacejac_eval_data_mp *BED, nullspacejac_eval_data_mp *BED_mp_input, int MPType);
 
 
 
@@ -696,6 +922,139 @@ int check_isstart_nullspacejac_d(point_d testpoint,
 void check_nullspace_evaluator(point_mp current_values,
 															 void const *ED);
 
+
+
+
+void nullspace_slave_entry_point(solver_configuration & solve_options);
+
+
+
+
+
+
+
+
+
+
+
+
+//int nullspacejac_solver_d(int											MPType, //, double parse_time, unsigned int currentSeed
+//													witness_set							& W,  // includes the initial linear.
+//													witness_set							*W_new,
+//													nullspace_config				*ns_config,
+//													solver_configuration		& solve_options);
+//
+//int nullspacejac_solver_mp(int MPType,
+//													 witness_set & W,  // includes the initial linears.
+//													 witness_set *W_new,
+//													 nullspace_config *ns_config,
+//													 solver_configuration & solve_options);
+//
+//
+//
+//
+//
+//
+//void nullspacejac_track_d(trackingStats *trackCount,
+//													FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
+//													witness_set & W,
+//													post_process_t *endPoints,  // for holding the produced data.
+//													FILE *FAIL,
+//													int pathMod, tracker_config_t *T,
+//													nullspacejac_eval_data_d *ED_d,
+//													nullspacejac_eval_data_mp *ED_mp,
+//													int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
+//													int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
+//													int (*change_prec)(void const *, int),
+//													int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
+//													solver_configuration & solve_options);
+//
+//
+//void nullspacejac_track_mp(trackingStats *trackCount,
+//													 FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
+//													 witness_set & W,
+//													 post_process_t *endPoints,
+//													 int pathMod, tracker_config_t *T,
+//													 nullspacejac_eval_data_mp *ED,
+//													 int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
+//													 int (*change_prec)(void const *, int),
+//													 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
+//													 solver_configuration & solve_options);
+//
+//
+
+
+//int nullspacejac_setup_d(FILE **OUT, boost::filesystem::path outName,
+//												 FILE **midOUT, boost::filesystem::path midName,
+//												 tracker_config_t *T,
+//												 nullspacejac_eval_data_d *ED,
+//												 prog_t *dummyProg,
+//												 int **startSub, int **endSub, int **startFunc, int **endFunc, int **startJvsub, int **endJvsub, int **startJv, int **endJv, int ***subFuncsBelow,
+//												 int (**eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
+//												 int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
+//												 boost::filesystem::path preprocFile, boost::filesystem::path degreeFile,
+//												 int findStartPts, boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
+//												 witness_set & W,
+//												 nullspace_config				*ns_config,
+//												 solver_configuration & solve_options);
+//
+//int nullspacejac_setup_mp(FILE **OUT, boost::filesystem::path outName,
+//													FILE **midOUT, boost::filesystem::path midName,
+//													tracker_config_t *T,
+//													nullspacejac_eval_data_mp *ED,
+//													prog_t *dummyProg,
+//													int **startSub, int **endSub, int **startFunc, int **endFunc, int **startJvsub, int **endJvsub, int **startJv, int **endJv, int ***subFuncsBelow,
+//													int (**eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
+//													int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
+//													boost::filesystem::path preprocFile, boost::filesystem::path degreeFile,
+//													int findStartPts,
+//													boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
+//													witness_set & W,
+//													nullspace_config *ns_config,
+//													solver_configuration *solve_optionss);
+//
+//
+//
+//
+//
+//void setupnullspacejacEval_d(tracker_config_t *T,char preprocFile[], char degreeFile[], prog_t *dummyProg,
+//														 int squareSize, int patchType, int ssType, int MPType,
+//														 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,// what are these supposed to point to?
+//														 nullspacejac_eval_data_d *BED, int adjustDegrees,
+//														 witness_set & W,
+//														 nullspace_config *ns_config,
+//														 solver_configuration & solve_options);
+//
+//
+//void setupnullspacejacEval_mp(char preprocFile[], char degreeFile[], prog_t *dummyProg,
+//															int squareSize, int patchType, int ssType, int prec,
+//															void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
+//															nullspacejac_eval_data_mp *BED, int adjustDegrees,
+//															witness_set & W,
+//															nullspace_config				*ns_config,
+//															solver_configuration & solve_options);
+//
+//
+
+
+
+
+
+
+//
+//
+////TODO:  remove those functions which appear below
+//
+//
+//
+//void cp_nullspacejac_eval_data_d(nullspacejac_eval_data_d *BED, nullspacejac_eval_data_d *BED_d_input, nullspacejac_eval_data_mp *BED_mp_input, int MPType);
+//
+//
+//
+//void printnullspacejacRelevantData(nullspacejac_eval_data_d *ED_d, nullspacejac_eval_data_mp *ED_mp, int MPType, int eqbyeqMethod, FILE *FP);
+//
+//void nullspacejac_eval_clear_d(nullspacejac_eval_data_d *ED, int clearRegen, int MPType);
+//
 
 
 #endif
