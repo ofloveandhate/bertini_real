@@ -3,11 +3,9 @@
 
 
 
-//the main wrapper function for chaining into the nullspacejac solver.
-// pass in:
-//     •
-//
-// 
+
+
+
 void nullspace_config::clear()
 {
 	
@@ -35,7 +33,7 @@ void nullspace_config::clear()
 	
 	clear_vec_mp(v_patch);
 	
-	for (int ii=0; ii<target_crit_codim; ii++) 
+	for (int ii=0; ii<num_projections; ii++)
 		clear_vec_mp(target_projection[ii]);
 	free(target_projection);
 	
@@ -97,426 +95,1158 @@ void nullspace_config::print()
 }
 
 
+///////////////
+//
+//   end the nullspace_config
+//
+/////////////
 
-int nullspacejac_eval_data_mp::send(int target_id, parallelism_config & mpi_config)
+
+
+
+
+
+///////////////
+//
+//   begin nullspace_eval_data_mp
+//
+/////////////
+void nullspacejac_eval_data_mp::init()
 {
-	// need to send the data to a worker
-//	MPI_Send(MPICH2_CONST void*, int, MPI_Datatype, int, int, MPI_Comm) MPICH_ATTR_POINTER_WITH_TYPE_TAG(1,3);
+	this->is_solution_checker_d = &check_issoln_nullspacejac_d;
+	this->is_solution_checker_mp = &check_issoln_nullspacejac_mp;
+	this->evaluator_function_d = &nullspacejac_eval_d;
+	this->evaluator_function_mp = &nullspacejac_eval_mp;
+	this->precision_changer = &change_nullspacejac_eval_prec;
+	this->dehomogenizer = &nullspacejac_dehom;
+	
+	additional_linears_terminal = NULL;
+	additional_linears_terminal_full_prec = NULL;
+	
+	additional_linears_starting = NULL;
+	additional_linears_starting_full_prec = NULL;
+	
+	
+	init_mat_mp(post_randomizer_matrix,0,0);  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
+	
+	starting_linears = NULL; // outer layer should have as many as there are randomized equations
+													 // inside layer has number corresponding to randomized_degrees
+	starting_linears_full_prec = NULL; // outer layer should have as many as there are randomized equations
+																		 // inside layer has number corresponding to randomized_degrees
+	
+	v_linears = NULL;         // should be as many in here as there are randomized equations
+	v_linears_full_prec = NULL;         // should be as many in here as there are randomized equations
+	
+	init_vec_mp(v_patch,0);
+	
+	
+	
+	init_mat_mp(jac_with_proj,0,0);
+	
+	
+	init_mp(perturbation);
+	
+	init_mp(half);
+	
+	
+	comp_d h;
+	
+	h->r = 0.5;
+	h->i = 0.0;
+	
+	d_to_mp(half, h);
+	
+	
+	comp_d p; p->r = PERTURBATION_VALUE_mp; p->i = PERTURBATION_VALUE_mp;
+	d_to_mp(perturbation,p);
+	
+	
+	target_projection = NULL; //
+	target_projection_full_prec = NULL; //
+	
+	this->randomized_degrees.clear();
+	
+	if (this->MPType==2) {
+		init_mat_mp2(post_randomizer_matrix_full_prec,0,0,1024);  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
+		init_vec_mp2(v_patch_full_prec,0,1024);
+		init_mat_mp2(jac_with_proj_full_prec,0,0,1024);
+		init_mp2(perturbation_full_prec,1024);
+		init_mp2(half_full_prec,1024);
+		d_to_mp(perturbation_full_prec,p);
+		d_to_mp(half_full_prec, h);
+	}
+	
+	
+}
+
+
+int nullspacejac_eval_data_mp::send(parallelism_config & mpi_config)
+{
+
 	int solver_choice = NULLSPACE;
-	MPI_Send(&solver_choice, 1, MPI_INT, target_id, TYPE_CONFIRMATION, mpi_config.my_communicator);
+	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.headnode, mpi_config.my_communicator);
+	// send the confirmation integer, to ensure that we are sending the correct type.
+	
+	//send the base class stuff.
+	solver_mp::send();
+	
+	int *buffer = new int[12];
+	
+	buffer[0] = num_additional_linears;
+	buffer[1] = num_jac_equations;
+	buffer[2] = max_degree;
+	buffer[3] = num_v_linears;
+	buffer[4] = num_projections;
+	
+	buffer[5] = num_x_vars;
+	buffer[6] = num_v_vars;
+	
+	buffer[7] = target_dim;
+	buffer[8] = ambient_dim;
+	buffer[9] = target_crit_codim;
+	
+	buffer[10] = num_randomized_eqns;
+	buffer[11] = num_natural_vars;
+	// now can actually send the data.
+	
+	MPI_Bcast(buffer,12,MPI_INT, 0, mpi_config.my_communicator);
+	
+	
+	
+	if (num_additional_linears>0) {
+		for (int ii=0; ii<num_additional_linears; ii++) {
+			// receive the full precision terminal additional linear
+			bcast_vec_mp(this->additional_linears_terminal_full_prec[ii], mpi_config.my_id, mpi_config.headnode);
+			
+			// receive the full precision starting additional linear
+			bcast_vec_mp(this->additional_linears_starting_full_prec[ii], mpi_config.my_id, mpi_config.headnode);
+		}
+	}
+	else {} // num_additional_linears == 0
+	
+	
+	// recieve the post-randomizer-matrix
+	bcast_mat_mp(post_randomizer_matrix_full_prec, mpi_config.my_id, mpi_config.headnode);
+	
+	
+	if (num_jac_equations>0) {
+		for (int ii=0; ii<num_jac_equations; ii++) {
+			for (int jj=0; jj<max_degree; jj++) {
+				bcast_vec_mp(starting_linears_full_prec[ii][jj], mpi_config.my_id, mpi_config.headnode);
+			}
+		}
+	}
+	else{}
+	
+	
+	
+	
+	if (num_v_linears>0) {
+		for (int ii=0; ii<num_v_linears; ii++) {
+			bcast_vec_mp(v_linears_full_prec[ii], mpi_config.my_id, mpi_config.headnode);
+		}
+	}
+	else{}
+	
+	bcast_vec_mp(v_patch_full_prec, mpi_config.my_id, mpi_config.headnode);
+	bcast_mat_mp(jac_with_proj_full_prec, mpi_config.my_id, mpi_config.headnode);
+	bcast_comp_mp(perturbation_full_prec, mpi_config.my_id, mpi_config.headnode);
+	bcast_comp_mp(half_full_prec, mpi_config.my_id, mpi_config.headnode);
+
+	if (num_projections>0) {
+		for (int ii=0; ii<num_projections; ii++) {
+			bcast_vec_mp(target_projection_full_prec[ii], mpi_config.my_id, mpi_config.headnode);
+		}
+	}
+	else{}
+	
+	delete(buffer);
 	
 	return SUCCESSFUL;
 }
 
 int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 {
-	MPI_Status status;
-	int confirmation_buffer;
-	MPI_Recv(&confirmation_buffer, 1, MPI_INT, 0, MPI_ANY_TAG,
-					 MPI_COMM_WORLD, &status);
+	int *buffer = new int[12];
+	MPI_Bcast(buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	
-	if (confirmation_buffer != NULLSPACE) {
+	if (buffer[0] != NULLSPACE) {
 		mpi_config.abort(777);
 	}
 	
+	solver_mp::receive();
+	
+	nullspacejac_eval_data_mp::clear();
+	nullspacejac_eval_data_mp::reset_counters();
+	// now can actually receive the data from whoever.
+	
+	
+	
+	MPI_Bcast(buffer,12,MPI_INT, 0, mpi_config.my_communicator);
+	
+	for (int ii=0; ii<11; ii++) {
+		std::cout << "buffer[" << ii << "] = " << buffer[ii] << std::endl;
+	}
+	
+	mypause();
+	
+	num_additional_linears = buffer[0];
+	num_jac_equations = buffer[1];
+	max_degree = buffer[2];
+	num_v_linears = buffer[3];
+	num_projections = buffer[4];
+	
+	num_x_vars = buffer[5];
+	num_v_vars = buffer[6];
+	
+	target_dim = buffer[7];
+	ambient_dim = buffer[8];
+	target_crit_codim = buffer[9];
+	
+	num_randomized_eqns = buffer[10];
+	num_natural_vars = buffer[11];
+	
+	
+	if (num_additional_linears>0) {
+		
+		this->additional_linears_terminal						= (vec_mp *) br_malloc(num_additional_linears*sizeof(vec_mp));
+		this->additional_linears_terminal_full_prec = (vec_mp *) br_malloc(num_additional_linears*sizeof(vec_mp));
+		this->additional_linears_starting						= (vec_mp *) br_malloc(num_additional_linears*sizeof(vec_mp));
+		this->additional_linears_starting_full_prec = (vec_mp *) br_malloc(num_additional_linears*sizeof(vec_mp));
+		
+		for (int ii=0; ii<num_additional_linears; ii++) {
+			
+			// receive the full precision terminal additional linear
+			bcast_vec_mp(this->additional_linears_terminal_full_prec[ii], mpi_config.my_id, mpi_config.headnode);
+			vec_cp_mp(this->additional_linears_terminal[ii],this->additional_linears_terminal_full_prec[ii]);
+
+			// receive the full precision starting additional linear
+			bcast_vec_mp(this->additional_linears_starting_full_prec[ii], mpi_config.my_id, mpi_config.headnode);
+			vec_cp_mp(this->additional_linears_starting[ii],this->additional_linears_starting_full_prec[ii]);
+			
+		}
+	}
+	else {} // num_additional_linears == 0
+	
+	
+	// recieve the post-randomizer-matrix
+	bcast_mat_mp(post_randomizer_matrix_full_prec, mpi_config.my_id, mpi_config.headnode);
+	mat_cp_mp(this->post_randomizer_matrix, post_randomizer_matrix_full_prec);
+	
+	
+	if (num_jac_equations>0) {
+		this->starting_linears_full_prec = (vec_mp **) br_malloc(num_jac_equations*sizeof(vec_mp *));
+		this->starting_linears = (vec_mp **) br_malloc(num_jac_equations*sizeof(vec_mp *));
+		
+		for (int ii=0; ii<num_jac_equations; ii++) {
+			
+			this->starting_linears_full_prec[ii] = (vec_mp *) br_malloc(max_degree*sizeof(vec_mp ));
+			this->starting_linears[ii] = (vec_mp *) br_malloc(max_degree*sizeof(vec_mp ));
+			for (int jj=0; jj<max_degree; jj++) {
+				init_vec_mp(this->starting_linears[ii][jj],0);
+				init_vec_mp2(this->starting_linears_full_prec[ii][jj],0,1024);
+				
+				// recieve the starting linearsin full prec and convert
+				bcast_vec_mp(starting_linears_full_prec[ii][jj], mpi_config.my_id, mpi_config.headnode);
+				vec_cp_mp(this->starting_linears[ii][jj],starting_linears_full_prec[ii][jj]);
+			}
+		}
+	}
+	else{}
+	
+	if (num_v_linears>0) {
+		this->v_linears = (vec_mp *) br_malloc(num_v_linears*sizeof(vec_mp));
+		this->v_linears_full_prec = (vec_mp *) br_malloc(num_v_linears*sizeof(vec_mp));
+		for (int ii=0; ii<num_v_linears; ii++) {
+			init_vec_mp(this->v_linears[ii],0);
+			init_vec_mp2(this->v_linears_full_prec[ii],0,1024);
+			// receive the full precision v_linears
+			bcast_vec_mp(v_linears_full_prec[ii], mpi_config.my_id, mpi_config.headnode);
+			vec_cp_mp(this->v_linears[ii],v_linears_full_prec[ii]);
+		}
+	}
+	else{}
+	
+	bcast_vec_mp(v_patch_full_prec, mpi_config.my_id, mpi_config.headnode);
+	vec_cp_mp(this->v_patch, v_patch_full_prec);
+	
+	bcast_mat_mp(jac_with_proj_full_prec, mpi_config.my_id, mpi_config.headnode);
+	mat_cp_mp(this->jac_with_proj, jac_with_proj_full_prec);
+	
+	bcast_comp_mp(perturbation_full_prec, mpi_config.my_id, mpi_config.headnode);
+	set_mp(this->perturbation,perturbation_full_prec);
+	
+	bcast_comp_mp(half_full_prec, mpi_config.my_id, mpi_config.headnode);
+	set_mp(this->half, half_full_prec);
+	
+	
+	
+	if (num_projections>0) {
+		this->target_projection = (vec_mp *) br_malloc(num_projections*sizeof(vec_mp));
+		this->target_projection_full_prec = (vec_mp *) br_malloc(num_projections*sizeof(vec_mp));
+		
+		for (int ii=0; ii<num_projections; ii++) {
+			init_vec_mp(this->target_projection[ii],0); init_vec_mp2(this->target_projection[ii],0,1024);
+			
+			bcast_vec_mp(target_projection_full_prec[ii], mpi_config.my_id, mpi_config.headnode);
+			vec_cp_mp(this->target_projection[ii],target_projection_full_prec[ii]);
+		}
+	}
+	else{}
+	
+	
+	
+	delete(buffer);
+	return SUCCESSFUL;
+}
+
+int nullspacejac_eval_data_mp::setup(prog_t * _SLP,
+																		 nullspace_config *ns_config,
+																		 witness_set & W,
+																		 solver_configuration & solve_options)
+{
+
+	verbose_level = solve_options.verbose_level;
+	
+	solver_mp::setup(_SLP);
+	
+	generic_setup_patch(&patch,W);
+
+	
+	
+	
+	if (solve_options.use_gamma_trick==1)
+		get_comp_rand_mp(this->gamma); // set gamma to be random complex value
+	else{
+		set_one_mp(this->gamma);
+	}
+	
+	comp_d temp;
+	if (this->MPType==2) {
+		if (solve_options.use_gamma_trick==1){
+			get_comp_rand_rat(temp, this->gamma, this->gamma_rat, 64, solve_options.T.AMP_max_prec, 0, 0);
+		}
+		else{
+			set_one_mp(this->gamma);
+			set_one_rat(this->gamma_rat);
+		}
+	}
+	
+	num_jac_equations = ns_config->num_jac_equations;
+	target_dim = ns_config->target_dim;
+	ambient_dim = ns_config->ambient_dim;
+	target_crit_codim = ns_config->target_crit_codim;
+	
+	num_natural_vars = W.num_variables - W.num_synth_vars - ns_config->num_v_vars;
+	num_v_vars = ns_config->num_v_vars;
+	num_x_vars = ns_config->num_x_vars;
+	
+	num_v_linears = ns_config->num_v_linears;   //
+	num_variables = ns_config->num_x_vars + ns_config->num_v_vars;
+	
+	num_projections = ns_config->num_projections;
+	
+	num_additional_linears = ns_config->num_additional_linears;
+	
+	num_randomized_eqns = ns_config->num_randomized_eqns;
+	max_degree = ns_config->max_degree;
+	randomized_degrees.resize(ns_config->num_randomized_eqns);
+	for (int ii=0; ii<ns_config->randomizer_matrix->rows; ii++)
+		randomized_degrees[ii] = ns_config->randomized_degrees[ii]; // store the full degree (not derivative).
+	
+	
+	
+	
+	
+	mat_cp_mp(randomizer_matrix,
+						ns_config->randomizer_matrix);
+	
+	
+	mat_cp_mp(post_randomizer_matrix,
+						ns_config->post_randomizer_matrix);
+	
+	
+	
+	// set up the vectors to hold the linears.
+
+	target_projection = (vec_mp *)br_malloc(ns_config->num_projections * sizeof(vec_mp));
+
+	init_mat_mp(jac_with_proj, ns_config->num_x_vars-1,ns_config->num_v_vars);
+	jac_with_proj->rows = ns_config->num_x_vars-1;
+	jac_with_proj->cols = ns_config->num_v_vars;
+	
+	int offset = ns_config->num_randomized_eqns;
+	for (int ii=0; ii<ns_config->num_projections; ii++) {
+		init_vec_mp(target_projection[ii],ns_config->num_x_vars);
+		target_projection[ii]->size =  ns_config->num_x_vars;
+		vec_cp_mp(target_projection[ii], ns_config->target_projection[ii]);
+		
+		for (int jj=1; jj<ns_config->num_x_vars; jj++) {
+			set_mp(&jac_with_proj->entry[jj-1][ii+offset], &ns_config->target_projection[ii]->coord[jj]);
+		}
+	}
+	
+
+	vec_cp_mp(v_patch, ns_config->v_patch);
+	
+
+	
+	
+	this->v_linears = (vec_mp *) br_malloc(ns_config->num_v_linears*sizeof(vec_mp));
+	for (int ii=0; ii<ns_config->num_v_linears; ii++) {
+		init_vec_mp(v_linears[ii],ns_config->num_v_vars);
+		v_linears[ii]->size = ns_config->num_v_vars;
+		vec_cp_mp(v_linears[ii], ns_config->v_linears[ii]);
+	}
+	
+	
+	additional_linears_terminal = (vec_mp *) br_malloc(ns_config->num_additional_linears*sizeof(vec_mp));
+	additional_linears_starting = (vec_mp *) br_malloc(ns_config->num_additional_linears*sizeof(vec_mp));
+	
+	for (int ii=0; ii<ns_config->num_additional_linears; ii++) {
+		init_vec_mp(additional_linears_terminal[ii], ns_config->num_x_vars);
+		additional_linears_terminal[ii]->size = ns_config->num_x_vars;
+		vec_cp_mp(additional_linears_terminal[ii],ns_config->additional_linears_terminal[ii]);
+		
+		init_vec_mp(additional_linears_starting[ii], ns_config->num_x_vars);
+		additional_linears_starting[ii]->size = ns_config->num_x_vars;
+		vec_cp_mp(additional_linears_starting[ii],ns_config->additional_linears_starting[ii]);
+	}
+	
+	starting_linears = (vec_mp **)br_malloc(ns_config->num_jac_equations*sizeof(vec_mp *));
+	
+	for (int ii=0; ii<ns_config->num_jac_equations; ++ii) {
+		starting_linears[ii] = (vec_mp *)br_malloc(ns_config->max_degree*sizeof(vec_mp));
+		for (int jj=0; jj<ns_config->max_degree; jj++) {
+			init_vec_mp(starting_linears[ii][jj],W.num_variables);
+			starting_linears[ii][jj]->size = W.num_variables;
+			
+			vec_cp_mp(starting_linears[ii][jj], ns_config->starting_linears[ii][jj]);
+		}
+	}
+	
+	
+	
+	if (this->MPType==2) {
+		mat_cp_mp(randomizer_matrix_full_prec, ns_config->randomizer_matrix);
+		
+		
+		mat_cp_mp(post_randomizer_matrix_full_prec, ns_config->post_randomizer_matrix);
+		
+		
+		
+		// set up the vectors to hold the linears.
+		
+		target_projection_full_prec = (vec_mp *)br_malloc(ns_config->num_projections * sizeof(vec_mp));
+		
+		init_mat_mp2(jac_with_proj_full_prec, ns_config->num_x_vars-1,ns_config->num_v_vars,solve_options.T.AMP_max_prec);
+		jac_with_proj_full_prec->rows = ns_config->num_x_vars-1;
+		jac_with_proj_full_prec->cols = ns_config->num_v_vars;
+		
+		int offset = ns_config->num_randomized_eqns;
+		for (int ii=0; ii<ns_config->num_projections; ii++) {
+			init_vec_mp2(target_projection_full_prec[ii],ns_config->num_x_vars,solve_options.T.AMP_max_prec);
+			target_projection_full_prec[ii]->size =  ns_config->num_x_vars;
+			vec_cp_mp(target_projection_full_prec[ii], ns_config->target_projection[ii]);
+			
+			for (int jj=1; jj<ns_config->num_x_vars; jj++) {
+				set_mp(&jac_with_proj_full_prec->entry[jj-1][ii+offset], &ns_config->target_projection[ii]->coord[jj]);
+			}
+		}
+		
+		
+		vec_cp_mp(v_patch_full_prec, ns_config->v_patch);
+		
+		
+		
+		
+		this->v_linears_full_prec = (vec_mp *) br_malloc(ns_config->num_v_linears*sizeof(vec_mp));
+		for (int ii=0; ii<ns_config->num_v_linears; ii++) {
+			init_vec_mp2(v_linears_full_prec[ii],ns_config->num_v_vars,solve_options.T.AMP_max_prec);
+			v_linears_full_prec[ii]->size = ns_config->num_v_vars;
+			vec_cp_mp(v_linears_full_prec[ii], ns_config->v_linears[ii]);
+		}
+		
+		
+		additional_linears_terminal_full_prec = (vec_mp *) br_malloc(ns_config->num_additional_linears*sizeof(vec_mp));
+		additional_linears_starting_full_prec = (vec_mp *) br_malloc(ns_config->num_additional_linears*sizeof(vec_mp));
+		
+		for (int ii=0; ii<ns_config->num_additional_linears; ii++) {
+			init_vec_mp2(additional_linears_terminal_full_prec[ii], ns_config->num_x_vars,solve_options.T.AMP_max_prec);
+			additional_linears_terminal_full_prec[ii]->size = ns_config->num_x_vars;
+			vec_cp_mp(additional_linears_terminal_full_prec[ii],ns_config->additional_linears_terminal[ii]);
+			
+			init_vec_mp2(additional_linears_starting_full_prec[ii], ns_config->num_x_vars,solve_options.T.AMP_max_prec);
+			additional_linears_starting_full_prec[ii]->size = ns_config->num_x_vars;
+			vec_cp_mp(additional_linears_starting_full_prec[ii],ns_config->additional_linears_starting[ii]);
+		}
+		
+		starting_linears_full_prec = (vec_mp **)br_malloc(ns_config->num_jac_equations*sizeof(vec_mp *));
+		
+		for (int ii=0; ii<ns_config->num_jac_equations; ++ii) {
+			starting_linears_full_prec[ii] = (vec_mp *)br_malloc(ns_config->max_degree*sizeof(vec_mp));
+			for (int jj=0; jj<ns_config->max_degree; jj++) {
+				init_vec_mp2(starting_linears_full_prec[ii][jj],W.num_variables,solve_options.T.AMP_max_prec);
+				starting_linears_full_prec[ii][jj]->size = W.num_variables;
+				
+				vec_cp_mp(starting_linears_full_prec[ii][jj], ns_config->starting_linears[ii][jj]);
+			}
+		}
+	}
+	
+							
+	return SUCCESSFUL;
+}
+
+///////////////
+//
+//   end nullspace_eval_data_mp
+//
+/////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+///////////////
+//
+//   begin nullspace_eval_data_d
+//
+/////////////
+
+void nullspacejac_eval_data_d::init()
+{
+	if (this->MPType==2) 
+		this->BED_mp = new nullspacejac_eval_data_mp(2);
+	else
+		this->BED_mp = NULL;
+	
+	this->is_solution_checker_d = &check_issoln_nullspacejac_d;
+	this->is_solution_checker_mp = &check_issoln_nullspacejac_mp;
+	this->evaluator_function_d = &nullspacejac_eval_d;
+	this->evaluator_function_mp = &nullspacejac_eval_mp;
+	this->precision_changer = &change_nullspacejac_eval_prec;
+	this->dehomogenizer = &nullspacejac_dehom;
+	
+	additional_linears_terminal = NULL;
+	
+	additional_linears_starting = NULL;
+	
+	
+	init_mat_d(post_randomizer_matrix,0,0);  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
+
+	starting_linears = NULL; // outer layer should have as many as there are randomized equations
+													 // inside layer has number corresponding to randomized_degrees
+	
+	
+	
+	v_linears = NULL;         // should be as many in here as there are randomized equations
+	
+	init_vec_d(v_patch,0);
+
+	init_mat_d(jac_with_proj,0,0);
+
+
+	half->r = 0.5; half->i = 0.0;
+	
+	perturbation->r = PERTURBATION_VALUE; perturbation->i = PERTURBATION_VALUE;
+
+	
+	target_projection = NULL; //
+
+	
+	this->randomized_degrees.clear();
+}
+
+
+int nullspacejac_eval_data_d::send(parallelism_config & mpi_config)
+{
+	
+	int solver_choice = NULLSPACE;
+	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.headnode, mpi_config.my_communicator);
+	// send the confirmation integer, to ensure that we are sending the correct type.
+	
+	//send the base class stuff.
+	solver_d::send();
+	
+	int *buffer = new int[12];
+	
+	buffer[0] = num_additional_linears;
+	buffer[1] = num_jac_equations;
+	buffer[2] = max_degree;
+	buffer[3] = num_v_linears;
+	buffer[4] = num_projections;
+	
+	buffer[5] = num_x_vars;
+	buffer[6] = num_v_vars;
+	
+	buffer[7] = target_dim;
+	buffer[8] = ambient_dim;
+	buffer[9] = target_crit_codim;
+	
+	buffer[10] = num_randomized_eqns;
+	buffer[11] = num_natural_vars;
+	// now can actually send the data.
+	
+	MPI_Bcast(buffer,12,MPI_INT, 0, mpi_config.my_communicator);
+	
+	
+	
+	if (num_additional_linears>0) {
+		for (int ii=0; ii<num_additional_linears; ii++) {
+			// receive the full precision terminal additional linear
+			bcast_vec_d(this->additional_linears_terminal[ii], mpi_config.my_id, mpi_config.headnode);
+			
+			// receive the full precision starting additional linear
+			bcast_vec_d(this->additional_linears_starting[ii], mpi_config.my_id, mpi_config.headnode);
+		}
+	}
+	else {} // num_additional_linears == 0
+	
+	
+	// recieve the post-randomizer-matrix
+	bcast_mat_d(post_randomizer_matrix, mpi_config.my_id, mpi_config.headnode);
+	
+	
+	if (num_jac_equations>0) {
+		for (int ii=0; ii<num_jac_equations; ii++) {
+			for (int jj=0; jj<max_degree; jj++) {
+				bcast_vec_d(starting_linears[ii][jj], mpi_config.my_id, mpi_config.headnode);
+			}
+		}
+	}
+	else{}
+	
+	
+	
+	
+	if (num_v_linears>0) {
+		for (int ii=0; ii<num_v_linears; ii++) {
+			bcast_vec_d(v_linears[ii], mpi_config.my_id, mpi_config.headnode);
+		}
+	}
+	else{}
+	
+	bcast_vec_d(v_patch, mpi_config.my_id, mpi_config.headnode);
+	bcast_mat_d(jac_with_proj, mpi_config.my_id, mpi_config.headnode);
+
+	
+	if (num_projections>0) {
+		for (int ii=0; ii<num_projections; ii++) {
+			bcast_vec_d(target_projection[ii], mpi_config.my_id, mpi_config.headnode);
+		}
+	}
+	else{}
+	
+	delete(buffer);
+	
+	return SUCCESSFUL;
+}
+
+int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
+{
+	int *buffer = new int[12];
+	MPI_Bcast(buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	
+	if (buffer[0] != NULLSPACE) {
+		mpi_config.abort(777);
+	}
+	
+	solver_d::receive();
+	
+	nullspacejac_eval_data_d::clear();
+	nullspacejac_eval_data_d::reset_counters();
+	// now can actually receive the data from whoever.
+	
+	
+	
+	MPI_Bcast(buffer,12,MPI_INT, 0, mpi_config.my_communicator);
+	
+	for (int ii=0; ii<11; ii++) {
+		std::cout << "buffer[" << ii << "] = " << buffer[ii] << std::endl;
+	}
+	
+	mypause();
+	
+	num_additional_linears = buffer[0];
+	num_jac_equations = buffer[1];
+	max_degree = buffer[2];
+	num_v_linears = buffer[3];
+	num_projections = buffer[4];
+	
+	num_x_vars = buffer[5];
+	num_v_vars = buffer[6];
+	
+	target_dim = buffer[7];
+	ambient_dim = buffer[8];
+	target_crit_codim = buffer[9];
+	
+	num_randomized_eqns = buffer[10];
+	num_natural_vars = buffer[11];
+	
+	
+	if (num_additional_linears>0) {
+		
+		this->additional_linears_terminal						= (vec_d *) br_malloc(num_additional_linears*sizeof(vec_d));
+		this->additional_linears_starting						= (vec_d *) br_malloc(num_additional_linears*sizeof(vec_d));
+		
+		for (int ii=0; ii<num_additional_linears; ii++) {
+			
+			// receive the full precision terminal additional linear
+			bcast_vec_d(this->additional_linears_terminal[ii], mpi_config.my_id, mpi_config.headnode);
+			
+			// receive the full precision starting additional linear
+			bcast_vec_d(this->additional_linears_starting[ii], mpi_config.my_id, mpi_config.headnode);
+			
+		}
+	}
+	else {} // num_additional_linears == 0
+	
+	
+	// recieve the post-randomizer-matrix
+	bcast_mat_d(post_randomizer_matrix, mpi_config.my_id, mpi_config.headnode);
+	
+	
+	if (num_jac_equations>0) {
+		this->starting_linears = (vec_d **) br_malloc(num_jac_equations*sizeof(vec_d *));
+		
+		for (int ii=0; ii<num_jac_equations; ii++) {
+			
+			this->starting_linears[ii] = (vec_d *) br_malloc(max_degree*sizeof(vec_d ));
+			for (int jj=0; jj<max_degree; jj++) {
+				init_vec_d(this->starting_linears[ii][jj],0);
+				
+				// recieve the starting linearsin full prec and convert
+				bcast_vec_d(starting_linears[ii][jj], mpi_config.my_id, mpi_config.headnode);
+			}
+		}
+	}
+	else{}
+	
+	if (num_v_linears>0) {
+		this->v_linears = (vec_d *) br_malloc(num_v_linears*sizeof(vec_d));
+		for (int ii=0; ii<num_v_linears; ii++) {
+			init_vec_d(this->v_linears[ii],0);
+			// receive the full precision v_linears
+			bcast_vec_d(v_linears[ii], mpi_config.my_id, mpi_config.headnode);
+		}
+	}
+	else{}
+	
+	bcast_vec_d(v_patch, mpi_config.my_id, mpi_config.headnode);
+	
+	bcast_mat_d(jac_with_proj, mpi_config.my_id, mpi_config.headnode);
+	
+
+	
+	
+	if (num_projections>0) {
+		this->target_projection = (vec_d *) br_malloc(num_projections*sizeof(vec_d));
+		
+		for (int ii=0; ii<num_projections; ii++) {
+			init_vec_d(this->target_projection[ii],0);
+			
+			bcast_vec_d(target_projection[ii], mpi_config.my_id, mpi_config.headnode);
+		}
+	}
+	else{}
+	
+	
+	
+	delete(buffer);
 	return SUCCESSFUL;
 }
 
 
 
-int nullspacejac_solver_main(int										MPType,
-														 witness_set						&W, // carries with it the start points, and the linears.
-														 witness_set						*W_new, // new data goes in here
-														 nullspace_config				*ns_config,
-														 solver_configuration		*solve_options)
+
+int nullspacejac_eval_data_d::setup(prog_t * _SLP,
+																		nullspace_config *ns_config,
+																		witness_set & W,
+																		solver_configuration & solve_options)
 {
+	
+	solver_d::setup(_SLP);
+	
+	verbose_level = solve_options.verbose_level;
+	
+	generic_setup_patch(&patch,W);
+	
+
+	
+	
+	
+	if (solve_options.use_gamma_trick==1)
+		get_comp_rand_d(this->gamma); // set gamma to be random complex value
+	else
+		set_one_d(this->gamma);
+	
+	
+	num_jac_equations = ns_config->num_jac_equations;
+	target_dim = ns_config->target_dim;
+	ambient_dim = ns_config->ambient_dim;
+	target_crit_codim = ns_config->target_crit_codim;
+	
+	num_natural_vars = W.num_variables - W.num_synth_vars - ns_config->num_v_vars;
+	num_v_vars = ns_config->num_v_vars;
+	num_x_vars = ns_config->num_x_vars;
+	
+	num_randomized_eqns = ns_config->num_randomized_eqns;
+	max_degree = ns_config->max_degree;
+	randomized_degrees.resize(ns_config->num_randomized_eqns);
+	for (int ii=0; ii<ns_config->randomizer_matrix->rows; ii++)
+		randomized_degrees[ii] = ns_config->randomized_degrees[ii]; // store the full degree (not derivative).
+	
+	
+	num_v_linears = ns_config->num_v_linears;   //
+	
+	
+	num_variables = ns_config->num_x_vars + ns_config->num_v_vars;
+	
+  
+	mat_mp_to_d(randomizer_matrix,
+						ns_config->randomizer_matrix);
+	
+	
+	//  THE STUFF PROPRIETARY TO THIS METHOD
+	mat_mp_to_d(post_randomizer_matrix,
+						ns_config->post_randomizer_matrix);
+	
+	
+	
+	// set up the vectors to hold the linears.
+	num_projections = ns_config->num_projections;
+	target_projection = (vec_d *)br_malloc(ns_config->num_projections * sizeof(vec_d));
+	
+	init_mat_d(jac_with_proj,ns_config->num_x_vars-1,ns_config->num_v_vars);
+	jac_with_proj->rows = ns_config->num_x_vars-1;
+	jac_with_proj->cols = ns_config->num_v_vars;
+	
+	int offset = ns_config->num_randomized_eqns;
+	for (int ii=0; ii<ns_config->num_projections; ii++) {
+		init_vec_d(target_projection[ii],ns_config->num_x_vars);
+		target_projection[ii]->size =  ns_config->num_x_vars;
+		vec_mp_to_d(target_projection[ii], ns_config->target_projection[ii]);
+		
+		for (int jj=1; jj<ns_config->num_x_vars; jj++) {
+			mp_to_d(&jac_with_proj->entry[jj-1][ii+offset], &ns_config->target_projection[ii]->coord[jj]);
+		}
+	}
+	
+	
+	vec_mp_to_d(v_patch, ns_config->v_patch);
+	
+	
+	
+	
+	this->v_linears = (vec_d *) br_malloc(ns_config->num_v_linears*sizeof(vec_d));
+	for (int ii=0; ii<ns_config->num_v_linears; ii++) {
+		init_vec_d(v_linears[ii],ns_config->num_v_vars);
+		v_linears[ii]->size = ns_config->num_v_vars;
+		vec_mp_to_d(v_linears[ii], ns_config->v_linears[ii]);
+	}
+	
+	num_additional_linears = ns_config->num_additional_linears;
+	additional_linears_terminal = (vec_d *) br_malloc(ns_config->num_additional_linears*sizeof(vec_d));
+	additional_linears_starting = (vec_d *) br_malloc(ns_config->num_additional_linears*sizeof(vec_d));
+	
+	for (int ii=0; ii<ns_config->num_additional_linears; ii++) {
+		init_vec_d(additional_linears_terminal[ii], ns_config->num_x_vars);
+		additional_linears_terminal[ii]->size = ns_config->num_x_vars;
+		vec_mp_to_d(additional_linears_terminal[ii],ns_config->additional_linears_terminal[ii]);
+		
+		init_vec_d(additional_linears_starting[ii], ns_config->num_x_vars);
+		additional_linears_starting[ii]->size = ns_config->num_x_vars;
+		vec_mp_to_d(additional_linears_starting[ii],ns_config->additional_linears_starting[ii]);
+	}
+	
+	
+	
+	starting_linears = (vec_d **)br_malloc(ns_config->num_jac_equations*sizeof(vec_d *));
+	
+	for (int ii=0; ii<ns_config->num_jac_equations; ++ii) {
+		starting_linears[ii] = (vec_d *)br_malloc(ns_config->max_degree*sizeof(vec_d));
+		for (int jj=0; jj<ns_config->max_degree; jj++) {
+			init_vec_d(starting_linears[ii][jj],W.num_variables);
+			starting_linears[ii][jj]->size = W.num_variables;
+			
+			vec_mp_to_d(starting_linears[ii][jj], ns_config->starting_linears[ii][jj]);
+		}
+	}
+	
+	if (this->MPType==2)
+	{
+		this->BED_mp->setup(_SLP,ns_config, W, solve_options);
+		rat_to_d(this->gamma, this->BED_mp->gamma_rat);
+	}
+	
+	return SUCCESSFUL;
+}
+
+///////////////
+//
+//   end nullspace_eval_data_d
+//
+/////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+int nullspacejac_solver_master_entry_point(int										MPType,
+																					 witness_set						&W, // carries with it the start points, and the linears.
+																					 witness_set						*W_new, // new data goes in here
+																					 nullspace_config				*ns_config,
+																					 solver_configuration		& solve_options)
+{
+	
+	
+	if (solve_options.use_parallel()) {
+		call_for_help(NULLSPACE, solve_options);
+	}
 	
 	W_new->num_variables = W.num_variables;
 	W_new->num_synth_vars = W.num_synth_vars;
-	
-	if (MPType==1){
-		nullspacejac_solver_mp(MPType,W,W_new,
-													 ns_config,solve_options);
-	}
-	else{
-		nullspacejac_solver_d(MPType,W,W_new,
-													ns_config,solve_options);
-	}
-	
-	
 	W_new->MPType = MPType;
-	if (solve_options->complete_witness_set==1){
-
-		//  do something with the linears here?
+	if (solve_options.complete_witness_set==1){
+		
 		cp_patches(W_new,W); // copy the patches over from the original witness set
 		cp_names(W_new,W);
 	}
 	
-	
-	return 0;
-}
-
-
-
-
-
-int nullspacejac_solver_d(int MPType,
-													witness_set & W, 
-													witness_set *W_new,
-													nullspace_config				*ns_config,
-													solver_configuration *solve_options)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES:                                                        *
- \***************************************************************/
-{
-	double parse_time = 0;
-  FILE *OUT = NULL, *FAIL = safe_fopen_write("failed_paths"), *midOUT = NULL, *rawOUT = safe_fopen_write("raw_data");
-  tracker_config_t T;
-  prog_t dummyProg;
-  bclock_t time1, time2;
-  int num_variables = 0, num_crossings = 0, num_sols = 0;
-	
-	
-	
-  int *startSub = NULL, *endSub = NULL, *startFunc = NULL, *endFunc = NULL, *startJvsub = NULL, *endJvsub = NULL, *startJv = NULL, *endJv = NULL, **subFuncsBelow = NULL;
-  int (*ptr_to_eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *) = NULL;
-  int (*ptr_to_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = NULL;
-	
-  nullspacejac_eval_data_d ED;
-  trackingStats trackCount;
-  double track_time;
-	
-  bclock(&time1); // initialize the clock.
-  init_trackingStats(&trackCount); // initialize trackCount to all 0
-	
-	//necessary for later whatnot
-	int userHom = 0, useRegen = 0, pathMod = 0, paramHom = 0;
-	
-	cp_tracker_config_t(&T, &solve_options->T);
-	
 
 	
 	
-	//  // call the setup function
-	// setup for standard tracking - 'useRegen' is used to determine whether or not to setup 'start'
-	num_variables = nullspacejac_setup_d(&OUT, "output",
-																			 &midOUT, "midpath_data",
-																			 &T, &ED,
-																			 &dummyProg,  //arg 7
-																			 &startSub, &endSub, &startFunc, &endFunc,
-																			 &startJvsub, &endJvsub, &startJv, &endJv, &subFuncsBelow,
-																			 &ptr_to_eval_d, &ptr_to_eval_mp,  //args 17,18
-																			 "preproc_data", "deg.out",
-																			 !useRegen, "nonhom_start", "start",
-																			 W,
-																			 ns_config,
-																			 solve_options);
-  
+  int num_crossings = 0;
 	
-	int (*change_prec)(void const *, int) = &change_nullspacejac_eval_prec;
-	int (*dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *) = &nullspacejac_dehom;
+  trackingStats trackCount; init_trackingStats(&trackCount); // initialize trackCount to all 0
 	
 	
+	//	solve_options.T.numVars = setupProg(this->SLP, solve_options.T.Precision, solve_options.T.MPType);
 	
-  // error checking
-  if (userHom <= 0 && paramHom != 2)
-  { // no pathvariables or parameters allowed!
-    if (dummyProg.numPathVars > 0)
-    { // path variable present
-      printf("ERROR: Bertini does not expect path variables when user-defined homotopies are not being used!\n");
-      bexit(ERROR_INPUT_SYSTEM);
-    }
-    if (dummyProg.numPars > 0)
-    { // parameter present
-      printf("ERROR: Bertini does not expect parameters when user-defined homotopies are not being used!\n");
-      bexit(ERROR_INPUT_SYSTEM);
-    }
-  }
+	int *startSub = NULL, *endSub = NULL, *startFunc = NULL, *endFunc = NULL, *startJvsub = NULL, *endJvsub = NULL, *startJv = NULL, *endJv = NULL, **subFuncsBelow = NULL;
 	
-  if (T.MPType == 2)  //If we are doing adaptive precision path-tracking, we must set up AMP_eps, AMP_Phi, AMP_Psi based on config settings.
-  {
-    T.AMP_eps = (double) num_variables * num_variables;  //According to Demmel (as in the AMP paper), n^2 is a very reasonable bound for \epsilon.
-    T.AMP_Phi = T.AMP_bound_on_degree*(T.AMP_bound_on_degree-1.0)*T.AMP_bound_on_abs_vals_of_coeffs;  //Phi from the AMP paper.
-    T.AMP_Psi = T.AMP_bound_on_degree*T.AMP_bound_on_abs_vals_of_coeffs;  //Psi from the AMP paper.
-    // initialize latest_newton_residual_mp to the maximum precision
-    mpf_init2(T.latest_newton_residual_mp, T.AMP_max_prec);
-  }
+	prog_t SLP;
+	//	// setup a straight-line program, using the file(s) created by the parser
+  solve_options.T.numVars = setupProg_count(&SLP, solve_options.T.Precision, solve_options.T.MPType,
+																						&startSub, &endSub, &startFunc, &endFunc, &startJvsub, &endJvsub, &startJv, &endJv,
+																						&subFuncsBelow);
 	
 	
-	post_process_t *endPoints = (post_process_t *)bmalloc(W.num_pts * sizeof(post_process_t)); //overallocate, expecting full number of solutions.
+	nullspacejac_eval_data_d *ED_d = NULL;
+	nullspacejac_eval_data_mp *ED_mp = NULL;
 	
 	
-	
-	
-	if (T.endgameNumber == 3)
-	{ // use the track-back endgame
-		//        zero_dim_trackBack_d(&trackCount, OUT, rawOUT, midOUT, StartPts, FAIL, pathMod, &T, &ED, ED.BED_mp, ptr_to_eval_d, ptr_to_eval_mp, change_basic_eval_prec, zero_dim_dehom);
-		printf("bertini_real not equipped to deal with endgameNumber 3\nexiting\n");
-		exit(-99);
-	}
-	else
-	{ // use regular endgame
-		nullspacejac_track_d(&trackCount, OUT, rawOUT, midOUT,
-												 W,  // was the startpts file pointer.
-												 endPoints,
-												 FAIL, pathMod,
-												 &T, &ED, ED.BED_mp,
-												 ptr_to_eval_d, ptr_to_eval_mp,
-												 change_prec, dehom,
-												 solve_options);
+	switch (solve_options.T.MPType) {
+		case 0:
+			ED_d = new nullspacejac_eval_data_d(0);
+			
+			ED_d->setup(&SLP,
+									ns_config,
+									W,
+									solve_options);
+			break;
+			
+		case 1:
+			ED_mp = new nullspacejac_eval_data_mp(1);
+			
+			ED_mp->setup(&SLP,
+									 ns_config,
+									 W,
+									 solve_options);
+			// initialize latest_newton_residual_mp
+			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+			break;
+		case 2:
+			ED_d = new nullspacejac_eval_data_d(2);
+			
+			ED_mp = ED_d->BED_mp;
+			
+			
+			ED_d->setup(&SLP,
+									ns_config,
+									W,
+									solve_options);
+			
+			
+			
+			
+			// initialize latest_newton_residual_mp
+			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+			break;
+		default:
+			break;
 	}
 	
 	
-	fclose(midOUT);
 	
 	
-	// finish the output to rawOUT
-	fprintf(rawOUT, "%d\n\n", -1);  // bottom of rawOUT
+	if (solve_options.use_parallel()) {
+		
+		std::cout << "master bcasting tracker config" << std::endl;
+		bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
+		std::cout << "master done bcasting tracker config" << std::endl;
+		
+		switch (solve_options.T.MPType) {
+			case 1:
+				ED_mp->send(solve_options);
+				break;
+				
+			default:
+				ED_d->send(solve_options);
+				break;
+		}
+	}
+	
+	
+	
+	post_process_t *endPoints = (post_process_t *)bmalloc(W.num_pts * sizeof(post_process_t)); //overallocate, expecting full
+	
+	
+	// call the file setup function
+	FILE *OUT = NULL, *midOUT = NULL;
+	
+	generic_setup_files(&OUT, "output",
+											&midOUT, "midpath_data");
+	
+	generic_tracker_loop(&trackCount, OUT, midOUT,
+											 W,
+											 endPoints,
+											 ED_d, ED_mp,
+											 solve_options);
+	
+	
+	// close the files
+	fclose(midOUT);   fclose(OUT);
+	
+	
 	
 	
 	// check for path crossings
-	if (solve_options->use_midpoint_checker==1) {
-		midpoint_checker(trackCount.numPoints, num_variables,solve_options->midpoint_tol, &num_crossings);
-	}
-	// setup num_sols
-	num_sols = trackCount.successes;
-	
-  // we report how we did with all paths:
-  bclock(&time2);
-  totalTime(&track_time, time1, time2);
-  if (solve_options->verbose_level>=1)
-  {
-		printf("nullspace_left report:\n");
-    printf("Number of failures:  %d\n", trackCount.failures);
-    printf("Number of successes:  %d\n", trackCount.successes);
-    printf("Number of paths:  %d\n", trackCount.numPoints);
-    printf("Parse Time = %fs\n", parse_time);
-    printf("Track Time = %fs\n", track_time);
-  }
-  fprintf(OUT, "Number of failures:  %d\n", trackCount.failures);
-  fprintf(OUT, "Number of successes:  %d\n", trackCount.successes);
-  fprintf(OUT, "Number of paths:  %d\n", trackCount.numPoints);
-  fprintf(OUT, "Parse Time = %fs\n", parse_time);
-  fprintf(OUT, "Track Time = %fs\n", track_time);
-	
-	
-  fclose(OUT);
-  fclose(rawOUT);
-  fprintf(FAIL, "\n");
-  fclose(FAIL);
-	
-	
-	if (num_crossings>0) {
-		printf("there were %d path crossings in nullspacejac, according to midpoint checker\n",num_crossings);
-		mypause();
+	if (solve_options.use_midpoint_checker==1) {
+		midpoint_checker(trackCount.numPoints, solve_options.T.numVars,solve_options.midpoint_tol, &num_crossings);
 	}
 	
-	BRpostProcessing(endPoints, W_new, trackCount.successes, &ED.preProcData, &T, solve_options);
+	// post process
+	switch (solve_options.T.MPType) {
+		case 0:
+			BRpostProcessing(endPoints, W_new, trackCount.successes, &ED_d->preProcData, &solve_options.T, solve_options);
+			break;
+			
+		default:
+			BRpostProcessing(endPoints, W_new, trackCount.successes, &ED_mp->preProcData, &solve_options.T, solve_options);
+			break;
+	}
+	
+	
+	
+  //clear the endopints here
+	
+	
+  return SUCCESSFUL;
 
-	
-	//DAB is there other stuff which should be cleared here?
-	
-	free(startSub);
-	free(endSub);
-	free(startFunc);
-	free(endFunc);
-	free(startJvsub);
-	free(endJvsub);
-	free(startJv);
-	free(endJv);
-	
-	
-	
-  nullspacejac_eval_clear_d(&ED, userHom, T.MPType);
-  tracker_config_clear(&T);
-	
-  return 0;
 }
 
 
 
 
 
-void nullspacejac_track_d(trackingStats *trackCount,
-													FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
-													witness_set & W,
-													post_process_t *endPoints,  // for holding the produced data.
-													FILE *FAIL,
-													int pathMod, tracker_config_t *T,
-													nullspacejac_eval_data_d *ED_d,
-													nullspacejac_eval_data_mp *ED_mp,
-													int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
-													int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-													int (*change_prec)(void const *, int),
-													int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
-													solver_configuration *solve_options)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: does standard zero dimensional tracking                *
- *  in either double precision or adaptive precision             *
- \***************************************************************/
+
+void nullspace_slave_entry_point(solver_configuration & solve_options)
 {
 	
-  int ii, oid, startPointIndex, max = max_threads();
-  tracker_config_t *T_copy = NULL;
-  nullspacejac_eval_data_d *BED_copy = NULL;
-  trackingStats *trackCount_copy = NULL;
-  FILE **OUT_copy = NULL, **MIDOUT_copy = NULL, **RAWOUT_copy = NULL, **FAIL_copy = NULL, *NONSOLN = NULL, **NONSOLN_copy = NULL;
 	
-  // top of RAWOUT - number of variables and that we are doing zero dimensional
-  fprintf(RAWOUT, "%d\n%d\n", T->numVars, 0);
+	// already received the flag which indicated that this worker is going to be performing the nullspace calculation.
+	std::cout << "worker receiving tracker config" << std::endl;
+	bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
+	std::cout << "worker received tracker config" << std::endl;
 	
-	
+	nullspacejac_eval_data_d *ED_d = NULL;
+	nullspacejac_eval_data_mp *ED_mp = NULL;
 	
 	
-	
-	int (*curr_eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *) = NULL;
-  int (*curr_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = NULL;
-	
-	curr_eval_d = &nullspacejac_eval_d;   
-  curr_eval_mp = &nullspacejac_eval_mp;
-	
-	
-	
-	point_data_d *startPts = NULL;
-	generic_set_start_pts(&startPts, W);
-	T->endgameOnly = 0;
-	
-	
-  // setup the rest of the structures
-	endgame_data_t *EG = NULL; //this will hold the temp solution data produced for each individual track
-  setup_nullspacejac_omp_d(max,
-													 &EG, &trackCount_copy, trackCount,
-													 &OUT_copy, OUT, &RAWOUT_copy, RAWOUT, &MIDOUT_copy, MIDOUT, &FAIL_copy, FAIL, &NONSOLN_copy, NONSOLN,
-													 &T_copy, T,
-													 &BED_copy, ED_d, ED_mp);
-	
-	
-	
-	
-	
-	
-	
-	trackCount->numPoints = W.num_pts;
-	int solution_counter = 0;
-	
-	
-	
-	// track each of the start points
-#ifdef _OPENMP
-#pragma omp parallel for private(ii, oid, startPointIndex) schedule(runtime)
-#endif
-	for (ii = 0; ii < W.num_pts; ii++)
-	{ // get current thread number
-		oid = thread_num();
-		if (solve_options->verbose_level>=0)
-			printf("nullspacejac tracking path %d of %d\n",ii,W.num_pts);
-		
-		startPointIndex = ii;
-		
-//		// print the header of the path to OUT
-//		printPathHeader_d(OUT_copy[oid], &startPts[startPointIndex], &T_copy[oid], ii, &BED_copy[oid], eval_func_d);
-		
-#ifdef printpathnullspace_left
-		BED_copy[oid].num_steps = 0;
-#endif
-		
-		if (!check_isstart_nullspacejac_d(startPts[ii].point,
-																			&T_copy[oid],
-																			&BED_copy[oid]))
-		{
-			std::cout << "trying to start from a non-start-point\n";
-			mypause();
-		}
-		
-		if (T->MPType==2) {
-			ED_d->BED_mp->curr_prec = 64;
-		}
-		
-		
-		// track the path
-		generic_track_path_d(solution_counter, &EG[oid], &startPts[startPointIndex],
-															OUT_copy[oid], MIDOUT_copy[oid],
-															&T_copy[oid], &BED_copy[oid], BED_copy[oid].BED_mp,
-															curr_eval_d, curr_eval_mp, change_prec, find_dehom);
-		
-#ifdef printpathnullspace_left
-		fprintf(BED_copy[oid].FOUT,"-100 %d ",BED_copy[oid].num_steps);
-		for (mm=0; mm<BED_copy[oid].num_variables-1; ++mm) {
-			fprintf(BED_copy[oid].FOUT,"0 0 ");
-		}
-		fprintf(BED_copy[oid].FOUT,"\n%d\n\n",EG->retVal);
-#endif
-		
-		
-		// check to see if it should be sharpened
-		if (EG[oid].retVal == 0 && T_copy[oid].sharpenDigits > 0)
-		{ // use the sharpener for after an endgame
-			sharpen_endpoint_endgame(&EG[oid], &T_copy[oid], OUT_copy[oid], &BED_copy[oid], BED_copy[oid].BED_mp, curr_eval_d, curr_eval_mp, change_prec);
-		}
-		
-		
-		
-		int issoln;
-		if (EG->prec<64){
-			issoln = check_issoln_nullspacejac_d(&EG[oid],  &T_copy[oid], &BED_copy[oid]); }
-		else {
-			issoln = check_issoln_nullspacejac_mp(&EG[oid], &T_copy[oid], BED_copy[oid].BED_mp); }
-		
-		
-		//get the terminal time in double form
-		comp_d time_to_compare;
-		if (EG->prec < 64) {
-			set_d(time_to_compare,EG->PD_d.time);}
-		else {
-			mp_to_d(time_to_compare, EG->PD_mp.time); }
-		
-		
-		if ((EG->retVal != 0 && time_to_compare->r > T->minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
+	switch (solve_options.T.MPType) {
+		case 0:
+			ED_d = new nullspacejac_eval_data_d(0);
 			
-			trackCount->failures++;
-		
-			printf("\nthere was a path failure nullspace_left tracking witness point %d\nretVal = %d; issoln = %d\n",ii,EG->retVal, issoln);
+			ED_d->receive(solve_options);
+			break;
 			
-			print_path_retVal_message(EG->retVal);
+		case 1:
+			ED_mp = new nullspacejac_eval_data_mp(1);
 			
-			if (solve_options->verbose_level > 0) {
-				if (EG->prec < 64)
-					print_point_to_screen_matlab(EG->PD_d.point,"bad_terminal_point");
-				else
-					print_point_to_screen_matlab(EG->PD_mp.point,"bad_terminal_point");
-			}
+			ED_mp->receive(solve_options);
+			// initialize latest_newton_residual_mp
+			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+			break;
+		case 2:
+			ED_d = new nullspacejac_eval_data_d(2);
 			
-		}
-		else
-		{
-			//otherwise converged, but may have still had non-zero retval due to other reasons.
-			endgamedata_to_endpoint(&endPoints[solution_counter], EG);
-			trackCount->successes++;
-			solution_counter++; // probably this could be eliminated
-		}
-		
-	}// re: for (ii=0; ii<W.num_pts ;ii++)
+			ED_mp = ED_d->BED_mp;
+			
+			
+			ED_d->receive(solve_options);
+			
+			
+			
+			
+			// initialize latest_newton_residual_mp
+			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+			break;
+		default:
+			break;
+	}
 	
 	
+	// call the file setup function
+	FILE *OUT = NULL, *midOUT = NULL;
 	
-	//clear the data structures.
-  for (ii = 0; ii >W.num_pts; ii++)
-  { // clear startPts[ii]
-    clear_point_data_d(&startPts[ii]);
-  }
-  free(startPts);
+	generic_setup_files(&OUT, "output",
+											&midOUT, "midpath_data");
 	
-  clear_nullspacejac_omp_d(max, &EG, &trackCount_copy, trackCount, &OUT_copy, OUT, &RAWOUT_copy, RAWOUT, &MIDOUT_copy, MIDOUT, &FAIL_copy, FAIL, &NONSOLN_copy, NONSOLN, &T_copy, &BED_copy);
+	trackingStats trackCount; init_trackingStats(&trackCount); // initialize trackCount to all 0
+	
+	generic_tracker_loop_worker(&trackCount, OUT, midOUT,
+															ED_d, ED_mp,
+															solve_options);
 	
 	
+	// close the files
+	fclose(midOUT);   fclose(OUT);
 	
-  return;
+	
+	//clear data
 }
 
 
@@ -524,13 +1254,6 @@ void nullspacejac_track_d(trackingStats *trackCount,
 
 
 
-
-
-
-
-
-
-//this derived from basic_eval_d
 int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp, point_d current_variable_values, comp_d pathVars, void const *ED)
 { // evaluates a special homotopy type, built for bertini_real
 
@@ -988,7 +1711,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
   set_one_d(&parDer->coord[0]);       // ds/dt = 1
 	
 	
-	if (BED->verbose_level>=3) {
+	if (BED->verbose_level>=5) {
 	printf("t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
 //	print_matrix_to_screen_matlab(jac_homogenizing_matrix,"jac_hom_1044");
 //	print_matrix_to_screen_matlab(BED->post_randomizer_matrix,"S");
@@ -1007,6 +1730,8 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 
 //	std::cout << "\n\n**************\n\n";
 //	mypause();
+		if (BED->verbose_level==10)
+			mypause();
 	}
 	
 	
@@ -1078,1358 +1803,9 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 
 
 
-
-void printnullspacejacRelevantData(nullspacejac_eval_data_d *ED_d, nullspacejac_eval_data_mp *ED_mp, int MPType, int eqbyeqMethod, FILE *FP)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: prints the relevant data to FP so that we can recover  *
- * the system if needed for sharpening                           *
- \***************************************************************/
-{
-  // print the MPType and if an eq-by-eq method (diagona/regen) was used
-	//  fprintf(FP, "%d %d\n", MPType, eqbyeqMethod);
-	//
-	//  // print the patch
-	//  printPatchCoeff(FP, MPType, ED_d, ED_mp);
-	//
-	//  // print the start system
-	//  printStartSystem(FP, MPType, ED_d, ED_mp);
-	//
-	//  // print the square system
-	//  printSquareSystem(FP, MPType, ED_d, ED_mp);
-	
-  return;
-}
-
-
-
-void nullspacejac_eval_clear_d(nullspacejac_eval_data_d *ED, int clearRegen, int MPType)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: clear ED                                               *
- \***************************************************************/
-{
-	//clear the patch
-  patch_eval_data_clear_d(&ED->patch);
-  preproc_data_clear(&ED->preProcData);
-	
-	
-	
-  if (MPType == 2)
-  { // clear the MP stuff
-    nullspacejac_eval_clear_mp(ED->BED_mp, 0, 0);
-  }
-//TODO: clear properly
-	//specifics for the nullspacejac method.
-//	clear_vec_d(ED->projection);
-	clear_mat_d(ED->randomizer_matrix);
-	
-#ifdef printpathnullspace_left
-	fclose(ED->FOUT);
-#endif
-	
-  return;
-}
-
-
-
-
-
-
-void setup_nullspacejac_omp_d(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount,
-															FILE ***OUT_copy, FILE *OUT, FILE ***RAWOUT_copy, FILE *RAWOUT,
-															FILE ***MIDOUT_copy, FILE *MIDOUT, FILE ***FAIL_copy, FILE *FAIL,
-															FILE ***NONSOLN_copy, FILE *NONSOLN,
-															tracker_config_t **T_copy, tracker_config_t *T,
-															nullspacejac_eval_data_d **BED_copy, nullspacejac_eval_data_d *ED_d, nullspacejac_eval_data_mp *ED_mp)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: setup everything needed to do zero dimensional tracking*
- *  using OpenMP                                                 *
- \***************************************************************/
-// if max_threads == 1, things are only pointers to the actual values,
-// otherwise, they are copies
-{
-  int ii;
-  // error checking
-  if (max_threads <= 0)
-  {
-    printf("\n\nERROR: The number of threads (%d) needs to be positive when setting up for tracking!\n", max_threads);
-    bexit(ERROR_CONFIGURATION);
-  }
-	
-	
-	
-	
-  // allocate space for EG
-  *EG = (endgame_data_t *)bmalloc(max_threads * sizeof(endgame_data_t));
-	
-	// initialize
-  for (ii = 0; ii < max_threads; ii++)
-	{
-    if (T->MPType == 2)
-    { // initialize for AMP tracking
-      init_endgame_data(&(*EG)[ii], 64);
-    }
-    else
-    { // initialize for double precision tracking
-      init_endgame_data(&(*EG)[ii], 52);
-    }
-	}
-	
-  // allocate space to hold pointers to the files
-  *OUT_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
-  *MIDOUT_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
-  *RAWOUT_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
-  *FAIL_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
-  *NONSOLN_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
-	
-  if (max_threads == 1)
-  { // setup the pointers
-    *trackCount_copy = trackCount;
-    *T_copy = T;
-    *BED_copy = ED_d;
-    (*BED_copy)->BED_mp = ED_mp; // make sure that this is pointed to inside of ED_d
-		
-    (*OUT_copy)[0] = OUT;
-    (*RAWOUT_copy)[0] = RAWOUT;
-    (*MIDOUT_copy)[0] = MIDOUT;
-    (*FAIL_copy)[0] = FAIL;
-    (*NONSOLN_copy)[0] = NONSOLN;
-  }
-  else // max_threads > 1
-  { // allocate memory
-    *trackCount_copy = (trackingStats *)bmalloc(max_threads * sizeof(trackingStats));
-    *T_copy = (tracker_config_t *)bmalloc(max_threads * sizeof(tracker_config_t));
-    *BED_copy = (nullspacejac_eval_data_d *)bmalloc(max_threads * sizeof(nullspacejac_eval_data_d));
-		
-    // copy T, ED_d, ED_mp, & trackCount
-    for (ii = 0; ii < max_threads; ii++)
-    { // copy T
-      cp_tracker_config_t(&(*T_copy)[ii], T);
-      // copy ED_d & ED_mp
-      cp_nullspacejac_eval_data_d(&(*BED_copy)[ii], ED_d, ED_mp, T->MPType);
-      // initialize trackCount_copy
-      init_trackingStats(&(*trackCount_copy)[ii]);
-      (*trackCount_copy)[ii].numPoints = trackCount->numPoints;
-    }
-		
-    // setup the files
-    char *str = NULL;
-    int size;
-    for (ii = 0; ii < max_threads; ii++)
-    {
-      size = 1 + snprintf(NULL, 0, "output_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "output_%d", ii);
-      (*OUT_copy)[ii] = fopen(str, "w+");
-			
-      size = 1 + snprintf(NULL, 0, "midout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "midout_%d", ii);
-      (*MIDOUT_copy)[ii] = fopen(str, "w+");
-			
-      size = 1 + snprintf(NULL, 0, "rawout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "rawout_%d", ii);
-      (*RAWOUT_copy)[ii] = fopen(str, "w+");
-			
-      size = 1 + snprintf(NULL, 0, "fail_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "fail_%d", ii);
-      (*FAIL_copy)[ii] = fopen(str, "w+");
-			
-      size = 1 + snprintf(NULL, 0, "nonsolutions_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "nonsolutions_%d", ii);
-      (*NONSOLN_copy)[ii] = fopen(str, "w+");
-    }
-    free(str);
-  }
-	
-	
-  return;
-}
-
-void clear_nullspacejac_omp_d(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount, FILE ***OUT_copy, FILE *OUT, FILE ***RAWOUT_copy, FILE *RAWOUT, FILE ***MIDOUT_copy, FILE *MIDOUT, FILE ***FAIL_copy, FILE *FAIL, FILE ***NONSOLN_copy, FILE *NONSOLN, tracker_config_t **T_copy, nullspacejac_eval_data_d **BED_copy)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: copy the relevant data back to the standard spot and   *
- *  clear the allocated data that was used by OpenMP             *
- \***************************************************************/
-// if max_threads == 1, things are only pointers to the actual values,
-// otherwise, they are copies
-{
-  int ii;
-	
-  // clear EG
-  for (ii = max_threads - 1; ii >= 0; ii--)
-  {
-    clear_endgame_data(&(*EG)[ii]);
-  }
-  free(*EG);
-	
-  if (max_threads == 1)
-  { // set the pointers to NULL since they just pointed to the actual values
-    *trackCount_copy = NULL;
-    *T_copy = NULL;
-    *BED_copy = NULL;
-		
-    *OUT_copy[0] = NULL;
-    *RAWOUT_copy[0] = NULL;
-    *MIDOUT_copy[0] = NULL;
-    *FAIL_copy[0] = NULL;
-		
-    // free the memory of the file pointers
-    free(*OUT_copy);
-    free(*MIDOUT_copy);
-    free(*RAWOUT_copy);
-    free(*FAIL_copy);
-    free(*NONSOLN_copy);
-  }
-  else if (max_threads > 1)
-  {
-    // combine trackCount_copy
-    add_trackingStats(trackCount, *trackCount_copy, max_threads);
-		
-    // clear the copies T, ED_d & ED_mp
-    for (ii = max_threads - 1; ii >= 0; ii--)
-    { // clear BED_copy - 0 since not using regeneration
-      nullspacejac_eval_clear_d(&(*BED_copy)[ii], 0, (*T_copy)[ii].MPType);
-			// clear T_copy
-      tracker_config_clear(&(*T_copy)[ii]);
-    }
-		
-    // free the memory
-    free(*trackCount_copy);
-    free(*T_copy);
-    free(*BED_copy);
-		
-    // copy all of the files to the appropriate place
-    char ch, *str = NULL;
-    int size;
-    for (ii = 0; ii < max_threads; ii++)
-    {
-      // rewind to beginning for reading
-      rewind((*OUT_copy)[ii]);
-      // copy over to OUT
-      ch = fgetc((*OUT_copy)[ii]);
-      while (ch != EOF)
-      {
-        fprintf(OUT, "%c", ch);
-        ch = fgetc((*OUT_copy)[ii]);
-      }
-      // close file & delete
-      fclose((*OUT_copy)[ii]);
-      size = 1 + snprintf(NULL, 0, "output_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "output_%d", ii);
-      remove(str);
-			
-      // rewind to beginning for reading
-      rewind((*MIDOUT_copy)[ii]);
-      // copy over to MIDOUT
-      ch = fgetc((*MIDOUT_copy)[ii]);
-      while (ch != EOF)
-      {
-        fprintf(MIDOUT, "%c", ch);
-        ch = fgetc((*MIDOUT_copy)[ii]);
-      }
-      // close file & delete
-      fclose((*MIDOUT_copy)[ii]);
-      size = 1 + snprintf(NULL, 0, "midout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "midout_%d", ii);
-      remove(str);
-			
-      // rewind to beginning for reading
-      rewind((*RAWOUT_copy)[ii]);
-      // copy over to RAWOUT
-      ch = fgetc((*RAWOUT_copy)[ii]);
-      while (ch != EOF)
-      {
-        fprintf(RAWOUT, "%c", ch);
-        ch = fgetc((*RAWOUT_copy)[ii]);
-      }
-      // close file & delete
-      fclose((*RAWOUT_copy)[ii]);
-      size = 1 + snprintf(NULL, 0, "rawout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "rawout_%d", ii);
-      remove(str);
-			
-      // rewind to beginning for reading
-      rewind((*FAIL_copy)[ii]);
-      // copy over to FAIL
-      ch = fgetc((*FAIL_copy)[ii]);
-      while (ch != EOF)
-      {
-        fprintf(FAIL, "%c", ch);
-        ch = fgetc((*FAIL_copy)[ii]);
-      }
-      // close file & delete
-      fclose((*FAIL_copy)[ii]);
-      size = 1 + snprintf(NULL, 0, "fail_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "fail_%d", ii);
-      remove(str);
-			
-      // rewind to beginning for reading
-      rewind((*NONSOLN_copy)[ii]);
-      // copy over to NONSOLN
-      ch = fgetc((*NONSOLN_copy)[ii]);
-      while (ch != EOF)
-      {
-        fprintf(NONSOLN, "%c", ch);
-        ch = fgetc((*NONSOLN_copy)[ii]);
-      }
-      // close file & delete
-      fclose((*NONSOLN_copy)[ii]);
-      size = 1 + snprintf(NULL, 0, "nonsolutions_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "nonsolutions_%d", ii);
-      remove(str);
-    }
-    free(str);
-    // free file memory
-    free(*OUT_copy);
-    free(*MIDOUT_copy);
-    free(*RAWOUT_copy);
-    free(*FAIL_copy);
-    free(*NONSOLN_copy);
-  }
-	
-  return;
-}
-
-
-
-
-
-// derived from zero_dim_basic_setup_d
-int nullspacejac_setup_d(FILE **OUT, boost::filesystem::path outName,
-												 FILE **midOUT, boost::filesystem::path midName,
-												 tracker_config_t *T,
-												 nullspacejac_eval_data_d *ED,
-												 prog_t *dummyProg,
-												 int **startSub, int **endSub, int **startFunc, int **endFunc, int **startJvsub, int **endJvsub, int **startJv, int **endJv, int ***subFuncsBelow,
-												 int (**eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
-												 int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-												 boost::filesystem::path preprocFile, boost::filesystem::path degreeFile,
-												 int findStartPts, boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
-												 witness_set & W,
-												 nullspace_config *ns_config,
-												 solver_configuration *solve_options)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES: number of original variables                   *
- * NOTES: setup for zero dimensional tracking                    *
- \***************************************************************/
-{ // need to create the homotopy
-  int rank, patchType, ssType, numOrigVars, adjustDegrees, numGps;
-	
-  *eval_d = &nullspacejac_eval_d;   
-  *eval_mp = &nullspacejac_eval_mp;
-	
-	
-  *OUT = safe_fopen_write(outName);  // open the main output files.
-  *midOUT = safe_fopen_write(midName);
-	
-  if (T->MPType == 2) // using AMP - need to allocate space to store BED_mp
-    ED->BED_mp = (nullspacejac_eval_data_mp *)bmalloc(1 * sizeof(nullspacejac_eval_data_mp));
-  else
-    ED->BED_mp = NULL;
-	
-	
-  // setup a straight-line program, using the file(s) created by the parser
-  T->numVars = numOrigVars = setupProg_count(dummyProg, T->Precision, T->MPType, startSub, endSub, startFunc, endFunc, startJvsub, endJvsub, startJv, endJv, subFuncsBelow);
-	
-  // setup preProcData
-  setupPreProcData(const_cast<char *>(preprocFile.c_str()), &ED->preProcData);
-	
-	
-	
-  numGps = ED->preProcData.num_var_gp + ED->preProcData.num_hom_var_gp;
-  // find the rank
-  rank = rank_finder_d(&ED->preProcData, dummyProg, T, T->numVars);
-	
-	patchType = 2; // 1-hom patch
-	ssType = 0;    // with 1-hom, we use total degree start system
-	
-	
-	
-#ifdef printpathnullspace_left
-	int ii;
-	ED->FOUT = safe_fopen_write("pathtrack_nullspace_left");
-	fprintf(ED->FOUT,"%d ",W.num_variables);
-	for (ii=0; ii<W.num_variables; ii++) {
-		fprintf(ED->FOUT,"%s ",W.variable_names[ii]);
-	}
-	fprintf(ED->FOUT,"\n%d ",W.num_pts);
-	fprintf(ED->FOUT,"%d %d %d ",T->MPType, T->odePredictor, T->endgameNumber);
-	fprintf(ED->FOUT,"\n");
-#endif
-	
-	
-	adjustDegrees = 0; // if the system does not need its degrees adjusted, then that is okay
-	setupnullspacejacEval_d(T,const_cast<char *>(preprocFile.c_str()),
-													const_cast<char *>(degreeFile.c_str()),
-													dummyProg,
-													rank,
-													patchType, ssType, T->MPType,
-													&T->numVars, NULL, NULL, NULL,
-													ED, adjustDegrees, W,ns_config,solve_options);
-	
-	
-	
-	
-  return numOrigVars;
-}
-
-
-
-
-void setupnullspacejacEval_d(tracker_config_t *T,char preprocFile[], char degreeFile[], prog_t *dummyProg,
-														 int squareSize, int patchType, int ssType, int MPType,
-														 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,// what are these supposed to point to?
-														 nullspacejac_eval_data_d *BED, int adjustDegrees,
-														 witness_set & W,
-														 nullspace_config *ns_config,
-														 solver_configuration *solve_options)
-{
-  int ii, jj;
-	
-	BED->verbose_level = solve_options->verbose_level;
-	
-	BED->num_jac_equations = ns_config->num_jac_equations;
-	BED->target_dim = ns_config->target_dim;
-	BED->ambient_dim = ns_config->ambient_dim;
-	BED->target_crit_codim = ns_config->target_crit_codim;
-	
-	BED->num_v_vars = ns_config->num_v_vars;
-	BED->num_x_vars = ns_config->num_x_vars;
-	
-	BED->num_randomized_eqns = ns_config->num_randomized_eqns;
-	BED->max_degree = ns_config->max_degree;
-	BED->randomized_degrees = (int *) br_malloc(ns_config->num_randomized_eqns*sizeof(int));
-	for (ii=0; ii<ns_config->randomizer_matrix->rows; ii++)
-		BED->randomized_degrees[ii] = ns_config->randomized_degrees[ii]; // store the full degree (not derivative).
-	
-	BED->num_v_linears = ns_config->num_v_linears;   //
-
-	
-	BED->num_variables = ns_config->num_x_vars + ns_config->num_v_vars;
-	
-  setupPreProcData(preprocFile, &BED->preProcData);
-
-  generic_setup_patch(&BED->patch,W);
-	if (T->MPType==2) {
-		generic_setup_patch(&BED->BED_mp->patch, W);
-	}
-	
-	
-	BED->SLP = dummyProg; // change a pointer
-	
-	init_mat_d(BED->randomizer_matrix,0,0);
-	mat_mp_to_d(BED->randomizer_matrix,
-							ns_config->randomizer_matrix);
-	
-	
-	//  THE STUFF PROPRIETARY TO THIS METHOD
-	init_mat_d(BED->post_randomizer_matrix,0,0);
-	mat_mp_to_d(BED->post_randomizer_matrix,
-							ns_config->post_randomizer_matrix);
-	
-	
-	
-	// set up the vectors to hold the linears.
-	BED->num_projections = ns_config->num_projections;
-	BED->target_projection = (vec_d *)br_malloc(ns_config->num_projections * sizeof(vec_d));
-	init_mat_d(BED->jac_with_proj, ns_config->num_x_vars-1, ns_config->num_v_vars);
-	BED->jac_with_proj->rows = ns_config->num_x_vars-1;
-	BED->jac_with_proj->cols = ns_config->num_v_vars;
-	
-	int offset = ns_config->num_randomized_eqns;
-	for (ii=0; ii<ns_config->num_projections; ii++) {
-		init_vec_d(BED->target_projection[ii],ns_config->num_x_vars);
-		BED->target_projection[ii]->size =  ns_config->num_x_vars;
-		vec_mp_to_d(BED->target_projection[ii], ns_config->target_projection[ii]);
-		
-		for (jj=1; jj<ns_config->num_x_vars; jj++) {
-			mp_to_d(&BED->jac_with_proj->entry[jj-1][ii+offset], &ns_config->target_projection[ii]->coord[jj]);
-		}
-	}
-	
-	init_vec_d(BED->v_patch,ns_config->num_v_vars);
-	BED->v_patch->size = ns_config->num_v_vars;
-	vec_mp_to_d(BED->v_patch, ns_config->v_patch);
-	
-	
-	BED->half->r = 0.5;
-	BED->half->i = 0.0;
-	
-	BED->perturbation->r = PERTURBATION_VALUE;
-	BED->perturbation->i = PERTURBATION_VALUE; // as defined in the determinant_derivative.h header
-	
-	
-	BED->v_linears = (vec_d *) br_malloc(ns_config->num_v_linears*sizeof(vec_d));
-	for (ii=0; ii<ns_config->num_v_linears; ii++) {
-		init_vec_d(BED->v_linears[ii],ns_config->num_v_vars);
-		BED->v_linears[ii]->size = ns_config->num_v_vars;
-		vec_mp_to_d(BED->v_linears[ii], ns_config->v_linears[ii]);
-	}
-
-	BED->num_additional_linears = ns_config->num_additional_linears;
-	BED->additional_linears_terminal = (vec_d *) br_malloc(ns_config->num_additional_linears*sizeof(vec_d));
-	BED->additional_linears_starting = (vec_d *) br_malloc(ns_config->num_additional_linears*sizeof(vec_d));
-	
-	for (ii=0; ii<ns_config->num_additional_linears; ii++) {
-		init_vec_d(BED->additional_linears_terminal[ii], ns_config->num_x_vars);
-		BED->additional_linears_terminal[ii]->size = ns_config->num_x_vars;
-		vec_mp_to_d(BED->additional_linears_terminal[ii],ns_config->additional_linears_terminal[ii]);
-		
-		init_vec_d(BED->additional_linears_starting[ii], ns_config->num_x_vars);
-		BED->additional_linears_starting[ii]->size = ns_config->num_x_vars;
-		vec_mp_to_d(BED->additional_linears_starting[ii],ns_config->additional_linears_starting[ii]);
-	}
-	
-	
-	
-	BED->starting_linears = (vec_d **)br_malloc(ns_config->num_jac_equations*sizeof(vec_d *));
-	
-	for (ii=0; ii<ns_config->num_jac_equations; ++ii) {
-		BED->starting_linears[ii] = (vec_d *)br_malloc(ns_config->max_degree*sizeof(vec_d));
-		for (jj=0; jj<ns_config->max_degree; jj++) {
-			init_vec_d(BED->starting_linears[ii][jj],W.num_variables);
-			BED->starting_linears[ii][jj]->size = W.num_variables;
-			
-			vec_mp_to_d(BED->starting_linears[ii][jj], ns_config->starting_linears[ii][jj]);
-		}
-	}
-	
-	
-	if (solve_options->use_gamma_trick==1)
-		get_comp_rand_d(BED->gamma); // set gamma to be random complex value
-	else
-		set_one_d(BED->gamma);
-	
-	
-	if (MPType == 2)
-  { // using AMP - initialize using 16 digits & 64-bit precison
-		
-#ifdef printpathnullspace_left
-		BED->BED_mp->FOUT = BED->FOUT;
-#endif
-		
-		BED->BED_mp->verbose_level = solve_options->verbose_level;
-		
-		int prec = 64;
-		initMP(prec);
-		
-		BED->BED_mp->curr_prec = prec;
-		
-		BED->BED_mp->gamma_rat = (mpq_t *)bmalloc(2 * sizeof(mpq_t));
-		if (solve_options->use_gamma_trick==1){
-			get_comp_rand_rat(BED->gamma, BED->BED_mp->gamma, BED->BED_mp->gamma_rat, prec, T->AMP_max_prec, 1, 1);
-		}
-		else{
-			init_rat(BED->BED_mp->gamma_rat);
-			init_mp(BED->BED_mp->gamma);
-			set_one_d(BED->gamma);
-			set_one_mp(BED->BED_mp->gamma);
-			set_one_rat(BED->BED_mp->gamma_rat);
-		}
-		
-		
-		BED->BED_mp->SLP = BED->SLP; // assign the SLP pointer
-		
-		
-		
-		
-		init_mat_mp2(BED->BED_mp->randomizer_matrix,0,0,prec); // initialize the randomizer matrix
-		init_mat_mp2(BED->BED_mp->randomizer_matrix_full_prec,0,0,T->AMP_max_prec); // initialize the randomizer matrix
-		
-		mat_cp_mp(BED->BED_mp->randomizer_matrix_full_prec,ns_config->randomizer_matrix);
-		mat_cp_mp(BED->BED_mp->randomizer_matrix,ns_config->randomizer_matrix);
-		
-		
-		BED->BED_mp->num_variables = ns_config->num_x_vars + ns_config->num_v_vars;
-		BED->BED_mp->num_jac_equations = ns_config->num_jac_equations;
-		BED->BED_mp->target_dim = ns_config->target_dim;
-		BED->BED_mp->ambient_dim = ns_config->ambient_dim;
-		BED->BED_mp->target_crit_codim = ns_config->target_crit_codim;
-		
-		BED->BED_mp->num_v_vars = ns_config->num_v_vars;
-		BED->BED_mp->num_x_vars = ns_config->num_x_vars;
-		
-		BED->BED_mp->num_randomized_eqns = ns_config->num_randomized_eqns;
-		BED->BED_mp->max_degree = ns_config->max_degree;
-		
-		
-		BED->BED_mp->randomized_degrees.resize(ns_config->num_randomized_eqns);
-		for (ii=0; ii<ns_config->randomizer_matrix->rows; ii++)
-			BED->BED_mp->randomized_degrees[ii] = ns_config->randomized_degrees[ii]; // store the full degree (not derivative).
-		
-		BED->BED_mp->num_v_linears = ns_config->num_v_linears;   //
-		
-		
-		
-		
-		
-		
-		
-		// set the $v$ linears
-		
-		BED->BED_mp->v_linears = (vec_mp *) br_malloc(ns_config->num_v_linears*sizeof(vec_mp));
-		BED->BED_mp->v_linears_full_prec = (vec_mp *) br_malloc(ns_config->num_v_linears*sizeof(vec_mp));
-		for (ii=0; ii<ns_config->num_v_linears; ii++) {
-			init_vec_mp2(BED->BED_mp->v_linears[ii],ns_config->num_v_vars,prec);
-			BED->BED_mp->v_linears[ii]->size = ns_config->num_v_vars;
-			
-			init_vec_mp2(BED->BED_mp->v_linears_full_prec[ii],ns_config->num_v_vars,T->AMP_max_prec);
-			BED->BED_mp->v_linears_full_prec[ii]->size = ns_config->num_v_vars;
-			
-			vec_cp_mp(BED->BED_mp->v_linears[ii], ns_config->v_linears[ii]);
-			vec_cp_mp(BED->BED_mp->v_linears_full_prec[ii], ns_config->v_linears[ii]);
-		}
-		
-		//set the jac_with_proj matrix
-		
-		init_mat_mp2(BED->BED_mp->jac_with_proj, ns_config->num_x_vars-1, ns_config->num_v_vars, prec);
-		BED->BED_mp->jac_with_proj->rows = ns_config->num_x_vars-1;
-		BED->BED_mp->jac_with_proj->cols = ns_config->num_v_vars;
-		
-		init_mat_mp2(BED->BED_mp->jac_with_proj_full_prec, ns_config->num_x_vars-1, ns_config->num_v_vars, T->AMP_max_prec);
-		BED->BED_mp->jac_with_proj_full_prec->rows = ns_config->num_x_vars-1;
-		BED->BED_mp->jac_with_proj_full_prec->cols = ns_config->num_v_vars;
-		
-		offset = ns_config->num_randomized_eqns;
-		
-		// set up the vectors to hold the  linears.
-		BED->BED_mp->num_projections = ns_config->num_projections;
-		BED->BED_mp->target_projection = (vec_mp *)br_malloc(ns_config->num_projections * sizeof(vec_mp));		
-		BED->BED_mp->target_projection_full_prec = (vec_mp *)br_malloc(ns_config->num_projections * sizeof(vec_mp));
-		
-		for (ii=0; ii<ns_config->num_projections; ii++) {
-			init_vec_mp2(BED->BED_mp->target_projection[ii],W.num_variables,prec); BED->BED_mp->target_projection[ii]->size =  W.num_variables;
-			vec_cp_mp(BED->BED_mp->target_projection[ii], ns_config->target_projection[ii]);
-			
-			init_vec_mp2(BED->BED_mp->target_projection_full_prec[ii],W.num_variables,T->AMP_max_prec);
-			BED->BED_mp->target_projection_full_prec[ii]->size =  W.num_variables;
-			vec_cp_mp(BED->BED_mp->target_projection_full_prec[ii], ns_config->target_projection[ii]);
-			
-			for (jj=1; jj<ns_config->num_x_vars; jj++) {
-				set_mp(&BED->BED_mp->jac_with_proj->entry[jj-1][ii+offset], &ns_config->target_projection[ii]->coord[jj]);
-				set_mp(&BED->BED_mp->jac_with_proj_full_prec->entry[jj-1][ii+offset], &ns_config->target_projection[ii]->coord[jj]);
-			}
-		}
-		
-		
-		
-
-		init_vec_mp2(BED->BED_mp->v_patch_full_prec,ns_config->num_v_vars,T->AMP_max_prec);
-		init_vec_mp2(BED->BED_mp->v_patch,ns_config->num_v_vars,prec);
-		BED->BED_mp->v_patch->size = BED->BED_mp->v_patch_full_prec->size = ns_config->num_v_vars;
-		vec_cp_mp(BED->BED_mp->v_patch_full_prec, ns_config->v_patch);
-		vec_cp_mp(BED->BED_mp->v_patch, ns_config->v_patch);
-		
-		BED->BED_mp->starting_linears = (vec_mp **)br_malloc(ns_config->num_jac_equations*sizeof(vec_mp *));
-		BED->BED_mp->starting_linears_full_prec = (vec_mp **)br_malloc(ns_config->num_jac_equations*sizeof(vec_mp *));
-		for (ii=0; ii<ns_config->num_jac_equations; ++ii) {
-			BED->BED_mp->starting_linears[ii] = (vec_mp *)br_malloc(ns_config->max_degree*sizeof(vec_mp));
-			BED->BED_mp->starting_linears_full_prec[ii] = (vec_mp *)br_malloc(ns_config->max_degree*sizeof(vec_mp));
-			
-			for (jj=0; jj<ns_config->max_degree; jj++) {
-				init_vec_mp2(BED->BED_mp->starting_linears[ii][jj],W.num_variables,prec);
-				init_vec_mp2(BED->BED_mp->starting_linears_full_prec[ii][jj],W.num_variables,T->AMP_max_prec);
-				BED->BED_mp->starting_linears[ii][jj]->size = W.num_variables;
-				BED->BED_mp->starting_linears_full_prec[ii][jj]->size = W.num_variables;
-				
-				vec_cp_mp(BED->BED_mp->starting_linears[ii][jj], ns_config->starting_linears[ii][jj]);
-				vec_cp_mp(BED->BED_mp->starting_linears_full_prec[ii][jj], ns_config->starting_linears[ii][jj]);
-			}
-		}
-
-		BED->BED_mp->num_additional_linears = ns_config->num_additional_linears;
-		BED->BED_mp->additional_linears_terminal = (vec_mp *) br_malloc(ns_config->num_additional_linears*sizeof(vec_mp));
-		BED->BED_mp->additional_linears_terminal_full_prec = (vec_mp *) br_malloc(ns_config->num_additional_linears*sizeof(vec_mp));
-		
-		BED->BED_mp->additional_linears_starting = (vec_mp *) br_malloc(ns_config->num_additional_linears*sizeof(vec_mp));
-		BED->BED_mp->additional_linears_starting_full_prec = (vec_mp *) br_malloc(ns_config->num_additional_linears*sizeof(vec_mp));
-		
-		for (ii=0; ii<ns_config->num_additional_linears; ii++) {
-			init_vec_mp2(BED->BED_mp->additional_linears_terminal[ii], ns_config->num_x_vars,prec);
-			init_vec_mp2(BED->BED_mp->additional_linears_terminal_full_prec[ii], ns_config->num_x_vars,T->AMP_max_prec);
-			BED->BED_mp->additional_linears_terminal[ii]->size = ns_config->num_x_vars;
-			BED->BED_mp->additional_linears_terminal_full_prec[ii]->size = ns_config->num_x_vars;
-			vec_cp_mp(BED->BED_mp->additional_linears_terminal[ii],ns_config->additional_linears_terminal[ii]);
-			vec_cp_mp(BED->BED_mp->additional_linears_terminal_full_prec[ii],ns_config->additional_linears_terminal[ii]);
-			
-			
-			init_vec_mp2(BED->BED_mp->additional_linears_starting[ii], ns_config->num_x_vars,prec);
-			init_vec_mp2(BED->BED_mp->additional_linears_starting_full_prec[ii], ns_config->num_x_vars,T->AMP_max_prec);
-			BED->BED_mp->additional_linears_starting[ii]->size = ns_config->num_x_vars;
-			BED->BED_mp->additional_linears_starting_full_prec[ii]->size = ns_config->num_x_vars;
-			vec_cp_mp(BED->BED_mp->additional_linears_starting[ii],ns_config->additional_linears_starting[ii]);
-			vec_cp_mp(BED->BED_mp->additional_linears_starting_full_prec[ii],ns_config->additional_linears_starting[ii]);
-		}
-		
-		init_mat_mp2(BED->BED_mp->post_randomizer_matrix,0,0,prec); // initialize the randomizer matrix
-		init_mat_mp2(BED->BED_mp->post_randomizer_matrix_full_prec,0,0,T->AMP_max_prec); // initialize the randomizer matrix
-		
-		mat_cp_mp(BED->BED_mp->post_randomizer_matrix_full_prec,ns_config->post_randomizer_matrix);
-		mat_cp_mp(BED->BED_mp->post_randomizer_matrix,ns_config->post_randomizer_matrix);
-		
-		init_mp(BED->BED_mp->half);
-		init_mp(BED->BED_mp->perturbation);
-		d_to_mp(BED->BED_mp->half,BED->half);
-		
-		BED->half->r = 0.5;
-		BED->half->i = 0.0;
-		
-		comp_d p; p->r = PERTURBATION_VALUE_mp; p->i = PERTURBATION_VALUE_mp;
-		d_to_mp(BED->BED_mp->perturbation,p);
-
-		
-    // setup preProcData
-    setupPreProcData(preprocFile, &BED->BED_mp->preProcData);
-
-  }//re: if mptype==2
-	
-	
-	
-	
-	
-  return;
-}
-
-
-
-void cp_nullspacejac_eval_data_d(nullspacejac_eval_data_d *BED, nullspacejac_eval_data_d *BED_d_input, nullspacejac_eval_data_mp *BED_mp_input, int MPType)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: stores a copy of BED_(t)_input to BED                  *
- \***************************************************************/
-{
-	printf("entering cp_nullspacejac_eval_data_d\nthis function needs much attention, as things which should be copied are not!\n");
-	exit(-1);
-  cp_preproc_data(&BED->preProcData, &BED_d_input->preProcData);
-	//  cp_square_system_d(&BED->squareSystem, &BED_d_input->squareSystem);
-  cp_patch_d(&BED->patch, &BED_d_input->patch);
-	//  cp_start_system_d(&BED->startSystem, &BED_d_input->startSystem);
-	BED->SLP = (prog_t *)bmalloc(1 * sizeof(prog_t));
-  cp_prog_t(BED->SLP, BED_d_input->SLP);
-	
-	
-	//HERE COPY THE MATRICES  DAB !!!
-	
-	set_d(BED->gamma, BED_d_input->gamma);
-  if (MPType == 2)
-  { // need to also setup MP versions since using AMP
-    BED->BED_mp = (nullspacejac_eval_data_mp *)bmalloc(1 * sizeof(nullspacejac_eval_data_mp));
-		
-    cp_preproc_data(&BED->BED_mp->preProcData, &BED_mp_input->preProcData);
-    // simply point to the SLP that was setup in BED
-		//    cp_square_system_mp(&BED->BED_mp->squareSystem, &BED_mp_input->squareSystem, 0, BED->squareSystem.Prog);
-    cp_patch_mp(&BED->BED_mp->patch, &BED_mp_input->patch);
-		//    cp_start_system_mp(&BED->BED_mp->startSystem, &BED_mp_input->startSystem);
-  }
-  else
-    BED->BED_mp = NULL;
-	
-  return;
-}
-
-
-
-
-int nullspacejac_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d in_d, point_mp in_mp, int in_prec, void const *ED_d, void const *ED_mp)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: compute the dehom point                                *
- \***************************************************************/
-{
-  nullspacejac_eval_data_d *BED_d = NULL;
-  nullspacejac_eval_data_mp *BED_mp = NULL;
-	
-  *out_prec = in_prec;
-	
-	
-	
-  if (in_prec < 64)
-  { // compute out_d
-		nullspacejac_eval_data_d *BED_d = (nullspacejac_eval_data_d *)ED_d;
-		
-		comp_d denom;
-		change_size_vec_d(out_d,in_d->size-1);
-		out_d->size = in_d->size-1;
-		
-		set_d(denom, &in_d->coord[0]);
-		
-		for (int ii=0; ii<BED_d->num_x_vars-1; ++ii) {
-			set_d(&out_d->coord[ii],&in_d->coord[ii+1]);
-			div_d(&out_d->coord[ii],&out_d->coord[ii],denom); //  result[ii] = dehom_me[ii+1]/dehom_me[0].
-		}
-		
-		for (int ii=BED_d->num_x_vars-1; ii<in_d->size-1; ++ii) {
-			set_d( &out_d->coord[ii],&in_d->coord[ii+1]);
-		}
-		
-		
-		
-		
-		
-  }
-  else
-  { // compute out_mp
-		nullspacejac_eval_data_mp *BED_mp = (nullspacejac_eval_data_mp *)ED_mp;
-		
-		comp_mp denom; init_mp(denom);
-		change_size_vec_mp(out_mp,in_mp->size-1);
-		out_mp->size = in_mp->size-1;
-		
-		set_mp(denom, &in_mp->coord[0]);
-
-		for (int ii=0; ii<BED_mp->num_x_vars-1; ++ii) {
-			set_mp(&out_mp->coord[ii],&in_mp->coord[ii+1]);
-			div_mp(&out_mp->coord[ii],&out_mp->coord[ii],denom); //  result[ii] = dehom_me[ii+1]/dehom_me[0].
-		}
-		
-		for (int ii=BED_mp->num_x_vars-1; ii<in_mp->size-1; ++ii) {
-			set_mp( &out_mp->coord[ii],&in_mp->coord[ii+1]);
-		}
-		
-		clear_mp(denom);
-		
-		
-    // set prec on out_mp
-    setprec_point_mp(out_mp, *out_prec);
-		
-		
-		
-	}
-	
-	
-//	if (in_prec < 64) {
-//		print_point_to_screen_matlab(in_d,"in");
-//		print_point_to_screen_matlab(out_d,"out");
-//	}
-//	else{
-//		print_point_to_screen_matlab(in_mp,"in");
-//		print_point_to_screen_matlab(out_mp,"out");
-//	}
-	
-	
-	BED_d = NULL;
-  BED_mp = NULL;
-	
-  return 0;
-}
-
-
-
-
-
-
-
-
-
-int change_nullspacejac_eval_prec(void const *ED, int new_prec)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: change precision for standard zero dimensional solving *
- \***************************************************************/
-{
-	nullspacejac_eval_data_mp *BED = (nullspacejac_eval_data_mp *)ED; // to avoid having to cast every time
-	
-	int ii, jj;
-	
-	if (new_prec != BED->curr_prec){
-		// change the precision for the patch
-		changePatchPrec_mp(new_prec, &BED->patch);
-		
-		if (BED->verbose_level >=4)
-			printf("prec  %d\t-->\t%d\n",BED->curr_prec, new_prec);
-
-		BED->SLP->precision = new_prec;
-		
-		BED->curr_prec = new_prec;
-		
-		setprec_mp(BED->gamma, new_prec);
-		mpf_set_q(BED->gamma->r, BED->gamma_rat[0]);
-		mpf_set_q(BED->gamma->i, BED->gamma_rat[1]);
-		
-		change_prec_mat_mp(BED->randomizer_matrix,new_prec);
-		mat_cp_mp(BED->randomizer_matrix,BED->randomizer_matrix_full_prec);
-		
-		change_prec_mat_mp(BED->post_randomizer_matrix,new_prec);
-		mat_cp_mp(BED->post_randomizer_matrix,BED->post_randomizer_matrix_full_prec);
-		
-		
-		for (ii=0; ii<BED->num_additional_linears; ii++) {
-			change_prec_point_mp(BED->additional_linears_terminal[ii],new_prec);
-			vec_cp_mp(BED->additional_linears_terminal[ii],BED->additional_linears_terminal_full_prec[ii]);
-			
-			
-			change_prec_point_mp(BED->additional_linears_starting[ii],new_prec);
-			vec_cp_mp(BED->additional_linears_starting[ii],BED->additional_linears_starting_full_prec[ii]);
-		}
-		
-		
-		
-		for (ii=0; ii<BED->num_jac_equations; ++ii) {
-			for (jj=0; jj<BED->max_degree; jj++) {
-				change_prec_point_mp(BED->starting_linears[ii][jj],new_prec);
-				vec_cp_mp(BED->starting_linears[ii][jj], BED->starting_linears_full_prec[ii][jj]);
-			}
-		}
-		
-		
-		
-		for (ii=0; ii<BED->num_v_linears; ii++) {
-			change_prec_point_mp(BED->v_linears[ii],new_prec);
-			vec_cp_mp(BED->v_linears[ii],BED->v_linears_full_prec[ii]);
-		}
-		
-		change_prec_point_mp(BED->v_patch,new_prec);
-		vec_cp_mp(BED->v_patch,BED->v_patch_full_prec);
-		
-		change_prec_mat_mp(BED->jac_with_proj,new_prec);
-		mat_cp_mp(BED->jac_with_proj,BED->jac_with_proj_full_prec);
-		
-		change_prec_mp(BED->perturbation,new_prec);
-		change_prec_mp(BED->half,new_prec);
-		
-		
-	}
-	
-	
-  return 0;
-}
-
-
-
-
-
-
-
-
-
-
-
-int nullspacejac_solver_mp(int MPType, //, double parse_time, unsigned int currentSeed
-													 witness_set & W,  // includes the initial linear.
-													 witness_set *W_new,
-													 nullspace_config *ns_config,
-													 solver_configuration *solve_options)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES:                                                        *
- \***************************************************************/
-{
-	double parse_time = 0;
-  FILE *OUT = NULL, *FAIL = fopen("failed_paths", "w"), *midOUT = NULL, *rawOUT = fopen("raw_data", "w");
-  tracker_config_t T;
-  prog_t dummyProg;
-  bclock_t time1, time2;
-  int num_variables = 0, num_crossings = 0, num_sols = 0;
-	
-	
-  int *startSub = NULL, *endSub = NULL, *startFunc = NULL, *endFunc = NULL, *startJvsub = NULL, *endJvsub = NULL, *startJv = NULL, *endJv = NULL, **subFuncsBelow = NULL;
-  int (*ptr_to_eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *) = NULL;
-  int (*ptr_to_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = NULL;
-	
-  nullspacejac_eval_data_mp ED;  // was basic_eval_data_d  DAB
-  trackingStats trackCount;
-  double track_time;
-	
-  bclock(&time1); // initialize the clock.
-  init_trackingStats(&trackCount); // initialize trackCount to all 0
-	
-	//necessary for later whatnot
-	int userHom = 0, useRegen = 0, pathMod = 0, paramHom = 0;
-	
-	cp_tracker_config_t(&T, &solve_options->T);
-	
-	
-	// initialize latest_newton_residual_mp
-  mpf_init(T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
-	
-	
-	//  // call the setup function
-	num_variables = nullspacejac_setup_mp(&OUT, "output",
-																				&midOUT, "midpath_data",
-																				&T, &ED,
-																				&dummyProg,  //arg 7
-																				&startSub, &endSub, &startFunc, &endFunc,
-																				&startJvsub, &endJvsub, &startJv, &endJv, &subFuncsBelow,
-																				&ptr_to_eval_d, &ptr_to_eval_mp,  //args 17,18
-																				"preproc_data", "deg.out",
-																				!useRegen, "nonhom_start", "start",
-																				W,
-																				ns_config,
-																				solve_options);
-  
-	int (*change_prec)(void const *, int) = &change_basic_eval_prec;
-	
-	int (*dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *) = &nullspacejac_dehom;
-	
-	
-	
-  // error checking
-  if (userHom <= 0 && paramHom != 2)
-  { // no pathvariables or parameters allowed!
-    if (dummyProg.numPathVars > 0)
-    { // path variable present
-      printf("ERROR: Bertini does not expect path variables when user-defined homotopies are not being used!\n");
-      bexit(ERROR_INPUT_SYSTEM);
-    }
-    if (dummyProg.numPars > 0)
-    { // parameter present
-      printf("ERROR: Bertini does not expect parameters when user-defined homotopies are not being used!\n");
-      bexit(ERROR_INPUT_SYSTEM);
-    }
-  }
-	
-	post_process_t *endPoints = (post_process_t *)bmalloc(W.num_pts * sizeof(post_process_t)); //overallocate, expecting full
-	
-	if (T.endgameNumber == 3)
-	{ // use the track-back endgame
-		//        zero_dim_trackBack_d(&trackCount, OUT, rawOUT, midOUT, StartPts, FAIL, pathMod, &T, &ED, ED.BED_mp, ptr_to_eval_d, ptr_to_eval_mp, change_basic_eval_prec, zero_dim_dehom);
-		printf("bertini_real not equipped to deal with endgameNumber 3\nexiting\n");
-		exit(-99);
-	}
-	else
-	{ // use regular endgame
-		nullspacejac_track_mp(&trackCount, OUT, rawOUT, midOUT,
-													W,  // was the startpts file pointer.
-													endPoints,
-													FAIL, pathMod,
-													&T, &ED,
-													ptr_to_eval_mp, //ptr_to_eval_d,
-													change_prec, dehom,
-													solve_options);
-	}
-	
-	
-	
-	
-	fclose(midOUT);
-	
-	
-	
-	
-	// finish the output to rawOUT
-	fprintf(rawOUT, "%d\n\n", -1);  // bottom of rawOUT
-	
-	// check for path crossings
-	if (solve_options->use_midpoint_checker==1) {
-		midpoint_checker(trackCount.numPoints, num_variables,solve_options->midpoint_tol, &num_crossings);
-	}
-	
-	// setup num_sols
-	num_sols = trackCount.successes;
-	
-  // we report how we did with all paths:
-  bclock(&time2);
-  totalTime(&track_time, time1, time2);
-  if (solve_options->verbose_level>=1)
-  {
-		printf("nullspace_left report:\n");
-    printf("Number of failures:  %d\n", trackCount.failures);
-    printf("Number of successes:  %d\n", trackCount.successes);
-    printf("Number of paths:  %d\n", trackCount.numPoints);
-    printf("Parse Time = %fs\n", parse_time);
-    printf("Track Time = %fs\n", track_time);
-  }
-  fprintf(OUT, "Number of failures:  %d\n", trackCount.failures);
-  fprintf(OUT, "Number of successes:  %d\n", trackCount.successes);
-  fprintf(OUT, "Number of paths:  %d\n", trackCount.numPoints);
-  fprintf(OUT, "Parse Time = %fs\n", parse_time);
-  fprintf(OUT, "Track Time = %fs\n", track_time);
-	
-
-	BRpostProcessing(endPoints, W_new, trackCount.successes, &ED.preProcData, &T, solve_options);
-	
-	
-  // close all of the files
-  fclose(OUT);
-  fclose(rawOUT);
-  fprintf(FAIL, "\n");
-  fclose(FAIL);
-	
-
-	
-	free(startSub);
-	free(endSub);
-	free(startFunc);
-	free(endFunc);
-	free(startJvsub);
-	free(endJvsub);
-	free(startJv);
-	free(endJv);
-	
-	
-	
-  nullspacejac_eval_clear_mp(&ED, userHom, T.MPType);
-  tracker_config_clear(&T);
-	
-  return 0;
-}
-
-
-
-
-void nullspacejac_track_mp(trackingStats *trackCount,
-													 FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
-													 witness_set & W,
-													 post_process_t *endPoints,
-													 FILE *FAIL,
-													 int pathMod, tracker_config_t *T,
-													 nullspacejac_eval_data_mp *ED,
-													 int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-													 int (*change_prec)(void const *, int),
-													 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
-													 solver_configuration *solve_options)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: does standard zero dimensional tracking                *
- *  in either double precision or adaptive precision             *
- \***************************************************************/
-{
-	
-  int ii, oid, max = max_threads();
-  tracker_config_t *T_copy = NULL;
-  nullspacejac_eval_data_mp *BED_copy = NULL;
-  trackingStats *trackCount_copy = NULL;
-  FILE **OUT_copy = NULL, **MIDOUT_copy = NULL, **RAWOUT_copy = NULL, **FAIL_copy = NULL, *NONSOLN = NULL, **NONSOLN_copy = NULL;
-	
-  // top of RAWOUT - number of variables and that we are doing zero dimensional
-  fprintf(RAWOUT, "%d\n%d\n", T->numVars, 0);
-	
-
-	
-  int (*curr_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = &nullspacejac_eval_mp;
-	
-	
-	point_data_mp *startPts = NULL;
-	startPts = (point_data_mp *)bmalloc(W.num_pts * sizeof(point_data_mp));
-	
-	
-	
-	for (ii = 0; ii < W.num_pts; ii++)
-	{ // setup startPts[ii]
-		init_point_data_mp2(&startPts[ii], W.num_variables, T->Precision);
-		startPts[ii].point->size = W.num_variables;
-		
-		//NEED TO COPY IN THE WITNESS POINT
-		
-		//1 set the coordinates
-		vec_cp_mp(startPts[ii].point, W.pts_mp[ii] );
-		
-		//2 set the start time to 1.
-		set_one_mp(startPts[ii].time);
-	}
-	
-	
-	T->endgameOnly = 0;
-	
-	
-  // setup the rest of the structures
-	endgame_data_t *EG = NULL;
-  setup_nullspacejac_omp_mp(max,
-														&EG, &trackCount_copy, trackCount,
-														&OUT_copy, OUT, &RAWOUT_copy, RAWOUT, &MIDOUT_copy, MIDOUT, &FAIL_copy, FAIL, &NONSOLN_copy, NONSOLN,
-														&T_copy, T,
-														&BED_copy, ED);
-	
-	
-	
-	trackCount->numPoints = W.num_pts;
-	int solution_counter = 0;
-	
-	
-	
-	
-	
-	
-	// track each of the start points
-	for (ii = 0; ii < W.num_pts; ii++)
-	{ // get current thread number
-		oid = thread_num();
-		if (solve_options->verbose_level>=1)
-			printf("nullspacejac tracking path %d of %d\n",ii,W.num_pts);
-
-		
-		
-#ifdef printpathnullspace_left
-		BED_copy[oid].num_steps = 0;
-#endif
-		
-		generic_track_path_mp(solution_counter, &EG[oid], &startPts[ii], OUT_copy[oid], MIDOUT_copy[oid], &T_copy[oid], &BED_copy[oid], curr_eval_mp, change_prec, find_dehom); //curr_eval_d,
-		
-#ifdef printpathnullspace_left
-		int mm;
-		fprintf(BED_copy[oid].FOUT,"-100 %d ",BED_copy[oid].num_steps);
-		for (mm=0; mm<BED_copy[oid].num_variables-1; ++mm) {
-			fprintf(BED_copy[oid].FOUT,"0 0 ");
-		}
-		fprintf(BED_copy[oid].FOUT,"\n%d\n\n",EG->retVal);
-#endif
-		
-		
-		
-		// check to see if it should be sharpened
-		if (EG[oid].retVal == 0 && T_copy[oid].sharpenDigits > 0)
-		{ // use the sharpener for after an endgame
-			sharpen_endpoint_endgame(&EG[oid], &T_copy[oid], OUT_copy[oid], NULL, &BED_copy[oid], NULL, curr_eval_mp, NULL);
-			// DAB - replaced curr_eval_d with NULL
-		}
-		
-		
-		int issoln = check_issoln_nullspacejac_mp(&EG[oid], &T_copy[oid], &BED_copy[oid]);
-		
-		
-		//get the terminal time in double form
-		comp_d time_to_compare;
-		mp_to_d(time_to_compare, EG->PD_mp.time);
-		
-		
-		if ((EG->retVal != 0 && time_to_compare->r > T->minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
-			trackCount->failures++;
-			if (issoln==0) {
-				printf("point %d was a non-solution junk point\n",ii);
-			}
-			else{
-				printf("\nretVal = %d; issoln = %d\nthere was a path failure nullspace_left tracking witness point %d\n\n",EG->retVal, issoln,ii);
-				print_path_retVal_message(EG->retVal);
-			}
-		}
-		else
-		{
-			//otherwise converged, but may have still had non-zero retval due to other reasons.
-			endgamedata_to_endpoint(&endPoints[solution_counter], EG);
-			trackCount->successes++;
-			solution_counter++; // probably this could be eliminated
-		}
-		
-		
-	}// re: for (ii=0; ii<W.num_pts ;ii++)
-	
-	
-	
-	
-	//clear the data structures.
-	
-  for (ii = 0; ii >W.num_pts; ii++)  // clear startPts[ii]
-    clear_point_data_mp(&startPts[ii]);
-  free(startPts);
-	
-  // clear the structures
-  clear_nullspacejac_omp_mp(max, &EG, &trackCount_copy, trackCount, &OUT_copy, OUT, &RAWOUT_copy, RAWOUT, &MIDOUT_copy, MIDOUT, &FAIL_copy, FAIL, &NONSOLN_copy, NONSOLN, &T_copy, &BED_copy);
-	
-  return;
-}
-
-
-
-
-// derived from zero_dim_basic_setup_d
-int nullspacejac_setup_mp(FILE **OUT, boost::filesystem::path outName,
-													FILE **midOUT, boost::filesystem::path midName,
-													tracker_config_t *T,
-													nullspacejac_eval_data_mp *ED,
-													prog_t *dummyProg,
-													int **startSub, int **endSub, int **startFunc, int **endFunc, int **startJvsub, int **endJvsub, int **startJv, int **endJv, int ***subFuncsBelow,
-													int (**eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
-													int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-													boost::filesystem::path preprocFile, boost::filesystem::path degreeFile,
-													int findStartPts,
-													boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
-													witness_set & W,
-													nullspace_config *ns_config,
-													solver_configuration *solve_options)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES: number of original variables                   *
- * NOTES: setup for zero dimensional tracking                    *
- \***************************************************************/
-{ // need to create the homotopy
-	
-  int rank = 0, patchType, ssType, numOrigVars, adjustDegrees, numGps;
-	
-  *eval_d = &nullspacejac_eval_d;
-  *eval_mp = &nullspacejac_eval_mp;
-	
-  *OUT = safe_fopen_write(outName);  // open the main output files.
-  *midOUT = safe_fopen_write(midName);
-	
-	
-	
-	
-  // setup a straight-line program, using the file(s) created by the parser
-  T->numVars = numOrigVars = setupProg_count(dummyProg, T->Precision, T->MPType, startSub, endSub, startFunc, endFunc, startJvsub, endJvsub, startJv, endJv, subFuncsBelow);
-	
-	
-  // setup preProcData
-  setupPreProcData(const_cast<char *>(preprocFile.c_str()), &ED->preProcData);
-	
-	
-	
-  numGps = ED->preProcData.num_var_gp + ED->preProcData.num_hom_var_gp;
-	
-	patchType = 2; // 1-hom patch
-	ssType = 0;    // with 1-hom, we use total degree start system
-	adjustDegrees = 0; // if the system does not need its degrees adjusted, then that is okay
-	setupnullspacejacEval_mp(const_cast<char *>(preprocFile.c_str()),
-													 const_cast<char *>(degreeFile.c_str()), dummyProg, rank, patchType, ssType, T->Precision, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, W,ns_config,solve_options);
-	
-	
-	
-	
-#ifdef printpathnullspace_left
-	int ii;
-	ED->FOUT = safe_fopen_write("pathtrack_nullspace_left");
-	fprintf(ED->FOUT,"%d ",W.num_variables);
-	for (ii=0; ii<W.num_variables; ii++) {
-		fprintf(ED->FOUT,"%s ",W.variable_names[ii]);
-	}
-	fprintf(ED->FOUT,"\n%d ",W.num_pts);
-	fprintf(ED->FOUT,"%d %d %d ",T->MPType, T->odePredictor, T->endgameNumber);
-	fprintf(ED->FOUT,"\n");
-#endif
-	
-  return numOrigVars;
-}
-
-
-
-
-
-//this derived from basic_eval_d
 int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED)
 { // evaluates a special homotopy type, built for bertini_real
-//	printf("entering eval_mp\n");
+	//	printf("entering eval_mp\n");
   nullspacejac_eval_data_mp *BED = (nullspacejac_eval_data_mp *)ED; // to avoid having to cast every time
 	
   int ii, jj, kk, mm;
@@ -2757,9 +2133,9 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 		
 		// evaluate perturbed forwards
 		evalProg_mp(unused_function_values, unused_parVals, unused_parDer,  //  unused output
-							 perturbed_Jv,  // <---- the output we need
-							 unused_Jp, //unused output
-							 perturbed_forward_variables, pathVars, BED->SLP); // input
+								perturbed_Jv,  // <---- the output we need
+								unused_Jp, //unused output
+								perturbed_forward_variables, pathVars, BED->SLP); // input
 		
 		
 		mat_mul_mp(perturbed_AtimesJ,BED->randomizer_matrix,perturbed_Jv);
@@ -2794,9 +2170,9 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 		
 		// evaluate perturbed back
 		evalProg_mp(unused_function_values, unused_parVals, unused_parDer,  //  unused output
-							 perturbed_Jv,  // <---- the output we need
-							 unused_Jp, //unused output
-							 perturbed_backward_variables, pathVars, BED->SLP); // input
+								perturbed_Jv,  // <---- the output we need
+								unused_Jp, //unused output
+								perturbed_backward_variables, pathVars, BED->SLP); // input
 		
 		
 		mat_cp_mp(tempmat1, BED->jac_with_proj); // probably unnecessary
@@ -2821,7 +2197,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 		
 		
 		vec_mulcomp_mp(tempvec, tempvec, temp); //tempvec = (forward-backward)/(2h)
-																					 // √ this is verified correct for sphere
+																						// √ this is verified correct for sphere
 		
 		//		print_point_to_screen_matlab(tempvec,"Jv_target");
 		
@@ -2856,7 +2232,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	
 	offset = BED->num_randomized_eqns + BED->num_additional_linears + BED->num_jac_equations + BED->patch.num_patches;
 	if (offset != BED->num_variables-1) {
-		std::cout << "mismatch in number of blabla, line 1006;\n" << offset << " " << BED->num_variables-1 << std::endl;
+		std::cout << "mismatch in number of blabla, line 2701;\n" << offset << " " << BED->num_variables-1 << std::endl;
 		print_matrix_to_screen_matlab(Jv,"Jv");
 		deliberate_segfault();
 	}
@@ -2877,24 +2253,25 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	
   set_mp(&parVals->coord[0], pathVars); // s = t
   set_one_mp(&parDer->coord[0]);       // ds/dt = 1
-
 	
-
 	
-	if (BED->verbose_level>=3) {
-//	print_matrix_to_screen_matlab( AtimesJ,"jac");
-//	print_point_to_screen_matlab(curr_x_vars,"currxvars");
+	
+	
+	if (BED->verbose_level>=5) {
+		//	print_matrix_to_screen_matlab( AtimesJ,"jac");
+		//	print_point_to_screen_matlab(curr_x_vars,"currxvars");
 		print_point_to_screen_matlab(funcVals,"F_mp");
-//	print_point_to_screen_matlab(parVals,"parVals");
-//	print_point_to_screen_matlab(parDer,"parDer");
+		//	print_point_to_screen_matlab(parVals,"parVals");
+		//	print_point_to_screen_matlab(parDer,"parDer");
 		print_matrix_to_screen_matlab(Jv,"Jv_mp");
-//	print_matrix_to_screen_matlab(Jp,"Jp");
-
-//	print_matrix_to_screen_matlab(BED->jac_with_proj,"jacwithproj");
-//these values are set in this function:  point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp
-//	print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
-
-//	mypause();
+		//	print_matrix_to_screen_matlab(Jp,"Jp");
+		
+		//	print_matrix_to_screen_matlab(BED->jac_with_proj,"jacwithproj");
+		//these values are set in this function:  point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp
+		//	print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
+		
+		if (BED->verbose_level==10)
+			mypause();
 	}
 	
 	
@@ -2950,13 +2327,13 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	
 	clear_vec_mp(perturbed_forward_variables);
 	clear_vec_mp(perturbed_backward_variables);
-
 	
 	
 	
-
 	
-
+	
+	
+	
 	
 #ifdef printpathnullspace_left
 	BED->num_steps++;
@@ -2979,474 +2356,173 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	
 	
   return 0;
-} //re: evaluator mp
+} 
 
 
 
 
 
 
-void nullspacejac_eval_clear_mp(nullspacejac_eval_data_mp *ED, int clearRegen, int MPType)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: clear ED                                               *
- \***************************************************************/
-{
-	
-  patch_eval_data_clear_mp(&ED->patch);
-  preproc_data_clear(&ED->preProcData);
-	
-	
-	//SOME OTHER THINGS OUGHT TO BE CLEARED HERE  DAB
-	
-	
-	//specifics for the nullspacejac method.
-	clear_mp(ED->gamma);
-	clear_mat_mp(ED->randomizer_matrix);
-	
-#ifdef printpathnullspace_left
-	fclose(ED->FOUT);
-#endif
-	
-  return;
-}
-
-
-
-
-
-
-void setup_nullspacejac_omp_mp(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount,
-															 FILE ***OUT_copy, FILE *OUT, FILE ***RAWOUT_copy, FILE *RAWOUT,
-															 FILE ***MIDOUT_copy, FILE *MIDOUT, FILE ***FAIL_copy, FILE *FAIL,
-															 FILE ***NONSOLN_copy, FILE *NONSOLN,
-															 tracker_config_t **T_copy, tracker_config_t *T,
-															 nullspacejac_eval_data_mp **BED_copy, nullspacejac_eval_data_mp *ED_mp)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: setup everything needed to do zero dimensional tracking*
- *  using OpenMP                                                 *
- \***************************************************************/
-// if max_threads == 1, things are only pointers to the actual values,
-// otherwise, they are copies
-{
-  int ii;
-  // error checking
-  if (max_threads <= 0)
-  {
-    printf("\n\nERROR: The number of threads (%d) needs to be positive when setting up for tracking!\n", max_threads);
-    bexit(ERROR_CONFIGURATION);
-  }
-	
-	
-	// allocate space for EG
-	*EG = (endgame_data_t *)bmalloc(max_threads * sizeof(endgame_data_t));
-  for (ii = 0; ii < max_threads; ii++)
-    init_endgame_data(&(*EG)[ii], T->Precision);
-	
-	
-
-	
-  // allocate space to hold pointers to the files
-  *OUT_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
-  *MIDOUT_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
-  *RAWOUT_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
-  *FAIL_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
-  *NONSOLN_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
-	
-  if (max_threads == 1)
-  { // setup the pointers
-    *trackCount_copy = trackCount;
-    *T_copy = T;
-    *BED_copy = ED_mp;
-		//    (*BED_copy)->BED_mp = ED_mp; // make sure that this is pointed to inside of ED_d
-		
-    (*OUT_copy)[0] = OUT;
-    (*RAWOUT_copy)[0] = RAWOUT;
-    (*MIDOUT_copy)[0] = MIDOUT;
-    (*FAIL_copy)[0] = FAIL;
-    (*NONSOLN_copy)[0] = NONSOLN;
-  }
-  else // max_threads > 1
-  { // allocate memory
-		printf("more than one thread? prolly gonna crap out here in a sec\n");
-		mypause();
-		
-    *trackCount_copy = (trackingStats *)bmalloc(max_threads * sizeof(trackingStats));
-    *T_copy = (tracker_config_t *)bmalloc(max_threads * sizeof(tracker_config_t));
-    *BED_copy = (nullspacejac_eval_data_mp *)bmalloc(max_threads * sizeof(nullspacejac_eval_data_mp));
-		
-    // copy T, ED_d, ED_mp, & trackCount
-    for (ii = 0; ii < max_threads; ii++)
-    { // copy T
-      cp_tracker_config_t(&(*T_copy)[ii], T);
-      // copy ED_d & ED_mp
-      cp_nullspacejac_eval_data_mp(&(*BED_copy)[ii], ED_mp, T->MPType);
-      // initialize trackCount_copy
-      init_trackingStats(&(*trackCount_copy)[ii]);
-      (*trackCount_copy)[ii].numPoints = trackCount->numPoints;
-    }
-		
-    // setup the files
-    char *str = NULL;
-    int size;
-    for (ii = 0; ii < max_threads; ii++)
-    {
-      size = 1 + snprintf(NULL, 0, "output_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "output_%d", ii);
-      (*OUT_copy)[ii] = fopen(str, "w+");
-			
-      size = 1 + snprintf(NULL, 0, "midout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "midout_%d", ii);
-      (*MIDOUT_copy)[ii] = fopen(str, "w+");
-			
-      size = 1 + snprintf(NULL, 0, "rawout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "rawout_%d", ii);
-      (*RAWOUT_copy)[ii] = fopen(str, "w+");
-			
-      size = 1 + snprintf(NULL, 0, "fail_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "fail_%d", ii);
-      (*FAIL_copy)[ii] = fopen(str, "w+");
-			
-      size = 1 + snprintf(NULL, 0, "nonsolutions_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "nonsolutions_%d", ii);
-      (*NONSOLN_copy)[ii] = fopen(str, "w+");
-    }
-    free(str);
-  }
-	
-	
-  return;
-}
-
-void clear_nullspacejac_omp_mp(int max_threads, endgame_data_t **EG, trackingStats **trackCount_copy, trackingStats *trackCount, FILE ***OUT_copy, FILE *OUT, FILE ***RAWOUT_copy, FILE *RAWOUT, FILE ***MIDOUT_copy, FILE *MIDOUT, FILE ***FAIL_copy, FILE *FAIL, FILE ***NONSOLN_copy, FILE *NONSOLN, tracker_config_t **T_copy, nullspacejac_eval_data_mp **BED_copy)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: copy the relevant data back to the standard spot and   *
- *  clear the allocated data that was used by OpenMP             *
- \***************************************************************/
-// if max_threads == 1, things are only pointers to the actual values,
-// otherwise, they are copies
-{
-  int ii;
-	
-  // clear EG
-  for (ii = max_threads - 1; ii >= 0; ii--)
-  {
-    clear_endgame_data(&(*EG)[ii]);
-  }
-  free(*EG);
-	
-  if (max_threads == 1)
-  { // set the pointers to NULL since they just pointed to the actual values
-    *trackCount_copy = NULL;
-    *T_copy = NULL;
-    *BED_copy = NULL;
-		
-    *OUT_copy[0] = NULL;
-    *RAWOUT_copy[0] = NULL;
-    *MIDOUT_copy[0] = NULL;
-    *FAIL_copy[0] = NULL;
-		
-    // free the memory of the file pointers
-    free(*OUT_copy);
-    free(*MIDOUT_copy);
-    free(*RAWOUT_copy);
-    free(*FAIL_copy);
-    free(*NONSOLN_copy);
-  }
-  else if (max_threads > 1)
-  {
-    // combine trackCount_copy
-    add_trackingStats(trackCount, *trackCount_copy, max_threads);
-		
-    // clear the copies T, ED_d & ED_mp
-    for (ii = max_threads - 1; ii >= 0; ii--)
-    { // clear BED_copy - 0 since not using regeneration
-      nullspacejac_eval_clear_mp(&(*BED_copy)[ii], 0, (*T_copy)[ii].MPType);
-			// clear T_copy
-      tracker_config_clear(&(*T_copy)[ii]);
-    }
-		
-    // free the memory
-    free(*trackCount_copy);
-    free(*T_copy);
-    free(*BED_copy);
-		
-    // copy all of the files to the appropriate place
-    char ch, *str = NULL;
-    int size;
-    for (ii = 0; ii < max_threads; ii++)
-    {
-      // rewind to beginning for reading
-      rewind((*OUT_copy)[ii]);
-      // copy over to OUT
-      ch = fgetc((*OUT_copy)[ii]);
-      while (ch != EOF)
-      {
-        fprintf(OUT, "%c", ch);
-        ch = fgetc((*OUT_copy)[ii]);
-      }
-      // close file & delete
-      fclose((*OUT_copy)[ii]);
-      size = 1 + snprintf(NULL, 0, "output_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "output_%d", ii);
-      remove(str);
-			
-      // rewind to beginning for reading
-      rewind((*MIDOUT_copy)[ii]);
-      // copy over to MIDOUT
-      ch = fgetc((*MIDOUT_copy)[ii]);
-      while (ch != EOF)
-      {
-        fprintf(MIDOUT, "%c", ch);
-        ch = fgetc((*MIDOUT_copy)[ii]);
-      }
-      // close file & delete
-      fclose((*MIDOUT_copy)[ii]);
-      size = 1 + snprintf(NULL, 0, "midout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "midout_%d", ii);
-      remove(str);
-			
-      // rewind to beginning for reading
-      rewind((*RAWOUT_copy)[ii]);
-      // copy over to RAWOUT
-      ch = fgetc((*RAWOUT_copy)[ii]);
-      while (ch != EOF)
-      {
-        fprintf(RAWOUT, "%c", ch);
-        ch = fgetc((*RAWOUT_copy)[ii]);
-      }
-      // close file & delete
-      fclose((*RAWOUT_copy)[ii]);
-      size = 1 + snprintf(NULL, 0, "rawout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "rawout_%d", ii);
-      remove(str);
-			
-      // rewind to beginning for reading
-      rewind((*FAIL_copy)[ii]);
-      // copy over to FAIL
-      ch = fgetc((*FAIL_copy)[ii]);
-      while (ch != EOF)
-      {
-        fprintf(FAIL, "%c", ch);
-        ch = fgetc((*FAIL_copy)[ii]);
-      }
-      // close file & delete
-      fclose((*FAIL_copy)[ii]);
-      size = 1 + snprintf(NULL, 0, "fail_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "fail_%d", ii);
-      remove(str);
-			
-      // rewind to beginning for reading
-      rewind((*NONSOLN_copy)[ii]);
-      // copy over to NONSOLN
-      ch = fgetc((*NONSOLN_copy)[ii]);
-      while (ch != EOF)
-      {
-        fprintf(NONSOLN, "%c", ch);
-        ch = fgetc((*NONSOLN_copy)[ii]);
-      }
-      // close file & delete
-      fclose((*NONSOLN_copy)[ii]);
-      size = 1 + snprintf(NULL, 0, "nonsolutions_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
-      sprintf(str, "nonsolutions_%d", ii);
-      remove(str);
-    }
-    free(str);
-    // free file memory
-    free(*OUT_copy);
-    free(*MIDOUT_copy);
-    free(*RAWOUT_copy);
-    free(*FAIL_copy);
-    free(*NONSOLN_copy);
-  }
-	
-  return;
-}
-
-
-
-
-void setupnullspacejacEval_mp(char preprocFile[], char degreeFile[], prog_t *dummyProg,
-															int squareSize, int patchType, int ssType, int prec,
-															void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
-															nullspacejac_eval_data_mp *BED, int adjustDegrees,
-															witness_set & W,
-															nullspace_config *ns_config,
-															solver_configuration *solve_options)
+int nullspacejac_dehom(point_d out_d, point_mp out_mp,
+											 int *out_prec,
+											 point_d in_d, point_mp in_mp,
+											 int in_prec,
+											 void const *ED_d, void const *ED_mp)
 {
   
+  
+	
+  *out_prec = in_prec;
+	
+	
+	
+  if (in_prec < 64)
+  { // compute out_d
+		nullspacejac_eval_data_d *BED_d = (nullspacejac_eval_data_d *)ED_d;
+		
+		comp_d denom;
+		change_size_vec_d(out_d,in_d->size-1);
+		out_d->size = in_d->size-1;
+		
+		set_d(denom, &in_d->coord[0]);
+		
+		for (int ii=0; ii<BED_d->num_natural_vars-1; ++ii) {
+			set_d(&out_d->coord[ii],&in_d->coord[ii+1]);
+			div_d(&out_d->coord[ii],&out_d->coord[ii],denom); //  result[ii] = dehom_me[ii+1]/dehom_me[0].
+		}
+		
+		for (int ii=BED_d->num_natural_vars-1; ii<in_d->size-1; ++ii) {
+			set_d( &out_d->coord[ii],&in_d->coord[ii+1]);
+		}
+		
+		
+		
+		BED_d = NULL;
+		
+  }
+  else
+  { // compute out_mp
+		nullspacejac_eval_data_mp *BED_mp = (nullspacejac_eval_data_mp *)ED_mp;
+		
+		comp_mp denom; init_mp(denom);
+		change_size_vec_mp(out_mp,in_mp->size-1);
+		out_mp->size = in_mp->size-1;
+		
+		set_mp(denom, &in_mp->coord[0]);
+
+		for (int ii=0; ii<BED_mp->num_natural_vars-1; ++ii) {
+			set_mp(&out_mp->coord[ii],&in_mp->coord[ii+1]);
+			div_mp(&out_mp->coord[ii],&out_mp->coord[ii],denom); //  result[ii] = dehom_me[ii+1]/dehom_me[0].
+		}
+		
+		for (int ii=BED_mp->num_natural_vars-1; ii<in_mp->size-1; ++ii) {
+			set_mp( &out_mp->coord[ii],&in_mp->coord[ii+1]);
+		}
+		
+		clear_mp(denom);
+		
+		
+    // set prec on out_mp
+    setprec_point_mp(out_mp, *out_prec);
+		
+		BED_mp = NULL;
+		
+	}
+	
+	
+//	if (in_prec < 64) {
+//		print_point_to_screen_matlab(in_d,"in");
+//		print_point_to_screen_matlab(out_d,"out");
+//	}
+//	else{
+//		print_point_to_screen_matlab(in_mp,"in");
+//		print_point_to_screen_matlab(out_mp,"out");
+//	}
+//	mypause();
+	
+	
+  
+	
+  return 0;
+}
+
+
+
+
+
+
+
+
+
+int change_nullspacejac_eval_prec(void const *ED, int new_prec)
+{
+	nullspacejac_eval_data_mp *BED = (nullspacejac_eval_data_mp *)ED; // to avoid having to cast every time
+	
 	int ii, jj;
 	
-	BED->verbose_level = solve_options->verbose_level;
-	
-  setupPreProcData(preprocFile, &BED->preProcData);
-	
-	generic_setup_patch(&BED->patch,W);
-
-	
-	BED->SLP = dummyProg;
-	
-	init_mp2(BED->gamma,prec);
-	if (solve_options->use_gamma_trick==1)
-		get_comp_rand_mp(BED->gamma); // set gamma to be random complex value
-	else
-		set_one_mp(BED->gamma);
-	
-
-	BED->num_jac_equations = ns_config->num_jac_equations;
-	BED->target_dim = ns_config->target_dim;
-	BED->ambient_dim = ns_config->ambient_dim;
-	BED->target_crit_codim = ns_config->target_crit_codim;
-	
-	BED->num_v_vars = ns_config->num_v_vars;
-	BED->num_x_vars = ns_config->num_x_vars;
-	
-	BED->num_randomized_eqns = ns_config->num_randomized_eqns;
-	BED->max_degree = ns_config->max_degree;
-	BED->randomized_degrees.resize(ns_config->num_randomized_eqns);
-	for (ii=0; ii<ns_config->randomizer_matrix->rows; ii++)
-		BED->randomized_degrees[ii] = ns_config->randomized_degrees[ii]; // store the full degree (not derivative).
-	
-	
-	BED->num_v_linears = ns_config->num_v_linears;   //
-	
-	
-	BED->num_variables = ns_config->num_x_vars + ns_config->num_v_vars;
-	
-  
-	init_mat_mp(BED->randomizer_matrix,0,0);
-	mat_cp_mp(BED->randomizer_matrix,
-							ns_config->randomizer_matrix);
-	
-	
-	//  THE STUFF PROPRIETARY TO THIS METHOD
-	init_mat_mp(BED->post_randomizer_matrix,0,0);
-	mat_cp_mp(BED->post_randomizer_matrix,
-							ns_config->post_randomizer_matrix);
-	
-	
-	
-	// set up the vectors to hold the linears.
-	BED->num_projections = ns_config->num_projections;
-	BED->target_projection = (vec_mp *)br_malloc(ns_config->num_projections * sizeof(vec_mp));
-	init_mat_mp(BED->jac_with_proj, ns_config->num_x_vars-1, ns_config->num_v_vars);
-	BED->jac_with_proj->rows = ns_config->num_x_vars-1;
-	BED->jac_with_proj->cols = ns_config->num_v_vars;
-	
-	int offset = ns_config->num_randomized_eqns;
-	for (ii=0; ii<ns_config->num_projections; ii++) {
-		init_vec_mp(BED->target_projection[ii],ns_config->num_x_vars);
-		BED->target_projection[ii]->size =  ns_config->num_x_vars;
-		vec_cp_mp(BED->target_projection[ii], ns_config->target_projection[ii]);
+	if (new_prec != BED->curr_prec){
+		// change the precision for the patch
+		changePatchPrec_mp(new_prec, &BED->patch);
 		
-		for (jj=1; jj<ns_config->num_x_vars; jj++) {
-			set_mp(&BED->jac_with_proj->entry[jj-1][ii+offset], &ns_config->target_projection[ii]->coord[jj]);
-		}
-	}
-	
-	init_vec_mp(BED->v_patch,ns_config->num_v_vars);
-	BED->v_patch->size = ns_config->num_v_vars;
-	vec_cp_mp(BED->v_patch, ns_config->v_patch);
-	
-	comp_d h; h->r = 0.5; h->i = 0;
-	init_mp(BED->half);
-	d_to_mp(BED->half,h);
-	
-	init_mp(BED->perturbation);
-	comp_d p; p->r = PERTURBATION_VALUE_mp; p->i = PERTURBATION_VALUE_mp;
-	d_to_mp(BED->perturbation,p);
-	
-	
-	BED->v_linears = (vec_mp *) br_malloc(ns_config->num_v_linears*sizeof(vec_mp));
-	for (ii=0; ii<ns_config->num_v_linears; ii++) {
-		init_vec_mp(BED->v_linears[ii],ns_config->num_v_vars);
-		BED->v_linears[ii]->size = ns_config->num_v_vars;
-		vec_cp_mp(BED->v_linears[ii], ns_config->v_linears[ii]);
-	}
-	
-	BED->num_additional_linears = ns_config->num_additional_linears;
-	BED->additional_linears_terminal = (vec_mp *) br_malloc(ns_config->num_additional_linears*sizeof(vec_mp));
-	BED->additional_linears_starting = (vec_mp *) br_malloc(ns_config->num_additional_linears*sizeof(vec_mp));
-	
-	for (ii=0; ii<ns_config->num_additional_linears; ii++) {
-		init_vec_mp(BED->additional_linears_terminal[ii], ns_config->num_x_vars);
-		BED->additional_linears_terminal[ii]->size = ns_config->num_x_vars;
-		vec_cp_mp(BED->additional_linears_terminal[ii],ns_config->additional_linears_terminal[ii]);
+		if (BED->verbose_level >=4)
+			printf("prec  %d\t-->\t%d\n",BED->curr_prec, new_prec);
+
+		BED->SLP->precision = new_prec;
 		
-		init_vec_mp(BED->additional_linears_starting[ii], ns_config->num_x_vars);
-		BED->additional_linears_starting[ii]->size = ns_config->num_x_vars;
-		vec_cp_mp(BED->additional_linears_starting[ii],ns_config->additional_linears_starting[ii]);
-	}
-	
-	
-	
-	BED->starting_linears = (vec_mp **)br_malloc(ns_config->num_jac_equations*sizeof(vec_mp *));
-	
-	for (ii=0; ii<ns_config->num_jac_equations; ++ii) {
-		BED->starting_linears[ii] = (vec_mp *)br_malloc(ns_config->max_degree*sizeof(vec_mp));
-		for (jj=0; jj<ns_config->max_degree; jj++) {
-			init_vec_mp(BED->starting_linears[ii][jj],W.num_variables);
-			BED->starting_linears[ii][jj]->size = W.num_variables;
+		BED->curr_prec = new_prec;
+		
+		setprec_mp(BED->gamma, new_prec);
+		mpf_set_q(BED->gamma->r, BED->gamma_rat[0]);
+		mpf_set_q(BED->gamma->i, BED->gamma_rat[1]);
+		
+		change_prec_mat_mp(BED->randomizer_matrix,new_prec);
+		mat_cp_mp(BED->randomizer_matrix,BED->randomizer_matrix_full_prec);
+		
+		change_prec_mat_mp(BED->post_randomizer_matrix,new_prec);
+		mat_cp_mp(BED->post_randomizer_matrix,BED->post_randomizer_matrix_full_prec);
+		
+		
+		for (ii=0; ii<BED->num_additional_linears; ii++) {
+			change_prec_point_mp(BED->additional_linears_terminal[ii],new_prec);
+			vec_cp_mp(BED->additional_linears_terminal[ii],BED->additional_linears_terminal_full_prec[ii]);
 			
-			vec_cp_mp(BED->starting_linears[ii][jj], ns_config->starting_linears[ii][jj]);
+			
+			change_prec_point_mp(BED->additional_linears_starting[ii],new_prec);
+			vec_cp_mp(BED->additional_linears_starting[ii],BED->additional_linears_starting_full_prec[ii]);
 		}
+		
+		
+		
+		for (ii=0; ii<BED->num_jac_equations; ++ii) {
+			for (jj=0; jj<BED->max_degree; jj++) {
+				change_prec_point_mp(BED->starting_linears[ii][jj],new_prec);
+				vec_cp_mp(BED->starting_linears[ii][jj], BED->starting_linears_full_prec[ii][jj]);
+			}
+		}
+		
+		
+		
+		for (ii=0; ii<BED->num_v_linears; ii++) {
+			change_prec_point_mp(BED->v_linears[ii],new_prec);
+			vec_cp_mp(BED->v_linears[ii],BED->v_linears_full_prec[ii]);
+		}
+
+		
+		change_prec_point_mp(BED->v_patch,new_prec);
+		vec_cp_mp(BED->v_patch,BED->v_patch_full_prec);
+		
+		change_prec_mat_mp(BED->jac_with_proj,new_prec);
+		mat_cp_mp(BED->jac_with_proj,BED->jac_with_proj_full_prec);
+		
+		change_prec_mp(BED->perturbation,new_prec);
+		change_prec_mp(BED->half,new_prec);
+		
+		
 	}
 	
-
 	
-  return;
+  return 0;
 }
-
-
-
-void cp_nullspacejac_eval_data_mp(nullspacejac_eval_data_mp *BED, nullspacejac_eval_data_mp *BED_mp_input, int MPType)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: stores a copy of BED_(t)_input to BED                  *
- \***************************************************************/
-{
-	printf("entering cp_nullspacejac_eval_data_mp\nthis function is likely broken\n");
-	exit(-1);
-  cp_preproc_data(&BED->preProcData, &BED_mp_input->preProcData);
-	//  cp_square_system_d(&BED->squareSystem, &BED_d_input->squareSystem);
-  cp_patch_mp(&BED->patch, &BED_mp_input->patch);
-	//  cp_start_system_d(&BED->startSystem, &BED_d_input->startSystem);
-	BED->SLP = (prog_t *)bmalloc(1 * sizeof(prog_t));
-  cp_prog_t(BED->SLP, BED_mp_input->SLP);
-	
-	
-	//HERE COPY THE MATRICES  DAB !!!
-	init_mat_mp(BED->randomizer_matrix,0,0);
-	mat_cp_mp(BED->randomizer_matrix,BED_mp_input->randomizer_matrix);
-	
-	set_mp(BED->gamma, BED_mp_input->gamma);
-	
-	
-  return;
-}
-
-
-
 
 
 
@@ -3540,7 +2616,7 @@ int check_issoln_nullspacejac_d(endgame_data_t *EG,
 		
 		if (tol <= n1 && n1 <= n2)
 		{ // compare ratio
-			if (n1 > max_rat * n2){ // seriously what is the point of this?
+			if (n1 > max_rat * n2){ // seriously what is the point of this
 				isSoln = 0;
 				printf("labeled as non_soln due to max_rat (d) 1 coord %d\n",ii);
 			}
@@ -3864,4 +2940,1286 @@ void check_nullspace_evaluator(point_mp current_values,
 
 
 
+
+
+
+//void printnullspacejacRelevantData(nullspacejac_eval_data_d *ED_d, nullspacejac_eval_data_mp *ED_mp, int MPType, int eqbyeqMethod, FILE *FP)
+//{
+//  // print the MPType and if an eq-by-eq method (diagona/regen) was used
+//	//  fprintf(FP, "%d %d\n", MPType, eqbyeqMethod);
+//	//
+//	//  // print the patch
+//	//  printPatchCoeff(FP, MPType, ED_d, ED_mp);
+//	//
+//	//  // print the start system
+//	//  printStartSystem(FP, MPType, ED_d, ED_mp);
+//	//
+//	//  // print the square system
+//	//  printSquareSystem(FP, MPType, ED_d, ED_mp);
+//	
+//  return;
+//}
 //
+//
+//
+//void nullspacejac_eval_clear_d(nullspacejac_eval_data_d *ED, int clearRegen, int MPType)
+//{
+//	//clear the patch
+//  patch_eval_data_clear_d(&ED->patch);
+//  preproc_data_clear(&ED->preProcData);
+//	
+//	
+//	
+//	clear_mat_d(ED->randomizer_matrix);
+//	
+//#ifdef printpathnullspace_left
+//	fclose(ED->FOUT);
+//#endif
+//	
+//  return;
+//}
+
+
+
+
+
+
+
+//int nullspacejac_solver_d(int MPType,
+//													witness_set & W,
+//													witness_set *W_new,
+//													nullspace_config				*ns_config,
+//													solver_configuration & solve_options)
+//{
+//	double parse_time = 0;
+//  FILE *OUT = NULL, *FAIL = safe_fopen_write("failed_paths"), *midOUT = NULL, *rawOUT = safe_fopen_write("raw_data");
+//  tracker_config_t T;
+//  prog_t dummyProg;
+//  bclock_t time1, time2;
+//  int num_variables = 0, num_crossings = 0, num_sols = 0;
+//
+//
+//
+//  int *startSub = NULL, *endSub = NULL, *startFunc = NULL, *endFunc = NULL, *startJvsub = NULL, *endJvsub = NULL, *startJv = NULL, *endJv = NULL, **subFuncsBelow = NULL;
+//  int (*ptr_to_eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *) = NULL;
+//  int (*ptr_to_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = NULL;
+//
+//  nullspacejac_eval_data_d ED;
+//  trackingStats trackCount;
+//  double track_time;
+//
+//  bclock(&time1); // initialize the clock.
+//  init_trackingStats(&trackCount); // initialize trackCount to all 0
+//
+//	//necessary for later whatnot
+//	int userHom = 0, useRegen = 0, pathMod = 0, paramHom = 0;
+//
+//	cp_tracker_config_t(&T, &solve_options.T); // copy for integrity.
+//
+//
+//
+//
+//	//  // call the setup function
+//	// setup for standard tracking - 'useRegen' is used to determine whether or not to setup 'start'
+//	num_variables = nullspacejac_setup_d(&OUT, "output",
+//																			 &midOUT, "midpath_data",
+//																			 &T, &ED,
+//																			 &dummyProg,  //arg 7
+//																			 &startSub, &endSub, &startFunc, &endFunc,
+//																			 &startJvsub, &endJvsub, &startJv, &endJv, &subFuncsBelow,
+//																			 &ptr_to_eval_d, &ptr_to_eval_mp,  //args 17,18
+//																			 "preproc_data", "deg.out",
+//																			 !useRegen, "nonhom_start", "start",
+//																			 W,
+//																			 ns_config,
+//																			 solve_options);
+//
+//
+//	int (*change_prec)(void const *, int) = &change_nullspacejac_eval_prec;
+//	int (*dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *) = &nullspacejac_dehom;
+//
+//
+//
+//  // error checking
+//  if (userHom <= 0 && paramHom != 2)
+//  { // no pathvariables or parameters allowed!
+//    if (dummyProg.numPathVars > 0)
+//    { // path variable present
+//      printf("ERROR: Bertini does not expect path variables when user-defined homotopies are not being used!\n");
+//      bexit(ERROR_INPUT_SYSTEM);
+//    }
+//    if (dummyProg.numPars > 0)
+//    { // parameter present
+//      printf("ERROR: Bertini does not expect parameters when user-defined homotopies are not being used!\n");
+//      bexit(ERROR_INPUT_SYSTEM);
+//    }
+//  }
+//
+//  if (T.MPType == 2)  //If we are doing adaptive precision path-tracking, we must set up AMP_eps, AMP_Phi, AMP_Psi based on config settings.
+//  {
+//    T.AMP_eps = (double) num_variables * num_variables;  //According to Demmel (as in the AMP paper), n^2 is a very reasonable bound for \epsilon.
+//    T.AMP_Phi = T.AMP_bound_on_degree*(T.AMP_bound_on_degree-1.0)*T.AMP_bound_on_abs_vals_of_coeffs;  //Phi from the AMP paper.
+//    T.AMP_Psi = T.AMP_bound_on_degree*T.AMP_bound_on_abs_vals_of_coeffs;  //Psi from the AMP paper.
+//    // initialize latest_newton_residual_mp to the maximum precision
+//    mpf_init2(T.latest_newton_residual_mp, T.AMP_max_prec);
+//  }
+//
+//
+//	post_process_t *endPoints = (post_process_t *)bmalloc(W.num_pts * sizeof(post_process_t)); //overallocate, expecting full number of solutions.
+//
+//
+//
+//
+//	if (T.endgameNumber == 3)
+//	{ // use the track-back endgame
+//		//        zero_dim_trackBack_d(&trackCount, OUT, rawOUT, midOUT, StartPts, FAIL, pathMod, &T, &ED, ED.BED_mp, ptr_to_eval_d, ptr_to_eval_mp, change_basic_eval_prec, zero_dim_dehom);
+//		printf("bertini_real not equipped to deal with endgameNumber 3\nexiting\n");
+//		exit(-99);
+//	}
+//	else
+//	{ // use regular endgame
+//		nullspacejac_track_d(&trackCount, OUT, rawOUT, midOUT,
+//												 W,  // was the startpts file pointer.
+//												 endPoints,
+//												 FAIL, pathMod,
+//												 &T, &ED, ED.BED_mp,
+//												 ptr_to_eval_d, ptr_to_eval_mp,
+//												 change_prec, dehom,
+//												 solve_options);
+//	}
+//
+//
+//	fclose(midOUT);
+//
+//
+//	// finish the output to rawOUT
+//	fprintf(rawOUT, "%d\n\n", -1);  // bottom of rawOUT
+//
+//
+//	// check for path crossings
+//	if (solve_options.use_midpoint_checker==1) {
+//		midpoint_checker(trackCount.numPoints, num_variables,solve_options.midpoint_tol, &num_crossings);
+//	}
+//	// setup num_sols
+//	num_sols = trackCount.successes;
+//
+//  // we report how we did with all paths:
+//  bclock(&time2);
+//  totalTime(&track_time, time1, time2);
+//  if (solve_options.verbose_level>=1)
+//  {
+//		printf("nullspace_left report:\n");
+//    printf("Number of failures:  %d\n", trackCount.failures);
+//    printf("Number of successes:  %d\n", trackCount.successes);
+//    printf("Number of paths:  %d\n", trackCount.numPoints);
+//    printf("Parse Time = %fs\n", parse_time);
+//    printf("Track Time = %fs\n", track_time);
+//  }
+//  fprintf(OUT, "Number of failures:  %d\n", trackCount.failures);
+//  fprintf(OUT, "Number of successes:  %d\n", trackCount.successes);
+//  fprintf(OUT, "Number of paths:  %d\n", trackCount.numPoints);
+//  fprintf(OUT, "Parse Time = %fs\n", parse_time);
+//  fprintf(OUT, "Track Time = %fs\n", track_time);
+//
+//
+//  fclose(OUT);
+//  fclose(rawOUT);
+//  fprintf(FAIL, "\n");
+//  fclose(FAIL);
+//
+//
+//	if (num_crossings>0) {
+//		printf("there were %d path crossings in nullspacejac, according to midpoint checker\n",num_crossings);
+//		mypause();
+//	}
+//
+//	BRpostProcessing(endPoints, W_new, trackCount.successes, &ED.preProcData, &T, solve_options);
+//
+//
+//	//DAB is there other stuff which should be cleared here?
+//
+//	free(startSub);
+//	free(endSub);
+//	free(startFunc);
+//	free(endFunc);
+//	free(startJvsub);
+//	free(endJvsub);
+//	free(startJv);
+//	free(endJv);
+//
+//
+//
+//  nullspacejac_eval_clear_d(&ED, userHom, T.MPType);
+//  tracker_config_clear(&T);
+//
+//  return 0;
+//}
+//
+//
+//int nullspacejac_solver_mp(int MPType,
+//													 witness_set & W,
+//													 witness_set *W_new,
+//													 nullspace_config *ns_config,
+//													 solver_configuration & solve_options)
+//{
+//	double parse_time = 0;
+//  FILE *OUT = NULL, *FAIL = fopen("failed_paths", "w"), *midOUT = NULL, *rawOUT = fopen("raw_data", "w");
+//  tracker_config_t T;
+//  prog_t dummyProg;
+//  bclock_t time1, time2;
+//  int num_variables = 0, num_crossings = 0, num_sols = 0;
+//
+//
+//  int *startSub = NULL, *endSub = NULL, *startFunc = NULL, *endFunc = NULL, *startJvsub = NULL, *endJvsub = NULL, *startJv = NULL, *endJv = NULL, **subFuncsBelow = NULL;
+//  int (*ptr_to_eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *) = NULL;
+//  int (*ptr_to_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = NULL;
+//
+//  nullspacejac_eval_data_mp ED(MPType);  // was basic_eval_data_d  DAB
+//
+//  trackingStats trackCount;
+//  double track_time;
+//
+//  bclock(&time1); // initialize the clock.
+//  init_trackingStats(&trackCount); // initialize trackCount to all 0
+//
+//	//necessary for later whatnot
+//	int userHom = 0, useRegen = 0, pathMod = 0, paramHom = 0;
+//
+//	cp_tracker_config_t(&T, &solve_options.T);
+//
+//
+//	// initialize latest_newton_residual_mp
+//  mpf_init(T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+//
+//
+//	//  // call the setup function
+//	num_variables = nullspacejac_setup_mp(&OUT, "output",
+//																				&midOUT, "midpath_data",
+//																				&T, &ED,
+//																				&dummyProg,  //arg 7
+//																				&startSub, &endSub, &startFunc, &endFunc,
+//																				&startJvsub, &endJvsub, &startJv, &endJv, &subFuncsBelow,
+//																				&ptr_to_eval_d, &ptr_to_eval_mp,  //args 17,18
+//																				"preproc_data", "deg.out",
+//																				!useRegen, "nonhom_start", "start",
+//																				W,
+//																				ns_config,
+//																				solve_options);
+//
+//	int (*change_prec)(void const *, int) = &change_nullspacejac_eval_prec;
+//
+//	int (*dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *) = &nullspacejac_dehom;
+//
+//
+//
+//  // error checking
+//  if (userHom <= 0 && paramHom != 2)
+//  { // no pathvariables or parameters allowed!
+//    if (dummyProg.numPathVars > 0)
+//    { // path variable present
+//      printf("ERROR: Bertini does not expect path variables when user-defined homotopies are not being used!\n");
+//      bexit(ERROR_INPUT_SYSTEM);
+//    }
+//    if (dummyProg.numPars > 0)
+//    { // parameter present
+//      printf("ERROR: Bertini does not expect parameters when user-defined homotopies are not being used!\n");
+//      bexit(ERROR_INPUT_SYSTEM);
+//    }
+//  }
+//
+//	post_process_t *endPoints = (post_process_t *)bmalloc(W.num_pts * sizeof(post_process_t)); //overallocate, expecting full
+//
+//	if (T.endgameNumber == 3)
+//	{ // use the track-back endgame
+//		//        zero_dim_trackBack_d(&trackCount, OUT, rawOUT, midOUT, StartPts, FAIL, pathMod, &T, &ED, ED.BED_mp, ptr_to_eval_d, ptr_to_eval_mp, change_basic_eval_prec, zero_dim_dehom);
+//		printf("bertini_real not equipped to deal with endgameNumber 3\nexiting\n");
+//		exit(-99);
+//	}
+//	else
+//	{ // use regular endgame
+//		nullspacejac_track_mp(&trackCount, OUT, midOUT, FAIL,
+//													W,  // was the startpts file pointer.
+//													endPoints,
+//													pathMod,
+//													&T, &ED,
+//													ptr_to_eval_mp, //ptr_to_eval_d,
+//													change_prec, dehom,
+//													solve_options);
+//	}
+//
+//
+//
+//
+//	fclose(midOUT);
+//
+//
+//
+//
+//	// finish the output to rawOUT
+//	fprintf(rawOUT, "%d\n\n", -1);  // bottom of rawOUT
+//
+//	// check for path crossings
+//	if (solve_options.use_midpoint_checker==1) {
+//		midpoint_checker(trackCount.numPoints, num_variables,solve_options.midpoint_tol, &num_crossings);
+//	}
+//
+//	// setup num_sols
+//	num_sols = trackCount.successes;
+//
+//  // we report how we did with all paths:
+//  bclock(&time2);
+//  totalTime(&track_time, time1, time2);
+//  if (solve_options.verbose_level>=1)
+//  {
+//		printf("nullspace_left report:\n");
+//    printf("Number of failures:  %d\n", trackCount.failures);
+//    printf("Number of successes:  %d\n", trackCount.successes);
+//    printf("Number of paths:  %d\n", trackCount.numPoints);
+//    printf("Parse Time = %fs\n", parse_time);
+//    printf("Track Time = %fs\n", track_time);
+//  }
+//  fprintf(OUT, "Number of failures:  %d\n", trackCount.failures);
+//  fprintf(OUT, "Number of successes:  %d\n", trackCount.successes);
+//  fprintf(OUT, "Number of paths:  %d\n", trackCount.numPoints);
+//  fprintf(OUT, "Parse Time = %fs\n", parse_time);
+//  fprintf(OUT, "Track Time = %fs\n", track_time);
+//
+//
+//	BRpostProcessing(endPoints, W_new, trackCount.successes, &ED.preProcData, &T, solve_options);
+//
+//
+//  // close all of the files
+//  fclose(OUT);
+//  fclose(rawOUT);
+//  fprintf(FAIL, "\n");
+//  fclose(FAIL);
+//
+//
+//
+//	free(startSub);
+//	free(endSub);
+//	free(startFunc);
+//	free(endFunc);
+//	free(startJvsub);
+//	free(endJvsub);
+//	free(startJv);
+//	free(endJv);
+//
+//
+//
+//	//  nullspacejac_eval_clear_mp(&ED, userHom, T.MPType);
+//  tracker_config_clear(&T);
+//
+//  return 0;
+//}
+//
+//
+//
+//
+//
+//void nullspacejac_track_d(trackingStats *trackCount,
+//													FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
+//													witness_set & W,
+//													post_process_t *endPoints,  // for holding the produced data.
+//													FILE *FAIL,
+//													int pathMod, tracker_config_t *T,
+//													nullspacejac_eval_data_d *ED_d,
+//													nullspacejac_eval_data_mp *ED_mp,
+//													int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
+//													int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
+//													int (*change_prec)(void const *, int),
+//													int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
+//													solver_configuration & solve_options)
+//{
+//
+//  int ii, startPointIndex;
+//
+//
+//  // top of RAWOUT - number of variables and that we are doing zero dimensional
+//  fprintf(RAWOUT, "%d\n%d\n", T->numVars, 0);
+//
+//
+//
+//
+//
+//	int (*curr_eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *) = NULL;
+//  int (*curr_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = NULL;
+//
+//	curr_eval_d = &nullspacejac_eval_d;
+//  curr_eval_mp = &nullspacejac_eval_mp;
+//
+//
+//
+//	point_data_d *startPts = NULL;
+//	generic_set_start_pts(&startPts, W);
+//	T->endgameOnly = 0;
+//
+//
+//  // setup the rest of the structures
+//	endgame_data_t EG; //this will hold the temp solution data produced for each individual track
+//	init_endgame_data(&EG, T->Precision);
+//
+//
+//
+//
+//	trackCount->numPoints = W.num_pts;
+//	int solution_counter = 0;
+//
+//
+//
+//	// track each of the start points
+//
+//	for (ii = 0; ii < W.num_pts; ii++)
+//	{
+//		if (solve_options.verbose_level>=0)
+//			printf("nullspacejac tracking path %d of %d\n",ii,W.num_pts);
+//
+//		startPointIndex = ii;
+//
+//
+//#ifdef printpathnullspace_left
+//		ED_d.num_steps = 0;
+//#endif
+//
+//		if (!check_isstart_nullspacejac_d(startPts[ii].point,
+//																			T,
+//																			ED_d))
+//		{
+//			std::cout << "trying to start from a non-start-point\n";
+//			mypause();
+//		}
+//
+//		if (T->MPType==2) {
+//			ED_d->BED_mp->curr_prec = 64;
+//		}
+//
+//
+//		// track the path
+//		generic_track_path_d(solution_counter, &EG, &startPts[startPointIndex],
+//															OUT, MIDOUT,
+//															T, ED_d, ED_d->BED_mp,
+//															curr_eval_d, curr_eval_mp, change_prec, find_dehom);
+//
+//
+//
+//		// check to see if it should be sharpened
+//		if (EG.retVal == 0 && T->sharpenDigits > 0)
+//		{ // use the sharpener for after an endgame
+//			sharpen_endpoint_endgame(&EG, T, OUT, ED_d, ED_d->BED_mp, curr_eval_d, curr_eval_mp, change_prec);
+//		}
+//
+//
+//
+//		int issoln;
+//		if (EG.prec<64){
+//			issoln = check_issoln_nullspacejac_d(&EG,  T, ED_d); }
+//		else {
+//			issoln = check_issoln_nullspacejac_mp(&EG, T, ED_d->BED_mp); }
+//
+//
+//		//get the terminal time in double form
+//		comp_d time_to_compare;
+//		if (EG.prec < 64) {
+//			set_d(time_to_compare,EG.PD_d.time);}
+//		else {
+//			mp_to_d(time_to_compare, EG.PD_mp.time); }
+//
+//
+//		if ((EG.retVal != 0 && time_to_compare->r > T->minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
+//
+//			trackCount->failures++;
+//
+//			printf("\nthere was a path failure nullspace_left tracking witness point %d\nretVal = %d; issoln = %d\n",ii,EG.retVal, issoln);
+//
+//			print_path_retVal_message(EG.retVal);
+//
+//			if (solve_options.verbose_level > 0) {
+//				if (EG.prec < 64)
+//					print_point_to_screen_matlab(EG.PD_d.point,"bad_terminal_point");
+//				else
+//					print_point_to_screen_matlab(EG.PD_mp.point,"bad_terminal_point");
+//			}
+//
+//		}
+//		else
+//		{
+//			//otherwise converged, but may have still had non-zero retval due to other reasons.
+//			endgamedata_to_endpoint(&endPoints[solution_counter], &EG);
+//			trackCount->successes++;
+//			solution_counter++; // probably this could be eliminated
+//		}
+//
+//	}// re: for (ii=0; ii<W.num_pts ;ii++)
+//
+//
+//
+//	//clear the data structures.
+//  for (ii = 0; ii >W.num_pts; ii++)
+//  { // clear startPts[ii]
+//    clear_point_data_d(&startPts[ii]);
+//  }
+//  free(startPts);
+//
+//
+//
+//  return;
+//}
+//
+//
+//
+//
+//void nullspacejac_track_mp(trackingStats *trackCount,
+//													 FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
+//													 witness_set & W,
+//													 post_process_t *endPoints,
+//													 int pathMod, tracker_config_t *T,
+//													 nullspacejac_eval_data_mp *BED,
+//													 int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
+//													 int (*change_prec)(void const *, int),
+//													 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
+//													 solver_configuration & solve_options)
+//{
+//
+//  int ii;
+//
+//
+//  // top of RAWOUT - number of variables and that we are doing zero dimensional
+//  fprintf(RAWOUT, "%d\n%d\n", T->numVars, 0);
+//
+//
+//
+//  int (*curr_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = &nullspacejac_eval_mp;
+//
+//
+//	point_data_mp *startPts = NULL;
+//	startPts = (point_data_mp *)bmalloc(W.num_pts * sizeof(point_data_mp));
+//
+//
+//
+//	for (ii = 0; ii < W.num_pts; ii++)
+//	{ // setup startPts[ii]
+//		init_point_data_mp2(&startPts[ii], W.num_variables, T->Precision);
+//		startPts[ii].point->size = W.num_variables;
+//
+//		//NEED TO COPY IN THE WITNESS POINT
+//
+//		//1 set the coordinates
+//		vec_cp_mp(startPts[ii].point, W.pts_mp[ii] );
+//
+//		//2 set the start time to 1.
+//		set_one_mp(startPts[ii].time);
+//	}
+//
+//
+//	T->endgameOnly = 0;
+//
+//
+//  // setup the rest of the structures
+//	endgame_data_t EG;
+//	init_endgame_data(&EG, T->Precision);
+//
+//
+//
+//
+//	trackCount->numPoints = W.num_pts;
+//	int solution_counter = 0;
+//
+//
+//
+//
+//
+//
+//	// track each of the start points
+//	for (ii = 0; ii < W.num_pts; ii++)
+//	{ // get current thread number
+//
+//		if (solve_options.verbose_level>=1)
+//			printf("nullspacejac tracking path %d of %d\n",ii,W.num_pts);
+//
+//
+//
+//#ifdef printpathnullspace_left
+//		BED_copy[oid].num_steps = 0;
+//#endif
+//
+//		generic_track_path_mp(solution_counter, &EG, &startPts[ii], OUT, MIDOUT, T, BED, curr_eval_mp, change_prec, find_dehom); //curr_eval_d,
+//
+//#ifdef printpathnullspace_left
+//		int mm;
+//		fprintf(BED->FOUT,"-100 %d ",BED->num_steps);
+//		for (mm=0; mm<BED->num_variables-1; ++mm) {
+//			fprintf(BED->FOUT,"0 0 ");
+//		}
+//		fprintf(BED->FOUT,"\n%d\n\n",EG.retVal);
+//#endif
+//
+//
+//
+//		// check to see if it should be sharpened
+//		if (EG.retVal == 0 && T->sharpenDigits > 0)
+//		{ // use the sharpener for after an endgame
+//			sharpen_endpoint_endgame(&EG, T, OUT, NULL, BED, NULL, curr_eval_mp, NULL);
+//			// DAB - replaced curr_eval_d with NULL
+//		}
+//
+//
+//		int issoln = check_issoln_nullspacejac_mp(&EG, T, BED);
+//
+//
+//		//get the terminal time in double form
+//		comp_d time_to_compare;
+//		mp_to_d(time_to_compare, EG.PD_mp.time);
+//
+//
+//		if ((EG.retVal != 0 && time_to_compare->r > T->minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
+//			trackCount->failures++;
+//			if (issoln==0) {
+//				printf("point %d was a non-solution junk point\n",ii);
+//			}
+//			else{
+//				printf("\nretVal = %d; issoln = %d\nthere was a path failure nullspace_left tracking witness point %d\n\n",EG.retVal, issoln,ii);
+//				print_path_retVal_message(EG.retVal);
+//			}
+//		}
+//		else
+//		{
+//			//otherwise converged, but may have still had non-zero retval due to other reasons.
+//			endgamedata_to_endpoint(&endPoints[solution_counter], &EG);
+//			trackCount->successes++;
+//			solution_counter++; // probably this could be eliminated
+//		}
+//
+//
+//	}// re: for (ii=0; ii<W.num_pts ;ii++)
+//
+//
+//
+//
+//	//clear the data structures.
+//
+//  for (ii = 0; ii >W.num_pts; ii++)  // clear startPts[ii]
+//    clear_point_data_mp(&startPts[ii]);
+//  free(startPts);
+//
+//
+//  return;
+//}
+
+
+
+
+//// derived from zero_dim_basic_setup_d
+//int nullspacejac_setup_d(FILE **OUT, boost::filesystem::path outName,
+//												 FILE **midOUT, boost::filesystem::path midName,
+//												 tracker_config_t *T,
+//												 nullspacejac_eval_data_d *ED,
+//												 prog_t *dummyProg,
+//												 int **startSub, int **endSub, int **startFunc, int **endFunc, int **startJvsub, int **endJvsub, int **startJv, int **endJv, int ***subFuncsBelow,
+//												 int (**eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
+//												 int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
+//												 boost::filesystem::path preprocFile, boost::filesystem::path degreeFile,
+//												 int findStartPts, boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
+//												 witness_set & W,
+//												 nullspace_config *ns_config,
+//												 solver_configuration & solve_options)
+//{ // need to create the homotopy
+//  int rank, patchType, ssType, numOrigVars, adjustDegrees, numGps;
+//
+//  *eval_d = &nullspacejac_eval_d;
+//  *eval_mp = &nullspacejac_eval_mp;
+//
+//
+//  *OUT = safe_fopen_write(outName);  // open the main output files.
+//  *midOUT = safe_fopen_write(midName);
+//
+//  if (T->MPType == 2) // using AMP - need to allocate space to store BED_mp
+//    ED->BED_mp = new nullspacejac_eval_data_mp(2);//(nullspacejac_eval_data_mp *)bmalloc(1 * sizeof(nullspacejac_eval_data_mp));
+//  else
+//    ED->BED_mp = NULL;
+//
+//
+//  // setup a straight-line program, using the file(s) created by the parser
+//  T->numVars = numOrigVars = setupProg_count(dummyProg, T->Precision, T->MPType, startSub, endSub, startFunc, endFunc, startJvsub, endJvsub, startJv, endJv, subFuncsBelow);
+//
+//  // setup preProcData
+//  setupPreProcData(const_cast<char *>(preprocFile.c_str()), &ED->preProcData);
+//
+//
+//
+//  numGps = ED->preProcData.num_var_gp + ED->preProcData.num_hom_var_gp;
+//  // find the rank
+//  rank = rank_finder_d(&ED->preProcData, dummyProg, T, T->numVars);
+//
+//	patchType = 2; // 1-hom patch
+//	ssType = 0;    // with 1-hom, we use total degree start system
+//
+//
+//
+//#ifdef printpathnullspace_left
+//	int ii;
+//	ED->FOUT = safe_fopen_write("pathtrack_nullspace_left");
+//	fprintf(ED->FOUT,"%d ",W.num_variables);
+//	for (ii=0; ii<W.num_variables; ii++) {
+//		fprintf(ED->FOUT,"%s ",W.variable_names[ii]);
+//	}
+//	fprintf(ED->FOUT,"\n%d ",W.num_pts);
+//	fprintf(ED->FOUT,"%d %d %d ",T->MPType, T->odePredictor, T->endgameNumber);
+//	fprintf(ED->FOUT,"\n");
+//#endif
+//
+//
+//	adjustDegrees = 0; // if the system does not need its degrees adjusted, then that is okay
+//	setupnullspacejacEval_d(T,const_cast<char *>(preprocFile.c_str()),
+//													const_cast<char *>(degreeFile.c_str()),
+//													dummyProg,
+//													rank,
+//													patchType, ssType, T->MPType,
+//													&T->numVars, NULL, NULL, NULL,
+//													ED, adjustDegrees, W,ns_config,solve_options);
+//
+//
+//
+//
+//  return numOrigVars;
+//}
+//
+//
+//
+//
+//// derived from zero_dim_basic_setup_d
+//int nullspacejac_setup_mp(FILE **OUT, boost::filesystem::path outName,
+//													FILE **midOUT, boost::filesystem::path midName,
+//													tracker_config_t *T,
+//													nullspacejac_eval_data_mp *ED,
+//													prog_t *dummyProg,
+//													int **startSub, int **endSub, int **startFunc, int **endFunc, int **startJvsub, int **endJvsub, int **startJv, int **endJv, int ***subFuncsBelow,
+//													int (**eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
+//													int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
+//													boost::filesystem::path preprocFile, boost::filesystem::path degreeFile,
+//													int findStartPts,
+//													boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
+//													witness_set & W,
+//													nullspace_config *ns_config,
+//													solver_configuration & solve_options)
+//{ // need to create the homotopy
+//
+//  int rank = 0, patchType, ssType, numOrigVars, adjustDegrees;
+//
+//  *eval_d = &nullspacejac_eval_d;
+//  *eval_mp = &nullspacejac_eval_mp;
+//
+//  *OUT = safe_fopen_write(outName);  // open the main output files.
+//  *midOUT = safe_fopen_write(midName);
+//
+//
+//
+//
+//  // setup a straight-line program, using the file(s) created by the parser
+//  T->numVars = numOrigVars = setupProg_count(dummyProg, T->Precision, T->MPType, startSub, endSub, startFunc, endFunc, startJvsub, endJvsub, startJv, endJv, subFuncsBelow);
+//
+//
+////  // setup preProcData
+////  setupPreProcData(const_cast<char *>(preprocFile.c_str()), &ED->preProcData);
+////
+//
+//
+//	patchType = 2; // 1-hom patch
+//	ssType = 0;    // with 1-hom, we use total degree start system
+//	adjustDegrees = 0; // if the system does not need its degrees adjusted, then that is okay
+////	setupnullspacejacEval_mp(const_cast<char *>(preprocFile.c_str()),
+////													 const_cast<char *>(degreeFile.c_str()), dummyProg, rank, patchType, ssType, T->Precision, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, W,ns_config,solve_options);
+////
+////
+//
+//
+//#ifdef printpathnullspace_left
+//	int ii;
+//	ED->FOUT = safe_fopen_write("pathtrack_nullspace_left");
+//	fprintf(ED->FOUT,"%d ",W.num_variables);
+//	for (ii=0; ii<W.num_variables; ii++) {
+//		fprintf(ED->FOUT,"%s ",W.variable_names[ii]);
+//	}
+//	fprintf(ED->FOUT,"\n%d ",W.num_pts);
+//	fprintf(ED->FOUT,"%d %d %d ",T->MPType, T->odePredictor, T->endgameNumber);
+//	fprintf(ED->FOUT,"\n");
+//#endif
+//
+//  return numOrigVars;
+//}
+
+
+
+
+
+
+
+//
+//void setupnullspacejacEval_d(tracker_config_t *T,
+//														 char preprocFile[], char degreeFile[], prog_t *dummyProg,
+//														 int squareSize, int patchType, int ssType, int MPType,
+//														 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,// what are these supposed to point to?
+//														 nullspacejac_eval_data_d *BED, int adjustDegrees,
+//														 witness_set & W,
+//														 nullspace_config *ns_config,
+//														 solver_configuration & solve_options)
+//{
+//  int ii, jj;
+//
+//	BED->verbose_level = solve_options.verbose_level;
+//
+//	BED->num_jac_equations = ns_config->num_jac_equations;
+//	BED->target_dim = ns_config->target_dim;
+//	BED->ambient_dim = ns_config->ambient_dim;
+//	BED->target_crit_codim = ns_config->target_crit_codim;
+//
+//	BED->num_natural_vars = W.num_variables - W.num_synth_vars - ns_config->num_v_vars;
+//	BED->num_v_vars = ns_config->num_v_vars;
+//	BED->num_x_vars = ns_config->num_x_vars;
+//
+//	BED->num_randomized_eqns = ns_config->num_randomized_eqns;
+//	BED->max_degree = ns_config->max_degree;
+//	BED->randomized_degrees.resize(ns_config->num_randomized_eqns);
+//	for (ii=0; ii<ns_config->randomizer_matrix->rows; ii++)
+//		BED->randomized_degrees[ii] = ns_config->randomized_degrees[ii]; // store the full degree (not derivative).
+//
+//	BED->num_v_linears = ns_config->num_v_linears;   //
+//
+//
+//	BED->num_variables = ns_config->num_x_vars + ns_config->num_v_vars;
+//
+//  setupPreProcData(preprocFile, &BED->preProcData);
+//
+//  generic_setup_patch(&BED->patch,W);
+//	if (T->MPType==2) {
+//		generic_setup_patch(&BED->BED_mp->patch, W);
+//	}
+//
+//
+//	BED->SLP = dummyProg; // change a pointer
+//
+//	init_mat_d(BED->randomizer_matrix,0,0);
+//	mat_mp_to_d(BED->randomizer_matrix,
+//							ns_config->randomizer_matrix);
+//
+//
+//	//  THE STUFF PROPRIETARY TO THIS METHOD
+//	init_mat_d(BED->post_randomizer_matrix,0,0);
+//	mat_mp_to_d(BED->post_randomizer_matrix,
+//							ns_config->post_randomizer_matrix);
+//
+//
+//
+//	// set up the vectors to hold the linears.
+//	BED->num_projections = ns_config->num_projections;
+//	BED->target_projection = (vec_d *)br_malloc(ns_config->num_projections * sizeof(vec_d));
+//	init_mat_d(BED->jac_with_proj, ns_config->num_x_vars-1, ns_config->num_v_vars);
+//	BED->jac_with_proj->rows = ns_config->num_x_vars-1;
+//	BED->jac_with_proj->cols = ns_config->num_v_vars;
+//
+//	int offset = ns_config->num_randomized_eqns;
+//	for (ii=0; ii<ns_config->num_projections; ii++) {
+//		init_vec_d(BED->target_projection[ii],ns_config->num_x_vars);
+//		BED->target_projection[ii]->size =  ns_config->num_x_vars;
+//		vec_mp_to_d(BED->target_projection[ii], ns_config->target_projection[ii]);
+//
+//		for (jj=1; jj<ns_config->num_x_vars; jj++) {
+//			mp_to_d(&BED->jac_with_proj->entry[jj-1][ii+offset], &ns_config->target_projection[ii]->coord[jj]);
+//		}
+//	}
+//
+//	init_vec_d(BED->v_patch,ns_config->num_v_vars);
+//	BED->v_patch->size = ns_config->num_v_vars;
+//	vec_mp_to_d(BED->v_patch, ns_config->v_patch);
+//
+//
+//	BED->half->r = 0.5;
+//	BED->half->i = 0.0;
+//
+//	BED->perturbation->r = PERTURBATION_VALUE;
+//	BED->perturbation->i = PERTURBATION_VALUE; // as defined in the determinant_derivative.h header
+//
+//
+//	BED->v_linears = (vec_d *) br_malloc(ns_config->num_v_linears*sizeof(vec_d));
+//	for (ii=0; ii<ns_config->num_v_linears; ii++) {
+//		init_vec_d(BED->v_linears[ii],ns_config->num_v_vars);
+//		BED->v_linears[ii]->size = ns_config->num_v_vars;
+//		vec_mp_to_d(BED->v_linears[ii], ns_config->v_linears[ii]);
+//	}
+//
+//	BED->num_additional_linears = ns_config->num_additional_linears;
+//	BED->additional_linears_terminal = (vec_d *) br_malloc(ns_config->num_additional_linears*sizeof(vec_d));
+//	BED->additional_linears_starting = (vec_d *) br_malloc(ns_config->num_additional_linears*sizeof(vec_d));
+//
+//	for (ii=0; ii<ns_config->num_additional_linears; ii++) {
+//		init_vec_d(BED->additional_linears_terminal[ii], ns_config->num_x_vars);
+//		BED->additional_linears_terminal[ii]->size = ns_config->num_x_vars;
+//		vec_mp_to_d(BED->additional_linears_terminal[ii],ns_config->additional_linears_terminal[ii]);
+//
+//		init_vec_d(BED->additional_linears_starting[ii], ns_config->num_x_vars);
+//		BED->additional_linears_starting[ii]->size = ns_config->num_x_vars;
+//		vec_mp_to_d(BED->additional_linears_starting[ii],ns_config->additional_linears_starting[ii]);
+//	}
+//
+//
+//
+//	BED->starting_linears = (vec_d **)br_malloc(ns_config->num_jac_equations*sizeof(vec_d *));
+//
+//	for (ii=0; ii<ns_config->num_jac_equations; ++ii) {
+//		BED->starting_linears[ii] = (vec_d *)br_malloc(ns_config->max_degree*sizeof(vec_d));
+//		for (jj=0; jj<ns_config->max_degree; jj++) {
+//			init_vec_d(BED->starting_linears[ii][jj],W.num_variables);
+//			BED->starting_linears[ii][jj]->size = W.num_variables;
+//
+//			vec_mp_to_d(BED->starting_linears[ii][jj], ns_config->starting_linears[ii][jj]);
+//		}
+//	}
+//
+//
+//	if (solve_options.use_gamma_trick==1)
+//		get_comp_rand_d(BED->gamma); // set gamma to be random complex value
+//	else
+//		set_one_d(BED->gamma);
+//
+//
+//	if (MPType == 2)
+//  { // using AMP - initialize using 16 digits & 64-bit precison
+//
+//		BED->BED_mp->verbose_level = solve_options.verbose_level;
+//
+//		int prec = 64;
+//		initMP(prec);
+//
+//		BED->BED_mp->curr_prec = prec;
+//
+//		if (solve_options.use_gamma_trick==1){
+//			get_comp_rand_rat(BED->gamma, BED->BED_mp->gamma, BED->BED_mp->gamma_rat, prec, T->AMP_max_prec, 0, 0);
+//		}
+//		else{
+//			set_one_d(BED->gamma);
+//			set_one_mp(BED->BED_mp->gamma);
+//			set_one_rat(BED->BED_mp->gamma_rat);
+//		}
+//
+//
+//		BED->BED_mp->SLP = BED->SLP; // assign the SLP pointer to same place
+//
+//		mat_cp_mp(BED->BED_mp->randomizer_matrix_full_prec,ns_config->randomizer_matrix);
+//		mat_cp_mp(BED->BED_mp->randomizer_matrix,ns_config->randomizer_matrix);
+//
+//
+//		BED->BED_mp->num_variables = ns_config->num_x_vars + ns_config->num_v_vars;
+//		BED->BED_mp->num_jac_equations = ns_config->num_jac_equations;
+//		BED->BED_mp->target_dim = ns_config->target_dim;
+//		BED->BED_mp->ambient_dim = ns_config->ambient_dim;
+//		BED->BED_mp->target_crit_codim = ns_config->target_crit_codim;
+//
+//		BED->BED_mp->num_natural_vars = W.num_variables - W.num_synth_vars - ns_config->num_v_vars;
+//		BED->BED_mp->num_v_vars = ns_config->num_v_vars;
+//		BED->BED_mp->num_x_vars = ns_config->num_x_vars;
+//
+//		BED->BED_mp->num_randomized_eqns = ns_config->num_randomized_eqns;
+//		BED->BED_mp->max_degree = ns_config->max_degree;
+//
+//
+//		BED->BED_mp->randomized_degrees.clear();
+//		for (ii=0; ii<ns_config->randomizer_matrix->rows; ii++)
+//			BED->BED_mp->randomized_degrees.push_back(ns_config->randomized_degrees[ii]); // store the full degree (not derivative).
+//
+//		BED->BED_mp->num_v_linears = ns_config->num_v_linears;   //
+//
+//
+//
+//
+//
+//
+//
+//		// set the $v$ linears
+//
+//		BED->BED_mp->v_linears = (vec_mp *) br_malloc(ns_config->num_v_linears*sizeof(vec_mp));
+//		BED->BED_mp->v_linears_full_prec = (vec_mp *) br_malloc(ns_config->num_v_linears*sizeof(vec_mp));
+//		for (ii=0; ii<ns_config->num_v_linears; ii++) {
+//			init_vec_mp2(BED->BED_mp->v_linears[ii],ns_config->num_v_vars,prec);
+//			BED->BED_mp->v_linears[ii]->size = ns_config->num_v_vars;
+//
+//			init_vec_mp2(BED->BED_mp->v_linears_full_prec[ii],ns_config->num_v_vars,T->AMP_max_prec);
+//			BED->BED_mp->v_linears_full_prec[ii]->size = ns_config->num_v_vars;
+//
+//			vec_cp_mp(BED->BED_mp->v_linears[ii], ns_config->v_linears[ii]);
+//			vec_cp_mp(BED->BED_mp->v_linears_full_prec[ii], ns_config->v_linears[ii]);
+//		}
+//
+//		//set the jac_with_proj matrix
+//
+//		init_mat_mp2(BED->BED_mp->jac_with_proj, ns_config->num_x_vars-1, ns_config->num_v_vars, prec);
+//		BED->BED_mp->jac_with_proj->rows = ns_config->num_x_vars-1;
+//		BED->BED_mp->jac_with_proj->cols = ns_config->num_v_vars;
+//
+//		init_mat_mp2(BED->BED_mp->jac_with_proj_full_prec, ns_config->num_x_vars-1, ns_config->num_v_vars, T->AMP_max_prec);
+//		BED->BED_mp->jac_with_proj_full_prec->rows = ns_config->num_x_vars-1;
+//		BED->BED_mp->jac_with_proj_full_prec->cols = ns_config->num_v_vars;
+//
+//		offset = ns_config->num_randomized_eqns;
+//
+//		// set up the vectors to hold the  linears.
+//		BED->BED_mp->num_projections = ns_config->num_projections;
+//		BED->BED_mp->target_projection = (vec_mp *)br_malloc(ns_config->num_projections * sizeof(vec_mp));
+//		BED->BED_mp->target_projection_full_prec = (vec_mp *)br_malloc(ns_config->num_projections * sizeof(vec_mp));
+//
+//		for (ii=0; ii<ns_config->num_projections; ii++) {
+//			init_vec_mp2(BED->BED_mp->target_projection[ii],W.num_variables,prec); BED->BED_mp->target_projection[ii]->size =  W.num_variables;
+//			vec_cp_mp(BED->BED_mp->target_projection[ii], ns_config->target_projection[ii]);
+//
+//			init_vec_mp2(BED->BED_mp->target_projection_full_prec[ii],W.num_variables,T->AMP_max_prec);
+//			BED->BED_mp->target_projection_full_prec[ii]->size =  W.num_variables;
+//			vec_cp_mp(BED->BED_mp->target_projection_full_prec[ii], ns_config->target_projection[ii]);
+//
+//			for (jj=1; jj<ns_config->num_x_vars; jj++) {
+//				set_mp(&BED->BED_mp->jac_with_proj->entry[jj-1][ii+offset], &ns_config->target_projection[ii]->coord[jj]);
+//				set_mp(&BED->BED_mp->jac_with_proj_full_prec->entry[jj-1][ii+offset], &ns_config->target_projection[ii]->coord[jj]);
+//			}
+//		}
+//
+//
+//
+//
+//		init_vec_mp2(BED->BED_mp->v_patch_full_prec,ns_config->num_v_vars,T->AMP_max_prec);
+//		init_vec_mp2(BED->BED_mp->v_patch,ns_config->num_v_vars,prec);
+//		BED->BED_mp->v_patch->size = BED->BED_mp->v_patch_full_prec->size = ns_config->num_v_vars;
+//		vec_cp_mp(BED->BED_mp->v_patch_full_prec, ns_config->v_patch);
+//		vec_cp_mp(BED->BED_mp->v_patch, ns_config->v_patch);
+//
+//		BED->BED_mp->starting_linears = (vec_mp **)br_malloc(ns_config->num_jac_equations*sizeof(vec_mp *));
+//		BED->BED_mp->starting_linears_full_prec = (vec_mp **)br_malloc(ns_config->num_jac_equations*sizeof(vec_mp *));
+//		for (ii=0; ii<ns_config->num_jac_equations; ++ii) {
+//			BED->BED_mp->starting_linears[ii] = (vec_mp *)br_malloc(ns_config->max_degree*sizeof(vec_mp));
+//			BED->BED_mp->starting_linears_full_prec[ii] = (vec_mp *)br_malloc(ns_config->max_degree*sizeof(vec_mp));
+//
+//			for (jj=0; jj<ns_config->max_degree; jj++) {
+//				init_vec_mp2(BED->BED_mp->starting_linears[ii][jj],W.num_variables,prec);
+//				init_vec_mp2(BED->BED_mp->starting_linears_full_prec[ii][jj],W.num_variables,T->AMP_max_prec);
+//				BED->BED_mp->starting_linears[ii][jj]->size = W.num_variables;
+//				BED->BED_mp->starting_linears_full_prec[ii][jj]->size = W.num_variables;
+//
+//				vec_cp_mp(BED->BED_mp->starting_linears[ii][jj], ns_config->starting_linears[ii][jj]);
+//				vec_cp_mp(BED->BED_mp->starting_linears_full_prec[ii][jj], ns_config->starting_linears[ii][jj]);
+//			}
+//		}
+//
+//		BED->BED_mp->num_additional_linears = ns_config->num_additional_linears;
+//		BED->BED_mp->additional_linears_terminal = (vec_mp *) br_malloc(ns_config->num_additional_linears*sizeof(vec_mp));
+//		BED->BED_mp->additional_linears_terminal_full_prec = (vec_mp *) br_malloc(ns_config->num_additional_linears*sizeof(vec_mp));
+//
+//		BED->BED_mp->additional_linears_starting = (vec_mp *) br_malloc(ns_config->num_additional_linears*sizeof(vec_mp));
+//		BED->BED_mp->additional_linears_starting_full_prec = (vec_mp *) br_malloc(ns_config->num_additional_linears*sizeof(vec_mp));
+//
+//		for (ii=0; ii<ns_config->num_additional_linears; ii++) {
+//			init_vec_mp2(BED->BED_mp->additional_linears_terminal[ii], ns_config->num_x_vars,prec);
+//			init_vec_mp2(BED->BED_mp->additional_linears_terminal_full_prec[ii], ns_config->num_x_vars,T->AMP_max_prec);
+//			BED->BED_mp->additional_linears_terminal[ii]->size = ns_config->num_x_vars;
+//			BED->BED_mp->additional_linears_terminal_full_prec[ii]->size = ns_config->num_x_vars;
+//			vec_cp_mp(BED->BED_mp->additional_linears_terminal[ii],ns_config->additional_linears_terminal[ii]);
+//			vec_cp_mp(BED->BED_mp->additional_linears_terminal_full_prec[ii],ns_config->additional_linears_terminal[ii]);
+//
+//
+//			init_vec_mp2(BED->BED_mp->additional_linears_starting[ii], ns_config->num_x_vars,prec);
+//			init_vec_mp2(BED->BED_mp->additional_linears_starting_full_prec[ii], ns_config->num_x_vars,T->AMP_max_prec);
+//			BED->BED_mp->additional_linears_starting[ii]->size = ns_config->num_x_vars;
+//			BED->BED_mp->additional_linears_starting_full_prec[ii]->size = ns_config->num_x_vars;
+//			vec_cp_mp(BED->BED_mp->additional_linears_starting[ii],ns_config->additional_linears_starting[ii]);
+//			vec_cp_mp(BED->BED_mp->additional_linears_starting_full_prec[ii],ns_config->additional_linears_starting[ii]);
+//		}
+//
+//		init_mat_mp2(BED->BED_mp->post_randomizer_matrix,0,0,prec); // initialize the randomizer matrix
+//		init_mat_mp2(BED->BED_mp->post_randomizer_matrix_full_prec,0,0,T->AMP_max_prec); // initialize the randomizer matrix
+//
+//		mat_cp_mp(BED->BED_mp->post_randomizer_matrix_full_prec,ns_config->post_randomizer_matrix);
+//		mat_cp_mp(BED->BED_mp->post_randomizer_matrix,ns_config->post_randomizer_matrix);
+//
+//
+//
+//
+//    // setup preProcData
+//    setupPreProcData(preprocFile, &BED->BED_mp->preProcData);
+//
+//  }//re: if mptype==2
+//
+//
+//
+//
+//  return;
+//}
+
+
+
+//void setupnullspacejacEval_mp(char preprocFile[], char degreeFile[], prog_t *dummyProg,
+//															int squareSize, int patchType, int ssType, int prec,
+//															void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
+//															nullspacejac_eval_data_mp *BED, int adjustDegrees,
+//															witness_set & W,
+//															nullspace_config *ns_config,
+//															solver_configuration & solve_options)
+//{
+//
+//	int ii, jj;
+//
+//	BED->verbose_level = solve_options.verbose_level;
+//
+//  setupPreProcData(preprocFile, &BED->preProcData);
+//
+//	generic_setup_patch(&BED->patch,W);
+//
+//
+//	BED->SLP = dummyProg;
+//
+//	if (solve_options.use_gamma_trick==1)
+//		get_comp_rand_mp(BED->gamma); // set gamma to be random complex value
+//	else
+//		set_one_mp(BED->gamma);
+//
+//
+//	BED->num_jac_equations = ns_config->num_jac_equations;
+//	BED->target_dim = ns_config->target_dim;
+//	BED->ambient_dim = ns_config->ambient_dim;
+//	BED->target_crit_codim = ns_config->target_crit_codim;
+//
+//	BED->num_natural_vars = W.num_variables - W.num_synth_vars - ns_config->num_v_vars;
+//	BED->num_v_vars = ns_config->num_v_vars;
+//	BED->num_x_vars = ns_config->num_x_vars;
+//
+//	BED->num_randomized_eqns = ns_config->num_randomized_eqns;
+//	BED->max_degree = ns_config->max_degree;
+//	BED->randomized_degrees.resize(ns_config->num_randomized_eqns);
+//	for (ii=0; ii<ns_config->randomizer_matrix->rows; ii++)
+//		BED->randomized_degrees[ii] = ns_config->randomized_degrees[ii]; // store the full degree (not derivative).
+//
+//
+//	BED->num_v_linears = ns_config->num_v_linears;   //
+//
+//
+//	BED->num_variables = ns_config->num_x_vars + ns_config->num_v_vars;
+//
+//
+//	init_mat_mp(BED->randomizer_matrix,0,0);
+//	mat_cp_mp(BED->randomizer_matrix,
+//						ns_config->randomizer_matrix);
+//
+//
+//	//  THE STUFF PROPRIETARY TO THIS METHOD
+//	init_mat_mp(BED->post_randomizer_matrix,0,0);
+//	mat_cp_mp(BED->post_randomizer_matrix,
+//						ns_config->post_randomizer_matrix);
+//
+//
+//
+//	// set up the vectors to hold the linears.
+//	BED->num_projections = ns_config->num_projections;
+//	BED->target_projection = (vec_mp *)br_malloc(ns_config->num_projections * sizeof(vec_mp));
+//	init_mat_mp(BED->jac_with_proj, ns_config->num_x_vars-1, ns_config->num_v_vars);
+//	BED->jac_with_proj->rows = ns_config->num_x_vars-1;
+//	BED->jac_with_proj->cols = ns_config->num_v_vars;
+//
+//	int offset = ns_config->num_randomized_eqns;
+//	for (ii=0; ii<ns_config->num_projections; ii++) {
+//		init_vec_mp(BED->target_projection[ii],ns_config->num_x_vars);
+//		BED->target_projection[ii]->size =  ns_config->num_x_vars;
+//		vec_cp_mp(BED->target_projection[ii], ns_config->target_projection[ii]);
+//
+//		for (jj=1; jj<ns_config->num_x_vars; jj++) {
+//			set_mp(&BED->jac_with_proj->entry[jj-1][ii+offset], &ns_config->target_projection[ii]->coord[jj]);
+//		}
+//	}
+//
+//	init_vec_mp(BED->v_patch,ns_config->num_v_vars);
+//	BED->v_patch->size = ns_config->num_v_vars;
+//	vec_cp_mp(BED->v_patch, ns_config->v_patch);
+//
+//	comp_d h; h->r = 0.5; h->i = 0;
+//	init_mp(BED->half);
+//	d_to_mp(BED->half,h);
+//
+//	init_mp(BED->perturbation);
+//	comp_d p; p->r = PERTURBATION_VALUE_mp; p->i = PERTURBATION_VALUE_mp;
+//	d_to_mp(BED->perturbation,p);
+//
+//
+//	BED->v_linears = (vec_mp *) br_malloc(ns_config->num_v_linears*sizeof(vec_mp));
+//	for (ii=0; ii<ns_config->num_v_linears; ii++) {
+//		init_vec_mp(BED->v_linears[ii],ns_config->num_v_vars);
+//		BED->v_linears[ii]->size = ns_config->num_v_vars;
+//		vec_cp_mp(BED->v_linears[ii], ns_config->v_linears[ii]);
+//	}
+//
+//	BED->num_additional_linears = ns_config->num_additional_linears;
+//	BED->additional_linears_terminal = (vec_mp *) br_malloc(ns_config->num_additional_linears*sizeof(vec_mp));
+//	BED->additional_linears_starting = (vec_mp *) br_malloc(ns_config->num_additional_linears*sizeof(vec_mp));
+//
+//	for (ii=0; ii<ns_config->num_additional_linears; ii++) {
+//		init_vec_mp(BED->additional_linears_terminal[ii], ns_config->num_x_vars);
+//		BED->additional_linears_terminal[ii]->size = ns_config->num_x_vars;
+//		vec_cp_mp(BED->additional_linears_terminal[ii],ns_config->additional_linears_terminal[ii]);
+//
+//		init_vec_mp(BED->additional_linears_starting[ii], ns_config->num_x_vars);
+//		BED->additional_linears_starting[ii]->size = ns_config->num_x_vars;
+//		vec_cp_mp(BED->additional_linears_starting[ii],ns_config->additional_linears_starting[ii]);
+//	}
+//
+//
+//
+//	BED->starting_linears = (vec_mp **)br_malloc(ns_config->num_jac_equations*sizeof(vec_mp *));
+//
+//	for (ii=0; ii<ns_config->num_jac_equations; ++ii) {
+//		BED->starting_linears[ii] = (vec_mp *)br_malloc(ns_config->max_degree*sizeof(vec_mp));
+//		for (jj=0; jj<ns_config->max_degree; jj++) {
+//			init_vec_mp(BED->starting_linears[ii][jj],W.num_variables);
+//			BED->starting_linears[ii][jj]->size = W.num_variables;
+//
+//			vec_cp_mp(BED->starting_linears[ii][jj], ns_config->starting_linears[ii][jj]);
+//		}
+//	}
+//
+//
+//  return;
+//}
+//
+//
+
+
+
+
+
+//void cp_nullspacejac_eval_data_d(nullspacejac_eval_data_d *BED, nullspacejac_eval_data_d *BED_d_input, nullspacejac_eval_data_mp *BED_mp_input, int MPType)
+//{
+//	printf("entering cp_nullspacejac_eval_data_d\nthis function needs much attention, as things which should be copied are not!\n");
+//	exit(-1);
+//  cp_preproc_data(&BED->preProcData, &BED_d_input->preProcData);
+//	//  cp_square_system_d(&BED->squareSystem, &BED_d_input->squareSystem);
+//  cp_patch_d(&BED->patch, &BED_d_input->patch);
+//	//  cp_start_system_d(&BED->startSystem, &BED_d_input->startSystem);
+//	BED->SLP = (prog_t *)bmalloc(1 * sizeof(prog_t));
+//  cp_prog_t(BED->SLP, BED_d_input->SLP);
+//
+//
+//	//HERE COPY THE MATRICES  DAB !!!
+//
+//	set_d(BED->gamma, BED_d_input->gamma);
+//  if (MPType == 2)
+//  { // need to also setup MP versions since using AMP
+//    BED->BED_mp = (nullspacejac_eval_data_mp *)bmalloc(1 * sizeof(nullspacejac_eval_data_mp));
+//
+//    cp_preproc_data(&BED->BED_mp->preProcData, &BED_mp_input->preProcData);
+//    // simply point to the SLP that was setup in BED
+//		//    cp_square_system_mp(&BED->BED_mp->squareSystem, &BED_mp_input->squareSystem, 0, BED->squareSystem.Prog);
+//    cp_patch_mp(&BED->BED_mp->patch, &BED_mp_input->patch);
+//		//    cp_start_system_mp(&BED->BED_mp->startSystem, &BED_mp_input->startSystem);
+//  }
+//  else
+//    BED->BED_mp = NULL;
+//
+//  return;
+//}
+
+
+
+
+
+

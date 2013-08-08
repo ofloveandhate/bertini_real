@@ -25,9 +25,8 @@
 #define _FILEOPS_H
 
 
-extern "C" {
-#include "polysolve.h"
-}
+#include "missing_bertini_headers.hpp"
+
 
 extern "C" {
 #include "partitionParse.h"
@@ -35,7 +34,6 @@ extern "C" {
 
 
 #include "data_type.hpp"
-#include "missing_bertini_headers.hpp"
 #include <boost/filesystem/path.hpp>
 
 

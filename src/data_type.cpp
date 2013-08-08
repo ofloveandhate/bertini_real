@@ -85,14 +85,19 @@ int vertex_set::setup_vertices(boost::filesystem::path INfile)
 	FILE *IN = safe_fopen_read(INfile);
 	int num_vertices;
 	int num_vars;
-	fscanf(IN, "%d %d\n\n", &num_vertices, &num_vars);
+	fscanf(IN, "%d\n\n", &num_vertices);
 	
 	vertex temp_vertex;
-	change_size_vec_mp(temp_vertex.pt_mp,num_vars); temp_vertex.pt_mp->size = num_vars;
+	
 	
 	for(int ii=0;ii<num_vertices;ii++)
 	{
-		for(int jj=0;jj<num_vars;jj++)
+		fscanf(IN, "%d\n", &num_vars);
+		if (temp_vertex.pt_mp->size != num_vars) {
+			change_size_vec_mp(temp_vertex.pt_mp,num_vars); temp_vertex.pt_mp->size = num_vars;
+		}
+		
+		for (int jj=0;jj<num_vars;jj++)
 		{
 			mpf_inp_str(temp_vertex.pt_mp->coord[jj].r, IN, 10);
 			mpf_inp_str(temp_vertex.pt_mp->coord[jj].i, IN, 10);
@@ -133,9 +138,6 @@ int vertex_set::setup_vertices(boost::filesystem::path INfile)
  
  pt.2
  
- .
- .
- .
  **/
 void vertex_set::print(boost::filesystem::path outputfile)
 {
@@ -143,9 +145,10 @@ void vertex_set::print(boost::filesystem::path outputfile)
 	FILE *OUT = safe_fopen_write(outputfile);
 	
 	// output the number of vertices
-	fprintf(OUT,"%d %d\n\n",num_vertices, vertices[0].pt_mp->size);
+	fprintf(OUT,"%d\n\n",num_vertices);
 	for (int ii = 0; ii < num_vertices; ii++)
 	{ // output points
+		fprintf(OUT,"%d\n", vertices[ii].pt_mp->size);
 		for(int jj=0;jj<vertices[ii].pt_mp->size;jj++) {
 			print_mp(OUT, 0, &vertices[ii].pt_mp->coord[jj]);
 			fprintf(OUT,"\n");
@@ -163,20 +166,17 @@ void vertex_set::print(boost::filesystem::path outputfile)
 
 
 
-int decomposition::add_vertex(vertex_set & V, vertex source_vertex){
+int decomposition::add_vertex(vertex_set & V, vertex source_vertex)
+{
 	
 	
 	int current_index = V.add_vertex(source_vertex);
 	
-	std::cout << "vertex type to add: " << source_vertex.type << std::endl;
-	
-	
 	if (this->counters.find(source_vertex.type) == this->counters.end()) {
 		this->counters[source_vertex.type] = 0;
 	}
-	
-		
-	std::cout << "counters[vertex_type]: " << this->counters[source_vertex.type] << std::endl;
+
+	print_point_to_screen_matlab(source_vertex.pt_mp,"new_added_point");
 	
 	this->counters[source_vertex.type]++;
 	this->indices[source_vertex.type].push_back(current_index);
@@ -203,8 +203,21 @@ int decomposition::index_in_vertices(vertex_set &V,
 	for (type_iter = this->counters.begin(); type_iter!= this->counters.end(); type_iter++) {
 		for (ii=0; ii<type_iter->second; ii++) {
 			int current_index = this->indices[type_iter->first][ii];
-//			std::cout << "current_index: " << current_index << " type: " << type_iter->first << " " << ii << std::endl;
-			if (isSamePoint_homogeneous_input(V.vertices[current_index].pt_mp, testpoint)){
+			
+			
+			sub_mp(V.diff, projection_value, V.vertices[current_index].projVal_mp);
+			mpf_abs_mp(V.abs, V.diff);
+			
+			if (mpf_cmp(V.abs, V.zerothresh) > 0){
+				continue;
+			}
+			
+			for (int jj=1; jj<V.num_natural_variables; jj++) {
+				div_mp(&V.checker_1->coord[jj-1], &testpoint->coord[jj],  &testpoint->coord[0]);
+				div_mp(&V.checker_2->coord[jj-1],&V.vertices[current_index].pt_mp->coord[jj], &V.vertices[current_index].pt_mp->coord[0]);
+			}
+			
+			if (isSamePoint_inhomogeneous_input(V.checker_1, V.checker_2)){
 //				std::cout << "these two points are the SAME:\n";
 //				print_point_to_screen_matlab(V.vertices[current_index].pt_mp,"candidate");
 //				print_point_to_screen_matlab(testpoint,"testpoint");
@@ -412,8 +425,12 @@ void decomposition::print(boost::filesystem::path input_deflated_Name, boost::fi
 		fprintf(OUT,"\n");
 	}
 	
-	for (ii=0; ii<dimension; ii++) {
-		for(int jj=0;jj<num_variables;jj++)
+	if (dimension != num_curr_projections) {
+		std::cerr << "decomposition was short projections\n";
+		deliberate_segfault();
+	}
+	for (ii=0; ii<num_curr_projections; ii++) {
+		for(int jj=0;jj<pi_mp[ii]->size;jj++)
 		{
 			print_mp(OUT, 0, &pi_mp[ii]->coord[jj]);
 			fprintf(OUT,"\n");
@@ -473,9 +490,7 @@ void curve_decomposition::print_edges(boost::filesystem::path outputfile)
  edge 1
  
  edge 2
- .
- .
- .
+
  
  for each edge, output the following information:
  index to left vertex in vertices
@@ -520,8 +535,11 @@ void clear_sample(sample_data *S, int MPType)
 void norm_of_difference(mpf_t result, vec_mp left, vec_mp right)
 {
 	if (left->size!=right->size || left->size == 0) {
-		printf("attempting to dot two vectors not of the same size! (%d!=%d)\n",left->size,right->size);
-		exit(-78);
+		printf("attempting to take difference of two vectors not of the same size! (%d!=%d)\n",left->size,right->size);
+		
+		print_point_to_screen_matlab(left,"left");
+		print_point_to_screen_matlab(right,"right");
+		deliberate_segfault();
 	}
 	
 	int ii;
@@ -639,7 +657,8 @@ void dehomogenize(point_d *result, point_d dehom_me, int num_variables)
 
 
 
-void dot_product_d(comp_d result, vec_d left, vec_d right){
+void dot_product_d(comp_d result, vec_d left, vec_d right)
+{
 	if (left->size!=right->size) {
 		printf("attempting to dot_d two vectors not of the same size! (%d!=%d)\n",left->size,right->size);
 		deliberate_segfault();
@@ -655,7 +674,8 @@ void dot_product_d(comp_d result, vec_d left, vec_d right){
 	}
 }
 
-void dot_product_mp(comp_mp result, vec_mp left, vec_mp right){
+void dot_product_mp(comp_mp result, vec_mp left, vec_mp right)
+{
 	if (left->size!=right->size) {
 		printf("attempting to dot_mp two vectors not of the same size! (%d!=%d)\n",left->size,right->size);
 		deliberate_segfault();
@@ -962,12 +982,6 @@ int get_num_vars_PPD(preproc_data PPD){
 
 
 void cp_patch_mp(patch_eval_data_mp *PED, patch_eval_data_mp PED_input)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: stores a copy of PED_input to PED                      *
- \***************************************************************/
 {
   PED->num_patches = PED_input.num_patches;
 	
@@ -985,13 +999,21 @@ void cp_patch_mp(patch_eval_data_mp *PED, patch_eval_data_mp PED_input)
 }
 
 
+void cp_patch_d(patch_eval_data_d *PED, patch_eval_data_d PED_input)
+{
+  PED->num_patches = PED_input.num_patches;
+	
+
+  // initialize patchCoeff to this preicision
+  init_mat_d(PED->patchCoeff, PED_input.patchCoeff->rows, PED_input.patchCoeff->cols);
+
+  // setup patchCoeff
+  mat_cp_d(PED->patchCoeff, PED_input.patchCoeff);
+	
+  return;
+}
+
 void cp_preproc_data(preproc_data *PPD, preproc_data PPD_input)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: stores a copy of PPD_input to PPD                      *
- \***************************************************************/
 {
   int i, total_gp;
 	
@@ -1012,6 +1034,330 @@ void cp_preproc_data(preproc_data *PPD, preproc_data PPD_input)
 	
   return;
 }
+
+
+
+
+
+void sort_increasing_by_real(vec_mp *projections_sorted, int **index_tracker, vec_mp projections_input){
+	
+	comp_mp large; init_mp(large);
+	comp_d l; l->r = 1e9; l->i = 0;
+	d_to_mp(large,l);
+	
+	
+	vec_mp raw; init_vec_mp(raw,1);
+	vec_cp_mp(raw,projections_input);
+	
+	change_size_vec_mp( (*projections_sorted), raw->size);
+	(*projections_sorted)->size = raw->size;
+	int ii,jj;
+	//	comp_mp temp1, temp2; init_mp(temp1); init_mp(temp2);
+	
+	double min;
+	double curr;
+	int indicator = -1;
+	for (ii=0; ii<raw->size; ii++) {
+		min = 1e10;
+		
+		for (jj=0; jj<raw->size; jj++) {
+			curr = mpf_get_d(raw->coord[jj].r);
+			if ( curr < min) {
+				indicator = jj;
+				min = curr;
+			}
+		}
+		if (indicator==-1) {
+			printf("min projection value was *insanely* large\n");
+			exit(1111);
+		}
+		
+		
+		
+		(*index_tracker)[ii] = indicator;
+		set_mp( &(*projections_sorted)->coord[ii],&raw->coord[indicator]);
+		set_mp( &raw->coord[indicator],large);
+	}
+	return;
+}
+
+
+
+//input the raw number of variables including the homogeneous variable (of which there must be one)
+// assume the array of integers 'randomized_degrees' is already initialized to the correct size.
+void make_randomization_matrix_based_on_degrees(mat_mp randomization_matrix, int ** randomized_degrees, int num_desired_rows, int num_funcs)
+{
+	int ii,jj;
+	
+	
+	
+	//get unique degrees
+	int *degrees = (int *) br_malloc(num_funcs*sizeof(int));
+	int *unique_degrees = (int *) br_malloc(num_funcs*sizeof(int));
+	
+	
+	FILE *IN = safe_fopen_read("deg.out"); //open the deg.out file for reading.
+	int num_unique_degrees = 0;
+	int occurrence_counter;
+	for (ii=0; ii<num_funcs; ++ii) {
+		fscanf(IN,"%d\n",&degrees[ii]); // read data
+		occurrence_counter = 0; // set the counter for how many timmes the current degree has already been found.
+		for (jj=0; jj<ii; jj++) {
+			if (degrees[jj]==degrees[ii]) { // if previously stored degree is same as current one
+				occurrence_counter++; // increment counter
+			}
+		}
+		
+		if (occurrence_counter==0) { // if did not find already in list
+			unique_degrees[num_unique_degrees] = degrees[ii]; // add to list of unique degrees.
+			num_unique_degrees++; // have one more unique degree
+		} // re: jj
+	}// re: ii
+	fclose(IN);
+	
+	
+	if (num_desired_rows==num_funcs) {
+		make_matrix_ID_mp(randomization_matrix,num_funcs,num_funcs);
+		for (ii=0; ii<num_desired_rows; ++ii) {
+			(*randomized_degrees)[ii] = degrees[ii];
+		}
+		free(degrees);
+		free(unique_degrees);
+		return;
+	}
+	
+	//sort the unique degrees into decreasing order
+	qsort(unique_degrees, num_unique_degrees, sizeof(int), compare_integers_decreasing);
+	
+	//count how many of each unique degree there are.
+	int *num_of_each_degree = (int *) br_malloc(num_unique_degrees*sizeof(int));
+	for (ii=0; ii<num_unique_degrees; ii++) {
+		num_of_each_degree[ii] = 0;
+		for (jj=0; jj<num_funcs; ++jj) {
+			if (unique_degrees[ii]==degrees[jj]) {
+				num_of_each_degree[ii]++;
+			}
+		}
+	}
+	
+	
+	
+	//	for (ii=0; ii<num_unique_degrees; ii++) {
+	//		printf("unique_degrees[%d]=%d; num_of_each_degree=%d\n",ii,unique_degrees[ii],num_of_each_degree[ii]);
+	//	}
+	
+	//resize the matrix
+	change_size_mat_mp(randomization_matrix,num_desired_rows,num_funcs);
+	randomization_matrix->rows = num_desired_rows; randomization_matrix->cols = num_funcs;
+	
+	
+	
+	int counter = 0;
+	int current_degree_index = 0; // start at the end
+	int current_degree;
+	for (ii=0; ii<num_desired_rows; ii++) {
+		
+		counter++;
+		if (counter>num_of_each_degree[current_degree_index]) {
+			current_degree_index++;
+			counter = 1;
+		}
+		
+		current_degree = unique_degrees[current_degree_index];
+		(*randomized_degrees)[ii] = current_degree;
+		
+		int encountered_current_degree = 0;
+		for (jj=0; jj<num_funcs; jj++) {
+			if ( (degrees[jj]<= current_degree)  ) {
+				encountered_current_degree++;
+				if (encountered_current_degree >= counter){
+					get_comp_rand_real_mp(&randomization_matrix->entry[ii][jj]);
+				}
+				else{
+					set_zero_mp(&randomization_matrix->entry[ii][jj]);
+				}
+			}
+			else
+			{
+				set_zero_mp(&randomization_matrix->entry[ii][jj]);
+			}
+		}
+		
+		
+	}
+	
+	free(num_of_each_degree);
+	free(degrees);
+	free(unique_degrees);
+	
+	return;
+}
+
+
+int compare_integers_decreasing(const void * left_in, const void * right_in){
+	
+	int left = *(const int*)left_in;
+	int right = *(const int*)right_in;
+	
+	
+	if (left<right) {
+		return 1;
+	}
+	else if(right > left){
+		return -1;
+	}
+	else{
+		return 0;
+	}
+	
+}
+
+
+
+void send_patch_mp(patch_eval_data_mp * patch)
+{
+	char *patchStr = NULL;
+	patch_eval_data_mp_int PED_int;
+	MPI_Datatype mpi_patch_int;
+	
+	// setup mpi_patch_int
+	create_patch_eval_data_mp_int(&mpi_patch_int);
+	// setup PED_int
+	cp_patch_mp_int(&PED_int, &patch, &patchStr, 0, 0);
+	
+	// send PED_int
+	MPI_Bcast(&PED_int, 1, mpi_patch_int, 0, MPI_COMM_WORLD);
+	// send patchStr
+	MPI_Bcast(patchStr, PED_int.totalLength, MPI_CHAR, 0, MPI_COMM_WORLD);
+	
+	// clear memory
+	free(patchStr);
+	MPI_Type_free(&mpi_patch_int);
+}
+
+void receive_patch_mp(patch_eval_data_mp * patch)
+{
+	char *patchStr = NULL;
+	patch_eval_data_mp_int PED_int;
+	MPI_Datatype mpi_patch_int;
+	
+	// setup mpi_patch_int
+	create_patch_eval_data_mp_int(&mpi_patch_int);
+	// recv PED_int
+	MPI_Bcast(&PED_int, 1, mpi_patch_int, 0, MPI_COMM_WORLD);
+	
+	// setup patchStr
+	patchStr = (char *)bmalloc(PED_int.totalLength * sizeof(char));
+	// recv patchStr
+	MPI_Bcast(patchStr, PED_int.totalLength, MPI_CHAR, 0, MPI_COMM_WORLD);
+	
+	// setup _mp patch
+	cp_patch_mp_int(patch, &PED_int, &patchStr, 1, 1);
+	
+	//	// setup _d patch
+//	for (i = 0; i < BED->patch.patchCoeff->rows; i++)
+//		for (j = 0; j < BED->patch.patchCoeff->cols; j++)
+//		{
+//			mp_to_d(&patch.patchCoeff->entry[i][j], &BED->BED_mp->patch.patchCoeff->entry[i][j]);
+//		}
+	
+	// free mpi_patch_int (patchStr is freed in cp_patch_mp_int)
+	MPI_Type_free(&mpi_patch_int);
+}
+
+
+
+void send_preproc_data(preproc_data *PPD){
+	
+
+	int *buffer = new int[3];
+	
+	buffer[0] = PPD->num_funcs;
+	buffer[1] = PPD->num_hom_var_gp;
+	buffer[2] = PPD->num_var_gp;
+	
+	MPI_Bcast(buffer, 3, MPI_INT, 0, MPI_COMM_WORLD);
+	
+	int size = PPD->num_hom_var_gp + PPD->num_var_gp;
+	MPI_Bcast(PPD->type, size, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(PPD->size, size, MPI_INT, 0, MPI_COMM_WORLD);
+	
+	delete(buffer);
+}
+
+void receive_preproc_data(preproc_data *PPD){
+	
+	
+	int *buffer = new int[3];
+	
+	MPI_Bcast(buffer, 3, MPI_INT, 0, MPI_COMM_WORLD);
+	
+	PPD->num_funcs = buffer[0];
+  PPD->num_hom_var_gp = buffer[1];
+	PPD->num_var_gp = buffer[2];
+	
+	
+	
+	int size = PPD->num_hom_var_gp + PPD->num_var_gp;
+	MPI_Bcast(PPD->type, size, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(PPD->size, size, MPI_INT, 0, MPI_COMM_WORLD);
+	
+	delete(buffer);
+}
+
+
+
+
+
+void send_patch_d(patch_eval_data_d * patch)
+{
+	comp_d *patch_coeff = NULL;
+	patch_eval_data_d_int PED_int;
+	MPI_Datatype mpi_comp_d, mpi_patch_d_int;
+	
+	// setup mpi_comp_d & mpi_patch_d_int
+	create_comp_d(&mpi_comp_d);
+	create_patch_eval_data_d_int(&mpi_patch_d_int);
+	// setup PED_int
+	cp_patch_d_int(&PED_int, &patch, &patch_coeff, 0);
+	
+	// broadcast patch structures
+	MPI_Bcast(&PED_int, 1, mpi_patch_d_int, 0, MPI_COMM_WORLD);
+	MPI_Bcast(patch_coeff, PED_int.patchCoeff_rows * PED_int.patchCoeff_cols, mpi_comp_d, 0, MPI_COMM_WORLD);
+	
+	// free memory
+	MPI_Type_free(&mpi_comp_d);
+	MPI_Type_free(&mpi_patch_d_int);
+	free(patch_coeff);
+}
+
+
+void receive_patch_d(patch_eval_data_d * patch)
+{
+	comp_d *patch_coeff = NULL;
+	patch_eval_data_d_int PED_int;
+	MPI_Datatype mpi_comp_d, mpi_patch_d_int;
+	
+	// setup mpi_comp_d & mpi_patch_d_int
+	create_comp_d(&mpi_comp_d);
+	create_patch_eval_data_d_int(&mpi_patch_d_int);
+	
+	// recv patch structures
+	MPI_Bcast(&PED_int, 1, mpi_patch_d_int, 0, MPI_COMM_WORLD);
+	// setup patch_coeff
+	patch_coeff = (comp_d *)bmalloc(PED_int.patchCoeff_rows * PED_int.patchCoeff_cols * sizeof(comp_d));
+	MPI_Bcast(&patch_coeff, PED_int.patchCoeff_rows * PED_int.patchCoeff_cols, mpi_comp_d, 0, MPI_COMM_WORLD);
+	
+	
+	// setup patch
+	cp_patch_d_int(&patch, &PED_int, &patch_coeff, 1);
+	
+	// free mpi_comp_d & mpi_patch_d_int
+	MPI_Type_free(&mpi_comp_d);
+	MPI_Type_free(&mpi_patch_d_int);
+}
+
+
 
 
 

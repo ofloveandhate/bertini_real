@@ -1,21 +1,12 @@
 #include "solver_multilintolin.hpp"
 
-//the main wrapper function for chaining into the multilin_to_lin solver.
-// pass in:
-//     • the MPType, witness_set with the linear and points to move FROM (as well as the patch equation),
-//     • max_precision randomizer matrix and linears,
-//	   • initialized W_new
-//
-// you will get out: W_new populated in both mp and double types, with the linears we moved TO, and the new points,
-//  in corresponding order.
 
-//solve_options has both a tracker_config_t and a preproc_data.
 int multilintolin_solver_main(int MPType,
 													 witness_set & W,
 													 mat_mp randomizer_matrix_full_prec,
 													 vec_mp *new_linears_full_prec,
 													 witness_set *W_new,
-													 solver_configuration *solve_options)
+													 solver_configuration & solve_options)
 {
 	
 	
@@ -42,7 +33,7 @@ int multilintolin_solver_main(int MPType,
 		
 	
 	W_new->MPType = MPType;
-	if (solve_options->complete_witness_set==1){
+	if (solve_options.complete_witness_set==1){
 		W_new->num_linears = W.num_linears;
 		W_new->L_mp = (vec_mp *)br_malloc(W.num_linears*sizeof(vec_mp));
 		int ii;
@@ -65,13 +56,7 @@ int multilin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int cur
 												mat_mp randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
 												vec_mp *new_linears_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 												witness_set *W_new,
-												solver_configuration *solve_options)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES:                                                        *
- \***************************************************************/
+												solver_configuration & solve_options)
 {
 	double parse_time = 0;
   FILE *OUT = NULL, *FAIL = safe_fopen_write("failed_paths"), *midOUT = NULL, *rawOUT = safe_fopen_write("raw_data");
@@ -95,7 +80,7 @@ int multilin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int cur
 	//necessary for later whatnot
 	int userHom = 0, useRegen = 0, pathMod = 0, paramHom = 0;
 	
-	cp_tracker_config_t(&T, &solve_options->T);
+	cp_tracker_config_t(&T, &solve_options.T);
 	
 	
 	
@@ -177,8 +162,8 @@ int multilin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int cur
 
 	// check for path crossings
 	int num_crossings = 0;
-	if (solve_options->use_midpoint_checker==1) {
-		midpoint_checker(trackCount.numPoints, num_variables,solve_options->midpoint_tol, &num_crossings);
+	if (solve_options.use_midpoint_checker==1) {
+		midpoint_checker(trackCount.numPoints, num_variables,solve_options.midpoint_tol, &num_crossings);
 	}
 	
 	
@@ -189,7 +174,7 @@ int multilin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int cur
   // we report how we did with all paths:
   bclock(&time2);
   totalTime(&track_time, time1, time2);
-  if (solve_options->verbose_level>=2)
+  if (solve_options.verbose_level>=2)
   {
     printf("Number of failures:  %d\n", trackCount.failures);
     printf("Number of successes:  %d\n", trackCount.successes);
@@ -249,14 +234,7 @@ void multilin_to_lin_track_d(trackingStats *trackCount,
 												int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 												int (*change_prec)(void const *, int),
 												int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
-												solver_configuration *solve_options)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: does standard zero dimensional tracking                *
- *  in either double precision or adaptive precision             *
- \***************************************************************/
+												solver_configuration & solve_options)
 {
   int ii,kk, startPointIndex;
 
@@ -294,7 +272,7 @@ void multilin_to_lin_track_d(trackingStats *trackCount,
 		// SET NEW LINEARs
 		
 		vec_mp_to_d(BED->current_linear[kk],new_linears_full_prec[kk]);
-		if (solve_options->T.MPType==2) {
+		if (solve_options.T.MPType==2) {
 			vec_cp_mp(BED->BED_mp->current_linear[kk],new_linears_full_prec[kk]);
 			vec_cp_mp(BED->BED_mp->current_linear_full_prec[kk],new_linears_full_prec[kk]);
 		}
@@ -306,7 +284,7 @@ void multilin_to_lin_track_d(trackingStats *trackCount,
 	for (ii = 0; ii < W.num_pts; ii++)
 	{
 		
-		if (solve_options->verbose_level>=1)
+		if (solve_options.verbose_level>=1)
 			printf("multilintolin\tpoint %d\n",ii);
 		
 		startPointIndex = ii;
@@ -426,13 +404,7 @@ int multilin_to_lin_setup_d(FILE **OUT, boost::filesystem::path outName,
 														int findStartPts, boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
 											 mat_mp randomizer_matrix_full_prec,
 											 witness_set & W,
-											 solver_configuration *solve_options)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES: number of original variables                   *
- * NOTES: setup for zero dimensional tracking                    *
- \***************************************************************/
+											 solver_configuration & solve_options)
 { // need to create the homotopy
 //	printf("entering multilin_to_lin_setup_d 606\n");
   int rank,  numOrigVars, numGps;
@@ -801,12 +773,6 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 
 
 void multilintolin_eval_clear_d(multilintolin_eval_data_d *ED, int clearRegen, int MPType)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: clear ED                                               *
- \***************************************************************/
 {
 	//clear the patch
   patch_eval_data_clear_d(&ED->patch);
@@ -850,13 +816,13 @@ void setupmultilintolinEval_d(tracker_config_t *T,
 															multilintolin_eval_data_d *BED,
 															mat_mp randomizer_matrix_full_prec,
 															witness_set & W,
-															solver_configuration *solve_options)
+															solver_configuration & solve_options)
 {
   int ii;
 	BED->num_variables = W.num_variables; // total number of variables
 	
   setupPreProcData(preprocFile, &BED->preProcData);
-	BED->verbose_level = solve_options->verbose_level;
+	BED->verbose_level = solve_options.verbose_level;
 	generic_setup_patch(&BED->patch,W);
 	if (T->MPType==2) {
 		generic_setup_patch(&BED->BED_mp->patch, W);
@@ -865,7 +831,7 @@ void setupmultilintolinEval_d(tracker_config_t *T,
 	BED->SLP = dummyProg;
 
 	
-	if (solve_options->use_gamma_trick==1)
+	if (solve_options.use_gamma_trick==1)
 		get_comp_rand_d(BED->gamma); // set gamma to be random complex value
 	else
 		set_one_d(BED->gamma);
@@ -904,7 +870,7 @@ void setupmultilintolinEval_d(tracker_config_t *T,
 		int prec = 64;
 		initMP(prec);
 		BED->BED_mp->curr_prec = prec;
-		BED->BED_mp->verbose_level = solve_options->verbose_level;
+		BED->BED_mp->verbose_level = solve_options.verbose_level;
 		
 #ifdef printpathmultilintolin
 		BED->BED_mp->FOUT = BED->FOUT;
@@ -912,7 +878,7 @@ void setupmultilintolinEval_d(tracker_config_t *T,
 		
 		
 		BED->BED_mp->gamma_rat = (mpq_t *)br_malloc(2 * sizeof(mpq_t));
-		if (solve_options->use_gamma_trick==1){
+		if (solve_options.use_gamma_trick==1){
 			get_comp_rand_rat(BED->gamma, BED->BED_mp->gamma, BED->BED_mp->gamma_rat, prec, T->AMP_max_prec, 1, 1);
 		}
 		else{
@@ -981,12 +947,6 @@ void setupmultilintolinEval_d(tracker_config_t *T,
 
 
 void cp_multilintolin_eval_data_d(multilintolin_eval_data_d *BED, multilintolin_eval_data_d *BED_d_input, multilintolin_eval_data_mp *BED_mp_input, int MPType)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: stores a copy of BED_(t)_input to BED                  *
- \***************************************************************/
 {
 	printf("entering cp multilintolin_eval_data_d\nthis function needs much attention, as things which should be copied are not!\n");
 	exit(-1);
@@ -1020,12 +980,6 @@ void cp_multilintolin_eval_data_d(multilintolin_eval_data_d *BED, multilintolin_
 
 
 int multilintolin_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d in_d, point_mp in_mp, int in_prec, void const *ED_d, void const *ED_mp)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: compute the dehom point                                *
- \***************************************************************/
 {
   multilintolin_eval_data_d *BED_d = NULL;
   multilintolin_eval_data_mp *BED_mp = NULL;
@@ -1092,59 +1046,11 @@ int multilintolin_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d i
 	
   return 0;
 }
-//
-//
-//int (point_d out_d, point_mp out_mp, int *out_prec, point_d in_d, point_mp in_mp, int in_prec, void const *ED_d, void const *ED_mp)
-///***************************************************************\
-// * USAGE:                                                        *
-// * ARGUMENTS:                                                    *
-// * RETURN VALUES:                                                *
-// * NOTES: compute the dehom point                                *
-// \***************************************************************/
-//{
-////  basic_eval_data_d *BED_d = NULL;
-////  basic_eval_data_mp *BED_mp = NULL;
-//	
-//  *out_prec = in_prec;
-//	
-//	
-//	
-//  if (in_prec < 64)
-//  { // compute out_d
-////    BED_d = (basic_eval_data_d *)ED_d;
-//		point_cp_d(out_d,in_d);
-////    getDehomPoint_d(out_d, in_d, in_d->size, &BED_d->preProcData);
-//  }
-//  else
-//  { // compute out_mp
-////    BED_mp = (basic_eval_data_mp *)ED_mp;
-//    // set prec on out_mp
-//    setprec_point_mp(out_mp, *out_prec);
-//		point_cp_mp(out_mp,in_mp);
-////    getDehomPoint_mp(out_mp, in_mp, in_mp->size, &BED_mp->preProcData);
-//  }
-//	
-////  BED_d = NULL;
-////  BED_mp = NULL;
-//	
-//  return 0;
-//}
-//
-//
-//
-
-
 
 
 
 
 int change_multilintolin_eval_prec(void const *ED, int new_prec)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: change precision for standard zero dimensional solving *
- \***************************************************************/
 {
 
 	multilintolin_eval_data_mp *BED = (multilintolin_eval_data_mp *)ED; // to avoid having to cast every time
@@ -1203,13 +1109,7 @@ int multilin_to_lin_solver_mp(int MPType,
 												 mat_mp randomizer_matrix,  // for randomizing down to N-1 equations.
 												 vec_mp *new_linears,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 												 witness_set *W_new,
-												 solver_configuration *solve_options)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES:                                                        *
- \***************************************************************/
+												 solver_configuration & solve_options)
 {
 	double parse_time = 0;
   FILE *OUT = NULL, *FAIL = fopen("failed_paths", "w"), *midOUT = NULL, *rawOUT = fopen("raw_data", "w");
@@ -1233,7 +1133,7 @@ int multilin_to_lin_solver_mp(int MPType,
 	//necessary for later whatnot
 	int userHom = 0, useRegen = 0, pathMod = 0, paramHom = 0;
 	
-	cp_tracker_config_t(&T, &solve_options->T);
+	cp_tracker_config_t(&T, &solve_options.T);
 	
 
 //	
@@ -1315,8 +1215,8 @@ int multilin_to_lin_solver_mp(int MPType,
 	
 	// check for path crossings
 	int num_crossings = 0;
-	if (solve_options->use_midpoint_checker==1) {
-		midpoint_checker(trackCount.numPoints, num_variables,solve_options->midpoint_tol, &num_crossings);
+	if (solve_options.use_midpoint_checker==1) {
+		midpoint_checker(trackCount.numPoints, num_variables,solve_options.midpoint_tol, &num_crossings);
 	}
 	
 	// setup num_sols
@@ -1383,14 +1283,7 @@ void multilin_to_lin_track_mp(trackingStats *trackCount,
 												int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 												int (*change_prec)(void const *, int),
 												 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
-												 solver_configuration *solve_options)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: does standard zero dimensional tracking                *
- *  in either double precision or adaptive precision             *
- \***************************************************************/
+												 solver_configuration & solve_options)
 {
 	
   int ii,kk;
@@ -1430,7 +1323,7 @@ void multilin_to_lin_track_mp(trackingStats *trackCount,
 		{ 
 			
 			
-			if (solve_options->verbose_level>=1)
+			if (solve_options.verbose_level>=1)
 				printf("multilintolin path %d of %d\n",ii, W.num_pts);
 			
 #ifdef printpathmultilintolin
@@ -1536,13 +1429,7 @@ int multilin_to_lin_setup_mp(FILE **OUT, boost::filesystem::path outName,
 														 boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
 														 mat_mp randomizer_matrix,
 												witness_set & W,
-												solver_configuration *solve_options)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES: number of original variables                   *
- * NOTES: setup for zero dimensional tracking                    *
- \***************************************************************/
+												solver_configuration & solve_options)
 { // need to create the homotopy
 	
   int rank = 0, patchType, ssType, numOrigVars, adjustDegrees, numGps;
@@ -1938,12 +1825,6 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 
 
 void multilintolin_eval_clear_mp(multilintolin_eval_data_mp *ED, int clearRegen, int MPType)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: clear ED                                               *
- \***************************************************************/
 {
 
   patch_eval_data_clear_mp(&ED->patch);
@@ -1984,21 +1865,21 @@ void setupmultilintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *du
 												 multilintolin_eval_data_mp *BED, int adjustDegrees,
 												 mat_mp randomizer_matrix,
 													witness_set & W,
-													solver_configuration *solve_options)
+													solver_configuration & solve_options)
 {
 	
 	int ii;
 	BED->num_variables = W.num_variables; // total number of variables
 	
   setupPreProcData(preprocFile, &BED->preProcData);
-	BED->verbose_level = solve_options->verbose_level;
+	BED->verbose_level = solve_options.verbose_level;
 	generic_setup_patch(&BED->patch,W);
 
 	
 	BED->SLP = dummyProg;
 	
 	init_mp(BED->gamma);
-	if (solve_options->use_gamma_trick==1)
+	if (solve_options.use_gamma_trick==1)
 		get_comp_rand_mp(BED->gamma); // set gamma to be random complex value
 	else
 		set_one_mp(BED->gamma);
@@ -2033,7 +1914,7 @@ void setupmultilintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *du
 //	
 //	// the standard setup
 //  setupPreProcData(preprocFile, &BED->preProcData);
-//	BED->verbose_level = solve_options->verbose_level;
+//	BED->verbose_level = solve_options.verbose_level;
 //
 //	generic_setup_patch(&BED->patch, W);
 //	
@@ -2066,7 +1947,7 @@ void setupmultilintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *du
 //	
 //	
 //	init_mp2(BED->gamma,prec);
-//	if (solve_options->use_gamma_trick==1)
+//	if (solve_options.use_gamma_trick==1)
 //		get_comp_rand_mp(BED->gamma); // set gamma to be random complex value
 //	else
 //		set_one_mp(BED->gamma);
@@ -2078,12 +1959,6 @@ void setupmultilintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *du
 
 
 void cp_multilintolin_eval_data_mp(multilintolin_eval_data_mp *BED, multilintolin_eval_data_mp *BED_mp_input, int MPType)
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES: stores a copy of BED_(t)_input to BED                  *
- \***************************************************************/
 {
 	printf("entering cp_multilintolin_eval_data_mp\nthis function is likely broken\n");
 	exit(-1);
@@ -2284,47 +2159,6 @@ int check_issoln_multilintolin_mp(endgame_data_t *EG,
 	return isSoln;
 	
 }
-
-
-
-////pass in a NULL double-pointer to vec_mp in which to return the data.
-//// \param moving_index the indices of the linears we will be moving.
-//// \param num_moving, the number of linears which are moving.
-//// \param style an integer indicating which from an ENUM structure we are performing.
-//// \param asdf the structure containing the linears to choose from.
-//void determine_new_linears(vec_mp ** new_linears, vec_mp *** asdf, int * moving_index, int num_moving, int style){
-//	
-//	
-//	
-//	switch (style) {
-//		case MESHSTYLE:
-//			
-//			break;
-//			
-//		case LISTSTYLE:
-//			
-//			//set current linear in the evaluator data's
-//			vec_mp_to_d(     ED_d->current_linear,new_linears_full_prec[kk]);
-//			
-//			
-//			if (T->MPType==2) {
-//				//q: should i reset the precision here?
-//				vec_cp_mp(ED_d->BED_mp->current_linear,new_linears_full_prec[kk]);
-//				vec_cp_mp(ED_d->BED_mp->current_linear_full_prec,new_linears_full_prec[kk]);
-//			}
-//			
-//			
-//			break;
-//			
-//			
-//		default:
-//			break;
-//	}
-//	
-//	
-//}
-
-
 
 
 

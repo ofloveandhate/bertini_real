@@ -14,6 +14,8 @@
 #ifndef _LINPROD_TO_DETJAC_H
 #define _LINPROD_TO_DETJAC_H
 
+#include "missing_bertini_headers.hpp"
+
 #include "solver.hpp"
 #include "fileops.hpp"
 #include "data_type.hpp"
@@ -22,7 +24,6 @@
 #include "programConfiguration.hpp"
 #include "postProcessing.hpp"
 #include "witnessSet.hpp"
-#include "missing_bertini_headers.hpp"
 
 
 // the mp version
@@ -104,7 +105,7 @@ int linprod_to_detjac_solver_main(int MPType,
 																	mat_mp randomizer_matrix_full_prec,
 																	vec_mp projection,
 																	witness_set *W_new,
-																	solver_configuration *solve_options);
+																	solver_configuration & solve_options);
 
 
 
@@ -113,7 +114,7 @@ int linprod_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int c
 															 mat_mp randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
 															 vec_mp projection,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 															 witness_set *W_new,
-															 solver_configuration *solve_options);
+															 solver_configuration & solve_options);
 
 
 
@@ -129,7 +130,7 @@ void linprod_to_detjac_track_d(trackingStats *trackCount,
 															 int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 															 int (*change_prec)(void const *, int),
 															 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
-															 solver_configuration *solve_options);
+															 solver_configuration & solve_options);
 
 void linprod_to_detjac_track_path_d(int pathNum, endgame_data_t *EG_out,
 																		point_data_d *Pin,
@@ -155,7 +156,7 @@ int linprod_to_detjac_setup_d(FILE **OUT, boost::filesystem::path outName,
 															mat_mp randomizer_matrix_full_prec,
 															witness_set & W,
 															vec_mp projection,
-															solver_configuration *solve_options);
+															solver_configuration & solve_options);
 
 //the new custom evaluator for this solver
 
@@ -190,7 +191,7 @@ void setuplinprodtodetjacEval_d(tracker_config_t *T,char preprocFile[], char deg
 																mat_mp randomizer_matrix_full_prec,
 																witness_set & W,
 																vec_mp projection,
-																solver_configuration *solve_options);
+																solver_configuration & solve_options);
 
 
 
@@ -211,7 +212,7 @@ int linprod_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int 
 																mat_mp randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
 																vec_mp projection,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 																witness_set *W_new,
-																solver_configuration *solve_options);
+																solver_configuration & solve_options);
 
 
 
@@ -225,7 +226,7 @@ void linprod_to_detjac_track_mp(trackingStats *trackCount,
 																int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 																int (*change_prec)(void const *, int),
 																int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
-																solver_configuration *solve_options);
+																solver_configuration & solve_options);
 
 
 void linprod_to_detjac_track_path_mp(int pathNum, endgame_data_t *EG_out,
@@ -250,7 +251,7 @@ int linprod_to_detjac_setup_mp(FILE **OUT, boost::filesystem::path outName,
 															 mat_mp randomizer_matrix,
 															 witness_set & W,
 															 vec_mp projection_full_prec,
-															 solver_configuration *solve_options);
+															 solver_configuration & solve_options);
 
 
 int linprod_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED);
@@ -278,7 +279,7 @@ void setuplinprodtodetjacEval_mp(char preprocFile[], char degreeFile[], prog_t *
 																 mat_mp randomizer_matrix,
 																 witness_set & W,
 																 vec_mp projection_full_prec,
-																 solver_configuration *solve_options);
+																 solver_configuration & solve_options);
 
 void cp_linprodtodetjac_eval_data_mp(linprodtodetjac_eval_data_mp *BED, linprodtodetjac_eval_data_mp *BED_mp_input, int MPType);
 

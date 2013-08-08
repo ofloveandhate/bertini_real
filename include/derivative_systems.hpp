@@ -32,15 +32,15 @@
 #define DERIVATIVE_SYSTEMS_H
 
 
-extern "C" {
-#include "polysolve.h"
-}
+#include "missing_bertini_headers.hpp"
+
+
 
 #include "programConfiguration.hpp"
 #include "data_type.hpp"
 
 #include "fileops.hpp"
-#include "missing_bertini_headers.hpp"
+
 
 
 

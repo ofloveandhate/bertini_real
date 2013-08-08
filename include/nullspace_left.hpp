@@ -15,19 +15,15 @@
 #ifndef NULLSPACE_H_
 #define NULLSPACE_H_
 
-extern "C" {
-#include "cascade.h"
-}
-extern "C" {
-#include "polysolve.h"
-}
+#include "missing_bertini_headers.hpp"
+
+
 #include "fileops.hpp"
 #include "data_type.hpp"
 #include "witnessSet.hpp"
 #include "solver_multilintolin.hpp"
 #include "solver_nullspace_left.hpp"
 #include "output.hpp"
-#include "missing_bertini_headers.hpp"
 
 
 #include "derivative_systems.hpp"
@@ -206,41 +202,13 @@ int compute_crit_nullspace(witness_set *W_crit_real, // the returned value
 													 int ambient_dim,
 													 int target_dim, // this should also be the number of vectors in the *pi entry
 													 int target_crit_dim,
-													 BR_configuration *program_options,
-													 solver_configuration *solve_options,
+													 BR_configuration & program_options,
+													 solver_configuration & solve_options,
 													 nullspace_config *ns_config);
 
 
 
-/**
- increments the odometer keeping track of which indices in the set of linears.
- 
- \param function_indices					the current functions we are working on building up linears for.
- \param subindices								the current linears we will use.  this is set in this function.
- \param randomized_degrees				the degrees of the pre-differentiated functions we are building up to.
- \param	num_inner_functions				cardinal number of the subset we are considering
- \param num_functions							cardinal number of the set of functions we are indexing into.
- */
-int increment_subindices(int **function_indices,
-												 int **subindices,
-												 int * randomized_degrees,
-												 int num_inner_indices, //these *should* be implicitly available.  switch to c++ plx.
-												 int num_functions);
 
-
-
-/**
- increments the monotonically increasing array of indices which keep track of which functions we are taking linears from
- 
- \param function_indices					the array we are incrementing
- \param unused_function_indices		the array of unused functions.  this is the complement of function_indices.
- \param	num_inner_functions				cardinal number of the subset we are considering
- \param num_functions							cardinal number of the set of functions we are indexing into.
- */
-int increment_function_indices(int **function_indices,
-												int **unused_function_indices,
-												int num_inner_indices,
-												int num_functions);
 
 /**
  performs the setup for the nullspace_config which is used in the compute_crit_nullspace method, and is passed into the solverNullspace. 
@@ -260,13 +228,13 @@ void nullspace_config_setup(nullspace_config *ns_config,
 														int *randomized_degrees, // an array of randomized degrees
 														mat_mp randomizer_matrix,
 														witness_set & W,
-														solver_configuration *solve_options);
+														solver_configuration & solve_options);
 
 
 
 void create_nullspace_system(boost::filesystem::path output_name,
 														 boost::filesystem::path input_name,
-														 BR_configuration * program_options,
+														 BR_configuration & program_options,
 														 nullspace_config *ns_config);
 
 

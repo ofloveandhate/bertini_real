@@ -14,6 +14,10 @@
 #ifndef _detjac_to_detjac_H
 #define _detjac_to_detjac_H
 
+#include "missing_bertini_headers.hpp"
+
+
+
 #include "determinant_derivative.hpp"
 
 #include "fileops.hpp"
@@ -21,7 +25,6 @@
 #include "programConfiguration.hpp"
 #include "postProcessing.hpp"
 #include "witnessSet.hpp"
-#include "missing_bertini_headers.hpp"
 // the mp version
 typedef struct
 {
@@ -102,7 +105,7 @@ int detjac_to_detjac_solver_main(int MPType,
 																 vec_mp old_projection_full_prec,
 																 vec_mp new_projection_full_prec,
 																 witness_set *W_new,
-																 solver_configuration *solve_options);
+																 solver_configuration & solve_options);
 
 
 
@@ -112,7 +115,7 @@ int detjac_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int cu
 															vec_mp old_projection_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 															vec_mp new_projection_full_prec,
 															witness_set *W_new,
-															solver_configuration *solve_options);
+															solver_configuration & solve_options);
 
 
 
@@ -128,7 +131,7 @@ void detjac_to_detjac_track_d(trackingStats *trackCount,
 															int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 															int (*change_prec)(void const *, int),
 															int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
-															solver_configuration *solve_options);
+															solver_configuration & solve_options);
 
 void detjac_to_detjac_track_path_d(int pathNum, endgame_data_t *EG_out,
 																	 point_data_d *Pin,
@@ -155,7 +158,7 @@ int detjac_to_detjac_setup_d(FILE **OUT, boost::filesystem::path outName,
 														 witness_set & W,
 														 vec_mp old_projection_full_prec,
 														 vec_mp new_projection_full_prec,
-														 solver_configuration *solve_options);
+														 solver_configuration & solve_options);
 
 //the new custom evaluator for this solver
 
@@ -190,7 +193,7 @@ void setupdetjactodetjacEval_d(tracker_config_t *T,char preprocFile[], char degr
 															 witness_set & W,
 															 vec_mp old_projection_full_prec,
 															 vec_mp new_projection_full_prec,
-															 solver_configuration *solve_options);
+															 solver_configuration & solve_options);
 
 
 
@@ -211,7 +214,7 @@ int detjac_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int c
 															 vec_mp old_projection_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 															 vec_mp new_projection_full_prec,
 															 witness_set *W_new,
-															 solver_configuration *solve_options);
+															 solver_configuration & solve_options);
 
 
 
@@ -225,7 +228,7 @@ void detjac_to_detjac_track_mp(trackingStats *trackCount,
 															 int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 															 int (*change_prec)(void const *, int),
 															 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
-															 solver_configuration *solve_options);
+															 solver_configuration & solve_options);
 
 
 void detjac_to_detjac_track_path_mp(int pathNum, endgame_data_t *EG_out,
@@ -251,7 +254,7 @@ int detjac_to_detjac_setup_mp(FILE **OUT, boost::filesystem::path outName,
 															witness_set & W,
 															vec_mp old_projection_full_prec,
 															vec_mp new_projection_full_prec,
-															solver_configuration *solve_options);
+															solver_configuration & solve_options);
 
 
 int detjac_to_detjac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED);
@@ -279,7 +282,7 @@ void setupdetjactodetjacEval_mp(char preprocFile[], char degreeFile[], prog_t *d
 																witness_set & W,
 																vec_mp old_projection_full_prec,
 																vec_mp new_projection_full_prec,
-																solver_configuration *solve_options);
+																solver_configuration & solve_options);
 
 void cp_detjactodetjac_eval_data_mp(detjactodetjac_eval_data_mp *BED, detjactodetjac_eval_data_mp *BED_mp_input, int MPType);
 

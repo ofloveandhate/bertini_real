@@ -13,12 +13,8 @@
 #include <mpf2mpfr.h>
 
 
-extern "C" {
-#include "cascade.h"
-}
-extern "C" {
-#include "polysolve.h"
-}
+#include "missing_bertini_headers.hpp"
+
 
 #include "fileops.hpp"
 #include "data_type.hpp"
@@ -28,7 +24,6 @@ extern "C" {
 
 #include "solver_lintolin.hpp"
 #include "solver_multilintolin.hpp"
-#include "missing_bertini_headers.hpp"
 #ifndef _SAMPLER_H
 #define _SAMPLER_H
 
@@ -71,7 +66,7 @@ void generate_new_sampling_pts(sample_data *S_new,
 															 witness_set & W,
 															 int  MPType,
 															 sampler_configuration *sampler_options,
-															 solver_configuration *solve_options);
+															 solver_configuration & solve_options);
 
 
 

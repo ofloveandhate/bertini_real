@@ -19,12 +19,10 @@
 #define _DATA_TO_SET_H
 
 #define DTSVERSION 1e-16
-extern "C" {
-#include "polysolve.h"
-}
 
+
+#include "missing_bertini_headers.hpp"
 #include "data_type.hpp"
-
 
 void purge_previous_directory(char *directoryName);
 

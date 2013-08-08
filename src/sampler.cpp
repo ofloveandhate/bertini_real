@@ -20,7 +20,7 @@ int main(int argC, char *args[])
 	curve_decomposition C;   //new data type; stores vertices, edges, etc.
 	
 	sample_data   S_old,S_new;
-	mat_mp randomizer_matrix;
+
 	
 	
 	srand(time(NULL));
@@ -52,8 +52,8 @@ int main(int argC, char *args[])
 
 	
 	// set up the solver configuration
-	solver_configuration solve_options;  solver_init_config(&solve_options);
-	get_tracker_config(&solve_options,MPType);
+	solver_configuration solve_options;  solver_init_config(solve_options);
+	get_tracker_config(solve_options,MPType);
 	parse_preproc_data("preproc_data", &solve_options.PPD);
 	
 	initMP(solve_options.T.Precision);
@@ -79,8 +79,17 @@ int main(int argC, char *args[])
 	for (int ii=0; ii<C.num_patches; ii++) {
 		W.add_patch(C.patch[ii]);
 	}
-//	W.read_patches_from_file(Dir_Name / "patches");
-	read_matrix(RandMatName, randomizer_matrix);
+
+	mat_mp randomizer_matrix; init_mat_mp2(randomizer_matrix, 0,0, solve_options.T.AMP_max_prec);
+	
+	//create the array of integers
+	int *randomized_degrees = (int *)br_malloc((num_vars)*sizeof(int));
+	
+	//get the matrix and the degrees of the resulting randomized functions.
+	make_randomization_matrix_based_on_degrees(randomizer_matrix, &randomized_degrees, W.num_variables-W.num_patches-1, solve_options.PPD.num_funcs);
+	
+	
+	
 	
 	set_initial_sample_data(&S_old,C,V,
 											 num_vars);
@@ -111,7 +120,7 @@ int main(int argC, char *args[])
 														W,
 														MPType,
 														&sampler_options,
-														&solve_options);
+														solve_options);
 	
 	
 
@@ -146,29 +155,6 @@ int main(int argC, char *args[])
 
 
 
-//
-//
-//void generate_new_sampling_pts(sample_data *S_new,
-//															 mat_mp randomizer_matrix,
-//															 sample_data S_old,
-//															 curve_decomposition C,
-//															 vertex_set *V,
-//															 witness_set W,
-//															 int MPType ,
-//															 sampler_configuration *sampler_options,
-//															 solver_configuration *solve_options)
-//{
-//	
-//	if(MPType==0)
-//		generate_new_sampling_pts_d(S_new, randomizer_matrix, S_old, C, V, W, MPType, sampler_options,solve_options);
-//	else
-//		generate_new_sampling_pts_d(S_new, randomizer_matrix, S_old, C, V, W, MPType, sampler_options, solve_options);
-//	
-//	
-//	return;
-//}
-
-
 void generate_new_sampling_pts(sample_data *S_new,
 																 mat_mp randomizer_matrix,
 																 sample_data S_old,
@@ -177,7 +163,7 @@ void generate_new_sampling_pts(sample_data *S_new,
 																 witness_set & W,
 																 int MPType,
 																 sampler_configuration *sampler_options,
-																 solver_configuration *solve_options)
+																 solver_configuration & solve_options)
 {
 
 	
@@ -596,7 +582,7 @@ void estimate_new_projection_value(comp_mp result, vec_mp left, vec_mp right, ve
 	
 	if (left->size != right->size) {
 		printf("attempting to estimate_new_projection_value on vectors of different size\n");
-		exit(8776);
+		deliberate_segfault();
 	}
 	
 	
@@ -707,12 +693,24 @@ void set_initial_refinement_flags(int *num_refinements, int **refine_flags, int 
 	int ii;
 	mpf_t dist_away;  mpf_init(dist_away);
 	
+	vec_mp temp1, temp2;  init_vec_mp(temp1,S.num_variables-1); init_vec_mp(temp2,S.num_variables-1);
+	temp1->size = temp2->size = S.num_variables-1;
+	
 	(* current_indices)[0] = S.sample_indices[current_edge][0];
 	for (ii=0; ii<(S.num_samples_each_edge[current_edge]-1); ii++) {
 		(* current_indices)[ii+1] = S.sample_indices[current_edge][ii+1];
 		
-		norm_of_difference(dist_away, V.vertices[S.sample_indices[current_edge][ii]].pt_mp,
-																	V.vertices[S.sample_indices[current_edge][ii+1]].pt_mp); // get the distance between the two adjacent points.
+		for (int jj=0; jj<S.num_variables-1; jj++) {
+			div_mp(&temp1->coord[jj],
+						 &V.vertices[S.sample_indices[current_edge][ii]].pt_mp->coord[jj+1],
+						 &V.vertices[S.sample_indices[current_edge][ii]].pt_mp->coord[0]);
+			
+			div_mp(&temp2->coord[jj],
+						 &V.vertices[S.sample_indices[current_edge][ii+1]].pt_mp->coord[jj+1],
+						 &V.vertices[S.sample_indices[current_edge][ii+1]].pt_mp->coord[0]);
+		}
+		norm_of_difference(dist_away, temp1,
+																	temp2); // get the distance between the two adjacent points.
 		if ( mpf_cmp(dist_away, sampler_options->TOL)>0 ){
 			(*refine_flags)[ii] = 1;
 			(*num_refinements)++;

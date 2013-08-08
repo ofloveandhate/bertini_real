@@ -16,17 +16,13 @@
 #define _CHECK_SELFCONJUGATE_H
 
 
-extern "C" {
-#include "polysolve.h"
-}
-
 
 #include "witnessSet.hpp"
-//extern "C" {
-//#include "partitionParse.h"
-//}
+
+#include "programConfiguration.hpp"
 #include "data_type.hpp"
 #include "fileops.hpp"
+
 #include "missing_bertini_headers.hpp"
 
 /**
@@ -37,15 +33,14 @@ extern "C" {
  \param W input witness set
  \param num_vars the number of variables in the problem, including the homogeneous one.
  \param input_file the name of the bertini input file
- \param stifle_text text to append to the system call, possibly " < /dev/null"
  
  \return boolean integer indicating whether the component is self-conjugate.
  
  */
 int checkSelfConjugate(witness_set & W,
                        int           num_vars,
-                      boost::filesystem::path input_file,
-											 std::string stifle_text);
+											 BR_configuration & program_options,
+											 boost::filesystem::path input_file);
 
 
 
@@ -56,18 +51,16 @@ int checkSelfConjugate(witness_set & W,
  \param W the input witness set
  \param num_vars the number of variables in the problem, including homogeneous.
  \param input_file the name of the bertini input file
- \param stifle_text text to append to the command to stifle screen output.
  */
 int get_incidence_number(const witness_set & W,
 												 int           num_vars,
-												 boost::filesystem::path input_file,
-												 std::string stifle_text);
+												 BR_configuration & program_options,
+												 boost::filesystem::path input_file);
 
 /**
  write a single point to "member_points"
  
  \param point_to_write the homogeneous point to write
- \param the format
  */
 int write_member_points_singlept(point_mp point_to_write);
 
@@ -75,7 +68,6 @@ int write_member_points_singlept(point_mp point_to_write);
   write a single point, and its complex conjugate, to "member_points"
  
  \param point_to_write the point to write
- \param fmt the format of the string.
  */
 int write_member_points_sc(point_mp point_to_write);
 

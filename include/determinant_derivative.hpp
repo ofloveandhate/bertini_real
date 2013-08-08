@@ -14,12 +14,7 @@
 #ifndef _DETERMINANT_DERIVATIVE_H
 #define _DETERMINANT_DERIVATIVE_H
 
-extern "C" {
-#include "cascade.h"
-}
-extern "C" {
-#include "polysolve.h"
-}
+#include "missing_bertini_headers.hpp"
 
 
 
@@ -29,7 +24,7 @@ extern "C" {
 #include "fileops.hpp"
 #include "data_type.hpp"
 
-#include "missing_bertini_headers.hpp"
+
 
 
 //the amount by which to perturb for numerical derivative

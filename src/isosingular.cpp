@@ -3,10 +3,9 @@
 
 
 int isosingular_deflation(int *num_deflations, int **deflation_sequence,
+													BR_configuration & program_options,
 													boost::filesystem::path inputFile,
 													boost::filesystem::path witness_point_filename,
-													std::string bertini_command,
-													std::string matlab_command,
 													int max_deflations,
 													int dim, int component_number)
 /***************************************************************\
@@ -23,7 +22,7 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
   FILE *IN = NULL, *OUT = NULL;
 
 	std::stringstream converter;
-	converter << bertini_command << " input_stabilization_test " << witness_point_filename;
+	converter << program_options.bertini_command << " input_stabilization_test " << witness_point_filename;
 	std::string bertini_system_command = converter.str();
 	converter.clear(); converter.str("");
 	
@@ -68,7 +67,7 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
   // loop until successful or run out of iterations
   while (*num_deflations < max_deflations && !success)
   { // create input file for deflation
-    isosingular_deflation_iteration(declarations, "func_input_real", matlab_command, nullSpace, *num_deflations + 1);
+    isosingular_deflation_iteration(declarations, "func_input_real", program_options.matlab_command, nullSpace, *num_deflations + 1);
 
     // setup input file to test for stabilization
     stabilization_input_file("input_stabilization_test", "func_input_real", "config_real");

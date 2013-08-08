@@ -16,7 +16,7 @@
 #include <boost/filesystem.hpp>
 #include <iostream>
 
-#include <mpi.h>
+
 
 #define BERTINI_REAL_VERSION_STRING "0.0.101"
 
@@ -26,21 +26,18 @@
 #define _PROGRAM_STARTUP_H
 
 
-extern "C" {
-#include "polysolve.h"
-}
-extern "C" {
-#include "cascade.h"
-}
-
-//#include "solver.hpp"
-#include "data_type.hpp"
 #include "missing_bertini_headers.hpp"
 
-// enum for solver choice
-enum {NULLSPACE = 300, LINPRODTODETJAC, DETJACTODETJAC, LINTOLIN, MULTILIN};
 
-enum {TYPE_CONFIRMATION = 100, DATA_TRANSMISSION};
+#include "data_type.hpp"
+
+
+// enum for worker mode choice
+enum {NULLSPACE = 3000, LINPRODTODETJAC, DETJACTODETJAC, LINTOLIN, MULTILIN};
+
+enum {TERMINATE = 2000, INITIAL_STATE};
+
+enum {PARSING = 1000, TYPE_CONFIRMATION, DATA_TRANSMISSION};
 
 
 ///////////
@@ -59,11 +56,11 @@ public:
 	
 	parallelism_config(){
 		
-		my_communicator = MPI_COMM_WORLD;
+
 		
 		
-		MPI_Comm_size(my_communicator, &this->numprocs);
-		MPI_Comm_rank(my_communicator, &this->my_id);
+		MPI_Comm_size(MPI_COMM_WORLD, &this->numprocs);
+		MPI_Comm_rank(MPI_COMM_WORLD, &this->my_id);
 		
 		
 		if (my_id==0)
@@ -71,12 +68,52 @@ public:
 		else
 			worker_level = 1;
 		
+		headnode = 0;
+		
+		
+		
+		
+		
+		
+//		MPI_Group orig_group, new_group;
+//		
+//		/* Extract the original group handle */
+//		
+//		MPI_Comm_group(MPI_COMM_WORLD, &orig_group);
+//		
+//		/* Create new communicator and then perform collective communications */
+//		
+//		MPI_Comm_create(MPI_COMM_WORLD, orig_group, &my_communicator);
+//		
+//		MPI_Comm_size(my_communicator, &this->numprocs);
+//		MPI_Comm_rank(my_communicator, &this->my_id);
+		
+		
+		
+		
+	}
+	
+	bool is_head()
+	{
+		if (my_id == headnode)
+			return true;
+		else
+			return false;
+	}
+	
+	
+	bool use_parallel(){
+		if (numprocs>1)
+			return true;
+		else
+			return false;
 	}
 	
 	
 	
 	
-	int my_id;
+	int headnode;
+	int my_id, my_id_global;
 	int numprocs;
 	MPI_Comm   my_communicator;
 	
@@ -85,12 +122,19 @@ public:
 	void abort(int why){
 		MPI_Abort(my_communicator,why);
 	}
+	
+	int head(){return headnode;};
+	int id(){ return my_id;};
+	int level(){return worker_level;};
+	int size(){ return numprocs;};
+	
+		
 };
 
 
 
 
-class prog_config
+class prog_config : public parallelism_config
 {
 	
 private:
@@ -99,7 +143,6 @@ private:
 	
 public:
 	
-	parallelism_config mpi_config;
 	
 	int verbose_level;
 	
@@ -110,6 +153,8 @@ public:
 	void move_to_temp();
 	
 	void move_to_called();
+	
+	
 };
 
 
@@ -138,7 +183,7 @@ public:
 	
 	boost::filesystem::path current_working_filename;
 	
-	
+	std::string bertini_command;
 	std::string matlab_command;
 	int verbose_level;
 	
@@ -169,7 +214,7 @@ public:
 	void display_current_options();
 	
 	
-	BR_configuration()
+	BR_configuration() : prog_config()
 	{
 		
 		this->max_deflations = 10;
@@ -193,6 +238,7 @@ public:
 		this->stifle_membership_screen = 1;
 		this->stifle_text = " > /dev/null ";
 		
+		this->bertini_command = "bertini_serial";
 		this->matlab_command = "matlab -nosplash";
 		this->verbose_level = 0; // default to 0
 		

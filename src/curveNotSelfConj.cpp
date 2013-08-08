@@ -9,8 +9,8 @@ void computeCurveNotSelfConj(witness_set & W_in,
 														 vertex_set			&V,
                              int           num_vars,
                              boost::filesystem::path input_file,
-														 BR_configuration * program_options,
-														 solver_configuration * solve_options)
+														 BR_configuration & program_options,
+														 solver_configuration & solve_options)
 /***************************************************************\
  * USAGE: compute the isolated points for Non-Self-Conjugate case            *
  * ARGUMENTS: witness set, projection, # of variables, name of input file*
@@ -84,7 +84,7 @@ void computeCurveNotSelfConj(witness_set & W_in,
 			dot_product_mp(temp_vertex.projVal_mp, temp_vertex.pt_mp, pi_mp);
 			
 			if (C.index_in_vertices(V, temp_vertex.pt_mp, temp_vertex.projVal_mp,
-															solve_options->T) ==-1
+															solve_options.T) ==-1
 					)
 				C.add_vertex(V,temp_vertex);
 		}

@@ -14,12 +14,9 @@
 #ifndef _CURVE_SELFCONJ_H
 #define _CURVE_SELFCONJ_H
 
-extern "C" {
-#include "cascade.h"
-}
-extern "C" {
-#include "polysolve.h"
-}
+#include "missing_bertini_headers.hpp"
+
+
 
 #include "fileops.hpp"
 #include "data_type.hpp"
@@ -34,7 +31,7 @@ extern "C" {
 #include "solver_detjactodetjac.hpp"
 
 #include "nullspace_left.hpp"
-#include "missing_bertini_headers.hpp"
+
 #include "output.hpp"
 /**
 //the main function for computing cell decom for a curve.  only for use on a self-conjugate component.  
@@ -45,7 +42,6 @@ extern "C" {
  \param C		curve decomposition structure into which to place computed data.
  \param V		vertex set structure into which to place collected data.
  \param num_vars		the total number of variables for the problem.
- \param num_var_gps	the number of variable groups.  should be 1.
  \param options program configuration.
  \param solve_options solver configuration.
  */
@@ -55,11 +51,28 @@ void computeCurveSelfConj(boost::filesystem::path inputFile,
 													curve_decomposition &C,
 													vertex_set &V,
 													int num_vars,
-													BR_configuration *options,
-													solver_configuration *solve_options);
+													BR_configuration & options,
+													solver_configuration & solve_options);
 
 
 
+int slice_and_dice(witness_set & W_curve,
+							witness_set & W_crit_real,
+							mat_mp randomizer_matrix,
+							vec_mp *pi,
+							BR_configuration & program_options,
+							solver_configuration solve_options,
+							curve_decomposition & C,
+							vertex_set & V);
+
+
+int curve_compute_critical_points(witness_set & W_curve,
+																	mat_mp randomizer_matrix,
+																	int *randomized_degrees,
+																	vec_mp *pi,
+																	BR_configuration & program_options,
+																	solver_configuration solve_options,
+																	witness_set & W_crit_real);
 /**
  the linprodtodetjac method for getting the critical points
  */
@@ -68,8 +81,8 @@ int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
 																	mat_mp n_minusone_randomizer_matrix, 
 																	vec_mp pi,
 																	int num_new_linears,
-																	BR_configuration *program_options,
-																	solver_configuration *solve_options);
+																	BR_configuration & program_options,
+																	solver_configuration & solve_options);
 
 
 
@@ -79,8 +92,8 @@ int curve_get_additional_critpts(witness_set *W_crit_real,
 							 mat_mp randomizer_matrix,
 							 vec_mp pi,
 							 int *randomized_degrees,
-							 BR_configuration *program_options,
-							 solver_configuration *solve_options);
+							 BR_configuration & program_options,
+							 solver_configuration & solve_options);
 
 //
 ///**
@@ -118,21 +131,17 @@ void sort_for_membership(char * input_file,
 
 
 
-void sort_increasing_by_real(vec_mp *projections_sorted, int **index_tracker, vec_mp projections_input);
 
-void make_randomization_matrix_based_on_degrees(mat_mp randomization_matrix, int ** randomized_degrees,
-																								int num_variables, int num_funcs);
-int compare_integers_decreasing(const void * left_in, const void * right_in);
 
 
 
 int verify_projection_ok(witness_set & W,
 												 vec_mp projection,
-												 solver_configuration *solve_options);
+												 solver_configuration & solve_options);
 
 int verify_projection_ok(witness_set & W,
 												 mat_mp randomizer_matrix,
 												 vec_mp projection,
-												 solver_configuration *solve_options);
+												 solver_configuration & solve_options);
 
 #endif

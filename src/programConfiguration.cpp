@@ -21,7 +21,8 @@ void parse_input_file(boost::filesystem::path filename)
   int my_id = 0, num_processes = 1, headnode = 0; // headnode is always 0
 	int MPType;
 	
-	
+	int bcastme = PARSING;
+	MPI_Bcast(&bcastme, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	//end parser-bertini essentials
 	
 
@@ -151,7 +152,9 @@ void BR_configuration::display_current_options()
 	printf("witness_set_filename: %s\n",this->witness_set_filename.c_str());
 	
 	std::cout << "stifle_text: " << this->stifle_text << std::endl;
-
+	std::cout << "bertini_command: " << this->bertini_command << std::endl;
+	std::cout << "output_directory base name: " << this->output_dir << std::endl;
+	
 }
 
 
