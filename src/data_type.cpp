@@ -1,5 +1,144 @@
 #include "data_type.hpp"
 
+
+//enum {SUCCESSFUL=0, CRITICAL_FAILURE=-10, TOLERABLE_FAILURE=-1};
+////The following lets us use words instead of numbers to indicate vertex type.
+//enum {UNSET=-10, CRITICAL=0, NEW=1, MIDPOINT=2, ISOLATED=-1, SAMPLE_POINT=3};
+//// enum for worker mode choice
+
+
+
+std::string enum_lookup(int flag)
+{
+	switch (flag) {
+		case SUCCESSFUL:
+			return "SUCCESSFUL";
+			break;
+		
+		case CRITICAL_FAILURE:
+			return "CRITICAL_FAILURE";
+			break;
+			
+		case TOLERABLE_FAILURE:
+			return "TOLERABLE_FAILURE";
+			break;
+			
+		case UNSET:
+			return "UNSET";
+			break;
+			
+		case CRITICAL:
+			return "CRITICAL";
+			break;
+			
+		case NEW:
+			return "NEW";
+			break;
+			
+		case MIDPOINT:
+			return "MIDPOINT";
+			break;
+			
+		case ISOLATED:
+			return "ISOLATED";
+			break;
+			
+			
+			
+			//enum {NULLSPACE = 3000, LINPRODTODETJAC, DETJACTODETJAC, LINTOLIN, MULTILIN};
+			//enum {TERMINATE = 2000, INITIAL_STATE};
+
+			
+			
+		case NULLSPACE:
+			return "NULLSPACE";
+			break;
+			
+		case LINPRODTODETJAC:
+			return "LINPRODTODETJAC";
+			break;
+			
+		case DETJACTODETJAC:
+			return "DETJACTODETJAC";
+			break;
+			
+		case LINTOLIN:
+			return "LINTOLIN";
+			break;
+			
+		case MULTILIN:
+			return "MULTILIN";
+			break;
+			
+		case TERMINATE:
+			return "TERMINATE";
+			break;
+			
+		case INITIAL_STATE:
+			return "INITIAL_STATE";
+			break;
+			
+			//enum {PARSING = 1000, TYPE_CONFIRMATION, DATA_TRANSMISSION, NUMPACKETS};
+			//enum {INACTIVE = 0, ACTIVE};
+			//enum {VEC_MP = 4000, VEC_D, MAT_MP, MAT_D, COMP_MP, COMP_D, INDICES};
+			
+			
+		case PARSING:
+			return "PARSING";
+			break;
+			
+		case TYPE_CONFIRMATION:
+			return "TYPE_CONFIRMATION";
+			break;
+			
+		case DATA_TRANSMISSION:
+			return "DATA_TRANSMISSION";
+			break;
+			
+		case NUMPACKETS:
+			return "NUMPACKETS";
+			break;
+			
+		case INACTIVE:
+			return "INACTIVE";
+			break;
+			
+		case VEC_MP:
+			return "VEC_MP";
+			break;
+			
+		case VEC_D:
+			return "VEC_D";
+			break;
+			
+		case MAT_MP:
+			return "MAT_MP";
+			break;
+			
+		case MAT_D:
+			return "MAT_D";
+			break;
+			
+		case COMP_MP:
+			return "COMP_MP";
+			break;
+		
+		case COMP_D:
+			return "COMP_D";
+			break;
+			
+		case INDICES:
+			return "INDICES";
+			break;
+			
+			
+		default:
+			break;
+	}
+	
+	return "unknown...  check out data_type.cpp";
+}
+
 void * br_malloc(size_t size)
 /***************************************************************\
  * USAGE:                                                        *
@@ -1298,9 +1437,12 @@ void receive_preproc_data(preproc_data *PPD){
 	
 	
 	
-	int size = PPD->num_hom_var_gp + PPD->num_var_gp;
-	MPI_Bcast(PPD->type, size, MPI_INT, 0, MPI_COMM_WORLD);
-	MPI_Bcast(PPD->size, size, MPI_INT, 0, MPI_COMM_WORLD);
+	int num_groups = PPD->num_hom_var_gp + PPD->num_var_gp;
+	
+	PPD->type = (int *) br_malloc(num_groups * sizeof(int));
+	PPD->size = (int *) br_malloc(num_groups * sizeof(int));
+	MPI_Bcast(PPD->type, num_groups, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(PPD->size, num_groups, MPI_INT, 0, MPI_COMM_WORLD);
 	
 	delete(buffer);
 }
@@ -1319,7 +1461,7 @@ void send_patch_d(patch_eval_data_d * patch)
 	create_comp_d(&mpi_comp_d);
 	create_patch_eval_data_d_int(&mpi_patch_d_int);
 	// setup PED_int
-	cp_patch_d_int(&PED_int, &patch, &patch_coeff, 0);
+	cp_patch_d_int(&PED_int, patch, &patch_coeff, 0);
 	
 	// broadcast patch structures
 	MPI_Bcast(&PED_int, 1, mpi_patch_d_int, 0, MPI_COMM_WORLD);
@@ -1346,17 +1488,199 @@ void receive_patch_d(patch_eval_data_d * patch)
 	MPI_Bcast(&PED_int, 1, mpi_patch_d_int, 0, MPI_COMM_WORLD);
 	// setup patch_coeff
 	patch_coeff = (comp_d *)bmalloc(PED_int.patchCoeff_rows * PED_int.patchCoeff_cols * sizeof(comp_d));
-	MPI_Bcast(&patch_coeff, PED_int.patchCoeff_rows * PED_int.patchCoeff_cols, mpi_comp_d, 0, MPI_COMM_WORLD);
+	MPI_Bcast(patch_coeff, PED_int.patchCoeff_rows * PED_int.patchCoeff_cols, mpi_comp_d, 0, MPI_COMM_WORLD);
 	
 	
-	// setup patch
-	cp_patch_d_int(&patch, &PED_int, &patch_coeff, 1);
+// setup patch
+	cp_patch_d_int(patch, &PED_int, &patch_coeff, 1);  // patch_coeff is freed in here
 	
 	// free mpi_comp_d & mpi_patch_d_int
 	MPI_Type_free(&mpi_comp_d);
 	MPI_Type_free(&mpi_patch_d_int);
 }
 
+
+
+
+void send_vec_mp(vec_mp b, int target)
+/***************************************************************\
+ * USAGE:                                                        *
+ * ARGUMENTS:                                                    *
+ * RETURN VALUES:                                                *
+ * NOTES: broadcasts b                                           *
+ \***************************************************************/
+{
+  MPI_Datatype mpi_vec_mp_int;
+  point_mp_int b_int;
+  char *bstr = NULL;
+	
+  // create the datatypes mpi_vec_mp_int
+  create_point_mp_int(&mpi_vec_mp_int);
+	
+	cp_point_mp_int(&b_int, b, &bstr, 0, 0, 0);
+	
+	// send b_int and bstr
+	MPI_Send(&b_int, 1, mpi_vec_mp_int, target, VEC_MP, MPI_COMM_WORLD);
+	MPI_Send(bstr, b_int.totalLength, MPI_CHAR, target,  VEC_MP, MPI_COMM_WORLD);
+	
+	// clear bstr
+	free(bstr);
+
+
+  // clear mpi_vec_mp_int
+  MPI_Type_free(&mpi_vec_mp_int);
+	
+  return;
+}
+
+
+
+void receive_vec_mp(vec_mp b, int source)
+/***************************************************************\
+ * USAGE:                                                        *
+ * ARGUMENTS:                                                    *
+ * RETURN VALUES:                                                *
+ * NOTES: broadcasts b                                           *
+ \***************************************************************/
+{
+  MPI_Datatype mpi_vec_mp_int;
+  point_mp_int b_int;
+  char *bstr = NULL;
+	
+  // create the datatypes mpi_vec_mp_int
+  create_point_mp_int(&mpi_vec_mp_int);
+	
+	MPI_Status statty_mc_gatty;
+
+	MPI_Recv(&b_int, 1, mpi_vec_mp_int, source,  VEC_MP, MPI_COMM_WORLD, &statty_mc_gatty);
+	bstr = (char *)bmalloc(b_int.totalLength * sizeof(char));
+	MPI_Recv(bstr, b_int.totalLength, MPI_CHAR, source,  VEC_MP, MPI_COMM_WORLD, &statty_mc_gatty);
+	
+	// setup b and clear bstr
+	cp_point_mp_int(b, &b_int, &bstr, 1, 1, 1);
+	
+  // clear mpi_vec_mp_int
+  MPI_Type_free(&mpi_vec_mp_int);
+	
+  return;
+}
+
+
+
+
+void send_vec_d(vec_d b, int target)
+/***************************************************************\
+ * USAGE:                                                        *
+ * ARGUMENTS:                                                    *
+ * RETURN VALUES:                                                *
+ * NOTES: broadcasts b                                           *
+ \***************************************************************/
+{
+	MPI_Datatype mpi_point_d_int, mpi_comp_d;
+  point_d_int b_int;
+  comp_d *entries = NULL;
+	
+  // create the datatype mpi_point_d_int & mpi_comp_d
+  create_point_d_int(&mpi_point_d_int);
+  create_comp_d(&mpi_comp_d);
+	
+	cp_point_d_int(&b_int, b, &entries, 0, 0, 0);
+	
+	// send b_int
+	MPI_Send(&b_int, 1, mpi_point_d_int, target, VEC_D, MPI_COMM_WORLD);
+	// send entries
+	MPI_Send(entries, b_int.size, mpi_comp_d, target, VEC_D, MPI_COMM_WORLD);
+	
+	// clear entries
+	free(entries);
+
+	
+  // clear mpi_point_d_int & mpi_comp_d
+  MPI_Type_free(&mpi_point_d_int);
+  MPI_Type_free(&mpi_comp_d);
+	
+
+	
+//  MPI_Datatype mpi_vec_d_int;
+//  point_d_int b_int;
+//  char *bstr = NULL;
+//	
+//  // create the datatypes mpi_vec_d_int
+//  create_point_d_int(&mpi_vec_d_int);
+//	
+//	cp_point_d_int(&b_int, b, &bstr, 0, 0, 0);
+//	
+//	// send b_int and bstr
+//	MPI_Send(&b_int, 1, mpi_vec_d_int, target, VEC_MP, MPI_COMM_WORLD);
+//	MPI_Send(bstr, b_int.totalLength, MPI_CHAR, target,  VEC_MP, MPI_COMM_WORLD);
+//	
+//	// clear bstr
+//	free(bstr);
+//	
+//	
+//  // clear mpi_vec_d_int
+//  MPI_Type_free(&mpi_vec_d_int);
+	
+  return;
+}
+
+
+
+void receive_vec_d(vec_d b, int source)
+/***************************************************************\
+ * USAGE:                                                        *
+ * ARGUMENTS:                                                    *
+ * RETURN VALUES:                                                *
+ * NOTES: broadcasts b                                           *
+ \***************************************************************/
+{
+	MPI_Datatype mpi_point_d_int, mpi_comp_d;
+  point_d_int b_int;
+  comp_d *entries = NULL;
+	
+  // create the datatype mpi_point_d_int & mpi_comp_d
+  create_point_d_int(&mpi_point_d_int);
+  create_comp_d(&mpi_comp_d);
+
+	MPI_Status statty_mc_gatty;
+	
+	MPI_Recv(&b_int, 1, mpi_point_d_int, source, VEC_D, MPI_COMM_WORLD, &statty_mc_gatty);
+	
+	entries = (comp_d *)bmalloc(b_int.size * sizeof(comp_d));
+	// recv entries
+	MPI_Recv(entries, b_int.size, mpi_comp_d, source, VEC_D, MPI_COMM_WORLD, &statty_mc_gatty);
+	
+	// setup b
+	cp_point_d_int(b, &b_int, &entries, 1, 1, 1);
+	
+  // clear mpi_point_d_int & mpi_comp_d
+  MPI_Type_free(&mpi_point_d_int);
+  MPI_Type_free(&mpi_comp_d);
+	
+
+	
+	
+//  MPI_Datatype mpi_vec_d_int;
+//  point_d_int b_int;
+//  comp_d *bstr = NULL;
+//	
+//  // create the datatypes mpi_vec_d_int
+//  create_point_d_int(&mpi_vec_d_int);
+//	
+//	MPI_Status statty_mc_gatty;
+//	
+//	MPI_Recv(&b_int, 1, mpi_vec_d_int, source,  VEC_MP, MPI_COMM_WORLD, &statty_mc_gatty);
+//	bstr = (char *)bmalloc(b_int.totalLength * sizeof(char));
+//	MPI_Recv(bstr, b_int.totalLength, MPI_CHAR, source,  VEC_MP, MPI_COMM_WORLD, &statty_mc_gatty);
+//	
+//	// setup b and clear bstr
+//	cp_point_d_int(b, &b_int, &bstr, 1, 1, 1);
+//	
+//  // clear mpi_vec_d_int
+//  MPI_Type_free(&mpi_vec_d_int);
+	
+  return;
+}
 
 
 

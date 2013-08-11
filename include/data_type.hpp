@@ -34,14 +34,27 @@
 
 /*** low-level data types. ***/
 
-
-//The following lets us use words instead of numbers to indicate vertex type.
-enum {UNSET=-10, CRITICAL=0, NEW=1, MIDPOINT=2, ISOLATED=-1, SAMPLE_POINT=3};
-
 enum {SUCCESSFUL=0, CRITICAL_FAILURE=-10, TOLERABLE_FAILURE=-1};
 
 
 
+//The following lets us use words instead of numbers to indicate vertex type.
+enum {UNSET= 100, CRITICAL, NEW, MIDPOINT, ISOLATED, SAMPLE_POINT};
+
+
+
+// enum for worker mode choice
+enum {NULLSPACE = 3000, LINPRODTODETJAC, DETJACTODETJAC, LINTOLIN, MULTILIN};
+
+enum {TERMINATE = 2000, INITIAL_STATE};
+
+enum {PARSING = 1000, TYPE_CONFIRMATION, DATA_TRANSMISSION, NUMPACKETS};
+
+enum {INACTIVE = 500, ACTIVE};
+
+enum {VEC_MP = 4000, VEC_D, MAT_MP, MAT_D, COMP_MP, COMP_D, INDICES};
+
+std::string enum_lookup(int flag);
 
 void * br_malloc(size_t size);
 
@@ -618,5 +631,12 @@ void receive_patch_d(patch_eval_data_d * patch);
 
 void send_preproc_data(preproc_data *PPD);
 void receive_preproc_data(preproc_data *PPD);
+
+
+void send_vec_mp(vec_mp b, int target);
+void receive_vec_mp(vec_mp b, int source);
+
+void send_vec_d(vec_d b, int target);
+void receive_vec_d(vec_d b, int source);
 #endif
 

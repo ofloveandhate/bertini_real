@@ -118,6 +118,7 @@ public:
 	int MPType; ///< the multiple precision type for solve
 	preproc_data preProcData; ///< information related to the SLP for system
 	prog_t *SLP; ///< the SLP
+	
 	int num_variables; ///< the grand total number of variables to be computed on in the problem at hand 
 	
 	// these function handles are required for all solvers.
@@ -141,22 +142,9 @@ public:
 		this->MPType = new_mp_type;
 	}
 	
-	void copy(const solver & other){
-		cp_preproc_data(&this->preProcData, other.preProcData);
-		cp_prog_t(this->SLP, other.SLP);
-		
-		this->is_solution_checker_d = other.is_solution_checker_d;
-		this->is_solution_checker_mp = other.is_solution_checker_mp;
-		
-		this->evaluator_function_mp = other.evaluator_function_mp;
-		this->evaluator_function_d = other.evaluator_function_d;
-		this->precision_changer = other.precision_changer;
-		this->dehomogenizer = other.dehomogenizer;
-		
-		this->num_variables = other.num_variables;
-		this->MPType = other.MPType;
-		this->verbose_level = other.verbose_level;
-		this->num_steps = other.num_steps;
+	~solver()
+	{
+		freeEvalProg(this->MPType);
 	}
 	
 	int send();
@@ -167,9 +155,13 @@ public:
 	{
 		setupPreProcData(const_cast<char *>(preproc_file.c_str()), &this->preProcData);
 		this->SLP = _SLP; // assign the pointer
+		this->have_SLP = true;
 	}
 	
 private:
+	
+	bool have_SLP;
+	
 	void init()
 	{
 		
@@ -178,6 +170,8 @@ private:
 		
 		this->MPType = 2;
 		SLP = NULL;
+		have_SLP = false;
+		
 		num_variables = 0;
 		
 		this->num_steps = 0;
@@ -194,7 +188,36 @@ private:
 	// these virtual functions will need to be programmed into the derived classes.
 	
 	
-
+	void copy(const solver & other){
+		cp_preproc_data(&this->preProcData, other.preProcData);
+		
+		if (other.have_SLP) {
+			
+			if (this->have_SLP) {
+				clearProg(this->SLP, this->MPType, 1);
+			}
+			
+			cp_prog_t(this->SLP, other.SLP);
+			this->have_SLP = true;
+		}
+		else if (this->have_SLP) {
+			clearProg(this->SLP, this->MPType, 1);
+		}
+		
+		
+		this->is_solution_checker_d = other.is_solution_checker_d;
+		this->is_solution_checker_mp = other.is_solution_checker_mp;
+		
+		this->evaluator_function_mp = other.evaluator_function_mp;
+		this->evaluator_function_d = other.evaluator_function_d;
+		this->precision_changer = other.precision_changer;
+		this->dehomogenizer = other.dehomogenizer;
+		
+		this->num_variables = other.num_variables;
+		this->MPType = other.MPType;
+		this->verbose_level = other.verbose_level;
+		this->num_steps = other.num_steps;
+	}
 };  // re: generic solver BASE class
 
 
@@ -313,15 +336,12 @@ public:
 
 	
 	solver_d() : solver(){
-		init_d(gamma);
-		init_mat_d(randomizer_matrix,0,0);
-
+		init();
 	}; // re: default constructor
 	
 	
 	solver_d(int new_mp_type) : solver(new_mp_type){
-		init_d(gamma);
-		init_mat_d(randomizer_matrix,0,0);
+		init();
 	}; // re: default constructor
 	
 	
@@ -356,6 +376,13 @@ public:
 	}
 	
 private:
+	
+	
+	void init()
+	{
+		init_d(gamma);
+		init_mat_d(randomizer_matrix,0,0);
+	}
 	
 	void copy(const solver_d & other){
 		
@@ -418,6 +445,13 @@ void generic_tracker_loop(trackingStats *trackCount,
 													post_process_t *endPoints,
 													solver_d * ED_d, solver_mp * ED_mp,
 													solver_configuration & solve_options);
+
+void generic_tracker_loop_master(trackingStats *trackCount,
+																 FILE * OUT, FILE * MIDOUT,
+																 witness_set & W,  // was the startpts file pointer.
+																 post_process_t *endPoints,
+																 solver_d * ED_d, solver_mp * ED_mp,
+																 solver_configuration & solve_options);
 
 
 void generic_tracker_loop_worker(trackingStats *trackCount,

@@ -543,7 +543,6 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	}
 	
 
-	
 	// evaluate the SLP to get the system's whatnot.
 	evalProg_d(temp_function_values, parVals, parDer, temp_jacobian_functions, temp_jacobian_parameters, current_variable_values, pathVars, BED->SLP);
 	
