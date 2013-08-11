@@ -101,11 +101,6 @@ void BRpostProcessing(post_process_t *endPoints, witness_set *W_new, int num_pts
 
 
 
-
-void call_for_help(int solver_type, parallelism_config & mpi_config);
-
-
-
 class solver
 {
 public:
@@ -259,7 +254,7 @@ public:
 		init_mat_mp(randomizer_matrix,0,0);
 		
 		if (this->MPType == 2 ) {
-			gamma_rat = (mpq_t *)bmalloc(2 * sizeof(mpq_t));
+			gamma_rat = (mpq_t *)br_malloc(2 * sizeof(mpq_t));
 			init_rat(gamma_rat);
 			init_mat_mp2(randomizer_matrix_full_prec,0,0,1024);
 		}

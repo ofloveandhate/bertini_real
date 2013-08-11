@@ -1051,7 +1051,7 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 	
 	
 	if (solve_options.use_parallel()) {
-		call_for_help(NULLSPACE, solve_options);
+		solve_options.call_for_help(NULLSPACE);
 	}
 	
 	W_new->num_variables = W.num_variables;
@@ -1148,7 +1148,7 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 	
 	
 	
-	post_process_t *endPoints = (post_process_t *)bmalloc(W.num_pts * sizeof(post_process_t)); //overallocate, expecting full
+	post_process_t *endPoints = (post_process_t *)br_malloc(W.num_pts * sizeof(post_process_t)); //overallocate, expecting full
 	
 	
 	// call the file setup function
@@ -3093,7 +3093,7 @@ void check_nullspace_evaluator(point_mp current_values,
 //  }
 //
 //
-//	post_process_t *endPoints = (post_process_t *)bmalloc(W.num_pts * sizeof(post_process_t)); //overallocate, expecting full number of solutions.
+//	post_process_t *endPoints = (post_process_t *)br_malloc(W.num_pts * sizeof(post_process_t)); //overallocate, expecting full number of solutions.
 //
 //
 //
@@ -3255,7 +3255,7 @@ void check_nullspace_evaluator(point_mp current_values,
 //    }
 //  }
 //
-//	post_process_t *endPoints = (post_process_t *)bmalloc(W.num_pts * sizeof(post_process_t)); //overallocate, expecting full
+//	post_process_t *endPoints = (post_process_t *)br_malloc(W.num_pts * sizeof(post_process_t)); //overallocate, expecting full
 //
 //	if (T.endgameNumber == 3)
 //	{ // use the track-back endgame
@@ -3520,7 +3520,7 @@ void check_nullspace_evaluator(point_mp current_values,
 //
 //
 //	point_data_mp *startPts = NULL;
-//	startPts = (point_data_mp *)bmalloc(W.num_pts * sizeof(point_data_mp));
+//	startPts = (point_data_mp *)br_malloc(W.num_pts * sizeof(point_data_mp));
 //
 //
 //
@@ -3661,7 +3661,7 @@ void check_nullspace_evaluator(point_mp current_values,
 //  *midOUT = safe_fopen_write(midName);
 //
 //  if (T->MPType == 2) // using AMP - need to allocate space to store BED_mp
-//    ED->BED_mp = new nullspacejac_eval_data_mp(2);//(nullspacejac_eval_data_mp *)bmalloc(1 * sizeof(nullspacejac_eval_data_mp));
+//    ED->BED_mp = new nullspacejac_eval_data_mp(2);//(nullspacejac_eval_data_mp *)br_malloc(1 * sizeof(nullspacejac_eval_data_mp));
 //  else
 //    ED->BED_mp = NULL;
 //
@@ -4223,7 +4223,7 @@ void check_nullspace_evaluator(point_mp current_values,
 //	//  cp_square_system_d(&BED->squareSystem, &BED_d_input->squareSystem);
 //  cp_patch_d(&BED->patch, &BED_d_input->patch);
 //	//  cp_start_system_d(&BED->startSystem, &BED_d_input->startSystem);
-//	BED->SLP = (prog_t *)bmalloc(1 * sizeof(prog_t));
+//	BED->SLP = (prog_t *)br_malloc(1 * sizeof(prog_t));
 //  cp_prog_t(BED->SLP, BED_d_input->SLP);
 //
 //
@@ -4232,7 +4232,7 @@ void check_nullspace_evaluator(point_mp current_values,
 //	set_d(BED->gamma, BED_d_input->gamma);
 //  if (MPType == 2)
 //  { // need to also setup MP versions since using AMP
-//    BED->BED_mp = (nullspacejac_eval_data_mp *)bmalloc(1 * sizeof(nullspacejac_eval_data_mp));
+//    BED->BED_mp = (nullspacejac_eval_data_mp *)br_malloc(1 * sizeof(nullspacejac_eval_data_mp));
 //
 //    cp_preproc_data(&BED->BED_mp->preProcData, &BED_mp_input->preProcData);
 //    // simply point to the SLP that was setup in BED

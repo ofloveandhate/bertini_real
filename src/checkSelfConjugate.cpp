@@ -53,7 +53,7 @@ int checkSelfConjugate(witness_set & W,
   system(bertini_command.c_str());
 	
 	int *component_numbers;
-	component_numbers = (int *)bmalloc(2*sizeof(int));
+	component_numbers = (int *)br_malloc(2*sizeof(int));
 	
 	read_incidence_matrix(component_numbers);
 

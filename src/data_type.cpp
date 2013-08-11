@@ -158,13 +158,38 @@ void * br_malloc(size_t size)
     {
 //			raise(SIGINT);
       printf("ERROR: bertini_real's malloc was unable to allocate memory (%d)!\n", (int) size);
-      br_exit(ERROR_MEMORY_ALLOCATION);
+			deliberate_segfault();
+//      br_exit(ERROR_MEMORY_ALLOCATION);
     }
     return x;
   }
 }
 
-
+void *br_realloc(void *ptr, size_t size)
+/***************************************************************\
+ * USAGE:                                                        *
+ * ARGUMENTS:                                                    *
+ * RETURN VALUES:                                                *
+ * NOTES: does realloc with error checking                       *
+ \***************************************************************/
+{
+  if (size <= 0)
+  { // nothing to allocate - free memory and return NULL
+    free(ptr);
+    ptr = NULL;
+  }
+  else
+  { // try to reallocate memory
+    ptr = realloc(ptr, size);
+    if (ptr == NULL)
+    {
+      printf("ERROR: bertini_real's realloc was unable to re-allocate memory!\n");
+			deliberate_segfault();
+//      br_exit(ERROR_MEMORY_ALLOCATION);
+    }
+  }
+  return ptr;
+}
 
 
 void br_exit(int errorCode)
@@ -1162,8 +1187,8 @@ void cp_preproc_data(preproc_data *PPD, preproc_data PPD_input)
 	
   total_gp = PPD->num_hom_var_gp + PPD->num_var_gp;
 	
-  PPD->size = (int *)bmalloc(total_gp * sizeof(int));
-  PPD->type = (int *)bmalloc(total_gp * sizeof(int));
+  PPD->size = (int *)br_malloc(total_gp * sizeof(int));
+  PPD->type = (int *)br_malloc(total_gp * sizeof(int));
 	
   for (i = 0; i < total_gp; i++)
   {
@@ -1386,7 +1411,7 @@ void receive_patch_mp(patch_eval_data_mp * patch)
 	MPI_Bcast(&PED_int, 1, mpi_patch_int, 0, MPI_COMM_WORLD);
 	
 	// setup patchStr
-	patchStr = (char *)bmalloc(PED_int.totalLength * sizeof(char));
+	patchStr = (char *)br_malloc(PED_int.totalLength * sizeof(char));
 	// recv patchStr
 	MPI_Bcast(patchStr, PED_int.totalLength, MPI_CHAR, 0, MPI_COMM_WORLD);
 	
@@ -1487,7 +1512,7 @@ void receive_patch_d(patch_eval_data_d * patch)
 	// recv patch structures
 	MPI_Bcast(&PED_int, 1, mpi_patch_d_int, 0, MPI_COMM_WORLD);
 	// setup patch_coeff
-	patch_coeff = (comp_d *)bmalloc(PED_int.patchCoeff_rows * PED_int.patchCoeff_cols * sizeof(comp_d));
+	patch_coeff = (comp_d *)br_malloc(PED_int.patchCoeff_rows * PED_int.patchCoeff_cols * sizeof(comp_d));
 	MPI_Bcast(patch_coeff, PED_int.patchCoeff_rows * PED_int.patchCoeff_cols, mpi_comp_d, 0, MPI_COMM_WORLD);
 	
 	
@@ -1553,7 +1578,7 @@ void receive_vec_mp(vec_mp b, int source)
 	MPI_Status statty_mc_gatty;
 
 	MPI_Recv(&b_int, 1, mpi_vec_mp_int, source,  VEC_MP, MPI_COMM_WORLD, &statty_mc_gatty);
-	bstr = (char *)bmalloc(b_int.totalLength * sizeof(char));
+	bstr = (char *)br_malloc(b_int.totalLength * sizeof(char));
 	MPI_Recv(bstr, b_int.totalLength, MPI_CHAR, source,  VEC_MP, MPI_COMM_WORLD, &statty_mc_gatty);
 	
 	// setup b and clear bstr
@@ -1646,7 +1671,7 @@ void receive_vec_d(vec_d b, int source)
 	
 	MPI_Recv(&b_int, 1, mpi_point_d_int, source, VEC_D, MPI_COMM_WORLD, &statty_mc_gatty);
 	
-	entries = (comp_d *)bmalloc(b_int.size * sizeof(comp_d));
+	entries = (comp_d *)br_malloc(b_int.size * sizeof(comp_d));
 	// recv entries
 	MPI_Recv(entries, b_int.size, mpi_comp_d, source, VEC_D, MPI_COMM_WORLD, &statty_mc_gatty);
 	
@@ -1670,7 +1695,7 @@ void receive_vec_d(vec_d b, int source)
 //	MPI_Status statty_mc_gatty;
 //	
 //	MPI_Recv(&b_int, 1, mpi_vec_d_int, source,  VEC_MP, MPI_COMM_WORLD, &statty_mc_gatty);
-//	bstr = (char *)bmalloc(b_int.totalLength * sizeof(char));
+//	bstr = (char *)br_malloc(b_int.totalLength * sizeof(char));
 //	MPI_Recv(bstr, b_int.totalLength, MPI_CHAR, source,  VEC_MP, MPI_COMM_WORLD, &statty_mc_gatty);
 //	
 //	// setup b and clear bstr

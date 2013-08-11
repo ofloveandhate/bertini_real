@@ -111,7 +111,7 @@ void witness_set::add_patch(vec_mp new_patch)
 		this->patch_mp = (vec_mp *)br_malloc(sizeof(vec_mp));
 	}
 	else{
-		this->patch_mp = (vec_mp *)brealloc(this->patch_mp, (this->num_patches+1) * sizeof(vec_mp));
+		this->patch_mp = (vec_mp *)br_realloc(this->patch_mp, (this->num_patches+1) * sizeof(vec_mp));
 	}
 	
 	init_vec_mp(this->patch_mp[this->num_patches], new_patch->size);
@@ -143,7 +143,7 @@ void witness_set::add_point(vec_mp new_point)
 		this->pts_mp = (vec_mp *)br_malloc(sizeof(vec_mp));
 	}
 	else{
-		this->pts_mp = (vec_mp *)brealloc(this->pts_mp, (this->num_pts+1) * sizeof(vec_mp));
+		this->pts_mp = (vec_mp *)br_realloc(this->pts_mp, (this->num_pts+1) * sizeof(vec_mp));
 	}
 	
 	init_vec_mp(this->pts_mp[this->num_pts], new_point->size);
@@ -174,7 +174,7 @@ void witness_set::add_linear(vec_mp new_linear)
 		this->L_mp = (vec_mp *)br_malloc(sizeof(vec_mp));
 	}
 	else{
-		this->L_mp = (vec_mp *)brealloc(this->L_mp, (this->num_linears+1) * sizeof(vec_mp));
+		this->L_mp = (vec_mp *)br_realloc(this->L_mp, (this->num_linears+1) * sizeof(vec_mp));
 	}
 	
 	init_vec_mp(this->L_mp[this->num_linears], new_linear->size);
@@ -434,7 +434,7 @@ void witness_set::only_first_vars(int num_vars)
 		clear_vec_mp(this->patch_mp[ii]);
 	}
 	
-	this->patch_mp = (vec_mp *) brealloc(this->patch_mp, trim_from_here* sizeof(vec_mp));
+	this->patch_mp = (vec_mp *) br_realloc(this->patch_mp, trim_from_here* sizeof(vec_mp));
 	this->num_patches = trim_from_here;
 	
 	clear_vec_mp(tempvec);
@@ -688,7 +688,7 @@ void cp_linears(witness_set *W_out, witness_set & W_in)
 	}
 	else
 	{
-		W_out->L_mp = (vec_mp *)brealloc(W_out->L_mp, W_in.num_linears * sizeof(vec_mp));
+		W_out->L_mp = (vec_mp *)br_realloc(W_out->L_mp, W_in.num_linears * sizeof(vec_mp));
 	}
 	
 	for (ii=0; ii<W_in.num_linears; ++ii) {
@@ -711,7 +711,7 @@ void cp_patches(witness_set *W_out, witness_set & W_in)
 	if (W_out->patch_mp==NULL)
 		W_out->patch_mp = (vec_mp *)bmalloc(W_in.num_patches * sizeof(vec_mp));
 	else{
-		W_out->patch_mp = (vec_mp *)brealloc(W_out->patch_mp, W_in.num_patches * sizeof(vec_mp));
+		W_out->patch_mp = (vec_mp *)br_realloc(W_out->patch_mp, W_in.num_patches * sizeof(vec_mp));
 	}
 	
 	for (int ii=0; ii<W_in.num_patches; ++ii) {

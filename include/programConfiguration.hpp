@@ -62,13 +62,6 @@ public:
 			worker_level = 1;
 		
 		
-
-		if (is_head()) {
-			for (int ii=1; ii<numprocs; ii++) {
-				worker_status[ii] = INACTIVE;
-				available_workers.push(ii);
-			}
-		}
 		
 		my_communicator = MPI_COMM_WORLD;
 	
@@ -123,6 +116,12 @@ public:
 	int level(){return worker_level;};
 	int size(){ return numprocs;};
 	
+	void init_active_workers()
+	{
+		for (int ii=1; ii<this->numprocs; ii++) {
+			available_workers.push(ii);
+		}
+	}
 	
 	int activate_next_worker()
 	{
@@ -159,6 +158,18 @@ public:
 			available_workers.pop();
 		}
 	}
+	
+	
+	void call_for_help(int solver_type)
+	{
+		
+		
+		MPI_Bcast(&solver_type, 1, MPI_INT, head(), MPI_COMM_WORLD);
+		
+		init_active_workers();
+		
+	}
+	
 	
 private:
 	std::map< int, bool> worker_status;
@@ -316,7 +327,6 @@ public:
 	sampler_configuration()
 	{
 		this->stifle_membership_screen = 1;
-		this->stifle_text = (char *)bmalloc(MAX_STRLEN*sizeof(char));
 		this->stifle_text = " > /dev/null ";
 		
 		this->verbose_level = 0; // default to 0

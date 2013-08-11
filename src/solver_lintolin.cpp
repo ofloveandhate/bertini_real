@@ -891,27 +891,27 @@ void setup_lintolin_omp_d(int max_threads, endgame_data_t **EG, trackingStats **
     for (ii = 0; ii < max_threads; ii++)
     {
       size = 1 + snprintf(NULL, 0, "output_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "output_%d", ii);
       (*OUT_copy)[ii] = fopen(str, "w+");
 			
       size = 1 + snprintf(NULL, 0, "midout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "midout_%d", ii);
       (*MIDOUT_copy)[ii] = fopen(str, "w+");
 			
       size = 1 + snprintf(NULL, 0, "rawout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "rawout_%d", ii);
       (*RAWOUT_copy)[ii] = fopen(str, "w+");
 			
       size = 1 + snprintf(NULL, 0, "fail_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "fail_%d", ii);
       (*FAIL_copy)[ii] = fopen(str, "w+");
 			
       size = 1 + snprintf(NULL, 0, "nonsolutions_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "nonsolutions_%d", ii);
       (*NONSOLN_copy)[ii] = fopen(str, "w+");
     }
@@ -986,7 +986,7 @@ void clear_lintolin_omp_d(int max_threads, endgame_data_t **EG, trackingStats **
       // close file & delete
       fclose((*OUT_copy)[ii]);
       size = 1 + snprintf(NULL, 0, "output_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "output_%d", ii);
       remove(str);
 			
@@ -1002,7 +1002,7 @@ void clear_lintolin_omp_d(int max_threads, endgame_data_t **EG, trackingStats **
       // close file & delete
       fclose((*MIDOUT_copy)[ii]);
       size = 1 + snprintf(NULL, 0, "midout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "midout_%d", ii);
       remove(str);
 			
@@ -1018,7 +1018,7 @@ void clear_lintolin_omp_d(int max_threads, endgame_data_t **EG, trackingStats **
       // close file & delete
       fclose((*RAWOUT_copy)[ii]);
       size = 1 + snprintf(NULL, 0, "rawout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "rawout_%d", ii);
       remove(str);
 			
@@ -1034,7 +1034,7 @@ void clear_lintolin_omp_d(int max_threads, endgame_data_t **EG, trackingStats **
       // close file & delete
       fclose((*FAIL_copy)[ii]);
       size = 1 + snprintf(NULL, 0, "fail_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "fail_%d", ii);
       remove(str);
 			
@@ -1050,7 +1050,7 @@ void clear_lintolin_omp_d(int max_threads, endgame_data_t **EG, trackingStats **
       // close file & delete
       fclose((*NONSOLN_copy)[ii]);
       size = 1 + snprintf(NULL, 0, "nonsolutions_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "nonsolutions_%d", ii);
       remove(str);
     }
@@ -2190,27 +2190,27 @@ void setup_lintolin_omp_mp(int max_threads, endgame_data_t **EG, trackingStats *
     for (ii = 0; ii < max_threads; ii++)
     {
       size = 1 + snprintf(NULL, 0, "output_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "output_%d", ii);
       (*OUT_copy)[ii] = fopen(str, "w+");
 			
       size = 1 + snprintf(NULL, 0, "midout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "midout_%d", ii);
       (*MIDOUT_copy)[ii] = fopen(str, "w+");
 			
       size = 1 + snprintf(NULL, 0, "rawout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "rawout_%d", ii);
       (*RAWOUT_copy)[ii] = fopen(str, "w+");
 			
       size = 1 + snprintf(NULL, 0, "fail_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "fail_%d", ii);
       (*FAIL_copy)[ii] = fopen(str, "w+");
 			
       size = 1 + snprintf(NULL, 0, "nonsolutions_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "nonsolutions_%d", ii);
       (*NONSOLN_copy)[ii] = fopen(str, "w+");
     }
@@ -2285,7 +2285,7 @@ void clear_lintolin_omp_mp(int max_threads, endgame_data_t **EG, trackingStats *
       // close file & delete
       fclose((*OUT_copy)[ii]);
       size = 1 + snprintf(NULL, 0, "output_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "output_%d", ii);
       remove(str);
 			
@@ -2301,7 +2301,7 @@ void clear_lintolin_omp_mp(int max_threads, endgame_data_t **EG, trackingStats *
       // close file & delete
       fclose((*MIDOUT_copy)[ii]);
       size = 1 + snprintf(NULL, 0, "midout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "midout_%d", ii);
       remove(str);
 			
@@ -2317,7 +2317,7 @@ void clear_lintolin_omp_mp(int max_threads, endgame_data_t **EG, trackingStats *
       // close file & delete
       fclose((*RAWOUT_copy)[ii]);
       size = 1 + snprintf(NULL, 0, "rawout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "rawout_%d", ii);
       remove(str);
 			
@@ -2333,7 +2333,7 @@ void clear_lintolin_omp_mp(int max_threads, endgame_data_t **EG, trackingStats *
       // close file & delete
       fclose((*FAIL_copy)[ii]);
       size = 1 + snprintf(NULL, 0, "fail_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "fail_%d", ii);
       remove(str);
 			
@@ -2349,7 +2349,7 @@ void clear_lintolin_omp_mp(int max_threads, endgame_data_t **EG, trackingStats *
       // close file & delete
       fclose((*NONSOLN_copy)[ii]);
       size = 1 + snprintf(NULL, 0, "nonsolutions_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "nonsolutions_%d", ii);
       remove(str);
     }

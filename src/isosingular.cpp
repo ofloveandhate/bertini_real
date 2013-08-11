@@ -61,7 +61,7 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
 	fclose(IN);
   // setup the first entry in the deflation sequence
   *num_deflations = 0;
-  *deflation_sequence = (int *)bmalloc((*num_deflations + 1) * sizeof(int));
+  *deflation_sequence = (int *)br_malloc((*num_deflations + 1) * sizeof(int));
   (*deflation_sequence)[*num_deflations] = nullSpace;
  
   // loop until successful or run out of iterations
@@ -86,7 +86,7 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
 
     // setup the next entry in the deflation sequence
     (*num_deflations)++;
-    *deflation_sequence = (int *)brealloc(*deflation_sequence, (*num_deflations + 1) * sizeof(int));
+    *deflation_sequence = (int *)br_realloc(*deflation_sequence, (*num_deflations + 1) * sizeof(int));
     (*deflation_sequence)[*num_deflations] = nullSpace;
 
     if ((*deflation_sequence)[*num_deflations] > (*deflation_sequence)[*num_deflations - 1])
@@ -199,7 +199,7 @@ void isosingular_deflation_iteration(int *declarations,
   parse_names(&numFuncs, &funcs, &lineFuncs, IN, const_cast< char *>("function"), declarations[9]);
 
   // read in the degrees
-  degrees = (int *)bmalloc(numFuncs * sizeof(int));
+  degrees = (int *)br_malloc(numFuncs * sizeof(int));
 	OUT = safe_fopen_read("deg.out");
   for (ii = 0; ii < numFuncs; ii++)
     fscanf(OUT, "%d", &degrees[ii]);
@@ -277,7 +277,7 @@ void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 {
   int ii, lineNumber = 1, cont = 1, declares = 0, strLength = 0, strSize = 1;
   char ch;
-  char *str = (char *)bmalloc(strSize * sizeof(char));
+  char *str = (char *)br_malloc(strSize * sizeof(char));
 
   // setup Bertini constants in Matlab
   fprintf(OUT, "syms I Pi;\n");
@@ -338,7 +338,7 @@ void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
           if (strLength + 1 == strSize)
           { // increase strSize
             strSize *= 2;
-            str = (char *)brealloc(str, strSize * sizeof(char));
+            str = (char *)br_realloc(str, strSize * sizeof(char));
           }
           str[strLength] = ch;
           strLength++;

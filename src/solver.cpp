@@ -19,7 +19,7 @@ void endgamedata_to_endpoint(post_process_t *endPoint, endgame_data_t *EG){
 	
 	if (EG->prec==52) {
 		num_vars = EG->PD_d.point->size;
-		endPoint->sol_d  = (comp_d *)bmalloc(num_vars * sizeof(comp_d));
+		endPoint->sol_d  = (comp_d *)br_malloc(num_vars * sizeof(comp_d));
 		endPoint->sol_mp = NULL;
 		
 		for (ii=0; ii<num_vars; ii++) {
@@ -39,7 +39,7 @@ void endgamedata_to_endpoint(post_process_t *endPoint, endgame_data_t *EG){
 		num_vars = EG->PD_mp.point->size;
 		
 		endPoint->sol_d  = NULL;
-		endPoint->sol_mp = (comp_mp *)bmalloc(num_vars * sizeof(comp_mp));
+		endPoint->sol_mp = (comp_mp *)br_malloc(num_vars * sizeof(comp_mp));
 		for (ii=0; ii<num_vars; ii++) {
 			init_mp2(endPoint->sol_mp[ii],EG->prec);
 			mpf_set(endPoint->sol_mp[ii]->r,EG->PD_mp.point->coord[ii].r);
@@ -295,7 +295,7 @@ void BRpostProcessing(post_process_t *endPoints, witness_set *W_new, int num_pts
 	}
 	int num_actual_solns = 0;
 	int *actual_solns_indices;
-	actual_solns_indices = (int *)bmalloc(num_pts*sizeof(int));
+	actual_solns_indices = (int *)br_malloc(num_pts*sizeof(int));
 	
 	
 	
@@ -309,8 +309,8 @@ void BRpostProcessing(post_process_t *endPoints, witness_set *W_new, int num_pts
 	
 	//initialize the structures for holding the produced data
 	W_new->num_pts=num_actual_solns; W_new->num_pts=num_actual_solns;
-	//  W_new->pts_d=(point_d *)bmalloc(num_actual_solns*sizeof(point_d));
-  W_new->pts_mp=(point_mp *)bmalloc(num_actual_solns*sizeof(point_mp));
+	//  W_new->pts_d=(point_d *)br_malloc(num_actual_solns*sizeof(point_d));
+  W_new->pts_mp=(point_mp *)br_malloc(num_actual_solns*sizeof(point_mp));
 	
 	
 	
@@ -350,12 +350,6 @@ void BRpostProcessing(post_process_t *endPoints, witness_set *W_new, int num_pts
 
 
 
-
-
-void call_for_help(int solver_type, parallelism_config & mpi_config)
-{
-	MPI_Bcast(&solver_type, 1, MPI_INT, mpi_config.head(), MPI_COMM_WORLD);
-}
 
 
 int solver::send()
@@ -848,22 +842,25 @@ void generic_tracker_loop_master(trackingStats *trackCount,
 	}
 	
 	
-	
-	
 	point_data_d *startPts_d = NULL;
-	generic_set_start_pts(&startPts_d, W);
-	
 	point_data_mp *startPts_mp = NULL;
-	generic_set_start_pts(&startPts_mp, W); // do both, regardless of the mp type???
+	
+	switch (solve_options.T.MPType) {
+		case 1:
+			generic_set_start_pts(&startPts_mp, W); 
+			break;
+			
+		default:
+			generic_set_start_pts(&startPts_d, W);
+			break;
+	}
+	
+	
+	
+	
 	
 	solve_options.T.endgameOnly = 0;
 	
-	
-//  // setup the rest of the structures
-//	endgame_data_t *EG = (endgame_data_t *) br_malloc(W.num_pts*sizeof(endgame_data_t)); //this will hold the temp solution data produced for each individual track
-//	for (int ii=0; ii<W.num_pts; ii++) {
-//		init_endgame_data(&EG[ii], solve_options.T.Precision);
-//	}
 	
 	// setup the rest of the structures
 	endgame_data_t *EG_receives = (endgame_data_t *) br_malloc(1*sizeof(endgame_data_t)); //this will hold the temp solution data produced for each individual track
@@ -896,7 +893,7 @@ void generic_tracker_loop_master(trackingStats *trackCount,
 		
 		
 		if (num_packets > max_outgoing) {
-			indices_outgoing = (int *) brealloc(indices_outgoing,num_packets*sizeof(int));
+			indices_outgoing = (int *) br_realloc(indices_outgoing,num_packets*sizeof(int));
 		}
 		for (int ii=0; ii<num_packets; ii++) {
 			indices_outgoing[ii] = next_index;
@@ -927,7 +924,7 @@ void generic_tracker_loop_master(trackingStats *trackCount,
 		MPI_Recv(&num_incoming, 1, MPI_INT, MPI_ANY_SOURCE, NUMPACKETS, MPI_COMM_WORLD, &statty_mc_gatty);
 		
 		if (num_incoming > max_incoming) {
-			EG_receives = (endgame_data_t *) brealloc(EG_receives, num_incoming * sizeof(endgame_data_t));
+			EG_receives = (endgame_data_t *) br_realloc(EG_receives, num_incoming * sizeof(endgame_data_t));
 			for (int ii=max_incoming; ii<num_incoming; ii++) {
 				init_endgame_data(&EG_receives[ii], solve_options.T.Precision);
 			}
@@ -936,7 +933,7 @@ void generic_tracker_loop_master(trackingStats *trackCount,
 		
 		int incoming_id = send_recv_endgame_data_t(&EG_receives, &num_incoming, solve_options.T.MPType, MPI_ANY_SOURCE, 0); // the trailing 0 indicates receiving
 		
-		
+		std::cout << "master receieved " << num_incoming << " packets." << std::endl;
 		solve_options.deactivate(statty_mc_gatty.MPI_SOURCE);
 		
 		for (int ii=0; ii<num_incoming; ii++) {
@@ -985,8 +982,9 @@ void generic_tracker_loop_master(trackingStats *trackCount,
 			}
 			else
 			{
+				std::cout << "master converting point " << EG_receives[ii].pathNum << " to endpoint" << std::endl;
 				//otherwise converged, but may have still had non-zero retval due to other reasons.
-				endgamedata_to_endpoint(&endPoints[EG_receives[ii].pathNum], &EG_receives[ii]);
+				endgamedata_to_endpoint(&endPoints[solution_counter], &EG_receives[ii]);
 				trackCount->successes++;
 				solution_counter++; // probably this could be eliminated
 			}
@@ -995,15 +993,25 @@ void generic_tracker_loop_master(trackingStats *trackCount,
 	
 	solve_options.send_all_available(0);
 	
-	//clear the data structures.
-  for (int ii = 0; ii >W.num_pts; ii++)
-  { // clear startPts[ii]
-    clear_point_data_d(&startPts_d[ii]);
-		clear_point_data_mp(&startPts_mp[ii]);
-  }
-  free(startPts_d);
-	free(startPts_mp);
 	
+	
+	//clear the data structures.
+	switch (solve_options.T.MPType) {
+		case 1:
+			for (int ii = 0; ii >W.num_pts; ii++)
+				clear_point_data_mp(&startPts_mp[ii]);
+			free(startPts_mp);
+			break;
+			
+		default:
+			for (int ii = 0; ii >W.num_pts; ii++)
+				clear_point_data_d(&startPts_d[ii]);
+			free(startPts_d);
+			break;
+	}
+  
+	
+
 	
 	
 }
@@ -1086,15 +1094,15 @@ void generic_tracker_loop_worker(trackingStats *trackCount,
 		if (numStartPts<max_num_allocated) {
 			switch (solve_options.T.MPType) {
 				case 1:
-					startPts_mp = (point_data_mp *) brealloc(startPts_mp, numStartPts*sizeof(point_data_mp));
+					startPts_mp = (point_data_mp *) br_realloc(startPts_mp, numStartPts*sizeof(point_data_mp));
 					break;
 					
 				default:
-					startPts_d = (point_data_d *) brealloc(startPts_d, numStartPts*sizeof(point_data_d));
+					startPts_d = (point_data_d *) br_realloc(startPts_d, numStartPts*sizeof(point_data_d));
 					break;
 			}
 			
-			indices_incoming = (int *) brealloc(indices_incoming, numStartPts*sizeof(int));
+			indices_incoming = (int *) br_realloc(indices_incoming, numStartPts*sizeof(int));
 			
 			max_num_allocated = numStartPts;
 		}
@@ -1119,8 +1127,10 @@ void generic_tracker_loop_worker(trackingStats *trackCount,
 		// track each of the start points
 		for (int ii = 0; ii < numStartPts; ii++)
 		{
+			int current_index = indices_incoming[ii];;
+			
 			if (solve_options.verbose_level>=0)
-				printf("tracking path %d, worker %d\n", ii, solve_options.id());
+				printf("tracking path %d, worker %d\n", current_index, solve_options.id());
 			
 			
 			if (solve_options.T.MPType==2) {
@@ -1188,7 +1198,6 @@ void generic_track_path(int pathNum, endgame_data_t *EG_out,
 {
 	
 	
-	std::cout << "in generic_track_path" << std::endl;
 	EG_out->pathNum = pathNum;
 	EG_out->codim = 0; // this is ignored
 	

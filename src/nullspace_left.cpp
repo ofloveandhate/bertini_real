@@ -629,7 +629,7 @@ void createMatlabDerivative(boost::filesystem::path output_name,
  \***************************************************************/
 {
   int ii, lineNumber = 1, cont = 1, declares = 0, strSize = 1;
-  char *str = (char *)bmalloc(strSize * sizeof(char));
+  char *str = (char *)br_malloc(strSize * sizeof(char));
 	
 	std::ifstream IN(input_name.c_str());
 	std::ofstream OUT(output_name.c_str());
