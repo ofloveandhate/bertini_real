@@ -58,6 +58,8 @@ std::string enum_lookup(int flag);
 
 void * br_malloc(size_t size);
 
+void *br_realloc(void *ptr, size_t size);
+
 void br_exit(int errorCode);
 
 void deliberate_segfault();
@@ -429,7 +431,7 @@ public:
 			pi_mp = (vec_mp *) br_malloc(sizeof(vec_mp));
 		}
 		else{
-			this->pi_mp = (vec_mp *)brealloc(this->pi_mp, (this->num_curr_projections+1) * sizeof(vec_mp));
+			this->pi_mp = (vec_mp *)br_realloc(this->pi_mp, (this->num_curr_projections+1) * sizeof(vec_mp));
 		}
 		
 		init_vec_mp(this->pi_mp[num_curr_projections],proj->size);
@@ -446,7 +448,7 @@ public:
 			this->patch = (vec_mp *) br_malloc(sizeof(vec_mp));
 		}
 		else{
-			this->patch = (vec_mp *)brealloc(this->patch, (this->num_patches+1) * sizeof(vec_mp));
+			this->patch = (vec_mp *)br_realloc(this->patch, (this->num_patches+1) * sizeof(vec_mp));
 		}
 		
 		init_vec_mp(this->patch[num_patches],new_patch->size);

@@ -14,7 +14,7 @@ void parse_names(int *numItems, char ***itemNames, int **itemLines, FILE *IN, ch
 {
   int lineNumber = 1, lengthName = strlen(name), strLength = 0, strSize = 1;
   char ch;
-  char *str = (char *)bmalloc(strSize * sizeof(char));
+  char *str = (char *)br_malloc(strSize * sizeof(char));
 	
   // move through the file looking for the items
   while ((ch = fgetc(IN)) != EOF)
@@ -22,7 +22,7 @@ void parse_names(int *numItems, char ***itemNames, int **itemLines, FILE *IN, ch
     if (strLength + 1 == strSize)
     { // increase strSize
       strSize *= 2;
-      str = (char *)brealloc(str, strSize * sizeof(char));
+      str = (char *)br_realloc(str, strSize * sizeof(char));
     }
     str[strLength] = ch;
     strLength++;
@@ -60,7 +60,7 @@ void addItems(int *numItems, char ***itemNames, int **itemLines, FILE *IN, int l
 {
   int strLength = 0, strSize = 1, cont = 1;
   char ch;
-  char *str = (char *)bmalloc(strSize * sizeof(char));
+  char *str = (char *)br_malloc(strSize * sizeof(char));
 	
   // initialize ch
   ch = fgetc(IN);
@@ -73,8 +73,8 @@ void addItems(int *numItems, char ***itemNames, int **itemLines, FILE *IN, int l
     else
     { // we have a new item to add
       (*numItems)++;
-      *itemNames = (char **)brealloc(*itemNames, *numItems * sizeof(char *));
-      *itemLines = (int *)brealloc(*itemLines, *numItems * sizeof(int));
+      *itemNames = (char **)br_realloc(*itemNames, *numItems * sizeof(char *));
+      *itemLines = (int *)br_realloc(*itemLines, *numItems * sizeof(int));
 			
       // read in the name
       do
@@ -82,7 +82,7 @@ void addItems(int *numItems, char ***itemNames, int **itemLines, FILE *IN, int l
         if (strLength + 1 == strSize)
         { // increase strSize
           strSize *= 2;
-          str = (char *)brealloc(str, strSize * sizeof(char));
+          str = (char *)br_realloc(str, strSize * sizeof(char));
         }
         str[strLength] = ch;
         strLength++;
@@ -95,7 +95,7 @@ void addItems(int *numItems, char ***itemNames, int **itemLines, FILE *IN, int l
       // save the information
       str[strLength] = '\0';
       strLength++;
-      (*itemNames)[*numItems - 1] = (char *)bmalloc(strLength * sizeof(char));
+      (*itemNames)[*numItems - 1] = (char *)br_malloc(strLength * sizeof(char));
       strcpy((*itemNames)[*numItems - 1], str);
       (*itemLines)[*numItems - 1] = lineNumber;
 			

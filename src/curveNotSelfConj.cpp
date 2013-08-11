@@ -134,9 +134,9 @@ void diag_homotopy_input_file(boost::filesystem::path outputFile,
 	FILE *IN = NULL;
 	
 
-  str=(char **)bmalloc(num_vars*sizeof(char *));
+  str=(char **)br_malloc(num_vars*sizeof(char *));
   for(ii=0;ii<num_vars;ii++)
-    str[ii]=(char*)bmalloc(sizeof(char)*256);
+    str[ii]=(char*)br_malloc(sizeof(char)*256);
   
 	FILE *OUT = safe_fopen_write(outputFile.c_str());
 	
@@ -177,7 +177,7 @@ void diag_homotopy_input_file(boost::filesystem::path outputFile,
   // find the size needed
   size = 1 + snprintf(NULL, 0, "%%.%dlf+%%.%dlf*I", 15, 15);
   // allocate size
-  fmt = (char *)bmalloc(size * sizeof(char));
+  fmt = (char *)br_malloc(size * sizeof(char));
   // setup fmt
   sprintf(fmt, "%%.%dlf+%%.%dlf*I", 15, 15);
   // output the linear function L and L_bar
@@ -275,7 +275,7 @@ void diag_homotopy_start_file(boost::filesystem::path startFile,
   
   size = 1 + snprintf(NULL, 0, "%%.%de %%.%de\n", digits, digits);
   // allocate size
-  fmt = (char *)bmalloc(size * sizeof(char));
+  fmt = (char *)br_malloc(size * sizeof(char));
   // setup fmt & fmtb
   sprintf(fmt, "%%.%de %%.%de\n", digits, digits);
 	// output the number of start points

@@ -32,7 +32,7 @@ int detjac_to_detjac_solver_main(int MPType,
 		cp_names(W_new,W);
 		
 		W_new->num_linears = (1);
-		W_new->L_mp = (vec_mp *)bmalloc((1)*sizeof(vec_mp)); init_vec_mp(W_new->L_mp[0],W.num_variables);
+		W_new->L_mp = (vec_mp *)br_malloc((1)*sizeof(vec_mp)); init_vec_mp(W_new->L_mp[0],W.num_variables);
 		vec_cp_mp(W_new->L_mp[0],new_projection_full_prec);
 	}
 	
@@ -124,7 +124,7 @@ int detjac_to_detjac_solver_d(int MPType, //, double parse_time, unsigned int cu
     // initialize latest_newton_residual_mp to the maximum precision
     mpf_init2(T.latest_newton_residual_mp, T.AMP_max_prec);
   }
-	post_process_t *endPoints = (post_process_t *)bmalloc(W.num_pts * sizeof(post_process_t)); //overallocate, expecting full
+	post_process_t *endPoints = (post_process_t *)br_malloc(W.num_pts * sizeof(post_process_t)); //overallocate, expecting full
 	
 	
 	
@@ -483,7 +483,7 @@ int detjac_to_detjac_setup_d(FILE **OUT, boost::filesystem::path outName,
   *midOUT = safe_fopen_write(midName);
 	
   if (T->MPType == 2) // using AMP - need to allocate space to store BED_mp
-    ED->BED_mp = (detjactodetjac_eval_data_mp *)bmalloc(1 * sizeof(detjactodetjac_eval_data_mp));
+    ED->BED_mp = (detjactodetjac_eval_data_mp *)br_malloc(1 * sizeof(detjactodetjac_eval_data_mp));
   else
     ED->BED_mp = NULL;
 	
@@ -857,7 +857,7 @@ void setup_detjac_to_detjac_omp_d(int max_threads, endgame_data_t **EG, tracking
 	
 	
   // allocate space for EG
-  *EG = (endgame_data_t *)bmalloc(max_threads * sizeof(endgame_data_t));
+  *EG = (endgame_data_t *)br_malloc(max_threads * sizeof(endgame_data_t));
 	
 	// initialize
   for (ii = 0; ii < max_threads; ii++)
@@ -873,11 +873,11 @@ void setup_detjac_to_detjac_omp_d(int max_threads, endgame_data_t **EG, tracking
 	}
 	
   // allocate space to hold pointers to the files
-  *OUT_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
-  *MIDOUT_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
-  *RAWOUT_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
-  *FAIL_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
-  *NONSOLN_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
+  *OUT_copy = (FILE **)br_malloc(max_threads * sizeof(FILE *));
+  *MIDOUT_copy = (FILE **)br_malloc(max_threads * sizeof(FILE *));
+  *RAWOUT_copy = (FILE **)br_malloc(max_threads * sizeof(FILE *));
+  *FAIL_copy = (FILE **)br_malloc(max_threads * sizeof(FILE *));
+  *NONSOLN_copy = (FILE **)br_malloc(max_threads * sizeof(FILE *));
 	
   if (max_threads == 1)
   { // setup the pointers
@@ -894,9 +894,9 @@ void setup_detjac_to_detjac_omp_d(int max_threads, endgame_data_t **EG, tracking
   }
   else // max_threads > 1
   { // allocate memory
-    *trackCount_copy = (trackingStats *)bmalloc(max_threads * sizeof(trackingStats));
-    *T_copy = (tracker_config_t *)bmalloc(max_threads * sizeof(tracker_config_t));
-    *BED_copy = (detjactodetjac_eval_data_d *)bmalloc(max_threads * sizeof(detjactodetjac_eval_data_d));
+    *trackCount_copy = (trackingStats *)br_malloc(max_threads * sizeof(trackingStats));
+    *T_copy = (tracker_config_t *)br_malloc(max_threads * sizeof(tracker_config_t));
+    *BED_copy = (detjactodetjac_eval_data_d *)br_malloc(max_threads * sizeof(detjactodetjac_eval_data_d));
 		
     // copy T, ED_d, ED_mp, & trackCount
     for (ii = 0; ii < max_threads; ii++)
@@ -915,27 +915,27 @@ void setup_detjac_to_detjac_omp_d(int max_threads, endgame_data_t **EG, tracking
     for (ii = 0; ii < max_threads; ii++)
     {
       size = 1 + snprintf(NULL, 0, "output_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "output_%d", ii);
       (*OUT_copy)[ii] = fopen(str, "w+");
 			
       size = 1 + snprintf(NULL, 0, "midout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "midout_%d", ii);
       (*MIDOUT_copy)[ii] = fopen(str, "w+");
 			
       size = 1 + snprintf(NULL, 0, "rawout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "rawout_%d", ii);
       (*RAWOUT_copy)[ii] = fopen(str, "w+");
 			
       size = 1 + snprintf(NULL, 0, "fail_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "fail_%d", ii);
       (*FAIL_copy)[ii] = fopen(str, "w+");
 			
       size = 1 + snprintf(NULL, 0, "nonsolutions_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "nonsolutions_%d", ii);
       (*NONSOLN_copy)[ii] = fopen(str, "w+");
     }
@@ -1010,7 +1010,7 @@ void clear_detjactodetjac_omp_d(int max_threads, endgame_data_t **EG, trackingSt
       // close file & delete
       fclose((*OUT_copy)[ii]);
       size = 1 + snprintf(NULL, 0, "output_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "output_%d", ii);
       remove(str);
 			
@@ -1026,7 +1026,7 @@ void clear_detjactodetjac_omp_d(int max_threads, endgame_data_t **EG, trackingSt
       // close file & delete
       fclose((*MIDOUT_copy)[ii]);
       size = 1 + snprintf(NULL, 0, "midout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "midout_%d", ii);
       remove(str);
 			
@@ -1042,7 +1042,7 @@ void clear_detjactodetjac_omp_d(int max_threads, endgame_data_t **EG, trackingSt
       // close file & delete
       fclose((*RAWOUT_copy)[ii]);
       size = 1 + snprintf(NULL, 0, "rawout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "rawout_%d", ii);
       remove(str);
 			
@@ -1058,7 +1058,7 @@ void clear_detjactodetjac_omp_d(int max_threads, endgame_data_t **EG, trackingSt
       // close file & delete
       fclose((*FAIL_copy)[ii]);
       size = 1 + snprintf(NULL, 0, "fail_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "fail_%d", ii);
       remove(str);
 			
@@ -1074,7 +1074,7 @@ void clear_detjactodetjac_omp_d(int max_threads, endgame_data_t **EG, trackingSt
       // close file & delete
       fclose((*NONSOLN_copy)[ii]);
       size = 1 + snprintf(NULL, 0, "nonsolutions_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "nonsolutions_%d", ii);
       remove(str);
     }
@@ -1155,7 +1155,7 @@ void setupdetjactodetjacEval_d(tracker_config_t *T,char preprocFile[], char degr
 		BED->BED_mp->verbose_level = solve_options.verbose_level;
 		BED->BED_mp->curr_prec = prec;
 		
-		BED->BED_mp->gamma_rat = (mpq_t *)bmalloc(2 * sizeof(mpq_t));
+		BED->BED_mp->gamma_rat = (mpq_t *)br_malloc(2 * sizeof(mpq_t));
 		if (solve_options.use_gamma_trick==1){
 			get_comp_rand_rat(BED->gamma, BED->BED_mp->gamma, BED->BED_mp->gamma_rat, prec, T->AMP_max_prec, 1, 1);
 		}
@@ -1240,7 +1240,7 @@ void cp_detjactodetjac_eval_data_d(detjactodetjac_eval_data_d *BED, detjactodetj
 	//  cp_square_system_d(&BED->squareSystem, &BED_d_input->squareSystem);
   cp_patch_d(&BED->patch, &BED_d_input->patch);
 	//  cp_start_system_d(&BED->startSystem, &BED_d_input->startSystem);
-	BED->SLP = (prog_t *)bmalloc(1 * sizeof(prog_t));
+	BED->SLP = (prog_t *)br_malloc(1 * sizeof(prog_t));
   cp_prog_t(BED->SLP, BED_d_input->SLP);
 	
 	
@@ -1249,7 +1249,7 @@ void cp_detjactodetjac_eval_data_d(detjactodetjac_eval_data_d *BED, detjactodetj
 	set_d(BED->gamma, BED_d_input->gamma);
   if (MPType == 2)
   { // need to also setup MP versions since using AMP
-    BED->BED_mp = (detjactodetjac_eval_data_mp *)bmalloc(1 * sizeof(detjactodetjac_eval_data_mp));
+    BED->BED_mp = (detjactodetjac_eval_data_mp *)br_malloc(1 * sizeof(detjactodetjac_eval_data_mp));
 		
     cp_preproc_data(&BED->BED_mp->preProcData, &BED_mp_input->preProcData);
     // simply point to the SLP that was setup in BED
@@ -1440,7 +1440,7 @@ int detjac_to_detjac_solver_mp(int MPType, //, double parse_time, unsigned int c
     }
   }
 	
-	post_process_t *endPoints = (post_process_t *)bmalloc(W.num_pts * sizeof(post_process_t)); //overallocate, expecting full
+	post_process_t *endPoints = (post_process_t *)br_malloc(W.num_pts * sizeof(post_process_t)); //overallocate, expecting full
 	
 	
 	
@@ -2082,14 +2082,14 @@ void setup_detjac_to_detjac_omp_mp(int max_threads, endgame_data_t **EG, trackin
 	
 	
 	// allocate space for EG
-	*EG = (endgame_data_t *)bmalloc(max_threads * sizeof(endgame_data_t));
+	*EG = (endgame_data_t *)br_malloc(max_threads * sizeof(endgame_data_t));
   for (ii = 0; ii < max_threads; ii++)
   {
     init_endgame_data(&(*EG)[ii], T->Precision);
   }
 	
 	
-	//  *EG = (endgame_data_t *)bmalloc(max_threads * sizeof(endgame_data_t));
+	//  *EG = (endgame_data_t *)br_malloc(max_threads * sizeof(endgame_data_t));
 	//
 	//	// initialize
 	//  for (ii = 0; ii < max_threads; ii++)
@@ -2105,11 +2105,11 @@ void setup_detjac_to_detjac_omp_mp(int max_threads, endgame_data_t **EG, trackin
 	//	}
 	
   // allocate space to hold pointers to the files
-  *OUT_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
-  *MIDOUT_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
-  *RAWOUT_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
-  *FAIL_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
-  *NONSOLN_copy = (FILE **)bmalloc(max_threads * sizeof(FILE *));
+  *OUT_copy = (FILE **)br_malloc(max_threads * sizeof(FILE *));
+  *MIDOUT_copy = (FILE **)br_malloc(max_threads * sizeof(FILE *));
+  *RAWOUT_copy = (FILE **)br_malloc(max_threads * sizeof(FILE *));
+  *FAIL_copy = (FILE **)br_malloc(max_threads * sizeof(FILE *));
+  *NONSOLN_copy = (FILE **)br_malloc(max_threads * sizeof(FILE *));
 	
   if (max_threads == 1)
   { // setup the pointers
@@ -2129,9 +2129,9 @@ void setup_detjac_to_detjac_omp_mp(int max_threads, endgame_data_t **EG, trackin
 		printf("more than one thread? prolly gonna crap out here in a sec\n");
 		mypause();
 		
-    *trackCount_copy = (trackingStats *)bmalloc(max_threads * sizeof(trackingStats));
-    *T_copy = (tracker_config_t *)bmalloc(max_threads * sizeof(tracker_config_t));
-    *BED_copy = (detjactodetjac_eval_data_mp *)bmalloc(max_threads * sizeof(detjactodetjac_eval_data_mp));
+    *trackCount_copy = (trackingStats *)br_malloc(max_threads * sizeof(trackingStats));
+    *T_copy = (tracker_config_t *)br_malloc(max_threads * sizeof(tracker_config_t));
+    *BED_copy = (detjactodetjac_eval_data_mp *)br_malloc(max_threads * sizeof(detjactodetjac_eval_data_mp));
 		
     // copy T, ED_d, ED_mp, & trackCount
     for (ii = 0; ii < max_threads; ii++)
@@ -2150,27 +2150,27 @@ void setup_detjac_to_detjac_omp_mp(int max_threads, endgame_data_t **EG, trackin
     for (ii = 0; ii < max_threads; ii++)
     {
       size = 1 + snprintf(NULL, 0, "output_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "output_%d", ii);
       (*OUT_copy)[ii] = fopen(str, "w+");
 			
       size = 1 + snprintf(NULL, 0, "midout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "midout_%d", ii);
       (*MIDOUT_copy)[ii] = fopen(str, "w+");
 			
       size = 1 + snprintf(NULL, 0, "rawout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "rawout_%d", ii);
       (*RAWOUT_copy)[ii] = fopen(str, "w+");
 			
       size = 1 + snprintf(NULL, 0, "fail_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "fail_%d", ii);
       (*FAIL_copy)[ii] = fopen(str, "w+");
 			
       size = 1 + snprintf(NULL, 0, "nonsolutions_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "nonsolutions_%d", ii);
       (*NONSOLN_copy)[ii] = fopen(str, "w+");
     }
@@ -2245,7 +2245,7 @@ void clear_detjactodetjac_omp_mp(int max_threads, endgame_data_t **EG, trackingS
       // close file & delete
       fclose((*OUT_copy)[ii]);
       size = 1 + snprintf(NULL, 0, "output_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "output_%d", ii);
       remove(str);
 			
@@ -2261,7 +2261,7 @@ void clear_detjactodetjac_omp_mp(int max_threads, endgame_data_t **EG, trackingS
       // close file & delete
       fclose((*MIDOUT_copy)[ii]);
       size = 1 + snprintf(NULL, 0, "midout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "midout_%d", ii);
       remove(str);
 			
@@ -2277,7 +2277,7 @@ void clear_detjactodetjac_omp_mp(int max_threads, endgame_data_t **EG, trackingS
       // close file & delete
       fclose((*RAWOUT_copy)[ii]);
       size = 1 + snprintf(NULL, 0, "rawout_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "rawout_%d", ii);
       remove(str);
 			
@@ -2293,7 +2293,7 @@ void clear_detjactodetjac_omp_mp(int max_threads, endgame_data_t **EG, trackingS
       // close file & delete
       fclose((*FAIL_copy)[ii]);
       size = 1 + snprintf(NULL, 0, "fail_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "fail_%d", ii);
       remove(str);
 			
@@ -2309,7 +2309,7 @@ void clear_detjactodetjac_omp_mp(int max_threads, endgame_data_t **EG, trackingS
       // close file & delete
       fclose((*NONSOLN_copy)[ii]);
       size = 1 + snprintf(NULL, 0, "nonsolutions_%d", ii);
-      str = (char *)brealloc(str, size * sizeof(char));
+      str = (char *)br_realloc(str, size * sizeof(char));
       sprintf(str, "nonsolutions_%d", ii);
       remove(str);
     }
@@ -2391,7 +2391,7 @@ void cp_detjactodetjac_eval_data_mp(detjactodetjac_eval_data_mp *BED, detjactode
 	//  cp_square_system_d(&BED->squareSystem, &BED_d_input->squareSystem);
   cp_patch_mp(&BED->patch, &BED_mp_input->patch);
 	//  cp_start_system_d(&BED->startSystem, &BED_d_input->startSystem);
-	BED->SLP = (prog_t *)bmalloc(1 * sizeof(prog_t));
+	BED->SLP = (prog_t *)br_malloc(1 * sizeof(prog_t));
   cp_prog_t(BED->SLP, BED_mp_input->SLP);
 	
 	

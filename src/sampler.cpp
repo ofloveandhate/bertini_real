@@ -683,7 +683,7 @@ void set_initial_refinement_flags(int *num_refinements, int **refine_flags, int 
 	if (*refine_flags==NULL)
 		(* refine_flags) = (int *)br_malloc((S.num_samples_each_edge[current_edge]-1)*sizeof(int));
 	else
-		(* refine_flags) = (int *)brealloc((refine_flags), (S.num_samples_each_edge[current_edge]-1)*sizeof(int));
+		(* refine_flags) = (int *)br_realloc((refine_flags), (S.num_samples_each_edge[current_edge]-1)*sizeof(int));
 	
 	(* current_indices) = (int *)br_malloc(S.num_samples_each_edge[current_edge]*sizeof(int));
 	
