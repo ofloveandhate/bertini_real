@@ -155,9 +155,8 @@ int worker_process::main_loop()
 	
 	while (solver_choice != TERMINATE) {
 		
-		std::cout << "worker" << program_options.id() << " trying to receive call for help" << std::endl;
 		MPI_Bcast(&solver_choice, 1, MPI_INT, program_options.head(), MPI_COMM_WORLD);
-		std::cout << "worker" << program_options.id() << " received call for help for solver " << solver_choice << std::endl;
+		std::cout << "worker" << program_options.id() << " received call for help for solver " << enum_lookup(solver_choice) << std::endl;
 		
 		switch (solver_choice) {
 			case NULLSPACE:

@@ -15,7 +15,7 @@
 
 #include <boost/filesystem.hpp>
 #include <iostream>
-
+#include <queue>
 
 
 #define BERTINI_REAL_VERSION_STRING "0.0.101"
@@ -31,13 +31,6 @@
 
 #include "data_type.hpp"
 
-
-// enum for worker mode choice
-enum {NULLSPACE = 3000, LINPRODTODETJAC, DETJACTODETJAC, LINTOLIN, MULTILIN};
-
-enum {TERMINATE = 2000, INITIAL_STATE};
-
-enum {PARSING = 1000, TYPE_CONFIRMATION, DATA_TRANSMISSION};
 
 
 ///////////
@@ -57,24 +50,28 @@ public:
 	parallelism_config(){
 		
 
-		
+		headnode = 0;
 		
 		MPI_Comm_size(MPI_COMM_WORLD, &this->numprocs);
 		MPI_Comm_rank(MPI_COMM_WORLD, &this->my_id);
 		
 		
-		if (my_id==0)
+		if (is_head())
 			worker_level = 0;
 		else
 			worker_level = 1;
 		
-		headnode = 0;
 		
+
+		if (is_head()) {
+			for (int ii=1; ii<numprocs; ii++) {
+				worker_status[ii] = INACTIVE;
+				available_workers.push(ii);
+			}
+		}
 		
-		
-		
-		
-		
+		my_communicator = MPI_COMM_WORLD;
+	
 //		MPI_Group orig_group, new_group;
 //		
 //		/* Extract the original group handle */
@@ -87,11 +84,9 @@ public:
 //		
 //		MPI_Comm_size(my_communicator, &this->numprocs);
 //		MPI_Comm_rank(my_communicator, &this->my_id);
-		
-		
-		
-		
 	}
+	
+	
 	
 	bool is_head()
 	{
@@ -128,7 +123,47 @@ public:
 	int level(){return worker_level;};
 	int size(){ return numprocs;};
 	
+	
+	int activate_next_worker()
+	{
+		int worker_id = available_workers.front();
+		available_workers.pop();
 		
+		if (worker_status[worker_id] == ACTIVE) {
+			std::cout << "master tried making worker" << worker_id << " active when it was already active" << std::endl;
+			MPI_Abort(MPI_COMM_WORLD,1);
+		}
+		worker_status[worker_id] = ACTIVE;
+		
+		return worker_id;
+	}
+	
+	
+	void deactivate(int worker_id)
+	{
+		if (worker_status[worker_id] == INACTIVE) {
+			std::cout << "master tried decativating worker" << worker_id << " when it was already inactive" << std::endl;
+			MPI_Abort(MPI_COMM_WORLD,2);
+		}
+		worker_status[worker_id] = INACTIVE;
+		
+		
+		available_workers.push(worker_id);
+	}
+	
+	void send_all_available(int numtosend)
+	{
+		while (available_workers.size()>0)  {
+			int sendtome = available_workers.front();
+			MPI_Send(&numtosend, 1, MPI_INT, sendtome, NUMPACKETS, MPI_COMM_WORLD);
+			available_workers.pop();
+		}
+	}
+	
+private:
+	std::map< int, bool> worker_status;
+	
+	std::queue< int > available_workers;
 };
 
 
@@ -143,6 +178,7 @@ private:
 	
 public:
 	
+
 	
 	int verbose_level;
 	
@@ -154,7 +190,6 @@ public:
 	
 	void move_to_called();
 	
-	
 };
 
 
@@ -164,7 +199,7 @@ class BR_configuration : public prog_config
 {
 public:
 	int max_deflations;
-	
+	int debugwait;
 	int stifle_membership_screen; //< boolean controlling whether stifle_text is empty or " > /dev/null"
 	std::string stifle_text; // std::string
 	
@@ -216,7 +251,7 @@ public:
 	
 	BR_configuration() : prog_config()
 	{
-		
+		this->debugwait = 0;
 		this->max_deflations = 10;
 		
 		this->user_projection = 0;

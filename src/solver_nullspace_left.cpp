@@ -630,7 +630,8 @@ int nullspacejac_eval_data_mp::setup(prog_t * _SLP,
 
 void nullspacejac_eval_data_d::init()
 {
-	if (this->MPType==2) 
+
+	if (this->MPType==2)
 		this->BED_mp = new nullspacejac_eval_data_mp(2);
 	else
 		this->BED_mp = NULL;
@@ -660,6 +661,8 @@ void nullspacejac_eval_data_d::init()
 
 	init_mat_d(jac_with_proj,0,0);
 
+	int id;
+	MPI_Comm_rank(MPI_COMM_WORLD, &id);
 
 	half->r = 0.5; half->i = 0.0;
 	
@@ -682,6 +685,8 @@ int nullspacejac_eval_data_d::send(parallelism_config & mpi_config)
 	
 	//send the base class stuff.
 	solver_d::send();
+
+	
 	
 	int *buffer = new int[12];
 	
@@ -704,7 +709,13 @@ int nullspacejac_eval_data_d::send(parallelism_config & mpi_config)
 	
 	MPI_Bcast(buffer,12,MPI_INT, 0, mpi_config.my_communicator);
 	
-	
+	delete[] buffer;
+	buffer = new int[num_randomized_eqns];
+	for (int ii=0; ii<num_randomized_eqns; ii++) {
+		buffer[ii] = randomized_degrees[ii];
+	}
+	MPI_Bcast(buffer, num_randomized_eqns, MPI_INT, 0, mpi_config.my_communicator);
+	delete[] buffer;
 	
 	if (num_additional_linears>0) {
 		for (int ii=0; ii<num_additional_linears; ii++) {
@@ -752,7 +763,6 @@ int nullspacejac_eval_data_d::send(parallelism_config & mpi_config)
 	}
 	else{}
 	
-	delete(buffer);
 	
 	return SUCCESSFUL;
 }
@@ -762,25 +772,24 @@ int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
 	int *buffer = new int[12];
 	MPI_Bcast(buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	
-	if (buffer[0] != NULLSPACE) {
+	if (buffer[0] != NULLSPACE){
+		std::cout << "worker failed to confirm it is receiving the nullspace type eval data" << std::endl;
 		mpi_config.abort(777);
 	}
-	
+
 	solver_d::receive();
 	
-	nullspacejac_eval_data_d::clear();
-	nullspacejac_eval_data_d::reset_counters();
+	std::cout << "worker done with basic solver_d receive" << std::endl;
 	// now can actually receive the data from whoever.
 	
 	
 	
 	MPI_Bcast(buffer,12,MPI_INT, 0, mpi_config.my_communicator);
 	
-	for (int ii=0; ii<11; ii++) {
-		std::cout << "buffer[" << ii << "] = " << buffer[ii] << std::endl;
-	}
+
+
 	
-	mypause();
+	
 	
 	num_additional_linears = buffer[0];
 	num_jac_equations = buffer[1];
@@ -797,6 +806,15 @@ int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
 	
 	num_randomized_eqns = buffer[10];
 	num_natural_vars = buffer[11];
+	
+	delete[] buffer;
+	buffer = new int[num_randomized_eqns];
+	
+	MPI_Bcast(buffer, num_randomized_eqns, MPI_INT, 0, mpi_config.my_communicator);
+	for (int ii=0; ii<num_randomized_eqns; ii++) {
+		randomized_degrees.push_back(buffer[ii]);
+	}
+	delete[] buffer;
 	
 	
 	if (num_additional_linears>0) {
@@ -867,7 +885,7 @@ int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
 	
 	
 	
-	delete(buffer);
+	
 	return SUCCESSFUL;
 }
 
@@ -1047,7 +1065,6 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 	
 
 	
-	
   int num_crossings = 0;
 	
   trackingStats trackCount; init_trackingStats(&trackCount); // initialize trackCount to all 0
@@ -1062,7 +1079,6 @@ int nullspacejac_solver_master_entry_point(int										MPType,
   solve_options.T.numVars = setupProg_count(&SLP, solve_options.T.Precision, solve_options.T.MPType,
 																						&startSub, &endSub, &startFunc, &endFunc, &startJvsub, &endJvsub, &startJv, &endJv,
 																						&subFuncsBelow);
-	
 	
 	nullspacejac_eval_data_d *ED_d = NULL;
 	nullspacejac_eval_data_mp *ED_mp = NULL;
@@ -1114,19 +1130,20 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 	
 	if (solve_options.use_parallel()) {
 		
-		std::cout << "master bcasting tracker config" << std::endl;
 		bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
-		std::cout << "master done bcasting tracker config" << std::endl;
 		
 		switch (solve_options.T.MPType) {
 			case 1:
+				std::cout << "master sending mp type" << std::endl;
 				ED_mp->send(solve_options);
 				break;
 				
 			default:
+				std::cout << "master sending double type " << solve_options.T.MPType <<  std::endl;
 				ED_d->send(solve_options);
 				break;
 		}
+		MPI_Barrier(MPI_COMM_WORLD);
 	}
 	
 	
@@ -1140,11 +1157,23 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 	generic_setup_files(&OUT, "output",
 											&midOUT, "midpath_data");
 	
-	generic_tracker_loop(&trackCount, OUT, midOUT,
-											 W,
-											 endPoints,
-											 ED_d, ED_mp,
-											 solve_options);
+	if (solve_options.use_parallel()) {
+		
+		std::cout << "master entering tracker loop" << std::endl;
+		generic_tracker_loop_master(&trackCount, OUT, midOUT,
+																W,
+																endPoints,
+																ED_d, ED_mp,
+																solve_options);
+	}
+	else{
+		generic_tracker_loop(&trackCount, OUT, midOUT,
+												 W,
+												 endPoints,
+												 ED_d, ED_mp,
+												 solve_options);
+	}
+	
 	
 	
 	// close the files
@@ -1188,9 +1217,7 @@ void nullspace_slave_entry_point(solver_configuration & solve_options)
 	
 	
 	// already received the flag which indicated that this worker is going to be performing the nullspace calculation.
-	std::cout << "worker receiving tracker config" << std::endl;
 	bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
-	std::cout << "worker received tracker config" << std::endl;
 	
 	nullspacejac_eval_data_d *ED_d = NULL;
 	nullspacejac_eval_data_mp *ED_mp = NULL;
@@ -1199,14 +1226,15 @@ void nullspace_slave_entry_point(solver_configuration & solve_options)
 	switch (solve_options.T.MPType) {
 		case 0:
 			ED_d = new nullspacejac_eval_data_d(0);
-			
 			ED_d->receive(solve_options);
 			break;
 			
 		case 1:
 			ED_mp = new nullspacejac_eval_data_mp(1);
 			
+			
 			ED_mp->receive(solve_options);
+			std::cout << "worker done receiving mp type" << std::endl;
 			// initialize latest_newton_residual_mp
 			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
@@ -1217,7 +1245,7 @@ void nullspace_slave_entry_point(solver_configuration & solve_options)
 			
 			
 			ED_d->receive(solve_options);
-			
+			std::cout << "worker done receiving double_mp type" << std::endl;
 			
 			
 			
@@ -1229,6 +1257,7 @@ void nullspace_slave_entry_point(solver_configuration & solve_options)
 	}
 	
 	
+	MPI_Barrier(MPI_COMM_WORLD);
 	// call the file setup function
 	FILE *OUT = NULL, *midOUT = NULL;
 	
@@ -1237,6 +1266,7 @@ void nullspace_slave_entry_point(solver_configuration & solve_options)
 	
 	trackingStats trackCount; init_trackingStats(&trackCount); // initialize trackCount to all 0
 	
+	std::cout << "slave entering tracker loop" << std::endl;
 	generic_tracker_loop_worker(&trackCount, OUT, midOUT,
 															ED_d, ED_mp,
 															solve_options);
@@ -1648,8 +1678,6 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 		vec_sub_d(tempvec, tempvec, tempvec2); // tempvec = forward - backward
 
 		div_d(temp, BED->half, BED->perturbation);   //this is repetitively wasteful
-																								 
-		
 		
 		vec_mulcomp_d(tempvec, tempvec, temp); //tempvec = (forward-backward)/(2h)
 		// √ this is verified correct for sphere
@@ -1716,16 +1744,16 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 //	print_matrix_to_screen_matlab(jac_homogenizing_matrix,"jac_hom_1044");
 //	print_matrix_to_screen_matlab(BED->post_randomizer_matrix,"S");
 //	print_matrix_to_screen_matlab(BED->randomizer_matrix,"R");
-
-	
+//
+//	
 //	print_matrix_to_screen_matlab( AtimesJ,"jac");
 //	print_point_to_screen_matlab(curr_x_vars,"currxvars");
 //	print_point_to_screen_matlab(current_variable_values,"curr_vars");
-	print_point_to_screen_matlab(funcVals,"F");
-	print_matrix_to_screen_matlab(Jv,"Jv");
+//	print_point_to_screen_matlab(funcVals,"F");
+//	print_matrix_to_screen_matlab(Jv,"Jv");
 //	print_matrix_to_screen_matlab(Jp,"Jp");
 //	print_matrix_to_screen_matlab(BED->jac_with_proj,"jacwithproj");
-	//these values are set in this function:  point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp
+//			//these values are set in this function:  point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp
 //	print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
 
 //	std::cout << "\n\n**************\n\n";

@@ -199,12 +199,13 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 			{"box",		required_argument,			 0, 'b'}, {"b",		required_argument,			 0, 'b'},
 			{"gammatrick",		required_argument,			 0, 'g'}, {"g",		required_argument,			 0, 'g'},
 			{"detjac",		no_argument,			 0, 'd'},
+			{"debug", no_argument, 0, 'D'},
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
 		
-		choice = getopt_long_only (argc, argv, "r:p:v:i:w:h:v:s",
+		choice = getopt_long_only (argc, argv, "D:d:g:b:V:o:s:r:p:w:i:v:h",
 															 long_options, &option_index);
 		
 		/* Detect the end of the options. */
@@ -213,6 +214,10 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 		
 		switch (choice)
 		{
+			case 'D':
+				this->debugwait = 1;
+				break;
+				
 			case 'd':
 				this->crit_solver = LINPRODTODETJAC;
 				break;

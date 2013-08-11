@@ -571,6 +571,9 @@ public:
 		std::cout << "num_v_vars " << num_v_vars << std::endl;
 		std::cout << "num_randomized_eqns " << num_randomized_eqns << std::endl;
 		std::cout << "max_degree " << max_degree << std::endl;
+		
+		print_comp_matlab(half,"half");
+		print_comp_matlab(perturbation,"epsilon");
 	};
 	
 	void reset_counters()
@@ -605,8 +608,7 @@ public:
 	
 	nullspacejac_eval_data_d(const nullspacejac_eval_data_d & other)
 	{
-		
-		
+		init();
 		solver_d();
 		nullspacejac_eval_data_d();
 		

@@ -9,8 +9,7 @@ int main(int argC, char *args[])
  \***************************************************************/
 {
 
-	
-	
+
 	
 	
 	////
@@ -26,6 +25,11 @@ int main(int argC, char *args[])
 	
 	
 	srand(time(NULL));
+	
+	if (program_options.debugwait) {
+		int debugwait = 1;
+		while (debugwait) ;
+	}
 	
 	
 //	// set up the solver configuration
