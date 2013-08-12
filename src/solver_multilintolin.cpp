@@ -32,7 +32,6 @@ int multilintolin_solver_main(int MPType,
 	}
 		
 	
-	W_new->MPType = MPType;
 	if (solve_options.complete_witness_set==1){
 		W_new->num_linears = W.num_linears;
 		W_new->L_mp = (vec_mp *)br_malloc(W.num_linears*sizeof(vec_mp));

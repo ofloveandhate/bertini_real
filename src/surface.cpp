@@ -71,7 +71,7 @@ void surface_main(vertex_set & V,
 	init_mat_mp2(randomizer_matrix,W_surf.num_variables-1-ambient_dim,solve_options.PPD.num_funcs,solve_options.T.AMP_max_prec);
 	
 	//create the array of integers
-	int *randomized_degrees = (int *)bmalloc((W_surf.num_variables-1-ambient_dim)*sizeof(int));
+	int *randomized_degrees = (int *)br_malloc((W_surf.num_variables-1-ambient_dim)*sizeof(int));
 	
 	//get the matrix and the degrees of the resulting randomized functions.
 	make_randomization_matrix_based_on_degrees(randomizer_matrix, &randomized_degrees, W_surf.num_variables-1-ambient_dim, solve_options.PPD.num_funcs);
@@ -126,7 +126,6 @@ void surface_main(vertex_set & V,
 //	W_curve.only_first_vars(num_vars);
 	W_curve.write_dehomogenized_coordinates("W_crit"); // write the points to file
 
-	
 	
 	// this system describes the system for the critical curve
 	create_nullspace_system("input_critical_curve",

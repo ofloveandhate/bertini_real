@@ -1377,6 +1377,54 @@ int compare_integers_decreasing(const void * left_in, const void * right_in){
 }
 
 
+void send_patch_d(patch_eval_data_d * patch)
+{
+	comp_d *patch_coeff = NULL;
+	patch_eval_data_d_int PED_int;
+	MPI_Datatype mpi_comp_d, mpi_patch_d_int;
+	
+	// setup mpi_comp_d & mpi_patch_d_int
+	create_comp_d(&mpi_comp_d);
+	create_patch_eval_data_d_int(&mpi_patch_d_int);
+	// setup PED_int
+	cp_patch_d_int(&PED_int, patch, &patch_coeff, 0);
+	
+	// broadcast patch structures
+	MPI_Bcast(&PED_int, 1, mpi_patch_d_int, 0, MPI_COMM_WORLD);
+	MPI_Bcast(patch_coeff, PED_int.patchCoeff_rows * PED_int.patchCoeff_cols, mpi_comp_d, 0, MPI_COMM_WORLD);
+	
+	// free memory
+	MPI_Type_free(&mpi_comp_d);
+	MPI_Type_free(&mpi_patch_d_int);
+	free(patch_coeff);
+}
+
+
+void receive_patch_d(patch_eval_data_d * patch)
+{
+	comp_d *patch_coeff = NULL;
+	patch_eval_data_d_int PED_int;
+	MPI_Datatype mpi_comp_d, mpi_patch_d_int;
+	
+	// setup mpi_comp_d & mpi_patch_d_int
+	create_comp_d(&mpi_comp_d);
+	create_patch_eval_data_d_int(&mpi_patch_d_int);
+	
+	// recv patch structures
+	MPI_Bcast(&PED_int, 1, mpi_patch_d_int, 0, MPI_COMM_WORLD);
+	// setup patch_coeff
+	patch_coeff = (comp_d *)br_malloc(PED_int.patchCoeff_rows * PED_int.patchCoeff_cols * sizeof(comp_d));
+	MPI_Bcast(patch_coeff, PED_int.patchCoeff_rows * PED_int.patchCoeff_cols, mpi_comp_d, 0, MPI_COMM_WORLD);
+	
+	
+	// setup patch
+	cp_patch_d_int(patch, &PED_int, &patch_coeff, 1);  // patch_coeff is freed in here
+	
+	// free mpi_comp_d & mpi_patch_d_int
+	MPI_Type_free(&mpi_comp_d);
+	MPI_Type_free(&mpi_patch_d_int);
+}
+
 
 void send_patch_mp(patch_eval_data_mp * patch)
 {
@@ -1387,7 +1435,7 @@ void send_patch_mp(patch_eval_data_mp * patch)
 	// setup mpi_patch_int
 	create_patch_eval_data_mp_int(&mpi_patch_int);
 	// setup PED_int
-	cp_patch_mp_int(&PED_int, &patch, &patchStr, 0, 0);
+	cp_patch_mp_int(&PED_int, patch, &patchStr, 0, 0);
 	
 	// send PED_int
 	MPI_Bcast(&PED_int, 1, mpi_patch_int, 0, MPI_COMM_WORLD);
@@ -1417,13 +1465,8 @@ void receive_patch_mp(patch_eval_data_mp * patch)
 	
 	// setup _mp patch
 	cp_patch_mp_int(patch, &PED_int, &patchStr, 1, 1);
+	// last 3 arguments:   ,    ,   intype -- 0 if sender, !0, else
 	
-	//	// setup _d patch
-//	for (i = 0; i < BED->patch.patchCoeff->rows; i++)
-//		for (j = 0; j < BED->patch.patchCoeff->cols; j++)
-//		{
-//			mp_to_d(&patch.patchCoeff->entry[i][j], &BED->BED_mp->patch.patchCoeff->entry[i][j]);
-//		}
 	
 	// free mpi_patch_int (patchStr is freed in cp_patch_mp_int)
 	MPI_Type_free(&mpi_patch_int);
@@ -1476,53 +1519,7 @@ void receive_preproc_data(preproc_data *PPD){
 
 
 
-void send_patch_d(patch_eval_data_d * patch)
-{
-	comp_d *patch_coeff = NULL;
-	patch_eval_data_d_int PED_int;
-	MPI_Datatype mpi_comp_d, mpi_patch_d_int;
-	
-	// setup mpi_comp_d & mpi_patch_d_int
-	create_comp_d(&mpi_comp_d);
-	create_patch_eval_data_d_int(&mpi_patch_d_int);
-	// setup PED_int
-	cp_patch_d_int(&PED_int, patch, &patch_coeff, 0);
-	
-	// broadcast patch structures
-	MPI_Bcast(&PED_int, 1, mpi_patch_d_int, 0, MPI_COMM_WORLD);
-	MPI_Bcast(patch_coeff, PED_int.patchCoeff_rows * PED_int.patchCoeff_cols, mpi_comp_d, 0, MPI_COMM_WORLD);
-	
-	// free memory
-	MPI_Type_free(&mpi_comp_d);
-	MPI_Type_free(&mpi_patch_d_int);
-	free(patch_coeff);
-}
 
-
-void receive_patch_d(patch_eval_data_d * patch)
-{
-	comp_d *patch_coeff = NULL;
-	patch_eval_data_d_int PED_int;
-	MPI_Datatype mpi_comp_d, mpi_patch_d_int;
-	
-	// setup mpi_comp_d & mpi_patch_d_int
-	create_comp_d(&mpi_comp_d);
-	create_patch_eval_data_d_int(&mpi_patch_d_int);
-	
-	// recv patch structures
-	MPI_Bcast(&PED_int, 1, mpi_patch_d_int, 0, MPI_COMM_WORLD);
-	// setup patch_coeff
-	patch_coeff = (comp_d *)br_malloc(PED_int.patchCoeff_rows * PED_int.patchCoeff_cols * sizeof(comp_d));
-	MPI_Bcast(patch_coeff, PED_int.patchCoeff_rows * PED_int.patchCoeff_cols, mpi_comp_d, 0, MPI_COMM_WORLD);
-	
-	
-// setup patch
-	cp_patch_d_int(patch, &PED_int, &patch_coeff, 1);  // patch_coeff is freed in here
-	
-	// free mpi_comp_d & mpi_patch_d_int
-	MPI_Type_free(&mpi_comp_d);
-	MPI_Type_free(&mpi_patch_d_int);
-}
 
 
 
@@ -1582,7 +1579,7 @@ void receive_vec_mp(vec_mp b, int source)
 	MPI_Recv(bstr, b_int.totalLength, MPI_CHAR, source,  VEC_MP, MPI_COMM_WORLD, &statty_mc_gatty);
 	
 	// setup b and clear bstr
-	cp_point_mp_int(b, &b_int, &bstr, 1, 1, 1);
+	cp_point_mp_int(b, &b_int, &bstr, 1, 1, 1); 
 	
   // clear mpi_vec_mp_int
   MPI_Type_free(&mpi_vec_mp_int);

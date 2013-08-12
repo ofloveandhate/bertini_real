@@ -445,16 +445,31 @@ int solver_mp::send()
 {
 	solver::send();
 	
-	
+	std::cout << "master sending patch " << std::endl;
+	print_matrix_to_screen_matlab(this->patch.patchCoeff,"patchCoeff");
+	std::cout << patch.num_patches << " " << patch.curr_prec << std::endl;
 	send_patch_mp(&this->patch);
 	
-	
+	std::cout << "master sent patch_mp" << std::endl;
 	
 	bcast_comp_mp(this->gamma, 0,0);
 	
-	bcast_mat_mp(randomizer_matrix_full_prec, 0, 0);
+	int *buffer = new int[2];
+	buffer[0] = randomizer_matrix->rows;
+	buffer[1] = randomizer_matrix->cols;
 	
-	int *buffer = new int[1];
+	MPI_Bcast(buffer, 2, MPI_INT, 0, MPI_COMM_WORLD);
+	if (this->MPType==2) {
+		bcast_mat_mp(randomizer_matrix_full_prec, 0, 0);
+	}
+	else{
+		print_matrix_to_screen_matlab(randomizer_matrix,"R");
+		bcast_mat_mp(randomizer_matrix, 0, 0);
+	}
+	
+	delete[] buffer;
+	std::cout << "master sent randomizer matrix" << std::endl;
+	buffer = new int[1];
 	
 	
 	buffer[0] = this->curr_prec;
@@ -462,7 +477,8 @@ int solver_mp::send()
 	
 	MPI_Bcast(buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	
-	delete(buffer);
+	delete[] buffer;
+	
 	return SUCCESSFUL;
 }
 
@@ -472,21 +488,44 @@ int solver_mp::receive()
 	
 	solver::receive();
 	
+	std::cout << "worker after basic receive" << std::endl;
 	
 	receive_patch_mp(&this->patch);
 	
-	
+	print_matrix_to_screen_matlab(patch.patchCoeff,"P");
 	
 	bcast_comp_mp(this->gamma, 1,0);
 	
-	bcast_mat_mp(randomizer_matrix_full_prec, 1, 0);
+	int *buffer = new int[2];
+	MPI_Bcast(buffer, 2, MPI_INT, 0, MPI_COMM_WORLD);
 	
-	int *buffer = new int[1];
+	if (this->MPType==2) {
+		init_mat_mp2(randomizer_matrix_full_prec,buffer[0],buffer[1],1024);
+		randomizer_matrix_full_prec->rows = buffer[0];
+		randomizer_matrix_full_prec->cols = buffer[1];
+		
+		bcast_mat_mp(randomizer_matrix_full_prec, 1, 0);
+		
+		init_mat_mp(randomizer_matrix,0,0);
+		mat_cp_mp(randomizer_matrix, randomizer_matrix_full_prec);
+
+	}
+	else{
+		init_mat_mp(randomizer_matrix,buffer[0],buffer[1]);
+		randomizer_matrix->rows = buffer[0];
+		randomizer_matrix->cols = buffer[1];
+		bcast_mat_mp(randomizer_matrix, 1, 0);
+	}
+	
+	delete[] buffer;
+	
+	
+	buffer = new int[1];
 	
 	MPI_Bcast(buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	this->curr_prec = buffer[0];
 	
-	delete(buffer);
+	delete[] buffer;
 	return SUCCESSFUL;
 }
 
@@ -888,6 +927,7 @@ void generic_tracker_loop_master(trackingStats *trackCount,
 		int num_packets =1;
 		
 		int next_worker = solve_options.activate_next_worker();
+		std::cout << "master sending " << num_packets << " packets." << std::endl;
 		MPI_Send(&num_packets, 1, MPI_INT, next_worker, NUMPACKETS, MPI_COMM_WORLD);
 		
 		
@@ -900,6 +940,11 @@ void generic_tracker_loop_master(trackingStats *trackCount,
 			next_index++;
 		}
 		
+		std::cout << "master sending indices: ";
+		for (int ii=0; ii<num_packets; ii++) {
+			std::cout << indices_outgoing[ii] << " ";
+		}
+		std::cout << std::endl;
 		MPI_Send(indices_outgoing, num_packets, MPI_INT, next_worker, INDICES, MPI_COMM_WORLD);
 		
 		
@@ -921,8 +966,10 @@ void generic_tracker_loop_master(trackingStats *trackCount,
 		//now to receive data
 		int num_incoming;
 		MPI_Status statty_mc_gatty;
+		std::cout << "master trying to receive from any source the number of packets" << std::endl;
 		MPI_Recv(&num_incoming, 1, MPI_INT, MPI_ANY_SOURCE, NUMPACKETS, MPI_COMM_WORLD, &statty_mc_gatty);
 		
+		std::cout << "master will receive " << num_incoming << " max currently " << max_incoming << std::endl;
 		if (num_incoming > max_incoming) {
 			EG_receives = (endgame_data_t *) br_realloc(EG_receives, num_incoming * sizeof(endgame_data_t));
 			for (int ii=max_incoming; ii<num_incoming; ii++) {
@@ -1421,6 +1468,9 @@ void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W)
 	P->num_patches = W.num_patches;
 	P->patchCoeff->rows = W.num_patches;
 	P->patchCoeff->cols = W.num_variables;
+	
+
+	
 	
 	if (W.num_patches==0) {
 		std::cerr << "the number of patches in input W is 0.  this is not allowed, the number must be positive.\n" << std::endl;

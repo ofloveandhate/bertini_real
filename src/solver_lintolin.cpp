@@ -63,7 +63,6 @@ int lintolin_solver_main(int MPType,
 	
 	if (solve_options.complete_witness_set==1){
 		cp_patches(W_new,W); // copy the patches over from the original witness set
-		W_new->MPType = MPType;
 		cp_names(W_new,W);
 		
 		

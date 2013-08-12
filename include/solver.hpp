@@ -239,6 +239,7 @@ public:
 
 	
 	solver_mp() : solver(){
+		this->MPType = 2;
 		init();
 	}; // re: default constructor
 	
