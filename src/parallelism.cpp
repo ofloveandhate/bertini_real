@@ -56,7 +56,7 @@ int ubermaster_process::main_loop()
 	
 	W.witnessSetParse(program_options.witness_set_filename,num_vars);
 	
-	W.MPType = program_options.MPType = MPType;
+	program_options.MPType = MPType;
 	
 	
 	W.get_variable_names();

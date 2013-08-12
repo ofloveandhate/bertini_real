@@ -50,9 +50,7 @@ public:
 	int num_pts;
 	int num_linears;
 	int num_patches;
-	
-	int MPType; //  will indicate the type of the solve.  both fields will have data, but one will be used.
-	
+		
 	std::vector< std::string > variable_names;
 	// end data members
 	
@@ -138,7 +136,6 @@ public:
 		this->num_linears = other.num_linears;
 		this->num_patches = other.num_patches;
 		
-		this->MPType = other.MPType;
 		
 		this->variable_names = other.variable_names;
 		
@@ -190,7 +187,6 @@ public:
 		this->num_linears = other.num_linears;
 		this->num_patches = other.num_patches;
 		
-		this->MPType = other.MPType;
 		
 		this->variable_names = other.variable_names;
 		

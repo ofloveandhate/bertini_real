@@ -184,7 +184,7 @@ int nullspacejac_eval_data_mp::send(parallelism_config & mpi_config)
 {
 
 	int solver_choice = NULLSPACE;
-	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.headnode, mpi_config.my_communicator);
+	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
 	// send the confirmation integer, to ensure that we are sending the correct type.
 	
 	//send the base class stuff.
@@ -211,62 +211,117 @@ int nullspacejac_eval_data_mp::send(parallelism_config & mpi_config)
 	
 	MPI_Bcast(buffer,12,MPI_INT, 0, mpi_config.my_communicator);
 	
-	
-	
-	if (num_additional_linears>0) {
-		for (int ii=0; ii<num_additional_linears; ii++) {
-			// receive the full precision terminal additional linear
-			bcast_vec_mp(this->additional_linears_terminal_full_prec[ii], mpi_config.my_id, mpi_config.headnode);
-			
-			// receive the full precision starting additional linear
-			bcast_vec_mp(this->additional_linears_starting_full_prec[ii], mpi_config.my_id, mpi_config.headnode);
-		}
+	delete[] buffer;
+	buffer = new int[num_randomized_eqns];
+	for (int ii=0; ii<num_randomized_eqns; ii++) {
+		buffer[ii] = randomized_degrees[ii];
 	}
-	else {} // num_additional_linears == 0
+	MPI_Bcast(buffer, num_randomized_eqns, MPI_INT, 0, mpi_config.my_communicator);
+	delete[] buffer;
 	
 	
-	// recieve the post-randomizer-matrix
-	bcast_mat_mp(post_randomizer_matrix_full_prec, mpi_config.my_id, mpi_config.headnode);
-	
-	
-	if (num_jac_equations>0) {
-		for (int ii=0; ii<num_jac_equations; ii++) {
-			for (int jj=0; jj<max_degree; jj++) {
-				bcast_vec_mp(starting_linears_full_prec[ii][jj], mpi_config.my_id, mpi_config.headnode);
+	if (this->MPType==2){
+		if (num_additional_linears>0) {
+			for (int ii=0; ii<num_additional_linears; ii++) {
+				// receive the full precision terminal additional linear
+				bcast_vec_mp(this->additional_linears_terminal_full_prec[ii], mpi_config.id(), mpi_config.head());
+				
+				// receive the full precision starting additional linear
+				bcast_vec_mp(this->additional_linears_starting_full_prec[ii], mpi_config.id(), mpi_config.head());
 			}
 		}
-	}
-	else{}
-	
-	
-	
-	
-	if (num_v_linears>0) {
-		for (int ii=0; ii<num_v_linears; ii++) {
-			bcast_vec_mp(v_linears_full_prec[ii], mpi_config.my_id, mpi_config.headnode);
+		else {} // num_additional_linears == 0
+		
+		
+		// recieve the post-randomizer-matrix
+		bcast_mat_mp(post_randomizer_matrix_full_prec, mpi_config.id(), mpi_config.head());
+		
+		
+		if (num_jac_equations>0) {
+			for (int ii=0; ii<num_jac_equations; ii++) {
+				for (int jj=0; jj<max_degree; jj++) {
+					bcast_vec_mp(starting_linears_full_prec[ii][jj], mpi_config.id(), mpi_config.head());
+				}
+			}
 		}
-	}
-	else{}
-	
-	bcast_vec_mp(v_patch_full_prec, mpi_config.my_id, mpi_config.headnode);
-	bcast_mat_mp(jac_with_proj_full_prec, mpi_config.my_id, mpi_config.headnode);
-	bcast_comp_mp(perturbation_full_prec, mpi_config.my_id, mpi_config.headnode);
-	bcast_comp_mp(half_full_prec, mpi_config.my_id, mpi_config.headnode);
+		else{}
+		
+		
+		
+		
+		if (num_v_linears>0) {
+			for (int ii=0; ii<num_v_linears; ii++) {
+				bcast_vec_mp(v_linears_full_prec[ii], mpi_config.id(), mpi_config.head());
+			}
+		}
+		else{}
+		
+		bcast_vec_mp(v_patch_full_prec, mpi_config.id(), mpi_config.head());
+		bcast_mat_mp(jac_with_proj_full_prec, mpi_config.id(), mpi_config.head());
+		bcast_comp_mp(perturbation_full_prec, mpi_config.id(), mpi_config.head());
+		bcast_comp_mp(half_full_prec, mpi_config.id(), mpi_config.head());
 
-	if (num_projections>0) {
-		for (int ii=0; ii<num_projections; ii++) {
-			bcast_vec_mp(target_projection_full_prec[ii], mpi_config.my_id, mpi_config.headnode);
+		if (num_projections>0) {
+			for (int ii=0; ii<num_projections; ii++) {
+				bcast_vec_mp(target_projection_full_prec[ii], mpi_config.id(), mpi_config.head());
+			}
 		}
+		else{}
 	}
-	else{}
+	else {
+		
+		if (num_additional_linears>0) {
+			for (int ii=0; ii<num_additional_linears; ii++) {
+				// receive the full precision terminal additional linear
+				bcast_vec_mp(this->additional_linears_terminal[ii], mpi_config.id(), mpi_config.head());
+				
+				// receive the full precision starting additional linear
+				bcast_vec_mp(this->additional_linears_starting[ii], mpi_config.id(), mpi_config.head());
+			}
+		}
+		else {} // num_additional_linears == 0
+		
+		
+		// recieve the post-randomizer-matrix
+		print_matrix_to_screen_matlab(post_randomizer_matrix, "S");
+		bcast_mat_mp(post_randomizer_matrix, mpi_config.id(), mpi_config.head());
+		
 	
-	delete(buffer);
+		for (int ii=0; ii<num_jac_equations; ii++) {
+			for (int jj=0; jj<max_degree; jj++) {
+				std::cout << "master sending starting_linear[" << ii << "][" << jj << "]" << std::endl;
+				bcast_vec_mp(starting_linears[ii][jj], mpi_config.id(), mpi_config.head());
+			}
+		}
+	
+		for (int ii=0; ii<num_v_linears; ii++) {
+			bcast_vec_mp(v_linears[ii], mpi_config.id(), mpi_config.head());
+		}
+
+		
+		bcast_vec_mp(v_patch, mpi_config.id(), mpi_config.head());
+		bcast_mat_mp(jac_with_proj, mpi_config.id(), mpi_config.head());
+		bcast_comp_mp(perturbation, mpi_config.id(), mpi_config.head());
+		bcast_comp_mp(half, mpi_config.id(), mpi_config.head());
+		
+		if (num_projections>0) {
+			for (int ii=0; ii<num_projections; ii++) {
+				bcast_vec_mp(target_projection[ii], mpi_config.id(), mpi_config.head());
+			}
+		}
+		else{}
+	}
+	
 	
 	return SUCCESSFUL;
 }
 
+
+
+
 int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 {
+	std::cout << "worker receiving nullspace mp" << std::endl;
 	int *buffer = new int[12];
 	MPI_Bcast(buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	
@@ -275,20 +330,9 @@ int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 	}
 	
 	solver_mp::receive();
-	
-	nullspacejac_eval_data_mp::clear();
-	nullspacejac_eval_data_mp::reset_counters();
+
 	// now can actually receive the data from whoever.
-	
-	
-	
 	MPI_Bcast(buffer,12,MPI_INT, 0, mpi_config.my_communicator);
-	
-	for (int ii=0; ii<11; ii++) {
-		std::cout << "buffer[" << ii << "] = " << buffer[ii] << std::endl;
-	}
-	
-	mypause();
 	
 	num_additional_linears = buffer[0];
 	num_jac_equations = buffer[1];
@@ -306,97 +350,213 @@ int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 	num_randomized_eqns = buffer[10];
 	num_natural_vars = buffer[11];
 	
+	delete[] buffer;
+	buffer = new int[num_randomized_eqns];
 	
-	if (num_additional_linears>0) {
-		
-		this->additional_linears_terminal						= (vec_mp *) br_malloc(num_additional_linears*sizeof(vec_mp));
-		this->additional_linears_terminal_full_prec = (vec_mp *) br_malloc(num_additional_linears*sizeof(vec_mp));
-		this->additional_linears_starting						= (vec_mp *) br_malloc(num_additional_linears*sizeof(vec_mp));
-		this->additional_linears_starting_full_prec = (vec_mp *) br_malloc(num_additional_linears*sizeof(vec_mp));
-		
-		for (int ii=0; ii<num_additional_linears; ii++) {
-			
-			// receive the full precision terminal additional linear
-			bcast_vec_mp(this->additional_linears_terminal_full_prec[ii], mpi_config.my_id, mpi_config.headnode);
-			vec_cp_mp(this->additional_linears_terminal[ii],this->additional_linears_terminal_full_prec[ii]);
-
-			// receive the full precision starting additional linear
-			bcast_vec_mp(this->additional_linears_starting_full_prec[ii], mpi_config.my_id, mpi_config.headnode);
-			vec_cp_mp(this->additional_linears_starting[ii],this->additional_linears_starting_full_prec[ii]);
-			
-		}
+	MPI_Bcast(buffer, num_randomized_eqns, MPI_INT, 0, mpi_config.my_communicator);
+	for (int ii=0; ii<num_randomized_eqns; ii++) {
+		randomized_degrees.push_back(buffer[ii]);
 	}
-	else {} // num_additional_linears == 0
+	delete[] buffer;
 	
 	
-	// recieve the post-randomizer-matrix
-	bcast_mat_mp(post_randomizer_matrix_full_prec, mpi_config.my_id, mpi_config.headnode);
-	mat_cp_mp(this->post_randomizer_matrix, post_randomizer_matrix_full_prec);
+	
+	if (this->MPType==2) {
+		if (num_additional_linears>0) {
+			
+			this->additional_linears_terminal						= (vec_mp *) br_malloc(num_additional_linears*sizeof(vec_mp));
+			this->additional_linears_terminal_full_prec = (vec_mp *) br_malloc(num_additional_linears*sizeof(vec_mp));
+			this->additional_linears_starting						= (vec_mp *) br_malloc(num_additional_linears*sizeof(vec_mp));
+			this->additional_linears_starting_full_prec = (vec_mp *) br_malloc(num_additional_linears*sizeof(vec_mp));
+			
+			for (int ii=0; ii<num_additional_linears; ii++) {
+				init_vec_mp2(this->additional_linears_terminal_full_prec[ii],0,1024);
+				init_vec_mp(this->additional_linears_terminal[ii],0);
+				// receive the full precision terminal additional linear
+				bcast_vec_mp(this->additional_linears_terminal_full_prec[ii], mpi_config.id(), mpi_config.head());
+				vec_cp_mp(this->additional_linears_terminal[ii],this->additional_linears_terminal_full_prec[ii]);
+
+				// receive the full precision starting additional linear
+				init_vec_mp2(this->additional_linears_starting_full_prec[ii],0,1024);
+				init_vec_mp(this->additional_linears_starting[ii],0);
+				bcast_vec_mp(this->additional_linears_starting_full_prec[ii], mpi_config.id(), mpi_config.head());
+				vec_cp_mp(this->additional_linears_starting[ii],this->additional_linears_starting_full_prec[ii]);
+				
+			}
+		}
+		else {} // num_additional_linears == 0
+		
+		
+		// recieve the post-randomizer-matrix
+		// recieve the post-randomizer-matrix
+		init_mat_mp(post_randomizer_matrix,num_jac_equations,num_x_vars-1);
+		post_randomizer_matrix->rows = num_jac_equations;
+		post_randomizer_matrix->cols = num_x_vars-1;
+		
+		init_mat_mp(post_randomizer_matrix_full_prec,num_jac_equations,num_x_vars-1);
+		post_randomizer_matrix_full_prec->rows = num_jac_equations;
+		post_randomizer_matrix_full_prec->cols = num_x_vars-1;
+		
+		bcast_mat_mp(post_randomizer_matrix_full_prec, mpi_config.id(), mpi_config.head());
+		mat_cp_mp(this->post_randomizer_matrix, post_randomizer_matrix_full_prec);
+		
+		
+		if (num_jac_equations>0) {
+			this->starting_linears_full_prec = (vec_mp **) br_malloc(num_jac_equations*sizeof(vec_mp *));
+			this->starting_linears = (vec_mp **) br_malloc(num_jac_equations*sizeof(vec_mp *));
+			
+			for (int ii=0; ii<num_jac_equations; ii++) {
+				
+				this->starting_linears_full_prec[ii] = (vec_mp *) br_malloc(max_degree*sizeof(vec_mp ));
+				this->starting_linears[ii] = (vec_mp *) br_malloc(max_degree*sizeof(vec_mp ));
+				for (int jj=0; jj<max_degree; jj++) {
+					init_vec_mp(this->starting_linears[ii][jj],0);
+					init_vec_mp2(this->starting_linears_full_prec[ii][jj],0,1024);
+					
+					// recieve the starting linearsin full prec and convert
+					bcast_vec_mp(starting_linears_full_prec[ii][jj], mpi_config.id(), mpi_config.head());
+					vec_cp_mp(this->starting_linears[ii][jj],starting_linears_full_prec[ii][jj]);
+				}
+			}
+		}
+		else{}
+		
+		if (num_v_linears>0) {
+			this->v_linears = (vec_mp *) br_malloc(num_v_linears*sizeof(vec_mp));
+			this->v_linears_full_prec = (vec_mp *) br_malloc(num_v_linears*sizeof(vec_mp));
+			for (int ii=0; ii<num_v_linears; ii++) {
+				init_vec_mp(this->v_linears[ii],0);
+				init_vec_mp2(this->v_linears_full_prec[ii],0,1024);
+				// receive the full precision v_linears
+				bcast_vec_mp(v_linears_full_prec[ii], mpi_config.id(), mpi_config.head());
+				vec_cp_mp(this->v_linears[ii],v_linears_full_prec[ii]);
+			}
+		}
+		else{}
+		
+		std::cout << "1" << std::endl;
+		init_vec_mp2(v_patch_full_prec,0,1024);
+		init_vec_mp(v_patch,0);
+		bcast_vec_mp(v_patch_full_prec, mpi_config.id(), mpi_config.head());
+		vec_cp_mp(this->v_patch, v_patch_full_prec);
+		
+		std::cout << "2" << std::endl;
+		init_mat_mp2(jac_with_proj_full_prec, num_x_vars-1, num_randomized_eqns+num_projections,1024);
+		
+		
+		init_mat_mp(jac_with_proj, num_x_vars-1, num_randomized_eqns+num_projections);
+		jac_with_proj->rows = jac_with_proj_full_prec->rows = num_x_vars-1;
+		jac_with_proj->cols = jac_with_proj_full_prec->cols = num_randomized_eqns+num_projections;
+		
+		bcast_mat_mp(jac_with_proj_full_prec, mpi_config.id(), mpi_config.head());
+		mat_cp_mp(this->jac_with_proj, jac_with_proj_full_prec);
+		
+		std::cout << "3" << std::endl;
+		init_mp2(perturbation_full_prec,1024);
+		init_mp(perturbation);
+		bcast_comp_mp(perturbation_full_prec, mpi_config.id(), mpi_config.head());
+		set_mp(this->perturbation,perturbation_full_prec);
+		
+		std::cout << "4" << std::endl;
+		init_mp2(half_full_prec,1024);
+		init_mp(half);
+		bcast_comp_mp(half_full_prec, mpi_config.id(), mpi_config.head());
+		set_mp(this->half, half_full_prec);
+		
+		
+		
+		if (num_projections>0) {
+			this->target_projection = (vec_mp *) br_malloc(num_projections*sizeof(vec_mp));
+			this->target_projection_full_prec = (vec_mp *) br_malloc(num_projections*sizeof(vec_mp));
+			
+			for (int ii=0; ii<num_projections; ii++) {
+				init_vec_mp(this->target_projection[ii],0);
+				init_vec_mp2(this->target_projection[ii],0,1024);
+				
+				bcast_vec_mp(target_projection_full_prec[ii], mpi_config.id(), mpi_config.head());
+				vec_cp_mp(this->target_projection[ii],target_projection_full_prec[ii]);
+			}
+		}
+		else{}
 	
 	
-	if (num_jac_equations>0) {
-		this->starting_linears_full_prec = (vec_mp **) br_malloc(num_jac_equations*sizeof(vec_mp *));
+	}
+	else{ // MPType == 1
+		if (num_additional_linears>0) {
+			
+			this->additional_linears_terminal						= (vec_mp *) br_malloc(num_additional_linears*sizeof(vec_mp));
+			this->additional_linears_starting						= (vec_mp *) br_malloc(num_additional_linears*sizeof(vec_mp));
+			
+			for (int ii=0; ii<num_additional_linears; ii++) {
+				init_vec_mp2(this->additional_linears_terminal[ii],0,1024);
+				// receive the full precision terminal additional linear
+				bcast_vec_mp(this->additional_linears_terminal[ii], mpi_config.id(), mpi_config.head());
+				
+				// receive the full precision starting additional linear
+				init_vec_mp2(this->additional_linears_starting[ii],0,1024);
+				bcast_vec_mp(this->additional_linears_starting[ii], mpi_config.id(), mpi_config.head());
+				
+			}
+		}
+		else {} // num_additional_linears == 0
+		
+		std::cout << "worker got additional linears" << std::endl;
+		
+		// recieve the post-randomizer-matrix
+		init_mat_mp(post_randomizer_matrix,num_jac_equations,num_x_vars-1);
+		post_randomizer_matrix->rows = num_jac_equations;
+		post_randomizer_matrix->cols = num_x_vars-1;
+		
+		bcast_mat_mp(post_randomizer_matrix, mpi_config.id(), mpi_config.head());
+		
+		std::cout << "worker got post-randomizer matrix" << std::endl;
+		
+		std::cout << "num_jac " << num_jac_equations << std::endl;
 		this->starting_linears = (vec_mp **) br_malloc(num_jac_equations*sizeof(vec_mp *));
 		
 		for (int ii=0; ii<num_jac_equations; ii++) {
-			
-			this->starting_linears_full_prec[ii] = (vec_mp *) br_malloc(max_degree*sizeof(vec_mp ));
 			this->starting_linears[ii] = (vec_mp *) br_malloc(max_degree*sizeof(vec_mp ));
 			for (int jj=0; jj<max_degree; jj++) {
-				init_vec_mp(this->starting_linears[ii][jj],0);
-				init_vec_mp2(this->starting_linears_full_prec[ii][jj],0,1024);
-				
+				init_vec_mp(this->starting_linears[ii][jj],num_x_vars);  starting_linears[ii][jj]->size = num_x_vars;
+				std::cout << "worker getting starting_linear[" << ii << "][" << jj << "]" << std::endl;
 				// recieve the starting linearsin full prec and convert
-				bcast_vec_mp(starting_linears_full_prec[ii][jj], mpi_config.my_id, mpi_config.headnode);
-				vec_cp_mp(this->starting_linears[ii][jj],starting_linears_full_prec[ii][jj]);
+				bcast_vec_mp(starting_linears[ii][jj], mpi_config.id(), mpi_config.head());
 			}
 		}
-	}
-	else{}
-	
-	if (num_v_linears>0) {
+
 		this->v_linears = (vec_mp *) br_malloc(num_v_linears*sizeof(vec_mp));
-		this->v_linears_full_prec = (vec_mp *) br_malloc(num_v_linears*sizeof(vec_mp));
 		for (int ii=0; ii<num_v_linears; ii++) {
 			init_vec_mp(this->v_linears[ii],0);
-			init_vec_mp2(this->v_linears_full_prec[ii],0,1024);
 			// receive the full precision v_linears
-			bcast_vec_mp(v_linears_full_prec[ii], mpi_config.my_id, mpi_config.headnode);
-			vec_cp_mp(this->v_linears[ii],v_linears_full_prec[ii]);
+			bcast_vec_mp(v_linears[ii], mpi_config.id(), mpi_config.head());
 		}
-	}
-	else{}
-	
-	bcast_vec_mp(v_patch_full_prec, mpi_config.my_id, mpi_config.headnode);
-	vec_cp_mp(this->v_patch, v_patch_full_prec);
-	
-	bcast_mat_mp(jac_with_proj_full_prec, mpi_config.my_id, mpi_config.headnode);
-	mat_cp_mp(this->jac_with_proj, jac_with_proj_full_prec);
-	
-	bcast_comp_mp(perturbation_full_prec, mpi_config.my_id, mpi_config.headnode);
-	set_mp(this->perturbation,perturbation_full_prec);
-	
-	bcast_comp_mp(half_full_prec, mpi_config.my_id, mpi_config.headnode);
-	set_mp(this->half, half_full_prec);
-	
-	
-	
-	if (num_projections>0) {
-		this->target_projection = (vec_mp *) br_malloc(num_projections*sizeof(vec_mp));
-		this->target_projection_full_prec = (vec_mp *) br_malloc(num_projections*sizeof(vec_mp));
 		
-		for (int ii=0; ii<num_projections; ii++) {
-			init_vec_mp(this->target_projection[ii],0); init_vec_mp2(this->target_projection[ii],0,1024);
+		init_vec_mp(v_patch,0);
+		bcast_vec_mp(v_patch, mpi_config.id(), mpi_config.head());
+		std::cout << "a";
+		
+		init_mat_mp(jac_with_proj,num_x_vars-1,num_randomized_eqns+num_projections);
+		jac_with_proj->rows = num_x_vars-1;
+		jac_with_proj->cols = num_randomized_eqns+num_projections;
+		bcast_mat_mp(jac_with_proj, mpi_config.id(), mpi_config.head());
+		std::cout << "b";
+		bcast_comp_mp(perturbation, mpi_config.id(), mpi_config.head());
+		std::cout << "c";
+		bcast_comp_mp(half, mpi_config.id(), mpi_config.head());
+		std::cout << "d";
+		
+		if (num_projections>0) {
+			this->target_projection = (vec_mp *) br_malloc(num_projections*sizeof(vec_mp));
 			
-			bcast_vec_mp(target_projection_full_prec[ii], mpi_config.my_id, mpi_config.headnode);
-			vec_cp_mp(this->target_projection[ii],target_projection_full_prec[ii]);
+			for (int ii=0; ii<num_projections; ii++) {
+				init_vec_mp(this->target_projection[ii],0);
+				bcast_vec_mp(target_projection[ii], mpi_config.id(), mpi_config.head());
+			}
 		}
+
 	}
-	else{}
+
 	
-	
-	
-	delete(buffer);
 	return SUCCESSFUL;
 }
 
@@ -680,12 +840,13 @@ int nullspacejac_eval_data_d::send(parallelism_config & mpi_config)
 {
 	
 	int solver_choice = NULLSPACE;
-	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.headnode, mpi_config.my_communicator);
+	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
 	// send the confirmation integer, to ensure that we are sending the correct type.
 	
 	//send the base class stuff.
 	solver_d::send();
 
+	std::cout << "master after double basic" << std::endl;
 	
 	
 	int *buffer = new int[12];
@@ -720,23 +881,23 @@ int nullspacejac_eval_data_d::send(parallelism_config & mpi_config)
 	if (num_additional_linears>0) {
 		for (int ii=0; ii<num_additional_linears; ii++) {
 			// receive the full precision terminal additional linear
-			bcast_vec_d(this->additional_linears_terminal[ii], mpi_config.my_id, mpi_config.headnode);
+			bcast_vec_d(this->additional_linears_terminal[ii], mpi_config.id(), mpi_config.head());
 			
 			// receive the full precision starting additional linear
-			bcast_vec_d(this->additional_linears_starting[ii], mpi_config.my_id, mpi_config.headnode);
+			bcast_vec_d(this->additional_linears_starting[ii], mpi_config.id(), mpi_config.head());
 		}
 	}
 	else {} // num_additional_linears == 0
 	
 	
 	// recieve the post-randomizer-matrix
-	bcast_mat_d(post_randomizer_matrix, mpi_config.my_id, mpi_config.headnode);
+	bcast_mat_d(post_randomizer_matrix, mpi_config.id(), mpi_config.head());
 	
 	
 	if (num_jac_equations>0) {
 		for (int ii=0; ii<num_jac_equations; ii++) {
 			for (int jj=0; jj<max_degree; jj++) {
-				bcast_vec_d(starting_linears[ii][jj], mpi_config.my_id, mpi_config.headnode);
+				bcast_vec_d(starting_linears[ii][jj], mpi_config.id(), mpi_config.head());
 			}
 		}
 	}
@@ -747,22 +908,25 @@ int nullspacejac_eval_data_d::send(parallelism_config & mpi_config)
 	
 	if (num_v_linears>0) {
 		for (int ii=0; ii<num_v_linears; ii++) {
-			bcast_vec_d(v_linears[ii], mpi_config.my_id, mpi_config.headnode);
+			bcast_vec_d(v_linears[ii], mpi_config.id(), mpi_config.head());
 		}
 	}
 	else{}
 	
-	bcast_vec_d(v_patch, mpi_config.my_id, mpi_config.headnode);
-	bcast_mat_d(jac_with_proj, mpi_config.my_id, mpi_config.headnode);
+	bcast_vec_d(v_patch, mpi_config.id(), mpi_config.head());
+	bcast_mat_d(jac_with_proj, mpi_config.id(), mpi_config.head());
 
 	
 	if (num_projections>0) {
 		for (int ii=0; ii<num_projections; ii++) {
-			bcast_vec_d(target_projection[ii], mpi_config.my_id, mpi_config.headnode);
+			bcast_vec_d(target_projection[ii], mpi_config.id(), mpi_config.head());
 		}
 	}
 	else{}
 	
+	if (this->MPType==2) {
+		this->BED_mp->send(mpi_config);
+	}
 	
 	return SUCCESSFUL;
 }
@@ -786,10 +950,6 @@ int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
 	
 	MPI_Bcast(buffer,12,MPI_INT, 0, mpi_config.my_communicator);
 	
-
-
-	
-	
 	
 	num_additional_linears = buffer[0];
 	num_jac_equations = buffer[1];
@@ -806,6 +966,8 @@ int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
 	
 	num_randomized_eqns = buffer[10];
 	num_natural_vars = buffer[11];
+	
+	
 	
 	delete[] buffer;
 	buffer = new int[num_randomized_eqns];
@@ -825,10 +987,10 @@ int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
 		for (int ii=0; ii<num_additional_linears; ii++) {
 			
 			// receive the full precision terminal additional linear
-			bcast_vec_d(this->additional_linears_terminal[ii], mpi_config.my_id, mpi_config.headnode);
+			bcast_vec_d(this->additional_linears_terminal[ii], mpi_config.id(), mpi_config.head());
 			
 			// receive the full precision starting additional linear
-			bcast_vec_d(this->additional_linears_starting[ii], mpi_config.my_id, mpi_config.headnode);
+			bcast_vec_d(this->additional_linears_starting[ii], mpi_config.id(), mpi_config.head());
 			
 		}
 	}
@@ -836,7 +998,7 @@ int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
 	
 	
 	// recieve the post-randomizer-matrix
-	bcast_mat_d(post_randomizer_matrix, mpi_config.my_id, mpi_config.headnode);
+	bcast_mat_d(post_randomizer_matrix, mpi_config.id(), mpi_config.head());
 	
 	
 	if (num_jac_equations>0) {
@@ -849,7 +1011,7 @@ int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
 				init_vec_d(this->starting_linears[ii][jj],0);
 				
 				// recieve the starting linearsin full prec and convert
-				bcast_vec_d(starting_linears[ii][jj], mpi_config.my_id, mpi_config.headnode);
+				bcast_vec_d(starting_linears[ii][jj], mpi_config.id(), mpi_config.head());
 			}
 		}
 	}
@@ -860,14 +1022,14 @@ int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
 		for (int ii=0; ii<num_v_linears; ii++) {
 			init_vec_d(this->v_linears[ii],0);
 			// receive the full precision v_linears
-			bcast_vec_d(v_linears[ii], mpi_config.my_id, mpi_config.headnode);
+			bcast_vec_d(v_linears[ii], mpi_config.id(), mpi_config.head());
 		}
 	}
 	else{}
 	
-	bcast_vec_d(v_patch, mpi_config.my_id, mpi_config.headnode);
+	bcast_vec_d(v_patch, mpi_config.id(), mpi_config.head());
 	
-	bcast_mat_d(jac_with_proj, mpi_config.my_id, mpi_config.headnode);
+	bcast_mat_d(jac_with_proj, mpi_config.id(), mpi_config.head());
 	
 
 	
@@ -878,13 +1040,15 @@ int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
 		for (int ii=0; ii<num_projections; ii++) {
 			init_vec_d(this->target_projection[ii],0);
 			
-			bcast_vec_d(target_projection[ii], mpi_config.my_id, mpi_config.headnode);
+			bcast_vec_d(target_projection[ii], mpi_config.id(), mpi_config.head());
 		}
 	}
 	else{}
 	
-	
-	
+	std::cout << "worker entering mp receive" << std::endl;
+	if (this->MPType==2) {
+		this->BED_mp->receive(mpi_config);
+	}
 	
 	return SUCCESSFUL;
 }
@@ -1056,7 +1220,7 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 	
 	W_new->num_variables = W.num_variables;
 	W_new->num_synth_vars = W.num_synth_vars;
-	W_new->MPType = MPType;
+
 	if (solve_options.complete_witness_set==1){
 		
 		cp_patches(W_new,W); // copy the patches over from the original witness set
@@ -1241,10 +1405,9 @@ void nullspace_slave_entry_point(solver_configuration & solve_options)
 		case 2:
 			ED_d = new nullspacejac_eval_data_d(2);
 			
-			ED_mp = ED_d->BED_mp;
-			
-			
 			ED_d->receive(solve_options);
+			
+			ED_mp = ED_d->BED_mp;
 			std::cout << "worker done receiving double_mp type" << std::endl;
 			
 			
@@ -1339,7 +1502,8 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	
 	
-	mat_d AtimesJ; init_mat_d(AtimesJ,1,1);
+	mat_d AtimesJ; init_mat_d(AtimesJ,1,1); AtimesJ->rows = AtimesJ->cols = 1;
+	
 	mat_d Jv_jac; init_mat_d(Jv_jac,0,0);
 	mat_d temp_jacobian_functions, temp_jacobian_parameters;
 		init_mat_d(temp_jacobian_functions,0,0); init_mat_d(temp_jacobian_parameters,0,0);
@@ -1371,8 +1535,8 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	
 	mat_d perturbed_AtimesJ, tempmat3; // create matrices
-		init_mat_d(perturbed_AtimesJ,0,0); init_mat_d(tempmat3,0,0);
-	
+		init_mat_d(perturbed_AtimesJ,1,1); init_mat_d(tempmat3,0,0);
+	perturbed_AtimesJ->rows = perturbed_AtimesJ->cols = 1;
 	
 	mat_d tempmat1,tempmat2; // create temp matrices
 		init_mat_d(tempmat1,BED->num_jac_equations,BED->num_v_vars);
@@ -1439,6 +1603,9 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	// the jacobian equations for orig
 	
 	//  randomize the original functions and jacobian
+//	print_matrix_to_screen_matlab(BED->randomizer_matrix, "randomizer");
+//	print_matrix_to_screen_matlab(temp_jacobian_functions, "temp_jacobian_functions");
+//	print_matrix_to_screen_matlab(AtimesJ, "AtimesJ");
 	mat_mul_d(AtimesJ,BED->randomizer_matrix,temp_jacobian_functions);
 	
 	// copy the jacobian into the return value for the evaluator
@@ -1943,7 +2110,6 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	evalProg_mp(temp_function_values, parVals, parDer, temp_jacobian_functions, temp_jacobian_parameters, curr_x_vars, pathVars, BED->SLP);
 	
 	
-  // evaluate the patch
   patch_eval_mp(    patchValues, parVals, parDer, Jv_Patch, Jp, curr_x_vars, pathVars, &BED->patch);  // Jp is ignored
 	
 	

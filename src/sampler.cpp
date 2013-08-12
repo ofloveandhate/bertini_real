@@ -69,7 +69,7 @@ int main(int argC, char *args[])
 	
 	witness_set W;
 	W.num_variables = num_vars;
-	W.MPType = MPType;
+
 	W.get_variable_names();
 	
 //	W.witnessSetParse(witnessSetName,num_vars);
@@ -200,7 +200,7 @@ void generate_new_sampling_pts(sample_data *S_new,
 	
 	
 	S_new->num_edges = S_old.num_edges;
-	S_new->num_samples_each_edge = (int *) bmalloc(S_new->num_edges * sizeof(int));
+	S_new->num_samples_each_edge = (int *) br_malloc(S_new->num_edges * sizeof(int));
 	S_new->sample_indices = (int **) br_malloc(S_new->num_edges * sizeof(int *));
 	
 	
@@ -468,7 +468,7 @@ void set_witness_set_mp(witness_set *W, vec_mp new_linear,vec_mp pts,int num_var
 	W->num_variables = num_vars;
 	
 	W->num_pts=1;
-	W->pts_mp=(point_mp *)bmalloc(sizeof(point_mp)); // apparently you can only pass in a single point to copy in.
+	W->pts_mp=(point_mp *)br_malloc(sizeof(point_mp)); // apparently you can only pass in a single point to copy in.
 	
 	//initialize the memory
 	init_point_mp(W->pts_mp[0],num_vars); W->pts_mp[0]->size = num_vars;
@@ -476,7 +476,7 @@ void set_witness_set_mp(witness_set *W, vec_mp new_linear,vec_mp pts,int num_var
 	
 	
 	W->num_linears = 1;
-	W->L_mp = (vec_mp *)bmalloc(sizeof(vec_mp));
+	W->L_mp = (vec_mp *)br_malloc(sizeof(vec_mp));
 	init_vec_mp(W->L_mp[0],num_vars); W->L_mp[0]->size = num_vars;
 	vec_cp_mp(W->L_mp[0],new_linear);
 	
@@ -646,7 +646,7 @@ int  set_initial_sample_data(sample_data *S, curve_decomposition C, vertex_set V
 	
 	S->num_variables = num_vars;
 	S->num_edges = C.num_edges;
-	S->num_samples_each_edge = (int *)bmalloc(C.num_edges * sizeof(int));
+	S->num_samples_each_edge = (int *)br_malloc(C.num_edges * sizeof(int));
 	for(ii=0;ii<C.num_edges;ii++){
 		S->num_samples_each_edge[ii]=3; // left, right, mid
 	}

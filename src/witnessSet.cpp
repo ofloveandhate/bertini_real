@@ -24,7 +24,7 @@ int witness_set::witnessSetParse(const boost::filesystem::path witness_set_file,
 	this->dim = dim;
 	this->comp_num = comp_num;
   this->num_pts = this->num_pts = num_pts;
-	this->pts_mp=(point_mp *)bmalloc(this->num_pts*sizeof(point_mp));
+	this->pts_mp=(point_mp *)br_malloc(this->num_pts*sizeof(point_mp));
 
 	
   this->num_variables = num_vars;
@@ -44,7 +44,7 @@ int witness_set::witnessSetParse(const boost::filesystem::path witness_set_file,
 	fscanf(IN, "%d %d", &num_linears, &num_vars_in_linears);  scanRestOfLine(IN);
 
 	this->num_linears = num_linears;
-	this->L_mp = (vec_mp *)bmalloc(num_linears*sizeof(vec_mp));
+	this->L_mp = (vec_mp *)br_malloc(num_linears*sizeof(vec_mp));
 	
   for (ii=0; ii < num_linears; ii++) {
 		init_vec_mp2(this->L_mp[ii],num_vars_in_linears,1024);
@@ -69,7 +69,7 @@ int witness_set::witnessSetParse(const boost::filesystem::path witness_set_file,
 		mypause();
 	}
 	
-	this->patch_mp = (vec_mp *)bmalloc(num_patches*sizeof(vec_mp));
+	this->patch_mp = (vec_mp *)br_malloc(num_patches*sizeof(vec_mp));
 	
   for (ii=0; ii < num_patches; ii++) {
 		init_vec_mp2(this->patch_mp[ii],patch_size,1024);//default max_prec is 1024
@@ -539,7 +539,7 @@ void witness_set::sort_for_unique(tracker_config_t T)
 	
 	
 	
-	vec_mp *transferme = (vec_mp *)bmalloc(num_good_pts*sizeof(vec_mp));
+	vec_mp *transferme = (vec_mp *)br_malloc(num_good_pts*sizeof(vec_mp));
 	int counter = 0;
 	for (int ii=0; ii<this->num_pts; ++ii) {
 		if (is_unique[ii]==1) {
@@ -684,7 +684,7 @@ void cp_linears(witness_set *W_out, witness_set & W_in)
 	
 	
 	if (W_out->L_mp==NULL) {
-		W_out->L_mp = (vec_mp *)bmalloc(W_in.num_linears * sizeof(vec_mp));
+		W_out->L_mp = (vec_mp *)br_malloc(W_in.num_linears * sizeof(vec_mp));
 	}
 	else
 	{
@@ -709,7 +709,7 @@ void cp_patches(witness_set *W_out, witness_set & W_in)
 	
 	
 	if (W_out->patch_mp==NULL)
-		W_out->patch_mp = (vec_mp *)bmalloc(W_in.num_patches * sizeof(vec_mp));
+		W_out->patch_mp = (vec_mp *)br_malloc(W_in.num_patches * sizeof(vec_mp));
 	else{
 		W_out->patch_mp = (vec_mp *)br_realloc(W_out->patch_mp, W_in.num_patches * sizeof(vec_mp));
 	}
@@ -758,7 +758,7 @@ void cp_patches(witness_set *W_out, witness_set & W_in)
 //	
 //	W_out->num_pts = counter;
 //	
-//	W_out->pts_mp = (point_mp *)bmalloc(counter*sizeof(point_mp));
+//	W_out->pts_mp = (point_mp *)br_malloc(counter*sizeof(point_mp));
 //
 //	
 //	
@@ -813,7 +813,7 @@ void cp_patches(witness_set *W_out, witness_set & W_in)
 //
 //	int curr_uniqueness;
 //	int num_good_pts = 0;
-//	int *is_unique  = (int *)bmalloc(W_in.num_pts*sizeof(int));
+//	int *is_unique  = (int *)br_malloc(W_in.num_pts*sizeof(int));
 //	
 //	for (ii = 0; ii<W_in.num_pts; ++ii) {
 //		curr_uniqueness = 1;
@@ -840,7 +840,7 @@ void cp_patches(witness_set *W_out, witness_set & W_in)
 //	
 //	W_out->num_pts = num_good_pts;
 //	
-//	W_out->pts_mp = (vec_mp *)bmalloc(num_good_pts*sizeof(vec_mp));
+//	W_out->pts_mp = (vec_mp *)br_malloc(num_good_pts*sizeof(vec_mp));
 //	int counter = 0;
 //	for (ii=0; ii<W_in.num_pts; ++ii) {
 //		if (is_unique[ii]==1) {

@@ -144,7 +144,8 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 		solve_options.allow_multiplicity = 0;
 		solve_options.allow_unsuccess = 1;
 		// actually solve WRT the linears
-		multilintolin_solver_main(W.MPType,
+
+		multilintolin_solver_main(solve_options.T.MPType,
 															W,         // witness_set
 															randomizer_matrix,
 															multilin_linears, //  the set of linears we will solve at.
@@ -240,11 +241,11 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	
 	
 	
-	nullspacejac_solver_master_entry_point(W.MPType,
-													 W_linprod, // carries with it the start points, but not the linears.
-													 W_crit,   // the created data goes in here.
-													 ns_config,
-													 solve_options);
+	nullspacejac_solver_master_entry_point(solve_options.T.MPType,
+																				 W_linprod, // carries with it the start points, but not the linears.
+																				 W_crit,   // the created data goes in here.
+																				 ns_config,
+																				 solve_options);
 	
 	
 	W_crit->num_variables = ns_config->num_x_vars+ns_config->num_v_vars;
