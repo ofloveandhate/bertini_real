@@ -714,20 +714,21 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	
 	// done!  yay!
 	
-	//uncomment to see screen output of important variables at each solve step.
-//	printf("gamma = %lf+1i*%lf;\n", BED->gamma->r, BED->gamma->i);
-//	printf("time = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
-//	print_matrix_to_screen_matlab( AtimesJ,"R*jac");
-//	print_point_to_screen_matlab(current_variable_values,"currvars");
-//	print_point_to_screen_matlab(BED->current_linear[0],"new");
-//	print_point_to_screen_matlab(BED->old_linear[0],"old");
-//	print_point_to_screen_matlab(funcVals,"F");
-//	print_matrix_to_screen_matlab(Jv,"Jv");
-//	print_matrix_to_screen_matlab(Jp,"Jp");
-//	print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
-
-//	mypause();
-
+	if (BED->verbose_level==12) {
+		//uncomment to see screen output of important variables at each solve step.
+		printf("gamma = %lf+1i*%lf;\n", BED->gamma->r, BED->gamma->i);
+		printf("time = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
+		print_matrix_to_screen_matlab( AtimesJ,"R*jac");
+		print_point_to_screen_matlab(current_variable_values,"currvars");
+		print_point_to_screen_matlab(BED->current_linear[0],"new");
+		print_point_to_screen_matlab(BED->old_linear[0],"old");
+		print_point_to_screen_matlab(funcVals,"F");
+		print_matrix_to_screen_matlab(Jv,"Jv");
+		print_matrix_to_screen_matlab(Jp,"Jp");
+		print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
+	//
+		mypause();
+	}
 
 
 	
@@ -1748,23 +1749,24 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	
 	// done!  yay!
 	
+	if (BED->verbose_level==12) {
 	//uncomment to see screen output of important variables at each solve step.
-//	print_comp_matlab(pathVars, "t");
-//	printf("BED->num_linears = %d\n",BED->num_linears);
-//	print_point_to_screen_matlab(parVals,"parVals_mp");
-//	print_matrix_to_screen_matlab( AtimesJ,"R*jac_mp");
-//	print_point_to_screen_matlab(current_variable_values,"currvars_mp");
-//	for (ii=0; ii<BED->num_linears; ii++) {
-//		print_point_to_screen_matlab(BED->current_linear[ii],"new_mp");
-//		print_point_to_screen_matlab(BED->old_linear[ii],"old_mp");
-//	}
-//	print_point_to_screen_matlab(funcVals,"F_mp");
-//	print_matrix_to_screen_matlab(Jv,"Jv_mp");
-//	print_matrix_to_screen_matlab(Jp,"Jp_mp");
-//	print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix_mp");
-//
-//	mypause();
-	
+	print_comp_matlab(pathVars, "t");
+	printf("BED->num_linears = %d\n",BED->num_linears);
+	print_point_to_screen_matlab(parVals,"parVals_mp");
+	print_matrix_to_screen_matlab( AtimesJ,"R*jac_mp");
+	print_point_to_screen_matlab(current_variable_values,"currvars_mp");
+	for (ii=0; ii<BED->num_linears; ii++) {
+		print_point_to_screen_matlab(BED->current_linear[ii],"new_mp");
+		print_point_to_screen_matlab(BED->old_linear[ii],"old_mp");
+	}
+	print_point_to_screen_matlab(funcVals,"F_mp");
+	print_matrix_to_screen_matlab(Jv,"Jv_mp");
+	print_matrix_to_screen_matlab(Jp,"Jp_mp");
+	print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix_mp");
+
+	mypause();
+	}
 	
 	
 	for (ii=0; ii<BED->num_linears; ii++) {

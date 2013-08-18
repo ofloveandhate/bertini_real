@@ -46,7 +46,7 @@ int main(int argC, char *args[])
 		return -445;
 	
 	
-	
+	std::cout << inputName << std::endl;
 	parse_input_file(inputName);
 	
 
@@ -79,7 +79,7 @@ int main(int argC, char *args[])
 	for (int ii=0; ii<C.num_patches; ii++) {
 		W.add_patch(C.patch[ii]);
 	}
-
+	
 	mat_mp randomizer_matrix; init_mat_mp2(randomizer_matrix, 0,0, solve_options.T.AMP_max_prec);
 	
 	//create the array of integers
@@ -98,11 +98,11 @@ int main(int argC, char *args[])
 	if (solve_options.verbose_level>=2) {
 		solve_options.show_status_summary=1;
 	}
-	solve_options.T.ratioTol = 1; // manually assert to be more permissive.  i don't really like this.
+	solve_options.T.ratioTol = 0.99999999; // manually assert to be more permissive.  i don't really like this.
 	solve_options.use_midpoint_checker = 0;
 	solve_options.use_gamma_trick = sampler_options.use_gamma_trick;
 	solve_options.allow_singular = 1;
-	
+
 	/////////
 	////////
 	//////
@@ -167,7 +167,7 @@ void generate_new_sampling_pts(sample_data *S_new,
 {
 
 	
-	int				num_vars = W.num_variables;
+	int				num_vars = C.num_variables;
 	
 	
 	witness_set  Wnew;
@@ -198,14 +198,14 @@ void generate_new_sampling_pts(sample_data *S_new,
 	
 	
 	
-	
+	S_new->num_variables = C.num_variables;
 	S_new->num_edges = S_old.num_edges;
 	S_new->num_samples_each_edge = (int *) br_malloc(S_new->num_edges * sizeof(int));
 	S_new->sample_indices = (int **) br_malloc(S_new->num_edges * sizeof(int *));
 	
 	
 	vertex temp_vertex;
-//	init_vertex(&temp_vertex);
+
 	mpf_t dist_away; mpf_init(dist_away);
 	int interval_counter;
 	int num_refinements;
@@ -306,37 +306,31 @@ void generate_new_sampling_pts(sample_data *S_new,
 					neg_mp(&(start_projection->coord[0]),&(start_projection->coord[0]));
 					
 					
-//					print_point_to_screen_matlab(C.pi_mp[0],"C.pi_mp[0]");
-					
-					
 					estimate_new_projection_value(target_projection_value,				// the new value
 																				V.vertices[left_index].pt_mp,	//
 																				V.vertices[right_index].pt_mp, // two points input
 																				C.pi_mp[0]);												// projection (in homogeneous coordinates)
 					
 					
-					
-//					print_comp_matlab(V.vertices[left_index].projVal_mp,"left");
-//					print_comp_matlab(V.vertices[right_index].projVal_mp,"right");
-//					print_comp_matlab(target_projection_value,"target");
-//					
-//					printf("\n\n");
-					
-					
+
 					neg_mp(&target_projection->coord[0],target_projection_value); // take the opposite :)
 					
 					
 					set_witness_set_mp(&W, start_projection,startpt,num_vars); // set the witness point and linear in the input for the lintolin solver.
 					
+							
 					if (sampler_options->verbose_level>=3) {
 						print_point_to_screen_matlab(W.pts_mp[0],"startpt");
 						print_comp_matlab(&W.L_mp[0]->coord[0],"initial_projection_value");
 						print_comp_matlab(target_projection_value,"target_projection_value");
-						
-//						W.print_to_screen();
 					}
 					
+					if (sampler_options->verbose_level>=5)
+						W.print_to_screen();
 					
+					if (sampler_options->verbose_level>=10) {
+						mypause();
+					}
 					
 					multilintolin_solver_main(MPType,
 																		W,         // witness_set
@@ -391,6 +385,8 @@ void generate_new_sampling_pts(sample_data *S_new,
 					vec_cp_mp(temp_vertex.pt_mp,Wnew.pts_mp[0]);
 					set_mp(temp_vertex.projVal_mp,target_projection_value);
 					temp_vertex.type = SAMPLE_POINT;
+					
+
 					new_indices[sample_counter] = V.add_vertex(temp_vertex);
 					sample_counter++;
 					
@@ -484,8 +480,10 @@ void set_witness_set_mp(witness_set *W, vec_mp new_linear,vec_mp pts,int num_var
 
 
 void  output_sampling_data(sample_data S, vertex_set V,
-													 boost::filesystem::path samplingName,int num_vars,int MPType)
+													 boost::filesystem::path samplingName,int num_vars, int MPType)
 {
+	V.print_to_screen();
+	V.vertices[0].print();
 	FILE *OUT =  safe_fopen_write(samplingName);
 	int ii,jj,kk;
 	// output the number of vertices
@@ -495,6 +493,9 @@ void  output_sampling_data(sample_data S, vertex_set V,
 		
 		fprintf(OUT,"%d\n\n",S.num_samples_each_edge[ii]);
 		for (jj=0; jj<S.num_samples_each_edge[ii]; jj++) {
+			std::cout << "edge " << ii << " sample " << jj << " " << S.sample_indices[ii][jj] << std::endl;
+			V.vertices[S.sample_indices[ii][jj]].print();
+			
 			print_mp(OUT,0,V.vertices[S.sample_indices[ii][jj]].projVal_mp);
 			fprintf(OUT,"\n");
 			for(kk=0;kk<num_vars;kk++) {
@@ -525,7 +526,7 @@ int  curve_sampler_startup(boost::filesystem::path directoryName,
 
 	int successful_startup = 1;
 	//read in the gross information from the summary file.
-	C.setup(directoryName / "C.curve", inputName, directoryName);
+	C.setup(directoryName / "decomp", inputName, directoryName);
 	
 	//setup E structure from E.edge
 	C.setup_edges(directoryName / "E.edge");
@@ -585,21 +586,17 @@ void estimate_new_projection_value(comp_mp result, vec_mp left, vec_mp right, ve
 		deliberate_segfault();
 	}
 	
-	
-	
+//	print_point_to_screen_matlab(left,"left");
+//	print_point_to_screen_matlab(right,"right");
+//	print_point_to_screen_matlab(pi,"pi");
 	
 	vec_mp dehom_left, dehom_right;
 	init_vec_mp(dehom_left,left->size-1);   dehom_left->size  = left->size-1;
 	init_vec_mp(dehom_right,right->size-1); dehom_right->size = right->size-1;
 	
-	dehomogenize(&dehom_left,left);
-	dehomogenize(&dehom_right,right);
+	dehomogenize(&dehom_left,left,pi->size);
+	dehomogenize(&dehom_right,right,pi->size);
 	
-	
-	
-//	print_point_to_screen_matlab(dehom_left,"left_pt");
-//	print_point_to_screen_matlab(dehom_right,"right_pt");
-//	print_point_to_screen_matlab(pi,"pi");
 	
 	comp_mp temp, temp2, half; init_mp(temp); init_mp(temp2);  init_mp(half);
 	
@@ -608,7 +605,7 @@ void estimate_new_projection_value(comp_mp result, vec_mp left, vec_mp right, ve
 	 
 	set_zero_mp(result);                                           // result = 0;  initialize
 	
-	for (ii = 0; ii<dehom_left->size; ii++) {
+	for (ii = 0; ii<pi->size-1; ii++) {
 		add_mp(temp,&dehom_left->coord[ii],&dehom_right->coord[ii]); //  a = (x+y)
 		mul_mp(temp2, temp, half);                                   //  b = a/2
 		mul_mp(temp,&pi->coord[ii+1],temp2);                          //  a = b.pi

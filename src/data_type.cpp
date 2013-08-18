@@ -340,8 +340,6 @@ int decomposition::add_vertex(vertex_set & V, vertex source_vertex)
 		this->counters[source_vertex.type] = 0;
 	}
 
-	print_point_to_screen_matlab(source_vertex.pt_mp,"new_added_point");
-	
 	this->counters[source_vertex.type]++;
 	this->indices[source_vertex.type].push_back(current_index);
 
@@ -360,8 +358,6 @@ int decomposition::index_in_vertices(vertex_set &V,
 	int ii;
 	int index = -1;
 		
-//	V.print_to_screen();
-	
 	std::map< int , int >::iterator type_iter;
 	
 	for (type_iter = this->counters.begin(); type_iter!= this->counters.end(); type_iter++) {
@@ -417,8 +413,7 @@ int decomposition::index_in_vertices_with_add(vertex_set &V,
 	int index = decomposition::index_in_vertices(V, testpoint, projection_value, T);
 	
 	if (index==-1) {
-		std::cout << "adding vertex to set.  type: " << NEW << "\n\n";
-		
+
 		vertex temp_vertex;
 		
 		set_mp(temp_vertex.projVal_mp,  projection_value);
@@ -517,14 +512,14 @@ int decomposition::setup(boost::filesystem::path INfile,
 	converter >> curr_num_patches;
 	converter.clear(); converter.str("");
 	
-//	std::cout << "during setup, num_patches is to be " << curr_num_patches << std::endl;
-//	mypause();
+
+	
 	
 	vec_mp temp_patch; init_vec_mp2(temp_patch,1,1024); temp_patch->size = 1;
 	for (int ii=0; ii<curr_num_patches; ii++) {
 		
-		getline(fin,tempstr); //std::cout << tempstr << std::endl;
-		getline(fin,tempstr); //std::cout << tempstr << " <--- supposed to have the size in it" << std::endl;
+		getline(fin,tempstr); 
+		getline(fin,tempstr); // <--- supposed to have the size in it
 		
 		int curr_size;
 		
@@ -548,8 +543,8 @@ int decomposition::setup(boost::filesystem::path INfile,
 		decomposition::add_patch(temp_patch);
 	}
 	
-//	std::cout << "correct number patches: " << curr_num_patches << " vs memory-num_patches " << this->num_patches << std::endl;
-//	mypause();
+
+	
 	clear_vec_mp(temp_patch);
 	
 	fin.close();
@@ -567,13 +562,15 @@ int decomposition::setup(boost::filesystem::path INfile,
  Output curve overall info as follows:
  
  **/
-void decomposition::print(boost::filesystem::path input_deflated_Name, boost::filesystem::path outputfile)
+void decomposition::print(boost::filesystem::path base)
 {
 	int ii;
 	
-	FILE *OUT = safe_fopen_write(outputfile);
+	boost::filesystem::create_directory(base);
 	
-	fprintf(OUT,"%s\n",input_deflated_Name.filename().c_str());
+	FILE *OUT = safe_fopen_write(base / "decomp");
+	
+	fprintf(OUT,"%s\n",input_filename.filename().c_str());
 	
 	fprintf(OUT,"%d %d\n",num_variables, dimension);
 	
@@ -590,7 +587,7 @@ void decomposition::print(boost::filesystem::path input_deflated_Name, boost::fi
 	}
 	
 	if (dimension != num_curr_projections) {
-		std::cerr << "decomposition was short projections\n";
+		std::cerr << "decomposition was short projections\nneeded	" << this->dimension << " but had " << num_curr_projections << std::endl;;
 		deliberate_segfault();
 	}
 	for (ii=0; ii<num_curr_projections; ii++) {
@@ -599,6 +596,7 @@ void decomposition::print(boost::filesystem::path input_deflated_Name, boost::fi
 			print_mp(OUT, 0, &pi_mp[ii]->coord[jj]);
 			fprintf(OUT,"\n");
 		}
+		fprintf(OUT,"\n");
 	}
 	fprintf(OUT,"\n");
 	
@@ -646,6 +644,22 @@ void curve_decomposition::add_edge(edge new_edge)
 	return;
 }
 
+
+void curve_decomposition::print(boost::filesystem::path base)
+{
+	
+	std::cout << "printing curve decomposition to folder " << base << std::endl;
+	
+	decomposition::print(base);
+	
+	boost::filesystem::path edgefile = base / "E.edge";
+	
+	curve_decomposition::print_edges(edgefile);
+}
+
+
+
+
 void curve_decomposition::print_edges(boost::filesystem::path outputfile)
 /**Output edge structure as follows:
  # variables
@@ -664,13 +678,14 @@ void curve_decomposition::print_edges(boost::filesystem::path outputfile)
  **/
 {
 	int ii;
-	FILE *OUT = safe_fopen_write(outputfile.c_str());
+	FILE *OUT = safe_fopen_write(outputfile);
 	
 	// output the number of vertices
 	fprintf(OUT,"%d\n\n",num_edges);
 	
 	for(ii=0;ii<num_edges;ii++)
-		fprintf(OUT,"%d %d %d \n",edges[ii].left,
+		fprintf(OUT,"%d %d %d \n",
+						edges[ii].left,
 						edges[ii].midpt,
 						edges[ii].right);
 	fclose(OUT);
@@ -679,6 +694,56 @@ void curve_decomposition::print_edges(boost::filesystem::path outputfile)
 
 
 
+
+void surface_decomposition::print(boost::filesystem::path base)
+{
+	
+	std::cout << "printing surface decomposition to folder " << base << std::endl;
+	decomposition::print(base);
+	
+	
+	
+	boost::filesystem::path summaryname = base;
+	summaryname /= "S.surf";
+	FILE *OUT = safe_fopen_write(summaryname);
+	fprintf(OUT,"%d %d %d %d\n\n", num_faces, num_edges, midpoint_slices.size(), critpoint_slices.size());
+	// what more to print here?
+	fclose(OUT);
+	
+	
+	boost::filesystem::path curve_location = base;
+	curve_location /= "curve";
+	
+	for (int ii=0; ii<midpoint_slices.size(); ii++) {
+		
+		std::stringstream converter;
+		converter << ii;
+		
+		boost::filesystem::path specific_loc = curve_location;
+		specific_loc += "_midslice_";
+		specific_loc += converter.str();
+		converter.clear(); converter.str("");
+		
+		midpoint_slices[ii].print(specific_loc);
+	}
+	
+	for (int ii=0; ii<critpoint_slices.size(); ii++) {
+		
+		std::stringstream converter;
+		converter << ii;
+		
+		boost::filesystem::path specific_loc = curve_location;
+		specific_loc += "_critslice_";
+		specific_loc += converter.str();
+		converter.clear(); converter.str("");
+		
+		critpoint_slices[ii].print(specific_loc);
+	}
+	
+	boost::filesystem::path specific_loc = curve_location;
+	specific_loc += "_crit";
+	crit_curve.print(specific_loc);
+}
 
 
 
@@ -1203,7 +1268,7 @@ void cp_preproc_data(preproc_data *PPD, preproc_data PPD_input)
 
 
 
-void sort_increasing_by_real(vec_mp *projections_sorted, int **index_tracker, vec_mp projections_input){
+void sort_increasing_by_real(vec_mp *projections_sorted, std::vector< int > & index_tracker, vec_mp projections_input){
 	
 	comp_mp large; init_mp(large);
 	comp_d l; l->r = 1e9; l->i = 0;
@@ -1213,11 +1278,10 @@ void sort_increasing_by_real(vec_mp *projections_sorted, int **index_tracker, ve
 	vec_mp raw; init_vec_mp(raw,1);
 	vec_cp_mp(raw,projections_input);
 	
-	change_size_vec_mp( (*projections_sorted), raw->size);
+	change_size_vec_mp( (*projections_sorted), raw->size); // destructive resize
 	(*projections_sorted)->size = raw->size;
 	int ii,jj;
-	//	comp_mp temp1, temp2; init_mp(temp1); init_mp(temp2);
-	
+
 	double min;
 	double curr;
 	int indicator = -1;
@@ -1238,7 +1302,7 @@ void sort_increasing_by_real(vec_mp *projections_sorted, int **index_tracker, ve
 		
 		
 		
-		(*index_tracker)[ii] = indicator;
+		index_tracker.push_back(indicator);
 		set_mp( &(*projections_sorted)->coord[ii],&raw->coord[indicator]);
 		set_mp( &raw->coord[indicator],large);
 	}

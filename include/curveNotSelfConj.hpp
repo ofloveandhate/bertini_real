@@ -40,7 +40,6 @@ void 	computeCurveNotSelfConj(witness_set		& W,
 															curve_decomposition &C,
 															vertex_set		&V,
 															int						num_vars,
-															boost::filesystem::path input_file,
 															BR_configuration & program_options,
 															solver_configuration & solve_options);
 

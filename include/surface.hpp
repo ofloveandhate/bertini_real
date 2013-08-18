@@ -38,7 +38,9 @@ void surface_main(vertex_set & V,
 									BR_configuration & program_options,
 									solver_configuration solve_options);
 
-
+void create_sliced_system(boost::filesystem::path input_file, boost::filesystem::path output_file,
+													vec_mp * linears, int num_to_add,
+													const witness_set & W);
 
 #endif
 

@@ -16,7 +16,7 @@
 
 
 int process::main_loop(){
-	std::cout << "the basic main loop does nothing" << std::endl;
+	std::cout << "the basic main loop for a generic process does nothing.  create a derived class." << std::endl;
 	
 	return SUCCESSFUL;
 }
@@ -60,8 +60,7 @@ int ubermaster_process::main_loop()
 	
 	
 	W.get_variable_names();
-	
-	
+	W.input_filename = program_options.input_filename;
 	
 	int incidence_number = get_incidence_number(W,num_vars,
 																							program_options,
@@ -92,7 +91,7 @@ int ubermaster_process::main_loop()
 			if (program_options.verbose_level>=2)
 				printf("outputting data\n");
 			
-			Output_Main(program_options, W, C, V);
+			Output_Main(program_options, C, V);
 			
 			break;
 			
@@ -100,8 +99,10 @@ int ubermaster_process::main_loop()
 		case 2:
 			// surface
 			surface_main(V, S, W, pi, program_options, solve_options);
-			
-			Output_Main(program_options, W, S.crit_curve, V);// temporarily using the curve output.
+//
+//			S.print(program_options);
+//			V.print(program_options);
+			Output_Main(program_options, S, V);// temporarily using the curve output.
 			
 			break;
 			

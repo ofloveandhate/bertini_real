@@ -9,8 +9,7 @@
 
 
 
-void computeCurveSelfConj(boost::filesystem::path inputFile,
-													witness_set & W_curve,
+void computeCurveSelfConj(witness_set & W_curve,
 													vec_mp *pi,
 													curve_decomposition &C,
 													vertex_set &V,
@@ -97,6 +96,7 @@ int curve_compute_critical_points(witness_set & W_curve,
 	int ambient_dim = 1;
 	
 	int *declarations = NULL;
+	
 	partition_parse(&declarations, program_options.current_working_filename, "func_input", "config", 0); // the 0 means not self conjugate.
 																																				// i would like to move this.
 	
@@ -106,9 +106,6 @@ int curve_compute_critical_points(witness_set & W_curve,
 	
 	if (program_options.crit_solver == LINPRODTODETJAC)
 	{
-#ifdef printpathlintolin
-		remove("pathtrack_lintolin");
-#endif
 		
 		
 		//compute the number of linears we will need to move to, to perform the regeneration for linprodtodetjac method.
@@ -152,12 +149,9 @@ int curve_compute_critical_points(witness_set & W_curve,
 		cp_linears(&W_crit_real, W_curve);
 		W_crit_real.only_first_vars(W_curve.num_variables); // trim the fat, since we are at the lowest level.
 		
-		W_crit_real.write_dehomogenized_coordinates("W_before_real_sort");
 		
 		W_crit_real.sort_for_real(solve_options.T);
-		
-		W_crit_real.write_dehomogenized_coordinates("W_before_additional");
-		
+
 		// now get the bounding box critical points and ends of the interval
 		curve_get_additional_critpts(&W_crit_real,
 																 W_curve,
@@ -169,47 +163,28 @@ int curve_compute_critical_points(witness_set & W_curve,
 		
 	}
 	
-	W_crit_real.write_dehomogenized_coordinates("W_after_additional");
-	
+
 	return SUCCESSFUL;
 }
 
 int slice_and_dice(witness_set & W_curve,
-							witness_set & W_crit_real,
-							mat_mp randomizer_matrix,
-							vec_mp *pi,
-							BR_configuration & program_options,
-							solver_configuration solve_options,
-							curve_decomposition & C,
-							vertex_set & V)
+									 witness_set & W_crit_real,
+									 mat_mp randomizer_matrix,
+									 vec_mp *pi,
+									 BR_configuration & program_options,
+									 solver_configuration solve_options,
+									 curve_decomposition & C,
+									 vertex_set & V)
 {
-
+	C.input_filename = W_curve.input_filename;
 	
 	int blabla; int *declarations = NULL;
 	
-	parse_input_file(program_options.current_working_filename, &blabla);
-	partition_parse(&declarations, program_options.current_working_filename, "func_input", "config", 0); // the 0 means not self conjugate.
+	parse_input_file(W_curve.input_filename, &blabla);
+	partition_parse(&declarations, W_curve.input_filename, "func_input", "config", 0); // the 0 means not self conjugate.
 																																				// i would like to move this.
-  // 5) compute h_o, get critical points
 
-	
-	vec_mp projection_values; init_vec_mp(projection_values,W_crit_real.num_pts); projection_values->size = W_crit_real.num_pts;
-	
-	
-	for (int ii=0; ii<W_crit_real.num_pts; ii++){
-		projection_value_homogeneous_input(&projection_values->coord[ii],W_crit_real.pts_mp[ii], pi[0]); // set projection value
-	}
 
-	
-	
-	vec_mp projections_sorted;
-	init_vec_mp(projections_sorted,W_crit_real.num_pts); projections_sorted->size = W_crit_real.num_pts;
-	
-	int *index_tracker = (int *)br_malloc(W_crit_real.num_pts*sizeof(vec_mp)*sizeof(int));
-	sort_increasing_by_real(&projections_sorted, &index_tracker, projection_values);
-	
-	
-	
 	
 	
 	///////
@@ -220,46 +195,28 @@ int slice_and_dice(witness_set & W_curve,
 	
 	
 	
-	double *crit_downstairs; int num_crit;
+	vec_mp crit_downstairs; init_vec_mp(crit_downstairs,0);
+	vec_mp midpoints_downstairs; init_vec_mp(midpoints_downstairs,0);
+	std::vector< int > index_tracker;
 	
-	num_crit = W_crit_real.num_pts;
-	crit_downstairs = (double *)br_malloc(num_crit*sizeof(double));
-	
-	int num_midpoints = W_crit_real.num_pts-1;
-	
-	if (num_midpoints<1) {
-		printf("no midpoints to work with :(\n");
-		printf("please program exiting setting C (start at line 449 in curveSelfConj() )\n");
-		exit(-1);
-	}
-	else{
-		printf("%d midpoints downstairs\n",num_midpoints);
-	}
+	W_crit_real.compute_downstairs_crit_midpts(crit_downstairs, midpoints_downstairs, index_tracker, pi[0]);
 	
 	
-	double *midpoints_downstairs = (double *) br_malloc(num_midpoints*sizeof(double));
+	int num_midpoints = midpoints_downstairs->size;
 	
-	
-	for (int ii=0; ii<projections_sorted->size-1; ii++)
-		midpoints_downstairs[ii] = (mpf_get_d(projections_sorted->coord[ii].r)+mpf_get_d(projections_sorted->coord[ii+1].r))/2;
-	
-	for (int ii=0; ii<W_crit_real.num_pts; ii++)
-		crit_downstairs[ii] = mpf_get_d(projections_sorted->coord[ii].r);
-	
-	
-	if (program_options.verbose_level>=1) {
-		printf("midpoints:\n");
-		for (int ii=0; ii<num_midpoints; ii++) {
-			printf("%lf\n",midpoints_downstairs[ii]);
-		}
-		
-		printf("crit_downstairs:\n");
-		//print out the crit set of projection values.
-		for (int ii=0; ii<num_crit; ii++) {
-			printf("%lf ",crit_downstairs[ii]);
-		}
-		printf("\n");
-	}
+//	if (program_options.verbose_level>=1) {
+//		printf("midpoints:\n");
+//		for (int ii=0; ii<num_midpoints; ii++) {
+//			printf("%lf\n",midpoints_downstairs[ii]);
+//		}
+//		
+//		printf("crit_downstairs:\n");
+//		//print out the crit set of projection values.
+//		for (int ii=0; ii<W_crit_real.num_pts; ii++) {
+//			printf("%lf ",crit_downstairs[ii]);
+//		}
+//		printf("\n");
+//	}
 	
 	
 	
@@ -270,11 +227,12 @@ int slice_and_dice(witness_set & W_curve,
 	
 	vertex temp_vertex;
 	
-	for (int ii=0; ii< projections_sorted->size; ii++){
-		if (program_options.verbose_level>=2)
-			printf("adding point %d of %d from crit_real to vertices\n",ii,projections_sorted->size);
+	for (int ii=0; ii<crit_downstairs->size; ii++){
 		
-		set_mp(temp_vertex.projVal_mp,  &projections_sorted->coord[ii]); // set projection value
+		if (program_options.verbose_level>=2)
+			printf("adding point %d of %d from crit_real to vertices\n",ii,crit_downstairs->size);
+		
+		set_mp(temp_vertex.projVal_mp,  &crit_downstairs->coord[ii]); // set projection value
 		vec_cp_mp(temp_vertex.pt_mp,W_crit_real.pts_mp[index_tracker[ii]]);// set point
 		temp_vertex.type = CRITICAL; // set type
 		C.add_vertex(V,temp_vertex);
@@ -315,23 +273,15 @@ int slice_and_dice(witness_set & W_curve,
 	midpoint_witness_sets.resize(num_midpoints);
 	
 	
-	//	witness_set *midpoint_witness_sets;
-	//	midpoint_witness_sets = (witness_set *)br_malloc(num_midpoints*sizeof(witness_set));
-	
-	comp_d temp;
   vec_mp particular_projection;  init_vec_mp(particular_projection,W_curve.num_variables); particular_projection->size = W_curve.num_variables;
 	vec_cp_mp(particular_projection,pi[0]);
 	
 	for (int ii=0; ii<num_midpoints; ii++) {
 		if (program_options.verbose_level>=2) {
-			printf("solving midpoints upstairs %d, projection value %lf\n",ii,midpoints_downstairs[ii]);
+			printf("solving midpoints upstairs %d, projection value %lf\n",ii,mpf_get_d(midpoints_downstairs->coord[ii].r));
 		}
 		
-		
-		
-		temp->i = 0;
-		temp->r = -midpoints_downstairs[ii];
-		d_to_mp(&particular_projection->coord[0],temp);
+		neg_mp(&particular_projection->coord[0], &midpoints_downstairs->coord[ii]);
 		
 		//make the projection we will solve at.
 		
@@ -385,13 +335,10 @@ int slice_and_dice(witness_set & W_curve,
 		}
 		
 		
-		temp->r = crit_downstairs[ii]; temp->i = 0;
-		d_to_mp(left_proj_val,temp);
-		d_to_mp(&particular_projection->coord[0],temp);
-		neg_mp(&particular_projection->coord[0],&particular_projection->coord[0]);
+		neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii]);
 		
-		print_point_to_screen_matlab(midpoint_witness_sets[ii].L_mp[0], "old_lin");
-		print_point_to_screen_matlab(particular_projection, "new_proj_left");
+//		print_point_to_screen_matlab(midpoint_witness_sets[ii].L_mp[0], "old_lin");
+//		print_point_to_screen_matlab(particular_projection, "new_proj_left");
 		lintolin_solver_main(solve_options.T.MPType,
 												 midpoint_witness_sets[ii], //the input
 												 randomizer_matrix,
@@ -400,13 +347,9 @@ int slice_and_dice(witness_set & W_curve,
 												 solve_options); // the output
 		
 		
-		temp->r = crit_downstairs[ii+1]; temp->i = 0;
-		d_to_mp(right_proj_val,temp);
-		d_to_mp(&particular_projection->coord[0],temp);
-		neg_mp(&particular_projection->coord[0],&particular_projection->coord[0]);
+		neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii+1]);
 		
-		
-		print_point_to_screen_matlab(particular_projection, "new_proj_right");
+//		print_point_to_screen_matlab(particular_projection, "new_proj_right");
 		lintolin_solver_main(solve_options.T.MPType,
 												 midpoint_witness_sets[ii], //the input
 												 randomizer_matrix,
@@ -516,11 +459,11 @@ int curve_get_additional_critpts(witness_set *W_crit_real,
 		
 		vec_mp projections_sorted;
 		init_vec_mp(projections_sorted,W_crit_real->num_pts); projections_sorted->size = W_crit_real->num_pts;
-		int *index_tracker = (int *)br_malloc(W_crit_real->num_pts*sizeof(int));
-		sort_increasing_by_real(&projections_sorted, &index_tracker, projection_values);
+		std::vector< int > index_tracker;
+		sort_increasing_by_real(&projections_sorted, index_tracker, projection_values);
 		
-		printf("%d points in W_crit_real\n", W_crit_real->num_pts);
-		print_point_to_screen_matlab(projections_sorted,"proj_sorted");
+//		printf("%d points in W_crit_real\n", W_crit_real->num_pts);
+//		print_point_to_screen_matlab(projections_sorted,"proj_sorted");
 		
 		
 		comp_mp left_proj_val, right_proj_val;
@@ -637,8 +580,8 @@ int curve_get_additional_critpts(witness_set *W_crit_real,
 				
 				vec_mp projections_sorted;
 				init_vec_mp(projections_sorted,Wtemp.num_pts); projections_sorted->size = Wtemp.num_pts;
-				int *index_tracker = (int *)br_malloc(Wtemp.num_pts*sizeof(int));
-				sort_increasing_by_real(&projections_sorted, &index_tracker, projection_values);
+				std::vector< int > index_tracker;
+				sort_increasing_by_real(&projections_sorted, index_tracker, projection_values);
 				
 				Wtemp.reset();
 
@@ -680,7 +623,7 @@ int curve_get_additional_critpts(witness_set *W_crit_real,
 				
 				clear_vec_mp(projection_values);
 				clear_vec_mp(projections_sorted);
-				free(index_tracker);
+				index_tracker.clear();
 			}
 			
 			Wtemp.reset();
@@ -794,7 +737,7 @@ int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
 		printf("done with initial use of lintolin solver\n");
 	
 	
-//	W_lintolin.print_to_screen();
+
 	
 	
 	//////////////
@@ -900,8 +843,8 @@ int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
 		
 		vec_mp projections_sorted;
 		init_vec_mp(projections_sorted,W_crit_real->num_pts); projections_sorted->size = W_crit_real->num_pts;
-		int *index_tracker = (int *)br_malloc(W_crit_real->num_pts*sizeof(int));
-		sort_increasing_by_real(&projections_sorted, &index_tracker, projection_values);
+		std::vector< int > index_tracker;
+		sort_increasing_by_real(&projections_sorted, index_tracker, projection_values);
 		
 		printf("%d points in W_crit_real\n", W_crit_real->num_pts);
 		print_point_to_screen_matlab(projections_sorted,"proj_sorted");
@@ -1019,8 +962,8 @@ int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
 				
 				vec_mp projections_sorted;
 				init_vec_mp(projections_sorted,Wtemp.num_pts); projections_sorted->size = Wtemp.num_pts;
-				int *index_tracker = (int *)br_malloc(Wtemp.num_pts*sizeof(int));
-				sort_increasing_by_real(&projections_sorted, &index_tracker, projection_values);
+				std::vector< int > index_tracker;
+				sort_increasing_by_real(&projections_sorted, index_tracker, projection_values);
 				
 				Wtemp.reset();
 
@@ -1062,7 +1005,7 @@ int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
 				
 				clear_vec_mp(projection_values);
 				clear_vec_mp(projections_sorted);
-				free(index_tracker);
+				index_tracker.clear();
 			}
 			
 			Wtemp.reset();

@@ -8,7 +8,6 @@ void computeCurveNotSelfConj(witness_set & W_in,
                              curve_decomposition	&C,
 														 vertex_set			&V,
                              int           num_vars,
-                             boost::filesystem::path input_file,
 														 BR_configuration & program_options,
 														 solver_configuration & solve_options)
 /***************************************************************\
@@ -24,7 +23,8 @@ void computeCurveNotSelfConj(witness_set & W_in,
 	
   int ii,jj,num_sols,*declarations = NULL;
   
-	std::string bertini_system_command = "bertini input_NSC";
+	std::string bertini_system_command = program_options.bertini_command;
+	bertini_system_command.append(" input_NSC");
 	
   FILE *IN = NULL;
   vec_mp cur_sol,cur_sol_bar;
@@ -34,7 +34,7 @@ void computeCurveNotSelfConj(witness_set & W_in,
   init_vec_mp(cur_sol_bar,num_vars); cur_sol_bar->size = num_vars;
 	set_one_mp(&cur_sol_bar->coord[0]);
 	
-  partition_parse(&declarations, input_file, "func_input_nsc", "config_nsc",1);
+  partition_parse(&declarations, W_in.input_filename, "func_input_nsc", "config_nsc",1);
 	
 
   //generate input file

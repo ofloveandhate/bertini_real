@@ -352,7 +352,7 @@ void BRpostProcessing(post_process_t *endPoints, witness_set *W_new, int num_pts
 
 
 
-int solver::send()
+int solver::send(parallelism_config & mpi_config)
 {
 	
 	
@@ -384,7 +384,7 @@ int solver::send()
 	return SUCCESSFUL;
 }
 
-int solver::receive()
+int solver::receive(parallelism_config & mpi_config)
 {
 	
 	int *buffer = new int[4];
@@ -441,9 +441,9 @@ int solver::receive()
 //
 ////////////
 
-int solver_mp::send()
+int solver_mp::send(parallelism_config & mpi_config)
 {
-	solver::send();
+	solver::send(mpi_config);
 	
 	std::cout << "master sending patch " << std::endl;
 	print_matrix_to_screen_matlab(this->patch.patchCoeff,"patchCoeff");
@@ -483,16 +483,13 @@ int solver_mp::send()
 }
 
 
-int solver_mp::receive()
+int solver_mp::receive(parallelism_config & mpi_config)
 {
 	
-	solver::receive();
+	solver::receive(mpi_config);
 	
-	std::cout << "worker after basic receive" << std::endl;
 	
 	receive_patch_mp(&this->patch);
-	
-	print_matrix_to_screen_matlab(patch.patchCoeff,"P");
 	
 	bcast_comp_mp(this->gamma, 1,0);
 	
@@ -541,9 +538,9 @@ int solver_mp::receive()
 //
 ////////////
 
-int solver_d::send()
+int solver_d::send(parallelism_config & mpi_config)
 {
-	solver::send();
+	solver::send(mpi_config);
 	
 	send_patch_d(&(this->patch));
 
@@ -555,12 +552,12 @@ int solver_d::send()
 }
 
 
-int solver_d::receive()
+int solver_d::receive(parallelism_config & mpi_config)
 {
 	
-	solver::receive();
+	solver::receive(mpi_config);
 
-	receive_patch_d(&this->patch);
+	receive_patch_d(&this->patch); // the receiving part of the broadcast
 	
 	bcast_comp_d(this->gamma, 1,0);
 	
@@ -589,9 +586,39 @@ void get_tracker_config(solver_configuration & solve_options,int MPType)
 	double intrinsicCutoffMultiplier;
 	int userHom = 0, useRegen = 0, regenStartLevel = 0, maxCodim = 0, specificCodim = 0, pathMod = 0, reducedOnly = 0, supersetOnly = 0, paramHom = 0;
 	//end necessaries for the setupConfig call.
+	int constructWitnessSet = 0;
+	
+  setupConfig(&solve_options.T,
+							&solve_options.midpoint_tol,
+							&userHom,
+							&useRegen,
+							&regenStartLevel,
+							&maxCodim,
+							&specificCodim,
+							&pathMod,
+							&intrinsicCutoffMultiplier,
+							&reducedOnly,
+							&constructWitnessSet,
+							&supersetOnly,
+							&paramHom,
+							MPType);
 	
 	
-  setupConfig(&solve_options.T, &solve_options.midpoint_tol, &userHom, &useRegen, &regenStartLevel, &maxCodim, &specificCodim, &pathMod, &intrinsicCutoffMultiplier, &reducedOnly, &supersetOnly, &paramHom, MPType);
+//	int setupConfig(tracker_config_t *T,
+//									double *midpointTol,
+//									int *userHom,
+//									int *useRegen,
+//									int *regenStartLevel,
+//									int *maxCodim,
+//									int *specificCodim,
+//									int *printMod,
+//									double *intrinsicCutoffMultiplier,
+//									int *reducedOnly,
+//									int *constructWitnessSet,
+//									int *supersetOnly,
+//									int *paramHom,
+//									int MPType); // Opens the file "config" and stores data in tracker_config_t.
+	
 	
 	return;
 }
@@ -927,7 +954,6 @@ void generic_tracker_loop_master(trackingStats *trackCount,
 		int num_packets =1;
 		
 		int next_worker = solve_options.activate_next_worker();
-		std::cout << "master sending " << num_packets << " packets." << std::endl;
 		MPI_Send(&num_packets, 1, MPI_INT, next_worker, NUMPACKETS, MPI_COMM_WORLD);
 		
 		
@@ -940,7 +966,6 @@ void generic_tracker_loop_master(trackingStats *trackCount,
 			next_index++;
 		}
 		
-		std::cout << "master sending indices: ";
 		for (int ii=0; ii<num_packets; ii++) {
 			std::cout << indices_outgoing[ii] << " ";
 		}
@@ -966,10 +991,8 @@ void generic_tracker_loop_master(trackingStats *trackCount,
 		//now to receive data
 		int num_incoming;
 		MPI_Status statty_mc_gatty;
-		std::cout << "master trying to receive from any source the number of packets" << std::endl;
 		MPI_Recv(&num_incoming, 1, MPI_INT, MPI_ANY_SOURCE, NUMPACKETS, MPI_COMM_WORLD, &statty_mc_gatty);
 		
-		std::cout << "master will receive " << num_incoming << " max currently " << max_incoming << std::endl;
 		if (num_incoming > max_incoming) {
 			EG_receives = (endgame_data_t *) br_realloc(EG_receives, num_incoming * sizeof(endgame_data_t));
 			for (int ii=max_incoming; ii<num_incoming; ii++) {
@@ -1029,7 +1052,6 @@ void generic_tracker_loop_master(trackingStats *trackCount,
 			}
 			else
 			{
-				std::cout << "master converting point " << EG_receives[ii].pathNum << " to endpoint" << std::endl;
 				//otherwise converged, but may have still had non-zero retval due to other reasons.
 				endgamedata_to_endpoint(&endPoints[solution_counter], &EG_receives[ii]);
 				trackCount->successes++;
@@ -1464,6 +1486,7 @@ void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W)
 	init_mat_rat(P->patchCoeff_rat, W.num_patches, W.num_variables);
 	
 	init_mat_mp2(P->patchCoeff, W.num_patches, W.num_variables, mpf_get_default_prec());
+	
 	P->curr_prec = mpf_get_default_prec();
 	P->num_patches = W.num_patches;
 	P->patchCoeff->rows = W.num_patches;
