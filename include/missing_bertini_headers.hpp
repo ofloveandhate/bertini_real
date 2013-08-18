@@ -11,7 +11,7 @@
 extern "C" {
 #include "cascade.h"
 #include "parallel.h"
-#include "polysolve.h"
+#include "bertini.h"
 }
 
 extern "C" {

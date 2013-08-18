@@ -142,9 +142,9 @@ public:
 		freeEvalProg(this->MPType);
 	}
 	
-	int send();
+	int send(parallelism_config & mpi_config);
 	
-	int receive();
+	int receive(parallelism_config & mpi_config);
 	
 	void setup(prog_t * _SLP)
 	{
@@ -286,10 +286,10 @@ public:
 		copy(other);
 	} // re: copy
 	
-	int send();
+	int send(parallelism_config & mpi_config);
 	
 	
-	int receive();
+	int receive(parallelism_config & mpi_config);
 	
 	void setup(prog_t * _SLP)
 	{
@@ -361,10 +361,10 @@ public:
 		copy(other);
 	} // re: copy
 	
-	int send();
+	int send(parallelism_config & mpi_config);
 	
 	
-	int receive();
+	int receive(parallelism_config & mpi_config);
 	
 	void setup(prog_t * _SLP)
 	{

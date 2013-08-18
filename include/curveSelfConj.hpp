@@ -45,8 +45,7 @@ extern "C" {
  \param options program configuration.
  \param solve_options solver configuration.
  */
-void computeCurveSelfConj(boost::filesystem::path inputFile,
-													witness_set & W,
+void computeCurveSelfConj(witness_set & W,
 													vec_mp *pi,
 													curve_decomposition &C,
 													vertex_set &V,

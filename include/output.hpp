@@ -30,7 +30,7 @@
 /**
  
  */
-void Output_Main(BR_configuration program_options, witness_set & W, curve_decomposition & C, vertex_set & V);
+void Output_Main(BR_configuration program_options, decomposition & D, vertex_set & V);
 
 
 

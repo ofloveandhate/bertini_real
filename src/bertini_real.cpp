@@ -24,23 +24,6 @@ int main(int argC, char *args[])
 	program_options.parse_commandline(argC, args); // everybody gets to parse the command line.
 	
 	
-//	initMP(1024);
-//	
-//	if (program_options.is_head()){
-//		mat_mp a;
-//		init_mat_mp2(a,3,4,1024);
-//		make_matrix_random_real_mp(a,3, 4, 1024); // this matrix is ~orthogonal
-//		
-//		bcast_mat_mp(a,program_options.id(), program_options.head());
-//	}
-//	else
-//	{
-//		mat_mp b;
-//		init_mat_mp2(b,3,4,1024);
-//		bcast_mat_mp(b,program_options.id(), program_options.head());
-//	}
-	
-	
 	srand(time(NULL));
 	
 	if (program_options.debugwait) {
@@ -70,7 +53,7 @@ int main(int argC, char *args[])
 	get_tracker_config(solve_options,MPType);
 	initMP(solve_options.T.Precision); // set up some globals.
 
-	
+	solve_options.T.ratioTol = 0.99999999; // manually assert to be more permissive.  i don't really like this.
 	solve_options.verbose_level = program_options.verbose_level;
 	
 	

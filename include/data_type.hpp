@@ -65,7 +65,13 @@ void br_exit(int errorCode);
 void deliberate_segfault();
 
 
+void print_point_to_screen_matlab(vec_d M, std::string name);
+void print_point_to_screen_matlab(vec_mp M, std::string name);
+void print_matrix_to_screen_matlab(mat_d M, std::string name);
+void print_matrix_to_screen_matlab(mat_mp M, std::string name);
 
+void print_comp_matlab(comp_mp M,std::string name);
+void print_comp_matlab(comp_d M,std::string name);
 
 
 
@@ -94,10 +100,7 @@ public:
 	
 	vertex()
 	{
-		init_mp(this->projVal_mp);
-		init_point_mp(this->pt_mp,1);
-		this->pt_mp->size = 1;
-		this->type = UNSET;
+		init();
 	};
 	
 	~vertex()
@@ -108,9 +111,7 @@ public:
 	
 	vertex & operator=(const vertex & other)
 	{
-		
-		init_mp(this->projVal_mp);
-		init_point_mp(this->pt_mp,1); this->pt_mp->size = 1;
+		init();
 		
 		vec_cp_mp(this->pt_mp, other.pt_mp);
 		set_mp(this->projVal_mp, other.projVal_mp);
@@ -120,13 +121,28 @@ public:
 	
 	vertex(const vertex& other)
 	{
-		init_mp(this->projVal_mp);
-		init_point_mp(this->pt_mp,1);
-		this->pt_mp->size = 1;
+		init();
 		
 		vec_cp_mp(this->pt_mp, other.pt_mp);
 		set_mp(this->projVal_mp, other.projVal_mp);
 		this->type = other.type;
+	}
+	
+	void print()
+	{
+		print_point_to_screen_matlab(pt_mp,"point");
+		print_comp_matlab(projVal_mp,"projVal");
+		std::cout << "type: " << type << std::endl;
+	}
+	
+private:
+	
+	void init()
+	{
+		init_mp(this->projVal_mp);
+		init_point_mp(this->pt_mp,1);
+		this->pt_mp->size = 1;
+		this->type = UNSET;
 	}
 };
 
@@ -218,6 +234,8 @@ private:
 	{
 		this->num_vertices = other.num_vertices;
 		this->num_natural_variables = other.num_natural_variables;
+		
+		this->vertices = other.vertices;
 		
 		vec_cp_mp(this->checker_1,other.checker_1);
 		vec_cp_mp(this->checker_2,other.checker_2);
@@ -331,6 +349,7 @@ public:
 	
 	int num_variables;
 	int dimension;
+	int component_num;
 	
 	int num_curr_projections;
 	vec_mp	*pi_mp; // the projections
@@ -341,17 +360,11 @@ public:
 	int num_patches;
 	vec_mp *patch;
 
-	
+	boost::filesystem::path input_filename;
+//	function input_file;
 	
 	decomposition(){
-		pi_mp = NULL;
-		patch = NULL;
-		init_mat_mp(randomizer_matrix, 0, 0);
-		randomizer_matrix->rows = randomizer_matrix->cols = 0;
-		
-		num_curr_projections = num_patches = 0;
-		num_variables = 0;
-		dimension = -1;
+		init();
 	}
 	
 	~decomposition()
@@ -376,56 +389,22 @@ public:
 	
 	decomposition & operator=(const decomposition& other){
 		
-		this->counters = other.counters;
-		this->indices = other.indices;
-		this->num_variables = other.num_variables;
-		this->dimension = other.dimension;
-		this->num_curr_projections = other.num_curr_projections;
-		init_mat_mp(this->randomizer_matrix, 0, 0); randomizer_matrix->rows = randomizer_matrix->cols = 0;
-		mat_cp_mp(this->randomizer_matrix, other.randomizer_matrix);
+		init();
 		
-		this->pi_mp = (vec_mp *) br_malloc(other.dimension * sizeof(vec_mp));
-		for (int ii = 0; ii<other.dimension; ii++) {
-			init_vec_mp(this->pi_mp[ii],other.pi_mp[ii]->size);
-			this->pi_mp[ii]->size = other.pi_mp[ii]->size;
-			vec_cp_mp(this->pi_mp[ii], other.pi_mp[ii])
-		}
+		copy(other);
 		
-		this->num_patches = other.num_patches;
-		this->patch = (vec_mp *) br_malloc(other.num_patches * sizeof(vec_mp));
-		for (int ii = 0; ii<other.num_patches; ii++) {
-			init_vec_mp(this->patch[ii],other.patch[ii]->size);
-			this->patch[ii]->size = other.patch[ii]->size;
-			vec_cp_mp(this->patch[ii], other.patch[ii])
-		}
 		return *this;
 	}
 	
 	decomposition(const decomposition & other){
-		this->counters = other.counters;
-		this->indices = other.indices;
-		this->num_variables = other.num_variables;
-		this->dimension = other.dimension;
-		this->num_curr_projections = other.num_curr_projections;
-		init_mat_mp(this->randomizer_matrix, 0, 0); randomizer_matrix->rows = randomizer_matrix->cols = 0;
-		mat_cp_mp(this->randomizer_matrix, other.randomizer_matrix);
 		
-		this->pi_mp = (vec_mp *) br_malloc(other.dimension * sizeof(vec_mp));
-		for (int ii = 0; ii<other.dimension; ii++) {
-			init_vec_mp(this->pi_mp[ii],other.pi_mp[ii]->size);
-			this->pi_mp[ii]->size = other.pi_mp[ii]->size;
-			vec_cp_mp(this->pi_mp[ii], other.pi_mp[ii])
-		}
+		init();
 		
-		this->num_patches = other.num_patches;
-		this->patch = (vec_mp *) br_malloc(other.num_patches * sizeof(vec_mp));
-		for (int ii = 0; ii<other.num_patches; ii++) {
-			init_vec_mp(this->patch[ii],other.patch[ii]->size);
-			this->patch[ii]->size = other.patch[ii]->size;
-			vec_cp_mp(this->patch[ii], other.patch[ii])
-		}
+		copy(other);
 	}
 	
+	
+
 	void add_projection(vec_mp proj){
 		if (this->num_curr_projections==0) {
 			pi_mp = (vec_mp *) br_malloc(sizeof(vec_mp));
@@ -474,7 +453,61 @@ public:
 						boost::filesystem::path & inputName,
 						boost::filesystem::path directoryName);
 	
-	void print(boost::filesystem::path input_deflated_Name, boost::filesystem::path outputfile);
+	virtual void print(boost::filesystem::path outputfile);
+	
+	
+
+	void init(){
+		pi_mp = NULL;
+		patch = NULL;
+		init_mat_mp(randomizer_matrix, 0, 0);
+		randomizer_matrix->rows = randomizer_matrix->cols = 0;
+		
+		num_curr_projections = num_patches = 0;
+		num_variables = 0;
+		dimension = -1;
+		component_num = -1;
+	}
+	
+	void copy(const decomposition & other)
+	{
+		
+		
+		
+		this->input_filename = other.input_filename;
+//		this->input_file = other.input_file;
+		
+		this->counters = other.counters;
+		this->indices = other.indices;
+		this->num_variables = other.num_variables;
+		this->dimension = other.dimension;
+		this->component_num = other.component_num;
+		
+		this->num_curr_projections = other.num_curr_projections;
+		this->pi_mp = (vec_mp *) br_malloc(other.num_curr_projections * sizeof(vec_mp));
+		for (int ii = 0; ii<other.num_curr_projections; ii++) {
+			init_vec_mp(this->pi_mp[ii],other.pi_mp[ii]->size);
+			this->pi_mp[ii]->size = other.pi_mp[ii]->size;
+			vec_cp_mp(this->pi_mp[ii], other.pi_mp[ii])
+		}
+		
+		
+		init_mat_mp2(this->randomizer_matrix, 0, 0,1024); randomizer_matrix->rows = randomizer_matrix->cols = 0;
+		mat_cp_mp(this->randomizer_matrix, other.randomizer_matrix);
+		
+		
+		
+		this->num_patches = other.num_patches;
+		this->patch = (vec_mp *) br_malloc(other.num_patches * sizeof(vec_mp));
+		for (int ii = 0; ii<other.num_patches; ii++) {
+			init_vec_mp(this->patch[ii],other.patch[ii]->size);
+			this->patch[ii]->size = other.patch[ii]->size;
+			vec_cp_mp(this->patch[ii], other.patch[ii])
+		}
+	}
+	
+
+	
 }; // end decomposition
 
 
@@ -498,10 +531,38 @@ public:
 	
 	void print_edges(boost::filesystem::path outputfile);
 	
-	curve_decomposition()
+	void print(boost::filesystem::path base);
+	
+	curve_decomposition() : decomposition()
 	{
+		init();
+	}
+	
+	curve_decomposition & operator=(const curve_decomposition& other){
+		init();
+		copy(other);
+		return *this;
+	}
+	
+	curve_decomposition(const curve_decomposition & other){
+		init();
+		copy(other);
+	}
+	
+	
+	
+	void init(){
+		decomposition::init();
 		num_edges = 0;
 		dimension = 1;
+	}
+	
+	
+	void copy(const curve_decomposition & other)
+	{
+		decomposition::copy(other);
+		this->edges = other.edges;
+		this->num_edges = other.num_edges;
 	}
 }; // end curve_decomposition
 
@@ -525,16 +586,53 @@ class surface_decomposition : public decomposition
 	int      num_edges;  
 	int      num_faces;
 
-
+	
 	
 public:
-	surface_decomposition()
+	
+	std::vector< curve_decomposition > midpoint_slices;
+	std::vector< curve_decomposition > critpoint_slices;
+	curve_decomposition crit_curve;
+	
+	
+	surface_decomposition() : decomposition()
 	{
-		num_edges = 0;
-		num_faces = 0;
+		init();
 	}
 	
-	curve_decomposition crit_curve;
+	surface_decomposition & operator=(const surface_decomposition& other){
+		init();
+		copy(other);
+		return *this;
+	}
+	
+	surface_decomposition(const surface_decomposition & other){
+		init();
+		copy(other);
+	}
+	
+	void print(boost::filesystem::path base);
+	
+	void init()
+	{
+		decomposition::init();
+		num_edges = 0;
+		num_faces = 0;
+		dimension = 2;
+	}
+	
+	void copy(const surface_decomposition & other)
+	{
+		this->faces = other.faces;
+		this->edges = other.edges;
+		
+		this->num_edges = other.num_edges;
+		this->num_faces = other.num_faces;
+		
+		this->midpoint_slices = other.midpoint_slices;
+		this->critpoint_slices = other.critpoint_slices;
+		this->crit_curve = other.crit_curve;
+	}
 };
 
 
@@ -597,13 +695,7 @@ int isSamePoint_homogeneous_input(point_mp left, point_mp right);
 
 
 
-void print_point_to_screen_matlab(vec_d M, std::string name);
-void print_point_to_screen_matlab(vec_mp M, std::string name);
-void print_matrix_to_screen_matlab(mat_d M, std::string name);
-void print_matrix_to_screen_matlab(mat_mp M, std::string name);
 
-void print_comp_matlab(comp_mp M,std::string name);
-void print_comp_matlab(comp_d M,std::string name);
 
 void print_path_retVal_message(int retVal);
 
@@ -617,7 +709,7 @@ void cp_patch_mp(patch_eval_data_mp *PED, patch_eval_data_mp PED_input);
 void cp_patch_d(patch_eval_data_d *PED, patch_eval_data_d PED_input);
 void cp_preproc_data(preproc_data *PPD, preproc_data PPD_input);
 
-void sort_increasing_by_real(vec_mp *projections_sorted, int **index_tracker, vec_mp projections_input);
+void sort_increasing_by_real(vec_mp *projections_sorted, std::vector< int > & index_tracker, vec_mp projections_input);
 
 void make_randomization_matrix_based_on_degrees(mat_mp randomization_matrix, int ** randomized_degrees,
 																								int num_variables, int num_funcs);

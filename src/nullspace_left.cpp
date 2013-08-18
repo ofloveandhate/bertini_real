@@ -38,7 +38,7 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	
 	solve_options.T.AMP_bound_on_degree = (double) max_degree+1;
 	
-	printf("max_degree: %d\nnum_jac_equations: %d\n",max_degree,ns_config->num_jac_equations);
+//	printf("max_degree: %d\nnum_jac_equations: %d\n",max_degree,ns_config->num_jac_equations);
 	
 
 	//
@@ -150,7 +150,7 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 															randomizer_matrix,
 															multilin_linears, //  the set of linears we will solve at.
 															&Wtemp, // the new data is put here!
-															solve_options); // already a pointer
+															solve_options); 
 		
 		W_step_one.merge(Wtemp);
 		Wtemp.reset();
@@ -258,7 +258,6 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	W_crit->add_patch(ns_config->v_patch);
 	
 
-	W_crit->print_to_screen();
 	
 	offset = ambient_dim - target_dim + target_crit_codim;
 	for (ii=0; ii< ns_config->num_additional_linears; ii++) {
@@ -301,7 +300,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 														witness_set & W,
 														solver_configuration & solve_options)
 {
-
+	std::cout << "entering nullspace setup" << std::endl;
 	int ii, jj, kk;
 	
 	
@@ -314,7 +313,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	}
 	*max_degree = maxiii;
 	
-	
+	std::cout << "maxdegree: " << *max_degree << std::endl;
 	
 	// set some integers
 	ns_config->num_v_vars = W.num_variables - 1 - target_crit_codim + 1; //  N-k+l
@@ -508,7 +507,6 @@ void create_nullspace_system(boost::filesystem::path output_name,
 	
 	
 
-	std::cout << "created matlab_nullspace_system.m" << std::endl;
 	
   // run Matlab script
 	std::stringstream converter;

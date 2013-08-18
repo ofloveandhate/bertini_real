@@ -52,6 +52,9 @@ public:
 	int num_patches;
 		
 	std::vector< std::string > variable_names;
+	
+	boost::filesystem::path input_filename;
+	function input_file;
 	// end data members
 	
 	
@@ -62,6 +65,7 @@ public:
 	// default constructor
 	
 	witness_set(){
+		this->input_filename = "unset_filename";
 		
 		this->num_variables = 0;
 		this->num_synth_vars = 0;
@@ -227,55 +231,66 @@ public:
 
 	void reset()
 	{
-		for (int ii =0; ii<this->num_linears; ii++) {
-			clear_vec_mp(this->L_mp[ii]);
-		}
-		if (this->num_linears>0) {
-			free(this->L_mp);
-		}
+		reset_names();
 		
+		reset_points();
 		
-		for (int ii =0; ii<this->num_patches; ii++) {
-			clear_vec_mp(this->patch_mp[ii]);
-		}
-		if (this->num_patches>0) {
-			free(this->patch_mp);
-		}
+		reset_linears();
 		
+		reset_patches();
 		
-		for (int ii =0; ii<this->num_pts; ii++) {
-			clear_vec_mp(this->pts_mp[ii]);
-		}
-		if (this->num_pts>0) {
-			free(this->pts_mp);
-		}
-		
+		this->input_filename = "unset_filename";
 		this->num_variables = 0;
 		this->num_synth_vars = 0;
-		
-		this->num_pts = this->num_patches = this->num_linears = 0;
-		
-		this->patch_mp = NULL;
-		this->L_mp = NULL;
-		this->pts_mp = NULL;
 		
 		this->incidence_number = -1;
 		this->comp_num = this->dim = -1;
 	};
 	
+	
+	void reset_names()
+	{
+		variable_names.clear();
+	}
+	
+	
+	void reset_points()
+	{
+		for (int ii =0; ii<this->num_pts; ii++)
+			clear_vec_mp(this->pts_mp[ii]);
+		
+		if (this->num_pts>0)
+			free(this->pts_mp);
+		
+		
+		this->num_pts = 0;
+		this->pts_mp = NULL;
+	}
+	
+	void reset_linears()
+	{
+		for (int ii =0; ii<this->num_linears; ii++) 
+			clear_vec_mp(this->L_mp[ii]);
+		
+		if (this->num_linears>0) 
+			free(this->L_mp);
+		
+		
+		this->num_linears = 0;
+		this->L_mp = NULL;
+	}
+	
+	
 	void reset_patches()
 	{
-				
-		
-		for (int ii =0; ii<this->num_patches; ii++) {
+		for (int ii =0; ii<this->num_patches; ii++) 
 			clear_vec_mp(this->patch_mp[ii]);
-		}
-		if (this->num_patches>0) {
+		
+		if (this->num_patches>0) 
 			free(this->patch_mp);
-		}
+		
 		
 		this->num_patches = 0;
-		
 		this->patch_mp = NULL;
 	};
 	
@@ -288,15 +303,11 @@ public:
 	
 	void merge(const witness_set & W_in);///< merges W_in into this
 	
-	/**
-	 parses variable names from names.out
-	 */
-	void get_variable_names();
+
+	void get_variable_names(); ///< reads variable names from names.out
 	
-	/**
-	 prints some information about the witness set to the screen
-	 */
-	void print_to_screen();
+
+	void print_to_screen(); ///< prints some information about the witness set to the screen
 	
 	void print_to_file();
 	
@@ -307,6 +318,12 @@ public:
 	 \param filename the name of the file to be written.
 	 */
 	void write_linears(boost::filesystem::path filename);
+	
+	/**
+	 writes the patches in point form to file filename
+	 
+	 \param filename the name of the file to be written.
+	 */
 	void print_patches(boost::filesystem::path filename);
 	void read_patches_from_file(boost::filesystem::path filename);
 	
@@ -314,8 +331,11 @@ public:
 	void write_homogeneous_coordinates(boost::filesystem::path filename);
 	void write_dehomogenized_coordinates(boost::filesystem::path filename);
 	
-	
-};  
+	void compute_downstairs_crit_midpts(vec_mp crit_downstairs,
+																			vec_mp midpoints_downstairs,
+																			std::vector< int > & index_tracker,
+																			vec_mp pi);
+};
 // end the double types
 
 
@@ -328,17 +348,6 @@ void cp_patches(witness_set *W_out, witness_set & W_in);
 
 
 
-
-
-
-//
-//void sort_for_real(witness_set *W_out,
-//										witness_set & W_in,
-//										tracker_config_t T);
-//
-//void sort_for_unique(witness_set *W_out,
-//										 witness_set & W_in,
-//										 tracker_config_t T);
 
 
 #endif
