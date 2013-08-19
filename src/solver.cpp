@@ -55,7 +55,7 @@ void endgamedata_to_endpoint(post_process_t *endPoint, endgame_data_t *EG){
 	}
 	
 	
-	if (EG->retVal==0) {
+	if (EG->retVal==0 || EG->retVal==-50) {
 		endPoint->success = 1;
 	}
 	else if (EG->retVal == retVal_sharpening_failed){
@@ -157,9 +157,6 @@ int BRfindFiniteSolns(post_process_t *endPoints, int num_sols, int num_vars,
 											tracker_config_t *T ){
 	int ii, jj, finite_count=0;
 	
-	
-	
-	//	printf("BR find Finite\n");
 	
 	//initialize temp stuffs
 	comp_d dehom_coord_recip_d;
@@ -945,124 +942,65 @@ void generic_tracker_loop_master(trackingStats *trackCount,
 	
 	
 	// track each of the start points
-
+	
 	
 	int next_index = 0;
-	while (next_index < W.num_pts)
-	{
-		
-		int num_packets =1;
-		
+	
+	int num_packets = 1;
+	
+	// seed the workers
+	for (int ii=1; ii<solve_options.numprocs; ii++) {
 		int next_worker = solve_options.activate_next_worker();
-		MPI_Send(&num_packets, 1, MPI_INT, next_worker, NUMPACKETS, MPI_COMM_WORLD);
 		
+		send_start_points(next_worker, num_packets,
+													startPts_d,
+													startPts_mp,
+													next_index,
+													solve_options);
 		
-		
-		if (num_packets > max_outgoing) {
-			indices_outgoing = (int *) br_realloc(indices_outgoing,num_packets*sizeof(int));
-		}
-		for (int ii=0; ii<num_packets; ii++) {
-			indices_outgoing[ii] = next_index;
-			next_index++;
-		}
-		
-		for (int ii=0; ii<num_packets; ii++) {
-			std::cout << indices_outgoing[ii] << " ";
-		}
-		std::cout << std::endl;
-		MPI_Send(indices_outgoing, num_packets, MPI_INT, next_worker, INDICES, MPI_COMM_WORLD);
-		
-		
-		
-		for (int ii=indices_outgoing[0]; ii<=indices_outgoing[num_packets-1]; ii++) {
-			if (solve_options.T.MPType==1) {
-				send_vec_mp( startPts_mp[ii].point, next_worker);
+	}
+	
+	
 
-			}
-			else
-			{
-				send_vec_d( startPts_d[ii].point, next_worker);
+	while (1)
+	{
 
-			}
-		}
+		int source = receive_endpoints(trackCount,
+											EG_receives, max_incoming,
+											solution_counter,
+											endPoints,
+											ED_d, ED_mp,
+											solve_options);
 		
 		
 		
-		//now to receive data
-		int num_incoming;
-		MPI_Status statty_mc_gatty;
-		MPI_Recv(&num_incoming, 1, MPI_INT, MPI_ANY_SOURCE, NUMPACKETS, MPI_COMM_WORLD, &statty_mc_gatty);
-		
-		if (num_incoming > max_incoming) {
-			EG_receives = (endgame_data_t *) br_realloc(EG_receives, num_incoming * sizeof(endgame_data_t));
-			for (int ii=max_incoming; ii<num_incoming; ii++) {
-				init_endgame_data(&EG_receives[ii], solve_options.T.Precision);
-			}
-			max_incoming = num_incoming;
-		}
-		
-		int incoming_id = send_recv_endgame_data_t(&EG_receives, &num_incoming, solve_options.T.MPType, MPI_ANY_SOURCE, 0); // the trailing 0 indicates receiving
-		
-		std::cout << "master receieved " << num_incoming << " packets." << std::endl;
-		solve_options.deactivate(statty_mc_gatty.MPI_SOURCE);
-		
-		for (int ii=0; ii<num_incoming; ii++) {
-			int issoln;
+			int next_worker = solve_options.activate_next_worker();
 			
-			switch (solve_options.T.MPType) {
-				case 0:
-					issoln = ED_d->is_solution_checker_d(&EG_receives[ii],  &solve_options.T, ED_d);
-					
-					break;
-					
-				default:
-					
-					if (EG_receives[ii].prec<64){
-						issoln = ED_mp->is_solution_checker_d(&EG_receives[ii],  &solve_options.T, ED_d); } // this function call is a reference!
-					else {
-						issoln = ED_mp->is_solution_checker_mp(&EG_receives[ii], &solve_options.T, ED_mp); } // this function call is a reference!
-					break;
-			}
-			
-			
-			
-			//get the terminal time in double form
-			comp_d time_to_compare;
-			if (EG_receives[ii].prec < 64) {
-				set_d(time_to_compare,EG_receives[ii].PD_d.time);}
-			else {
-				mp_to_d(time_to_compare, EG_receives[ii].PD_mp.time); }
-			
-			
-			if ((EG_receives[ii].retVal != 0 && time_to_compare->r > solve_options.T.minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
-				
-				trackCount->failures++;
-				
-				printf("\nthere was a path failure nullspace_left tracking witness point %d\nretVal = %d; issoln = %d\n",EG_receives[ii].pathNum, EG_receives[ii].retVal, issoln);
-				
-				print_path_retVal_message(EG_receives[ii].retVal);
-				
-				if (solve_options.verbose_level > 0) {
-					if (EG_receives[ii].prec < 64)
-						print_point_to_screen_matlab(EG_receives[ii].PD_d.point,"bad_terminal_point");
-					else
-						print_point_to_screen_matlab(EG_receives[ii].PD_mp.point,"bad_terminal_point");
-				}
-				
-			}
-			else
-			{
-				//otherwise converged, but may have still had non-zero retval due to other reasons.
-				endgamedata_to_endpoint(&endPoints[solution_counter], &EG_receives[ii]);
-				trackCount->successes++;
-				solution_counter++; // probably this could be eliminated
-			}
-		}
+
+		// this loop currently assumes the numpackets==1
+			send_start_points(next_worker, num_packets,
+											 startPts_d,
+											 startPts_mp,
+											 next_index,
+											 solve_options);
+		
+		if (next_index==W.num_pts)
+			break;
+		
 	}// re: for (ii=0; ii<W.num_pts ;ii++)
 	
+	while (solve_options.have_active()) {
+		
+		int source = receive_endpoints(trackCount,
+																	 EG_receives, max_incoming,
+																	 solution_counter,
+																	 endPoints,
+																	 ED_d, ED_mp,
+																	 solve_options);
+	}
+	
+	
 	solve_options.send_all_available(0);
-	
-	
 	
 	//clear the data structures.
 	switch (solve_options.T.MPType) {
@@ -1079,12 +1017,131 @@ void generic_tracker_loop_master(trackingStats *trackCount,
 			break;
 	}
   
-	
-
-	
-	
 }
 
+
+void send_start_points(int next_worker, int num_packets,
+											point_data_d *startPts_d,
+											point_data_mp *startPts_mp,
+											int & next_index,
+											solver_configuration & solve_options)
+{
+	MPI_Send(&num_packets, 1, MPI_INT, next_worker, NUMPACKETS, MPI_COMM_WORLD);
+	
+	int *indices_outgoing = new int[num_packets];
+	
+	for (int ii=0; ii<num_packets; ii++) {
+		indices_outgoing[ii] = next_index;
+		next_index++;
+	}
+	
+
+	MPI_Send(indices_outgoing, num_packets, MPI_INT, next_worker, INDICES, MPI_COMM_WORLD);
+	
+	
+	
+	for (int ii=indices_outgoing[0]; ii<=indices_outgoing[num_packets-1]; ii++) {
+		if (solve_options.T.MPType==1) {
+			send_vec_mp( startPts_mp[ii].point, next_worker);
+			
+		}
+		else
+		{
+			send_vec_d( startPts_d[ii].point, next_worker);
+			
+		}
+	}
+	
+	delete[] indices_outgoing;
+	return;
+}
+
+
+int receive_endpoints(trackingStats *trackCount,
+											endgame_data_t *EG_receives, int & max_incoming,
+											int & solution_counter,
+											post_process_t *endPoints,
+											solver_d * ED_d, solver_mp * ED_mp,
+											solver_configuration & solve_options)
+{
+
+	//now to receive data
+	int num_incoming;
+	MPI_Status statty_mc_gatty;
+	MPI_Recv(&num_incoming, 1, MPI_INT, MPI_ANY_SOURCE, NUMPACKETS, MPI_COMM_WORLD, &statty_mc_gatty);
+	
+	if (num_incoming > max_incoming) {
+		EG_receives = (endgame_data_t *) br_realloc(EG_receives, num_incoming * sizeof(endgame_data_t));
+		for (int ii=max_incoming; ii<num_incoming; ii++) {
+			init_endgame_data(&EG_receives[ii], solve_options.T.Precision);
+		}
+		max_incoming = num_incoming;
+	}
+	
+	int incoming_id = send_recv_endgame_data_t(&EG_receives, &num_incoming, solve_options.T.MPType, MPI_ANY_SOURCE, 0); // the trailing 0 indicates receiving
+	
+
+	solve_options.deactivate(statty_mc_gatty.MPI_SOURCE);
+	
+	for (int ii=0; ii<num_incoming; ii++) {
+		int issoln;
+		
+		switch (solve_options.T.MPType) {
+			case 0:
+				issoln = ED_d->is_solution_checker_d(&EG_receives[ii],  &solve_options.T, ED_d);
+				
+				break;
+				
+			default:
+				
+				if (EG_receives[ii].prec<64){
+					issoln = ED_mp->is_solution_checker_d(&EG_receives[ii],  &solve_options.T, ED_d); } // this function call is a reference!
+				else {
+					issoln = ED_mp->is_solution_checker_mp(&EG_receives[ii], &solve_options.T, ED_mp); } // this function call is a reference!
+				break;
+		}
+		
+		
+		
+		//get the terminal time in double form
+		comp_d time_to_compare;
+		if (EG_receives[ii].prec < 64) {
+			set_d(time_to_compare,EG_receives[ii].PD_d.time);}
+		else {
+			mp_to_d(time_to_compare, EG_receives[ii].PD_mp.time); }
+		
+		
+		if ((EG_receives[ii].retVal != 0 && time_to_compare->r > solve_options.T.minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
+			
+			trackCount->failures++;
+			
+			printf("\nthere was a path failure nullspace_left tracking witness point %d\nretVal = %d; issoln = %d\n",EG_receives[ii].pathNum, EG_receives[ii].retVal, issoln);
+			
+			print_path_retVal_message(EG_receives[ii].retVal);
+			
+			if (solve_options.verbose_level > 0) {
+				if (EG_receives[ii].prec < 64)
+					print_point_to_screen_matlab(EG_receives[ii].PD_d.point,"bad_terminal_point");
+				else
+					print_point_to_screen_matlab(EG_receives[ii].PD_mp.point,"bad_terminal_point");
+			}
+			
+		}
+		else
+		{
+			//otherwise converged, but may have still had non-zero retval due to other reasons.
+			endgamedata_to_endpoint(&endPoints[solution_counter], &EG_receives[ii]);
+			trackCount->successes++;
+			solution_counter++; // probably this could be eliminated
+		}
+	}
+	
+	
+	
+	
+	
+	return incoming_id;
+}
 
 void generic_tracker_loop_worker(trackingStats *trackCount,
 																 FILE * OUT, FILE * MIDOUT,
@@ -1224,7 +1281,7 @@ void generic_tracker_loop_worker(trackingStats *trackCount,
 			
 		}// re: for (ii=0; ii<W.num_pts ;ii++)
 
-
+		std::cout << "worker" << solve_options.id() << " done with point " << indices_incoming[0] << std::endl;
 		MPI_Send(&numStartPts, 1, MPI_INT, solve_options.head(), NUMPACKETS, MPI_COMM_WORLD);
 		send_recv_endgame_data_t(&EG, &numStartPts, solve_options.T.MPType, solve_options.head(), 1);
 		
@@ -1572,24 +1629,24 @@ void get_projection(vec_mp *pi,
 		fclose(IN);
 	}
 	else{
-		for (ii=0; ii<num_projections; ii++) {
-			set_zero_mp(&pi[ii]->coord[0]);
-			for (jj=1; jj<num_vars; jj++)
-				get_comp_rand_real_mp(&pi[ii]->coord[jj]);//, &temp_getter->entry[ii][jj-1]);
-
-		}
-//		mat_mp temp_getter;
-//		init_mat_mp2(temp_getter,0,0,1024);
-//		make_matrix_random_real_mp(temp_getter,num_projections, num_vars-1, 1024); // this matrix is ~orthogonal
-//		
 //		for (ii=0; ii<num_projections; ii++) {
 //			set_zero_mp(&pi[ii]->coord[0]);
 //			for (jj=1; jj<num_vars; jj++)
-//				set_mp(&pi[ii]->coord[jj], &temp_getter->entry[ii][jj-1]);
-//			
+//				get_comp_rand_real_mp(&pi[ii]->coord[jj]);//, &temp_getter->entry[ii][jj-1]);
+//
 //		}
+		mat_mp temp_getter;
+		init_mat_mp2(temp_getter,0,0,1024);
+		make_matrix_random_real_mp(temp_getter,num_projections, num_vars-1, 1024); // this matrix is ~orthogonal
 		
-//		clear_mat_mp(temp_getter);
+		for (ii=0; ii<num_projections; ii++) {
+			set_zero_mp(&pi[ii]->coord[0]);
+			for (jj=1; jj<num_vars; jj++)
+				set_mp(&pi[ii]->coord[jj], &temp_getter->entry[ii][jj-1]);
+			
+		}
+
+		clear_mat_mp(temp_getter);
 	}
 	
 	return;

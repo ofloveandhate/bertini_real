@@ -449,6 +449,20 @@ void generic_tracker_loop_master(trackingStats *trackCount,
 																 solver_d * ED_d, solver_mp * ED_mp,
 																 solver_configuration & solve_options);
 
+void send_start_points(int next_worker, int num_packets,
+											point_data_d *startPts_d,
+											point_data_mp *startPts_mp,
+											int & next_index,
+											solver_configuration & solve_options);
+
+int receive_endpoints(trackingStats *trackCount,
+											endgame_data_t *EG_receives, int & max_incoming,
+											int & solution_counter,
+											post_process_t *endPoints,
+											solver_d * ED_d, solver_mp * ED_mp,
+											solver_configuration & solve_options);
+
+
 
 void generic_tracker_loop_worker(trackingStats *trackCount,
 																 FILE * OUT, FILE * MIDOUT,

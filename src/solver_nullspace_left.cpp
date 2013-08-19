@@ -1594,9 +1594,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	// the jacobian equations for orig
 	
 	//  randomize the original functions and jacobian
-//	print_matrix_to_screen_matlab(BED->randomizer_matrix, "randomizer");
-//	print_matrix_to_screen_matlab(temp_jacobian_functions, "temp_jacobian_functions");
-//	print_matrix_to_screen_matlab(AtimesJ, "AtimesJ");
+
 	mat_mul_d(AtimesJ,BED->randomizer_matrix,temp_jacobian_functions);
 	
 	// copy the jacobian into the return value for the evaluator
@@ -1608,7 +1606,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	for (ii=0; ii< AtimesJ->rows; ii++)
 		for (jj=1; jj<BED->num_x_vars; jj++)
 			set_d(&BED->jac_with_proj->entry[jj-1][ii], &AtimesJ->entry[ii][jj]);
-	//√
+
 	
 	
 	// the additional linears.  there are $r-\ell$ of them.

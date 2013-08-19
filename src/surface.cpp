@@ -7,7 +7,7 @@ void surface_main(vertex_set & V,
 									witness_set & W_surf,
 									vec_mp *pi,
 									BR_configuration & program_options,
-									solver_configuration solve_options)
+									solver_configuration & solve_options)
 {
 
 #ifdef usetempfolders
@@ -157,7 +157,7 @@ void surface_main(vertex_set & V,
 	}
 	
 	
-	slice_and_dice(W_curve,
+	interslice(W_curve,
 								 W_curve_crit,
 								 randomizer_matrix,
 								 &temp_proj,
@@ -237,7 +237,6 @@ void surface_main(vertex_set & V,
 		midpoint_witness_sets[ii].input_filename = slicename;
 		midpoint_witness_sets[ii].add_linear(multilin_linears[1]);
 		midpoint_witness_sets[ii].add_patch(W_surf.patch_mp[0]);
-		midpoint_witness_sets[ii].print_to_screen();
 		midpoint_witness_sets[ii].variable_names = W_surf.variable_names;
 		midpoint_witness_sets[ii].dim = 1;
 		
@@ -299,7 +298,6 @@ void surface_main(vertex_set & V,
 		critpoint_witness_sets[ii].input_filename = slicename;
 		critpoint_witness_sets[ii].add_linear(multilin_linears[1]);
 		critpoint_witness_sets[ii].add_patch(W_surf.patch_mp[0]);
-		critpoint_witness_sets[ii].print_to_screen();
 		critpoint_witness_sets[ii].variable_names = W_surf.variable_names;
 		critpoint_witness_sets[ii].dim = 1;
 		
@@ -316,6 +314,15 @@ void surface_main(vertex_set & V,
 		std::cout << "done decomposing the " << ii << "th critpoint slice" << std::endl;
 		
 	}
+	
+	
+	//connect the dots
+	connect_the_dots(V,
+									 surf,
+									 pi,
+									 program_options,
+									 solve_options);
+	
 	
 	surf.num_variables = W_surf.num_variables;
 	surf.component_num = W_surf.comp_num;
@@ -388,4 +395,21 @@ void create_sliced_system(boost::filesystem::path input_file, boost::filesystem:
 	
 }
 
+
+
+
+
+void connect_the_dots(vertex_set & V,
+											surface_decomposition & surf,
+											vec_mp *pi,
+											BR_configuration & program_options,
+											solver_configuration & solve_options)
+{
+	
+	midpoint_config mid_config;
+	
+	
+	
+	return;
+}
 

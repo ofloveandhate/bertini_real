@@ -71,7 +71,7 @@ void computeCurveSelfConj(witness_set & W_curve,
 																W_crit_real);
 		
 	
-	slice_and_dice(W_curve,
+	interslice(W_curve,
 								 W_crit_real,
 								 randomizer_matrix,
 								 pi,
@@ -167,7 +167,7 @@ int curve_compute_critical_points(witness_set & W_curve,
 	return SUCCESSFUL;
 }
 
-int slice_and_dice(witness_set & W_curve,
+int interslice(witness_set & W_curve,
 									 witness_set & W_crit_real,
 									 mat_mp randomizer_matrix,
 									 vec_mp *pi,
@@ -176,6 +176,7 @@ int slice_and_dice(witness_set & W_curve,
 									 curve_decomposition & C,
 									 vertex_set & V)
 {
+
 	C.input_filename = W_curve.input_filename;
 	
 	int blabla; int *declarations = NULL;
@@ -203,21 +204,6 @@ int slice_and_dice(witness_set & W_curve,
 	
 	
 	int num_midpoints = midpoints_downstairs->size;
-	
-//	if (program_options.verbose_level>=1) {
-//		printf("midpoints:\n");
-//		for (int ii=0; ii<num_midpoints; ii++) {
-//			printf("%lf\n",midpoints_downstairs[ii]);
-//		}
-//		
-//		printf("crit_downstairs:\n");
-//		//print out the crit set of projection values.
-//		for (int ii=0; ii<W_crit_real.num_pts; ii++) {
-//			printf("%lf ",crit_downstairs[ii]);
-//		}
-//		printf("\n");
-//	}
-	
 	
 	
 	
@@ -310,10 +296,7 @@ int slice_and_dice(witness_set & W_curve,
 		
 	}
 	
-	if (program_options.verbose_level>=1) {
-		printf("done finding midpoints upstairs\n");
-	}
-	
+
 	
 	
 	

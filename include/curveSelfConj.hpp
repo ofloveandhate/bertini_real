@@ -55,7 +55,7 @@ void computeCurveSelfConj(witness_set & W,
 
 
 
-int slice_and_dice(witness_set & W_curve,
+int interslice(witness_set & W_curve,
 							witness_set & W_crit_real,
 							mat_mp randomizer_matrix,
 							vec_mp *pi,
