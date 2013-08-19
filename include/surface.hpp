@@ -23,24 +23,36 @@
 
 #include "fileops.hpp"
 
+
+#include "nullspace_left.hpp"
+#include "solver_midpoint_tracker.hpp"
 #include "checkSelfConjugate.hpp"
 #include "curve.hpp"
 #include "data_type.hpp"
 #include "isosingular.hpp"
 #include "programConfiguration.hpp"
 #include "witnessSet.hpp"
-#include "output.hpp"
+
 
 void surface_main(vertex_set & V,
 									surface_decomposition & surf,
 									witness_set & W,
 									vec_mp *pi,
 									BR_configuration & program_options,
-									solver_configuration solve_options);
+									solver_configuration & solve_options);
 
 void create_sliced_system(boost::filesystem::path input_file, boost::filesystem::path output_file,
 													vec_mp * linears, int num_to_add,
 													const witness_set & W);
+
+
+void connect_the_dots(vertex_set & V,
+											surface_decomposition & surf,
+											vec_mp *pi,
+											BR_configuration & program_options,
+											solver_configuration & solve_options);
+
+
 
 #endif
 

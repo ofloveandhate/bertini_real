@@ -49,7 +49,7 @@ public:
 	
 	parallelism_config(){
 		
-
+		numprocs = 1;
 		headnode = 0;
 		
 		MPI_Comm_size(MPI_COMM_WORLD, &this->numprocs);
@@ -120,7 +120,10 @@ public:
 	{
 		for (int ii=1; ii<this->numprocs; ii++) {
 			available_workers.push(ii);
+			worker_status[ii] = INACTIVE;
 		}
+		
+		
 	}
 	
 	int activate_next_worker()
@@ -170,9 +173,20 @@ public:
 		
 	}
 	
+	bool have_active()
+	{
+		bool yep = false;
+		for (int ii=1; ii<this->numprocs; ii++) {
+			if (this->worker_status[ii]==ACTIVE) {
+				yep = true;
+				break;
+			}
+		}
+		return yep;
+	}
 	
-private:
-	std::map< int, bool> worker_status;
+
+	std::map< int, int> worker_status;
 	
 	std::queue< int > available_workers;
 };

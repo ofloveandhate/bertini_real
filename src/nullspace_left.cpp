@@ -300,7 +300,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 														witness_set & W,
 														solver_configuration & solve_options)
 {
-	std::cout << "entering nullspace setup" << std::endl;
+
 	int ii, jj, kk;
 	
 	
@@ -313,7 +313,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	}
 	*max_degree = maxiii;
 	
-	std::cout << "maxdegree: " << *max_degree << std::endl;
+
 	
 	// set some integers
 	ns_config->num_v_vars = W.num_variables - 1 - target_crit_codim + 1; //  N-k+l
@@ -416,18 +416,29 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	
 	
 	
+	mat_mp temp_getter;  init_mat_mp2(temp_getter,*max_degree, W.num_variables - W.num_synth_vars,solve_options.T.AMP_max_prec);
+	temp_getter->rows = *max_degree;
+	temp_getter->cols = W.num_variables - W.num_synth_vars;
 	
 	//the 'ns_config->starting_linears' will be used for the x variables.  we will homotope to these $k-\ell$ at a time
 	ns_config->starting_linears = (vec_mp **)br_malloc( num_jac_equations*sizeof(vec_mp *));
 	for (ii=0; ii<num_jac_equations; ii++) {
 		ns_config->starting_linears[ii] = (vec_mp *) br_malloc((*max_degree)*sizeof(vec_mp)); //subtract 1 for differentiation
+		
+		make_matrix_random_mp(temp_getter,*max_degree, W.num_variables - W.num_synth_vars, solve_options.T.AMP_max_prec); // this matrix is nearly orthogonal
+		
 		for (jj=0; jj<(*max_degree); jj++) {
 			init_vec_mp2(ns_config->starting_linears[ii][jj],W.num_variables,solve_options.T.AMP_max_prec);
 			ns_config->starting_linears[ii][jj]->size = W.num_variables;
-			//			set_zero_mp(&ns_config->starting_linears[ii][jj]->coord[0]);  // maybe? but prolly not
+			
 			for (kk=0; kk<W.num_variables - W.num_synth_vars; kk++) {
-				get_comp_rand_mp(&ns_config->starting_linears[ii][jj]->coord[kk]);
+				set_mp(&ns_config->starting_linears[ii][jj]->coord[kk], &temp_getter->entry[jj][kk]);
 			}
+			
+			//			set_zero_mp(&ns_config->starting_linears[ii][jj]->coord[0]);  // maybe? but prolly not
+//			for (kk=0; kk<W.num_variables - W.num_synth_vars; kk++) {
+//				get_comp_rand_mp(&ns_config->starting_linears[ii][jj]->coord[kk]);
+//			}
 			for (kk=W.num_variables - W.num_synth_vars; kk<W.num_variables; kk++) {
 				set_zero_mp(&ns_config->starting_linears[ii][jj]->coord[kk]);
 			}
@@ -435,7 +446,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	}
 	
 
-
+	clear_mat_mp(temp_getter);
 	
 
 	
