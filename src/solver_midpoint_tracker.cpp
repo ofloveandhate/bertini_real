@@ -3,6 +3,14 @@
 
 
 
+void midpoint_config::setup(const surface_decomposition & surf)
+{
+	//copy the projections
+	for (int ii=0; ii< surf.dimension; ii++)
+		add_projection(surf.pi[ii]);
+	
+	
+}
 
 
 
@@ -368,9 +376,8 @@ int midpoint_solver_master_entry_point(int										MPType,
 			
 			
 			
-			
+			adjust_tracker_AMP(& (solve_options.T), W.num_variables);
 			// initialize latest_newton_residual_mp
-			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		default:
 			break;
@@ -394,7 +401,6 @@ int midpoint_solver_master_entry_point(int										MPType,
 				ED_d->send(solve_options);
 				break;
 		}
-		MPI_Barrier(MPI_COMM_WORLD);
 	}
 	
 	
@@ -499,14 +505,14 @@ void midpoint_slave_entry_point(solver_configuration & solve_options)
 			
 			
 			// initialize latest_newton_residual_mp
-			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+			mpf_init2(solve_options.T.latest_newton_residual_mp,solve_options.T.AMP_max_prec);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		default:
 			break;
 	}
 	
 	
-	MPI_Barrier(MPI_COMM_WORLD);
+
 	// call the file setup function
 	FILE *OUT = NULL, *midOUT = NULL;
 	
@@ -551,18 +557,18 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
   mul_d(gamma_s, BED->gamma, pathVars);       // gamma_s = gamma * s
 	
 	
-	vec_d curr_x_vars; init_vec_d(curr_x_vars, BED->num_x_vars);
-	curr_x_vars->size = BED->num_x_vars;
-	for (ii=0; ii<BED->num_x_vars; ii++)
+	vec_d curr_x_vars; init_vec_d(curr_x_vars, BED->num_mid_vars);
+	curr_x_vars->size = BED->num_mid_vars;
+	for (ii=0; ii<BED->num_mid_vars; ii++)
 		set_d(&curr_x_vars->coord[ii], &current_variable_values->coord[ii]);
 	
-	offset = BED->num_x_vars;
+	offset = BED->num_mid_vars;
 	vec_d curr_y_vars; init_vec_d(curr_y_vars, BED->num_y_vars);
 	curr_y_vars->size = BED->num_y_vars;
 	for (ii=0; ii<BED->num_y_vars; ii++)
 		set_d(&curr_y_vars->coord[ii], &current_variable_values->coord[ii+offset]);
 	
-	offset = BED->num_x_vars + BED->num_y_vars;
+	offset = BED->num_mid_vars + BED->num_y_vars;
 	vec_d curr_z_vars; init_vec_d(curr_z_vars, BED->num_z_vars);
 	curr_z_vars->size = BED->num_z_vars;
 	for (ii=0; ii<BED->num_z_vars; ii++)
@@ -666,7 +672,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 		set_d(&funcVals->coord[ii+offset], &patchValues->coord[ii]);
 		
 		// Jv = Jv_Patch
-		for (jj = 0; jj<BED->num_x_vars; jj++) // for each variable
+		for (jj = 0; jj<BED->num_mid_vars; jj++) // for each variable
 			set_d(&Jv->entry[ii+offset][jj], &Jv_Patch->entry[ii][jj]);
 	}
 	
@@ -793,7 +799,7 @@ int midpoint_dehom(point_d out_d, point_mp out_mp,
 		
 		set_d(denom, &in_d->coord[0]);
 		
-		for (int ii=0; ii<BED_d->num_x_vars-1; ++ii) {
+		for (int ii=0; ii<BED_d->num_mid_vars-1; ++ii) {
 			set_d(&out_d->coord[ii],&in_d->coord[ii+1]);
 			div_d(&out_d->coord[ii],&out_d->coord[ii],denom); //  result[ii] = dehom_me[ii+1]/dehom_me[0].
 		}
@@ -817,7 +823,7 @@ int midpoint_dehom(point_d out_d, point_mp out_mp,
 		
 		set_mp(denom, &in_mp->coord[0]);
 		
-		for (int ii=0; ii<BED_mp->num_x_vars-1; ++ii) {
+		for (int ii=0; ii<BED_mp->num_mid_vars-1; ++ii) {
 			set_mp(&out_mp->coord[ii],&in_mp->coord[ii+1]);
 			div_mp(&out_mp->coord[ii],&out_mp->coord[ii],denom); //  result[ii] = dehom_me[ii+1]/dehom_me[0].
 		}
@@ -908,8 +914,8 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 	
 
 	
-	vec_d curr_x_vars; init_vec_d(curr_x_vars, BED->num_x_vars);
-	curr_x_vars->size = BED->num_x_vars;
+	vec_d curr_x_vars; init_vec_d(curr_x_vars, BED->num_mid_vars);
+	curr_x_vars->size = BED->num_mid_vars;
 	
 	vec_d curr_y_vars; init_vec_d(curr_y_vars, BED->num_y_vars);
 	curr_y_vars->size = BED->num_y_vars;
@@ -939,11 +945,11 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 		//		lin_to_lin_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, terminal_pt, EG->PD_d.time, ED);
 		
 		
-		for (ii=0; ii<BED->num_x_vars; ii++)
+		for (ii=0; ii<BED->num_mid_vars; ii++)
 			set_d(&curr_x_vars->coord[ii], &terminal_pt->coord[ii]);
 		
 		for (ii=0; ii<BED->num_y_vars; ii++)
-			set_d(&curr_y_vars->coord[ii], &terminal_pt->coord[ii+BED->num_x_vars]);
+			set_d(&curr_y_vars->coord[ii], &terminal_pt->coord[ii+BED->num_mid_vars]);
 		
 		clear_vec_d(terminal_pt);
 	}
@@ -951,11 +957,11 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 		evalProg_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_d.point, EG->PD_d.time, BED->SLP);
 		//		lin_to_lin_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_d.point, EG->PD_d.time, ED);
 		
-		for (ii=0; ii<BED->num_x_vars; ii++)
+		for (ii=0; ii<BED->num_mid_vars; ii++)
 			set_d(&curr_x_vars->coord[ii], &EG->PD_d.point->coord[ii]);
 		
 		for (ii=0; ii<BED->num_y_vars; ii++)
-			set_d(&curr_y_vars->coord[ii], &EG->PD_d.point->coord[ii+BED->num_x_vars]);
+			set_d(&curr_y_vars->coord[ii], &EG->PD_d.point->coord[ii+BED->num_mid_vars]);
 		
 	}
 	
@@ -1035,8 +1041,8 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	
 	
 	
-	vec_mp curr_x_vars; init_vec_mp(curr_x_vars, BED->num_x_vars);
-	curr_x_vars->size = BED->num_x_vars;
+	vec_mp curr_x_vars; init_vec_mp(curr_x_vars, BED->num_mid_vars);
+	curr_x_vars->size = BED->num_mid_vars;
 	
 	vec_mp curr_y_vars; init_vec_mp(curr_y_vars, BED->num_y_vars);
 	curr_y_vars->size = BED->num_y_vars;
@@ -1076,11 +1082,11 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	mpf_set_d(zero_thresh, tol);
 	
 	
-	for (ii=0; ii<BED->num_x_vars; ii++)
+	for (ii=0; ii<BED->num_mid_vars; ii++)
 		set_mp(&curr_x_vars->coord[ii], &EG->PD_mp.point->coord[ii]);
 	
 	for (ii=0; ii<BED->num_y_vars; ii++)
-		set_mp(&curr_y_vars->coord[ii], &EG->PD_mp.point->coord[ii+BED->num_x_vars]);
+		set_mp(&curr_y_vars->coord[ii], &EG->PD_mp.point->coord[ii+BED->num_mid_vars]);
 	
 	
 	
@@ -1205,7 +1211,7 @@ void check_midpoint_evaluator(point_mp current_values,
 	
 	comp_d lambda; get_comp_rand_d(lambda);
 	
-	for (ii=0; ii<BED->num_x_vars; ii++) {
+	for (ii=0; ii<BED->num_mid_vars; ii++) {
 		mul_d(&tempvec->coord[ii],&tempvec->coord[ii],lambda);
 	}
 	

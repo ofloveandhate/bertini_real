@@ -36,7 +36,7 @@ int lintolin_solver_main(int MPType,
 	W_new->num_synth_vars = W.num_synth_vars;
 
 	
-	setupPreProcData("preproc_data", &solve_options.PPD);
+	setupPreProcData(const_cast< char * > ("preproc_data"), &solve_options.PPD);
 	
 	mat_mp randomizer_matrix;
 	init_mat_mp2(randomizer_matrix,
@@ -111,8 +111,6 @@ int lintolin_solver_d(int MPType, //, double parse_time, unsigned int currentSee
 	int userHom = 0, useRegen = 0, pathMod = 0, paramHom = 0;
 	
 	cp_tracker_config_t(&T, &solve_options.T);
-	
-	
 	
 	
 	//  // call the setup function
@@ -407,7 +405,8 @@ void lintolin_track_d(trackingStats *trackCount,
 				}
 				print_point_to_screen_matlab(BED_copy->old_linear,"old");
 				print_point_to_screen_matlab(BED_copy->current_linear,"new");
-				exit(EG->retVal); //failure intolerable in this solver.
+				deliberate_segfault();
+//				exit(EG->retVal); //failure intolerable in this solver.
 			}
 			else
 			{
@@ -1076,7 +1075,6 @@ void setuplintolinEval_d(tracker_config_t *T,char preprocFile[], char degreeFile
 												 witness_set & W,
 												 solver_configuration & solve_options)
 {
-  int ii;
 	BED->num_variables = W.num_variables;
 	
 	
@@ -1122,7 +1120,7 @@ void setuplintolinEval_d(tracker_config_t *T,char preprocFile[], char degreeFile
 	
 	if (MPType == 2)
   { // using AMP - initialize using 16 digits & 64-bit precison
-    int digits = 16, prec = 64;
+    int prec = 64;
 		initMP(prec);
 		BED->BED_mp->curr_prec = prec;
 		
@@ -2376,7 +2374,7 @@ void setuplintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *dummyPr
 													solver_configuration & solve_options)
 {
 
-	int digits = prec_to_digits(mpf_get_default_prec());
+//	int digits = prec_to_digits(mpf_get_default_prec());
   setupPreProcData(preprocFile, &BED->preProcData);
 	BED->verbose_level = solve_options.verbose_level;
 	
@@ -2570,7 +2568,9 @@ int check_issoln_lintolin_mp(endgame_data_t *EG,
 	if (num_digits > 300)
 		num_digits = 300;
 	num_digits -= 4;
-	double tol = MAX(T->funcResTol, pow(10,-num_digits));
+
+//	double tol = MAX(T->funcResTol, pow(10,-num_digits));
+	double tol = 1e-10;
 	mpf_set_d(zero_thresh, tol);
 	
 	//this one guaranteed by entry condition
@@ -2612,6 +2612,15 @@ int check_issoln_lintolin_mp(endgame_data_t *EG,
 		}
 	}
 	
+	if (!isSoln) {
+		print_point_to_screen_matlab(e.funcVals,"terminal");
+		print_point_to_screen_matlab(f,"prev");
+		std::cout << "tol was ";
+		mpf_out_str (NULL, 10, 6, zero_thresh); // base 10, 6 digits
+		std::cout << "\nmax_rat was ";
+		mpf_out_str (NULL, 10, 6, max_rat); // base 10, 6 digits
+		std::cout << "\n";
+	}
 	
 	mpf_clear(n1); mpf_clear(n2); mpf_clear(zero_thresh); mpf_clear(max_rat);
 	

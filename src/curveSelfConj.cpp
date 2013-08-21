@@ -251,7 +251,6 @@ int interslice(witness_set & W_curve,
 	solve_options.use_midpoint_checker = 0;
 	
 	
-	
 	int edge_counter = 0; // set the counter
 	
 	
@@ -262,7 +261,16 @@ int interslice(witness_set & W_curve,
   vec_mp particular_projection;  init_vec_mp(particular_projection,W_curve.num_variables); particular_projection->size = W_curve.num_variables;
 	vec_cp_mp(particular_projection,pi[0]);
 	
+	solve_options.backup_tracker_config();
+	
+
+
+	solve_options.allow_multiplicity = 0;
+	solve_options.allow_singular = 0;
+	solve_options.complete_witness_set = 1;
+
 	for (int ii=0; ii<num_midpoints; ii++) {
+		
 		if (program_options.verbose_level>=2) {
 			printf("solving midpoints upstairs %d, projection value %lf\n",ii,mpf_get_d(midpoints_downstairs->coord[ii].r));
 		}
@@ -271,10 +279,8 @@ int interslice(witness_set & W_curve,
 		
 		//make the projection we will solve at.
 		
-		solve_options.allow_multiplicity = 0;
-		solve_options.allow_singular = 0;
-		solve_options.complete_witness_set = 1;
 
+		
 		
 		
 		lintolin_solver_main(solve_options.T.MPType,
@@ -288,16 +294,15 @@ int interslice(witness_set & W_curve,
 		if (program_options.verbose_level>=2) {
 			printf("sorting midpoint witness set %d for realness\n",ii);
 		}
-		
+		midpoint_witness_sets[ii].print_to_screen();
 		midpoint_witness_sets[ii].sort_for_real(solve_options.T);
 		midpoint_witness_sets[ii].sort_for_unique(solve_options.T);
 		
 		edge_counter += midpoint_witness_sets[ii].num_pts;
-		
+		midpoint_witness_sets[ii].print_to_screen();
 	}
-	
 
-	
+	solve_options.reset_tracker_config();
 	
 	
   // 7) find edge endpoints
@@ -340,10 +345,6 @@ int interslice(witness_set & W_curve,
 												 &Wright,
 												 solve_options); // the output
 																				 //each member of Wtemp should real.  if a member of V1 already, mark index.  else, add to V1, and mark.
-		
-//		Wright.only_natural_vars();
-//		Wleft.only_natural_vars();
-//		midpoint_witness_sets[ii].only_natural_vars();
 		
 		
 		int keep_going = 1;

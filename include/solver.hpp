@@ -35,6 +35,7 @@ class solver_configuration : public prog_config
 public:
 	
 	tracker_config_t T;
+	tracker_config_t T_orig;
 	preproc_data PPD;
 	
 	int allow_multiplicity;
@@ -51,6 +52,17 @@ public:
 	int use_gamma_trick;
 	
 	int complete_witness_set;
+	
+	void reset_tracker_config()
+	{
+		cp_tracker_config_t(&T,&T_orig);
+	}
+	
+	void backup_tracker_config()
+	{
+		cp_tracker_config_t(&T_orig,&T);
+	}
+	
 };
 
 
@@ -410,7 +422,7 @@ void get_projection(vec_mp *pi,
 
 
 
-
+void adjust_tracker_AMP(tracker_config_t * T, int num_variables);
 
 
 

@@ -2,7 +2,14 @@
 
 
 
-
+void adjust_tracker_AMP(tracker_config_t * T, int num_variables)
+{
+		T->AMP_eps = (double) num_variables * num_variables;  //According to Demmel (as in the AMP paper), n^2 is a very reasonable bound for \epsilon.
+		T->AMP_Phi = T->AMP_bound_on_degree*(T->AMP_bound_on_degree-1.0)*T->AMP_bound_on_abs_vals_of_coeffs;  //Phi from the AMP paper.
+		T->AMP_Psi = T->AMP_bound_on_degree*T->AMP_bound_on_abs_vals_of_coeffs;  //Psi from the AMP paper.
+																																					// initialize latest_newton_residual_mp to the maximum precision
+		mpf_init2(T->latest_newton_residual_mp, T->AMP_max_prec);
+}
 
 void endgamedata_to_endpoint(post_process_t *endPoint, endgame_data_t *EG){
 	
@@ -600,6 +607,8 @@ void get_tracker_config(solver_configuration & solve_options,int MPType)
 							&paramHom,
 							MPType);
 	
+	cp_tracker_config_t(&solve_options.T_orig,&solve_options.T);
+	
 	
 //	int setupConfig(tracker_config_t *T,
 //									double *midpointTol,
@@ -767,16 +776,6 @@ void generic_tracker_loop(trackingStats *trackCount,
 		if (solve_options.verbose_level>=0)
 			printf("tracking path %d of %d\n",ii,W.num_pts);
 		
-		
-		
-//		if (!check_isstart_nullspacejac_d(startPts[ii].point,
-//																			T,
-//																			ED_d))
-//		{
-//			std::cout << "trying to start from a non-start-point\n";
-//			mypause();
-//		}
-		
 		if (solve_options.T.MPType==2) {
 			ED_mp->curr_prec = 64;
 		}
@@ -830,17 +829,19 @@ void generic_tracker_loop(trackingStats *trackCount,
 			
 			trackCount->failures++;
 			
-			printf("\nthere was a path failure nullspace_left tracking witness point %d\nretVal = %d; issoln = %d\n",ii,EG.retVal, issoln);
-			
-			print_path_retVal_message(EG.retVal);
-			
-			if (solve_options.verbose_level > 0) {
-				if (EG.prec < 64)
-					print_point_to_screen_matlab(EG.PD_d.point,"bad_terminal_point");
-				else
-					print_point_to_screen_matlab(EG.PD_mp.point,"bad_terminal_point");
+			if (solve_options.verbose_level>=0) {
+
+				printf("\nthere was a path failure nullspace_left tracking witness point %d\nretVal = %d; issoln = %d\n",ii,EG.retVal, issoln);
+				
+				print_path_retVal_message(EG.retVal);
+				
+				if (solve_options.verbose_level > 0) {
+					if (EG.prec < 64)
+						print_point_to_screen_matlab(EG.PD_d.point,"bad_terminal_point");
+					else
+						print_point_to_screen_matlab(EG.PD_mp.point,"bad_terminal_point");
+				}
 			}
-			
 		}
 		else
 		{
@@ -1115,17 +1116,19 @@ int receive_endpoints(trackingStats *trackCount,
 			
 			trackCount->failures++;
 			
-			printf("\nthere was a path failure nullspace_left tracking witness point %d\nretVal = %d; issoln = %d\n",EG_receives[ii].pathNum, EG_receives[ii].retVal, issoln);
-			
-			print_path_retVal_message(EG_receives[ii].retVal);
-			
-			if (solve_options.verbose_level > 0) {
-				if (EG_receives[ii].prec < 64)
-					print_point_to_screen_matlab(EG_receives[ii].PD_d.point,"bad_terminal_point");
-				else
-					print_point_to_screen_matlab(EG_receives[ii].PD_mp.point,"bad_terminal_point");
+			if (solve_options.verbose_level>=0) {
+				printf("\nthere was a path failure nullspace_left tracking witness point %d\nretVal = %d; issoln = %d\n",EG_receives[ii].pathNum, EG_receives[ii].retVal, issoln);
+				
+				print_path_retVal_message(EG_receives[ii].retVal);
+				
+				if (solve_options.verbose_level > 0) {
+					if (EG_receives[ii].prec < 64)
+						print_point_to_screen_matlab(EG_receives[ii].PD_d.point,"bad_terminal_point");
+					else
+						print_point_to_screen_matlab(EG_receives[ii].PD_mp.point,"bad_terminal_point");
+				}
 			}
-			
+	
 		}
 		else
 		{

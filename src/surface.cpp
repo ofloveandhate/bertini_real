@@ -17,8 +17,12 @@ void surface_main(vertex_set & V,
 	surf.input_filename = W_surf.input_filename;
 	int ambient_dim = 2;
 	
-	int num_vars = W_surf.num_variables; //HERE CHANGE THIS
+	surf.num_variables = W_surf.num_variables;
+	surf.component_num = W_surf.comp_num;
+	surf.add_projection(pi[0]);
+	surf.add_projection(pi[1]);
 	
+	int num_vars = W_surf.num_variables; //HERE CHANGE THIS
 	
 	
 	// perform an isosingular deflation
@@ -324,10 +328,7 @@ void surface_main(vertex_set & V,
 									 solve_options);
 	
 	
-	surf.num_variables = W_surf.num_variables;
-	surf.component_num = W_surf.comp_num;
-	surf.add_projection(pi[0]);
-	surf.add_projection(pi[1]);
+
 #ifdef usetempfolders
 	program_options.move_to_called();
 #endif
@@ -335,6 +336,49 @@ void surface_main(vertex_set & V,
 	
 	
 }
+
+
+
+
+
+
+
+void connect_the_dots(vertex_set & V,
+											surface_decomposition & surf,
+											vec_mp *pi,
+											BR_configuration & program_options,
+											solver_configuration & solve_options)
+{
+	
+	midpoint_config mid_config;
+	
+	for (int ii=0; ii<surf.midpoint_slices.size(); ii++) {
+		for (int jj=0; jj<surf.midpoint_slices[ii].num_edges; jj++) {
+			face F;
+			
+			//create the face here
+			
+			
+			surf.add_face(F);
+		}
+	}
+	
+	return;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -356,11 +400,11 @@ void create_sliced_system(boost::filesystem::path input_file, boost::filesystem:
 	FILE *OUT = safe_fopen_write(output_file);
 	FILE *IN = safe_fopen_read("func_input");
 	
-
+	
 	
 	
 	fprintf(OUT,"INPUT\n\n");
-		copyfile(IN,OUT);
+	copyfile(IN,OUT);
 	fclose(IN);
 	
 	std::vector< int > indicators;
@@ -393,23 +437,5 @@ void create_sliced_system(boost::filesystem::path input_file, boost::filesystem:
 	
 	
 	
-}
-
-
-
-
-
-void connect_the_dots(vertex_set & V,
-											surface_decomposition & surf,
-											vec_mp *pi,
-											BR_configuration & program_options,
-											solver_configuration & solve_options)
-{
-	
-	midpoint_config mid_config;
-	
-	
-	
-	return;
 }
 

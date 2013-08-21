@@ -1374,11 +1374,12 @@ void multilin_to_lin_track_mp(trackingStats *trackCount,
 			
 			if ((EG.retVal != 0 && time_to_compare->r > T->minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
 				trackCount->failures++;
-				printf("\nretVal = %d\nthere was a fatal path failure tracking linear %d, witness point %d\n\n",EG.retVal,kk,ii);
+				printf("\nretVal = %d\nthere was a fatal path failure tracking multilinear %d, witness point %d\n\n",EG.retVal,kk,ii);
 				print_path_retVal_message(EG.retVal);
 				print_point_to_screen_matlab(BED->old_linear[0],"old");
 				print_point_to_screen_matlab(BED->current_linear[0],"new");
-				exit(EG.retVal); //failure intolerable in this solver.
+				deliberate_segfault();
+//				exit(EG.retVal); //failure intolerable in this solver.
 			}
 			else
 			{

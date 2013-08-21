@@ -1203,7 +1203,7 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 																					 nullspace_config				*ns_config,
 																					 solver_configuration		& solve_options)
 {
-	
+
 	
 	if (solve_options.use_parallel()) {
 		solve_options.call_for_help(NULLSPACE);
@@ -1272,9 +1272,8 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 			
 			
 			
-			
+			adjust_tracker_AMP(& (solve_options.T), W.num_variables);
 			// initialize latest_newton_residual_mp
-			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		default:
 			break;
@@ -1314,7 +1313,6 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 	
 	if (solve_options.use_parallel()) {
 		
-		std::cout << "master entering tracker loop" << std::endl;
 		generic_tracker_loop_master(&trackCount, OUT, midOUT,
 																W,
 																endPoints,
@@ -1356,7 +1354,7 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 	
 	
   //clear the endopints here
-	
+
 	
   return SUCCESSFUL;
 

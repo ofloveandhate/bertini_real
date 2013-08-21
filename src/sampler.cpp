@@ -175,7 +175,7 @@ void generate_new_sampling_pts(sample_data *S_new,
 	
 	vec_mp				target_projection;
 	init_vec_mp(target_projection,num_vars); target_projection->size = num_vars;
-	vec_cp_mp(target_projection,C.pi_mp[0]); // copy the projection into target_projection
+	vec_cp_mp(target_projection,C.pi[0]); // copy the projection into target_projection
 	
 	
 	vec_mp startpt;
@@ -184,7 +184,7 @@ void generate_new_sampling_pts(sample_data *S_new,
 	
 	vec_mp				start_projection;
 	init_vec_mp(start_projection,num_vars);  start_projection->size = num_vars;
-	vec_cp_mp(start_projection,C.pi_mp[0]); // grab the projection, copy it into start_projection
+	vec_cp_mp(start_projection,C.pi[0]); // grab the projection, copy it into start_projection
 	
 	
 	int ii,jj;
@@ -309,7 +309,7 @@ void generate_new_sampling_pts(sample_data *S_new,
 					estimate_new_projection_value(target_projection_value,				// the new value
 																				V.vertices[left_index].pt_mp,	//
 																				V.vertices[right_index].pt_mp, // two points input
-																				C.pi_mp[0]);												// projection (in homogeneous coordinates)
+																				C.pi[0]);												// projection (in homogeneous coordinates)
 					
 					
 
