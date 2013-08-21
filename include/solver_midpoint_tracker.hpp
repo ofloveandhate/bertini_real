@@ -32,14 +32,12 @@ class midpoint_config
 	
 public:
 	
-	mat_mp randomizer_matrix;
+	mat_mp randomizer_matrix_crit, randomizer_matrix;
 	
-	
-	int num_x_vars;
+	int num_mid_vars;
 	int num_y_vars;
 	int num_z_vars;
 	
-	prog_t *SLP_crit;
 	
 	vec_mp *pi;
 	int num_projections;
@@ -48,8 +46,6 @@ public:
 	
 	comp_mp v_target;
 	comp_mp u_target;
-	
-	mat_mp randomizer_matrix_crit;
 	
 	comp_mp crit_val_left;
 	comp_mp crit_val_right;
@@ -90,11 +86,7 @@ public:
 		init_mp2(crit_val_left,1024);
 		init_mp2(crit_val_right,1024);
 		
-		
-		init_mat_mp2(randomizer_matrix,0,0,1024);
-		init_mat_mp2(randomizer_matrix_crit,0,0,1024);
-		
-		this->SLP_crit = NULL;
+
 	}
 	
 	void clear()
@@ -104,15 +96,12 @@ public:
 		clear_mp(crit_val_left);
 		clear_mp(crit_val_right);
 		
-		clear_mat_mp(randomizer_matrix);
-		clear_mat_mp(randomizer_matrix_crit);
 		
 		for (int ii=0; ii<num_projections; ii++) {
 			clear_vec_mp(pi[ii]);
 		}
 		free(pi);
 		
-//		clear_prog_t(SLP_crit);
 	}
 	
 
@@ -121,6 +110,9 @@ public:
 	{
 		
 	}
+	
+	void setup(const surface_decomposition & surf);
+	
 };
 
 
@@ -134,11 +126,11 @@ class midpoint_eval_data_mp : public solver_mp
 {
 public:
 	
-	int num_x_vars;
+	int num_mid_vars;
 	int num_y_vars;
 	int num_z_vars;
 	
-	prog_t *SLP_crit;
+	prog_t *SLP_crit; // this system should be the same for both endpoints?
 	
 	vec_mp *pi;
 	int num_projections;
@@ -172,7 +164,7 @@ public:
 	
 	~midpoint_eval_data_mp(){
 		
-		midpoint_eval_data_mp::clear();
+		clear();
 		// no need to reset the counters.
 	}
 	
@@ -228,6 +220,8 @@ private:
 	
 	void clear()
 	{
+		
+		clearProg(SLP_crit, this->MPType, 0);
 				
 	} // re: clear
 	
@@ -263,7 +257,7 @@ public:
 	
 	midpoint_eval_data_mp *BED_mp; // used only for AMP
 	
-	int num_x_vars;
+	int num_mid_vars;
 	int num_y_vars;
 	int num_z_vars;
 	
