@@ -29,11 +29,9 @@
 #include "data_type.hpp"
 #include "isosingular.hpp"
 #include "programConfiguration.hpp"
-#include "witnessSet.hpp"
 #include "output.hpp"
 
 
-#include "checkSelfConjugate.hpp"
 #include "solver_lintolin.hpp"
 #include "solver_linprodtodetjac.hpp"
 #include "solver_detjactodetjac.hpp"

@@ -19,7 +19,6 @@
 #include "fileops.hpp"
 #include "data_type.hpp"
 #include "programConfiguration.hpp"
-#include "witnessSet.hpp"
 #include "checkSelfConjugate.hpp"
 
 #include "solver_lintolin.hpp"

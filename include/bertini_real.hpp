@@ -24,12 +24,12 @@
 
 #include "fileops.hpp"
 #include "checkSelfConjugate.hpp"
-#include "curveNotSelfConj.hpp"
-#include "curveSelfConj.hpp"
+
+
 #include "data_type.hpp"
 #include "isosingular.hpp"
 #include "programConfiguration.hpp"
-#include "witnessSet.hpp"
+
 #include "output.hpp"
 
 #include "surface.hpp"

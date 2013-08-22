@@ -25,7 +25,7 @@
 #include "determinant_derivative.hpp"
 #include "programConfiguration.hpp"
 #include "postProcessing.hpp"
-#include "witnessSet.hpp"
+
 
 class surface_decomposition;
 

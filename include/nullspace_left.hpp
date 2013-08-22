@@ -20,7 +20,6 @@
 
 #include "fileops.hpp"
 #include "data_type.hpp"
-#include "witnessSet.hpp"
 #include "solver_multilintolin.hpp"
 #include "solver_nullspace_left.hpp"
 #include "output.hpp"
