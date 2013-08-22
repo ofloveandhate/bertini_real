@@ -42,8 +42,8 @@ int multilintolin_solver_main(int MPType,
 			vec_cp_mp(W_new->L_mp[ii],new_linears_full_prec[ii]);
 		}
 		
-		cp_patches(W_new,W); // copy the patches over from the original witness set
-		cp_names(W_new,W);
+		W_new->cp_patches(W); // copy the patches over from the original witness set
+		W_new->cp_names(W);
 	}
 	
 	return 0;
@@ -1013,6 +1013,8 @@ int multilintolin_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d i
   { // compute out_mp
 		multilintolin_eval_data_mp *BED_mp = (multilintolin_eval_data_mp *)ED_mp;
 		
+		setprec_point_mp(out_mp, *out_prec);
+		
 		comp_mp denom; init_mp(denom);
 		change_size_vec_mp(out_mp,in_mp->size-1);
 		out_mp->size = in_mp->size-1;
@@ -1029,7 +1031,7 @@ int multilintolin_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d i
 		
 		
     // set prec on out_mp
-    setprec_point_mp(out_mp, *out_prec);
+    
 		
 //		print_point_to_screen_matlab(in_mp,"in");
 //		print_point_to_screen_matlab(out_mp,"out");

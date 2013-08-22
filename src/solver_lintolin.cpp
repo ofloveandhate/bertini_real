@@ -62,9 +62,8 @@ int lintolin_solver_main(int MPType,
 	
 	
 	if (solve_options.complete_witness_set==1){
-		cp_patches(W_new,W); // copy the patches over from the original witness set
-		cp_names(W_new,W);
-		
+		W_new->cp_patches(W); // copy the patches over from the original witness set
+		W_new->cp_names(W);
 		
 		W_new->num_linears = (num_new_linears);
 		W_new->L_mp = (vec_mp *)br_malloc((num_new_linears)*sizeof(vec_mp));

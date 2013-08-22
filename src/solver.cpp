@@ -607,23 +607,11 @@ void get_tracker_config(solver_configuration & solve_options,int MPType)
 							&paramHom,
 							MPType);
 	
+	if (solve_options.T.final_tolerance > solve_options.T.real_threshold) 
+		solve_options.T.real_threshold = solve_options.T.final_tolerance*10;
+	
+	
 	cp_tracker_config_t(&solve_options.T_orig,&solve_options.T);
-	
-	
-//	int setupConfig(tracker_config_t *T,
-//									double *midpointTol,
-//									int *userHom,
-//									int *useRegen,
-//									int *regenStartLevel,
-//									int *maxCodim,
-//									int *specificCodim,
-//									int *printMod,
-//									double *intrinsicCutoffMultiplier,
-//									int *reducedOnly,
-//									int *constructWitnessSet,
-//									int *supersetOnly,
-//									int *paramHom,
-//									int MPType); // Opens the file "config" and stores data in tracker_config_t.
 	
 	
 	return;
@@ -829,7 +817,7 @@ void generic_tracker_loop(trackingStats *trackCount,
 			
 			trackCount->failures++;
 			
-			if (solve_options.verbose_level>=0) {
+			if (solve_options.verbose_level>=1) {
 
 				printf("\nthere was a path failure nullspace_left tracking witness point %d\nretVal = %d; issoln = %d\n",ii,EG.retVal, issoln);
 				
@@ -1116,7 +1104,7 @@ int receive_endpoints(trackingStats *trackCount,
 			
 			trackCount->failures++;
 			
-			if (solve_options.verbose_level>=0) {
+			if (solve_options.verbose_level>=1) {
 				printf("\nthere was a path failure nullspace_left tracking witness point %d\nretVal = %d; issoln = %d\n",EG_receives[ii].pathNum, EG_receives[ii].retVal, issoln);
 				
 				print_path_retVal_message(EG_receives[ii].retVal);

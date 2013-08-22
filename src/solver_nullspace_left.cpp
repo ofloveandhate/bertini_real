@@ -1213,9 +1213,8 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 	W_new->num_synth_vars = W.num_synth_vars;
 
 	if (solve_options.complete_witness_set==1){
-		
-		cp_patches(W_new,W); // copy the patches over from the original witness set
-		cp_names(W_new,W);
+		W_new->cp_patches(W); // copy the patches over from the original witness set
+		W_new->cp_names(W);
 	}
 	
 
@@ -1327,8 +1326,7 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 												 solve_options);
 	}
 	
-	
-	
+
 	// close the files
 	fclose(midOUT);   fclose(OUT);
 	
@@ -1903,8 +1901,8 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 //	print_matrix_to_screen_matlab( AtimesJ,"jac");
 //	print_point_to_screen_matlab(curr_x_vars,"currxvars");
 //	print_point_to_screen_matlab(current_variable_values,"curr_vars");
-//	print_point_to_screen_matlab(funcVals,"F");
-//	print_matrix_to_screen_matlab(Jv,"Jv");
+	print_point_to_screen_matlab(funcVals,"F");
+	print_matrix_to_screen_matlab(Jv,"Jv");
 //	print_matrix_to_screen_matlab(Jp,"Jp");
 //	print_matrix_to_screen_matlab(BED->jac_with_proj,"jacwithproj");
 //			//these values are set in this function:  point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp
@@ -2543,7 +2541,6 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 
 
 
-
 int nullspacejac_dehom(point_d out_d, point_mp out_mp,
 											 int *out_prec,
 											 point_d in_d, point_mp in_mp,
@@ -2561,66 +2558,36 @@ int nullspacejac_dehom(point_d out_d, point_mp out_mp,
   { // compute out_d
 		nullspacejac_eval_data_d *BED_d = (nullspacejac_eval_data_d *)ED_d;
 		
-		comp_d denom;
-		change_size_vec_d(out_d,in_d->size-1);
-		out_d->size = in_d->size-1;
+		change_size_vec_d(out_d,BED_d->num_natural_vars-1);
+		out_d->size = BED_d->num_natural_vars-1;
 		
-		set_d(denom, &in_d->coord[0]);
 		
 		for (int ii=0; ii<BED_d->num_natural_vars-1; ++ii) {
-			set_d(&out_d->coord[ii],&in_d->coord[ii+1]);
-			div_d(&out_d->coord[ii],&out_d->coord[ii],denom); //  result[ii] = dehom_me[ii+1]/dehom_me[0].
+			div_d(&out_d->coord[ii],&in_d->coord[ii+1],&in_d->coord[0]); //  result[ii] = dehom_me[ii+1]/dehom_me[0].
 		}
-		
-		for (int ii=BED_d->num_natural_vars-1; ii<in_d->size-1; ++ii) {
-			set_d( &out_d->coord[ii],&in_d->coord[ii+1]);
-		}
-		
-		
 		
 		BED_d = NULL;
 		
   }
   else
   { // compute out_mp
+		
 		nullspacejac_eval_data_mp *BED_mp = (nullspacejac_eval_data_mp *)ED_mp;
-		
-		comp_mp denom; init_mp(denom);
-		change_size_vec_mp(out_mp,in_mp->size-1);
-		out_mp->size = in_mp->size-1;
-		
-		set_mp(denom, &in_mp->coord[0]);
-
-		for (int ii=0; ii<BED_mp->num_natural_vars-1; ++ii) {
-			set_mp(&out_mp->coord[ii],&in_mp->coord[ii+1]);
-			div_mp(&out_mp->coord[ii],&out_mp->coord[ii],denom); //  result[ii] = dehom_me[ii+1]/dehom_me[0].
-		}
-		
-		for (int ii=BED_mp->num_natural_vars-1; ii<in_mp->size-1; ++ii) {
-			set_mp( &out_mp->coord[ii],&in_mp->coord[ii+1]);
-		}
-		
-		clear_mp(denom);
-		
-		
-    // set prec on out_mp
+		// set prec on out_mp
     setprec_point_mp(out_mp, *out_prec);
+		
+		change_size_vec_mp(out_mp,BED_mp->num_natural_vars-1);
+		out_mp->size = BED_mp->num_natural_vars-1;
+		
+		for (int ii=0; ii<BED_mp->num_natural_vars-1; ++ii) {
+			div_mp(&out_mp->coord[ii],&in_mp->coord[ii+1],&in_mp->coord[0]); //  result[ii] = dehom_me[ii+1]/dehom_me[0].
+		}
 		
 		BED_mp = NULL;
 		
 	}
 	
-	
-//	if (in_prec < 64) {
-//		print_point_to_screen_matlab(in_d,"in");
-//		print_point_to_screen_matlab(out_d,"out");
-//	}
-//	else{
-//		print_point_to_screen_matlab(in_mp,"in");
-//		print_point_to_screen_matlab(out_mp,"out");
-//	}
-//	mypause();
-	
+
 	
   
 	
