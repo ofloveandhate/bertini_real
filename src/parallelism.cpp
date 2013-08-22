@@ -86,7 +86,7 @@ int ubermaster_process::main_loop()
 	switch (W.dim) {
 		case 1:
 			// curve
-			curve_main(V, C, W, pi, program_options, solve_options);
+			C.main(V, W, pi, program_options, solve_options);
 			
 			if (program_options.verbose_level>=2)
 				printf("outputting data\n");
@@ -98,7 +98,7 @@ int ubermaster_process::main_loop()
 			
 		case 2:
 			// surface
-			surface_main(V, S, W, pi, program_options, solve_options);
+			S.main(V, W, pi, program_options, solve_options);
 //
 //			S.print(program_options);
 //			V.print(program_options);

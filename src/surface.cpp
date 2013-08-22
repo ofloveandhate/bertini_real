@@ -2,27 +2,98 @@
 
 
 
-void surface_main(vertex_set & V,
-									surface_decomposition & surf,
-									witness_set & W_surf,
-									vec_mp *pi,
-									BR_configuration & program_options,
-									solver_configuration & solve_options)
+
+
+
+
+
+
+
+
+void surface_decomposition::print(boost::filesystem::path base)
+{
+	
+	std::cout << "printing surface decomposition to folder " << base << std::endl;
+	decomposition::print(base);
+	
+	
+	
+	boost::filesystem::path summaryname = base;
+	summaryname /= "S.surf";
+	FILE *OUT = safe_fopen_write(summaryname);
+	fprintf(OUT,"%d %d %ld %ld\n\n", num_faces, num_edges, mid_slices.size(), mid_slices.size());
+	// what more to print here?
+	fclose(OUT);
+	
+	summaryname = base;
+	summaryname /= "F.faces";
+	print_faces(summaryname);
+	
+	
+	boost::filesystem::path curve_location = base;
+	curve_location /= "curve";
+	
+	for (int ii=0; ii<mid_slices.size(); ii++) {
+		
+		std::stringstream converter;
+		converter << ii;
+		
+		boost::filesystem::path specific_loc = curve_location;
+		specific_loc += "_midslice_";
+		specific_loc += converter.str();
+		converter.clear(); converter.str("");
+		
+		mid_slices[ii].print(specific_loc);
+	}
+	
+	for (int ii=0; ii<mid_slices.size(); ii++) {
+		
+		std::stringstream converter;
+		converter << ii;
+		
+		boost::filesystem::path specific_loc = curve_location;
+		specific_loc += "_critslice_";
+		specific_loc += converter.str();
+		converter.clear(); converter.str("");
+		
+		mid_slices[ii].print(specific_loc);
+	}
+	
+	boost::filesystem::path specific_loc = curve_location;
+	specific_loc += "_crit";
+	crit_curve.print(specific_loc);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+void surface_decomposition::main(vertex_set & V,
+																 witness_set & W_surf,
+																 vec_mp *pi,
+																 BR_configuration & program_options,
+																 solver_configuration & solve_options)
 {
 
 #ifdef usetempfolders
 	program_options.move_to_temp();
 #endif
 	
-	surf.input_filename = W_surf.input_filename;
+	input_filename = W_surf.input_filename;
 	int ambient_dim = 2;
 	
-	surf.num_variables = W_surf.num_variables;
-	surf.component_num = W_surf.comp_num;
-	surf.add_projection(pi[0]);
-	surf.add_projection(pi[1]);
+	num_variables = W_surf.num_variables;
+	component_num = W_surf.comp_num;
+	add_projection(pi[0]);
+	add_projection(pi[1]);
 	
-	int num_vars = W_surf.num_variables; //HERE CHANGE THIS
 	
 	
 	// perform an isosingular deflation
@@ -60,7 +131,7 @@ void surface_main(vertex_set & V,
 	}
 	
 	
-	checkSelfConjugate(W_surf,num_vars,program_options, program_options.current_working_filename);  //later:  could be passed in from user, if we want
+	checkSelfConjugate(W_surf,num_variables,program_options, program_options.current_working_filename);  //later:  could be passed in from user, if we want
 	
 	//regenerate the various files, since we ran bertini since then.
 	parse_input_file(program_options.input_deflated_filename);
@@ -101,7 +172,7 @@ void surface_main(vertex_set & V,
 												 solve_options,
 												 &ns_config);
 	
-	W_curve_crit.only_first_vars(num_vars);
+	W_curve_crit.only_first_vars(num_variables);
 	W_curve_crit.sort_for_real(solve_options.T);
 	W_curve_crit.write_dehomogenized_coordinates("W_curve_crit"); // write the points to file
 	
@@ -161,19 +232,19 @@ void surface_main(vertex_set & V,
 	}
 	
 	
-	interslice(W_curve,
+	crit_curve.interslice(W_curve,
 								 W_curve_crit,
 								 randomizer_matrix,
 								 &temp_proj,
 								 program_options,
 								 solve_options,
-								 surf.crit_curve,
 								 V);
 	
 	clear_vec_mp(temp_proj);
-	surf.crit_curve.add_projection(pi[0]);
 	
-	surf.crit_curve.num_variables = num_vars;
+	crit_curve.add_projection(pi[0]);
+	
+	crit_curve.num_variables = num_variables;
 	
 	// DONE COMPUTING THE CRITICAL CURVE NOW.
 	std::cout << "done decomposing critical curve" << std::endl;
@@ -199,7 +270,7 @@ void surface_main(vertex_set & V,
 	std::vector< witness_set > midpoint_witness_sets;
 	midpoint_witness_sets.resize(midpoints_downstairs->size);
 	
-	surf.midpoint_slices.resize(midpoints_downstairs->size);
+	mid_slices.resize(midpoints_downstairs->size);
 	
 	
 
@@ -245,14 +316,14 @@ void surface_main(vertex_set & V,
 		midpoint_witness_sets[ii].dim = 1;
 		
 		// we already know the component is self-conjugate (by entry condition), so we are free to call this function
-		computeCurveSelfConj(midpoint_witness_sets[ii],
+		mid_slices[ii].computeCurveSelfConj(midpoint_witness_sets[ii],
 												 &pi[1],
-												 surf.midpoint_slices[ii],V,
-												 num_vars,
+												 V,
+												 num_variables,
 												 program_options, solve_options);
 		
-		surf.midpoint_slices[ii].add_projection(pi[1]);
-		surf.midpoint_slices[ii].num_variables = num_vars;
+		mid_slices[ii].add_projection(pi[1]);
+		mid_slices[ii].num_variables = num_variables;
 		
 		std::cout << "done decomposing the " << ii << "th midpoint slice" << std::endl;
 
@@ -264,7 +335,7 @@ void surface_main(vertex_set & V,
 	std::vector< witness_set > critpoint_witness_sets;
 	critpoint_witness_sets.resize(crit_downstairs->size);
 	
-	surf.critpoint_slices.resize(crit_downstairs->size);
+	crit_slices.resize(crit_downstairs->size);
 	
 	for (int ii=0; ii<crit_downstairs->size; ii++){
 		std::stringstream converter;
@@ -306,14 +377,14 @@ void surface_main(vertex_set & V,
 		critpoint_witness_sets[ii].dim = 1;
 		
 		// we already know the component is self-conjugate (by entry condition), so we are free to call this function
-		computeCurveSelfConj(critpoint_witness_sets[ii],
+		crit_slices[ii].computeCurveSelfConj(critpoint_witness_sets[ii],
 												 &pi[1],
-												 surf.critpoint_slices[ii],V,
-												 num_vars,
+												 V,
+												 num_variables,
 												 program_options, solve_options);
 		
-		surf.critpoint_slices[ii].add_projection(pi[1]);
-		surf.critpoint_slices[ii].num_variables = num_vars;
+		crit_slices[ii].add_projection(pi[1]);
+		crit_slices[ii].num_variables = num_variables;
 		
 		std::cout << "done decomposing the " << ii << "th critpoint slice" << std::endl;
 		
@@ -322,10 +393,10 @@ void surface_main(vertex_set & V,
 	
 	//connect the dots
 	connect_the_dots(V,
-									 surf,
 									 pi,
 									 program_options,
 									 solve_options);
+	
 	
 	
 
@@ -343,23 +414,33 @@ void surface_main(vertex_set & V,
 
 
 
-void connect_the_dots(vertex_set & V,
-											surface_decomposition & surf,
-											vec_mp *pi,
-											BR_configuration & program_options,
-											solver_configuration & solve_options)
+void surface_decomposition::connect_the_dots(vertex_set & V,
+																						 vec_mp *pi,
+																						 BR_configuration & program_options,
+																						 solver_configuration & solve_options)
 {
 	
 	midpoint_config mid_config;
 	
-	for (int ii=0; ii<surf.midpoint_slices.size(); ii++) {
-		for (int jj=0; jj<surf.midpoint_slices[ii].num_edges; jj++) {
+	for (int ii=0; ii<mid_slices.size(); ii++) {
+		for (int jj=0; jj<mid_slices[ii].num_edges; jj++) {
+			std::cout << "face " << num_faces << std::endl;
 			face F;
 			
 			//create the face here
 			
+			F.midpt = mid_slices[ii].edges[jj].midpt;
+			F.left = crit_curve.edge_w_midpt(mid_slices[ii].edges[jj].left);
+			F.right = crit_curve.edge_w_midpt(mid_slices[ii].edges[jj].right);
 			
-			surf.add_face(F);
+			
+			
+			std::cout << "mid_slices[ii].edges[jj].left " << mid_slices[ii].edges[jj].left << std::endl;
+			std::cout << "mid_slices[ii].edges[jj].right " << mid_slices[ii].edges[jj].right << std::endl;
+			std::cout << "F.left " << F.left << std::endl;
+			std::cout << "F.right " << F.right << std::endl;
+			
+			add_face(F);
 		}
 	}
 	
@@ -368,8 +449,32 @@ void connect_the_dots(vertex_set & V,
 
 
 
-
-
+void surface_decomposition::print_faces(boost::filesystem::path outputfile)
+{
+	std::cout << "printing faces to file " << outputfile << std::endl;
+	
+	FILE *OUT = safe_fopen_write(outputfile);
+	
+	// output the number of vertices
+	fprintf(OUT,"%d\n\n",num_faces);
+	
+	for(int ii=0;ii<num_faces;ii++){
+		fprintf(OUT,"%d mid\n%d %d  l-r\n", faces[ii].midpt, faces[ii].left, faces[ii].right);
+		fprintf(OUT,"%ld  top size\n",faces[ii].top.size());
+		for (int jj=0; jj<faces[ii].top.size(); jj++) {
+			fprintf(OUT,"%d ",faces[ii].top[ii]);
+		}
+		
+		fprintf(OUT,"%ld  bottom size\n",faces[ii].bottom.size());
+		for (int jj=0; jj<faces[ii].bottom.size(); jj++) {
+			fprintf(OUT,"%d ",faces[ii].bottom[ii]);
+		}
+		fprintf(OUT,"\n");
+	}
+	
+	
+	fclose(OUT);
+}
 
 
 

@@ -28,8 +28,8 @@ int detjac_to_detjac_solver_main(int MPType,
 	
 	
 	if (solve_options.complete_witness_set==1){
-		cp_patches(W_new,W); // copy the patches over from the original witness set.  for completeness
-		cp_names(W_new,W);
+		W_new->cp_patches(W); // copy the patches over from the original witness set
+		W_new->cp_names(W);
 		
 		W_new->num_linears = (1);
 		W_new->L_mp = (vec_mp *)br_malloc((1)*sizeof(vec_mp)); init_vec_mp(W_new->L_mp[0],W.num_variables);

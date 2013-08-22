@@ -125,60 +125,13 @@ public:
 	// default constructor
 	
 	witness_set(){
-		this->input_filename = "unset_filename";
-		
-		this->num_variables = 0;
-		this->num_synth_vars = 0;
-		
-		
-		this->num_patches = this->num_linears = 0;
-		this->num_pts = 0;
-		
-		this->patch_mp = NULL;
-		this->L_mp = NULL;
-		this->pts_mp = NULL;
-		
-		this->incidence_number = -1;
-		this->comp_num = this->dim = -1;
+		init();
 	};
 	
 	
 	~witness_set(){ // the destructor
 		
-		if (this->num_linears>0) {
-			for (int ii =0; ii<this->num_linears; ii++) {
-				clear_vec_mp(this->L_mp[ii]);
-			}
-			free(this->L_mp);
-		}
-		
-		if (this->num_patches>0) {
-			for (int ii =0; ii<this->num_patches; ii++) {
-				clear_vec_mp(this->patch_mp[ii]);
-			}
-			free(this->patch_mp);
-		}
-		
-		
-		if (this->num_pts>0) {
-			for (int ii =0; ii<this->num_pts; ii++) {
-				clear_vec_mp(this->pts_mp[ii]);
-			}
-			free(this->pts_mp);
-		}
-		
-		
-		this->num_variables = 0;
-		this->num_synth_vars = 0;
-		
-		
-		this->num_patches = this->num_linears = 0;
-		this->num_pts = 0;
-		
-		this->patch_mp = this->L_mp = this->pts_mp = NULL;
-		
-		this->incidence_number = -1;
-		this->comp_num = this->dim = -1;
+		reset();
 		
 	};
 	
@@ -186,48 +139,9 @@ public:
 	// assignment
 	witness_set& operator=( const witness_set& other) {
 		
-		// i am pretty sure that this code has leaks /  errors, in that when you assign a non-empty witness set, this attempts to br_malloc, not br_realloc.
+		init();
 		
-		this->dim = other.dim;
-		this->comp_num = other.comp_num;
-		this->incidence_number = other.incidence_number;
-		
-		
-		this->num_variables = other.num_variables;
-		this->num_synth_vars = other.num_synth_vars;
-		
-		this->num_pts = other.num_pts;
-		this->num_linears = other.num_linears;
-		this->num_patches = other.num_patches;
-		
-		
-		this->variable_names = other.variable_names;
-		
-		if (this->num_linears>0) {
-			this->L_mp = (vec_mp *)br_malloc(other.num_linears*sizeof(vec_mp));
-			for (int ii=0; ii<other.num_linears; ii++) {
-				init_vec_mp2(this->L_mp[ii],1,1024); this->L_mp[ii]->size = 1;
-				vec_cp_mp(this->L_mp[ii], other.L_mp[ii]);
-			}
-		}
-		
-		if (this->num_patches>0) {
-			this->patch_mp = (vec_mp *)br_malloc(other.num_patches*sizeof(vec_mp));
-			for (int ii=0; ii<other.num_patches; ii++) {
-				init_vec_mp2(this->patch_mp[ii],1,1024); this->patch_mp[ii]->size = 1;
-				vec_cp_mp(this->patch_mp[ii], other.patch_mp[ii]);
-			}
-		}
-		
-		if (this->num_pts>0) {
-			this->pts_mp = (vec_mp *)br_malloc(other.num_pts*sizeof(vec_mp));
-			for (int ii=0; ii<other.num_pts; ii++) {
-				init_vec_mp2(this->pts_mp[ii],1,1024); this->pts_mp[ii]->size = 1;
-				vec_cp_mp(this->pts_mp[ii], other.pts_mp[ii]);
-			}
-		}
-		
-		
+		copy(other);
     return *this;
   };
 	
@@ -235,50 +149,53 @@ public:
 	//copy operator.  must be explicitly declared because the underlying c structures use pointers.
 	witness_set(const witness_set & other){
 		
+		init();
+		
+		copy(other);
+	};
+	
+	void init()
+	{
+		this->input_filename = "unset_filename";
+		
+		this->num_variables = 0;
+		this->num_synth_vars = 0;
+		
+		
+		this->num_patches = 0;
+		this->num_linears = 0;
+		this->num_pts = 0;
+		
 		this->patch_mp = NULL;
 		this->L_mp = NULL;
 		this->pts_mp = NULL;
+		
+		this->incidence_number = -1;
+		this->comp_num = this->dim = -1;
+	}
+	
+	void copy(const witness_set & other)
+	{
+		reset();
 		
 		this->dim = other.dim;
 		this->comp_num = other.comp_num;
 		this->incidence_number = other.incidence_number;
 		
-		
 		this->num_variables = other.num_variables;
 		this->num_synth_vars = other.num_synth_vars;
 		
-		this->num_pts = other.num_pts;
-		this->num_linears = other.num_linears;
-		this->num_patches = other.num_patches;
-		
-		
 		this->variable_names = other.variable_names;
 		
-		if (this->num_linears>0) {
-			this->L_mp = (vec_mp *)br_malloc(other.num_linears*sizeof(vec_mp));
-			for (int ii=0; ii<other.num_linears; ii++) {
-				init_vec_mp2(this->L_mp[ii],1,1024); this->L_mp[ii]->size = 1;
-				vec_cp_mp(this->L_mp[ii], other.L_mp[ii]);
-			}
-		}
+		for (int ii=0; ii<other.num_linears; ii++)
+			add_linear(other.L_mp[ii]);
+
+		for (int ii=0; ii<other.num_pts; ii++)
+			add_point(other.pts_mp[ii]);
 		
-		if (this->num_patches>0) {
-			this->patch_mp = (vec_mp *)br_malloc(other.num_patches*sizeof(vec_mp));
-			for (int ii=0; ii<other.num_patches; ii++) {
-				init_vec_mp2(this->patch_mp[ii],1,1024); this->patch_mp[ii]->size = 1;
-				vec_cp_mp(this->patch_mp[ii], other.patch_mp[ii]);
-			}
-		}
-		
-		if (this->num_pts>0) {
-			this->pts_mp = (vec_mp *)br_malloc(other.num_pts*sizeof(vec_mp));
-			for (int ii=0; ii<other.num_pts; ii++) {
-				init_vec_mp2(this->pts_mp[ii],1,1024); this->pts_mp[ii]->size = 1;
-				vec_cp_mp(this->pts_mp[ii], other.pts_mp[ii]);
-			}
-		}
-		
-	};
+		for (int ii=0; ii<other.num_patches; ii++)
+			add_patch(other.patch_mp[ii]);
+	}
 	
 	
 	void only_natural_vars();
@@ -299,12 +216,7 @@ public:
 		
 		reset_patches();
 		
-		this->input_filename = "unset_filename";
-		this->num_variables = 0;
-		this->num_synth_vars = 0;
-		
-		this->incidence_number = -1;
-		this->comp_num = this->dim = -1;
+		init();
 	};
 	
 	
@@ -360,6 +272,10 @@ public:
 	void add_point(vec_mp new_point);
 	void add_linear(vec_mp new_linear);
 	
+	void cp_names(witness_set & W_in);
+	void cp_linears(witness_set & W_in);
+	void cp_patches(witness_set & W_in);
+	
 	
 	void merge(const witness_set & W_in);///< merges W_in into this
 	
@@ -402,9 +318,7 @@ public:
 
 
 
-void cp_names(witness_set *W_out, witness_set & W_in);
-void cp_linears(witness_set *W_out, witness_set & W_in);
-void cp_patches(witness_set *W_out, witness_set & W_in);
+
 
 
 
@@ -470,8 +384,8 @@ private:
 	
 	void init()
 	{
-		init_mp2(this->projVal_mp,1024);
-		init_point_mp2(this->pt_mp,1,1024);
+		init_mp(this->projVal_mp);
+		init_point_mp(this->pt_mp,1);
 		this->pt_mp->size = 1;
 		this->type = UNSET;
 	}
@@ -592,7 +506,11 @@ private:
 //	function homotopy;
 	
 public:
+	int midpt; ///< index into vertex set
 	
+	void copy(const cell & other){
+		this->midpt = other.midpt;
+	}
 };
 
 
@@ -607,7 +525,7 @@ public:
   int right; ///< index into vertices
 	int midpt; ///<  index into vertices
 	
-	edge()
+	edge() : cell()
 	{
 		left = right = midpt = -1;
 	}
@@ -626,46 +544,7 @@ public:
 
 
 
-/**
- the face data type..
- */
-class face : public cell
-{
-public:
-	
-  std::vector<int>	left;  ///< index into vertices
-  std::vector<int>	right; ///< index into vertices
-	int top; ///<  index into edges
-	int bottom; ///<  index into edges
-	
-	int num_left;  ///<  counters
-	int num_right; ///< 
-	
-	comp_mp left_crit_val; ///< 
-	comp_mp right_crit_val; ///< 
-	
-	int interior_pt; ///< index into vertex set
-	
-	face(){init_mp(left_crit_val); init_mp(right_crit_val);} ///<  constructor
-	~face(){clear_mp(left_crit_val); clear_mp(right_crit_val);}  ///<  destructor
-	
-	face(const face & other){ ///<  copy
-		init_mp(left_crit_val); init_mp(right_crit_val);
-		
-		set_mp(this->left_crit_val, other.left_crit_val);
-		set_mp(this->right_crit_val, other.right_crit_val);
-	}
-	
-	face& operator=(const face & other){ ///<  assignment
-		init_mp(left_crit_val); init_mp(right_crit_val);
-		
-		set_mp(this->left_crit_val, other.left_crit_val);
-		set_mp(this->right_crit_val, other.right_crit_val);
-		return *this;
-	}
-	
-	
-};
+
 
 
 
@@ -766,7 +645,6 @@ public:
 		
 		vec_cp_mp(this->patch[this->num_patches], new_patch);
 		this->num_patches++;
-		std::cout << "adding " << this->num_patches << "th patch to decomp\n";
 	}
 	
 	int add_vertex(vertex_set &V, vertex source_vertex);
@@ -777,6 +655,10 @@ public:
 	
 	int index_in_vertices_with_add(vertex_set &V,
 																 vec_mp testpoint, comp_mp projection_value,
+																 tracker_config_t T);
+	
+	int index_in_vertices_with_add(vertex_set &V,
+																 vertex vert,
 																 tracker_config_t T);
 	
 	int setup(boost::filesystem::path INfile,
@@ -840,140 +722,6 @@ public:
 
 
 
-
-/**
- a curve decomposition.
-
- includes methods to add vertices, look up vertices, etc
-*/
-class curve_decomposition : public decomposition
-{
-public:
-	
-	std::vector<edge> edges;
-	int      num_edges;
-
-	void add_edge(edge new_edge);
-	
-	int setup_edges(boost::filesystem::path INfile);
-	
-	void print_edges(boost::filesystem::path outputfile);
-	
-	void print(boost::filesystem::path base);
-	
-	curve_decomposition() : decomposition()
-	{
-		init();
-	}
-	
-	curve_decomposition & operator=(const curve_decomposition& other){
-		init();
-		copy(other);
-		return *this;
-	}
-	
-	curve_decomposition(const curve_decomposition & other){
-		init();
-		copy(other);
-	}
-	
-	
-	
-	void init(){
-		decomposition::init();
-		num_edges = 0;
-		dimension = 1;
-	}
-	
-	
-	void copy(const curve_decomposition & other)
-	{
-		decomposition::copy(other);
-		this->edges = other.edges;
-		this->num_edges = other.num_edges;
-	}
-}; // end curve_decomposition
-
-
-
-
-
-
-/**
- surface decomposition.
- 
- includes methods to add vertices, look up vertices, etc
- */
-class surface_decomposition : public decomposition
-{
-	
-	std::vector<edge> edges;
-	std::vector<face> faces;
-	//these counters keep track of the number of things
-	
-	int      num_edges;  
-	int      num_faces;
-
-	
-	
-public:
-	
-	std::vector< curve_decomposition > midpoint_slices;
-	std::vector< curve_decomposition > critpoint_slices;
-	curve_decomposition crit_curve;
-	
-	
-	surface_decomposition() : decomposition()
-	{
-		init();
-	}
-	
-	surface_decomposition & operator=(const surface_decomposition& other){
-		init();
-		copy(other);
-		return *this;
-	}
-	
-	surface_decomposition(const surface_decomposition & other){
-		init();
-		copy(other);
-	}
-	
-	void print(boost::filesystem::path base);
-	
-	void init()
-	{
-		decomposition::init();
-		num_edges = 0;
-		num_faces = 0;
-		dimension = 2;
-	}
-	
-	void copy(const surface_decomposition & other)
-	{
-		this->faces = other.faces;
-		this->edges = other.edges;
-		
-		this->num_edges = other.num_edges;
-		this->num_faces = other.num_faces;
-		
-		this->midpoint_slices = other.midpoint_slices;
-		this->critpoint_slices = other.critpoint_slices;
-		this->crit_curve = other.crit_curve;
-	}
-	
-	void add_face(const face & F)
-	{
-		faces.push_back(F);
-		num_faces++;
-	}
-	
-	void add_edge(const edge & E)
-	{
-		edges.push_back(E);
-		num_edges++;
-	}
-};
 
 
 
@@ -1049,7 +797,7 @@ void cp_patch_mp(patch_eval_data_mp *PED, patch_eval_data_mp PED_input);
 void cp_patch_d(patch_eval_data_d *PED, patch_eval_data_d PED_input);
 void cp_preproc_data(preproc_data *PPD, preproc_data PPD_input);
 
-void sort_increasing_by_real(vec_mp *projections_sorted, std::vector< int > & index_tracker, vec_mp projections_input);
+void sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & index_tracker, vec_mp projections_input);
 
 void make_randomization_matrix_based_on_degrees(mat_mp randomization_matrix, int ** randomized_degrees,
 																								int num_variables, int num_funcs);

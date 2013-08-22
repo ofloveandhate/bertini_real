@@ -27,9 +27,10 @@
 #include "postProcessing.hpp"
 #include "witnessSet.hpp"
 
+class surface_decomposition;
+
 class midpoint_config
 {
-	
 public:
 	
 	mat_mp randomizer_matrix_crit, randomizer_matrix;

@@ -103,8 +103,8 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	witness_set W_step_one;
 	W_step_one.num_variables = W.num_variables;
 	W_step_one.num_synth_vars = W.num_synth_vars;
-	cp_patches(&W_step_one, W);
-	cp_names(&W_step_one, W);
+	W_step_one.cp_patches(W);
+	W_step_one.cp_names(W);
 	
 	
 	witness_set W_linprod;
@@ -142,7 +142,7 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 		solve_options.allow_singular = 0;
 		solve_options.complete_witness_set = 1;
 		solve_options.allow_multiplicity = 0;
-		solve_options.allow_unsuccess = 1;
+		solve_options.allow_unsuccess = 0;
 		// actually solve WRT the linears
 
 		multilintolin_solver_main(solve_options.T.MPType,
@@ -162,10 +162,11 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 		
 		for (ii=0; ii<ns_config->num_v_vars-1; ii++) { // deficient one because of the patch equation
 			
-			if (program_options.verbose_level>=5) {
+			if (program_options.verbose_level>=5)
 				std::cout << "copy into tempmat v_linears[" << odo.inact_reg(ii) << "]\n";
+
+			if (program_options.verbose_level>=6)
 				print_point_to_screen_matlab(ns_config->v_linears[odo.inact_reg(ii)], "v_linears");
-			}
 			
 			for (jj=0; jj<ns_config->num_v_vars; jj++)
 				set_mp(&tempmat->entry[ii][jj], &ns_config->v_linears[odo.inact_reg(ii)]->coord[jj]);
@@ -204,8 +205,8 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 			W_step_one.reset();
 			W_step_one.num_variables = W.num_variables;
 			W_step_one.num_synth_vars = W.num_synth_vars;
-			cp_patches(&W_step_one, W);  // necessary?
-			cp_names(&W_step_one, W); // necessary?
+			W_step_one.cp_patches(W);  // necessary?
+			W_step_one.cp_names(W); // necessary?
 			
 		}
 	}
@@ -214,8 +215,8 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	clear_vec_mp(temppoint);
 	
 	
-	cp_patches(&W_linprod, W);
-	cp_names(&W_linprod, W);
+	W_linprod.cp_patches(W);
+	W_linprod.cp_names(W);
 	
 	//set some solver options
 	
@@ -251,8 +252,8 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	W_crit->num_variables = ns_config->num_x_vars+ns_config->num_v_vars;
 	W_crit->num_synth_vars = W.num_synth_vars + ns_config->num_v_vars;
 	
-	cp_patches(W_crit, W);
-	cp_names(W_crit, W);
+	W_crit->cp_patches(W);
+	W_crit->cp_names(W);
 	W_crit->sort_for_unique(solve_options.T); // get only the unique solutions.
 	
 	W_crit->add_patch(ns_config->v_patch);

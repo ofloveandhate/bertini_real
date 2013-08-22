@@ -23,8 +23,8 @@ int main(int argC, char *args[])
 	
 	program_options.parse_commandline(argC, args); // everybody gets to parse the command line.
 	
-	
-	srand(time(NULL));
+	//time(NULL)
+	srand(0);
 	
 	if (program_options.debugwait) {
 		int z = 1;
@@ -51,6 +51,7 @@ int main(int argC, char *args[])
 	MPI_Bcast(&MPType, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	
 	get_tracker_config(solve_options,MPType);
+	
 	initMP(solve_options.T.Precision); // set up some globals.
 
 //	solve_options.T.ratioTol = 0.99999999; // manually assert to be more permissive.  i don't really like this.

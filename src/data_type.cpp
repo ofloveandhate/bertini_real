@@ -687,9 +687,6 @@ void witness_set::sort_for_real(tracker_config_t T)
 	int *real_indicator = new int[this->num_pts];
 	int counter = 0;
 	
-	//	std::cout << "sorting for real\n\n" << num_synth_vars << " synth vars " << num_variables-num_synth_vars << " is diff" << std::endl;
-	
-	
 	vec_mp result; init_vec_mp(result,num_variables-num_synth_vars-1);
 	result->size = num_variables-num_synth_vars-1;
 	
@@ -697,13 +694,7 @@ void witness_set::sort_for_real(tracker_config_t T)
 		for (int jj=1; jj<this->num_variables-this->num_synth_vars; jj++) {
 			div_mp(&result->coord[jj-1], &this->pts_mp[ii]->coord[jj], &this->pts_mp[ii]->coord[0]);
 		}
-		//		dehomogenize(&result, this->pts_mp[ii]);
 		real_indicator[ii] = checkForReal_mp(result, T.real_threshold);
-		
-
-//		print_point_to_screen_matlab(result,"isthisreal???");
-//		std::cout << real_indicator[ii] << " " << T.real_threshold << std::endl;
-//		
 		
 		if (real_indicator[ii]==1) {
 			counter++;
@@ -888,76 +879,6 @@ void witness_set::merge(const witness_set & W_in)
 }//re: merge_witness_sets
 
 
-//copies names from old to new
-void cp_names(witness_set *W_out, witness_set & W_in)
-{
-	
-	if (W_in.num_variables==0) {
-		printf("\nattempting to copy variable names from witness_set with no variables\n");
-		exit(1333);
-	}
-	
-	
-	W_out->variable_names.clear();
-	
-	for (int ii=0; ii<W_in.variable_names.size(); ii++)
-		W_out->variable_names.push_back(W_in.variable_names[ii]);
-	
-}
-
-
-
-
-//copies the mp and d linears from in to out.
-void cp_linears(witness_set *W_out, witness_set & W_in)
-{
-	int ii;
-	
-	
-	W_out->num_linears = W_in.num_linears;
-	
-	
-	if (W_out->L_mp==NULL) {
-		W_out->L_mp = (vec_mp *)br_malloc(W_in.num_linears * sizeof(vec_mp));
-	}
-	else
-	{
-		W_out->L_mp = (vec_mp *)br_realloc(W_out->L_mp, W_in.num_linears * sizeof(vec_mp));
-	}
-	
-	for (ii=0; ii<W_in.num_linears; ++ii) {
-		init_vec_mp(W_out->L_mp[ii],W_in.L_mp[ii]->size);
-		vec_cp_mp(W_out->L_mp[ii],W_in.L_mp[ii]);
-		W_out->L_mp[ii]->size = W_in.L_mp[ii]->size;
-	}
-	
-	
-	return;
-}
-
-
-void cp_patches(witness_set *W_out, witness_set & W_in)
-{
-	
-	W_out->num_patches = W_in.num_patches;
-	
-	
-	if (W_out->patch_mp==NULL)
-		W_out->patch_mp = (vec_mp *)br_malloc(W_in.num_patches * sizeof(vec_mp));
-	else{
-		W_out->patch_mp = (vec_mp *)br_realloc(W_out->patch_mp, W_in.num_patches * sizeof(vec_mp));
-	}
-	
-	for (int ii=0; ii<W_in.num_patches; ++ii) {
-		init_vec_mp(W_out->patch_mp[ii],W_in.patch_mp[ii]->size);
-		vec_cp_mp(W_out->patch_mp[ii],W_in.patch_mp[ii]);
-		W_out->patch_mp[ii]->size = W_in.patch_mp[ii]->size;
-	}
-	
-	
-	return;
-}
-
 
 void witness_set::compute_downstairs_crit_midpts(vec_mp crit_downstairs,
 																								 vec_mp midpoints_downstairs,
@@ -965,12 +886,7 @@ void witness_set::compute_downstairs_crit_midpts(vec_mp crit_downstairs,
 																								 vec_mp pi)
 {
 	
-	int num_midpoints = this->num_pts-1;
-	
-	if (num_midpoints<1) {
-		printf("no midpoints to work with :(\n");
-		return;
-	}
+
 	
 	
 	vec_mp projection_values; init_vec_mp(projection_values,this->num_pts);
@@ -981,14 +897,18 @@ void witness_set::compute_downstairs_crit_midpts(vec_mp crit_downstairs,
 	}
 	
 	
-	vec_mp projections_sorted;
-	init_vec_mp(projections_sorted,this->num_pts);
-	projections_sorted->size = this->num_pts;
+	change_size_vec_mp(crit_downstairs,this->num_pts); // destructive resize
+	crit_downstairs->size = this->num_pts;
 	
-	sort_increasing_by_real(&projections_sorted, index_tracker, projection_values);
+	sort_increasing_by_real(crit_downstairs, index_tracker, projection_values);
 	
+	clear_vec_mp(projection_values);
 	
+	int num_midpoints = this->num_pts-1;
 	
+	if (num_midpoints<1) {
+		return;
+	}
 	
 	
 	comp_d h;  h->r = 0.5; h->i = 0.0;
@@ -998,15 +918,82 @@ void witness_set::compute_downstairs_crit_midpts(vec_mp crit_downstairs,
 	midpoints_downstairs->size = num_midpoints;
 	
 	comp_mp temp; init_mp(temp);
-	for (int ii=0; ii<projections_sorted->size-1; ii++){
-		add_mp(temp, &projections_sorted->coord[ii], &projections_sorted->coord[ii+1]);
+	for (int ii=0; ii<num_midpoints; ii++){
+		add_mp(temp, &crit_downstairs->coord[ii], &crit_downstairs->coord[ii+1]);
 		mul_mp(&midpoints_downstairs->coord[ii], temp, half);
 	}
 	
 	clear_mp(temp);
 	clear_mp(half);
-	vec_cp_mp(crit_downstairs, projections_sorted);
 }
+
+
+
+
+//copies names from old to new
+void witness_set::cp_names(witness_set & W_in)
+{
+	
+	if (W_in.num_variables==0) {
+		printf("\nattempting to copy variable names from witness_set with no variables\n");
+		deliberate_segfault();
+		exit(1333);
+	}
+	
+	this->variable_names = W_in.variable_names;
+//	this->variable_names.clear();
+//	
+//	for (int ii=0; ii<W_in.variable_names.size(); ii++)
+//		W_out->variable_names.push_back(W_in.variable_names[ii]);
+	
+}
+
+
+
+
+//copies the mp and d linears from in to out.
+void witness_set::cp_linears(witness_set & W_in)
+{
+	int ii;
+	
+	
+
+	
+	if (this->num_linears==0)
+		this->L_mp = (vec_mp *)br_malloc(W_in.num_linears * sizeof(vec_mp));
+	else
+		this->L_mp = (vec_mp *)br_realloc(this->L_mp, W_in.num_linears * sizeof(vec_mp));
+	
+	for (ii=0; ii<W_in.num_linears; ++ii) {
+		init_vec_mp2(this->L_mp[ii],W_in.L_mp[ii]->size,1024);
+		vec_cp_mp(this->L_mp[ii],W_in.L_mp[ii]);
+		this->L_mp[ii]->size = W_in.L_mp[ii]->size;
+	}
+	
+	this->num_linears = W_in.num_linears;
+	
+	return;
+}
+
+
+void witness_set::cp_patches(witness_set & W_in)
+{
+	if (this->num_patches==0)
+		this->patch_mp = (vec_mp *)br_malloc(W_in.num_patches * sizeof(vec_mp));
+	else
+		this->patch_mp = (vec_mp *)br_realloc(this->patch_mp, W_in.num_patches * sizeof(vec_mp));
+	
+	
+	for (int ii=0; ii<W_in.num_patches; ++ii) {
+		init_vec_mp(this->patch_mp[ii],W_in.patch_mp[ii]->size);
+		vec_cp_mp(this->patch_mp[ii],W_in.patch_mp[ii]);
+		this->patch_mp[ii]->size = W_in.patch_mp[ii]->size;
+	}
+	
+	this->num_patches = W_in.num_patches;
+	return;
+}
+
 
 
 
@@ -1159,81 +1146,31 @@ int decomposition::index_in_vertices(vertex_set &V,
 	
 		for (ii=0; ii<V.num_vertices; ii++) {
 			
-			int current_index = ii;//this->indices[type_iter->first][ii];
+			int current_index = ii;
 			
-			
-			sub_mp(V.diff, projection_value, V.vertices[current_index].projVal_mp);
-			mpf_abs_mp(V.abs, V.diff);
-			
-			if (mpf_cmp(V.abs, V.zerothresh) > 0){ // i think this is opposite
-				continue;
-			}
+			//it would be desirable to perform this comparison, but the projection value depends on the projection used to compute it!
+			// hence, it has been commented out.  WTB: a faster comparison search.
+//			sub_mp(V.diff, projection_value, V.vertices[current_index].projVal_mp);
+//			mpf_abs_mp(V.abs, V.diff);
+//			
+//			if (mpf_cmp(V.abs, V.zerothresh) > 0){ // i think this is opposite
+//				continue;
+//			}
 			
 			for (int jj=1; jj<V.num_natural_variables; jj++) {
 				div_mp(&V.checker_1->coord[jj-1], &testpoint->coord[jj],  &testpoint->coord[0]);
 				div_mp(&V.checker_2->coord[jj-1],&V.vertices[current_index].pt_mp->coord[jj], &V.vertices[current_index].pt_mp->coord[0]);
 			}
 			
-			if (isSamePoint_inhomogeneous_input(V.checker_1, V.checker_2)){
-				//				std::cout << "these two points are the SAME:\n";
-				//				print_point_to_screen_matlab(V.vertices[current_index].pt_mp,"candidate");
-				//				print_point_to_screen_matlab(testpoint,"testpoint");
-				//				mypause();
-				
+			if (isSamePoint_inhomogeneous_input(V.checker_1, V.checker_2)){				
 				index = current_index;
 				break;
 			}
-			//			else{
-			//				std::cout << "these two points are DIFFERENT:\n";
-			//				print_point_to_screen_matlab(V.vertices[current_index].pt_mp,"candidate");
-			//				print_point_to_screen_matlab(testpoint,"testpoint");
-			//				mypause();
-			//			}
-			if (index!=-1) {
+
+			if (index!=-1)
 				break;
-			}
+			
 		}
-
-	
-//	for (type_iter = this->counters.begin(); type_iter!= this->counters.end(); type_iter++) {
-//		for (ii=0; ii<type_iter->second; ii++) {
-//			int current_index = this->indices[type_iter->first][ii];
-//			
-//			
-//			sub_mp(V.diff, projection_value, V.vertices[current_index].projVal_mp);
-//			mpf_abs_mp(V.abs, V.diff);
-//			
-//			if (mpf_cmp(V.abs, V.zerothresh) > 0){
-//				continue;
-//			}
-//			
-//			for (int jj=1; jj<V.num_natural_variables; jj++) {
-//				div_mp(&V.checker_1->coord[jj-1], &testpoint->coord[jj],  &testpoint->coord[0]);
-//				div_mp(&V.checker_2->coord[jj-1],&V.vertices[current_index].pt_mp->coord[jj], &V.vertices[current_index].pt_mp->coord[0]);
-//			}
-//			
-//			if (isSamePoint_inhomogeneous_input(V.checker_1, V.checker_2)){
-////				std::cout << "these two points are the SAME:\n";
-////				print_point_to_screen_matlab(V.vertices[current_index].pt_mp,"candidate");
-////				print_point_to_screen_matlab(testpoint,"testpoint");
-////				mypause();
-//				
-//				index = current_index;
-//				break;
-//			}
-////			else{
-////				std::cout << "these two points are DIFFERENT:\n";
-////				print_point_to_screen_matlab(V.vertices[current_index].pt_mp,"candidate");
-////				print_point_to_screen_matlab(testpoint,"testpoint");
-////				mypause();
-////			}
-//			
-//		}
-//		if (index!=-1) {
-//			break;
-//		}
-//	}
-
 		
 	
 	return index;	
@@ -1265,6 +1202,22 @@ int decomposition::index_in_vertices_with_add(vertex_set &V,
 
 }
 
+
+
+
+int decomposition::index_in_vertices_with_add(vertex_set &V,
+																							vertex vert,
+																							tracker_config_t T)
+{
+	int index = decomposition::index_in_vertices(V, vert.pt_mp, vert.projVal_mp, T);
+	
+	if (index==-1) {
+		index = decomposition::add_vertex(V, vert);
+	}
+	
+	return index;
+	
+}
 
 
 
@@ -1452,133 +1405,10 @@ void decomposition::print(boost::filesystem::path base)
 
 
 
-int curve_decomposition::setup_edges(boost::filesystem::path INfile)
-//setup the vertex structure
-{
-	FILE *IN = safe_fopen_read(INfile);
-	
-	fscanf(IN, "%d\n", &this->num_edges);
-	int left, midpt, right;
-	for(int ii=0;ii<this->num_edges;ii++) {
-		fscanf(IN,"%d %d %d",&left, &midpt, &right); scanRestOfLine(IN);
-		this->edges.push_back(edge(left, midpt, right));
-	}
-	
-	fclose(IN);
-	return this->num_edges;
-}
 
 
 
 
-
-void curve_decomposition::add_edge(edge new_edge)
-{
-	this->num_edges++;
-	this->edges.push_back(new_edge);
-	return;
-}
-
-
-void curve_decomposition::print(boost::filesystem::path base)
-{
-	
-	std::cout << "printing curve decomposition to folder " << base << std::endl;
-	
-	decomposition::print(base);
-	
-	boost::filesystem::path edgefile = base / "E.edge";
-	
-	curve_decomposition::print_edges(edgefile);
-}
-
-
-
-
-void curve_decomposition::print_edges(boost::filesystem::path outputfile)
-/**Output edge structure as follows:
- # variables
- # edges
- name of input file
- edge 1
- 
- edge 2
-
- 
- for each edge, output the following information:
- index to left vertex in vertices
- index to right vertex in vertices
- index to midpoint vertex in vertices
- 
- **/
-{
-	int ii;
-	FILE *OUT = safe_fopen_write(outputfile);
-	
-	// output the number of vertices
-	fprintf(OUT,"%d\n\n",num_edges);
-	
-	for(ii=0;ii<num_edges;ii++)
-		fprintf(OUT,"%d %d %d \n",
-						edges[ii].left,
-						edges[ii].midpt,
-						edges[ii].right);
-	fclose(OUT);
-}
-
-
-
-
-
-void surface_decomposition::print(boost::filesystem::path base)
-{
-	
-	std::cout << "printing surface decomposition to folder " << base << std::endl;
-	decomposition::print(base);
-	
-	
-	
-	boost::filesystem::path summaryname = base;
-	summaryname /= "S.surf";
-	FILE *OUT = safe_fopen_write(summaryname);
-	fprintf(OUT,"%d %d %ld %ld\n\n", num_faces, num_edges, midpoint_slices.size(), critpoint_slices.size());
-	// what more to print here?
-	fclose(OUT);
-	
-	
-	boost::filesystem::path curve_location = base;
-	curve_location /= "curve";
-	
-	for (int ii=0; ii<midpoint_slices.size(); ii++) {
-		
-		std::stringstream converter;
-		converter << ii;
-		
-		boost::filesystem::path specific_loc = curve_location;
-		specific_loc += "_midslice_";
-		specific_loc += converter.str();
-		converter.clear(); converter.str("");
-		
-		midpoint_slices[ii].print(specific_loc);
-	}
-	
-	for (int ii=0; ii<critpoint_slices.size(); ii++) {
-		
-		std::stringstream converter;
-		converter << ii;
-		
-		boost::filesystem::path specific_loc = curve_location;
-		specific_loc += "_critslice_";
-		specific_loc += converter.str();
-		converter.clear(); converter.str("");
-		
-		critpoint_slices[ii].print(specific_loc);
-	}
-	
-	boost::filesystem::path specific_loc = curve_location;
-	specific_loc += "_crit";
-	crit_curve.print(specific_loc);
-}
 
 
 
@@ -1778,6 +1608,10 @@ void projection_value_homogeneous_input(comp_d result, vec_d input, vec_d projec
 		result->i = 0.0;
 	}
 	
+//	if (result->r < 1e-13) {
+//		result->r = 0.0;
+//	}
+	
 	return;
 }
 
@@ -1802,6 +1636,11 @@ void projection_value_homogeneous_input(comp_mp result, vec_mp input, vec_mp pro
 	if (temp2->i < 1e-10) {
 		mpf_set_d(result->i, 0.0);
 	}
+	
+//	mp_to_d(temp2, result);
+//	if (temp2->r < 1e-13) {
+//		mpf_set_d(result->r, 0.0);
+//	}
 	
 }
 
@@ -1891,14 +1730,9 @@ int isSamePoint_homogeneous_input(point_mp left, point_mp right){
 
 void print_point_to_screen_matlab(vec_d M, std::string name)
 {
-	int kk;
-	
-	if (M->size==0) {
-		printf("requested to print a vector '%s' which had size==0.  exiting\n",name.c_str());
-	}
 	
 	printf("%s = [...\n",name.c_str());
-	for (kk = 0; kk < M->size; kk++)
+	for (int kk = 0; kk < M->size; kk++)
 	{ // print kth coordinate
 		printf(" %.15le+1i*%.15le;\n",M->coord[kk].r,M->coord[kk].i);
 	}
@@ -1907,14 +1741,9 @@ void print_point_to_screen_matlab(vec_d M, std::string name)
 
 void print_point_to_screen_matlab(vec_mp M, std::string name)
 {
-	int kk;
-	
-	if (M->size==0) {
-		printf("requested to print a vector '%s' which had size==0.  exiting\n",name.c_str());
-	}
 	
 	printf("%s = [...\n",name.c_str());
-	for (kk = 0; kk < M->size; kk++)
+	for (int kk = 0; kk < M->size; kk++)
 	{ // print kth coordinate
 		mpf_out_str (NULL, 10, 16, M->coord[kk].r);
 		printf("+1i*");
@@ -2116,7 +1945,7 @@ void cp_preproc_data(preproc_data *PPD, preproc_data PPD_input)
 
 
 
-void sort_increasing_by_real(vec_mp *projections_sorted, std::vector< int > & index_tracker, vec_mp projections_input){
+void sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & index_tracker, vec_mp projections_input){
 	
 	comp_mp large; init_mp(large);
 	comp_d l; l->r = 1e9; l->i = 0;
@@ -2126,8 +1955,8 @@ void sort_increasing_by_real(vec_mp *projections_sorted, std::vector< int > & in
 	vec_mp raw; init_vec_mp(raw,1);
 	vec_cp_mp(raw,projections_input);
 	
-	change_size_vec_mp( (*projections_sorted), raw->size); // destructive resize
-	(*projections_sorted)->size = raw->size;
+	change_size_vec_mp( projections_sorted, raw->size); // destructive resize
+	projections_sorted->size = raw->size;
 	int ii,jj;
 
 	double min;
@@ -2151,7 +1980,7 @@ void sort_increasing_by_real(vec_mp *projections_sorted, std::vector< int > & in
 		
 		
 		index_tracker.push_back(indicator);
-		set_mp( &(*projections_sorted)->coord[ii],&raw->coord[indicator]);
+		set_mp( &projections_sorted->coord[ii],&raw->coord[indicator]);
 		set_mp( &raw->coord[indicator],large);
 	}
 	return;
