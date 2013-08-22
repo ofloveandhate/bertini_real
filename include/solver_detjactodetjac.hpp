@@ -24,7 +24,7 @@
 #include "data_type.hpp"
 #include "programConfiguration.hpp"
 #include "postProcessing.hpp"
-#include "witnessSet.hpp"
+
 // the mp version
 typedef struct
 {

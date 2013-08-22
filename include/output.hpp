@@ -20,7 +20,6 @@
 #include "missing_bertini_headers.hpp"
 
 
-#include "witnessSet.hpp"
 
 #include "fileops.hpp"
 #include "data_type.hpp"

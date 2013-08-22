@@ -17,7 +17,6 @@
 
 
 
-#include "witnessSet.hpp"
 
 #include "programConfiguration.hpp"
 #include "data_type.hpp"
