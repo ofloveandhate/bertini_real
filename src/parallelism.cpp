@@ -165,6 +165,11 @@ int worker_process::main_loop()
 				// call the blabla here
 				break;
 				
+			case MIDPOINT_SOLVER:
+//				midpoint_slave_entry_point(this->solve_options);
+				// call the blabla here
+				break;
+				
 			case TERMINATE:
 				break;
 				

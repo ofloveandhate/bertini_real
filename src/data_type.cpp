@@ -1604,9 +1604,9 @@ void projection_value_homogeneous_input(comp_d result, vec_d input, vec_d projec
 	set_d(temp, result);
 	div_d(result, temp, &input->coord[0]);
 	
-	if (result->i < 1e-10) {
-		result->i = 0.0;
-	}
+//	if (result->i < 1e-10) {
+//		result->i = 0.0;
+//	}
 	
 //	if (result->r < 1e-13) {
 //		result->r = 0.0;
@@ -1633,9 +1633,9 @@ void projection_value_homogeneous_input(comp_mp result, vec_mp input, vec_mp pro
 	
 	comp_d temp2;
 	mp_to_d(temp2, result);
-	if (temp2->i < 1e-10) {
-		mpf_set_d(result->i, 0.0);
-	}
+//	if (temp2->i < 1e-10) {
+//		mpf_set_d(result->i, 0.0);
+//	}
 	
 //	mp_to_d(temp2, result);
 //	if (temp2->r < 1e-13) {
@@ -1765,9 +1765,32 @@ void print_matrix_to_screen_matlab(mat_d M, std::string name)
 	{ // print kth row
 		for (jj = 0; jj < M->cols; jj++)
 		{
-			printf("%.8le+1i*%.8le\t",M->entry[kk][jj].r,M->entry[kk][jj].i);
+//			if (abs(M->entry[kk][jj].r)<1e-12) {
+//				printf("0");
+//			}
+//			else{
+//			printf("%.8le",M->entry[kk][jj].r);
+//			}
+//			
+//			if (abs(M->entry[kk][jj].r)>=1e-12 && abs(M->entry[kk][jj].i)>=1e-12) {
+//				printf("+");
+//			}
+//			else{
+//				printf(" ");
+//			}
+//			
+//			if (abs(M->entry[kk][jj].i)<1e-12) {
+//				
+//			}
+//			else{
+//				printf("1i*%.8le ",M->entry[kk][jj].i);
+//			}
+			printf("%.8le+1i*%.8le ",M->entry[kk][jj].r,M->entry[kk][jj].i );
 		}
-		printf(";\n");
+		if (kk!= M->rows-1) {
+			printf(";...\n");
+		}
+		
 	}
 	printf("];\n\n");
 }

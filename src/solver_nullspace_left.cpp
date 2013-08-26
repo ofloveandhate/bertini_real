@@ -190,6 +190,8 @@ int nullspacejac_eval_data_mp::send(parallelism_config & mpi_config)
 	//send the base class stuff.
 	solver_mp::send(mpi_config);
 	
+	std::cout << "master done sending solver_d" << std::endl;
+	
 	int *buffer = new int[12];
 	
 	buffer[0] = num_additional_linears;
@@ -323,6 +325,7 @@ int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 	MPI_Bcast(buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	
 	if (buffer[0] != NULLSPACE) {
+		std::cout << "worker failed to confirm it is receiving the NULLSPACE type eval data" << std::endl;
 		mpi_config.abort(777);
 	}
 	
@@ -833,13 +836,14 @@ int nullspacejac_eval_data_d::send(parallelism_config & mpi_config)
 {
 	
 	int solver_choice = NULLSPACE;
+	std::cout << "master bcasting solver choice " << solver_choice << std::endl;
 	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
 	// send the confirmation integer, to ensure that we are sending the correct type.
 	
 	//send the base class stuff.
 	solver_d::send(mpi_config);
 
-	
+	std::cout << "master done sending solver_d" << std::endl;
 	
 	int *buffer = new int[12];
 	
@@ -1209,19 +1213,8 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 		solve_options.call_for_help(NULLSPACE);
 	}
 	
-	W_new->num_variables = W.num_variables;
-	W_new->num_synth_vars = W.num_synth_vars;
-
-	if (solve_options.complete_witness_set==1){
-		W_new->cp_patches(W); // copy the patches over from the original witness set
-		W_new->cp_names(W);
-	}
 	
-
 	
-  int num_crossings = 0;
-	
-  trackingStats trackCount; init_trackingStats(&trackCount); // initialize trackCount to all 0
 	
 	
 	//	solve_options.T.numVars = setupProg(this->SLP, solve_options.T.Precision, solve_options.T.MPType);
@@ -1271,89 +1264,20 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 			
 			
 			
-			adjust_tracker_AMP(& (solve_options.T), W.num_variables);
-			// initialize latest_newton_residual_mp
-			break;
-		default:
-			break;
-	}
-	
-	
-	
-	
-	if (solve_options.use_parallel()) {
-		
-		bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
-		
-		switch (solve_options.T.MPType) {
-			case 1:
-				std::cout << "master sending mp type" << std::endl;
-				ED_mp->send(solve_options);
-				break;
-				
-			default:
-				std::cout << "master sending double type " << solve_options.T.MPType <<  std::endl;
-				ED_d->send(solve_options);
-				break;
-		}
-		MPI_Barrier(MPI_COMM_WORLD);
-	}
-	
-	
-	
-	post_process_t *endPoints = (post_process_t *)br_malloc(W.num_pts * sizeof(post_process_t)); //overallocate, expecting full
-	
-	
-	// call the file setup function
-	FILE *OUT = NULL, *midOUT = NULL;
-	
-	generic_setup_files(&OUT, "output",
-											&midOUT, "midpath_data");
-	
-	if (solve_options.use_parallel()) {
-		
-		generic_tracker_loop_master(&trackCount, OUT, midOUT,
-																W,
-																endPoints,
-																ED_d, ED_mp,
-																solve_options);
-	}
-	else{
-		generic_tracker_loop(&trackCount, OUT, midOUT,
-												 W,
-												 endPoints,
-												 ED_d, ED_mp,
-												 solve_options);
-	}
-	
-
-	// close the files
-	fclose(midOUT);   fclose(OUT);
-	
-	
-	
-	
-	// check for path crossings
-	if (solve_options.use_midpoint_checker==1) {
-		midpoint_checker(trackCount.numPoints, solve_options.T.numVars,solve_options.midpoint_tol, &num_crossings);
-	}
-	
-	// post process
-	switch (solve_options.T.MPType) {
-		case 0:
-			BRpostProcessing(endPoints, W_new, trackCount.successes, &ED_d->preProcData, &solve_options.T, solve_options);
-			break;
+			adjust_tracker_AMP(& (solve_options.T), W.num_variables); // & initialize latest_newton_residual_mp
 			
+			break;
 		default:
-			BRpostProcessing(endPoints, W_new, trackCount.successes, &ED_mp->preProcData, &solve_options.T, solve_options);
 			break;
 	}
-	
-	
-	
-  //clear the endopints here
 
 	
+	
+	generic_solver_master(W_new, W,
+												ED_d, ED_mp,
+												solve_options);
+	
+		
   return SUCCESSFUL;
 
 }
@@ -1382,9 +1306,8 @@ void nullspace_slave_entry_point(solver_configuration & solve_options)
 			
 		case 1:
 			ED_mp = new nullspacejac_eval_data_mp(1);
-			
-			
 			ED_mp->receive(solve_options);
+			
 			std::cout << "worker done receiving mp type" << std::endl;
 			// initialize latest_newton_residual_mp
 			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
@@ -1407,7 +1330,7 @@ void nullspace_slave_entry_point(solver_configuration & solve_options)
 	}
 	
 	
-	MPI_Barrier(MPI_COMM_WORLD);
+
 	// call the file setup function
 	FILE *OUT = NULL, *midOUT = NULL;
 	
@@ -1891,7 +1814,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
   set_one_d(&parDer->coord[0]);       // ds/dt = 1
 	
 	
-	if (BED->verbose_level>=5) {
+	if (BED->verbose_level==10) {
 	printf("t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
 //	print_matrix_to_screen_matlab(jac_homogenizing_matrix,"jac_hom_1044");
 //	print_matrix_to_screen_matlab(BED->post_randomizer_matrix,"S");
@@ -2436,7 +2359,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	
 	
 	
-	if (BED->verbose_level>=5) {
+	if (BED->verbose_level==10) {
 		//	print_matrix_to_screen_matlab( AtimesJ,"jac");
 		//	print_point_to_screen_matlab(curr_x_vars,"currxvars");
 		print_point_to_screen_matlab(funcVals,"F_mp");

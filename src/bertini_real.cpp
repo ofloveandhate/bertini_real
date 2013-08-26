@@ -23,8 +23,6 @@ int main(int argC, char *args[])
 	
 	program_options.parse_commandline(argC, args); // everybody gets to parse the command line.
 	
-	//time(NULL)
-	srand(0);
 	
 	if (program_options.debugwait) {
 		int z = 1;
@@ -54,7 +52,8 @@ int main(int argC, char *args[])
 	
 	initMP(solve_options.T.Precision); // set up some globals.
 
-//	solve_options.T.ratioTol = 0.99999999; // manually assert to be more permissive.  i don't really like this.
+	solve_options.use_midpoint_checker = 0;
+	solve_options.T.ratioTol = 0.99999999; // manually assert to be more permissive.  i don't really like this.
 	solve_options.verbose_level = program_options.verbose_level;
 	
 	

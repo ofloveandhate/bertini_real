@@ -207,18 +207,17 @@ void curve_decomposition::main(vertex_set & V,
 
 
 void curve_decomposition::computeCurveSelfConj(witness_set & W_curve,
-													vec_mp *pi,
-													vertex_set &V,
-													int num_vars,
-													BR_configuration & program_options,
-													solver_configuration & solve_options)
+																							 vec_mp *pi,
+																							 vertex_set &V,
+																							 int num_vars,
+																							 BR_configuration & program_options,
+																							 solver_configuration & solve_options)
 {
 	//IN DEVELOPMENT
   
 	
 	
 	int ambient_dim = 1;
-	
 	
 	witness_set Wtemp;
 	
@@ -231,7 +230,6 @@ void curve_decomposition::computeCurveSelfConj(witness_set & W_curve,
 	
 	
 	//create the matrix
-	mat_mp randomizer_matrix;
 	init_mat_mp2(randomizer_matrix,
 							 W_curve.num_variables-W_curve.num_patches-ambient_dim,solve_options.PPD.num_funcs,
 							 solve_options.T.AMP_max_prec);
@@ -344,6 +342,8 @@ int curve_compute_critical_points(witness_set & W_curve,
 		W_crit_real.cp_linears(W_curve);
 		W_crit_real.only_first_vars(W_curve.num_variables); // trim the fat, since we are at the lowest level.
 		
+//		std::cout << "W_crit_real:" << std::endl;
+//		W_crit_real.print_to_screen();
 		W_crit_real.sort_for_real(solve_options.T);
 		// now get the bounding box critical points and ends of the interval
 		curve_get_additional_critpts(&W_crit_real,
@@ -372,6 +372,7 @@ int curve_decomposition::interslice(witness_set & W_curve,
 	for (int ii=0; ii<W_curve.num_patches; ii++) 
 		add_patch(W_curve.patch_mp[ii]);
 	
+	this->num_variables = W_crit_real.num_variables;
 	input_filename = W_curve.input_filename;
 	
 	int blabla; int *declarations = NULL;
@@ -380,9 +381,9 @@ int curve_decomposition::interslice(witness_set & W_curve,
 	partition_parse(&declarations, W_curve.input_filename, "func_input", "config", 0); // the 0 means not self conjugate.
 																																										 // i would like to move this.
 	
+	mat_cp_mp(this->randomizer_matrix, randomizer_matrix);
 	
-	
-	
+
 	///////
 	//
 	//   actually form crit.
@@ -491,12 +492,10 @@ int curve_decomposition::interslice(witness_set & W_curve,
 		if (program_options.verbose_level>=2) {
 			printf("sorting midpoint witness set %d for realness\n",ii);
 		}
-		//		midpoint_witness_sets[ii].print_to_screen();
 		midpoint_witness_sets[ii].sort_for_real(solve_options.T);
 		midpoint_witness_sets[ii].sort_for_unique(solve_options.T);
 		
 		edge_counter += midpoint_witness_sets[ii].num_pts;
-		//		midpoint_witness_sets[ii].print_to_screen();
 	}
 	
 	solve_options.reset_tracker_config();
@@ -521,7 +520,7 @@ int curve_decomposition::interslice(witness_set & W_curve,
 		
 		
 		neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii]);
-		
+		print_comp_matlab(&crit_downstairs->coord[ii],"left");
 		lintolin_solver_main(solve_options.T.MPType,
 												 midpoint_witness_sets[ii], //the input
 												 randomizer_matrix,
@@ -532,6 +531,8 @@ int curve_decomposition::interslice(witness_set & W_curve,
 		
 		neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii+1]);
 		
+		
+		print_comp_matlab(&crit_downstairs->coord[ii+1],"right");
 		lintolin_solver_main(solve_options.T.MPType,
 												 midpoint_witness_sets[ii], //the input
 												 randomizer_matrix,
@@ -569,6 +570,10 @@ int curve_decomposition::interslice(witness_set & W_curve,
 			temp_edge.right = index_in_vertices_with_add(V, Wright.pts_mp[kk], &crit_downstairs->coord[ii+1], solve_options.T);
 			
 			add_edge(temp_edge);
+			
+			
+			
+			
 			
 			if (program_options.verbose_level>=2) {
 				printf("upstairs midpoint %d\n",kk);

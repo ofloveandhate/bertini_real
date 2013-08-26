@@ -237,8 +237,7 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	if (program_options.verbose_level>=2)
 		ns_config->print();
 	
-	if (program_options.verbose_level>=4)
-		W_linprod.print_to_screen();
+
 	
 	
 	
