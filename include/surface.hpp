@@ -45,10 +45,11 @@ class face : public cell
 {
 public:
 	
-  std::vector<int>	top;  ///< index into vertices
-  std::vector<int>	bottom; ///< index into vertices
-	int left;				///<  index into edges.  indexes into crit_curve.edges
-	int right;			///<  index into edges
+  std::vector<int>	left;  ///< index into vertices
+  std::vector<int>	right; ///< index into vertices
+	
+	int top;				///<  index into edges.  indexes into crit_curve.edges
+	int bottom;			///<  index into edges
 	
 	int num_left;		///<  counters
 	int num_right;	///<
@@ -56,6 +57,7 @@ public:
 	comp_mp left_crit_val; ///<
 	comp_mp right_crit_val; ///<
 	
+	int index; ///< which midpoint this face came from.
 	
 	face() : cell()
 	{
@@ -83,14 +85,17 @@ public:
 		init_mp(right_crit_val);
 		
 		num_left = num_right = 0;
-		left = right = -1;
+		top = bottom = -1;
+		index = -1;
 	}
 	
 	
 	void copy(const face & other)
 	{
 		cell::copy(other);
-	
+		
+		this->index = other.index;
+		
 		this->left = other.left;
 		this->right = other.right;
 		

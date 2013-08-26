@@ -267,8 +267,8 @@ void get_tracker_config(solver_configuration & solve_options,int MPType)
 							&paramHom,
 							MPType);
 	
-	if (solve_options.T.final_tolerance > solve_options.T.real_threshold) 
-		solve_options.T.real_threshold = solve_options.T.final_tolerance*10;
+//	if (solve_options.T.final_tolerance > solve_options.T.real_threshold) 
+		solve_options.T.real_threshold = 1e-6;
 	
 	
 	cp_tracker_config_t(&solve_options.T_orig,&solve_options.T);
@@ -298,6 +298,109 @@ void solver_clear_config(solver_configuration & options){
 	//has no fields which require clearing.
 	return;
 }
+
+
+
+
+
+
+void generic_solver_master(witness_set * W_new, witness_set & W,
+													 solver_d * ED_d, solver_mp * ED_mp,
+													 solver_configuration & solve_options)
+{
+	
+	
+	
+	
+  int num_crossings = 0;
+	
+	W_new->num_variables = W.num_variables;
+	W_new->num_synth_vars = W.num_synth_vars;
+	
+	if (solve_options.complete_witness_set==1){
+		
+		W_new->cp_patches(W); // copy the patches over from the original witness set
+		W_new->cp_names(W);
+	}
+	
+	
+	if (solve_options.use_parallel()) {
+		
+		bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
+		
+		switch (solve_options.T.MPType) {
+			case 1:
+				
+				ED_mp->send(solve_options);
+				std::cout << "master done sending mp type" << std::endl;
+				break;
+				
+			default:
+				
+				ED_d->send(solve_options);
+				std::cout << "master done sending double type " << solve_options.T.MPType <<  std::endl;
+				break;
+		}
+	}
+	
+	
+	trackingStats trackCount; init_trackingStats(&trackCount); // initialize trackCount to all 0
+	
+	post_process_t *endPoints = (post_process_t *)br_malloc(W.num_pts * sizeof(post_process_t)); //overallocate, expecting full
+	
+	
+	// call the file setup function
+	FILE *OUT = NULL, *midOUT = NULL;
+	
+	generic_setup_files(&OUT, "output",
+											&midOUT, "midpath_data");
+	
+	if (solve_options.use_parallel()) {
+		
+		
+		generic_tracker_loop_master(&trackCount, OUT, midOUT,
+																W,
+																endPoints,
+																ED_d, ED_mp,
+																solve_options);
+	}
+	else{
+		generic_tracker_loop(&trackCount, OUT, midOUT,
+												 W,
+												 endPoints,
+												 ED_d, ED_mp,
+												 solve_options);
+	}
+	
+	
+	
+	// close the files
+	fclose(midOUT);   fclose(OUT);
+	
+	
+	
+	
+	// check for path crossings
+	if (solve_options.use_midpoint_checker==1) {
+		midpoint_checker(trackCount.numPoints, solve_options.T.numVars,solve_options.midpoint_tol, &num_crossings);
+	}
+	
+	// post process
+	switch (solve_options.T.MPType) {
+		case 0:
+			BRpostProcessing(endPoints, W_new, trackCount.successes, &ED_d->preProcData, &solve_options.T, solve_options);
+			break;
+			
+		default:
+			BRpostProcessing(endPoints, W_new, trackCount.successes, &ED_mp->preProcData, &solve_options.T, solve_options);
+			break;
+	}
+	
+  //clear the endpoints here
+	
+}
+
+
 
 
 
@@ -483,7 +586,7 @@ void generic_tracker_loop(trackingStats *trackCount,
 				
 				print_path_retVal_message(EG.retVal);
 				
-				if (solve_options.verbose_level > 0) {
+				if (solve_options.verbose_level >= 5) {
 					if (EG.prec < 64)
 						print_point_to_screen_matlab(EG.PD_d.point,"bad_terminal_point");
 					else
@@ -528,7 +631,7 @@ void generic_tracker_loop_master(trackingStats *trackCount,
 	
 	
 	
-	
+	std::cout << "master in generic tracker loop" << std::endl;
 	
 	
 	int (*curr_eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *) = NULL;
@@ -600,7 +703,7 @@ void generic_tracker_loop_master(trackingStats *trackCount,
 	// seed the workers
 	for (int ii=1; ii<solve_options.numprocs; ii++) {
 		int next_worker = solve_options.activate_next_worker();
-		
+		std::cout << "master sending first packet to worker" << ii << std::endl;
 		send_start_points(next_worker, num_packets,
 													startPts_d,
 													startPts_mp,
@@ -769,7 +872,7 @@ int receive_endpoints(trackingStats *trackCount,
 				
 				print_path_retVal_message(EG_receives[ii].retVal);
 				
-				if (solve_options.verbose_level > 0) {
+				if (solve_options.verbose_level >= 5) {
 					if (EG_receives[ii].prec < 64)
 						print_point_to_screen_matlab(EG_receives[ii].PD_d.point,"bad_terminal_point");
 					else
@@ -803,7 +906,7 @@ void generic_tracker_loop_worker(trackingStats *trackCount,
 	
 	
 	
-	
+	std::cout << "worker" << solve_options.id() << " entering loop" << std::endl;
 	
 	int (*curr_eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *) = NULL;
   int (*curr_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = NULL;
@@ -860,7 +963,7 @@ void generic_tracker_loop_worker(trackingStats *trackCount,
 	
 	while (1)
 	{
-		
+		std::cout << "worker" << solve_options.id() << " receiving work" << std::endl;
 		MPI_Recv(&numStartPts, 1, MPI_INT, solve_options.head(), NUMPACKETS, MPI_COMM_WORLD, &statty_mc_gatty);
 		// recv next set of start points
 		

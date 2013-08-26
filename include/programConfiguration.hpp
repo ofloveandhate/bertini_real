@@ -49,6 +49,7 @@ public:
 	
 	parallelism_config(){
 		
+		force_no_parallel = false;
 		numprocs = 1;
 		headnode = 0;
 		
@@ -91,15 +92,17 @@ public:
 	
 	
 	bool use_parallel(){
-		if (numprocs>1)
+		if (numprocs>1 && force_no_parallel==false)
 			return true;
 		else
 			return false;
+		
+		
 	}
 	
 	
 	
-	
+	bool force_no_parallel;
 	int headnode;
 	int my_id, my_id_global;
 	int numprocs;

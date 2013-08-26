@@ -113,14 +113,14 @@ public:
 		this->MPType = new_mp_type;
 	}
 	
-	~solver()
+	virtual ~solver()
 	{
 		freeEvalProg(this->MPType);
 	}
 	
-	int send(parallelism_config & mpi_config);
+	virtual int send(parallelism_config & mpi_config);
 	
-	int receive(parallelism_config & mpi_config);
+	virtual int receive(parallelism_config & mpi_config);
 	
 	void setup(prog_t * _SLP)
 	{
@@ -129,7 +129,12 @@ public:
 		this->have_SLP = true;
 	}
 	
-private:
+	void setup()
+	{
+		setupPreProcData(const_cast<char *>(preproc_file.c_str()), &this->preProcData);
+	}
+	
+protected:
 	
 	bool have_SLP;
 	
@@ -156,7 +161,7 @@ private:
 		precision_changer = NULL;
 		dehomogenizer = NULL;
 	}
-	// these virtual functions will need to be programmed into the derived classes.
+	// these referenced functions will need to be programmed into the derived classes.
 	
 	
 	void copy(const solver & other){
@@ -227,6 +232,8 @@ public:
 	
 
 	void init(){
+		solver::init();
+		
 		init_mp(gamma);
 		init_mat_mp(randomizer_matrix,0,0);
 		
@@ -237,7 +244,7 @@ public:
 		}
 	}
 	
-	~solver_mp(){
+	virtual ~solver_mp(){
 		
 		clear_mat_mp(randomizer_matrix);
 		clear_mp(gamma);
@@ -262,17 +269,21 @@ public:
 		copy(other);
 	} // re: copy
 	
-	int send(parallelism_config & mpi_config);
+	virtual int send(parallelism_config & mpi_config);
 	
 	
-	int receive(parallelism_config & mpi_config);
+	virtual int receive(parallelism_config & mpi_config);
 	
 	void setup(prog_t * _SLP)
 	{
 		solver::setup(_SLP);
 	}
 	
-private:
+	void setup()
+	{
+		solver::setup();
+	}
+protected:
 	
 	void copy(const solver_mp & other){
 		cp_patch_mp(&this->patch, other.patch);
@@ -318,7 +329,7 @@ public:
 	
 	
 	
-	~solver_d(){
+	virtual ~solver_d(){
 		clear_mat_d(randomizer_matrix);
 		clear_d(gamma);
 	}// re: default destructor
@@ -337,21 +348,27 @@ public:
 		copy(other);
 	} // re: copy
 	
-	int send(parallelism_config & mpi_config);
+	virtual int send(parallelism_config & mpi_config);
 	
 	
-	int receive(parallelism_config & mpi_config);
+	virtual int receive(parallelism_config & mpi_config);
 	
 	void setup(prog_t * _SLP)
 	{
 		solver::setup(_SLP);
 	}
 	
-private:
+	void setup()
+	{
+		solver::setup();
+	}
+protected:
 	
 	
 	void init()
 	{
+		solver::init();
+		
 		init_d(gamma);
 		init_mat_d(randomizer_matrix,0,0);
 	}
@@ -410,6 +427,9 @@ void get_tracker_config(solver_configuration &solve_options,int MPType);
 void solver_init_config(solver_configuration &options);
 void solver_clear_config(solver_configuration &options);
 
+void generic_solver_master(witness_set * W_new, witness_set & W,
+													 solver_d * ED_d, solver_mp * ED_mp,
+													 solver_configuration & solve_options);
 
 void generic_tracker_loop(trackingStats *trackCount,
 													FILE * OUT, FILE * midOUT,

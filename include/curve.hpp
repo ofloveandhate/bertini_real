@@ -51,6 +51,12 @@ public:
 	std::vector<edge> edges;
 	int      num_edges;
 	
+	
+	
+	
+	
+	
+	
 	void add_edge(edge new_edge);
 	
 	int setup_edges(boost::filesystem::path INfile);
@@ -75,7 +81,13 @@ public:
 		copy(other);
 	}
 	
-	
+	void clear()
+	{
+		decomposition::clear();
+		
+		edges.clear();
+		num_edges = 0;
+	}
 	
 	void init(){
 		decomposition::init();
@@ -91,6 +103,21 @@ public:
 		this->num_edges = other.num_edges;
 	}
 	
+	
+	
+	
+	bool is_degenerate()
+	{
+		if (num_edges==1) {
+			if (edges[0].left == edges[0].right) // can it be otherwise?
+				return true;
+			else
+				return false;
+		}
+		else
+			return false;
+	}
+	
 	int edge_w_midpt(int ind)
 	{
 		
@@ -104,7 +131,28 @@ public:
 	}
 	
 	
-	
+	int edge_w_left(int ind)
+	{
+		
+		for (int ii=0; ii<num_edges; ii++){
+			if (this->edges[ii].left == ind){
+				return ii;
+			}
+		}
+		
+		return -1;
+	}
+	int edge_w_right(int ind)
+	{
+		
+		for (int ii=0; ii<num_edges; ii++){
+			if (this->edges[ii].right == ind){
+				return ii;
+			}
+		}
+		
+		return -1;
+	}
 	
 	
 	void main(vertex_set & V,

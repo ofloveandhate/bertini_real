@@ -10,7 +10,6 @@ int multilintolin_solver_main(int MPType,
 {
 	
 	
-	
 	if (W.num_linears==0) {
 		printf("input witness set had 0 linears!\n");
 		exit(01);

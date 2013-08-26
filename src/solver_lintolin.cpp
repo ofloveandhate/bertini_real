@@ -709,7 +709,7 @@ int lintolin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	
 	// done!  yay!
 	
-	if (BED->verbose_level>=7) {
+	if (BED->verbose_level==15) {
 //	printf("gamma = %lf+1i*%lf;\n", BED->gamma->r, BED->gamma->i);
 //	printf("time = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
 //	print_matrix_to_screen_matlab( temp_jacobian_functions,"jac");
@@ -721,7 +721,7 @@ int lintolin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 //	print_matrix_to_screen_matlab(Jp,"Jp");
 //	print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
 //
-		if (BED->verbose_level==11) {
+		if (BED->verbose_level==15) {
 			mypause();
 		}
 	}
@@ -2008,7 +2008,7 @@ int lintolin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	//done!  yay!
 	
 
-	if (BED->verbose_level>=7) {
+	if (BED->verbose_level==15) {
 		//	printf("gamma = %lf+1i*%lf;\n", BED->gamma->r, BED->gamma->i);
 		//	printf("time = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
 		//	print_matrix_to_screen_matlab( temp_jacobian_functions,"jac");
@@ -2020,7 +2020,7 @@ int lintolin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 		//	print_matrix_to_screen_matlab(Jp,"Jp");
 		//	print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
 		//
-		if (BED->verbose_level==11) {
+		if (BED->verbose_level==15) {
 			mypause();
 		}
 	}

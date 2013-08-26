@@ -44,7 +44,7 @@ enum {UNSET= 100, CRITICAL, NEW, MIDPOINT, ISOLATED, SAMPLE_POINT};
 
 
 // enum for worker mode choice
-enum {NULLSPACE = 3000, LINPRODTODETJAC, DETJACTODETJAC, LINTOLIN, MULTILIN};
+enum {NULLSPACE = 3000, LINPRODTODETJAC, DETJACTODETJAC, LINTOLIN, MULTILIN, MIDPOINT_SOLVER};
 
 enum {TERMINATE = 2000, INITIAL_STATE};
 
@@ -176,8 +176,7 @@ public:
 	
 	void copy(const witness_set & other)
 	{
-		reset();
-		
+
 		this->dim = other.dim;
 		this->comp_num = other.comp_num;
 		this->incidence_number = other.incidence_number;
@@ -222,7 +221,7 @@ public:
 	
 	void reset_names()
 	{
-		variable_names.clear();
+		variable_names.resize(0);
 	}
 	
 	
@@ -581,22 +580,7 @@ public:
 	
 	~decomposition()
 	{
-		if (num_curr_projections>0){
-		for (int ii=0; ii<num_curr_projections; ii++) 
-			clear_vec_mp(pi[ii]);
-		free(pi);
-		}
-		
-		if (num_patches>0){
-			for (int ii=0; ii<num_patches; ii++)
-				clear_vec_mp(patch[ii]);
-			free(patch);
-		}
-		
-		counters.clear();
-		indices.clear();
-		
-		clear_mat_mp(randomizer_matrix);
+		clear();
 	}
 	
 	decomposition & operator=(const decomposition& other){
@@ -615,7 +599,27 @@ public:
 		copy(other);
 	}
 	
-	
+	void clear()
+	{
+		if (num_curr_projections>0){
+			for (int ii=0; ii<num_curr_projections; ii++)
+				clear_vec_mp(pi[ii]);
+			free(pi);
+		}
+		num_curr_projections = 0;
+		
+		if (num_patches>0){
+			for (int ii=0; ii<num_patches; ii++)
+				clear_vec_mp(patch[ii]);
+			free(patch);
+		}
+		num_patches = 0;
+		
+		counters.clear();
+		indices.clear();
+		
+		clear_mat_mp(randomizer_matrix);
+	}
 
 	void add_projection(vec_mp proj){
 		if (this->num_curr_projections==0) {
@@ -670,7 +674,7 @@ public:
 	void init(){
 		pi = NULL;
 		patch = NULL;
-		init_mat_mp(randomizer_matrix, 0, 0);
+		init_mat_mp2(randomizer_matrix, 0, 0,1024);
 		randomizer_matrix->rows = randomizer_matrix->cols = 0;
 		
 		num_curr_projections = num_patches = 0;
@@ -710,7 +714,7 @@ public:
 		this->num_patches = other.num_patches;
 		this->patch = (vec_mp *) br_malloc(other.num_patches * sizeof(vec_mp));
 		for (int ii = 0; ii<other.num_patches; ii++) {
-			init_vec_mp(this->patch[ii],other.patch[ii]->size);
+			init_vec_mp2(this->patch[ii],other.patch[ii]->size,1024);
 			this->patch[ii]->size = other.patch[ii]->size;
 			vec_cp_mp(this->patch[ii], other.patch[ii])
 		}
