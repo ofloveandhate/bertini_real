@@ -575,8 +575,6 @@ int midpoint_solver_master_entry_point(witness_set						&W, // carries with it t
 																			 solver_configuration		& solve_options)
 {
 
-	md_config.print();
-	
 	bool prev_state = solve_options.force_no_parallel;
 	solve_options.force_no_parallel = true;
 	
@@ -629,7 +627,6 @@ int midpoint_solver_master_entry_point(witness_set						&W, // carries with it t
 			break;
 	}
 	
-	ED_d->print();
 	
 	
 	generic_solver_master(W_new, W,
@@ -741,17 +738,19 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	for (ii=0; ii<BED->num_mid_vars; ii++)
 		set_d(&curr_mid_vars->coord[ii], &current_variable_values->coord[ii]);
 	
-	offset = BED->num_mid_vars;
-	vec_d curr_left_vars; init_vec_d(curr_left_vars, BED->num_crit_vars); // y0
-	curr_left_vars->size = BED->num_crit_vars;
+	offset = BED->num_mid_vars; // y0 
+	vec_d curr_bottom_vars; init_vec_d(curr_bottom_vars, BED->num_crit_vars);
+	curr_bottom_vars->size = BED->num_crit_vars;
 	for (ii=0; ii<BED->num_crit_vars; ii++)
-		set_d(&curr_left_vars->coord[ii], &current_variable_values->coord[ii+offset]);
+		set_d(&curr_bottom_vars->coord[ii], &current_variable_values->coord[ii+offset]);
 	
 	offset = BED->num_mid_vars + BED->num_crit_vars; // y2
-	vec_d curr_right_vars; init_vec_d(curr_right_vars, BED->num_crit_vars);
-	curr_right_vars->size = BED->num_crit_vars;
+	vec_d curr_top_vars; init_vec_d(curr_top_vars, BED->num_crit_vars); 
+	curr_top_vars->size = BED->num_crit_vars;
 	for (ii=0; ii<BED->num_crit_vars; ii++)
-		set_d(&curr_right_vars->coord[ii], &current_variable_values->coord[ii+offset]);
+		set_d(&curr_top_vars->coord[ii], &current_variable_values->coord[ii+offset]);
+	
+
 	
 	
 	//create the variables to hold temp output
@@ -773,7 +772,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	mat_d Jv_Patch; init_mat_d(Jv_Patch,0,0);
 
 	comp_d temp, temp2, temp3;
-	comp_d proj_left, proj_right, proj_mid;
+	comp_d proj_bottom, proj_top, proj_mid;
 	
 	comp_d u, v;
 	mul_d(temp, one_minus_s, BED->u_target);
@@ -822,7 +821,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 		set_zero_d(&Jp->entry[ii][0]);  // initialize entire matrix to 0
 	
 	for (ii = 0; ii<BED->num_variables; ii++)
-		set_one_d(&funcVals->coord[ii]);  // initialize entire matrix to 0
+		set_zero_d(&funcVals->coord[ii]);  // initialize entire matrix to 0
 	
 	// the main evaluations for $x$
 	
@@ -865,7 +864,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	offset = BED->randomizer_matrix->rows; //y0
 	int offset2 = BED->num_mid_vars;
 	evalProg_d(temp_function_values, parVals, parDer,
-						 temp_jacobian_functions, unused_Jp, curr_left_vars, pathVars, BED->SLP_crit);
+						 temp_jacobian_functions, unused_Jp, curr_bottom_vars, pathVars, BED->SLP_crit);
 
 //	std::cout << offset << " " << offset2 << std::endl;
 	// randomize
@@ -892,7 +891,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 //		std::cout << offset << " " << offset2 << std::endl;
 	
 	evalProg_d(temp_function_values, parVals, parDer,
-						 temp_jacobian_functions, unused_Jp, curr_right_vars, pathVars, BED->SLP_crit);
+						 temp_jacobian_functions, unused_Jp, curr_top_vars, pathVars, BED->SLP_crit);
 //	print_matrix_to_screen_matlab(temp_jacobian_functions, "Jv_crit_1");
 //	print_matrix_to_screen_matlab(BED->randomizer_matrix_crit, "crit_rand");
 //	print_point_to_screen_matlab(temp_function_values, "f_temp");
@@ -935,12 +934,10 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	offset = BED->randomizer_matrix->rows + 2*(BED->randomizer_matrix_crit->rows);
 	
 	projection_value_homogeneous_input(proj_mid, curr_mid_vars,BED->pi[0]);
-	projection_value_homogeneous_input(proj_left, curr_left_vars,BED->pi[0]);
-	projection_value_homogeneous_input(proj_right, curr_right_vars,BED->pi[0]);
+	projection_value_homogeneous_input(proj_top, curr_top_vars,BED->pi[0]);
+	projection_value_homogeneous_input(proj_bottom, curr_bottom_vars,BED->pi[0]);
 	
-	print_comp_matlab(proj_left,"proj_left_u");
-	print_comp_matlab(proj_right,"proj_right_u");
-	print_comp_matlab(proj_mid,"proj_mid_u");
+
 	
 	
 	mul_d(temp, one_minus_u, BED->crit_val_left);
@@ -950,8 +947,8 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	add_d(temp3, temp, temp2); // temp3 = (1-u)*p2(w0) + u*p2(w2)
 
 	sub_d(&funcVals->coord[offset+0], proj_mid, temp3);
-	sub_d(&funcVals->coord[offset+1], proj_left, temp3);
-	sub_d(&funcVals->coord[offset+2], proj_right, temp3);
+	sub_d(&funcVals->coord[offset+1], proj_bottom, temp3);
+	sub_d(&funcVals->coord[offset+2], proj_top, temp3);
 	
 	
 	// now the derivatives of the supplemental \pi[0] equations
@@ -969,16 +966,22 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	
 	
 	// d/dx
-	for (int ii=0; ii<BED->num_mid_vars; ii++)  // mid
+	offset2 = 0;
+	div_d(&Jv->entry[offset][offset2], proj_mid, &curr_mid_vars->coord[0]);
+	neg_d(&Jv->entry[offset][offset2], &Jv->entry[offset][offset2]); //  -*proj_mid / x[0]
+	for (int ii=1; ii<BED->num_mid_vars; ii++)  // mid
 		set_d(&Jv->entry[offset][ii], &BED->pi[0]->coord[ii]);
 	
 	offset2 = BED->num_mid_vars; // y2
-	for (int ii=0; ii<BED->num_mid_vars; ii++) 
+	div_d(&Jv->entry[offset+1][offset2], proj_bottom, &curr_bottom_vars->coord[0]);
+	neg_d(&Jv->entry[offset+1][offset2], &Jv->entry[offset+1][offset2]); //  -*proj_bottom / y0[0]
+	for (int ii=1; ii<BED->num_mid_vars; ii++)
 		set_d(&Jv->entry[offset+1][offset2+ii], &BED->pi[0]->coord[ii]);
 	
-	
-	offset2 = BED->num_mid_vars + BED->num_crit_vars; // y0
-	for (int ii=0; ii<BED->num_mid_vars; ii++) 
+	offset2 = BED->num_mid_vars + BED->num_crit_vars; // y2
+	div_d(&Jv->entry[offset+2][offset2], proj_top, &curr_top_vars->coord[0]);
+	neg_d(&Jv->entry[offset+2][offset2], &Jv->entry[offset+2][offset2]); //  -*proj_mid / y2[0]
+	for (int ii=1; ii<BED->num_mid_vars; ii++)
 		set_d(&Jv->entry[offset+2][offset2+ii], &BED->pi[0]->coord[ii]);
 	
 
@@ -993,38 +996,51 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	offset+=3;
 	
 	projection_value_homogeneous_input(proj_mid, curr_mid_vars,BED->pi[1]); // mid
-	projection_value_homogeneous_input(proj_left, curr_left_vars,BED->pi[1]); // y2
-	projection_value_homogeneous_input(proj_right, curr_right_vars,BED->pi[1]); // y0
+	projection_value_homogeneous_input(proj_bottom, curr_bottom_vars,BED->pi[1]); // y0
+	projection_value_homogeneous_input(proj_top, curr_top_vars,BED->pi[1]); // y2
+	
 	
 	
 	//function value
-	mul_d(temp, one_minus_v, proj_left);
-	mul_d(temp2, v, proj_right);
+	mul_d(temp, one_minus_v, proj_bottom);
+	mul_d(temp2, v, proj_top);
 	add_d(temp3, temp, temp2);
 	sub_d(&funcVals->coord[offset], proj_mid, temp3);
 	
 	
 	//Jv for the last equation
 	// midpoint
-	for (int ii=0; ii<BED->num_mid_vars; ii++) 
-		set_d(&Jv->entry[offset][ii], &BED->pi[1]->coord[ii]);
+	
+	offset2 = 0;
+	div_d(&Jv->entry[offset][offset2], proj_mid, &curr_mid_vars->coord[0]);
+	neg_d(&Jv->entry[offset][offset2], &Jv->entry[offset][offset2]); //  -proj_mid / x0[0]
+	for (int ii=1; ii<BED->num_mid_vars; ii++)
+		div_d(&Jv->entry[offset][ii], &BED->pi[1]->coord[ii], &curr_mid_vars->coord[0]);
 	
 	
 	// y0
 	offset2 = BED->num_mid_vars;
-	for (int ii=0; ii<BED->num_mid_vars; ii++) // only go this far, because all remaining entries are 0
+	div_d(&Jv->entry[offset][offset2], proj_bottom, &curr_bottom_vars->coord[0]);
+	mul_d(&Jv->entry[offset][offset2], &Jv->entry[offset][offset2], one_minus_v);
+//	neg_d(&Jv->entry[offset][offset2], &Jv->entry[offset][offset2]); //  -(1-v)*proj_bottom / y0[0]
+	for (int ii=1; ii<BED->num_mid_vars; ii++) // only go this far, because all remaining entries are 0
 	{
 		mul_d(&Jv->entry[offset][ii+offset2], one_minus_v, &BED->pi[1]->coord[ii]);
-		neg_d(&Jv->entry[offset][ii+offset2], &Jv->entry[offset][ii]);
+		neg_d(&Jv->entry[offset][ii+offset2], &Jv->entry[offset][ii+offset2]);
+		div_d(&Jv->entry[offset][ii+offset2], &Jv->entry[offset][ii+offset2], &curr_bottom_vars->coord[0]);
 	}
 	
 	
 	// y2
 	offset2 = BED->num_mid_vars+BED->num_crit_vars;
-	for (int ii=0; ii<BED->num_mid_vars; ii++)
+	div_d(&Jv->entry[offset][offset2], proj_top, &curr_top_vars->coord[0]);
+	mul_d(&Jv->entry[offset][offset2], &Jv->entry[offset][offset2], v);
+//	neg_d(&Jv->entry[offset][offset2], &Jv->entry[offset][offset2]); //  -(v)*proj_top / y2[0]
+	for (int ii=1; ii<BED->num_mid_vars; ii++)
 	{
 		mul_d(&Jv->entry[offset][ii+offset2], v, &BED->pi[1]->coord[ii]); 
-		neg_d(&Jv->entry[offset][ii+offset2], &Jv->entry[offset][ii]);
+		neg_d(&Jv->entry[offset][ii+offset2], &Jv->entry[offset][ii+offset2]);
+		div_d(&Jv->entry[offset][ii+offset2], &Jv->entry[offset][ii+offset2], &curr_top_vars->coord[0]);
 	}
 	
 	
@@ -1032,10 +1048,10 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 //should be correct up to perhaps switching left and right proj val
 	
 	sub_d(temp, BED->v_start, BED->v_target);
-	mul_d(&Jp->entry[offset][0], proj_left, temp);
+	mul_d(&Jp->entry[offset][0], proj_bottom, temp);
 	
 	neg_d(temp, temp);
-	mul_d(temp2, proj_right, temp);
+	mul_d(temp2, proj_top, temp);
 	
 	add_d(&Jp->entry[offset][0], &Jp->entry[offset][0], temp2);
 	
@@ -1075,8 +1091,9 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
   set_d(&parVals->coord[0], pathVars); // s = t
   set_one_d(&parDer->coord[0]);       // ds/dt = 1
 	
-	printf("t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
-	print_point_to_screen_matlab(funcVals,"F_d");
+//	printf("t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
+//	print_point_to_screen_matlab(current_variable_values,"curr_vars");
+//	print_point_to_screen_matlab(funcVals,"F_d");
 	if ( (BED->verbose_level==14) || (BED->verbose_level == -14)) {
 		printf("t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
 		
@@ -1097,8 +1114,8 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	
 	
 	clear_vec_d(curr_mid_vars);
-	clear_vec_d(curr_left_vars);
-	clear_vec_d(curr_right_vars);
+	clear_vec_d(curr_top_vars);
+	clear_vec_d(curr_bottom_vars);
 	clear_vec_d(patchValues);
 	clear_vec_d(temp_function_values);
 	
@@ -1172,17 +1189,19 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	for (ii=0; ii<BED->num_mid_vars; ii++)
 		set_mp(&curr_mid_vars->coord[ii], &current_variable_values->coord[ii]);
 	
-	offset = BED->num_mid_vars;
-	vec_mp curr_left_vars; init_vec_mp(curr_left_vars, BED->num_crit_vars); // y0
-	curr_left_vars->size = BED->num_crit_vars;
+
+	offset = BED->num_mid_vars;// y0
+	vec_mp curr_bottom_vars; init_vec_mp(curr_bottom_vars, BED->num_crit_vars);
+	curr_bottom_vars->size = BED->num_crit_vars;
 	for (ii=0; ii<BED->num_crit_vars; ii++)
-		set_mp(&curr_left_vars->coord[ii], &current_variable_values->coord[ii+offset]);
+		set_mp(&curr_bottom_vars->coord[ii], &current_variable_values->coord[ii+offset]);
+	
 	
 	offset = BED->num_mid_vars + BED->num_crit_vars; // y2
-	vec_mp curr_right_vars; init_vec_mp(curr_right_vars, BED->num_crit_vars);
-	curr_right_vars->size = BED->num_crit_vars;
+	vec_mp curr_top_vars; init_vec_mp(curr_top_vars, BED->num_crit_vars); 
+	curr_top_vars->size = BED->num_crit_vars;
 	for (ii=0; ii<BED->num_crit_vars; ii++)
-		set_mp(&curr_right_vars->coord[ii], &current_variable_values->coord[ii+offset]);
+		set_mp(&curr_top_vars->coord[ii], &current_variable_values->coord[ii+offset]);
 	
 	
 	//create the variables to hold temp output
@@ -1205,8 +1224,8 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
 	comp_mp temp, temp2, temp3;  init_mp(temp);
 		init_mp(temp2); init_mp(temp3);
-	comp_mp proj_left, proj_right, proj_mid;
-		init_mp(proj_left); init_mp(proj_right); init_mp(proj_mid);
+	comp_mp proj_bottom, proj_top, proj_mid;
+		init_mp(proj_bottom); init_mp(proj_top); init_mp(proj_mid);
 	
 	comp_mp u, v;  init_mp(u); init_mp(v);
 	mul_mp(temp, one_minus_s, BED->u_target);
@@ -1296,7 +1315,7 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	offset = BED->randomizer_matrix->rows; //y0
 	int offset2 = BED->num_mid_vars;
 	evalProg_mp(temp_function_values, parVals, parDer,
-						 temp_jacobian_functions, unused_Jp, curr_left_vars, pathVars, BED->SLP_crit);
+						 temp_jacobian_functions, unused_Jp, curr_bottom_vars, pathVars, BED->SLP_crit);
 	
 	//	std::cout << offset << " " << offset2 << std::endl;
 	// randomize
@@ -1323,7 +1342,7 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	//		std::cout << offset << " " << offset2 << std::endl;
 	
 	evalProg_mp(temp_function_values, parVals, parDer,
-						 temp_jacobian_functions, unused_Jp, curr_right_vars, pathVars, BED->SLP_crit);
+						 temp_jacobian_functions, unused_Jp, curr_top_vars, pathVars, BED->SLP_crit);
 	//	print_matrix_to_screen_matlab(temp_jacobian_functions, "Jv_crit_1");
 	//	print_matrix_to_screen_matlab(BED->randomizer_matrix_crit, "crit_rand");
 	//	print_point_to_screen_matlab(temp_function_values, "f_temp");
@@ -1356,40 +1375,40 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
 	
 	
-	
 	//
 	// now three equations involving the projections, causing movement in the u direction.
 	//
 	
 	
 	
-	offset = BED->randomizer_matrix->rows + 2*BED->randomizer_matrix_crit->rows;
+	offset = BED->randomizer_matrix->rows + 2*(BED->randomizer_matrix_crit->rows);
 	
 	projection_value_homogeneous_input(proj_mid, curr_mid_vars,BED->pi[0]);
-	projection_value_homogeneous_input(proj_left, curr_left_vars,BED->pi[0]);
-	projection_value_homogeneous_input(proj_right, curr_right_vars,BED->pi[0]);
+	projection_value_homogeneous_input(proj_top, curr_top_vars,BED->pi[0]);
+	projection_value_homogeneous_input(proj_bottom, curr_bottom_vars,BED->pi[0]);
+	
+
 	
 	
 	mul_mp(temp, one_minus_u, BED->crit_val_left);
 	mul_mp(temp2, u, BED->crit_val_right);
 	
 	
-	add_mp(temp3, temp, temp2);
+	add_mp(temp3, temp, temp2); // temp3 = (1-u)*p2(w0) + u*p2(w2)
 	
-	sub_mp(&funcVals->coord[offset], proj_mid, temp3);
-	
-	sub_mp(&funcVals->coord[offset+1], proj_left, temp3);
-	sub_mp(&funcVals->coord[offset+2], proj_right, temp3);
+	sub_mp(&funcVals->coord[offset+0], proj_mid, temp3);
+	sub_mp(&funcVals->coord[offset+1], proj_bottom, temp3);
+	sub_mp(&funcVals->coord[offset+2], proj_top, temp3);
 	
 	
 	// now the derivatives of the supplemental \pi[0] equations
 	// d/dt
-	add_mp(temp, BED->u_start, BED->u_target);
+	sub_mp(temp, BED->u_start, BED->u_target);
 	mul_mp(&Jp->entry[offset][0],BED->crit_val_left, temp);
 	
 	neg_mp(temp, temp);
 	mul_mp(temp2, BED->crit_val_right, temp);
-	add_mp(&Jp->entry[offset][0],&Jp->entry[offset][0],temp2); // c_l(u_0 - u_t) + c_r(u_t - u_0)
+	add_mp(&Jp->entry[offset+0][0],&Jp->entry[offset][0],temp2); // c_l(u_0 - u_t) + c_r(u_t - u_0)
 	
 	set_mp(&Jp->entry[offset+1][0],&Jp->entry[offset][0]);
 	set_mp(&Jp->entry[offset+2][0],&Jp->entry[offset][0]);
@@ -1397,18 +1416,27 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
 	
 	// d/dx
-	for (int ii=0; ii<BED->num_mid_vars; ii++)  // mid
-		set_mp(&Jv->entry[offset][ii], &BED->pi[0]->coord[ii]);
+	offset2 = 0;
+	div_mp(&Jv->entry[offset][offset2], proj_mid, &curr_mid_vars->coord[0]);
+	neg_mp(&Jv->entry[offset][offset2], &Jv->entry[offset][offset2]); //  -*proj_mid / x[0]
+	for (int ii=1; ii<BED->num_mid_vars; ii++){  // mid
+		div_mp(&Jv->entry[offset][ii], &BED->pi[0]->coord[ii], &curr_mid_vars->coord[0]);
+	}
+	
 	
 	offset2 = BED->num_mid_vars; // y2
-	for (int ii=0; ii<BED->num_mid_vars; ii++)
-		set_mp(&Jv->entry[offset+1][offset2+ii], &BED->pi[0]->coord[ii]);
+	div_mp(&Jv->entry[offset+1][offset2], proj_bottom, &curr_bottom_vars->coord[0]);
+	neg_mp(&Jv->entry[offset+1][offset2], &Jv->entry[offset+1][offset2]); //  -*proj_bottom / y0[0]
+	for (int ii=1; ii<BED->num_mid_vars; ii++){
+		div_mp(&Jv->entry[offset+1][offset2+ii], &BED->pi[0]->coord[ii], &curr_bottom_vars->coord[0]);
+	}
 	
-	
-	offset2 = BED->num_mid_vars + BED->num_crit_vars; // y0
-	for (int ii=0; ii<BED->num_mid_vars; ii++)
-		set_mp(&Jv->entry[offset+2][offset2+ii], &BED->pi[0]->coord[ii]);
-	
+	offset2 = BED->num_mid_vars + BED->num_crit_vars; // y2
+	div_mp(&Jv->entry[offset+2][offset2], proj_top, &curr_top_vars->coord[0]);
+	neg_mp(&Jv->entry[offset+2][offset2], &Jv->entry[offset+2][offset2]); //  -*proj_mid / y2[0]
+	for (int ii=1; ii<BED->num_mid_vars; ii++){
+		div_mp(&Jv->entry[offset+2][offset2+ii], &BED->pi[0]->coord[ii], &curr_top_vars->coord[0]);
+	}
 	
 	
 	
@@ -1421,38 +1449,52 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	offset+=3;
 	
 	projection_value_homogeneous_input(proj_mid, curr_mid_vars,BED->pi[1]); // mid
-	projection_value_homogeneous_input(proj_left, curr_left_vars,BED->pi[1]); // y2
-	projection_value_homogeneous_input(proj_right, curr_right_vars,BED->pi[1]); // y0
+	projection_value_homogeneous_input(proj_bottom, curr_bottom_vars,BED->pi[1]); // y0
+	projection_value_homogeneous_input(proj_top, curr_top_vars,BED->pi[1]); // y2
+	
 	
 	
 	//function value
-	mul_mp(temp, one_minus_v, proj_left);
-	mul_mp(temp2, v, proj_right);
+	mul_mp(temp, one_minus_v, proj_bottom);
+	mul_mp(temp2, v, proj_top);
 	add_mp(temp3, temp, temp2);
 	sub_mp(&funcVals->coord[offset], proj_mid, temp3);
 	
 	
 	//Jv for the last equation
 	// midpoint
-	for (int ii=0; ii<BED->num_mid_vars; ii++)
-		set_mp(&Jv->entry[offset][ii], &BED->pi[1]->coord[ii]);
+	
+	offset2 = 0;
+	div_mp(&Jv->entry[offset][offset2], proj_mid, &curr_mid_vars->coord[0]);
+	neg_mp(&Jv->entry[offset][offset2], &Jv->entry[offset][offset2]); //  -*proj_mid / x0[0]
+	for (int ii=1; ii<BED->num_mid_vars; ii++){
+		div_mp(&Jv->entry[offset][ii], &BED->pi[1]->coord[ii], &curr_mid_vars->coord[0]);
+	}
 	
 	
 	// y0
 	offset2 = BED->num_mid_vars;
-	for (int ii=0; ii<BED->num_mid_vars; ii++) // only go this far, because all remaining entries are 0
+	div_mp(&Jv->entry[offset][offset2], proj_bottom, &curr_bottom_vars->coord[0]);
+	mul_mp(&Jv->entry[offset][offset2], &Jv->entry[offset][offset2], one_minus_v);
+//	neg_mp(&Jv->entry[offset][offset2], &Jv->entry[offset][offset2]); //  -(1-v)*proj_bottom / y0[0]
+	for (int ii=1; ii<BED->num_mid_vars; ii++) // only go this far, because all remaining entries are 0
 	{
 		mul_mp(&Jv->entry[offset][ii+offset2], one_minus_v, &BED->pi[1]->coord[ii]);
-		neg_mp(&Jv->entry[offset][ii+offset2], &Jv->entry[offset][ii]);
+		neg_mp(&Jv->entry[offset][ii+offset2], &Jv->entry[offset][ii+offset2]);
+		div_mp(&Jv->entry[offset][ii+offset2], &Jv->entry[offset][ii+offset2], &curr_bottom_vars->coord[0]);
 	}
 	
 	
 	// y2
 	offset2 = BED->num_mid_vars+BED->num_crit_vars;
-	for (int ii=0; ii<BED->num_mid_vars; ii++)
+	div_mp(&Jv->entry[offset][offset2], proj_top, &curr_top_vars->coord[0]);
+	mul_mp(&Jv->entry[offset][offset2], &Jv->entry[offset][offset2], v);
+//	neg_mp(&Jv->entry[offset][offset2], &Jv->entry[offset][offset2]); //  -(v)*proj_top / y2[0]
+	for (int ii=1; ii<BED->num_mid_vars; ii++)
 	{
 		mul_mp(&Jv->entry[offset][ii+offset2], v, &BED->pi[1]->coord[ii]);
-		neg_mp(&Jv->entry[offset][ii+offset2], &Jv->entry[offset][ii]);
+		neg_mp(&Jv->entry[offset][ii+offset2], &Jv->entry[offset][ii+offset2]);
+		div_mp(&Jv->entry[offset][ii+offset2], &Jv->entry[offset][ii+offset2], &curr_top_vars->coord[0]);
 	}
 	
 	
@@ -1460,14 +1502,17 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	//should be correct up to perhaps switching left and right proj val
 	
 	sub_mp(temp, BED->v_start, BED->v_target);
-	mul_mp(&Jp->entry[offset][0], proj_left, temp);
+	mul_mp(&Jp->entry[offset][0], proj_bottom, temp);
 	
 	neg_mp(temp, temp);
-	mul_mp(temp2, proj_right, temp);
+	mul_mp(temp2, proj_top, temp);
 	
 	add_mp(&Jp->entry[offset][0], &Jp->entry[offset][0], temp2);
 	
 	offset++;
+	
+	
+	
 	
 	
 	if (offset != BED->num_variables - BED->patch.num_patches) {
@@ -1501,8 +1546,9 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
   set_mp(&parVals->coord[0], pathVars); // s = t
   set_one_mp(&parDer->coord[0]);       // ds/dt = 1
 	
-	print_comp_matlab(pathVars,"t");
-	print_point_to_screen_matlab(funcVals,"F_mp");
+//	print_comp_matlab(pathVars,"t");
+//	print_point_to_screen_matlab(current_variable_values,"curr_vars");
+//	print_point_to_screen_matlab(funcVals,"F_mp");
 	
 	if ( (BED->verbose_level==14) || (BED->verbose_level == -14)) {
 		print_comp_matlab(pathVars,"t");
@@ -1527,8 +1573,8 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
 	
 	clear_vec_mp(curr_mid_vars);
-	clear_vec_mp(curr_left_vars);
-	clear_vec_mp(curr_right_vars);
+	clear_vec_mp(curr_top_vars);
+	clear_vec_mp(curr_bottom_vars);
 	clear_vec_mp(patchValues);
 	clear_vec_mp(temp_function_values);
 	
@@ -1733,15 +1779,7 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 	
 	
 	int ii;
-	
-
-	
-	vec_d curr_mid_vars; init_vec_d(curr_mid_vars, BED->num_mid_vars);
-	curr_mid_vars->size = BED->num_mid_vars;
-	
-	vec_d curr_left_vars; init_vec_d(curr_left_vars, BED->num_crit_vars);
-	curr_left_vars->size = BED->num_crit_vars;
-	
+	int offset;
 	
 	double n1, n2, max_rat;
 	point_d f;
@@ -1760,46 +1798,177 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 	double tol = MAX(T->funcResTol, 1e-10);
 	
 	
+	
+	
+	vec_d f_terminal; init_vec_d(f_terminal, 1); f_terminal->size =1;
+	vec_d f_prev; init_vec_d(f_prev, 1); f_prev->size =1;
+	
+	vec_d curr_mid_vars; init_vec_d(curr_mid_vars, BED->num_mid_vars);
+	curr_mid_vars->size = BED->num_mid_vars;
+	
+	vec_d curr_bottom_vars; init_vec_d(curr_bottom_vars, BED->num_crit_vars);
+	curr_bottom_vars->size = BED->num_crit_vars;
+	
+	vec_d curr_top_vars; init_vec_d(curr_top_vars, BED->num_crit_vars);
+	curr_top_vars->size = BED->num_crit_vars;
+	
+	vec_d temp_function_values; init_vec_d(temp_function_values,1);
+	temp_function_values->size = 1;
+	
+	
+	
+	vec_d terminal_pt;  init_vec_d(terminal_pt,1); terminal_pt->size = 1;
+	vec_d prev_pt;  init_vec_d(prev_pt,1); prev_pt->size = 1;
+	
 	if (EG->prec>=64){
-		vec_d terminal_pt;  init_vec_d(terminal_pt,1);
 		vec_mp_to_d(terminal_pt,EG->PD_mp.point);
-		evalProg_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, terminal_pt, EG->PD_d.time, BED->SLP);
-		//		lin_to_lin_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, terminal_pt, EG->PD_d.time, ED);
-		
-		
-		for (ii=0; ii<BED->num_mid_vars; ii++)
-			set_d(&curr_mid_vars->coord[ii], &terminal_pt->coord[ii]);
-		
-		for (ii=0; ii<BED->num_crit_vars; ii++)
-			set_d(&curr_left_vars->coord[ii], &terminal_pt->coord[ii+BED->num_mid_vars]);
-		
-		clear_vec_d(terminal_pt);
 	}
 	else{
-		evalProg_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_d.point, EG->PD_d.time, BED->SLP);
-		//		lin_to_lin_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_d.point, EG->PD_d.time, ED);
-		
-		for (ii=0; ii<BED->num_mid_vars; ii++)
-			set_d(&curr_mid_vars->coord[ii], &EG->PD_d.point->coord[ii]);
-		
-		for (ii=0; ii<BED->num_crit_vars; ii++)
-			set_d(&curr_left_vars->coord[ii], &EG->PD_d.point->coord[ii+BED->num_mid_vars]);
-		
+		vec_cp_d(terminal_pt,EG->PD_d.point);
 	}
+	
+	
+	for (ii=0; ii<BED->num_mid_vars; ii++)
+		set_d(&curr_mid_vars->coord[ii], &terminal_pt->coord[ii]);
+	
+	for (ii=0; ii<BED->num_crit_vars; ii++)
+		set_d(&curr_bottom_vars->coord[ii], &terminal_pt->coord[ii+BED->num_mid_vars]);
+	
+	for (ii=0; ii<BED->num_crit_vars; ii++)
+		set_d(&curr_top_vars->coord[ii], &terminal_pt->coord[ii+BED->num_mid_vars+BED->num_crit_vars]);
+	
+	
+	// the main evaluations for $x$
+	
+	mem_d = mem_d_mid;
+	mem_mp = mem_mp_mid;
+	size_d = size_d_mid;  // size of mem_d
+	size_mp = size_mp_mid;  // size of mem_mp
+	mem_needs_init_d = mem_needs_init_d_mid; // determine if mem_d has been initialized
+	mem_needs_init_mp = mem_needs_init_mp_mid; // determine if mem_mp has been initialized
+	
+	
+	// for midpoint functions
+	offset = 0;
+	evalProg_d(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_mid_vars, EG->PD_d.time, BED->SLP_face);
+	
+	//resize output variables to correct size
+	increase_size_vec_d(f_terminal,temp_function_values->size);
+	f_terminal->size = temp_function_values->size;
+	
+	for (ii=0; ii<temp_function_values->size; ii++)
+		set_d(&f_terminal->coord[ii], &temp_function_values->coord[ii]);
+	
+	
+	mem_d = mem_d_crit;
+	mem_mp = mem_mp_crit;
+	size_d = size_d_crit;  // size of mem_d
+	size_mp = size_mp_crit;  // size of mem_mp
+	mem_needs_init_d = mem_needs_init_d_crit; // determine if mem_d has been initialized
+	mem_needs_init_mp = mem_needs_init_mp_crit; // determine if mem_mp has been initialized
+	
+	
+
+	
+	offset += temp_function_values->size; //y0
+	evalProg_d(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_bottom_vars, EG->PD_d.time, BED->SLP_crit);
+	
+	//resize output variables to correct size
+	increase_size_vec_d(f_terminal,f_terminal->size + temp_function_values->size);
+	f_terminal->size = f_terminal->size + temp_function_values->size;
+	
+	for (ii=0; ii<temp_function_values->size; ii++)
+		set_d(&f_terminal->coord[ii+offset], &temp_function_values->coord[ii]);
+	
+	
+	
+	
+	offset += temp_function_values->size; //y2
+	evalProg_d(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_top_vars, EG->PD_d.time, BED->SLP_crit);
+	
+	//resize output variables to correct size
+	increase_size_vec_d(f_terminal,f_terminal->size + temp_function_values->size);
+	f_terminal->size = f_terminal->size + temp_function_values->size;
+	for (ii=0; ii<temp_function_values->size; ii++)
+		set_d(&f_terminal->coord[ii+offset], &temp_function_values->coord[ii]);
+	
+	
+	
 	
 	
 	if (EG->last_approx_prec>=64) {
-		vec_d prev_pt;  init_vec_d(prev_pt,1);
-		vec_mp_to_d(prev_pt,EG->PD_mp.point);
-		evalProg_d(f, e.parVals, e.parDer, e.Jv, e.Jp, prev_pt, EG->PD_d.time, BED->SLP);
-		clear_vec_d(prev_pt);}
+		vec_mp_to_d(prev_pt,EG->last_approx_mp);
+	}
 	else{
-		evalProg_d(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_d, EG->PD_d.time, BED->SLP);
+		vec_cp_d(prev_pt, EG->last_approx_d);
 	}
 	
+	for (ii=0; ii<BED->num_mid_vars; ii++)
+		set_d(&curr_mid_vars->coord[ii], &prev_pt->coord[ii]);
+	
+	for (ii=0; ii<BED->num_crit_vars; ii++)
+		set_d(&curr_bottom_vars->coord[ii], &prev_pt->coord[ii+BED->num_mid_vars]);
+	
+	for (ii=0; ii<BED->num_crit_vars; ii++)
+		set_d(&curr_top_vars->coord[ii], &prev_pt->coord[ii+BED->num_mid_vars+BED->num_crit_vars]);
+	
+	
+	// the main evaluations for $x$
+	
+	mem_d = mem_d_mid;
+	mem_mp = mem_mp_mid;
+	size_d = size_d_mid;  // size of mem_d
+	size_mp = size_mp_mid;  // size of mem_mp
+	mem_needs_init_d = mem_needs_init_d_mid; // determine if mem_d has been initialized
+	mem_needs_init_mp = mem_needs_init_mp_mid; // determine if mem_mp has been initialized
+	
+	
+	// for midpoint functions
+	offset = 0;
+	evalProg_d(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_mid_vars, EG->PD_d.time, BED->SLP_face);
+	
+	//resize output variables to correct size
+	increase_size_vec_d(f_prev,temp_function_values->size);
+	f_prev->size = temp_function_values->size;
+	
+	for (ii=0; ii<temp_function_values->size; ii++)
+		set_d(&f_prev->coord[ii], &temp_function_values->coord[ii]);
+	
+	
+	mem_d = mem_d_crit;
+	mem_mp = mem_mp_crit;
+	size_d = size_d_crit;  // size of mem_d
+	size_mp = size_mp_crit;  // size of mem_mp
+	mem_needs_init_d = mem_needs_init_d_crit; // determine if mem_d has been initialized
+	mem_needs_init_mp = mem_needs_init_mp_crit; // determine if mem_mp has been initialized
+	
+	
+	offset += temp_function_values->size; //y0
+	evalProg_d(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_bottom_vars, EG->PD_d.time, BED->SLP_crit);
+	increase_size_vec_d(f_prev, f_prev->size + temp_function_values->size);
+	f_prev->size = f_prev->size + temp_function_values->size;
+
+	for (ii=0; ii<temp_function_values->size; ii++)
+		set_d(&f_prev->coord[ii+offset], &temp_function_values->coord[ii]);
 	
 	
 	
+	offset += temp_function_values->size; //y2
+	evalProg_d(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_top_vars, EG->PD_d.time, BED->SLP_crit);
+	
+	increase_size_vec_d(f_prev, f_prev->size + temp_function_values->size);
+	f_prev->size = f_prev->size + temp_function_values->size;
+	
+	for (ii=0; ii<temp_function_values->size; ii++)
+		set_d(&f_prev->coord[ii+offset], &temp_function_values->coord[ii]);
+
+
+	mem_d = NULL;
+	mem_mp = NULL;
+	size_d = NULL;  // size of mem_d
+	size_mp = NULL;  // size of mem_mp
+	mem_needs_init_d = NULL; // determine if mem_d has been initialized
+	mem_needs_init_mp = NULL; // determine if mem_mp has been initialized
 	
 	
 	
@@ -1807,10 +1976,10 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 	//	print_point_to_screen_matlab(EG->PD_d.point,"soln");
 	//	print_point_to_screen_matlab(e.funcVals,"howfaroff");	// compare the function values
 	int isSoln = 1;
-	for (ii = 0; (ii < BED->SLP->numFuncs) && isSoln; ii++)
+	for (ii = 0; (ii < f_terminal->size) && isSoln; ii++)
 	{
-		n1 = d_abs_d( &e.funcVals->coord[ii]); // corresponds to final point
-		n2 = d_abs_d( &f->coord[ii]); // corresponds to the previous point
+		n1 = d_abs_d( &f_terminal->coord[ii]); // corresponds to final point
+		n2 = d_abs_d( &f_prev->coord[ii]); // corresponds to the previous point
 		
 		
 		if (tol <= n1 && n1 <= n2)
@@ -1834,8 +2003,8 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 	
 	if (!isSoln) {
 		
-		print_point_to_screen_matlab(e.funcVals,"terminal");
-		print_point_to_screen_matlab(f,"prev");
+		print_point_to_screen_matlab(f_terminal,"terminal");
+		print_point_to_screen_matlab(f_prev,"prev");
 		
 		printf("tol was %le\nmax_rat was %le\n",tol,max_rat);
 	}
@@ -1845,8 +2014,8 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 	
 	
 	clear_eval_struct_d(e);
-	clear_vec_d(f);
-	
+	clear_vec_d(f_prev);
+	clear_vec_d(f_terminal);
 
 	return isSoln;
 	
@@ -1860,18 +2029,14 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
   midpoint_eval_data_mp *BED = (midpoint_eval_data_mp *)ED; // to avoid having to cast every time
 	
 	int ii;
+	int offset;
 	
+	mpf_t n1, n2, zero_thresh, max_rat;
+	mpf_init(n1); mpf_init(n2); mpf_init(zero_thresh); mpf_init(max_rat);
 	
+	eval_struct_mp e; init_eval_struct_mp(e, 0, 0, 0);
 	
-	vec_mp curr_mid_vars; init_vec_mp(curr_mid_vars, BED->num_mid_vars);
-	curr_mid_vars->size = BED->num_mid_vars;
-	
-	vec_mp curr_left_vars; init_vec_mp(curr_left_vars, BED->num_crit_vars);
-	curr_left_vars->size = BED->num_crit_vars;
-	
-	vec_mp curr_right_vars; init_vec_mp(curr_right_vars, BED->num_crit_vars);
-	curr_right_vars->size = BED->num_crit_vars;
-	
+	mpf_set_d(max_rat, T->ratioTol);
 	
 	
 	for (ii = 0; ii < T->numVars; ii++)
@@ -1884,17 +2049,6 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 		}
 	}
 	
-	
-	
-	mpf_t n1, n2, zero_thresh, max_rat;
-	mpf_init(n1); mpf_init(n2); mpf_init(zero_thresh); mpf_init(max_rat);
-	
-	point_mp f; init_point_mp(f, 1);f->size = 1;
-	eval_struct_mp e; init_eval_struct_mp(e, 0, 0, 0);
-	
-	mpf_set_d(max_rat, T->ratioTol);
-	
-	
 	int num_digits = prec_to_digits((int) mpf_get_default_prec());
 	// setup threshold based on given threshold and precision
 	if (num_digits > 300)
@@ -1904,30 +2058,195 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	mpf_set_d(zero_thresh, tol);
 	
 	
+	
+	
+	
+	
+	
+	vec_mp f_terminal; init_vec_mp(f_terminal, 1); f_terminal->size =1;
+	vec_mp f_prev; init_vec_mp(f_prev, 1); f_prev->size =1;
+	
+	vec_mp curr_mid_vars; init_vec_mp(curr_mid_vars, BED->num_mid_vars);
+	curr_mid_vars->size = BED->num_mid_vars;
+	
+	vec_mp curr_bottom_vars; init_vec_mp(curr_bottom_vars, BED->num_crit_vars);
+	curr_bottom_vars->size = BED->num_crit_vars;
+	
+	vec_mp curr_top_vars; init_vec_mp(curr_top_vars, BED->num_crit_vars);
+	curr_top_vars->size = BED->num_crit_vars;
+	
+	vec_mp temp_function_values; init_vec_mp(temp_function_values,1);
+	temp_function_values->size = 1;
+	
+	
+	
+	vec_mp terminal_pt;  init_vec_mp(terminal_pt,1); terminal_pt->size = 1;
+	vec_mp prev_pt;  init_vec_mp(prev_pt,1); prev_pt->size = 1;
+	
+	vec_cp_mp(terminal_pt,EG->PD_mp.point);
+	
+	
 	for (ii=0; ii<BED->num_mid_vars; ii++)
-		set_mp(&curr_mid_vars->coord[ii], &EG->PD_mp.point->coord[ii]);
+		set_mp(&curr_mid_vars->coord[ii], &terminal_pt->coord[ii]);
 	
 	for (ii=0; ii<BED->num_crit_vars; ii++)
-		set_mp(&curr_left_vars->coord[ii], &EG->PD_mp.point->coord[ii+BED->num_mid_vars]);
+		set_mp(&curr_bottom_vars->coord[ii], &terminal_pt->coord[ii+BED->num_mid_vars]);
+	
+	for (ii=0; ii<BED->num_crit_vars; ii++)
+		set_mp(&curr_top_vars->coord[ii], &terminal_pt->coord[ii+BED->num_mid_vars+BED->num_crit_vars]);
+	
+	
+	// the main evaluations for $x$
+	
+	mem_d = mem_d_mid;
+	mem_mp = mem_mp_mid;
+	size_d = size_d_mid;  // size of mem_d
+	size_mp = size_mp_mid;  // size of mem_mp
+	mem_needs_init_d = mem_needs_init_d_mid; // determine if mem_d has been initialized
+	mem_needs_init_mp = mem_needs_init_mp_mid; // determine if mem_mp has been initialized
+	
+	
+	// for midpoint functions
+	offset = 0;
+	evalProg_mp(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_mid_vars, EG->PD_mp.time, BED->SLP_face);
+	
+	//resize output variables to correct size
+	increase_size_vec_mp(f_terminal,temp_function_values->size);
+	f_terminal->size = temp_function_values->size;
+	
+	for (ii=0; ii<temp_function_values->size; ii++)
+		set_mp(&f_terminal->coord[ii], &temp_function_values->coord[ii]);
+	
+	
+	mem_d = mem_d_crit;
+	mem_mp = mem_mp_crit;
+	size_d = size_d_crit;  // size of mem_d
+	size_mp = size_mp_crit;  // size of mem_mp
+	mem_needs_init_d = mem_needs_init_d_crit; // determine if mem_d has been initialized
+	mem_needs_init_mp = mem_needs_init_mp_crit; // determine if mem_mp has been initialized
 	
 	
 	
-	//this one guaranteed by entry condition
-	evalProg_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, BED->SLP);
 	
-
+	offset += temp_function_values->size; //y0
+	evalProg_mp(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_bottom_vars, EG->PD_mp.time, BED->SLP_crit);
+	
+	//resize output variables to correct size
+	increase_size_vec_mp(f_terminal,f_terminal->size + temp_function_values->size);
+	f_terminal->size = f_terminal->size + temp_function_values->size;
+	
+	for (ii=0; ii<temp_function_values->size; ii++)
+		set_mp(&f_terminal->coord[ii+offset], &temp_function_values->coord[ii]);
+	
+	
+	
+	
+	offset += temp_function_values->size; //y2
+	evalProg_mp(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_top_vars, EG->PD_mp.time, BED->SLP_crit);
+	
+	//resize output variables to correct size
+	increase_size_vec_mp(f_terminal,f_terminal->size + temp_function_values->size);
+	f_terminal->size = f_terminal->size + temp_function_values->size;
+	for (ii=0; ii<temp_function_values->size; ii++)
+		set_mp(&f_terminal->coord[ii+offset], &temp_function_values->coord[ii]);
+	
+	
+	
+	
+	
 	if (EG->last_approx_prec < 64) { // copy to _mp
-		point_d_to_mp(EG->last_approx_mp, EG->last_approx_d);
+		vec_d_to_mp(prev_pt,EG->last_approx_d);
 	}
+	else{
+		vec_cp_mp(prev_pt,EG->last_approx_mp);
+	}
+//	print_point_to_screen_matlab(EG->last_approx_d,"EG->last_approx_d");
+//	print_point_to_screen_matlab(EG->last_approx_mp,"EG->last_approx_mp");
+//	print_point_to_screen_matlab(prev_pt,"prev_pt");
+//	print_point_to_screen_matlab(curr_mid_vars,"curr_mid_vars");
 	
-	evalProg_mp(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_mp, EG->PD_mp.time, BED->SLP);
-	//	lin_to_lin_eval_mp(f,          e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_mp, EG->PD_mp.time, ED);
+	for (ii=0; ii<BED->num_mid_vars; ii++)
+		set_mp(&curr_mid_vars->coord[ii], &prev_pt->coord[ii]);
+	
+	for (ii=0; ii<BED->num_crit_vars; ii++)
+		set_mp(&curr_bottom_vars->coord[ii], &prev_pt->coord[ii+BED->num_mid_vars]);
+	
+	for (ii=0; ii<BED->num_crit_vars; ii++)
+		set_mp(&curr_top_vars->coord[ii], &prev_pt->coord[ii+BED->num_mid_vars+BED->num_crit_vars]);
+	
+	
+	// the main evaluations for $x$
+	
+	mem_d = mem_d_mid;
+	mem_mp = mem_mp_mid;
+	size_d = size_d_mid;  // size of mem_d
+	size_mp = size_mp_mid;  // size of mem_mp
+	mem_needs_init_d = mem_needs_init_d_mid; // determine if mem_d has been initialized
+	mem_needs_init_mp = mem_needs_init_mp_mid; // determine if mem_mp has been initialized
+	
+	
+	// for midpoint functions
+	offset = 0;
+	evalProg_mp(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_mid_vars, EG->PD_mp.time, BED->SLP_face);
+	
+	//resize output variables to correct size
+	increase_size_vec_mp(f_prev,temp_function_values->size);
+	f_prev->size = temp_function_values->size;
+	
+	for (ii=0; ii<temp_function_values->size; ii++)
+		set_mp(&f_prev->coord[ii], &temp_function_values->coord[ii]);
+	
+	
+	mem_d = mem_d_crit;
+	mem_mp = mem_mp_crit;
+	size_d = size_d_crit;  // size of mem_d
+	size_mp = size_mp_crit;  // size of mem_mp
+	mem_needs_init_d = mem_needs_init_d_crit; // determine if mem_d has been initialized
+	mem_needs_init_mp = mem_needs_init_mp_crit; // determine if mem_mp has been initialized
+	
+	
+	offset += temp_function_values->size; //y0
+	evalProg_mp(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_bottom_vars, EG->PD_mp.time, BED->SLP_crit);
+	increase_size_vec_mp(f_prev, f_prev->size + temp_function_values->size);
+	f_prev->size = f_prev->size + temp_function_values->size;
+	
+	for (ii=0; ii<temp_function_values->size; ii++)
+		set_mp(&f_prev->coord[ii+offset], &temp_function_values->coord[ii]);
+	
+	
+	
+	offset += temp_function_values->size; //y2
+	evalProg_mp(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_top_vars, EG->PD_mp.time, BED->SLP_crit);
+	
+	increase_size_vec_mp(f_prev, f_prev->size + temp_function_values->size);
+	f_prev->size = f_prev->size + temp_function_values->size;
+	
+	for (ii=0; ii<temp_function_values->size; ii++)
+		set_mp(&f_prev->coord[ii+offset], &temp_function_values->coord[ii]);
+	
+	
+	mem_d = NULL;
+	mem_mp = NULL;
+	size_d = NULL;  // size of mem_d
+	size_mp = NULL;  // size of mem_mp
+	mem_needs_init_d = NULL; // determine if mem_d has been initialized
+	mem_needs_init_mp = NULL; // determine if mem_mp has been initialized
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	// compare the function values
 	int isSoln = 1;
-	for (ii = 0; ii < BED->SLP->numFuncs && isSoln; ii++)
+	for (ii = 0; ii < f_terminal->size && isSoln; ii++)
 	{
-		mpf_abs_mp(n1, &e.funcVals->coord[ii]);
-		mpf_abs_mp(n2, &f->coord[ii]);
+		mpf_abs_mp(n1, &f_terminal->coord[ii]);
+		mpf_abs_mp(n2, &f_prev->coord[ii]);
 		
 		//		mpf_out_str(NULL,10,9,n1);
 		
@@ -1957,7 +2276,8 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	
 	
 	clear_eval_struct_mp(e);
-	clear_vec_mp(f);
+	clear_vec_mp(f_terminal);
+	clear_vec_mp(f_prev);
 	
 
 	return isSoln;

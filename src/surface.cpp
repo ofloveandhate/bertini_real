@@ -21,7 +21,7 @@ void surface_decomposition::print(boost::filesystem::path base)
 	boost::filesystem::path summaryname = base;
 	summaryname /= "S.surf";
 	FILE *OUT = safe_fopen_write(summaryname);
-	fprintf(OUT,"%d %d %ld %ld\n\n", num_faces, num_edges, mid_slices.size(), mid_slices.size());
+	fprintf(OUT,"%d %d %ld %ld\n\n", num_faces, num_edges, mid_slices.size(), crit_slices.size());
 	// what more to print here?
 	fclose(OUT);
 	
@@ -462,6 +462,9 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 	init_mp(proj_bottom);
 	init_mp(proj_top);
 	
+	
+	vec_mp found_point; init_vec_mp(found_point, this->num_variables); found_point->size = this->num_variables;
+	
 	int num_crit_vars = V.vertices[crit_curve.edges[0].right].pt_mp->size; // is this guaranteed to exist?
 	
 	witness_set W_midtrack;
@@ -502,19 +505,21 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 			
 			
 			
-			
+			// mid 
 			int var_counter = 0;
 			for (int kk=0; kk<this->num_variables; kk++) {
 				set_mp(&W_midtrack.pts_mp[0]->coord[kk], &V.vertices[mid_slices[ii].edges[jj].midpt].pt_mp->coord[kk]);
 				var_counter++;
 			}
 			
+			// bottom
 			int offset = var_counter;
 			for (int kk=0; kk<num_crit_vars; kk++) {
 				set_mp(&W_midtrack.pts_mp[0]->coord[kk+offset], &V.vertices[mid_slices[ii].edges[jj].left].pt_mp->coord[kk]); // y0
 				var_counter++;
 			}
 			
+			// top
 			offset = var_counter;
 			for (int kk=0; kk<num_crit_vars; kk++) {
 				set_mp(&W_midtrack.pts_mp[0]->coord[kk+offset], &V.vertices[mid_slices[ii].edges[jj].right].pt_mp->coord[kk]); // y2
@@ -522,27 +527,16 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 			}
 			
 			
-
-			
-			// the v direction corresponds to pi[1].
-			
-			
-			
 			// make u, v target values.
 			
-			//track
 			projection_value_homogeneous_input(md_config.crit_val_left, V.vertices[ crit_slices[ii].edges[0].midpt ].pt_mp,pi[0]);
 			projection_value_homogeneous_input(md_config.crit_val_right, V.vertices[crit_slices[ii+1].edges[0].midpt].pt_mp,pi[0]);
 			
 			// the u direction corresponds to pi[0].
-			for (int zz=0; zz<2; zz++) { // go left and right (or up and down, whatever you want, just choose two directions)
-				std::cout << zz << "\n";
-				if (zz==0){
-					set_zero_mp(md_config.u_target);}
-				else{
-					set_one_mp(md_config.u_target);}
+			for (int zz=0; zz<2; zz++) { // go left (zz=0) and right (zz=1)
 				
-				if (crit_slices[ii+zz].is_degenerate()) {
+				if (crit_slices[ii+zz].is_degenerate())
+				{
 					// can simply set the top or bottom edge to be this one.  know it goes there.  only have to 
 					std::cout << "crit_slice[" << ii+zz << "] is degenerate" << std::endl;
 					if (zz==0){
@@ -557,9 +551,16 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 				}
 				else
 				{
-
+					//track	
+					int final_top_ind, final_bottom_ind; // indexes in V of the bottom and top points of the left or right edge.  
 					
 					if (zz==0) {
+						final_top_ind = crit_curve.edges[F.top].left;
+						final_bottom_ind = crit_curve.edges[F.bottom].left;
+						
+						
+						set_zero_mp(md_config.u_target);
+						
 						projection_value_homogeneous_input(proj_top,    V.vertices[ crit_curve.edges[F.top].left ].pt_mp,   pi[1]); //w2
 						projection_value_homogeneous_input(proj_bottom, V.vertices[ crit_curve.edges[F.bottom].left ].pt_mp,pi[1]); //w0
 						
@@ -569,6 +570,12 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 						
 					}
 					else{ // zz==1, and going right
+						
+						final_top_ind = crit_curve.edges[F.top].right;
+						final_bottom_ind = crit_curve.edges[F.bottom].right;
+						
+						set_one_mp(md_config.u_target);
+						
 						projection_value_homogeneous_input(proj_top, V.vertices[ crit_curve.edges[F.top].right ].pt_mp,pi[1]);
 						projection_value_homogeneous_input(proj_bottom, V.vertices[ crit_curve.edges[F.bottom].right ].pt_mp,pi[1]);
 						
@@ -578,69 +585,125 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 					}
 					
 					
-
-					for (int yy=0; yy<crit_slices[ii+zz].num_edges; yy++)
+					int current_bottom_ind = final_bottom_ind;
+					int current_top_ind = -12131; // initialize to impossible value;
+					
+					
+					while (current_top_ind != final_top_ind) // int yy=0; yy<crit_slices[ii+zz].num_edges; yy++
 					{
 						
-						std::cout << "face " << ii << " zz " << zz << " yy " << yy << std::endl;
 						
-						int curr_left_index = 0;
-						int current_edge = yy;
-						
-						
-						//target midpoint e.w from paper.
-						projection_value_homogeneous_input(proj_mid, V.vertices[ crit_slices[ii+zz].edges[current_edge].midpt ].pt_mp,pi[1]);
-
-						
-						sub_mp(denom, proj_top, proj_bottom); // p2(w2) - p2(w0);
-						sub_mp(numer, proj_mid, proj_bottom); // p2(e.w) - p2(w0);
-						div_mp(md_config.v_target, numer, denom); // [p2(e.w) - p2(w0)] / [p2(w2) - p2(w0)]
-						
-						//print some display to screen
-						{
-							print_point_to_screen_matlab(V.vertices[mid_slices[ii].edges[jj].right].pt_mp,"top_start");
-							print_point_to_screen_matlab(V.vertices[mid_slices[ii].edges[jj].left].pt_mp,"bottom_start");
-							
-
-							print_point_to_screen_matlab(V.vertices[ crit_slices[ii+zz].edges[yy].midpt ].pt_mp,"midpoint_target");
-							print_comp_matlab(proj_top,"upper");
-							print_comp_matlab(proj_bottom,"lower");
-							print_comp_matlab(proj_mid,"mid");
-							
-							print_comp_matlab(numer,"numer");
-							print_comp_matlab(denom,"denom");
-							
-							print_comp_matlab(md_config.u_target,"u_target");
-							print_comp_matlab(md_config.v_target,"v_target");
-							
-							print_comp_matlab(md_config.crit_val_left,"crit_val_left");
-							print_comp_matlab(md_config.crit_val_right,"crit_val_right");
-							
-							
-							set_one_mp(temp);
-							sub_mp(temp2, temp, md_config.v_target);
-							mul_mp(temp, temp2, proj_bottom);
-							
-							mul_mp(temp2, md_config.v_target, proj_top);
-							
-							add_mp(temp3, temp, temp2);
-							
-							print_comp_matlab(temp3,"proj_1_target_mid");
+						std::vector< int > candidates; // indices of candidates for next one.
+						for (int qq=0; qq< crit_slices[ii+zz].num_edges; qq++) {
+							if (crit_slices[ii+zz].edges[qq].left == current_bottom_ind) {
+								candidates.push_back(qq);
+							}
 						}
 						
 						
-						witness_set W_new;
-						midpoint_solver_master_entry_point(W_midtrack, // carries with it the start points, and the linears.
-																							 &W_new, // new data goes in here
-																							 *this,
-																							 md_config,
-																							 solve_options);
-						
-						
+						for (int qq=0; qq<candidates.size(); qq++)
+						{
+							
+							int current_edge = candidates[qq];
+							std::cout << "face " << ii << " zz " << zz << " qq " << qq << std::endl;
+							
+
+							
+							
+							//target midpoint e.w from paper.
+							projection_value_homogeneous_input(proj_mid, V.vertices[ crit_slices[ii+zz].edges[current_edge].midpt ].pt_mp,pi[1]);
+
+							
+							sub_mp(denom, proj_top, proj_bottom); // p2(w2) - p2(w0);
+							sub_mp(numer, proj_mid, proj_bottom); // p2(e.w) - p2(w0);
+							div_mp(md_config.v_target, numer, denom); // [p2(e.w) - p2(w0)] / [p2(w2) - p2(w0)]
+							
+							//print some display to screen
+							if (solve_options.verbose_level >= 3)
+							{
+								print_point_to_screen_matlab(V.vertices[mid_slices[ii].edges[jj].right].pt_mp,"top_start");
+								print_point_to_screen_matlab(V.vertices[mid_slices[ii].edges[jj].left].pt_mp,"bottom_start");
+								
+
+								print_point_to_screen_matlab(V.vertices[ crit_slices[ii+zz].edges[current_edge].midpt ].pt_mp,"midpoint_target");
+								print_comp_matlab(proj_top,"upper");
+								print_comp_matlab(proj_bottom,"lower");
+								print_comp_matlab(proj_mid,"mid");
+								
+								print_comp_matlab(numer,"numer");
+								print_comp_matlab(denom,"denom");
+								
+								print_comp_matlab(md_config.u_target,"u_target");
+								print_comp_matlab(md_config.v_target,"v_target");
+								
+								print_comp_matlab(md_config.crit_val_left,"crit_val_left");
+								print_comp_matlab(md_config.crit_val_right,"crit_val_right");
+								
+								
+								set_one_mp(temp);
+								sub_mp(temp2, temp, md_config.v_target);
+								mul_mp(temp, temp2, proj_bottom);
+								
+								mul_mp(temp2, md_config.v_target, proj_top);
+								
+								add_mp(temp3, temp, temp2);
+								
+								print_comp_matlab(temp3,"proj_1_target_mid");
+							}
+							
+							solve_options.allow_multiplicity = 1;
+							solve_options.allow_singular = 1;
+							
+							witness_set W_new;
+							midpoint_solver_master_entry_point(W_midtrack, // carries with it the start points, and the linears.
+																								 &W_new, // new data goes in here
+																								 *this,
+																								 md_config,
+																								 solve_options);
+							
+							// should get a single point back from this solver.
+							
+							if (W_new.num_pts==0) {
+								std::cout << "midpoint tracker did not return any points :(" << std::endl;
+								mypause();
+							}
+							
+							for (int tt = 0; tt<this->num_variables; tt++) {
+								set_mp(&found_point->coord[tt], &W_new.pts_mp[0]->coord[tt]);
+							}
+							
+							print_point_to_screen_matlab(found_point, "found_point");
+							//need to look it up.
+							int found_index = index_in_vertices(V,
+																									found_point,
+																									solve_options.T);
+							
+							if (found_index==-1) {
+								std::cout << "the point found by midpoint tracker was not found in the vertex set :(" << std::endl;
+							}
+							else{
+								int next_edge = crit_slices[ii+zz].edge_w_midpt(found_index); // index the *edge*
+								current_bottom_ind = current_top_ind = crit_slices[ii+zz].edges[next_edge].right; // the upper value
+								
+								if (zz==0) {
+									F.left.push_back(next_edge);
+									F.num_left++;
+								}
+								else
+								{
+									F.right.push_back(next_edge);
+									F.num_left++;
+								}
+								
+								break;
+							}
+							
+						}
 						//find the edge with crit_slices[ii+zz].edges[yy].midpt index as midpoint
-					}
+					} // re: while...
 					
 				}
+		
 
 			}
 			

@@ -1136,13 +1136,18 @@ int decomposition::add_vertex(vertex_set & V, vertex source_vertex)
 
 
 int decomposition::index_in_vertices(vertex_set &V,
-																		 vec_mp testpoint, comp_mp projection_value,
+																		 vec_mp testpoint,
 																		 tracker_config_t T)
 {
 	int ii;
 	int index = -1;
 		
 	std::map< int , int >::iterator type_iter;
+	
+	for (int jj=1; jj<V.num_natural_variables; jj++) {
+		div_mp(&V.checker_1->coord[jj-1], &testpoint->coord[jj],  &testpoint->coord[0]);
+	}
+	
 	
 		for (ii=0; ii<V.num_vertices; ii++) {
 			
@@ -1158,7 +1163,6 @@ int decomposition::index_in_vertices(vertex_set &V,
 //			}
 			
 			for (int jj=1; jj<V.num_natural_variables; jj++) {
-				div_mp(&V.checker_1->coord[jj-1], &testpoint->coord[jj],  &testpoint->coord[0]);
 				div_mp(&V.checker_2->coord[jj-1],&V.vertices[current_index].pt_mp->coord[jj], &V.vertices[current_index].pt_mp->coord[0]);
 			}
 			
@@ -1178,29 +1182,6 @@ int decomposition::index_in_vertices(vertex_set &V,
 
 
 
-int decomposition::index_in_vertices_with_add(vertex_set &V,
-																							vec_mp testpoint, comp_mp projection_value,
-																							tracker_config_t T)
-{
-	int index = decomposition::index_in_vertices(V, testpoint, projection_value, T);
-	
-	if (index==-1) {
-
-		vertex temp_vertex;
-		
-		set_mp(temp_vertex.projVal_mp,  projection_value);
-		vec_cp_mp(temp_vertex.pt_mp, testpoint);
-		
-		
-		temp_vertex.type = NEW;
-		
-		index = decomposition::add_vertex(V, temp_vertex);
-		
-	}
-	
-	return index;
-
-}
 
 
 
@@ -1209,7 +1190,7 @@ int decomposition::index_in_vertices_with_add(vertex_set &V,
 																							vertex vert,
 																							tracker_config_t T)
 {
-	int index = decomposition::index_in_vertices(V, vert.pt_mp, vert.projVal_mp, T);
+	int index = decomposition::index_in_vertices(V, vert.pt_mp, T);
 	
 	if (index==-1) {
 		index = decomposition::add_vertex(V, vert);
@@ -1604,7 +1585,7 @@ void projection_value_homogeneous_input(comp_d result, vec_d input, vec_d projec
 	set_d(temp, result);
 	div_d(result, temp, &input->coord[0]);
 	
-//	if (result->i < 1e-10) {
+//	if (result->i < 1e-14) {
 //		result->i = 0.0;
 //	}
 	
@@ -1631,11 +1612,11 @@ void projection_value_homogeneous_input(comp_mp result, vec_mp input, vec_mp pro
 	set_mp(temp, result);
 	div_mp(result, temp, &input->coord[0]);
 	
-	comp_d temp2;
-	mp_to_d(temp2, result);
-//	if (temp2->i < 1e-10) {
-//		mpf_set_d(result->i, 0.0);
-//	}
+//	comp_d temp2;
+//	mp_to_d(temp2, result);
+////	if (temp2->i < 1e-14) {
+////		mpf_set_d(result->i, 0.0);
+////	}
 	
 //	mp_to_d(temp2, result);
 //	if (temp2->r < 1e-13) {
