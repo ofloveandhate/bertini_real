@@ -654,12 +654,8 @@ public:
 	int add_vertex(vertex_set &V, vertex source_vertex);
 	
 	int index_in_vertices(vertex_set &V,
-												vec_mp testpoint, comp_mp projection_value,
+												vec_mp testpoint,
 												tracker_config_t T);
-	
-	int index_in_vertices_with_add(vertex_set &V,
-																 vec_mp testpoint, comp_mp projection_value,
-																 tracker_config_t T);
 	
 	int index_in_vertices_with_add(vertex_set &V,
 																 vertex vert,

@@ -560,14 +560,22 @@ int curve_decomposition::interslice(witness_set & W_curve,
 			
 			set_mp(temp_vertex.projVal_mp, &midpoints_downstairs->coord[ii]  ); // set projection value
 			vec_cp_mp(temp_vertex.pt_mp,midpoint_witness_sets[ii].pts_mp[kk]);// set point
-			
-			
-			
 			temp_vertex.type = MIDPOINT; // set type
 			
 			temp_edge.midpt = index_in_vertices_with_add(V,temp_vertex,solve_options.T); // gets the index of the new midpoint as it is added
-			temp_edge.left  = index_in_vertices_with_add(V, Wleft.pts_mp[kk],  &crit_downstairs->coord[ii],  solve_options.T);
-			temp_edge.right = index_in_vertices_with_add(V, Wright.pts_mp[kk], &crit_downstairs->coord[ii+1], solve_options.T);
+			
+			
+			set_mp(temp_vertex.projVal_mp,  &crit_downstairs->coord[ii] ); // set projection value
+			vec_cp_mp(temp_vertex.pt_mp,Wleft.pts_mp[kk]);// set point
+			temp_vertex.type = NEW; // set type
+			
+			temp_edge.left  = index_in_vertices_with_add(V, temp_vertex,  solve_options.T);
+			
+			set_mp(temp_vertex.projVal_mp, &crit_downstairs->coord[ii+1] ); // set projection value
+			vec_cp_mp(temp_vertex.pt_mp,Wright.pts_mp[kk]);// set point
+			temp_vertex.type = NEW; // set type
+			
+			temp_edge.right = index_in_vertices_with_add(V, temp_vertex, solve_options.T);
 			
 			add_edge(temp_edge);
 			
@@ -1635,12 +1643,9 @@ void curve_decomposition::computeCurveNotSelfConj(witness_set & W_in,
 			
 			dot_product_mp(temp_vertex.projVal_mp, temp_vertex.pt_mp, pi_mp);
 			
-			if (index_in_vertices(V, temp_vertex.pt_mp, temp_vertex.projVal_mp,
-															solve_options.T) ==-1
-					)
-				add_vertex(V,temp_vertex);
-		}
+			index_in_vertices_with_add(V, temp_vertex, solve_options.T);
 		
+		}
 	}
 	
 	clear_mp(projection_value);
