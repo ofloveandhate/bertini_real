@@ -250,37 +250,31 @@ void BRpostProcessing(post_process_t *endPoints, witness_set *W_new, int num_pts
  * NOTES: does the actual post processing for a zero dim run     *
  \***************************************************************/
 {
-	//	printf("BR post processing\n");
-	//	options->allow_multiplicity = 0;
-	//	options->allow_singular = 0;
-	//	options->allow_infinite = 0;
-	//	options->allow_unsuccess = 0;
+
 	
 	int ii, jj;
 	
+//	std::cout << "sing: " << solve_options.allow_singular << ", unsuccess: " << solve_options.allow_unsuccess << ", multi: " << solve_options.allow_multiplicity << " " << solve_options.allow_infinite << std::endl;
 	
 	// sets the multiplicity and solution number in the endPoints data
 	//direct from the bertini library:
 	findMultSol(endPoints, num_pts, W_new->num_variables, preProcData, T->final_tol_times_mult);
-	
-	//	printf("post findMultSol\n");
-	
+		
 	//sets the singularity flag in endPoints.
 	//custom, derived from bertini's analagous call.
 	int num_singular_solns = BRfindSingularSolns(endPoints, num_pts, W_new->num_variables, T);
-	//	printf("post BRfindSingular\n");
 	
 	//sets the finite flag in endPoints.
 	//custom, derived from bertini's analagous call.
 	int num_finite_solns = BRfindFiniteSolns(endPoints, num_pts, W_new->num_variables, T);
-	//	printf("post BRfindFinite\n");
 	
 	
 	
-	if (solve_options.show_status_summary==1) {
-		printf("%d singular solutions\n",num_singular_solns);
-		printf("%d finite solutions\n",num_finite_solns);
-		
+	if (solve_options.verbose_level>=1) 
+		printf("%d finite solutions, %d singular solutions\n",num_finite_solns, num_singular_solns);
+	
+	
+	if (solve_options.verbose_level>=4) {
 		for (ii=0; ii<num_pts; ++ii) {
 			//		int success;      // success flag
 			//		int multiplicity; // multiplicity

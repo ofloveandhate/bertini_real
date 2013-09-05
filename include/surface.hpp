@@ -202,10 +202,31 @@ public:
 	
 	
 	void main(vertex_set & V,
-						witness_set & W,
+						const witness_set & W,
 						vec_mp *pi,
 						BR_configuration & program_options,
 						solver_configuration & solve_options);
+	
+	
+	
+	void compute_slices(const witness_set W_surf,
+											vertex_set & V,
+											vec_mp projection_values_downstairs,
+											std::vector< curve_decomposition > & slices,
+											BR_configuration & program_options,
+											solver_configuration & solve_options,
+											bool rerun_empty,
+											std::string kindofslice);
+	
+	
+	
+	void compute_critical_curve(witness_set & W_curve_crit,
+															const witness_set & W_surf,
+															vertex_set & V,
+															BR_configuration & program_options,
+															solver_configuration & solve_options);
+	
+	
 	
 	void connect_the_dots(vertex_set & V,
 												vec_mp *pi,

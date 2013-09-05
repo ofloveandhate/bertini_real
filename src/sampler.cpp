@@ -83,10 +83,10 @@ int main(int argC, char *args[])
 	mat_mp randomizer_matrix; init_mat_mp2(randomizer_matrix, 0,0, solve_options.T.AMP_max_prec);
 	
 	//create the array of integers
-	int *randomized_degrees = (int *)br_malloc((num_vars)*sizeof(int));
+	std::vector< int > randomized_degrees;
 	
 	//get the matrix and the degrees of the resulting randomized functions.
-	make_randomization_matrix_based_on_degrees(randomizer_matrix, &randomized_degrees, W.num_variables-W.num_patches-1, solve_options.PPD.num_funcs);
+	make_randomization_matrix_based_on_degrees(randomizer_matrix, randomized_degrees, W.num_variables-W.num_patches-1, solve_options.PPD.num_funcs);
 	
 	
 	

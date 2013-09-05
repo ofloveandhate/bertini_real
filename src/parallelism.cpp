@@ -91,7 +91,8 @@ int ubermaster_process::main_loop()
 			if (program_options.verbose_level>=2)
 				printf("outputting data\n");
 			
-			Output_Main(program_options, C, V);
+			
+			C.output_main(program_options, V);
 			
 			break;
 			
@@ -99,10 +100,8 @@ int ubermaster_process::main_loop()
 		case 2:
 			// surface
 			S.main(V, W, pi, program_options, solve_options);
-//
-//			S.print(program_options);
-//			V.print(program_options);
-			Output_Main(program_options, S, V);// temporarily using the curve output.
+
+			S.output_main(program_options, V);
 			
 			break;
 			

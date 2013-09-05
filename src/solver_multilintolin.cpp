@@ -2,7 +2,7 @@
 
 
 int multilintolin_solver_main(int MPType,
-													 witness_set & W,
+													 const witness_set & W,
 													 mat_mp randomizer_matrix_full_prec,
 													 vec_mp *new_linears_full_prec,
 													 witness_set *W_new,
@@ -50,7 +50,7 @@ int multilintolin_solver_main(int MPType,
 
 
 int multilin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int currentSeed
-												witness_set & W,  // includes the initial linear.
+												const witness_set & W,  // includes the initial linear.
 												mat_mp randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
 												vec_mp *new_linears_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 												witness_set *W_new,
@@ -101,6 +101,26 @@ int multilin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int cur
 	
 	int (*dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *) = NULL;
 	dehom = &multilintolin_dehom;
+	
+	
+	
+	for (int kk = 0; kk< W.num_linears; kk++)
+	{
+		
+		// we pass the particulars of the information for this solve mode via the ED.
+		
+		// SET NEW LINEARs
+		
+		vec_mp_to_d(ED.current_linear[kk],new_linears_full_prec[kk]);
+		if (solve_options.T.MPType==2) {
+			vec_cp_mp(ED.BED_mp->current_linear[kk],new_linears_full_prec[kk]);
+			vec_cp_mp(ED.BED_mp->current_linear_full_prec[kk],new_linears_full_prec[kk]);
+		}
+		
+		
+	} // for each new linear
+	
+	
 	
 	
 	
@@ -221,7 +241,7 @@ int multilin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int cur
 
 void multilin_to_lin_track_d(trackingStats *trackCount,
 												FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
-												witness_set & W,
+												const witness_set & W,
 												vec_mp *new_linears_full_prec,
 												post_process_t *endPoints,
 												FILE *FAIL,
@@ -262,115 +282,121 @@ void multilin_to_lin_track_d(trackingStats *trackCount,
 	int solution_counter = 0;
 	
 	
-	for (kk = 0; kk< W.num_linears; kk++)
-	{
-
-		// we pass the particulars of the information for this solve mode via the ED.
-		
-		// SET NEW LINEARs
-		
-		vec_mp_to_d(BED->current_linear[kk],new_linears_full_prec[kk]);
-		if (solve_options.T.MPType==2) {
-			vec_cp_mp(BED->BED_mp->current_linear[kk],new_linears_full_prec[kk]);
-			vec_cp_mp(BED->BED_mp->current_linear_full_prec[kk],new_linears_full_prec[kk]);
-		}
-		
-		
-	} // for each new linear
+	solve_options.backup_tracker_config();
 	
 	// track each of the start points
 	for (ii = 0; ii < W.num_pts; ii++)
 	{
 		
-		if (solve_options.verbose_level>=1)
+		if (solve_options.verbose_level>=3 && (ii%solve_options.path_number_modulus==0))
 			printf("multilintolin\tpoint %d\n",ii);
 		
-		startPointIndex = ii;
+		
+		int iterations=0, max_iterations = 10;
+		
+		solve_options.reset_tracker_config();
+		while (iterations<max_iterations) {
 
-
-		
-#ifdef printpathmultilintolin
-		BED.num_steps = BED_mp.num_steps = 0;
-#endif
-		
-		if (T->MPType==2) {
-			BED->BED_mp->curr_prec = 64;
-		}
-
-		// track the path
-		generic_track_path_d(solution_counter, &EG, &startPts[startPointIndex], OUT, MIDOUT, T, BED, BED->BED_mp, curr_eval_d, curr_eval_mp, change_prec, find_dehom);
-		
-#ifdef printpathmultilintolin
-		fprintf(BED.FOUT,"-100 %d ",BED.num_steps);
-		for (mm=0; mm<BED.num_variables-1; ++mm) {
-			fprintf(BED.FOUT,"0 0 ");
-		}
-		fprintf(BED.FOUT,"\n%d\n\n",EG->retVal);
-#endif
-		
-		
-		// check to see if it should be sharpened
-		if (EG.retVal == 0 && T->sharpenDigits > 0)
-		{ // use the sharpener for after an endgame
-			sharpen_endpoint_endgame(&EG, T, OUT, BED, BED->BED_mp, curr_eval_d, curr_eval_mp, change_prec);
-		}
-		
-
-		//get the terminal time in double form
-		comp_d time_to_compare;
-		if (EG.prec < 64) {
-			set_d(time_to_compare,EG.PD_d.time);}
-		else {
-			mp_to_d(time_to_compare, EG.PD_mp.time); }
-		
-		
-		int issoln = 0;
-		if (EG.last_approx_prec!=1) {
-			if (EG.prec<64){
-				issoln = check_issoln_multilintolin_d(&EG,  T, BED); }
-			else {
-				issoln = check_issoln_multilintolin_mp(&EG, T, BED->BED_mp); }
-		}
-		else{
+	#ifdef printpathmultilintolin
+			BED.num_steps = BED_mp.num_steps = 0;
+	#endif
 			
-			if (EG.prec<64){
-				print_point_to_screen_matlab(EG.PD_d.point,"solution");}
-			else {
-				print_point_to_screen_matlab(EG.PD_mp.point,"solution");}
+			if (T->MPType==2) {
+				BED->BED_mp->curr_prec = 64;
+			}
+
+			// track the path
+			generic_track_path_d(solution_counter, &EG, &startPts[ii], OUT, MIDOUT, T, BED, BED->BED_mp, curr_eval_d, curr_eval_mp, change_prec, find_dehom);
 			
-			printf("the last approximation was of precision %d\n",EG.last_approx_prec);
-			printf("this is probably a problem\n");
-			mypause();
-		}
-		
-		if ( (EG.retVal != 0 && time_to_compare->r > T->minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
-			trackCount->failures++;
-			printf("\nretVal = %d\nthere was a fatal path failure tracking linear %d, witness point %d\n\n",EG.retVal,kk,ii);
-			print_path_retVal_message(EG.retVal);
-			if (!issoln) {
-				printf("the following was labeled as not a solution\n");
+			// check to see if it should be sharpened
+			if (EG.retVal == 0 && T->sharpenDigits > 0)// use the sharpener for after an endgame
+				sharpen_endpoint_endgame(&EG, T, OUT, BED, BED->BED_mp, curr_eval_d, curr_eval_mp, change_prec);
+			
+
+			//get the terminal time in double form
+			comp_d time_to_compare;
+			if (EG.prec < 64) {
+				set_d(time_to_compare,EG.PD_d.time);}
+			else {
+				mp_to_d(time_to_compare, EG.PD_mp.time); }
+			
+			
+			int issoln = 0;
+			if (EG.last_approx_prec!=1) {
+				if (EG.prec<64){
+					issoln = check_issoln_multilintolin_d(&EG,  T, BED); }
+				else {
+					issoln = check_issoln_multilintolin_mp(&EG, T, BED->BED_mp); }
+			}
+			else{
+				
+				if (EG.prec<64){
+					print_point_to_screen_matlab(EG.PD_d.point,"solution");}
+				else {
+					print_point_to_screen_matlab(EG.PD_mp.point,"solution");}
+				
+				printf("the last approximation was of precision %d\n",EG.last_approx_prec);
+				printf("this is probably a problem\n");
+				mypause();
+			}
+			
+			if ( (EG.retVal != 0 && time_to_compare->r > T->minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
+				trackCount->failures++;
+				printf("\nretVal = %d\nthere was a fatal path failure tracking witness point %d\n\n",EG.retVal,ii);
+				print_path_retVal_message(EG.retVal);
+				if (!issoln) {
+					printf("the following was labeled as not a solution\n");
+					if (EG.prec < 64) {
+						print_point_to_screen_matlab(EG.PD_d.point,"variablevalues");
+					}
+					else{
+						print_point_to_screen_matlab(EG.PD_mp.point,"variablevalues");
+					}
+				}
+				
+				
 				if (EG.prec < 64) {
 					print_point_to_screen_matlab(EG.PD_d.point,"variablevalues");
 				}
 				else{
 					print_point_to_screen_matlab(EG.PD_mp.point,"variablevalues");
 				}
+				
+				for (int zz = 0; zz<BED->num_linears; zz++) {
+					print_point_to_screen_matlab(BED->old_linear[zz],"old");
+					print_point_to_screen_matlab(BED->current_linear[zz],"new");
+				}
+//				deliberate_segfault();
+//				exit(EG.retVal); //failure intolerable in this solver.
+				if (iterations<1) {
+					solve_options.T.securityMaxNorm = 10*solve_options.T.securityMaxNorm;
+				}
+				else if (iterations< 3){
+					solve_options.T.final_tolerance = 0.1*solve_options.T.final_tolerance;
+					solve_options.T.securityMaxNorm = 100*solve_options.T.securityMaxNorm;
+				}
+				else
+				{
+					solve_options.T.final_tolerance = 0.1*solve_options.T.final_tolerance;
+					solve_options.T.securityMaxNorm = 100*solve_options.T.securityMaxNorm;
+				}
+				
+				
 			}
-			print_point_to_screen_matlab(BED->old_linear[0],"old");
-			print_point_to_screen_matlab(BED->current_linear[0],"new");
-			exit(EG.retVal); //failure intolerable in this solver.
+			else
+			{
+				//otherwise converged, but may have still had non-zero retval due to other reasons.
+				endgamedata_to_endpoint(&endPoints[solution_counter], &EG);
+				trackCount->successes++;
+				solution_counter++; // probably this could be eliminated
+				break; // break out of the while loop
+			}
+			
+			iterations++;
 		}
-		else
-		{
-			//otherwise converged, but may have still had non-zero retval due to other reasons.
-			endgamedata_to_endpoint(&endPoints[solution_counter], &EG);
-			trackCount->successes++;
-			solution_counter++; // probably this could be eliminated
-		}
-		
 	}// re: for (ii=0; ii<W.num_pts ;ii++)
 
-	
+	solve_options.reset_tracker_config();
 	
 	//clear the data structures.
 	
@@ -401,7 +427,7 @@ int multilin_to_lin_setup_d(FILE **OUT, boost::filesystem::path outName,
 														boost::filesystem::path preprocFile, boost::filesystem::path degreeFile,
 														int findStartPts, boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
 											 mat_mp randomizer_matrix_full_prec,
-											 witness_set & W,
+											 const witness_set & W,
 											 solver_configuration & solve_options)
 { // need to create the homotopy
 //	printf("entering multilin_to_lin_setup_d 606\n");
@@ -813,7 +839,7 @@ void setupmultilintolinEval_d(tracker_config_t *T,
 															prog_t *dummyProg,
 															multilintolin_eval_data_d *BED,
 															mat_mp randomizer_matrix_full_prec,
-															witness_set & W,
+															const witness_set & W,
 															solver_configuration & solve_options)
 {
   int ii;
@@ -1105,7 +1131,7 @@ int change_multilintolin_eval_prec(void const *ED, int new_prec)
 
 
 int multilin_to_lin_solver_mp(int MPType,
-												 witness_set & W,  // includes the initial linear.
+												 const witness_set & W,  // includes the initial linear.
 												 mat_mp randomizer_matrix,  // for randomizing down to N-1 equations.
 												 vec_mp *new_linears,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 												 witness_set *W_new,
@@ -1181,7 +1207,11 @@ int multilin_to_lin_solver_mp(int MPType,
 	
 	post_process_t *endPoints = (post_process_t *)br_malloc(W.num_pts* sizeof(post_process_t)); //overallocate, expecting full number of solutions.
 	
-	
+	for (int kk = 0; kk< W.num_linears; kk++)
+	{
+		// set current linears in the evaluator data
+		vec_cp_mp(ED.current_linear[kk],new_linears[kk]);
+	}
 	
 	if (T.endgameNumber == 3)
 	{ // use the track-back endgame
@@ -1274,7 +1304,7 @@ int multilin_to_lin_solver_mp(int MPType,
 
 void multilin_to_lin_track_mp(trackingStats *trackCount,
 												FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
-												witness_set & W,
+												const witness_set & W,
 												vec_mp *new_linears,
 												post_process_t *endPoints,
 												FILE *FAIL,
@@ -1312,12 +1342,7 @@ void multilin_to_lin_track_mp(trackingStats *trackCount,
 	int solution_counter = 0;
 	
 	
-	for (kk = 0; kk< W.num_linears; kk++)
-	{
-		// set current linears in the evaluator data
-		vec_cp_mp(BED->current_linear[kk],new_linears[kk]);
 
-	}
 		
 		for (ii = 0; ii < W.num_pts; ii++)
 		{ 
@@ -1375,10 +1400,13 @@ void multilin_to_lin_track_mp(trackingStats *trackCount,
 			
 			if ((EG.retVal != 0 && time_to_compare->r > T->minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
 				trackCount->failures++;
-				printf("\nretVal = %d\nthere was a fatal path failure tracking multilinear %d, witness point %d\n\n",EG.retVal,kk,ii);
+				printf("\nretVal = %d\nthere was a fatal path failure tracking witness point %d\n\n",EG.retVal,ii);
 				print_path_retVal_message(EG.retVal);
-				print_point_to_screen_matlab(BED->old_linear[0],"old");
-				print_point_to_screen_matlab(BED->current_linear[0],"new");
+				
+				for (int zz = 0; zz<BED->num_linears; zz++) {
+					print_point_to_screen_matlab(BED->old_linear[zz],"old");
+					print_point_to_screen_matlab(BED->current_linear[zz],"new");
+				}
 				deliberate_segfault();
 //				exit(EG.retVal); //failure intolerable in this solver.
 			}
@@ -1429,7 +1457,7 @@ int multilin_to_lin_setup_mp(FILE **OUT, boost::filesystem::path outName,
 														 int findStartPts,
 														 boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
 														 mat_mp randomizer_matrix,
-												witness_set & W,
+												const witness_set & W,
 												solver_configuration & solve_options)
 { // need to create the homotopy
 	
@@ -1866,7 +1894,7 @@ void setupmultilintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *du
 															 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4, //8-11
 												 multilintolin_eval_data_mp *BED, int adjustDegrees,
 												 mat_mp randomizer_matrix,
-													witness_set & W,
+													const witness_set & W,
 													solver_configuration & solve_options)
 {
 	

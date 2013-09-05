@@ -11,7 +11,7 @@
 
 //solve_options has both a tracker_config_t and a preproc_data.
 int lintolin_solver_main(int MPType,
-													 witness_set & W,
+													 const witness_set & W,
 													 mat_mp randomizer_matrix_full_prec,
 													 vec_mp *new_linears_full_prec,
 													 int num_new_linears,
@@ -44,10 +44,10 @@ int lintolin_solver_main(int MPType,
 							 solve_options.T.AMP_max_prec);
 	
 	//create the array of integers
-	int *randomized_degrees = (int *)br_malloc((W.num_variables-W.num_patches-W.num_linears)*sizeof(int));
+		std::vector<int> randomized_degrees;
 	
 	//get the matrix and the degrees of the resulting randomized functions.
-	make_randomization_matrix_based_on_degrees(randomizer_matrix, &randomized_degrees, W.num_variables-W.num_patches-W.num_linears, solve_options.PPD.num_funcs);
+	make_randomization_matrix_based_on_degrees(randomizer_matrix, randomized_degrees, W.num_variables-W.num_patches-W.num_linears, solve_options.PPD.num_funcs);
 	
 	
 	
@@ -80,7 +80,7 @@ int lintolin_solver_main(int MPType,
 
 
 int lintolin_solver_d(int MPType, //, double parse_time, unsigned int currentSeed
-												witness_set & W,  // includes the initial linear.
+												const witness_set & W,  // includes the initial linear.
 												mat_mp randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
 												vec_mp *new_linears_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 												int num_new_linears,
@@ -252,7 +252,7 @@ int lintolin_solver_d(int MPType, //, double parse_time, unsigned int currentSee
 
 void lintolin_track_d(trackingStats *trackCount,
 												FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
-												witness_set & W,
+												const witness_set & W,
 												vec_mp *new_linears_full_prec,
 												int num_new_linears,
 												post_process_t *endPoints,
@@ -450,7 +450,7 @@ int lintolin_setup_d(FILE **OUT, boost::filesystem::path outName,
 											 boost::filesystem::path preprocFile, boost::filesystem::path degreeFile,
 											 int findStartPts, boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
 											 mat_mp randomizer_matrix_full_prec,
-											 witness_set & W,
+											 const witness_set & W,
 											 solver_configuration & solve_options)
 { // need to create the homotopy
 //	printf("entering lintolin_setup_d 606\n");
@@ -1071,7 +1071,7 @@ void setuplintolinEval_d(tracker_config_t *T,char preprocFile[], char degreeFile
 												 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,// what are these supposed to point to?
 												 lintolin_eval_data_d *BED, int adjustDegrees,
 												 mat_mp randomizer_matrix_full_prec,
-												 witness_set & W,
+												 const witness_set & W,
 												 solver_configuration & solve_options)
 {
 	BED->num_variables = W.num_variables;
@@ -1324,7 +1324,7 @@ int change_lintolin_eval_prec(void const *ED, int new_prec)
 
 
 int lintolin_solver_mp(int MPType,
-												 witness_set & W,  // includes the initial linear.
+												 const witness_set & W,  // includes the initial linear.
 												 mat_mp randomizer_matrix,  // for randomizing down to N-1 equations.
 												 vec_mp *new_linears,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 												 int num_new_linears,
@@ -1495,7 +1495,7 @@ int lintolin_solver_mp(int MPType,
 
 void lintolin_track_mp(trackingStats *trackCount,
 												FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
-												witness_set & W,
+												const witness_set & W,
 												vec_mp *new_linears,
 												int num_new_linears,
 												post_process_t *endPoints,
@@ -1728,7 +1728,7 @@ int lintolin_setup_mp(FILE **OUT, boost::filesystem::path outName,
 											boost::filesystem::path preprocFile, boost::filesystem::path degreeFile,
 											int findStartPts, boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
 											 mat_mp randomizer_matrix,
-												witness_set & W,
+												const witness_set & W,
 												solver_configuration & solve_options)
 { // need to create the homotopy
 	
@@ -2369,7 +2369,7 @@ void setuplintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *dummyPr
 												 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
 												 lintolin_eval_data_mp *BED, int adjustDegrees,
 												 mat_mp randomizer_matrix,
-													witness_set & W,
+													const witness_set & W,
 													solver_configuration & solve_options)
 {
 
