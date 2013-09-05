@@ -2,10 +2,10 @@
 
 
 int compute_crit_nullspace(witness_set *W_crit, // the returned value
-													 witness_set & W,
+													 const witness_set & W,
 													 mat_mp randomizer_matrix,
 													 vec_mp *pi, // an array of projections, the number of which is the target dimensions
-													 int *randomized_degrees, // an array of integers holding the degrees of the randomized equations.
+													 std::vector< int > randomized_degrees, // an array of integers holding the degrees of the randomized equations.
 													 int ambient_dim,
 													 int target_dim,
 													 int target_crit_codim,
@@ -221,8 +221,9 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	//set some solver options
 	
 	solve_options.complete_witness_set = 0;
+	solve_options.use_midpoint_checker = 0;
 	
-	if (ambient_dim==1) {
+	if (ambient_dim==target_crit_codim) {
 		solve_options.allow_multiplicity = 1;
 		solve_options.allow_singular = 1;
 	}
@@ -232,9 +233,9 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 		solve_options.allow_singular = 0;
 	}
 	
-	solve_options.use_midpoint_checker = 0;
 	
-	if (program_options.verbose_level>=2)
+	
+	if (program_options.verbose_level>=4)
 		ns_config->print();
 	
 
@@ -295,9 +296,9 @@ void nullspace_config_setup(nullspace_config *ns_config,
 														int target_dim,
 														int target_crit_codim,
 														int *max_degree, // a pointer to the value
-														int *randomized_degrees, // an array of randomized degrees
+														std::vector< int > randomized_degrees, // an array of randomized degrees
 														mat_mp randomizer_matrix,
-														witness_set & W,
+														const witness_set & W,
 														solver_configuration & solve_options)
 {
 

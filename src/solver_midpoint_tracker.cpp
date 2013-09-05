@@ -1,27 +1,28 @@
 #include "solver_midpoint_tracker.hpp"
 #include "surface.hpp"
 
-//stupid globals
-
-_comp_d  **mem_d_crit;
-_comp_mp **mem_mp_crit;
-int *size_d_crit;  // size of mem_d
-int *size_mp_crit;  // size of mem_mp
-int *mem_needs_init_d_crit; // determine if mem_d has been initialized
-int *mem_needs_init_mp_crit; // determine if mem_mp has been initialized
-
-_comp_d  **mem_d_mid;
-_comp_mp **mem_mp_mid;
-int *size_d_mid;  // size of mem_d
-int *size_mp_mid;  // size of mem_mp
-int *mem_needs_init_d_mid; // determine if mem_d has been initialized
-int *mem_needs_init_mp_mid; // determine if mem_mp has been initialized
+////stupid globals
+//
+//_comp_d  **mem_d_crit;
+//_comp_mp **mem_mp_crit;
+//int *size_d_crit;  // size of mem_d
+//int *size_mp_crit;  // size of mem_mp
+//int *mem_needs_init_d_crit; // determine if mem_d has been initialized
+//int *mem_needs_init_mp_crit; // determine if mem_mp has been initialized
+//
+//_comp_d  **mem_d_mid;
+//_comp_mp **mem_mp_mid;
+//int *size_d_mid;  // size of mem_d
+//int *size_mp_mid;  // size of mem_mp
+//int *mem_needs_init_d_mid; // determine if mem_d has been initialized
+//int *mem_needs_init_mp_mid; // determine if mem_mp has been initialized
 
 
 void midpoint_config::setup(const surface_decomposition & surf,
 														solver_configuration & solve_options)
 {
 	
+	this->MPType = solve_options.T.MPType;
 
 	num_mid_vars = surf.num_variables;
 	num_crit_vars = surf.crit_curve.num_variables;
@@ -31,7 +32,6 @@ void midpoint_config::setup(const surface_decomposition & surf,
 	// i would like to move this.
 	
 
-	
 	parse_input_file(surf.input_filename, &blabla);
 	partition_parse(&declarations, surf.input_filename, "func_input", "config", 0); // the 0 means not self conjugate.
 	free(declarations);
@@ -42,36 +42,30 @@ void midpoint_config::setup(const surface_decomposition & surf,
 //																						&subFuncsBelow);
 //	setupProg(prog_t *P, int precision, int MPType)
 	
-	solve_options.T.numVars = setupProg(SLP_face, solve_options.T.Precision, solve_options.T.MPType);  // setup a straight-line program, using the file(s) created by the parser.
+	solve_options.T.numVars = setupProg(this->SLP_face, solve_options.T.Precision, solve_options.T.MPType);  // setup a straight-line program, using the file(s) created by the parser.
 
 	
 	preproc_data_clear(&solve_options.PPD);
 	parse_preproc_data("preproc_data", &solve_options.PPD);
 	
 	//create the array of integers
-	int *randomized_degrees = (int *)br_malloc((surf.num_variables-surf.num_patches-2)*sizeof(int));
+	std::vector<int> randomized_degrees;
 	
 	//get the matrix and the degrees of the resulting randomized functions.
-	make_randomization_matrix_based_on_degrees(this->randomizer_matrix, &randomized_degrees, surf.num_variables-surf.num_patches-2, solve_options.PPD.num_funcs);
+	make_randomization_matrix_based_on_degrees(this->randomizer_matrix, randomized_degrees, surf.num_variables-surf.num_patches-2, solve_options.PPD.num_funcs);
 	//W.num_variables-W.num_patches-W.num_linears
-	free(randomized_degrees);
+
 	
+	this->mid_memory.capture_globals();
+	this->mid_memory.set_globals_null();
 	
-	
-	mem_d_mid = mem_d;
-	mem_mp_mid = mem_mp;
-	size_d_mid = size_d;  // size of mem_d
-	size_mp_mid = size_mp;  // size of mem_mp
-	mem_needs_init_d_mid = mem_needs_init_d; // determine if mem_d has been initialized
-	mem_needs_init_mp_mid = mem_needs_init_mp; // determine if mem_mp has been initialized
-	
-	//reset
-	mem_d = NULL;
-	mem_mp = NULL;
-	size_d = NULL;  // size of mem_d
-	size_mp = NULL;  // size of mem_mp
-	mem_needs_init_d = NULL; // determine if mem_d has been initialized
-	mem_needs_init_mp = NULL; // determine if mem_mp has been initialized
+//	//reset
+//	mem_d = NULL;
+//	mem_mp = NULL;
+//	size_d = NULL;  // size of mem_d
+//	size_mp = NULL;  // size of mem_mp
+//	mem_needs_init_d = NULL; // determine if mem_d has been initialized
+//	mem_needs_init_mp = NULL; // determine if mem_mp has been initialized
 	// this call writes to several global variables.
 	//	//	_comp_d  **mem_d  = NULL;
 	//	//	_comp_mp **mem_mp = NULL;
@@ -91,47 +85,36 @@ void midpoint_config::setup(const surface_decomposition & surf,
 //  solve_options.T.numVars = setupProg_count(SLP_crit, solve_options.T.Precision, solve_options.T.MPType,
 //																						&startSub, &endSub, &startFunc, &endFunc, &startJvsub, &endJvsub, &startJv, &endJv,
 //																						&subFuncsBelow);
-	solve_options.T.numVars = setupProg(SLP_crit, solve_options.T.Precision, solve_options.T.MPType);  // setup a straight-line program, using the file(s) created by the parser.
+	solve_options.T.numVars = setupProg(this->SLP_crit, solve_options.T.Precision, solve_options.T.MPType);  // setup a straight-line program, using the file(s) created by the parser.
 
 	preproc_data_clear(&solve_options.PPD);
 	parse_preproc_data("preproc_data", &solve_options.PPD);
 	
 	
 	//get the matrix and the degrees of the resulting randomized functions.
-	randomized_degrees = (int *)br_malloc((surf.crit_curve.num_variables-surf.crit_curve.num_patches-1-1)*sizeof(int));
-	make_randomization_matrix_based_on_degrees(this->randomizer_matrix_crit, &randomized_degrees, surf.crit_curve.num_variables-surf.crit_curve.num_patches-1, solve_options.PPD.num_funcs);
-	free(randomized_degrees);
+	randomized_degrees.clear();
+	make_randomization_matrix_based_on_degrees(this->randomizer_matrix_crit, randomized_degrees, surf.crit_curve.num_variables-surf.crit_curve.num_patches-1, solve_options.PPD.num_funcs);
 	
 	
+	std::cout << "blabla " << size_mp[0] << std::endl;
 	
+	this->crit_memory.capture_globals();
+	this->crit_memory.set_globals_null();
 	
-	mem_d_crit = mem_d;
-	mem_mp_crit = mem_mp;
-	size_d_crit = size_d;  // size of mem_d
-	size_mp_crit = size_mp;  // size of mem_mp
-	mem_needs_init_d_crit = mem_needs_init_d; // determine if mem_d has been initialized
-	mem_needs_init_mp_crit = mem_needs_init_mp; // determine if mem_mp has been initialized
-	
-	
-	//reset to null, keeping the global memory there, just not deleting it.
-	mem_d = NULL;
-	mem_mp = NULL;
-	size_d = NULL;  // size of mem_d
-	size_mp = NULL;  // size of mem_mp
-	mem_needs_init_d = NULL; // determine if mem_d has been initialized
-	mem_needs_init_mp = NULL; // determine if mem_mp has been initialized
-	
-	
+	std::cout << "mem_d: " << this->mid_memory.local_mem_d << std::endl;
+	std::cout << "mem_mp: " << this->mid_memory.local_mem_mp << std::endl;
+
 	
 	solve_options.T.numVars = surf.num_variables + 2*surf.crit_curve.num_variables;
-
+	// are there other things in T which need to be set?
 }
 
 
 void midpoint_config::init()
 {
 	
-
+	this->MPType = -1;
+	
 	init_mat_mp2(randomizer_matrix_crit,1,1,1024);randomizer_matrix_crit->rows = randomizer_matrix_crit->cols = 1;
 	init_mat_mp2(randomizer_matrix,1,1,1024);randomizer_matrix->rows = randomizer_matrix->cols = 1;
 	
@@ -142,19 +125,8 @@ void midpoint_config::init()
 	init_mp2(crit_val_left,1024);
 	init_mp2(crit_val_right,1024);
 	
-	mem_d_mid = NULL;
-	mem_mp_mid = NULL;
-	size_d_mid = NULL;  // size of mem_d
-	size_mp_mid = NULL;  // size of mem_mp
-	mem_needs_init_d_mid = NULL; // determine if mem_d has been initialized
-	mem_needs_init_mp_mid = NULL; // determine if mem_mp has been initialized
-	
-	mem_d_crit = NULL;
-	mem_mp_crit = NULL;
-	size_d_crit = NULL;  // size of mem_d
-	size_mp_crit = NULL;  // size of mem_mp
-	mem_needs_init_d_crit = NULL; // determine if mem_d has been initialized
-	mem_needs_init_mp_crit = NULL; // determine if mem_mp has been initialized
+	this->SLP_crit =  new prog_t;
+	this->SLP_face = new prog_t;//(prog_t *) br_malloc(sizeof(prog_t));
 }
 
 
@@ -309,6 +281,10 @@ int midpoint_eval_data_mp::setup(midpoint_config & md_config,
 	solver_mp::setup();
 	
 	generic_setup_patch(&patch,W);
+	
+	this->crit_memory = md_config.crit_memory; // copy the pointers to the memory
+	this->mid_memory = md_config.mid_memory;
+	
 	
 	this->SLP_crit = md_config.SLP_crit;
 	this->SLP_face = md_config.SLP_face;
@@ -499,8 +475,12 @@ int midpoint_eval_data_d::setup(midpoint_config & md_config,
 	
 	solver_d::setup();
 	
-	this->SLP_crit = md_config.SLP_crit;
+	this->crit_memory = md_config.crit_memory; // copy the pointers to the memory
+	this->mid_memory = md_config.mid_memory;
+	
+	this->SLP_crit = md_config.SLP_crit; // copy the pointers to the SLPs (which refer to the memory)
 	this->SLP_face = md_config.SLP_face;
+	
 	verbose_level = solve_options.verbose_level;
 	
 	generic_setup_patch(&patch,W);
@@ -825,12 +805,8 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	
 	// the main evaluations for $x$
 	
-	mem_d = mem_d_mid;
-	mem_mp = mem_mp_mid;
-	size_d = size_d_mid;  // size of mem_d
-	size_mp = size_mp_mid;  // size of mem_mp
-	mem_needs_init_d = mem_needs_init_d_mid; // determine if mem_d has been initialized
-	mem_needs_init_mp = mem_needs_init_mp_mid; // determine if mem_mp has been initialized
+	BED->mid_memory.set_globals_to_this();
+	
 
 	offset = 0;
 	evalProg_d(temp_function_values, parVals, parDer,
@@ -853,12 +829,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	
 	
 	
-	mem_d = mem_d_crit;
-	mem_mp = mem_mp_crit;
-	size_d = size_d_crit;  // size of mem_d
-	size_mp = size_mp_crit;  // size of mem_mp
-	mem_needs_init_d = mem_needs_init_d_crit; // determine if mem_d has been initialized
-	mem_needs_init_mp = mem_needs_init_mp_crit; // determine if mem_mp has been initialized
+	BED->crit_memory.set_globals_to_this();
 	
 	
 	offset = BED->randomizer_matrix->rows; //y0
@@ -910,13 +881,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	
 	
 	// done with evaluation, so set these to NULL to prevent accidental deletion of the data.
-	
-	mem_d = NULL;
-	mem_mp = NULL;
-	size_d = NULL;  // size of mem_d
-	size_mp = NULL;  // size of mem_mp
-	mem_needs_init_d = NULL; // determine if mem_d has been initialized
-	mem_needs_init_mp = NULL; // determine if mem_mp has been initialized
+	BED->crit_memory.set_globals_null();
 	
 	
 	
@@ -1098,7 +1063,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 		printf("t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
 		
 		print_point_to_screen_matlab(current_variable_values,"curr_vars");
-//		print_point_to_screen_matlab(funcVals,"F_d");
+		print_point_to_screen_matlab(funcVals,"F_d");
 		print_matrix_to_screen_matlab(Jv,"Jv");
 		print_matrix_to_screen_matlab(Jp,"Jp");
 
@@ -1276,13 +1241,7 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
 	// the main evaluations for $x$
 	
-	mem_d = mem_d_mid;
-	mem_mp = mem_mp_mid;
-	size_d = size_d_mid;  // size of mem_mp
-	size_mp = size_mp_mid;  // size of mem_mp
-	mem_needs_init_d = mem_needs_init_d_mid; // determine if mem_mp has been initialized
-	mem_needs_init_mp = mem_needs_init_mp_mid; // determine if mem_mp has been initialized
-																						 //	std::cout << "at evaluating, SLP_face has " << BED->SLP_face->numVars << " vars" << std::endl;
+	BED->mid_memory.set_globals_to_this();
 	
 	evalProg_mp(temp_function_values, parVals, parDer,
 						 temp_jacobian_functions, unused_Jp, curr_mid_vars, pathVars, BED->SLP_face);
@@ -1304,12 +1263,7 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
 	
 	
-	mem_d = mem_d_crit;
-	mem_mp = mem_mp_crit;
-	size_d = size_d_crit;  // size of mem_d
-	size_mp = size_mp_crit;  // size of mem_mp
-	mem_needs_init_d = mem_needs_init_d_crit; // determine if mem_d has been initialized
-	mem_needs_init_mp = mem_needs_init_mp_crit; // determine if mem_mp has been initialized
+	BED->crit_memory.set_globals_to_this();
 	
 	
 	offset = BED->randomizer_matrix->rows; //y0
@@ -1362,12 +1316,7 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
 	// done with evaluation, so set these to NULL to prevent accidental deletion of the data.
 	
-	mem_d = NULL;
-	mem_mp = NULL;
-	size_d = NULL;  // size of mem_d
-	size_mp = NULL;  // size of mem_mp
-	mem_needs_init_d = NULL; // determine if mem_d has been initialized
-	mem_needs_init_mp = NULL; // determine if mem_mp has been initialized
+	BED->crit_memory.set_globals_null();
 	
 	
 	
@@ -1557,7 +1506,7 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 //	print_matrix_to_screen_matlab( AtimesJ,"jac");
 //	print_point_to_screen_matlab(curr_mid_vars,"currxvars");
 		print_point_to_screen_matlab(current_variable_values,"curr_vars");
-//		print_point_to_screen_matlab(funcVals,"F_mp");
+		print_point_to_screen_matlab(funcVals,"F_mp");
 		print_matrix_to_screen_matlab(Jv,"Jv");
 		print_matrix_to_screen_matlab(Jp,"Jp");
 		
@@ -1840,12 +1789,7 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 	
 	// the main evaluations for $x$
 	
-	mem_d = mem_d_mid;
-	mem_mp = mem_mp_mid;
-	size_d = size_d_mid;  // size of mem_d
-	size_mp = size_mp_mid;  // size of mem_mp
-	mem_needs_init_d = mem_needs_init_d_mid; // determine if mem_d has been initialized
-	mem_needs_init_mp = mem_needs_init_mp_mid; // determine if mem_mp has been initialized
+	BED->mid_memory.set_globals_to_this();
 	
 	
 	// for midpoint functions
@@ -1860,12 +1804,7 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 		set_d(&f_terminal->coord[ii], &temp_function_values->coord[ii]);
 	
 	
-	mem_d = mem_d_crit;
-	mem_mp = mem_mp_crit;
-	size_d = size_d_crit;  // size of mem_d
-	size_mp = size_mp_crit;  // size of mem_mp
-	mem_needs_init_d = mem_needs_init_d_crit; // determine if mem_d has been initialized
-	mem_needs_init_mp = mem_needs_init_mp_crit; // determine if mem_mp has been initialized
+	BED->crit_memory.set_globals_to_this();
 	
 	
 
@@ -1915,12 +1854,7 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 	
 	// the main evaluations for $x$
 	
-	mem_d = mem_d_mid;
-	mem_mp = mem_mp_mid;
-	size_d = size_d_mid;  // size of mem_d
-	size_mp = size_mp_mid;  // size of mem_mp
-	mem_needs_init_d = mem_needs_init_d_mid; // determine if mem_d has been initialized
-	mem_needs_init_mp = mem_needs_init_mp_mid; // determine if mem_mp has been initialized
+	BED->mid_memory.set_globals_to_this();
 	
 	
 	// for midpoint functions
@@ -1935,12 +1869,7 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 		set_d(&f_prev->coord[ii], &temp_function_values->coord[ii]);
 	
 	
-	mem_d = mem_d_crit;
-	mem_mp = mem_mp_crit;
-	size_d = size_d_crit;  // size of mem_d
-	size_mp = size_mp_crit;  // size of mem_mp
-	mem_needs_init_d = mem_needs_init_d_crit; // determine if mem_d has been initialized
-	mem_needs_init_mp = mem_needs_init_mp_crit; // determine if mem_mp has been initialized
+	BED->crit_memory.set_globals_to_this();
 	
 	
 	offset += temp_function_values->size; //y0
@@ -1963,12 +1892,7 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 		set_d(&f_prev->coord[ii+offset], &temp_function_values->coord[ii]);
 
 
-	mem_d = NULL;
-	mem_mp = NULL;
-	size_d = NULL;  // size of mem_d
-	size_mp = NULL;  // size of mem_mp
-	mem_needs_init_d = NULL; // determine if mem_d has been initialized
-	mem_needs_init_mp = NULL; // determine if mem_mp has been initialized
+	BED->crit_memory.set_globals_null();
 	
 	
 	
@@ -2098,12 +2022,7 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	
 	// the main evaluations for $x$
 	
-	mem_d = mem_d_mid;
-	mem_mp = mem_mp_mid;
-	size_d = size_d_mid;  // size of mem_d
-	size_mp = size_mp_mid;  // size of mem_mp
-	mem_needs_init_d = mem_needs_init_d_mid; // determine if mem_d has been initialized
-	mem_needs_init_mp = mem_needs_init_mp_mid; // determine if mem_mp has been initialized
+	BED->mid_memory.set_globals_to_this();
 	
 	
 	// for midpoint functions
@@ -2118,12 +2037,7 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 		set_mp(&f_terminal->coord[ii], &temp_function_values->coord[ii]);
 	
 	
-	mem_d = mem_d_crit;
-	mem_mp = mem_mp_crit;
-	size_d = size_d_crit;  // size of mem_d
-	size_mp = size_mp_crit;  // size of mem_mp
-	mem_needs_init_d = mem_needs_init_d_crit; // determine if mem_d has been initialized
-	mem_needs_init_mp = mem_needs_init_mp_crit; // determine if mem_mp has been initialized
+	BED->crit_memory.set_globals_to_this();
 	
 	
 	
@@ -2177,12 +2091,7 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	
 	// the main evaluations for $x$
 	
-	mem_d = mem_d_mid;
-	mem_mp = mem_mp_mid;
-	size_d = size_d_mid;  // size of mem_d
-	size_mp = size_mp_mid;  // size of mem_mp
-	mem_needs_init_d = mem_needs_init_d_mid; // determine if mem_d has been initialized
-	mem_needs_init_mp = mem_needs_init_mp_mid; // determine if mem_mp has been initialized
+	BED->mid_memory.set_globals_to_this();
 	
 	
 	// for midpoint functions
@@ -2197,12 +2106,7 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 		set_mp(&f_prev->coord[ii], &temp_function_values->coord[ii]);
 	
 	
-	mem_d = mem_d_crit;
-	mem_mp = mem_mp_crit;
-	size_d = size_d_crit;  // size of mem_d
-	size_mp = size_mp_crit;  // size of mem_mp
-	mem_needs_init_d = mem_needs_init_d_crit; // determine if mem_d has been initialized
-	mem_needs_init_mp = mem_needs_init_mp_crit; // determine if mem_mp has been initialized
+	BED->crit_memory.set_globals_to_this();
 	
 	
 	offset += temp_function_values->size; //y0
@@ -2225,12 +2129,7 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 		set_mp(&f_prev->coord[ii+offset], &temp_function_values->coord[ii]);
 	
 	
-	mem_d = NULL;
-	mem_mp = NULL;
-	size_d = NULL;  // size of mem_d
-	size_mp = NULL;  // size of mem_mp
-	mem_needs_init_d = NULL; // determine if mem_d has been initialized
-	mem_needs_init_mp = NULL; // determine if mem_mp has been initialized
+	BED->crit_memory.set_globals_null();
 
 	
 	

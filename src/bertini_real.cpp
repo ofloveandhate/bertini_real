@@ -66,7 +66,6 @@ int main(int argC, char *args[])
 	
 	
 	
-	
 	if (program_options.is_head()) {
 		
 		ubermaster_process current_process(program_options, solve_options);

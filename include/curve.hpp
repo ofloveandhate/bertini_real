@@ -105,19 +105,6 @@ public:
 	
 	
 	
-	
-	bool is_degenerate()
-	{
-		if (num_edges==1) {
-			if (edges[0].left == edges[0].right) // can it be otherwise?
-				return true;
-			else
-				return false;
-		}
-		else
-			return false;
-	}
-	
 	int edge_w_midpt(int ind)
 	{
 		
@@ -127,7 +114,7 @@ public:
 			}
 		}
 
-		return -1;
+		return -10;
 	}
 	
 	
@@ -140,7 +127,7 @@ public:
 			}
 		}
 		
-		return -1;
+		return -11;
 	}
 	int edge_w_right(int ind)
 	{
@@ -151,7 +138,7 @@ public:
 			}
 		}
 		
-		return -1;
+		return -12;
 	}
 	
 	
@@ -178,7 +165,7 @@ public:
 	 \param	solve_options			structure holding options to pass to a solver.
 	 
 	 */
-	void 	computeCurveNotSelfConj(witness_set		& W,
+	void 	computeCurveNotSelfConj(const witness_set		& W,
 																vec_mp				pi,
 																vertex_set		&V,
 																int						num_vars,
@@ -199,7 +186,7 @@ public:
 	 \param options program configuration.
 	 \param solve_options solver configuration.
 	 */
-	void computeCurveSelfConj(witness_set & W,
+	void computeCurveSelfConj(const witness_set & W,
 														vec_mp *pi,
 														vertex_set &V,
 														int num_vars,
@@ -208,12 +195,12 @@ public:
 	
 	
 	
-	int interslice(witness_set & W_curve,
-								 witness_set & W_crit_real,
+	int interslice(const witness_set & W_curve,
+								 const witness_set & W_crit_real,
 								 mat_mp randomizer_matrix,
 								 vec_mp *pi,
 								 BR_configuration & program_options,
-								 solver_configuration solve_options,
+								 solver_configuration & solve_options,
 								 vertex_set & V);
 }; // end curve_decomposition
 
@@ -255,7 +242,7 @@ void 	diag_homotopy_input_file(boost::filesystem::path outputFile,
  \param W the input witness set
  */
 void 	diag_homotopy_start_file(boost::filesystem::path startFile,
-															 witness_set & W);
+															 const witness_set & W);
 
 
 
@@ -265,18 +252,18 @@ void 	diag_homotopy_start_file(boost::filesystem::path startFile,
 
 
 
-int curve_compute_critical_points(witness_set & W_curve,
+int curve_compute_critical_points(const witness_set & W_curve,
 																	mat_mp randomizer_matrix,
-																	int *randomized_degrees,
+																	std::vector<int> randomized_degrees,
 																	vec_mp *pi,
 																	BR_configuration & program_options,
-																	solver_configuration solve_options,
+																	solver_configuration & solve_options,
 																	witness_set & W_crit_real);
 /**
  the linprodtodetjac method for getting the critical points
  */
 int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
-																 witness_set & W,
+																 const witness_set & W,
 																 mat_mp n_minusone_randomizer_matrix,
 																 vec_mp pi,
 																 int num_new_linears,
@@ -287,10 +274,10 @@ int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
 
 
 int curve_get_additional_critpts(witness_set *W_crit_real,
-																 witness_set & W,
+																 const witness_set & W,
 																 mat_mp randomizer_matrix,
 																 vec_mp pi,
-																 int *randomized_degrees,
+																 std::vector<int> randomized_degrees,
 																 BR_configuration & program_options,
 																 solver_configuration & solve_options);
 
@@ -321,10 +308,6 @@ int curve_get_additional_critpts(witness_set *W_crit_real,
 int get_sum_degrees(char filename[], int num_funcs);
 
 
-void sort_for_membership(char * input_file,
-												 witness_set *W_out,
-												 witness_set & W_in,
-												 char *stifle_text);
 
 
 
@@ -334,13 +317,13 @@ void sort_for_membership(char * input_file,
 
 
 
-int verify_projection_ok(witness_set & W,
-												 vec_mp projection,
+int verify_projection_ok(const witness_set & W,
+												 vec_mp * projection,
 												 solver_configuration & solve_options);
 
-int verify_projection_ok(witness_set & W,
+int verify_projection_ok(const witness_set & W,
 												 mat_mp randomizer_matrix,
-												 vec_mp projection,
+												 vec_mp * projection,
 												 solver_configuration & solve_options);
 
 

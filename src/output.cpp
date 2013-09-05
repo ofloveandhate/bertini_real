@@ -3,40 +3,7 @@
 
 
 
-void Output_Main(BR_configuration program_options, decomposition & D, vertex_set & V)
-{
 
-	FILE *OUT;
-	std::stringstream converter;
-	converter << "_dim_" << D.dimension << "_comp_" << D.component_num;
-	boost::filesystem::path base = program_options.output_dir;
-	base += converter.str();
-	converter.clear(); converter.str("");
-
-	boost::filesystem::remove_all(base);
-	boost::filesystem::create_directory(base);
-	
-
-	copyfile("witness_data",base / "witness_data");
-	
-	copyfile(program_options.witness_set_filename, base / "witness_set");
-	
-	
-// TODO:  this should be a write call, not a copy ?
-	copyfile(program_options.input_deflated_filename, base / program_options.input_deflated_filename.filename());
-
-
-	V.print(base / "V.vertex");
-	
-	D.print(base);
-	
-	OUT = safe_fopen_write("Dir_Name");
-	fprintf(OUT,"%s\n",base.c_str());
-	fprintf(OUT,"%d\n",program_options.MPType);
-	fclose(OUT);
-	
-	
-}
 
 
 

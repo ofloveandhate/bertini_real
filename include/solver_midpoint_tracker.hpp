@@ -26,29 +26,6 @@
 #include "programConfiguration.hpp"
 #include "postProcessing.hpp"
 
-extern _comp_d  **mem_d;
-extern _comp_mp **mem_mp;
-extern int *size_d;  // size of mem_d
-extern int *size_mp;  // size of mem_mp
-extern int *mem_needs_init_d; // determine if mem_d has been initialized
-extern int *mem_needs_init_mp; // determine if mem_mp has been initialized
-
-extern _comp_d  **mem_d_mid;
-extern _comp_mp **mem_mp_mid;
-extern int *size_d_mid;  // size of mem_d
-extern int *size_mp_mid;  // size of mem_mp
-extern int *mem_needs_init_d_mid; // determine if mem_d has been initialized
-extern int *mem_needs_init_mp_mid; // determine if mem_mp has been initialized
-
-extern _comp_d  **mem_d_crit;
-extern _comp_mp **mem_mp_crit;
-extern int *size_d_crit;	// size of mem_d
-extern int *size_mp_crit;  // size of mem_mp
-extern int *mem_needs_init_d_crit; // determine if mem_d has been initialized
-extern int *mem_needs_init_mp_crit; // determine if mem_mp has been initialized
-
-
-
 
 
 
@@ -64,11 +41,34 @@ class midpoint_config
 public:
 	
 	
+	SLP_global_pointers crit_memory;
+	SLP_global_pointers mid_memory;
+	
+//	_comp_d  **mem_d_mid;
+//	_comp_mp **mem_mp_mid;
+//	int *size_d_mid;  // size of mem_d
+//	int *size_mp_mid;  // size of mem_mp
+//	int *mem_needs_init_d_mid; // determine if mem_d has been initialized
+//	int *mem_needs_init_mp_mid; // determine if mem_mp has been initialized
+//	
+//	_comp_d  **mem_d_crit;
+//	_comp_mp **mem_mp_crit;
+//	int *size_d_crit;	// size of mem_d
+//	int *size_mp_crit;  // size of mem_mp
+//	int *mem_needs_init_d_crit; // determine if mem_d has been initialized
+//	int *mem_needs_init_mp_crit; // determine if mem_mp has been initialized
+	
+	// these are all merely pointers, and should only be assigned to memory set by the SLP creation routine inside of setupProg(), by the midpoint_config::setup() call
+	
+	prog_t *SLP_crit;
+	prog_t *SLP_face; // will hold a pointer to the SLP. will pass this pointer to the BED class member
+	
+	
 	mat_mp randomizer_matrix_crit, randomizer_matrix;
 	
-	int num_mid_vars;  //set by setup
-	int num_crit_vars;//set by setup
-	int num_variables;//set by setup
+	int num_mid_vars;  //the number of variables (incl homogenizing) of midpoint.  set by setup
+	int num_crit_vars;//the number of variables (incl homogenizing) of each edge point.  set by setup
+	int num_variables;//the number of variables (incl homogenizing) of midpoint.  set by setup
 
 	//patch already lives in the base class.
 	
@@ -78,13 +78,17 @@ public:
 	comp_mp crit_val_left;// set during the loop in connect the dots
 	comp_mp crit_val_right;// set during the loop in connect the dots
 	
-	prog_t *SLP_crit;
-	prog_t *SLP_face; // will hold a pointer to the SLP. will pass this pointer to the BED class member
+	int MPType;
 	
 	
 	midpoint_config(){
 		init();
 	}
+	
+	~midpoint_config(){
+		clear();
+	}
+	
 	
 	midpoint_config & operator=(const midpoint_config & other)
 	{
@@ -105,6 +109,13 @@ public:
 	
 
 	void copy(const midpoint_config & other){
+		
+		this->MPType = other.MPType;
+		
+		this->crit_memory = other.crit_memory;
+		this->mid_memory = other.mid_memory;
+		
+		
 		
 		mat_cp_mp(randomizer_matrix, other.randomizer_matrix);
 		mat_cp_mp(randomizer_matrix_crit, other.randomizer_matrix_crit);
@@ -128,6 +139,7 @@ public:
 	
 	void clear()
 	{
+		std::cout << "clearing md_confug" << std::endl;
 		clear_mat_mp(randomizer_matrix_crit);
 		clear_mat_mp(randomizer_matrix);
 		
@@ -137,6 +149,8 @@ public:
 		clear_mp(crit_val_right);
 		
 		//also put in clearing stuff for the SLP's here.
+		clearProg(this->SLP_face, this->MPType, 1); // 1 means call freeprogeval()
+		clearProg(this->SLP_crit, this->MPType, 1); // 1 means call freeprogeval()
 	}
 	
 
@@ -172,8 +186,14 @@ public:
 	int num_mid_vars;
 	int num_crit_vars;
 	
+	SLP_global_pointers crit_memory;
+	SLP_global_pointers mid_memory;
+	
+	// these are all merely pointers, and should only be assigned to memory set by the SLP creation routine inside of setupProg(), by the midpoint_config::setup() call
+	
+	
 	prog_t *SLP_crit;
-	prog_t *SLP_face;
+	prog_t *SLP_face; // these are to be freed by the midpoint_setup object.
 	
 	vec_mp *pi;
 	int num_projections;
@@ -314,8 +334,6 @@ public:
 	{
 		
 		
-		
-		
 		if (this->num_projections>0) {
 			for (int ii=0; ii<num_projections; ii++) {
 				clear_vec_mp(pi[ii]);
@@ -323,7 +341,6 @@ public:
 			free(pi);
 		}
 		
-		clearProg(SLP_crit, this->MPType, 0);
 	} // re: clear
 	
 	void init(); // in the .cpp file
@@ -336,23 +353,11 @@ public:
 		this->num_mid_vars = other.num_mid_vars;
 		this->num_crit_vars = other.num_crit_vars;
 		
-		//		if (other.have_SLP) {
-		//
-		//			if (this->have_SLP) {
-		//				clearProg(this->SLP, this->MPType, 1);
-		//			}
-		//
-		cp_prog_t(this->SLP_face, other.SLP_face);
-		cp_prog_t(this->SLP_crit, other.SLP_crit);
-		//			this->have_SLP = true;
-		//		}
-		//		else if (this->have_SLP) {
-		//			clearProg(this->SLP, this->MPType, 1);
-		//		}
+		this->crit_memory = other.crit_memory;
+		this->mid_memory = other.mid_memory;
 		
-		
-		
-		
+		this->SLP_face = other.SLP_face;
+		this->SLP_crit = other.SLP_crit;
 		
 		for (int ii=0; ii<other.num_projections; ii++) {
 			if (other.MPType==2) {
@@ -416,6 +421,10 @@ public:
 	
 	int num_mid_vars;
 	int num_crit_vars;
+	
+	
+	SLP_global_pointers crit_memory;
+	SLP_global_pointers mid_memory;
 	
 	prog_t *SLP_crit;
 	prog_t *SLP_face;
@@ -553,6 +562,10 @@ private:
 	
 	void clear()
 	{
+		
+		free(SLP_crit);
+		free(SLP_face);
+		
 		//yeah, there's some stuff to clear here.
 		if (this->MPType==2) {
 			
@@ -571,19 +584,13 @@ private:
 		this->num_mid_vars = other.num_mid_vars;
 		this->num_crit_vars = other.num_crit_vars;
 		
-		//		if (other.have_SLP) {
-		//
-		//			if (this->have_SLP) {
-		//				clearProg(this->SLP, this->MPType, 1);
-		//			}
-		//
-		cp_prog_t(this->SLP_face, other.SLP_face); // do these depend on having the global pointers set correctly?
-		cp_prog_t(this->SLP_crit, other.SLP_crit);
-		//			this->have_SLP = true;
-		//		}
-		//		else if (this->have_SLP) {
-		//			clearProg(this->SLP, this->MPType, 1);
-		//		}
+		this->crit_memory = other.crit_memory;
+		this->mid_memory = other.mid_memory;
+		
+		
+		this->SLP_face = other.SLP_face;
+		this->SLP_crit = other.SLP_crit;
+
 		
 		for (int ii=0; ii<other.num_projections; ii++) {
 			add_projection(other.pi[ii]);

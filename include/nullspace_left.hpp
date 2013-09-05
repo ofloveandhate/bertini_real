@@ -194,10 +194,10 @@ public:
  \param solve_options					holds the configuration for any solvers called.  is a pointer so that it is mutable.
  */
 int compute_crit_nullspace(witness_set *W_crit_real, // the returned value
-													 witness_set & W,
+													 const witness_set & W,
 													 mat_mp randomizer_matrix,
 													 vec_mp *pi,
-													 int *randomized_degrees,
+													 std::vector< int> randomized_degrees,
 													 int ambient_dim,
 													 int target_dim, // this should also be the number of vectors in the *pi entry
 													 int target_crit_dim,
@@ -224,9 +224,9 @@ void nullspace_config_setup(nullspace_config *ns_config,
 														int target_dim,
 														int target_crit_codim,
 														int *max_degree, // a pointer to the value
-														int *randomized_degrees, // an array of randomized degrees
+														std::vector< int > randomized_degrees, // an array of randomized degrees
 														mat_mp randomizer_matrix,
-														witness_set & W,
+														const witness_set & W,
 														solver_configuration & solve_options);
 
 

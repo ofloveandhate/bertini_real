@@ -2,6 +2,9 @@
 
 
 
+
+
+
 void adjust_tracker_AMP(tracker_config_t * T, int num_variables)
 {
 		T->AMP_eps = (double) num_variables * num_variables;  //According to Demmel (as in the AMP paper), n^2 is a very reasonable bound for \epsilon.
@@ -248,7 +251,7 @@ void get_tracker_config(solver_configuration & solve_options,int MPType)
 	
 	//necessary for the setupConfig call
 	double intrinsicCutoffMultiplier;
-	int userHom = 0, useRegen = 0, regenStartLevel = 0, maxCodim = 0, specificCodim = 0, pathMod = 0, reducedOnly = 0, supersetOnly = 0, paramHom = 0;
+	int userHom = 0, useRegen = 0, regenStartLevel = 0, maxCodim = 0, specificCodim = 0, reducedOnly = 0, supersetOnly = 0, paramHom = 0;
 	//end necessaries for the setupConfig call.
 	int constructWitnessSet = 0;
 	
@@ -259,7 +262,7 @@ void get_tracker_config(solver_configuration & solve_options,int MPType)
 							&regenStartLevel,
 							&maxCodim,
 							&specificCodim,
-							&pathMod,
+							&solve_options.path_number_modulus,
 							&intrinsicCutoffMultiplier,
 							&reducedOnly,
 							&constructWitnessSet,
@@ -267,7 +270,7 @@ void get_tracker_config(solver_configuration & solve_options,int MPType)
 							&paramHom,
 							MPType);
 	
-//	if (solve_options.T.final_tolerance > solve_options.T.real_threshold) 
+//	if (solve_options.T.final_tolerance > solve_options.T.real_threshold)
 		solve_options.T.real_threshold = 1e-6;
 	
 	
@@ -413,7 +416,7 @@ void generic_solver_master(witness_set * W_new, witness_set & W,
  
  */
 void generic_set_start_pts(point_data_d ** startPts,
-													 witness_set & W)
+													 const witness_set & W)
 {
 	int ii; // counters
 	
@@ -436,7 +439,7 @@ void generic_set_start_pts(point_data_d ** startPts,
 
 
 void generic_set_start_pts(point_data_mp ** startPts,
-													 witness_set & W)
+													 const witness_set & W)
 {
 	int ii; // counters
 	
@@ -524,7 +527,7 @@ void generic_tracker_loop(trackingStats *trackCount,
 	
 	for (int ii = 0; ii < W.num_pts; ii++)
 	{
-		if (solve_options.verbose_level>=0)
+		if ((solve_options.verbose_level>=0) && ((ii%(solve_options.path_number_modulus))==0))
 			printf("tracking path %d of %d\n",ii,W.num_pts);
 		
 		if (solve_options.T.MPType==2) {
@@ -580,7 +583,7 @@ void generic_tracker_loop(trackingStats *trackCount,
 			
 			trackCount->failures++;
 			
-			if (solve_options.verbose_level>=1) {
+			if (solve_options.verbose_level>=3) {
 
 				printf("\nthere was a path failure nullspace_left tracking witness point %d\nretVal = %d; issoln = %d\n",ii,EG.retVal, issoln);
 				
@@ -628,33 +631,6 @@ void generic_tracker_loop_master(trackingStats *trackCount,
 																 solver_d * ED_d, solver_mp * ED_mp,
 																 solver_configuration & solve_options)
 {
-	
-	
-	
-	std::cout << "master in generic tracker loop" << std::endl;
-	
-	
-	int (*curr_eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *) = NULL;
-  int (*curr_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = NULL;
-	int (*change_prec)(void const *, int) = NULL;
-	int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *) = NULL;
-	
-	switch (solve_options.T.MPType) {
-		case 0:
-			curr_eval_d = ED_d->evaluator_function_d;
-			curr_eval_mp = ED_d->evaluator_function_mp;
-			change_prec = ED_d->precision_changer;
-			find_dehom = ED_d->dehomogenizer;
-			break;
-			
-		default:
-			curr_eval_d = ED_mp->evaluator_function_d;
-			curr_eval_mp = ED_mp->evaluator_function_mp;
-			change_prec = ED_mp->precision_changer;
-			find_dehom = ED_mp->dehomogenizer;
-			break;
-			
-	}
 	
 	
 	point_data_d *startPts_d = NULL;
@@ -1311,6 +1287,12 @@ void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W)
 		deliberate_segfault();
 	}
 	
+//	for (int jj=0; jj<W.num_patches; jj++) {
+//		print_point_to_screen_matlab(W.patch_mp[jj],"patch_jj");
+//	}
+//	std::cout << "W.num_variables " << W.num_variables << std::endl;
+//	print_matrix_to_screen_matlab(P->patchCoeff, "patch_mat");
+	
 	
 	int varcounter = 0;
 	for (int jj=0; jj<W.num_patches; jj++) {
@@ -1349,7 +1331,7 @@ int generic_setup_files(FILE ** OUT, boost::filesystem::path outname,
 
 void get_projection(vec_mp *pi,
 										BR_configuration program_options,
-										solver_configuration solve_options,
+										const solver_configuration & solve_options,
 										int num_vars,
 										int num_projections)
 {

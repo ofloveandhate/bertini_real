@@ -1277,7 +1277,8 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 												ED_d, ED_mp,
 												solve_options);
 	
-		
+	
+	clearProg(&SLP, solve_options.T.MPType, 1); // 1 means call freeprogeval()
   return SUCCESSFUL;
 
 }

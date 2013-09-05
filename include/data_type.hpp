@@ -31,6 +31,7 @@
 #include "fileops.hpp"
 
 
+class BR_configuration; // a forward declaration
 
 /*** low-level data types. ***/
 
@@ -131,7 +132,7 @@ public:
 	
 	~witness_set(){ // the destructor
 		
-		reset();
+		clear();
 		
 	};
 	
@@ -176,6 +177,7 @@ public:
 	
 	void copy(const witness_set & other)
 	{
+		this->input_filename = other.input_filename;
 
 		this->dim = other.dim;
 		this->comp_num = other.comp_num;
@@ -207,6 +209,15 @@ public:
 	
 	void reset()
 	{
+//		std::cout << "resetting witness set" << std::endl;
+		clear();
+	};
+	
+	
+	
+	void clear()
+	{
+		
 		reset_names();
 		
 		reset_points();
@@ -216,7 +227,8 @@ public:
 		reset_patches();
 		
 		init();
-	};
+//		std::cout << "clearing witness set" << std::endl;
+	}
 	
 	
 	void reset_names()
@@ -271,9 +283,9 @@ public:
 	void add_point(vec_mp new_point);
 	void add_linear(vec_mp new_linear);
 	
-	void cp_names(witness_set & W_in);
-	void cp_linears(witness_set & W_in);
-	void cp_patches(witness_set & W_in);
+	void cp_names(const witness_set & W_in);
+	void cp_linears(const witness_set & W_in);
+	void cp_patches(const witness_set & W_in);
 	
 	
 	void merge(const witness_set & W_in);///< merges W_in into this
@@ -282,9 +294,8 @@ public:
 	void get_variable_names(); ///< reads variable names from names.out
 	
 	
-	void print_to_screen(); ///< prints some information about the witness set to the screen
+	void print_to_screen() const; ///< prints some information about the witness set to the screen
 	
-	void print_to_file();
 	
 	
 	/**
@@ -292,24 +303,24 @@ public:
 	 
 	 \param filename the name of the file to be written.
 	 */
-	void write_linears(boost::filesystem::path filename);
+	void write_linears(boost::filesystem::path filename) const;
 	
 	/**
 	 writes the patches in point form to file filename
 	 
 	 \param filename the name of the file to be written.
 	 */
-	void print_patches(boost::filesystem::path filename);
+	void print_patches(boost::filesystem::path filename) const;
 	void read_patches_from_file(boost::filesystem::path filename);
 	
 	
-	void write_homogeneous_coordinates(boost::filesystem::path filename);
-	void write_dehomogenized_coordinates(boost::filesystem::path filename);
+	void write_homogeneous_coordinates(boost::filesystem::path filename) const;
+	void write_dehomogenized_coordinates(boost::filesystem::path filename) const;
 	
 	void compute_downstairs_crit_midpts(vec_mp crit_downstairs,
 																			vec_mp midpoints_downstairs,
 																			std::vector< int > & index_tracker,
-																			vec_mp pi);
+																			vec_mp pi) const;
 };
 // end the double types
 
@@ -538,6 +549,15 @@ public:
 	
 	// other defaults are correct for this type.
 	
+	bool is_degenerate()
+	{
+		if ((left == right) || (left==midpt) || (right==midpt))
+			return true;
+		else
+			return false;
+	}
+	
+	
 };
 
 
@@ -558,6 +578,7 @@ public:
 	std::map< int , int > counters;
 	std::map< int , std::vector< int > > indices;
 	
+	
 	int num_variables;
 	int dimension;
 	int component_num;
@@ -565,7 +586,7 @@ public:
 	int num_curr_projections;
 	vec_mp	*pi; // the projections
 	
-	
+	std::vector< int > randomized_degrees;
 	mat_mp randomizer_matrix;
 	
 	int num_patches;
@@ -601,6 +622,8 @@ public:
 	
 	void clear()
 	{
+		randomized_degrees.clear();
+		
 		if (num_curr_projections>0){
 			for (int ii=0; ii<num_curr_projections; ii++)
 				clear_vec_mp(pi[ii]);
@@ -668,10 +691,13 @@ public:
 	virtual void print(boost::filesystem::path outputfile);
 	
 	void init(){
+		input_filename = "unset";
 		pi = NULL;
 		patch = NULL;
 		init_mat_mp2(randomizer_matrix, 0, 0,1024);
 		randomizer_matrix->rows = randomizer_matrix->cols = 0;
+		
+		randomized_degrees.clear();
 		
 		num_curr_projections = num_patches = 0;
 		num_variables = 0;
@@ -681,7 +707,7 @@ public:
 	
 	void copy(const decomposition & other)
 	{
-		
+		this->randomized_degrees = other.randomized_degrees;
 		
 		
 		this->input_filename = other.input_filename;
@@ -716,7 +742,7 @@ public:
 		}
 	}
 	
-
+	void output_main(const BR_configuration & program_options, vertex_set & V);
 	
 }; // end decomposition
 
@@ -799,7 +825,7 @@ void cp_preproc_data(preproc_data *PPD, preproc_data PPD_input);
 
 void sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & index_tracker, vec_mp projections_input);
 
-void make_randomization_matrix_based_on_degrees(mat_mp randomization_matrix, int ** randomized_degrees,
+void make_randomization_matrix_based_on_degrees(mat_mp randomization_matrix, std::vector< int > & randomized_degrees,
 																								int num_variables, int num_funcs);
 int compare_integers_decreasing(const void * left_in, const void * right_in);
 

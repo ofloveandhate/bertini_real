@@ -107,7 +107,7 @@ typedef struct
 /** the main function for finding critical conditions WRT a projection
  */
 int lintolin_solver_main(int MPType,
-													 witness_set & W,
+													 const witness_set & W,
 													 mat_mp randomizer_matrix_full_prec,
 													 vec_mp *new_linears_full_prec,
 													 int num_new_linears,
@@ -118,7 +118,7 @@ int lintolin_solver_main(int MPType,
 
 
 int lintolin_solver_d(int MPType,
-												witness_set & W,  // should include the old linear
+												const witness_set & W,  // should include the old linear
 												mat_mp randomizer_matrix_full_prec,
 												vec_mp *new_linears_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 												int num_new_linears,
@@ -129,7 +129,7 @@ int lintolin_solver_d(int MPType,
 
 void lintolin_track_d(trackingStats *trackCount,
 												FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
-												witness_set & W,
+												const witness_set & W,
 												vec_mp *new_linears_full_prec,
 												int num_new_linears,
 												post_process_t *endPoints,
@@ -162,7 +162,7 @@ int lintolin_setup_d(FILE **OUT, boost::filesystem::path outName,
 										 boost::filesystem::path preprocFile, boost::filesystem::path degreeFile,
 										 int findStartPts, boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
 										 mat_mp randomizer_matrix_full_prec,
-										 witness_set & W,
+										 const witness_set & W,
 										 solver_configuration & solve_options);
 
 //the new custom evaluator for this solver
@@ -197,7 +197,7 @@ void setuplintolinEval_d(tracker_config_t *T,
 											 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
 											 lintolin_eval_data_d *BED, int adjustDegrees,
 												 mat_mp randomizer_matrix_full_prec,
-												 witness_set & W,
+												 const witness_set & W,
 												 solver_configuration & solve_options);
 
 
@@ -216,7 +216,7 @@ int change_lintolin_eval_prec(void const *ED, int prec);
 
 
 int lintolin_solver_mp(int MPType,
-												 witness_set & W,  // includes the initial linear.
+												 const witness_set & W,  // includes the initial linear.
 												 mat_mp randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
 												 vec_mp *new_linears_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
 												 int num_new_linears,
@@ -225,7 +225,7 @@ int lintolin_solver_mp(int MPType,
 
 void lintolin_track_mp(trackingStats *trackCount,
 												 FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
-												 witness_set & W,
+												 const witness_set & W,
 												 vec_mp *new_linears_full_prec,
 												 int num_new_linears,
 												 post_process_t *endPoints,
@@ -260,7 +260,7 @@ int lintolin_setup_mp(FILE **OUT, boost::filesystem::path outName,
 											boost::filesystem::path preprocFile, boost::filesystem::path degreeFile,
 											int findStartPts, boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
 											mat_mp randomizer_matrix,
-											witness_set & W,
+											const witness_set & W,
 											solver_configuration & solve_options);
 
 int lintolin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED);
@@ -281,7 +281,7 @@ void setuplintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *dummyPr
 													void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
 													lintolin_eval_data_mp *BED, int adjustDegrees,
 													mat_mp randomizer_matrix_full_prec,
-													witness_set & W,
+													const witness_set & W,
 													solver_configuration & solve_options);
 
 

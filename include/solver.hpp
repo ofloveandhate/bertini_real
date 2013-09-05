@@ -30,6 +30,109 @@
 //////////
 
 
+extern _comp_d  **mem_d;
+extern _comp_mp **mem_mp;
+extern int *size_d;  // size of mem_d
+extern int *size_mp;  // size of mem_mp
+extern int *mem_needs_init_d; // determine if mem_d has been initialized
+extern int *mem_needs_init_mp; // determine if mem_mp has been initialized
+
+
+class SLP_global_pointers
+{
+public:
+	
+	void capture_globals()
+	{
+		
+		local_mem_d = mem_d;
+		local_mem_mp = mem_mp;
+		local_size_d = size_d;  // size of mem_d
+		local_size_mp = size_mp;  // size of mem_mp
+		local_mem_needs_init_d = mem_needs_init_d; // determine if mem_d has been initialized
+		local_mem_needs_init_mp = mem_needs_init_mp; // determine if mem_mp has been initialized
+	}
+	
+	
+	void set_globals_to_this()
+	{
+		mem_d							= local_mem_d;
+		mem_mp						= local_mem_mp;
+		size_d						= local_size_d;  // size of mem_d
+		size_mp						= local_size_mp;  // size of mem_mp
+		mem_needs_init_d	= local_mem_needs_init_d; // determine if mem_d has been initialized
+		mem_needs_init_mp = local_mem_needs_init_mp; // determine if mem_mp has been initialized
+	}
+	
+	void set_globals_null()
+	{
+		mem_d							= NULL;
+		mem_mp						= NULL;
+		size_d						= NULL;  // size of mem_d
+		size_mp						= NULL;  // size of mem_mp
+		mem_needs_init_d	= NULL; // determine if mem_d has been initialized
+		mem_needs_init_mp = NULL; // determine if mem_mp has been initialized
+	}
+	
+	
+	
+	
+	SLP_global_pointers()
+	{
+		init();
+	}
+	
+	
+	
+	SLP_global_pointers & operator=( const SLP_global_pointers & other)
+	{
+		init();
+		copy(other);
+		return *this;
+	}
+	
+	SLP_global_pointers(const SLP_global_pointers & other)
+	{
+		init();
+		copy(other);
+	} // re: copy
+	
+	
+
+	
+	_comp_d  **local_mem_d;
+	_comp_mp **local_mem_mp;
+	int *local_size_d;  // size of mem_d
+	int *local_size_mp;  // size of mem_mp
+	int *local_mem_needs_init_d; // determine if mem_d has been initialized
+	int *local_mem_needs_init_mp; // determine if mem_mp has been initialized
+	
+	protected:
+	
+	void init()
+	{
+		local_mem_d = NULL;
+		local_mem_mp = NULL;
+		local_size_d = NULL;  // size of mem_d
+		local_size_mp = NULL;  // size of mem_mp
+		local_mem_needs_init_d = NULL; // determine if mem_d has been initialized
+		local_mem_needs_init_mp = NULL; // determine if mem_mp has been initialized
+	}
+	
+	void copy(const SLP_global_pointers & other)
+	{
+		this->local_mem_d = other.local_mem_d;
+		this->local_mem_mp = other.local_mem_mp;
+		this->local_size_d = other.local_size_d;  // size of mem_d
+		this->local_size_mp = other.local_size_mp;  // size of mem_mp
+		this->local_mem_needs_init_d = other.local_mem_needs_init_d; // determine if mem_d has been initialized
+		this->local_mem_needs_init_mp = other.local_mem_needs_init_mp; // determine if mem_mp has been initialized
+	}
+	
+};
+
+
+
 class solver_configuration : public prog_config
 {
 public:
@@ -42,6 +145,8 @@ public:
 	int allow_singular;
 	int allow_infinite;
 	int allow_unsuccess;
+	
+	int path_number_modulus;
 	
 	int verbose_level;
 	int show_status_summary;
@@ -63,6 +168,19 @@ public:
 		cp_tracker_config_t(&T_orig,&T);
 	}
 	
+	
+	~solver_configuration(){
+//		tracker_config_clear(&this->T);
+//		tracker_config_clear(&this->T_orig);
+//		preproc_data_clear(&this->PPD);
+	}
+	
+	
+	void get_PPD()
+	{
+		parse_preproc_data("preproc_data", &this->PPD);
+	}
+
 };
 
 
@@ -89,6 +207,7 @@ public:
 	int MPType; ///< the multiple precision type for solve
 	preproc_data preProcData; ///< information related to the SLP for system
 	prog_t *SLP; ///< the SLP
+	bool have_SLP;
 	
 	int num_variables; ///< the grand total number of variables to be computed on in the problem at hand 
 	
@@ -136,7 +255,7 @@ public:
 	
 protected:
 	
-	bool have_SLP;
+	
 	
 	void init()
 	{
@@ -167,19 +286,8 @@ protected:
 	void copy(const solver & other){
 		cp_preproc_data(&this->preProcData, other.preProcData);
 		
-		if (other.have_SLP) {
-			
-			if (this->have_SLP) {
-				clearProg(this->SLP, this->MPType, 1);
-			}
-			
-			cp_prog_t(this->SLP, other.SLP);
-			this->have_SLP = true;
-		}
-		else if (this->have_SLP) {
-			clearProg(this->SLP, this->MPType, 1);
-		}
-		
+		this->SLP = other.SLP;
+
 		
 		this->is_solution_checker_d = other.is_solution_checker_d;
 		this->is_solution_checker_mp = other.is_solution_checker_mp;
@@ -396,7 +504,7 @@ protected:
  */
 void get_projection(vec_mp *pi,
 										BR_configuration program_options,
-										solver_configuration solve_options,
+										const solver_configuration & solve_options,
 										int num_vars,
 										int num_projections);
 
@@ -409,10 +517,10 @@ void adjust_tracker_AMP(tracker_config_t * T, int num_variables);
 
 
 void generic_set_start_pts(point_data_d ** startPts,
-													 witness_set & W);
+													 const witness_set & W);
 
 void generic_set_start_pts(point_data_mp ** startPts,
-													 witness_set & W);
+													 const witness_set & W);
 
 void generic_setup_patch(patch_eval_data_d *P, const witness_set & W); // for mp type 0
 void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W);// for my type 2

@@ -1,5 +1,5 @@
 #include "data_type.hpp"
-
+#include "programConfiguration.hpp"
 
 //enum {SUCCESSFUL=0, CRITICAL_FAILURE=-10, TOLERABLE_FAILURE=-1};
 ////The following lets us use words instead of numbers to indicate vertex type.
@@ -352,6 +352,16 @@ void witness_set::add_patch(vec_mp new_patch)
 	
 	this->num_patches++;
 	
+	
+	int numasdf = 0;
+	for (int ii=0; ii<this->num_patches; ii++) {
+		numasdf += this->patch_mp[ii]->size;
+	}
+	
+	if (numasdf>this->num_variables) {
+		std::cout << "added patch " << this->num_patches << ", but put the number of patch vars (" << numasdf << ") higher than set number (" << this->num_variables << ")" << std::endl;
+		deliberate_segfault();
+	}
 	return;
 }
 
@@ -442,7 +452,7 @@ void witness_set::get_variable_names()
 
 
 
-void witness_set::write_homogeneous_coordinates(boost::filesystem::path filename)
+void witness_set::write_homogeneous_coordinates(boost::filesystem::path filename) const
 {
 	int ii,jj;
 	
@@ -464,7 +474,7 @@ void witness_set::write_homogeneous_coordinates(boost::filesystem::path filename
 	return;
 }
 
-void witness_set::write_dehomogenized_coordinates(boost::filesystem::path filename)
+void witness_set::write_dehomogenized_coordinates(boost::filesystem::path filename) const
 {
 	int ii,jj;
 	
@@ -503,7 +513,7 @@ void witness_set::write_dehomogenized_coordinates(boost::filesystem::path filena
 
 
 
-void witness_set::write_linears(boost::filesystem::path filename)
+void witness_set::write_linears(boost::filesystem::path filename) const
 {
 	int ii,jj;
 	
@@ -527,7 +537,7 @@ void witness_set::write_linears(boost::filesystem::path filename)
 
 
 
-void witness_set::print_patches(boost::filesystem::path filename)
+void witness_set::print_patches(boost::filesystem::path filename) const
 {
 	int ii,jj;
 	
@@ -582,7 +592,7 @@ void witness_set::read_patches_from_file(boost::filesystem::path filename)
 
 
 
-void witness_set::print_to_screen()
+void witness_set::print_to_screen() const
 {
 	
 	std::stringstream varname;
@@ -883,7 +893,7 @@ void witness_set::merge(const witness_set & W_in)
 void witness_set::compute_downstairs_crit_midpts(vec_mp crit_downstairs,
 																								 vec_mp midpoints_downstairs,
 																								 std::vector< int > & index_tracker,
-																								 vec_mp pi)
+																								 vec_mp pi) const
 {
 	
 
@@ -931,7 +941,7 @@ void witness_set::compute_downstairs_crit_midpts(vec_mp crit_downstairs,
 
 
 //copies names from old to new
-void witness_set::cp_names(witness_set & W_in)
+void witness_set::cp_names(const witness_set & W_in)
 {
 	
 	if (W_in.num_variables==0) {
@@ -952,7 +962,7 @@ void witness_set::cp_names(witness_set & W_in)
 
 
 //copies the mp and d linears from in to out.
-void witness_set::cp_linears(witness_set & W_in)
+void witness_set::cp_linears(const witness_set & W_in)
 {
 	int ii;
 	
@@ -976,7 +986,7 @@ void witness_set::cp_linears(witness_set & W_in)
 }
 
 
-void witness_set::cp_patches(witness_set & W_in)
+void witness_set::cp_patches(const witness_set & W_in)
 {
 	if (this->num_patches==0)
 		this->patch_mp = (vec_mp *)br_malloc(W_in.num_patches * sizeof(vec_mp));
@@ -1388,7 +1398,39 @@ void decomposition::print(boost::filesystem::path base)
 
 
 
-
+void decomposition::output_main(const BR_configuration & program_options, vertex_set & V)
+{
+	
+	FILE *OUT;
+	std::stringstream converter;
+	converter << "_dim_" << this->dimension << "_comp_" << this->component_num;
+	boost::filesystem::path base = program_options.output_dir;
+	base += converter.str();
+	converter.clear(); converter.str("");
+	
+	boost::filesystem::remove_all(base);
+	boost::filesystem::create_directory(base);
+	
+	
+	copyfile("witness_data",base / "witness_data");
+	
+	copyfile(program_options.witness_set_filename, base / "witness_set");
+	
+	
+	// TODO:  this should be a write call, not a copy ?
+	copyfile(program_options.input_deflated_filename, base / program_options.input_deflated_filename.filename());
+	
+	
+	V.print(base / "V.vertex");
+	
+	this->print(base);
+	
+	OUT = safe_fopen_write("Dir_Name");
+	fprintf(OUT,"%s\n",base.c_str());
+	fprintf(OUT,"%d\n",program_options.MPType);
+	fclose(OUT);
+	
+}
 
 
 
@@ -1584,7 +1626,7 @@ void projection_value_homogeneous_input(comp_d result, vec_d input, vec_d projec
 	}
 	set_d(temp, result);
 	div_d(result, temp, &input->coord[0]);
-	
+//	
 //	if (result->i < 1e-14) {
 //		result->i = 0.0;
 //	}
@@ -1614,9 +1656,9 @@ void projection_value_homogeneous_input(comp_mp result, vec_mp input, vec_mp pro
 	
 //	comp_d temp2;
 //	mp_to_d(temp2, result);
-////	if (temp2->i < 1e-14) {
-////		mpf_set_d(result->i, 0.0);
-////	}
+//	if (temp2->i < 1e-14) {
+//		mpf_set_d(result->i, 0.0);
+//	}
 	
 //	mp_to_d(temp2, result);
 //	if (temp2->r < 1e-13) {
@@ -1637,7 +1679,7 @@ int isSamePoint_inhomogeneous_input(point_d left, point_d right){
 	}
 	
 	
-	int indicator = isSamePoint(left,NULL,52,right,NULL,52,1e-6);
+	int indicator = isSamePoint(left,NULL,52,right,NULL,52,1e-4);
 	
 	
 	return indicator;
@@ -1653,7 +1695,7 @@ int isSamePoint_inhomogeneous_input(point_mp left, point_mp right){
 //		exit(-287);
 	}
 	
-	int indicator = isSamePoint(NULL,left,65,NULL,right,65,1e-6); // make the bertini library call
+	int indicator = isSamePoint(NULL,left,65,NULL,right,65,1e-4); // make the bertini library call
 	
 
 	return indicator;
@@ -1676,7 +1718,7 @@ int isSamePoint_homogeneous_input(point_d left, point_d right){
 	dehomogenize(&dehom_left,left);
 	dehomogenize(&dehom_right,right);
 	
-	int indicator = isSamePoint(dehom_left,NULL,52,dehom_right,NULL,52,1e-6);
+	int indicator = isSamePoint(dehom_left,NULL,52,dehom_right,NULL,52,1e-4);
 	
 	clear_vec_d(dehom_left); clear_vec_d(dehom_right);
 	
@@ -1699,7 +1741,7 @@ int isSamePoint_homogeneous_input(point_mp left, point_mp right){
 	dehomogenize(&dehom_left,left);
 	dehomogenize(&dehom_right,right);
 	
-	int indicator = isSamePoint(NULL,dehom_left,65,NULL,dehom_right,65,1e-6); // make the bertini library call
+	int indicator = isSamePoint(NULL,dehom_left,65,NULL,dehom_right,65,1e-4); // make the bertini library call
 	
 	clear_vec_mp(dehom_left); clear_vec_mp(dehom_right);
 	
@@ -1766,7 +1808,7 @@ void print_matrix_to_screen_matlab(mat_d M, std::string name)
 //			else{
 //				printf("1i*%.8le ",M->entry[kk][jj].i);
 //			}
-			printf("%.8le+1i*%.8le ",M->entry[kk][jj].r,M->entry[kk][jj].i );
+			printf("%.4le+1i*%.4le ",M->entry[kk][jj].r,M->entry[kk][jj].i );
 		}
 		if (kk!= M->rows-1) {
 			printf(";...\n");
@@ -1799,9 +1841,9 @@ void print_matrix_to_screen_matlab(mat_mp M, std::string name)
 
 void print_comp_matlab(comp_mp M, std::string name){
 	printf("%s=",name.c_str());
-	mpf_out_str (NULL, 10, 6, M->r);
+	mpf_out_str (NULL, 10, 4, M->r);
 	printf("+1i*");
-	mpf_out_str (NULL, 10, 6, M->i); // base 10, 6 digits
+	mpf_out_str (NULL, 10, 4, M->i); // base 10, 6 digits
 	printf("\n");
 	return;
 }
@@ -1994,7 +2036,7 @@ void sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & ind
 
 //input the raw number of variables including the homogeneous variable (of which there must be one)
 // assume the array of integers 'randomized_degrees' is already initialized to the correct size.
-void make_randomization_matrix_based_on_degrees(mat_mp randomization_matrix, int ** randomized_degrees, int num_desired_rows, int num_funcs)
+void make_randomization_matrix_based_on_degrees(mat_mp randomization_matrix, std::vector< int > & randomized_degrees, int num_desired_rows, int num_funcs)
 {
 	int ii,jj;
 	
@@ -2028,7 +2070,7 @@ void make_randomization_matrix_based_on_degrees(mat_mp randomization_matrix, int
 	if (num_desired_rows==num_funcs) {
 		make_matrix_ID_mp(randomization_matrix,num_funcs,num_funcs);
 		for (ii=0; ii<num_desired_rows; ++ii) {
-			(*randomized_degrees)[ii] = degrees[ii];
+			randomized_degrees.push_back(degrees[ii]);
 		}
 		free(degrees);
 		free(unique_degrees);
@@ -2073,7 +2115,7 @@ void make_randomization_matrix_based_on_degrees(mat_mp randomization_matrix, int
 		}
 		
 		current_degree = unique_degrees[current_degree_index];
-		(*randomized_degrees)[ii] = current_degree;
+		randomized_degrees.push_back(current_degree);
 		
 		int encountered_current_degree = 0;
 		for (jj=0; jj<num_funcs; jj++) {
