@@ -1,11 +1,6 @@
 #include "data_type.hpp"
 #include "programConfiguration.hpp"
 
-//enum {SUCCESSFUL=0, CRITICAL_FAILURE=-10, TOLERABLE_FAILURE=-1};
-////The following lets us use words instead of numbers to indicate vertex type.
-//enum {UNSET=-10, CRITICAL=0, NEW=1, MIDPOINT=2, ISOLATED=-1, SAMPLE_POINT=3};
-//// enum for worker mode choice
-
 
 
 std::string enum_lookup(int flag)
@@ -44,11 +39,7 @@ std::string enum_lookup(int flag)
 			break;
 			
 			
-			
-			//enum {NULLSPACE = 3000, LINPRODTODETJAC, DETJACTODETJAC, LINTOLIN, MULTILIN};
-			//enum {TERMINATE = 2000, INITIAL_STATE};
-
-			
+		
 			
 		case NULLSPACE:
 			return "NULLSPACE";
@@ -77,10 +68,6 @@ std::string enum_lookup(int flag)
 		case INITIAL_STATE:
 			return "INITIAL_STATE";
 			break;
-			
-			//enum {PARSING = 1000, TYPE_CONFIRMATION, DATA_TRANSMISSION, NUMPACKETS};
-			//enum {INACTIVE = 0, ACTIVE};
-			//enum {VEC_MP = 4000, VEC_D, MAT_MP, MAT_D, COMP_MP, COMP_D, INDICES};
 			
 			
 		case PARSING:
@@ -907,14 +894,14 @@ void witness_set::compute_downstairs_crit_midpts(vec_mp crit_downstairs,
 	}
 	
 	
-	change_size_vec_mp(crit_downstairs,this->num_pts); // destructive resize
-	crit_downstairs->size = this->num_pts;
+	change_size_vec_mp(crit_downstairs,1); // destructive resize
+	crit_downstairs->size = 1;
 	
 	sort_increasing_by_real(crit_downstairs, index_tracker, projection_values);
 	
 	clear_vec_mp(projection_values);
 	
-	int num_midpoints = this->num_pts-1;
+	int num_midpoints = crit_downstairs->size - 1;
 	
 	if (num_midpoints<1) {
 		return;
@@ -1990,7 +1977,7 @@ void cp_preproc_data(preproc_data *PPD, preproc_data PPD_input)
 
 
 
-
+// this sort should be optimized.  it is sloppy and wasteful right now.
 void sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & index_tracker, vec_mp projections_input){
 	
 	comp_mp large; init_mp(large);
@@ -1998,37 +1985,96 @@ void sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & ind
 	d_to_mp(large,l);
 	
 	
-	vec_mp raw; init_vec_mp(raw,1);
-	vec_cp_mp(raw,projections_input);
+	print_point_to_screen_matlab(projections_input, "projections_input");
 	
-	change_size_vec_mp( projections_sorted, raw->size); // destructive resize
-	projections_sorted->size = raw->size;
-	int ii,jj;
-
+	std::vector< int > index_tracker_non_unique;
+	std::vector< double > projvals_as_doubles;
+	
 	double min;
 	double curr;
 	int indicator = -1;
-	for (ii=0; ii<raw->size; ii++) {
-		min = 1e10;
+	
+	
+	
+	
+	vec_mp raw; init_vec_mp(raw,1);
+	vec_cp_mp(raw,projections_input);
+	
+	vec_mp projections_sorted_non_unique;
+	init_vec_mp(projections_sorted_non_unique,raw->size);
+	projections_sorted_non_unique->size = raw->size;
+
+
+	
+	
+	//sort by size
+	
+	for (int ii=0; ii<raw->size; ii++) { // for each of the projection values input
+		min = 1e10; // reset this
 		
-		for (jj=0; jj<raw->size; jj++) {
-			curr = mpf_get_d(raw->coord[jj].r);
-			if ( curr < min) {
+		// this loop finds the minimum projection value
+		for (int jj=0; jj<raw->size; jj++) {
+			curr = mpf_get_d(raw->coord[jj].r); // convert projection value to a double for comparison
+			if ( curr < min) { // compare
 				indicator = jj;
 				min = curr;
 			}
 		}
-		if (indicator==-1) {
+		if (indicator==-1) { // if min value was larger than a huge number
 			printf("min projection value was *insanely* large\n");
 			exit(1111);
 		}
 		
 		
-		
-		index_tracker.push_back(indicator);
-		set_mp( &projections_sorted->coord[ii],&raw->coord[indicator]);
-		set_mp( &raw->coord[indicator],large);
+		projvals_as_doubles.push_back(min);
+		index_tracker_non_unique.push_back(indicator);
+		set_mp( &projections_sorted_non_unique->coord[ii],&raw->coord[indicator]);
+		set_mp( &raw->coord[indicator],large); // set to be a large number so don't find it again.
 	}
+	
+	
+	
+	
+	// filter for uniqueness
+	
+	
+	double distinct_thresh = 1e-5;  // reasonable?
+	
+	change_size_vec_mp(projections_sorted,1); projections_sorted->size = 1;
+	
+	index_tracker.push_back(index_tracker_non_unique[0]);
+	set_mp(&projections_sorted->coord[0],&projections_sorted_non_unique->coord[0])
+	int unique_counter = 1;
+	for (int ii=1; ii<raw->size; ii++) {
+		if ( fabs( projvals_as_doubles[ii-1]-projvals_as_doubles[ii]) < distinct_thresh) {
+//			std::cout << "sorter claims fabs(" << projvals_as_doubles[ii-1] << " - " << projvals_as_doubles[ii] << ")<" << distinct_thresh << std::endl;
+			continue;
+		}
+		else
+		{
+			
+//			std::cout << "sorter claims fabs(" << projvals_as_doubles[ii-1] << " - " << projvals_as_doubles[ii] << ")>" << distinct_thresh << std::endl;
+			
+			
+			increase_size_vec_mp(projections_sorted,unique_counter+1); projections_sorted->size = unique_counter+1;
+			set_mp(&projections_sorted->coord[unique_counter],&projections_sorted_non_unique->coord[ii]);
+			unique_counter++;
+			
+			index_tracker.push_back(index_tracker_non_unique[ii]);
+			
+		}
+			
+	}
+	
+//	std::cout << "projvals_as_doubles:";
+//	for (int ii=0; ii<projvals_as_doubles.size(); ii++) {
+//		std::cout << projvals_as_doubles[ii] << " ";
+//	}
+//	std::cout << std::endl;
+//	
+//	print_point_to_screen_matlab(projections_sorted, "projections_sorted");
+//	
+//	mypause();
 	return;
 }
 

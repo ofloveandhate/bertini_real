@@ -208,6 +208,10 @@ public:
 						solver_configuration & solve_options);
 	
 	
+	void beginning_stuff(const witness_set & W_surf,
+																							BR_configuration & program_options,
+																							solver_configuration & solve_options);
+	
 	
 	void compute_slices(const witness_set W_surf,
 											vertex_set & V,

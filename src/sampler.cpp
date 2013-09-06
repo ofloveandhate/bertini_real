@@ -52,7 +52,7 @@ int main(int argC, char *args[])
 
 	
 	// set up the solver configuration
-	solver_configuration solve_options;  solver_init_config(solve_options);
+	solver_configuration solve_options; 
 	get_tracker_config(solve_options,MPType);
 	parse_preproc_data("preproc_data", &solve_options.PPD);
 	

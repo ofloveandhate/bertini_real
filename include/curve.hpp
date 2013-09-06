@@ -12,7 +12,7 @@
 #include <mpf2mpfr.h>
 
 
-
+#include <set>
 
 
 #ifndef CURVE_H
@@ -57,7 +57,14 @@ public:
 	
 	
 	
-	void add_edge(edge new_edge);
+	int add_edge(edge new_edge)
+	{
+		this->num_edges++;
+		this->edges.push_back(new_edge);
+		return this->num_edges-1; // -1 to correct for the fencepost problem
+	}
+	
+	
 	
 	int setup_edges(boost::filesystem::path INfile);
 	

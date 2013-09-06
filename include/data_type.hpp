@@ -40,7 +40,7 @@ enum {SUCCESSFUL=0, CRITICAL_FAILURE=-10, TOLERABLE_FAILURE=-1};
 
 
 //The following lets us use words instead of numbers to indicate vertex type.
-enum {UNSET= 100, CRITICAL, NEW, MIDPOINT, ISOLATED, SAMPLE_POINT};
+enum {UNSET= 100, CRITICAL, SEMICRITICAL, MIDPOINT, ISOLATED, NEW, SAMPLE_POINT};
 
 
 
@@ -239,6 +239,8 @@ public:
 	
 	void reset_points()
 	{
+		
+//		std::cout << this->num_pts << std::endl;
 		for (int ii =0; ii<this->num_pts; ii++)
 			clear_vec_mp(this->pts_mp[ii]);
 		

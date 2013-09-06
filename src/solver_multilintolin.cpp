@@ -58,7 +58,6 @@ int multilin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int cur
 {
 	double parse_time = 0;
   FILE *OUT = NULL, *FAIL = safe_fopen_write("failed_paths"), *midOUT = NULL, *rawOUT = safe_fopen_write("raw_data");
-  tracker_config_t T;
   prog_t dummyProg;
   bclock_t time1, time2;
   int num_variables = 0, num_sols = 0;
@@ -78,15 +77,12 @@ int multilin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int cur
 	//necessary for later whatnot
 	int userHom = 0, useRegen = 0, pathMod = 0, paramHom = 0;
 	
-	cp_tracker_config_t(&T, &solve_options.T);
-	
-	
 	
 	
 	//  // call the setup function
 	num_variables = multilin_to_lin_setup_d(&OUT, "output",
 																		 &midOUT, "midpath_data",
-																		 &T, &ED,
+																		 &ED,
 																		 &dummyProg,  //arg 7
 																		 &startSub, &endSub, &startFunc, &endFunc,
 																		 &startJvsub, &endJvsub, &startJv, &endJv, &subFuncsBelow,
@@ -139,20 +135,20 @@ int multilin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int cur
     }
   }
 	
-  if (T.MPType == 2)  //If we are doing adaptive precision path-tracking, we must set up AMP_eps, AMP_Phi, AMP_Psi based on config settings.
+  if (solve_options.T.MPType == 2)  //If we are doing adaptive precision path-tracking, we must set up AMP_eps, AMP_Phi, AMP_Psi based on config settings.
   {
-    T.AMP_eps = (double) num_variables * num_variables;  //According to Demmel (as in the AMP paper), n^2 is a very reasonable bound for \epsilon.
-    T.AMP_Phi = T.AMP_bound_on_degree*(T.AMP_bound_on_degree-1.0)*T.AMP_bound_on_abs_vals_of_coeffs;  //Phi from the AMP paper.
-    T.AMP_Psi = T.AMP_bound_on_degree*T.AMP_bound_on_abs_vals_of_coeffs;  //Psi from the AMP paper.
+    solve_options.T.AMP_eps = (double) num_variables * num_variables;  //According to Demmel (as in the AMP paper), n^2 is a very reasonable bound for \epsilon.
+    solve_options.T.AMP_Phi = solve_options.T.AMP_bound_on_degree*(solve_options.T.AMP_bound_on_degree-1.0)*solve_options.T.AMP_bound_on_abs_vals_of_coeffs;  //Phi from the AMP paper.
+    solve_options.T.AMP_Psi = solve_options.T.AMP_bound_on_degree*solve_options.T.AMP_bound_on_abs_vals_of_coeffs;  //Psi from the AMP paper.
     // initialize latest_newton_residual_mp to the maximum precision
-    mpf_init2(T.latest_newton_residual_mp, T.AMP_max_prec);
+    mpf_init2(solve_options.T.latest_newton_residual_mp, solve_options.T.AMP_max_prec);
   }
 	
 	
 	post_process_t *endPoints = (post_process_t *)br_malloc(W.num_pts* sizeof(post_process_t)); //overallocate, expecting full number of solutions.
 	
 	
-	if (T.endgameNumber == 3)
+	if (solve_options.T.endgameNumber == 3)
 	{ // use the track-back endgame
 		//        zero_dim_trackBack_d(&trackCount, OUT, rawOUT, midOUT, StartPts, FAIL, pathMod, &T, &ED, ED.BED_mp, ptr_to_eval_d, ptr_to_eval_mp, change_basic_eval_prec, zero_dim_dehom);
 		printf("bertini_real not equipped to deal with endgameNumber 3\nexiting\n");
@@ -165,7 +161,7 @@ int multilin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int cur
 											 new_linears_full_prec,
 											 endPoints,
 											 FAIL, pathMod,
-											 &T, &ED, ED.BED_mp,
+											 &ED, ED.BED_mp,
 											 ptr_to_eval_d, ptr_to_eval_mp,
 											 change_prec, dehom,
 											 solve_options);
@@ -215,7 +211,7 @@ int multilin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int cur
 	
 
 	
-	BRpostProcessing(endPoints, W_new, trackCount.successes, &ED.preProcData, &T,solve_options);
+	BRpostProcessing(endPoints, W_new, trackCount.successes, &ED.preProcData, &solve_options.T,solve_options);
 	
 
 	
@@ -230,8 +226,7 @@ int multilin_to_lin_solver_d(int MPType, //, double parse_time, unsigned int cur
 
 	
 	
-  multilintolin_eval_clear_d(&ED, userHom, T.MPType);
-  tracker_config_clear(&T);
+  multilintolin_eval_clear_d(&ED, userHom, solve_options.T.MPType);
 
   return 0;
 }
@@ -245,8 +240,8 @@ void multilin_to_lin_track_d(trackingStats *trackCount,
 												vec_mp *new_linears_full_prec,
 												post_process_t *endPoints,
 												FILE *FAIL,
-												int pathMod, tracker_config_t *T,
-												multilintolin_eval_data_d *BED,
+												int pathMod,
+														 multilintolin_eval_data_d *BED,
 												multilintolin_eval_data_mp *BED_mp,
 												int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
 												int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
@@ -257,7 +252,7 @@ void multilin_to_lin_track_d(trackingStats *trackCount,
   int ii,kk, startPointIndex;
 
   // top of RAWOUT - number of variables and that we are doing zero dimensional
-  fprintf(RAWOUT, "%d\n%d\n", T->numVars, 0);
+  fprintf(RAWOUT, "%d\n%d\n", solve_options.T.numVars, 0);
 	
 	
 	int (*curr_eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *) = NULL;
@@ -270,12 +265,12 @@ void multilin_to_lin_track_d(trackingStats *trackCount,
 	
 	point_data_d *startPts = NULL;
 	generic_set_start_pts(&startPts, W);
-	T->endgameOnly = 0;
+	solve_options.T.endgameOnly = 0;
 	
 	
   // setup the rest of the structures
 	endgame_data_t EG; //this will hold the temp solution data produced for each individual track
-	init_endgame_data(&EG, T->Precision);
+	init_endgame_data(&EG, solve_options.T.Precision);
 
 	
 	trackCount->numPoints = W.num_pts;
@@ -292,25 +287,36 @@ void multilin_to_lin_track_d(trackingStats *trackCount,
 			printf("multilintolin\tpoint %d\n",ii);
 		
 		
-		int iterations=0, max_iterations = 10;
-		
-		solve_options.reset_tracker_config();
-		while (iterations<max_iterations) {
+
 
 	#ifdef printpathmultilintolin
 			BED.num_steps = BED_mp.num_steps = 0;
 	#endif
 			
-			if (T->MPType==2) {
+			if (solve_options.T.MPType==2) {
 				BED->BED_mp->curr_prec = 64;
 			}
 
 			// track the path
-			generic_track_path_d(solution_counter, &EG, &startPts[ii], OUT, MIDOUT, T, BED, BED->BED_mp, curr_eval_d, curr_eval_mp, change_prec, find_dehom);
+			robust_track_path(solution_counter, &EG, &startPts[ii],NULL, OUT, MIDOUT, solve_options, BED, BED->BED_mp, curr_eval_d, curr_eval_mp, change_prec, find_dehom);
 			
+		
+		
+//		robust_track_path(int pathNum, endgame_data_t *EG_out,
+//											point_data_d *Pin, point_data_mp *Pin_mp,
+//											FILE *OUT, FILE *MIDOUT,
+//											solver_configuration & solve_options,
+//											void const *ED_d, void const *ED_mp,
+//											int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
+//											int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
+//											int (*change_prec)(void const *, int),
+//											int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *))
+		
+		
+		
 			// check to see if it should be sharpened
-			if (EG.retVal == 0 && T->sharpenDigits > 0)// use the sharpener for after an endgame
-				sharpen_endpoint_endgame(&EG, T, OUT, BED, BED->BED_mp, curr_eval_d, curr_eval_mp, change_prec);
+			if (EG.retVal == 0 && solve_options.T.sharpenDigits > 0)// use the sharpener for after an endgame
+				sharpen_endpoint_endgame(&EG, &solve_options.T, OUT, BED, BED->BED_mp, curr_eval_d, curr_eval_mp, change_prec);
 			
 
 			//get the terminal time in double form
@@ -324,9 +330,9 @@ void multilin_to_lin_track_d(trackingStats *trackCount,
 			int issoln = 0;
 			if (EG.last_approx_prec!=1) {
 				if (EG.prec<64){
-					issoln = check_issoln_multilintolin_d(&EG,  T, BED); }
+					issoln = check_issoln_multilintolin_d(&EG,  &solve_options.T, BED); }
 				else {
-					issoln = check_issoln_multilintolin_mp(&EG, T, BED->BED_mp); }
+					issoln = check_issoln_multilintolin_mp(&EG, &solve_options.T, BED->BED_mp); }
 			}
 			else{
 				
@@ -340,9 +346,9 @@ void multilin_to_lin_track_d(trackingStats *trackCount,
 				mypause();
 			}
 			
-			if ( (EG.retVal != 0 && time_to_compare->r > T->minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
+			if ( (EG.retVal != 0 && time_to_compare->r > solve_options.T.minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
 				trackCount->failures++;
-				printf("\nretVal = %d\nthere was a fatal path failure tracking witness point %d\n\n",EG.retVal,ii);
+				printf("\nretVal = %d\nthere was a path failure tracking witness point %d\n\n",EG.retVal,ii);
 				print_path_retVal_message(EG.retVal);
 				if (!issoln) {
 					printf("the following was labeled as not a solution\n");
@@ -366,20 +372,6 @@ void multilin_to_lin_track_d(trackingStats *trackCount,
 					print_point_to_screen_matlab(BED->old_linear[zz],"old");
 					print_point_to_screen_matlab(BED->current_linear[zz],"new");
 				}
-//				deliberate_segfault();
-//				exit(EG.retVal); //failure intolerable in this solver.
-				if (iterations<1) {
-					solve_options.T.securityMaxNorm = 10*solve_options.T.securityMaxNorm;
-				}
-				else if (iterations< 3){
-					solve_options.T.final_tolerance = 0.1*solve_options.T.final_tolerance;
-					solve_options.T.securityMaxNorm = 100*solve_options.T.securityMaxNorm;
-				}
-				else
-				{
-					solve_options.T.final_tolerance = 0.1*solve_options.T.final_tolerance;
-					solve_options.T.securityMaxNorm = 100*solve_options.T.securityMaxNorm;
-				}
 				
 				
 			}
@@ -389,14 +381,14 @@ void multilin_to_lin_track_d(trackingStats *trackCount,
 				endgamedata_to_endpoint(&endPoints[solution_counter], &EG);
 				trackCount->successes++;
 				solution_counter++; // probably this could be eliminated
-				break; // break out of the while loop
 			}
-			
-			iterations++;
-		}
+
+		
+		
 	}// re: for (ii=0; ii<W.num_pts ;ii++)
 
-	solve_options.reset_tracker_config();
+	
+	
 	
 	//clear the data structures.
 	
@@ -418,7 +410,6 @@ void multilin_to_lin_track_d(trackingStats *trackCount,
 
 int multilin_to_lin_setup_d(FILE **OUT, boost::filesystem::path outName,
 														FILE **midOUT, boost::filesystem::path midName,
-														tracker_config_t *T,
 														multilintolin_eval_data_d *ED,
 														prog_t *dummyProg,
 														int **startSub, int **endSub, int **startFunc, int **endFunc, int **startJvsub, int **endJvsub, int **startJv, int **endJv, int ***subFuncsBelow,
@@ -441,14 +432,14 @@ int multilin_to_lin_setup_d(FILE **OUT, boost::filesystem::path outName,
   *OUT = safe_fopen_write(outName);  // open the main output files.
   *midOUT = safe_fopen_write(midName);
 	
-  if (T->MPType == 2) // using AMP - need to allocate space to store BED_mp
+  if (solve_options.T.MPType == 2) // using AMP - need to allocate space to store BED_mp
     ED->BED_mp = (multilintolin_eval_data_mp *)br_malloc(1 * sizeof(multilintolin_eval_data_mp));
   else
     ED->BED_mp = NULL;
 	
 	
   // setup a straight-line program, using the file(s) created by the parser
-  T->numVars = numOrigVars = setupProg_count(dummyProg, T->Precision, T->MPType, startSub, endSub, startFunc, endFunc, startJvsub, endJvsub, startJv, endJv, subFuncsBelow);
+  solve_options.T.numVars = numOrigVars = setupProg_count(dummyProg, solve_options.T.Precision, solve_options.T.MPType, startSub, endSub, startFunc, endFunc, startJvsub, endJvsub, startJv, endJv, subFuncsBelow);
 	
   // setup preProcData
   setupPreProcData(const_cast<char *>(preprocFile.c_str()), &ED->preProcData);
@@ -457,10 +448,10 @@ int multilin_to_lin_setup_d(FILE **OUT, boost::filesystem::path outName,
 	
   numGps = ED->preProcData.num_var_gp + ED->preProcData.num_hom_var_gp;//this should probably be removed
   // find the rank
-  rank = rank_finder_d(&ED->preProcData, dummyProg, T, T->numVars); //this should probably be removed
+  rank = rank_finder_d(&ED->preProcData, dummyProg, &solve_options.T, solve_options.T.numVars); //this should probably be removed
 	
 
-	setupmultilintolinEval_d(T,
+	setupmultilintolinEval_d(&solve_options.T,
 													 const_cast<char *>(preprocFile.c_str()),
 													 const_cast<char *>(degreeFile.c_str()),
 													 dummyProg, ED, randomizer_matrix_full_prec, W, solve_options);
@@ -1139,7 +1130,6 @@ int multilin_to_lin_solver_mp(int MPType,
 {
 	double parse_time = 0;
   FILE *OUT = NULL, *FAIL = fopen("failed_paths", "w"), *midOUT = NULL, *rawOUT = fopen("raw_data", "w");
-  tracker_config_t T;
   prog_t dummyProg;
   bclock_t time1, time2;
   int num_variables = 0, num_sols = 0;
@@ -1159,19 +1149,18 @@ int multilin_to_lin_solver_mp(int MPType,
 	//necessary for later whatnot
 	int userHom = 0, useRegen = 0, pathMod = 0, paramHom = 0;
 	
-	cp_tracker_config_t(&T, &solve_options.T);
 	
 
 //	
 	// initialize latest_newton_residual_mp
-  mpf_init(T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+  mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 	
 	
 	//  // call the setup function
 	// setup for standard tracking - 'useRegen' is used to determine whether or not to setup 'start'
 	num_variables = multilin_to_lin_setup_mp(&OUT, "output",
 																		 &midOUT, "midpath_data",
-																		 &T, &ED,
+																		 &ED,
 																		 &dummyProg,  //arg 7
 																		 &startSub, &endSub, &startFunc, &endFunc,
 																		 &startJvsub, &endJvsub, &startJv, &endJv, &subFuncsBelow,
@@ -1213,7 +1202,7 @@ int multilin_to_lin_solver_mp(int MPType,
 		vec_cp_mp(ED.current_linear[kk],new_linears[kk]);
 	}
 	
-	if (T.endgameNumber == 3)
+	if (solve_options.T.endgameNumber == 3)
 	{ // use the track-back endgame
 		//        zero_dim_trackBack_d(&trackCount, OUT, rawOUT, midOUT, StartPts, FAIL, pathMod, &T, &ED, ED.BED_mp, ptr_to_eval_d, ptr_to_eval_mp, change_basic_eval_prec, zero_dim_dehom);
 		printf("bertini_real not equipped to deal with endgameNumber 3\nexiting\n");
@@ -1226,7 +1215,7 @@ int multilin_to_lin_solver_mp(int MPType,
 											 new_linears,
 											 endPoints,
 											 FAIL, pathMod,
-											 &T, &ED,
+														 &ED,
 											 ptr_to_eval_mp, //ptr_to_eval_d,
 												change_prec, dehom,
 												solve_options);
@@ -1255,7 +1244,7 @@ int multilin_to_lin_solver_mp(int MPType,
   // we report how we did with all paths:
   bclock(&time2);
   totalTime(&track_time, time1, time2);
-  if (T.screenOut)
+  if (solve_options.T.screenOut)
   {
     printf("Number of failures:  %d\n", trackCount.failures);
     printf("Number of successes:  %d\n", trackCount.successes);
@@ -1277,7 +1266,7 @@ int multilin_to_lin_solver_mp(int MPType,
   fclose(FAIL);
 	
 
-	BRpostProcessing(endPoints, W_new, trackCount.successes, &ED.preProcData, &T,solve_options);
+	BRpostProcessing(endPoints, W_new, trackCount.successes, &ED.preProcData, &solve_options.T,solve_options);
 	
 	
 
@@ -1293,8 +1282,7 @@ int multilin_to_lin_solver_mp(int MPType,
 
 	
 	
-  multilintolin_eval_clear_mp(&ED, userHom, T.MPType);
-  tracker_config_clear(&T);
+  multilintolin_eval_clear_mp(&ED, userHom, solve_options.T.MPType);
 	
   return 0;
 }
@@ -1308,8 +1296,8 @@ void multilin_to_lin_track_mp(trackingStats *trackCount,
 												vec_mp *new_linears,
 												post_process_t *endPoints,
 												FILE *FAIL,
-												int pathMod, tracker_config_t *T,
-												multilintolin_eval_data_mp *BED,
+												int pathMod,
+															multilintolin_eval_data_mp *BED,
 												int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 												int (*change_prec)(void const *, int),
 												 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
@@ -1319,7 +1307,7 @@ void multilin_to_lin_track_mp(trackingStats *trackCount,
   int ii,kk;
 	
   // top of RAWOUT - number of variables and that we are doing zero dimensional
-  fprintf(RAWOUT, "%d\n%d\n", T->numVars, 0);
+  fprintf(RAWOUT, "%d\n%d\n", solve_options.T.numVars, 0);
 	
 
   int (*curr_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = NULL;
@@ -1330,12 +1318,12 @@ void multilin_to_lin_track_mp(trackingStats *trackCount,
 	generic_set_start_pts(&	startPts, W);
 	
 	
-	T->endgameOnly = 0;
+	solve_options.T.endgameOnly = 0;
 	
 	
   // setup the rest of the structures
 	endgame_data_t EG;
-	init_endgame_data(&EG, T->Precision);
+	init_endgame_data(&EG, solve_options.T.Precision);
 	
 
 	trackCount->numPoints = W.num_pts;
@@ -1356,7 +1344,7 @@ void multilin_to_lin_track_mp(trackingStats *trackCount,
 #endif
 			
 			generic_track_path_mp(solution_counter, &EG, &startPts[ii],
-														OUT, MIDOUT, T, BED, curr_eval_mp, change_prec, find_dehom);
+														OUT, MIDOUT, &solve_options.T, BED, curr_eval_mp, change_prec, find_dehom);
 			
 
 			
@@ -1371,9 +1359,9 @@ void multilin_to_lin_track_mp(trackingStats *trackCount,
 			
 			
 			// check to see if it should be sharpened
-			if (EG.retVal == 0 && T->sharpenDigits > 0)
+			if (EG.retVal == 0 && solve_options.T.sharpenDigits > 0)
 			{ // use the sharpener for after an endgame
-				sharpen_endpoint_endgame(&EG, T, OUT, NULL, BED, NULL, curr_eval_mp, NULL);
+				sharpen_endpoint_endgame(&EG, &solve_options.T, OUT, NULL, BED, NULL, curr_eval_mp, NULL);
 			}
 			
 
@@ -1387,7 +1375,7 @@ void multilin_to_lin_track_mp(trackingStats *trackCount,
 			
 			int issoln = 0;
 			if (EG.last_approx_prec!=1) {
-				issoln = check_issoln_multilintolin_mp(&EG, T, BED);
+				issoln = check_issoln_multilintolin_mp(&EG, &solve_options.T, BED);
 			}
 			else{
 				print_point_to_screen_matlab(EG.PD_mp.point,"solution");
@@ -1398,7 +1386,7 @@ void multilin_to_lin_track_mp(trackingStats *trackCount,
 			
 			
 			
-			if ((EG.retVal != 0 && time_to_compare->r > T->minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
+			if ((EG.retVal != 0 && time_to_compare->r > solve_options.T.minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
 				trackCount->failures++;
 				printf("\nretVal = %d\nthere was a fatal path failure tracking witness point %d\n\n",EG.retVal,ii);
 				print_path_retVal_message(EG.retVal);
@@ -1447,8 +1435,7 @@ void multilin_to_lin_track_mp(trackingStats *trackCount,
 // derived from zero_dim_basic_setup_d
 int multilin_to_lin_setup_mp(FILE **OUT, boost::filesystem::path outName,
 														 FILE **midOUT, boost::filesystem::path midName,
-														 tracker_config_t *T,
-														 multilintolin_eval_data_mp *ED,
+														multilintolin_eval_data_mp *ED,
 														 prog_t *dummyProg,
 														 int **startSub, int **endSub, int **startFunc, int **endFunc, int **startJvsub, int **endJvsub, int **startJv, int **endJv, int ***subFuncsBelow,
 														 int (**eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
@@ -1473,7 +1460,7 @@ int multilin_to_lin_setup_mp(FILE **OUT, boost::filesystem::path outName,
 	
 	
   // setup a straight-line program, using the file(s) created by the parser
-  T->numVars = numOrigVars = setupProg_count(dummyProg, T->Precision, T->MPType, startSub, endSub, startFunc, endFunc, startJvsub, endJvsub, startJv, endJv, subFuncsBelow);
+  solve_options.T.numVars = numOrigVars = setupProg_count(dummyProg, solve_options.T.Precision, solve_options.T.MPType, startSub, endSub, startFunc, endFunc, startJvsub, endJvsub, startJv, endJv, subFuncsBelow);
 	
 	
   // setup preProcData
@@ -1492,7 +1479,7 @@ int multilin_to_lin_setup_mp(FILE **OUT, boost::filesystem::path outName,
     adjustDegrees = 0; // if the system does not need its degrees adjusted, then that is okay
     setupmultilintolinEval_mp(const_cast<char *>(preprocFile.c_str()),
 															const_cast<char *>(degreeFile.c_str()),
-															dummyProg, rank, patchType, ssType, T->Precision, &T->numVars, NULL, NULL, NULL, ED, adjustDegrees, randomizer_matrix, W,solve_options);
+															dummyProg, rank, patchType, ssType, solve_options.T.Precision, &solve_options.T.numVars, NULL, NULL, NULL, ED, adjustDegrees, randomizer_matrix, W,solve_options);
   }
   else
   { // m-hom, m > 1

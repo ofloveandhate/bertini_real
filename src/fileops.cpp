@@ -73,14 +73,11 @@ FILE *safe_fopen_read(boost::filesystem::path filename)
 	
 	if (boost::filesystem::is_directory(filename)){
 		std::cerr << "trying to open directory " << filename.string() << " as a file!" << std::endl;
-		deliberate_segfault();
 		br_exit(ERROR_FILE_NOT_EXIST);
 	}
 	
 	if (!boost::filesystem::exists(filename)){
-		std::cerr << "unable to open specified file to read: " << filename.string() << std::endl;
-		std::cerr << boost::filesystem::current_path().string() << " is the current directory" << std::endl;
-		deliberate_segfault();
+		std::cerr << "unable to find specified file to read: " << filename.string() << std::endl;
 		br_exit(ERROR_FILE_NOT_EXIST);
 	}
 	
@@ -90,7 +87,6 @@ FILE *safe_fopen_read(boost::filesystem::path filename)
 	if (IN == NULL) {
 		std::cerr << "failed to open file: " << filename.string() << std::endl;
 		fclose(IN);
-		deliberate_segfault();
 		br_exit(ERROR_FILE_NOT_EXIST);
 	}
 	else{
