@@ -38,7 +38,7 @@ int main(int argC, char *args[])
 	
 	
 	// set up the solver configuration
-	solver_configuration solve_options;  solver_init_config(solve_options);
+	solver_configuration solve_options; 
 	
 	int MPType;
 	

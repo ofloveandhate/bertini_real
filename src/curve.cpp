@@ -24,12 +24,7 @@ int curve_decomposition::setup_edges(boost::filesystem::path INfile)
 
 
 
-void curve_decomposition::add_edge(edge new_edge)
-{
-	this->num_edges++;
-	this->edges.push_back(new_edge);
-	return;
-}
+
 
 
 void curve_decomposition::print(boost::filesystem::path base)
@@ -101,7 +96,7 @@ void curve_decomposition::main(vertex_set & V,
 	
 	int num_vars = W.num_variables;
 	
-	
+	solve_options.robust = true;
 	
 	
 	
@@ -286,6 +281,12 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 																		vertex_set & V)
 {
 	
+	
+	if (solve_options.verbose_level>=2) {
+		W_crit_real.print_to_screen();
+	}
+	
+	
 	for (int ii=0; ii<W_curve.num_patches; ii++)
 		this->add_patch(W_curve.patch_mp[ii]);
 	
@@ -338,13 +339,14 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	
 	
 	
-	for (int ii=0; ii<crit_downstairs->size; ii++){
+	for (int ii=0; ii<W_crit_real.num_pts; ii++){
 		
 		if (program_options.verbose_level>=8)
-			printf("adding point %d of %d from crit_real to vertices\n",ii,crit_downstairs->size);
+			printf("adding point %d of %d from W_crit_real to vertices\n",ii,W_crit_real.num_pts);
 		
-		set_mp(temp_vertex.projVal_mp,  &crit_downstairs->coord[ii]); // set projection value
-		vec_cp_mp(temp_vertex.pt_mp, W_crit_real.pts_mp[index_tracker[ii]]);// set point
+		set_zero_mp(temp_vertex.projVal_mp);
+//		set_mp(temp_vertex.projVal_mp,  &crit_downstairs->coord[ii]); // set projection value
+		vec_cp_mp(temp_vertex.pt_mp, W_crit_real.pts_mp[ii]);// set point
 		temp_vertex.type = CRITICAL; // set type
 		
 		int I = index_in_vertices_with_add(V, temp_vertex,  solve_options.T);
@@ -432,6 +434,13 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	comp_mp left_proj_val; init_mp(left_proj_val);
 	comp_mp right_proj_val; init_mp(right_proj_val);
 	
+	
+	
+	std::vector<int> found_indices_left;
+	std::vector<int> found_indices_right;
+	std::map<int, std::vector< int > > edge_occurence_tracker_left;
+	std::map<int, std::vector< int > > edge_occurence_tracker_right;
+	
 	for (int ii=0; ii<num_midpoints; ++ii) {
 		if (program_options.verbose_level>=1) {
 			printf("moving from downstairs midpoint %d, to left and right\n",ii);
@@ -440,10 +449,10 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 		
 		neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii]);
 		print_comp_matlab(&crit_downstairs->coord[ii],"left  ");
-		lintolin_solver_main(solve_options.T.MPType,
+		multilintolin_solver_main(solve_options.T.MPType,
 												 midpoint_witness_sets[ii], //the input
 												 randomizer_matrix,
-												 &particular_projection, 1,
+												 &particular_projection,
 												 &Wleft,
 												 solve_options); // the output
 		
@@ -452,10 +461,10 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 		
 		
 		print_comp_matlab(&crit_downstairs->coord[ii+1],"right ");
-		lintolin_solver_main(solve_options.T.MPType,
+		multilintolin_solver_main(solve_options.T.MPType,
 												 midpoint_witness_sets[ii], //the input
 												 randomizer_matrix,
-												 &particular_projection, 1,
+												 &particular_projection,
 												 &Wright,
 												 solve_options); // the output
 																				 //each member of Wtemp should real.  if a member of V1 already, mark index.  else, add to V1, and mark.
@@ -490,12 +499,24 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 			
 			temp_edge.left  = index_in_vertices_with_add(V, temp_vertex,  solve_options.T);
 			
+			
 			set_mp(temp_vertex.projVal_mp, &crit_downstairs->coord[ii+1] ); // set projection value
 			vec_cp_mp(temp_vertex.pt_mp,Wright.pts_mp[kk]);// set point
 			temp_vertex.type = NEW; // set type
 			
 			temp_edge.right = index_in_vertices_with_add(V, temp_vertex, solve_options.T);
 			
+			// keep track of those indices we found.
+			
+			found_indices_left.push_back(temp_edge.left);
+			found_indices_right.push_back(temp_edge.right);
+			
+			int edge_num = add_edge(temp_edge);
+			edge_occurence_tracker_left[temp_edge.left].push_back(edge_num);
+			edge_occurence_tracker_right[temp_edge.right].push_back(edge_num);
+			
+			
+			// if count the number of times a critical point is tracked *to*.  this is for degenerate edge testing.  those which never get tracked to, make degenerate edges (isolated points are included in this).
 			if (crit_point_counter.find(temp_edge.left)==crit_point_counter.end()) {
 				crit_point_counter[temp_edge.left] = 1;
 			}
@@ -512,7 +533,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 				crit_point_counter[temp_edge.right] ++;
 			}
 			
-			add_edge(temp_edge);
+			
 			
 			
 			
@@ -520,9 +541,9 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 			
 			if (program_options.verbose_level>=2) {
 				printf("upstairs midpoint %d\n",kk);
-				print_comp_matlab(V.vertices[temp_edge.left].projVal_mp,"left");
-				print_comp_matlab(V.vertices[temp_edge.midpt].projVal_mp,"mid");
-				print_comp_matlab(V.vertices[temp_edge.right].projVal_mp,"right");
+				print_comp_matlab(V.vertices[temp_edge.left].projVal_mp,"left_proj_val");
+				print_comp_matlab(V.vertices[temp_edge.midpt].projVal_mp,"mid_proj_val");
+				print_comp_matlab(V.vertices[temp_edge.right].projVal_mp,"right_proj_val");
 				printf("indices of left, mid, right: %d %d %d\n",temp_edge.left,temp_edge.midpt,temp_edge.right);
 				printf("\n\n");
 			}
@@ -560,23 +581,152 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	}
 	
 	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	//              \\              //
 	//\\\\\\\\\\\\\\\\\            /////////////
 	///////////////////  merge    /////////////
 	//////////////////            \\\\\\\\\\\\\\
 	//             //              \\
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+	if (program_options.merge_edges==true) {
+		
+		comp_mp half;  init_mp(half);  comp_mp temp;  init_mp(temp);  comp_mp temp2;  init_mp(temp2);
+		mpf_set_str(half->r, "0.5", 10); mpf_set_str(half->i, "0.0", 10);
+		
+		std::set< int > edges_to_remove;
+		for (int ii = 0; ii<found_indices_right.size(); ii++) {
+			if (V.vertices[found_indices_right[ii]].type==NEW) { // only need to look at one of right and left here.
+				
+				// then the edges having this endpoint are superfluous and need to be merged
+				
+				
+				if (edge_occurence_tracker_left[found_indices_right[ii]].size()!=1) { // a little sanity check
+					std::cout << "found a NEW point " << found_indices_right[ii] << ", but it occurred multiple times as a left point of an edge:" << std::endl;
+					for (int zz=0; zz< edge_occurence_tracker_left[found_indices_left[ii]].size();zz++) {
+						std::cout << edge_occurence_tracker_left[found_indices_left[ii]][zz] << " " << std::endl;
+					}
+					mypause();
+				}
+				
+				if (edge_occurence_tracker_right[found_indices_right[ii]].size()!=1) { // a little sanity check
+					std::cout << "found a NEW point " << found_indices_right[ii] << ", but it occurred multiple times as a right point of an edge:" << std::endl;
+					for (int zz=0; zz< edge_occurence_tracker_right[found_indices_right[ii]].size();zz++) {
+						std::cout << edge_occurence_tracker_right[found_indices_right[ii]][zz] << " " << std::endl;
+					}
+					mypause();
+				}
+				
+				
+				
+				// indexing by point index in V (into a map of vectors)
+				int right_edge_w_pt  = edge_occurence_tracker_left[found_indices_left[ii]][0];  
+				int left_edge_w_pt = edge_occurence_tracker_right[found_indices_right[ii]][0];
+				// can there be more?  yes, unless i solve the uniqueness problem
+				
+				
+				edges_to_remove.insert(right_edge_w_pt);
+				edges_to_remove.insert(left_edge_w_pt);
+				
+				witness_set W_temp;
+				
+				
+				// get the projection value of the midpoint we will be moving from.
+				
+				projection_value_homogeneous_input(&particular_projection->coord[0], V.vertices[edges[left_edge_w_pt].midpt].pt_mp, pi[0]);
+				neg_mp(&particular_projection->coord[0],&particular_projection->coord[0]);
+				//
+				midpoint_witness_sets[0].reset_linears(); // this witness set should only have a single linear
+				midpoint_witness_sets[0].add_linear(particular_projection);
+				
+				midpoint_witness_sets[0].reset_points();
+				midpoint_witness_sets[0].add_point(V.vertices[edges[left_edge_w_pt].midpt].pt_mp);  // I arbitrarily chose the left edge's midpoint as source to track to new midpoint.
+				
+				projection_value_homogeneous_input(temp,V.vertices[edges[left_edge_w_pt].left].pt_mp,pi[0]);
+				projection_value_homogeneous_input(temp2,V.vertices[edges[right_edge_w_pt].right].pt_mp,pi[0]);
+				
+				add_mp(temp_vertex.projVal_mp, temp, temp2);
+				
+				mul_mp(temp_vertex.projVal_mp,half,temp_vertex.projVal_mp); // now it is the average value
+				
+				neg_mp(&particular_projection->coord[0], temp_vertex.projVal_mp); // set it in the linear for tracking
+				
+				
+				solve_options.allow_multiplicity = 0;
+				solve_options.allow_singular = 0;
+				solve_options.complete_witness_set = 0;
+				
+				multilintolin_solver_main(solve_options.T.MPType,
+														 midpoint_witness_sets[0], //the input
+														 randomizer_matrix,
+														 &particular_projection, // pass by reference because expects an array
+														 &W_temp,
+														 solve_options); // the output
+																						 //each member of Wtemp should real.  if a member of V1 already, mark index.  else, add to V1, and mark.
+				
+				vec_cp_mp(temp_vertex.pt_mp, W_temp.pts_mp[0]);
+				temp_vertex.type = MIDPOINT;
+				
+				temp_edge.left = edges[left_edge_w_pt].left;
+				temp_edge.midpt = index_in_vertices_with_add(V, temp_vertex, solve_options.T);
+				temp_edge.right = edges[right_edge_w_pt].right;
+				
+
+				add_edge(temp_edge);
+				
+				//add the new_edge
+			}
+		}
+		clear_mp(half); clear_mp(temp); clear_mp(temp2);
+		
+		
+		
+		// delete the two old edges // can't do this in the loop because we were using indexes into the edge set
+		std::vector< edge > post_merge_edges;
+		
+		for (int ii = 0; ii<this->num_edges; ii++) {
+			if (edges_to_remove.find(ii) == edges_to_remove.end()) { // if don't want to remove the edge
+				post_merge_edges.push_back( this->edges[ii]);
+			}
+			else{
+				std::cout << "removing edge " << ii << std::endl;
+				std::cout << this->edges[ii].left << " " << this->edges[ii].midpt << " " << this->edges[ii].right << " " << std::endl;
+			}
+			//otherwise skip it.
+		}
+		
+		
+		//swap this's edge info to post-merge info.
+		this->edges = post_merge_edges;
+		this->num_edges = int(post_merge_edges.size());
+	}// re: if merge_edges==true
+	else
+	{
+		
+		// since we are not merging, we need to NOT leave the type indicator as NEW, because it will throw off later merges.
+		for (int ii = 0; ii<found_indices_right.size(); ii++) {
+			if (V.vertices[found_indices_right[ii]].type==NEW) { // only need to look at one of right and left here.
+				V.vertices[found_indices_right[ii]].type = SEMICRITICAL;
+				std::cout << "setting vertex " << found_indices_right[ii] << " to SEMI" << std::endl;
+			}
+		}
+		
+		for (int ii = 0; ii<found_indices_left.size(); ii++) {
+			if (V.vertices[found_indices_left[ii]].type==NEW) { // only need to look at one of right and left here.
+				V.vertices[found_indices_left[ii]].type = SEMICRITICAL;
+				std::cout << "setting vertex " << found_indices_left[ii] << " to SEMI" << std::endl;
+			}
+		}
+		
+	}//re: else merge_edges==false
 	
 	
 	
@@ -734,13 +884,12 @@ int curve_get_additional_critpts(witness_set *W_crit_real,
 		init_mp(left_proj_val); init_mp(right_proj_val);
 		
 		if (W_crit_real->num_pts==0) {
-			set_one_mp(right_proj_val);
-			set_one_mp(left_proj_val);
-			neg_mp(left_proj_val,left_proj_val);
+			set_zero_mp(right_proj_val);
+			set_zero_mp(left_proj_val);
 		}
 		else{
 			set_mp(left_proj_val, &projections_sorted->coord[0]);
-			set_mp(right_proj_val, &projections_sorted->coord[W_crit_real->num_pts-1]);
+			set_mp(right_proj_val, &projections_sorted->coord[projections_sorted->size-1]);
 		}
 		
 		
@@ -751,25 +900,20 @@ int curve_get_additional_critpts(witness_set *W_crit_real,
 			
 			//set the value for the projection to move to
 			if (jj==0){ // if on the first of the two iterations
-				set_mp(relevant_proj_val,left_proj_val);}
+				sub_mp(&variable_projection->coord[0],left_proj_val,one);
+			}
 			else{
-				set_mp(relevant_proj_val,right_proj_val);}
-			
-			set_mp(&variable_projection->coord[0],relevant_proj_val);
-			
-			if (jj==0){
-				sub_mp(&variable_projection->coord[0],&variable_projection->coord[0],one);}
-			else{
-				add_mp(&variable_projection->coord[0],&variable_projection->coord[0],one);}
+				add_mp(&variable_projection->coord[0],one,right_proj_val);
+			}
 			
 			neg_mp(&variable_projection->coord[0],&variable_projection->coord[0]);
 			//done setting the value of the projection.
 			
 			//run the solver
-			lintolin_solver_main(solve_options.T.MPType,
+			multilintolin_solver_main(solve_options.T.MPType,
 													 W,
 													 randomizer_matrix,
-													 &variable_projection, 1,
+													 &variable_projection,
 													 &Wtemp,
 													 solve_options);
 			
@@ -854,10 +998,10 @@ int curve_get_additional_critpts(witness_set *W_crit_real,
 				sub_mp(&variable_projection->coord[0],&variable_projection->coord[0],one);
 				neg_mp(&variable_projection->coord[0],&variable_projection->coord[0]);
 				
-				lintolin_solver_main(solve_options.T.MPType,
+				multilintolin_solver_main(solve_options.T.MPType,
 														 W,
 														 randomizer_matrix,
-														 &variable_projection, 1,
+														 &variable_projection,
 														 &Wtemp,
 														 solve_options);
 				
@@ -872,10 +1016,10 @@ int curve_get_additional_critpts(witness_set *W_crit_real,
 				add_mp(&variable_projection->coord[0],&variable_projection->coord[0],one);
 				neg_mp(&variable_projection->coord[0],&variable_projection->coord[0]);
 				
-				lintolin_solver_main(solve_options.T.MPType,
+				multilintolin_solver_main(solve_options.T.MPType,
 														 W,
 														 randomizer_matrix,
-														 &variable_projection, 1,
+														 &variable_projection,
 														 &Wtemp,
 														 solve_options);
 				
@@ -972,6 +1116,7 @@ int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
 	witness_set W_lintolin = W;
 	
 	//set some solver options.  these will have to be reset later;
+	solve_options.robust = true;
 	solve_options.allow_multiplicity = 1;
 	solve_options.allow_singular = 1;
 	solve_options.use_midpoint_checker = 0;
@@ -1150,10 +1295,10 @@ int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
 			//done setting the value of the projection.
 			
 			//run the solver
-			lintolin_solver_main(solve_options.T.MPType,
+			multilintolin_solver_main(solve_options.T.MPType,
 													 W,
 													 randomizer_matrix,
-													 &variable_projection, 1,
+													 &variable_projection,
 													 &Wtemp,
 													 solve_options);
 			
@@ -1236,10 +1381,10 @@ int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
 				sub_mp(&variable_projection->coord[0],&variable_projection->coord[0],one);
 				neg_mp(&variable_projection->coord[0],&variable_projection->coord[0]);
 				
-				lintolin_solver_main(solve_options.T.MPType,
+				multilintolin_solver_main(solve_options.T.MPType,
 														 W,
 														 randomizer_matrix,
-														 &variable_projection, 1,
+														 &variable_projection,
 														 &Wtemp,
 														 solve_options);
 				
@@ -1254,10 +1399,10 @@ int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
 				add_mp(&variable_projection->coord[0],&variable_projection->coord[0],one);
 				neg_mp(&variable_projection->coord[0],&variable_projection->coord[0]);
 				
-				lintolin_solver_main(solve_options.T.MPType,
+				multilintolin_solver_main(solve_options.T.MPType,
 														 W,
 														 randomizer_matrix,
-														 &variable_projection, 1,
+														 &variable_projection,
 														 &Wtemp,
 														 solve_options);
 				

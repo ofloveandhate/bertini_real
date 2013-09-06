@@ -100,9 +100,78 @@ void surface_decomposition::main(vertex_set & V,
 	
 	//copy the patch over into this object
 	for (int ii=0; ii<W_surf.num_patches; ii++)
-		add_patch(W_surf.patch_mp[ii]);
+		this->add_patch(W_surf.patch_mp[ii]);
 	
 	
+	this->beginning_stuff( W_surf, program_options, solve_options);
+	
+	
+	witness_set W_curve_crit;
+	program_options.merge_edges=false;
+	compute_critical_curve(W_curve_crit, // <---  this gets computed,
+														W_surf,       //          all else is input
+													V,
+													program_options,
+													solve_options);
+	
+	
+	// DONE COMPUTING THE CRITICAL CURVE NOW.
+	std::cout << "done decomposing critical curve" << std::endl;
+	this->output_main(program_options, V);
+	
+	
+	
+	// compute the downstairs crit and midpoints for slicing
+	vec_mp midpoints_downstairs, crit_downstairs;  std::vector< int > index_tracker;
+	init_vec_mp(midpoints_downstairs,0); init_vec_mp(crit_downstairs,0);
+	W_curve_crit.compute_downstairs_crit_midpts(crit_downstairs, midpoints_downstairs, index_tracker, pi[0]);
+	
+	
+	if (program_options.verbose_level>=0) {
+		print_point_to_screen_matlab(crit_downstairs,"crit_down");
+		print_point_to_screen_matlab(midpoints_downstairs,"middown");
+	}
+	
+	program_options.merge_edges=true;
+	// get the midpoint slices
+	bool rerun_empty = false;
+	compute_slices(W_surf, V,
+								 midpoints_downstairs, this->mid_slices,
+								 program_options, solve_options, rerun_empty,"mid");
+	
+	
+	this->output_main(program_options, V);
+	
+	// get the critical slices
+	rerun_empty = true;
+	compute_slices(W_surf, V,
+								 crit_downstairs, this->crit_slices,
+								 program_options, solve_options, rerun_empty,"crit");
+	
+		
+	
+	this->output_main(program_options, V);
+	
+	
+	//connect the dots
+	connect_the_dots(V, pi, program_options, solve_options);
+	
+	
+	
+
+#ifdef usetempfolders
+	program_options.move_to_called();
+#endif
+	
+	
+	
+}
+
+
+void surface_decomposition::beginning_stuff(const witness_set & W_surf,
+																								BR_configuration & program_options,
+																								solver_configuration & solve_options)
+{
 	// perform an isosingular deflation
 	// note: you do not need witness_data to perform isosingular deflation
 	if (program_options.verbose_level>=2)
@@ -132,99 +201,42 @@ void surface_decomposition::main(vertex_set & V,
 	parse_preproc_data("preproc_data", &solve_options.PPD);
 	
 	
-
-	if (program_options.verbose_level>=2) 
+	
+	if (program_options.verbose_level>=2)
 		printf("checking if component is self-conjugate\n");
 	
 	
 	
-	checkSelfConjugate(W_surf,num_variables,program_options, program_options.current_working_filename);  //later:  could be passed in from user, if we want
+	checkSelfConjugate(W_surf,num_variables,program_options, program_options.current_working_filename);  
 	
-	//regenerate the various files, since we ran bertini since then.
+	//regenerate the various files, since we ran bertini since then and many files were deleted.
 	parse_input_file(program_options.input_deflated_filename);
 	
 	
 	
 	
-
-
+	
+	
 	//create the matrix
-	init_mat_mp2(this->randomizer_matrix,W_surf.num_variables-1-dimension,solve_options.PPD.num_funcs,solve_options.T.AMP_max_prec);
-
+	init_mat_mp2(this->randomizer_matrix,W_surf.num_variables-1-this->dimension,solve_options.PPD.num_funcs,solve_options.T.AMP_max_prec);
+	
 	//get the matrix and the degrees of the resulting randomized functions.
 	make_randomization_matrix_based_on_degrees(this->randomizer_matrix, this->randomized_degrees, W_surf.num_variables-1-dimension, solve_options.PPD.num_funcs);
 	
 	
 	
-
+	
 	if (!verify_projection_ok(W_surf,
-														randomizer_matrix,
-														this->pi,
-														solve_options))
+															this->randomizer_matrix,
+															this->pi,
+															solve_options))
 	{
 		std::cout << "the projections being used appear to suffer rank deficiency with Jacobian matrix..." << std::endl;
 		mypause();
 	}
-	
-	
-	
-	witness_set W_curve_crit;
-	
-	compute_critical_curve(W_curve_crit, // <---  this gets computed,
-												 W_surf,       //          all else is input
-												 V,
-												 program_options,
-												 solve_options);
-	
-	// DONE COMPUTING THE CRITICAL CURVE NOW.
-	std::cout << "done decomposing critical curve" << std::endl;
-	
-	
-	// compute the downstairs crit and midpoints for slicing
-	vec_mp midpoints_downstairs, crit_downstairs;  std::vector< int > index_tracker;
-	init_vec_mp(midpoints_downstairs,0); init_vec_mp(crit_downstairs,0);
-	W_curve_crit.compute_downstairs_crit_midpts(crit_downstairs, midpoints_downstairs, index_tracker, pi[0]);
-	
-	
-	if (program_options.verbose_level>=0) {
-		print_point_to_screen_matlab(crit_downstairs,"crit_down");
-		print_point_to_screen_matlab(midpoints_downstairs,"middown");
-	}
-	
-	// get the midpoint slices
-	bool rerun_empty = false;
-	compute_slices(W_surf, V,
-								 midpoints_downstairs, this->mid_slices,
-								 program_options, solve_options, rerun_empty,"mid");
-	
-	
-	// get the critical slices
-	rerun_empty = true;
-	compute_slices(W_surf, V,
-								 crit_downstairs, this->crit_slices,
-								 program_options, solve_options, rerun_empty,"crit");
-	
-		
-	
-	this->output_main(program_options, V);
-	
-	
-	//connect the dots
-	connect_the_dots(V, pi, program_options, solve_options);
-	
-	
-	
 
-#ifdef usetempfolders
-	program_options.move_to_called();
-#endif
-	
-	
 	
 }
-
-
-
 
 void surface_decomposition::compute_slices(const witness_set W_surf,
 																					 vertex_set & V,
@@ -435,6 +447,7 @@ void surface_decomposition::compute_critical_curve(witness_set & W_curve_crit,
 												 program_options,
 												 solve_options,
 												 &ns_config);
+	// this will use pi[0] to compute critical points
 	
 	W_curve_crit.only_first_vars(num_variables);
 	W_curve_crit.write_dehomogenized_coordinates("W_curve_crit_all"); // write the points to file
@@ -463,7 +476,7 @@ void surface_decomposition::compute_critical_curve(witness_set & W_curve_crit,
 												 program_options,
 												 solve_options,
 												 &ns_config);
-	
+	//this uses both pi[0] and pi[1] to compute witness points
 	//	W_curve.only_first_vars(num_vars);
 	W_curve.write_dehomogenized_coordinates("W_curve"); // write the points to file
 	
@@ -780,6 +793,8 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 						
 						solve_options.allow_multiplicity = 1;
 						solve_options.allow_singular = 1;
+						
+						solve_options.robust = true;
 						
 						witness_set W_new;
 						midpoint_solver_master_entry_point(W_midtrack, // carries with it the start points, and the linears.

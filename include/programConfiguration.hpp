@@ -252,6 +252,7 @@ public:
 	
 	int use_gamma_trick; // bool
 	int use_bounding_box; // bool
+	bool merge_edges;
 	
 	int crit_solver;
 	
@@ -309,6 +310,9 @@ public:
 		
 		this->use_bounding_box = 0;
 		this->use_gamma_trick = 0;
+		
+		merge_edges = true;
+		
 		return;
 
 	};

@@ -98,7 +98,7 @@ public:
 	} // re: copy
 	
 	
-
+	
 	
 	_comp_d  **local_mem_d;
 	_comp_mp **local_mem_mp;
@@ -107,7 +107,7 @@ public:
 	int *local_mem_needs_init_d; // determine if mem_d has been initialized
 	int *local_mem_needs_init_mp; // determine if mem_mp has been initialized
 	
-	protected:
+protected:
 	
 	void init()
 	{
@@ -137,6 +137,7 @@ class solver_configuration : public prog_config
 {
 public:
 	
+	bool robust;
 	tracker_config_t T;
 	tracker_config_t T_orig;
 	preproc_data PPD;
@@ -169,10 +170,34 @@ public:
 	}
 	
 	
+	
+	solver_configuration(){
+		this->robust = false;
+		
+		allow_unsuccess = 0;
+		allow_singular = 0;
+		allow_multiplicity = 0;
+		allow_infinite = 0;
+		
+		path_number_modulus = 20;
+		
+		verbose_level = 0;
+		
+		show_status_summary = 0;
+		
+		use_midpoint_checker = 0;
+		
+		midpoint_tol = 1e-6;
+		
+		use_gamma_trick = 0;
+		
+
+		complete_witness_set = 1;
+	}
 	~solver_configuration(){
-//		tracker_config_clear(&this->T);
-//		tracker_config_clear(&this->T_orig);
-//		preproc_data_clear(&this->PPD);
+		//		tracker_config_clear(&this->T);
+		//		tracker_config_clear(&this->T_orig);
+		//		preproc_data_clear(&this->PPD);
 	}
 	
 	
@@ -180,7 +205,7 @@ public:
 	{
 		parse_preproc_data("preproc_data", &this->PPD);
 	}
-
+	
 };
 
 
@@ -209,7 +234,7 @@ public:
 	prog_t *SLP; ///< the SLP
 	bool have_SLP;
 	
-	int num_variables; ///< the grand total number of variables to be computed on in the problem at hand 
+	int num_variables; ///< the grand total number of variables to be computed on in the problem at hand
 	
 	// these function handles are required for all solvers.
 	int (*evaluator_function_d) (point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *); // function handle to evaluator to use
@@ -287,7 +312,7 @@ protected:
 		cp_preproc_data(&this->preProcData, other.preProcData);
 		
 		this->SLP = other.SLP;
-
+		
 		
 		this->is_solution_checker_d = other.is_solution_checker_d;
 		this->is_solution_checker_mp = other.is_solution_checker_mp;
@@ -323,9 +348,9 @@ public:
 	mpq_t *gamma_rat; ///< randomizer
 	mat_mp randomizer_matrix;     ///< randomizer
 	mat_mp randomizer_matrix_full_prec;  ///< randomizer
-
+	
 	int curr_prec;
-
+	
 	
 	solver_mp() : solver(){
 		this->MPType = 2;
@@ -338,7 +363,7 @@ public:
 		init();
 	}; // re: default constructor
 	
-
+	
 	void init(){
 		solver::init();
 		
@@ -405,7 +430,7 @@ protected:
 		this->curr_prec = other.curr_prec;
 	}
 	
-
+	
 };
 
 
@@ -424,7 +449,7 @@ public:
   
 	comp_d gamma;    ///< randomizer
 	mat_d randomizer_matrix;     ///< randomizer
-
+	
 	
 	solver_d() : solver(){
 		init();
@@ -446,7 +471,7 @@ public:
 	solver_d & operator=( const solver_d & other)
 	{
 		solver::operator= (other);
-
+		
 		copy(other);
 		return *this;
 	}  // re: assigment
@@ -488,7 +513,7 @@ protected:
 		mat_cp_d(this->randomizer_matrix, other.randomizer_matrix);
 	}
 	
-
+	
 	
 };
 
@@ -532,7 +557,6 @@ int generic_setup_files(FILE ** OUT, boost::filesystem::path outname,
 
 /** reads the tracker_config_t from file. */
 void get_tracker_config(solver_configuration &solve_options,int MPType);
-void solver_init_config(solver_configuration &options);
 void solver_clear_config(solver_configuration &options);
 
 void generic_solver_master(witness_set * W_new, witness_set & W,
@@ -554,10 +578,10 @@ void generic_tracker_loop_master(trackingStats *trackCount,
 																 solver_configuration & solve_options);
 
 void send_start_points(int next_worker, int num_packets,
-											point_data_d *startPts_d,
-											point_data_mp *startPts_mp,
-											int & next_index,
-											solver_configuration & solve_options);
+											 point_data_d *startPts_d,
+											 point_data_mp *startPts_mp,
+											 int & next_index,
+											 solver_configuration & solve_options);
 
 int receive_endpoints(trackingStats *trackCount,
 											endgame_data_t *EG_receives, int & max_incoming,
@@ -584,6 +608,18 @@ void generic_track_path(int pathNum, endgame_data_t *EG_out,
 												int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 												int (*change_prec)(void const *, int),
 												int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *));
+
+
+
+void robust_track_path(int pathNum, endgame_data_t *EG_out,
+											 point_data_d *Pin, point_data_mp *Pin_mp,
+											 FILE *OUT, FILE *MIDOUT,
+											solver_configuration & solve_options,
+											 void const *ED_d, void const *ED_mp,
+											 int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
+											 int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
+											 int (*change_prec)(void const *, int),
+											 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *));
 
 
 

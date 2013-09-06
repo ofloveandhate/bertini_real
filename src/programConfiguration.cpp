@@ -200,6 +200,7 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 			{"gammatrick",		required_argument,			 0, 'g'}, {"g",		required_argument,			 0, 'g'},
 			{"detjac",		no_argument,			 0, 'd'},
 			{"debug", no_argument, 0, 'D'},
+			{"nomerge", no_argument, 0, 'm'},
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
@@ -214,6 +215,11 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 		
 		switch (choice)
 		{
+				
+			case 'm':
+				this->merge_edges = false;
+				break;
+				
 			case 'D':
 				this->debugwait = 1;
 				break;

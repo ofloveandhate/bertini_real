@@ -1309,7 +1309,7 @@ void nullspace_slave_entry_point(solver_configuration & solve_options)
 			ED_mp = new nullspacejac_eval_data_mp(1);
 			ED_mp->receive(solve_options);
 			
-			std::cout << "worker done receiving mp type" << std::endl;
+//			std::cout << "worker done receiving mp type" << std::endl;
 			// initialize latest_newton_residual_mp
 			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
@@ -1319,7 +1319,7 @@ void nullspace_slave_entry_point(solver_configuration & solve_options)
 			ED_d->receive(solve_options);
 			
 			ED_mp = ED_d->BED_mp;
-			std::cout << "worker done receiving double_mp type" << std::endl;
+//			std::cout << "worker done receiving double_mp type" << std::endl;
 			
 			
 			
