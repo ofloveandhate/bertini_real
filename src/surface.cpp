@@ -107,7 +107,7 @@ void surface_decomposition::main(vertex_set & V,
 	
 	
 	witness_set W_curve_crit;
-	program_options.merge_edges=false;
+	
 	compute_critical_curve(W_curve_crit, // <---  this gets computed,
 														W_surf,       //          all else is input
 													V,
@@ -132,7 +132,7 @@ void surface_decomposition::main(vertex_set & V,
 		print_point_to_screen_matlab(midpoints_downstairs,"middown");
 	}
 	
-	program_options.merge_edges=true;
+
 	// get the midpoint slices
 	bool rerun_empty = false;
 	compute_slices(W_surf, V,
@@ -248,6 +248,8 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 																					 std::string kindofslice)
 {
 	
+	program_options.merge_edges=true;
+	
 	
 	vec_mp *multilin_linears = (vec_mp *) br_malloc(2*sizeof(vec_mp));
 	
@@ -280,7 +282,10 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 		int iterations=0;
 		
 		witness_set slice_witness_set;
-		while ((slices[ii].num_edges==0) && (iterations<10)) {
+		
+		curve_decomposition new_slice;
+		
+		while ((new_slice.num_edges==0) && (iterations<10)) {
 			
 			std::stringstream converter;
 			converter << ii;
@@ -335,12 +340,12 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 
 
 		
-			slices[ii].clear();
+			new_slice.clear();
 			
 			solve_options.complete_witness_set = 1;
 			
 		// we already know the component is self-conjugate (by entry condition), so we are free to call this function
-			slices[ii].computeCurveSelfConj(slice_witness_set,
+			new_slice.computeCurveSelfConj(slice_witness_set,
 																			&pi[1],
 																			V,
 																			num_variables,
@@ -354,7 +359,7 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 				solve_options.T.final_tolerance = 0.5*solve_options.T.final_tolerance;
 				solve_options.T.securityMaxNorm = 10*solve_options.T.securityMaxNorm;
 				
-				jalk->r = 1e-14;
+				jalk->r = 1e-17;
 				d_to_mp(h, jalk);                 // h = 1e-10
 				
 				get_comp_rand_real_mp(rand_perterb); //  rand_perterb = real rand
@@ -365,25 +370,16 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 				add_mp(&projection_values_downstairs->coord[ii],&projection_values_downstairs->coord[ii],rand_perterb); // perturb the projection value
 				
 
-				
-				
 			}
 			else
 			{
-				
-				
-				jalk->r = 1e-13;
+				jalk->r = 1e-16;
 				d_to_mp(h, jalk);                 // h = 1e-10
 				
 				get_comp_rand_real_mp(rand_perterb); //  rand_perterb = real rand
-				
-				
-				
+
 				mul_mp(rand_perterb,rand_perterb,h); // rand_perterb = small real rand
 				add_mp(&projection_values_downstairs->coord[ii],&projection_values_downstairs->coord[ii],rand_perterb); // perturb the projection value
-				
-
-				
 				
 				solve_options.T.final_tolerance = 0.1*solve_options.T.final_tolerance;
 				solve_options.T.securityMaxNorm = 100*solve_options.T.securityMaxNorm;
@@ -404,10 +400,13 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 		} // re: while loop
 		solve_options.reset_tracker_config();
 		
-		slices[ii].add_projection(pi[1]);
-		slices[ii].num_variables = num_variables;
+		new_slice.add_projection(pi[1]);
+		new_slice.num_variables = num_variables;
+		
+		slices[ii] = new_slice;
 		
 		
+		this->output_main(program_options, V);
 		std::cout << "DONE decomposing the " << ii << "th slice" << std::endl;
 		
 	} // re: for loop
@@ -430,6 +429,9 @@ void surface_decomposition::compute_critical_curve(witness_set & W_curve_crit,
 																									 BR_configuration & program_options,
 																									 solver_configuration & solve_options)
 {
+	
+	program_options.merge_edges=false;
+	
 	
 	// find witness points on the critical curve.
 	
@@ -537,7 +539,7 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 {
 	
 
-	std::cout << "there are dots: " << V.num_vertices << std::endl;
+//	std::cout << "there are dots: " << V.num_vertices << std::endl;
 	midpoint_config md_config;
 	
 	
@@ -569,10 +571,10 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 	vec_mp blank_point;  init_vec_mp2(blank_point, this->num_variables + 2*num_crit_vars,1024);
 	blank_point->size = this->num_variables + 2*num_crit_vars;
 	
-	std::cout << this->num_variables << " " << num_crit_vars << std::endl;
-	print_point_to_screen_matlab(blank_point,"blank");
-	print_point_to_screen_matlab(V.vertices[crit_curve.edges[0].midpt].pt_mp,"V.vertices[crit_curve.edges[0].right].pt_mp");
-	
+//	std::cout << this->num_variables << " " << num_crit_vars << std::endl;
+//	print_point_to_screen_matlab(blank_point,"blank");
+//	print_point_to_screen_matlab(V.vertices[crit_curve.edges[0].midpt].pt_mp,"V.vertices[crit_curve.edges[0].right].pt_mp");
+//	
 	W_midtrack.add_point(blank_point);
 	
 	
@@ -697,10 +699,12 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 				while (current_top_ind != final_top_ind) // int yy=0; yy<crit_slices[ii+zz].num_edges; yy++
 				{
 					
+					std::cout << "target bottom: " << final_bottom_ind << " current bottom: " << current_bottom_ind << " current top: " << current_top_ind << " final top: " << final_top_ind << std::endl;
 					
 					std::vector< int > candidates; // indices of candidates for next one.
 					
 					int candidate_counter = 0;
+					std::cout << "finding candidates for bottom index " << current_bottom_ind << std::endl;
 					for (int qq=0; qq< crit_slices[ii+zz].num_edges; qq++) {
 						if (crit_slices[ii+zz].edges[qq].left == current_bottom_ind) {
 							candidates.push_back(qq);
@@ -714,9 +718,12 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 					
 					
 					
+					if (candidate_counter==0) {
+						std::cout << "found 0 candidates for left endpoint, bottom index " << current_bottom_ind << std::endl;
+						mypause();
+					}
 					
-					
-					for (int qq=0; qq<candidates.size(); qq++)
+					for (int qq=0; qq<candidate_counter; qq++)
 					{
 						int current_edge = candidates[qq];
 						
@@ -729,11 +736,13 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 							// can simply set the top or bottom edge to be this one.  know it goes there.  only have to
 							std::cout << "crit_slice[" << ii+zz << "].edges[" << current_edge << "] is degenerate" << std::endl;
 							if (zz==0){
-									F.left.push_back(current_edge);
-									F.num_left++; }
-								else {
-									F.right.push_back(current_edge);
-									F.num_right++; }
+								F.left.push_back(current_edge);
+								F.num_left++;
+							}
+							else {
+								F.right.push_back(current_edge);
+								F.num_right++;
+							}
 						
 							current_bottom_ind = current_top_ind = crit_slices[ii+zz].edges[current_edge].right; // the upper value
 							
@@ -824,6 +833,7 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 							std::cout << "the point found by midpoint tracker was not found in the vertex set :(" << std::endl;
 						}
 						else{
+							std::cout << "found_index " << found_index << std::endl;
 							int next_edge = crit_slices[ii+zz].edge_w_midpt(found_index); // index the *edge*
 							current_bottom_ind = current_top_ind = crit_slices[ii+zz].edges[next_edge].right; // the upper value
 							

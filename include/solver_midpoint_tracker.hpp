@@ -44,20 +44,7 @@ public:
 	SLP_global_pointers crit_memory;
 	SLP_global_pointers mid_memory;
 	
-//	_comp_d  **mem_d_mid;
-//	_comp_mp **mem_mp_mid;
-//	int *size_d_mid;  // size of mem_d
-//	int *size_mp_mid;  // size of mem_mp
-//	int *mem_needs_init_d_mid; // determine if mem_d has been initialized
-//	int *mem_needs_init_mp_mid; // determine if mem_mp has been initialized
-//	
-//	_comp_d  **mem_d_crit;
-//	_comp_mp **mem_mp_crit;
-//	int *size_d_crit;	// size of mem_d
-//	int *size_mp_crit;  // size of mem_mp
-//	int *mem_needs_init_d_crit; // determine if mem_d has been initialized
-//	int *mem_needs_init_mp_crit; // determine if mem_mp has been initialized
-	
+
 	// these are all merely pointers, and should only be assigned to memory set by the SLP creation routine inside of setupProg(), by the midpoint_config::setup() call
 	
 	prog_t *SLP_crit;
@@ -292,9 +279,9 @@ public:
 	
 	
 	
-	int setup(midpoint_config & md_config,
+	int setup(const midpoint_config & md_config,
 						surface_decomposition & surf,
-						witness_set & W,
+						const witness_set & W,
 						solver_configuration & solve_options);
 	
 	
@@ -521,9 +508,9 @@ public:
 	
 	
 	
-	int setup(midpoint_config & md_config,
+	int setup(const midpoint_config & md_config,
 						surface_decomposition & surf,
-						witness_set & W,
+						const witness_set & W,
 						solver_configuration & solve_options);
 	
 	
@@ -620,7 +607,7 @@ private:
 /** the main function for finding critical conditions WRT a projection
  */
 
-int midpoint_solver_master_entry_point(witness_set						& W, // carries with it the start points, and the linears.
+int midpoint_solver_master_entry_point(const witness_set						& W, // carries with it the start points, and the linears.
 																			 witness_set						*W_new, // new data goes in here
 																			 surface_decomposition & surf,
 																			 midpoint_config & md_config,

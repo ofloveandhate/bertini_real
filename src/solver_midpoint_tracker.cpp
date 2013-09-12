@@ -270,9 +270,9 @@ int midpoint_eval_data_mp::receive(parallelism_config & mpi_config)
 	return SUCCESSFUL;
 }
 
-int midpoint_eval_data_mp::setup(midpoint_config & md_config,
+int midpoint_eval_data_mp::setup(const midpoint_config & md_config,
 																 surface_decomposition & surf,
-																 witness_set & W,
+																 const witness_set & W,
 																 solver_configuration & solve_options)
 {
 	
@@ -467,9 +467,9 @@ int midpoint_eval_data_d::receive(parallelism_config & mpi_config)
 
 
 
-int midpoint_eval_data_d::setup(midpoint_config & md_config,
+int midpoint_eval_data_d::setup(const midpoint_config & md_config,
 																surface_decomposition & surf,
-																witness_set & W,
+																const witness_set & W,
 																solver_configuration & solve_options)
 {
 	
@@ -548,7 +548,7 @@ int midpoint_eval_data_d::setup(midpoint_config & md_config,
 
 
 
-int midpoint_solver_master_entry_point(witness_set						&W, // carries with it the start points, and the linears.
+int midpoint_solver_master_entry_point(const witness_set						&W, // carries with it the start points, and the linears.
 																			 witness_set						*W_new, // new data goes in here
 																			 surface_decomposition & surf,
 																			 midpoint_config & md_config,

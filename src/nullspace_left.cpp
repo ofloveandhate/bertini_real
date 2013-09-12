@@ -139,6 +139,7 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 			}
 		}
 		
+		solve_options.robust = true;
 		solve_options.allow_singular = 0;
 		solve_options.complete_witness_set = 1;
 		solve_options.allow_multiplicity = 0;
@@ -219,6 +220,9 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	W_linprod.cp_names(W);
 	
 	//set some solver options
+	
+	solve_options.robust = false;
+	
 	
 	solve_options.complete_witness_set = 0;
 	solve_options.use_midpoint_checker = 0;

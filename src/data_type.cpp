@@ -200,6 +200,11 @@ void br_exit(int errorCode)
 
 
 
+
+
+
+
+
 void deliberate_segfault(){
 	printf("the following segfault is deliberate\n");
 	int *faulty = NULL;
@@ -1354,7 +1359,6 @@ void decomposition::print(boost::filesystem::path base)
 	
 	if (dimension != num_curr_projections) {
 		std::cerr << "decomposition was short projections\nneeded	" << this->dimension << " but had " << num_curr_projections << std::endl;;
-		deliberate_segfault();
 	}
 	for (ii=0; ii<num_curr_projections; ii++) {
 		for(int jj=0;jj<pi[ii]->size;jj++)
@@ -1613,7 +1617,7 @@ void projection_value_homogeneous_input(comp_d result, vec_d input, vec_d projec
 	}
 	set_d(temp, result);
 	div_d(result, temp, &input->coord[0]);
-//	
+//
 //	if (result->i < 1e-14) {
 //		result->i = 0.0;
 //	}
