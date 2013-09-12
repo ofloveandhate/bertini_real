@@ -2707,7 +2707,7 @@ int check_issoln_nullspacejac_d(endgame_data_t *EG,
 	
 	if (!isSoln) {
 		
-		print_point_to_screen_matlab(e.funcVals,"terminal");
+		print_point_to_screen_matlab(e.funcVals,"terminal_func_vals");
 		print_point_to_screen_matlab(f,"prev");
 
 		printf("tol was %le\nmax_rat was %le\n",tol,max_rat);
@@ -2859,46 +2859,7 @@ int check_issoln_nullspacejac_mp(endgame_data_t *EG,
 		}
 	}
 	
-	
-//	mat_mp AtimesJ; init_mat_mp(AtimesJ,0,0);  AtimesJ->rows = AtimesJ->cols = 0;
-//	mat_mp jac_homogenizing_matrix;  init_mat_mp(jac_homogenizing_matrix,0,0);
-//	jac_homogenizing_matrix->rows = jac_homogenizing_matrix->cols = 0;
-//	mat_mp tempmat; init_mat_mp(tempmat,0,0); tempmat->rows = tempmat->cols = 0;
-//	mat_mp S_times_Jf_pi; init_mat_mp(S_times_Jf_pi,0,0); S_times_Jf_pi->rows = S_times_Jf_pi->cols = 0;
-//	vec_mp target_function_values; init_vec_mp(target_function_values,0); target_function_values->size = 0;
-//	
-//	mat_mul_mp(AtimesJ,BED->randomizer_matrix,e.Jv);
-//	for (ii=0; ii< AtimesJ->rows; ii++)
-//		for (int jj=1; jj<BED->num_x_vars; jj++)
-//			set_mp(&BED->jac_with_proj->entry[jj - 1][ii],&AtimesJ->entry[ii][jj]); // copy in the transpose of the (randomized) jacobian, omitting the homogenizing variables
-//	make_matrix_ID_mp(jac_homogenizing_matrix,BED->num_v_vars,BED->num_v_vars);
-//	
-//	for (ii=0; ii<BED->num_randomized_eqns; ii++)
-//		for (int jj=0; jj<(BED->max_degree - (BED->randomized_degrees[ii]-1)); jj++)
-//			mul_mp(&jac_homogenizing_matrix->entry[ii][ii], &jac_homogenizing_matrix->entry[ii][ii], &curr_x_vars->coord[0]);
-//	
-//	for (ii=BED->num_randomized_eqns; ii<BED->num_v_vars; ii++)
-//		for (int jj=0; jj<(BED->max_degree); jj++) // these are all degree 1
-//			mul_mp(&jac_homogenizing_matrix->entry[ii][ii], &jac_homogenizing_matrix->entry[ii][ii], &curr_x_vars->coord[0]);
-//	
-//	mat_mul_mp(tempmat, BED->post_randomizer_matrix, BED->jac_with_proj); // jac with proj having been set above with unperturbed values
-//	mat_mul_mp(S_times_Jf_pi, tempmat, jac_homogenizing_matrix); // jac with proj having been set above with unperturbed values
-//	mul_mat_vec_mp(target_function_values, S_times_Jf_pi, curr_v_vars);
-//	
-//	
-//	for (ii=0; ii<target_function_values->size; ii++) {
-//		mpf_abs_mp(n1, &target_function_values->coord[ii]);
-//		if (mpf_cmp(n1,zero_thresh)>0) {
-//			isSoln = 0;
-//			std::cout << T->funcResTol << " " <<  pow(10,-num_digits) << std::endl;
-//			mpf_out_str (NULL, 10, 6, zero_thresh); // base 10, 6 digits
-//			std::cout << std::endl;
-//			print_point_to_screen_matlab(target_function_values,"target_func_vals");
-//			break;
-//		}
-//	}
-	
-	
+
 	
 	mpf_clear(n1); mpf_clear(n2); mpf_clear(zero_thresh); mpf_clear(max_rat);
 	

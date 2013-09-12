@@ -2018,8 +2018,8 @@ int check_issoln_multilintolin_d(endgame_data_t *EG,
 	double n1, n2, max_rat;
 	point_d f;
 	eval_struct_d e;
-	//
-	//	mpf_init(n1); mpf_init(n2); mpf_init(zero_thresh); mpf_init(max_rat);
+
+	
 	init_point_d(f, 1);
 	init_eval_struct_d(e,0, 0, 0);
 	
@@ -2076,7 +2076,7 @@ int check_issoln_multilintolin_d(endgame_data_t *EG,
 	}
 	
 	if (!isSoln) {
-		print_point_to_screen_matlab(e.funcVals,"terminal");
+		print_point_to_screen_matlab(e.funcVals,"terminal_func_vals");
 		print_point_to_screen_matlab(f,"prev");
 		printf("tol was %le\nmax_rat was %le\n",tol,max_rat);
 	}
@@ -2138,7 +2138,7 @@ int check_issoln_multilintolin_mp(endgame_data_t *EG,
 	}
 	
 	evalProg_mp(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_mp, EG->PD_mp.time, BED->SLP);
-//	multilin_to_lin_eval_mp(f,          e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_mp, EG->PD_mp.time, ED);
+
 	// compare the function values
 	int isSoln = 1;
 	for (ii = 0; ii < BED->SLP->numFuncs && isSoln; ii++)
@@ -2165,6 +2165,15 @@ int check_issoln_multilintolin_mp(endgame_data_t *EG,
 			}
 		}
 	}
+	
+	
+	
+	if (!isSoln) {
+		
+		print_point_to_screen_matlab(e.funcVals,"terminal_func_vals");		
+		printf("tol was %le\nmax_rat was %le\n",tol,max_rat);
+	}
+	
 	
 	
 	mpf_clear(n1); mpf_clear(n2); mpf_clear(zero_thresh); mpf_clear(max_rat);

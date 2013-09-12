@@ -295,7 +295,7 @@ void solver_clear_config(solver_configuration & options){
 
 
 
-void generic_solver_master(witness_set * W_new, witness_set & W,
+void generic_solver_master(witness_set * W_new, const witness_set & W,
 													 solver_d * ED_d, solver_mp * ED_mp,
 													 solver_configuration & solve_options)
 {
@@ -454,7 +454,7 @@ void generic_set_start_pts(point_data_mp ** startPts,
 
 void generic_tracker_loop(trackingStats *trackCount,
 										 FILE * OUT, FILE * MIDOUT,
-										 witness_set & W,  // was the startpts file pointer.
+										 const witness_set & W,  // was the startpts file pointer.
 										 post_process_t *endPoints,
 										 solver_d * ED_d, solver_mp * ED_mp,
 										 solver_configuration & solve_options)
@@ -621,7 +621,7 @@ void generic_tracker_loop(trackingStats *trackCount,
 
 void generic_tracker_loop_master(trackingStats *trackCount,
 																 FILE * OUT, FILE * MIDOUT,
-																 witness_set & W,  // was the startpts file pointer.
+																 const witness_set & W,  // was the startpts file pointer.
 																 post_process_t *endPoints,
 																 solver_d * ED_d, solver_mp * ED_mp,
 																 solver_configuration & solve_options)
@@ -687,7 +687,7 @@ void generic_tracker_loop_master(trackingStats *trackCount,
 
 	while (1)
 	{
-		std::cout << "master waiting to receive" << std::endl;
+//		std::cout << "master waiting to receive" << std::endl;
 		int source = receive_endpoints(trackCount,
 											EG_receives, max_incoming,
 											solution_counter,
@@ -699,7 +699,7 @@ void generic_tracker_loop_master(trackingStats *trackCount,
 		
 			int next_worker = solve_options.activate_next_worker();
 			
-		std::cout << "master sending" << std::endl;
+//		std::cout << "master sending" << std::endl;
 		// this loop currently assumes the numpackets==1
 			send_start_points(next_worker, num_packets,
 											 startPts_d,
@@ -980,7 +980,7 @@ void generic_tracker_loop_worker(trackingStats *trackCount,
 		{
 			int current_index = indices_incoming[ii];;
 			
-			if (solve_options.verbose_level>=0)
+			if (solve_options.verbose_level>=0 && (current_index%solve_options.path_number_modulus==0) )
 				printf("tracking path %d, worker %d\n", current_index, solve_options.id());
 			
 			
@@ -1138,7 +1138,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 												int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *))
 {
 	
-
+//	std::cout << "using robust tracker" << std::endl;
 	EG_out->pathNum = pathNum;
 	EG_out->codim = 0; // this is ignored
 	
@@ -1149,9 +1149,17 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 	
 	solve_options.backup_tracker_config();
 	
+	
+	
+	std::map <int,int> setting_increments;
+
+	
+	
 	EG_out->retVal = -876; // set to bad return value
 	while ((iterations<max_iterations) && (EG_out->retVal!=0)) {
 		
+		
+		EG_out->retVal = 0;
 		
 	
 		T->first_step_of_path = 1;
@@ -1224,10 +1232,26 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 			
 		}
 		
+		
+		
+//TODO: PUT the is_solution check right here.
+		
+		// get how many times we have changed settings due to this type of failure.
+		int current_retval_counter = map_lookup_with_default( setting_increments, EG_out->retVal, 0 );
+		
 		if (EG_out->retVal!=0) {
+			std::cout << "solution had non-zero retVal " << EG_out->retVal << " (" << current_retval_counter << ")th occurrence on iteration " << iterations << "." << std::endl;
 			switch (EG_out->retVal) {
+					
+				case -50:
+//					retVal_reached_minTrackT
+//					NBHDRADIUS
+					solve_options.T.minTrackT *= 1e-20;
+					break;
 				case -100:
 					solve_options.T.AMP_max_prec +=256;
+					
+					
 					//this is higher precision needed.
 					break;
 					
@@ -1247,18 +1271,19 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					break;
 					
 				case -3:
-					solve_options.T.minStepSizeBeforeEndGame *= 1e-1;
-					solve_options.T.minStepSizeDuringEndGame *= 1e-1;
-					solve_options.T.minStepSize *=  1e-1;
+					solve_options.T.minStepSizeBeforeEndGame *= 1e-5;
+					solve_options.T.minStepSizeDuringEndGame *= 1e-5;
+					solve_options.T.minStepSize *=  1e-5;
 					break;
 					
 				case -4:
-					if (iterations<3) {
+					if (current_retval_counter<3) {
 						solve_options.T.securityMaxNorm *= 10;
 						std::cout << "increasing securityMaxNorm to " << solve_options.T.securityMaxNorm << std::endl;
 					}
 					else
 					{
+						// on the third try, go to security level 1.
 						solve_options.T.securityLevel = 1;
 						std::cout << "setting securityLevel to 1" << std::endl;
 					}
@@ -1272,6 +1297,11 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					break;
 			}
 		}
+		
+		// increment the counter for how many times we have changed this type of setting.
+		setting_increments[EG_out->retVal] = current_retval_counter + 1;
+		
+		
 		iterations++;
 	} // re: while
 	

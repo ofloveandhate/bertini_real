@@ -66,6 +66,28 @@ void br_exit(int errorCode);
 void deliberate_segfault();
 
 
+
+
+template <typename key_type, typename value_type>
+value_type map_lookup_with_default(const  std::map <key_type,value_type> & mc_mapperson, const key_type & lookup_key, const value_type& default_value ) {
+	typename std::map<key_type,value_type>::const_iterator it = mc_mapperson.find( lookup_key );
+	if ( it == mc_mapperson.end() ) {
+		return default_value;
+	}
+	else {
+		return it->second;
+	}
+}
+
+
+
+
+
+
+
+
+
+
 void print_point_to_screen_matlab(vec_d M, std::string name);
 void print_point_to_screen_matlab(vec_mp M, std::string name);
 void print_matrix_to_screen_matlab(mat_d M, std::string name);
@@ -659,6 +681,8 @@ public:
 		
 		vec_cp_mp(pi[num_curr_projections], proj);
 		num_curr_projections++;
+		
+		std::cout << "projection now has " << num_curr_projections << " projections" << std::endl;
 	}
 	
 	void add_patch(vec_mp new_patch){

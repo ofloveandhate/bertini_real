@@ -257,7 +257,7 @@ public:
 		this->MPType = new_mp_type;
 	}
 	
-	virtual ~solver()
+	~solver()
 	{
 		freeEvalProg(this->MPType);
 	}
@@ -559,20 +559,20 @@ int generic_setup_files(FILE ** OUT, boost::filesystem::path outname,
 void get_tracker_config(solver_configuration &solve_options,int MPType);
 void solver_clear_config(solver_configuration &options);
 
-void generic_solver_master(witness_set * W_new, witness_set & W,
+void generic_solver_master(witness_set * W_new, const witness_set & W,
 													 solver_d * ED_d, solver_mp * ED_mp,
 													 solver_configuration & solve_options);
 
 void generic_tracker_loop(trackingStats *trackCount,
 													FILE * OUT, FILE * midOUT,
-													witness_set & W,  // was the startpts file pointer.
+													const witness_set & W,  // was the startpts file pointer.
 													post_process_t *endPoints,
 													solver_d * ED_d, solver_mp * ED_mp,
 													solver_configuration & solve_options);
 
 void generic_tracker_loop_master(trackingStats *trackCount,
 																 FILE * OUT, FILE * MIDOUT,
-																 witness_set & W,  // was the startpts file pointer.
+																 const witness_set & W,  // was the startpts file pointer.
 																 post_process_t *endPoints,
 																 solver_d * ED_d, solver_mp * ED_mp,
 																 solver_configuration & solve_options);

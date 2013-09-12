@@ -35,7 +35,7 @@
 #include "solver_lintolin.hpp"
 #include "solver_linprodtodetjac.hpp"
 #include "solver_detjactodetjac.hpp"
-
+#include "solver_multilin_projection.hpp"
 #include "nullspace_left.hpp"
 
 
@@ -148,6 +148,26 @@ public:
 		return -12;
 	}
 	
+	std::pair<int,int> get_merge_candidate(const vertex_set & V){
+		std::pair< int, int> found_edges;
+		found_edges.first = -1;
+		found_edges.second = -1;
+		
+		
+		for (int ii=0; ii<this->num_edges; ii++) {
+			if (V.vertices[edges[ii].left].type == NEW) {
+				found_edges.second = ii;
+				found_edges.first = this->edge_w_right(edges[ii].left);
+				return found_edges;
+			}
+		}
+		
+		return found_edges;		
+	}
+	
+	void merge(witness_set & W_midpt, vertex_set & V,
+						 vec_mp * pi_in,
+						 solver_configuration & solve_options);
 	
 	void main(vertex_set & V,
 						witness_set & W,
