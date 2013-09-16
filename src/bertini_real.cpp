@@ -55,8 +55,6 @@ int main(int argC, char *args[])
 	solve_options.use_midpoint_checker = 0;
 	solve_options.T.ratioTol = 0.99999999; // manually assert to be more permissive.  i don't really like this.
 	solve_options.verbose_level = program_options.verbose_level;
-	
-	
 	solve_options.use_gamma_trick = program_options.use_gamma_trick;
 	
 	if (program_options.verbose_level>=2)

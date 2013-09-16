@@ -1239,15 +1239,15 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 		// get how many times we have changed settings due to this type of failure.
 		int current_retval_counter = map_lookup_with_default( setting_increments, EG_out->retVal, 0 );
 		
-		if (EG_out->retVal!=0) {
+		if (!(EG_out->retVal==0 ||   EG_out->retVal==-50 )) {
 			std::cout << "solution had non-zero retVal " << EG_out->retVal << " (" << current_retval_counter << ")th occurrence on iteration " << iterations << "." << std::endl;
 			switch (EG_out->retVal) {
 					
-				case -50:
-//					retVal_reached_minTrackT
-//					NBHDRADIUS
-					solve_options.T.minTrackT *= 1e-20;
-					break;
+//				case -50:
+////					retVal_reached_minTrackT
+////					NBHDRADIUS
+//					solve_options.T.minTrackT *= 1e-50;
+//					break;
 				case -100:
 					solve_options.T.AMP_max_prec +=256;
 					
@@ -1256,11 +1256,11 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					break;
 					
 				case 100:
-					solve_options.T.AMP_max_prec +=256;
+					solve_options.T.AMP_max_prec +=256; // linear increase by 256.
 					break;
 					
 				case -10:
-					solve_options.T.maxNumSteps *=2;
+					solve_options.T.maxNumSteps *=2; // double each time
 					
 					break;
 					
@@ -1278,13 +1278,13 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					
 				case -4:
 					if (current_retval_counter<3) {
-						solve_options.T.securityMaxNorm *= 10;
+						solve_options.T.securityMaxNorm *= 10;  // exponential increase by 10's
 						std::cout << "increasing securityMaxNorm to " << solve_options.T.securityMaxNorm << std::endl;
 					}
 					else
 					{
 						// on the third try, go to security level 1.
-						solve_options.T.securityLevel = 1;
+						solve_options.T.securityLevel = 1; // just turn on security level 1 
 						std::cout << "setting securityLevel to 1" << std::endl;
 					}
 						

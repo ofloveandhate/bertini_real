@@ -1,22 +1,6 @@
 #include "solver_midpoint_tracker.hpp"
 #include "surface.hpp"
 
-////stupid globals
-//
-//_comp_d  **mem_d_crit;
-//_comp_mp **mem_mp_crit;
-//int *size_d_crit;  // size of mem_d
-//int *size_mp_crit;  // size of mem_mp
-//int *mem_needs_init_d_crit; // determine if mem_d has been initialized
-//int *mem_needs_init_mp_crit; // determine if mem_mp has been initialized
-//
-//_comp_d  **mem_d_mid;
-//_comp_mp **mem_mp_mid;
-//int *size_d_mid;  // size of mem_d
-//int *size_mp_mid;  // size of mem_mp
-//int *mem_needs_init_d_mid; // determine if mem_d has been initialized
-//int *mem_needs_init_mp_mid; // determine if mem_mp has been initialized
-
 
 void midpoint_config::setup(const surface_decomposition & surf,
 														solver_configuration & solve_options)
@@ -59,21 +43,7 @@ void midpoint_config::setup(const surface_decomposition & surf,
 	this->mid_memory.capture_globals();
 	this->mid_memory.set_globals_null();
 	
-//	//reset
-//	mem_d = NULL;
-//	mem_mp = NULL;
-//	size_d = NULL;  // size of mem_d
-//	size_mp = NULL;  // size of mem_mp
-//	mem_needs_init_d = NULL; // determine if mem_d has been initialized
-//	mem_needs_init_mp = NULL; // determine if mem_mp has been initialized
-	// this call writes to several global variables.
-	//	//	_comp_d  **mem_d  = NULL;
-	//	//	_comp_mp **mem_mp = NULL;
-	//	//	int *size_d  = NULL;  // size of mem_d
-	//	//	int *size_mp = NULL;  // size of mem_mp
-	//	//	int *mem_needs_init_d  = NULL; // determine if mem_d has been initialized
-	//	//	int *mem_needs_init_mp = NULL; // determine if mem_mp has been initialized
-	
+
 
 	//do the necessary parsing
 	
@@ -95,15 +65,8 @@ void midpoint_config::setup(const surface_decomposition & surf,
 	randomized_degrees.clear();
 	make_randomization_matrix_based_on_degrees(this->randomizer_matrix_crit, randomized_degrees, surf.crit_curve.num_variables-surf.crit_curve.num_patches-1, solve_options.PPD.num_funcs);
 	
-	
-	std::cout << "blabla " << size_mp[0] << std::endl;
-	
 	this->crit_memory.capture_globals();
 	this->crit_memory.set_globals_null();
-	
-	std::cout << "mem_d: " << this->mid_memory.local_mem_d << std::endl;
-	std::cout << "mem_mp: " << this->mid_memory.local_mem_mp << std::endl;
-
 	
 	solve_options.T.numVars = surf.num_variables + 2*surf.crit_curve.num_variables;
 	// are there other things in T which need to be set?
@@ -1066,14 +1029,8 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 		print_point_to_screen_matlab(funcVals,"F_d");
 		print_matrix_to_screen_matlab(Jv,"Jv");
 		print_matrix_to_screen_matlab(Jp,"Jp");
-
-		vec_d result; init_vec_d(result,0);
-		dehomogenize(&result, curr_mid_vars);
-		print_point_to_screen_matlab(result,"mid");
 		
-		//	std::cout << "\n\n**************\n\n";
-		clear_vec_d(result);
-			mypause();
+		mypause();
 	}
 	
 	

@@ -172,6 +172,64 @@ public:
 	
 	
 	solver_configuration(){
+
+	}
+	~solver_configuration(){
+		//		tracker_config_clear(&this->T);
+		//		tracker_config_clear(&this->T_orig);
+		//		preproc_data_clear(&this->PPD);
+	}
+	
+	
+	solver_configuration & operator=( const solver_configuration & other)
+	{
+		init();
+		copy(other);
+		return *this;
+	}
+	
+	solver_configuration(const solver_configuration & other)
+	{
+		init();
+		copy(other);
+	} // re: copy
+	
+	
+	void copy(const solver_configuration & other)
+	{
+		cp_tracker_config_t(&this->T, &other.T);
+		cp_tracker_config_t(&this->T_orig, &other.T_orig);
+		
+		
+		this->robust = other.robust;
+
+		cp_preproc_data(&this->PPD, other.PPD);
+		
+		this->allow_multiplicity = other.allow_multiplicity;
+		this->allow_singular = other.allow_singular;
+		this->allow_infinite = other.allow_infinite;
+		this->allow_unsuccess = other.allow_unsuccess;
+		
+		this->path_number_modulus = other.path_number_modulus;
+		
+		this->verbose_level = other.verbose_level;
+		this->show_status_summary = other.show_status_summary;
+		
+		this->use_midpoint_checker = other.use_midpoint_checker;
+		this->midpoint_tol = other.midpoint_tol;
+		
+		this->use_gamma_trick = other.use_gamma_trick;
+		
+		this->complete_witness_set = other.complete_witness_set;
+		
+		
+		
+	}
+	
+	
+	
+	void init()
+	{
 		this->robust = false;
 		
 		allow_unsuccess = 0;
@@ -191,13 +249,8 @@ public:
 		
 		use_gamma_trick = 0;
 		
-
+		
 		complete_witness_set = 1;
-	}
-	~solver_configuration(){
-		//		tracker_config_clear(&this->T);
-		//		tracker_config_clear(&this->T_orig);
-		//		preproc_data_clear(&this->PPD);
 	}
 	
 	

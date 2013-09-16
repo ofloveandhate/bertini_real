@@ -896,6 +896,9 @@ void witness_set::compute_downstairs_crit_midpts(vec_mp crit_downstairs,
 	
 	for (int ii=0; ii<this->num_pts; ii++){
 		projection_value_homogeneous_input(&projection_values->coord[ii],this->pts_mp[ii], pi); // set projection value
+		if (mpf_get_d(projection_values->coord[ii].i)<1e-13) {
+			mpf_set_str(projection_values->coord[ii].i,"0",10);
+		}
 	}
 	
 	
@@ -1151,32 +1154,35 @@ int decomposition::index_in_vertices(vertex_set &V,
 	}
 	
 	
-		for (ii=0; ii<V.num_vertices; ii++) {
-			
-			int current_index = ii;
-			
-			//it would be desirable to perform this comparison, but the projection value depends on the projection used to compute it!
-			// hence, it has been commented out.  WTB: a faster comparison search.
+	for (ii=0; ii<V.num_vertices; ii++) {
+		
+		int current_index = ii;
+		
+		if (V.vertices[current_index].removed!=1) {
+		
+		//it would be desirable to perform this comparison, but the projection value depends on the projection used to compute it!
+		// hence, it has been commented out.  WTB: a faster comparison search.
 //			sub_mp(V.diff, projection_value, V.vertices[current_index].projVal_mp);
 //			mpf_abs_mp(V.abs, V.diff);
 //			
 //			if (mpf_cmp(V.abs, V.zerothresh) > 0){ // i think this is opposite
 //				continue;
 //			}
-			
-			for (int jj=1; jj<V.num_natural_variables; jj++) {
-				div_mp(&V.checker_2->coord[jj-1],&V.vertices[current_index].pt_mp->coord[jj], &V.vertices[current_index].pt_mp->coord[0]);
-			}
-			
-			if (isSamePoint_inhomogeneous_input(V.checker_1, V.checker_2)){				
-				index = current_index;
-				break;
-			}
+		
+		for (int jj=1; jj<V.num_natural_variables; jj++) {
+			div_mp(&V.checker_2->coord[jj-1],&V.vertices[current_index].pt_mp->coord[jj], &V.vertices[current_index].pt_mp->coord[0]);
+		}
+		
+		if (isSamePoint_inhomogeneous_input(V.checker_1, V.checker_2)){				
+			index = current_index;
+			break;
+		}
 
-			if (index!=-1)
-				break;
+		if (index!=-1)
+			break;
 			
 		}
+	}
 		
 	
 	return index;	
@@ -1358,8 +1364,9 @@ void decomposition::print(boost::filesystem::path base)
 	}
 	
 	if (dimension != num_curr_projections) {
-		std::cerr << "decomposition was short projections\nneeded	" << this->dimension << " but had " << num_curr_projections << std::endl;;
+//		std::cout << "decomposition was short projections\nneeded	" << this->dimension << " but had " << num_curr_projections << std::endl;;
 	}
+	
 	for (ii=0; ii<num_curr_projections; ii++) {
 		for(int jj=0;jj<pi[ii]->size;jj++)
 		{
@@ -1618,9 +1625,9 @@ void projection_value_homogeneous_input(comp_d result, vec_d input, vec_d projec
 	set_d(temp, result);
 	div_d(result, temp, &input->coord[0]);
 //
-//	if (result->i < 1e-14) {
-//		result->i = 0.0;
-//	}
+	if (result->i < 1e-14) {
+		result->i = 0.0;
+	}
 	
 //	if (result->r < 1e-13) {
 //		result->r = 0.0;
@@ -1647,9 +1654,9 @@ void projection_value_homogeneous_input(comp_mp result, vec_mp input, vec_mp pro
 	
 //	comp_d temp2;
 //	mp_to_d(temp2, result);
-//	if (temp2->i < 1e-14) {
-//		mpf_set_d(result->i, 0.0);
-//	}
+	if (mpf_get_d(result->i) < 1e-14) {
+		mpf_set_d(result->i, 0.0);
+	}
 	
 //	mp_to_d(temp2, result);
 //	if (temp2->r < 1e-13) {
@@ -1670,7 +1677,7 @@ int isSamePoint_inhomogeneous_input(point_d left, point_d right){
 	}
 	
 	
-	int indicator = isSamePoint(left,NULL,52,right,NULL,52,1e-4);
+	int indicator = isSamePoint(left,NULL,52,right,NULL,52,1e-3);
 	
 	
 	return indicator;
@@ -1686,7 +1693,7 @@ int isSamePoint_inhomogeneous_input(point_mp left, point_mp right){
 //		exit(-287);
 	}
 	
-	int indicator = isSamePoint(NULL,left,65,NULL,right,65,1e-4); // make the bertini library call
+	int indicator = isSamePoint(NULL,left,65,NULL,right,65,1e-3); // make the bertini library call
 	
 
 	return indicator;
@@ -1709,7 +1716,7 @@ int isSamePoint_homogeneous_input(point_d left, point_d right){
 	dehomogenize(&dehom_left,left);
 	dehomogenize(&dehom_right,right);
 	
-	int indicator = isSamePoint(dehom_left,NULL,52,dehom_right,NULL,52,1e-4);
+	int indicator = isSamePoint(dehom_left,NULL,52,dehom_right,NULL,52,1e-3);
 	
 	clear_vec_d(dehom_left); clear_vec_d(dehom_right);
 	
@@ -1732,7 +1739,7 @@ int isSamePoint_homogeneous_input(point_mp left, point_mp right){
 	dehomogenize(&dehom_left,left);
 	dehomogenize(&dehom_right,right);
 	
-	int indicator = isSamePoint(NULL,dehom_left,65,NULL,dehom_right,65,1e-4); // make the bertini library call
+	int indicator = isSamePoint(NULL,dehom_left,65,NULL,dehom_right,65,1e-3); // make the bertini library call
 	
 	clear_vec_mp(dehom_left); clear_vec_mp(dehom_right);
 	
@@ -1956,7 +1963,7 @@ void cp_patch_d(patch_eval_data_d *PED, patch_eval_data_d PED_input)
   return;
 }
 
-void cp_preproc_data(preproc_data *PPD, preproc_data PPD_input)
+void cp_preproc_data(preproc_data *PPD, const preproc_data PPD_input)
 {
   int i, total_gp;
 	
@@ -1989,7 +1996,7 @@ void sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & ind
 	d_to_mp(large,l);
 	
 	
-	print_point_to_screen_matlab(projections_input, "projections_input");
+//	print_point_to_screen_matlab(projections_input, "projections_input");
 	
 	std::vector< int > index_tracker_non_unique;
 	std::vector< double > projvals_as_doubles;
@@ -2014,7 +2021,7 @@ void sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & ind
 	//sort by size
 	
 	for (int ii=0; ii<raw->size; ii++) { // for each of the projection values input
-		min = 1e10; // reset this
+		min = 1e10; // reset this bogus value
 		
 		// this loop finds the minimum projection value
 		for (int jj=0; jj<raw->size; jj++) {
@@ -2051,34 +2058,19 @@ void sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & ind
 	int unique_counter = 1;
 	for (int ii=1; ii<raw->size; ii++) {
 		if ( fabs( projvals_as_doubles[ii-1]-projvals_as_doubles[ii]) < distinct_thresh) {
-//			std::cout << "sorter claims fabs(" << projvals_as_doubles[ii-1] << " - " << projvals_as_doubles[ii] << ")<" << distinct_thresh << std::endl;
 			continue;
 		}
 		else
 		{
-			
-//			std::cout << "sorter claims fabs(" << projvals_as_doubles[ii-1] << " - " << projvals_as_doubles[ii] << ")>" << distinct_thresh << std::endl;
-			
-			
 			increase_size_vec_mp(projections_sorted,unique_counter+1); projections_sorted->size = unique_counter+1;
 			set_mp(&projections_sorted->coord[unique_counter],&projections_sorted_non_unique->coord[ii]);
 			unique_counter++;
 			
 			index_tracker.push_back(index_tracker_non_unique[ii]);
-			
 		}
-			
 	}
 	
-//	std::cout << "projvals_as_doubles:";
-//	for (int ii=0; ii<projvals_as_doubles.size(); ii++) {
-//		std::cout << projvals_as_doubles[ii] << " ";
-//	}
-//	std::cout << std::endl;
-//	
-//	print_point_to_screen_matlab(projections_sorted, "projections_sorted");
-//	
-//	mypause();
+
 	return;
 }
 

@@ -375,7 +375,8 @@ public:
   comp_mp  projVal_mp;
 	
   int type;  //See enum above.
-	
+	int removed;
+	int input_filename_index;
 	
 	vertex()
 	{
@@ -391,20 +392,14 @@ public:
 	vertex & operator=(const vertex & other)
 	{
 		init();
-		
-		vec_cp_mp(this->pt_mp, other.pt_mp);
-		set_mp(this->projVal_mp, other.projVal_mp);
-		this->type = other.type;
+			copy(other);
 		return *this;
-	};
+	}
 	
 	vertex(const vertex& other)
 	{
 		init();
-		
-		vec_cp_mp(this->pt_mp, other.pt_mp);
-		set_mp(this->projVal_mp, other.projVal_mp);
-		this->type = other.type;
+		copy(other);
 	}
 	
 	void print()
@@ -416,12 +411,27 @@ public:
 	
 private:
 	
+	
+	void copy(const vertex & other)
+	{
+		vec_cp_mp(this->pt_mp, other.pt_mp);
+		set_mp(this->projVal_mp, other.projVal_mp);
+		this->type = other.type;
+		
+		this->input_filename_index = other.input_filename_index;
+		this->removed = other.removed;
+	}
+	
+	
 	void init()
 	{
 		init_mp(this->projVal_mp);
 		init_point_mp(this->pt_mp,1);
 		this->pt_mp->size = 1;
 		this->type = UNSET;
+		
+		this->removed = 0;
+		this->input_filename_index = -1;
 	}
 };
 
@@ -433,7 +443,10 @@ private:
  */
 class vertex_set
 {
-public: 
+public:
+	
+	std::vector< boost::filesystem::path > input_filename;
+	
 	std::vector<vertex> vertices;  //Isolated real points.
 	int num_vertices;
 	
@@ -682,7 +695,7 @@ public:
 		vec_cp_mp(pi[num_curr_projections], proj);
 		num_curr_projections++;
 		
-		std::cout << "projection now has " << num_curr_projections << " projections" << std::endl;
+//		std::cout << "projection now has " << num_curr_projections << " projections" << std::endl;
 	}
 	
 	void add_patch(vec_mp new_patch){
@@ -847,7 +860,7 @@ int get_num_vars_PPD(preproc_data PPD);
 
 void cp_patch_mp(patch_eval_data_mp *PED, patch_eval_data_mp PED_input);
 void cp_patch_d(patch_eval_data_d *PED, patch_eval_data_d PED_input);
-void cp_preproc_data(preproc_data *PPD, preproc_data PPD_input);
+void cp_preproc_data(preproc_data *PPD, const preproc_data PPD_input);
 
 void sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & index_tracker, vec_mp projections_input);
 

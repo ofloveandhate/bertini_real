@@ -13,7 +13,7 @@
 void surface_decomposition::print(boost::filesystem::path base)
 {
 	
-	std::cout << "printing surface decomposition to folder " << base << std::endl;
+//	std::cout << "printing surface decomposition to folder " << base << std::endl;
 	decomposition::print(base);
 	
 	
@@ -539,11 +539,11 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 {
 	
 
-//	std::cout << "there are dots: " << V.num_vertices << std::endl;
 	midpoint_config md_config;
 	
 	
 	md_config.setup(*this, solve_options);
+	
 	
 	
 	comp_mp temp, temp2, temp3;
@@ -597,6 +597,8 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 			std::cout << "face " << this->num_faces << ", slice	" << ii << " edge " << jj << std::endl;
 			face F;
 			
+			
+
 			//create the face here
 			
 			F.index = ii; // the index of which midslice this face came from.
@@ -609,9 +611,9 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 			
 			std::cout << "tracking from these point indices:" << std::endl;
 			std::cout <<  mid_slices[ii].edges[jj].left  << " " << mid_slices[ii].edges[jj].midpt  << " "  << mid_slices[ii].edges[jj].right << std::endl;
-			print_point_to_screen_matlab(V.vertices[mid_slices[ii].edges[jj].midpt].pt_mp,"V.vertices[mid_slices[ii].edges[jj].midpt].pt_mp");
-			print_point_to_screen_matlab(V.vertices[mid_slices[ii].edges[jj].left].pt_mp,"V.vertices[mid_slices[ii].edges[jj].left].pt_mp");
-			print_point_to_screen_matlab(V.vertices[mid_slices[ii].edges[jj].right].pt_mp,"V.vertices[mid_slices[ii].edges[jj].right].pt_mp");
+//			print_point_to_screen_matlab(V.vertices[mid_slices[ii].edges[jj].midpt].pt_mp,"V.vertices[mid_slices[ii].edges[jj].midpt].pt_mp");
+//			print_point_to_screen_matlab(V.vertices[mid_slices[ii].edges[jj].left].pt_mp,"V.vertices[mid_slices[ii].edges[jj].left].pt_mp");
+//			print_point_to_screen_matlab(V.vertices[mid_slices[ii].edges[jj].right].pt_mp,"V.vertices[mid_slices[ii].edges[jj].right].pt_mp");
 			
 			
 			// mid
@@ -650,6 +652,7 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 					std::cout << "going right" << std::endl;
 				}
 				
+				
 
 				//track	
 				int final_top_ind, final_bottom_ind; // indexes in V of the bottom and top points of the left or right edge.  
@@ -665,12 +668,12 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 					set_zero_mp(md_config.u_target);
 					
 					std::cout << "top: " << crit_curve.edges[F.top].left << " bottom: " << crit_curve.edges[F.bottom].left << std::endl;
-			print_point_to_screen_matlab(V.vertices[ crit_curve.edges[F.bottom].left ].pt_mp,"V.vertices[ crit_curve.edges[F.bottom].left ].pt_mp");
+					print_point_to_screen_matlab(V.vertices[ crit_curve.edges[F.bottom].left ].pt_mp,"V.vertices[ crit_curve.edges[F.bottom].left ].pt_mp");
 					projection_value_homogeneous_input(proj_top,    V.vertices[ crit_curve.edges[F.top].left ].pt_mp,   pi[1]); //w2
 					projection_value_homogeneous_input(proj_bottom, V.vertices[ crit_curve.edges[F.bottom].left ].pt_mp,pi[1]); //w0
 					
-					print_point_to_screen_matlab(V.vertices[ crit_curve.edges[F.top].left ].pt_mp,"top_target");
-					print_point_to_screen_matlab(V.vertices[ crit_curve.edges[F.bottom].left ].pt_mp,"bottom_target");
+//					print_point_to_screen_matlab(V.vertices[ crit_curve.edges[F.top].left ].pt_mp,"top_target");
+//					print_point_to_screen_matlab(V.vertices[ crit_curve.edges[F.bottom].left ].pt_mp,"bottom_target");
 					
 					
 				}
@@ -686,9 +689,24 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 					projection_value_homogeneous_input(proj_top, V.vertices[ crit_curve.edges[F.top].right ].pt_mp,pi[1]);
 					projection_value_homogeneous_input(proj_bottom, V.vertices[ crit_curve.edges[F.bottom].right ].pt_mp,pi[1]);
 					
-					print_point_to_screen_matlab(V.vertices[ crit_curve.edges[F.top].right ].pt_mp,"top_target");
-					print_point_to_screen_matlab(V.vertices[ crit_curve.edges[F.bottom].right ].pt_mp,"bottom_target");
+//					print_point_to_screen_matlab(V.vertices[ crit_curve.edges[F.top].right ].pt_mp,"top_target");
+//					print_point_to_screen_matlab(V.vertices[ crit_curve.edges[F.bottom].right ].pt_mp,"bottom_target");
 					
+				}
+				
+				if (final_bottom_ind==final_top_ind) {
+					int current_edge = crit_slices[ii+zz].edge_w_midpt(final_bottom_ind);
+						// can simply set the top or bottom edge to be this one.  know it goes there.
+						std::cout << "crit_slice[" << ii+zz << "].edges[" << current_edge << "] is degenerate" << std::endl;
+						if (zz==0){
+							F.left.push_back(current_edge);
+							F.num_left++;
+						}
+						else {
+							F.right.push_back(current_edge);
+							F.num_right++;
+						}
+					continue; // go to next zz value, or next midslice edge, or whatever
 				}
 				
 				
@@ -696,23 +714,58 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 				int current_top_ind = -12131; // initialize to impossible value;
 				
 				
-				while (current_top_ind != final_top_ind) // int yy=0; yy<crit_slices[ii+zz].num_edges; yy++
+				std::set< int > found_edges;
+				std::set< int > possible_edges;
+				for (int rr = 0; rr< crit_slices[ii+zz].num_edges; rr++) 
+					possible_edges.insert(rr);
+				
+				
+				while ((current_top_ind != final_top_ind) && (possible_edges.size()>0)) // int yy=0; yy<crit_slices[ii+zz].num_edges; yy++
 				{
 					
 					std::cout << "target bottom: " << final_bottom_ind << " current bottom: " << current_bottom_ind << " current top: " << current_top_ind << " final top: " << final_top_ind << std::endl;
 					
 					std::vector< int > candidates; // indices of candidates for next one.
 					
+//					for (std::set< int >::iterator setiter = possible_edges.begin(); setiter != possible_edges.end(); setiter++){
+//						std::cout << *setiter << " " ;
+//					}
+					
+					
 					int candidate_counter = 0;
 					std::cout << "finding candidates for bottom index " << current_bottom_ind << std::endl;
 					for (int qq=0; qq< crit_slices[ii+zz].num_edges; qq++) {
-						if (crit_slices[ii+zz].edges[qq].left == current_bottom_ind) {
+						
+						
+						bool correct_interval = false;
+						bool matches_end = ((crit_slices[ii+zz].edges[qq].left == current_bottom_ind) || (crit_slices[ii+zz].edges[qq].right == current_bottom_ind));
+						bool havent_found_yet = (possible_edges.find(qq)!=possible_edges.end());
+							
+						
+						// we gotta be moving from lower to higher...  so temp > temp2 is required
+						if (matches_end) {
+							projection_value_homogeneous_input(temp, V.vertices[ crit_slices[ii+zz].edges[qq].midpt].pt_mp,pi[1]);
+							projection_value_homogeneous_input(temp2, V.vertices[ final_bottom_ind].pt_mp,pi[1]);
+							projection_value_homogeneous_input(temp3, V.vertices[ final_top_ind].pt_mp,pi[1]);
+							
+							correct_interval =  ( mpf_get_d(temp3->r) > mpf_get_d(temp->r)) && (mpf_get_d(temp->r) > mpf_get_d(temp2->r)) ;
+						}
+
+						
+						if (havent_found_yet && matches_end && correct_interval) {
 							candidates.push_back(qq);
 							
-							std::cout << "candidate " << candidate_counter << " " << candidates[candidate_counter] << std::endl;
+							std::cout << "candidate [" << candidate_counter << "] = " << candidates[candidate_counter] << " " <<
+								crit_slices[ii+zz].edges[qq].left << " " << crit_slices[ii+zz].edges[qq].midpt << " " << crit_slices[ii+zz].edges[qq].right <<  std::endl;
 							
 							candidate_counter++;
 						}
+						else
+						{
+							std::cout << "edge " << qq << " excluded: " << correct_interval << " dir, (fabs=" << fabs( mpf_get_d(temp->r) - mpf_get_d(temp2->r)) << ") " << matches_end << " matches, " << havent_found_yet << "  ~found yet" << std::endl;
+							
+						}
+						 
 					}
 					
 					
@@ -720,7 +773,7 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 					
 					if (candidate_counter==0) {
 						std::cout << "found 0 candidates for left endpoint, bottom index " << current_bottom_ind << std::endl;
-						mypause();
+						break; // out of the while loop
 					}
 					
 					for (int qq=0; qq<candidate_counter; qq++)
@@ -731,28 +784,6 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 						std::cout << final_bottom_ind << " " << crit_slices[ii+zz].edges[current_edge].midpt << " " << final_top_ind << std::endl;
 
 						
-						if (crit_slices[ii+zz].edges[current_edge].is_degenerate())
-						{
-							// can simply set the top or bottom edge to be this one.  know it goes there.  only have to
-							std::cout << "crit_slice[" << ii+zz << "].edges[" << current_edge << "] is degenerate" << std::endl;
-							if (zz==0){
-								F.left.push_back(current_edge);
-								F.num_left++;
-							}
-							else {
-								F.right.push_back(current_edge);
-								F.num_right++;
-							}
-						
-							current_bottom_ind = current_top_ind = crit_slices[ii+zz].edges[current_edge].right; // the upper value
-							
-							break;
-						}
-						
-						
-						
-						
-
 						
 						
 						//target midpoint e.w from paper.
@@ -816,7 +847,7 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 						
 						if (W_new.num_pts==0) {
 							std::cout << "midpoint tracker did not return any points :(" << std::endl;
-							mypause();
+							continue;
 						}
 						
 						for (int tt = 0; tt<this->num_variables; tt++) {
@@ -828,14 +859,35 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 						int found_index = index_in_vertices(V,
 																								found_point,
 																								solve_options.T);
+						std::cout << "found_index " << found_index << std::endl;
 						
-						if (found_index==-1) {
-							std::cout << "the point found by midpoint tracker was not found in the vertex set :(" << std::endl;
-						}
-						else{
-							std::cout << "found_index " << found_index << std::endl;
+						
+						if (found_index== (crit_slices[ii+zz].edges[current_edge].midpt)  )
+						{
+							
 							int next_edge = crit_slices[ii+zz].edge_w_midpt(found_index); // index the *edge*
-							current_bottom_ind = current_top_ind = crit_slices[ii+zz].edges[next_edge].right; // the upper value
+							std::cout << "next_edge " << next_edge << ", l m r: " << crit_slices[ii+zz].edges[next_edge].left << " " << crit_slices[ii+zz].edges[next_edge].midpt << " " << crit_slices[ii+zz].edges[next_edge].right << std::endl;
+							
+							
+							
+							if ( (next_edge<0) || !(  (crit_slices[ii+zz].edges[next_edge].left!=current_bottom_ind) ||  crit_slices[ii+zz].edges[next_edge].right!=current_bottom_ind))  {
+								continue;
+							}
+							
+							if (crit_slices[ii+zz].edges[next_edge].left==current_bottom_ind) {
+								current_bottom_ind = current_top_ind = crit_slices[ii+zz].edges[next_edge].right; // the upper value
+							}
+							else
+							{
+								current_bottom_ind = current_top_ind = crit_slices[ii+zz].edges[next_edge].left; // the upper value
+							}
+							
+							found_edges.insert(next_edge);
+							
+							for (int ww=0; ww<candidate_counter; ww++) {
+								possible_edges.erase(candidates[ww]);
+							}
+							
 							
 							if (zz==0) {
 								F.left.push_back(next_edge);
@@ -848,6 +900,10 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 							}
 							
 							break;
+						}
+						else
+						{
+							possible_edges.erase(current_edge);
 						}
 						
 					}
@@ -881,7 +937,7 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 
 void surface_decomposition::print_faces(boost::filesystem::path outputfile)
 {
-	std::cout << "printing faces to file " << outputfile << std::endl;
+//	std::cout << "printing faces to file " << outputfile << std::endl;
 	
 	FILE *OUT = safe_fopen_write(outputfile);
 	
