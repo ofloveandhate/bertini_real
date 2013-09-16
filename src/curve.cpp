@@ -30,7 +30,7 @@ int curve_decomposition::setup_edges(boost::filesystem::path INfile)
 void curve_decomposition::print(boost::filesystem::path base)
 {
 	
-	std::cout << "printing curve decomposition to folder " << base << std::endl;
+//	std::cout << "printing curve decomposition to folder " << base << std::endl;
 	
 	decomposition::print(base);
 	
@@ -453,13 +453,9 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	std::map<int, std::vector< int > > edge_occurence_tracker_right;
 	
 	for (int ii=0; ii<num_midpoints; ++ii) {
-		if (program_options.verbose_level>=1) {
-			printf("moving from downstairs midpoint %d, to left and right\n",ii);
-		}
-		
-		
+
 		neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii]);
-		print_comp_matlab(&crit_downstairs->coord[ii],"left  ");
+//		print_comp_matlab(&crit_downstairs->coord[ii],"left  ");
 		multilintolin_solver_main(solve_options.T.MPType,
 															midpoint_witness_sets[ii], //the input
 															randomizer_matrix,
@@ -471,7 +467,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 		neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii+1]);
 		
 		
-		print_comp_matlab(&crit_downstairs->coord[ii+1],"right ");
+//		print_comp_matlab(&crit_downstairs->coord[ii+1],"right ");
 		multilintolin_solver_main(solve_options.T.MPType,
 															midpoint_witness_sets[ii], //the input
 															randomizer_matrix,
@@ -620,7 +616,6 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 			int curr_index = *setiter;
 			if (V.vertices[curr_index].type==NEW) { // only need to look at one of right and left here.
 				V.vertices[curr_index].type = SEMICRITICAL;
-				std::cout << "setting vertex " << curr_index << " to SEMI" << std::endl;
 			}
 		}
 		
@@ -628,7 +623,6 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 			int curr_index = *setiter;
 			if (V.vertices[curr_index].type==NEW) { // only need to look at one of right and left here.
 				V.vertices[curr_index].type = SEMICRITICAL;
-				std::cout << "setting vertex " << curr_index << " to SEMI" << std::endl;
 			}
 		}
 		
@@ -755,7 +749,9 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		
 		
 		
-		
+		V.vertices[edges[left_edge_w_pt].midpt].removed = 1;
+		V.vertices[edges[left_edge_w_pt].right].removed = 1;
+		V.vertices[edges[right_edge_w_pt].midpt].removed = 1;
 		
 		// delete the two old edges // can't do this in the loop because we were using indexes into the edge set
 		std::vector< edge > post_merge_edges;

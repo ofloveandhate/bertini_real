@@ -2023,7 +2023,7 @@ int check_issoln_multilintolin_d(endgame_data_t *EG,
 	init_point_d(f, 1);
 	init_eval_struct_d(e,0, 0, 0);
 	
-	max_rat = T->ratioTol;
+	max_rat = MAX(T->ratioTol,0.99999);
 	
 	// setup threshold based on given threshold and precision
 	//	if (num_digits > 300)
@@ -2116,7 +2116,7 @@ int check_issoln_multilintolin_mp(endgame_data_t *EG,
 	point_mp f; init_point_mp(f, 1);f->size = 1;
 	eval_struct_mp e; init_eval_struct_mp(e, 0, 0, 0);
 	
-	mpf_set_d(max_rat, T->ratioTol);
+	mpf_set_d(max_rat, MAX(T->ratioTol,0.99999));
 	
 	
 	int num_digits = prec_to_digits((int) mpf_get_default_prec());
@@ -2124,7 +2124,8 @@ int check_issoln_multilintolin_mp(endgame_data_t *EG,
 	if (num_digits > 300)
 		num_digits = 300;
 	num_digits -= 4;
-	double tol = MAX(T->funcResTol, pow(10,-num_digits));
+	double my_guarantor = MAX(T->funcResTol, 1e-10);
+	double tol = MAX(my_guarantor, pow(10,-num_digits));
 	mpf_set_d(zero_thresh, tol);
 	
 	//this one guaranteed by entry condition
@@ -2145,8 +2146,6 @@ int check_issoln_multilintolin_mp(endgame_data_t *EG,
 	{
 		mpf_abs_mp(n1, &e.funcVals->coord[ii]);
 		mpf_abs_mp(n2, &f->coord[ii]);
-		
-//		mpf_out_str(NULL,10,9,n1);
 		
 		if ( (mpf_cmp(zero_thresh, n1) <= 0) &&  (mpf_cmp(n1, n2) <= 0) )
 		{ // compare ratio
