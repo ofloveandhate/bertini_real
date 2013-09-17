@@ -1,0 +1,18 @@
+CONFIG
+tracktype:1;
+securitylevel: 1;
+mptype:2;
+
+
+END;
+
+
+INPUT
+
+variable_group x, y, z;
+function f1;
+
+
+f1 = x^2+y^2+z^2-1;
+
+END;
