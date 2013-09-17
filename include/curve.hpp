@@ -35,7 +35,7 @@
 #include "solver_lintolin.hpp"
 #include "solver_linprodtodetjac.hpp"
 #include "solver_detjactodetjac.hpp"
-#include "solver_multilin_projection.hpp"
+//#include "solver_multilin_projection.hpp"
 #include "nullspace_left.hpp"
 
 

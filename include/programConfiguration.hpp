@@ -302,7 +302,7 @@ public:
 		this->stifle_membership_screen = 1;
 		this->stifle_text = " > /dev/null ";
 		
-		this->bertini_command = "bertini_serial";
+		this->bertini_command = "~/bin/bertini_serial";
 		this->matlab_command = "matlab -nosplash";
 		this->verbose_level = 0; // default to 0
 		

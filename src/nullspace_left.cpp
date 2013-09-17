@@ -610,7 +610,7 @@ void create_nullspace_system(boost::filesystem::path output_name,
   fclose(OUT);
 	
 	
-	fprintf(OUT, "END;");
+//	fprintf(OUT, "END;");
 
 	
   // clear memory

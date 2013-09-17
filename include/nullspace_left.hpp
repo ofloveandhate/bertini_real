@@ -81,16 +81,11 @@ private:
 		}
 		
 		int local_counter = 0;
-		for (int ii=0; ii<num_total_registers; ii++) {
-			
-			// a crappy find function
-			int ok = 1;
-			for (int jj=0; jj<num_active_registers; jj++) {
-				if (active_registers[jj]==ii) 
-					ok=0;
-			}
-			
-			if ( (ok==1) && (num_total_registers != num_active_registers)){ // if didn't find current index in the list, put it in the unused list.
+		for (int ii=0; (ii<num_total_registers) && (local_counter<num_inactive_registers) ; ii++) {
+			if (std::find(active_registers.begin(), active_registers.end(), ii)==active_registers.end())
+			{
+				std::cout << "setting inactive_registers[" << local_counter << "] = " << ii << std::endl;
+
 				inactive_registers[local_counter] = ii;
 				local_counter++;
 			}

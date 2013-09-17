@@ -42,15 +42,19 @@ endif
 
 ifeq ($(MACHINENAME),sam)
     #sam
-    INC:=-I/usr/local/include/   $(INC) 
+    INC:=-I/usr/local/include/ -I/usr/local/boost/include $(INC) 
     BISON=bison 
     LIBS=-lm -L/usr/local/lib -lmpfr  -lgmp #
-    COMPcc=gcc 
-	COMPpp = g++  
-    STATICFLAG= -static
+    COMPcc=mpicc -cc=gcc 
+	COMPpp = mpic++ -cxx=g++  
+    STATICFLAG=
 	BERTINILIB:=$(HOME)/lib/libbertini.a
 	INSTALLPATH:=$(HOME)/bin
-	BERTINIHEADERS:= $(HOME)/code/darpa/bertini_source/include
+	BERTINIHEADERS:= $(HOME)/code/bertini_source/include
+	
+	BOOSTLOC := /usr/local/boost/lib/
+	BOOSTSUFFIX :=#no spaces
+	
 endif
 
 ifeq ($(MACHINENAME),wenrui)
@@ -93,7 +97,7 @@ INC:=$(INC) -I../include  -I$(BERTINIHEADERS) #this includes the header files fo
 
 ARGS= $(OPT) -D_HAVE_MPI $(MACHINESPECIFICS) $(INC)
 OBJFILES= parallelism.o derivative_systems.o data_type.o programConfiguration.o determinant_derivative.o output.o fileops.o isosingular.o checkSelfConjugate.o nullspace_left.o surface.o curve.o
-SOLVERS= solver.o solver_multilin_projection.o solver_midpoint_tracker.o solver_nullspace_left.o solver_detjactodetjac.o solver_linprodtodetjac.o solver_multilintolin.o postProcessing.o solver_lintolin.o
+SOLVERS= solver.o solver_midpoint_tracker.o solver_nullspace_left.o solver_detjactodetjac.o solver_linprodtodetjac.o solver_multilintolin.o postProcessing.o solver_lintolin.o
 FLEXFILES=lex.partitionParse.o 
 
 
@@ -110,17 +114,19 @@ libpartitionparse: lex.partitionParse.o
 
 #makes the bertini_real program
 bertini_real : bertini_real.cpp $(OBJFILES)  $(SOLVERS) $(FLEXFILES)
-	$(COMPpp) $(ARGS) -o bertini_real bertini_real.cpp $(OBJFILES)  $(SOLVERS)  $(FLEXFILES) $(BERTINILIB)  $(LIBS)  $(STATICFLAG)
+	$(COMPpp) $(ARGS) -o bertini_real bertini_real.cpp  $(OBJFILES)  $(SOLVERS)  $(FLEXFILES) $(BERTINILIB)  -Bstatic $(LIBS)
+	
+	#$(COMPpp) $(ARGS) -o bertini_real bertini_real.cpp -Wl,-Bstatic $(OBJFILES)  $(SOLVERS)  $(FLEXFILES) $(BERTINILIB)  $(LIBS) -Wl,-Bdynamic
 
 
 #makes the data2set program.
 data_to_set: dataToSet.cpp
-	$(COMPpp) $(ARGS) -o data2set dataToSet.cpp $(BERTINILIB) $(LIBS)  $(STATICFLAG)
+	$(COMPpp) $(ARGS) -o data2set dataToSet.cpp -Bstatic $(BERTINILIB) $(LIBS)  $(STATICFLAG) -Bdynamic
 #   
 
 #makes the sampler program.
 sampler: sampler.cpp $(OBJFILES) $(FLEXFILES) $(SOLVERS)
-	$(COMPpp) $(ARGS) -o sampler sampler.cpp  $(SOLVERS) $(OBJFILES)   $(BERTINILIB) $(FLEXFILES)  $(LIBS)  $(STATICFLAG)
+	$(COMPpp) $(ARGS) -o sampler sampler.cpp  -Bstatic  $(SOLVERS) $(OBJFILES)   $(BERTINILIB) $(FLEXFILES)  $(LIBS)  -Bdynamic
 #   
 
 
@@ -145,6 +151,7 @@ lex.partitionParse.c:	partitionParse.l
 	$(FLEX) -PpartitionParse partitionParse.l
 
 clean : 
+	rm partitionParse.a
 	rm -f $(OBJFILES) $(FLEXFILES) $(SOLVERS) sampler.o bertini.o data2set.o bertini_real data2set sampler
 	rm -f par.out paramDerivs.out arr.out eval.out eval2.out const.out finalFile.out jacV.out jacP.out num.out
 	rm -f tempBertiniFile lex.partitionParse.c 

@@ -578,6 +578,22 @@ int midpoint_solver_master_entry_point(const witness_set						&W, // carries wit
 	
 	
 	solve_options.force_no_parallel = prev_state;
+	
+	switch (solve_options.T.MPType) {
+		case 0:
+			delete ED_d;
+			break;
+			
+		case 1:
+			delete ED_mp;
+			break;
+		case 2:
+			delete ED_d;
+			
+		default:
+			break;
+	}
+	
   return SUCCESSFUL;
 	
 }
@@ -1035,6 +1051,41 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	
 	
 	
+//	clear_vec_d(curr_mid_vars);
+//	clear_vec_d(curr_top_vars);
+//	clear_vec_d(curr_bottom_vars);
+//	clear_vec_d(patchValues);
+//	clear_vec_d(temp_function_values);
+//	
+//	
+//	clear_vec_d(AtimesF);
+//
+//	clear_vec_d(tempvec);
+//	clear_vec_d(tempvec2);
+//	
+//	
+//	clear_mat_d(Jv_Patch);
+//	
+//	
+//	
+//	clear_mat_d(AtimesJ);
+//	clear_mat_d(Jv_jac);
+//	clear_mat_d(temp_jacobian_functions);
+//	clear_mat_d(temp_jacobian_parameters);
+//	
+//
+//	
+//	
+//	clear_vec_d(unused_function_values);
+//	clear_vec_d(unused_parVals);
+//	clear_vec_d(unused_parDer);
+//	clear_mat_d(unused_Jp);
+//	
+	
+	
+	
+
+	
 	clear_vec_d(curr_mid_vars);
 	clear_vec_d(curr_top_vars);
 	clear_vec_d(curr_bottom_vars);
@@ -1043,7 +1094,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	
 	
 	clear_vec_d(AtimesF);
-
+	
 	clear_vec_d(tempvec);
 	clear_vec_d(tempvec2);
 	
@@ -1057,7 +1108,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	clear_mat_d(temp_jacobian_functions);
 	clear_mat_d(temp_jacobian_parameters);
 	
-
+	
 	
 	
 	clear_vec_d(unused_function_values);
@@ -1066,7 +1117,6 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	
 	
 	clear_mat_d(unused_Jp);
-	
 	
 	
 #ifdef printpathnullspace_left
@@ -1098,34 +1148,14 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
   int ii, jj;
 	int offset;
-  comp_mp one_minus_s, gamma_s;  init_mp(one_minus_s); init_mp(gamma_s);
-	
-	set_one_mp(one_minus_s);
-  sub_mp(one_minus_s, one_minus_s, pathVars);  // one_minus_s = (1 - s)
-  mul_mp(gamma_s, BED->gamma, pathVars);       // gamma_s = gamma * s
+  
 	
 	
-	//parse out the variables into proper segments.
+	
+	comp_mp one_minus_s, gamma_s;  init_mp(one_minus_s); init_mp(gamma_s);
 	vec_mp curr_mid_vars; init_vec_mp(curr_mid_vars, BED->num_mid_vars);
-	curr_mid_vars->size = BED->num_mid_vars;
-	for (ii=0; ii<BED->num_mid_vars; ii++)
-		set_mp(&curr_mid_vars->coord[ii], &current_variable_values->coord[ii]);
-	
-
-	offset = BED->num_mid_vars;// y0
 	vec_mp curr_bottom_vars; init_vec_mp(curr_bottom_vars, BED->num_crit_vars);
-	curr_bottom_vars->size = BED->num_crit_vars;
-	for (ii=0; ii<BED->num_crit_vars; ii++)
-		set_mp(&curr_bottom_vars->coord[ii], &current_variable_values->coord[ii+offset]);
-	
-	
-	offset = BED->num_mid_vars + BED->num_crit_vars; // y2
-	vec_mp curr_top_vars; init_vec_mp(curr_top_vars, BED->num_crit_vars); 
-	curr_top_vars->size = BED->num_crit_vars;
-	for (ii=0; ii<BED->num_crit_vars; ii++)
-		set_mp(&curr_top_vars->coord[ii], &current_variable_values->coord[ii+offset]);
-	
-	
+	vec_mp curr_top_vars; init_vec_mp(curr_top_vars, BED->num_crit_vars);
 	//create the variables to hold temp output
 	vec_mp patchValues; init_vec_mp(patchValues, 0);
 	vec_mp temp_function_values; init_vec_mp(temp_function_values,0);
@@ -1144,12 +1174,50 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	mat_mp Jv_jac; init_mat_mp(Jv_jac,0,0);
 	mat_mp Jv_Patch; init_mat_mp(Jv_Patch,0,0);
 	
-	comp_mp temp, temp2, temp3;  init_mp(temp);
-		init_mp(temp2); init_mp(temp3);
-	comp_mp proj_bottom, proj_top, proj_mid;
-		init_mp(proj_bottom); init_mp(proj_top); init_mp(proj_mid);
 	
+	comp_mp temp, temp2, temp3;  init_mp(temp);
+	init_mp(temp2); init_mp(temp3);
+	comp_mp proj_bottom, proj_top, proj_mid;
+	init_mp(proj_bottom); init_mp(proj_top); init_mp(proj_mid);
+	point_mp unused_function_values, unused_parVals;
+	comp_mp one_minus_u, one_minus_v;
 	comp_mp u, v;  init_mp(u); init_mp(v);
+	
+	
+	
+	
+	
+	
+	
+	set_one_mp(one_minus_s);
+  sub_mp(one_minus_s, one_minus_s, pathVars);  // one_minus_s = (1 - s)
+  mul_mp(gamma_s, BED->gamma, pathVars);       // gamma_s = gamma * s
+	
+	
+	//parse out the variables into proper segments.
+	
+	curr_mid_vars->size = BED->num_mid_vars;
+	for (ii=0; ii<BED->num_mid_vars; ii++)
+		set_mp(&curr_mid_vars->coord[ii], &current_variable_values->coord[ii]);
+	
+
+	offset = BED->num_mid_vars;// y0
+	
+	curr_bottom_vars->size = BED->num_crit_vars;
+	for (ii=0; ii<BED->num_crit_vars; ii++)
+		set_mp(&curr_bottom_vars->coord[ii], &current_variable_values->coord[ii+offset]);
+	
+	
+	offset = BED->num_mid_vars + BED->num_crit_vars; // y2
+	 
+	curr_top_vars->size = BED->num_crit_vars;
+	for (ii=0; ii<BED->num_crit_vars; ii++)
+		set_mp(&curr_top_vars->coord[ii], &current_variable_values->coord[ii+offset]);
+	
+	
+	
+	
+	
 	mul_mp(temp, one_minus_s, BED->u_target);
 	mul_mp(temp2, pathVars, BED->u_start);
 	add_mp(u,temp, temp2);
@@ -1159,7 +1227,8 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	add_mp(v,temp, temp2);
 	
 	
-	comp_mp one_minus_u, one_minus_v;  init_mp(one_minus_u); init_mp(one_minus_v);
+	
+	init_mp(one_minus_u); init_mp(one_minus_v);
 	set_one_mp(one_minus_u);
 	sub_mp(one_minus_u, one_minus_u, u);
 	
@@ -1167,7 +1236,9 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	sub_mp(one_minus_v, one_minus_v, v);
 	
 	//initialize some more containers, for the unused stuff from the called evaluators.
-	point_mp unused_function_values, unused_parVals;
+	
+	
+	
 	init_vec_mp(unused_function_values,0);init_vec_mp(unused_parVals,0);
 	vec_mp unused_parDer; init_vec_mp(unused_parDer,0);
 	mat_mp unused_Jp; init_mat_mp(unused_Jp,0,0);
@@ -1478,6 +1549,28 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
 	
 	
+	
+	
+	
+	
+
+
+
+	clear_mp(temp);
+	clear_mp(temp2);
+	clear_mp(temp3);
+	
+	clear_mp(proj_bottom);
+	clear_mp(proj_top);
+	clear_mp(proj_mid);
+	
+	clear_mp(u);
+	clear_mp(v);
+	clear_mp(one_minus_u);
+	clear_mp(one_minus_v);
+	clear_mp(one_minus_s);
+	clear_mp(gamma_s);
+	
 	clear_vec_mp(curr_mid_vars);
 	clear_vec_mp(curr_top_vars);
 	clear_vec_mp(curr_bottom_vars);
@@ -1509,6 +1602,16 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
 	
 	clear_mat_mp(unused_Jp);
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	
 	
