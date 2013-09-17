@@ -11,7 +11,7 @@
 #include <mpf2mpfr.h>
 #include <signal.h>
 
-
+#include <set>
 #include <iostream>
 #include <ios>
 #include <string>
@@ -346,8 +346,6 @@ public:
 																			std::vector< int > & index_tracker,
 																			vec_mp pi) const;
 };
-// end the double types
-
 
 
 
@@ -636,7 +634,7 @@ public:
 		init();
 	}
 	
-	~decomposition()
+	virtual ~decomposition()
 	{
 		clear();
 	}
@@ -827,7 +825,7 @@ void dehomogenize(point_d *result, point_d dehom_me);
 void dehomogenize(point_d *result, point_d dehom_me, int num_variables);
 
 void dehomogenize(point_mp *result, point_mp dehom_me);
-void dehomogenize(point_mp *result, point_mp dehom_me, int num_variables);
+void dehomogenize(point_mp *result, point_mp dehom_me, int num_variables); 
 
 
 void dot_product_d(comp_d result, vec_d one, vec_d two);
@@ -860,7 +858,7 @@ int get_num_vars_PPD(preproc_data PPD);
 
 void cp_patch_mp(patch_eval_data_mp *PED, patch_eval_data_mp PED_input);
 void cp_patch_d(patch_eval_data_d *PED, patch_eval_data_d PED_input);
-void cp_preproc_data(preproc_data *PPD, const preproc_data PPD_input);
+void cp_preproc_data(preproc_data *PPD, const preproc_data & PPD_input);
 
 void sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & index_tracker, vec_mp projections_input);
 

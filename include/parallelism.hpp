@@ -53,6 +53,14 @@ public:
 	
 	int MPType;
 	virtual int main_loop();
+	
+	virtual ~process()
+	{
+		
+	};
+	
+	
+	
 };
 
 
@@ -67,7 +75,13 @@ public:
 	}
 	
 	int main_loop();
-	};
+
+	
+	~ubermaster_process()
+	{
+		
+	}
+};
 
 
 
@@ -83,7 +97,10 @@ public:
 	
 	
 	
-	
+	~worker_process()
+	{
+		
+	}
 	
 	int main_loop();
 

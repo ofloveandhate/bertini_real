@@ -478,7 +478,6 @@ int multilin_to_lin_setup_d(FILE **OUT, boost::filesystem::path outName,
 
 
 
-//this derived from basic_eval_d
 int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp, point_d current_variable_values, comp_d pathVars, void const *ED)
 { // evaluates a special homotopy type, build for bertini_real
 	
@@ -525,12 +524,6 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	
 	
 	vec_d *gamma_s_times_old_linear = (vec_d *)br_malloc(BED->num_linears*sizeof(vec_d));
-	for (ii=0; ii<BED->num_linears; ii++) {
-		init_vec_d(gamma_s_times_old_linear[ii],BED->num_variables);
-		gamma_s_times_old_linear[ii]->size = BED->num_variables;
-	}
-	
-	
 	for (ii=0; ii<BED->num_linears; ii++) {
 		init_vec_d(gamma_s_times_old_linear[ii],BED->num_variables);
 		gamma_s_times_old_linear[ii]->size = BED->num_variables;
@@ -754,7 +747,10 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 		clear_vec_d(one_minus_s_times_current_linear[ii]);
 		clear_vec_d(gamma_s_times_old_linear[ii]);
 	}
-	
+	free(vars_times_curr_linear);
+	free(vars_times_old_linear);
+	free(one_minus_s_times_current_linear);
+	free(gamma_s_times_old_linear);
 	
 	clear_vec_d(patchValues);
 	clear_vec_d(temp_function_values);
@@ -1792,7 +1788,10 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 		clear_vec_mp(one_minus_s_times_current_linear[ii]);
 		clear_vec_mp(gamma_s_times_old_linear[ii]);
 	}
-	
+	free(vars_times_curr_linear);
+	free(vars_times_old_linear);
+	free(one_minus_s_times_current_linear);
+	free(gamma_s_times_old_linear);
 	
 	
 	clear_mp(one_minus_s);

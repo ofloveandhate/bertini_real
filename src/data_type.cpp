@@ -615,7 +615,7 @@ void witness_set::print_to_screen() const
 	}
 	
 	std::cout << "variable names:\n";
-	for (ii=0; ii<this->variable_names.size(); ii++) {
+	for (ii=0; ii< int(this->variable_names.size()); ii++) {
 		std::cout << this->variable_names[ii] << "\n";
 	}
 	printf("\n\n");
@@ -891,11 +891,11 @@ void witness_set::compute_downstairs_crit_midpts(vec_mp crit_downstairs,
 
 	
 	
-	vec_mp projection_values; init_vec_mp(projection_values,this->num_pts);
+	vec_mp projection_values; init_vec_mp(projection_values,this->num_pts); 
 	projection_values->size = this->num_pts;
 	
 	for (int ii=0; ii<this->num_pts; ii++){
-		projection_value_homogeneous_input(&projection_values->coord[ii],this->pts_mp[ii], pi); // set projection value
+		projection_value_homogeneous_input(&projection_values->coord[ii], this->pts_mp[ii], pi); // set projection value
 		if (mpf_get_d(projection_values->coord[ii].i)<1e-13) {
 			mpf_set_str(projection_values->coord[ii].i,"0",10);
 		}
@@ -1625,9 +1625,9 @@ void projection_value_homogeneous_input(comp_d result, vec_d input, vec_d projec
 	set_d(temp, result);
 	div_d(result, temp, &input->coord[0]);
 //
-	if (result->i < 1e-14) {
-		result->i = 0.0;
-	}
+//	if (result->i < 1e-14) {
+//		result->i = 0.0;
+//	}
 	
 //	if (result->r < 1e-13) {
 //		result->r = 0.0;
@@ -1652,11 +1652,11 @@ void projection_value_homogeneous_input(comp_mp result, vec_mp input, vec_mp pro
 	set_mp(temp, result);
 	div_mp(result, temp, &input->coord[0]);
 	
-//	comp_d temp2;
-//	mp_to_d(temp2, result);
-	if (mpf_get_d(result->i) < 1e-14) {
-		mpf_set_d(result->i, 0.0);
-	}
+	clear_mp(temp);
+	
+//	if (mpf_get_d(result->i) < 1e-14) {
+//		mpf_set_d(result->i, 0.0);
+//	}
 	
 //	mp_to_d(temp2, result);
 //	if (temp2->r < 1e-13) {
@@ -1963,24 +1963,33 @@ void cp_patch_d(patch_eval_data_d *PED, patch_eval_data_d PED_input)
   return;
 }
 
-void cp_preproc_data(preproc_data *PPD, const preproc_data PPD_input)
+void cp_preproc_data(preproc_data *PPD, const preproc_data & PPD_input)
 {
-  int i, total_gp;
 	
   PPD->num_funcs = PPD_input.num_funcs;
   PPD->num_hom_var_gp = PPD_input.num_hom_var_gp;
   PPD->num_var_gp = PPD_input.num_var_gp;
 	
-  total_gp = PPD->num_hom_var_gp + PPD->num_var_gp;
+  int total_gp = PPD->num_hom_var_gp + PPD->num_var_gp;
 	
-  PPD->size = (int *)br_malloc(total_gp * sizeof(int));
-  PPD->type = (int *)br_malloc(total_gp * sizeof(int));
+	std::cout << PPD_input.num_hom_var_gp << " " << PPD_input.num_var_gp  << " "  << total_gp << std::endl;
+
 	
-  for (i = 0; i < total_gp; i++)
-  {
-    PPD->size[i] = PPD_input.size[i];
-    PPD->type[i] = PPD_input.type[i];
-  }
+	if (total_gp==0) {
+		return;
+	}
+	else{
+		PPD->size = (int *)br_malloc(total_gp * sizeof(int));
+		PPD->type = (int *)br_malloc(total_gp * sizeof(int));
+		
+		for (int i = 0; i < total_gp; i++)
+		{
+			PPD->size[i] = PPD_input.size[i];
+			PPD->type[i] = PPD_input.type[i];
+		}
+	}
+		
+  
 	
   return;
 }
@@ -1991,56 +2000,68 @@ void cp_preproc_data(preproc_data *PPD, const preproc_data PPD_input)
 // this sort should be optimized.  it is sloppy and wasteful right now.
 void sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & index_tracker, vec_mp projections_input){
 	
-	comp_mp large; init_mp(large);
-	comp_d l; l->r = 1e9; l->i = 0;
-	d_to_mp(large,l);
+
 	
 	
-//	print_point_to_screen_matlab(projections_input, "projections_input");
+	
 	
 	std::vector< int > index_tracker_non_unique;
 	std::vector< double > projvals_as_doubles;
 	
-	double min;
-	double curr;
-	int indicator = -1;
 	
 	
 	
 	
-	vec_mp raw; init_vec_mp(raw,1);
-	vec_cp_mp(raw,projections_input);
+	
+	
 	
 	vec_mp projections_sorted_non_unique;
-	init_vec_mp(projections_sorted_non_unique,raw->size);
-	projections_sorted_non_unique->size = raw->size;
+	init_vec_mp(projections_sorted_non_unique,projections_input->size);
+	projections_sorted_non_unique->size = projections_input->size;
 
-
+	for (int ii=0; ii<projections_input->size; ii++) {
+		if (!(mpfr_number_p(projections_input->coord[ii].r) && mpfr_number_p(projections_input->coord[ii].i))) {
+			std::cout << "there was NAN in the projections to sort :(" << std::endl;
+			print_point_to_screen_matlab(projections_input, "projections_input");
+			
+			deliberate_segfault();
+		}
+	}
+	
+	std::set<int> unsorted_indices;
+	for (int ii=0; ii<projections_input->size; ii++) {
+		unsorted_indices.insert(ii);
+	}
+	
+	
 	
 	
 	//sort by size
-	
-	for (int ii=0; ii<raw->size; ii++) { // for each of the projection values input
-		min = 1e10; // reset this bogus value
+	for (int ii=0; ii<projections_input->size; ii++) { // for each of the projection values input
+		double min = 1e20; // reset this bogus value
+		
+		int indicator = -1;
 		
 		// this loop finds the minimum projection value
-		for (int jj=0; jj<raw->size; jj++) {
-			curr = mpf_get_d(raw->coord[jj].r); // convert projection value to a double for comparison
+		for (std::set<int>::iterator set_iter = unsorted_indices.begin(); set_iter!=unsorted_indices.end(); set_iter++) {
+			
+			double curr = mpf_get_d(projections_input->coord[*set_iter].r); // convert projection value to a double for comparison
 			if ( curr < min) { // compare
-				indicator = jj;
+				indicator = *set_iter;
 				min = curr;
 			}
 		}
+		
 		if (indicator==-1) { // if min value was larger than a huge number
 			printf("min projection value was *insanely* large\n");
 			exit(1111);
 		}
 		
+		unsorted_indices.erase(indicator);
 		
 		projvals_as_doubles.push_back(min);
 		index_tracker_non_unique.push_back(indicator);
-		set_mp( &projections_sorted_non_unique->coord[ii],&raw->coord[indicator]);
-		set_mp( &raw->coord[indicator],large); // set to be a large number so don't find it again.
+		set_mp( &projections_sorted_non_unique->coord[ii],&projections_input->coord[indicator]);
 	}
 	
 	
@@ -2056,7 +2077,7 @@ void sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & ind
 	index_tracker.push_back(index_tracker_non_unique[0]);
 	set_mp(&projections_sorted->coord[0],&projections_sorted_non_unique->coord[0])
 	int unique_counter = 1;
-	for (int ii=1; ii<raw->size; ii++) {
+	for (int ii=1; ii<projections_input->size; ii++) {
 		if ( fabs( projvals_as_doubles[ii-1]-projvals_as_doubles[ii]) < distinct_thresh) {
 			continue;
 		}

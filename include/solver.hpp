@@ -172,7 +172,7 @@ public:
 	
 	
 	solver_configuration(){
-
+		init();
 	}
 	~solver_configuration(){
 		//		tracker_config_clear(&this->T);
@@ -203,7 +203,7 @@ public:
 		
 		this->robust = other.robust;
 
-		cp_preproc_data(&this->PPD, other.PPD);
+		cp_preproc_data(&(this->PPD), other.PPD);
 		
 		this->allow_multiplicity = other.allow_multiplicity;
 		this->allow_singular = other.allow_singular;
@@ -231,6 +231,12 @@ public:
 	void init()
 	{
 		this->robust = false;
+		
+		PPD.num_funcs = 0;
+		PPD.num_hom_var_gp = 0;
+		PPD.num_var_gp = 0;
+		PPD.size = NULL;
+		PPD.type = NULL;
 		
 		allow_unsuccess = 0;
 		allow_singular = 0;
@@ -310,7 +316,7 @@ public:
 		this->MPType = new_mp_type;
 	}
 	
-	~solver()
+	virtual ~solver()
 	{
 		freeEvalProg(this->MPType);
 	}
@@ -698,3 +704,4 @@ void generic_track_path_mp(int pathNum, endgame_data_t *EG_out,
 
 
 #endif
+

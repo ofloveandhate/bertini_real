@@ -1278,6 +1278,23 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 												solve_options);
 	
 	
+	
+	switch (solve_options.T.MPType) {
+		case 0:
+			delete ED_d;
+			break;
+			
+		case 1:
+			delete ED_mp;
+			break;
+		case 2:
+			delete ED_d;
+			
+		default:
+			break;
+	}
+	
+	
 	clearProg(&SLP, solve_options.T.MPType, 1); // 1 means call freeprogeval()
   return SUCCESSFUL;
 
@@ -1349,6 +1366,21 @@ void nullspace_slave_entry_point(solver_configuration & solve_options)
 	// close the files
 	fclose(midOUT);   fclose(OUT);
 	
+	
+	switch (solve_options.T.MPType) {
+		case 0:
+			delete ED_d;
+			break;
+			
+		case 1:
+			delete ED_mp;
+			break;
+		case 2:
+			delete ED_d;
+			
+		default:
+			break;
+	}
 	
 	//clear data
 }
@@ -1456,7 +1488,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 		init_mat_d(tempmat2,BED->num_jac_equations,BED->num_v_vars);
 		tempmat2->rows = BED->num_jac_equations; tempmat2->cols = BED->num_v_vars;
 	
-	mat_d jac_homogenizing_matrix; init_mat_d(jac_homogenizing_matrix,0,0);
+	
 	
 	
 	//initialize the jacobians we will work with.
@@ -1560,6 +1592,8 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	
 	// make the homogenizing matrix for the $x$ variables
+	mat_d jac_homogenizing_matrix; init_mat_d(jac_homogenizing_matrix,BED->num_v_vars,BED->num_v_vars);
+	jac_homogenizing_matrix->rows = jac_homogenizing_matrix->cols = BED->num_v_vars;
 	make_matrix_ID_d(jac_homogenizing_matrix,BED->num_v_vars,BED->num_v_vars);
 	
 	for (ii=0; ii<BED->num_randomized_eqns; ii++)
@@ -1864,6 +1898,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	clear_mat_d(temp_jacobian_functions);
 	clear_mat_d(temp_jacobian_parameters);
 	clear_mat_d(linprod_derivative_wrt_x);
+	clear_mat_d(jac_homogenizing_matrix);
 	
 	clear_vec_d(start_function_values);
 	clear_vec_d(target_function_values);
@@ -2005,7 +2040,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	init_mat_mp(tempmat2,BED->num_jac_equations,BED->num_v_vars);
 	tempmat2->rows = BED->num_jac_equations; tempmat2->cols = BED->num_v_vars;
 	
-	mat_mp jac_homogenizing_matrix; init_mat_mp(jac_homogenizing_matrix,0,0);
+	
 	
 	//initialize the jacobians we will work with.
 	point_mp perturbed_forward_variables, perturbed_backward_variables;
@@ -2102,6 +2137,8 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	
 	
 	// make the homogenizing matrix for the $x$ variables
+	mat_mp jac_homogenizing_matrix; init_mat_mp(jac_homogenizing_matrix,BED->num_v_vars,BED->num_v_vars);
+	jac_homogenizing_matrix->rows = jac_homogenizing_matrix->cols = BED->num_v_vars;
 	make_matrix_ID_mp(jac_homogenizing_matrix,BED->num_v_vars,BED->num_v_vars);
 	
 	for (ii=0; ii<BED->num_randomized_eqns; ii++)
@@ -2427,6 +2464,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	clear_mat_mp(tempmat3);
 	clear_mat_mp(tempmat1);
 	clear_mat_mp(tempmat2);
+	clear_mat_mp(jac_homogenizing_matrix);
 	
 	clear_vec_mp(perturbed_forward_variables);
 	clear_vec_mp(perturbed_backward_variables);
