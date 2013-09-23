@@ -70,11 +70,6 @@ void surface_decomposition::print(boost::filesystem::path base)
 
 
 
-
-
-
-
-
 void surface_decomposition::main(vertex_set & V,
 																 const witness_set & W_surf,
 																 vec_mp *pi,
@@ -268,38 +263,45 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 	
 	slices.resize(projection_values_downstairs->size);
 	
+	int blabla;
+	parse_input_file(W_surf.input_filename, & blabla);
 	
 	
 	
+	multilin_config ml_config(solve_options); // copies in the randomizer matrix and sets up the SLP & globals.
 	
 	for (int ii=0; ii<projection_values_downstairs->size; ii++){
-		std::cout << "decomposing the " << ii << "th " << kindofslice << " slice" << std::endl;
 		
+		
+		std::cout << "decomposing the " << ii << "th " << kindofslice << " slice" << std::endl;
 		print_comp_matlab(&projection_values_downstairs->coord[ii], "target_proj");
 		
 		solve_options.backup_tracker_config();
 		
 		int iterations=0;
 		
-		witness_set slice_witness_set;
+		witness_set slice_witness_set; // deliberately scoped variable
 		
 		curve_decomposition new_slice;
 		
-		while ((new_slice.num_edges==0) && (iterations<10)) {
+		while ((new_slice.num_edges==0) && (iterations<10)) {// try not to allow an empty edge, if rerun_empty is true.  break below.
 			
 			std::stringstream converter;
 			converter << ii;
 			
 			int blabla, *declarations;
 			parse_input_file(W_surf.input_filename, &blabla);
-			partition_parse(&declarations, W_surf.input_filename, "func_input", "config", 0); // the 0 means not self conjugate.
-			free(declarations);																													 // i would like to move this.
-			preproc_data_clear(&solve_options.PPD);
+//			partition_parse(&declarations, W_surf.input_filename, "func_input", "config", 0); // the 0 means not self conjugate.
+//			free(declarations);																													 // i would like to move this.
+			preproc_data_clear(&solve_options.PPD); // ugh this sucks
 			parse_preproc_data("preproc_data", &solve_options.PPD);
 			
+			make_randomization_matrix_based_on_degrees(randomizer_matrix, randomized_degrees, W_surf.num_variables-W_surf.num_patches-W_surf.num_linears, solve_options.PPD.num_funcs);
+			
+			ml_config.set_randomizer(randomizer_matrix);
 			neg_mp(&multilin_linears[0]->coord[0], &projection_values_downstairs->coord[ii]);
 			
-			make_randomization_matrix_based_on_degrees(randomizer_matrix, randomized_degrees, W_surf.num_variables-W_surf.num_patches-W_surf.num_linears, solve_options.PPD.num_funcs);
+
 			
 			solve_options.allow_singular = 0;
 			solve_options.complete_witness_set = 0;
@@ -307,25 +309,21 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 			solve_options.allow_unsuccess = 0;
 			
 			
-			// project onto the pi[0] direction
-			multilintolin_solver_main(solve_options.T.MPType,
-																W_surf,										// witness_set
-																randomizer_matrix,				//	
-																multilin_linears,					//  the set of linears we will solve at.
-																&slice_witness_set,	// the new data is put here!
-																solve_options);		
+			print_matrix_to_screen_matlab(ml_config.randomizer_matrix,"rand_surf_slice_314");
+			multilin_solver_master_entry_point(W_surf,         // witness_set
+																				 &slice_witness_set, // the new data is put here!
+																				 multilin_linears,
+																				 ml_config,
+																				 solve_options);
 			
 			boost::filesystem::path slicename = W_surf.input_filename;
-			slicename += "_";
-			slicename += kindofslice;
-			slicename += "slice_";
-			slicename += converter.str();
+			slicename += "_"; slicename += kindofslice; slicename += "slice_"; slicename += converter.str();
 			create_sliced_system(W_surf.input_filename, slicename, &multilin_linears[0], 1, W_surf);
 			
 			
 			parse_input_file(slicename, &blabla);
-			partition_parse(&declarations, slicename, "func_input", "config", 0); // the 0 means not self conjugate.
-			free(declarations);																													 // i would like to move this.
+//			partition_parse(&declarations, slicename, "func_input", "config", 0); // the 0 means not self conjugate.
+//			free(declarations);																													 // i would like to move this.
 			preproc_data_clear(&solve_options.PPD);
 			parse_preproc_data("preproc_data", &solve_options.PPD);
 			
@@ -344,7 +342,9 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 			
 			solve_options.complete_witness_set = 1;
 			
-		// we already know the component is self-conjugate (by entry condition), so we are free to call this function
+			
+			// we already know the component is self-conjugate (by entry condition), so we are free to call this function
+			// the memory for the multilin system will get erased in this call...
 			new_slice.computeCurveSelfConj(slice_witness_set,
 																			&pi[1],
 																			V,
@@ -407,7 +407,7 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 		
 		
 		this->output_main(program_options, V);
-		std::cout << "DONE decomposing the " << ii << "th slice" << std::endl;
+		std::cout << "DONE decomposing the " << ii << "th " << kindofslice << " slice" << std::endl;
 		
 	} // re: for loop
 	
@@ -594,7 +594,7 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 		this->output_main(program_options, V);
 		
 		for (int jj=0; jj<mid_slices[ii].num_edges; jj++) {
-			std::cout << "face " << this->num_faces << ", slice	" << ii << " edge " << jj << std::endl;
+			std::cout << "\n\n\n*****************************\nface " << this->num_faces << ", slice	" << ii << " edge " << jj << std::endl;
 			face F;
 			
 			
@@ -688,11 +688,12 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 					
 					projection_value_homogeneous_input(proj_top, V.vertices[ crit_curve.edges[F.top].right ].pt_mp,pi[1]);
 					projection_value_homogeneous_input(proj_bottom, V.vertices[ crit_curve.edges[F.bottom].right ].pt_mp,pi[1]);
-					
 //					print_point_to_screen_matlab(V.vertices[ crit_curve.edges[F.top].right ].pt_mp,"top_target");
 //					print_point_to_screen_matlab(V.vertices[ crit_curve.edges[F.bottom].right ].pt_mp,"bottom_target");
-					
 				}
+				
+				
+				
 				
 				if (final_bottom_ind==final_top_ind) {
 					int current_edge = crit_slices[ii+zz].edge_w_midpt(final_bottom_ind);
@@ -727,9 +728,6 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 					
 					std::vector< int > candidates; // indices of candidates for next one.
 					
-//					for (std::set< int >::iterator setiter = possible_edges.begin(); setiter != possible_edges.end(); setiter++){
-//						std::cout << *setiter << " " ;
-//					}
 					
 					
 					int candidate_counter = 0;
@@ -755,7 +753,7 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 						if (havent_found_yet && matches_end && correct_interval) {
 							candidates.push_back(qq);
 							
-							std::cout << "candidate [" << candidate_counter << "] = " << candidates[candidate_counter] << " " <<
+							std::cout << "candidate [" << candidate_counter << "] = " <<
 								crit_slices[ii+zz].edges[qq].left << " " << crit_slices[ii+zz].edges[qq].midpt << " " << crit_slices[ii+zz].edges[qq].right <<  std::endl;
 							
 							candidate_counter++;
@@ -780,8 +778,8 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 					{
 						int current_edge = candidates[qq];
 						
-						std::cout << "face " << this->num_faces << ", " << zz << ", current_edge: " << current_edge << std::endl;
-						std::cout << final_bottom_ind << " " << crit_slices[ii+zz].edges[current_edge].midpt << " " << final_top_ind << std::endl;
+						std::cout << "face #: " << this->num_faces << ", zz: " << zz << ", current_edge: " << current_edge << std::endl;
+						std::cout << "tracking to these indices: " << final_bottom_ind << " " << crit_slices[ii+zz].edges[current_edge].midpt << " " << final_top_ind << std::endl;
 
 						
 						
@@ -789,7 +787,20 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 						//target midpoint e.w from paper.
 						projection_value_homogeneous_input(proj_mid, V.vertices[ crit_slices[ii+zz].edges[current_edge].midpt ].pt_mp,pi[1]);
 
-
+						
+						if (solve_options.use_real_thresholding) {
+							if (fabs(mpf_get_d(proj_top->i))<1e-10)
+								mpf_set_str(proj_top->i,"0.0",10);
+							
+							if (fabs(mpf_get_d(proj_bottom->i))<1e-10)
+								mpf_set_str(proj_bottom->i,"0.0",10);
+							
+							if (fabs(mpf_get_d(proj_mid->i))<1e-10)
+								mpf_set_str(proj_mid->i,"0.0",10);
+						}
+						
+						
+						
 						sub_mp(denom, proj_top, proj_bottom); // p2(w2) - p2(w0);
 						sub_mp(numer, proj_mid, proj_bottom); // p2(e.w) - p2(w0);
 						div_mp(md_config.v_target, numer, denom); // [p2(e.w) - p2(w0)] / [p2(w2) - p2(w0)]
@@ -859,13 +870,21 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 						int found_index = index_in_vertices(V,
 																								found_point,
 																								solve_options.T);
-						std::cout << "found_index " << found_index << std::endl;
+						std::cout << "found_index of point: " << found_index << std::endl;
+						
+						int index_in_set = -1;
+						for (std::set<int>::iterator possibility_iter=possible_edges.begin(); possibility_iter!=possible_edges.end(); possibility_iter++) {
+							if (found_index == crit_slices[ii+zz].edges[*possibility_iter].midpt) {
+								index_in_set = *possibility_iter;
+								break;
+							}
+						}
 						
 						
-						if (found_index== (crit_slices[ii+zz].edges[current_edge].midpt)  )
+						if (index_in_set>=0)
 						{
 							
-							int next_edge = crit_slices[ii+zz].edge_w_midpt(found_index); // index the *edge*
+							int next_edge = index_in_set; // index the *edge*
 							std::cout << "next_edge " << next_edge << ", l m r: " << crit_slices[ii+zz].edges[next_edge].left << " " << crit_slices[ii+zz].edges[next_edge].midpt << " " << crit_slices[ii+zz].edges[next_edge].right << std::endl;
 							
 							
@@ -920,6 +939,7 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 			std::cout << "F.bottom " << F.bottom << std::endl;
 			std::cout << "F.num_left " << F.num_left << std::endl;
 			std::cout << "F.num_right " << F.num_right << std::endl;
+			std::cout << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n\n";
 			add_face(F);
 		}
 	}

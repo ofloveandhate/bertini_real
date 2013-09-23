@@ -1900,6 +1900,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	clear_mat_d(linprod_derivative_wrt_x);
 	clear_mat_d(jac_homogenizing_matrix);
 	
+	
 	clear_vec_d(start_function_values);
 	clear_vec_d(target_function_values);
 	clear_vec_d(target_function_values_times_oneminus_s);
@@ -2428,7 +2429,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	clear_vec_mp(linprod_times_gamma_s);
 	clear_vec_mp(tempvec);
 	clear_vec_mp(tempvec2);
-	
+	clear_vec_mp(start_function_values);
 	
 	clear_mat_mp(Jv_Patch);
 	clear_mat_mp(tempmat);

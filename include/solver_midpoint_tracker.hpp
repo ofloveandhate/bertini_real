@@ -126,7 +126,6 @@ public:
 	
 	void clear()
 	{
-		std::cout << "clearing md_confug" << std::endl;
 		clear_mat_mp(randomizer_matrix_crit);
 		clear_mat_mp(randomizer_matrix);
 		
@@ -135,9 +134,12 @@ public:
 		clear_mp(crit_val_left);
 		clear_mp(crit_val_right);
 		
+		
 		//also put in clearing stuff for the SLP's here.
 		clearProg(this->SLP_face, this->MPType, 1); // 1 means call freeprogeval()
 		clearProg(this->SLP_crit, this->MPType, 1); // 1 means call freeprogeval()
+		delete SLP_face;
+		delete SLP_crit;
 	}
 	
 
@@ -195,12 +197,13 @@ public:
 	comp_mp crit_val_left;
 	comp_mp crit_val_right;
 	
-	comp_mp half;
+	
 	comp_mp u_start;
 	comp_mp v_start;
+	
 	comp_mp one;
 	comp_mp zero;
-	
+	comp_mp half;
 	
 	
 	vec_mp *pi_full_prec;
@@ -299,16 +302,17 @@ public:
 		init_vec_mp(pi[num_projections],0);
 		vec_cp_mp(pi[num_projections], proj);
 		
-		if (this->num_projections==0) {
-			this->pi_full_prec = (vec_mp *) br_malloc(sizeof(vec_mp));
+		if (this->MPType==2){
+			if (this->num_projections==0) {
+				this->pi_full_prec = (vec_mp *) br_malloc(sizeof(vec_mp));
+			}
+			else {
+				this->pi_full_prec = (vec_mp *) br_realloc(pi_full_prec,(this->num_projections+1) *sizeof(vec_mp));
+			}
+			
+			init_vec_mp2(pi_full_prec[num_projections],0,1024);
+			vec_cp_mp(pi_full_prec[num_projections], proj);
 		}
-		else {
-			this->pi_full_prec = (vec_mp *) br_realloc(pi_full_prec,(this->num_projections+1) *sizeof(vec_mp));
-		}
-		
-		init_vec_mp2(pi_full_prec[num_projections],0,1024);
-		vec_cp_mp(pi_full_prec[num_projections], proj);
-		
 		num_projections++;
 		
 	}
@@ -327,6 +331,46 @@ public:
 			}
 			free(pi);
 		}
+		
+		clear_mp(v_target);
+		clear_mp(u_target);
+		clear_mat_mp(randomizer_matrix_crit);
+		clear_mp(crit_val_left);
+		clear_mp(crit_val_right);
+		
+		clear_mp(u_start);
+		clear_mp(v_start);
+		
+		clear_mp(half);
+		clear_mp(one);
+		clear_mp(zero);
+		
+		
+		if (this->MPType==2){
+		
+			if (this->num_projections>0) {
+				for (int ii=0; ii<num_projections; ii++) {
+					clear_vec_mp(pi_full_prec[ii]);
+				}
+				free(pi_full_prec);
+			}
+			
+			clear_mp(v_target_full_prec);
+			clear_mp(u_target_full_prec);
+			clear_mat_mp(randomizer_matrix_crit_full_prec);
+			clear_mp(crit_val_left_full_prec);
+			clear_mp(crit_val_right_full_prec);
+			
+			clear_mp(u_start_full_prec);
+			clear_mp(v_start_full_prec);
+			
+			clear_mp(half_full_prec);
+			clear_mp(one_full_prec);
+			clear_mp(zero_full_prec);
+			
+		}
+
+		
 		
 	} // re: clear
 	
@@ -419,12 +463,13 @@ public:
 	vec_d *pi;
 	int num_projections;
 	
+	mat_d randomizer_matrix_crit;
 	//patch already lives in the base class.
 	
 	comp_d v_target;
 	comp_d u_target;
 	
-	mat_d randomizer_matrix_crit;
+	
 	
 	comp_d crit_val_left;
 	comp_d crit_val_right;
@@ -550,14 +595,22 @@ private:
 	void clear()
 	{
 		
-		free(SLP_crit);
-		free(SLP_face);
+
 		
 		//yeah, there's some stuff to clear here.
 		if (this->MPType==2) {
-			
 			delete this->BED_mp;
 		}
+		
+		
+		for (int ii=0; ii<num_projections; ii++) {
+			clear_vec_d(pi[ii]);
+		}
+		free(pi);
+		
+		
+		clear_mat_d(randomizer_matrix_crit);
+		
 	} // re: clear
 	
 	void init();

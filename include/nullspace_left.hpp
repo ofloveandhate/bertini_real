@@ -84,8 +84,6 @@ private:
 		for (int ii=0; (ii<num_total_registers) && (local_counter<num_inactive_registers) ; ii++) {
 			if (std::find(active_registers.begin(), active_registers.end(), ii)==active_registers.end())
 			{
-				std::cout << "setting inactive_registers[" << local_counter << "] = " << ii << std::endl;
-
 				inactive_registers[local_counter] = ii;
 				local_counter++;
 			}

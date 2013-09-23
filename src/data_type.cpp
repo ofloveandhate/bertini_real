@@ -891,14 +891,14 @@ void witness_set::compute_downstairs_crit_midpts(vec_mp crit_downstairs,
 
 	
 	
-	vec_mp projection_values; init_vec_mp(projection_values,this->num_pts); 
+	vec_mp projection_values; init_vec_mp2(projection_values,this->num_pts,1024);
 	projection_values->size = this->num_pts;
 	
 	for (int ii=0; ii<this->num_pts; ii++){
 		projection_value_homogeneous_input(&projection_values->coord[ii], this->pts_mp[ii], pi); // set projection value
-		if (mpf_get_d(projection_values->coord[ii].i)<1e-13) {
-			mpf_set_str(projection_values->coord[ii].i,"0",10);
-		}
+//		if (fabs(mpf_get_d(projection_values->coord[ii].i))<1e-13) {
+//			mpf_set_str(projection_values->coord[ii].i,"0",10);
+//		}
 	}
 	
 	
@@ -917,12 +917,12 @@ void witness_set::compute_downstairs_crit_midpts(vec_mp crit_downstairs,
 	
 	
 	comp_d h;  h->r = 0.5; h->i = 0.0;
-	comp_mp half; init_mp(half); d_to_mp(half, h);
+	comp_mp half; init_mp2(half,1024); d_to_mp(half, h);
 	
 	change_size_vec_mp(midpoints_downstairs, num_midpoints);
 	midpoints_downstairs->size = num_midpoints;
 	
-	comp_mp temp; init_mp(temp);
+	comp_mp temp; init_mp2(temp,1024);
 	for (int ii=0; ii<num_midpoints; ii++){
 		add_mp(temp, &crit_downstairs->coord[ii], &crit_downstairs->coord[ii+1]);
 		mul_mp(&midpoints_downstairs->coord[ii], temp, half);
@@ -946,11 +946,7 @@ void witness_set::cp_names(const witness_set & W_in)
 	}
 	
 	this->variable_names = W_in.variable_names;
-//	this->variable_names.clear();
-//	
-//	for (int ii=0; ii<W_in.variable_names.size(); ii++)
-//		W_out->variable_names.push_back(W_in.variable_names[ii]);
-	
+
 }
 
 
@@ -990,7 +986,7 @@ void witness_set::cp_patches(const witness_set & W_in)
 	
 	
 	for (int ii=0; ii<W_in.num_patches; ++ii) {
-		init_vec_mp(this->patch_mp[ii],W_in.patch_mp[ii]->size);
+		init_vec_mp2(this->patch_mp[ii],W_in.patch_mp[ii]->size,1024);
 		vec_cp_mp(this->patch_mp[ii],W_in.patch_mp[ii]);
 		this->patch_mp[ii]->size = W_in.patch_mp[ii]->size;
 	}
@@ -1221,7 +1217,6 @@ int decomposition::index_in_vertices_with_add(vertex_set &V,
 int decomposition::setup(boost::filesystem::path INfile,
 												 boost::filesystem::path & inputName,
 												 boost::filesystem::path directoryName)
-//setup the vertex structure
 {
 	
 
@@ -1257,7 +1252,7 @@ int decomposition::setup(boost::filesystem::path INfile,
 		}
 	}
 	
-	vec_mp tempvec; init_vec_mp(tempvec, this->num_variables);
+	vec_mp tempvec; init_vec_mp2(tempvec, this->num_variables,1024);
 	tempvec->size = this->num_variables;
 	
 	getline(fin,tempstr); // burn two lines as a consequence of using getline.
@@ -1276,6 +1271,7 @@ int decomposition::setup(boost::filesystem::path INfile,
 		}
 		
 		decomposition::add_projection(tempvec);
+		
 	}
 
 	
@@ -1285,11 +1281,12 @@ int decomposition::setup(boost::filesystem::path INfile,
 	
 	getline(fin,tempstr); std::cout << tempstr << std::endl;
 	getline(fin,tempstr); std::cout << tempstr << std::endl;
+	getline(fin,tempstr); std::cout << tempstr << std::endl; // i hate this
 	converter << tempstr;
 	converter >> curr_num_patches;
 	converter.clear(); converter.str("");
 	
-
+	std::cout << "should be loading " << curr_num_patches << " patches" << std::endl;
 	
 	
 	vec_mp temp_patch; init_vec_mp2(temp_patch,1,1024); temp_patch->size = 1;
@@ -1318,6 +1315,7 @@ int decomposition::setup(boost::filesystem::path INfile,
 		}
 		
 		decomposition::add_patch(temp_patch);
+		print_point_to_screen_matlab(temp_patch,"temp_patch");
 	}
 	
 
@@ -1459,8 +1457,8 @@ void norm_of_difference(mpf_t result, vec_mp left, vec_mp right)
 	
 	int ii;
 	
-	vec_mp difference;  init_vec_mp(difference, left->size);difference->size = left->size;
-	comp_mp temp; init_mp(temp);
+	vec_mp difference;  init_vec_mp2(difference, left->size,1024);difference->size = left->size;
+	comp_mp temp; init_mp2(temp,1024);
 	
 	for (ii = 0;  ii< left->size; ++ii) {
 		sub_mp(&difference->coord[ii], &left->coord[ii], &right->coord[ii]);
@@ -1498,7 +1496,7 @@ void dehomogenize(point_mp *result, point_mp dehom_me)
 		exit(977);
 	}
 	
-	comp_mp denom; init_mp(denom);
+	comp_mp denom; init_mp2(denom,1024);
 	change_size_vec_mp((*result),dehom_me->size-1);
 	
 	(*result)->size = dehom_me->size-1;
@@ -1521,7 +1519,7 @@ void dehomogenize(point_mp *result, point_mp dehom_me, int num_variables)
 		exit(977);
 	}
 	
-	comp_mp denom; init_mp(denom);
+	comp_mp denom; init_mp2(denom,1024);
 	change_size_vec_mp((*result),dehom_me->size-1);
 	
 	(*result)->size = dehom_me->size-1;
@@ -1597,15 +1595,13 @@ void dot_product_mp(comp_mp result, vec_mp left, vec_mp right)
 	}
 	
 	set_zero_mp(result);
-	comp_mp temp; init_mp(temp);
-	comp_mp temp2; init_mp(temp2);
+	comp_mp temp; init_mp2(temp,1024);
 	int ii;
 	for (ii=0; ii<left->size; ++ii) {
-		set_mp(temp2,result)
 		mul_mp(temp,&left->coord[ii],&right->coord[ii]);
-		add_mp(result,temp2,temp);
+		add_mp(result,result,temp);
 	}
-	clear_mp(temp);clear_mp(temp2);
+	clear_mp(temp);
 }
 
 
@@ -1644,7 +1640,7 @@ void projection_value_homogeneous_input(comp_d result, vec_d input, vec_d projec
 void projection_value_homogeneous_input(comp_mp result, vec_mp input, vec_mp projection)
 {
 	set_zero_mp(result);
-	comp_mp temp; init_mp(temp);
+	comp_mp temp; init_mp2(temp,1024);
 	for (int ii=0; ii<projection->size; ii++) {
 		mul_mp(temp, &input->coord[ii], &projection->coord[ii]);
 		add_mp(result, result, temp);
@@ -1926,11 +1922,6 @@ int get_num_vars_PPD(preproc_data PPD){
 
 
 
-
-
-
-
-
 void cp_patch_mp(patch_eval_data_mp *PED, patch_eval_data_mp PED_input)
 {
   PED->num_patches = PED_input.num_patches;
@@ -2003,22 +1994,6 @@ void sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & ind
 
 	
 	
-	
-	
-	std::vector< int > index_tracker_non_unique;
-	std::vector< double > projvals_as_doubles;
-	
-	
-	
-	
-	
-	
-	
-	
-	vec_mp projections_sorted_non_unique;
-	init_vec_mp(projections_sorted_non_unique,projections_input->size);
-	projections_sorted_non_unique->size = projections_input->size;
-
 	for (int ii=0; ii<projections_input->size; ii++) {
 		if (!(mpfr_number_p(projections_input->coord[ii].r) && mpfr_number_p(projections_input->coord[ii].i))) {
 			std::cout << "there was NAN in the projections to sort :(" << std::endl;
@@ -2027,6 +2002,20 @@ void sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & ind
 			deliberate_segfault();
 		}
 	}
+	
+	
+	
+	
+	
+	std::vector< int > index_tracker_non_unique;
+	std::vector< double > projvals_as_doubles;
+	
+	
+	vec_mp projections_sorted_non_unique;
+	init_vec_mp2(projections_sorted_non_unique,projections_input->size,1024);
+	projections_sorted_non_unique->size = projections_input->size;
+
+
 	
 	std::set<int> unsorted_indices;
 	for (int ii=0; ii<projections_input->size; ii++) {

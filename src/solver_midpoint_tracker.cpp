@@ -20,15 +20,9 @@ void midpoint_config::setup(const surface_decomposition & surf,
 	partition_parse(&declarations, surf.input_filename, "func_input", "config", 0); // the 0 means not self conjugate.
 	free(declarations);
 	
-	//	// setup a straight-line program, using the file(s) created by the parser
-//  solve_options.T.numVars = setupProg_count(SLP_face, solve_options.T.Precision, solve_options.T.MPType,
-//																						&startSub, &endSub, &startFunc, &endFunc, &startJvsub, &endJvsub, &startJv, &endJv,
-//																						&subFuncsBelow);
-//	setupProg(prog_t *P, int precision, int MPType)
-	
-	solve_options.T.numVars = setupProg(this->SLP_face, solve_options.T.Precision, solve_options.T.MPType);  // setup a straight-line program, using the file(s) created by the parser.
+	//	// setup a straight-line program, using the file(s) created by the parser	
+	solve_options.T.numVars = setupProg(this->SLP_face, solve_options.T.Precision, solve_options.T.MPType);
 
-	
 	preproc_data_clear(&solve_options.PPD);
 	parse_preproc_data("preproc_data", &solve_options.PPD);
 	
@@ -51,12 +45,10 @@ void midpoint_config::setup(const surface_decomposition & surf,
 	parse_input_file(surf.crit_curve.input_filename, &blabla);
 	partition_parse(&declarations, surf.crit_curve.input_filename, "func_input", "config", 0); // the 0 means not self conjugate.
 	free(declarations);
+	
+	
 	//	// setup a straight-line program, using the file(s) created by the parser
-//  solve_options.T.numVars = setupProg_count(SLP_crit, solve_options.T.Precision, solve_options.T.MPType,
-//																						&startSub, &endSub, &startFunc, &endFunc, &startJvsub, &endJvsub, &startJv, &endJv,
-//																						&subFuncsBelow);
-	solve_options.T.numVars = setupProg(this->SLP_crit, solve_options.T.Precision, solve_options.T.MPType);  // setup a straight-line program, using the file(s) created by the parser.
-
+	solve_options.T.numVars = setupProg(this->SLP_crit, solve_options.T.Precision, solve_options.T.MPType); 
 	preproc_data_clear(&solve_options.PPD);
 	parse_preproc_data("preproc_data", &solve_options.PPD);
 	
@@ -133,6 +125,7 @@ void midpoint_eval_data_mp::init()
 	
 	d_to_mp(half, h);
 	
+	std::cout << "setting one" << std::endl;
 	set_one_mp(this->one);
 	set_zero_mp(this->zero);
 	
@@ -291,11 +284,11 @@ int midpoint_eval_data_mp::setup(const midpoint_config & md_config,
 
 	
 	
-	mat_cp_mp(randomizer_matrix, surf.randomizer_matrix);
+	mat_cp_mp(randomizer_matrix, md_config.randomizer_matrix);
 	mat_cp_mp(randomizer_matrix_crit, md_config.randomizer_matrix_crit);
 	
 	if (this->MPType==2) {
-		mat_cp_mp(randomizer_matrix_full_prec, surf.randomizer_matrix);
+		mat_cp_mp(randomizer_matrix_full_prec, md_config.randomizer_matrix);
 		mat_cp_mp(randomizer_matrix_crit_full_prec, md_config.randomizer_matrix_crit);
 		
 		set_mp(this->crit_val_left_full_prec, md_config.crit_val_left);
@@ -364,6 +357,7 @@ void midpoint_eval_data_d::init()
 	set_d(this->u_start,half);
 	set_d(this->v_start,half);
 	
+	this->pi = NULL;
 	this->num_projections = 0;
 	this->num_variables = -1;
 	this->num_mid_vars = -1;
@@ -576,6 +570,7 @@ int midpoint_solver_master_entry_point(const witness_set						&W, // carries wit
 												ED_d, ED_mp,
 												solve_options);
 	
+	std::cout << "done with solver master" << std::endl;
 	
 	solve_options.force_no_parallel = prev_state;
 	

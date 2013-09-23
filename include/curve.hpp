@@ -286,18 +286,18 @@ int curve_compute_critical_points(const witness_set & W_curve,
 																	BR_configuration & program_options,
 																	solver_configuration & solve_options,
 																	witness_set & W_crit_real);
-/**
- the linprodtodetjac method for getting the critical points
- */
-int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
-																 const witness_set & W,
-																 mat_mp n_minusone_randomizer_matrix,
-																 vec_mp pi,
-																 int num_new_linears,
-																 BR_configuration & program_options,
-																 solver_configuration & solve_options);
-
-
+///**
+// the linprodtodetjac method for getting the critical points
+// */
+//int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
+//																 const witness_set & W,
+//																 mat_mp n_minusone_randomizer_matrix,
+//																 vec_mp pi,
+//																 int num_new_linears,
+//																 BR_configuration & program_options,
+//																 solver_configuration & solve_options);
+//
+//
 
 
 int curve_get_additional_critpts(witness_set *W_crit_real,

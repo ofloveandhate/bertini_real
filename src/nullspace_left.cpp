@@ -68,7 +68,7 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 		vec_cp_mp(multilin_linears[ii], W.L_mp[ii]);
 	}
 
-	
+	multilin_config ml_config(solve_options,randomizer_matrix);
 	
 	
 	
@@ -146,12 +146,11 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 		solve_options.allow_unsuccess = 0;
 		// actually solve WRT the linears
 
-		multilintolin_solver_main(solve_options.T.MPType,
-															W,         // witness_set
-															randomizer_matrix,
-															multilin_linears, //  the set of linears we will solve at.
-															&Wtemp, // the new data is put here!
-															solve_options); 
+		multilin_solver_master_entry_point(W,         // witness_set
+																			 &Wtemp, // the new data is put here!
+																			 multilin_linears,
+																			 ml_config,
+																			 solve_options);
 		
 		W_step_one.merge(Wtemp);
 		Wtemp.reset();
