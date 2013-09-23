@@ -423,8 +423,8 @@ private:
 	
 	void init()
 	{
-		init_mp(this->projVal_mp);
-		init_point_mp(this->pt_mp,1);
+		init_mp2(this->projVal_mp,1024);
+		init_point_mp2(this->pt_mp,1,1024);
 		this->pt_mp->size = 1;
 		this->type = UNSET;
 		
@@ -481,6 +481,7 @@ public:
 	
 	
 	vertex_set & operator=( const vertex_set& other) {
+		init();
 		copy(other);
 		return *this;
 	}
@@ -687,7 +688,7 @@ public:
 			this->pi = (vec_mp *)br_realloc(this->pi, (this->num_curr_projections+1) * sizeof(vec_mp));
 		}
 		
-		init_vec_mp(this->pi[num_curr_projections],proj->size);
+		init_vec_mp2(this->pi[num_curr_projections],proj->size,1024);
 		this->pi[num_curr_projections]->size = proj->size;
 		
 		vec_cp_mp(pi[num_curr_projections], proj);
@@ -704,7 +705,7 @@ public:
 			this->patch = (vec_mp *)br_realloc(this->patch, (this->num_patches+1) * sizeof(vec_mp));
 		}
 		
-		init_vec_mp(this->patch[num_patches],new_patch->size);
+		init_vec_mp2(this->patch[num_patches],new_patch->size,1024);
 		this->patch[this->num_patches]->size = new_patch->size;
 		
 		vec_cp_mp(this->patch[this->num_patches], new_patch);
@@ -759,7 +760,7 @@ public:
 		this->num_curr_projections = other.num_curr_projections;
 		this->pi = (vec_mp *) br_malloc(other.num_curr_projections * sizeof(vec_mp));
 		for (int ii = 0; ii<other.num_curr_projections; ii++) {
-			init_vec_mp(this->pi[ii],other.pi[ii]->size);
+			init_vec_mp2(this->pi[ii],other.pi[ii]->size,1024);
 			this->pi[ii]->size = other.pi[ii]->size;
 			vec_cp_mp(this->pi[ii], other.pi[ii])
 		}

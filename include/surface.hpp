@@ -64,7 +64,10 @@ public:
 		init();
 	} ///<  constructor
 	
-	~face(){clear_mp(left_crit_val); clear_mp(right_crit_val);}  ///<  destructor
+	~face(){
+		clear_mp(left_crit_val);
+		clear_mp(right_crit_val);
+	}  ///<  destructor
 	
 	face(const face & other){ ///<  copy
 		init();
@@ -81,8 +84,9 @@ public:
 	
 	void init()
 	{
-		init_mp(left_crit_val);
-		init_mp(right_crit_val);
+		
+		init_mp2(left_crit_val,1024);
+		init_mp2(right_crit_val,1024);
 		
 		num_left = num_right = 0;
 		top = bottom = -1;

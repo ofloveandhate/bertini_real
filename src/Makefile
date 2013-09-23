@@ -34,7 +34,7 @@ ifeq ($(MACHINENAME),MACBRAKE)
 	BERTINILIB:=$(HOME)/lib/libbertini.a
 	INSTALLPATH:=$(HOME)/bin
 	BERTINIHEADERS:=$(HOME)/bertini_source/include
-	
+
 	BOOSTLOC := /usr/local/Cellar/boost/1.54.0/lib/
 	BOOSTSUFFIX:=-mt
 	MACHINESPECIFICS:= 
@@ -51,10 +51,10 @@ ifeq ($(MACHINENAME),sam)
 	BERTINILIB:=$(HOME)/lib/libbertini.a
 	INSTALLPATH:=$(HOME)/bin
 	BERTINIHEADERS:= $(HOME)/code/bertini_source/include
-	
+
 	BOOSTLOC := /usr/local/boost/lib/
 	BOOSTSUFFIX :=#no spaces
-	
+
 endif
 
 ifeq ($(MACHINENAME),wenrui)
@@ -114,20 +114,19 @@ libpartitionparse: lex.partitionParse.o
 
 #makes the bertini_real program
 bertini_real : bertini_real.cpp $(OBJFILES)  $(SOLVERS) $(FLEXFILES)
-	$(COMPpp) $(ARGS) -o bertini_real bertini_real.cpp  $(OBJFILES)  $(SOLVERS)  $(FLEXFILES) $(BERTINILIB)  -Bstatic $(LIBS)
-	
-	#$(COMPpp) $(ARGS) -o bertini_real bertini_real.cpp -Wl,-Bstatic $(OBJFILES)  $(SOLVERS)  $(FLEXFILES) $(BERTINILIB)  $(LIBS) -Wl,-Bdynamic
+	$(COMPpp) $(ARGS) -o bertini_real bertini_real.cpp  $(OBJFILES)  $(SOLVERS)  $(FLEXFILES)  -Bstatic  $(BERTINILIB) $(LIBS) -Bdynamic
+	#$(COMPpp) $(ARGS) -o bertini_real bertini_real.cpp $(OBJFILES)  $(SOLVERS)  $(FLEXFILES) -Wl,-Bstatic $(BERTINILIB)  $(LIBS) -Wl,-Bdynamic
 
 
 #makes the data2set program.
 data_to_set: dataToSet.cpp
 	$(COMPpp) $(ARGS) -o data2set dataToSet.cpp -Bstatic $(BERTINILIB) $(LIBS)  $(STATICFLAG) -Bdynamic
-#   
+	#$(COMPpp) $(ARGS) -o data2set dataToSet.cpp -Wl,-Bstatic $(BERTINILIB) $(LIBS)  $(STATICFLAG) -Wl,-Bdynamic 
 
 #makes the sampler program.
 sampler: sampler.cpp $(OBJFILES) $(FLEXFILES) $(SOLVERS)
 	$(COMPpp) $(ARGS) -o sampler sampler.cpp  -Bstatic  $(SOLVERS) $(OBJFILES)   $(BERTINILIB) $(FLEXFILES)  $(LIBS)  -Bdynamic
-#   
+	#$(COMPpp) $(ARGS) -o sampler sampler.cpp  -Wl,-Bstatic  $(SOLVERS) $(OBJFILES)   $(BERTINILIB) $(FLEXFILES)  $(LIBS)  -Wl,-Bdynamic 
 
 
 #simply copy the executables to the installpath
@@ -151,7 +150,6 @@ lex.partitionParse.c:	partitionParse.l
 	$(FLEX) -PpartitionParse partitionParse.l
 
 clean : 
-	rm partitionParse.a
 	rm -f $(OBJFILES) $(FLEXFILES) $(SOLVERS) sampler.o bertini.o data2set.o bertini_real data2set sampler
 	rm -f par.out paramDerivs.out arr.out eval.out eval2.out const.out finalFile.out jacV.out jacP.out num.out
 	rm -f tempBertiniFile lex.partitionParse.c 

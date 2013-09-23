@@ -37,7 +37,7 @@ int main(int argC, char *args[])
 	get_dir_mptype( Dir_Name, &MPType);
 	
 	
-	
+
 	
 	int successful_startup = curve_sampler_startup(Dir_Name,
 																								 inputName, witnessSetName,RandMatName,samplingNamenew,
@@ -55,17 +55,15 @@ int main(int argC, char *args[])
 	solver_configuration solve_options; 
 	get_tracker_config(solve_options,MPType);
 	parse_preproc_data("preproc_data", &solve_options.PPD);
-	
+
 	initMP(solve_options.T.Precision);
-	
 	num_vars = get_num_vars_PPD(solve_options.PPD);		
 	
 	
 
 
 	
-	if (solve_options.verbose_level>=1)
-		printf("loading curve decomposition\n");
+	
 	
 	witness_set W;
 	W.num_variables = num_vars;
@@ -80,6 +78,8 @@ int main(int argC, char *args[])
 		W.add_patch(C.patch[ii]);
 	}
 	
+	
+	print_point_to_screen_matlab(W.patch_mp[0],"patch");
 	mat_mp randomizer_matrix; init_mat_mp2(randomizer_matrix, 0,0, solve_options.T.AMP_max_prec);
 	
 	//create the array of integers
@@ -211,6 +211,8 @@ void generate_new_sampling_pts(sample_data *S_new,
 	int num_refinements;
 	int *current_indices;
 	
+	multilin_config ml_config(solve_options,randomizer_matrix);
+	
 	
 	for(ii=0;ii<S_old.num_edges;ii++) // for each of the edges
 	{
@@ -332,14 +334,18 @@ void generate_new_sampling_pts(sample_data *S_new,
 						mypause();
 					}
 					
-					multilintolin_solver_main(MPType,
-																		W,         // witness_set
-																		randomizer_matrix,
-																		&target_projection, //  the set of linears we will solve at.
-																		&Wnew, // the new data is put here!
-																		solve_options); // already a pointer
+//					multilintolin_solver_main(MPType,
+//																		W,         // witness_set
+//																		randomizer_matrix,
+//																		&target_projection, //  the set of linears we will solve at.
+//																		&Wnew, // the new data is put here!
+//																		solve_options); // already a pointer
 					
-					
+					multilin_solver_master_entry_point(W,         // witness_set
+																						 &Wnew, // the new data is put here!
+																						 &target_projection,
+																						 ml_config,
+																						 solve_options);
 					
 					
 					

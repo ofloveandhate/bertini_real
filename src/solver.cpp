@@ -1131,7 +1131,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 												point_data_d *Pin, point_data_mp *Pin_mp,
 												FILE *OUT, FILE *MIDOUT,
 												solver_configuration & solve_options,
-												void const *ED_d, void const *ED_mp,
+												solver_d *ED_d, solver_mp *ED_mp,
 												int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
 												int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 												int (*change_prec)(void const *, int),
@@ -1158,14 +1158,19 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 	EG_out->retVal = -876; // set to bad return value
 	while ((iterations<max_iterations) && (EG_out->retVal!=0)) {
 		
+		// reset a few things here
 		
 		EG_out->retVal = 0;
-		
-	
 		T->first_step_of_path = 1;
 		
 		if (T->MPType == 2)
 		{ // track using AMP
+			
+			if (solve_options.T.MPType==2) {
+				ED_mp->curr_prec = 64; // reset!
+			}
+			
+			
 			EG_out->prec = EG_out->last_approx_prec = 52;
 			
 			EG_out->retVal = endgame_amp(T->endgameNumber, EG_out->pathNum, &EG_out->prec, &EG_out->first_increase, &EG_out->PD_d, &EG_out->PD_mp, &EG_out->last_approx_prec, EG_out->last_approx_d, EG_out->last_approx_mp, Pin, T, OUT, MIDOUT, ED_d, ED_mp, eval_func_d, eval_func_mp, change_prec, find_dehom);

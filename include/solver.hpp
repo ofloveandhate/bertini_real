@@ -100,35 +100,50 @@ public:
 	
 	
 	
+
+	
+protected:
+	
+	void init()
+	{
+		this->local_mem_d = NULL;
+		this->local_mem_mp = NULL;
+		this->local_size_d = NULL;  // size of mem_d
+		this->local_size_mp = NULL;  // size of mem_mp
+		this->local_mem_needs_init_d = NULL; // determine if mem_d has been initialized
+		this->local_mem_needs_init_mp = NULL; // determine if mem_mp has been initialized
+	}
+	
+	void copy(const SLP_global_pointers & other)
+	{
+		if (other.local_mem_d!=NULL)
+			this->local_mem_d = other.local_mem_d;
+		
+		if (other.local_mem_mp!=NULL)
+			this->local_mem_mp = other.local_mem_mp;
+		
+		if (other.local_size_d!=NULL)
+			this->local_size_d = other.local_size_d;  // size of mem_d
+		
+		if (other.local_size_mp!=NULL)
+			this->local_size_mp = other.local_size_mp;  // size of mem_mp
+		
+		if (other.local_mem_needs_init_d!=NULL)
+			this->local_mem_needs_init_d = other.local_mem_needs_init_d; // determine if mem_d has been initialized
+		
+		if (other.local_mem_needs_init_mp!=NULL)
+			this->local_mem_needs_init_mp = other.local_mem_needs_init_mp; // determine if mem_mp has been initialized
+	}
+	
+	
+private:
+	
 	_comp_d  **local_mem_d;
 	_comp_mp **local_mem_mp;
 	int *local_size_d;  // size of mem_d
 	int *local_size_mp;  // size of mem_mp
 	int *local_mem_needs_init_d; // determine if mem_d has been initialized
 	int *local_mem_needs_init_mp; // determine if mem_mp has been initialized
-	
-protected:
-	
-	void init()
-	{
-		local_mem_d = NULL;
-		local_mem_mp = NULL;
-		local_size_d = NULL;  // size of mem_d
-		local_size_mp = NULL;  // size of mem_mp
-		local_mem_needs_init_d = NULL; // determine if mem_d has been initialized
-		local_mem_needs_init_mp = NULL; // determine if mem_mp has been initialized
-	}
-	
-	void copy(const SLP_global_pointers & other)
-	{
-		this->local_mem_d = other.local_mem_d;
-		this->local_mem_mp = other.local_mem_mp;
-		this->local_size_d = other.local_size_d;  // size of mem_d
-		this->local_size_mp = other.local_size_mp;  // size of mem_mp
-		this->local_mem_needs_init_d = other.local_mem_needs_init_d; // determine if mem_d has been initialized
-		this->local_mem_needs_init_mp = other.local_mem_needs_init_mp; // determine if mem_mp has been initialized
-	}
-	
 };
 
 
@@ -137,6 +152,7 @@ class solver_configuration : public prog_config
 {
 public:
 	
+	bool use_real_thresholding;
 	bool robust;
 	tracker_config_t T;
 	tracker_config_t T_orig;
@@ -222,7 +238,7 @@ public:
 		
 		this->complete_witness_set = other.complete_witness_set;
 		
-		
+		this->use_real_thresholding = other.use_real_thresholding;
 		
 	}
 	
@@ -230,7 +246,8 @@ public:
 	
 	void init()
 	{
-		this->robust = false;
+		use_real_thresholding = false;
+		robust = false;
 		
 		PPD.num_funcs = 0;
 		PPD.num_hom_var_gp = 0;
@@ -288,8 +305,12 @@ public:
 	
 	int num_steps; ///< the number of evaluations made using this evaluator
 	int verbose_level;  ///< how verbose to be
+	
+	
+	
 	int MPType; ///< the multiple precision type for solve
 	preproc_data preProcData; ///< information related to the SLP for system
+	SLP_global_pointers SLP_memory;
 	prog_t *SLP; ///< the SLP
 	bool have_SLP;
 	
@@ -438,14 +459,10 @@ public:
 	
 	virtual ~solver_mp(){
 		
-		clear_mat_mp(randomizer_matrix);
-		clear_mp(gamma);
-		
-		if (MPType==2) {
-			clear_mat_mp(randomizer_matrix_full_prec);
-			clear_rat(gamma_rat);
-		}
+		clear();
 	}// re: default destructor
+	
+	
 	
 	
 	solver_mp & operator=( const solver_mp & other)
@@ -489,7 +506,16 @@ protected:
 		this->curr_prec = other.curr_prec;
 	}
 	
-	
+	void clear()
+	{
+	  clear_mat_mp(randomizer_matrix);
+		clear_mp(gamma);
+		
+		if (MPType==2) {
+			clear_mat_mp(randomizer_matrix_full_prec);
+			clear_rat(gamma_rat);
+		}
+	}
 };
 
 
@@ -522,8 +548,7 @@ public:
 	
 	
 	virtual ~solver_d(){
-		clear_mat_d(randomizer_matrix);
-		clear_d(gamma);
+		clear();
 	}// re: default destructor
 	
 	
@@ -557,6 +582,9 @@ public:
 protected:
 	
 	
+	
+	
+	
 	void init()
 	{
 		solver::init();
@@ -572,7 +600,10 @@ protected:
 		mat_cp_d(this->randomizer_matrix, other.randomizer_matrix);
 	}
 	
-	
+	void clear(){
+		clear_mat_d(randomizer_matrix);
+		clear_d(gamma);
+	}
 	
 };
 
@@ -674,7 +705,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 											 point_data_d *Pin, point_data_mp *Pin_mp,
 											 FILE *OUT, FILE *MIDOUT,
 											solver_configuration & solve_options,
-											 void const *ED_d, void const *ED_mp,
+											 solver_d *ED_d, solver_mp *ED_mp,
 											 int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
 											 int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 											 int (*change_prec)(void const *, int),
