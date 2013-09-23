@@ -1,0 +1,19 @@
+CONFIG
+printpathmodulus:45;
+tracktype: 1;
+securitymaxnorm: 1e4;
+
+CONDNUMTHRESHOLD: 1e20;
+imagthreshold: 1e-4;
+FunctionTolerance: 1e-6;
+
+END;
+INPUT
+
+variable_group x, y, z;
+function f1;
+
+f1 = x^2+y^2+z^2+1000 * (x^2+y^2)*(x^2+z^2)*(y^2+z^2)-1;
+
+
+END;
