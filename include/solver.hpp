@@ -152,6 +152,7 @@ class solver_configuration : public prog_config
 {
 public:
 	
+
 	bool use_real_thresholding;
 	bool robust;
 	tracker_config_t T;
@@ -185,7 +186,14 @@ public:
 		cp_tracker_config_t(&T_orig,&T);
 	}
 	
-	
+	int increment_num_paths_tracked()
+	{
+		total_num_paths_tracked++;
+		if ((total_num_paths_tracked%500)==0) {
+			std::cout << "\t\t\t\t\ttracked " << total_num_paths_tracked << " paths total." << std::endl;
+		}
+		return total_num_paths_tracked;
+	}
 	
 	solver_configuration(){
 		init();
@@ -216,7 +224,7 @@ public:
 		cp_tracker_config_t(&this->T, &other.T);
 		cp_tracker_config_t(&this->T_orig, &other.T_orig);
 		
-		
+		this->total_num_paths_tracked = other.total_num_paths_tracked;
 		this->robust = other.robust;
 
 		cp_preproc_data(&(this->PPD), other.PPD);
@@ -246,6 +254,8 @@ public:
 	
 	void init()
 	{
+		total_num_paths_tracked = 0;
+		
 		use_real_thresholding = false;
 		robust = false;
 		
@@ -281,6 +291,12 @@ public:
 	{
 		parse_preproc_data("preproc_data", &this->PPD);
 	}
+	
+	
+	
+	
+private:
+	long long total_num_paths_tracked;
 	
 };
 
