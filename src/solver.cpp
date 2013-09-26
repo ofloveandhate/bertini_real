@@ -515,8 +515,10 @@ void generic_tracker_loop(trackingStats *trackCount,
 	
 	for (int ii = 0; ii < W.num_pts; ii++)
 	{
-		if ((solve_options.verbose_level>=0) && ((ii%(solve_options.path_number_modulus))==0))
+		if ((solve_options.verbose_level>=0) && ((ii%(solve_options.path_number_modulus))==0) && (W.num_pts>solve_options.path_number_modulus) )
 			printf("tracking path %d of %d\n",ii,W.num_pts);
+		
+		solve_options.increment_num_paths_tracked();
 		
 		if (solve_options.T.MPType==2) {
 			ED_mp->curr_prec = 64;
@@ -833,7 +835,7 @@ int receive_endpoints(trackingStats *trackCount,
 		else {
 			mp_to_d(time_to_compare, EG_receives[ii].PD_mp.time); }
 		
-		
+		solve_options.increment_num_paths_tracked();
 		if ((EG_receives[ii].retVal != 0 && time_to_compare->r > solve_options.T.minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
 			
 			trackCount->failures++;
@@ -980,7 +982,7 @@ void generic_tracker_loop_worker(trackingStats *trackCount,
 		{
 			int current_index = indices_incoming[ii];;
 			
-			if (solve_options.verbose_level>=0 && (current_index%solve_options.path_number_modulus==0) )
+			if (solve_options.verbose_level>=1 && (current_index%solve_options.path_number_modulus==0))
 				printf("tracking path %d, worker %d\n", current_index, solve_options.id());
 			
 			
@@ -1006,7 +1008,7 @@ void generic_tracker_loop_worker(trackingStats *trackCount,
 			
 		}// re: for (ii=0; ii<W.num_pts ;ii++)
 
-		std::cout << "worker" << solve_options.id() << " waiting to send point " << indices_incoming[0] << std::endl;
+//		std::cout << "worker" << solve_options.id() << " waiting to send point " << indices_incoming[0] << std::endl;
 		MPI_Send(&numStartPts, 1, MPI_INT, solve_options.head(), NUMPACKETS, MPI_COMM_WORLD);
 		send_recv_endgame_data_t(&EG, &numStartPts, solve_options.T.MPType, solve_options.head(), 1);
 		
@@ -1246,6 +1248,11 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 		
 		if (!(EG_out->retVal==0 ||   EG_out->retVal==-50 )) {
 			std::cout << "solution had non-zero retVal " << EG_out->retVal << " (" << current_retval_counter << ")th occurrence on iteration " << iterations << "." << std::endl;
+			
+			if (solve_options.verbose_level>=1){
+				print_path_retVal_message(EG_out->retVal);
+			}
+			
 			switch (EG_out->retVal) {
 					
 //				case -50:
@@ -1269,7 +1276,9 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					
 					break;
 					
-				
+				case -2:
+					
+					break;
 					
 				case -1:
 					

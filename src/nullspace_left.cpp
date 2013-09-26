@@ -340,24 +340,6 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	// make the post-randomizer matrix $S$
 	int num_jac_equations = (ns_config->num_x_vars - 1);//N-1;  the subtraction of 1 is for the 1 hom-var
 	
-	init_mat_mp2(ns_config->post_randomizer_matrix,
-							 num_jac_equations, W.num_variables-1,
-							 solve_options.T.AMP_max_prec);
-	
-	ns_config->post_randomizer_matrix->rows = num_jac_equations;
-	ns_config->post_randomizer_matrix->cols = W.num_variables-1;
-	if (ns_config->post_randomizer_matrix->rows == ns_config->post_randomizer_matrix->cols) {
-		make_matrix_ID_mp(ns_config->post_randomizer_matrix,num_jac_equations,num_jac_equations);
-	}
-	else if(ns_config->post_randomizer_matrix->rows > ns_config->post_randomizer_matrix->cols){
-		std::cout << "up-randomizing..." << std::endl;
-		deliberate_segfault();
-	}
-	else{
-	make_matrix_random_real_mp(ns_config->post_randomizer_matrix,
-														 num_jac_equations,W.num_variables-1,
-														 solve_options.T.AMP_max_prec);
-	}
 	
 	// copy the main randomizer matrix
 	init_mat_mp2(ns_config->randomizer_matrix,randomizer_matrix->rows, randomizer_matrix->cols,solve_options.T.AMP_max_prec);
@@ -600,7 +582,7 @@ void create_nullspace_system(boost::filesystem::path output_name,
 
 	write_matrix_as_constants(ns_config->randomizer_matrix, "r", OUT);
 	
-	write_matrix_as_constants(ns_config->post_randomizer_matrix, "s", OUT);
+//	write_matrix_as_constants(ns_config->post_randomizer_matrix, "s", OUT);
 	
 	IN = safe_fopen_read("derivative_polynomials_declaration");
   while ((ch = fgetc(IN)) != EOF)
@@ -758,14 +740,6 @@ void createMatlabDerivative(boost::filesystem::path output_name,
 	}
 	OUT << ";\n";
 	
-	OUT << "syms ";
-	for (ii=0; ii<ns_config->post_randomizer_matrix->rows; ii++) {
-		for (int jj=0; jj<ns_config->post_randomizer_matrix->cols; jj++) {
-			OUT << "s_" << ii+1 << "_" << jj+1 << " "	;
-		}
-	}
-	OUT << ";\n";
-	
 	
 	// put in the randomization matrices.
 	OUT << "R = [";
@@ -777,15 +751,7 @@ void createMatlabDerivative(boost::filesystem::path output_name,
 	}
 	OUT << "];\n\n";
 	
-	
-	OUT << "S = [";
-	for (ii=0; ii<ns_config->post_randomizer_matrix->rows; ii++) {
-		for (int jj=0; jj<ns_config->post_randomizer_matrix->cols; jj++) {
-			OUT << "s_" << ii+1 << "_" << jj+1 << " "	;
-		}
-		OUT << ";\n";
-	}
-	OUT << "];\n\n";
+
 	
   // setup functions
   OUT << "\nF_orig = [";
@@ -796,8 +762,8 @@ void createMatlabDerivative(boost::filesystem::path output_name,
 	OUT << "F_rand = R*F_orig; % randomize\n";
 	
   // compute the jacobian
-  OUT << "J = transpose(jacobian(F_rand,X));  %compute the transpose of the jacobian\n";
-	OUT << "J = S*[J proj]; %randomize after concatenating with the projections\n\n";
+  OUT << "J = [transpose(jacobian(F_rand,X)) proj];  %compute the transpose of the jacobian\n";
+	OUT << "                                           %concatenate the projections\n\n";
 	
 	OUT << "new_eqns = J*synth_vars; % multiply the synth vars\n\n";
 	

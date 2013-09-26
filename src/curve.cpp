@@ -318,7 +318,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	vec_mp midpoints_downstairs; init_vec_mp(midpoints_downstairs,0);
 	std::vector< int > index_tracker;
 	
-	W_crit_real.print_to_screen();
+//	W_crit_real.print_to_screen();
 	W_crit_real.compute_downstairs_crit_midpts(crit_downstairs, midpoints_downstairs, index_tracker, projections[0]);
 	//index tracker gives the increasing order for the points in W_crit_real
 	
@@ -382,10 +382,10 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	
 
 	
-	print_matrix_to_screen_matlab(randomizer_matrix,"rand_interslice");
+//	print_matrix_to_screen_matlab(randomizer_matrix,"rand_interslice");
 	multilin_config ml_config(solve_options,randomizer_matrix);
 	
-	
+	solve_options.robust = true;
 	solve_options.backup_tracker_config();
 	
 	for (int ii=0; ii<num_midpoints; ii++) {
@@ -411,7 +411,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 		midpoint_witness_sets[ii].sort_for_real(solve_options.T);
 		midpoint_witness_sets[ii].sort_for_unique(solve_options.T);
 		
-		midpoint_witness_sets[ii].print_to_screen();
+//		midpoint_witness_sets[ii].print_to_screen();
 		
 		edge_counter += midpoint_witness_sets[ii].num_pts;
 	}
@@ -474,7 +474,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 //																							//each member of Wtemp should real.  if a member of V1 already, mark index.  else, add to V1, and mark.
 		
 		
-		Wright.print_to_screen();
+//		Wright.print_to_screen();
 		int keep_going = 1;
 		if (Wright.num_pts!=midpoint_witness_sets[ii].num_pts) {
 			printf("had a critical failure\n moving right was deficient a point\n");
@@ -657,6 +657,37 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 
 
 
+//returns (-1,-1) if no candidate found
+std::pair<int,int> curve_decomposition::get_merge_candidate(const vertex_set & V){
+	
+	std::pair< int, int> found_edges = std::pair<int,int>(-1,-1);
+
+	
+	// looking for edges with the type NEW, by looking at the left endpoint
+	for (int tentative_right_edge=0; tentative_right_edge<this->num_edges; tentative_right_edge++) {
+		if (V.vertices[edges[tentative_right_edge].left].type == NEW) {
+			
+			if (edges[tentative_right_edge].left == edges[tentative_right_edge].right) 
+				continue;
+			
+
+			int tentative_left_edge = this->edge_w_right(edges[tentative_right_edge].left);
+			
+			
+			if (tentative_left_edge < 0) {
+				std::cout << "found that edge " << tentative_right_edge << " has NEW leftpoint, but \\nexists edge w point " << edges[tentative_right_edge].left << " as right point." << std::endl;
+				continue;
+			}
+			
+			found_edges.second = tentative_right_edge;
+			found_edges.first = tentative_left_edge;
+			
+			return found_edges;
+		}
+	}
+	
+	return found_edges;
+}
 
 
 
@@ -677,20 +708,32 @@ void curve_decomposition::merge(witness_set & W_midpt,
 	
 	
 	std::pair< int, int > edges_to_merge = this->get_merge_candidate(V);
-	while (edges_to_merge.first!=-1) {
+	
+	while (edges_to_merge.first!=-1) { // this value is updated at the end of the loop
 		// then there are edges superfluous and need to be merged
-
 		int left_edge_w_pt = edges_to_merge.first;
 		int right_edge_w_pt  = edges_to_merge.second;
-		
-		
-		
 		std::cout << "merging edges " << left_edge_w_pt << " " << right_edge_w_pt << std::endl;
-		std::cout << edges[left_edge_w_pt].left << " " << edges[left_edge_w_pt].midpt << " " << edges[left_edge_w_pt].right << " ";
-		std::cout << edges[right_edge_w_pt].left << " " << edges[right_edge_w_pt].midpt << " " << edges[right_edge_w_pt].right << " " << std::endl;
+		
+		
+		if (edges_to_merge.first < 0 || edges_to_merge.second < 0) {
+			std::cout << "error: attemping to merge edges with negative index!" << std::endl;
+			
+			std::cout << "<" << edges[left_edge_w_pt].left << " " << edges[left_edge_w_pt].midpt << " " << edges[left_edge_w_pt].right << "> <";
+			std::cout << edges[right_edge_w_pt].left << " " << edges[right_edge_w_pt].midpt << " " << edges[right_edge_w_pt].right << ">" << std::endl;
+			
+			
+			deliberate_segfault();
+		}
 		
 		
 		
+		
+		
+		
+		
+		std::cout << "<" << edges[left_edge_w_pt].left << " " << edges[left_edge_w_pt].midpt << " " << edges[left_edge_w_pt].right << "> <";
+		std::cout << edges[right_edge_w_pt].left << " " << edges[right_edge_w_pt].midpt << " " << edges[right_edge_w_pt].right << ">" << std::endl;
 		
 		
 		witness_set W_temp;
@@ -751,7 +794,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		
 		
 		add_edge(temp_edge);
-		std::cout << "adding edge " << temp_edge.left << " " << temp_edge.midpt << " " << temp_edge.right << " " << std::endl;
+//		std::cout << "adding edge " << temp_edge.left << " " << temp_edge.midpt << " " << temp_edge.right << " " << std::endl;
 		//add the new_edge
 		
 		
@@ -762,14 +805,14 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		
 		// delete the two old edges // can't do this in the loop because we were using indexes into the edge set
 		std::vector< edge > post_merge_edges;
-		
+		// this should be changed.
 		for (int ii = 0; ii<this->num_edges; ii++) {
 			if ((ii!=left_edge_w_pt) && (ii!=right_edge_w_pt)) { // if don't want to remove the edge
 				post_merge_edges.push_back( this->edges[ii]);
 			}
 			else{
-				std::cout << "removing edge " << ii << std::endl;
-				std::cout << this->edges[ii].left << " " << this->edges[ii].midpt << " " << this->edges[ii].right << " " << std::endl;
+//				std::cout << "removing edge " << ii << std::endl;
+//				std::cout << this->edges[ii].left << " " << this->edges[ii].midpt << " " << this->edges[ii].right << " " << std::endl;
 			}
 			//otherwise skip it.
 		}
@@ -891,7 +934,7 @@ int curve_get_additional_critpts(witness_set *W_crit_real,
 	
 	vec_mp variable_projection; init_vec_mp(variable_projection, W.num_variables); variable_projection->size = W.num_variables;
 	
-	print_matrix_to_screen_matlab(randomizer_matrix,"rand_addlcrit");
+//	print_matrix_to_screen_matlab(randomizer_matrix,"rand_addlcrit");
 	multilin_config ml_config(solve_options, randomizer_matrix);
 	
 	

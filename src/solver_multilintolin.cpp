@@ -1140,7 +1140,7 @@ int check_issoln_multilintolin_d(endgame_data_t *EG,
 	//	if (num_digits > 300)
 	//		num_digits = 300;
 	//	num_digits -= 2;
-	double tol = MAX(T->funcResTol, 1e-10);
+	double tol = MAX(T->funcResTol, 1e-8);
 	
 	
 	if (EG->prec>=64){
@@ -1238,7 +1238,7 @@ int check_issoln_multilintolin_mp(endgame_data_t *EG,
 	if (num_digits > 300)
 		num_digits = 300;
 	num_digits -= 4;
-	double my_guarantor = MAX(T->funcResTol, 1e-10);
+	double my_guarantor = MAX(T->funcResTol, 1e-8);
 	double tol = MAX(my_guarantor, pow(10,-num_digits));
 	mpf_set_d(zero_thresh, tol);
 	

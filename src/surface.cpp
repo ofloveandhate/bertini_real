@@ -266,7 +266,7 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 	int blabla;
 	parse_input_file(W_surf.input_filename, & blabla);
 	
-	
+	solve_options.robust = true;
 	
 	multilin_config ml_config(solve_options); // copies in the randomizer matrix and sets up the SLP & globals.
 	
@@ -309,7 +309,7 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 			solve_options.allow_unsuccess = 0;
 			
 			
-			print_matrix_to_screen_matlab(ml_config.randomizer_matrix,"rand_surf_slice_314");
+//			print_matrix_to_screen_matlab(ml_config.randomizer_matrix,"rand_surf_slice_314");
 			multilin_solver_master_entry_point(W_surf,         // witness_set
 																				 &slice_witness_set, // the new data is put here!
 																				 multilin_linears,
@@ -595,6 +595,12 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 		
 		for (int jj=0; jj<mid_slices[ii].num_edges; jj++) {
 			std::cout << "\n\n\n*****************************\nface " << this->num_faces << ", slice	" << ii << " edge " << jj << std::endl;
+			
+			if (mid_slices[ii].edges[jj].is_degenerate()) {
+				std::cout << "no computation necessary -- midslice edge is degenerate" << std::endl;
+				continue;
+			}
+			
 			face F;
 			
 			
@@ -646,10 +652,10 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 			// the u direction corresponds to pi[0].
 			for (int zz=0; zz<2; zz++) { // go left (zz=0) and right (zz=1)
 				if (zz==0) {
-				std::cout << "going left" << std::endl;
+				std::cout << "\n      <<=========   going left" << std::endl;
 				}
 				else{
-					std::cout << "going right" << std::endl;
+					std::cout << "\n\n           going right   =======>> " << std::endl;
 				}
 				
 				
@@ -697,16 +703,21 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 				
 				if (final_bottom_ind==final_top_ind) {
 					int current_edge = crit_slices[ii+zz].edge_w_midpt(final_bottom_ind);
-						// can simply set the top or bottom edge to be this one.  know it goes there.
-						std::cout << "crit_slice[" << ii+zz << "].edges[" << current_edge << "] is degenerate" << std::endl;
-						if (zz==0){
-							F.left.push_back(current_edge);
-							F.num_left++;
-						}
-						else {
-							F.right.push_back(current_edge);
-							F.num_right++;
-						}
+					
+					if (current_edge==-10) {
+						std::cout << "unable to find an edge with midpoint " << final_bottom_ind << std::endl;
+					}
+					
+					// can simply set the top or bottom edge to be this one.  know it goes there.
+					std::cout << "crit_slice[" << ii+zz << "].edges[" << current_edge << "] is degenerate" << std::endl;
+					if (zz==0){
+						F.left.push_back(current_edge);
+						F.num_left++;
+					}
+					else {
+						F.right.push_back(current_edge);
+						F.num_right++;
+					}
 					continue; // go to next zz value, or next midslice edge, or whatever
 				}
 				

@@ -40,6 +40,7 @@ public:
 	int num_v_vars;  ///< N   number of variables in original problem statement (including homogenizing variables)
 	int num_x_vars;  ///< N-k+\ell
 	
+	bool randomize;
 	int num_randomized_eqns;	///< N-k (N-ambient_dim)
 	int max_degree;						///< the max degree of differentiated (randomized) functions
 	int *randomized_degrees; ///< the degrees of the randomized functions (not derivatives)
@@ -61,8 +62,8 @@ public:
 	
 	mat_mp randomizer_matrix;  ///< R, the main randomizer matrix, which was passed in.  randomizes f and Jf down to N-k equations.
 	
-	mat_mp post_randomizer_matrix;  ///< S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
-	
+//	mat_mp post_randomizer_matrix;  ///< S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
+//	
 	void clear();
 	
 	nullspace_config(){
@@ -87,6 +88,123 @@ public:
 
 
 
+class temps_mp
+{
+	std::map<std::string,int> name_indexer;
+	vec_mp * vectors;
+	mat_mp * matrices;
+	
+	int num_vectors;
+	int num_matrices;
+	
+	
+	
+	
+//	vec_mp operator[] (std::string name)
+//	{
+//		return vectors[name_indexer[name]];
+//	}
+	
+
+	
+	
+	temps_mp(){init();}
+	~temps_mp(){clear();}
+	
+	temps_mp & operator=(const temps_mp & other){
+		init();
+		copy(other);
+		
+		return *this;
+	}
+	
+	temps_mp(const temps_mp & other){
+		init();
+		copy(other);
+	}
+
+	
+	
+	void init(){
+		vectors = NULL;
+		matrices = NULL;
+		num_vectors = 0;
+		num_matrices = 0;
+	}
+	
+	void copy(const temps_mp &other)
+	{
+		for (int ii=0; ii<other.num_vectors; ii++) {
+			int new_index = this->add_vector();
+			vec_cp_mp(this->vectors[new_index],other.vectors[ii]);
+		}
+		
+		for (int ii=0; ii<other.num_matrices; ii++) {
+			int new_index = this->add_matrix();
+			mat_cp_mp(this->matrices[new_index],other.matrices[ii]);
+		}
+	}
+	
+	
+	void clear(){
+		clear_matrices();
+		clear_vectors();
+	}
+	
+	void clear_matrices()
+	{
+		if (num_matrices>0) {
+			for (int ii=0; ii<num_matrices; ii++) {
+				clear_mat_mp(matrices[ii]);
+			}
+			free(matrices);
+		}
+	}
+	
+	
+	void clear_vectors()
+	{
+		if (num_vectors>0) {
+			for (int ii=0; ii<num_vectors; ii++) {
+				clear_vec_mp(vectors[ii]);
+			}
+			free(vectors);
+		}
+	}
+	
+	
+	int add_vector(){
+		int new_index = num_vectors;
+		if (num_vectors==0) {
+			vectors = (vec_mp *) br_malloc(sizeof(vec_mp));
+		}
+		else {
+			vectors = (vec_mp *) br_realloc(vectors,(num_vectors+1)*sizeof(vec_mp));
+		}
+		init_vec_mp(vectors[new_index],1);
+		vectors[new_index]->size = 1;
+		
+		return new_index;
+		
+	}
+	
+	
+	int add_matrix(){
+		int new_index = num_matrices;
+		if (num_matrices==0) {
+			matrices = (mat_mp *) br_malloc(sizeof(mat_mp));
+		}
+		else {
+			matrices = (mat_mp *) br_realloc(matrices,(num_matrices+1)*sizeof(mat_mp));
+		}
+		init_mat_mp(matrices[new_index],1,1);
+		matrices[new_index]->rows = matrices[new_index]->cols = 1;
+		
+		return new_index;
+	}
+	
+	
+};
 
 
 
@@ -105,6 +223,7 @@ public:
 	int num_x_vars;  // N   number of variables in original problem statement (including homogenizing variables)
 	int num_v_vars;  // (N-k) + (k-\ell+1)
 	
+	bool randomize;
 	int num_randomized_eqns;	// N-k (N-ambient_dim)
 	int max_degree;						// the max degree of differentiated (randomized) functions
 	std::vector<int> randomized_degrees;
@@ -118,9 +237,7 @@ public:
 	vec_mp *additional_linears_starting_full_prec;
 	
 	
-	mat_mp post_randomizer_matrix;  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
-	mat_mp post_randomizer_matrix_full_prec;  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
-	
+
 	
 	
 	
@@ -263,8 +380,7 @@ private:
 			free(additional_linears_starting);
 		}
 		
-		clear_mat_mp(post_randomizer_matrix);  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
-		
+
 		
 		if (num_jac_equations>0) {
 			for (int ii=0; ii<num_jac_equations; ii++) {
@@ -314,8 +430,7 @@ private:
 				free(additional_linears_starting_full_prec);
 			}
 			
-			clear_mat_mp(post_randomizer_matrix_full_prec);  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
-			
+
 			
 			
 			for (int ii=0; ii<num_jac_equations; ii++){
@@ -379,11 +494,6 @@ private:
 		else {} // other.num_additional_linears == 0
 		
 		this->num_additional_linears = other.num_additional_linears;
-		
-		
-		mat_cp_mp(this->post_randomizer_matrix, other.post_randomizer_matrix);
-		mat_cp_mp(this->post_randomizer_matrix_full_prec, other.post_randomizer_matrix_full_prec);
-		
 		
 		if (other.num_jac_equations) {
 			this->starting_linears_full_prec = (vec_mp **) br_malloc(other.num_jac_equations*sizeof(vec_mp *));
@@ -500,6 +610,7 @@ public:
 	int num_x_vars;  // N   number of variables in original problem statement (including homogenizing variables)
 	int num_v_vars;  // (N-k) + (k-\ell+1)
 	
+	bool randomize;
 	int num_randomized_eqns;	// N-k (N-ambient_dim)
 	int max_degree;						// the max degree of differentiated (randomized) functions
 	std::vector<int> randomized_degrees;
@@ -509,10 +620,6 @@ public:
 	vec_d *additional_linears_terminal;
 	
 	vec_d *additional_linears_starting;
-	
-	
-	mat_d post_randomizer_matrix;  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
-	
 	
 	
 	
@@ -648,8 +755,7 @@ private:
 			free(additional_linears_starting);
 		}
 		
-		clear_mat_d(post_randomizer_matrix);  // S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
-		
+
 		
 		if (num_jac_equations>0) {
 			for (int ii=0; ii<num_jac_equations; ii++) {
@@ -720,8 +826,7 @@ private:
 		this->num_additional_linears = other.num_additional_linears;
 		
 		
-		mat_cp_d(this->post_randomizer_matrix, other.post_randomizer_matrix);
-		
+
 		
 		if (other.num_jac_equations) {
 			this->starting_linears = (vec_d **) br_malloc(other.num_jac_equations*sizeof(vec_d *));
