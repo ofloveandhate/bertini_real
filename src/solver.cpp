@@ -388,7 +388,9 @@ void generic_solver_master(witness_set * W_new, const witness_set & W,
 	}
 	
   //clear the endpoints here
-	
+	for (int ii=0; ii<W.num_pts; ii++) {
+		clear_post_process_t(&endPoints[ii],W.num_variables);
+	}
 }
 
 
@@ -607,7 +609,7 @@ void generic_tracker_loop(trackingStats *trackCount,
 	
 	
 	//clear the data structures.
-  for (int ii = 0; ii >W.num_pts; ii++)
+  for (int ii = 0; ii < W.num_pts; ii++)
   { // clear startPts[ii]
     clear_point_data_d(&startPts_d[ii]);
 		clear_point_data_mp(&startPts_mp[ii]);
@@ -730,13 +732,13 @@ void generic_tracker_loop_master(trackingStats *trackCount,
 	//clear the data structures.
 	switch (solve_options.T.MPType) {
 		case 1:
-			for (int ii = 0; ii >W.num_pts; ii++)
+			for (int ii = 0; ii < W.num_pts; ii++)
 				clear_point_data_mp(&startPts_mp[ii]);
 			free(startPts_mp);
 			break;
 			
 		default:
-			for (int ii = 0; ii >W.num_pts; ii++)
+			for (int ii = 0; ii < W.num_pts; ii++)
 				clear_point_data_d(&startPts_d[ii]);
 			free(startPts_d);
 			break;

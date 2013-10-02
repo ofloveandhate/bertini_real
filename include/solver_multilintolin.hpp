@@ -140,7 +140,7 @@ public:
 	
 	void clear()
 	{
-
+		
 		
 		clear_mat_mp(randomizer_matrix);
 		
@@ -440,6 +440,23 @@ public:
 	
 protected:
 	void init();
+	
+	void clear()
+	{
+		solver_d::clear();
+		
+		for (int ii=0; ii<num_linears; ii++) {
+			clear_vec_d(current_linear[ii]);
+			clear_vec_d(old_linear[ii]);
+		}
+		free(current_linear);
+		free(old_linear);
+		
+		if (this->MPType==2)
+		{
+			delete this->BED_mp;
+		}
+	}
 };
 
 

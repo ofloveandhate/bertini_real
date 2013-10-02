@@ -11,7 +11,7 @@ void nullspace_config::clear()
 	
 	free(randomized_degrees); // the degrees of the randomized functions (not derivatives)
 	
-	for (int ii=0; ii<ambient_dim-target_dim; ii++) {
+	for (int ii=0; ii<num_jac_equations; ii++) {
 		for (int jj=0; jj<max_degree; jj++) {
 			clear_vec_mp(starting_linears[ii][jj]);
 		}
@@ -2405,7 +2405,9 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	clear_mp(temp);
 	clear_mp(temp2);
 	clear_mp(temp3);
-	
+	clear_mp(gamma_s);
+	clear_mp(one_minus_s);
+
 	
 	clear_vec_mp(target_function_values);
 	clear_vec_mp(target_function_values_times_oneminus_s);
@@ -2861,9 +2863,11 @@ int check_issoln_nullspacejac_mp(endgame_data_t *EG,
 	
 	clear_eval_struct_mp(e);
 	clear_vec_mp(f);
+	clear_vec_mp(curr_x_vars);
+	clear_vec_mp(curr_v_vars);
 	
-//	std::cout << isSoln << std::endl;
 	
+
 	return isSoln;
 	
 }

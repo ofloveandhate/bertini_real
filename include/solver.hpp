@@ -183,6 +183,7 @@ public:
 	
 	void backup_tracker_config()
 	{
+		tracker_config_clear(&T_orig);
 		cp_tracker_config_t(&T_orig,&T);
 	}
 	
@@ -355,7 +356,8 @@ public:
 	
 	virtual ~solver()
 	{
-		freeEvalProg(this->MPType);
+		clear();
+		
 	}
 	
 	virtual int send(parallelism_config & mpi_config);
@@ -376,7 +378,13 @@ public:
 	
 protected:
 	
-	
+	void clear()
+	{
+		if (have_SLP) {
+			freeEvalProg(this->MPType);
+		}
+		
+	}
 	
 	void init()
 	{
@@ -524,6 +532,10 @@ protected:
 	
 	void clear()
 	{
+		solver::clear();
+		
+		patch_eval_data_clear_mp(& this->patch);
+		
 	  clear_mat_mp(randomizer_matrix);
 		clear_mp(gamma);
 		
@@ -617,6 +629,10 @@ protected:
 	}
 	
 	void clear(){
+		solver::clear();
+		
+		patch_eval_data_clear_d(& this->patch);
+		
 		clear_mat_d(randomizer_matrix);
 		clear_d(gamma);
 	}

@@ -861,6 +861,8 @@ void cp_patch_mp(patch_eval_data_mp *PED, patch_eval_data_mp PED_input);
 void cp_patch_d(patch_eval_data_d *PED, patch_eval_data_d PED_input);
 void cp_preproc_data(preproc_data *PPD, const preproc_data & PPD_input);
 
+void clear_post_process_t(post_process_t * endPoint, int num_vars);
+
 void sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & index_tracker, vec_mp projections_input);
 
 void make_randomization_matrix_based_on_degrees(mat_mp randomization_matrix, std::vector< int > & randomized_degrees,

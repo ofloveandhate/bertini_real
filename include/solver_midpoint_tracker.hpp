@@ -323,7 +323,7 @@ public:
 	
 	void clear()
 	{
-		
+		solver_mp::clear();
 		
 		if (this->num_projections>0) {
 			for (int ii=0; ii<num_projections; ii++) {
@@ -594,9 +594,8 @@ private:
 	
 	void clear()
 	{
-		
+		solver_d::clear();
 
-		
 		//yeah, there's some stuff to clear here.
 		if (this->MPType==2) {
 			delete this->BED_mp;
