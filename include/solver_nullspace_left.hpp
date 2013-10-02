@@ -368,9 +368,7 @@ private:
 	
 	void clear()
 	{
-		solver_mp::clear();
-		
-		
+
 		if (num_additional_linears>0) {
 			for (int ii=0; ii<num_additional_linears; ii++) {
 				clear_vec_mp(additional_linears_terminal[ii]);
@@ -746,9 +744,7 @@ private:
 	
 	void clear()
 	{
-		
-		solver_d::clear();
-		
+
 		
 		if (num_additional_linears>0) {
 			for (int ii=0; ii<num_additional_linears; ii++) {

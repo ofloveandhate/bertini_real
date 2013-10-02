@@ -238,9 +238,8 @@ public:
 	
 	
 	
-	~multilintolin_eval_data_mp(){
+	virtual ~multilintolin_eval_data_mp(){
 		clear();
-		// no need to reset the counters.
 	}
 	
 
@@ -274,9 +273,8 @@ protected:
 	
 	void clear()
 	{
-		solver_mp::clear();
-		
-		
+
+
 		for (int ii=0; ii<num_linears; ii++) {
 			clear_vec_mp(current_linear[ii]);
 			clear_vec_mp(old_linear[ii]);
@@ -409,7 +407,6 @@ public:
 	
 	~multilintolin_eval_data_d(){
 		clear();
-		// no need to reset the counters.
 	}
 	
 	
@@ -443,8 +440,7 @@ protected:
 	
 	void clear()
 	{
-		solver_d::clear();
-		
+
 		for (int ii=0; ii<num_linears; ii++) {
 			clear_vec_d(current_linear[ii]);
 			clear_vec_d(old_linear[ii]);

@@ -388,9 +388,10 @@ void generic_solver_master(witness_set * W_new, const witness_set & W,
 	}
 	
   //clear the endpoints here
-	for (int ii=0; ii<W.num_pts; ii++) {
+	for (int ii=0; ii<trackCount.successes; ii++) {
 		clear_post_process_t(&endPoints[ii],W.num_variables);
 	}
+	free(endPoints);
 }
 
 
