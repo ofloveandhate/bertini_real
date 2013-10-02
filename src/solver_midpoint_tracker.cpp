@@ -1996,6 +1996,9 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 	clear_vec_d(f_prev);
 	clear_vec_d(f_terminal);
 
+	clear_vec_d(prev_pt);
+	clear_vec_d(terminal_pt);
+	
 	return isSoln;
 	
 }
@@ -2233,6 +2236,8 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	clear_vec_mp(f_terminal);
 	clear_vec_mp(f_prev);
 	
+	clear_vec_mp(prev_pt);
+	clear_vec_mp(terminal_pt);
 
 	return isSoln;
 	

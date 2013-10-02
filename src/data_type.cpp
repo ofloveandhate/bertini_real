@@ -1986,7 +1986,22 @@ void cp_preproc_data(preproc_data *PPD, const preproc_data & PPD_input)
 }
 
 
-
+void clear_post_process_t(post_process_t * endPoint, int num_vars)
+{
+	int j;
+	
+	if (endPoint->sol_prec >= 64)
+	{ // clear _mp
+		mpf_clear(endPoint->function_resid_mp);
+		mpf_clear(endPoint->newton_resid_mp);
+		for (j = 0; j < num_vars; j++)
+		{
+			clear_mp(endPoint->sol_mp[j]);
+		}
+	}
+	free(endPoint->sol_mp);
+	free(endPoint->sol_d);
+}
 
 // this sort should be optimized.  it is sloppy and wasteful right now.
 void sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & index_tracker, vec_mp projections_input){

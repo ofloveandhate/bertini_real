@@ -488,8 +488,8 @@ void set_witness_set_mp(witness_set *W, vec_mp new_linear,vec_mp pts,int num_var
 void  output_sampling_data(sample_data S, vertex_set V,
 													 boost::filesystem::path samplingName,int num_vars, int MPType)
 {
-	V.print_to_screen();
-	V.vertices[0].print();
+//	V.print_to_screen();
+//	V.vertices[0].print();
 	FILE *OUT =  safe_fopen_write(samplingName);
 	int ii,jj,kk;
 	// output the number of vertices
@@ -499,8 +499,8 @@ void  output_sampling_data(sample_data S, vertex_set V,
 		
 		fprintf(OUT,"%d\n\n",S.num_samples_each_edge[ii]);
 		for (jj=0; jj<S.num_samples_each_edge[ii]; jj++) {
-			std::cout << "edge " << ii << " sample " << jj << " " << S.sample_indices[ii][jj] << std::endl;
-			V.vertices[S.sample_indices[ii][jj]].print();
+//			std::cout << "edge " << ii << " sample " << jj << " " << S.sample_indices[ii][jj] << std::endl;
+//			V.vertices[S.sample_indices[ii][jj]].print();
 			
 			print_mp(OUT,0,V.vertices[S.sample_indices[ii][jj]].projVal_mp);
 			fprintf(OUT,"\n");
