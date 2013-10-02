@@ -357,7 +357,6 @@ public:
 	virtual ~solver()
 	{
 		clear();
-		
 	}
 	
 	virtual int send(parallelism_config & mpi_config);
@@ -481,8 +480,9 @@ public:
 		}
 	}
 	
+	
+	
 	virtual ~solver_mp(){
-		
 		clear();
 	}// re: default destructor
 	
@@ -532,9 +532,8 @@ protected:
 	
 	void clear()
 	{
-		solver::clear();
-		
-		patch_eval_data_clear_mp(& this->patch);
+
+		patch_eval_data_clear_mp(&this->patch);
 		
 	  clear_mat_mp(randomizer_matrix);
 		clear_mp(gamma);
@@ -629,8 +628,8 @@ protected:
 	}
 	
 	void clear(){
-		solver::clear();
-		
+
+
 		patch_eval_data_clear_d(& this->patch);
 		
 		clear_mat_d(randomizer_matrix);
