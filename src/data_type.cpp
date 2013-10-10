@@ -179,6 +179,14 @@ void *br_realloc(void *ptr, size_t size)
 }
 
 
+void deliberate_segfault(){
+	printf("the following segfault is deliberate\n");
+	int *faulty = NULL;
+	faulty[-10] = faulty[10]+faulty[0];
+	
+}
+
+
 void br_exit(int errorCode)
 /***************************************************************\
  * USAGE:                                                        *
@@ -190,7 +198,11 @@ void br_exit(int errorCode)
   if (errorCode == 0)
     errorCode = ERROR_OTHER;
 	
+	
   printf("%s\n", "bertini_real quitting\n");
+	
+	deliberate_segfault();
+	
 #ifdef _HAVE_MPI
   MPI_Abort(MPI_COMM_WORLD, errorCode);
 #else
@@ -205,12 +217,6 @@ void br_exit(int errorCode)
 
 
 
-void deliberate_segfault(){
-	printf("the following segfault is deliberate\n");
-	int *faulty = NULL;
-	faulty[-10] = faulty[10]+faulty[0];
-	
-}
 
 
 
@@ -587,17 +593,26 @@ void witness_set::read_patches_from_file(boost::filesystem::path filename)
 void witness_set::print_to_screen() const
 {
 	
+	vec_mp dehom;  init_vec_mp(dehom,1); dehom->size = 1;
+	
 	std::stringstream varname;
 	
 	std::cout << "witness set has " << num_variables << " total variables, " << num_synth_vars << " synthetic vars." << std::endl;
 	int ii;
 	printf("******\n%d points\n******\n",this->num_pts);
+	std::cout << color::green();
 	for (ii=0; ii<this->num_pts; ii++) {
+		
+		dehomogenize(&dehom, this->pts_mp[ii], num_variables - num_synth_vars);
+		
 		varname << "point_" << ii;
-		print_point_to_screen_matlab(this->pts_mp[ii],varname.str());
+		
+		print_point_to_screen_matlab(dehom,varname.str());
 		varname.str("");
 	}
+	std::cout << color::console_default();
 	
+	std::cout << color::blue();
 	printf("******\n%d linears\n******\n",this->num_linears);
 	
 	for (ii=0; ii<this->num_linears; ii++) {
@@ -605,7 +620,9 @@ void witness_set::print_to_screen() const
 		print_point_to_screen_matlab(this->L_mp[ii],varname.str());
 		varname.str("");
 	}
+	std::cout << color::console_default();
 	
+	std::cout << color::cyan();
 	printf("******\n%d patches\n******\n",this->num_patches);
 	
 	for (ii=0; ii<this->num_patches; ii++) {
@@ -613,12 +630,16 @@ void witness_set::print_to_screen() const
 		print_point_to_screen_matlab(this->patch_mp[ii],varname.str());
 		varname.str("");
 	}
+	std::cout << color::console_default();
 	
 	std::cout << "variable names:\n";
 	for (ii=0; ii< int(this->variable_names.size()); ii++) {
 		std::cout << this->variable_names[ii] << "\n";
 	}
 	printf("\n\n");
+	
+	
+	clear_vec_mp(dehom);
 }
 
 
@@ -882,20 +903,48 @@ void witness_set::merge(const witness_set & W_in)
 
 
 
-void witness_set::compute_downstairs_crit_midpts(vec_mp crit_downstairs,
+int witness_set::compute_downstairs_crit_midpts(vec_mp crit_downstairs,
 																								 vec_mp midpoints_downstairs,
 																								 std::vector< int > & index_tracker,
 																								 vec_mp pi) const
 {
 	
-
+	int retVal = 0;
 	
 	
 	vec_mp projection_values; init_vec_mp2(projection_values,this->num_pts,1024);
 	projection_values->size = this->num_pts;
 	
 	for (int ii=0; ii<this->num_pts; ii++){
+		
+		for (int jj=0; jj<this->pts_mp[ii]->size; jj++) {
+			
+			if (!(mpfr_number_p(this->pts_mp[ii]->coord[jj].r) && mpfr_number_p(this->pts_mp[ii]->coord[jj].i))) {
+				std::cout << color::red();
+				std::cout << "there was NAN in a point in the projections to sort :(" << std::endl;
+				print_point_to_screen_matlab(this->pts_mp[ii], "bad_point");
+				
+				print_point_to_screen_matlab(pi,"pi");
+				std::cout << color::console_default();
+				return -14;
+			}
+			
+		}
+	
+		
+		
 		projection_value_homogeneous_input(&projection_values->coord[ii], this->pts_mp[ii], pi); // set projection value
+		
+		print_comp_matlab(&projection_values->coord[ii],"proj_val");
+		
+		
+		if (!(mpfr_number_p(projection_values->coord[ii].r) && mpfr_number_p(projection_values->coord[ii].i)))
+		{
+			print_comp_matlab(&projection_values->coord[ii],"not_a_number");
+			print_point_to_screen_matlab(pi,"pi");
+			
+		}
+			
 //		if (fabs(mpf_get_d(projection_values->coord[ii].i))<1e-13) {
 //			mpf_set_str(projection_values->coord[ii].i,"0",10);
 //		}
@@ -905,14 +954,14 @@ void witness_set::compute_downstairs_crit_midpts(vec_mp crit_downstairs,
 	change_size_vec_mp(crit_downstairs,1); // destructive resize
 	crit_downstairs->size = 1;
 	
-	sort_increasing_by_real(crit_downstairs, index_tracker, projection_values);
+	retVal = sort_increasing_by_real(crit_downstairs, index_tracker, projection_values);
 	
 	clear_vec_mp(projection_values);
 	
 	int num_midpoints = crit_downstairs->size - 1;
 	
 	if (num_midpoints<1) {
-		return;
+		return retVal;
 	}
 	
 	
@@ -930,6 +979,9 @@ void witness_set::compute_downstairs_crit_midpts(vec_mp crit_downstairs,
 	
 	clear_mp(temp);
 	clear_mp(half);
+	
+	
+	return retVal;
 }
 
 
@@ -1022,7 +1074,7 @@ void vertex_set::print_to_screen()
 	printf("vertex set has %d vertices:\n\n",this->num_vertices);
 	for (int ii=0; ii<this->num_vertices; ++ii) {
 		print_point_to_screen_matlab(this->vertices[ii].pt_mp,"vert");
-		print_comp_matlab(this->vertices[ii].projVal_mp,"proj");
+		print_point_to_screen_matlab(this->vertices[ii].projection_values,"projection_values");
 		printf("type: %d\n", this->vertices[ii].type);
 	}
 }
@@ -1034,10 +1086,9 @@ int vertex_set::setup_vertices(boost::filesystem::path INfile)
 	FILE *IN = safe_fopen_read(INfile);
 	int num_vertices;
 	int num_vars;
-	fscanf(IN, "%d\n\n", &num_vertices);
+	fscanf(IN, "%d %d\n\n", &num_vertices, &this->num_projections);
 	
 	vertex temp_vertex;
-	
 	
 	for(int ii=0;ii<num_vertices;ii++)
 	{
@@ -1052,8 +1103,12 @@ int vertex_set::setup_vertices(boost::filesystem::path INfile)
 			mpf_inp_str(temp_vertex.pt_mp->coord[jj].i, IN, 10);
 		}
 		
-		mpf_inp_str(temp_vertex.projVal_mp->r, IN, 10);
-		mpf_inp_str(temp_vertex.projVal_mp->i, IN, 10);
+		increase_size_vec_mp(temp_vertex.projection_values,num_projections);
+		for (int jj=0; jj<num_projections; jj++) {
+			mpf_inp_str(temp_vertex.projection_values->coord[jj].r, IN, 10);
+			mpf_inp_str(temp_vertex.projection_values->coord[jj].i, IN, 10);
+		}
+		
 		
 		fscanf(IN,"%d\n",&temp_vertex.type);
 		
@@ -1066,7 +1121,7 @@ int vertex_set::setup_vertices(boost::filesystem::path INfile)
 	
 	if (this->num_vertices!=num_vertices) {
 		printf("parity error in num_vertices.\n\texpected: %d\tactual: %d\n",this->num_vertices,num_vertices);
-		exit(25943);
+		br_exit(25943);
 	}
 	
 	return num_vertices;
@@ -1094,7 +1149,7 @@ void vertex_set::print(boost::filesystem::path outputfile)
 	FILE *OUT = safe_fopen_write(outputfile);
 	
 	// output the number of vertices
-	fprintf(OUT,"%d\n\n",num_vertices);
+	fprintf(OUT,"%d %d\n\n",num_vertices,num_projections);
 	for (int ii = 0; ii < num_vertices; ii++)
 	{ // output points
 		fprintf(OUT,"%d\n", vertices[ii].pt_mp->size);
@@ -1102,7 +1157,12 @@ void vertex_set::print(boost::filesystem::path outputfile)
 			print_mp(OUT, 0, &vertices[ii].pt_mp->coord[jj]);
 			fprintf(OUT,"\n");
 		}
-		print_mp(OUT, 0, vertices[ii].projVal_mp);
+		
+		for(int jj=0;jj<vertices[ii].projection_values->size;jj++) {
+			print_mp(OUT, 0, &vertices[ii].projection_values->coord[jj]);
+			fprintf(OUT,"\n");
+		}
+		
 		fprintf(OUT,"\n");
 		fprintf(OUT,"%d\n\n",vertices[ii].type);
 	}
@@ -1138,26 +1198,27 @@ int decomposition::add_vertex(vertex_set & V, vertex source_vertex)
 
 int decomposition::index_in_vertices(vertex_set &V,
 																		 vec_mp testpoint,
+																		 comp_mp proj_val,
 																		 tracker_config_t T)
 {
 	int ii;
 	int index = -1;
 		
-	std::map< int , int >::iterator type_iter;
+	
 	
 	for (int jj=1; jj<V.num_natural_variables; jj++) {
 		div_mp(&V.checker_1->coord[jj-1], &testpoint->coord[jj],  &testpoint->coord[0]);
 	}
 	
-	
+//	WTB: a faster comparison search.
 	for (ii=0; ii<V.num_vertices; ii++) {
 		
 		int current_index = ii;
 		
 		if (V.vertices[current_index].removed!=1) {
 		
-		//it would be desirable to perform this comparison, but the projection value depends on the projection used to compute it!
-		// hence, it has been commented out.  WTB: a faster comparison search.
+		//it would be desirable to perform the below comparison, but the projection value depends on the projection used to compute it!
+		// hence, it has been commented out.  
 //			sub_mp(V.diff, projection_value, V.vertices[current_index].projVal_mp);
 //			mpf_abs_mp(V.abs, V.diff);
 //			
@@ -1188,13 +1249,14 @@ int decomposition::index_in_vertices(vertex_set &V,
 
 
 
-
+//TODO: make T here a pointer
 
 int decomposition::index_in_vertices_with_add(vertex_set &V,
 																							vertex vert,
+																							comp_mp proj_val,
 																							tracker_config_t T)
 {
-	int index = decomposition::index_in_vertices(V, vert.pt_mp, T);
+	int index = decomposition::index_in_vertices(V, vert.pt_mp, proj_val, T);
 	
 	if (index==-1) {
 		index = decomposition::add_vertex(V, vert);
@@ -1673,7 +1735,7 @@ int isSamePoint_inhomogeneous_input(point_d left, point_d right){
 	}
 	
 	
-	int indicator = isSamePoint(left,NULL,52,right,NULL,52,1e-3);
+	int indicator = isSamePoint(left,NULL,52,right,NULL,52,SAMEPOINTTOL);
 	
 	
 	return indicator;
@@ -1689,7 +1751,7 @@ int isSamePoint_inhomogeneous_input(point_mp left, point_mp right){
 //		exit(-287);
 	}
 	
-	int indicator = isSamePoint(NULL,left,65,NULL,right,65,1e-3); // make the bertini library call
+	int indicator = isSamePoint(NULL,left,65,NULL,right,65,SAMEPOINTTOL); // make the bertini library call
 	
 
 	return indicator;
@@ -1712,7 +1774,7 @@ int isSamePoint_homogeneous_input(point_d left, point_d right){
 	dehomogenize(&dehom_left,left);
 	dehomogenize(&dehom_right,right);
 	
-	int indicator = isSamePoint(dehom_left,NULL,52,dehom_right,NULL,52,1e-3);
+	int indicator = isSamePoint(dehom_left,NULL,52,dehom_right,NULL,52,SAMEPOINTTOL);
 	
 	clear_vec_d(dehom_left); clear_vec_d(dehom_right);
 	
@@ -1735,7 +1797,7 @@ int isSamePoint_homogeneous_input(point_mp left, point_mp right){
 	dehomogenize(&dehom_left,left);
 	dehomogenize(&dehom_right,right);
 	
-	int indicator = isSamePoint(NULL,dehom_left,65,NULL,dehom_right,65,1e-3); // make the bertini library call
+	int indicator = isSamePoint(NULL,dehom_left,65,NULL,dehom_right,65,SAMEPOINTTOL); // make the bertini library call
 	
 	clear_vec_mp(dehom_left); clear_vec_mp(dehom_right);
 	
@@ -2006,7 +2068,7 @@ void clear_post_process_t(post_process_t * endPoint, int num_vars)
 }
 
 // this sort should be optimized.  it is sloppy and wasteful right now.
-void sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & index_tracker, vec_mp projections_input){
+int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & index_tracker, vec_mp projections_input){
 	
 
 	
@@ -2016,7 +2078,7 @@ void sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & ind
 			std::cout << "there was NAN in the projections to sort :(" << std::endl;
 			print_point_to_screen_matlab(projections_input, "projections_input");
 			
-			deliberate_segfault();
+			return -51;
 		}
 	}
 	
@@ -2098,7 +2160,7 @@ void sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & ind
 	}
 	
 
-	return;
+	return 0;
 }
 
 
@@ -2562,4 +2624,54 @@ void receive_vec_d(vec_d b, int source)
 
 
 
+namespace color {
+	
+	
+	
+  std::string console_default(){
+		return "\033[0m";
+	}
+	
+	std::string black(){
+		return "\033[0;30m";
+	}
+	
+	std::string red(){
+		return "\033[0;31m";
+	}
+	
+	std::string green(){
+		return "\033[0;32m";
+	}
+	
+	std::string brown(){
+		return "\033[0;33m";
+	}
+	
+	std::string blue(){
+		return "\033[0;34m";
+	}
+	
+	std::string magenta(){
+		return "\033[0;35m";
+	}
+	std::string cyan(){
+		return "\033[0;36m";
+	}
+	
+	std::string gray(){
+		return "\033[0;37m";
+	}
+	
+	
+}
 
+
+//black - 30
+//red - 31
+//green - 32
+//brown - 33
+//blue - 34
+//magenta - 35
+//cyan - 36
+//lightgray - 37

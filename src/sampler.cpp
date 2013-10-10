@@ -259,13 +259,7 @@ void generate_new_sampling_pts(sample_data *S_new,
 				printf("\n\n");
 			}
 			
-			if (sampler_options->verbose_level>=1) {
-				printf("the current projection values are:\n");
-				for (jj=0; jj<prev_num_samp; jj++) {
-					print_comp_matlab(V.vertices[current_indices[jj]].projVal_mp,"proj");
-				}
-				printf("\n\n");
-			}
+
 			
 			num_refinements = 0; // reset this counter.  this should be the only place this is reset
 			interval_counter = 0;
@@ -304,8 +298,8 @@ void generate_new_sampling_pts(sample_data *S_new,
 				{
 			
 					vec_cp_mp(startpt,V.vertices[startpt_index].pt_mp);
-					set_mp(&(start_projection->coord[0]),V.vertices[startpt_index].projVal_mp);
-					neg_mp(&(start_projection->coord[0]),&(start_projection->coord[0]));
+					set_mp(&(start_projection->coord[0]), &V.vertices[startpt_index].projection_values->coord[0]);
+					neg_mp(&(start_projection->coord[0]), &(start_projection->coord[0]));
 					
 					
 					estimate_new_projection_value(target_projection_value,				// the new value
@@ -389,7 +383,7 @@ void generate_new_sampling_pts(sample_data *S_new,
 					
 					
 					vec_cp_mp(temp_vertex.pt_mp,Wnew.pts_mp[0]);
-					set_mp(temp_vertex.projVal_mp,target_projection_value);
+					set_mp(&temp_vertex.projection_values->coord[0],target_projection_value);
 					temp_vertex.type = SAMPLE_POINT;
 					
 
@@ -502,7 +496,9 @@ void  output_sampling_data(sample_data S, vertex_set V,
 //			std::cout << "edge " << ii << " sample " << jj << " " << S.sample_indices[ii][jj] << std::endl;
 //			V.vertices[S.sample_indices[ii][jj]].print();
 			
-			print_mp(OUT,0,V.vertices[S.sample_indices[ii][jj]].projVal_mp);
+			
+			print_mp(OUT,0, &V.vertices[S.sample_indices[ii][jj]].projection_values->coord[0]);
+			
 			fprintf(OUT,"\n");
 			for(kk=0;kk<num_vars;kk++) {
 				print_mp(OUT, 0, &V.vertices[S.sample_indices[ii][jj]].pt_mp->coord[kk]);

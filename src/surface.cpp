@@ -121,6 +121,8 @@ void surface_decomposition::main(vertex_set & V,
 	init_vec_mp(midpoints_downstairs,0); init_vec_mp(crit_downstairs,0);
 	W_curve_crit.compute_downstairs_crit_midpts(crit_downstairs, midpoints_downstairs, index_tracker, pi[0]);
 	
+	compute_sphere_diameter(W_curve_crit);
+	
 	
 	if (program_options.verbose_level>=0) {
 		print_point_to_screen_matlab(crit_downstairs,"crit_down");
@@ -129,6 +131,8 @@ void surface_decomposition::main(vertex_set & V,
 	
 
 	// get the midpoint slices
+	
+	program_options.merge_edges=true;
 	bool rerun_empty = false;
 	compute_slices(W_surf, V,
 								 midpoints_downstairs, this->mid_slices,
@@ -138,6 +142,8 @@ void surface_decomposition::main(vertex_set & V,
 	this->output_main(program_options, V);
 	
 	// get the critical slices
+	
+	program_options.merge_edges=false;
 	rerun_empty = true;
 	compute_slices(W_surf, V,
 								 crit_downstairs, this->crit_slices,
@@ -243,7 +249,7 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 																					 std::string kindofslice)
 {
 	
-	program_options.merge_edges=true;
+	
 	
 	
 	vec_mp *multilin_linears = (vec_mp *) br_malloc(2*sizeof(vec_mp));
@@ -289,7 +295,7 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 			std::stringstream converter;
 			converter << ii;
 			
-			int blabla, *declarations;
+			int blabla;
 			parse_input_file(W_surf.input_filename, &blabla);
 //			partition_parse(&declarations, W_surf.input_filename, "func_input", "config", 0); // the 0 means not self conjugate.
 //			free(declarations);																													 // i would like to move this.
@@ -356,7 +362,7 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 				solve_options.T.securityMaxNorm = 2*solve_options.T.securityMaxNorm;
 			}
 			else if (iterations< 7){
-				solve_options.T.final_tolerance = 0.5*solve_options.T.final_tolerance;
+//				solve_options.T.final_tolerance = 0.5*solve_options.T.final_tolerance;
 				solve_options.T.securityMaxNorm = 10*solve_options.T.securityMaxNorm;
 				
 				jalk->r = 1e-17;
@@ -381,7 +387,7 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 				mul_mp(rand_perterb,rand_perterb,h); // rand_perterb = small real rand
 				add_mp(&projection_values_downstairs->coord[ii],&projection_values_downstairs->coord[ii],rand_perterb); // perturb the projection value
 				
-				solve_options.T.final_tolerance = 0.1*solve_options.T.final_tolerance;
+//				solve_options.T.final_tolerance = 0.1*solve_options.T.final_tolerance;
 				solve_options.T.securityMaxNorm = 100*solve_options.T.securityMaxNorm;
 			}
 			
@@ -419,7 +425,152 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 
 
 
+void surface_decomposition::compute_bounding_sphere(witness_set & W_surf,
+																									 vertex_set & V,
+																									 vec_mp *pi,
+																									 BR_configuration & program_options,
+																									 solver_configuration & solve_options)
+{
 	
+	//build up the start system
+	solve_options.robust = true;
+	
+	multilin_config ml_config(solve_options); // copies in the randomizer matrix and sets up the SLP & globals.
+	
+	int blabla;
+	parse_input_file(W_surf.input_filename, &blabla);
+	preproc_data_clear(&solve_options.PPD); // ugh this sucks
+	parse_preproc_data("preproc_data", &solve_options.PPD);
+	
+	make_randomization_matrix_based_on_degrees(randomizer_matrix, randomized_degrees,
+																						 W_surf.num_variables-W_surf.num_patches-W_surf.num_linears,
+																						 solve_options.PPD.num_funcs);
+	
+	ml_config.set_randomizer(randomizer_matrix);
+	
+	vec_mp *multilin_linears = (vec_mp *) br_malloc(2*sizeof(vec_mp));
+	init_vec_mp2(multilin_linears[0],0,solve_options.T.AMP_max_prec);
+	init_vec_mp2(multilin_linears[1],0,solve_options.T.AMP_max_prec);
+	vec_cp_mp(multilin_linears[1],W_surf.L_mp[1]);
+	
+	witness_set W_sphere;
+	
+	
+	for (int ii=0; ii<2; ii++) {
+		
+		for (int jj=0; jj<W_surf.num_variables; jj++) {
+			get_comp_rand_real_mp(&multilin_linears[0]->coord[jj]);
+		}
+		
+		
+		
+		witness_set W_temp;
+		
+		
+		
+		solve_options.allow_singular = 0;
+		solve_options.complete_witness_set = 1;
+		solve_options.allow_multiplicity = 0;
+		solve_options.allow_unsuccess = 0;
+		
+		
+		
+		multilin_solver_master_entry_point(W_surf,         // witness_set
+																			 &W_temp, // the new data is put here!
+																			 multilin_linears,
+																			 ml_config,
+																			 solve_options);
+		
+		W_sphere.merge(W_temp);
+		
+	}
+	
+	clear_vec_mp(multilin_linears[0]);
+	clear_vec_mp(multilin_linears[1]);
+	free(multilin_linears);
+	
+	
+	
+	
+	
+	
+	
+	
+	//compute the critical points of the bounding curve with respect to pi[0]
+	
+	
+	// make a new randomizer matrix
+	mat_mp sphere_rand;init_mat_mp2(sphere_rand,0,0,solve_options.T.AMP_max_prec);
+	
+	mat_cp_mp(sphere_rand, this->randomizer_matrix);
+	increase_size_mat_mp(sphere_rand,sphere_rand->rows+1,sphere_rand->cols+1);
+	sphere_rand->rows = sphere_rand->rows + 1;
+	sphere_rand->cols = sphere_rand->cols + 1;
+	for (int ii=0; ii<sphere_rand->cols-1; ii++) {
+		set_zero_mp(&sphere_rand->entry[sphere_rand->rows-1][ii]);
+	}
+	set_one_mp(&sphere_rand->entry[sphere_rand->rows-1][sphere_rand->cols-1]);
+	
+	
+	std::vector<int> sphere_degrees = this->randomized_degrees;
+	sphere_degrees.push_back(2);
+
+	
+	witness_set W_sphere_crit;
+	nullspace_config ns_config;
+	compute_crit_nullspace(&W_sphere_crit, // the returned value
+												 W_sphere,            // input the original witness set
+												 sphere_rand,
+												 this->pi,
+												 sphere_degrees,
+												 1,  // dimension of ambient complex object
+												 1,   //  target dimension to find
+												 1,   // COdimension of the critical set to find.
+												 program_options,
+												 solve_options,
+												 &ns_config);
+	
+	ns_config.clear();
+	
+	W_sphere.write_dehomogenized_coordinates("W_sphere"); // write the points to file
+	
+	W_sphere.input_filename = "input_sphere_intersection";
+	
+	// this system describes the system for the sphere intersection
+	create_sphere_system("input_sphere_intersection",
+											 boost::filesystem::path(program_options.called_dir) / program_options.input_filename,
+											 this->sphere_diameter,
+											 W_sphere);
+	
+
+	
+	
+	program_options.current_working_filename = boost::filesystem::absolute("input_sphere_intersection"); // this should be deprecated
+	
+	
+	
+	// then feed it to the interslice algorithm
+	sphere_curve.interslice(W_sphere,
+													W_sphere_crit,
+													sphere_rand,
+													&pi[0],
+													program_options,
+													solve_options,
+													V);
+	
+	
+	sphere_curve.add_projection(pi[0]);
+	
+	sphere_curve.num_variables = num_variables + num_variables-1;
+	
+	
+	clear_mat_mp(sphere_rand);
+	
+	return;
+}
+
+
+
 	
 
 
@@ -560,6 +711,8 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 	init_mp(proj_bottom);
 	init_mp(proj_top);
 	
+	comp_mp found_proj_0, found_proj_1;  init_mp(found_proj_0); init_mp(found_proj_1);
+	
 	
 	vec_mp found_point; init_vec_mp(found_point, this->num_variables); found_point->size = this->num_variables;
 	
@@ -591,10 +744,11 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 	
 	
 	for (int ii=0; ii<mid_slices.size(); ii++) {
-		this->output_main(program_options, V);
+		
 		
 		for (int jj=0; jj<mid_slices[ii].num_edges; jj++) {
-			std::cout << "\n\n\n*****************************\nface " << this->num_faces << ", slice	" << ii << " edge " << jj << std::endl;
+			this->output_main(program_options, V);
+			std::cout << color::magenta() << "\n\n\n*****************************\nface " << this->num_faces << ", slice	" << ii << " edge " << jj << color::console_default() << std::endl;
 			
 			if (mid_slices[ii].edges[jj].is_degenerate()) {
 				std::cout << "no computation necessary -- midslice edge is degenerate" << std::endl;
@@ -631,6 +785,12 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 			
 			// bottom
 			int offset = var_counter;
+			if (V.vertices[mid_slices[ii].edges[jj].left].pt_mp->size < num_crit_vars)
+			{
+				std::cout << color::red() << "point " << mid_slices[ii].edges[jj].left << " had only " << V.vertices[mid_slices[ii].edges[jj].left].pt_mp->size << " variables; " << num_crit_vars << " expected" << color::console_default() << std::endl;
+				continue;
+			}
+			
 			for (int kk=0; kk<num_crit_vars; kk++) {
 				set_mp(&W_midtrack.pts_mp[0]->coord[kk+offset], &V.vertices[mid_slices[ii].edges[jj].left].pt_mp->coord[kk]); // y0
 				var_counter++;
@@ -742,7 +902,7 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 					
 					
 					int candidate_counter = 0;
-					std::cout << "finding candidates for bottom index " << current_bottom_ind << std::endl;
+					std::cout << "\nfinding candidates for bottom index " << current_bottom_ind << std::endl;
 					for (int qq=0; qq< crit_slices[ii+zz].num_edges; qq++) {
 						
 						
@@ -771,13 +931,13 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 						}
 						else
 						{
-							std::cout << "edge " << qq << " excluded: " << correct_interval << " dir, (fabs=" << fabs( mpf_get_d(temp->r) - mpf_get_d(temp2->r)) << ") " << matches_end << " matches, " << havent_found_yet << "  ~found yet" << std::endl;
+//							std::cout << "edge " << qq << " excluded: " << correct_interval << " dir, (fabs=" << fabs( mpf_get_d(temp->r) - mpf_get_d(temp2->r)) << ") " << matches_end << " matches, " << havent_found_yet << "  ~found yet" << std::endl;
 							
 						}
 						 
 					}
 					
-					
+					std::cout << std::endl;
 					
 					
 					if (candidate_counter==0) {
@@ -792,7 +952,6 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 						std::cout << "face #: " << this->num_faces << ", zz: " << zz << ", current_edge: " << current_edge << std::endl;
 						std::cout << "tracking to these indices: " << final_bottom_ind << " " << crit_slices[ii+zz].edges[current_edge].midpt << " " << final_top_ind << std::endl;
 
-						
 						
 						
 						//target midpoint e.w from paper.
@@ -876,10 +1035,20 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 							set_mp(&found_point->coord[tt], &W_new.pts_mp[0]->coord[tt]);
 						}
 						
-						print_point_to_screen_matlab(found_point, "found_point");
+						projection_value_homogeneous_input(found_proj_1, found_point, pi[1]);
+						
+						vec_mp tempvec;
+						init_vec_mp(tempvec,0);
+						dehomogenize(&tempvec, found_point);
+						
+						
+						print_point_to_screen_matlab(tempvec, "found_point");
+						clear_vec_mp(tempvec);
+						
 						//need to look it up.
 						int found_index = index_in_vertices(V,
 																								found_point,
+																								found_proj_1,
 																								solve_options.T);
 						std::cout << "found_index of point: " << found_index << std::endl;
 						
@@ -961,6 +1130,9 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 	clear_mp(numer);
 	clear_mp(denom);
 	
+	
+	clear_mp(found_proj_0);
+	clear_mp(found_proj_1);
 	return;
 }
 
@@ -995,6 +1167,56 @@ void surface_decomposition::print_faces(boost::filesystem::path outputfile)
 
 
 
+
+
+
+
+
+void surface_decomposition::compute_sphere_diameter(const witness_set & W_curve_crit_all)
+{
+	
+	
+	mpf_t temp_diam; mpf_init(temp_diam);
+	
+	mpf_set_str(sphere_diameter,"-1",10); // set to impossibly low value.
+	
+	
+	comp_mp norm;  init_mp(norm);
+	
+	vec_mp(temp_vec); init_vec_mp2(temp_vec,0,1024);
+	
+	
+	for (int ii=0; ii<W_curve_crit_all.num_pts; ii++) {
+		dehomogenize(&temp_vec, W_curve_crit_all.pts_mp[ii]);
+		twoNormVec_mp(temp_vec, norm);
+		mpf_abs_mp(temp_diam, norm);
+		
+//		print_point_to_screen_matlab(temp_vec,"normme");
+//		std::cout << "candidate_diameter[" << ii << "] = ";
+//		mpf_out_str(NULL,10,10,temp_diam);
+//		std::cout << std::endl;
+		
+		if (mpf_cmp(sphere_diameter, temp_diam) < 0){
+			mpf_set(sphere_diameter, temp_diam);
+		}
+	}
+	
+	
+	mpf_set_str(temp_diam,"2",10);
+	
+	mpf_mul(sphere_diameter,temp_diam,sphere_diameter);  // double the diameter to be safe.
+	
+//	std::cout << color::red() << "computed sphere diameter is: ";
+	
+//	mpf_out_str(NULL,10,10,sphere_diameter);
+//	std::cout << color::console_default() << std::endl;
+	
+	clear_mp(norm);
+	clear_vec_mp(temp_vec);
+	mpf_clear(temp_diam);
+	
+	return;
+}
 
 
 
@@ -1060,4 +1282,69 @@ void create_sliced_system(boost::filesystem::path input_file, boost::filesystem:
 	
 	
 }
+
+
+
+
+
+
+
+
+
+void create_sphere_system(boost::filesystem::path input_file, boost::filesystem::path output_file,
+													mpf_t sphere_diameter,
+													const witness_set & W)
+{
+	// a bit of error checking
+
+	
+	if (W.variable_names.size()==0) {
+		std::cout << color::red() << "trying to create a sphere system, but witness set does not have the variable names." << color::console_default() << std::endl;
+		br_exit(-9846);
+	}
+	
+	
+	// got here, so ok to continue.
+	
+	
+	int *declarations = NULL;
+	
+	partition_parse(&declarations, input_file, "func_input", "config", 0); // the 0 means not self conjugate.
+	free(declarations);
+	
+	FILE *OUT = safe_fopen_write(output_file);
+	
+	
+	
+	// copy the original input file as parsed above.
+	FILE *IN = safe_fopen_read("func_input");
+	fprintf(OUT,"INPUT\n\n");
+	copyfile(IN,OUT);
+	fclose(IN);
+	
+	
+	
+	// now put in the sphere equations
+	
+	int rand_index = rand(); // what if there are multiple sphere equations???  put in this random number to be safe.
+	
+	fprintf(OUT,"function sphere_%d;\n",rand_index);
+
+	fprintf(OUT,"sphere_%d = -",rand_index);
+	mpf_out_str(OUT,10,0,sphere_diameter);
+	fprintf(OUT,"^2 ");
+	for (int jj=1; jj<W.num_variables; jj++) { // start at 1 to omit the homogenizing variable
+		fprintf(OUT," + %s^2", W.variable_names[jj].c_str());
+	}
+	fprintf(OUT, ";\n\nEND\n");
+	
+	fclose(OUT);
+	
+	
+	
+}
+
+
+
+
 

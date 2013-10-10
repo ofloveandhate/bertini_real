@@ -135,9 +135,13 @@ public:
 		clear_mp(crit_val_right);
 		
 		
+		mid_memory.set_globals_to_this();
 		//also put in clearing stuff for the SLP's here.
 		clearProg(this->SLP_face, this->MPType, 1); // 1 means call freeprogeval()
+		
+		crit_memory.set_globals_to_this();
 		clearProg(this->SLP_crit, this->MPType, 1); // 1 means call freeprogeval()
+		
 		delete SLP_face;
 		delete SLP_crit;
 	}
@@ -291,7 +295,7 @@ public:
 	
 	
 	void add_projection(vec_mp proj)
-	{ // this is wrong for mptype 2
+	{ 
 		if (this->num_projections==0) {
 			this->pi = (vec_mp *) br_malloc(sizeof(vec_mp));
 		}
@@ -373,7 +377,7 @@ public:
 		
 	} // re: clear
 	
-	void init(); // in the .cpp file
+	void init(); // in the .cpp file.  must be there, not here.
 		
 	
 	void copy(const midpoint_eval_data_mp & other)

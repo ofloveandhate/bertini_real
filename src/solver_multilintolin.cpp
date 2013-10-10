@@ -617,7 +617,7 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 		print_matrix_to_screen_matlab(Jp,"Jp");
 		print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
 		//
-		mypause();
+
 	}
 	
 	
@@ -933,8 +933,7 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 		print_matrix_to_screen_matlab(Jv,"Jv_mp");
 		print_matrix_to_screen_matlab(Jp,"Jp_mp");
 		print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix_mp");
-		
-		mypause();
+
 	}
 	
 	
@@ -1078,15 +1077,18 @@ int change_multilintolin_eval_prec(void const *ED, int new_prec)
 	
 	
 	
-	
+	BED->SLP->precision;
   // change the precision for the patch
   changePatchPrec_mp(new_prec, &BED->patch);
 	
 	
 	if (new_prec != BED->curr_prec){
 		
-		if (BED->verbose_level >=4)
+		if (BED->verbose_level >=4){
+			std::cout << color::brown();
 			printf("prec  %d\t-->\t%d\n",BED->curr_prec, new_prec);
+			std::cout << color::console_default();
+		}
 		
 		BED->curr_prec = new_prec;
 		
@@ -1223,14 +1225,13 @@ int check_issoln_multilintolin_mp(endgame_data_t *EG,
 	}
 	
 	
-	
 	mpf_t n1, n2, zero_thresh, max_rat;
 	mpf_init(n1); mpf_init(n2); mpf_init(zero_thresh); mpf_init(max_rat);
+
+	mpf_set_d(max_rat, MAX(T->ratioTol,0.99999));
 	
 	point_mp f; init_point_mp(f, 1);f->size = 1;
 	eval_struct_mp e; init_eval_struct_mp(e, 0, 0, 0);
-	
-	mpf_set_d(max_rat, MAX(T->ratioTol,0.99999));
 	
 	
 	int num_digits = prec_to_digits((int) mpf_get_default_prec());

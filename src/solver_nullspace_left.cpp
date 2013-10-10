@@ -2531,6 +2531,7 @@ int change_nullspacejac_eval_prec(void const *ED, int new_prec)
 	
 	int ii, jj;
 	
+
 	if (new_prec != BED->curr_prec){
 		// change the precision for the patch
 		changePatchPrec_mp(new_prec, &BED->patch);

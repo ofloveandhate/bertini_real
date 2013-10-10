@@ -363,6 +363,10 @@ public:
 	
 	virtual int receive(parallelism_config & mpi_config);
 	
+	virtual void print()
+	{};
+	
+	
 	void setup(prog_t * _SLP)
 	{
 		setupPreProcData(const_cast<char *>(preproc_file.c_str()), &this->preProcData);
@@ -507,6 +511,10 @@ public:
 	
 	virtual int receive(parallelism_config & mpi_config);
 	
+	virtual void print()
+	{};
+	
+	
 	void setup(prog_t * _SLP)
 	{
 		solver::setup(_SLP);
@@ -596,6 +604,10 @@ public:
 	
 	
 	virtual int receive(parallelism_config & mpi_config);
+	
+	virtual void print()
+	{};
+	
 	
 	void setup(prog_t * _SLP)
 	{
