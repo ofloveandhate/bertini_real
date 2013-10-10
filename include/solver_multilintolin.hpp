@@ -244,7 +244,7 @@ public:
 	
 
 	
-	void print()
+	virtual void print()
 	{
 		
 	}
@@ -411,9 +411,24 @@ public:
 	
 	
 	
-	void print()
+	virtual void print()
 	{
+		solver_d::print();
 		
+		std::cout << "multilintolin evaluator data (double):" << std::endl;
+		for (int ii=0; ii<num_linears; ii++) {
+			
+			std::stringstream name;
+			name << "old_linear_" << ii;
+			print_point_to_screen_matlab(old_linear[ii],name.str());
+		}
+		
+		for (int ii=0; ii<num_linears; ii++) {
+			
+			std::stringstream name;
+			name << "current_linear_" << ii;
+			print_point_to_screen_matlab(current_linear[ii],name.str());
+		}
 	}
 	
 	

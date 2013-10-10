@@ -143,6 +143,10 @@ public:
 	std::vector< curve_decomposition > mid_slices;
 	std::vector< curve_decomposition > crit_slices;
 	curve_decomposition crit_curve;
+	curve_decomposition sphere_curve;
+	
+	mpf_t sphere_diameter;
+	bool have_sphere_diameter;
 	
 	
 	surface_decomposition() : decomposition()
@@ -161,6 +165,13 @@ public:
 		copy(other);
 	}
 	
+	
+	~surface_decomposition()
+	{
+		mpf_clear(sphere_diameter);
+	}
+	
+	
 	void print(boost::filesystem::path base);
 	
 	void print_faces(boost::filesystem::path outputfile);
@@ -172,6 +183,8 @@ public:
 		num_edges = 0;
 		num_faces = 0;
 		dimension = 2;
+		
+		mpf_init(sphere_diameter);
 	}
 	
 	void copy(const surface_decomposition & other)
@@ -242,6 +255,14 @@ public:
 												solver_configuration & solve_options);
 	
 	
+	
+	void compute_bounding_sphere(witness_set & W_surf,
+															vertex_set & V,
+															vec_mp *pi,
+															BR_configuration & program_options,
+															solver_configuration & solve_options);
+	
+	void compute_sphere_diameter(const witness_set & W_curve_crit_all);
 };
 
 
@@ -255,6 +276,10 @@ void create_sliced_system(boost::filesystem::path input_file, boost::filesystem:
 													vec_mp * linears, int num_to_add,
 													const witness_set & W);
 
+
+void create_sphere_system(boost::filesystem::path input_file, boost::filesystem::path output_file,
+													mpf_t sphere_diameter,
+													const witness_set & W);
 
 
 

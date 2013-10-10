@@ -7,6 +7,8 @@
 
 void adjust_tracker_AMP(tracker_config_t * T, int num_variables)
 {
+
+	
 		T->AMP_eps = (double) num_variables * num_variables;  //According to Demmel (as in the AMP paper), n^2 is a very reasonable bound for \epsilon.
 		T->AMP_Phi = T->AMP_bound_on_degree*(T->AMP_bound_on_degree-1.0)*T->AMP_bound_on_abs_vals_of_coeffs;  //Phi from the AMP paper.
 		T->AMP_Psi = T->AMP_bound_on_degree*T->AMP_bound_on_abs_vals_of_coeffs;  //Psi from the AMP paper.
@@ -519,7 +521,11 @@ void generic_tracker_loop(trackingStats *trackCount,
 	for (int ii = 0; ii < W.num_pts; ii++)
 	{
 		if ((solve_options.verbose_level>=0) && ((ii%(solve_options.path_number_modulus))==0) && (W.num_pts>solve_options.path_number_modulus) )
+		{
+			std::cout << color::green();
 			printf("tracking path %d of %d\n",ii,W.num_pts);
+			std::cout << color::console_default();
+		}
 		
 		solve_options.increment_num_paths_tracked();
 		
@@ -547,7 +553,15 @@ void generic_tracker_loop(trackingStats *trackCount,
 		// check to see if it should be sharpened
 		if (EG.retVal == 0 && solve_options.T.sharpenDigits > 0)
 		{ // use the sharpener for after an endgame
+//			std::cout << "sharpening" << std::endl;
+//			
+//			print_point_to_screen_matlab(EG.PD_d.point, "point_before");
+			
 			sharpen_endpoint_endgame(&EG, &solve_options.T, OUT, ED_d, ED_mp, curr_eval_d, curr_eval_mp, change_prec);
+			
+//			print_point_to_screen_matlab(EG.PD_d.point, "point_after");
+//			std::cout << "retval is now " << EG.retVal << std::endl;
+//			mypause();
 		}
 		
 		
@@ -1060,6 +1074,9 @@ void generic_track_path(int pathNum, endgame_data_t *EG_out,
 		
 		if (T->MPType == 2)
 		{ // track using AMP
+			
+			change_prec(ED_mp,64);
+			T->Precision = 64;
 			EG_out->prec = EG_out->last_approx_prec = 52;
 			
 			EG_out->retVal = endgame_amp(T->endgameNumber, EG_out->pathNum, &EG_out->prec, &EG_out->first_increase, &EG_out->PD_d, &EG_out->PD_mp, &EG_out->last_approx_prec, EG_out->last_approx_d, EG_out->last_approx_mp, Pin, T, OUT, MIDOUT, ED_d, ED_mp, eval_func_d, eval_func_mp, change_prec, find_dehom);
@@ -1158,7 +1175,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 	
 	std::map <int,int> setting_increments;
 
-	
+
 	
 	EG_out->retVal = -876; // set to bad return value
 	while ((iterations<max_iterations) && (EG_out->retVal!=0)) {
@@ -1167,18 +1184,27 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 		
 		EG_out->retVal = 0;
 		T->first_step_of_path = 1;
-		
+//		std::cout << T->currentStepSize << std::endl;
+//		
+//		mypause();
 		if (T->MPType == 2)
 		{ // track using AMP
 			
-			if (solve_options.T.MPType==2) {
-				ED_mp->curr_prec = 64; // reset!
+			if (T->MPType==2) {
+				change_prec(ED_mp,64);
 			}
-			
+			T->Precision = 64;
 			
 			EG_out->prec = EG_out->last_approx_prec = 52;
 			
-			EG_out->retVal = endgame_amp(T->endgameNumber, EG_out->pathNum, &EG_out->prec, &EG_out->first_increase, &EG_out->PD_d, &EG_out->PD_mp, &EG_out->last_approx_prec, EG_out->last_approx_d, EG_out->last_approx_mp, Pin, T, OUT, MIDOUT, ED_d, ED_mp, eval_func_d, eval_func_mp, change_prec, find_dehom);
+			EG_out->retVal = endgame_amp(T->endgameNumber, EG_out->pathNum, &EG_out->prec, &EG_out->first_increase,
+																	 &EG_out->PD_d, &EG_out->PD_mp, &EG_out->last_approx_prec,
+																	 EG_out->last_approx_d, EG_out->last_approx_mp,
+																	 Pin,
+																	 T,
+																	 OUT, MIDOUT,
+																	 ED_d, ED_mp,
+																	 eval_func_d, eval_func_mp, change_prec, find_dehom);
 			
 			if (EG_out->prec == 52)
 			{ // copy over values in double precision
@@ -1249,8 +1275,8 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 		// get how many times we have changed settings due to this type of failure.
 		int current_retval_counter = map_lookup_with_default( setting_increments, EG_out->retVal, 0 );
 		
-		if (!(EG_out->retVal==0 ||   EG_out->retVal==-50 )) {
-			std::cout << "solution had non-zero retVal " << EG_out->retVal << " (" << current_retval_counter << ")th occurrence on iteration " << iterations << "." << std::endl;
+		if ( !(EG_out->retVal==0  )) {  // ||   EG_out->retVal==-50
+			std::cout << color::red() << "solution had non-zero retVal " << EG_out->retVal << " (" << current_retval_counter << ")th occurrence on iteration " << iterations << "." << color::console_default() << std::endl;
 			
 			if (solve_options.verbose_level>=1){
 				print_path_retVal_message(EG_out->retVal);
@@ -1258,20 +1284,43 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 			
 			switch (EG_out->retVal) {
 					
-//				case -50:
-////					retVal_reached_minTrackT
-////					NBHDRADIUS
+				case -50:
+					
+					//TODO:  put in switch endgame
+					
+					//rerun from the endgame using midpoint data.
+					
+					
+					ED_d->print();
+					print_point_to_screen_matlab(Pin->point,"start");
+					mypause();
+//					retVal_reached_minTrackT
+//					NBHDRADIUS
 //					solve_options.T.minTrackT *= 1e-50;
-//					break;
-				case -100:
-					solve_options.T.AMP_max_prec +=256;
+					break;
 					
 					
-					//this is higher precision needed.
+				case -100:   //this is higher precision needed.
+					
+					T->basicNewtonTol = MIN(1e-3, T->basicNewtonTol*2);
+					T->endgameNewtonTol = MIN(1e-3, T->endgameNewtonTol*2);
+					
+					if (current_retval_counter<5) {
+						solve_options.T.odePredictor  = (solve_options.T.odePredictor+1)%9;
+					}
+					
 					break;
 					
 				case 100:
-					solve_options.T.AMP_max_prec +=256; // linear increase by 256.
+					
+					T->basicNewtonTol = MIN(1e-3, T->basicNewtonTol*2);
+					T->endgameNewtonTol = MIN(1e-3, T->endgameNewtonTol*2);
+					
+					if (current_retval_counter<5) {
+						solve_options.T.odePredictor  = (solve_options.T.odePredictor+1)%9;
+					}
+					
+					
 					break;
 					
 				case -10:
@@ -1288,9 +1337,9 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					break;
 					
 				case -3:
-					solve_options.T.minStepSizeBeforeEndGame *= 1e-5;
-					solve_options.T.minStepSizeDuringEndGame *= 1e-5;
-					solve_options.T.minStepSize *=  1e-5;
+					solve_options.T.minStepSizeBeforeEndGame *= 1e-2;
+					solve_options.T.minStepSizeDuringEndGame *= 1e-2;
+					solve_options.T.minStepSize *=  1e-2;
 					break;
 					
 				case -4:
@@ -1310,8 +1359,8 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					break;
 					
 				default:
-					solve_options.T.odePredictor ++;
-					break;
+					std::cout << color::red() << "retVal was of unprogrammed robust changing." << color::console_default() << std::endl;
+ 					break;
 			}
 		}
 		

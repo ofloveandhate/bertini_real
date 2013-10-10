@@ -281,6 +281,8 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 																		vertex_set & V)
 {
 	
+	V.set_curr_projection(projections[0]);
+	
 	
 	if (solve_options.verbose_level>=2) {
 		W_crit_real.print_to_screen();
@@ -319,9 +321,12 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	std::vector< int > index_tracker;
 	
 //	W_crit_real.print_to_screen();
-	W_crit_real.compute_downstairs_crit_midpts(crit_downstairs, midpoints_downstairs, index_tracker, projections[0]);
+	int successful = W_crit_real.compute_downstairs_crit_midpts(crit_downstairs, midpoints_downstairs, index_tracker, projections[0]);
 	//index tracker gives the increasing order for the points in W_crit_real
-	
+	if (!successful) {
+		program_options.output_dir = "failed_decomp";
+		this->output_main(program_options, V);
+	}
 	
 	
 	int num_midpoints = midpoints_downstairs->size;
@@ -345,22 +350,14 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 		if (program_options.verbose_level>=8)
 			printf("adding point %d of %d from W_crit_real to vertices\n",ii,W_crit_real.num_pts);
 		
-		set_zero_mp(temp_vertex.projVal_mp);
-		//		set_mp(temp_vertex.projVal_mp,  &crit_downstairs->coord[ii]); // set projection value
 		vec_cp_mp(temp_vertex.pt_mp, W_crit_real.pts_mp[ii]);// set point
 		temp_vertex.type = CRITICAL; // set type
 		
-		int I = index_in_vertices_with_add(V, temp_vertex,  solve_options.T);
+		int I = index_in_vertices_with_add(V, temp_vertex,  &crit_downstairs->coord[ii], solve_options.T);
 		crit_point_counter[I] = 0;
 	}
 	
-	
-	
-	
-	
-	solve_options.allow_multiplicity=1;
-	solve_options.allow_singular=1;
-	solve_options.use_midpoint_checker = 0;
+
 	
 	
 	int edge_counter = 0; // set the counter
@@ -391,6 +388,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	for (int ii=0; ii<num_midpoints; ii++) {
 		
 		if (program_options.verbose_level>=2) {
+			
 			printf("solving midpoints upstairs %d, projection value %lf\n",ii,mpf_get_d(midpoints_downstairs->coord[ii].r));
 		}
 		
@@ -411,7 +409,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 		midpoint_witness_sets[ii].sort_for_real(solve_options.T);
 		midpoint_witness_sets[ii].sort_for_unique(solve_options.T);
 		
-//		midpoint_witness_sets[ii].print_to_screen();
+		midpoint_witness_sets[ii].print_to_screen();
 		
 		edge_counter += midpoint_witness_sets[ii].num_pts;
 	}
@@ -439,9 +437,10 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	std::map<int, std::vector< int > > edge_occurence_tracker_right;
 	
 	for (int ii=0; ii<num_midpoints; ++ii) {
-
+		std::cout << color::brown() << "connecting midpoint downstairs " << ii << color::console_default() << std::endl;
 		neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii]);
-		
+		if (program_options.verbose_level>=2)
+			print_comp_matlab(&crit_downstairs->coord[ii],"left ");
 		multilin_solver_master_entry_point(midpoint_witness_sets[ii],         // witness_set
 																			 &Wleft, // the new data is put here!
 																			 &particular_projection,
@@ -449,41 +448,35 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 																			 solve_options);
 		
 		
-//		multilintolin_solver_main(solve_options.T.MPType,
-//															midpoint_witness_sets[ii], //the input
-//															randomizer_matrix,
-//															&particular_projection,
-//															&Wleft,
-//															solve_options); // the output
-		
 		
 		neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii+1]);
 		
+		if (program_options.verbose_level>=2) 
+			print_comp_matlab(&crit_downstairs->coord[ii+1],"right ");
+			
 		multilin_solver_master_entry_point(midpoint_witness_sets[ii],         // witness_set
 																			 &Wright, // the new data is put here!
 																			 &particular_projection,
 																			 ml_config,
 																			 solve_options);
-////		print_comp_matlab(&crit_downstairs->coord[ii+1],"right ");
-//		multilintolin_solver_main(solve_options.T.MPType,
-//															midpoint_witness_sets[ii], //the input
-//															randomizer_matrix,
-//															&particular_projection,
-//															&Wright,
-//															solve_options); // the output
-//																							//each member of Wtemp should real.  if a member of V1 already, mark index.  else, add to V1, and mark.
+		
+
+
 		
 		
 //		Wright.print_to_screen();
 		int keep_going = 1;
-		if (Wright.num_pts!=midpoint_witness_sets[ii].num_pts) {
-			printf("had a critical failure\n moving right was deficient a point\n");
-			keep_going = 0;
-		}
+		
 		if (Wleft.num_pts!=midpoint_witness_sets[ii].num_pts) {
-			printf("had a critical failure\n moving left was deficient a point\n");
+			std::cout << color::red() << "had a critical failure\n moving left was deficient a point" << color::console_default() << std::endl;
 			keep_going = 0;
 		}
+		
+		if (Wright.num_pts!=midpoint_witness_sets[ii].num_pts) {
+			std::cout << color::red() << "had a critical failure\n moving right was deficient a point" << color::console_default() << std::endl;
+			keep_going = 0;
+		}
+		
 		if (!keep_going) {
 			deliberate_segfault();
 		}
@@ -491,25 +484,68 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 		
 		for (int kk=0; kk<midpoint_witness_sets[ii].num_pts; kk++) {
 			
-			set_mp(temp_vertex.projVal_mp, &midpoints_downstairs->coord[ii]  ); // set projection value
+			bool ok = true;
+			
+			vec_mp result; init_vec_mp(result,W_curve.num_variables-W_curve.num_synth_vars-1);
+			result->size = W_curve.num_variables-W_curve.num_synth_vars-1;
+			
+			
+			for (int jj=1; jj<W_curve.num_variables-W_curve.num_synth_vars; jj++) {
+				div_mp(&result->coord[jj-1], &Wleft.pts_mp[kk]->coord[jj], &Wleft.pts_mp[kk]->coord[0]);
+			}
+				
+			if (!checkForReal_mp(result, solve_options.T.real_threshold)) {
+				std::cout << color::red();
+				print_point_to_screen_matlab(result,"not_real_but_should_be_left");
+				std::cout << color::console_default();
+				ok = false;
+			}
+			
+			
+			for (int jj=1; jj<W_curve.num_variables-W_curve.num_synth_vars; jj++) {
+				div_mp(&result->coord[jj-1], &Wright.pts_mp[kk]->coord[jj], &Wright.pts_mp[kk]->coord[0]);
+			}
+			
+			if (!checkForReal_mp(result, solve_options.T.real_threshold)) {
+				std::cout << color::red();
+				print_point_to_screen_matlab(result,"not_real_but_should_be_right");
+				std::cout << color::console_default();
+				ok = false;
+			}
+			
+			if (!ok) {
+				std::cout << color::magenta();
+				print_point_to_screen_matlab(midpoint_witness_sets[ii].pts_mp[kk],"generating_point");
+				
+				print_comp_matlab(&crit_downstairs->coord[ii],"left_proj_val");
+				print_comp_matlab(&midpoints_downstairs->coord[ii],"midpt_proj_val");
+				print_comp_matlab(&crit_downstairs->coord[ii+1],"right_proj_val");
+				print_point_to_screen_matlab(particular_projection,"particular_projection");
+				std::cout << color::console_default();
+				mypause();
+			}
+			
+			
+			
+			clear_vec_mp(result);
+			
+			
 			vec_cp_mp(temp_vertex.pt_mp,midpoint_witness_sets[ii].pts_mp[kk]);// set point
 			temp_vertex.type = MIDPOINT; // set type
 			
-			temp_edge.midpt = index_in_vertices_with_add(V,temp_vertex,solve_options.T); // gets the index of the new midpoint as it is added
+			temp_edge.midpt = index_in_vertices_with_add(V,temp_vertex,&midpoints_downstairs->coord[ii],solve_options.T); // gets the index of the new midpoint as it is added
 			
 			
-			set_mp(temp_vertex.projVal_mp,  &crit_downstairs->coord[ii] ); // set projection value
 			vec_cp_mp(temp_vertex.pt_mp,Wleft.pts_mp[kk]);// set point
 			temp_vertex.type = NEW; // set type
 			
-			temp_edge.left  = index_in_vertices_with_add(V, temp_vertex,  solve_options.T);
+			temp_edge.left  = index_in_vertices_with_add(V, temp_vertex, &crit_downstairs->coord[ii], solve_options.T);
 			
 			
-			set_mp(temp_vertex.projVal_mp, &crit_downstairs->coord[ii+1] ); // set projection value
 			vec_cp_mp(temp_vertex.pt_mp,Wright.pts_mp[kk]);// set point
 			temp_vertex.type = NEW; // set type
 			
-			temp_edge.right = index_in_vertices_with_add(V, temp_vertex, solve_options.T);
+			temp_edge.right = index_in_vertices_with_add(V, temp_vertex, &crit_downstairs->coord[ii+1], solve_options.T);
 			
 			// keep track of those indices we found.
 			
@@ -521,7 +557,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 			edge_occurence_tracker_right[temp_edge.right].push_back(edge_num);
 			
 			
-			// if count the number of times a critical point is tracked *to*.  this is for degenerate edge testing.  those which never get tracked to, make degenerate edges (isolated points are included in this).
+			// count the number of times a critical point is tracked *to*.  this is for degenerate edge testing.  those which never get tracked to, make degenerate edges (isolated points are included in this).
 			if (crit_point_counter.find(temp_edge.left)==crit_point_counter.end()) {
 				crit_point_counter[temp_edge.left] = 1;
 			}
@@ -545,10 +581,8 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 			
 			
 			if (program_options.verbose_level>=2) {
-				printf("upstairs midpoint %d\n",kk);
-				print_comp_matlab(V.vertices[temp_edge.left].projVal_mp,"left_proj_val");
-				print_comp_matlab(V.vertices[temp_edge.midpt].projVal_mp,"mid_proj_val");
-				print_comp_matlab(V.vertices[temp_edge.right].projVal_mp,"right_proj_val");
+				printf("done connecting upstairs midpoint %d (downstairs midpoint %d)\n",kk,ii);
+
 				printf("indices of left, mid, right: %d %d %d\n",temp_edge.left,temp_edge.midpt,temp_edge.right);
 				printf("\n\n");
 			}
@@ -574,10 +608,9 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 		
 		if (num_occurrences_local==0) {
 			
-			//			set_mp(temp_vertex.projVal_mp,  &crit_downstairs->coord[0]); // set projection value
-			vec_cp_mp(temp_vertex.pt_mp, V.vertices[curr_index].pt_mp);// set point
-			projection_value_homogeneous_input(temp_vertex.projVal_mp,  V.vertices[curr_index].pt_mp,projections[0]);
-			temp_vertex.type = ISOLATED; // set type
+//			vec_cp_mp(temp_vertex.pt_mp, V.vertices[curr_index].pt_mp);// set point
+//			projection_value_homogeneous_input(temp_vertex.projVal_mp,  V.vertices[curr_index].pt_mp,projections[0]);
+//			temp_vertex.type = ISOLATED; // set type
 			
 			edge E(curr_index,curr_index,curr_index);
 			
@@ -709,6 +742,10 @@ void curve_decomposition::merge(witness_set & W_midpt,
 	
 	std::pair< int, int > edges_to_merge = this->get_merge_candidate(V);
 	
+	
+	comp_mp new_proj_val;  init_mp2(new_proj_val,1024);
+	
+	
 	while (edges_to_merge.first!=-1) { // this value is updated at the end of the loop
 		// then there are edges superfluous and need to be merged
 		int left_edge_w_pt = edges_to_merge.first;
@@ -756,11 +793,11 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		projection_value_homogeneous_input(temp2,V.vertices[edges[right_edge_w_pt].right].pt_mp,projections[0]);
 		
 		vertex temp_vertex;
-		add_mp(temp_vertex.projVal_mp, temp, temp2);
+		add_mp(new_proj_val, temp, temp2);
 		
-		mul_mp(temp_vertex.projVal_mp,temp_vertex.projVal_mp,half); // now it is the average value
+		mul_mp(new_proj_val, new_proj_val, half); // now it is the average value
 		
-		neg_mp(&particular_projection->coord[0], temp_vertex.projVal_mp); // set it in the linear for tracking
+		neg_mp(&particular_projection->coord[0], new_proj_val); // set it in the linear for tracking
 		
 		
 		solve_options.allow_multiplicity = 0;
@@ -776,20 +813,14 @@ void curve_decomposition::merge(witness_set & W_midpt,
 																			 ml_config,
 																			 solve_options);
 		
-//		multilintolin_solver_main(solve_options.T.MPType,
-//															W_midpt, //the input
-//															randomizer_matrix,
-//															&particular_projection, // pass by reference because expects an array
-//															&W_temp,
-//															solve_options); // the output
-//																							//each member of Wtemp should real.  if a member of V1 already, mark index.  else, add to V1, and mark.
+// each member of W_temp should real.  if a member of V already, mark index.  else, add to V, and mark.
 		
 		vec_cp_mp(temp_vertex.pt_mp, W_temp.pts_mp[0]);
 		temp_vertex.type = MIDPOINT;
 		
 		edge temp_edge;
 		temp_edge.left = edges[left_edge_w_pt].left;
-		temp_edge.midpt = index_in_vertices_with_add(V, temp_vertex, solve_options.T);
+		temp_edge.midpt = index_in_vertices_with_add(V, temp_vertex, new_proj_val, solve_options.T);
 		temp_edge.right = edges[right_edge_w_pt].right;
 		
 		
@@ -828,7 +859,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 	clear_mp(half); clear_mp(temp); clear_mp(temp2);
 	
 	
-	
+	clear_mp(new_proj_val);
 	
 	
 } // re: merge
@@ -1633,7 +1664,7 @@ int verify_projection_ok(const witness_set & W,
 	comp_mp determinant; init_mp(determinant);
 	take_determinant_mp(determinant,detme);
 	
-	if ( d_abs_mp(determinant) < 1e-12){
+	if ( d_abs_mp(determinant) < 1e-2){
 		invalid_flag = 0;
 		std::cout << d_abs_mp(determinant) << "\n";
 		print_matrix_to_screen_matlab(ED.Jv,"Jv");
@@ -1731,9 +1762,9 @@ void curve_decomposition::computeCurveNotSelfConj(const witness_set & W_in,
 			
 			vec_cp_mp(temp_vertex.pt_mp,cur_sol);
 			
-			dot_product_mp(temp_vertex.projVal_mp, temp_vertex.pt_mp, pi_mp);
+			dot_product_mp(projection_value, temp_vertex.pt_mp, pi_mp);// i think this is wrong, because pi_mp probably has a 0 at the front of it.
 			
-			index_in_vertices_with_add(V, temp_vertex, solve_options.T);
+			index_in_vertices_with_add(V, temp_vertex, projection_value, solve_options.T);
 			
 		}
 	}

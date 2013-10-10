@@ -30,6 +30,7 @@
 #include "boost/filesystem.hpp"
 #include "fileops.hpp"
 
+#define SAMEPOINTTOL 1e-3
 
 class BR_configuration; // a forward declaration
 
@@ -85,6 +86,84 @@ value_type map_lookup_with_default(const  std::map <key_type,value_type> & mc_ma
 
 
 
+
+
+
+
+
+
+
+
+
+
+//function prototypes for bertini_real data clearing etc.
+
+void norm_of_difference(mpf_t result, vec_mp left, vec_mp right);
+
+void dehomogenize(point_d *result, point_d dehom_me);
+void dehomogenize(point_d *result, point_d dehom_me, int num_variables);
+
+void dehomogenize(point_mp *result, point_mp dehom_me);
+void dehomogenize(point_mp *result, point_mp dehom_me, int num_variables);
+
+
+void dot_product_d(comp_d result, vec_d one, vec_d two);
+void dot_product_mp(comp_mp result, vec_mp one, vec_mp two);
+
+void projection_value_homogeneous_input(comp_d result, vec_d input, vec_d projection);
+void projection_value_homogeneous_input(comp_mp result, vec_mp input, vec_mp projection);
+
+
+int isSamePoint_inhomogeneous_input(point_d left, point_d right);
+int isSamePoint_inhomogeneous_input(point_mp left, point_mp right);
+
+
+
+int isSamePoint_homogeneous_input(point_d left, point_d right);
+
+int isSamePoint_homogeneous_input(point_mp left, point_mp right);
+
+
+
+
+
+void print_path_retVal_message(int retVal);
+
+/**
+ retrieves the number of variables from the PPD by taking the sum of the sizes, plus the sum of the types.
+ */
+int get_num_vars_PPD(preproc_data PPD);
+
+
+void cp_patch_mp(patch_eval_data_mp *PED, patch_eval_data_mp PED_input);
+void cp_patch_d(patch_eval_data_d *PED, patch_eval_data_d PED_input);
+void cp_preproc_data(preproc_data *PPD, const preproc_data & PPD_input);
+
+void clear_post_process_t(post_process_t * endPoint, int num_vars);
+
+int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & index_tracker, vec_mp projections_input);
+
+void make_randomization_matrix_based_on_degrees(mat_mp randomization_matrix, std::vector< int > & randomized_degrees,
+																								int num_variables, int num_funcs);
+int compare_integers_decreasing(const void * left_in, const void * right_in);
+
+void send_patch_mp   (patch_eval_data_mp * patch);
+void receive_patch_mp(patch_eval_data_mp * patch);
+
+
+void send_patch_d   (patch_eval_data_d * patch);
+void receive_patch_d(patch_eval_data_d * patch);
+
+
+void send_preproc_data(preproc_data *PPD);
+void receive_preproc_data(preproc_data *PPD);
+
+
+void send_vec_mp(vec_mp b, int target);
+void receive_vec_mp(vec_mp b, int source);
+
+void send_vec_d(vec_d b, int target);
+void receive_vec_d(vec_d b, int source);
 
 
 
@@ -341,7 +420,7 @@ public:
 	void write_homogeneous_coordinates(boost::filesystem::path filename) const;
 	void write_dehomogenized_coordinates(boost::filesystem::path filename) const;
 	
-	void compute_downstairs_crit_midpts(vec_mp crit_downstairs,
+	int compute_downstairs_crit_midpts(vec_mp crit_downstairs,
 																			vec_mp midpoints_downstairs,
 																			std::vector< int > & index_tracker,
 																			vec_mp pi) const;
@@ -370,7 +449,9 @@ class vertex
 public:
 	
   point_mp pt_mp;
-  comp_mp  projVal_mp;
+	
+	
+  vec_mp  projection_values;
 	
   int type;  //See enum above.
 	int removed;
@@ -383,8 +464,8 @@ public:
 	
 	~vertex()
 	{
-		clear_vec_mp(this->pt_mp);
-		clear_mp(this->projVal_mp);
+		clear();
+		
 	};
 	
 	vertex & operator=(const vertex & other)
@@ -403,17 +484,22 @@ public:
 	void print()
 	{
 		print_point_to_screen_matlab(pt_mp,"point");
-		print_comp_matlab(projVal_mp,"projVal");
+		print_point_to_screen_matlab(projection_values,"projVal");
 		std::cout << "type: " << type << std::endl;
 	}
 	
 private:
 	
+	void clear()
+	{
+		clear_vec_mp(this->pt_mp);
+		clear_vec_mp(this->projection_values);
+	}
 	
 	void copy(const vertex & other)
 	{
 		vec_cp_mp(this->pt_mp, other.pt_mp);
-		set_mp(this->projVal_mp, other.projVal_mp);
+		vec_cp_mp(this->projection_values, other.projection_values);
 		this->type = other.type;
 		
 		this->input_filename_index = other.input_filename_index;
@@ -423,9 +509,9 @@ private:
 	
 	void init()
 	{
-		init_mp2(this->projVal_mp,1024);
+		init_point_mp2(this->projection_values,1,1024);
 		init_point_mp2(this->pt_mp,1,1024);
-		this->pt_mp->size = 1;
+		this->pt_mp->size = this->projection_values->size = 1;
 		this->type = UNSET;
 		
 		this->removed = 0;
@@ -442,6 +528,11 @@ private:
 class vertex_set
 {
 public:
+	
+	vec_mp *projections;
+	int num_projections;
+	int curr_projection;
+	
 	
 	std::vector< boost::filesystem::path > input_filename;
 	
@@ -500,11 +591,71 @@ public:
 	
 	void print(boost::filesystem::path outputfile);
 	
+	int set_curr_projection(vec_mp new_proj){
+		int proj_index = -1;
+		for (int ii=0; ii<num_projections; ii++) {
+			if (isSamePoint_inhomogeneous_input(projections[ii],new_proj)) {
+				proj_index = ii;
+				break;
+			}
+		}
+		
+		if (proj_index==-1) {
+			proj_index = add_projection(new_proj);
+		}
+		
+		curr_projection = proj_index;
+		return proj_index;
+	}
+	
+	
+	int add_projection(vec_mp proj){
+		
+		if (this->num_projections==0) {
+			projections = (vec_mp *) br_malloc(sizeof(vec_mp));
+		}
+		else{
+			this->projections = (vec_mp *)br_realloc(this->projections, (this->num_projections+1) * sizeof(vec_mp));
+		}
+		
+		
+		init_vec_mp2(this->projections[num_projections],num_natural_variables,1024);
+		this->projections[num_projections]->size = num_natural_variables;
+		
+		
+		if (proj->size != num_natural_variables) {
+			vec_mp tempvec;
+			init_vec_mp2(tempvec,num_natural_variables,1024); tempvec->size = num_natural_variables;
+			for (int kk=0; kk<num_natural_variables; kk++) {
+				set_mp(&tempvec->coord[kk], &proj->coord[kk]);
+			}
+			vec_cp_mp(projections[num_projections], tempvec);
+			clear_vec_mp(tempvec);
+		}
+		else
+		{
+			vec_cp_mp(projections[num_projections], proj);
+		}
+		
+
+		num_projections++;
+		
+		return num_projections;
+	}
+	
+	
+	
 	
 private:
 	
 	void init()
 	{
+		
+		num_projections = 0;
+		projections = NULL;
+		curr_projection = -1;
+		
+		
 		this->num_vertices = 0;
 		this->num_natural_variables = 0;
 		
@@ -523,6 +674,32 @@ private:
 	
 	void copy(const vertex_set &other)
 	{
+		this->curr_projection = other.curr_projection;
+		if (this->num_projections==0 && other.num_projections>0) {
+			projections = (vec_mp *) br_malloc(other.num_projections*sizeof(vec_mp));
+		}
+		else if(this->num_projections>0 && other.num_projections>0) {
+			projections = (vec_mp *) br_realloc(projections,other.num_projections*sizeof(vec_mp));
+		}
+		else if (this->num_projections>0 && other.num_projections==0){
+			for (int ii=0; ii<this->num_projections; ii++) {
+				clear_vec_mp(projections[ii]);
+			}
+			free(projections);
+		}
+		
+		for (int ii=0; ii<other.num_projections; ii++) {
+			if (ii>=this->num_projections){
+				init_vec_mp2(projections[ii],1,1024); projections[ii]->size = 1;
+			}
+			vec_cp_mp(projections[ii],other.projections[ii]);
+		}
+		
+		this->num_projections = other.num_projections;
+		
+		
+		
+		
 		this->num_vertices = other.num_vertices;
 		this->num_natural_variables = other.num_natural_variables;
 		
@@ -712,14 +889,15 @@ public:
 		this->num_patches++;
 	}
 	
-	int add_vertex(vertex_set &V, vertex source_vertex);
 	
 	int index_in_vertices(vertex_set &V,
 												vec_mp testpoint,
+												comp_mp proj_val,
 												tracker_config_t T);
 	
 	int index_in_vertices_with_add(vertex_set &V,
 																 vertex vert,
+																 comp_mp proj_val,
 																 tracker_config_t T);
 	
 	int setup(boost::filesystem::path INfile,
@@ -727,6 +905,17 @@ public:
 						boost::filesystem::path directoryName);
 	
 	virtual void print(boost::filesystem::path outputfile);
+	
+	
+	void output_main(const BR_configuration & program_options, vertex_set & V);
+	
+	
+	
+protected:
+	
+	int add_vertex(vertex_set &V, vertex source_vertex);
+	
+	
 	
 	void init(){
 		input_filename = "unset";
@@ -780,7 +969,6 @@ public:
 		}
 	}
 	
-	void output_main(const BR_configuration & program_options, vertex_set & V);
 	
 }; // end decomposition
 
@@ -803,88 +991,34 @@ typedef struct
 }
 sample_data;
 
-
-
-
-
 void clear_sample(sample_data *S, int MPType);
 
 
 
 
+namespace color {
+	std::string console_default();
+	
+	std::string black();
+	
+	std::string red();
+	
+	std::string green();
+	
+	std::string brown();
+	
+	std::string blue();
+	
+	std::string magenta();
+	
+	std::string cyan();
+	
+	std::string gray();
+	
+	
+	
+}
 
 
-
-
-
-
-//function prototypes for bertini_real data clearing etc.
-
-void norm_of_difference(mpf_t result, vec_mp left, vec_mp right);
-
-void dehomogenize(point_d *result, point_d dehom_me);
-void dehomogenize(point_d *result, point_d dehom_me, int num_variables);
-
-void dehomogenize(point_mp *result, point_mp dehom_me);
-void dehomogenize(point_mp *result, point_mp dehom_me, int num_variables); 
-
-
-void dot_product_d(comp_d result, vec_d one, vec_d two);
-void dot_product_mp(comp_mp result, vec_mp one, vec_mp two);
-
-void projection_value_homogeneous_input(comp_d result, vec_d input, vec_d projection);
-void projection_value_homogeneous_input(comp_mp result, vec_mp input, vec_mp projection);
-
-
-int isSamePoint_inhomogeneous_input(point_d left, point_d right);
-int isSamePoint_inhomogeneous_input(point_mp left, point_mp right);
-
-
-
-int isSamePoint_homogeneous_input(point_d left, point_d right);
-
-int isSamePoint_homogeneous_input(point_mp left, point_mp right);
-
-
-
-
-
-void print_path_retVal_message(int retVal);
-
-/**
-retrieves the number of variables from the PPD by taking the sum of the sizes, plus the sum of the types.
-*/
-int get_num_vars_PPD(preproc_data PPD);
-
-
-void cp_patch_mp(patch_eval_data_mp *PED, patch_eval_data_mp PED_input);
-void cp_patch_d(patch_eval_data_d *PED, patch_eval_data_d PED_input);
-void cp_preproc_data(preproc_data *PPD, const preproc_data & PPD_input);
-
-void clear_post_process_t(post_process_t * endPoint, int num_vars);
-
-void sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & index_tracker, vec_mp projections_input);
-
-void make_randomization_matrix_based_on_degrees(mat_mp randomization_matrix, std::vector< int > & randomized_degrees,
-																								int num_variables, int num_funcs);
-int compare_integers_decreasing(const void * left_in, const void * right_in);
-
-void send_patch_mp   (patch_eval_data_mp * patch);
-void receive_patch_mp(patch_eval_data_mp * patch);
-
-
-void send_patch_d   (patch_eval_data_d * patch);
-void receive_patch_d(patch_eval_data_d * patch);
-
-
-void send_preproc_data(preproc_data *PPD);
-void receive_preproc_data(preproc_data *PPD);
-
-
-void send_vec_mp(vec_mp b, int target);
-void receive_vec_mp(vec_mp b, int source);
-
-void send_vec_d(vec_d b, int target);
-void receive_vec_d(vec_d b, int source);
 #endif
 

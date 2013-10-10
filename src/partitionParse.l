@@ -1,7 +1,7 @@
 %{
 /* This will take an input file and partition it into a configurations file and a function file */
 
-#include "polysolve.h"
+#include "bertini.h"
 
 
 // settings to switch between config & function

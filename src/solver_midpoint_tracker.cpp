@@ -124,8 +124,7 @@ void midpoint_eval_data_mp::init()
 	h->i = 0.0;
 	
 	d_to_mp(half, h);
-	
-	std::cout << "setting one" << std::endl;
+
 	set_one_mp(this->one);
 	set_zero_mp(this->zero);
 	
@@ -148,7 +147,9 @@ void midpoint_eval_data_mp::init()
 		init_mat_mp2(randomizer_matrix_crit_full_prec, 0, 0,1024);
 		
 		init_mp2(half_full_prec,1024);
-		set_mp(half_full_prec, half);
+		set_zero_mp(half_full_prec);
+		mpf_set_str(half_full_prec->r,"0.5",10);
+		
 		
 		init_mp2(crit_val_right_full_prec,1024);
 		init_mp2(crit_val_left_full_prec,1024);
@@ -1030,56 +1031,32 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
   set_d(&parVals->coord[0], pathVars); // s = t
   set_one_d(&parDer->coord[0]);       // ds/dt = 1
 	
-//	printf("t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
-//	print_point_to_screen_matlab(current_variable_values,"curr_vars");
-//	print_point_to_screen_matlab(funcVals,"F_d");
+
 	if ( (BED->verbose_level==14) || (BED->verbose_level == -14)) {
+		std::cout << color::blue();
 		printf("t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
+		std::cout << color::console_default();
 		
 		print_point_to_screen_matlab(current_variable_values,"curr_vars");
-		print_point_to_screen_matlab(funcVals,"F_d");
-		print_matrix_to_screen_matlab(Jv,"Jv");
-		print_matrix_to_screen_matlab(Jp,"Jp");
+//		print_point_to_screen_matlab(funcVals,"F_d");
+//		print_matrix_to_screen_matlab(Jv,"Jv");
+//		print_matrix_to_screen_matlab(Jp,"Jp");
 		
-		mypause();
 	}
 	
+#ifdef printpathnullspace_left
+	BED->num_steps++;
+	vec_d dehommed; init_vec_d(dehommed,BED->num_variables-1); dehommed->size = BED->num_variables-1;
+	dehomogenize(&dehommed,curr_mid_vars);
+	fprintf(BED->FOUT,"%.15lf %.15lf ", pathVars->r, pathVars->i);
+	for (ii=0; ii<BED->num_variables-1; ++ii) {
+		fprintf(BED->FOUT,"%.15lf %.15lf ",dehommed->coord[ii].r,dehommed->coord[ii].i);
+	}
+	fprintf(BED->FOUT,"\n");
+	clear_vec_d(dehommed);
+#endif
 	
 	
-//	clear_vec_d(curr_mid_vars);
-//	clear_vec_d(curr_top_vars);
-//	clear_vec_d(curr_bottom_vars);
-//	clear_vec_d(patchValues);
-//	clear_vec_d(temp_function_values);
-//	
-//	
-//	clear_vec_d(AtimesF);
-//
-//	clear_vec_d(tempvec);
-//	clear_vec_d(tempvec2);
-//	
-//	
-//	clear_mat_d(Jv_Patch);
-//	
-//	
-//	
-//	clear_mat_d(AtimesJ);
-//	clear_mat_d(Jv_jac);
-//	clear_mat_d(temp_jacobian_functions);
-//	clear_mat_d(temp_jacobian_parameters);
-//	
-//
-//	
-//	
-//	clear_vec_d(unused_function_values);
-//	clear_vec_d(unused_parVals);
-//	clear_vec_d(unused_parDer);
-//	clear_mat_d(unused_Jp);
-//	
-	
-	
-	
-
 	
 	clear_vec_d(curr_mid_vars);
 	clear_vec_d(curr_top_vars);
@@ -1113,20 +1090,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	
 	clear_mat_d(unused_Jp);
 	
-	
-#ifdef printpathnullspace_left
-	BED->num_steps++;
-	vec_d dehommed; init_vec_d(dehommed,BED->num_variables-1); dehommed->size = BED->num_variables-1;
-	dehomogenize(&dehommed,curr_mid_vars);
-	fprintf(BED->FOUT,"%.15lf %.15lf ", pathVars->r, pathVars->i);
-	for (ii=0; ii<BED->num_variables-1; ++ii) {
-		fprintf(BED->FOUT,"%.15lf %.15lf ",dehommed->coord[ii].r,dehommed->coord[ii].i);
-	}
-	fprintf(BED->FOUT,"\n");
-	clear_vec_d(dehommed);
-#endif
-	
-	//	printf("exiting eval\n");
+
   return 0;
 }
 
@@ -1523,23 +1487,23 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 //	print_point_to_screen_matlab(funcVals,"F_mp");
 	
 	if ( (BED->verbose_level==14) || (BED->verbose_level == -14)) {
+		std::cout << color::blue();
 		print_comp_matlab(pathVars,"t");
-//
-//
-//	print_matrix_to_screen_matlab( AtimesJ,"jac");
-//	print_point_to_screen_matlab(curr_mid_vars,"currxvars");
+		std::cout << color::console_default();
+		
+		
 		print_point_to_screen_matlab(current_variable_values,"curr_vars");
-		print_point_to_screen_matlab(funcVals,"F_mp");
-		print_matrix_to_screen_matlab(Jv,"Jv");
-		print_matrix_to_screen_matlab(Jp,"Jp");
+//		print_point_to_screen_matlab(funcVals,"F_mp");
+//		print_matrix_to_screen_matlab(Jv,"Jv");
+//		print_matrix_to_screen_matlab(Jp,"Jp");
 		
-		vec_mp result; init_vec_mp(result,0);
-		dehomogenize(&result, curr_mid_vars);
-		print_point_to_screen_matlab(result,"mid");
-		
-		//	std::cout << "\n\n**************\n\n";
-		clear_vec_mp(result);
-		mypause();
+//		vec_mp result; init_vec_mp(result,0);
+//		dehomogenize(&result, curr_mid_vars);
+//		print_point_to_screen_matlab(result,"mid");
+//		
+//		//	std::cout << "\n\n**************\n\n";
+//		clear_vec_mp(result);
+//		mypause();
 	}
 	
 	
@@ -1548,7 +1512,17 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
 	
 	
-
+#ifdef printpathnullspace_left
+	BED->num_steps++;
+	vec_mp dehommed; init_vec_mp(dehommed,BED->num_variables-1); dehommed->size = BED->num_variables-1;
+	dehomogenize(&dehommed,curr_mid_vars);
+	fprintf(BED->FOUT,"%.15lf %.15lf ", pathVars->r, pathVars->i);
+	for (ii=0; ii<BED->num_variables-1; ++ii) {
+		fprintf(BED->FOUT,"%.15lf %.15lf ",dehommed->coord[ii].r,dehommed->coord[ii].i);
+	}
+	fprintf(BED->FOUT,"\n");
+	clear_vec_mp(dehommed);
+#endif
 
 
 	clear_mp(temp);
@@ -1601,29 +1575,6 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
 	
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-#ifdef printpathnullspace_left
-	BED->num_steps++;
-	vec_mp dehommed; init_vec_mp(dehommed,BED->num_variables-1); dehommed->size = BED->num_variables-1;
-	dehomogenize(&dehommed,curr_mid_vars);
-	fprintf(BED->FOUT,"%.15lf %.15lf ", pathVars->r, pathVars->i);
-	for (ii=0; ii<BED->num_variables-1; ++ii) {
-		fprintf(BED->FOUT,"%.15lf %.15lf ",dehommed->coord[ii].r,dehommed->coord[ii].i);
-	}
-	fprintf(BED->FOUT,"\n");
-	clear_vec_mp(dehommed);
-#endif
-	
-	//	printf("exiting eval\n");
-  	
   return 0;
 }
 
@@ -1721,20 +1672,29 @@ int change_midpoint_eval_prec(void const *ED, int new_prec)
 {
 	midpoint_eval_data_mp *BED = (midpoint_eval_data_mp *)ED; // to avoid having to cast every time
 	
-//	int ii, jj;
+
+	BED->SLP_face->precision = new_prec;
+	BED->SLP_crit->precision = new_prec;
+	
+	
+	changePatchPrec_mp(new_prec, &BED->patch);
 	
 	if (new_prec != BED->curr_prec){
 		// change the precision for the patch
-		changePatchPrec_mp(new_prec, &BED->patch);
-		
-		if (BED->verbose_level >=4)
+		if (BED->verbose_level >=0)
+		{
+			std::cout << color::brown();
 			printf("prec  %d\t-->\t%d\n",BED->curr_prec, new_prec);
-		
-		BED->SLP_face->precision = new_prec;
-		BED->SLP_crit->precision = new_prec;
-		
+			std::cout << color::console_default();
+		}
 		
 		BED->curr_prec = new_prec;
+		
+		
+		
+		
+		
+		
 		
 		setprec_mp(BED->gamma, new_prec);
 		mpf_set_q(BED->gamma->r, BED->gamma_rat[0]);
