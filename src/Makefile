@@ -97,7 +97,7 @@ INC:=$(INC) -I../include  -I$(BERTINIHEADERS) #this includes the header files fo
 
 ARGS= $(OPT) -D_HAVE_MPI $(MACHINESPECIFICS) $(INC)
 OBJFILES= parallelism.o derivative_systems.o data_type.o programConfiguration.o determinant_derivative.o output.o fileops.o isosingular.o checkSelfConjugate.o nullspace_left.o surface.o curve.o
-SOLVERS= solver.o solver_midpoint_tracker.o solver_nullspace_left.o solver_detjactodetjac.o solver_linprodtodetjac.o solver_multilintolin.o postProcessing.o solver_lintolin.o
+SOLVERS= solver.o solver_midpoint_tracker.o solver_nullspace_left.o solver_detjactodetjac.o solver_linprodtodetjac.o solver_multilintolin.o postProcessing.o solver_lintolin.o solver_sphere.o
 FLEXFILES=lex.partitionParse.o 
 
 

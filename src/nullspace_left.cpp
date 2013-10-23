@@ -57,7 +57,9 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	
 	
 	//  2.  Do a bunch of homotopies in $x$, each set of which will be followed by a single linear solve in $v$.
-	
+	if (program_options.verbose_level>=3) {
+		std::cout << "building up linprod start system for left nullspace" << std::endl;
+	}
 	
 	// setup for the multilin moves
 	//  these are for feeding into the multilin solver -- and that's it.  they'll be set in the while loop
@@ -114,6 +116,7 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	
 	double_odometer odo(ns_config->num_jac_equations, target_crit_codim, max_degree);
 	
+	std::cout << max_degree << std::endl;
 	int increment_status = 0;
 	while (increment_status!=-1) { // current_absolute_index incremented at the bottom of loop
 		
@@ -221,8 +224,6 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	//set some solver options
 	
 	solve_options.robust = false;
-	
-	
 	solve_options.complete_witness_set = 0;
 	solve_options.use_midpoint_checker = 0;
 	
@@ -243,7 +244,9 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	
 
 	
-	
+	if (program_options.verbose_level>=3) {
+		std::cout << "running nullspace method" << std::endl;
+	}
 	
 	nullspacejac_solver_master_entry_point(solve_options.T.MPType,
 																				 W_linprod, // carries with it the start points, but not the linears.
@@ -320,7 +323,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 
 	
 	// set some integers
-	ns_config->num_v_vars = W.num_variables - 1 - target_crit_codim + 1; //  N-k+l
+	ns_config->num_v_vars = W.num_variables - 1 - target_crit_codim + 1; 
 	ns_config->num_x_vars = W.num_variables;
 	
 	ns_config->ambient_dim = ambient_dim;
@@ -348,8 +351,11 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	mat_cp_mp(ns_config->randomizer_matrix, randomizer_matrix);
 	
 	if (randomizer_matrix->rows != W.num_variables-W.num_patches-ambient_dim) {
+		std::cout << color::red();
 		std::cout << "mismatch in number of equations...\n" << std::endl;
-		deliberate_segfault();
+		std::cout << "left: " << randomizer_matrix->rows << " right " << W.num_variables-W.num_patches-ambient_dim << std::endl;
+		std::cout << color::console_default();
+		br_exit(-1737);
 	}
 	
 	ns_config->num_jac_equations = num_jac_equations;
@@ -371,7 +377,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	
 	
 	// the last of the linears will be used for the slicing, and passed on to later routines
-	int offset = ambient_dim - target_dim + target_crit_codim;  //  CHECK ME!!!
+	int offset = ambient_dim - target_dim + target_crit_codim; 
 	ns_config->num_additional_linears = target_dim - target_crit_codim;
 	
 	ns_config->additional_linears_terminal = (vec_mp *)br_malloc((ns_config->num_additional_linears)*sizeof(vec_mp));

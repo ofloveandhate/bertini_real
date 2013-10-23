@@ -1185,9 +1185,11 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 	
 	prog_t SLP;
 	//	// setup a straight-line program, using the file(s) created by the parser
-  solve_options.T.numVars = setupProg_count(&SLP, solve_options.T.Precision, solve_options.T.MPType,
+  setupProg_count(&SLP, solve_options.T.Precision, solve_options.T.MPType,
 																						&startSub, &endSub, &startFunc, &endFunc, &startJvsub, &endJvsub, &startJv, &endJv,
 																						&subFuncsBelow);
+	
+	solve_options.T.numVars = W.num_variables;
 	
 	nullspacejac_eval_data_d *ED_d = NULL;
 	nullspacejac_eval_data_mp *ED_mp = NULL;
@@ -1823,12 +1825,10 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 //	print_matrix_to_screen_matlab(Jp,"Jp");
 //	print_matrix_to_screen_matlab(BED->jac_with_proj,"jacwithproj");
 //			//these values are set in this function:  point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp
-//	print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
+	print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
 
 //	std::cout << "\n\n**************\n\n";
-//	mypause();
-		if (BED->verbose_level==10)
-			mypause();
+
 	}
 	
 	
@@ -2367,10 +2367,8 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 		
 		//	print_matrix_to_screen_matlab(BED->jac_with_proj,"jacwithproj");
 		//these values are set in this function:  point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp
-		//	print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
-		
-		if (BED->verbose_level==10)
-			mypause();
+		print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
+
 	}
 	
 	

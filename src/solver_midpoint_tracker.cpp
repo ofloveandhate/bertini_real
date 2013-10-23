@@ -10,18 +10,18 @@ void midpoint_config::setup(const surface_decomposition & surf,
 
 	num_mid_vars = surf.num_variables;
 	num_crit_vars = surf.crit_curve.num_variables;
-	num_variables = num_mid_vars + 2*num_crit_vars;
-	//	solve_options.T.numVars = setupProg(this->SLP, solve_options.T.Precision, solve_options.T.MPType);
-	int blabla, *declarations;
+	num_sphere_vars = surf.sphere_curve.num_variables;
+	
+	
+	int blabla;
 	// i would like to move this.
 	
 
 	parse_input_file(surf.input_filename, &blabla);
-	partition_parse(&declarations, surf.input_filename, "func_input", "config", 0); // the 0 means not self conjugate.
-	free(declarations);
+
 	
 	//	// setup a straight-line program, using the file(s) created by the parser	
-	solve_options.T.numVars = setupProg(this->SLP_face, solve_options.T.Precision, solve_options.T.MPType);
+	solve_options.T.numVars = setupProg(this->SLP_mid, solve_options.T.Precision, solve_options.T.MPType);
 
 	preproc_data_clear(&solve_options.PPD);
 	parse_preproc_data("preproc_data", &solve_options.PPD);
@@ -43,8 +43,7 @@ void midpoint_config::setup(const surface_decomposition & surf,
 	
 
 	parse_input_file(surf.crit_curve.input_filename, &blabla);
-	partition_parse(&declarations, surf.crit_curve.input_filename, "func_input", "config", 0); // the 0 means not self conjugate.
-	free(declarations);
+
 	
 	
 	//	// setup a straight-line program, using the file(s) created by the parser
@@ -60,8 +59,29 @@ void midpoint_config::setup(const surface_decomposition & surf,
 	this->crit_memory.capture_globals();
 	this->crit_memory.set_globals_null();
 	
-	solve_options.T.numVars = surf.num_variables + 2*surf.crit_curve.num_variables;
-	// are there other things in T which need to be set?
+	
+	
+	//do the necessary parsing
+	
+	
+	parse_input_file(surf.sphere_curve.input_filename, &blabla);
+
+	
+	//	// setup a straight-line program, using the file(s) created by the parser
+	setupProg(this->SLP_sphere, solve_options.T.Precision, solve_options.T.MPType);
+	preproc_data_clear(&solve_options.PPD);
+	parse_preproc_data("preproc_data", &solve_options.PPD);
+	
+	
+	//get the matrix and the degrees of the resulting randomized functions.
+	randomized_degrees.clear();
+	make_randomization_matrix_based_on_degrees(this->randomizer_matrix_sph, randomized_degrees, surf.sphere_curve.num_variables-surf.sphere_curve.num_patches-1, solve_options.PPD.num_funcs);
+	
+	this->sphere_memory.capture_globals();
+	this->sphere_memory.set_globals_null();
+	
+	
+//	// are there other things in T which need to be set?
 }
 
 
@@ -70,6 +90,7 @@ void midpoint_config::init()
 	
 	this->MPType = -1;
 	
+	init_mat_mp2(randomizer_matrix_sph,1,1,1024);randomizer_matrix_sph->rows = randomizer_matrix_sph->cols = 1;
 	init_mat_mp2(randomizer_matrix_crit,1,1,1024);randomizer_matrix_crit->rows = randomizer_matrix_crit->cols = 1;
 	init_mat_mp2(randomizer_matrix,1,1,1024);randomizer_matrix->rows = randomizer_matrix->cols = 1;
 	
@@ -81,7 +102,13 @@ void midpoint_config::init()
 	init_mp2(crit_val_right,1024);
 	
 	this->SLP_crit =  new prog_t;
-	this->SLP_face = new prog_t;//(prog_t *) br_malloc(sizeof(prog_t));
+	this->SLP_mid = new prog_t;//(prog_t *) br_malloc(sizeof(prog_t));
+	this->SLP_sphere = new prog_t;//(prog_t *) br_malloc(sizeof(prog_t));
+	
+	system_type_top = UNSET;
+	system_type_bottom = UNSET;
+	
+
 }
 
 
@@ -104,8 +131,9 @@ void midpoint_eval_data_mp::init()
 	
 	num_projections = 0;
 	pi = NULL;
-	SLP_crit = NULL;
-	SLP_face = NULL;
+	SLP_bottom = NULL;
+	SLP_mid = NULL;
+	SLP_top = NULL;
 	
 	init_mp(half);
 	init_mp(one);
@@ -137,14 +165,22 @@ void midpoint_eval_data_mp::init()
 	this->num_projections = 0;
 	this->num_variables = -1;
 	this->num_mid_vars = -1;
-	this->num_crit_vars = -1;
+	this->num_bottom_vars = -1;
+	this->num_top_vars = -1;
 	
-	init_mat_mp(randomizer_matrix_crit,1,1);randomizer_matrix_crit->rows = randomizer_matrix_crit->cols = 1;
+
+
+	
+	
+	
+	init_mat_mp(randomizer_matrix_bottom,1,1);randomizer_matrix_bottom->rows = randomizer_matrix_bottom->cols = 1;
+	init_mat_mp(randomizer_matrix_top,1,1);randomizer_matrix_top->rows = randomizer_matrix_top->cols = 1;
 	
 	
 	
 	if (this->MPType==2) {
-		init_mat_mp2(randomizer_matrix_crit_full_prec, 0, 0,1024);
+		init_mat_mp2(randomizer_matrix_bottom_full_prec, 0, 0,1024);
+		init_mat_mp2(randomizer_matrix_top_full_prec, 0, 0,1024);
 		
 		init_mp2(half_full_prec,1024);
 		set_zero_mp(half_full_prec);
@@ -227,6 +263,8 @@ int midpoint_eval_data_mp::receive(parallelism_config & mpi_config)
 	return SUCCESSFUL;
 }
 
+
+
 int midpoint_eval_data_mp::setup(const midpoint_config & md_config,
 																 surface_decomposition & surf,
 																 const witness_set & W,
@@ -239,16 +277,65 @@ int midpoint_eval_data_mp::setup(const midpoint_config & md_config,
 	
 	generic_setup_patch(&patch,W);
 	
-	this->crit_memory = md_config.crit_memory; // copy the pointers to the memory
+	
+	
 	this->mid_memory = md_config.mid_memory;
-	
-	
-	this->SLP_crit = md_config.SLP_crit;
-	this->SLP_face = md_config.SLP_face;
-	
+	this->SLP_mid = md_config.SLP_mid;
 	this->num_mid_vars = md_config.num_mid_vars;
-	this->num_crit_vars = md_config.num_crit_vars;
-	this->num_variables = md_config.num_mid_vars + 2*md_config.num_crit_vars;
+	mat_cp_mp(randomizer_matrix, md_config.randomizer_matrix);
+	
+	
+	if (md_config.system_type_top == SYSTEM_CRIT) {
+		this->top_memory = md_config.crit_memory; // copy the pointers to the memory
+		this->SLP_top = md_config.SLP_crit;
+		this->num_top_vars = md_config.num_crit_vars;
+		mat_cp_mp(randomizer_matrix_top, md_config.randomizer_matrix_crit);
+		if (MPType == 2) {
+			mat_cp_mp(randomizer_matrix_top_full_prec, md_config.randomizer_matrix_crit);
+		}
+	}
+	else if (md_config.system_type_top == SYSTEM_SPHERE){
+		this->top_memory = md_config.sphere_memory; // copy the pointers to the memory
+		this->SLP_top = md_config.SLP_sphere;
+		this->num_top_vars = md_config.num_sphere_vars;
+		mat_cp_mp(randomizer_matrix_top, md_config.randomizer_matrix_sph);
+		if (MPType == 2) {
+			mat_cp_mp(randomizer_matrix_top_full_prec, md_config.randomizer_matrix_sph);
+		}
+	}
+	else{
+		br_exit(98711);
+	}
+	
+	
+	
+	
+	if (md_config.system_type_bottom == SYSTEM_CRIT) {
+		this->bottom_memory = md_config.crit_memory; // copy the pointers to the memory
+		this->SLP_bottom = md_config.SLP_crit;
+		this->num_bottom_vars = md_config.num_crit_vars;
+		mat_cp_mp(randomizer_matrix_bottom, md_config.randomizer_matrix_crit);
+		if (MPType == 2) {
+			mat_cp_mp(randomizer_matrix_bottom_full_prec, md_config.randomizer_matrix_crit);
+		}
+	}
+	else if (md_config.system_type_bottom == SYSTEM_SPHERE){
+		this->bottom_memory = md_config.sphere_memory; // copy the pointers to the memory
+		this->SLP_bottom = md_config.SLP_sphere;
+		this->num_bottom_vars = md_config.num_sphere_vars;
+		mat_cp_mp(randomizer_matrix_bottom, md_config.randomizer_matrix_sph);
+		if (MPType == 2) {
+			mat_cp_mp(randomizer_matrix_bottom_full_prec, md_config.randomizer_matrix_sph);
+		}
+	}
+	else{
+		br_exit(98711);
+	}
+	
+	
+
+	this->num_variables = num_mid_vars + num_bottom_vars + num_top_vars;
+	
 
 	
 	if (solve_options.use_gamma_trick==1)
@@ -285,19 +372,17 @@ int midpoint_eval_data_mp::setup(const midpoint_config & md_config,
 
 	
 	
-	mat_cp_mp(randomizer_matrix, md_config.randomizer_matrix);
-	mat_cp_mp(randomizer_matrix_crit, md_config.randomizer_matrix_crit);
+	
+	
 	
 	if (this->MPType==2) {
 		mat_cp_mp(randomizer_matrix_full_prec, md_config.randomizer_matrix);
-		mat_cp_mp(randomizer_matrix_crit_full_prec, md_config.randomizer_matrix_crit);
-		
+
 		set_mp(this->crit_val_left_full_prec, md_config.crit_val_left);
 		set_mp(this->crit_val_right_full_prec, md_config.crit_val_right);
 		
 		set_mp(this->u_target_full_prec, md_config.u_target);
 		set_mp(this->v_target_full_prec, md_config.v_target);
-		
 	}
 	
 	
@@ -362,9 +447,13 @@ void midpoint_eval_data_d::init()
 	this->num_projections = 0;
 	this->num_variables = -1;
 	this->num_mid_vars = -1;
-	this->num_crit_vars = -1;
+	this->num_bottom_vars = -1;
+	this->num_top_vars = -1;
 	
-	init_mat_d(randomizer_matrix_crit,1,1);randomizer_matrix_crit->rows = randomizer_matrix_crit->cols = 1;
+
+	
+	init_mat_d(randomizer_matrix_bottom,1,1);randomizer_matrix_bottom->rows = randomizer_matrix_bottom->cols = 1;
+	init_mat_d(randomizer_matrix_top,1,1); randomizer_matrix_top->rows = randomizer_matrix_top->cols = 1;
 }
 
 
@@ -433,19 +522,64 @@ int midpoint_eval_data_d::setup(const midpoint_config & md_config,
 	
 	solver_d::setup();
 	
-	this->crit_memory = md_config.crit_memory; // copy the pointers to the memory
-	this->mid_memory = md_config.mid_memory;
 	
-	this->SLP_crit = md_config.SLP_crit; // copy the pointers to the SLPs (which refer to the memory)
-	this->SLP_face = md_config.SLP_face;
 	
 	verbose_level = solve_options.verbose_level;
 	
 	generic_setup_patch(&patch,W);
 	
+	
+	
+	this->mid_memory = md_config.mid_memory;
+	this->SLP_mid = md_config.SLP_mid;
 	this->num_mid_vars = md_config.num_mid_vars;
-	this->num_crit_vars = md_config.num_crit_vars;
-	this->num_variables = md_config.num_mid_vars + 2*md_config.num_crit_vars;
+	mat_mp_to_d(randomizer_matrix, md_config.randomizer_matrix);
+	
+	
+	if (md_config.system_type_top == SYSTEM_CRIT) {
+		this->top_memory = md_config.crit_memory; // copy the pointers to the memory
+		this->SLP_top = md_config.SLP_crit;
+		this->num_top_vars = md_config.num_crit_vars;
+		mat_mp_to_d(randomizer_matrix_top, md_config.randomizer_matrix_crit);
+	}
+	else if (md_config.system_type_top == SYSTEM_SPHERE){
+		this->top_memory = md_config.sphere_memory; // copy the pointers to the memory
+		this->SLP_top = md_config.SLP_sphere;
+		this->num_top_vars = md_config.num_sphere_vars;
+		mat_mp_to_d(randomizer_matrix_top, md_config.randomizer_matrix_sph);
+	}
+	else{
+		std::cout << "in double setup for midpoint eval, top system was neither sphere nor crit." << std::endl;
+		br_exit(98711);
+	}
+	
+	
+	
+	
+	if (md_config.system_type_bottom == SYSTEM_CRIT) {
+		this->bottom_memory = md_config.crit_memory; // copy the pointers to the memory
+		this->SLP_bottom = md_config.SLP_crit;
+		this->num_bottom_vars = md_config.num_crit_vars;
+		mat_mp_to_d(randomizer_matrix_bottom, md_config.randomizer_matrix_crit);
+	}
+	else if (md_config.system_type_bottom == SYSTEM_SPHERE){
+		this->bottom_memory = md_config.sphere_memory; // copy the pointers to the memory
+		this->SLP_bottom = md_config.SLP_sphere;
+		this->num_bottom_vars = md_config.num_sphere_vars;
+		mat_mp_to_d(randomizer_matrix_bottom, md_config.randomizer_matrix_sph);
+	}
+	else{
+		std::cout << "in double setup for midpoint eval, bottom system was neither sphere nor crit." << std::endl;
+		br_exit(98712);
+	}
+	
+	
+	
+	this->num_variables = num_mid_vars + num_bottom_vars + num_top_vars;
+	
+
+	
+	
 	
 	
 	add_projection(surf.pi[0]);
@@ -467,8 +601,7 @@ int midpoint_eval_data_d::setup(const midpoint_config & md_config,
 	mat_mp_to_d(randomizer_matrix,
 							md_config.randomizer_matrix);
 	
-	mat_mp_to_d(randomizer_matrix_crit,
-							md_config.randomizer_matrix_crit);
+	
 	
 	if (this->MPType==2)
 	{
@@ -694,15 +827,15 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 		set_d(&curr_mid_vars->coord[ii], &current_variable_values->coord[ii]);
 	
 	offset = BED->num_mid_vars; // y0 
-	vec_d curr_bottom_vars; init_vec_d(curr_bottom_vars, BED->num_crit_vars);
-	curr_bottom_vars->size = BED->num_crit_vars;
-	for (ii=0; ii<BED->num_crit_vars; ii++)
+	vec_d curr_bottom_vars; init_vec_d(curr_bottom_vars, BED->num_bottom_vars);
+	curr_bottom_vars->size = BED->num_bottom_vars;
+	for (ii=0; ii<BED->num_bottom_vars; ii++)
 		set_d(&curr_bottom_vars->coord[ii], &current_variable_values->coord[ii+offset]);
 	
-	offset = BED->num_mid_vars + BED->num_crit_vars; // y2
-	vec_d curr_top_vars; init_vec_d(curr_top_vars, BED->num_crit_vars); 
-	curr_top_vars->size = BED->num_crit_vars;
-	for (ii=0; ii<BED->num_crit_vars; ii++)
+	offset = BED->num_mid_vars + BED->num_bottom_vars; // y2
+	vec_d curr_top_vars; init_vec_d(curr_top_vars, BED->num_top_vars);
+	curr_top_vars->size = BED->num_top_vars;
+	for (ii=0; ii<BED->num_top_vars; ii++)
 		set_d(&curr_top_vars->coord[ii], &current_variable_values->coord[ii+offset]);
 	
 
@@ -785,7 +918,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 
 	offset = 0;
 	evalProg_d(temp_function_values, parVals, parDer,
-						 temp_jacobian_functions, unused_Jp, curr_mid_vars, pathVars, BED->SLP_face);
+						 temp_jacobian_functions, unused_Jp, curr_mid_vars, pathVars, BED->SLP_mid);
 	
 
 	
@@ -804,59 +937,55 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	
 	
 	
-	BED->crit_memory.set_globals_to_this();
+	BED->bottom_memory.set_globals_to_this();
 	
 	
 	offset = BED->randomizer_matrix->rows; //y0
-	int offset2 = BED->num_mid_vars;
+	int offset_horizontal = BED->num_mid_vars;
 	evalProg_d(temp_function_values, parVals, parDer,
-						 temp_jacobian_functions, unused_Jp, curr_bottom_vars, pathVars, BED->SLP_crit);
+						 temp_jacobian_functions, unused_Jp, curr_bottom_vars, pathVars, BED->SLP_bottom);
 
-//	std::cout << offset << " " << offset2 << std::endl;
+//	std::cout << offset << " " << offset_horizontal << std::endl;
 	// randomize
-	mul_mat_vec_d(AtimesF,BED->randomizer_matrix_crit, temp_function_values); // set values of AtimesF (A is randomization matrix)
+	mul_mat_vec_d(AtimesF,BED->randomizer_matrix_bottom, temp_function_values); // set values of AtimesF (A is randomization matrix)
 	for (ii=0; ii<AtimesF->size; ii++)  // for each function, after (real) randomization
 		set_d(&funcVals->coord[ii+offset], &AtimesF->coord[ii]);
 
 	
-	mat_mul_d(AtimesJ,BED->randomizer_matrix_crit,temp_jacobian_functions);
+	mat_mul_d(AtimesJ,BED->randomizer_matrix_bottom,temp_jacobian_functions);
 //	print_matrix_to_screen_matlab(AtimesJ,"AtimesJy2");
 	for (ii=0; ii< AtimesJ->rows; ii++)
 		for (jj=0; jj< AtimesJ->cols; jj++)
-			set_d(&Jv->entry[ii+offset][jj+offset2],&AtimesJ->entry[ii][jj]);
+			set_d(&Jv->entry[ii+offset][jj+offset_horizontal],&AtimesJ->entry[ii][jj]);
 	
 	
 	
 	
 	
-	offset = BED->randomizer_matrix->rows + BED->randomizer_matrix_crit->rows; // y2
+	offset = BED->randomizer_matrix->rows + BED->randomizer_matrix_bottom->rows; // y2
+	offset_horizontal = BED->num_mid_vars + BED->num_bottom_vars;
 	
-
-	offset2 = BED->num_mid_vars + BED->num_crit_vars;
-	
-//		std::cout << offset << " " << offset2 << std::endl;
+	BED->top_memory.set_globals_to_this();
 	
 	evalProg_d(temp_function_values, parVals, parDer,
-						 temp_jacobian_functions, unused_Jp, curr_top_vars, pathVars, BED->SLP_crit);
-//	print_matrix_to_screen_matlab(temp_jacobian_functions, "Jv_crit_1");
-//	print_matrix_to_screen_matlab(BED->randomizer_matrix_crit, "crit_rand");
-//	print_point_to_screen_matlab(temp_function_values, "f_temp");
+						 temp_jacobian_functions, unused_Jp, curr_top_vars, pathVars, BED->SLP_top);
+
+	
 	// randomize
-	mul_mat_vec_d(AtimesF,BED->randomizer_matrix_crit, temp_function_values); // set values of AtimesF (A is randomization matrix)
+	mul_mat_vec_d(AtimesF,BED->randomizer_matrix_top, temp_function_values); // set values of AtimesF (A is randomization matrix)
 	for (ii=0; ii<AtimesF->size; ii++)  // for each function, after (real) randomization
 		set_d(&funcVals->coord[ii+offset], &AtimesF->coord[ii]);
 	// the jacobian equations for orig
 	//  randomize the original functions and jacobian
-	mat_mul_d(AtimesJ,BED->randomizer_matrix_crit,temp_jacobian_functions);
+	mat_mul_d(AtimesJ,BED->randomizer_matrix_top,temp_jacobian_functions);
 	
-//	print_matrix_to_screen_matlab(AtimesJ,"AtimesJy0");
 	for (ii=0; ii< AtimesJ->rows; ii++)
 		for (jj=0; jj< AtimesJ->cols; jj++)
-			set_d(&Jv->entry[ii+offset][jj+offset2],&AtimesJ->entry[ii][jj]);
+			set_d(&Jv->entry[ii+offset][jj+offset_horizontal],&AtimesJ->entry[ii][jj]);
 	
 	
 	// done with evaluation, so set these to NULL to prevent accidental deletion of the data.
-	BED->crit_memory.set_globals_null();
+	BED->top_memory.set_globals_null();
 	
 	
 	
@@ -871,7 +1000,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	
 	
 	
-	offset = BED->randomizer_matrix->rows + 2*(BED->randomizer_matrix_crit->rows);
+	offset = BED->randomizer_matrix->rows + BED->randomizer_matrix_bottom->rows + BED->randomizer_matrix_top->rows;
 	
 	projection_value_homogeneous_input(proj_mid, curr_mid_vars,BED->pi[0]);
 	projection_value_homogeneous_input(proj_top, curr_top_vars,BED->pi[0]);
@@ -906,23 +1035,23 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	
 	
 	// d/dx
-	offset2 = 0;
-	div_d(&Jv->entry[offset][offset2], proj_mid, &curr_mid_vars->coord[0]);
-	neg_d(&Jv->entry[offset][offset2], &Jv->entry[offset][offset2]); //  -*proj_mid / x[0]
+	offset_horizontal = 0;
+	div_d(&Jv->entry[offset][offset_horizontal], proj_mid, &curr_mid_vars->coord[0]);
+	neg_d(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal]); //  -*proj_mid / x[0]
 	for (int ii=1; ii<BED->num_mid_vars; ii++)  // mid
 		set_d(&Jv->entry[offset][ii], &BED->pi[0]->coord[ii]);
 	
-	offset2 = BED->num_mid_vars; // y2
-	div_d(&Jv->entry[offset+1][offset2], proj_bottom, &curr_bottom_vars->coord[0]);
-	neg_d(&Jv->entry[offset+1][offset2], &Jv->entry[offset+1][offset2]); //  -*proj_bottom / y0[0]
+	offset_horizontal = BED->num_mid_vars; // y2
+	div_d(&Jv->entry[offset+1][offset_horizontal], proj_bottom, &curr_bottom_vars->coord[0]);
+	neg_d(&Jv->entry[offset+1][offset_horizontal], &Jv->entry[offset+1][offset_horizontal]); //  -*proj_bottom / y0[0]
 	for (int ii=1; ii<BED->num_mid_vars; ii++)
-		set_d(&Jv->entry[offset+1][offset2+ii], &BED->pi[0]->coord[ii]);
+		set_d(&Jv->entry[offset+1][offset_horizontal+ii], &BED->pi[0]->coord[ii]);
 	
-	offset2 = BED->num_mid_vars + BED->num_crit_vars; // y2
-	div_d(&Jv->entry[offset+2][offset2], proj_top, &curr_top_vars->coord[0]);
-	neg_d(&Jv->entry[offset+2][offset2], &Jv->entry[offset+2][offset2]); //  -*proj_mid / y2[0]
+	offset_horizontal = BED->num_mid_vars + BED->num_bottom_vars; // y2
+	div_d(&Jv->entry[offset+2][offset_horizontal], proj_top, &curr_top_vars->coord[0]);
+	neg_d(&Jv->entry[offset+2][offset_horizontal], &Jv->entry[offset+2][offset_horizontal]); //  -*proj_mid / y2[0]
 	for (int ii=1; ii<BED->num_mid_vars; ii++)
-		set_d(&Jv->entry[offset+2][offset2+ii], &BED->pi[0]->coord[ii]);
+		set_d(&Jv->entry[offset+2][offset_horizontal+ii], &BED->pi[0]->coord[ii]);
 	
 
 	
@@ -951,36 +1080,36 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	//Jv for the last equation
 	// midpoint
 	
-	offset2 = 0;
-	div_d(&Jv->entry[offset][offset2], proj_mid, &curr_mid_vars->coord[0]);
-	neg_d(&Jv->entry[offset][offset2], &Jv->entry[offset][offset2]); //  -proj_mid / x0[0]
+	offset_horizontal = 0;
+	div_d(&Jv->entry[offset][offset_horizontal], proj_mid, &curr_mid_vars->coord[0]);
+	neg_d(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal]); //  -proj_mid / x0[0]
 	for (int ii=1; ii<BED->num_mid_vars; ii++)
 		div_d(&Jv->entry[offset][ii], &BED->pi[1]->coord[ii], &curr_mid_vars->coord[0]);
 	
 	
 	// y0
-	offset2 = BED->num_mid_vars;
-	div_d(&Jv->entry[offset][offset2], proj_bottom, &curr_bottom_vars->coord[0]);
-	mul_d(&Jv->entry[offset][offset2], &Jv->entry[offset][offset2], one_minus_v);
-//	neg_d(&Jv->entry[offset][offset2], &Jv->entry[offset][offset2]); //  -(1-v)*proj_bottom / y0[0]
+	offset_horizontal = BED->num_mid_vars;
+	div_d(&Jv->entry[offset][offset_horizontal], proj_bottom, &curr_bottom_vars->coord[0]);
+	mul_d(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal], one_minus_v);
+//	neg_d(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal]); //  -(1-v)*proj_bottom / y0[0]
 	for (int ii=1; ii<BED->num_mid_vars; ii++) // only go this far, because all remaining entries are 0
 	{
-		mul_d(&Jv->entry[offset][ii+offset2], one_minus_v, &BED->pi[1]->coord[ii]);
-		neg_d(&Jv->entry[offset][ii+offset2], &Jv->entry[offset][ii+offset2]);
-		div_d(&Jv->entry[offset][ii+offset2], &Jv->entry[offset][ii+offset2], &curr_bottom_vars->coord[0]);
+		mul_d(&Jv->entry[offset][ii+offset_horizontal], one_minus_v, &BED->pi[1]->coord[ii]);
+		neg_d(&Jv->entry[offset][ii+offset_horizontal], &Jv->entry[offset][ii+offset_horizontal]);
+		div_d(&Jv->entry[offset][ii+offset_horizontal], &Jv->entry[offset][ii+offset_horizontal], &curr_bottom_vars->coord[0]);
 	}
 	
 	
 	// y2
-	offset2 = BED->num_mid_vars+BED->num_crit_vars;
-	div_d(&Jv->entry[offset][offset2], proj_top, &curr_top_vars->coord[0]);
-	mul_d(&Jv->entry[offset][offset2], &Jv->entry[offset][offset2], v);
-//	neg_d(&Jv->entry[offset][offset2], &Jv->entry[offset][offset2]); //  -(v)*proj_top / y2[0]
+	offset_horizontal = BED->num_mid_vars+BED->num_bottom_vars;
+	div_d(&Jv->entry[offset][offset_horizontal], proj_top, &curr_top_vars->coord[0]);
+	mul_d(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal], v);
+//	neg_d(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal]); //  -(v)*proj_top / y2[0]
 	for (int ii=1; ii<BED->num_mid_vars; ii++)
 	{
-		mul_d(&Jv->entry[offset][ii+offset2], v, &BED->pi[1]->coord[ii]); 
-		neg_d(&Jv->entry[offset][ii+offset2], &Jv->entry[offset][ii+offset2]);
-		div_d(&Jv->entry[offset][ii+offset2], &Jv->entry[offset][ii+offset2], &curr_top_vars->coord[0]);
+		mul_d(&Jv->entry[offset][ii+offset_horizontal], v, &BED->pi[1]->coord[ii]); 
+		neg_d(&Jv->entry[offset][ii+offset_horizontal], &Jv->entry[offset][ii+offset_horizontal]);
+		div_d(&Jv->entry[offset][ii+offset_horizontal], &Jv->entry[offset][ii+offset_horizontal], &curr_top_vars->coord[0]);
 	}
 	
 	
@@ -1113,8 +1242,11 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
 	comp_mp one_minus_s, gamma_s;  init_mp(one_minus_s); init_mp(gamma_s);
 	vec_mp curr_mid_vars; init_vec_mp(curr_mid_vars, BED->num_mid_vars);
-	vec_mp curr_bottom_vars; init_vec_mp(curr_bottom_vars, BED->num_crit_vars);
-	vec_mp curr_top_vars; init_vec_mp(curr_top_vars, BED->num_crit_vars);
+	vec_mp curr_bottom_vars; init_vec_mp(curr_bottom_vars, BED->num_bottom_vars);
+	curr_bottom_vars->size = BED->num_bottom_vars;
+	vec_mp curr_top_vars; init_vec_mp(curr_top_vars, BED->num_top_vars);
+	curr_top_vars->size = BED->num_top_vars;
+	
 	//create the variables to hold temp output
 	vec_mp patchValues; init_vec_mp(patchValues, 0);
 	vec_mp temp_function_values; init_vec_mp(temp_function_values,0);
@@ -1162,15 +1294,15 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 
 	offset = BED->num_mid_vars;// y0
 	
-	curr_bottom_vars->size = BED->num_crit_vars;
-	for (ii=0; ii<BED->num_crit_vars; ii++)
+	curr_bottom_vars->size = BED->num_bottom_vars;
+	for (ii=0; ii<BED->num_bottom_vars; ii++)
 		set_mp(&curr_bottom_vars->coord[ii], &current_variable_values->coord[ii+offset]);
 	
 	
-	offset = BED->num_mid_vars + BED->num_crit_vars; // y2
+	offset = BED->num_mid_vars + BED->num_bottom_vars; // y2
 	 
-	curr_top_vars->size = BED->num_crit_vars;
-	for (ii=0; ii<BED->num_crit_vars; ii++)
+	curr_top_vars->size = BED->num_top_vars;
+	for (ii=0; ii<BED->num_top_vars; ii++)
 		set_mp(&curr_top_vars->coord[ii], &current_variable_values->coord[ii+offset]);
 	
 	
@@ -1231,7 +1363,7 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	BED->mid_memory.set_globals_to_this();
 	
 	evalProg_mp(temp_function_values, parVals, parDer,
-						 temp_jacobian_functions, unused_Jp, curr_mid_vars, pathVars, BED->SLP_face);
+						 temp_jacobian_functions, unused_Jp, curr_mid_vars, pathVars, BED->SLP_mid);
 	
 	
 	
@@ -1250,60 +1382,56 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
 	
 	
-	BED->crit_memory.set_globals_to_this();
-	
+	BED->bottom_memory.set_globals_to_this();
 	
 	offset = BED->randomizer_matrix->rows; //y0
-	int offset2 = BED->num_mid_vars;
+	int offset_horizontal = BED->num_mid_vars;
 	evalProg_mp(temp_function_values, parVals, parDer,
-						 temp_jacobian_functions, unused_Jp, curr_bottom_vars, pathVars, BED->SLP_crit);
+						 temp_jacobian_functions, unused_Jp, curr_bottom_vars, pathVars, BED->SLP_bottom);
 	
-	//	std::cout << offset << " " << offset2 << std::endl;
+	//	std::cout << offset << " " << offset_horizontal << std::endl;
 	// randomize
-	mul_mat_vec_mp(AtimesF,BED->randomizer_matrix_crit, temp_function_values); // set values of AtimesF (A is randomization matrix)
+	mul_mat_vec_mp(AtimesF,BED->randomizer_matrix_bottom, temp_function_values); // set values of AtimesF (A is randomization matrix)
 	for (ii=0; ii<AtimesF->size; ii++)  // for each function, after (real) randomization
 		set_mp(&funcVals->coord[ii+offset], &AtimesF->coord[ii]);
 	
 	
-	mat_mul_mp(AtimesJ,BED->randomizer_matrix_crit,temp_jacobian_functions);
+	mat_mul_mp(AtimesJ,BED->randomizer_matrix_bottom,temp_jacobian_functions);
 	//	print_matrix_to_screen_matlab(AtimesJ,"AtimesJy2");
 	for (ii=0; ii< AtimesJ->rows; ii++)
 		for (jj=0; jj< AtimesJ->cols; jj++)
-			set_mp(&Jv->entry[ii+offset][jj+offset2],&AtimesJ->entry[ii][jj]);
+			set_mp(&Jv->entry[ii+offset][jj+offset_horizontal],&AtimesJ->entry[ii][jj]);
 	
 	
 	
 	
 	
-	offset = BED->randomizer_matrix->rows + BED->randomizer_matrix_crit->rows; // y2
+	offset = BED->randomizer_matrix->rows + BED->randomizer_matrix_bottom->rows; // y2
+	offset_horizontal = BED->num_mid_vars + BED->num_bottom_vars;
 	
-	
-	offset2 = BED->num_mid_vars + BED->num_crit_vars;
-	
-	//		std::cout << offset << " " << offset2 << std::endl;
+	BED->top_memory.set_globals_to_this();
+
 	
 	evalProg_mp(temp_function_values, parVals, parDer,
-						 temp_jacobian_functions, unused_Jp, curr_top_vars, pathVars, BED->SLP_crit);
-	//	print_matrix_to_screen_matlab(temp_jacobian_functions, "Jv_crit_1");
-	//	print_matrix_to_screen_matlab(BED->randomizer_matrix_crit, "crit_rand");
-	//	print_point_to_screen_matlab(temp_function_values, "f_temp");
+						 temp_jacobian_functions, unused_Jp, curr_top_vars, pathVars, BED->SLP_top);
+
+	
 	// randomize
-	mul_mat_vec_mp(AtimesF,BED->randomizer_matrix_crit, temp_function_values); // set values of AtimesF (A is randomization matrix)
+	mul_mat_vec_mp(AtimesF,BED->randomizer_matrix_top, temp_function_values); // set values of AtimesF (A is randomization matrix)
 	for (ii=0; ii<AtimesF->size; ii++)  // for each function, after (real) randomization
 		set_mp(&funcVals->coord[ii+offset], &AtimesF->coord[ii]);
+	
 	// the jacobian equations for orig
 	//  randomize the original functions and jacobian
-	mat_mul_mp(AtimesJ,BED->randomizer_matrix_crit,temp_jacobian_functions);
-	
-	//	print_matrix_to_screen_matlab(AtimesJ,"AtimesJy0");
+	mat_mul_mp(AtimesJ,BED->randomizer_matrix_top,temp_jacobian_functions);
 	for (ii=0; ii< AtimesJ->rows; ii++)
 		for (jj=0; jj< AtimesJ->cols; jj++)
-			set_mp(&Jv->entry[ii+offset][jj+offset2],&AtimesJ->entry[ii][jj]);
+			set_mp(&Jv->entry[ii+offset][jj+offset_horizontal],&AtimesJ->entry[ii][jj]);
 	
 	
 	// done with evaluation, so set these to NULL to prevent accidental deletion of the data.
 	
-	BED->crit_memory.set_globals_null();
+	BED->top_memory.set_globals_null();
 	
 	
 	
@@ -1317,7 +1445,7 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
 	
 	
-	offset = BED->randomizer_matrix->rows + 2*(BED->randomizer_matrix_crit->rows);
+	offset = BED->randomizer_matrix->rows + BED->randomizer_matrix_bottom->rows + BED->randomizer_matrix_top->rows;
 	
 	projection_value_homogeneous_input(proj_mid, curr_mid_vars,BED->pi[0]);
 	projection_value_homogeneous_input(proj_top, curr_top_vars,BED->pi[0]);
@@ -1352,26 +1480,26 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
 	
 	// d/dx
-	offset2 = 0;
-	div_mp(&Jv->entry[offset][offset2], proj_mid, &curr_mid_vars->coord[0]);
-	neg_mp(&Jv->entry[offset][offset2], &Jv->entry[offset][offset2]); //  -*proj_mid / x[0]
+	offset_horizontal = 0;
+	div_mp(&Jv->entry[offset][offset_horizontal], proj_mid, &curr_mid_vars->coord[0]);
+	neg_mp(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal]); //  -*proj_mid / x[0]
 	for (int ii=1; ii<BED->num_mid_vars; ii++){  // mid
 		div_mp(&Jv->entry[offset][ii], &BED->pi[0]->coord[ii], &curr_mid_vars->coord[0]);
 	}
 	
 	
-	offset2 = BED->num_mid_vars; // y2
-	div_mp(&Jv->entry[offset+1][offset2], proj_bottom, &curr_bottom_vars->coord[0]);
-	neg_mp(&Jv->entry[offset+1][offset2], &Jv->entry[offset+1][offset2]); //  -*proj_bottom / y0[0]
+	offset_horizontal = BED->num_mid_vars; // y2
+	div_mp(&Jv->entry[offset+1][offset_horizontal], proj_bottom, &curr_bottom_vars->coord[0]);
+	neg_mp(&Jv->entry[offset+1][offset_horizontal], &Jv->entry[offset+1][offset_horizontal]); //  -*proj_bottom / y0[0]
 	for (int ii=1; ii<BED->num_mid_vars; ii++){
-		div_mp(&Jv->entry[offset+1][offset2+ii], &BED->pi[0]->coord[ii], &curr_bottom_vars->coord[0]);
+		div_mp(&Jv->entry[offset+1][offset_horizontal+ii], &BED->pi[0]->coord[ii], &curr_bottom_vars->coord[0]);
 	}
 	
-	offset2 = BED->num_mid_vars + BED->num_crit_vars; // y2
-	div_mp(&Jv->entry[offset+2][offset2], proj_top, &curr_top_vars->coord[0]);
-	neg_mp(&Jv->entry[offset+2][offset2], &Jv->entry[offset+2][offset2]); //  -*proj_mid / y2[0]
+	offset_horizontal = BED->num_mid_vars + BED->num_bottom_vars; // y2
+	div_mp(&Jv->entry[offset+2][offset_horizontal], proj_top, &curr_top_vars->coord[0]);
+	neg_mp(&Jv->entry[offset+2][offset_horizontal], &Jv->entry[offset+2][offset_horizontal]); //  -*proj_mid / y2[0]
 	for (int ii=1; ii<BED->num_mid_vars; ii++){
-		div_mp(&Jv->entry[offset+2][offset2+ii], &BED->pi[0]->coord[ii], &curr_top_vars->coord[0]);
+		div_mp(&Jv->entry[offset+2][offset_horizontal+ii], &BED->pi[0]->coord[ii], &curr_top_vars->coord[0]);
 	}
 	
 	
@@ -1400,37 +1528,37 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	//Jv for the last equation
 	// midpoint
 	
-	offset2 = 0;
-	div_mp(&Jv->entry[offset][offset2], proj_mid, &curr_mid_vars->coord[0]);
-	neg_mp(&Jv->entry[offset][offset2], &Jv->entry[offset][offset2]); //  -*proj_mid / x0[0]
+	offset_horizontal = 0;
+	div_mp(&Jv->entry[offset][offset_horizontal], proj_mid, &curr_mid_vars->coord[0]);
+	neg_mp(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal]); //  -*proj_mid / x0[0]
 	for (int ii=1; ii<BED->num_mid_vars; ii++){
 		div_mp(&Jv->entry[offset][ii], &BED->pi[1]->coord[ii], &curr_mid_vars->coord[0]);
 	}
 	
 	
 	// y0
-	offset2 = BED->num_mid_vars;
-	div_mp(&Jv->entry[offset][offset2], proj_bottom, &curr_bottom_vars->coord[0]);
-	mul_mp(&Jv->entry[offset][offset2], &Jv->entry[offset][offset2], one_minus_v);
-//	neg_mp(&Jv->entry[offset][offset2], &Jv->entry[offset][offset2]); //  -(1-v)*proj_bottom / y0[0]
+	offset_horizontal = BED->num_mid_vars;
+	div_mp(&Jv->entry[offset][offset_horizontal], proj_bottom, &curr_bottom_vars->coord[0]);
+	mul_mp(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal], one_minus_v);
+//	neg_mp(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal]); //  -(1-v)*proj_bottom / y0[0]
 	for (int ii=1; ii<BED->num_mid_vars; ii++) // only go this far, because all remaining entries are 0
 	{
-		mul_mp(&Jv->entry[offset][ii+offset2], one_minus_v, &BED->pi[1]->coord[ii]);
-		neg_mp(&Jv->entry[offset][ii+offset2], &Jv->entry[offset][ii+offset2]);
-		div_mp(&Jv->entry[offset][ii+offset2], &Jv->entry[offset][ii+offset2], &curr_bottom_vars->coord[0]);
+		mul_mp(&Jv->entry[offset][ii+offset_horizontal], one_minus_v, &BED->pi[1]->coord[ii]);
+		neg_mp(&Jv->entry[offset][ii+offset_horizontal], &Jv->entry[offset][ii+offset_horizontal]);
+		div_mp(&Jv->entry[offset][ii+offset_horizontal], &Jv->entry[offset][ii+offset_horizontal], &curr_bottom_vars->coord[0]);
 	}
 	
 	
 	// y2
-	offset2 = BED->num_mid_vars+BED->num_crit_vars;
-	div_mp(&Jv->entry[offset][offset2], proj_top, &curr_top_vars->coord[0]);
-	mul_mp(&Jv->entry[offset][offset2], &Jv->entry[offset][offset2], v);
-//	neg_mp(&Jv->entry[offset][offset2], &Jv->entry[offset][offset2]); //  -(v)*proj_top / y2[0]
+	offset_horizontal = BED->num_mid_vars+BED->num_bottom_vars;
+	div_mp(&Jv->entry[offset][offset_horizontal], proj_top, &curr_top_vars->coord[0]);
+	mul_mp(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal], v);
+//	neg_mp(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal]); //  -(v)*proj_top / y2[0]
 	for (int ii=1; ii<BED->num_mid_vars; ii++)
 	{
-		mul_mp(&Jv->entry[offset][ii+offset2], v, &BED->pi[1]->coord[ii]);
-		neg_mp(&Jv->entry[offset][ii+offset2], &Jv->entry[offset][ii+offset2]);
-		div_mp(&Jv->entry[offset][ii+offset2], &Jv->entry[offset][ii+offset2], &curr_top_vars->coord[0]);
+		mul_mp(&Jv->entry[offset][ii+offset_horizontal], v, &BED->pi[1]->coord[ii]);
+		neg_mp(&Jv->entry[offset][ii+offset_horizontal], &Jv->entry[offset][ii+offset_horizontal]);
+		div_mp(&Jv->entry[offset][ii+offset_horizontal], &Jv->entry[offset][ii+offset_horizontal], &curr_top_vars->coord[0]);
 	}
 	
 	
@@ -1482,9 +1610,7 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
   set_mp(&parVals->coord[0], pathVars); // s = t
   set_one_mp(&parDer->coord[0]);       // ds/dt = 1
 	
-//	print_comp_matlab(pathVars,"t");
-//	print_point_to_screen_matlab(current_variable_values,"curr_vars");
-//	print_point_to_screen_matlab(funcVals,"F_mp");
+
 	
 	if ( (BED->verbose_level==14) || (BED->verbose_level == -14)) {
 		std::cout << color::blue();
@@ -1673,9 +1799,9 @@ int change_midpoint_eval_prec(void const *ED, int new_prec)
 	midpoint_eval_data_mp *BED = (midpoint_eval_data_mp *)ED; // to avoid having to cast every time
 	
 
-	BED->SLP_face->precision = new_prec;
-	BED->SLP_crit->precision = new_prec;
-	
+	BED->SLP_mid->precision = new_prec;
+	BED->SLP_bottom->precision = new_prec;
+	BED->SLP_top->precision = new_prec;
 	
 	changePatchPrec_mp(new_prec, &BED->patch);
 	
@@ -1703,9 +1829,13 @@ int change_midpoint_eval_prec(void const *ED, int new_prec)
 		change_prec_mat_mp(BED->randomizer_matrix,new_prec);
 		mat_cp_mp(BED->randomizer_matrix,BED->randomizer_matrix_full_prec);
 		
-		change_prec_mat_mp(BED->randomizer_matrix_crit,new_prec);
-		mat_cp_mp(BED->randomizer_matrix_crit,BED->randomizer_matrix_crit_full_prec);
+		change_prec_mat_mp(BED->randomizer_matrix_bottom,new_prec);
+		mat_cp_mp(BED->randomizer_matrix_bottom,BED->randomizer_matrix_bottom_full_prec);
 				
+		change_prec_mat_mp(BED->randomizer_matrix_top,new_prec);
+		mat_cp_mp(BED->randomizer_matrix_top,BED->randomizer_matrix_top_full_prec);
+		
+		
 		for (int ii=0; ii<BED->num_projections; ii++) {
 			change_prec_vec_mp(BED->pi[ii],new_prec);
 			vec_cp_mp(BED->pi[ii],BED->pi_full_prec[ii]);
@@ -1770,11 +1900,11 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 	vec_d curr_mid_vars; init_vec_d(curr_mid_vars, BED->num_mid_vars);
 	curr_mid_vars->size = BED->num_mid_vars;
 	
-	vec_d curr_bottom_vars; init_vec_d(curr_bottom_vars, BED->num_crit_vars);
-	curr_bottom_vars->size = BED->num_crit_vars;
+	vec_d curr_bottom_vars; init_vec_d(curr_bottom_vars, BED->num_bottom_vars);
+	curr_bottom_vars->size = BED->num_bottom_vars;
 	
-	vec_d curr_top_vars; init_vec_d(curr_top_vars, BED->num_crit_vars);
-	curr_top_vars->size = BED->num_crit_vars;
+	vec_d curr_top_vars; init_vec_d(curr_top_vars, BED->num_top_vars);
+	curr_top_vars->size = BED->num_top_vars;
 	
 	vec_d temp_function_values; init_vec_d(temp_function_values,1);
 	temp_function_values->size = 1;
@@ -1795,11 +1925,11 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 	for (ii=0; ii<BED->num_mid_vars; ii++)
 		set_d(&curr_mid_vars->coord[ii], &terminal_pt->coord[ii]);
 	
-	for (ii=0; ii<BED->num_crit_vars; ii++)
+	for (ii=0; ii<BED->num_bottom_vars; ii++)
 		set_d(&curr_bottom_vars->coord[ii], &terminal_pt->coord[ii+BED->num_mid_vars]);
 	
-	for (ii=0; ii<BED->num_crit_vars; ii++)
-		set_d(&curr_top_vars->coord[ii], &terminal_pt->coord[ii+BED->num_mid_vars+BED->num_crit_vars]);
+	for (ii=0; ii<BED->num_top_vars; ii++)
+		set_d(&curr_top_vars->coord[ii], &terminal_pt->coord[ii+BED->num_mid_vars+BED->num_bottom_vars]);
 	
 	
 	// the main evaluations for $x$
@@ -1809,7 +1939,7 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 	
 	// for midpoint functions
 	offset = 0;
-	evalProg_d(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_mid_vars, EG->PD_d.time, BED->SLP_face);
+	evalProg_d(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_mid_vars, EG->PD_d.time, BED->SLP_mid);
 	
 	//resize output variables to correct size
 	increase_size_vec_d(f_terminal,temp_function_values->size);
@@ -1819,13 +1949,11 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 		set_d(&f_terminal->coord[ii], &temp_function_values->coord[ii]);
 	
 	
-	BED->crit_memory.set_globals_to_this();
+	BED->bottom_memory.set_globals_to_this();
 	
-	
-
 	
 	offset += temp_function_values->size; //y0
-	evalProg_d(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_bottom_vars, EG->PD_d.time, BED->SLP_crit);
+	evalProg_d(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_bottom_vars, EG->PD_d.time, BED->SLP_bottom);
 	
 	//resize output variables to correct size
 	increase_size_vec_d(f_terminal,f_terminal->size + temp_function_values->size);
@@ -1835,10 +1963,10 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 		set_d(&f_terminal->coord[ii+offset], &temp_function_values->coord[ii]);
 	
 	
-	
+	BED->top_memory.set_globals_to_this();
 	
 	offset += temp_function_values->size; //y2
-	evalProg_d(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_top_vars, EG->PD_d.time, BED->SLP_crit);
+	evalProg_d(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_top_vars, EG->PD_d.time, BED->SLP_top);
 	
 	//resize output variables to correct size
 	increase_size_vec_d(f_terminal,f_terminal->size + temp_function_values->size);
@@ -1860,11 +1988,11 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 	for (ii=0; ii<BED->num_mid_vars; ii++)
 		set_d(&curr_mid_vars->coord[ii], &prev_pt->coord[ii]);
 	
-	for (ii=0; ii<BED->num_crit_vars; ii++)
+	for (ii=0; ii<BED->num_bottom_vars; ii++)
 		set_d(&curr_bottom_vars->coord[ii], &prev_pt->coord[ii+BED->num_mid_vars]);
 	
-	for (ii=0; ii<BED->num_crit_vars; ii++)
-		set_d(&curr_top_vars->coord[ii], &prev_pt->coord[ii+BED->num_mid_vars+BED->num_crit_vars]);
+	for (ii=0; ii<BED->num_top_vars; ii++)
+		set_d(&curr_top_vars->coord[ii], &prev_pt->coord[ii+BED->num_mid_vars+BED->num_bottom_vars]);
 	
 	
 	// the main evaluations for $x$
@@ -1874,7 +2002,7 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 	
 	// for midpoint functions
 	offset = 0;
-	evalProg_d(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_mid_vars, EG->PD_d.time, BED->SLP_face);
+	evalProg_d(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_mid_vars, EG->PD_d.time, BED->SLP_mid);
 	
 	//resize output variables to correct size
 	increase_size_vec_d(f_prev,temp_function_values->size);
@@ -1884,11 +2012,11 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 		set_d(&f_prev->coord[ii], &temp_function_values->coord[ii]);
 	
 	
-	BED->crit_memory.set_globals_to_this();
+	BED->bottom_memory.set_globals_to_this();
 	
 	
 	offset += temp_function_values->size; //y0
-	evalProg_d(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_bottom_vars, EG->PD_d.time, BED->SLP_crit);
+	evalProg_d(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_bottom_vars, EG->PD_d.time, BED->SLP_bottom);
 	increase_size_vec_d(f_prev, f_prev->size + temp_function_values->size);
 	f_prev->size = f_prev->size + temp_function_values->size;
 
@@ -1896,9 +2024,10 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 		set_d(&f_prev->coord[ii+offset], &temp_function_values->coord[ii]);
 	
 	
+	BED->top_memory.set_globals_to_this();
 	
 	offset += temp_function_values->size; //y2
-	evalProg_d(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_top_vars, EG->PD_d.time, BED->SLP_crit);
+	evalProg_d(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_top_vars, EG->PD_d.time, BED->SLP_top);
 	
 	increase_size_vec_d(f_prev, f_prev->size + temp_function_values->size);
 	f_prev->size = f_prev->size + temp_function_values->size;
@@ -1907,7 +2036,7 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 		set_d(&f_prev->coord[ii+offset], &temp_function_values->coord[ii]);
 
 
-	BED->crit_memory.set_globals_null();
+	BED->top_memory.set_globals_null();
 	
 	
 	
@@ -2011,11 +2140,11 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	vec_mp curr_mid_vars; init_vec_mp(curr_mid_vars, BED->num_mid_vars);
 	curr_mid_vars->size = BED->num_mid_vars;
 	
-	vec_mp curr_bottom_vars; init_vec_mp(curr_bottom_vars, BED->num_crit_vars);
-	curr_bottom_vars->size = BED->num_crit_vars;
+	vec_mp curr_bottom_vars; init_vec_mp(curr_bottom_vars, BED->num_bottom_vars);
+	curr_bottom_vars->size = BED->num_bottom_vars;
 	
-	vec_mp curr_top_vars; init_vec_mp(curr_top_vars, BED->num_crit_vars);
-	curr_top_vars->size = BED->num_crit_vars;
+	vec_mp curr_top_vars; init_vec_mp(curr_top_vars, BED->num_top_vars);
+	curr_top_vars->size = BED->num_top_vars;
 	
 	vec_mp temp_function_values; init_vec_mp(temp_function_values,1);
 	temp_function_values->size = 1;
@@ -2031,11 +2160,11 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	for (ii=0; ii<BED->num_mid_vars; ii++)
 		set_mp(&curr_mid_vars->coord[ii], &terminal_pt->coord[ii]);
 	
-	for (ii=0; ii<BED->num_crit_vars; ii++)
+	for (ii=0; ii<BED->num_bottom_vars; ii++)
 		set_mp(&curr_bottom_vars->coord[ii], &terminal_pt->coord[ii+BED->num_mid_vars]);
 	
-	for (ii=0; ii<BED->num_crit_vars; ii++)
-		set_mp(&curr_top_vars->coord[ii], &terminal_pt->coord[ii+BED->num_mid_vars+BED->num_crit_vars]);
+	for (ii=0; ii<BED->num_top_vars; ii++)
+		set_mp(&curr_top_vars->coord[ii], &terminal_pt->coord[ii+BED->num_mid_vars+BED->num_bottom_vars]);
 	
 	
 	// the main evaluations for $x$
@@ -2043,9 +2172,11 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	BED->mid_memory.set_globals_to_this();
 	
 	
+	
+														
 	// for midpoint functions
 	offset = 0;
-	evalProg_mp(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_mid_vars, EG->PD_mp.time, BED->SLP_face);
+	evalProg_mp(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_mid_vars, EG->PD_mp.time, BED->SLP_mid);
 	
 	//resize output variables to correct size
 	increase_size_vec_mp(f_terminal,temp_function_values->size);
@@ -2055,13 +2186,10 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 		set_mp(&f_terminal->coord[ii], &temp_function_values->coord[ii]);
 	
 	
-	BED->crit_memory.set_globals_to_this();
-	
-	
-	
+	BED->bottom_memory.set_globals_to_this();
 	
 	offset += temp_function_values->size; //y0
-	evalProg_mp(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_bottom_vars, EG->PD_mp.time, BED->SLP_crit);
+	evalProg_mp(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_bottom_vars, EG->PD_mp.time, BED->SLP_bottom);
 	
 	//resize output variables to correct size
 	increase_size_vec_mp(f_terminal,f_terminal->size + temp_function_values->size);
@@ -2072,9 +2200,10 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	
 	
 	
-	
+	BED->top_memory.set_globals_to_this();
+														
 	offset += temp_function_values->size; //y2
-	evalProg_mp(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_top_vars, EG->PD_mp.time, BED->SLP_crit);
+	evalProg_mp(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_top_vars, EG->PD_mp.time, BED->SLP_top);
 	
 	//resize output variables to correct size
 	increase_size_vec_mp(f_terminal,f_terminal->size + temp_function_values->size);
@@ -2092,19 +2221,22 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	else{
 		vec_cp_mp(prev_pt,EG->last_approx_mp);
 	}
-//	print_point_to_screen_matlab(EG->last_approx_d,"EG->last_approx_d");
-//	print_point_to_screen_matlab(EG->last_approx_mp,"EG->last_approx_mp");
-//	print_point_to_screen_matlab(prev_pt,"prev_pt");
-//	print_point_to_screen_matlab(curr_mid_vars,"curr_mid_vars");
+
+														
+														
+														
+											
+														
+														
 	
 	for (ii=0; ii<BED->num_mid_vars; ii++)
 		set_mp(&curr_mid_vars->coord[ii], &prev_pt->coord[ii]);
 	
-	for (ii=0; ii<BED->num_crit_vars; ii++)
+	for (ii=0; ii<BED->num_bottom_vars; ii++)
 		set_mp(&curr_bottom_vars->coord[ii], &prev_pt->coord[ii+BED->num_mid_vars]);
 	
-	for (ii=0; ii<BED->num_crit_vars; ii++)
-		set_mp(&curr_top_vars->coord[ii], &prev_pt->coord[ii+BED->num_mid_vars+BED->num_crit_vars]);
+	for (ii=0; ii<BED->num_top_vars; ii++)
+		set_mp(&curr_top_vars->coord[ii], &prev_pt->coord[ii+BED->num_mid_vars+BED->num_bottom_vars]);
 	
 	
 	// the main evaluations for $x$
@@ -2114,7 +2246,7 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	
 	// for midpoint functions
 	offset = 0;
-	evalProg_mp(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_mid_vars, EG->PD_mp.time, BED->SLP_face);
+	evalProg_mp(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_mid_vars, EG->PD_mp.time, BED->SLP_mid);
 	
 	//resize output variables to correct size
 	increase_size_vec_mp(f_prev,temp_function_values->size);
@@ -2124,21 +2256,24 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 		set_mp(&f_prev->coord[ii], &temp_function_values->coord[ii]);
 	
 	
-	BED->crit_memory.set_globals_to_this();
+	BED->bottom_memory.set_globals_to_this();
 	
 	
 	offset += temp_function_values->size; //y0
-	evalProg_mp(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_bottom_vars, EG->PD_mp.time, BED->SLP_crit);
+	evalProg_mp(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_bottom_vars, EG->PD_mp.time, BED->SLP_bottom);
 	increase_size_vec_mp(f_prev, f_prev->size + temp_function_values->size);
 	f_prev->size = f_prev->size + temp_function_values->size;
 	
 	for (ii=0; ii<temp_function_values->size; ii++)
 		set_mp(&f_prev->coord[ii+offset], &temp_function_values->coord[ii]);
 	
+														
+														
+	BED->top_memory.set_globals_to_this();
 	
 	
 	offset += temp_function_values->size; //y2
-	evalProg_mp(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_top_vars, EG->PD_mp.time, BED->SLP_crit);
+	evalProg_mp(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_top_vars, EG->PD_mp.time, BED->SLP_top);
 	
 	increase_size_vec_mp(f_prev, f_prev->size + temp_function_values->size);
 	f_prev->size = f_prev->size + temp_function_values->size;
@@ -2147,7 +2282,7 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 		set_mp(&f_prev->coord[ii+offset], &temp_function_values->coord[ii]);
 	
 	
-	BED->crit_memory.set_globals_null();
+	BED->top_memory.set_globals_null();
 
 	
 	

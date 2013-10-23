@@ -34,7 +34,7 @@
 #include "isosingular.hpp"
 #include "programConfiguration.hpp"
 
-
+#include "solver_sphere.hpp"
 
 
 
@@ -56,6 +56,9 @@ public:
 	
 	comp_mp left_crit_val; ///<
 	comp_mp right_crit_val; ///<
+	
+	int system_type_top;
+	int system_type_bottom;
 	
 	int index; ///< which midpoint this face came from.
 	
@@ -84,6 +87,9 @@ public:
 	
 	void init()
 	{
+		system_type_top = UNSET;
+		system_type_bottom = UNSET;
+		
 		
 		init_mp2(left_crit_val,1024);
 		init_mp2(right_crit_val,1024);
@@ -97,6 +103,10 @@ public:
 	void copy(const face & other)
 	{
 		cell::copy(other);
+		
+		this->system_type_bottom = other.system_type_bottom;
+		this->system_type_top = other.system_type_top;
+		
 		
 		this->index = other.index;
 		
@@ -145,31 +155,10 @@ public:
 	curve_decomposition crit_curve;
 	curve_decomposition sphere_curve;
 	
-	mpf_t sphere_diameter;
-	bool have_sphere_diameter;
+
 	
 	
-	surface_decomposition() : decomposition()
-	{
-		init();
-	}
-	
-	surface_decomposition & operator=(const surface_decomposition& other){
-		init();
-		copy(other);
-		return *this;
-	}
-	
-	surface_decomposition(const surface_decomposition & other){
-		init();
-		copy(other);
-	}
-	
-	
-	~surface_decomposition()
-	{
-		mpf_clear(sphere_diameter);
-	}
+
 	
 	
 	void print(boost::filesystem::path base);
@@ -177,30 +166,9 @@ public:
 	void print_faces(boost::filesystem::path outputfile);
 	
 	
-	void init()
-	{
-		decomposition::init();
-		num_edges = 0;
-		num_faces = 0;
-		dimension = 2;
-		
-		mpf_init(sphere_diameter);
-	}
+
 	
-	void copy(const surface_decomposition & other)
-	{
-		decomposition::copy(other);
-		
-		this->faces = other.faces;
-		this->edges = other.edges;
-		
-		this->num_edges = other.num_edges;
-		this->num_faces = other.num_faces;
-		
-		this->mid_slices = other.mid_slices;
-		this->crit_slices = other.crit_slices;
-		this->crit_curve = other.crit_curve;
-	}
+
 	
 	void add_face(const face & F)
 	{
@@ -256,13 +224,81 @@ public:
 	
 	
 	
-	void compute_bounding_sphere(witness_set & W_surf,
-															vertex_set & V,
-															vec_mp *pi,
-															BR_configuration & program_options,
+	void compute_sphere_witness_set(const witness_set & W_surf,
+																	witness_set & W_intersection_sphere,//
+																	BR_configuration & program_options,//
+																	solver_configuration & solve_options);
+	
+	void compute_sphere_crit(const witness_set & W_intersection_sphere,
+													 witness_set & W_sphere_crit,
+													 BR_configuration & program_options,
+													 solver_configuration & solve_options);
+	
+
+	
+	void compute_bounding_sphere(const witness_set & W_intersection_sphere,
+															 const witness_set & W_total_crit,
+															 vertex_set & V,
+															 BR_configuration & program_options,
 															solver_configuration & solve_options);
 	
-	void compute_sphere_diameter(const witness_set & W_curve_crit_all);
+	
+	surface_decomposition() : decomposition()
+	{
+		this->init();
+	}
+	
+	surface_decomposition & operator=(const surface_decomposition& other){
+		this->init();
+		this->copy(other);
+		return *this;
+	}
+	
+	surface_decomposition(const surface_decomposition & other){
+		this->init();
+		this->copy(other);
+	}
+	
+	
+	~surface_decomposition()
+	{
+		this->clear();
+	}
+	
+	
+protected:
+	
+	
+	void copy(const surface_decomposition & other)
+	{
+		decomposition::copy(other);
+		
+		this->faces = other.faces;
+		this->edges = other.edges;
+		
+		this->num_edges = other.num_edges;
+		this->num_faces = other.num_faces;
+		
+		this->mid_slices = other.mid_slices;
+		this->crit_slices = other.crit_slices;
+		this->crit_curve = other.crit_curve;
+	}
+	
+	
+	void init()
+	{
+
+		num_edges = 0;
+		num_faces = 0;
+		dimension = 2;
+		
+		
+	}
+	
+	void clear()
+	{
+		
+	}
 };
 
 
@@ -278,7 +314,8 @@ void create_sliced_system(boost::filesystem::path input_file, boost::filesystem:
 
 
 void create_sphere_system(boost::filesystem::path input_file, boost::filesystem::path output_file,
-													mpf_t sphere_diameter,
+													comp_mp sphere_diameter,
+													vec_mp sphere_center,
 													const witness_set & W);
 
 

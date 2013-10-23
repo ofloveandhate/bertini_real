@@ -35,9 +35,8 @@
 #include "solver_lintolin.hpp"
 #include "solver_linprodtodetjac.hpp"
 #include "solver_detjactodetjac.hpp"
-//#include "solver_multilin_projection.hpp"
 #include "nullspace_left.hpp"
-
+#include "solver_sphere.hpp"
 
 /**
  a curve decomposition.
@@ -46,10 +45,19 @@
  */
 class curve_decomposition : public decomposition
 {
+	
+	
+	friend class surface_decomposition;
+	
 public:
 	
 	std::vector<edge> edges;
 	int      num_edges;
+	
+	
+	
+	
+	
 	
 	
 	
@@ -72,43 +80,14 @@ public:
 	
 	void print(boost::filesystem::path base);
 	
-	curve_decomposition() : decomposition()
-	{
-		init();
-	}
-	
-	curve_decomposition & operator=(const curve_decomposition& other){
-		init();
-		copy(other);
-		return *this;
-	}
-	
-	curve_decomposition(const curve_decomposition & other){
-		init();
-		copy(other);
-	}
-	
-	void clear()
-	{
-		decomposition::clear();
-		
-		edges.clear();
-		num_edges = 0;
-	}
-	
-	void init(){
-		decomposition::init();
-		num_edges = 0;
-		dimension = 1;
-	}
 	
 	
-	void copy(const curve_decomposition & other)
-	{
-		decomposition::copy(other);
-		this->edges = other.edges;
-		this->num_edges = other.num_edges;
-	}
+	
+	
+	
+
+	
+
 	
 	
 	
@@ -147,6 +126,26 @@ public:
 		
 		return -12;
 	}
+	
+	
+	int edge_w_removed(int ind)
+	{
+		
+		for (int ii=0; ii<num_edges; ii++){
+			
+			for (std::vector<int>::iterator iter=edges[ii].removed_points.begin();
+					 iter!=edges[ii].removed_points.end(); ++iter) {
+				if (*iter == ind){
+					return ii;
+				}
+			}
+			
+
+		}
+		
+		return -13;
+	}
+	
 	
 	std::pair<int,int> get_merge_candidate(const vertex_set & V);
 	
@@ -214,6 +213,86 @@ public:
 								 BR_configuration & program_options,
 								 solver_configuration & solve_options,
 								 vertex_set & V);
+	
+	
+	
+	
+	int compute_critical_points(const witness_set & W_curve,
+																		mat_mp randomizer_matrix,
+																		std::vector<int> randomized_degrees,
+																		vec_mp *pi,
+																		BR_configuration & program_options,
+																		solver_configuration & solve_options,
+																		witness_set & W_crit_real);
+
+
+	
+	
+	
+	
+	int get_additional_critpts(witness_set *W_crit_real,
+														 const witness_set & W,
+														 mat_mp randomizer_matrix,
+														 std::vector<int> randomized_degrees,
+														 BR_configuration & program_options,
+														 solver_configuration & solve_options);
+	
+	
+	
+	void reset()
+	{
+		this->clear();
+		this->init();
+		
+		decomposition::reset();
+	}
+	
+	curve_decomposition() : decomposition()
+	{
+		this->init();
+	}
+	
+	curve_decomposition & operator=(const curve_decomposition& other){
+		this->init();
+		this->copy(other);
+		return *this;
+	}
+	
+	curve_decomposition(const curve_decomposition & other){
+		this->init();
+		this->copy(other);
+	}
+	
+	~curve_decomposition()
+	{
+		this->clear();
+	}
+	
+	
+	
+	
+protected:
+	
+	void clear()
+	{
+		edges.clear();
+		num_edges = 0;
+	}
+	
+	void init(){
+
+		num_edges = 0;
+		dimension = 1;
+	}
+	
+	
+	void copy(const curve_decomposition & other)
+	{
+		decomposition::copy(other);
+		this->edges = other.edges;
+		this->num_edges = other.num_edges;
+	}
+	
 }; // end curve_decomposition
 
 
@@ -264,25 +343,7 @@ void 	diag_homotopy_start_file(boost::filesystem::path startFile,
 
 
 
-int curve_compute_critical_points(const witness_set & W_curve,
-																	mat_mp randomizer_matrix,
-																	std::vector<int> randomized_degrees,
-																	vec_mp *pi,
-																	BR_configuration & program_options,
-																	solver_configuration & solve_options,
-																	witness_set & W_crit_real);
-///**
-// the linprodtodetjac method for getting the critical points
-// */
-//int compute_crit_linprodtodetjac(witness_set *W_crit_real, // the returned value
-//																 const witness_set & W,
-//																 mat_mp n_minusone_randomizer_matrix,
-//																 vec_mp pi,
-//																 int num_new_linears,
-//																 BR_configuration & program_options,
-//																 solver_configuration & solve_options);
-//
-//
+
 
 
 int curve_get_additional_critpts(witness_set *W_crit_real,

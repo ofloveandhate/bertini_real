@@ -112,6 +112,7 @@ int main(int argC, char *args[])
 	//
 
 	
+
 	generate_new_sampling_pts(&S_new,
 														randomizer_matrix,
 														S_old,
@@ -383,7 +384,6 @@ void generate_new_sampling_pts(sample_data *S_new,
 					
 					
 					vec_cp_mp(temp_vertex.pt_mp,Wnew.pts_mp[0]);
-					set_mp(&temp_vertex.projection_values->coord[0],target_projection_value);
 					temp_vertex.type = SAMPLE_POINT;
 					
 
