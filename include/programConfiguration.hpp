@@ -231,12 +231,14 @@ public:
 	int stifle_membership_screen; //< boolean controlling whether stifle_text is empty or " > /dev/null"
 	std::string stifle_text; // std::string
 	
+	bool user_sphere;
 	int user_randomization; // bool
 	int user_projection; // bool
 	
 	int MPType;
 	
 	// all these char* should be boost::filesystem::path
+	boost::filesystem::path bounding_sphere_filename;
 	boost::filesystem::path projection_filename;
 	boost::filesystem::path randomization_filename;
 	boost::filesystem::path input_filename;
@@ -288,6 +290,9 @@ public:
 		
 		this->user_randomization = 0;
 		this->randomization_filename = "";
+		
+		user_sphere = false;
+		bounding_sphere_filename = "";
 		
 		this->input_filename = "input";
 		this->current_working_filename = this->input_filename;

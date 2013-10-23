@@ -323,6 +323,7 @@ public:
 	int num_steps; ///< the number of evaluations made using this evaluator
 	int verbose_level;  ///< how verbose to be
 	
+	bool randomizing;
 	
 	
 	int MPType; ///< the multiple precision type for solve
@@ -391,11 +392,11 @@ protected:
 	
 	void init()
 	{
+		randomizing = true;
 		
 		this->preproc_file = "preproc_data";
 		this->function_file = "func_input";
 		
-		this->MPType = 2;
 		SLP = NULL;
 		have_SLP = false;
 		

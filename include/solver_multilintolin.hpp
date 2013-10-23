@@ -213,6 +213,8 @@ public:
 	
 	// default initializer
 	multilintolin_eval_data_mp() : solver_mp(){
+		std::cout << "instantiating multilin eval d without declaring mp type"	 << std::endl;
+		mypause();
 		init();
 	}
 	
@@ -224,13 +226,14 @@ public:
 	
 	multilintolin_eval_data_mp(const multilintolin_eval_data_mp & other) : solver_mp(other)
 	{
+		this->MPType = other.MPType;
 		init();
 		copy(other);
 	}
 	
 	multilintolin_eval_data_mp & operator=(const multilintolin_eval_data_mp & other)
 	{
-		
+		this->MPType = other.MPType;
 		init();
 		copy(other);
 		return *this;
@@ -380,24 +383,29 @@ public:
 	
 	// default initializer
 	multilintolin_eval_data_d() : solver_d(){
+		std::cout << "instantiating multilin eval d without declaring mp type"	 << std::endl;
+		mypause();
 		init();
 	}
 	
 	multilintolin_eval_data_d(int mp) : solver_d(mp)
 	{
 		this->MPType = mp;
+		
 		init();
 	}
 	
 	
 	multilintolin_eval_data_d(const multilintolin_eval_data_d & other) : solver_d(other)
 	{
+		this->MPType = other.MPType;
 		init();
 		copy(other);
 	}
 	
 	multilintolin_eval_data_d & operator=(const multilintolin_eval_data_d & other)
 	{
+		this->MPType = other.MPType;
 		init();
 		copy(other);
 		return *this;
@@ -515,167 +523,6 @@ int change_multilintolin_eval_prec(void const *ED, int new_prec);
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//
-//
-//
-//
-///** the main function for finding critical conditions WRT a projection
-// */
-//int multilintolin_solver_main(int MPType,
-//															const witness_set & W,
-//															mat_mp randomizer_matrix_full_prec,
-//															vec_mp *new_linears_full_prec,
-//															witness_set *W_new,
-//															solver_configuration & solve_options);
-//
-//
-//
-//
-//int multilin_to_lin_solver_d(int MPType,
-//														 const witness_set & W,  // should include the old linear
-//														 mat_mp randomizer_matrix_full_prec,
-//														 vec_mp *new_linears_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
-//														 witness_set *W_new,
-//														 solver_configuration & solve_options);
-//
-//
-//
-//int multilin_to_lin_solver_mp(int MPType,
-//															const witness_set & W,  // includes the initial linear.
-//															mat_mp randomizer_matrix_full_prec,  // for randomizing down to N-1 equations.
-//															vec_mp *new_linears_full_prec,   // collection of random complex linears.  for setting up the regeneration for V(f\\g)
-//															witness_set *W_new,
-//															solver_configuration & solve_options);
-//
-
-
-
-void multilin_to_lin_track_d(trackingStats *trackCount,
-														 FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
-														 const witness_set & W,
-														 vec_mp *new_linears_full_prec,
-														 post_process_t *endPoints,
-														 FILE *FAIL,
-														 int pathMod,
-														 multilintolin_eval_data_d *ED_d, multilintolin_eval_data_mp *ED_mp,
-														 int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
-														 int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-														 int (*change_prec)(void const *, int),
-														 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),solver_configuration & solve_options);
-
-
-
-int multilin_to_lin_setup_d(FILE **OUT, boost::filesystem::path outName,
-														FILE **midOUT, boost::filesystem::path midName,
-														multilintolin_eval_data_d *ED,
-														prog_t *dummyProg,
-														int **startSub, int **endSub, int **startFunc, int **endFunc, int **startJvsub, int **endJvsub, int **startJv, int **endJv, int ***subFuncsBelow,
-														int (**eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
-														int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-														boost::filesystem::path preprocFile, boost::filesystem::path degreeFile,
-														int findStartPts, boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
-														mat_mp randomizer_matrix_full_prec,
-														const witness_set & W,
-														solver_configuration & solve_options);
-
-
-
-
-
-void multilintolin_eval_clear_d(multilintolin_eval_data_d *ED, int clearRegen, int MPType);
-
-
-
-
-void setupmultilintolinEval_d(tracker_config_t *T,
-															char preprocFile[], char degreeFile[],
-															prog_t *dummyProg,
-															multilintolin_eval_data_d *BED,
-															mat_mp randomizer_matrix_full_prec,
-															const witness_set & W,
-															solver_configuration & solve_options);
-
-
-
-void cp_multilintolin_eval_data_d(multilintolin_eval_data_d *BED, multilintolin_eval_data_d *BED_d_input, multilintolin_eval_data_mp *BED_mp_input, int MPType);
-
-
-
-
-
-
-void multilin_to_lin_track_mp(trackingStats *trackCount,
-															FILE *OUT, FILE *RAWOUT, FILE *MIDOUT,
-															const witness_set & W,
-															vec_mp *new_linears_full_prec,
-															post_process_t *endPoints,
-															FILE *FAIL,
-															int pathMod,
-															multilintolin_eval_data_mp *ED_d,
-															int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-															int (*change_prec)(void const *, int),
-															int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *),
-															solver_configuration & solve_options);
-
-
-
-
-int multilin_to_lin_setup_mp(FILE **OUT, boost::filesystem::path outName,
-														 FILE **midOUT, boost::filesystem::path midName,
-														 multilintolin_eval_data_mp *ED,
-														 prog_t *dummyProg,
-														 int **startSub, int **endSub, int **startFunc, int **endFunc, int **startJvsub, int **endJvsub, int **startJv, int **endJv, int ***subFuncsBelow,
-														 int (**eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
-														 int (**eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-														 boost::filesystem::path preprocFile, boost::filesystem::path degreeFile,
-														 int findStartPts,
-														 boost::filesystem::path pointsIN, boost::filesystem::path pointsOUT,
-														 mat_mp randomizer_matrix_full_prec,
-														 const witness_set & W,
-														 solver_configuration & solve_options);
-
-
-
-void multilintolin_eval_clear_mp(multilintolin_eval_data_mp *ED, int clearRegen, int MPType);
-
-
-void setupmultilintolinEval_mp(char preprocFile[], char degreeFile[], prog_t *dummyProg,
-															 int squareSize, int patchType, int ssType, int prec,
-															 void const *ptr1, void const *ptr2, void const *ptr3, void const *ptr4,
-															 multilintolin_eval_data_mp *BED, int adjustDegrees,
-															 mat_mp randomizer_matrix_full_prec,
-															 const witness_set & W,
-															 solver_configuration & solve_options);
 
 #endif
 

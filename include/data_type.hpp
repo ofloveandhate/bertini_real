@@ -30,7 +30,7 @@
 #include "boost/filesystem.hpp"
 #include "fileops.hpp"
 
-#define SAMEPOINTTOL 1e-3
+#define SAMEPOINTTOL 1e-2
 
 class BR_configuration; // a forward declaration
 
@@ -39,14 +39,15 @@ class BR_configuration; // a forward declaration
 enum {SUCCESSFUL=0, CRITICAL_FAILURE=-10, TOLERABLE_FAILURE=-1};
 
 
+enum {SYSTEM_CRIT = -1600, SYSTEM_SPHERE};
 
 //The following lets us use words instead of numbers to indicate vertex type.
-enum {UNSET= 100, CRITICAL, SEMICRITICAL, MIDPOINT, ISOLATED, NEW, SAMPLE_POINT};
+enum {UNSET= 100, CRITICAL, SEMICRITICAL, MIDPOINT, ISOLATED, NEW, SAMPLE_POINT, REMOVED};
 
 
 
 // enum for worker mode choice
-enum {NULLSPACE = 3000, LINPRODTODETJAC, DETJACTODETJAC, LINTOLIN, MULTILIN, MIDPOINT_SOLVER};
+enum {NULLSPACE = 3000, LINPRODTODETJAC, DETJACTODETJAC, LINTOLIN, MULTILIN, MIDPOINT_SOLVER, SPHERE_SOLVER};
 
 enum {TERMINATE = 2000, INITIAL_STATE};
 
@@ -58,7 +59,7 @@ enum {VEC_MP = 4000, VEC_D, MAT_MP, MAT_D, COMP_MP, COMP_D, INDICES};
 
 std::string enum_lookup(int flag);
 
-void * br_malloc(size_t size);
+void *br_malloc(size_t size);
 
 void *br_realloc(void *ptr, size_t size);
 
@@ -304,7 +305,7 @@ public:
 	void only_first_vars(int num_vars);
 	void sort_for_real(tracker_config_t T);
 	void sort_for_unique(tracker_config_t T);
-	
+	void sort_for_inside_sphere(comp_mp radius, vec_mp center);
 	
 	int  witnessSetParse(const boost::filesystem::path witness_set_file, const int num_vars);
 	
@@ -471,7 +472,7 @@ public:
 	vertex & operator=(const vertex & other)
 	{
 		init();
-			copy(other);
+		copy(other);
 		return *this;
 	}
 	
@@ -484,7 +485,7 @@ public:
 	void print()
 	{
 		print_point_to_screen_matlab(pt_mp,"point");
-		print_point_to_screen_matlab(projection_values,"projVal");
+		print_point_to_screen_matlab(projection_values,"projection_values");
 		std::cout << "type: " << type << std::endl;
 	}
 	
@@ -509,9 +510,9 @@ private:
 	
 	void init()
 	{
-		init_point_mp2(this->projection_values,1,1024);
-		init_point_mp2(this->pt_mp,1,1024);
-		this->pt_mp->size = this->projection_values->size = 1;
+		init_point_mp2(this->projection_values,0,1024);
+		init_point_mp2(this->pt_mp,0,1024);
+		this->pt_mp->size = this->projection_values->size = 0;
 		this->type = UNSET;
 		
 		this->removed = 0;
@@ -533,8 +534,8 @@ public:
 	int num_projections;
 	int curr_projection;
 	
-	
-	std::vector< boost::filesystem::path > input_filename;
+	int curr_input_index;
+	std::vector< boost::filesystem::path > filenames;
 	
 	std::vector<vertex> vertices;  //Isolated real points.
 	int num_vertices;
@@ -590,6 +591,50 @@ public:
 	
 	
 	void print(boost::filesystem::path outputfile);
+	
+	
+	
+	
+	int set_curr_input(boost::filesystem::path el_nom){
+		
+		int nom_index = -1;
+//		std::cout << el_nom << std::endl;
+//		
+//		mypause();
+		
+////TODO: this comparison is incorrect.
+//		boost::to_lower_copy(fs::canonical(path).string())
+//		
+//		fs::canonical(path).string()
+//		
+		if ( el_nom.string().compare("unset_filename")==0 )
+		{
+			std::cout << "trying to set curr_input from unset_filename" << std::endl;
+			
+			br_exit(-59251);
+		}
+		
+		
+		int counter = 0;
+		for (std::vector<boost::filesystem::path>::iterator ii = filenames.begin(); ii!= filenames.end(); ++ii) {
+			
+			if (*ii == el_nom) {
+				nom_index = counter;
+				break;
+			}
+			counter++;
+		}
+		
+		if (nom_index==-1) {
+			filenames.push_back(el_nom);
+			nom_index = counter;
+		}
+		
+		curr_input_index = nom_index;
+		return nom_index;
+	}
+	
+	
 	
 	int set_curr_projection(vec_mp new_proj){
 		int proj_index = -1;
@@ -655,6 +700,7 @@ private:
 		projections = NULL;
 		curr_projection = -1;
 		
+		curr_input_index = -2;
 		
 		this->num_vertices = 0;
 		this->num_natural_variables = 0;
@@ -698,6 +744,8 @@ private:
 		this->num_projections = other.num_projections;
 		
 		
+		curr_input_index = other.curr_input_index;
+		filenames = other.filenames;
 		
 		
 		this->num_vertices = other.num_vertices;
@@ -748,6 +796,8 @@ public:
   int right; ///< index into vertices
 	int midpt; ///<  index into vertices
 	
+	std::vector< int > removed_points;
+	
 	edge() : cell()
 	{
 		left = right = midpt = -1;
@@ -791,6 +841,7 @@ public:
 	std::map< int , int > counters;
 	std::map< int , std::vector< int > > indices;
 	
+	int initted;
 	
 	int num_variables;
 	int dimension;
@@ -805,57 +856,16 @@ public:
 	int num_patches;
 	vec_mp *patch;
 
+	vec_mp sphere_center;
+	comp_mp sphere_radius;
+	bool have_sphere_radius;
+	
 	boost::filesystem::path input_filename;
 //	function input_file;
 	
-	decomposition(){
-		init();
-	}
 	
-	virtual ~decomposition()
-	{
-		clear();
-	}
 	
-	decomposition & operator=(const decomposition& other){
-		
-		init();
-		
-		copy(other);
-		
-		return *this;
-	}
-	
-	decomposition(const decomposition & other){
-		
-		init();
-		
-		copy(other);
-	}
-	
-	void clear()
-	{
-		randomized_degrees.clear();
-		
-		if (num_curr_projections>0){
-			for (int ii=0; ii<num_curr_projections; ii++)
-				clear_vec_mp(pi[ii]);
-			free(pi);
-		}
-		num_curr_projections = 0;
-		
-		if (num_patches>0){
-			for (int ii=0; ii<num_patches; ii++)
-				clear_vec_mp(patch[ii]);
-			free(patch);
-		}
-		num_patches = 0;
-		
-		counters.clear();
-		indices.clear();
-		
-		clear_mat_mp(randomizer_matrix);
-	}
+
 
 	void add_projection(vec_mp proj){
 		if (this->num_curr_projections==0) {
@@ -906,8 +916,63 @@ public:
 	
 	virtual void print(boost::filesystem::path outputfile);
 	
+	void compute_sphere_bounds(const witness_set & W_crit);
+	
+	
+	
+	
+	
+	void copy_sphere_bounds(const decomposition & other)
+	{
+		set_mp(this->sphere_radius, other.sphere_radius);
+		vec_cp_mp(this->sphere_center, other.sphere_center);
+		this->have_sphere_radius = true;
+	}
+	
+	
 	
 	void output_main(const BR_configuration & program_options, vertex_set & V);
+	
+	
+	
+	
+	
+	
+	
+	void reset()
+	{
+		clear();
+		init();
+	}
+	
+	
+	
+	
+	decomposition(){
+		init();
+	}
+	
+	virtual ~decomposition()
+	{
+		this->clear();
+	}
+	
+	decomposition & operator=(const decomposition& other){
+		
+		this->init();
+		
+		this->copy(other);
+		
+		return *this;
+	}
+	
+	decomposition(const decomposition & other){
+		
+		this->init();
+		
+		this->copy(other);
+	}
+	
 	
 	
 	
@@ -918,6 +983,10 @@ protected:
 	
 	
 	void init(){
+		
+		initted = -999;
+		
+		
 		input_filename = "unset";
 		pi = NULL;
 		patch = NULL;
@@ -930,15 +999,38 @@ protected:
 		num_variables = 0;
 		dimension = -1;
 		component_num = -1;
+		
+		init_mp2(sphere_radius,1024);
+		init_vec_mp2(sphere_center,0,1024);
+		sphere_center->size = 0;
+		have_sphere_radius = false;
+		
+		set_one_mp(sphere_radius);
+		neg_mp(sphere_radius,sphere_radius);
+		
+
+		
+
+
+		
+		
+		
 	}
+	
 	
 	void copy(const decomposition & other)
 	{
+		
+		if (initted!=999) {
+			std::cout << "copying into non-initted decomposition" << std::endl;
+		}
+		
+		
+		
 		this->randomized_degrees = other.randomized_degrees;
 		
 		
 		this->input_filename = other.input_filename;
-//		this->input_file = other.input_file;
 		
 		this->counters = other.counters;
 		this->indices = other.indices;
@@ -967,8 +1059,51 @@ protected:
 			this->patch[ii]->size = other.patch[ii]->size;
 			vec_cp_mp(this->patch[ii], other.patch[ii])
 		}
+		
+		copy_sphere_bounds(other);
+		
+		return;
 	}
 	
+	void clear()
+	{
+		
+		if (initted!=999) {
+			std::cout << "clearing non-initted decomposition" << std::endl;
+		}
+		randomized_degrees.clear();
+		
+		if (num_curr_projections>0){
+			for (int ii=0; ii<num_curr_projections; ii++)
+				clear_vec_mp(pi[ii]);
+			free(pi);
+		}
+		num_curr_projections = 0;
+		
+		if (num_patches>0){
+			for (int ii=0; ii<num_patches; ii++)
+				clear_vec_mp(patch[ii]);
+			free(patch);
+		}
+		num_patches = 0;
+		
+		counters.clear();
+		indices.clear();
+		randomized_degrees.clear();
+		
+		clear_mat_mp(randomizer_matrix);
+		
+		clear_mp(sphere_radius);
+		clear_vec_mp(sphere_center);
+		
+
+		
+	}
+	
+	
+	
+	
+
 	
 }; // end decomposition
 
@@ -997,6 +1132,23 @@ void clear_sample(sample_data *S, int MPType);
 
 
 namespace color {
+	
+	int color_to_int(const std::string c);
+	
+	
+	std::string bold(std::string new_color);
+	
+	std::string dark(std::string new_color);
+	
+	
+	std::string underline(std::string new_color);
+	
+	
+	std::string background(std::string new_color);
+	
+	
+	std::string strike(std::string new_color);
+			 
 	std::string console_default();
 	
 	std::string black();
@@ -1004,6 +1156,7 @@ namespace color {
 	std::string red();
 	
 	std::string green();
+
 	
 	std::string brown();
 	
@@ -1016,6 +1169,14 @@ namespace color {
 	std::string gray();
 	
 	
+	//black - 30
+	//red - 31
+	//green - 32
+	//brown - 33
+	//blue - 34
+	//magenta - 35
+	//cyan - 36
+	//lightgray - 37
 	
 }
 

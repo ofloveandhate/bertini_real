@@ -1287,7 +1287,9 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 				case -50:
 					
 					//TODO:  put in switch endgame
+					solve_options.T.endgameNumber = 2;
 					
+					// better:
 					//rerun from the endgame using midpoint data.
 					
 					

@@ -11,7 +11,6 @@ int main(int argC, char *args[])
 
 
 	
-	
 	////
 	//  INITIALIZATION
 	////

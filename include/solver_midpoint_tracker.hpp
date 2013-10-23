@@ -29,10 +29,6 @@
 
 
 
-
-
-
-
 //
 class surface_decomposition;
 //
@@ -40,22 +36,23 @@ class midpoint_config
 {
 public:
 	
-	
+	SLP_global_pointers sphere_memory;
 	SLP_global_pointers crit_memory;
 	SLP_global_pointers mid_memory;
 	
 
 	// these are all merely pointers, and should only be assigned to memory set by the SLP creation routine inside of setupProg(), by the midpoint_config::setup() call
 	
+	prog_t *SLP_sphere;
 	prog_t *SLP_crit;
-	prog_t *SLP_face; // will hold a pointer to the SLP. will pass this pointer to the BED class member
+	prog_t *SLP_mid; // will hold a pointer to the SLP. will pass this pointer to the BED class member
 	
 	
-	mat_mp randomizer_matrix_crit, randomizer_matrix;
+	mat_mp randomizer_matrix_crit, randomizer_matrix_sph, randomizer_matrix;
 	
-	int num_mid_vars;  //the number of variables (incl homogenizing) of midpoint.  set by setup
-	int num_crit_vars;//the number of variables (incl homogenizing) of each edge point.  set by setup
-	int num_variables;//the number of variables (incl homogenizing) of midpoint.  set by setup
+	int num_mid_vars;    //the number of variables (incl homogenizing) of midpoint.  set by setup
+	int num_crit_vars;   //the number of variables (incl homogenizing) of each edge point.  set by setup
+	int num_sphere_vars;
 
 	//patch already lives in the base class.
 	
@@ -66,6 +63,10 @@ public:
 	comp_mp crit_val_right;// set during the loop in connect the dots
 	
 	int MPType;
+	
+	int system_type_bottom;
+	int system_type_top;
+	
 	
 	
 	midpoint_config(){
@@ -101,23 +102,28 @@ public:
 		
 		this->crit_memory = other.crit_memory;
 		this->mid_memory = other.mid_memory;
+		this->sphere_memory = other.sphere_memory;
 		
-		
+		system_type_top = other.system_type_top;
+		system_type_bottom = other.system_type_bottom;
 		
 		mat_cp_mp(randomizer_matrix, other.randomizer_matrix);
 		mat_cp_mp(randomizer_matrix_crit, other.randomizer_matrix_crit);
+		mat_cp_mp(randomizer_matrix_sph, other.randomizer_matrix_sph);
+		
 		
 		num_mid_vars = other.num_mid_vars;
 		num_crit_vars = other.num_crit_vars;
-		num_variables = other.num_variables;
+		num_sphere_vars = other.num_sphere_vars;
 		
 		set_mp(v_target,other.v_target);
 		set_mp(u_target,other.u_target);
 		set_mp(crit_val_left,other.crit_val_left);
 		set_mp(crit_val_right,other.crit_val_right);
 		
-		SLP_face = other.SLP_face;
+		SLP_mid = other.SLP_mid;
 		SLP_crit = other.SLP_crit;
+		SLP_sphere = other.SLP_sphere;
 	}
 	
 	
@@ -126,6 +132,7 @@ public:
 	
 	void clear()
 	{
+		clear_mat_mp(randomizer_matrix_sph);
 		clear_mat_mp(randomizer_matrix_crit);
 		clear_mat_mp(randomizer_matrix);
 		
@@ -137,19 +144,28 @@ public:
 		
 		mid_memory.set_globals_to_this();
 		//also put in clearing stuff for the SLP's here.
-		clearProg(this->SLP_face, this->MPType, 1); // 1 means call freeprogeval()
+		clearProg(this->SLP_mid, this->MPType, 1); // 1 means call freeprogeval()
 		
 		crit_memory.set_globals_to_this();
 		clearProg(this->SLP_crit, this->MPType, 1); // 1 means call freeprogeval()
 		
-		delete SLP_face;
+		sphere_memory.set_globals_to_this();
+		clearProg(this->SLP_sphere, this->MPType, 1); // 1 means call freeprogeval()
+		
+		
+		delete SLP_mid;
 		delete SLP_crit;
+		delete SLP_sphere;
 	}
 	
 
 	
 	void print()
 	{
+		
+		std::cout << "top system type: " << system_type_top << std::endl;
+		std::cout << "bottom system type: " << system_type_bottom << std::endl;
+		
 		print_comp_matlab(u_target,"u_target");
 		print_comp_matlab(v_target,"v_target");
 		
@@ -158,6 +174,7 @@ public:
 		
 		print_matrix_to_screen_matlab(randomizer_matrix,"R");
 		print_matrix_to_screen_matlab(randomizer_matrix_crit,"R_crit");
+		print_matrix_to_screen_matlab(randomizer_matrix_sph,"R_sph");
 	}
 	
 	void setup(const surface_decomposition & surf,
@@ -177,16 +194,25 @@ class midpoint_eval_data_mp : public solver_mp
 public:
 	
 	int num_mid_vars;
-	int num_crit_vars;
+	int num_bottom_vars;
+	int num_top_vars;
 	
-	SLP_global_pointers crit_memory;
+
+	SLP_global_pointers top_memory;
 	SLP_global_pointers mid_memory;
+	SLP_global_pointers bottom_memory;
 	
 	// these are all merely pointers, and should only be assigned to memory set by the SLP creation routine inside of setupProg(), by the midpoint_config::setup() call
 	
+	prog_t *SLP_top;
+	prog_t *SLP_bottom;
+	prog_t *SLP_mid; // these are to be freed by the midpoint_setup object.
 	
-	prog_t *SLP_crit;
-	prog_t *SLP_face; // these are to be freed by the midpoint_setup object.
+	
+	mat_mp randomizer_matrix_bottom;
+	mat_mp randomizer_matrix_top;
+	
+	
 	
 	vec_mp *pi;
 	int num_projections;
@@ -196,7 +222,7 @@ public:
 	comp_mp v_target;
 	comp_mp u_target;
 	
-	mat_mp randomizer_matrix_crit;
+
 	
 	comp_mp crit_val_left;
 	comp_mp crit_val_right;
@@ -214,7 +240,8 @@ public:
 	comp_mp v_target_full_prec;
 	comp_mp u_target_full_prec;
 	
-	mat_mp randomizer_matrix_crit_full_prec;
+	mat_mp randomizer_matrix_bottom_full_prec;
+	mat_mp randomizer_matrix_top_full_prec;
 	
 	comp_mp crit_val_left_full_prec;
 	comp_mp crit_val_right_full_prec;
@@ -337,7 +364,8 @@ public:
 		
 		clear_mp(v_target);
 		clear_mp(u_target);
-		clear_mat_mp(randomizer_matrix_crit);
+		clear_mat_mp(randomizer_matrix_top);
+		clear_mat_mp(randomizer_matrix_bottom);
 		clear_mp(crit_val_left);
 		clear_mp(crit_val_right);
 		
@@ -360,7 +388,8 @@ public:
 			
 			clear_mp(v_target_full_prec);
 			clear_mp(u_target_full_prec);
-			clear_mat_mp(randomizer_matrix_crit_full_prec);
+			clear_mat_mp(randomizer_matrix_top_full_prec);
+			clear_mat_mp(randomizer_matrix_bottom_full_prec);
 			clear_mp(crit_val_left_full_prec);
 			clear_mp(crit_val_right_full_prec);
 			
@@ -385,13 +414,16 @@ public:
 		solver_mp::copy(other);
 		
 		this->num_mid_vars = other.num_mid_vars;
-		this->num_crit_vars = other.num_crit_vars;
+		this->num_top_vars = other.num_top_vars;
+		this->num_bottom_vars = other.num_bottom_vars;
 		
-		this->crit_memory = other.crit_memory;
+		this->bottom_memory = other.bottom_memory;
+		this->top_memory = other.top_memory;
 		this->mid_memory = other.mid_memory;
 		
-		this->SLP_face = other.SLP_face;
-		this->SLP_crit = other.SLP_crit;
+		this->SLP_mid = other.SLP_mid;
+		this->SLP_top = other.SLP_top;
+		this->SLP_bottom = other.SLP_bottom;
 		
 		for (int ii=0; ii<other.num_projections; ii++) {
 			if (other.MPType==2) {
@@ -407,7 +439,9 @@ public:
 		set_mp(v_target,other.v_target);
 		set_mp(u_target,other.u_target);
 		
-		mat_cp_mp(randomizer_matrix_crit,other.randomizer_matrix_crit);
+		mat_cp_mp(randomizer_matrix_top, other.randomizer_matrix_top);
+		mat_cp_mp(randomizer_matrix_bottom, other.randomizer_matrix_bottom);
+		
 		
 		set_mp(crit_val_left,other.crit_val_left);
 		set_mp(crit_val_right,other.crit_val_right);
@@ -420,7 +454,9 @@ public:
 			set_mp(v_target_full_prec,other.v_target_full_prec);
 			set_mp(u_target_full_prec,other.u_target_full_prec);
 			
-			mat_cp_mp(randomizer_matrix_crit_full_prec,other.randomizer_matrix_crit_full_prec);
+			mat_cp_mp(randomizer_matrix_top_full_prec,other.randomizer_matrix_top_full_prec);
+			mat_cp_mp(randomizer_matrix_bottom_full_prec,other.randomizer_matrix_bottom_full_prec);
+			
 			
 			set_mp(crit_val_left_full_prec,other.crit_val_left_full_prec);
 			set_mp(crit_val_right_full_prec,other.crit_val_right_full_prec);
@@ -428,7 +464,7 @@ public:
 			set_mp(u_start_full_prec, other.u_start_full_prec);
 			set_mp(v_start_full_prec, other.v_start_full_prec);
 		}
-		//copy the mp one?
+
 	} // re: copy
 	
 	
@@ -454,19 +490,24 @@ public:
 	midpoint_eval_data_mp *BED_mp; // used only for AMP
 	
 	int num_mid_vars;
-	int num_crit_vars;
+	int num_top_vars;
+	int num_bottom_vars;
 	
-	
-	SLP_global_pointers crit_memory;
+	SLP_global_pointers bottom_memory;
+	SLP_global_pointers top_memory;
 	SLP_global_pointers mid_memory;
 	
-	prog_t *SLP_crit;
-	prog_t *SLP_face;
+	prog_t *SLP_bottom;
+	prog_t *SLP_top;
+	prog_t *SLP_mid;
 	
 	vec_d *pi;
 	int num_projections;
 	
-	mat_d randomizer_matrix_crit;
+	mat_d randomizer_matrix_top;
+	mat_d randomizer_matrix_bottom;
+	
+	
 	//patch already lives in the base class.
 	
 	comp_d v_target;
@@ -510,8 +551,9 @@ public:
 	{
 		std::cout << "num_variables " << num_variables << std::endl;
 		std::cout << "num_mid_vars " << num_mid_vars << std::endl;
-		std::cout << "SLP_crit " << SLP_crit->size << std::endl;
-		std::cout << "SLP_face " << SLP_face->size << std::endl;
+		std::cout << "SLP_top "      << SLP_top->size << std::endl;
+		std::cout << "SLP_bottom " << SLP_bottom->size << std::endl;
+		std::cout << "SLP_mid " << SLP_mid->size << std::endl;
 
 		std::cout << num_projections << " projections: " << std::endl;
 		for (int ii=0; ii<2; ii++) {
@@ -610,8 +652,8 @@ private:
 		free(pi);
 		
 		
-		clear_mat_d(randomizer_matrix_crit);
-		
+		clear_mat_d(randomizer_matrix_top);
+		clear_mat_d(randomizer_matrix_bottom);
 	} // re: clear
 	
 	void init();
@@ -623,14 +665,16 @@ private:
 		solver_d::copy(other);
 		
 		this->num_mid_vars = other.num_mid_vars;
-		this->num_crit_vars = other.num_crit_vars;
+		this->num_top_vars = other.num_top_vars;
+		this->num_bottom_vars = other.num_bottom_vars;
 		
-		this->crit_memory = other.crit_memory;
+		this->top_memory = other.top_memory;
+		this->bottom_memory = other.bottom_memory;
 		this->mid_memory = other.mid_memory;
 		
-		
-		this->SLP_face = other.SLP_face;
-		this->SLP_crit = other.SLP_crit;
+		this->SLP_bottom = other.SLP_bottom;
+		this->SLP_mid = other.SLP_mid;
+		this->SLP_top = other.SLP_top;
 
 		
 		for (int ii=0; ii<other.num_projections; ii++) {
@@ -642,7 +686,9 @@ private:
 		set_d(v_target,other.v_target);
 		set_d(u_target,other.u_target);
 		
-		mat_cp_d(randomizer_matrix_crit,other.randomizer_matrix_crit);
+		mat_cp_d(randomizer_matrix_top,other.randomizer_matrix_top);
+		mat_cp_d(randomizer_matrix_bottom,other.randomizer_matrix_bottom);
+		
 		
 		set_d(crit_val_left,other.crit_val_left);
 		set_d(crit_val_right,other.crit_val_right);

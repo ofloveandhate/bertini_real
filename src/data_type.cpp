@@ -822,7 +822,71 @@ void witness_set::sort_for_unique(tracker_config_t T)
 
 
 
+void witness_set::sort_for_inside_sphere(comp_mp radius, vec_mp center)
+{
+	
 
+	
+
+	int num_good_pts = 0;
+	
+	
+	std::vector<int> is_ok;
+	
+	vec_mp temp_vec; init_vec_mp(temp_vec,0);
+	comp_mp temp; init_mp(temp);
+	
+	for (int ii = 0; ii<this->num_pts; ++ii) {
+
+		
+		
+		dehomogenize(&temp_vec, this->pts_mp[ii]);
+		temp_vec->size = center->size;
+		
+		norm_of_difference(temp->r, temp_vec, center);
+		if ( mpf_cmp(temp->r, radius->r) < 0   ){
+			is_ok.push_back(1);
+			num_good_pts++;
+		}
+		else
+		{
+			is_ok.push_back(0);
+		}
+		
+
+		
+	}
+	
+	
+	
+	vec_mp *transferme = (vec_mp *)br_malloc(num_good_pts*sizeof(vec_mp));
+	int counter = 0;
+	for (int ii=0; ii<this->num_pts; ++ii) {
+		if (is_ok[ii]==1) {
+			init_vec_mp2(transferme[counter],0,1024);  transferme[counter]->size = 0;
+			vec_cp_mp(transferme[counter], this->pts_mp[ii]);
+			counter++;
+		}
+	}
+	
+	if (counter!= num_good_pts) {
+		printf("counter mismatch\n");
+		exit(271);
+	}
+	
+	for (int ii=0; ii<this->num_pts; ii++) {
+		clear_vec_mp(this->pts_mp[ii]);
+	}
+	free(this->pts_mp);
+	
+	
+	this->num_pts = num_good_pts;
+	this->pts_mp = transferme;
+	
+	clear_vec_mp(temp_vec);
+	clear_mp(temp);
+	return;
+}
 
 
 
@@ -1062,9 +1126,50 @@ void witness_set::cp_patches(const witness_set & W_in)
 
 int vertex_set::add_vertex(const vertex source_vertex){
 	
-	this->num_vertices++;
+	
+	if (this->num_projections <= 0) {
+		std::cout << color::red() << "vertex set has no projections!!!" << color::console_default() << std::endl;
+		br_exit(-9644);
+	}
+	
+	if (curr_input_index<0) {
+		std::cout << color::red() << "adding points to vertex set, but input file index unset." << color::console_default() << std::endl;
+		br_exit(6711);
+	}
+	
+	
 	this->vertices.push_back(source_vertex);
 	
+	
+	if (this->vertices[num_vertices].projection_values->size < this->num_projections) {
+		increase_size_vec_mp(this->vertices[num_vertices].projection_values, this->num_projections );
+		this->vertices[num_vertices].projection_values->size = this->num_projections;
+	}
+	
+	for (int ii=0; ii<this->num_projections; ii++){
+		bool compute_proj_val = false;
+		
+		if (! (mpfr_number_p( vertices[num_vertices].projection_values->coord[ii].r) && mpfr_number_p( vertices[num_vertices].projection_values->coord[ii].i)  ) ) {
+			compute_proj_val = true;
+		}
+//		else if ( false )//yeah, i dunno what else right yet.
+//		{
+//			compute_proj_val = true;
+//		}
+		
+		
+		if (compute_proj_val==true) {
+			projection_value_homogeneous_input(&vertices[num_vertices].projection_values->coord[ii],
+																				 vertices[num_vertices].pt_mp,
+																				 projections[ii]);
+		}
+		
+	}
+	
+	
+	vertices[num_vertices].input_filename_index = curr_input_index;
+	
+	this->num_vertices++;
 	return this->num_vertices-1;
 }
 
@@ -1086,36 +1191,55 @@ int vertex_set::setup_vertices(boost::filesystem::path INfile)
 	FILE *IN = safe_fopen_read(INfile);
 	int num_vertices;
 	int num_vars;
-	fscanf(IN, "%d %d\n\n", &num_vertices, &this->num_projections);
+	int tmp_num_projections;
+	fscanf(IN, "%d %d %d\n\n", &num_vertices, &tmp_num_projections, &this->num_natural_variables);
+	
+	
+	vec_mp temp_vec; init_vec_mp2(temp_vec,num_natural_variables,1024);
+	for (int ii=0; ii<tmp_num_projections; ii++) {
+		for (int jj=0; jj<num_natural_variables; jj++) {
+			mpf_inp_str(temp_vec->coord[jj].r, IN, 10);
+			mpf_inp_str(temp_vec->coord[jj].i, IN, 10);
+		}
+		add_projection(temp_vec);
+	}
+	clear_vec_mp(temp_vec);
+	
+	
+	
 	
 	vertex temp_vertex;
 	
-	for(int ii=0;ii<num_vertices;ii++)
+	for (int ii=0; ii<num_vertices; ii++)
 	{
 		fscanf(IN, "%d\n", &num_vars);
 		if (temp_vertex.pt_mp->size != num_vars) {
 			change_size_vec_mp(temp_vertex.pt_mp,num_vars); temp_vertex.pt_mp->size = num_vars;
 		}
 		
-		for (int jj=0;jj<num_vars;jj++)
+		for (int jj=0; jj<num_vars; jj++)
 		{
 			mpf_inp_str(temp_vertex.pt_mp->coord[jj].r, IN, 10);
 			mpf_inp_str(temp_vertex.pt_mp->coord[jj].i, IN, 10);
 		}
 		
-		increase_size_vec_mp(temp_vertex.projection_values,num_projections);
-		for (int jj=0; jj<num_projections; jj++) {
+		int temp_num;
+		fscanf(IN,"%d\n",&temp_num);
+		increase_size_vec_mp(temp_vertex.projection_values,temp_num);
+		temp_vertex.projection_values->size = temp_num;
+		for (int jj=0; jj<temp_num; jj++) {
 			mpf_inp_str(temp_vertex.projection_values->coord[jj].r, IN, 10);
 			mpf_inp_str(temp_vertex.projection_values->coord[jj].i, IN, 10);
 		}
 		
-		
+		print_point_to_screen_matlab(temp_vertex.projection_values,"p");
 		fscanf(IN,"%d\n",&temp_vertex.type);
 		
 		
 		vertex_set::add_vertex(temp_vertex);
 	}
 	
+
 	
 	fclose(IN);
 	
@@ -1149,7 +1273,20 @@ void vertex_set::print(boost::filesystem::path outputfile)
 	FILE *OUT = safe_fopen_write(outputfile);
 	
 	// output the number of vertices
-	fprintf(OUT,"%d %d\n\n",num_vertices,num_projections);
+	fprintf(OUT,"%d %d %d\n\n",num_vertices,num_projections, num_natural_variables);
+	
+	
+	
+	for (int ii=0; ii<num_projections; ii++) {
+		for (int jj=0; jj<num_natural_variables; jj++) {
+			print_mp(OUT, 0, &projections[ii]->coord[jj]);
+			fprintf(OUT,"\n");
+		}
+		fprintf(OUT,"\n");
+	}
+	
+	
+	
 	for (int ii = 0; ii < num_vertices; ii++)
 	{ // output points
 		fprintf(OUT,"%d\n", vertices[ii].pt_mp->size);
@@ -1158,14 +1295,22 @@ void vertex_set::print(boost::filesystem::path outputfile)
 			fprintf(OUT,"\n");
 		}
 		
+		fprintf(OUT,"%d\n",vertices[ii].projection_values->size);
 		for(int jj=0;jj<vertices[ii].projection_values->size;jj++) {
 			print_mp(OUT, 0, &vertices[ii].projection_values->coord[jj]);
 			fprintf(OUT,"\n");
 		}
 		
 		fprintf(OUT,"\n");
-		fprintf(OUT,"%d\n\n",vertices[ii].type);
+		if (vertices[ii].removed==1) {
+			fprintf(OUT,"%d\n\n",REMOVED);
+		}
+		else{
+			fprintf(OUT,"%d\n\n",vertices[ii].type);
+		}
 	}
+	
+
 	
 	fclose(OUT);
 	
@@ -1210,12 +1355,15 @@ int decomposition::index_in_vertices(vertex_set &V,
 		div_mp(&V.checker_1->coord[jj-1], &testpoint->coord[jj],  &testpoint->coord[0]);
 	}
 	
+	
+	// first we search the non-removed points.
+	
 //	WTB: a faster comparison search.
 	for (ii=0; ii<V.num_vertices; ii++) {
 		
 		int current_index = ii;
 		
-		if (V.vertices[current_index].removed!=1) {
+		if (V.vertices[current_index].removed==0) {
 		
 		//it would be desirable to perform the below comparison, but the projection value depends on the projection used to compute it!
 		// hence, it has been commented out.  
@@ -1241,6 +1389,28 @@ int decomposition::index_in_vertices(vertex_set &V,
 		}
 	}
 		
+	
+	for (ii=0; ii<V.num_vertices; ii++) {
+		int current_index = ii;
+		
+		if (V.vertices[current_index].removed==1) {
+			
+			for (int jj=1; jj<V.num_natural_variables; jj++) {
+				div_mp(&V.checker_2->coord[jj-1],&V.vertices[current_index].pt_mp->coord[jj], &V.vertices[current_index].pt_mp->coord[0]);
+			}
+			
+			if (isSamePoint_inhomogeneous_input(V.checker_1, V.checker_2)){
+				index = current_index;
+				break;
+			}
+			
+			if (index!=-1)
+				break;
+			
+		}
+	}
+	
+	
 	
 	return index;	
 }
@@ -1454,6 +1624,122 @@ void decomposition::print(boost::filesystem::path base)
 
 
 
+void decomposition::compute_sphere_bounds(const witness_set & W_crit)
+{
+	int num_vars = W_crit.num_variables-W_crit.num_synth_vars-1;
+	
+	change_size_vec_mp(this->sphere_center, num_vars); //destructive resize
+	sphere_center->size = num_vars;
+	
+	if (W_crit.num_pts == 0) {
+		set_one_mp(sphere_radius);
+		
+		for (int ii=0; ii<num_vars; ii++) {
+			set_zero_mp(&sphere_center->coord[ii]);
+		}
+		return;
+	}
+	
+	vec_mp(temp_vec); init_vec_mp2(temp_vec,0,1024);
+	if (W_crit.num_pts==1)
+	{
+		set_one_mp(sphere_radius);
+		
+		dehomogenize(&temp_vec, W_crit.pts_mp[0]);
+		
+		for (int ii=0; ii<num_vars; ii++) {
+			set_mp(&sphere_center->coord[ii], &temp_vec->coord[ii]);
+		}
+		
+		clear_vec_mp(temp_vec);
+		return;
+	}
+	
+	
+//	W_crit.print_to_screen();
+	
+	
+	
+	
+	comp_mp temp_rad; init_mp2(temp_rad,1024);
+	set_zero_mp(temp_rad);
+	
+	set_one_mp(sphere_radius);
+	neg_mp(sphere_radius,sphere_radius); // set to impossibly low value.
+	
+	
+	comp_mp temp_mp;  init_mp2(temp_mp,1024);
+	
+	
+	vec_mp(cumulative_sum); init_vec_mp2(cumulative_sum,num_vars,1024);
+	cumulative_sum->size = num_vars;
+	
+	for (int ii=0; ii<num_vars; ii++) {
+		set_zero_mp(&cumulative_sum->coord[ii]);
+	}
+	
+	
+	for (int ii=0; ii<W_crit.num_pts; ii++) {
+		dehomogenize(&temp_vec, W_crit.pts_mp[ii], num_vars+1);
+		temp_vec->size = num_vars;
+		add_vec_mp(cumulative_sum, cumulative_sum, temp_vec);
+	}
+	
+	set_zero_mp(temp_mp);
+	mpf_set_d(temp_mp->r, double(W_crit.num_pts));
+	
+	
+	
+	for (int ii=0; ii<num_vars; ii++) {
+		div_mp(&sphere_center->coord[ii], &cumulative_sum->coord[ii], temp_mp);
+	}
+	
+	
+	
+	for (int ii=0; ii<W_crit.num_pts; ii++) {
+		dehomogenize(&temp_vec, W_crit.pts_mp[ii], num_vars+1);
+		temp_vec->size = num_vars;
+		vec_sub_mp(temp_vec, temp_vec, sphere_center);
+		
+		
+		twoNormVec_mp(temp_vec, temp_mp);
+		mpf_abs_mp(temp_rad->r, temp_mp);
+		
+		//		print_point_to_screen_matlab(temp_vec,"normme");
+		//		std::cout << "candidate_radius[" << ii << "] = ";
+		//		mpf_out_str(NULL,10,10,temp_diam);
+		//		std::cout << std::endl;
+		
+		if (mpf_cmp(sphere_radius->r, temp_rad->r) < 0){
+			set_mp(sphere_radius, temp_rad);
+		}
+	}
+	
+	
+
+	mpf_set_str(temp_rad->r,"2.0",10);
+	mpf_set_str(temp_rad->i,"0.0",10);
+	mul_mp(sphere_radius,temp_rad,sphere_radius);  // double the radius to be safe.
+
+	
+	clear_mp(temp_mp);
+	clear_vec_mp(temp_vec);
+	clear_mp(temp_rad);
+	
+	
+	this->have_sphere_radius = true;
+	
+	
+	
+	std::cout << color::green();
+	print_point_to_screen_matlab(sphere_center,"center");
+	print_comp_matlab(sphere_radius,"radius");
+	std::cout << std::endl;
+	
+	std::cout << color::console_default();
+	return;
+}
+
 
 
 void decomposition::output_main(const BR_configuration & program_options, vertex_set & V)
@@ -1480,8 +1766,9 @@ void decomposition::output_main(const BR_configuration & program_options, vertex
 	
 	
 	V.print(base / "V.vertex");
+//	V.print_to_screen();
 	
-	this->print(base);
+	this->print(base); // using polymorphism here!
 	
 	OUT = safe_fopen_write("Dir_Name");
 	fprintf(OUT,"%s\n",base.c_str());
@@ -1542,10 +1829,8 @@ void dehomogenize(point_d *result, point_d dehom_me)
 	(*result)->size = dehom_me->size-1;
 	set_d(denom, &dehom_me->coord[0]);
 	
-	int ii;
-	for (ii=0; ii<dehom_me->size-1; ++ii) {
-		set_d( &(*result)->coord[ii],&(dehom_me)->coord[ii+1]);
-		div_d(&(*result)->coord[ii],&(*result)->coord[ii],denom); //  result[ii] = dehom_me[ii+1]/dehom_me[0].
+	for (int ii=0; ii<dehom_me->size-1; ++ii) {
+		div_d(&(*result)->coord[ii],&(dehom_me)->coord[ii+1],denom); //  result[ii] = dehom_me[ii+1]/dehom_me[0].
 	}
 	
 	return;
@@ -1564,10 +1849,8 @@ void dehomogenize(point_mp *result, point_mp dehom_me)
 	(*result)->size = dehom_me->size-1;
 	
 	set_mp(denom, &dehom_me->coord[0]);
-	int ii;
-	for (ii=0; ii<dehom_me->size-1; ++ii) {
-		set_mp( &(*result)->coord[ii],&(dehom_me)->coord[ii+1]);
-		div_mp(&(*result)->coord[ii],&(*result)->coord[ii],denom); //  result[ii] = dehom_me[ii+1]/dehom_me[0].
+	for (int ii=0; ii<dehom_me->size-1; ++ii) {
+		div_mp(&(*result)->coord[ii],&(dehom_me)->coord[ii+1],denom); //  result[ii] = dehom_me[ii+1]/dehom_me[0].
 	}
 	
 	clear_mp(denom);
@@ -1578,7 +1861,7 @@ void dehomogenize(point_mp *result, point_mp dehom_me, int num_variables)
 {
 	if (dehom_me->size==0 || dehom_me->size==1) {
 		printf("attempting to dehomogenize a vector of length 0 or 1\n");
-		exit(977);
+		br_exit(977);
 	}
 	
 	comp_mp denom; init_mp2(denom,1024);
@@ -1587,13 +1870,11 @@ void dehomogenize(point_mp *result, point_mp dehom_me, int num_variables)
 	(*result)->size = dehom_me->size-1;
 	
 	set_mp(denom, &dehom_me->coord[0]);
-	int ii;
-	for (ii=0; ii<num_variables-1; ++ii) {
-		set_mp( &(*result)->coord[ii],&(dehom_me)->coord[ii+1]);
-		div_mp(&(*result)->coord[ii],&(*result)->coord[ii],denom); //  result[ii] = dehom_me[ii+1]/dehom_me[0].
+	for (int ii=0; ii<num_variables-1; ++ii) {
+		div_mp(&(*result)->coord[ii],&(dehom_me)->coord[ii+1],denom); //  result[ii] = dehom_me[ii+1]/dehom_me[0].
 	}
 	
-	for (ii=num_variables-1; ii<dehom_me->size-1; ++ii) {
+	for (int ii=num_variables-1; ii<dehom_me->size-1; ++ii) {
 		set_mp( &(*result)->coord[ii],&(dehom_me)->coord[ii+1]);
 	}
 	
@@ -1608,22 +1889,19 @@ void dehomogenize(point_d *result, point_d dehom_me, int num_variables)
 {
 	if (dehom_me->size==0 || dehom_me->size==1) {
 		printf("attempting to dehomogenize a vector of length 0 or 1\n");
-		exit(977);
+		br_exit(977);
 	}
 	
 	comp_d denom;
 	change_size_point_d((*result),dehom_me->size-1);
-	
 	(*result)->size = dehom_me->size-1;
 	
 	set_d(denom, &dehom_me->coord[0]);
-	int ii;
-	for (ii=0; ii<num_variables-1; ++ii) {
-		set_d( &(*result)->coord[ii],&(dehom_me)->coord[ii+1]);
-		div_d(&(*result)->coord[ii],&(*result)->coord[ii],denom); //  result[ii] = dehom_me[ii+1]/dehom_me[0].
+	for (int ii=0; ii<num_variables-1; ++ii) {
+		div_d( &(*result)->coord[ii],&(dehom_me)->coord[ii+1],denom); //  result[ii] = dehom_me[ii+1]/dehom_me[0].
 	}
 	
-	for (ii=num_variables-1; ii<dehom_me->size-1; ++ii) {
+	for (int ii=num_variables-1; ii<dehom_me->size-1; ++ii) {
 		set_d( &(*result)->coord[ii],&(dehom_me)->coord[ii+1]);
 	}
 	
@@ -1642,8 +1920,7 @@ void dot_product_d(comp_d result, vec_d left, vec_d right)
 	set_zero_d(result);
 	
 	comp_d temp;
-	int ii;
-	for (ii=0; ii<left->size; ++ii) {
+	for (int ii=0; ii<left->size; ++ii) {
 		mul_d(temp,&left->coord[ii],&right->coord[ii]);
 		add_d(result,result,temp);
 	}
@@ -1658,8 +1935,7 @@ void dot_product_mp(comp_mp result, vec_mp left, vec_mp right)
 	
 	set_zero_mp(result);
 	comp_mp temp; init_mp2(temp,1024);
-	int ii;
-	for (ii=0; ii<left->size; ++ii) {
+	for (int ii=0; ii<left->size; ++ii) {
 		mul_mp(temp,&left->coord[ii],&right->coord[ii]);
 		add_mp(result,result,temp);
 	}
@@ -1687,8 +1963,8 @@ void projection_value_homogeneous_input(comp_d result, vec_d input, vec_d projec
 //		result->i = 0.0;
 //	}
 	
-//	if (result->r < 1e-13) {
-//		result->r = 0.0;
+//	if (result->i < 1e-13) {
+//		result->i = 0.0;
 //	}
 	
 	return;
@@ -1701,6 +1977,8 @@ void projection_value_homogeneous_input(comp_d result, vec_d input, vec_d projec
 */
 void projection_value_homogeneous_input(comp_mp result, vec_mp input, vec_mp projection)
 {
+
+	
 	set_zero_mp(result);
 	comp_mp temp; init_mp2(temp,1024);
 	for (int ii=0; ii<projection->size; ii++) {
@@ -1709,17 +1987,23 @@ void projection_value_homogeneous_input(comp_mp result, vec_mp input, vec_mp pro
 	}
 	set_mp(temp, result);
 	div_mp(result, temp, &input->coord[0]);
-	
 	clear_mp(temp);
+	
+	
+//	comp_d temp2;
+//	mp_to_d(temp2, result);
+//	if (temp2->i < 1e-13) {
+//		mpf_set_d(result->i, 0.0);
+//	}
+
+	
+	
+
 	
 //	if (mpf_get_d(result->i) < 1e-14) {
 //		mpf_set_d(result->i, 0.0);
 //	}
 	
-//	mp_to_d(temp2, result);
-//	if (temp2->r < 1e-13) {
-//		mpf_set_d(result->r, 0.0);
-//	}
 	
 }
 
@@ -2070,7 +2354,14 @@ void clear_post_process_t(post_process_t * endPoint, int num_vars)
 // this sort should be optimized.  it is sloppy and wasteful right now.
 int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & index_tracker, vec_mp projections_input){
 	
-
+	
+	if (projections_input->size == 0) {
+		change_size_vec_mp(projections_sorted,1);
+		projections_sorted->size = 0;
+		return -1;
+	}
+	
+	print_point_to_screen_matlab(projections_input,"sorting_these");
 	
 	
 	for (int ii=0; ii<projections_input->size; ii++) {
@@ -2138,7 +2429,7 @@ int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & inde
 	// filter for uniqueness
 	
 	
-	double distinct_thresh = 1e-5;  // reasonable?
+	double distinct_thresh = SAMEPOINTTOL;  // reasonable?
 	
 	change_size_vec_mp(projections_sorted,1); projections_sorted->size = 1;
 	
@@ -2624,11 +2915,81 @@ void receive_vec_d(vec_d b, int source)
 
 
 
+
+
 namespace color {
+	int color_to_int(const std::string c)
+	{
+		
+		if(c.compare("k") == 0){
+			return 30;
+		}
+		else if(c.compare("r") == 0){
+			return 31;
+		}
+		else if(c.compare("g") == 0){
+			return 32;
+		}
+		else if(c.compare("y") == 0){
+			return 33;
+		}
+		else if (c.compare("b") == 0) {
+			return 34;
+		}
+		else if(c.compare("m") == 0){
+			return 35;
+		}
+		else if(c.compare("c") == 0){
+			return 36;
+		}
+		else if(c.compare("l") == 0){
+			return 37;
+		}
+		
+		return 30;
+		
+	}
 	
 	
+	std::string bold(std::string new_color)
+	{
+		std::stringstream ss;
+		ss << "\033[1;" << color_to_int(new_color) << "m" ;     //;
+		return ss.str();
+	}
 	
-  std::string console_default(){
+	std::string dark(std::string new_color)
+	{
+		std::stringstream ss;
+		ss << "\033[2;" << color_to_int(new_color) << "m" ;     //;
+		return ss.str();
+	}
+	
+	
+	std::string underline(std::string new_color)
+	{
+		std::stringstream ss;
+		ss << "\033[4;" << color_to_int(new_color) << "m" ;     //;
+		return ss.str();
+	}
+	
+	
+	std::string background(std::string new_color)
+	{
+		std::stringstream ss;
+		ss << "\033[7;" << color_to_int(new_color) << "m" ;     //;
+		return ss.str();
+	}
+	
+	
+	std::string strike(std::string new_color)
+	{
+		std::stringstream ss;
+		ss << "\033[9;" << color_to_int(new_color) << "m" ;     //;
+		return ss.str();
+	}
+	
+	std::string console_default(){
 		return "\033[0m";
 	}
 	
@@ -2644,6 +3005,7 @@ namespace color {
 		return "\033[0;32m";
 	}
 	
+	
 	std::string brown(){
 		return "\033[0;33m";
 	}
@@ -2655,6 +3017,7 @@ namespace color {
 	std::string magenta(){
 		return "\033[0;35m";
 	}
+	
 	std::string cyan(){
 		return "\033[0;36m";
 	}
@@ -2664,14 +3027,12 @@ namespace color {
 	}
 	
 	
+	//black - 30
+	//red - 31
+	//green - 32
+	//brown - 33
+	//blue - 34
+	//magenta - 35
+	//cyan - 36
+	//lightgray - 37
 }
-
-
-//black - 30
-//red - 31
-//green - 32
-//brown - 33
-//blue - 34
-//magenta - 35
-//cyan - 36
-//lightgray - 37
