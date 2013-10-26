@@ -1,0 +1,15 @@
+CONFIG
+tracktype: 1;
+sharpendigits: 24;
+mptype: 0;
+%tracktolbeforeeg: 1e-4;
+%tracktolduringeg: 1e-4;
+
+END;
+INPUT
+variable_group x, y, z;
+function f1;
+
+f1 = (y^2+z^2-1)^2 +(x^2+y^2-1)^3 ;
+
+END;
