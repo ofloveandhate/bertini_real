@@ -1,0 +1,17 @@
+CONFIG 
+tracktype:1;
+
+sharpendigits: 30;
+CONDNUMTHRESHOLD: 1e26;
+
+END;
+INPUT
+variable_group x,y,z;
+function barth6;
+constant phi, w;
+phi=(5^(1/2)+1)/2;
+w=1;
+barth6=4*(phi^2*x^2-y^2)*(phi^2*y^2-z^2)*(phi^2*z^2-x^2) - (1+2*phi)*(x^2+y^2+z^2-w^2)^2*w^2;
+
+
+END;
