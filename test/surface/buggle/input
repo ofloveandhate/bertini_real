@@ -1,0 +1,15 @@
+CONFIG
+
+tracktype: 1;
+randomseed: 3;
+
+END;
+INPUT
+
+
+variable_group x, y, z;
+
+function f1;
+f1 = x^4*y^2+y^4*x^2-x^2*y^2+z^6;
+
+END;
