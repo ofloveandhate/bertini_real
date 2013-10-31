@@ -208,12 +208,25 @@ public:
 											std::string kindofslice);
 	
 	
+    
+    void compute_critcurve_witness_set(witness_set & W_critcurve,
+                                                              const witness_set & W_surf,
+                                                              BR_configuration & program_options,
+                                       solver_configuration & solve_options);
+    
+    void compute_critcurve_critpts(witness_set & W_critcurve_crit, // the computed value
+                                   const witness_set & W_surf, // input witness set
+                                   const witness_set & W_critcurve,
+                                   BR_configuration & program_options,
+                                   solver_configuration & solve_options);
+    
+    
 	
-	void compute_critical_curve(witness_set & W_curve_crit,
-															const witness_set & W_surf,
-															vertex_set & V,
-															BR_configuration & program_options,
-															solver_configuration & solve_options);
+	void compute_critical_curve(const witness_set & W_critcurve,
+                                const witness_set & W_critpts,
+                                vertex_set & V,
+                                BR_configuration & program_options,
+                                solver_configuration & solve_options);
 	
 	
 	

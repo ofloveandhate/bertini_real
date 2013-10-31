@@ -1450,6 +1450,21 @@ void vertex_set::print(boost::filesystem::path outputfile)
 
 
 
+int decomposition::add_witness_set(const witness_set & W, int add_type, vertex_set & V)
+{
+    V.set_curr_input(W.input_filename);
+    
+    vertex temp_vertex;
+    temp_vertex.type = add_type;
+    
+    for (int ii=0; ii<W.num_pts; ii++) {
+        vec_cp_mp(temp_vertex.pt_mp, W.pts_mp[ii]);
+        this->index_in_vertices_with_add(V, temp_vertex);
+    }
+    
+    return 0;
+}
+
 
 int decomposition::add_vertex(vertex_set & V, vertex source_vertex)
 {
@@ -1473,8 +1488,7 @@ int decomposition::add_vertex(vertex_set & V, vertex source_vertex)
 
 
 int decomposition::index_in_vertices(vertex_set & V,
-									 vec_mp testpoint,
-									 tracker_config_t T)
+									 vec_mp testpoint)
 {
 
 	int index = -1;
@@ -1494,10 +1508,9 @@ int decomposition::index_in_vertices(vertex_set & V,
 //TODO: make T here a pointer
 
 int decomposition::index_in_vertices_with_add(vertex_set &V,
-											  vertex vert,
-											  tracker_config_t T)
+											  vertex vert)
 {
-	int index = decomposition::index_in_vertices(V, vert.pt_mp, T);
+	int index = decomposition::index_in_vertices(V, vert.pt_mp);
 	
 	if (index==-1) {
 		index = decomposition::add_vertex(V, vert);

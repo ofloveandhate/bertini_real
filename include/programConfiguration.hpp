@@ -246,8 +246,7 @@ public:
 	boost::filesystem::path input_deflated_filename;
 	 
 	
-	boost::filesystem::path current_working_filename;
-	
+
 	std::string bertini_command;
 	std::string matlab_command;
 	int verbose_level;
@@ -282,7 +281,13 @@ public:
 	
 	BR_configuration() : prog_config()
 	{
-		this->debugwait = 0;
+		
+        init();
+	};
+	
+	void init()
+    {
+        this->debugwait = 0;
 		this->max_deflations = 10;
 		
 		this->user_projection = 0;
@@ -295,7 +300,6 @@ public:
 		bounding_sphere_filename = "";
 		
 		this->input_filename = "input";
-		this->current_working_filename = this->input_filename;
 		
 		this->witness_set_filename = "witness_set";
 		
@@ -319,10 +323,7 @@ public:
 		merge_edges = true;
 		
 		return;
-
-	};
-	
-	
+    }
 	
 }; //re: BR_configuration
 

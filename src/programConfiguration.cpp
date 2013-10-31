@@ -299,8 +299,7 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 	}
 	
 	
-	this->current_working_filename = this->input_filename;
-	
+    
 	this->called_dir = boost::filesystem::absolute(boost::filesystem::current_path());
 	this->output_dir = boost::filesystem::absolute(this->output_dir);
 	this->working_dir = this->called_dir;
