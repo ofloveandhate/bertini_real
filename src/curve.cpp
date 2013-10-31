@@ -23,7 +23,7 @@ void curve_decomposition::main(vertex_set & V,
 	W.write_dehomogenized_coordinates("witness_points_dehomogenized"); // write the points to file
 	int num_deflations, *deflation_sequence = NULL;
 	isosingular_deflation(&num_deflations, &deflation_sequence,
-                          program_options, program_options.current_working_filename,
+                          program_options, W.input_filename,
                           "witness_points_dehomogenized",
                           program_options.max_deflations,
                           W.dim, W.comp_num);
@@ -247,7 +247,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 		vec_cp_mp(temp_vertex.pt_mp, W_crit_real.pts_mp[ii]);// set point
 		temp_vertex.type = CRITICAL; // set type
 		
-		int I = index_in_vertices_with_add(V, temp_vertex, solve_options.T);
+		int I = index_in_vertices_with_add(V, temp_vertex);
 		crit_point_counter[I] = 0;
 	}
     
@@ -493,19 +493,19 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 			vec_cp_mp(temp_vertex.pt_mp,midpoint_witness_sets[ii].pts_mp[kk]);// set point
 			temp_vertex.type = MIDPOINT; // set type
 			
-			temp_edge.midpt = index_in_vertices_with_add(V, temp_vertex, solve_options.T); // gets the index of the new midpoint as it is added
+			temp_edge.midpt = index_in_vertices_with_add(V, temp_vertex); // gets the index of the new midpoint as it is added
 			
 			
 			vec_cp_mp(temp_vertex.pt_mp,Wleft.pts_mp[kk]);// set point
 			temp_vertex.type = NEW; // set type
 			
-			temp_edge.left  = index_in_vertices_with_add(V, temp_vertex, solve_options.T);
+			temp_edge.left  = index_in_vertices_with_add(V, temp_vertex);
 			
 			
 			vec_cp_mp(temp_vertex.pt_mp,Wright.pts_mp[kk]);// set point
 			temp_vertex.type = NEW; // set type
 			
-			temp_edge.right = index_in_vertices_with_add(V, temp_vertex, solve_options.T);
+			temp_edge.right = index_in_vertices_with_add(V, temp_vertex);
 			
 			// keep track of those indices we found.
 			
@@ -795,7 +795,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		
 		edge temp_edge;
 		temp_edge.left = edges[left_edge_w_pt].left;
-		temp_edge.midpt = index_in_vertices_with_add(V, temp_vertex, solve_options.T);
+		temp_edge.midpt = index_in_vertices_with_add(V, temp_vertex);
 		temp_edge.right = edges[right_edge_w_pt].right;
 		
 		
@@ -1304,7 +1304,7 @@ void curve_decomposition::computeCurveNotSelfConj(const witness_set & W_in,
 			
 			dot_product_mp(projection_value, temp_vertex.pt_mp, pi_mp);// i think this is wrong, because pi_mp probably has a 0 at the front of it.
 			
-			index_in_vertices_with_add(V, temp_vertex, solve_options.T);
+			index_in_vertices_with_add(V, temp_vertex);
 			
 		}
 	}

@@ -44,22 +44,95 @@ void surface_decomposition::main(vertex_set & V,
 	
 	
     
+    // get the witness points for the critical curve.
+    witness_set W_critcurve;
+    compute_critcurve_witness_set(W_critcurve,
+                                  W_surf,
+                                  program_options,
+                                  solve_options);
     
-	witness_set W_curve_crit;
+    
+    // get the critical points and the sphere intersection points for the critical curve
+    witness_set W_critcurve_crit;
+    compute_critcurve_critpts(W_critcurve_crit, // the computed value
+                              W_surf, // input witness set
+                              W_critcurve,
+                              program_options,
+                              solve_options);
+    
+    
+    this->crit_curve.add_witness_set(W_critcurve_crit,CRITICAL,V);
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    // now we get the critical points for the sphere intersection curve.
+
+    // make the input file
+	create_sphere_system(W_surf.input_filename,
+                         "input_surf_sphere",
+                         sphere_radius,
+                         sphere_center,
+                         W_surf);
+    
+    // get witness points
+	witness_set W_intersection_sphere;
+	compute_sphere_witness_set(W_surf,
+                               W_intersection_sphere, // output
+                               program_options,
+                               solve_options);
 	
-	compute_critical_curve(W_curve_crit, // <---  this gets computed,
-                           W_surf,       //          all else is input
+    
+    // compute critical points
+    witness_set W_sphere_crit;
+	compute_sphere_crit(W_intersection_sphere,
+                        W_sphere_crit, // output
+                        program_options,
+                        solve_options);
+    
+    this->sphere_curve.add_witness_set(W_sphere_crit,CRITICAL,V);
+    
+    
+    // merge together the critical points from both the critical curve and the sphere intersection curve.
+    witness_set W_total_crit;
+    
+	W_total_crit.merge(W_critcurve_crit);
+	W_total_crit.only_first_vars( this->num_variables); // chop down the number of variables
+    
+    
+	W_sphere_crit.only_first_vars(this->num_variables);
+    W_total_crit.merge(W_sphere_crit);
+    
+    
+    
+    W_total_crit.input_filename = "total_crit___there-is-a-problem";
+	W_total_crit.sort_for_unique(solve_options.T);
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+	compute_critical_curve(W_critcurve, // all input.
+                           W_total_crit,
                            V,
                            program_options,
                            solve_options);
 	
-	
-    witness_set W_total_crit;
-    
-	W_total_crit.merge(W_curve_crit);
-	W_total_crit.only_first_vars( this->num_variables); // chop down the number of variables
-    
-    
 	// DONE COMPUTING THE CRITICAL CURVE NOW.
 	this->output_main(program_options, V);
 	
@@ -70,46 +143,8 @@ void surface_decomposition::main(vertex_set & V,
 	
 	
 	
-	//the sphere stuffs
-    
-	create_sphere_system(W_surf.input_filename,
-                         "input_surf_sphere",
-                         sphere_radius,
-                         sphere_center,
-                         W_surf);
-	
-	
-	
-    
-    
-	witness_set W_intersection_sphere;
-	compute_sphere_witness_set(W_surf,
-                               W_intersection_sphere, // output
-                               program_options,
-                               solve_options);
-	
 
-    
-    witness_set W_sphere_crit;
-	compute_sphere_crit(W_intersection_sphere,
-                        W_sphere_crit, // output
-                        program_options,
-                        solve_options);
 	
-    this->output_main(program_options, V);
-    
-    // merge together the critical points from both the critical curve and the sphere curve
-
-	W_sphere_crit.only_first_vars(this->num_variables);
-    W_total_crit.merge(W_sphere_crit);
-    
-    
-    
-    
-    
-    
-	W_total_crit.input_filename = "input_surf_sphere";
-	W_total_crit.sort_for_unique(solve_options.T);
 	
 	
     // actually perform the interslice on the bounding sphere curve.
@@ -117,6 +152,21 @@ void surface_decomposition::main(vertex_set & V,
                             W_total_crit,          // the critical points for the both sphere and critical curve.
                             V,                     // vertex set.  it goes almost everywhere.
                             program_options, solve_options); // configuration
+    
+	
+    this->output_main(program_options, V);
+    
+
+    
+    
+    
+    
+    
+    
+	
+	
+	
+    
 	
 	
 	
@@ -200,13 +250,13 @@ void surface_decomposition::beginning_stuff(const witness_set & W_surf,
 	int num_deflations, *deflation_sequence = NULL;
 	
 	isosingular_deflation(&num_deflations, &deflation_sequence, program_options,
-                          program_options.current_working_filename,
+                          program_options.input_filename,
                           "witness_points_dehomogenized",
                           program_options.max_deflations, W_surf.dim, W_surf.comp_num);
 	free(deflation_sequence);
 	
 	
-	program_options.input_deflated_filename = program_options.current_working_filename;
+	program_options.input_deflated_filename = program_options.input_filename;
 	
 	std::stringstream converter;
 	converter << "_dim_" << W_surf.dim << "_comp_" << W_surf.comp_num << "_deflated";
@@ -226,7 +276,7 @@ void surface_decomposition::beginning_stuff(const witness_set & W_surf,
 	
 	
 	
-	checkSelfConjugate(W_surf,num_variables,program_options, program_options.current_working_filename);
+	checkSelfConjugate(W_surf,num_variables,program_options, W_surf.input_filename);
 	
 	//regenerate the various files, since we ran bertini since then and many files were deleted.
 	parse_input_file(program_options.input_deflated_filename);
@@ -270,18 +320,12 @@ void surface_decomposition::beginning_stuff(const witness_set & W_surf,
 
 
 
-
-
-void surface_decomposition::compute_critical_curve(witness_set & W_curve_crit,
-                                                   const witness_set & W_surf,
-                                                   vertex_set & V,
-                                                   BR_configuration & program_options,
-                                                   solver_configuration & solve_options)
+void surface_decomposition::compute_critcurve_witness_set(witness_set & W_critcurve,
+                                                          const witness_set & W_surf,
+                                                          BR_configuration & program_options,
+                                                          solver_configuration & solve_options)
 {
-	
-	program_options.merge_edges=false;
-	
-	
+  	
 	// find witness points on the critical curve.
 	
 	
@@ -290,17 +334,9 @@ void surface_decomposition::compute_critical_curve(witness_set & W_curve_crit,
 	nullspace_config ns_config;
     
 	
-	
-	
-	
-	
-	
-	
-	
 	std::cout << color::bold("m") << "computing witness points for the critical curve" << color::console_default() << std::endl;
     
-	witness_set W_curve;
-	compute_crit_nullspace(&W_curve, // the returned value
+	compute_crit_nullspace(&W_critcurve, // the returned value
                            W_surf,            // input the original witness set
                            this->randomizer_matrix,
                            this->pi,
@@ -312,40 +348,50 @@ void surface_decomposition::compute_critical_curve(witness_set & W_curve_crit,
                            solve_options,
                            &ns_config);
 	//this uses both pi[0] and pi[1] to compute witness points
-	//	W_curve.only_first_vars(num_vars);
-	W_curve.write_dehomogenized_coordinates("W_curve"); // write the points to file
+
+	W_critcurve.write_dehomogenized_coordinates("W_curve"); // write the points to file
 	
-	W_curve.input_filename = "input_critical_curve";
+	W_critcurve.input_filename = "input_critical_curve";
 	
 	// this system describes the system for the critical curve
 	create_nullspace_system("input_critical_curve",
-                            boost::filesystem::path(program_options.called_dir) / program_options.input_filename,
+                            boost::filesystem::path(program_options.called_dir) / program_options.input_deflated_filename,
                             program_options, &ns_config);
-	ns_config.clear();
-	
-	
-	
-	
-    //TODO: this should be deprecated
-	program_options.current_working_filename = "deletethiscall";
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+    
+    
+    
+    
+    // adjust the size of the linears to match the number of variables.  this should be a method in the witness set data type.
+    
+    for (int ii=0; ii<W_critcurve.num_linears; ii++) {
+		increase_size_vec_mp(W_critcurve.L_mp[ii], W_critcurve.num_variables); W_critcurve.L_mp[ii]->size = W_critcurve.num_variables;
+		
+		for (int jj=W_surf.num_variables; jj<W_critcurve.num_variables; jj++) {
+			set_zero_mp(&W_critcurve.L_mp[ii]->coord[jj]);
+		}
+	}
+    
+    
+    
+    return;
+    
+}
+
+
+void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_crit, // the computed value
+                                                      const witness_set & W_surf, // input witness set
+                                                      const witness_set & W_critcurve,
+                                                      BR_configuration & program_options,
+                                                      solver_configuration & solve_options)
+{
+  
+    
+	nullspace_config ns_config;
 	
 	std::cout << color::bold("m") << "\ncomputing critical points of the critical curve" <<  color::console_default() << std::endl;
 	
 	
-	compute_crit_nullspace(&W_curve_crit, // the returned value
+	compute_crit_nullspace(&W_critcurve_crit, // the returned value
                            W_surf,            // input the original witness set
                            this->randomizer_matrix,
                            this->pi,
@@ -358,77 +404,77 @@ void surface_decomposition::compute_critical_curve(witness_set & W_curve_crit,
                            &ns_config);
 	// this will use pi[0] to compute critical points
 	
-	W_curve_crit.only_first_vars(num_variables);
-	W_curve_crit.write_dehomogenized_coordinates("W_curve_crit_all"); // write the points to file
-	W_curve_crit.sort_for_real(solve_options.T);
-	W_curve_crit.write_dehomogenized_coordinates("W_curve_crit"); // write the points to file
+	W_critcurve_crit.only_first_vars(num_variables);
+//	W_critcurve_crit.write_dehomogenized_coordinates("W_critcurve_crit_all"); // write the points to file
+	W_critcurve_crit.sort_for_real(solve_options.T);
+//	W_critcurve_crit.write_dehomogenized_coordinates("W_critcurve_crit"); // write the points to file
 	
 	ns_config.clear();
 	
 	
-	this->compute_sphere_bounds(W_curve_crit); // sets the radius and center in this decomposition.  Must propagate to the constituent decompositions as well.   fortunately, i have a method for that!!!
-	crit_curve.copy_sphere_bounds(*this);
+	this->compute_sphere_bounds(W_critcurve_crit); // sets the radius and center in this decomposition.  Must propagate to the constituent decompositions as well.   fortunately, i have a method for that!!!
+	crit_curve.copy_sphere_bounds(*this); // copy the bounds into the critcurve.
 	
-	
-	
-
-	
-	
-	
-	
-	
-	
-	
-	
-	//fluff up the projection and linears to have 0 entries for all the synthetic variables.
-	vec_mp temp_proj; init_vec_mp2(temp_proj,0,1024);
-	vec_cp_mp(temp_proj, pi[0]);
-	std::cout << temp_proj->size << std::endl;
-	increase_size_vec_mp(temp_proj, W_curve.num_variables); // nondestructive increase in size
-    temp_proj->size = W_curve.num_variables;
-    
-	for ( int ii=W_surf.num_variables; ii<W_curve.num_variables; ii++) {
-		set_zero_mp(&temp_proj->coord[ii]);
-	}
-	
-	for (int ii=0; ii<W_curve.num_linears; ii++) {
-		increase_size_vec_mp(W_curve.L_mp[ii], W_curve.num_variables); W_curve.L_mp[ii]->size = W_curve.num_variables;
-		
-		for (int jj=W_surf.num_variables; jj<W_curve.num_variables; jj++) {
-			set_zero_mp(&W_curve.L_mp[ii]->coord[jj]);
-		}
-	}
-	
-    
     
     std::cout << color::bold("m") << "intersecting critical curve with sphere" << color::console_default() << std::endl;
     
-    W_curve.input_filename = "input_critical_curve";
+    W_critcurve_crit.input_filename = "input_critical_curve";
     
     
 	witness_set W_sphere_intersection;
     // now get the sphere intersection critical points and ends of the interval
 	crit_curve.get_additional_critpts(&W_sphere_intersection,  // the returned value
-                                      W_curve,       // all else here is input
+                                      W_critcurve,       // all else here is input
                                       this->randomizer_matrix,  //
                                       program_options,
                                       solve_options);
     
-
+    
     W_sphere_intersection.only_first_vars(W_surf.num_variables);
     
     W_sphere_intersection.sort_for_real(solve_options.T);
 	W_sphere_intersection.sort_for_unique(solve_options.T);
-
-    W_curve_crit.merge(W_sphere_intersection);
     
+    W_critcurve_crit.merge(W_sphere_intersection);
+    
+    
+    
+    
+    return;
+}
+
+void surface_decomposition::compute_critical_curve(const witness_set & W_critcurve,
+                                                   const witness_set & W_critpts,
+                                                   vertex_set & V,
+                                                   BR_configuration & program_options,
+                                                   solver_configuration & solve_options)
+{
+	
     std::cout << color::bold("m") << "interslicing critical curve" << color::console_default() << std::endl;
     
 	
-	W_curve_crit.input_filename = "input_critical_curve";
+    
+    
+	program_options.merge_edges=false;
 	
-	crit_curve.interslice(W_curve,
-                          W_curve_crit,
+    
+	//fluff up the projection to have 0 entries for all the synthetic variables.
+	vec_mp temp_proj; init_vec_mp2(temp_proj,0,1024);
+	vec_cp_mp(temp_proj, pi[0]);
+	std::cout << temp_proj->size << std::endl;
+	increase_size_vec_mp(temp_proj, W_critcurve.num_variables); // nondestructive increase in size
+    temp_proj->size = W_critcurve.num_variables;
+    
+	for ( int ii=this->num_variables; ii<W_critcurve.num_variables; ii++) {
+		set_zero_mp(&temp_proj->coord[ii]);
+	}
+	
+
+    
+
+	
+	crit_curve.interslice(W_critcurve,
+                          W_critpts,
                           this->randomizer_matrix,
                           &temp_proj,
                           program_options,
@@ -1407,8 +1453,7 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 						
 						//need to look the found point up in vertex set V
 						int found_index = index_in_vertices(V,
-                                                            found_point,
-                                                            solve_options.T);
+                                                            found_point);
 						
 						
 						

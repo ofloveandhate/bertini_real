@@ -953,13 +953,13 @@ public:
 	}
 	
 	
+    int add_witness_set(const witness_set & W, int add_type, vertex_set & V);
+    
 	int index_in_vertices(vertex_set &V,
-                          vec_mp testpoint,
-                          tracker_config_t T);
+                          vec_mp testpoint);
 	
 	int index_in_vertices_with_add(vertex_set &V,
-                                   vertex vert,
-                                   tracker_config_t T);
+                                   vertex vert);
 	
 	int setup(boost::filesystem::path INfile,
 						boost::filesystem::path & inputName,
