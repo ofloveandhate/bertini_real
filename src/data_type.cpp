@@ -9,7 +9,7 @@ std::string enum_lookup(int flag)
 		case SUCCESSFUL:
 			return "SUCCESSFUL";
 			break;
-		
+			
 		case CRITICAL_FAILURE:
 			return "CRITICAL_FAILURE";
 			break;
@@ -39,7 +39,7 @@ std::string enum_lookup(int flag)
 			break;
 			
 			
-		
+			
 			
 		case NULLSPACE:
 			return "NULLSPACE";
@@ -109,7 +109,7 @@ std::string enum_lookup(int flag)
 		case COMP_MP:
 			return "COMP_MP";
 			break;
-		
+			
 		case COMP_D:
 			return "COMP_D";
 			break;
@@ -134,22 +134,22 @@ void * br_malloc(size_t size)
  * NOTES: does malloc with error checking                        *
  \***************************************************************/
 {
-  if (size <= 0)
-  { // nothing to allocate
-    return NULL;
-  }
-  else
-  { // try to allocate memory
-    void *x = malloc(size);
-    if (x == NULL)
-    {
-//			raise(SIGINT);
-      printf("ERROR: bertini_real's malloc was unable to allocate memory (%d)!\n", (int) size);
+	if (size <= 0)
+	{ // nothing to allocate
+		return NULL;
+	}
+	else
+	{ // try to allocate memory
+		void *x = malloc(size);
+		if (x == NULL)
+		{
+			//			raise(SIGINT);
+			printf("ERROR: bertini_real's malloc was unable to allocate memory (%d)!\n", (int) size);
 			deliberate_segfault();
-//      br_exit(ERROR_MEMORY_ALLOCATION);
-    }
-    return x;
-  }
+			//      br_exit(ERROR_MEMORY_ALLOCATION);
+		}
+		return x;
+	}
 }
 
 void *br_realloc(void *ptr, size_t size)
@@ -160,22 +160,22 @@ void *br_realloc(void *ptr, size_t size)
  * NOTES: does realloc with error checking                       *
  \***************************************************************/
 {
-  if (size <= 0)
-  { // nothing to allocate - free memory and return NULL
-    free(ptr);
-    ptr = NULL;
-  }
-  else
-  { // try to reallocate memory
-    ptr = realloc(ptr, size);
-    if (ptr == NULL)
-    {
-      printf("ERROR: bertini_real's realloc was unable to re-allocate memory!\n");
+	if (size <= 0)
+	{ // nothing to allocate - free memory and return NULL
+		free(ptr);
+		ptr = NULL;
+	}
+	else
+	{ // try to reallocate memory
+		ptr = realloc(ptr, size);
+		if (ptr == NULL)
+		{
+			printf("ERROR: bertini_real's realloc was unable to re-allocate memory!\n");
 			deliberate_segfault();
-//      br_exit(ERROR_MEMORY_ALLOCATION);
-    }
-  }
-  return ptr;
+			//      br_exit(ERROR_MEMORY_ALLOCATION);
+		}
+	}
+	return ptr;
 }
 
 
@@ -195,18 +195,18 @@ void br_exit(int errorCode)
  * NOTES: exits Bertini - either standard or using MPI           *
  \***************************************************************/
 {
-  if (errorCode == 0)
-    errorCode = ERROR_OTHER;
+	if (errorCode == 0)
+		errorCode = ERROR_OTHER;
 	
 	
-  printf("%s\n", "bertini_real quitting\n");
+	printf("%s\n", "bertini_real quitting\n");
 	
 	deliberate_segfault();
 	
 #ifdef _HAVE_MPI
-  MPI_Abort(MPI_COMM_WORLD, errorCode);
+	MPI_Abort(MPI_COMM_WORLD, errorCode);
 #else
-  exit(errorCode);
+	exit(errorCode);
 #endif
 }
 
@@ -238,56 +238,56 @@ void br_exit(int errorCode)
 
 int witness_set::witnessSetParse(const boost::filesystem::path witness_set_file, const int num_vars)
 {
-  
 	
-  int ii, jj;
 	
-  FILE *IN = safe_fopen_read(witness_set_file.c_str());
-  
-  
+	int ii, jj;
+	
+	FILE *IN = safe_fopen_read(witness_set_file.c_str());
+	
+	
 	int dim, comp_num;
 	int num_patches, patch_size, num_linears, num_pts, num_vars_in_linears;
 	
 	
 	
-  fscanf(IN, "%d %d %d", &num_pts, &dim, &comp_num); scanRestOfLine(IN);
+	fscanf(IN, "%d %d %d", &num_pts, &dim, &comp_num); scanRestOfLine(IN);
 	this->dim = dim;
 	this->comp_num = comp_num;
-  this->num_pts = this->num_pts = num_pts;
+	this->num_pts = this->num_pts = num_pts;
 	this->pts_mp=(point_mp *)br_malloc(this->num_pts*sizeof(point_mp));
 	
 	
-  this->num_variables = num_vars;
+	this->num_variables = num_vars;
 	this->num_synth_vars = 0;
 	
-  for (ii=0; ii < num_pts; ii++) {
-    init_point_mp2(this->pts_mp[ii],num_vars,1024);
+	for (ii=0; ii < num_pts; ii++) {
+		init_point_mp2(this->pts_mp[ii],num_vars,1024);
 		this->pts_mp[ii]->size = num_vars;
-    //read the witness points into memory
-    for (jj=0; jj < num_vars; jj=jj+1) {
+		//read the witness points into memory
+		for (jj=0; jj < num_vars; jj=jj+1) {
 			mpf_inp_str(this->pts_mp[ii]->coord[jj].r, IN, 10); // 10 is the base
 			mpf_inp_str(this->pts_mp[ii]->coord[jj].i, IN, 10);
 			scanRestOfLine(IN);
-    }
-  }
-  
+		}
+	}
+	
 	fscanf(IN, "%d %d", &num_linears, &num_vars_in_linears);  scanRestOfLine(IN);
 	
 	this->num_linears = num_linears;
 	this->L_mp = (vec_mp *)br_malloc(num_linears*sizeof(vec_mp));
 	
-  for (ii=0; ii < num_linears; ii++) {
+	for (ii=0; ii < num_linears; ii++) {
 		init_vec_mp2(this->L_mp[ii],num_vars_in_linears,1024);
 		this->L_mp[ii]->size = num_vars_in_linears;
 		
-    //read the witness linears into memory
-    for (jj=0; jj < num_vars_in_linears; jj++) {
+		//read the witness linears into memory
+		for (jj=0; jj < num_vars_in_linears; jj++) {
 			mpf_inp_str(this->L_mp[ii]->coord[jj].r, IN, 10);
 			mpf_inp_str(this->L_mp[ii]->coord[jj].i, IN, 10);
 			scanRestOfLine(IN);
-    }
-  }
-  
+		}
+	}
+	
 	
 	fscanf(IN, "%d %d", &num_patches, &patch_size); scanRestOfLine(IN);
 	this->num_patches = num_patches;
@@ -301,24 +301,24 @@ int witness_set::witnessSetParse(const boost::filesystem::path witness_set_file,
 	
 	this->patch_mp = (vec_mp *)br_malloc(num_patches*sizeof(vec_mp));
 	
-  for (ii=0; ii < num_patches; ii++) {
+	for (ii=0; ii < num_patches; ii++) {
 		init_vec_mp2(this->patch_mp[ii],patch_size,1024);//default max_prec is 1024
 		
 		this->patch_mp[ii]->size = patch_size;
-    //read the patch into memory
-    for (jj=0; jj < patch_size; jj++) {
+		//read the patch into memory
+		for (jj=0; jj < patch_size; jj++) {
 			mpf_inp_str(this->patch_mp[ii]->coord[jj].r, IN, 10);
 			mpf_inp_str(this->patch_mp[ii]->coord[jj].i, IN, 10);
 			scanRestOfLine(IN);
-    }
-  }
+		}
+	}
 	
-  fclose(IN);
-	
-	
+	fclose(IN);
 	
 	
-  return 0;
+	
+	
+	return 0;
 }
 
 
@@ -825,9 +825,9 @@ void witness_set::sort_for_unique(tracker_config_t T)
 void witness_set::sort_for_inside_sphere(comp_mp radius, vec_mp center)
 {
 	
-
 	
-
+	
+	
 	int num_good_pts = 0;
 	
 	
@@ -837,7 +837,7 @@ void witness_set::sort_for_inside_sphere(comp_mp radius, vec_mp center)
 	comp_mp temp; init_mp(temp);
 	
 	for (int ii = 0; ii<this->num_pts; ++ii) {
-
+		
 		
 		
 		dehomogenize(&temp_vec, this->pts_mp[ii]);
@@ -853,7 +853,7 @@ void witness_set::sort_for_inside_sphere(comp_mp radius, vec_mp center)
 			is_ok.push_back(0);
 		}
 		
-
+		
 		
 	}
 	
@@ -909,7 +909,7 @@ void witness_set::merge(const witness_set & W_in)
 	
 	if (W_in.num_synth_vars != this->num_synth_vars) {
 		printf("merging two witness sets with differing numbers of synthetic variables. %d merging set, %d existing\n",
-					 W_in.num_synth_vars, this->num_synth_vars);
+			   W_in.num_synth_vars, this->num_synth_vars);
 		deliberate_segfault();
 	}
 	
@@ -967,87 +967,6 @@ void witness_set::merge(const witness_set & W_in)
 
 
 
-int witness_set::compute_downstairs_crit_midpts(vec_mp crit_downstairs,
-																								 vec_mp midpoints_downstairs,
-																								 std::vector< int > & index_tracker,
-																								 vec_mp pi) const
-{
-	
-	int retVal = 0;
-	
-	
-	vec_mp projection_values; init_vec_mp2(projection_values,this->num_pts,1024);
-	projection_values->size = this->num_pts;
-	
-	for (int ii=0; ii<this->num_pts; ii++){
-		
-		for (int jj=0; jj<this->pts_mp[ii]->size; jj++) {
-			
-			if (!(mpfr_number_p(this->pts_mp[ii]->coord[jj].r) && mpfr_number_p(this->pts_mp[ii]->coord[jj].i))) {
-				std::cout << color::red();
-				std::cout << "there was NAN in a point in the projections to sort :(" << std::endl;
-				print_point_to_screen_matlab(this->pts_mp[ii], "bad_point");
-				
-				print_point_to_screen_matlab(pi,"pi");
-				std::cout << color::console_default();
-				return -14;
-			}
-			
-		}
-	
-		
-		
-		projection_value_homogeneous_input(&projection_values->coord[ii], this->pts_mp[ii], pi); // set projection value
-		
-		print_comp_matlab(&projection_values->coord[ii],"proj_val");
-		
-		
-		if (!(mpfr_number_p(projection_values->coord[ii].r) && mpfr_number_p(projection_values->coord[ii].i)))
-		{
-			print_comp_matlab(&projection_values->coord[ii],"not_a_number");
-			print_point_to_screen_matlab(pi,"pi");
-			
-		}
-			
-//		if (fabs(mpf_get_d(projection_values->coord[ii].i))<1e-13) {
-//			mpf_set_str(projection_values->coord[ii].i,"0",10);
-//		}
-	}
-	
-	
-	change_size_vec_mp(crit_downstairs,1); // destructive resize
-	crit_downstairs->size = 1;
-	
-	retVal = sort_increasing_by_real(crit_downstairs, index_tracker, projection_values);
-	
-	clear_vec_mp(projection_values);
-	
-	int num_midpoints = crit_downstairs->size - 1;
-	
-	if (num_midpoints<1) {
-		return retVal;
-	}
-	
-	
-	comp_d h;  h->r = 0.5; h->i = 0.0;
-	comp_mp half; init_mp2(half,1024); d_to_mp(half, h);
-	
-	change_size_vec_mp(midpoints_downstairs, num_midpoints);
-	midpoints_downstairs->size = num_midpoints;
-	
-	comp_mp temp; init_mp2(temp,1024);
-	for (int ii=0; ii<num_midpoints; ii++){
-		add_mp(temp, &crit_downstairs->coord[ii], &crit_downstairs->coord[ii+1]);
-		mul_mp(&midpoints_downstairs->coord[ii], temp, half);
-	}
-	
-	clear_mp(temp);
-	clear_mp(half);
-	
-	
-	return retVal;
-}
-
 
 
 
@@ -1062,7 +981,7 @@ void witness_set::cp_names(const witness_set & W_in)
 	}
 	
 	this->variable_names = W_in.variable_names;
-
+	
 }
 
 
@@ -1074,7 +993,7 @@ void witness_set::cp_linears(const witness_set & W_in)
 	int ii;
 	
 	
-
+	
 	
 	if (this->num_linears==0)
 		this->L_mp = (vec_mp *)br_malloc(W_in.num_linears * sizeof(vec_mp));
@@ -1112,13 +1031,223 @@ void witness_set::cp_patches(const witness_set & W_in)
 }
 
 
+int vertex_set::search_for_point(vec_mp testpoint)
+{
+    int index = -1;
+    
+    index = search_for_active_point(testpoint);
+    
+    if (index==-1) {
+        index = search_for_removed_point(testpoint);
+    }
+    
+    return index;
+}
+
+
+int vertex_set::search_for_active_point(vec_mp testpoint)
+{
+    int index = -1; // initialize the index we will return
+    
+    // dehomogenize the testpoint into the internal temp container.
+    for (int jj=1; jj<num_natural_variables; jj++) {
+		div_mp(&checker_1->coord[jj-1], &testpoint->coord[jj],  &testpoint->coord[0]);
+	}
+    
+    
+	//	WTB: a faster comparison search.
+	for (int ii=0; ii<num_vertices; ii++) {
+		
+		int current_index = ii;
+		
+		if (vertices[current_index].removed==0) {
+			
+			// dehomogenize the current point under investigation
+			for (int jj=1; jj<num_natural_variables; jj++) {
+				div_mp(&checker_2->coord[jj-1], &vertices[current_index].pt_mp->coord[jj], &vertices[current_index].pt_mp->coord[0]);
+			}
+			
+			if (isSamePoint_inhomogeneous_input(checker_1, checker_2)){
+				index = current_index;
+				break;
+			}
+			
+			if (index!=-1)
+				break;
+			
+		}
+	}
+    
+    return index;
+}
+
+
+
+int vertex_set::search_for_removed_point(vec_mp testpoint)
+{
+    
+    int index = -1; // initialize the index we will return
+    
+    
+    // dehomogenize the testpoint into the internal temp container.
+    
+    for (int jj=1; jj<num_natural_variables; jj++) {
+		div_mp(&checker_1->coord[jj-1], &testpoint->coord[jj],  &testpoint->coord[0]);
+	}
+    
+    
+    //	WTB: a faster comparison search.
+    for (int ii=0; ii<num_vertices; ii++) {
+		int current_index = ii;
+		
+		if (vertices[current_index].removed==1) {
+			
+			for (int jj=1; jj<num_natural_variables; jj++) {
+				div_mp(&checker_2->coord[jj-1], &vertices[current_index].pt_mp->coord[jj], &vertices[current_index].pt_mp->coord[0]);
+			}
+			
+			if (isSamePoint_inhomogeneous_input(checker_1, checker_2)){
+				index = current_index;
+				break;
+			}
+			
+			if (index!=-1)
+				break;
+			
+		}
+	}
+    
+    return index;
+}
 
 
 
 
 
+int vertex_set::compute_downstairs_crit_midpts(const witness_set & W,
+                                               vec_mp crit_downstairs,
+                                               vec_mp midpoints_downstairs,
+                                               std::vector< int > & index_tracker,
+                                               vec_mp pi)
+{
+    
+    
+	
+	int retVal = SUCCESSFUL;
+	
+    int proj_index = this->get_proj_index(pi);
+    
+	vec_mp projection_values; init_vec_mp2(projection_values,W.num_pts,1024);
+	projection_values->size = W.num_pts;
+	
+	for (int ii=0; ii<W.num_pts; ii++){
+		
+		for (int jj=0; jj<W.pts_mp[ii]->size; jj++) {
+			
+			if (!(mpfr_number_p(W.pts_mp[ii]->coord[jj].r) && mpfr_number_p(W.pts_mp[ii]->coord[jj].i))) {
+				std::cout << color::red();
+				std::cout << "there was NAN in a coordinate for a point in the projections to sort :(" << std::endl;
+				print_point_to_screen_matlab(W.pts_mp[ii], "bad_point");
+				
+				print_point_to_screen_matlab(pi,"pi");
+				std::cout << color::console_default();
+				return CRITICAL_FAILURE;
+			}
+			
+		}
+		
+        
+        int curr_index = search_for_point(W.pts_mp[ii]);
+        
+        if (curr_index < 0) {
+            std::cout << color::red() << "trying to retrieve projection value from a non-stored point" << color::console_default() << std::endl;
+            mypause();
+        }
+        
+
+        
+        set_mp(&projection_values->coord[ii], &vertices[curr_index].projection_values->coord[proj_index]);
+        
+		
+		
+		if (!(mpfr_number_p(projection_values->coord[ii].r) && mpfr_number_p(projection_values->coord[ii].i)))
+		{
+			print_comp_matlab(&projection_values->coord[ii],"not_a_number");
+			print_point_to_screen_matlab(pi,"pi");
+			
+		}
+		
+	}
+	
+	
+#ifdef thresholding
+	real_threshold(projection_values, 1e-13);
+#endif
+	
+	
+	change_size_vec_mp(crit_downstairs,1); // destructive resize
+	crit_downstairs->size = 1;
+	
+	retVal = sort_increasing_by_real(crit_downstairs, index_tracker, projection_values);
+	
+	clear_vec_mp(projection_values); // done with this data.  clear it.
+	
+	int num_midpoints = crit_downstairs->size - 1;
+	
+	if (num_midpoints<1) {
+        // work is done, simply return
+		return retVal;
+	}
+	
+	
+	comp_d h;  h->r = 0.5; h->i = 0.0;
+	comp_mp half; init_mp2(half,1024); d_to_mp(half, h);
+	
+	change_size_vec_mp(midpoints_downstairs, num_midpoints);
+	midpoints_downstairs->size = num_midpoints;
+	
+	comp_mp temp; init_mp2(temp,1024);
+	for (int ii=0; ii<num_midpoints; ii++){
+		add_mp(temp, &crit_downstairs->coord[ii], &crit_downstairs->coord[ii+1]);
+		mul_mp(&midpoints_downstairs->coord[ii], temp, half);
+	}
+	
+	clear_mp(temp);
+	clear_mp(half);
+	
+	
+	return retVal;
+}
 
 
+
+
+void vertex_set::assert_projection_value(const std::set< int > & relevant_indices, comp_mp new_value)
+{
+    if (this->curr_projection<0) {
+        std::cout << color::red() << "trying to assert projection value (current index) without having index set" << color::console_default() << std::endl;
+        br_exit(-91621);
+    }
+    assert_projection_value(relevant_indices,new_value,this->curr_projection);
+    return;
+}
+
+void vertex_set::assert_projection_value(const std::set< int > & relevant_indices, comp_mp new_value, int proj_index)
+{
+    
+    
+    if ( (proj_index) > num_projections ) {
+        std::cout << color::red() << "trying to assert projection value, but index of projection is larger than possible" << color::console_default() << std::endl;
+    }
+    
+    for (std::set<int>::iterator ii=relevant_indices.begin(); ii!=relevant_indices.end(); ii++) {
+        //*ii
+        set_mp(&vertices[*ii].projection_values->coord[proj_index], new_value);
+    }
+    
+    
+    return;
+}
 
 
 
@@ -1152,20 +1281,22 @@ int vertex_set::add_vertex(const vertex source_vertex){
 		if (! (mpfr_number_p( vertices[num_vertices].projection_values->coord[ii].r) && mpfr_number_p( vertices[num_vertices].projection_values->coord[ii].i)  ) ) {
 			compute_proj_val = true;
 		}
-//		else if ( false )//yeah, i dunno what else right yet.
-//		{
-//			compute_proj_val = true;
-//		}
+		//		else if ( false )//yeah, i dunno what else right yet.
+		//		{
+		//			compute_proj_val = true;
+		//		}
 		
 		
 		if (compute_proj_val==true) {
 			projection_value_homogeneous_input(&vertices[num_vertices].projection_values->coord[ii],
-																				 vertices[num_vertices].pt_mp,
-																				 projections[ii]);
+											   vertices[num_vertices].pt_mp,
+											   projections[ii]);
+            real_threshold(&vertices[num_vertices].projection_values->coord[ii],1e-13);
 		}
 		
 	}
 	
+    
 	
 	vertices[num_vertices].input_filename_index = curr_input_index;
 	
@@ -1239,7 +1370,7 @@ int vertex_set::setup_vertices(boost::filesystem::path INfile)
 		vertex_set::add_vertex(temp_vertex);
 	}
 	
-
+	
 	
 	fclose(IN);
 	
@@ -1310,7 +1441,7 @@ void vertex_set::print(boost::filesystem::path outputfile)
 		}
 	}
 	
-
+	
 	
 	fclose(OUT);
 	
@@ -1329,10 +1460,10 @@ int decomposition::add_vertex(vertex_set & V, vertex source_vertex)
 	if (this->counters.find(source_vertex.type) == this->counters.end()) {
 		this->counters[source_vertex.type] = 0;
 	}
-
+	
 	this->counters[source_vertex.type]++;
 	this->indices[source_vertex.type].push_back(current_index);
-
+	
 	return current_index;
 }
 
@@ -1341,78 +1472,19 @@ int decomposition::add_vertex(vertex_set & V, vertex source_vertex)
 
 
 
-int decomposition::index_in_vertices(vertex_set &V,
-																		 vec_mp testpoint,
-																		 comp_mp proj_val,
-																		 tracker_config_t T)
+int decomposition::index_in_vertices(vertex_set & V,
+									 vec_mp testpoint,
+									 tracker_config_t T)
 {
-	int ii;
+
 	int index = -1;
-		
-	
-	
-	for (int jj=1; jj<V.num_natural_variables; jj++) {
-		div_mp(&V.checker_1->coord[jj-1], &testpoint->coord[jj],  &testpoint->coord[0]);
-	}
 	
 	
 	// first we search the non-removed points.
-	
-//	WTB: a faster comparison search.
-	for (ii=0; ii<V.num_vertices; ii++) {
-		
-		int current_index = ii;
-		
-		if (V.vertices[current_index].removed==0) {
-		
-		//it would be desirable to perform the below comparison, but the projection value depends on the projection used to compute it!
-		// hence, it has been commented out.  
-//			sub_mp(V.diff, projection_value, V.vertices[current_index].projVal_mp);
-//			mpf_abs_mp(V.abs, V.diff);
-//			
-//			if (mpf_cmp(V.abs, V.zerothresh) > 0){ // i think this is opposite
-//				continue;
-//			}
-		
-		for (int jj=1; jj<V.num_natural_variables; jj++) {
-			div_mp(&V.checker_2->coord[jj-1],&V.vertices[current_index].pt_mp->coord[jj], &V.vertices[current_index].pt_mp->coord[0]);
-		}
-		
-		if (isSamePoint_inhomogeneous_input(V.checker_1, V.checker_2)){				
-			index = current_index;
-			break;
-		}
-
-		if (index!=-1)
-			break;
-			
-		}
-	}
-		
-	
-	for (ii=0; ii<V.num_vertices; ii++) {
-		int current_index = ii;
-		
-		if (V.vertices[current_index].removed==1) {
-			
-			for (int jj=1; jj<V.num_natural_variables; jj++) {
-				div_mp(&V.checker_2->coord[jj-1],&V.vertices[current_index].pt_mp->coord[jj], &V.vertices[current_index].pt_mp->coord[0]);
-			}
-			
-			if (isSamePoint_inhomogeneous_input(V.checker_1, V.checker_2)){
-				index = current_index;
-				break;
-			}
-			
-			if (index!=-1)
-				break;
-			
-		}
-	}
-	
-	
-	
-	return index;	
+	index = V.search_for_point(testpoint);
+    
+    
+	return index;
 }
 
 
@@ -1422,11 +1494,10 @@ int decomposition::index_in_vertices(vertex_set &V,
 //TODO: make T here a pointer
 
 int decomposition::index_in_vertices_with_add(vertex_set &V,
-																							vertex vert,
-																							comp_mp proj_val,
-																							tracker_config_t T)
+											  vertex vert,
+											  tracker_config_t T)
 {
-	int index = decomposition::index_in_vertices(V, vert.pt_mp, proj_val, T);
+	int index = decomposition::index_in_vertices(V, vert.pt_mp, T);
 	
 	if (index==-1) {
 		index = decomposition::add_vertex(V, vert);
@@ -1447,11 +1518,11 @@ int decomposition::index_in_vertices_with_add(vertex_set &V,
 
 
 int decomposition::setup(boost::filesystem::path INfile,
-												 boost::filesystem::path & inputName,
-												 boost::filesystem::path directoryName)
+						 boost::filesystem::path & inputName,
+						 boost::filesystem::path directoryName)
 {
 	
-
+	
 	boost::filesystem::path input_deflated_Name;
 	
 	std::stringstream converter;
@@ -1463,7 +1534,7 @@ int decomposition::setup(boost::filesystem::path INfile,
 	getline(fin, tempstr);
 	input_deflated_Name = tempstr;
 	inputName = directoryName / input_deflated_Name;
-
+	
 	getline(fin, tempstr);
 	converter << tempstr;
 	converter >> this->num_variables >> this->dimension;
@@ -1505,7 +1576,7 @@ int decomposition::setup(boost::filesystem::path INfile,
 		decomposition::add_projection(tempvec);
 		
 	}
-
+	
 	
 	
 	
@@ -1524,7 +1595,7 @@ int decomposition::setup(boost::filesystem::path INfile,
 	vec_mp temp_patch; init_vec_mp2(temp_patch,1,1024); temp_patch->size = 1;
 	for (int ii=0; ii<curr_num_patches; ii++) {
 		
-		getline(fin,tempstr); 
+		getline(fin,tempstr);
 		getline(fin,tempstr); // <--- supposed to have the size in it
 		
 		int curr_size;
@@ -1550,7 +1621,7 @@ int decomposition::setup(boost::filesystem::path INfile,
 		print_point_to_screen_matlab(temp_patch,"temp_patch");
 	}
 	
-
+	
 	
 	clear_vec_mp(temp_patch);
 	
@@ -1594,7 +1665,7 @@ void decomposition::print(boost::filesystem::path base)
 	}
 	
 	if (dimension != num_curr_projections) {
-//		std::cout << "decomposition was short projections\nneeded	" << this->dimension << " but had " << num_curr_projections << std::endl;;
+		//		std::cout << "decomposition was short projections\nneeded	" << this->dimension << " but had " << num_curr_projections << std::endl;;
 	}
 	
 	for (ii=0; ii<num_curr_projections; ii++) {
@@ -1650,13 +1721,13 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 		for (int ii=0; ii<num_vars; ii++) {
 			set_mp(&sphere_center->coord[ii], &temp_vec->coord[ii]);
 		}
-		
+		real_threshold(sphere_center, 1e-13);
 		clear_vec_mp(temp_vec);
 		return;
 	}
 	
 	
-//	W_crit.print_to_screen();
+	//	W_crit.print_to_screen();
 	
 	
 	
@@ -1716,11 +1787,11 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 	}
 	
 	
-
+	
 	mpf_set_str(temp_rad->r,"2.0",10);
 	mpf_set_str(temp_rad->i,"0.0",10);
 	mul_mp(sphere_radius,temp_rad,sphere_radius);  // double the radius to be safe.
-
+	
 	
 	clear_mp(temp_mp);
 	clear_vec_mp(temp_vec);
@@ -1729,14 +1800,14 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 	
 	this->have_sphere_radius = true;
 	
+	real_threshold(sphere_center,1e-13);
 	
-	
-	std::cout << color::green();
-	print_point_to_screen_matlab(sphere_center,"center");
-	print_comp_matlab(sphere_radius,"radius");
-	std::cout << std::endl;
-	
-	std::cout << color::console_default();
+//	std::cout << color::green();
+//	print_point_to_screen_matlab(sphere_center,"center");
+//	print_comp_matlab(sphere_radius,"radius");
+//	std::cout << std::endl;
+//	
+//	std::cout << color::console_default();
 	return;
 }
 
@@ -1766,7 +1837,7 @@ void decomposition::output_main(const BR_configuration & program_options, vertex
 	
 	
 	V.print(base / "V.vertex");
-//	V.print_to_screen();
+	//	V.print_to_screen();
 	
 	this->print(base); // using polymorphism here!
 	
@@ -1958,14 +2029,14 @@ void projection_value_homogeneous_input(comp_d result, vec_d input, vec_d projec
 	}
 	set_d(temp, result);
 	div_d(result, temp, &input->coord[0]);
-//
-//	if (result->i < 1e-14) {
-//		result->i = 0.0;
-//	}
+	//
+	//	if (result->i < 1e-14) {
+	//		result->i = 0.0;
+	//	}
 	
-//	if (result->i < 1e-13) {
-//		result->i = 0.0;
-//	}
+	//	if (result->i < 1e-13) {
+	//		result->i = 0.0;
+	//	}
 	
 	return;
 }
@@ -1974,10 +2045,10 @@ void projection_value_homogeneous_input(comp_d result, vec_d input, vec_d projec
  computes the projection value given a homogeneous input.
  
  mp type
-*/
+ */
 void projection_value_homogeneous_input(comp_mp result, vec_mp input, vec_mp projection)
 {
-
+	
 	
 	set_zero_mp(result);
 	comp_mp temp; init_mp2(temp,1024);
@@ -1990,19 +2061,19 @@ void projection_value_homogeneous_input(comp_mp result, vec_mp input, vec_mp pro
 	clear_mp(temp);
 	
 	
-//	comp_d temp2;
-//	mp_to_d(temp2, result);
-//	if (temp2->i < 1e-13) {
-//		mpf_set_d(result->i, 0.0);
-//	}
-
+	//	comp_d temp2;
+	//	mp_to_d(temp2, result);
+	//	if (temp2->i < 1e-13) {
+	//		mpf_set_d(result->i, 0.0);
+	//	}
 	
 	
-
 	
-//	if (mpf_get_d(result->i) < 1e-14) {
-//		mpf_set_d(result->i, 0.0);
-//	}
+	
+	
+	//	if (mpf_get_d(result->i) < 1e-14) {
+	//		mpf_set_d(result->i, 0.0);
+	//	}
 	
 	
 }
@@ -2015,7 +2086,7 @@ int isSamePoint_inhomogeneous_input(point_d left, point_d right){
 		printf("attempting to isSamePoint_inhom_d with disparate sized points.\n");
 		std::cout << "left: " << left->size << "\t right: " << right->size << std::endl;
 		deliberate_segfault();
-//		exit(-287);
+		//		exit(-287);
 	}
 	
 	
@@ -2032,12 +2103,12 @@ int isSamePoint_inhomogeneous_input(point_mp left, point_mp right){
 		printf("attempting to isSamePoint_inhom_mp with disparate sized points.\n");
 		std::cout << "left: " << left->size << "\t right: " << right->size << std::endl;
 		deliberate_segfault();
-//		exit(-287);
+		//		exit(-287);
 	}
 	
 	int indicator = isSamePoint(NULL,left,65,NULL,right,65,SAMEPOINTTOL); // make the bertini library call
 	
-
+	
 	return indicator;
 }
 
@@ -2049,7 +2120,7 @@ int isSamePoint_homogeneous_input(point_d left, point_d right){
 		printf("attempting to isSamePoint_hom_d with disparate sized points.\n");
 		std::cout << "left: " << left->size << "\t right: " << right->size << std::endl;
 		deliberate_segfault();
-//		exit(-287);
+		//		exit(-287);
 	}
 	
 	vec_d dehom_left;  init_vec_d(dehom_left,left->size-1);  dehom_left->size = left->size-1;
@@ -2072,7 +2143,7 @@ int isSamePoint_homogeneous_input(point_mp left, point_mp right){
 		printf("attempting to isSamePoint_hom_mp with disparate sized points.\n");
 		std::cout << "left: " << left->size << "\t right: " << right->size << std::endl;
 		deliberate_segfault();
-//		exit(-287);
+		//		exit(-287);
 	}
 	
 	vec_mp dehom_left;  init_vec_mp(dehom_left,left->size-1);  dehom_left->size = left->size-1;
@@ -2086,6 +2157,58 @@ int isSamePoint_homogeneous_input(point_mp left, point_mp right){
 	clear_vec_mp(dehom_left); clear_vec_mp(dehom_right);
 	
 	return indicator;
+}
+
+
+
+void real_threshold(comp_mp blabla, double threshold)
+{
+
+	comp_d temp;
+	mp_to_d(temp, blabla);
+
+	if (temp->i < threshold) {
+		mpf_set_str( blabla->i, "0.0", 10);
+	}
+	
+	return;
+}
+
+
+
+void real_threshold(vec_mp blabla, double threshold)
+{
+	if (blabla->size == 0) {
+		return;
+	}
+	
+	comp_d temp;
+	for (int ii=0; ii<blabla->size; ii++) {
+		mp_to_d(temp, &blabla->coord[ii]);
+		if (temp->i < threshold) {
+			mpf_set_str( blabla->coord[ii].i, "0.0", 10);
+		}
+	}
+	return;
+}
+
+
+void real_threshold(mat_mp blabla, double threshold)
+{
+	if ( (blabla->rows == 0) || (blabla->cols == 0) ) {
+		return;
+	}
+	
+	comp_d temp;
+	for (int jj=0; jj<blabla->cols; jj++) {
+		for (int ii=0; ii<blabla->rows; ii++) {
+			mp_to_d(temp, &blabla->entry[ii][jj]);
+			if (temp->i < threshold) {
+				mpf_set_str( blabla->entry[ii][jj].i, "0.0", 10);
+			}
+		}
+	}
+	return;
 }
 
 
@@ -2128,26 +2251,26 @@ void print_matrix_to_screen_matlab(mat_d M, std::string name)
 	{ // print kth row
 		for (jj = 0; jj < M->cols; jj++)
 		{
-//			if (abs(M->entry[kk][jj].r)<1e-12) {
-//				printf("0");
-//			}
-//			else{
-//			printf("%.8le",M->entry[kk][jj].r);
-//			}
-//			
-//			if (abs(M->entry[kk][jj].r)>=1e-12 && abs(M->entry[kk][jj].i)>=1e-12) {
-//				printf("+");
-//			}
-//			else{
-//				printf(" ");
-//			}
-//			
-//			if (abs(M->entry[kk][jj].i)<1e-12) {
-//				
-//			}
-//			else{
-//				printf("1i*%.8le ",M->entry[kk][jj].i);
-//			}
+			//			if (abs(M->entry[kk][jj].r)<1e-12) {
+			//				printf("0");
+			//			}
+			//			else{
+			//			printf("%.8le",M->entry[kk][jj].r);
+			//			}
+			//
+			//			if (abs(M->entry[kk][jj].r)>=1e-12 && abs(M->entry[kk][jj].i)>=1e-12) {
+			//				printf("+");
+			//			}
+			//			else{
+			//				printf(" ");
+			//			}
+			//
+			//			if (abs(M->entry[kk][jj].i)<1e-12) {
+			//
+			//			}
+			//			else{
+			//				printf("1i*%.8le ",M->entry[kk][jj].i);
+			//			}
 			printf("%.4le+1i*%.4le ",M->entry[kk][jj].r,M->entry[kk][jj].i );
 		}
 		if (kk!= M->rows-1) {
@@ -2244,7 +2367,7 @@ void print_path_retVal_message(int retVal){
 	else if (retVal==-22){
 		printf("higher_dim\nthis is used in regeneration when an endpoint lies on a higher dimensional component\n");
 	}
-
+	
 	
 	return;
 }
@@ -2270,47 +2393,47 @@ int get_num_vars_PPD(preproc_data PPD){
 
 void cp_patch_mp(patch_eval_data_mp *PED, patch_eval_data_mp PED_input)
 {
-  PED->num_patches = PED_input.num_patches;
+	PED->num_patches = PED_input.num_patches;
 	
-  // set the current precision
-  PED->curr_prec = PED_input.curr_prec;
+	// set the current precision
+	PED->curr_prec = PED_input.curr_prec;
 	
-  // initialize patchCoeff to this preicision
-  init_mat_mp2(PED->patchCoeff, PED_input.patchCoeff->rows, PED_input.patchCoeff->cols, PED->curr_prec);
-  init_mat_rat(PED->patchCoeff_rat, PED_input.patchCoeff->rows, PED_input.patchCoeff->cols);
+	// initialize patchCoeff to this preicision
+	init_mat_mp2(PED->patchCoeff, PED_input.patchCoeff->rows, PED_input.patchCoeff->cols, PED->curr_prec);
+	init_mat_rat(PED->patchCoeff_rat, PED_input.patchCoeff->rows, PED_input.patchCoeff->cols);
 	
-  // setup patchCoeff
-  mat_cp_mp_rat(PED->patchCoeff, PED->patchCoeff_rat, PED_input.patchCoeff, PED_input.patchCoeff_rat);
+	// setup patchCoeff
+	mat_cp_mp_rat(PED->patchCoeff, PED->patchCoeff_rat, PED_input.patchCoeff, PED_input.patchCoeff_rat);
 	
-  return;
+	return;
 }
 
 
 void cp_patch_d(patch_eval_data_d *PED, patch_eval_data_d PED_input)
 {
-  PED->num_patches = PED_input.num_patches;
+	PED->num_patches = PED_input.num_patches;
 	
-
-  // initialize patchCoeff to this preicision
-  init_mat_d(PED->patchCoeff, PED_input.patchCoeff->rows, PED_input.patchCoeff->cols);
-
-  // setup patchCoeff
-  mat_cp_d(PED->patchCoeff, PED_input.patchCoeff);
 	
-  return;
+	// initialize patchCoeff to this preicision
+	init_mat_d(PED->patchCoeff, PED_input.patchCoeff->rows, PED_input.patchCoeff->cols);
+	
+	// setup patchCoeff
+	mat_cp_d(PED->patchCoeff, PED_input.patchCoeff);
+	
+	return;
 }
 
 void cp_preproc_data(preproc_data *PPD, const preproc_data & PPD_input)
 {
 	
-  PPD->num_funcs = PPD_input.num_funcs;
-  PPD->num_hom_var_gp = PPD_input.num_hom_var_gp;
-  PPD->num_var_gp = PPD_input.num_var_gp;
+	PPD->num_funcs = PPD_input.num_funcs;
+	PPD->num_hom_var_gp = PPD_input.num_hom_var_gp;
+	PPD->num_var_gp = PPD_input.num_var_gp;
 	
-  int total_gp = PPD->num_hom_var_gp + PPD->num_var_gp;
+	int total_gp = PPD->num_hom_var_gp + PPD->num_var_gp;
 	
 	std::cout << PPD_input.num_hom_var_gp << " " << PPD_input.num_var_gp  << " "  << total_gp << std::endl;
-
+	
 	
 	if (total_gp==0) {
 		return;
@@ -2325,16 +2448,16 @@ void cp_preproc_data(preproc_data *PPD, const preproc_data & PPD_input)
 			PPD->type[i] = PPD_input.type[i];
 		}
 	}
-		
-  
 	
-  return;
+	
+	
+	return;
 }
 
 
 void clear_post_process_t(post_process_t * endPoint, int num_vars)
 {
-
+	
 	if (endPoint->sol_prec >1)
 	{
 		if (endPoint->sol_prec >= 64)
@@ -2384,8 +2507,8 @@ int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & inde
 	vec_mp projections_sorted_non_unique;
 	init_vec_mp2(projections_sorted_non_unique,projections_input->size,1024);
 	projections_sorted_non_unique->size = projections_input->size;
-
-
+	
+	
 	
 	std::set<int> unsorted_indices;
 	for (int ii=0; ii<projections_input->size; ii++) {
@@ -2450,7 +2573,7 @@ int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & inde
 		}
 	}
 	
-
+	
 	return 0;
 }
 
@@ -2685,7 +2808,7 @@ void receive_patch_mp(patch_eval_data_mp * patch)
 
 void send_preproc_data(preproc_data *PPD){
 	
-
+	
 	int *buffer = new int[3];
 	
 	buffer[0] = PPD->num_funcs;
@@ -2709,7 +2832,7 @@ void receive_preproc_data(preproc_data *PPD){
 	MPI_Bcast(buffer, 3, MPI_INT, 0, MPI_COMM_WORLD);
 	
 	PPD->num_funcs = buffer[0];
-  PPD->num_hom_var_gp = buffer[1];
+	PPD->num_hom_var_gp = buffer[1];
 	PPD->num_var_gp = buffer[2];
 	
 	
@@ -2741,12 +2864,12 @@ void send_vec_mp(vec_mp b, int target)
  * NOTES: broadcasts b                                           *
  \***************************************************************/
 {
-  MPI_Datatype mpi_vec_mp_int;
-  point_mp_int b_int;
-  char *bstr = NULL;
+	MPI_Datatype mpi_vec_mp_int;
+	point_mp_int b_int;
+	char *bstr = NULL;
 	
-  // create the datatypes mpi_vec_mp_int
-  create_point_mp_int(&mpi_vec_mp_int);
+	// create the datatypes mpi_vec_mp_int
+	create_point_mp_int(&mpi_vec_mp_int);
 	
 	cp_point_mp_int(&b_int, b, &bstr, 0, 0, 0);
 	
@@ -2756,12 +2879,12 @@ void send_vec_mp(vec_mp b, int target)
 	
 	// clear bstr
 	free(bstr);
-
-
-  // clear mpi_vec_mp_int
-  MPI_Type_free(&mpi_vec_mp_int);
 	
-  return;
+	
+	// clear mpi_vec_mp_int
+	MPI_Type_free(&mpi_vec_mp_int);
+	
+	return;
 }
 
 
@@ -2774,26 +2897,26 @@ void receive_vec_mp(vec_mp b, int source)
  * NOTES: broadcasts b                                           *
  \***************************************************************/
 {
-  MPI_Datatype mpi_vec_mp_int;
-  point_mp_int b_int;
-  char *bstr = NULL;
+	MPI_Datatype mpi_vec_mp_int;
+	point_mp_int b_int;
+	char *bstr = NULL;
 	
-  // create the datatypes mpi_vec_mp_int
-  create_point_mp_int(&mpi_vec_mp_int);
+	// create the datatypes mpi_vec_mp_int
+	create_point_mp_int(&mpi_vec_mp_int);
 	
 	MPI_Status statty_mc_gatty;
-
+	
 	MPI_Recv(&b_int, 1, mpi_vec_mp_int, source,  VEC_MP, MPI_COMM_WORLD, &statty_mc_gatty);
 	bstr = (char *)br_malloc(b_int.totalLength * sizeof(char));
 	MPI_Recv(bstr, b_int.totalLength, MPI_CHAR, source,  VEC_MP, MPI_COMM_WORLD, &statty_mc_gatty);
 	
 	// setup b and clear bstr
-	cp_point_mp_int(b, &b_int, &bstr, 1, 1, 1); 
+	cp_point_mp_int(b, &b_int, &bstr, 1, 1, 1);
 	
-  // clear mpi_vec_mp_int
-  MPI_Type_free(&mpi_vec_mp_int);
+	// clear mpi_vec_mp_int
+	MPI_Type_free(&mpi_vec_mp_int);
 	
-  return;
+	return;
 }
 
 
@@ -2808,12 +2931,12 @@ void send_vec_d(vec_d b, int target)
  \***************************************************************/
 {
 	MPI_Datatype mpi_point_d_int, mpi_comp_d;
-  point_d_int b_int;
-  comp_d *entries = NULL;
+	point_d_int b_int;
+	comp_d *entries = NULL;
 	
-  // create the datatype mpi_point_d_int & mpi_comp_d
-  create_point_d_int(&mpi_point_d_int);
-  create_comp_d(&mpi_comp_d);
+	// create the datatype mpi_point_d_int & mpi_comp_d
+	create_point_d_int(&mpi_point_d_int);
+	create_comp_d(&mpi_comp_d);
 	
 	cp_point_d_int(&b_int, b, &entries, 0, 0, 0);
 	
@@ -2824,35 +2947,35 @@ void send_vec_d(vec_d b, int target)
 	
 	// clear entries
 	free(entries);
-
 	
-  // clear mpi_point_d_int & mpi_comp_d
-  MPI_Type_free(&mpi_point_d_int);
-  MPI_Type_free(&mpi_comp_d);
 	
-
+	// clear mpi_point_d_int & mpi_comp_d
+	MPI_Type_free(&mpi_point_d_int);
+	MPI_Type_free(&mpi_comp_d);
 	
-//  MPI_Datatype mpi_vec_d_int;
-//  point_d_int b_int;
-//  char *bstr = NULL;
-//	
-//  // create the datatypes mpi_vec_d_int
-//  create_point_d_int(&mpi_vec_d_int);
-//	
-//	cp_point_d_int(&b_int, b, &bstr, 0, 0, 0);
-//	
-//	// send b_int and bstr
-//	MPI_Send(&b_int, 1, mpi_vec_d_int, target, VEC_MP, MPI_COMM_WORLD);
-//	MPI_Send(bstr, b_int.totalLength, MPI_CHAR, target,  VEC_MP, MPI_COMM_WORLD);
-//	
-//	// clear bstr
-//	free(bstr);
-//	
-//	
-//  // clear mpi_vec_d_int
-//  MPI_Type_free(&mpi_vec_d_int);
 	
-  return;
+	
+	//  MPI_Datatype mpi_vec_d_int;
+	//  point_d_int b_int;
+	//  char *bstr = NULL;
+	//
+	//  // create the datatypes mpi_vec_d_int
+	//  create_point_d_int(&mpi_vec_d_int);
+	//
+	//	cp_point_d_int(&b_int, b, &bstr, 0, 0, 0);
+	//
+	//	// send b_int and bstr
+	//	MPI_Send(&b_int, 1, mpi_vec_d_int, target, VEC_MP, MPI_COMM_WORLD);
+	//	MPI_Send(bstr, b_int.totalLength, MPI_CHAR, target,  VEC_MP, MPI_COMM_WORLD);
+	//
+	//	// clear bstr
+	//	free(bstr);
+	//
+	//
+	//  // clear mpi_vec_d_int
+	//  MPI_Type_free(&mpi_vec_d_int);
+	
+	return;
 }
 
 
@@ -2866,13 +2989,13 @@ void receive_vec_d(vec_d b, int source)
  \***************************************************************/
 {
 	MPI_Datatype mpi_point_d_int, mpi_comp_d;
-  point_d_int b_int;
-  comp_d *entries = NULL;
+	point_d_int b_int;
+	comp_d *entries = NULL;
 	
-  // create the datatype mpi_point_d_int & mpi_comp_d
-  create_point_d_int(&mpi_point_d_int);
-  create_comp_d(&mpi_comp_d);
-
+	// create the datatype mpi_point_d_int & mpi_comp_d
+	create_point_d_int(&mpi_point_d_int);
+	create_comp_d(&mpi_comp_d);
+	
 	MPI_Status statty_mc_gatty;
 	
 	MPI_Recv(&b_int, 1, mpi_point_d_int, source, VEC_D, MPI_COMM_WORLD, &statty_mc_gatty);
@@ -2884,33 +3007,33 @@ void receive_vec_d(vec_d b, int source)
 	// setup b
 	cp_point_d_int(b, &b_int, &entries, 1, 1, 1);
 	
-  // clear mpi_point_d_int & mpi_comp_d
-  MPI_Type_free(&mpi_point_d_int);
-  MPI_Type_free(&mpi_comp_d);
-	
-
+	// clear mpi_point_d_int & mpi_comp_d
+	MPI_Type_free(&mpi_point_d_int);
+	MPI_Type_free(&mpi_comp_d);
 	
 	
-//  MPI_Datatype mpi_vec_d_int;
-//  point_d_int b_int;
-//  comp_d *bstr = NULL;
-//	
-//  // create the datatypes mpi_vec_d_int
-//  create_point_d_int(&mpi_vec_d_int);
-//	
-//	MPI_Status statty_mc_gatty;
-//	
-//	MPI_Recv(&b_int, 1, mpi_vec_d_int, source,  VEC_MP, MPI_COMM_WORLD, &statty_mc_gatty);
-//	bstr = (char *)br_malloc(b_int.totalLength * sizeof(char));
-//	MPI_Recv(bstr, b_int.totalLength, MPI_CHAR, source,  VEC_MP, MPI_COMM_WORLD, &statty_mc_gatty);
-//	
-//	// setup b and clear bstr
-//	cp_point_d_int(b, &b_int, &bstr, 1, 1, 1);
-//	
-//  // clear mpi_vec_d_int
-//  MPI_Type_free(&mpi_vec_d_int);
 	
-  return;
+	
+	//  MPI_Datatype mpi_vec_d_int;
+	//  point_d_int b_int;
+	//  comp_d *bstr = NULL;
+	//
+	//  // create the datatypes mpi_vec_d_int
+	//  create_point_d_int(&mpi_vec_d_int);
+	//
+	//	MPI_Status statty_mc_gatty;
+	//
+	//	MPI_Recv(&b_int, 1, mpi_vec_d_int, source,  VEC_MP, MPI_COMM_WORLD, &statty_mc_gatty);
+	//	bstr = (char *)br_malloc(b_int.totalLength * sizeof(char));
+	//	MPI_Recv(bstr, b_int.totalLength, MPI_CHAR, source,  VEC_MP, MPI_COMM_WORLD, &statty_mc_gatty);
+	//
+	//	// setup b and clear bstr
+	//	cp_point_d_int(b, &b_int, &bstr, 1, 1, 1);
+	//
+	//  // clear mpi_vec_d_int
+	//  MPI_Type_free(&mpi_vec_d_int);
+	
+	return;
 }
 
 

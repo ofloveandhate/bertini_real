@@ -580,7 +580,6 @@ void create_nullspace_system(boost::filesystem::path output_name,
 	
 	
 	for (ii=0; ii<ns_config->num_projections; ii++) {
-//		print_point_to_screen_matlab(ns_config->target_projection[ii],"pi");
 		std::stringstream projname;
 		projname << "pi_" << ii+1;
 		write_vector_as_constants(ns_config->target_projection[ii], projname.str(), OUT);
@@ -588,18 +587,27 @@ void create_nullspace_system(boost::filesystem::path output_name,
 
 	write_matrix_as_constants(ns_config->randomizer_matrix, "r", OUT);
 	
-//	write_matrix_as_constants(ns_config->post_randomizer_matrix, "s", OUT);
-	
+
 	IN = safe_fopen_read("derivative_polynomials_declaration");
   while ((ch = fgetc(IN)) != EOF)
     fprintf(OUT, "%c", ch);
   fclose(IN);
-  fclose(OUT);
-	
-	
-//	fprintf(OUT, "END;");
+  
+	// END; written in the above transciption
+    fprintf(OUT,"END;\n\n\n");
+    
+    write_vector_as_constants(ns_config->v_patch, "synthetic_var_patch", OUT);
+    fprintf(OUT,"function synth_var_patch;\n");
+    fprintf(OUT,"synth_var_patch = ");
+    for (ii=0; ii<(ns_config->num_v_vars); ii++) {
+		fprintf(OUT,"synthetic_var_patch_%d * synth%d",ii+1,ii+1);
+		(ii==ns_config->num_v_vars-1) ? fprintf(OUT,";\n") : fprintf(OUT," + ");
+	}
+    
+    
+    fprintf(OUT,"\n\nTODO: add natural variable patch");
 
-	
+    fclose(OUT);
   // clear memory
   free(str);
 

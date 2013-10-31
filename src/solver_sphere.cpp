@@ -70,6 +70,7 @@ void sphere_eval_data_mp::init()
 	set_zero_mp(two);
 	mpf_set_str(two->r, "2.0", 10);
 	
+    num_natural_vars = 0;
 }
 
 
@@ -94,7 +95,7 @@ int sphere_eval_data_mp::setup(const sphere_config & config,
 	
 	this->SLP_memory = config.SLP_memory;
 	
-	
+	num_natural_vars = W.num_natural_vars();
 	num_variables = W.num_variables;
 	
 	
@@ -116,12 +117,32 @@ int sphere_eval_data_mp::setup(const sphere_config & config,
 	
 	set_mp(this->radius, config.radius);
 	vec_cp_mp(this->center, config.center);
-	
+	if (this->center->size < W.num_variables) {
+        int old_size = this->center->size;
+        increase_size_vec_mp(this->center, W.num_variables);
+        this->center->size = W.num_variables;
+        
+        for (int ii=old_size; ii<W.num_variables; ii++) {
+            set_zero_mp(&this->center->coord[ii]);
+        }
+    }
+    
+    
 	if (this->MPType==2) {
 		
 		set_mp(this->radius_full_prec, config.radius);
 		vec_cp_mp(this->center_full_prec, config.center);
-		
+        if (this->center_full_prec->size < W.num_variables) {
+            int old_size = this->center_full_prec->size;
+            increase_size_vec_mp(this->center_full_prec, W.num_variables);
+            this->center_full_prec->size = W.num_variables;
+            
+            for (int ii=old_size; ii<W.num_variables; ii++) {
+                set_zero_mp(&this->center_full_prec->coord[ii]);
+            }
+        }
+        
+        
 		
 		if (this->num_static_linears==0) {
 			static_linear_full_prec = (vec_mp *) br_malloc(W.num_linears*sizeof(vec_mp));
@@ -244,6 +265,7 @@ void sphere_eval_data_d::init()
 	
 	init_vec_d(center,0);
 	
+    num_natural_vars = 0;
 }
 
 
@@ -261,10 +283,21 @@ int sphere_eval_data_d::setup(const sphere_config & config,
 	
 	// set up the vectors to hold the two linears.
 	
-	vec_mp_to_d(center, config.center);
+	
 	mp_to_d(radius, config.radius);
-	
-	
+	vec_mp_to_d(center, config.center);
+    
+    if (this->center->size < W.num_variables) {
+        int old_size = this->center->size;
+        increase_size_vec_d(this->center, W.num_variables);
+        this->center->size = W.num_variables;
+        
+        for (int ii=old_size; ii<W.num_variables; ii++) {
+            set_zero_d(&this->center->coord[ii]);
+        }
+    }
+    
+    
 	if (this->num_static_linears==0) {
 		static_linear = (vec_d *) br_malloc(W.num_linears*sizeof(vec_d));
 	}
@@ -279,6 +312,7 @@ int sphere_eval_data_d::setup(const sphere_config & config,
 	}
 	num_static_linears = W.num_linears;
 	
+    num_natural_vars = W.num_natural_vars();
 	num_variables = W.num_variables;
 	
 	
@@ -553,7 +587,7 @@ int sphere_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat
 	
 	
 	
-	for (int ii=1; ii<BED->num_variables; ii++) {
+	for (int ii=1; ii<BED->num_natural_vars; ii++) {
 		mul_d(temp2, &BED->center->coord[ii-1], &current_variable_values->coord[0]); // temp2 = c_{i-1}*h
 		
 		sub_d(temp, &current_variable_values->coord[ii], temp2);  // temp = x_i - h*c_{i-1}
@@ -590,17 +624,17 @@ int sphere_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat
 	
 	
 	
-	for (int ii=1; ii<BED->num_variables; ii++) {
+	for (int ii=1; ii<BED->num_natural_vars; ii++) {
 		mul_d(temp2, &BED->center->coord[ii-1], &current_variable_values->coord[0]); // temp2 = c_{i-1}*h
 		sub_d(temp, &current_variable_values->coord[ii], temp2) // temp = x_i - c_{i-1}*h
 		mul_d(&Jv->entry[offset][ii], BED->two, temp); // Jv = 2*(x_i - c_{i-1}*h) 
 		mul_d(&Jv->entry[offset][ii], &Jv->entry[offset][ii], one_minus_s); // Jv = (1-t)*2*(x_i - c_{i-1}*h) 
-	
+        // multiply these entries by (1-t)
 		
 		mul_d(temp2, &BED->center->coord[ii-1], temp);  // temp2 = c_{i-1} * ( x_i - c_{i-1} * h )
 		add_d(&Jv->entry[offset][0], &Jv->entry[offset][0], temp2); // Jv[0] += c_{i-1} * ( x_i - c_{i-1} * h )
 	}
-	// multiply these entries by (1-t)
+	
 	
 	
 	// the homogenizing var deriv
@@ -613,7 +647,7 @@ int sphere_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat
 	mul_d(&Jv->entry[offset][0], &Jv->entry[offset][0], one_minus_s);  // Jv[0] *= (1-t)
 	
 	// f = \sum{ ( x_i - c_{i-1} * h )^2 } - r^2 h^2
-	//Jv = -2(1-t) (  \sum_{i=1}^n {  c_{i-1} * ( x_i - c_{i-1} * h )  } + r^2 h )
+	//Jv[0] = -2(1-t) (  \sum_{i=1}^n {  c_{i-1} * ( x_i - c_{i-1} * h )  } + r^2 h )
 	
 	
 	
@@ -880,7 +914,7 @@ int sphere_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv
 	
 	
 	
-	for (int ii=1; ii<BED->num_variables; ii++) {
+	for (int ii=1; ii<BED->num_natural_vars; ii++) {
 		mul_mp(temp2, &BED->center->coord[ii-1], &current_variable_values->coord[0]); // temp2 = c_{i-1}*h
 		
 		sub_mp(temp, &current_variable_values->coord[ii], temp2);  // temp = x_i - h*c_{i-1}
@@ -917,7 +951,7 @@ int sphere_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv
 	
 	
 	
-	for (int ii=1; ii<BED->num_variables; ii++) {
+	for (int ii=1; ii<BED->num_natural_vars; ii++) {
 		mul_mp(temp2, &BED->center->coord[ii-1], &current_variable_values->coord[0]); // temp2 = c_{i-1}*h
 		sub_mp(temp, &current_variable_values->coord[ii], temp2) // temp = x_i - c_{i-1}*h
 		mul_mp(&Jv->entry[offset][ii], BED->two, temp); // Jv = 2*(x_i - c_{i-1}*h)

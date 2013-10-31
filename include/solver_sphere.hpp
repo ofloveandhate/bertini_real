@@ -213,6 +213,8 @@ class sphere_eval_data_mp : public solver_mp
 {
 public:
 	
+    int num_natural_vars;
+    
 	comp_mp two, two_full_prec;
 
 	vec_mp *starting_linear;								// has current precision
@@ -404,6 +406,8 @@ class sphere_eval_data_d : public solver_d
 {
 public:
 	
+    int num_natural_vars;
+    
 	sphere_eval_data_mp * BED_mp;
 	
 	vec_d *starting_linear;								// has current precision

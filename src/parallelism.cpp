@@ -81,7 +81,11 @@ int ubermaster_process::main_loop()
 	}
 	get_projection(pi, program_options, solve_options, W.num_variables, W.dim);
 	
-
+    for (int ii=0; ii<W.dim; ii++) {
+        V.add_projection(pi[ii]);
+    }
+    
+    
 	
 	switch (W.dim) {
 		case 1:
