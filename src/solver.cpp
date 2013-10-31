@@ -522,7 +522,7 @@ void generic_tracker_loop(trackingStats *trackCount,
 	{
 		if ((solve_options.verbose_level>=0) && ((ii%(solve_options.path_number_modulus))==0) && (W.num_pts>solve_options.path_number_modulus) )
 		{
-			std::cout << color::green();
+			std::cout << color::gray();
 			printf("tracking path %d of %d\n",ii,W.num_pts);
 			std::cout << color::console_default();
 		}
@@ -1306,8 +1306,8 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					
 					T->basicNewtonTol = MIN(1e-3, T->basicNewtonTol*2);
 					T->endgameNewtonTol = MIN(1e-3, T->endgameNewtonTol*2);
-					
-					if (current_retval_counter<5) {
+//
+					if (current_retval_counter>5) {
 						solve_options.T.odePredictor  = (solve_options.T.odePredictor+1)%9;
 					}
 					
@@ -1317,8 +1317,8 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					
 					T->basicNewtonTol = MIN(1e-3, T->basicNewtonTol*2);
 					T->endgameNewtonTol = MIN(1e-3, T->endgameNewtonTol*2);
-					
-					if (current_retval_counter<5) {
+//
+					if (current_retval_counter>5) {
 						solve_options.T.odePredictor  = (solve_options.T.odePredictor+1)%9;
 					}
 					
@@ -1331,11 +1331,14 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					break;
 					
 				case -2:
-					
+					solve_options.T.goingToInfinity *= 1e2;
+//                    solve_options.T.finiteThreshold *= 1;
+                    
+                    
 					break;
 					
 				case -1:
-					
+					print_path_retVal_message(-1);
 					break;
 					
 				case -3:

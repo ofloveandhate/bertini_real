@@ -30,7 +30,7 @@
 #include "boost/filesystem.hpp"
 #include "fileops.hpp"
 
-#define SAMEPOINTTOL 1e-2
+#define SAMEPOINTTOL 1e-3
 
 class BR_configuration; // a forward declaration
 
@@ -124,8 +124,9 @@ int isSamePoint_homogeneous_input(point_d left, point_d right);
 
 int isSamePoint_homogeneous_input(point_mp left, point_mp right);
 
-
-
+void real_threshold(comp_mp blabla, double threshold);
+void real_threshold(vec_mp blabla, double threshold);
+void real_threshold(mat_mp blabla, double threshold);
 
 
 void print_path_retVal_message(int retVal);
@@ -290,17 +291,33 @@ public:
 		
 		this->variable_names = other.variable_names;
 		
-		for (int ii=0; ii<other.num_linears; ii++)
-			add_linear(other.L_mp[ii]);
-
-		for (int ii=0; ii<other.num_pts; ii++)
-			add_point(other.pts_mp[ii]);
-		
-		for (int ii=0; ii<other.num_patches; ii++)
-			add_patch(other.patch_mp[ii]);
+		copy_points(other);
+        copy_linears(other);
+		copy_patches(other);
 	}
 	
+    
+    void copy_linears(const witness_set & other) {
+        for (int ii=0; ii<other.num_linears; ii++)
+			add_linear(other.L_mp[ii]);
+    }
+    
+    void copy_points(const witness_set & other) {
+        for (int ii=0; ii<other.num_pts; ii++)
+			add_point(other.pts_mp[ii]);
+    }
+    
+    void copy_patches(const witness_set & other) {
+        for (int ii=0; ii<other.num_patches; ii++)
+			add_patch(other.patch_mp[ii]);
+    }
 	
+    int num_natural_vars() const
+    {
+        return num_variables - num_synth_vars;
+    }
+    
+    
 	void only_natural_vars();
 	void only_first_vars(int num_vars);
 	void sort_for_real(tracker_config_t T);
@@ -421,10 +438,7 @@ public:
 	void write_homogeneous_coordinates(boost::filesystem::path filename) const;
 	void write_dehomogenized_coordinates(boost::filesystem::path filename) const;
 	
-	int compute_downstairs_crit_midpts(vec_mp crit_downstairs,
-																			vec_mp midpoints_downstairs,
-																			std::vector< int > & index_tracker,
-																			vec_mp pi) const;
+
 };
 
 
@@ -598,15 +612,7 @@ public:
 	int set_curr_input(boost::filesystem::path el_nom){
 		
 		int nom_index = -1;
-//		std::cout << el_nom << std::endl;
-//		
-//		mypause();
-		
-////TODO: this comparison is incorrect.
-//		boost::to_lower_copy(fs::canonical(path).string())
-//		
-//		fs::canonical(path).string()
-//		
+        
 		if ( el_nom.string().compare("unset_filename")==0 )
 		{
 			std::cout << "trying to set curr_input from unset_filename" << std::endl;
@@ -635,24 +641,71 @@ public:
 	}
 	
 	
+    
+    /**
+     \param W witness set containing points of which we wish to retrieve projections values.
+     \return  crit_downstairs the projection values of the input witness set, sorted for uniqueness and increasingness.
+     \return midpoints_downstairs the bisection of each interval in crit_downstairs.
+     \return the indices of the points in W.
+     \param pi the projection we are retrieving projection values with respect to.
+     
+     */
+    
+    int search_for_point(vec_mp testpoint);
+    int search_for_active_point(vec_mp testpoint);
+    int search_for_removed_point(vec_mp testpoint);
+    
+    int compute_downstairs_crit_midpts(const witness_set & W,
+                                       vec_mp crit_downstairs,
+                                       vec_mp midpoints_downstairs,
+                                       std::vector< int > & index_tracker,
+                                       vec_mp pi);
+    
+    
+    void assert_projection_value(const std::set< int > & relevant_indices, comp_mp new_value);
+    void assert_projection_value(const std::set< int > & relevant_indices, comp_mp new_value, int proj_index);
 	
 	int set_curr_projection(vec_mp new_proj){
-		int proj_index = -1;
-		for (int ii=0; ii<num_projections; ii++) {
-			if (isSamePoint_inhomogeneous_input(projections[ii],new_proj)) {
+        
+        int proj_index = get_proj_index(new_proj);
+        
+        if (proj_index==-1) {
+            int init_size = new_proj->size;
+            new_proj->size = this->num_natural_variables;
+            
+			proj_index = add_projection(new_proj);
+            
+            new_proj->size = init_size;
+		}
+		
+        curr_projection = proj_index;
+        
+        std::cout << "curr_projection is now: " << curr_projection << std::endl;
+		return proj_index;
+	}
+	
+    
+    int get_proj_index(vec_mp proj) const
+    {
+        int init_size = proj->size;
+        proj->size = this->num_natural_variables;
+        
+        
+        int proj_index = -1;
+        
+        for (int ii=0; ii<num_projections; ii++) {
+			if (isSamePoint_inhomogeneous_input(projections[ii],proj)) {
 				proj_index = ii;
 				break;
 			}
 		}
-		
-		if (proj_index==-1) {
-			proj_index = add_projection(new_proj);
-		}
-		
-		curr_projection = proj_index;
-		return proj_index;
-	}
-	
+        
+        proj->size = init_size;
+        
+        return proj_index;
+    }
+    
+    
 	
 	int add_projection(vec_mp proj){
 		
@@ -901,14 +954,12 @@ public:
 	
 	
 	int index_in_vertices(vertex_set &V,
-												vec_mp testpoint,
-												comp_mp proj_val,
-												tracker_config_t T);
+                          vec_mp testpoint,
+                          tracker_config_t T);
 	
 	int index_in_vertices_with_add(vertex_set &V,
-																 vertex vert,
-																 comp_mp proj_val,
-																 tracker_config_t T);
+                                   vertex vert,
+                                   tracker_config_t T);
 	
 	int setup(boost::filesystem::path INfile,
 						boost::filesystem::path & inputName,

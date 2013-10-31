@@ -1,6 +1,6 @@
 
 #choose some options.  by default, compiler optimization is turned off
-OPT= -Dverbose  -g  -Wall #-Wdeprecated # -Dprintpathlinprod  -O3 -funroll-loops -fexpensive-optimizations
+OPT= -Dverbose  -g  -Wall -Dthresholding #-Wdeprecated # -Dprintpathlinprod  -O3 -funroll-loops -fexpensive-optimizations
 
 
 
@@ -27,7 +27,7 @@ ifeq ($(MACHINENAME),MACBRAKE)
     #dan brake's machine.  he uses different places for his includes, etc.
     INC:= -I/usr/local/include  -I/usr/local/Cellar/mpich2/3.0.4/include $(INC) 
     BISON=bison# bison in path already
-    LIBS=-lm -lmpfr -lgmp# brake has libraries in path for linking, via brew.  no need to specify here
+    LIBS=  -lm -L/usr/local/lib/ -lmpfr -lgmp          #-lm -lmpfr -lgmp# brake has libraries in path for linking, via brew.  no need to specify here
     COMPcc=mpicc -cc=clang 
 	COMPpp = mpic++ -cxx=clang++
     STATICFLAG=#  on macintosh, do not static compile (get missing lcrt0.o problem)

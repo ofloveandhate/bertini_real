@@ -2094,8 +2094,8 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 
 
 int check_issoln_midpoint_mp(endgame_data_t *EG,
-																 tracker_config_t *T,
-																 void const *ED)
+                            tracker_config_t *T,
+                                void const *ED)
 {
   midpoint_eval_data_mp *BED = (midpoint_eval_data_mp *)ED; // to avoid having to cast every time
 	
@@ -2116,7 +2116,7 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 		{
 			printf("got not a number\n");
 			print_point_to_screen_matlab(EG->PD_mp.point,"bad solution");
-      return 0;
+            return 0;
 		}
 	}
 	
@@ -2307,7 +2307,9 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 			mpf_mul(n2, max_rat, n2);
 			if (mpf_cmp(n1, n2) > 0){
 				isSoln = 0;
-				printf("labeled as non_soln due to max_rat (mp) 1\n");
+				printf("labeled as non_soln due to max_rat (mp) 1\nmax_rat: ");
+                mpf_out_str(NULL,10,10,max_rat);
+                printf("\n");
 			}
 		}
 		else if ( (mpf_cmp(zero_thresh, n2) <= 0) &&  (mpf_cmp(n2, n1) <= 0) )
@@ -2315,7 +2317,9 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 			mpf_mul(n1, max_rat, n1);
 			if (mpf_cmp(n2, n1) > 0){
 				isSoln = 0;
-				printf("labeled as non_soln due to max_rat (mp) 2\n");
+				printf("labeled as non_soln due to max_rat (mp) 2\nmax_rat: ");
+                mpf_out_str(NULL,10,10,max_rat);
+                printf("\n");
 			}
 		}
 	}

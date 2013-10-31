@@ -233,7 +233,6 @@ public:
 	int get_additional_critpts(witness_set *W_crit_real,
 														 const witness_set & W,
 														 mat_mp randomizer_matrix,
-														 std::vector<int> randomized_degrees,
 														 BR_configuration & program_options,
 														 solver_configuration & solve_options);
 	

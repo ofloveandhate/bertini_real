@@ -266,7 +266,7 @@ void BRpostProcessing(post_process_t *endPoints, witness_set *W_new, int num_pts
 	
 	//sets the finite flag in endPoints.
 	//custom, derived from bertini's analagous call.
-	int num_finite_solns = BRfindFiniteSolns(endPoints, num_pts, W_new->num_variables, T);
+	int num_finite_solns = BRfindFiniteSolns(endPoints, num_pts, W_new->num_variables - W_new->num_synth_vars, T);
 	
 	
 	

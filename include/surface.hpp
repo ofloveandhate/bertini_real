@@ -237,7 +237,7 @@ public:
 
 	
 	void compute_bounding_sphere(const witness_set & W_intersection_sphere,
-															 const witness_set & W_total_crit,
+															 const witness_set & W_crit,
 															 vertex_set & V,
 															 BR_configuration & program_options,
 															solver_configuration & solve_options);
