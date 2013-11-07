@@ -693,7 +693,7 @@ int generic_setup_files(FILE ** OUT, boost::filesystem::path outname,
 void get_tracker_config(solver_configuration &solve_options,int MPType);
 void solver_clear_config(solver_configuration &options);
 
-void generic_solver_master(witness_set * W_new, const witness_set & W,
+void master_solver(witness_set * W_new, const witness_set & W,
 													 solver_d * ED_d, solver_mp * ED_mp,
 													 solver_configuration & solve_options);
 
@@ -704,7 +704,7 @@ void generic_tracker_loop(trackingStats *trackCount,
 													solver_d * ED_d, solver_mp * ED_mp,
 													solver_configuration & solve_options);
 
-void generic_tracker_loop_master(trackingStats *trackCount,
+void master_tracker_loop(trackingStats *trackCount,
 																 FILE * OUT, FILE * MIDOUT,
 																 const witness_set & W,  // was the startpts file pointer.
 																 post_process_t *endPoints,
@@ -726,7 +726,7 @@ int receive_endpoints(trackingStats *trackCount,
 
 
 
-void generic_tracker_loop_worker(trackingStats *trackCount,
+void worker_tracker_loop(trackingStats *trackCount,
 																 FILE * OUT, FILE * MIDOUT,
 																 solver_d * ED_d, solver_mp * ED_mp,
 																 solver_configuration & solve_options);

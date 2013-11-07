@@ -33,8 +33,6 @@
 
 
 #include "solver_lintolin.hpp"
-#include "solver_linprodtodetjac.hpp"
-#include "solver_detjactodetjac.hpp"
 #include "nullspace_left.hpp"
 #include "solver_sphere.hpp"
 
@@ -59,7 +57,18 @@ public:
 	
 	
 	
-	
+	std::set< int > all_edge_indices()
+    {
+        std::set< int > ind;
+        
+        for (int ii=0; ii<num_edges; ii++) {
+            ind.insert(edges[ii].left);
+            ind.insert(edges[ii].midpt);
+            ind.insert(edges[ii].right);
+        }
+        
+        return ind;
+    }
 	
 	
 	
@@ -353,26 +362,7 @@ int curve_get_additional_critpts(witness_set *W_crit_real,
 																 BR_configuration & program_options,
 																 solver_configuration & solve_options);
 
-//
-///**
-//
-// */
-//void check_patch_values(witness_set W);
 
-///**
-// checks to see what the determinant of the jacobian is at the points in W.
-// */
-//void check_detjac(witness_set W, prog_t SLP, tracker_config_t T, mat_d n_minusone_randomizer_matrix, vec_d projection);
-//
-///**
-//// gets the jacobian (homogeneous) of the functions at the point current_values.  returns mat_d jacobian.  primarily for testing.
-// */
-//void get_jacobian(point_d current_values,
-//									int MPType,
-//									int num_var_gps,
-//									prog_t SLP,
-//									tracker_config_t T,
-//									mat_d jacobian);
 
 /**
  read the file "deg.out" and takes the sum of the numbers appearing there. used for determining the number of lintolin solves to perform to get the critical points WRT the projection and coordinate axes (bounding box).

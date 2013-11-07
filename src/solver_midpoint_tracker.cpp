@@ -228,8 +228,6 @@ int midpoint_eval_data_mp::send(parallelism_config & mpi_config)
 	
 	int *buffer = new int[12];
 	
-
-	
 	MPI_Bcast(buffer,12,MPI_INT, 0, mpi_config.my_communicator);
 	
 	delete[] buffer;
@@ -242,17 +240,25 @@ int midpoint_eval_data_mp::send(parallelism_config & mpi_config)
 
 int midpoint_eval_data_mp::receive(parallelism_config & mpi_config)
 {
-	int *buffer = new int[12];
+    
+	int *buffer = new int[12]; // allocate 12 here because we will be sending 12 integers
 	MPI_Bcast(buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	
 	if (buffer[0] != MIDPOINT_SOLVER) {
 		std::cout << "worker failed to confirm it is receiving the midpoint solver type eval data" << std::endl;
-		mpi_config.abort(777);
+		mpi_config.abort(778);
 	}
-	
+	// now can actually receive the data from whomever.
+    
+    //the base class receive
 	solver_mp::receive(mpi_config);
 	
-	// now can actually receive the data from whoever.
+	
+    
+    
+    
+    
+    
 	MPI_Bcast(buffer,12,MPI_INT, 0, mpi_config.my_communicator);
 	
 	
@@ -700,7 +706,7 @@ int midpoint_solver_master_entry_point(const witness_set						&W, // carries wit
 	
 	
 	
-	generic_solver_master(W_new, W,
+	master_solver(W_new, W,
 												ED_d, ED_mp,
 												solve_options);
 	
@@ -785,7 +791,7 @@ void midpoint_slave_entry_point(solver_configuration & solve_options)
 	trackingStats trackCount; init_trackingStats(&trackCount); // initialize trackCount to all 0
 	
 
-	generic_tracker_loop_worker(&trackCount, OUT, midOUT,
+	worker_tracker_loop(&trackCount, OUT, midOUT,
 															ED_d, ED_mp,
 															solve_options);
 	
