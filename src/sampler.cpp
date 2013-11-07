@@ -1,13 +1,13 @@
 #include "sampler.hpp"
 
 
+
+
+
+
+
+
 int main(int argC, char *args[])
-/***************************************************************\
- * USAGE:                                                        *
- * ARGUMENTS:                                                    *
- * RETURN VALUES:                                                *
- * NOTES:                                                        *
- \***************************************************************/
 {
 	
 	MPI_Init(&argC,&args);
@@ -16,11 +16,11 @@ int main(int argC, char *args[])
 	int num_vars=0;
 	boost::filesystem::path inputName, RandMatName, witnessSetName, samplingNamenew;
 	
-	vertex_set V;
-	curve_decomposition C;   //new data type; stores vertices, edges, etc.
+	
+	
 	
 	sample_data   S_old,S_new;
-
+    
 	
 	
 	srand(time(NULL));
@@ -30,18 +30,18 @@ int main(int argC, char *args[])
 	
 	sampler_options.splash_screen();
 	sampler_options.parse_commandline(argC, args);
-
+    
 	int MPType;
 	
 	boost::filesystem::path Dir_Name;
 	get_dir_mptype( Dir_Name, &MPType);
 	
 	
-
-	
+    vertex_set V;
+	curve_decomposition C;
 	int successful_startup = curve_sampler_startup(Dir_Name,
-																								 inputName, witnessSetName,RandMatName,samplingNamenew,
-																								 C,V);
+                                                   inputName, witnessSetName,RandMatName,samplingNamenew,
+                                                   C,V);
 	if (successful_startup!=1)
 		return -445;
 	
@@ -49,28 +49,28 @@ int main(int argC, char *args[])
 	std::cout << inputName << std::endl;
 	parse_input_file(inputName);
 	
-
+    
 	
 	// set up the solver configuration
-	solver_configuration solve_options; 
+	solver_configuration solve_options;
 	get_tracker_config(solve_options,MPType);
 	parse_preproc_data("preproc_data", &solve_options.PPD);
-
+    
 	initMP(solve_options.T.Precision);
-	num_vars = get_num_vars_PPD(solve_options.PPD);		
+	num_vars = get_num_vars_PPD(solve_options.PPD);
 	
 	
-
-
+    
+    
 	
 	
 	
 	witness_set W;
 	W.num_variables = num_vars;
-
+    
 	W.get_variable_names();
 	
-//	W.witnessSetParse(witnessSetName,num_vars);
+    //	W.witnessSetParse(witnessSetName,num_vars);
 	
 	
 	W.reset_patches();
@@ -92,8 +92,8 @@ int main(int argC, char *args[])
 	
 	
 	set_initial_sample_data(&S_old,C,V,
-											 num_vars);
-
+                            num_vars);
+    
 	solve_options.verbose_level = sampler_options.verbose_level;
 	if (solve_options.verbose_level>=2) {
 		solve_options.show_status_summary=1;
@@ -102,7 +102,7 @@ int main(int argC, char *args[])
 	solve_options.use_midpoint_checker = 0;
 	solve_options.use_gamma_trick = sampler_options.use_gamma_trick;
 	solve_options.allow_singular = 1;
-
+    
 	/////////
 	////////
 	//////
@@ -110,21 +110,21 @@ int main(int argC, char *args[])
 	//
 	//  Generate new sampling data
 	//
-
+    
 	
-
+    
 	generate_new_sampling_pts(&S_new,
-														randomizer_matrix,
-														S_old,
-														C,
-														V,
-														W,
-														MPType,
-														&sampler_options,
-														solve_options);
+                              randomizer_matrix,
+                              S_old,
+                              C,
+                              V,
+                              W,
+                              MPType,
+                              &sampler_options,
+                              solve_options);
 	
 	
-
+    
 	//
 	//   Done with the main call
 	////
@@ -136,13 +136,13 @@ int main(int argC, char *args[])
 	
 	//output
 	output_sampling_data(S_new,V,
-											 samplingNamenew,num_vars,MPType);
+                         samplingNamenew,num_vars,MPType);
 	
-
-
+    
+    
 	
 	clear_mat_mp(randomizer_matrix);
-		
+    
 	clear_sample(&S_new, MPType);
 	
 	
@@ -157,16 +157,16 @@ int main(int argC, char *args[])
 
 
 void generate_new_sampling_pts(sample_data *S_new,
-																 mat_mp randomizer_matrix,
-																 sample_data S_old,
-																 curve_decomposition C,
-																 vertex_set &V,
-																 witness_set & W,
-																 int MPType,
-																 sampler_configuration *sampler_options,
-																 solver_configuration & solve_options)
+                               mat_mp randomizer_matrix,
+                               sample_data S_old,
+                               curve_decomposition C,
+                               vertex_set &V,
+                               witness_set & W,
+                               int MPType,
+                               sampler_configuration *sampler_options,
+                               solver_configuration & solve_options)
 {
-
+    
 	
 	int				num_vars = C.num_variables;
 	
@@ -193,7 +193,7 @@ void generate_new_sampling_pts(sample_data *S_new,
 	
 	comp_mp				temp, temp1, target_projection_value;
 	init_mp(temp);  init_mp(temp1); init_mp(target_projection_value);
-
+    
 	int				prev_num_samp, sample_counter;
 	int				*refine_current = NULL, *refine_next = NULL;
 	
@@ -206,7 +206,7 @@ void generate_new_sampling_pts(sample_data *S_new,
 	
 	
 	vertex temp_vertex;
-
+    
 	mpf_t dist_away; mpf_init(dist_away);
 	int interval_counter;
 	int num_refinements;
@@ -217,12 +217,12 @@ void generate_new_sampling_pts(sample_data *S_new,
 	
 	for(ii=0;ii<S_old.num_edges;ii++) // for each of the edges
 	{
-
+        
 		set_initial_refinement_flags(&num_refinements,
-																 &refine_current,
-																 &current_indices,
-																 S_old, V,
-																 ii, sampler_options);
+                                     &refine_current,
+                                     &current_indices,
+                                     S_old, V,
+                                     ii, sampler_options);
 		
 		prev_num_samp = S_old.num_samples_each_edge[ii]; // grab the number of points from the array of integers
 		
@@ -231,9 +231,9 @@ void generate_new_sampling_pts(sample_data *S_new,
 		int pass_number  = 0;//this should be the only place this is reset.
 		while(1) // breaking condition is all samples being less than TOL away from each other (in the infty norm sense).
 		{
-
-			refine_next = (int * )br_malloc((prev_num_samp+num_refinements-1) * sizeof(int)); // refinement flag	
-
+            
+			refine_next = (int * )br_malloc((prev_num_samp+num_refinements-1) * sizeof(int)); // refinement flag
+            
 			int *new_indices = (int *) br_malloc((prev_num_samp+num_refinements)*sizeof(int));
 			
 			new_indices[0] = current_indices[0];
@@ -247,7 +247,7 @@ void generate_new_sampling_pts(sample_data *S_new,
 			
 			if (sampler_options->verbose_level>=1) {
 				printf("the current indices:\n");
-				for (jj=0; jj<prev_num_samp; jj++) 
+				for (jj=0; jj<prev_num_samp; jj++)
 					printf("%d ",current_indices[jj]);
 				printf("\n\n");
 			}
@@ -255,12 +255,12 @@ void generate_new_sampling_pts(sample_data *S_new,
 			if (sampler_options->verbose_level>=1) {
 				printf("refine_flag:\n");
 				for (jj=0; jj<prev_num_samp-1; jj++) {
-						printf("%d ",refine_current[jj]);
+                    printf("%d ",refine_current[jj]);
 				}
 				printf("\n\n");
 			}
 			
-
+            
 			
 			num_refinements = 0; // reset this counter.  this should be the only place this is reset
 			interval_counter = 0;
@@ -269,7 +269,7 @@ void generate_new_sampling_pts(sample_data *S_new,
 				
 				
 				
-				if (sampler_options->verbose_level>=2) 
+				if (sampler_options->verbose_level>=2)
 					printf("interval %d of %d\n",jj,prev_num_samp-1);
 				
 				
@@ -293,29 +293,29 @@ void generate_new_sampling_pts(sample_data *S_new,
 					exit(1);
 				}
 				
-
+                
 				
 				if(refine_current[jj]==1) //
 				{
-			
+                    
 					vec_cp_mp(startpt,V.vertices[startpt_index].pt_mp);
 					set_mp(&(start_projection->coord[0]), &V.vertices[startpt_index].projection_values->coord[0]);
 					neg_mp(&(start_projection->coord[0]), &(start_projection->coord[0]));
 					
 					
 					estimate_new_projection_value(target_projection_value,				// the new value
-																				V.vertices[left_index].pt_mp,	//
-																				V.vertices[right_index].pt_mp, // two points input
-																				C.pi[0]);												// projection (in homogeneous coordinates)
+                                                  V.vertices[left_index].pt_mp,	//
+                                                  V.vertices[right_index].pt_mp, // two points input
+                                                  C.pi[0]);												// projection (in homogeneous coordinates)
 					
 					
-
+                    
 					neg_mp(&target_projection->coord[0],target_projection_value); // take the opposite :)
 					
 					
 					set_witness_set_mp(&W, start_projection,startpt,num_vars); // set the witness point and linear in the input for the lintolin solver.
 					
-							
+                    
 					if (sampler_options->verbose_level>=3) {
 						print_point_to_screen_matlab(W.pts_mp[0],"startpt");
 						print_comp_matlab(&W.L_mp[0]->coord[0],"initial_projection_value");
@@ -329,22 +329,22 @@ void generate_new_sampling_pts(sample_data *S_new,
 						mypause();
 					}
 					
-//					multilintolin_solver_main(MPType,
-//																		W,         // witness_set
-//																		randomizer_matrix,
-//																		&target_projection, //  the set of linears we will solve at.
-//																		&Wnew, // the new data is put here!
-//																		solve_options); // already a pointer
+                    //					multilintolin_solver_main(MPType,
+                    //																		W,         // witness_set
+                    //																		randomizer_matrix,
+                    //																		&target_projection, //  the set of linears we will solve at.
+                    //																		&Wnew, // the new data is put here!
+                    //																		solve_options); // already a pointer
 					
 					multilin_solver_master_entry_point(W,         // witness_set
-																						 &Wnew, // the new data is put here!
-																						 &target_projection,
-																						 ml_config,
-																						 solve_options);
+                                                       &Wnew, // the new data is put here!
+                                                       &target_projection,
+                                                       ml_config,
+                                                       solve_options);
 					
 					
 					
-					if (sampler_options->verbose_level>=3) 
+					if (sampler_options->verbose_level>=3)
 						print_point_to_screen_matlab(Wnew.pts_mp[0], "new_solution");
 					
 					
@@ -353,15 +353,15 @@ void generate_new_sampling_pts(sample_data *S_new,
 					
 					// check how far away we were from the LEFT interval point
 					norm_of_difference(dist_away,
-														 Wnew.pts_mp[0], // the current new point
-														 V.vertices[left_index].pt_mp);// jj is left, jj+1 is right
+                                       Wnew.pts_mp[0], // the current new point
+                                       V.vertices[left_index].pt_mp);// jj is left, jj+1 is right
 					
 					if ( mpf_cmp(dist_away, sampler_options->TOL )>0 ){
-						refine_next[interval_counter] = 1; 
+						refine_next[interval_counter] = 1;
 						num_refinements++;
 					}
 					else{
-					 refine_next[interval_counter] = 0;
+                        refine_next[interval_counter] = 0;
 					}
 					interval_counter++;
 					
@@ -370,11 +370,11 @@ void generate_new_sampling_pts(sample_data *S_new,
 					
 					// check how far away we were from the RIGHT interval point
 					norm_of_difference(dist_away,
-														 Wnew.pts_mp[0], // the current new point
-														 V.vertices[right_index].pt_mp);
+                                       Wnew.pts_mp[0], // the current new point
+                                       V.vertices[right_index].pt_mp);
 					
 					if (mpf_cmp(dist_away, sampler_options->TOL ) > 0){
-						refine_next[interval_counter] = 1; 
+						refine_next[interval_counter] = 1;
 						num_refinements++;
 					}
 					else{
@@ -386,18 +386,18 @@ void generate_new_sampling_pts(sample_data *S_new,
 					vec_cp_mp(temp_vertex.pt_mp,Wnew.pts_mp[0]);
 					temp_vertex.type = SAMPLE_POINT;
 					
-
+                    
 					new_indices[sample_counter] = V.add_vertex(temp_vertex);
 					sample_counter++;
 					
 					new_indices[sample_counter] = right_index;
 					sample_counter++;
-
+                    
 					Wnew.reset();
 					
 				}
 				else {
-					if (sampler_options->verbose_level>=2) 
+					if (sampler_options->verbose_level>=2)
 						printf("adding sample %d\n",sample_counter);
 					
 					refine_next[interval_counter] = 0;
@@ -406,7 +406,7 @@ void generate_new_sampling_pts(sample_data *S_new,
 					sample_counter++;
 				}
 			}
-
+            
 			
 			if (sampler_options->verbose_level>=1) // print by default
 				printf("\n\n");
@@ -420,7 +420,7 @@ void generate_new_sampling_pts(sample_data *S_new,
 				
 				S_new->sample_indices[ii] = new_indices;
 				S_new->num_samples_each_edge[ii] = sample_counter;
-		
+                
 				free(refine_current);
 				refine_current = NULL;
 				break; // BREAKS THE WHILE LOOP
@@ -431,11 +431,11 @@ void generate_new_sampling_pts(sample_data *S_new,
 				
 				refine_current = refine_next; // reassign this pointer
 				current_indices = new_indices;
-
+                
 				prev_num_samp=sample_counter; // update the number of samples
 				pass_number++;
 			}
-
+            
 		}//while loop
 		if (sampler_options->verbose_level>=2) {
 			printf("exiting while loop\n");
@@ -480,10 +480,10 @@ void set_witness_set_mp(witness_set *W, vec_mp new_linear,vec_mp pts,int num_var
 
 
 void  output_sampling_data(sample_data S, vertex_set V,
-													 boost::filesystem::path samplingName,int num_vars, int MPType)
+                           boost::filesystem::path samplingName,int num_vars, int MPType)
 {
-//	V.print_to_screen();
-//	V.vertices[0].print();
+    //	V.print_to_screen();
+    //	V.vertices[0].print();
 	FILE *OUT =  safe_fopen_write(samplingName);
 	int ii,jj,kk;
 	// output the number of vertices
@@ -493,8 +493,8 @@ void  output_sampling_data(sample_data S, vertex_set V,
 		
 		fprintf(OUT,"%d\n\n",S.num_samples_each_edge[ii]);
 		for (jj=0; jj<S.num_samples_each_edge[ii]; jj++) {
-//			std::cout << "edge " << ii << " sample " << jj << " " << S.sample_indices[ii][jj] << std::endl;
-//			V.vertices[S.sample_indices[ii][jj]].print();
+            //			std::cout << "edge " << ii << " sample " << jj << " " << S.sample_indices[ii][jj] << std::endl;
+            //			V.vertices[S.sample_indices[ii][jj]].print();
 			
 			
 			print_mp(OUT,0, &V.vertices[S.sample_indices[ii][jj]].projection_values->coord[0]);
@@ -511,12 +511,12 @@ void  output_sampling_data(sample_data S, vertex_set V,
 
 
 int  curve_sampler_startup(boost::filesystem::path directoryName,
-													 boost::filesystem::path &inputName,
-													 boost::filesystem::path &witnessSetName,
-													 boost::filesystem::path &RandMatName,
-													 boost::filesystem::path &samplingNamenew,
-													 curve_decomposition &C,
-													 vertex_set &V)
+                           boost::filesystem::path &inputName,
+                           boost::filesystem::path &witnessSetName,
+                           boost::filesystem::path &RandMatName,
+                           boost::filesystem::path &samplingNamenew,
+                           curve_decomposition &C,
+                           vertex_set &V)
 /***************************************************************\
  * USAGE:    curve_sampler_startup structure and inputname
  * ARGUMENTS:                                                    *
@@ -524,8 +524,8 @@ int  curve_sampler_startup(boost::filesystem::path directoryName,
  * NOTES:                                                        *
  \***************************************************************/
 {
-
-
+    
+    
 	int successful_startup = 1;
 	//read in the gross information from the summary file.
 	C.setup(directoryName / "decomp", inputName, directoryName);
@@ -537,14 +537,14 @@ int  curve_sampler_startup(boost::filesystem::path directoryName,
 	
 	V.setup_vertices(directoryName / "V.vertex");
 	
-
+    
 	witnessSetName = directoryName / "witness_set";
 	
-
+    
 	RandMatName = directoryName / "Rand_Matrix";
 	
 	samplingNamenew = directoryName / "samp.dat";
-
+    
 	
 	if(C.num_edges==0)
 	{
@@ -557,7 +557,7 @@ int  curve_sampler_startup(boost::filesystem::path directoryName,
 
 
 int get_dir_mptype(boost::filesystem::path & Dir_Name, int * MPType){
-
+    
 	std::string tempstr;
 	std::ifstream fin("Dir_Name");
 	fin >> tempstr;
@@ -588,9 +588,9 @@ void estimate_new_projection_value(comp_mp result, vec_mp left, vec_mp right, ve
 		deliberate_segfault();
 	}
 	
-//	print_point_to_screen_matlab(left,"left");
-//	print_point_to_screen_matlab(right,"right");
-//	print_point_to_screen_matlab(pi,"pi");
+    //	print_point_to_screen_matlab(left,"left");
+    //	print_point_to_screen_matlab(right,"right");
+    //	print_point_to_screen_matlab(pi,"pi");
 	
 	vec_mp dehom_left, dehom_right;
 	init_vec_mp(dehom_left,left->size-1);   dehom_left->size  = left->size-1;
@@ -604,7 +604,7 @@ void estimate_new_projection_value(comp_mp result, vec_mp left, vec_mp right, ve
 	
 	mpf_set_d(half->r, 0.5); mpf_set_d(half->i, 0.0);
 	
-	 
+    
 	set_zero_mp(result);                                           // result = 0;  initialize
 	
 	for (ii = 0; ii<pi->size-1; ii++) {
@@ -614,10 +614,10 @@ void estimate_new_projection_value(comp_mp result, vec_mp left, vec_mp right, ve
 		set_mp(temp2,result);                                        //  b = result
 		add_mp(result, temp, temp2);                                  //  result = a+b
 	}
-
+    
 	
 	// in other words, result += (x+y)/2 \cdot pi
-
+    
 	mpf_t zerothresh; mpf_init(zerothresh);
 	mpf_set_d(zerothresh, 1e-9);
 	if (mpf_cmp(result->i, zerothresh) < 0){
@@ -635,7 +635,7 @@ void estimate_new_projection_value(comp_mp result, vec_mp left, vec_mp right, ve
 
 
 int  set_initial_sample_data(sample_data *S, curve_decomposition C, vertex_set V,
-													int num_vars)
+                             int num_vars)
 {
 	int ii;
 	
@@ -670,13 +670,13 @@ int  set_initial_sample_data(sample_data *S, curve_decomposition C, vertex_set V
 
 
 void set_initial_refinement_flags(int *num_refinements, int **refine_flags, int ** current_indices,
-																 sample_data S, vertex_set &V,
-																 int current_edge, sampler_configuration *sampler_options)
+                                  sample_data S, vertex_set &V,
+                                  int current_edge, sampler_configuration *sampler_options)
 {
 	
 	
 	
-//	printf("setting refinement flags\n");
+    //	printf("setting refinement flags\n");
 	*num_refinements = 0;
 	
 	if (*refine_flags==NULL)
@@ -701,21 +701,21 @@ void set_initial_refinement_flags(int *num_refinements, int **refine_flags, int 
 		
 		for (int jj=0; jj<S.num_variables-1; jj++) {
 			div_mp(&temp1->coord[jj],
-						 &V.vertices[S.sample_indices[current_edge][ii]].pt_mp->coord[jj+1],
-						 &V.vertices[S.sample_indices[current_edge][ii]].pt_mp->coord[0]);
+                   &V.vertices[S.sample_indices[current_edge][ii]].pt_mp->coord[jj+1],
+                   &V.vertices[S.sample_indices[current_edge][ii]].pt_mp->coord[0]);
 			
 			div_mp(&temp2->coord[jj],
-						 &V.vertices[S.sample_indices[current_edge][ii+1]].pt_mp->coord[jj+1],
-						 &V.vertices[S.sample_indices[current_edge][ii+1]].pt_mp->coord[0]);
+                   &V.vertices[S.sample_indices[current_edge][ii+1]].pt_mp->coord[jj+1],
+                   &V.vertices[S.sample_indices[current_edge][ii+1]].pt_mp->coord[0]);
 		}
 		norm_of_difference(dist_away, temp1,
-																	temp2); // get the distance between the two adjacent points.
+                           temp2); // get the distance between the two adjacent points.
 		if ( mpf_cmp(dist_away, sampler_options->TOL)>0 ){
 			(*refine_flags)[ii] = 1;
 			(*num_refinements)++;
 		}
 	}
-//	printf("done setting refinement flags\n");
+    //	printf("done setting refinement flags\n");
 	mpf_clear(dist_away);
 }
 

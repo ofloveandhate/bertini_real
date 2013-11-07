@@ -315,7 +315,7 @@ int multilin_solver_master_entry_point(const witness_set						&W, // carries wit
 	
 	
 	
-	generic_solver_master(W_new, W,
+	master_solver(W_new, W,
 												ED_d, ED_mp,
 												solve_options);
 	

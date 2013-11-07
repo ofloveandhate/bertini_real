@@ -374,7 +374,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
         
         solve_options.backup_tracker_config();
         
-        
+        solve_options.robust = true;
         int keep_going = 1;
         int iterations = 0;
         while (keep_going==1 && (iterations<2))
@@ -405,6 +405,11 @@ int curve_decomposition::interslice(const witness_set & W_curve,
                                                ml_config,
                                                solve_options);
             
+//            if (iterations<=1) {
+//                Wleft.sort_for_real(solve_options.T);
+//                Wright.sort_for_real(solve_options.T);
+//            }
+            
             
             
             if (Wleft.num_pts!=midpoint_witness_sets[ii].num_pts) {
@@ -418,12 +423,18 @@ int curve_decomposition::interslice(const witness_set & W_curve,
             }
             
             if (!keep_going) {
+                
                 break;
             }
             else{
               //tighten some tolerances, change it up.
-                
+                Wleft.reset();
+                Wright.reset();
+                std::cout << "trying to recover the failure...";
                 solve_options.T.endgameNumber = 2;
+                
+                solve_options.T.basicNewtonTol   *= 1e-6;
+                solve_options.T.endgameNewtonTol *= 1e-6;
             }
 
         }
@@ -445,6 +456,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 			if (!checkForReal_mp(result, solve_options.T.real_threshold)) {
 				std::cout << color::red();
 				print_point_to_screen_matlab(result,"not_real_but_should_be_left");
+                print_point_to_screen_matlab(Wleft.pts_mp[kk],"nat");
 				std::cout << color::console_default();
 				ok = false;
 			}
@@ -457,6 +469,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 			if (!checkForReal_mp(result, solve_options.T.real_threshold)) {
 				std::cout << color::red();
 				print_point_to_screen_matlab(result,"not_real_but_should_be_right");
+                print_point_to_screen_matlab(Wright.pts_mp[kk],"nat");
 				std::cout << color::console_default();
 				ok = false;
 			}
@@ -477,11 +490,12 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 //                midpoint_witness_sets[ii].print_to_screen();
 //                mypause();
                 
-                Wleft.reset();
-                Wright.reset();
+                
+                continue;
+                
                 
 //                ii--;
-                continue;
+                
                 //
 			}
 			
@@ -1644,227 +1658,6 @@ void diag_homotopy_start_file(boost::filesystem::path startFile,
 
 
 
-
-
-
-
-
-//
-//
-//void sort_for_membership(char * input_file,
-//												 witness_set *W_out,
-//												 witness_set W_in,
-//												 char *stifle_text){
-////	printf("sorting points for membership\n");
-//
-//
-//	if (W_in.incidence_number==-1) {
-//		printf("input witness_set has unset incidence_number for comparison.\n");
-//		exit(-1112);
-//	}
-//
-//	W_out->MPType = W_in.MPType;
-//	W_out->incidence_number = W_in.incidence_number;
-//	W_out->num_variables = W_in.num_variables;
-//	W_out->num_var_gps = W_in.num_var_gps;
-//
-//	//copy the linears, patches from old to new
-//	cp_patches(W_out, W_in);
-//	cp_linears(W_out, W_in);
-//	cp_names(W_out, W_in);
-//
-//	//more important files out of the way.  this will probably crash the program if it is called without these files being present.
-//	rename_bertini_files_dotbak();
-//
-//
-//	int strLength = 0, digits = 15, *declarations = NULL;
-//  char *SysStr = NULL,*fmt = NULL, *bertini_command="bertini";
-//  FILE *IN = NULL;
-//
-//
-//
-//	//make the command string to run
-//	strLength = 1 + snprintf(NULL, 0, "%s input_membership_test %s ", bertini_command, stifle_text);
-//  SysStr = (char *)br_malloc(strLength * sizeof(char));
-//  sprintf(SysStr, "%s input_membership_test %s ", bertini_command, stifle_text);
-//
-//
-//
-//	// make the format to write the member_points file
-//  strLength = 1 + snprintf(NULL, 0, "%%.%dle %%.%dle\n", digits, digits);
-//  // allocate size
-//  fmt = (char *)br_malloc(strLength * sizeof(char));
-//  // setup fmt
-//  sprintf(fmt, "%%.%dle %%.%dle\n", digits, digits);
-//
-//
-//  // setup input file
-//	IN = safe_fopen_read(input_file);
-//  partitionParse(&declarations, IN, "func_input_real", "config_real",0); // the 0 means not self conjugate
-//	fclose(IN);
-//
-//
-//	//check existence of the required witness_data file.
-//	IN = safe_fopen_read("witness_data");
-//	fclose(IN);
-//
-//
-//
-//
-//
-//
-//	//only need to do this once.  we put the point and its conjugate into the same member points file and run the membership test simultaneously with one bertini call.
-//  membership_test_input_file("input_membership_test", "func_input_real", "config_real",3);
-//
-//
-//
-//
-//	// Do membership test
-//	printf("*\n%s\n*\n",SysStr);
-//  system(SysStr);
-//
-//
-//	int on_component_indicator[W_in.num_pts];
-//	read_incidence_matrix_wrt_number(on_component_indicator,W_in.incidence_number);
-//
-////	printf("done reading incidence_matrix\n");
-//
-//	int *is_on_component;
-//	is_on_component = (int *)br_malloc(W_in.num_pts*sizeof(int));
-//
-//
-//
-//	int num_pts_on_component =0;
-//	int ii,jj;
-//	for (ii=0; ii<W_in.num_pts; ii++) {
-////		printf("%d\n",on_component_indicator[ii]);
-//
-//		if (on_component_indicator[ii]==1) {
-//			num_pts_on_component++;
-//			is_on_component[ii]=1;
-//		}
-//		else{
-//			is_on_component[ii]=0;
-//		}
-//
-//	}
-//
-//	if (num_pts_on_component==0) {
-//		printf("found 0 points out of %d candidates, on component.\n",W_in.num_pts);
-//		restore_bertini_files_dotbak();
-//		return;
-//	}
-//
-//
-//	vec_d *points_on_component;
-//	points_on_component =(point_d *)br_malloc(num_pts_on_component*sizeof(point_d));
-//
-//	int *indices_on_component;
-//	indices_on_component = (int *)br_malloc(num_pts_on_component*sizeof(int));
-//
-//	int counter =0;
-//	for (ii=0; ii<W_in.num_pts; ii++) {
-//		if (on_component_indicator[ii]==1) {
-//			init_vec_d(points_on_component[counter],W_in.pts_d[ii]->size);
-//			points_on_component[counter]->size = W_in.pts_d[ii]->size;
-//			vec_cp_d(points_on_component[counter],W_in.pts_d[ii]);
-//
-//			indices_on_component[counter] = ii;
-//
-//			counter++;
-//		}
-//	}
-//
-//
-//
-//	//now remove duplicates
-//
-//
-//
-//	int *is_unique; int curr_uniqueness; int num_good_pts = 0;
-//	is_unique  = (int *)br_malloc(num_pts_on_component*sizeof(int));
-//	for (ii = 0; ii<num_pts_on_component; ++ii) {
-//		curr_uniqueness = 1;
-//		if (ii!= (num_pts_on_component-1) ) { // the last point is unique...  always
-//			for (jj=ii+1; jj<num_pts_on_component; ++jj) {
-//				if (isSamePoint_homogeneous_input_d(points_on_component[ii],points_on_component[jj])){
-//					//formerly (isSamePoint(points_on_component[ii],NULL,52,points_on_component[jj],NULL,52,1e-8)){
-//					curr_uniqueness = 0;
-////					printf("the following two points are not distinct:\n");
-////					print_point_to_screen_matlab(points_on_component[ii],"left");
-////					print_point_to_screen_matlab(points_on_component[jj],"right");
-//				}
-//			}
-//		}
-//
-//
-//		if (curr_uniqueness==1) {
-//			is_unique[ii] = 1;
-//			num_good_pts++;
-//		}
-//		else
-//		{
-//			is_unique[ii] = 0;
-//		}
-//
-//	}
-//
-//
-//
-//
-//
-//
-//
-//
-//	//allocate the memory
-//	W_out->pts_d=(point_d *)br_malloc(num_good_pts*sizeof(point_d));
-//	W_out->pts_mp=(point_mp *)br_malloc(num_good_pts*sizeof(point_mp));
-//	W_out->num_pts = num_good_pts;
-//	W_out->num_pts = num_good_pts;
-//
-//
-//
-//	//copy in the distinct points lying on the correct component
-//	counter = 0;
-//	for (ii=0; ii<num_pts_on_component; ++ii) {
-//		if (is_unique[ii]==1) {
-//			init_vec_d(W_out->pts_d[counter],W_in.num_variables); W_out->pts_d[counter]->size = W_in.num_variables;
-//			init_vec_mp2(W_out->pts_mp[counter],W_in.num_variables,1024);  W_out->pts_mp[counter]->size = W_in.num_variables;
-//
-//			vec_cp_d(W_out->pts_d[counter], W_in.pts_d[indices_on_component[ii]]);
-//			vec_cp_mp(W_out->pts_mp[counter], W_in.pts_mp[indices_on_component[ii]]);
-//			counter++;
-//		}
-//	}
-//
-//	if (!counter==num_good_pts){
-//		printf("counter mismatch; counter!=num_good_pts in sort_for_membership\n");
-//		exit(169);
-//	}
-//
-//		//clear the memory
-//
-//	for (ii=0; ii<num_pts_on_component; ++ii) {
-//		clear_vec_d(points_on_component[ii]);
-//	}
-//	free(points_on_component);
-//
-//
-//	free(is_unique);
-//  free(declarations);
-//
-//  // delete temporary files
-//  remove("func_input_real");
-//  remove("config_real");
-//	remove("incidence_matrix");
-////	remove("member_points");
-//
-//	//move files back into place
-//	restore_bertini_files_dotbak();
-//	return;
-//}
-//
-//
 
 
 

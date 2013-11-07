@@ -1170,7 +1170,8 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 																					 solver_configuration		& solve_options)
 {
 
-	
+	boost::timer::auto_cpu_timer t;
+    
 	if (solve_options.use_parallel()) {
 		solve_options.call_for_help(NULLSPACE);
 	}
@@ -1184,7 +1185,7 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 	int *startSub = NULL, *endSub = NULL, *startFunc = NULL, *endFunc = NULL, *startJvsub = NULL, *endJvsub = NULL, *startJv = NULL, *endJv = NULL, **subFuncsBelow = NULL;
 	
 	prog_t SLP;
-	//	// setup a straight-line program, using the file(s) created by the parser
+	//	// setup a straight-line program, using the file(s) created by the parser.  the input file must already be parsed
   setupProg_count(&SLP, solve_options.T.Precision, solve_options.T.MPType,
 																						&startSub, &endSub, &startFunc, &endFunc, &startJvsub, &endJvsub, &startJv, &endJv,
 																						&subFuncsBelow);
@@ -1236,8 +1237,8 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 	}
 
 	
-	
-	generic_solver_master(W_new, W,
+
+	master_solver(W_new, W,
 												ED_d, ED_mp,
 												solve_options);
 	
@@ -1308,7 +1309,8 @@ void nullspace_slave_entry_point(solver_configuration & solve_options)
 			break;
 	}
 	
-	
+//	print_tracker(&solve_options.T);
+    
 
 	// call the file setup function
 	FILE *OUT = NULL, *midOUT = NULL;
@@ -1319,7 +1321,7 @@ void nullspace_slave_entry_point(solver_configuration & solve_options)
 	trackingStats trackCount; init_trackingStats(&trackCount); // initialize trackCount to all 0
 	
 	std::cout << "slave entering tracker loop" << std::endl;
-	generic_tracker_loop_worker(&trackCount, OUT, midOUT,
+	worker_tracker_loop(&trackCount, OUT, midOUT,
 															ED_d, ED_mp,
 															solve_options);
 	

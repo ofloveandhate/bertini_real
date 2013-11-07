@@ -17,6 +17,7 @@
 #include <iostream>
 #include <queue>
 
+//#include <omp.h>
 
 #define BERTINI_REAL_VERSION_STRING "0.0.101"
 
@@ -66,6 +67,9 @@ public:
 		
 		my_communicator = MPI_COMM_WORLD;
 	
+        
+        
+        
 //		MPI_Group orig_group, new_group;
 //		
 //		/* Extract the original group handle */

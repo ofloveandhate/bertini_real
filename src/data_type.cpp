@@ -1235,6 +1235,7 @@ void vertex_set::assert_projection_value(const std::set< int > & relevant_indice
 void vertex_set::assert_projection_value(const std::set< int > & relevant_indices, comp_mp new_value, int proj_index)
 {
     
+    comp_mp temp; init_mp(temp);
     
     if ( (proj_index) > num_projections ) {
         std::cout << color::red() << "trying to assert projection value, but index of projection is larger than possible" << color::console_default() << std::endl;
@@ -1242,10 +1243,19 @@ void vertex_set::assert_projection_value(const std::set< int > & relevant_indice
     
     for (std::set<int>::iterator ii=relevant_indices.begin(); ii!=relevant_indices.end(); ii++) {
         //*ii
+        
+        sub_mp(temp, &vertices[*ii].projection_values->coord[proj_index], new_value);
+        if (fabs(mpf_get_d(temp->r))>0.0001) {
+            std::cout << "trying to assert projection value of " << mpf_get_d(new_value->r) << " but original value is " << mpf_get_d(vertices[*ii].projection_values->coord[proj_index].r) << std::endl;
+            std::cout << "point index is " << *ii << std::endl;
+            mypause();
+        }
+        
         set_mp(&vertices[*ii].projection_values->coord[proj_index], new_value);
     }
     
     
+    clear_mp(temp);
     return;
 }
 
@@ -1702,6 +1712,18 @@ void decomposition::print(boost::filesystem::path base)
 		fprintf(OUT,"\n");
 	}
 	
+    
+    fprintf(OUT,"\n\n");
+    
+    print_mp(OUT, 0, this->sphere_radius);
+    fprintf(OUT, "\n%d\n",this->sphere_center->size);
+    
+    for (int jj=0; jj<this->sphere_center->size; jj++) {
+        print_mp(OUT, 0, &this->sphere_center->coord[jj]);
+        fprintf(OUT, "\n");
+    }
+    fprintf(OUT,"\n");
+    
 	fclose(OUT);
 }
 
@@ -2180,7 +2202,11 @@ void real_threshold(comp_mp blabla, double threshold)
 	comp_d temp;
 	mp_to_d(temp, blabla);
 
-	if (temp->i < threshold) {
+    if (fabs(temp->r) < threshold) {
+		mpf_set_str( blabla->r, "0.0", 10);
+	}
+    
+	if (fabs(temp->i) < threshold) {
 		mpf_set_str( blabla->i, "0.0", 10);
 	}
 	
@@ -2198,7 +2224,12 @@ void real_threshold(vec_mp blabla, double threshold)
 	comp_d temp;
 	for (int ii=0; ii<blabla->size; ii++) {
 		mp_to_d(temp, &blabla->coord[ii]);
-		if (temp->i < threshold) {
+        
+        if (fabs(temp->r) < threshold) {
+			mpf_set_str( blabla->coord[ii].r, "0.0", 10);
+		}
+        
+		if (fabs(temp->i) < threshold) {
 			mpf_set_str( blabla->coord[ii].i, "0.0", 10);
 		}
 	}
@@ -2216,7 +2247,10 @@ void real_threshold(mat_mp blabla, double threshold)
 	for (int jj=0; jj<blabla->cols; jj++) {
 		for (int ii=0; ii<blabla->rows; ii++) {
 			mp_to_d(temp, &blabla->entry[ii][jj]);
-			if (temp->i < threshold) {
+            if ( fabs(temp->r) < threshold) {
+				mpf_set_str( blabla->entry[ii][jj].r, "0.0", 10);
+			}
+			if ( fabs(temp->i) < threshold) {
 				mpf_set_str( blabla->entry[ii][jj].i, "0.0", 10);
 			}
 		}
@@ -2487,6 +2521,116 @@ void clear_post_process_t(post_process_t * endPoint, int num_vars)
 	}
 }
 
+
+void print_tracker(const tracker_config_t * T)
+{
+    std::cout << "BEGIN TRACKER CONFIG:\n\n" << std::endl;
+        std::cout << "numVars: " << T->numVars << std::endl;
+        std::cout << "numPathVars: " << T->numPathVars << std::endl;
+        std::cout << "numParams: " << T->numParams << std::endl;
+        std::cout << "numFuncs: " << T->numFuncs << std::endl;
+        
+        std::cout << "maxStepSize: " << T->maxStepSize << std::endl;
+        std::cout << "minStepSizeBeforeEndGame: " << T->minStepSizeBeforeEndGame << std::endl;
+        std::cout << "minStepSizeDuringEndGame: " << T->minStepSizeDuringEndGame << std::endl;
+        std::cout << "minStepSize: " << T->minStepSize << std::endl;
+        std::cout << "currentStepSize: " << T->currentStepSize << std::endl;
+        std::cout << "first_step_of_path: " << T->first_step_of_path << std::endl;
+        std::cout << "minTrackT: " << T->minTrackT << std::endl;
+        
+        std::cout << "basicNewtonTol: " << T->basicNewtonTol << std::endl;
+        std::cout << "endgameNewtonTol: " << T->endgameNewtonTol << std::endl;
+        std::cout << "final_tolerance: " << T->final_tolerance << std::endl;
+        
+        std::cout << "cSecInc: " << T->cSecInc << std::endl;
+        std::cout << "maxNewtonIts: " << T->maxNewtonIts << std::endl;
+        std::cout << "MPType: " << T->MPType << std::endl;
+        std::cout << "Precision: " << T->Precision << std::endl;
+        std::cout << "outputLevel: " << T->outputLevel << std::endl;
+        std::cout << "screenOut: " << T->screenOut << std::endl;
+        
+        std::cout << "targetT: " << T->targetT << std::endl;
+        std::cout << "endgameBoundary: " << T->endgameBoundary << std::endl;
+        std::cout << "endgameSwitch: " << T->endgameSwitch << std::endl;
+        
+        std::cout << "goingToInfinity: " << T->goingToInfinity << std::endl;
+        std::cout << "maxNumSteps: " << T->maxNumSteps << std::endl;
+        std::cout << "endgameNumber: " << T->endgameNumber << std::endl;
+        
+        std::cout << "latest_cond_num_exp: " << T->latest_cond_num_exp << std::endl;
+        std::cout << "steps_since_last_CN: " << T->steps_since_last_CN << std::endl;
+        
+        std::cout << "power_series_sample_factor: " << T->power_series_sample_factor << std::endl;
+        std::cout << "cycle_num_max: " << T->cycle_num_max << std::endl;
+        std::cout << "num_PSEG_sample_points: " << T->num_PSEG_sample_points << std::endl;
+        
+        std::cout << "latest_newton_residual_d: " << T->latest_newton_residual_d << std::endl;
+
+        
+        std::cout << "t_val_at_latest_sample_point: " << T->t_val_at_latest_sample_point << std::endl;
+        std::cout << "error_at_latest_sample_point: " << T->error_at_latest_sample_point << std::endl;
+        std::cout << "final_tolerance: " << T->final_tolerance << std::endl;
+        
+        std::cout << "real_threshold: " << T->real_threshold << std::endl;
+        std::cout << "endgameOnly: " << T->endgameOnly << std::endl;
+        
+        std::cout << "AMP_bound_on_abs_vals_of_coeffs: " << T->AMP_bound_on_abs_vals_of_coeffs << std::endl;
+        std::cout << "AMP_bound_on_degree: " << T->AMP_bound_on_degree << std::endl;
+        std::cout << "AMP_eps: " << T->AMP_eps << std::endl;
+        std::cout << "AMP_Phi: " << T->AMP_Phi << std::endl;
+        std::cout << "AMP_Psi: " << T->AMP_Psi << std::endl;
+        
+        std::cout << "AMP_safety_digits_1: " << T->AMP_safety_digits_1 << std::endl;
+        std::cout << "AMP_safety_digits_2: " << T->AMP_safety_digits_2 << std::endl;
+        std::cout << "AMP_max_prec: " << T->AMP_max_prec << std::endl;
+        
+        std::cout << "sing_val_zero_tol: " << T->sing_val_zero_tol << std::endl;
+        std::cout << "cond_num_threshold: " << T->cond_num_threshold << std::endl;
+        
+        std::cout << "step_fail_factor: " << T->step_fail_factor << std::endl;
+        std::cout << "step_success_factor: " << T->step_success_factor << std::endl;
+        
+        std::cout << "max_num_pts_for_trace: " << T->max_num_pts_for_trace << std::endl;
+        std::cout << "max_num_mon_linears: " << T->max_num_mon_linears << std::endl;
+        std::cout << "max_num_bad_loops_in_mon: " << T->max_num_bad_loops_in_mon << std::endl;
+        
+        std::cout << "final_tol_multiplier: " << T->final_tol_multiplier << std::endl;
+        std::cout << "final_tol_times_mult: " << T->final_tol_times_mult << std::endl;
+        
+        std::cout << "sharpenDigits: " << T->sharpenDigits << std::endl;
+        std::cout << "sharpenOnly: " << T->sharpenOnly << std::endl;
+        
+        std::cout << "regen_remove_inf: " << T->regen_remove_inf << std::endl;
+        std::cout << "regen_higher_dim_check: " << T->regen_higher_dim_check << std::endl;
+        std::cout << "sliceBasicNewtonTol: " << T->sliceBasicNewtonTol << std::endl;
+        std::cout << "sliceEndgameNewtonTol: " << T->sliceEndgameNewtonTol << std::endl;
+        std::cout << "sliceFinalTol: " << T->sliceFinalTol << std::endl;
+        
+        std::cout << "minCycleTrackBack: " << T->minCycleTrackBack << std::endl;
+        std::cout << "junkRemovalTest: " << T->junkRemovalTest << std::endl;
+        std::cout << "maxDepthLDT: " << T->maxDepthLDT << std::endl;
+        std::cout << "odePredictor: " << T->odePredictor << std::endl;
+        
+        std::cout << "securityLevel: " << T->securityLevel << std::endl;
+        std::cout << "securityMaxNorm: " << T->securityMaxNorm << std::endl;
+        
+        std::cout << "cutoffCycleTime: " << T->cutoffCycleTime << std::endl;
+        std::cout << "cutoffRatioTime: " << T->cutoffRatioTime << std::endl;
+        std::cout << "finiteThreshold: " << T->finiteThreshold << std::endl;
+        std::cout << "funcResTol: " << T->funcResTol << std::endl;
+        std::cout << "ratioTol: " << T->ratioTol << std::endl;
+        std::cout << "maxStepsBeforeNewton: " << T->maxStepsBeforeNewton << std::endl;
+    
+    std::cout << "END TRACKER CONFIG" << std::endl << std::endl << std::endl;
+
+     return;
+}
+
+
+
+
+
+
 // this sort should be optimized.  it is sloppy and wasteful right now.
 int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & index_tracker, vec_mp projections_input){
 	
@@ -2565,7 +2709,7 @@ int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & inde
 	// filter for uniqueness
 	
 	
-	double distinct_thresh = SAMEPOINTTOL;  // reasonable?
+	double distinct_thresh = 1e-3;  // reasonable?
 	
 	change_size_vec_mp(projections_sorted,1); projections_sorted->size = 1;
 	

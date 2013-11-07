@@ -26,11 +26,11 @@
 
 #include "missing_bertini_headers.hpp"
 
-
+#include <boost/timer/timer.hpp>
 #include "boost/filesystem.hpp"
 #include "fileops.hpp"
 
-#define SAMEPOINTTOL 1e-3
+#define SAMEPOINTTOL 1e-4
 
 class BR_configuration; // a forward declaration
 
@@ -142,6 +142,10 @@ void cp_patch_d(patch_eval_data_d *PED, patch_eval_data_d PED_input);
 void cp_preproc_data(preproc_data *PPD, const preproc_data & PPD_input);
 
 void clear_post_process_t(post_process_t * endPoint, int num_vars);
+
+
+void print_tracker(const tracker_config_t * T);
+
 
 int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & index_tracker, vec_mp projections_input);
 
@@ -894,7 +898,6 @@ public:
 	std::map< int , int > counters;
 	std::map< int , std::vector< int > > indices;
 	
-	int initted;
 	
 	int num_variables;
 	int dimension;
@@ -918,7 +921,7 @@ public:
 	
 	
 	
-
+    
 
 	void add_projection(vec_mp proj){
 		if (this->num_curr_projections==0) {
@@ -1035,9 +1038,7 @@ protected:
 	
 	void init(){
 		
-		initted = -999;
-		
-		
+
 		input_filename = "unset";
 		pi = NULL;
 		patch = NULL;
@@ -1072,9 +1073,7 @@ protected:
 	void copy(const decomposition & other)
 	{
 		
-		if (initted!=999) {
-			std::cout << "copying into non-initted decomposition" << std::endl;
-		}
+
 		
 		
 		
@@ -1119,9 +1118,7 @@ protected:
 	void clear()
 	{
 		
-		if (initted!=999) {
-			std::cout << "clearing non-initted decomposition" << std::endl;
-		}
+
 		randomized_degrees.clear();
 		
 		if (num_curr_projections>0){
