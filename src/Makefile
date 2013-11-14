@@ -28,7 +28,7 @@ ifeq ($(MACHINENAME),MACBRAKE)
     INC:= -I/usr/local/include  -I/usr/local/Cellar/mpich2/3.0.4/include $(INC) 
     BISON=bison# bison in path already
     LIBS=  -lm -L/usr/local/lib/ -lmpfr -lgmp          #-lm -lmpfr -lgmp# brake has libraries in path for linking, via brew.  no need to specify here
-    COMPcc=mpicc -cc=clang 
+    COMPcc = mpicc -cc=clang 
 	COMPpp = mpic++ -cxx=clang++ -std=c++11
     STATICFLAG=#  on macintosh, do not static compile (get missing lcrt0.o problem)
 	BERTINILIB:=$(HOME)/lib/libbertini.a
@@ -96,8 +96,11 @@ LIBS:=$(LIBS) ./libpartitionparse.a $(LIBSboost)
 INC:=$(INC) -I../include  -I$(BERTINIHEADERS) #this includes the header files for bertini_real, etc   
 
 ARGS= $(OPT) -D_HAVE_MPI $(MACHINESPECIFICS) $(INC)
+
 OBJFILES= parallelism.o derivative_systems.o data_type.o programConfiguration.o determinant_derivative.o output.o fileops.o isosingular.o checkSelfConjugate.o nullspace_left.o surface.o curve.o
+
 SOLVERS= solver.o solver_midpoint_tracker.o solver_nullspace_left.o solver_multilintolin.o postProcessing.o solver_lintolin.o solver_sphere.o
+
 FLEXFILES=lex.partitionParse.o 
 
 

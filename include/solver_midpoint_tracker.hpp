@@ -30,7 +30,7 @@
 
 
 //
-class surface_decomposition;
+class surface_decomposition; // forward declaration
 //
 class midpoint_config
 {
@@ -40,7 +40,7 @@ public:
 	SLP_global_pointers crit_memory;
 	SLP_global_pointers mid_memory;
 	
-
+    
 	// these are all merely pointers, and should only be assigned to memory set by the SLP creation routine inside of setupProg(), by the midpoint_config::setup() call
 	
 	prog_t *SLP_sphere;
@@ -53,8 +53,11 @@ public:
 	int num_mid_vars;    //the number of variables (incl homogenizing) of midpoint.  set by setup
 	int num_crit_vars;   //the number of variables (incl homogenizing) of each edge point.  set by setup
 	int num_sphere_vars;
-
-	//patch already lives in the base class.
+    
+    
+    int MPType;
+    
+    
 	
 	comp_mp v_target; // set during the loop in connect the dots
 	comp_mp u_target;// set during the loop in connect the dots
@@ -62,12 +65,15 @@ public:
 	comp_mp crit_val_left;// set during the loop in connect the dots
 	comp_mp crit_val_right;// set during the loop in connect the dots
 	
-	int MPType;
+    
 	
 	int system_type_bottom;
 	int system_type_top;
 	
-	
+	vec_mp *pi;
+	int num_projections;
+    
+    
 	
 	midpoint_config(){
 		init();
@@ -95,7 +101,49 @@ public:
 	}
 	
 	
-
+    void print()
+	{
+		
+		std::cout << "top system type: " << system_type_top << std::endl;
+		std::cout << "bottom system type: " << system_type_bottom << std::endl;
+		
+		print_comp_matlab(u_target,"u_target");
+		print_comp_matlab(v_target,"v_target");
+		
+		print_comp_matlab(crit_val_right,"crit_val_right");
+		print_comp_matlab(crit_val_left,"crit_val_left");
+		
+		print_matrix_to_screen_matlab(randomizer_matrix,"R");
+		print_matrix_to_screen_matlab(randomizer_matrix_crit,"R_crit");
+		print_matrix_to_screen_matlab(randomizer_matrix_sph,"R_sph");
+	}
+	
+	void setup(const surface_decomposition & surf,
+               solver_configuration & solve_options);
+    
+    void initial_send(parallelism_config & mpi_config);
+    void initial_receive(parallelism_config & mpi_config);
+    
+    void update_send(parallelism_config & mpi_config, int target);
+    void update_receive(parallelism_config & mpi_config);
+    
+    void add_projection(vec_mp proj)
+	{
+		if (this->num_projections==0) {
+			this->pi = (vec_mp *) br_malloc(sizeof(vec_mp));
+		}
+		else {
+			this->pi = (vec_mp *) br_realloc(pi,(this->num_projections+1) *sizeof(vec_mp));
+		}
+		
+		init_vec_mp2(pi[num_projections],0,1024);
+		vec_cp_mp(pi[num_projections], proj);
+		
+		num_projections++;
+		
+	}
+private:
+    
 	void copy(const midpoint_config & other){
 		
 		this->MPType = other.MPType;
@@ -124,6 +172,11 @@ public:
 		SLP_mid = other.SLP_mid;
 		SLP_crit = other.SLP_crit;
 		SLP_sphere = other.SLP_sphere;
+        
+        for (int ii=0; ii<other.num_projections; ii++) {
+            add_projection(other.pi[ii]);
+        }
+        
 	}
 	
 	
@@ -158,27 +211,9 @@ public:
 		delete SLP_sphere;
 	}
 	
-
+    
 	
-	void print()
-	{
-		
-		std::cout << "top system type: " << system_type_top << std::endl;
-		std::cout << "bottom system type: " << system_type_bottom << std::endl;
-		
-		print_comp_matlab(u_target,"u_target");
-		print_comp_matlab(v_target,"v_target");
-		
-		print_comp_matlab(crit_val_right,"crit_val_right");
-		print_comp_matlab(crit_val_left,"crit_val_left");
-		
-		print_matrix_to_screen_matlab(randomizer_matrix,"R");
-		print_matrix_to_screen_matlab(randomizer_matrix_crit,"R_crit");
-		print_matrix_to_screen_matlab(randomizer_matrix_sph,"R_sph");
-	}
-	
-	void setup(const surface_decomposition & surf,
-						 solver_configuration & solve_options);
+    
 	
 };
 
@@ -197,7 +232,7 @@ public:
 	int num_bottom_vars;
 	int num_top_vars;
 	
-
+    
 	SLP_global_pointers top_memory;
 	SLP_global_pointers mid_memory;
 	SLP_global_pointers bottom_memory;
@@ -222,7 +257,7 @@ public:
 	comp_mp v_target;
 	comp_mp u_target;
 	
-
+    
 	
 	comp_mp crit_val_left;
 	comp_mp crit_val_right;
@@ -279,7 +314,7 @@ public:
 	
 	void print()
 	{
-
+        
 	};
 	
 	void reset_counters()
@@ -314,15 +349,14 @@ public:
 	
 	
 	int setup(const midpoint_config & md_config,
-						surface_decomposition & surf,
-						const witness_set & W,
-						solver_configuration & solve_options);
+              const witness_set & W,
+              solver_configuration & solve_options);
 	
 	
 	
 	
 	void add_projection(vec_mp proj)
-	{ 
+	{
 		if (this->num_projections==0) {
 			this->pi = (vec_mp *) br_malloc(sizeof(vec_mp));
 		}
@@ -354,7 +388,7 @@ public:
 	
 	void clear()
 	{
-
+        
 		if (this->num_projections>0) {
 			for (int ii=0; ii<num_projections; ii++) {
 				clear_vec_mp(pi[ii]);
@@ -378,7 +412,7 @@ public:
 		
 		
 		if (this->MPType==2){
-		
+            
 			if (this->num_projections>0) {
 				for (int ii=0; ii<num_projections; ii++) {
 					clear_vec_mp(pi_full_prec[ii]);
@@ -401,13 +435,13 @@ public:
 			clear_mp(zero_full_prec);
 			
 		}
-
+        
 		
 		
 	} // re: clear
 	
 	void init(); // in the .cpp file.  must be there, not here.
-		
+    
 	
 	void copy(const midpoint_eval_data_mp & other)
 	{
@@ -464,7 +498,7 @@ public:
 			set_mp(u_start_full_prec, other.u_start_full_prec);
 			set_mp(v_start_full_prec, other.v_start_full_prec);
 		}
-
+        
 	} // re: copy
 	
 	
@@ -554,7 +588,7 @@ public:
 		std::cout << "SLP_top "      << SLP_top->size << std::endl;
 		std::cout << "SLP_bottom " << SLP_bottom->size << std::endl;
 		std::cout << "SLP_mid " << SLP_mid->size << std::endl;
-
+        
 		std::cout << num_projections << " projections: " << std::endl;
 		for (int ii=0; ii<2; ii++) {
 			print_point_to_screen_matlab(this->pi[ii],"pi");
@@ -599,9 +633,8 @@ public:
 	
 	
 	int setup(const midpoint_config & md_config,
-						surface_decomposition & surf,
-						const witness_set & W,
-						solver_configuration & solve_options);
+              const witness_set & W,
+              solver_configuration & solve_options);
 	
 	
 	void add_projection(vec_mp proj)
@@ -639,7 +672,7 @@ private:
 	
 	void clear()
 	{
-
+        
 		//yeah, there's some stuff to clear here.
 		if (this->MPType==2) {
 			delete this->BED_mp;
@@ -675,7 +708,7 @@ private:
 		this->SLP_bottom = other.SLP_bottom;
 		this->SLP_mid = other.SLP_mid;
 		this->SLP_top = other.SLP_top;
-
+        
 		
 		for (int ii=0; ii<other.num_projections; ii++) {
 			add_projection(other.pi[ii]);
@@ -708,10 +741,9 @@ private:
  */
 
 int midpoint_solver_master_entry_point(const witness_set						& W, // carries with it the start points, and the linears.
-																			 witness_set						*W_new, // new data goes in here
-																			 surface_decomposition & surf,
-																			 midpoint_config & md_config,
-																			 solver_configuration		& solve_options);
+                                       witness_set						*W_new, // new data goes in here
+                                       midpoint_config & md_config,
+                                       solver_configuration		& solve_options);
 
 
 
@@ -735,19 +767,19 @@ int change_midpoint_eval_prec(void const *ED, int new_prec);
 
 
 int check_issoln_midpoint_d(endgame_data_t *EG,
-																tracker_config_t *T,
-																void const *ED);
+                            tracker_config_t *T,
+                            void const *ED);
 int check_issoln_midpoint_mp(endgame_data_t *EG,
-																 tracker_config_t *T,
-																 void const *ED);
+                             tracker_config_t *T,
+                             void const *ED);
 
 int check_isstart_midpoint_d(point_d testpoint,
-																 tracker_config_t *T,
-																 void const *ED);
+                             tracker_config_t *T,
+                             void const *ED);
 
 
 void check_midpoint_evaluator(point_mp current_values,
-															 void const *ED);
+                              void const *ED);
 
 
 

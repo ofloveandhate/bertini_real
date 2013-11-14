@@ -26,8 +26,8 @@ void nullspace_config::clear()
 	free(additional_linears_terminal);
 	free(additional_linears_starting);
 	
-
-	for (int ii=0; ii<num_v_linears; ii++) 
+	
+	for (int ii=0; ii<num_v_linears; ii++)
 		clear_vec_mp(v_linears[ii]);
 	free(v_linears);
 	
@@ -48,7 +48,7 @@ void nullspace_config::print()
 	std::stringstream converter;
 	
 	std::cout << "*******************\n\tns_config:\n\n";
-
+	
 	std::cout << "#x: " << num_x_vars << "\n#v: " << num_v_vars << std::endl;
 	
 	std::cout << "# additional linears: " << this->num_additional_linears << std::endl;
@@ -84,7 +84,7 @@ void nullspace_config::print()
 	
 	for (int ii=0; ii<num_jac_equations; ii++) {
 		converter << "v_linear_" << ii+1;
-			print_point_to_screen_matlab(v_linears[ii],converter.str());
+		print_point_to_screen_matlab(v_linears[ii],converter.str());
 		converter.str("");
 	}
 	
@@ -124,11 +124,11 @@ void nullspacejac_eval_data_mp::init()
 	additional_linears_starting = NULL;
 	additional_linears_starting_full_prec = NULL;
 	
-
+	
 	starting_linears = NULL; // outer layer should have as many as there are randomized equations
-													 // inside layer has number corresponding to randomized_degrees
+							 // inside layer has number corresponding to randomized_degrees
 	starting_linears_full_prec = NULL; // outer layer should have as many as there are randomized equations
-																		 // inside layer has number corresponding to randomized_degrees
+									   // inside layer has number corresponding to randomized_degrees
 	
 	v_linears = NULL;         // should be as many in here as there are randomized equations
 	v_linears_full_prec = NULL;         // should be as many in here as there are randomized equations
@@ -141,20 +141,17 @@ void nullspacejac_eval_data_mp::init()
 	
 	
 	init_mp(perturbation);
-	
-	init_mp(half);
-	
-	
-	comp_d h;
-	
-	h->r = 0.5;
-	h->i = 0.0;
-	
-	d_to_mp(half, h);
-	
-	
 	comp_d p; p->r = PERTURBATION_VALUE_mp; p->i = PERTURBATION_VALUE_mp;
 	d_to_mp(perturbation,p);
+    
+    
+	init_mp(half);
+	mpf_set_str(half->r, "0.5", 10);
+	mpf_set_str(half->i, "0.0", 10);
+    
+	
+	
+	
 	
 	
 	target_projection = NULL; //
@@ -169,7 +166,8 @@ void nullspacejac_eval_data_mp::init()
 		init_mp2(perturbation_full_prec,1024);
 		init_mp2(half_full_prec,1024);
 		d_to_mp(perturbation_full_prec,p);
-		d_to_mp(half_full_prec, h);
+		mpf_set_str(half_full_prec->r, "0.5", 10);
+        mpf_set_str(half_full_prec->i, "0.0", 10);
 	}
 	
 	
@@ -178,7 +176,7 @@ void nullspacejac_eval_data_mp::init()
 
 int nullspacejac_eval_data_mp::send(parallelism_config & mpi_config)
 {
-
+	
 	int solver_choice = NULLSPACE;
 	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
 	// send the confirmation integer, to ensure that we are sending the correct type.
@@ -186,7 +184,6 @@ int nullspacejac_eval_data_mp::send(parallelism_config & mpi_config)
 	//send the base class stuff.
 	solver_mp::send(mpi_config);
 	
-	std::cout << "master done sending solver_d" << std::endl;
 	
 	int *buffer = new int[12];
 	
@@ -221,10 +218,10 @@ int nullspacejac_eval_data_mp::send(parallelism_config & mpi_config)
 	if (this->MPType==2){
 		if (num_additional_linears>0) {
 			for (int ii=0; ii<num_additional_linears; ii++) {
-				// receive the full precision terminal additional linear
+				// send the full precision terminal additional linear
 				bcast_vec_mp(this->additional_linears_terminal_full_prec[ii], mpi_config.id(), mpi_config.head());
 				
-				// receive the full precision starting additional linear
+				// send the full precision starting additional linear
 				bcast_vec_mp(this->additional_linears_starting_full_prec[ii], mpi_config.id(), mpi_config.head());
 			}
 		}
@@ -253,9 +250,8 @@ int nullspacejac_eval_data_mp::send(parallelism_config & mpi_config)
 		
 		bcast_vec_mp(v_patch_full_prec, mpi_config.id(), mpi_config.head());
 		bcast_mat_mp(jac_with_proj_full_prec, mpi_config.id(), mpi_config.head());
-		bcast_comp_mp(perturbation_full_prec, mpi_config.id(), mpi_config.head());
-		bcast_comp_mp(half_full_prec, mpi_config.id(), mpi_config.head());
-
+		
+		
 		if (num_projections>0) {
 			for (int ii=0; ii<num_projections; ii++) {
 				bcast_vec_mp(target_projection_full_prec[ii], mpi_config.id(), mpi_config.head());
@@ -264,7 +260,7 @@ int nullspacejac_eval_data_mp::send(parallelism_config & mpi_config)
 		else{}
 	}
 	else {
-		
+        std::cout << "sending mptype 1" << std::endl;
 		if (num_additional_linears>0) {
 			for (int ii=0; ii<num_additional_linears; ii++) {
 				// receive the full precision terminal additional linear
@@ -278,23 +274,22 @@ int nullspacejac_eval_data_mp::send(parallelism_config & mpi_config)
 		
 		
 		// recieve the post-randomizer-matrix
-
-	
+		
+		
 		for (int ii=0; ii<num_jac_equations; ii++) {
 			for (int jj=0; jj<max_degree; jj++) {
 				bcast_vec_mp(starting_linears[ii][jj], mpi_config.id(), mpi_config.head());
 			}
 		}
-	
+		
 		for (int ii=0; ii<num_v_linears; ii++) {
 			bcast_vec_mp(v_linears[ii], mpi_config.id(), mpi_config.head());
 		}
-
+		
 		
 		bcast_vec_mp(v_patch, mpi_config.id(), mpi_config.head());
 		bcast_mat_mp(jac_with_proj, mpi_config.id(), mpi_config.head());
-		bcast_comp_mp(perturbation, mpi_config.id(), mpi_config.head());
-		bcast_comp_mp(half, mpi_config.id(), mpi_config.head());
+		
 		
 		if (num_projections>0) {
 			for (int ii=0; ii<num_projections; ii++) {
@@ -322,7 +317,7 @@ int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 	}
 	
 	solver_mp::receive(mpi_config);
-
+	
 	// now can actually receive the data from whoever.
 	MPI_Bcast(buffer,12,MPI_INT, 0, mpi_config.my_communicator);
 	
@@ -367,7 +362,7 @@ int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 				// receive the full precision terminal additional linear
 				bcast_vec_mp(this->additional_linears_terminal_full_prec[ii], mpi_config.id(), mpi_config.head());
 				vec_cp_mp(this->additional_linears_terminal[ii],this->additional_linears_terminal_full_prec[ii]);
-
+				
 				// receive the full precision starting additional linear
 				init_vec_mp2(this->additional_linears_starting_full_prec[ii],0,1024);
 				init_vec_mp(this->additional_linears_starting[ii],0);
@@ -379,7 +374,7 @@ int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 		else {} // num_additional_linears == 0
 		
 		
-
+		
 		
 		if (num_jac_equations>0) {
 			this->starting_linears_full_prec = (vec_mp **) br_malloc(num_jac_equations*sizeof(vec_mp *));
@@ -429,17 +424,6 @@ int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 		bcast_mat_mp(jac_with_proj_full_prec, mpi_config.id(), mpi_config.head());
 		mat_cp_mp(this->jac_with_proj, jac_with_proj_full_prec);
 		
-		init_mp2(perturbation_full_prec,1024);
-		init_mp(perturbation);
-		bcast_comp_mp(perturbation_full_prec, mpi_config.id(), mpi_config.head());
-		set_mp(this->perturbation,perturbation_full_prec);
-		
-		init_mp2(half_full_prec,1024);
-		init_mp(half);
-		bcast_comp_mp(half_full_prec, mpi_config.id(), mpi_config.head());
-		set_mp(this->half, half_full_prec);
-		
-		
 		
 		if (num_projections>0) {
 			this->target_projection = (vec_mp *) br_malloc(num_projections*sizeof(vec_mp));
@@ -454,10 +438,11 @@ int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 			}
 		}
 		else{}
-	
-	
+		
+		
 	}
 	else{ // MPType == 1
+        std::cout << "receiving mptype 1" << std::endl;
 		if (num_additional_linears>0) {
 			
 			this->additional_linears_terminal						= (vec_mp *) br_malloc(num_additional_linears*sizeof(vec_mp));
@@ -478,8 +463,8 @@ int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 		
 		std::cout << "worker got additional linears" << std::endl;
 		
-
-
+		
+		
 		std::cout << "num_jac " << num_jac_equations << std::endl;
 		this->starting_linears = (vec_mp **) br_malloc(num_jac_equations*sizeof(vec_mp *));
 		
@@ -492,7 +477,7 @@ int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 				bcast_vec_mp(starting_linears[ii][jj], mpi_config.id(), mpi_config.head());
 			}
 		}
-
+		
 		this->v_linears = (vec_mp *) br_malloc(num_v_linears*sizeof(vec_mp));
 		for (int ii=0; ii<num_v_linears; ii++) {
 			init_vec_mp(this->v_linears[ii],0);
@@ -502,17 +487,13 @@ int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 		
 		init_vec_mp(v_patch,0);
 		bcast_vec_mp(v_patch, mpi_config.id(), mpi_config.head());
-		std::cout << "a";
+		//		std::cout << "a";
 		
 		init_mat_mp(jac_with_proj,num_x_vars-1,num_randomized_eqns+num_projections);
 		jac_with_proj->rows = num_x_vars-1;
 		jac_with_proj->cols = num_randomized_eqns+num_projections;
 		bcast_mat_mp(jac_with_proj, mpi_config.id(), mpi_config.head());
-		std::cout << "b";
-		bcast_comp_mp(perturbation, mpi_config.id(), mpi_config.head());
-		std::cout << "c";
-		bcast_comp_mp(half, mpi_config.id(), mpi_config.head());
-		std::cout << "d";
+		
 		
 		if (num_projections>0) {
 			this->target_projection = (vec_mp *) br_malloc(num_projections*sizeof(vec_mp));
@@ -522,33 +503,29 @@ int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 				bcast_vec_mp(target_projection[ii], mpi_config.id(), mpi_config.head());
 			}
 		}
-
+		
 	}
-
+	
 	
 	return SUCCESSFUL;
 }
 
 int nullspacejac_eval_data_mp::setup(prog_t * _SLP,
-																		 nullspace_config *ns_config,
-																		 witness_set & W,
-																		 solver_configuration & solve_options)
+                                     nullspace_config *ns_config,
+                                     witness_set & W,
+                                     solver_configuration & solve_options)
 {
-
+	
 	verbose_level = solve_options.verbose_level;
 	
 	solver_mp::setup(_SLP);
 	
 	generic_setup_patch(&patch,W);
-
 	
 	
 	
-	if (solve_options.use_gamma_trick==1)
-		get_comp_rand_mp(this->gamma); // set gamma to be random complex value
-	else{
-		set_one_mp(this->gamma);
-	}
+	
+	
 	
 	comp_d temp;
 	if (this->MPType==2) {
@@ -560,7 +537,15 @@ int nullspacejac_eval_data_mp::setup(prog_t * _SLP,
 			set_one_rat(this->gamma_rat);
 		}
 	}
-	
+	else{
+        if (solve_options.use_gamma_trick==1)
+            get_comp_rand_mp(this->gamma); // set gamma to be random complex value
+        else{
+            set_one_mp(this->gamma);
+        }
+    }
+    
+    
 	num_jac_equations = ns_config->num_jac_equations;
 	target_dim = ns_config->target_dim;
 	ambient_dim = ns_config->ambient_dim;
@@ -588,16 +573,16 @@ int nullspacejac_eval_data_mp::setup(prog_t * _SLP,
 	
 	
 	mat_cp_mp(randomizer_matrix,
-						ns_config->randomizer_matrix);
+			  ns_config->randomizer_matrix);
 	
 	
-
+	
 	
 	
 	// set up the vectors to hold the linears.
-
+	
 	target_projection = (vec_mp *)br_malloc(ns_config->num_projections * sizeof(vec_mp));
-
+	
 	init_mat_mp(jac_with_proj, ns_config->num_x_vars-1,ns_config->num_v_vars);
 	jac_with_proj->rows = ns_config->num_x_vars-1;
 	jac_with_proj->cols = ns_config->num_v_vars;
@@ -613,10 +598,10 @@ int nullspacejac_eval_data_mp::setup(prog_t * _SLP,
 		}
 	}
 	
-
+	
 	vec_cp_mp(v_patch, ns_config->v_patch);
 	
-
+	
 	
 	
 	this->v_linears = (vec_mp *) br_malloc(ns_config->num_v_linears*sizeof(vec_mp));
@@ -658,7 +643,7 @@ int nullspacejac_eval_data_mp::setup(prog_t * _SLP,
 		mat_cp_mp(randomizer_matrix_full_prec, ns_config->randomizer_matrix);
 		
 		
-
+		
 		
 		// set up the vectors to hold the linears.
 		
@@ -719,9 +704,66 @@ int nullspacejac_eval_data_mp::setup(prog_t * _SLP,
 		}
 	}
 	
-							
+	
 	return SUCCESSFUL;
 }
+
+
+
+
+void nullspacejac_eval_data_mp::print()
+{
+    std::cout << "num_jac_equations " << num_jac_equations << std::endl;
+    std::cout << "target_dim " << target_dim << std::endl;
+    
+    std::cout << "ambient_dim " << ambient_dim << std::endl;
+    std::cout << "target_crit_codim " << target_crit_codim << std::endl;
+    
+    std::cout << "num_natural_vars " << num_natural_vars << std::endl;
+    std::cout << "num_x_vars " << num_x_vars << std::endl;
+    std::cout << "num_v_vars " << num_v_vars << std::endl;
+    std::cout << "num_randomized_eqns " << num_randomized_eqns << std::endl;
+    std::cout << "max_degree " << max_degree << std::endl;
+    
+    
+    for (int ii=0; ii<num_jac_equations; ii++) {
+        for (int jj=0; jj<max_degree; jj++) {
+            std::stringstream name;
+            name << "starting" << ii << "_" << jj;
+            print_point_to_screen_matlab(starting_linears_full_prec[ii][jj],name.str());
+        }
+        
+    }
+    
+    for (int ii=0; ii< num_additional_linears; ii++) {
+        print_point_to_screen_matlab(additional_linears_terminal_full_prec[ii],"add_term");
+        print_point_to_screen_matlab(additional_linears_starting_full_prec[ii],"add_start");
+    }
+    
+    
+    for (int ii=0; ii<num_v_linears; ii++) {
+        print_point_to_screen_matlab(v_linears_full_prec[ii],"v_linears");
+	}
+    
+    print_point_to_screen_matlab(v_patch_full_prec,"v_patch");
+    
+    print_matrix_to_screen_matlab(jac_with_proj_full_prec,"jac");
+    
+    print_matrix_to_screen_matlab(randomizer_matrix_full_prec,"R");
+    
+    
+    print_comp_matlab(gamma,"gamma");
+    
+	
+    comp_d temp;
+    rat_to_d(temp, gamma_rat);
+    std::cout << "gamma_converted: " << temp->r << "+1i*" << temp->i << std::endl;
+    
+    
+    //mpf_t_out_str(NULL,10,0,gamma_rat[0]);
+}
+
+
 
 ///////////////
 //
@@ -755,11 +797,13 @@ int nullspacejac_eval_data_mp::setup(prog_t * _SLP,
 
 void nullspacejac_eval_data_d::init()
 {
-
-	if (this->MPType==2)
+	
+	if (this->MPType==2){
 		this->BED_mp = new nullspacejac_eval_data_mp(2);
-	else
-		this->BED_mp = NULL;
+        solver_d::BED_mp = this->BED_mp;
+    }
+    
+	else{this->BED_mp = NULL;}
 	
 	this->is_solution_checker_d = &check_issoln_nullspacejac_d;
 	this->is_solution_checker_mp = &check_issoln_nullspacejac_mp;
@@ -773,28 +817,28 @@ void nullspacejac_eval_data_d::init()
 	additional_linears_starting = NULL;
 	
 	
-
+	
 	starting_linears = NULL; // outer layer should have as many as there are randomized equations
-													 // inside layer has number corresponding to randomized_degrees
+							 // inside layer has number corresponding to randomized_degrees
 	
 	
 	
 	v_linears = NULL;         // should be as many in here as there are randomized equations
 	
 	init_vec_d(v_patch,0);
-
+	
 	init_mat_d(jac_with_proj,0,0);
-
+	
 	int id;
 	MPI_Comm_rank(MPI_COMM_WORLD, &id);
-
+	
 	half->r = 0.5; half->i = 0.0;
 	
 	perturbation->r = PERTURBATION_VALUE; perturbation->i = PERTURBATION_VALUE;
-
+	
 	
 	target_projection = NULL; //
-
+	
 	randomize = true;
 	this->randomized_degrees.clear();
 }
@@ -802,16 +846,21 @@ void nullspacejac_eval_data_d::init()
 
 int nullspacejac_eval_data_d::send(parallelism_config & mpi_config)
 {
-	
-	int solver_choice = NULLSPACE;
-	std::cout << "master bcasting solver choice " << solver_choice << std::endl;
+    
+    int solver_choice = NULLSPACE;
 	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
 	// send the confirmation integer, to ensure that we are sending the correct type.
+    
+    if (this->MPType==2) {
+		this->BED_mp->send(mpi_config);
+	}
+    
+    
+	
 	
 	//send the base class stuff.
 	solver_d::send(mpi_config);
-
-	std::cout << "master done sending solver_d" << std::endl;
+	
 	
 	int *buffer = new int[12];
 	
@@ -844,17 +893,14 @@ int nullspacejac_eval_data_d::send(parallelism_config & mpi_config)
 	
 	if (num_additional_linears>0) {
 		for (int ii=0; ii<num_additional_linears; ii++) {
-			// receive the full precision terminal additional linear
 			bcast_vec_d(this->additional_linears_terminal[ii], mpi_config.id(), mpi_config.head());
-			
-			// receive the full precision starting additional linear
 			bcast_vec_d(this->additional_linears_starting[ii], mpi_config.id(), mpi_config.head());
 		}
 	}
 	else {} // num_additional_linears == 0
 	
 	
-
+	
 	
 	if (num_jac_equations>0) {
 		for (int ii=0; ii<num_jac_equations; ii++) {
@@ -877,7 +923,7 @@ int nullspacejac_eval_data_d::send(parallelism_config & mpi_config)
 	
 	bcast_vec_d(v_patch, mpi_config.id(), mpi_config.head());
 	bcast_mat_d(jac_with_proj, mpi_config.id(), mpi_config.head());
-
+	
 	
 	if (num_projections>0) {
 		for (int ii=0; ii<num_projections; ii++) {
@@ -886,23 +932,30 @@ int nullspacejac_eval_data_d::send(parallelism_config & mpi_config)
 	}
 	else{}
 	
-	if (this->MPType==2) {
-		this->BED_mp->send(mpi_config);
-	}
+	
 	
 	return SUCCESSFUL;
 }
 
 int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
 {
-	int *buffer = new int[12];
+    int *buffer = new int[12];
 	MPI_Bcast(buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	
 	if (buffer[0] != NULLSPACE){
 		std::cout << "worker failed to confirm it is receiving the nullspace type eval data" << std::endl;
 		mpi_config.abort(777);
 	}
-
+    
+    
+    
+	if (this->MPType==2) {
+		this->BED_mp->receive(mpi_config);
+	}
+    
+    
+	
+	
 	solver_d::receive(mpi_config);
 	
 	// now can actually receive the data from whoever.
@@ -958,7 +1011,7 @@ int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
 	else {} // num_additional_linears == 0
 	
 	
-
+	
 	
 	if (num_jac_equations>0) {
 		this->starting_linears = (vec_d **) br_malloc(num_jac_equations*sizeof(vec_d *));
@@ -990,7 +1043,7 @@ int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
 	
 	bcast_mat_d(jac_with_proj, mpi_config.id(), mpi_config.head());
 	
-
+	
 	
 	
 	if (num_projections>0) {
@@ -1004,10 +1057,7 @@ int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
 	}
 	else{}
 	
-	std::cout << "worker entering mp receive" << std::endl;
-	if (this->MPType==2) {
-		this->BED_mp->receive(mpi_config);
-	}
+	
 	
 	return SUCCESSFUL;
 }
@@ -1016,9 +1066,9 @@ int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
 
 
 int nullspacejac_eval_data_d::setup(prog_t * _SLP,
-																		nullspace_config *ns_config,
-																		witness_set & W,
-																		solver_configuration & solve_options)
+									nullspace_config *ns_config,
+									witness_set & W,
+									solver_configuration & solve_options)
 {
 	
 	solver_d::setup(_SLP);
@@ -1027,7 +1077,7 @@ int nullspacejac_eval_data_d::setup(prog_t * _SLP,
 	
 	generic_setup_patch(&patch,W);
 	
-
+	
 	
 	
 	
@@ -1058,13 +1108,13 @@ int nullspacejac_eval_data_d::setup(prog_t * _SLP,
 	
 	num_variables = ns_config->num_x_vars + ns_config->num_v_vars;
 	
-  
+	
 	mat_mp_to_d(randomizer_matrix,
-						ns_config->randomizer_matrix);
+				ns_config->randomizer_matrix);
 	
 	
 	//  THE STUFF PROPRIETARY TO THIS METHOD
-
+	
 	
 	
 	// set up the vectors to hold the linears.
@@ -1129,12 +1179,37 @@ int nullspacejac_eval_data_d::setup(prog_t * _SLP,
 	
 	if (this->MPType==2)
 	{
+		//        this->BED_mp = dynamic_cast<nullspacejac_eval_data_mp *>(BED_mp);
 		this->BED_mp->setup(_SLP,ns_config, W, solve_options);
 		rat_to_d(this->gamma, this->BED_mp->gamma_rat);
 	}
 	
 	return SUCCESSFUL;
 }
+
+
+
+
+void nullspacejac_eval_data_d::print()
+{
+    
+    std::cout << "num_jac_equations " << num_jac_equations << std::endl;
+    std::cout << "target_dim " << target_dim << std::endl;
+    
+    std::cout << "ambient_dim " << ambient_dim << std::endl;
+    std::cout << "target_crit_codim " << target_crit_codim << std::endl;
+    
+    std::cout << "num_natural_vars " << num_natural_vars << std::endl;
+    std::cout << "num_x_vars " << num_x_vars << std::endl;
+    std::cout << "num_v_vars " << num_v_vars << std::endl;
+    std::cout << "num_randomized_eqns " << num_randomized_eqns << std::endl;
+    std::cout << "max_degree " << max_degree << std::endl;
+    
+    print_comp_matlab(half,"half");
+    print_comp_matlab(perturbation,"epsilon");
+	
+}
+
 
 ///////////////
 //
@@ -1164,12 +1239,12 @@ int nullspacejac_eval_data_d::setup(prog_t * _SLP,
 
 
 int nullspacejac_solver_master_entry_point(int										MPType,
-																					 witness_set						&W, // carries with it the start points, and the linears.
-																					 witness_set						*W_new, // new data goes in here
-																					 nullspace_config				*ns_config,
-																					 solver_configuration		& solve_options)
+										   witness_set						&W, // carries with it the start points, and the linears.
+										   witness_set						*W_new, // new data goes in here
+										   nullspace_config				*ns_config,
+										   solver_configuration		& solve_options)
 {
-
+	
 	boost::timer::auto_cpu_timer t;
     
 	if (solve_options.use_parallel()) {
@@ -1186,9 +1261,9 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 	
 	prog_t SLP;
 	//	// setup a straight-line program, using the file(s) created by the parser.  the input file must already be parsed
-  setupProg_count(&SLP, solve_options.T.Precision, solve_options.T.MPType,
-																						&startSub, &endSub, &startFunc, &endFunc, &startJvsub, &endJvsub, &startJv, &endJv,
-																						&subFuncsBelow);
+	setupProg_count(&SLP, solve_options.T.Precision, solve_options.T.MPType,
+					&startSub, &endSub, &startFunc, &endFunc, &startJvsub, &endJvsub, &startJv, &endJv,
+					&subFuncsBelow);
 	
 	solve_options.T.numVars = W.num_variables;
 	
@@ -1201,18 +1276,18 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 			ED_d = new nullspacejac_eval_data_d(0);
 			
 			ED_d->setup(&SLP,
-									ns_config,
-									W,
-									solve_options);
+						ns_config,
+						W,
+						solve_options);
 			break;
 			
 		case 1:
 			ED_mp = new nullspacejac_eval_data_mp(1);
 			
 			ED_mp->setup(&SLP,
-									 ns_config,
-									 W,
-									 solve_options);
+						 ns_config,
+						 W,
+						 solve_options);
 			// initialize latest_newton_residual_mp
 			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
@@ -1223,9 +1298,9 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 			
 			
 			ED_d->setup(&SLP,
-									ns_config,
-									W,
-									solve_options);
+						ns_config,
+						W,
+						solve_options);
 			
 			
 			
@@ -1235,12 +1310,11 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 		default:
 			break;
 	}
-
 	
-
+	
 	master_solver(W_new, W,
-												ED_d, ED_mp,
-												solve_options);
+                  ED_d, ED_mp,
+                  solve_options);
 	
 	
 	
@@ -1261,8 +1335,8 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 	
 	
 	clearProg(&SLP, solve_options.T.MPType, 1); // 1 means call freeprogeval()
-  return SUCCESSFUL;
-
+	return SUCCESSFUL;
+	
 }
 
 
@@ -1276,6 +1350,10 @@ void nullspace_slave_entry_point(solver_configuration & solve_options)
 	
 	// already received the flag which indicated that this worker is going to be performing the nullspace calculation.
 	bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
+	
+	int robust;
+	MPI_Bcast(&robust,1,MPI_INT, 0,MPI_COMM_WORLD);
+	solve_options.robust = robust;
 	
 	nullspacejac_eval_data_d *ED_d = NULL;
 	nullspacejac_eval_data_mp *ED_mp = NULL;
@@ -1296,11 +1374,11 @@ void nullspace_slave_entry_point(solver_configuration & solve_options)
 			break;
 		case 2:
 			ED_d = new nullspacejac_eval_data_d(2);
-			
+			ED_mp = ED_d->BED_mp;
 			ED_d->receive(solve_options);
 			
-			ED_mp = ED_d->BED_mp;
-		
+			
+			
 			
 			// initialize latest_newton_residual_mp
 			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
@@ -1309,21 +1387,19 @@ void nullspace_slave_entry_point(solver_configuration & solve_options)
 			break;
 	}
 	
-//	print_tracker(&solve_options.T);
     
-
+	
 	// call the file setup function
 	FILE *OUT = NULL, *midOUT = NULL;
 	
 	generic_setup_files(&OUT, "output",
-											&midOUT, "midpath_data");
+                        &midOUT, "midpath_data");
 	
 	trackingStats trackCount; init_trackingStats(&trackCount); // initialize trackCount to all 0
 	
-	std::cout << "slave entering tracker loop" << std::endl;
 	worker_tracker_loop(&trackCount, OUT, midOUT,
-															ED_d, ED_mp,
-															solve_options);
+						ED_d, ED_mp,
+						solve_options);
 	
 	
 	// close the files
@@ -1338,6 +1414,7 @@ void nullspace_slave_entry_point(solver_configuration & solve_options)
 		case 1:
 			delete ED_mp;
 			break;
+            
 		case 2:
 			delete ED_d;
 			
@@ -1355,27 +1432,27 @@ void nullspace_slave_entry_point(solver_configuration & solve_options)
 
 int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp, point_d current_variable_values, comp_d pathVars, void const *ED)
 { // evaluates a special homotopy type, built for bertini_real
-
-	
-//	std::cout << "++++++++++++++++++++++++++\n";
 	
 	
-  nullspacejac_eval_data_d *BED = (nullspacejac_eval_data_d *)ED; // to avoid having to cast every time
+	//	std::cout << "++++++++++++++++++++++++++\n";
+	
+	
+	nullspacejac_eval_data_d *BED = (nullspacejac_eval_data_d *)ED; // to avoid having to cast every time
 	
 	
 	
-  int ii, jj, kk, mm;
+	int ii, jj, kk, mm;
 	int offset;
-  comp_d one_minus_s, gamma_s;
+	comp_d one_minus_s, gamma_s;
 	
 	set_one_d(one_minus_s);
-  sub_d(one_minus_s, one_minus_s, pathVars);  // one_minus_s = (1 - s)
-  mul_d(gamma_s, BED->gamma, pathVars);       // gamma_s = gamma * s
+	sub_d(one_minus_s, one_minus_s, pathVars);  // one_minus_s = (1 - s)
+	mul_d(gamma_s, BED->gamma, pathVars);       // gamma_s = gamma * s
 	
-
+	
 	vec_d curr_x_vars; init_vec_d(curr_x_vars, BED->num_x_vars);
 	curr_x_vars->size = BED->num_x_vars;
-	for (ii=0; ii<BED->num_x_vars; ii++) 
+	for (ii=0; ii<BED->num_x_vars; ii++)
 		set_d(&curr_x_vars->coord[ii], &current_variable_values->coord[ii]);
 	
 	vec_d curr_v_vars; init_vec_d(curr_v_vars, BED->num_v_vars);
@@ -1386,12 +1463,12 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	vec_d patchValues; init_vec_d(patchValues, 0);
 	vec_d temp_function_values; init_vec_d(temp_function_values,0);
 	
-
+	
 	vec_d AtimesF;  init_vec_d(AtimesF,0);
 	vec_d linprod_x;  init_vec_d(linprod_x, BED->num_jac_equations);
-		linprod_x->size = BED->num_jac_equations;
+	linprod_x->size = BED->num_jac_equations;
 	vec_d linprod_times_gamma_s; init_vec_d(linprod_times_gamma_s,BED->num_jac_equations);
-		linprod_times_gamma_s->size = BED->num_jac_equations;
+	linprod_times_gamma_s->size = BED->num_jac_equations;
 	vec_d tempvec; init_vec_d(tempvec,0);
 	vec_d tempvec2; init_vec_d(tempvec2,0);
 	
@@ -1399,10 +1476,10 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	mat_d Jv_Patch; init_mat_d(Jv_Patch, 0, 0);
 	mat_d tempmat; init_mat_d(tempmat,BED->num_variables-1,BED->num_variables-1);
-		tempmat->rows = tempmat->cols = BED->num_variables-1; // change the size indicators
-
+	tempmat->rows = tempmat->cols = BED->num_variables-1; // change the size indicators
+	
 	mat_d lin_func_vals; init_mat_d(lin_func_vals,BED->num_jac_equations, BED->max_degree);
-		lin_func_vals->rows = BED->num_jac_equations; lin_func_vals->cols = BED->max_degree;
+	lin_func_vals->rows = BED->num_jac_equations; lin_func_vals->cols = BED->max_degree;
 	
 	
 	
@@ -1412,11 +1489,11 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	mat_d Jv_jac; init_mat_d(Jv_jac,0,0);
 	mat_d temp_jacobian_functions, temp_jacobian_parameters;
-		init_mat_d(temp_jacobian_functions,0,0); init_mat_d(temp_jacobian_parameters,0,0);
+	init_mat_d(temp_jacobian_functions,0,0); init_mat_d(temp_jacobian_parameters,0,0);
 	
 	mat_d linprod_derivative_wrt_x;
-		init_mat_d(linprod_derivative_wrt_x, BED->num_jac_equations, BED->num_x_vars);
-		linprod_derivative_wrt_x->rows = BED->num_jac_equations; linprod_derivative_wrt_x->cols = BED->num_x_vars;
+	init_mat_d(linprod_derivative_wrt_x, BED->num_jac_equations, BED->num_x_vars);
+	linprod_derivative_wrt_x->rows = BED->num_jac_equations; linprod_derivative_wrt_x->cols = BED->num_x_vars;
 	
 	
 	comp_d running_prod;
@@ -1425,7 +1502,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	
 	mat_d Jf_pi_homogenized;  init_mat_d(Jf_pi_homogenized, BED->num_x_vars-1, BED->num_v_vars); // set up temp matrix
-		Jf_pi_homogenized->rows = BED->num_x_vars-1; Jf_pi_homogenized->cols = BED->num_v_vars;
+	Jf_pi_homogenized->rows = BED->num_x_vars-1; Jf_pi_homogenized->cols = BED->num_v_vars;
 	vec_d target_function_values;  init_vec_d(target_function_values,0);
 	vec_d target_function_values_times_oneminus_s;  init_vec_d(target_function_values_times_oneminus_s,0);
 	
@@ -1434,22 +1511,22 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	//initialize some containers, for the unused stuff from the called evaluators.
 	point_d unused_function_values, unused_parVals;
-		init_vec_d(unused_function_values,0);init_vec_d(unused_parVals,0);
+	init_vec_d(unused_function_values,0);init_vec_d(unused_parVals,0);
 	vec_d unused_parDer; init_vec_d(unused_parDer,0);
 	mat_d unused_Jp; init_mat_d(unused_Jp,0,0);
 	mat_d perturbed_Jv; init_mat_d(perturbed_Jv,0,0);
 	
 	
 	mat_d perturbed_AtimesJ, tempmat3; // create matrices
-		init_mat_d(perturbed_AtimesJ,1,1); init_mat_d(tempmat3,0,0);
+	init_mat_d(perturbed_AtimesJ,1,1); init_mat_d(tempmat3,0,0);
 	perturbed_AtimesJ->rows = perturbed_AtimesJ->cols = 1;
 	
 	mat_d tempmat1,tempmat2; // create temp matrices
-		init_mat_d(tempmat1,BED->num_jac_equations,BED->num_v_vars);
-		tempmat1->rows = BED->num_jac_equations; tempmat1->cols = BED->num_v_vars;
+	init_mat_d(tempmat1,BED->num_jac_equations,BED->num_v_vars);
+	tempmat1->rows = BED->num_jac_equations; tempmat1->cols = BED->num_v_vars;
 	
-		init_mat_d(tempmat2,BED->num_jac_equations,BED->num_v_vars);
-		tempmat2->rows = BED->num_jac_equations; tempmat2->cols = BED->num_v_vars;
+	init_mat_d(tempmat2,BED->num_jac_equations,BED->num_v_vars);
+	tempmat2->rows = BED->num_jac_equations; tempmat2->cols = BED->num_v_vars;
 	
 	
 	
@@ -1466,30 +1543,30 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	evalProg_d(temp_function_values, parVals, parDer, temp_jacobian_functions, temp_jacobian_parameters, curr_x_vars, pathVars, BED->SLP);
 	
 	
-  // evaluate the patch
-  patch_eval_d(    patchValues, parVals, parDer, Jv_Patch, Jp, curr_x_vars, pathVars, &BED->patch);  // Jp is ignored
+	// evaluate the patch
+	patch_eval_d(    patchValues, parVals, parDer, Jv_Patch, Jp, curr_x_vars, pathVars, &BED->patch);  // Jp is ignored
 	
-
+	
 	
 	//resize output variables to correct size
 	change_size_vec_d(funcVals,BED->num_variables);
-  change_size_mat_d(Jv, BED->num_variables, BED->num_variables);
-  change_size_mat_d(Jp, BED->num_variables, 1);
+	change_size_mat_d(Jv, BED->num_variables, BED->num_variables);
+	change_size_mat_d(Jp, BED->num_variables, 1);
 	
 	
 	//////
 	// initialize stuff to all 0's
 	///////
 	
-  funcVals->size = Jv->rows = Jp->rows = BED->num_variables;
-  Jv->cols = BED->num_variables;  //  <-- this must be square
-  Jp->cols = 1;
+	funcVals->size = Jv->rows = Jp->rows = BED->num_variables;
+	Jv->cols = BED->num_variables;  //  <-- this must be square
+	Jp->cols = 1;
 	
-	for (ii=0; ii<Jv->rows; ii++) 
-		for (jj=0; jj<Jv->cols; jj++) 
+	for (ii=0; ii<Jv->rows; ii++)
+		for (jj=0; jj<Jv->cols; jj++)
 			set_zero_d(&Jv->entry[ii][jj]);
 	
-	for (ii = 0; ii<BED->num_variables; ii++) 
+	for (ii = 0; ii<BED->num_variables; ii++)
 		set_zero_d(&Jp->entry[ii][0]);  // initialize entire matrix to 0
 	
 	
@@ -1499,7 +1576,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	// randomize
 	if (BED->randomize) {
 		mul_mat_vec_d(AtimesF,BED->randomizer_matrix, temp_function_values); // set values of AtimesF (A is randomization matrix)
-		// set func vals
+																			 // set func vals
 		for (ii=0; ii<AtimesF->size; ii++)  // for each function, after (real) randomization
 			set_d(&funcVals->coord[ii], &AtimesF->coord[ii]);
 	}
@@ -1510,9 +1587,9 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	
 	
-
+	
 	// the jacobian equations for orig
-
+	
 	if (BED->randomize) {
 		//  randomize the original functions and jacobian
 		mat_mul_d(AtimesJ,BED->randomizer_matrix,temp_jacobian_functions);
@@ -1533,7 +1610,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 			for (jj=1; jj<BED->num_x_vars; jj++)
 				set_d(&BED->jac_with_proj->entry[jj-1][ii], &temp_jacobian_functions->entry[ii][jj]);
 	}
-
+	
 	
 	
 	// the additional linears.  there are $r-\ell$ of them.
@@ -1553,7 +1630,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 		add_d(&funcVals->coord[offset+ii],temp2, temp3); // (gamma*s)*start(x) + (1-s)*terminal(x)
 		
 		for (jj=0; jj<BED->num_x_vars; jj++) {
-			mul_d(temp, gamma_s,    &BED->additional_linears_starting[ii]->coord[jj]); 
+			mul_d(temp, gamma_s,    &BED->additional_linears_starting[ii]->coord[jj]);
 			mul_d(temp2,one_minus_s,&BED->additional_linears_terminal[ii]->coord[jj]);
 			
 			add_d(&Jv->entry[ii+offset][jj], temp, temp2);
@@ -1579,18 +1656,18 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 		for (jj=0; jj<(BED->max_degree); jj++) // these are all degree 1
 			mul_d(&jac_homogenizing_matrix->entry[ii][ii], &jac_homogenizing_matrix->entry[ii][ii], &curr_x_vars->coord[0]);
 	
-
-//	mat_mul_d(tempmat, BED->post_randomizer_matrix, BED->jac_with_proj); // jac with proj having been set above with unperturbed values
+	
+	//	mat_mul_d(tempmat, BED->post_randomizer_matrix, BED->jac_with_proj); // jac with proj having been set above with unperturbed values
 	mat_mul_d(Jf_pi_homogenized, BED->jac_with_proj, jac_homogenizing_matrix); // jac with proj having been set above with unperturbed values
-
-
+	
+	
 	mul_mat_vec_d(target_function_values, Jf_pi_homogenized, curr_v_vars);
 	vec_mulcomp_d(target_function_values_times_oneminus_s, target_function_values, one_minus_s);
 	
 	
 	
 	//  THE LINPROD START SYSTEM FUNCTION VALUES
-	offset = BED->num_randomized_eqns + BED->num_additional_linears;  
+	offset = BED->num_randomized_eqns + BED->num_additional_linears;
 	// the product of the linears
 	for (jj=0; jj<BED->num_jac_equations; jj++) {
 		
@@ -1614,7 +1691,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 		add_d( &Jp->entry[jj + offset][0], &Jp->entry[jj + offset][0], temp); // Jp = -target + gamma*start
 	}
 	
-
+	
 	
 	
 	offset = BED->num_randomized_eqns + BED->num_additional_linears; // N-r+k
@@ -1636,7 +1713,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 			mul_d(temp, &BED->v_linears[ii]->coord[jj], &linprod_x->coord[ii]);  // temp = M_ij * linprod_x(x)
 			mul_d(temp2, temp, gamma_s);                                      // temp2 = gamma*s*M_ij * linprod_x(x)
 			
-
+			
 			
 			mul_d(temp, one_minus_s, &Jf_pi_homogenized->entry[ii][jj]);           // temp = (1-s)*(S*[Jf^T pi^T])_ij
 			
@@ -1644,8 +1721,8 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 		}
 	}
 	// √ for sphere
-
-
+	
+	
 	// now the x derivatives corresponding to the linprod start system
 	
 	// an implementation of the product rule
@@ -1695,21 +1772,21 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 		
 		// evaluate perturbed forwards
 		evalProg_d(unused_function_values, unused_parVals, unused_parDer,  //  unused output
-							 perturbed_Jv,  // <---- the output we need
-							 unused_Jp, //unused output
-							 perturbed_forward_variables, pathVars, BED->SLP); // input
+				   perturbed_Jv,  // <---- the output we need
+				   unused_Jp, //unused output
+				   perturbed_forward_variables, pathVars, BED->SLP); // input
 		
 		
 		mat_mul_d(perturbed_AtimesJ,BED->randomizer_matrix,perturbed_Jv);
 		
 		mat_cp_d(tempmat1, BED->jac_with_proj);//reset
-		// copy in the transpose of the (randomized) jacobian
+											   // copy in the transpose of the (randomized) jacobian
 		for (mm=0; mm< (BED->num_randomized_eqns); mm++) {
 			for (jj=1; jj<BED->num_x_vars; jj++) {
-				set_d(&tempmat1->entry[jj - 1][mm],&perturbed_AtimesJ->entry[mm][jj]); 
+				set_d(&tempmat1->entry[jj - 1][mm],&perturbed_AtimesJ->entry[mm][jj]);
 			}
 		}
-
+		
 		mat_mul_d(tempmat3, tempmat1, jac_homogenizing_matrix);
 		mul_mat_vec_d(tempvec, tempmat3, curr_v_vars);
 		
@@ -1728,14 +1805,14 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 			for (jj=0; jj<(BED->max_degree); jj++)
 				mul_d(&jac_homogenizing_matrix->entry[kk][kk], &jac_homogenizing_matrix->entry[kk][kk], &perturbed_backward_variables->coord[0]);
 		
-
+		
 		// evaluate perturbed back
 		evalProg_d(unused_function_values, unused_parVals, unused_parDer,  //  unused output
-							 perturbed_Jv,  // <---- the output we need
-							 unused_Jp, //unused output
-							 perturbed_backward_variables, pathVars, BED->SLP); // input
-
-
+				   perturbed_Jv,  // <---- the output we need
+				   unused_Jp, //unused output
+				   perturbed_backward_variables, pathVars, BED->SLP); // input
+		
+		
 		mat_cp_d(tempmat1, BED->jac_with_proj); // probably unnecessary
 		
 		// copy in the transpose of the (randomized) jacobian
@@ -1745,17 +1822,17 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 				set_d(&tempmat1->entry[jj - 1][mm], &perturbed_AtimesJ->entry[mm][jj]);
 			}
 		}
-
+		
 		mat_mul_d(tempmat3, tempmat1, jac_homogenizing_matrix);
 		mul_mat_vec_d(tempvec2, tempmat3, curr_v_vars);
 		
 		
 		vec_sub_d(tempvec, tempvec, tempvec2); // tempvec = forward - backward
-
+		
 		div_d(temp, BED->half, BED->perturbation);   //this is repetitively wasteful
 		
 		vec_mulcomp_d(tempvec, tempvec, temp); //tempvec = (forward-backward)/(2h)
-		// √ this is verified correct for sphere
+											   // √ this is verified correct for sphere
 		
 		
 		vec_mulcomp_d(tempvec, tempvec, one_minus_s);// now tempvec has the numerical derivatives wrt $x$ variable ii. (for all jac eqns)
@@ -1768,7 +1845,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 		}
 		
 	}//re: ii for numerical diff
-
+	
 	// END NUMERICAL DIFF wrt x
 	
 	
@@ -1785,7 +1862,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 			set_d(&Jv->entry[ii+offset][jj], &Jv_Patch->entry[ii][jj]);
 	}
 	
-
+	
 	offset = BED->num_randomized_eqns + BED->num_additional_linears + BED->num_jac_equations + BED->patch.num_patches;
 	if (offset != BED->num_variables-1) {
 		std::cout << "mismatch in number of blabla, line 1006;\n" << offset << " " << BED->num_variables-1 << std::endl;
@@ -1797,40 +1874,40 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	set_one_d(temp2);
 	dot_product_d(temp, BED->v_patch, curr_v_vars);
 	sub_d(&funcVals->coord[BED->num_variables-1], temp, temp2);  // f = patch*v-1
-
-	for (ii=0; ii<BED->num_v_vars; ii++) 
+	
+	for (ii=0; ii<BED->num_v_vars; ii++)
 		set_d(&Jv->entry[BED->num_variables-1][BED->num_x_vars+ii], &BED->v_patch->coord[ii]);
 	
 	
 	
 	// finally, set parVals & parDer correctly
 	
-  change_size_point_d(parVals, 1);  change_size_vec_d(parDer, 1);
-  parVals->size = parDer->size = 1;
+	change_size_point_d(parVals, 1);  change_size_vec_d(parDer, 1);
+	parVals->size = parDer->size = 1;
 	
-  set_d(&parVals->coord[0], pathVars); // s = t
-  set_one_d(&parDer->coord[0]);       // ds/dt = 1
+	set_d(&parVals->coord[0], pathVars); // s = t
+	set_one_d(&parDer->coord[0]);       // ds/dt = 1
 	
 	
 	if (BED->verbose_level==10) {
-	printf("t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
-//	print_matrix_to_screen_matlab(jac_homogenizing_matrix,"jac_hom_1044");
-//	print_matrix_to_screen_matlab(BED->post_randomizer_matrix,"S");
-//	print_matrix_to_screen_matlab(BED->randomizer_matrix,"R");
-//
-//	
-//	print_matrix_to_screen_matlab( AtimesJ,"jac");
-//	print_point_to_screen_matlab(curr_x_vars,"currxvars");
-//	print_point_to_screen_matlab(current_variable_values,"curr_vars");
-	print_point_to_screen_matlab(funcVals,"F");
-	print_matrix_to_screen_matlab(Jv,"Jv");
-//	print_matrix_to_screen_matlab(Jp,"Jp");
-//	print_matrix_to_screen_matlab(BED->jac_with_proj,"jacwithproj");
-//			//these values are set in this function:  point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp
-	print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
-
-//	std::cout << "\n\n**************\n\n";
-
+		printf("t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
+		//	print_matrix_to_screen_matlab(jac_homogenizing_matrix,"jac_hom_1044");
+		//	print_matrix_to_screen_matlab(BED->post_randomizer_matrix,"S");
+		//	print_matrix_to_screen_matlab(BED->randomizer_matrix,"R");
+		//
+		//
+		//	print_matrix_to_screen_matlab( AtimesJ,"jac");
+		//	print_point_to_screen_matlab(curr_x_vars,"currxvars");
+		//	print_point_to_screen_matlab(current_variable_values,"curr_vars");
+		print_point_to_screen_matlab(funcVals,"F");
+		print_matrix_to_screen_matlab(Jv,"Jv");
+		//	print_matrix_to_screen_matlab(Jp,"Jp");
+		//	print_matrix_to_screen_matlab(BED->jac_with_proj,"jacwithproj");
+		//			//these values are set in this function:  point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp
+		print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
+		
+		//	std::cout << "\n\n**************\n\n";
+		
 	}
 	
 	
@@ -1839,7 +1916,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	clear_vec_d(curr_v_vars);
 	clear_vec_d(patchValues);
 	clear_vec_d(temp_function_values);
-
+	
 	
 	clear_vec_d(AtimesF);
 	clear_vec_d(linprod_x);
@@ -1847,12 +1924,12 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	clear_vec_d(tempvec);
 	clear_vec_d(tempvec2);
 	
-
+	
 	clear_mat_d(Jv_Patch);
 	clear_mat_d(tempmat);
 	clear_mat_d(lin_func_vals);
 	
-
+	
 	
 	clear_mat_d(AtimesJ);
 	clear_mat_d(Jv_jac);
@@ -1871,7 +1948,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	clear_vec_d(unused_function_values);
 	clear_vec_d(unused_parVals);
 	clear_vec_d(unused_parDer);
-
+	
 	
 	clear_mat_d(unused_Jp);
 	clear_mat_d(perturbed_Jv);
@@ -1879,10 +1956,10 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	clear_mat_d(tempmat3);
 	clear_mat_d(tempmat1);
 	clear_mat_d(tempmat2);
-
+	
 	clear_vec_d(perturbed_forward_variables);
 	clear_vec_d(perturbed_backward_variables);
-
+	
 	
 	
 #ifdef printpathnullspace_left
@@ -1898,7 +1975,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 #endif
 	
 	//	printf("exiting eval\n");
-  return 0;
+	return 0;
 }
 
 
@@ -1906,18 +1983,18 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 
 int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED)
 { // evaluates a special homotopy type, built for bertini_real
-	//	printf("entering eval_mp\n");
-  nullspacejac_eval_data_mp *BED = (nullspacejac_eval_data_mp *)ED; // to avoid having to cast every time
+  //	printf("entering eval_mp\n");
+	nullspacejac_eval_data_mp *BED = (nullspacejac_eval_data_mp *)ED; // to avoid having to cast every time
 	
-  int ii, jj, kk, mm;
+	int ii, jj, kk, mm;
 	int offset;
-  comp_mp one_minus_s, gamma_s;  init_mp(one_minus_s); init_mp(gamma_s);
+	comp_mp one_minus_s, gamma_s;  init_mp(one_minus_s); init_mp(gamma_s);
 	
 	set_one_mp(one_minus_s);
-  sub_mp(one_minus_s, one_minus_s, pathVars);  // one_minus_s = (1 - s)
-  mul_mp(gamma_s, BED->gamma, pathVars);       // gamma_s = gamma * s
+	sub_mp(one_minus_s, one_minus_s, pathVars);  // one_minus_s = (1 - s)
+	mul_mp(gamma_s, BED->gamma, pathVars);       // gamma_s = gamma * s
 	
-  // we assume that the only parameter is s = t and setup parVals & parDer accordingly.
+	// we assume that the only parameter is s = t and setup parVals & parDer accordingly.
 	vec_mp curr_x_vars; init_vec_mp(curr_x_vars, BED->num_x_vars);
 	curr_x_vars->size = BED->num_x_vars;
 	for (ii=0; ii<BED->num_x_vars; ii++)
@@ -2016,20 +2093,20 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	evalProg_mp(temp_function_values, parVals, parDer, temp_jacobian_functions, temp_jacobian_parameters, curr_x_vars, pathVars, BED->SLP);
 	
 	
-  patch_eval_mp(    patchValues, parVals, parDer, Jv_Patch, Jp, curr_x_vars, pathVars, &BED->patch);  // Jp is ignored
+	patch_eval_mp(    patchValues, parVals, parDer, Jv_Patch, Jp, curr_x_vars, pathVars, &BED->patch);  // Jp is ignored
 	
 	
 	
 	
 	//resize output variables to correct size
 	change_size_vec_mp(funcVals,BED->num_variables);
-  change_size_mat_mp(Jv, BED->num_variables, BED->num_variables);
-  change_size_mat_mp(Jp, BED->num_variables, 1);
+	change_size_mat_mp(Jv, BED->num_variables, BED->num_variables);
+	change_size_mat_mp(Jp, BED->num_variables, 1);
 	
 	// initialize stuff to all 0's
-  funcVals->size = Jv->rows = Jp->rows = BED->num_variables;
-  Jv->cols = BED->num_variables;  //  <-- this must be square
-  Jp->cols = 1;
+	funcVals->size = Jv->rows = Jp->rows = BED->num_variables;
+	Jv->cols = BED->num_variables;  //  <-- this must be square
+	Jp->cols = 1;
 	
 	for (ii=0; ii<Jv->rows; ii++)
 		for (jj=0; jj<Jv->cols; jj++)
@@ -2112,7 +2189,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 			mul_mp(&jac_homogenizing_matrix->entry[ii][ii], &jac_homogenizing_matrix->entry[ii][ii], &curr_x_vars->coord[0]);
 	
 	
-
+	
 	mat_mul_mp(Jf_pi_homogenized, BED->jac_with_proj, jac_homogenizing_matrix); // jac with proj having been set above with unperturbed values
 	
 	
@@ -2235,9 +2312,9 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 		
 		// evaluate perturbed forwards
 		evalProg_mp(unused_function_values, unused_parVals, unused_parDer,  //  unused output
-								perturbed_Jv,  // <---- the output we need
-								unused_Jp, //unused output
-								perturbed_forward_variables, pathVars, BED->SLP); // input
+					perturbed_Jv,  // <---- the output we need
+					unused_Jp, //unused output
+					perturbed_forward_variables, pathVars, BED->SLP); // input
 		
 		
 		mat_mul_mp(perturbed_AtimesJ,BED->randomizer_matrix,perturbed_Jv);
@@ -2250,7 +2327,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 			}
 		}
 		
-
+		
 		mat_mul_mp(tempmat3, tempmat1, jac_homogenizing_matrix);
 		mul_mat_vec_mp(tempvec, tempmat3, curr_v_vars);
 		
@@ -2272,9 +2349,9 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 		
 		// evaluate perturbed back
 		evalProg_mp(unused_function_values, unused_parVals, unused_parDer,  //  unused output
-								perturbed_Jv,  // <---- the output we need
-								unused_Jp, //unused output
-								perturbed_backward_variables, pathVars, BED->SLP); // input
+					perturbed_Jv,  // <---- the output we need
+					unused_Jp, //unused output
+					perturbed_backward_variables, pathVars, BED->SLP); // input
 		
 		
 		mat_cp_mp(tempmat1, BED->jac_with_proj); // probably unnecessary
@@ -2298,7 +2375,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 		
 		
 		vec_mulcomp_mp(tempvec, tempvec, temp); //tempvec = (forward-backward)/(2h)
-																						// √ this is verified correct for sphere
+												// √ this is verified correct for sphere
 		
 		//		print_point_to_screen_matlab(tempvec,"Jv_target");
 		
@@ -2349,28 +2426,30 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	
 	// finally, set parVals & parDer correctly
 	
-  change_size_point_mp(parVals, 1);  change_size_vec_mp(parDer, 1);
-  parVals->size = parDer->size = 1;
+	change_size_point_mp(parVals, 1);  change_size_vec_mp(parDer, 1);
+	parVals->size = parDer->size = 1;
 	
-  set_mp(&parVals->coord[0], pathVars); // s = t
-  set_one_mp(&parDer->coord[0]);       // ds/dt = 1
+	set_mp(&parVals->coord[0], pathVars); // s = t
+	set_one_mp(&parDer->coord[0]);       // ds/dt = 1
 	
 	
 	
 	
 	if (BED->verbose_level==10) {
+        print_comp_matlab(pathVars,"t");
 		//	print_matrix_to_screen_matlab( AtimesJ,"jac");
-		//	print_point_to_screen_matlab(curr_x_vars,"currxvars");
+        print_point_to_screen_matlab(curr_x_vars,"currxvars");
+        print_point_to_screen_matlab(curr_v_vars,"currvvars");
 		print_point_to_screen_matlab(funcVals,"F_mp");
 		//	print_point_to_screen_matlab(parVals,"parVals");
 		//	print_point_to_screen_matlab(parDer,"parDer");
 		print_matrix_to_screen_matlab(Jv,"Jv_mp");
 		//	print_matrix_to_screen_matlab(Jp,"Jp");
 		
-		//	print_matrix_to_screen_matlab(BED->jac_with_proj,"jacwithproj");
+        print_matrix_to_screen_matlab(BED->jac_with_proj,"jacwithproj");
 		//these values are set in this function:  point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp
 		print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
-
+		
 	}
 	
 	
@@ -2407,7 +2486,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	clear_mp(temp3);
 	clear_mp(gamma_s);
 	clear_mp(one_minus_s);
-
+	
 	
 	clear_vec_mp(target_function_values);
 	clear_vec_mp(target_function_values_times_oneminus_s);
@@ -2457,28 +2536,28 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 #endif
 	
 	
-  return 0;
-} 
+	return 0;
+}
 
 
 
 
 
 int nullspacejac_dehom(point_d out_d, point_mp out_mp,
-											 int *out_prec,
-											 point_d in_d, point_mp in_mp,
-											 int in_prec,
-											 void const *ED_d, void const *ED_mp)
+					   int *out_prec,
+					   point_d in_d, point_mp in_mp,
+					   int in_prec,
+					   void const *ED_d, void const *ED_mp)
 {
-  
-  
-	
-  *out_prec = in_prec;
 	
 	
 	
-  if (in_prec < 64)
-  { // compute out_d
+	*out_prec = in_prec;
+	
+	
+	
+	if (in_prec < 64)
+	{ // compute out_d
 		nullspacejac_eval_data_d *BED_d = (nullspacejac_eval_data_d *)ED_d;
 		
 		change_size_vec_d(out_d,BED_d->num_natural_vars-1);
@@ -2491,13 +2570,13 @@ int nullspacejac_dehom(point_d out_d, point_mp out_mp,
 		
 		BED_d = NULL;
 		
-  }
-  else
-  { // compute out_mp
+	}
+	else
+	{ // compute out_mp
 		
 		nullspacejac_eval_data_mp *BED_mp = (nullspacejac_eval_data_mp *)ED_mp;
 		// set prec on out_mp
-    setprec_point_mp(out_mp, *out_prec);
+		setprec_point_mp(out_mp, *out_prec);
 		
 		change_size_vec_mp(out_mp,BED_mp->num_natural_vars-1);
 		out_mp->size = BED_mp->num_natural_vars-1;
@@ -2510,11 +2589,11 @@ int nullspacejac_dehom(point_d out_d, point_mp out_mp,
 		
 	}
 	
-
 	
-  
 	
-  return 0;
+	
+	
+	return 0;
 }
 
 
@@ -2531,14 +2610,14 @@ int change_nullspacejac_eval_prec(void const *ED, int new_prec)
 	
 	int ii, jj;
 	
-
+	
 	if (new_prec != BED->curr_prec){
 		// change the precision for the patch
 		changePatchPrec_mp(new_prec, &BED->patch);
 		
 		if (BED->verbose_level >=4)
 			printf("prec  %d\t-->\t%d\n",BED->curr_prec, new_prec);
-
+		
 		BED->SLP->precision = new_prec;
 		
 		BED->curr_prec = new_prec;
@@ -2550,7 +2629,7 @@ int change_nullspacejac_eval_prec(void const *ED, int new_prec)
 		change_prec_mat_mp(BED->randomizer_matrix,new_prec);
 		mat_cp_mp(BED->randomizer_matrix,BED->randomizer_matrix_full_prec);
 		
-
+		
 		
 		for (ii=0; ii<BED->num_additional_linears; ii++) {
 			change_prec_point_mp(BED->additional_linears_terminal[ii],new_prec);
@@ -2576,7 +2655,7 @@ int change_nullspacejac_eval_prec(void const *ED, int new_prec)
 			change_prec_point_mp(BED->v_linears[ii],new_prec);
 			vec_cp_mp(BED->v_linears[ii],BED->v_linears_full_prec[ii]);
 		}
-
+		
 		
 		change_prec_point_mp(BED->v_patch,new_prec);
 		vec_cp_mp(BED->v_patch,BED->v_patch_full_prec);
@@ -2591,7 +2670,7 @@ int change_nullspacejac_eval_prec(void const *ED, int new_prec)
 	}
 	
 	
-  return 0;
+	return 0;
 }
 
 
@@ -2600,10 +2679,10 @@ int change_nullspacejac_eval_prec(void const *ED, int new_prec)
 
 
 int check_issoln_nullspacejac_d(endgame_data_t *EG,
-																tracker_config_t *T,
-																void const *ED)
+								tracker_config_t *T,
+								void const *ED)
 {
-  nullspacejac_eval_data_d *BED = (nullspacejac_eval_data_d *)ED; // to avoid having to cast every time
+	nullspacejac_eval_data_d *BED = (nullspacejac_eval_data_d *)ED; // to avoid having to cast every time
 	
 	
 	int ii;
@@ -2637,7 +2716,7 @@ int check_issoln_nullspacejac_d(endgame_data_t *EG,
 		evalProg_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, terminal_pt, EG->PD_d.time, BED->SLP);
 		//		lin_to_lin_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, terminal_pt, EG->PD_d.time, ED);
 		
-
+		
 		for (ii=0; ii<BED->num_x_vars; ii++)
 			set_d(&curr_x_vars->coord[ii], &terminal_pt->coord[ii]);
 		
@@ -2672,11 +2751,11 @@ int check_issoln_nullspacejac_d(endgame_data_t *EG,
 	
 	
 	
-
 	
 	
-//	print_point_to_screen_matlab(EG->PD_d.point,"soln");
-//	print_point_to_screen_matlab(e.funcVals,"howfaroff");	// compare the function values
+	
+	//	print_point_to_screen_matlab(EG->PD_d.point,"soln");
+	//	print_point_to_screen_matlab(e.funcVals,"howfaroff");	// compare the function values
 	int isSoln = 1;
 	for (ii = 0; (ii < BED->SLP->numFuncs) && isSoln; ii++)
 	{
@@ -2700,62 +2779,62 @@ int check_issoln_nullspacejac_d(endgame_data_t *EG,
 		}
 	}
 	
-
+	
 	
 	
 	if (!isSoln) {
 		
 		print_point_to_screen_matlab(e.funcVals,"terminal_func_vals");
 		print_point_to_screen_matlab(f,"prev");
-
+		
 		printf("tol was %le\nmax_rat was %le\n",tol,max_rat);
 	}
 	
 	
 	
 	
-//	mat_d AtimesJ; init_mat_d(AtimesJ,0,0);  AtimesJ->rows = AtimesJ->cols = 0;
-//	mat_d jac_homogenizing_matrix;  init_mat_d(jac_homogenizing_matrix,0,0);
-//	jac_homogenizing_matrix->rows = jac_homogenizing_matrix->cols = 0;
-//	mat_d tempmat; init_mat_d(tempmat,0,0); tempmat->rows = tempmat->cols = 0;
-//	
-//	mat_d Jf_pi; init_mat_d(Jf_pi,0,0); Jf_pi->rows = Jf_pi->cols = 0;
-//	vec_d target_function_values; init_vec_d(target_function_values,0); target_function_values->size = 0;
-//	
-//	mat_mul_d(AtimesJ,BED->randomizer_matrix,e.Jv);
-//	for (ii=0; ii< AtimesJ->rows; ii++)
-//		for (int jj=1; jj<BED->num_x_vars; jj++)
-//			set_d(&BED->jac_with_proj->entry[jj - 1][ii],&AtimesJ->entry[ii][jj]); // copy in the transpose of the (randomized) jacobian, omitting the homogenizing variables
-//	
-//	make_matrix_ID_d(jac_homogenizing_matrix,BED->num_v_vars,BED->num_v_vars);
-//	
-//	for (ii=0; ii<BED->num_randomized_eqns; ii++)
-//		for (int jj=0; jj<(BED->max_degree - (BED->randomized_degrees[ii]-1)); jj++)
-//			mul_d(&jac_homogenizing_matrix->entry[ii][ii], &jac_homogenizing_matrix->entry[ii][ii], &curr_x_vars->coord[0]);
-//	
-//	for (ii=BED->num_randomized_eqns; ii<BED->num_v_vars; ii++)
-//		for (int jj=0; jj<(BED->max_degree); jj++) // these are all degree 1
-//			mul_d(&jac_homogenizing_matrix->entry[ii][ii], &jac_homogenizing_matrix->entry[ii][ii], &curr_x_vars->coord[0]);
-//	
-//	mat_mul_d(Jf_pi, BED->jac_with_proj, jac_homogenizing_matrix);
-//	
-//	mul_mat_vec_d(target_function_values, Jf_pi, curr_v_vars);
-//	
-//	mul_mat_vec_d(target_function_values, BED->post_randomizer_matrix, target_function_values);
-//
-//	
-//	for (ii=0; ii<target_function_values->size; ii++) {
-//		if (d_abs_d(&target_function_values->coord[ii]) > tol) {
-//			isSoln = 0;
-//			print_point_to_screen_matlab(target_function_values,"target_func_vals");
-//			break;
-//		}
-//	}
+	//	mat_d AtimesJ; init_mat_d(AtimesJ,0,0);  AtimesJ->rows = AtimesJ->cols = 0;
+	//	mat_d jac_homogenizing_matrix;  init_mat_d(jac_homogenizing_matrix,0,0);
+	//	jac_homogenizing_matrix->rows = jac_homogenizing_matrix->cols = 0;
+	//	mat_d tempmat; init_mat_d(tempmat,0,0); tempmat->rows = tempmat->cols = 0;
+	//
+	//	mat_d Jf_pi; init_mat_d(Jf_pi,0,0); Jf_pi->rows = Jf_pi->cols = 0;
+	//	vec_d target_function_values; init_vec_d(target_function_values,0); target_function_values->size = 0;
+	//
+	//	mat_mul_d(AtimesJ,BED->randomizer_matrix,e.Jv);
+	//	for (ii=0; ii< AtimesJ->rows; ii++)
+	//		for (int jj=1; jj<BED->num_x_vars; jj++)
+	//			set_d(&BED->jac_with_proj->entry[jj - 1][ii],&AtimesJ->entry[ii][jj]); // copy in the transpose of the (randomized) jacobian, omitting the homogenizing variables
+	//
+	//	make_matrix_ID_d(jac_homogenizing_matrix,BED->num_v_vars,BED->num_v_vars);
+	//
+	//	for (ii=0; ii<BED->num_randomized_eqns; ii++)
+	//		for (int jj=0; jj<(BED->max_degree - (BED->randomized_degrees[ii]-1)); jj++)
+	//			mul_d(&jac_homogenizing_matrix->entry[ii][ii], &jac_homogenizing_matrix->entry[ii][ii], &curr_x_vars->coord[0]);
+	//
+	//	for (ii=BED->num_randomized_eqns; ii<BED->num_v_vars; ii++)
+	//		for (int jj=0; jj<(BED->max_degree); jj++) // these are all degree 1
+	//			mul_d(&jac_homogenizing_matrix->entry[ii][ii], &jac_homogenizing_matrix->entry[ii][ii], &curr_x_vars->coord[0]);
+	//
+	//	mat_mul_d(Jf_pi, BED->jac_with_proj, jac_homogenizing_matrix);
+	//
+	//	mul_mat_vec_d(target_function_values, Jf_pi, curr_v_vars);
+	//
+	//	mul_mat_vec_d(target_function_values, BED->post_randomizer_matrix, target_function_values);
+	//
+	//
+	//	for (ii=0; ii<target_function_values->size; ii++) {
+	//		if (d_abs_d(&target_function_values->coord[ii]) > tol) {
+	//			isSoln = 0;
+	//			print_point_to_screen_matlab(target_function_values,"target_func_vals");
+	//			break;
+	//		}
+	//	}
 	
 	clear_eval_struct_d(e);
 	clear_vec_d(f);
 	
-//	std::cout << isSoln << std::endl;
+	//	std::cout << isSoln << std::endl;
 	
 	
 	return isSoln;
@@ -2764,10 +2843,10 @@ int check_issoln_nullspacejac_d(endgame_data_t *EG,
 
 
 int check_issoln_nullspacejac_mp(endgame_data_t *EG,
-																 tracker_config_t *T,
-																 void const *ED)
+								 tracker_config_t *T,
+								 void const *ED)
 {
-  nullspacejac_eval_data_mp *BED = (nullspacejac_eval_data_mp *)ED; // to avoid having to cast every time
+	nullspacejac_eval_data_mp *BED = (nullspacejac_eval_data_mp *)ED; // to avoid having to cast every time
 	
 	int ii;
 	
@@ -2781,11 +2860,11 @@ int check_issoln_nullspacejac_mp(endgame_data_t *EG,
 	
 	for (ii = 0; ii < T->numVars; ii++)
 	{
-    if (!(mpfr_number_p(EG->PD_mp.point->coord[ii].r) && mpfr_number_p(EG->PD_mp.point->coord[ii].i)))
+		if (!(mpfr_number_p(EG->PD_mp.point->coord[ii].r) && mpfr_number_p(EG->PD_mp.point->coord[ii].i)))
 		{
 			printf("got not a number\n");
 			print_point_to_screen_matlab(EG->PD_mp.point,"bad solution");
-      return 0;
+			return 0;
 		}
 	}
 	
@@ -2821,8 +2900,8 @@ int check_issoln_nullspacejac_mp(endgame_data_t *EG,
 	//	lin_to_lin_eval_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, ED);
 	evalProg_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, BED->SLP);
 	
-//	print_point_to_screen_matlab(EG->PD_mp.point,"soln");
-//	print_point_to_screen_matlab(e.funcVals,"howfaroff");
+	//	print_point_to_screen_matlab(EG->PD_mp.point,"soln");
+	//	print_point_to_screen_matlab(e.funcVals,"howfaroff");
 	
 	if (EG->last_approx_prec < 64) { // copy to _mp
 		point_d_to_mp(EG->last_approx_mp, EG->last_approx_d);
@@ -2857,7 +2936,7 @@ int check_issoln_nullspacejac_mp(endgame_data_t *EG,
 		}
 	}
 	
-
+	
 	
 	mpf_clear(n1); mpf_clear(n2); mpf_clear(zero_thresh); mpf_clear(max_rat);
 	
@@ -2868,7 +2947,7 @@ int check_issoln_nullspacejac_mp(endgame_data_t *EG,
 	clear_vec_mp(curr_v_vars);
 	
 	
-
+	
 	return isSoln;
 	
 }
@@ -2880,13 +2959,13 @@ int check_issoln_nullspacejac_mp(endgame_data_t *EG,
 
 
 int check_isstart_nullspacejac_d(point_d testpoint,
-																tracker_config_t *T,
-																void const *ED)
+								 tracker_config_t *T,
+								 void const *ED)
 {
-
+	
 	eval_struct_d e;
 	init_eval_struct_d(e,0, 0, 0);
-		
+	
 	comp_d time;
 	set_one_d(time);
 	
@@ -2898,7 +2977,7 @@ int check_isstart_nullspacejac_d(point_d testpoint,
 	int isSoln = 1;
 	
 	for (int ii = 0; (ii < e.funcVals->size) && isSoln; ii++) // function by function
-	{		
+	{
 		if (tol <= d_abs_d( &e.funcVals->coord[ii])){ // compare
 			isSoln = 0;
 			print_point_to_screen_matlab(testpoint,"invalid_startpoint");
@@ -2917,28 +2996,28 @@ int check_isstart_nullspacejac_d(point_d testpoint,
 
 
 void check_nullspace_evaluator(point_mp current_values,
-															 void const *ED)
+							   void const *ED)
 {
 	int ii;
 	printf("checking homogeneousness of double evaluator\n");
-  nullspacejac_eval_data_d *BED = (nullspacejac_eval_data_d *)ED; // to avoid having to cast every time
-	//initialize
+	nullspacejac_eval_data_d *BED = (nullspacejac_eval_data_d *)ED; // to avoid having to cast every time
+																	//initialize
 	eval_struct_d e_d; init_eval_struct_d(e_d, 0, 0, 0);
 	eval_struct_d e_d2; init_eval_struct_d(e_d2, 0, 0, 0);
 	
 	
-
+	
 	
 	comp_d zerotime; set_zero_d(zerotime);
 	
-
+	
 	
 	
 	point_d tempvec;  init_point_d(tempvec,0);
 	vec_mp_to_d(tempvec, current_values);
 	
 	nullspacejac_eval_d(e_d.funcVals, e_d.parVals, e_d.parDer, e_d.Jv, e_d.Jp, tempvec, zerotime, ED);
-
+	
 	
 	comp_d lambda; get_comp_rand_d(lambda);
 	
@@ -2948,14 +3027,14 @@ void check_nullspace_evaluator(point_mp current_values,
 	
 	nullspacejac_eval_d(e_d2.funcVals, e_d2.parVals, e_d2.parDer, e_d2.Jv, e_d2.Jp, tempvec, zerotime, ED);
 	
-
+	
 	printf("lambda = %lf+1i*%lf\n",lambda->r, lambda->i);
 	print_point_to_screen_matlab(e_d.funcVals,"f");
 	print_point_to_screen_matlab(e_d2.funcVals,"f2");
 	
 	
 	mypause();
-
+	
 	return;
 	
 }

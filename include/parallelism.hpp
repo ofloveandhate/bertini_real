@@ -1,6 +1,5 @@
 
-#ifndef BR_PARALLELISM_H
-#define BR_PARALLELISM_H
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,13 +33,14 @@
 #include "data_type.hpp"
 #include "isosingular.hpp"
 #include "programConfiguration.hpp"
-#include "output.hpp"
+//#include "output.hpp"
 #include "surface.hpp"
 #include "curve.hpp"
-#include "solver_nullspace_left.hpp"
+//#include "solver_nullspace_left.hpp"
 
 
-
+#ifndef BR_PARALLELISM_H
+#define BR_PARALLELISM_H
 
 
 
@@ -105,6 +105,22 @@ public:
 	int main_loop();
 
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #endif
 

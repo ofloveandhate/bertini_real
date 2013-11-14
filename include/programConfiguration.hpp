@@ -19,7 +19,7 @@
 
 //#include <omp.h>
 
-#define BERTINI_REAL_VERSION_STRING "0.0.101"
+#define BERTINI_REAL_VERSION_STRING "0.0.102"
 
 
 
@@ -40,7 +40,6 @@
 //
 //////////
 
-#define MAX_STRLEN 200
 
 class parallelism_config
 {
