@@ -3,26 +3,26 @@
 
 
 void midpoint_config::setup(const surface_decomposition & surf,
-														solver_configuration & solve_options)
+                            solver_configuration & solve_options)
 {
 	
 	this->MPType = solve_options.T.MPType;
-
+    
+    add_projection(surf.pi[0]);
+	add_projection(surf.pi[1]);
+    
 	num_mid_vars = surf.num_variables;
 	num_crit_vars = surf.crit_curve.num_variables;
 	num_sphere_vars = surf.sphere_curve.num_variables;
 	
 	
-	int blabla;
-	// i would like to move this.
-	
-
+	int blabla;  // i would like to move this.
 	parse_input_file(surf.input_filename, &blabla);
-
+    
 	
-	//	// setup a straight-line program, using the file(s) created by the parser	
+	//	// setup a straight-line program, using the file(s) created by the parser
 	solve_options.T.numVars = setupProg(this->SLP_mid, solve_options.T.Precision, solve_options.T.MPType);
-
+    
 	preproc_data_clear(&solve_options.PPD);
 	parse_preproc_data("preproc_data", &solve_options.PPD);
 	
@@ -32,22 +32,22 @@ void midpoint_config::setup(const surface_decomposition & surf,
 	//get the matrix and the degrees of the resulting randomized functions.
 	make_randomization_matrix_based_on_degrees(this->randomizer_matrix, randomized_degrees, surf.num_variables-surf.num_patches-2, solve_options.PPD.num_funcs);
 	//W.num_variables-W.num_patches-W.num_linears
-
+    
 	
 	this->mid_memory.capture_globals();
 	this->mid_memory.set_globals_null();
 	
-
-
+    
+    
 	//do the necessary parsing
 	
-
+    
 	parse_input_file(surf.crit_curve.input_filename, &blabla);
-
+    
 	
 	
 	//	// setup a straight-line program, using the file(s) created by the parser
-	solve_options.T.numVars = setupProg(this->SLP_crit, solve_options.T.Precision, solve_options.T.MPType); 
+	solve_options.T.numVars = setupProg(this->SLP_crit, solve_options.T.Precision, solve_options.T.MPType);
 	preproc_data_clear(&solve_options.PPD);
 	parse_preproc_data("preproc_data", &solve_options.PPD);
 	
@@ -65,7 +65,7 @@ void midpoint_config::setup(const surface_decomposition & surf,
 	
 	
 	parse_input_file(surf.sphere_curve.input_filename, &blabla);
-
+    
 	
 	//	// setup a straight-line program, using the file(s) created by the parser
 	setupProg(this->SLP_sphere, solve_options.T.Precision, solve_options.T.MPType);
@@ -81,13 +81,14 @@ void midpoint_config::setup(const surface_decomposition & surf,
 	this->sphere_memory.set_globals_null();
 	
 	
-//	// are there other things in T which need to be set?
+    //	// are there other things in T which need to be set?
 }
 
 
 void midpoint_config::init()
 {
-	
+	num_projections = 0;
+    
 	this->MPType = -1;
 	
 	init_mat_mp2(randomizer_matrix_sph,1,1,1024);randomizer_matrix_sph->rows = randomizer_matrix_sph->cols = 1;
@@ -108,10 +109,94 @@ void midpoint_config::init()
 	system_type_top = UNSET;
 	system_type_bottom = UNSET;
 	
-
+    
 }
 
 
+
+void midpoint_config::initial_send(parallelism_config & mpi_config)
+{
+    bcast_prog_t(SLP_sphere, this->MPType, 0, 0); // last two arguments are: myid, headnode
+    sphere_memory.capture_globals();
+    
+    bcast_prog_t(SLP_crit, this->MPType, 0, 0); // last two arguments are: myid, headnode
+    crit_memory.capture_globals();
+    
+    bcast_prog_t(SLP_mid, this->MPType, 0, 0); // last two arguments are: myid, headnode
+    mid_memory.capture_globals();
+    
+    bcast_mat_mp(randomizer_matrix_crit,0,0);
+    bcast_mat_mp(randomizer_matrix_sph,0,0);
+    bcast_mat_mp(randomizer_matrix,0,0);
+    
+    
+    MPI_Bcast(&num_mid_vars, 1, MPI_INT, mpi_config.id(), mpi_config.my_communicator);
+    MPI_Bcast(&num_crit_vars, 1, MPI_INT, mpi_config.id(), mpi_config.my_communicator);
+    MPI_Bcast(&num_sphere_vars, 1, MPI_INT, mpi_config.id(), mpi_config.my_communicator);
+    
+    for (int ii=0; ii<num_projections; ii++) {
+        bcast_vec_mp(pi[ii],0,0);
+    }
+}
+
+void midpoint_config::initial_receive(parallelism_config & mpi_config)
+{
+    
+    
+    
+    bcast_prog_t(SLP_sphere, this->MPType, 1, 0); // last two arguments are: myid, headnode
+    sphere_memory.capture_globals();
+    
+    bcast_prog_t(SLP_crit, this->MPType, 1, 0); // last two arguments are: myid, headnode
+    crit_memory.capture_globals();
+
+    bcast_prog_t(SLP_mid, this->MPType, 1, 0); // last two arguments are: myid, headnode
+    mid_memory.capture_globals();
+    
+    bcast_mat_mp(randomizer_matrix_crit,1,0);
+    bcast_mat_mp(randomizer_matrix_sph,1,0);
+    bcast_mat_mp(randomizer_matrix,1,0);
+    
+    
+    MPI_Bcast(&num_mid_vars, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+    MPI_Bcast(&num_crit_vars, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+    MPI_Bcast(&num_sphere_vars, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+
+    vec_mp tempvec;  init_vec_mp2(tempvec, 0, 1024);
+    for (int ii=0; ii<num_projections; ii++) {
+        bcast_vec_mp(tempvec,1,0);
+        add_projection(tempvec);
+    }
+    clear_vec_mp(tempvec);
+}
+
+void midpoint_config::update_send(parallelism_config & mpi_config,int target)
+{
+    send_comp_mp(v_target,target); // set during the loop in connect the dots
+    send_comp_mp(u_target,target); // set during the loop in connect the dots
+    
+    send_comp_mp(crit_val_left,target); // set during the loop in connect the dots
+    send_comp_mp(crit_val_right,target); // set during the loop in connect the dots
+    
+
+	MPI_Send(&system_type_bottom, 1, MPI_INT, target, UNUSED, MPI_COMM_WORLD);
+    MPI_Send(&system_type_top, 1, MPI_INT, target, UNUSED, MPI_COMM_WORLD);
+}
+
+void midpoint_config::update_receive(parallelism_config & mpi_config)
+{
+    MPI_Status statty_mc_gatty;
+    
+    receive_comp_mp(v_target,MPI_ANY_SOURCE); // set during the loop in connect the dots
+    receive_comp_mp(u_target,MPI_ANY_SOURCE); // set during the loop in connect the dots
+    
+    receive_comp_mp(crit_val_left,MPI_ANY_SOURCE); // set during the loop in connect the dots
+    receive_comp_mp(crit_val_right,MPI_ANY_SOURCE); // set during the loop in connect the dots
+    
+    
+    MPI_Recv(&system_type_bottom, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &statty_mc_gatty);
+    MPI_Recv(&system_type_top, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &statty_mc_gatty);
+}
 
 ///////////////
 //
@@ -152,7 +237,7 @@ void midpoint_eval_data_mp::init()
 	h->i = 0.0;
 	
 	d_to_mp(half, h);
-
+    
 	set_one_mp(this->one);
 	set_zero_mp(this->zero);
 	
@@ -168,8 +253,8 @@ void midpoint_eval_data_mp::init()
 	this->num_bottom_vars = -1;
 	this->num_top_vars = -1;
 	
-
-
+    
+    
 	
 	
 	
@@ -209,7 +294,7 @@ void midpoint_eval_data_mp::init()
 	
 	
 	
-
+    
 	
 	
 	
@@ -231,7 +316,7 @@ int midpoint_eval_data_mp::send(parallelism_config & mpi_config)
 	MPI_Bcast(buffer,12,MPI_INT, 0, mpi_config.my_communicator);
 	
 	delete[] buffer;
-		
+    
 	return SUCCESSFUL;
 }
 
@@ -264,7 +349,7 @@ int midpoint_eval_data_mp::receive(parallelism_config & mpi_config)
 	
 	
 	delete[] buffer;
-		
+    
 	
 	return SUCCESSFUL;
 }
@@ -272,9 +357,8 @@ int midpoint_eval_data_mp::receive(parallelism_config & mpi_config)
 
 
 int midpoint_eval_data_mp::setup(const midpoint_config & md_config,
-																 surface_decomposition & surf,
-																 const witness_set & W,
-																 solver_configuration & solve_options)
+                                 const witness_set & W,
+                                 solver_configuration & solve_options)
 {
 	
 	verbose_level = solve_options.verbose_level;
@@ -339,10 +423,10 @@ int midpoint_eval_data_mp::setup(const midpoint_config & md_config,
 	}
 	
 	
-
+    
 	this->num_variables = num_mid_vars + num_bottom_vars + num_top_vars;
 	
-
+    
 	
 	if (solve_options.use_gamma_trick==1)
 		get_comp_rand_mp(this->gamma); // set gamma to be random complex value
@@ -364,18 +448,18 @@ int midpoint_eval_data_mp::setup(const midpoint_config & md_config,
 	}
 	
 	
-
+    
 	set_mp(this->crit_val_left, md_config.crit_val_left);
 	set_mp(this->crit_val_right, md_config.crit_val_right);
 	
 	set_mp(this->u_target, md_config.u_target);
 	set_mp(this->v_target, md_config.v_target);
 	
-
+    
 	
-	add_projection(surf.pi[0]);
-	add_projection(surf.pi[1]);
-
+	add_projection(md_config.pi[0]);
+	add_projection(md_config.pi[1]);
+    
 	
 	
 	
@@ -383,7 +467,7 @@ int midpoint_eval_data_mp::setup(const midpoint_config & md_config,
 	
 	if (this->MPType==2) {
 		mat_cp_mp(randomizer_matrix_full_prec, md_config.randomizer_matrix);
-
+        
 		set_mp(this->crit_val_left_full_prec, md_config.crit_val_left);
 		set_mp(this->crit_val_right_full_prec, md_config.crit_val_right);
 		
@@ -429,9 +513,13 @@ void midpoint_eval_data_d::init()
 {
 	
 	if (this->MPType==2)
+    {
 		this->BED_mp = new midpoint_eval_data_mp(2);
-	else
+        solver_d::BED_mp = this->BED_mp;
+    }
+	else{
 		this->BED_mp = NULL;
+    }
 	
 	this->is_solution_checker_d = &check_issoln_midpoint_d;
 	this->is_solution_checker_mp = &check_issoln_midpoint_mp;
@@ -442,7 +530,7 @@ void midpoint_eval_data_d::init()
 	
 	half->r = 0.5;
 	half->i = 0.0;
-
+    
 	set_one_d(this->one);
 	set_zero_d(this->zero);
 	
@@ -456,7 +544,7 @@ void midpoint_eval_data_d::init()
 	this->num_bottom_vars = -1;
 	this->num_top_vars = -1;
 	
-
+    
 	
 	init_mat_d(randomizer_matrix_bottom,1,1);randomizer_matrix_bottom->rows = randomizer_matrix_bottom->cols = 1;
 	init_mat_d(randomizer_matrix_top,1,1); randomizer_matrix_top->rows = randomizer_matrix_top->cols = 1;
@@ -482,7 +570,7 @@ int midpoint_eval_data_d::send(parallelism_config & mpi_config)
 	MPI_Bcast(buffer,12,MPI_INT, 0, mpi_config.my_communicator);
 	
 	delete[] buffer;
-		return SUCCESSFUL;
+    return SUCCESSFUL;
 }
 
 int midpoint_eval_data_d::receive(parallelism_config & mpi_config)
@@ -504,11 +592,11 @@ int midpoint_eval_data_d::receive(parallelism_config & mpi_config)
 	MPI_Bcast(buffer,12,MPI_INT, 0, mpi_config.my_communicator);
 	
 	
-
+    
 	
 	
 	delete[] buffer;
-
+    
 	
 	if (this->MPType==2) {
 		this->BED_mp->receive(mpi_config);
@@ -521,9 +609,8 @@ int midpoint_eval_data_d::receive(parallelism_config & mpi_config)
 
 
 int midpoint_eval_data_d::setup(const midpoint_config & md_config,
-																surface_decomposition & surf,
-																const witness_set & W,
-																solver_configuration & solve_options)
+                                const witness_set & W,
+                                solver_configuration & solve_options)
 {
 	
 	solver_d::setup();
@@ -583,13 +670,13 @@ int midpoint_eval_data_d::setup(const midpoint_config & md_config,
 	
 	this->num_variables = num_mid_vars + num_bottom_vars + num_top_vars;
 	
-
+    
 	
 	
 	
 	
-	add_projection(surf.pi[0]);
-	add_projection(surf.pi[1]);
+	add_projection(md_config.pi[0]);
+	add_projection(md_config.pi[1]);
 	
 	mp_to_d(this->crit_val_left, md_config.crit_val_left);
 	mp_to_d(this->crit_val_right, md_config.crit_val_right);
@@ -605,13 +692,13 @@ int midpoint_eval_data_d::setup(const midpoint_config & md_config,
 	
 	
 	mat_mp_to_d(randomizer_matrix,
-							md_config.randomizer_matrix);
+                md_config.randomizer_matrix);
 	
 	
 	
 	if (this->MPType==2)
 	{
-		this->BED_mp->setup(md_config, surf, W, solve_options); // must be called before the gamma line below.
+		this->BED_mp->setup(md_config, W, solve_options); // must be called before the gamma line below.
 		rat_to_d(this->gamma, this->BED_mp->gamma_rat);
 	}
 	
@@ -646,12 +733,11 @@ int midpoint_eval_data_d::setup(const midpoint_config & md_config,
 
 
 int midpoint_solver_master_entry_point(const witness_set						&W, // carries with it the start points, and the linears.
-																			 witness_set						*W_new, // new data goes in here
-																			 surface_decomposition & surf,
-																			 midpoint_config & md_config,
-																			 solver_configuration		& solve_options)
+                                       witness_set						*W_new, // new data goes in here
+                                       midpoint_config & md_config,
+                                       solver_configuration		& solve_options)
 {
-
+    
 	bool prev_state = solve_options.force_no_parallel;
 	solve_options.force_no_parallel = true;
 	
@@ -669,18 +755,16 @@ int midpoint_solver_master_entry_point(const witness_set						&W, // carries wit
 			ED_d = new midpoint_eval_data_d(0);
 			
 			ED_d->setup(md_config,
-									surf,
-									W,
-									solve_options);
+                        W,
+                        solve_options);
 			break;
 			
 		case 1:
 			ED_mp = new midpoint_eval_data_mp(1);
 			
 			ED_mp->setup(md_config,
-									 surf,
-									 W,
-									 solve_options);
+                         W,
+                         solve_options);
 			// initialize latest_newton_residual_mp
 			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
@@ -691,9 +775,8 @@ int midpoint_solver_master_entry_point(const witness_set						&W, // carries wit
 			
 			
 			ED_d->setup(md_config,
-									surf,
-									W,
-									solve_options);
+                        W,
+                        solve_options);
 			
 			
 			
@@ -707,11 +790,9 @@ int midpoint_solver_master_entry_point(const witness_set						&W, // carries wit
 	
 	
 	master_solver(W_new, W,
-												ED_d, ED_mp,
-												solve_options);
-	
-	std::cout << "done with solver master" << std::endl;
-	
+                  ED_d, ED_mp,
+                  solve_options);
+    
 	solve_options.force_no_parallel = prev_state;
 	
 	switch (solve_options.T.MPType) {
@@ -729,7 +810,7 @@ int midpoint_solver_master_entry_point(const witness_set						&W, // carries wit
 			break;
 	}
 	
-  return SUCCESSFUL;
+    return SUCCESSFUL;
 	
 }
 
@@ -769,7 +850,7 @@ void midpoint_slave_entry_point(solver_configuration & solve_options)
 			ED_d->receive(solve_options);
 			
 			ED_mp = ED_d->BED_mp;
-
+            
 			
 			
 			
@@ -781,19 +862,19 @@ void midpoint_slave_entry_point(solver_configuration & solve_options)
 	}
 	
 	
-
+    
 	// call the file setup function
 	FILE *OUT = NULL, *midOUT = NULL;
 	
 	generic_setup_files(&OUT, "output",
-											&midOUT, "midpath_data");
+						&midOUT, "midpath_data");
 	
 	trackingStats trackCount; init_trackingStats(&trackCount); // initialize trackCount to all 0
 	
-
+    
 	worker_tracker_loop(&trackCount, OUT, midOUT,
-															ED_d, ED_mp,
-															solve_options);
+                        ED_d, ED_mp,
+                        solve_options);
 	
 	
 	// close the files
@@ -813,17 +894,17 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	
 	
 	
-  midpoint_eval_data_d *BED = (midpoint_eval_data_d *)ED; // to avoid having to cast every time
+    midpoint_eval_data_d *BED = (midpoint_eval_data_d *)ED; // to avoid having to cast every time
 	
 	
 	
-  int ii, jj;
+    int ii, jj;
 	int offset;
-  comp_d one_minus_s, gamma_s;
+    comp_d one_minus_s, gamma_s;
 	
 	set_one_d(one_minus_s);
-  sub_d(one_minus_s, one_minus_s, pathVars);  // one_minus_s = (1 - s)
-  mul_d(gamma_s, BED->gamma, pathVars);       // gamma_s = gamma * s
+    sub_d(one_minus_s, one_minus_s, pathVars);  // one_minus_s = (1 - s)
+    mul_d(gamma_s, BED->gamma, pathVars);       // gamma_s = gamma * s
 	
 	
 	//parse out the variables into proper segments.
@@ -832,7 +913,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	for (ii=0; ii<BED->num_mid_vars; ii++)
 		set_d(&curr_mid_vars->coord[ii], &current_variable_values->coord[ii]);
 	
-	offset = BED->num_mid_vars; // y0 
+	offset = BED->num_mid_vars; // y0
 	vec_d curr_bottom_vars; init_vec_d(curr_bottom_vars, BED->num_bottom_vars);
 	curr_bottom_vars->size = BED->num_bottom_vars;
 	for (ii=0; ii<BED->num_bottom_vars; ii++)
@@ -844,7 +925,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	for (ii=0; ii<BED->num_top_vars; ii++)
 		set_d(&curr_top_vars->coord[ii], &current_variable_values->coord[ii+offset]);
 	
-
+    
 	
 	
 	//create the variables to hold temp output
@@ -852,7 +933,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	vec_d temp_function_values; init_vec_d(temp_function_values,0);
 	
 	vec_d AtimesF;  init_vec_d(AtimesF,0);
-
+    
 	vec_d tempvec; init_vec_d(tempvec,0);
 	vec_d tempvec2; init_vec_d(tempvec2,0);
 	
@@ -864,7 +945,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	
 	mat_d Jv_jac; init_mat_d(Jv_jac,0,0);
 	mat_d Jv_Patch; init_mat_d(Jv_Patch,0,0);
-
+    
 	comp_d temp, temp2, temp3;
 	comp_d proj_bottom, proj_top, proj_mid;
 	
@@ -890,22 +971,22 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	init_vec_d(unused_function_values,0);init_vec_d(unused_parVals,0);
 	vec_d unused_parDer; init_vec_d(unused_parDer,0);
 	mat_d unused_Jp; init_mat_d(unused_Jp,0,0);
-
+    
 	
 	
 	//resize output variables to correct size
 	change_size_vec_d(funcVals,BED->num_variables);
-  change_size_mat_d(Jv, BED->num_variables, BED->num_variables);
-  change_size_mat_d(Jp, BED->num_variables, 1);
+    change_size_mat_d(Jv, BED->num_variables, BED->num_variables);
+    change_size_mat_d(Jp, BED->num_variables, 1);
 	
 	
 	//////
 	// initialize stuff to all 0's
 	///////
 	
-  funcVals->size = Jv->rows = Jp->rows = BED->num_variables;
-  Jv->cols = BED->num_variables;  //  <-- this must be square
-  Jp->cols = 1;
+    funcVals->size = Jv->rows = Jp->rows = BED->num_variables;
+    Jv->cols = BED->num_variables;  //  <-- this must be square
+    Jp->cols = 1;
 	
 	for (ii=0; ii<Jv->rows; ii++)
 		for (jj=0; jj<Jv->cols; jj++)
@@ -921,19 +1002,19 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	
 	BED->mid_memory.set_globals_to_this();
 	
-
+    
 	offset = 0;
 	evalProg_d(temp_function_values, parVals, parDer,
-						 temp_jacobian_functions, unused_Jp, curr_mid_vars, pathVars, BED->SLP_mid);
+               temp_jacobian_functions, unused_Jp, curr_mid_vars, pathVars, BED->SLP_mid);
 	
-
+    
 	
 	// randomize
 	mul_mat_vec_d(AtimesF,BED->randomizer_matrix, temp_function_values);
 	mat_mul_d(AtimesJ,BED->randomizer_matrix,temp_jacobian_functions);
 	
 	// for midpoint functions
-	for (ii=0; ii<AtimesF->size; ii++)  
+	for (ii=0; ii<AtimesF->size; ii++)
 		set_d(&funcVals->coord[ii], &AtimesF->coord[ii]);
 	
 	// the jacobian equations for midpoint
@@ -949,17 +1030,17 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	offset = BED->randomizer_matrix->rows; //y0
 	int offset_horizontal = BED->num_mid_vars;
 	evalProg_d(temp_function_values, parVals, parDer,
-						 temp_jacobian_functions, unused_Jp, curr_bottom_vars, pathVars, BED->SLP_bottom);
-
-//	std::cout << offset << " " << offset_horizontal << std::endl;
+               temp_jacobian_functions, unused_Jp, curr_bottom_vars, pathVars, BED->SLP_bottom);
+    
+    //	std::cout << offset << " " << offset_horizontal << std::endl;
 	// randomize
 	mul_mat_vec_d(AtimesF,BED->randomizer_matrix_bottom, temp_function_values); // set values of AtimesF (A is randomization matrix)
 	for (ii=0; ii<AtimesF->size; ii++)  // for each function, after (real) randomization
 		set_d(&funcVals->coord[ii+offset], &AtimesF->coord[ii]);
-
+    
 	
 	mat_mul_d(AtimesJ,BED->randomizer_matrix_bottom,temp_jacobian_functions);
-//	print_matrix_to_screen_matlab(AtimesJ,"AtimesJy2");
+    //	print_matrix_to_screen_matlab(AtimesJ,"AtimesJy2");
 	for (ii=0; ii< AtimesJ->rows; ii++)
 		for (jj=0; jj< AtimesJ->cols; jj++)
 			set_d(&Jv->entry[ii+offset][jj+offset_horizontal],&AtimesJ->entry[ii][jj]);
@@ -974,8 +1055,8 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	BED->top_memory.set_globals_to_this();
 	
 	evalProg_d(temp_function_values, parVals, parDer,
-						 temp_jacobian_functions, unused_Jp, curr_top_vars, pathVars, BED->SLP_top);
-
+               temp_jacobian_functions, unused_Jp, curr_top_vars, pathVars, BED->SLP_top);
+    
 	
 	// randomize
 	mul_mat_vec_d(AtimesF,BED->randomizer_matrix_top, temp_function_values); // set values of AtimesF (A is randomization matrix)
@@ -1012,15 +1093,15 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	projection_value_homogeneous_input(proj_top, curr_top_vars,BED->pi[0]);
 	projection_value_homogeneous_input(proj_bottom, curr_bottom_vars,BED->pi[0]);
 	
-
+    
 	
 	
 	mul_d(temp, one_minus_u, BED->crit_val_left);
 	mul_d(temp2, u, BED->crit_val_right);
-
+    
 	
 	add_d(temp3, temp, temp2); // temp3 = (1-u)*p2(w0) + u*p2(w2)
-
+    
 	sub_d(&funcVals->coord[offset+0], proj_mid, temp3);
 	sub_d(&funcVals->coord[offset+1], proj_bottom, temp3);
 	sub_d(&funcVals->coord[offset+2], proj_top, temp3);
@@ -1059,7 +1140,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	for (int ii=1; ii<BED->num_mid_vars; ii++)
 		set_d(&Jv->entry[offset+2][offset_horizontal+ii], &BED->pi[0]->coord[ii]);
 	
-
+    
 	
 	
 	
@@ -1097,7 +1178,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	offset_horizontal = BED->num_mid_vars;
 	div_d(&Jv->entry[offset][offset_horizontal], proj_bottom, &curr_bottom_vars->coord[0]);
 	mul_d(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal], one_minus_v);
-//	neg_d(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal]); //  -(1-v)*proj_bottom / y0[0]
+    //	neg_d(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal]); //  -(1-v)*proj_bottom / y0[0]
 	for (int ii=1; ii<BED->num_mid_vars; ii++) // only go this far, because all remaining entries are 0
 	{
 		mul_d(&Jv->entry[offset][ii+offset_horizontal], one_minus_v, &BED->pi[1]->coord[ii]);
@@ -1110,17 +1191,17 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	offset_horizontal = BED->num_mid_vars+BED->num_bottom_vars;
 	div_d(&Jv->entry[offset][offset_horizontal], proj_top, &curr_top_vars->coord[0]);
 	mul_d(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal], v);
-//	neg_d(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal]); //  -(v)*proj_top / y2[0]
+    //	neg_d(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal]); //  -(v)*proj_top / y2[0]
 	for (int ii=1; ii<BED->num_mid_vars; ii++)
 	{
-		mul_d(&Jv->entry[offset][ii+offset_horizontal], v, &BED->pi[1]->coord[ii]); 
+		mul_d(&Jv->entry[offset][ii+offset_horizontal], v, &BED->pi[1]->coord[ii]);
 		neg_d(&Jv->entry[offset][ii+offset_horizontal], &Jv->entry[offset][ii+offset_horizontal]);
 		div_d(&Jv->entry[offset][ii+offset_horizontal], &Jv->entry[offset][ii+offset_horizontal], &curr_top_vars->coord[0]);
 	}
 	
 	
-//	the Jp entry for this last equation.
-//should be correct up to perhaps switching left and right proj val
+    //	the Jp entry for this last equation.
+    //should be correct up to perhaps switching left and right proj val
 	
 	sub_d(temp, BED->v_start, BED->v_target);
 	mul_d(&Jp->entry[offset][0], proj_bottom, temp);
@@ -1137,11 +1218,11 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	
 	if (offset != BED->num_variables - BED->patch.num_patches) {
 		std::cout << "appear to have offset " << offset << " but should be " << BED->num_variables - BED->patch.num_patches << std::endl;
-//		print_matrix_to_screen_matlab(Jv,"Jv");
+        //		print_matrix_to_screen_matlab(Jv,"Jv");
 		mypause();
 	}
-  // evaluate the patch
-  patch_eval_d(    patchValues, parVals, parDer, Jv_Patch, unused_Jp, current_variable_values, pathVars, &BED->patch);  // Jp is ignored
+    // evaluate the patch
+    patch_eval_d(    patchValues, parVals, parDer, Jv_Patch, unused_Jp, current_variable_values, pathVars, &BED->patch);  // Jp is ignored
 	
 	offset = BED->num_variables - BED->patch.num_patches;
 	for (ii = 0; ii<BED->patch.num_patches; ii++)  // for each patch equation
@@ -1154,28 +1235,28 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	}
 	
 	
-
+    
 	
-
+    
 	
 	// finally, set parVals & parDer correctly
 	
-  change_size_point_d(parVals, 1);  change_size_vec_d(parDer, 1);
-  parVals->size = parDer->size = 1;
+    change_size_point_d(parVals, 1);  change_size_vec_d(parDer, 1);
+    parVals->size = parDer->size = 1;
 	
-  set_d(&parVals->coord[0], pathVars); // s = t
-  set_one_d(&parDer->coord[0]);       // ds/dt = 1
+    set_d(&parVals->coord[0], pathVars); // s = t
+    set_one_d(&parDer->coord[0]);       // ds/dt = 1
 	
-
+    
 	if ( (BED->verbose_level==14) || (BED->verbose_level == -14)) {
 		std::cout << color::blue();
 		printf("t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
 		std::cout << color::console_default();
 		
 		print_point_to_screen_matlab(current_variable_values,"curr_vars");
-//		print_point_to_screen_matlab(funcVals,"F_d");
-//		print_matrix_to_screen_matlab(Jv,"Jv");
-//		print_matrix_to_screen_matlab(Jp,"Jp");
+        //		print_point_to_screen_matlab(funcVals,"F_d");
+        //		print_matrix_to_screen_matlab(Jv,"Jv");
+        //		print_matrix_to_screen_matlab(Jp,"Jp");
 		
 	}
 	
@@ -1225,8 +1306,8 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	
 	clear_mat_d(unused_Jp);
 	
-
-  return 0;
+    
+    return 0;
 }
 
 
@@ -1234,15 +1315,15 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 
 int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED)
 { // evaluates a special homotopy type, built for bertini_real
-
+    
 	
-  midpoint_eval_data_mp *BED = (midpoint_eval_data_mp *)ED; // to avoid having to cast every time
+    midpoint_eval_data_mp *BED = (midpoint_eval_data_mp *)ED; // to avoid having to cast every time
 	
 	
 	
-  int ii, jj;
+    int ii, jj;
 	int offset;
-  
+    
 	
 	
 	
@@ -1287,8 +1368,8 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
 	
 	set_one_mp(one_minus_s);
-  sub_mp(one_minus_s, one_minus_s, pathVars);  // one_minus_s = (1 - s)
-  mul_mp(gamma_s, BED->gamma, pathVars);       // gamma_s = gamma * s
+    sub_mp(one_minus_s, one_minus_s, pathVars);  // one_minus_s = (1 - s)
+    mul_mp(gamma_s, BED->gamma, pathVars);       // gamma_s = gamma * s
 	
 	
 	//parse out the variables into proper segments.
@@ -1297,7 +1378,7 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	for (ii=0; ii<BED->num_mid_vars; ii++)
 		set_mp(&curr_mid_vars->coord[ii], &current_variable_values->coord[ii]);
 	
-
+    
 	offset = BED->num_mid_vars;// y0
 	
 	curr_bottom_vars->size = BED->num_bottom_vars;
@@ -1306,7 +1387,7 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
 	
 	offset = BED->num_mid_vars + BED->num_bottom_vars; // y2
-	 
+    
 	curr_top_vars->size = BED->num_top_vars;
 	for (ii=0; ii<BED->num_top_vars; ii++)
 		set_mp(&curr_top_vars->coord[ii], &current_variable_values->coord[ii+offset]);
@@ -1344,17 +1425,17 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
 	//resize output variables to correct size
 	change_size_vec_mp(funcVals,BED->num_variables);
-  change_size_mat_mp(Jv, BED->num_variables, BED->num_variables);
-  change_size_mat_mp(Jp, BED->num_variables, 1);
+    change_size_mat_mp(Jv, BED->num_variables, BED->num_variables);
+    change_size_mat_mp(Jp, BED->num_variables, 1);
 	
 	
 	//////
 	// initialize stuff to all 0's
 	///////
 	
-  funcVals->size = Jv->rows = Jp->rows = BED->num_variables;
-  Jv->cols = BED->num_variables;  //  <-- this must be square
-  Jp->cols = 1;
+    funcVals->size = Jv->rows = Jp->rows = BED->num_variables;
+    Jv->cols = BED->num_variables;  //  <-- this must be square
+    Jp->cols = 1;
 	
 	for (ii=0; ii<Jv->rows; ii++)
 		for (jj=0; jj<Jv->cols; jj++)
@@ -1369,7 +1450,7 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	BED->mid_memory.set_globals_to_this();
 	
 	evalProg_mp(temp_function_values, parVals, parDer,
-						 temp_jacobian_functions, unused_Jp, curr_mid_vars, pathVars, BED->SLP_mid);
+                temp_jacobian_functions, unused_Jp, curr_mid_vars, pathVars, BED->SLP_mid);
 	
 	
 	
@@ -1393,7 +1474,7 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	offset = BED->randomizer_matrix->rows; //y0
 	int offset_horizontal = BED->num_mid_vars;
 	evalProg_mp(temp_function_values, parVals, parDer,
-						 temp_jacobian_functions, unused_Jp, curr_bottom_vars, pathVars, BED->SLP_bottom);
+                temp_jacobian_functions, unused_Jp, curr_bottom_vars, pathVars, BED->SLP_bottom);
 	
 	//	std::cout << offset << " " << offset_horizontal << std::endl;
 	// randomize
@@ -1416,11 +1497,11 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	offset_horizontal = BED->num_mid_vars + BED->num_bottom_vars;
 	
 	BED->top_memory.set_globals_to_this();
-
+    
 	
 	evalProg_mp(temp_function_values, parVals, parDer,
-						 temp_jacobian_functions, unused_Jp, curr_top_vars, pathVars, BED->SLP_top);
-
+                temp_jacobian_functions, unused_Jp, curr_top_vars, pathVars, BED->SLP_top);
+    
 	
 	// randomize
 	mul_mat_vec_mp(AtimesF,BED->randomizer_matrix_top, temp_function_values); // set values of AtimesF (A is randomization matrix)
@@ -1457,7 +1538,7 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	projection_value_homogeneous_input(proj_top, curr_top_vars,BED->pi[0]);
 	projection_value_homogeneous_input(proj_bottom, curr_bottom_vars,BED->pi[0]);
 	
-
+    
 	
 	
 	mul_mp(temp, one_minus_u, BED->crit_val_left);
@@ -1546,7 +1627,7 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	offset_horizontal = BED->num_mid_vars;
 	div_mp(&Jv->entry[offset][offset_horizontal], proj_bottom, &curr_bottom_vars->coord[0]);
 	mul_mp(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal], one_minus_v);
-//	neg_mp(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal]); //  -(1-v)*proj_bottom / y0[0]
+    //	neg_mp(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal]); //  -(1-v)*proj_bottom / y0[0]
 	for (int ii=1; ii<BED->num_mid_vars; ii++) // only go this far, because all remaining entries are 0
 	{
 		mul_mp(&Jv->entry[offset][ii+offset_horizontal], one_minus_v, &BED->pi[1]->coord[ii]);
@@ -1559,7 +1640,7 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	offset_horizontal = BED->num_mid_vars+BED->num_bottom_vars;
 	div_mp(&Jv->entry[offset][offset_horizontal], proj_top, &curr_top_vars->coord[0]);
 	mul_mp(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal], v);
-//	neg_mp(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal]); //  -(v)*proj_top / y2[0]
+    //	neg_mp(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal]); //  -(v)*proj_top / y2[0]
 	for (int ii=1; ii<BED->num_mid_vars; ii++)
 	{
 		mul_mp(&Jv->entry[offset][ii+offset_horizontal], v, &BED->pi[1]->coord[ii]);
@@ -1590,8 +1671,8 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 		print_matrix_to_screen_matlab(Jv,"Jv");
 		mypause();
 	}
-  // evaluate the patch
-  patch_eval_mp(    patchValues, parVals, parDer, Jv_Patch, unused_Jp, current_variable_values, pathVars, &BED->patch);  // Jp is ignored
+    // evaluate the patch
+    patch_eval_mp(    patchValues, parVals, parDer, Jv_Patch, unused_Jp, current_variable_values, pathVars, &BED->patch);  // Jp is ignored
 	
 	offset = BED->num_variables - BED->patch.num_patches;
 	for (ii = 0; ii<BED->patch.num_patches; ii++)  // for each patch equation
@@ -1610,13 +1691,13 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
 	// finally, set parVals & parDer correctly
 	
-  change_size_point_mp(parVals, 1);  change_size_vec_mp(parDer, 1);
-  parVals->size = parDer->size = 1;
+    change_size_point_mp(parVals, 1);  change_size_vec_mp(parDer, 1);
+    parVals->size = parDer->size = 1;
 	
-  set_mp(&parVals->coord[0], pathVars); // s = t
-  set_one_mp(&parDer->coord[0]);       // ds/dt = 1
+    set_mp(&parVals->coord[0], pathVars); // s = t
+    set_one_mp(&parDer->coord[0]);       // ds/dt = 1
 	
-
+    
 	
 	if ( (BED->verbose_level==14) || (BED->verbose_level == -14)) {
 		std::cout << color::blue();
@@ -1625,17 +1706,17 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 		
 		
 		print_point_to_screen_matlab(current_variable_values,"curr_vars");
-//		print_point_to_screen_matlab(funcVals,"F_mp");
-//		print_matrix_to_screen_matlab(Jv,"Jv");
-//		print_matrix_to_screen_matlab(Jp,"Jp");
+        //		print_point_to_screen_matlab(funcVals,"F_mp");
+        //		print_matrix_to_screen_matlab(Jv,"Jv");
+        //		print_matrix_to_screen_matlab(Jp,"Jp");
 		
-//		vec_mp result; init_vec_mp(result,0);
-//		dehomogenize(&result, curr_mid_vars);
-//		print_point_to_screen_matlab(result,"mid");
-//		
-//		//	std::cout << "\n\n**************\n\n";
-//		clear_vec_mp(result);
-//		mypause();
+        //		vec_mp result; init_vec_mp(result,0);
+        //		dehomogenize(&result, curr_mid_vars);
+        //		print_point_to_screen_matlab(result,"mid");
+        //
+        //		//	std::cout << "\n\n**************\n\n";
+        //		clear_vec_mp(result);
+        //		mypause();
 	}
 	
 	
@@ -1655,8 +1736,8 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	fprintf(BED->FOUT,"\n");
 	clear_vec_mp(dehommed);
 #endif
-
-
+    
+    
 	clear_mp(temp);
 	clear_mp(temp2);
 	clear_mp(temp3);
@@ -1707,7 +1788,7 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
 	
 	
-  return 0;
+    return 0;
 }
 
 
@@ -1716,20 +1797,20 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 
 
 int midpoint_dehom(point_d out_d, point_mp out_mp,
-											 int *out_prec,
-											 point_d in_d, point_mp in_mp,
-											 int in_prec,
-											 void const *ED_d, void const *ED_mp)
+                   int *out_prec,
+                   point_d in_d, point_mp in_mp,
+                   int in_prec,
+                   void const *ED_d, void const *ED_mp)
 {
-  
-  
+    
+    
 	
-  *out_prec = in_prec;
+    *out_prec = in_prec;
 	
 	
 	
-  if (in_prec < 64)
-  { // compute out_d
+    if (in_prec < 64)
+    { // compute out_d
 		midpoint_eval_data_d *BED_d = (midpoint_eval_data_d *)ED_d;
 		
 		change_size_vec_d(out_d,BED_d->num_mid_vars-1);
@@ -1739,21 +1820,21 @@ int midpoint_dehom(point_d out_d, point_mp out_mp,
 		for (int ii=0; ii<BED_d->num_mid_vars-1; ++ii) {
 			div_d(&out_d->coord[ii],&in_d->coord[ii+1],&in_d->coord[0]); //  result[ii] = dehom_me[ii+1]/dehom_me[0].
 		}
-//		
-//		for (int ii=BED_d->num_natural_vars-1; ii<in_d->size-1; ++ii) {
-//			set_d( &out_d->coord[ii],&in_d->coord[ii+1]);
-//		}
-//		
+        //
+        //		for (int ii=BED_d->num_natural_vars-1; ii<in_d->size-1; ++ii) {
+        //			set_d( &out_d->coord[ii],&in_d->coord[ii+1]);
+        //		}
+        //
 		
 		
 		BED_d = NULL;
 		
-  }
-  else
-  { // compute out_mp
+    }
+    else
+    { // compute out_mp
 		midpoint_eval_data_mp *BED_mp = (midpoint_eval_data_mp *)ED_mp;
 		
-
+        
 		change_size_vec_mp(out_mp,BED_mp->num_mid_vars-1);
 		out_mp->size = BED_mp->num_mid_vars-1;
 		
@@ -1761,35 +1842,17 @@ int midpoint_dehom(point_d out_d, point_mp out_mp,
 			div_mp(&out_mp->coord[ii],&in_mp->coord[ii+1],&in_mp->coord[0]); //  result[ii] = dehom_me[ii+1]/dehom_me[0].
 		}
 		
-//		for (int ii=BED_mp->num_natural_vars-1; ii<in_mp->size-1; ++ii) {
-//			set_mp( &out_mp->coord[ii],&in_mp->coord[ii+1]);
-//		}
-		
 
 		
-		
-    // set prec on out_mp
-    setprec_point_mp(out_mp, *out_prec);
+        // set prec on out_mp
+        setprec_point_mp(out_mp, *out_prec);
 		
 		BED_mp = NULL;
 		
 	}
-	
-	
-//	if (in_prec < 64) {
-//		print_point_to_screen_matlab(in_d,"in");
-//		print_point_to_screen_matlab(out_d,"out");
-//	}
-//	else{
-//		print_point_to_screen_matlab(in_mp,"in");
-//		print_point_to_screen_matlab(out_mp,"out");
-//	}
-//	mypause();
 
 	
-  
-	
-  return 0;
+    return 0;
 }
 
 
@@ -1804,7 +1867,7 @@ int change_midpoint_eval_prec(void const *ED, int new_prec)
 {
 	midpoint_eval_data_mp *BED = (midpoint_eval_data_mp *)ED; // to avoid having to cast every time
 	
-
+    
 	BED->SLP_mid->precision = new_prec;
 	BED->SLP_bottom->precision = new_prec;
 	BED->SLP_top->precision = new_prec;
@@ -1837,7 +1900,7 @@ int change_midpoint_eval_prec(void const *ED, int new_prec)
 		
 		change_prec_mat_mp(BED->randomizer_matrix_bottom,new_prec);
 		mat_cp_mp(BED->randomizer_matrix_bottom,BED->randomizer_matrix_bottom_full_prec);
-				
+        
 		change_prec_mat_mp(BED->randomizer_matrix_top,new_prec);
 		mat_cp_mp(BED->randomizer_matrix_top,BED->randomizer_matrix_top_full_prec);
 		
@@ -1858,12 +1921,12 @@ int change_midpoint_eval_prec(void const *ED, int new_prec)
 		
 		setprec_mp(BED->crit_val_left, new_prec); set_mp(BED->crit_val_left, BED->crit_val_left_full_prec);
 		setprec_mp(BED->crit_val_right, new_prec); set_mp(BED->crit_val_right, BED->crit_val_right_full_prec);
-
+        
 		
 	}
 	
 	
-  return 0;
+    return 0;
 }
 
 
@@ -1872,10 +1935,10 @@ int change_midpoint_eval_prec(void const *ED, int new_prec)
 
 
 int check_issoln_midpoint_d(endgame_data_t *EG,
-																tracker_config_t *T,
-																void const *ED)
+                            tracker_config_t *T,
+                            void const *ED)
 {
-  midpoint_eval_data_d *BED = (midpoint_eval_data_d *)ED; // to avoid having to cast every time
+    midpoint_eval_data_d *BED = (midpoint_eval_data_d *)ED; // to avoid having to cast every time
 	
 	
 	int ii;
@@ -2025,7 +2088,7 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 	evalProg_d(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_bottom_vars, EG->PD_d.time, BED->SLP_bottom);
 	increase_size_vec_d(f_prev, f_prev->size + temp_function_values->size);
 	f_prev->size = f_prev->size + temp_function_values->size;
-
+    
 	for (ii=0; ii<temp_function_values->size; ii++)
 		set_d(&f_prev->coord[ii+offset], &temp_function_values->coord[ii]);
 	
@@ -2040,8 +2103,8 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 	
 	for (ii=0; ii<temp_function_values->size; ii++)
 		set_d(&f_prev->coord[ii+offset], &temp_function_values->coord[ii]);
-
-
+    
+    
 	BED->top_memory.set_globals_null();
 	
 	
@@ -2090,7 +2153,7 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 	clear_eval_struct_d(e);
 	clear_vec_d(f_prev);
 	clear_vec_d(f_terminal);
-
+    
 	clear_vec_d(prev_pt);
 	clear_vec_d(terminal_pt);
 	
@@ -2100,10 +2163,10 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 
 
 int check_issoln_midpoint_mp(endgame_data_t *EG,
-                            tracker_config_t *T,
-                                void const *ED)
+                             tracker_config_t *T,
+                             void const *ED)
 {
-  midpoint_eval_data_mp *BED = (midpoint_eval_data_mp *)ED; // to avoid having to cast every time
+    midpoint_eval_data_mp *BED = (midpoint_eval_data_mp *)ED; // to avoid having to cast every time
 	
 	int ii;
 	int offset;
@@ -2118,7 +2181,7 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	
 	for (ii = 0; ii < T->numVars; ii++)
 	{
-    if (!(mpfr_number_p(EG->PD_mp.point->coord[ii].r) && mpfr_number_p(EG->PD_mp.point->coord[ii].i)))
+        if (!(mpfr_number_p(EG->PD_mp.point->coord[ii].r) && mpfr_number_p(EG->PD_mp.point->coord[ii].i)))
 		{
 			printf("got not a number\n");
 			print_point_to_screen_matlab(EG->PD_mp.point,"bad solution");
@@ -2179,7 +2242,7 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	
 	
 	
-														
+    
 	// for midpoint functions
 	offset = 0;
 	evalProg_mp(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_mid_vars, EG->PD_mp.time, BED->SLP_mid);
@@ -2207,7 +2270,7 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	
 	
 	BED->top_memory.set_globals_to_this();
-														
+    
 	offset += temp_function_values->size; //y2
 	evalProg_mp(temp_function_values, e.parVals, e.parDer, e.Jv, e.Jp, curr_top_vars, EG->PD_mp.time, BED->SLP_top);
 	
@@ -2227,13 +2290,13 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	else{
 		vec_cp_mp(prev_pt,EG->last_approx_mp);
 	}
-
-														
-														
-														
-											
-														
-														
+    
+    
+    
+    
+    
+    
+    
 	
 	for (ii=0; ii<BED->num_mid_vars; ii++)
 		set_mp(&curr_mid_vars->coord[ii], &prev_pt->coord[ii]);
@@ -2273,8 +2336,8 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	for (ii=0; ii<temp_function_values->size; ii++)
 		set_mp(&f_prev->coord[ii+offset], &temp_function_values->coord[ii]);
 	
-														
-														
+    
+    
 	BED->top_memory.set_globals_to_this();
 	
 	
@@ -2289,7 +2352,7 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	
 	
 	BED->top_memory.set_globals_null();
-
+    
 	
 	
 	
@@ -2331,7 +2394,7 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	}
 	
 	
-		
+    
 	
 	
 	mpf_clear(n1); mpf_clear(n2); mpf_clear(zero_thresh); mpf_clear(max_rat);
@@ -2343,7 +2406,7 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	
 	clear_vec_mp(prev_pt);
 	clear_vec_mp(terminal_pt);
-
+    
 	return isSoln;
 	
 }
@@ -2355,8 +2418,8 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 
 
 int check_isstart_midpoint_d(point_d testpoint,
-																 tracker_config_t *T,
-																 void const *ED)
+                             tracker_config_t *T,
+                             void const *ED)
 {
 	
 	eval_struct_d e;
@@ -2392,12 +2455,12 @@ int check_isstart_midpoint_d(point_d testpoint,
 
 
 void check_midpoint_evaluator(point_mp current_values,
-															 void const *ED)
+                              void const *ED)
 {
 	int ii;
 	printf("checking homogeneousness of double evaluator\n");
-  midpoint_eval_data_d *BED = (midpoint_eval_data_d *)ED; // to avoid having to cast every time
-																																	//initialize
+    midpoint_eval_data_d *BED = (midpoint_eval_data_d *)ED; // to avoid having to cast every time
+    //initialize
 	eval_struct_d e_d; init_eval_struct_d(e_d, 0, 0, 0);
 	eval_struct_d e_d2; init_eval_struct_d(e_d2, 0, 0, 0);
 	

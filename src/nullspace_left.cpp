@@ -115,8 +115,7 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	
 	
 	double_odometer odo(ns_config->num_jac_equations, target_crit_codim, max_degree);
-	
-	std::cout << max_degree << std::endl;
+
 	int increment_status = 0;
 	while (increment_status!=-1) { // current_absolute_index incremented at the bottom of loop
 		
@@ -339,6 +338,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 		vec_cp_mp(ns_config->target_projection[ii], pi[ii]);
 	}
 	
+    
 	
 	// make the post-randomizer matrix $S$
 	int num_jac_equations = (ns_config->num_x_vars - 1);//N-1;  the subtraction of 1 is for the 1 hom-var
@@ -427,7 +427,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 				set_mp(&ns_config->starting_linears[ii][jj]->coord[kk], &temp_getter->entry[jj][kk]);
 			}
 			
-			//			set_zero_mp(&ns_config->starting_linears[ii][jj]->coord[0]);  // maybe? but prolly not
+//			set_zero_mp(&ns_config->starting_linears[ii][jj]->coord[0]);  // maybe? but prolly not
 //			for (kk=0; kk<W.num_variables - W.num_synth_vars; kk++) {
 //				get_comp_rand_mp(&ns_config->starting_linears[ii][jj]->coord[kk]);
 //			}

@@ -325,16 +325,16 @@ int curve_decomposition::interslice(const witness_set & W_curve,
                                            &particular_projection,
                                            ml_config,
                                            solve_options);
+//		midpoint_witness_sets[ii].print_to_screen();
 		
-		if (program_options.verbose_level>=2) {
-			printf("sorting midpoint witness set %d for realness\n",ii);
-		}
 		midpoint_witness_sets[ii].sort_for_real(solve_options.T);
 		midpoint_witness_sets[ii].sort_for_unique(solve_options.T);
 		midpoint_witness_sets[ii].sort_for_inside_sphere(sphere_radius, sphere_center);
 		
-        //		midpoint_witness_sets[ii].print_to_screen();
-		
+
+		if (program_options.verbose_level>=2) {
+            std::cout << "midpoint_downstairs " << ii << " had " << midpoint_witness_sets[ii].num_pts << " real points" << std::endl;
+		}
 		edge_counter += midpoint_witness_sets[ii].num_pts;
 	}
 	
@@ -377,7 +377,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
         solve_options.robust = true;
         int keep_going = 1;
         int iterations = 0;
-        while (keep_going==1 && (iterations<2))
+        while (keep_going==1 && (iterations<3))
         {
             
             iterations++;
@@ -426,7 +426,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
                 
                 break;
             }
-            else{
+            else if (iterations<3) {
               //tighten some tolerances, change it up.
                 Wleft.reset();
                 Wright.reset();
@@ -436,6 +436,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
                 solve_options.T.basicNewtonTol   *= 1e-6;
                 solve_options.T.endgameNewtonTol *= 1e-6;
             }
+
 
         }
         solve_options.reset_tracker_config();
@@ -929,8 +930,8 @@ int curve_decomposition::compute_critical_points(const witness_set & W_curve,
 	if (have_sphere_radius) {
 		W_crit_real.sort_for_inside_sphere(sphere_radius, sphere_center);
 		
-		print_point_to_screen_matlab(sphere_center,"center");
-		print_comp_matlab(sphere_radius,"radius");
+//		print_point_to_screen_matlab(sphere_center,"center");
+//		print_comp_matlab(sphere_radius,"radius");
 	}
 	else
 	{

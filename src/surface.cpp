@@ -74,7 +74,7 @@ void surface_decomposition::main(vertex_set & V,
     
     
     // now we get the critical points for the sphere intersection curve.
-
+	
     // make the input file
 	create_sphere_system(W_surf.input_filename,
                          "input_surf_sphere",
@@ -126,7 +126,7 @@ void surface_decomposition::main(vertex_set & V,
     
     
     
-
+	
 	compute_critical_curve(W_critcurve, // all input.
                            W_total_crit,
                            V,
@@ -138,12 +138,9 @@ void surface_decomposition::main(vertex_set & V,
 	
 	
 	
-    
-	return;
 	
 	
 	
-
 	
 	
 	
@@ -156,7 +153,7 @@ void surface_decomposition::main(vertex_set & V,
 	
     this->output_main(program_options, V);
     
-
+	
     
     
     
@@ -348,7 +345,7 @@ void surface_decomposition::compute_critcurve_witness_set(witness_set & W_critcu
                            solve_options,
                            &ns_config);
 	//this uses both pi[0] and pi[1] to compute witness points
-
+	
 	W_critcurve.write_dehomogenized_coordinates("W_curve"); // write the points to file
 	
 	W_critcurve.input_filename = "input_critical_curve";
@@ -384,7 +381,7 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
                                                       BR_configuration & program_options,
                                                       solver_configuration & solve_options)
 {
-  
+	
     
 	nullspace_config ns_config;
 	
@@ -405,9 +402,9 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 	// this will use pi[0] to compute critical points
 	
 	W_critcurve_crit.only_first_vars(num_variables);
-//	W_critcurve_crit.write_dehomogenized_coordinates("W_critcurve_crit_all"); // write the points to file
+	//	W_critcurve_crit.write_dehomogenized_coordinates("W_critcurve_crit_all"); // write the points to file
 	W_critcurve_crit.sort_for_real(solve_options.T);
-//	W_critcurve_crit.write_dehomogenized_coordinates("W_critcurve_crit"); // write the points to file
+	//	W_critcurve_crit.write_dehomogenized_coordinates("W_critcurve_crit"); // write the points to file
 	
 	ns_config.clear();
 	
@@ -471,9 +468,9 @@ void surface_decomposition::compute_critical_curve(const witness_set & W_critcur
 		set_zero_mp(&temp_proj->coord[ii]);
 	}
 	
-
+	
     
-
+	
 	
 	crit_curve.interslice(W_critcurve,
                           W_critpts,
@@ -603,8 +600,8 @@ void surface_decomposition::compute_sphere_witness_set(const witness_set & W_sur
 	
 	
 	// need to actually move to the sphere system now.
-
-
+	
+	
 	sp_config.set_memory(solve_options);
 	sp_config.set_center(this->sphere_center);
 	sp_config.set_radius(this->sphere_radius);
@@ -643,26 +640,26 @@ void surface_decomposition::compute_sphere_crit(const witness_set & W_intersecti
 	parse_preproc_data("preproc_data", &solve_options.PPD);
 	
 	
-//	prog_t SLP;
-//	setupProg(&SLP, solve_options.T.Precision, solve_options.T.MPType);
-//	
-//	comp_mp temp;  init_mp(temp);
-//	for (int ii=0; ii<W_intersection_sphere.num_pts; ii++) {
-//		dot_product_mp(temp, W_intersection_sphere.pts_mp[ii], W_intersection_sphere.L_mp[0]);
-//		print_comp_matlab(temp, "result");
-//		
-//		
-//		set_one_mp(temp);
-//		eval_struct_mp e; init_eval_struct_mp(e, 0, 0, 0);
-//		evalProg_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, W_intersection_sphere.pts_mp[ii], temp, &SLP);
-//		
-//		print_point_to_screen_matlab(e.funcVals,"func_vals");
-//		clear_eval_struct_mp(e);
-//	}
-//	clear_mp(temp);
-//	
-//	clearProg(&SLP, solve_options.T.MPType, 1); // 1 means call freeprogeval()
-//	mypause();
+	//	prog_t SLP;
+	//	setupProg(&SLP, solve_options.T.Precision, solve_options.T.MPType);
+	//
+	//	comp_mp temp;  init_mp(temp);
+	//	for (int ii=0; ii<W_intersection_sphere.num_pts; ii++) {
+	//		dot_product_mp(temp, W_intersection_sphere.pts_mp[ii], W_intersection_sphere.L_mp[0]);
+	//		print_comp_matlab(temp, "result");
+	//
+	//
+	//		set_one_mp(temp);
+	//		eval_struct_mp e; init_eval_struct_mp(e, 0, 0, 0);
+	//		evalProg_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, W_intersection_sphere.pts_mp[ii], temp, &SLP);
+	//
+	//		print_point_to_screen_matlab(e.funcVals,"func_vals");
+	//		clear_eval_struct_mp(e);
+	//	}
+	//	clear_mp(temp);
+	//
+	//	clearProg(&SLP, solve_options.T.MPType, 1); // 1 means call freeprogeval()
+	//	mypause();
     
     
     
@@ -919,8 +916,8 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 		
 		slices[ii] = new_slice;
 		
-
-
+		
+		
         // does it matter speedwise whether i do this before or after the copy immediately above?  i think the answer is no.
         V.assert_projection_value(slices[ii].all_edge_indices(), &projection_values_downstairs->coord[ii], 0);
 		
@@ -962,49 +959,36 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 	
 	std::cout << color::bold("m") << "***\n\nCONNECT THE DOTS\n\n***" << color::console_default() << std::endl;
     
+    
+    
 	midpoint_config md_config;
-	
-	
-	md_config.setup(*this, solve_options);
+	md_config.setup(*this, solve_options); // yep, pass this object into another call. brilliant.
 	
 	
 	
-	comp_mp temp, temp2, temp3;
-	init_mp(temp);
-	init_mp(temp2);
-	init_mp(temp3);
-	
-	comp_mp numer, denom;
-	init_mp(numer);
-	init_mp(denom);
-	
-	comp_mp proj_top, proj_bottom, proj_mid;
-	init_mp(proj_mid);
-	init_mp(proj_bottom);
-	init_mp(proj_top);
-	
-
-	
-	vec_mp found_point;
-    init_vec_mp(found_point, this->num_variables);
-    found_point->size = this->num_variables;
+	comp_mp temp, temp2, temp3; init_mp2(temp,1024); init_mp2(temp2,1024); init_mp2(temp3,1024);
+	comp_mp numer, denom; init_mp2(numer,1024); init_mp2(denom,1024);
+	comp_mp proj_top, proj_bottom, proj_mid; init_mp2(proj_mid,1024); init_mp2(proj_bottom,1024); init_mp2(proj_top,1024);
+	vec_mp found_point; init_vec_mp2(found_point, this->num_variables,1024); found_point->size = this->num_variables;
 	
 	
 	witness_set W_midtrack;
-	
-    
 	vec_mp blank_point;  init_vec_mp2(blank_point, 0,1024);
 	W_midtrack.add_point(blank_point);
 	
 	
+    // assert some solver options
+    solve_options.allow_multiplicity = 1;
+    solve_options.allow_singular = 1;
+    solve_options.robust = true;
+	
+	int num_bottom_vars, num_top_vars;
     
-	
-	
 	for (int ii=0; ii<mid_slices.size(); ii++) {
 		
 		
 		for (int jj=0; jj<mid_slices[ii].num_edges; jj++) {
-			this->output_main(program_options, V);
+			this->output_main(program_options, V); // incremental output
 			std::cout << color::magenta() << "\n\n\n*****************************\nface " << this->num_faces << ", midslice " << ii << " edge " << jj << color::console_default() << std::endl;
 			
 			if (mid_slices[ii].edges[jj].is_degenerate()) {
@@ -1072,7 +1056,7 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 			// get the bottom and top edges for this face.
             
 			
-			int num_bottom_vars;
+			
 			if (md_config.system_type_bottom == SYSTEM_CRIT) {
 				num_bottom_vars = md_config.num_crit_vars;
 				F.bottom = crit_curve.edge_w_midpt(mid_slices[ii].edges[jj].left); // index the *edge*
@@ -1089,7 +1073,7 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 			}
 			
 			
-			int num_top_vars;
+			
 			if (md_config.system_type_top == SYSTEM_CRIT) {
 				num_top_vars = md_config.num_crit_vars;
 				F.top = crit_curve.edge_w_midpt(mid_slices[ii].edges[jj].right); // index the *edge*
@@ -1116,7 +1100,6 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
                 std::cout <<  mid_slices[ii].edges[jj].left  << " " << mid_slices[ii].edges[jj].midpt  << " "  << mid_slices[ii].edges[jj].right << std::endl;
                 
 				add_face(F);
-//				mypause();
 				continue;
 			}
             
@@ -1199,9 +1182,6 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
             set_mp(md_config.crit_val_right,  &V.vertices[ crit_slices[ii+1].edges[0].midpt ].projection_values->coord[0]);
             
             
-//			projection_value_homogeneous_input(md_config.crit_val_left,  V.vertices[ crit_slices[ii].edges[0].midpt ].pt_mp,pi[0]);
-//			projection_value_homogeneous_input(md_config.crit_val_right, V.vertices[crit_slices[ii+1].edges[0].midpt].pt_mp,pi[0]);
-			
 			
 			// the u direction corresponds to pi[0].
 			for (int zz=0; zz<2; zz++) { // go left (zz=0) and right (zz=1)
@@ -1269,18 +1249,19 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 					
 					if (current_edge<0) {
 						std::cout << "unable to find an edge in crit_slices[" << ii+zz << "] with midpoint " << final_bottom_ind << std::endl;
-						std::cout << "checking for edges with point as left or right point" << std::endl;
+						std::cout << "making new degenerate edge" << std::endl;
+						edge E(final_bottom_ind,final_bottom_ind,final_bottom_ind);
+						current_edge = crit_slices[ii+zz].add_edge(E);
+//						current_edge = crit_slices[ii+zz].edge_w_left(final_bottom_ind);
+//						
+//						if (current_edge < 0) {
+//							current_edge = crit_slices[ii+zz].edge_w_right(final_bottom_ind);
+//						}
 						
-						current_edge = crit_slices[ii+zz].edge_w_left(final_bottom_ind);
-						
-						if (current_edge < 0) {
-							current_edge = crit_slices[ii+zz].edge_w_right(final_bottom_ind);
-						}
-						
-						if (current_edge < 0) {
-							std::cout << "unable to find any edges in crit_slice with point" << std::endl;
-							continue;
-						}
+//						if (current_edge < 0) {
+//							std::cout << "unable to find any edges in crit_slice with point" << std::endl;
+//							continue;
+//						}
 					}
 					
 					
@@ -1301,8 +1282,8 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
                 set_mp(proj_top, &V.vertices[ final_top_ind ].projection_values->coord[1]);
                 set_mp(proj_bottom, &V.vertices[ final_bottom_ind ].projection_values->coord[1]);
                 
-//				projection_value_homogeneous_input(proj_top,    V.vertices[ final_top_ind ].pt_mp,   pi[1]); //w2
-//				projection_value_homogeneous_input(proj_bottom, V.vertices[ final_bottom_ind ].pt_mp,pi[1]); //w0
+				//				projection_value_homogeneous_input(proj_top,    V.vertices[ final_top_ind ].pt_mp,   pi[1]); //w2
+				//				projection_value_homogeneous_input(proj_bottom, V.vertices[ final_bottom_ind ].pt_mp,pi[1]); //w0
 				
 				//initialize current index trackers.
 				int current_bottom_ind = final_bottom_ind;
@@ -1347,16 +1328,16 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
                         
 						
 						// we gotta be moving from lower to higher...  so temp > temp2 is required
-//                        bool correct_interval = false;
-//						if (matches_end) {
-//                            set_mp(temp , &V.vertices[ crit_slices[ii+zz].edges[qq].midpt].projection_values->coord[1]);
-//                            set_mp(temp2, &V.vertices[ final_bottom_ind].projection_values->coord[1]);
-//                            set_mp(temp3, &V.vertices[ final_top_ind].projection_values->coord[1]);
-//							correct_interval =  ( mpf_get_d(temp3->r) > mpf_get_d(temp->r)) && (mpf_get_d(temp->r) > mpf_get_d(temp2->r)) ;
-//						}
+                        bool correct_interval = false;
+						if (matches_end) {
+                            set_mp(temp , &V.vertices[ crit_slices[ii+zz].edges[qq].midpt].projection_values->coord[1]);
+                            set_mp(temp2, &V.vertices[ final_bottom_ind].projection_values->coord[1]);
+                            set_mp(temp3, &V.vertices[ final_top_ind].projection_values->coord[1]);
+							correct_interval =  ( mpf_get_d(temp3->r) > mpf_get_d(temp->r)) && (mpf_get_d(temp->r) > mpf_get_d(temp2->r)) ;
+						}
                         
 						
-						if ( (!already_found) && matches_end) { // && correct_interval
+						if ( (!already_found) && matches_end && correct_interval) { //
 							candidates.push_back(qq);
 							
 							std::cout << "candidate [" << candidate_counter << "] = " <<
@@ -1366,13 +1347,13 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 						}
 						else
 						{
-//                            if (!correct_interval) {
-//                                print_comp_matlab(temp3,"final_top_proj_1");
-//                                print_comp_matlab(temp ,"critslices[].proj_val_1");
-//                                print_comp_matlab(temp2,"final_bottom_proj_1");
-//                            }
-//							std::cout << "edge " << qq << " excluded: " << correct_interval << " direction, " << matches_end << " matches, " << already_found << "  already found" << std::endl;
-//							
+							//                            if (!correct_interval) {
+							//                                print_comp_matlab(temp3,"final_top_proj_1");
+							//                                print_comp_matlab(temp ,"critslices[].proj_val_1");
+							//                                print_comp_matlab(temp2,"final_bottom_proj_1");
+							//                            }
+							//							std::cout << "edge " << qq << " excluded: " << correct_interval << " direction, " << matches_end << " matches, " << already_found << "  already found" << std::endl;
+							//
 						}
                         
 					}
@@ -1396,7 +1377,7 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 						
 						//target midpoint e.w from paper.
                         set_mp(proj_mid, &V.vertices[ crit_slices[ii+zz].edges[current_edge].midpt ].projection_values->coord[1]);
-//						projection_value_homogeneous_input(proj_mid, V.vertices[ crit_slices[ii+zz].edges[current_edge].midpt ].pt_mp,pi[1]);
+						//						projection_value_homogeneous_input(proj_mid, V.vertices[ crit_slices[ii+zz].edges[current_edge].midpt ].pt_mp,pi[1]);
                         
 						
 						if (solve_options.use_real_thresholding) {
@@ -1453,15 +1434,12 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 						
 						
 						
-						solve_options.allow_multiplicity = 1;
-						solve_options.allow_singular = 1;
-						solve_options.robust = true;
+						
 						
 						
 						witness_set W_new;
 						midpoint_solver_master_entry_point(W_midtrack, // carries with it the start points, and the linears.
                                                            &W_new, // new data goes in here
-                                                           *this,
                                                            md_config,
                                                            solve_options);
 						
@@ -1484,7 +1462,7 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 						int found_index = index_in_vertices(V, found_point);
 						
 						
-
+						
 						
 						if (solve_options.verbose_level>=0) {
                             
@@ -1605,7 +1583,7 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 	clear_mp(denom);
 	
 	
-
+	
 	return;
 }
 

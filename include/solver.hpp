@@ -153,6 +153,7 @@ class solver_configuration : public prog_config
 public:
 	
 
+	bool orthogonal_projection;
 	bool use_real_thresholding;
 	bool robust;
 	tracker_config_t T;
@@ -257,6 +258,7 @@ public:
 	{
 		total_num_paths_tracked = 0;
 		
+		orthogonal_projection = true;
 		use_real_thresholding = false;
 		robust = false;
 		
@@ -325,6 +327,7 @@ public:
 	
 	bool randomizing;
 	
+    bool received_mpi;
 	
 	int MPType; ///< the multiple precision type for solve
 	preproc_data preProcData; ///< information related to the SLP for system
@@ -384,14 +387,15 @@ protected:
 	
 	void clear()
 	{
-		if (have_SLP) {
-			freeEvalProg(this->MPType);
-		}
+
 		
 	}
 	
 	void init()
 	{
+        
+        received_mpi = false;
+        
 		randomizing = true;
 		
 		this->preproc_file = "preproc_data";
@@ -551,6 +555,12 @@ protected:
 			clear_mat_mp(randomizer_matrix_full_prec);
 			clear_rat(gamma_rat);
 		}
+        
+        
+        if (have_SLP && received_mpi) {
+            clearProg(this->SLP, this->MPType, 1); // 1 means call freeprogeval()
+            delete[] SLP;
+		}
 	}
 };
 
@@ -571,7 +581,9 @@ public:
 	comp_d gamma;    ///< randomizer
 	mat_d randomizer_matrix;     ///< randomizer
 	
-	
+	solver_mp *BED_mp;
+    
+    
 	solver_d() : solver(){
 		init();
 	}; // re: default constructor
@@ -647,6 +659,12 @@ protected:
 		
 		clear_mat_d(randomizer_matrix);
 		clear_d(gamma);
+        
+        
+        if (have_SLP && received_mpi) {
+            clearProg(this->SLP, this->MPType, 1); // 1 means call freeprogeval()
+            delete[] SLP;
+		}
 	}
 	
 };

@@ -1,3 +1,6 @@
+#ifndef _DATA_TYPE_H
+#define _DATA_TYPE_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -21,8 +24,7 @@
 #include <sstream>
 #include <map>
 
-#ifndef _DATA_TYPE_H
-#define _DATA_TYPE_H
+#define DEFAULT_MAX_PREC 512
 
 #include "missing_bertini_headers.hpp"
 
@@ -32,7 +34,8 @@
 
 #define SAMEPOINTTOL 1e-4
 
-class BR_configuration; // a forward declaration
+class parallelism_config; // a forward declaration
+class BR_configuration;   // a forward declaration
 
 /*** low-level data types. ***/
 
@@ -55,7 +58,7 @@ enum {PARSING = 1000, TYPE_CONFIRMATION, DATA_TRANSMISSION, NUMPACKETS};
 
 enum {INACTIVE = 500, ACTIVE};
 
-enum {VEC_MP = 4000, VEC_D, MAT_MP, MAT_D, COMP_MP, COMP_D, INDICES};
+enum {VEC_MP = 4000, VEC_D, MAT_MP, MAT_D, COMP_MP, COMP_D, VEC_RAT, MAT_RAT, COMP_RAT, INDICES, UNUSED};
 
 std::string enum_lookup(int flag);
 
@@ -164,12 +167,60 @@ void receive_patch_d(patch_eval_data_d * patch);
 void send_preproc_data(preproc_data *PPD);
 void receive_preproc_data(preproc_data *PPD);
 
+//
+//void send_vec_mp(vec_mp b, int target);
+//void receive_vec_mp(vec_mp b, int source);
+//
+//void send_vec_d(vec_d b, int target);
+//void receive_vec_d(vec_d b, int source);
+
+
+
+void send_mat_d(mat_d A, int target);
+void receive_mat_d(mat_d A, int source);
+
+
+
+void send_mat_mp(mat_mp A, int target);
+void receive_mat_mp(mat_mp A, int source);
+
+void send_mat_rat(mat_d A_d, mat_mp A_mp, mpq_t ***A_rat, int target);
+void receive_mat_rat(mat_d A_d, mat_mp A_mp, mpq_t ***A_rat, int source);
+
+void send_vec_d(vec_d b, int target);
+void receive_vec_d(vec_d b, int source);
+
 
 void send_vec_mp(vec_mp b, int target);
 void receive_vec_mp(vec_mp b, int source);
 
-void send_vec_d(vec_d b, int target);
-void receive_vec_d(vec_d b, int source);
+void send_vec_rat(mpq_t ***b, int size, int target);
+void receive_vec_rat(mpq_t ***b, int size, int source);
+
+
+void send_comp_d(comp_d c, int target);
+void receive_comp_d(comp_d c, int source);
+
+
+void send_comp_num_d(comp_d *c, int num, int target);
+void receive_comp_num_d(comp_d *c, int num, int source);
+
+
+void send_comp_mp(comp_mp c, int target);
+void receive_comp_mp(comp_mp c, int source);
+
+
+void send_comp_num_mp(comp_mp *c, int num, int target);
+void receive_comp_num_mp(comp_mp *c, int num, int source);
+
+void send_comp_rat(mpq_t c[2], int target);
+void receive_comp_rat(mpq_t c[2], int source);
+
+void send_comp_num_rat(mpq_t c[][2], int num, int target);
+void receive_comp_num_rat(mpq_t c[][2], int num, int source);
+
+
+
 
 
 
@@ -206,7 +257,7 @@ public:
 	
 	vec_mp *L_mp;
 	vec_mp *patch_mp;
-  point_mp *pts_mp;
+    point_mp *pts_mp;
 	
 	int dim;
   int comp_num;
@@ -332,7 +383,6 @@ public:
 	
 	void reset()
 	{
-//		std::cout << "resetting witness set" << std::endl;
 		clear();
 	};
 	
@@ -350,7 +400,6 @@ public:
 		reset_patches();
 		
 		init();
-//		std::cout << "clearing witness set" << std::endl;
 	}
 	
 	
@@ -363,7 +412,6 @@ public:
 	void reset_points()
 	{
 		
-//		std::cout << this->num_pts << std::endl;
 		for (int ii =0; ii<this->num_pts; ii++)
 			clear_vec_mp(this->pts_mp[ii]);
 		
@@ -442,7 +490,8 @@ public:
 	void write_homogeneous_coordinates(boost::filesystem::path filename) const;
 	void write_dehomogenized_coordinates(boost::filesystem::path filename) const;
 	
-
+    void send(parallelism_config & mpi_config, int target);
+    void receive(parallelism_config & mpi_config);
 };
 
 
@@ -684,7 +733,7 @@ public:
 		
         curr_projection = proj_index;
         
-        std::cout << "curr_projection is now: " << curr_projection << std::endl;
+//        std::cout << "curr_projection is now: " << curr_projection << std::endl;
 		return proj_index;
 	}
 	
@@ -721,13 +770,13 @@ public:
 		}
 		
 		
-		init_vec_mp2(this->projections[num_projections],num_natural_variables,1024);
+		init_vec_mp2(this->projections[num_projections],num_natural_variables,DEFAULT_MAX_PREC);
 		this->projections[num_projections]->size = num_natural_variables;
 		
 		
 		if (proj->size != num_natural_variables) {
 			vec_mp tempvec;
-			init_vec_mp2(tempvec,num_natural_variables,1024); tempvec->size = num_natural_variables;
+			init_vec_mp2(tempvec,num_natural_variables,DEFAULT_MAX_PREC); tempvec->size = num_natural_variables;
 			for (int kk=0; kk<num_natural_variables; kk++) {
 				set_mp(&tempvec->coord[kk], &proj->coord[kk]);
 			}
@@ -931,7 +980,7 @@ public:
 			this->pi = (vec_mp *)br_realloc(this->pi, (this->num_curr_projections+1) * sizeof(vec_mp));
 		}
 		
-		init_vec_mp2(this->pi[num_curr_projections],proj->size,1024);
+		init_vec_mp2(this->pi[num_curr_projections],proj->size,DEFAULT_MAX_PREC);
 		this->pi[num_curr_projections]->size = proj->size;
 		
 		vec_cp_mp(pi[num_curr_projections], proj);
@@ -948,7 +997,7 @@ public:
 			this->patch = (vec_mp *)br_realloc(this->patch, (this->num_patches+1) * sizeof(vec_mp));
 		}
 		
-		init_vec_mp2(this->patch[num_patches],new_patch->size,1024);
+		init_vec_mp2(this->patch[num_patches],new_patch->size,DEFAULT_MAX_PREC);
 		this->patch[this->num_patches]->size = new_patch->size;
 		
 		vec_cp_mp(this->patch[this->num_patches], new_patch);
@@ -1052,7 +1101,7 @@ protected:
 		dimension = -1;
 		component_num = -1;
 		
-		init_mp2(sphere_radius,1024);
+		init_mp2(sphere_radius,DEFAULT_MAX_PREC);
 		init_vec_mp2(sphere_center,0,1024);
 		sphere_center->size = 0;
 		have_sphere_radius = false;
@@ -1091,7 +1140,7 @@ protected:
 		this->num_curr_projections = other.num_curr_projections;
 		this->pi = (vec_mp *) br_malloc(other.num_curr_projections * sizeof(vec_mp));
 		for (int ii = 0; ii<other.num_curr_projections; ii++) {
-			init_vec_mp2(this->pi[ii],other.pi[ii]->size,1024);
+			init_vec_mp2(this->pi[ii],other.pi[ii]->size,DEFAULT_MAX_PREC);
 			this->pi[ii]->size = other.pi[ii]->size;
 			vec_cp_mp(this->pi[ii], other.pi[ii])
 		}
@@ -1105,7 +1154,7 @@ protected:
 		this->num_patches = other.num_patches;
 		this->patch = (vec_mp *) br_malloc(other.num_patches * sizeof(vec_mp));
 		for (int ii = 0; ii<other.num_patches; ii++) {
-			init_vec_mp2(this->patch[ii],other.patch[ii]->size,1024);
+			init_vec_mp2(this->patch[ii],other.patch[ii]->size,DEFAULT_MAX_PREC);
 			this->patch[ii]->size = other.patch[ii]->size;
 			vec_cp_mp(this->patch[ii], other.patch[ii])
 		}

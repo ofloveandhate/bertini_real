@@ -150,9 +150,9 @@ int ubermaster_process::main_loop()
 
 
 
+
 int worker_process::main_loop()
 {
-	
 	int single_int_buffer = 0;
 	
 	int solver_choice = INITIAL_STATE;
@@ -160,7 +160,7 @@ int worker_process::main_loop()
 	while (solver_choice != TERMINATE) {
 		
 		MPI_Bcast(&solver_choice, 1, MPI_INT, program_options.head(), MPI_COMM_WORLD);
-		std::cout << "worker" << program_options.id() << " received call for help for solver " << enum_lookup(solver_choice) << std::endl;
+//		std::cout << "worker" << program_options.id() << " received call for help for solver " << enum_lookup(solver_choice) << std::endl;
 		
 		switch (solver_choice) {
 			case NULLSPACE:
@@ -189,9 +189,6 @@ int worker_process::main_loop()
 	
 	return SUCCESSFUL;
 }
-
-
-
 
 
 

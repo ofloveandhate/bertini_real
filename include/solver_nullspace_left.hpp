@@ -291,21 +291,11 @@ public:
 		// no need to reset the counters.
 	}
 	
-	void print()
-	{
-		std::cout << "num_jac_equations " << num_jac_equations << std::endl;
-		std::cout << "target_dim " << target_dim << std::endl;
-		
-		std::cout << "ambient_dim " << ambient_dim << std::endl;
-		std::cout << "target_crit_codim " << target_crit_codim << std::endl;
-		
-		std::cout << "num_natural_vars " << num_natural_vars << std::endl;
-		std::cout << "num_x_vars " << num_x_vars << std::endl;
-		std::cout << "num_v_vars " << num_v_vars << std::endl;
-		std::cout << "num_randomized_eqns " << num_randomized_eqns << std::endl;
-		std::cout << "max_degree " << max_degree << std::endl;
-	};
-	
+	void print();
+    
+    
+    
+    
 	void reset_counters()
 	{
 		num_jac_equations = 0;
@@ -666,23 +656,8 @@ public:
 		// no need to reset the counters.
 	}
 	
-	void print()
-	{
-		std::cout << "num_jac_equations " << num_jac_equations << std::endl;
-		std::cout << "target_dim " << target_dim << std::endl;
-		
-		std::cout << "ambient_dim " << ambient_dim << std::endl;
-		std::cout << "target_crit_codim " << target_crit_codim << std::endl;
-		
-		std::cout << "num_natural_vars " << num_natural_vars << std::endl;
-		std::cout << "num_x_vars " << num_x_vars << std::endl;
-		std::cout << "num_v_vars " << num_v_vars << std::endl;
-		std::cout << "num_randomized_eqns " << num_randomized_eqns << std::endl;
-		std::cout << "max_degree " << max_degree << std::endl;
-		
-		print_comp_matlab(half,"half");
-		print_comp_matlab(perturbation,"epsilon");
-	};
+	void print();
+	
 	
 	void reset_counters()
 	{
