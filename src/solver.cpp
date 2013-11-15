@@ -656,9 +656,7 @@ void generic_tracker_loop(trackingStats *trackCount,
 		
 		solve_options.increment_num_paths_tracked();
 		
-		if (solve_options.T.MPType==2) {
-			ED_mp->curr_prec = 64;
-		}
+
 		
 //        print_point_to_screen_matlab(startPts_d[ii].point,"start");
         
@@ -996,9 +994,6 @@ void worker_tracker_loop(trackingStats *trackCount,
             }
 			
 			
-			if (solve_options.T.MPType==2) {
-				ED_mp->curr_prec = 64;
-			}
 			
             
             
@@ -1464,10 +1459,12 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 			
 			// if
 			if ( (time_to_compare->r < std::max(1e-2,1e-1*solve_options.T.endgameBoundary)) && (infNormVec_d(solution_as_double) > solve_options.T.finiteThreshold)) {
-			
-				print_point_to_screen_matlab(solution_as_double,"big_solution");
-				print_comp_matlab(time_to_compare,"at_time");
-				std::cout << "discarding.\n\n" << std::endl;
+				if (solve_options.verbose_level>=5) {
+					print_point_to_screen_matlab(solution_as_double,"big_solution");
+					print_comp_matlab(time_to_compare,"at_time");
+					std::cout << "discarding.\n\n" << std::endl;
+				}
+				
 				break;
 			}
 			
@@ -1494,8 +1491,8 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					//rerun from the endgame using midpoint data.
 					
 					
-					ED_d->print();
-					print_point_to_screen_matlab(Pin->point,"start");
+//					ED_d->print();
+//					print_point_to_screen_matlab(Pin->point,"start");
                     //					mypause();
                     //					retVal_reached_minTrackT
                     //					NBHDRADIUS
@@ -1558,8 +1555,8 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					
 				case -4:
 					
-					if (current_retval_counter<3) {
-						solve_options.T.securityMaxNorm *= 100;  // exponential increase by 10's
+					if (current_retval_counter<6) {
+						solve_options.T.securityMaxNorm *= 10;  // exponential increase by 10's
 //						std::cout << "increasing securityMaxNorm to " << solve_options.T.securityMaxNorm << std::endl;
 					}
 					else
