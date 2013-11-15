@@ -234,6 +234,7 @@ public:
 	int stifle_membership_screen; //< boolean controlling whether stifle_text is empty or " > /dev/null"
 	std::string stifle_text; // std::string
 	
+	bool quick_run;
 	bool user_sphere;
 	int user_randomization; // bool
 	int user_projection; // bool
@@ -290,6 +291,7 @@ public:
 	
 	void init()
     {
+		quick_run = false;
         this->debugwait = 0;
 		this->max_deflations = 10;
 		
@@ -298,6 +300,7 @@ public:
 		
 		this->user_randomization = 0;
 		this->randomization_filename = "";
+		
 		
 		user_sphere = false;
 		bounding_sphere_filename = "";

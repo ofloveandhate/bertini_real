@@ -374,6 +374,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
         
         solve_options.backup_tracker_config();
         
+
         solve_options.robust = true;
         int keep_going = 1;
         int iterations = 0;
@@ -432,10 +433,14 @@ int curve_decomposition::interslice(const witness_set & W_curve,
                 Wright.reset();
                 std::cout << "trying to recover the failure...";
                 solve_options.T.endgameNumber = 2;
-                
+                // what else can i do here to improve the probability of success?
                 solve_options.T.basicNewtonTol   *= 1e-6;
                 solve_options.T.endgameNewtonTol *= 1e-6;
             }
+			else // iterations == 3
+			{
+
+			}
 
 
         }
@@ -443,6 +448,12 @@ int curve_decomposition::interslice(const witness_set & W_curve,
         
 		
 		for (int kk=0; kk<midpoint_witness_sets[ii].num_pts; kk++) {
+			
+			if (Wleft.num_pts!=midpoint_witness_sets[ii].num_pts || Wright.num_pts!=midpoint_witness_sets[ii].num_pts)
+			{
+				break;
+			}
+			
 			
 			bool ok = true;
 			

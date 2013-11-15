@@ -222,7 +222,14 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	
 	//set some solver options
 	
-	solve_options.robust = false;
+	if (program_options.quick_run) {
+		solve_options.robust = false;
+	}
+	else
+	{
+		solve_options.robust = true;
+	}
+	
 	solve_options.complete_witness_set = 0;
 	solve_options.use_midpoint_checker = 0;
 	
