@@ -2,16 +2,16 @@
 
 
 int compute_crit_nullspace(witness_set *W_crit, // the returned value
-													 const witness_set & W,
-													 mat_mp randomizer_matrix,
-													 vec_mp *pi, // an array of projections, the number of which is the target dimensions
-													 std::vector< int > randomized_degrees, // an array of integers holding the degrees of the randomized equations.
-													 int ambient_dim,
-													 int target_dim,
-													 int target_crit_codim,
-													 BR_configuration & program_options,
-													 solver_configuration & solve_options,
-													 nullspace_config *ns_config)
+						   const witness_set & W,
+						   mat_mp randomizer_matrix,
+						   vec_mp *pi, // an array of projections, the number of which is the target dimensions
+						   std::vector< int > randomized_degrees, // an array of integers holding the degrees of the randomized equations.
+						   int ambient_dim,
+						   int target_dim,
+						   int target_crit_codim,
+						   BR_configuration & program_options,
+						   solver_configuration & solve_options,
+						   nullspace_config *ns_config)
 {
 	//many of the 1's here should be replaced by the number of patch equations, or the number of variable_groups
 	
@@ -26,21 +26,21 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	
 	
 	nullspace_config_setup(ns_config,
-												 pi,
-												 ambient_dim,
-												 target_dim,
-												 target_crit_codim,
-												 &max_degree,
-												 randomized_degrees,
-												 randomizer_matrix,
-												 W,
-												 solve_options);
+						   pi,
+						   ambient_dim,
+						   target_dim,
+						   target_crit_codim,
+						   &max_degree,
+						   randomized_degrees,
+						   randomizer_matrix,
+						   W,
+						   solve_options);
 	
 	solve_options.T.AMP_bound_on_degree = (double) max_degree+1;
 	
-//	printf("max_degree: %d\nnum_jac_equations: %d\n",max_degree,ns_config->num_jac_equations);
+	//	printf("max_degree: %d\nnum_jac_equations: %d\n",max_degree,ns_config->num_jac_equations);
 	
-
+	
 	//
 	///
 	/////        end setup
@@ -50,7 +50,7 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	
 	
 	
-
+	
 	
 	
 	
@@ -69,7 +69,7 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 		multilin_linears[ii]->size = W.num_variables;
 		vec_cp_mp(multilin_linears[ii], W.L_mp[ii]);
 	}
-
+	
 	multilin_config ml_config(solve_options,randomizer_matrix);
 	
 	
@@ -115,7 +115,7 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	
 	
 	double_odometer odo(ns_config->num_jac_equations, target_crit_codim, max_degree);
-
+	
 	int increment_status = 0;
 	while (increment_status!=-1) { // current_absolute_index incremented at the bottom of loop
 		
@@ -147,16 +147,16 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 		solve_options.allow_multiplicity = 0;
 		solve_options.allow_unsuccess = 0;
 		// actually solve WRT the linears
-
+		
 		multilin_solver_master_entry_point(W,         // witness_set
-																			 &Wtemp, // the new data is put here!
-																			 multilin_linears,
-																			 ml_config,
-																			 solve_options);
+										   &Wtemp, // the new data is put here!
+										   multilin_linears,
+										   ml_config,
+										   solve_options);
 		
 		W_step_one.merge(Wtemp);
 		Wtemp.reset();
- 
+		
 		
 		
 		
@@ -166,7 +166,7 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 			
 			if (program_options.verbose_level>=5)
 				std::cout << "copy into tempmat v_linears[" << odo.inact_reg(ii) << "]\n";
-
+			
 			if (program_options.verbose_level>=6)
 				print_point_to_screen_matlab(ns_config->v_linears[odo.inact_reg(ii)], "v_linears");
 			
@@ -177,7 +177,7 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 		
 		
 		increment_status = odo.increment();  // increment the tracking indices
-
+		
 		
 		// if it's time to move on to next function combo, must commit the points
 		if (increment_status!=0)
@@ -185,13 +185,13 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 			
 			// invert the matrix for the v variables.
 			matrixSolve_LU_mp(result, tempmat,  invert_wrt_me, 1e-14, 1e9);
-					
+			
 			
 			
 			
 			
 			offset = ns_config->num_x_vars;
-			for (jj=0; jj<ns_config->num_v_vars; jj++) 
+			for (jj=0; jj<ns_config->num_v_vars; jj++)
 				set_mp(&temppoint->coord[jj+offset], &result->coord[jj]);
 			
 			
@@ -248,17 +248,17 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	if (program_options.verbose_level>=4)
 		ns_config->print();
 	
-
+	
 	
 	if (program_options.verbose_level>=3) {
 		std::cout << "running nullspace method" << std::endl;
 	}
 	
 	nullspacejac_solver_master_entry_point(solve_options.T.MPType,
-																				 W_linprod, // carries with it the start points, but not the linears.
-																				 W_crit,   // the created data goes in here.
-																				 ns_config,
-																				 solve_options);
+										   W_linprod, // carries with it the start points, but not the linears.
+										   W_crit,   // the created data goes in here.
+										   ns_config,
+										   solve_options);
 	
 	
 	W_crit->num_variables = ns_config->num_x_vars+ns_config->num_v_vars;
@@ -270,7 +270,7 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	
 	W_crit->add_patch(ns_config->v_patch);
 	
-
+	
 	
 	offset = ambient_dim - target_dim + target_crit_codim;
 	for (ii=0; ii< ns_config->num_additional_linears; ii++) {
@@ -303,17 +303,17 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 
 
 void nullspace_config_setup(nullspace_config *ns_config,
-														vec_mp *pi, // an array of projections, the number of which is the target dimensions
-														int ambient_dim,
-														int target_dim,
-														int target_crit_codim,
-														int *max_degree, // a pointer to the value
-														std::vector< int > randomized_degrees, // an array of randomized degrees
-														mat_mp randomizer_matrix,
-														const witness_set & W,
-														solver_configuration & solve_options)
+							vec_mp *pi, // an array of projections, the number of which is the target dimensions
+							int ambient_dim,
+							int target_dim,
+							int target_crit_codim,
+							int *max_degree, // a pointer to the value
+							std::vector< int > randomized_degrees, // an array of randomized degrees
+							mat_mp randomizer_matrix,
+							const witness_set & W,
+							solver_configuration & solve_options)
 {
-
+	
 	int ii, jj, kk;
 	
 	
@@ -326,17 +326,17 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	}
 	*max_degree = maxiii;
 	
-
+	
 	
 	// set some integers
-	ns_config->num_v_vars = W.num_variables - 1 - target_crit_codim + 1; 
+	ns_config->num_v_vars = W.num_variables - 1 - target_crit_codim + 1;
 	ns_config->num_x_vars = W.num_variables;
 	
 	ns_config->ambient_dim = ambient_dim;
 	ns_config->target_dim = target_dim;
 	ns_config->target_crit_codim = target_crit_codim;
 	ns_config->max_degree = (*max_degree);
-
+	
 	ns_config->num_projections = ambient_dim - target_crit_codim + 1;
 	ns_config->target_projection = (vec_mp *) br_malloc(ns_config->num_projections * sizeof(vec_mp));
 	for (ii=0; ii<ns_config->num_projections; ii++) {
@@ -384,7 +384,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	
 	
 	// the last of the linears will be used for the slicing, and passed on to later routines
-	int offset = ambient_dim - target_dim + target_crit_codim; 
+	int offset = ambient_dim - target_dim + target_crit_codim;
 	ns_config->num_additional_linears = target_dim - target_crit_codim;
 	
 	ns_config->additional_linears_terminal = (vec_mp *)br_malloc((ns_config->num_additional_linears)*sizeof(vec_mp));
@@ -434,20 +434,20 @@ void nullspace_config_setup(nullspace_config *ns_config,
 				set_mp(&ns_config->starting_linears[ii][jj]->coord[kk], &temp_getter->entry[jj][kk]);
 			}
 			
-//			set_zero_mp(&ns_config->starting_linears[ii][jj]->coord[0]);  // maybe? but prolly not
-//			for (kk=0; kk<W.num_variables - W.num_synth_vars; kk++) {
-//				get_comp_rand_mp(&ns_config->starting_linears[ii][jj]->coord[kk]);
-//			}
+			//			set_zero_mp(&ns_config->starting_linears[ii][jj]->coord[0]);  // maybe? but prolly not
+			//			for (kk=0; kk<W.num_variables - W.num_synth_vars; kk++) {
+			//				get_comp_rand_mp(&ns_config->starting_linears[ii][jj]->coord[kk]);
+			//			}
 			for (kk=W.num_variables - W.num_synth_vars; kk<W.num_variables; kk++) {
 				set_zero_mp(&ns_config->starting_linears[ii][jj]->coord[kk]);
 			}
 		}
 	}
 	
-
+	
 	clear_mat_mp(temp_getter);
 	
-
+	
 	
 	return;
 }
@@ -463,9 +463,9 @@ void nullspace_config_setup(nullspace_config *ns_config,
 
 
 void create_nullspace_system(boost::filesystem::path output_name,
-														 boost::filesystem::path input_name,
-														 BR_configuration & program_options,
-														 nullspace_config *ns_config)
+							 boost::filesystem::path input_name,
+							 BR_configuration & program_options,
+							 nullspace_config *ns_config)
 /***************************************************************\
  * USAGE: setup input file for one deflation iteration           *
  * ARGUMENTS: number of declaration statments, name of file,     *
@@ -480,106 +480,106 @@ void create_nullspace_system(boost::filesystem::path output_name,
 	
 	
 	
-  int ii, numVars = 0, numFuncs = 0, numConstants = 0;
-  int *lineVars = NULL, *lineFuncs = NULL, *lineConstants = NULL;
-  char ch, *str = NULL, **vars = NULL, **funcs = NULL, **consts = NULL;
-  FILE *IN = NULL, *OUT = NULL;
+	int ii, numVars = 0, numFuncs = 0, numConstants = 0;
+	int *lineVars = NULL, *lineFuncs = NULL, *lineConstants = NULL;
+	char ch, *str = NULL, **vars = NULL, **funcs = NULL, **consts = NULL;
+	FILE *IN = NULL, *OUT = NULL;
 	
 	
-  // move the file & open it
+	// move the file & open it
 	IN = safe_fopen_read("func_input_real");
-  // setup variables
-  if (declarations[0] > 0)
-  { // using variable_group
-    parse_names(&numVars, &vars, &lineVars, IN,const_cast< char *>("variable_group"), declarations[0]);
-  }
-  else
-  { // using hom_variable_group
-    parse_names(&numVars, &vars, &lineVars, IN,const_cast< char *>("hom_variable_group"), declarations[1]);
-  }
+	// setup variables
+	if (declarations[0] > 0)
+	{ // using variable_group
+		parse_names(&numVars, &vars, &lineVars, IN,const_cast< char *>("variable_group"), declarations[0]);
+	}
+	else
+	{ // using hom_variable_group
+		parse_names(&numVars, &vars, &lineVars, IN,const_cast< char *>("hom_variable_group"), declarations[1]);
+	}
 	
-  // setup constants
-  rewind(IN);
-  parse_names(&numConstants, &consts, &lineConstants, IN,const_cast< char *>("constant"), declarations[8]);
+	// setup constants
+	rewind(IN);
+	parse_names(&numConstants, &consts, &lineConstants, IN,const_cast< char *>("constant"), declarations[8]);
 	
-  // setup functions
-  rewind(IN);
-  parse_names(&numFuncs, &funcs, &lineFuncs, IN, const_cast< char *>("function"), declarations[9]);
+	// setup functions
+	rewind(IN);
+	parse_names(&numFuncs, &funcs, &lineFuncs, IN, const_cast< char *>("function"), declarations[9]);
 	
 	fclose(IN);
 	
 	// setup Matlab script
 	
 	
-  createMatlabDerivative("matlab_nullspace_system.m", "func_input_real",
-												 ns_config,
-												 numVars, vars, lineVars, numConstants, consts, lineConstants, numFuncs, funcs, lineFuncs);
+	createMatlabDerivative("matlab_nullspace_system.m", "func_input_real",
+						   ns_config,
+						   numVars, vars, lineVars, numConstants, consts, lineConstants, numFuncs, funcs, lineFuncs);
 	
 	
-
 	
-  // run Matlab script
+	
+	// run Matlab script
 	std::stringstream converter;
 	converter << program_options.matlab_command << " < matlab_nullspace_system.m";
 	system(converter.str().c_str());
 	converter.clear(); converter.str("");
-  
-  
+	
+	
 	
 	// setup new file
-
+	
 	OUT = safe_fopen_write(output_name.c_str());
-
+	
 	
 	fprintf(OUT, "CONFIG\n");
 	
 	IN = safe_fopen_read("config_real");
 	copyfile(IN,OUT);
 	fclose(IN);
-  fprintf(OUT, "\nEND;");
+	fprintf(OUT, "\nEND;");
 	fprintf(OUT, "\n\nINPUT\n");
 	
 	
 	std::string constants = just_constants("func_input_real",numConstants,consts,lineConstants);
 	
 	fprintf(OUT, "%s\n\n",constants.c_str());
-//	IN = safe_fopen_read("func_input_real");
-//	copyfile(IN,OUT);
-//	fclose(IN);
-//	fprintf(OUT,"\n");
-		
-//	if (numConstants>0) {
-//		
-//		fprintf(OUT,"constant ");
-//		for (ii=0;ii<numConstants; ii++){
-//			fprintf(OUT,"%s",consts[ii]);
-//			if (ii!=numConstants-1)
-//				fprintf(OUT,", ");
-//			else
-//				fprintf(OUT,";\n");
-//		}
-//	}
+	//	IN = safe_fopen_read("func_input_real");
+	//	copyfile(IN,OUT);
+	//	fclose(IN);
+	//	fprintf(OUT,"\n");
+	
+	//	if (numConstants>0) {
+	//
+	//		fprintf(OUT,"constant ");
+	//		for (ii=0;ii<numConstants; ii++){
+	//			fprintf(OUT,"%s",consts[ii]);
+	//			if (ii!=numConstants-1)
+	//				fprintf(OUT,", ");
+	//			else
+	//				fprintf(OUT,";\n");
+	//		}
+	//	}
 	
 	
-  // this commented block produces TWO variables groups.
-//	fprintf(OUT,"variable_group ");
-//	for (ii=0;ii<numVars; ii++){
-//		fprintf(OUT,"%s",vars[ii]);
-//		(ii==numVars-1) ? fprintf(OUT,";\n") : fprintf(OUT,", ");
-//	}
-//	
-//	fprintf(OUT,"hom_variable_group ");
-//	for (ii=0; ii<(ns_config->num_v_vars); ii++) {
-//		fprintf(OUT,"synth%d",ii+1);
-//		(ii==ns_config->num_v_vars-1) ? fprintf(OUT,";\n") : fprintf(OUT,", ");
-//	}
+	// this commented block produces TWO variables groups.
+	//	fprintf(OUT,"variable_group ");
+	//	for (ii=0;ii<numVars; ii++){
+	//		fprintf(OUT,"%s",vars[ii]);
+	//		(ii==numVars-1) ? fprintf(OUT,";\n") : fprintf(OUT,", ");
+	//	}
+	//
+	//	fprintf(OUT,"hom_variable_group ");
+	//	for (ii=0; ii<(ns_config->num_v_vars); ii++) {
+	//		fprintf(OUT,"synth%d",ii+1);
+	//		(ii==ns_config->num_v_vars-1) ? fprintf(OUT,";\n") : fprintf(OUT,", ");
+	//	}
 	
 	
 	fprintf(OUT,"variable_group ");
 	for (ii=0;ii<numVars; ii++){
 		fprintf(OUT,"%s, ",vars[ii]);
 	}
-
+	
 	for (ii=0; ii<(ns_config->num_v_vars); ii++) {
 		fprintf(OUT,"synth%d",ii+1);
 		(ii==ns_config->num_v_vars-1) ? fprintf(OUT,";\n") : fprintf(OUT,", ");
@@ -591,15 +591,15 @@ void create_nullspace_system(boost::filesystem::path output_name,
 		projname << "pi_" << ii+1;
 		write_vector_as_constants(ns_config->target_projection[ii], projname.str(), OUT);
 	}
-
+	
 	write_matrix_as_constants(ns_config->randomizer_matrix, "r", OUT);
 	
-
+	
 	IN = safe_fopen_read("derivative_polynomials_declaration");
-  while ((ch = fgetc(IN)) != EOF)
-    fprintf(OUT, "%c", ch);
-  fclose(IN);
-  
+	while ((ch = fgetc(IN)) != EOF)
+		fprintf(OUT, "%c", ch);
+	fclose(IN);
+	
 	// END; written in the above transciption
     fprintf(OUT,"END;\n\n\n");
     
@@ -613,31 +613,31 @@ void create_nullspace_system(boost::filesystem::path output_name,
     
     
     fprintf(OUT,"\n\nTODO: add natural variable patch");
-
-    fclose(OUT);
-  // clear memory
-  free(str);
-
-  for (ii = 0; ii < numVars; ii++)
-    free(vars[ii]);
-  free(vars);
-  free(lineVars);
-  for (ii = 0; ii < numConstants; ii++)
-    free(consts[ii]);
-  free(consts);
-  free(lineConstants);
-  for (ii = 0; ii < numFuncs; ii++)
-    free(funcs[ii]);
-  free(funcs);
-  free(lineFuncs);
 	
-  return;
+    fclose(OUT);
+	// clear memory
+	free(str);
+	
+	for (ii = 0; ii < numVars; ii++)
+		free(vars[ii]);
+	free(vars);
+	free(lineVars);
+	for (ii = 0; ii < numConstants; ii++)
+		free(consts[ii]);
+	free(consts);
+	free(lineConstants);
+	for (ii = 0; ii < numFuncs; ii++)
+		free(funcs[ii]);
+	free(funcs);
+	free(lineFuncs);
+	
+	return;
 }
 
 void createMatlabDerivative(boost::filesystem::path output_name,
-														boost::filesystem::path input_name,
-														nullspace_config *ns_config,
-														int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs)
+							boost::filesystem::path input_name,
+							nullspace_config *ns_config,
+							int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs)
 /***************************************************************\
  * USAGE: setup a Matlab script to perform the deflation         *
  * ARGUMENTS: input file, declaration name, and number of lines  *
@@ -645,31 +645,31 @@ void createMatlabDerivative(boost::filesystem::path output_name,
  * NOTES:                                                        *
  \***************************************************************/
 {
-  int ii, lineNumber = 1, cont = 1, declares = 0, strSize = 1;
-  char *str = (char *)br_malloc(strSize * sizeof(char));
+	int ii, lineNumber = 1, cont = 1, declares = 0, strSize = 1;
+	char *str = (char *)br_malloc(strSize * sizeof(char));
 	
 	std::ifstream IN(input_name.c_str());
 	std::ofstream OUT(output_name.c_str());
-  // setup Bertini constants in Matlab
-  OUT << "syms I Pi;\n";
+	// setup Bertini constants in Matlab
+	OUT << "syms I Pi;\n";
 	
-  // setup variables
-  OUT << "syms";
-  for (ii = 0; ii < numVars; ii++)
-    OUT << " " << vars[ii];
-  OUT << ";\nX = [";
-  for (ii = 0; ii < numVars; ii++)
-    OUT << " " << vars[ii];
-  OUT << "];\n\n";
+	// setup variables
+	OUT << "syms";
+	for (ii = 0; ii < numVars; ii++)
+		OUT << " " << vars[ii];
+	OUT << ";\nX = [";
+	for (ii = 0; ii < numVars; ii++)
+		OUT << " " << vars[ii];
+	OUT << "];\n\n";
 	
 	OUT << "syms";
-  for (ii = 0; ii < ns_config->num_v_vars; ii++)
-    OUT << " synth" << ii+1;
+	for (ii = 0; ii < ns_config->num_v_vars; ii++)
+		OUT << " synth" << ii+1;
 	
-  OUT << ";\nsynth_vars = [";
-  for (ii = 0; ii < ns_config->num_v_vars; ii++)
-    OUT << " " << "synth" << ii+1 << ";";
-  OUT << "];\n\n";
+	OUT << ";\nsynth_vars = [";
+	for (ii = 0; ii < ns_config->num_v_vars; ii++)
+		OUT << " " << "synth" << ii+1 << ";";
+	OUT << "];\n\n";
 	
 	
 	
@@ -677,7 +677,7 @@ void createMatlabDerivative(boost::filesystem::path output_name,
 	for (ii = 1; ii <= ns_config->num_projections; ii++)
 		for (int jj = 1; jj< ns_config->num_x_vars; jj++)
 			OUT << " pi_" << ii << "_" << jj+1;
-  OUT << "\n";
+	OUT << "\n";
 	
 	OUT << "proj = [";
 	for (ii = 1; ii <= ns_config->num_projections; ii++){
@@ -689,44 +689,44 @@ void createMatlabDerivative(boost::filesystem::path output_name,
 	}
 	OUT << "];\n\n";
 	
-  // setup constants
-  if (numConstants > 0)
-  {
-    OUT << "syms";
-    for (ii = 0; ii < numConstants; ii++)
-      OUT << " " << consts[ii];
-    OUT << ";\n";
-  }
+	// setup constants
+	if (numConstants > 0)
+	{
+		OUT << "syms";
+		for (ii = 0; ii < numConstants; ii++)
+			OUT << " " << consts[ii];
+		OUT << ";\n";
+	}
 	
 	
 	OUT << "num_jac_equations = " << ns_config->num_jac_equations << ";\n";
 	OUT << "num_randomized_eqns = " << ns_config->num_randomized_eqns << ";\n";
 	OUT << "target_crit_codim = " << ns_config->target_crit_codim << ";\n";
 	
-  // copy lines which do not declare items or define constants (keep these as symbolic objects)
-  while (cont)
-  { // see if this line number declares items
-    declares = 0;
-    for (ii = 0; ii < numVars; ii++)
-      if (lineNumber == lineVars[ii])
-        declares = 1;
-    for (ii = 0; ii < numConstants; ii++)
-      if (lineNumber == lineConstants[ii])
-        declares = 1;
-    for (ii = 0; ii < numFuncs; ii++)
-      if (lineNumber == lineFuncs[ii])
-        declares = 1;
+	// copy lines which do not declare items or define constants (keep these as symbolic objects)
+	while (cont)
+	{ // see if this line number declares items
+		declares = 0;
+		for (ii = 0; ii < numVars; ii++)
+			if (lineNumber == lineVars[ii])
+				declares = 1;
+		for (ii = 0; ii < numConstants; ii++)
+			if (lineNumber == lineConstants[ii])
+				declares = 1;
+		for (ii = 0; ii < numFuncs; ii++)
+			if (lineNumber == lineFuncs[ii])
+				declares = 1;
 		
 		std::string current_line;
 		getline(IN,current_line);
 		//		std::cout << "curr line: " << current_line << std::endl;
 		
-    if (declares)
-    { // move past this line
+		if (declares)
+		{ // move past this line
 			
-    }
-    else
-    { // check to see if this defines a constant - line must be of the form '[NAME]=[EXPRESSION];' OR EOF
+		}
+		else
+		{ // check to see if this defines a constant - line must be of the form '[NAME]=[EXPRESSION];' OR EOF
 			
 			std::string name;
 			
@@ -745,13 +745,13 @@ void createMatlabDerivative(boost::filesystem::path output_name,
 				OUT << current_line << std::endl;
 		}
 		
-    // increment lineNumber
-    lineNumber++;
+		// increment lineNumber
+		lineNumber++;
 		
-    // test for EOF
-    if (IN.eof())
-      cont = 0;
-  }
+		// test for EOF
+		if (IN.eof())
+			cont = 0;
+	}
 	
 	OUT << "syms ";
 	for (ii=0; ii<ns_config->randomizer_matrix->rows; ii++) {
@@ -772,23 +772,23 @@ void createMatlabDerivative(boost::filesystem::path output_name,
 	}
 	OUT << "];\n\n";
 	
-
 	
-  // setup functions
-  OUT << "\nF_orig = [";
-  for (ii = 0; ii < numFuncs; ii++)
-    OUT << " " << funcs[ii] << ";";
-  OUT << "]; %collect the functions into a single matrix\n";
+	
+	// setup functions
+	OUT << "\nF_orig = [";
+	for (ii = 0; ii < numFuncs; ii++)
+		OUT << " " << funcs[ii] << ";";
+	OUT << "]; %collect the functions into a single matrix\n";
 	
 	OUT << "F_rand = R*F_orig; % randomize\n";
 	
-  // compute the jacobian
-  OUT << "J = [transpose(jacobian(F_rand,X)) proj];  %compute the transpose of the jacobian\n";
+	// compute the jacobian
+	OUT << "J = [transpose(jacobian(F_rand,X)) proj];  %compute the transpose of the jacobian\n";
 	OUT << "                                           %concatenate the projections\n\n";
 	
 	OUT << "new_eqns = J*synth_vars; % multiply the synth vars\n\n";
 	
-  OUT << "OUT = fopen('derivative_polynomials_declaration','w'); %open the file to write\n";
+	OUT << "OUT = fopen('derivative_polynomials_declaration','w'); %open the file to write\n";
 	
 	OUT << "fprintf(OUT, 'function ');\n";
 	OUT << "for ii=1:num_randomized_eqns\n";
@@ -804,7 +804,7 @@ void createMatlabDerivative(boost::filesystem::path output_name,
 	OUT << "  fprintf(OUT,'f%i = %s;\\n',ii,char(F_rand(ii)));\n";
 	OUT << "end\n\n";
 	
-  OUT << "fprintf(OUT, 'function ');\n";
+	OUT << "fprintf(OUT, 'function ');\n";
 	OUT << "for jj = 1:num_jac_equations\n";
 	OUT << "  fprintf(OUT, 'der_func_%i', jj);\n";
 	OUT << "  if jj~=num_jac_equations\n    fprintf(OUT,', ');\n  end %re: if\n";
@@ -813,26 +813,26 @@ void createMatlabDerivative(boost::filesystem::path output_name,
 	
 	OUT << "for jj = 1:num_jac_equations\n";
 	OUT << "  fprintf(OUT, 'der_func_%i = %s;  \\n',jj,char(new_eqns(jj)));\n";
-//	OUT << "  for kk = 1:num_jac_equations\n";
-//	OUT << "    fprintf(OUT,'%s\n',);\n";
-//	OUT << "  end %re: kk\n";
-//	OUT << "  for kk = 1:target_crit_codim\n";
-//	OUT << "    fprintf(OUT,'pi_%i_%i*synth%i',kk,jj+1,kk+num_randomized_eqns);\n";
-//	OUT << "    if kk~=target_crit_codim\n";
-//	OUT << "      fprintf(OUT,' + ');\n";
-//	OUT << "    else\n";
-//	OUT << "      fprintf(OUT,';\\n');\n";
-//	OUT << "    end %re: if\n";
-//	OUT << "  end %re: kk\n";
+	//	OUT << "  for kk = 1:num_jac_equations\n";
+	//	OUT << "    fprintf(OUT,'%s\n',);\n";
+	//	OUT << "  end %re: kk\n";
+	//	OUT << "  for kk = 1:target_crit_codim\n";
+	//	OUT << "    fprintf(OUT,'pi_%i_%i*synth%i',kk,jj+1,kk+num_randomized_eqns);\n";
+	//	OUT << "    if kk~=target_crit_codim\n";
+	//	OUT << "      fprintf(OUT,' + ');\n";
+	//	OUT << "    else\n";
+	//	OUT << "      fprintf(OUT,';\\n');\n";
+	//	OUT << "    end %re: if\n";
+	//	OUT << "  end %re: kk\n";
 	OUT << "end %re: jj\n\n";
 	
 	
 	
 	
-  // clear memory
-  free(str);
+	// clear memory
+	free(str);
 	
-  return;
+	return;
 }
 
 
