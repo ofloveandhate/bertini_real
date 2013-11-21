@@ -177,6 +177,50 @@ void BR_configuration::print_usage()
 }
 
 
+void BR_configuration::init()
+{
+	quick_run = false;
+	this->debugwait = 0;
+	this->max_deflations = 10;
+	
+	this->user_projection = 0;
+	this->projection_filename = "";
+	
+	this->user_randomization = 0;
+	this->randomization_filename = "";
+	
+	
+	user_sphere = false;
+	bounding_sphere_filename = "";
+	
+	this->input_filename = "input";
+	
+	this->witness_set_filename = "witness_set";
+	
+	this->output_dir = boost::filesystem::absolute("output");
+	
+	
+	this->crit_solver = NULLSPACE;
+	
+	this->stifle_membership_screen = 1;
+	this->stifle_text = " > /dev/null ";
+	
+	this->bertini_command = "~/bin/bertini_serial";
+	this->matlab_command = "matlab -nosplash";
+	this->verbose_level = 0; // default to 0
+	
+	this->MPType = 2;
+	
+	this->use_bounding_box = 0;
+	this->use_gamma_trick = 0;
+	
+	merge_edges = true;
+	
+	return;
+}
+
+
+
 
 int  BR_configuration::parse_commandline(int argc, char **argv)
 {

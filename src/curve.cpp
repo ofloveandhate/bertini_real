@@ -325,7 +325,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
                                            &particular_projection,
                                            ml_config,
                                            solve_options);
-//		midpoint_witness_sets[ii].print_to_screen();
+
 		
 		midpoint_witness_sets[ii].sort_for_real(solve_options.T);
 		midpoint_witness_sets[ii].sort_for_unique(solve_options.T);
@@ -333,6 +333,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 		
 
 		if (program_options.verbose_level>=2) {
+			midpoint_witness_sets[ii].print_to_screen();
             std::cout << "midpoint_downstairs " << ii << " had " << midpoint_witness_sets[ii].num_pts << " real points" << std::endl;
 		}
 		edge_counter += midpoint_witness_sets[ii].num_pts;
@@ -908,9 +909,7 @@ int curve_decomposition::compute_critical_points(const witness_set & W_curve,
 	
 	W_crit_real.input_filename = W_curve.input_filename;
 	
-    //	partition_parse(&declarations, program_options.current_working_filename, "func_input", "config", 0); // the 0 means not self conjugate.
-    //																																																			 // i would like to move this.
-    //
+
 	
     
     
