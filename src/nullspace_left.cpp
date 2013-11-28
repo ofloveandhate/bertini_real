@@ -260,6 +260,8 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 										   ns_config,
 										   solve_options);
 	
+//	W_crit->print_to_screen();
+//	std::cout << "above is the nullspace crit set" << std::endl;
 	
 	W_crit->num_variables = ns_config->num_x_vars+ns_config->num_v_vars;
 	W_crit->num_synth_vars = W.num_synth_vars + ns_config->num_v_vars;

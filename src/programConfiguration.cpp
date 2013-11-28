@@ -171,6 +171,7 @@ void BR_configuration::print_usage()
 	printf("-v -version\t\t\t   -- \n");
 	printf("-h -help\t\t\t   --\n");
 	printf("-box -b\t\t\t   bool\n");
+	printf("-quick -q\t\t\t --\n");
 	
 	printf("\n\n\n");
 	return;
@@ -246,6 +247,7 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 			{"detjac",		no_argument,			 0, 'd'},
 			{"debug", no_argument, 0, 'D'},
 			{"nomerge", no_argument, 0, 'm'},
+			{"quick",no_argument,0,'q'},{"q",no_argument,0,'q'},
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
@@ -260,7 +262,9 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 		
 		switch (choice)
 		{
-				
+			case 'q':
+				this->quick_run = true;
+				break;
 			case 'm':
 				this->merge_edges = false;
 				break;

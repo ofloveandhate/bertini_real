@@ -2924,6 +2924,7 @@ int check_issoln_nullspacejac_mp(endgame_data_t *EG,
 			if (mpf_cmp(n1, n2) > 0){
 				isSoln = 0;
 				printf("labeled as non_soln due to max_rat (mp) 1\n");
+				mpf_out_str(NULL,10,0,max_rat);
 			}
 		}
 		else if ( (mpf_cmp(zero_thresh, n2) <= 0) &&  (mpf_cmp(n2, n1) <= 0) )

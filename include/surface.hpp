@@ -85,6 +85,29 @@ public:
 		return *this;
 	}
 	
+	
+	void send(int target, parallelism_config & mpi_config)
+	{
+		
+		
+		return;
+		
+	}
+	
+	void receive(int source, parallelism_config & mpi_config)
+	{
+	
+		return;
+		
+	}
+	
+	
+	
+	
+private:
+	
+	
+	
 	void init()
 	{
 		system_type_top = UNSET;
@@ -230,10 +253,7 @@ public:
 	
 	
 	
-	void connect_the_dots(vertex_set & V,
-												vec_mp *pi,
-												BR_configuration & program_options,
-												solver_configuration & solve_options);
+
 	
 	
 	
@@ -254,6 +274,41 @@ public:
 															 vertex_set & V,
 															 BR_configuration & program_options,
 															solver_configuration & solve_options);
+	
+	
+	void connect_the_dots(vertex_set & V,
+												 vec_mp *pi,
+												 BR_configuration & program_options,
+												 solver_configuration & solve_options);
+	
+	void serial_connect(vertex_set & V, midpoint_config & md_config, solver_configuration & solve_options, BR_configuration & program_options);
+	
+	void master_connect(vertex_set & V, midpoint_config & md_config, solver_configuration & solve_options, BR_configuration & program_options);
+	
+	void worker_connect(solver_configuration & solve_options, BR_configuration & program_options);
+	
+	void master_face_requester(int ii, int jj, int next_worker, parallelism_config & mpi_config);
+	
+	void worker_face_requester(int & ii, int & jj, parallelism_config & mpi_config);
+	
+	face make_face(int ii, int jj, vertex_set & V,
+				   midpoint_config & md_config,
+				   solver_configuration & solve_options, BR_configuration & program_options);
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	
 	surface_decomposition() : decomposition()
@@ -278,6 +333,15 @@ public:
 		this->clear();
 	}
 	
+	
+	
+	
+	
+	
+	void send(int target, parallelism_config & mpi_config);
+	
+	
+	void receive(int source, parallelism_config & mpi_config);
 	
 protected:
 	

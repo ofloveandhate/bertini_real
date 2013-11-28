@@ -1543,6 +1543,155 @@ void vertex_set::print(boost::filesystem::path outputfile)
 
 
 
+
+void vertex_set::send(int target, parallelism_config & mpi_config)
+{
+	
+	MPI_Send(&num_natural_variables, MPI_INT, 1, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+	
+	
+	MPI_Send(&num_projections, MPI_INT, 1, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+	MPI_Send(&curr_projection, MPI_INT, 1, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+	for (int ii=0; ii<num_projections; ii++) {
+		send_vec_mp(projections[ii],target);
+	}
+	
+	
+	int num_filenames = filenames.size();
+	
+	MPI_Send(&num_filenames, MPI_INT, 1, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+	for (int ii=0; ii<num_filenames; ii++) {
+		char * buffer;
+		
+		
+		int strleng = filenames[ii].string().size() + 1;
+		buffer = new char[strleng];
+		memcpy(buffer, filenames[ii].c_str(), strleng);
+		
+		MPI_Send(&strleng, MPI_INT, 1, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+		MPI_Send(buffer, MPI_CHAR, strleng, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+		
+		delete [] buffer;
+		
+	}
+	
+
+	
+	
+	
+	MPI_Send(&curr_input_index, MPI_INT, 1, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+	
+
+	MPI_Send(&num_vertices, MPI_INT, 1, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+	for (int ii=0; ii<num_vertices; ii++) {
+		vertices[ii].send(target, mpi_config);
+	}
+	
+	
+	
+
+	
+	
+	
+	
+	return;
+}
+
+
+void vertex_set::receive(int source, parallelism_config & mpi_config)
+{
+	MPI_Status statty_mc_gatty;
+	
+	
+	MPI_Recv(&num_natural_variables, MPI_INT, 1, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+	
+	
+	MPI_Recv(&num_projections, MPI_INT, 1, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+	MPI_Recv(&curr_projection, MPI_INT, 1, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+	for (int ii=0; ii<num_projections; ii++) {
+		receive_vec_mp(projections[ii],source);
+	}
+	
+	
+	int num_filenames = filenames.size();
+	
+	MPI_Recv(&num_filenames, MPI_INT, 1, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+	for (int ii=0; ii<num_filenames; ii++) {
+		char * buffer; int strleng;
+		
+		MPI_Recv(&strleng, MPI_INT, 1, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+		
+		buffer = new char[strleng];
+		
+		MPI_Recv(buffer, MPI_CHAR, strleng, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+		boost::filesystem::path temppath(buffer);
+		filenames.push_back(temppath);
+		
+		delete [] buffer;
+		
+	}
+	
+	
+	
+	
+	
+	MPI_Recv(&curr_input_index, MPI_INT, 1, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+	
+	
+	MPI_Recv(&num_vertices, MPI_INT, 1, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+	for (int ii=0; ii<num_vertices; ii++) {
+		vertices[ii].receive(source, mpi_config);
+	}
+	
+	
+	
+
+
+	
+	return;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 int decomposition::add_witness_set(const witness_set & W, int add_type, vertex_set & V)
 {
     V.set_curr_input(W.input_filename);
@@ -1965,6 +2114,58 @@ void decomposition::output_main(const BR_configuration & program_options, vertex
 	fclose(OUT);
 	
 }
+
+
+
+void decomposition::send(int target, parallelism_config & mpi_config)
+{
+	//	std::map< int , int > counters;
+	//	std::map< int , std::vector< int > > indices;
+	//	
+	//	
+	//	int num_variables;
+	//	int dimension;
+	//	int component_num;
+	//	
+	//	int num_curr_projections;
+	//	vec_mp	*pi; // the projections
+	//	
+	//	std::vector< int > randomized_degrees;
+	//	mat_mp randomizer_matrix;
+	//	
+	//	int num_patches;
+	//	vec_mp *patch;
+	//	
+	//	vec_mp sphere_center;
+	//	comp_mp sphere_radius;
+	//	bool have_sphere_radius;
+	//	
+	//	boost::filesystem::path input_filename;
+	return;
+}
+
+
+
+void decomposition::receive(int source, parallelism_config & mpi_config)
+{
+	
+	return;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
