@@ -87,6 +87,42 @@ void adjust_tracker_AMP(tracker_config_t * T, int num_variables)
 
 
 
+void solver_configuration::init()
+{
+	total_num_paths_tracked = 0;
+	
+	orthogonal_projection = true;
+	use_real_thresholding = false;
+	robust = false;
+	
+	PPD.num_funcs = 0;
+	PPD.num_hom_var_gp = 0;
+	PPD.num_var_gp = 0;
+	PPD.size = NULL;
+	PPD.type = NULL;
+	
+	allow_unsuccess = 0;
+	allow_singular = 0;
+	allow_multiplicity = 0;
+	allow_infinite = 0;
+	
+	path_number_modulus = 20;
+	
+	verbose_level = 0;
+	
+	show_status_summary = 0;
+	
+	use_midpoint_checker = 0;
+	
+	midpoint_tol = 1e-6;
+	
+	use_gamma_trick = 0;
+	
+	
+	complete_witness_set = 1;
+}
+
+
 
 
 int solver::send(parallelism_config & mpi_config)
@@ -1425,8 +1461,17 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 		
         //TODO: PUT the is_solution check right here.
 		
+		
+		
+		
+		
+		
+		
+		
+		
+		
 		// get how many times we have changed settings due to this type of failure.
-		int current_retval_counter = map_lookup_with_default( setting_increments, EG_out->retVal, 0 );
+		int current_retval_counter = map_lookup_with_default( setting_increments, EG_out->retVal, 0 ); // how many times have we encountered this retval?
 		
 		if ( !(EG_out->retVal==0  )) {  // ||   EG_out->retVal==-50
 
@@ -1458,20 +1503,20 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 			solve_options.increment_num_paths_tracked();
 			
 			// if
-			if ( (time_to_compare->r < std::max(1e-2,1e-1*solve_options.T.endgameBoundary)) && (infNormVec_d(solution_as_double) > solve_options.T.finiteThreshold)) {
-				if (solve_options.verbose_level>=5) {
+			if ( (time_to_compare->r < std::max(1e-2,1e-2*solve_options.T.endgameBoundary)) && (infNormVec_d(solution_as_double) > solve_options.T.finiteThreshold)) {
+				if (solve_options.verbose_level>=2) {
 					print_point_to_screen_matlab(solution_as_double,"big_solution");
 					print_comp_matlab(time_to_compare,"at_time");
-					std::cout << "discarding.\n\n" << std::endl;
+					std::cout << "discarding non-finite solution.\n\n" << std::endl;
 				}
-				
+//				EG_out->retVal=0;
 				break;
 			}
 			
 			clear_vec_d(solution_as_double);
 			
 			
-			if (solve_options.verbose_level>=1){
+			if (solve_options.verbose_level>=3){
 				print_path_retVal_message(EG_out->retVal);
 				std::cout << color::red() << "solution had non-zero retVal " << EG_out->retVal << " (" << current_retval_counter << ")th occurrence on iteration " << iterations << "." << color::console_default() << std::endl;
 			}
@@ -1505,12 +1550,12 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
                     solve_options.T.endgameNumber = 2;
                     
                     
-					T->basicNewtonTol = MIN(1e-3, T->basicNewtonTol*2);
+					T->basicNewtonTol   = MIN(1e-3, T->basicNewtonTol*2);
 					T->endgameNewtonTol = MIN(1e-3, T->endgameNewtonTol*2);
                     //
-//					if (current_retval_counter>5) {
-//						solve_options.T.odePredictor  = (solve_options.T.odePredictor+1)%9;
-//					}
+					if (current_retval_counter>2) {
+						solve_options.T.odePredictor  = (solve_options.T.odePredictor+1)%9;
+					}
 					
 					break;
 					
@@ -1521,23 +1566,24 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
                     if ( (T->basicNewtonTol == 1e-3) || (T->endgameNewtonTol == 1e-3)) {
 						
 					}
-					T->basicNewtonTol = MIN(1e-3, T->basicNewtonTol*2);
+					T->basicNewtonTol   = MIN(1e-3, T->basicNewtonTol*2);
 					T->endgameNewtonTol = MIN(1e-3, T->endgameNewtonTol*2);
                     //
-//					if (current_retval_counter>5) {
-//						solve_options.T.odePredictor  = (solve_options.T.odePredictor+1)%9;
-//					}
+					if (current_retval_counter>2) {
+						solve_options.T.odePredictor  = (solve_options.T.odePredictor+1)%9;
+					}
 					
 					
 					break;
 					
 				case -10:
-					solve_options.T.maxNumSteps *=10; // double each time
 					
+					solve_options.T.maxNumSteps *=10; // factor of 10 each time
 					break;
 					
 				case -2:
-					solve_options.T.goingToInfinity *= 1e2;
+					print_path_retVal_message(-2);
+//					solve_options.T.goingToInfinity *= 1e2;
                     //                    solve_options.T.finiteThreshold *= 1;
                     
                     
@@ -1553,7 +1599,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					solve_options.T.minStepSize *=  1e-2;
 					break;
 					
-				case -4:
+				case -4: // securitymax
 					
 					if (current_retval_counter<6) {
 						solve_options.T.securityMaxNorm *= 10;  // exponential increase by 10's

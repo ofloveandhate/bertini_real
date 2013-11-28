@@ -919,7 +919,7 @@ int curve_decomposition::compute_critical_points(const witness_set & W_curve,
                            W_curve,            // input the original witness set
                            randomizer_matrix,
                            projections,
-                           randomized_degrees,
+                           randomized_degrees,//this is computed
                            1,  // dimension of ambient complex object
                            1,   //  target dimension to find
                            1,   // COdimension of the critical set to find.
@@ -936,6 +936,7 @@ int curve_decomposition::compute_critical_points(const witness_set & W_curve,
 	W_crit_real.only_first_vars(W_curve.num_variables); // trim the fat, since we are at the lowest level.
 	W_crit_real.sort_for_real(solve_options.T);
 	
+	W_crit_real.print_to_screen();
 	
 	if (have_sphere_radius) {
 		W_crit_real.sort_for_inside_sphere(sphere_radius, sphere_center);
@@ -945,8 +946,8 @@ int curve_decomposition::compute_critical_points(const witness_set & W_curve,
 	}
 	else
 	{
-		// this should only happen if we are decomposing a curve at the highest level.  if anything higher dimension, this curve is a subcomponent, and we should NOT compute bounds here.
-		std::cout << color::red() << "don't have the sphere bounds here..." << color::console_default() << std::endl;
+//		// this should only happen if we are decomposing a curve at the highest level.  if anything higher dimension, this curve is a subcomponent, and we should NOT compute bounds here.
+		std::cout << color::red() << "computing sphere bounds..." << color::console_default() << std::endl;
 		compute_sphere_bounds(W_crit_real);
 	}
 	

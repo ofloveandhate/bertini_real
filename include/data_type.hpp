@@ -516,12 +516,12 @@ class vertex
 {
 public:
 	
-  point_mp pt_mp;
+	point_mp pt_mp;
 	
 	
-  vec_mp  projection_values;
+	vec_mp  projection_values;
 	
-  int type;  //See enum above.
+	int type;  //See enum above.
 	int removed;
 	int input_filename_index;
 	
@@ -554,6 +554,38 @@ public:
 		print_point_to_screen_matlab(pt_mp,"point");
 		print_point_to_screen_matlab(projection_values,"projection_values");
 		std::cout << "type: " << type << std::endl;
+	}
+	
+	
+	void send(int target, parallelism_config & mpi_config)
+	{
+
+		
+		send_vec_mp(pt_mp, target);
+		
+		send_vec_mp(projection_values, target);
+		
+		MPI_Send(&type, MPI_INT, 1, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+		MPI_Send(&removed, MPI_INT, 1, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+		MPI_Send(&input_filename_index, MPI_INT, 1, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+		
+		
+	}
+	
+	void receive(int source, parallelism_config & mpi_config)
+	{
+		MPI_Status statty_mc_gatty;
+		
+		
+		
+		receive_vec_mp(pt_mp, source);
+		receive_vec_mp(projection_values, source);
+		
+		MPI_Recv(&type, MPI_INT, 1, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+		MPI_Recv(&removed, MPI_INT, 1, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+		MPI_Recv(&input_filename_index, MPI_INT, 1, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+
+		
 	}
 	
 private:
@@ -795,6 +827,13 @@ public:
 	}
 	
 	
+	
+	
+	void send(int target, parallelism_config & mpi_config);
+	
+	
+	
+	void receive(int source, parallelism_config & mpi_config);
 	
 	
 private:
@@ -1078,6 +1117,8 @@ public:
 	
 	
 	
+	void send(int target, parallelism_config & mpi_config);
+	void receive(int source, parallelism_config & mpi_config);
 	
 protected:
 	

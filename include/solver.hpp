@@ -254,40 +254,7 @@ public:
 	
 	
 	
-	void init()
-	{
-		total_num_paths_tracked = 0;
-		
-		orthogonal_projection = true;
-		use_real_thresholding = false;
-		robust = false;
-		
-		PPD.num_funcs = 0;
-		PPD.num_hom_var_gp = 0;
-		PPD.num_var_gp = 0;
-		PPD.size = NULL;
-		PPD.type = NULL;
-		
-		allow_unsuccess = 0;
-		allow_singular = 0;
-		allow_multiplicity = 0;
-		allow_infinite = 0;
-		
-		path_number_modulus = 20;
-		
-		verbose_level = 0;
-		
-		show_status_summary = 0;
-		
-		use_midpoint_checker = 0;
-		
-		midpoint_tol = 1e-6;
-		
-		use_gamma_trick = 0;
-		
-		
-		complete_witness_set = 1;
-	}
+	void init();
 	
 	
 	void get_PPD()

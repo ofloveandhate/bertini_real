@@ -179,6 +179,18 @@ public:
 		
 	}
 	
+	bool have_available()
+	{
+		if (available_workers.size()<numprocs) {
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+		
+	}
+	
 	bool have_active()
 	{
 		bool yep = false;
