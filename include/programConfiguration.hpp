@@ -46,6 +46,19 @@ class parallelism_config
 	
 public:
 	
+	bool force_no_parallel;
+	int headnode;
+	int my_id, my_id_global;
+	int numprocs;
+	MPI_Comm   my_communicator;
+	
+	int worker_level; // higher worker level means more tedious work, in a sense.  worker_level 0 is uber-master.  worker_level 1 will be the next level down in management, etc.  the exact usage of this is relative to the process being run.
+	
+	
+	std::map< int, int> worker_status;
+	
+	std::queue< int > available_workers;
+	
 	
 	parallelism_config(){
 		
@@ -105,13 +118,7 @@ public:
 	
 	
 	
-	bool force_no_parallel;
-	int headnode;
-	int my_id, my_id_global;
-	int numprocs;
-	MPI_Comm   my_communicator;
 	
-	int worker_level; // higher worker level means more tedious work, in a sense.  worker_level 0 is uber-master.  worker_level 1 will be the next level down in management, etc.  the exact usage of this is relative to the process being run.
 	
 	void abort(int why){
 		MPI_Abort(my_communicator,why);
@@ -124,6 +131,7 @@ public:
 	
 	void init_active_workers()
 	{
+
 		for (int ii=1; ii<this->numprocs; ii++) {
 			available_workers.push(ii);
 			worker_status[ii] = INACTIVE;
@@ -143,6 +151,7 @@ public:
 		}
 		worker_status[worker_id] = ACTIVE;
 		
+
 		return worker_id;
 	}
 	
@@ -181,12 +190,12 @@ public:
 	
 	bool have_available()
 	{
-		if (available_workers.size()<numprocs) {
-			return true;
+		if (available_workers.size()==0) {
+			return false;
 		}
 		else
 		{
-			return false;
+			return true;
 		}
 		
 	}
@@ -204,15 +213,23 @@ public:
 	}
 	
 
-	std::map< int, int> worker_status;
+	int num_active()
+	{
+		int num = 0;
+		for (int ii=1; ii<this->numprocs; ii++) {
+			if (this->worker_status[ii]==ACTIVE) {
+				num++;
+			}
+		}
+		return num;
+	}
 	
-	std::queue< int > available_workers;
 };
 
 
 
 
-class prog_config : public parallelism_config
+class prog_config
 {
 	
 private:
@@ -308,7 +325,7 @@ public:
 
 
 
-class sampler_configuration
+class sampler_configuration : public prog_config
 {
 public:
 	int stifle_membership_screen; //< boolean controlling whether stifle_text is empty or " > /dev/null"

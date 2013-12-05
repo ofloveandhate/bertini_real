@@ -212,8 +212,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	this->num_variables = W_crit_real.num_variables;
 	input_filename = W_curve.input_filename;
 	
-	int blabla; int *declarations = NULL;
-	
+	int blabla;
 	parse_input_file(W_curve.input_filename, &blabla);
 	solve_options.get_PPD();
 	
@@ -905,8 +904,7 @@ int curve_decomposition::compute_critical_points(const witness_set & W_curve,
                                                  witness_set & W_crit_real)
 {
     
-	int *declarations = NULL;
-	
+
 	W_crit_real.input_filename = W_curve.input_filename;
 	
 
@@ -936,7 +934,7 @@ int curve_decomposition::compute_critical_points(const witness_set & W_curve,
 	W_crit_real.only_first_vars(W_curve.num_variables); // trim the fat, since we are at the lowest level.
 	W_crit_real.sort_for_real(solve_options.T);
 	
-	W_crit_real.print_to_screen();
+//	W_crit_real.print_to_screen();
 	
 	if (have_sphere_radius) {
 		W_crit_real.sort_for_inside_sphere(sphere_radius, sphere_center);
@@ -1249,13 +1247,40 @@ int verify_projection_ok(const witness_set & W,
 
 
 
+void curve_decomposition::send(int target, parallelism_config & mpi_config)
+{
+	decomposition::send(target, mpi_config);
+	
+	MPI_Send(&num_edges, 1, MPI_INT, target, CURVE, MPI_COMM_WORLD);
+	for (int ii=0; ii<num_edges; ii++) {
+		edges[ii].send(target, mpi_config);
+	}
+	
+}
 
-/***************************************************************\
- * USAGE: compute the isolated points for Non-Self-Conjugate case            *
- * ARGUMENTS: witness set, projection, # of variables, name of input file*
- * RETURN VALUES: Curve decomposition*
- * NOTES:                                                        *
- \***************************************************************/
+
+
+void curve_decomposition::receive(int source, parallelism_config & mpi_config)
+{
+	std::cout << "receiving curve " << std::endl;
+	decomposition::receive(source, mpi_config);
+	
+	MPI_Status statty_mc_gatty;
+	
+	int temp_num_edges;
+	MPI_Recv(&temp_num_edges, 1, MPI_INT, source, CURVE, MPI_COMM_WORLD, &statty_mc_gatty);
+	
+	std::cout << "recving "	<< temp_num_edges <<  " edges" << std::endl;
+	
+	for (int ii=0; ii<temp_num_edges; ii++) {
+		edge E;
+		E.receive(source, mpi_config);
+		add_edge(E);
+	}
+	
+}
+
+
 void curve_decomposition::computeCurveNotSelfConj(const witness_set & W_in,
                                                   vec_mp         pi_mp,
                                                   vertex_set			&V,

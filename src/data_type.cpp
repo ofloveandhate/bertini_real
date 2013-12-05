@@ -36,10 +36,7 @@ std::string enum_lookup(int flag)
 			
 		case ISOLATED:
 			return "ISOLATED";
-			break;
-			
-			
-			
+			break;			
 			
 		case NULLSPACE:
 			return "NULLSPACE";
@@ -60,6 +57,15 @@ std::string enum_lookup(int flag)
 		case MULTILIN:
 			return "MULTILIN";
 			break;
+		
+		case MIDPOINT_SOLVER:
+			return "MIDPOINT_SOLVER";
+			break;
+			
+		case SPHERE_SOLVER:
+			return "SPHERE_SOLVER";
+			break;
+						
 			
 		case TERMINATE:
 			return "TERMINATE";
@@ -1114,10 +1120,50 @@ void witness_set::receive(parallelism_config & mpi_config)
     return;
 }
 
+void vertex::send(int target, parallelism_config & mpi_config)
+{
+	
+	print_point_to_screen_matlab(pt_mp,"sendpt");
+	send_vec_mp(pt_mp, target);
+	
+	send_vec_mp(projection_values, target);
+	
+	int * buffer = new int[3];
+	buffer[0] = type;
+	buffer[1] = removed;
+	buffer[2] = input_filename_index;
+	
+	MPI_Send(buffer, 3, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+	delete [] buffer;
+	
+}
+
+
+void vertex::receive(int source, parallelism_config & mpi_config)
+{
+	MPI_Status statty_mc_gatty;
+	int * buffer = new int[3];
+	
+	
+	receive_vec_mp(pt_mp, source);
+	receive_vec_mp(projection_values, source);
+	
+	MPI_Recv(buffer, 3, MPI_INT, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+	
+	type = buffer[0];
+	removed = buffer[1];
+	input_filename_index = buffer[2];
+	print_point_to_screen_matlab(pt_mp,"recvpt");
+	delete [] buffer;
+}
+
+
+
+
 int vertex_set::search_for_point(vec_mp testpoint)
 {
     int index = -1;
-    
+	
     index = search_for_active_point(testpoint);
     
     if (index==-1) {
@@ -1371,7 +1417,8 @@ int vertex_set::add_vertex(const vertex source_vertex){
 	for (int ii=0; ii<this->num_projections; ii++){
 		bool compute_proj_val = false;
 		
-		if (! (mpfr_number_p( vertices[num_vertices].projection_values->coord[ii].r) && mpfr_number_p( vertices[num_vertices].projection_values->coord[ii].i)  ) ) {
+		if (! (mpfr_number_p( vertices[num_vertices].projection_values->coord[ii].r) && mpfr_number_p( vertices[num_vertices].projection_values->coord[ii].i)  ) )
+		{
 			compute_proj_val = true;
 		}
 		//		else if ( false )//yeah, i dunno what else right yet.
@@ -1391,7 +1438,11 @@ int vertex_set::add_vertex(const vertex source_vertex){
 	
     
 	
-	vertices[num_vertices].input_filename_index = curr_input_index;
+	if (vertices[num_vertices].input_filename_index == -1)
+	{
+		vertices[num_vertices].input_filename_index = curr_input_index;
+	}
+		
 	
 	this->num_vertices++;
 	return this->num_vertices-1;
@@ -1547,19 +1598,27 @@ void vertex_set::print(boost::filesystem::path outputfile)
 void vertex_set::send(int target, parallelism_config & mpi_config)
 {
 	
-	MPI_Send(&num_natural_variables, MPI_INT, 1, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+
+	int num_filenames = filenames.size();
 	
 	
-	MPI_Send(&num_projections, MPI_INT, 1, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
-	MPI_Send(&curr_projection, MPI_INT, 1, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+	int * buffer2 = new int[6];
+	buffer2[0] = num_natural_variables;
+	buffer2[1] = num_projections;
+	buffer2[2] = curr_projection;
+	buffer2[3] = num_filenames;
+	buffer2[4] = curr_input_index;
+	buffer2[5] = num_vertices;
+	
+	MPI_Send(buffer2, 6, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+	
+	delete [] buffer2;
+	
 	for (int ii=0; ii<num_projections; ii++) {
 		send_vec_mp(projections[ii],target);
 	}
+
 	
-	
-	int num_filenames = filenames.size();
-	
-	MPI_Send(&num_filenames, MPI_INT, 1, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
 	for (int ii=0; ii<num_filenames; ii++) {
 		char * buffer;
 		
@@ -1568,21 +1627,14 @@ void vertex_set::send(int target, parallelism_config & mpi_config)
 		buffer = new char[strleng];
 		memcpy(buffer, filenames[ii].c_str(), strleng);
 		
-		MPI_Send(&strleng, MPI_INT, 1, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
-		MPI_Send(buffer, MPI_CHAR, strleng, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+		MPI_Send(&strleng, 1, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+		MPI_Send(buffer, strleng, MPI_CHAR, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
 		
 		delete [] buffer;
 		
 	}
 	
-
 	
-	
-	
-	MPI_Send(&curr_input_index, MPI_INT, 1, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
-	
-
-	MPI_Send(&num_vertices, MPI_INT, 1, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
 	for (int ii=0; ii<num_vertices; ii++) {
 		vertices[ii].send(target, mpi_config);
 	}
@@ -1602,28 +1654,42 @@ void vertex_set::receive(int source, parallelism_config & mpi_config)
 {
 	MPI_Status statty_mc_gatty;
 	
+	int * buffer2 = new int[6];
+	MPI_Recv(buffer2, 6, MPI_INT, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
 	
-	MPI_Recv(&num_natural_variables, MPI_INT, 1, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
 	
 	
-	MPI_Recv(&num_projections, MPI_INT, 1, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
-	MPI_Recv(&curr_projection, MPI_INT, 1, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
-	for (int ii=0; ii<num_projections; ii++) {
-		receive_vec_mp(projections[ii],source);
+	int temp_num_natural_variables = buffer2[0];
+	int temp_num_projections = buffer2[1];
+	curr_projection = buffer2[2];
+	int num_filenames = buffer2[3];
+	curr_input_index = buffer2[4];
+	int temp_num_vertices = buffer2[5];
+	
+	delete [] buffer2;
+	
+	set_num_vars(temp_num_natural_variables);
+	
+	vec_mp tempvec;
+	init_vec_mp2(tempvec, 0, 1024);
+	
+	for (int ii=0; ii<temp_num_projections; ii++) {
+		receive_vec_mp(tempvec,source);
+		add_projection(tempvec);
+//		std::cout << "recv'd projection " << ii << std::endl;
 	}
 	
 	
-	int num_filenames = filenames.size();
+//	std::cout << "worker receiving filenames for vertex_set" << std::endl;
 	
-	MPI_Recv(&num_filenames, MPI_INT, 1, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
 	for (int ii=0; ii<num_filenames; ii++) {
 		char * buffer; int strleng;
 		
-		MPI_Recv(&strleng, MPI_INT, 1, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+		MPI_Recv(&strleng, 1, MPI_INT, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
 		
 		buffer = new char[strleng];
 		
-		MPI_Recv(buffer, MPI_CHAR, strleng, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+		MPI_Recv(buffer, strleng, MPI_CHAR, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
 		boost::filesystem::path temppath(buffer);
 		filenames.push_back(temppath);
 		
@@ -1634,13 +1700,13 @@ void vertex_set::receive(int source, parallelism_config & mpi_config)
 	
 	
 	
+
+//	std::cout << "worker receiving vertices for vertex_set" << std::endl;
 	
-	MPI_Recv(&curr_input_index, MPI_INT, 1, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
-	
-	
-	MPI_Recv(&num_vertices, MPI_INT, 1, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
-	for (int ii=0; ii<num_vertices; ii++) {
-		vertices[ii].receive(source, mpi_config);
+	for (int ii=0; ii<temp_num_vertices; ii++) {
+		vertex tempvert;
+		tempvert.receive(source, mpi_config);
+		add_vertex(tempvert);
 	}
 	
 	
@@ -2119,28 +2185,147 @@ void decomposition::output_main(const BR_configuration & program_options, vertex
 
 void decomposition::send(int target, parallelism_config & mpi_config)
 {
-	//	std::map< int , int > counters;
-	//	std::map< int , std::vector< int > > indices;
-	//	
-	//	
-	//	int num_variables;
-	//	int dimension;
-	//	int component_num;
-	//	
-	//	int num_curr_projections;
-	//	vec_mp	*pi; // the projections
-	//	
-	//	std::vector< int > randomized_degrees;
-	//	mat_mp randomizer_matrix;
-	//	
-	//	int num_patches;
-	//	vec_mp *patch;
-	//	
-	//	vec_mp sphere_center;
-	//	comp_mp sphere_radius;
-	//	bool have_sphere_radius;
-	//	
-	//	boost::filesystem::path input_filename;
+	
+	
+	int * buffer2;
+	
+	
+	//pack and send numbers of things.
+	buffer2 = new int[12];
+	buffer2[0] = num_variables;
+	buffer2[1] = dimension;
+	buffer2[2] = component_num;
+	buffer2[3] = num_curr_projections;
+	buffer2[4] = randomized_degrees.size();
+	buffer2[5] = randomizer_matrix->rows;
+	buffer2[6] = randomizer_matrix->cols;
+	buffer2[7] = num_patches;
+	buffer2[8] = have_sphere_radius;
+	int strleng = input_filename.string().size() + 1;
+	buffer2[9] = strleng;
+	buffer2[10] = counters.size();
+	buffer2[11] = indices.size();
+	MPI_Ssend(buffer2, 12, MPI_INT, target, 6, MPI_COMM_WORLD);
+	delete [] buffer2;
+	
+	
+	
+	if (counters.size()>0) {
+//		std::cout << "sending " << counters.size() << " counters" << std::endl;
+		//pack and send the counters.
+		int * buffer3 = new int[2*counters.size()];
+		int cnt = 0;
+		for (auto iter = counters.begin(); iter!=counters.begin(); iter++) {
+			buffer3[2*cnt] = iter->first;
+			buffer3[2*cnt+1] = iter->second;
+		}
+		MPI_Ssend(buffer3, 2*counters.size(), MPI_INT, target, 2, MPI_COMM_WORLD);
+		delete [] buffer3;
+	}
+	
+	
+	
+
+	int * intbuff = new int[2];
+
+	//pack and send the indices
+	
+	if (indices.size()>0) {
+//		std::cout << "sending " << indices.size() << " indices" << std::endl;
+		for (auto iter = indices.begin(); iter!=indices.end(); iter++) { // a std::map<int, std::vectors<ints>>
+			
+			intbuff[0] = iter->first;
+			int num_these_indices = iter->second.size();
+			
+			intbuff[1] = num_these_indices;
+			MPI_Ssend(intbuff, 2, MPI_INT, target, 4, MPI_COMM_WORLD);
+			
+			
+//			std::cout << num_these_indices << "these indices" << std::endl;
+			
+			if (num_these_indices>0) {
+//				std::cout << "sending " << num_these_indices << " ints" << std::endl;
+				int * buffer4 = new int[num_these_indices];
+				int cnt = 0;
+				for (auto jter = iter->second.begin(); jter != iter->second.end(); jter++) {
+					buffer4[cnt] = *jter;
+					cnt++;
+				}
+				MPI_Ssend(buffer4, num_these_indices, MPI_INT, target, 5, MPI_COMM_WORLD);
+				delete [] buffer4;
+			}
+			
+		}
+	}
+	delete [] intbuff;
+	
+	
+	if (num_curr_projections>0) {
+//		std::cout << "send proj" << std::endl;
+		for (int ii=0; ii<num_curr_projections; ii++) {
+			send_vec_mp(pi[ii],target);
+		}
+	}
+	
+	
+	
+	
+	if (randomized_degrees.size()>0) {
+//		std::cout << "sending " << randomized_degrees.size() << " randomized_degrees" << std::endl;
+		buffer2 = new int[randomized_degrees.size()];
+		int cnt = 0;
+		for (auto iter = randomized_degrees.begin(); iter!=randomized_degrees.end(); iter++) {
+			buffer2[cnt] = *iter;
+			cnt++;
+		}
+		MPI_Ssend(buffer2, randomized_degrees.size(), MPI_INT, target, 1, MPI_COMM_WORLD);
+		delete [] buffer2;
+	}
+	
+	
+
+	if ( (randomizer_matrix->rows != 0) || (randomizer_matrix->cols != 0)) {
+		send_mat_mp(randomizer_matrix, target);
+	}
+	
+	
+	
+	
+	if ( num_patches>0) {
+//		std::cout << "sending patches" << std::endl;
+		for (int ii=0; ii<num_patches; ii++) {
+			send_vec_mp(patch[ii],target);
+		}
+	}
+	
+	
+	
+	
+	if (have_sphere_radius) {
+//		std::cout << "sending sphere radius" << std::endl;
+		send_vec_mp(sphere_center,target);
+		send_comp_mp(sphere_radius,target);
+	}
+	
+	
+	
+	if (strleng>1) {
+		char * buffer = new char[strleng];
+		memcpy(buffer, input_filename.c_str(), strleng);
+		MPI_Ssend(buffer, strleng, MPI_CHAR, target, 7, MPI_COMM_WORLD);
+		delete [] buffer;
+	}
+	
+	
+	
+	
+	
+
+
+
+	
+	
+	
 	return;
 }
 
@@ -2148,6 +2333,151 @@ void decomposition::send(int target, parallelism_config & mpi_config)
 
 void decomposition::receive(int source, parallelism_config & mpi_config)
 {
+	
+	MPI_Status statty_mc_gatty;
+	
+	
+	
+	vec_mp tempvec;  init_vec_mp2(tempvec, 0, 1024);
+	
+	int * buffer2;
+	
+	
+	
+	
+	
+	
+	buffer2 = new int[12];
+	
+	MPI_Recv(buffer2, 12, MPI_INT, source, 6, MPI_COMM_WORLD, &statty_mc_gatty);
+	num_variables = buffer2[0];
+	dimension = buffer2[1];
+	component_num = buffer2[2];
+	int temp_num_projections = buffer2[3];
+	int num_rand_degrees = buffer2[4];
+	int rand_rows = buffer2[5];
+	int rand_cols = buffer2[6];
+	int temp_num_patches = buffer2[7];
+	have_sphere_radius = buffer2[8];
+	int strleng = buffer2[9];
+	
+	int num_counters = buffer2[10];
+	int num_indices = buffer2[11];
+	delete [] buffer2;
+	
+	
+	
+	if (num_counters>0) {
+//		std::cout << "recving " << num_counters << " counters" << std::endl;
+		int * buffer3 = new int[2*num_counters];
+		MPI_Recv(buffer3, 2*num_counters, MPI_INT, source, 2, MPI_COMM_WORLD, &statty_mc_gatty);
+		for (int ii=0; ii<num_counters; ii++) {
+			counters[buffer3[2*ii]] = buffer3[2*ii+1]; // counters is a map, this is ok.
+		}
+		delete [] buffer3;
+	}
+	
+	
+	int * intbuff = new int[2];
+	
+//	std::cout << "recving " << num_indices << " indices" << std::endl;
+	if (num_indices>0) {
+		for (int ii=0; ii<num_indices; ii++) {
+			
+			MPI_Recv(intbuff, 2, MPI_INT, source, 4, MPI_COMM_WORLD, &statty_mc_gatty);
+			int indices_index_lol = intbuff[0];
+			int num_these_indices = intbuff[1];
+			
+			
+			
+			std::vector<int> tempind;
+			
+			if (num_these_indices>0) {
+//				std::cout << "worker receiving " << num_these_indices << " elmnt index buffer" << std::endl;
+				int * buffer3 = new int[num_these_indices];
+				MPI_Recv(buffer3, num_these_indices, MPI_INT, source, 5, MPI_COMM_WORLD, &statty_mc_gatty);
+				for (int jj=0; jj<num_these_indices; jj++) {
+					tempind.push_back(buffer3[jj]);
+				}
+				delete [] buffer3;
+			}
+			
+			indices[indices_index_lol] = tempind;
+		}
+	}
+	
+	
+	
+	
+	if (temp_num_projections>0) {
+//		std::cout << "recving projections" << std::endl;
+		for (int ii=0; ii<temp_num_projections; ii++) {
+			receive_vec_mp(tempvec,source);
+			add_projection(tempvec);
+		}
+	}
+	
+	
+	
+//	std::cout << "worker has " << num_curr_projections << " #" << std::endl;
+	if (num_rand_degrees>0) {
+//		std::cout << "recving " << num_rand_degrees << " degrees" << std::endl;
+		int * buffer3 = new int[num_rand_degrees];
+		
+		MPI_Recv(buffer3, num_rand_degrees, MPI_INT, source, 1, MPI_COMM_WORLD, &statty_mc_gatty);
+		
+		for (int ii=0; ii<num_rand_degrees; ii++) {
+			randomized_degrees.push_back(buffer3[ii]);
+		}
+		delete [] buffer3;
+	}
+	
+	
+	
+//	std::cout << "$" << std::endl;
+	change_size_mat_mp(randomizer_matrix,rand_rows,rand_cols);
+	randomizer_matrix->rows = rand_rows;//why are these not in the matrix size changer?
+	randomizer_matrix->cols = rand_cols;
+	
+	if ( (rand_rows != 0) || (rand_cols != 0)) {
+//		std::cout << "recving rand martic" << std::endl;
+		receive_mat_mp(randomizer_matrix, source);
+	}
+//	print_matrix_to_screen_matlab(randomizer_matrix,"R_recv");
+	
+	if (temp_num_patches>0) {
+//		std::cout << "recving patches" << std::endl;
+		for (int ii=0; ii<temp_num_patches; ii++) {
+			receive_vec_mp(tempvec,source);
+			add_patch(tempvec);
+		}
+	}
+	
+	
+	
+	if (have_sphere_radius) {
+//		std::cout << "recving sphereparams" << std::endl;
+		receive_vec_mp(sphere_center,source);
+		receive_comp_mp(sphere_radius,source);
+	}
+	
+	if (strleng>1) {
+//		std::cout << "recving input_filename" << std::endl;
+		char * buffer = new char[strleng];
+		MPI_Recv(buffer, strleng, MPI_CHAR, source, 7, MPI_COMM_WORLD, &statty_mc_gatty);
+		
+		input_filename = buffer;
+		delete [] buffer;
+	}
+	
+	
+	
+	delete [] intbuff;
+	
+
+	clear_vec_mp(tempvec);
+	
+	
 	
 	return;
 }
@@ -2991,7 +3321,7 @@ int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & inde
 	// filter for uniqueness
 	
 	
-	double distinct_thresh = 1e-3;  // reasonable?
+	double distinct_thresh = 1e-13;  // reasonable?
 	
 	change_size_vec_mp(projections_sorted,1); projections_sorted->size = 1;
 	
@@ -3805,7 +4135,7 @@ void send_comp_num_mp(comp_mp *c, int num, int target)
 void receive_comp_num_mp(comp_mp *c, int num, int source)
 {
     MPI_Status statty_mc_gatty;
-    int i, j, total = 0, currLoc = 0;
+    int i, total = 0, currLoc = 0;
     comp_mp_int *c_int = (comp_mp_int *)bmalloc(num * sizeof(comp_mp_int));
     char *str = NULL, *tempStr = NULL;
     MPI_Datatype mpi_comp_mp_int;
@@ -3946,7 +4276,7 @@ void send_comp_num_rat(mpq_t c[][2], int num, int target)
 void receive_comp_num_rat(mpq_t c[][2], int num, int source)
 {
     MPI_Status statty_mc_gatty;
-    int i, j, total = 0, currLoc = 0;
+    int i, total = 0, currLoc = 0;
     comp_rat_int *c_int = (comp_rat_int *)bmalloc(num * sizeof(comp_rat_int));
     char *str = NULL, *tempStr = NULL;
     MPI_Datatype mpi_comp_rat_int;

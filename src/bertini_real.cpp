@@ -42,7 +42,7 @@ int main(int argC, char *args[])
 	
 	int MPType;
 	
-	if (program_options.is_head()) {
+	if (solve_options.is_head()) {
 		parse_input_file(program_options.input_filename, &MPType);
 	}
 	
@@ -64,7 +64,7 @@ int main(int argC, char *args[])
 	
 	
 	
-	if (program_options.is_head()) {
+	if (solve_options.is_head()) {
 		
 		ubermaster_process current_process(program_options, solve_options);
 		current_process.main_loop();

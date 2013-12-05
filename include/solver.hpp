@@ -30,6 +30,7 @@
 //////////
 
 
+
 extern _comp_d  **mem_d;
 extern _comp_mp **mem_mp;
 extern int *size_d;  // size of mem_d
@@ -37,41 +38,23 @@ extern int *size_mp;  // size of mem_mp
 extern int *mem_needs_init_d; // determine if mem_d has been initialized
 extern int *mem_needs_init_mp; // determine if mem_mp has been initialized
 
-
 class SLP_global_pointers
 {
 public:
 	
-	void capture_globals()
-	{
-		
-		local_mem_d = mem_d;
-		local_mem_mp = mem_mp;
-		local_size_d = size_d;  // size of mem_d
-		local_size_mp = size_mp;  // size of mem_mp
-		local_mem_needs_init_d = mem_needs_init_d; // determine if mem_d has been initialized
-		local_mem_needs_init_mp = mem_needs_init_mp; // determine if mem_mp has been initialized
-	}
+	void capture_globals();
 	
 	
-	void set_globals_to_this()
-	{
-		mem_d							= local_mem_d;
-		mem_mp						= local_mem_mp;
-		size_d						= local_size_d;  // size of mem_d
-		size_mp						= local_size_mp;  // size of mem_mp
-		mem_needs_init_d	= local_mem_needs_init_d; // determine if mem_d has been initialized
-		mem_needs_init_mp = local_mem_needs_init_mp; // determine if mem_mp has been initialized
-	}
+	void set_globals_to_this();
 	
 	void set_globals_null()
 	{
-		mem_d							= NULL;
-		mem_mp						= NULL;
-		size_d						= NULL;  // size of mem_d
-		size_mp						= NULL;  // size of mem_mp
+		mem_d				= NULL;
+		mem_mp				= NULL;
+		size_d				= NULL;  // size of mem_d
+		size_mp				= NULL;  // size of mem_mp
 		mem_needs_init_d	= NULL; // determine if mem_d has been initialized
-		mem_needs_init_mp = NULL; // determine if mem_mp has been initialized
+		mem_needs_init_mp	= NULL; // determine if mem_mp has been initialized
 	}
 	
 	
@@ -148,7 +131,7 @@ private:
 
 
 
-class solver_configuration : public prog_config
+class solver_configuration : public parallelism_config
 {
 public:
 	
@@ -454,6 +437,8 @@ public:
 			init_rat(gamma_rat);
 			init_mat_mp2(randomizer_matrix_full_prec,0,0,1024);
 		}
+		
+		curr_prec = mpfr_get_default_prec();
 	}
 	
 	

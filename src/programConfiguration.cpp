@@ -159,68 +159,6 @@ void BR_configuration::display_current_options()
 }
 
 
-void BR_configuration::print_usage()
-{
-	printf("bertini_real has the following options:\n");
-	printf("option name(s)\t\t\targument\n\n");
-	printf("-p -pi -projection \t\t\t'filename'\n");
-	printf("-r -randomization \t\t'filename'\n");
-	printf("-w -witness\t\t\t'filename'\n");
-	printf("-i -input\t\t\t'filename'\n");
-	printf("-ns -nostifle\t\t\t   --\n");
-	printf("-v -version\t\t\t   -- \n");
-	printf("-h -help\t\t\t   --\n");
-	printf("-box -b\t\t\t   bool\n");
-	printf("-quick -q\t\t\t --\n");
-	
-	printf("\n\n\n");
-	return;
-}
-
-
-void BR_configuration::init()
-{
-	quick_run = false;
-	this->debugwait = 0;
-	this->max_deflations = 10;
-	
-	this->user_projection = 0;
-	this->projection_filename = "";
-	
-	this->user_randomization = 0;
-	this->randomization_filename = "";
-	
-	
-	user_sphere = false;
-	bounding_sphere_filename = "";
-	
-	this->input_filename = "input";
-	
-	this->witness_set_filename = "witness_set";
-	
-	this->output_dir = boost::filesystem::absolute("output");
-	
-	
-	this->crit_solver = NULLSPACE;
-	
-	this->stifle_membership_screen = 1;
-	this->stifle_text = " > /dev/null ";
-	
-	this->bertini_command = "~/bin/bertini_serial";
-	this->matlab_command = "matlab -nosplash";
-	this->verbose_level = 0; // default to 0
-	
-	this->MPType = 2;
-	
-	this->use_bounding_box = 0;
-	this->use_gamma_trick = 0;
-	
-	merge_edges = true;
-	
-	return;
-}
-
-
 
 
 int  BR_configuration::parse_commandline(int argc, char **argv)
@@ -254,7 +192,7 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 		int option_index = 0;
 		
 		choice = getopt_long_only (argc, argv, "D:d:g:b:V:o:s:r:p:w:i:v:h",
-															 long_options, &option_index);
+								   long_options, &option_index);
 		
 		/* Detect the end of the options. */
 		if (choice == -1)
@@ -364,6 +302,92 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 	
 	return 0;
 }
+
+
+void BR_configuration::print_usage()
+{
+//	
+//	{"nostifle", no_argument,       0, 's'}, {"ns", no_argument,					0, 's'},
+//	{"projection",		required_argument,			 0, 'p'},
+//	{"p",		required_argument,			 0, 'p'}, {"pi",		required_argument,			 0, 'p'},
+//	{"randomization",		required_argument,			 0, 'r'},
+//	{"r",		required_argument,			 0, 'r'},
+//	{"input",		required_argument,			 0, 'i'}, {"i",		required_argument,			 0, 'i'},
+//	{"witness",		required_argument,			 0, 'w'}, {"w",		required_argument,			 0, 'w'},
+//	{"help",		no_argument,			 0, 'h'}, {"h",		no_argument,			 0, 'h'},
+//	{"version",		no_argument,			 0, 'v'}, {"v",		no_argument,			 0, 'v'},
+//	{"output",		required_argument,			 0, 'o'}, {"out",		required_argument,			 0, 'o'}, {"o",		required_argument,			 0, 'o'},
+//	{"verb",		required_argument,			 0, 'V'},
+//	{"box",		required_argument,			 0, 'b'}, {"b",		required_argument,			 0, 'b'},
+//	{"gammatrick",		required_argument,			 0, 'g'}, {"g",		required_argument,			 0, 'g'},
+//	{"detjac",		no_argument,			 0, 'd'},
+//	{"debug", no_argument, 0, 'D'},
+//	{"nomerge", no_argument, 0, 'm'},
+//	{"quick",no_argument,0,'q'},{"q",no_argument,0,'q'},
+	
+	printf("bertini_real has the following options:\n----------------------\n");
+	printf("option name(s)\t\t\targument\n\n");
+	printf("-p -pi -projection \t\t\t'filename'\n");
+	printf("-r -randomization \t\t'filename'\n");
+	printf("-w -witness\t\t\t'filename'\n");
+	printf("-i -input\t\t\t'filename'\n");
+	printf("-ns -nostifle\t\t\t   --\n");
+	printf("-v -version\t\t\t   -- \n");
+	printf("-h -help\t\t\t   --\n");
+	printf("-box -b\t\t\t   bool\n");
+	printf("-q -quick\t\t\t --\n");
+	printf("-debug\t\t\t --\n");
+	printf("-gammatrick\t\t\t bool\n");
+	printf("\n\n\n");
+	return;
+}
+
+void BR_configuration::init()
+{
+	quick_run = false;
+	this->debugwait = 0;
+	this->max_deflations = 10;
+	
+	this->user_projection = 0;
+	this->projection_filename = "";
+	
+	this->user_randomization = 0;
+	this->randomization_filename = "";
+	
+	
+	user_sphere = false;
+	bounding_sphere_filename = "";
+	
+	this->input_filename = "input";
+	
+	this->witness_set_filename = "witness_set";
+	
+	this->output_dir = boost::filesystem::absolute("output");
+	
+	
+	this->crit_solver = NULLSPACE;
+	
+	this->stifle_membership_screen = 1;
+	this->stifle_text = " > /dev/null ";
+	
+	this->bertini_command = "~/bin/bertini_serial";
+	this->matlab_command = "matlab -nosplash";
+	this->verbose_level = 0; // default to 0
+	
+	this->MPType = 2;
+	
+	this->use_bounding_box = 0;
+	this->use_gamma_trick = 0;
+	
+	merge_edges = true;
+	
+	return;
+}
+
+
+
+
+
 
 
 
