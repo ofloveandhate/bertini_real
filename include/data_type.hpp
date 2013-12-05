@@ -58,7 +58,8 @@ enum {PARSING = 1000, TYPE_CONFIRMATION, DATA_TRANSMISSION, NUMPACKETS};
 
 enum {INACTIVE = 500, ACTIVE};
 
-enum {VEC_MP = 4000, VEC_D, MAT_MP, MAT_D, COMP_MP, COMP_D, VEC_RAT, MAT_RAT, COMP_RAT, INDICES, UNUSED};
+enum {VEC_MP = 4000, VEC_D, MAT_MP, MAT_D, COMP_MP, COMP_D, VEC_RAT, MAT_RAT, COMP_RAT, INDICES,
+	DECOMPOSITION, CURVE, SURFACE, EDGE, CELL, FACE, UNUSED};
 
 std::string enum_lookup(int flag);
 
@@ -557,36 +558,9 @@ public:
 	}
 	
 	
-	void send(int target, parallelism_config & mpi_config)
-	{
-
-		
-		send_vec_mp(pt_mp, target);
-		
-		send_vec_mp(projection_values, target);
-		
-		MPI_Send(&type, MPI_INT, 1, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
-		MPI_Send(&removed, MPI_INT, 1, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
-		MPI_Send(&input_filename_index, MPI_INT, 1, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
-		
-		
-	}
+	void send(int target, parallelism_config & mpi_config);
 	
-	void receive(int source, parallelism_config & mpi_config)
-	{
-		MPI_Status statty_mc_gatty;
-		
-		
-		
-		receive_vec_mp(pt_mp, source);
-		receive_vec_mp(projection_values, source);
-		
-		MPI_Recv(&type, MPI_INT, 1, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
-		MPI_Recv(&removed, MPI_INT, 1, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
-		MPI_Recv(&input_filename_index, MPI_INT, 1, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
-
-		
-	}
+	void receive(int source, parallelism_config & mpi_config);
 	
 private:
 	
@@ -659,11 +633,7 @@ public:
 	vertex_set(int num_vars){
 		init();
 		
-		this->num_natural_variables = num_vars;
-		
-		change_size_vec_mp(checker_1, num_vars);
-		change_size_vec_mp(checker_2, num_vars);
-		checker_1->size = checker_2->size = num_vars;
+		set_num_vars(num_vars);
 	}
 	
 
@@ -687,6 +657,19 @@ public:
 	{
 		clear();
 	}
+	
+	
+	
+	void set_num_vars(int num_vars)
+	{
+		this->num_natural_variables = num_vars;
+		
+		change_size_vec_mp(checker_1, num_vars);
+		change_size_vec_mp(checker_2, num_vars);
+		checker_1->size = checker_2->size = num_vars;
+	}
+	
+	
 	
 	
 	void print(boost::filesystem::path outputfile);
@@ -927,6 +910,22 @@ public:
 	void copy(const cell & other){
 		this->midpt = other.midpt;
 	}
+	
+	void send(int target, parallelism_config & mpi_config)
+	{
+		int buffer = midpt;
+		MPI_Send(&buffer, 1, MPI_INT, target, CELL, MPI_COMM_WORLD);
+	}
+	
+	void receive(int source, parallelism_config & mpi_config)
+	{
+		MPI_Status statty_mc_gatty;
+		int buffer;
+		MPI_Recv(&buffer, 1, MPI_INT, source, CELL, MPI_COMM_WORLD, &statty_mc_gatty);
+		midpt = buffer;
+	}
+	
+	
 };
 
 
@@ -937,11 +936,13 @@ public:
 class edge : public cell
 {
 public:
-  int left;  ///< index into vertices
-  int right; ///< index into vertices
+	int left;  ///< index into vertices
+	int right; ///< index into vertices
 	int midpt; ///<  index into vertices
 	
 	std::vector< int > removed_points;
+	
+	
 	
 	edge() : cell()
 	{
@@ -965,7 +966,58 @@ public:
 			return false;
 	}
 	
+	void send(int target, parallelism_config & mpi_config)
+	{
+		int * buffer = new int[4];
+		
+		buffer[0] = left;
+		buffer[1] = midpt;
+		buffer[2] = right;
+		buffer[3] = removed_points.size();
+		
+		MPI_Send(buffer, 4, MPI_INT, target, EDGE, MPI_COMM_WORLD);
+		
+		delete [] buffer;
+		
+		buffer = new int[removed_points.size()];
+		for (int ii=0; ii<removed_points.size(); ii++) {
+			buffer[ii] = removed_points[ii];
+		}
+		MPI_Send(buffer, removed_points.size(), MPI_INT, target, EDGE, MPI_COMM_WORLD);
+		delete [] buffer;
+		
+
+	}
 	
+	void receive(int source, parallelism_config & mpi_config)
+	{
+		MPI_Status statty_mc_gatty;
+		int * buffer = new int[4];
+		MPI_Recv(buffer, 4, MPI_INT, source, EDGE, MPI_COMM_WORLD, &statty_mc_gatty);
+		
+		left  = buffer[0];
+		midpt = buffer[1];
+		right = buffer[2];
+		
+		int temp_num_removed = buffer[3];
+		
+		
+		delete [] buffer;
+		
+		buffer = new int[temp_num_removed];
+		MPI_Recv(buffer, temp_num_removed, MPI_INT, source, EDGE, MPI_COMM_WORLD, &statty_mc_gatty);
+		for (int ii=0; ii<temp_num_removed; ii++) {
+			removed_points.push_back(buffer[ii]);
+		}
+		
+		delete [] buffer;
+		
+	//		int left;  ///< index into vertices
+	//		int right; ///< index into vertices
+	//		int midpt; ///<  index into vertices
+	//		
+	//		std::vector< int > removed_points;
+	}
 };
 
 

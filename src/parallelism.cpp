@@ -157,10 +157,15 @@ int worker_process::main_loop()
 	
 	int solver_choice = INITIAL_STATE;
 	
+	surface_decomposition S;
+	
 	while (solver_choice != TERMINATE) {
 		
-		MPI_Bcast(&solver_choice, 1, MPI_INT, program_options.head(), MPI_COMM_WORLD);
-//		std::cout << "worker" << program_options.id() << " received call for help for solver " << enum_lookup(solver_choice) << std::endl;
+		MPI_Bcast(&solver_choice, 1, MPI_INT, solve_options.head(), MPI_COMM_WORLD);
+		
+		if ( (solver_choice!=0) && (solve_options.id()==1)) {
+			std::cout << "received call for help for solver " << enum_lookup(solver_choice) << std::endl;
+		}
 		
 		switch (solver_choice) {
 			case NULLSPACE:
@@ -169,6 +174,7 @@ int worker_process::main_loop()
 				break;
 				
 			case MIDPOINT_SOLVER:
+				S.worker_connect(solve_options, program_options);
 //				midpoint_slave_entry_point(this->solve_options);
 				// call the blabla here
 				break;
@@ -178,6 +184,9 @@ int worker_process::main_loop()
 				
 			case PARSING:
 				MPI_Bcast(&single_int_buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
+				break;
+				
+				
 			default:
 				break;
 		}

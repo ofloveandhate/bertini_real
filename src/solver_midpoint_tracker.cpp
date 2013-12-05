@@ -116,43 +116,111 @@ void midpoint_config::init()
 
 void midpoint_config::initial_send(parallelism_config & mpi_config)
 {
-    bcast_prog_t(SLP_sphere, this->MPType, 0, 0); // last two arguments are: myid, headnode
-    sphere_memory.capture_globals();
-    
-    bcast_prog_t(SLP_crit, this->MPType, 0, 0); // last two arguments are: myid, headnode
-    crit_memory.capture_globals();
-    
+	
+	int * buffer = new int[7];
+	
+	buffer[0] = randomizer_matrix_crit->rows;
+	buffer[1] = randomizer_matrix_crit->cols;
+	buffer[2] = randomizer_matrix_sph->rows;
+	buffer[3] = randomizer_matrix_sph->cols;
+	buffer[4] = randomizer_matrix->rows;
+	buffer[5] = randomizer_matrix->cols;
+	buffer[6] = MPType;
+	
+	MPI_Bcast(buffer, 7, MPI_INT, mpi_config.id(), mpi_config.my_communicator);
+	
+	delete [] buffer;
+	
+	
+	
+	mid_memory.set_globals_to_this();
     bcast_prog_t(SLP_mid, this->MPType, 0, 0); // last two arguments are: myid, headnode
-    mid_memory.capture_globals();
+	
+	sphere_memory.set_globals_to_this();
+    bcast_prog_t(SLP_sphere, this->MPType, 0, 0); // last two arguments are: myid, headnode
+	
+    crit_memory.set_globals_to_this();
+    bcast_prog_t(SLP_crit, this->MPType, 0, 0); // last two arguments are: myid, headnode
+
     
+
+    
+	
+	
+	
+	
+	
     bcast_mat_mp(randomizer_matrix_crit,0,0);
     bcast_mat_mp(randomizer_matrix_sph,0,0);
     bcast_mat_mp(randomizer_matrix,0,0);
     
+	
+	
     
     MPI_Bcast(&num_mid_vars, 1, MPI_INT, mpi_config.id(), mpi_config.my_communicator);
     MPI_Bcast(&num_crit_vars, 1, MPI_INT, mpi_config.id(), mpi_config.my_communicator);
     MPI_Bcast(&num_sphere_vars, 1, MPI_INT, mpi_config.id(), mpi_config.my_communicator);
-    
+	
+    MPI_Bcast(&num_projections, 1, MPI_INT, mpi_config.id(), mpi_config.my_communicator);
     for (int ii=0; ii<num_projections; ii++) {
         bcast_vec_mp(pi[ii],0,0);
     }
+	
+	
 }
 
 void midpoint_config::initial_receive(parallelism_config & mpi_config)
 {
-    
-    
-    
-    bcast_prog_t(SLP_sphere, this->MPType, 1, 0); // last two arguments are: myid, headnode
-    sphere_memory.capture_globals();
-    
-    bcast_prog_t(SLP_crit, this->MPType, 1, 0); // last two arguments are: myid, headnode
-    crit_memory.capture_globals();
-
+	
+	
+	int * buffer = new int[7];
+	
+	MPI_Bcast(buffer, 7, MPI_INT, mpi_config.id(), mpi_config.my_communicator);
+	
+	change_size_mat_mp(randomizer_matrix_crit,buffer[0],buffer[1]);
+	change_size_mat_mp(randomizer_matrix_sph,buffer[2],buffer[3]);
+	change_size_mat_mp(randomizer_matrix,buffer[4],buffer[5]);
+	
+	
+	randomizer_matrix_crit->rows = buffer[0];
+	randomizer_matrix_crit->cols = buffer[1];
+	randomizer_matrix_sph->rows = buffer[2];
+	randomizer_matrix_sph->cols = buffer[3];
+	randomizer_matrix->rows = buffer[4];
+	randomizer_matrix->cols = buffer[5];
+	
+	MPType = buffer[6];
+	
+	delete [] buffer;
+	
+	
+	
+	
+	
     bcast_prog_t(SLP_mid, this->MPType, 1, 0); // last two arguments are: myid, headnode
+	initEvalProg(this->MPType);
     mid_memory.capture_globals();
+    mid_memory.set_globals_null();
+	
+    sphere_memory.set_globals_null();
+	bcast_prog_t(SLP_sphere, this->MPType, 1, 0); // last two arguments are: myid, headnode
+	initEvalProg(this->MPType);
+    sphere_memory.capture_globals();
+    sphere_memory.set_globals_null();
+	
+	
+    bcast_prog_t(SLP_crit, this->MPType, 1, 0); // last two arguments are: myid, headnode
+	initEvalProg(this->MPType);
+    crit_memory.capture_globals();
+	crit_memory.set_globals_null();
+	
+	
     
+	
+	
+	
+	
+	
     bcast_mat_mp(randomizer_matrix_crit,1,0);
     bcast_mat_mp(randomizer_matrix_sph,1,0);
     bcast_mat_mp(randomizer_matrix,1,0);
@@ -161,42 +229,45 @@ void midpoint_config::initial_receive(parallelism_config & mpi_config)
     MPI_Bcast(&num_mid_vars, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
     MPI_Bcast(&num_crit_vars, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
     MPI_Bcast(&num_sphere_vars, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
-
-    vec_mp tempvec;  init_vec_mp2(tempvec, 0, 1024);
-    for (int ii=0; ii<num_projections; ii++) {
+	int temp_num_projections;
+	MPI_Bcast(&temp_num_projections, 1, MPI_INT, mpi_config.id(), mpi_config.my_communicator);
+    vec_mp tempvec;  init_vec_mp2(tempvec, 1, 1024);
+    for (int ii=0; ii<temp_num_projections; ii++) {
         bcast_vec_mp(tempvec,1,0);
         add_projection(tempvec);
     }
     clear_vec_mp(tempvec);
+	
+	
 }
 
-void midpoint_config::update_send(parallelism_config & mpi_config,int target)
-{
-    send_comp_mp(v_target,target); // set during the loop in connect the dots
-    send_comp_mp(u_target,target); // set during the loop in connect the dots
-    
-    send_comp_mp(crit_val_left,target); // set during the loop in connect the dots
-    send_comp_mp(crit_val_right,target); // set during the loop in connect the dots
-    
+//void midpoint_config::update_send(parallelism_config & mpi_config,int target)
+//{
+//    send_comp_mp(v_target,target); // set during the loop in connect the dots
+//    send_comp_mp(u_target,target); // set during the loop in connect the dots
+//    
+//    send_comp_mp(crit_val_left,target); // set during the loop in connect the dots
+//    send_comp_mp(crit_val_right,target); // set during the loop in connect the dots
+//    
+//
+//	MPI_Send(&system_type_bottom, 1, MPI_INT, target, UNUSED, MPI_COMM_WORLD);
+//    MPI_Send(&system_type_top, 1, MPI_INT, target, UNUSED, MPI_COMM_WORLD);
+//}
 
-	MPI_Send(&system_type_bottom, 1, MPI_INT, target, UNUSED, MPI_COMM_WORLD);
-    MPI_Send(&system_type_top, 1, MPI_INT, target, UNUSED, MPI_COMM_WORLD);
-}
-
-void midpoint_config::update_receive(parallelism_config & mpi_config)
-{
-    MPI_Status statty_mc_gatty;
-    
-    receive_comp_mp(v_target,MPI_ANY_SOURCE); // set during the loop in connect the dots
-    receive_comp_mp(u_target,MPI_ANY_SOURCE); // set during the loop in connect the dots
-    
-    receive_comp_mp(crit_val_left,MPI_ANY_SOURCE); // set during the loop in connect the dots
-    receive_comp_mp(crit_val_right,MPI_ANY_SOURCE); // set during the loop in connect the dots
-    
-    
-    MPI_Recv(&system_type_bottom, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &statty_mc_gatty);
-    MPI_Recv(&system_type_top, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &statty_mc_gatty);
-}
+//void midpoint_config::update_receive(parallelism_config & mpi_config)
+//{
+//    MPI_Status statty_mc_gatty;
+//    
+//    receive_comp_mp(v_target,MPI_ANY_SOURCE); // set during the loop in connect the dots
+//    receive_comp_mp(u_target,MPI_ANY_SOURCE); // set during the loop in connect the dots
+//    
+//    receive_comp_mp(crit_val_left,MPI_ANY_SOURCE); // set during the loop in connect the dots
+//    receive_comp_mp(crit_val_right,MPI_ANY_SOURCE); // set during the loop in connect the dots
+//    
+//    
+//    MPI_Recv(&system_type_bottom, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &statty_mc_gatty);
+//    MPI_Recv(&system_type_top, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &statty_mc_gatty);
+//}
 
 ///////////////
 //
@@ -1003,6 +1074,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	BED->mid_memory.set_globals_to_this();
 	
     
+//	print_point_to_screen_matlab(curr_mid_vars,"curr_mid_vars");
 	offset = 0;
 	evalProg_d(temp_function_values, parVals, parDer,
                temp_jacobian_functions, unused_Jp, curr_mid_vars, pathVars, BED->SLP_mid);

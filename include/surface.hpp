@@ -54,13 +54,14 @@ public:
 	int num_left;		///<  counters
 	int num_right;	///<
 	
+	
 	comp_mp left_crit_val; ///<
 	comp_mp right_crit_val; ///<
 	
 	int system_type_top;
 	int system_type_bottom;
 	
-	int index; ///< which midpoint this face came from.
+	int crit_slice_index; ///< which midpoint this face came from.
 	
 	face() : cell()
 	{
@@ -86,20 +87,9 @@ public:
 	}
 	
 	
-	void send(int target, parallelism_config & mpi_config)
-	{
-		
-		
-		return;
-		
-	}
+	void send(int target, parallelism_config & mpi_config);
 	
-	void receive(int source, parallelism_config & mpi_config)
-	{
-	
-		return;
-		
-	}
+	void receive(int source, parallelism_config & mpi_config);
 	
 	
 	
@@ -119,7 +109,7 @@ private:
 		
 		num_left = num_right = 0;
 		top = bottom = -1;
-		index = -1;
+		crit_slice_index = -1;
 	}
 	
 	
@@ -131,7 +121,7 @@ private:
 		this->system_type_top = other.system_type_top;
 		
 		
-		this->index = other.index;
+		this->crit_slice_index = other.crit_slice_index;
 		
 		this->left = other.left;
 		this->right = other.right;

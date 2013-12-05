@@ -124,8 +124,8 @@ public:
     void initial_send(parallelism_config & mpi_config);
     void initial_receive(parallelism_config & mpi_config);
     
-    void update_send(parallelism_config & mpi_config, int target);
-    void update_receive(parallelism_config & mpi_config);
+//    void update_send(parallelism_config & mpi_config, int target);
+//    void update_receive(parallelism_config & mpi_config);
     
     void add_projection(vec_mp proj)
 	{

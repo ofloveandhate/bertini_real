@@ -1,6 +1,58 @@
 #include "solver.hpp"
 
 
+extern _comp_d  **mem_d;
+extern _comp_mp **mem_mp;
+extern int *size_d;  // size of mem_d
+extern int *size_mp;  // size of mem_mp
+extern int *mem_needs_init_d; // determine if mem_d has been initialized
+extern int *mem_needs_init_mp; // determine if mem_mp has been initialized
+
+void SLP_global_pointers::capture_globals()
+{
+	
+	local_mem_d = mem_d;
+	local_mem_mp = mem_mp;
+	local_size_d = size_d;  // size of mem_d
+	local_size_mp = size_mp;  // size of mem_mp
+	local_mem_needs_init_d = mem_needs_init_d; // determine if mem_d has been initialized
+	local_mem_needs_init_mp = mem_needs_init_mp; // determine if mem_mp has been initialized
+	
+	if (local_mem_d==NULL) {
+		std::cout << "local_mem_d is NULL" << std::endl;
+	}
+	if (local_mem_mp==NULL) {
+		std::cout << "local_mem_mp is NULL" << std::endl;
+	}
+	
+	if (local_size_d==NULL) {
+		std::cout << "local_size_d is NULL" << std::endl;
+	}
+	
+	if (local_size_mp==NULL) {
+		std::cout << "local_size_mp is NULL" << std::endl;
+	}
+	
+	if (local_mem_needs_init_d==NULL) {
+		std::cout << "local_mem_needs_init_d is NULL" << std::endl;
+	}
+	if (local_mem_needs_init_mp==NULL) {
+		std::cout << "local_mem_needs_init_mp is NULL" << std::endl;
+	}
+	
+}
+
+void SLP_global_pointers::set_globals_to_this()
+{
+	mem_d							= local_mem_d;
+	mem_mp						= local_mem_mp;
+	size_d						= local_size_d;  // size of mem_d
+	size_mp						= local_size_mp;  // size of mem_mp
+	mem_needs_init_d	= local_mem_needs_init_d; // determine if mem_d has been initialized
+	mem_needs_init_mp = local_mem_needs_init_mp; // determine if mem_mp has been initialized
+}
+
+
 
 
 
@@ -683,11 +735,14 @@ void generic_tracker_loop(trackingStats *trackCount,
 	
 	for (int ii = 0; ii < W.num_pts; ii++)
 	{
-		if ((solve_options.verbose_level>=0) && ((ii%(solve_options.path_number_modulus))==0) && (W.num_pts>solve_options.path_number_modulus) )
+		if ((solve_options.verbose_level>=0) && (solve_options.path_number_modulus!=0) )
 		{
-			std::cout << color::gray();
-			printf("tracking path %d of %d\n",ii,W.num_pts);
-			std::cout << color::console_default();
+			if ((ii%solve_options.path_number_modulus)==0) {
+				std::cout << color::gray();
+				printf("tracking path %d of %d\n",ii,W.num_pts);
+				std::cout << color::console_default();
+			}
+			
 		}
 		
 		solve_options.increment_num_paths_tracked();
@@ -822,8 +877,8 @@ void master_tracker_loop(trackingStats *trackCount,
 	init_endgame_data(&EG_receives[0], solve_options.T.Precision);
 	
 	
-	int *indices_outgoing= (int *) br_malloc(sizeof(int));
-	int max_outgoing = 1;
+//	int *indices_outgoing= (int *) br_malloc(sizeof(int));
+//	int max_outgoing = 1;
 	int max_incoming = 1;
 	
 	
@@ -862,7 +917,7 @@ void master_tracker_loop(trackingStats *trackCount,
 	{
         
         
-		int source = receive_endpoints(trackCount,
+		receive_endpoints(trackCount,
                                        EG_receives, max_incoming,
                                        solution_counter,
                                        endPoints,
@@ -884,7 +939,7 @@ void master_tracker_loop(trackingStats *trackCount,
 	
 	while (solve_options.have_active()) {
 		
-		int source = receive_endpoints(trackCount,
+		receive_endpoints(trackCount,
                                        EG_receives, max_incoming,
                                        solution_counter,
                                        endPoints,
@@ -1020,16 +1075,24 @@ void worker_tracker_loop(trackingStats *trackCount,
 		// track each of the start points
 		for (int ii = 0; ii < numStartPts; ii++)
 		{
-			int current_index = indices_incoming[ii];;
+			int current_index =  indices_incoming[ii];
 			
-			if (solve_options.verbose_level>=0 && (current_index%solve_options.path_number_modulus==0))
-            {
-                std::cout << color::gray();
-				printf("tracking path %d of %d, worker %d\n", current_index, total_number_points, solve_options.id());
-                std::cout << color::console_default();
-            }
+//			if (solve_options.verbose_level>=0 && (current_index%solve_options.path_number_modulus==0))
+//            {
+//                std::cout << color::gray();
+//				printf("tracking path %d of %d, worker %d\n", current_index, total_number_points, solve_options.id());
+//                std::cout << color::console_default();
+//            }
 			
-			
+			if ((solve_options.verbose_level>=0) && (solve_options.path_number_modulus!=0) )
+			{
+				if ((current_index%solve_options.path_number_modulus)==0) {
+					std::cout << color::gray();
+					printf("tracking path %d\n",current_index);
+					std::cout << color::console_default();
+				}
+				
+			}
 			
             
             

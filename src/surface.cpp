@@ -163,7 +163,6 @@ void surface_decomposition::main(vertex_set & V,
 	
 	
 	
-    
 	
 	
 	
@@ -183,10 +182,12 @@ void surface_decomposition::main(vertex_set & V,
         std::cout << color::green() << "the pi[0] projection values at which we will be slicing:\n\n" << color::console_default();
 		print_point_to_screen_matlab(crit_downstairs,"crit_down");
 		print_point_to_screen_matlab(midpoints_downstairs,"middown");
-        W_total_crit.print_to_screen();
+        
 	}
 	
-    
+    if (program_options.verbose_level>=2) {
+		W_total_crit.print_to_screen();
+	}
 	
 	
 	
@@ -1009,10 +1010,11 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 	midpoint_config md_config;
 	md_config.setup(*this, solve_options); // yep, pass 'this' object into another call. brilliant.
 	
+	std::cout << "have the slp's in memory for connect the dots" << std::endl;
 	
 	
 	
-	if (program_options.use_parallel()) {
+	if (solve_options.use_parallel()) {
 		master_connect(V, md_config, solve_options, program_options);
 	}
 	else
@@ -1073,12 +1075,19 @@ void surface_decomposition::master_connect(vertex_set & V, midpoint_config & md_
     
 	MPI_Status statty_mc_gatty;
 	
-	if (solve_options.use_parallel()) {
-		solve_options.call_for_help(MIDPOINT_SOLVER);
-	}
+	solve_options.call_for_help(MIDPOINT_SOLVER); // sets available workers, too
 	
 	
+
+	std::cout << "master sending tracker config t" << std::endl;
+	bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
+	std::cout << "master DONE sending tracker config t" << std::endl;
 	
+	
+
+	md_config.initial_send(solve_options);
+	
+//
 	
 	
 	
@@ -1087,18 +1096,14 @@ void surface_decomposition::master_connect(vertex_set & V, midpoint_config & md_
 	}
 	
 	
-	
-	
 	//seed the workers
 	for (int ii=1; ii<solve_options.numprocs; ii++) {
+		std::cout << "sending to worker " << ii << std::endl;
 		this->send(ii, solve_options);
 		V.send(ii, solve_options);
-		md_config.initial_send(solve_options);
 	}
 	
-	
-	bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
-	
+
 	// this loop is semi-self-seeding
 	this->output_main(program_options, V); // incremental output
 	for (int ii=0; ii<mid_slices.size(); ii++) { // each edge of each midslice will become a face.  degenerate edge => degenerate face.
@@ -1108,31 +1113,36 @@ void surface_decomposition::master_connect(vertex_set & V, midpoint_config & md_
 			
 			int next_worker = solve_options.activate_next_worker();
 			
-			int num_faces = 1;// num_faces doubles as the keep_going signal.  if 0, the worker halts.
-			MPI_Send(&num_faces, MPI_INT, 1, MPI_ANY_SOURCE, NUMPACKETS, MPI_COMM_WORLD);
+			std::cout << "next worker is " << next_worker << std::endl;
+			int send_num_faces = 1;// num_faces doubles as the keep_going signal.  if 0, the worker halts.
+			MPI_Send(&send_num_faces, 1, MPI_INT, next_worker, NUMPACKETS, MPI_COMM_WORLD);
 			
-			md_config.update_send(solve_options, next_worker);
-			
-			
-			master_face_requester(ii,jj,next_worker, solve_options);
+//			md_config.update_send(solve_options, next_worker);
 			
 			
+			master_face_requester(ii,jj, next_worker, solve_options);
 			
 			
+			
+			std::cout << solve_options.num_active() << "active workers" << std::endl;
 			if (solve_options.have_available()) {
+				
 				continue;
 			}
 			else
 			{
 				//perform blocking receive of the face.
+				int recv_num_faces;
+				std::cout << "waiting for completion of a face" << std::endl;
+				MPI_Recv(&recv_num_faces, 1, MPI_INT, MPI_ANY_SOURCE, NUMPACKETS, MPI_COMM_WORLD, &statty_mc_gatty);
 				
+				for (int qq = 0; qq<recv_num_faces; qq++) {
+					face F;
+					F.receive(statty_mc_gatty.MPI_SOURCE, solve_options);
+					add_face(F);
+					std::cout << "master received face " << num_faces << std::endl;
+				}
 				
-				MPI_Recv(&num_faces, MPI_INT, 1, MPI_ANY_SOURCE, NUMPACKETS, MPI_COMM_WORLD, &statty_mc_gatty);
-				
-				
-				face F;
-				F.receive(MPI_ANY_SOURCE, solve_options);
-				add_face(F);
 				this->output_main(program_options, V); // incremental output
 				solve_options.deactivate(statty_mc_gatty.MPI_SOURCE);
 			}
@@ -1140,17 +1150,26 @@ void surface_decomposition::master_connect(vertex_set & V, midpoint_config & md_
 	}
 	
 	
+	std::cout << "master cleaning up" << std::endl;
 	//cleanup
-	while (program_options.have_active()) {
-		int num_faces;
-		MPI_Recv(&num_faces, MPI_INT, 1, MPI_ANY_SOURCE, NUMPACKETS, MPI_COMM_WORLD, &statty_mc_gatty);
-		
-		face F;
-		F.receive(MPI_ANY_SOURCE, solve_options);
-		add_face(F);
-		solve_options.deactivate(statty_mc_gatty.MPI_SOURCE);
+	
+	std::cout << solve_options.num_active() << "active workers" << std::endl;
+	
+	while (solve_options.have_active()) {
+		std::cout << "master receiving face from active worker" << std::endl;
+		int recv_num_faces;
+		MPI_Recv(&recv_num_faces, 1, MPI_INT, MPI_ANY_SOURCE, NUMPACKETS, MPI_COMM_WORLD, &statty_mc_gatty);
+		for (int ii=0; ii<recv_num_faces; ii++) {
+			face F;
+			F.receive(statty_mc_gatty.MPI_SOURCE, solve_options);
+			add_face(F);
+			solve_options.deactivate(statty_mc_gatty.MPI_SOURCE);
+		}
 	}
 	
+	solve_options.send_all_available(0);
+	
+	std::cout << "master done cleaning" << std::endl;
 	this->output_main(program_options, V); // incremental output
 	
 	
@@ -1165,33 +1184,49 @@ void surface_decomposition::master_connect(vertex_set & V, midpoint_config & md_
 void surface_decomposition::worker_connect(solver_configuration & solve_options, BR_configuration & program_options)
 {
 	
-	this->receive(solve_options.head(), solve_options);
 	
-	vertex_set V;
-	V.receive(solve_options.head(), solve_options);
+	std::cout << "worker " << solve_options.id() << " getting tracker_t" << std::endl;
+	bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
+	std::cout << "worker " << solve_options.id() << " received tracker_t" << std::endl;
+	
+
+	solve_options.robust = true;
 	
 	
 	midpoint_config md_config;
 	md_config.initial_receive(solve_options);
+	std::cout << "worker " << solve_options.id() << " received md_config" << std::endl;
+	
+
+	this->receive(solve_options.head(), solve_options);
+	std::cout << "worker " << solve_options.id() << " received surface" << std::endl;
 	
 	
+	
+	
+	vertex_set V;
+	V.receive(solve_options.head(), solve_options);
+	std::cout << "worker " << solve_options.id() << " received vertex_set" << std::endl;
+	
+
 	//receive the md_config from the master.  it holds the three SLP's, as well as everything needed to run the system except:
 	//	• system types
 	//	• patches
 	//	• starting point
 	//which are all updated from another call later.
 	
-	bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
 	
-	
+
+	std::cout << "worker " << solve_options.id() << " entering while loop" << std::endl;
 	
 	while (1) {
 		
+		std::cout << "worker " << solve_options.id() << " getting continue flag" << std::endl;
 		// get the continue or discontinue signal.
 		int keep_going;
 		MPI_Status statty_mc_gatty;
-		MPI_Recv(&keep_going, MPI_INT, 1, solve_options.head(), NUMPACKETS, MPI_COMM_WORLD, &statty_mc_gatty);
-		
+		MPI_Recv(&keep_going, 1, MPI_INT, solve_options.head(), NUMPACKETS, MPI_COMM_WORLD, &statty_mc_gatty);
+		std::cout << "worker keep going " << keep_going << std::endl;
 		if (keep_going==0) {
 			break;
 		}
@@ -1199,7 +1234,7 @@ void surface_decomposition::worker_connect(solver_configuration & solve_options,
 		
 
 		// get system info
-		md_config.update_receive(solve_options);
+//		md_config.update_receive(solve_options);
 		
 		int ii, jj;
 		// get the indices of the face to make.
@@ -1211,15 +1246,16 @@ void surface_decomposition::worker_connect(solver_configuration & solve_options,
 		
 		
 		//send the face back to master.
-		int num_faces = 1;
-		MPI_Send(&num_faces, MPI_INT, 1, solve_options.head(), NUMPACKETS, MPI_COMM_WORLD);
+		int send_num_faces = 1;
+		std::cout << "worker sending completed face" << std::endl;
+		MPI_Send(&send_num_faces, 1, MPI_INT, solve_options.head(), NUMPACKETS, MPI_COMM_WORLD);
 		
 		F.send(solve_options.head(), solve_options);
-		
+		std::cout << "done sending completed face" << std::endl;
 	}
 	
 	
-	
+	std::cout << "worker all done with this action" << std::endl;
 	
 	
 	
@@ -1231,17 +1267,24 @@ void surface_decomposition::worker_connect(solver_configuration & solve_options,
 
 void surface_decomposition::master_face_requester(int ii, int jj, int next_worker, parallelism_config & mpi_config)
 {
-	MPI_Send(&ii, MPI_INT, 1, next_worker, DATA_TRANSMISSION, MPI_COMM_WORLD);
-	MPI_Send(&jj, MPI_INT, 1, next_worker, DATA_TRANSMISSION, MPI_COMM_WORLD);
+	int * buffer = new int[2];
+	buffer[0] = ii;
+	buffer[1] = jj;
+	MPI_Ssend(buffer, 2, MPI_INT, next_worker, DATA_TRANSMISSION, MPI_COMM_WORLD);
+	delete[] buffer;
 }
 
 
 void surface_decomposition::worker_face_requester(int & ii, int & jj, parallelism_config & mpi_config)
 {
+	int * buffer = new int[2];
 	MPI_Status statty_mc_gatty;
-	MPI_Recv(&ii, MPI_INT, 1, mpi_config.head(), DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
-	MPI_Recv(&jj, MPI_INT, 1, mpi_config.head(), DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
 	
+	MPI_Recv(buffer, 2, MPI_INT, mpi_config.head(), DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+	ii = buffer[0];
+	jj = buffer[1];
+	
+	delete[] buffer;
 	return;
 }
 
@@ -1253,7 +1296,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	//create the face
 	face F;
 	
-	std::cout << color::magenta() << "\n\n\n*****************************\nface " << this->num_faces << ", midslice " << ii << " edge " << jj << color::console_default() << std::endl;
+	std::cout << color::magenta() << "\n\n\n*****************************\nmidslice " << ii << " / " << this->mid_slices.size() <<  ", edge " << jj << " / " << mid_slices[ii].edges.size() << color::console_default() << std::endl;
 	
 	if (mid_slices[ii].edges[jj].is_degenerate()) {
 		std::cout << "no computation necessary -- midslice edge is degenerate" << std::endl;
@@ -1279,7 +1322,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 	
 	
-	F.index = ii; // the index of which midslice this face came from.
+	F.crit_slice_index = ii; // the index of which midslice this face came from.
 	F.midpt = mid_slices[ii].edges[jj].midpt; // index the point
 	
 	std::cout << color::brown() << "current midpoint: " <<  mid_slices[ii].edges[jj].midpt  << " " << color::console_default() << std::endl;
@@ -1348,7 +1391,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 		F.system_type_bottom = UNSET;
 	}
 	
-	
+	std::cout << "!" << std::endl;
 	
 	if (md_config.system_type_top == SYSTEM_CRIT) {
 		num_top_vars = md_config.num_crit_vars;
@@ -1370,20 +1413,20 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	bool top_ok = ((md_config.system_type_top == SYSTEM_CRIT) || (md_config.system_type_top == SYSTEM_SPHERE));
 	
 	if (! (bottom_ok && top_ok) ) {
-		std::cout << color::red() << "one of the points was neither sphere nor crit in origin." << color::console_default() << std::endl;
+		std::cout << color::red() << "one of the points was neither sphere nor crit in origin." << std::endl;
 		
 		std::cout << "tracking from these point indices:" << std::endl;
-		std::cout <<  mid_slices[ii].edges[jj].left  << " " << mid_slices[ii].edges[jj].midpt  << " "  << mid_slices[ii].edges[jj].right << std::endl;
+		std::cout <<  mid_slices[ii].edges[jj].left  << " " << mid_slices[ii].edges[jj].midpt  << " "  << mid_slices[ii].edges[jj].right << color::console_default() << std::endl;
 		
 		return F;
 	}
 	
-	
+	std::cout << "@" << std::endl;
 	
 	//copy in the start point as three points concatenated.
 	
 	W_midtrack.num_variables = this->num_variables + num_bottom_vars + num_top_vars;
-	
+	W_midtrack.num_synth_vars = W_midtrack.num_variables - this->num_variables;
 	change_size_vec_mp(W_midtrack.pts_mp[0], W_midtrack.num_variables); W_midtrack.pts_mp[0]->size = W_midtrack.num_variables; // destructive resize
 	
 	
@@ -1411,9 +1454,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 	
 	
-	
-	
-	
+
 	
 	
 	//copy in the patches appropriate for the systems we will be tracking on.  this could be improved.
@@ -1449,14 +1490,22 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 	
 	
-	
-	
+
 	// make u, v target values.
+	if (crit_slices[ii].num_edges == 0) {
+		std::cout << "critslice " << ii << " has no edges" << std::endl;
+	}
+	if (crit_slices[ii+1].num_edges == 0) {
+		std::cout << "critslice " << ii+1 << " has no edges" << std::endl;
+	}
 	
-	set_mp(md_config.crit_val_left,  &V.vertices[ crit_slices[ii].edges[0].midpt ].projection_values->coord[0]);
+	print_comp_matlab(&V.vertices[ crit_slices[ii].edges[0].midpt ].projection_values->coord[0],"a");
+	print_comp_matlab(&V.vertices[ crit_slices[ii+1].edges[0].midpt ].projection_values->coord[0],"b");
+	
+	set_mp(md_config.crit_val_left,   &V.vertices[ crit_slices[ii].edges[0].midpt ].projection_values->coord[0]);
 	set_mp(md_config.crit_val_right,  &V.vertices[ crit_slices[ii+1].edges[0].midpt ].projection_values->coord[0]);
 	
-	
+	std::cout << "%%" << std::endl;
 	
 	// the u direction corresponds to pi[0].
 	for (int zz=0; zz<2; zz++) { // go left (zz=0) and right (zz=1)
@@ -1726,6 +1775,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 												   md_config,
 												   solve_options);
 				
+				
 				// should get a single point back from this solver.
 				
 				if (W_new.num_pts==0) {
@@ -1739,12 +1789,12 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				for (int tt = 0; tt<this->num_variables; tt++) {
 					set_mp(&found_point->coord[tt], &W_new.pts_mp[0]->coord[tt]);
 				}
-				
-				
+//
+//
 				//need to look the found point up in vertex set V
 				int found_index = index_in_vertices(V, found_point);
 				
-				
+//
 				
 				
 				if (solve_options.verbose_level>=0) {
@@ -1773,7 +1823,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 					}
 				}
 				
-				
+
 				// search edges for the found point as a removed point.
 				if (index_in_set < 0) {
 					index_in_set = crit_slices[ii+zz].edge_w_removed(found_index);
@@ -1782,7 +1832,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 					}
 				}
 				
-				
+
 				if (index_in_set < 0) {
 					std::cout << color::red() << "did not find the indexed point as the midpoint of any current possibilitiy." << color::console_default() << std::endl;
 				}
@@ -1915,6 +1965,42 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 void surface_decomposition::send(int target, parallelism_config & mpi_config)
 {
 	
+	decomposition::send(target, mpi_config);
+	std::cout << "^^" << std::endl;
+	int * buffer = new int[4];
+	
+	buffer[0] = num_edges;
+	buffer[1] = num_faces;
+	
+	buffer[2] = mid_slices.size();
+	buffer[3] = crit_slices.size();
+	
+	MPI_Send(buffer, 4, MPI_INT, target, SURFACE, MPI_COMM_WORLD);
+	delete [] buffer;
+	
+	for (int ii=0; ii<num_edges; ii++) {
+		edges[ii].send(target, mpi_config);
+	}
+	
+	for (int ii=0; ii<num_faces; ii++) {
+		faces[ii].send(target, mpi_config);
+	}
+
+	
+	for (int ii=0; ii<mid_slices.size(); ii++) {
+		std::cout << "sending midslice "  << ii << " of " << mid_slices.size() << std::endl;
+		mid_slices[ii].send(target, mpi_config);
+	}
+	
+	for (int ii=0; ii<crit_slices.size(); ii++) {
+		std::cout << "sending critslice "  << ii << " of " << crit_slices.size() << std::endl;
+		crit_slices[ii].send(target, mpi_config);
+	}
+	
+	crit_curve.send(target, mpi_config);
+	sphere_curve.send(target, mpi_config);
+
+	
 	
 	return;
 }
@@ -1922,6 +2008,56 @@ void surface_decomposition::send(int target, parallelism_config & mpi_config)
 
 void surface_decomposition::receive(int source, parallelism_config & mpi_config)
 {
+	MPI_Status statty_mc_gatty;
+	
+	decomposition::receive(source, mpi_config);
+	
+	
+	int * buffer = new int[4];
+	MPI_Recv(buffer, 4, MPI_INT, source, SURFACE, MPI_COMM_WORLD, &statty_mc_gatty);
+	int a, b, c, d;
+	a = buffer[0];
+	b = buffer[1];
+	c = buffer[2];
+	d = buffer[3];
+	delete [] buffer;
+	
+	std::cout << a << " " << b << " " << c << " " << d << std::endl;
+	
+	for (int ii=0; ii<a; ii++) {
+		edge E;
+		E.receive(source, mpi_config);
+		add_edge(E);
+	}
+	
+	for (int ii=0; ii<b; ii++) {
+		face F;
+		F.receive(source, mpi_config);
+		add_face(F);
+	}
+	
+	
+//	this->mid_slices.resize(c);
+	for (int ii=0; ii<c; ii++) {
+		curve_decomposition C;
+		std::cout << "worker receiving midslice "  << ii << " of " << c << std::endl;
+		C.receive(source, mpi_config);
+		mid_slices.push_back(C);
+//		mid_slices[ii].receive(source, mpi_config);
+	}
+	
+//	this->crit_slices.resize(d);
+	for (int ii=0; ii<d; ii++) {
+		curve_decomposition C;
+		std::cout << "worker receiving critslice "  << ii << " of " << d << std::endl;
+		
+		C.receive(source, mpi_config);
+		crit_slices.push_back(C);
+	}
+	
+	crit_curve.receive(source, mpi_config);
+	sphere_curve.receive(source, mpi_config);
+
 	
 	
 	return;
@@ -2020,7 +2156,7 @@ void surface_decomposition::print_faces(boost::filesystem::path outputfile)
 	fprintf(OUT,"%d\n\n",num_faces);
 	
 	for(int ii=0;ii<num_faces;ii++){
-		fprintf(OUT,"%d %d\n%d %d\n", faces[ii].midpt, faces[ii].index, faces[ii].top, faces[ii].bottom);
+		fprintf(OUT,"%d %d\n%d %d\n", faces[ii].midpt, faces[ii].crit_slice_index, faces[ii].top, faces[ii].bottom);
 		fprintf(OUT,"%d %d\n",faces[ii].system_type_top,faces[ii].system_type_bottom);
 		fprintf(OUT,"%ld\n",faces[ii].left.size());
 		for (int jj=0; jj<faces[ii].left.size(); jj++) {
@@ -2199,6 +2335,145 @@ void create_sphere_system(boost::filesystem::path input_file, boost::filesystem:
 	
 	
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void face::send(int target, parallelism_config & mpi_config)
+{
+	cell::send(target,mpi_config);
+	
+	int * buffer = new int[10];
+	
+	buffer[0] = left.size();
+	buffer[1] = right.size();
+	buffer[3] = top;
+	buffer[4] = bottom;
+	buffer[5] = num_left;
+	buffer[6] = num_right;
+	buffer[7] = system_type_bottom;
+	buffer[8] = system_type_top;
+	buffer[9] = crit_slice_index;
+	
+	MPI_Send(buffer, 10, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+	delete [] buffer;
+	
+	if (num_left != left.size()) {
+		std::cout << "left sizes for face DO NOT match" << std::endl;
+	}
+	if (num_right != right.size()) {
+		std::cout << "left sizes for face DO NOT match" << std::endl;
+	}
+	
+	if (num_left>0) {
+		buffer = new int[num_left];
+		for (int ii=0; ii<num_left; ii++) {
+			buffer[ii] = left[ii];
+		}
+		MPI_Send(buffer, num_left, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+		delete [] buffer;
+	}
+	
+	
+	
+	if (num_right>0) {
+		buffer = new int[num_right];
+		for (int ii=0; ii<num_right; ii++) {
+			buffer[ii] = right[ii];
+		}
+		MPI_Send(buffer, num_right, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+		delete [] buffer;
+	}
+	
+	
+	
+	
+	
+	send_comp_mp(left_crit_val, target);
+	send_comp_mp(right_crit_val, target);
+	
+	
+	return;
+	
+}
+
+void face::receive(int source, parallelism_config & mpi_config)
+{
+	
+	cell::receive(source,mpi_config);
+	
+	MPI_Status statty_mc_gatty;
+	int * buffer = new int[10];
+	
+	MPI_Recv(buffer, 10, MPI_INT, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+	
+	int tmp_size_left = buffer[0];
+	int tmp_size_right = buffer[1];
+	top = buffer[3];
+	bottom = buffer[4];
+	num_left = buffer[5];
+	num_right = buffer[6];
+	system_type_bottom = buffer[7];
+	system_type_top = buffer[8];
+	crit_slice_index = buffer[9];
+	
+	delete [] buffer;
+	
+	
+	if (tmp_size_left>0) {
+		buffer = new int[tmp_size_left];
+		MPI_Recv(buffer, tmp_size_left, MPI_INT, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+		for (int ii=0; ii<tmp_size_left; ii++) {
+			left.push_back(buffer[ii]);
+		}
+		delete [] buffer;
+	}
+	
+	
+	
+	if (tmp_size_right>0) {
+		buffer = new int[tmp_size_right];
+		MPI_Recv(buffer, tmp_size_right, MPI_INT, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+		for (int ii=0; ii<tmp_size_right; ii++) {
+			right.push_back(buffer[ii]);
+		}
+		delete [] buffer;
+	}
+	
+	
+
+
+	
+	receive_comp_mp(left_crit_val,source);
+	receive_comp_mp(right_crit_val,source);
+	
+
+	
+	
+	return;
+	
+}
+
+
+
+
+
 
 
 

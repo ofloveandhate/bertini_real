@@ -76,9 +76,9 @@ public:
 	
 	int add_edge(edge new_edge)
 	{
-		this->num_edges++;
-		this->edges.push_back(new_edge);
-		return this->num_edges-1; // -1 to correct for the fencepost problem
+		num_edges++;
+		edges.push_back(new_edge);
+		return num_edges-1; // -1 to correct for the fencepost problem
 	}
 	
 	
@@ -245,6 +245,10 @@ public:
 														 BR_configuration & program_options,
 														 solver_configuration & solve_options);
 	
+	
+	void send(int target, parallelism_config & mpi_config);
+	
+	void receive(int source, parallelism_config & mpi_config);
 	
 	
 	void reset()
