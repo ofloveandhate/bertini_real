@@ -24,7 +24,7 @@
 #include <sstream>
 #include <map>
 
-#define DEFAULT_MAX_PREC 512
+#define DEFAULT_MAX_PREC 1024
 
 #include "missing_bertini_headers.hpp"
 

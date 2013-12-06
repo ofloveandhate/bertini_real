@@ -151,8 +151,7 @@ void * br_malloc(size_t size)
 		{
 			//			raise(SIGINT);
 			printf("ERROR: bertini_real's malloc was unable to allocate memory (%d)!\n", (int) size);
-			deliberate_segfault();
-			//      br_exit(ERROR_MEMORY_ALLOCATION);
+			br_exit(ERROR_MEMORY_ALLOCATION);
 		}
 		return x;
 	}
@@ -177,8 +176,7 @@ void *br_realloc(void *ptr, size_t size)
 		if (ptr == NULL)
 		{
 			printf("ERROR: bertini_real's realloc was unable to re-allocate memory!\n");
-			deliberate_segfault();
-			//      br_exit(ERROR_MEMORY_ALLOCATION);
+			br_exit(ERROR_MEMORY_ALLOCATION);
 		}
 	}
 	return ptr;
