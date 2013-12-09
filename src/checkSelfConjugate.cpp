@@ -6,7 +6,7 @@
 
 
 
-int checkSelfConjugate(const witness_set & W,
+bool checkSelfConjugate(const witness_set & W,
                        int           num_vars,
 											 BR_configuration & program_options,
 											 boost::filesystem::path input_file)
@@ -67,13 +67,13 @@ int checkSelfConjugate(const witness_set & W,
 	if (component_numbers[0]==component_numbers[1]) {
 		printf("component IS self conjugate\n");
 		free(component_numbers);
-		return 1;
+		return true;
 	}
 	else
 	{
 		printf("component is NOT self conjugate\n");
 		free(component_numbers);
-		return 0;
+		return false;
 	}
 
 	

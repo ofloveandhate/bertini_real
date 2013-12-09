@@ -1121,7 +1121,7 @@ void witness_set::receive(parallelism_config & mpi_config)
 void vertex::send(int target, parallelism_config & mpi_config)
 {
 	
-	print_point_to_screen_matlab(pt_mp,"sendpt");
+//	print_point_to_screen_matlab(pt_mp,"sendpt");
 	send_vec_mp(pt_mp, target);
 	
 	send_vec_mp(projection_values, target);
@@ -1151,7 +1151,7 @@ void vertex::receive(int source, parallelism_config & mpi_config)
 	type = buffer[0];
 	removed = buffer[1];
 	input_filename_index = buffer[2];
-	print_point_to_screen_matlab(pt_mp,"recvpt");
+//	print_point_to_screen_matlab(pt_mp,"recvpt");
 	delete [] buffer;
 }
 

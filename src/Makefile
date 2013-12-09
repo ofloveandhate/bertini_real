@@ -133,7 +133,7 @@ sampler: sampler.cpp $(OBJFILES) $(FLEXFILES) $(SOLVERS)
 
 
 #simply copy the executables to the installpath
-install: bertini_real data_to_set sampler
+install: all
 	cp bertini_real data2set sampler $(INSTALLPATH)
 
 
