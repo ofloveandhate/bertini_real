@@ -2167,7 +2167,7 @@ void surface_decomposition::print_faces(boost::filesystem::path outputfile)
 		for (int jj=0; jj<faces[ii].right.size(); jj++) {
 			fprintf(OUT,"%d ",faces[ii].right[jj]);
 		}
-		fprintf(OUT,"\n");
+		fprintf(OUT,"\n\n");
 	}
 	fprintf(OUT,"\n");
 	
@@ -2371,7 +2371,7 @@ void face::send(int target, parallelism_config & mpi_config)
 	buffer[8] = system_type_top;
 	buffer[9] = crit_slice_index;
 	
-	MPI_Send(buffer, 10, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+	MPI_Ssend(buffer, 10, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
 	delete [] buffer;
 	
 	if (num_left != left.size()) {
@@ -2386,7 +2386,7 @@ void face::send(int target, parallelism_config & mpi_config)
 		for (int ii=0; ii<num_left; ii++) {
 			buffer[ii] = left[ii];
 		}
-		MPI_Send(buffer, num_left, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+		MPI_Ssend(buffer, num_left, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
 		delete [] buffer;
 	}
 	
@@ -2397,7 +2397,7 @@ void face::send(int target, parallelism_config & mpi_config)
 		for (int ii=0; ii<num_right; ii++) {
 			buffer[ii] = right[ii];
 		}
-		MPI_Send(buffer, num_right, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+		MPI_Ssend(buffer, num_right, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
 		delete [] buffer;
 	}
 	
@@ -2437,23 +2437,23 @@ void face::receive(int source, parallelism_config & mpi_config)
 	
 	
 	if (tmp_size_left>0) {
-		buffer = new int[tmp_size_left];
-		MPI_Recv(buffer, tmp_size_left, MPI_INT, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+		int * buffer2 = new int[tmp_size_left];
+		MPI_Recv(buffer2, tmp_size_left, MPI_INT, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
 		for (int ii=0; ii<tmp_size_left; ii++) {
-			left.push_back(buffer[ii]);
+			left.push_back(buffer2[ii]);
 		}
-		delete [] buffer;
+		delete [] buffer2;
 	}
 	
 	
 	
 	if (tmp_size_right>0) {
-		buffer = new int[tmp_size_right];
-		MPI_Recv(buffer, tmp_size_right, MPI_INT, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+		int * buffer3 = new int[tmp_size_right];
+		MPI_Recv(buffer3, tmp_size_right, MPI_INT, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
 		for (int ii=0; ii<tmp_size_right; ii++) {
-			right.push_back(buffer[ii]);
+			right.push_back(buffer3[ii]);
 		}
-		delete [] buffer;
+		delete [] buffer3;
 	}
 	
 	

@@ -30,6 +30,12 @@
 
 #include <boost/timer/timer.hpp>
 #include "boost/filesystem.hpp"
+
+#include <boost/serialization/list.hpp>
+#include <boost/serialization/string.hpp>
+#include <boost/serialization/version.hpp>
+#include <boost/serialization/split_member.hpp>
+
 #include "fileops.hpp"
 
 #define SAMEPOINTTOL 1e-4

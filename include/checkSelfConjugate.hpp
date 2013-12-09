@@ -36,7 +36,7 @@
  \return boolean integer indicating whether the component is self-conjugate.
  
  */
-int checkSelfConjugate(const witness_set & W,
+bool checkSelfConjugate(const witness_set & W,
                        int           num_vars,
 											 BR_configuration & program_options,
 											 boost::filesystem::path input_file);
