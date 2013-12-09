@@ -602,9 +602,9 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	std::map<int,int>::iterator crit_pt_iterator;
 	for (crit_pt_iterator = crit_point_counter.begin(); crit_pt_iterator != crit_point_counter.end(); crit_pt_iterator++) {
 		int curr_index = crit_pt_iterator->first;
-		int num_occurrences_local = crit_pt_iterator->second;
-		
-		if (num_occurrences_local==0) {
+//		int num_occurrences_local = crit_pt_iterator->second;
+//		
+//		if (num_occurrences_local==0) {
 			
             //			vec_cp_mp(temp_vertex.pt_mp, V.vertices[curr_index].pt_mp);// set point
             //			projection_value_homogeneous_input(temp_vertex.projVal_mp,  V.vertices[curr_index].pt_mp,projections[0]);
@@ -613,7 +613,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 			edge E(curr_index,curr_index,curr_index);
 			
 			add_edge(E);
-		}
+//		}
 	}
 	
 	

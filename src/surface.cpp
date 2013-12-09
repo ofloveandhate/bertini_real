@@ -1000,10 +1000,9 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
     
 	
 	
-	// assert some solver options
-    solve_options.allow_multiplicity = 1; // this seems irrelevant, as we will be tracking only one point at a time
-    solve_options.allow_singular = 1;
-    solve_options.robust = true;
+	
+	
+
 	
 	
 	
@@ -1292,6 +1291,9 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 									  midpoint_config & md_config,
 									  solver_configuration & solve_options, BR_configuration & program_options)
 {
+	// assert some solver options
+	solve_options.allow_singular = 1;
+    solve_options.robust = true;
 	
 	//create the face
 	face F;
@@ -1704,7 +1706,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				int current_edge = candidates[qq];
 				
 				if (program_options.verbose_level>=-1) {
-					std::cout << "face #: " << this->num_faces << ", zz: " << zz << ", current_edge: " << current_edge << std::endl;
+//					std::cout << "face #: " << this->num_faces << ", zz: " << zz << ", current_edge: " << current_edge << std::endl;
 					std::cout << "tracking to these indices: " << final_bottom_ind << " " << crit_slices[ii+zz].edges[current_edge].midpt << " " << final_top_ind << std::endl;
 				}
 				
@@ -1719,8 +1721,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				
 				
 				if (solve_options.use_real_thresholding) {
-					if (fabs(mpf_get_d(proj_mid->i))<1e-10)
-						mpf_set_str(proj_mid->i,"0.0",10);
+					real_threshold(proj_mid,1e-10);
 				}
 				
 				
