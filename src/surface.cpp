@@ -966,7 +966,9 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 	} // re: for loop
 	
 	clear_mp(rand_perterb);  clear_mp(h);
-	
+	clear_vec_mp(multilin_linears[0]);
+	clear_vec_mp(multilin_linears[1]);
+	free(multilin_linears);
 	return;
 }
 
@@ -1109,6 +1111,10 @@ void surface_decomposition::master_connect(vertex_set & V, midpoint_config & md_
 		
 		
 		for (int jj=0; jj<mid_slices[ii].num_edges; jj++) {
+			
+			if (mid_slices[ii].edges[jj].is_degenerate()) {
+				continue;
+			}
 			
 			int next_worker = solve_options.activate_next_worker();
 			
@@ -1671,8 +1677,9 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 					correct_interval =  ( mpf_get_d(temp3->r) > mpf_get_d(temp->r)) && (mpf_get_d(temp->r) > mpf_get_d(temp2->r)) ;
 				}
 				
+				bool degenerate = crit_slices[ii+zz].edges[qq].is_degenerate();
 				
-				if ( (!already_found) && matches_end && correct_interval) { //
+				if ( (!already_found) && matches_end && correct_interval && (!degenerate) ) { //
 					candidates.push_back(qq);
 					
 					std::cout << "candidate [" << candidate_counter << "] = " <<
@@ -1750,8 +1757,8 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 					print_comp_matlab(md_config.u_target,"u_target");
 					print_comp_matlab(md_config.v_target,"v_target");
 					
-					print_comp_matlab(md_config.crit_val_left,"crit_val_left");
-					print_comp_matlab(md_config.crit_val_right,"crit_val_right");
+					print_comp_matlab(md_config.crit_val_left,"proj_val_left");
+					print_comp_matlab(md_config.crit_val_right,"proj_val_right");
 					
 					
 					set_one_mp(temp);
@@ -1785,17 +1792,34 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 					continue;
 				}
 				
+					vec_mp top_found, bottom_found;  init_vec_mp(top_found,md_config.num_top_vars());
+													 init_vec_mp(bottom_found,md_config.num_bottom_vars());
+					
+					// get only the midpoint coordinates out of the returned point
+					for (int tt = 0; tt<this->num_variables; tt++) {
+						set_mp(&found_point->coord[tt], &W_new.pts_mp[0]->coord[tt]);
+					}
+					
+					int offset = md_config.num_mid_vars;
+					// get only the bottom coordinates out of the returned point
+					for (int tt = 0; tt<md_config.num_bottom_vars(); tt++) {
+						set_mp(&bottom_found->coord[tt], &W_new.pts_mp[0]->coord[offset+tt]);
+					}
+					
+					offset += md_config.num_bottom_vars();
+					// get only the top coordinates out of the returned point
+					for (int tt = 0; tt<md_config.num_top_vars(); tt++) {
+						set_mp(&top_found->coord[tt], &W_new.pts_mp[0]->coord[offset+tt]);
+					}
+					
+					//need to look the found point up in vertex set V
+					int found_index = index_in_vertices(V, found_point);
+					std::cout << index_in_vertices(V, bottom_found) << " bottom_found" << std::endl;
+					std::cout << index_in_vertices(V, top_found) << " top_found" << std::endl;
+					
+					clear_vec_mp(bottom_found);
+					clear_vec_mp(top_found);
 				
-				// get only the midpoint coordinates out of the returned point
-				for (int tt = 0; tt<this->num_variables; tt++) {
-					set_mp(&found_point->coord[tt], &W_new.pts_mp[0]->coord[tt]);
-				}
-//
-//
-				//need to look the found point up in vertex set V
-				int found_index = index_in_vertices(V, found_point);
-				
-//
 				
 				
 				if (solve_options.verbose_level>=0) {
@@ -1808,11 +1832,10 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 					clear_vec_mp(tempvec);
 					
 					std::cout << "found_index of point: " << found_index << std::endl;
-					
 				}
 				
 				
-				
+				clear_vec_mp(found_point);
 				
 				
 				//search among the current edge possibilities for the one containing the found (mid) point

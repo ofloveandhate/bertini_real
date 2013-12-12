@@ -215,6 +215,12 @@ void write_matrix_as_constants(mat_mp M, std::string prefix, FILE *OUT)
 void write_vector_as_constants(vec_mp V, std::string prefix, FILE *OUT)
 {
 	
+	mpf_t a;  mpf_init(a);
+	mpf_set_str(a,const_cast<char *>("0"),10);
+	
+	mpf_t b;  mpf_init(b);
+	mpf_set_str(b,const_cast<char *>("-0"),10);
+	
 	
 	fprintf(OUT,"constant ");
 	for (int ii=0; ii<V->size; ii++) {
@@ -228,16 +234,29 @@ void write_vector_as_constants(vec_mp V, std::string prefix, FILE *OUT)
 			if (mpfr_number_p(V->coord[ii].r) && mpfr_number_p(V->coord[ii].i))
 			{
 				mpf_out_str(OUT, 10, 0, V->coord[ii].r);
-				fprintf(OUT,"+I*");
-				//				if (mpfr_sgn(Z->i) >= 0)
-				//					fprintf(fp, "+I*");
-				mpf_out_str(OUT, 10, 0, V->coord[ii].i);
+				
+				
+				
+				
+				if ( (mpf_cmp(V->coord[ii].i,a)==0) || (mpf_cmp(V->coord[ii].i,b)==0)){
+					
+				}
+				else{
+					fprintf(OUT,"+I*");
+					//				if (mpfr_sgn(Z->i) >= 0)
+					//					fprintf(fp, "+I*");
+					mpf_out_str(OUT, 10, 0, V->coord[ii].i);
+				}
+				
+				
+				
 				fprintf(OUT, ";\n");
 			}
 			else
 				fprintf(OUT, "NaN+I*NaN;\n");
 	}
 	
+	mpf_clear(a); mpf_clear(b);
 }
 
 

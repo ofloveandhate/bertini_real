@@ -142,6 +142,38 @@ public:
 		num_projections++;
 		
 	}
+	
+	
+	int num_top_vars()
+	{
+		if (system_type_top==SYSTEM_CRIT) {
+			return num_crit_vars;
+		}
+		else
+		{
+			return num_sphere_vars;
+		}
+	}
+	
+	
+	
+	int num_bottom_vars()
+	{
+		if (system_type_bottom==SYSTEM_CRIT) {
+			return num_crit_vars;
+		}
+		else{
+			return num_sphere_vars;
+		}
+	}
+	
+	
+	
+	
+	
+	
+	
+	
 private:
     
 	void copy(const midpoint_config & other){
@@ -178,6 +210,7 @@ private:
         }
         
 	}
+	
 	
 	
 	
@@ -589,10 +622,17 @@ public:
 		std::cout << "SLP_bottom " << SLP_bottom->size << std::endl;
 		std::cout << "SLP_mid " << SLP_mid->size << std::endl;
         
-		std::cout << num_projections << " projections: " << std::endl;
-		for (int ii=0; ii<2; ii++) {
-			print_point_to_screen_matlab(this->pi[ii],"pi");
-		}
+		print_comp_matlab(u_target,"u_target");
+		print_comp_matlab(v_target,"v_target");
+		
+		print_comp_matlab(crit_val_left,"crit_val_left");
+		print_comp_matlab(crit_val_right,"crit_val_right");
+		
+		
+//		std::cout << num_projections << " projections: " << std::endl;
+//		for (int ii=0; ii<2; ii++) {
+//			print_point_to_screen_matlab(this->pi[ii],"pi");
+//		}
 		
 	};
 	

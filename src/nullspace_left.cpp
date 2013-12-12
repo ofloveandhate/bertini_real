@@ -213,6 +213,10 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 		}
 	}
 	
+	for (int ii=0; ii<ambient_dim; ii++) {
+		clear_vec_mp(multilin_linears[ii]);
+	}
+	free(multilin_linears);
 	
 	clear_vec_mp(temppoint);
 	
