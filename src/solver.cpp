@@ -133,7 +133,7 @@ void adjust_tracker_AMP(tracker_config_t * T, int num_variables)
     T->AMP_Phi = T->AMP_bound_on_degree*(T->AMP_bound_on_degree-1.0)*T->AMP_bound_on_abs_vals_of_coeffs;  //Phi from the AMP paper.
     T->AMP_Psi = T->AMP_bound_on_degree*T->AMP_bound_on_abs_vals_of_coeffs;  //Psi from the AMP paper.
     // initialize latest_newton_residual_mp to the maximum precision
-    mpf_init2(T->latest_newton_residual_mp, T->AMP_max_prec);
+    
 }
 
 
@@ -480,6 +480,8 @@ void get_tracker_config(solver_configuration & solve_options,int MPType)
                 &supersetOnly,
                 &paramHom,
                 MPType);
+	
+	mpf_init2(solve_options.T.latest_newton_residual_mp, solve_options.T.AMP_max_prec);
 	
     //	if (solve_options.T.final_tolerance > solve_options.T.real_threshold)
     if (solve_options.T.real_threshold < 1e-6) {
@@ -1586,13 +1588,14 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 			
 			switch (EG_out->retVal) {
 					
-				case -50:
+				case -20: // // refining failed
+				case -50: // some other failure
 					
-					//TODO:  put in switch endgame
+					//TODO:  put in conditional on endgame
 					solve_options.T.endgameNumber = 2;
 					
-                    T->basicNewtonTol = MIN(1e-3, T->basicNewtonTol*2);
-					T->endgameNewtonTol = MIN(1e-3, T->endgameNewtonTol*2);
+                    T->basicNewtonTol = MIN(1e-4, T->basicNewtonTol*2);
+					T->endgameNewtonTol = MIN(1e-4, T->endgameNewtonTol*2);
                     
                     
 					// better:
@@ -1609,31 +1612,20 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					
 					
 				case -100:   //this is higher precision needed.
-					
-                    solve_options.T.endgameNumber = 2;
-                    
-                    
-					T->basicNewtonTol   = MIN(1e-3, T->basicNewtonTol*2);
-					T->endgameNewtonTol = MIN(1e-3, T->endgameNewtonTol*2);
-                    //
-					if (current_retval_counter>2) {
-						solve_options.T.odePredictor  = (solve_options.T.odePredictor+1)%9;
-					}
-					
-					break;
+							 // break deliberately omitted
 					
 				case 100:
 					
                     solve_options.T.endgameNumber = 2;
                     
-                    if ( (T->basicNewtonTol == 1e-3) || (T->endgameNewtonTol == 1e-3)) {
+                    if ( (T->basicNewtonTol >= 1e-4) || (T->endgameNewtonTol >= 1e-4)) {
 						
 					}
-					T->basicNewtonTol   = MIN(1e-3, T->basicNewtonTol*2);
-					T->endgameNewtonTol = MIN(1e-3, T->endgameNewtonTol*2);
+					T->basicNewtonTol   = MIN(1e-4, T->basicNewtonTol*2);
+					T->endgameNewtonTol = MIN(1e-4, T->endgameNewtonTol*2);
                     //
 					if (current_retval_counter>2) {
-						solve_options.T.odePredictor  = (solve_options.T.odePredictor+1)%9;
+						solve_options.T.odePredictor  = MIN(8,solve_options.T.odePredictor+1);
 					}
 					
 					
@@ -1644,18 +1636,18 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					solve_options.T.maxNumSteps *=10; // factor of 10 each time
 					break;
 					
-				case -2:
-					print_path_retVal_message(-2);
-//					solve_options.T.goingToInfinity *= 1e2;
-                    //                    solve_options.T.finiteThreshold *= 1;
-                    
-                    
-					break;
-					
-				case -1:
-					print_path_retVal_message(-1);
-					break;
-					
+//				case -2:
+//					print_path_retVal_message(-2);
+////					solve_options.T.goingToInfinity *= 1e2;
+//                    //                    solve_options.T.finiteThreshold *= 1;
+//                    
+//                    
+//					break;
+//					
+//				case -1:
+//					print_path_retVal_message(-1);
+//					break;
+//					
 				case -3:
 					solve_options.T.minStepSizeBeforeEndGame *= 1e-2;
 					solve_options.T.minStepSizeDuringEndGame *= 1e-2;
@@ -1680,7 +1672,9 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					break;
 					
 				default:
-					std::cout << color::red() << "retVal was of unprogrammed robust changing." << color::console_default() << std::endl;
+					
+					std::cout << color::red() << "retVal was of unprogrammed robust changing: " << EG_out->retVal << color::console_default() << std::endl;
+					print_path_retVal_message(EG_out->retVal);
  					break;
 			}
 		}
@@ -1852,7 +1846,7 @@ void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W)
 	
 	if (W.num_patches==0) {
 		std::cerr << "the number of patches in input W is 0.  this is not allowed, the number must be positive.\n" << std::endl;
-		deliberate_segfault();
+		br_exit(1801);
 	}
 	
     //	for (int jj=0; jj<W.num_patches; jj++) {

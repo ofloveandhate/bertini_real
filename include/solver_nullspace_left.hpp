@@ -84,6 +84,12 @@ public:
 	}
 	
 	void print();
+	
+	~nullspace_config()
+	{
+		clear();
+	}
+	
 };
 
 

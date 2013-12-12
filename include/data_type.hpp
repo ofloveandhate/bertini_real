@@ -449,9 +449,9 @@ public:
 		for (int ii =0; ii<this->num_patches; ii++)
 			clear_vec_mp(this->patch_mp[ii]);
 		
-		if (this->num_patches>0)
+		if (this->num_patches>0) {
 			free(this->patch_mp);
-		
+		}
 		
 		this->num_patches = 0;
 		this->patch_mp = NULL;

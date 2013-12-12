@@ -670,7 +670,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	
 	
 	
-	
+	clear_vec_mp(particular_projection);
 	
 	
 	
@@ -1234,6 +1234,10 @@ int verify_projection_ok(const witness_set & W,
 	}
 	else
 		invalid_flag = 1;
+	
+	clear_eval_struct_mp(ED);
+	
+	clearProg(&SLP, solve_options.T.MPType, 1);
 	
 	return invalid_flag;
 	

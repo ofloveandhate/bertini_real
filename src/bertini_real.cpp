@@ -24,10 +24,7 @@ int main(int argC, char *args[])
 	program_options.parse_commandline(argC, args); // everybody gets to parse the command line.
 	
 	
-	if (program_options.debugwait) {
-		int z = 1;
-		while (z) ;
-	}
+	
 	
 	
 //	// set up the solver configuration
@@ -39,6 +36,28 @@ int main(int argC, char *args[])
 	
 	// set up the solver configuration
 	solver_configuration solve_options; 
+	
+	
+	if (program_options.debugwait) {
+		std::cout << "in debug mode, waiting to start so you can attach to this process" << std::endl;
+		if (solve_options.is_head()) {
+			std::cout << "master PID: " << getpid() << std::endl;
+		}
+		for (int ii=0; ii<30; ii++) {
+			std::cout << "starting program in " << 30-ii << " seconds" << std::endl;
+			sleep(1);
+			std::cout << "\033[F";
+		}
+		
+		
+		if (solve_options.use_parallel()) {
+			int arbitrary_int = 1;
+			MPI_Bcast(&arbitrary_int,1,MPI_INT,0,MPI_COMM_WORLD);
+		}
+		//		int z = 1;
+		//		while (z) ;
+	}
+	
 	
 	int MPType;
 	

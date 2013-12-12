@@ -355,14 +355,14 @@ void witness_set::add_patch(vec_mp new_patch)
 	this->num_patches++;
 	
 	
-	int numasdf = 0;
+	int burnsome = 0;
 	for (int ii=0; ii<this->num_patches; ii++) {
-		numasdf += this->patch_mp[ii]->size;
+		burnsome += this->patch_mp[ii]->size;
 	}
 	
-	if (numasdf>this->num_variables) {
-		std::cout << "added patch " << this->num_patches << ", but put the number of patch vars (" << numasdf << ") higher than set number (" << this->num_variables << ")" << std::endl;
-		deliberate_segfault();
+	if (burnsome>this->num_variables) {
+		std::cout << "added patch " << this->num_patches << ", but put the number of patch vars (" << burnsome << ") higher than set number (" << this->num_variables << ")" << std::endl;
+		br_exit(971);
 	}
 	return;
 }
@@ -374,12 +374,12 @@ void witness_set::add_point(vec_mp new_point)
 	
 	if (this->num_pts!=0 && this->pts_mp==NULL) {
 		printf("trying to add point to witness set with non-zero num_pts and NULL container!\n");
-		deliberate_segfault();
+		br_exit(972);
 	}
 	
 	if (this->num_pts==0 && this->pts_mp!=NULL) {
 		printf("trying to add point to witness set with num_pts==0 and non-NULL container!\n");
-		deliberate_segfault();
+		br_exit(972);
 	}
 	
 	
@@ -1429,7 +1429,9 @@ int vertex_set::add_vertex(const vertex source_vertex){
 			projection_value_homogeneous_input(&vertices[num_vertices].projection_values->coord[ii],
 											   vertices[num_vertices].pt_mp,
 											   projections[ii]);
+#ifdef thresholding
             real_threshold(&vertices[num_vertices].projection_values->coord[ii],1e-13);
+#endif
 		}
 		
 	}
@@ -2052,7 +2054,9 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 		for (int ii=0; ii<num_vars; ii++) {
 			set_mp(&sphere_center->coord[ii], &temp_vec->coord[ii]);
 		}
+#ifdef thresholding
 		real_threshold(sphere_center, 1e-13);
+#endif
 		clear_vec_mp(temp_vec);
 		return;
 	}
@@ -2130,9 +2134,9 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 	
 	
 	this->have_sphere_radius = true;
-	
+#ifdef thresholding
 	real_threshold(sphere_center,1e-13);
-	
+#endif
 //	std::cout << color::green();
 //	print_point_to_screen_matlab(sphere_center,"center");
 //	print_comp_matlab(sphere_radius,"radius");
@@ -3319,7 +3323,7 @@ int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & inde
 	// filter for uniqueness
 	
 	
-	double distinct_thresh = 1e-13;  // reasonable?
+	double distinct_thresh = 1e-17;  // reasonable?
 	
 	change_size_vec_mp(projections_sorted,1); projections_sorted->size = 1;
 	
@@ -3340,6 +3344,8 @@ int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & inde
 		}
 	}
 	
+	
+	clear_vec_mp(projections_sorted_non_unique);
 	
 	return 0;
 }

@@ -851,14 +851,15 @@ int midpoint_solver_master_entry_point(const witness_set						&W, // carries wit
 			
 			
 			
-			adjust_tracker_AMP(& (solve_options.T), W.num_variables);
+			adjust_tracker_AMP( &(solve_options.T), W.num_variables);
 			// initialize latest_newton_residual_mp
 			break;
 		default:
 			break;
 	}
 	
-	
+	print_point_to_screen_matlab(W.pts_mp[0],"start_pt");
+	ED_d->print();
 	
 	master_solver(W_new, W,
                   ED_d, ED_mp,
@@ -1948,7 +1949,7 @@ int change_midpoint_eval_prec(void const *ED, int new_prec)
 	
 	if (new_prec != BED->curr_prec){
 		// change the precision for the patch
-		if (BED->verbose_level >=0)
+		if (BED->verbose_level >=5)
 		{
 			std::cout << color::brown();
 			printf("prec  %d\t-->\t%d\n",BED->curr_prec, new_prec);
@@ -2229,6 +2230,13 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 	clear_vec_d(prev_pt);
 	clear_vec_d(terminal_pt);
 	
+	
+	clear_vec_d(curr_mid_vars);
+	clear_vec_d(temp_function_values);
+	clear_vec_d(curr_bottom_vars);
+	clear_vec_d(curr_top_vars);
+	
+	
 	return isSoln;
 	
 }
@@ -2473,12 +2481,26 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	
 	
 	clear_eval_struct_mp(e);
+	
 	clear_vec_mp(f_terminal);
 	clear_vec_mp(f_prev);
 	
 	clear_vec_mp(prev_pt);
 	clear_vec_mp(terminal_pt);
     
+	clear_vec_mp(curr_mid_vars);
+	clear_vec_mp(temp_function_values);
+	clear_vec_mp(curr_bottom_vars);
+	clear_vec_mp(curr_top_vars);
+	
+	
+
+	
+
+	
+	
+	
+	
 	return isSoln;
 	
 }
