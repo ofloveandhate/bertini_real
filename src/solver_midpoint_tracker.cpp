@@ -1018,7 +1018,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	mat_d Jv_jac; init_mat_d(Jv_jac,0,0);
 	mat_d Jv_Patch; init_mat_d(Jv_Patch,0,0);
     
-	comp_d temp, temp2, temp3;
+	comp_d temp, temp2, temp3, temp4;
 	comp_d proj_bottom, proj_top, proj_mid;
 	
 	comp_d u, v;
@@ -1155,134 +1155,163 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	
 	
 	//
-	// now three equations involving the projections, causing movement in the u direction.
+	/// now three equations involving the projections, causing movement in the $u$ or \pi_0 direction.
 	//
 	
 	
-	
+	//the number of rows does not equal the number of variables.
 	offset = BED->randomizer_matrix->rows + BED->randomizer_matrix_bottom->rows + BED->randomizer_matrix_top->rows;
 	
-	projection_value_homogeneous_input(proj_mid, curr_mid_vars,BED->pi[0]);
-	projection_value_homogeneous_input(proj_top, curr_top_vars,BED->pi[0]);
-	projection_value_homogeneous_input(proj_bottom, curr_bottom_vars,BED->pi[0]);
 	
-    
-	
+	dot_product_mindim(proj_mid, curr_mid_vars,BED->pi[0]);
+	dot_product_mindim(proj_bottom, curr_bottom_vars,BED->pi[0]);
+	dot_product_mindim(proj_top, curr_top_vars,BED->pi[0]);
+
 	
 	mul_d(temp, one_minus_u, BED->crit_val_left);
 	mul_d(temp2, u, BED->crit_val_right);
-    
+    add_d(temp4, temp, temp2); // temp4 = (1-u)*c_l + u*c_r      // i think a multiplication can be eliminated here
+				
 	
-	add_d(temp3, temp, temp2); // temp3 = (1-u)*p2(w0) + u*p2(w2)
-    
-	sub_d(&funcVals->coord[offset+0], proj_mid, temp3);
-	sub_d(&funcVals->coord[offset+1], proj_bottom, temp3);
-	sub_d(&funcVals->coord[offset+2], proj_top, temp3);
+	
+	mul_d(temp,temp4,&curr_mid_vars->coord[0]);// temp = x_0*((1-u)*c_l + u*c_r)
+	sub_d(&funcVals->coord[offset+0], proj_mid, temp);
+	
+	mul_d(temp,temp4,&curr_bottom_vars->coord[0]);// temp = y_0*((1-u)*c_l + u*c_r)
+	sub_d(&funcVals->coord[offset+1], proj_bottom, temp);
+	
+	mul_d(temp,temp4,&curr_top_vars->coord[0]);// temp = z_0*((1-u)*c_l + u*c_r)
+	sub_d(&funcVals->coord[offset+2], proj_top, temp); // f = proj_top - z_0*((1-u)*c_l + u*c_r)
 	
 	
 	// now the derivatives of the supplemental \pi[0] equations
-	// d/dt
-	sub_d(temp, BED->u_start, BED->u_target);
-	mul_d(&Jp->entry[offset][0],BED->crit_val_left, temp);
-	
-	neg_d(temp, temp);
-	mul_d(temp2, BED->crit_val_right, temp);
-	add_d(&Jp->entry[offset+0][0],&Jp->entry[offset][0],temp2); // c_l(u_0 - u_t) + c_r(u_t - u_0)
-	
-	set_d(&Jp->entry[offset+1][0],&Jp->entry[offset][0]);
-	set_d(&Jp->entry[offset+2][0],&Jp->entry[offset][0]);
-	
-	
 	
 	// d/dx
+	//mid
 	offset_horizontal = 0;
-	div_d(&Jv->entry[offset][offset_horizontal], proj_mid, &curr_mid_vars->coord[0]);
-	neg_d(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal]); //  -*proj_mid / x[0]
+	neg_d( &Jv->entry[offset][offset_horizontal], temp4); // the homvar entry
 	for (int ii=1; ii<BED->num_mid_vars; ii++)  // mid
-		set_d(&Jv->entry[offset][ii], &BED->pi[0]->coord[ii]);
+		set_d(&Jv->entry[offset][offset_horizontal+ii], &BED->pi[0]->coord[ii]);
 	
-	offset_horizontal = BED->num_mid_vars; // y2
-	div_d(&Jv->entry[offset+1][offset_horizontal], proj_bottom, &curr_bottom_vars->coord[0]);
-	neg_d(&Jv->entry[offset+1][offset_horizontal], &Jv->entry[offset+1][offset_horizontal]); //  -*proj_bottom / y0[0]
-	for (int ii=1; ii<BED->num_mid_vars; ii++)
+	//bottom
+	offset_horizontal = BED->num_mid_vars; //
+	neg_d( &Jv->entry[offset+1][offset_horizontal], temp4);  // the homvar entry
+	for (int ii=1; ii<BED->num_mid_vars; ii++)// only these entries will be nonzero!
 		set_d(&Jv->entry[offset+1][offset_horizontal+ii], &BED->pi[0]->coord[ii]);
 	
-	offset_horizontal = BED->num_mid_vars + BED->num_bottom_vars; // y2
-	div_d(&Jv->entry[offset+2][offset_horizontal], proj_top, &curr_top_vars->coord[0]);
-	neg_d(&Jv->entry[offset+2][offset_horizontal], &Jv->entry[offset+2][offset_horizontal]); //  -*proj_mid / y2[0]
+	//top
+	offset_horizontal = BED->num_mid_vars + BED->num_bottom_vars; //
+	neg_d( &Jv->entry[offset+2][offset_horizontal], temp4);  // the homvar entry
 	for (int ii=1; ii<BED->num_mid_vars; ii++)
 		set_d(&Jv->entry[offset+2][offset_horizontal+ii], &BED->pi[0]->coord[ii]);
 	
-    
+	
+	// d/dt
+	sub_d(temp, BED->crit_val_left, BED->crit_val_right);
+	sub_d(temp2,BED->u_start, BED->u_target);
+	
+	mul_d(temp3, temp2, temp);
+	mul_d(&Jp->entry[offset+0][0],temp3,&curr_mid_vars->coord[0]);
+	mul_d(&Jp->entry[offset+1][0],temp3,&curr_bottom_vars->coord[0]);
+	mul_d(&Jp->entry[offset+2][0],temp3,&curr_top_vars->coord[0]);
 	
 	
 	
 	
 	
 	
-	// finally, the fourth equation, which forces the midpoint to be a midpoint
+	// finally, the fourth equation, which forces the midpoint to remain a midpoint throught the entire track
 	
-	offset+=3;
+	offset+=3;// increment the offset counter
 	
-	projection_value_homogeneous_input(proj_mid, curr_mid_vars,BED->pi[1]); // mid
-	projection_value_homogeneous_input(proj_bottom, curr_bottom_vars,BED->pi[1]); // y0
-	projection_value_homogeneous_input(proj_top, curr_top_vars,BED->pi[1]); // y2
+	dot_product_mindim(proj_mid, curr_mid_vars, BED->pi[1]);
+	dot_product_mindim(proj_bottom, curr_bottom_vars,BED->pi[1]);
+	dot_product_mindim(proj_top, curr_top_vars,BED->pi[1]);
 	
 	
+
 	
 	//function value
 	mul_d(temp, one_minus_v, proj_bottom);
-	mul_d(temp2, v, proj_top);
-	add_d(temp3, temp, temp2);
-	sub_d(&funcVals->coord[offset], proj_mid, temp3);
+	mul_d(temp, temp, &curr_top_vars->coord[0]); // temp = (1-v) y_20 proj_bottom
 	
+	mul_d(temp2, v, proj_top);
+	mul_d(temp2, temp2, &curr_bottom_vars->coord[0]); // temp2 = y_00 v proj_top
+	
+	add_d(temp3, temp2, temp); //                     temp3  = [ (1-v) y_20 proj_bottom + y_00 v proj_top]
+	mul_d(temp4, temp3, &curr_mid_vars->coord[0]); // temp4 = x_0*[ (1-v) y_20 proj_bottom + y_00 v proj_top]
+	
+	
+	mul_d(temp, &curr_bottom_vars->coord[0], &curr_top_vars->coord[0]);
+	mul_d(temp2, proj_mid, temp);
+    sub_d(&funcVals->coord[offset], temp2, temp4);
+	
+
 	
 	//Jv for the last equation
-	// midpoint
 	
+	// midpoint
 	offset_horizontal = 0;
-	div_d(&Jv->entry[offset][offset_horizontal], proj_mid, &curr_mid_vars->coord[0]);
-	neg_d(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal]); //  -proj_mid / x0[0]
+	neg_d(&Jv->entry[offset][offset_horizontal], temp3); // temp3 computed above
+	// already have temp = bottom_hom * top_hom
 	for (int ii=1; ii<BED->num_mid_vars; ii++)
-		div_d(&Jv->entry[offset][ii], &BED->pi[1]->coord[ii], &curr_mid_vars->coord[0]);
+		mul_d(&Jv->entry[offset][ii], &BED->pi[1]->coord[ii], temp);
 	
 	
 	// y0
 	offset_horizontal = BED->num_mid_vars;
-	div_d(&Jv->entry[offset][offset_horizontal], proj_bottom, &curr_bottom_vars->coord[0]);
-	mul_d(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal], one_minus_v);
-    //	neg_d(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal]); //  -(1-v)*proj_bottom / y0[0]
+	mul_d(temp, &curr_top_vars->coord[0], proj_mid);
+	
+		//
+	mul_d(temp2, &curr_mid_vars->coord[0], v);
+	mul_d(temp2, temp2, proj_top); // temp2 = proj_top * x_0 * v
+	sub_d(&Jv->entry[offset][offset_horizontal], temp, temp2); // the entry for the homogenizing variable of the bottom group
+   //Jv = top_hom*proj_mid - mid_hom*v*proj_top
+	
+	   // set up the Jv entries for the regular variables for the bottom point
+	mul_d(temp, &curr_mid_vars->coord[0], one_minus_v);//overwrite temp = mid_hom * (1-v)
+	mul_d(temp, temp, &curr_top_vars->coord[0]); // temp = mid_hom * (1-v) * top_hom
+	neg_d(temp, temp);// temp = - mid_hom * (1-v) * top_hom
 	for (int ii=1; ii<BED->num_mid_vars; ii++) // only go this far, because all remaining entries are 0
 	{
-		mul_d(&Jv->entry[offset][ii+offset_horizontal], one_minus_v, &BED->pi[1]->coord[ii]);
-		neg_d(&Jv->entry[offset][ii+offset_horizontal], &Jv->entry[offset][ii+offset_horizontal]);
-		div_d(&Jv->entry[offset][ii+offset_horizontal], &Jv->entry[offset][ii+offset_horizontal], &curr_bottom_vars->coord[0]);
+		mul_d(&Jv->entry[offset][ii+offset_horizontal], temp, &BED->pi[1]->coord[ii]);
 	}
 	
 	
 	// y2
-	offset_horizontal = BED->num_mid_vars+BED->num_bottom_vars;
-	div_d(&Jv->entry[offset][offset_horizontal], proj_top, &curr_top_vars->coord[0]);
-	mul_d(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal], v);
-    //	neg_d(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal]); //  -(v)*proj_top / y2[0]
-	for (int ii=1; ii<BED->num_mid_vars; ii++)
+	offset_horizontal += BED->num_bottom_vars;
+	mul_d(temp, &curr_bottom_vars->coord[0], proj_mid);
+	
+	mul_d(temp2, &curr_mid_vars->coord[0], one_minus_v);
+	mul_d(temp2, temp2, proj_bottom); // temp2 = proj_bottom * x_0 * (1-v)
+	
+	sub_d(&Jv->entry[offset][offset_horizontal], temp, temp2); // the entry for the homogenizing variable of the bottom group
+															   //Jv = bottom_hom*proj_mid - mid_hom*(1-v)*proj_bottom
+	
+	// set up the Jv entries for the regular variables for the bottom point
+	mul_d(temp, &curr_mid_vars->coord[0], v);//overwrite temp = mid_hom * v
+	mul_d(temp, temp, &curr_bottom_vars->coord[0]); // temp = mid_hom * v * bottom_hom
+	neg_d(temp, temp);// temp = - mid_hom * v * bottom_hom
+	for (int ii=1; ii<BED->num_mid_vars; ii++) // only go this far, because all remaining entries are preset to and should be 0
 	{
-		mul_d(&Jv->entry[offset][ii+offset_horizontal], v, &BED->pi[1]->coord[ii]);
-		neg_d(&Jv->entry[offset][ii+offset_horizontal], &Jv->entry[offset][ii+offset_horizontal]);
-		div_d(&Jv->entry[offset][ii+offset_horizontal], &Jv->entry[offset][ii+offset_horizontal], &curr_top_vars->coord[0]);
+		mul_d(&Jv->entry[offset][ii+offset_horizontal], temp, &BED->pi[1]->coord[ii]);
 	}
 	
 	
+	
+	
+	
     //	the Jp entry for this last equation.
-    //should be correct up to perhaps switching left and right proj val
+	// d/dt
 	
-	sub_d(temp, BED->v_start, BED->v_target);
-	mul_d(&Jp->entry[offset][0], proj_bottom, temp);
+	sub_d(temp, BED->v_start, BED->v_target); // temp  = v_start - v_target
+	mul_d(temp, temp, &curr_mid_vars->coord[0]); //   *= mid_hom
 	
-	neg_d(temp, temp);
-	mul_d(temp2, proj_top, temp);
+	mul_d(temp2, &curr_top_vars->coord[0], proj_bottom);
+	mul_d(temp3, &curr_bottom_vars->coord[0], proj_top);
+	sub_d(temp4, temp2, temp3);
 	
-	add_d(&Jp->entry[offset][0], &Jp->entry[offset][0], temp2);
+	mul_d(&Jp->entry[offset][0], temp, temp4);
 	
 	offset++;
 	
@@ -1290,7 +1319,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	
 	
 	if (offset != BED->num_variables - BED->patch.num_patches) {
-		std::cout << "appear to have offset " << offset << " but should be " << BED->num_variables - BED->patch.num_patches << std::endl;
+		std::cout << color::red() << "appear to have offset " << offset << " but should be " << BED->num_variables - BED->patch.num_patches << color::console_default() << std::endl;
         //		print_matrix_to_screen_matlab(Jv,"Jv");
 		mypause();
 	}
@@ -1327,8 +1356,8 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 		std::cout << color::console_default();
 		
 		print_point_to_screen_matlab(current_variable_values,"curr_vars");
-        //		print_point_to_screen_matlab(funcVals,"F_d");
-        //		print_matrix_to_screen_matlab(Jv,"Jv");
+		print_point_to_screen_matlab(funcVals,"F_d");
+//		print_matrix_to_screen_matlab(Jv,"Jv");
         //		print_matrix_to_screen_matlab(Jp,"Jp");
 		
 	}
@@ -1426,8 +1455,8 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	mat_mp Jv_Patch; init_mat_mp(Jv_Patch,0,0);
 	
 	
-	comp_mp temp, temp2, temp3;  init_mp(temp);
-	init_mp(temp2); init_mp(temp3);
+	comp_mp temp, temp2, temp3, temp4;  init_mp(temp);
+	init_mp(temp2); init_mp(temp3); init_mp(temp4);
 	comp_mp proj_bottom, proj_top, proj_mid;
 	init_mp(proj_bottom); init_mp(proj_top); init_mp(proj_mid);
 	point_mp unused_function_values, unused_parVals;
@@ -1605,133 +1634,154 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
 	
 	
+	//the number of rows does not equal the number of variables.
 	offset = BED->randomizer_matrix->rows + BED->randomizer_matrix_bottom->rows + BED->randomizer_matrix_top->rows;
 	
-	projection_value_homogeneous_input(proj_mid, curr_mid_vars,BED->pi[0]);
-	projection_value_homogeneous_input(proj_top, curr_top_vars,BED->pi[0]);
-	projection_value_homogeneous_input(proj_bottom, curr_bottom_vars,BED->pi[0]);
-	
-    
+	dot_product_mindim(proj_mid, curr_mid_vars,BED->pi[0]);
+	dot_product_mindim(proj_top, curr_top_vars,BED->pi[0]);
+	dot_product_mindim(proj_bottom, curr_bottom_vars,BED->pi[0]);
 	
 	
 	mul_mp(temp, one_minus_u, BED->crit_val_left);
 	mul_mp(temp2, u, BED->crit_val_right);
+    add_mp(temp4, temp, temp2); // temp4 = (1-u)*c_l + u*c_r      // i think a multiplication can be eliminated here
+    
+	mul_mp(temp,temp4,&curr_mid_vars->coord[0]);// temp = x_0*((1-u)*c_l + u*c_r)
+	sub_mp(&funcVals->coord[offset+0], proj_mid, temp);
 	
+	mul_mp(temp,temp4,&curr_bottom_vars->coord[0]);// temp = y_0*((1-u)*c_l + u*c_r)
+	sub_mp(&funcVals->coord[offset+1], proj_bottom, temp);
 	
-	add_mp(temp3, temp, temp2); // temp3 = (1-u)*p2(w0) + u*p2(w2)
-	
-	sub_mp(&funcVals->coord[offset+0], proj_mid, temp3);
-	sub_mp(&funcVals->coord[offset+1], proj_bottom, temp3);
-	sub_mp(&funcVals->coord[offset+2], proj_top, temp3);
+	mul_mp(temp,temp4,&curr_top_vars->coord[0]);// temp = z_0*((1-u)*c_l + u*c_r)
+	sub_mp(&funcVals->coord[offset+2], proj_top, temp);
 	
 	
 	// now the derivatives of the supplemental \pi[0] equations
 	// d/dt
-	sub_mp(temp, BED->u_start, BED->u_target);
-	mul_mp(&Jp->entry[offset][0],BED->crit_val_left, temp);
+	sub_mp(temp, BED->crit_val_left, BED->crit_val_right);
+	sub_mp(temp2,BED->u_start, BED->u_target);
 	
-	neg_mp(temp, temp);
-	mul_mp(temp2, BED->crit_val_right, temp);
-	add_mp(&Jp->entry[offset+0][0],&Jp->entry[offset][0],temp2); // c_l(u_0 - u_t) + c_r(u_t - u_0)
+	mul_mp(temp3, temp2, temp);
+	mul_mp(&Jp->entry[offset+0][0],temp3,&curr_mid_vars->coord[0]); // c_l(u_0 - u_t) + c_r(u_t - u_0)
+	mul_mp(&Jp->entry[offset+1][0],temp3,&curr_bottom_vars->coord[0]);
+	mul_mp(&Jp->entry[offset+2][0],temp3,&curr_top_vars->coord[0]);
 	
-	set_mp(&Jp->entry[offset+1][0],&Jp->entry[offset][0]);
-	set_mp(&Jp->entry[offset+2][0],&Jp->entry[offset][0]);
-	
-	
-	
+
 	// d/dx
+	//mid
 	offset_horizontal = 0;
-	div_mp(&Jv->entry[offset][offset_horizontal], proj_mid, &curr_mid_vars->coord[0]);
-	neg_mp(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal]); //  -*proj_mid / x[0]
-	for (int ii=1; ii<BED->num_mid_vars; ii++){  // mid
-		div_mp(&Jv->entry[offset][ii], &BED->pi[0]->coord[ii], &curr_mid_vars->coord[0]);
-	}
+	neg_mp(&Jv->entry[offset][offset_horizontal],temp4);
+	for (int ii=1; ii<BED->num_mid_vars; ii++)  // mid
+		set_mp(&Jv->entry[offset][offset_horizontal+ii], &BED->pi[0]->coord[ii]);
 	
+	//bottom
+	offset_horizontal = BED->num_mid_vars; //
+	neg_mp(&Jv->entry[offset+1][offset_horizontal],temp4);
+	for (int ii=1; ii<BED->num_mid_vars; ii++)// only these entries will be nonzero!
+		set_mp(&Jv->entry[offset+1][offset_horizontal+ii], &BED->pi[0]->coord[ii]);
 	
-	offset_horizontal = BED->num_mid_vars; // y2
-	div_mp(&Jv->entry[offset+1][offset_horizontal], proj_bottom, &curr_bottom_vars->coord[0]);
-	neg_mp(&Jv->entry[offset+1][offset_horizontal], &Jv->entry[offset+1][offset_horizontal]); //  -*proj_bottom / y0[0]
-	for (int ii=1; ii<BED->num_mid_vars; ii++){
-		div_mp(&Jv->entry[offset+1][offset_horizontal+ii], &BED->pi[0]->coord[ii], &curr_bottom_vars->coord[0]);
-	}
+	//top
+	offset_horizontal = BED->num_mid_vars + BED->num_bottom_vars; //
+	neg_mp(&Jv->entry[offset+2][offset_horizontal],temp4);
+	for (int ii=1; ii<BED->num_mid_vars; ii++)
+		set_mp(&Jv->entry[offset+2][offset_horizontal+ii], &BED->pi[0]->coord[ii]);
 	
-	offset_horizontal = BED->num_mid_vars + BED->num_bottom_vars; // y2
-	div_mp(&Jv->entry[offset+2][offset_horizontal], proj_top, &curr_top_vars->coord[0]);
-	neg_mp(&Jv->entry[offset+2][offset_horizontal], &Jv->entry[offset+2][offset_horizontal]); //  -*proj_mid / y2[0]
-	for (int ii=1; ii<BED->num_mid_vars; ii++){
-		div_mp(&Jv->entry[offset+2][offset_horizontal+ii], &BED->pi[0]->coord[ii], &curr_top_vars->coord[0]);
-	}
+    
 	
 	
 	
 	
 	
 	
+	// finally, the fourth equation, which forces the midpoint to remain a midpoint throught the entire track
 	
-	// finally, the fourth equation, which forces the midpoint to be a midpoint
+	offset+=3;// increment the offset counter
 	
-	offset+=3;
-	
-	projection_value_homogeneous_input(proj_mid, curr_mid_vars,BED->pi[1]); // mid
-	projection_value_homogeneous_input(proj_bottom, curr_bottom_vars,BED->pi[1]); // y0
-	projection_value_homogeneous_input(proj_top, curr_top_vars,BED->pi[1]); // y2
+	dot_product_mindim(proj_mid, curr_mid_vars, BED->pi[1]);
+	dot_product_mindim(proj_top, curr_top_vars,BED->pi[1]);
+	dot_product_mindim(proj_bottom, curr_bottom_vars,BED->pi[1]);
 	
 	
 	
 	//function value
 	mul_mp(temp, one_minus_v, proj_bottom);
+	mul_mp(temp, temp, &curr_top_vars->coord[0]); // temp = (1-v) y_20 proj_bottom
+	
 	mul_mp(temp2, v, proj_top);
-	add_mp(temp3, temp, temp2);
-	sub_mp(&funcVals->coord[offset], proj_mid, temp3);
+	mul_mp(temp2, temp2, &curr_bottom_vars->coord[0]); // temp2 = y_00 v proj_top
+	
+	add_mp(temp3, temp2, temp); //                     temp3  = [ (1-v) y_20 proj_bottom + y_00 v proj_top]
+	mul_mp(temp4, temp3, &curr_mid_vars->coord[0]); // temp4 = x_0*[ (1-v) y_20 proj_bottom + y_00 v proj_top]
+	
+	
+	mul_mp(temp, &curr_bottom_vars->coord[0], &curr_top_vars->coord[0]);
+	mul_mp(temp2, proj_mid, temp);
+    sub_mp(&funcVals->coord[offset], temp2, temp4);
+	
 	
 	
 	//Jv for the last equation
+	
 	// midpoint
-	
 	offset_horizontal = 0;
-	div_mp(&Jv->entry[offset][offset_horizontal], proj_mid, &curr_mid_vars->coord[0]);
-	neg_mp(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal]); //  -*proj_mid / x0[0]
-	for (int ii=1; ii<BED->num_mid_vars; ii++){
-		div_mp(&Jv->entry[offset][ii], &BED->pi[1]->coord[ii], &curr_mid_vars->coord[0]);
-	}
-	
+	neg_mp(&Jv->entry[offset][offset_horizontal], temp3);
+	// already have temp = bottom_hom * top_hom
+	for (int ii=1; ii<BED->num_mid_vars; ii++)
+		mul_mp(&Jv->entry[offset][ii], &BED->pi[1]->coord[ii], temp);
 	
 	// y0
 	offset_horizontal = BED->num_mid_vars;
-	div_mp(&Jv->entry[offset][offset_horizontal], proj_bottom, &curr_bottom_vars->coord[0]);
-	mul_mp(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal], one_minus_v);
-    //	neg_mp(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal]); //  -(1-v)*proj_bottom / y0[0]
+	mul_mp(temp, &curr_top_vars->coord[0], proj_mid);
+	
+	mul_mp(temp2, &curr_mid_vars->coord[0], v);
+	mul_mp(temp2, temp2, proj_top); // temp2 = proj_top * x_0 * v
+	sub_mp(&Jv->entry[offset][offset_horizontal], temp, temp2); // the entry for the homogenizing variable of the bottom group
+															   //Jv = top_hom*proj_mid - mid_hom*v*proj_top
+	
+	// set up the Jv entries for the regular variables for the bottom point
+	mul_mp(temp, &curr_mid_vars->coord[0], one_minus_v);//overwrite temp = mid_hom * (1-v)
+	mul_mp(temp, temp, &curr_top_vars->coord[0]); // temp = mid_hom * (1-v) * top_hom
+	neg_mp(temp, temp);// temp = - mid_hom * (1-v) * top_hom
 	for (int ii=1; ii<BED->num_mid_vars; ii++) // only go this far, because all remaining entries are 0
 	{
-		mul_mp(&Jv->entry[offset][ii+offset_horizontal], one_minus_v, &BED->pi[1]->coord[ii]);
-		neg_mp(&Jv->entry[offset][ii+offset_horizontal], &Jv->entry[offset][ii+offset_horizontal]);
-		div_mp(&Jv->entry[offset][ii+offset_horizontal], &Jv->entry[offset][ii+offset_horizontal], &curr_bottom_vars->coord[0]);
+		mul_mp(&Jv->entry[offset][ii+offset_horizontal], temp, &BED->pi[1]->coord[ii]);
 	}
 	
 	
 	// y2
-	offset_horizontal = BED->num_mid_vars+BED->num_bottom_vars;
-	div_mp(&Jv->entry[offset][offset_horizontal], proj_top, &curr_top_vars->coord[0]);
-	mul_mp(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal], v);
-    //	neg_mp(&Jv->entry[offset][offset_horizontal], &Jv->entry[offset][offset_horizontal]); //  -(v)*proj_top / y2[0]
-	for (int ii=1; ii<BED->num_mid_vars; ii++)
+	offset_horizontal += BED->num_bottom_vars;
+	mul_mp(temp, &curr_bottom_vars->coord[0], proj_mid);
+	
+	mul_mp(temp2, &curr_mid_vars->coord[0], one_minus_v);
+	mul_mp(temp2, temp2, proj_bottom); // temp2 = proj_bottom * x_0 * (1-v)
+	
+	sub_mp(&Jv->entry[offset][offset_horizontal], temp, temp2); // the entry for the homogenizing variable of the bottom group
+															   //Jv = bottom_hom*proj_mid - mid_hom*v*proj_bottom
+	
+	// set up the Jv entries for the regular variables for the bottom point
+	mul_mp(temp, &curr_mid_vars->coord[0], v);//overwrite temp = mid_hom * v
+	mul_mp(temp, temp, &curr_bottom_vars->coord[0]); // temp = mid_hom * v * bottom_hom
+	neg_mp(temp, temp);// temp = - mid_hom * v * bottom_hom
+	for (int ii=1; ii<BED->num_mid_vars; ii++) // only go this far, because all remaining entries are preset to and should be 0
 	{
-		mul_mp(&Jv->entry[offset][ii+offset_horizontal], v, &BED->pi[1]->coord[ii]);
-		neg_mp(&Jv->entry[offset][ii+offset_horizontal], &Jv->entry[offset][ii+offset_horizontal]);
-		div_mp(&Jv->entry[offset][ii+offset_horizontal], &Jv->entry[offset][ii+offset_horizontal], &curr_top_vars->coord[0]);
+		mul_mp(&Jv->entry[offset][ii+offset_horizontal], temp, &BED->pi[1]->coord[ii]);
 	}
 	
 	
-	//	the Jp entry for this last equation.
-	//should be correct up to perhaps switching left and right proj val
 	
-	sub_mp(temp, BED->v_start, BED->v_target);
-	mul_mp(&Jp->entry[offset][0], proj_bottom, temp);
 	
-	neg_mp(temp, temp);
-	mul_mp(temp2, proj_top, temp);
 	
-	add_mp(&Jp->entry[offset][0], &Jp->entry[offset][0], temp2);
+    //	the Jp entry for this last equation.
+	
+	
+	sub_mp(temp, BED->v_start, BED->v_target); // temp  = v_start - v_target
+	mul_mp(temp, temp, &curr_mid_vars->coord[0]); //   *= mid_hom
+	
+	mul_mp(temp2, &curr_top_vars->coord[0], proj_bottom);
+	mul_mp(temp3, &curr_bottom_vars->coord[0], proj_top);
+	sub_mp(temp4, temp2, temp3);
+	
+	mul_mp(&Jp->entry[offset][0], temp, temp4);
 	
 	offset++;
 	
@@ -1779,8 +1829,8 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 		
 		
 		print_point_to_screen_matlab(current_variable_values,"curr_vars");
-        //		print_point_to_screen_matlab(funcVals,"F_mp");
-        //		print_matrix_to_screen_matlab(Jv,"Jv");
+		print_point_to_screen_matlab(funcVals,"F_mp");
+//		print_matrix_to_screen_matlab(Jv,"Jv");
         //		print_matrix_to_screen_matlab(Jp,"Jp");
 		
         //		vec_mp result; init_vec_mp(result,0);
@@ -1814,6 +1864,7 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	clear_mp(temp);
 	clear_mp(temp2);
 	clear_mp(temp3);
+	clear_mp(temp4);
 	
 	clear_mp(proj_bottom);
 	clear_mp(proj_top);

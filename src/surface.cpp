@@ -1061,6 +1061,8 @@ void surface_decomposition::serial_connect(vertex_set & V, midpoint_config & md_
 			std::cout << "F.num_right " << F.num_right << std::endl;
 			std::cout << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n\n";
 			add_face(F);
+			
+//			sleep(60);
 		}
 	}
 	
@@ -1399,8 +1401,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 		F.system_type_bottom = UNSET;
 	}
 	
-	std::cout << "!" << std::endl;
-	
+
 	if (md_config.system_type_top == SYSTEM_CRIT) {
 		num_top_vars = md_config.num_crit_vars;
 		F.top = crit_curve.edge_w_midpt(mid_slices[ii].edges[jj].right); // index the *edge*
@@ -1429,7 +1430,6 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 		return F;
 	}
 	
-	std::cout << "@" << std::endl;
 	
 	//copy in the start point as three points concatenated.
 	
@@ -1737,13 +1737,11 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				sub_mp(numer, proj_mid, proj_bottom); // p2(e.w) - p2(w0);
 				div_mp(md_config.v_target, numer, denom); // [p2(e.w) - p2(w0)] / [p2(w2) - p2(w0)]
 				
-				//print some display to screen
-				if (solve_options.verbose_level >= 3)
-				{
-					print_point_to_screen_matlab(V.vertices[mid_slices[ii].edges[jj].right].pt_mp,"top_start");
-					print_point_to_screen_matlab(V.vertices[mid_slices[ii].edges[jj].left].pt_mp,"bottom_start");
-					print_point_to_screen_matlab(V.vertices[ crit_slices[ii+zz].edges[current_edge].midpt ].pt_mp,"midpoint_target");
-				}
+				
+				
+				
+				
+				
 				
 				if (solve_options.verbose_level >= 0)
 				{
@@ -1775,13 +1773,22 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				
 				
 				
-				
-				
 				witness_set W_new;
 				midpoint_solver_master_entry_point(W_midtrack, // carries with it the start points, and the linears.
 												   &W_new, // new data goes in here
 												   md_config,
 												   solve_options);
+				
+				//print some display to screen
+				if (solve_options.verbose_level >= 3)
+				{
+					print_point_to_screen_matlab(V.vertices[mid_slices[ii].edges[jj].right].pt_mp,"top_start");
+					print_point_to_screen_matlab(V.vertices[mid_slices[ii].edges[jj].left].pt_mp,"bottom_start");
+					print_point_to_screen_matlab(V.vertices[ crit_slices[ii+zz].edges[current_edge].midpt ].pt_mp,"midpoint_target");
+				}
+				
+				
+				
 				
 				
 				// should get a single point back from this solver.
@@ -1834,9 +1841,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 					std::cout << "found_index of point: " << found_index << std::endl;
 				}
 				
-				
-				clear_vec_mp(found_point);
-				
+
 				
 				//search among the current edge possibilities for the one containing the found (mid) point
 				int index_in_set = -1;
@@ -1868,7 +1873,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 					
 					int next_edge = index_in_set; // index the *edge*
 					
-					std::cout << "next_edge " << next_edge << ", l m r: " << crit_slices[ii+zz].edges[next_edge].left << " " << crit_slices[ii+zz].edges[next_edge].midpt << " " << crit_slices[ii+zz].edges[next_edge].right << std::endl;
+					std::cout << "added_edge " << next_edge << ", l m r: " << crit_slices[ii+zz].edges[next_edge].left << " " << crit_slices[ii+zz].edges[next_edge].midpt << " " << crit_slices[ii+zz].edges[next_edge].right << std::endl;
 					
 					
 					
@@ -1923,7 +1928,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 		
 	}
 	
-	
+	clear_vec_mp(found_point);
 	
 	clear_mp(temp);
 	clear_mp(temp2);

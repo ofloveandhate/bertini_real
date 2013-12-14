@@ -121,6 +121,9 @@ void dehomogenize(point_mp *result, point_mp dehom_me, int num_variables);
 void dot_product_d(comp_d result, vec_d one, vec_d two);
 void dot_product_mp(comp_mp result, vec_mp one, vec_mp two);
 
+void dot_product_mindim(comp_d result, vec_d left, vec_d right);
+void dot_product_mindim(comp_mp result, vec_mp left, vec_mp right);
+
 void projection_value_homogeneous_input(comp_d result, vec_d input, vec_d projection);
 void projection_value_homogeneous_input(comp_mp result, vec_mp input, vec_mp projection);
 
@@ -131,8 +134,8 @@ int isSamePoint_inhomogeneous_input(point_mp left, point_mp right);
 
 
 int isSamePoint_homogeneous_input(point_d left, point_d right);
-
 int isSamePoint_homogeneous_input(point_mp left, point_mp right);
+
 
 void real_threshold(comp_mp blabla, double threshold);
 void real_threshold(vec_mp blabla, double threshold);

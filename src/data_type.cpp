@@ -2665,6 +2665,38 @@ void dot_product_mp(comp_mp result, vec_mp left, vec_mp right)
 }
 
 
+
+
+void dot_product_mindim(comp_d result, vec_d left, vec_d right)
+{
+
+	set_zero_d(result);
+	comp_d temp;
+	for (int ii=0; ii<MIN(left->size,right->size); ++ii) {
+		mul_d(temp,&left->coord[ii],&right->coord[ii]);
+		add_d(result,result,temp);
+	}
+	
+}
+
+
+void dot_product_mindim(comp_mp result, vec_mp left, vec_mp right)
+{
+	
+	set_zero_mp(result);
+	comp_mp temp; init_mp(temp);
+	for (int ii=0; ii<MIN(left->size,right->size); ++ii) {
+		mul_mp(temp,&left->coord[ii],&right->coord[ii]);
+		add_mp(result,result,temp);
+	}
+	clear_mp(temp);
+}
+
+
+
+
+
+
 /**
  computes the projection value given a homogeneous input.
  
