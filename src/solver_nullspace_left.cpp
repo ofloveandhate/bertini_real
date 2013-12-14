@@ -9,35 +9,35 @@
 void nullspace_config::clear()
 {
 	
-	free(randomized_degrees); // the degrees of the randomized functions (not derivatives)
+//	free(randomized_degrees); // the degrees of the randomized functions (not derivatives)
 	
-	for (int ii=0; ii<num_jac_equations; ii++) {
-		for (int jj=0; jj<max_degree; jj++) {
-			clear_vec_mp(starting_linears[ii][jj]);
-		}
-		free(starting_linears[ii]);
-	}
-	free(starting_linears);
-	
-	for (int ii=0; ii<num_additional_linears; ii++){
-		clear_vec_mp(additional_linears_starting[ii]);
-		clear_vec_mp(additional_linears_terminal[ii]);
-	}
-	free(additional_linears_terminal);
-	free(additional_linears_starting);
-	
-	
-	for (int ii=0; ii<num_v_linears; ii++)
-		clear_vec_mp(v_linears[ii]);
-	free(v_linears);
-	
-	clear_vec_mp(v_patch);
-	
-	for (int ii=0; ii<num_projections; ii++)
-		clear_vec_mp(target_projection[ii]);
-	free(target_projection);
-	
-	clear_mat_mp(randomizer_matrix);
+//	for (int ii=0; ii<num_jac_equations; ii++) {
+//		for (int jj=0; jj<max_degree; jj++) {
+//			clear_vec_mp(starting_linears[ii][jj]);
+//		}
+//		free(starting_linears[ii]);
+//	}
+//	free(starting_linears);
+//	
+//	for (int ii=0; ii<num_additional_linears; ii++){
+//		clear_vec_mp(additional_linears_starting[ii]);
+//		clear_vec_mp(additional_linears_terminal[ii]);
+//	}
+//	free(additional_linears_terminal);
+//	free(additional_linears_starting);
+//	
+//	
+//	for (int ii=0; ii<num_v_linears; ii++)
+//		clear_vec_mp(v_linears[ii]);
+//	free(v_linears);
+//	
+//	clear_vec_mp(v_patch);
+//	
+//	for (int ii=0; ii<num_projections; ii++)
+//		clear_vec_mp(target_projection[ii]);
+//	free(target_projection);
+//	
+//	clear_mat_mp(randomizer_matrix);
 }
 
 
