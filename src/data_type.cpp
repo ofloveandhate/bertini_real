@@ -1467,7 +1467,8 @@ int vertex_set::setup_vertices(boost::filesystem::path INfile)
 	int num_vertices;
 	int num_vars;
 	int tmp_num_projections;
-	fscanf(IN, "%d %d %d\n\n", &num_vertices, &tmp_num_projections, &this->num_natural_variables);
+	int tmp_num_filenames;
+	fscanf(IN, "%d %d %d %d\n\n", &num_vertices, &tmp_num_projections, &this->num_natural_variables, &tmp_num_filenames);
 	
 	
 	vec_mp temp_vec; init_vec_mp2(temp_vec,num_natural_variables,1024);
@@ -1481,6 +1482,13 @@ int vertex_set::setup_vertices(boost::filesystem::path INfile)
 	clear_vec_mp(temp_vec);
 	
 	
+	char * buffer = new char[1024];
+	for (int ii=0; ii<tmp_num_filenames; ii++) {
+		fgets(buffer, 1024, IN);
+		boost::filesystem::path temppath = buffer;
+		this->filenames.push_back(temppath);
+	}
+	delete [] buffer;
 	
 	
 	vertex temp_vertex;
@@ -1507,7 +1515,8 @@ int vertex_set::setup_vertices(boost::filesystem::path INfile)
 			mpf_inp_str(temp_vertex.projection_values->coord[jj].i, IN, 10);
 		}
 		
-		print_point_to_screen_matlab(temp_vertex.projection_values,"p");
+//		print_point_to_screen_matlab(temp_vertex.projection_values,"p");
+		fscanf(IN,"%d\n",&temp_vertex.input_filename_index);
 		fscanf(IN,"%d\n",&temp_vertex.type);
 		
 		
@@ -1548,7 +1557,7 @@ void vertex_set::print(boost::filesystem::path outputfile)
 	FILE *OUT = safe_fopen_write(outputfile);
 	
 	// output the number of vertices
-	fprintf(OUT,"%d %d %d\n\n",num_vertices,num_projections, num_natural_variables);
+	fprintf(OUT,"%d %d %d %lu\n\n",num_vertices,num_projections, num_natural_variables, filenames.size());
 	
 	
 	
@@ -1561,6 +1570,13 @@ void vertex_set::print(boost::filesystem::path outputfile)
 	}
 	
 	
+	for (int ii=0; ii<filenames.size(); ii++) {
+		int strleng = filenames[ii].string().size() + 1; // +1 for the null character
+		char * buffer = new char[strleng];
+		memcpy(buffer, filenames[ii].c_str(), strleng);
+		fprintf(OUT,"%s\n",buffer);
+		free(buffer);
+	}
 	
 	for (int ii = 0; ii < num_vertices; ii++)
 	{ // output points
@@ -1575,6 +1591,8 @@ void vertex_set::print(boost::filesystem::path outputfile)
 			print_mp(OUT, 0, &vertices[ii].projection_values->coord[jj]);
 			fprintf(OUT,"\n");
 		}
+		
+		fprintf(OUT,"%d\n",vertices[ii].input_filename_index);
 		
 		fprintf(OUT,"\n");
 		if (vertices[ii].removed==1) {
@@ -2025,6 +2043,40 @@ void decomposition::print(boost::filesystem::path base)
 	fclose(OUT);
 }
 
+
+
+
+int decomposition::read_sphere(const boost::filesystem::path & bounding_sphere_filename)
+{
+	
+
+	change_size_vec_mp(this->sphere_center, num_variables-1); //destructive resize
+	sphere_center->size = num_variables-1;
+	
+	
+	FILE *IN = safe_fopen_read(bounding_sphere_filename);
+	
+	mpf_inp_str(sphere_radius->r, IN, 10);
+	mpf_set_str(sphere_radius->i,"0",10);
+	
+	
+	for (int jj=1; jj<num_variables; jj++) {
+		mpf_inp_str(sphere_center->coord[jj-1].r, IN, 10);
+		mpf_set_str(sphere_center->coord[jj-1].i,"0",10);
+	}
+	
+	int tmp_num_vars;
+	fscanf(IN,"%d",&tmp_num_vars); scanRestOfLine(IN);
+	
+	
+	fclose(IN);
+	
+	
+	have_sphere_radius = true;
+	
+	
+	return SUCCESSFUL;
+}
 
 
 

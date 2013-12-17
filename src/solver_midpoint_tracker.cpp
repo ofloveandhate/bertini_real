@@ -858,8 +858,8 @@ int midpoint_solver_master_entry_point(const witness_set						&W, // carries wit
 			break;
 	}
 	
-	print_point_to_screen_matlab(W.pts_mp[0],"start_pt");
-	ED_d->print();
+//	print_point_to_screen_matlab(W.pts_mp[0],"start_pt");
+//	ED_d->print();
 	
 	master_solver(W_new, W,
                   ED_d, ED_mp,

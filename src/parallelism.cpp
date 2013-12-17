@@ -32,7 +32,7 @@ int process::main_loop(){
 int ubermaster_process::main_loop()
 {
 	witness_set W;
-
+	
 	
 	program_options.splash_screen();
 	
@@ -63,8 +63,8 @@ int ubermaster_process::main_loop()
 	W.input_filename = program_options.input_filename;
 	
 	int incidence_number = get_incidence_number(W,num_vars,
-																							program_options,
-																							program_options.input_filename);
+												program_options,
+												program_options.input_filename);
 	
 	W.incidence_number = incidence_number;
 	
@@ -89,22 +89,23 @@ int ubermaster_process::main_loop()
 	
 	switch (W.dim) {
 		case 1:
-			// curve
-			C.main(V, W, pi, program_options, solve_options);
-			
-			if (program_options.verbose_level>=2)
-				printf("outputting data\n");
-			
-			
-			C.output_main(program_options, V);
-			
+			{
+				// curve
+				C.main(V, W, pi, program_options, solve_options);
+				
+				if (program_options.verbose_level>=2)
+					printf("outputting data\n");
+				
+				
+				C.output_main(program_options, V);
+			}
 			break;
 			
 			
 		case 2:
 			// surface
 			S.main(V, W, pi, program_options, solve_options);
-
+			
 			S.output_main(program_options, V);
 			
 			break;
@@ -175,7 +176,7 @@ int worker_process::main_loop()
 				
 			case MIDPOINT_SOLVER:
 				S.worker_connect(solve_options, program_options);
-//				midpoint_slave_entry_point(this->solve_options);
+				//				midpoint_slave_entry_point(this->solve_options);
 				// call the blabla here
 				break;
 				
