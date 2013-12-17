@@ -119,14 +119,19 @@ int BR_configuration::startup()
 		fclose(IN);
 	}
 	
+	if (this->user_sphere) {
+		IN = safe_fopen_read(this->bounding_sphere_filename.c_str());
+		fclose(IN);
+	}
+	
 	return 0;
 }
 
 void BR_configuration::splash_screen()
 {
 	printf("\n BertiniReal(TM) v%s\n\n", BERTINI_REAL_VERSION_STRING);
-  printf(" D.J. Bates, D. Brake,\n W. Hao, J.D. Hauenstein,\n A.J. Sommese, C.W. Wampler\n\n");
-  printf("(using GMP v%d.%d.%d, MPFR v%s)\n\n", __GNU_MP_VERSION, __GNU_MP_VERSION_MINOR, __GNU_MP_VERSION_PATCHLEVEL, mpfr_get_version());
+	printf(" Daniel A Brake with\n D.J. Bates,\n W. Hao, J.D. Hauenstein,\n A.J. Sommese, C.W. Wampler\n\n");
+	printf("(using GMP v%d.%d.%d, MPFR v%s)\n\n", __GNU_MP_VERSION, __GNU_MP_VERSION_MINOR, __GNU_MP_VERSION_PATCHLEVEL, mpfr_get_version());
 	
 }
 
@@ -148,6 +153,14 @@ void BR_configuration::display_current_options()
 		printf(", %s\n",this->randomization_filename.c_str());
 	else
 		printf("\n");
+	
+	
+	printf("user_sphere: %d",user_sphere);
+	if (user_sphere)
+		printf(", %s\n",bounding_sphere_filename.c_str());
+	else
+		printf("\n");
+	
 	
 	printf("input_filename: %s\n",this->input_filename.c_str());
 	printf("witness_set_filename: %s\n",this->witness_set_filename.c_str());
@@ -180,11 +193,10 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 			{"version",		no_argument,			 0, 'v'}, {"v",		no_argument,			 0, 'v'},
 			{"output",		required_argument,			 0, 'o'}, {"out",		required_argument,			 0, 'o'}, {"o",		required_argument,			 0, 'o'},
 			{"verb",		required_argument,			 0, 'V'},
-			{"box",		required_argument,			 0, 'b'}, {"b",		required_argument,			 0, 'b'},
+			{"sphere",		required_argument,			 0, 'S'}, {"s",		required_argument,			 0, 'S'},
 			{"gammatrick",		required_argument,			 0, 'g'}, {"g",		required_argument,			 0, 'g'},
 			{"detjac",		no_argument,			 0, 'd'},
 			{"debug", no_argument, 0, 'D'},
-			{"nomerge", no_argument, 0, 'm'},
 			{"quick",no_argument,0,'q'},{"q",no_argument,0,'q'},
 			{0, 0, 0, 0}
 		};
@@ -203,9 +215,7 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 			case 'q':
 				this->quick_run = true;
 				break;
-			case 'm':
-				this->merge_edges = false;
-				break;
+
 				
 			case 'D':
 				this->debugwait = 1;
@@ -223,12 +233,10 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 				break;
 				
 				
-			case 'b':
-				this->use_bounding_box = atoi(optarg);
-				if (! (this->use_bounding_box==0 || this->use_bounding_box==1) ) {
-					printf("value for 'box' must be 1 or 0\n");
-					exit(689);
-				}
+			case 'S':
+				user_sphere = true;
+				this->bounding_sphere_filename = boost::filesystem::absolute(optarg);
+				break;
 				
 			case 'V':
 				this->verbose_level = atoi(optarg);
@@ -268,7 +276,7 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 				break;
 				
 			case 'h':
-				printf("\nThis is BertiniReal v %s, developed by\nDan J. Bates, Daniel Brake,\nWenrui Hao, Jonathan D. Hauenstein,\nAndrew J. Sommmese, and Charles W. Wampler.\n\n", BERTINI_REAL_VERSION_STRING);
+				printf("\nThis is BertiniReal v %s, developed by\nDaniel A. Brake with Dan J. Bates,\nWenrui Hao, Jonathan D. Hauenstein,\nAndrew J. Sommmese, and Charles W. Wampler.\n\n", BERTINI_REAL_VERSION_STRING);
 				printf("Send email to brake@math.colostate.edu for details about BertiniReal.\n\n");
 				BR_configuration::print_usage();
 				exit(0);
@@ -334,7 +342,7 @@ void BR_configuration::print_usage()
 	printf("-ns -nostifle\t\t\t   --\n");
 	printf("-v -version\t\t\t   -- \n");
 	printf("-h -help\t\t\t   --\n");
-	printf("-box -b\t\t\t   bool\n");
+	printf("-sphere -b\t\t\t   'filename'\n");
 	printf("-q -quick\t\t\t --\n");
 	printf("-debug\t\t\t --\n");
 	printf("-gammatrick\t\t\t bool\n");
@@ -376,7 +384,6 @@ void BR_configuration::init()
 	
 	this->MPType = 2;
 	
-	this->use_bounding_box = 0;
 	this->use_gamma_trick = 0;
 	
 	merge_edges = true;

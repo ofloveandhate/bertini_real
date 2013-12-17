@@ -246,9 +246,18 @@ void print_comp_matlab(comp_d M,std::string name);
 
 
 
+class mpi_data_class
+{
+	
+};
 
 
-
+namespace bertini {
+	class complex : public mpi_data_class
+	{
+		
+	};
+};
 
 class function
 {
@@ -1119,11 +1128,12 @@ public:
 	
 	virtual void print(boost::filesystem::path outputfile);
 	
+	
+	
+	
+	int read_sphere(const boost::filesystem::path & bounding_sphere_filename);
+	
 	void compute_sphere_bounds(const witness_set & W_crit);
-	
-	
-	
-	
 	
 	void copy_sphere_bounds(const decomposition & other)
 	{

@@ -265,27 +265,32 @@ public:
 	
 	bool quick_run;
 	bool user_sphere;
-	int user_randomization; // bool
+	
+	int user_randomization; // bool // deprecate me
+	
 	int user_projection; // bool
 	
 	int MPType;
 	
-	// all these char* should be boost::filesystem::path
 	boost::filesystem::path bounding_sphere_filename;
 	boost::filesystem::path projection_filename;
 	boost::filesystem::path randomization_filename;
 	boost::filesystem::path input_filename;
 	boost::filesystem::path witness_set_filename;
 	boost::filesystem::path input_deflated_filename;
-	 
+	boost::filesystem::path sphere_filename;
 	
 
+	
+
+	
+	
 	std::string bertini_command;
 	std::string matlab_command;
 	int verbose_level;
 	
 	int use_gamma_trick; // bool
-	int use_bounding_box; // bool
+	
 	bool merge_edges;
 	
 	int crit_solver;

@@ -34,6 +34,10 @@ void surface_decomposition::main(vertex_set & V,
 	add_projection(pi[1]); // add to this
 	
 	
+	
+	
+	
+	
     
 	//copy the patch over into this object
 	for (int ii=0; ii<W_surf.num_patches; ii++)
@@ -282,6 +286,9 @@ void surface_decomposition::beginning_stuff(const witness_set & W_surf,
 	
 	
 	
+	if (program_options.user_sphere) {
+		read_sphere(program_options.bounding_sphere_filename);
+	}
 	
 	
 	//create the matrix
@@ -443,7 +450,13 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 		ns_config.clear();
 		
 		
-		this->compute_sphere_bounds(W_critcurve_crit); // sets the radius and center in this decomposition.  Must propagate to the constituent decompositions as well.   fortunately, i have a method for that!!!
+		if (have_sphere_radius) {
+			W_critcurve_crit.sort_for_inside_sphere(sphere_radius, sphere_center);
+		}
+		else
+		{
+			this->compute_sphere_bounds(W_critcurve_crit); // sets the radius and center in this decomposition.  Must propagate to the constituent decompositions as well.   fortunately, i have a method for that!!!
+		}
 		
 		
 		crit_curve.copy_sphere_bounds(*this); // copy the bounds into the critcurve.
@@ -1868,9 +1881,8 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				
 				//perhaps check for the point as left or right point of an edge?
 				
-				if (index_in_set>=0)
+				if (index_in_set>=0 && found_edges.find(index_in_set)==found_edges.end())
 				{
-					
 					int next_edge = index_in_set; // index the *edge*
 					
 					std::cout << "added_edge " << next_edge << ", l m r: " << crit_slices[ii+zz].edges[next_edge].left << " " << crit_slices[ii+zz].edges[next_edge].midpt << " " << crit_slices[ii+zz].edges[next_edge].right << std::endl;

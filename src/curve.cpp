@@ -9,6 +9,8 @@ void curve_decomposition::main(vertex_set & V,
                                solver_configuration & solve_options)
 {
 	
+	
+	
 	int num_vars = W.num_variables;
 	
 	solve_options.robust = false;
@@ -78,11 +80,16 @@ void curve_decomposition::main(vertex_set & V,
 	
 	
 	
+	if (program_options.user_sphere) {
+		read_sphere(program_options.bounding_sphere_filename);
+	}
+	
+	
 	
 	input_filename = W.input_filename;
 	component_num = W.comp_num;
 	dimension = W.dim;
-	num_variables = num_vars;
+	num_variables = num_vars; // ELIMINATE ONE OF THESE.  THERE ARE TOO MANY.
 	add_projection(projections[0]);
 	
 	if (self_conjugate==0)  //C is not self-conjugate
@@ -934,17 +941,13 @@ int curve_decomposition::compute_critical_points(const witness_set & W_curve,
 	W_crit_real.only_first_vars(W_curve.num_variables); // trim the fat, since we are at the lowest level.
 	W_crit_real.sort_for_real(solve_options.T);
 	
-//	W_crit_real.print_to_screen();
+
 	
 	if (have_sphere_radius) {
 		W_crit_real.sort_for_inside_sphere(sphere_radius, sphere_center);
-		
-//		print_point_to_screen_matlab(sphere_center,"center");
-//		print_comp_matlab(sphere_radius,"radius");
 	}
 	else
 	{
-//		// this should only happen if we are decomposing a curve at the highest level.  if anything higher dimension, this curve is a subcomponent, and we should NOT compute bounds here.
 		std::cout << color::red() << "computing sphere bounds..." << color::console_default() << std::endl;
 		compute_sphere_bounds(W_crit_real);
 	}
