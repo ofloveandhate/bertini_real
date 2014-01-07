@@ -2555,19 +2555,6 @@ void decomposition::receive(int source, parallelism_config & mpi_config)
 
 
 
-void clear_sample(sample_data *S, int MPType)
-{
-	
-	int ii;
-	for(ii=0;ii<S->num_edges;ii++)
-	{
-		free(S->sample_indices[ii]);
-	}
-	free(S->sample_indices);
-}
-
-
-
 void norm_of_difference(mpf_t result, vec_mp left, vec_mp right)
 {
 	if (left->size!=right->size || left->size == 0) {

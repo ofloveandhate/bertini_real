@@ -1324,18 +1324,7 @@ protected:
 
 
 
-typedef struct
-{
-	int num_variables;
-	int num_edges;
-	
-	int *num_samples_each_edge;
-	
-	int **sample_indices;
-}
-sample_data;
 
-void clear_sample(sample_data *S, int MPType);
 
 
 
