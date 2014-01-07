@@ -6,6 +6,19 @@
 
 
 
+void clear_sample(curve_sample_data *S, int MPType)
+{
+	
+	int ii;
+	for(ii=0;ii<S->num_edges;ii++)
+	{
+		free(S->sample_indices[ii]);
+	}
+	free(S->sample_indices);
+}
+
+
+
 
 int main(int argC, char *args[])
 {
@@ -19,7 +32,7 @@ int main(int argC, char *args[])
 	
 	
 	
-	sample_data   S_old,S_new;
+	curve_sample_data   S_old,S_new;
     
 	
 	
@@ -156,9 +169,9 @@ int main(int argC, char *args[])
 
 
 
-void generate_new_sampling_pts(sample_data *S_new,
+void generate_new_sampling_pts(curve_sample_data *S_new,
                                mat_mp randomizer_matrix,
-                               sample_data S_old,
+                               curve_sample_data S_old,
                                curve_decomposition C,
                                vertex_set &V,
                                witness_set & W,
@@ -479,7 +492,7 @@ void set_witness_set_mp(witness_set *W, vec_mp new_linear,vec_mp pts,int num_var
 }
 
 
-void  output_sampling_data(sample_data S, vertex_set V,
+void  output_sampling_data(curve_sample_data S, vertex_set V,
                            boost::filesystem::path samplingName,int num_vars, int MPType)
 {
     //	V.print_to_screen();
@@ -634,7 +647,7 @@ void estimate_new_projection_value(comp_mp result, vec_mp left, vec_mp right, ve
 
 
 
-int  set_initial_sample_data(sample_data *S, curve_decomposition C, vertex_set V,
+int  set_initial_sample_data(curve_sample_data *S, curve_decomposition C, vertex_set V,
                              int num_vars)
 {
 	int ii;
@@ -670,7 +683,7 @@ int  set_initial_sample_data(sample_data *S, curve_decomposition C, vertex_set V
 
 
 void set_initial_refinement_flags(int *num_refinements, int **refine_flags, int ** current_indices,
-                                  sample_data S, vertex_set &V,
+                                  curve_sample_data S, vertex_set &V,
                                   int current_edge, sampler_configuration *sampler_options)
 {
 	

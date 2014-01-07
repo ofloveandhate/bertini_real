@@ -1163,8 +1163,12 @@ void surface_decomposition::master_connect(vertex_set & V, midpoint_config & md_
 					std::cout << "master received face " << num_faces << std::endl;
 				}
 				
-				this->output_main(program_options, V); // incremental output
 				solve_options.deactivate(statty_mc_gatty.MPI_SOURCE);
+				
+				
+				
+				// this needs to be inside of a protector, in the sense that we shouldn't do it after EVERY face, but rather at thoughtful times.
+				this->output_main(program_options, V); // incremental output
 			}
 		}
 	}

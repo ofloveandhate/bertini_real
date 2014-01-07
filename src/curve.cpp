@@ -16,31 +16,37 @@ void curve_decomposition::main(vertex_set & V,
 	solve_options.robust = false;
 	
 	
+	if (0) {
+		// perform an isosingular deflation
+		// note: somehow, you do not need witness_data to perform isosingular deflation
+		if (program_options.verbose_level>=2)
+			printf("performing isosingular deflation\n");
+		
+		W.write_dehomogenized_coordinates("witness_points_dehomogenized"); // write the points to file
+		int num_deflations, *deflation_sequence = NULL;
+		isosingular_deflation(&num_deflations, &deflation_sequence,
+							  program_options, W.input_filename,
+							  "witness_points_dehomogenized",
+							  program_options.max_deflations,
+							  W.dim, W.comp_num);
+		free(deflation_sequence);
+		
+		
+		
+		program_options.input_deflated_filename = W.input_filename;
+		
+		std::stringstream converter;
+		converter << "_dim_" << W.dim << "_comp_" << W.comp_num << "_deflated";
+		program_options.input_deflated_filename += converter.str();
+		converter.clear(); converter.str("");
+		
+		W.input_filename = program_options.input_deflated_filename;
+	}
+	else {
+		//nothing
+	}
 	
-	// perform an isosingular deflation
-	// note: you do not need witness_data to perform isosingular deflation
-	if (program_options.verbose_level>=2)
-		printf("performing isosingular deflation\n");
 	
-	W.write_dehomogenized_coordinates("witness_points_dehomogenized"); // write the points to file
-	int num_deflations, *deflation_sequence = NULL;
-	isosingular_deflation(&num_deflations, &deflation_sequence,
-                          program_options, W.input_filename,
-                          "witness_points_dehomogenized",
-                          program_options.max_deflations,
-                          W.dim, W.comp_num);
-	free(deflation_sequence);
-	
-	
-	
-	program_options.input_deflated_filename = W.input_filename;
-	
-	std::stringstream converter;
-	converter << "_dim_" << W.dim << "_comp_" << W.comp_num << "_deflated";
-	program_options.input_deflated_filename += converter.str();
-	converter.clear(); converter.str("");
-	
-	W.input_filename = program_options.input_deflated_filename;
 	
 	// this wraps around a bertini routine
 	parse_input_file(W.input_filename);
