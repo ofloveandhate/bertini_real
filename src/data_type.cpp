@@ -2226,7 +2226,7 @@ void decomposition::output_main(const BR_configuration & program_options, vertex
 	V.print(base / "V.vertex");
 	//	V.print_to_screen();
 	
-	this->print(base); // using polymorphism here!
+	this->print(base); // using polymorphism and virtuallism here!
 	
 	OUT = safe_fopen_write("Dir_Name");
 	fprintf(OUT,"%s\n",base.c_str());

@@ -243,27 +243,37 @@ void surface_decomposition::beginning_stuff(const witness_set & W_surf,
                                             BR_configuration & program_options,
                                             solver_configuration & solve_options)
 {
-	// perform an isosingular deflation
-	// note: you do not need witness_data to perform isosingular deflation
-	if (program_options.verbose_level>=2)
-		printf("performing isosingular deflation\n");
-	
-	W_surf.write_dehomogenized_coordinates("witness_points_dehomogenized"); // write the points to file
-	int num_deflations, *deflation_sequence = NULL;
-	
-	isosingular_deflation(&num_deflations, &deflation_sequence, program_options,
-                          program_options.input_filename,
-                          "witness_points_dehomogenized",
-                          program_options.max_deflations, W_surf.dim, W_surf.comp_num);
-	free(deflation_sequence);
 	
 	
-	program_options.input_deflated_filename = program_options.input_filename;
+	if (0) {
+		// perform an isosingular deflation
+		// note: you do not need witness_data to perform isosingular deflation
+		if (program_options.verbose_level>=2)
+			printf("performing isosingular deflation\n");
+		
+		W_surf.write_dehomogenized_coordinates("witness_points_dehomogenized"); // write the points to file
+		int num_deflations, *deflation_sequence = NULL;
+		
+		isosingular_deflation(&num_deflations, &deflation_sequence, program_options,
+							  program_options.input_filename,
+							  "witness_points_dehomogenized",
+							  program_options.max_deflations, W_surf.dim, W_surf.comp_num);
+		free(deflation_sequence);
+		
+		
+		program_options.input_deflated_filename = program_options.input_filename;
+		
+		std::stringstream converter;
+		converter << "_dim_" << W_surf.dim << "_comp_" << W_surf.comp_num << "_deflated";
+		program_options.input_deflated_filename += converter.str();
+		converter.clear(); converter.str("");
+	}
+	else {
+		program_options.input_deflated_filename = program_options.input_filename;
+	}
 	
-	std::stringstream converter;
-	converter << "_dim_" << W_surf.dim << "_comp_" << W_surf.comp_num << "_deflated";
-	program_options.input_deflated_filename += converter.str();
-	converter.clear(); converter.str("");
+	
+	
 	
 	// this wraps around a bertini routine
 	parse_input_file(program_options.input_deflated_filename);
