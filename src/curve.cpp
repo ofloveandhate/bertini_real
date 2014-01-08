@@ -43,6 +43,7 @@ void curve_decomposition::main(vertex_set & V,
 		W.input_filename = program_options.input_deflated_filename;
 	}
 	else {
+		program_options.input_deflated_filename = program_options.input_filename;
 		//nothing
 	}
 	
@@ -773,8 +774,8 @@ void curve_decomposition::merge(witness_set & W_midpt,
 			std::cout << "<" << edges[left_edge_w_pt].left << " " << edges[left_edge_w_pt].midpt << " " << edges[left_edge_w_pt].right << "> <";
 			std::cout << edges[right_edge_w_pt].left << " " << edges[right_edge_w_pt].midpt << " " << edges[right_edge_w_pt].right << ">" << std::endl;
 			
-			
-			br_exit(-8009);
+			break;
+//			br_exit(-8009);
 		}
 		
 		
