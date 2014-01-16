@@ -315,6 +315,7 @@ int solver_mp::receive(parallelism_config & mpi_config)
         
         this->have_SLP = true;
         initEvalProg(this->MPType);
+		SLP_memory.capture_globals();
     }
     
 	receive_patch_mp(&this->patch);
@@ -428,12 +429,18 @@ int solver_d::receive(parallelism_config & mpi_config)
             
             this->have_SLP = true;
             initEvalProg(this->MPType);
+			SLP_memory.capture_globals();
         }
     }
     else if (MPType==2) {
         this->setup(BED_mp->SLP);
+		if (have_SLP) {
+			SLP_memory.capture_globals();
+		}
+		
     }
     
+	
     
 	receive_patch_d(&this->patch); // the receiving part of the broadcast
 	
