@@ -79,6 +79,8 @@ int main(int argC, char *args[])
 	
 	
 	witness_set W;
+	
+	W.input_filename = inputName;
 	W.num_variables = num_vars;
     
 	W.get_variable_names();
@@ -180,6 +182,11 @@ void generate_new_sampling_pts(curve_sample_data *S_new,
                                solver_configuration & solve_options)
 {
     
+	
+	V.set_curr_projection(C.pi[0]);
+	V.set_curr_input(W.input_filename);
+	
+	
 	
 	int				num_vars = C.num_variables;
 	
