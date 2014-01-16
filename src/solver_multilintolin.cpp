@@ -24,19 +24,19 @@ void multilintolin_eval_data_mp::init()
 
 
 int multilintolin_eval_data_mp::setup(const multilin_config & config,
-					const witness_set & W,
-					vec_mp * target_linears,
-					solver_configuration & solve_options)
+									  const witness_set & W,
+									  vec_mp * target_linears,
+									  solver_configuration & solve_options)
 {
 	
 	
 	if (!config.have_rand) {
-		std::cout << "don't have randomization matrix!" << std::endl;
+		std::cout << "don't have multilin randomization matrix!" << std::endl;
 		deliberate_segfault();
 	}
 	
 	if (!config.have_mem) {
-		std::cout << "don't have memory!" << std::endl;
+		std::cout << "don't have multilin SLP memory!" << std::endl;
 		deliberate_segfault();
 	}
 	
@@ -118,10 +118,10 @@ int multilintolin_eval_data_mp::setup(const multilin_config & config,
 	
 	
 	mat_cp_mp(randomizer_matrix,
-						config.randomizer_matrix);
+			  config.randomizer_matrix);
 	
 	mat_cp_mp(randomizer_matrix_full_prec,
-						config.randomizer_matrix);
+			  config.randomizer_matrix);
 	
 	
 	
@@ -133,6 +133,107 @@ int multilintolin_eval_data_mp::setup(const multilin_config & config,
 
 
 
+
+
+
+
+int multilintolin_eval_data_mp::send(parallelism_config & mpi_config)
+{
+	
+	int solver_choice = MULTILIN;
+	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	// send the confirmation integer, to ensure that we are sending the correct type.
+	
+	//send the base class stuff.
+	solver_mp::send(mpi_config);
+	
+	
+	int *buffer = new int[1];
+	
+	
+	buffer[0] = num_linears;
+	
+	// now can actually send the data.
+	
+	MPI_Bcast(buffer,1,MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	
+	delete[] buffer;
+	
+	if (this->MPType==2){
+		for (int ii=0; ii<num_linears; ii++) {
+			bcast_vec_mp(old_linear_full_prec[ii], mpi_config.id(), mpi_config.head());
+			bcast_vec_mp(current_linear_full_prec[ii], mpi_config.id(), mpi_config.head());
+		}
+	}
+	else {
+		for (int ii=0; ii<num_linears; ii++) {
+			bcast_vec_mp(old_linear[ii], mpi_config.id(), mpi_config.head());
+			bcast_vec_mp(current_linear[ii], mpi_config.id(), mpi_config.head());
+		}
+		
+	}
+	
+	
+	return SUCCESSFUL;
+}
+
+
+
+
+int multilintolin_eval_data_mp::receive(parallelism_config & mpi_config)
+{
+	int *buffer = new int[1];
+	MPI_Bcast(buffer, 1, MPI_INT, mpi_config.head(), MPI_COMM_WORLD);
+	
+	if (buffer[0] != MULTILIN) {
+		std::cout << "worker failed to confirm it is receiving the multilin type eval data" << std::endl;
+		mpi_config.abort(777);
+	}
+	
+	solver_mp::receive(mpi_config);
+	
+	
+	// now can actually receive the data from whoever.
+	MPI_Bcast(buffer, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	num_linears = buffer[0];
+	delete[] buffer;
+	
+
+	old_linear     = (vec_mp *) br_malloc(num_linears*sizeof(vec_mp));
+	current_linear = (vec_mp *) br_malloc(num_linears*sizeof(vec_mp));
+	
+	if (this->MPType==2) {
+		old_linear_full_prec = (vec_mp *) br_malloc(num_linears*sizeof(vec_mp));
+		current_linear_full_prec = (vec_mp *) br_malloc(num_linears*sizeof(vec_mp));
+		
+		for (int ii=0; ii<num_linears; ii++) {
+			init_vec_mp(old_linear[ii],1);
+			init_vec_mp(current_linear[ii],1);
+			
+			init_vec_mp2(old_linear_full_prec[ii],1,1024);
+			init_vec_mp2(current_linear_full_prec[ii],1,1024);
+			
+			bcast_vec_mp(old_linear_full_prec[ii], mpi_config.id(), mpi_config.head());
+			bcast_vec_mp(current_linear_full_prec[ii], mpi_config.id(), mpi_config.head());
+			
+			vec_cp_mp(old_linear[ii],old_linear_full_prec[ii]);
+			vec_cp_mp(current_linear[ii],current_linear_full_prec[ii]);
+		}
+		
+		
+	}
+	else{ // MPType == 1
+		for (int ii=0; ii<num_linears; ii++) {
+			init_vec_mp(old_linear[ii],1);
+			init_vec_mp(current_linear[ii],1);
+			bcast_vec_mp(old_linear[ii], mpi_config.id(), mpi_config.head());
+			bcast_vec_mp(current_linear[ii], mpi_config.id(), mpi_config.head());
+		}
+	}
+	
+
+	return SUCCESSFUL;
+}
 
 
 
@@ -154,13 +255,17 @@ int multilintolin_eval_data_mp::setup(const multilin_config & config,
 void multilintolin_eval_data_d::init()
 {
 	
-	if (this->MPType==2)
+	if (this->MPType==2){
 		this->BED_mp = new multilintolin_eval_data_mp(2);
-	else
+		solver_d::BED_mp = this->BED_mp;
+	}
+	else{
 		this->BED_mp = NULL;
+	}
 	
 	
 	solver_d::init();
+	
 	this->is_solution_checker_d = &check_issoln_multilintolin_d;
 	this->is_solution_checker_mp = &check_issoln_multilintolin_mp;
 	this->evaluator_function_d = &multilin_to_lin_eval_d;
@@ -181,9 +286,9 @@ void multilintolin_eval_data_d::init()
 
 
 int multilintolin_eval_data_d::setup(const multilin_config & config,
-					const witness_set & W,
-					vec_mp * target_linears,
-					solver_configuration & solve_options)
+									 const witness_set & W,
+									 vec_mp * target_linears,
+									 solver_configuration & solve_options)
 {
 	
 	SLP_memory = config.SLP_memory;
@@ -223,7 +328,7 @@ int multilintolin_eval_data_d::setup(const multilin_config & config,
 	
 	
 	mat_mp_to_d(randomizer_matrix,
-							config.randomizer_matrix);
+				config.randomizer_matrix);
 	
 	if (this->MPType==2)
 	{
@@ -246,6 +351,79 @@ int multilintolin_eval_data_d::setup(const multilin_config & config,
 
 
 
+int multilintolin_eval_data_d::send(parallelism_config & mpi_config)
+{
+    
+    int solver_choice = MULTILIN;
+	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	// send the confirmation integer, to ensure that we are sending the correct type.
+    
+    if (this->MPType==2) {
+		this->BED_mp->send(mpi_config);
+	}
+    
+    
+	//send the base class stuff.
+	solver_d::send(mpi_config);
+	
+	// now can actually send the data.
+	int *buffer = new int[1];
+	buffer[0] = num_linears;
+	MPI_Bcast(buffer, 1, MPI_INT, mpi_config.head() , mpi_config.my_communicator);
+	delete[] buffer;
+	
+	for (int ii=0; ii<num_linears; ii++) {
+		bcast_vec_d(old_linear[ii], mpi_config.id(), mpi_config.head());
+		bcast_vec_d(current_linear[ii], mpi_config.id(), mpi_config.head());
+	}
+	
+	return SUCCESSFUL;
+}
+
+int multilintolin_eval_data_d::receive(parallelism_config & mpi_config)
+{
+
+    int *buffer = new int[1];
+	
+	MPI_Bcast(buffer, 1, MPI_INT, mpi_config.head(), MPI_COMM_WORLD);
+	if (buffer[0] != MULTILIN){
+		std::cout << "worker failed to confirm it is receiving the multilin type eval data" << std::endl;
+		mpi_config.abort(777);
+	}
+    
+    
+    
+	if (this->MPType==2) {
+		this->BED_mp->receive(mpi_config);
+	}
+    
+    
+
+	solver_d::receive(mpi_config);
+	
+	// now can actually receive the data from whoever.
+	
+	
+	
+	MPI_Bcast(buffer, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	num_linears = buffer[0];
+	delete[] buffer;
+	
+
+	
+	old_linear     = (vec_d *) br_malloc(num_linears*sizeof(vec_d));
+	current_linear = (vec_d *) br_malloc(num_linears*sizeof(vec_d));
+	
+	for (int ii=0; ii<num_linears; ii++) {
+		init_vec_d(old_linear[ii],0);
+		init_vec_d(current_linear[ii],0);
+		bcast_vec_d(old_linear[ii], mpi_config.id(), mpi_config.head());
+		bcast_vec_d(current_linear[ii], mpi_config.id(), mpi_config.head());
+	}
+	
+	return SUCCESSFUL;
+}
+
 
 
 
@@ -255,14 +433,12 @@ int multilintolin_eval_data_d::setup(const multilin_config & config,
 
 
 int multilin_solver_master_entry_point(const witness_set						&W, // carries with it the start points, and the linears.
-																			 witness_set							*W_new, // new data goes in here
-																			 vec_mp * target_linears,
-																			 const multilin_config &		config,
-																			 solver_configuration		& solve_options)
+									   witness_set							*W_new, // new data goes in here
+									   vec_mp * target_linears,
+									   const multilin_config &		config,
+									   solver_configuration		& solve_options)
 {
 	
-	bool prev_state = solve_options.force_no_parallel;
-	solve_options.force_no_parallel = true;
 	
 	
 	if (solve_options.use_parallel()) {
@@ -278,18 +454,18 @@ int multilin_solver_master_entry_point(const witness_set						&W, // carries wit
 			ED_d = new multilintolin_eval_data_d(0);
 			
 			ED_d->setup(config,
-									W,
-									target_linears,
-									solve_options);
+						W,
+						target_linears,
+						solve_options);
 			break;
 			
 		case 1:
 			ED_mp = new multilintolin_eval_data_mp(1);
 			
 			ED_mp->setup(config,
-									 W,
-									 target_linears,
-									 solve_options);
+						 W,
+						 target_linears,
+						 solve_options);
 			// initialize latest_newton_residual_mp
 			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
@@ -300,9 +476,9 @@ int multilin_solver_master_entry_point(const witness_set						&W, // carries wit
 			
 			
 			ED_d->setup(config,
-									W,
-									target_linears,
-									solve_options);
+						W,
+						target_linears,
+						solve_options);
 			
 			
 			
@@ -319,8 +495,6 @@ int multilin_solver_master_entry_point(const witness_set						&W, // carries wit
 				  ED_d, ED_mp,
 				  solve_options);
 	
-
-	solve_options.force_no_parallel = prev_state;
 	
 	switch (solve_options.T.MPType) {
 		case 0:
@@ -345,8 +519,98 @@ int multilin_solver_master_entry_point(const witness_set						&W, // carries wit
 			W_new->add_linear(target_linears[jj]);
 		}
 	}
-  return SUCCESSFUL;
+	return SUCCESSFUL;
 	
+}
+
+
+
+
+
+
+
+
+int multilin_slave_entry_point(solver_configuration & solve_options)
+{
+	
+	
+	// already received the flag which indicated that this worker is going to be performing the nullspace calculation.
+	bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
+	
+	int robust;
+	MPI_Bcast(&robust,1,MPI_INT, 0,MPI_COMM_WORLD);
+	solve_options.robust = robust;
+	
+	multilintolin_eval_data_d *ED_d = NULL;
+	multilintolin_eval_data_mp *ED_mp = NULL;
+	
+	
+	switch (solve_options.T.MPType) {
+		case 0:
+			ED_d = new multilintolin_eval_data_d(0);
+			ED_d->receive(solve_options);
+			break;
+			
+		case 1:
+			ED_mp = new multilintolin_eval_data_mp(1);
+			ED_mp->receive(solve_options);
+			
+			// initialize latest_newton_residual_mp
+			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+			break;
+		case 2:
+			ED_d = new multilintolin_eval_data_d(2);
+			ED_mp = ED_d->BED_mp;
+			ED_d->receive(solve_options);
+			
+			
+			
+			
+			// initialize latest_newton_residual_mp
+			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+			break;
+		default:
+			break;
+	}
+	
+    
+	
+	// call the file setup function
+	FILE *OUT = NULL, *midOUT = NULL;
+	
+	generic_setup_files(&OUT, "output",
+                        &midOUT, "midpath_data");
+	
+	trackingStats trackCount; init_trackingStats(&trackCount); // initialize trackCount to all 0
+	
+	std::cout << "1" << std::endl;
+	worker_tracker_loop(&trackCount, OUT, midOUT,
+						ED_d, ED_mp,
+						solve_options);
+	
+	
+	// close the files
+	fclose(midOUT);   fclose(OUT);
+	
+	//clear data
+	switch (solve_options.T.MPType) {
+		case 0:
+			delete ED_d;
+			break;
+			
+		case 1:
+			delete ED_mp;
+			break;
+            
+		case 2:
+			delete ED_d;
+			
+		default:
+			break;
+	}
+	
+	
+	return SUCCESSFUL;
 }
 
 
@@ -362,19 +626,19 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	// uncomment to see the time at each step.
 	//	printf("t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
 	
-  multilintolin_eval_data_d *BED = (multilintolin_eval_data_d *)ED; // to avoid having to cast every time
+	multilintolin_eval_data_d *BED = (multilintolin_eval_data_d *)ED; // to avoid having to cast every time
 	
 	BED->SLP_memory.set_globals_to_this();
 	
-  int ii, jj, mm; // counters
+	int ii, jj, mm; // counters
 	int offset;
-  comp_d one_minus_s, gamma_s;
+	comp_d one_minus_s, gamma_s;
 	comp_d temp, temp2;
 	
 	
-  set_one_d(one_minus_s);
-  sub_d(one_minus_s, one_minus_s, pathVars);  // one_minus_s = (1 - s)
-  mul_d(gamma_s, BED->gamma, pathVars);       // gamma_s = gamma * s
+	set_one_d(one_minus_s);
+	sub_d(one_minus_s, one_minus_s, pathVars);  // one_minus_s = (1 - s)
+	mul_d(gamma_s, BED->gamma, pathVars);       // gamma_s = gamma * s
 	
 	
 	vec_d patchValues; init_vec_d(patchValues, 0);
@@ -422,7 +686,7 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	
 	//set the sizes
 	change_size_vec_d(funcVals,BED->num_variables); funcVals->size = BED->num_variables;
-  change_size_mat_d(Jv, BED->num_variables, BED->num_variables); Jv->rows = Jv->cols = BED->num_variables; //  -> this should be square!!!
+	change_size_mat_d(Jv, BED->num_variables, BED->num_variables); Jv->rows = Jv->cols = BED->num_variables; //  -> this should be square!!!
 	
 	for (ii=0; ii<BED->num_variables; ii++) {
 		for (jj=0; jj<BED->num_variables; jj++) {
@@ -435,30 +699,30 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	evalProg_d(temp_function_values, parVals, parDer, temp_jacobian_functions, temp_jacobian_parameters, current_variable_values, pathVars, BED->SLP);
 	
 	
-  // evaluate the patch
-  patch_eval_d(patchValues, parVals, parDer, Jv_Patch, Jp, current_variable_values, pathVars, &BED->patch);  // Jp is ignored
+	// evaluate the patch
+	patch_eval_d(patchValues, parVals, parDer, Jv_Patch, Jp, current_variable_values, pathVars, &BED->patch);  // Jp is ignored
 	
 	
 	// we assume that the only parameter is s = t and setup parVals & parDer accordingly.
 	// note that you can only really do this AFTER you are done calling other evaluators.
-  // set parVals & parDer correctly
+	// set parVals & parDer correctly
 	
 	// i.e. these must remain here, or below.  \/
-  change_size_point_d(parVals, 1);
-  change_size_vec_d(parDer, 1);
+	change_size_point_d(parVals, 1);
+	change_size_vec_d(parDer, 1);
 	change_size_mat_d(Jp, BED->num_variables, 1); Jp->rows = BED->num_variables; Jp->cols = 1;
 	for (ii=0; ii<BED->num_variables; ii++)
 		set_zero_d(&Jp->entry[ii][0]);
 	
 	
-  parVals->size = parDer->size = 1;
-  set_d(&parVals->coord[0], pathVars); // s = t
-  set_one_d(&parDer->coord[0]);       // ds/dt = 1
+	parVals->size = parDer->size = 1;
+	set_d(&parVals->coord[0], pathVars); // s = t
+	set_one_d(&parDer->coord[0]);       // ds/dt = 1
 	
 	
 	
 	///////// / / / /  /   /
-  // combine everything
+	// combine everything
 	///////// / / / /  /   /
 	
 	//perform the randomization multiplications
@@ -538,11 +802,11 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	
 	//first, the entries related to the functions
 	
-  for (ii = 0; ii < BED->randomizer_matrix->rows; ii++)
+	for (ii = 0; ii < BED->randomizer_matrix->rows; ii++)
 		for (jj = 0; jj < BED->num_variables; jj++)
 			set_d(&Jv->entry[ii][jj],&AtimesJ->entry[ii][jj]);
 	
-  
+	
 	
 	
 	//////////////
@@ -580,7 +844,7 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	for (ii=0; ii<BED->num_linears; ii++) {
 		set_zero_d(&Jp->entry[offset+ii][0]);
 		dot_product_d(temp,
-									BED->current_linear[ii],current_variable_values);
+					  BED->current_linear[ii],current_variable_values);
 		neg_d(temp,temp);
 		dot_product_d(temp2,BED->old_linear[ii],current_variable_values);
 		mul_d(temp2,temp2,BED->gamma);
@@ -616,7 +880,7 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 		print_matrix_to_screen_matlab(Jp,"Jp");
 		print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
 		//
-
+		
 	}
 	
 	
@@ -658,7 +922,7 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 #endif
 	
 	
-  return 0;
+	return 0;
 }
 
 
@@ -671,21 +935,21 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	//	print_comp_mp_matlab(pathVars,"pathvars");
 	
 	
-  multilintolin_eval_data_mp *BED = (multilintolin_eval_data_mp *)ED; // to avoid having to cast every time
+	multilintolin_eval_data_mp *BED = (multilintolin_eval_data_mp *)ED; // to avoid having to cast every time
 	
 	BED->SLP_memory.set_globals_to_this();
 	
-  comp_mp one_minus_s, gamma_s; init_mp(one_minus_s); init_mp(gamma_s);
+	comp_mp one_minus_s, gamma_s; init_mp(one_minus_s); init_mp(gamma_s);
 	comp_mp temp, temp2; init_mp(temp); init_mp(temp2);
 	
-  int ii, jj, mm; // counters
+	int ii, jj, mm; // counters
 	int offset;
 	
 	
 	
-  set_one_mp(one_minus_s);
-  sub_mp(one_minus_s, one_minus_s, pathVars);  // one_minus_s = (1 - s)
-  mul_mp(gamma_s, BED->gamma, pathVars);       // gamma_s = gamma * s
+	set_one_mp(one_minus_s);
+	sub_mp(one_minus_s, one_minus_s, pathVars);  // one_minus_s = (1 - s)
+	mul_mp(gamma_s, BED->gamma, pathVars);       // gamma_s = gamma * s
 	
 	
 	vec_mp patchValues; init_vec_mp(patchValues, 0);
@@ -733,7 +997,7 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	
 	//set the sizes
 	change_size_vec_mp(funcVals,BED->num_variables); funcVals->size = BED->num_variables;
-  change_size_mat_mp(Jv, BED->num_variables, BED->num_variables); Jv->rows = Jv->cols = BED->num_variables; //  -> this should be square!!!
+	change_size_mat_mp(Jv, BED->num_variables, BED->num_variables); Jv->rows = Jv->cols = BED->num_variables; //  -> this should be square!!!
 	
 	for (ii=0; ii<BED->num_variables; ii++)
 		for (jj=0; jj<BED->num_variables; jj++)
@@ -745,31 +1009,31 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	evalProg_mp(temp_function_values, parVals, parDer, temp_jacobian_functions, temp_jacobian_parameters, current_variable_values, pathVars, BED->SLP);
 	
 	
-  // evaluate the patch
-  patch_eval_mp(    patchValues, parVals, parDer, Jv_Patch, Jp, current_variable_values, pathVars, &BED->patch);  // Jp is ignored
+	// evaluate the patch
+	patch_eval_mp(    patchValues, parVals, parDer, Jv_Patch, Jp, current_variable_values, pathVars, &BED->patch);  // Jp is ignored
 	
 	
 	// we assume that the only parameter is s = t and setup parVals & parDer accordingly.
 	// note that you can only really do this AFTER you are done calling other evaluators.
-  // set parVals & parDer correctly
+	// set parVals & parDer correctly
 	
 	// i.e. these must remain here, or below.  \/
-  change_size_point_mp(parVals, 1);
-  change_size_vec_mp(parDer, 1);
+	change_size_point_mp(parVals, 1);
+	change_size_vec_mp(parDer, 1);
 	change_size_mat_mp(Jp, BED->num_variables, 1); Jp->rows = BED->num_variables; Jp->cols = 1;
 	
 	for (ii=0; ii<BED->num_variables; ii++)
 		set_zero_mp(&Jp->entry[ii][0]);
 	
 	
-  parVals->size = parDer->size = 1;
-  set_mp(&parVals->coord[0], pathVars); // s = t
-  set_one_mp(&parDer->coord[0]);       // ds/dt = 1
+	parVals->size = parDer->size = 1;
+	set_mp(&parVals->coord[0], pathVars); // s = t
+	set_one_mp(&parDer->coord[0]);       // ds/dt = 1
 	
 	
 	
 	///////// / / / /  /   /
-  // combine everything
+	// combine everything
 	///////// / / / /  /   /
 	
 	//perform the randomization multiplications
@@ -815,7 +1079,7 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 		
 		
 		set_mp(&funcVals->coord[mm+offset],temp); // this is the entry for the linear's homotopy.
-																							//		printf("setting F[%d]\n",mm+offset);
+												  //		printf("setting F[%d]\n",mm+offset);
 	}
 	
 	
@@ -849,11 +1113,11 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	
 	//first, the entries related to the functions
 	
-  for (ii = 0; ii < BED->randomizer_matrix->rows; ii++)
+	for (ii = 0; ii < BED->randomizer_matrix->rows; ii++)
 		for (jj = 0; jj < BED->num_variables; jj++)
 			set_mp(&Jv->entry[ii][jj],&AtimesJ->entry[ii][jj]);
 	
-  
+	
 	
 	
 	//////////////
@@ -890,7 +1154,7 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	for (ii=0; ii<BED->num_linears; ii++) {
 		set_zero_mp(&Jp->entry[offset+ii][0]);
 		dot_product_mp(temp,
-									 BED->current_linear[ii],current_variable_values);
+					   BED->current_linear[ii],current_variable_values);
 		neg_mp(temp,temp);
 		dot_product_mp(temp2,BED->old_linear[ii],current_variable_values);
 		mul_mp(temp2,temp2,BED->gamma);
@@ -907,7 +1171,7 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	offset = BED->num_variables - BED->patch.num_patches;
 	for (ii = 0; ii<BED->patch.num_patches; ii++)  // for each patch equation
 	{ // funcVals = patchValues
-		// Jp = 0
+	  // Jp = 0
 		set_zero_mp(&Jp->entry[ii+offset][0]);
 		// Jv = Jv_Patch
 		for (jj = 0; jj<BED->num_variables; jj++) // for each variable
@@ -932,7 +1196,7 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 		print_matrix_to_screen_matlab(Jv,"Jv_mp");
 		print_matrix_to_screen_matlab(Jp,"Jp_mp");
 		print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix_mp");
-
+		
 	}
 	
 	
@@ -989,7 +1253,7 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	
 	
 	
-  return 0;
+	return 0;
 }
 
 
@@ -998,15 +1262,15 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 
 int multilintolin_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d in_d, point_mp in_mp, int in_prec, void const *ED_d, void const *ED_mp)
 {
-  multilintolin_eval_data_d *BED_d = NULL;
-  multilintolin_eval_data_mp *BED_mp = NULL;
+	multilintolin_eval_data_d *BED_d = NULL;
+	multilintolin_eval_data_mp *BED_mp = NULL;
 	
-  *out_prec = in_prec;
+	*out_prec = in_prec;
 	
 	
 	
-  if (in_prec < 64)
-  { // compute out_d
+	if (in_prec < 64)
+	{ // compute out_d
 		multilintolin_eval_data_d *BED_d = (multilintolin_eval_data_d *)ED_d;
 		
 		comp_d denom;
@@ -1026,9 +1290,9 @@ int multilintolin_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d i
 		//		print_point_to_screen_matlab(out_d,"out");
 		
 		
-  }
-  else
-  { // compute out_mp
+	}
+	else
+	{ // compute out_mp
 		multilintolin_eval_data_mp *BED_mp = (multilintolin_eval_data_mp *)ED_mp;
 		
 		setprec_point_mp(out_mp, *out_prec);
@@ -1048,8 +1312,8 @@ int multilintolin_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d i
 		clear_mp(denom);
 		
 		
-    // set prec on out_mp
-    
+		// set prec on out_mp
+		
 		
 		//		print_point_to_screen_matlab(in_mp,"in");
 		//		print_point_to_screen_matlab(out_mp,"out");
@@ -1057,13 +1321,13 @@ int multilintolin_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d i
 	}
 	
 	
-  BED_d = NULL;
-  BED_mp = NULL;
+	BED_d = NULL;
+	BED_mp = NULL;
 	
 	
 	
 	
-  return 0;
+	return 0;
 }
 
 
@@ -1077,8 +1341,8 @@ int change_multilintolin_eval_prec(void const *ED, int new_prec)
 	
 	
 	BED->SLP->precision = new_prec;
-  // change the precision for the patch
-  changePatchPrec_mp(new_prec, &BED->patch);
+	// change the precision for the patch
+	changePatchPrec_mp(new_prec, &BED->patch);
 	
 	
 	if (new_prec != BED->curr_prec){
@@ -1108,7 +1372,7 @@ int change_multilintolin_eval_prec(void const *ED, int new_prec)
 		
 	}
 	
-  return 0;
+	return 0;
 }
 
 
@@ -1116,10 +1380,10 @@ int change_multilintolin_eval_prec(void const *ED, int new_prec)
 
 
 int check_issoln_multilintolin_d(endgame_data_t *EG,
-																 tracker_config_t *T,
-																 void const *ED)
+								 tracker_config_t *T,
+								 void const *ED)
 {
-  multilintolin_eval_data_d *BED = (multilintolin_eval_data_d *)ED; // to avoid having to cast every time
+	multilintolin_eval_data_d *BED = (multilintolin_eval_data_d *)ED; // to avoid having to cast every time
 	
 	BED->SLP_memory.set_globals_to_this();
 	int ii;
@@ -1206,27 +1470,27 @@ int check_issoln_multilintolin_d(endgame_data_t *EG,
 
 
 int check_issoln_multilintolin_mp(endgame_data_t *EG,
-																	tracker_config_t *T,
-																	void const *ED)
+								  tracker_config_t *T,
+								  void const *ED)
 {
-  multilintolin_eval_data_mp *BED = (multilintolin_eval_data_mp *)ED; // to avoid having to cast every time
+	multilintolin_eval_data_mp *BED = (multilintolin_eval_data_mp *)ED; // to avoid having to cast every time
 	BED->SLP_memory.set_globals_to_this();
 	int ii;
 	
 	for (ii = 0; ii < T->numVars; ii++)
 	{
-    if (!(mpfr_number_p(EG->PD_mp.point->coord[ii].r) && mpfr_number_p(EG->PD_mp.point->coord[ii].i)))
+		if (!(mpfr_number_p(EG->PD_mp.point->coord[ii].r) && mpfr_number_p(EG->PD_mp.point->coord[ii].i)))
 		{
 			printf("got not a number\n");
 			print_point_to_screen_matlab(EG->PD_mp.point,"bad solution");
-      return 0;
+			return 0;
 		}
 	}
 	
 	
 	mpf_t n1, n2, zero_thresh, max_rat;
 	mpf_init(n1); mpf_init(n2); mpf_init(zero_thresh); mpf_init(max_rat);
-
+	
 	mpf_set_d(max_rat, MAX(T->ratioTol,0.99999));
 	
 	point_mp f; init_point_mp(f, 1);f->size = 1;

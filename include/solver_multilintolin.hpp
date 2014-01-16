@@ -258,9 +258,9 @@ public:
 	
 	// MPI SENDS AND RECEIVES
 	
-	int send(parallelism_config & mpi_config){return 0;}
+	int send(parallelism_config & mpi_config);
 	
-	int receive(parallelism_config & mpi_config){return 0;}
+	int receive(parallelism_config & mpi_config);
 	
 	
 	
@@ -445,9 +445,9 @@ public:
 	
 	// MPI SENDS AND RECEIVES
 	
-	int send(parallelism_config & mpi_config){return 0;}
+	int send(parallelism_config & mpi_config);
 	
-	int receive(parallelism_config & mpi_config){return 0;}
+	int receive(parallelism_config & mpi_config);
 	
 	
 	
@@ -487,6 +487,8 @@ int multilin_solver_master_entry_point(const witness_set						&W, // carries wit
 																			 solver_configuration		& solve_options);
 
 
+
+int multilin_slave_entry_point(solver_configuration & solve_options);
 
 
 //the new custom evaluator for this solver

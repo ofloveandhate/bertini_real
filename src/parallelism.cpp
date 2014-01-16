@@ -180,13 +180,16 @@ int worker_process::main_loop()
 				// call the blabla here
 				break;
 				
-			case TERMINATE:
-				break;
-				
 			case PARSING:
 				MPI_Bcast(&single_int_buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
 				break;
 				
+			case MULTILIN:
+				multilin_slave_entry_point(this->solve_options);
+				break;
+				
+			case TERMINATE:
+				break;
 				
 			default:
 				break;
