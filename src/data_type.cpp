@@ -205,7 +205,9 @@ void br_exit(int errorCode)
 	
 	printf("%s\n", "bertini_real quitting\n");
 	
+#ifdef debug_compile
 	deliberate_segfault();
+#endif
 	
 #ifdef _HAVE_MPI
 	MPI_Abort(MPI_COMM_WORLD, errorCode);
@@ -1398,7 +1400,7 @@ int vertex_set::add_vertex(const vertex source_vertex){
 		br_exit(-9644);
 	}
 	
-	if (curr_input_index<0) {
+	if (curr_input_index<0 && source_vertex.input_filename_index == -1) {
 		std::cout << color::red() << "adding points to vertex set, but input file index unset." << color::console_default() << std::endl;
 		br_exit(6711);
 	}
@@ -1481,14 +1483,24 @@ int vertex_set::setup_vertices(boost::filesystem::path INfile)
 	}
 	clear_vec_mp(temp_vec);
 	
+	scanRestOfLine(IN);
+	scanRestOfLine(IN);
 	
-	char * buffer = new char[1024];
+	
 	for (int ii=0; ii<tmp_num_filenames; ii++) {
-		fgets(buffer, 1024, IN);
+		int tmp_size;
+		fscanf(IN,"%d\n",&tmp_size);
+		
+		char * buffer = new char[tmp_size];
+		fgets(buffer, tmp_size, IN);
 		boost::filesystem::path temppath = buffer;
 		this->filenames.push_back(temppath);
+		
+		std::cout << ii << std::endl;
+		std::cout << temppath << std::endl;
+		delete [] buffer;
 	}
-	delete [] buffer;
+	
 	
 	
 	vertex temp_vertex;
@@ -1519,7 +1531,7 @@ int vertex_set::setup_vertices(boost::filesystem::path INfile)
 		fscanf(IN,"%d\n",&temp_vertex.input_filename_index);
 		fscanf(IN,"%d\n",&temp_vertex.type);
 		
-		
+		std::cout << temp_vertex.input_filename_index << " " << temp_vertex.type << std::endl;
 		vertex_set::add_vertex(temp_vertex);
 	}
 	
@@ -1574,6 +1586,7 @@ void vertex_set::print(boost::filesystem::path outputfile)
 		int strleng = filenames[ii].string().size() + 1; // +1 for the null character
 		char * buffer = new char[strleng];
 		memcpy(buffer, filenames[ii].c_str(), strleng);
+		fprintf(OUT,"%d\n",strleng);
 		fprintf(OUT,"%s\n",buffer);
 		free(buffer);
 	}

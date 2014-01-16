@@ -216,7 +216,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 {
 	
 	V.set_curr_projection(projections[0]);
-	
+	V.set_curr_input(W_crit_real.input_filename);
 	
 	
 	
@@ -249,7 +249,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	std::map<int, int> crit_point_counter;
 	
 	
-	V.set_curr_input(W_crit_real.input_filename);
+	
 	
 	
 	for (int ii=0; ii<W_crit_real.num_pts; ii++){
