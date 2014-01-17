@@ -748,7 +748,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 	vec_mp particular_projection; init_vec_mp(particular_projection,0);
 	vec_cp_mp(particular_projection, projections[0]);
 	
-	comp_mp half;  init_mp(half);  comp_mp temp;  init_mp(temp);  comp_mp temp2;  init_mp(temp2);
+	comp_mp half;  init_mp2(half,1024);  comp_mp temp;  init_mp2(temp,1024);  comp_mp temp2;  init_mp2(temp2,1024);
 	mpf_set_str(half->r, "0.5", 10); mpf_set_str(half->i, "0.0", 10);
 	
 	
@@ -761,12 +761,18 @@ void curve_decomposition::merge(witness_set & W_midpt,
 	comp_mp new_proj_val;  init_mp2(new_proj_val,1024);
 	
 	
+//TODO: parallelize this loop
+	
+	
 	while (edges_to_merge.first!=-1) { // this value is updated at the end of the loop
 		// then there are edges superfluous and need to be merged
 		int left_edge_w_pt = edges_to_merge.first;
 		int right_edge_w_pt  = edges_to_merge.second;
-		std::cout << color::cyan() << "merging edges " << left_edge_w_pt << " " << right_edge_w_pt << color::console_default() <<  std::endl;
 		
+		if (solve_options.verbose_level>=0)
+		{
+			std::cout << color::cyan() << "merging edges " << left_edge_w_pt << " " << right_edge_w_pt << color::console_default() <<  std::endl;
+		}
 		
 		if (edges_to_merge.first < 0 || edges_to_merge.second < 0) {
 			std::cout << "error: attemping to merge edges with negative index!" << std::endl;
@@ -774,8 +780,8 @@ void curve_decomposition::merge(witness_set & W_midpt,
 			std::cout << "<" << edges[left_edge_w_pt].left << " " << edges[left_edge_w_pt].midpt << " " << edges[left_edge_w_pt].right << "> <";
 			std::cout << edges[right_edge_w_pt].left << " " << edges[right_edge_w_pt].midpt << " " << edges[right_edge_w_pt].right << ">" << std::endl;
 			
-			break;
-//			br_exit(-8009);
+			// do something better than break!
+			break;`                        
 		}
 		
 		
@@ -807,9 +813,8 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		projection_value_homogeneous_input(temp,V.vertices[edges[left_edge_w_pt].left].pt_mp,projections[0]);
 		projection_value_homogeneous_input(temp2,V.vertices[edges[right_edge_w_pt].right].pt_mp,projections[0]);
 		
-		vertex temp_vertex;
-		add_mp(new_proj_val, temp, temp2);
 		
+		add_mp(new_proj_val, temp, temp2);
 		mul_mp(new_proj_val, new_proj_val, half); // now it is the average value
 		
 		neg_mp(&particular_projection->coord[0], new_proj_val); // set it in the linear for tracking
@@ -828,8 +833,9 @@ void curve_decomposition::merge(witness_set & W_midpt,
                                            ml_config,
                                            solve_options);
 		
-        // each member of W_temp should real.  if a member of V already, mark index.  else, add to V, and mark.
 		
+        // each member of W_temp should real.  if a member of V already, mark index.  else, add to V, and mark.
+		vertex temp_vertex;
 		vec_cp_mp(temp_vertex.pt_mp, W_temp.pts_mp[0]);
 		temp_vertex.type = MIDPOINT;
 		

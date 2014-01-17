@@ -809,7 +809,7 @@ int midpoint_solver_master_entry_point(const witness_set						&W, // carries wit
                                        solver_configuration		& solve_options)
 {
     
-	bool prev_state = solve_options.force_no_parallel;
+	bool prev_state = solve_options.force_no_parallel;// create a backup value to restore to.
 	solve_options.force_no_parallel = true;
 	
 	
@@ -858,14 +858,13 @@ int midpoint_solver_master_entry_point(const witness_set						&W, // carries wit
 			break;
 	}
 	
-//	print_point_to_screen_matlab(W.pts_mp[0],"start_pt");
-//	ED_d->print();
+
 	
 	master_solver(W_new, W,
                   ED_d, ED_mp,
                   solve_options);
     
-	solve_options.force_no_parallel = prev_state;
+	solve_options.force_no_parallel = prev_state; // restore
 	
 	switch (solve_options.T.MPType) {
 		case 0:

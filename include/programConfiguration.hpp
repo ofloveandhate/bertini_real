@@ -61,39 +61,7 @@ public:
 	
 	
 	parallelism_config(){
-		
-		force_no_parallel = false;
-		numprocs = 1;
-		headnode = 0;
-		
-		MPI_Comm_size(MPI_COMM_WORLD, &this->numprocs);
-		MPI_Comm_rank(MPI_COMM_WORLD, &this->my_id);
-		
-		
-		if (is_head())
-			worker_level = 0;
-		else
-			worker_level = 1;
-		
-		
-		
-		my_communicator = MPI_COMM_WORLD;
-	
-        
-        
-        
-//		MPI_Group orig_group, new_group;
-//		
-//		/* Extract the original group handle */
-//		
-//		MPI_Comm_group(MPI_COMM_WORLD, &orig_group);
-//		
-//		/* Create new communicator and then perform collective communications */
-//		
-//		MPI_Comm_create(MPI_COMM_WORLD, orig_group, &my_communicator);
-//		
-//		MPI_Comm_size(my_communicator, &this->numprocs);
-//		MPI_Comm_rank(my_communicator, &this->my_id);
+		init();
 	}
 	
 	
@@ -108,7 +76,7 @@ public:
 	
 	
 	bool use_parallel(){
-		if (numprocs>1 && force_no_parallel==false)
+		if (numprocs>1 && force_no_parallel!=true)
 			return true;
 		else
 			return false;
@@ -224,6 +192,46 @@ public:
 		return num;
 	}
 	
+	
+private:
+	
+	void init()
+	{
+		
+		force_no_parallel = false;
+		numprocs = 1;
+		headnode = 0;
+		
+		MPI_Comm_size(MPI_COMM_WORLD, &this->numprocs);
+		MPI_Comm_rank(MPI_COMM_WORLD, &this->my_id);
+		
+		
+		if (is_head())
+			worker_level = 0;
+		else
+			worker_level = 1;
+		
+		
+		
+		my_communicator = MPI_COMM_WORLD; // default communicator is MPI_COMM_WORLD
+		
+        
+        
+        
+		//		MPI_Group orig_group, new_group;
+		//
+		//		/* Extract the original group handle */
+		//
+		//		MPI_Comm_group(MPI_COMM_WORLD, &orig_group);
+		//
+		//		/* Create new communicator and then perform collective communications */
+		//
+		//		MPI_Comm_create(MPI_COMM_WORLD, orig_group, &my_communicator);
+		//
+		//		MPI_Comm_size(my_communicator, &this->numprocs);
+		//		MPI_Comm_rank(my_communicator, &this->my_id);
+		return;
+	}
 };
 
 

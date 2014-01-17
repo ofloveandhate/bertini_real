@@ -42,11 +42,14 @@ int main(int argC, char *args[])
 		std::cout << "in debug mode, waiting to start so you can attach to this process" << std::endl;
 		if (solve_options.is_head()) {
 			std::cout << "master PID: " << getpid() << std::endl;
+			for (int ii=0; ii<30; ii++) {
+				std::cout << "starting program in " << 30-ii << " seconds" << std::endl;
+				sleep(1);
+				std::cout << "\033[F"; // that's a line up movement.  only works with some terminals
+			}
 		}
-		for (int ii=0; ii<30; ii++) {
-			std::cout << "starting program in " << 30-ii << " seconds" << std::endl;
-			sleep(1);
-			std::cout << "\033[F";
+		else{
+			sleep(30);
 		}
 		
 		
