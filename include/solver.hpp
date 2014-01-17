@@ -83,7 +83,7 @@ public:
 	
 	
 	
-
+	
 	
 protected:
 	
@@ -262,7 +262,7 @@ class solver_configuration : public parallelism_config
 {
 public:
 	
-
+	
 	bool orthogonal_projection;
 	bool use_real_thresholding;
 	bool robust;
@@ -338,7 +338,7 @@ public:
 		
 		this->total_num_paths_tracked = other.total_num_paths_tracked;
 		this->robust = other.robust;
-
+		
 		cp_preproc_data(&(this->PPD), other.PPD);
 		
 		this->allow_multiplicity = other.allow_multiplicity;
@@ -464,7 +464,7 @@ protected:
 	
 	void clear()
 	{
-
+		
 		
 	}
 	
@@ -532,7 +532,7 @@ class solver_mp : public solver
 public:
 	
 	patch_eval_data_mp patch; ///< patch in x
-  
+	
 	comp_mp gamma;    ///< randomizer
 	mpq_t *gamma_rat; ///< randomizer
 	mat_mp randomizer_matrix;     ///< randomizer
@@ -624,10 +624,10 @@ protected:
 	
 	void clear()
 	{
-
+		
 		patch_eval_data_clear_mp(&this->patch);
 		
-	  clear_mat_mp(randomizer_matrix);
+		clear_mat_mp(randomizer_matrix);
 		clear_mp(gamma);
 		
 		if (MPType==2) {
@@ -656,7 +656,7 @@ class solver_d : public solver
 public:
 	
 	patch_eval_data_d patch; ///< patch in x
-  
+	
 	comp_d gamma;    ///< randomizer
 	mat_d randomizer_matrix;     ///< randomizer
 	
@@ -732,8 +732,8 @@ protected:
 	}
 	
 	void clear(){
-
-
+		
+		
 		patch_eval_data_clear_d(& this->patch);
 		
 		clear_mat_d(randomizer_matrix);
@@ -759,10 +759,10 @@ protected:
  // currently defaults to create a random real projection with homogeneous value 0;
  */
 void get_projection(vec_mp *pi,
-										BR_configuration program_options,
-										const solver_configuration & solve_options,
-										int num_vars,
-										int num_projections);
+					BR_configuration program_options,
+					const solver_configuration & solve_options,
+					int num_vars,
+					int num_projections);
 
 
 
@@ -773,17 +773,17 @@ void adjust_tracker_AMP(tracker_config_t * T, int num_variables);
 
 
 void generic_set_start_pts(point_data_d ** startPts,
-													 const witness_set & W);
+						   const witness_set & W);
 
 void generic_set_start_pts(point_data_mp ** startPts,
-													 const witness_set & W);
+						   const witness_set & W);
 
 void generic_setup_patch(patch_eval_data_d *P, const witness_set & W); // for mp type 0
 void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W);// for my type 2
 void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W, int prec); // for mp type 1
 
 int generic_setup_files(FILE ** OUT, boost::filesystem::path outname,
-												FILE ** MIDOUT, boost::filesystem::path midname);
+						FILE ** MIDOUT, boost::filesystem::path midname);
 
 
 /** reads the tracker_config_t from file. */
@@ -791,86 +791,89 @@ void get_tracker_config(solver_configuration &solve_options,int MPType);
 void solver_clear_config(solver_configuration &options);
 
 void master_solver(witness_set * W_new, const witness_set & W,
-													 solver_d * ED_d, solver_mp * ED_mp,
-													 solver_configuration & solve_options);
+				   solver_d * ED_d, solver_mp * ED_mp,
+				   solver_configuration & solve_options);
 
 void generic_tracker_loop(trackingStats *trackCount,
-													FILE * OUT, FILE * midOUT,
-													const witness_set & W,  // was the startpts file pointer.
-													post_process_t *endPoints,
-													solver_d * ED_d, solver_mp * ED_mp,
-													solver_configuration & solve_options);
+						  FILE * OUT, FILE * midOUT,
+						  const witness_set & W,  // was the startpts file pointer.
+						  post_process_t *endPoints,
+						  solver_d * ED_d, solver_mp * ED_mp,
+						  solver_configuration & solve_options);
 
 void master_tracker_loop(trackingStats *trackCount,
-																 FILE * OUT, FILE * MIDOUT,
-																 const witness_set & W,  // was the startpts file pointer.
-																 post_process_t *endPoints,
-																 solver_d * ED_d, solver_mp * ED_mp,
-																 solver_configuration & solve_options);
+						 FILE * OUT, FILE * MIDOUT,
+						 const witness_set & W,  // was the startpts file pointer.
+						 post_process_t *endPoints,
+						 solver_d * ED_d, solver_mp * ED_mp,
+						 solver_configuration & solve_options);
+
+int get_num_at_a_time(int num_workers, int num_points);
+
 
 void send_start_points(int next_worker, int num_packets,
-											 point_data_d *startPts_d,
-											 point_data_mp *startPts_mp,
-											 int & next_index,
-											 solver_configuration & solve_options);
+					   point_data_d *startPts_d,
+					   point_data_mp *startPts_mp,
+					   int & next_index,
+					   solver_configuration & solve_options);
 
 int receive_endpoints(trackingStats *trackCount,
-											endgame_data_t *EG_receives, int & max_incoming,
-											int & solution_counter,
-											post_process_t *endPoints,
-											solver_d * ED_d, solver_mp * ED_mp,
-											solver_configuration & solve_options);
+					  endgame_data_t **EG_receives, int & max_incoming,
+					  int & solution_counter,
+					  post_process_t *endPoints,
+					  solver_d * ED_d, solver_mp * ED_mp,
+					  solver_configuration & solve_options);
 
 
 
 void worker_tracker_loop(trackingStats *trackCount,
-																 FILE * OUT, FILE * MIDOUT,
-																 solver_d * ED_d, solver_mp * ED_mp,
-																 solver_configuration & solve_options);
+						 FILE * OUT, FILE * MIDOUT,
+						 solver_d * ED_d, solver_mp * ED_mp,
+						 solver_configuration & solve_options);
 
 
 
 void generic_track_path(int pathNum, endgame_data_t *EG_out,
-												point_data_d *Pin, point_data_mp *Pin_mp,
-												FILE *OUT, FILE *MIDOUT,
-												tracker_config_t *T,
-												void const *ED_d, void const *ED_mp,
-												int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
-												int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-												int (*change_prec)(void const *, int),
-												int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *));
+						point_data_d *Pin, point_data_mp *Pin_mp,
+						FILE *OUT, FILE *MIDOUT,
+						tracker_config_t *T,
+						void const *ED_d, void const *ED_mp,
+						int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
+						int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
+						int (*change_prec)(void const *, int),
+						int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *));
 
 
 
 void robust_track_path(int pathNum, endgame_data_t *EG_out,
-											 point_data_d *Pin, point_data_mp *Pin_mp,
-											 FILE *OUT, FILE *MIDOUT,
-											solver_configuration & solve_options,
-											 solver_d *ED_d, solver_mp *ED_mp,
-											 int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
-											 int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-											 int (*change_prec)(void const *, int),
-											 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *));
+					   point_data_d *Pin, point_data_mp *Pin_mp,
+					   FILE *OUT, FILE *MIDOUT,
+					   solver_configuration & solve_options,
+					   solver_d *ED_d, solver_mp *ED_mp,
+					   int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
+					   int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
+					   int (*change_prec)(void const *, int),
+					   int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *));
 
 
 
 
 void generic_track_path_d(int pathNum, endgame_data_t *EG_out,
-													point_data_d *Pin,
-													FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
-													void const *ED_d, void const *ED_mp,
-													int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
-													int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-													int (*change_prec)(void const *, int),
-													int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *));
+						  point_data_d *Pin,
+						  FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
+						  void const *ED_d, void const *ED_mp,
+						  int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
+						  int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
+						  int (*change_prec)(void const *, int),
+						  int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *));
 
 void generic_track_path_mp(int pathNum, endgame_data_t *EG_out,
-													 point_data_mp *Pin,
-													 FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
-													 void const *ED,
-													 int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-													 int (*change_prec)(void const *, int),
-													 int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *));
+						   point_data_mp *Pin,
+						   FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
+						   void const *ED,
+						   int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
+						   int (*change_prec)(void const *, int),
+						   int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *));
 
 
 

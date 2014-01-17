@@ -257,7 +257,7 @@ void multilintolin_eval_data_d::init()
 	
 	if (this->MPType==2){
 		this->BED_mp = new multilintolin_eval_data_mp(2);
-		solver_d::BED_mp = this->BED_mp;
+		solver_d::BED_mp = this->BED_mp;                   //   <---------  you gotta do this cuz of masking problems.
 	}
 	else{
 		this->BED_mp = NULL;
