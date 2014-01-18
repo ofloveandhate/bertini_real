@@ -164,7 +164,7 @@ int worker_process::main_loop()
 		
 		MPI_Bcast(&solver_choice, 1, MPI_INT, solve_options.head(), MPI_COMM_WORLD);
 		
-		if ( (solver_choice!=0) && (solve_options.id()==1)) {
+		if ( (solver_choice!=0) && (solve_options.id()==1) && (solve_options.verbose_level>=1)) {
 			std::cout << "received call for help for solver " << enum_lookup(solver_choice) << std::endl;
 		}
 		

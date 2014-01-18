@@ -911,7 +911,7 @@ void master_tracker_loop(trackingStats *trackCount,
 		int next_worker = solve_options.activate_next_worker();
         
 		int num_packets = get_num_at_a_time(solve_options.numprocs-1,total_number_points-next_index);
-		std::cout << "master seeding " << num_packets << " packets to worker" << next_worker << std::endl;
+//		std::cout << "master seeding " << num_packets << " packets to worker" << next_worker << std::endl;
 		send_start_points(next_worker, num_packets,
                           startPts_d,
                           startPts_mp,
@@ -947,7 +947,7 @@ void master_tracker_loop(trackingStats *trackCount,
 	}// re: for (ii=0; ii<W.num_pts ;ii++)
 	
 	while (solve_options.have_active()) {
-		std::cout << "waiting to receive from active worker" << std::endl;
+//		std::cout << "waiting to receive from active worker" << std::endl;
 		receive_endpoints(trackCount,
 						  &EG_receives, max_incoming,
 						  solution_counter,
@@ -1107,7 +1107,7 @@ void worker_tracker_loop(trackingStats *trackCount,
 			int current_index =  indices_incoming[ii];
 			
 			
-			if ((solve_options.verbose_level>=0) && (solve_options.path_number_modulus!=0) )
+			if ((solve_options.verbose_level>=0) && (solve_options.path_number_modulus!=0) && (solve_options.path_number_modulus < total_number_points) )
 			{
 				if ((current_index%solve_options.path_number_modulus)==0) {
 					std::cout << color::gray();
@@ -1239,25 +1239,25 @@ int receive_endpoints(trackingStats *trackCount,
 	MPI_Status statty_mc_gatty;
 	MPI_Recv(&num_incoming, 1, MPI_INT, MPI_ANY_SOURCE, NUMPACKETS, MPI_COMM_WORLD, &statty_mc_gatty);
 	
-	std::cout << num_incoming << std::endl;
+//	std::cout << num_incoming << std::endl;
 	if (num_incoming > max_incoming) {
 		std::cout << "the impossible happened -- want to receive more endpoints than max" << std::endl;
 	}
 	
-	std::cout << sizeof(*EG_receives) << std::endl;
+//	std::cout << sizeof(*EG_receives) << std::endl;
 	int incoming_id = send_recv_endgame_data_t(EG_receives, &num_incoming, solve_options.T.MPType, statty_mc_gatty.MPI_SOURCE, 0); // the trailing 0 indicates receiving
-	std::cout << sizeof(*EG_receives) << std::endl;
+//	std::cout << sizeof(*EG_receives) << std::endl;
 	
-	std::cout << "m received " << num_incoming << " points from " << incoming_id << "." << std::endl;
+//	std::cout << "m received " << num_incoming << " points from " << incoming_id << "." << std::endl;
 	solve_options.deactivate(statty_mc_gatty.MPI_SOURCE);
 	
-	for (int ii=0; ii<num_incoming; ii++) {
-		std::cout << (*EG_receives)[ii].prec << std::endl;
-	}
+//	for (int ii=0; ii<num_incoming; ii++) {
+//		std::cout << (*EG_receives)[ii].prec << std::endl;
+//	}
 	
 	for (int ii=0; ii<num_incoming; ii++) {
 		int issoln;
-		std::cout << ii << std::endl;
+//		std::cout << ii << std::endl;
 		switch (solve_options.T.MPType) {
 			case 0:
 				issoln = ED_d->is_solution_checker_d( &(*EG_receives)[ii],  &solve_options.T, ED_d);

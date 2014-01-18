@@ -1496,8 +1496,6 @@ int vertex_set::setup_vertices(boost::filesystem::path INfile)
 		boost::filesystem::path temppath = buffer;
 		this->filenames.push_back(temppath);
 		
-		std::cout << ii << std::endl;
-		std::cout << temppath << std::endl;
 		delete [] buffer;
 	}
 	
@@ -1531,7 +1529,6 @@ int vertex_set::setup_vertices(boost::filesystem::path INfile)
 		fscanf(IN,"%d\n",&temp_vertex.input_filename_index);
 		fscanf(IN,"%d\n",&temp_vertex.type);
 		
-		std::cout << temp_vertex.input_filename_index << " " << temp_vertex.type << std::endl;
 		vertex_set::add_vertex(temp_vertex);
 	}
 	
@@ -1970,7 +1967,7 @@ int decomposition::setup(boost::filesystem::path INfile,
 		}
 		
 		decomposition::add_patch(temp_patch);
-		print_point_to_screen_matlab(temp_patch,"temp_patch");
+//		print_point_to_screen_matlab(temp_patch,"temp_patch");
 	}
 	
 	
