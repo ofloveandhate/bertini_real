@@ -23,6 +23,9 @@ void clear_sample(curve_sample_data *S, int MPType)
 int main(int argC, char *args[])
 {
 	
+	boost::timer::auto_cpu_timer t;
+	
+	
 	MPI_Init(&argC,&args);
 	
 	
@@ -117,7 +120,7 @@ int main(int argC, char *args[])
 	solve_options.use_midpoint_checker = 0;
 	solve_options.use_gamma_trick = sampler_options.use_gamma_trick;
 	solve_options.allow_singular = 1;
-    
+    solve_options.robust = true;
 	/////////
 	////////
 	//////
@@ -349,20 +352,14 @@ void generate_new_sampling_pts(curve_sample_data *S_new,
 						mypause();
 					}
 					
-                    //					multilintolin_solver_main(MPType,
-                    //																		W,         // witness_set
-                    //																		randomizer_matrix,
-                    //																		&target_projection, //  the set of linears we will solve at.
-                    //																		&Wnew, // the new data is put here!
-                    //																		solve_options); // already a pointer
+
 					
 					multilin_solver_master_entry_point(W,         // witness_set
                                                        &Wnew, // the new data is put here!
                                                        &target_projection,
                                                        ml_config,
                                                        solve_options);
-					
-					
+										
 					
 					if (sampler_options->verbose_level>=3)
 						print_point_to_screen_matlab(Wnew.pts_mp[0], "new_solution");

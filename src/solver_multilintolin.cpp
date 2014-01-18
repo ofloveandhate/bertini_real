@@ -583,7 +583,6 @@ int multilin_slave_entry_point(solver_configuration & solve_options)
 	
 	trackingStats trackCount; init_trackingStats(&trackCount); // initialize trackCount to all 0
 	
-	std::cout << "1" << std::endl;
 	worker_tracker_loop(&trackCount, OUT, midOUT,
 						ED_d, ED_mp,
 						solve_options);

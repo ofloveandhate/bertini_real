@@ -781,7 +781,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 			std::cout << edges[right_edge_w_pt].left << " " << edges[right_edge_w_pt].midpt << " " << edges[right_edge_w_pt].right << ">" << std::endl;
 			
 			// do something better than break!
-			break;`                        
+			break;                  
 		}
 		
 		
