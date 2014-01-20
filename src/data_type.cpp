@@ -3404,7 +3404,7 @@ int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & inde
 	// filter for uniqueness
 	
 	
-	double distinct_thresh = 1e-17;  // reasonable?
+	double distinct_thresh = 1e-17;  // reasonable?  i hate hard-coded tolerances
 	
 	change_size_vec_mp(projections_sorted,1); projections_sorted->size = 1;
 	
@@ -3562,6 +3562,23 @@ int compare_integers_decreasing(const void * left_in, const void * right_in){
 	
 }
 
+int compare_integers_increasing(const void * left_in, const void * right_in){
+	
+	int left = *(const int*)left_in;
+	int right = *(const int*)right_in;
+	
+	
+	if (left>right) {
+		return 1;
+	}
+	else if(right < left){
+		return -1;
+	}
+	else{
+		return 0;
+	}
+	
+}
 
 void send_patch_d(patch_eval_data_d * patch)
 {

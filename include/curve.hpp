@@ -156,7 +156,7 @@ public:
 	}
 	
 	
-	std::pair<int,int> get_merge_candidate(const vertex_set & V);
+	std::vector<int> get_merge_candidate(const vertex_set & V);
 	
 	void merge(witness_set & W_midpt, vertex_set & V,
 						 vec_mp * pi_in,
