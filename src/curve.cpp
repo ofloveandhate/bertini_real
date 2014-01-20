@@ -414,6 +414,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
             if (program_options.verbose_level>=2)
                 print_comp_matlab(&crit_downstairs->coord[ii+1],"right ");
             
+			// if these get out of order, things get all messed up.
             multilin_solver_master_entry_point(midpoint_witness_sets[ii],         // witness_set
                                                &Wright, // the new data is put here!
                                                &particular_projection,
@@ -702,36 +703,51 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 
 
 
-//returns (-1,-1) if no candidate found
-std::pair<int,int> curve_decomposition::get_merge_candidate(const vertex_set & V){
+//returns <-1> if no candidate found
+std::vector<int> curve_decomposition::get_merge_candidate(const vertex_set & V){
 	
-	std::pair< int, int> found_edges = std::pair<int,int>(-1,-1);
+	std::vector< int > default_found_edges;
+	default_found_edges.push_back(-1);
     
 	
 	// looking for edges with the type NEW, by looking at the left endpoint
-	for (int tentative_right_edge=0; tentative_right_edge<this->num_edges; tentative_right_edge++) {
-		if (V.vertices[edges[tentative_right_edge].left].type == NEW) {
+	for (int tentative_right_edge=0; tentative_right_edge < this->num_edges; tentative_right_edge++) {
+		if (V.vertices[edges[tentative_right_edge].left].type == NEW && V.vertices[edges[tentative_right_edge].right].type != NEW) {
+			// found a starting point for the merges
 			
 			if (edges[tentative_right_edge].left == edges[tentative_right_edge].right)
-				continue;
+				continue; // degenerate edge, should not blabla, but i think hypothetically this will never happen?
 			
-            
-			int tentative_left_edge = this->edge_w_right(edges[tentative_right_edge].left);
+			std::vector<int> tentative_edge_list;
+			tentative_edge_list.push_back(tentative_right_edge);
 			
 			
-			if (tentative_left_edge < 0) {
-				std::cout << "found that edge " << tentative_right_edge << " has NEW leftpoint, but \\nexists edge w point " << edges[tentative_right_edge].left << " as right point." << std::endl;
-				continue;
+			while (1) {
+				
+				int tentative_left_edge = this->edge_w_right(edges[tentative_edge_list.back()].left);
+				
+				
+				if (tentative_left_edge < 0) {
+					std::cout << "found that edge " << tentative_edge_list.back() << " has NEW leftpoint, but \\nexists edge w point " << edges[tentative_edge_list.back()].left << " as right point." << std::endl;
+					break;
+					//gotta do something careful here
+				}
+				
+				
+				tentative_edge_list.push_back(tentative_left_edge);
+				
+				
+				if (V.vertices[edges[tentative_left_edge].left].type != NEW) {
+					break;
+				}
+				
 			}
 			
-			found_edges.second = tentative_right_edge;
-			found_edges.first = tentative_left_edge;
-			
-			return found_edges;
+			return tentative_edge_list;
 		}
 	}
 	
-	return found_edges;
+	return default_found_edges;
 }
 
 
@@ -755,7 +771,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 	multilin_config ml_config(solve_options);
 	
 	
-	std::pair< int, int > edges_to_merge = this->get_merge_candidate(V);
+	std::vector< int > edges_to_merge = this->get_merge_candidate(V);
 	
 	
 	comp_mp new_proj_val;  init_mp2(new_proj_val,1024);
@@ -764,22 +780,28 @@ void curve_decomposition::merge(witness_set & W_midpt,
 //TODO: parallelize this loop
 	
 	
-	while (edges_to_merge.first!=-1) { // this value is updated at the end of the loop
+	while (edges_to_merge.back()!=-1) { // this value is updated at the end of the loop
 		// then there are edges superfluous and need to be merged
-		int left_edge_w_pt = edges_to_merge.first;
-		int right_edge_w_pt  = edges_to_merge.second;
 		
-		if (solve_options.verbose_level>=0)
-		{
-			std::cout << color::cyan() << "merging edges " << left_edge_w_pt << " " << right_edge_w_pt << color::console_default() <<  std::endl;
+		int rightmost_edge = edges_to_merge.front();
+		int leftmost_edge = edges_to_merge.back();
+		
+		
+		
+		if (solve_options.verbose_level>=0) {
+			std::cout << color::cyan() << "merging edges (r to l): ";
+			for (int zz=0; zz<edges_to_merge.size(); zz++) {
+				std::cout << edges_to_merge[zz] << " ";
+			}
+			std::cout << color::console_default() <<  std::endl;
 		}
 		
-		if (edges_to_merge.first < 0 || edges_to_merge.second < 0) {
-			std::cout << "error: attemping to merge edges with negative index!" << std::endl;
-			
-			std::cout << "<" << edges[left_edge_w_pt].left << " " << edges[left_edge_w_pt].midpt << " " << edges[left_edge_w_pt].right << "> <";
-			std::cout << edges[right_edge_w_pt].left << " " << edges[right_edge_w_pt].midpt << " " << edges[right_edge_w_pt].right << ">" << std::endl;
-			
+		if (edges_to_merge.back() < 0) {
+			std::cout << "error: attemping to merge an edge with negative index!" << std::endl;
+//			
+//			std::cout << "<" << edges[left_edge_w_pt].left << " " << edges[left_edge_w_pt].midpt << " " << edges[left_edge_w_pt].right << "> <";
+//			std::cout << edges[right_edge_w_pt].left << " " << edges[right_edge_w_pt].midpt << " " << edges[right_edge_w_pt].right << ">" << std::endl;
+//			
 			// do something better than break!
 			break;                  
 		}
@@ -789,17 +811,25 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		
 		
 		
-		
-		std::cout << "<" << edges[left_edge_w_pt].left << " " << edges[left_edge_w_pt].midpt << " " << edges[left_edge_w_pt].right << "> <";
-		std::cout << edges[right_edge_w_pt].left << " " << edges[right_edge_w_pt].midpt << " " << edges[right_edge_w_pt].right << ">" << std::endl;
-		
+		if (solve_options.verbose_level>=0) {
+			
+			for (int zz=edges_to_merge.size()-1; zz>=0; zz--) {
+				std::cout << edges[edges_to_merge[zz]].left << " " << edges[edges_to_merge[zz]].midpt << " " << edges[edges_to_merge[zz]].right << " ";
+			}
+			std::cout << color::console_default() <<  std::endl;
+			
+			std::cout << std::endl;
+			
+//			std::cout << "<" << edges[left_edge_w_pt].left << " " << edges[left_edge_w_pt].midpt << " " << edges[left_edge_w_pt].right << "> <";
+//			std::cout << edges[right_edge_w_pt].left << " " << edges[right_edge_w_pt].midpt << " " << edges[right_edge_w_pt].right << ">" << std::endl;
+		}
 		
 		witness_set W_temp;
 		
 		
 		// get the projection value of the midpoint we will be moving from.
 		//arbitrarily chose to move from the midpoint of the left edge.
-		projection_value_homogeneous_input(&particular_projection->coord[0], V.vertices[edges[left_edge_w_pt].midpt].pt_mp, projections[0]);
+		projection_value_homogeneous_input(&particular_projection->coord[0], V.vertices[edges[leftmost_edge].midpt].pt_mp, projections[0]);
 		neg_mp(&particular_projection->coord[0],&particular_projection->coord[0]);
 		
 		
@@ -807,11 +837,11 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		W_midpt.add_linear(particular_projection);
 		
 		W_midpt.reset_points();
-		W_midpt.add_point(V.vertices[edges[left_edge_w_pt].midpt].pt_mp);
+		W_midpt.add_point(V.vertices[edges[leftmost_edge].midpt].pt_mp);
 		// I arbitrarily chose the left edge's midpoint as source to track to new midpoint.
 		
-		projection_value_homogeneous_input(temp,V.vertices[edges[left_edge_w_pt].left].pt_mp,projections[0]);
-		projection_value_homogeneous_input(temp2,V.vertices[edges[right_edge_w_pt].right].pt_mp,projections[0]);
+		projection_value_homogeneous_input(temp,V.vertices[edges[leftmost_edge].left].pt_mp,projections[0]);
+		projection_value_homogeneous_input(temp2,V.vertices[edges[rightmost_edge].right].pt_mp,projections[0]);
 		
 		
 		add_mp(new_proj_val, temp, temp2);
@@ -833,6 +863,12 @@ void curve_decomposition::merge(witness_set & W_midpt,
                                            ml_config,
                                            solve_options);
 		
+		if (W_temp.num_pts==0) {
+			std::cout << "merging multilin solver returned NO POINTS!!!" << std::endl;
+			continue;
+//TODO:  IMMEDIATELY, insert some catch code for when this returns 0 points.  ideally, you would improve the merge method to do a deeper search, so that many edges get merged simultaneously.
+		}
+
 		
         // each member of W_temp should real.  if a member of V already, mark index.  else, add to V, and mark.
 		vertex temp_vertex;
@@ -840,41 +876,56 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		temp_vertex.type = MIDPOINT;
 		
 		edge temp_edge;
-		temp_edge.left = edges[left_edge_w_pt].left;
+		temp_edge.left = edges[leftmost_edge].left;
 		temp_edge.midpt = index_in_vertices_with_add(V, temp_vertex);
-		temp_edge.right = edges[right_edge_w_pt].right;
+		temp_edge.right = edges[rightmost_edge].right;
 		
 		
-		for (std::vector<int>::iterator vec_iter = edges[left_edge_w_pt].removed_points.begin(); vec_iter!=edges[left_edge_w_pt].removed_points.end(); vec_iter++)
-		{
-			temp_edge.removed_points.push_back( *vec_iter );
+		// copy over the removed points for all the edges we are going to merge.
+		for (int zz=0; zz<edges_to_merge.size(); zz++) {
+			int merge_me_away = edges_to_merge[zz];
+			for (std::vector<int>::iterator vec_iter = edges[merge_me_away].removed_points.begin(); vec_iter!=edges[merge_me_away].removed_points.end(); vec_iter++)
+			{
+				temp_edge.removed_points.push_back( *vec_iter );
+			}
+			
+			if (zz==0){ // rightmost edge
+				temp_edge.removed_points.push_back(edges[merge_me_away].right);
+				temp_edge.removed_points.push_back(edges[merge_me_away].midpt);
+				V.vertices[edges[merge_me_away].midpt].removed = 1;
+				V.vertices[edges[merge_me_away].left].removed = 1;
+			}
+			else if (zz==edges_to_merge.size()-1){ // rightmost edge
+				temp_edge.removed_points.push_back(edges[merge_me_away].left);
+				temp_edge.removed_points.push_back(edges[merge_me_away].midpt);
+				V.vertices[edges[merge_me_away].midpt].removed = 1;
+				V.vertices[edges[merge_me_away].right].removed = 1;
+			}
+			else {
+				temp_edge.removed_points.push_back(edges[merge_me_away].left);
+				temp_edge.removed_points.push_back(edges[merge_me_away].midpt);
+				V.vertices[edges[merge_me_away].midpt].removed = 1;
+				V.vertices[edges[merge_me_away].left].removed = 1;
+			}
 		}
-		
-		for (std::vector<int>::iterator vec_iter = edges[right_edge_w_pt].removed_points.begin(); vec_iter!=edges[right_edge_w_pt].removed_points.end(); vec_iter++)
-		{
-			temp_edge.removed_points.push_back( *vec_iter );
-		}
-		
-		temp_edge.removed_points.push_back(edges[left_edge_w_pt].midpt);
-		temp_edge.removed_points.push_back(edges[left_edge_w_pt].right);
-		temp_edge.removed_points.push_back(edges[right_edge_w_pt].midpt);
-		
+
 		
 		add_edge(temp_edge);
         //		std::cout << "adding edge " << temp_edge.left << " " << temp_edge.midpt << " " << temp_edge.right << " " << std::endl;
 		//add the new_edge
 		
 		
-		
-		V.vertices[edges[left_edge_w_pt].midpt].removed = 1;
-		V.vertices[edges[left_edge_w_pt].right].removed = 1;
-		V.vertices[edges[right_edge_w_pt].midpt].removed = 1;
-		
 		// delete the two old edges // can't do this in the loop because we were using indexes into the edge set
 		std::vector< edge > post_merge_edges;
 		// this should be changed.
 		for (int ii = 0; ii<this->num_edges; ii++) {
-			if ((ii!=left_edge_w_pt) && (ii!=right_edge_w_pt)) { // if don't want to remove the edge
+			bool remove_flag = false;
+			for (int zz=0; zz<edges_to_merge.size(); zz++) {
+				if (edges_to_merge[zz] == ii) {
+					remove_flag = true;
+				}
+			}
+			if (remove_flag==false) { // if don't want to remove the edge // (ii!=left_edge_w_pt) && (ii!=right_edge_w_pt)
 				post_merge_edges.push_back( this->edges[ii]);
 			}
 			else{

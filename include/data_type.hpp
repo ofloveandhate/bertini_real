@@ -35,6 +35,7 @@
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/split_member.hpp>
+#include <boost/bind.hpp>
 
 #include "fileops.hpp"
 
@@ -165,6 +166,7 @@ int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & inde
 void make_randomization_matrix_based_on_degrees(mat_mp randomization_matrix, std::vector< int > & randomized_degrees,
 																								int num_variables, int num_funcs);
 int compare_integers_decreasing(const void * left_in, const void * right_in);
+int compare_integers_increasing(const void * left_in, const void * right_in);
 
 void send_patch_mp   (patch_eval_data_mp * patch);
 void receive_patch_mp(patch_eval_data_mp * patch);

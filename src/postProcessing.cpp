@@ -240,7 +240,7 @@ int is_acceptable_solution(post_process_t endPoint, solver_configuration & solve
 
 
 //assumes that W has the number of variables already set, and the pts NOT allocated yet.  should be NULL
-void BRpostProcessing(post_process_t *endPoints, witness_set *W_new, int num_pts,
+void BRpostProcessing(post_process_t *endPoints, witness_set *W_new, int num_pts_to_check,
 											preproc_data *preProcData, tracker_config_t *T,
 											solver_configuration & solve_options)
 /***************************************************************\
@@ -252,21 +252,20 @@ void BRpostProcessing(post_process_t *endPoints, witness_set *W_new, int num_pts
 {
 
 	
-	int ii, jj;
 	
 //	std::cout << "sing: " << solve_options.allow_singular << ", unsuccess: " << solve_options.allow_unsuccess << ", multi: " << solve_options.allow_multiplicity << " " << solve_options.allow_infinite << std::endl;
 	
 	// sets the multiplicity and solution number in the endPoints data
 	//direct from the bertini library:
-	findMultSol(endPoints, num_pts, W_new->num_variables, preProcData, T->final_tol_times_mult);
+	findMultSol(endPoints, num_pts_to_check, W_new->num_variables, preProcData, T->final_tol_times_mult);
 		
 	//sets the singularity flag in endPoints.
 	//custom, derived from bertini's analagous call.
-	int num_singular_solns = BRfindSingularSolns(endPoints, num_pts, W_new->num_variables, T);
+	int num_singular_solns = BRfindSingularSolns(endPoints, num_pts_to_check, W_new->num_variables, T);
 	
 	//sets the finite flag in endPoints.
 	//custom, derived from bertini's analagous call.
-	int num_finite_solns = BRfindFiniteSolns(endPoints, num_pts, W_new->num_variables - W_new->num_synth_vars, T);
+	int num_finite_solns = BRfindFiniteSolns(endPoints, num_pts_to_check, W_new->num_variables - W_new->num_synth_vars, T);
 	
 	
 	
@@ -275,7 +274,7 @@ void BRpostProcessing(post_process_t *endPoints, witness_set *W_new, int num_pts
 	
 	
 	if (solve_options.verbose_level>=4) {
-		for (ii=0; ii<num_pts; ++ii) {
+		for (int ii=0; ii<num_pts_to_check; ++ii) {
 			//		int success;      // success flag
 			//		int multiplicity; // multiplicity
 			//		int isReal;       // real flag:  0 - not real, 1 - real
@@ -284,55 +283,73 @@ void BRpostProcessing(post_process_t *endPoints, witness_set *W_new, int num_pts
 			printf("solution %d, success %d, multi %d, isFinite %d, isSing %d\n",ii,endPoints[ii].success,endPoints[ii].multiplicity,endPoints[ii].isFinite,endPoints[ii].isSing);
 		}
 	}
+	
+	
+	
 	int num_actual_solns = 0;
-	int *actual_solns_indices;
-	actual_solns_indices = (int *)br_malloc(num_pts*sizeof(int));
 	
+	std::vector<  std::pair< int,int > > actual_soln_indices;
 	
-	
-	for (ii=0; ii<num_pts; ii++) {
+	for (int ii=0; ii<num_pts_to_check; ii++) {
 		if ( is_acceptable_solution(endPoints[ii],solve_options) )//determine if acceptable based on current configuration
 		{
-			actual_solns_indices[num_actual_solns] = ii;
+			actual_soln_indices.push_back(std::pair<int,int>(ii,endPoints[ii].path_num));
 			num_actual_solns++;
 		}
 	}
 	
-	//initialize the structures for holding the produced data
-	W_new->num_pts=num_actual_solns; W_new->num_pts=num_actual_solns;
-	//  W_new->pts_d=(point_d *)br_malloc(num_actual_solns*sizeof(point_d));
-  W_new->pts_mp=(point_mp *)br_malloc(num_actual_solns*sizeof(point_mp));
-	
-	
-	
-	for (ii=0; ii<num_actual_solns; ++ii) {
-		
-		//		init_vec_d(W_new->pts_d[ii],W_new->num_variables);
-		init_vec_mp(W_new->pts_mp[ii],W_new->num_variables);
-		//		W_new->pts_d[ii]->size =
-		W_new->pts_mp[ii]->size = W_new->num_variables;
-		
-		if (endPoints[actual_solns_indices[ii]].sol_prec<64) {
-			//copy out of the double structure.
-			for (jj=0; jj<W_new->num_variables; jj++) {
-				d_to_mp(&W_new->pts_mp[ii]->coord[jj],endPoints[actual_solns_indices[ii]].sol_d[jj]);
-			}
-			//			vec_d_to_mp(W_new->pts_mp[ii],W_new->pts_d[ii]);
-		}
-		else{
-			//copy out of the mp structure.
-			for (jj=0; jj<W_new->num_variables; jj++) {
-				set_mp(&W_new->pts_mp[ii]->coord[jj],endPoints[actual_solns_indices[ii]].sol_mp[jj]);
-			}
-			//			vec_mp_to_d(W_new->pts_d[ii],W_new->pts_mp[ii]);
+	if (solve_options.verbose_level>=8) {
+		for (int ii=0; ii<num_actual_solns; ii++) {
+			std::cout << actual_soln_indices[ii].first << " " << actual_soln_indices[ii].second << std::endl;
 		}
 	}
 	
-	free(actual_solns_indices);
+	// sort the indices into the post_process_t array, based on the path numbers.  this restores the order permuted by multiple processors.
+	std::sort(actual_soln_indices.begin(), actual_soln_indices.end(),
+			  boost::bind(&std::pair<int, int>::second, _1) <
+			  boost::bind(&std::pair<int, int>::second, _2));
+	
+	if (solve_options.verbose_level>=8) {
+		std::cout << std::endl;
+		for (int ii=0; ii<num_actual_solns; ii++) {
+			std::cout << actual_soln_indices[ii].first << " " << actual_soln_indices[ii].second << std::endl;
+		}
+		std::cout << std::endl;
+	}
 	
 	
+
+	
+	// this is total crap. but the post_process_t type is total crap, so what're you gonna do?
+//TODO: change the post_process_t type.
+	
+	//initialize the structures for holding the produced data
+	W_new->num_pts=num_actual_solns; W_new->num_pts=num_actual_solns;
+	W_new->pts_mp=(point_mp *)br_malloc(num_actual_solns*sizeof(point_mp));
 	
 	
+
+	for (int ii=0; ii<num_actual_solns; ++ii) {
+		int curr_ind = actual_soln_indices[ii].first;  // sorted!!!
+		
+		init_vec_mp(W_new->pts_mp[ii],W_new->num_variables);
+		W_new->pts_mp[ii]->size = W_new->num_variables;
+		
+		if (endPoints[curr_ind].sol_prec<64) {
+			//copy out of the double structure.
+			for (int jj=0; jj<W_new->num_variables; jj++)
+				d_to_mp(&W_new->pts_mp[ii]->coord[jj],endPoints[curr_ind].sol_d[jj]);
+			
+		}
+		else{
+			//copy out of the mp structure.
+			for (int jj=0; jj<W_new->num_variables; jj++)
+				set_mp(&W_new->pts_mp[ii]->coord[jj],endPoints[curr_ind].sol_mp[jj]);
+			
+		}
+	}
+	
+
   return;
 }
 

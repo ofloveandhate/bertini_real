@@ -794,7 +794,7 @@ void master_solver(witness_set * W_new, const witness_set & W,
 				   solver_d * ED_d, solver_mp * ED_mp,
 				   solver_configuration & solve_options);
 
-void generic_tracker_loop(trackingStats *trackCount,
+void serial_tracker_loop(trackingStats *trackCount,
 						  FILE * OUT, FILE * midOUT,
 						  const witness_set & W,  // was the startpts file pointer.
 						  post_process_t *endPoints,

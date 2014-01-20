@@ -583,7 +583,7 @@ void master_solver(witness_set * W_new, const witness_set & W,
                             solve_options);
 	}
 	else{
-		generic_tracker_loop(&trackCount, OUT, midOUT,
+		serial_tracker_loop(&trackCount, OUT, midOUT,
                              W,
                              endPoints,
                              ED_d, ED_mp,
@@ -602,6 +602,7 @@ void master_solver(witness_set * W_new, const witness_set & W,
 	if (solve_options.use_midpoint_checker==1) {
 		midpoint_checker(trackCount.numPoints, solve_options.T.numVars,solve_options.midpoint_tol, &num_crossings);
 	}
+	
 	
 	// post process
 	switch (solve_options.T.MPType) {
@@ -682,7 +683,7 @@ void generic_set_start_pts(point_data_mp ** startPts,
 
 
 
-void generic_tracker_loop(trackingStats *trackCount,
+void serial_tracker_loop(trackingStats *trackCount,
                           FILE * OUT, FILE * MIDOUT,
                           const witness_set & W,  // was the startpts file pointer.
                           post_process_t *endPoints,
@@ -1239,25 +1240,22 @@ int receive_endpoints(trackingStats *trackCount,
 	MPI_Status statty_mc_gatty;
 	MPI_Recv(&num_incoming, 1, MPI_INT, MPI_ANY_SOURCE, NUMPACKETS, MPI_COMM_WORLD, &statty_mc_gatty);
 	
-//	std::cout << num_incoming << std::endl;
+
 	if (num_incoming > max_incoming) {
 		std::cout << "the impossible happened -- want to receive more endpoints than max" << std::endl;
 	}
 	
-//	std::cout << sizeof(*EG_receives) << std::endl;
+
 	int incoming_id = send_recv_endgame_data_t(EG_receives, &num_incoming, solve_options.T.MPType, statty_mc_gatty.MPI_SOURCE, 0); // the trailing 0 indicates receiving
-//	std::cout << sizeof(*EG_receives) << std::endl;
+
 	
-//	std::cout << "m received " << num_incoming << " points from " << incoming_id << "." << std::endl;
 	solve_options.deactivate(statty_mc_gatty.MPI_SOURCE);
 	
-//	for (int ii=0; ii<num_incoming; ii++) {
-//		std::cout << (*EG_receives)[ii].prec << std::endl;
-//	}
+
 	
 	for (int ii=0; ii<num_incoming; ii++) {
 		int issoln;
-//		std::cout << ii << std::endl;
+
 		switch (solve_options.T.MPType) {
 			case 0:
 				issoln = ED_d->is_solution_checker_d( &(*EG_receives)[ii],  &solve_options.T, ED_d);
@@ -1324,6 +1322,8 @@ int receive_endpoints(trackingStats *trackCount,
 		}
 		else
 		{
+			//this conversion of type is total crap.
+			
 			//otherwise converged, but may have still had non-zero retval due to other reasons.
 			endgamedata_to_endpoint(&endPoints[solution_counter], &((*EG_receives)[ii]));
 			trackCount->successes++;
