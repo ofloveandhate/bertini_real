@@ -9,35 +9,59 @@
 void nullspace_config::clear()
 {
 	
-//	free(randomized_degrees); // the degrees of the randomized functions (not derivatives)
+	if (randomized_degrees==NULL) {
+		free(randomized_degrees); // the degrees of the randomized functions (not derivatives)
+		randomized_degrees = NULL;
+	}
 	
-//	for (int ii=0; ii<num_jac_equations; ii++) {
-//		for (int jj=0; jj<max_degree; jj++) {
-//			clear_vec_mp(starting_linears[ii][jj]);
-//		}
-//		free(starting_linears[ii]);
-//	}
-//	free(starting_linears);
-//	
-//	for (int ii=0; ii<num_additional_linears; ii++){
-//		clear_vec_mp(additional_linears_starting[ii]);
-//		clear_vec_mp(additional_linears_terminal[ii]);
-//	}
-//	free(additional_linears_terminal);
-//	free(additional_linears_starting);
-//	
-//	
-//	for (int ii=0; ii<num_v_linears; ii++)
-//		clear_vec_mp(v_linears[ii]);
-//	free(v_linears);
-//	
-//	clear_vec_mp(v_patch);
-//	
-//	for (int ii=0; ii<num_projections; ii++)
-//		clear_vec_mp(target_projection[ii]);
-//	free(target_projection);
-//	
-//	clear_mat_mp(randomizer_matrix);
+	
+	if (num_jac_equations>0) {
+		for (int ii=0; ii<num_jac_equations; ii++) {
+			for (int jj=0; jj<max_degree; jj++) {
+				clear_vec_mp(starting_linears[ii][jj]);
+			}
+			free(starting_linears[ii]);
+		}
+		free(starting_linears);
+	}
+	
+	
+	num_jac_equations = 0;
+	max_degree = 0;
+	
+	if (num_additional_linears >0 ) {
+		for (int ii=0; ii<num_additional_linears; ii++){
+			clear_vec_mp(additional_linears_starting[ii]);
+			clear_vec_mp(additional_linears_terminal[ii]);
+		}
+		free(additional_linears_terminal);
+		free(additional_linears_starting);
+		
+		num_additional_linears = 0;
+	}
+	
+	
+	if (num_v_linears>0) {
+		for (int ii=0; ii<num_v_linears; ii++)
+			clear_vec_mp(v_linears[ii]);
+		free(v_linears);
+		clear_vec_mp(v_patch);
+		
+		num_v_linears = 0;
+	}
+	
+	
+	if (num_projections>0) {
+		for (int ii=0; ii<num_projections; ii++)
+			clear_vec_mp(target_projection[ii]);
+		free(target_projection);
+		
+		num_projections = 0;
+	}
+	
+	
+	
+	clear_mat_mp(randomizer_matrix);
 }
 
 

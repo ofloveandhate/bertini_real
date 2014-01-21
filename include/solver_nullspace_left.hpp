@@ -67,6 +67,21 @@ public:
 	void clear();
 	
 	nullspace_config(){
+		init();
+	}
+	
+	void print();
+	
+	~nullspace_config()
+	{
+		clear();
+	}
+	
+	
+private:
+	
+	void init()
+	{
 		target_dim = ambient_dim = target_crit_codim = num_jac_equations = -1;
 		num_x_vars = num_v_vars = -1;
 		num_randomized_eqns = max_degree = -1;
@@ -82,14 +97,6 @@ public:
 		
 		target_projection = NULL;
 	}
-	
-	void print();
-	
-	~nullspace_config()
-	{
-		clear();
-	}
-	
 };
 
 

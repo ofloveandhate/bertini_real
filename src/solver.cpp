@@ -1322,7 +1322,7 @@ int receive_endpoints(trackingStats *trackCount,
 		}
 		else
 		{
-			//this conversion of type is total crap.
+			//this conversion of type is total crap. i mean, really, what is the point?  all it does is put the data into a more useless format and waste time.
 			
 			//otherwise converged, but may have still had non-zero retval due to other reasons.
 			endgamedata_to_endpoint(&endPoints[solution_counter], &((*EG_receives)[ii]));
