@@ -379,7 +379,7 @@ void BR_configuration::init()
 	this->stifle_text = " > /dev/null ";
 	
 	this->bertini_command = "~/bin/bertini_serial";
-	this->matlab_command = "matlab -nosplash";
+	this->matlab_command = "matlab -nosplash -nodesktop -nojvm";
 	this->verbose_level = 0; // default to 0
 	
 	this->MPType = 2;

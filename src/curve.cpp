@@ -786,7 +786,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		int rightmost_edge = edges_to_merge.front();
 		int leftmost_edge = edges_to_merge.back();
 		
-		
+		int moving_edge = edges_to_merge[int(edges_to_merge.size())/2];
 		
 		if (solve_options.verbose_level>=0) {
 			std::cout << color::cyan() << "merging edges (r to l): ";
@@ -829,7 +829,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		
 		// get the projection value of the midpoint we will be moving from.
 		//arbitrarily chose to move from the midpoint of the left edge.
-		projection_value_homogeneous_input(&particular_projection->coord[0], V.vertices[edges[leftmost_edge].midpt].pt_mp, projections[0]);
+		projection_value_homogeneous_input(&particular_projection->coord[0], V.vertices[edges[moving_edge].midpt].pt_mp, projections[0]);
 		neg_mp(&particular_projection->coord[0],&particular_projection->coord[0]);
 		
 		
@@ -837,7 +837,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		W_midpt.add_linear(particular_projection);
 		
 		W_midpt.reset_points();
-		W_midpt.add_point(V.vertices[edges[leftmost_edge].midpt].pt_mp);
+		W_midpt.add_point(V.vertices[edges[moving_edge].midpt].pt_mp);
 		// I arbitrarily chose the left edge's midpoint as source to track to new midpoint.
 		
 		projection_value_homogeneous_input(temp,V.vertices[edges[leftmost_edge].left].pt_mp,projections[0]);
@@ -851,7 +851,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		
 		
 		solve_options.allow_multiplicity = 0;
-		solve_options.allow_singular = 0;
+		solve_options.allow_singular = 1;
 		solve_options.complete_witness_set = 0;
 		solve_options.robust = true;
 		
@@ -875,7 +875,9 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		vec_cp_mp(temp_vertex.pt_mp, W_temp.pts_mp[0]);
 		temp_vertex.type = MIDPOINT;
 		
-		edge temp_edge;
+		edge temp_edge; // create new empty edge
+		
+		//set the left, mid and right points
 		temp_edge.left = edges[leftmost_edge].left;
 		temp_edge.midpt = index_in_vertices_with_add(V, temp_vertex);
 		temp_edge.right = edges[rightmost_edge].right;
@@ -883,23 +885,23 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		
 		// copy over the removed points for all the edges we are going to merge.
 		for (int zz=0; zz<edges_to_merge.size(); zz++) {
-			int merge_me_away = edges_to_merge[zz];
+			int merge_me_away = edges_to_merge[zz];  //set an index into the merge edges
 			for (std::vector<int>::iterator vec_iter = edges[merge_me_away].removed_points.begin(); vec_iter!=edges[merge_me_away].removed_points.end(); vec_iter++)
 			{
 				temp_edge.removed_points.push_back( *vec_iter );
 			}
 			
 			if (zz==0){ // rightmost edge
-				temp_edge.removed_points.push_back(edges[merge_me_away].right);
+				temp_edge.removed_points.push_back(edges[merge_me_away].left);
 				temp_edge.removed_points.push_back(edges[merge_me_away].midpt);
 				V.vertices[edges[merge_me_away].midpt].removed = 1;
 				V.vertices[edges[merge_me_away].left].removed = 1;
 			}
-			else if (zz==edges_to_merge.size()-1){ // rightmost edge
-				temp_edge.removed_points.push_back(edges[merge_me_away].left);
+			else if (zz==int(edges_to_merge.size())-1){ // leftmost edge
+//				temp_edge.removed_points.push_back(edges[merge_me_away].right);
 				temp_edge.removed_points.push_back(edges[merge_me_away].midpt);
 				V.vertices[edges[merge_me_away].midpt].removed = 1;
-				V.vertices[edges[merge_me_away].right].removed = 1;
+//				V.vertices[edges[merge_me_away].right].removed = 1;
 			}
 			else {
 				temp_edge.removed_points.push_back(edges[merge_me_away].left);
@@ -911,13 +913,16 @@ void curve_decomposition::merge(witness_set & W_midpt,
 
 		
 		add_edge(temp_edge);
+		// tacks this onto the end of the edge vector
+		
         //		std::cout << "adding edge " << temp_edge.left << " " << temp_edge.midpt << " " << temp_edge.right << " " << std::endl;
 		//add the new_edge
 		
 		
-		// delete the two old edges // can't do this in the loop because we were using indexes into the edge set
+		// delete the old edges // note that we can't do this *IN* the loop because we were using indexes into the edge set.  have to do it after added new edge
 		std::vector< edge > post_merge_edges;
 		// this should be changed.
+		int num_removed_edges = 0;
 		for (int ii = 0; ii<this->num_edges; ii++) {
 			bool remove_flag = false;
 			for (int zz=0; zz<edges_to_merge.size(); zz++) {
@@ -925,10 +930,12 @@ void curve_decomposition::merge(witness_set & W_midpt,
 					remove_flag = true;
 				}
 			}
+			
 			if (remove_flag==false) { // if don't want to remove the edge // (ii!=left_edge_w_pt) && (ii!=right_edge_w_pt)
 				post_merge_edges.push_back( this->edges[ii]);
 			}
 			else{
+				num_removed_edges++;
                 //				std::cout << "removing edge " << ii << std::endl;
                 //				std::cout << this->edges[ii].left << " " << this->edges[ii].midpt << " " << this->edges[ii].right << " " << std::endl;
 			}
@@ -936,11 +943,16 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		}
 		
 		
+		if (num_removed_edges!=int(edges_to_merge.size())) {
+			std::cout << "claiming to have merged away " << num_removed_edges << " edges, but had " << edges_to_merge.size() << " in the list to merge" << std::endl;
+			br_exit(-524);
+		}
 		
 		//swap this's edge info to post-merge info.
 		this->edges.swap(post_merge_edges);
 		this->num_edges = int(this->edges.size());
 		
+		std::cout << "getting merge candidate" << std::endl;
 		edges_to_merge = this->get_merge_candidate(V);
 	}// re: while
 	clear_mp(half); clear_mp(temp); clear_mp(temp2);
@@ -948,6 +960,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 	
 	clear_mp(new_proj_val);
 	
+	std::cout << "done merging" << std::endl;
 	
 } // re: merge
 
