@@ -54,6 +54,11 @@ int main(int argC, char *args[])
 	
 	
     vertex_set V;
+	
+	
+	
+	
+	
 	curve_decomposition C;
 	int successful_startup = curve_sampler_startup(Dir_Name,
                                                    inputName, witnessSetName,RandMatName,samplingNamenew,
@@ -131,7 +136,7 @@ int main(int argC, char *args[])
     
 	
     
-	generate_new_sampling_pts(&S_new,
+	curve_generate_new_sampling_pts_adaptive(&S_new,
                               randomizer_matrix,
                               S_old,
                               C,
@@ -174,7 +179,7 @@ int main(int argC, char *args[])
 
 
 
-void generate_new_sampling_pts(curve_sample_data *S_new,
+void curve_generate_new_sampling_pts_adaptive(curve_sample_data *S_new,
                                mat_mp randomizer_matrix,
                                curve_sample_data S_old,
                                curve_decomposition C,

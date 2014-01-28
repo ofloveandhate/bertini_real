@@ -74,8 +74,17 @@ void sphere_eval_data_mp::init()
 }
 
 
+int sphere_eval_data_mp::send(parallelism_config & mpi_config)
+{
+	
+	return 1;
+}
 
-
+int sphere_eval_data_mp::receive(parallelism_config & mpi_config)
+{
+	
+	return 1;
+}
 
 int sphere_eval_data_mp::setup(const sphere_config & config,
 															 const witness_set & W,
@@ -271,7 +280,16 @@ void sphere_eval_data_d::init()
 
 
 
+int sphere_eval_data_d::send(parallelism_config & mpi_config)
+{
+	
+	return 1;
+}
 
+int sphere_eval_data_d::receive(parallelism_config & mpi_config)
+{
+	return 1;
+}
 
 
 int sphere_eval_data_d::setup(const sphere_config & config,
@@ -364,7 +382,7 @@ int sphere_eval_data_d::setup(const sphere_config & config,
 
 
 
-
+//TODO:  parallelize this solver
 
 
 int sphere_solver_master_entry_point(const witness_set						&W, // carries with it the start points, and the linears.

@@ -66,7 +66,7 @@ public:
 	
 	
 	
-	bool is_head()
+	inline bool is_head()
 	{
 		if (my_id == headnode)
 			return true;
@@ -75,7 +75,7 @@ public:
 	}
 	
 	
-	bool use_parallel(){
+	inline bool use_parallel(){
 		if (numprocs>1 && force_no_parallel!=true)
 			return true;
 		else
@@ -92,10 +92,10 @@ public:
 		MPI_Abort(my_communicator,why);
 	}
 	
-	int head(){return headnode;};
-	int id(){ return my_id;};
-	int level(){return worker_level;};
-	int size(){ return numprocs;};
+	inline int head(){return headnode;};
+	inline int id(){ return my_id;};
+	inline int level(){return worker_level;};
+	inline int size(){ return numprocs;};
 	
 	void init_active_workers()
 	{

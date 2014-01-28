@@ -1310,7 +1310,7 @@ int vertex_set::compute_downstairs_crit_midpts(const witness_set & W,
 	
 	
 #ifdef thresholding
-	real_threshold(projection_values, 1e-13);
+	real_threshold(projection_values, 1e-10);
 #endif
 	
 	
@@ -1991,6 +1991,11 @@ int decomposition::setup(boost::filesystem::path INfile,
  **/
 void decomposition::print(boost::filesystem::path base)
 {
+	
+#ifdef functionentry_output
+	std::cout << "decomposition::print" << std::endl;
+#endif
+	
 	int ii;
 	
 	boost::filesystem::create_directory(base);
@@ -2058,7 +2063,10 @@ void decomposition::print(boost::filesystem::path base)
 
 int decomposition::read_sphere(const boost::filesystem::path & bounding_sphere_filename)
 {
-	
+#ifdef functionentry_output
+	std::cout << "decomposition::read_sphere" << std::endl;
+#endif
+
 
 	change_size_vec_mp(this->sphere_center, num_variables-1); //destructive resize
 	sphere_center->size = num_variables-1;
@@ -2092,6 +2100,12 @@ int decomposition::read_sphere(const boost::filesystem::path & bounding_sphere_f
 
 void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 {
+	
+#ifdef functionentry_output
+	std::cout << "decomposition::compute_sphere_bounds" << std::endl;
+#endif
+
+	
 	int num_vars = W_crit.num_variables-W_crit.num_synth_vars-1;
 	
 	change_size_vec_mp(this->sphere_center, num_vars); //destructive resize
@@ -2212,6 +2226,12 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 
 void decomposition::output_main(const BR_configuration & program_options, vertex_set & V)
 {
+#ifdef functionentry_output
+	std::cout << "decomposition::output_main" << std::endl;
+#endif
+
+	
+	
 	
 	FILE *OUT;
 	std::stringstream converter;
@@ -2249,7 +2269,10 @@ void decomposition::output_main(const BR_configuration & program_options, vertex
 
 void decomposition::send(int target, parallelism_config & mpi_config)
 {
-	
+#ifdef functionentry_output
+	std::cout << "decomposition::send" << std::endl;
+#endif
+
 	
 	int * buffer2;
 	
@@ -2397,6 +2420,11 @@ void decomposition::send(int target, parallelism_config & mpi_config)
 
 void decomposition::receive(int source, parallelism_config & mpi_config)
 {
+#ifdef functionentry_output
+	std::cout << "decomposition::receive" << std::endl;
+#endif
+
+	
 	
 	MPI_Status statty_mc_gatty;
 	
@@ -2557,8 +2585,67 @@ void decomposition::receive(int source, parallelism_config & mpi_config)
 
 
 
+bool is_identity(mat_d M)
+{
+	
+	comp_d one;
+	set_one_d(one);
+	
+	comp_d temp;
+	for (int ii=0; ii<M->rows; ii++) {
+		for (int jj=0; jj<M->cols; jj++) {
+			if (ii==jj) {
+				sub_d(temp, &M->entry[ii][jj], one);
+				if (d_oneNorm_d(temp)>0) {
+					return false;
+				}
+			}
+			else{
+				if (d_oneNorm_d(&M->entry[ii][jj])>0) {
+					return false;
+				}
+			}
+			
+		}
+	}
+	
+	return true;
+}
 
 
+
+bool is_identity(mat_mp M)
+{
+	
+	comp_mp one; init_mp(one); set_one_mp(one);
+	comp_mp temp;  init_mp(temp);
+	
+	
+	for (int ii=0; ii<M->rows; ii++) {
+		for (int jj=0; jj<M->cols; jj++) {
+			if (ii==jj) {
+				sub_mp(temp, &M->entry[ii][jj], one);
+				if (d_oneNorm_mp(temp)>0) {
+					
+					clear_mp(one); clear_mp(temp);
+					return false;
+				}
+			}
+			else{
+				if (d_oneNorm_mp(&M->entry[ii][jj])>0) {
+					clear_mp(one); clear_mp(temp);
+					
+					return false;
+				}
+			}
+			
+		}
+	}
+	
+	clear_mp(one); clear_mp(temp);
+	
+	return true;
+}
 
 
 
@@ -3388,7 +3475,7 @@ int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & inde
 		
 		if (indicator==-1) { // if min value was larger than a huge number
 			printf("min projection value was *insanely* large\n");
-			exit(1111);
+			br_exit(1111);
 		}
 		
 		unsorted_indices.erase(indicator);

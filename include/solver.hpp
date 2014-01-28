@@ -289,6 +289,7 @@ public:
 	
 	void reset_tracker_config()
 	{
+		tracker_config_clear(&T);
 		cp_tracker_config_t(&T,&T_orig);
 	}
 	
@@ -402,7 +403,7 @@ public:
 	int num_steps; ///< the number of evaluations made using this evaluator
 	int verbose_level;  ///< how verbose to be
 	
-	bool randomizing;
+	bool randomize;
 	
     bool received_mpi;
 	
@@ -473,7 +474,7 @@ protected:
         
         received_mpi = false;
         
-		randomizing = true;
+		randomize = true;
 		
 		this->preproc_file = "preproc_data";
 		this->function_file = "func_input";

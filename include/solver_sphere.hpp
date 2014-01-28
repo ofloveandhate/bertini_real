@@ -275,9 +275,9 @@ public:
 	
 	// MPI SENDS AND RECEIVES
 	
-	int send(parallelism_config & mpi_config){return 0;}
+	int send(parallelism_config & mpi_config);
 	
-	int receive(parallelism_config & mpi_config){return 0;}
+	int receive(parallelism_config & mpi_config);
 	
 	
 	
@@ -487,9 +487,9 @@ public:
 	
 	// MPI SENDS AND RECEIVES
 	
-	int send(parallelism_config & mpi_config){return 0;}
+	int send(parallelism_config & mpi_config);
 	
-	int receive(parallelism_config & mpi_config){return 0;}
+	int receive(parallelism_config & mpi_config);
 	
 	
 	
