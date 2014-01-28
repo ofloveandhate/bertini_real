@@ -181,14 +181,15 @@ int solver::send(parallelism_config & mpi_config)
 {
 	
 	
-	int *buffer = new int[4];
+	int *buffer = new int[5];
 	
 	buffer[0] = this->num_variables;
 	buffer[1] = this->num_steps;
 	buffer[2] = this->verbose_level;
 	buffer[3] = this->MPType;
+	buffer[4] = int(randomize);
 	
-	MPI_Bcast(buffer, 4, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(buffer, 5, MPI_INT, 0, MPI_COMM_WORLD);
 	
 	send_preproc_data(&this->preProcData);
 	
@@ -203,16 +204,16 @@ int solver::receive(parallelism_config & mpi_config)
 {
 	
     
-	int *buffer = new int[4];
+	int *buffer = new int[5];
 	
     
-	MPI_Bcast(buffer, 4, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(buffer, 5, MPI_INT, 0, MPI_COMM_WORLD);
 	
 	this->num_variables = buffer[0];
 	this->num_steps = buffer[1];
 	this->verbose_level = buffer[2];
 	this->MPType = buffer[3];
-	
+	randomize = buffer[4];
 	
 	receive_preproc_data(&this->preProcData);
 	
@@ -543,8 +544,12 @@ void master_solver(witness_set * W_new, const witness_set & W,
 		bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
 		
 		
-		int robust = solve_options.robust;
-		MPI_Bcast(&robust,1,MPI_INT, 0,MPI_COMM_WORLD);
+		int *settings_buffer = (int *) br_malloc(2*sizeof(int));
+		settings_buffer[0] = solve_options.robust;
+		settings_buffer[1] = solve_options.use_gamma_trick;
+		
+		MPI_Bcast(settings_buffer,2,MPI_INT, 0, MPI_COMM_WORLD);
+		free(settings_buffer);
 		
 		switch (solve_options.T.MPType) {
 			case 1:
@@ -747,7 +752,7 @@ void serial_tracker_loop(trackingStats *trackCount,
 	{
 		if ((solve_options.verbose_level>=0) && (solve_options.path_number_modulus!=0) )
 		{
-			if ((ii%solve_options.path_number_modulus)==0) {
+			if ((ii%solve_options.path_number_modulus)==0 && (solve_options.path_number_modulus<W.num_pts)) {
 				std::cout << color::gray();
 				printf("tracking path %d of %d\n",ii,W.num_pts);
 				std::cout << color::console_default();
@@ -769,7 +774,7 @@ void serial_tracker_loop(trackingStats *trackCount,
                               curr_eval_d, curr_eval_mp, change_prec, find_dehom);
 		}
 		else{
-			//            boost::timer::auto_cpu_timer t;
+//            boost::timer::auto_cpu_timer t;
             // track the path
 			generic_track_path(solution_counter, &EG,
                                &startPts_d[ii], &startPts_mp[ii],
@@ -1475,16 +1480,13 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 		
 		EG_out->retVal = 0;
 		T->first_step_of_path = 1;
-        //		std::cout << T->currentStepSize << std::endl;
-        //
-        //		mypause();
+
 		if (T->MPType == 2)
 		{ // track using AMP
 			
-			if (T->MPType==2) {
-				change_prec(ED_mp,64);
-			}
+			change_prec(ED_mp,64);
 			T->Precision = 64;
+			
 			
 			EG_out->prec = EG_out->last_approx_prec = 52;
 			

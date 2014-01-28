@@ -51,6 +51,16 @@ void clear_sample(curve_sample_data *S, int MPType);
 
 
 
+int get_dir_mptype(boost::filesystem::path & Dir_Name, int * MPType);
+
+
+
+
+
+
+
+
+
 int  curve_sampler_startup(boost::filesystem::path directoryName,
 						   boost::filesystem::path &inputName,
 						   boost::filesystem::path &witnessSetName,
@@ -62,8 +72,6 @@ int  curve_sampler_startup(boost::filesystem::path directoryName,
 
 
 
-
-int get_dir_mptype(boost::filesystem::path & Dir_Name, int * MPType);
 
 
 
@@ -77,7 +85,7 @@ void  output_sampling_data(curve_sample_data S,  vertex_set V,
 void  set_witness_set_d(witness_set *W, vec_d L,vec_d pts,int num_vars);
 void set_witness_set_mp(witness_set *W, vec_mp L,vec_mp pts,int num_vars);
 
-void generate_new_sampling_pts(curve_sample_data *S_new,
+void curve_generate_new_sampling_pts_adaptive(curve_sample_data *S_new,
 							   mat_mp randomizer_matrix,
 							   curve_sample_data S_old,
 							   curve_decomposition C,

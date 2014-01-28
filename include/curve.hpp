@@ -96,7 +96,57 @@ public:
 	
 
 	
-
+	int nondegenerate_edge_w_midpt(int ind)
+	{
+		
+		for (int ii=0; ii<num_edges; ii++){
+			if (this->edges[ii].midpt == ind){
+				
+				if (edges[ii].is_degenerate()) {
+					continue;
+				}
+				
+				return ii;
+			}
+		}
+		
+		return -10;
+	}
+	
+	
+	int nondegenerate_edge_w_left(int ind)
+	{
+		
+		for (int ii=0; ii<num_edges; ii++){
+			if (this->edges[ii].left == ind){
+				
+				if (edges[ii].is_degenerate()) {
+					continue;
+				}
+				
+				return ii;
+			}
+		}
+		
+		return -11;
+	}
+	int nondegenerate_edge_w_right(int ind)
+	{
+		
+		for (int ii=0; ii<num_edges; ii++){
+			if (this->edges[ii].right == ind){
+				
+				if (edges[ii].is_degenerate()) {
+					continue;
+				}
+				
+				return ii;
+			}
+		}
+		
+		return -12;
+	}
+	
 	
 	
 	
@@ -111,6 +161,7 @@ public:
 
 		return -10;
 	}
+	
 	
 	
 	int edge_w_left(int ind)

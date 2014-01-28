@@ -10,7 +10,7 @@ int main(int argC, char *args[])
 {
 
 
-	boost::timer::auto_cpu_timer t;
+	
     
 	////
 	//  INITIALIZATION

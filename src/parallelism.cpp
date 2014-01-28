@@ -31,6 +31,10 @@ int process::main_loop(){
 
 int ubermaster_process::main_loop()
 {
+	
+	boost::timer::auto_cpu_timer t;
+	
+	
 	witness_set W;
 	
 	

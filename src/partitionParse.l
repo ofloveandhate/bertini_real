@@ -218,7 +218,7 @@ other .
 %%
 
 // parse a file
-int partitionParse(int **declarations, FILE *fp, char *funcName, char *configName,int fornsc)
+int partitionParse(int **declarations, FILE *fp, char *funcName, char *configName, int fornsc)
 /***************************************************************\
 * USAGE:                                                        *
 * ARGUMENTS:                                                    *

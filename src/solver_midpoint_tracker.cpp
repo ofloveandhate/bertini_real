@@ -894,8 +894,14 @@ void midpoint_slave_entry_point(solver_configuration & solve_options)
 {
 	
 	
-	// already received the flag which indicated that this worker is going to be performing the nullspace calculation.
+	// already received the flag which indicated that this worker is going to be performing the midpoint calculation.
 	bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
+	
+	int *settings_buffer = (int *) br_malloc(2*sizeof(int));
+	MPI_Bcast(settings_buffer,2,MPI_INT, 0,MPI_COMM_WORLD);
+	solve_options.robust = settings_buffer[0];
+	solve_options.use_gamma_trick = settings_buffer[1];
+	free(settings_buffer);
 	
 	midpoint_eval_data_d *ED_d = NULL;
 	midpoint_eval_data_mp *ED_mp = NULL;

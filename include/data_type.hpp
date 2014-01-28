@@ -39,7 +39,7 @@
 
 #include "fileops.hpp"
 
-#define SAMEPOINTTOL 1e-4
+#define SAMEPOINTTOL 1e-6
 
 class parallelism_config; // a forward declaration
 class BR_configuration;   // a forward declaration
@@ -52,7 +52,7 @@ enum {SUCCESSFUL=0, CRITICAL_FAILURE=-10, TOLERABLE_FAILURE=-1};
 enum {SYSTEM_CRIT = -1600, SYSTEM_SPHERE};
 
 //The following lets us use words instead of numbers to indicate vertex type.
-enum {UNSET= 100, CRITICAL, SEMICRITICAL, MIDPOINT, ISOLATED, NEW, SAMPLE_POINT, REMOVED};
+enum {UNSET= 100, CRITICAL, SEMICRITICAL, MIDPOINT, ISOLATED, NEW, SAMPLE_POINT, REMOVED, PROBLEMATIC};
 
 
 
@@ -106,7 +106,8 @@ value_type map_lookup_with_default(const  std::map <key_type,value_type> & mc_ma
 
 
 
-
+bool is_identity(mat_d M);
+bool is_identity(mat_mp M);
 
 //function prototypes for bertini_real data clearing etc.
 
@@ -978,7 +979,7 @@ public:
 	
 	// other defaults are correct for this type.
 	
-	bool is_degenerate()
+	inline bool is_degenerate()
 	{
 		if ((left == right) || (left==midpt) || (right==midpt))
 			return true;

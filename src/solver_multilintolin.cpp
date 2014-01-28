@@ -537,9 +537,11 @@ int multilin_slave_entry_point(solver_configuration & solve_options)
 	// already received the flag which indicated that this worker is going to be performing the nullspace calculation.
 	bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
 	
-	int robust;
-	MPI_Bcast(&robust,1,MPI_INT, 0,MPI_COMM_WORLD);
-	solve_options.robust = robust;
+	int *settings_buffer = (int *) br_malloc(2*sizeof(int));
+	MPI_Bcast(settings_buffer,2,MPI_INT, 0,MPI_COMM_WORLD);
+	solve_options.robust = settings_buffer[0];
+	solve_options.use_gamma_trick = settings_buffer[1];
+	free(settings_buffer);
 	
 	multilintolin_eval_data_d *ED_d = NULL;
 	multilintolin_eval_data_mp *ED_mp = NULL;
@@ -706,7 +708,7 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	// note that you can only really do this AFTER you are done calling other evaluators.
 	// set parVals & parDer correctly
 	
-	// i.e. these must remain here, or below.  \/
+	// i.e. these MUST remain here, or below.  \/
 	change_size_point_d(parVals, 1);
 	change_size_vec_d(parDer, 1);
 	change_size_mat_d(Jp, BED->num_variables, 1); Jp->rows = BED->num_variables; Jp->cols = 1;

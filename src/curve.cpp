@@ -9,6 +9,10 @@ void curve_decomposition::main(vertex_set & V,
                                solver_configuration & solve_options)
 {
 	
+#ifdef functionentry_output
+	std::cout << "curve::main" << std::endl;
+#endif
+	
 	
 	
 	int num_vars = W.num_variables;
@@ -137,7 +141,12 @@ void curve_decomposition::computeCurveSelfConj(const witness_set & W_curve,
                                                BR_configuration & program_options,
                                                solver_configuration & solve_options)
 {
-	//IN DEVELOPMENT
+	
+#ifdef functionentry_output
+	std::cout << "curve::computeCurveSelfConj" << std::endl;
+#endif
+	
+	
     
 	
 	
@@ -214,6 +223,11 @@ int curve_decomposition::interslice(const witness_set & W_curve,
                                     solver_configuration & solve_options,
                                     vertex_set & V)
 {
+	
+#ifdef functionentry_output
+	std::cout << "curve::interslice" << std::endl;
+#endif
+	
 	
 	V.set_curr_projection(projections[0]);
 	V.set_curr_input(W_crit_real.input_filename);
@@ -308,7 +322,6 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	
 	
 	
-	
 	solve_options.allow_multiplicity = 0;
 	solve_options.allow_singular = 0;
 	solve_options.complete_witness_set = 1;
@@ -381,7 +394,8 @@ int curve_decomposition::interslice(const witness_set & W_curve,
     found_indices_mid.resize(num_midpoints);
     found_indices_crit.resize(num_midpoints+1);
     
-    
+    solve_options.use_gamma_trick = 0;
+	
 	for (int ii=0; ii<num_midpoints; ++ii) {
 		std::cout << color::brown() << "connecting midpoint downstairs " << ii << color::console_default() << std::endl;
         
@@ -392,7 +406,8 @@ int curve_decomposition::interslice(const witness_set & W_curve,
         solve_options.robust = true;
         int keep_going = 1;
         int iterations = 0;
-        while (keep_going==1 && (iterations<3))
+		int maxits = 4;
+        while (keep_going==1 && (iterations<maxits))
         {
             
             iterations++;
@@ -401,7 +416,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
             neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii]);
             if (program_options.verbose_level>=2)
                 print_comp_matlab(&crit_downstairs->coord[ii],"left ");
-            multilin_solver_master_entry_point(midpoint_witness_sets[ii],         // witness_set
+            multilin_solver_master_entry_point(midpoint_witness_sets[ii],         // input witness_set
                                                &Wleft, // the new data is put here!
                                                &particular_projection,
                                                ml_config,
@@ -421,19 +436,19 @@ int curve_decomposition::interslice(const witness_set & W_curve,
                                                ml_config,
                                                solve_options);
             
-//            if (iterations<=1) {
-//                Wleft.sort_for_real(solve_options.T);
-//                Wright.sort_for_real(solve_options.T);
-//            }
             
+			witness_set Wright_real = Wright;
+			witness_set Wleft_real = Wleft;
             
+			Wright_real.sort_for_real(solve_options.T);
+			Wleft_real.sort_for_real(solve_options.T);
             
-            if (Wleft.num_pts!=midpoint_witness_sets[ii].num_pts) {
+            if (Wleft_real.num_pts!=midpoint_witness_sets[ii].num_pts) {
                 std::cout << color::red() << "had a critical failure\n moving left was deficient a point" << color::console_default() << std::endl;
                 keep_going = 1;
             }
             
-            if (Wright.num_pts!=midpoint_witness_sets[ii].num_pts) {
+            if (Wright_real.num_pts!=midpoint_witness_sets[ii].num_pts) {
                 std::cout << color::red() << "had a critical failure\n moving right was deficient a point" << color::console_default() << std::endl;
                 keep_going = 1;
             }
@@ -442,23 +457,82 @@ int curve_decomposition::interslice(const witness_set & W_curve,
                 
                 break;
             }
-            else if (iterations<3) {
+            else if (iterations<maxits){
               //tighten some tolerances, change it up.
                 Wleft.reset();
                 Wright.reset();
-                std::cout << "trying to recover the failure...";
+                std::cout << "trying to recover the failure..." << std::endl;
+				
                 solve_options.T.endgameNumber = 2;
                 // what else can i do here to improve the probability of success?
-                solve_options.T.basicNewtonTol   *= 1e-6;
-                solve_options.T.endgameNewtonTol *= 1e-6;
+                solve_options.T.basicNewtonTol   *= 1e-6; // tracktolbeforeeg
+                solve_options.T.endgameNewtonTol *= 1e-6; // tracktolduringeg
+				
+				std::cout << "tracktolBEFOREeg: "	<< solve_options.T.basicNewtonTol << " tracktolDURINGeg: "	<< solve_options.T.endgameNewtonTol << std::endl;
             }
-			else // iterations == 3
+			else
 			{
-
+				Wleft.reset();
+                Wright.reset();
+				
+				witness_set W_single = midpoint_witness_sets[ii];
+				
+				witness_set W_single_right,W_single_left,W_midpoint_replacement = midpoint_witness_sets[ii];
+				
+				W_midpoint_replacement.reset_points();
+				
+				for (int kk=0; kk<midpoint_witness_sets[ii].num_pts; kk++) {
+					W_single.reset_points();
+					W_single_left.reset();
+					W_single_right.reset();
+					
+					
+					W_single.add_point(midpoint_witness_sets[ii].pts_mp[kk]);
+					
+					
+					neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii]);
+					if (program_options.verbose_level>=2)
+						print_comp_matlab(&crit_downstairs->coord[ii],"left ");
+					multilin_solver_master_entry_point(W_single,         // input witness_set
+													   &W_single_left, // the new data is put here!
+													   &particular_projection,
+													   ml_config,
+													   solve_options);
+					
+					
+					
+					neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii+1]);
+					
+					if (program_options.verbose_level>=2)
+						print_comp_matlab(&crit_downstairs->coord[ii+1],"right ");
+					
+					// if these get out of order, things get all messed up.
+					multilin_solver_master_entry_point(W_single,         // witness_set
+													   &W_single_right, // the new data is put here!
+													   &particular_projection,
+													   ml_config,
+													   solve_options);
+					
+					
+					W_single_left.sort_for_real(solve_options.T);
+					W_single_right.sort_for_real(solve_options.T);
+					if (W_single_right.num_pts==1 && W_single_left.num_pts==1) {
+						W_midpoint_replacement.add_point(midpoint_witness_sets[ii].pts_mp[kk]);
+						Wleft.merge(W_single_left);
+						Wright.merge(W_single_right);
+					}
+					
+					
+				}
+				
+				midpoint_witness_sets[ii].reset_points();
+				midpoint_witness_sets[ii].copy_points(W_midpoint_replacement);
+				
 			}
-
-
-        }
+			
+		}
+		
+		
         solve_options.reset_tracker_config();
         
 		
@@ -466,6 +540,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 			
 			if (Wleft.num_pts!=midpoint_witness_sets[ii].num_pts || Wright.num_pts!=midpoint_witness_sets[ii].num_pts)
 			{
+				std::cout << "going left or right was still deficient a point..." << std::endl;
 				break;
 			}
 			
@@ -706,33 +781,51 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 //returns <-1> if no candidate found
 std::vector<int> curve_decomposition::get_merge_candidate(const vertex_set & V){
 	
+#ifdef functionentry_output
+	std::cout << "curve::get_merge_candidate" << std::endl;
+#endif
+	
+	
+	
 	std::vector< int > default_found_edges;
 	default_found_edges.push_back(-1);
     
 	
 	// looking for edges with the type NEW, by looking at the left endpoint
 	for (int tentative_right_edge=0; tentative_right_edge < this->num_edges; tentative_right_edge++) {
+//		std::cout << "looking at edge " << tentative_right_edge << " for merge candidate" << std::endl;
+		
 		if (V.vertices[edges[tentative_right_edge].left].type == NEW && V.vertices[edges[tentative_right_edge].right].type != NEW) {
 			// found a starting point for the merges
 			
-			if (edges[tentative_right_edge].left == edges[tentative_right_edge].right)
+			if (edges[tentative_right_edge].is_degenerate())
 				continue; // degenerate edge, should not blabla, but i think hypothetically this will never happen?
 			
 			std::vector<int> tentative_edge_list;
 			tentative_edge_list.push_back(tentative_right_edge);
 			
-			
+//			long long blabla = 0;
 			while (1) {
+//				blabla++;
+//				if (blabla> num_edges) {
+//					sleep(10);
+//				}
 				
-				int tentative_left_edge = this->edge_w_right(edges[tentative_edge_list.back()].left);
+				
+				// this goes into an infinite loop if it finds a degenerate edge with the point...
+				
+//				std::cout << tentative_edge_list.back() << " " << edges[tentative_edge_list.back()].left << " " << edges[tentative_edge_list.back()].midpt << " " << edges[tentative_edge_list.back()].right << std::endl;
+				
+				int tentative_left_edge = this->nondegenerate_edge_w_right(edges[tentative_edge_list.back()].left);
 				
 				
 				if (tentative_left_edge < 0) {
 					std::cout << "found that edge " << tentative_edge_list.back() << " has NEW leftpoint, but \\nexists edge w point " << edges[tentative_edge_list.back()].left << " as right point." << std::endl;
 					break;
-					//gotta do something careful here
+					//gotta do something careful here?   i suspect that this happens when two points are very near to each other...
 				}
 				
+//				std::cout << tentative_left_edge << " tent left, with left point type " << V.vertices[edges[tentative_left_edge].left].type << std::endl;
 				
 				tentative_edge_list.push_back(tentative_left_edge);
 				
@@ -743,7 +836,13 @@ std::vector<int> curve_decomposition::get_merge_candidate(const vertex_set & V){
 				
 			}
 			
-			return tentative_edge_list;
+			if (tentative_edge_list.size()>1) {
+				return tentative_edge_list;
+			}
+			else{
+				continue;
+			}
+			
 		}
 	}
 	
@@ -760,6 +859,11 @@ void curve_decomposition::merge(witness_set & W_midpt,
                                 vec_mp * projections,
                                 solver_configuration & solve_options)
 {
+#ifdef functionentry_output
+	std::cout << "curve::merge" << std::endl;
+#endif
+	
+	
 	
 	vec_mp particular_projection; init_vec_mp(particular_projection,0);
 	vec_cp_mp(particular_projection, projections[0]);
@@ -884,6 +988,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		
 		
 		// copy over the removed points for all the edges we are going to merge.
+		std::cout << "copying removed points" << std::endl;
 		for (int zz=0; zz<edges_to_merge.size(); zz++) {
 			int merge_me_away = edges_to_merge[zz];  //set an index into the merge edges
 			for (std::vector<int>::iterator vec_iter = edges[merge_me_away].removed_points.begin(); vec_iter!=edges[merge_me_away].removed_points.end(); vec_iter++)
@@ -911,7 +1016,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 			}
 		}
 
-		
+		std::cout << "adding edge" << std::endl;
 		add_edge(temp_edge);
 		// tacks this onto the end of the edge vector
 		
@@ -936,8 +1041,8 @@ void curve_decomposition::merge(witness_set & W_midpt,
 			}
 			else{
 				num_removed_edges++;
-                //				std::cout << "removing edge " << ii << std::endl;
-                //				std::cout << this->edges[ii].left << " " << this->edges[ii].midpt << " " << this->edges[ii].right << " " << std::endl;
+				std::cout << "removing edge " << ii << std::endl;
+				std::cout << this->edges[ii].left << " " << this->edges[ii].midpt << " " << this->edges[ii].right << " " << std::endl;
 			}
 			//otherwise skip it.
 		}
@@ -987,14 +1092,17 @@ int curve_decomposition::compute_critical_points(const witness_set & W_curve,
                                                  solver_configuration & solve_options,
                                                  witness_set & W_crit_real)
 {
-    
+#ifdef functionentry_output
+	std::cout << "curve::compute_critical_points" << std::endl;
+#endif
+	
 
 	W_crit_real.input_filename = W_curve.input_filename;
 	
 
 	
     
-    
+
 	
 	nullspace_config ns_config;
 	compute_crit_nullspace(&W_crit_real, // the returned value
@@ -1058,6 +1166,9 @@ int curve_decomposition::get_additional_critpts(witness_set *W_additional,
                                                 BR_configuration & program_options,
                                                 solver_configuration & solve_options)
 {
+#ifdef functionentry_output
+	std::cout << "curve::get_additional_critpts" << std::endl;
+#endif
 	
     
     if (W_curve.num_linears!=1) {
@@ -1113,7 +1224,6 @@ int curve_decomposition::get_additional_critpts(witness_set *W_additional,
 		vec_cp_mp(sp_config.starting_linear[ii], multilin_linears[0]);
 		
 		witness_set W_temp;
-		
 		
 		
 		solve_options.allow_singular = 0;
@@ -1333,6 +1443,12 @@ int verify_projection_ok(const witness_set & W,
 
 void curve_decomposition::send(int target, parallelism_config & mpi_config)
 {
+#ifdef functionentry_output
+	std::cout << "curve::send" << std::endl;
+#endif
+	
+	
+	
 	decomposition::send(target, mpi_config);
 	
 	MPI_Send(&num_edges, 1, MPI_INT, target, CURVE, MPI_COMM_WORLD);
@@ -1346,7 +1462,12 @@ void curve_decomposition::send(int target, parallelism_config & mpi_config)
 
 void curve_decomposition::receive(int source, parallelism_config & mpi_config)
 {
-	std::cout << "receiving curve " << std::endl;
+#ifdef functionentry_output
+	std::cout << "curve::receive" << std::endl;
+#endif
+	
+	
+	
 	decomposition::receive(source, mpi_config);
 	
 	MPI_Status statty_mc_gatty;
@@ -1373,6 +1494,11 @@ void curve_decomposition::computeCurveNotSelfConj(const witness_set & W_in,
                                                   solver_configuration & solve_options)
 
 {
+#ifdef functionentry_output
+	std::cout << "curve::computeCurveNotSelfConj" << std::endl;
+#endif
+	
+	
 	
 	// num_vars includes the homogeneous variable
 	
@@ -1471,6 +1597,11 @@ void curve_decomposition::computeCurveNotSelfConj(const witness_set & W_in,
 int curve_decomposition::setup_edges(boost::filesystem::path INfile)
 //setup the vertex structure
 {
+#ifdef functionentry_output
+	std::cout << "curve::setup_edges" << std::endl;
+#endif
+	
+	
 	FILE *IN = safe_fopen_read(INfile);
 	
 	fscanf(IN, "%d\n", &this->num_edges);
@@ -1493,6 +1624,9 @@ int curve_decomposition::setup_edges(boost::filesystem::path INfile)
 
 void curve_decomposition::print(boost::filesystem::path base)
 {
+#ifdef functionentry_output
+	std::cout << "curve::print" << std::endl;
+#endif
 	
     //	std::cout << "printing curve decomposition to folder " << base << std::endl;
 	
@@ -1526,6 +1660,10 @@ void curve_decomposition::print(boost::filesystem::path base)
  **/
 void curve_decomposition::print_edges(boost::filesystem::path outputfile)
 {
+#ifdef functionentry_output
+	std::cout << "curve::print_edges" << std::endl;
+#endif
+	
 	int ii;
 	FILE *OUT = safe_fopen_write(outputfile);
 	

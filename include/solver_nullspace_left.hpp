@@ -40,7 +40,6 @@ public:
 	int num_v_vars;  ///< N   number of variables in original problem statement (including homogenizing variables)
 	int num_x_vars;  ///< N-k+\ell
 	
-	bool randomize;
 	int num_randomized_eqns;	///< N-k (N-ambient_dim)
 	int max_degree;						///< the max degree of differentiated (randomized) functions
 	int *randomized_degrees; ///< the degrees of the randomized functions (not derivatives)
@@ -118,7 +117,6 @@ public:
 	int num_x_vars;  // N   number of variables in original problem statement (including homogenizing variables)
 	int num_v_vars;  // (N-k) + (k-\ell+1)
 	
-	bool randomize;
 	int num_randomized_eqns;	// N-k (N-ambient_dim)
 	int max_degree;						// the max degree of differentiated (randomized) functions
 	std::vector<int> randomized_degrees;
@@ -496,7 +494,6 @@ public:
 	int num_x_vars;  // N   number of variables in original problem statement (including homogenizing variables)
 	int num_v_vars;  // (N-k) + (k-\ell+1)
 	
-	bool randomize;
 	int num_randomized_eqns;	// N-k (N-ambient_dim)
 	int max_degree;						// the max degree of differentiated (randomized) functions
 	std::vector<int> randomized_degrees;
