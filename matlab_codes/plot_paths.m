@@ -8,7 +8,7 @@ end
 
 fontsize  =16;
 window = [40 40 1024 768];
-% window = getmondim;
+% window = getmondim; % this would make the window full screen.
 
 
 plot_params.fontsize = fontsize;
@@ -133,7 +133,7 @@ for ii = 1:num_plots
 	
 end
 
-render_into_file(sprintf('paths_linprod_ode%i_eg%i_mp%i',data(1).odepredictor,data(1).endgame,data(1).MPType),plot_params);
+render_into_file(sprintf('paths_%s_ode%i_eg%i_mp%i',data(1).solver, data(1).odepredictor,data(1).endgame,data(1).MPType),plot_params);
 
 end
 
