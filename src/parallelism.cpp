@@ -192,6 +192,10 @@ int worker_process::main_loop()
 				multilin_slave_entry_point(this->solve_options);
 				break;
 				
+			case SPHERE_SOLVER:
+				sphere_slave_entry_point(this->solve_options);
+				break;
+				
 			case TERMINATE:
 				break;
 				

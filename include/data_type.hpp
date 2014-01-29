@@ -1098,7 +1098,6 @@ public:
 		vec_cp_mp(pi[num_curr_projections], proj);
 		num_curr_projections++;
 		
-//		std::cout << "projection now has " << num_curr_projections << " projections" << std::endl;
 	}
 	
 	void add_patch(vec_mp new_patch){
@@ -1125,9 +1124,7 @@ public:
 	int index_in_vertices_with_add(vertex_set &V,
                                    vertex vert);
 	
-	int setup(boost::filesystem::path INfile,
-						boost::filesystem::path & inputName,
-						boost::filesystem::path directoryName);
+	int setup(boost::filesystem::path INfile);
 	
 	virtual void print(boost::filesystem::path outputfile);
 	

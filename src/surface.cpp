@@ -2267,11 +2267,132 @@ void surface_decomposition::print_faces(boost::filesystem::path outputfile)
 
 
 
+void surface_decomposition::read_faces(boost::filesystem::path load_from_me)
+{
+#ifdef functionentry_output
+	std::cout << "surface::read_faces" << std::endl;
+#endif
+	
+	
+	
+
+	FILE *IN = safe_fopen_read(load_from_me);
+	
+	// input the number of vertices
+	int temp_num_faces;
+	fscanf(IN,"%d\n\n",&temp_num_faces);
+	
+	for(int ii=0;ii<temp_num_faces;ii++){
+		face F;
+		
+		fscanf(IN,"%d %d\n%d %d\n", &F.midpt, &F.crit_slice_index, &F.top, &F.bottom);
+		fscanf(IN,"%d %d\n",&F.system_type_top,&F.system_type_bottom);
+		
+		int temp_num_left;
+		fscanf(IN,"%d\n",&temp_num_left);
+		F.left.resize(temp_num_left);
+		
+		for (int jj=0; jj<temp_num_left; jj++) {
+			fscanf(IN,"%d ",&F.left[jj]);
+		}
+		
+		int temp_num_right;
+		fscanf(IN,"%d\n",&temp_num_right);
+		F.right.resize(temp_num_right);
+		
+		for (int jj=0; jj<temp_num_right; jj++) {
+			fscanf(IN,"%d ",&F.right[jj]);
+		}
+		
+		add_face(F);
+	}
+	
+	fclose(IN);
+	
+	
+	return;
+}
+
+
+void read_summary(int & temp_num_mid, int & temp_num_crit, boost::filesystem::path INfile)
+{
+	FILE *IN = safe_fopen_read(INfile);
+	int temp_num_faces, temp_num_edges;
+	
+	fscanf(IN,"%d %d %d %d\n\n", &temp_num_faces, &temp_num_edges, &temp_num_mid, &temp_num_crit);
+
+	fclose(IN);
+	
+	
+	return;
+}
 
 
 
-
-
+void surface_decomposition::setup(boost::filesystem::path base)
+{
+	decomposition::setup(base / "decomp");
+	
+	
+	int temp_num_crit, temp_num_mid;
+	
+	read_summary(temp_num_mid, temp_num_crit, base / "S.surf");
+	
+	read_faces(base / "F.faces");
+	
+	
+	
+	
+	
+	
+	mid_slices.resize(temp_num_mid);
+	crit_slices.resize(temp_num_crit);
+	
+	
+	
+	boost::filesystem::path curve_location = base;
+	curve_location /= "curve";
+	
+	std::stringstream converter;
+	
+	for (int ii=0; ii<temp_num_mid; ii++) {
+		
+		
+		converter << ii;
+		
+		boost::filesystem::path specific_loc = curve_location;
+		specific_loc += "_midslice_";
+		specific_loc += converter.str();
+		converter.clear(); converter.str("");
+		
+		mid_slices[ii].setup(specific_loc);
+	}
+	
+	for (int ii=0; ii<temp_num_crit; ii++) {
+		
+		converter << ii;
+		
+		boost::filesystem::path specific_loc = curve_location;
+		specific_loc += "_critslice_";
+		specific_loc += converter.str();
+		converter.clear(); converter.str("");
+		
+		crit_slices[ii].setup(specific_loc);
+	}
+	
+	boost::filesystem::path specific_loc = curve_location;
+	specific_loc += "_crit";
+	crit_curve.setup(specific_loc);
+	
+	specific_loc = curve_location;
+	specific_loc += "_sphere";
+	sphere_curve.setup(specific_loc);
+	
+//	singular_curve.setup(specific_loc);
+	
+	return;
+	
+}
 
 
 

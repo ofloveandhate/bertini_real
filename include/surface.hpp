@@ -168,10 +168,12 @@ public:
 	curve_decomposition crit_curve;
 	curve_decomposition sphere_curve;
 	
+	curve_decomposition singular_curve; // NEW curve, need to write code to populate it.
 
 	
+	void read_faces(boost::filesystem::path load_from_me);
 	
-
+	void setup(boost::filesystem::path base);
 	
 	
 	void print(boost::filesystem::path base);

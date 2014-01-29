@@ -4,7 +4,7 @@
 void sphere_config::set_memory(solver_configuration & solve_options)
 {
 	
-//TODO: should i assume here that the input file is already parsed??  (as i already do)
+	//TODO: should i assume here that the input file is already parsed??  (as i already do)
 	this->MPType = solve_options.T.MPType;
 	solve_options.T.numVars = setupProg(SLP, solve_options.T.Precision, solve_options.T.MPType);
 	//make randomizer matrix here
@@ -77,18 +77,136 @@ void sphere_eval_data_mp::init()
 int sphere_eval_data_mp::send(parallelism_config & mpi_config)
 {
 	
-	return 1;
+	int solver_choice = SPHERE_SOLVER;
+	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	// send the confirmation integer, to ensure that we are sending the correct type.
+	
+	//send the base class stuff.
+	solver_mp::send(mpi_config);
+	
+	
+	// now can actually send the data.
+	
+	
+	int *buffer = new int[2];
+	
+	buffer[0] = num_natural_vars;
+	buffer[1] = num_static_linears;
+	
+	MPI_Bcast(buffer,2,MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	
+	delete[] buffer;
+	
+	
+	if (this->MPType==2){
+		for (int ii=0; ii<num_static_linears; ii++) {
+			bcast_vec_mp(static_linear_full_prec[ii], mpi_config.id(), mpi_config.head());
+		}
+		
+		for (int ii=0; ii<2; ii++) {
+			bcast_vec_mp(starting_linear_full_prec[ii], mpi_config.id(), mpi_config.head());
+		}
+		
+		bcast_vec_mp(center_full_prec, mpi_config.id(), mpi_config.head());
+		
+		bcast_comp_mp(radius_full_prec, mpi_config.id(), mpi_config.head());
+		
+		
+	}
+	else {
+		for (int ii=0; ii<num_static_linears; ii++) {
+			bcast_vec_mp(static_linear[ii], mpi_config.id(), mpi_config.head());
+		}
+		
+		for (int ii=0; ii<2; ii++) {
+			bcast_vec_mp(starting_linear[ii], mpi_config.id(), mpi_config.head());
+		}
+		
+		bcast_vec_mp(center, mpi_config.id(), mpi_config.head());
+		
+		bcast_comp_mp(radius, mpi_config.id(), mpi_config.head());
+		
+	}
+	
+	
+	return SUCCESSFUL;
 }
 
 int sphere_eval_data_mp::receive(parallelism_config & mpi_config)
 {
 	
-	return 1;
+	int *buffer = new int[2];
+	MPI_Bcast(buffer, 1, MPI_INT, mpi_config.head(), MPI_COMM_WORLD);
+	
+	if (buffer[0] != SPHERE_SOLVER) {
+		std::cout << "worker failed to confirm it is receiving the SPHERE_SOLVER type eval data" << std::endl;
+		mpi_config.abort(777);
+	}
+	
+	solver_mp::receive(mpi_config);
+	
+	
+	// now can actually receive the data from whoever.
+	MPI_Bcast(buffer, 2, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	
+	num_natural_vars = buffer[0];
+	num_static_linears = buffer[1];
+	
+	delete[] buffer;
+	
+	//starting linears already created and initted
+	static_linear = (vec_mp *) br_malloc(num_static_linears*sizeof(vec_mp));
+	
+	if (this->MPType==2) {
+		static_linear_full_prec = (vec_mp *) br_malloc(num_static_linears*sizeof(vec_mp));
+		
+		for (int ii=0; ii<num_static_linears; ii++) {
+			
+			init_vec_mp(static_linear[ii],1);
+			init_vec_mp2(static_linear_full_prec[ii],1,1024);
+			
+			bcast_vec_mp(static_linear_full_prec[ii], mpi_config.id(), mpi_config.head());
+			
+			vec_cp_mp(static_linear[ii],static_linear_full_prec[ii]);
+			
+		}
+		
+		for (int ii=0; ii<2; ii++) {
+			
+			bcast_vec_mp(starting_linear_full_prec[ii], mpi_config.id(), mpi_config.head());
+			
+			vec_cp_mp(starting_linear[ii],starting_linear_full_prec[ii]);
+		}
+		
+		bcast_vec_mp(center_full_prec, mpi_config.id(), mpi_config.head());
+		
+		bcast_comp_mp(radius_full_prec, mpi_config.id(), mpi_config.head());
+		
+		vec_cp_mp(center, center_full_prec);
+		set_mp(radius, radius_full_prec);
+	}
+	else{ // MPType == 1
+		for (int ii=0; ii<num_static_linears; ii++) {
+			init_vec_mp(static_linear[ii],1);
+			bcast_vec_mp(static_linear[ii], mpi_config.id(), mpi_config.head());
+		}
+		
+		for (int ii=0; ii<2; ii++) {
+			bcast_vec_mp(starting_linear[ii], mpi_config.id(), mpi_config.head());
+		}
+		
+		bcast_vec_mp(center, mpi_config.id(), mpi_config.head());
+		bcast_comp_mp(radius, mpi_config.id(), mpi_config.head());
+	}
+	
+	
+	return SUCCESSFUL;
+	
 }
 
 int sphere_eval_data_mp::setup(const sphere_config & config,
-															 const witness_set & W,
-															 solver_configuration & solve_options)
+							   const witness_set & W,
+							   solver_configuration & solve_options)
 {
 	
 	
@@ -213,10 +331,10 @@ int sphere_eval_data_mp::setup(const sphere_config & config,
 	
 	
 	mat_cp_mp(randomizer_matrix,
-						config.randomizer_matrix);
+			  config.randomizer_matrix);
 	
 	mat_cp_mp(randomizer_matrix_full_prec,
-						config.randomizer_matrix);
+			  config.randomizer_matrix);
 	
 	
 	
@@ -250,9 +368,13 @@ void sphere_eval_data_d::init()
 {
 	
 	if (this->MPType==2)
+	{
 		this->BED_mp = new sphere_eval_data_mp(2);
-	else
+		solver_d::BED_mp = this->BED_mp;                   //   <---------  you gotta do this cuz of masking problems.
+	}
+	else{
 		this->BED_mp = NULL;
+	}
 	
 	
 	solver_d::init();
@@ -283,18 +405,99 @@ void sphere_eval_data_d::init()
 int sphere_eval_data_d::send(parallelism_config & mpi_config)
 {
 	
-	return 1;
+	int solver_choice = SPHERE_SOLVER;
+	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	// send the confirmation integer, to ensure that we are sending the correct type.
+    
+    if (this->MPType==2) {
+		this->BED_mp->send(mpi_config);
+	}
+    
+    
+	//send the base class stuff.
+	solver_d::send(mpi_config);
+	
+	
+	
+	int *buffer = new int[2];
+	
+	buffer[0] = num_natural_vars;
+	buffer[1] = num_static_linears;
+	
+	MPI_Bcast(buffer,2,MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	
+	delete[] buffer;
+	
+	for (int ii=0; ii<num_static_linears; ii++) {
+		bcast_vec_d(static_linear[ii], mpi_config.id(), mpi_config.head());
+	}
+	
+	for (int ii=0; ii<2; ii++) {
+		bcast_vec_d(starting_linear[ii], mpi_config.id(), mpi_config.head());
+	}
+	
+	bcast_vec_d(center, mpi_config.id(), mpi_config.head());
+	
+	bcast_comp_d(radius, mpi_config.id(), mpi_config.head());
+	
+	
+	
+	return SUCCESSFUL;
 }
 
 int sphere_eval_data_d::receive(parallelism_config & mpi_config)
 {
-	return 1;
+	
+    int *buffer = new int[1];
+	
+	MPI_Bcast(buffer, 1, MPI_INT, mpi_config.head(), MPI_COMM_WORLD);
+	if (buffer[0] != SPHERE_SOLVER){
+		std::cout << "worker failed to confirm it is receiving the double SPHERE_SOLVER type eval data" << std::endl;
+		mpi_config.abort(777);
+	}
+    
+    
+    
+	if (this->MPType==2) {
+		this->BED_mp->receive(mpi_config);
+	}
+    
+    
+	
+	solver_d::receive(mpi_config);
+	
+	
+	
+	// now can actually receive the data from whoever.
+	MPI_Bcast(buffer, 2, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	
+	num_natural_vars = buffer[0];
+	num_static_linears = buffer[1];
+	
+	delete[] buffer;
+	
+	
+	static_linear = (vec_d *) br_malloc(num_static_linears*sizeof(vec_d));
+	
+	for (int ii=0; ii<num_static_linears; ii++) {
+		init_vec_d(static_linear[ii],1);
+		bcast_vec_d(static_linear[ii], mpi_config.id(), mpi_config.head());
+	}
+	
+	for (int ii=0; ii<2; ii++) {
+		bcast_vec_d(starting_linear[ii], mpi_config.id(), mpi_config.head());
+	}
+	
+	bcast_vec_d(center, mpi_config.id(), mpi_config.head());
+	bcast_comp_d(radius, mpi_config.id(), mpi_config.head());
+	
+	return SUCCESSFUL;
 }
 
 
 int sphere_eval_data_d::setup(const sphere_config & config,
-															const witness_set & W,
-															solver_configuration & solve_options)
+							  const witness_set & W,
+							  solver_configuration & solve_options)
 {
 	
 	SLP_memory = config.SLP_memory;
@@ -353,7 +556,7 @@ int sphere_eval_data_d::setup(const sphere_config & config,
 	
 	
 	mat_mp_to_d(randomizer_matrix,
-							config.randomizer_matrix);
+				config.randomizer_matrix);
 	
 	
 	if (this->MPType==2)
@@ -386,14 +589,10 @@ int sphere_eval_data_d::setup(const sphere_config & config,
 
 
 int sphere_solver_master_entry_point(const witness_set						&W, // carries with it the start points, and the linears.
-																			 witness_set							*W_new, // new data goes in here
-																			 const sphere_config &		config,
-																			 solver_configuration		& solve_options)
+									 witness_set							*W_new, // new data goes in here
+									 const sphere_config &		config,
+									 solver_configuration		& solve_options)
 {
-	
-	bool prev_state = solve_options.force_no_parallel;
-	solve_options.force_no_parallel = true;
-	
 	
 	if (solve_options.use_parallel()) {
 		solve_options.call_for_help(SPHERE_SOLVER);
@@ -408,16 +607,16 @@ int sphere_solver_master_entry_point(const witness_set						&W, // carries with 
 			ED_d = new sphere_eval_data_d(0);
 			
 			ED_d->setup(config,
-									W,
-									solve_options);
+						W,
+						solve_options);
 			break;
 			
 		case 1:
 			ED_mp = new sphere_eval_data_mp(1);
 			
 			ED_mp->setup(config,
-									 W,
-									 solve_options);
+						 W,
+						 solve_options);
 			// initialize latest_newton_residual_mp
 			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
@@ -428,13 +627,13 @@ int sphere_solver_master_entry_point(const witness_set						&W, // carries with 
 			
 			
 			ED_d->setup(config,
-									W,
-									solve_options);
+						W,
+						solve_options);
 			
 			
 			
 			adjust_tracker_AMP(& (solve_options.T), W.num_variables);
-
+			
 			break;
 		default:
 			break;
@@ -447,7 +646,6 @@ int sphere_solver_master_entry_point(const witness_set						&W, // carries with 
                   solve_options);
 	
 	
-	solve_options.force_no_parallel = prev_state;
 	
 	switch (solve_options.T.MPType) {
 		case 0:
@@ -472,8 +670,96 @@ int sphere_solver_master_entry_point(const witness_set						&W, // carries with 
 			W_new->add_linear(W.L_mp[jj]);
 		}
 	}
-  return SUCCESSFUL;
+	return SUCCESSFUL;
 	
+}
+
+
+
+
+
+int sphere_slave_entry_point(solver_configuration & solve_options)
+{
+	
+	
+	// already received the flag which indicated that this worker is going to be performing the nullspace calculation.
+	bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
+	
+	int *settings_buffer = (int *) br_malloc(2*sizeof(int));
+	MPI_Bcast(settings_buffer,2,MPI_INT, 0,MPI_COMM_WORLD);
+	solve_options.robust = settings_buffer[0];
+	solve_options.use_gamma_trick = settings_buffer[1];
+	free(settings_buffer);
+	
+	sphere_eval_data_d *ED_d = NULL;
+	sphere_eval_data_mp *ED_mp = NULL;
+	
+	
+	switch (solve_options.T.MPType) {
+		case 0:
+			ED_d = new sphere_eval_data_d(0);
+			ED_d->receive(solve_options);
+			break;
+			
+		case 1:
+			ED_mp = new sphere_eval_data_mp(1);
+			ED_mp->receive(solve_options);
+			
+			// initialize latest_newton_residual_mp
+			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+			break;
+		case 2:
+			ED_d = new sphere_eval_data_d(2);
+			ED_mp = ED_d->BED_mp;
+			ED_d->receive(solve_options);
+			
+			
+			
+			
+			// initialize latest_newton_residual_mp
+			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+			break;
+		default:
+			break;
+	}
+	
+    
+	
+	// call the file setup function
+	FILE *OUT = NULL, *midOUT = NULL;
+	
+	generic_setup_files(&OUT, "output",
+                        &midOUT, "midpath_data");
+	
+	trackingStats trackCount; init_trackingStats(&trackCount); // initialize trackCount to all 0
+	
+	worker_tracker_loop(&trackCount, OUT, midOUT,
+						ED_d, ED_mp,
+						solve_options);
+	
+	
+	// close the files
+	fclose(midOUT);   fclose(OUT);
+	
+	//clear data
+	switch (solve_options.T.MPType) {
+		case 0:
+			delete ED_d;
+			break;
+			
+		case 1:
+			delete ED_mp;
+			break;
+            
+		case 2:
+			delete ED_d;
+			
+		default:
+			break;
+	}
+	
+	
+	return SUCCESSFUL;
 }
 
 
@@ -482,33 +768,32 @@ int sphere_solver_master_entry_point(const witness_set						&W, // carries with 
 
 
 
-
 int sphere_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp,
-									point_d current_variable_values, comp_d pathVars,
-									void const *ED)
+				  point_d current_variable_values, comp_d pathVars,
+				  void const *ED)
 { // evaluates a special homotopy type, built for bertini_real
 	
-  sphere_eval_data_d *BED = (sphere_eval_data_d *)ED; // to avoid having to cast every time
+	sphere_eval_data_d *BED = (sphere_eval_data_d *)ED; // to avoid having to cast every time
 	
 	
 	BED->SLP_memory.set_globals_to_this();
 	
-  int ii, jj, mm; // counters
+	int ii, jj, mm; // counters
 	int offset;
-  comp_d one_minus_s, gamma_s;
+	comp_d one_minus_s, gamma_s;
 	comp_d temp, temp2;
 	comp_d func_val_sphere, func_val_start;
 	
-  set_one_d(one_minus_s);
-  sub_d(one_minus_s, one_minus_s, pathVars);  // one_minus_s = (1 - s)
-  mul_d(gamma_s, BED->gamma, pathVars);       // gamma_s = gamma * s
+	set_one_d(one_minus_s);
+	sub_d(one_minus_s, one_minus_s, pathVars);  // one_minus_s = (1 - s)
+	mul_d(gamma_s, BED->gamma, pathVars);       // gamma_s = gamma * s
 	
 	
 	vec_d patchValues; init_vec_d(patchValues, 0);
 	vec_d temp_function_values; init_vec_d(temp_function_values,0);
 	vec_d AtimesF; init_vec_d(AtimesF,BED->randomizer_matrix->rows); AtimesF->size = BED->randomizer_matrix->rows;// declare  // initialize
 	
-
+	
 	
 	mat_d temp_jacobian_functions; init_mat_d(temp_jacobian_functions,BED->randomizer_matrix->cols,BED->num_variables);
 	temp_jacobian_functions->rows = BED->randomizer_matrix->cols; temp_jacobian_functions->cols = BED->num_variables;
@@ -520,37 +805,37 @@ int sphere_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat
 	
 	//set the sizes
 	change_size_vec_d(funcVals,BED->num_variables); funcVals->size = BED->num_variables;
-  change_size_mat_d(Jv, BED->num_variables, BED->num_variables); Jv->rows = Jv->cols = BED->num_variables; //  -> this should be square!!!
+	change_size_mat_d(Jv, BED->num_variables, BED->num_variables); Jv->rows = Jv->cols = BED->num_variables; //  -> this should be square!!!
 	
-	for (ii=0; ii<BED->num_variables; ii++) 
-		for (jj=0; jj<BED->num_variables; jj++) 
+	for (ii=0; ii<BED->num_variables; ii++)
+		for (jj=0; jj<BED->num_variables; jj++)
 			set_zero_d(&Jv->entry[ii][jj]);
-
+	
 	
 	
 	// evaluate the SLP to get the system's whatnot.
 	evalProg_d(temp_function_values, parVals, parDer, temp_jacobian_functions, temp_jacobian_parameters, current_variable_values, pathVars, BED->SLP);
 	
 	
-  // evaluate the patch
-  patch_eval_d(patchValues, parVals, parDer, Jv_Patch, Jp, current_variable_values, pathVars, &BED->patch);  // Jp is ignored
+	// evaluate the patch
+	patch_eval_d(patchValues, parVals, parDer, Jv_Patch, Jp, current_variable_values, pathVars, &BED->patch);  // Jp is ignored
 	
 	
 	// we assume that the only parameter is s = t and setup parVals & parDer accordingly.
 	// note that you can only really do this AFTER you are done calling other evaluators.
-  // set parVals & parDer correctly
+	// set parVals & parDer correctly
 	
 	// i.e. these must remain here, or below.  \/
-  change_size_point_d(parVals, 1);
-  change_size_vec_d(parDer, 1);
+	change_size_point_d(parVals, 1);
+	change_size_vec_d(parDer, 1);
 	change_size_mat_d(Jp, BED->num_variables, 1); Jp->rows = BED->num_variables; Jp->cols = 1;
 	for (ii=0; ii<BED->num_variables; ii++)
 		set_zero_d(&Jp->entry[ii][0]);
 	
 	
-  parVals->size = parDer->size = 1;
-  set_d(&parVals->coord[0], pathVars); // s = t
-  set_one_d(&parDer->coord[0]);       // ds/dt = 1
+	parVals->size = parDer->size = 1;
+	set_d(&parVals->coord[0], pathVars); // s = t
+	set_one_d(&parDer->coord[0]);       // ds/dt = 1
 	
 	
 	
@@ -619,7 +904,7 @@ int sphere_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat
 	for (mm=0; mm<2; ++mm) {
 		dot_product_d(temp, BED->starting_linear[mm], current_variable_values);
 		mul_d(func_val_start, func_val_start, temp);
-		//f_start *= L_i (x) 
+		//f_start *= L_i (x)
 	}
 	
 	
@@ -645,9 +930,9 @@ int sphere_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat
 	for (int ii=1; ii<BED->num_natural_vars; ii++) {
 		mul_d(temp2, &BED->center->coord[ii-1], &current_variable_values->coord[0]); // temp2 = c_{i-1}*h
 		sub_d(temp, &current_variable_values->coord[ii], temp2) // temp = x_i - c_{i-1}*h
-		mul_d(&Jv->entry[offset][ii], BED->two, temp); // Jv = 2*(x_i - c_{i-1}*h) 
-		mul_d(&Jv->entry[offset][ii], &Jv->entry[offset][ii], one_minus_s); // Jv = (1-t)*2*(x_i - c_{i-1}*h) 
-        // multiply these entries by (1-t)
+		mul_d(&Jv->entry[offset][ii], BED->two, temp); // Jv = 2*(x_i - c_{i-1}*h)
+		mul_d(&Jv->entry[offset][ii], &Jv->entry[offset][ii], one_minus_s); // Jv = (1-t)*2*(x_i - c_{i-1}*h)
+																			// multiply these entries by (1-t)
 		
 		mul_d(temp2, &BED->center->coord[ii-1], temp);  // temp2 = c_{i-1} * ( x_i - c_{i-1} * h )
 		add_d(&Jv->entry[offset][0], &Jv->entry[offset][0], temp2); // Jv[0] += c_{i-1} * ( x_i - c_{i-1} * h )
@@ -733,10 +1018,10 @@ int sphere_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat
 	//
 	// the entries for the patch equations.
 	//
-	////////////////////	
+	////////////////////
 	if (offset+BED->num_static_linears != BED->num_variables-BED->patch.num_patches) {
 		std::cout << color::red() << "mismatch in offset!\nleft: " <<
-			offset+BED->num_static_linears << " right " << BED->num_variables-BED->patch.num_patches << color::console_default() << std::endl;
+		offset+BED->num_static_linears << " right " << BED->num_variables-BED->patch.num_patches << color::console_default() << std::endl;
 		mypause();
 	}
 	
@@ -770,7 +1055,7 @@ int sphere_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat
 		print_point_to_screen_matlab(funcVals,"F");
 		print_matrix_to_screen_matlab(Jv,"Jv");
 		print_matrix_to_screen_matlab(Jp,"Jp");
-
+		
 	}
 	
 	
@@ -799,7 +1084,7 @@ int sphere_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat
 #endif
 	
 	
-  return 0;
+	return 0;
 }
 
 
@@ -812,13 +1097,13 @@ int sphere_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv
 	//	print_comp_mp_matlab(pathVars,"pathvars");
 	
 	
-  sphere_eval_data_mp *BED = (sphere_eval_data_mp *)ED; // to avoid having to cast every time
+	sphere_eval_data_mp *BED = (sphere_eval_data_mp *)ED; // to avoid having to cast every time
 	
 	BED->SLP_memory.set_globals_to_this();
 	
-  int ii, jj, mm; // counters
+	int ii, jj, mm; // counters
 	int offset;
-  comp_mp one_minus_s, gamma_s;
+	comp_mp one_minus_s, gamma_s;
 	comp_mp temp, temp2;
 	comp_mp func_val_sphere, func_val_start;
 	init_mp(one_minus_s);  init_mp(gamma_s);
@@ -826,9 +1111,9 @@ int sphere_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv
 	init_mp(func_val_start);
 	init_mp(func_val_sphere);
 	
-  set_one_mp(one_minus_s);
-  sub_mp(one_minus_s, one_minus_s, pathVars);  // one_minus_s = (1 - s)
-  mul_mp(gamma_s, BED->gamma, pathVars);       // gamma_s = gamma * s
+	set_one_mp(one_minus_s);
+	sub_mp(one_minus_s, one_minus_s, pathVars);  // one_minus_s = (1 - s)
+	mul_mp(gamma_s, BED->gamma, pathVars);       // gamma_s = gamma * s
 	
 	
 	vec_mp patchValues; init_vec_mp(patchValues, 0);
@@ -847,7 +1132,7 @@ int sphere_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv
 	
 	//set the sizes
 	change_size_vec_mp(funcVals,BED->num_variables); funcVals->size = BED->num_variables;
-  change_size_mat_mp(Jv, BED->num_variables, BED->num_variables); Jv->rows = Jv->cols = BED->num_variables; //  -> this should be square!!!
+	change_size_mat_mp(Jv, BED->num_variables, BED->num_variables); Jv->rows = Jv->cols = BED->num_variables; //  -> this should be square!!!
 	
 	for (ii=0; ii<BED->num_variables; ii++)
 		for (jj=0; jj<BED->num_variables; jj++)
@@ -859,25 +1144,25 @@ int sphere_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv
 	evalProg_mp(temp_function_values, parVals, parDer, temp_jacobian_functions, temp_jacobian_parameters, current_variable_values, pathVars, BED->SLP);
 	
 	
-  // evaluate the patch
-  patch_eval_mp(patchValues, parVals, parDer, Jv_Patch, Jp, current_variable_values, pathVars, &BED->patch);  // Jp is ignored
+	// evaluate the patch
+	patch_eval_mp(patchValues, parVals, parDer, Jv_Patch, Jp, current_variable_values, pathVars, &BED->patch);  // Jp is ignored
 	
 	
 	// we assume that the only parameter is s = t and setup parVals & parDer accordingly.
 	// note that you can only really do this AFTER you are done calling other evaluators.
-  // set parVals & parDer correctly
+	// set parVals & parDer correctly
 	
 	// i.e. these must remain here, or below.  \/
-  change_size_point_mp(parVals, 1);
-  change_size_vec_mp(parDer, 1);
+	change_size_point_mp(parVals, 1);
+	change_size_vec_mp(parDer, 1);
 	change_size_mat_mp(Jp, BED->num_variables, 1); Jp->rows = BED->num_variables; Jp->cols = 1;
 	for (ii=0; ii<BED->num_variables; ii++)
 		set_zero_mp(&Jp->entry[ii][0]);
 	
 	
-  parVals->size = parDer->size = 1;
-  set_mp(&parVals->coord[0], pathVars); // s = t
-  set_one_mp(&parDer->coord[0]);       // ds/dt = 1
+	parVals->size = parDer->size = 1;
+	set_mp(&parVals->coord[0], pathVars); // s = t
+	set_one_mp(&parDer->coord[0]);       // ds/dt = 1
 	
 	
 	
@@ -1088,7 +1373,7 @@ int sphere_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv
 		print_point_to_screen_matlab(funcVals,"F_mp");
 		print_matrix_to_screen_matlab(Jv,"Jv_mp");
 		print_matrix_to_screen_matlab(Jp,"Jp_mp");
-
+		
 		
 	}
 	
@@ -1112,10 +1397,10 @@ int sphere_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv
 	clear_mat_mp(Jv_Patch);
 	clear_mat_mp(AtimesJ);
 	
-
 	
 	
-  return 0;
+	
+	return 0;
 }
 
 
@@ -1124,15 +1409,15 @@ int sphere_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv
 
 int sphere_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d in_d, point_mp in_mp, int in_prec, void const *ED_d, void const *ED_mp)
 {
-  sphere_eval_data_d *BED_d = NULL;
-  sphere_eval_data_mp *BED_mp = NULL;
+	sphere_eval_data_d *BED_d = NULL;
+	sphere_eval_data_mp *BED_mp = NULL;
 	
-  *out_prec = in_prec;
+	*out_prec = in_prec;
 	
 	
 	
-  if (in_prec < 64)
-  { // compute out_d
+	if (in_prec < 64)
+	{ // compute out_d
 		sphere_eval_data_d *BED_d = (sphere_eval_data_d *)ED_d;
 		
 		comp_d denom;
@@ -1152,9 +1437,9 @@ int sphere_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d in_d, po
 		//		print_point_to_screen_matlab(out_d,"out");
 		
 		
-  }
-  else
-  { // compute out_mp
+	}
+	else
+	{ // compute out_mp
 		sphere_eval_data_mp *BED_mp = (sphere_eval_data_mp *)ED_mp;
 		
 		setprec_point_mp(out_mp, *out_prec);
@@ -1174,8 +1459,8 @@ int sphere_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d in_d, po
 		clear_mp(denom);
 		
 		
-    // set prec on out_mp
-    
+		// set prec on out_mp
+		
 		
 		//		print_point_to_screen_matlab(in_mp,"in");
 		//		print_point_to_screen_matlab(out_mp,"out");
@@ -1183,13 +1468,13 @@ int sphere_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d in_d, po
 	}
 	
 	
-  BED_d = NULL;
-  BED_mp = NULL;
+	BED_d = NULL;
+	BED_mp = NULL;
 	
 	
 	
 	
-  return 0;
+	return 0;
 }
 
 
@@ -1203,8 +1488,8 @@ int change_sphere_eval_prec(void const *ED, int new_prec)
 	
 	
 	BED->SLP->precision = new_prec;
-  // change the precision for the patch
-  changePatchPrec_mp(new_prec, &BED->patch);
+	// change the precision for the patch
+	changePatchPrec_mp(new_prec, &BED->patch);
 	
 	
 	if (new_prec != BED->curr_prec){
@@ -1244,9 +1529,9 @@ int change_sphere_eval_prec(void const *ED, int new_prec)
 		mat_cp_mp(BED->randomizer_matrix,BED->randomizer_matrix_full_prec);
 		
 	}
-
 	
-  return 0;
+	
+	return 0;
 }
 
 
@@ -1254,10 +1539,10 @@ int change_sphere_eval_prec(void const *ED, int new_prec)
 
 
 int check_issoln_sphere_d(endgame_data_t *EG,
-																 tracker_config_t *T,
-																 void const *ED)
+						  tracker_config_t *T,
+						  void const *ED)
 {
-  sphere_eval_data_d *BED = (sphere_eval_data_d *)ED; // to avoid having to cast every time
+	sphere_eval_data_d *BED = (sphere_eval_data_d *)ED; // to avoid having to cast every time
 	
 	BED->SLP_memory.set_globals_to_this();
 	int ii;
@@ -1344,20 +1629,20 @@ int check_issoln_sphere_d(endgame_data_t *EG,
 
 
 int check_issoln_sphere_mp(endgame_data_t *EG,
-																	tracker_config_t *T,
-																	void const *ED)
+						   tracker_config_t *T,
+						   void const *ED)
 {
-  sphere_eval_data_mp *BED = (sphere_eval_data_mp *)ED; // to avoid having to cast every time
+	sphere_eval_data_mp *BED = (sphere_eval_data_mp *)ED; // to avoid having to cast every time
 	BED->SLP_memory.set_globals_to_this();
 	int ii;
 	
 	for (ii = 0; ii < T->numVars; ii++)
 	{
-    if (!(mpfr_number_p(EG->PD_mp.point->coord[ii].r) && mpfr_number_p(EG->PD_mp.point->coord[ii].i)))
+		if (!(mpfr_number_p(EG->PD_mp.point->coord[ii].r) && mpfr_number_p(EG->PD_mp.point->coord[ii].i)))
 		{
 			printf("got not a number\n");
 			print_point_to_screen_matlab(EG->PD_mp.point,"bad solution");
-      return 0;
+			return 0;
 		}
 	}
 	

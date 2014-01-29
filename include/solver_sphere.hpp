@@ -50,7 +50,7 @@ public:
 	comp_mp radius;
 	
 	sphere_config(solver_configuration & solve_options,
-									const witness_set & W)
+				  const witness_set & W)
 	{
 		init();
 		
@@ -62,7 +62,7 @@ public:
 	
 	
 	sphere_config(solver_configuration & solve_options,
-									mat_mp _random)
+				  mat_mp _random)
 	{
 		init();
 		
@@ -216,8 +216,9 @@ public:
     int num_natural_vars;
     
 	comp_mp two, two_full_prec;
-
-	vec_mp *starting_linear;								// has current precision
+	
+	//there had better be two starting linears.
+	vec_mp *starting_linear;					// has current precision
 	vec_mp *starting_linear_full_prec;			// carries full precision data for AMP
 	
 	
@@ -229,7 +230,7 @@ public:
 	
 	vec_mp center, center_full_prec;
 	comp_mp radius, radius_full_prec;
-		
+	
 	
 	// default initializer
 	sphere_eval_data_mp() : solver_mp(){
@@ -282,8 +283,8 @@ public:
 	
 	
 	int setup(const sphere_config & config,
-						const witness_set & W,
-						solver_configuration & solve_options);
+			  const witness_set & W,
+			  solver_configuration & solve_options);
 	
 	
 	
@@ -467,7 +468,7 @@ public:
 			name << "static_linear_" << ii;
 			print_point_to_screen_matlab(static_linear[ii],name.str());
 		}
-
+		
 		for (int ii=0; ii<2; ii++) {
 			
 			std::stringstream name;
@@ -494,8 +495,8 @@ public:
 	
 	
 	int setup(const sphere_config & config,
-						const witness_set & W,
-						solver_configuration & solve_options);
+			  const witness_set & W,
+			  solver_configuration & solve_options);
 	
 	
 	
@@ -557,12 +558,12 @@ protected:
 
 
 int sphere_solver_master_entry_point(const witness_set						&W, // carries with it the start points, and the linears.
-																			 witness_set							*W_new, // new data goes in here
-																			 const sphere_config &		config,
-																			 solver_configuration		& solve_options);
+									 witness_set							*W_new, // new data goes in here
+									 const sphere_config &		config,
+									 solver_configuration		& solve_options);
 
 
-
+int sphere_slave_entry_point(solver_configuration & solve_options);
 
 //the new custom evaluator for this solver
 
@@ -576,11 +577,11 @@ int sphere_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv
 
 
 int check_issoln_sphere_d(endgame_data_t *EG,
-																 tracker_config_t *T,
-																 void const *ED);
+						  tracker_config_t *T,
+						  void const *ED);
 int check_issoln_sphere_mp(endgame_data_t *EG,
-																	tracker_config_t *T,
-																	void const *ED);
+						   tracker_config_t *T,
+						   void const *ED);
 
 
 

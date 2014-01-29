@@ -1866,14 +1866,12 @@ int decomposition::index_in_vertices_with_add(vertex_set &V,
 
 
 
-int decomposition::setup(boost::filesystem::path INfile,
-						 boost::filesystem::path & inputName,
-						 boost::filesystem::path directoryName)
+int decomposition::setup(boost::filesystem::path INfile)
 {
 	
 	
-	boost::filesystem::path input_deflated_Name;
-	
+	boost::filesystem::path directoryName = INfile.parent_path();
+
 	std::stringstream converter;
 	std::string tempstr;
 	std::ifstream fin(INfile.c_str());
@@ -1881,8 +1879,7 @@ int decomposition::setup(boost::filesystem::path INfile,
 	int num_vertices = 0;
 	
 	getline(fin, tempstr);
-	input_deflated_Name = tempstr;
-	inputName = directoryName / input_deflated_Name;
+	input_filename = directoryName / tempstr;
 	
 	getline(fin, tempstr);
 	converter << tempstr;
@@ -2254,13 +2251,13 @@ void decomposition::output_main(const BR_configuration & program_options, vertex
 	
 	
 	V.print(base / "V.vertex");
-	//	V.print_to_screen();
 	
-	this->print(base); // using polymorphism and virtuallism here!
+	this->print(base); // using polymorphism and virtualism here!
 	
 	OUT = safe_fopen_write("Dir_Name");
 	fprintf(OUT,"%s\n",base.c_str());
 	fprintf(OUT,"%d\n",program_options.MPType);
+	fprintf(OUT,"%d\n",dimension);
 	fclose(OUT);
 	
 }
