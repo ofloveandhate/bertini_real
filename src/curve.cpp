@@ -1589,6 +1589,13 @@ void curve_decomposition::computeCurveNotSelfConj(const witness_set & W_in,
 
 
 
+int curve_decomposition::setup(boost::filesystem::path containing_folder){
+	decomposition::setup(containing_folder / "decomp");
+	
+	setup_edges(containing_folder / "E.edge");
+	
+	return 1;
+}
 
 
 
@@ -1601,6 +1608,7 @@ int curve_decomposition::setup_edges(boost::filesystem::path INfile)
 	std::cout << "curve::setup_edges" << std::endl;
 #endif
 	
+	std::cout << "in setup edges, infile = " << INfile << std::endl;
 	
 	FILE *IN = safe_fopen_read(INfile);
 	
@@ -1643,19 +1651,15 @@ void curve_decomposition::print(boost::filesystem::path base)
 
 
 /**Output edge structure as follows:
- //this needs to be updated...
- # variables
- # edges
- name of input file
- edge 1
  
- edge 2
+ the # of edges
  
+ for each edge:
+ left index, mid index, right index
+ end
  
- for each edge, output the following information:
- index to left vertex in vertices
- index to right vertex in vertices
- index to midpoint vertex in vertices
+ endfile
+ 
  
  **/
 void curve_decomposition::print_edges(boost::filesystem::path outputfile)

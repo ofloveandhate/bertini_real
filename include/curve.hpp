@@ -82,6 +82,7 @@ public:
 	}
 	
 	
+	int setup(boost::filesystem::path containing_folder);
 	
 	int setup_edges(boost::filesystem::path INfile);
 	
