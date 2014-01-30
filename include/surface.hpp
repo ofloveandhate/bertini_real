@@ -140,7 +140,30 @@ private:
 
 
 
-
+class triangle
+{
+	
+	long long v1;
+	long long v2;
+	long long v3;
+	
+	bool is_degenerate()
+	{
+		if (v1==v2) {
+			return true;
+		}
+		
+		if (v2==v3) {
+			return true;
+		}
+		
+		if (v1==v3) {
+			return true;
+		}
+		
+		return false;
+	}
+};
 
 
 
@@ -159,6 +182,10 @@ class surface_decomposition : public decomposition
 	int      num_edges;
 	int      num_faces;
 	
+	
+	std::vector<int> num_samples_each_face;
+	
+	std::vector< std::vector< triangle >> samples;
 	
 	
 public:
@@ -293,7 +320,9 @@ public:
 	
 	
 	
-	
+	void fixed_sampler(vertex_set &V,
+					   sampler_configuration & sampler_options,
+					   solver_configuration & solve_options);
 	
 	
 	

@@ -1560,7 +1560,7 @@ int vertex_set::setup_vertices(boost::filesystem::path INfile)
  pt.2
  
  **/
-void vertex_set::print(boost::filesystem::path outputfile)
+void vertex_set::print(boost::filesystem::path outputfile) const
 {
 	
 	FILE *OUT = safe_fopen_write(outputfile);
@@ -3042,7 +3042,7 @@ void real_threshold(mat_mp blabla, double threshold)
 
 
 
-void print_point_to_screen_matlab(vec_d M, std::string name)
+void print_point_to_screen_matlab(const vec_d M, std::string name)
 {
 	
 	printf("%s = [...\n",name.c_str());
@@ -3053,7 +3053,7 @@ void print_point_to_screen_matlab(vec_d M, std::string name)
 	printf("];\n\n");
 }
 
-void print_point_to_screen_matlab(vec_mp M, std::string name)
+void print_point_to_screen_matlab(const vec_mp M, std::string name)
 {
 	
 	printf("%s = [...\n",name.c_str());
@@ -3069,7 +3069,7 @@ void print_point_to_screen_matlab(vec_mp M, std::string name)
 
 
 
-void print_matrix_to_screen_matlab(mat_d M, std::string name)
+void print_matrix_to_screen_matlab(const mat_d M, std::string name)
 {
 	int jj,kk;
 	
@@ -3108,7 +3108,7 @@ void print_matrix_to_screen_matlab(mat_d M, std::string name)
 	}
 	printf("];\n\n");
 }
-void print_matrix_to_screen_matlab(mat_mp M, std::string name)
+void print_matrix_to_screen_matlab(const mat_mp M, std::string name)
 {
 	int jj,kk;
 	
@@ -3130,7 +3130,7 @@ void print_matrix_to_screen_matlab(mat_mp M, std::string name)
 }
 
 
-void print_comp_matlab(comp_mp M, std::string name){
+void print_comp_matlab(const comp_mp M, std::string name){
 	printf("%s=",name.c_str());
 	mpf_out_str (NULL, 10, 8, M->r);
 	printf("+1i*");
@@ -3139,7 +3139,7 @@ void print_comp_matlab(comp_mp M, std::string name){
 	return;
 }
 
-void print_comp_matlab(comp_d M, std::string name){
+void print_comp_matlab(const comp_d M, std::string name){
 	printf("%s=%.5le+1i*%.5le\n",name.c_str(),M->r,M->i);
 	return;
 }
