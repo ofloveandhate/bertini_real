@@ -44,6 +44,10 @@
 class curve_decomposition : public decomposition
 {
 	
+	std::vector<int> num_samples_each_edge;
+	
+	std::vector< std::vector<int >> sample_indices;
+	
 	
 	friend class surface_decomposition;
 	
@@ -301,6 +305,37 @@ public:
 	void send(int target, parallelism_config & mpi_config);
 	
 	void receive(int source, parallelism_config & mpi_config);
+	
+	
+	
+	
+	
+	
+	
+	int adaptive_set_initial_sample_data();
+	void adaptive_sampler(vertex_set &V,
+						  sampler_configuration & sampler_options,
+						  solver_configuration & solve_options);
+	
+	void adaptive_set_initial_refinement_flags(int & num_refinements, std::vector<bool> & refine_flags, std::vector<int> & current_indices,
+											   vertex_set &V,
+											   int current_edge, sampler_configuration & sampler_options);
+	
+	int fixed_set_initial_sample_data(int target_num_samples);
+	
+	void fixed_sampler(vertex_set &V,
+					   sampler_configuration & sampler_options,
+					   solver_configuration & solve_options,
+					   int target_num_samples);
+	
+	void  output_sampling_data(const vertex_set & V,
+							   boost::filesystem::path samplingName);
+	
+	
+	
+	
+	
+	
 	
 	
 	void reset()

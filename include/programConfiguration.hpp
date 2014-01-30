@@ -351,6 +351,8 @@ public:
 	int use_gamma_trick;
 	mpf_t TOL;
 	
+	bool use_fixed_sampler;
+	int target_num_samples;
 	
 	/** get the sampler_configuration from the command line. */
 	int  parse_commandline(int argc, char **argv);
@@ -361,6 +363,10 @@ public:
 	
 	sampler_configuration()
 	{
+		use_fixed_sampler = false;
+		target_num_samples = 10;
+		
+		
 		this->stifle_membership_screen = 1;
 		this->stifle_text = " > /dev/null ";
 		

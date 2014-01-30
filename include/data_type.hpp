@@ -237,13 +237,13 @@ void receive_comp_num_rat(mpq_t c[][2], int num, int source);
 
 
 
-void print_point_to_screen_matlab(vec_d M, std::string name);
-void print_point_to_screen_matlab(vec_mp M, std::string name);
-void print_matrix_to_screen_matlab(mat_d M, std::string name);
-void print_matrix_to_screen_matlab(mat_mp M, std::string name);
+void print_point_to_screen_matlab(const vec_d M, std::string name);
+void print_point_to_screen_matlab(const vec_mp M, std::string name);
+void print_matrix_to_screen_matlab(const mat_d M, std::string name);
+void print_matrix_to_screen_matlab(const mat_mp M, std::string name);
 
-void print_comp_matlab(comp_mp M,std::string name);
-void print_comp_matlab(comp_d M,std::string name);
+void print_comp_matlab(const comp_mp M,std::string name);
+void print_comp_matlab(const comp_d M,std::string name);
 
 
 
@@ -571,7 +571,7 @@ public:
 		copy(other);
 	}
 	
-	void print()
+	void print() const
 	{
 		print_point_to_screen_matlab(pt_mp,"point");
 		print_point_to_screen_matlab(projection_values,"projection_values");
@@ -693,7 +693,7 @@ public:
 	
 	
 	
-	void print(boost::filesystem::path outputfile);
+	void print(boost::filesystem::path outputfile) const;
 	
 	
 	

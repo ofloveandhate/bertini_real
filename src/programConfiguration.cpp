@@ -427,6 +427,7 @@ void sampler_configuration::print_usage()
 	printf("-verb\t\t\t\tint\n");
 	printf("-maxits -m \t\t\tint\n");
 	printf("-gammatrick -g \t\t\tbool\n");
+	printf("-fixed \t\t\tint number samples per edge\n");
 	printf("\n\n\n");
 	return;
 }
@@ -455,6 +456,7 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 			{"maxits",		required_argument,			 0, 'm'},
 			{"gammatrick",		required_argument,			 0, 'g'},
 			{"g",		required_argument,			 0, 'g'},
+			{"fixed",		required_argument,			 0, 'f'},
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
@@ -469,6 +471,12 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 		
 		switch (choice)
 		{
+			case 'f':
+				use_fixed_sampler = true;
+				target_num_samples = atoi(optarg);
+				
+				break;
+				
 			case 's':
 				this->stifle_text = "\0";
 				break;
