@@ -328,8 +328,7 @@ public:
 					   solver_configuration & solve_options,
 					   int target_num_samples);
 	
-	void  output_sampling_data(const vertex_set & V,
-							   boost::filesystem::path samplingName);
+	void  output_sampling_data(boost::filesystem::path samplingName);
 	
 	
 	
@@ -340,10 +339,14 @@ public:
 	
 	void reset()
 	{
+		
+		
+		decomposition::reset();
+		
 		this->clear();
 		this->init();
 		
-		decomposition::reset();
+		
 	}
 	
 	curve_decomposition() : decomposition()

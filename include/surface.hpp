@@ -325,7 +325,7 @@ public:
 					   solver_configuration & solve_options);
 	
 	
-	
+	void  output_sampling_data(boost::filesystem::path base_path);
 	
 	
 	

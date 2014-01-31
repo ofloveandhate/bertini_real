@@ -1594,6 +1594,7 @@ int curve_decomposition::setup(boost::filesystem::path containing_folder){
 	
 	setup_edges(containing_folder / "E.edge");
 	
+	
 	return 1;
 }
 
@@ -1608,7 +1609,6 @@ int curve_decomposition::setup_edges(boost::filesystem::path INfile)
 	std::cout << "curve::setup_edges" << std::endl;
 #endif
 	
-	std::cout << "in setup edges, infile = " << INfile << std::endl;
 	
 	FILE *IN = safe_fopen_read(INfile);
 	
