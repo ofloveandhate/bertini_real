@@ -139,9 +139,6 @@ void surface_decomposition::main(vertex_set & V,
                            program_options,
                            solve_options);
 	
-	// DONE COMPUTING THE CRITICAL CURVE NOW.
-	this->output_main(program_options, V);
-	
 	
 	
 	
@@ -157,8 +154,8 @@ void surface_decomposition::main(vertex_set & V,
                             program_options, solve_options); // configuration
     
 	
-    this->output_main(program_options, V);
-    
+    this->output_main(program_options.output_dir);
+	V.print(program_options.output_dir/ "V.vertex");
 	
     
     
@@ -210,7 +207,8 @@ void surface_decomposition::main(vertex_set & V,
 	
 	
 	//incremental output
-	this->output_main(program_options, V);
+	this->output_main(program_options.output_dir);
+	V.print(program_options.output_dir/ "V.vertex");
 	
 	// get the critical slices
 	
@@ -222,8 +220,8 @@ void surface_decomposition::main(vertex_set & V,
 	
     
 	//incremental output
-	this->output_main(program_options, V);
-	
+	this->output_main(program_options.output_dir);
+	V.print(program_options.output_dir/ "V.vertex");
 	
 	//connect the dots - the final routine
 	connect_the_dots(V, pi, program_options, solve_options);
@@ -776,7 +774,7 @@ void surface_decomposition::compute_bounding_sphere(const witness_set & W_inters
                                   solve_options,
                                   V);
 	
-	
+	sphere_curve.input_filename = W_intersection_sphere.input_filename;
 	this->sphere_curve.add_projection(pi[0]);
 	this->sphere_curve.num_variables = num_variables;
 	
@@ -859,8 +857,7 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 			
 			int blabla;
 			parse_input_file(W_surf.input_filename, &blabla);
-			//			partition_parse(&declarations, W_surf.input_filename, "func_input", "config", 0); // the 0 means not self conjugate.
-			//			free(declarations);																													 // i would like to move this->
+
 			preproc_data_clear(&solve_options.PPD); // ugh this sucks
 			parse_preproc_data("preproc_data", &solve_options.PPD);
 			
@@ -896,6 +893,9 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 			parse_preproc_data("preproc_data", &solve_options.PPD);
 			
 			
+			new_slice.reset();
+			
+			
 			slice_witness_set.num_variables = W_surf.num_variables;
 			slice_witness_set.input_filename = slicename;
 			slice_witness_set.add_linear(multilin_linears[1]);
@@ -904,14 +904,14 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 			slice_witness_set.dim = 1;
 			
 			
-			
-			
-			new_slice.reset();
-			
 			solve_options.complete_witness_set = 1;
+			
+			
+			new_slice.input_filename = slicename;
 			
 			new_slice.copy_sphere_bounds(*this);
 			
+			std::cout << "slice_wit " << slice_witness_set.input_filename << std::endl;
 			// we already know the component is self-conjugate (by entry condition), so we are free to call this function
 			// the memory for the multilin system will get erased in this call...
 			new_slice.computeCurveSelfConj(slice_witness_set,
@@ -979,7 +979,9 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
         // does it matter speedwise whether i do this before or after the copy immediately above?  i think the answer is no.
         V.assert_projection_value(slices[ii].all_edge_indices(), &projection_values_downstairs->coord[ii], 0); // the 0 is an index into the number of projections.
 		
-		this->output_main(program_options, V);
+		this->output_main(program_options.output_dir);
+		V.print(program_options.output_dir/ "V.vertex");
+		
 		std::cout << color::magenta() << "DONE decomposing the " << ii << "th " << kindofslice << " slice" << color::console_default() << std::endl;
 		
 	} // re: for loop
@@ -1067,8 +1069,8 @@ void surface_decomposition::serial_connect(vertex_set & V, midpoint_config & md_
 		
 		
 		for (int jj=0; jj<mid_slices[ii].num_edges; jj++) {
-			this->output_main(program_options, V); // incremental output
-			
+			this->output_main(program_options.output_dir);
+			V.print(program_options.output_dir/ "V.vertex");
 			
 			
 			//make face
@@ -1130,7 +1132,10 @@ void surface_decomposition::master_connect(vertex_set & V, midpoint_config & md_
 	
 
 	// this loop is semi-self-seeding
-	this->output_main(program_options, V); // incremental output
+	this->output_main(program_options.output_dir);
+	V.print(program_options.output_dir/ "V.vertex");
+	
+	
 	for (int ii=0; ii<mid_slices.size(); ii++) { // each edge of each midslice will become a face.  degenerate edge => degenerate face.
 		
 		
@@ -1172,8 +1177,10 @@ void surface_decomposition::master_connect(vertex_set & V, midpoint_config & md_
 				
 				
 				
-				// this needs to be inside of a protector, in the sense that we shouldn't do it after EVERY face, but rather at thoughtful times.
-				this->output_main(program_options, V); // incremental output
+//TODO: this needs to be inside of a protector, in the sense that we shouldn't do it after EVERY face, but rather at thoughtful times.
+				this->output_main(program_options.output_dir);
+				V.print(program_options.output_dir/ "V.vertex");
+			
 			}
 		}
 	}
@@ -1196,9 +1203,6 @@ void surface_decomposition::master_connect(vertex_set & V, midpoint_config & md_
 	}
 	
 	solve_options.send_all_available(0);
-	
-	this->output_main(program_options, V); // incremental output
-	
 	
 	
 	return;
@@ -2196,7 +2200,7 @@ void surface_decomposition::print(boost::filesystem::path base)
 		specific_loc += converter.str();
 		converter.clear(); converter.str("");
 		
-		mid_slices[ii].print(specific_loc);
+		mid_slices[ii].output_main(specific_loc);
 	}
 	
 	for (int ii=0; ii<crit_slices.size(); ii++) {
@@ -2209,16 +2213,16 @@ void surface_decomposition::print(boost::filesystem::path base)
 		specific_loc += converter.str();
 		converter.clear(); converter.str("");
 		
-		crit_slices[ii].print(specific_loc);
+		crit_slices[ii].output_main(specific_loc);
 	}
 	
 	boost::filesystem::path specific_loc = curve_location;
 	specific_loc += "_crit";
-	crit_curve.print(specific_loc);
+	crit_curve.output_main(specific_loc);
 	
 	specific_loc = curve_location;
 	specific_loc += "_sphere";
-	sphere_curve.print(specific_loc);
+	sphere_curve.output_main(specific_loc);
 }
 
 
@@ -2340,11 +2344,6 @@ void surface_decomposition::setup(boost::filesystem::path base)
 	
 	read_faces(base / "F.faces");
 	
-	
-	
-	
-	
-	
 	mid_slices.resize(temp_num_mid);
 	crit_slices.resize(temp_num_crit);
 	
@@ -2389,6 +2388,9 @@ void surface_decomposition::setup(boost::filesystem::path base)
 	sphere_curve.setup(specific_loc);
 	
 //	singular_curve.setup(specific_loc);
+	
+
+	
 	
 	return;
 	
@@ -2452,7 +2454,7 @@ void create_sliced_system(boost::filesystem::path input_file, boost::filesystem:
 		}
 		fprintf(OUT, ";\n\n");
 	}
-	fprintf(OUT,"END\n\n\n\n");
+	fprintf(OUT,"END;\n\n\n\n");
 	
     
     for (int ii=0; ii<W.num_patches; ii++) {

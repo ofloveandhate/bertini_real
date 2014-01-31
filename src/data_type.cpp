@@ -648,6 +648,12 @@ void witness_set::print_to_screen() const
 }
 
 
+void witness_set::print_to_file(boost::filesystem::path filename) const
+{
+	// print back into the same format we parse from.
+	
+	return;
+}
 
 
 void witness_set::only_natural_vars()
@@ -1392,7 +1398,8 @@ void vertex_set::assert_projection_value(const std::set< int > & relevant_indice
 
 
 
-int vertex_set::add_vertex(const vertex source_vertex){
+int vertex_set::add_vertex(const vertex source_vertex)
+{
 	
 	
 	if (this->num_projections <= 0) {
@@ -1868,15 +1875,12 @@ int decomposition::index_in_vertices_with_add(vertex_set &V,
 
 int decomposition::setup(boost::filesystem::path INfile)
 {
-	
-	
 	boost::filesystem::path directoryName = INfile.parent_path();
 
 	std::stringstream converter;
 	std::string tempstr;
 	std::ifstream fin(INfile.c_str());
 	
-	int num_vertices = 0;
 	
 	getline(fin, tempstr);
 	input_filename = directoryName / tempstr;
@@ -1886,13 +1890,15 @@ int decomposition::setup(boost::filesystem::path INfile)
 	converter >> this->num_variables >> this->dimension;
 	converter.clear(); converter.str("");
 	
+
 	int num_types;
 	fin >> num_types;
+	
 	
 	for (int ii =0; ii<num_types; ii++) {
 		int current_type, num_this_type, current_index;
 		fin >> current_type >> num_this_type;
-//		std::cout << "vertex type: " << current_type << ", # vertices: " << num_this_type << std::endl;
+
 		this->counters[current_type] = num_this_type;
 		
 		for (int jj=0; jj<num_this_type; jj++) {
@@ -1904,67 +1910,48 @@ int decomposition::setup(boost::filesystem::path INfile)
 	vec_mp tempvec; init_vec_mp2(tempvec, this->num_variables,1024);
 	tempvec->size = this->num_variables;
 	
-	getline(fin,tempstr); // burn two lines as a consequence of using getline.
-	getline(fin,tempstr);
+
 	for (int ii=0; ii<dimension; ii++) {
-		for (int jj=0;jj<this->num_variables;jj++)
+		int temp_size;
+		fin >> temp_size;
+		
+		change_size_vec_mp(tempvec,temp_size);  tempvec->size = temp_size;
+		for (int jj=0;jj<temp_size;jj++)
 		{
-			getline(fin,tempstr);
-			converter << tempstr;
 			std::string re, im;
-			converter >> re >> im; // this line is correct
-			converter.clear(); converter.str("");
-			
+			fin >> re >> im ;
 			mpf_set_str(tempvec->coord[jj].r, const_cast<char *>(re.c_str()), 10);
 			mpf_set_str(tempvec->coord[jj].i, const_cast<char *>(im.c_str()), 10);
 		}
 		
 		decomposition::add_projection(tempvec);
-		
 	}
 	
 	
 	
 	
-	int curr_num_patches;
-	
-	getline(fin,tempstr); std::cout << tempstr << std::endl;
-	getline(fin,tempstr); std::cout << tempstr << std::endl;
-	getline(fin,tempstr); std::cout << tempstr << std::endl; // i hate this
-	converter << tempstr;
-	converter >> curr_num_patches;
-	converter.clear(); converter.str("");
-	
-//	std::cout << "should be loading " << curr_num_patches << " patches" << std::endl;
+	int curr_num_patches = -1;
+	fin >> curr_num_patches;
 	
 	
 	vec_mp temp_patch; init_vec_mp2(temp_patch,1,1024); temp_patch->size = 1;
 	for (int ii=0; ii<curr_num_patches; ii++) {
 		
-		getline(fin,tempstr);
-		getline(fin,tempstr); // <--- supposed to have the size in it
-		
-		int curr_size;
-		
-		converter << tempstr;
-		converter >> curr_size;
-		converter.clear(); converter.str("");
-		
+
+		int curr_size = -1;
+		fin >> curr_size;
+
 		change_size_vec_mp(temp_patch,curr_size); temp_patch->size = curr_size;
 		
 		for (int jj=0; jj<curr_size; jj++) {
-			getline(fin,tempstr);
-			converter << tempstr;
 			std::string re, im;
-			converter >> re >> im; // this line is correct
-			converter.clear(); converter.str("");
-			
+			fin >> re >> im; // this line is correct
+		
 			mpf_set_str(temp_patch->coord[jj].r, const_cast<char *>(re.c_str()), 10);
 			mpf_set_str(temp_patch->coord[jj].i, const_cast<char *>(im.c_str()), 10);
 		}
 		
 		decomposition::add_patch(temp_patch);
-//		print_point_to_screen_matlab(temp_patch,"temp_patch");
 	}
 	
 	
@@ -1975,7 +1962,7 @@ int decomposition::setup(boost::filesystem::path INfile)
 	
 	
 	
-	return num_vertices;
+	return 0;
 }
 
 
@@ -1993,6 +1980,11 @@ void decomposition::print(boost::filesystem::path base)
 	std::cout << "decomposition::print" << std::endl;
 #endif
 	
+	if (dimension != num_curr_projections) {
+		std::cout << "decomposition was short projections\nneeded	" << this->dimension << " but had " << num_curr_projections << std::endl;;
+	}
+	
+	
 	int ii;
 	
 	boost::filesystem::create_directory(base);
@@ -2001,7 +1993,7 @@ void decomposition::print(boost::filesystem::path base)
 	
 	fprintf(OUT,"%s\n",input_filename.filename().c_str());
 	
-	fprintf(OUT,"%d %d\n",num_variables, dimension);
+	fprintf(OUT,"%d %d\n\n",num_variables, dimension);
 	
 	fprintf(OUT, "%d\n", int(this->counters.size()));
 	
@@ -2014,12 +2006,11 @@ void decomposition::print(boost::filesystem::path base)
 		}
 		fprintf(OUT,"\n");
 	}
+	fprintf(OUT,"\n");
 	
-	if (dimension != num_curr_projections) {
-		//		std::cout << "decomposition was short projections\nneeded	" << this->dimension << " but had " << num_curr_projections << std::endl;;
-	}
 	
 	for (ii=0; ii<num_curr_projections; ii++) {
+		fprintf(OUT,"%d\n",pi[ii]->size);
 		for(int jj=0;jj<pi[ii]->size;jj++)
 		{
 			print_mp(OUT, 0, &pi[ii]->coord[jj]);
@@ -2221,42 +2212,39 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 
 
 
-void decomposition::output_main(const BR_configuration & program_options, vertex_set & V)
+void decomposition::output_main(const boost::filesystem::path base)
 {
 #ifdef functionentry_output
 	std::cout << "decomposition::output_main" << std::endl;
 #endif
 
-	
-	
-	
+	std::cout << "outputting decomp to folder " << base << std::endl;
 	FILE *OUT;
-	std::stringstream converter;
-	converter << "_dim_" << this->dimension << "_comp_" << this->component_num;
-	boost::filesystem::path base = program_options.output_dir;
-	base += converter.str();
-	converter.clear(); converter.str("");
+
 	
 	boost::filesystem::remove_all(base);
 	boost::filesystem::create_directory(base);
 	
 	
-	copyfile("witness_data",base / "witness_data");
+	copyfile("witness_data",base / "witness_data"); // this is wrong for nested decompositions.
 	
-	copyfile(program_options.witness_set_filename, base / "witness_set");
-	
-	
-	// TODO:  this should be a write call, not a copy ?
-	copyfile(program_options.input_deflated_filename, base / program_options.input_deflated_filename.filename());
+	W.print_to_file(base / "witness_set");
 	
 	
-	V.print(base / "V.vertex");
+// TODO:  this should be a write call, not a copy!
+	if (input_filename.filename().string().compare("unset")) {
+		copyfile(input_filename, base / input_filename.filename());
+	}
+	else{
+		std::cout << "not copying inputfile because name was unset -- " << input_filename << std::endl;
+	}
+	
 	
 	this->print(base); // using polymorphism and virtualism here!
 	
 	OUT = safe_fopen_write("Dir_Name");
 	fprintf(OUT,"%s\n",base.c_str());
-	fprintf(OUT,"%d\n",program_options.MPType);
+	fprintf(OUT,"%d\n",2);//remove this
 	fprintf(OUT,"%d\n",dimension);
 	fclose(OUT);
 	

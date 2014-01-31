@@ -491,7 +491,7 @@ public:
 	
 	void print_to_screen() const; ///< prints some information about the witness set to the screen
 	
-	
+	void print_to_file(boost::filesystem::path filename) const;
 	
 	/**
 	 writes the linears in point form to file filename
@@ -1059,6 +1059,7 @@ public:
 	std::map< int , int > counters;
 	std::map< int , std::vector< int > > indices;
 	
+	witness_set W;
 	
 	int num_variables;
 	int dimension;
@@ -1144,7 +1145,7 @@ public:
 	
 	
 	
-	void output_main(const BR_configuration & program_options, vertex_set & V);
+	void output_main(const boost::filesystem::path base);
 	
 	
 	

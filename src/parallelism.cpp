@@ -89,11 +89,16 @@ int ubermaster_process::main_loop()
         V.add_projection(pi[ii]);
     }
     
-    
+	
 	
 	switch (W.dim) {
 		case 1:
 			{
+				
+				std::stringstream converter;
+				converter << "_dim_" << C.dimension << "_comp_" << C.component_num;
+				program_options.output_dir += converter.str();
+				
 				// curve
 				C.main(V, W, pi, program_options, solve_options);
 				
@@ -101,28 +106,52 @@ int ubermaster_process::main_loop()
 					printf("outputting data\n");
 				
 				
-				C.output_main(program_options, V);
+				
+				
+				C.output_main(program_options.output_dir);
+				
+				V.print(program_options.output_dir/ "V.vertex");
+				
 			}
 			break;
 			
 			
 		case 2:
+		{
+			
+			std::stringstream converter;
+			converter << "_dim_" << S.dimension << "_comp_" << S.component_num;
+			program_options.output_dir += converter.str();
+			
+			
 			// surface
 			S.main(V, W, pi, program_options, solve_options);
 			
-			S.output_main(program_options, V);
 			
+			
+			
+			S.output_main(program_options.output_dir);
+			
+			V.print(program_options.output_dir/ "V.vertex");
+		}
 			break;
 			
 		default:
+		{
 			std::cout << "bertini_real not programmed for components of dimension " << W.dim << std::endl;
+		}
 			break;
 	}
+	
+	
+	
+
 	
 	
 	for (int ii=0; ii<W.dim; ii++)
 		clear_vec_mp(pi[ii]);
 	
+	// dismiss the workers
 	int sendme = TERMINATE;
 	MPI_Bcast(&sendme, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	return SUCCESSFUL;
