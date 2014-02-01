@@ -592,8 +592,8 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 														   solve_options);
 
 						if (num_its==3) {
-							std::cout << "paused for inspecting output file" << std::endl;
-							sleep(600);
+//							std::cout << "paused for inspecting output file" << std::endl;
+//							sleep(600);
 						}
 						W_single_right.sort_for_real(solve_options.T);
 						//					W_single_right.print_to_screen();
