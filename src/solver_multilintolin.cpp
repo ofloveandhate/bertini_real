@@ -580,7 +580,7 @@ int multilin_slave_entry_point(solver_configuration & solve_options)
 	// call the file setup function
 	FILE *OUT = NULL, *midOUT = NULL;
 	
-	generic_setup_files(&OUT, "output",
+	generic_setup_files(&OUT, "multilin_output",
                         &midOUT, "midpath_data");
 	
 	trackingStats trackCount; init_trackingStats(&trackCount); // initialize trackCount to all 0

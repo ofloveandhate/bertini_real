@@ -352,6 +352,8 @@ void BR_configuration::print_usage()
 
 void BR_configuration::init()
 {
+	
+
 	quick_run = false;
 	this->debugwait = 0;
 	this->max_deflations = 10;

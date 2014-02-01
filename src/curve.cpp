@@ -406,7 +406,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
         solve_options.robust = true;
         int keep_going = 1;
         int iterations = 0;
-		int maxits = 4;
+		int maxits = 2;
         while (keep_going==1 && (iterations<maxits))
         {
             
@@ -415,7 +415,11 @@ int curve_decomposition::interslice(const witness_set & W_curve,
             
             neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii]);
             if (program_options.verbose_level>=2)
+			{
                 print_comp_matlab(&crit_downstairs->coord[ii],"left ");
+				print_comp_matlab(&crit_downstairs->coord[ii+1],"right ");
+			}
+			
             multilin_solver_master_entry_point(midpoint_witness_sets[ii],         // input witness_set
                                                &Wleft, // the new data is put here!
                                                &particular_projection,
@@ -426,10 +430,9 @@ int curve_decomposition::interslice(const witness_set & W_curve,
             
             neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii+1]);
             
-            if (program_options.verbose_level>=2)
-                print_comp_matlab(&crit_downstairs->coord[ii+1],"right ");
+			
             
-			// if these get out of order, things get all messed up.
+
             multilin_solver_master_entry_point(midpoint_witness_sets[ii],         // witness_set
                                                &Wright, // the new data is put here!
                                                &particular_projection,
@@ -467,63 +470,160 @@ int curve_decomposition::interslice(const witness_set & W_curve,
                 // what else can i do here to improve the probability of success?
                 solve_options.T.basicNewtonTol   *= 1e-6; // tracktolbeforeeg
                 solve_options.T.endgameNewtonTol *= 1e-6; // tracktolduringeg
-				
+				solve_options.T.maxStepSize *= 1e-1;
+				solve_options.T.odePredictor = 8;
 				std::cout << "tracktolBEFOREeg: "	<< solve_options.T.basicNewtonTol << " tracktolDURINGeg: "	<< solve_options.T.endgameNewtonTol << std::endl;
             }
 			else
 			{
-				Wleft.reset();
-                Wright.reset();
+				Wleft.reset_points();
+                Wright.reset_points();
 				
 				witness_set W_single = midpoint_witness_sets[ii];
+				witness_set W_single_sharpened;
+				
+				
 				
 				witness_set W_single_right,W_single_left,W_midpoint_replacement = midpoint_witness_sets[ii];
 				
 				W_midpoint_replacement.reset_points();
 				
+				
 				for (int kk=0; kk<midpoint_witness_sets[ii].num_pts; kk++) {
-					W_single.reset_points();
-					W_single_left.reset();
-					W_single_right.reset();
 					
+					W_single.reset_points();
+					W_single_sharpened.reset();
+					W_single_left.reset(); W_single_right.reset();
+					
+					
+					
+					
+					//sharpen up the initial point.
 					
 					W_single.add_point(midpoint_witness_sets[ii].pts_mp[kk]);
 					
 					
-					neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii]);
-					if (program_options.verbose_level>=2)
-						print_comp_matlab(&crit_downstairs->coord[ii],"left ");
+					int prev_sharpen_digits = solve_options.T.sharpenDigits;
+					solve_options.T.sharpenDigits = MIN(4*solve_options.T.sharpenDigits,300);
+					
+					neg_mp(&particular_projection->coord[0], &midpoints_downstairs->coord[ii]);
 					multilin_solver_master_entry_point(W_single,         // input witness_set
-													   &W_single_left, // the new data is put here!
+													   &W_single_sharpened, // the new data is put here!
 													   &particular_projection,
 													   ml_config,
 													   solve_options);
+					
+					solve_options.T.sharpenDigits = prev_sharpen_digits;
+					
+					
+					
+					
+					
+					//go left and right
+					
+					comp_mp one_e_minus_four;  init_mp2(one_e_minus_four,1024);
+					set_zero_mp(one_e_minus_four);  mpf_set_str(one_e_minus_four->r,"1e-4",10);
+					
+					comp_mp temp;  init_mp2(temp,1024);
+					sub_mp(temp, &crit_downstairs->coord[num_midpoints], &crit_downstairs->coord[0]);
+					
+					neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii]);
+					int num_its = 0;
+					while (num_its < 4 && W_single_left.num_pts==0) {
+						W_single_left.reset();
+						
+						std::cout << num_its << "th iteration, going left, midpoint " << ii << std::endl;
+						
+						if (num_its == 0) { // on first try, go default
+							solve_options.T.maxNewtonIts = 2;
+						}
+						else if (num_its == 1) { // on second try, go to straight-up predictor
+							solve_options.T.maxNewtonIts = 1;
+						}
+						else if (num_its == 2){
+							solve_options.T.maxNewtonIts = 2;
+							sub_mp(&particular_projection->coord[0], &particular_projection->coord[0], temp);
+						}
+						else{ //try many steps for correction.
+							solve_options.T.maxNewtonIts = 4;
+							solve_options.T.outputLevel = 3;
+						}
+						
+						multilin_solver_master_entry_point(W_single_sharpened,         // witness_set
+														   &W_single_left, // the new data is put here!
+														   &particular_projection,
+														   ml_config,
+														   solve_options);
+						
+						W_single_left.sort_for_real(solve_options.T);
+						
+						num_its++;
+					}
 					
 					
 					
 					neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii+1]);
+					num_its = 0;
 					
-					if (program_options.verbose_level>=2)
-						print_comp_matlab(&crit_downstairs->coord[ii+1],"right ");
+					while (num_its < 4 && W_single_right.num_pts==0) {
+						W_single_right.reset();
+						
+						std::cout << num_its << "th iteration, going right, midpoint " << ii << std::endl;
+						
+						if (num_its == 0) { // on first try, go default
+							solve_options.T.maxNewtonIts = 2;
+						}
+						else if (num_its == 1) { // on second try, go to straight-up predictor
+							solve_options.T.maxNewtonIts = 1;
+						}
+						else if (num_its == 2){
+							solve_options.T.maxNewtonIts = 2;
+							add_mp(&particular_projection->coord[0], &particular_projection->coord[0], temp);
+						}
+						else{ //try many steps for correction.
+							solve_options.T.maxNewtonIts = 4;
+							solve_options.T.outputLevel = 3;
+						}
+						
+						multilin_solver_master_entry_point(W_single_sharpened,         // witness_set
+														   &W_single_right, // the new data is put here!
+														   &particular_projection,
+														   ml_config,
+														   solve_options);
+
+						if (num_its==3) {
+							std::cout << "paused for inspecting output file" << std::endl;
+							sleep(600);
+						}
+						W_single_right.sort_for_real(solve_options.T);
+						//					W_single_right.print_to_screen();
+						
+						num_its++;
+					}
 					
-					// if these get out of order, things get all messed up.
-					multilin_solver_master_entry_point(W_single,         // witness_set
-													   &W_single_right, // the new data is put here!
-													   &particular_projection,
-													   ml_config,
-													   solve_options);
+					
+
+					std::cout << color::magenta() << "left:" << color::console_default() << std::endl;
+					W_single_left.print_to_screen();
+					std::cout << color::magenta() << "right:" << color::console_default() << std::endl;
+					W_single_right.print_to_screen();
 					
 					
-					W_single_left.sort_for_real(solve_options.T);
-					W_single_right.sort_for_real(solve_options.T);
 					if (W_single_right.num_pts==1 && W_single_left.num_pts==1) {
 						W_midpoint_replacement.add_point(midpoint_witness_sets[ii].pts_mp[kk]);
-						Wleft.merge(W_single_left);
-						Wright.merge(W_single_right);
+						Wleft.add_point(W_single_left.pts_mp[0]);
+						Wright.add_point(W_single_right.pts_mp[0]);
+					}
+					else{
+						vec_cp_mp(temp_vertex.pt_mp,midpoint_witness_sets[ii].pts_mp[kk]);// set point
+						temp_vertex.type = PROBLEMATIC; // set type
+						index_in_vertices_with_add(V, temp_vertex);
 					}
 					
 					
 				}
+				
+				
 				
 				midpoint_witness_sets[ii].reset_points();
 				midpoint_witness_sets[ii].copy_points(W_midpoint_replacement);
@@ -537,74 +637,6 @@ int curve_decomposition::interslice(const witness_set & W_curve,
         
 		
 		for (int kk=0; kk<midpoint_witness_sets[ii].num_pts; kk++) {
-			
-			if (Wleft.num_pts!=midpoint_witness_sets[ii].num_pts || Wright.num_pts!=midpoint_witness_sets[ii].num_pts)
-			{
-				std::cout << "going left or right was still deficient a point..." << std::endl;
-				break;
-			}
-			
-			
-			bool ok = true;
-			
-			vec_mp result; init_vec_mp(result,W_curve.num_variables-W_curve.num_synth_vars-1);
-			result->size = W_curve.num_variables-W_curve.num_synth_vars-1;
-			
-			
-			for (int jj=1; jj<W_curve.num_variables-W_curve.num_synth_vars; jj++) {
-				div_mp(&result->coord[jj-1], &Wleft.pts_mp[kk]->coord[jj], &Wleft.pts_mp[kk]->coord[0]);
-			}
-            
-			if (!checkForReal_mp(result, solve_options.T.real_threshold)) {
-				std::cout << color::red();
-				print_point_to_screen_matlab(result,"not_real_but_should_be_left");
-                print_point_to_screen_matlab(Wleft.pts_mp[kk],"nat");
-				std::cout << color::console_default();
-				ok = false;
-			}
-			
-			
-			for (int jj=1; jj<W_curve.num_variables-W_curve.num_synth_vars; jj++) {
-				div_mp(&result->coord[jj-1], &Wright.pts_mp[kk]->coord[jj], &Wright.pts_mp[kk]->coord[0]);
-			}
-			
-			if (!checkForReal_mp(result, solve_options.T.real_threshold)) {
-				std::cout << color::red();
-				print_point_to_screen_matlab(result,"not_real_but_should_be_right");
-                print_point_to_screen_matlab(Wright.pts_mp[kk],"nat");
-				std::cout << color::console_default();
-				ok = false;
-			}
-			
-            clear_vec_mp(result);
-            
-            
-			if (!ok) {
-				std::cout << color::magenta();
-				print_point_to_screen_matlab(midpoint_witness_sets[ii].pts_mp[kk],"generating_point");
-				
-				print_comp_matlab(&crit_downstairs->coord[ii],"left_proj_val");
-				print_comp_matlab(&midpoints_downstairs->coord[ii],"midpt_proj_val");
-				print_comp_matlab(&crit_downstairs->coord[ii+1],"right_proj_val");
-				print_point_to_screen_matlab(particular_projection,"particular_projection");
-				std::cout << color::console_default();
-                
-//                midpoint_witness_sets[ii].print_to_screen();
-//                mypause();
-                
-                
-                continue;
-                
-                
-//                ii--;
-                
-                //
-			}
-			
-			
-			
-			
-			
 			
 			vec_cp_mp(temp_vertex.pt_mp,midpoint_witness_sets[ii].pts_mp[kk]);// set point
 			temp_vertex.type = MIDPOINT; // set type
@@ -716,12 +748,13 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	
 	
 	
-	
+	/*
 	//              \\              //
 	//\\\\\\\\\\\\\\\\\            /////////////
 	///////////////////  merge    /////////////
 	//////////////////            \\\\\\\\\\\\\\
 	//             //              \\
+	*/
 	
 	if (program_options.merge_edges==true) {
 		mat_cp_mp(this->randomizer_matrix, randomizer_matrix);
