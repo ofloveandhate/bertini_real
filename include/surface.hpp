@@ -48,7 +48,7 @@ public:
   std::vector<int>	left;  ///< index into vertices
   std::vector<int>	right; ///< index into vertices
 	
-	int top;				///<  index into edges.  indexes into crit_curve.edges
+	int top;			///<  index into edges.  indexes into crit_curve.edges
 	int bottom;			///<  index into edges
 	
 	int num_left;		///<  counters

@@ -24,7 +24,6 @@
 #include <sstream>
 #include <map>
 
-#define DEFAULT_MAX_PREC 1024
 
 #include "missing_bertini_headers.hpp"
 
@@ -40,6 +39,10 @@
 #include "fileops.hpp"
 
 #define SAMEPOINTTOL 1e-6
+
+
+#define DEFAULT_MAX_PREC 1024
+
 
 class parallelism_config; // a forward declaration
 class BR_configuration;   // a forward declaration

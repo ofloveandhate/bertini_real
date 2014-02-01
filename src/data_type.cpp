@@ -203,7 +203,7 @@ void br_exit(int errorCode)
 		errorCode = ERROR_OTHER;
 	
 	
-	printf("%s\n", "bertini_real quitting\n");
+	printf("%s\n", "bertini_real quitting\n\a");
 	
 #ifdef debug_compile
 	deliberate_segfault();
@@ -921,7 +921,7 @@ void witness_set::merge(const witness_set & W_in)
 	if (W_in.num_synth_vars != this->num_synth_vars) {
 		printf("merging two witness sets with differing numbers of synthetic variables. %d merging set, %d existing\n",
 			   W_in.num_synth_vars, this->num_synth_vars);
-		deliberate_segfault();
+		br_exit(95);
 	}
 	
 	
@@ -3047,9 +3047,9 @@ void print_point_to_screen_matlab(const vec_mp M, std::string name)
 	printf("%s = [...\n",name.c_str());
 	for (int kk = 0; kk < M->size; kk++)
 	{ // print kth coordinate
-		mpf_out_str (NULL, 10, 8, M->coord[kk].r);
+		mpf_out_str (NULL, 10, 0, M->coord[kk].r);
 		printf("+1i*");
-		mpf_out_str (NULL, 10, 8, M->coord[kk].i);
+		mpf_out_str (NULL, 10, 0, M->coord[kk].i);
 		printf(";\n");
 	}
 	printf("];\n\n");
