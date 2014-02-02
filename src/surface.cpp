@@ -1123,6 +1123,8 @@ void surface_decomposition::master_connect(vertex_set & V, midpoint_config & md_
 		std::cout << color::red() << "attempting to transmit over 1e5 points to all workers..." << color::console_default() << std::endl;
 	}
 	
+	int arbitrary_int = 0;
+	MPI_Bcast(&arbitrary_int, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	
 	//seed the workers
 	for (int ii=1; ii<solve_options.numprocs; ii++) {
@@ -1131,6 +1133,7 @@ void surface_decomposition::master_connect(vertex_set & V, midpoint_config & md_
 	}
 	
 
+	MPI_Bcast(&arbitrary_int, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	
 	this->output_main(program_options.output_dir);
 	V.print(program_options.output_dir/ "V.vertex");
@@ -1236,6 +1239,10 @@ void surface_decomposition::worker_connect(solver_configuration & solve_options,
 	
 	
 
+	int arbitrary_int = 0;
+	MPI_Bcast(&arbitrary_int, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	
+	
 	this->receive(solve_options.head(), solve_options);
 	
 	
@@ -1245,8 +1252,7 @@ void surface_decomposition::worker_connect(solver_configuration & solve_options,
 	V.receive(solve_options.head(), solve_options);
 	
 
-
-	
+	MPI_Bcast(&arbitrary_int, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	
 
 	
