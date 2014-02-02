@@ -57,8 +57,7 @@ int main(int argC, char *args[])
 			int arbitrary_int = 1;
 			MPI_Bcast(&arbitrary_int,1,MPI_INT,0,MPI_COMM_WORLD);
 		}
-		//		int z = 1;
-		//		while (z) ;
+
 	}
 	
 	

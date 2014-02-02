@@ -1055,7 +1055,7 @@ void witness_set::send(parallelism_config & mpi_config, int target)
 //	function input_file;
 //	// end data members
     
-    int *buffer = new int[8];
+    int *buffer = (int *) br_malloc(8*sizeof(int));
     buffer[0] = dim;
     buffer[1] = comp_num;
     buffer[2] = incidence_number;
@@ -1067,7 +1067,7 @@ void witness_set::send(parallelism_config & mpi_config, int target)
     
     MPI_Send(buffer, 8, MPI_INT, UNUSED, target, mpi_config.my_communicator);
     
-    delete[] buffer;
+    free(buffer);
     
     for (int ii=0; ii<num_linears; ii++) {
         send_vec_mp(L_mp[ii],target);
@@ -1079,9 +1079,10 @@ void witness_set::send(parallelism_config & mpi_config, int target)
         send_vec_mp(pts_mp[ii],target);
     }
     
-    char * namebuffer = new char[1024];
+    char * namebuffer = (char *) br_malloc(1024*sizeof(char));
     
-    delete[] namebuffer;
+	
+    free(namebuffer);
     return;
 }
 
@@ -1089,7 +1090,7 @@ void witness_set::receive(parallelism_config & mpi_config)
 {
     MPI_Status statty_mc_gatty;
     
-    int *buffer = new int[8];
+    int *buffer = (int *) br_malloc(8*sizeof(int));
     
     
     MPI_Recv(buffer, 8, MPI_INT, UNUSED, MPI_ANY_SOURCE, mpi_config.my_communicator, &statty_mc_gatty);
@@ -1103,7 +1104,7 @@ void witness_set::receive(parallelism_config & mpi_config)
     num_linears = buffer[6];
     num_patches = buffer[7];
     
-    delete[] buffer;
+    free(buffer);
     
     vec_mp tempvec; init_vec_mp2(tempvec,0,1024);
     
@@ -1134,13 +1135,13 @@ void vertex::send(int target, parallelism_config & mpi_config)
 	
 	send_vec_mp(projection_values, target);
 	
-	int * buffer = new int[3];
+	int * buffer = (int *) br_malloc(3*sizeof(int));
 	buffer[0] = type;
 	buffer[1] = removed;
 	buffer[2] = input_filename_index;
 	
 	MPI_Send(buffer, 3, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
-	delete [] buffer;
+	free(buffer);
 	
 }
 
@@ -1148,7 +1149,7 @@ void vertex::send(int target, parallelism_config & mpi_config)
 void vertex::receive(int source, parallelism_config & mpi_config)
 {
 	MPI_Status statty_mc_gatty;
-	int * buffer = new int[3];
+	int * buffer = (int *) br_malloc(3*sizeof(int));
 	
 	
 	receive_vec_mp(pt_mp, source);
@@ -1160,7 +1161,7 @@ void vertex::receive(int source, parallelism_config & mpi_config)
 	removed = buffer[1];
 	input_filename_index = buffer[2];
 //	print_point_to_screen_matlab(pt_mp,"recvpt");
-	delete [] buffer;
+	free(buffer);
 }
 
 
@@ -1592,7 +1593,7 @@ void vertex_set::print(boost::filesystem::path outputfile) const
 		memcpy(buffer, filenames[ii].c_str(), strleng);
 		fprintf(OUT,"%d\n",strleng);
 		fprintf(OUT,"%s\n",buffer);
-		free(buffer);
+		delete [] buffer;
 	}
 	
 	for (int ii = 0; ii < num_vertices; ii++)
@@ -1795,6 +1796,11 @@ void vertex_set::receive(int source, parallelism_config & mpi_config)
 
 int decomposition::add_witness_set(const witness_set & W, int add_type, vertex_set & V)
 {
+#ifdef functionentry_output
+	std::cout << "decomposition::add_witness_set" << std::endl;
+#endif
+	
+	
     V.set_curr_input(W.input_filename);
     
     vertex temp_vertex;
@@ -1811,7 +1817,9 @@ int decomposition::add_witness_set(const witness_set & W, int add_type, vertex_s
 
 int decomposition::add_vertex(vertex_set & V, vertex source_vertex)
 {
-	
+#ifdef functionentry_output
+	std::cout << "decomposition::add_vertex" << std::endl;
+#endif
 	
 	int current_index = V.add_vertex(source_vertex);
 	
@@ -1833,7 +1841,9 @@ int decomposition::add_vertex(vertex_set & V, vertex source_vertex)
 int decomposition::index_in_vertices(vertex_set & V,
 									 vec_mp testpoint)
 {
-
+#ifdef functionentry_output
+	std::cout << "decomposition::index_in_vertices" << std::endl;
+#endif
 	int index = -1;
 	
 	
@@ -2277,7 +2287,7 @@ void decomposition::send(int target, parallelism_config & mpi_config)
 	buffer2[9] = strleng;
 	buffer2[10] = counters.size();
 	buffer2[11] = indices.size();
-	MPI_Ssend(buffer2, 12, MPI_INT, target, 6, MPI_COMM_WORLD);
+	MPI_Send(buffer2, 12, MPI_INT, target, 6, MPI_COMM_WORLD);
 	delete [] buffer2;
 	
 	
@@ -3764,7 +3774,7 @@ void send_preproc_data(preproc_data *PPD){
 	MPI_Bcast(PPD->type, size, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(PPD->size, size, MPI_INT, 0, MPI_COMM_WORLD);
 	
-	delete(buffer);
+	delete [] buffer;
 }
 
 void receive_preproc_data(preproc_data *PPD){
@@ -3787,7 +3797,7 @@ void receive_preproc_data(preproc_data *PPD){
 	MPI_Bcast(PPD->type, num_groups, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(PPD->size, num_groups, MPI_INT, 0, MPI_COMM_WORLD);
 	
-	delete(buffer);
+	delete [] buffer;
 }
 
 
