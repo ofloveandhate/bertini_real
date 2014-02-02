@@ -1131,11 +1131,11 @@ void surface_decomposition::master_connect(vertex_set & V, midpoint_config & md_
 	}
 	
 
-	// this loop is semi-self-seeding
+	
 	this->output_main(program_options.output_dir);
 	V.print(program_options.output_dir/ "V.vertex");
 	
-	
+	// this loop is semi-self-seeding
 	for (int ii=0; ii<mid_slices.size(); ii++) { // each edge of each midslice will become a face.  degenerate edge => degenerate face.
 		
 		
@@ -1295,11 +1295,11 @@ void surface_decomposition::master_face_requester(int ii, int jj, int next_worke
 	
 	
 	
-	int * buffer = new int[2];
+	int * buffer = (int *) br_malloc(2*sizeof(int));
 	buffer[0] = ii;
 	buffer[1] = jj;
 	MPI_Ssend(buffer, 2, MPI_INT, next_worker, DATA_TRANSMISSION, MPI_COMM_WORLD);
-	delete[] buffer;
+	free(buffer);
 }
 
 
@@ -1312,14 +1312,14 @@ void surface_decomposition::worker_face_requester(int & ii, int & jj, parallelis
 	
 	
 	
-	int * buffer = new int[2];
+	int * buffer = (int *) br_malloc(2*sizeof(int));
 	MPI_Status statty_mc_gatty;
 	
 	MPI_Recv(buffer, 2, MPI_INT, mpi_config.head(), DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
 	ii = buffer[0];
 	jj = buffer[1];
 	
-	delete[] buffer;
+	free(buffer);
 	return;
 }
 
@@ -2037,7 +2037,7 @@ void surface_decomposition::send(int target, parallelism_config & mpi_config)
 	
 	decomposition::send(target, mpi_config);
 	std::cout << "^^" << std::endl;
-	int * buffer = new int[4];
+	int * buffer = (int *) br_malloc(4*sizeof(int));
 	
 	buffer[0] = num_edges;
 	buffer[1] = num_faces;
@@ -2046,7 +2046,7 @@ void surface_decomposition::send(int target, parallelism_config & mpi_config)
 	buffer[3] = crit_slices.size();
 	
 	MPI_Send(buffer, 4, MPI_INT, target, SURFACE, MPI_COMM_WORLD);
-	delete [] buffer;
+	free(buffer);
 	
 	for (int ii=0; ii<num_edges; ii++) {
 		edges[ii].send(target, mpi_config);
@@ -2091,14 +2091,14 @@ void surface_decomposition::receive(int source, parallelism_config & mpi_config)
 	decomposition::receive(source, mpi_config);
 	
 	
-	int * buffer = new int[4];
+	int * buffer = (int *) br_malloc(4*sizeof(int));
 	MPI_Recv(buffer, 4, MPI_INT, source, SURFACE, MPI_COMM_WORLD, &statty_mc_gatty);
 	int a, b, c, d;
 	a = buffer[0];
 	b = buffer[1];
 	c = buffer[2];
 	d = buffer[3];
-	delete [] buffer;
+	free(buffer);
 	
 	std::cout << a << " " << b << " " << c << " " << d << std::endl;
 	
@@ -2593,7 +2593,7 @@ void face::send(int target, parallelism_config & mpi_config)
 	
 	cell::send(target,mpi_config);
 	
-	int * buffer = new int[10];
+	int * buffer = (int *) br_malloc(10*sizeof(int));
 	
 	buffer[0] = left.size();
 	buffer[1] = right.size();
@@ -2606,7 +2606,7 @@ void face::send(int target, parallelism_config & mpi_config)
 	buffer[9] = crit_slice_index;
 	
 	MPI_Ssend(buffer, 10, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
-	delete [] buffer;
+	free(buffer);
 	
 	if (num_left != left.size()) {
 		std::cout << "left sizes for face DO NOT match" << std::endl;
@@ -2616,23 +2616,23 @@ void face::send(int target, parallelism_config & mpi_config)
 	}
 	
 	if (num_left>0) {
-		buffer = new int[num_left];
+		buffer = (int *) br_malloc(num_left*sizeof(int));
 		for (int ii=0; ii<num_left; ii++) {
 			buffer[ii] = left[ii];
 		}
 		MPI_Ssend(buffer, num_left, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
-		delete [] buffer;
+		free(buffer);
 	}
 	
 	
 	
 	if (num_right>0) {
-		buffer = new int[num_right];
+		buffer = (int *) br_malloc(num_right*sizeof(int));
 		for (int ii=0; ii<num_right; ii++) {
 			buffer[ii] = right[ii];
 		}
 		MPI_Ssend(buffer, num_right, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
-		delete [] buffer;
+		free(buffer);
 	}
 	
 	
@@ -2659,7 +2659,7 @@ void face::receive(int source, parallelism_config & mpi_config)
 	cell::receive(source,mpi_config);
 	
 	MPI_Status statty_mc_gatty;
-	int * buffer = new int[10];
+	int * buffer= (int *) br_malloc(10*sizeof(int));
 	
 	MPI_Recv(buffer, 10, MPI_INT, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
 	
@@ -2673,27 +2673,27 @@ void face::receive(int source, parallelism_config & mpi_config)
 	system_type_top = buffer[8];
 	crit_slice_index = buffer[9];
 	
-	delete [] buffer;
+	free(buffer);
 	
 	
 	if (tmp_size_left>0) {
-		int * buffer2 = new int[tmp_size_left];
+		int * buffer2 = (int *) br_malloc(tmp_size_left*sizeof(int));
 		MPI_Recv(buffer2, tmp_size_left, MPI_INT, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
 		for (int ii=0; ii<tmp_size_left; ii++) {
 			left.push_back(buffer2[ii]);
 		}
-		delete [] buffer2;
+		free(buffer2);
 	}
 	
 	
 	
 	if (tmp_size_right>0) {
-		int * buffer3 = new int[tmp_size_right];
+		int * buffer3 = (int *) br_malloc(tmp_size_right*sizeof(int));
 		MPI_Recv(buffer3, tmp_size_right, MPI_INT, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
 		for (int ii=0; ii<tmp_size_right; ii++) {
 			right.push_back(buffer3[ii]);
 		}
-		delete [] buffer3;
+		free(buffer3);
 	}
 	
 	
