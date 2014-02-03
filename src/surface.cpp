@@ -437,26 +437,26 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 	ns_config.clear();
 	
 	
-//	witness_set W_crit2;
-//	compute_crit_nullspace(&W_crit2, // the returned value
-//						   W_surf,            // input the original witness set
-//						   this->randomizer_matrix,
-//						   &this->pi[1],
-//						   this->randomized_degrees,
-//						   2,  // dimension of ambient complex object
-//						   2,   //  target dimension to find
-//						   2,   // COdimension of the critical set to find.
-//						   program_options,
-//						   solve_options,
-//						   &ns_config);
-//	// this will use pi[1] to compute critical points
-//	
-//	W_crit2.only_first_vars(num_variables);
-//	W_crit2.sort_for_real(solve_options.T);
-//	
-//	ns_config.clear();
-//	
-//	W_critcurve_crit.merge(W_crit2);
+	witness_set W_crit2;
+	compute_crit_nullspace(&W_crit2, // the returned value
+						   W_surf,            // input the original witness set
+						   this->randomizer_matrix,
+						   &this->pi[1],
+						   this->randomized_degrees,
+						   2,  // dimension of ambient complex object
+						   2,   //  target dimension to find
+						   2,   // COdimension of the critical set to find.
+						   program_options,
+						   solve_options,
+						   &ns_config);
+	// this will use pi[1] to compute critical points
+	
+	W_crit2.only_first_vars(num_variables);
+	W_crit2.sort_for_real(solve_options.T);
+	
+	ns_config.clear();
+	
+	W_critcurve_crit.merge(W_crit2);
 	
 	
 	if (have_sphere_radius) {

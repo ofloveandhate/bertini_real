@@ -2293,7 +2293,7 @@ void decomposition::send(int target, parallelism_config & mpi_config)
 	
 	
 	if (counters.size()>0) {
-//		std::cout << "sending " << counters.size() << " counters" << std::endl;
+		std::cout << "sending " << counters.size() << " counters" << std::endl;
 		//pack and send the counters.
 		int * buffer3 = new int[2*counters.size()];
 		int cnt = 0;
