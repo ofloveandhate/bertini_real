@@ -143,7 +143,7 @@ void solver_configuration::init()
 {
 	total_num_paths_tracked = 0;
 	
-	orthogonal_projection = true;
+	orthogonal_projection = false;
 	use_real_thresholding = false;
 	robust = false;
 	
