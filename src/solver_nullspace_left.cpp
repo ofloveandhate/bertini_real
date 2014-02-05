@@ -2689,7 +2689,7 @@ int change_nullspacejac_eval_prec(void const *ED, int new_prec)
 		// change the precision for the patch
 		changePatchPrec_mp(new_prec, &BED->patch);
 		
-		if (BED->verbose_level >=4)
+		if (BED->verbose_level >=8)
 			printf("prec  %d\t-->\t%d\n",BED->curr_prec, new_prec);
 		
 		BED->SLP->precision = new_prec;

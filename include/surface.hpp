@@ -61,7 +61,7 @@ public:
 	int system_type_top;
 	int system_type_bottom;
 	
-	int crit_slice_index; ///< which midpoint this face came from.
+	int crit_slice_index; ///< which midpoint slice this face came from.
 	
 	face() : cell()
 	{
