@@ -929,6 +929,13 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 	int target_num_samples = 10; // make this dynamic
 	
 	
+	midpoint_config md_config;
+	md_config.setup(*this, solve_options); // yep, pass 'this' object into another call. brilliant.
+	
+	std::cout << "have the slp's in memory for connect the dots" << std::endl;
+	
+	
+	
 	std::cout << "crit_curve" << std::endl;
 	crit_curve.fixed_sampler(V,sampler_options,solve_options,target_num_samples);
 	
@@ -947,16 +954,207 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 	}
 	
 
+	witness_set W_midtrack;
+	vec_mp blank_point;  init_vec_mp2(blank_point, 0,1024);
+	W_midtrack.add_point(blank_point);
+	clear_vec_mp(blank_point);
 	
 	
+	comp_mp interval_width; init_mp2(interval_width,1024); set_one_mp(interval_width);
+	comp_mp num_intervals;  init_mp2(num_intervals,1024); set_zero_mp(num_intervals);
+	
+	mpf_set_d(num_intervals->r,double(target_num_samples));
+	div_mp(interval_width,interval_width,num_intervals);
+	
+
 	//once you have the fixed samples of the curves, down here is just making the integer triangles.
 	for (int ii=0; ii<num_faces; ii++) {
 		
-		std::cout << "face " << ii << std::endl;
+		std::cout << "face " << ii << " " << faces[ii].num_left << " " << faces[ii].num_right << " " << faces[ii].crit_slice_index <<std::endl;
+		
+		int slice_ind = faces[ii].crit_slice_index;
 		
 		
 		
 		
+		// get the system types
+		md_config.system_type_top = faces[ii].system_type_top;
+		md_config.system_type_bottom = faces[ii].system_type_bottom;
+		
+		int num_bottom_vars, num_top_vars;
+		if (md_config.system_type_bottom == SYSTEM_CRIT) {
+			num_bottom_vars = md_config.num_crit_vars;
+		}
+		else { //if (md_config.system_type_bottom == SYSTEM_SPHERE)
+			num_bottom_vars = md_config.num_sphere_vars;
+		}
+//		else{
+//			
+//		}
+		
+		
+		if (md_config.system_type_top == SYSTEM_CRIT) {
+			num_top_vars = md_config.num_crit_vars;
+		}
+		else { //if (md_config.system_type_top == SYSTEM_SPHERE)
+			num_top_vars = md_config.num_sphere_vars;
+		}
+//		else{
+//			
+//		}
+		
+		
+		
+		
+		//copy in the start point as three points concatenated.
+		
+		W_midtrack.num_variables = this->num_variables + num_bottom_vars + num_top_vars;
+		W_midtrack.num_synth_vars = W_midtrack.num_variables - this->num_variables;
+		change_size_vec_mp(W_midtrack.pts_mp[0], W_midtrack.num_variables); W_midtrack.pts_mp[0]->size = W_midtrack.num_variables; // destructive resize
+		
+		
+		// mid
+		int var_counter = 0;
+		for (int kk=0; kk<this->num_variables; kk++) {
+			set_mp(&W_midtrack.pts_mp[0]->coord[kk], &V.vertices[faces[ii].midpt].pt_mp->coord[kk]);
+			var_counter++;
+		}
+		
+		int mid_edge = mid_slices[slice_ind].edge_w_midpt(faces[ii].midpt);
+		// bottom
+		int offset = var_counter;
+		for (int kk=0; kk<num_bottom_vars; kk++) {
+			set_mp(&W_midtrack.pts_mp[0]->coord[kk+offset], &V.vertices[mid_slices[slice_ind].edges[mid_edge].left].pt_mp->coord[kk]); // y0
+			var_counter++;
+		}
+		
+		// top
+		offset = var_counter;
+		for (int kk=0; kk<num_top_vars; kk++) {
+			set_mp(&W_midtrack.pts_mp[0]->coord[kk+offset], &V.vertices[mid_slices[slice_ind].edges[mid_edge].right].pt_mp->coord[kk]); // y2
+			var_counter++;
+		}
+		
+		
+		
+		
+		
+		
+		
+		//copy in the patches appropriate for the systems we will be tracking on.  this could be improved.
+		W_midtrack.reset_patches();
+		
+		for (int qq = 0; qq<this->num_patches; qq++) {
+			W_midtrack.add_patch(this->patch[qq]);
+		}
+		
+		if (md_config.system_type_bottom == SYSTEM_CRIT) {
+			for (int qq = 0; qq<crit_curve.num_patches; qq++) {
+				W_midtrack.add_patch(crit_curve.patch[qq]);
+			}
+		}
+		else{
+			for (int qq = 0; qq<sphere_curve.num_patches; qq++) {
+				W_midtrack.add_patch(sphere_curve.patch[qq]);
+			}
+		}
+		
+		if (md_config.system_type_top == SYSTEM_CRIT) {
+			for (int qq = 0; qq<crit_curve.num_patches; qq++) {
+				W_midtrack.add_patch(crit_curve.patch[qq]);
+			}
+		}
+		else{
+			for (int qq = 0; qq<sphere_curve.num_patches; qq++) {
+				W_midtrack.add_patch(sphere_curve.patch[qq]);
+			}
+		}
+		
+		
+		
+		
+		
+		
+		// make u, v target values.
+		
+		set_mp(md_config.crit_val_left,   &V.vertices[ crit_slices[ii].edges[0].midpt ].projection_values->coord[0]);
+		set_mp(md_config.crit_val_right,  &V.vertices[ crit_slices[ii+1].edges[0].midpt ].projection_values->coord[0]);
+		
+		
+		
+		
+		
+		
+		//replace this with the appropriate number between 0 and 1.
+		set_zero_mp(md_config.u_target);
+		
+		set_zero_mp(md_config.v_target);
+		
+		
+		
+		
+		
+		
+		//we need to sample the ribs
+		std::vector< std::vector<int> > rib_indices;
+		rib_indices.resize(target_num_samples);
+		
+		vertex temp_vertex;
+		
+		
+		set_zero_mp(md_config.u_target); // initialize this
+		set_zero_mp(md_config.v_target);
+		
+		
+		for (int jj=1; jj<target_num_samples-1; jj++) {
+			
+			add_mp(md_config.u_target,md_config.u_target,interval_width);
+			
+			rib_indices[jj].resize(target_num_samples);
+			
+			
+			//TODO: these are placeholder indices.  put real ones here
+			
+
+			
+			rib_indices[jj][0] = 0;
+			rib_indices[jj][target_num_samples-1] = 1;
+			
+			
+			for (int kk=1; kk<target_num_samples-1; kk++) {
+				add_mp(md_config.v_target,md_config.v_target,interval_width);
+				
+				
+				witness_set W_new;
+				midpoint_solver_master_entry_point(W_midtrack, // carries with it the start points, and the linears.
+												   &W_new, // new data goes in here
+												   md_config,
+												   solve_options);
+				
+				if (W_new.num_pts==0) {
+					std::cout << color::red() << "midpoint tracker did not return any points :(" << color::console_default() << std::endl;
+					continue;
+				}
+				
+
+				vec_cp_mp(temp_vertex.pt_mp,W_new.pts_mp[0]);
+				temp_vertex.type = SAMPLE_POINT;
+				
+				
+				rib_indices[jj][kk] = V.add_vertex(temp_vertex);
+				
+				
+			}
+			
+			
+			
+			
+		}
+		
+		
+		
+		
+		//stitch together the
 		
 	}
 	

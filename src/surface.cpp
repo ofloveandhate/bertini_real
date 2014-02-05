@@ -1304,7 +1304,7 @@ void surface_decomposition::master_face_requester(int ii, int jj, int next_worke
 	int * buffer = (int *) br_malloc(2*sizeof(int));
 	buffer[0] = ii;
 	buffer[1] = jj;
-	MPI_Ssend(buffer, 2, MPI_INT, next_worker, DATA_TRANSMISSION, MPI_COMM_WORLD);
+	MPI_Send(buffer, 2, MPI_INT, next_worker, DATA_TRANSMISSION, MPI_COMM_WORLD);
 	free(buffer);
 }
 
@@ -1555,7 +1555,6 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	set_mp(md_config.crit_val_left,   &V.vertices[ crit_slices[ii].edges[0].midpt ].projection_values->coord[0]);
 	set_mp(md_config.crit_val_right,  &V.vertices[ crit_slices[ii+1].edges[0].midpt ].projection_values->coord[0]);
 	
-	std::cout << "%%" << std::endl;
 	
 	// the u direction corresponds to pi[0].
 	for (int zz=0; zz<2; zz++) { // go left (zz=0) and right (zz=1)
@@ -2611,7 +2610,7 @@ void face::send(int target, parallelism_config & mpi_config)
 	buffer[8] = system_type_top;
 	buffer[9] = crit_slice_index;
 	
-	MPI_Ssend(buffer, 10, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+	MPI_Send(buffer, 10, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
 	free(buffer);
 	
 	if (num_left != left.size()) {
@@ -2626,7 +2625,7 @@ void face::send(int target, parallelism_config & mpi_config)
 		for (int ii=0; ii<num_left; ii++) {
 			buffer[ii] = left[ii];
 		}
-		MPI_Ssend(buffer, num_left, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+		MPI_Send(buffer, num_left, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
 		free(buffer);
 	}
 	
@@ -2637,7 +2636,7 @@ void face::send(int target, parallelism_config & mpi_config)
 		for (int ii=0; ii<num_right; ii++) {
 			buffer[ii] = right[ii];
 		}
-		MPI_Ssend(buffer, num_right, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+		MPI_Send(buffer, num_right, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
 		free(buffer);
 	}
 	

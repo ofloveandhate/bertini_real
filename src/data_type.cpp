@@ -2301,7 +2301,7 @@ void decomposition::send(int target, parallelism_config & mpi_config)
 			buffer3[2*cnt] = iter->first;
 			buffer3[2*cnt+1] = iter->second;
 		}
-		MPI_Ssend(buffer3, 2*counters.size(), MPI_INT, target, 2, MPI_COMM_WORLD);
+		MPI_Send(buffer3, 2*counters.size(), MPI_INT, target, 2, MPI_COMM_WORLD);
 		delete [] buffer3;
 	}
 	
@@ -2320,7 +2320,7 @@ void decomposition::send(int target, parallelism_config & mpi_config)
 			int num_these_indices = iter->second.size();
 			
 			intbuff[1] = num_these_indices;
-			MPI_Ssend(intbuff, 2, MPI_INT, target, 4, MPI_COMM_WORLD);
+			MPI_Send(intbuff, 2, MPI_INT, target, 4, MPI_COMM_WORLD);
 			
 			
 //			std::cout << num_these_indices << "these indices" << std::endl;
@@ -2333,7 +2333,7 @@ void decomposition::send(int target, parallelism_config & mpi_config)
 					buffer4[cnt] = *jter;
 					cnt++;
 				}
-				MPI_Ssend(buffer4, num_these_indices, MPI_INT, target, 5, MPI_COMM_WORLD);
+				MPI_Send(buffer4, num_these_indices, MPI_INT, target, 5, MPI_COMM_WORLD);
 				delete [] buffer4;
 			}
 			
@@ -2360,7 +2360,7 @@ void decomposition::send(int target, parallelism_config & mpi_config)
 			buffer2[cnt] = *iter;
 			cnt++;
 		}
-		MPI_Ssend(buffer2, randomized_degrees.size(), MPI_INT, target, 1, MPI_COMM_WORLD);
+		MPI_Send(buffer2, randomized_degrees.size(), MPI_INT, target, 1, MPI_COMM_WORLD);
 		delete [] buffer2;
 	}
 	
@@ -2394,7 +2394,7 @@ void decomposition::send(int target, parallelism_config & mpi_config)
 	if (strleng>1) {
 		char * buffer = new char[strleng];
 		memcpy(buffer, input_filename.c_str(), strleng);
-		MPI_Ssend(buffer, strleng, MPI_CHAR, target, 7, MPI_COMM_WORLD);
+		MPI_Send(buffer, strleng, MPI_CHAR, target, 7, MPI_COMM_WORLD);
 		delete [] buffer;
 	}
 	
@@ -3046,7 +3046,7 @@ void print_point_to_screen_matlab(const vec_d M, std::string name)
 	printf("%s = [...\n",name.c_str());
 	for (int kk = 0; kk < M->size; kk++)
 	{ // print kth coordinate
-		printf(" %.15le+1i*%.15le;\n",M->coord[kk].r,M->coord[kk].i);
+		printf(" %.8le+1i*%.8le;\n",M->coord[kk].r,M->coord[kk].i);
 	}
 	printf("];\n\n");
 }
@@ -3057,9 +3057,9 @@ void print_point_to_screen_matlab(const vec_mp M, std::string name)
 	printf("%s = [...\n",name.c_str());
 	for (int kk = 0; kk < M->size; kk++)
 	{ // print kth coordinate
-		mpf_out_str (NULL, 10, 0, M->coord[kk].r);
+		mpf_out_str (NULL, 10, 8, M->coord[kk].r);
 		printf("+1i*");
-		mpf_out_str (NULL, 10, 0, M->coord[kk].i);
+		mpf_out_str (NULL, 10, 8, M->coord[kk].i);
 		printf(";\n");
 	}
 	printf("];\n\n");

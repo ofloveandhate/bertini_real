@@ -148,8 +148,7 @@ public:
 	
 	void call_for_help(int solver_type)
 	{
-		
-		
+
 		MPI_Bcast(&solver_type, 1, MPI_INT, head(), MPI_COMM_WORLD);
 		
 		init_active_workers();
@@ -295,7 +294,6 @@ public:
 	
 	std::string bertini_command;
 	std::string matlab_command;
-	int verbose_level;
 	
 	int use_gamma_trick; // bool
 	
