@@ -5,6 +5,9 @@
 void midpoint_config::setup(const surface_decomposition & surf,
                             solver_configuration & solve_options)
 {
+#ifdef functionentry_output
+	std::cout << "midpoint_config::setup" << std::endl;
+#endif
 	
 	this->MPType = solve_options.T.MPType;
     
@@ -87,6 +90,7 @@ void midpoint_config::setup(const surface_decomposition & surf,
 
 void midpoint_config::init()
 {
+	
 	num_projections = 0;
     
 	this->MPType = -1;
@@ -116,6 +120,10 @@ void midpoint_config::init()
 
 void midpoint_config::initial_send(parallelism_config & mpi_config)
 {
+#ifdef functionentry_output
+	std::cout << "midpoint_config::initial_send" << std::endl;
+#endif
+	
 	
 	int * buffer = new int[7];
 	
@@ -127,11 +135,11 @@ void midpoint_config::initial_send(parallelism_config & mpi_config)
 	buffer[5] = randomizer_matrix->cols;
 	buffer[6] = MPType;
 	
-	MPI_Bcast(buffer, 7, MPI_INT, mpi_config.id(), mpi_config.my_communicator);
+	MPI_Bcast(buffer, 7, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
 	
 	delete [] buffer;
 	
-	
+	std::cout << "sent matrix sizes" << std::endl;
 	
 	mid_memory.set_globals_to_this();
     bcast_prog_t(SLP_mid, this->MPType, 0, 0); // last two arguments are: myid, headnode
@@ -144,7 +152,7 @@ void midpoint_config::initial_send(parallelism_config & mpi_config)
 
     
 
-    
+    std::cout << "sent SLP" << std::endl;
 	
 	
 	
@@ -155,27 +163,30 @@ void midpoint_config::initial_send(parallelism_config & mpi_config)
     bcast_mat_mp(randomizer_matrix,0,0);
     
 	
-	
+	std::cout << "sent matrices" << std::endl;
     
-    MPI_Bcast(&num_mid_vars, 1, MPI_INT, mpi_config.id(), mpi_config.my_communicator);
-    MPI_Bcast(&num_crit_vars, 1, MPI_INT, mpi_config.id(), mpi_config.my_communicator);
-    MPI_Bcast(&num_sphere_vars, 1, MPI_INT, mpi_config.id(), mpi_config.my_communicator);
+    MPI_Bcast(&num_mid_vars, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+    MPI_Bcast(&num_crit_vars, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+    MPI_Bcast(&num_sphere_vars, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
 	
-    MPI_Bcast(&num_projections, 1, MPI_INT, mpi_config.id(), mpi_config.my_communicator);
+    MPI_Bcast(&num_projections, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
     for (int ii=0; ii<num_projections; ii++) {
         bcast_vec_mp(pi[ii],0,0);
     }
 	
-	
+	std::cout << "done md_send" << std::endl;
 }
 
 void midpoint_config::initial_receive(parallelism_config & mpi_config)
 {
 	
+#ifdef functionentry_output
+	std::cout << "midpoint_config::initial_receive" << std::endl;
+#endif
 	
 	int * buffer = new int[7];
 	
-	MPI_Bcast(buffer, 7, MPI_INT, mpi_config.id(), mpi_config.my_communicator);
+	MPI_Bcast(buffer, 7, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
 	
 	change_size_mat_mp(randomizer_matrix_crit,buffer[0],buffer[1]);
 	change_size_mat_mp(randomizer_matrix_sph,buffer[2],buffer[3]);
@@ -194,7 +205,7 @@ void midpoint_config::initial_receive(parallelism_config & mpi_config)
 	delete [] buffer;
 	
 	
-	
+	std::cout << "have matrix sizes" << std::endl;
 	
 	
     bcast_prog_t(SLP_mid, this->MPType, 1, 0); // last two arguments are: myid, headnode
@@ -217,7 +228,7 @@ void midpoint_config::initial_receive(parallelism_config & mpi_config)
 	
     
 	
-	
+	std::cout << "have SLPs" << std::endl;
 	
 	
 	
@@ -225,12 +236,13 @@ void midpoint_config::initial_receive(parallelism_config & mpi_config)
     bcast_mat_mp(randomizer_matrix_sph,1,0);
     bcast_mat_mp(randomizer_matrix,1,0);
     
-    
+    std::cout << "have matrices" << std::endl;
+	
     MPI_Bcast(&num_mid_vars, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
     MPI_Bcast(&num_crit_vars, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
     MPI_Bcast(&num_sphere_vars, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
 	int temp_num_projections;
-	MPI_Bcast(&temp_num_projections, 1, MPI_INT, mpi_config.id(), mpi_config.my_communicator);
+	MPI_Bcast(&temp_num_projections, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
     vec_mp tempvec;  init_vec_mp2(tempvec, 1, 1024);
     for (int ii=0; ii<temp_num_projections; ii++) {
         bcast_vec_mp(tempvec,1,0);
@@ -238,36 +250,10 @@ void midpoint_config::initial_receive(parallelism_config & mpi_config)
     }
     clear_vec_mp(tempvec);
 	
-	
+	std::cout << "done md_config" << std::endl;
 }
 
-//void midpoint_config::update_send(parallelism_config & mpi_config,int target)
-//{
-//    send_comp_mp(v_target,target); // set during the loop in connect the dots
-//    send_comp_mp(u_target,target); // set during the loop in connect the dots
-//    
-//    send_comp_mp(crit_val_left,target); // set during the loop in connect the dots
-//    send_comp_mp(crit_val_right,target); // set during the loop in connect the dots
-//    
-//
-//	MPI_Send(&system_type_bottom, 1, MPI_INT, target, UNUSED, MPI_COMM_WORLD);
-//    MPI_Send(&system_type_top, 1, MPI_INT, target, UNUSED, MPI_COMM_WORLD);
-//}
 
-//void midpoint_config::update_receive(parallelism_config & mpi_config)
-//{
-//    MPI_Status statty_mc_gatty;
-//    
-//    receive_comp_mp(v_target,MPI_ANY_SOURCE); // set during the loop in connect the dots
-//    receive_comp_mp(u_target,MPI_ANY_SOURCE); // set during the loop in connect the dots
-//    
-//    receive_comp_mp(crit_val_left,MPI_ANY_SOURCE); // set during the loop in connect the dots
-//    receive_comp_mp(crit_val_right,MPI_ANY_SOURCE); // set during the loop in connect the dots
-//    
-//    
-//    MPI_Recv(&system_type_bottom, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &statty_mc_gatty);
-//    MPI_Recv(&system_type_top, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &statty_mc_gatty);
-//}
 
 ///////////////
 //
@@ -374,7 +360,9 @@ void midpoint_eval_data_mp::init()
 
 int midpoint_eval_data_mp::send(parallelism_config & mpi_config)
 {
-	
+#ifdef functionentry_output
+	std::cout << "midpoint_eval_data_mp::send" << std::endl;
+#endif
 	int solver_choice = MIDPOINT_SOLVER;
 	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
 	// send the confirmation integer, to ensure that we are sending the correct type.
@@ -384,7 +372,7 @@ int midpoint_eval_data_mp::send(parallelism_config & mpi_config)
 	
 	int *buffer = new int[12];
 	
-	MPI_Bcast(buffer,12,MPI_INT, 0, mpi_config.my_communicator);
+	MPI_Bcast(buffer,12,MPI_INT, mpi_config.head(), mpi_config.my_communicator);
 	
 	delete[] buffer;
     
@@ -396,7 +384,9 @@ int midpoint_eval_data_mp::send(parallelism_config & mpi_config)
 
 int midpoint_eval_data_mp::receive(parallelism_config & mpi_config)
 {
-    
+#ifdef functionentry_output
+	std::cout << "midpoint_eval_data_mp::receive" << std::endl;
+#endif
 	int *buffer = new int[12]; // allocate 12 here because we will be sending 12 integers
 	MPI_Bcast(buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	
@@ -415,7 +405,7 @@ int midpoint_eval_data_mp::receive(parallelism_config & mpi_config)
     
     
     
-	MPI_Bcast(buffer,12,MPI_INT, 0, mpi_config.my_communicator);
+	MPI_Bcast(buffer,12,MPI_INT, mpi_config.head(), mpi_config.my_communicator);
 	
 	
 	
@@ -624,6 +614,9 @@ void midpoint_eval_data_d::init()
 
 int midpoint_eval_data_d::send(parallelism_config & mpi_config)
 {
+#ifdef functionentry_output
+	std::cout << "midpoint_eval_data_d::send" << std::endl;
+#endif
 	
 	int solver_choice = MIDPOINT_SOLVER;
 	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
@@ -646,6 +639,12 @@ int midpoint_eval_data_d::send(parallelism_config & mpi_config)
 
 int midpoint_eval_data_d::receive(parallelism_config & mpi_config)
 {
+	
+#ifdef functionentry_output
+	std::cout << "midpoint_eval_data_d::receive" << std::endl;
+#endif
+	
+	
 	int *buffer = new int[12];
 	MPI_Bcast(buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	
