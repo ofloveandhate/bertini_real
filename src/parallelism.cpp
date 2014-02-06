@@ -191,7 +191,7 @@ int worker_process::main_loop()
 	
 	int solver_choice = INITIAL_STATE;
 	
-	surface_decomposition S;
+	
 	
 	while (solver_choice != TERMINATE) {
 		
@@ -204,13 +204,13 @@ int worker_process::main_loop()
 		switch (solver_choice) {
 			case NULLSPACE:
 				nullspace_slave_entry_point(this->solve_options);
-				// call the blabla here
 				break;
 				
 			case MIDPOINT_SOLVER:
+			{
+				surface_decomposition S;
 				S.worker_connect(solve_options, program_options);
-				//				midpoint_slave_entry_point(this->solve_options);
-				// call the blabla here
+			}
 				break;
 				
 			case PARSING:

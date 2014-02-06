@@ -2353,7 +2353,7 @@ void decomposition::send(int target, parallelism_config & mpi_config)
 	
 	
 	if (randomized_degrees.size()>0) {
-//		std::cout << "sending " << randomized_degrees.size() << " randomized_degrees" << std::endl;
+		std::cout << "sending " << randomized_degrees.size() << " randomized_degrees" << std::endl;
 		buffer2 = new int[randomized_degrees.size()];
 		int cnt = 0;
 		for (auto iter = randomized_degrees.begin(); iter!=randomized_degrees.end(); iter++) {
@@ -2453,9 +2453,23 @@ void decomposition::receive(int source, parallelism_config & mpi_config)
 	delete [] buffer2;
 	
 	
+	std::cout << "receieved:" << std::endl;
+	std::cout << num_variables << std::endl;
+	std::cout << dimension << std::endl;
+	std::cout << component_num << std::endl;
+	std::cout << temp_num_projections << std::endl;
+	std::cout << num_rand_degrees << std::endl;
+	std::cout << rand_rows << std::endl;
+	std::cout << rand_cols << std::endl;
+	std::cout << temp_num_patches << std::endl;
+	std::cout << have_sphere_radius << std::endl;
+	std::cout << strleng << std::endl;
+	std::cout << num_counters << std::endl;
+	std::cout << num_indices << std::endl;
+	
 	
 	if (num_counters>0) {
-//		std::cout << "recving " << num_counters << " counters" << std::endl;
+		std::cout << "recving " << num_counters << " counters" << std::endl;
 		int * buffer3 = new int[2*num_counters];
 		MPI_Recv(buffer3, 2*num_counters, MPI_INT, source, 2, MPI_COMM_WORLD, &statty_mc_gatty);
 		for (int ii=0; ii<num_counters; ii++) {
@@ -2508,7 +2522,7 @@ void decomposition::receive(int source, parallelism_config & mpi_config)
 	
 //	std::cout << "worker has " << num_curr_projections << " #" << std::endl;
 	if (num_rand_degrees>0) {
-//		std::cout << "recving " << num_rand_degrees << " degrees" << std::endl;
+		std::cout << "recving " << num_rand_degrees << " degrees" << std::endl;
 		int * buffer3 = new int[num_rand_degrees];
 		
 		MPI_Recv(buffer3, num_rand_degrees, MPI_INT, source, 1, MPI_COMM_WORLD, &statty_mc_gatty);

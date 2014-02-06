@@ -1109,12 +1109,14 @@ void surface_decomposition::master_connect(vertex_set & V, midpoint_config & md_
 	
 	solve_options.call_for_help(MIDPOINT_SOLVER); // sets available workers, too
 	
-	
-
+	MPI_Barrier(MPI_COMM_WORLD);
+	std::cout << "barrier1" << std::endl;
 	bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
 	
+	MPI_Barrier(MPI_COMM_WORLD);
+	std::cout << "barrier2" << std::endl;
 	
-
+	
 	md_config.initial_send(solve_options);
 	
 
@@ -1123,18 +1125,18 @@ void surface_decomposition::master_connect(vertex_set & V, midpoint_config & md_
 		std::cout << color::red() << "attempting to transmit over 1e5 points to all workers..." << color::console_default() << std::endl;
 	}
 	
-	int arbitrary_int = 0;
-	MPI_Bcast(&arbitrary_int, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	
+
+	MPI_Barrier(MPI_COMM_WORLD);
+	std::cout << "barrier3" << std::endl;
+	std::cout << "seeding workers" << std::endl;
 	//seed the workers
 	for (int ii=1; ii<solve_options.numprocs; ii++) {
+		std::cout << "seeding worker" << ii << std::endl;
 		this->send(ii, solve_options);
 		V.send(ii, solve_options);
 	}
 	
 
-	MPI_Bcast(&arbitrary_int, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	
 	this->output_main(program_options.output_dir);
 	V.print(program_options.output_dir/ "V.vertex");
 	
@@ -1221,13 +1223,14 @@ void surface_decomposition::worker_connect(solver_configuration & solve_options,
 	std::cout << "surface::worker_connect" << std::endl;
 #endif
 	
-	
+	MPI_Barrier(MPI_COMM_WORLD);
 	
 	bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
 	
-
+	MPI_Barrier(MPI_COMM_WORLD);
 	solve_options.robust = true;
 	
+	std::cout << "worker has tracker config" << std::endl;
 	
 	midpoint_config md_config;
 	md_config.initial_receive(solve_options);
@@ -1237,23 +1240,21 @@ void surface_decomposition::worker_connect(solver_configuration & solve_options,
 	//	• starting point
 	//which are all updated from another call later.
 	
+	std::cout << "worker has md_config" << std::endl;
 	
+	MPI_Barrier(MPI_COMM_WORLD);
 
-	int arbitrary_int = 0;
-	MPI_Bcast(&arbitrary_int, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	
-	
 	this->receive(solve_options.head(), solve_options);
 	
-	
+	std::cout << "worker has surface" << std::endl;
 	
 	
 	vertex_set V;
 	V.receive(solve_options.head(), solve_options);
 	
+	std::cout << "worker has vertex set" << std::endl;
 
-	MPI_Bcast(&arbitrary_int, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	
+
 
 	
 	while (1) {
