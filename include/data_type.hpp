@@ -55,7 +55,7 @@ enum {SUCCESSFUL=0, CRITICAL_FAILURE=-10, TOLERABLE_FAILURE=-1};
 enum {SYSTEM_CRIT = -1600, SYSTEM_SPHERE};
 
 //The following lets us use words instead of numbers to indicate vertex type.
-enum {UNSET= 100, CRITICAL, SEMICRITICAL, MIDPOINT, ISOLATED, NEW, SAMPLE_POINT, REMOVED, PROBLEMATIC};
+enum {UNSET= 100, CRITICAL, SEMICRITICAL, MIDPOINT, ISOLATED, NEW, CURVE_SAMPLE_POINT, SURFACE_SAMPLE_POINT, REMOVED, PROBLEMATIC};
 
 
 
@@ -930,6 +930,13 @@ private:
 	
 public:
 	int midpt; ///< index into vertex set
+	
+	friend std::ostream & operator<<(std::ostream &os, const cell & c)
+	{
+		os << c.midpt << std::endl;
+		return os;
+	};
+	
 	
 	void copy(const cell & other){
 		this->midpt = other.midpt;

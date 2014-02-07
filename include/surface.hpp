@@ -63,6 +63,31 @@ public:
 	
 	int crit_slice_index; ///< which midpoint slice this face came from.
 	
+	
+	friend std::ostream & operator<<(std::ostream &os, const face & f)
+	{
+		
+		os << (cell &) f;
+		
+		os << f.crit_slice_index << std::endl << f.top << " " << f.bottom << std::endl;
+		os << f.system_type_top << " " << f.system_type_bottom << std::endl;
+		
+		os << f.left.size() << std::endl;
+		for (int jj=0; jj<int(f.left.size()); jj++) {
+			os << f.left[jj] << " ";
+		}
+		os << std::endl;
+		
+		os << f.right.size() << std::endl;
+		for (int jj=0; jj<int(f.right.size()); jj++) {
+			os << f.right[jj] << " ";
+		}
+		os << std::endl << std::endl;
+		
+		return os;
+	};
+	
+	
 	face() : cell()
 	{
 		init();
