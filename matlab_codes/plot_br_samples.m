@@ -8,7 +8,7 @@ global plot_params;
 
 if ~isempty(which('getmondim'))
 	mondim = getmondim;
-	plot_params.window = [20 20 mondim(3)-430 mondim(4)-130];
+	plot_params.window = [20 20 mondim(3)-130 mondim(4)-130];
 else
 	plot_params.window = [20 20 1280 768];
 end
@@ -119,10 +119,10 @@ ind = get_indices_interactive(sampler_data,BRinfo);
 plot_params.ind = ind;
 switch BRinfo.dimension
 	case 1
-		curve_plot(sampler_data, BRinfo,ind);
+		curve_plot(BRinfo,ind);
 		
 	case 2	
-		plot_params.faces_and_vertices = surface_plot(sampler_data, BRinfo,ind);
+		plot_params.faces_and_vertices = surface_plot(BRinfo,ind);
 		
 	otherwise
 	
@@ -153,7 +153,7 @@ if ~isempty(sampler_data)
 	counter = 1;
 	for ii = 1:BRinfo.num_edges
 		for jj = 1:sampler_data.sample_sizes(ii)
-			tmpdata(counter,:) = sampler_data.edge(ii).samples(jj).soln;
+			tmpdata(counter,:) = BRinfo.vertices(sampler_data.edge(ii).samples(jj)+1).point;
 			counter = counter+1;
 		end
 	end
@@ -310,6 +310,8 @@ plot_params.switches.label_critcurve = 0;
 plot_params.switches.label_critedges = 0;
 plot_params.switches.label_midedges = 0;
 
+plot_params.switches.show_edges = 0;
+plot_params.switches.show_curve_samples = 0;
 
 plot_params.switches.display_vertices = 0;
 plot_params.switches.label_vertices = 0;
@@ -317,14 +319,28 @@ plot_params.switches.label_vertices = 0;
 f = plot_params.legend.vertices.types;
 
 for ii = 1:length(f)
-	plot_params.switches.vertex_set.(f{ii}) = 1;
+    if strcmp('CRITICAL',f{ii})
+        plot_params.switches.vertex_set.(f{ii}) = 1;
+    else
+        plot_params.switches.vertex_set.(f{ii}) = 0;
+    end
 end
 
 
 if plot_params.dimension==2
-	plot_params.switches.display_faces = 1;
+
+    if isempty(plot_params.handles.surface_samples)
+        plot_params.switches.display_faces = 1;
+        plot_params.switches.display_face_samples = 0; 
+    else
+        plot_params.switches.display_faces = 0;
+        plot_params.switches.display_face_samples = 1;
+    end
+        
+	
 else
     plot_params.switches.display_faces = 0;
+    plot_params.switches.display_face_samples = 0;
 end
 
 plot_params.switches.display_projection = 0;
@@ -351,7 +367,7 @@ init_y = button_pos(2)+button_pos(4)+10;
 plot_params.panels.visibility = uipanel('units','pixels','Position',[20 init_y 120 400],'visible','on');
 
 checkbox.y_start = 0;
-checkbox.y_factor = 30;
+checkbox.y_factor = 25;
 
 checkbox.x = 0;
 checkbox.w = 100;
@@ -438,7 +454,22 @@ end
 
 switch plot_params.dimension
 	case 1
-		
+		pos =[checkbox.x,checkbox.y_start+checkbox.y_factor*num_checkboxes,checkbox.w,checkbox.h];
+		plot_params.checkboxes.critcurve_visibility = uicontrol(...
+			'style','checkbox','units','pixels','position',pos,...
+			'String','edges','Value',plot_params.switches.show_edges,'callback',{@flip_switch,'show_edges'},...
+			'Parent',plot_params.panels.visibility,...
+			'ForeGroundColor','k'); 
+		num_checkboxes = num_checkboxes+1;
+        
+        pos =[checkbox.x,checkbox.y_start+checkbox.y_factor*num_checkboxes,checkbox.w,checkbox.h];
+		plot_params.checkboxes.critcurve_visibility = uicontrol(...
+			'style','checkbox','units','pixels','position',pos,...
+			'String','refinement','Value',plot_params.switches.show_curve_samples,'callback',{@flip_switch,'show_curve_samples'},...
+			'Parent',plot_params.panels.visibility,...
+			'ForeGroundColor','k'); 
+		num_checkboxes = num_checkboxes+1;
+        
 	case 2
 		
 		pos =[checkbox.x,checkbox.y_start+checkbox.y_factor*num_checkboxes,checkbox.w,checkbox.h];
@@ -450,6 +481,22 @@ switch plot_params.dimension
 		num_checkboxes = num_checkboxes+1;
 		
 		
+        pos =[checkbox.x,checkbox.y_start+checkbox.y_factor*num_checkboxes,checkbox.w,checkbox.h];
+		plot_params.checkboxes.face_visibility = uicontrol(...
+			'style','checkbox','units','pixels','position',pos,...
+			'String','faces','Value',plot_params.switches.display_faces,'callback',{@flip_switch,'display_faces'},...
+			'Parent',plot_params.panels.visibility); 
+		num_checkboxes = num_checkboxes+1;
+        
+        pos =[checkbox.x,checkbox.y_start+checkbox.y_factor*num_checkboxes,checkbox.w,checkbox.h];
+		plot_params.checkboxes.midslice_visibility = uicontrol(...
+			'style','checkbox','units','pixels','position',pos,...
+			'String','face samples','Value',plot_params.switches.display_face_samples,'callback',{@flip_switch,'display_face_samples'},...
+			'Parent',plot_params.panels.visibility); 
+		num_checkboxes = num_checkboxes+1;
+        
+        
+        
 		
         if ~isempty(plot_params.handles.critcurve_labels)
             new_color = get(plot_params.handles.critcurve_labels);
@@ -518,12 +565,7 @@ switch plot_params.dimension
 		
 		
 
-		pos =[checkbox.x,checkbox.y_start+checkbox.y_factor*num_checkboxes,checkbox.w,checkbox.h];
-		plot_params.checkboxes.face_visibility = uicontrol(...
-			'style','checkbox','units','pixels','position',pos,...
-			'String','faces','Value',plot_params.switches.display_faces,'callback',{@flip_switch,'display_faces'},...
-			'Parent',plot_params.panels.visibility); 
-		num_checkboxes = num_checkboxes+1;
+
         
         
         pos =[checkbox.x,checkbox.y_start+checkbox.y_factor*num_checkboxes,checkbox.w,checkbox.h];
@@ -563,7 +605,7 @@ switch plot_params.dimension
 end
 
 
-set(plot_params.panels.visibility,'units','pixels','position',[10 init_y 120 30*num_checkboxes])
+set(plot_params.panels.visibility,'units','pixels','position',[10 init_y 120 checkbox.y_factor*num_checkboxes])
 	
 	
 end
@@ -636,9 +678,17 @@ end
 		case 1
 			
 			
+            if plot_params.switches.show_edges == 0
+                set(plot_params.handles.edges(:),'visible','off')
+            else
+                set(plot_params.handles.edges(:),'visible','on')
+            end
 			
-			
-			
+			if plot_params.switches.show_curve_samples == 0
+                set(plot_params.handles.sample_edges(:),'visible','off')
+            else
+                set(plot_params.handles.sample_edges(:),'visible','on')
+            end
 			
 			
 		case 2
@@ -729,8 +779,20 @@ end
 				for ii = 1:length(plot_params.handles.faces)
 					set(plot_params.handles.faces(ii),'visible','on');
 				end
-			end
+            end
+            
+            %faces
+			if plot_params.switches.display_face_samples == 0
+				for ii = 1:length(plot_params.handles.surface_samples)
+					set(plot_params.handles.surface_samples(ii),'visible','off');
+				end
+			else
+				for ii = 1:length(plot_params.handles.faces)
+					set(plot_params.handles.surface_samples(ii),'visible','on');
+				end
+            end
 	
+            
 		otherwise
 			
 	end
@@ -793,7 +855,7 @@ for ii = 1:length(f)
 end
 
 
-if plot_params.switches.display_faces == 1
+if or(plot_params.switches.display_faces == 1,plot_params.switches.display_face_samples == 1)
     plot_params.format = 'png';
     plot_params.format_flag = 'png';
 else
@@ -802,7 +864,7 @@ else
 end
 
 
-render_into_file(plot_params);
+render_into_file(plot_params,'-r600');
 
 for ii = 1:length(f)
 	set(plot_params.panels.(f{ii}),'visible','on');
@@ -835,7 +897,7 @@ end
 
 
 plot_params.handles.legend = legend(a,b); 
-set(plot_params.handles.legend,'Location','NorthEastOutside');
+set(plot_params.handles.legend,'Location','NorthEastOutside','Interpreter','none');
 %,'Location','SouthEast','Parent',plot_params.axes.vertices
 end
 
@@ -866,16 +928,28 @@ global plot_params
 fv = plot_params.faces_and_vertices;
 save('fv.mat','fv');
 
-stlwrite('br_surf.stl',plot_params.faces_and_vertices);
-
-% figure(3);
-% 
-% patch('Faces',plot_params.faces_and_vertices.faces, 'Vertices',plot_params.faces_and_vertices.vertices)
 
 
-% plot_params.faces_and_vertices.faces
-thickened_fv = surf2solid(plot_params.faces_and_vertices,'thickness',0.05);
+
+degen = any(diff(fv.faces(:,[1:3 1]),[],2)==0,2);
+  fv.faces(degen,:) = [];
+
+  % Fix non-uniform face orientations
+  fv2 = unifyMeshNormals(fv,'alignTo',1);
+  % Solidify
+  thickened_fv = surf2solid(fv2,'thickness',0.15);
+  
+  
+  
+stlwrite('br_surf.stl',fv2);
+
+
+
+
 stlwrite('br_thickened_surf.stl',thickened_fv);
+
+
+figure, patch(thickened_fv,'FaceColor','g','FaceAlpha',0.5,'EdgeAlpha',0.5), axis image
 
 end
 

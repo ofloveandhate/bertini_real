@@ -3,7 +3,7 @@ global plot_params
 
 curr_axis = plot_params.axes.vertices;
 
-names = {'UNSET', 'CRITICAL', 'SEMICRITICAL', 'MIDPOINT', 'ISOLATED', 'NEW', 'SAMPLE_POINT', 'REMOVED'};
+names = {'UNSET', 'CRITICAL', 'SEMICRITICAL', 'MIDPOINT', 'ISOLATED', 'NEW', 'CURVE_SAMPLE_POINT', 'SURFACE_SAMPLE_POINT', 'REMOVED', 'PROBLEMATIC'};
 
 catnames = cell(length(names),1);
 
