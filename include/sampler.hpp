@@ -82,6 +82,13 @@ void set_witness_set_mp(witness_set *W, vec_mp L,vec_mp pts,int num_vars);
 
 void estimate_new_projection_value(comp_mp result, vec_mp left, vec_mp right, vec_mp pi);
 
+void triangulate_two_ribs(const std::vector< int > & rib1, const std::vector< int > & rib2,
+						  const vertex_set & V,
+						  std::vector< triangle> & current_samples);
+
+void triangulate_two_ribs_by_binning(const std::vector< int > & rib1, const std::vector< int > & rib2,
+									 const vertex_set & V,
+									 std::vector< triangle> & current_samples);
 
 
 //int set_initial_sample_data(curve_sample_data & S, const curve_decomposition & C, vertex_set V,

@@ -1991,7 +1991,7 @@ void decomposition::print(boost::filesystem::path base)
 #endif
 	
 	if (dimension != num_curr_projections) {
-		std::cout << "decomposition was short projections\nneeded	" << this->dimension << " but had " << num_curr_projections << std::endl;;
+//		std::cout << "decomposition was short projections\nneeded	" << this->dimension << " but had " << num_curr_projections << std::endl;;
 	}
 	
 	
@@ -2228,7 +2228,7 @@ void decomposition::output_main(const boost::filesystem::path base)
 	std::cout << "decomposition::output_main" << std::endl;
 #endif
 
-	std::cout << "outputting decomp to folder " << base << std::endl;
+//	std::cout << "outputting decomp to folder " << base << std::endl;
 	FILE *OUT;
 
 	
@@ -2246,7 +2246,7 @@ void decomposition::output_main(const boost::filesystem::path base)
 		copyfile(input_filename, base / input_filename.filename());
 	}
 	else{
-		std::cout << "not copying inputfile because name was unset -- " << input_filename << std::endl;
+//		std::cout << "not copying inputfile because name was unset -- " << input_filename << std::endl;
 	}
 	
 	

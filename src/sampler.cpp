@@ -122,9 +122,9 @@ int main(int argC, char *args[])
 			
 			
 			//output
-			C.output_sampling_data(samplingNamenew);
+			C.output_sampling_data(directoryName);
 			
-			V.print(directoryName / "V.vertex");
+			V.print(directoryName / "V_samp.vertex");
 			
 			
 		}
@@ -137,9 +137,9 @@ int main(int argC, char *args[])
 									 solve_options);
 			
 			
-			surf_input.output_sampling_data(samplingNamenew);
+			surf_input.output_sampling_data(directoryName);
 			
-			V.print(directoryName / "V.vertex");
+			V.print(directoryName / "V_samp.vertex");
 			
 			
 		}
@@ -642,13 +642,15 @@ void curve_decomposition::fixed_sampler(vertex_set & V,
 		W.add_point(V.vertices[edges[ii].midpt].pt_mp);
 		
 		
-		mpf_set_d(num_intervals->r,double(target_num_samples));
+		mpf_set_d(num_intervals->r,double(target_num_samples-1));
 		
 		sub_mp(interval_width,&V.vertices[edges[ii].right].projection_values->coord[V.curr_projection],&V.vertices[edges[ii].left].projection_values->coord[V.curr_projection]);
 		
 		div_mp(interval_width,interval_width,num_intervals);
 		
 		set_mp(target_projection_value,&V.vertices[edges[ii].left].projection_values->coord[V.curr_projection]);
+		
+		//add once to get us off 0
 		add_mp(target_projection_value,target_projection_value,interval_width);
 		
 		for (int jj=1; jj<target_num_samples-1; jj++) {
@@ -677,7 +679,7 @@ void curve_decomposition::fixed_sampler(vertex_set & V,
 			
 			
 			if (Wnew.num_pts==0) {
-				//ah shit!  this ain't good.  how to deal with it?  
+				//TODO: ah shit!  this ain't good.  how to deal with it?
 			}
 			
 			vec_cp_mp(temp_vertex.pt_mp,Wnew.pts_mp[0]);
@@ -892,7 +894,7 @@ void  curve_decomposition::output_sampling_data(boost::filesystem::path base_pat
 
 	boost::filesystem::path samplingName = base_path / "samp.curvesamp";
 	
-
+	std::cout << "wrote curve sampling to " << samplingName << std::endl;
 	FILE *OUT = safe_fopen_write(samplingName);
 	// output the number of vertices
 	fprintf(OUT,"%d\n\n",num_edges);
@@ -936,23 +938,27 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 	
 	
 	
-	std::cout << "crit_curve" << std::endl;
+	std::cout << "critical curve" << std::endl;
 	crit_curve.fixed_sampler(V,sampler_options,solve_options,target_num_samples);
 	
-	std::cout << "sphere_curve" << std::endl;
+	std::cout << "sphere curve" << std::endl;
 	sphere_curve.fixed_sampler(V,sampler_options,solve_options,target_num_samples);
 	
 	
-	std::cout << "midcurve" << std::endl;
+	std::cout << "mid slices" << std::endl;
 	for (int ii=0; ii<mid_slices.size(); ii++) {
 		mid_slices[ii].fixed_sampler(V,sampler_options,solve_options,target_num_samples);
 	}
 	
-	std::cout << "critcurve" << std::endl;
+	std::cout << "critical slices" << std::endl;
 	for (int ii=0; ii<crit_slices.size(); ii++) {
 		crit_slices[ii].fixed_sampler(V,sampler_options,solve_options,target_num_samples);
 	}
 	
+//	std::cout << "singular curves" << std::endl;
+//	for (int ii=0; ii<singular_curves.size(); ii++) {
+//		singular_curves[ii].fixed_sampler(V,sampler_options,solve_options,target_num_samples);
+//	}
 
 	witness_set W_midtrack;
 	vec_mp blank_point;  init_vec_mp2(blank_point, 0,1024);
@@ -963,7 +969,7 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 	comp_mp interval_width; init_mp2(interval_width,1024); set_one_mp(interval_width);
 	comp_mp num_intervals;  init_mp2(num_intervals,1024); set_zero_mp(num_intervals);
 	
-	mpf_set_d(num_intervals->r,double(target_num_samples));
+	mpf_set_d(num_intervals->r,double(target_num_samples-1));
 	div_mp(interval_width,interval_width,num_intervals);
 	
 	
@@ -974,11 +980,20 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 	//once you have the fixed samples of the curves, down here is just making the integer triangles.
 	for (int ii=0; ii<num_faces; ii++) {
 		
+		
 		std::cout << "face " << ii << std::endl;
 		std::cout << faces[ii];
+		
+		
+		
+		
+		if (faces[ii].crit_slice_index==-1) {
+			continue;
+		}
+		
+		
 		int slice_ind = faces[ii].crit_slice_index;
-		
-		
+		curve_decomposition * top_, *bottom_;
 		
 		
 		// get the system types
@@ -1056,22 +1071,27 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 			for (int qq = 0; qq<crit_curve.num_patches; qq++) {
 				W_midtrack.add_patch(crit_curve.patch[qq]);
 			}
+			
+			bottom_ = &crit_curve;
 		}
 		else{
 			for (int qq = 0; qq<sphere_curve.num_patches; qq++) {
 				W_midtrack.add_patch(sphere_curve.patch[qq]);
 			}
+			bottom_ = &sphere_curve;
 		}
 		
 		if (md_config.system_type_top == SYSTEM_CRIT) {
 			for (int qq = 0; qq<crit_curve.num_patches; qq++) {
 				W_midtrack.add_patch(crit_curve.patch[qq]);
 			}
+			top_ = &crit_curve;
 		}
 		else{
 			for (int qq = 0; qq<sphere_curve.num_patches; qq++) {
 				W_midtrack.add_patch(sphere_curve.patch[qq]);
 			}
+			top_ = &sphere_curve;
 		}
 		
 		
@@ -1101,38 +1121,84 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 		std::vector< std::vector<int> > rib_indices;
 		rib_indices.resize(target_num_samples);
 		
+		for (int jj=0; jj<faces[ii].num_left; jj++) {
+			int asdf = faces[ii].left[jj];
+//			std::cout << "crit_slices["<<slice_ind<<"].sample_indices["<<asdf<<"].size() = " << crit_slices[slice_ind].sample_indices[asdf].size()<<std::endl;
+			
+			
+			for (int kk = 0; kk< crit_slices[slice_ind].sample_indices[asdf].size(); kk++) {
+				rib_indices[0].push_back(crit_slices[slice_ind].sample_indices[asdf][kk]);
+			}
+		}
+			
+		for (int jj=0; jj<faces[ii].num_right; jj++) {
+			int asdf = faces[ii].right[jj];
+			for (int kk = 0; kk< crit_slices[slice_ind+1].sample_indices[asdf].size(); kk++) {
+				rib_indices[target_num_samples-1].push_back(crit_slices[slice_ind+1].sample_indices[asdf][kk]);
+			}
+		}
+		
+		
+		for (int jj=0; jj<rib_indices[0].size(); jj++) {
+			std::cout << rib_indices[0][jj] << " ";
+		}
+		std::cout << std::endl;
+		for (int jj=0; jj<rib_indices[target_num_samples-1].size(); jj++) {
+			std::cout << rib_indices[target_num_samples-1][jj] << " ";
+		}
+		std::cout << std::endl;
+		
+		//check the two rows.
+		
+		for (int zz=0; zz<int(rib_indices[0].size())-1; zz++) {
+			if (mpf_cmp(V.vertices[rib_indices[0][zz]].projection_values->coord[1].r, V.vertices[rib_indices[0][zz+1]].projection_values->coord[1].r) > 0) {
+				std::cout << "out of order, cuz these are off:" << std::endl;
+				print_comp_matlab(V.vertices[rib_indices[0][zz]].projection_values->coord,"l");
+				print_comp_matlab(V.vertices[rib_indices[0][zz+1]].projection_values->coord,"r");
+			}
+		}
+		
+		for (int zz=0; zz<int(rib_indices[target_num_samples-1].size())-1; zz++) {
+			if (mpf_cmp(V.vertices[rib_indices[target_num_samples-1][zz]].projection_values->coord[1].r, V.vertices[rib_indices[target_num_samples-1][zz+1]].projection_values->coord[1].r) > 0) {
+				std::cout << "out of order, cuz these are off:" << std::endl;
+				print_comp_matlab(V.vertices[rib_indices[target_num_samples-1][zz]].projection_values->coord,"l");
+				print_comp_matlab(V.vertices[rib_indices[target_num_samples-1][zz+1]].projection_values->coord,"r");
+			}
+		}
+		
+
+		
 		vertex temp_vertex;
 		
 		
 		
 		
-		
+		//this is here to get ready to use a single midtrack, followed by many multilins.
 //		//get ready to use the multilin tracker.  
 //		parse_input_file(this->input_filename); // restores all the temp files generated by the parser, to this folder.
 //		solve_options.get_PPD();
 		
-		//replace this with the appropriate number between 0 and 1.
+		//initialize to 0
 		set_zero_mp(md_config.u_target);
 		
-		for (int jj=1; jj<target_num_samples; jj++) {
+		for (int jj=1; jj<target_num_samples-1; jj++) {
 			
 			add_mp(md_config.u_target,md_config.u_target,interval_width);
 			set_zero_mp(md_config.v_target);
-			print_comp_matlab(md_config.u_target,"u_target");
+//			print_comp_matlab(md_config.u_target,"u_target");
 
 			rib_indices[jj].resize(target_num_samples);
 			
 			
-			//TODO: these are placeholder indices.  put real ones here
-			rib_indices[jj][0] = 0;
-			rib_indices[jj][target_num_samples-1] = 1;
+
+			rib_indices[jj][0] = bottom_->sample_indices[faces[ii].bottom][jj];
+			rib_indices[jj][target_num_samples-1] = top_->sample_indices[faces[ii].top][jj];
 			
-//			md_config.print();
 			
-			for (int kk=1; kk<target_num_samples; kk++) {
+			for (int kk=1; kk<target_num_samples-1; kk++) {
 				add_mp(md_config.v_target,md_config.v_target,interval_width);
 				
-				print_comp_matlab(md_config.v_target,"v_target");
+//				print_comp_matlab(md_config.v_target,"v_target");
 				
 				
 				witness_set W_new;
@@ -1144,7 +1210,8 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 				if (W_new.num_pts==0) {
 					std::cout << color::red() << "midpoint tracker did not return any points :(" << color::console_default() << std::endl;
 					rib_indices[jj][kk] = -1;
-					return;
+					// do something other than continue here.  this is terrible.
+					continue;
 				}
 				
 
@@ -1162,11 +1229,12 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 			
 		}
 		
+
 		
+		//stitch together the rib_indices
+		samples.push_back(stitch_triangulation(rib_indices,V));
 		
-		
-		//stitch together the
-		
+
 	}
 	
 	
@@ -1176,24 +1244,198 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 
 
 
+std::vector< triangle > surface_decomposition::stitch_triangulation(const std::vector< std::vector< int > > & rib_indices,
+																	const vertex_set & V)
+{
+#ifdef functionentry_output
+	std::cout << "surface_decomposition::stitch_triangulation" << std::endl;
+#endif
+	
+	std::vector< triangle > current_samples;
+	
+	triangle add_me;
+	
+
+
+	
+	
+	for (int ii = 0; ii<int(rib_indices.size()-1); ii++) {
+		triangulate_two_ribs(rib_indices[ii], rib_indices[ii+1], V, current_samples);
+	}
+	
+	
+		
+	return current_samples;
+}
+
+
+void triangulate_two_ribs(const std::vector< int > & rib1, const std::vector< int > & rib2,
+						  const vertex_set & V,
+						  std::vector< triangle> & current_samples)
+{
+	
+	triangle add_me;
+	
+	if (rib1.size()==1 && rib2.size()==1) {
+		return;
+	}
+	else if (rib1.size()==1) {
+		add_me.v1 = rib1[0];
+		for (int jj = 0; jj<int(rib2.size()-1); jj++) {
+			add_me.v2 = rib2[jj];
+			add_me.v3 = rib2[jj+1];
+			
+			current_samples.push_back(add_me);
+		}
+	}
+	else if (rib2.size()==1) {
+		add_me.v1 = rib2[0];
+		for (int jj = 0; jj<int(rib1.size()-1); jj++) {
+			add_me.v2 = rib1[jj];
+			add_me.v3 = rib1[jj+1];
+			
+			current_samples.push_back(add_me);
+		}
+	}
+	else if (rib1.size()==rib2.size())
+	{
+		
+		for (int jj = 0; jj<int(rib1.size()-1); jj++) {
+			add_me.v1 = rib1[jj];
+			add_me.v2 = rib2[jj];
+			add_me.v3 = rib2[jj+1];
+			
+			current_samples.push_back(add_me);
+			
+			add_me.v1 = rib1[jj];
+			add_me.v2 = rib1[jj+1];
+			add_me.v3 = rib2[jj+1];
+			
+			current_samples.push_back(add_me);
+			
+		}
+		
+	}
+	else{
+				
+		triangulate_two_ribs_by_binning(rib1, rib2,
+										V,
+										current_samples);
+		
+		
+	}
+}
+
+
+void triangulate_two_ribs_by_binning(const std::vector< int > & rib1, const std::vector< int > & rib2,
+									 const vertex_set & V,
+									 std::vector< triangle> & current_samples)
+{
+#ifdef functionentry_output
+	std::cout << "triangulate_by_binning" << std::endl;
+#endif
+	
+	
+	
+	const std::vector<int> * rib_w_more_entries, *rib_w_less_entries;
+	
+	if (rib1.size() > rib2.size()) {
+		rib_w_more_entries = & rib1;
+		rib_w_less_entries = & rib2;
+	}
+	else{
+		rib_w_more_entries = & rib2;
+		rib_w_less_entries = & rib1;
+	}
+	
+	int nbins = rib_w_less_entries->size();
+	
+	
+	vec_mp bins; init_vec_mp(bins, nbins);
+	bins->size = nbins;
+	
+	comp_mp interval_width, temp; init_mp(interval_width);  init_mp(temp);
+
+	sub_mp(interval_width,
+		   &V.vertices[rib_w_less_entries->at(nbins-1)].projection_values->coord[1],
+		   &V.vertices[rib_w_less_entries->at(0)].projection_values->coord[1]);
+	
+	
+	set_zero_mp(&bins->coord[0]);
+	set_one_mp(&bins->coord[nbins-1]);
+	
+	for (int ii=1; ii<nbins-1; ii++) {
+		sub_mp(temp,
+			   &V.vertices[rib_w_less_entries->at(ii)].projection_values->coord[1],
+			   &V.vertices[rib_w_less_entries->at(0)].projection_values->coord[1]);
+		div_mp(&bins->coord[ii], temp, interval_width);
+	}
+	
+	//ok, have the bins.  now to actually bin the larger of the two ribs.
+	
+	
+	sub_mp(interval_width,
+		   &V.vertices[rib_w_more_entries->back()].projection_values->coord[1],
+		   &V.vertices[rib_w_more_entries->at(0)].projection_values->coord[1]);
+	
+	
+	//both ribs are guaranteed (by hypothesis) to have increasing projection values in pi[1].
+	int curr_bin_ind = 1; // start at the lowest.
+	
+	for (int ii=0; ii<rib_w_more_entries->size()-1; ii++) {
+		
+		if (ii==rib_w_more_entries->size()-1) {
+			set_one_mp(temp);
+		}
+		else{
+			sub_mp(temp,
+				   &V.vertices[rib_w_more_entries->at(ii+1)].projection_values->coord[1],
+				   &V.vertices[rib_w_more_entries->at(0)].projection_values->coord[1]);
+			div_mp(temp, temp, interval_width);
+		}
+		
+		
+		if (mpf_cmp(temp->r, bins->coord[curr_bin_ind].r)>=0) {
+			triangle T(rib_w_less_entries->at(curr_bin_ind-1), rib_w_less_entries->at(curr_bin_ind), rib_w_more_entries->at(ii)); // this call could be contracted with the next.
+			current_samples.push_back(T);
+			
+			curr_bin_ind++;
+		}
+
+		triangle T(rib_w_less_entries->at(curr_bin_ind-1), rib_w_more_entries->at(ii), rib_w_more_entries->at(ii+1)); // this call could be contracted with the next.
+		current_samples.push_back(T);
+		
+		
+	}
+	
+	
+	clear_vec_mp(bins);
+	clear_mp(interval_width);
+	return;
+}
 
 void  surface_decomposition::output_sampling_data(boost::filesystem::path base_path)
 {
 	
 	boost::filesystem::path samplingName = base_path / "samp.surfsamp";
 	
-//	FILE *OUT = safe_fopen_write(samplingName);
-//	// output the number of vertices
-//	fprintf(OUT,"%d\n\n",num_edges);
-//	for (int ii=0; ii<num_edges; ii++) {
-//		fprintf(OUT,"%d\n",num_samples_each_edge[ii]);
-//		for (int jj=0; jj<num_samples_each_edge[ii]; jj++) {
-//			fprintf(OUT,"%d ",sample_indices[ii][jj]);
-//		}
-//		fprintf(OUT,"\n\n");
-//	}
+	std::cout << "writing surface sampling to " << samplingName << std::endl;
 	
-//	fclose(OUT);
+	std::ofstream fout(samplingName.string());
+	fout << samples.size() << std::endl << std::endl;
+	for (int ii=0; ii<int(samples.size()); ii++) {
+		
+		fout << samples[ii].size() << std::endl;
+		
+		for (int jj=0; jj<int(samples[ii].size()); jj++) {
+			fout << samples[ii][jj] << std::endl;
+		}
+		fout << std::endl;
+	}
+	
+	fout << std::endl;
+	fout.close();
+	
 	
 	
 	crit_curve.output_sampling_data(base_path / "curve_crit");
