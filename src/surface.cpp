@@ -437,26 +437,26 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 	ns_config.clear();
 	
 	
-	witness_set W_crit2;
-	compute_crit_nullspace(&W_crit2, // the returned value
-						   W_surf,            // input the original witness set
-						   this->randomizer_matrix,
-						   &this->pi[1],
-						   this->randomized_degrees,
-						   2,  // dimension of ambient complex object
-						   2,   //  target dimension to find
-						   2,   // COdimension of the critical set to find.
-						   program_options,
-						   solve_options,
-						   &ns_config);
-	// this will use pi[1] to compute critical points
-	
-	W_crit2.only_first_vars(num_variables);
-	W_crit2.sort_for_real(solve_options.T);
-	
-	ns_config.clear();
-	
-	W_critcurve_crit.merge(W_crit2);
+//	witness_set W_crit2;
+//	compute_crit_nullspace(&W_crit2, // the returned value
+//						   W_surf,            // input the original witness set
+//						   this->randomizer_matrix,
+//						   &this->pi[1],
+//						   this->randomized_degrees,
+//						   2,  // dimension of ambient complex object
+//						   2,   //  target dimension to find
+//						   2,   // COdimension of the critical set to find.
+//						   program_options,
+//						   solve_options,
+//						   &ns_config);
+//	// this will use pi[1] to compute critical points
+//	
+//	W_crit2.only_first_vars(num_variables);
+//	W_crit2.sort_for_real(solve_options.T);
+//	
+//	ns_config.clear();
+//	
+//	W_critcurve_crit.merge(W_crit2);
 	
 	
 	if (have_sphere_radius) {
@@ -911,7 +911,6 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 			
 			new_slice.copy_sphere_bounds(*this);
 			
-			std::cout << "slice_wit " << slice_witness_set.input_filename << std::endl;
 			// we already know the component is self-conjugate (by entry condition), so we are free to call this function
 			// the memory for the multilin system will get erased in this call...
 			new_slice.computeCurveSelfConj(slice_witness_set,
@@ -2298,19 +2297,17 @@ void surface_decomposition::read_faces(boost::filesystem::path load_from_me)
 		fscanf(IN,"%d %d\n%d %d\n", &F.midpt, &F.crit_slice_index, &F.top, &F.bottom);
 		fscanf(IN,"%d %d\n",&F.system_type_top,&F.system_type_bottom);
 		
-		int temp_num_left;
-		fscanf(IN,"%d\n",&temp_num_left);
-		F.left.resize(temp_num_left);
+		fscanf(IN,"%d\n",&F.num_left);
+		F.left.resize(F.num_left);
 		
-		for (int jj=0; jj<temp_num_left; jj++) {
+		for (int jj=0; jj<F.num_left; jj++) {
 			fscanf(IN,"%d ",&F.left[jj]);
 		}
 		
-		int temp_num_right;
-		fscanf(IN,"%d\n",&temp_num_right);
-		F.right.resize(temp_num_right);
+		fscanf(IN,"%d\n",&F.num_right);
+		F.right.resize(F.num_right);
 		
-		for (int jj=0; jj<temp_num_right; jj++) {
+		for (int jj=0; jj<F.num_right; jj++) {
 			fscanf(IN,"%d ",&F.right[jj]);
 		}
 		

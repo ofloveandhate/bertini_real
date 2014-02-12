@@ -167,10 +167,32 @@ private:
 
 class triangle
 {
-	
+public:
 	long long v1;
 	long long v2;
 	long long v3;
+	
+
+	triangle(){};
+	
+	triangle(long long _v1,long long _v2,long long _v3)
+	{
+		v1 = _v1;
+		v2 = _v2;
+		v3 = _v3;
+		
+	};
+	
+	
+	friend std::ostream & operator<<(std::ostream &os, const triangle & t)
+	{
+		
+		
+		os << t.v1 << " " << t.v2 << " " << t.v3;
+		
+		return os;
+	};
+	
 	
 	bool is_degenerate()
 	{
@@ -349,6 +371,8 @@ public:
 					   sampler_configuration & sampler_options,
 					   solver_configuration & solve_options);
 	
+	std::vector< triangle > stitch_triangulation(const std::vector< std::vector< int > > & rib_indices,
+												 const vertex_set & V);
 	
 	void  output_sampling_data(boost::filesystem::path base_path);
 	

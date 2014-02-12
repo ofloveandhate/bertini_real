@@ -925,9 +925,9 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		
 		int moving_edge = edges_to_merge[int(edges_to_merge.size())/2];
 		
-		if (solve_options.verbose_level>=0) {
-			std::cout << color::cyan() << "merging edges (r to l): ";
-			for (int zz=0; zz<edges_to_merge.size(); zz++) {
+		if (solve_options.verbose_level>=1) {
+			std::cout << color::cyan() << "merging edges: ";
+			for (int zz=edges_to_merge.size()-1; zz>=0; zz--) {
 				std::cout << edges_to_merge[zz] << " ";
 			}
 			std::cout << color::console_default() <<  std::endl;
@@ -948,18 +948,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		
 		
 		
-		if (solve_options.verbose_level>=0) {
-			
-			for (int zz=edges_to_merge.size()-1; zz>=0; zz--) {
-				std::cout << edges[edges_to_merge[zz]].left << " " << edges[edges_to_merge[zz]].midpt << " " << edges[edges_to_merge[zz]].right << " ";
-			}
-			std::cout << color::console_default() <<  std::endl;
-			
-			std::cout << std::endl;
-			
-//			std::cout << "<" << edges[left_edge_w_pt].left << " " << edges[left_edge_w_pt].midpt << " " << edges[left_edge_w_pt].right << "> <";
-//			std::cout << edges[right_edge_w_pt].left << " " << edges[right_edge_w_pt].midpt << " " << edges[right_edge_w_pt].right << ">" << std::endl;
-		}
+
 		
 		witness_set W_temp;
 		
@@ -1021,7 +1010,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		
 		
 		// copy over the removed points for all the edges we are going to merge.
-		std::cout << "copying removed points" << std::endl;
+
 		for (int zz=0; zz<edges_to_merge.size(); zz++) {
 			int merge_me_away = edges_to_merge[zz];  //set an index into the merge edges
 			for (std::vector<int>::iterator vec_iter = edges[merge_me_away].removed_points.begin(); vec_iter!=edges[merge_me_away].removed_points.end(); vec_iter++)
@@ -1049,7 +1038,6 @@ void curve_decomposition::merge(witness_set & W_midpt,
 			}
 		}
 
-		std::cout << "adding edge" << std::endl;
 		add_edge(temp_edge);
 		// tacks this onto the end of the edge vector
 		
@@ -1074,8 +1062,6 @@ void curve_decomposition::merge(witness_set & W_midpt,
 			}
 			else{
 				num_removed_edges++;
-				std::cout << "removing edge " << ii << std::endl;
-				std::cout << this->edges[ii].left << " " << this->edges[ii].midpt << " " << this->edges[ii].right << " " << std::endl;
 			}
 			//otherwise skip it.
 		}
@@ -1090,7 +1076,6 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		this->edges.swap(post_merge_edges);
 		this->num_edges = int(this->edges.size());
 		
-		std::cout << "getting merge candidate" << std::endl;
 		edges_to_merge = this->get_merge_candidate(V);
 	}// re: while
 	clear_mp(half); clear_mp(temp); clear_mp(temp2);
@@ -1098,7 +1083,6 @@ void curve_decomposition::merge(witness_set & W_midpt,
 	
 	clear_mp(new_proj_val);
 	
-	std::cout << "done merging" << std::endl;
 	
 } // re: merge
 
