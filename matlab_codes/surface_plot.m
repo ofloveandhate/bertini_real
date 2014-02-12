@@ -2,7 +2,7 @@
 
 
 
-function [fv] = surface_plot(sampler_data, BRinfo,ind)
+function [fv,sampler_faces] = surface_plot(BRinfo,ind)
 global plot_params
 
 
@@ -10,13 +10,12 @@ global plot_params
 
 create_axes_surface();
 
-label_axes(ind,BRinfo,plot_params.axes.vertices);
-
+% label_axes(ind,BRinfo,plot_params.axes.vertices);
 
 fv.vertices = plot_vertices(ind, BRinfo);
 
 
-plot_surface_edges(BRinfo);
+plot_surface_edges(BRinfo,ind);
 
 
 fv.faces = plot_faces(BRinfo, ind);
@@ -24,6 +23,11 @@ fv.faces = plot_faces(BRinfo, ind);
 
 plot_projection(BRinfo,ind);
 
+sampler_faces = plot_surface_samples(BRinfo,fv);
+
+if ~isempty(sampler_faces)
+    fv.faces = sampler_faces;
+end
 
 sync_axes();
 
@@ -38,10 +42,32 @@ end
 
 
 
+function [sampler_faces] = plot_surface_samples(BRinfo,fv)
+global plot_params
 
 
 
-function plot_surface_edges(BRinfo)
+colors = jet(BRinfo.num_faces);
+sampler_faces = [];
+plot_params.handles.surface_samples = [];
+if ~isempty(BRinfo.sampler_data)
+    for ii = 1:length(BRinfo.sampler_data)
+        
+        
+        fv.faces = BRinfo.sampler_data{ii}+1;
+        sampler_faces = [sampler_faces;fv.faces];
+        h = patch(fv);
+        
+        set(h,'FaceColor',colors(ii,:),'FaceAlpha',0.5,'EdgeColor',0.985*colors(ii,:),'EdgeAlpha',0.5);
+        plot_params.handles.surface_samples(ii) = h;
+    end
+end
+
+
+end
+
+
+function plot_surface_edges(BRinfo,plot_indices)
 global plot_params
 %
 line_thickness = 0.5;
@@ -87,7 +113,14 @@ if BRinfo.crit_curve.num_edges>0
 		plot_params.handles.critcurve_labels = [plot_params.handles.critcurve_labels; new_handles];
 		
 
-	end
+    end
+    
+
+    if ~isempty(BRinfo.crit_curve.sampler_data)
+        plot_sampler_data(plot_indices, BRinfo.vertices,BRinfo.crit_curve.sampler_data,colors);
+    end
+        
+    
 end
 
 plot_params.handles.spherecurve = [];
@@ -124,6 +157,12 @@ if BRinfo.sphere_curve.num_edges>0
 		
 
 	end
+    
+    if ~isempty(BRinfo.sphere_curve.sampler_data)
+        plot_sampler_data(plot_indices, BRinfo.vertices,BRinfo.sphere_curve.sampler_data,colors);
+    end
+    
+    
 end
 end
 
@@ -159,6 +198,11 @@ for kk = 1:length(BRinfo.midpoint_slices)
             midslice_counter = midslice_counter + 1;
             plot_params.handles.midslices(midslice_counter) = h;
 		
+            if ~isempty(BRinfo.midpoint_slices(kk).sampler_data)
+                refinement_colors = jet(length(BRinfo.midpoint_slices(kk).edges));
+                plot_sampler_data(plot_indices, BRinfo.vertices,BRinfo.midpoint_slices(kk).sampler_data,refinement_colors);
+            end
+    
 		end
 		
 		if kk==1
@@ -203,6 +247,11 @@ for kk = 1:length(BRinfo.critpoint_slices)
 			
             critslice_counter = critslice_counter + 1;
 			plot_params.handles.critslices(critslice_counter) = h;
+            
+            if ~isempty(BRinfo.critpoint_slices(kk).sampler_data)
+                plot_sampler_data(plot_indices, BRinfo.vertices,BRinfo.critpoint_slices(kk).sampler_data,colors);
+             end
+            
             
 		end
 		if kk==1
@@ -400,7 +449,7 @@ for ii = 1:BRinfo.num_faces
 	triangle.y = real(triangle.y);
 	triangle.z = real(triangle.z);
 
-	plot_params.handles.faces(ii) = patch(triangle.x,triangle.y,triangle.z,cdata,'FaceAlpha',0.5,'EdgeColor','none','Parent',curr_axis);%,'EdgeAlpha',0.05 [0 0.9 0.9]
+	plot_params.handles.faces(ii) = patch(triangle.x,triangle.y,triangle.z,cdata,'FaceAlpha',0.2,'EdgeColor','none','Parent',curr_axis);%,'EdgeAlpha',0.05 [0 0.9 0.9]
 	
 		
 		
@@ -463,6 +512,18 @@ delete( get(new_axes,'Children') );
 set(new_axes,'visible','off');
 hold(new_axes,'on');
 plot_params.axes.faces = new_axes;
+
+new_axes = copyobj(plot_params.axes.vertices,plot_params.figures.main_plot);
+delete( get(new_axes,'Children') );
+set(new_axes,'visible','off');
+hold(new_axes,'on');
+plot_params.axes.sampler = new_axes;
+
+new_axes = copyobj(plot_params.axes.vertices,plot_params.figures.main_plot);
+delete( get(new_axes,'Children') );
+set(new_axes,'visible','off');
+hold(new_axes,'on');
+plot_params.axes.face_sampler = new_axes;
 
 end
 

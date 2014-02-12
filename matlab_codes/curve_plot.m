@@ -1,6 +1,6 @@
 %curve specific code
 
-function curve_plot(sampler_data, BRinfo,plot_indices)
+function curve_plot(BRinfo,plot_indices)
 global plot_params
 %
 
@@ -39,12 +39,16 @@ plot_projection(BRinfo,plot_indices);
 
 plot_vertices(plot_indices, BRinfo);
 
-if ~isempty(sampler_data)
-	plot_sampler_data(plot_indices, BRinfo,sampler_data,colors);
-else
-	plot_edge_points(plot_indices,BRinfo,0.8*colors);
-end
 
+plot_params.handles.sample_edges = [];
+plot_params.handles.edges = [];
+
+plot_edge_points(plot_indices,BRinfo,0.8*colors);
+
+
+if ~isempty(BRinfo.sampler_data)
+	plot_sampler_data(plot_indices, BRinfo.vertices,BRinfo.sampler_data,colors);
+end
 
 
 
@@ -72,6 +76,8 @@ global plot_params
 %
 curr_axis = plot_params.axes.edges;
 
+
+
 nondegen_edge_ind = 1;
 for ii = 1:BRinfo.num_edges
 	
@@ -98,8 +104,8 @@ for ii = 1:BRinfo.num_edges
 				right_plot(ind(1)) right_plot(ind(2)) right_plot(ind(3))];
 			plotme = real(plotme);
 			h = main_plot_function(plotme,[1 2 3], curr_axis);
-% 			h = plot3(plotme(:,1),plotme(:,2),plotme(:,3),'--');
-	end
+    end
+    plot_params.handles.edges(ii) = h;
 	set(h,'Color',colors(nondegen_edge_ind,:),'LineStyle','--','LineWidth',2);
     nondegen_edge_ind = nondegen_edge_ind+1;
 end
@@ -107,35 +113,7 @@ end
 
 end
 
-function plot_sampler_data(ind, BRinfo,sampler_data,colors)
-%
-global plot_params
-curr_axis = plot_params.axes.sampler;
 
-nondegen_edge_ind = 1;
-
-for ii = 1:BRinfo.num_edges
-    
-    left_plot = BRinfo.vertices(BRinfo.edges(ii,1)).point;
-	mid_plot = BRinfo.vertices(BRinfo.edges(ii,2)).point;
-	right_plot = BRinfo.vertices(BRinfo.edges(ii,3)).point;
-    if and(left_plot==mid_plot, mid_plot==right_plot)
-       continue; 
-    end
-    
-	plotme = zeros(sampler_data.sample_sizes(ii),BRinfo.num_variables-1);
-	
-	for jj = 1:sampler_data.sample_sizes(ii)
-		plotme(jj,:) = sampler_data.edge(ii).samples(jj).soln;
-	end
-	plotme = real(plotme);
-	h = main_plot_function(plotme,ind,curr_axis);
-	set(h,'Color',colors(nondegen_edge_ind,:));
-	set(h,'LineWidth',2);
-    nondegen_edge_ind = nondegen_edge_ind+1;
-end
-
-end
 
 
 
