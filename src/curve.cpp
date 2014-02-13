@@ -323,7 +323,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	
 	
 	solve_options.allow_multiplicity = 0;
-	solve_options.allow_singular = 0;
+	solve_options.allow_singular = 1;
 	solve_options.complete_witness_set = 1;
 	
     
