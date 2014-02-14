@@ -38,6 +38,74 @@ extern int *size_mp;  // size of mem_mp
 extern int *mem_needs_init_d; // determine if mem_d has been initialized
 extern int *mem_needs_init_mp; // determine if mem_mp has been initialized
 
+
+
+
+
+class solver_output
+{
+
+	
+	
+private:
+	
+	witness_set returned_nonsingular_finite_multiplicityone_solutions;
+	witness_set returned_singular_solutions;
+	witness_set returned_infinite_solutions;
+	std::map<long long, witness_set> returned_multiple_solutions;
+	
+	
+	std::vector< long long> failed_path_indices;
+	
+public:
+	
+	
+	void add_patch(vec_mp new_patch)
+	{
+		returned_nonsingular_finite_multiplicityone_solutions.add_patch(new_patch);
+		returned_singular_solutions.add_patch(new_patch);
+		returned_infinite_solutions.add_patch(new_patch);
+		
+		for (auto iter=returned_multiple_solutions.begin(); iter!=returned_multiple_solutions.end(); ++iter) {
+			iter->second.add_patch(new_patch);
+		}
+	};
+	
+	
+	void add_linear(vec_mp new_linear)
+	{
+		returned_nonsingular_finite_multiplicityone_solutions.add_linear(new_linear);
+		returned_singular_solutions.add_linear(new_linear);
+		returned_infinite_solutions.add_linear(new_linear);
+		
+		for (auto iter=returned_multiple_solutions.begin(); iter!=returned_multiple_solutions.end(); ++iter) {
+			iter->second.add_linear(new_linear);
+		}
+	};
+	
+	
+	void add_good_solution(vec_mp new_point)
+	{
+		returned_nonsingular_finite_multiplicityone_solutions.add_point(new_point);
+	};
+	
+	void add_singular_solution(vec_mp new_point)
+	{
+		returned_singular_solutions.add_point(new_point);
+	};
+	
+	void add_infinite_solution(vec_mp new_point)
+	{
+		returned_infinite_solutions.add_point(new_point);
+	};
+	
+	void add_multiple_solution(vec_mp new_point, int multiplicity)
+	{
+		returned_multiple_solutions[multiplicity].add_point(new_point);
+	};
+	
+};
+
 class SLP_global_pointers
 {
 public:
@@ -625,7 +693,6 @@ protected:
 	
 	void clear()
 	{
-		
 		patch_eval_data_clear_mp(&this->patch);
 		
 		clear_mat_mp(randomizer_matrix);

@@ -73,8 +73,8 @@ int ubermaster_process::main_loop()
 	W.incidence_number = incidence_number;
 	
 	vertex_set V(num_vars);
-	curve_decomposition C;
-	surface_decomposition S;
+	
+	
 	
 	
 	
@@ -94,6 +94,10 @@ int ubermaster_process::main_loop()
 	switch (W.dim) {
 		case 1:
 			{
+				curve_decomposition C;
+				
+				C.component_num = W.comp_num;
+				
 				
 				std::stringstream converter;
 				converter << "_dim_" << C.dimension << "_comp_" << C.component_num;
@@ -118,6 +122,9 @@ int ubermaster_process::main_loop()
 			
 		case 2:
 		{
+			
+			surface_decomposition S;
+			S.component_num = W.comp_num;
 			
 			std::stringstream converter;
 			converter << "_dim_" << S.dimension << "_comp_" << S.component_num;
