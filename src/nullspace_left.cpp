@@ -598,7 +598,10 @@ void create_nullspace_system(boost::filesystem::path output_name,
 		write_vector_as_constants(ns_config->target_projection[ii], projname.str(), OUT);
 	}
 	
-	write_matrix_as_constants(ns_config->randomizer_matrix, "r", OUT);
+	if (!is_identity(ns_config->randomizer_matrix)) {
+		write_matrix_as_constants(ns_config->randomizer_matrix, "r", OUT);
+	}
+	
 	
 	
 	IN = safe_fopen_read("derivative_polynomials_declaration");
@@ -663,7 +666,7 @@ void createMatlabDerivative(boost::filesystem::path output_name,
 	OUT << "syms";
 	for (ii = 0; ii < numVars; ii++)
 		OUT << " " << vars[ii];
-	OUT << ";\nX = [";
+	OUT << ";\nmy_var_names = [";
 	for (ii = 0; ii < numVars; ii++)
 		OUT << " " << vars[ii];
 	OUT << "];\n\n";
@@ -768,15 +771,8 @@ void createMatlabDerivative(boost::filesystem::path output_name,
 	OUT << ";\n";
 	
 	
-	// put in the randomization matrices.
-	OUT << "R = [";
-	for (ii=0; ii<ns_config->randomizer_matrix->rows; ii++) {
-		for (int jj=0; jj<ns_config->randomizer_matrix->cols; jj++) {
-			OUT << "r_" << ii+1 << "_" << jj+1 << " "	;
-		}
-		OUT << ";\n";
-	}
-	OUT << "];\n\n";
+	
+	
 	
 	
 	
@@ -786,10 +782,27 @@ void createMatlabDerivative(boost::filesystem::path output_name,
 		OUT << " " << funcs[ii] << ";";
 	OUT << "]; %collect the functions into a single matrix\n";
 	
-	OUT << "F_rand = R*F_orig; % randomize\n";
+	// put in the randomization matrices.
+	if (!is_identity(ns_config->randomizer_matrix)) {
+		OUT << "R = [";
+		for (ii=0; ii<ns_config->randomizer_matrix->rows; ii++) {
+			for (int jj=0; jj<ns_config->randomizer_matrix->cols; jj++) {
+				OUT << "r_" << ii+1 << "_" << jj+1 << " "	;
+			}
+			OUT << ";\n";
+		}
+		OUT << "];\n\n";
+		
+		OUT << "F_rand = R*F_orig; % randomize\n";
+	}
+	else{
+		
+		OUT << "F_rand = F_orig; % no need to randomize\n";
+	}
+	
 	
 	// compute the jacobian
-	OUT << "J = [transpose(jacobian(F_rand,X)) proj];  %compute the transpose of the jacobian\n";
+	OUT << "J = [transpose(jacobian(F_rand,my_var_names)) proj];  %compute the transpose of the jacobian\n";
 	OUT << "                                           %concatenate the projections\n\n";
 	
 	OUT << "new_eqns = J*synth_vars; % multiply the synth vars\n\n";

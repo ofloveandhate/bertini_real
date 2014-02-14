@@ -1692,15 +1692,15 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 			std::vector< int > candidates; // indices of candidates for next one.
 			
 			
-			std::cout << "possibile edges:" << std::endl;
-			for (std::set<int>::iterator poss_iter=possible_edges.begin(); poss_iter != possible_edges.end(); poss_iter++) {
-				std::cout << *poss_iter << std::endl;
-			}
+//			std::cout << "possibile edges:" << std::endl;
+//			for (std::set<int>::iterator poss_iter=possible_edges.begin(); poss_iter != possible_edges.end(); poss_iter++) {
+//				std::cout << *poss_iter << std::endl;
+//			}
 			
 			std::cout << std::endl;
 			
 			int candidate_counter = 0;
-			std::cout << "\nfinding candidates for bottom index " << current_bottom_ind << std::endl;
+//			std::cout << "\nfinding candidates for bottom index " << current_bottom_ind << std::endl;
 			for (std::set<int>::iterator poss_iter=possible_edges.begin(); poss_iter != possible_edges.end(); poss_iter++) {
 				
 				int qq = *poss_iter;
@@ -1723,8 +1723,11 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				if ( (!already_found) && matches_end && correct_interval && (!degenerate) ) { //
 					candidates.push_back(qq);
 					
-					std::cout << "candidate [" << candidate_counter << "] = " <<
-					crit_slices[ii+zz].edges[qq].left << " " << crit_slices[ii+zz].edges[qq].midpt << " " << crit_slices[ii+zz].edges[qq].right <<  std::endl;
+					if (program_options.verbose_level>=1) {
+						std::cout << "candidate [" << candidate_counter << "] = " <<
+							crit_slices[ii+zz].edges[qq].left << " " << crit_slices[ii+zz].edges[qq].midpt << " " << crit_slices[ii+zz].edges[qq].right <<  std::endl;
+					}
+					
 					
 					candidate_counter++;
 				}
@@ -1913,7 +1916,10 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				{
 					int next_edge = index_in_set; // index the *edge*
 					
-					std::cout << "added_edge " << next_edge << ", l m r: " << crit_slices[ii+zz].edges[next_edge].left << " " << crit_slices[ii+zz].edges[next_edge].midpt << " " << crit_slices[ii+zz].edges[next_edge].right << std::endl;
+					if (program_options.verbose_level>=1) {
+						std::cout << "added_edge " << next_edge << ", l m r: " << crit_slices[ii+zz].edges[next_edge].left << " " << crit_slices[ii+zz].edges[next_edge].midpt << " " << crit_slices[ii+zz].edges[next_edge].right << std::endl;
+					}
+					
 					
 					
 					
@@ -1935,10 +1941,6 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 					possible_edges.erase(current_edge);
 					possible_edges.erase(next_edge);
 					
-					////TODO:  check this for possibility of removing too many edges.  namely those we haven't actually found or whatever.
-					//							for (int ww=0; ww<candidate_counter; ww++) {
-					//								possible_edges.erase(candidates[ww]);
-					//							}
 					
 					// add the next edge to the set we can connect together.
 					if (zz==0) {

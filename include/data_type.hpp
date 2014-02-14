@@ -285,7 +285,7 @@ public:
     point_mp *pts_mp;
 	
 	int dim;
-  int comp_num;
+	int comp_num;
 	int incidence_number;
 	
 	int num_variables;

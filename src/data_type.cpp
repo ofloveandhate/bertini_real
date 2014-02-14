@@ -2228,11 +2228,16 @@ void decomposition::output_main(const boost::filesystem::path base)
 	std::cout << "decomposition::output_main" << std::endl;
 #endif
 
-//	std::cout << "outputting decomp to folder " << base << std::endl;
 	FILE *OUT;
-
-	
-	boost::filesystem::remove_all(base);
+	boost::filesystem::path backupdir = base;
+	backupdir += "_bak";
+	if (boost::filesystem::exists(base)) {
+		
+		if (boost::filesystem::exists(backupdir)) {
+			boost::filesystem::remove_all(backupdir);
+		}
+		boost::filesystem::rename(base, backupdir);
+	}
 	boost::filesystem::create_directory(base);
 	
 	
@@ -2258,6 +2263,10 @@ void decomposition::output_main(const boost::filesystem::path base)
 	fprintf(OUT,"%d\n",dimension);
 	fclose(OUT);
 	
+	
+	if (boost::filesystem::exists(backupdir)) {
+		boost::filesystem::remove_all(backupdir);
+	}
 }
 
 
@@ -2635,7 +2644,6 @@ bool is_identity(mat_mp M)
 			if (ii==jj) {
 				sub_mp(temp, &M->entry[ii][jj], one);
 				if (d_oneNorm_mp(temp)>0) {
-					
 					clear_mp(one); clear_mp(temp);
 					return false;
 				}
@@ -2643,7 +2651,6 @@ bool is_identity(mat_mp M)
 			else{
 				if (d_oneNorm_mp(&M->entry[ii][jj])>0) {
 					clear_mp(one); clear_mp(temp);
-					
 					return false;
 				}
 			}

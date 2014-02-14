@@ -468,10 +468,10 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 				
                 solve_options.T.endgameNumber = 2;
                 // what else can i do here to improve the probability of success?
-                solve_options.T.basicNewtonTol   *= 1e-6; // tracktolbeforeeg
-                solve_options.T.endgameNewtonTol *= 1e-6; // tracktolduringeg
-				solve_options.T.maxStepSize *= 1e-1;
-				solve_options.T.odePredictor = 8;
+                solve_options.T.basicNewtonTol   *= 1e-1; // tracktolbeforeeg
+                solve_options.T.endgameNewtonTol *= 1e-1; // tracktolduringeg
+				solve_options.T.maxStepSize *= 0.5;
+				solve_options.T.odePredictor = 7;
 				std::cout << "tracktolBEFOREeg: "	<< solve_options.T.basicNewtonTol << " tracktolDURINGeg: "	<< solve_options.T.endgameNewtonTol << std::endl;
             }
 			else
@@ -603,10 +603,10 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 					
 					
 
-					std::cout << color::magenta() << "left:" << color::console_default() << std::endl;
-					W_single_left.print_to_screen();
-					std::cout << color::magenta() << "right:" << color::console_default() << std::endl;
-					W_single_right.print_to_screen();
+//					std::cout << color::magenta() << "left:" << color::console_default() << std::endl;
+//					W_single_left.print_to_screen();
+//					std::cout << color::magenta() << "right:" << color::console_default() << std::endl;
+//					W_single_right.print_to_screen();
 					
 					
 					if (W_single_right.num_pts==1 && W_single_left.num_pts==1) {
