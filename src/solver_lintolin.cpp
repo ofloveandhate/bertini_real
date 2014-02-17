@@ -62,7 +62,7 @@ int lintolin_solver_main(int MPType,
 	
 	
 	if (solve_options.complete_witness_set==1){
-		W_new->cp_patches(W); // copy the patches over from the original witness set
+		W_new->copy_patches(W); // copy the patches over from the original witness set
 		W_new->cp_names(W);
 		
 		W_new->num_linears = (num_new_linears);
@@ -158,7 +158,7 @@ int lintolin_solver_d(int MPType, //, double parse_time, unsigned int currentSee
   }
 	
 	
-	post_process_t *endPoints = (post_process_t *)br_malloc(W.num_pts*(num_new_linears) * sizeof(post_process_t)); //overallocate, expecting full number of solutions.
+	post_process_t *endPoints = (post_process_t *)br_malloc(W.num_points*(num_new_linears) * sizeof(post_process_t)); //overallocate, expecting full number of solutions.
 	
 	
 	if (T.endgameNumber == 3)
@@ -299,7 +299,7 @@ void lintolin_track_d(trackingStats *trackCount,
 												 &BED_copy, ED_d, ED_mp);
 
 	
-	trackCount->numPoints = W.num_pts*(num_new_linears);
+	trackCount->numPoints = W.num_points*(num_new_linears);
 	int solution_counter = 0;
 	
 	
@@ -324,7 +324,7 @@ void lintolin_track_d(trackingStats *trackCount,
 
 		
 
-		for (ii = 0; ii < W.num_pts; ii++)
+		for (ii = 0; ii < W.num_points; ii++)
 		{ 
 			oid = thread_num();
 			
@@ -414,13 +414,13 @@ void lintolin_track_d(trackingStats *trackCount,
 				trackCount->successes++;
 				solution_counter++; // probably this could be eliminated
 			}
-		}// re: for (ii=0; ii<W.num_pts ;ii++)
+		}// re: for (ii=0; ii<W.num_points ;ii++)
 	} // for each new linear
 	
 	
 	//clear the data structures.
 	
-  for (ii = 0; ii >W.num_pts; ii++)
+  for (ii = 0; ii >W.num_points; ii++)
   { // clear startPts[ii]
     clear_point_data_d(&startPts[ii]);
   }
@@ -497,7 +497,7 @@ int lintolin_setup_d(FILE **OUT, boost::filesystem::path outName,
 	for (ii=0; ii<W.num_variables; ii++) {
 		fprintf(ED->FOUT,"%s ",W.variable_names[ii]);
 	}
-	fprintf(ED->FOUT,"\n%d ",W.num_pts);
+	fprintf(ED->FOUT,"\n%d ",W.num_points);
 	fprintf(ED->FOUT,"%d %d %d ",T->MPType, T->odePredictor, T->endgameNumber);
 	fprintf(ED->FOUT,"\n");
 #endif
@@ -1399,7 +1399,7 @@ int lintolin_solver_mp(int MPType,
   }
 	
 	
-	post_process_t *endPoints = (post_process_t *)br_malloc(W.num_pts*(num_new_linears) * sizeof(post_process_t)); //overallocate, expecting full number of solutions.
+	post_process_t *endPoints = (post_process_t *)br_malloc(W.num_points*(num_new_linears) * sizeof(post_process_t)); //overallocate, expecting full number of solutions.
 	
 	
 	
@@ -1548,7 +1548,7 @@ void lintolin_track_mp(trackingStats *trackCount,
 	
 	
 	
-	trackCount->numPoints = W.num_pts*(num_new_linears);
+	trackCount->numPoints = W.num_points*(num_new_linears);
 	int solution_counter = 0;
 	
 	
@@ -1564,7 +1564,7 @@ void lintolin_track_mp(trackingStats *trackCount,
 		
 		// track each of the start points
 
-		for (ii = 0; ii < W.num_pts; ii++)
+		for (ii = 0; ii < W.num_points; ii++)
 		{ // get current thread number
 			oid = thread_num();
 			
@@ -1654,7 +1654,7 @@ void lintolin_track_mp(trackingStats *trackCount,
 			
 			
 			
-		}// re: for (ii=0; ii<W.num_pts ;ii++)
+		}// re: for (ii=0; ii<W.num_points ;ii++)
 	} // for each new linear
 	
 	
@@ -1663,7 +1663,7 @@ void lintolin_track_mp(trackingStats *trackCount,
 	
 	//clear the data structures.
 	
-  for (ii = 0; ii >W.num_pts; ii++)
+  for (ii = 0; ii >W.num_points; ii++)
   { // clear startPts[ii]
     clear_point_data_mp(&startPts[ii]);
   }
@@ -1776,7 +1776,7 @@ int lintolin_setup_mp(FILE **OUT, boost::filesystem::path outName,
 	for (ii=0; ii<W.num_variables; ii++) {
 		fprintf(ED->FOUT,"%s ",W.variable_names[ii]);
 	}
-	fprintf(ED->FOUT,"\n%d ",W.num_pts);
+	fprintf(ED->FOUT,"\n%d ",W.num_points);
 	fprintf(ED->FOUT,"%d %d %d ",T->MPType, T->odePredictor, T->endgameNumber);
 	fprintf(ED->FOUT,"\n");
 #endif
