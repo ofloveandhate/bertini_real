@@ -42,7 +42,7 @@ extern int *mem_needs_init_mp; // determine if mem_mp has been initialized
 
 
 
-class solver_output
+class solver_output : public patch_holder, public linear_holder
 {
 
 	
@@ -60,28 +60,7 @@ private:
 public:
 	
 	
-	void add_patch(vec_mp new_patch)
-	{
-		returned_nonsingular_finite_multiplicityone_solutions.add_patch(new_patch);
-		returned_singular_solutions.add_patch(new_patch);
-		returned_infinite_solutions.add_patch(new_patch);
-		
-		for (auto iter=returned_multiple_solutions.begin(); iter!=returned_multiple_solutions.end(); ++iter) {
-			iter->second.add_patch(new_patch);
-		}
-	};
 	
-	
-	void add_linear(vec_mp new_linear)
-	{
-		returned_nonsingular_finite_multiplicityone_solutions.add_linear(new_linear);
-		returned_singular_solutions.add_linear(new_linear);
-		returned_infinite_solutions.add_linear(new_linear);
-		
-		for (auto iter=returned_multiple_solutions.begin(); iter!=returned_multiple_solutions.end(); ++iter) {
-			iter->second.add_linear(new_linear);
-		}
-	};
 	
 	
 	void add_good_solution(vec_mp new_point)
@@ -104,7 +83,26 @@ public:
 		returned_multiple_solutions[multiplicity].add_point(new_point);
 	};
 	
+	
+	void merge_good_solutions(witness_set & W_transfer)
+	{
+		
+	}
+	
+
+	
+	void get_patches(witness_set & W_transfer)
+	{
+		W_transfer.copy_patches(*this);
+	}
+	
+	void get_linears(witness_set & W_transfer)
+	{
+		W_transfer.copy_linears(*this);
+	}
 };
+
+
 
 class SLP_global_pointers
 {

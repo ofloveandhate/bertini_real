@@ -105,7 +105,7 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	witness_set W_step_one;
 	W_step_one.num_variables = W.num_variables;
 	W_step_one.num_synth_vars = W.num_synth_vars;
-	W_step_one.cp_patches(W);
+	W_step_one.copy_patches(W);
 	W_step_one.cp_names(W);
 	
 	
@@ -195,7 +195,7 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 				set_mp(&temppoint->coord[jj+offset], &result->coord[jj]);
 			
 			
-			for (ii=0; ii<W_step_one.num_pts; ii++) {
+			for (ii=0; ii<W_step_one.num_points; ii++) {
 				for (jj=0; jj<ns_config->num_x_vars; jj++) {
 					set_mp(&temppoint->coord[jj], &W_step_one.pts_mp[ii]->coord[jj]);
 				}
@@ -207,7 +207,7 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 			W_step_one.reset();
 			W_step_one.num_variables = W.num_variables;
 			W_step_one.num_synth_vars = W.num_synth_vars;
-			W_step_one.cp_patches(W);  // necessary?
+			W_step_one.copy_patches(W);  // necessary?
 			W_step_one.cp_names(W); // necessary?
 			
 		}
@@ -221,7 +221,7 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	clear_vec_mp(temppoint);
 	
 	
-	W_linprod.cp_patches(W);
+	W_linprod.copy_patches(W);
 	W_linprod.cp_names(W);
 	
 	//set some solver options
@@ -270,7 +270,7 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	W_crit->num_variables = ns_config->num_x_vars+ns_config->num_v_vars;
 	W_crit->num_synth_vars = W.num_synth_vars + ns_config->num_v_vars;
 	
-	W_crit->cp_patches(W);
+	W_crit->copy_patches(W);
 	W_crit->cp_names(W);
 	W_crit->sort_for_unique(solve_options.T); // get only the unique solutions.
 	
@@ -320,12 +320,12 @@ void nullspace_config_setup(nullspace_config *ns_config,
 							solver_configuration & solve_options)
 {
 	
-	int ii, jj, kk;
+
 	
 	
 	int maxiii = 0;
 	ns_config->randomized_degrees = (int *)br_malloc(randomizer_matrix->rows * sizeof(int));
-	for (ii=0; ii<randomizer_matrix->rows; ii++	) {
+	for (int ii=0; ii<randomizer_matrix->rows; ii++	) {
 		ns_config->randomized_degrees[ii] = randomized_degrees[ii]; // store the full degree (not derivative).
 		if ( (randomized_degrees[ii]-1) > maxiii)
 			maxiii = randomized_degrees[ii]-1; // minus one for the derivative
@@ -345,7 +345,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	
 	ns_config->num_projections = ambient_dim - target_crit_codim + 1;
 	ns_config->target_projection = (vec_mp *) br_malloc(ns_config->num_projections * sizeof(vec_mp));
-	for (ii=0; ii<ns_config->num_projections; ii++) {
+	for (int ii=0; ii<ns_config->num_projections; ii++) {
 		init_vec_mp2(ns_config->target_projection[ii], W.num_variables,solve_options.T.AMP_max_prec);
 		ns_config->target_projection[ii]->size = W.num_variables;
 		vec_cp_mp(ns_config->target_projection[ii], pi[ii]);
@@ -380,10 +380,10 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	
 	// set up the linears in $v$  ( the M_i linears)
 	ns_config->v_linears = (vec_mp *)br_malloc(ns_config->num_v_linears*sizeof(vec_mp));
-	for (ii=0; ii<ns_config->num_v_linears; ii++) {
+	for (int ii=0; ii<ns_config->num_v_linears; ii++) {
 		init_vec_mp2(ns_config->v_linears[ii],ns_config->num_v_vars,solve_options.T.AMP_max_prec);
 		ns_config->v_linears[ii]->size = ns_config->num_v_vars;
-		for (jj=0; jj<ns_config->num_v_vars; jj++){
+		for (int jj=0; jj<ns_config->num_v_vars; jj++){
 			get_comp_rand_mp(&ns_config->v_linears[ii]->coord[jj]); // should this be real?
 		}
 	}
@@ -396,13 +396,13 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	ns_config->additional_linears_terminal = (vec_mp *)br_malloc((ns_config->num_additional_linears)*sizeof(vec_mp));
 	ns_config->additional_linears_starting = (vec_mp *)br_malloc((ns_config->num_additional_linears)*sizeof(vec_mp));
 	
-	for (ii=0; ii<ns_config->num_additional_linears; ii++) {
+	for (int ii=0; ii<ns_config->num_additional_linears; ii++) {
 		init_vec_mp2(ns_config->additional_linears_terminal[ii],W.num_variables,solve_options.T.AMP_max_prec);
 		ns_config->additional_linears_terminal[ii]->size = W.num_variables;
-		for (jj=0; jj<W.num_variables - W.num_synth_vars; jj++){
+		for (int jj=0; jj<W.num_variables - W.num_synth_vars; jj++){
 			get_comp_rand_mp(&ns_config->additional_linears_terminal[ii]->coord[jj]); // should this be real?
 		}
-		for (jj=W.num_variables - W.num_synth_vars; jj<W.num_variables; jj++) {
+		for (int jj=W.num_variables - W.num_synth_vars; jj<W.num_variables; jj++) {
 			set_zero_mp(&ns_config->additional_linears_terminal[ii]->coord[jj]);
 		}
 		
@@ -415,7 +415,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	// set up the patch in $v$.  we will include this in an inversion matrix to get the starting $v$ values.
 	init_vec_mp2(ns_config->v_patch,ns_config->num_v_vars,solve_options.T.AMP_max_prec);
 	ns_config->v_patch->size = ns_config->num_v_vars;
-	for (ii=0; ii<ns_config->num_v_vars; ii++) {
+	for (int ii=0; ii<ns_config->num_v_vars; ii++) {
 		get_comp_rand_mp(&ns_config->v_patch->coord[ii]);
 	}
 	
@@ -427,16 +427,16 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	
 	//the 'ns_config->starting_linears' will be used for the x variables.  we will homotope to these $k-\ell$ at a time
 	ns_config->starting_linears = (vec_mp **)br_malloc( num_jac_equations*sizeof(vec_mp *));
-	for (ii=0; ii<num_jac_equations; ii++) {
+	for (int ii=0; ii<num_jac_equations; ii++) {
 		ns_config->starting_linears[ii] = (vec_mp *) br_malloc((*max_degree)*sizeof(vec_mp)); //subtract 1 for differentiation
 		
 		make_matrix_random_mp(temp_getter,*max_degree, W.num_variables - W.num_synth_vars, solve_options.T.AMP_max_prec); // this matrix is nearly orthogonal
 		
-		for (jj=0; jj<(*max_degree); jj++) {
+		for (int jj=0; jj<(*max_degree); jj++) {
 			init_vec_mp2(ns_config->starting_linears[ii][jj],W.num_variables,solve_options.T.AMP_max_prec);
 			ns_config->starting_linears[ii][jj]->size = W.num_variables;
 			
-			for (kk=0; kk<W.num_variables - W.num_synth_vars; kk++) {
+			for (int kk=0; kk<W.num_variables - W.num_synth_vars; kk++) {
 				set_mp(&ns_config->starting_linears[ii][jj]->coord[kk], &temp_getter->entry[jj][kk]);
 			}
 			
@@ -444,7 +444,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 			//			for (kk=0; kk<W.num_variables - W.num_synth_vars; kk++) {
 			//				get_comp_rand_mp(&ns_config->starting_linears[ii][jj]->coord[kk]);
 			//			}
-			for (kk=W.num_variables - W.num_synth_vars; kk<W.num_variables; kk++) {
+			for (int kk=W.num_variables - W.num_synth_vars; kk<W.num_variables; kk++) {
 				set_zero_mp(&ns_config->starting_linears[ii][jj]->coord[kk]);
 			}
 		}

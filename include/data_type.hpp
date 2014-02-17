@@ -273,17 +273,285 @@ class function
 
 
 
-class witness_set
+class point_holder
+{
+	
+public:
+	
+	vec_mp *pts_mp;
+	int num_points;
+	
+	
+	void copy_points(const point_holder & other) {
+		
+        for (int ii=0; ii<other.num_points; ii++)
+			add_point(other.pts_mp[ii]);
+    }
+	
+	
+	
+	void reset_points()
+	{
+		for (int ii =0; ii<this->num_points; ii++)
+			clear_vec_mp(this->pts_mp[ii]);
+		
+		if (this->num_points>0) {
+			free(this->pts_mp);
+		}
+		
+		this->num_points = 0;
+		this->pts_mp = NULL;
+	};
+	
+	void add_point(vec_mp new_point);
+	
+	
+	
+	point_holder(){
+		init();
+	};
+	
+	
+	~point_holder(){ // the destructor
+		
+		clear();
+		
+	};
+	
+	
+	// assignment
+	point_holder& operator=( const point_holder & other) {
+		
+		init();
+		
+		copy(other);
+		return *this;
+	};
+	
+	
+	//copy operator.  must be explicitly declared because the underlying c structures use pointers.
+	point_holder(const point_holder & other){
+		
+		init();
+		
+		copy(other);
+	};
+	
+	
+	
+	void copy(const point_holder & other)
+	{
+		copy_points(other);
+	}
+	
+	
+	
+private:
+	
+	
+	
+	void init()
+	{
+		this->pts_mp = NULL;
+		this->num_points = 0;
+	}
+	
+	void clear(){
+		reset_points();
+	};
+};
+
+
+
+
+
+class patch_holder
+{
+
+public:
+	
+	vec_mp *patch_mp;
+	int num_patches;
+	
+	
+	void copy_patches(const patch_holder & other) {
+		
+        for (int ii=0; ii<other.num_patches; ii++)
+			add_patch(other.patch_mp[ii]);
+    }
+	
+	
+	
+	void reset_patches()
+	{
+		for (int ii =0; ii<this->num_patches; ii++)
+			clear_vec_mp(this->patch_mp[ii]);
+		
+		if (this->num_patches>0) {
+			free(this->patch_mp);
+		}
+		
+		this->num_patches = 0;
+		this->patch_mp = NULL;
+	};
+	
+	void add_patch(vec_mp new_patch);
+	
+	
+	
+	patch_holder(){
+		init();
+	};
+	
+	
+	~patch_holder(){ // the destructor
+		
+		clear();
+		
+	};
+	
+	
+	// assignment
+	patch_holder& operator=( const patch_holder& other) {
+		
+		init();
+		
+		copy(other);
+		return *this;
+	};
+	
+	
+	//copy operator.  must be explicitly declared because the underlying c structures use pointers.
+	patch_holder(const patch_holder & other){
+		
+		init();
+		
+		copy(other);
+	};
+	
+	
+	
+	void copy(const patch_holder & other)
+	{
+		copy_patches(other);
+	}
+	
+	
+	
+private:
+	
+	
+	
+	void init()
+	{
+		this->patch_mp = NULL;
+		this->num_patches = 0;
+	}
+	
+	void clear(){
+		reset_patches();
+	};
+};
+
+
+
+class linear_holder
+{
+	
+public:
+	
+	vec_mp *L_mp;
+	int num_linears;
+	
+	
+	void copy_linears(const linear_holder & other) {
+        for (int ii=0; ii<other.num_linears; ii++)
+			add_linear(other.L_mp[ii]);
+    }
+	
+	
+	
+	void reset_linears()
+	{
+		for (int ii =0; ii<num_linears; ii++)
+			clear_vec_mp(L_mp[ii]);
+		
+		if (this->num_linears>0) {
+			free(L_mp);
+		}
+		
+		num_linears = 0;
+		L_mp = NULL;
+	};
+	
+	void add_linear(vec_mp new_linear);
+	
+	
+	
+	linear_holder(){
+		init();
+	};
+	
+	
+	~linear_holder(){ // the destructor
+		
+		clear();
+		
+	};
+	
+	
+	// assignment
+	linear_holder& operator=( const linear_holder& other) {
+		
+		init();
+		
+		copy(other);
+		return *this;
+	};
+	
+	
+	//copy operator.  must be explicitly declared because the underlying c structures use pointers.
+	linear_holder(const linear_holder & other){
+		
+		init();
+		
+		copy(other);
+	};
+	
+	
+	
+	void copy(const linear_holder & other)
+	{
+		copy_linears(other);
+	}
+	
+	
+	
+private:
+	
+	
+	
+	void init()
+	{
+		this->L_mp = NULL;
+		this->num_linears = 0;
+	}
+	
+	void clear(){
+		reset_linears();
+	};
+};
+
+
+
+class witness_set : public patch_holder, public linear_holder, public point_holder
 {
 	
 public:
 	
 	//begin data members
 	
-	vec_mp *L_mp;
-	vec_mp *patch_mp;
-    point_mp *pts_mp;
-	
+
 	int dim;
 	int comp_num;
 	int incidence_number;
@@ -291,9 +559,8 @@ public:
 	int num_variables;
 	int num_synth_vars;
 	
-	int num_pts;
-	int num_linears;
-	int num_patches;
+
+
 	
 	std::vector< std::string > variable_names;
 	
@@ -321,7 +588,8 @@ public:
 	
 	
 	// assignment
-	witness_set& operator=( const witness_set& other) {
+	witness_set& operator=( const witness_set& other)
+	{
 		
 		init();
 		
@@ -331,7 +599,8 @@ public:
 	
 	
 	//copy operator.  must be explicitly declared because the underlying c structures use pointers.
-	witness_set(const witness_set & other){
+	witness_set(const witness_set & other)
+	{
 		
 		init();
 		
@@ -346,16 +615,11 @@ public:
 		this->num_synth_vars = 0;
 		
 		
-		this->num_patches = 0;
-		this->num_linears = 0;
-		this->num_pts = 0;
-		
-		this->patch_mp = NULL;
-		this->L_mp = NULL;
-		this->pts_mp = NULL;
-		
 		this->incidence_number = -1;
 		this->comp_num = this->dim = -1;
+		
+		
+		
 	}
 	
 	void copy(const witness_set & other)
@@ -372,25 +636,16 @@ public:
 		this->variable_names = other.variable_names;
 		
 		copy_points(other);
-        copy_linears(other);
 		copy_patches(other);
+		copy_linears(other);
 	}
 	
     
-    void copy_linears(const witness_set & other) {
-        for (int ii=0; ii<other.num_linears; ii++)
-			add_linear(other.L_mp[ii]);
-    }
+
     
-    void copy_points(const witness_set & other) {
-        for (int ii=0; ii<other.num_pts; ii++)
-			add_point(other.pts_mp[ii]);
-    }
+
     
-    void copy_patches(const witness_set & other) {
-        for (int ii=0; ii<other.num_patches; ii++)
-			add_patch(other.patch_mp[ii]);
-    }
+
 	
     int num_natural_vars() const
     {
@@ -423,7 +678,7 @@ public:
 		reset_linears();
 		
 		reset_patches();
-		
+
 		init();
 	}
 	
@@ -434,56 +689,9 @@ public:
 	}
 	
 	
-	void reset_points()
-	{
-		
-		for (int ii =0; ii<this->num_pts; ii++)
-			clear_vec_mp(this->pts_mp[ii]);
-		
-		if (this->num_pts>0)
-			free(this->pts_mp);
-		
-		
-		this->num_pts = 0;
-		this->pts_mp = NULL;
-	}
-	
-	void reset_linears()
-	{
-		for (int ii =0; ii<this->num_linears; ii++)
-			clear_vec_mp(this->L_mp[ii]);
-		
-		if (this->num_linears>0)
-			free(this->L_mp);
-		
-		
-		this->num_linears = 0;
-		this->L_mp = NULL;
-	}
-	
-	
-	void reset_patches()
-	{
-		for (int ii =0; ii<this->num_patches; ii++)
-			clear_vec_mp(this->patch_mp[ii]);
-		
-		if (this->num_patches>0) {
-			free(this->patch_mp);
-		}
-		
-		this->num_patches = 0;
-		this->patch_mp = NULL;
-	};
-	
-	
-	
-	void add_patch(vec_mp new_patch);
-	void add_point(vec_mp new_point);
-	void add_linear(vec_mp new_linear);
+
 	
 	void cp_names(const witness_set & W_in);
-	void cp_linears(const witness_set & W_in);
-	void cp_patches(const witness_set & W_in);
 	
 	
 	void merge(const witness_set & W_in);///< merges W_in into this

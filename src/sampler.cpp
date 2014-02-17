@@ -678,7 +678,7 @@ void curve_decomposition::fixed_sampler(vertex_set & V,
 											   solve_options);
 			
 			
-			if (Wnew.num_pts==0) {
+			if (Wnew.num_points==0) {
 				//TODO: ah shit!  this ain't good.  how to deal with it?
 			}
 			
@@ -1207,7 +1207,7 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 												   md_config,
 												   solve_options);
 				
-				if (W_new.num_pts==0) {
+				if (W_new.num_points==0) {
 					std::cout << color::red() << "midpoint tracker did not return any points :(" << color::console_default() << std::endl;
 					rib_indices[jj][kk] = -1;
 					// do something other than continue here.  this is terrible.
@@ -1490,7 +1490,7 @@ void set_witness_set_mp(witness_set *W, vec_mp new_linear,vec_mp pts,int num_var
 	
 	W->num_variables = num_vars;
 	
-	W->num_pts=1;
+	W->num_points=1;
 	W->pts_mp=(point_mp *)br_malloc(sizeof(point_mp)); // apparently you can only pass in a single point to copy in.
 	
 	//initialize the memory

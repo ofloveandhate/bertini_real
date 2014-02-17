@@ -1837,7 +1837,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				
 				// should get a single point back from this solver.
 				
-				if (W_new.num_pts==0) {
+				if (W_new.num_points==0) {
 					std::cout << color::red() << "midpoint tracker did not return any points :(" << color::console_default() << std::endl;
 					possible_edges.erase(current_edge);
 					continue;

@@ -87,7 +87,7 @@ void BRpostProcessing(post_process_t *endPoints, witness_set *W_new, int num_pts
 	//TODO: change the post_process_t type.
 	
 	//initialize the structures for holding the produced data
-	W_new->num_pts=num_actual_solns; W_new->num_pts=num_actual_solns;
+	W_new->num_points=num_actual_solns; W_new->num_points=num_actual_solns;
 	W_new->pts_mp=(point_mp *)br_malloc(num_actual_solns*sizeof(point_mp));
 	
 	

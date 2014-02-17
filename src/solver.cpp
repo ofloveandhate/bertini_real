@@ -534,7 +534,7 @@ void master_solver(witness_set * W_new, const witness_set & W,
 	
 	if (solve_options.complete_witness_set==1){
 		
-		W_new->cp_patches(W); // copy the patches over from the original witness set
+		W_new->copy_patches(W); // copy the patches over from the original witness set
 		W_new->cp_names(W);
 	}
 	
@@ -569,7 +569,7 @@ void master_solver(witness_set * W_new, const witness_set & W,
 	
 	trackingStats trackCount; init_trackingStats(&trackCount); // initialize trackCount to all 0
 	
-	post_process_t *endPoints = (post_process_t *)br_malloc(W.num_pts * sizeof(post_process_t)); //overallocate, expecting full
+	post_process_t *endPoints = (post_process_t *)br_malloc(W.num_points * sizeof(post_process_t)); //overallocate, expecting full
 	
 	
 	// call the file setup function
@@ -644,9 +644,9 @@ void generic_set_start_pts(point_data_d ** startPts,
 {
 	int ii; // counters
 	
-	*startPts = (point_data_d *)br_malloc(W.num_pts * sizeof(point_data_d));
+	*startPts = (point_data_d *)br_malloc(W.num_points * sizeof(point_data_d));
 	
-	for (ii = 0; ii < W.num_pts; ii++)
+	for (ii = 0; ii < W.num_points; ii++)
 	{ // setup startPts[ii]
 		init_point_data_d(&(*startPts)[ii], W.num_variables); // also performs initialization on the point inside startPts
 		change_size_vec_d((*startPts)[ii].point,W.num_variables);
@@ -667,9 +667,9 @@ void generic_set_start_pts(point_data_mp ** startPts,
 {
 	int ii; // counters
 	
-	(*startPts) = (point_data_mp *)br_malloc(W.num_pts * sizeof(point_data_mp));
+	(*startPts) = (point_data_mp *)br_malloc(W.num_points * sizeof(point_data_mp));
 	
-	for (ii = 0; ii < W.num_pts; ii++)
+	for (ii = 0; ii < W.num_points; ii++)
 	{ // setup startPts[ii]
 		init_point_data_mp(&(*startPts)[ii], W.num_variables); // also performs initialization on the point inside startPts
 		change_size_vec_mp((*startPts)[ii].point,W.num_variables);
@@ -741,20 +741,20 @@ void serial_tracker_loop(trackingStats *trackCount,
 	
 	
 	
-	trackCount->numPoints = W.num_pts;
+	trackCount->numPoints = W.num_points;
 	int solution_counter = 0;
 	
 	
 	
 	// track each of the start points
 	
-	for (int ii = 0; ii < W.num_pts; ii++)
+	for (int ii = 0; ii < W.num_points; ii++)
 	{
 		if ((solve_options.verbose_level>=0) && (solve_options.path_number_modulus!=0) )
 		{
-			if ((ii%solve_options.path_number_modulus)==0 && (solve_options.path_number_modulus<W.num_pts)) {
+			if ((ii%solve_options.path_number_modulus)==0 && (solve_options.path_number_modulus<W.num_points)) {
 				std::cout << color::gray();
-				printf("tracking path %d of %d\n",ii,W.num_pts);
+				printf("tracking path %d of %d\n",ii,W.num_points);
 				std::cout << color::console_default();
 			}
 			
@@ -845,12 +845,12 @@ void serial_tracker_loop(trackingStats *trackCount,
 			solution_counter++; // probably this could be eliminated
 		}
 		
-	}// re: for (ii=0; ii<W.num_pts ;ii++)
+	}// re: for (ii=0; ii<W.num_points ;ii++)
 	
 	
 	
 	//clear the data structures.
-    for (int ii = 0; ii < W.num_pts; ii++)
+    for (int ii = 0; ii < W.num_points; ii++)
     { // clear startPts[ii]
         clear_point_data_d(&startPts_d[ii]);
 		clear_point_data_mp(&startPts_mp[ii]);
@@ -894,10 +894,10 @@ void master_tracker_loop(trackingStats *trackCount,
 
 	
 	
-	trackCount->numPoints = W.num_pts;
+	trackCount->numPoints = W.num_points;
 	int solution_counter = 0;
 	
-	int total_number_points = W.num_pts;
+	int total_number_points = W.num_points;
 	MPI_Bcast(&total_number_points, 1, MPI_INT, solve_options.head(), MPI_COMM_WORLD);
 	
 	
@@ -913,7 +913,7 @@ void master_tracker_loop(trackingStats *trackCount,
 	// seed the workers
 	int next_index = 0;
 	
-	for (int ii=1; ii<solve_options.numprocs && next_index<W.num_pts; ii++) {
+	for (int ii=1; ii<solve_options.numprocs && next_index<W.num_points; ii++) {
 		int next_worker = solve_options.activate_next_worker();
         
 		int num_packets = get_num_at_a_time(solve_options.numprocs-1,total_number_points-next_index);
@@ -950,7 +950,7 @@ void master_tracker_loop(trackingStats *trackCount,
                           next_index,
                           solve_options);
 		
-	}// re: for (ii=0; ii<W.num_pts ;ii++)
+	}// re: for (ii=0; ii<W.num_points ;ii++)
 	
 	while (solve_options.have_active()) {
 //		std::cout << "waiting to receive from active worker" << std::endl;
@@ -968,13 +968,13 @@ void master_tracker_loop(trackingStats *trackCount,
 	//clear the data structures.
 	switch (solve_options.T.MPType) {
 		case 1:
-			for (int ii = 0; ii < W.num_pts; ii++)
+			for (int ii = 0; ii < W.num_points; ii++)
 				clear_point_data_mp(&startPts_mp[ii]);
 			free(startPts_mp);
 			break;
 			
 		default:
-			for (int ii = 0; ii < W.num_pts; ii++)
+			for (int ii = 0; ii < W.num_points; ii++)
 				clear_point_data_d(&startPts_d[ii]);
 			free(startPts_d);
 			break;
@@ -1154,7 +1154,7 @@ void worker_tracker_loop(trackingStats *trackCount,
 			
 			
             
-		}// re: for (ii=0; ii<W.num_pts ;ii++)
+		}// re: for (ii=0; ii<W.num_points ;ii++)
         
 		MPI_Send(&numStartPts, 1, MPI_INT, solve_options.head(), NUMPACKETS, MPI_COMM_WORLD);
 		send_recv_endgame_data_t(&EG, &numStartPts, solve_options.T.MPType, solve_options.head(), 1);
