@@ -780,8 +780,8 @@ private:
 /** the main function for finding critical conditions WRT a projection
  */
 
-int midpoint_solver_master_entry_point(const witness_set						& W, // carries with it the start points, and the linears.
-                                       witness_set						*W_new, // new data goes in here
+int midpoint_solver_master_entry_point(const witness_set & W, // carries with it the start points, and the linears.
+                                       solver_output & solve_out, // new data goes in here
                                        midpoint_config & md_config,
                                        solver_configuration		& solve_options);
 

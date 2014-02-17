@@ -148,13 +148,19 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 		solve_options.allow_unsuccess = 0;
 		// actually solve WRT the linears
 		
+		
+		solver_output fillme;
 		multilin_solver_master_entry_point(W,         // witness_set
-										   &Wtemp, // the new data is put here!
+										   fillme, // the new data is put here!
 										   multilin_linears,
 										   ml_config,
 										   solve_options);
 		
+		witness_set Wtemp;
+		fillme.get_noninfinite_w_mult_full(Wtemp); // should be ordered
+		
 		W_step_one.merge(Wtemp);
+		
 		Wtemp.reset();
 		
 		
@@ -258,11 +264,15 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 		std::cout << "running nullspace method" << std::endl;
 	}
 	
+	
+	solver_output fillme;
 	nullspacejac_solver_master_entry_point(solve_options.T.MPType,
 										   W_linprod, // carries with it the start points, but not the linears.
-										   W_crit,   // the created data goes in here.
+										   fillme,   // the created data goes in here.
 										   ns_config,
 										   solve_options);
+	
+	fillme.get_noninfinite_w_mult_full(*W_crit); // should be ordered
 	
 //	W_crit->print_to_screen();
 //	std::cout << "above is the nullspace crit set" << std::endl;

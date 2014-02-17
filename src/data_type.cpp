@@ -350,7 +350,6 @@ void linear_holder::add_linear(vec_mp new_linear)
 
 
 
-
 //use:  call to parse the file witness_set_file, into the struct W.
 
 
@@ -449,20 +448,7 @@ int witness_set::witnessSetParse(const boost::filesystem::path witness_set_file,
 
 
 
-//requires the witness set to have set the number of variables.
-void witness_set::get_variable_names()
-{
-	
-	this->variable_names.resize(this->num_variables);
-	
-	std::ifstream fin("names.out");
-	
-	for (int ii=0; ii<this->num_variables; ++ii){
-		fin >> this->variable_names[ii];
-	}
-	fin.close();
-	
-}
+
 
 
 
@@ -993,19 +979,7 @@ void witness_set::merge(const witness_set & W_in)
 
 
 
-//copies names from old to new
-void witness_set::cp_names(const witness_set & W_in)
-{
-	
-	if (W_in.num_variables==0) {
-		printf("\nattempting to copy variable names from witness_set with no variables\n");
-		deliberate_segfault();
-		exit(1333);
-	}
-	
-	this->variable_names = W_in.variable_names;
-	
-}
+
 
 
 
@@ -1382,15 +1356,15 @@ int vertex_set::add_vertex(const vertex source_vertex)
 {
 	
 	
-	if (this->num_projections <= 0) {
-		std::cout << color::red() << "vertex set has no projections!!!" << color::console_default() << std::endl;
-		br_exit(-9644);
-	}
-	
-	if (curr_input_index<0 && source_vertex.input_filename_index == -1) {
-		std::cout << color::red() << "adding points to vertex set, but input file index unset." << color::console_default() << std::endl;
-		br_exit(6711);
-	}
+//	if (this->num_projections <= 0) {
+//		std::cout << color::red() << "vertex set has no projections!!!" << color::console_default() << std::endl;
+//		br_exit(-9644);
+//	}
+//	
+//	if (curr_input_index<0 && source_vertex.input_filename_index == -1) {
+//		std::cout << color::red() << "adding points to vertex set, but input file index unset." << color::console_default() << std::endl;
+//		br_exit(6711);
+//	}
 	
 	
 	this->vertices.push_back(source_vertex);

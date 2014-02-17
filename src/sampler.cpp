@@ -234,7 +234,7 @@ void curve_decomposition::adaptive_sampler(vertex_set & V,
 	W.num_variables = num_variables;
 	W.num_synth_vars = num_variables - V.num_natural_variables;
     
-	W.get_variable_names();
+	W.get_variable_names(num_variables);
 	
 	
 	
@@ -427,13 +427,14 @@ void curve_decomposition::adaptive_sampler(vertex_set & V,
 					}
 					
 					
-					
+					solver_output fillme;
 					multilin_solver_master_entry_point(W,         // witness_set
-                                                       &Wnew, // the new data is put here!
+                                                       fillme, // the new data is put here!
                                                        &target_projection,
                                                        ml_config,
                                                        solve_options);
-					
+					//get new points from fillme
+					deliberate_segfault();
 					
 					if (sampler_options.verbose_level>=3)
 						print_point_to_screen_matlab(Wnew.pts_mp[0], "new_solution");
@@ -671,8 +672,9 @@ void curve_decomposition::fixed_sampler(vertex_set & V,
 				W.print_to_screen();
 			
 			
+			solver_output fillme;
 			multilin_solver_master_entry_point(W,         // witness_set
-											   &Wnew, // the new data is put here!
+											   fillme, // the new data is put here!
 											   &target_projection,
 											   ml_config,
 											   solve_options);
@@ -1200,12 +1202,14 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 				
 //				print_comp_matlab(md_config.v_target,"v_target");
 				
-				
+				solver_output fillme;
 				witness_set W_new;
 				midpoint_solver_master_entry_point(W_midtrack, // carries with it the start points, and the linears.
-												   &W_new, // new data goes in here
+												   fillme, // new data goes in here
 												   md_config,
 												   solve_options);
+				// get W_new from fillme.
+				deliberate_segfault();
 				
 				if (W_new.num_points==0) {
 					std::cout << color::red() << "midpoint tracker did not return any points :(" << color::console_default() << std::endl;

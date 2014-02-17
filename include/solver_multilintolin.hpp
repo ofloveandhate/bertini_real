@@ -35,7 +35,7 @@ class multilin_config
 	
 public:
 	mat_mp randomizer_matrix;  ///< R, the main randomizer matrix, which was passed in.  randomizes f and Jf down to N-k equations.
-
+	
 	SLP_global_pointers SLP_memory;
 	prog_t * SLP;
 	
@@ -46,7 +46,7 @@ public:
 	
 	
 	multilin_config(solver_configuration & solve_options,
-									const witness_set & W)
+					const witness_set & W)
 	{
 		init();
 		
@@ -58,7 +58,7 @@ public:
 	
 	
 	multilin_config(solver_configuration & solve_options,
-									mat_mp _random)
+					mat_mp _random)
 	{
 		init();
 		
@@ -92,12 +92,12 @@ public:
 		
 		have_rand = true;
 	}
-
+	
 	
 	void set_memory(solver_configuration & solve_options)
 	{
 		
-//TODO: should i assume here that the input file is already parsed??
+		//TODO: should i assume here that the input file is already parsed??
 		this->MPType = solve_options.T.MPType;
 		solve_options.T.numVars = setupProg(SLP, solve_options.T.Precision, solve_options.T.MPType);
 		//make randomizer matrix here
@@ -131,7 +131,7 @@ public:
 	void init()
 	{
 		init_mat_mp2(randomizer_matrix,1,1,1024); randomizer_matrix->rows = randomizer_matrix->cols = 1;
-
+		
 		SLP = new prog_t;
 		have_mem = false;
 		have_rand = false;
@@ -245,14 +245,14 @@ public:
 		clear();
 	}
 	
-
+	
 	
 	virtual void print()
 	{
 		
 	}
 	
-
+	
 	
 	
 	
@@ -265,9 +265,9 @@ public:
 	
 	
 	int setup(const multilin_config & config,
-						const witness_set & W,
-						vec_mp * target_linears,
-						solver_configuration & solve_options);
+			  const witness_set & W,
+			  vec_mp * target_linears,
+			  solver_configuration & solve_options);
 	
 	
 	
@@ -276,8 +276,8 @@ protected:
 	
 	void clear()
 	{
-
-
+		
+		
 		for (int ii=0; ii<num_linears; ii++) {
 			clear_vec_mp(current_linear[ii]);
 			clear_vec_mp(old_linear[ii]);
@@ -344,7 +344,7 @@ protected:
 				vec_cp_mp(old_linear_full_prec[ii],other.old_linear_full_prec[ii]);
 			}
 		}
-
+		
 		this->num_linears= other.num_linears;
 	} // re: copy
 	
@@ -376,8 +376,8 @@ public:
 	
 	
 	
-	vec_d *current_linear;						
-	vec_d *old_linear;								
+	vec_d *current_linear;
+	vec_d *old_linear;
 	
 	
 	
@@ -452,9 +452,9 @@ public:
 	
 	
 	int setup(const multilin_config & config,
-						const witness_set & W,
-						vec_mp * target_linears,
-						solver_configuration & solve_options);
+			  const witness_set & W,
+			  vec_mp * target_linears,
+			  solver_configuration & solve_options);
 	
 	
 	
@@ -463,7 +463,7 @@ protected:
 	
 	void clear()
 	{
-
+		
 		for (int ii=0; ii<num_linears; ii++) {
 			clear_vec_d(current_linear[ii]);
 			clear_vec_d(old_linear[ii]);
@@ -480,11 +480,11 @@ protected:
 
 
 
-int multilin_solver_master_entry_point(const witness_set						&W, // carries with it the start points, and the linears.
-																			 witness_set							*W_new, // new data goes in here
-																			 vec_mp * new_linears,
-																			 const multilin_config &		config,
-																			 solver_configuration		& solve_options);
+int multilin_solver_master_entry_point(const witness_set & W, // carries with it the start points, and the linears.
+									   solver_output & solve_out, // new data goes in here
+									   vec_mp * new_linears,
+									   const multilin_config &		config,
+									   solver_configuration		& solve_options);
 
 
 
@@ -503,11 +503,11 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 
 
 int check_issoln_multilintolin_d(endgame_data_t *EG,
-														tracker_config_t *T,
-														void const *ED);
+								 tracker_config_t *T,
+								 void const *ED);
 int check_issoln_multilintolin_mp(endgame_data_t *EG,
-														 tracker_config_t *T,
-														 void const *ED);
+								  tracker_config_t *T,
+								  void const *ED);
 
 
 

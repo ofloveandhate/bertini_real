@@ -519,7 +519,7 @@ void solver_clear_config(solver_configuration & options){
 
 
 
-void master_solver(witness_set * W_new, const witness_set & W,
+void master_solver(solver_output & solve_out, const witness_set & W,
                    solver_d * ED_d, solver_mp * ED_mp,
                    solver_configuration & solve_options)
 {
@@ -529,14 +529,11 @@ void master_solver(witness_set * W_new, const witness_set & W,
 	
     int num_crossings = 0;
 	
-	W_new->num_variables = W.num_variables;
-	W_new->num_synth_vars = W.num_synth_vars;
+	solve_out.num_variables = W.num_variables;
+	solve_out.num_synth_vars = W.num_synth_vars;
 	
-	if (solve_options.complete_witness_set==1){
-		
-		W_new->copy_patches(W); // copy the patches over from the original witness set
-		W_new->cp_names(W);
-	}
+	solve_out.copy_patches(W); // copy the patches over from the original witness set
+	solve_out.cp_names(W);
 	
 	
 	if (solve_options.use_parallel()) {
@@ -612,11 +609,11 @@ void master_solver(witness_set * W_new, const witness_set & W,
 	// post process
 	switch (solve_options.T.MPType) {
 		case 0:
-			BRpostProcessing(endPoints, W_new, trackCount.successes, &ED_d->preProcData, &solve_options.T, solve_options);
+			solve_out.post_process(endPoints, trackCount.successes, &ED_d->preProcData, &solve_options.T, solve_options);
 			break;
 			
 		default:
-			BRpostProcessing(endPoints, W_new, trackCount.successes, &ED_mp->preProcData, &solve_options.T, solve_options);
+			solve_out.post_process(endPoints, trackCount.successes, &ED_mp->preProcData, &solve_options.T, solve_options);
 			break;
 	}
 	

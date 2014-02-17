@@ -558,7 +558,7 @@ protected:
 
 
 int sphere_solver_master_entry_point(const witness_set						&W, // carries with it the start points, and the linears.
-									 witness_set							*W_new, // new data goes in here
+									 solver_output & solve_out, // new data goes in here
 									 const sphere_config &		config,
 									 solver_configuration		& solve_options);
 

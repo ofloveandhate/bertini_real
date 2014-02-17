@@ -642,13 +642,14 @@ void surface_decomposition::compute_sphere_witness_set(const witness_set & W_sur
 		solve_options.allow_unsuccess = 0;
 		
 		
-		
+		solver_output fillme;
 		multilin_solver_master_entry_point(W_surf,         // witness_set
-                                           &W_temp, // the new data is put here!
+                                           fillme, // the new data is put here!
                                            multilin_linears,
                                            ml_config,
                                            solve_options);
-		
+		//get stuff from fillme into W_temp, or whatever
+		deliberate_segfault();
 		W_sphere.merge(W_temp);
 		
 	}
@@ -681,12 +682,14 @@ void surface_decomposition::compute_sphere_witness_set(const witness_set & W_sur
 	
 	
 	
-	
-	sphere_solver_master_entry_point(W_sphere, &W_intersection_sphere,
+	solver_output fillme;
+	sphere_solver_master_entry_point(W_sphere,
+									 fillme,
                                      sp_config,
                                      solve_options);
 	
-	
+	// get output from fillme into W_intersection_sphere
+	deliberate_segfault();
 	W_intersection_sphere.input_filename = "input_surf_sphere";
 	
 }
@@ -874,12 +877,16 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 			solve_options.allow_unsuccess = 0;
 			
 			
+			solver_output fillme;
 			//			print_matrix_to_screen_matlab(ml_config.randomizer_matrix,"rand_surf_slice_314");
 			multilin_solver_master_entry_point(W_surf,         // witness_set
-                                               &slice_witness_set, // the new data is put here!
+                                               fillme, // the new data is put here!
                                                multilin_linears,
                                                ml_config,
                                                solve_options);
+			
+			//fill slice_witness_set from fillme
+			deliberate_segfault();
 			
 			boost::filesystem::path slicename = W_surf.input_filename;
 			slicename += "_"; slicename += kindofslice; slicename += "slice_"; slicename += converter.str();
@@ -1816,12 +1823,16 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				
 				
 				
-				
+				solver_output fillme;
 				witness_set W_new;
 				midpoint_solver_master_entry_point(W_midtrack, // carries with it the start points, and the linears.
-												   &W_new, // new data goes in here
+												   fillme, // new data goes in here
 												   md_config,
 												   solve_options);
+				
+				//somehow get stull from fillme
+				deliberate_segfault();
+				
 				
 				//print some display to screen
 				if (solve_options.verbose_level >= 3)

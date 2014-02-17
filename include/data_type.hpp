@@ -543,8 +543,45 @@ private:
 };
 
 
+class name_holder
+{
+public:
+	
+	std::vector< std::string > variable_names;
+	
+	
+	void reset_names()
+	{
+		variable_names.resize(0);
+	}
+	
+	void cp_names(const name_holder & nomnom)
+	{
+		
+		this->variable_names = nomnom.variable_names;
+		
+	}
+	
+	void get_variable_names(int num_vars) ///< reads variable names from names.out
+	{
+		
+		variable_names.resize(num_vars);
+		
+		std::ifstream fin("names.out");
+		
+		for (int ii=0; ii<num_vars; ++ii){
+			fin >> this->variable_names[ii];
+		}
+		fin.close();
+		
+	}
+	
+	
+};
 
-class witness_set : public patch_holder, public linear_holder, public point_holder
+
+
+class witness_set : public patch_holder, public linear_holder, public point_holder, public name_holder
 {
 	
 public:
@@ -562,10 +599,12 @@ public:
 
 
 	
-	std::vector< std::string > variable_names;
+
 	
 	boost::filesystem::path input_filename;
 	function input_file;
+	
+	
 	// end data members
 	
 	
@@ -574,7 +613,6 @@ public:
 	
 	
 	// default constructor
-	
 	witness_set(){
 		init();
 	};
@@ -633,8 +671,8 @@ public:
 		this->num_variables = other.num_variables;
 		this->num_synth_vars = other.num_synth_vars;
 		
-		this->variable_names = other.variable_names;
-		
+
+		cp_names(other);
 		copy_points(other);
 		copy_patches(other);
 		copy_linears(other);
@@ -683,21 +721,18 @@ public:
 	}
 	
 	
-	void reset_names()
-	{
-		variable_names.resize(0);
-	}
+
 	
 	
 
 	
-	void cp_names(const witness_set & W_in);
+
 	
 	
 	void merge(const witness_set & W_in);///< merges W_in into this
 	
 	
-	void get_variable_names(); ///< reads variable names from names.out
+
 	
 	
 	void print_to_screen() const; ///< prints some information about the witness set to the screen
@@ -847,16 +882,24 @@ public:
 	
 	int num_natural_variables;  ///< the number of natural variables appearing in the problem to solve.
 	
-	void print_to_screen(); ///< operator for displaying information to screen
 	
-	int add_vertex(const vertex new_vertex);
-	int setup_vertices(boost::filesystem::path INfile);
 	
 	mpf_t abs;
 	mpf_t zerothresh;
 	comp_mp diff;
 	vec_mp checker_1;
 	vec_mp checker_2;
+	
+	
+	
+	void print_to_screen(); ///< operator for displaying information to screen
+	
+	int add_vertex(const vertex new_vertex);
+	int setup_vertices(boost::filesystem::path INfile);
+	
+	
+	
+	
 	
 	vertex_set(){
 		init();
@@ -1050,8 +1093,22 @@ public:
 	
 	void receive(int source, parallelism_config & mpi_config);
 	
-	
-private:
+	void reset()
+	{
+		for (int ii=0; ii<num_projections; ii++) {
+			clear_vec_mp(projections[ii]);
+		}
+		num_projections = 0;
+		
+		filenames.resize(0);
+		
+		vertices.resize(0);
+		num_vertices = 0;
+		
+		clear();
+		init();
+	}
+protected:
 	
 	void init()
 	{
@@ -1122,6 +1179,11 @@ private:
 	{
 		clear_vec_mp(checker_1);
 		clear_vec_mp(checker_2);
+		
+		clear_mp(diff);
+		
+		mpf_clear(abs);
+		mpf_clear(zerothresh);
 	}
 
 };
