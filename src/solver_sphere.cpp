@@ -589,7 +589,7 @@ int sphere_eval_data_d::setup(const sphere_config & config,
 
 
 int sphere_solver_master_entry_point(const witness_set						&W, // carries with it the start points, and the linears.
-									 witness_set							*W_new, // new data goes in here
+									 solver_output							&solve_out, // new data goes in here
 									 const sphere_config &		config,
 									 solver_configuration		& solve_options)
 {
@@ -641,7 +641,7 @@ int sphere_solver_master_entry_point(const witness_set						&W, // carries with 
 	
 	
 	
-	master_solver(W_new, W,
+	master_solver(solve_out, W,
                   ED_d, ED_mp,
                   solve_options);
 	
@@ -664,12 +664,11 @@ int sphere_solver_master_entry_point(const witness_set						&W, // carries with 
 	}
 	
 	
-	if (solve_options.complete_witness_set==1){
-		for (int jj=0; jj<W.num_linears; jj++)
-		{
-			W_new->add_linear(W.L_mp[jj]);
-		}
+	for (int jj=0; jj<W.num_linears; jj++)
+	{
+		solve_out.add_linear(W.L_mp[jj]);
 	}
+	
 	return SUCCESSFUL;
 	
 }

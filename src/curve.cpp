@@ -346,16 +346,19 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 		
 		solve_options.complete_witness_set = 1;
 		
+		solver_output fillme;
 		multilin_solver_master_entry_point(W_curve,         // witness_set
-                                           &midpoint_witness_sets[ii], // the new data is put here!
+                                           fillme, // the new data is put here!
                                            &particular_projection,
                                            ml_config,
                                            solve_options);
-
 		
+		fillme.get_noninfinite_w_mult_full(midpoint_witness_sets[ii]); // is ordered
+
+
 		midpoint_witness_sets[ii].sort_for_real(solve_options.T);
-		midpoint_witness_sets[ii].sort_for_unique(solve_options.T);
 		midpoint_witness_sets[ii].sort_for_inside_sphere(sphere_radius, sphere_center);
+		
 		
 
 		if (program_options.verbose_level>=2) {
@@ -413,35 +416,49 @@ int curve_decomposition::interslice(const witness_set & W_curve,
             iterations++;
             keep_going = 0; // we would like to stop computing
             
-            neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii]);
+            
             if (program_options.verbose_level>=2)
 			{
                 print_comp_matlab(&crit_downstairs->coord[ii],"left ");
 				print_comp_matlab(&crit_downstairs->coord[ii+1],"right ");
 			}
 			
+//			std::cout << "start:" << std::endl;
+//			midpoint_witness_sets[ii].print_to_screen();
+			
+			solver_output fillme;
+			
+			neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii]);
             multilin_solver_master_entry_point(midpoint_witness_sets[ii],         // input witness_set
-                                               &Wleft, // the new data is put here!
+                                               fillme, // the new data is put here!
                                                &particular_projection,
                                                ml_config,
                                                solve_options);
-            
-            
-            
-            neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii+1]);
-            
+			
+			fillme.get_noninfinite_w_mult_full(Wleft); // should be ordered
 			
             
-
+			
+			fillme.reset();
+			
+            neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii+1]);
             multilin_solver_master_entry_point(midpoint_witness_sets[ii],         // witness_set
-                                               &Wright, // the new data is put here!
+                                               fillme, // the new data is put here!
                                                &particular_projection,
                                                ml_config,
                                                solve_options);
-            
-            
-			witness_set Wright_real = Wright;
-			witness_set Wleft_real = Wleft;
+			
+			fillme.get_noninfinite_w_mult_full(Wright); // should be ordered
+			
+//			std::cout << "left:" << std::endl;
+//            Wleft.print_to_screen();
+//			std::cout << "right:" << std::endl;
+//			Wright.print_to_screen();
+			
+			
+//			mypause();
+			witness_set Wright_real = Wright; // this is unnecessary
+			witness_set Wleft_real = Wleft;   // this is unnecessary
             
 			Wright_real.sort_for_real(solve_options.T);
 			Wleft_real.sort_for_real(solve_options.T);
@@ -507,11 +524,17 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 					solve_options.T.sharpenDigits = MIN(4*solve_options.T.sharpenDigits,300);
 					
 					neg_mp(&particular_projection->coord[0], &midpoints_downstairs->coord[ii]);
+					
+					solver_output fillme;
 					multilin_solver_master_entry_point(W_single,         // input witness_set
-													   &W_single_sharpened, // the new data is put here!
+													   fillme, // the new data is put here!
 													   &particular_projection,
 													   ml_config,
 													   solve_options);
+					
+					//fill &W_single_sharpened from fillme
+					deliberate_segfault();
+					
 					
 					solve_options.T.sharpenDigits = prev_sharpen_digits;
 					
@@ -549,12 +572,14 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 							solve_options.T.outputLevel = 3;
 						}
 						
+						solver_output fillme;
 						multilin_solver_master_entry_point(W_single_sharpened,         // witness_set
-														   &W_single_left, // the new data is put here!
+														   fillme, // the new data is put here!
 														   &particular_projection,
 														   ml_config,
 														   solve_options);
-						
+						// get stuff from fillme
+						deliberate_segfault();
 						W_single_left.sort_for_real(solve_options.T);
 						
 						num_its++;
@@ -584,13 +609,14 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 							solve_options.T.maxNewtonIts = 4;
 							solve_options.T.outputLevel = 3;
 						}
-						
+						solver_output fillme;
 						multilin_solver_master_entry_point(W_single_sharpened,         // witness_set
-														   &W_single_right, // the new data is put here!
+														   fillme, // the new data is put here!
 														   &particular_projection,
 														   ml_config,
 														   solve_options);
-
+						//get stuff from fillme
+						deliberate_segfault();
 						if (num_its==3) {
 //							std::cout << "paused for inspecting output file" << std::endl;
 //							sleep(600);
@@ -982,13 +1008,15 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		solve_options.robust = true;
 		
 		ml_config.set_randomizer(this->randomizer_matrix);
-		
+		solver_output fillme;
 		multilin_solver_master_entry_point(W_midpt,         // witness_set
-                                           &W_temp, // the new data is put here!
+                                           fillme, // the new data is put here!
                                            &particular_projection,
                                            ml_config,
                                            solve_options);
 		
+		fillme.get_noninfinite_w_mult_full(W_temp); // should be ordered
+
 		if (W_temp.num_points==0) {
 			std::cout << "merging multilin solver returned NO POINTS!!!" << std::endl;
 			continue;
@@ -1249,12 +1277,14 @@ int curve_decomposition::get_additional_critpts(witness_set *W_additional,
 		solve_options.allow_unsuccess = 0;
 		
 		
-		
+		solver_output fillme;
 		multilin_solver_master_entry_point(W_curve,         // witness_set
-                                           &W_temp, // the new data is put here!
+                                           fillme, // the new data is put here!
                                            multilin_linears,
                                            ml_config,
                                            solve_options);
+		
+		fillme.get_noninfinite_w_mult(W_temp); // should be ordered
 		
 		W_sphere.merge(W_temp); // copy in the points
 		
@@ -1294,12 +1324,14 @@ int curve_decomposition::get_additional_critpts(witness_set *W_additional,
 	
 	
 	
-
+	solver_output fillme;
 	sphere_solver_master_entry_point(W_sphere,
-                                     W_additional, // returned value
+                                     fillme, // returned value
                                      sp_config,
                                      solve_options);
 	
+	//get stuff into W_additional from fillme.
+	fillme.get_noninfinite_w_mult_full(*W_additional);
 	
 
 	return 0;

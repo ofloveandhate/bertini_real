@@ -63,7 +63,7 @@ int ubermaster_process::main_loop()
 	program_options.MPType = MPType;
 	
 	
-	W.get_variable_names();
+	W.get_variable_names(num_vars);
 	W.input_filename = program_options.input_filename;
 	
 	int incidence_number = get_incidence_number(W,num_vars,

@@ -1,6 +1,6 @@
 
 #choose some options.  by default, compiler optimization is turned off
-OPT= -Dverbose  -g  -Wall -Ddebug_compile #-Dthresholding #-Wdeprecated # -Dprintpathlinprod  -O3 -funroll-loops -fexpensive-optimizations
+OPT= -Dverbose  -g  -Ddebug_compile -Dthresholding # -O3 #-Wdeprecated # -Dprintpathlinprod  -O3 -funroll-loops -fexpensive-optimizations
 
 
 
@@ -31,7 +31,7 @@ ifeq ($(MACHINENAME),MACBRAKE)
     COMPcc = mpicc -cc=clang 
 	COMPpp = mpic++ -cxx=clang++ -std=c++11
     STATICFLAG=#  on macintosh, do not static compile (get missing lcrt0.o problem)
-	BERTINILIB:=$(HOME)/lib/libbertini.a
+	BERTINILIB:=$(HOME)/lib/libbertini_parallel.a
 	INSTALLPATH:=$(HOME)/bin
 	BERTINIHEADERS:=$(HOME)/bertini_source/include
 
@@ -99,7 +99,7 @@ ARGS= $(OPT) -D_HAVE_MPI $(MACHINESPECIFICS) $(INC)
 
 OBJFILES= parallelism.o derivative_systems.o data_type.o programConfiguration.o determinant_derivative.o output.o fileops.o isosingular.o checkSelfConjugate.o nullspace_left.o surface.o curve.o
 
-SOLVERS= solver.o solver_midpoint_tracker.o solver_nullspace_left.o solver_multilintolin.o postProcessing.o solver_lintolin.o solver_sphere.o
+SOLVERS= solver.o solver_midpoint_tracker.o solver_nullspace_left.o solver_multilintolin.o postProcessing.o solver_sphere.o
 
 FLEXFILES=lex.partitionParse.o 
 

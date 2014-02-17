@@ -803,7 +803,7 @@ int midpoint_eval_data_d::setup(const midpoint_config & md_config,
 
 
 int midpoint_solver_master_entry_point(const witness_set						&W, // carries with it the start points, and the linears.
-                                       witness_set						*W_new, // new data goes in here
+                                       solver_output & solve_out, // new data goes in here
                                        midpoint_config & md_config,
                                        solver_configuration		& solve_options)
 {
@@ -859,7 +859,7 @@ int midpoint_solver_master_entry_point(const witness_set						&W, // carries wit
 	
 
 	
-	master_solver(W_new, W,
+	master_solver(solve_out, W,
                   ED_d, ED_mp,
                   solve_options);
     

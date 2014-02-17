@@ -42,65 +42,6 @@ extern int *mem_needs_init_mp; // determine if mem_mp has been initialized
 
 
 
-class solver_output : public patch_holder, public linear_holder
-{
-
-	
-	
-private:
-	
-	witness_set returned_nonsingular_finite_multiplicityone_solutions;
-	witness_set returned_singular_solutions;
-	witness_set returned_infinite_solutions;
-	std::map<long long, witness_set> returned_multiple_solutions;
-	
-	
-	std::vector< long long> failed_path_indices;
-	
-public:
-	
-	
-	
-	
-	
-	void add_good_solution(vec_mp new_point)
-	{
-		returned_nonsingular_finite_multiplicityone_solutions.add_point(new_point);
-	};
-	
-	void add_singular_solution(vec_mp new_point)
-	{
-		returned_singular_solutions.add_point(new_point);
-	};
-	
-	void add_infinite_solution(vec_mp new_point)
-	{
-		returned_infinite_solutions.add_point(new_point);
-	};
-	
-	void add_multiple_solution(vec_mp new_point, int multiplicity)
-	{
-		returned_multiple_solutions[multiplicity].add_point(new_point);
-	};
-	
-	
-	void merge_good_solutions(witness_set & W_transfer)
-	{
-		
-	}
-	
-
-	
-	void get_patches(witness_set & W_transfer)
-	{
-		W_transfer.copy_patches(*this);
-	}
-	
-	void get_linears(witness_set & W_transfer)
-	{
-		W_transfer.copy_linears(*this);
-	}
-};
 
 
 
@@ -452,9 +393,197 @@ private:
 
 
 
+class solver_output;
 
+class solution_metadata
+{
 
+friend solver_output;
+	
+	std::vector<long long> input_index;
+	std::vector<long long> output_index;
+	int multiplicity;
+	bool is_finite;
+	bool is_singular;
+	bool is_successful;
+	
+	
+public:
+	
+	
+	void set_finite(bool state){
+		is_finite = state;
+	}
+	void set_singular(bool state){
+		is_singular = state;
+	}
+	void set_successful(bool state){
+		is_successful = state;
+	}
+	
+	void set_multiplicity(int state){
+		multiplicity= state;
+	}
+	
+	void add_input_index(long long new_ind){
+		input_index.push_back(new_ind);
+	}
+	void add_output_index(long long new_ind){
+		output_index.push_back(new_ind);
+	}
+	
+};
 
+class solver_output : public patch_holder, public linear_holder, public name_holder, public vertex_set
+{
+
+	
+	
+private:
+	
+	std::vector< solution_metadata > metadata;
+	
+	std::vector< std::pair<long long, long long>> ordering; /// created in the post-processing.
+
+	std::vector< int > occuring_multiplicities;
+	
+public:
+	
+	int num_variables;
+	int num_synth_vars;
+	
+	
+	int num_higher_multiplicities()
+	{
+		return occuring_multiplicities.size();
+	}
+	
+	void reset()
+	{
+		vertex_set::reset();
+		reset_names();
+		reset_linears();
+		reset_patches();
+		
+		ordering.resize(0);
+		metadata.resize(0);
+		occuring_multiplicities.resize(0);
+		
+		
+	}
+	
+	void set_witness_set_nvars(witness_set & W_transfer)
+	{
+		W_transfer.num_variables = this->num_variables;
+		W_transfer.num_synth_vars = this->num_synth_vars;
+	}
+	
+	void add_solution(const vertex & temp_vert, const solution_metadata & meta)
+	{
+
+		add_vertex(temp_vert);
+		metadata.push_back(meta);
+
+	}
+	
+	
+	void get_noninfinite_w_mult_full(witness_set & W_transfer)
+	{
+		get_noninfinite_w_mult(W_transfer);
+		
+		get_patches_linears(W_transfer);
+		
+		set_witness_set_nvars(W_transfer);
+		
+	}
+	
+	void get_noninfinite_w_mult(witness_set & W_transfer)
+	{
+//		vertex_set::print_to_screen();
+		for (auto index = ordering.begin(); index != ordering.end(); ++index) {
+			
+//			std::cout << index->first << " " << index->second << std::endl;
+			//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
+			if (metadata[index->first].is_finite) {
+				W_transfer.add_point(vertices[index->first].pt_mp);
+			}
+		}
+		
+		set_witness_set_nvars(W_transfer);
+	}
+	
+	
+	void get_nonsing_finite_multone(witness_set & W_transfer)
+	{
+		for (auto index = ordering.begin(); index != ordering.end(); ++index) {
+			//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
+			if ( (metadata[index->first].is_finite) && (!metadata[index->first].is_singular) && (metadata[index->first].multiplicity==1) ) {
+				W_transfer.add_point(vertices[index->first].pt_mp);
+			}
+		}
+		
+		set_witness_set_nvars(W_transfer);
+	}
+	
+	void get_multpos(std::map<int, witness_set> & W_transfer)
+	{
+		
+		//for each multiplicity, construct the witness_sets
+		for (auto mult_ind = occuring_multiplicities.begin(); mult_ind!=occuring_multiplicities.end(); ++mult_ind) {
+			
+			
+			for (auto index = ordering.begin(); index != ordering.end(); ++index) {
+				//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
+				if (metadata[index->first].multiplicity== *mult_ind)  {
+					W_transfer[*mult_ind].add_point(vertices[index->first].pt_mp);
+				}
+			}
+			
+			set_witness_set_nvars(W_transfer[*mult_ind]);
+		}
+		
+		
+	}
+	
+	void get_sing(witness_set & W_transfer)
+	{
+		for (auto index = ordering.begin(); index != ordering.end(); ++index) {
+			//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
+			if ( (metadata[index->first].is_singular) ) {
+				W_transfer.add_point(vertices[index->first].pt_mp);
+			}
+		}
+		set_witness_set_nvars(W_transfer);
+	}
+	
+	void get_patches_linears(witness_set & W_transfer)
+	{
+		get_patches(W_transfer);
+		get_linears(W_transfer);
+	}
+	
+	
+	void get_patches(witness_set & W_transfer)
+	{
+		W_transfer.copy_patches(*this);
+	}
+	
+	void get_linears(witness_set & W_transfer)
+	{
+		W_transfer.copy_linears(*this);
+	}
+	
+	
+	
+	/**
+	 bertini_real's version of post-processing.  options are set via the solver_configuration.
+	 */
+	void post_process(post_process_t *endPoints, int num_pts_to_check,
+					  preproc_data *preProcData, tracker_config_t *T,
+					  const solver_configuration & solve_options);
+	
+	
+};
 
 
 
@@ -856,7 +985,7 @@ int generic_setup_files(FILE ** OUT, boost::filesystem::path outname,
 void get_tracker_config(solver_configuration &solve_options,int MPType);
 void solver_clear_config(solver_configuration &options);
 
-void master_solver(witness_set * W_new, const witness_set & W,
+void master_solver(solver_output & solve_out, const witness_set & W,
 				   solver_d * ED_d, solver_mp * ED_mp,
 				   solver_configuration & solve_options);
 

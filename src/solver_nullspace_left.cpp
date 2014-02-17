@@ -1269,7 +1269,7 @@ void nullspacejac_eval_data_d::print()
 
 int nullspacejac_solver_master_entry_point(int										MPType,
 										   witness_set						&W, // carries with it the start points, and the linears.
-										   witness_set						*W_new, // new data goes in here
+										   solver_output & solve_out, // new data goes in here
 										   nullspace_config				*ns_config,
 										   solver_configuration		& solve_options)
 {
@@ -1341,7 +1341,7 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 	}
 	
 	
-	master_solver(W_new, W,
+	master_solver(solve_out, W,
                   ED_d, ED_mp,
                   solve_options);
 	

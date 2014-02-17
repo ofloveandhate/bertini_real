@@ -45,7 +45,7 @@ public:
 	int *randomized_degrees; ///< the degrees of the randomized functions (not derivatives)
 	
 	vec_mp **starting_linears;	///< outer layer should have as many as there are randomized equations (N-k)
-															///< inside layer has number corresponding to max of randomized_degrees
+								///< inside layer has number corresponding to max of randomized_degrees
 	
 	int num_additional_linears; ///<
 	vec_mp *additional_linears_terminal; ///<
@@ -61,8 +61,8 @@ public:
 	
 	mat_mp randomizer_matrix;  ///< R, the main randomizer matrix, which was passed in.  randomizes f and Jf down to N-k equations.
 	
-//	mat_mp post_randomizer_matrix;  ///< S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
-//	
+	//	mat_mp post_randomizer_matrix;  ///< S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
+	//
 	void clear();
 	
 	nullspace_config(){
@@ -130,14 +130,14 @@ public:
 	vec_mp *additional_linears_starting_full_prec;
 	
 	
-
+	
 	
 	
 	
 	vec_mp **starting_linears; // outer layer should have as many as there are randomized equations
-														 // inside layer has number corresponding to randomized_degrees
+							   // inside layer has number corresponding to randomized_degrees
 	vec_mp **starting_linears_full_prec; // outer layer should have as many as there are randomized equations
-																			 // inside layer has number corresponding to randomized_degrees
+										 // inside layer has number corresponding to randomized_degrees
 	
 	
 	int num_v_linears;
@@ -240,9 +240,9 @@ public:
 	
 	
 	int setup(prog_t * _SLP,
-						nullspace_config *ns_config,
-						 witness_set & W,
-						 solver_configuration & solve_options);
+			  nullspace_config *ns_config,
+			  witness_set & W,
+			  solver_configuration & solve_options);
 	
 	
 	
@@ -251,7 +251,7 @@ private:
 	
 	void clear()
 	{
-
+		
 		if (num_additional_linears>0) {
 			for (int ii=0; ii<num_additional_linears; ii++) {
 				clear_vec_mp(additional_linears_terminal[ii]);
@@ -264,7 +264,7 @@ private:
 			free(additional_linears_starting);
 		}
 		
-
+		
 		
 		if (num_jac_equations>0) {
 			for (int ii=0; ii<num_jac_equations; ii++) {
@@ -314,7 +314,7 @@ private:
 				free(additional_linears_starting_full_prec);
 			}
 			
-
+			
 			
 			
 			for (int ii=0; ii<num_jac_equations; ii++){
@@ -464,7 +464,7 @@ private:
 	} // re: copy
 	
 	
-
+	
 	
 }; // re: class nullspace_eval_data_mp
 
@@ -507,7 +507,7 @@ public:
 	
 	
 	vec_d **starting_linears; // outer layer should have as many as there are randomized equations
-														 // inside layer has number corresponding to randomized_degrees
+							  // inside layer has number corresponding to randomized_degrees
 	
 	
 	int num_v_linears;
@@ -601,9 +601,9 @@ public:
 	
 	
 	int setup(prog_t * _SLP,
-						nullspace_config *ns_config,
-						witness_set & W,
-						solver_configuration & solve_options);
+			  nullspace_config *ns_config,
+			  witness_set & W,
+			  solver_configuration & solve_options);
 	
 	
 private:
@@ -611,7 +611,7 @@ private:
 	
 	void clear()
 	{
-
+		
 		
 		if (num_additional_linears>0) {
 			for (int ii=0; ii<num_additional_linears; ii++) {
@@ -625,7 +625,7 @@ private:
 			free(additional_linears_starting);
 		}
 		
-
+		
 		
 		if (num_jac_equations>0) {
 			for (int ii=0; ii<num_jac_equations; ii++) {
@@ -695,7 +695,7 @@ private:
 		this->num_additional_linears = other.num_additional_linears;
 		
 		
-
+		
 		
 		if (other.num_jac_equations) {
 			this->starting_linears = (vec_d **) br_malloc(other.num_jac_equations*sizeof(vec_d *));
@@ -780,18 +780,14 @@ private:
  */
 
 int nullspacejac_solver_master_entry_point(int										MPType,
-																					 witness_set						& W, // carries with it the start points, and the linears.
-																					 witness_set						*W_new, // new data goes in here
-																					 nullspace_config				*ns_config,
-																					 solver_configuration		& solve_options);
+										   witness_set & W, // carries with it the start points, and the linears.
+										   solver_output & solve_out, // new data goes in here
+										   nullspace_config				*ns_config,
+										   solver_configuration		& solve_options);
 
 
 
-int nullspacejac_solver(int MPType,
-												witness_set & W,
-												witness_set *W_new,
-												nullspace_config				*ns_config,
-												solver_configuration & solve_options);
+
 
 
 
@@ -815,19 +811,19 @@ int change_nullspacejac_eval_prec(void const *ED, int new_prec);
 
 
 int check_issoln_nullspacejac_d(endgame_data_t *EG,
-																tracker_config_t *T,
-																void const *ED);
+								tracker_config_t *T,
+								void const *ED);
 int check_issoln_nullspacejac_mp(endgame_data_t *EG,
-																 tracker_config_t *T,
-																 void const *ED);
+								 tracker_config_t *T,
+								 void const *ED);
 
 int check_isstart_nullspacejac_d(point_d testpoint,
-																 tracker_config_t *T,
-																 void const *ED);
+								 tracker_config_t *T,
+								 void const *ED);
 
 
 void check_nullspace_evaluator(point_mp current_values,
-															 void const *ED);
+							   void const *ED);
 
 
 
