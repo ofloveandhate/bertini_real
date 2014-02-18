@@ -1,7 +1,7 @@
 #include "nullspace_left.hpp"
 
 
-int compute_crit_nullspace(witness_set *W_crit, // the returned value
+int compute_crit_nullspace(solver_output & solve_out, // the returned value
 						   const witness_set & W,
 						   mat_mp randomizer_matrix,
 						   vec_mp *pi, // an array of projections, the number of which is the target dimensions
@@ -51,7 +51,17 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	
 	
 	
-	
+	if (max_degree==0) {
+		
+		solve_out.copy_patches(W);
+		ns_concluding_modifications(solve_out, W, ns_config);
+		
+		
+		std::cout << "the highest degree of any derivative equation is 0.  Returning empty solver_output." << std::endl;
+		//then there cannot possibly be any critical points, with respect to ANY projection.  simply return an empty but complete set.
+		
+		return 0;
+	}
 	
 	
 	
@@ -265,33 +275,15 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	}
 	
 	
-	solver_output fillme;
 	nullspacejac_solver_master_entry_point(solve_options.T.MPType,
 										   W_linprod, // carries with it the start points, but not the linears.
-										   fillme,   // the created data goes in here.
+										   solve_out,   // the created data goes in here.
 										   ns_config,
 										   solve_options);
 	
-	fillme.get_noninfinite_w_mult(*W_crit); // should be ordered
+
 	
-//	W_crit->print_to_screen();
-//	std::cout << "above is the nullspace crit set" << std::endl;
-	
-	W_crit->num_variables  = ns_config->num_x_vars + ns_config->num_v_vars;
-	W_crit->num_synth_vars = W.num_synth_vars + ns_config->num_v_vars;
-	
-	W_crit->copy_patches(W);
-	W_crit->cp_names(W);
-	W_crit->sort_for_unique(solve_options.T); // get only the unique solutions.
-	
-	W_crit->add_patch(ns_config->v_patch);
-	
-	
-	
-//	offset = ambient_dim - target_dim + target_crit_codim;
-	for (ii=0; ii< ns_config->num_additional_linears; ii++) {
-		W_crit->add_linear(ns_config->additional_linears_terminal[ii]);
-	}
+	ns_concluding_modifications(solve_out, W, ns_config);
 	
 	
 	clear_mat_mp(tempmat);
@@ -306,7 +298,19 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 
 
 
-
+void ns_concluding_modifications(solver_output & solve_out,
+								 const witness_set & W,
+								 nullspace_config * ns_config)
+{
+	solve_out.num_variables  = ns_config->num_x_vars + ns_config->num_v_vars;
+	solve_out.num_synth_vars = W.num_synth_vars + ns_config->num_v_vars;
+	
+	solve_out.add_patch(ns_config->v_patch);
+	
+	for (int ii=0; ii< ns_config->num_additional_linears; ii++) {
+		solve_out.add_linear(ns_config->additional_linears_terminal[ii]);
+	}
+}
 
 
 
@@ -331,7 +335,8 @@ void nullspace_config_setup(nullspace_config *ns_config,
 {
 	
 
-	
+	int toss;
+	parse_input_file(W.input_filename, &toss); // re-create the parsed files for the stuffs (namely the SLP).
 	
 	int maxiii = 0;
 	ns_config->randomized_degrees = (int *)br_malloc(randomizer_matrix->rows * sizeof(int));

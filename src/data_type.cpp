@@ -650,6 +650,70 @@ void witness_set::print_to_file(boost::filesystem::path filename) const
 {
 	// print back into the same format we parse from.
 	
+	
+	FILE *OUT = safe_fopen_write(filename);
+	
+	
+	fprintf(OUT, "%d %d %d\n\n", this->num_points, this->dim, this->comp_num);
+	
+
+
+	for (int ii=0; ii < num_points; ii++) {
+		
+		//read the witness points into memory
+		for (int jj=0; jj < pts_mp[ii]->size; ++jj) {
+			mpf_out_str(OUT,10,0,pts_mp[ii]->coord[jj].r); // 10 is the base
+			fprintf(OUT," ");
+			mpf_out_str(OUT,10,0,pts_mp[ii]->coord[jj].i);
+			fprintf(OUT,"\n");
+		}
+		fprintf(OUT,"\n");
+	}
+	fprintf(OUT,"\n");
+	
+	
+	
+	
+	fprintf(OUT, "%d %d\n", num_linears, num_variables);
+	
+	
+	for (int ii=0; ii < num_linears; ii++) {
+
+		for (int jj=0; jj < L_mp[ii]->size; jj++) {
+			mpf_out_str(OUT,10,0,L_mp[ii]->coord[jj].r); // 10 is the base
+			fprintf(OUT," ");
+			mpf_out_str(OUT,10,0,L_mp[ii]->coord[jj].i);
+			fprintf(OUT,"\n");
+		}
+		
+		fprintf(OUT,"\n");
+	}
+	fprintf(OUT,"\n");
+	
+	
+	
+	fprintf(OUT, "%d %d\n", num_patches, num_variables);// this is incorrect
+	
+	for (int ii=0; ii < num_patches; ii++) {
+		
+		
+		//read the patch into memory
+		for (int jj=0; jj < patch_mp[ii]->size; jj++) {
+			mpf_out_str(OUT,10,0,patch_mp[ii]->coord[jj].r); // 10 is the base
+			fprintf(OUT," ");
+			mpf_out_str(OUT,10,0,patch_mp[ii]->coord[jj].i);
+			fprintf(OUT,"\n");
+		}
+		
+		fprintf(OUT,"\n");
+	}
+	fprintf(OUT,"\n");
+	fclose(OUT);
+	
+	
+	
+	
+	
 	return;
 }
 
@@ -691,6 +755,7 @@ void witness_set::only_first_vars(int num_vars)
 	
 	if (trim_from_here==0) {
 		std::cerr << "problem: the sum of the patch sizes never equalled the number of variables to trim to...\nhence, the trimming operation could not complete." << std::endl;
+		this->print_to_screen();
 		deliberate_segfault();
 	}
 	
@@ -1540,7 +1605,7 @@ void vertex_set::print(boost::filesystem::path outputfile) const
 	}
 	
 	
-	for (int ii=0; ii<filenames.size(); ii++) {
+	for (unsigned int ii=0; ii!=filenames.size(); ii++) {
 		int strleng = filenames[ii].string().size() + 1; // +1 for the null character
 		char * buffer = new char[strleng];
 		memcpy(buffer, filenames[ii].c_str(), strleng);
@@ -2004,6 +2069,8 @@ void decomposition::print(boost::filesystem::path base)
     fprintf(OUT,"\n");
     
 	fclose(OUT);
+	
+	
 }
 
 

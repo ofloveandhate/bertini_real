@@ -1350,7 +1350,7 @@ int change_multilintolin_eval_prec(void const *ED, int new_prec)
 		
 		if (BED->verbose_level >=4){
 			std::cout << color::brown();
-			printf("prec  %d\t-->\t%d\n",BED->curr_prec, new_prec);
+			printf("prec  %lu\t-->\t%d\n",BED->curr_prec, new_prec);
 			std::cout << color::console_default();
 		}
 		
@@ -1549,7 +1549,9 @@ int check_issoln_multilintolin_mp(endgame_data_t *EG,
 	if (!isSoln) {
 		
 		print_point_to_screen_matlab(e.funcVals,"terminal_func_vals");
-		printf("tol was %le\nmax_rat was %le\n",tol,max_rat);
+		printf("tol was %le\nmax_rat was ",tol);
+		mpf_out_str (NULL, 10, 8, max_rat);
+		printf("\n");
 	}
 	
 	

@@ -401,7 +401,7 @@ class solution_metadata
 friend solver_output;
 	
 	std::vector<long long> input_index;
-	std::vector<long long> output_index;
+	long long output_index;
 	int multiplicity;
 	bool is_finite;
 	bool is_singular;
@@ -409,6 +409,22 @@ friend solver_output;
 	
 	
 public:
+	friend std::ostream & operator<<(std::ostream &os, const solution_metadata & t)
+	{
+		
+		
+		os << t.output_index << std::endl;
+		for (auto iter=t.input_index.begin(); iter!=t.input_index.end(); ++iter) {
+			std::cout << *iter << " ";
+		}
+		std::cout << std::endl;
+		
+		std::cout << t.multiplicity << " " << t.is_finite << " " << t.is_singular << " " << t.is_successful;
+		
+		return os;
+	}
+	
+	
 	
 	
 	void set_finite(bool state){
@@ -422,14 +438,14 @@ public:
 	}
 	
 	void set_multiplicity(int state){
-		multiplicity= state;
+		multiplicity = state;
 	}
 	
 	void add_input_index(long long new_ind){
 		input_index.push_back(new_ind);
 	}
-	void add_output_index(long long new_ind){
-		output_index.push_back(new_ind);
+	void set_output_index(long long new_ind){
+		output_index = new_ind;
 	}
 	
 };
@@ -487,71 +503,21 @@ public:
 	}
 	
 	
-	void get_noninfinite_w_mult_full(witness_set & W_transfer)
-	{
-		get_noninfinite_w_mult(W_transfer);
-		
-		get_patches_linears(W_transfer);
-		
-		set_witness_set_nvars(W_transfer);
-		
-	}
+	void get_noninfinite_w_mult_full(witness_set & W_transfer);
 	
-	void get_noninfinite_w_mult(witness_set & W_transfer)
-	{
-		for (auto index = ordering.begin(); index != ordering.end(); ++index) {
-			//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
-			if (metadata[index->first].is_finite) {
-				W_transfer.add_point(vertices[index->first].pt_mp);
-			}
-		}
-		
-		set_witness_set_nvars(W_transfer);
-	}
+	void get_noninfinite_w_mult(witness_set & W_transfer);
 	
 	
-	void get_nonsing_finite_multone(witness_set & W_transfer)
-	{
-		for (auto index = ordering.begin(); index != ordering.end(); ++index) {
-			//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
-			if ( (metadata[index->first].is_finite) && (!metadata[index->first].is_singular) && (metadata[index->first].multiplicity==1) ) {
-				W_transfer.add_point(vertices[index->first].pt_mp);
-			}
-		}
-		
-		set_witness_set_nvars(W_transfer);
-	}
+	void get_nonsing_finite_multone(witness_set & W_transfer);
 	
-	void get_multpos(std::map<int, witness_set> & W_transfer)
-	{
+	void get_multpos(std::map<int, witness_set> & W_transfer);
 		
-		//for each multiplicity, construct the witness_sets
-		for (auto mult_ind = occuring_multiplicities.begin(); mult_ind!=occuring_multiplicities.end(); ++mult_ind) {
-			
-			
-			for (auto index = ordering.begin(); index != ordering.end(); ++index) {
-				//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
-				if (metadata[index->first].multiplicity== *mult_ind)  {
-					W_transfer[*mult_ind].add_point(vertices[index->first].pt_mp);
-				}
-			}
-			
-			set_witness_set_nvars(W_transfer[*mult_ind]);
-		}
-		
-		
-	}
+	void get_multpos_full(std::map<int, witness_set> & W_transfer);
+
+	void get_sing(witness_set & W_transfer);
 	
-	void get_sing(witness_set & W_transfer)
-	{
-		for (auto index = ordering.begin(); index != ordering.end(); ++index) {
-			//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
-			if ( (metadata[index->first].is_singular) ) {
-				W_transfer.add_point(vertices[index->first].pt_mp);
-			}
-		}
-		set_witness_set_nvars(W_transfer);
-	}
+	
+	
 	
 	void get_patches_linears(witness_set & W_transfer)
 	{
@@ -731,7 +697,7 @@ public:
 	mat_mp randomizer_matrix;     ///< randomizer
 	mat_mp randomizer_matrix_full_prec;  ///< randomizer
 	
-	int curr_prec;
+	mpfr_prec_t curr_prec;
 	
 	
 	solver_mp() : solver(){
@@ -857,12 +823,12 @@ public:
     
 	solver_d() : solver(){
 		init();
-	}; // re: default constructor
+	} // re: default constructor
 	
 	
 	solver_d(int new_mp_type) : solver(new_mp_type){
 		init();
-	}; // re: default constructor
+	} // re: default constructor
 	
 	
 	

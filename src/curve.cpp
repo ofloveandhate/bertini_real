@@ -232,7 +232,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	V.set_curr_projection(projections[0]);
 	V.set_curr_input(W_crit_real.input_filename);
 	
-	
+	this->W = W_curve;
 	
 	for (int ii=0; ii<W_curve.num_patches; ii++)
 		this->add_patch(W_curve.patch_mp[ii]);
@@ -502,8 +502,6 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 					
 					W_single.reset_points();
 					W_single_sharpened.reset();
-					W_single_left.reset(); W_single_right.reset();
-					
 					
 					
 					
@@ -524,8 +522,9 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 													   ml_config,
 													   solve_options);
 					
-					//fill &W_single_sharpened from fillme
-					deliberate_segfault();
+					fillme.get_noninfinite_w_mult_full(W_single_sharpened);
+					fillme.reset();
+
 					
 					
 					solve_options.T.sharpenDigits = prev_sharpen_digits;
@@ -571,7 +570,9 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 														   ml_config,
 														   solve_options);
 						// get stuff from fillme
-						deliberate_segfault();
+						fillme.get_noninfinite_w_mult_full(W_single_left);
+						fillme.reset();
+						
 						W_single_left.sort_for_real(solve_options.T);
 						
 						num_its++;
@@ -608,7 +609,10 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 														   ml_config,
 														   solve_options);
 						//get stuff from fillme
-						deliberate_segfault();
+						fillme.get_noninfinite_w_mult_full(W_single_right);
+						fillme.reset();
+						
+						
 						if (num_its==3) {
 //							std::cout << "paused for inspecting output file" << std::endl;
 //							sleep(600);
@@ -1027,7 +1031,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		
 		// copy over the removed points for all the edges we are going to merge.
 
-		for (int zz=0; zz<edges_to_merge.size(); zz++) {
+		for (unsigned int zz=0; zz!=edges_to_merge.size(); zz++) {
 			int merge_me_away = edges_to_merge[zz];  //set an index into the merge edges
 			for (std::vector<int>::iterator vec_iter = edges[merge_me_away].removed_points.begin(); vec_iter!=edges[merge_me_away].removed_points.end(); vec_iter++)
 			{
@@ -1040,7 +1044,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 				V.vertices[edges[merge_me_away].midpt].removed = 1;
 				V.vertices[edges[merge_me_away].left].removed = 1;
 			}
-			else if (zz==int(edges_to_merge.size())-1){ // leftmost edge
+			else if (zz==edges_to_merge.size()-1){ // leftmost edge
 //				temp_edge.removed_points.push_back(edges[merge_me_away].right);
 				temp_edge.removed_points.push_back(edges[merge_me_away].midpt);
 				V.vertices[edges[merge_me_away].midpt].removed = 1;
@@ -1067,7 +1071,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		int num_removed_edges = 0;
 		for (int ii = 0; ii<this->num_edges; ii++) {
 			bool remove_flag = false;
-			for (int zz=0; zz<edges_to_merge.size(); zz++) {
+			for (unsigned int zz=0; zz!=edges_to_merge.size(); zz++) {
 				if (edges_to_merge[zz] == ii) {
 					remove_flag = true;
 				}
@@ -1133,9 +1137,10 @@ int curve_decomposition::compute_critical_points(const witness_set & W_curve,
 	W_crit_real.input_filename = W_curve.input_filename;
 	
 	
+	solver_output solve_out;
 	
 	nullspace_config ns_config;
-	compute_crit_nullspace(&W_crit_real, // the returned value
+	compute_crit_nullspace(solve_out, // the returned value
                            W_curve,            // input the original witness set
                            randomizer_matrix,
                            projections,
@@ -1150,9 +1155,9 @@ int curve_decomposition::compute_critical_points(const witness_set & W_curve,
 	
     
 	
-	W_crit_real.copy_patches(W_curve);
-	W_crit_real.copy_linears(W_curve);
+	solve_out.get_noninfinite_w_mult_full(W_crit_real);
 	
+
 	W_crit_real.only_first_vars(W_curve.num_variables); // trim the fat, since we are at the lowest level.
 	W_crit_real.sort_for_real(solve_options.T);
 	
@@ -1261,7 +1266,7 @@ int curve_decomposition::get_additional_critpts(witness_set *W_additional,
 		solve_options.allow_multiplicity = 0;
 		solve_options.allow_unsuccess = 0;
 		
-		
+
 		solver_output fillme;
 		multilin_solver_master_entry_point(W_curve,         // witness_set
                                            fillme, // the new data is put here!
@@ -1676,6 +1681,7 @@ void curve_decomposition::print(boost::filesystem::path base)
 	boost::filesystem::path edgefile = base / "E.edge";
 	
 	curve_decomposition::print_edges(edgefile);
+	
 }
 
 

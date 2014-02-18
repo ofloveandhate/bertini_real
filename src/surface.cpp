@@ -52,11 +52,28 @@ void surface_decomposition::main(vertex_set & V,
     
     // get the witness points for the critical curve.
     witness_set W_critcurve;
+	std::map<int, witness_set> higher_multiplicity_witness_sets;
+	
+	
     compute_critcurve_witness_set(W_critcurve,
+								  higher_multiplicity_witness_sets,
                                   W_surf,
                                   program_options,
                                   solve_options);
     
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
     
     // get the critical points and the sphere intersection points for the critical curve
     witness_set W_critcurve_crit;
@@ -73,9 +90,8 @@ void surface_decomposition::main(vertex_set & V,
     
     
     
-    
-    
-    
+	
+	
     
     
     
@@ -154,7 +170,20 @@ void surface_decomposition::main(vertex_set & V,
                             program_options, solve_options); // configuration
     
 	
-    this->output_main(program_options.output_dir);
+	this->output_main(program_options.output_dir);
+	V.print(program_options.output_dir/ "V.vertex");
+	
+	
+	
+	
+	
+	//we have the sphere parameters by this point, having retrieved them from file, or computed from critcurve_critpts.
+    
+    deal_with_singular_critical_curves(higher_multiplicity_witness_sets,
+									   V,                     // vertex set.  it goes almost everywhere.
+									   program_options, solve_options); // configuration
+	
+	this->output_main(program_options.output_dir);
 	V.print(program_options.output_dir/ "V.vertex");
 	
     
@@ -239,6 +268,32 @@ void surface_decomposition::main(vertex_set & V,
 }
 
 
+
+void surface_decomposition::deal_with_singular_critical_curves(const std::map<int, witness_set> & higher_multiplicity_witness_sets,
+															   vertex_set & V,
+															   BR_configuration & program_options,
+															   solver_configuration & solve_options)
+{
+	for (auto iter = higher_multiplicity_witness_sets.begin(); iter!=higher_multiplicity_witness_sets.end(); ++iter) {
+		
+		const witness_set Wtemp = iter->second;
+		witness_set asdf = Wtemp;
+		asdf.only_first_vars(this->num_variables);
+		
+		
+		asdf.write_dehomogenized_coordinates("witness_points_dehomogenized"); // write the points to file
+		int num_deflations, *deflation_sequence = NULL;
+		
+		isosingular_deflation(&num_deflations, &deflation_sequence, program_options,
+							  program_options.input_filename,
+							  "witness_points_dehomogenized",
+							  "asdf",
+							  program_options.max_deflations, 1, 1);
+		free(deflation_sequence);
+	}
+	
+}
+
 void surface_decomposition::beginning_stuff(const witness_set & W_surf,
                                             BR_configuration & program_options,
                                             solver_configuration & solve_options)
@@ -248,20 +303,11 @@ void surface_decomposition::beginning_stuff(const witness_set & W_surf,
 	std::cout << "surface::beginning_stuff" << std::endl;
 #endif
 	
-	if (0) {
+	if (1) {
 		// perform an isosingular deflation
 		// note: you do not need witness_data to perform isosingular deflation
 		if (program_options.verbose_level>=2)
 			printf("performing isosingular deflation\n");
-		
-		W_surf.write_dehomogenized_coordinates("witness_points_dehomogenized"); // write the points to file
-		int num_deflations, *deflation_sequence = NULL;
-		
-		isosingular_deflation(&num_deflations, &deflation_sequence, program_options,
-							  program_options.input_filename,
-							  "witness_points_dehomogenized",
-							  program_options.max_deflations, W_surf.dim, W_surf.comp_num);
-		free(deflation_sequence);
 		
 		
 		program_options.input_deflated_filename = program_options.input_filename;
@@ -269,6 +315,20 @@ void surface_decomposition::beginning_stuff(const witness_set & W_surf,
 		std::stringstream converter;
 		converter << "_dim_" << W_surf.dim << "_comp_" << W_surf.comp_num << "_deflated";
 		program_options.input_deflated_filename += converter.str();
+		
+		
+		W_surf.write_dehomogenized_coordinates("witness_points_dehomogenized"); // write the points to file
+		int num_deflations, *deflation_sequence = NULL;
+		
+		isosingular_deflation(&num_deflations, &deflation_sequence, program_options,
+							  program_options.input_filename,
+							  "witness_points_dehomogenized",
+							  program_options.input_deflated_filename, // the desired output name
+							  program_options.max_deflations, W_surf.dim, W_surf.comp_num);
+		free(deflation_sequence);
+		
+		
+		
 		converter.clear(); converter.str("");
 	}
 	else {
@@ -337,6 +397,7 @@ void surface_decomposition::beginning_stuff(const witness_set & W_surf,
 
 
 void surface_decomposition::compute_critcurve_witness_set(witness_set & W_critcurve,
+														  std::map<int, witness_set> & higher_multiplicity_witness_sets,
                                                           const witness_set & W_surf,
                                                           BR_configuration & program_options,
                                                           solver_configuration & solve_options)
@@ -358,7 +419,9 @@ void surface_decomposition::compute_critcurve_witness_set(witness_set & W_critcu
 	solve_options.use_gamma_trick = 0;
 	std::cout << color::bold("m") << "computing witness points for the critical curve" << color::console_default() << std::endl;
     
-	compute_crit_nullspace(&W_critcurve, // the returned value
+	solver_output solve_out;
+	
+	compute_crit_nullspace(solve_out,	// the returned value
                            W_surf,            // input the original witness set
                            this->randomizer_matrix,
                            this->pi,
@@ -369,6 +432,30 @@ void surface_decomposition::compute_critcurve_witness_set(witness_set & W_critcu
                            program_options,
                            solve_options,
                            &ns_config);
+	
+	
+	solve_out.get_nonsing_finite_multone(W_critcurve);
+	solve_out.get_patches_linears(W_critcurve);
+	solve_out.cp_names(W_critcurve);
+
+
+	solve_out.get_multpos_full(higher_multiplicity_witness_sets);
+	//now we have a map of multiplicities and witness sets.  for each point of each multiplicity, we need to perform iso. defl.  this will enable us to get ahold of the singular curves.
+	
+//	W_critcurve.print_to_screen();
+//	
+//	for (auto iter = higher_multiplicity_witness_sets.begin(); iter!=higher_multiplicity_witness_sets.end(); iter++) {
+//		std::cout << "found " << iter->second.num_points << " points of multiplicity " << iter->first << std::endl;
+//		
+//		iter->second.print_to_screen();
+//	}
+//	
+	
+	
+	
+	
+	
+	
 	//this uses both pi[0] and pi[1] to compute witness points
 	
 	W_critcurve.write_dehomogenized_coordinates("W_curve"); // write the points to file
@@ -418,7 +505,10 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 	solve_options.use_gamma_trick = 0;
 	
 	nullspace_config ns_config; // this is set up in the nullspace call.
-	compute_crit_nullspace(&W_critcurve_crit, // the returned value
+	
+	solver_output solve_out;
+	
+	compute_crit_nullspace(solve_out, // the returned value
 						   W_surf,            // input the original witness set
 						   this->randomizer_matrix,
 						   &this->pi[0],
@@ -431,7 +521,10 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 						   &ns_config);
 	// this will use pi[0] to compute critical points
 	
-	W_critcurve_crit.only_first_vars(num_variables);
+	
+	solve_out.get_noninfinite_w_mult_full(W_critcurve_crit);
+	
+	W_critcurve_crit.only_first_vars(num_variables); // i question this line. it might be better without it.
 	W_critcurve_crit.sort_for_real(solve_options.T);
 	
 	ns_config.clear();
@@ -494,10 +587,7 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 	
 
 
-
-
-    
-    
+	
     
     
     return;
@@ -732,7 +822,9 @@ void surface_decomposition::compute_sphere_crit(const witness_set & W_intersecti
 	
 	std::cout << "computing critical points of sphere curve" << std::endl;
 	
-	compute_crit_nullspace(&W_sphere_crit,                   // the returned value
+	solver_output solve_out;
+	
+	compute_crit_nullspace(solve_out,                   // the returned value
                            W_intersection_sphere,            // input the witness set with linears
                            sphere_curve.randomizer_matrix,
                            &(this->pi[0]),
@@ -743,6 +835,8 @@ void surface_decomposition::compute_sphere_crit(const witness_set & W_intersecti
                            program_options,
                            solve_options,
                            &ns_config);
+	
+	solve_out.get_noninfinite_w_mult_full(W_sphere_crit);
 	
 	ns_config.clear();
 	
@@ -1042,7 +1136,6 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 	midpoint_config md_config;
 	md_config.setup(*this, solve_options); // yep, pass 'this' object into another call. brilliant.
 	
-	std::cout << "have the slp's in memory for connect the dots" << std::endl;
 	
 	
 	
@@ -1073,7 +1166,7 @@ void surface_decomposition::serial_connect(vertex_set & V, midpoint_config & md_
 #endif
 	
     
-	for (int ii=0; ii<mid_slices.size(); ii++) { // each edge of each midslice will become a face.  degenerate edge => degenerate face.
+	for (unsigned int ii=0; ii!=mid_slices.size(); ii++) { // each edge of each midslice will become a face.  degenerate edge => degenerate face.
 		
 		
 		for (int jj=0; jj<mid_slices[ii].num_edges; jj++) {
@@ -1147,7 +1240,7 @@ void surface_decomposition::master_connect(vertex_set & V, midpoint_config & md_
 	V.print(program_options.output_dir/ "V.vertex");
 	
 	// this loop is semi-self-seeding
-	for (int ii=0; ii<mid_slices.size(); ii++) { // each edge of each midslice will become a face.  degenerate edge => degenerate face.
+	for (unsigned int ii=0; ii!=mid_slices.size(); ii++) { // each edge of each midslice will become a face.  degenerate edge => degenerate face.
 		
 		
 		for (int jj=0; jj<mid_slices[ii].num_edges; jj++) {
@@ -2057,20 +2150,20 @@ void surface_decomposition::send(int target, parallelism_config & mpi_config)
 	MPI_Send(buffer, 4, MPI_INT, target, SURFACE, MPI_COMM_WORLD);
 	free(buffer);
 	
-	for (int ii=0; ii<num_edges; ii++) {
+	for (unsigned int ii=0; ii<num_edges; ii++) {
 		edges[ii].send(target, mpi_config);
 	}
 	
-	for (int ii=0; ii<num_faces; ii++) {
+	for (unsigned int ii=0; ii<num_faces; ii++) {
 		faces[ii].send(target, mpi_config);
 	}
 
 	
-	for (int ii=0; ii<mid_slices.size(); ii++) {
+	for (unsigned int ii=0; ii!=mid_slices.size(); ii++) {
 		mid_slices[ii].send(target, mpi_config);
 	}
 	
-	for (int ii=0; ii<crit_slices.size(); ii++) {
+	for (unsigned int ii=0; ii!=crit_slices.size(); ii++) {
 		crit_slices[ii].send(target, mpi_config);
 	}
 	
@@ -2190,7 +2283,7 @@ void surface_decomposition::print(boost::filesystem::path base)
 	boost::filesystem::path curve_location = base;
 	curve_location /= "curve";
 	
-	for (int ii=0; ii<mid_slices.size(); ii++) {
+	for (unsigned int ii=0; ii!=mid_slices.size(); ii++) {
 		
 		std::stringstream converter;
 		converter << ii;
@@ -2203,7 +2296,7 @@ void surface_decomposition::print(boost::filesystem::path base)
 		mid_slices[ii].output_main(specific_loc);
 	}
 	
-	for (int ii=0; ii<crit_slices.size(); ii++) {
+	for (unsigned int ii=0; ii!=crit_slices.size(); ii++) {
 		
 		std::stringstream converter;
 		converter << ii;
@@ -2247,16 +2340,16 @@ void surface_decomposition::print_faces(boost::filesystem::path outputfile)
 	// output the number of vertices
 	fprintf(OUT,"%d\n\n",num_faces);
 	
-	for(int ii=0;ii<num_faces;ii++){
+	for(unsigned int ii=0;ii<num_faces;ii++){
 		fprintf(OUT,"%d %d\n%d %d\n", faces[ii].midpt, faces[ii].crit_slice_index, faces[ii].top, faces[ii].bottom);
 		fprintf(OUT,"%d %d\n",faces[ii].system_type_top,faces[ii].system_type_bottom);
 		fprintf(OUT,"%ld\n",faces[ii].left.size());
-		for (int jj=0; jj<faces[ii].left.size(); jj++) {
+		for (unsigned int jj=0; jj!=faces[ii].left.size(); jj++) {
 			fprintf(OUT,"%d ",faces[ii].left[jj]);
 		}
 		fprintf(OUT,"\n");
 		fprintf(OUT,"%ld\n",faces[ii].right.size());
-		for (int jj=0; jj<faces[ii].right.size(); jj++) {
+		for (unsigned int jj=0; jj!=faces[ii].right.size(); jj++) {
 			fprintf(OUT,"%d ",faces[ii].right[jj]);
 		}
 		fprintf(OUT,"\n\n");
@@ -2295,14 +2388,14 @@ void surface_decomposition::read_faces(boost::filesystem::path load_from_me)
 		fscanf(IN,"%d\n",&F.num_left);
 		F.left.resize(F.num_left);
 		
-		for (int jj=0; jj<F.num_left; jj++) {
+		for (unsigned int jj=0; jj<F.num_left; jj++) {
 			fscanf(IN,"%d ",&F.left[jj]);
 		}
 		
 		fscanf(IN,"%d\n",&F.num_right);
 		F.right.resize(F.num_right);
 		
-		for (int jj=0; jj<F.num_right; jj++) {
+		for (unsigned int jj=0; jj<F.num_right; jj++) {
 			fscanf(IN,"%d ",&F.right[jj]);
 		}
 		
@@ -2615,7 +2708,7 @@ void face::send(int target, parallelism_config & mpi_config)
 	
 	if (num_left>0) {
 		buffer = (int *) br_malloc(num_left*sizeof(int));
-		for (int ii=0; ii<num_left; ii++) {
+		for (unsigned int ii=0; ii<num_left; ii++) {
 			buffer[ii] = left[ii];
 		}
 		MPI_Send(buffer, num_left, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
@@ -2626,7 +2719,7 @@ void face::send(int target, parallelism_config & mpi_config)
 	
 	if (num_right>0) {
 		buffer = (int *) br_malloc(num_right*sizeof(int));
-		for (int ii=0; ii<num_right; ii++) {
+		for (unsigned int ii=0; ii<num_right; ii++) {
 			buffer[ii] = right[ii];
 		}
 		MPI_Send(buffer, num_right, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);

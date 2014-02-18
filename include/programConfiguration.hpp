@@ -1,4 +1,8 @@
 
+#ifndef _PROGRAM_STARTUP_H
+#define _PROGRAM_STARTUP_H
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -16,21 +20,18 @@
 #include <boost/filesystem.hpp>
 #include <iostream>
 #include <queue>
-
-//#include <omp.h>
-
-#define BERTINI_REAL_VERSION_STRING "0.0.102"
+#include <map>
 
 
+#define BERTINI_REAL_VERSION_STRING "0.0.103"
 
-#ifndef _PROGRAM_STARTUP_H
-#define _PROGRAM_STARTUP_H
+#include "data_type.hpp"
+
+
 
 
 #include "missing_bertini_headers.hpp"
 
-
-#include "data_type.hpp"
 
 
 
@@ -44,16 +45,22 @@
 class parallelism_config
 {
 	
-public:
+protected:
 	
+	
+public:
 	bool force_no_parallel;
 	int headnode;
 	int my_id, my_id_global;
 	int numprocs;
 	MPI_Comm   my_communicator;
 	
+	
+
+	
 	int worker_level; // higher worker level means more tedious work, in a sense.  worker_level 0 is uber-master.  worker_level 1 will be the next level down in management, etc.  the exact usage of this is relative to the process being run.
 	
+
 	
 	std::map< int, int> worker_status;
 	
@@ -92,10 +99,11 @@ public:
 		MPI_Abort(my_communicator,why);
 	}
 	
-	inline int head(){return headnode;};
-	inline int id(){ return my_id;};
-	inline int level(){return worker_level;};
-	inline int size(){ return numprocs;};
+	inline MPI_Comm comm(){return my_communicator;}
+	inline int head(){return headnode;}
+	inline int id(){ return my_id;}
+	inline int level(){return worker_level;}
+	inline int size(){ return numprocs;}
 	
 	void init_active_workers()
 	{
@@ -267,21 +275,19 @@ class BR_configuration : public prog_config
 public:
 	int max_deflations;
 	int debugwait;
-	int stifle_membership_screen; //< boolean controlling whether stifle_text is empty or " > /dev/null"
-	std::string stifle_text; // std::string
+	int stifle_membership_screen; ///< boolean controlling whether stifle_text is empty or " > /dev/null"
+	std::string stifle_text; //
 	
 	bool quick_run;
 	bool user_sphere;
 	
-	int user_randomization; // bool // deprecate me
-	
-	int user_projection; // bool
+
+	bool user_projection; // bool
 	
 	int MPType;
 	
 	boost::filesystem::path bounding_sphere_filename;
 	boost::filesystem::path projection_filename;
-	boost::filesystem::path randomization_filename;
 	boost::filesystem::path input_filename;
 	boost::filesystem::path witness_set_filename;
 	boost::filesystem::path input_deflated_filename;
@@ -295,7 +301,7 @@ public:
 	std::string bertini_command;
 	std::string matlab_command;
 	
-	int use_gamma_trick; // bool
+	bool use_gamma_trick; // bool
 	
 	bool merge_edges;
 	

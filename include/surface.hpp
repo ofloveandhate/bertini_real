@@ -51,8 +51,8 @@ public:
 	int top;			///<  index into edges.  indexes into crit_curve.edges
 	int bottom;			///<  index into edges
 	
-	int num_left;		///<  counters
-	int num_right;	///<
+	unsigned int num_left;		///<  counters
+	unsigned int num_right;	///<
 	
 	
 	comp_mp left_crit_val; ///<
@@ -85,7 +85,7 @@ public:
 		os << std::endl << std::endl;
 		
 		return os;
-	};
+	}
 	
 	
 	face() : cell()
@@ -181,7 +181,7 @@ public:
 		v2 = _v2;
 		v3 = _v3;
 		
-	};
+	}
 	
 	
 	friend std::ostream & operator<<(std::ostream &os, const triangle & t)
@@ -191,7 +191,7 @@ public:
 		os << t.v1 << " " << t.v2 << " " << t.v3;
 		
 		return os;
-	};
+	}
 	
 	
 	bool is_degenerate()
@@ -226,8 +226,8 @@ class surface_decomposition : public decomposition
 	std::vector<face> faces;
 	//these counters keep track of the number of things
 	
-	int      num_edges;
-	int      num_faces;
+	unsigned int      num_edges;
+	unsigned int      num_faces;
 	
 	
 	std::vector<int> num_samples_each_face;
@@ -286,6 +286,10 @@ public:
 																							BR_configuration & program_options,
 																							solver_configuration & solve_options);
 	
+	void deal_with_singular_critical_curves(const std::map<int, witness_set> & higher_multiplicity_witness_sets,
+											vertex_set & V,
+											BR_configuration & program_options,
+											solver_configuration & solve_options);
 	
 	void compute_slices(const witness_set W_surf,
 											vertex_set & V,
@@ -299,8 +303,9 @@ public:
 	
     
     void compute_critcurve_witness_set(witness_set & W_critcurve,
-                                                              const witness_set & W_surf,
-                                                              BR_configuration & program_options,
+									   std::map<int, witness_set> & higher_multiplicity_witness_sets,
+                                       const witness_set & W_surf,
+                                       BR_configuration & program_options,
                                        solver_configuration & solve_options);
     
     void compute_critcurve_critpts(witness_set & W_critcurve_crit, // the computed value
