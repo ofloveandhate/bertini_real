@@ -52,7 +52,7 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 	
 	
 	if (max_degree==0) {
-		
+		// this will probably need tweaking when the dimension is higher.  but who really is going to decompose a linear surface?
 		solve_out.copy_patches(W);
 		ns_concluding_modifications(solve_out, W, ns_config);
 		

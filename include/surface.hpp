@@ -242,7 +242,7 @@ public:
 	curve_decomposition crit_curve;
 	curve_decomposition sphere_curve;
 	
-	curve_decomposition singular_curve; // NEW curve, need to write code to populate it.
+	std::map<int,curve_decomposition> singular_curves; // NEW curve, need to write code to populate it.
 
 	
 	void read_faces(boost::filesystem::path load_from_me);
@@ -286,7 +286,7 @@ public:
 																							BR_configuration & program_options,
 																							solver_configuration & solve_options);
 	
-	void deal_with_singular_critical_curves(const std::map<int, witness_set> & higher_multiplicity_witness_sets,
+	void deal_with_singular_curves(const std::map<int, witness_set> & higher_multiplicity_witness_sets,
 											vertex_set & V,
 											BR_configuration & program_options,
 											solver_configuration & solve_options);

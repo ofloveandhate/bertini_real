@@ -20,21 +20,11 @@ void curve_decomposition::main(vertex_set & V,
 	solve_options.robust = false;
 	
 	
-	if (0) {
+	if (1) {
 		// perform an isosingular deflation
 		// note: somehow, you do not need witness_data to perform isosingular deflation
 		if (program_options.verbose_level>=2)
 			printf("performing isosingular deflation\n");
-		
-		W.write_dehomogenized_coordinates("witness_points_dehomogenized"); // write the points to file
-		int num_deflations, *deflation_sequence = NULL;
-		isosingular_deflation(&num_deflations, &deflation_sequence,
-							  program_options, W.input_filename,
-							  "witness_points_dehomogenized",
-							  program_options.max_deflations,
-							  W.dim, W.comp_num);
-		free(deflation_sequence);
-		
 		
 		
 		program_options.input_deflated_filename = W.input_filename;
@@ -43,6 +33,20 @@ void curve_decomposition::main(vertex_set & V,
 		converter << "_dim_" << W.dim << "_comp_" << W.comp_num << "_deflated";
 		program_options.input_deflated_filename += converter.str();
 		converter.clear(); converter.str("");
+		
+		
+		W.write_dehomogenized_coordinates("witness_points_dehomogenized"); // write the points to file
+		int num_deflations, *deflation_sequence = NULL;
+		isosingular_deflation(&num_deflations, &deflation_sequence,
+							  program_options, W.input_filename,
+							  "witness_points_dehomogenized",
+							  program_options.input_deflated_filename,
+							  program_options.max_deflations);
+		free(deflation_sequence);
+		
+		
+		
+		
 		
 		W.input_filename = program_options.input_deflated_filename;
 	}
@@ -118,7 +122,6 @@ void curve_decomposition::main(vertex_set & V,
 		computeCurveSelfConj(W,
                              projections,
                              V,
-                             num_vars,
                              program_options, solve_options);
 	}
 	
@@ -137,7 +140,6 @@ void curve_decomposition::main(vertex_set & V,
 void curve_decomposition::computeCurveSelfConj(const witness_set & W_curve,
                                                vec_mp *projections,
                                                vertex_set &V,
-                                               int num_vars,
                                                BR_configuration & program_options,
                                                solver_configuration & solve_options)
 {

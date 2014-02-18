@@ -7,8 +7,7 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
 						  boost::filesystem::path inputFile,
 						  boost::filesystem::path witness_point_filename,
 						  boost::filesystem::path output_name,
-						  int max_deflations,
-						  int dim, int component_number)
+						  int max_deflations)
 /***************************************************************\
  * USAGE: Perform isosingular deflation for system at given point*
  * ARGUMENTS: name of file for polynomial system, point, command *
