@@ -116,13 +116,13 @@ public:
 		num_active_registers = num_active_;
 		num_inactive_registers = num_total_registers - num_active_registers;
 		
-		for (int ii=0; ii<num_active_registers; ii++) 
+		for (int ii=0; ii<num_active_registers; ii++)
 			active_registers.push_back(ii);
 		
 		for (int ii=num_active_registers; ii<num_total_registers; ii++)
 			inactive_registers.push_back(ii);
 		
-		for (int ii=0; ii<num_active_registers; ii++) 
+		for (int ii=0; ii<num_active_registers; ii++)
 			registers.push_back(0);
 		
 		for (int ii=0; ii<num_total_registers; ii++)
@@ -133,7 +133,7 @@ public:
 	int reg_val(int reggie){
 		return registers[reggie];
 	}
-		
+	
 	int act_reg(int reggie){
 		return active_registers[reggie];
 	}
@@ -143,7 +143,7 @@ public:
 	}
 	
 	int increment(){
-
+		
 		if (double_odometer::increment_registers()!=0) {
 			if (double_odometer::increment_active_registers()!=0)
 				return -1;
@@ -156,7 +156,7 @@ public:
 	
 	void print(){
 		std::cout << "active: ";
-		for (int ii=0; ii<num_active_registers; ii++) 
+		for (int ii=0; ii<num_active_registers; ii++)
 			std::cout << active_registers[ii] << " ";
 		std::cout << "\t|\t";
 		
@@ -177,7 +177,7 @@ public:
 /**
  the main function for computing critical sets.
  
- \param W_crit_real			the main returned structure.  
+ \param W_crit_real			the main returned structure.
  \param W								input witness_set.
  \param randomizer_matrix	randomizes the system down to the correct number of equations.
  \param pi							the set of projections to use.
@@ -186,24 +186,26 @@ public:
  \param program_options				holds the configuration for the main program.  is a pointer so that it is mutable.
  \param solve_options					holds the configuration for any solvers called.  is a pointer so that it is mutable.
  */
-int compute_crit_nullspace(witness_set *W_crit_real, // the returned value
-													 const witness_set & W,
-													 mat_mp randomizer_matrix,
-													 vec_mp *pi,
-													 std::vector< int> randomized_degrees,
-													 int ambient_dim,
-													 int target_dim, // this should also be the number of vectors in the *pi entry
-													 int target_crit_dim,
-													 BR_configuration & program_options,
-													 solver_configuration & solve_options,
-													 nullspace_config *ns_config);
+int compute_crit_nullspace(solver_output & solve_out, // the returned value
+						   const witness_set & W,
+						   mat_mp randomizer_matrix,
+						   vec_mp *pi,
+						   std::vector< int> randomized_degrees,
+						   int ambient_dim,
+						   int target_dim, // this should also be the number of vectors in the *pi entry
+						   int target_crit_dim,
+						   BR_configuration & program_options,
+						   solver_configuration & solve_options,
+						   nullspace_config *ns_config);
 
 
 
-
+void ns_concluding_modifications(solver_output & solve_out,
+								 const witness_set & W,
+								 nullspace_config * ns_config);
 
 /**
- performs the setup for the nullspace_config which is used in the compute_crit_nullspace method, and is passed into the solverNullspace. 
+ performs the setup for the nullspace_config which is used in the compute_crit_nullspace method, and is passed into the solverNullspace.
  
  \param ns_config						the data structure we are setting up.
  \param target_dim					the dimension of the object we are detecting.
@@ -212,28 +214,28 @@ int compute_crit_nullspace(witness_set *W_crit_real, // the returned value
  \param W										the input witness_set
  */
 void nullspace_config_setup(nullspace_config *ns_config,
-														vec_mp *pi, // an array of projections, the number of which is the target dimensions
-														int ambient_dim,
-														int target_dim,
-														int target_crit_codim,
-														int *max_degree, // a pointer to the value
-														std::vector< int > randomized_degrees, // an array of randomized degrees
-														mat_mp randomizer_matrix,
-														const witness_set & W,
-														solver_configuration & solve_options);
+							vec_mp *pi, // an array of projections, the number of which is the target dimensions
+							int ambient_dim,
+							int target_dim,
+							int target_crit_codim,
+							int *max_degree, // a pointer to the value
+							std::vector< int > randomized_degrees, // an array of randomized degrees
+							mat_mp randomizer_matrix,
+							const witness_set & W,
+							solver_configuration & solve_options);
 
 
 
 void create_nullspace_system(boost::filesystem::path output_name,
-														 boost::filesystem::path input_name,
-														 BR_configuration & program_options,
-														 nullspace_config *ns_config);
+							 boost::filesystem::path input_name,
+							 BR_configuration & program_options,
+							 nullspace_config *ns_config);
 
 
 void createMatlabDerivative(boost::filesystem::path output_name,
-														boost::filesystem::path input_name,
-														nullspace_config *ns_config,
-														int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs);
+							boost::filesystem::path input_name,
+							nullspace_config *ns_config,
+							int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs);
 
 
 

@@ -950,12 +950,12 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 	
 	
 	std::cout << "mid slices" << std::endl;
-	for (int ii=0; ii<mid_slices.size(); ii++) {
+	for (unsigned int ii=0; ii<mid_slices.size(); ii++) {
 		mid_slices[ii].fixed_sampler(V,sampler_options,solve_options,target_num_samples);
 	}
 	
 	std::cout << "critical slices" << std::endl;
-	for (int ii=0; ii<crit_slices.size(); ii++) {
+	for (unsigned int ii=0; ii<crit_slices.size(); ii++) {
 		crit_slices[ii].fixed_sampler(V,sampler_options,solve_options,target_num_samples);
 	}
 	
@@ -982,7 +982,7 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 	V.set_curr_input(this->input_filename);
 
 	//once you have the fixed samples of the curves, down here is just making the integer triangles.
-	for (int ii=0; ii<num_faces; ii++) {
+	for (unsigned int ii=0; ii<num_faces; ii++) {
 		
 		
 		std::cout << "face " << ii << std::endl;
@@ -1125,29 +1125,27 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 		std::vector< std::vector<int> > rib_indices;
 		rib_indices.resize(target_num_samples);
 		
-		for (int jj=0; jj<faces[ii].num_left; jj++) {
+		for (unsigned int jj=0; jj<faces[ii].num_left; jj++) {
 			int asdf = faces[ii].left[jj];
-//			std::cout << "crit_slices["<<slice_ind<<"].sample_indices["<<asdf<<"].size() = " << crit_slices[slice_ind].sample_indices[asdf].size()<<std::endl;
 			
-			
-			for (int kk = 0; kk< crit_slices[slice_ind].sample_indices[asdf].size(); kk++) {
+			for (unsigned int kk = 0; kk< crit_slices[slice_ind].sample_indices[asdf].size(); kk++) {
 				rib_indices[0].push_back(crit_slices[slice_ind].sample_indices[asdf][kk]);
 			}
 		}
 			
-		for (int jj=0; jj<faces[ii].num_right; jj++) {
+		for (unsigned int jj=0; jj<faces[ii].num_right; jj++) {
 			int asdf = faces[ii].right[jj];
-			for (int kk = 0; kk< crit_slices[slice_ind+1].sample_indices[asdf].size(); kk++) {
+			for (unsigned int kk = 0; kk< crit_slices[slice_ind+1].sample_indices[asdf].size(); kk++) {
 				rib_indices[target_num_samples-1].push_back(crit_slices[slice_ind+1].sample_indices[asdf][kk]);
 			}
 		}
 		
 		
-		for (int jj=0; jj<rib_indices[0].size(); jj++) {
+		for (unsigned int jj=0; jj<rib_indices[0].size(); jj++) {
 			std::cout << rib_indices[0][jj] << " ";
 		}
 		std::cout << std::endl;
-		for (int jj=0; jj<rib_indices[target_num_samples-1].size(); jj++) {
+		for (unsigned int jj=0; jj<rib_indices[target_num_samples-1].size(); jj++) {
 			std::cout << rib_indices[target_num_samples-1][jj] << " ";
 		}
 		std::cout << std::endl;
@@ -1342,6 +1340,17 @@ void triangulate_two_ribs_by_binning(const std::vector< int > & rib1, const std:
 	std::cout << "triangulate_by_binning" << std::endl;
 #endif
 	
+	if (rib1.size()==0) {
+		std::cout << "rib1 had 0 size!";
+	}
+	if (rib2.size()==0) {
+		std::cout << "rib2 had 0 size!";
+	}
+	
+	if (rib1.size()==0 || rib2.size()==0) {
+		return;
+	}
+
 	
 	
 	const std::vector<int> * rib_w_more_entries, *rib_w_less_entries;
@@ -1389,7 +1398,7 @@ void triangulate_two_ribs_by_binning(const std::vector< int > & rib1, const std:
 	//both ribs are guaranteed (by hypothesis) to have increasing projection values in pi[1].
 	int curr_bin_ind = 1; // start at the lowest.
 	
-	for (int ii=0; ii<rib_w_more_entries->size()-1; ii++) {
+	for (unsigned int ii=0; ii<rib_w_more_entries->size()-1; ii++) {
 		
 		if (ii==rib_w_more_entries->size()-1) {
 			set_one_mp(temp);
@@ -1455,7 +1464,7 @@ void  surface_decomposition::output_sampling_data(boost::filesystem::path base_p
 	
 	std::stringstream converter;
 	
-	for (int ii=0; ii<mid_slices.size(); ii++) {
+	for (unsigned int ii=0; ii<mid_slices.size(); ii++) {
 		boost::filesystem::path specific_loc = curve_location;
 		
 		converter << ii;
@@ -1467,7 +1476,7 @@ void  surface_decomposition::output_sampling_data(boost::filesystem::path base_p
 		mid_slices[ii].output_sampling_data(specific_loc);
 	}
 	
-	for (int ii=0; ii<crit_slices.size(); ii++) {
+	for (unsigned int ii=0; ii<crit_slices.size(); ii++) {
 		boost::filesystem::path specific_loc = curve_location;
 		
 		converter << ii;

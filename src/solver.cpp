@@ -177,6 +177,101 @@ void solver_configuration::init()
 
 
 
+
+void solver_output::get_noninfinite_w_mult_full(witness_set & W_transfer)
+{
+	get_noninfinite_w_mult(W_transfer);
+	
+	get_patches_linears(W_transfer);
+	
+	set_witness_set_nvars(W_transfer);
+	
+}
+
+void solver_output::get_noninfinite_w_mult(witness_set & W_transfer)
+{
+	for (auto index = ordering.begin(); index != ordering.end(); ++index) {
+		//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
+		if (metadata[index->first].is_finite) {
+			W_transfer.add_point(vertices[index->first].pt_mp);
+		}
+	}
+	
+	set_witness_set_nvars(W_transfer);
+}
+
+
+void solver_output::get_nonsing_finite_multone(witness_set & W_transfer)
+{
+	for (auto index = ordering.begin(); index != ordering.end(); ++index) {
+		//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
+		if ( (metadata[index->first].is_finite) && (!metadata[index->first].is_singular) && (metadata[index->first].multiplicity==1) ) {
+			W_transfer.add_point(vertices[index->first].pt_mp);
+		}
+	}
+	
+	set_witness_set_nvars(W_transfer);
+}
+
+void solver_output::get_multpos(std::map<int, witness_set> & W_transfer)
+{
+	
+	//for each multiplicity, construct the witness_sets
+	for (auto mult_ind = occuring_multiplicities.begin(); mult_ind!=occuring_multiplicities.end(); ++mult_ind) {
+		
+		
+		for (auto index = metadata.begin(); index != metadata.end(); ++index) {
+			if (index->multiplicity== *mult_ind)  {
+				W_transfer[*mult_ind].add_point(vertices[index->output_index].pt_mp);
+			}
+		}
+		
+		set_witness_set_nvars(W_transfer[*mult_ind]);
+	}
+	
+	
+}
+
+void solver_output::get_multpos_full(std::map<int, witness_set> & W_transfer)
+{
+	
+	get_multpos(W_transfer);
+	
+	for (auto iter = W_transfer.begin(); iter!=W_transfer.end(); ++iter) {
+		get_patches_linears(iter->second);
+	}
+	
+	
+}
+
+
+
+void solver_output::get_sing(witness_set & W_transfer)
+{
+	for (auto index = ordering.begin(); index != ordering.end(); ++index) {
+		//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
+		if ( (metadata[index->first].is_singular) ) {
+			W_transfer.add_point(vertices[index->first].pt_mp);
+		}
+	}
+	set_witness_set_nvars(W_transfer);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 int solver::send(parallelism_config & mpi_config)
 {
 	
@@ -1356,6 +1451,7 @@ void generic_track_path(int pathNum, endgame_data_t *EG_out,
                         int (*change_prec)(void const *, int),
                         int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *))
 {
+//	print_tracker(T);
 	
 	EG_out->pathNum = pathNum;
 	EG_out->codim = 0; // this is ignored
@@ -1494,6 +1590,8 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 	
 	
 	tracker_config_t * T = &solve_options.T;
+	
+//	print_tracker(T);
 	
 	int iterations=0, max_iterations = 10;
 	

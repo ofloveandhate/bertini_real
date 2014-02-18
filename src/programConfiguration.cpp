@@ -109,10 +109,6 @@ int BR_configuration::startup()
 	IN = safe_fopen_read(this->witness_set_filename.c_str());
 	fclose(IN);
 	
-	if (this->user_randomization) {
-		IN = safe_fopen_read(this->randomization_filename.c_str());
-		fclose(IN);
-	}
 	
 	if (this->user_projection) {
 		IN = safe_fopen_read(this->projection_filename.c_str());
@@ -148,11 +144,7 @@ void BR_configuration::display_current_options()
 		printf("\n");
 	
 	
-	printf("user_randomization: %d",this->user_randomization);
-	if (this->user_randomization)
-		printf(", %s\n",this->randomization_filename.c_str());
-	else
-		printf("\n");
+
 	
 	
 	printf("user_sphere: %d",user_sphere);
@@ -186,7 +178,6 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 			/* These options set a flag. */
 			{"nostifle", no_argument,       0, 's'}, {"ns", no_argument,					0, 's'},
 			{"projection",		required_argument,			 0, 'p'}, {"p",		required_argument,			 0, 'p'}, {"pi",		required_argument,			 0, 'p'},
-			{"randomization",		required_argument,			 0, 'r'}, {"r",		required_argument,			 0, 'r'},
 			{"input",		required_argument,			 0, 'i'}, {"i",		required_argument,			 0, 'i'},
 			{"witness",		required_argument,			 0, 'w'}, {"w",		required_argument,			 0, 'w'},
 			{"help",		no_argument,			 0, 'h'}, {"h",		no_argument,			 0, 'h'},
@@ -250,10 +241,6 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 				this->stifle_text = "\0";
 				break;
 				
-			case 'r':
-				this->user_randomization=1;
-				this->randomization_filename = optarg;
-				break;
 				
 				
 			case 'p':
@@ -318,7 +305,6 @@ void BR_configuration::print_usage()
 //	{"nostifle", no_argument,       0, 's'}, {"ns", no_argument,					0, 's'},
 //	{"projection",		required_argument,			 0, 'p'},
 //	{"p",		required_argument,			 0, 'p'}, {"pi",		required_argument,			 0, 'p'},
-//	{"randomization",		required_argument,			 0, 'r'},
 //	{"r",		required_argument,			 0, 'r'},
 //	{"input",		required_argument,			 0, 'i'}, {"i",		required_argument,			 0, 'i'},
 //	{"witness",		required_argument,			 0, 'w'}, {"w",		required_argument,			 0, 'w'},
@@ -336,7 +322,6 @@ void BR_configuration::print_usage()
 	printf("bertini_real has the following options:\n----------------------\n");
 	printf("option name(s)\t\t\targument\n\n");
 	printf("-p -pi -projection \t\t\t'filename'\n");
-	printf("-r -randomization \t\t'filename'\n");
 	printf("-w -witness\t\t\t'filename'\n");
 	printf("-i -input\t\t\t'filename'\n");
 	printf("-ns -nostifle\t\t\t   --\n");
@@ -361,8 +346,6 @@ void BR_configuration::init()
 	this->user_projection = 0;
 	this->projection_filename = "";
 	
-	this->user_randomization = 0;
-	this->randomization_filename = "";
 	
 	
 	user_sphere = false;

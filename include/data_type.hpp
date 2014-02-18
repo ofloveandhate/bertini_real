@@ -263,7 +263,7 @@ namespace bertini {
 	{
 		
 	};
-};
+}
 
 class function
 {
@@ -301,7 +301,7 @@ public:
 		
 		this->num_points = 0;
 		this->pts_mp = NULL;
-	};
+	}
 	
 	void add_point(vec_mp new_point);
 	
@@ -309,14 +309,14 @@ public:
 	
 	point_holder(){
 		init();
-	};
+	}
 	
 	
 	~point_holder(){ // the destructor
 		
 		clear();
 		
-	};
+	}
 	
 	
 	// assignment
@@ -326,7 +326,7 @@ public:
 		
 		copy(other);
 		return *this;
-	};
+	}
 	
 	
 	//copy operator.  must be explicitly declared because the underlying c structures use pointers.
@@ -335,7 +335,7 @@ public:
 		init();
 		
 		copy(other);
-	};
+	}
 	
 	
 	
@@ -358,7 +358,7 @@ private:
 	
 	void clear(){
 		reset_points();
-	};
+	}
 };
 
 
@@ -393,7 +393,7 @@ public:
 		
 		this->num_patches = 0;
 		this->patch_mp = NULL;
-	};
+	}
 	
 	void add_patch(vec_mp new_patch);
 	
@@ -401,14 +401,14 @@ public:
 	
 	patch_holder(){
 		init();
-	};
+	}
 	
 	
 	~patch_holder(){ // the destructor
 		
 		clear();
 		
-	};
+	}
 	
 	
 	// assignment
@@ -418,7 +418,7 @@ public:
 		
 		copy(other);
 		return *this;
-	};
+	}
 	
 	
 	//copy operator.  must be explicitly declared because the underlying c structures use pointers.
@@ -427,7 +427,7 @@ public:
 		init();
 		
 		copy(other);
-	};
+	}
 	
 	
 	
@@ -450,7 +450,7 @@ private:
 	
 	void clear(){
 		reset_patches();
-	};
+	}
 };
 
 
@@ -482,7 +482,7 @@ public:
 		
 		num_linears = 0;
 		L_mp = NULL;
-	};
+	}
 	
 	void add_linear(vec_mp new_linear);
 	
@@ -490,14 +490,14 @@ public:
 	
 	linear_holder(){
 		init();
-	};
+	}
 	
 	
 	~linear_holder(){ // the destructor
 		
 		clear();
 		
-	};
+	}
 	
 	
 	// assignment
@@ -507,7 +507,7 @@ public:
 		
 		copy(other);
 		return *this;
-	};
+	}
 	
 	
 	//copy operator.  must be explicitly declared because the underlying c structures use pointers.
@@ -516,7 +516,7 @@ public:
 		init();
 		
 		copy(other);
-	};
+	}
 	
 	
 	
@@ -539,7 +539,7 @@ private:
 	
 	void clear(){
 		reset_linears();
-	};
+	}
 };
 
 
@@ -615,14 +615,14 @@ public:
 	// default constructor
 	witness_set(){
 		init();
-	};
+	}
 	
 	
 	~witness_set(){ // the destructor
 		
 		clear();
 		
-	};
+	}
 	
 	
 	// assignment
@@ -633,7 +633,7 @@ public:
 		
 		copy(other);
     return *this;
-  };
+  }
 	
 	
 	//copy operator.  must be explicitly declared because the underlying c structures use pointers.
@@ -643,7 +643,7 @@ public:
 		init();
 		
 		copy(other);
-	};
+	}
 	
 	void init()
 	{
@@ -702,7 +702,7 @@ public:
 	void reset()
 	{
 		clear();
-	};
+	}
 	
 	
 	
@@ -796,13 +796,13 @@ public:
 	vertex()
 	{
 		init();
-	};
+	}
 	
 	~vertex()
 	{
 		clear();
 		
-	};
+	}
 	
 	vertex & operator=(const vertex & other)
 	{
@@ -985,19 +985,20 @@ public:
 	
 	
     
-    /**
-     \param W witness set containing points of which we wish to retrieve projections values.
-     \return  crit_downstairs the projection values of the input witness set, sorted for uniqueness and increasingness.
-     \return midpoints_downstairs the bisection of each interval in crit_downstairs.
-     \return the indices of the points in W.
-     \param pi the projection we are retrieving projection values with respect to.
-     
-     */
+
     
     int search_for_point(vec_mp testpoint);
     int search_for_active_point(vec_mp testpoint);
     int search_for_removed_point(vec_mp testpoint);
     
+	/**
+     \param W witness set containing points of which we wish to retrieve projections values.
+     \return  crit_downstairs the projection values of the input witness set, sorted for uniqueness and increasingness.
+     \return midpoints_downstairs the bisection of each interval in crit_downstairs.
+     \return index_tracker the indices of the points in W.
+     \param pi the projection we are retrieving projection values with respect to.
+     
+     */
     int compute_downstairs_crit_midpts(const witness_set & W,
                                        vec_mp crit_downstairs,
                                        vec_mp midpoints_downstairs,
@@ -1205,7 +1206,7 @@ public:
 	{
 		os << c.midpt << std::endl;
 		return os;
-	};
+	}
 	
 	
 	void copy(const cell & other){
@@ -1281,7 +1282,7 @@ public:
 		delete [] buffer;
 		
 		buffer = new int[removed_points.size()];
-		for (int ii=0; ii<removed_points.size(); ii++) {
+		for (unsigned int ii=0; ii!=removed_points.size(); ii++) {
 			buffer[ii] = removed_points[ii];
 		}
 		MPI_Send(buffer, removed_points.size(), MPI_INT, target, EDGE, MPI_COMM_WORLD);
@@ -1313,11 +1314,6 @@ public:
 		
 		delete [] buffer;
 		
-	//		int left;  ///< index into vertices
-	//		int right; ///< index into vertices
-	//		int midpt; ///<  index into vertices
-	//		
-	//		std::vector< int > removed_points;
 	}
 };
 

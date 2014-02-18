@@ -1992,7 +1992,7 @@ int change_midpoint_eval_prec(void const *ED, int new_prec)
 		if (BED->verbose_level >=5)
 		{
 			std::cout << color::brown();
-			printf("prec  %d\t-->\t%d\n",BED->curr_prec, new_prec);
+			printf("prec  %ld\t-->\t%d\n",BED->curr_prec, new_prec);
 			std::cout << color::console_default();
 		}
 		

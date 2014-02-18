@@ -86,7 +86,7 @@ void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check
 		meta.set_multiplicity(endPoints[curr_ind].multiplicity);
 		meta.set_successful(endPoints[curr_ind].success);
 		meta.add_input_index(endPoints[curr_ind].path_num);
-		meta.add_output_index(ii);
+		meta.set_output_index(this->num_vertices);
 		
 		add_solution(temp_vertex, meta);
 	}
@@ -103,7 +103,7 @@ void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check
 			continue;
 		}
 		
-//		std::cout << "dealing w mult " << endPoints[curr_ind].multiplicity << " soln for solution " << curr_ind << " w solnum "<< endPoints[curr_ind].sol_num <<std::endl;
+
 		
 		if ( find(occuring_multiplicities.begin(),occuring_multiplicities.end(),endPoints[curr_ind].multiplicity)==occuring_multiplicities.end()) {
 			occuring_multiplicities.push_back(endPoints[curr_ind].multiplicity);
@@ -123,12 +123,11 @@ void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check
 			int inner_ind = soln_indices[jj].first;
 			
 			if (endPoints[inner_ind].sol_num==endPoints[curr_ind].sol_num) {
-//				std::cout << "input point " << inner_ind << " maps to endpoint number " << curr_ind << std::endl;
 				meta.add_input_index(endPoints[inner_ind].path_num);
-				meta.add_output_index(jj);
+				
 			}
 		}
-
+		meta.set_output_index(this->num_vertices);
 		
 		add_solution(temp_vertex, meta);
 	}
@@ -136,14 +135,10 @@ void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check
 	
 	std::sort(occuring_multiplicities.begin(), occuring_multiplicities.end());
 	for (int ii=0; ii<num_vertices; ii++) {
-//		std::cout << "input indices for vertex " << ii << ": " << std::endl;
 		for (auto jj = metadata[ii].input_index.begin(); jj!=metadata[ii].input_index.end(); ++jj) {
-//			std::cout << *jj << " ";
 			ordering.push_back(std::pair<long long, long long>(ii,*jj));
 		}
-//		std::cout << std::endl;
 	}
-//	std::cout << std::endl;
 	
 	// sort the ordering.  now properly respects the vertex set WRT multiplicity.
 	std::sort(ordering.begin(), ordering.end(),

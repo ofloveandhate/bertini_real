@@ -29,11 +29,12 @@
 
 // isosingular.c
 int isosingular_deflation(int *num_deflations, int **deflation_sequence,
-													BR_configuration & program_options,
-													boost::filesystem::path inputFile,
-													boost::filesystem::path witness_point_filename,
-													int max_deflations,
-													int dim, int component_number);
+						  BR_configuration & program_options,
+						  boost::filesystem::path inputFile,
+						  boost::filesystem::path witness_point_filename,
+						  boost::filesystem::path output_name,
+						  int max_deflations,
+						  int dim, int component_number);
 
 
 void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs, FILE *IN, int minorSize, int *degrees, int deflation_number);
@@ -41,12 +42,12 @@ void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 
 
 void isosingular_deflation_iteration(int *declarations,
-																		 boost::filesystem::path inputOutputName,
-																		 std::string matlab_command, int nullSpace, int deflation_number);
+									 boost::filesystem::path inputOutputName,
+									 std::string matlab_command, int nullSpace, int deflation_number);
 
 void stabilization_input_file(boost::filesystem::path outputFile,
-															boost::filesystem::path funcInput,
-															boost::filesystem::path configInput);
+							  boost::filesystem::path funcInput,
+							  boost::filesystem::path configInput);
 
 
 void check_declarations(int *declarations);
