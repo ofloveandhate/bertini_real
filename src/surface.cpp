@@ -393,7 +393,7 @@ void surface_decomposition::compute_critcurve_witness_set(witness_set & W_critcu
 		}
 	}
     
-    
+	
     program_options.quick_run = prev_quick_state;
 	
     return;
@@ -648,8 +648,10 @@ void surface_decomposition::compute_sphere_witness_set(const witness_set & W_sur
                                            multilin_linears,
                                            ml_config,
                                            solve_options);
+		
 		//get stuff from fillme into W_temp, or whatever
-		deliberate_segfault();
+		fillme.get_noninfinite_w_mult(W_temp);
+
 		W_sphere.merge(W_temp);
 		
 	}
@@ -681,6 +683,7 @@ void surface_decomposition::compute_sphere_witness_set(const witness_set & W_sur
 	
 	
 	
+
 	
 	solver_output fillme;
 	sphere_solver_master_entry_point(W_sphere,
@@ -688,8 +691,8 @@ void surface_decomposition::compute_sphere_witness_set(const witness_set & W_sur
                                      sp_config,
                                      solve_options);
 	
-	// get output from fillme into W_intersection_sphere
-	deliberate_segfault();
+	fillme.get_noninfinite_w_mult_full(W_intersection_sphere);
+	
 	W_intersection_sphere.input_filename = "input_surf_sphere";
 	
 }
@@ -767,7 +770,7 @@ void surface_decomposition::compute_bounding_sphere(const witness_set & W_inters
 	
 	this->sphere_curve.compute_sphere_bounds(W_crit); // inflate around this thing because the interslice method requires having bounds in place.
 	
-	std::cout << "entering interslice for sphere" << std::endl;
+	std::cout << color::magenta() << "entering interslice for sphere" << color::console_default() << std::endl;
 	// then feed it to the interslice algorithm
 	this->sphere_curve.interslice(W_intersection_sphere, // the witness set with a single linear and some patches.
                                   W_crit, // the critical points
@@ -782,7 +785,7 @@ void surface_decomposition::compute_bounding_sphere(const witness_set & W_inters
 	this->sphere_curve.num_variables = num_variables;
 	
 	
-	
+	std::cout << color::magenta() << "done decomposing sphere curve" << color::console_default() << std::endl;
 	return;
 }
 
@@ -885,8 +888,9 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
                                                ml_config,
                                                solve_options);
 			
-			//fill slice_witness_set from fillme
-			deliberate_segfault();
+			fillme.get_noninfinite_w_mult(slice_witness_set);
+			
+			fillme.reset();
 			
 			boost::filesystem::path slicename = W_surf.input_filename;
 			slicename += "_"; slicename += kindofslice; slicename += "slice_"; slicename += converter.str();
@@ -894,8 +898,6 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 			
 			
 			parse_input_file(slicename, &blabla);
-			//			partition_parse(&declarations, slicename, "func_input", "config", 0); // the 0 means not self conjugate.
-			//			free(declarations);																													 // i would like to move this->
 			preproc_data_clear(&solve_options.PPD);
 			parse_preproc_data("preproc_data", &solve_options.PPD);
 			
@@ -1116,11 +1118,10 @@ void surface_decomposition::master_connect(vertex_set & V, midpoint_config & md_
 	solve_options.call_for_help(MIDPOINT_SOLVER); // sets available workers, too
 	
 	MPI_Barrier(MPI_COMM_WORLD);
-	std::cout << "barrier1" << std::endl;
+
 	bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
 	
 	MPI_Barrier(MPI_COMM_WORLD);
-	std::cout << "barrier2" << std::endl;
 	
 	
 	md_config.initial_send(solve_options);
@@ -1133,11 +1134,10 @@ void surface_decomposition::master_connect(vertex_set & V, midpoint_config & md_
 	
 
 	MPI_Barrier(MPI_COMM_WORLD);
-	std::cout << "barrier3" << std::endl;
-	std::cout << "seeding workers" << std::endl;
+
+	
 	//seed the workers
 	for (int ii=1; ii<solve_options.numprocs; ii++) {
-		std::cout << "seeding worker" << ii << std::endl;
 		this->send(ii, solve_options);
 		V.send(ii, solve_options);
 	}
@@ -1160,8 +1160,6 @@ void surface_decomposition::master_connect(vertex_set & V, midpoint_config & md_
 			
 			int send_num_faces = 1;// num_faces doubles as the keep_going signal.  if 0, the worker halts.
 			MPI_Send(&send_num_faces, 1, MPI_INT, next_worker, NUMPACKETS, MPI_COMM_WORLD);
-			
-//			md_config.update_send(solve_options, next_worker);
 			
 			
 			master_face_requester(ii,jj, next_worker, solve_options);
@@ -1199,10 +1197,8 @@ void surface_decomposition::master_connect(vertex_set & V, midpoint_config & md_
 	
 	//cleanup
 	
-	std::cout << solve_options.num_active() << "active workers" << std::endl;
 	
 	while (solve_options.have_active()) {
-		std::cout << "master receiving face from active worker" << std::endl;
 		int recv_num_faces;
 		MPI_Recv(&recv_num_faces, 1, MPI_INT, MPI_ANY_SOURCE, NUMPACKETS, MPI_COMM_WORLD, &statty_mc_gatty);
 		for (int ii=0; ii<recv_num_faces; ii++) {
@@ -1236,7 +1232,6 @@ void surface_decomposition::worker_connect(solver_configuration & solve_options,
 	MPI_Barrier(MPI_COMM_WORLD);
 	solve_options.robust = true;
 	
-	std::cout << "worker has tracker config" << std::endl;
 	
 	midpoint_config md_config;
 	md_config.initial_receive(solve_options);
@@ -1246,19 +1241,16 @@ void surface_decomposition::worker_connect(solver_configuration & solve_options,
 	//	• starting point
 	//which are all updated from another call later.
 	
-	std::cout << "worker has md_config" << std::endl;
 	
 	MPI_Barrier(MPI_COMM_WORLD);
 
 	this->receive(solve_options.head(), solve_options);
 	
-	std::cout << "worker has surface" << std::endl;
 	
 	
 	vertex_set V;
 	V.receive(solve_options.head(), solve_options);
 	
-	std::cout << "worker has vertex set" << std::endl;
 
 
 
@@ -1830,8 +1822,8 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 												   md_config,
 												   solve_options);
 				
-				//somehow get stull from fillme
-				deliberate_segfault();
+				fillme.get_noninfinite_w_mult_full(W_new);
+				
 				
 				
 				//print some display to screen
@@ -2054,7 +2046,6 @@ void surface_decomposition::send(int target, parallelism_config & mpi_config)
 	
 	
 	decomposition::send(target, mpi_config);
-	std::cout << "^^" << std::endl;
 	int * buffer = (int *) br_malloc(4*sizeof(int));
 	
 	buffer[0] = num_edges;
@@ -2076,12 +2067,10 @@ void surface_decomposition::send(int target, parallelism_config & mpi_config)
 
 	
 	for (int ii=0; ii<mid_slices.size(); ii++) {
-		std::cout << "sending midslice "  << ii << " of " << mid_slices.size() << std::endl;
 		mid_slices[ii].send(target, mpi_config);
 	}
 	
 	for (int ii=0; ii<crit_slices.size(); ii++) {
-		std::cout << "sending critslice "  << ii << " of " << crit_slices.size() << std::endl;
 		crit_slices[ii].send(target, mpi_config);
 	}
 	
@@ -2118,7 +2107,6 @@ void surface_decomposition::receive(int source, parallelism_config & mpi_config)
 	d = buffer[3];
 	free(buffer);
 	
-	std::cout << a << " " << b << " " << c << " " << d << std::endl;
 	
 	for (int ii=0; ii<a; ii++) {
 		edge E;
@@ -2133,20 +2121,14 @@ void surface_decomposition::receive(int source, parallelism_config & mpi_config)
 	}
 	
 	
-//	this->mid_slices.resize(c);
 	for (int ii=0; ii<c; ii++) {
 		curve_decomposition C;
-		std::cout << "worker receiving midslice "  << ii << " of " << c << std::endl;
 		C.receive(source, mpi_config);
 		mid_slices.push_back(C);
-//		mid_slices[ii].receive(source, mpi_config);
 	}
 	
-//	this->crit_slices.resize(d);
 	for (int ii=0; ii<d; ii++) {
 		curve_decomposition C;
-		std::cout << "worker receiving critslice "  << ii << " of " << d << std::endl;
-		
 		C.receive(source, mpi_config);
 		crit_slices.push_back(C);
 	}

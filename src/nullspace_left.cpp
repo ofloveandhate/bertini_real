@@ -272,12 +272,12 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 										   ns_config,
 										   solve_options);
 	
-	fillme.get_noninfinite_w_mult_full(*W_crit); // should be ordered
+	fillme.get_noninfinite_w_mult(*W_crit); // should be ordered
 	
 //	W_crit->print_to_screen();
 //	std::cout << "above is the nullspace crit set" << std::endl;
 	
-	W_crit->num_variables = ns_config->num_x_vars+ns_config->num_v_vars;
+	W_crit->num_variables  = ns_config->num_x_vars + ns_config->num_v_vars;
 	W_crit->num_synth_vars = W.num_synth_vars + ns_config->num_v_vars;
 	
 	W_crit->copy_patches(W);
@@ -288,7 +288,7 @@ int compute_crit_nullspace(witness_set *W_crit, // the returned value
 	
 	
 	
-	offset = ambient_dim - target_dim + target_crit_codim;
+//	offset = ambient_dim - target_dim + target_crit_codim;
 	for (ii=0; ii< ns_config->num_additional_linears; ii++) {
 		W_crit->add_linear(ns_config->additional_linears_terminal[ii]);
 	}

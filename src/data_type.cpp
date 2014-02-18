@@ -1665,11 +1665,9 @@ void vertex_set::receive(int source, parallelism_config & mpi_config)
 	for (int ii=0; ii<temp_num_projections; ii++) {
 		receive_vec_mp(tempvec,source);
 		add_projection(tempvec);
-//		std::cout << "recv'd projection " << ii << std::endl;
 	}
 	
 	
-//	std::cout << "worker receiving filenames for vertex_set" << std::endl;
 	
 	for (int ii=0; ii<num_filenames; ii++) {
 		char * buffer; int strleng;
@@ -1690,7 +1688,6 @@ void vertex_set::receive(int source, parallelism_config & mpi_config)
 	
 	
 
-//	std::cout << "worker receiving vertices for vertex_set" << std::endl;
 	
 	for (int ii=0; ii<temp_num_vertices; ii++) {
 		vertex tempvert;
@@ -2255,7 +2252,7 @@ void decomposition::send(int target, parallelism_config & mpi_config)
 	
 	
 	if (counters.size()>0) {
-		std::cout << "sending " << counters.size() << " counters" << std::endl;
+
 		//pack and send the counters.
 		int * buffer3 = new int[2*counters.size()];
 		int cnt = 0;
@@ -2315,7 +2312,7 @@ void decomposition::send(int target, parallelism_config & mpi_config)
 	
 	
 	if (randomized_degrees.size()>0) {
-		std::cout << "sending " << randomized_degrees.size() << " randomized_degrees" << std::endl;
+
 		buffer2 = new int[randomized_degrees.size()];
 		int cnt = 0;
 		for (auto iter = randomized_degrees.begin(); iter!=randomized_degrees.end(); iter++) {
@@ -2336,7 +2333,7 @@ void decomposition::send(int target, parallelism_config & mpi_config)
 	
 	
 	if ( num_patches>0) {
-//		std::cout << "sending patches" << std::endl;
+
 		for (int ii=0; ii<num_patches; ii++) {
 			send_vec_mp(patch[ii],target);
 		}
@@ -2346,7 +2343,7 @@ void decomposition::send(int target, parallelism_config & mpi_config)
 	
 	
 	if (have_sphere_radius) {
-//		std::cout << "sending sphere radius" << std::endl;
+
 		send_vec_mp(sphere_center,target);
 		send_comp_mp(sphere_radius,target);
 	}
@@ -2415,23 +2412,22 @@ void decomposition::receive(int source, parallelism_config & mpi_config)
 	delete [] buffer2;
 	
 	
-	std::cout << "receieved:" << std::endl;
-	std::cout << num_variables << std::endl;
-	std::cout << dimension << std::endl;
-	std::cout << component_num << std::endl;
-	std::cout << temp_num_projections << std::endl;
-	std::cout << num_rand_degrees << std::endl;
-	std::cout << rand_rows << std::endl;
-	std::cout << rand_cols << std::endl;
-	std::cout << temp_num_patches << std::endl;
-	std::cout << have_sphere_radius << std::endl;
-	std::cout << strleng << std::endl;
-	std::cout << num_counters << std::endl;
-	std::cout << num_indices << std::endl;
+//	std::cout << "receieved:" << std::endl;
+//	std::cout << num_variables << std::endl;
+//	std::cout << dimension << std::endl;
+//	std::cout << component_num << std::endl;
+//	std::cout << temp_num_projections << std::endl;
+//	std::cout << num_rand_degrees << std::endl;
+//	std::cout << rand_rows << std::endl;
+//	std::cout << rand_cols << std::endl;
+//	std::cout << temp_num_patches << std::endl;
+//	std::cout << have_sphere_radius << std::endl;
+//	std::cout << strleng << std::endl;
+//	std::cout << num_counters << std::endl;
+//	std::cout << num_indices << std::endl;
 	
 	
 	if (num_counters>0) {
-		std::cout << "recving " << num_counters << " counters" << std::endl;
 		int * buffer3 = new int[2*num_counters];
 		MPI_Recv(buffer3, 2*num_counters, MPI_INT, source, 2, MPI_COMM_WORLD, &statty_mc_gatty);
 		for (int ii=0; ii<num_counters; ii++) {
@@ -2443,7 +2439,7 @@ void decomposition::receive(int source, parallelism_config & mpi_config)
 	
 	int * intbuff = new int[2];
 	
-//	std::cout << "recving " << num_indices << " indices" << std::endl;
+
 	if (num_indices>0) {
 		for (int ii=0; ii<num_indices; ii++) {
 			
@@ -2456,7 +2452,7 @@ void decomposition::receive(int source, parallelism_config & mpi_config)
 			std::vector<int> tempind;
 			
 			if (num_these_indices>0) {
-//				std::cout << "worker receiving " << num_these_indices << " elmnt index buffer" << std::endl;
+
 				int * buffer3 = new int[num_these_indices];
 				MPI_Recv(buffer3, num_these_indices, MPI_INT, source, 5, MPI_COMM_WORLD, &statty_mc_gatty);
 				for (int jj=0; jj<num_these_indices; jj++) {
@@ -2473,7 +2469,7 @@ void decomposition::receive(int source, parallelism_config & mpi_config)
 	
 	
 	if (temp_num_projections>0) {
-//		std::cout << "recving projections" << std::endl;
+
 		for (int ii=0; ii<temp_num_projections; ii++) {
 			receive_vec_mp(tempvec,source);
 			add_projection(tempvec);
@@ -2482,9 +2478,9 @@ void decomposition::receive(int source, parallelism_config & mpi_config)
 	
 	
 	
-//	std::cout << "worker has " << num_curr_projections << " #" << std::endl;
+
 	if (num_rand_degrees>0) {
-		std::cout << "recving " << num_rand_degrees << " degrees" << std::endl;
+
 		int * buffer3 = new int[num_rand_degrees];
 		
 		MPI_Recv(buffer3, num_rand_degrees, MPI_INT, source, 1, MPI_COMM_WORLD, &statty_mc_gatty);
@@ -2497,19 +2493,16 @@ void decomposition::receive(int source, parallelism_config & mpi_config)
 	
 	
 	
-//	std::cout << "$" << std::endl;
+
 	change_size_mat_mp(randomizer_matrix,rand_rows,rand_cols);
 	randomizer_matrix->rows = rand_rows;//why are these not in the matrix size changer?
 	randomizer_matrix->cols = rand_cols;
 	
 	if ( (rand_rows != 0) || (rand_cols != 0)) {
-//		std::cout << "recving rand martic" << std::endl;
 		receive_mat_mp(randomizer_matrix, source);
 	}
-//	print_matrix_to_screen_matlab(randomizer_matrix,"R_recv");
 	
 	if (temp_num_patches>0) {
-//		std::cout << "recving patches" << std::endl;
 		for (int ii=0; ii<temp_num_patches; ii++) {
 			receive_vec_mp(tempvec,source);
 			add_patch(tempvec);
@@ -2519,13 +2512,11 @@ void decomposition::receive(int source, parallelism_config & mpi_config)
 	
 	
 	if (have_sphere_radius) {
-//		std::cout << "recving sphereparams" << std::endl;
 		receive_vec_mp(sphere_center,source);
 		receive_comp_mp(sphere_radius,source);
 	}
 	
 	if (strleng>1) {
-//		std::cout << "recving input_filename" << std::endl;
 		char * buffer = new char[strleng];
 		MPI_Recv(buffer, strleng, MPI_CHAR, source, 7, MPI_COMM_WORLD, &statty_mc_gatty);
 		

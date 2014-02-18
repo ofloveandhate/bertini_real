@@ -423,9 +423,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 				print_comp_matlab(&crit_downstairs->coord[ii+1],"right ");
 			}
 			
-//			std::cout << "start:" << std::endl;
-//			midpoint_witness_sets[ii].print_to_screen();
-			
+	
 			solver_output fillme;
 			
 			neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii]);
@@ -450,13 +448,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 			
 			fillme.get_noninfinite_w_mult_full(Wright); // should be ordered
 			
-//			std::cout << "left:" << std::endl;
-//            Wleft.print_to_screen();
-//			std::cout << "right:" << std::endl;
-//			Wright.print_to_screen();
 			
-			
-//			mypause();
 			witness_set Wright_real = Wright; // this is unnecessary
 			witness_set Wleft_real = Wleft;   // this is unnecessary
             
@@ -622,17 +614,13 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 //							sleep(600);
 						}
 						W_single_right.sort_for_real(solve_options.T);
-						//					W_single_right.print_to_screen();
 						
 						num_its++;
 					}
 					
 					
 
-//					std::cout << color::magenta() << "left:" << color::console_default() << std::endl;
-//					W_single_left.print_to_screen();
-//					std::cout << color::magenta() << "right:" << color::console_default() << std::endl;
-//					W_single_right.print_to_screen();
+
 					
 					
 					if (W_single_right.num_points==1 && W_single_left.num_points==1) {
@@ -1144,10 +1132,7 @@ int curve_decomposition::compute_critical_points(const witness_set & W_curve,
 
 	W_crit_real.input_filename = W_curve.input_filename;
 	
-
 	
-    
-
 	
 	nullspace_config ns_config;
 	compute_crit_nullspace(&W_crit_real, // the returned value
@@ -1524,7 +1509,6 @@ void curve_decomposition::receive(int source, parallelism_config & mpi_config)
 	int temp_num_edges;
 	MPI_Recv(&temp_num_edges, 1, MPI_INT, source, CURVE, MPI_COMM_WORLD, &statty_mc_gatty);
 	
-	std::cout << "recving "	<< temp_num_edges <<  " edges" << std::endl;
 	
 	for (int ii=0; ii<temp_num_edges; ii++) {
 		edge E;
