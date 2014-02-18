@@ -33,8 +33,7 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
 						  boost::filesystem::path inputFile,
 						  boost::filesystem::path witness_point_filename,
 						  boost::filesystem::path output_name,
-						  int max_deflations,
-						  int dim, int component_number);
+						  int max_deflations);
 
 
 void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs, FILE *IN, int minorSize, int *degrees, int deflation_number);

@@ -221,7 +221,7 @@ void solver_output::get_multpos(std::map<int, witness_set> & W_transfer)
 		
 		
 		for (auto index = metadata.begin(); index != metadata.end(); ++index) {
-			if (index->multiplicity== *mult_ind)  {
+			if ((index->multiplicity== *mult_ind) && (index->is_finite))  {
 				W_transfer[*mult_ind].add_point(vertices[index->output_index].pt_mp);
 			}
 		}

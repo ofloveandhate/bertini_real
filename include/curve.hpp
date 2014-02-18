@@ -265,7 +265,6 @@ public:
 	void computeCurveSelfConj(const witness_set & W,
 														vec_mp *pi,
 														vertex_set &V,
-														int num_vars,
 														BR_configuration & options,
 														solver_configuration & solve_options);
 	
