@@ -139,7 +139,6 @@ void midpoint_config::initial_send(parallelism_config & mpi_config)
 	
 	delete [] buffer;
 	
-	std::cout << "sent matrix sizes" << std::endl;
 	
 	mid_memory.set_globals_to_this();
     bcast_prog_t(SLP_mid, this->MPType, 0, 0); // last two arguments are: myid, headnode
@@ -152,19 +151,12 @@ void midpoint_config::initial_send(parallelism_config & mpi_config)
 
     
 
-    std::cout << "sent SLP" << std::endl;
-	
-	
-	
-	
-	
+    
     bcast_mat_mp(randomizer_matrix_crit,0,0);
     bcast_mat_mp(randomizer_matrix_sph,0,0);
     bcast_mat_mp(randomizer_matrix,0,0);
     
-	
-	std::cout << "sent matrices" << std::endl;
-    
+	   
     MPI_Bcast(&num_mid_vars, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
     MPI_Bcast(&num_crit_vars, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
     MPI_Bcast(&num_sphere_vars, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
@@ -174,7 +166,6 @@ void midpoint_config::initial_send(parallelism_config & mpi_config)
         bcast_vec_mp(pi[ii],0,0);
     }
 	
-	std::cout << "done md_send" << std::endl;
 }
 
 void midpoint_config::initial_receive(parallelism_config & mpi_config)
@@ -205,9 +196,6 @@ void midpoint_config::initial_receive(parallelism_config & mpi_config)
 	delete [] buffer;
 	
 	
-	std::cout << "have matrix sizes" << std::endl;
-	
-	
     bcast_prog_t(SLP_mid, this->MPType, 1, 0); // last two arguments are: myid, headnode
 	initEvalProg(this->MPType);
     mid_memory.capture_globals();
@@ -228,7 +216,6 @@ void midpoint_config::initial_receive(parallelism_config & mpi_config)
 	
     
 	
-	std::cout << "have SLPs" << std::endl;
 	
 	
 	
@@ -236,7 +223,6 @@ void midpoint_config::initial_receive(parallelism_config & mpi_config)
     bcast_mat_mp(randomizer_matrix_sph,1,0);
     bcast_mat_mp(randomizer_matrix,1,0);
     
-    std::cout << "have matrices" << std::endl;
 	
     MPI_Bcast(&num_mid_vars, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
     MPI_Bcast(&num_crit_vars, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
@@ -250,7 +236,6 @@ void midpoint_config::initial_receive(parallelism_config & mpi_config)
     }
     clear_vec_mp(tempvec);
 	
-	std::cout << "done md_config" << std::endl;
 }
 
 

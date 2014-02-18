@@ -199,7 +199,7 @@ int BRfindFiniteSolns(post_process_t *endPoints, int num_sols, int num_vars,
 			recip_d(dehom_coord_recip_d,dehom_coord_recip_d);
 			for (int jj=0; jj<num_vars-1; ++jj) {
 				//do the division.
-				mul_d(&dehom_d->coord[jj],dehom_coord_recip_d,endPoints[ii].sol_d[jj])
+				mul_d(&dehom_d->coord[jj],dehom_coord_recip_d,endPoints[ii].sol_d[jj+1])
 			}
 			
 			if (infNormVec_d(dehom_d) < T->finiteThreshold){
@@ -215,10 +215,10 @@ int BRfindFiniteSolns(post_process_t *endPoints, int num_sols, int num_vars,
 		{
 			change_prec_point_mp(dehom_mp,endPoints[ii].sol_prec);
 			setprec_mp(dehom_coord_recip_mp,endPoints[ii].sol_prec);
-			set_mp(dehom_coord_recip_mp,endPoints[ii].sol_mp[0]);
+			recip_mp(dehom_coord_recip_mp,endPoints[ii].sol_mp[0]);
 			for (int jj=0; jj<num_vars-1; ++jj) {
 				//do the division.
-				mul_mp(&dehom_mp->coord[jj],dehom_coord_recip_mp,endPoints[ii].sol_mp[jj])
+				mul_mp(&dehom_mp->coord[jj],dehom_coord_recip_mp,endPoints[ii].sol_mp[jj+1])
 			}
 			
 			if (infNormVec_mp(dehom_mp) < T->finiteThreshold){

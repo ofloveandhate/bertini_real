@@ -499,10 +499,7 @@ public:
 	
 	void get_noninfinite_w_mult(witness_set & W_transfer)
 	{
-//		vertex_set::print_to_screen();
 		for (auto index = ordering.begin(); index != ordering.end(); ++index) {
-			
-//			std::cout << index->first << " " << index->second << std::endl;
 			//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
 			if (metadata[index->first].is_finite) {
 				W_transfer.add_point(vertices[index->first].pt_mp);
