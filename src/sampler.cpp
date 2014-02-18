@@ -433,8 +433,9 @@ void curve_decomposition::adaptive_sampler(vertex_set & V,
                                                        &target_projection,
                                                        ml_config,
                                                        solve_options);
-					//get new points from fillme
-					deliberate_segfault();
+					
+					fillme.get_noninfinite_w_mult_full(Wnew);
+					
 					
 					if (sampler_options.verbose_level>=3)
 						print_point_to_screen_matlab(Wnew.pts_mp[0], "new_solution");
@@ -679,6 +680,7 @@ void curve_decomposition::fixed_sampler(vertex_set & V,
 											   ml_config,
 											   solve_options);
 			
+			fillme.get_noninfinite_w_mult_full(Wnew);
 			
 			if (Wnew.num_points==0) {
 				//TODO: ah shit!  this ain't good.  how to deal with it?
@@ -1208,8 +1210,9 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 												   fillme, // new data goes in here
 												   md_config,
 												   solve_options);
-				// get W_new from fillme.
-				deliberate_segfault();
+				
+				fillme.get_noninfinite_w_mult_full(W_new);
+				
 				
 				if (W_new.num_points==0) {
 					std::cout << color::red() << "midpoint tracker did not return any points :(" << color::console_default() << std::endl;
