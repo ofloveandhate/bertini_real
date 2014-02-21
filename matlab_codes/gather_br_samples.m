@@ -2,35 +2,36 @@ function gather_br_samples()
 
 
 
-dirname = parse_dirname;
+[BRinfo.dirname,BRinfo.dimension] = parse_dirname;
 
-BRinfo = parse_decomp(dirname);
 
-BRinfo.dirname = dirname;
+
 
 
 
 
 BRinfo = gather_vertices(BRinfo);
 
-tmpnames = get_names(BRinfo.num_variables);
-BRinfo.var_names = tmpnames(2:end);
+
 
 switch BRinfo.dimension
 	
 	case 1
 		
-		[BRinfo.num_edges, BRinfo.edges, BRinfo.sampler_data] = gather_curve(BRinfo.dirname);
+		[BRinfo] = gather_curve(BRinfo.dirname, BRinfo);
 
 	case 2
 		
-		[BRinfo.num_faces, BRinfo.faces, BRinfo.midpoint_slices, BRinfo.critpoint_slices, BRinfo.crit_curve, BRinfo.sphere_curve,BRinfo.sampler_data] = gather_surface(BRinfo.dirname);
+		[BRinfo] = gather_surface(BRinfo.dirname, BRinfo);
 		
 	otherwise
 		
 		
 	
 end
+
+tmpnames = get_names(BRinfo.num_variables);
+BRinfo.var_names = tmpnames(2:end);
 
 display('done gathering decomposition.');
 
@@ -62,44 +63,72 @@ end%re: function
 
 
 
+function input = read_input(dirname,decomp)
+
+
+input = fileread([dirname '/' decomp.inputfilename]);
+
+end
 
 
 
+function [BRinfo] = gather_surface(dirname, BRinfo)
 
-function [num_faces, faces, midpoint_slices, critpoint_slices, crit_curve, sphere_curve,sampler_data] = gather_surface(dirname)
+BRinfo = parse_decomp(dirname,BRinfo);
 
+% .num_faces, BRinfo.faces, BRinfo.midpoint_slices, BRinfo.critpoint_slices, BRinfo.crit_curve, BRinfo.sphere_curve,BRinfo.sampler_data
 
+fin = fopen([dirname '/S.surf'],'r');
 
-fin = fopen([dirname '/S.surf']);
-
-[num_faces] = fscanf(fin,'%i',[1 1]);
-[num_edges] = fscanf(fin,'%i',[1 1]);
+[BRinfo.num_faces] = fscanf(fin,'%i',[1 1]);
+[BRinfo.num_edges] = fscanf(fin,'%i',[1 1]);
 [num_midpoint_slices] = fscanf(fin,'%i',[1 1]);
 [num_critpoint_slices] = fscanf(fin,'%i',[1 1]);
-midpoint_slices = [];
-critpoint_slices = [];
-crit_curve = [];
+[num_singular_curves] = fscanf(fin,'%i',[1 1]);
+BRinfo.singular_curve_multiplicities = [];
+for ii = 1:num_singular_curves
+    BRinfo.singular_curve_multiplicities(ii) = fscanf(fin,'%i',[1 1]);
+end
+
+% BRinfo.midpoint_slices = [];
+% BRinfo.critpoint_slices = [];
+% BRinfo.crit_curve = [];
 
 fclose(fin);
 
 
 
-[faces] = gather_faces(dirname);
+[BRinfo.faces] = gather_faces(dirname);
 
 
 for ii =1:num_midpoint_slices
-	[midpoint_slices(ii).num_edges, midpoint_slices(ii).edges, midpoint_slices(ii).sampler_data] = gather_curve([dirname '/curve_midslice_' num2str(ii-1) ]);
+    a = gather_curve([dirname '/curve_midslice_' num2str(ii-1) ], []);
+	BRinfo.midpoint_slices(ii) = a;
 end
 
 for ii =1:num_critpoint_slices
-	[critpoint_slices(ii).num_edges, critpoint_slices(ii).edges, critpoint_slices(ii).sampler_data] = gather_curve([dirname '/curve_critslice_' num2str(ii-1) ]);
+    a = gather_curve([dirname '/curve_critslice_' num2str(ii-1) ],[]);
+	[BRinfo.critpoint_slices(ii)] = a;
 end
 
-[crit_curve.num_edges, crit_curve.edges,crit_curve.sampler_data] = gather_curve([dirname '/curve_crit']);
+a = gather_curve([dirname '/curve_crit'],[]);
+[BRinfo.crit_curve] = a;
 
-[sphere_curve.num_edges, sphere_curve.edges, sphere_curve.sampler_data] = gather_curve([dirname '/curve_sphere']);
 
-sampler_data = gather_surface_samples(dirname);
+[BRinfo.sphere_curve] = gather_curve([dirname '/curve_sphere'],[]);
+
+% BRinfo.singular_curves = [];
+for ii = 1:num_singular_curves
+    a = gather_curve([dirname '/curve_singular_mult_' num2str(BRinfo.singular_curve_multiplicities(ii))],[]);
+    [BRinfo.singular_curves(ii)] = a;
+    BRinfo.singular_names{ii} = a.inputfilename;
+end
+
+
+BRinfo.sampler_data = gather_surface_samples(dirname);
+
+
+BRinfo.input = read_input(dirname,BRinfo);
 end
 
 
@@ -118,8 +147,8 @@ for ii = 1:num_faces
 	faces(ii).top = fscanf(fid,'%i',[1 1]);
 	faces(ii).bottom = fscanf(fid,'%i\n',[1 1]);
 	
-	faces(ii).system_top = fscanf(fid,'%i',[1 1]);
-	faces(ii).system_bottom = fscanf(fid,'%i\n',[1 1]);
+	faces(ii).system_top = fscanf(fid,'%s',[1 1]);
+	faces(ii).system_bottom = fscanf(fid,'%s\n',[1 1]);
 	
 	
 	faces(ii).num_left = fscanf(fid,'%i\n',[1 1]); 
@@ -134,8 +163,6 @@ for ii = 1:num_faces
 		faces(ii).right(jj) = fscanf(fid,'%i\n',[1 1]);
 	end
 	
-% 	faces(ii).num_bottom
-% 	faces(ii).num_top
 
 end
 
@@ -144,7 +171,7 @@ fclose(fid);
 end
 
 
-function BRinfo = parse_decomp(dirname)
+function BRinfo = parse_decomp(dirname,BRinfo)
 
 
 
@@ -221,7 +248,7 @@ fclose(fid);
 end
 
 
-function dirname = parse_dirname()
+function [dirname,dimension] = parse_dirname()
 
 
 if isempty('Dir_Name')
@@ -230,9 +257,9 @@ if isempty('Dir_Name')
 end
 
 fid = fopen('Dir_Name','r');
-nchars = fscanf(fid,'%i\n',[1 1]);
-dirname = fscanf(fid,'%s\n',[1 1]);
-nchars = fscanf(fid,'%i\n',[1 1]);
+dirname = fscanf(fid,'%s',[1 1]);
+MPtype = fscanf(fid,'%i',[1 1]);
+dimension = fscanf(fid,'%i',[1 1]);
 
 fclose(fid);
 
@@ -271,16 +298,20 @@ fclose(fid);
 
 end
 
-function [num_edges, edges, sampler_data] = gather_curve(dirname)
+function [curve] = gather_curve(dirname, curve)
+
+curve = parse_decomp(dirname,curve);
+
+
 fid = fopen([dirname '/E.edge'],'r');
 
-num_edges = fscanf(fid,'%i\n',[1 1]);
+curve.num_edges = fscanf(fid,'%i\n',[1 1]);
 
 
-edges = zeros(num_edges,3);  % 3, as left, mid, right
-for ii = 1:num_edges
+curve.edges = zeros(curve.num_edges,3);  % 3, as left, mid, right
+for ii = 1:curve.num_edges
 	tmp = fscanf(fid,'%i',[1 3]);
-	edges(ii,:) = tmp+1;
+	curve.edges(ii,:) = tmp+1;
 end
 	
 fclose(fid);
@@ -291,27 +322,27 @@ filename = [dirname '/' 'samp.curvesamp'];
 
 
 if isempty(dir(filename))
-	display('no sampler data.  run sampler.');
-	sampler_data = [];
+	curve.sampler_data = [];
 else
 	fid = fopen(filename,'r');
-	num_edges = fscanf(fid,'%i\n\n',[1 1]);
-	sample_sizes = zeros(num_edges,1);
-	for ii = 1:num_edges
+	curve.num_edges = fscanf(fid,'%i\n\n',[1 1]);
+	curve.sampler_data.sample_sizes = zeros(curve.num_edges,1);
+    curve.sampler_data.edge = [];
+	for ii = 1:curve.num_edges
 		num_samples = fscanf(fid,'%i\n',[1 1]);
-		sample_sizes(ii) = num_samples;
+		curve.sampler_data.sample_sizes(ii) = num_samples;
 		for jj=1:num_samples
 			tmp_ind = fscanf(fid,'%i\n',[1 1]);
-			edge(ii).samples(jj) = tmp_ind;
+			curve.sampler_data.edge(ii).samples(jj) = tmp_ind;
 		end
 	end
 	fclose(fid);
-	sampler_data.edge = edge;
-	sampler_data.sample_sizes = sample_sizes;
     
     display('done gathering sampler data.');
 end
 
+
+curve.input = read_input(dirname,curve);
 end
 
 

@@ -1202,12 +1202,12 @@ private:
 public:
 	int midpt; ///< index into vertex set
 	
-	friend std::ostream & operator<<(std::ostream &os, const cell & c)
+	
+	friend std::istream & operator>>(std::istream &os, cell & c)
 	{
-		os << c.midpt << std::endl;
+		os >> c.midpt;
 		return os;
 	}
-	
 	
 	void copy(const cell & other){
 		this->midpt = other.midpt;
@@ -1227,6 +1227,7 @@ public:
 		midpt = buffer;
 	}
 	
+	virtual void read_from_stream( std::istream &is ) = 0;
 	
 };
 
@@ -1315,6 +1316,16 @@ public:
 		delete [] buffer;
 		
 	}
+	
+	
+	
+	virtual void read_from_stream( std::istream &os )
+	{
+		
+	}
+	
+	
+	
 };
 
 
@@ -1328,7 +1339,7 @@ public:
 
 
 
-class decomposition
+class decomposition : public patch_holder
 {
 
 public:
@@ -1347,8 +1358,7 @@ public:
 	std::vector< int > randomized_degrees;
 	mat_mp randomizer_matrix;
 	
-	int num_patches;
-	vec_mp *patch;
+
 
 	vec_mp sphere_center;
 	comp_mp sphere_radius;
@@ -1377,20 +1387,6 @@ public:
 		
 	}
 	
-	void add_patch(vec_mp new_patch){
-		if (this->num_patches==0) {
-			this->patch = (vec_mp *) br_malloc(sizeof(vec_mp));
-		}
-		else{
-			this->patch = (vec_mp *)br_realloc(this->patch, (this->num_patches+1) * sizeof(vec_mp));
-		}
-		
-		init_vec_mp2(this->patch[num_patches],new_patch->size,DEFAULT_MAX_PREC);
-		this->patch[this->num_patches]->size = new_patch->size;
-		
-		vec_cp_mp(this->patch[this->num_patches], new_patch);
-		this->num_patches++;
-	}
 	
 	
     int add_witness_set(const witness_set & W, int add_type, vertex_set & V);
@@ -1479,13 +1475,13 @@ protected:
 
 		input_filename = "unset";
 		pi = NULL;
-		patch = NULL;
+
 		init_mat_mp2(randomizer_matrix, 0, 0,1024);
 		randomizer_matrix->rows = randomizer_matrix->cols = 0;
 		
 		randomized_degrees.clear();
 		
-		num_curr_projections = num_patches = 0;
+		num_curr_projections = 0;
 		num_variables = 0;
 		dimension = -1;
 		component_num = -1;
@@ -1512,7 +1508,7 @@ protected:
 	{
 		
 
-		
+		patch_holder::copy(other);
 		
 		
 		this->randomized_degrees = other.randomized_degrees;
@@ -1540,14 +1536,6 @@ protected:
 		
 		
 		
-		this->num_patches = other.num_patches;
-		this->patch = (vec_mp *) br_malloc(other.num_patches * sizeof(vec_mp));
-		for (int ii = 0; ii<other.num_patches; ii++) {
-			init_vec_mp2(this->patch[ii],other.patch[ii]->size,DEFAULT_MAX_PREC);
-			this->patch[ii]->size = other.patch[ii]->size;
-			vec_cp_mp(this->patch[ii], other.patch[ii])
-		}
-		
 		copy_sphere_bounds(other);
 		
 		return;
@@ -1566,12 +1554,6 @@ protected:
 		}
 		num_curr_projections = 0;
 		
-		if (num_patches>0){
-			for (int ii=0; ii<num_patches; ii++)
-				clear_vec_mp(patch[ii]);
-			free(patch);
-		}
-		num_patches = 0;
 		
 		counters.clear();
 		indices.clear();
