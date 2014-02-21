@@ -2048,9 +2048,9 @@ void decomposition::print(boost::filesystem::path base)
 	fprintf(OUT,"%d\n\n",this->num_patches); // print the header line
 	
 	for (ii=0; ii<this->num_patches; ++ii) {
-		fprintf(OUT,"%d\n",this->patch[ii]->size);
-		for (int jj=0; jj<this->patch[ii]->size; jj++) {
-			print_mp(OUT, 0, &this->patch[ii]->coord[jj]);
+		fprintf(OUT,"%d\n",this->patch_mp[ii]->size);
+		for (int jj=0; jj<this->patch_mp[ii]->size; jj++) {
+			print_mp(OUT, 0, &this->patch_mp[ii]->coord[jj]);
 			fprintf(OUT, "\n");
 		}
 		fprintf(OUT,"\n");
@@ -2402,7 +2402,7 @@ void decomposition::send(int target, parallelism_config & mpi_config)
 	if ( num_patches>0) {
 
 		for (int ii=0; ii<num_patches; ii++) {
-			send_vec_mp(patch[ii],target);
+			send_vec_mp(patch_mp[ii],target);
 		}
 	}
 	

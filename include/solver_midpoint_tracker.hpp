@@ -26,8 +26,250 @@
 #include "programConfiguration.hpp"
 #include "postProcessing.hpp"
 
+class midpoint_config;
+class midpoint_eval_data_mp;
+class midpoint_eval_data_d;
 
+class complete_system
+{
+	friend class midpoint_config;
+	friend class midpoint_eval_data_mp;
+	friend class midpoint_eval_data_d;
+protected:
+	
+	boost::filesystem::path input_filename;
+	SLP_global_pointers memory;
+	prog_t * SLP;
+	mat_mp randomizer_matrix;
+	int num_variables;
+	
+	bool have_SLP;
+	
+	int MPType;
+	
+public:
+	
+	void bcast_send(parallelism_config & mpi_config)
+	{
+		std::cout << "bcasting " << input_filename << std::endl;
+		
+		
+		int * buffer = new int[4];
+		buffer[0] = randomizer_matrix->rows;
+		buffer[1] = randomizer_matrix->cols;
+		buffer[2] = MPType;
+		buffer[3] = num_variables;
+		MPI_Bcast(buffer, 4, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+		
+		delete [] buffer;
+		
+		bcast_mat_mp(randomizer_matrix,0,0);
+		memory.set_globals_to_this();
+		bcast_prog_t(SLP, this->MPType, 0, 0); // last two arguments are: myid, headnode
+		memory.set_globals_null();
+	}
+	
+	
+	
+	void bcast_receive(parallelism_config & mpi_config)
+	{
+		
+		if (have_SLP) {
+			clear_mat_mp(randomizer_matrix);
+			memory.set_globals_to_this();
+			clearProg(SLP, this->MPType, 1); // 1 means call freeprogeval()
+		}
+		else
+		{
+			init_mat_mp2(randomizer_matrix,1,1,1024);
+			randomizer_matrix->rows = 1;
+			randomizer_matrix->cols = 1;
+			SLP = new prog_t;
+		}
+		
+		int * buffer = new int[4];
+		
+		MPI_Bcast(buffer, 4, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+		
+		change_size_mat_mp(randomizer_matrix,buffer[0],buffer[1]);
 
+		randomizer_matrix->rows = buffer[0];
+		randomizer_matrix->cols = buffer[1];
+		MPType = buffer[2];
+		num_variables = buffer[3];
+		
+		
+		bcast_mat_mp(randomizer_matrix,1,0);
+		
+		
+		delete [] buffer;
+		
+		bcast_prog_t(SLP, MPType, 1, 0); // last two arguments are: myid, headnode
+		initEvalProg(MPType);
+		memory.capture_globals();
+		memory.set_globals_null();
+		
+		have_SLP = true;
+	}
+	
+	
+	
+	complete_system()
+	{
+		init();
+	}
+	
+	complete_system(const decomposition & D, tracker_config_t * T)
+	{
+		init();
+		get_system(D,T);
+	}
+	
+	
+	~complete_system()
+	{
+		clear();
+	}
+	
+	
+	complete_system & operator=( const complete_system & other)
+	{
+		init();
+		copy(other);
+		return *this;
+	}
+	
+	complete_system(const complete_system & other)
+	{
+		init();
+		copy(other);
+	} // re: copy
+	
+	
+	
+	void init()
+	{
+		num_variables = 0;
+		input_filename = "unset_input_filename_complete_class";
+		MPType = -1;
+		
+		have_SLP = false;
+	}
+	
+	
+	void copy(const complete_system & other)
+	{
+
+		this->num_variables = other.num_variables;
+		
+		this->MPType = other.MPType;
+		
+		this->input_filename = other.input_filename;
+		
+		if (this->have_SLP) {
+			this->memory.set_globals_to_this();
+			clearProg(this->SLP, this->MPType, 1); // 1 means call freeprogeval()
+			
+			if (!other.have_SLP) {
+				delete this->SLP;
+				clear_mat_mp(this->randomizer_matrix);
+				this->have_SLP = false;
+			}
+			
+		}
+		
+		if (other.have_SLP) {
+			
+			if (!this->have_SLP)
+			{
+				this->SLP = new prog_t;
+				init_mat_mp2(this->randomizer_matrix,1,1,1024);
+				this->randomizer_matrix->rows = 1; this->randomizer_matrix->cols = 1;
+			}
+			
+			mat_cp_mp(this->randomizer_matrix, other.randomizer_matrix);
+			
+			cp_prog_t(this->SLP, other.SLP);
+			this->memory.set_globals_null();
+			initEvalProg(this->MPType);
+			this->memory.capture_globals();
+			
+			this->have_SLP = true;
+		}
+		
+		
+	}
+	
+	
+	void clear()
+	{
+		std::cout << "clearing complete_system, name " << input_filename << std::endl;
+		
+		if (have_SLP) {
+			clear_mat_mp(randomizer_matrix);
+			memory.set_globals_to_this();
+			clearProg(SLP, this->MPType, 1); // 1 means call freeprogeval()
+			delete SLP;
+			have_SLP = false;
+		}
+		
+		
+	}
+	
+	void get_system(const decomposition & D, tracker_config_t * T)
+	{
+		if (have_SLP) {
+			memory.set_globals_to_this();
+			clearProg(SLP, this->MPType, 1); // 1 means call freeprogeval()
+		}
+		else{
+			SLP = new prog_t;
+			init_mat_mp2(randomizer_matrix,1,1,1024);
+			randomizer_matrix->rows = 1; randomizer_matrix->cols = 1;
+		}
+		
+		
+		
+		
+		int blabla;  // i would like to move this.
+		parse_input_file(D.input_filename, &blabla);
+		num_variables = D.num_variables;
+		input_filename = D.input_filename;
+		this->MPType = T->MPType;
+		
+		
+		
+		
+		//	// setup a straight-line program, using the file(s) created by the parser
+		int numVars = setupProg(SLP, T->Precision, T->MPType);
+		if (num_variables != numVars) {
+			std::cout << "numvars is incorrect..." << std::endl;
+			mypause();
+			br_exit(-57189); // this should be a throw or something
+		}
+		
+		preproc_data PPD;
+		parse_preproc_data("preproc_data", &PPD);
+		
+		//create the array of integers
+		std::vector<int> randomized_degrees;
+		
+		//get the matrix and the degrees of the resulting randomized functions.
+		make_randomization_matrix_based_on_degrees(randomizer_matrix, randomized_degrees, D.num_variables-D.num_patches-D.dimension, PPD.num_funcs);
+		
+		
+		
+		memory.capture_globals();
+		memory.set_globals_null();
+		
+		
+		
+		preproc_data_clear(&PPD);
+		
+		have_SLP = true;
+		std::cout << "have system " << input_filename << " in memory" << std::endl;
+	}
+};
 
 //
 class surface_decomposition; // forward declaration
@@ -35,25 +277,11 @@ class surface_decomposition; // forward declaration
 class midpoint_config
 {
 public:
+	friend class complete_system;
 	
-	SLP_global_pointers sphere_memory;
-	SLP_global_pointers crit_memory;
-	SLP_global_pointers mid_memory;
-	
-    
-	// these are all merely pointers, and should only be assigned to memory set by the SLP creation routine inside of setupProg(), by the midpoint_config::setup() call
-	
-	prog_t *SLP_sphere;
-	prog_t *SLP_crit;
-	prog_t *SLP_mid; // will hold a pointer to the SLP. will pass this pointer to the BED class member
+	std::map<std::string, complete_system> systems;
 	
 	
-	mat_mp randomizer_matrix_crit, randomizer_matrix_sph, randomizer_matrix;
-	
-	int num_mid_vars;    //the number of variables (incl homogenizing) of midpoint.  set by setup
-	int num_crit_vars;   //the number of variables (incl homogenizing) of each edge point.  set by setup
-	int num_sphere_vars;
-    
     
     int MPType;
     
@@ -65,10 +293,10 @@ public:
 	comp_mp crit_val_left;// set during the loop in connect the dots
 	comp_mp crit_val_right;// set during the loop in connect the dots
 	
-    
+	std::string system_name_mid;
+	std::string system_name_bottom;
+	std::string system_name_top;
 	
-	int system_type_bottom;
-	int system_type_top;
 	
 	vec_mp *pi;
 	int num_projections;
@@ -101,32 +329,29 @@ public:
 	}
 	
 	
+
+	
+	
     void print()
 	{
-		
-		std::cout << "top system type: " << system_type_top << std::endl;
-		std::cout << "bottom system type: " << system_type_bottom << std::endl;
-		
+
 		print_comp_matlab(u_target,"u_target");
 		print_comp_matlab(v_target,"v_target");
 		
 		print_comp_matlab(crit_val_right,"crit_val_right");
 		print_comp_matlab(crit_val_left,"crit_val_left");
 		
-		print_matrix_to_screen_matlab(randomizer_matrix,"R");
-		print_matrix_to_screen_matlab(randomizer_matrix_crit,"R_crit");
-		print_matrix_to_screen_matlab(randomizer_matrix_sph,"R_sph");
+
 	}
 	
 	void setup(const surface_decomposition & surf,
                solver_configuration & solve_options);
     
-    void initial_send(parallelism_config & mpi_config);
-    void initial_receive(parallelism_config & mpi_config);
-    
-//    void update_send(parallelism_config & mpi_config, int target);
-//    void update_receive(parallelism_config & mpi_config);
-    
+    void bcast_send(parallelism_config & mpi_config);
+    void bcast_receive(parallelism_config & mpi_config);
+
+	
+	
     void add_projection(vec_mp proj)
 	{
 		if (this->num_projections==0) {
@@ -146,28 +371,21 @@ public:
 	
 	int num_top_vars()
 	{
-		if (system_type_top==SYSTEM_CRIT) {
-			return num_crit_vars;
-		}
-		else
-		{
-			return num_sphere_vars;
-		}
+		return systems[system_name_top].num_variables;
 	}
 	
 	
 	
 	int num_bottom_vars()
 	{
-		if (system_type_bottom==SYSTEM_CRIT) {
-			return num_crit_vars;
-		}
-		else{
-			return num_sphere_vars;
-		}
+		return systems[system_name_bottom].num_variables;
 	}
 	
 	
+	int num_mid_vars()
+	{
+		return systems[system_name_mid].num_variables;
+	}
 	
 	
 	
@@ -180,30 +398,22 @@ private:
 		
 		this->MPType = other.MPType;
 		
-		this->crit_memory = other.crit_memory;
-		this->mid_memory = other.mid_memory;
-		this->sphere_memory = other.sphere_memory;
+		this->systems = other.systems;
 		
-		system_type_top = other.system_type_top;
-		system_type_bottom = other.system_type_bottom;
+
 		
-		mat_cp_mp(randomizer_matrix, other.randomizer_matrix);
-		mat_cp_mp(randomizer_matrix_crit, other.randomizer_matrix_crit);
-		mat_cp_mp(randomizer_matrix_sph, other.randomizer_matrix_sph);
+		system_name_mid = other.system_name_mid;
+		system_name_top = other.system_name_top;
+		system_name_bottom = other.system_name_bottom;
 		
-		
-		num_mid_vars = other.num_mid_vars;
-		num_crit_vars = other.num_crit_vars;
-		num_sphere_vars = other.num_sphere_vars;
+
 		
 		set_mp(v_target,other.v_target);
 		set_mp(u_target,other.u_target);
 		set_mp(crit_val_left,other.crit_val_left);
 		set_mp(crit_val_right,other.crit_val_right);
 		
-		SLP_mid = other.SLP_mid;
-		SLP_crit = other.SLP_crit;
-		SLP_sphere = other.SLP_sphere;
+
         
         for (int ii=0; ii<other.num_projections; ii++) {
             add_projection(other.pi[ii]);
@@ -218,30 +428,19 @@ private:
 	
 	void clear()
 	{
-		clear_mat_mp(randomizer_matrix_sph);
-		clear_mat_mp(randomizer_matrix_crit);
-		clear_mat_mp(randomizer_matrix);
 		
 		clear_mp(v_target);
 		clear_mp(u_target);
 		clear_mp(crit_val_left);
 		clear_mp(crit_val_right);
 		
+		if (num_projections>0) {
+			for (int ii=0; ii<num_projections; ii++) {
+				clear_vec_mp(pi[ii]);
+			}
+			free(pi);
+		}
 		
-		mid_memory.set_globals_to_this();
-		//also put in clearing stuff for the SLP's here.
-		clearProg(this->SLP_mid, this->MPType, 1); // 1 means call freeprogeval()
-		
-		crit_memory.set_globals_to_this();
-		clearProg(this->SLP_crit, this->MPType, 1); // 1 means call freeprogeval()
-		
-		sphere_memory.set_globals_to_this();
-		clearProg(this->SLP_sphere, this->MPType, 1); // 1 means call freeprogeval()
-		
-		
-		delete SLP_mid;
-		delete SLP_crit;
-		delete SLP_sphere;
 	}
 	
     
@@ -381,7 +580,7 @@ public:
 	
 	
 	
-	int setup(const midpoint_config & md_config,
+	int setup(midpoint_config & md_config,
               const witness_set & W,
               solver_configuration & solve_options);
 	
@@ -672,7 +871,7 @@ public:
 	
 	
 	
-	int setup(const midpoint_config & md_config,
+	int setup(midpoint_config & md_config,
               const witness_set & W,
               solver_configuration & solve_options);
 	

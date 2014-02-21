@@ -14,78 +14,25 @@ void midpoint_config::setup(const surface_decomposition & surf,
     add_projection(surf.pi[0]);
 	add_projection(surf.pi[1]);
     
-	num_mid_vars = surf.num_variables;
-	num_crit_vars = surf.crit_curve.num_variables;
-	num_sphere_vars = surf.sphere_curve.num_variables;
 	
+	systems[surf.input_filename.filename().string()] = complete_system(); // this pattern avoids a time-wasting copy pattern.
+	systems[surf.input_filename.filename().string()].get_system(surf, &solve_options.T);
 	
-	int blabla;  // i would like to move this.
-	parse_input_file(surf.input_filename, &blabla);
-    
+	systems[surf.crit_curve.input_filename.filename().string()] = complete_system();// this pattern avoids a time-wasting copy pattern.
+	systems[surf.crit_curve.input_filename.filename().string()].get_system(surf.crit_curve, &solve_options.T);
 	
-	//	// setup a straight-line program, using the file(s) created by the parser
-	solve_options.T.numVars = setupProg(this->SLP_mid, solve_options.T.Precision, solve_options.T.MPType);
-    
-	preproc_data_clear(&solve_options.PPD);
-	parse_preproc_data("preproc_data", &solve_options.PPD);
+	systems[surf.sphere_curve.input_filename.filename().string()] = complete_system();// this pattern avoids a time-wasting copy pattern.
+	systems[surf.sphere_curve.input_filename.filename().string()].get_system(surf.sphere_curve, &solve_options.T);
 	
-	//create the array of integers
-	std::vector<int> randomized_degrees;
+	for (auto iter = surf.singular_curves.begin(); iter!=surf.singular_curves.end(); ++iter) {
+		systems[iter->second.input_filename.filename().string()] = complete_system();// this pattern avoids a time-wasting copy pattern.
+		systems[iter->second.input_filename.filename().string()].get_system(iter->second, &solve_options.T);
+	}
 	
-	//get the matrix and the degrees of the resulting randomized functions.
-	make_randomization_matrix_based_on_degrees(this->randomizer_matrix, randomized_degrees, surf.num_variables-surf.num_patches-2, solve_options.PPD.num_funcs);
-	//W.num_variables-W.num_patches-W.num_linears
-    
-	
-	this->mid_memory.capture_globals();
-	this->mid_memory.set_globals_null();
-	
-    
-    
-	//do the necessary parsing
-	
-    
-	parse_input_file(surf.crit_curve.input_filename, &blabla);
-    
-	
-	
-	//	// setup a straight-line program, using the file(s) created by the parser
-	solve_options.T.numVars = setupProg(this->SLP_crit, solve_options.T.Precision, solve_options.T.MPType);
-	preproc_data_clear(&solve_options.PPD);
-	parse_preproc_data("preproc_data", &solve_options.PPD);
-	
-	
-	//get the matrix and the degrees of the resulting randomized functions.
-	randomized_degrees.clear();
-	make_randomization_matrix_based_on_degrees(this->randomizer_matrix_crit, randomized_degrees, surf.crit_curve.num_variables-surf.crit_curve.num_patches-1, solve_options.PPD.num_funcs);
-	
-	this->crit_memory.capture_globals();
-	this->crit_memory.set_globals_null();
-	
-	
-	
-	//do the necessary parsing
-	
-	
-	parse_input_file(surf.sphere_curve.input_filename, &blabla);
-    
-	
-	//	// setup a straight-line program, using the file(s) created by the parser
-	setupProg(this->SLP_sphere, solve_options.T.Precision, solve_options.T.MPType);
-	preproc_data_clear(&solve_options.PPD);
-	parse_preproc_data("preproc_data", &solve_options.PPD);
-	
-	
-	//get the matrix and the degrees of the resulting randomized functions.
-	randomized_degrees.clear();
-	make_randomization_matrix_based_on_degrees(this->randomizer_matrix_sph, randomized_degrees, surf.sphere_curve.num_variables-surf.sphere_curve.num_patches-1, solve_options.PPD.num_funcs);
-	
-	this->sphere_memory.capture_globals();
-	this->sphere_memory.set_globals_null();
-	
-	
-    //	// are there other things in T which need to be set?
 }
+
+
+
 
 
 void midpoint_config::init()
@@ -93,148 +40,158 @@ void midpoint_config::init()
 	
 	num_projections = 0;
     
-	this->MPType = -1;
+	this->MPType = -1; // initialize to impossible value
 	
-	init_mat_mp2(randomizer_matrix_sph,1,1,1024);randomizer_matrix_sph->rows = randomizer_matrix_sph->cols = 1;
-	init_mat_mp2(randomizer_matrix_crit,1,1,1024);randomizer_matrix_crit->rows = randomizer_matrix_crit->cols = 1;
-	init_mat_mp2(randomizer_matrix,1,1,1024);randomizer_matrix->rows = randomizer_matrix->cols = 1;
-	
-	
+
 	init_mp2(v_target,1024);
 	init_mp2(u_target,1024);
 	
 	init_mp2(crit_val_left,1024);
 	init_mp2(crit_val_right,1024);
 	
-	this->SLP_crit =  new prog_t;
-	this->SLP_mid = new prog_t;//(prog_t *) br_malloc(sizeof(prog_t));
-	this->SLP_sphere = new prog_t;//(prog_t *) br_malloc(sizeof(prog_t));
-	
-	system_type_top = UNSET;
-	system_type_bottom = UNSET;
+
+	system_name_mid = "unset_mid";
+	system_name_bottom = "unset_bottom";
+	system_name_top = "unset_top";
 	
     
 }
 
 
 
-void midpoint_config::initial_send(parallelism_config & mpi_config)
+void midpoint_config::bcast_send(parallelism_config & mpi_config)
 {
 #ifdef functionentry_output
 	std::cout << "midpoint_config::initial_send" << std::endl;
 #endif
 	
 	
-	int * buffer = new int[7];
+	int * buffer = new int[3];
+	int num_systems_to_send = systems.size();
 	
-	buffer[0] = randomizer_matrix_crit->rows;
-	buffer[1] = randomizer_matrix_crit->cols;
-	buffer[2] = randomizer_matrix_sph->rows;
-	buffer[3] = randomizer_matrix_sph->cols;
-	buffer[4] = randomizer_matrix->rows;
-	buffer[5] = randomizer_matrix->cols;
-	buffer[6] = MPType;
 	
-	MPI_Bcast(buffer, 7, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	buffer[0] = MPType;
+	buffer[1] = num_systems_to_send;
+	buffer[2] = num_projections;
+	
+	MPI_Bcast(buffer, 3, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
 	
 	delete [] buffer;
 	
 	
-	mid_memory.set_globals_to_this();
-    bcast_prog_t(SLP_mid, this->MPType, 0, 0); // last two arguments are: myid, headnode
+	buffer = new int[num_systems_to_send];
+	std::vector< int > namelengths;
+	std::vector< std::string > names;
+	int num_chars = 0;
+	int counter = 0;
+	std::string sendme;
 	
-	sphere_memory.set_globals_to_this();
-    bcast_prog_t(SLP_sphere, this->MPType, 0, 0); // last two arguments are: myid, headnode
+	for (auto iter = systems.begin(); iter!= systems.end(); ++iter) {
+		buffer[counter] = iter->first.size();
+		namelengths.push_back(iter->first.size());
+		num_chars += iter->first.size();
+		names.push_back(iter->first);
+		sendme.append(names[counter]);
+		counter++;
+	}
 	
-    crit_memory.set_globals_to_this();
-    bcast_prog_t(SLP_crit, this->MPType, 0, 0); // last two arguments are: myid, headnode
+	MPI_Bcast(buffer, num_systems_to_send, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	
+	delete [] buffer;
+	
+	
+	// i hate this conversion to send nonsense.  WTB: improved.  Or someone to convert this to boost::mpi
+	char * bla = new char [sendme.size()+1];
+	
+	strcpy(bla, sendme.c_str());
+	bla[sendme.size()] = '\0';
+	
+	MPI_Bcast(bla, sendme.size(), MPI_CHAR, mpi_config.head(), mpi_config.my_communicator);
+	
+	
+	delete [] bla;
+	
+	for (int ii=0; ii<num_systems_to_send; ii++) {
+		systems[names[ii]].bcast_send(mpi_config);
+	}
 
-    
-
-    
-    bcast_mat_mp(randomizer_matrix_crit,0,0);
-    bcast_mat_mp(randomizer_matrix_sph,0,0);
-    bcast_mat_mp(randomizer_matrix,0,0);
-    
-	   
-    MPI_Bcast(&num_mid_vars, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
-    MPI_Bcast(&num_crit_vars, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
-    MPI_Bcast(&num_sphere_vars, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
 	
-    MPI_Bcast(&num_projections, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
-    for (int ii=0; ii<num_projections; ii++) {
+	for (int ii=0; ii<num_projections; ii++) {
         bcast_vec_mp(pi[ii],0,0);
-    }
+	}
 	
 }
 
-void midpoint_config::initial_receive(parallelism_config & mpi_config)
+void midpoint_config::bcast_receive(parallelism_config & mpi_config)
 {
 	
 #ifdef functionentry_output
 	std::cout << "midpoint_config::initial_receive" << std::endl;
 #endif
 	
-	int * buffer = new int[7];
+	int * buffer = new int[3];
 	
-	MPI_Bcast(buffer, 7, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(buffer, 3, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
 	
-	change_size_mat_mp(randomizer_matrix_crit,buffer[0],buffer[1]);
-	change_size_mat_mp(randomizer_matrix_sph,buffer[2],buffer[3]);
-	change_size_mat_mp(randomizer_matrix,buffer[4],buffer[5]);
+	MPType = buffer[0];
+	int num_systems_to_receive = buffer[1];
+	int temp_num_projections = buffer[2];
+	
+	delete [] buffer;
+	
+	buffer = new int[num_systems_to_receive];
+	MPI_Bcast(buffer, num_systems_to_receive, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
 	
 	
-	randomizer_matrix_crit->rows = buffer[0];
-	randomizer_matrix_crit->cols = buffer[1];
-	randomizer_matrix_sph->rows = buffer[2];
-	randomizer_matrix_sph->cols = buffer[3];
-	randomizer_matrix->rows = buffer[4];
-	randomizer_matrix->cols = buffer[5];
+	int num_chars = 0;
+	std::vector< int > namelengths;
 	
-	MPType = buffer[6];
+	for (int ii=0; ii<num_systems_to_receive; ii++) {
+		num_chars += buffer[ii];
+		namelengths.push_back(buffer[ii]);
+		std::cout << "name-lengths_" << ii << " " << namelengths[ii] << std::endl;
+	}
 	
 	delete [] buffer;
 	
 	
-    bcast_prog_t(SLP_mid, this->MPType, 1, 0); // last two arguments are: myid, headnode
-	initEvalProg(this->MPType);
-    mid_memory.capture_globals();
-    mid_memory.set_globals_null();
+	char * charbuff = new char[num_chars+1]; // +1?  for null char?
+	MPI_Bcast(charbuff, num_chars, MPI_CHAR, mpi_config.head(), mpi_config.my_communicator);
 	
-    sphere_memory.set_globals_null();
-	bcast_prog_t(SLP_sphere, this->MPType, 1, 0); // last two arguments are: myid, headnode
-	initEvalProg(this->MPType);
-    sphere_memory.capture_globals();
-    sphere_memory.set_globals_null();
+	int charcounter = 0;
+	
+	std::vector< std::string > names;
+	
+	for (int ii=0; ii<num_systems_to_receive; ii++) {
+		std::stringstream converter;
+		
+		for (int jj=0; jj<namelengths[ii]; jj++) {
+			converter << charbuff[charcounter];
+			charcounter++;
+		}
+		names.push_back(converter.str());
+	}
+	delete [] charbuff;
+	
+	//  now we have the names;
+
 	
 	
-    bcast_prog_t(SLP_crit, this->MPType, 1, 0); // last two arguments are: myid, headnode
-	initEvalProg(this->MPType);
-    crit_memory.capture_globals();
-	crit_memory.set_globals_null();
+	// finally, get the systems from broadcaster.
+	for (int ii=0; ii<num_systems_to_receive; ii++) {
+		systems[names[ii]] = complete_system();
+		systems[names[ii]].bcast_receive(mpi_config);
+		systems[names[ii]].input_filename = names[ii];
+	}
 	
 	
-    
-	
-	
-	
-	
-    bcast_mat_mp(randomizer_matrix_crit,1,0);
-    bcast_mat_mp(randomizer_matrix_sph,1,0);
-    bcast_mat_mp(randomizer_matrix,1,0);
-    
-	
-    MPI_Bcast(&num_mid_vars, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
-    MPI_Bcast(&num_crit_vars, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
-    MPI_Bcast(&num_sphere_vars, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
-	int temp_num_projections;
-	MPI_Bcast(&temp_num_projections, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
     vec_mp tempvec;  init_vec_mp2(tempvec, 1, 1024);
     for (int ii=0; ii<temp_num_projections; ii++) {
         bcast_vec_mp(tempvec,1,0);
         add_projection(tempvec);
     }
     clear_vec_mp(tempvec);
+
 	
 }
 
@@ -348,6 +305,8 @@ int midpoint_eval_data_mp::send(parallelism_config & mpi_config)
 #ifdef functionentry_output
 	std::cout << "midpoint_eval_data_mp::send" << std::endl;
 #endif
+	
+	std::cout << "why are you sending midpoint_eval_data_mp?  it's not intended to be called that way" << std::endl;
 	int solver_choice = MIDPOINT_SOLVER;
 	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
 	// send the confirmation integer, to ensure that we are sending the correct type.
@@ -402,7 +361,7 @@ int midpoint_eval_data_mp::receive(parallelism_config & mpi_config)
 
 
 
-int midpoint_eval_data_mp::setup(const midpoint_config & md_config,
+int midpoint_eval_data_mp::setup(midpoint_config & md_config,
                                  const witness_set & W,
                                  solver_configuration & solve_options)
 {
@@ -415,61 +374,67 @@ int midpoint_eval_data_mp::setup(const midpoint_config & md_config,
 	
 	
 	
-	this->mid_memory = md_config.mid_memory;
-	this->SLP_mid = md_config.SLP_mid;
-	this->num_mid_vars = md_config.num_mid_vars;
-	mat_cp_mp(randomizer_matrix, md_config.randomizer_matrix);
-	
-	
-	if (md_config.system_type_top == SYSTEM_CRIT) {
-		this->top_memory = md_config.crit_memory; // copy the pointers to the memory
-		this->SLP_top = md_config.SLP_crit;
-		this->num_top_vars = md_config.num_crit_vars;
-		mat_cp_mp(randomizer_matrix_top, md_config.randomizer_matrix_crit);
-		if (MPType == 2) {
-			mat_cp_mp(randomizer_matrix_top_full_prec, md_config.randomizer_matrix_crit);
-		}
+	bool bail_out = false;
+	if (md_config.systems.find( md_config.system_name_mid ) == md_config.systems.end())
+	{
+		std::cout << "don't have a system in memory for name " << md_config.system_name_mid << std::endl;
+		bail_out = true;
 	}
-	else if (md_config.system_type_top == SYSTEM_SPHERE){
-		this->top_memory = md_config.sphere_memory; // copy the pointers to the memory
-		this->SLP_top = md_config.SLP_sphere;
-		this->num_top_vars = md_config.num_sphere_vars;
-		mat_cp_mp(randomizer_matrix_top, md_config.randomizer_matrix_sph);
-		if (MPType == 2) {
-			mat_cp_mp(randomizer_matrix_top_full_prec, md_config.randomizer_matrix_sph);
-		}
+	if (md_config.systems.find( md_config.system_name_bottom ) == md_config.systems.end())
+	{
+		std::cout << "don't have a system in memory for name " << md_config.system_name_bottom << std::endl;
+		bail_out = true;
 	}
-	else{
-		br_exit(98711);
+	if (md_config.systems.find( md_config.system_name_top ) == md_config.systems.end())
+	{
+		std::cout << "don't have a system in memory for name " << md_config.system_name_top << std::endl;
+		bail_out = true;
 	}
 	
 	
-	
-	
-	if (md_config.system_type_bottom == SYSTEM_CRIT) {
-		this->bottom_memory = md_config.crit_memory; // copy the pointers to the memory
-		this->SLP_bottom = md_config.SLP_crit;
-		this->num_bottom_vars = md_config.num_crit_vars;
-		mat_cp_mp(randomizer_matrix_bottom, md_config.randomizer_matrix_crit);
-		if (MPType == 2) {
-			mat_cp_mp(randomizer_matrix_bottom_full_prec, md_config.randomizer_matrix_crit);
-		}
+	if (bail_out) {
+		return -1;
+		//		br_exit(-1730);
 	}
-	else if (md_config.system_type_bottom == SYSTEM_SPHERE){
-		this->bottom_memory = md_config.sphere_memory; // copy the pointers to the memory
-		this->SLP_bottom = md_config.SLP_sphere;
-		this->num_bottom_vars = md_config.num_sphere_vars;
-		mat_cp_mp(randomizer_matrix_bottom, md_config.randomizer_matrix_sph);
-		if (MPType == 2) {
-			mat_cp_mp(randomizer_matrix_bottom_full_prec, md_config.randomizer_matrix_sph);
-		}
+	
+	
+	this->mid_memory = md_config.systems[md_config.system_name_mid].memory;
+	this->SLP_mid = md_config.systems[md_config.system_name_mid].SLP;
+	this->num_mid_vars = md_config.systems[md_config.system_name_mid].num_variables;
+	mat_cp_mp(randomizer_matrix, md_config.systems[md_config.system_name_mid].randomizer_matrix); // use the built-in randomizer matrix for mid system
+	if (MPType == 2) {
+		mat_cp_mp(randomizer_matrix, md_config.systems[md_config.system_name_mid].randomizer_matrix);
+		mat_cp_mp(randomizer_matrix_full_prec, md_config.systems[md_config.system_name_mid].randomizer_matrix);
 	}
 	else{
-		br_exit(98711);
+		mat_cp_mp(randomizer_matrix, md_config.systems[md_config.system_name_mid].randomizer_matrix);
 	}
 	
 	
-    
+	
+	
+	this->top_memory = md_config.systems[md_config.system_name_top].memory;
+	this->SLP_top = md_config.systems[md_config.system_name_top].SLP;
+	this->num_top_vars = md_config.systems[md_config.system_name_top].num_variables;
+	if (MPType == 2) {
+		mat_cp_mp(randomizer_matrix_top, md_config.systems[md_config.system_name_top].randomizer_matrix);
+		mat_cp_mp(randomizer_matrix_top_full_prec, md_config.systems[md_config.system_name_top].randomizer_matrix);
+	}
+	else{
+		mat_cp_mp(randomizer_matrix_top, md_config.systems[md_config.system_name_top].randomizer_matrix);
+	}
+	
+	this->bottom_memory = md_config.systems[md_config.system_name_bottom].memory;
+	this->SLP_bottom = md_config.systems[md_config.system_name_bottom].SLP;
+	this->num_bottom_vars = md_config.systems[md_config.system_name_bottom].num_variables;
+	if (MPType == 2) {
+		mat_cp_mp(randomizer_matrix_bottom, md_config.systems[md_config.system_name_bottom].randomizer_matrix);
+		mat_cp_mp(randomizer_matrix_bottom_full_prec, md_config.systems[md_config.system_name_bottom].randomizer_matrix);
+	}
+	else{
+		mat_cp_mp(randomizer_matrix_bottom, md_config.systems[md_config.system_name_bottom].randomizer_matrix);
+	}
+	
 	this->num_variables = num_mid_vars + num_bottom_vars + num_top_vars;
 	
     
@@ -482,16 +447,7 @@ int midpoint_eval_data_mp::setup(const midpoint_config & md_config,
 	
 	
 	
-	comp_d temp;
-	if (this->MPType==2) {
-		if (solve_options.use_gamma_trick==1){
-			get_comp_rand_rat(temp, this->gamma, this->gamma_rat, 64, solve_options.T.AMP_max_prec, 0, 0);
-		}
-		else{
-			set_one_mp(this->gamma);
-			set_one_rat(this->gamma_rat);
-		}
-	}
+	
 	
 	
     
@@ -510,10 +466,16 @@ int midpoint_eval_data_mp::setup(const midpoint_config & md_config,
 	
 	
 	
-	
+	comp_d temp;
 	if (this->MPType==2) {
-		mat_cp_mp(randomizer_matrix_full_prec, md_config.randomizer_matrix);
-        
+		if (solve_options.use_gamma_trick==1){
+			get_comp_rand_rat(temp, this->gamma, this->gamma_rat, 64, solve_options.T.AMP_max_prec, 0, 0);
+		}
+		else{
+			set_one_mp(this->gamma);
+			set_one_rat(this->gamma_rat);
+		}
+		
 		set_mp(this->crit_val_left_full_prec, md_config.crit_val_left);
 		set_mp(this->crit_val_right_full_prec, md_config.crit_val_right);
 		
@@ -602,7 +564,7 @@ int midpoint_eval_data_d::send(parallelism_config & mpi_config)
 #ifdef functionentry_output
 	std::cout << "midpoint_eval_data_d::send" << std::endl;
 #endif
-	
+	std::cout << "why are you sending midpoint_eval_data_d?  it's not intended to be called that way" << std::endl;
 	int solver_choice = MIDPOINT_SOLVER;
 	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
 	// send the confirmation integer, to ensure that we are sending the correct type.
@@ -663,7 +625,7 @@ int midpoint_eval_data_d::receive(parallelism_config & mpi_config)
 
 
 
-int midpoint_eval_data_d::setup(const midpoint_config & md_config,
+int midpoint_eval_data_d::setup(midpoint_config & md_config,
                                 const witness_set & W,
                                 solver_configuration & solve_options)
 {
@@ -676,50 +638,51 @@ int midpoint_eval_data_d::setup(const midpoint_config & md_config,
 	
 	generic_setup_patch(&patch,W);
 	
-	
-	
-	this->mid_memory = md_config.mid_memory;
-	this->SLP_mid = md_config.SLP_mid;
-	this->num_mid_vars = md_config.num_mid_vars;
-	mat_mp_to_d(randomizer_matrix, md_config.randomizer_matrix);
-	
-	
-	if (md_config.system_type_top == SYSTEM_CRIT) {
-		this->top_memory = md_config.crit_memory; // copy the pointers to the memory
-		this->SLP_top = md_config.SLP_crit;
-		this->num_top_vars = md_config.num_crit_vars;
-		mat_mp_to_d(randomizer_matrix_top, md_config.randomizer_matrix_crit);
+	bool bail_out = false;
+	if (md_config.systems.find( md_config.system_name_mid ) == md_config.systems.end())
+	{
+		std::cout << "don't have a system in memory for name " << md_config.system_name_mid << std::endl;
+		bail_out = true;
 	}
-	else if (md_config.system_type_top == SYSTEM_SPHERE){
-		this->top_memory = md_config.sphere_memory; // copy the pointers to the memory
-		this->SLP_top = md_config.SLP_sphere;
-		this->num_top_vars = md_config.num_sphere_vars;
-		mat_mp_to_d(randomizer_matrix_top, md_config.randomizer_matrix_sph);
+	if (md_config.systems.find( md_config.system_name_bottom ) == md_config.systems.end())
+	{
+		std::cout << "don't have a system in memory for name " << md_config.system_name_bottom << std::endl;
+		bail_out = true;
 	}
-	else{
-		std::cout << "in double setup for midpoint eval, top system was neither sphere nor crit." << std::endl;
-		br_exit(98711);
+	if (md_config.systems.find( md_config.system_name_top ) == md_config.systems.end())
+	{
+		std::cout << "don't have a system in memory for name " << md_config.system_name_top << std::endl;
+		bail_out = true;
 	}
 	
 	
+	if (bail_out) {
+		return -1;
+//		br_exit(-1730);
+	}
+	
+
+	this->mid_memory = md_config.systems[md_config.system_name_mid].memory;
+	this->SLP_mid = md_config.systems[md_config.system_name_mid].SLP;
+	this->num_mid_vars = md_config.systems[md_config.system_name_mid].num_variables;
+	mat_mp_to_d(randomizer_matrix, md_config.systems[md_config.system_name_mid].randomizer_matrix); // use the built-in randomizer matrix for mid system
 	
 	
-	if (md_config.system_type_bottom == SYSTEM_CRIT) {
-		this->bottom_memory = md_config.crit_memory; // copy the pointers to the memory
-		this->SLP_bottom = md_config.SLP_crit;
-		this->num_bottom_vars = md_config.num_crit_vars;
-		mat_mp_to_d(randomizer_matrix_bottom, md_config.randomizer_matrix_crit);
-	}
-	else if (md_config.system_type_bottom == SYSTEM_SPHERE){
-		this->bottom_memory = md_config.sphere_memory; // copy the pointers to the memory
-		this->SLP_bottom = md_config.SLP_sphere;
-		this->num_bottom_vars = md_config.num_sphere_vars;
-		mat_mp_to_d(randomizer_matrix_bottom, md_config.randomizer_matrix_sph);
-	}
-	else{
-		std::cout << "in double setup for midpoint eval, bottom system was neither sphere nor crit." << std::endl;
-		br_exit(98712);
-	}
+	this->top_memory = md_config.systems[md_config.system_name_top].memory;
+	this->SLP_top = md_config.systems[md_config.system_name_top].SLP;
+	this->num_top_vars = md_config.systems[md_config.system_name_top].num_variables;
+	mat_mp_to_d(randomizer_matrix_top, md_config.systems[md_config.system_name_top].randomizer_matrix);
+	
+	
+	this->bottom_memory = md_config.systems[md_config.system_name_bottom].memory;
+	this->SLP_bottom = md_config.systems[md_config.system_name_bottom].SLP;
+	this->num_bottom_vars = md_config.systems[md_config.system_name_bottom].num_variables;
+	mat_mp_to_d(randomizer_matrix_bottom, md_config.systems[md_config.system_name_bottom].randomizer_matrix);
+	
+	
+	
+//	mat_mp_to_d(randomizer_matrix,
+//                md_config.randomizer_matrix);
 	
 	
 	
@@ -746,8 +709,7 @@ int midpoint_eval_data_d::setup(const midpoint_config & md_config,
 	
 	
 	
-	mat_mp_to_d(randomizer_matrix,
-                md_config.randomizer_matrix);
+	
 	
 	
 	

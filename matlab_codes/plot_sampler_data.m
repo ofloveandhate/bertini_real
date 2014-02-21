@@ -5,7 +5,7 @@ global plot_params
 curr_axis = gca;
 nondegen_edge_ind = 1;
 
-
+colors = jet(length(sampler_data.edge));
 for ii = 1:length(sampler_data.edge)
     if sampler_data.sample_sizes(ii)<=3
        continue; 
@@ -18,6 +18,7 @@ for ii = 1:length(sampler_data.edge)
 	end
 	plotme = real(plotme);
 	h = main_plot_function(plotme,ind,curr_axis);
+
 	set(h,'Color',colors(nondegen_edge_ind,:));
 	set(h,'LineWidth',2);
     nondegen_edge_ind = nondegen_edge_ind+1;

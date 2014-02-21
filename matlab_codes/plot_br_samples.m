@@ -233,7 +233,7 @@ twiddle_visibility(plot_params);
 
 
 if length(plot_params.ind)==3
-    rotation_setup(BRinfo);
+    camera_setup(BRinfo);
 end
 
 end
@@ -272,21 +272,25 @@ end
 
 
 
-function rotation_setup(BRinfo)
+function camera_setup(BRinfo)
 global plot_params 
 
 
-view(3);  %yep, switch to view 3 by default for initial view.
-set(plot_params.axes.vertices,'CameraViewAngle', 20);
+% view(3);  %yep, switch to view 3 by default for initial view.
+% set(plot_params.axes.vertices,'CameraViewAngle', 20);
 
+set(gca,'CameraTargetMode','manual');
 plot_params.scene.target = real(BRinfo.center(plot_params.ind));
+set(gca,'CameraTarget',plot_params.scene.target);
 
-init_campos = real(BRinfo.center(plot_params.ind)) + BRinfo.radius;
+
+init_campos = real(BRinfo.center(plot_params.ind));
+init_campos = init_campos + BRinfo.radius;
 
 plot_params.scene.campos = init_campos;
 
-
-
+set(gca,'CameraPosition',plot_params.scene.campos);
+set(gca,'CameraViewAngle',90);
 rotate3d off
 
 end
@@ -309,7 +313,7 @@ plot_params.switches.label_spherecurve = 0;
 plot_params.switches.label_critcurve = 0;
 plot_params.switches.label_critedges = 0;
 plot_params.switches.label_midedges = 0;
-
+plot_params.switches.label_singular = 0;
 plot_params.switches.show_edges = 0;
 plot_params.switches.show_curve_samples = 0;
 
@@ -328,17 +332,27 @@ end
 
 
 if plot_params.dimension==2
-
-    if isempty(plot_params.handles.surface_samples)
         plot_params.switches.display_faces = 1;
-        plot_params.switches.display_face_samples = 0; 
-    else
-        plot_params.switches.display_faces = 0;
-        plot_params.switches.display_face_samples = 1;
-    end
+        plot_params.switches.display_face_samples = 0;
+%     if isempty(plot_params.handles.surface_samples)
+%         plot_params.switches.display_faces = 1;
+%         plot_params.switches.display_face_samples = 0; 
+%     else
+%         plot_params.switches.display_faces = 0;
+%         plot_params.switches.display_face_samples = 1;
+%     end
         
 	
 else
+    
+    if isempty(plot_params.handles.sample_edges)
+        plot_params.switches.show_edges = 1;
+        plot_params.switches.show_curve_samples = 0; 
+    else
+        plot_params.switches.show_edges = 0;
+        plot_params.switches.show_curve_samples = 1;
+    end
+    
     plot_params.switches.display_faces = 0;
     plot_params.switches.display_face_samples = 0;
 end
@@ -352,7 +366,7 @@ plot_params.switches.show_critcurve = 0;
 plot_params.switches.show_spherecurve = 0;
 plot_params.switches.show_critslices = 0;
 plot_params.switches.show_midslices = 0;
-
+plot_params.switches.show_singular = 0;
 end
 
 
@@ -462,13 +476,15 @@ switch plot_params.dimension
 			'ForeGroundColor','k'); 
 		num_checkboxes = num_checkboxes+1;
         
-        pos =[checkbox.x,checkbox.y_start+checkbox.y_factor*num_checkboxes,checkbox.w,checkbox.h];
-		plot_params.checkboxes.critcurve_visibility = uicontrol(...
-			'style','checkbox','units','pixels','position',pos,...
-			'String','refinement','Value',plot_params.switches.show_curve_samples,'callback',{@flip_switch,'show_curve_samples'},...
-			'Parent',plot_params.panels.visibility,...
-			'ForeGroundColor','k'); 
-		num_checkboxes = num_checkboxes+1;
+        if ~isempty(plot_params.handles.sample_edges)
+            pos =[checkbox.x,checkbox.y_start+checkbox.y_factor*num_checkboxes,checkbox.w,checkbox.h];
+            plot_params.checkboxes.critcurve_visibility = uicontrol(...
+                'style','checkbox','units','pixels','position',pos,...
+                'String','refinement','Value',plot_params.switches.show_curve_samples,'callback',{@flip_switch,'show_curve_samples'},...
+                'Parent',plot_params.panels.visibility,...
+                'ForeGroundColor','k'); 
+            num_checkboxes = num_checkboxes+1;
+        end
         
 	case 2
 		
@@ -567,6 +583,25 @@ switch plot_params.dimension
 
 
         
+        if ~isempty(plot_params.handles.singtext)
+			new_color = get(plot_params.handles.singtext);
+			new_color = new_color.Color;
+		else
+			new_color = [0 0 0];
+		end
+		
+
+		
+		pos =[checkbox.x,checkbox.y_start+checkbox.y_factor*num_checkboxes,checkbox.w,checkbox.h];
+		plot_params.checkboxes.singular_visibility = uicontrol(...
+			'style','checkbox','units','pixels','position',pos,...
+			'String','singedge labels','Value',plot_params.switches.label_singular,'callback',{@flip_switch,'label_singular'},...
+			'Parent',plot_params.panels.visibility,...
+			'ForeGroundColor',new_color(1,:)); 
+		num_checkboxes = num_checkboxes+1;
+        
+        
+        
         
         pos =[checkbox.x,checkbox.y_start+checkbox.y_factor*num_checkboxes,checkbox.w,checkbox.h];
 		plot_params.checkboxes.critcurve_visibility = uicontrol(...
@@ -597,7 +632,12 @@ switch plot_params.dimension
 		num_checkboxes = num_checkboxes+1;
 
 
-
+        pos =[checkbox.x,checkbox.y_start+checkbox.y_factor*num_checkboxes,checkbox.w,checkbox.h];
+		plot_params.checkboxes.singular_visibility = uicontrol(...
+			'style','checkbox','units','pixels','position',pos,...
+			'String','singular curves','Value',plot_params.switches.show_singular,'callback',{@flip_switch,'show_singular'},...
+			'Parent',plot_params.panels.visibility); 
+		num_checkboxes = num_checkboxes+1;
 
 
 	otherwise
@@ -737,6 +777,23 @@ end
             
             
             
+            if plot_params.switches.show_singular == 0
+                set(plot_params.handles.singular_curves(:),'visible','off')
+                set(plot_params.handles.singtext,'visible','off');
+            else
+                set(plot_params.handles.singular_curves(:),'visible','on')
+                
+                if (plot_params.switches.label_singular == 0)
+                    set(plot_params.handles.singtext,'visible','off');
+                else
+                    set(plot_params.handles.singtext,'visible','on');
+                end
+            
+                
+                
+            end
+            
+            
             if plot_params.switches.show_midslices == 0
                 set(plot_params.handles.midslices(:),'visible','off')
                 set(plot_params.handles.midtext,'visible','off');
@@ -787,7 +844,7 @@ end
 					set(plot_params.handles.surface_samples(ii),'visible','off');
 				end
 			else
-				for ii = 1:length(plot_params.handles.faces)
+				for ii = 1:length(plot_params.handles.surface_samples)
 					set(plot_params.handles.surface_samples(ii),'visible','on');
 				end
             end
@@ -864,7 +921,7 @@ else
 end
 
 
-render_into_file(plot_params,'-r600');
+render_into_file(plot_params,'-r150');
 
 for ii = 1:length(f)
 	set(plot_params.panels.(f{ii}),'visible','on');
@@ -937,7 +994,7 @@ degen = any(diff(fv.faces(:,[1:3 1]),[],2)==0,2);
   % Fix non-uniform face orientations
   fv2 = unifyMeshNormals(fv,'alignTo',1);
   % Solidify
-  thickened_fv = surf2solid(fv2,'thickness',0.15);
+  thickened_fv = surf2solid(fv2,'thickness',0.09);
   
   
   

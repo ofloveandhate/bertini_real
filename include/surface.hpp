@@ -58,19 +58,18 @@ public:
 	comp_mp left_crit_val; ///<
 	comp_mp right_crit_val; ///<
 	
-	int system_type_top;
-	int system_type_bottom;
+	std::string system_name_bottom;
+	std::string system_name_top;
+
 	
 	int crit_slice_index; ///< which midpoint slice this face came from.
 	
 	
 	friend std::ostream & operator<<(std::ostream &os, const face & f)
 	{
-		
-		os << (cell &) f;
-		
+		os << f.midpt << std::endl;
 		os << f.crit_slice_index << std::endl << f.top << " " << f.bottom << std::endl;
-		os << f.system_type_top << " " << f.system_type_bottom << std::endl;
+		os << f.system_name_top << " " << f.system_name_bottom << std::endl;
 		
 		os << f.left.size() << std::endl;
 		for (int jj=0; jj<int(f.left.size()); jj++) {
@@ -85,6 +84,36 @@ public:
 		os << std::endl << std::endl;
 		
 		return os;
+	}
+	
+	
+	friend std::istream & operator>>(std::istream &os, face & f)
+	{
+		
+		f.read_from_stream(os);
+		return os;
+	}
+	
+	
+	virtual void read_from_stream( std::istream &os )
+	{
+		
+		os >> midpt;
+		os >> crit_slice_index >> top >> bottom;
+		os >> system_name_top >> system_name_bottom;
+		
+		os >> num_left;
+		left.resize(num_left);
+		for (int jj=0; jj<num_left; jj++) {
+			os >> left[jj];
+		}
+		
+
+		os >> num_right;
+		right.resize(num_right);
+		for (int jj=0; jj<num_right; jj++) {
+			os >> right[jj];
+		}
 	}
 	
 	
@@ -117,7 +146,15 @@ public:
 	void receive(int source, parallelism_config & mpi_config);
 	
 	
-	
+	bool is_degenerate()
+	{
+		if (crit_slice_index<0) {
+			return true;
+		}
+		else{
+			return false;
+		}
+	}
 	
 private:
 	
@@ -125,8 +162,8 @@ private:
 	
 	void init()
 	{
-		system_type_top = UNSET;
-		system_type_bottom = UNSET;
+		system_name_top = "UNSET_TOP";
+		system_name_bottom = "UNSET_BOTTOM";
 		
 		
 		init_mp2(left_crit_val,1024);
@@ -142,8 +179,8 @@ private:
 	{
 		cell::copy(other);
 		
-		this->system_type_bottom = other.system_type_bottom;
-		this->system_type_top = other.system_type_top;
+		this->system_name_bottom = other.system_name_bottom;
+		this->system_name_top = other.system_name_top;
 		
 		
 		this->crit_slice_index = other.crit_slice_index;
@@ -242,8 +279,8 @@ public:
 	curve_decomposition crit_curve;
 	curve_decomposition sphere_curve;
 	
-	std::map<int,curve_decomposition> singular_curves; // NEW curve, need to write code to populate it.
-
+	std::map<int,curve_decomposition> singular_curves;
+	int num_singular_curves;
 	
 	void read_faces(boost::filesystem::path load_from_me);
 	
@@ -283,13 +320,25 @@ public:
 	
 	
 	void beginning_stuff(const witness_set & W_surf,
-																							BR_configuration & program_options,
-																							solver_configuration & solve_options);
+						BR_configuration & program_options,
+						 solver_configuration & solve_options);
 	
-	void deal_with_singular_curves(const std::map<int, witness_set> & higher_multiplicity_witness_sets,
-											vertex_set & V,
-											BR_configuration & program_options,
-											solver_configuration & solve_options);
+	
+	
+	void compute_singular_crit(witness_set & W_singular_crit,
+							   std::map<int, witness_set> & higher_multiplicity_witness_sets,
+							   vertex_set & V,
+							   BR_configuration & program_options,
+							   solver_configuration & solve_options);
+	
+	void compute_singular_curves(const witness_set & W_total_crit,
+								 const std::map<int, witness_set> & higher_multiplicity_witness_sets,
+								 vertex_set & V,
+								 BR_configuration & program_options,
+								 solver_configuration & solve_options);
+	
+	
+	
 	
 	void compute_slices(const witness_set W_surf,
 											vertex_set & V,
@@ -409,6 +458,40 @@ public:
 	}
 	
 	
+	curve_decomposition * curve_with_name(std::string & findme)
+	{
+		
+		if (findme.compare(crit_curve.input_filename.filename().string())==0) {
+			return &crit_curve;
+		}
+		
+		if (findme.compare(sphere_curve.input_filename.filename().string())==0) {
+			return &sphere_curve;
+		}
+		for (auto iter = singular_curves.begin(); iter!=singular_curves.end(); ++iter) {
+			if (findme.compare(iter->second.input_filename.filename().string())==0) {
+				return &(iter->second);
+			}
+		}
+		
+		
+		for (auto iter = mid_slices.begin(); iter!=mid_slices.end(); ++iter) {
+			if (findme.compare(iter->input_filename.filename().string())==0) {
+				return &(*iter);
+			}
+		}
+		
+		
+		for (auto iter = crit_slices.begin(); iter!=crit_slices.end(); ++iter) {
+			if (findme.compare(iter->input_filename.filename().string())==0) {
+				return &(*iter);
+			}
+		}
+	
+		
+				
+		return NULL;
+	}
 	
 	
 	
@@ -434,12 +517,15 @@ protected:
 		this->mid_slices = other.mid_slices;
 		this->crit_slices = other.crit_slices;
 		this->crit_curve = other.crit_curve;
+		this->singular_curves = other.singular_curves;
+		this->num_singular_curves = other.num_singular_curves;
 	}
 	
 	
 	void init()
 	{
-
+		num_singular_curves = 0;
+		
 		num_edges = 0;
 		num_faces = 0;
 		dimension = 2;
@@ -471,7 +557,7 @@ void create_sphere_system(boost::filesystem::path input_file, boost::filesystem:
 													const witness_set & W);
 
 
-
+void read_summary(std::vector<int> & singular_multiplicities, int & temp_num_mid, int & temp_num_crit, boost::filesystem::path INfile);
 
 
 #endif
