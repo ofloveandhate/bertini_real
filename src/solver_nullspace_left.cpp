@@ -600,8 +600,13 @@ int nullspacejac_eval_data_mp::setup(prog_t * _SLP,
 			  ns_config->randomizer_matrix);
 	
 	
-	if (is_identity(randomizer_matrix)) {
+	if (is_identity( ns_config->randomizer_matrix)) {
+//		std::cout << "rand mat is identity"<<std::endl;
+//		print_matrix_to_screen_matlab(randomizer_matrix);
 		randomize = false;
+	}
+	else{
+		randomize = true;
 	}
 	
 	
@@ -773,20 +778,13 @@ void nullspacejac_eval_data_mp::print()
     
     print_point_to_screen_matlab(v_patch_full_prec,"v_patch");
     
-    print_matrix_to_screen_matlab(jac_with_proj_full_prec,"jac");
+    print_matrix_to_screen_matlab(jac_with_proj_full_prec,"jac_with_proj");
     
     print_matrix_to_screen_matlab(randomizer_matrix_full_prec,"R");
     
     
     print_comp_matlab(gamma,"gamma");
     
-	
-    comp_d temp;
-    rat_to_d(temp, gamma_rat);
-    std::cout << "gamma_converted: " << temp->r << "+1i*" << temp->i << std::endl;
-    
-    
-    //mpf_t_out_str(NULL,10,0,gamma_rat[0]);
 }
 
 
@@ -829,7 +827,7 @@ void nullspacejac_eval_data_d::init()
         solver_d::BED_mp = this->BED_mp;
     }
     
-	else{this->BED_mp = NULL;}
+	else{this->BED_mp = NULL; solver_d::BED_mp = NULL;}
 	
 	this->is_solution_checker_d = &check_issoln_nullspacejac_d;
 	this->is_solution_checker_mp = &check_issoln_nullspacejac_mp;
@@ -1135,14 +1133,17 @@ int nullspacejac_eval_data_d::setup(prog_t * _SLP,
 	num_variables = ns_config->num_x_vars + ns_config->num_v_vars;
 	
 	
-	if (is_identity(randomizer_matrix)) {
-		randomize = false;
-	}
 	mat_mp_to_d(randomizer_matrix,
 				ns_config->randomizer_matrix);
+	if (is_identity( ns_config->randomizer_matrix)) {
+		std::cout << "rand mat is identity"<<std::endl;
+		randomize = false;
+	}
+	else{
+		randomize = true;
+	}
 	
-	
-	//  THE STUFF PROPRIETARY TO THIS METHOD
+
 	
 	
 	
@@ -1176,6 +1177,7 @@ int nullspacejac_eval_data_d::setup(prog_t * _SLP,
 		init_vec_d(v_linears[ii],ns_config->num_v_vars);
 		v_linears[ii]->size = ns_config->num_v_vars;
 		vec_mp_to_d(v_linears[ii], ns_config->v_linears[ii]);
+		print_point_to_screen_matlab(v_linears[ii],"v_linears_double");
 	}
 	
 	num_additional_linears = ns_config->num_additional_linears;
@@ -1237,6 +1239,11 @@ void nullspacejac_eval_data_d::print()
     print_comp_matlab(half,"half");
     print_comp_matlab(perturbation,"epsilon");
 	
+	for (int ii=0; ii<num_jac_equations; ii++) {
+		print_point_to_screen_matlab(v_linears[ii],"v_lin");
+	}
+	
+	print_matrix_to_screen_matlab(randomizer_matrix,"rand_mat");
 }
 
 
@@ -1283,8 +1290,6 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 	
 	
 	
-	
-	//	solve_options.T.numVars = setupProg(this->SLP, solve_options.T.Precision, solve_options.T.MPType);
 	
 	int *startSub = NULL, *endSub = NULL, *startFunc = NULL, *endFunc = NULL, *startJvsub = NULL, *endJvsub = NULL, *startJv = NULL, *endJv = NULL, **subFuncsBelow = NULL;
 	
@@ -1340,6 +1345,7 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 			break;
 	}
 	
+
 	
 	master_solver(solve_out, W,
                   ED_d, ED_mp,
@@ -1470,7 +1476,6 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	
 	nullspacejac_eval_data_d *BED = (nullspacejac_eval_data_d *)ED; // to avoid having to cast every time
-	
 	
 	
 	int ii, jj, kk, mm;
@@ -1711,6 +1716,9 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 		}
 		
 		//perform the $v$ evaluation
+//		std::cout << BED->num_v_vars << " " << BED->num_x_vars << std::endl;
+//		print_point_to_screen_matlab(BED->v_linears[jj],"v_linear");
+//		std::cout << jj << std::endl;
 		dot_product_d(temp, BED->v_linears[jj], curr_v_vars);
 		
 		//now set the combined $x,v$ value
@@ -1744,15 +1752,14 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 		for (jj=0; jj<BED->num_v_vars; jj++) {
 			mul_d(temp, &BED->v_linears[ii]->coord[jj], &linprod_x->coord[ii]);  // temp = M_ij * linprod_x(x)
 			mul_d(temp2, temp, gamma_s);                                      // temp2 = gamma*s*M_ij * linprod_x(x)
-			
-			
+//			std::cout << offset << " " << ii << " " << jj << " " << std::endl;
+//			print_matrix_to_screen_matlab(Jv,"Jv");
 			
 			mul_d(temp, one_minus_s, &Jf_pi_homogenized->entry[ii][jj]);           // temp = (1-s)*(S*[Jf^T pi^T])_ij
-			
 			add_d(&Jv->entry[ii+offset][jj+BED->num_x_vars], temp, temp2);    // Jv = temp + temp2
 		}
 	}
-	// √ for sphere
+	
 	
 	
 	// now the x derivatives corresponding to the linprod start system

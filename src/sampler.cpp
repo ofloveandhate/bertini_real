@@ -944,7 +944,7 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 	
 	std::cout << "critical curve" << std::endl;
 	crit_curve.fixed_sampler(V,sampler_options,solve_options,target_num_samples);
-	for (int jj=0; jj<crit_curve.edges.size(); jj++) {
+	for (unsigned int jj=0; jj<crit_curve.edges.size(); jj++) {
 		std::cout << crit_curve.num_samples_each_edge[jj] << " " ;//sample_indices
 	}
 	std::cout << std::endl;
@@ -952,7 +952,7 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 	
 	std::cout << "sphere curve" << std::endl;
 	sphere_curve.fixed_sampler(V,sampler_options,solve_options,target_num_samples);
-	for (int jj=0; jj<sphere_curve.edges.size(); jj++) {
+	for (unsigned int jj=0; jj<sphere_curve.edges.size(); jj++) {
 		std::cout << sphere_curve.num_samples_each_edge[jj] << " " ;//sample_indices
 	}
 	std::cout << std::endl;
@@ -960,7 +960,7 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 	std::cout << "mid slices" << std::endl;
 	for (unsigned int ii=0; ii<mid_slices.size(); ii++) {
 		mid_slices[ii].fixed_sampler(V,sampler_options,solve_options,target_num_samples);
-		for (int jj=0; jj<mid_slices[ii].edges.size(); jj++) {
+		for (unsigned int jj=0; jj<mid_slices[ii].edges.size(); jj++) {
 			std::cout << mid_slices[ii].num_samples_each_edge[jj] << " " ;//sample_indices
 		}
 		std::cout << std::endl;
@@ -969,7 +969,7 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 	std::cout << "critical slices" << std::endl;
 	for (unsigned int ii=0; ii<crit_slices.size(); ii++) {
 		crit_slices[ii].fixed_sampler(V,sampler_options,solve_options,target_num_samples);
-		for (int jj=0; jj<crit_slices[ii].edges.size(); jj++) {
+		for (unsigned int jj=0; jj<crit_slices[ii].edges.size(); jj++) {
 			std::cout << crit_slices[ii].num_samples_each_edge[jj] << " " ;//sample_indices
 		}
 		std::cout << std::endl;

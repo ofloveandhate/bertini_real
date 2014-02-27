@@ -104,14 +104,14 @@ public:
 		
 		os >> num_left;
 		left.resize(num_left);
-		for (int jj=0; jj<num_left; jj++) {
+		for (unsigned int jj=0; jj<num_left; jj++) {
 			os >> left[jj];
 		}
 		
 
 		os >> num_right;
 		right.resize(num_right);
-		for (int jj=0; jj<num_right; jj++) {
+		for (unsigned int jj=0; jj<num_right; jj++) {
 			os >> right[jj];
 		}
 	}

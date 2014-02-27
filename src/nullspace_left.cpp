@@ -392,6 +392,11 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	
 	ns_config->num_v_linears = ns_config->num_jac_equations;
 	
+	if (ns_config->num_v_vars<0) {
+		std::cout << "ns_config's num_v_vars is " << ns_config->num_v_vars << "!!!" << std::endl;
+		mypause();
+	}
+	
 	
 	// set up the linears in $v$  ( the M_i linears)
 	ns_config->v_linears = (vec_mp *)br_malloc(ns_config->num_v_linears*sizeof(vec_mp));
@@ -399,7 +404,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 		init_vec_mp2(ns_config->v_linears[ii],ns_config->num_v_vars,solve_options.T.AMP_max_prec);
 		ns_config->v_linears[ii]->size = ns_config->num_v_vars;
 		for (int jj=0; jj<ns_config->num_v_vars; jj++){
-			get_comp_rand_mp(&ns_config->v_linears[ii]->coord[jj]); // should this be real?
+			get_comp_rand_mp(&ns_config->v_linears[ii]->coord[jj]); // should this be real? no.
 		}
 	}
 	

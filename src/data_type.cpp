@@ -2617,6 +2617,11 @@ void decomposition::receive(int source, parallelism_config & mpi_config)
 bool is_identity(mat_d M)
 {
 	
+	
+	if (M->rows!=M->cols) {
+		return false;
+	}
+	
 	comp_d one;
 	set_one_d(one);
 	
@@ -2645,6 +2650,11 @@ bool is_identity(mat_d M)
 
 bool is_identity(mat_mp M)
 {
+	
+	if (M->rows!=M->cols) {
+		return false;
+	}
+	
 	
 	comp_mp one; init_mp(one); set_one_mp(one);
 	comp_mp temp;  init_mp(temp);
@@ -2799,7 +2809,7 @@ void dot_product_d(comp_d result, vec_d left, vec_d right)
 {
 	if (left->size!=right->size) {
 		printf("attempting to dot_d two vectors not of the same size! (%d!=%d)\n",left->size,right->size);
-		deliberate_segfault();
+		br_exit(5901);
 	}
 	
 	set_zero_d(result);
@@ -2815,7 +2825,7 @@ void dot_product_mp(comp_mp result, vec_mp left, vec_mp right)
 {
 	if (left->size!=right->size) {
 		printf("attempting to dot_mp two vectors not of the same size! (%d!=%d)\n",left->size,right->size);
-		deliberate_segfault();
+		br_exit(5902);
 	}
 	
 	set_zero_mp(result);
