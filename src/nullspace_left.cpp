@@ -339,9 +339,8 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	parse_input_file(W.input_filename, &toss); // re-create the parsed files for the stuffs (namely the SLP).
 	
 	int maxiii = 0;
-	ns_config->randomized_degrees = (int *)br_malloc(randomizer_matrix->rows * sizeof(int));
 	for (int ii=0; ii<randomizer_matrix->rows; ii++	) {
-		ns_config->randomized_degrees[ii] = randomized_degrees[ii]; // store the full degree (not derivative).
+		ns_config->randomized_degrees.push_back(randomized_degrees[ii]); // store the full degree (not derivative).
 		if ( (randomized_degrees[ii]-1) > maxiii)
 			maxiii = randomized_degrees[ii]-1; // minus one for the derivative
 	}

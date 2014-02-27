@@ -293,7 +293,7 @@ protected:
 	
 	void clear()
 	{
-		
+		clear_mp(two);
 		clear_vec_mp(center);
 		clear_mp(radius);
 		
@@ -312,7 +312,7 @@ protected:
 		if (this->MPType == 2) {
 			clear_vec_mp(center_full_prec);
 			clear_mp(radius_full_prec);
-			
+			clear_mp(two_full_prec);
 			
 			for (int ii=0; ii<2; ii++) {
 				clear_vec_mp(starting_linear_full_prec[ii]);

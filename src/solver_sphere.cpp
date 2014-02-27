@@ -1671,10 +1671,15 @@ int check_issoln_sphere_mp(endgame_data_t *EG,
 	
 	if (EG->last_approx_prec < 64)
 	{ // copy to _mp
-		point_d_to_mp(EG->last_approx_mp, EG->last_approx_d);
+		vec_mp temp_vec;  init_vec_mp(temp_vec,0);
+		point_d_to_mp(temp_vec, EG->last_approx_d);
+		evalProg_mp(f, e.parVals, e.parDer, e.Jv, e.Jp, temp_vec, EG->PD_mp.time, BED->SLP);
+		clear_vec_mp(temp_vec);
 	}
-	
-	evalProg_mp(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_mp, EG->PD_mp.time, BED->SLP);
+	else
+	{
+		evalProg_mp(f, e.parVals, e.parDer, e.Jv, e.Jp, EG->last_approx_mp, EG->PD_mp.time, BED->SLP);
+	}
 	
 	// compare the function values
 	int isSoln = 1;
