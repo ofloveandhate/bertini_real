@@ -78,11 +78,7 @@ int main(int argC, char *args[])
 	solve_options.verbose_level = program_options.verbose_level;
 	solve_options.use_gamma_trick = program_options.use_gamma_trick;
 	
-//	if (program_options.verbose_level>=2)
-		solve_options.show_status_summary = 1;
-//	else
-//		solve_options.show_status_summary = 0;
-	
+
 	
 	
 	if (solve_options.is_head()) {

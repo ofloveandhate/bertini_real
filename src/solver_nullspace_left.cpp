@@ -1137,7 +1137,7 @@ int nullspacejac_eval_data_d::setup(prog_t * _SLP,
 	mat_mp_to_d(randomizer_matrix,
 				ns_config->randomizer_matrix);
 	if (is_identity( ns_config->randomizer_matrix)) {
-		std::cout << "rand mat is identity"<<std::endl;
+//		std::cout << "rand mat is identity"<<std::endl;
 		randomize = false;
 	}
 	else{

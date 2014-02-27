@@ -275,7 +275,7 @@ void surface_decomposition::main(vertex_set & V,
 	connect_the_dots(V, pi, program_options, solve_options);
 	
 	
-	
+	clear_vec_mp(crit_downstairs); clear_vec_mp(midpoints_downstairs);
     
 #ifdef usetempfolders
 	// this is likely extremely broken.  i'd like to use temp folders, but it's not there yet.
@@ -1660,34 +1660,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	md_config.system_name_mid = this->input_filename.filename().string();
 	
 	
-//	if (V.filenames[bottom_index].string().compare(sphere_curve.input_filename.string())==0) {// note that this comparison will fail if using temp directories.
-//		std::cout << "bottom point is a sphere point" << std::endl;
-//		md_config.system_type_bottom = SYSTEM_SPHERE;
-//	}
-//	else if (V.filenames[bottom_index].string().compare(crit_curve.input_filename.string())==0) {
-//		std::cout << "bottom point is a crit point" << std::endl;
-//		md_config.system_type_bottom = SYSTEM_CRIT;
-//	}
-//	else{
-//		md_config.system_type_bottom = UNSET;
-//		std::cout << color::red() << "bottom point does not appear to be a point of either sphere or crit type." << std::endl <<
-//		"instead, it appears to have came from " << V.filenames[bottom_index].string() << color::console_default() << std::endl;
-//	}
-	
-	
-//	if (V.filenames[top_index].string().compare(sphere_curve.input_filename.string())==0) {
-//		std::cout << "top point is a sphere point" << std::endl;
-//		md_config.system_type_top = SYSTEM_SPHERE;
-//	}
-//	else if (V.filenames[top_index].string().compare(crit_curve.input_filename.string())==0) {
-//		std::cout << "top point is a crit point" << std::endl;
-//		md_config.system_type_top = SYSTEM_CRIT;
-//	}
-//	else{
-//		md_config.system_type_top = UNSET;
-//		std::cout << color::red() << "top point does not appear to be a point of either sphere or crit type." << std::endl <<
-//		"instead, it appears to have came from " << V.filenames[top_index].string() << color::console_default() << std::endl;
-//	}
+
 	
 	
 	
@@ -1706,36 +1679,6 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	F.top= top_curve->edge_w_midpt(mid_slices[ii].edges[jj].right); // index the *edge*
 	F.system_name_top = md_config.system_name_top;
 	
-//	if (md_config.system_type_bottom == SYSTEM_CRIT) {
-//		num_bottom_vars = md_config.num_crit_vars;
-//		F.bottom = crit_curve.edge_w_midpt(mid_slices[ii].edges[jj].left); // index the *edge*
-//		F.system_type_bottom = SYSTEM_CRIT;
-//	}
-//	else if (md_config.system_type_bottom == SYSTEM_SPHERE){
-//		num_bottom_vars = md_config.num_sphere_vars;
-//		F.bottom = sphere_curve.edge_w_midpt(mid_slices[ii].edges[jj].left); // index the *edge*
-//		F.system_type_bottom = SYSTEM_SPHERE;
-//	}
-//	else {
-//		F.bottom = -10;
-//		F.system_type_bottom = UNSET;
-//	}
-//	
-//	
-//	if (md_config.system_type_top == SYSTEM_CRIT) {
-//		num_top_vars = md_config.num_crit_vars;
-//		F.top = crit_curve.edge_w_midpt(mid_slices[ii].edges[jj].right); // index the *edge*
-//		F.system_type_top = SYSTEM_CRIT;
-//	}
-//	else if (md_config.system_type_top == SYSTEM_SPHERE){
-//		num_top_vars = md_config.num_sphere_vars;
-//		F.top = sphere_curve.edge_w_midpt(mid_slices[ii].edges[jj].right); // index the *edge*
-//		F.system_type_top = SYSTEM_SPHERE;
-//	}
-//	else {
-//		F.top = -10;
-//		F.system_type_top = UNSET;
-//	}
 	
 		
 	if (bail_out) {
@@ -1798,27 +1741,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	}
 	
 	
-//	if (md_config.system_type_bottom == SYSTEM_CRIT) {
-//		for (int qq = 0; qq<crit_curve.num_patches; qq++) {
-//			W_midtrack.add_patch(crit_curve.patch[qq]);
-//		}
-//	}
-//	else{
-//		for (int qq = 0; qq<sphere_curve.num_patches; qq++) {
-//			W_midtrack.add_patch(sphere_curve.patch[qq]);
-//		}
-//	}
-//	
-//	if (md_config.system_type_top == SYSTEM_CRIT) {
-//		for (int qq = 0; qq<crit_curve.num_patches; qq++) {
-//			W_midtrack.add_patch(crit_curve.patch[qq]);
-//		}
-//	}
-//	else{
-//		for (int qq = 0; qq<sphere_curve.num_patches; qq++) {
-//			W_midtrack.add_patch(sphere_curve.patch[qq]);
-//		}
-//	}
+
 	
 	
 	
@@ -1860,25 +1783,10 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 		
 		
 		if (zz==0) {
+			
 			set_zero_mp(md_config.u_target);
 			final_bottom_ind = bottom_curve->edges[F.bottom].left;
 			final_top_ind = top_curve->edges[F.top].left;
-			
-			
-//			if (md_config.system_type_bottom == SYSTEM_CRIT) {
-//				final_bottom_ind = crit_curve.edges[F.bottom].left;
-//			}
-//			else{
-//				final_bottom_ind = sphere_curve.edges[F.bottom].left;
-//			}
-//			
-//			if (md_config.system_type_top == SYSTEM_CRIT) {
-//				final_top_ind = crit_curve.edges[F.top].left;
-//			}
-//			else{
-//				final_top_ind = sphere_curve.edges[F.top].left;
-//			}
-			
 			
 		}
 		else{ // zz==1, and going right
@@ -1887,22 +1795,6 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 			final_bottom_ind = bottom_curve->edges[F.bottom].right;
 			final_top_ind = top_curve->edges[F.top].right;
 			
-			
-//			if (md_config.system_type_bottom == SYSTEM_CRIT) {
-//				final_bottom_ind = crit_curve.edges[F.bottom].right;
-//			}
-//			else{
-//				final_bottom_ind = sphere_curve.edges[F.bottom].right;
-//			}
-//			
-//			if (md_config.system_type_top == SYSTEM_CRIT) {
-//				final_top_ind = crit_curve.edges[F.top].right;
-//			}
-//			else{
-//				final_top_ind = sphere_curve.edges[F.top].right;
-//			}
-//			
-//			set_one_mp(md_config.u_target);
 		}
 		
 		
@@ -1921,16 +1813,6 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				std::cout << "making new degenerate edge" << std::endl;
 				edge E(final_bottom_ind,final_bottom_ind,final_bottom_ind);
 				current_edge = crit_slices[ii+zz].add_edge(E);
-				//						current_edge = crit_slices[ii+zz].edge_w_left(final_bottom_ind);
-				//
-				//						if (current_edge < 0) {
-				//							current_edge = crit_slices[ii+zz].edge_w_right(final_bottom_ind);
-				//						}
-				
-				//						if (current_edge < 0) {
-				//							std::cout << "unable to find any edges in crit_slice with point" << std::endl;
-				//							continue;
-				//						}
 			}
 			
 			
@@ -1987,15 +1869,9 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 			std::vector< int > candidates; // indices of candidates for next one.
 			
 			
-			//			std::cout << "possibile edges:" << std::endl;
-			//			for (std::set<int>::iterator poss_iter=possible_edges.begin(); poss_iter != possible_edges.end(); poss_iter++) {
-			//				std::cout << *poss_iter << std::endl;
-			//			}
-			
-			//  std::cout << std::endl;
+
 			
 			int candidate_counter = 0;
-			//			std::cout << "\nfinding candidates for bottom index " << current_bottom_ind << std::endl;
 			for (std::set<int>::iterator poss_iter=possible_edges.begin(); poss_iter != possible_edges.end(); poss_iter++) {
 				
 				int qq = *poss_iter;
@@ -2084,15 +1960,22 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				
 				if (solve_options.verbose_level >= 0)
 				{
+
+					
+					print_comp_matlab(md_config.u_target,"u_target");
+					print_comp_matlab(md_config.v_target,"v_target");
+					
+
+				}
+				
+				
+				if (solve_options.verbose_level >= 1){
 					print_comp_matlab(proj_top,"upper");
 					print_comp_matlab(proj_bottom,"lower");
 					print_comp_matlab(proj_mid,"mid");
 					
 					print_comp_matlab(numer,"numer");
 					print_comp_matlab(denom,"denom");
-					
-					print_comp_matlab(md_config.u_target,"u_target");
-					print_comp_matlab(md_config.v_target,"v_target");
 					
 					print_comp_matlab(md_config.crit_val_left,"proj_val_left");
 					print_comp_matlab(md_config.crit_val_right,"proj_val_right");
@@ -2107,8 +1990,8 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 					add_mp(temp3, temp, temp2);
 					
 					print_comp_matlab(temp3,"proj_1_target_mid");
+					
 				}
-				
 				
 				
 				solver_output fillme;
@@ -2171,8 +2054,11 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				clear_vec_mp(top_found);
 				
 				
-				
 				if (solve_options.verbose_level>=0) {
+					std::cout << "found_index of point: " << found_index << std::endl;
+				}
+				
+				if (solve_options.verbose_level>=1) {
 					
 					projection_value_homogeneous_input(temp, found_point, pi[1]);
 					print_comp_matlab(temp, "found_point_proj_val");
@@ -2180,8 +2066,6 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 					dehomogenize(&tempvec, found_point);
 					print_point_to_screen_matlab(tempvec, "found_point");
 					clear_vec_mp(tempvec);
-					
-					std::cout << "found_index of point: " << found_index << std::endl;
 				}
 				
 				
@@ -2199,13 +2083,14 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				// search edges for the found point as a removed point.
 				if (index_in_set < 0) {
 					index_in_set = crit_slices[ii+zz].edge_w_removed(found_index);
-					if (index_in_set>=0) {
+					
+					if (index_in_set>=0 && solve_options.verbose_level>=1) {
 						std::cout << color::green() << "found point as removed point from edge " << index_in_set << color::console_default() << std::endl;
 					}
 				}
 				
 				
-				if (index_in_set < 0) {
+				if (index_in_set < 0 && solve_options.verbose_level>=1) {
 					std::cout << color::red() << "did not find the indexed point as the midpoint of any current possibilitiy." << color::console_default() << std::endl;
 				}
 				
@@ -2271,10 +2156,10 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 	clear_vec_mp(found_point);
 	
-	clear_mp(temp);
-	clear_mp(temp2);
-	clear_mp(numer);
-	clear_mp(denom);
+	clear_mp(temp); clear_mp(temp2); clear_mp(temp3);
+	clear_mp(numer); clear_mp(denom);
+	
+	clear_mp(proj_top); clear_mp(proj_bottom); clear_mp(proj_mid);
 	
 	return F;
 }
@@ -2595,27 +2480,6 @@ void surface_decomposition::print_faces(boost::filesystem::path outputfile)
 	}
 	fout.close();
 	
-//	FILE *OUT = safe_fopen_write(outputfile);
-//	// output the number of faces
-//	fprintf(OUT,"%d\n\n",num_faces);
-//	
-//	for(unsigned int ii=0;ii<num_faces;ii++){
-//		fprintf(OUT,"%d %d\n%d %d\n", faces[ii].midpt, faces[ii].crit_slice_index, faces[ii].top, faces[ii].bottom);
-//		fprintf(OUT,"%s %s\n",faces[ii].system_name_top,faces[ii].system_name_bottom);
-//		fprintf(OUT,"%ld\n",faces[ii].left.size());
-//		for (unsigned int jj=0; jj!=faces[ii].left.size(); jj++) {
-//			fprintf(OUT,"%d ",faces[ii].left[jj]);
-//		}
-//		fprintf(OUT,"\n");
-//		fprintf(OUT,"%ld\n",faces[ii].right.size());
-//		for (unsigned int jj=0; jj!=faces[ii].right.size(); jj++) {
-//			fprintf(OUT,"%d ",faces[ii].right[jj]);
-//		}
-//		fprintf(OUT,"\n\n");
-//	}
-//	fprintf(OUT,"\n");
-//	
-//	fclose(OUT);
 }
 
 

@@ -451,7 +451,7 @@ public:
 	
 	
 	
-	~sphere_eval_data_d(){
+	virtual ~sphere_eval_data_d(){
 		clear();
 	}
 	

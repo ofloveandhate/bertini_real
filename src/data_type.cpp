@@ -2202,10 +2202,6 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 		twoNormVec_mp(temp_vec, temp_mp);
 		mpf_abs_mp(temp_rad->r, temp_mp);
 		
-		//		print_point_to_screen_matlab(temp_vec,"normme");
-		//		std::cout << "candidate_radius[" << ii << "] = ";
-		//		mpf_out_str(NULL,10,10,temp_diam);
-		//		std::cout << std::endl;
 		
 		if (mpf_cmp(sphere_radius->r, temp_rad->r) < 0){
 			set_mp(sphere_radius, temp_rad);
@@ -2219,21 +2215,16 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 	mul_mp(sphere_radius,temp_rad,sphere_radius);  // double the radius to be safe.
 	
 	
-	clear_mp(temp_mp);
-	clear_vec_mp(temp_vec);
-	clear_mp(temp_rad);
+	clear_mp(temp_mp); clear_mp(temp_rad);
+	clear_vec_mp(temp_vec); clear_vec_mp(cumulative_sum);
+	
 	
 	
 	this->have_sphere_radius = true;
 #ifdef thresholding
 	real_threshold(sphere_center,1e-13);
 #endif
-//	std::cout << color::green();
-//	print_point_to_screen_matlab(sphere_center,"center");
-//	print_comp_matlab(sphere_radius,"radius");
-//	std::cout << std::endl;
-//	
-//	std::cout << color::console_default();
+
 	return;
 }
 
@@ -2339,7 +2330,6 @@ void decomposition::send(int target, parallelism_config & mpi_config)
 	//pack and send the indices
 	
 	if (indices.size()>0) {
-//		std::cout << "sending " << indices.size() << " indices" << std::endl;
 		for (auto iter = indices.begin(); iter!=indices.end(); iter++) { // a std::map<int, std::vectors<ints>>
 			
 			intbuff[0] = iter->first;
@@ -2349,10 +2339,8 @@ void decomposition::send(int target, parallelism_config & mpi_config)
 			MPI_Send(intbuff, 2, MPI_INT, target, 4, MPI_COMM_WORLD);
 			
 			
-//			std::cout << num_these_indices << "these indices" << std::endl;
-			
+
 			if (num_these_indices>0) {
-//				std::cout << "sending " << num_these_indices << " ints" << std::endl;
 				int * buffer4 = new int[num_these_indices];
 				int cnt = 0;
 				for (auto jter = iter->second.begin(); jter != iter->second.end(); jter++) {
@@ -2369,7 +2357,6 @@ void decomposition::send(int target, parallelism_config & mpi_config)
 	
 	
 	if (num_curr_projections>0) {
-//		std::cout << "send proj" << std::endl;
 		for (int ii=0; ii<num_curr_projections; ii++) {
 			send_vec_mp(pi[ii],target);
 		}
@@ -2916,22 +2903,6 @@ void projection_value_homogeneous_input(comp_mp result, vec_mp input, vec_mp pro
 	div_mp(result, temp, &input->coord[0]);
 	clear_mp(temp);
 	
-	
-	//	comp_d temp2;
-	//	mp_to_d(temp2, result);
-	//	if (temp2->i < 1e-13) {
-	//		mpf_set_d(result->i, 0.0);
-	//	}
-	
-	
-	
-	
-	
-	//	if (mpf_get_d(result->i) < 1e-14) {
-	//		mpf_set_d(result->i, 0.0);
-	//	}
-	
-	
 }
 
 
@@ -3119,26 +3090,6 @@ void print_matrix_to_screen_matlab(const mat_d M, std::string name)
 	{ // print kth row
 		for (jj = 0; jj < M->cols; jj++)
 		{
-			//			if (abs(M->entry[kk][jj].r)<1e-12) {
-			//				printf("0");
-			//			}
-			//			else{
-			//			printf("%.8le",M->entry[kk][jj].r);
-			//			}
-			//
-			//			if (abs(M->entry[kk][jj].r)>=1e-12 && abs(M->entry[kk][jj].i)>=1e-12) {
-			//				printf("+");
-			//			}
-			//			else{
-			//				printf(" ");
-			//			}
-			//
-			//			if (abs(M->entry[kk][jj].i)<1e-12) {
-			//
-			//			}
-			//			else{
-			//				printf("1i*%.8le ",M->entry[kk][jj].i);
-			//			}
 			printf("%.4le+1i*%.4le ",M->entry[kk][jj].r,M->entry[kk][jj].i );
 		}
 		if (kk!= M->rows-1) {
@@ -3616,10 +3567,7 @@ void make_randomization_matrix_based_on_degrees(mat_mp randomization_matrix, std
 	
 	
 	
-	//	for (ii=0; ii<num_unique_degrees; ii++) {
-	//		printf("unique_degrees[%d]=%d; num_of_each_degree=%d\n",ii,unique_degrees[ii],num_of_each_degree[ii]);
-	//	}
-	
+
 	//resize the matrix
 	change_size_mat_mp(randomization_matrix,num_desired_rows,num_funcs);
 	randomization_matrix->rows = num_desired_rows; randomization_matrix->cols = num_funcs;
@@ -4662,183 +4610,4 @@ namespace color {
 
 
 
-//void send_vec_mp(vec_mp b, int target)
-///***************************************************************\
-// * USAGE:                                                        *
-// * ARGUMENTS:                                                    *
-// * RETURN VALUES:                                                *
-// * NOTES: broadcasts b                                           *
-// \***************************************************************/
-//{
-//	MPI_Datatype mpi_vec_mp_int;
-//	point_mp_int b_int;
-//	char *bstr = NULL;
-//	
-//	// create the datatypes mpi_vec_mp_int
-//	create_point_mp_int(&mpi_vec_mp_int);
-//	
-//	cp_point_mp_int(&b_int, b, &bstr, 0, 0, 0);
-//	
-//	// send b_int and bstr
-//	MPI_Send(&b_int, 1, mpi_vec_mp_int, target, VEC_MP, MPI_COMM_WORLD);
-//	MPI_Send(bstr, b_int.totalLength, MPI_CHAR, target,  VEC_MP, MPI_COMM_WORLD);
-//	
-//	// clear bstr
-//	free(bstr);
-//	
-//	
-//	// clear mpi_vec_mp_int
-//	MPI_Type_free(&mpi_vec_mp_int);
-//	
-//	return;
-//}
-//
-//
-//
-//void receive_vec_mp(vec_mp b, int source)
-///***************************************************************\
-// * USAGE:                                                        *
-// * ARGUMENTS:                                                    *
-// * RETURN VALUES:                                                *
-// * NOTES: broadcasts b                                           *
-// \***************************************************************/
-//{
-//	MPI_Datatype mpi_vec_mp_int;
-//	point_mp_int b_int;
-//	char *bstr = NULL;
-//	
-//	// create the datatypes mpi_vec_mp_int
-//	create_point_mp_int(&mpi_vec_mp_int);
-//	
-//	MPI_Status statty_mc_gatty;
-//	
-//	MPI_Recv(&b_int, 1, mpi_vec_mp_int, source,  VEC_MP, MPI_COMM_WORLD, &statty_mc_gatty);
-//	bstr = (char *)br_malloc(b_int.totalLength * sizeof(char));
-//	MPI_Recv(bstr, b_int.totalLength, MPI_CHAR, source,  VEC_MP, MPI_COMM_WORLD, &statty_mc_gatty);
-//	
-//	// setup b and clear bstr
-//	cp_point_mp_int(b, &b_int, &bstr, 1, 1, 1);
-//	
-//	// clear mpi_vec_mp_int
-//	MPI_Type_free(&mpi_vec_mp_int);
-//	
-//	return;
-//}
-//
-//
-//
-//
-//void send_vec_d(vec_d b, int target)
-///***************************************************************\
-// * USAGE:                                                        *
-// * ARGUMENTS:                                                    *
-// * RETURN VALUES:                                                *
-// * NOTES: broadcasts b                                           *
-// \***************************************************************/
-//{
-//	MPI_Datatype mpi_point_d_int, mpi_comp_d;
-//	point_d_int b_int;
-//	comp_d *entries = NULL;
-//	
-//	// create the datatype mpi_point_d_int & mpi_comp_d
-//	create_point_d_int(&mpi_point_d_int);
-//	create_comp_d(&mpi_comp_d);
-//	
-//	cp_point_d_int(&b_int, b, &entries, 0, 0, 0);
-//	
-//	// send b_int
-//	MPI_Send(&b_int, 1, mpi_point_d_int, target, VEC_D, MPI_COMM_WORLD);
-//	// send entries
-//	MPI_Send(entries, b_int.size, mpi_comp_d, target, VEC_D, MPI_COMM_WORLD);
-//	
-//	// clear entries
-//	free(entries);
-//	
-//	
-//	// clear mpi_point_d_int & mpi_comp_d
-//	MPI_Type_free(&mpi_point_d_int);
-//	MPI_Type_free(&mpi_comp_d);
-//	
-//	
-//	
-//	//  MPI_Datatype mpi_vec_d_int;
-//	//  point_d_int b_int;
-//	//  char *bstr = NULL;
-//	//
-//	//  // create the datatypes mpi_vec_d_int
-//	//  create_point_d_int(&mpi_vec_d_int);
-//	//
-//	//	cp_point_d_int(&b_int, b, &bstr, 0, 0, 0);
-//	//
-//	//	// send b_int and bstr
-//	//	MPI_Send(&b_int, 1, mpi_vec_d_int, target, VEC_MP, MPI_COMM_WORLD);
-//	//	MPI_Send(bstr, b_int.totalLength, MPI_CHAR, target,  VEC_MP, MPI_COMM_WORLD);
-//	//
-//	//	// clear bstr
-//	//	free(bstr);
-//	//
-//	//
-//	//  // clear mpi_vec_d_int
-//	//  MPI_Type_free(&mpi_vec_d_int);
-//	
-//	return;
-//}
-//
-//
-//
-//void receive_vec_d(vec_d b, int source)
-///***************************************************************\
-// * USAGE:                                                        *
-// * ARGUMENTS:                                                    *
-// * RETURN VALUES:                                                *
-// * NOTES: broadcasts b                                           *
-// \***************************************************************/
-//{
-//	MPI_Datatype mpi_point_d_int, mpi_comp_d;
-//	point_d_int b_int;
-//	comp_d *entries = NULL;
-//	
-//	// create the datatype mpi_point_d_int & mpi_comp_d
-//	create_point_d_int(&mpi_point_d_int);
-//	create_comp_d(&mpi_comp_d);
-//	
-//	MPI_Status statty_mc_gatty;
-//	
-//	MPI_Recv(&b_int, 1, mpi_point_d_int, source, VEC_D, MPI_COMM_WORLD, &statty_mc_gatty);
-//	
-//	entries = (comp_d *)br_malloc(b_int.size * sizeof(comp_d));
-//	// recv entries
-//	MPI_Recv(entries, b_int.size, mpi_comp_d, source, VEC_D, MPI_COMM_WORLD, &statty_mc_gatty);
-//	
-//	// setup b
-//	cp_point_d_int(b, &b_int, &entries, 1, 1, 1);
-//	
-//	// clear mpi_point_d_int & mpi_comp_d
-//	MPI_Type_free(&mpi_point_d_int);
-//	MPI_Type_free(&mpi_comp_d);
-//	
-//	
-//	
-//	
-//	//  MPI_Datatype mpi_vec_d_int;
-//	//  point_d_int b_int;
-//	//  comp_d *bstr = NULL;
-//	//
-//	//  // create the datatypes mpi_vec_d_int
-//	//  create_point_d_int(&mpi_vec_d_int);
-//	//
-//	//	MPI_Status statty_mc_gatty;
-//	//
-//	//	MPI_Recv(&b_int, 1, mpi_vec_d_int, source,  VEC_MP, MPI_COMM_WORLD, &statty_mc_gatty);
-//	//	bstr = (char *)br_malloc(b_int.totalLength * sizeof(char));
-//	//	MPI_Recv(bstr, b_int.totalLength, MPI_CHAR, source,  VEC_MP, MPI_COMM_WORLD, &statty_mc_gatty);
-//	//
-//	//	// setup b and clear bstr
-//	//	cp_point_d_int(b, &b_int, &bstr, 1, 1, 1);
-//	//
-//	//  // clear mpi_vec_d_int
-//	//  MPI_Type_free(&mpi_vec_d_int);
-//	
-//	return;
-//}
 
