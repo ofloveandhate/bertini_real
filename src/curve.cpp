@@ -815,7 +815,8 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	
 	clear_vec_mp(particular_projection);
 	
-	
+	clear_vec_mp(crit_downstairs);
+	clear_vec_mp(midpoints_downstairs);
 	
 	return SUCCESSFUL;
 } // re: interslice
@@ -1104,7 +1105,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 	
 	
 	clear_mp(new_proj_val);
-	
+	clear_vec_mp(particular_projection);
 	
 } // re: merge
 
@@ -1465,6 +1466,9 @@ int verify_projection_ok(const witness_set & W,
 	}
 	else
 		invalid_flag = 1;
+	
+	clear_mp(determinant);
+	clear_mp(zerotime);
 	
 	clear_eval_struct_mp(ED);
 	

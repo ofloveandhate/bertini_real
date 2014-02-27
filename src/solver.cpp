@@ -311,7 +311,7 @@ int solver::receive(parallelism_config & mpi_config)
 	randomize = buffer[4];
 	
 	receive_preproc_data(&this->preProcData);
-	
+	have_PPD = true;
 	
 	
 	
@@ -938,7 +938,7 @@ void serial_tracker_loop(trackingStats *trackCount,
 		}
 		
 	}// re: for (ii=0; ii<W.num_points ;ii++)
-	
+	clear_endgame_data(&EG);
 	
 	
 	//clear the data structures.

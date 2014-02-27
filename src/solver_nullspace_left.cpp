@@ -9,10 +9,11 @@
 void nullspace_config::clear()
 {
 	
-	if (randomized_degrees==NULL) {
-		free(randomized_degrees); // the degrees of the randomized functions (not derivatives)
-		randomized_degrees = NULL;
-	}
+	
+	
+	
+	
+	
 	
 	
 	if (num_jac_equations>0) {
@@ -1291,13 +1292,11 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 	
 	
 	
-	int *startSub = NULL, *endSub = NULL, *startFunc = NULL, *endFunc = NULL, *startJvsub = NULL, *endJvsub = NULL, *startJv = NULL, *endJv = NULL, **subFuncsBelow = NULL;
 	
 	prog_t SLP;
 	//	// setup a straight-line program, using the file(s) created by the parser.  the input file must already be parsed
-	setupProg_count(&SLP, solve_options.T.Precision, solve_options.T.MPType,
-					&startSub, &endSub, &startFunc, &endFunc, &startJvsub, &endJvsub, &startJv, &endJv,
-					&subFuncsBelow);
+	setupProg(&SLP, solve_options.T.Precision, solve_options.T.MPType);
+	
 	
 	solve_options.T.numVars = W.num_variables;
 	

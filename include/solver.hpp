@@ -569,7 +569,7 @@ public:
 	preproc_data preProcData; ///< information related to the SLP for system
 	SLP_global_pointers SLP_memory;
 	prog_t *SLP; ///< the SLP
-	bool have_SLP;
+	bool have_SLP, have_PPD;
 	
 	int num_variables; ///< the grand total number of variables to be computed on in the problem at hand
 	
@@ -596,7 +596,7 @@ public:
 	
 	virtual ~solver()
 	{
-		clear();
+		solver::clear();
 	}
 	
 	virtual int send(parallelism_config & mpi_config);
@@ -623,7 +623,10 @@ protected:
 	
 	void clear()
 	{
-		
+		if (have_PPD) {
+			preproc_data_clear(&this->preProcData);
+			have_PPD = false;
+		}
 		
 	}
 	
@@ -639,7 +642,7 @@ protected:
 		
 		SLP = NULL;
 		have_SLP = false;
-		
+		have_PPD = false;
 		num_variables = 0;
 		
 		this->num_steps = 0;
@@ -730,7 +733,7 @@ public:
 	
 	
 	virtual ~solver_mp(){
-		clear();
+		solver_mp::clear();
 	}// re: default destructor
 	
 	
@@ -833,7 +836,7 @@ public:
 	
 	
 	virtual ~solver_d(){
-		clear();
+		solver_d::clear();
 	}// re: default destructor
 	
 	

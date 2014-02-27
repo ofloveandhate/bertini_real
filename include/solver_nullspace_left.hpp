@@ -42,7 +42,7 @@ public:
 	
 	int num_randomized_eqns;	///< N-k (N-ambient_dim)
 	int max_degree;						///< the max degree of differentiated (randomized) functions
-	int *randomized_degrees; ///< the degrees of the randomized functions (not derivatives)
+	std::vector<int> randomized_degrees; ///< the degrees of the randomized functions (not derivatives)
 	
 	vec_mp **starting_linears;	///< outer layer should have as many as there are randomized equations (N-k)
 								///< inside layer has number corresponding to max of randomized_degrees
@@ -85,7 +85,7 @@ private:
 		num_x_vars = num_v_vars = -1;
 		num_randomized_eqns = max_degree = -1;
 		
-		randomized_degrees = NULL;
+
 		
 		starting_linears = NULL;
 		
@@ -273,6 +273,7 @@ private:
 				}
 				free(starting_linears[ii]);
 			}
+			free(starting_linears);
 		}
 		
 		if (num_v_linears>0) {
@@ -323,7 +324,7 @@ private:
 				}
 				free(starting_linears_full_prec[ii]);
 			}
-			
+			free(starting_linears_full_prec);
 			
 			for (int ii=0; ii<num_v_linears; ii++)
 				clear_vec_mp(v_linears_full_prec[ii]);
@@ -634,6 +635,7 @@ private:
 				}
 				free(starting_linears[ii]);
 			}
+			free(starting_linears);
 		}
 		
 		if (num_v_linears>0) {

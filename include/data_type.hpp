@@ -930,7 +930,7 @@ public:
 	
 	~vertex_set()
 	{
-		clear();
+		vertex_set::clear();
 	}
 	
 	
@@ -1185,6 +1185,11 @@ protected:
 		
 		mpf_clear(abs);
 		mpf_clear(zerothresh);
+		
+		for (int ii=0; ii<num_projections; ii++) {
+			clear_vec_mp(projections[ii]);
+		}
+		free(projections);
 	}
 
 };
