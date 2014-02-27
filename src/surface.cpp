@@ -65,6 +65,14 @@ void surface_decomposition::main(vertex_set & V,
 	
 	
 	
+	
+	
+
+	
+	
+	
+	
+	
 	// get the critical points and the sphere intersection points for the critical curve
     witness_set W_critcurve_crit;
     compute_critcurve_critpts(W_critcurve_crit, // the computed value
@@ -114,6 +122,11 @@ void surface_decomposition::main(vertex_set & V,
 	
 	
 	
+	
+	
+	///////////////////////////////
+	
+	// the bounding sphere must be set here.
 	witness_set W_singular_crit;
 	
 	compute_singular_crit(W_singular_crit,
@@ -121,6 +134,12 @@ void surface_decomposition::main(vertex_set & V,
 						  V,
 						  program_options,
 						  solve_options);
+	///////////////////////////////
+	
+	
+	
+	
+
 	
     
     // merge together the critical points from both the critical curve and the sphere intersection curve.
@@ -282,7 +301,7 @@ void surface_decomposition::compute_singular_crit(witness_set & W_singular_crit,
 	W_singular_crit.copy_patches(*this);
 	for (auto iter = higher_multiplicity_witness_sets.begin(); iter!=higher_multiplicity_witness_sets.end(); ++iter) {
 		
-		std::cout << "getting critical points for multiplicity " << iter->first << " singular curve" << std::endl;
+		std::cout << std::endl << color::magenta() << "getting critical points for multiplicity " << iter->first << " singular curve" << color::console_default() << std::endl;
 		
 		
 		std::stringstream converter;
@@ -297,20 +316,24 @@ void surface_decomposition::compute_singular_crit(witness_set & W_singular_crit,
 
 		iter->second.only_first_vars(this->num_variables);
 		
+		witness_set W_only_one_witness_point = iter->second;
+		W_only_one_witness_point.reset_points();
+		W_only_one_witness_point.add_point(iter->second.pts_mp[0]);
 		
-		iter->second.write_dehomogenized_coordinates("witness_points_dehomogenized"); // write the points to file
+		W_only_one_witness_point.write_dehomogenized_coordinates("singular_witness_points_dehomogenized"); // write the points to file
+		
+		
 		
 		int num_deflations, *deflation_sequence = NULL;
-		
 		isosingular_deflation(&num_deflations, &deflation_sequence, program_options,
-							  program_options.input_filename,
-							  "witness_points_dehomogenized",
+							  program_options.input_filename, // start from the beginning.
+							  "singular_witness_points_dehomogenized",
 							  singcurve_filename,
 							  program_options.max_deflations);
 		free(deflation_sequence);
 		
 		iter->second.input_filename = singcurve_filename;
-		iter->second.dim = 1;
+		iter->second.dim = 1; //why again does a witness set need a dimension?
 		
 		int blabla;
 		parse_input_file(singcurve_filename,&blabla);
@@ -322,12 +345,14 @@ void surface_decomposition::compute_singular_crit(witness_set & W_singular_crit,
 		//get the matrix and the degrees of the resulting randomized functions.
 		make_randomization_matrix_based_on_degrees(singular_curves[iter->first].randomizer_matrix, singular_curves[iter->first].randomized_degrees, iter->second.num_variables-iter->second.num_patches-1, solve_options.PPD.num_funcs);
 		
+		
+//		iter->second.print_to_screen();
+//		print_matrix_to_screen_matlab(singular_curves[iter->first].randomizer_matrix,"rand");
 
 		nullspace_config ns_config;
 		solver_output solve_out;
 		
-//		iter->second.print_to_screen();
-//		
+		
 		compute_crit_nullspace(solve_out,                   // the returned value
 							   iter->second,            // input the witness set with linears
 							   singular_curves[iter->first].randomizer_matrix,
