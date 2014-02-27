@@ -51,7 +51,7 @@ public:
 	
 	void bcast_send(parallelism_config & mpi_config)
 	{
-		std::cout << "bcasting " << input_filename << std::endl;
+//		std::cout << "bcasting " << input_filename << std::endl;
 		
 		
 		int * buffer = new int[4];
@@ -150,7 +150,7 @@ public:
 	void init()
 	{
 		num_variables = 0;
-		input_filename = "unset_input_filename_complete_class";
+		input_filename = "unset_input_filename_complete_system";
 		MPType = -1;
 		
 		have_SLP = false;
@@ -203,7 +203,7 @@ public:
 	
 	void clear()
 	{
-		std::cout << "clearing complete_system, name " << input_filename << std::endl;
+
 		
 		if (have_SLP) {
 			clear_mat_mp(randomizer_matrix);
@@ -267,7 +267,7 @@ public:
 		preproc_data_clear(&PPD);
 		
 		have_SLP = true;
-		std::cout << "have system " << input_filename << " in memory" << std::endl;
+
 	}
 };
 
@@ -538,7 +538,7 @@ public:
 		init();
 	}
 	
-	~midpoint_eval_data_mp(){
+	virtual ~midpoint_eval_data_mp(){
 		
 		clear();
 		// no need to reset the counters.
@@ -807,7 +807,7 @@ public:
 		init();
 	}
 	
-	~midpoint_eval_data_d(){
+	virtual ~midpoint_eval_data_d(){
 		
 		midpoint_eval_data_d::clear();
 		// no need to reset the counters.

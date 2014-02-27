@@ -19,7 +19,7 @@ void parse_input_file(boost::filesystem::path filename)
 	
 	unsigned int currentSeed;
 	int trackType, genType = 0,  sharpenOnly, needToDiff, remove_temp, useParallelDiff = 0,userHom = 0;
-  int my_id = 0, num_processes = 1, headnode = 0; // headnode is always 0
+	int my_id = 0, num_processes = 1, headnode = 0; // headnode is always 0
 	int MPType;
 	
 	int bcastme = PARSING;
@@ -39,7 +39,7 @@ void parse_input_file(boost::filesystem::path filename, int * MPType)
 	
 	unsigned int currentSeed;
 	int trackType, genType = 0,  sharpenOnly, needToDiff, remove_temp, useParallelDiff = 0,userHom = 0;
-  int my_id = 0, num_processes = 1, headnode = 0; // headnode is always 0
+	int my_id = 0, num_processes = 1, headnode = 0; // headnode is always 0
 	
 	
 	//end parser-bertini essentials

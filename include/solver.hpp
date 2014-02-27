@@ -774,12 +774,13 @@ protected:
 	
 	void copy(const solver_mp & other){
 		cp_patch_mp(&this->patch, other.patch);
-		
 		set_mp(this->gamma, other.gamma);
-		set_rat(this->gamma_rat, other.gamma_rat);
-		
 		mat_cp_mp(this->randomizer_matrix, other.randomizer_matrix);
-		mat_cp_mp(this->randomizer_matrix_full_prec, other.randomizer_matrix_full_prec);
+		
+		if (other.MPType==2) {
+			set_rat(this->gamma_rat, other.gamma_rat);
+			mat_cp_mp(this->randomizer_matrix_full_prec, other.randomizer_matrix_full_prec);
+		}
 		
 		this->curr_prec = other.curr_prec;
 	}
@@ -794,10 +795,11 @@ protected:
 		if (MPType==2) {
 			clear_mat_mp(randomizer_matrix_full_prec);
 			clear_rat(gamma_rat);
+			free(gamma_rat);
 		}
         
         
-        if (have_SLP && received_mpi) {
+        if (have_SLP && received_mpi) { // other wise don't have it, or someone else is responsible for clearing it.
             clearProg(this->SLP, this->MPType, 1); // 1 means call freeprogeval()
             delete[] SLP;
 		}

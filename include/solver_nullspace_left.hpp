@@ -178,7 +178,7 @@ public:
 		init();
 	}
 	
-	~nullspacejac_eval_data_mp(){
+	virtual ~nullspacejac_eval_data_mp(){
 		
 		nullspacejac_eval_data_mp::clear();
 		// no need to reset the counters.
@@ -543,7 +543,7 @@ public:
 		init();
 	}
 	
-	~nullspacejac_eval_data_d(){
+	virtual ~nullspacejac_eval_data_d(){
 		
 		nullspacejac_eval_data_d::clear();
 		// no need to reset the counters.

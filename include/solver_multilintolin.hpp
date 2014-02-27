@@ -413,7 +413,7 @@ public:
 	
 	
 	
-	~multilintolin_eval_data_d(){
+	virtual ~multilintolin_eval_data_d(){
 		clear();
 	}
 	
