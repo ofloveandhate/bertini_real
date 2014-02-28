@@ -5,7 +5,6 @@
 
 void multilintolin_eval_data_mp::init()
 {
-	solver_mp::init();
 	this->is_solution_checker_d = &check_issoln_multilintolin_d;
 	this->is_solution_checker_mp = &check_issoln_multilintolin_mp;
 	this->evaluator_function_d = &multilin_to_lin_eval_d;
@@ -264,7 +263,6 @@ void multilintolin_eval_data_d::init()
 	}
 	
 	
-	solver_d::init();
 	
 	this->is_solution_checker_d = &check_issoln_multilintolin_d;
 	this->is_solution_checker_mp = &check_issoln_multilintolin_mp;
@@ -507,8 +505,10 @@ int multilin_solver_master_entry_point(const witness_set & W, // carries with it
 			
 		case 2:
 			delete ED_d;
+			break;
 			
 		default:
+			std::cout << "MPTYPE is not 0, 1, 2, cannot clear... " << std::endl;
 			break;
 	}
 	

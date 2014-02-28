@@ -444,7 +444,6 @@ public:
 	
 	sphere_eval_data_d & operator=(const sphere_eval_data_d & other)
 	{
-		init();
 		copy(other);
 		return *this;
 	}

@@ -523,7 +523,7 @@ void midpoint_eval_data_d::init()
 	if (this->MPType==2)
     {
 		this->BED_mp = new midpoint_eval_data_mp(2);
-        solver_d::BED_mp = this->BED_mp;
+//        solver_d::BED_mp = this->BED_mp;
     }
 	else{
 		this->BED_mp = NULL;

@@ -716,7 +716,6 @@ public:
 	
 	
 	void init(){
-		solver::init();
 		
 		init_mp(gamma);
 		init_mat_mp(randomizer_matrix,0,0);
@@ -742,7 +741,6 @@ public:
 	solver_mp & operator=( const solver_mp & other)
 	{
 		solver::operator= (other);
-		
 		copy(other);
 		return *this;
 	}  // re: assigment
@@ -774,6 +772,7 @@ protected:
 	
 	void copy(const solver_mp & other){
 		cp_patch_mp(&this->patch, other.patch);
+	
 		set_mp(this->gamma, other.gamma);
 		mat_cp_mp(this->randomizer_matrix, other.randomizer_matrix);
 		
@@ -823,7 +822,7 @@ public:
 	comp_d gamma;    ///< randomizer
 	mat_d randomizer_matrix;     ///< randomizer
 	
-	solver_mp *BED_mp;
+	solver_mp *BED_mp; // why even have this?
     
     
 	solver_d() : solver(){
