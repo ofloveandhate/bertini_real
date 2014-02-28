@@ -1178,7 +1178,6 @@ int nullspacejac_eval_data_d::setup(prog_t * _SLP,
 		init_vec_d(v_linears[ii],ns_config->num_v_vars);
 		v_linears[ii]->size = ns_config->num_v_vars;
 		vec_mp_to_d(v_linears[ii], ns_config->v_linears[ii]);
-		print_point_to_screen_matlab(v_linears[ii],"v_linears_double");
 	}
 	
 	num_additional_linears = ns_config->num_additional_linears;

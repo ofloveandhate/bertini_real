@@ -30,6 +30,7 @@ class midpoint_config;
 class midpoint_eval_data_mp;
 class midpoint_eval_data_d;
 
+//TODO: move this into solver.hpp for use elsewhere!
 class complete_system
 {
 	friend class midpoint_config;
@@ -51,7 +52,6 @@ public:
 	
 	void bcast_send(parallelism_config & mpi_config)
 	{
-//		std::cout << "bcasting " << input_filename << std::endl;
 		
 		
 		int * buffer = new int[4];
@@ -557,8 +557,6 @@ public:
 	
 	midpoint_eval_data_mp & operator=(const midpoint_eval_data_mp & other)
 	{
-		init();
-		
 		copy(other);
 		return *this;
 	}
@@ -828,10 +826,10 @@ public:
 		print_comp_matlab(crit_val_right,"crit_val_right");
 		
 		
-//		std::cout << num_projections << " projections: " << std::endl;
-//		for (int ii=0; ii<2; ii++) {
-//			print_point_to_screen_matlab(this->pi[ii],"pi");
-//		}
+		std::cout << num_projections << " projections: " << std::endl;
+		for (int ii=0; ii<2; ii++) {
+			print_point_to_screen_matlab(this->pi[ii],"pi");
+		}
 		
 	};
 	
@@ -846,8 +844,6 @@ public:
 	midpoint_eval_data_d & operator=(const midpoint_eval_data_d & other)
 	{
 		this->MPType = other.MPType;
-		init();
-		
 		copy(other);
 		return *this;
 	}
