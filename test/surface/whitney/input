@@ -1,0 +1,22 @@
+CONFIG
+
+randomseed: 8;
+
+sharpendigits: 16;
+tracktype: 1;
+securitymaxnorm: 1e6;
+%tracktolbeforeeg:1e-4;
+%tracktolduringeg: 1e-5;
+%finaltol:1e-8;
+%sharpendigits: 12;
+
+END;
+
+INPUT
+
+variable_group x, y, z;
+function f1;
+
+f1 = x^2-y^2*z;
+
+END;
