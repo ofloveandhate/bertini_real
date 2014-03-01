@@ -1,0 +1,19 @@
+CONFIG
+
+tracktype: 1;
+
+%securitymaxnorm: 1e8;
+
+END;
+
+INPUT
+
+variable_group x, y, z, w;
+
+function f1, f2;
+
+f1 = w^2 + x^2 + y^2 + z^2 - 1;
+f2 = 2*w*y*z - x*(y^2 + z^2);
+
+
+END;
