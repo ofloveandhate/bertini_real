@@ -567,7 +567,7 @@ void surface_decomposition::compute_critcurve_witness_set(witness_set & W_critcu
 	
 	
 	bool prev_quick_state = program_options.quick_run;
-	//	program_options.quick_run = false;
+	program_options.quick_run = false;
 	
 	
 	nullspace_config ns_config;
