@@ -1845,7 +1845,18 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					//	solve_options.T.final_tolerance = 0.1*solve_options.T.final_tolerance;
 					
 					break;
+				case -2:
+					if (current_retval_counter<6) {
+						solve_options.T.goingToInfinity *= 10;  // exponential increase by 10's
+					}
+					else
+					{
+						solve_options.T.goingToInfinity *= 10;  // exponential increase by 10's
+						// on the manyth try, go to security level 1.
+						solve_options.T.securityLevel = 1;
+					}
 					
+					break;
 				default:
 					
 					std::cout << color::red() << "retVal was of unprogrammed robust changing: " << EG_out->retVal << color::console_default() << std::endl;
