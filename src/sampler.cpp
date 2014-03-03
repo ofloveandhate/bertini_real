@@ -630,13 +630,12 @@ void curve_decomposition::fixed_sampler(vertex_set & V,
 	for (int ii=0;ii<num_edges;ii++) // for each of the edges
 	{
 		if (edges[ii].is_degenerate()) {
-			std::cout << "edge " << ii << " is degenerate" << std::endl;
 			continue;
 		}
 		else{
-			std::cout << "edge " << ii << std::endl;
 		}
 		
+		std::cout << "\tsampling edge " << ii << std::endl;
 		
 		neg_mp(&W.L_mp[0]->coord[0],&V.vertices[edges[ii].midpt].projection_values->coord[V.curr_projection]);
 		
@@ -944,35 +943,35 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 	
 	std::cout << "critical curve" << std::endl;
 	crit_curve.fixed_sampler(V,sampler_options,solve_options,target_num_samples);
-	for (unsigned int jj=0; jj<crit_curve.edges.size(); jj++) {
-		std::cout << crit_curve.num_samples_each_edge[jj] << " " ;//sample_indices
-	}
-	std::cout << std::endl;
+//	for (unsigned int jj=0; jj<crit_curve.edges.size(); jj++) {
+//		std::cout << crit_curve.num_samples_each_edge[jj] << " " ;//sample_indices
+//	}
+//	std::cout << std::endl;
 	
 	
 	std::cout << "sphere curve" << std::endl;
 	sphere_curve.fixed_sampler(V,sampler_options,solve_options,target_num_samples);
-	for (unsigned int jj=0; jj<sphere_curve.edges.size(); jj++) {
-		std::cout << sphere_curve.num_samples_each_edge[jj] << " " ;//sample_indices
-	}
-	std::cout << std::endl;
+//	for (unsigned int jj=0; jj<sphere_curve.edges.size(); jj++) {
+//		std::cout << sphere_curve.num_samples_each_edge[jj] << " " ;//sample_indices
+//	}
+//	std::cout << std::endl;
 	
 	std::cout << "mid slices" << std::endl;
 	for (unsigned int ii=0; ii<mid_slices.size(); ii++) {
 		mid_slices[ii].fixed_sampler(V,sampler_options,solve_options,target_num_samples);
-		for (unsigned int jj=0; jj<mid_slices[ii].edges.size(); jj++) {
-			std::cout << mid_slices[ii].num_samples_each_edge[jj] << " " ;//sample_indices
-		}
-		std::cout << std::endl;
+//		for (unsigned int jj=0; jj<mid_slices[ii].edges.size(); jj++) {
+//			std::cout << mid_slices[ii].num_samples_each_edge[jj] << " " ;//sample_indices
+//		}
+//		std::cout << std::endl;
 	}
 	
 	std::cout << "critical slices" << std::endl;
 	for (unsigned int ii=0; ii<crit_slices.size(); ii++) {
 		crit_slices[ii].fixed_sampler(V,sampler_options,solve_options,target_num_samples);
-		for (unsigned int jj=0; jj<crit_slices[ii].edges.size(); jj++) {
-			std::cout << crit_slices[ii].num_samples_each_edge[jj] << " " ;//sample_indices
-		}
-		std::cout << std::endl;
+//		for (unsigned int jj=0; jj<crit_slices[ii].edges.size(); jj++) {
+//			std::cout << crit_slices[ii].num_samples_each_edge[jj] << " " ;//sample_indices
+//		}
+//		std::cout << std::endl;
 	}
 	
 	std::cout << "singular curves" << std::endl;
@@ -1004,7 +1003,10 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 		
 		
 		std::cout << "face " << ii << std::endl;
-		std::cout << faces[ii];
+		if (sampler_options.verbose_level>=1) {
+			std::cout << faces[ii];
+		}
+		
 		
 
 		
@@ -1111,18 +1113,35 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 		rib_indices.resize(target_num_samples);
 		
 		
+		//TODO: remove duplicates.
 		
 		for (unsigned int jj=0; jj<faces[ii].num_left; jj++) {
 			int asdf = faces[ii].left[jj];
 			
 			for (unsigned int kk = 0; kk< crit_slices[slice_ind].sample_indices[asdf].size(); kk++) {
+				if (jj>0 && kk==0) {
+					if (crit_slices[slice_ind].sample_indices[asdf][kk]==rib_indices[0].back()) {
+						continue;
+					}
+					
+				}
+				
 				rib_indices[0].push_back(crit_slices[slice_ind].sample_indices[asdf][kk]);
+				
 			}
 		}
 			
 		for (unsigned int jj=0; jj<faces[ii].num_right; jj++) {
 			int asdf = faces[ii].right[jj];
 			for (unsigned int kk = 0; kk< crit_slices[slice_ind+1].sample_indices[asdf].size(); kk++) {
+				
+				if (jj>0 && kk==0) {
+					if (crit_slices[slice_ind+1].sample_indices[asdf][kk]==rib_indices[target_num_samples-1].back()) {
+						continue;
+					}
+					
+				}
+				
 				rib_indices[target_num_samples-1].push_back(crit_slices[slice_ind+1].sample_indices[asdf][kk]);
 			}
 		}
@@ -1131,7 +1150,7 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 		
 		
 		if (sampler_options.verbose_level>=1) {
-			//TODO: remove duplicates.
+			
 			for (unsigned int jj=0; jj<rib_indices[0].size(); jj++) {
 				std::cout << rib_indices[0][jj] << " ";
 			}
@@ -1229,9 +1248,6 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 		}
 		
 
-		for (auto iter = rib_indices.begin(); iter!=rib_indices.end(); ++iter) {
-			std::cout << iter->size() << std::endl;
-		}
 		
 		//stitch together the rib_indices
 		samples.push_back(stitch_triangulation(rib_indices,V));
@@ -1345,7 +1361,6 @@ void triangulate_two_ribs_by_binning(const std::vector< int > & rib1, const std:
 	}
 	
 	if (rib1.size()==0 || rib2.size()==0) {
-		mypause();
 		return;
 	}
 

@@ -1597,7 +1597,6 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 	// assert some solver options
 	solve_options.use_gamma_trick = 0;
-	solve_options.allow_singular = 1;
     solve_options.robust = true;
 	
 	//create the face
@@ -1641,22 +1640,22 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 	// get the type of system for the top and bottom edges.  this is determined by reading the system name for the midpoints.
 	// info on the files from which the points came from.
-	int bottom_index = V.vertices[mid_slices[ii].edges[jj].left].input_filename_index;
-	int top_index = V.vertices[mid_slices[ii].edges[jj].right].input_filename_index;
+	int bottom_input_index = V.vertices[mid_slices[ii].edges[jj].left].input_filename_index;
+	int top_input_index = V.vertices[mid_slices[ii].edges[jj].right].input_filename_index;
 	
 	bool bail_out = false;
-	if (md_config.systems.find(V.filenames[bottom_index].string())==md_config.systems.end()) {
-		std::cout << "bottom system is " << V.filenames[bottom_index] << ", which is not in md_config" << std::endl;
+	if (md_config.systems.find(V.filenames[bottom_input_index].string())==md_config.systems.end()) {
+		std::cout << "bottom system is " << V.filenames[bottom_input_index] << ", which is not in md_config" << std::endl;
 		bail_out = true;
 	}
-	if (md_config.systems.find(V.filenames[top_index].string())==md_config.systems.end()) {
-		std::cout << "top system is " << V.filenames[top_index] << ", which is not in md_config" << std::endl;
+	if (md_config.systems.find(V.filenames[top_input_index].string())==md_config.systems.end()) {
+		std::cout << "top system is " << V.filenames[top_input_index] << ", which is not in md_config" << std::endl;
 		bail_out = true;
 	}
 	
 	
-	md_config.system_name_bottom = V.filenames[bottom_index].filename().string();
-	md_config.system_name_top = V.filenames[top_index].filename().string();
+	md_config.system_name_bottom = V.filenames[bottom_input_index].filename().string();
+	md_config.system_name_top = V.filenames[top_input_index].filename().string();
 	md_config.system_name_mid = this->input_filename.filename().string();
 	
 	
@@ -2090,7 +2089,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				}
 				
 				
-				if (index_in_set < 0 && solve_options.verbose_level>=1) {
+				if (index_in_set < 0 && solve_options.verbose_level>=0) {
 					std::cout << color::red() << "did not find the indexed point as the midpoint of any current possibilitiy." << color::console_default() << std::endl;
 				}
 				
@@ -2100,7 +2099,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				{
 					int next_edge = index_in_set; // index the *edge*
 					
-					if (program_options.verbose_level>=1) {
+					if (program_options.verbose_level>=0) {
 						std::cout << "added_edge " << next_edge << ", l m r: " << crit_slices[ii+zz].edges[next_edge].left << " " << crit_slices[ii+zz].edges[next_edge].midpt << " " << crit_slices[ii+zz].edges[next_edge].right << std::endl;
 					}
 					
