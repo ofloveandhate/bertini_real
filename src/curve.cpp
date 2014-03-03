@@ -458,13 +458,13 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 			Wleft_real.sort_for_real(solve_options.T);
             
             if (Wleft_real.num_points!=midpoint_witness_sets[ii].num_points) {
-                std::cout << color::red() << "had a critical failure\n moving left was deficient a point" << color::console_default() << std::endl;
+                std::cout << color::red() << "had a critical failure\n moving left was deficient " << midpoint_witness_sets[ii].num_points-Wleft_real.num_points << " points" << color::console_default() << std::endl;
                 keep_going = 1;
             }
             
             if (Wright_real.num_points!=midpoint_witness_sets[ii].num_points) {
-                std::cout << color::red() << "had a critical failure\n moving right was deficient a point" << color::console_default() << std::endl;
-                keep_going = 1;
+				std::cout << color::red() << "had a critical failure\n moving right was deficient " << midpoint_witness_sets[ii].num_points-Wright_real.num_points << " points" << color::console_default() << std::endl;
+				keep_going = 1;
             }
             
             if (!keep_going) {
