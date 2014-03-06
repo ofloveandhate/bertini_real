@@ -523,7 +523,7 @@ void midpoint_eval_data_d::init()
 	if (this->MPType==2)
     {
 		this->BED_mp = new midpoint_eval_data_mp(2);
-//        solver_d::BED_mp = this->BED_mp;
+        solver_d::BED_mp = this->BED_mp;
     }
 	else{
 		this->BED_mp = NULL;
@@ -681,8 +681,7 @@ int midpoint_eval_data_d::setup(midpoint_config & md_config,
 	
 	
 	
-//	mat_mp_to_d(randomizer_matrix,
-//                md_config.randomizer_matrix);
+
 	
 	
 	

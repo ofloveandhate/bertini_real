@@ -279,7 +279,7 @@ public:
 	curve_decomposition crit_curve;
 	curve_decomposition sphere_curve;
 	
-	std::map<int,curve_decomposition> singular_curves;
+	std::map<std::pair<int,int>,curve_decomposition> singular_curves;
 	int num_singular_curves;
 	
 	void read_faces(boost::filesystem::path load_from_me);
@@ -324,15 +324,19 @@ public:
 						 solver_configuration & solve_options);
 	
 	
+	void deflate_and_split(std::map< std::pair<int,int>, witness_set > & split_sets,
+						   std::map<int, witness_set > & higher_multiplicity_witness_sets,
+						   BR_configuration & program_options,
+						   solver_configuration & solve_options);
 	
 	void compute_singular_crit(witness_set & W_singular_crit,
-							   std::map<int, witness_set> & higher_multiplicity_witness_sets,
-							   vertex_set & V,
-							   BR_configuration & program_options,
-							   solver_configuration & solve_options);
+													  const std::map<std::pair<int,int>, witness_set> & split_sets,
+													  vertex_set & V,
+													  BR_configuration & program_options,
+													  solver_configuration & solve_options);
 	
 	void compute_singular_curves(const witness_set & W_total_crit,
-								 const std::map<int, witness_set> & higher_multiplicity_witness_sets,
+								 const std::map< std::pair<int,int>, witness_set> & split_sets,
 								 vertex_set & V,
 								 BR_configuration & program_options,
 								 solver_configuration & solve_options);
@@ -543,7 +547,11 @@ protected:
 
 
 
-
+// will compute a randomizer matrix since you don't provide one. must have current PPD in solve_options for this to work correctly
+int find_matching_singular_witness_points(witness_set & W_match,
+										  witness_set & W_reject,
+										  const witness_set & W,
+										  solver_configuration & solve_options);
 
 
 void create_sliced_system(boost::filesystem::path input_file, boost::filesystem::path output_file,
@@ -557,7 +565,7 @@ void create_sphere_system(boost::filesystem::path input_file, boost::filesystem:
 													const witness_set & W);
 
 
-void read_summary(std::vector<int> & singular_multiplicities, int & temp_num_mid, int & temp_num_crit, boost::filesystem::path INfile);
+void read_summary(std::vector<std::pair<int,int>> & singular_multiplicities, int & temp_num_mid, int & temp_num_crit, boost::filesystem::path INfile);
 
 
 #endif

@@ -30,7 +30,7 @@ colors = jet(num_non_degen);
 
 create_axes_curve(BRinfo);
 
-label_axes(plot_indices,BRinfo,plot_params.axes.vertices);
+label_axes(plot_indices,BRinfo,plot_params.axes.main);
 
 % actually plot
 plot_projection(BRinfo,plot_indices);
@@ -47,12 +47,12 @@ plot_edge_points(plot_indices,BRinfo,0.8*colors);
 
 
 if ~isempty(BRinfo.sampler_data)
-	plot_sampler_data(plot_indices, BRinfo.vertices,BRinfo.sampler_data,colors);
+	plot_params.handles.sample_edges = plot_sampler_data(plot_indices, BRinfo.vertices,BRinfo.sampler_data,colors);
 end
 
 
 
-sync_axes();
+% sync_axes();
 
 % colorbar
 make_discrete_colorbar(1,num_non_degen,plot_params.fontsize,'edge number');
@@ -74,7 +74,7 @@ function plot_edge_points(ind, BRinfo,colors)
 global plot_params
 
 %
-curr_axis = plot_params.axes.edges;
+curr_axis = plot_params.axes.main;
 
 
 
@@ -125,39 +125,23 @@ global plot_params
 
 
 
-new_axes = axes('Parent',plot_params.figures.main_plot);
-delete( get(new_axes,'Children') );
-set(new_axes,'visible','on');
-hold(new_axes,'on');
+curr_axes = axes('Parent',plot_params.figures.main_plot);
+set(curr_axes,'visible','on');
+hold(curr_axes,'on');
 
-set(new_axes,'XLim',[BRinfo.center(plot_params.ind(1))-1.1*BRinfo.radius BRinfo.center(plot_params.ind(1))+1.1*BRinfo.radius]);
-set(new_axes,'YLim',[BRinfo.center(plot_params.ind(2))-1.1*BRinfo.radius BRinfo.center(plot_params.ind(2))+1.1*BRinfo.radius]);
+set(curr_axes,'XLim',[BRinfo.center(plot_params.ind(1))-1.1*BRinfo.radius BRinfo.center(plot_params.ind(1))+1.1*BRinfo.radius]);
+set(curr_axes,'YLim',[BRinfo.center(plot_params.ind(2))-1.1*BRinfo.radius BRinfo.center(plot_params.ind(2))+1.1*BRinfo.radius]);
 
 if length(plot_params.ind)==3
-    set(new_axes,'ZLim',[BRinfo.center(plot_params.ind(3))-1.1*BRinfo.radius BRinfo.center(plot_params.ind(3))+1.1*BRinfo.radius]);
+    set(curr_axes,'ZLim',[BRinfo.center(plot_params.ind(3))-1.1*BRinfo.radius BRinfo.center(plot_params.ind(3))+1.1*BRinfo.radius]);
 end
 
-plot_params.axes.vertices = new_axes;
+set(curr_axes,'dataaspectratio',[1 1 1]);
 
 
-new_axes = copyobj(plot_params.axes.vertices,plot_params.figures.main_plot);
-delete( get(new_axes,'Children') );
-set(new_axes,'visible','off');
-hold(new_axes,'on')
-plot_params.axes.projection = new_axes;
+plot_params.axes.main = curr_axes;
 
 
-new_axes = copyobj(plot_params.axes.vertices,plot_params.figures.main_plot);
-delete( get(new_axes,'Children') );
-set(new_axes,'visible','off');
-hold(new_axes,'on');
-plot_params.axes.edges = new_axes;
-
-new_axes = copyobj(plot_params.axes.vertices,plot_params.figures.main_plot);
-delete( get(new_axes,'Children') );
-set(new_axes,'visible','off');
-hold(new_axes,'on');
-plot_params.axes.sampler = new_axes;
 
 end
 

@@ -52,7 +52,7 @@ void surface_decomposition::main(vertex_set & V,
     
     // get the witness points for the critical curve.
     witness_set W_critcurve;
-	std::map<int, witness_set> higher_multiplicity_witness_sets;
+	std::map< int, witness_set> higher_multiplicity_witness_sets;
 	
 	
     compute_critcurve_witness_set(W_critcurve,
@@ -126,11 +126,20 @@ void surface_decomposition::main(vertex_set & V,
 	
 	///////////////////////////////
 	
-	// the bounding sphere must be set here.
-	witness_set W_singular_crit;
+	// the bounding sphere must be set before here, or this will eat it.
 	
+	
+	std::map< std::pair<int,int>, witness_set > split_sets;
+	deflate_and_split(split_sets,
+					  higher_multiplicity_witness_sets,
+					  program_options,
+					  solve_options);
+	
+	
+	
+	witness_set W_singular_crit;
 	compute_singular_crit(W_singular_crit,
-						  higher_multiplicity_witness_sets,
+						  split_sets,
 						  V,
 						  program_options,
 						  solve_options);
@@ -199,7 +208,7 @@ void surface_decomposition::main(vertex_set & V,
 	
 	
 	compute_singular_curves(W_total_crit,
-							higher_multiplicity_witness_sets,
+							split_sets,
 							V,
 							program_options, solve_options);
 	
@@ -288,55 +297,130 @@ void surface_decomposition::main(vertex_set & V,
 
 
 
+
+
+
+void surface_decomposition::deflate_and_split(std::map< std::pair<int,int>, witness_set > & split_sets,
+					   std::map<int, witness_set > & higher_multiplicity_witness_sets,
+					   BR_configuration & program_options,
+					   solver_configuration & solve_options)
+{
+	
+	for (auto iter = higher_multiplicity_witness_sets.begin(); iter!=higher_multiplicity_witness_sets.end(); ++iter) {
+		std::cout << "multiplicity " << iter->first << std::endl;
+	}
+	
+	for (auto iter = higher_multiplicity_witness_sets.begin(); iter!=higher_multiplicity_witness_sets.end(); ++iter) {
+		std::cout << std::endl << color::magenta() << "splitting points for multiplicity " << iter->first << " singular curve" << color::console_default() << std::endl;
+		
+		int num_this_multiplicity = 0;
+		
+		
+		
+		
+		
+		
+		
+		witness_set active_set = iter->second; // seed the loop/  this sucks because it duplicates data
+		active_set.only_first_vars(this->num_variables);
+		
+		witness_set W_only_one_witness_point;
+		W_only_one_witness_point.copy_skeleton(active_set);
+		
+		
+		while (active_set.has_points()) {
+			
+			witness_set W_reject; // these will be populated in the find matching call.
+			std::pair<int,int> curr_index(iter->first,num_this_multiplicity);
+			std::stringstream converter;
+			
+			converter << "_singcurve_mult_" << iter->first << "_" << num_this_multiplicity;
+			
+			boost::filesystem::path singcurve_filename = program_options.input_filename;
+			singcurve_filename += converter.str(); converter.clear(); converter.str("");
+			
+			
+			W_only_one_witness_point.reset_points();
+			W_only_one_witness_point.add_point(active_set.pts_mp[0]); // exists by entrance condition
+			W_only_one_witness_point.write_dehomogenized_coordinates("singular_witness_points_dehomogenized"); // write the points to file
+			
+			
+			
+			int num_deflations, *deflation_sequence = NULL;
+			isosingular_deflation(&num_deflations, &deflation_sequence, program_options,
+								  program_options.input_filename, // start from the beginning.
+								  "singular_witness_points_dehomogenized",
+								  singcurve_filename,
+								  program_options.max_deflations);
+			free(deflation_sequence);
+			
+			active_set.input_filename = singcurve_filename;
+			active_set.dim = 1; //why again does a witness set need a dimension?
+			
+			int blabla;
+			parse_input_file(singcurve_filename,&blabla);
+			preproc_data_clear(&solve_options.PPD); // ugh this sucks
+			parse_preproc_data("preproc_data", &solve_options.PPD);
+			
+			std::cout << "testing points for deflation validity" << std::endl;
+			
+			
+			find_matching_singular_witness_points(split_sets[curr_index],
+												  W_reject, //W_reject contains the points of this multiplicity which DO NOT satisfy this deflation.  they must be deflated again.
+												  active_set,//input witness set
+												  solve_options);
+			
+			split_sets[curr_index].input_filename = singcurve_filename;
+			
+			
+			if (W_reject.has_points()) {
+				std::cout << "found that current singular witness set had " << W_reject.num_points << " non-deflated points" << std::endl;
+				sleep(10); std::cout << "355" << std::endl;  W_reject.print_to_screen();
+				std::cout << "357" << std::endl;
+			}
+			
+			//TODO: this is an ideal place for a swap operator.
+			active_set = W_reject;
+			num_this_multiplicity++;
+			
+		}
+		
+		
+		
+		
+		
+		
+	}
+
+	for (auto iter = split_sets.begin(); iter!=split_sets.end(); ++iter) {
+		std::cout << "multiplicity " << iter->first.first << " " << iter->first.second << std::endl;
+	}
+	
+}
+
+
+
 void surface_decomposition::compute_singular_crit(witness_set & W_singular_crit,
-												  std::map<int, witness_set> & higher_multiplicity_witness_sets,
+												  const std::map<std::pair<int,int>, witness_set> & split_sets,
 												  vertex_set & V,
 												  BR_configuration & program_options,
 												  solver_configuration & solve_options)
 {
 	
 	
+	
 	W_singular_crit.num_variables = this->num_variables;
 	W_singular_crit.num_synth_vars = 0;
 	W_singular_crit.copy_patches(*this);
-	for (auto iter = higher_multiplicity_witness_sets.begin(); iter!=higher_multiplicity_witness_sets.end(); ++iter) {
+	for (auto iter = split_sets.begin(); iter!=split_sets.end(); ++iter) {
 		
-		std::cout << std::endl << color::magenta() << "getting critical points for multiplicity " << iter->first << " singular curve" << color::console_default() << std::endl;
-		
-		
-		std::stringstream converter;
-		
-		converter << "_singcurve_mult_" << iter->first;
-	
-		boost::filesystem::path singcurve_filename = program_options.input_filename;
-		singcurve_filename += converter.str();
-		converter.clear();
-		converter.str("");
-		
-
-		iter->second.only_first_vars(this->num_variables);
-		
-		witness_set W_only_one_witness_point = iter->second;
-		W_only_one_witness_point.reset_points();
-		W_only_one_witness_point.add_point(iter->second.pts_mp[0]);
-		
-		W_only_one_witness_point.write_dehomogenized_coordinates("singular_witness_points_dehomogenized"); // write the points to file
+		std::cout << std::endl << color::magenta() << "getting critical points for multiplicity " << iter->first.first << " " << iter->first.second << " singular curve" << color::console_default() << std::endl;
 		
 		
 		
-		int num_deflations, *deflation_sequence = NULL;
-		isosingular_deflation(&num_deflations, &deflation_sequence, program_options,
-							  program_options.input_filename, // start from the beginning.
-							  "singular_witness_points_dehomogenized",
-							  singcurve_filename,
-							  program_options.max_deflations);
-		free(deflation_sequence);
-		
-		iter->second.input_filename = singcurve_filename;
-		iter->second.dim = 1; //why again does a witness set need a dimension?
 		
 		int blabla;
-		parse_input_file(singcurve_filename,&blabla);
+		parse_input_file(iter->second.input_filename,&blabla);
 		preproc_data_clear(&solve_options.PPD); // ugh this sucks
 		parse_preproc_data("preproc_data", &solve_options.PPD);
 		
@@ -346,13 +430,10 @@ void surface_decomposition::compute_singular_crit(witness_set & W_singular_crit,
 		make_randomization_matrix_based_on_degrees(singular_curves[iter->first].randomizer_matrix, singular_curves[iter->first].randomized_degrees, iter->second.num_variables-iter->second.num_patches-1, solve_options.PPD.num_funcs);
 		
 		
-//		iter->second.print_to_screen();
-//		print_matrix_to_screen_matlab(singular_curves[iter->first].randomizer_matrix,"rand");
-
 		nullspace_config ns_config;
 		solver_output solve_out;
 		
-		
+
 		compute_crit_nullspace(solve_out,                   // the returned value
 							   iter->second,            // input the witness set with linears
 							   singular_curves[iter->first].randomizer_matrix,
@@ -371,10 +452,10 @@ void surface_decomposition::compute_singular_crit(witness_set & W_singular_crit,
 		ns_config.clear();
 		
 		W_this_round.only_first_vars(this->num_variables);
-		W_this_round.sort_for_unique(solve_options.T); // this should be unnecessary, after rewriting a bit of solverout
+		W_this_round.sort_for_unique(solve_options.T); // this could be made to be unnecessary, after rewriting a bit of solverout
 		W_this_round.sort_for_real(solve_options.T);
 		W_this_round.sort_for_inside_sphere(sphere_radius,sphere_center);
-		W_this_round.input_filename = singcurve_filename;
+		W_this_round.input_filename = iter->second.input_filename;
 		
 		singular_curves[iter->first].add_witness_set(W_this_round,CRITICAL,V); // creates the curve decomposition for this multiplicity
 		
@@ -388,19 +469,21 @@ void surface_decomposition::compute_singular_crit(witness_set & W_singular_crit,
 
 
 
+
+
 void surface_decomposition::compute_singular_curves(const witness_set & W_total_crit,
-													const std::map<int, witness_set> & higher_multiplicity_witness_sets,
+													const std::map< std::pair<int,int>, witness_set> & split_sets,
 													vertex_set & V,
 													BR_configuration & program_options,
 													solver_configuration & solve_options)
 {
-	for (auto iter = higher_multiplicity_witness_sets.begin(); iter!=higher_multiplicity_witness_sets.end(); ++iter) {
+	for (auto iter = split_sets.begin(); iter!=split_sets.end(); ++iter) {
 		
 		singular_curves[iter->first].input_filename = iter->second.input_filename;
 		singular_curves[iter->first].copy_sphere_bounds(*this);
 		
 		
-		std::cout << "getting sphere intersection with singular curve " << iter->first << std::endl;
+		std::cout << "getting sphere intersection with singular curve " << iter->first.first << " " << iter->first.second << std::endl;
 		witness_set W_sphere_intersection;
 		// now get the sphere intersection critical points and ends of the interval
 		singular_curves[iter->first].get_additional_critpts(&W_sphere_intersection,  // the returned value
@@ -426,7 +509,7 @@ void surface_decomposition::compute_singular_curves(const witness_set & W_total_
 
 		
 		
-		std::cout << "interslicing singular curve " << iter->first << std::endl;
+		std::cout << "interslicing singular curve " << std::endl;
 		
 		// we already know the component is self-conjugate (by entry condition), so we are free to call this function
 		// the memory for the multilin system will get erased in this call...
@@ -445,6 +528,109 @@ void surface_decomposition::compute_singular_curves(const witness_set & W_total_
 		
 	}
 	
+}
+
+
+
+// will compute a randomizer matrix since you don't provide one. must have current PPD in solve_options for this to work correctly
+int find_matching_singular_witness_points(witness_set & W_match,
+										  witness_set & W_reject,
+										  const witness_set & W,
+										  solver_configuration & solve_options)
+{
+	
+	if (W.has_no_points()) {
+		std::cout << color::red() << "input witness set for find_matching_  has NO points, but hypothetically it does..." << color::console_default() << std::endl;
+		return TOLERABLE_FAILURE;
+	}
+	
+	
+	// assumes input file for W is already parsed.
+	
+	
+	
+	prog_t SLP;
+	setupProg(&SLP, solve_options.T.Precision, 2);
+	
+	
+	comp_mp zerotime; init_mp(zerotime);
+	set_zero_mp(zerotime);
+	
+	
+	
+	eval_struct_mp ED; init_eval_struct_mp(ED, 0, 0, 0);
+	
+	tracker_config_t * T = &solve_options.T;
+	double tol = MAX(T->final_tol_times_mult, T->sing_val_zero_tol);
+	
+	mat_mp U, E, V; init_mat_mp(U, 0, 0); init_mat_mp(E, 0, 0); init_mat_mp(V, 0, 0);
+	
+	
+	
+	
+	evalProg_mp(ED.funcVals, ED.parVals, ED.parDer, ED.Jv, ED.Jp, W.pts_mp[0], zerotime, &SLP);
+	int hypothesis_corank = svd_jacobi_mp_prec(U, E, V, ED.Jv, tol, T->Precision); // this wraps around svd_jacobi_mp.
+	
+	
+	
+	std::vector< bool > validity_flag;
+	validity_flag.push_back(true);
+	for (int zz = 1;zz<W.num_points;++zz) // by hypothesis, the first (0th) point satisfies the deflation
+	{
+		
+		evalProg_mp(ED.funcVals, ED.parVals, ED.parDer, ED.Jv, ED.Jp, W.pts_mp[zz], zerotime, &SLP);
+		
+		// first, check that the point satifies the system.
+		if (d_vec_abs_mp(ED.funcVals)>T->final_tol_times_mult) { // is this the correct measure of the vector to compare?
+			validity_flag.push_back(false);
+			continue;
+		}
+		
+		
+		// now, check the rank and make sure is same as first (0th) point.
+		int corank = svd_jacobi_mp_prec(U, E, V, ED.Jv, tol, T->Precision); // this wraps around svd_jacobi_mp.
+		
+		if (corank != hypothesis_corank) {
+			
+			validity_flag.push_back(false);
+			continue;
+		}
+		else{
+			validity_flag.push_back(true);
+		}
+	}
+	
+	
+	for (int zz=0; zz<W.num_points; zz++) {
+		if (validity_flag[zz]==true) { // trivially true for first point -- it generated the deflation!
+			W_match.add_point(W.pts_mp[zz]);
+		}
+		else
+		{
+			std::cout << "adding reject point" << std::endl;
+			W_reject.add_point(W.pts_mp[zz]);
+		}
+	}
+	
+	
+	
+	W_match.copy_skeleton(W);
+	W_reject.copy_skeleton(W);
+	
+	W_match.copy_linears(W);
+	W_reject.copy_linears(W);
+	
+	W_match.copy_patches(W);
+	W_reject.copy_patches(W);
+	
+	
+	
+	clear_mat_mp(U); clear_mat_mp(E); clear_mat_mp(V);
+	clear_mp(zerotime);
+	clear_eval_struct_mp(ED); clearProg(&SLP, solve_options.T.MPType, 1);
+	
+	
+	return SUCCESSFUL;
 }
 
 
@@ -2263,13 +2449,14 @@ void surface_decomposition::send(int target, parallelism_config & mpi_config)
 	sphere_curve.send(target, mpi_config);
 	
 	
-	buffer = (int *) br_malloc(num_singular_curves* sizeof(int));
+	buffer = (int *) br_malloc(2*num_singular_curves* sizeof(int));
 	int counter = 0;
 	for (auto iter = singular_curves.begin(); iter!= singular_curves.end(); ++iter) {
-		buffer[counter] = iter->first;
+		buffer[counter] = iter->first.first;
+		buffer[counter] = iter->first.second;
 		counter++;
 	}
-	MPI_Send(buffer, num_singular_curves, MPI_INT, target, SURFACE, MPI_COMM_WORLD);
+	MPI_Send(buffer, 2*num_singular_curves, MPI_INT, target, SURFACE, MPI_COMM_WORLD);
 	free(buffer);
 	
 	for (auto iter = singular_curves.begin(); iter!= singular_curves.end(); ++iter) {
@@ -2337,12 +2524,12 @@ void surface_decomposition::receive(int source, parallelism_config & mpi_config)
 	sphere_curve.receive(source, mpi_config);
 	
 	
-	buffer = (int *) br_malloc(num_singular_curves* sizeof(int));
-	MPI_Recv(buffer, num_singular_curves, MPI_INT, source, SURFACE, MPI_COMM_WORLD, &statty_mc_gatty);
+	buffer = (int *) br_malloc(2*num_singular_curves* sizeof(int));
+	MPI_Recv(buffer, 2*num_singular_curves, MPI_INT, source, SURFACE, MPI_COMM_WORLD, &statty_mc_gatty);
 	
 	
-	for (int ii=0; ii<num_singular_curves; ii++) {
-		singular_curves[buffer[ii]].receive(source, mpi_config);
+	for (int ii=0; ii<num_singular_curves; ii+=2) {
+		singular_curves[std::pair<int,int>(buffer[ii],buffer[ii+1])].receive(source, mpi_config);
 	}
 	
 	free(buffer);
@@ -2389,7 +2576,7 @@ void surface_decomposition::print(boost::filesystem::path base)
 	fprintf(OUT,"%d %d %ld %ld\n\n", num_faces, num_edges, mid_slices.size(), crit_slices.size());
 	fprintf(OUT,"%ld\n",singular_curves.size());
 	for (auto iter = singular_curves.begin(); iter!=singular_curves.end(); ++iter) {
-		fprintf(OUT,"%d ",iter->first);
+		fprintf(OUT,"%d %d",iter->first.first,iter->first.second); // TODO:  clean up this first.first nonsense.  it is terrible.s
 	}
 	fprintf(OUT,"\n");
 	// what more to print here?
@@ -2437,15 +2624,12 @@ void surface_decomposition::print(boost::filesystem::path base)
 	specific_loc += "_sphere";
 	sphere_curve.output_main(specific_loc);
 	
-	//this needs to be rewritten to allow for multiple singular curves of same multiplicity.
 	for (auto iter = singular_curves.begin(); iter!=singular_curves.end(); ++iter) {
 		
 		std::stringstream converter;
-		converter << iter->first;
+		converter << curve_location.string() << "_singular_mult_" << iter->first.first << "_" << iter->first.second;
 		
-		boost::filesystem::path specific_loc = curve_location;
-		specific_loc += "_singular_mult_";
-		specific_loc += converter.str();
+		specific_loc = converter.str();
 		converter.clear(); converter.str("");
 		
 		iter->second.output_main(specific_loc);
@@ -2520,7 +2704,7 @@ void surface_decomposition::setup(boost::filesystem::path base)
 {
 	decomposition::setup(base / "decomp");
 	
-	std::vector<int> singular_multiplicities;
+	std::vector<std::pair<int,int>> singular_multiplicities;
 	int temp_num_crit, temp_num_mid;
 	
 	read_summary(singular_multiplicities,temp_num_mid, temp_num_crit, base / "S.surf");
@@ -2565,7 +2749,7 @@ void surface_decomposition::setup(boost::filesystem::path base)
 	
 	for (auto iter = singular_multiplicities.begin(); iter!=singular_multiplicities.end(); ++iter) {
 		
-		converter << *iter;
+		converter << iter->first << "_" << iter->second;
 		
 		boost::filesystem::path specific_loc = curve_location;
 		specific_loc += "_singular_mult_";
@@ -2596,7 +2780,7 @@ void surface_decomposition::setup(boost::filesystem::path base)
 
 
 
-void read_summary(std::vector<int> & singular_multiplicities, int & temp_num_mid, int & temp_num_crit, boost::filesystem::path INfile)
+void read_summary(std::vector<std::pair<int,int>> & singular_multiplicities, int & temp_num_mid, int & temp_num_crit, boost::filesystem::path INfile)
 {
 	FILE *IN = safe_fopen_read(INfile);
 	int temp_num_faces, temp_num_edges;
@@ -2605,10 +2789,10 @@ void read_summary(std::vector<int> & singular_multiplicities, int & temp_num_mid
 	
 	int temp_num_sing;
 	fscanf(IN,"%d",&temp_num_sing);
-	int temp;
+	int temp1,temp2;
 	for (int ii=0; ii<temp_num_sing; ii++) {
-		fscanf(IN,"%d",&temp);
-		singular_multiplicities.push_back(temp);
+		fscanf(IN,"%d %d",&temp1, &temp2);
+		singular_multiplicities.push_back(std::pair<int,int>(temp1,temp2));
 	}
 	fclose(IN);
 	

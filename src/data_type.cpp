@@ -265,7 +265,7 @@ void point_holder::add_point(vec_mp new_point)
 		this->pts_mp = (vec_mp *)br_realloc(pts_mp, (num_points+1) * sizeof(vec_mp));
 	}
 	
-	init_vec_mp2(pts_mp[num_points], new_point->size,1024);
+	init_vec_mp2(pts_mp[num_points], new_point->size, new_point->curr_prec);
 	this->pts_mp[num_points]->size = new_point->size;
 	vec_cp_mp(pts_mp[num_points], new_point);
 	
@@ -295,7 +295,7 @@ void patch_holder::add_patch(vec_mp new_patch)
 		this->patch_mp = (vec_mp *)br_realloc(this->patch_mp, (this->num_patches+1) * sizeof(vec_mp));
 	}
 	
-	init_vec_mp2(this->patch_mp[this->num_patches], new_patch->size,1024);
+	init_vec_mp2(this->patch_mp[this->num_patches], new_patch->size,new_patch->curr_prec);
 	this->patch_mp[this->num_patches]->size = new_patch->size;
 	vec_cp_mp(this->patch_mp[this->num_patches], new_patch);
 	
@@ -336,7 +336,7 @@ void linear_holder::add_linear(vec_mp new_linear)
 		this->L_mp = (vec_mp *)br_realloc(L_mp, (num_linears+1) * sizeof(vec_mp));
 	}
 	
-	init_vec_mp2(L_mp[num_linears], new_linear->size,1024);
+	init_vec_mp2(L_mp[num_linears], new_linear->size,new_linear->curr_prec);
 	L_mp[this->num_linears]->size = new_linear->size;
 	vec_cp_mp(L_mp[num_linears], new_linear);
 	
@@ -2272,9 +2272,9 @@ void decomposition::output_main(const boost::filesystem::path base)
 	fclose(OUT);
 	
 	
-	if (boost::filesystem::exists(backupdir)) {
-		boost::filesystem::remove_all(backupdir);
-	}
+//	if (boost::filesystem::exists(backupdir)) {
+//		boost::filesystem::remove_all(backupdir);
+//	}
 }
 
 

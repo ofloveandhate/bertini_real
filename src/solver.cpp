@@ -219,14 +219,18 @@ void solver_output::get_multpos(std::map<int, witness_set> & W_transfer)
 	//for each multiplicity, construct the witness_sets
 	for (auto mult_ind = occuring_multiplicities.begin(); mult_ind!=occuring_multiplicities.end(); ++mult_ind) {
 		
-		
+		int num_added_points = 0;
 		for (auto index = metadata.begin(); index != metadata.end(); ++index) {
 			if ((index->multiplicity== *mult_ind) && (index->is_finite))  {
 				W_transfer[*mult_ind].add_point(vertices[index->output_index].pt_mp);
+				num_added_points++;
 			}
 		}
 		
-		set_witness_set_nvars(W_transfer[*mult_ind]);
+		if (num_added_points>0) { // avoids adding an empty witness set when all the points were infinite.
+			set_witness_set_nvars(W_transfer[*mult_ind]);
+		}
+		
 	}
 	
 	
@@ -1766,25 +1770,6 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 				case -20: // // refining failed
 				case -50: // some other failure
 					
-					//TODO:  put in conditional on endgame
-					solve_options.T.endgameNumber = 2;
-					
-                    T->basicNewtonTol = MIN(1e-4, T->basicNewtonTol*2);
-					T->endgameNewtonTol = MIN(1e-4, T->endgameNewtonTol*2);
-                    
-                    
-					// better:
-					//rerun from the endgame using midpoint data.
-					
-					
-					//					ED_d->print();
-					//					print_point_to_screen_matlab(Pin->point,"start");
-                    //					mypause();
-                    //					retVal_reached_minTrackT
-                    //					NBHDRADIUS
-                    //					solve_options.T.minTrackT *= 1e-50;
-					break;
-					
 					
 				case -100:   //this is higher precision needed.
 							 // break deliberately omitted
@@ -1793,12 +1778,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					
                     solve_options.T.endgameNumber = 2;
                     
-                    if ( (T->basicNewtonTol >= 1e-4) || (T->endgameNewtonTol >= 1e-4)) {
-						
-					}
-					T->basicNewtonTol   = MIN(1e-4, T->basicNewtonTol*2);
-					T->endgameNewtonTol = MIN(1e-4, T->endgameNewtonTol*2);
-                    //
+					
 					if (current_retval_counter>2) {
 						solve_options.T.odePredictor  = MIN(8,solve_options.T.odePredictor+1);
 					}
@@ -1808,21 +1788,10 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					
 				case -10:
 					
-					solve_options.T.maxNumSteps *=10; // factor of 10 each time
+					solve_options.T.maxNumSteps *=2; // factor of 2 each time
 					break;
 					
-					//				case -2:
-					//					print_path_retVal_message(-2);
-					////					solve_options.T.goingToInfinity *= 1e2;
-					//                    //                    solve_options.T.finiteThreshold *= 1;
-					//
-					//
-					//					break;
-					//
-					//				case -1:
-					//					print_path_retVal_message(-1);
-					//					break;
-					//
+					
 				case -3:
 					solve_options.T.minStepSizeBeforeEndGame *= 1e-2;
 					solve_options.T.minStepSizeDuringEndGame *= 1e-2;
@@ -1842,7 +1811,6 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 														   //						std::cout << "setting securityLevel to 1" << std::endl;
 					}
                     
-					//	solve_options.T.final_tolerance = 0.1*solve_options.T.final_tolerance;
 					
 					break;
 				case -2:
@@ -1852,7 +1820,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					else
 					{
 						solve_options.T.goingToInfinity *= 10;  // exponential increase by 10's
-						// on the manyth try, go to security level 1.
+																// on the manyth try, go to security level 1.
 						solve_options.T.securityLevel = 1;
 					}
 					
