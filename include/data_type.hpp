@@ -812,7 +812,6 @@ public:
 	
 	vertex & operator=(const vertex & other)
 	{
-		init();
 		copy(other);
 		return *this;
 	}
@@ -830,6 +829,8 @@ public:
 		std::cout << "type: " << type << std::endl;
 	}
 	
+	void set_point(const vec_mp new_point);
+	
 	
 	void send(int target, parallelism_config & mpi_config);
 	
@@ -845,7 +846,8 @@ private:
 	
 	void copy(const vertex & other)
 	{
-		vec_cp_mp(this->pt_mp, other.pt_mp);
+		set_point(other.pt_mp);
+		
 		vec_cp_mp(this->projection_values, other.projection_values);
 		this->type = other.type;
 		
@@ -857,8 +859,10 @@ private:
 	void init()
 	{
 		init_point_mp2(this->projection_values,0,1024);
-		init_point_mp2(this->pt_mp,0,1024);
-		this->pt_mp->size = this->projection_values->size = 0;
+		init_point_mp2(this->pt_mp,1,64);
+		this->pt_mp->size = 1;
+		set_zero_mp(&pt_mp->coord[0]);
+		this->projection_values->size = 0;
 		this->type = UNSET;
 		
 		this->removed = 0;

@@ -945,7 +945,7 @@ void witness_set::sort_for_inside_sphere(comp_mp radius, vec_mp center)
 	
 	if (counter!= num_good_pts) {
 		printf("counter mismatch\n");
-		exit(271);
+		br_exit(271);
 	}
 	
 	for (int ii=0; ii<this->num_points; ii++) {
@@ -1141,6 +1141,14 @@ void witness_set::receive(parallelism_config & mpi_config)
 
 
 
+
+
+
+void vertex::set_point(const vec_mp new_point)
+{
+	change_prec_vec_mp(this->pt_mp, new_point->curr_prec);
+	vec_cp_mp(this->pt_mp, new_point);
+}
 
 
 
@@ -2688,8 +2696,8 @@ void norm_of_difference(mpf_t result, vec_mp left, vec_mp right)
 	
 	int ii;
 	
-	vec_mp difference;  init_vec_mp2(difference, left->size,1024);difference->size = left->size;
-	comp_mp temp; init_mp2(temp,1024);
+	vec_mp difference;  init_vec_mp(difference, left->size);difference->size = left->size;
+	comp_mp temp; init_mp(temp);
 	
 	for (ii = 0;  ii< left->size; ++ii) {
 		sub_mp(&difference->coord[ii], &left->coord[ii], &right->coord[ii]);
