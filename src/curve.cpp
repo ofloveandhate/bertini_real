@@ -272,8 +272,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 		
 		if (program_options.verbose_level>=8)
 			printf("adding point %d of %d from W_crit_real to vertices\n",ii,W_crit_real.num_points);
-		
-		vec_cp_mp(temp_vertex.pt_mp, W_crit_real.pts_mp[ii]);// set point
+		temp_vertex.set_point(W_crit_real.pts_mp[ii]);
 		temp_vertex.type = CRITICAL; // set type
 		
 		int I = index_in_vertices_with_add(V, temp_vertex);
@@ -635,7 +634,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 						Wright.add_point(W_single_right.pts_mp[0]);
 					}
 					else{
-						vec_cp_mp(temp_vertex.pt_mp,midpoint_witness_sets[ii].pts_mp[kk]);// set point
+						temp_vertex.set_point(midpoint_witness_sets[ii].pts_mp[kk]);
 						temp_vertex.type = PROBLEMATIC; // set type
 						index_in_vertices_with_add(V, temp_vertex);
 					}
@@ -657,20 +656,18 @@ int curve_decomposition::interslice(const witness_set & W_curve,
         
 		
 		for (int kk=0; kk<midpoint_witness_sets[ii].num_points; kk++) {
-			
-			vec_cp_mp(temp_vertex.pt_mp,midpoint_witness_sets[ii].pts_mp[kk]);// set point
+			temp_vertex.set_point(midpoint_witness_sets[ii].pts_mp[kk]);
 			temp_vertex.type = MIDPOINT; // set type
 			
 			temp_edge.midpt = index_in_vertices_with_add(V, temp_vertex); // gets the index of the new midpoint as it is added
 			
-			
-			vec_cp_mp(temp_vertex.pt_mp,Wleft.pts_mp[kk]);// set point
+			temp_vertex.set_point(Wleft.pts_mp[kk]);
 			temp_vertex.type = NEW; // set type
 			
 			temp_edge.left  = index_in_vertices_with_add(V, temp_vertex);
 			
 			
-			vec_cp_mp(temp_vertex.pt_mp,Wright.pts_mp[kk]);// set point
+			temp_vertex.set_point(Wright.pts_mp[kk]);
 			temp_vertex.type = NEW; // set type
 			
 			temp_edge.right = index_in_vertices_with_add(V, temp_vertex);
@@ -1021,7 +1018,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		
         // each member of W_temp should real.  if a member of V already, mark index.  else, add to V, and mark.
 		vertex temp_vertex;
-		vec_cp_mp(temp_vertex.pt_mp, W_temp.pts_mp[0]);
+		temp_vertex.set_point(W_temp.pts_mp[0]);
 		temp_vertex.type = MIDPOINT;
 		
 		edge temp_edge; // create new empty edge
@@ -1586,7 +1583,6 @@ void curve_decomposition::computeCurveNotSelfConj(const witness_set & W_in,
 	
 	
 	vertex temp_vertex;
-	//	init_vertex(&temp_vertex);
 	change_size_vec_mp(temp_vertex.pt_mp,num_vars); temp_vertex.pt_mp->size = num_vars;
 	
 	temp_vertex.type = ISOLATED;
@@ -1605,8 +1601,7 @@ void curve_decomposition::computeCurveNotSelfConj(const witness_set & W_in,
         //check if x=x_bar
 		
         if (isSamePoint_homogeneous_input(cur_sol,cur_sol_bar)) { // x=x_bar
-			
-			vec_cp_mp(temp_vertex.pt_mp,cur_sol);
+			temp_vertex.set_point(cur_sol);
 			
 			dot_product_mp(projection_value, temp_vertex.pt_mp, pi_mp);// i think this is wrong, because pi_mp probably has a 0 at the front of it.
 			
