@@ -1,11 +1,13 @@
-function plot_sampler_data(ind, vertices,sampler_data,colors)
+function handles = plot_sampler_data(ind, vertices,sampler_data,colors)
 %
 global plot_params
-% curr_axis = plot_params.axes.sampler;
-curr_axis = gca;
+
+
+curr_axis = plot_params.axes.main;
 nondegen_edge_ind = 1;
 
-colors = jet(length(sampler_data.edge));
+handles = [];
+% handles = zeros(sum( length(sampler_data.sample_sizes>3)),1);
 for ii = 1:length(sampler_data.edge)
     if sampler_data.sample_sizes(ii)<=3
        continue; 
@@ -21,9 +23,13 @@ for ii = 1:length(sampler_data.edge)
 
 	set(h,'Color',colors(nondegen_edge_ind,:));
 	set(h,'LineWidth',2);
-    nondegen_edge_ind = nondegen_edge_ind+1;
     
-    plot_params.handles.sample_edges(ii) = h;
+    
+    handles(nondegen_edge_ind) = h;
+	
+	
+	nondegen_edge_ind = nondegen_edge_ind+1;
+	
 end
 
 end

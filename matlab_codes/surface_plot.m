@@ -5,12 +5,12 @@
 function [fv,sampler_faces] = surface_plot(BRinfo,ind)
 global plot_params
 
-
+material shiny
 
 
 create_axes_surface(BRinfo);
 
-% label_axes(ind,BRinfo,plot_params.axes.vertices);
+label_axes(ind,BRinfo,plot_params.axes.main);
 
 fv.vertices = plot_vertices(ind, BRinfo);
 
@@ -47,7 +47,7 @@ global plot_params
 
 
 
-colors = jet(BRinfo.num_faces);
+colors = jet(length(BRinfo.sampler_data));
 sampler_faces = [];
 plot_params.handles.surface_samples = [];
 if ~isempty(BRinfo.sampler_data)
@@ -77,12 +77,12 @@ crit_curve = zeros(3, BRinfo.num_variables-1, BRinfo.crit_curve.num_edges);
 handle_counter = 0;
 plot_params.handles.critcurve_labels = [];
 plot_params.handles.spherecurve_labels = [];
-
+plot_params.handles.refinements.critcurve = [];
 plot_params.handles.critcurve = [];
 critcurve_counter = 0;
 
 if BRinfo.crit_curve.num_edges>0
-	
+	curr_axes = plot_params.axes.main;
 	colors = 0.8*jet(BRinfo.crit_curve.num_edges);
 	
 	
@@ -94,7 +94,7 @@ if BRinfo.crit_curve.num_edges>0
 			crit_curve(jj,:,ii) = real(transpose(BRinfo.vertices(BRinfo.crit_curve.edges(ii,jj)).point(1:BRinfo.num_variables-1)));
 		end
 		
-		h = plot3(crit_curve(:,1,ii),crit_curve(:,2,ii),crit_curve(:,3,ii),'Parent',plot_params.axes.crit_curve);
+		h = plot3(crit_curve(:,1,ii),crit_curve(:,2,ii),crit_curve(:,3,ii),'Parent',curr_axes);
 		set(h,'Color',colors(ii,:));
 		set(h,'LineStyle','-','LineWidth',line_thickness);
 		
@@ -109,7 +109,7 @@ if BRinfo.crit_curve.num_edges>0
 		end
 		
 		new_handles = text(crit_curve(2,1,ii),crit_curve(2,2,ii),crit_curve(2,3,ii),['critcurve ' num2str(ii-1) '  '],'HorizontalAlignment','right','FontSize',plot_params.fontsize-4,...
-			'Parent',plot_params.axes.crit_curve,'Color','r');
+			'Parent',curr_axes,'Color','r');
 		plot_params.handles.critcurve_labels = [plot_params.handles.critcurve_labels; new_handles];
 		
 		
@@ -117,16 +117,19 @@ if BRinfo.crit_curve.num_edges>0
 	
 	
 	if ~isempty(BRinfo.crit_curve.sampler_data)
-		plot_sampler_data(plot_indices, BRinfo.vertices,BRinfo.crit_curve.sampler_data,colors);
+		plot_params.handles.refinements.critcurve = plot_sampler_data(plot_indices, BRinfo.vertices,BRinfo.crit_curve.sampler_data,colors);
 	end
 	
 	
 end
 
+plot_params.handles.refinements.spherecurve = [];
 plot_params.handles.spherecurve = [];
 spherecurve_counter = 0;
 if isfield(BRinfo,'sphere_curve')
 	if BRinfo.sphere_curve.num_edges>0
+		
+		curr_axes = plot_params.axes.main;
 		sphere_curve = zeros(3, BRinfo.num_variables-1, BRinfo.sphere_curve.num_edges);
 		
 		colors = 0.8*jet(BRinfo.sphere_curve.num_edges);
@@ -137,7 +140,7 @@ if isfield(BRinfo,'sphere_curve')
 				sphere_curve(jj,:,ii) = real(transpose(BRinfo.vertices(BRinfo.sphere_curve.edges(ii,jj)).point(1:BRinfo.num_variables-1)));
 			end
 			
-			h = plot3(sphere_curve(:,1,ii),sphere_curve(:,2,ii),sphere_curve(:,3,ii),'Parent',plot_params.axes.sphere_curve);
+			h = plot3(sphere_curve(:,1,ii),sphere_curve(:,2,ii),sphere_curve(:,3,ii),'Parent',curr_axes);
 			set(h,'Color',colors(ii,:));
 			set(h,'LineStyle','-.','LineWidth',line_thickness);
 			
@@ -152,14 +155,14 @@ if isfield(BRinfo,'sphere_curve')
 			end
 			
 			new_handles = text(sphere_curve(2,1,ii),sphere_curve(2,2,ii),sphere_curve(2,3,ii),['spherecurve ' num2str(ii-1) '  '],'HorizontalAlignment','right','FontSize',plot_params.fontsize-4,...
-				'Parent',plot_params.axes.sphere_curve,'Color','c');
+				'Parent',curr_axes,'Color','c');
 			plot_params.handles.spherecurve_labels = [plot_params.handles.spherecurve_labels; new_handles];
 			
 			
 		end
 		
 		if ~isempty(BRinfo.sphere_curve.sampler_data)
-			plot_sampler_data(plot_indices, BRinfo.vertices,BRinfo.sphere_curve.sampler_data,colors);
+			plot_params.handles.refinements.spherecurve = plot_sampler_data(plot_indices, BRinfo.vertices,BRinfo.sphere_curve.sampler_data,colors);
 		end
 		
 		
@@ -174,7 +177,9 @@ colors = 0.7*jet(length(BRinfo.midpoint_slices));
 plot_params.handles.midtext = [];
 
 plot_params.handles.midslices = [];
+plot_params.handles.refinements.midslice = [];
 midslice_counter = 0;
+curr_axes = plot_params.axes.main;
 for kk = 1:length(BRinfo.midpoint_slices)
 	midslice = zeros(3, BRinfo.num_variables-1, BRinfo.midpoint_slices(kk).num_edges);
 	
@@ -188,7 +193,7 @@ for kk = 1:length(BRinfo.midpoint_slices)
 		end
 		
 		h = plot3(midslice(:,1,ii),midslice(:,2,ii),midslice(:,3,ii),...
-			'Parent',plot_params.axes.midedge);
+			'Parent',curr_axes);
 		set(h,'Color',colors(kk,:));
 		set(h,'LineStyle',':','LineWidth',line_thickness);
 		
@@ -200,7 +205,7 @@ for kk = 1:length(BRinfo.midpoint_slices)
 		
 		if ~isempty(BRinfo.midpoint_slices(kk).sampler_data)
 			refinement_colors = jet(length(BRinfo.midpoint_slices(kk).edges));
-			plot_sampler_data(plot_indices, BRinfo.vertices,BRinfo.midpoint_slices(kk).sampler_data,refinement_colors);
+			plot_params.handles.refinements.midslice = horzcat(plot_params.handles.refinements.midslice,plot_sampler_data(plot_indices, BRinfo.vertices,BRinfo.midpoint_slices(kk).sampler_data,refinement_colors));
 		end
 		
 	end
@@ -214,7 +219,7 @@ for kk = 1:length(BRinfo.midpoint_slices)
 	
 	plot_params.handles.midtext = [plot_params.handles.midtext;...
 		text(text_positions(1,:),text_positions(2,:),text_positions(3,:), textme,'HorizontalAlignment','right','FontSize',plot_params.fontsize-4,...
-		'Parent',plot_params.axes.midedge,'Color','g')];
+		'Parent',curr_axes,'Color','g')];
 	
 	
 end
@@ -228,6 +233,8 @@ plot_params.handles.crittext = [];
 colors = 0.7*jet(length(BRinfo.critpoint_slices));
 plot_params.handles.critslices = [];
 critslice_counter = 0;
+curr_axes = plot_params.axes.main;
+plot_params.handles.refinements.critslice = [];
 for kk = 1:length(BRinfo.critpoint_slices)
 	critslice = zeros(3, BRinfo.num_variables-1, BRinfo.critpoint_slices(kk).num_edges);
 	
@@ -238,7 +245,7 @@ for kk = 1:length(BRinfo.critpoint_slices)
 			critslice(jj,:,ii) = real(transpose(BRinfo.vertices(BRinfo.critpoint_slices(kk).edges(ii,jj)).point(1:BRinfo.num_variables-1)));
 		end
 		
-		h = plot3(critslice(:,1,ii),critslice(:,2,ii),critslice(:,3,ii),'Parent',plot_params.axes.critedge);
+		h = plot3(critslice(:,1,ii),critslice(:,2,ii),critslice(:,3,ii),'Parent',curr_axes);
 		set(h,'Color',colors(kk,:));
 		set(h,'LineStyle','--','LineWidth',line_thickness);
 		
@@ -250,7 +257,8 @@ for kk = 1:length(BRinfo.critpoint_slices)
 		
 		
 		if ~isempty(BRinfo.critpoint_slices(kk).sampler_data)
-			plot_sampler_data(plot_indices, BRinfo.vertices,BRinfo.critpoint_slices(kk).sampler_data,colors);
+			a = plot_sampler_data(plot_indices, BRinfo.vertices,BRinfo.critpoint_slices(kk).sampler_data,colors);
+			plot_params.handles.refinements.critslice = horzcat(plot_params.handles.refinements.critslice,a);
 		end
 		
 		
@@ -263,7 +271,7 @@ for kk = 1:length(BRinfo.critpoint_slices)
 	
 	plot_params.handles.crittext = [plot_params.handles.crittext;...
 		text(text_positions(1,:),text_positions(2,:),text_positions(3,:), textme,'HorizontalAlignment','right',...
-		'FontSize',plot_params.fontsize-4,'Parent',plot_params.axes.critedge,'Color','b')];
+		'FontSize',plot_params.fontsize-4,'Parent',curr_axes,'Color','b')];
 	
 	
 	
@@ -272,53 +280,58 @@ end
 
 
 plot_params.handles.singtext = [];
-colors = 0.7*jet(length(BRinfo.singular_curves));
-plot_params.handles.singular_curves = [];
-singular_counter = 0;
-for kk = 1:length(BRinfo.singular_curves)
-	midslice = zeros(3, BRinfo.num_variables-1, BRinfo.singular_curves(kk).num_edges);
-	
-	text_positions = zeros(3,BRinfo.singular_curves(kk).num_edges);
-	textme = cell(1,BRinfo.singular_curves(kk).num_edges);
-	
-	
-	for ii =1:BRinfo.singular_curves(kk).num_edges
-		for jj = 1:3
-			midslice(jj,:,ii) = real(transpose(BRinfo.vertices(BRinfo.singular_curves(kk).edges(ii,jj)).point(1:BRinfo.num_variables-1)));
-		end
-		
-		h = plot3(midslice(:,1,ii),midslice(:,2,ii),midslice(:,3,ii),...
-			'Parent',plot_params.axes.midedge);
-		set(h,'Color',colors(kk,:));
-		set(h,'LineStyle',':','LineWidth',line_thickness);
-		
-		text_positions(:,ii) = midslice(2,1:3,ii);
-		textme{ii} = ['sing ' num2str(kk-1) '.' num2str(ii-1) '  '];
-		
-		singular_counter = singular_counter + 1;
-		plot_params.handles.singular_curves(singular_counter) = h;
-		
-		if ~isempty(BRinfo.singular_curves(kk).sampler_data)
-			refinement_colors = jet(length(BRinfo.singular_curves(kk).edges));
-			plot_sampler_data(plot_indices, BRinfo.vertices,BRinfo.singular_curves(kk).sampler_data,refinement_colors);
-		end
-		
-	end
-	
-	if kk==1
-		handle_counter = handle_counter+1;
-		plot_params.legend.surface_edges.handles(handle_counter) = h;
-		plot_params.legend.surface_edges.text{handle_counter} = 'singular';
-	end
-	
-	
-	plot_params.handles.singtext = [plot_params.handles.singtext;...
-		text(text_positions(1,:),text_positions(2,:),text_positions(3,:), textme,'HorizontalAlignment','right','FontSize',plot_params.fontsize-4,...
-		'Parent',plot_params.axes.midedge,'Color','g')];
-	
-	
-end
 
+plot_params.handles.singular_curves = [];
+
+plot_params.handles.refinements.singularcurve = [];
+
+if isfield(BRinfo,'singular_curves')
+	colors = 0.7*jet(length(BRinfo.singular_curves));
+	singular_counter = 0;
+	for kk = 1:length(BRinfo.singular_curves)
+		midslice = zeros(3, BRinfo.num_variables-1, BRinfo.singular_curves(kk).num_edges);
+
+		text_positions = zeros(3,BRinfo.singular_curves(kk).num_edges);
+		textme = cell(1,BRinfo.singular_curves(kk).num_edges);
+
+
+		for ii =1:BRinfo.singular_curves(kk).num_edges
+			for jj = 1:3
+				midslice(jj,:,ii) = real(transpose(BRinfo.vertices(BRinfo.singular_curves(kk).edges(ii,jj)).point(1:BRinfo.num_variables-1)));
+			end
+
+			h = plot3(midslice(:,1,ii),midslice(:,2,ii),midslice(:,3,ii),...
+				'Parent',curr_axes);
+			set(h,'Color',colors(kk,:));
+			set(h,'LineStyle',':','LineWidth',line_thickness);
+
+			text_positions(:,ii) = midslice(2,1:3,ii);
+			textme{ii} = ['sing ' num2str(kk-1) '.' num2str(ii-1) '  '];
+
+			singular_counter = singular_counter + 1;
+			plot_params.handles.singular_curves(singular_counter) = h;
+
+			if ~isempty(BRinfo.singular_curves(kk).sampler_data)
+				refinement_colors = jet(length(BRinfo.singular_curves(kk).edges));
+				plot_params.handles.refinements.singularcurve = horzcat(plot_params.handles.refinements.singularcurve,plot_sampler_data(plot_indices, BRinfo.vertices,BRinfo.singular_curves(kk).sampler_data,refinement_colors));
+			end
+
+		end
+
+		if kk==1
+			handle_counter = handle_counter+1;
+			plot_params.legend.surface_edges.handles(handle_counter) = h;
+			plot_params.legend.surface_edges.text{handle_counter} = 'singular';
+		end
+
+
+		plot_params.handles.singtext = [plot_params.handles.singtext;...
+			text(text_positions(1,:),text_positions(2,:),text_positions(3,:), textme,'HorizontalAlignment','right','FontSize',plot_params.fontsize-4,...
+			'Parent',curr_axes,'Color','g')];
+
+
+	end
+end
 
 
 
@@ -353,7 +366,7 @@ num_total_faces = num_total_faces*2;
 stl_faces = zeros(num_total_faces, length(ind));
 curr_face_index = 1;
 
-curr_axis = plot_params.axes.faces;
+curr_axis = plot_params.axes.main;
 
 txt = cell(BRinfo.num_faces,1);
 pos = zeros(BRinfo.num_faces,3);
@@ -363,7 +376,7 @@ for ii = 1:BRinfo.num_faces
 	if BRinfo.faces(ii).midslice_index == -1
 		continue
 	end
-	
+	ii
 	num_triangles= 2*(2 + BRinfo.faces(ii).num_left + BRinfo.faces(ii).num_right);
 	
 	triangle.x = zeros(3,num_triangles);
@@ -455,8 +468,8 @@ for ii = 1:BRinfo.num_faces
 						continue;
 					end
 					
-					slice_ind = BRinfo.faces(ii).midslice_index+1;
-					edge_ind = BRinfo.faces(ii).left(left_edge_counter)+1;
+					slice_ind = BRinfo.faces(ii).midslice_index+1
+					edge_ind = BRinfo.faces(ii).left(left_edge_counter)+1
 					
 					curr_edge = BRinfo.critpoint_slices(slice_ind).edges(edge_ind,:);
 					left_edge_counter = left_edge_counter +1;
@@ -535,6 +548,13 @@ set(plot_params.handles.face_labels,'visible','off');
 end
 
 
+
+
+
+
+
+
+
 function create_axes_surface(BRinfo)
 global plot_params
 
@@ -542,76 +562,25 @@ global plot_params
 
 
 
+curr_axes = gca;
+% new_axes = axes('Parent',plot_params.figures.main_plot);
+% delete( get(new_axes,'Children') );
+set(curr_axes,'visible','on');
+hold(curr_axes,'on');
 
-new_axes = axes('Parent',plot_params.figures.main_plot);
-delete( get(new_axes,'Children') );
-set(new_axes,'visible','on');
-hold(new_axes,'on');
 
-
-set(new_axes,'XLim',[BRinfo.center(plot_params.ind(1))-1.1*BRinfo.radius BRinfo.center(plot_params.ind(1))+1.1*BRinfo.radius]);
-set(new_axes,'YLim',[BRinfo.center(plot_params.ind(2))-1.1*BRinfo.radius BRinfo.center(plot_params.ind(2))+1.1*BRinfo.radius]);
+set(curr_axes,'XLim',[BRinfo.center(plot_params.ind(1))-1.1*BRinfo.radius BRinfo.center(plot_params.ind(1))+1.1*BRinfo.radius]);
+set(curr_axes,'YLim',[BRinfo.center(plot_params.ind(2))-1.1*BRinfo.radius BRinfo.center(plot_params.ind(2))+1.1*BRinfo.radius]);
 
 if length(plot_params.ind)==3
-    set(new_axes,'ZLim',[BRinfo.center(plot_params.ind(3))-1.1*BRinfo.radius BRinfo.center(plot_params.ind(3))+1.1*BRinfo.radius]);
+    set(curr_axes,'ZLim',[BRinfo.center(plot_params.ind(3))-1.1*BRinfo.radius BRinfo.center(plot_params.ind(3))+1.1*BRinfo.radius]);
 end
 
 
 
-plot_params.axes.vertices = new_axes;
+plot_params.axes.main = curr_axes;
 
 
-new_axes = copyobj(plot_params.axes.vertices,plot_params.figures.main_plot);
-delete( get(new_axes,'Children') );
-set(new_axes,'visible','off');
-hold(new_axes,'on')
-plot_params.axes.projection = new_axes;
-
-
-new_axes = copyobj(plot_params.axes.vertices,plot_params.figures.main_plot);
-delete( get(new_axes,'Children') );
-set(new_axes,'visible','off');
-hold(new_axes,'on');
-plot_params.axes.critedge = new_axes;
-
-
-new_axes = copyobj(plot_params.axes.vertices,plot_params.figures.main_plot);
-delete( get(new_axes,'Children') );
-set(new_axes,'visible','off');
-hold(new_axes,'on');
-plot_params.axes.crit_curve = new_axes;
-
-new_axes = copyobj(plot_params.axes.vertices,plot_params.figures.main_plot);
-delete( get(new_axes,'Children') );
-set(new_axes,'visible','off');
-hold(new_axes,'on');
-plot_params.axes.sphere_curve = new_axes;
-
-
-new_axes = copyobj(plot_params.axes.vertices,plot_params.figures.main_plot);
-delete( get(new_axes,'Children') );
-set(new_axes,'visible','off');
-hold(new_axes,'on');
-plot_params.axes.midedge = new_axes;
-
-
-new_axes = copyobj(plot_params.axes.vertices,plot_params.figures.main_plot);
-delete( get(new_axes,'Children') );
-set(new_axes,'visible','off');
-hold(new_axes,'on');
-plot_params.axes.faces = new_axes;
-
-new_axes = copyobj(plot_params.axes.vertices,plot_params.figures.main_plot);
-delete( get(new_axes,'Children') );
-set(new_axes,'visible','off');
-hold(new_axes,'on');
-plot_params.axes.sampler = new_axes;
-
-new_axes = copyobj(plot_params.axes.vertices,plot_params.figures.main_plot);
-delete( get(new_axes,'Children') );
-set(new_axes,'visible','off');
-hold(new_axes,'on');
-plot_params.axes.face_sampler = new_axes;
 
 end
 

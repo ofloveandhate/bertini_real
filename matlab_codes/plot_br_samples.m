@@ -1,4 +1,4 @@
-function plot_br_samples()
+function varargout = plot_br_samples()
 
 clear all;
 close all;
@@ -31,6 +31,10 @@ button_setup();
 
 load_and_render();
 
+
+if nargout==1
+	varargout{1} = plot_params;
+end
 
 
 
@@ -133,6 +137,8 @@ end
 render_legends();
 
 controls(BRinfo);
+
+save_routine
 end
 
 
@@ -285,12 +291,12 @@ set(gca,'CameraTarget',plot_params.scene.target);
 
 
 init_campos = real(BRinfo.center(plot_params.ind));
-init_campos = init_campos + BRinfo.radius;
+init_campos = init_campos + 9*BRinfo.radius;
 
 plot_params.scene.campos = init_campos;
 
 set(gca,'CameraPosition',plot_params.scene.campos);
-set(gca,'CameraViewAngle',90);
+set(gca,'CameraViewAngle',10);
 rotate3d off
 
 end
@@ -332,15 +338,15 @@ end
 
 
 if plot_params.dimension==2
-        plot_params.switches.display_faces = 1;
-        plot_params.switches.display_face_samples = 0;
-%     if isempty(plot_params.handles.surface_samples)
 %         plot_params.switches.display_faces = 1;
-%         plot_params.switches.display_face_samples = 0; 
-%     else
-%         plot_params.switches.display_faces = 0;
-%         plot_params.switches.display_face_samples = 1;
-%     end
+%         plot_params.switches.display_face_samples = 0;
+    if isempty(plot_params.handles.surface_samples)
+        plot_params.switches.display_faces = 1;
+        plot_params.switches.display_face_samples = 0; 
+    else
+        plot_params.switches.display_faces = 0;
+        plot_params.switches.display_face_samples = 1;
+    end
         
 	
 else
@@ -355,8 +361,9 @@ else
     
     plot_params.switches.display_faces = 0;
     plot_params.switches.display_face_samples = 0;
-end
 
+end
+plot_params.switches.curve_refinements = 0;
 plot_params.switches.display_projection = 0;
 
 
@@ -375,13 +382,13 @@ function visibility_setup()
 global plot_params
 
 button_pos = get(plot_params.panels.buttons,'Position');
-init_y = button_pos(2)+button_pos(4)+10;
+init_y = button_pos(2)+button_pos(4)+5;
 
 
 plot_params.panels.visibility = uipanel('units','pixels','Position',[20 init_y 120 400],'visible','on');
 
 checkbox.y_start = 0;
-checkbox.y_factor = 25;
+checkbox.y_factor = 21;
 
 checkbox.x = 0;
 checkbox.w = 100;
@@ -639,7 +646,14 @@ switch plot_params.dimension
 			'Parent',plot_params.panels.visibility); 
 		num_checkboxes = num_checkboxes+1;
 
+		pos =[checkbox.x,checkbox.y_start+checkbox.y_factor*num_checkboxes,checkbox.w,checkbox.h];
+		plot_params.checkboxes.refinement_visibility = uicontrol(...
+			'style','checkbox','units','pixels','position',pos,...
+			'String','curve refinements','Value',plot_params.switches.curve_refinements,'callback',{@flip_switch,'curve_refinements'},...
+			'Parent',plot_params.panels.visibility); 
+		num_checkboxes = num_checkboxes+1;
 
+		%end 3d case
 	otherwise
 		
 end
@@ -663,46 +677,53 @@ end
 
 
 if plot_params.switches.main_axes == 0
-	set(plot_params.axes.vertices,'visible','off');
+	set(plot_params.axes.main,'visible','off');
 else
-	set(plot_params.axes.vertices,'visible','on');
+	set(plot_params.axes.main,'visible','on');
 end
+
+
 %vertices
-	if plot_params.switches.display_vertices == 0
-		set(get(plot_params.axes.vertices,'Children'),'visible','off');
-	else
-		set(get(plot_params.axes.vertices,'Children'),'visible','on');
-
-		
-		f = fieldnames(plot_params.switches.vertex_set);
-		for ii = 1:length(f)
-			if plot_params.switches.vertex_set.(f{ii}) == 0
-				set(plot_params.handles.(f{ii}),'visible','off')
-			else
-				set(plot_params.handles.(f{ii}),'visible','on')
-			end
-		end
-
-		for ii = 1:length(f)
-			if plot_params.switches.label_vertices == 0;
-
-					set(plot_params.handles.vertex_text.(f{ii}),'visible','off')
-
-			else
-				if plot_params.switches.vertex_set.(f{ii}) == 0
-					set(plot_params.handles.vertex_text.(f{ii}),'visible','off');
-				else
-					set(plot_params.handles.vertex_text.(f{ii}),'visible','on');
-				end
-			end
-		end
+if plot_params.switches.display_vertices == 0
+	f = fieldnames(plot_params.switches.vertex_set);
+	for ii = 1:length(f)
+		set(plot_params.handles.vertices.(f{ii}),'visible','off');
+		set(plot_params.handles.vertex_text.(f{ii}),'visible','off');
 	end
 	
-	if plot_params.switches.display_projection ==0
-		set(get(plot_params.axes.projection,'Children'),'visible','off');
-	else
-		set(get(plot_params.axes.projection,'Children'),'visible','on');
+else
+
+	f = fieldnames(plot_params.switches.vertex_set);
+	for ii = 1:length(f)
+		if plot_params.switches.vertex_set.(f{ii}) == 0
+			set(plot_params.handles.vertices.(f{ii}),'visible','off')
+		else
+			set(plot_params.handles.vertices.(f{ii}),'visible','on')
+		end
 	end
+
+	for ii = 1:length(f)
+		if plot_params.switches.label_vertices == 0;
+
+				set(plot_params.handles.vertex_text.(f{ii}),'visible','off')
+
+		else
+			if plot_params.switches.vertex_set.(f{ii}) == 0
+				set(plot_params.handles.vertex_text.(f{ii}),'visible','off');
+			else
+				set(plot_params.handles.vertex_text.(f{ii}),'visible','on');
+			end
+		end
+	end
+end
+
+
+
+if plot_params.switches.display_projection ==0
+	set(plot_params.handles.projection(:),'visible','off');
+else
+	set(plot_params.handles.projection(:),'visible','on');
+end
 	
 	
 	
@@ -817,7 +838,19 @@ end
 				set(plot_params.handles.face_labels,'visible','on');
 			end
 			
-			
+			if plot_params.switches.curve_refinements == 0
+				set(plot_params.handles.refinements.critslice(:),'visible','off');
+				set(plot_params.handles.refinements.midslice(:),'visible','off');
+				set(plot_params.handles.refinements.spherecurve,'visible','off');
+				set(plot_params.handles.refinements.critcurve,'visible','off');
+				set(plot_params.handles.refinements.singularcurve(:),'visible','off');
+			else
+				set(plot_params.handles.refinements.critslice(:),'visible','on');
+				set(plot_params.handles.refinements.midslice(:),'visible','on');
+				set(plot_params.handles.refinements.spherecurve,'visible','on');
+				set(plot_params.handles.refinements.critcurve,'visible','on');
+				set(plot_params.handles.refinements.singularcurve(:),'visible','on');
+			end
 
 
 
@@ -987,10 +1020,13 @@ save('fv.mat','fv');
 
 
 
-
+%delete the bad degenerate faces.  
 degen = any(diff(fv.faces(:,[1:3 1]),[],2)==0,2);
+fv.faces(degen,:)
   fv.faces(degen,:) = [];
 
+  fv.faces(1,:) = fv.faces(1,[3 2 1]);
+  
   % Fix non-uniform face orientations
   fv2 = unifyMeshNormals(fv,'alignTo',1);
   % Solidify
@@ -1015,7 +1051,7 @@ end
 function center_camera_on_selected_point(source, event)
 global plot_params
 
-curr_axes = plot_params.axes.vertices;
+curr_axes = plot_params.axes.main;
 
 dcm_obj = datacursormode(gcf);
 set(dcm_obj,'DisplayStyle','datatip',...

@@ -1,13 +1,13 @@
 function vertices = plot_vertices(ind, BRinfo)
 global plot_params
 
-curr_axis = plot_params.axes.vertices;
+curr_axis = plot_params.axes.main;
 
 names = {'UNSET', 'CRITICAL', 'SEMICRITICAL', 'MIDPOINT', 'ISOLATED', 'NEW', 'CURVE_SAMPLE_POINT', 'SURFACE_SAMPLE_POINT', 'REMOVED', 'PROBLEMATIC'};
 
 catnames = cell(length(names),1);
 
-curr_index = 100; %sadly set manually...
+curr_index = 100; %sadly set manually...  this corresponds to header files in bertini_real
 for ii = 1:length(names)
 
 	catnames{ii} = ['ind_' num2str(curr_index)];
@@ -45,7 +45,7 @@ colors = lines(length(types));
 for ii = 1:length(types)
 	
 	curr_points = real(plotme(indices==types(ii),:));
-	h = main_plot_function(curr_points,ind, curr_axis);
+	h = main_plot_function(curr_points,1:length(ind), curr_axis);
 	
 	
 	set(h,'LineStyle','none');
@@ -55,7 +55,7 @@ for ii = 1:length(types)
 	
 	
 	plot_params.legend.vertices.handles(ii) = h;
-	plot_params.handles.(available_types.(local_catname)) = h;
+	plot_params.handles.vertices.(available_types.(local_catname)) = h;
 	
 	plot_params.legend.vertices.types{ii} = available_types.(local_catname);
 	

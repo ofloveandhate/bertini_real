@@ -288,7 +288,25 @@ public:
 			add_point(other.pts_mp[ii]);
     }
 	
+	inline bool has_no_points() const
+	{
+		if (num_points==0) {
+			return true;
+		}
+		else{
+			return false;
+		}
+	}
 	
+	inline bool has_points() const
+	{
+		if (num_points==0) {
+			return false;
+		}
+		else{
+			return true;
+		}
+	}
 	
 	void reset_points()
 	{
@@ -322,7 +340,7 @@ public:
 	// assignment
 	point_holder& operator=( const point_holder & other) {
 		
-		init();
+		reset_points();
 		
 		copy(other);
 		return *this;
@@ -331,8 +349,6 @@ public:
 	
 	//copy operator.  must be explicitly declared because the underlying c structures use pointers.
 	point_holder(const point_holder & other){
-		
-		init();
 		
 		copy(other);
 	}
@@ -352,7 +368,7 @@ private:
 	
 	void init()
 	{
-		this->pts_mp = NULL;
+		this->pts_mp = NULL; // potential data loss if used improperly, which i may.
 		this->num_points = 0;
 	}
 	
@@ -414,7 +430,7 @@ public:
 	// assignment
 	patch_holder& operator=( const patch_holder& other) {
 		
-		init();
+		reset_patches();
 		
 		copy(other);
 		return *this;
@@ -423,9 +439,6 @@ public:
 	
 	//copy operator.  must be explicitly declared because the underlying c structures use pointers.
 	patch_holder(const patch_holder & other){
-		
-		init();
-		
 		copy(other);
 	}
 	
@@ -502,9 +515,7 @@ public:
 	
 	// assignment
 	linear_holder& operator=( const linear_holder& other) {
-		
-		init();
-		
+		reset_linears();
 		copy(other);
 		return *this;
 	}
@@ -512,9 +523,6 @@ public:
 	
 	//copy operator.  must be explicitly declared because the underlying c structures use pointers.
 	linear_holder(const linear_holder & other){
-		
-		init();
-		
 		copy(other);
 	}
 	
@@ -628,9 +636,7 @@ public:
 	// assignment
 	witness_set& operator=( const witness_set& other)
 	{
-		
-		init();
-		
+		reset();
 		copy(other);
     return *this;
   }
@@ -639,9 +645,6 @@ public:
 	//copy operator.  must be explicitly declared because the underlying c structures use pointers.
 	witness_set(const witness_set & other)
 	{
-		
-		init();
-		
 		copy(other);
 	}
 	
@@ -662,15 +665,8 @@ public:
 	
 	void copy(const witness_set & other)
 	{
-		this->input_filename = other.input_filename;
-
-		this->dim = other.dim;
-		this->comp_num = other.comp_num;
-		this->incidence_number = other.incidence_number;
 		
-		this->num_variables = other.num_variables;
-		this->num_synth_vars = other.num_synth_vars;
-		
+		copy_skeleton(other);
 
 		cp_names(other);
 		copy_points(other);
@@ -678,7 +674,17 @@ public:
 		copy_linears(other);
 	}
 	
-    
+    void copy_skeleton(const witness_set & other)
+	{
+		this->input_filename = other.input_filename;
+		
+		this->dim = other.dim;
+		this->comp_num = other.comp_num;
+		this->incidence_number = other.incidence_number;
+		
+		this->num_variables = other.num_variables;
+		this->num_synth_vars = other.num_synth_vars;
+	}
 
     
 

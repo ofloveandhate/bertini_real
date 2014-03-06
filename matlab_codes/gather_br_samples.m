@@ -2,7 +2,15 @@ function gather_br_samples()
 
 
 
-[BRinfo.dirname,BRinfo.dimension] = parse_dirname;
+[dirname,dimension] = parse_dirname;
+
+locations = strfind(dirname,'/');
+if length(locations)>0
+	dirname = dirname(locations(end)+1:end)
+end
+
+BRinfo.dirname = dirname;
+BRinfo.dimension = dimension;
 
 
 
@@ -64,9 +72,13 @@ end%re: function
 
 
 function input = read_input(dirname,decomp)
+filename = [dirname '/' decomp.inputfilename];
+if ~isempty(dir(filename))
+	input = fileread(filename);
+else
+	input = '';
+end
 
-
-input = fileread([dirname '/' decomp.inputfilename]);
 
 end
 
@@ -87,7 +99,7 @@ fin = fopen([dirname '/S.surf'],'r');
 [num_singular_curves] = fscanf(fin,'%i',[1 1]);
 BRinfo.singular_curve_multiplicities = [];
 for ii = 1:num_singular_curves
-    BRinfo.singular_curve_multiplicities(ii) = fscanf(fin,'%i',[1 1]);
+    BRinfo.singular_curve_multiplicities(ii,1:2) = fscanf(fin,'%i',[1 2]);
 end
 
 % BRinfo.midpoint_slices = [];
@@ -119,7 +131,7 @@ a = gather_curve([dirname '/curve_crit'],[]);
 
 % BRinfo.singular_curves = [];
 for ii = 1:num_singular_curves
-    a = gather_curve([dirname '/curve_singular_mult_' num2str(BRinfo.singular_curve_multiplicities(ii))],[]);
+    a = gather_curve([dirname '/curve_singular_mult_' num2str(BRinfo.singular_curve_multiplicities(ii,1)) '_' num2str(BRinfo.singular_curve_multiplicities(ii,2))],[]);
     [BRinfo.singular_curves(ii)] = a;
     BRinfo.singular_names{ii} = a.inputfilename;
 end
