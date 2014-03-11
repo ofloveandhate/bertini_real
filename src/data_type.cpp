@@ -1077,7 +1077,7 @@ void witness_set::send(parallelism_config & mpi_config, int target)
     buffer[6] = num_linears;
     buffer[7] = num_patches;
     
-    MPI_Send(buffer, 8, MPI_INT, UNUSED, target, mpi_config.my_communicator);
+    MPI_Send(buffer, 8, MPI_INT, WITNESS_SET, target, mpi_config.my_communicator);
     
     free(buffer);
     
@@ -1098,14 +1098,14 @@ void witness_set::send(parallelism_config & mpi_config, int target)
     return;
 }
 
-void witness_set::receive(parallelism_config & mpi_config)
+void witness_set::receive(int source, parallelism_config & mpi_config)
 {
     MPI_Status statty_mc_gatty;
     
     int *buffer = (int *) br_malloc(8*sizeof(int));
     
     
-    MPI_Recv(buffer, 8, MPI_INT, UNUSED, MPI_ANY_SOURCE, mpi_config.my_communicator, &statty_mc_gatty);
+    MPI_Recv(buffer, 8, MPI_INT, WITNESS_SET, source, mpi_config.my_communicator, &statty_mc_gatty);
     
     dim = buffer[0];
     comp_num = buffer[1];
@@ -1121,17 +1121,17 @@ void witness_set::receive(parallelism_config & mpi_config)
     vec_mp tempvec; init_vec_mp2(tempvec,0,1024);
     
     for (int ii=0; ii<num_linears; ii++) {
-        receive_vec_mp(tempvec,MPI_ANY_SOURCE);
+        receive_vec_mp(tempvec,source);
         add_linear(tempvec);
     }
     
     for (int ii=0; ii<num_patches; ii++) {
-        receive_vec_mp(tempvec,MPI_ANY_SOURCE);
+        receive_vec_mp(tempvec,source);
         add_patch(tempvec);
     }
     
     for (int ii=0; ii<num_points; ii++) {
-        receive_vec_mp(tempvec,MPI_ANY_SOURCE);
+        receive_vec_mp(tempvec,source);
         add_point(tempvec);
     }
     
@@ -1166,7 +1166,7 @@ void vertex::send(int target, parallelism_config & mpi_config)
 	buffer[1] = removed;
 	buffer[2] = input_filename_index;
 	
-	MPI_Send(buffer, 3, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+	MPI_Send(buffer, 3, MPI_INT, target, VERTEX, MPI_COMM_WORLD);
 	free(buffer);
 	
 }
@@ -1181,7 +1181,7 @@ void vertex::receive(int source, parallelism_config & mpi_config)
 	receive_vec_mp(pt_mp, source);
 	receive_vec_mp(projection_values, source);
 	
-	MPI_Recv(buffer, 3, MPI_INT, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+	MPI_Recv(buffer, 3, MPI_INT, source, VERTEX, MPI_COMM_WORLD, &statty_mc_gatty);
 	
 	type = buffer[0];
 	removed = buffer[1];
@@ -1384,23 +1384,24 @@ int vertex_set::compute_downstairs_crit_midpts(const witness_set & W,
 
 
 
-void vertex_set::assert_projection_value(const std::set< int > & relevant_indices, comp_mp new_value)
+std::vector<int> vertex_set::assert_projection_value(const std::set< int > & relevant_indices, comp_mp new_value)
 {
     if (this->curr_projection<0) {
         std::cout << color::red() << "trying to assert projection value (current index) without having index set" << color::console_default() << std::endl;
         br_exit(-91621);
     }
-    assert_projection_value(relevant_indices,new_value,this->curr_projection);
-    return;
+    return assert_projection_value(relevant_indices,new_value,this->curr_projection);
 }
 
-void vertex_set::assert_projection_value(const std::set< int > & relevant_indices, comp_mp new_value, int proj_index)
+std::vector<int> vertex_set::assert_projection_value(const std::set< int > & relevant_indices, comp_mp new_value, int proj_index)
 {
+	std::vector<int> bad_indices;
     
     comp_mp temp; init_mp(temp);
     
-    if ( (proj_index) > num_projections ) {
+    if ( proj_index > num_projections ) {
         std::cout << color::red() << "trying to assert projection value, but index of projection is larger than possible" << color::console_default() << std::endl;
+		br_exit(3091); // throw?
     }
     
     for (std::set<int>::iterator ii=relevant_indices.begin(); ii!=relevant_indices.end(); ii++) {
@@ -1408,9 +1409,11 @@ void vertex_set::assert_projection_value(const std::set< int > & relevant_indice
         
         sub_mp(temp, &vertices[*ii].projection_values->coord[proj_index], new_value);
         if (fabs(mpf_get_d(temp->r))>0.0001) {
-            std::cout << "trying to assert projection value of " << mpf_get_d(new_value->r) << " but original value is " << mpf_get_d(vertices[*ii].projection_values->coord[proj_index].r) << std::endl;
+            std::cout << "trying to assert projection value of " << mpf_get_d(new_value->r)
+				      << " but original value is " << mpf_get_d(vertices[*ii].projection_values->coord[proj_index].r) << std::endl;
             std::cout << "point index is " << *ii << std::endl;
-            mypause();
+			bad_indices.push_back(*ii);
+			continue;
         }
         
         set_mp(&vertices[*ii].projection_values->coord[proj_index], new_value);
@@ -1418,7 +1421,7 @@ void vertex_set::assert_projection_value(const std::set< int > & relevant_indice
     
     
     clear_mp(temp);
-    return;
+    return bad_indices;
 }
 
 
@@ -1672,25 +1675,35 @@ void vertex_set::send(int target, parallelism_config & mpi_config)
 	buffer2[4] = curr_input_index;
 	buffer2[5] = num_vertices;
 	
-	MPI_Send(buffer2, 6, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+	MPI_Send(buffer2, 6, MPI_INT, target, VERTEX_SET, MPI_COMM_WORLD);
 	
+	delete [] buffer2;
+//	std::cout << "sending " << num_projections << " projections" << std::endl;
+	
+	buffer2 = new int[num_projections];
+	for (int ii=0; ii<num_projections; ii++) {
+		buffer2[ii] = projections[ii]->size;
+	}
+	MPI_Send(buffer2, num_projections, MPI_INT, target, VERTEX_SET, MPI_COMM_WORLD);
 	delete [] buffer2;
 	
 	for (int ii=0; ii<num_projections; ii++) {
 		send_vec_mp(projections[ii],target);
 	}
 
-	
+//	std::cout << "sending " << num_filenames << " filenames" << std::endl;
 	for (int ii=0; ii<num_filenames; ii++) {
 		char * buffer;
 		
 		
-		int strleng = filenames[ii].string().size() + 1;
+		int strleng = filenames[ii].string().size()+1;
 		buffer = new char[strleng];
-		memcpy(buffer, filenames[ii].c_str(), strleng);
+		memcpy(buffer, filenames[ii].string().c_str(), strleng-1); // this sucks
+		buffer[strleng-1] = '\0';
 		
-		MPI_Send(&strleng, 1, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
-		MPI_Send(buffer, strleng, MPI_CHAR, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+		MPI_Send(&strleng, 1, MPI_INT, target, VERTEX_SET, MPI_COMM_WORLD);
+//		std::cout << "sending filename length " << strleng << " " << filenames[ii].string() << std::endl;
+		MPI_Send(&buffer[0], strleng, MPI_CHAR, target, VERTEX_SET, MPI_COMM_WORLD);
 		
 		delete [] buffer;
 		
@@ -1717,14 +1730,14 @@ void vertex_set::receive(int source, parallelism_config & mpi_config)
 	MPI_Status statty_mc_gatty;
 	
 	int * buffer2 = new int[6];
-	MPI_Recv(buffer2, 6, MPI_INT, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+	MPI_Recv(buffer2, 6, MPI_INT, source, VERTEX_SET, MPI_COMM_WORLD, &statty_mc_gatty);
 	
 	
 	
 	int temp_num_natural_variables = buffer2[0];
 	int temp_num_projections = buffer2[1];
 	curr_projection = buffer2[2];
-	int num_filenames = buffer2[3];
+	int temp_num_filenames = buffer2[3];
 	curr_input_index = buffer2[4];
 	int temp_num_vertices = buffer2[5];
 	
@@ -1732,26 +1745,41 @@ void vertex_set::receive(int source, parallelism_config & mpi_config)
 	
 	set_num_vars(temp_num_natural_variables);
 	
-	vec_mp tempvec;
-	init_vec_mp2(tempvec, 0, 1024);
 	
+//	std::cout << "receiving " << temp_num_projections << " projections" << std::endl;
+	
+	buffer2 = new int[temp_num_projections];
+	
+	MPI_Recv(buffer2, temp_num_projections, MPI_INT, source, VERTEX_SET, MPI_COMM_WORLD, &statty_mc_gatty);
+
+	
+	
+	vec_mp tempvec; init_vec_mp2(tempvec, 0, 1024);
 	for (int ii=0; ii<temp_num_projections; ii++) {
+//		std::cout << "recving " << ii << "th proj" << std::endl;
+		change_size_vec_mp(tempvec,buffer2[ii]); tempvec->size = buffer2[ii];
 		receive_vec_mp(tempvec,source);
 		add_projection(tempvec);
+//		print_point_to_screen_matlab(tempvec,"tempvec_recvd_proj");
+		
+	}
+	clear_vec_mp(tempvec);
+	delete [] buffer2;
+	
+	if (num_projections!=temp_num_projections) {
+		std::cout << "num_projections doesn't match!" << std::endl;
 	}
 	
-	
-	
-	for (int ii=0; ii<num_filenames; ii++) {
+//	std::cout << "receiving " << temp_num_filenames << " filenames" << std::endl;
+	for (int ii=0; ii<temp_num_filenames; ii++) {
 		char * buffer; int strleng;
 		
-		MPI_Recv(&strleng, 1, MPI_INT, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+		MPI_Recv(&strleng, 1, MPI_INT, source, VERTEX_SET, MPI_COMM_WORLD, &statty_mc_gatty);
 		
 		buffer = new char[strleng];
-		
-		MPI_Recv(buffer, strleng, MPI_CHAR, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
-		boost::filesystem::path temppath(buffer);
-		filenames.push_back(temppath);
+//		std::cout << "recving filename length " << strleng << std::endl;
+		MPI_Recv(&buffer[0], strleng, MPI_CHAR, source, VERTEX_SET, MPI_COMM_WORLD, &statty_mc_gatty);
+		filenames.push_back(boost::filesystem::path(std::string(buffer)));
 		
 		delete [] buffer;
 		
@@ -1768,9 +1796,12 @@ void vertex_set::receive(int source, parallelism_config & mpi_config)
 		add_vertex(tempvert);
 	}
 	
+	if (num_vertices != temp_num_vertices) {
+		std::cout << "logical inconsistency.  do not have correct num vertices." << std::endl;
+	}
 	
 	
-
+	
 
 	
 	return;
@@ -2135,8 +2166,8 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 	sphere_center->size = num_vars;
 	
 	if (W_crit.num_points == 0) {
-		set_one_mp(sphere_radius);
-		
+		set_zero_mp(sphere_radius);
+		mpf_set_str(sphere_radius->r, "3.0",10);
 		for (int ii=0; ii<num_vars; ii++) {
 			set_zero_mp(&sphere_center->coord[ii]);
 		}
@@ -2146,8 +2177,8 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 	vec_mp(temp_vec); init_vec_mp2(temp_vec,0,1024);
 	if (W_crit.num_points==1)
 	{
-		set_one_mp(sphere_radius);
-		
+		set_zero_mp(sphere_radius);
+		mpf_set_str(sphere_radius->r, "3.0",10);
 		dehomogenize(&temp_vec, W_crit.pts_mp[0]);
 		
 		for (int ii=0; ii<num_vars; ii++) {
@@ -3824,9 +3855,9 @@ void send_mat_d(mat_d A, int target)
     num_entries = A->rows * A->cols;
     
     // send A_int
-    MPI_Send(&A_int, 1, mpi_mat_d_int, target, UNUSED, MPI_COMM_WORLD);
+    MPI_Send(&A_int, 1, mpi_mat_d_int, target, MAT_D, MPI_COMM_WORLD);
     // send entries
-    MPI_Send(entries, num_entries, mpi_comp_d, target, UNUSED, MPI_COMM_WORLD);
+    MPI_Send(entries, num_entries, mpi_comp_d, target, MAT_D, MPI_COMM_WORLD);
     
     // clear entries
     free(entries);
@@ -3851,14 +3882,14 @@ void receive_mat_d(mat_d A, int source)
     create_comp_d(&mpi_comp_d);
     
     // recv A_int
-    MPI_Recv(&A_int, 1, mpi_mat_d_int, source, UNUSED, MPI_COMM_WORLD, &statty_mc_gatty);
+    MPI_Recv(&A_int, 1, mpi_mat_d_int, source, MAT_D, MPI_COMM_WORLD, &statty_mc_gatty);
     // setup A and entries
     init_mat_d(A, A_int.rows, A_int.cols);
     
     num_entries = A_int.rows * A_int.cols;
     entries = (comp_d *)bmalloc(num_entries * sizeof(comp_d));
     // recv entries
-    MPI_Recv(entries, num_entries, mpi_comp_d, source, UNUSED, MPI_COMM_WORLD, &statty_mc_gatty);
+    MPI_Recv(entries, num_entries, mpi_comp_d, source, MAT_D, MPI_COMM_WORLD, &statty_mc_gatty);
     
     // setup A
     cp_mat_d_int(A, &A_int, &entries, 1);
@@ -3886,8 +3917,8 @@ void send_mat_mp(mat_mp A, int target)
     cp_mat_mp_int(&A_int, A, &Astr, 1, 0);
     
     // send A_int and Astr
-    MPI_Send(&A_int, 1, mpi_mat_mp_int, target, UNUSED, MPI_COMM_WORLD);
-    MPI_Send(Astr, A_int.totalLength, MPI_CHAR, target, UNUSED, MPI_COMM_WORLD);
+    MPI_Send(&A_int, 1, mpi_mat_mp_int, target, MAT_MP, MPI_COMM_WORLD);
+    MPI_Send(Astr, A_int.totalLength, MPI_CHAR, target, MAT_MP, MPI_COMM_WORLD);
     
     // clear Astr
     free(Astr);
@@ -3909,9 +3940,9 @@ void receive_mat_mp(mat_mp A, int source)
     create_mat_mp_int(&mpi_mat_mp_int);
     
     // recv A_int and Astr
-    MPI_Recv(&A_int, 1, mpi_mat_mp_int, source, UNUSED, MPI_COMM_WORLD, &statty_mc_gatty);
+    MPI_Recv(&A_int, 1, mpi_mat_mp_int, source, MAT_MP, MPI_COMM_WORLD, &statty_mc_gatty);
     Astr = (char *)bmalloc(A_int.totalLength * sizeof(char));
-    MPI_Recv(Astr, A_int.totalLength, MPI_CHAR, source, UNUSED, MPI_COMM_WORLD, &statty_mc_gatty);
+    MPI_Recv(Astr, A_int.totalLength, MPI_CHAR, source, MAT_MP, MPI_COMM_WORLD, &statty_mc_gatty);
     
     // setup A and clear Astr
     cp_mat_mp_int(A, &A_int, &Astr, 1, 1);
@@ -3943,8 +3974,8 @@ void send_mat_rat(mat_d A_d, mat_mp A_mp, mpq_t ***A_rat, int target)
     cp_mat_rat_int(&A_int, A_rat, &ratStr, rows, cols, 1, 0);
     
     // send A_int & ratStr
-    MPI_Send(&A_int, 1, mpi_mat_rat, target, UNUSED, MPI_COMM_WORLD);
-    MPI_Send(ratStr, A_int.totalLength, MPI_CHAR, target, UNUSED, MPI_COMM_WORLD);
+    MPI_Send(&A_int, 1, mpi_mat_rat, target, MAT_RAT, MPI_COMM_WORLD);
+    MPI_Send(ratStr, A_int.totalLength, MPI_CHAR, target, MAT_RAT, MPI_COMM_WORLD);
     
     // clear ratStr
     free(ratStr);
@@ -3967,9 +3998,9 @@ void receive_mat_rat(mat_d A_d, mat_mp A_mp, mpq_t ***A_rat, int source)
     create_mat_rat_int(&mpi_mat_rat);
     
     // recv A_int & ratStr
-    MPI_Recv(&A_int, 1, mpi_mat_rat, source, UNUSED, MPI_COMM_WORLD, &statty_mc_gatty);
+    MPI_Recv(&A_int, 1, mpi_mat_rat, source, MAT_RAT, MPI_COMM_WORLD, &statty_mc_gatty);
     ratStr = (char *)bmalloc(A_int.totalLength * sizeof(char));
-    MPI_Recv(ratStr, A_int.totalLength, MPI_CHAR, source, UNUSED, MPI_COMM_WORLD, &statty_mc_gatty);
+    MPI_Recv(ratStr, A_int.totalLength, MPI_CHAR, source, MAT_RAT, MPI_COMM_WORLD, &statty_mc_gatty);
     
     // setup A_rat and clear ratStr
     cp_mat_rat_int(A_rat, &A_int, &ratStr, A_int.rows, A_int.cols, 1, 1);
@@ -4008,9 +4039,9 @@ void send_vec_d(vec_d b, int target)
     cp_point_d_int(&b_int, b, &entries, 0, 0, 0);
     
     // send b_int
-    MPI_Send(&b_int, 1, mpi_point_d_int, target, UNUSED, MPI_COMM_WORLD);
+    MPI_Send(&b_int, 1, mpi_point_d_int, target, VEC_D, MPI_COMM_WORLD);
     // send entries
-    MPI_Send(entries, b_int.size, mpi_comp_d, target, UNUSED, MPI_COMM_WORLD);
+    MPI_Send(entries, b_int.size, mpi_comp_d, target, VEC_D, MPI_COMM_WORLD);
     
     // clear entries
     free(entries);
@@ -4034,14 +4065,14 @@ void receive_vec_d(vec_d b, int source)
     create_comp_d(&mpi_comp_d);
     
     // recv b_int
-    MPI_Recv(&b_int, 1, mpi_point_d_int, source, UNUSED, MPI_COMM_WORLD, &statty_mc_gatty);
+    MPI_Recv(&b_int, 1, mpi_point_d_int, source, VEC_D, MPI_COMM_WORLD, &statty_mc_gatty);
     
     entries = (comp_d *)bmalloc(b_int.size * sizeof(comp_d));
     // recv entries
-    MPI_Recv(entries, b_int.size, mpi_comp_d, source, UNUSED, MPI_COMM_WORLD, &statty_mc_gatty);
+    MPI_Recv(entries, b_int.size, mpi_comp_d, source, VEC_D, MPI_COMM_WORLD, &statty_mc_gatty);
     
     // setup b
-    cp_point_d_int(b, &b_int, &entries, 1, 1, 1);
+    cp_point_d_int(b, &b_int, &entries, 1, 0, 1);
     
     
     // clear mpi_point_d_int & mpi_comp_d
@@ -4067,8 +4098,8 @@ void send_vec_mp(vec_mp b, int target)
     cp_point_mp_int(&b_int, b, &bstr, 0, 0, 0);
     
     // send b_int and bstr
-    MPI_Send(&b_int, 1, mpi_vec_mp_int, target, UNUSED, MPI_COMM_WORLD);
-    MPI_Send(bstr, b_int.totalLength, MPI_CHAR, target, UNUSED, MPI_COMM_WORLD);
+    MPI_Send(&b_int, 1, mpi_vec_mp_int, target, VEC_MP, MPI_COMM_WORLD);
+    MPI_Send(bstr, b_int.totalLength, MPI_CHAR, target, VEC_MP, MPI_COMM_WORLD);
     
     // clear bstr
     free(bstr);
@@ -4090,12 +4121,12 @@ void receive_vec_mp(vec_mp b, int source)
     create_point_mp_int(&mpi_vec_mp_int);
     
     // recv b_int and bstr
-    MPI_Recv(&b_int, 1, mpi_vec_mp_int, source, UNUSED, MPI_COMM_WORLD, &statty_mc_gatty);
+    MPI_Recv(&b_int, 1, mpi_vec_mp_int, source, VEC_MP, MPI_COMM_WORLD, &statty_mc_gatty);
     bstr = (char *)bmalloc(b_int.totalLength * sizeof(char));
-    MPI_Recv(bstr, b_int.totalLength, MPI_CHAR, source, UNUSED, MPI_COMM_WORLD, &statty_mc_gatty);
+    MPI_Recv(bstr, b_int.totalLength, MPI_CHAR, source, VEC_MP, MPI_COMM_WORLD, &statty_mc_gatty);
     
     // setup b and clear bstr
-    cp_point_mp_int(b, &b_int, &bstr, 1, 1, 1);
+    cp_point_mp_int(b, &b_int, &bstr, 1, 0, 1); // first 1 indicates to free bstr.  second is init_point.  third is intype.  see doc in copy_functions.c
     
     
     // clear mpi_vec_mp_int
@@ -4122,10 +4153,10 @@ void send_vec_rat(mpq_t ***b, int size, int target)
     cp_vec_rat_char(&ratStr, b, &b_int.totalLength, size, 0, 0);
     
     // send b_int
-    MPI_Send(&b_int, 1, mpi_point_rat, target, UNUSED, MPI_COMM_WORLD);
+    MPI_Send(&b_int, 1, mpi_point_rat, target, VEC_RAT, MPI_COMM_WORLD);
     
     // send ratStr
-    MPI_Send(ratStr, b_int.totalLength, MPI_CHAR, target, UNUSED, MPI_COMM_WORLD);
+    MPI_Send(ratStr, b_int.totalLength, MPI_CHAR, target, VEC_RAT, MPI_COMM_WORLD);
     
     // clear ratStr
     free(ratStr);
@@ -4147,11 +4178,11 @@ void receive_vec_rat(mpq_t ***b, int size, int source)
     create_point_rat_int(&mpi_point_rat);
     
     // recv b_int
-    MPI_Recv(&b_int, 1, mpi_point_rat, source, UNUSED, MPI_COMM_WORLD, &statty_mc_gatty);
+    MPI_Recv(&b_int, 1, mpi_point_rat, source, VEC_RAT, MPI_COMM_WORLD, &statty_mc_gatty);
     
     // setup & recv ratStr
     ratStr = (char *)bmalloc(b_int.totalLength * sizeof(char));
-    MPI_Recv(ratStr, b_int.totalLength, MPI_CHAR, source, UNUSED, MPI_COMM_WORLD, &statty_mc_gatty);
+    MPI_Recv(ratStr, b_int.totalLength, MPI_CHAR, source, VEC_RAT, MPI_COMM_WORLD, &statty_mc_gatty);
     
     // setup b - clears all structures
     cp_vec_rat_char(b, &ratStr, &b_int.totalLength, b_int.size, 1, 1);
@@ -4178,7 +4209,7 @@ void send_comp_d(comp_d c, int target)
     MPI_Datatype mpi_comp_d;
     create_comp_d(&mpi_comp_d);
     
-    MPI_Send(c, 1, mpi_comp_d, target, UNUSED, MPI_COMM_WORLD);
+    MPI_Send(c, 1, mpi_comp_d, target, COMP_D, MPI_COMM_WORLD);
     
     MPI_Type_free(&mpi_comp_d);
     
@@ -4190,7 +4221,7 @@ void receive_comp_d(comp_d c, int source)
     MPI_Datatype mpi_comp_d;
     create_comp_d(&mpi_comp_d);
     
-    MPI_Recv(c, 1, mpi_comp_d, source, UNUSED, MPI_COMM_WORLD, &statty_mc_gatty);
+    MPI_Recv(c, 1, mpi_comp_d, source, COMP_D, MPI_COMM_WORLD, &statty_mc_gatty);
     
     MPI_Type_free(&mpi_comp_d);
     
@@ -4205,7 +4236,7 @@ void send_comp_num_d(comp_d *c, int num, int target)
     MPI_Datatype mpi_comp_d;
     create_comp_d(&mpi_comp_d);
     
-    MPI_Send(c, num, mpi_comp_d, target, UNUSED, MPI_COMM_WORLD);
+    MPI_Send(c, num, mpi_comp_d, target, COMP_D, MPI_COMM_WORLD);
     
     MPI_Type_free(&mpi_comp_d);
     
@@ -4217,7 +4248,7 @@ void receive_comp_num_d(comp_d *c, int num, int source)
     MPI_Datatype mpi_comp_d;
     create_comp_d(&mpi_comp_d);
     
-    MPI_Recv(c, num, mpi_comp_d, source, UNUSED, MPI_COMM_WORLD, &statty_mc_gatty);
+    MPI_Recv(c, num, mpi_comp_d, source, COMP_D, MPI_COMM_WORLD, &statty_mc_gatty);
     
     MPI_Type_free(&mpi_comp_d);
     
@@ -4237,9 +4268,9 @@ void send_comp_mp(comp_mp c, int target)
     // send data
     cp_comp_mp_int(&c_int, c, &str, 0, 0);
     // send c_int
-    MPI_Send(&c_int, 1, mpi_comp_mp_int, target, UNUSED, MPI_COMM_WORLD);
+    MPI_Send(&c_int, 1, mpi_comp_mp_int, target, COMP_MP, MPI_COMM_WORLD);
     // send str
-    MPI_Send(str, c_int.totalLength, MPI_CHAR, target, UNUSED, MPI_COMM_WORLD);
+    MPI_Send(str, c_int.totalLength, MPI_CHAR, target, COMP_MP, MPI_COMM_WORLD);
     
     // clear str
     free(str);
@@ -4258,10 +4289,10 @@ void receive_comp_mp(comp_mp c, int source)
     create_comp_mp_int(&mpi_comp_mp_int);
     
     // recv data
-    MPI_Recv(&c_int, 1, mpi_comp_mp_int, source, UNUSED, MPI_COMM_WORLD, &statty_mc_gatty);
+    MPI_Recv(&c_int, 1, mpi_comp_mp_int, source, COMP_MP, MPI_COMM_WORLD, &statty_mc_gatty);
     // setup & recv str
     str = (char *)bmalloc(c_int.totalLength * sizeof(char));
-    MPI_Recv(str, c_int.totalLength, MPI_CHAR, source, UNUSED, MPI_COMM_WORLD, &statty_mc_gatty);
+    MPI_Recv(str, c_int.totalLength, MPI_CHAR, source, COMP_MP, MPI_COMM_WORLD, &statty_mc_gatty);
     
     // setup c
     cp_comp_mp_int(c, &c_int, &str, 1, 1);
@@ -4299,9 +4330,9 @@ void send_comp_num_mp(comp_mp *c, int num, int target)
         free(tempStr);
     }
     // send c_int
-    MPI_Send(c_int, num, mpi_comp_mp_int, target, UNUSED, MPI_COMM_WORLD);
+    MPI_Send(c_int, num, mpi_comp_mp_int, target, COMP_MP, MPI_COMM_WORLD);
     // send str
-    MPI_Send(str, total, MPI_CHAR, target, UNUSED, MPI_COMM_WORLD);
+    MPI_Send(str, total, MPI_CHAR, target, COMP_MP, MPI_COMM_WORLD);
     
     // clear data
     free(str);
@@ -4324,12 +4355,12 @@ void receive_comp_num_mp(comp_mp *c, int num, int source)
     create_comp_mp_int(&mpi_comp_mp_int);
     
     // recv data
-    MPI_Recv(c_int, num, mpi_comp_mp_int, source, UNUSED, MPI_COMM_WORLD, &statty_mc_gatty);
+    MPI_Recv(c_int, num, mpi_comp_mp_int, source, COMP_MP, MPI_COMM_WORLD, &statty_mc_gatty);
     // setup & recv str
     for (i = 0; i < num; i++)
         total += c_int[i].totalLength;
     str = (char *)bmalloc(total * sizeof(char));
-    MPI_Recv(str, total, MPI_CHAR, source, UNUSED, MPI_COMM_WORLD, &statty_mc_gatty);
+    MPI_Recv(str, total, MPI_CHAR, source, COMP_MP, MPI_COMM_WORLD, &statty_mc_gatty);
     
     // setup c
     for (i = 0; i < num; i++)
@@ -4374,9 +4405,9 @@ void send_comp_rat(mpq_t c[2], int target)
     // send data
     cp_comp_rat_int(&c_int, c, &str, 0, 0);
     // send c_int
-    MPI_Send(&c_int, 1, mpi_comp_rat_int, target, UNUSED, MPI_COMM_WORLD);
+    MPI_Send(&c_int, 1, mpi_comp_rat_int, target, COMP_RAT, MPI_COMM_WORLD);
     // send str
-    MPI_Send(str, c_int.length[0] + c_int.length[1], MPI_CHAR, target, UNUSED, MPI_COMM_WORLD);
+    MPI_Send(str, c_int.length[0] + c_int.length[1], MPI_CHAR, target, COMP_RAT, MPI_COMM_WORLD);
     
     // clear str
     free(str);
@@ -4394,10 +4425,10 @@ void receive_comp_rat(mpq_t c[2], int source)
     create_comp_rat_int(&mpi_comp_rat_int);
     
     // recv data
-    MPI_Recv(&c_int, 1, mpi_comp_rat_int, source, UNUSED, MPI_COMM_WORLD, &statty_mc_gatty);
+    MPI_Recv(&c_int, 1, mpi_comp_rat_int, source, COMP_RAT, MPI_COMM_WORLD, &statty_mc_gatty);
     // setup & recv str
     str = (char *)bmalloc((c_int.length[0] + c_int.length[1]) * sizeof(char));
-    MPI_Recv(str, c_int.length[0] + c_int.length[1], MPI_CHAR, source, UNUSED, MPI_COMM_WORLD, &statty_mc_gatty);
+    MPI_Recv(str, c_int.length[0] + c_int.length[1], MPI_CHAR, source, COMP_RAT, MPI_COMM_WORLD, &statty_mc_gatty);
     
     // setup c
     cp_comp_rat_int(c, &c_int, &str, 1, 1);
@@ -4444,9 +4475,9 @@ void send_comp_num_rat(mpq_t c[][2], int num, int target)
         free(tempStr);
     }
     // send c_int
-    MPI_Send(c_int, num, mpi_comp_rat_int, target, UNUSED, MPI_COMM_WORLD);
+    MPI_Send(c_int, num, mpi_comp_rat_int, target, COMP_RAT, MPI_COMM_WORLD);
     // send str
-    MPI_Send(str, total, MPI_CHAR, target, UNUSED, MPI_COMM_WORLD);
+    MPI_Send(str, total, MPI_CHAR, target, COMP_RAT, MPI_COMM_WORLD);
     
     // clear str
     free(str);
@@ -4465,12 +4496,12 @@ void receive_comp_num_rat(mpq_t c[][2], int num, int source)
     create_comp_rat_int(&mpi_comp_rat_int);
     
     // recv data
-    MPI_Recv(c_int, num, mpi_comp_rat_int, source, UNUSED, MPI_COMM_WORLD, &statty_mc_gatty);
+    MPI_Recv(c_int, num, mpi_comp_rat_int, source, COMP_RAT, MPI_COMM_WORLD, &statty_mc_gatty);
     // setup & recv str
     for (i = 0; i < num; i++)
         total += c_int[i].length[0] + c_int[i].length[1];
     str = (char *)bmalloc(total * sizeof(char));
-    MPI_Recv(str, total, MPI_CHAR, source, UNUSED, MPI_COMM_WORLD, &statty_mc_gatty);
+    MPI_Recv(str, total, MPI_CHAR, source, COMP_RAT, MPI_COMM_WORLD, &statty_mc_gatty);
     
     // setup c
     for (i = 0; i < num; i++)
