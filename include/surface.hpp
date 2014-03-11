@@ -462,7 +462,7 @@ public:
 	}
 	
 	
-	curve_decomposition * curve_with_name(std::string & findme)
+	curve_decomposition * curve_with_name(const std::string & findme)
 	{
 		
 		if (findme.compare(crit_curve.input_filename.filename().string())==0) {
@@ -492,7 +492,7 @@ public:
 			}
 		}
 	
-		
+		std::cout << "failed to find curve with name " << findme << std::endl;
 				
 		return NULL;
 	}

@@ -38,7 +38,7 @@
 
 #include "fileops.hpp"
 
-#define SAMEPOINTTOL 1e-6
+#define SAMEPOINTTOL 1e-5
 
 
 #define DEFAULT_MAX_PREC 1024
@@ -69,7 +69,8 @@ enum {PARSING = 1000, TYPE_CONFIRMATION, DATA_TRANSMISSION, NUMPACKETS};
 enum {INACTIVE = 500, ACTIVE};
 
 enum {VEC_MP = 4000, VEC_D, MAT_MP, MAT_D, COMP_MP, COMP_D, VEC_RAT, MAT_RAT, COMP_RAT, INDICES,
-	DECOMPOSITION, CURVE, SURFACE, EDGE, CELL, FACE, UNUSED};
+	DECOMPOSITION, CURVE, SURFACE, EDGE, CELL, FACE, UNUSED,
+	VERTEX_SET, WITNESS_SET, VERTEX};
 
 std::string enum_lookup(int flag);
 
@@ -349,7 +350,7 @@ public:
 	
 	//copy operator.  must be explicitly declared because the underlying c structures use pointers.
 	point_holder(const point_holder & other){
-		
+		init();
 		copy(other);
 	}
 	
@@ -439,6 +440,7 @@ public:
 	
 	//copy operator.  must be explicitly declared because the underlying c structures use pointers.
 	patch_holder(const patch_holder & other){
+		init();
 		copy(other);
 	}
 	
@@ -523,6 +525,7 @@ public:
 	
 	//copy operator.  must be explicitly declared because the underlying c structures use pointers.
 	linear_holder(const linear_holder & other){
+		init();
 		copy(other);
 	}
 	
@@ -645,6 +648,7 @@ public:
 	//copy operator.  must be explicitly declared because the underlying c structures use pointers.
 	witness_set(const witness_set & other)
 	{
+		init();
 		copy(other);
 	}
 	
@@ -765,7 +769,7 @@ public:
 	void write_dehomogenized_coordinates(boost::filesystem::path filename) const;
 	
     void send(parallelism_config & mpi_config, int target);
-    void receive(parallelism_config & mpi_config);
+    void receive(int source, parallelism_config & mpi_config);
 };
 
 
@@ -1016,8 +1020,8 @@ public:
                                        vec_mp pi);
     
     
-    void assert_projection_value(const std::set< int > & relevant_indices, comp_mp new_value);
-    void assert_projection_value(const std::set< int > & relevant_indices, comp_mp new_value, int proj_index);
+    std::vector<int>  assert_projection_value(const std::set< int > & relevant_indices, comp_mp new_value);
+    std::vector<int>  assert_projection_value(const std::set< int > & relevant_indices, comp_mp new_value, int proj_index);
 	
 	int set_curr_projection(vec_mp new_proj){
         
@@ -1528,6 +1532,7 @@ protected:
 		
 		this->randomized_degrees = other.randomized_degrees;
 		
+		this->W = other.W;
 		
 		this->input_filename = other.input_filename;
 		
