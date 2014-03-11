@@ -154,9 +154,6 @@ void curve_decomposition::computeCurveSelfConj(const witness_set & W_curve,
 	
 	int ambient_dim = 1;
 	
-	witness_set Wtemp;
-	
-	
 	
 	
 	
@@ -176,12 +173,6 @@ void curve_decomposition::computeCurveSelfConj(const witness_set & W_curve,
 	if (program_options.verbose_level>=4)
 		print_matrix_to_screen_matlab(randomizer_matrix,"randomization");
 	
-	FILE *OUT = safe_fopen_write("Rand_matrix");
-	fprintf(OUT,"%d %d\n",randomizer_matrix->rows,randomizer_matrix->cols);
-	fprintf(OUT,"%d\n",solve_options.T.AMP_max_prec);
-	fprintf(OUT,"\n");
-	print_matrix_to_file_mp(OUT, 0, randomizer_matrix);
-	fclose(OUT);
 	
 	
 	
@@ -467,7 +458,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
             }
             
             if (!keep_going) {
-                
+                // this is good, it means we have same number out as in, so we can do a full mapping.
                 break;
             }
             else if (iterations<maxits){
@@ -480,8 +471,8 @@ int curve_decomposition::interslice(const witness_set & W_curve,
                 // what else can i do here to improve the probability of success?
                 solve_options.T.basicNewtonTol   *= 1e-1; // tracktolbeforeeg
                 solve_options.T.endgameNewtonTol *= 1e-1; // tracktolduringeg
-				solve_options.T.maxStepSize *= 0.5;
-				solve_options.T.odePredictor = 7;
+//				solve_options.T.maxStepSize *= 0.5;
+//				solve_options.T.odePredictor = 7;
 				std::cout << "tracktolBEFOREeg: "	<< solve_options.T.basicNewtonTol << " tracktolDURINGeg: "	<< solve_options.T.endgameNewtonTol << std::endl;
             }
 			else
@@ -544,7 +535,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 					
 					neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii]);
 					int num_its = 0;
-					while (num_its < 4 && W_single_left.num_points==0) {
+					while (num_its < 1 && W_single_left.num_points==0) {
 						W_single_left.reset();
 						
 						std::cout << num_its << "th iteration, going left, midpoint " << ii << std::endl;
@@ -584,7 +575,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 					neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii+1]);
 					num_its = 0;
 					
-					while (num_its < 4 && W_single_right.num_points==0) {
+					while (num_its < 1 && W_single_right.num_points==0) {
 						W_single_right.reset();
 						
 						std::cout << num_its << "th iteration, going right, midpoint " << ii << std::endl;
@@ -728,10 +719,10 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	
 	
     for (int ii=0; ii<num_midpoints; ii++) {
-        V.assert_projection_value(found_indices_crit[ii], &crit_downstairs->coord[ii]);
-        V.assert_projection_value(found_indices_mid[ii], &midpoints_downstairs->coord[ii]);
+		std::vector<int> bad_crit = V.assert_projection_value(found_indices_crit[ii], &crit_downstairs->coord[ii]);
+        std::vector<int> bad_mid = V.assert_projection_value(found_indices_mid[ii], &midpoints_downstairs->coord[ii]);
     }
-	V.assert_projection_value(found_indices_crit[num_midpoints], &crit_downstairs->coord[num_midpoints]);
+	std::vector<int> bad_crit = V.assert_projection_value(found_indices_crit[num_midpoints], &crit_downstairs->coord[num_midpoints]);
 	
 	
 	

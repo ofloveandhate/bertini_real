@@ -1353,6 +1353,7 @@ void triangulate_two_ribs_by_binning(const std::vector< int > & rib1, const std:
 	std::cout << "triangulate_by_binning" << std::endl;
 #endif
 	
+	
 	if (rib1.size()==0) {
 		std::cout << "rib1 had 0 size!" << std::endl;
 	}
@@ -1364,7 +1365,6 @@ void triangulate_two_ribs_by_binning(const std::vector< int > & rib1, const std:
 		return;
 	}
 
-	
 	
 	const std::vector<int> * rib_w_more_entries, *rib_w_less_entries;
 	
@@ -1409,11 +1409,11 @@ void triangulate_two_ribs_by_binning(const std::vector< int > & rib1, const std:
 	
 	
 	//both ribs are guaranteed (by hypothesis) to have increasing projection values in pi[1].
-	int curr_bin_ind = 1; // start at the lowest.
+	unsigned int curr_bin_ind = 1; // start at the lowest.
 	
 	for (unsigned int ii=0; ii<rib_w_more_entries->size()-1; ii++) {
 		
-		if (ii==rib_w_more_entries->size()-1) {
+		if (ii==rib_w_more_entries->size()-2) {
 			set_one_mp(temp);
 		}
 		else{
@@ -1423,17 +1423,19 @@ void triangulate_two_ribs_by_binning(const std::vector< int > & rib1, const std:
 			div_mp(temp, temp, interval_width);
 		}
 		
+		current_samples.push_back(triangle(rib_w_less_entries->at(curr_bin_ind-1), rib_w_more_entries->at(ii), rib_w_more_entries->at(ii+1)));
 		
-		if (mpf_cmp(temp->r, bins->coord[curr_bin_ind].r)>=0) {
-			triangle T(rib_w_less_entries->at(curr_bin_ind-1), rib_w_less_entries->at(curr_bin_ind), rib_w_more_entries->at(ii)); // this call could be contracted with the next.
-			current_samples.push_back(T);
+		while ((mpf_cmp(temp->r, bins->coord[curr_bin_ind].r)>=0)) {// || (ii==(rib_w_more_entries->size()-2))
+			current_samples.push_back(triangle(rib_w_less_entries->at(curr_bin_ind-1), rib_w_less_entries->at(curr_bin_ind), rib_w_more_entries->at(ii+1)));
 			
+			
+			if (curr_bin_ind==rib_w_less_entries->size()-1) {
+				break;
+			}
 			curr_bin_ind++;
+			
 		}
 
-		triangle T(rib_w_less_entries->at(curr_bin_ind-1), rib_w_more_entries->at(ii), rib_w_more_entries->at(ii+1)); // this call could be contracted with the next.
-		current_samples.push_back(T);
-		
 		
 	}
 	
@@ -1550,6 +1552,7 @@ int get_dir_mptype_dimen(boost::filesystem::path & Dir_Name, int & MPType, int &
 	fin >> dimension;
 	
 	Dir_Name = tempstr;
+	Dir_Name = Dir_Name.filename();
 	return MPType;
 }
 

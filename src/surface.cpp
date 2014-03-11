@@ -375,8 +375,8 @@ void surface_decomposition::deflate_and_split(std::map< std::pair<int,int>, witn
 			
 			if (W_reject.has_points()) {
 				std::cout << "found that current singular witness set had " << W_reject.num_points << " non-deflated points" << std::endl;
-				sleep(10); std::cout << "355" << std::endl;  W_reject.print_to_screen();
-				std::cout << "357" << std::endl;
+//				sleep(10); std::cout << "355" << std::endl;  W_reject.print_to_screen();
+//				std::cout << "357" << std::endl;
 			}
 			
 			//TODO: this is an ideal place for a swap operator.
@@ -1310,14 +1310,10 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 			
 			
 			
-			solve_options.allow_singular = 0;
-			solve_options.complete_witness_set = 0;
-			solve_options.allow_multiplicity = 0;
-			solve_options.allow_unsuccess = 0;
+			
 			
 			
 			solver_output fillme;
-			//			print_matrix_to_screen_matlab(ml_config.randomizer_matrix,"rand_surf_slice_314");
 			multilin_solver_master_entry_point(W_surf,         // witness_set
                                                fillme, // the new data is put here!
                                                multilin_linears,
@@ -1415,7 +1411,7 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 		new_slice.add_projection(pi[1]);
 		new_slice.num_variables = num_variables;
 		
-		slices[ii] = new_slice;
+		slices[ii] = new_slice; // TODO: remove this unnecessary copy call.
 		
 		
 		
@@ -1673,7 +1669,7 @@ void surface_decomposition::worker_connect(solver_configuration & solve_options,
 	MPI_Barrier(MPI_COMM_WORLD);
 	solve_options.robust = true;
 	
-	std::cout << "worker getting md_congid" << std::endl;
+//	std::cout << "worker getting md_congid" << std::endl;
 	midpoint_config md_config;
 	md_config.bcast_receive(solve_options);
 	//receive the md_config from the master.  it holds the three SLP's, as well as everything needed to run the system except:
@@ -1685,7 +1681,7 @@ void surface_decomposition::worker_connect(solver_configuration & solve_options,
 	
 	MPI_Barrier(MPI_COMM_WORLD);
 	
-	std::cout << "worker getting surface" << std::endl;
+//	std::cout << "worker getting surface" << std::endl;
 	this->receive(solve_options.head(), solve_options);
 	
 	
@@ -1742,11 +1738,11 @@ void surface_decomposition::master_face_requester(int ii, int jj, int next_worke
 	
 	
 	
-	int * buffer = (int *) br_malloc(2*sizeof(int));
+	int * buffer = new int[2];
 	buffer[0] = ii;
 	buffer[1] = jj;
-	MPI_Send(buffer, 2, MPI_INT, next_worker, DATA_TRANSMISSION, MPI_COMM_WORLD);
-	free(buffer);
+	MPI_Send(&buffer[0], 2, MPI_INT, next_worker, DATA_TRANSMISSION, MPI_COMM_WORLD);
+	delete [] buffer;
 }
 
 
@@ -1759,14 +1755,14 @@ void surface_decomposition::worker_face_requester(int & ii, int & jj, parallelis
 	
 	
 	
-	int * buffer = (int *) br_malloc(2*sizeof(int));
+	int * buffer = new int[2];
 	MPI_Status statty_mc_gatty;
 	
-	MPI_Recv(buffer, 2, MPI_INT, mpi_config.head(), DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+	MPI_Recv(&buffer[0], 2, MPI_INT, mpi_config.head(), DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
 	ii = buffer[0];
 	jj = buffer[1];
 	
-	free(buffer);
+	delete [] buffer;
 	return;
 }
 
@@ -1788,10 +1784,10 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	//create the face
 	face F;
 	
-	std::cout << color::magenta() << "\n\n\n*****************************\nmidslice " << ii << " / " << this->mid_slices.size() <<  ", edge " << jj << " / " << mid_slices[ii].edges.size() << color::console_default() << std::endl;
+	std::cout << color::magenta() << "\n\n\n*****************************\nmidslice " << ii << " / " << this->mid_slices.size() <<  ", edge " << jj << " / " << mid_slices[ii].edges.size() << color::console_default() << "\n";
 	
 	if (mid_slices[ii].edges[jj].is_degenerate()) {
-		std::cout << "no computation necessary -- midslice edge is degenerate" << std::endl;
+//		std::cout << "no computation necessary -- midslice edge is degenerate" << std::endl;
 		return F;
 	}
 	
@@ -1817,7 +1813,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	F.crit_slice_index = ii; // the index of which midslice this face came from.
 	F.midpt = mid_slices[ii].edges[jj].midpt; // index the point
 	
-	std::cout << color::brown() << "current midpoint: " <<  mid_slices[ii].edges[jj].midpt  << " " << color::console_default() << std::endl;
+	std::cout << color::brown() << "current midpoint: " <<  mid_slices[ii].edges[jj].midpt  << " " << color::console_default() << "\n";
 	
 	
 	
@@ -1846,12 +1842,21 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 	
 
-	
+	std::cout << md_config.system_name_top << " " << md_config.system_name_bottom << std::endl;
 	
 	
 	curve_decomposition * top_curve = curve_with_name(md_config.system_name_top);
 	curve_decomposition * bottom_curve = curve_with_name(md_config.system_name_bottom);
 	
+	if (top_curve==NULL) {
+		std::cout << "did not find matching top curve: " << md_config.system_name_top << std::endl;
+		bail_out = true;
+	}
+	
+	if (bottom_curve==NULL) {
+		std::cout << "did not find matching bottom curve: " << md_config.system_name_bottom << std::endl;
+		bail_out = true;
+	}
 	
 	// get the bottom and top edges for this face.
 	
@@ -1864,10 +1869,18 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	F.top= top_curve->edge_w_midpt(mid_slices[ii].edges[jj].right); // index the *edge*
 	F.system_name_top = md_config.system_name_top;
 	
+	if (F.bottom < 0) { // this would happen because the bottom point was of type PROBLEMATIC
+		std::cout << "F.bottom is set to negative" << std::endl;
+		bail_out = true;
+	}
 	
+	if (F.top < 0) { // this would happen because the bottom point was of type PROBLEMATIC
+		std::cout << "F.top is set to negative" << std::endl;
+		bail_out = true;
+	}
 		
 	if (bail_out) {
-		std::cout << color::red() << "one of the points was neither sphere nor crit in origin." << std::endl;
+		std::cout << color::red() << "bailing out " << ii << " " << jj << "." << std::endl;
 		
 		std::cout << "tracking from these point indices:" << std::endl;
 		std::cout <<  mid_slices[ii].edges[jj].left  << " " << mid_slices[ii].edges[jj].midpt  << " "  << mid_slices[ii].edges[jj].right << color::console_default() << std::endl;
@@ -1935,14 +1948,14 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 	// make u, v target values.
 	if (crit_slices[ii].num_edges == 0) {
-		std::cout << "critslice " << ii << " has no edges" << std::endl;
+		std::cout << "critslice " << ii << " has no edges!" << std::endl;
 	}
 	if (crit_slices[ii+1].num_edges == 0) {
-		std::cout << "critslice " << ii+1 << " has no edges" << std::endl;
+		std::cout << "critslice " << ii+1 << " has no edges!" << std::endl;
 	}
 	
-	print_comp_matlab(&V.vertices[ crit_slices[ii].edges[0].midpt ].projection_values->coord[0],"a");
-	print_comp_matlab(&V.vertices[ crit_slices[ii+1].edges[0].midpt ].projection_values->coord[0],"b");
+//	print_comp_matlab(&V.vertices[ crit_slices[ii].edges[0].midpt ].projection_values->coord[0],"a");
+//	print_comp_matlab(&V.vertices[ crit_slices[ii+1].edges[0].midpt ].projection_values->coord[0],"b");
 	
 	set_mp(md_config.crit_val_left,   &V.vertices[ crit_slices[ii].edges[0].midpt ].projection_values->coord[0]);
 	set_mp(md_config.crit_val_right,  &V.vertices[ crit_slices[ii+1].edges[0].midpt ].projection_values->coord[0]);
@@ -1964,7 +1977,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 		
 		
 		//track
-		int final_top_ind, final_bottom_ind; // indexes in V of the bottom and top points of the left or right edge.
+		int final_top_ind = -1, final_bottom_ind = -2; // indexes in V of the bottom and top points of the left or right edge.
 		
 		
 		if (zz==0) {
@@ -1988,16 +2001,17 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 		// check for degeneracy
 		if (final_bottom_ind==final_top_ind) {
 			// can simply set the top or bottom edge to be this one.  know it goes there.
-			std::cout << "current edge is degenerate" << std::endl;
+			std::cout << "current edge is degenerate, " << final_bottom_ind <<"=="<<final_top_ind << std::endl;
 			
 			
 			int current_edge = crit_slices[ii+zz].edge_w_midpt(final_bottom_ind);
 			
 			if (current_edge<0) {
 				std::cout << "unable to find an edge in crit_slices[" << ii+zz << "] with midpoint " << final_bottom_ind << std::endl;
-				std::cout << "making new degenerate edge" << std::endl;
-				edge E(final_bottom_ind,final_bottom_ind,final_bottom_ind);
-				current_edge = crit_slices[ii+zz].add_edge(E);
+//				std::cout << "making new degenerate edge" << std::endl;
+//				edge E(final_bottom_ind,final_bottom_ind,final_bottom_ind);
+//				current_edge = crit_slices[ii+zz].add_edge(E);
+				continue;
 			}
 			
 			
@@ -2412,7 +2426,7 @@ void surface_decomposition::send(int target, parallelism_config & mpi_config)
 	
 	
 	decomposition::send(target, mpi_config);
-	int * buffer = (int *) br_malloc(5*sizeof(int));
+	int * buffer = new int[5];
 	
 	buffer[0] = num_edges;
 	buffer[1] = num_faces;
@@ -2422,7 +2436,7 @@ void surface_decomposition::send(int target, parallelism_config & mpi_config)
 	buffer[4] = num_singular_curves;
 	
 	MPI_Send(buffer, 5, MPI_INT, target, SURFACE, MPI_COMM_WORLD);
-	free(buffer);
+	delete [] buffer;
 	
 	
 	
@@ -2449,15 +2463,15 @@ void surface_decomposition::send(int target, parallelism_config & mpi_config)
 	sphere_curve.send(target, mpi_config);
 	
 	
-	buffer = (int *) br_malloc(2*num_singular_curves* sizeof(int));
+	buffer = new int[2*num_singular_curves];
 	int counter = 0;
 	for (auto iter = singular_curves.begin(); iter!= singular_curves.end(); ++iter) {
 		buffer[counter] = iter->first.first;
-		buffer[counter] = iter->first.second;
-		counter++;
+		buffer[counter+1] = iter->first.second;
+		counter+=2;
 	}
 	MPI_Send(buffer, 2*num_singular_curves, MPI_INT, target, SURFACE, MPI_COMM_WORLD);
-	free(buffer);
+	delete [] buffer;
 	
 	for (auto iter = singular_curves.begin(); iter!= singular_curves.end(); ++iter) {
 		iter->second.send(target, mpi_config);
@@ -2483,7 +2497,7 @@ void surface_decomposition::receive(int source, parallelism_config & mpi_config)
 	decomposition::receive(source, mpi_config);
 	
 	
-	int * buffer = (int *) br_malloc(5*sizeof(int));
+	int * buffer = new int[5];
 	MPI_Recv(buffer, 5, MPI_INT, source, SURFACE, MPI_COMM_WORLD, &statty_mc_gatty);
 	int a, b, c, d;
 	a = buffer[0];
@@ -2491,7 +2505,7 @@ void surface_decomposition::receive(int source, parallelism_config & mpi_config)
 	c = buffer[2];
 	d = buffer[3];
 	num_singular_curves = buffer[4];
-	free(buffer);
+	delete [] buffer;
 	
 	
 	
@@ -2524,15 +2538,17 @@ void surface_decomposition::receive(int source, parallelism_config & mpi_config)
 	sphere_curve.receive(source, mpi_config);
 	
 	
-	buffer = (int *) br_malloc(2*num_singular_curves* sizeof(int));
+	buffer = new int[2*num_singular_curves];//
 	MPI_Recv(buffer, 2*num_singular_curves, MPI_INT, source, SURFACE, MPI_COMM_WORLD, &statty_mc_gatty);
 	
-	
-	for (int ii=0; ii<num_singular_curves; ii+=2) {
-		singular_curves[std::pair<int,int>(buffer[ii],buffer[ii+1])].receive(source, mpi_config);
+	// receive and unpack the buffer at same time
+	int counter = 0;
+	for (int ii=0; ii<num_singular_curves; ii++) {
+		singular_curves[std::pair<int,int>(buffer[counter],buffer[counter+1])].receive(source, mpi_config);
+		counter+=2;
 	}
 	
-	free(buffer);
+	delete [] buffer;
 	return;
 }
 
@@ -2576,7 +2592,7 @@ void surface_decomposition::print(boost::filesystem::path base)
 	fprintf(OUT,"%d %d %ld %ld\n\n", num_faces, num_edges, mid_slices.size(), crit_slices.size());
 	fprintf(OUT,"%ld\n",singular_curves.size());
 	for (auto iter = singular_curves.begin(); iter!=singular_curves.end(); ++iter) {
-		fprintf(OUT,"%d %d",iter->first.first,iter->first.second); // TODO:  clean up this first.first nonsense.  it is terrible.s
+		fprintf(OUT,"%d %d ",iter->first.first,iter->first.second); // TODO:  clean up this first.first nonsense.  it is terrible.
 	}
 	fprintf(OUT,"\n");
 	// what more to print here?
@@ -3005,7 +3021,7 @@ void face::send(int target, parallelism_config & mpi_config)
 	buffer[8] = system_name_top.size();
 	buffer[9] = crit_slice_index;
 	
-	MPI_Send(buffer, 10, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+	MPI_Send(buffer, 10, MPI_INT, target, FACE, MPI_COMM_WORLD);
 	free(buffer);
 	
 	if (num_left != left.size()) {
@@ -3020,7 +3036,7 @@ void face::send(int target, parallelism_config & mpi_config)
 		for (unsigned int ii=0; ii<num_left; ii++) {
 			buffer[ii] = left[ii];
 		}
-		MPI_Send(buffer, num_left, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+		MPI_Send(buffer, num_left, MPI_INT, target, FACE, MPI_COMM_WORLD);
 		free(buffer);
 	}
 	
@@ -3031,7 +3047,7 @@ void face::send(int target, parallelism_config & mpi_config)
 		for (unsigned int ii=0; ii<num_right; ii++) {
 			buffer[ii] = right[ii];
 		}
-		MPI_Send(buffer, num_right, MPI_INT, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+		MPI_Send(buffer, num_right, MPI_INT, target, FACE, MPI_COMM_WORLD);
 		free(buffer);
 	}
 	
@@ -3040,10 +3056,11 @@ void face::send(int target, parallelism_config & mpi_config)
 	std::string sendme = system_name_bottom;
 	sendme.append(system_name_top);
 	
-	char * charbuff = new char[sendme.size()+1];
+	int num_to_send = sendme.size()+1;
+	char * charbuff = new char[num_to_send];
 	strcpy(charbuff, sendme.c_str());
-	charbuff[sendme.size()] = '\0';
-	MPI_Send(charbuff, sendme.size(), MPI_CHAR, target, DATA_TRANSMISSION, MPI_COMM_WORLD);
+	charbuff[num_to_send-1] = '\0';
+	MPI_Send(&charbuff[0], num_to_send, MPI_CHAR, target, FACE, MPI_COMM_WORLD);
 	delete [] charbuff;
 	
 	
@@ -3069,7 +3086,7 @@ void face::receive(int source, parallelism_config & mpi_config)
 	MPI_Status statty_mc_gatty;
 	int * buffer= (int *) br_malloc(10*sizeof(int));
 	
-	MPI_Recv(buffer, 10, MPI_INT, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+	MPI_Recv(buffer, 10, MPI_INT, source, FACE, MPI_COMM_WORLD, &statty_mc_gatty);
 	
 	int tmp_size_left = buffer[0];
 	int tmp_size_right = buffer[1];
@@ -3086,7 +3103,7 @@ void face::receive(int source, parallelism_config & mpi_config)
 	
 	if (tmp_size_left>0) {
 		int * buffer2 = (int *) br_malloc(tmp_size_left*sizeof(int));
-		MPI_Recv(buffer2, tmp_size_left, MPI_INT, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+		MPI_Recv(buffer2, tmp_size_left, MPI_INT, source, FACE, MPI_COMM_WORLD, &statty_mc_gatty);
 		for (int ii=0; ii<tmp_size_left; ii++) {
 			left.push_back(buffer2[ii]);
 		}
@@ -3097,7 +3114,7 @@ void face::receive(int source, parallelism_config & mpi_config)
 	
 	if (tmp_size_right>0) {
 		int * buffer3 = (int *) br_malloc(tmp_size_right*sizeof(int));
-		MPI_Recv(buffer3, tmp_size_right, MPI_INT, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+		MPI_Recv(buffer3, tmp_size_right, MPI_INT, source, FACE, MPI_COMM_WORLD, &statty_mc_gatty);
 		for (int ii=0; ii<tmp_size_right; ii++) {
 			right.push_back(buffer3[ii]);
 		}
@@ -3115,7 +3132,7 @@ void face::receive(int source, parallelism_config & mpi_config)
 	
 	char * charbuff = new char[nchars_name_bottom+nchars_name_top+1];
 	
-	MPI_Recv(charbuff, nchars_name_bottom+nchars_name_top, MPI_CHAR, source, DATA_TRANSMISSION, MPI_COMM_WORLD, &statty_mc_gatty);
+	MPI_Recv(charbuff, nchars_name_bottom+nchars_name_top+1, MPI_CHAR, source, FACE, MPI_COMM_WORLD, &statty_mc_gatty);
 	
 	std::stringstream converter;
 	for (int jj=0; jj<nchars_name_bottom; ++jj) {
