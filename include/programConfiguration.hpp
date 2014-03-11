@@ -23,7 +23,7 @@
 #include <map>
 
 
-#define BERTINI_REAL_VERSION_STRING "0.0.103"
+#define BERTINI_REAL_VERSION_STRING "0.0.378"
 
 #include "data_type.hpp"
 
