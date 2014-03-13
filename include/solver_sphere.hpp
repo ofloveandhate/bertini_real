@@ -260,7 +260,7 @@ public:
 	
 	
 	virtual ~sphere_eval_data_mp(){
-		clear();
+		sphere_eval_data_mp::clear();
 	}
 	
 	
@@ -300,13 +300,17 @@ protected:
 		for (int ii=0; ii<2; ii++) {
 			clear_vec_mp(starting_linear[ii]);
 		}
+		free(starting_linear);
 		
-		for (int ii=0; ii<num_static_linears; ii++) {
-			clear_vec_mp(static_linear[ii]);
+		if (num_static_linears>0) {
+			for (int ii=0; ii<num_static_linears; ii++) {
+				clear_vec_mp(static_linear[ii]);
+			}
+			
+			free(static_linear);
 		}
 		
-		free(static_linear);
-		free(starting_linear);
+		
 		
 		
 		if (this->MPType == 2) {
@@ -317,13 +321,17 @@ protected:
 			for (int ii=0; ii<2; ii++) {
 				clear_vec_mp(starting_linear_full_prec[ii]);
 			}
+			free(starting_linear_full_prec);
 			
-			for (int ii=0; ii<num_static_linears; ii++) {
-				clear_vec_mp(static_linear_full_prec[ii]);
+			if (num_static_linears>0) {
+				for (int ii=0; ii<num_static_linears; ii++) {
+					clear_vec_mp(static_linear_full_prec[ii]);
+				}
+				
+				free(static_linear_full_prec);
 			}
 			
-			free(static_linear_full_prec);
-			free(starting_linear_full_prec);
+			
 		}
 		
 		
@@ -451,7 +459,7 @@ public:
 	
 	
 	virtual ~sphere_eval_data_d(){
-		clear();
+		sphere_eval_data_d::clear();
 	}
 	
 	
@@ -510,13 +518,17 @@ protected:
 		for (int ii=0; ii<2; ii++) {
 			clear_vec_d(starting_linear[ii]);
 		}
+		free(starting_linear);
 		
-		for (int ii=0; ii<num_static_linears; ii++) {
-			clear_vec_d(static_linear[ii]);
+		if (num_static_linears>0) {
+			for (int ii=0; ii<num_static_linears; ii++) {
+				clear_vec_d(static_linear[ii]);
+			}
+			
+			free(static_linear);
 		}
 		
-		free(static_linear);
-		free(starting_linear);
+		
 		
 		if (this->MPType==2)
 		{

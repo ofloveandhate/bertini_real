@@ -509,6 +509,7 @@ int multilin_solver_master_entry_point(const witness_set & W, // carries with it
 			
 		default:
 			std::cout << "MPTYPE is not 0, 1, 2, cannot clear... " << std::endl;
+			br_exit(398);
 			break;
 	}
 	

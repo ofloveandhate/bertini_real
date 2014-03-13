@@ -91,7 +91,7 @@ void membership_test_input_file(boost::filesystem::path outputFile,
 void read_incidence_matrix(int *component_numbers);
 
 /**
- //read the incicence matrix
+ read the incicence matrix
  
  returns a logical integer array, indicating whether member_point is on the given_incidence_number.  That is, the returned array (which must be initialized before passing into this function), will be 0 at all incidence number positions for which the point is not a member, and at least 1 for all points it is a member.
  */

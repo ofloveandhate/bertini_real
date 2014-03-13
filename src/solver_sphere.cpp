@@ -30,7 +30,6 @@ void sphere_config::set_memory(solver_configuration & solve_options)
 
 void sphere_eval_data_mp::init()
 {
-	solver_mp::init();
 	this->is_solution_checker_d = &check_issoln_sphere_d;
 	this->is_solution_checker_mp = &check_issoln_sphere_mp;
 	this->evaluator_function_d = &sphere_eval_d;
@@ -377,7 +376,6 @@ void sphere_eval_data_d::init()
 	}
 	
 	
-	solver_d::init();
 	this->is_solution_checker_d = &check_issoln_sphere_d;
 	this->is_solution_checker_mp = &check_issoln_sphere_mp;
 	this->evaluator_function_d = &sphere_eval_d;
@@ -658,8 +656,9 @@ int sphere_solver_master_entry_point(const witness_set						&W, // carries with 
 			
 		case 2:
 			delete ED_d;
-			
+			break;
 		default:
+			br_exit(399);
 			break;
 	}
 	

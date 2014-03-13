@@ -821,8 +821,9 @@ int midpoint_solver_master_entry_point(const witness_set						&W, // carries wit
 			break;
 		case 2:
 			delete ED_d;
-			
+			break;
 		default:
+			br_exit(397);
 			break;
 	}
 	

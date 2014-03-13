@@ -319,8 +319,8 @@ public:
 		init();
 	}
 	~solver_configuration(){
-		//		tracker_config_clear(&this->T);
-		//		tracker_config_clear(&this->T_orig);
+		tracker_config_clear(&this->T);
+		tracker_config_clear(&this->T_orig);
 		//		preproc_data_clear(&this->PPD);
 	}
 	
@@ -692,6 +692,7 @@ class solver_mp : public solver
 {
 	
 public:
+	int removeme;
 	
 	patch_eval_data_mp patch; ///< patch in x
 	
@@ -716,7 +717,6 @@ public:
 	
 	
 	void init(){
-		
 		init_mp(gamma);
 		init_mat_mp(randomizer_matrix,0,0);
 		
@@ -786,6 +786,7 @@ protected:
 	
 	void clear()
 	{
+
 		patch_eval_data_clear_mp(&this->patch);
 		
 		clear_mat_mp(randomizer_matrix);

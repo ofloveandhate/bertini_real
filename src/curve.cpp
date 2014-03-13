@@ -1455,6 +1455,8 @@ int verify_projection_ok(const witness_set & W,
 	else
 		invalid_flag = 1;
 	
+	clear_mat_mp(detme);
+	clear_mat_mp(AtimesJ);
 	clear_vec_mp(temp_rand_point);
 	clear_mp(determinant);
 	clear_mp(zerotime);

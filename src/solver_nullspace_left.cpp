@@ -1361,8 +1361,9 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 			break;
 		case 2:
 			delete ED_d;
-			
+			break;
 		default:
+			br_exit(396);
 			break;
 	}
 	
