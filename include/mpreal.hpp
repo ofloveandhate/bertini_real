@@ -1,59 +1,47 @@
 /*
-    Multi-precision floating point number class for C++. 
+    MPFR C++: Multi-precision floating point number class for C++. 
     Based on MPFR library:    http://mpfr.org
 
     Project homepage:    http://www.holoborodko.com/pavel/mpfr
     Contact e-mail:      pavel@holoborodko.com
 
-    Copyright (c) 2008-2012 Pavel Holoborodko
+    Copyright (c) 2008-2014 Pavel Holoborodko
 
     Contributors:
     Dmitriy Gubanov, Konstantin Holoborodko, Brian Gladman, 
     Helmut Jarausch, Fokko Beekhof, Ulrich Mutze, Heinz van Saanen, 
     Pere Constans, Peter van Hoof, Gael Guennebaud, Tsai Chia Cheng, 
-    Alexei Zubanov, Jauhien Piatlicki, Victor Berger, John Westwood.
+    Alexei Zubanov, Jauhien Piatlicki, Victor Berger, John Westwood,
+    Petr Aleksandrov, Orion Poplawski.
 
-    ****************************************************************************
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
+    Licensing:
+    (A) MPFR C++ is under GNU General Public License ("GPL").
+    
+    (B) Non-free licenses may also be purchased from the author, for users who 
+        do not want their programs protected by the GPL.
 
-    This library is distributed in the hope that it will be useful,
+        The non-free licenses are for users that wish to use MPFR C++ in 
+        their products but are unwilling to release their software 
+        under the GPL (which would require them to release source code 
+        and allow free redistribution).
+
+        Such users can purchase an unlimited-use license from the author.
+        Contact us for more details.
+    
+    GNU General Public License ("GPL") copyright permissions statement:
+    **************************************************************************
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-    You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-
-    ****************************************************************************
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions
-    are met:
-    
-    1. Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer.
-    
-    2. Redistributions in binary form must reproduce the above copyright
-    notice, this list of conditions and the following disclaimer in the
-    documentation and/or other materials provided with the distribution.
-    
-    3. The name of the author may not be used to endorse or promote products
-    derived from this software without specific prior written permission.
-
-    THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
-    ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-    ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
-    FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-    DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-    OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-    HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-    LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-    OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-    SUCH DAMAGE.
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #ifndef __MPREAL_H__
@@ -65,6 +53,7 @@
 #include <stdexcept>
 #include <cfloat>
 #include <cmath>
+#include <cstring>
 #include <limits>
 
 // Options
@@ -82,36 +71,55 @@
     #define IsInf(x) std::isinf(x)              // GNU C/C++ (and/or other compilers), just hope for C99 conformance
 #endif
 
+// Detect support for r-value references (move semantic). Borrowed from Eigen.
+// A Clang feature extension to determine compiler features.
+// We use it to determine 'cxx_rvalue_references'
+#ifndef __has_feature
+# define __has_feature(x) 0
+#endif
+
+#if (__has_feature(cxx_rvalue_references) || \
+    defined(__GXX_EXPERIMENTAL_CXX0X__) || __cplusplus >= 201103L || \
+    (defined(_MSC_VER) && _MSC_VER >= 1600))
+
+#define MPREAL_HAVE_MOVE_SUPPORT
+
+// Use fields in mpfr_t structure to check if it was initialized / set dummy initialization 
+#define mpfr_is_initialized(x)      (0 != (x)->_mpfr_d)
+#define mpfr_set_uninitialized(x)   ((x)->_mpfr_d = 0 )
+#endif
+
+// Detect available 64-bit capabilities
 #if defined(MPREAL_HAVE_INT64_SUPPORT)
     
     #define MPFR_USE_INTMAX_T                   // Should be defined before mpfr.h
 
-    #if defined(_MSC_VER)                       // <stdint.h> is available only in msvc2010!
+    #if defined(_MSC_VER)                       // MSVC + Windows
         #if (_MSC_VER >= 1600)                    
-            #include <stdint.h>                    
+            #include <stdint.h>                 // <stdint.h> is available only in msvc2010!
+
         #else                                   // MPFR relies on intmax_t which is available only in msvc2010
             #undef MPREAL_HAVE_INT64_SUPPORT    // Besides, MPFR & MPIR have to be compiled with msvc2010
             #undef MPFR_USE_INTMAX_T            // Since we cannot detect this, disable x64 by default
                                                 // Someone should change this manually if needed.
         #endif
-    #endif
-    
-    #if defined (__MINGW32__) || defined(__MINGW64__)
-            #include <stdint.h>                 // Equivalent to msvc2010
 
-    #elif defined (__GNUC__)
-        #if defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64) || defined(__ia64) || defined(__itanium__) || defined(_M_IA64)
+    #elif defined (__GNUC__) && defined(__linux__)
+        #if defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64) || defined(__ia64) || defined(__itanium__) || defined(_M_IA64) || defined (__PPC64__)
             #undef MPREAL_HAVE_INT64_SUPPORT    // Remove all shaman dances for x64 builds since
             #undef MPFR_USE_INTMAX_T            // GCC already supports x64 as of "long int" is 64-bit integer, nothing left to do
         #else
-            #include <stdint.h>                 // use int64_t, uint64_t otherwise.
+            #include <stdint.h>                 // use int64_t, uint64_t otherwise
         #endif
+
+    #else
+        #include <stdint.h>                     // rely on int64_t, uint64_t in all other cases, Mac OSX, etc.
     #endif
 
 #endif 
 
 #if defined(MPREAL_HAVE_MSVC_DEBUGVIEW) && defined(_MSC_VER) && defined(_DEBUG)
-#define MPREAL_MSVC_DEBUGVIEW_CODE         DebugView = toString();
+    #define MPREAL_MSVC_DEBUGVIEW_CODE     DebugView = toString();
     #define MPREAL_MSVC_DEBUGVIEW_DATA     std::string DebugView;
 #else
     #define MPREAL_MSVC_DEBUGVIEW_CODE 
@@ -128,6 +136,12 @@
 #define MPREAL_DOUBLE_BITS_OVERFLOW -1          // Triggers overflow exception during conversion to double if mpreal 
                                                 // cannot fit in MPREAL_DOUBLE_BITS_OVERFLOW bits
                                                 // = -1 disables overflow checks (default)
+#if defined(__GNUC__)
+  #define MPREAL_PERMISSIVE_EXPR __extension__
+#else
+  #define MPREAL_PERMISSIVE_EXPR
+#endif
+
 namespace mpfr {
 
 class mpreal {
@@ -143,7 +157,6 @@ public:
     // Constructors && type conversions
     mpreal();
     mpreal(const mpreal& u);
-    mpreal(const mpfr_t u);    
     mpreal(const mpf_t u);    
     mpreal(const mpz_t u,             mp_prec_t prec = mpreal::get_default_prec(), mp_rnd_t mode = mpreal::get_default_rnd());    
     mpreal(const mpq_t u,             mp_prec_t prec = mpreal::get_default_prec(), mp_rnd_t mode = mpreal::get_default_rnd());    
@@ -153,6 +166,10 @@ public:
     mpreal(const unsigned int u,      mp_prec_t prec = mpreal::get_default_prec(), mp_rnd_t mode = mpreal::get_default_rnd());
     mpreal(const long int u,          mp_prec_t prec = mpreal::get_default_prec(), mp_rnd_t mode = mpreal::get_default_rnd());
     mpreal(const int u,               mp_prec_t prec = mpreal::get_default_prec(), mp_rnd_t mode = mpreal::get_default_rnd());
+    
+    // Construct mpreal from mpfr_t structure.
+    // shared = true allows to avoid deep copy, so that mpreal and 'u' share the same data & pointers.    
+    mpreal(const mpfr_t  u, bool shared = false);   
 
 #if defined (MPREAL_HAVE_INT64_SUPPORT)
     mpreal(const uint64_t u,          mp_prec_t prec = mpreal::get_default_prec(),  mp_rnd_t mode = mpreal::get_default_rnd());
@@ -163,6 +180,11 @@ public:
     mpreal(const std::string& s,      mp_prec_t prec = mpreal::get_default_prec(), int base = 10, mp_rnd_t mode = mpreal::get_default_rnd());
 
     ~mpreal();                           
+
+#ifdef MPREAL_HAVE_MOVE_SUPPORT
+    mpreal& operator=(mpreal&& v);
+    mpreal(mpreal&& u);
+#endif
 
     // Operations
     // =
@@ -223,10 +245,10 @@ public:
     mpreal& operator-=(const int u);
     const mpreal operator-() const;
     friend const mpreal operator-(const unsigned long int b, const mpreal& a);
-    friend const mpreal operator-(const unsigned int b, const mpreal& a);
-    friend const mpreal operator-(const long int b, const mpreal& a);
-    friend const mpreal operator-(const int b, const mpreal& a);
-    friend const mpreal operator-(const double b, const mpreal& a);
+    friend const mpreal operator-(const unsigned int b,      const mpreal& a);
+    friend const mpreal operator-(const long int b,          const mpreal& a);
+    friend const mpreal operator-(const int b,               const mpreal& a);
+    friend const mpreal operator-(const double b,            const mpreal& a);
     mpreal& operator-- ();    
     const mpreal  operator-- (int);
 
@@ -252,10 +274,10 @@ public:
     mpreal& operator/=(const long int v);
     mpreal& operator/=(const int v);
     friend const mpreal operator/(const unsigned long int b, const mpreal& a);
-    friend const mpreal operator/(const unsigned int b, const mpreal& a);
-    friend const mpreal operator/(const long int b, const mpreal& a);
-    friend const mpreal operator/(const int b, const mpreal& a);
-    friend const mpreal operator/(const double b, const mpreal& a);
+    friend const mpreal operator/(const unsigned int b,      const mpreal& a);
+    friend const mpreal operator/(const long int b,          const mpreal& a);
+    friend const mpreal operator/(const int b,               const mpreal& a);
+    friend const mpreal operator/(const double b,            const mpreal& a);
 
     //<<= Fast Multiplication by 2^u
     mpreal& operator<<=(const unsigned long int u);
@@ -296,8 +318,9 @@ public:
     uint64_t        toUInt64    (mp_rnd_t mode = GMP_RNDZ)    const;
 #endif
 
-    // Get raw pointers so that mpreal can correctly be used in raw mpfr_* functions
-    ::mpfr_ptr mpfr_ptr();
+    // Get raw pointers so that mpreal can be directly used in raw mpfr_* functions
+    ::mpfr_ptr    mpfr_ptr();
+    ::mpfr_srcptr mpfr_ptr()    const;
     ::mpfr_srcptr mpfr_srcptr() const;
 
     // Convert mpreal to string with n significant digits in base b
@@ -309,113 +332,115 @@ public:
 #endif
 
     // Math Functions
-    friend const mpreal sqr (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal sqrt(const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal sqrt(const unsigned long int v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal cbrt(const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal root(const mpreal& v, unsigned long int k, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal pow (const mpreal& a, const mpreal& b, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal pow (const mpreal& a, const mpz_t b, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal pow (const mpreal& a, const unsigned long int b, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal pow (const mpreal& a, const long int b, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal pow (const unsigned long int a, const mpreal& b, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal pow (const unsigned long int a, const unsigned long int b, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal fabs(const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
+    friend const mpreal sqr (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal sqrt(const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal sqrt(const unsigned long int v, mp_rnd_t rnd_mode);
+    friend const mpreal cbrt(const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal root(const mpreal& v, unsigned long int k, mp_rnd_t rnd_mode);
+    friend const mpreal pow (const mpreal& a, const mpreal& b, mp_rnd_t rnd_mode);
+    friend const mpreal pow (const mpreal& a, const mpz_t b, mp_rnd_t rnd_mode);
+    friend const mpreal pow (const mpreal& a, const unsigned long int b, mp_rnd_t rnd_mode);
+    friend const mpreal pow (const mpreal& a, const long int b, mp_rnd_t rnd_mode);
+    friend const mpreal pow (const unsigned long int a, const mpreal& b, mp_rnd_t rnd_mode);
+    friend const mpreal pow (const unsigned long int a, const unsigned long int b, mp_rnd_t rnd_mode);
+    friend const mpreal fabs(const mpreal& v, mp_rnd_t rnd_mode);
 
-    friend const mpreal abs(const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal dim(const mpreal& a, const mpreal& b, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend inline const mpreal mul_2ui(const mpreal& v, unsigned long int k, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend inline const mpreal mul_2si(const mpreal& v, long int k, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend inline const mpreal div_2ui(const mpreal& v, unsigned long int k, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend inline const mpreal div_2si(const mpreal& v, long int k, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
+    friend const mpreal abs(const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal dim(const mpreal& a, const mpreal& b, mp_rnd_t rnd_mode);
+    friend inline const mpreal mul_2ui(const mpreal& v, unsigned long int k, mp_rnd_t rnd_mode);
+    friend inline const mpreal mul_2si(const mpreal& v, long int k, mp_rnd_t rnd_mode);
+    friend inline const mpreal div_2ui(const mpreal& v, unsigned long int k, mp_rnd_t rnd_mode);
+    friend inline const mpreal div_2si(const mpreal& v, long int k, mp_rnd_t rnd_mode);
     friend int cmpabs(const mpreal& a,const mpreal& b);
     
-    friend const mpreal log  (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal log2 (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal log10(const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal exp  (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd()); 
-    friend const mpreal exp2 (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal exp10(const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal log1p(const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal expm1(const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
+    friend const mpreal log  (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal log2 (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal log10(const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal exp  (const mpreal& v, mp_rnd_t rnd_mode); 
+    friend const mpreal exp2 (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal exp10(const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal log1p(const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal expm1(const mpreal& v, mp_rnd_t rnd_mode);
 
-    friend const mpreal cos(const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal sin(const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal tan(const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal sec(const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal csc(const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal cot(const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend int sin_cos(mpreal& s, mpreal& c, const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
+    friend const mpreal cos(const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal sin(const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal tan(const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal sec(const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal csc(const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal cot(const mpreal& v, mp_rnd_t rnd_mode);
+    friend int sin_cos(mpreal& s, mpreal& c, const mpreal& v, mp_rnd_t rnd_mode);
 
-    friend const mpreal acos  (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal asin  (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal atan  (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal atan2 (const mpreal& y, const mpreal& x, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal acot  (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal asec  (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal acsc  (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
+    friend const mpreal acos  (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal asin  (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal atan  (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal atan2 (const mpreal& y, const mpreal& x, mp_rnd_t rnd_mode);
+    friend const mpreal acot  (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal asec  (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal acsc  (const mpreal& v, mp_rnd_t rnd_mode);
 
-    friend const mpreal cosh  (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal sinh  (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal tanh  (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal sech  (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal csch  (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal coth  (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal acosh (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal asinh (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal atanh (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal acoth (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal asech (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal acsch (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
+    friend const mpreal cosh  (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal sinh  (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal tanh  (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal sech  (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal csch  (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal coth  (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal acosh (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal asinh (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal atanh (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal acoth (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal asech (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal acsch (const mpreal& v, mp_rnd_t rnd_mode);
 
-    friend const mpreal hypot (const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
+    friend const mpreal hypot (const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode);
 
-    friend const mpreal fac_ui (unsigned long int v,  mp_prec_t prec = mpreal::get_default_prec(), mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal eint   (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
+    friend const mpreal fac_ui (unsigned long int v,  mp_prec_t prec, mp_rnd_t rnd_mode);
+    friend const mpreal eint   (const mpreal& v, mp_rnd_t rnd_mode);
 
-    friend const mpreal gamma    (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal lngamma  (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal lgamma   (const mpreal& v, int *signp = 0, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal zeta     (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal erf      (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal erfc     (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal besselj0 (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd()); 
-    friend const mpreal besselj1 (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd()); 
-    friend const mpreal besseljn (long n, const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal bessely0 (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal bessely1 (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal besselyn (long n, const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd()); 
-    friend const mpreal fma      (const mpreal& v1, const mpreal& v2, const mpreal& v3, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal fms      (const mpreal& v1, const mpreal& v2, const mpreal& v3, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal agm      (const mpreal& v1, const mpreal& v2, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal sum      (const mpreal tab[], unsigned long int n, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
+    friend const mpreal gamma    (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal lngamma  (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal lgamma   (const mpreal& v, int *signp, mp_rnd_t rnd_mode);
+    friend const mpreal zeta     (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal erf      (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal erfc     (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal besselj0 (const mpreal& v, mp_rnd_t rnd_mode); 
+    friend const mpreal besselj1 (const mpreal& v, mp_rnd_t rnd_mode); 
+    friend const mpreal besseljn (long n, const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal bessely0 (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal bessely1 (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal besselyn (long n, const mpreal& v, mp_rnd_t rnd_mode); 
+    friend const mpreal fma      (const mpreal& v1, const mpreal& v2, const mpreal& v3, mp_rnd_t rnd_mode);
+    friend const mpreal fms      (const mpreal& v1, const mpreal& v2, const mpreal& v3, mp_rnd_t rnd_mode);
+    friend const mpreal agm      (const mpreal& v1, const mpreal& v2, mp_rnd_t rnd_mode);
+    friend const mpreal sum      (const mpreal tab[], unsigned long int n, mp_rnd_t rnd_mode);
     friend int sgn(const mpreal& v); // returns -1 or +1
 
 // MPFR 2.4.0 Specifics
 #if (MPFR_VERSION >= MPFR_VERSION_NUM(2,4,0))
-    friend int          sinh_cosh   (mpreal& s, mpreal& c, const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal li2         (const mpreal& v,                       mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal fmod        (const mpreal& x, const mpreal& y,      mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal rec_sqrt    (const mpreal& v,                       mp_rnd_t rnd_mode = mpreal::get_default_rnd());
+    friend int          sinh_cosh   (mpreal& s, mpreal& c, const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal li2         (const mpreal& v,                       mp_rnd_t rnd_mode);
+    friend const mpreal fmod        (const mpreal& x, const mpreal& y,      mp_rnd_t rnd_mode);
+    friend const mpreal rec_sqrt    (const mpreal& v,                       mp_rnd_t rnd_mode);
 
     // MATLAB's semantic equivalents
-    friend const mpreal rem (const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode = mpreal::get_default_rnd()); // Remainder after division
-    friend const mpreal mod (const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode = mpreal::get_default_rnd()); // Modulus after division
+    friend const mpreal rem (const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode); // Remainder after division
+    friend const mpreal mod (const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode); // Modulus after division
 #endif
 
 // MPFR 3.0.0 Specifics
 #if (MPFR_VERSION >= MPFR_VERSION_NUM(3,0,0))
-    friend const mpreal digamma (const mpreal& v,        mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal ai      (const mpreal& v,        mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal urandom (gmp_randstate_t& state, mp_rnd_t rnd_mode = mpreal::get_default_rnd());     // use gmp_randinit_default() to init state, gmp_randclear() to clear
+    friend const mpreal digamma (const mpreal& v,        mp_rnd_t rnd_mode);
+    friend const mpreal ai      (const mpreal& v,        mp_rnd_t rnd_mode);
+    friend const mpreal urandom (gmp_randstate_t& state, mp_rnd_t rnd_mode);     // use gmp_randinit_default() to init state, gmp_randclear() to clear
+    friend const mpreal grandom (gmp_randstate_t& state, mp_rnd_t rnd_mode);     // use gmp_randinit_default() to init state, gmp_randclear() to clear
+    friend const mpreal grandom (unsigned int seed);
 #endif
     
     // Uniformly distributed random number generation in [0,1] using
     // Mersenne-Twister algorithm by default.
     // Use parameter to setup seed, e.g.: random((unsigned)time(NULL))
     // Check urandom() for more precise control.
-    friend const mpreal random(unsigned int seed = 0);
-    
+    friend const mpreal random(unsigned int seed);
+
     // Exponent and mantissa manipulation
     friend const mpreal frexp(const mpreal& v, mp_exp_t* exp);    
     friend const mpreal ldexp(const mpreal& v, mp_exp_t exp);
@@ -426,31 +451,31 @@ public:
 
     // Constants
     // don't forget to call mpfr_free_cache() for every thread where you are using const-functions
-    friend const mpreal const_log2      (mp_prec_t prec = mpreal::get_default_prec(), mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal const_pi        (mp_prec_t prec = mpreal::get_default_prec(), mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal const_euler     (mp_prec_t prec = mpreal::get_default_prec(), mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal const_catalan   (mp_prec_t prec = mpreal::get_default_prec(), mp_rnd_t rnd_mode = mpreal::get_default_rnd());
+    friend const mpreal const_log2      (mp_prec_t prec, mp_rnd_t rnd_mode);
+    friend const mpreal const_pi        (mp_prec_t prec, mp_rnd_t rnd_mode);
+    friend const mpreal const_euler     (mp_prec_t prec, mp_rnd_t rnd_mode);
+    friend const mpreal const_catalan   (mp_prec_t prec, mp_rnd_t rnd_mode);
 
     // returns +inf iff sign>=0 otherwise -inf
-    friend const mpreal const_infinity(int sign = 1, mp_prec_t prec = mpreal::get_default_prec(), mp_rnd_t rnd_mode = mpreal::get_default_rnd());
+    friend const mpreal const_infinity(int sign, mp_prec_t prec, mp_rnd_t rnd_mode);
 
     // Output/ Input
     friend std::ostream& operator<<(std::ostream& os, const mpreal& v);
     friend std::istream& operator>>(std::istream& is, mpreal& v);
 
     // Integer Related Functions
-    friend const mpreal rint (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
+    friend const mpreal rint (const mpreal& v, mp_rnd_t rnd_mode);
     friend const mpreal ceil (const mpreal& v);
     friend const mpreal floor(const mpreal& v);
     friend const mpreal round(const mpreal& v);
     friend const mpreal trunc(const mpreal& v);
-    friend const mpreal rint_ceil   (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal rint_floor  (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal rint_round  (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal rint_trunc  (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal frac        (const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal remainder   (         const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal remquo      (long* q, const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
+    friend const mpreal rint_ceil   (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal rint_floor  (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal rint_round  (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal rint_trunc  (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal frac        (const mpreal& v, mp_rnd_t rnd_mode);
+    friend const mpreal remainder   (         const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode);
+    friend const mpreal remquo      (long* q, const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode);
     
     // Miscellaneous Functions
     friend const mpreal nexttoward (const mpreal& x, const mpreal& y);
@@ -517,19 +542,22 @@ public:
     // Efficient swapping of two mpreal values - needed for std algorithms
     friend void swap(mpreal& x, mpreal& y);
     
-    friend const mpreal fmax(const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
-    friend const mpreal fmin(const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
+    friend const mpreal fmax(const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode);
+    friend const mpreal fmin(const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode);
 
 private:
     // Human friendly Debug Preview in Visual Studio.
     // Put one of these lines:
     //
-    // mpfr::mpreal=<DebugView>                                ; Show value only
+    // mpfr::mpreal=<DebugView>                              ; Show value only
     // mpfr::mpreal=<DebugView>, <mp[0]._mpfr_prec,u>bits    ; Show value & precision
     // 
     // at the beginning of
     // [Visual Studio Installation Folder]\Common7\Packages\Debugger\autoexp.dat
     MPREAL_MSVC_DEBUGVIEW_DATA
+
+    // "Smart" resources deallocation. Checks if instance initialized before deletion.
+    void clear(::mpfr_ptr);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -558,10 +586,35 @@ inline mpreal::mpreal(const mpreal& u)
     MPREAL_MSVC_DEBUGVIEW_CODE;
 }
 
-inline mpreal::mpreal(const mpfr_t u)
+#ifdef MPREAL_HAVE_MOVE_SUPPORT
+inline mpreal::mpreal(mpreal&& other)
 {
-    mpfr_init2(mp,mpfr_get_prec(u));
-    mpfr_set(mp,u,mpreal::get_default_rnd());
+    mpfr_set_uninitialized(mpfr_ptr());     // make sure "other" holds no pinter to actual data 
+    mpfr_swap(mpfr_ptr(), other.mpfr_ptr());
+
+    MPREAL_MSVC_DEBUGVIEW_CODE;
+}
+
+inline mpreal& mpreal::operator=(mpreal&& other)
+{
+    mpfr_swap(mpfr_ptr(), other.mpfr_ptr());
+
+    MPREAL_MSVC_DEBUGVIEW_CODE;
+    return *this;
+}
+#endif
+
+inline mpreal::mpreal(const mpfr_t  u, bool shared)
+{
+    if(shared)
+    {
+        std::memcpy(mp, u, sizeof(mpfr_t));
+    }
+    else
+    {
+        mpfr_init2(mp, mpfr_get_prec(u));
+        mpfr_set  (mp, u, mpreal::get_default_rnd());
+    }
 
     MPREAL_MSVC_DEBUGVIEW_CODE;
 }
@@ -681,9 +734,17 @@ inline mpreal::mpreal(const std::string& s, mp_prec_t prec, int base, mp_rnd_t m
     MPREAL_MSVC_DEBUGVIEW_CODE;
 }
 
+inline void mpreal::clear(::mpfr_ptr x)
+{
+#ifdef MPREAL_HAVE_MOVE_SUPPORT
+    if(mpfr_is_initialized(x)) 
+#endif
+    mpfr_clear(x);
+}
+
 inline mpreal::~mpreal() 
 { 
-    mpfr_clear(mp);
+    clear(mpfr_ptr());
 }                           
 
 // internal namespace needed for template magic
@@ -754,6 +815,9 @@ const mpreal sqrt(const int v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
 const mpreal sqrt(const long double v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
 const mpreal sqrt(const double v, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
 
+// abs
+inline const mpreal abs(const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd());
+
 //////////////////////////////////////////////////////////////////////////
 // pow
 const mpreal pow(const mpreal& a, const unsigned int b, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
@@ -806,6 +870,11 @@ const mpreal pow(const double a, const unsigned int b, mp_rnd_t rnd_mode = mprea
 const mpreal pow(const double a, const long int b, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
 const mpreal pow(const double a, const int b, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
 
+inline const mpreal mul_2ui(const mpreal& v, unsigned long int k, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
+inline const mpreal mul_2si(const mpreal& v, long int k, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
+inline const mpreal div_2ui(const mpreal& v, unsigned long int k, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
+inline const mpreal div_2si(const mpreal& v, long int k, mp_rnd_t rnd_mode = mpreal::get_default_rnd());
+
 //////////////////////////////////////////////////////////////////////////
 // Estimate machine epsilon for the given precision
 // Returns smallest eps such that 1.0 + eps != 1.0
@@ -856,9 +925,9 @@ inline mpreal& mpreal::operator=(const mpreal& v)
 		mp_prec_t tp = mpfr_get_prec(mp);
 		mp_prec_t vp = mpfr_get_prec(v.mp);
 
-		if(tp < vp){
-			mpfr_clear(mp);
-			mpfr_init2(mp, vp);
+		if(tp != vp){
+			clear(mpfr_ptr());
+			mpfr_init2(mpfr_ptr(), vp);
 		}
 
         mpfr_set(mp, v.mp, mpreal::get_default_rnd());
@@ -967,7 +1036,7 @@ inline mpreal& mpreal::operator=(const char* s)
         MPREAL_MSVC_DEBUGVIEW_CODE;
     }
 
-    mpfr_clear(t);
+    clear(t);
     return *this;
 }
 
@@ -990,7 +1059,7 @@ inline mpreal& mpreal::operator=(const std::string& s)
         MPREAL_MSVC_DEBUGVIEW_CODE;
     }
 
-    mpfr_clear(t);
+    clear(t);
     return *this;
 }
 
@@ -1087,9 +1156,9 @@ inline const mpreal mpreal::operator+()const    {    return mpreal(*this); }
 
 inline const mpreal operator+(const mpreal& a, const mpreal& b)
 {
-    // prec(a+b) = max(prec(a),prec(b))
-    if(a.get_prec()>b.get_prec()) return mpreal(a) += b;
-    else                          return mpreal(b) += a;
+	mpreal c(0, (std::max)(mpfr_get_prec(a.mpfr_ptr()), mpfr_get_prec(b.mpfr_ptr())));
+	mpfr_add(c.mpfr_ptr(), a.mpfr_srcptr(), b.mpfr_srcptr(), mpreal::get_default_rnd());
+	return c;
 }
 
 inline mpreal& mpreal::operator++() 
@@ -1118,7 +1187,7 @@ inline const mpreal mpreal::operator-- (int)
 
 //////////////////////////////////////////////////////////////////////////
 // - Subtraction
-inline mpreal& mpreal::operator-= (const mpreal& v)
+inline mpreal& mpreal::operator-=(const mpreal& v)
 {
     mpfr_sub(mp,mp,v.mp,mpreal::get_default_rnd());
     MPREAL_MSVC_DEBUGVIEW_CODE;
@@ -1195,53 +1264,49 @@ inline const mpreal mpreal::operator-()const
 
 inline const mpreal operator-(const mpreal& a, const mpreal& b)
 {
-    // prec(a-b) = max(prec(a),prec(b))
-    if(a.getPrecision() >= b.getPrecision())    
-    {
-        return   mpreal(a) -= b;
-    }else{
-        mpreal x(a);
-        x.setPrecision(b.getPrecision());
-        return x -= b;        
-    }
+	mpreal c(0, (std::max)(mpfr_get_prec(a.mpfr_ptr()), mpfr_get_prec(b.mpfr_ptr())));
+	mpfr_sub(c.mpfr_ptr(), a.mpfr_srcptr(), b.mpfr_srcptr(), mpreal::get_default_rnd());
+	return c;
 }
 
 inline const mpreal operator-(const double  b, const mpreal& a)
 {
 #if (MPFR_VERSION >= MPFR_VERSION_NUM(2,4,0))
-    mpreal x(a);
-    mpfr_d_sub(x.mp,b,a.mp,mpreal::get_default_rnd());
+    mpreal x(0, mpfr_get_prec(a.mpfr_ptr()));
+    mpfr_d_sub(x.mpfr_ptr(), b, a.mpfr_srcptr(), mpreal::get_default_rnd());
     return x;
 #else
-    return mpreal(b) -= a;
+    mpreal x(b, mpfr_get_prec(a.mpfr_ptr()));
+    x -= a;
+    return x;
 #endif
 }
 
 inline const mpreal operator-(const unsigned long int b, const mpreal& a)
 {
-    mpreal x(a);
-    mpfr_ui_sub(x.mp,b,a.mp,mpreal::get_default_rnd());
+    mpreal x(0, mpfr_get_prec(a.mpfr_ptr()));
+    mpfr_ui_sub(x.mpfr_ptr(), b, a.mpfr_srcptr(), mpreal::get_default_rnd());
     return x;
 }
 
 inline const mpreal operator-(const unsigned int b, const mpreal& a)
 {
-    mpreal x(a);
-    mpfr_ui_sub(x.mp,b,a.mp,mpreal::get_default_rnd());
+    mpreal x(0, mpfr_get_prec(a.mpfr_ptr()));
+    mpfr_ui_sub(x.mpfr_ptr(), b, a.mpfr_srcptr(), mpreal::get_default_rnd());
     return x;
 }
 
 inline const mpreal operator-(const long int b, const mpreal& a)
 {
-    mpreal x(a);
-    mpfr_si_sub(x.mp,b,a.mp,mpreal::get_default_rnd());
+    mpreal x(0, mpfr_get_prec(a.mpfr_ptr()));
+    mpfr_si_sub(x.mpfr_ptr(), b, a.mpfr_srcptr(), mpreal::get_default_rnd());
     return x;
 }
 
 inline const mpreal operator-(const int b, const mpreal& a)
 {
-    mpreal x(a);
-    mpfr_si_sub(x.mp,b,a.mp,mpreal::get_default_rnd());
+    mpreal x(0, mpfr_get_prec(a.mpfr_ptr()));
+    mpfr_si_sub(x.mpfr_ptr(), b, a.mpfr_srcptr(), mpreal::get_default_rnd());
     return x;
 }
 
@@ -1282,7 +1347,6 @@ inline mpreal& mpreal::operator*=(const double v)
 #else
     *this *= mpreal(v);    
 #endif
-
     MPREAL_MSVC_DEBUGVIEW_CODE;
     return *this;
 }
@@ -1317,9 +1381,9 @@ inline mpreal& mpreal::operator*=(const int v)
 
 inline const mpreal operator*(const mpreal& a, const mpreal& b)
 {
-    // prec(a*b) = max(prec(a),prec(b))
-    if(a.getPrecision() >= b.getPrecision())    return   mpreal(a) *= b;
-    else                                        return   mpreal(b) *= a;        
+	mpreal c(0, (std::max)(mpfr_get_prec(a.mpfr_ptr()), mpfr_get_prec(b.mpfr_ptr())));
+	mpfr_mul(c.mpfr_ptr(), a.mpfr_srcptr(), b.mpfr_srcptr(), mpreal::get_default_rnd());
+	return c;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1393,54 +1457,49 @@ inline mpreal& mpreal::operator/=(const int v)
 
 inline const mpreal operator/(const mpreal& a, const mpreal& b)
 {
-    // prec(a/b) = max(prec(a),prec(b))
-    if(a.getPrecision() >= b.getPrecision())    
-    {
-        return   mpreal(a) /= b;
-    }else{
-
-        mpreal x(a);
-        x.setPrecision(b.getPrecision());
-        return x /= b;        
-    }
+	mpreal c(0, (std::max)(mpfr_get_prec(a.mpfr_ptr()), mpfr_get_prec(b.mpfr_ptr())));
+	mpfr_div(c.mpfr_ptr(), a.mpfr_srcptr(), b.mpfr_srcptr(), mpreal::get_default_rnd());
+	return c;
 }
 
 inline const mpreal operator/(const unsigned long int b, const mpreal& a)
 {
-    mpreal x(a);
-    mpfr_ui_div(x.mp,b,a.mp,mpreal::get_default_rnd());
+    mpreal x(0, mpfr_get_prec(a.mpfr_ptr()));
+    mpfr_ui_div(x.mpfr_ptr(), b, a.mpfr_srcptr(), mpreal::get_default_rnd());
     return x;
 }
 
 inline const mpreal operator/(const unsigned int b, const mpreal& a)
 {
-    mpreal x(a);
-    mpfr_ui_div(x.mp,b,a.mp,mpreal::get_default_rnd());
+    mpreal x(0, mpfr_get_prec(a.mpfr_ptr()));
+    mpfr_ui_div(x.mpfr_ptr(), b, a.mpfr_srcptr(), mpreal::get_default_rnd());
     return x;
 }
 
 inline const mpreal operator/(const long int b, const mpreal& a)
 {
-    mpreal x(a);
-    mpfr_si_div(x.mp,b,a.mp,mpreal::get_default_rnd());
+    mpreal x(0, mpfr_get_prec(a.mpfr_ptr()));
+    mpfr_si_div(x.mpfr_ptr(), b, a.mpfr_srcptr(),mpreal::get_default_rnd());
     return x;
 }
 
 inline const mpreal operator/(const int b, const mpreal& a)
 {
-    mpreal x(a);
-    mpfr_si_div(x.mp,b,a.mp,mpreal::get_default_rnd());
+    mpreal x(0, mpfr_get_prec(a.mpfr_ptr()));
+    mpfr_si_div(x.mpfr_ptr(), b, a.mpfr_srcptr(),mpreal::get_default_rnd());
     return x;
 }
 
 inline const mpreal operator/(const double  b, const mpreal& a)
 {
 #if (MPFR_VERSION >= MPFR_VERSION_NUM(2,4,0))
-    mpreal x(a);
-    mpfr_d_div(x.mp,b,a.mp,mpreal::get_default_rnd());
+    mpreal x(0, mpfr_get_prec(a.mpfr_ptr()));
+    mpfr_d_div(x.mpfr_ptr(), b, a.mpfr_srcptr(),mpreal::get_default_rnd());
     return x;
 #else
-    return mpreal(b) /= a;
+    mpreal x(0, mpfr_get_prec(a.mpfr_ptr()));
+    x /= a;
+    return x;
 #endif
 }
 
@@ -1611,8 +1670,9 @@ inline int64_t      mpreal::toInt64 (mp_rnd_t mode)    const{    return mpfr_get
 inline uint64_t     mpreal::toUInt64(mp_rnd_t mode)    const{    return mpfr_get_uj(mp, mode);    }
 #endif
 
-inline ::mpfr_ptr       mpreal::mpfr_ptr()             {    return mp;    }
-inline ::mpfr_srcptr    mpreal::mpfr_srcptr() const    {    return const_cast< ::mpfr_srcptr >(mp);    }
+inline ::mpfr_ptr     mpreal::mpfr_ptr()             { return mp; }
+inline ::mpfr_srcptr  mpreal::mpfr_ptr()    const    { return mp; }
+inline ::mpfr_srcptr  mpreal::mpfr_srcptr() const    { return mp; }
 
 template <class T>
 inline std::string toString(T t, std::ios_base & (*f)(std::ios_base&))
@@ -1818,7 +1878,7 @@ inline int mpreal::getPrecision() const
 
 inline mpreal& mpreal::setPrecision(int Precision, mp_rnd_t RoundingMode)
 {
-    mpfr_prec_round(mp,Precision, RoundingMode);
+    mpfr_prec_round(mp, Precision, RoundingMode);
     MPREAL_MSVC_DEBUGVIEW_CODE;
     return *this;
 }
@@ -1924,17 +1984,17 @@ inline mpreal maxval(mp_prec_t prec)
 
 inline bool isEqualUlps(const mpreal& a, const mpreal& b, int maxUlps)
 {
-  return abs(a - b) <= machine_epsilon((max)(abs(a), abs(b))) * maxUlps;
+    return abs(a - b) <= machine_epsilon((max)(abs(a), abs(b))) * maxUlps;
 }
 
 inline bool isEqualFuzzy(const mpreal& a, const mpreal& b, const mpreal& eps)
 {
-    return abs(a - b) <= (min)(abs(a), abs(b)) * eps;
+    return abs(a - b) <= eps;
 }
 
 inline bool isEqualFuzzy(const mpreal& a, const mpreal& b)
 {
-    return isEqualFuzzy(a, b, machine_epsilon((min)(abs(a), abs(b))));
+    return isEqualFuzzy(a, b, machine_epsilon((max)(1, (min)(abs(a), abs(b)))));
 }
 
 inline const mpreal modf(const mpreal& v, mpreal& n)
@@ -2002,25 +2062,22 @@ inline mp_exp_t mpreal::get_emax_max (void)
 //////////////////////////////////////////////////////////////////////////
 // Mathematical Functions
 //////////////////////////////////////////////////////////////////////////
-inline const mpreal sqr(const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_sqr(x.mp,x.mp,rnd_mode);
-    return x;
-}
+#define MPREAL_UNARY_MATH_FUNCTION_BODY(f)                    \
+        mpreal y(0, mpfr_get_prec(x.mpfr_srcptr()));          \
+        mpfr_##f(y.mpfr_ptr(), x.mpfr_srcptr(), r);           \
+        return y; 
 
-inline const mpreal sqrt(const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_sqrt(x.mp,x.mp,rnd_mode);
-    return x;
-}
+inline const mpreal sqr  (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd())
+{   MPREAL_UNARY_MATH_FUNCTION_BODY(sqr );    }
 
-inline const mpreal sqrt(const unsigned long int v, mp_rnd_t rnd_mode)
+inline const mpreal sqrt (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd())
+{   MPREAL_UNARY_MATH_FUNCTION_BODY(sqrt);    }
+
+inline const mpreal sqrt(const unsigned long int x, mp_rnd_t r)
 {
-    mpreal x;
-    mpfr_sqrt_ui(x.mp,v,rnd_mode);
-    return x;
+    mpreal y;
+    mpfr_sqrt_ui(y.mpfr_ptr(), x, r);
+    return y;
 }
 
 inline const mpreal sqrt(const unsigned int v, mp_rnd_t rnd_mode)
@@ -2030,452 +2087,156 @@ inline const mpreal sqrt(const unsigned int v, mp_rnd_t rnd_mode)
 
 inline const mpreal sqrt(const long int v, mp_rnd_t rnd_mode)
 {
-    if (v>=0)    return sqrt(static_cast<unsigned long int>(v),rnd_mode);
+    if (v>=0)   return sqrt(static_cast<unsigned long int>(v),rnd_mode);
     else        return mpreal().setNan(); // NaN  
 }
 
 inline const mpreal sqrt(const int v, mp_rnd_t rnd_mode)
 {
-    if (v>=0)    return sqrt(static_cast<unsigned long int>(v),rnd_mode);
+    if (v>=0)   return sqrt(static_cast<unsigned long int>(v),rnd_mode);
     else        return mpreal().setNan(); // NaN
 }
 
-inline const mpreal sqrt(const long double v, mp_rnd_t rnd_mode)
+inline const mpreal root(const mpreal& x, unsigned long int k, mp_rnd_t r = mpreal::get_default_rnd())
 {
-    return sqrt(mpreal(v),rnd_mode);
+    mpreal y(0, mpfr_get_prec(x.mpfr_srcptr())); 
+    mpfr_root(y.mpfr_ptr(), x.mpfr_srcptr(), k, r);  
+    return y; 
 }
 
-inline const mpreal sqrt(const double v, mp_rnd_t rnd_mode)
+inline const mpreal dim(const mpreal& a, const mpreal& b, mp_rnd_t r = mpreal::get_default_rnd())
 {
-    return sqrt(mpreal(v),rnd_mode);
-}
-
-inline const mpreal cbrt(const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_cbrt(x.mp,x.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal root(const mpreal& v, unsigned long int k, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_root(x.mp,x.mp,k,rnd_mode);
-    return x;
-}
-
-inline const mpreal fabs(const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_abs(x.mp,x.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal abs(const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_abs(x.mp,x.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal dim(const mpreal& a, const mpreal& b, mp_rnd_t rnd_mode)
-{
-    mpreal x(a);
-    mpfr_dim(x.mp,a.mp,b.mp,rnd_mode);
-    return x;
+    mpreal y(0, mpfr_get_prec(a.mpfr_srcptr()));
+    mpfr_dim(y.mpfr_ptr(), a.mpfr_srcptr(), b.mpfr_srcptr(), r);
+    return y;
 }
 
 inline int cmpabs(const mpreal& a,const mpreal& b)
 {
-    return mpfr_cmpabs(a.mp,b.mp);
+    return mpfr_cmpabs(a.mpfr_ptr(), b.mpfr_srcptr());
 }
 
-inline const mpreal log  (const mpreal& v, mp_rnd_t rnd_mode)
+inline int sin_cos(mpreal& s, mpreal& c, const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd())
 {
-    mpreal x(v);
-    mpfr_log(x.mp,v.mp,rnd_mode);
-    return x;
+    return mpfr_sin_cos(s.mpfr_ptr(), c.mpfr_ptr(), v.mpfr_srcptr(), rnd_mode);
 }
 
-inline const mpreal log2(const mpreal& v, mp_rnd_t rnd_mode)
+inline const mpreal sqrt  (const long double v, mp_rnd_t rnd_mode)    {   return sqrt(mpreal(v),rnd_mode);    }
+inline const mpreal sqrt  (const double v, mp_rnd_t rnd_mode)         {   return sqrt(mpreal(v),rnd_mode);    }
+
+inline const mpreal cbrt  (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(cbrt );    }
+inline const mpreal fabs  (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(abs  );    }
+inline const mpreal abs   (const mpreal& x, mp_rnd_t r) {   MPREAL_UNARY_MATH_FUNCTION_BODY(abs  );    }
+inline const mpreal log   (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(log  );    }
+inline const mpreal log2  (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(log2 );    }
+inline const mpreal log10 (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(log10);    }
+inline const mpreal exp   (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(exp  );    }
+inline const mpreal exp2  (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(exp2 );    }
+inline const mpreal exp10 (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(exp10);    }
+inline const mpreal cos   (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(cos  );    }
+inline const mpreal sin   (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(sin  );    }
+inline const mpreal tan   (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(tan  );    }
+inline const mpreal sec   (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(sec  );    }
+inline const mpreal csc   (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(csc  );    }
+inline const mpreal cot   (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(cot  );    }
+inline const mpreal acos  (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(acos );     }
+inline const mpreal asin  (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(asin );     }
+inline const mpreal atan  (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(atan );     }
+
+inline const mpreal acot  (const mpreal& v, mp_rnd_t r = mpreal::get_default_rnd()) {   return atan (1/v, r);                      }
+inline const mpreal asec  (const mpreal& v, mp_rnd_t r = mpreal::get_default_rnd()) {   return acos (1/v, r);                      }
+inline const mpreal acsc  (const mpreal& v, mp_rnd_t r = mpreal::get_default_rnd()) {   return asin (1/v, r);                      }
+inline const mpreal acoth (const mpreal& v, mp_rnd_t r = mpreal::get_default_rnd()) {   return atanh(1/v, r);                      }
+inline const mpreal asech (const mpreal& v, mp_rnd_t r = mpreal::get_default_rnd()) {   return acosh(1/v, r);                      }
+inline const mpreal acsch (const mpreal& v, mp_rnd_t r = mpreal::get_default_rnd()) {   return asinh(1/v, r);                      }
+
+inline const mpreal cosh  (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(cosh );    }
+inline const mpreal sinh  (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(sinh );    }
+inline const mpreal tanh  (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(tanh );    }
+inline const mpreal sech  (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(sech );    }
+inline const mpreal csch  (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(csch );    }
+inline const mpreal coth  (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(coth );    }
+inline const mpreal acosh (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(acosh);    }
+inline const mpreal asinh (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(asinh);    }
+inline const mpreal atanh (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(atanh);    }
+
+inline const mpreal log1p   (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(log1p  );    }
+inline const mpreal expm1   (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(expm1  );    }
+inline const mpreal eint    (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(eint   );    }
+inline const mpreal gamma   (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(gamma  );    }
+inline const mpreal lngamma (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(lngamma);    }
+inline const mpreal zeta    (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(zeta   );    }
+inline const mpreal erf     (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(erf    );    }
+inline const mpreal erfc    (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(erfc   );    }
+inline const mpreal besselj0(const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(j0     );    }
+inline const mpreal besselj1(const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(j1     );    }
+inline const mpreal bessely0(const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(y0     );    }
+inline const mpreal bessely1(const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(y1     );    }
+
+inline const mpreal atan2 (const mpreal& y, const mpreal& x, mp_rnd_t rnd_mode = mpreal::get_default_rnd())
 {
-    mpreal x(v);
-    mpfr_log2(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal log10(const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_log10(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal exp(const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_exp(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal exp2(const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_exp2(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal exp10(const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_exp10(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal cos(const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_cos(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal sin(const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_sin(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal tan(const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_tan(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal sec(const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_sec(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal csc(const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_csc(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal cot(const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_cot(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline int sin_cos(mpreal& s, mpreal& c, const mpreal& v, mp_rnd_t rnd_mode)
-{
-    return mpfr_sin_cos(s.mp,c.mp,v.mp,rnd_mode);
-}
-
-inline const mpreal acos (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_acos(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal asin (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_asin(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal atan (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_atan(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal acot (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    return atan(1/v, rnd_mode);
-}
-
-inline const mpreal asec (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    return acos(1/v, rnd_mode);
-}
-
-inline const mpreal acsc (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    return asin(1/v, rnd_mode);
-}
-
-inline const mpreal acoth (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    return atanh(1/v, rnd_mode);
-}
-
-inline const mpreal asech (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    return acosh(1/v, rnd_mode);
-}
-
-inline const mpreal acsch (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    return asinh(1/v, rnd_mode);
-}
-
-inline const mpreal atan2 (const mpreal& y, const mpreal& x, mp_rnd_t rnd_mode)
-{
-    mpreal a;
-    mp_prec_t yp, xp;
-
-    yp = y.get_prec(); 
-    xp = x.get_prec(); 
-
-    a.set_prec(yp>xp?yp:xp);
-
-    mpfr_atan2(a.mp, y.mp, x.mp, rnd_mode);
-
+    mpreal a(0,(std::max)(y.getPrecision(), x.getPrecision()));
+    mpfr_atan2(a.mpfr_ptr(), y.mpfr_srcptr(), x.mpfr_srcptr(), rnd_mode);
     return a;
 }
 
-inline const mpreal cosh (const mpreal& v, mp_rnd_t rnd_mode)
+inline const mpreal hypot (const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode = mpreal::get_default_rnd())
 {
-    mpreal x(v);
-    mpfr_cosh(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal sinh (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_sinh(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal tanh (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_tanh(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal sech (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_sech(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal csch (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_csch(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal coth (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_coth(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal acosh  (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_acosh(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal asinh  (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_asinh(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal atanh  (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_atanh(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal hypot (const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode)
-{
-    mpreal a;
-    mp_prec_t yp, xp;
-
-    yp = y.get_prec(); 
-    xp = x.get_prec(); 
-
-    a.set_prec(yp>xp?yp:xp);
-
-    mpfr_hypot(a.mp, x.mp, y.mp, rnd_mode);
-
+    mpreal a(0,(std::max)(y.getPrecision(), x.getPrecision()));
+    mpfr_hypot(a.mpfr_ptr(), x.mpfr_srcptr(), y.mpfr_srcptr(), rnd_mode);
     return a;
 }
 
-inline const mpreal remainder (const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode)
+inline const mpreal remainder (const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode = mpreal::get_default_rnd())
 {    
-    mpreal a;
-    mp_prec_t yp, xp;
-
-    yp = y.get_prec(); 
-    xp = x.get_prec(); 
-
-    a.set_prec(yp>xp?yp:xp);
-
-    mpfr_remainder(a.mp, x.mp, y.mp, rnd_mode);
-
+    mpreal a(0,(std::max)(y.getPrecision(), x.getPrecision()));
+    mpfr_remainder(a.mpfr_ptr(), x.mpfr_srcptr(), y.mpfr_srcptr(), rnd_mode);
     return a;
 }
 
-inline const mpreal remquo (long* q, const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode)
+inline const mpreal remquo (long* q, const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode = mpreal::get_default_rnd())
 {
-    mpreal a;
-    mp_prec_t yp, xp;
-
-    yp = y.get_prec(); 
-    xp = x.get_prec(); 
-
-    a.set_prec(yp>xp?yp:xp);
-
-    mpfr_remquo(a.mp,q, x.mp, y.mp, rnd_mode);
-
+    mpreal a(0,(std::max)(y.getPrecision(), x.getPrecision()));
+    mpfr_remquo(a.mpfr_ptr(),q, x.mpfr_srcptr(), y.mpfr_srcptr(), rnd_mode);
     return a;
 }
 
-inline const mpreal fac_ui (unsigned long int v, mp_prec_t prec, mp_rnd_t rnd_mode)
+inline const mpreal fac_ui (unsigned long int v, mp_prec_t prec = mpreal::get_default_prec(),
+			    mp_rnd_t rnd_mode = mpreal::get_default_rnd())
 {
-    mpreal x(0,prec);
-    mpfr_fac_ui(x.mp,v,rnd_mode);
+    mpreal x(0, prec);
+    mpfr_fac_ui(x.mpfr_ptr(),v,rnd_mode);
     return x;
 }
 
-inline const mpreal log1p  (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_log1p(x.mp,v.mp,rnd_mode);
-    return x;
-}
 
-inline const mpreal expm1  (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_expm1(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal eint   (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_eint(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal gamma (const mpreal& x, mp_rnd_t rnd_mode)
-{
-    mpreal FunctionValue(x);
-
-    // x < 0: gamma(-x) = -pi/(x * gamma(x) * sin(pi*x))
-
-    mpfr_gamma(FunctionValue.mp, x.mp, rnd_mode);
-
-    return FunctionValue;
-}
-
-inline const mpreal lngamma (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_lngamma(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal lgamma (const mpreal& v, int *signp, mp_rnd_t rnd_mode)
+inline const mpreal lgamma (const mpreal& v, int *signp = 0, mp_rnd_t rnd_mode = mpreal::get_default_rnd())
 {
     mpreal x(v);
     int tsignp;
 
-    if(signp)
-        mpfr_lgamma(x.mp,signp,v.mp,rnd_mode);
-    else
-        mpfr_lgamma(x.mp,&tsignp,v.mp,rnd_mode);
+    if(signp)   mpfr_lgamma(x.mp,  signp,v.mp,rnd_mode);
+    else        mpfr_lgamma(x.mp,&tsignp,v.mp,rnd_mode);
 
     return x;
 }
 
-inline const mpreal zeta (const mpreal& v, mp_rnd_t rnd_mode)
+
+inline const mpreal besseljn (long n, const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd())
 {
-    mpreal x(v);
-    mpfr_zeta(x.mp,v.mp,rnd_mode);
-    return x;
+    mpreal  y(0, mpfr_get_prec(x.mpfr_srcptr()));
+    mpfr_jn(y.mpfr_ptr(), n, x.mpfr_srcptr(), r);
+    return y;
 }
 
-inline const mpreal erf (const mpreal& v, mp_rnd_t rnd_mode)
+inline const mpreal besselyn (long n, const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd())
 {
-    mpreal x(v);
-    mpfr_erf(x.mp,v.mp,rnd_mode);
-    return x;
+    mpreal  y(0, mpfr_get_prec(x.mpfr_srcptr()));
+    mpfr_yn(y.mpfr_ptr(), n, x.mpfr_srcptr(), r);
+    return y;
 }
 
-inline const mpreal erfc (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_erfc(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal besselj0 (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_j0(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal besselj1 (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_j1(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal besseljn (long n, const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_jn(x.mp,n,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal bessely0 (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_y0(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal bessely1 (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_y1(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal besselyn (long n, const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_yn(x.mp,n,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal fma (const mpreal& v1, const mpreal& v2, const mpreal& v3, mp_rnd_t rnd_mode)
+inline const mpreal fma (const mpreal& v1, const mpreal& v2, const mpreal& v3, mp_rnd_t rnd_mode = mpreal::get_default_rnd())
 {
     mpreal a;
     mp_prec_t p1, p2, p3;
@@ -2490,7 +2251,7 @@ inline const mpreal fma (const mpreal& v1, const mpreal& v2, const mpreal& v3, m
     return a;
 }
 
-inline const mpreal fms (const mpreal& v1, const mpreal& v2, const mpreal& v3, mp_rnd_t rnd_mode)
+inline const mpreal fms (const mpreal& v1, const mpreal& v2, const mpreal& v3, mp_rnd_t rnd_mode = mpreal::get_default_rnd())
 {
     mpreal a;
     mp_prec_t p1, p2, p3;
@@ -2505,7 +2266,7 @@ inline const mpreal fms (const mpreal& v1, const mpreal& v2, const mpreal& v3, m
     return a;
 }
 
-inline const mpreal agm (const mpreal& v1, const mpreal& v2, mp_rnd_t rnd_mode)
+inline const mpreal agm (const mpreal& v1, const mpreal& v2, mp_rnd_t rnd_mode = mpreal::get_default_rnd())
 {
     mpreal a;
     mp_prec_t p1, p2;
@@ -2520,7 +2281,7 @@ inline const mpreal agm (const mpreal& v1, const mpreal& v2, mp_rnd_t rnd_mode)
     return a;
 }
 
-inline const mpreal sum (const mpreal tab[], unsigned long int n, mp_rnd_t rnd_mode)
+inline const mpreal sum (const mpreal tab[], unsigned long int n, mp_rnd_t rnd_mode = mpreal::get_default_rnd())
 {
     mpreal x;
     mpfr_ptr* t;
@@ -2537,25 +2298,23 @@ inline const mpreal sum (const mpreal tab[], unsigned long int n, mp_rnd_t rnd_m
 // MPFR 2.4.0 Specifics
 #if (MPFR_VERSION >= MPFR_VERSION_NUM(2,4,0))
 
-inline int sinh_cosh(mpreal& s, mpreal& c, const mpreal& v, mp_rnd_t rnd_mode)
+inline int sinh_cosh(mpreal& s, mpreal& c, const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd())
 {
     return mpfr_sinh_cosh(s.mp,c.mp,v.mp,rnd_mode);
 }
 
-inline const mpreal li2(const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_li2(x.mp,v.mp,rnd_mode);
-    return x;
+inline const mpreal li2 (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) 
+{   
+    MPREAL_UNARY_MATH_FUNCTION_BODY(li2);    
 }
 
-inline const mpreal rem (const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode)
+inline const mpreal rem (const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode = mpreal::get_default_rnd())
 {
     /*  R = rem(X,Y) if Y != 0, returns X - n * Y where n = trunc(X/Y). */
     return fmod(x, y, rnd_mode);
 }
 
-inline const mpreal mod (const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode)
+inline const mpreal mod (const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode = mpreal::get_default_rnd())
 {
     (void)rnd_mode;
     
@@ -2580,7 +2339,7 @@ inline const mpreal mod (const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode)
     return m;
 }
 
-inline const mpreal fmod (const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode)
+inline const mpreal fmod (const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode = mpreal::get_default_rnd())
 {
     mpreal a;
     mp_prec_t yp, xp;
@@ -2595,7 +2354,7 @@ inline const mpreal fmod (const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode)
     return a;
 }
 
-inline const mpreal rec_sqrt(const mpreal& v, mp_rnd_t rnd_mode)
+inline const mpreal rec_sqrt(const mpreal& v, mp_rnd_t rnd_mode = mpreal::get_default_rnd())
 {
     mpreal x(v);
     mpfr_rec_sqrt(x.mp,v.mp,rnd_mode);
@@ -2606,80 +2365,54 @@ inline const mpreal rec_sqrt(const mpreal& v, mp_rnd_t rnd_mode)
 //////////////////////////////////////////////////////////////////////////
 // MPFR 3.0.0 Specifics
 #if (MPFR_VERSION >= MPFR_VERSION_NUM(3,0,0))
-
-inline const mpreal digamma(const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_digamma(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal ai(const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_ai(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
+inline const mpreal digamma (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(digamma);     }
+inline const mpreal ai      (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(ai);          }
 #endif // MPFR 3.0.0 Specifics
 
 //////////////////////////////////////////////////////////////////////////
 // Constants
-inline const mpreal const_log2 (mp_prec_t prec, mp_rnd_t rnd_mode)
+inline const mpreal const_log2 (mp_prec_t p = mpreal::get_default_prec(), mp_rnd_t r = mpreal::get_default_rnd())
 {
-    mpreal x;
-    x.set_prec(prec);
-    mpfr_const_log2(x.mp,rnd_mode);
+    mpreal x(0, p);
+    mpfr_const_log2(x.mpfr_ptr(), r);
     return x;
 }
 
-inline const mpreal const_pi (mp_prec_t prec, mp_rnd_t rnd_mode)
+inline const mpreal const_pi (mp_prec_t p = mpreal::get_default_prec(), mp_rnd_t r = mpreal::get_default_rnd())
 {
-    mpreal x;
-    x.set_prec(prec);
-    mpfr_const_pi(x.mp,rnd_mode);
+    mpreal x(0, p);
+    mpfr_const_pi(x.mpfr_ptr(), r);
     return x;
 }
 
-inline const mpreal const_euler (mp_prec_t prec, mp_rnd_t rnd_mode)
+inline const mpreal const_euler (mp_prec_t p = mpreal::get_default_prec(), mp_rnd_t r = mpreal::get_default_rnd())
 {
-    mpreal x;
-    x.set_prec(prec);
-    mpfr_const_euler(x.mp,rnd_mode);
+    mpreal x(0, p);
+    mpfr_const_euler(x.mpfr_ptr(), r);
     return x;
 }
 
-inline const mpreal const_catalan (mp_prec_t prec, mp_rnd_t rnd_mode)
+inline const mpreal const_catalan (mp_prec_t p = mpreal::get_default_prec(), mp_rnd_t r = mpreal::get_default_rnd())
 {
-    mpreal x;
-    x.set_prec(prec);
-    mpfr_const_catalan(x.mp,rnd_mode);
+    mpreal x(0, p);
+    mpfr_const_catalan(x.mpfr_ptr(), r);
     return x;
 }
 
-inline const mpreal const_infinity (int sign, mp_prec_t prec, mp_rnd_t rnd_mode)
+inline const mpreal const_infinity (int sign = 1, mp_prec_t p = mpreal::get_default_prec(), mp_rnd_t r = mpreal::get_default_rnd())
 {
-    mpreal x;
-    x.set_prec(prec,rnd_mode);
-    mpfr_set_inf(x.mp, sign);
+    mpreal x(0, p);
+    mpfr_set_inf(x.mpfr_ptr(), sign);
     return x;
 }
 
 //////////////////////////////////////////////////////////////////////////
 // Integer Related Functions
-inline const mpreal rint(const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_rint(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
 inline const mpreal ceil(const mpreal& v)
 {
     mpreal x(v);
     mpfr_ceil(x.mp,v.mp);
     return x;
-
 }
 
 inline const mpreal floor(const mpreal& v)
@@ -2703,66 +2436,27 @@ inline const mpreal trunc(const mpreal& v)
     return x;
 }
 
-inline const mpreal rint_ceil (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_rint_ceil(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal rint_floor(const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_rint_floor(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal rint_round(const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_rint_round(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal rint_trunc(const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_rint_trunc(x.mp,v.mp,rnd_mode);
-    return x;
-}
-
-inline const mpreal frac (const mpreal& v, mp_rnd_t rnd_mode)
-{
-    mpreal x(v);
-    mpfr_frac(x.mp,v.mp,rnd_mode);
-    return x;
-}
+inline const mpreal rint       (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(rint      );     }
+inline const mpreal rint_ceil  (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(rint_ceil );     }
+inline const mpreal rint_floor (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(rint_floor);     }
+inline const mpreal rint_round (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(rint_round);     }
+inline const mpreal rint_trunc (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(rint_trunc);     }
+inline const mpreal frac       (const mpreal& x, mp_rnd_t r = mpreal::get_default_rnd()) {   MPREAL_UNARY_MATH_FUNCTION_BODY(frac      );     }
 
 //////////////////////////////////////////////////////////////////////////
 // Miscellaneous Functions
-inline void swap(mpreal& a, mpreal& b) 
-{
-    mpfr_swap(a.mp,b.mp);
-}
+inline void         swap (mpreal& a, mpreal& b)            {    mpfr_swap(a.mp,b.mp);   }
+inline const mpreal (max)(const mpreal& x, const mpreal& y){    return (x>y?x:y);       }
+inline const mpreal (min)(const mpreal& x, const mpreal& y){    return (x<y?x:y);       }
 
-inline const mpreal (max)(const mpreal& x, const mpreal& y)
-{
-    return (x>y?x:y);
-}
-
-inline const mpreal (min)(const mpreal& x, const mpreal& y)
-{
-    return (x<y?x:y);
-}
-
-inline const mpreal fmax(const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode)
+inline const mpreal fmax(const mpreal& x, const mpreal& y, mp_rnd_t rnd_mode = mpreal::get_default_rnd())
 {
     mpreal a;
     mpfr_max(a.mp,x.mp,y.mp,rnd_mode);
     return a;
 }
 
-inline const mpreal fmin(const mpreal& x, const mpreal& y,  mp_rnd_t rnd_mode)
+inline const mpreal fmin(const mpreal& x, const mpreal& y,  mp_rnd_t rnd_mode = mpreal::get_default_rnd())
 {
     mpreal a;
     mpfr_min(a.mp,x.mp,y.mp,rnd_mode);
@@ -2797,14 +2491,22 @@ inline const mpreal urandomb (gmp_randstate_t& state)
     return x;
 }
 
-#if (MPFR_VERSION >= MPFR_VERSION_NUM(3,0,0))
+#if (MPFR_VERSION >= MPFR_VERSION_NUM(3,1,0))
 // use gmp_randinit_default() to init state, gmp_randclear() to clear
-inline const mpreal urandom (gmp_randstate_t& state, mp_rnd_t rnd_mode)
+inline const mpreal urandom (gmp_randstate_t& state, mp_rnd_t rnd_mode = mpreal::get_default_rnd())
 {
     mpreal x;
     mpfr_urandom(x.mp,state,rnd_mode);
     return x;
 }
+
+inline const mpreal grandom (gmp_randstate_t& state, mp_rnd_t rnd_mode = mpreal::get_default_rnd())
+{
+    mpreal x;
+    mpfr_grandom(x.mp, NULL, state, rnd_mode);
+    return x;
+}
+
 #endif 
 
 #if (MPFR_VERSION <= MPFR_VERSION_NUM(2,4,2))
@@ -2820,7 +2522,7 @@ inline const mpreal random2 (mp_size_t size, mp_exp_t exp)
 // a = random(seed); <- initialization & first random number generation
 // a = random();     <- next random numbers generation
 // seed != 0
-inline const mpreal random(unsigned int seed)
+inline const mpreal random(unsigned int seed = 0)
 {
 
 #if (MPFR_VERSION >= MPFR_VERSION_NUM(3,0,0))
@@ -2844,6 +2546,25 @@ inline const mpreal random(unsigned int seed)
 
 }
 
+#if (MPFR_VERSION >= MPFR_VERSION_NUM(3,0,0))
+inline const mpreal grandom(unsigned int seed = 0)
+{
+    static gmp_randstate_t state;
+    static bool isFirstTime = true;
+
+    if(isFirstTime)
+    {
+        gmp_randinit_default(state);
+        gmp_randseed_ui(state,0);
+        isFirstTime = false;
+    }
+
+    if(seed != 0) gmp_randseed_ui(state,seed);
+
+    return mpfr::grandom(state);
+}
+#endif
+
 //////////////////////////////////////////////////////////////////////////
 // Set/Get global properties
 inline void mpreal::set_default_prec(mp_prec_t prec)
@@ -2863,21 +2584,21 @@ inline bool mpreal::fits_in_bits(double x, int n)
     return IsInf(x) || (std::modf ( std::ldexp ( std::frexp ( x, &i ), n ), &t ) == 0.0);
 }
 
-inline const mpreal pow(const mpreal& a, const mpreal& b, mp_rnd_t rnd_mode)
+inline const mpreal pow(const mpreal& a, const mpreal& b, mp_rnd_t rnd_mode = mpreal::get_default_rnd())
 {
     mpreal x(a);
     mpfr_pow(x.mp,x.mp,b.mp,rnd_mode);
     return x;
 }
 
-inline const mpreal pow(const mpreal& a, const mpz_t b, mp_rnd_t rnd_mode)
+inline const mpreal pow(const mpreal& a, const mpz_t b, mp_rnd_t rnd_mode = mpreal::get_default_rnd())
 {
     mpreal x(a);
     mpfr_pow_z(x.mp,x.mp,b,rnd_mode);
     return x;
 }
 
-inline const mpreal pow(const mpreal& a, const unsigned long int b, mp_rnd_t rnd_mode)
+inline const mpreal pow(const mpreal& a, const unsigned long int b, mp_rnd_t rnd_mode = mpreal::get_default_rnd())
 {
     mpreal x(a);
     mpfr_pow_ui(x.mp,x.mp,b,rnd_mode);
@@ -2889,7 +2610,7 @@ inline const mpreal pow(const mpreal& a, const unsigned int b, mp_rnd_t rnd_mode
     return pow(a,static_cast<unsigned long int>(b),rnd_mode);
 }
 
-inline const mpreal pow(const mpreal& a, const long int b, mp_rnd_t rnd_mode)
+inline const mpreal pow(const mpreal& a, const long int b, mp_rnd_t rnd_mode = mpreal::get_default_rnd())
 {
     mpreal x(a);
     mpfr_pow_si(x.mp,x.mp,b,rnd_mode);
@@ -2911,7 +2632,7 @@ inline const mpreal pow(const mpreal& a, const double b, mp_rnd_t rnd_mode)
     return pow(a,mpreal(b),rnd_mode);
 }
 
-inline const mpreal pow(const unsigned long int a, const mpreal& b, mp_rnd_t rnd_mode)
+inline const mpreal pow(const unsigned long int a, const mpreal& b, mp_rnd_t rnd_mode = mpreal::get_default_rnd())
 {
     mpreal x(a);
     mpfr_ui_pow(x.mp,a,b.mp,rnd_mode);
@@ -2926,13 +2647,13 @@ inline const mpreal pow(const unsigned int a, const mpreal& b, mp_rnd_t rnd_mode
 inline const mpreal pow(const long int a, const mpreal& b, mp_rnd_t rnd_mode)
 {
     if (a>=0)     return pow(static_cast<unsigned long int>(a),b,rnd_mode);
-    else        return pow(mpreal(a),b,rnd_mode);
+    else          return pow(mpreal(a),b,rnd_mode);
 }
 
 inline const mpreal pow(const int a, const mpreal& b, mp_rnd_t rnd_mode)
 {
     if (a>=0)     return pow(static_cast<unsigned long int>(a),b,rnd_mode);
-    else        return pow(mpreal(a),b,rnd_mode);
+    else          return pow(mpreal(a),b,rnd_mode);
 }
 
 inline const mpreal pow(const long double a, const mpreal& b, mp_rnd_t rnd_mode)
@@ -2961,13 +2682,13 @@ inline const mpreal pow(const unsigned long int a, const unsigned int b, mp_rnd_
 inline const mpreal pow(const unsigned long int a, const long int b, mp_rnd_t rnd_mode)
 {
     if(b>0)    return pow(a,static_cast<unsigned long int>(b),rnd_mode); //mpfr_ui_pow_ui
-    else    return pow(a,mpreal(b),rnd_mode); //mpfr_ui_pow
+    else       return pow(a,mpreal(b),rnd_mode); //mpfr_ui_pow
 }
 
 inline const mpreal pow(const unsigned long int a, const int b, mp_rnd_t rnd_mode)
 {
     if(b>0)    return pow(a,static_cast<unsigned long int>(b),rnd_mode); //mpfr_ui_pow_ui
-    else    return pow(a,mpreal(b),rnd_mode); //mpfr_ui_pow
+    else       return pow(a,mpreal(b),rnd_mode); //mpfr_ui_pow
 }
 
 inline const mpreal pow(const unsigned long int a, const long double b, mp_rnd_t rnd_mode)
@@ -2993,13 +2714,13 @@ inline const mpreal pow(const unsigned int a, const unsigned int b, mp_rnd_t rnd
 
 inline const mpreal pow(const unsigned int a, const long int b, mp_rnd_t rnd_mode)
 {
-    if(b>0)    return pow(static_cast<unsigned long int>(a),static_cast<unsigned long int>(b),rnd_mode); //mpfr_ui_pow_ui
+    if(b>0) return pow(static_cast<unsigned long int>(a),static_cast<unsigned long int>(b),rnd_mode); //mpfr_ui_pow_ui
     else    return pow(static_cast<unsigned long int>(a),mpreal(b),rnd_mode); //mpfr_ui_pow
 }
 
 inline const mpreal pow(const unsigned int a, const int b, mp_rnd_t rnd_mode)
 {
-    if(b>0)    return pow(static_cast<unsigned long int>(a),static_cast<unsigned long int>(b),rnd_mode); //mpfr_ui_pow_ui
+    if(b>0) return pow(static_cast<unsigned long int>(a),static_cast<unsigned long int>(b),rnd_mode); //mpfr_ui_pow_ui
     else    return pow(static_cast<unsigned long int>(a),mpreal(b),rnd_mode); //mpfr_ui_pow
 }
 
@@ -3050,13 +2771,13 @@ inline const mpreal pow(const long int a, const int b, mp_rnd_t rnd_mode)
 
 inline const mpreal pow(const long int a, const long double b, mp_rnd_t rnd_mode)
 {
-    if (a>=0)     return pow(static_cast<unsigned long int>(a),mpreal(b),rnd_mode); //mpfr_ui_pow
+    if (a>=0)   return pow(static_cast<unsigned long int>(a),mpreal(b),rnd_mode); //mpfr_ui_pow
     else        return pow(mpreal(a),mpreal(b),rnd_mode); //mpfr_pow
 }
 
 inline const mpreal pow(const long int a, const double b, mp_rnd_t rnd_mode)
 {
-    if (a>=0)     return pow(static_cast<unsigned long int>(a),mpreal(b),rnd_mode); //mpfr_ui_pow
+    if (a>=0)   return pow(static_cast<unsigned long int>(a),mpreal(b),rnd_mode); //mpfr_ui_pow
     else        return pow(mpreal(a),mpreal(b),rnd_mode); //mpfr_pow
 }
 
@@ -3097,13 +2818,13 @@ inline const mpreal pow(const int a, const int b, mp_rnd_t rnd_mode)
 
 inline const mpreal pow(const int a, const long double b, mp_rnd_t rnd_mode)
 {
-    if (a>=0)     return pow(static_cast<unsigned long int>(a),mpreal(b),rnd_mode); //mpfr_ui_pow
+    if (a>=0)   return pow(static_cast<unsigned long int>(a),mpreal(b),rnd_mode); //mpfr_ui_pow
     else        return pow(mpreal(a),mpreal(b),rnd_mode); //mpfr_pow
 }
 
 inline const mpreal pow(const int a, const double b, mp_rnd_t rnd_mode)
 {
-    if (a>=0)     return pow(static_cast<unsigned long int>(a),mpreal(b),rnd_mode); //mpfr_ui_pow
+    if (a>=0)   return pow(static_cast<unsigned long int>(a),mpreal(b),rnd_mode); //mpfr_ui_pow
     else        return pow(mpreal(a),mpreal(b),rnd_mode); //mpfr_pow
 }
 
@@ -3199,10 +2920,10 @@ namespace std
 
             switch (r)
             {
-                case MPFR_RNDN: return round_to_nearest;
-                case MPFR_RNDZ: return round_toward_zero; 
-                case MPFR_RNDU: return round_toward_infinity; 
-                case MPFR_RNDD: return round_toward_neg_infinity; 
+                case GMP_RNDN: return round_to_nearest;
+                case GMP_RNDZ: return round_toward_zero; 
+                case GMP_RNDU: return round_toward_infinity; 
+                case GMP_RNDD: return round_toward_neg_infinity; 
                 default: return round_indeterminate;
             }
         }
@@ -3215,13 +2936,13 @@ namespace std
         inline static mpfr::mpreal epsilon(mp_prec_t precision = mpfr::mpreal::get_default_prec()) {  return  mpfr::machine_epsilon(precision); }
 		
         // Returns smallest eps such that x + eps != x (relative machine epsilon)
-	inline static mpfr::mpreal epsilon(const mpfr::mpreal& x) {  return mpfr::machine_epsilon(x);  }
+        inline static mpfr::mpreal epsilon(const mpfr::mpreal& x) {  return mpfr::machine_epsilon(x);  }
 
         inline static mpfr::mpreal round_error(mp_prec_t precision = mpfr::mpreal::get_default_prec())
         {
             mp_rnd_t r = mpfr::mpreal::get_default_rnd();
 
-            if(r == MPFR_RNDN) return mpfr::mpreal(0.5, precision); 
+            if(r == GMP_RNDN)  return mpfr::mpreal(0.5, precision); 
             else               return mpfr::mpreal(1.0, precision);    
         }
 
@@ -3233,8 +2954,8 @@ namespace std
         // Please note, exponent range is not fixed in MPFR
         static const int min_exponent = MPFR_EMIN_DEFAULT;
         static const int max_exponent = MPFR_EMAX_DEFAULT;
-        static const int min_exponent10 = (int) (MPFR_EMIN_DEFAULT * 0.3010299956639811); 
-        static const int max_exponent10 = (int) (MPFR_EMAX_DEFAULT * 0.3010299956639811); 
+        MPREAL_PERMISSIVE_EXPR static const int min_exponent10 = (int) (MPFR_EMIN_DEFAULT * 0.3010299956639811); 
+        MPREAL_PERMISSIVE_EXPR static const int max_exponent10 = (int) (MPFR_EMAX_DEFAULT * 0.3010299956639811); 
 
         // Should be constant according to standard, but 'digits' depends on precision in MPFR
 
