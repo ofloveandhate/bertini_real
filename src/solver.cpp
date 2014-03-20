@@ -18,27 +18,27 @@ void SLP_global_pointers::capture_globals()
 	local_mem_needs_init_d = mem_needs_init_d; // determine if mem_d has been initialized
 	local_mem_needs_init_mp = mem_needs_init_mp; // determine if mem_mp has been initialized
 	
-	if (local_mem_d==NULL) {
-		std::cout << "local_mem_d is NULL" << std::endl;
-	}
-	if (local_mem_mp==NULL) {
-		std::cout << "local_mem_mp is NULL" << std::endl;
-	}
-	
-	if (local_size_d==NULL) {
-		std::cout << "local_size_d is NULL" << std::endl;
-	}
-	
-	if (local_size_mp==NULL) {
-		std::cout << "local_size_mp is NULL" << std::endl;
-	}
-	
-	if (local_mem_needs_init_d==NULL) {
-		std::cout << "local_mem_needs_init_d is NULL" << std::endl;
-	}
-	if (local_mem_needs_init_mp==NULL) {
-		std::cout << "local_mem_needs_init_mp is NULL" << std::endl;
-	}
+//	if (local_mem_d==NULL) {
+//		std::cout << "local_mem_d is NULL" << std::endl;
+//	}
+//	if (local_mem_mp==NULL) {
+//		std::cout << "local_mem_mp is NULL" << std::endl;
+//	}
+//	
+//	if (local_size_d==NULL) {
+//		std::cout << "local_size_d is NULL" << std::endl;
+//	}
+//	
+//	if (local_size_mp==NULL) {
+//		std::cout << "local_size_mp is NULL" << std::endl;
+//	}
+//	
+//	if (local_mem_needs_init_d==NULL) {
+//		std::cout << "local_mem_needs_init_d is NULL" << std::endl;
+//	}
+//	if (local_mem_needs_init_mp==NULL) {
+//		std::cout << "local_mem_needs_init_mp is NULL" << std::endl;
+//	}
 	
 }
 
@@ -921,7 +921,7 @@ void serial_tracker_loop(trackingStats *trackCount,
 			
 			if (solve_options.verbose_level>=3) {
                 
-				printf("\nthere was a path failure nullspace_left tracking witness point %d\nretVal = %d; issoln = %d\n",ii,EG.retVal, issoln);
+				printf("\nthere was a path failure tracking witness point %d\nretVal = %d; issoln = %d\n",ii,EG.retVal, issoln);
 				
 				print_path_retVal_message(EG.retVal);
 				
@@ -1387,7 +1387,7 @@ int receive_endpoints(trackingStats *trackCount,
 			trackCount->failures++;
 			
 			if (solve_options.verbose_level>=1) {
-				printf("\nthere was a path failure nullspace_left tracking witness point %d\nretVal = %d; issoln = %d\n",
+				printf("\nthere was a path failure tracking witness point %d\nretVal = %d; issoln = %d\n",
 					   (*EG_receives)[ii].pathNum, (*EG_receives)[ii].retVal, issoln);
 				
 				print_path_retVal_message((*EG_receives)[ii].retVal);
@@ -1753,7 +1753,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					print_comp_matlab(time_to_compare,"at_time");
 					std::cout << "discarding non-finite solution.\n\n" << std::endl;
 				}
-				//				EG_out->retVal=0;
+				EG_out->retVal=0;
 				break;
 			}
 			
@@ -1840,7 +1840,13 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 		iterations++;
 	} // re: while
 	
+	if (iterations>1 && EG_out->retVal==0) {
+		std::cout << "resolution of " << pathNum << " was successful" << std::endl;
+	}
 	
+	if (EG_out->retVal!=0) {
+		std::cout << "resolution of path " << pathNum << " failed, terminal retVal " << EG_out->retVal << std::endl;
+	}
 	solve_options.reset_tracker_config();
 	
 	return;
@@ -1959,24 +1965,23 @@ void generic_track_path_mp(int pathNum, endgame_data_t *EG_out,
 
 void generic_setup_patch(patch_eval_data_d *P, const witness_set & W)
 {
-	int ii;
 	P->num_patches = W.num_patches;
 	init_mat_d(P->patchCoeff, W.num_patches, W.num_variables);
 	P->patchCoeff->rows = W.num_patches; P->patchCoeff->cols = W.num_variables;
 	
 	int varcounter = 0;
 	for (int jj=0; jj<W.num_patches; jj++) {
-		for (ii=0; ii<varcounter; ii++) {
+		for (int ii=0; ii<varcounter; ii++) {
 			set_zero_d(&P->patchCoeff->entry[jj][ii]);
 		}
 		
 		int offset = varcounter;
-		for (ii = 0; ii < W.patch_mp[jj]->size ; ii++){
+		for (int ii = 0; ii < W.patch_mp[jj]->size ; ii++){
 			mp_to_d(&P->patchCoeff->entry[jj][ii+offset],&W.patch_mp[jj]->coord[ii]);
 			varcounter++;
 		}
 		
-		for (ii=varcounter; ii<W.num_variables; ii++) {
+		for (int ii=varcounter; ii<W.num_variables; ii++) {
 			set_zero_d(&P->patchCoeff->entry[jj][ii]);
 		}
 	}
@@ -1985,7 +1990,11 @@ void generic_setup_patch(patch_eval_data_d *P, const witness_set & W)
 
 void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W)
 {
-	int ii;
+	if (P->patchCoeff->rows == W.num_patches && P->patchCoeff->cols == W.num_variables) {
+		std::cout << "appear to have already set up the patch!" << std::endl;
+		mypause();
+	}
+	
 	init_mat_rat(P->patchCoeff_rat, W.num_patches, W.num_variables);
 	
 	init_mat_mp2(P->patchCoeff, W.num_patches, W.num_variables, mpf_get_default_prec());
@@ -2013,22 +2022,21 @@ void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W)
 	int varcounter = 0;
 	for (int jj=0; jj<W.num_patches; jj++) {
 		
-		for (ii=0; ii<varcounter; ii++) {
+		for (int ii=0; ii<varcounter; ii++) {
 			set_zero_mp(&P->patchCoeff->entry[jj][ii]);
-			mp_to_rat(P->patchCoeff_rat[jj][ii], &P->patchCoeff->entry[jj][ii]);
+			set_zero_rat(P->patchCoeff_rat[jj][ii]);
 		}
 		
 		int offset = varcounter;
-		for (ii = 0; ii < W.patch_mp[jj]->size; ii++){
+		for (int ii = 0; ii < W.patch_mp[jj]->size; ii++){
 			set_mp(&P->patchCoeff->entry[jj][ii+offset],&W.patch_mp[jj]->coord[ii]);
-			mp_to_rat(P->patchCoeff_rat[jj][ii+offset],
-                      &P->patchCoeff->entry[jj][ii+offset]);
+			mp_to_rat(P->patchCoeff_rat[jj][ii+offset], &W.patch_mp[jj]->coord[ii]);
 			varcounter++;
 		}
 		
-		for (ii=varcounter; ii<W.num_variables; ii++) {
+		for (int ii=varcounter; ii<W.num_variables; ii++) {
 			set_zero_mp(&P->patchCoeff->entry[jj][ii]);
-			mp_to_rat(P->patchCoeff_rat[jj][ii], &P->patchCoeff->entry[jj][ii]);
+			set_zero_rat(P->patchCoeff_rat[jj][ii]);
 		}
 	}
 }

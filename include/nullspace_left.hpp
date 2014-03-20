@@ -15,7 +15,7 @@
 #ifndef NULLSPACE_H_
 #define NULLSPACE_H_
 
-#include "missing_bertini_headers.hpp"
+#include "bertini_headers.hpp"
 
 
 #include "fileops.hpp"

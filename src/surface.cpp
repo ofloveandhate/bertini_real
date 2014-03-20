@@ -167,9 +167,9 @@ void surface_decomposition::main(vertex_set & V,
     
 	
     W_total_crit.input_filename = "total_crit___there-is-a-problem";
-	W_total_crit.sort_for_unique(solve_options.T);
+	W_total_crit.sort_for_unique(&solve_options.T);
     
-    
+    W_total_crit.print_to_screen();
     
     
     
@@ -191,7 +191,8 @@ void surface_decomposition::main(vertex_set & V,
 	
 	
 	
-	
+	this->output_main(program_options.output_dir);
+	V.print(program_options.output_dir/ "V.vertex");
 	
 	
 	
@@ -283,6 +284,9 @@ void surface_decomposition::main(vertex_set & V,
 	//connect the dots - the final routine
 	connect_the_dots(V, pi, program_options, solve_options);
 	
+	
+	this->output_main(program_options.output_dir);
+	V.print(program_options.output_dir/ "V.vertex");
 	
 	clear_vec_mp(crit_downstairs); clear_vec_mp(midpoints_downstairs);
     
@@ -452,8 +456,8 @@ void surface_decomposition::compute_singular_crit(witness_set & W_singular_crit,
 		ns_config.clear();
 		
 		W_this_round.only_first_vars(this->num_variables);
-		W_this_round.sort_for_unique(solve_options.T); // this could be made to be unnecessary, after rewriting a bit of solverout
-		W_this_round.sort_for_real(solve_options.T);
+		W_this_round.sort_for_unique(&solve_options.T); // this could be made to be unnecessary, after rewriting a bit of solverout
+		W_this_round.sort_for_real(&solve_options.T);
 		W_this_round.sort_for_inside_sphere(sphere_radius,sphere_center);
 		W_this_round.input_filename = iter->second.input_filename;
 		
@@ -477,6 +481,8 @@ void surface_decomposition::compute_singular_curves(const witness_set & W_total_
 													BR_configuration & program_options,
 													solver_configuration & solve_options)
 {
+	program_options.merge_edges=false;
+	
 	for (auto iter = split_sets.begin(); iter!=split_sets.end(); ++iter) {
 		
 		singular_curves[iter->first].input_filename = iter->second.input_filename;
@@ -496,8 +502,8 @@ void surface_decomposition::compute_singular_curves(const witness_set & W_total_
 
 		
 		W_sphere_intersection.only_first_vars(this->num_variables); // throw out the extra variables.
-		W_sphere_intersection.sort_for_real(solve_options.T);
-		W_sphere_intersection.sort_for_unique(solve_options.T);
+		W_sphere_intersection.sort_for_real(&solve_options.T);
+		W_sphere_intersection.sort_for_unique(&solve_options.T);
 		
 		singular_curves[iter->first].add_witness_set(W_sphere_intersection,CRITICAL,V); // creates the curve decomposition for this multiplicity
 		
@@ -512,7 +518,6 @@ void surface_decomposition::compute_singular_curves(const witness_set & W_total_
 		std::cout << "interslicing singular curve " << std::endl;
 		
 		// we already know the component is self-conjugate (by entry condition), so we are free to call this function
-		// the memory for the multilin system will get erased in this call...
 		singular_curves[iter->first].interslice(iter->second,
 												W_sphere_intersection,
 												singular_curves[iter->first].randomizer_matrix,
@@ -843,6 +848,7 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 	std::cout << color::bold("m") << "\ncomputing critical points of the critical curve" <<  color::console_default() << std::endl;
 	
 	
+//	solve_options.verbose_level = 10;
 	
 	solve_options.use_gamma_trick = 0;
 	
@@ -867,7 +873,7 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 	solve_out.get_noninfinite_w_mult_full(W_critcurve_crit);
 	
 	W_critcurve_crit.only_first_vars(num_variables); // i question this line. it might be better without it.
-	W_critcurve_crit.sort_for_real(solve_options.T);
+	W_critcurve_crit.sort_for_real(&solve_options.T);
 	
 	ns_config.clear();
 	
@@ -922,8 +928,8 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 	
 	W_sphere_intersection.only_first_vars(W_surf.num_variables); // throw out the extra variables.
 	
-	W_sphere_intersection.sort_for_real(solve_options.T);
-	W_sphere_intersection.sort_for_unique(solve_options.T);
+	W_sphere_intersection.sort_for_real(&solve_options.T);
+	W_sphere_intersection.sort_for_unique(&solve_options.T);
 	
 	W_critcurve_crit.merge(W_sphere_intersection);
 	
@@ -1182,8 +1188,8 @@ void surface_decomposition::compute_sphere_crit(const witness_set & W_intersecti
 	
 	ns_config.clear();
 	
-	W_sphere_crit.sort_for_unique(solve_options.T);
-	W_sphere_crit.sort_for_real(solve_options.T);
+	W_sphere_crit.sort_for_unique(&solve_options.T);
+	W_sphere_crit.sort_for_real(&solve_options.T);
     
 	W_sphere_crit.input_filename = "input_surf_sphere";
 	
@@ -1274,7 +1280,7 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 	int blabla;
 	parse_input_file(W_surf.input_filename, & blabla);
 	
-	solve_options.robust = true;
+	
 	
 	multilin_config ml_config(solve_options); // copies in the randomizer matrix and sets up the SLP & globals.
 	
@@ -1310,7 +1316,7 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 			
 			
 			
-			
+			solve_options.robust = true;
 			
 			
 			solver_output fillme;
@@ -1354,11 +1360,15 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 			
 			// we already know the component is self-conjugate (by entry condition), so we are free to call this function
 			// the memory for the multilin system will get erased in this call...
+			bool prev_quick_state = program_options.quick_run;
+			program_options.quick_run = false;
+			
 			new_slice.computeCurveSelfConj(slice_witness_set,
                                            &pi[1],
                                            V,
                                            program_options, solve_options);
 			
+			program_options.quick_run = prev_quick_state;
 			
 			if (iterations<3) {
 				solve_options.T.securityMaxNorm = 2*solve_options.T.securityMaxNorm;
@@ -1621,9 +1631,12 @@ void surface_decomposition::master_connect(vertex_set & V, midpoint_config & md_
 				
 				
 				//TODO: this needs to be inside of a better protector, in the sense that we shouldn't do it after EVERY face, but rather at thoughtful times.
-				if (added_face) {
-					this->output_main(program_options.output_dir);
-					V.print(program_options.output_dir/ "V.vertex");
+				if (added_face) { // only the faces file really needs to be updated.  the rest stay the same.  this is very wasteful.
+//					boost::filesystem::path::rename(program_options.output_dir / "F.faces");
+//					this->print_faces(program_options.output_dir + "_bak" / "F.faces");
+					this->print_faces(program_options.output_dir / "F.faces");
+//					this->output_main(program_options.output_dir);
+//					V.print(program_options.output_dir/ "V.vertex");
 				}
 				
 				
@@ -1858,6 +1871,18 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 		bail_out = true;
 	}
 	
+	
+	
+	if (crit_slices[ii].num_edges == 0) {
+		std::cout << "critslice " << ii << " has no edges!" << std::endl;
+		bail_out = true;
+	}
+	if (crit_slices[ii+1].num_edges == 0) {
+		std::cout << "critslice " << ii+1 << " has no edges!" << std::endl;
+		bail_out = true;
+	}
+	
+	
 	// get the bottom and top edges for this face.
 	
 	num_bottom_vars = md_config.num_bottom_vars();
@@ -1947,12 +1972,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 	
 	// make u, v target values.
-	if (crit_slices[ii].num_edges == 0) {
-		std::cout << "critslice " << ii << " has no edges!" << std::endl;
-	}
-	if (crit_slices[ii+1].num_edges == 0) {
-		std::cout << "critslice " << ii+1 << " has no edges!" << std::endl;
-	}
+	
 	
 //	print_comp_matlab(&V.vertices[ crit_slices[ii].edges[0].midpt ].projection_values->coord[0],"a");
 //	print_comp_matlab(&V.vertices[ crit_slices[ii+1].edges[0].midpt ].projection_values->coord[0],"b");

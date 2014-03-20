@@ -17,7 +17,7 @@
 #define _ISOSINGULAR_H
 
 
-#include "missing_bertini_headers.hpp"
+#include "bertini_headers.hpp"
 
 
 

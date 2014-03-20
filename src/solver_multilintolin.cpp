@@ -113,17 +113,15 @@ int multilintolin_eval_data_mp::setup(const multilin_config & config,
 			set_one_mp(this->gamma);
 			set_one_rat(this->gamma_rat);
 		}
+		
+		mat_cp_mp(randomizer_matrix_full_prec,
+				  config.randomizer_matrix);
 	}
 	
 	
 	mat_cp_mp(randomizer_matrix,
 			  config.randomizer_matrix);
-	
-	mat_cp_mp(randomizer_matrix_full_prec,
-			  config.randomizer_matrix);
-	
-	
-	
+
 	
 	return 0;
 }
@@ -1349,7 +1347,7 @@ int change_multilintolin_eval_prec(void const *ED, int new_prec)
 	
 	if (new_prec != BED->curr_prec){
 		
-		if (BED->verbose_level >=4){
+		if (BED->verbose_level >=8){
 			std::cout << color::brown();
 			printf("prec  %lu\t-->\t%d\n",BED->curr_prec, new_prec);
 			std::cout << color::console_default();

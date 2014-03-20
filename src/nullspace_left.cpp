@@ -265,7 +265,7 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 	
 	
 	
-	if (program_options.verbose_level>=4)
+	if (program_options.verbose_level>=6)
 		ns_config->print();
 	
 	
@@ -347,6 +347,16 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	*max_degree = maxiii;
 	
 	
+	//TODO: eliminate this file parsing
+	FILE *IN = safe_fopen_read("deg.out"); //open the deg.out file for reading.
+	for (int ii=0; ii<randomizer_matrix->cols; ++ii) {
+		int tempint;
+		fscanf(IN,"%d\n",&tempint); // read data
+		std::cout << tempint << std::endl;
+		ns_config->base_degrees.push_back(tempint);
+		std::cout << ns_config->base_degrees[ii] << std::endl;
+	}// re: ii
+	fclose(IN);
 	
 	// set some integers
 	ns_config->num_v_vars = W.num_variables - 1 - target_crit_codim + 1;

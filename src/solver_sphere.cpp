@@ -326,14 +326,15 @@ int sphere_eval_data_mp::setup(const sphere_config & config,
 			set_one_mp(this->gamma);
 			set_one_rat(this->gamma_rat);
 		}
+		mat_cp_mp(randomizer_matrix_full_prec,
+				  config.randomizer_matrix);
 	}
+	
 	
 	
 	mat_cp_mp(randomizer_matrix,
 			  config.randomizer_matrix);
 	
-	mat_cp_mp(randomizer_matrix_full_prec,
-			  config.randomizer_matrix);
 	
 	
 	
@@ -1492,7 +1493,7 @@ int change_sphere_eval_prec(void const *ED, int new_prec)
 	
 	if (new_prec != BED->curr_prec){
 		
-		if (BED->verbose_level >=4){
+		if (BED->verbose_level >=8){
 			std::cout << color::brown();
 			printf("prec  %ld\t-->\t%d\n",BED->curr_prec, new_prec);
 			std::cout << color::console_default();

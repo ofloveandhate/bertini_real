@@ -14,7 +14,7 @@
 #ifndef SOLVER_MIDPOINT_H
 #define SOLVER_MIDPOINT_H
 
-#include "missing_bertini_headers.hpp"
+#include "bertini_headers.hpp"
 
 
 

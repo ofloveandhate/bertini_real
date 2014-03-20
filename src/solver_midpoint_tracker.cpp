@@ -1951,7 +1951,7 @@ int change_midpoint_eval_prec(void const *ED, int new_prec)
 	
 	if (new_prec != BED->curr_prec){
 		// change the precision for the patch
-		if (BED->verbose_level >=5)
+		if (BED->verbose_level >=8)
 		{
 			std::cout << color::brown();
 			printf("prec  %ld\t-->\t%d\n",BED->curr_prec, new_prec);

@@ -14,7 +14,7 @@
 #ifndef SOLVER_MAIN_HEADER_H
 #define SOLVER_MAIN_HEADER_H
 
-#include "missing_bertini_headers.hpp"
+#include "bertini_headers.hpp"
 
 #include "fileops.hpp"
 #include "data_type.hpp"
@@ -44,7 +44,7 @@ extern int *mem_needs_init_mp; // determine if mem_mp has been initialized
 
 
 
-
+// this class is ignorant of MPtype.
 class SLP_global_pointers
 {
 public:
@@ -406,7 +406,7 @@ friend solver_output;
 	bool is_finite;
 	bool is_singular;
 	bool is_successful;
-	
+	bool is_real;
 	
 public:
 	friend std::ostream & operator<<(std::ostream &os, const solution_metadata & t)
@@ -439,6 +439,10 @@ public:
 	
 	void set_multiplicity(int state){
 		multiplicity = state;
+	}
+	
+	void set_real(int state) {
+		is_real = state;
 	}
 	
 	void add_input_index(long long new_ind){
@@ -610,6 +614,7 @@ public:
 	void setup(prog_t * _SLP)
 	{
 		setupPreProcData(const_cast<char *>(preproc_file.c_str()), &this->preProcData);
+		//TODO: if there is a way, remove the above setup call, as it refers to parsing the preprocdata file, which is dumb.
 		this->SLP = _SLP; // assign the pointer
 		this->have_SLP = true;
 	}
@@ -788,6 +793,22 @@ protected:
 	{
 
 		patch_eval_data_clear_mp(&this->patch);
+		
+//		for (int ii=0; ii<patch.patchCoeff->rows; ii++) {
+//			for (int jj=0; jj<patch.patchCoeff->cols; jj++) {
+//				std::cout << jj << std::endl;
+//				mpq_clear(patch.patchCoeff_rat[ii][jj][0]);
+//				mpq_clear(patch.patchCoeff_rat[ii][jj][1]);
+//
+//				free(patch.patchCoeff_rat[ii][jj]);
+//			}
+//			free(patch.patchCoeff_rat[ii]);
+//		}
+//		free(patch.patchCoeff_rat);
+//		clear_mat_mp(patch.patchCoeff);
+		
+		
+		
 		
 		clear_mat_mp(randomizer_matrix);
 		clear_mp(gamma);

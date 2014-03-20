@@ -21,7 +21,7 @@
 #define DTSVERSION 1e-16
 
 
-#include "missing_bertini_headers.hpp"
+#include "bertini_headers.hpp"
 #include "data_type.hpp"
 
 void purge_previous_directory(char *directoryName);

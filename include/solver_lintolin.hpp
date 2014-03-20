@@ -14,7 +14,7 @@
 #ifndef _LINTOLINSOLVER_H
 #define _LINTOLINSOLVER_H
 
-#include "missing_bertini_headers.hpp"
+#include "bertini_headers.hpp"
 
 
 
