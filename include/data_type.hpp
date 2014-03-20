@@ -25,7 +25,7 @@
 #include <map>
 
 
-#include "missing_bertini_headers.hpp"
+#include "bertini_headers.hpp"
 
 #include <boost/timer/timer.hpp>
 #include "boost/filesystem.hpp"
@@ -38,7 +38,7 @@
 
 #include "fileops.hpp"
 
-#define SAMEPOINTTOL 1e-5
+
 
 
 #define DEFAULT_MAX_PREC 1024
@@ -123,6 +123,8 @@ void dehomogenize(point_d *result, point_d dehom_me, int num_variables);
 void dehomogenize(point_mp *result, point_mp dehom_me);
 void dehomogenize(point_mp *result, point_mp dehom_me, int num_variables);
 
+void nonconj_transpose(mat_d Res, mat_d M);
+void nonconj_transpose(mat_mp Res, mat_mp M);
 
 void dot_product_d(comp_d result, vec_d one, vec_d two);
 void dot_product_mp(comp_mp result, vec_mp one, vec_mp two);
@@ -703,8 +705,8 @@ public:
     
 	void only_natural_vars();
 	void only_first_vars(int num_vars);
-	void sort_for_real(tracker_config_t T);
-	void sort_for_unique(tracker_config_t T);
+	void sort_for_real(tracker_config_t * T);
+	void sort_for_unique(tracker_config_t * T);
 	void sort_for_inside_sphere(comp_mp radius, vec_mp center);
 	
 	int  witnessSetParse(const boost::filesystem::path witness_set_file, const int num_vars);

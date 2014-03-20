@@ -348,7 +348,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 		fillme.get_noninfinite_w_mult_full(midpoint_witness_sets[ii]); // is ordered
 
 
-		midpoint_witness_sets[ii].sort_for_real(solve_options.T);
+		midpoint_witness_sets[ii].sort_for_real(&solve_options.T);
 		midpoint_witness_sets[ii].sort_for_inside_sphere(sphere_radius, sphere_center);
 		
 		
@@ -444,8 +444,8 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 			witness_set Wright_real = Wright; // this is unnecessary
 			witness_set Wleft_real = Wleft;   // this is unnecessary
             
-			Wright_real.sort_for_real(solve_options.T);
-			Wleft_real.sort_for_real(solve_options.T);
+			Wright_real.sort_for_real(&solve_options.T);
+			Wleft_real.sort_for_real(&solve_options.T);
             
             if (Wleft_real.num_points!=midpoint_witness_sets[ii].num_points) {
                 std::cout << color::red() << "had a critical failure\n moving left was deficient " << midpoint_witness_sets[ii].num_points-Wleft_real.num_points << " points" << color::console_default() << std::endl;
@@ -565,7 +565,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 						fillme.get_noninfinite_w_mult_full(W_single_left);
 						fillme.reset();
 						
-						W_single_left.sort_for_real(solve_options.T);
+						W_single_left.sort_for_real(&solve_options.T);
 						
 						num_its++;
 					}
@@ -609,7 +609,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 //							std::cout << "paused for inspecting output file" << std::endl;
 //							sleep(600);
 						}
-						W_single_right.sort_for_real(solve_options.T);
+						W_single_right.sort_for_real(&solve_options.T);
 						
 						num_its++;
 					}
@@ -1150,7 +1150,7 @@ int curve_decomposition::compute_critical_points(const witness_set & W_curve,
 	
 
 	W_crit_real.only_first_vars(W_curve.num_variables); // trim the fat, since we are at the lowest level.
-	W_crit_real.sort_for_real(solve_options.T);
+	W_crit_real.sort_for_real(&solve_options.T);
 	
 
 	
@@ -1172,8 +1172,8 @@ int curve_decomposition::compute_critical_points(const witness_set & W_curve,
                            program_options,
                            solve_options);
 	
-    W_additional.sort_for_real(solve_options.T);
-	W_additional.sort_for_unique(solve_options.T);
+    W_additional.sort_for_real(&solve_options.T);
+	W_additional.sort_for_unique(&solve_options.T);
 	
 
     

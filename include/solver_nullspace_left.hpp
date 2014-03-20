@@ -11,10 +11,9 @@
 #include <mpf2mpfr.h>
 
 
-#ifndef SOLVER_NULLSPACE_H
-#define SOLVER_NULLSPACE_H
 
-#include "missing_bertini_headers.hpp"
+
+#include "bertini_headers.hpp"
 
 
 
@@ -25,6 +24,12 @@
 #include "determinant_derivative.hpp"
 #include "programConfiguration.hpp"
 #include "postProcessing.hpp"
+
+
+#ifndef SOLVER_NULLSPACE_H
+#define SOLVER_NULLSPACE_H
+
+
 
 
 class nullspace_config
@@ -43,6 +48,8 @@ public:
 	int num_randomized_eqns;	///< N-k (N-ambient_dim)
 	int max_degree;						///< the max degree of differentiated (randomized) functions
 	std::vector<int> randomized_degrees; ///< the degrees of the randomized functions (not derivatives)
+	std::vector<int> base_degrees;
+	
 	
 	vec_mp **starting_linears;	///< outer layer should have as many as there are randomized equations (N-k)
 								///< inside layer has number corresponding to max of randomized_degrees
@@ -108,6 +115,9 @@ class nullspacejac_eval_data_mp : public solver_mp
 {
 public:
 	
+	prog_deriv_t * SLP_derivative;
+	
+	
 	int num_jac_equations;
 	int target_dim;   // r			the dimension of the real set we are looking for
 	int ambient_dim;  // k			the dimension of the complex component we are looking IN.
@@ -120,7 +130,7 @@ public:
 	int num_randomized_eqns;	// N-k (N-ambient_dim)
 	int max_degree;						// the max degree of differentiated (randomized) functions
 	std::vector<int> randomized_degrees;
-	
+	std::vector<int> base_degrees;
 	
 	int num_additional_linears;
 	vec_mp *additional_linears_terminal;
@@ -345,6 +355,8 @@ private:
 			}
 		}
 		
+		clear_deriv(SLP_derivative);
+		delete this->SLP_derivative;
 		
 	} // re: clear
 	
@@ -486,6 +498,10 @@ public:
 	
 	nullspacejac_eval_data_mp *BED_mp; // used only for AMP
 	
+	
+	prog_deriv_t * SLP_derivative;
+	
+	
 	int num_jac_equations;
 	int target_dim;   // r			the dimension of the real set we are looking for
 	int ambient_dim;  // k			the dimension of the complex component we are looking IN.
@@ -498,7 +514,7 @@ public:
 	int num_randomized_eqns;	// N-k (N-ambient_dim)
 	int max_degree;						// the max degree of differentiated (randomized) functions
 	std::vector<int> randomized_degrees;
-	
+	std::vector<int> base_degrees;
 	
 	int num_additional_linears;
 	vec_d *additional_linears_terminal;
@@ -665,6 +681,10 @@ private:
 		
 		if (this->MPType==2) {
 			delete this->BED_mp;
+		}
+		else{
+			clear_deriv(SLP_derivative);
+			delete this->SLP_derivative;
 		}
 	} // re: clear
 	

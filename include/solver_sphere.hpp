@@ -14,7 +14,7 @@
 #ifndef _SPHERESOLVER_H
 #define _SPHERESOLVER_H
 
-#include "missing_bertini_headers.hpp"
+#include "bertini_headers.hpp"
 
 
 

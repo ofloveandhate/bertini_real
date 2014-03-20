@@ -14,7 +14,7 @@
 #ifndef _MULTILINSOLVER_H
 #define _MULTILINSOLVER_H
 
-#include "missing_bertini_headers.hpp"
+#include "bertini_headers.hpp"
 
 
 
@@ -234,7 +234,6 @@ public:
 	multilintolin_eval_data_mp & operator=(const multilintolin_eval_data_mp & other)
 	{
 		this->MPType = other.MPType;
-		init();
 		copy(other);
 		return *this;
 	}
@@ -242,7 +241,7 @@ public:
 	
 	
 	virtual ~multilintolin_eval_data_mp(){
-		clear();
+		multilintolin_eval_data_mp::clear();
 	}
 	
 	
@@ -406,7 +405,6 @@ public:
 	multilintolin_eval_data_d & operator=(const multilintolin_eval_data_d & other)
 	{
 		this->MPType = other.MPType;
-		init();
 		copy(other);
 		return *this;
 	}

@@ -263,6 +263,9 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 				break;
 				
 			case 'h':
+				
+				splash_screen();
+				
 				printf("\nThis is BertiniReal v %s, developed by\nDaniel A. Brake with Dan J. Bates,\nWenrui Hao, Jonathan D. Hauenstein,\nAndrew J. Sommmese, and Charles W. Wampler.\n\n", BERTINI_REAL_VERSION_STRING);
 				printf("Send email to brake@math.colostate.edu for details about BertiniReal.\n\n");
 				BR_configuration::print_usage();
@@ -275,7 +278,7 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 				
 			default:
 				BR_configuration::print_usage();
-				exit(0);
+				exit(0); // this indices a memory leak.
 		}
 	}
 	
@@ -289,7 +292,7 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 	/* Print any remaining command line arguments (not options). */
 	if (optind < argc)
 	{
-		printf ("these options not processed: ");
+		printf ("these options were not processed: ");
 		while (optind < argc)
 			printf ("%s ", argv[optind++]);
 		putchar ('\n');

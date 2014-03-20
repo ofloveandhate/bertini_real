@@ -19,7 +19,7 @@
 #define _POST_PROCESSING_H
 
 
-#include "missing_bertini_headers.hpp"
+#include "bertini_headers.hpp"
 
 
 #include "fileops.hpp"
@@ -54,7 +54,8 @@ int BRfindFiniteSolns(post_process_t *endPoints, int num_sols, int num_vars,
 
 
 
-
+int BRfindRealSolns(post_process_t *endPoints, int num_sols, int num_vars,
+					tracker_config_t *T );
 
 void endpoint_to_vec_mp(vec_mp veccie, post_process_t *endPoint);
 

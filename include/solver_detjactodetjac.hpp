@@ -14,7 +14,7 @@
 #ifndef _detjac_to_detjac_H
 #define _detjac_to_detjac_H
 
-#include "missing_bertini_headers.hpp"
+#include "bertini_headers.hpp"
 
 
 

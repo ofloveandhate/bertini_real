@@ -14,6 +14,7 @@ void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check
 	//direct from the bertini library:
 	findMultSol(endPoints, num_pts_to_check, num_nat_vars, preProcData, T->final_tol_times_mult);
 	
+	
 	//sets the singularity flag in endPoints.
 	//custom, derived from bertini's analagous call.
 	int num_singular_solns = BRfindSingularSolns(endPoints, num_pts_to_check, num_nat_vars, T);
@@ -23,9 +24,10 @@ void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check
 	int num_finite_solns = BRfindFiniteSolns(endPoints, num_pts_to_check, num_nat_vars, T);
 	
 	
+	int num_real_solns = BRfindRealSolns(endPoints,num_pts_to_check,num_nat_vars,T);
 	
-	if (solve_options.verbose_level>=1)
-		printf("%d finite solutions, %d singular solutions\n",num_finite_solns, num_singular_solns);
+	if (solve_options.verbose_level>=3)
+		printf("%d finite solutions, %d singular solutions, %d real solutions\n",num_finite_solns, num_singular_solns, num_real_solns);
 	
 	
 	if (solve_options.verbose_level>=3) {
@@ -35,7 +37,7 @@ void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check
 			//		int isReal;       // real flag:  0 - not real, 1 - real
 			//		int isFinite;     // finite flag: -1 - no finite/infinite distinction, 0 - infinite, 1 - finite
 			//		int isSing;       // singular flag: 0 - non-sigular, 1 - singular
-			printf("solution %d, success %d, multi %d, isFinite %d, isSing %d\n",ii,endPoints[ii].success,endPoints[ii].multiplicity,endPoints[ii].isFinite,endPoints[ii].isSing);
+			printf("solution %d, success %d, multi %d, isFinite %d, isSing %d, isReal %d\n",ii,endPoints[ii].success,endPoints[ii].multiplicity,endPoints[ii].isFinite,endPoints[ii].isSing,endPoints[ii].isReal);
 		}
 	}
 	
@@ -81,6 +83,7 @@ void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check
 		
 		solution_metadata meta;
 
+		meta.set_real(endPoints[curr_ind].isReal);
 		meta.set_finite(endPoints[curr_ind].isFinite);
 		meta.set_singular(endPoints[curr_ind].isSing);
 		meta.set_multiplicity(endPoints[curr_ind].multiplicity);
@@ -235,6 +238,57 @@ int BRfindFiniteSolns(post_process_t *endPoints, int num_sols, int num_vars,
 }
 
 
+int BRfindRealSolns(post_process_t *endPoints, int num_sols, int num_vars,
+					  tracker_config_t *T )
+{
+	int real_count=0;
+	
+	
+	//initialize temp stuffs
+	comp_d dehom_coord_recip_d;
+	comp_mp dehom_coord_recip_mp; init_mp(dehom_coord_recip_mp);
+	vec_d dehom_d;   init_vec_d(dehom_d,num_vars-1);   dehom_d->size = num_vars-1;
+	vec_mp dehom_mp; init_vec_mp(dehom_mp,num_vars-1); dehom_mp->size = num_vars-1;
+	
+	
+	
+	for (int ii = 0; ii < num_sols; ii++){
+		if (endPoints[ii].sol_prec<64) {
+			set_d(dehom_coord_recip_d,endPoints[ii].sol_d[0]);
+			recip_d(dehom_coord_recip_d,dehom_coord_recip_d);
+			for (int jj=0; jj<num_vars-1; ++jj) {
+				//do the division.
+				mul_d(&dehom_d->coord[jj],dehom_coord_recip_d,endPoints[ii].sol_d[jj+1])
+			}
+			
+			endPoints[ii].isReal = checkForReal_d(dehom_d, T->real_threshold);
+			
+		}
+		else // high precision, do mp
+		{
+			change_prec_point_mp(dehom_mp,endPoints[ii].sol_prec);
+			setprec_mp(dehom_coord_recip_mp,endPoints[ii].sol_prec);
+			recip_mp(dehom_coord_recip_mp,endPoints[ii].sol_mp[0]);
+			for (int jj=0; jj<num_vars-1; ++jj) {
+				//do the division.
+				mul_mp(&dehom_mp->coord[jj],dehom_coord_recip_mp,endPoints[ii].sol_mp[jj+1])
+			}
+			
+			endPoints[ii].isReal = checkForReal_mp(dehom_mp, T->real_threshold);
+			
+		}
+		
+		if (endPoints[ii].isReal) {
+			real_count++;
+		}
+	}
+	
+	clear_vec_d(dehom_d);
+	clear_vec_mp(dehom_mp);
+	clear_mp(dehom_coord_recip_mp);
+	
+	return real_count;
+}
 
 
 
@@ -293,7 +347,7 @@ void endgamedata_to_endpoint(post_process_t *endPoint, endgame_data_t *EG)
 	}
 	
 	
-	if (EG->retVal==0 || EG->retVal==-22 || EG->retVal==-50) {//EG->retVal==-50
+	if (EG->retVal==0 || EG->retVal==-22 || EG->retVal==-50 || EG->retVal==-21) {//EG->retVal==-50
 		endPoint->success = 1;
 	}
 	else if (EG->retVal == retVal_sharpening_failed){

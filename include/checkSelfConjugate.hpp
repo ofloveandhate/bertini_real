@@ -22,7 +22,7 @@
 #include "data_type.hpp"
 #include "fileops.hpp"
 
-#include "missing_bertini_headers.hpp"
+#include "bertini_headers.hpp"
 
 /**
  main function for performing self-conjugacy check.

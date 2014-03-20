@@ -1,7 +1,7 @@
 #include "data_type.hpp"
 #include "programConfiguration.hpp"
 
-
+#define SAMEPOINTTOL 1e-5
 
 std::string enum_lookup(int flag)
 {
@@ -774,7 +774,7 @@ void witness_set::only_first_vars(int num_vars)
 
 
 
-void witness_set::sort_for_real(tracker_config_t T)
+void witness_set::sort_for_real(tracker_config_t * T)
 {
 	
 	
@@ -791,7 +791,7 @@ void witness_set::sort_for_real(tracker_config_t T)
 		for (int jj=1; jj<this->num_variables-this->num_synth_vars; jj++) {
 			div_mp(&result->coord[jj-1], &this->pts_mp[ii]->coord[jj], &this->pts_mp[ii]->coord[0]);
 		}
-		real_indicator[ii] = checkForReal_mp(result, T.real_threshold);
+		real_indicator[ii] = checkForReal_mp(result, T->real_threshold);
 		
 		if (real_indicator[ii]==1) {
 			counter++;
@@ -835,7 +835,7 @@ void witness_set::sort_for_real(tracker_config_t T)
 
 
 // T is necessary for the tolerances.
-void witness_set::sort_for_unique(tracker_config_t T)
+void witness_set::sort_for_unique(tracker_config_t * T)
 {
 	
 	
@@ -2830,6 +2830,99 @@ void dehomogenize(point_d *result, point_d dehom_me, int num_variables)
 }
 
 
+void nonconj_transpose(mat_d Res, mat_d M)  /* Stores NON-CONJUGATE transpose of M in Res. */
+/***************************************************************\
+ * USAGE:                                                        *
+ * ARGUMENTS:                                                    *
+ * RETURN VALUES:                                                *
+ * NOTES:                                                        *
+ \***************************************************************/
+{
+	int i, j, rows = M->rows, cols = M->cols;
+	
+	if (Res != M)
+	{ // setup Res
+		change_size_mat_d(Res, cols, rows);
+		
+		for (i = 0; i < cols; i++)
+			for (j = 0; j < rows; j++)
+			{
+				set_d(&Res->entry[i][j], &M->entry[j][i]);
+			}
+	}
+	else // Res = M
+	{ // need to use a temporary matrix
+		mat_d tempMat;
+		// copy M to tempMat
+		init_mat_d(tempMat, rows, cols);
+		mat_cp_d(tempMat, M);
+		
+		// setup Res
+		change_size_mat_d(Res, cols, rows);
+		
+		for (i = 0; i < cols; i++)
+			for (j = 0; j < rows; j++)
+			{
+				set_d(&Res->entry[i][j], &tempMat->entry[j][i]);
+			}
+		
+		// clear tempMat
+		clear_mat_d(tempMat);
+	}
+	// set the size
+	Res->rows = cols;
+	Res->cols = rows;
+	
+	return;
+}
+
+void nonconj_transpose(mat_mp Res, mat_mp M)  /* Stores NON-CONJUGATE transpose of M in Res. */
+/***************************************************************\
+ * USAGE:                                                        *
+ * ARGUMENTS:                                                    *
+ * RETURN VALUES:                                                *
+ * NOTES:                                                        *
+ \***************************************************************/
+{
+	int i, j, rows = M->rows, cols = M->cols;
+	
+	if (Res != M)
+	{ // setup Res
+		change_size_mat_mp(Res, cols, rows);
+		
+		for (i = 0; i < cols; i++)
+			for (j = 0; j < rows; j++)
+			{
+				set_mp(&Res->entry[i][j], &M->entry[j][i]);
+			}
+	}
+	else // Res = M
+	{ // need to use a temporary matrix
+		mat_mp tempMat;
+		// copy M to tempMat
+		init_mat_mp2(tempMat, rows, cols, M->curr_prec);
+		mat_cp_mp(tempMat, M);
+		
+		// setup Res
+		change_size_mat_mp(Res, cols, rows);
+		
+		for (i = 0; i < cols; i++)
+			for (j = 0; j < rows; j++)
+			{
+				set_mp(&Res->entry[i][j], &tempMat->entry[j][i]); 
+			}
+		
+		// clear tempMat
+		clear_mat_mp(tempMat);
+	}
+	// set the size
+	Res->rows = cols;
+	Res->cols = rows;
+	
+	return;
+}
+
+
 
 void dot_product_d(comp_d result, vec_d left, vec_d right)
 {
@@ -3518,7 +3611,7 @@ int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & inde
 	// filter for uniqueness
 	
 	
-	double distinct_thresh = 1e-17;  // reasonable?  i hate hard-coded tolerances
+	double distinct_thresh = 1e-10;  // reasonable?  i hate hard-coded tolerances
 	
 	change_size_vec_mp(projections_sorted,1); projections_sorted->size = 1;
 	

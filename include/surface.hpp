@@ -18,7 +18,7 @@
 #ifndef SURFACE_H
 #define SURFACE_H
 
-#include "missing_bertini_headers.hpp"
+#include "bertini_headers.hpp"
 
 
 #include "fileops.hpp"
