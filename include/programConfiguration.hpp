@@ -273,6 +273,7 @@ public:
 class BR_configuration : public prog_config
 {
 public:
+	
 	int max_deflations;
 	int debugwait;
 	int stifle_membership_screen; ///< boolean controlling whether stifle_text is empty or " > /dev/null"
@@ -280,7 +281,7 @@ public:
 	
 	bool quick_run;
 	bool user_sphere;
-	
+	bool numerical_derivative;
 
 	bool user_projection; // bool
 	

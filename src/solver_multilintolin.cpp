@@ -628,9 +628,8 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	
 	multilintolin_eval_data_d *BED = (multilintolin_eval_data_d *)ED; // to avoid having to cast every time
 	
-	BED->SLP_memory.set_globals_to_this();
 	
-	int ii, jj, mm; // counters
+	
 	int offset;
 	comp_d one_minus_s, gamma_s;
 	comp_d temp, temp2;
@@ -645,36 +644,6 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	vec_d temp_function_values; init_vec_d(temp_function_values,0);
 	vec_d AtimesF; init_vec_d(AtimesF,BED->randomizer_matrix->rows); AtimesF->size = BED->randomizer_matrix->rows;// declare  // initialize
 	
-	vec_d *vars_times_curr_linear = (vec_d *)br_malloc(BED->num_linears*sizeof(vec_d));
-	for (ii=0; ii<BED->num_linears; ii++) {
-		init_vec_d(vars_times_curr_linear[ii],BED->num_variables);
-		vars_times_curr_linear[ii]->size = BED->num_variables;
-	}
-	
-	
-	
-	vec_d *vars_times_old_linear = (vec_d *)br_malloc(BED->num_linears*sizeof(vec_d));
-	for (ii=0; ii<BED->num_linears; ii++) {
-		init_vec_d(vars_times_old_linear[ii],BED->num_variables);
-		vars_times_old_linear[ii]->size = BED->num_variables;
-	}
-	
-	
-	vec_d *one_minus_s_times_current_linear = (vec_d *)br_malloc(BED->num_linears*sizeof(vec_d));
-	for (ii=0; ii<BED->num_linears; ii++) {
-		init_vec_d(one_minus_s_times_current_linear[ii],BED->num_variables);
-		one_minus_s_times_current_linear[ii]->size = BED->num_variables;
-	}
-	
-	
-	vec_d *gamma_s_times_old_linear = (vec_d *)br_malloc(BED->num_linears*sizeof(vec_d));
-	for (ii=0; ii<BED->num_linears; ii++) {
-		init_vec_d(gamma_s_times_old_linear[ii],BED->num_variables);
-		gamma_s_times_old_linear[ii]->size = BED->num_variables;
-	}
-	
-	
-	
 	
 	mat_d temp_jacobian_functions; init_mat_d(temp_jacobian_functions,BED->randomizer_matrix->cols,BED->num_variables);
 	temp_jacobian_functions->rows = BED->randomizer_matrix->cols; temp_jacobian_functions->cols = BED->num_variables;
@@ -688,16 +657,16 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	change_size_vec_d(funcVals,BED->num_variables); funcVals->size = BED->num_variables;
 	change_size_mat_d(Jv, BED->num_variables, BED->num_variables); Jv->rows = Jv->cols = BED->num_variables; //  -> this should be square!!!
 	
-	for (ii=0; ii<BED->num_variables; ii++) {
-		for (jj=0; jj<BED->num_variables; jj++) {
+	for (int ii=0; ii<BED->num_variables; ii++) {
+		for (int jj=0; jj<BED->num_variables; jj++) {
 			set_zero_d(&Jv->entry[ii][jj]);
 		}
 	}
 	
-	
+	BED->SLP_memory.set_globals_to_this();
 	// evaluate the SLP to get the system's whatnot.
 	evalProg_d(temp_function_values, parVals, parDer, temp_jacobian_functions, temp_jacobian_parameters, current_variable_values, pathVars, BED->SLP);
-	
+	BED->SLP_memory.set_globals_null();
 	
 	// evaluate the patch
 	patch_eval_d(patchValues, parVals, parDer, Jv_Patch, Jp, current_variable_values, pathVars, &BED->patch);  // Jp is ignored
@@ -711,7 +680,7 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	change_size_point_d(parVals, 1);
 	change_size_vec_d(parDer, 1);
 	change_size_mat_d(Jp, BED->num_variables, 1); Jp->rows = BED->num_variables; Jp->cols = 1;
-	for (ii=0; ii<BED->num_variables; ii++)
+	for (int ii=0; ii<BED->num_variables; ii++)
 		set_zero_d(&Jp->entry[ii][0]);
 	
 	
@@ -729,7 +698,7 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	mat_mul_d(AtimesJ,BED->randomizer_matrix,temp_jacobian_functions);
 	mul_mat_vec_d(AtimesF,BED->randomizer_matrix, temp_function_values ); // set values of AtimesF (A is randomization matrix)
 	
-	for (ii=0; ii<AtimesF->size; ii++)  // for each function, after (real orthogonal) randomization
+	for (int ii=0; ii<AtimesF->size; ii++)  // for each function, after (real orthogonal) randomization
 		set_d(&funcVals->coord[ii], &AtimesF->coord[ii]);
 	
 	
@@ -741,41 +710,26 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	
 	//////////////
 	//
-	// function values for the linears
+	// function values and Jp for the linears
 	//
 	////////////////////
 	
 	
 	offset = BED->num_variables-BED->patch.num_patches-BED->num_linears;
-	for (mm=0; mm<BED->num_linears; ++mm) {
-		// multiply vars times the new linear, with (1-s)
-		for (ii=0; ii<BED->num_variables; ii++) { // for each variable, including the homogeneous ones.
-			mul_d(&one_minus_s_times_current_linear[mm]->coord[ii], &BED->current_linear[mm]->coord[ii], one_minus_s);
-			mul_d(&vars_times_curr_linear[mm]->coord[ii], &one_minus_s_times_current_linear[mm]->coord[ii], &current_variable_values->coord[ii]);
-		}
-		// multiply vars times the old linear, with gamma*s
-		for (ii=0; ii<BED->num_variables; ii++) { // for each variable, including the homogeneous ones.
-			mul_d(&gamma_s_times_old_linear[mm]->coord[ii], &BED->old_linear[mm]->coord[ii], gamma_s);
-			mul_d(&vars_times_old_linear[mm]->coord[ii],&gamma_s_times_old_linear[mm]->coord[ii],&current_variable_values->coord[ii]);
-		}
-		// add the old and the new
-		set_zero_d(temp);  //  initialize to 0
-		for (ii=0; ii<BED->num_variables; ii++) {  // for each variable, including the homogenizing ones.
-			add_d(temp2, &vars_times_old_linear[mm]->coord[ii], &vars_times_curr_linear[mm]->coord[ii]);
-			add_d(temp,temp,temp2); //  tested correct, does not overwrite values in temp before accessed for read.
-		}
-		//finally set the value of the linears we are homotoping.
+	for (int ii=0; ii<BED->num_linears; ++ii) {
+		dot_product_d(temp,BED->current_linear[ii],current_variable_values);
 		
+		mul_d(&funcVals->coord[ii+offset],one_minus_s,temp);
+		neg_d(&Jp->entry[offset+ii][0],temp);
 		
-		set_d(&funcVals->coord[mm+offset],temp); // this is the entry for the linear's homotopy.
+		dot_product_d(temp2,BED->old_linear[ii],current_variable_values);
 		
+		mul_d(temp,temp2,BED->gamma);
+		add_d(&Jp->entry[offset+ii][0],&Jp->entry[offset+ii][0],temp); // Jp = -curr_lin_val + gamma*old_lin_val
+		
+		mul_d(temp2,temp2,gamma_s);
+		add_d(&funcVals->coord[ii+offset],&funcVals->coord[ii+offset],temp2); // f = (1-s)*curr_lin_val + gamma*s*old_lin_val
 	}
-	
-	
-	
-	
-	
-	
 	
 	
 	//////////////
@@ -787,8 +741,17 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	
 	
 	offset = BED->num_variables-BED->patch.num_patches;
-	for (ii=0; ii<BED->patch.num_patches; ii++)
+	for (int ii=0; ii<BED->patch.num_patches; ii++)
 		set_d(&funcVals->coord[ii+offset], &patchValues->coord[ii]);
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	
 	
@@ -802,8 +765,8 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	
 	//first, the entries related to the functions
 	
-	for (ii = 0; ii < BED->randomizer_matrix->rows; ii++)
-		for (jj = 0; jj < BED->num_variables; jj++)
+	for (int ii = 0; ii < BED->randomizer_matrix->rows; ii++)
+		for (int jj = 0; jj < BED->num_variables; jj++)
 			set_d(&Jv->entry[ii][jj],&AtimesJ->entry[ii][jj]);
 	
 	
@@ -817,39 +780,17 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	
 	
 	offset = BED->num_variables-BED->patch.num_patches-BED->num_linears;
-	for (mm=0; mm<BED->num_linears; ++mm) {
-		for (ii=0; ii<BED->num_variables; ii++) {
-			add_d(temp,&gamma_s_times_old_linear[mm]->coord[ii], &one_minus_s_times_current_linear[mm]->coord[ii]);
-			set_d(&Jv->entry[offset+mm][ii], temp);
-		}
-	}
-	
-	
-	offset = BED->num_variables - BED->patch.num_patches;
-	for (jj=0; jj<BED->patch.num_patches; jj++){
-		for (ii=0; ii<BED->num_variables; ii++) {
-			set_d(&Jv->entry[offset+jj][ii],&Jv_Patch->entry[jj][ii]);
+	for (int ii=0; ii<BED->num_linears; ++ii) {
+		for (int jj=0; jj<BED->num_variables; jj++) {
+			mul_d(temp,&BED->old_linear[ii]->coord[jj],gamma_s);
+			mul_d(temp2,&BED->current_linear[ii]->coord[jj],one_minus_s);
+			add_d(&Jv->entry[offset+ii][jj], temp,temp2);
 		}
 	}
 	
 	
 	
-	
-	
-	
-	
-	// Jp = -current_linear_times_vars + gamma*old_linear_times_vars
-	
-	offset = BED->num_variables-BED->patch.num_patches-BED->num_linears;
-	for (ii=0; ii<BED->num_linears; ii++) {
-		set_zero_d(&Jp->entry[offset+ii][0]);
-		dot_product_d(temp,
-					  BED->current_linear[ii],current_variable_values);
-		neg_d(temp,temp);
-		dot_product_d(temp2,BED->old_linear[ii],current_variable_values);
-		mul_d(temp2,temp2,BED->gamma);
-		add_d(&Jp->entry[offset+ii][0],temp,temp2);
-	}
+
 	
 	
 	//////////////
@@ -859,9 +800,9 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	////////////////////
 	
 	offset = BED->num_variables - BED->patch.num_patches;
-	for (ii = 0; ii<BED->patch.num_patches; ii++)  // for each patch equation
+	for (int ii = 0; ii<BED->patch.num_patches; ii++)  // for each patch equation
 	{  // Jv = Jv_Patch
-		for (jj = 0; jj<BED->num_variables; jj++) // for each variable
+		for (int jj = 0; jj<BED->num_variables; jj++) // for each variable
 			set_d(&Jv->entry[ii+offset][jj], &Jv_Patch->entry[ii][jj]);
 	}
 	
@@ -884,20 +825,6 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	}
 	
 	
-	
-	for (ii=0; ii<BED->num_linears; ii++) {
-		clear_vec_d(vars_times_curr_linear[ii]);
-		clear_vec_d(vars_times_old_linear[ii]);
-		clear_vec_d(one_minus_s_times_current_linear[ii]);
-		clear_vec_d(gamma_s_times_old_linear[ii]);
-	}
-	free(vars_times_curr_linear);
-	free(vars_times_old_linear);
-	free(one_minus_s_times_current_linear);
-	free(gamma_s_times_old_linear);
-	
-	
-	BED->SLP_memory.set_globals_null();
 	
 	clear_vec_d(patchValues);
 	clear_vec_d(temp_function_values);
@@ -937,12 +864,11 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	
 	multilintolin_eval_data_mp *BED = (multilintolin_eval_data_mp *)ED; // to avoid having to cast every time
 	
-	BED->SLP_memory.set_globals_to_this();
+	
 	
 	comp_mp one_minus_s, gamma_s; init_mp(one_minus_s); init_mp(gamma_s);
 	comp_mp temp, temp2; init_mp(temp); init_mp(temp2);
 	
-	int ii, jj, mm; // counters
 	int offset;
 	
 	
@@ -956,34 +882,7 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	vec_mp temp_function_values; init_vec_mp(temp_function_values,0);
 	vec_mp AtimesF; init_vec_mp(AtimesF,BED->randomizer_matrix->rows); AtimesF->size = BED->randomizer_matrix->rows;// declare  // initialize
 	
-	vec_mp *vars_times_curr_linear = (vec_mp *)br_malloc(BED->num_linears*sizeof(vec_mp));
-	for (ii=0; ii<BED->num_linears; ii++) {
-		init_vec_mp(vars_times_curr_linear[ii],BED->num_variables);
-		vars_times_curr_linear[ii]->size = BED->num_variables;
-	}
-	
-	
-	
-	vec_mp *vars_times_old_linear = (vec_mp *)br_malloc(BED->num_linears*sizeof(vec_mp));
-	for (ii=0; ii<BED->num_linears; ii++) {
-		init_vec_mp(vars_times_old_linear[ii],BED->num_variables);
-		vars_times_old_linear[ii]->size = BED->num_variables;
-	}
-	
-	
-	vec_mp *one_minus_s_times_current_linear = (vec_mp *)br_malloc(BED->num_linears*sizeof(vec_mp));
-	for (ii=0; ii<BED->num_linears; ii++) {
-		init_vec_mp(one_minus_s_times_current_linear[ii],BED->num_variables);
-		one_minus_s_times_current_linear[ii]->size = BED->num_variables;
-	}
-	
-	
-	vec_mp *gamma_s_times_old_linear = (vec_mp *)br_malloc(BED->num_linears*sizeof(vec_mp));
-	for (ii=0; ii<BED->num_linears; ii++) {
-		init_vec_mp(gamma_s_times_old_linear[ii],BED->num_variables);
-		gamma_s_times_old_linear[ii]->size = BED->num_variables;
-	}
-	
+		
 	
 	
 	
@@ -999,15 +898,16 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	change_size_vec_mp(funcVals,BED->num_variables); funcVals->size = BED->num_variables;
 	change_size_mat_mp(Jv, BED->num_variables, BED->num_variables); Jv->rows = Jv->cols = BED->num_variables; //  -> this should be square!!!
 	
-	for (ii=0; ii<BED->num_variables; ii++)
-		for (jj=0; jj<BED->num_variables; jj++)
+	for (int ii=0; ii<BED->num_variables; ii++)
+		for (int jj=0; jj<BED->num_variables; jj++)
 			set_zero_mp(&Jv->entry[ii][jj]);
 	
 	
 	
 	// evaluate the SLP to get the system's whatnot.
+	BED->SLP_memory.set_globals_to_this();
 	evalProg_mp(temp_function_values, parVals, parDer, temp_jacobian_functions, temp_jacobian_parameters, current_variable_values, pathVars, BED->SLP);
-	
+	BED->SLP_memory.set_globals_null();
 	
 	// evaluate the patch
 	patch_eval_mp(    patchValues, parVals, parDer, Jv_Patch, Jp, current_variable_values, pathVars, &BED->patch);  // Jp is ignored
@@ -1022,7 +922,7 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	change_size_vec_mp(parDer, 1);
 	change_size_mat_mp(Jp, BED->num_variables, 1); Jp->rows = BED->num_variables; Jp->cols = 1;
 	
-	for (ii=0; ii<BED->num_variables; ii++)
+	for (int ii=0; ii<BED->num_variables; ii++)
 		set_zero_mp(&Jp->entry[ii][0]);
 	
 	
@@ -1040,9 +940,9 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	mat_mul_mp(AtimesJ,BED->randomizer_matrix,temp_jacobian_functions);
 	mul_mat_vec_mp(AtimesF,BED->randomizer_matrix, temp_function_values ); // set values of AtimesF (A is randomization matrix)
 	
-	for (ii=0; ii<AtimesF->size; ii++) { // for each function, after (real orthogonal) randomization
+	for (int ii=0; ii<AtimesF->size; ii++)  // for each function, after (real orthogonal) randomization
 		set_mp(&funcVals->coord[ii], &AtimesF->coord[ii]);
-	}
+	
 	
 	
 	
@@ -1052,41 +952,26 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	
 	//////////////
 	//
-	// function values for the linears
+	// function values and Jp for the linears
 	//
 	////////////////////
 	
 	
-	offset = BED->num_variables - BED->patch.num_patches - BED->num_linears;
-	for (mm=0; mm<BED->num_linears; ++mm) {
-		// multiply vars times the new linear, with (1-s)
-		for (ii=0; ii<BED->num_variables; ii++) { // for each variable, including the homogeneous ones.
-			mul_mp(&one_minus_s_times_current_linear[mm]->coord[ii], &BED->current_linear[mm]->coord[ii], one_minus_s);
-			mul_mp(&vars_times_curr_linear[mm]->coord[ii], &one_minus_s_times_current_linear[mm]->coord[ii], &current_variable_values->coord[ii]);
-		}
-		// multiply vars times the old linear, with gamma*s
-		for (ii=0; ii<BED->num_variables; ii++) { // for each variable, including the homogeneous ones.
-			mul_mp(&gamma_s_times_old_linear[mm]->coord[ii], &BED->old_linear[mm]->coord[ii], gamma_s);
-			mul_mp(&vars_times_old_linear[mm]->coord[ii],&gamma_s_times_old_linear[mm]->coord[ii],&current_variable_values->coord[ii]);
-		}
-		// add the old and the new
-		set_zero_mp(temp);  //  initialize to 0
-		for (ii=0; ii<BED->num_variables; ii++) {  // for each variable, including the homogenizing ones.
-			add_mp(temp2, &vars_times_old_linear[mm]->coord[ii], &vars_times_curr_linear[mm]->coord[ii]);
-			add_mp(temp,temp,temp2); //  tested correct, does not overwrite values in temp before accessed for read.
-		}
-		//finally set the value of the linears we are homotoping.
+	offset = BED->num_variables-BED->patch.num_patches-BED->num_linears;
+	for (int ii=0; ii<BED->num_linears; ++ii) {
+		dot_product_mp(temp,BED->current_linear[ii],current_variable_values);
 		
+		mul_mp(&funcVals->coord[ii+offset],one_minus_s,temp);
+		neg_mp(&Jp->entry[offset+ii][0],temp);
 		
-		set_mp(&funcVals->coord[mm+offset],temp); // this is the entry for the linear's homotopy.
-												  //		printf("setting F[%d]\n",mm+offset);
+		dot_product_mp(temp2,BED->old_linear[ii],current_variable_values);
+		
+		mul_mp(temp,temp2,BED->gamma);
+		add_mp(&Jp->entry[offset+ii][0],&Jp->entry[offset+ii][0],temp); // Jp = -curr_lin_val + gamma*old_lin_val
+		
+		mul_mp(temp2,temp2,gamma_s);
+		add_mp(&funcVals->coord[ii+offset],&funcVals->coord[ii+offset],temp2); // f = (1-s)*curr_lin_val + gamma*s*old_lin_val
 	}
-	
-	
-	
-	
-	
-	
 	
 	
 	//////////////
@@ -1098,8 +983,17 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	
 	
 	offset = BED->num_variables-BED->patch.num_patches;
-	for (ii=0; ii<BED->patch.num_patches; ii++)
+	for (int ii=0; ii<BED->patch.num_patches; ii++)
 		set_mp(&funcVals->coord[ii+offset], &patchValues->coord[ii]);
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	
 	
@@ -1113,8 +1007,8 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	
 	//first, the entries related to the functions
 	
-	for (ii = 0; ii < BED->randomizer_matrix->rows; ii++)
-		for (jj = 0; jj < BED->num_variables; jj++)
+	for (int ii = 0; ii < BED->randomizer_matrix->rows; ii++)
+		for (int jj = 0; jj < BED->num_variables; jj++)
 			set_mp(&Jv->entry[ii][jj],&AtimesJ->entry[ii][jj]);
 	
 	
@@ -1128,38 +1022,17 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	
 	
 	offset = BED->num_variables-BED->patch.num_patches-BED->num_linears;
-	for (mm=0; mm<BED->num_linears; ++mm) {
-		for (ii=0; ii<BED->num_variables; ii++) {
-			add_mp(temp,&gamma_s_times_old_linear[mm]->coord[ii], &one_minus_s_times_current_linear[mm]->coord[ii]);
-			set_mp(&Jv->entry[offset+mm][ii], temp);
-		}
-	}
-	
-	
-	offset = BED->num_variables - BED->patch.num_patches;
-	for (jj=0; jj<BED->patch.num_patches; jj++){
-		for (ii=0; ii<BED->num_variables; ii++) {
-			set_mp(&Jv->entry[offset+jj][ii],&Jv_Patch->entry[jj][ii]);
+	for (int ii=0; ii<BED->num_linears; ++ii) {
+		for (int jj=0; jj<BED->num_variables; jj++) {
+			mul_mp(temp,&BED->old_linear[ii]->coord[jj],gamma_s);
+			mul_mp(temp2,&BED->current_linear[ii]->coord[jj],one_minus_s);
+			add_mp(&Jv->entry[offset+ii][jj], temp,temp2);
 		}
 	}
 	
 	
 	
 	
-	
-	
-	// Jp = -current_linear_times_vars + gamma*old_linear_times_vars
-	
-	offset = BED->num_variables-BED->patch.num_patches-BED->num_linears;
-	for (ii=0; ii<BED->num_linears; ii++) {
-		set_zero_mp(&Jp->entry[offset+ii][0]);
-		dot_product_mp(temp,
-					   BED->current_linear[ii],current_variable_values);
-		neg_mp(temp,temp);
-		dot_product_mp(temp2,BED->old_linear[ii],current_variable_values);
-		mul_mp(temp2,temp2,BED->gamma);
-		add_mp(&Jp->entry[offset+ii][0],temp,temp2);
-	}
 	
 	
 	//////////////
@@ -1169,14 +1042,10 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	////////////////////
 	
 	offset = BED->num_variables - BED->patch.num_patches;
-	for (ii = 0; ii<BED->patch.num_patches; ii++)  // for each patch equation
-	{ // funcVals = patchValues
-	  // Jp = 0
-		set_zero_mp(&Jp->entry[ii+offset][0]);
-		// Jv = Jv_Patch
-		for (jj = 0; jj<BED->num_variables; jj++) // for each variable
+	for (int ii = 0; ii<BED->patch.num_patches; ii++)  // for each patch equation
+	{  // Jv = Jv_Patch
+		for (int jj = 0; jj<BED->num_variables; jj++) // for each variable
 			set_mp(&Jv->entry[ii+offset][jj], &Jv_Patch->entry[ii][jj]);
-		
 	}
 	
 	// done!  yay!
@@ -1188,7 +1057,7 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 		print_point_to_screen_matlab(parVals,"parVals_mp");
 		print_matrix_to_screen_matlab( AtimesJ,"R*jac_mp");
 		print_point_to_screen_matlab(current_variable_values,"currvars_mp");
-		for (ii=0; ii<BED->num_linears; ii++) {
+		for (int ii=0; ii<BED->num_linears; ii++) {
 			print_point_to_screen_matlab(BED->current_linear[ii],"new_mp");
 			print_point_to_screen_matlab(BED->old_linear[ii],"old_mp");
 		}
@@ -1202,19 +1071,9 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	
 	
 	
-	for (ii=0; ii<BED->num_linears; ii++) {
-		clear_vec_mp(vars_times_curr_linear[ii]);
-		clear_vec_mp(vars_times_old_linear[ii]);
-		clear_vec_mp(one_minus_s_times_current_linear[ii]);
-		clear_vec_mp(gamma_s_times_old_linear[ii]);
-	}
-	free(vars_times_curr_linear);
-	free(vars_times_old_linear);
-	free(one_minus_s_times_current_linear);
-	free(gamma_s_times_old_linear);
 	
 	
-	BED->SLP_memory.set_globals_null();
+	
 	
 	clear_mp(one_minus_s);
 	clear_mp(gamma_s);
@@ -1240,14 +1099,14 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	fprintf(BED->FOUT," ");
 	mpf_out_str (BED->FOUT, 10, 15, pathVars->i);
 	fprintf(BED->FOUT," ");
-	for (ii=0; ii<BED->num_variables-1; ++ii) {
+	for (int ii=0; ii<BED->num_variables-1; ++ii) {
 		mpf_out_str (BED->FOUT, 10, 15, dehommed->coord[ii].r);
 		fprintf(BED->FOUT," ");
 		mpf_out_str (BED->FOUT, 10, 15, dehommed->coord[ii].i);
 		fprintf(BED->FOUT," ");
 	}
 	fprintf(BED->FOUT,"\n");
-	clear_vec_d(dehommed);
+	clear_vec_mp(dehommed);
 #endif
 	
 	

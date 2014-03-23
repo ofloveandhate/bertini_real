@@ -70,6 +70,8 @@ public:
 	
 	//	mat_mp post_randomizer_matrix;  ///< S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
 	//
+	bool numerical_derivative;
+	
 	void clear();
 	
 	nullspace_config(){
@@ -92,7 +94,7 @@ private:
 		num_x_vars = num_v_vars = -1;
 		num_randomized_eqns = max_degree = -1;
 		
-
+		numerical_derivative = false;
 		
 		starting_linears = NULL;
 		
@@ -821,8 +823,8 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED);
 
 
-
-
+int nullspacejac_numerical_deriv_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp, point_d current_variable_values, comp_d pathVars, void const *ED);
+int nullspacejac_numerical_deriv_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED);
 
 int nullspacejac_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d in_d, point_mp in_mp, int in_prec, void const *ED_d, void const *ED_mp);
 
@@ -839,7 +841,7 @@ int check_issoln_nullspacejac_mp(endgame_data_t *EG,
 								 tracker_config_t *T,
 								 void const *ED);
 
-int check_isstart_nullspacejac_d(point_d testpoint,
+int check_isstart_nullspacejac_d(vec_d testpoint,
 								 tracker_config_t *T,
 								 void const *ED);
 

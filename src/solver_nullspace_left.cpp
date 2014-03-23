@@ -113,6 +113,11 @@ void nullspace_config::print()
 		converter.str("");
 	}
 	
+	for (int ii=0; ii<num_projections; ii++) {
+		converter << "pi" << ii;
+		print_point_to_screen_matlab(target_projection[ii],converter.str());
+		converter.str("");
+	}
 	std::cout << "\n********************\n" << std::endl;
 	
 }
@@ -210,7 +215,7 @@ int nullspacejac_eval_data_mp::send(parallelism_config & mpi_config)
 	solver_mp::send(mpi_config);
 	
 	
-	int *buffer = new int[12];
+	int *buffer = new int[13];
 	
 	buffer[0] = num_additional_linears;
 	buffer[1] = num_jac_equations;
@@ -227,19 +232,24 @@ int nullspacejac_eval_data_mp::send(parallelism_config & mpi_config)
 	
 	buffer[10] = num_randomized_eqns;
 	buffer[11] = num_natural_vars;
+	
+	buffer[12] = base_degrees.size();
 	// now can actually send the data.
 	
 	delete[] buffer;
 	
-	MPI_Bcast(buffer,12,MPI_INT, 0, mpi_config.my_communicator);
-	std::cout << "immedately add code to transmit base_degrees" << std::endl;
-	br_exit(123120);
+	MPI_Bcast(buffer,13,MPI_INT, 0, mpi_config.my_communicator);
 	
-	buffer = new int[num_randomized_eqns];
+	buffer = new int[num_randomized_eqns + base_degrees.size()];
 	for (int ii=0; ii<num_randomized_eqns; ii++) {
 		buffer[ii] = randomized_degrees[ii];
 	}
-	MPI_Bcast(buffer, num_randomized_eqns, MPI_INT, 0, mpi_config.my_communicator);
+	
+	for (unsigned int ii=0; ii<base_degrees.size(); ii++) {
+		buffer[ii+num_randomized_eqns] = base_degrees[ii];
+	}
+	
+	MPI_Bcast(buffer, num_randomized_eqns+base_degrees.size(), MPI_INT, 0, mpi_config.my_communicator);
 	delete[] buffer;
 	
 	
@@ -288,7 +298,6 @@ int nullspacejac_eval_data_mp::send(parallelism_config & mpi_config)
 		else{}
 	}
 	else {
-        std::cout << "sending mptype 1" << std::endl;
 		if (num_additional_linears>0) {
 			for (int ii=0; ii<num_additional_linears; ii++) {
 				// receive the full precision terminal additional linear
@@ -336,7 +345,7 @@ int nullspacejac_eval_data_mp::send(parallelism_config & mpi_config)
 
 int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 {
-	int *buffer = new int[12];
+	int *buffer = new int[13];
 	MPI_Bcast(buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	
 	if (buffer[0] != NULLSPACE) {
@@ -347,7 +356,7 @@ int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 	solver_mp::receive(mpi_config);
 	
 	// now can actually receive the data from whoever.
-	MPI_Bcast(buffer,12,MPI_INT, 0, mpi_config.my_communicator);
+	MPI_Bcast(buffer,13,MPI_INT, 0, mpi_config.my_communicator);
 	
 	num_additional_linears = buffer[0];
 	num_jac_equations = buffer[1];
@@ -365,13 +374,19 @@ int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 	num_randomized_eqns = buffer[10];
 	num_natural_vars = buffer[11];
 	
+	int temp_num_base_degrees = buffer[12];
 	delete[] buffer;
-	buffer = new int[num_randomized_eqns];
+	buffer = new int[num_randomized_eqns+temp_num_base_degrees];
 	
-	MPI_Bcast(buffer, num_randomized_eqns, MPI_INT, 0, mpi_config.my_communicator);
+	MPI_Bcast(buffer, num_randomized_eqns+temp_num_base_degrees, MPI_INT, 0, mpi_config.my_communicator);
 	for (int ii=0; ii<num_randomized_eqns; ii++) {
 		randomized_degrees.push_back(buffer[ii]);
 	}
+	
+	for (int ii=0; ii<temp_num_base_degrees; ii++) {
+		base_degrees.push_back(buffer[ii+num_randomized_eqns]);
+	}
+	
 	delete[] buffer;
 	
 	
@@ -534,6 +549,11 @@ int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 		
 	}
 	
+	setup_deriv_from_SLP(SLP_derivative, this->SLP);
+	while (SLP_derivative->order < 2) {
+		setupNext_derivs(SLP_derivative);
+	}
+	
 	
 	return SUCCESSFUL;
 }
@@ -550,6 +570,10 @@ int nullspacejac_eval_data_mp::setup(prog_t * _SLP,
 	
 	generic_setup_patch(&patch,W);
 	
+	if (ns_config->numerical_derivative) {
+		this->evaluator_function_d = &nullspacejac_numerical_deriv_eval_d;
+		this->evaluator_function_mp = &nullspacejac_numerical_deriv_eval_mp;
+	}
 	
 	
 	setup_deriv_from_SLP(SLP_derivative, SLP);
@@ -599,7 +623,9 @@ int nullspacejac_eval_data_mp::setup(prog_t * _SLP,
 	for (int ii=0; ii<ns_config->randomizer_matrix->rows; ii++)
 		randomized_degrees[ii] = ns_config->randomized_degrees[ii]; // store the full degree (not derivative).
 	
-	this->base_degrees = ns_config->base_degrees;
+	base_degrees.resize(0);
+	for (auto ii=ns_config->base_degrees.begin(); ii!=ns_config->base_degrees.end(); ++ii)
+		base_degrees.push_back(*ii);
 	
 	
 	
@@ -893,7 +919,7 @@ int nullspacejac_eval_data_d::send(parallelism_config & mpi_config)
 	solver_d::send(mpi_config);
 	
 	
-	int *buffer = new int[12];
+	int *buffer = new int[13];
 	
 	buffer[0] = num_additional_linears;
 	buffer[1] = num_jac_equations;
@@ -910,16 +936,23 @@ int nullspacejac_eval_data_d::send(parallelism_config & mpi_config)
 	
 	buffer[10] = num_randomized_eqns;
 	buffer[11] = num_natural_vars;
+	buffer[12] = base_degrees.size();
 	// now can actually send the data.
 	
-	MPI_Bcast(buffer,12,MPI_INT, 0, mpi_config.my_communicator);
+	MPI_Bcast(buffer,13,MPI_INT, 0, mpi_config.my_communicator);
 	
 	delete[] buffer;
-	buffer = new int[num_randomized_eqns];
+	
+	buffer = new int[num_randomized_eqns + base_degrees.size()];
 	for (int ii=0; ii<num_randomized_eqns; ii++) {
 		buffer[ii] = randomized_degrees[ii];
 	}
-	MPI_Bcast(buffer, num_randomized_eqns, MPI_INT, 0, mpi_config.my_communicator);
+	
+	for (unsigned int ii=0; ii<base_degrees.size(); ii++) {
+		buffer[ii+num_randomized_eqns] = base_degrees[ii];
+	}
+	
+	MPI_Bcast(buffer, num_randomized_eqns+base_degrees.size(), MPI_INT, 0, mpi_config.my_communicator);
 	delete[] buffer;
 	
 	if (num_additional_linears>0) {
@@ -970,7 +1003,7 @@ int nullspacejac_eval_data_d::send(parallelism_config & mpi_config)
 
 int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
 {
-    int *buffer = new int[12];
+    int *buffer = new int[13];
 	MPI_Bcast(buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	
 	if (buffer[0] != NULLSPACE){
@@ -993,7 +1026,7 @@ int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
 	
 	
 	
-	MPI_Bcast(buffer,12,MPI_INT, 0, mpi_config.my_communicator);
+	MPI_Bcast(buffer,13,MPI_INT, 0, mpi_config.my_communicator);
 	
 	
 	num_additional_linears = buffer[0];
@@ -1013,14 +1046,21 @@ int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
 	num_natural_vars = buffer[11];
 	
 	
-	
+	int temp_num_base_degrees = buffer[12];
 	delete[] buffer;
-	buffer = new int[num_randomized_eqns];
 	
-	MPI_Bcast(buffer, num_randomized_eqns, MPI_INT, 0, mpi_config.my_communicator);
+	
+	buffer = new int[num_randomized_eqns+temp_num_base_degrees];
+	
+	MPI_Bcast(buffer, num_randomized_eqns+temp_num_base_degrees, MPI_INT, 0, mpi_config.my_communicator);
 	for (int ii=0; ii<num_randomized_eqns; ii++) {
 		randomized_degrees.push_back(buffer[ii]);
 	}
+	
+	for (int ii=0; ii<temp_num_base_degrees; ii++) {
+		base_degrees.push_back(buffer[ii+num_randomized_eqns]);
+	}
+	
 	delete[] buffer;
 	
 	
@@ -1090,6 +1130,20 @@ int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
 	
 	
 	
+	
+	if (this->MPType==2)
+	{
+		this->SLP_derivative = this->BED_mp->SLP_derivative;
+	}
+	else{
+		SLP_derivative = new prog_deriv_t;
+		
+		setup_deriv_from_SLP(SLP_derivative, this->SLP);
+		while (SLP_derivative->order < 2) {
+			setupNext_derivs(SLP_derivative);
+		}
+	}
+	
 	return SUCCESSFUL;
 }
 
@@ -1109,7 +1163,10 @@ int nullspacejac_eval_data_d::setup(prog_t * _SLP,
 	generic_setup_patch(&patch,W);
 	
 	
-	
+	if (ns_config->numerical_derivative) {
+		this->evaluator_function_d = &nullspacejac_numerical_deriv_eval_d;
+		this->evaluator_function_mp = &nullspacejac_numerical_deriv_eval_mp;
+	}
 	
 	
 	if (solve_options.use_gamma_trick==1)
@@ -1133,6 +1190,7 @@ int nullspacejac_eval_data_d::setup(prog_t * _SLP,
 	for (int ii=0; ii<ns_config->randomizer_matrix->rows; ii++)
 		randomized_degrees[ii] = ns_config->randomized_degrees[ii]; // store the full degree (not derivative).
 	
+	base_degrees.resize(0);
 	for (auto ii=ns_config->base_degrees.begin(); ii!=ns_config->base_degrees.end(); ++ii)
 		base_degrees.push_back(*ii);
 
@@ -1169,7 +1227,7 @@ int nullspacejac_eval_data_d::setup(prog_t * _SLP,
 	for (int ii=0; ii<ns_config->num_projections; ii++) {
 		init_vec_d(target_projection[ii],ns_config->num_x_vars);
 		target_projection[ii]->size =  ns_config->num_x_vars;
-		vec_mp_to_d(target_projection[ii], ns_config->target_projection[ii]);
+		vec_mp_to_d(target_projection[ii], ns_config->target_projection[ii]); // copy in the projection
 		
 		for (int jj=1; jj<ns_config->num_x_vars; jj++) {
 			mp_to_d(&jac_with_proj->entry[jj-1][ii+offset], &ns_config->target_projection[ii]->coord[jj]);
@@ -1219,7 +1277,6 @@ int nullspacejac_eval_data_d::setup(prog_t * _SLP,
 	
 	if (this->MPType==2)
 	{
-		//        this->BED_mp = dynamic_cast<nullspacejac_eval_data_mp *>(BED_mp);
 		this->BED_mp->setup(_SLP,ns_config, W, solve_options);
 		rat_to_d(this->gamma, this->BED_mp->gamma_rat);
 		
@@ -1365,7 +1422,18 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 			break;
 	}
 	
-
+	vec_d tempvec;  init_vec_d(tempvec,0);
+	for (int ii=0;ii<W.num_points;ii++)
+	{
+		vec_mp_to_d(tempvec,W.pts_mp[ii]);
+		if (check_isstart_nullspacejac_d(tempvec,&solve_options.T,ED_d)==0)
+		{
+			std::cout << "point " << ii << " doesn't appear to be a start point.  it will be refined before starting..." << std::endl;
+		}
+			
+	}
+	clear_vec_d(tempvec);
+//	check_nullspace_evaluator(W.pts_mp[0],ED_d);
 	
 	master_solver(solve_out, W,
                   ED_d, ED_mp,
@@ -1612,18 +1680,18 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	
 	//resize output variables to correct size
-	change_size_vec_d(funcVals,BED->num_variables);
-	change_size_mat_d(Jv, BED->num_variables, BED->num_variables);
-	change_size_mat_d(Jp, BED->num_variables, 1);
+	increase_size_vec_d(funcVals,BED->num_variables);
+	increase_size_mat_d(Jv, BED->num_variables, BED->num_variables);
+	increase_size_mat_d(Jp, BED->num_variables, 1);
+	funcVals->size = Jv->rows = Jp->rows = BED->num_variables;
+	Jv->cols = BED->num_variables;  //  <-- this must be square
+	Jp->cols = 1; // this is a column vector, or nx1 matrix, for this evaluator
+	
 	
 	
 	//////
 	// initialize stuff to all 0's
 	///////
-	
-	funcVals->size = Jv->rows = Jp->rows = BED->num_variables;
-	Jv->cols = BED->num_variables;  //  <-- this must be square
-	Jp->cols = 1; // this is a column vector, or nx1 matrix, for this evaluator
 	
 	for (int ii=0; ii<Jv->rows; ii++)
 		for (int jj=0; jj<Jv->cols; jj++)
@@ -1633,8 +1701,12 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 		set_zero_d(&Jp->entry[ii][0]);  // initialize entire matrix to 0
 	
 	
-	// orig eqns
 	
+	
+	
+	///////////
+	// orig eqns
+	/////////////
 	
 	// randomize
 	if (BED->randomize) {
@@ -1653,10 +1725,14 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	
 	
+	//////////////
+	//  orig function jacobian values
+	////////////////
 	
 	// resize temp_jacobians to be Nxn, to hold the first derivatives.
 	change_size_mat_d(temp_jacobian_functions, temp_function_values->size, BED->num_x_vars);
-	temp_jacobian_functions->rows = temp_function_values->size; temp_jacobian_functions->cols = BED->num_x_vars;
+	temp_jacobian_functions->rows = temp_function_values->size;
+	temp_jacobian_functions->cols = BED->num_x_vars;
 	
 	
 	
@@ -1670,7 +1746,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	} // the remainer of deriv_vals contains the second derivatives, which will be used later in this function
 	
 	
-	// the jacobian equations for orig
+	// set the jacobian equations for orig into Jv
 	
 	if (BED->randomize) {
 		
@@ -1700,8 +1776,12 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	
 	
-	
+	//////////
 	// the additional linears.  there are $r-\ell$ of them.
+	///////////
+	
+	
+	
 	offset = BED->num_randomized_eqns;
 	for (int ii=0; ii< BED->num_additional_linears; ii++) {
 		
@@ -1731,16 +1811,13 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	
 	
-	
-	
-	
-	
-	
+	/////////////////////////////
 	// NOW WE WILL WORK ON THE TARGET SYSTEM'S FUNCTION VALUES
-	
+	////////////////////////////////
 
 	
-// HOMOGENIZE the jacobian matrix for the supplemental equations
+	
+	// HOMOGENIZE the jacobian matrix for the supplemental equations.
 	
 	for (int ii=0; ii<temp_jacobian_functions->rows; ++ii) {
 		int degree_deficiency = BED->max_degree+1-BED->base_degrees[ii];
@@ -1754,9 +1831,6 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 				mul_d(temp,temp,&curr_x_vars->coord[0])
 			}//TODO: optimize this away
 			
-			std::cout << "bla" << std::endl;
-			mypause();
-			
 			for (int jj=0; jj<temp_jacobian_functions->cols; ++jj) {
 				mul_d(&temp_jacobian_functions->entry[ii][jj],&temp_jacobian_functions->entry[ii][jj],temp);
 			}
@@ -1765,7 +1839,6 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	
 	if (BED->randomize) {
-		
 		// temp_jacobian_functions is already homogenized, immediately above
 		// so we can randomize and get something homogeneous.
 		mat_mul_d(AtimesJ,BED->randomizer_matrix,temp_jacobian_functions);
@@ -1785,7 +1858,8 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	
 	
-	// concatenate in the values of the projections, homogenized
+	
+	// concatenate in the values of the projections, homogenized, to get [Jv | pi]
 	for (int ii=0; ii<BED->num_projections; ii++) {
 		for (int jj=1; jj<BED->num_x_vars; jj++) {
 			set_d(temp, &BED->target_projection[ii]->coord[jj]); // seed the homogenization loop with the projection coefficient
@@ -1795,7 +1869,12 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 			set_d(&BED->jac_with_proj->entry[jj-1][ii+temp_jacobian_functions->rows],temp); // set into the transpose, to the right of the jacobian matrix
 		}
 	} // this verified correct for paraboloid and torus base systems using matlab
+	
+//	print_matrix_to_screen_matlab(BED->jac_with_proj,"jac_hom_w_proj");
+	
 	mul_mat_vec_d(target_function_values, BED->jac_with_proj, curr_v_vars);
+	
+//	print_point_to_screen_matlab(target_function_values,"target_f");
 	vec_mulcomp_d(target_function_values_times_oneminus_s, target_function_values, one_minus_s);
 	
 	
@@ -1840,7 +1919,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	
 	
-	// DERIVATIVES OF THE HOMOTOPY WRT V
+	// DERIVATIVES OF THE start and target WRT V
 	offset = BED->num_randomized_eqns + BED->num_additional_linears;
 	for (int ii=0; ii<BED->num_jac_equations; ii++) {
 		for (int jj=0; jj<BED->num_v_vars; jj++) {
@@ -1853,8 +1932,11 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	}
 	
 	
-	
+	//////////////////
 	// now the x derivatives corresponding to the linprod start system
+	//////////////////////
+	
+	
 	
 	// an implementation of the product rule
 	for (int mm=0; mm< BED->num_jac_equations; mm++) {
@@ -1879,20 +1961,19 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	} // re: mm
 	
 	
-//	print_matrix_to_screen_matlab(lin_func_vals,"lin_func_vals");
 	
-	
+	///////////////
 	// DIFFERENTIATE THE derivative of the target jacobian system wrt $h,x_i$.
+	/////////////////
 	
-	
-	// tempmat1 will hold ?
-	increase_size_mat_d(tempmat1,temp_function_values->size,BED->num_x_vars-1);
+	// tempmat1 will hold the second derivatives, omitting the homvar column (hence the minus 1)
+	change_size_mat_d(tempmat1,temp_function_values->size,BED->num_x_vars-1);
 	tempmat1->rows = temp_function_values->size; tempmat1->cols = BED->num_x_vars-1;
 	
 	offset = BED->num_randomized_eqns + BED->num_additional_linears;
 	
 	
-	// this one is different because it is the homogenizing variable for the problem,
+	// this one is different from the x derivatives because h is the homogenizing variable for the problem,
 	// and there are terms which contain only constants (pi) and the homvar.
 	
 	int current_variable_index = 0; // later we will loop from 1:num_x_vars
@@ -1923,7 +2004,9 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 				}
 				else{ // must homogenize, n>0 in above formula
 					
-					
+//					std::cout << "homogenizing deg def " << degree_deficiency << std::endl;
+//					
+//					print_comp_matlab(&deriv_vals->coord[local_offset],"second_der");
 					// first, homogenize against the derivative number of times according to deficiency.
 					//   h^n (∂^2)f/(∂x∂x)
 					set_d(temp,&deriv_vals->coord[local_offset]); // seed, grab the first derivative
@@ -1935,7 +2018,8 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 					
 					// next, homogenize against the non-derivative part (function)
 					//   n h^(n-1) f =
-					set_d(temp3, &deriv_vals->coord[func_index*BED->num_x_vars+current_variable_index]); // seed
+//					print_comp_matlab(&deriv_vals->coord[func_index*BED->num_x_vars+jj],"first_der");
+					set_d(temp3, &deriv_vals->coord[func_index*BED->num_x_vars+jj]); // seed
 					for (int zz=0; zz<degree_deficiency-1; zz++) {  // i emphasize the -1 in upper limit for this loop (degree_deficiency-1)
 						mul_d(temp3, temp3, &curr_x_vars->coord[0]); // loop multiply
 					}
@@ -1995,7 +2079,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 
 	
 	mul_mat_vec_d(tempvec, tempmat3, curr_v_vars); // multiply against the $v$ variables
-//	print_point_to_screen_matlab(tempvec,"djvdh_times_v");
+//	print_point_to_screen_matlab(tempvec,"diff_h_times_v");
 	vec_mulcomp_d(tempvec, tempvec, one_minus_s);// now tempvec has the numerical derivatives wrt $x$ variable 0. (for all jac eqns), (with current time taken into account)
 	
 	// now, combine this derivative and the linprod derivative to get the exact values for the $x$ portion of the jacobian matrix to return
@@ -2066,14 +2150,9 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 		{
 			nonconj_transpose(tempmat3,tempmat1);
 		}
-
-		
 //		print_matrix_to_screen_matlab(tempmat3,"xxx");
-		
-		
-		
 		mul_mat_vec_d(tempvec, tempmat3, curr_v_vars); // recall v has been truncated to avoid unnecessary 0*number multiplication
-//		print_point_to_screen_matlab(tempvec,"djvdx_times_v");
+//		print_point_to_screen_matlab(tempvec,"diff_x_times_v");
 		vec_mulcomp_d(tempvec, tempvec, one_minus_s);// now tempvec has the numerical derivatives wrt $x$ variable 0. (for all jac eqns)
 		
 		// combine this derivative and the linprod derivative to get the exact values for the $x$ portion of the jacobian matrix to return
@@ -2083,10 +2162,13 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 		}
 		
 	}//re: current_variable_index for numerical diff
-//	mypause();
+
 	// END DIFF wrt x
 	
 	curr_v_vars->size += BED->num_projections; // un-truncate
+	
+	
+	
 	//set the X PATCH values
 	offset = BED->num_randomized_eqns + BED->num_additional_linears + BED->num_jac_equations;
 	
@@ -2142,9 +2224,12 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 		//	print_matrix_to_screen_matlab(BED->jac_with_proj,"jacwithproj");
 		//			//these values are set in this function:  point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp
 //		print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
-		
-		//	std::cout << "\n\n**************\n\n";
 		mypause();
+		//	std::cout << "\n\n**************\n\n";
+		if (BED->verbose_level<0) {
+			
+		}
+		
 	}
 	
 	
@@ -2219,6 +2304,1330 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 
 
 int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED)
+{ // evaluates a special homotopy type, built for bertini_real
+  //	printf("entering eval_mp\n");
+	nullspacejac_eval_data_mp *BED = (nullspacejac_eval_data_mp *)ED; // to avoid having to cast every time
+	
+	int offset;
+	comp_mp one_minus_s, gamma_s;  init_mp(one_minus_s); init_mp(gamma_s);
+	
+	set_one_mp(one_minus_s);
+	sub_mp(one_minus_s, one_minus_s, pathVars);  // one_minus_s = (1 - s)
+	mul_mp(gamma_s, BED->gamma, pathVars);       // gamma_s = gamma * s
+	
+	// we assume that the only parameter is s = t and setup parVals & parDer accordingly.
+	vec_mp curr_x_vars; init_vec_mp(curr_x_vars, BED->num_x_vars);
+	curr_x_vars->size = BED->num_x_vars;
+	for (int ii=0; ii<BED->num_x_vars; ii++)
+		set_mp(&curr_x_vars->coord[ii], &current_variable_values->coord[ii]);
+	
+	vec_mp curr_v_vars; init_vec_mp(curr_v_vars, BED->num_v_vars);
+	curr_v_vars->size = BED->num_v_vars;
+	for (int ii=0; ii<BED->num_v_vars; ii++)
+		set_mp(&curr_v_vars->coord[ii], &current_variable_values->coord[ii+BED->num_x_vars]);
+	
+	
+	
+	
+	
+	
+	
+	
+	vec_mp patchValues; init_vec_mp(patchValues, 0);
+	vec_mp temp_function_values; init_vec_mp(temp_function_values,0);
+	
+	
+	vec_mp AtimesF;  init_vec_mp(AtimesF,0);
+	vec_mp linprod_x;  init_vec_mp(linprod_x, BED->num_jac_equations);
+	linprod_x->size = BED->num_jac_equations;
+	vec_mp linprod_times_gamma_s; init_vec_mp(linprod_times_gamma_s,BED->num_jac_equations);
+	linprod_times_gamma_s->size = BED->num_jac_equations;
+	vec_mp tempvec; init_vec_mp(tempvec,0);
+	vec_mp tempvec2; init_vec_mp(tempvec2,0);
+	
+	
+	
+	mat_mp Jv_Patch; init_mat_mp(Jv_Patch, 0, 0);
+	mat_mp tempmat; init_mat_mp(tempmat,BED->num_variables-1,BED->num_variables-1);
+	tempmat->rows = tempmat->cols = BED->num_variables-1; // change the size indicators
+	
+	mat_mp lin_func_vals; init_mat_mp(lin_func_vals,BED->num_jac_equations, BED->max_degree);
+	lin_func_vals->rows = BED->num_jac_equations; lin_func_vals->cols = BED->max_degree;
+	
+	
+	
+	
+	
+	mat_mp AtimesJ; init_mat_mp(AtimesJ,1,1);
+	mat_mp Jv_jac; init_mat_mp(Jv_jac,0,0);
+	mat_mp temp_jacobian_functions, temp_jacobian_parameters;
+	init_mat_mp(temp_jacobian_functions,0,0); init_mat_mp(temp_jacobian_parameters,0,0);
+	
+	mat_mp linprod_derivative_wrt_x;
+	init_mat_mp(linprod_derivative_wrt_x, BED->num_jac_equations, BED->num_x_vars);
+	linprod_derivative_wrt_x->rows = BED->num_jac_equations; linprod_derivative_wrt_x->cols = BED->num_x_vars;
+	
+	
+	comp_mp running_prod;  init_mp(running_prod);
+	comp_mp temp, temp2, temp3; init_mp(temp); init_mp(temp2); init_mp(temp3);
+	
+	
+	
+	mat_mp Jf_pi_homogenized;  init_mat_mp(Jf_pi_homogenized, BED->num_x_vars-1, BED->num_v_vars); // set up temp matrix
+	Jf_pi_homogenized->rows = BED->num_x_vars-1; Jf_pi_homogenized->cols = BED->num_v_vars;
+	vec_mp target_function_values;  init_vec_mp(target_function_values,0);
+	vec_mp target_function_values_times_oneminus_s;  init_vec_mp(target_function_values_times_oneminus_s,0);
+	
+	vec_mp start_function_values;
+	init_vec_mp(start_function_values,BED->num_jac_equations); start_function_values->size = BED->num_jac_equations;
+	
+	//initialize some containers, for the unused stuff from the called evaluators.
+	point_mp unused_function_values, unused_parVals;
+	init_vec_mp(unused_function_values,0);init_vec_mp(unused_parVals,0);
+	vec_mp unused_parDer; init_vec_mp(unused_parDer,0);
+	mat_mp unused_Jp; init_mat_mp(unused_Jp,0,0);
+	mat_mp perturbed_Jv; init_mat_mp(perturbed_Jv,0,0);
+	
+	
+	mat_mp perturbed_AtimesJ, tempmat3; // create matrices
+	init_mat_mp(perturbed_AtimesJ,0,0); init_mat_mp(tempmat3,0,0);
+	
+	
+	mat_mp tempmat1,tempmat2; // create temp matrices
+	init_mat_mp(tempmat1,BED->num_jac_equations,BED->num_v_vars);
+	tempmat1->rows = BED->num_jac_equations; tempmat1->cols = BED->num_v_vars;
+	
+	init_mat_mp(tempmat2,BED->num_jac_equations,BED->num_v_vars);
+	tempmat2->rows = BED->num_jac_equations; tempmat2->cols = BED->num_v_vars;
+	
+	
+	
+	//initialize the jacobians we will work with.
+	point_mp perturbed_forward_variables, perturbed_backward_variables;
+	init_vec_mp(perturbed_forward_variables,0); init_vec_mp(perturbed_backward_variables,0);
+	change_size_vec_mp(perturbed_forward_variables,BED->num_x_vars);
+	change_size_vec_mp(perturbed_backward_variables,BED->num_x_vars);
+	perturbed_backward_variables->size = perturbed_forward_variables->size = BED->num_x_vars;
+	
+	vec_mp deriv_vals; init_vec_mp(deriv_vals,0); deriv_vals->size = 0;
+	
+	// the main evaluations for $x$
+	evalDeriv_mp(temp_function_values, deriv_vals, tempvec, tempvec2, curr_x_vars, BED->SLP_derivative);
+	
+	// evaluate the patch
+	patch_eval_mp(    patchValues, parVals, parDer, Jv_Patch, Jp, curr_x_vars, pathVars, &BED->patch);  // Jp is ignored
+	
+	
+	
+	//	print_point_to_screen_matlab(curr_x_vars,"curr_x_vars");
+	//	print_point_to_screen_matlab(deriv_vals,"deriv_vals");
+	
+	
+	
+	
+	
+	//resize output variables to correct size
+	increase_size_vec_mp(funcVals,BED->num_variables);
+	increase_size_mat_mp(Jv, BED->num_variables, BED->num_variables);
+	increase_size_mat_mp(Jp, BED->num_variables, 1);
+	funcVals->size = Jv->rows = Jp->rows = BED->num_variables;
+	Jv->cols = BED->num_variables;  //  <-- this must be square
+	Jp->cols = 1; // this is a column vector, or nx1 matrix, for this evaluator
+	
+	
+	
+	//////
+	// initialize stuff to all 0's
+	///////
+	
+	for (int ii=0; ii<Jv->rows; ii++)
+		for (int jj=0; jj<Jv->cols; jj++)
+			set_zero_mp(&Jv->entry[ii][jj]); // initialize entire matrix to 0
+	
+	for (int ii = 0; ii<BED->num_variables; ii++)
+		set_zero_mp(&Jp->entry[ii][0]);  // initialize entire matrix to 0
+	
+	
+	
+	
+	
+	///////////
+	// orig eqns
+	/////////////
+	
+	// randomize
+	if (BED->randomize) {
+		//TODO: get homogenization correct for the function randomization here
+		br_exit(234662);
+		mul_mat_vec_mp(AtimesF,BED->randomizer_matrix, temp_function_values); // set values of AtimesF (A is randomization matrix)
+																			 // set func vals
+		for (int ii=0; ii<AtimesF->size; ii++)  // for each function, after (real) randomization
+			set_mp(&funcVals->coord[ii], &AtimesF->coord[ii]);
+	}
+	else {
+		for (int ii=0; ii<temp_function_values->size; ii++)  // for each function
+			set_mp(&funcVals->coord[ii], &temp_function_values->coord[ii]); // copy in the value to the output vector of function values.
+	}
+	
+	
+	
+	
+	//////////////
+	//  orig function jacobian values
+	////////////////
+	
+	// resize temp_jacobians to be Nxn, to hold the first derivatives.
+	change_size_mat_mp(temp_jacobian_functions, temp_function_values->size, BED->num_x_vars);
+	temp_jacobian_functions->rows = temp_function_values->size;
+	temp_jacobian_functions->cols = BED->num_x_vars;
+	
+	
+	
+	// unpack the first derivatives
+	int derivative_offset = 0;
+	for (int ii = 0; ii<temp_function_values->size; ii++) {
+		for (int jj = 0; jj<BED->num_x_vars; jj++) {
+			set_mp(&temp_jacobian_functions->entry[ii][jj],&deriv_vals->coord[derivative_offset]);
+			derivative_offset++; // the end of this loop will leave this offset for use later.
+		}
+	} // the remainer of deriv_vals contains the second derivatives, which will be used later in this function
+	
+	
+	// set the jacobian equations for orig into Jv
+	
+	if (BED->randomize) {
+		
+		//TODO: HERE, NEED TO HOMOGENIZE THE jacobian FUNCTIONS, since randomization mixes degrees!!!
+		br_exit(666555);
+		//  randomize the original functions and jacobian
+		mat_mul_mp(AtimesJ,BED->randomizer_matrix,temp_jacobian_functions);
+		
+		// copy the jacobian into the return value for the evaluator
+		for (int ii=0; ii< AtimesJ->rows; ii++) // for every function
+			for (int jj=0; jj< AtimesJ->cols; jj++)
+				set_mp(&Jv->entry[ii][jj],&AtimesJ->entry[ii][jj]);
+		
+		
+	}
+	else {
+		
+		// copy the jacobian into the return value for the evaluator
+		for (int ii=0; ii< temp_jacobian_functions->rows; ii++)
+			for (int jj=0; jj< temp_jacobian_functions->cols; jj++)
+				set_mp(&Jv->entry[ii][jj],&temp_jacobian_functions->entry[ii][jj]);
+		
+	}
+	
+	
+	
+	
+	
+	
+	//////////
+	// the additional linears.  there are $r-\ell$ of them.
+	///////////
+	
+	
+	
+	offset = BED->num_randomized_eqns;
+	for (int ii=0; ii< BED->num_additional_linears; ii++) {
+		
+		dot_product_mp(temp, BED->additional_linears_terminal[ii], curr_x_vars); //temp = terminal(x)
+		neg_mp(&Jp->entry[offset+ii][0], temp);  // Jp = -terminal(x)
+		mul_mp(temp3, temp, one_minus_s);        // temp3 = (1-s)*terminal(x)
+		
+		dot_product_mp(temp,  BED->additional_linears_starting[ii], curr_x_vars); // temp = starting(x)
+		mul_mp(temp2, BED->gamma, temp);         // temp2 = gamma*starting(x)
+		
+		add_mp(&Jp->entry[offset+ii][0], &Jp->entry[offset+ii][0], temp2);   // Jp = -terminal + gamma*start
+		
+		mul_mp(temp2, gamma_s, temp);            // temp2 = gamma*s*starting(x)
+		
+		add_mp(&funcVals->coord[offset+ii],temp2, temp3); // (gamma*s)*start(x) + (1-s)*terminal(x)
+		
+		for (int jj=0; jj<BED->num_x_vars; jj++) {
+			mul_mp(temp, gamma_s,    &BED->additional_linears_starting[ii]->coord[jj]);
+			mul_mp(temp2,one_minus_s,&BED->additional_linears_terminal[ii]->coord[jj]);
+			
+			add_mp(&Jv->entry[ii+offset][jj], temp, temp2);
+		}
+	}
+	
+	
+	
+	
+	
+	
+	/////////////////////////////
+	// NOW WE WILL WORK ON THE TARGET SYSTEM'S FUNCTION VALUES
+	////////////////////////////////
+	
+	
+	
+	// HOMOGENIZE the jacobian matrix for the supplemental equations.
+	
+	for (int ii=0; ii<temp_jacobian_functions->rows; ++ii) {
+		int degree_deficiency = BED->max_degree+1-BED->base_degrees[ii];
+		
+		if (degree_deficiency==0) { // jacobian value already set with correct homogenization
+			continue;
+		}
+		else{
+			set_mp(temp,&curr_x_vars->coord[0]);
+			for (int jj=1; jj<degree_deficiency; ++jj) {
+				mul_mp(temp,temp,&curr_x_vars->coord[0])
+			}//TODO: optimize this away
+			
+			for (int jj=0; jj<temp_jacobian_functions->cols; ++jj) {
+				mul_mp(&temp_jacobian_functions->entry[ii][jj],&temp_jacobian_functions->entry[ii][jj],temp);
+			}
+		}
+	}
+	
+	
+	if (BED->randomize) {
+		// temp_jacobian_functions is already homogenized, immediately above
+		// so we can randomize and get something homogeneous.
+		mat_mul_mp(AtimesJ,BED->randomizer_matrix,temp_jacobian_functions);
+		
+		// copy in the transpose of the (randomized) jacobian, omitting the homogenizing variable
+		for (int ii=0; ii< AtimesJ->rows; ii++)
+			for (int jj=1; jj<BED->num_x_vars; jj++)
+				set_mp(&BED->jac_with_proj->entry[jj-1][ii], &AtimesJ->entry[ii][jj]);
+	}
+	else
+	{   // copy in the transpose of the jacobian, omitting the homogenizing variable
+		for (int ii=0; ii< temp_jacobian_functions->rows; ii++)// for every function
+			for (int jj=1; jj<BED->num_x_vars; jj++) // for only the natural variables, omitting the hom var.
+				set_mp(&BED->jac_with_proj->entry[jj-1][ii], &temp_jacobian_functions->entry[ii][jj]);
+	}
+	
+	
+	
+	
+	// concatenate in the values of the projections, homogenized, to get [Jv | pi]
+	for (int ii=0; ii<BED->num_projections; ii++) {
+		for (int jj=1; jj<BED->num_x_vars; jj++) {
+			set_mp(temp, &BED->target_projection[ii]->coord[jj]); // seed the homogenization loop with the projection coefficient
+			for (int mm=0; mm<BED->max_degree; mm++) { // max_degree is highest degree of a derivative.
+				mul_mp(temp,temp,&curr_x_vars->coord[0]); // homogenize
+			}
+			set_mp(&BED->jac_with_proj->entry[jj-1][ii+temp_jacobian_functions->rows],temp); // set into the transpose, to the right of the jacobian matrix
+		}
+	} // this verified correct for paraboloid and torus base systems using matlab
+	
+	
+	
+	mul_mat_vec_mp(target_function_values, BED->jac_with_proj, curr_v_vars);
+	vec_mulcomp_mp(target_function_values_times_oneminus_s, target_function_values, one_minus_s);
+	
+	
+	
+	//  THE LINPROD START SYSTEM FUNCTION VALUES
+	offset = BED->num_randomized_eqns + BED->num_additional_linears;
+	// the product of the linears
+	for (int jj=0; jj<BED->num_jac_equations; jj++) {
+		
+		//perform the $x$ evaluation
+		set_one_mp(&linprod_x->coord[jj]); // initialize to 1 for multiplication
+		for (int ii=0; ii<BED->max_degree; ++ii) {
+			dot_product_mp(&lin_func_vals->entry[jj][ii],BED->starting_linears[jj][ii],curr_x_vars); // save into a buffer for calculating the derivative later.
+			mul_mp(&linprod_x->coord[jj], &linprod_x->coord[jj], &lin_func_vals->entry[jj][ii]);// multiply linprod_x times the value we just created
+		}
+		
+		//perform the $v$ evaluation
+		dot_product_mp(temp, BED->v_linears[jj], curr_v_vars);
+		
+		//now set the combined $x,v$ value
+		mul_mp(&start_function_values->coord[jj], &linprod_x->coord[jj], temp); // start_function_values = linprod_x(x)*linear(v)
+		mul_mp(&linprod_times_gamma_s->coord[jj], gamma_s, &start_function_values->coord[jj]); // sets the value linprod_x*gamma*s
+		
+		
+		neg_mp( &Jp->entry[jj + offset][0], &target_function_values->coord[jj]);  // Jp = -target
+		mul_mp( temp, BED->gamma, &start_function_values->coord[jj]);  // temp = gamma*linprod_x(x)*linear(v)
+		add_mp( &Jp->entry[jj + offset][0], &Jp->entry[jj + offset][0], temp); // Jp = Jp + gamma*start = -target + gamma*start
+	}
+	
+	
+	// mix the start and target into final function value to return.
+	
+	offset = BED->num_randomized_eqns + BED->num_additional_linears;
+	for (int ii=0; ii<BED->num_jac_equations; ii++) {
+		add_mp(&funcVals->coord[ii+offset], &target_function_values_times_oneminus_s->coord[ii], &linprod_times_gamma_s->coord[ii]);
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	// DERIVATIVES OF THE start and target WRT V
+	offset = BED->num_randomized_eqns + BED->num_additional_linears;
+	for (int ii=0; ii<BED->num_jac_equations; ii++) {
+		for (int jj=0; jj<BED->num_v_vars; jj++) {
+			mul_mp(temp, &BED->v_linears[ii]->coord[jj], &linprod_x->coord[ii]);  // temp = M_ij * linprod_x(x)
+			mul_mp(temp2, temp, gamma_s);                                         // temp2 = gamma*s*M_ij * linprod_x(x)
+			
+			mul_mp(temp, one_minus_s, &BED->jac_with_proj->entry[ii][jj]);        // temp = (1-s)*([Jf^T pi^T])_ij
+			add_mp(&Jv->entry[ii+offset][jj+BED->num_x_vars], temp, temp2);       // Jv = temp + temp2
+		}
+	}
+	
+	
+	//////////////////
+	// now the x derivatives corresponding to the linprod start system
+	//////////////////////
+	
+	
+	
+	// an implementation of the product rule
+	for (int mm=0; mm< BED->num_jac_equations; mm++) {
+		for (int kk=0; kk<BED->num_x_vars; kk++) { // for each variable
+			set_zero_mp(&linprod_derivative_wrt_x->entry[mm][kk]); // initialize to 0 for the sum
+			
+			for (int ii=0; ii<BED->max_degree; ++ii) { //  for each linear
+				
+				set_mp(running_prod, &BED->starting_linears[mm][ii]->coord[kk]);// initialize the product
+				for (int jj=0; jj<BED->max_degree; jj++) {
+					if (jj!=ii) {
+						mul_mp(running_prod,running_prod,&lin_func_vals->entry[mm][jj]); // the linear evaluated at curr_var_vals
+					}
+				}//re: jj
+				add_mp(&linprod_derivative_wrt_x->entry[mm][kk],&linprod_derivative_wrt_x->entry[mm][kk],running_prod);
+				
+			}// re:ii
+			
+			dot_product_mp(temp, BED->v_linears[mm], curr_v_vars);  // these two lines multiply by  (v_linear •	v)
+			mul_mp(&linprod_derivative_wrt_x->entry[mm][kk], &linprod_derivative_wrt_x->entry[mm][kk], temp);
+		} // re: kk
+	} // re: mm
+	
+	
+	
+	///////////////
+	// DIFFERENTIATE THE derivative of the target jacobian system wrt $h,x_i$.
+	/////////////////
+	
+	// tempmat1 will hold the second derivatives, omitting the homvar column (hence the minus 1)
+	change_size_mat_mp(tempmat1,temp_function_values->size,BED->num_x_vars-1);
+	tempmat1->rows = temp_function_values->size; tempmat1->cols = BED->num_x_vars-1;
+	
+	offset = BED->num_randomized_eqns + BED->num_additional_linears;
+	
+	
+	// this one is different from the x derivatives because h is the homogenizing variable for the problem,
+	// and there are terms which contain only constants (pi) and the homvar.
+	
+	int current_variable_index = 0; // later we will loop from 1:num_x_vars
+	int local_offset = derivative_offset-1; // local_offset indexes into the vector containing second derivatives.
+											//  the -1 is because we increment this at the beginning of the nested for loop
+	
+	for (int func_index=0; func_index<BED->randomizer_matrix->cols; func_index++) { // iterate over each function
+		
+		int degree_deficiency = BED->max_degree+1 - BED->base_degrees[func_index];// +1 is because maxdegree is deg of derivatives,
+																				  //and base_degrees is deg of natural function before differentiation.
+		int entry_counter = 0; // indexes into the column we will set.  easier this way.
+		for (int ii=0; ii<BED->num_x_vars; ii++){
+			for (int jj=ii; jj<BED->num_x_vars; jj++) { // it's essentially an upper triangular matrix passed through reshape(-,[],1)
+				local_offset++;//  MUST always increment.   cannot 'continue' before this.
+				
+				if (jj==0) {// for this particular nullspace implementation calculation, we omit the hom var.  one would not do this if they needed ALL second derivatives.
+					continue; //
+				}
+				
+				if (ii!=current_variable_index && jj!=current_variable_index) {
+					continue;
+				}
+				
+				// g = h^n * function = h^n df_{curr_func}/dx_{curr_var}
+				// dg/dh = n*h^(n-1)function + h^n dfunction/dh
+				if (degree_deficiency==0) { // no need to further homogenize, n=0 in above formula
+					set_mp(&tempmat1->entry[func_index][entry_counter], &deriv_vals->coord[local_offset]);
+				}
+				else{ // must homogenize, n>0 in above formula
+					
+					
+					// first, homogenize against the derivative number of times according to deficiency.
+					//   h^n (∂^2)f/(∂x∂x)
+					set_mp(temp,&deriv_vals->coord[local_offset]); // seed, grab the first derivative
+					for (int zz = 0; zz<degree_deficiency; zz++) {
+						mul_mp(temp,temp,&curr_x_vars->coord[0]); // loop to multiply
+					}
+					// temp = h^n*df/dx
+					
+					
+					// next, homogenize against the non-derivative part (function)
+					//   n h^(n-1) f =
+					set_mp(temp3, &deriv_vals->coord[func_index*BED->num_x_vars+jj]); // seed
+					for (int zz=0; zz<degree_deficiency-1; zz++) {  // i emphasize the -1 in upper limit for this loop (degree_deficiency-1)
+						mul_mp(temp3, temp3, &curr_x_vars->coord[0]); // loop multiply
+					}
+					
+					set_zero_mp(temp2);
+					mpf_set_d(temp2->r,degree_deficiency);
+//					temp2->r = degree_deficiency; temp2->i = 0; // temp2 = n
+					mul_mp(temp3,temp2,temp3);  // multiply by the coefficient according to the degree.
+											   // temp3 = n*h^{n-1} f
+					
+					// put 'em together
+					add_mp(&tempmat1->entry[func_index][entry_counter], temp3, temp);
+					
+				}
+				entry_counter++;
+			}
+		}
+	}
+	// ok, now tempmat1 has in it all the derivatives of the derivatives of the system f.
+	//  we are trying to get d/dx( [(R*Jf)^T | pi^T] v).
+	
+	if (BED->randomize) {
+		std::cout << "R" << std::endl;
+		br_exit(12121);
+		mat_mul_mp(tempmat2, BED->randomizer_matrix, tempmat1); // randomize
+		nonconj_transpose(tempmat3,tempmat2);
+	}
+	else
+	{
+		nonconj_transpose(tempmat3,tempmat1);
+	}
+	
+	//	print_matrix_to_screen_matlab(tempmat3,"hom_deriv_mat");
+	increase_size_mat_mp(tempmat3,tempmat3->rows, BED->num_v_vars);
+	tempmat3->cols = BED->num_v_vars;
+	
+	
+	// homogenize the projection terms for the concatenated jacobian
+	set_zero_mp(temp2);
+	mpf_set_d(temp2->r,BED->max_degree);
+	for (int mm=0; mm<BED->max_degree-1; mm++)  // remember, max_degree is the highest degree occurring in the DERIVATIVES
+		mul_mp(temp2,temp2,&curr_x_vars->coord[0]); // we will use this in a line or two to homogenize
+												   // temp2 = n*h^{n-1}
+	
+	
+	for (int mm=0; mm<BED->num_projections; mm++) {
+		for (int nn=1; nn<BED->num_x_vars; nn++) {
+			mul_mp(&tempmat3->entry[nn-1][BED->num_randomized_eqns+mm], &BED->target_projection[mm]->coord[nn],temp2);
+			// entry = pi_mm[nn]*n*h^{n-1}
+		}
+	}
+	
+	//	for (int ii=0; ii<BED->num_projections; ii++) {
+	//		print_point_to_screen_matlab(BED->target_projection[ii],"pi");
+	//	}
+	//
+	//	print_matrix_to_screen_matlab(tempmat3,"hhh");
+	
+	
+	
+	mul_mat_vec_mp(tempvec, tempmat3, curr_v_vars); // multiply against the $v$ variables
+												   //	print_point_to_screen_matlab(tempvec,"djvdh_times_v");
+	vec_mulcomp_mp(tempvec, tempvec, one_minus_s);// now tempvec has the numerical derivatives wrt $x$ variable 0. (for all jac eqns), (with current time taken into account)
+	
+	// now, combine this derivative and the linprod derivative to get the exact values for the $x$ portion of the jacobian matrix to return
+	
+	for (int mm=0; mm<BED->num_jac_equations; mm++) {
+		mul_mp(temp, gamma_s, &linprod_derivative_wrt_x->entry[mm][current_variable_index]);
+		add_mp(&Jv->entry[mm+offset][current_variable_index], &tempvec->coord[mm], temp);
+	}
+	
+	// end diff WRT hom_var
+	
+	
+	
+	
+	
+	// THE X VARS
+	curr_v_vars->size -= BED->num_projections; // truncate.  this is for optimization, not theoretical reasons
+	
+	for (current_variable_index=1; current_variable_index<BED->num_x_vars; current_variable_index++) {
+		
+		
+		local_offset = derivative_offset-1;
+		for (int func_index=0; func_index<BED->randomizer_matrix->cols; func_index++) { // iterate over each function
+			
+			int degree_deficiency = BED->max_degree+1 - BED->base_degrees[func_index];
+			int entry_counter = 0;
+			for (int ii=0; ii<BED->num_x_vars; ii++){
+				for (int jj=ii; jj<BED->num_x_vars; jj++) {
+					local_offset++;//  MUST always increment.
+					
+					if (ii==0) {
+						continue;
+					}
+					
+					if ( (ii!=current_variable_index) && (jj!=current_variable_index) ) {
+						continue;
+					}
+					
+					
+					set_mp(&tempmat1->entry[func_index][entry_counter], &deriv_vals->coord[local_offset]);
+					
+					
+					// g = h^n * f
+					// dg/dx = h^n df/dx
+					if (degree_deficiency>0){
+						for (int zz = 0; zz<degree_deficiency; zz++) {
+							mul_mp(&tempmat1->entry[func_index][entry_counter],&tempmat1->entry[func_index][entry_counter],&curr_x_vars->coord[0]); // loop to multiply
+						}
+					}
+					
+					entry_counter++;
+				}
+			}
+		}
+		
+		
+		
+		
+		
+		// ok, now tempmat1 has in it all the (homogenized) derivatives of the derivatives of the system f.
+		//  we are trying to get d/dx( [(R*Jf)^T | h^d•pi^T] v) = ( R*d/dx(Jf) )^T v_truncate.
+		
+		if (BED->randomize) {
+			mat_mul_mp(tempmat2, BED->randomizer_matrix, tempmat1); // randomize
+			nonconj_transpose(tempmat3,tempmat2);
+		}
+		else
+		{
+			nonconj_transpose(tempmat3,tempmat1);
+		}
+		
+		mul_mat_vec_mp(tempvec, tempmat3, curr_v_vars); // recall v has been truncated to avoid unnecessary 0*number multiplication
+		vec_mulcomp_mp(tempvec, tempvec, one_minus_s);// now tempvec has the numerical derivatives wrt $x$ variable 0. (for all jac eqns)
+		
+		// combine this derivative and the linprod derivative to get the exact values for the $x$ portion of the jacobian matrix to return
+		for (int mm=0; mm<BED->num_jac_equations; mm++) {
+			mul_mp(temp, gamma_s, &linprod_derivative_wrt_x->entry[mm][current_variable_index]);
+			add_mp(&Jv->entry[mm+offset][current_variable_index], &tempvec->coord[mm], temp);
+		}
+		
+	}//re: current_variable_index for numerical diff
+	
+	// END DIFF wrt x
+	
+	curr_v_vars->size += BED->num_projections; // un-truncate
+
+	
+	
+	
+	//set the X PATCH values
+	offset = BED->num_randomized_eqns + BED->num_additional_linears + BED->num_jac_equations;
+	
+	for (int ii = 0; ii<BED->patch.num_patches; ii++)  // for each patch equation
+	{ // funcVals = patchValues
+		set_mp(&funcVals->coord[ii+offset], &patchValues->coord[ii]);
+		
+		// Jv = Jv_Patch
+		for (int jj = 0; jj<BED->num_x_vars; jj++) // for each variable
+			set_mp(&Jv->entry[ii+offset][jj], &Jv_Patch->entry[ii][jj]);
+	}
+	
+	
+	offset = BED->num_randomized_eqns + BED->num_additional_linears + BED->num_jac_equations + BED->patch.num_patches;
+	if (offset != BED->num_variables-1) {
+		std::cout << "mismatch in number of blabla, line 2701;\n" << offset << " " << BED->num_variables-1 << std::endl;
+		print_matrix_to_screen_matlab(Jv,"Jv");
+		deliberate_segfault();
+	}
+	
+	// V patch
+	set_one_mp(temp2);
+	dot_product_mp(temp, BED->v_patch, curr_v_vars);
+	sub_mp(&funcVals->coord[BED->num_variables-1], temp, temp2);  // f = patch*v-1
+	
+	for (int ii=0; ii<BED->num_v_vars; ii++)
+		set_mp(&Jv->entry[BED->num_variables-1][BED->num_x_vars+ii], &BED->v_patch->coord[ii]);
+	
+	
+	// finally, set parVals & parDer correctly
+	
+	change_size_point_mp(parVals, 1);  change_size_vec_mp(parDer, 1);
+	parVals->size = parDer->size = 1;
+	
+	set_mp(&parVals->coord[0], pathVars); // s = t
+	set_one_mp(&parDer->coord[0]);       // ds/dt = 1
+	
+	
+	
+	
+	if (BED->verbose_level==10) {
+        print_comp_matlab(pathVars,"t");
+		//	print_matrix_to_screen_matlab( AtimesJ,"jac");
+//        print_point_to_screen_matlab(curr_x_vars,"currxvars");
+//        print_point_to_screen_matlab(curr_v_vars,"currvvars");
+		print_point_to_screen_matlab(funcVals,"F_mp");
+		//	print_point_to_screen_matlab(parVals,"parVals");
+		//	print_point_to_screen_matlab(parDer,"parDer");
+//		print_matrix_to_screen_matlab(Jv,"Jv_mp");
+		//	print_matrix_to_screen_matlab(Jp,"Jp");
+		
+//        print_matrix_to_screen_matlab(BED->jac_with_proj,"jacwithproj");
+		//these values are set in this function:  point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp
+//		print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
+		
+	}
+	
+	
+	clear_vec_mp(deriv_vals);
+	
+	clear_vec_mp(curr_x_vars);
+	clear_vec_mp(curr_v_vars);
+	clear_vec_mp(patchValues);
+	clear_vec_mp(temp_function_values);
+	
+	
+	clear_vec_mp(AtimesF);
+	clear_vec_mp(linprod_x);
+	clear_vec_mp(linprod_times_gamma_s);
+	clear_vec_mp(tempvec);
+	clear_vec_mp(tempvec2);
+	clear_vec_mp(start_function_values);
+	
+	clear_mat_mp(Jv_Patch);
+	clear_mat_mp(tempmat);
+	clear_mat_mp(lin_func_vals);
+	
+	
+	
+	clear_mat_mp(AtimesJ);
+	clear_mat_mp(Jv_jac);
+	clear_mat_mp(temp_jacobian_functions);
+	clear_mat_mp(temp_jacobian_parameters);
+	clear_mat_mp(linprod_derivative_wrt_x);
+	
+	clear_mp(running_prod);
+	clear_mp(temp);
+	clear_mp(temp2);
+	clear_mp(temp3);
+	clear_mp(gamma_s);
+	clear_mp(one_minus_s);
+	
+	
+	clear_vec_mp(target_function_values);
+	clear_vec_mp(target_function_values_times_oneminus_s);
+	clear_mat_mp(Jf_pi_homogenized);
+	
+	
+	clear_vec_mp(unused_function_values);
+	clear_vec_mp(unused_parVals);
+	clear_vec_mp(unused_parDer);
+	
+	
+	clear_mat_mp(unused_Jp);
+	clear_mat_mp(perturbed_Jv);
+	clear_mat_mp(perturbed_AtimesJ);
+	clear_mat_mp(tempmat3);
+	clear_mat_mp(tempmat1);
+	clear_mat_mp(tempmat2);
+	
+	clear_vec_mp(perturbed_forward_variables);
+	clear_vec_mp(perturbed_backward_variables);
+	
+	
+	
+	
+	
+	
+	
+	
+#ifdef printpathnullspace_left
+	BED->num_steps++;
+	vec_mp dehommed; init_vec_mp(dehommed,BED->num_variables-1); dehommed->size = BED->num_variables-1;
+	dehomogenize_mp(&dehommed,curr_x_vars);
+	mpf_out_str (BED->FOUT, 10, 15, pathVars->r);
+	fprintf(BED->FOUT," ");
+	mpf_out_str (BED->FOUT, 10, 15, pathVars->i);
+	fprintf(BED->FOUT," ");
+	for (ii=0; ii<BED->num_variables-1; ++ii) {
+		mpf_out_str (BED->FOUT, 10, 15, dehommed->coord[ii].r);
+		fprintf(BED->FOUT," ");
+		mpf_out_str (BED->FOUT, 10, 15, dehommed->coord[ii].i);
+		fprintf(BED->FOUT," ");
+		
+	}
+	fprintf(BED->FOUT,"\n");
+	clear_vec_mp(dehommed);
+#endif
+	
+	
+	return 0;
+}
+
+
+
+
+
+
+int nullspacejac_numerical_deriv_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp, point_d current_variable_values, comp_d pathVars, void const *ED)
+{ // evaluates a special homotopy type, built for bertini_real
+	
+	
+	//	std::cout << "++++++++++++++++++++++++++\n";
+	
+	
+	nullspacejac_eval_data_d *BED = (nullspacejac_eval_data_d *)ED; // to avoid having to cast every time
+	
+	
+	int ii, jj, kk, mm;
+	int offset;
+	comp_d one_minus_s, gamma_s;
+	
+	set_one_d(one_minus_s);
+	sub_d(one_minus_s, one_minus_s, pathVars);  // one_minus_s = (1 - s)
+	mul_d(gamma_s, BED->gamma, pathVars);       // gamma_s = gamma * s
+	
+	
+	vec_d curr_x_vars; init_vec_d(curr_x_vars, BED->num_x_vars);
+	curr_x_vars->size = BED->num_x_vars;
+	for (ii=0; ii<BED->num_x_vars; ii++)
+		set_d(&curr_x_vars->coord[ii], &current_variable_values->coord[ii]);
+	
+	vec_d curr_v_vars; init_vec_d(curr_v_vars, BED->num_v_vars);
+	curr_v_vars->size = BED->num_v_vars;
+	for (ii=0; ii<BED->num_v_vars; ii++)
+		set_d(&curr_v_vars->coord[ii], &current_variable_values->coord[ii+BED->num_x_vars]);
+	
+	vec_d patchValues; init_vec_d(patchValues, 0);
+	vec_d temp_function_values; init_vec_d(temp_function_values,0);
+	
+	
+	vec_d AtimesF;  init_vec_d(AtimesF,0);
+	vec_d linprod_x;  init_vec_d(linprod_x, BED->num_jac_equations);
+	linprod_x->size = BED->num_jac_equations;
+	vec_d linprod_times_gamma_s; init_vec_d(linprod_times_gamma_s,BED->num_jac_equations);
+	linprod_times_gamma_s->size = BED->num_jac_equations;
+	vec_d tempvec; init_vec_d(tempvec,0);
+	vec_d tempvec2; init_vec_d(tempvec2,0);
+	
+	
+	
+	mat_d Jv_Patch; init_mat_d(Jv_Patch, 0, 0);
+	mat_d tempmat; init_mat_d(tempmat,BED->num_variables-1,BED->num_variables-1);
+	tempmat->rows = tempmat->cols = BED->num_variables-1; // change the size indicators
+	
+	mat_d lin_func_vals; init_mat_d(lin_func_vals,BED->num_jac_equations, BED->max_degree);
+	lin_func_vals->rows = BED->num_jac_equations; lin_func_vals->cols = BED->max_degree;
+	
+	
+	
+	
+	
+	mat_d AtimesJ; init_mat_d(AtimesJ,1,1); AtimesJ->rows = AtimesJ->cols = 1;
+	
+	mat_d Jv_jac; init_mat_d(Jv_jac,0,0);
+	mat_d temp_jacobian_functions, temp_jacobian_parameters;
+	init_mat_d(temp_jacobian_functions,0,0); init_mat_d(temp_jacobian_parameters,0,0);
+	
+	mat_d linprod_derivative_wrt_x;
+	init_mat_d(linprod_derivative_wrt_x, BED->num_jac_equations, BED->num_x_vars);
+	linprod_derivative_wrt_x->rows = BED->num_jac_equations; linprod_derivative_wrt_x->cols = BED->num_x_vars;
+	
+	
+	comp_d running_prod;
+	comp_d temp, temp2, temp3;
+	
+	
+	
+	mat_d Jf_pi_homogenized;  init_mat_d(Jf_pi_homogenized, BED->num_x_vars-1, BED->num_v_vars); // set up temp matrix
+	Jf_pi_homogenized->rows = BED->num_x_vars-1; Jf_pi_homogenized->cols = BED->num_v_vars;
+	vec_d target_function_values;  init_vec_d(target_function_values,0);
+	vec_d target_function_values_times_oneminus_s;  init_vec_d(target_function_values_times_oneminus_s,0);
+	
+	vec_d start_function_values;
+	init_vec_d(start_function_values,BED->num_jac_equations); start_function_values->size = BED->num_jac_equations;
+	
+	//initialize some containers, for the unused stuff from the called evaluators.
+	point_d unused_function_values, unused_parVals;
+	init_vec_d(unused_function_values,0);init_vec_d(unused_parVals,0);
+	vec_d unused_parDer; init_vec_d(unused_parDer,0);
+	mat_d unused_Jp; init_mat_d(unused_Jp,0,0);
+	mat_d perturbed_Jv; init_mat_d(perturbed_Jv,0,0);
+	
+	
+	mat_d perturbed_AtimesJ, tempmat3; // create matrices
+	init_mat_d(perturbed_AtimesJ,1,1); init_mat_d(tempmat3,0,0);
+	perturbed_AtimesJ->rows = perturbed_AtimesJ->cols = 1;
+	
+	mat_d tempmat1,tempmat2; // create temp matrices
+	init_mat_d(tempmat1,BED->num_jac_equations,BED->num_v_vars);
+	tempmat1->rows = BED->num_jac_equations; tempmat1->cols = BED->num_v_vars;
+	
+	init_mat_d(tempmat2,BED->num_jac_equations,BED->num_v_vars);
+	tempmat2->rows = BED->num_jac_equations; tempmat2->cols = BED->num_v_vars;
+	
+	
+	
+	
+	//initialize the jacobians we will work with.
+	point_d perturbed_forward_variables, perturbed_backward_variables;
+	init_vec_d(perturbed_forward_variables,0); init_vec_d(perturbed_backward_variables,0);
+	change_size_vec_d(perturbed_forward_variables, BED->num_x_vars);
+	change_size_vec_d(perturbed_backward_variables,BED->num_x_vars);
+	perturbed_backward_variables->size = perturbed_forward_variables->size = BED->num_x_vars;
+	
+	
+	// the main evaluations for $x$
+	evalProg_d(temp_function_values, parVals, parDer, temp_jacobian_functions, temp_jacobian_parameters, curr_x_vars, pathVars, BED->SLP);
+	
+	
+	// evaluate the patch
+	patch_eval_d(    patchValues, parVals, parDer, Jv_Patch, Jp, curr_x_vars, pathVars, &BED->patch);  // Jp is ignored
+	
+	
+	
+	//resize output variables to correct size
+	change_size_vec_d(funcVals,BED->num_variables);
+	change_size_mat_d(Jv, BED->num_variables, BED->num_variables);
+	change_size_mat_d(Jp, BED->num_variables, 1);
+	
+	
+	//////
+	// initialize stuff to all 0's
+	///////
+	
+	funcVals->size = Jv->rows = Jp->rows = BED->num_variables;
+	Jv->cols = BED->num_variables;  //  <-- this must be square
+	Jp->cols = 1;
+	
+	for (ii=0; ii<Jv->rows; ii++)
+		for (jj=0; jj<Jv->cols; jj++)
+			set_zero_d(&Jv->entry[ii][jj]);
+	
+	for (ii = 0; ii<BED->num_variables; ii++)
+		set_zero_d(&Jp->entry[ii][0]);  // initialize entire matrix to 0
+	
+	
+	// orig eqns
+	
+	
+	// randomize
+	if (BED->randomize) {
+		mul_mat_vec_d(AtimesF,BED->randomizer_matrix, temp_function_values); // set values of AtimesF (A is randomization matrix)
+																			 // set func vals
+		for (ii=0; ii<AtimesF->size; ii++)  // for each function, after (real) randomization
+			set_d(&funcVals->coord[ii], &AtimesF->coord[ii]);
+	}
+	else {
+		for (ii=0; ii<temp_function_values->size; ii++)  // for each function, after (real) randomization
+			set_d(&funcVals->coord[ii], &temp_function_values->coord[ii]);
+	}
+	
+	
+	
+	
+	// the jacobian equations for orig
+	
+	if (BED->randomize) {
+		//  randomize the original functions and jacobian
+		mat_mul_d(AtimesJ,BED->randomizer_matrix,temp_jacobian_functions);
+		
+		// copy the jacobian into the return value for the evaluator
+		for (ii=0; ii< AtimesJ->rows; ii++)
+			for (jj=0; jj< AtimesJ->cols; jj++)
+				set_d(&Jv->entry[ii][jj],&AtimesJ->entry[ii][jj]);
+		
+		// copy in the transpose of the (randomized) jacobian, omitting the homogenizing variable
+		for (ii=0; ii< AtimesJ->rows; ii++)
+			for (jj=1; jj<BED->num_x_vars; jj++)
+				set_d(&BED->jac_with_proj->entry[jj-1][ii], &AtimesJ->entry[ii][jj]);
+	}
+	else {
+		// copy in the transpose of the jacobian, omitting the homogenizing variable
+		for (ii=0; ii< temp_jacobian_functions->rows; ii++)
+			for (jj=1; jj<BED->num_x_vars; jj++)
+				set_d(&BED->jac_with_proj->entry[jj-1][ii], &temp_jacobian_functions->entry[ii][jj]);
+	}
+	
+	
+	
+	// the additional linears.  there are $r-\ell$ of them.
+	offset = BED->num_randomized_eqns;
+	for (ii=0; ii< BED->num_additional_linears; ii++) {
+		dot_product_d(temp, BED->additional_linears_terminal[ii], curr_x_vars);
+		mul_d(temp3, temp, one_minus_s);
+		neg_d(&Jp->entry[offset+ii][0], temp);  // Jp = -terminal
+		
+		dot_product_d(temp,  BED->additional_linears_starting[ii], curr_x_vars);
+		
+		mul_d(temp2, temp, BED->gamma);
+		add_d(&Jp->entry[offset+ii][0], &Jp->entry[offset+ii][0], temp2);   // Jp = -terminal + gamma*start
+		
+		mul_d(temp2, temp, gamma_s);
+		
+		add_d(&funcVals->coord[offset+ii],temp2, temp3); // (gamma*s)*start(x) + (1-s)*terminal(x)
+		
+		for (jj=0; jj<BED->num_x_vars; jj++) {
+			mul_d(temp, gamma_s,    &BED->additional_linears_starting[ii]->coord[jj]);
+			mul_d(temp2,one_minus_s,&BED->additional_linears_terminal[ii]->coord[jj]);
+			
+			add_d(&Jv->entry[ii+offset][jj], temp, temp2);
+		}
+	} // √
+	
+	
+	
+	// NOW WE WILL WORK ON THE TARGET SYSTEM'S FUNCTION VALUES
+	
+	
+	
+	// make the homogenizing matrix for the $x$ variables
+	mat_d jac_homogenizing_matrix; init_mat_d(jac_homogenizing_matrix,BED->num_v_vars,BED->num_v_vars);
+	jac_homogenizing_matrix->rows = jac_homogenizing_matrix->cols = BED->num_v_vars;
+	make_matrix_ID_d(jac_homogenizing_matrix,BED->num_v_vars,BED->num_v_vars);
+	
+	for (ii=0; ii<BED->num_randomized_eqns; ii++)
+		for (jj=0; jj<(BED->max_degree - (BED->randomized_degrees[ii]-1)); jj++)
+			mul_d(&jac_homogenizing_matrix->entry[ii][ii], &jac_homogenizing_matrix->entry[ii][ii], &curr_x_vars->coord[0]);
+	
+	for (ii=BED->num_randomized_eqns; ii<BED->num_v_vars; ii++)
+		for (jj=0; jj<(BED->max_degree); jj++) // these are all degree 1
+			mul_d(&jac_homogenizing_matrix->entry[ii][ii], &jac_homogenizing_matrix->entry[ii][ii], &curr_x_vars->coord[0]);
+	
+	
+	//	mat_mul_d(tempmat, BED->post_randomizer_matrix, BED->jac_with_proj); // jac with proj having been set above with unperturbed values
+	mat_mul_d(Jf_pi_homogenized, BED->jac_with_proj, jac_homogenizing_matrix); // jac with proj having been set above with unperturbed values
+	
+	
+	mul_mat_vec_d(target_function_values, Jf_pi_homogenized, curr_v_vars);
+	vec_mulcomp_d(target_function_values_times_oneminus_s, target_function_values, one_minus_s);
+	
+	
+	
+	//  THE LINPROD START SYSTEM FUNCTION VALUES
+	offset = BED->num_randomized_eqns + BED->num_additional_linears;
+	// the product of the linears
+	for (jj=0; jj<BED->num_jac_equations; jj++) {
+		
+		//perform the $x$ evaluation
+		set_one_d(&linprod_x->coord[jj]); // initialize to 1 for multiplication
+		for (ii=0; ii<BED->max_degree; ++ii) {
+			dot_product_d(&lin_func_vals->entry[jj][ii],BED->starting_linears[jj][ii],curr_x_vars); // save into a buffer for calculating the derivative later.
+			mul_d(&linprod_x->coord[jj], &linprod_x->coord[jj], &lin_func_vals->entry[jj][ii]);// multiply linprod_x times the value we just created
+		}
+		
+		//perform the $v$ evaluation
+		//		std::cout << BED->num_v_vars << " " << BED->num_x_vars << std::endl;
+		//		print_point_to_screen_matlab(BED->v_linears[jj],"v_linear");
+		//		std::cout << jj << std::endl;
+		dot_product_d(temp, BED->v_linears[jj], curr_v_vars);
+		
+		//now set the combined $x,v$ value
+		mul_d(&start_function_values->coord[jj], &linprod_x->coord[jj], temp); // start_function_values = linprod_x(x)*linear(v)
+		mul_d(&linprod_times_gamma_s->coord[jj], gamma_s, &start_function_values->coord[jj]); // sets the value linprod_x*gamma*s
+		
+		
+		neg_d( &Jp->entry[jj + offset][0], &target_function_values->coord[jj]);  // temp = -target
+		mul_d( temp, BED->gamma, &start_function_values->coord[jj]);  // temp = gamma*linprod_x(x)*linear(v)
+		add_d( &Jp->entry[jj + offset][0], &Jp->entry[jj + offset][0], temp); // Jp = -target + gamma*start
+	}
+	
+	
+	
+	
+	offset = BED->num_randomized_eqns + BED->num_additional_linears; // N-r+k
+	for (ii=0; ii<BED->num_jac_equations; ii++) {
+		add_d(&funcVals->coord[ii+offset], &target_function_values_times_oneminus_s->coord[ii], &linprod_times_gamma_s->coord[ii]);
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	// DERIVATIVES OF THE HOMOTOPY WRT V
+	offset = BED->num_randomized_eqns + BED->num_additional_linears; // N-k+l
+	for (ii=0; ii<BED->num_jac_equations; ii++) {
+		for (jj=0; jj<BED->num_v_vars; jj++) {
+			mul_d(temp, &BED->v_linears[ii]->coord[jj], &linprod_x->coord[ii]);  // temp = M_ij * linprod_x(x)
+			mul_d(temp2, temp, gamma_s);                                      // temp2 = gamma*s*M_ij * linprod_x(x)
+																			  //			std::cout << offset << " " << ii << " " << jj << " " << std::endl;
+																			  //			print_matrix_to_screen_matlab(Jv,"Jv");
+			
+			mul_d(temp, one_minus_s, &Jf_pi_homogenized->entry[ii][jj]);           // temp = (1-s)*(S*[Jf^T pi^T])_ij
+			add_d(&Jv->entry[ii+offset][jj+BED->num_x_vars], temp, temp2);    // Jv = temp + temp2
+		}
+	}
+	
+	
+	
+	// now the x derivatives corresponding to the linprod start system
+	
+	// an implementation of the product rule
+	for (mm=0; mm< BED->num_jac_equations; mm++) {
+		for (kk=0; kk<BED->num_x_vars; kk++) { // for each variable
+			set_zero_d(&linprod_derivative_wrt_x->entry[mm][kk]); // initialize to 0 for the sum
+			
+			for (ii=0; ii<BED->max_degree; ++ii) { //  for each linear
+				
+				set_d(running_prod, &BED->starting_linears[mm][ii]->coord[kk]);// initialize the product
+				for (jj=0; jj<BED->max_degree; jj++) {
+					if (jj!=ii) {
+						mul_d(running_prod,running_prod,&lin_func_vals->entry[mm][jj]); // the linear evaluated at curr_var_vals
+					}
+				}//re: jj
+				add_d(&linprod_derivative_wrt_x->entry[mm][kk],&linprod_derivative_wrt_x->entry[mm][kk],running_prod);
+				
+			}// re:ii
+			
+			dot_product_d(temp, BED->v_linears[mm], curr_v_vars);  // these two lines multiply by  (v_linear •	v)
+			mul_d(&linprod_derivative_wrt_x->entry[mm][kk], &linprod_derivative_wrt_x->entry[mm][kk], temp);
+		} // re: kk
+	} // re: mm
+	
+	
+	
+	
+	
+	// NUMERICALLY DIFFERENTIATE THE derivative of the target jacobian system wrt $x$.
+	
+	offset = BED->num_randomized_eqns + BED->num_additional_linears;
+	for (ii=0; ii<BED->num_x_vars; ii++) {
+		
+		//go forward
+		vec_cp_d(perturbed_forward_variables, curr_x_vars);
+		add_d( &perturbed_forward_variables->coord[ii], &perturbed_forward_variables->coord[ii],BED->perturbation);
+		
+		
+		make_matrix_ID_d(jac_homogenizing_matrix,BED->num_v_vars,BED->num_v_vars);
+		for (kk=0; kk<BED->num_randomized_eqns; kk++)
+			for (jj=0; jj<(BED->max_degree - (BED->randomized_degrees[kk]-1)); jj++) // -1 because differentiation
+				mul_d(&jac_homogenizing_matrix->entry[kk][kk], &jac_homogenizing_matrix->entry[kk][kk], &perturbed_forward_variables->coord[0]);
+		
+		for (kk=BED->num_randomized_eqns; kk<BED->num_v_vars; kk++)
+			for (jj=0; jj<(BED->max_degree); jj++)
+				mul_d(&jac_homogenizing_matrix->entry[kk][kk], &jac_homogenizing_matrix->entry[kk][kk], &perturbed_forward_variables->coord[0]);
+		
+		// evaluate perturbed forwards
+		evalProg_d(unused_function_values, unused_parVals, unused_parDer,  //  unused output
+				   perturbed_Jv,  // <---- the output we need
+				   unused_Jp, //unused output
+				   perturbed_forward_variables, pathVars, BED->SLP); // input
+		
+		if (BED->randomize) {
+			mat_mul_d(perturbed_AtimesJ,BED->randomizer_matrix,perturbed_Jv);
+		}
+		else{
+			mat_cp_d(perturbed_AtimesJ,perturbed_Jv);
+		}
+		
+		
+		mat_cp_d(tempmat1, BED->jac_with_proj);//reset
+											   // copy in the transpose of the (randomized) jacobian
+		for (mm=0; mm< (BED->num_randomized_eqns); mm++) {
+			for (jj=1; jj<BED->num_x_vars; jj++) {
+				set_d(&tempmat1->entry[jj - 1][mm],&perturbed_AtimesJ->entry[mm][jj]);
+			}
+		}
+		
+		mat_mul_d(tempmat3, tempmat1, jac_homogenizing_matrix);
+		mul_mat_vec_d(tempvec, tempmat3, curr_v_vars);
+		
+		
+		
+		//go backward
+		
+		vec_cp_d(perturbed_backward_variables, curr_x_vars);
+		sub_d(&perturbed_backward_variables->coord[ii], &perturbed_backward_variables->coord[ii],BED->perturbation);
+		
+		make_matrix_ID_d(jac_homogenizing_matrix,BED->num_v_vars,BED->num_v_vars);
+		for (kk=0; kk<BED->num_randomized_eqns; kk++)
+			for (jj=0; jj<(BED->max_degree - (BED->randomized_degrees[kk]-1)); jj++)
+				mul_d(&jac_homogenizing_matrix->entry[kk][kk], &jac_homogenizing_matrix->entry[kk][kk], &perturbed_backward_variables->coord[0]);
+		for (kk=BED->num_randomized_eqns; kk<BED->num_v_vars; kk++)
+			for (jj=0; jj<(BED->max_degree); jj++)
+				mul_d(&jac_homogenizing_matrix->entry[kk][kk], &jac_homogenizing_matrix->entry[kk][kk], &perturbed_backward_variables->coord[0]);
+		
+		
+		// evaluate perturbed back
+		evalProg_d(unused_function_values, unused_parVals, unused_parDer,  //  unused output
+				   perturbed_Jv,  // <---- the output we need
+				   unused_Jp, //unused output
+				   perturbed_backward_variables, pathVars, BED->SLP); // input
+		
+		
+		mat_cp_d(tempmat1, BED->jac_with_proj); // probably unnecessary
+		
+		// copy in the transpose of the (randomized) jacobian
+		if (BED->randomize) {
+			mat_mul_d(perturbed_AtimesJ,BED->randomizer_matrix,perturbed_Jv);
+			for (mm=0; mm< (BED->num_randomized_eqns); mm++) {
+				for (jj=1; jj<BED->num_x_vars; jj++) {
+					set_d(&tempmat1->entry[jj - 1][mm], &perturbed_AtimesJ->entry[mm][jj]);
+				}
+			}
+		}
+		else{
+			mat_cp_d(perturbed_AtimesJ,perturbed_Jv);
+			for (mm=0; mm<(BED->num_randomized_eqns); mm++) {
+				for (jj=1; jj<BED->num_x_vars; jj++) {
+					set_d(&tempmat1->entry[jj - 1][mm], &perturbed_AtimesJ->entry[mm][jj]);
+				}
+			}
+		}
+		
+		mat_mul_d(tempmat3, tempmat1, jac_homogenizing_matrix);
+		mul_mat_vec_d(tempvec2, tempmat3, curr_v_vars);
+		
+		
+		vec_sub_d(tempvec, tempvec, tempvec2); // tempvec = forward - backward
+		
+		div_d(temp, BED->half, BED->perturbation);   //this is repetitively wasteful
+		
+		vec_mulcomp_d(tempvec, tempvec, temp); //tempvec = (forward-backward)/(2h)
+											   // √ this is verified correct for sphere
+		
+		
+		vec_mulcomp_d(tempvec, tempvec, one_minus_s);// now tempvec has the numerical derivatives wrt $x$ variable ii. (for all jac eqns)
+		
+		// now, combine this numerical derivative and the linprod derivative to get the exact values for the $x$ portion of the jacobian matrix to return
+		
+		for (mm=0; mm<BED->num_jac_equations; mm++) {
+			mul_d(temp, gamma_s, &linprod_derivative_wrt_x->entry[mm][ii]);
+			add_d(&Jv->entry[mm+offset][ii], &tempvec->coord[mm], temp);
+		}
+		
+	}//re: ii for numerical diff
+	
+	// END NUMERICAL DIFF wrt x
+	
+	
+	
+	//set the X PATCH values
+	offset = BED->num_randomized_eqns + BED->num_additional_linears + BED->num_jac_equations;
+	
+	for (ii = 0; ii<BED->patch.num_patches; ii++)  // for each patch equation
+	{ // funcVals = patchValues
+		set_d(&funcVals->coord[ii+offset], &patchValues->coord[ii]);
+		
+		// Jv = Jv_Patch
+		for (jj = 0; jj<BED->num_x_vars; jj++) // for each variable
+			set_d(&Jv->entry[ii+offset][jj], &Jv_Patch->entry[ii][jj]);
+	}
+	
+	
+	offset = BED->num_randomized_eqns + BED->num_additional_linears + BED->num_jac_equations + BED->patch.num_patches;
+	if (offset != BED->num_variables-1) {
+		std::cout << "mismatch in number of blabla, line 1895;\n" << offset << " " << BED->num_variables-1 << std::endl;
+		print_matrix_to_screen_matlab(Jv,"Jv");
+		br_exit(801);
+	}
+	
+	// V patch
+	set_one_d(temp2);
+	dot_product_d(temp, BED->v_patch, curr_v_vars);
+	sub_d(&funcVals->coord[BED->num_variables-1], temp, temp2);  // f = patch*v-1
+	
+	for (ii=0; ii<BED->num_v_vars; ii++)
+		set_d(&Jv->entry[BED->num_variables-1][BED->num_x_vars+ii], &BED->v_patch->coord[ii]);
+	
+	
+	
+	// finally, set parVals & parDer correctly
+	
+	change_size_point_d(parVals, 1);  change_size_vec_d(parDer, 1);
+	parVals->size = parDer->size = 1;
+	
+	set_d(&parVals->coord[0], pathVars); // s = t
+	set_one_d(&parDer->coord[0]);       // ds/dt = 1
+	
+	
+	if (BED->verbose_level==10) {
+		printf("t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
+		//	print_matrix_to_screen_matlab(jac_homogenizing_matrix,"jac_hom_1044");
+		//	print_matrix_to_screen_matlab(BED->post_randomizer_matrix,"S");
+		//	print_matrix_to_screen_matlab(BED->randomizer_matrix,"R");
+		//
+		//
+		//	print_matrix_to_screen_matlab( AtimesJ,"jac");
+		//	print_point_to_screen_matlab(curr_x_vars,"currxvars");
+		//	print_point_to_screen_matlab(current_variable_values,"curr_vars");
+		print_point_to_screen_matlab(funcVals,"F");
+		print_matrix_to_screen_matlab(Jv,"Jv");
+		//	print_matrix_to_screen_matlab(Jp,"Jp");
+		//	print_matrix_to_screen_matlab(BED->jac_with_proj,"jacwithproj");
+		//			//these values are set in this function:  point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp
+		print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
+		
+		//	std::cout << "\n\n**************\n\n";
+		
+	}
+	
+	
+	
+	clear_vec_d(curr_x_vars);
+	clear_vec_d(curr_v_vars);
+	clear_vec_d(patchValues);
+	clear_vec_d(temp_function_values);
+	
+	
+	clear_vec_d(AtimesF);
+	clear_vec_d(linprod_x);
+	clear_vec_d(linprod_times_gamma_s);
+	clear_vec_d(tempvec);
+	clear_vec_d(tempvec2);
+	
+	
+	clear_mat_d(Jv_Patch);
+	clear_mat_d(tempmat);
+	clear_mat_d(lin_func_vals);
+	
+	
+	
+	clear_mat_d(AtimesJ);
+	clear_mat_d(Jv_jac);
+	clear_mat_d(temp_jacobian_functions);
+	clear_mat_d(temp_jacobian_parameters);
+	clear_mat_d(linprod_derivative_wrt_x);
+	clear_mat_d(jac_homogenizing_matrix);
+	
+	
+	clear_vec_d(start_function_values);
+	clear_vec_d(target_function_values);
+	clear_vec_d(target_function_values_times_oneminus_s);
+	clear_mat_d(Jf_pi_homogenized);
+	
+	
+	clear_vec_d(unused_function_values);
+	clear_vec_d(unused_parVals);
+	clear_vec_d(unused_parDer);
+	
+	
+	clear_mat_d(unused_Jp);
+	clear_mat_d(perturbed_Jv);
+	clear_mat_d(perturbed_AtimesJ);
+	clear_mat_d(tempmat3);
+	clear_mat_d(tempmat1);
+	clear_mat_d(tempmat2);
+	
+	clear_vec_d(perturbed_forward_variables);
+	clear_vec_d(perturbed_backward_variables);
+	
+	
+	
+#ifdef printpathnullspace_left
+	BED->num_steps++;
+	vec_d dehommed; init_vec_d(dehommed,BED->num_variables-1); dehommed->size = BED->num_variables-1;
+	dehomogenize(&dehommed,curr_x_vars);
+	fprintf(BED->FOUT,"%.15lf %.15lf ", pathVars->r, pathVars->i);
+	for (ii=0; ii<BED->num_variables-1; ++ii) {
+		fprintf(BED->FOUT,"%.15lf %.15lf ",dehommed->coord[ii].r,dehommed->coord[ii].i);
+	}
+	fprintf(BED->FOUT,"\n");
+	clear_vec_d(dehommed);
+#endif
+	
+	//	printf("exiting eval\n");
+	return 0;
+}
+
+
+
+
+int nullspacejac_numerical_deriv_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED)
 { // evaluates a special homotopy type, built for bertini_real
   //	printf("entering eval_mp\n");
 	nullspacejac_eval_data_mp *BED = (nullspacejac_eval_data_mp *)ED; // to avoid having to cast every time
@@ -2360,7 +3769,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	// randomize
 	if (BED->randomize) {
 		mul_mat_vec_mp(AtimesF,BED->randomizer_matrix, temp_function_values); // set values of AtimesF (A is randomization matrix)
-																			 // set func vals
+																			  // set func vals
 		for (ii=0; ii<AtimesF->size; ii++)  // for each function, after (real) randomization
 			set_mp(&funcVals->coord[ii], &AtimesF->coord[ii]);
 	}
@@ -2381,7 +3790,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	if (BED->randomize) {
 		mat_mul_mp(AtimesJ,BED->randomizer_matrix,temp_jacobian_functions);
 	}
-	else{ // spare the multiplication
+	else{
 		mat_cp_mp(AtimesJ, temp_jacobian_functions);
 	}
 	
@@ -2544,30 +3953,14 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	
 	
 	// NUMERICALLY DIFFERENTIATE THE derivative of the target jacobian system wrt $x$.
-	comp_mp scale;  init_mp(scale);  set_zero_mp(scale);
-	mpf_set_str(temp2->r,"1e-11",10);
+	
 	offset = BED->num_randomized_eqns + BED->num_additional_linears;
 	for (ii=0; ii<BED->num_x_vars; ii++) {
 		
 		//go forward
 		vec_cp_mp(perturbed_forward_variables, curr_x_vars);
+		add_mp( &perturbed_forward_variables->coord[ii], &perturbed_forward_variables->coord[ii],BED->perturbation);
 		
-		
-		
-		mpf_abs_mp(scale->r,&perturbed_forward_variables->coord[ii]);
-		
-		mul_mp(temp, scale, BED->perturbation);
-		
-		
-		if (mpf_cmp(temp->r,temp2->r)<0) {
-			mpf_set_str(temp->r,"1e-11",10);
-			mpf_set_str(temp->i,"1e-11",10);
-		}
-		
-		
-		add_mp( &perturbed_forward_variables->coord[ii], &perturbed_forward_variables->coord[ii],temp);
-		
-
 		
 		make_matrix_ID_mp(jac_homogenizing_matrix,BED->num_v_vars,BED->num_v_vars);
 		for (kk=0; kk<BED->num_randomized_eqns; kk++)
@@ -2609,7 +4002,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 		//go backward
 		
 		vec_cp_mp(perturbed_backward_variables, curr_x_vars);
-		sub_mp(&perturbed_backward_variables->coord[ii], &perturbed_backward_variables->coord[ii],temp);
+		sub_mp(&perturbed_backward_variables->coord[ii], &perturbed_backward_variables->coord[ii],BED->perturbation);
 		
 		make_matrix_ID_mp(jac_homogenizing_matrix,BED->num_v_vars,BED->num_v_vars);
 		for (kk=0; kk<BED->num_randomized_eqns; kk++)
@@ -2650,7 +4043,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 		
 		vec_sub_mp(tempvec, tempvec, tempvec2); // tempvec = forward - backward
 		
-		div_mp(temp, BED->half, temp);   //this is repetitively wasteful.  temp here is the perturbation value.
+		div_mp(temp, BED->half, BED->perturbation);   //this is repetitively wasteful
 		
 		
 		
@@ -2670,7 +4063,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 		}
 		
 	}//re: ii for numerical diff
-	clear_mp(scale);
+	
 	// END NUMERICAL DIFF wrt x
 	
 	
@@ -2718,17 +4111,17 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	if (BED->verbose_level==10) {
         print_comp_matlab(pathVars,"t");
 		//	print_matrix_to_screen_matlab( AtimesJ,"jac");
-//        print_point_to_screen_matlab(curr_x_vars,"currxvars");
-//        print_point_to_screen_matlab(curr_v_vars,"currvvars");
+        print_point_to_screen_matlab(curr_x_vars,"currxvars");
+        print_point_to_screen_matlab(curr_v_vars,"currvvars");
 		print_point_to_screen_matlab(funcVals,"F_mp");
 		//	print_point_to_screen_matlab(parVals,"parVals");
 		//	print_point_to_screen_matlab(parDer,"parDer");
-//		print_matrix_to_screen_matlab(Jv,"Jv_mp");
+		print_matrix_to_screen_matlab(Jv,"Jv_mp");
 		//	print_matrix_to_screen_matlab(Jp,"Jp");
 		
-//        print_matrix_to_screen_matlab(BED->jac_with_proj,"jacwithproj");
+        print_matrix_to_screen_matlab(BED->jac_with_proj,"jacwithproj");
 		//these values are set in this function:  point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp
-//		print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
+		print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
 		
 	}
 	
@@ -2823,6 +4216,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 
 
 
+
 int nullspacejac_dehom(point_d out_d, point_mp out_mp,
 					   int *out_prec,
 					   point_d in_d, point_mp in_mp,
@@ -2899,6 +4293,8 @@ int change_nullspacejac_eval_prec(void const *ED, int new_prec)
 			printf("prec  %lu\t-->\t%d\n",BED->curr_prec, new_prec);
 		
 		BED->SLP->precision = new_prec;
+		
+		change_prec_prog_deriv(BED->SLP_derivative,new_prec);
 		
 		BED->curr_prec = new_prec;
 		
@@ -3200,7 +4596,7 @@ int check_issoln_nullspacejac_mp(endgame_data_t *EG,
 
 
 
-int check_isstart_nullspacejac_d(point_d testpoint,
+int check_isstart_nullspacejac_d(vec_d testpoint,
 								 tracker_config_t *T,
 								 void const *ED)
 {
@@ -3212,7 +4608,7 @@ int check_isstart_nullspacejac_d(point_d testpoint,
 	set_one_d(time);
 	
 	
-	double tol = (1e-9);
+	double tol = (1e-9); // TODO: replace this with appropriate merbobber.
 	
 	nullspacejac_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, testpoint, time, ED);
 	
@@ -3224,6 +4620,7 @@ int check_isstart_nullspacejac_d(point_d testpoint,
 			isSoln = 0;
 			print_point_to_screen_matlab(testpoint,"invalid_startpoint");
 			print_point_to_screen_matlab(e.funcVals,"start_residual");
+			break;
 		}
 		
 	}
@@ -3250,31 +4647,49 @@ void check_nullspace_evaluator(point_mp current_values,
 	
 	
 	
-	comp_d zerotime; set_zero_d(zerotime);
+	comp_d time;
 	
 	
 	
 	
 	point_d tempvec;  init_point_d(tempvec,0);
-	vec_mp_to_d(tempvec, current_values);
+	point_d tempvec2;  init_point_d(tempvec2,0);
+	make_vec_random_d(tempvec, current_values->size);
+	vec_cp_d(tempvec2, tempvec);
 	
-	nullspacejac_eval_d(e_d.funcVals, e_d.parVals, e_d.parDer, e_d.Jv, e_d.Jp, tempvec, zerotime, ED);
+	comp_d lambda;
+//	lambda->r = 2; lambda->i = 0;
+	get_comp_rand_d(lambda);
 	
-	
-	comp_d lambda; get_comp_rand_d(lambda);
-	
-	for (ii=0; ii<BED->num_x_vars; ii++) {
-		mul_d(&tempvec->coord[ii],&tempvec->coord[ii],lambda);
+	for (ii=0; ii<BED->num_variables; ii++) {
+		mul_d(&tempvec2->coord[ii],&tempvec->coord[ii],lambda);
 	}
 	
-	nullspacejac_eval_d(e_d2.funcVals, e_d2.parVals, e_d2.parDer, e_d2.Jv, e_d2.Jp, tempvec, zerotime, ED);
-	
-	
+	print_point_to_screen_matlab(tempvec,"input");
 	printf("lambda = %lf+1i*%lf\n",lambda->r, lambda->i);
-	print_point_to_screen_matlab(e_d.funcVals,"f");
+	
+	set_zero_d(time);
+	BED->evaluator_function_d(e_d.funcVals, e_d.parVals, e_d.parDer, e_d.Jv, e_d.Jp, tempvec, time, ED);
+	BED->evaluator_function_d(e_d2.funcVals, e_d2.parVals, e_d2.parDer, e_d2.Jv, e_d2.Jp, tempvec2, time, ED);
+	
+	print_point_to_screen_matlab(e_d.funcVals,"f1");
 	print_point_to_screen_matlab(e_d2.funcVals,"f2");
+	print_matrix_to_screen_matlab(e_d.Jv,"j1");
+	print_matrix_to_screen_matlab(e_d2.Jv,"j2");
+	
+	set_one_d(time);
+	BED->evaluator_function_d(e_d.funcVals, e_d.parVals, e_d.parDer, e_d.Jv, e_d.Jp, tempvec, time, ED);
+	BED->evaluator_function_d(e_d2.funcVals, e_d2.parVals, e_d2.parDer, e_d2.Jv, e_d2.Jp, tempvec2, time, ED);
+	
+	print_point_to_screen_matlab(e_d.funcVals,"g1");
+	print_point_to_screen_matlab(e_d2.funcVals,"g2");
+	print_matrix_to_screen_matlab(e_d.Jv,"k1");
+	print_matrix_to_screen_matlab(e_d2.Jv,"k2");
 	
 	
+	clear_eval_struct_d(e_d);
+	clear_eval_struct_d(e_d2);
+	clear_vec_d(tempvec);
 	mypause();
 	
 	return;
@@ -3289,6 +4704,635 @@ void check_nullspace_evaluator(point_mp current_values,
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED)
+//{ // evaluates a special homotopy type, built for bertini_real
+//  //	printf("entering eval_mp\n");
+//	nullspacejac_eval_data_mp *BED = (nullspacejac_eval_data_mp *)ED; // to avoid having to cast every time
+//	
+//	int ii, jj, kk, mm;
+//	int offset;
+//	comp_mp one_minus_s, gamma_s;  init_mp(one_minus_s); init_mp(gamma_s);
+//	
+//	set_one_mp(one_minus_s);
+//	sub_mp(one_minus_s, one_minus_s, pathVars);  // one_minus_s = (1 - s)
+//	mul_mp(gamma_s, BED->gamma, pathVars);       // gamma_s = gamma * s
+//	
+//	// we assume that the only parameter is s = t and setup parVals & parDer accordingly.
+//	vec_mp curr_x_vars; init_vec_mp(curr_x_vars, BED->num_x_vars);
+//	curr_x_vars->size = BED->num_x_vars;
+//	for (ii=0; ii<BED->num_x_vars; ii++)
+//		set_mp(&curr_x_vars->coord[ii], &current_variable_values->coord[ii]);
+//	
+//	vec_mp curr_v_vars; init_vec_mp(curr_v_vars, BED->num_v_vars);
+//	curr_v_vars->size = BED->num_v_vars;
+//	for (ii=0; ii<BED->num_v_vars; ii++)
+//		set_mp(&curr_v_vars->coord[ii], &current_variable_values->coord[ii+BED->num_x_vars]);
+//	
+//	
+//	
+//	
+//	
+//	
+//	
+//	
+//	vec_mp patchValues; init_vec_mp(patchValues, 0);
+//	vec_mp temp_function_values; init_vec_mp(temp_function_values,0);
+//	
+//	
+//	vec_mp AtimesF;  init_vec_mp(AtimesF,0);
+//	vec_mp linprod_x;  init_vec_mp(linprod_x, BED->num_jac_equations);
+//	linprod_x->size = BED->num_jac_equations;
+//	vec_mp linprod_times_gamma_s; init_vec_mp(linprod_times_gamma_s,BED->num_jac_equations);
+//	linprod_times_gamma_s->size = BED->num_jac_equations;
+//	vec_mp tempvec; init_vec_mp(tempvec,0);
+//	vec_mp tempvec2; init_vec_mp(tempvec2,0);
+//	
+//	
+//	
+//	mat_mp Jv_Patch; init_mat_mp(Jv_Patch, 0, 0);
+//	mat_mp tempmat; init_mat_mp(tempmat,BED->num_variables-1,BED->num_variables-1);
+//	tempmat->rows = tempmat->cols = BED->num_variables-1; // change the size indicators
+//	
+//	mat_mp lin_func_vals; init_mat_mp(lin_func_vals,BED->num_jac_equations, BED->max_degree);
+//	lin_func_vals->rows = BED->num_jac_equations; lin_func_vals->cols = BED->max_degree;
+//	
+//	
+//	
+//	
+//	
+//	mat_mp AtimesJ; init_mat_mp(AtimesJ,1,1);
+//	mat_mp Jv_jac; init_mat_mp(Jv_jac,0,0);
+//	mat_mp temp_jacobian_functions, temp_jacobian_parameters;
+//	init_mat_mp(temp_jacobian_functions,0,0); init_mat_mp(temp_jacobian_parameters,0,0);
+//	
+//	mat_mp linprod_derivative_wrt_x;
+//	init_mat_mp(linprod_derivative_wrt_x, BED->num_jac_equations, BED->num_x_vars);
+//	linprod_derivative_wrt_x->rows = BED->num_jac_equations; linprod_derivative_wrt_x->cols = BED->num_x_vars;
+//	
+//	
+//	comp_mp running_prod;  init_mp(running_prod);
+//	comp_mp temp, temp2, temp3; init_mp(temp); init_mp(temp2); init_mp(temp3);
+//	
+//	
+//	
+//	mat_mp Jf_pi_homogenized;  init_mat_mp(Jf_pi_homogenized, BED->num_x_vars-1, BED->num_v_vars); // set up temp matrix
+//	Jf_pi_homogenized->rows = BED->num_x_vars-1; Jf_pi_homogenized->cols = BED->num_v_vars;
+//	vec_mp target_function_values;  init_vec_mp(target_function_values,0);
+//	vec_mp target_function_values_times_oneminus_s;  init_vec_mp(target_function_values_times_oneminus_s,0);
+//	
+//	vec_mp start_function_values;
+//	init_vec_mp(start_function_values,BED->num_jac_equations); start_function_values->size = BED->num_jac_equations;
+//	
+//	//initialize some containers, for the unused stuff from the called evaluators.
+//	point_mp unused_function_values, unused_parVals;
+//	init_vec_mp(unused_function_values,0);init_vec_mp(unused_parVals,0);
+//	vec_mp unused_parDer; init_vec_mp(unused_parDer,0);
+//	mat_mp unused_Jp; init_mat_mp(unused_Jp,0,0);
+//	mat_mp perturbed_Jv; init_mat_mp(perturbed_Jv,0,0);
+//	
+//	
+//	mat_mp perturbed_AtimesJ, tempmat3; // create matrices
+//	init_mat_mp(perturbed_AtimesJ,0,0); init_mat_mp(tempmat3,0,0);
+//	
+//	
+//	mat_mp tempmat1,tempmat2; // create temp matrices
+//	init_mat_mp(tempmat1,BED->num_jac_equations,BED->num_v_vars);
+//	tempmat1->rows = BED->num_jac_equations; tempmat1->cols = BED->num_v_vars;
+//	
+//	init_mat_mp(tempmat2,BED->num_jac_equations,BED->num_v_vars);
+//	tempmat2->rows = BED->num_jac_equations; tempmat2->cols = BED->num_v_vars;
+//	
+//	
+//	
+//	//initialize the jacobians we will work with.
+//	point_mp perturbed_forward_variables, perturbed_backward_variables;
+//	init_vec_mp(perturbed_forward_variables,0); init_vec_mp(perturbed_backward_variables,0);
+//	change_size_vec_mp(perturbed_forward_variables,BED->num_x_vars);
+//	change_size_vec_mp(perturbed_backward_variables,BED->num_x_vars);
+//	perturbed_backward_variables->size = perturbed_forward_variables->size = BED->num_x_vars;
+//	
+//	
+//	// the main evaluations for $x$
+//	evalProg_mp(temp_function_values, parVals, parDer, temp_jacobian_functions, temp_jacobian_parameters, curr_x_vars, pathVars, BED->SLP);
+//	
+//	
+//	patch_eval_mp(    patchValues, parVals, parDer, Jv_Patch, Jp, curr_x_vars, pathVars, &BED->patch);  // Jp is ignored
+//	
+//	
+//	
+//	
+//	//resize output variables to correct size
+//	change_size_vec_mp(funcVals,BED->num_variables);
+//	change_size_mat_mp(Jv, BED->num_variables, BED->num_variables);
+//	change_size_mat_mp(Jp, BED->num_variables, 1);
+//	
+//	// initialize stuff to all 0's
+//	funcVals->size = Jv->rows = Jp->rows = BED->num_variables;
+//	Jv->cols = BED->num_variables;  //  <-- this must be square
+//	Jp->cols = 1;
+//	
+//	for (ii=0; ii<Jv->rows; ii++)
+//		for (jj=0; jj<Jv->cols; jj++)
+//			set_zero_mp(&Jv->entry[ii][jj]);
+//	
+//	for (ii = 0; ii<BED->num_variables; ii++)
+//		set_zero_mp(&Jp->entry[ii][0]);  // initialize entire matrix to 0
+//	
+//	// orig eqns
+//	
+//	
+//	// randomize
+//	
+//	// randomize
+//	if (BED->randomize) {
+//		mul_mat_vec_mp(AtimesF,BED->randomizer_matrix, temp_function_values); // set values of AtimesF (A is randomization matrix)
+//																			  // set func vals
+//		for (ii=0; ii<AtimesF->size; ii++)  // for each function, after (real) randomization
+//			set_mp(&funcVals->coord[ii], &AtimesF->coord[ii]);
+//	}
+//	else {
+//		for (ii=0; ii<temp_function_values->size; ii++)  // for each function, after (real) randomization
+//			set_mp(&funcVals->coord[ii], &temp_function_values->coord[ii]);
+//	}
+//	
+//	
+//	
+//	
+//	
+//	
+//	
+//	// the jacobian equations for orig
+//	
+//	//  randomize the original functions and jacobian
+//	if (BED->randomize) {
+//		mat_mul_mp(AtimesJ,BED->randomizer_matrix,temp_jacobian_functions);
+//	}
+//	else{ // spare the multiplication
+//		mat_cp_mp(AtimesJ, temp_jacobian_functions);
+//	}
+//	
+//	// copy the jacobian into the return value for the evaluator
+//	for (ii=0; ii< AtimesJ->rows; ii++)
+//		for (jj=0; jj< AtimesJ->cols; jj++)
+//			set_mp(&Jv->entry[ii][jj],&AtimesJ->entry[ii][jj]);
+//	
+//	// copy in the transpose of the (randomized) jacobian, omitting the homogenizing variable
+//	for (ii=0; ii< AtimesJ->rows; ii++)
+//		for (jj=1; jj<BED->num_x_vars; jj++)
+//			set_mp(&BED->jac_with_proj->entry[jj-1][ii], &AtimesJ->entry[ii][jj]);
+//	
+//	
+//	
+//	// the additional linears.  there are $r-\ell$ of them.
+//	offset = BED->num_randomized_eqns;
+//	for (ii=0; ii< BED->num_additional_linears; ii++) {
+//		dot_product_mp(temp, BED->additional_linears_terminal[ii], curr_x_vars);
+//		mul_mp(temp3, temp, one_minus_s);
+//		neg_mp(&Jp->entry[offset+ii][0], temp);  // Jp = -terminal
+//		
+//		dot_product_mp(temp,  BED->additional_linears_starting[ii], curr_x_vars);
+//		
+//		mul_mp(temp2, temp, BED->gamma);
+//		add_mp(&Jp->entry[offset+ii][0], &Jp->entry[offset+ii][0], temp2);   // Jp = -terminal + gamma*start
+//		
+//		mul_mp(temp2, temp, gamma_s);
+//		
+//		add_mp(&funcVals->coord[offset+ii],temp2, temp3); // (gamma*s)*start(x) + (1-s)*terminal(x)
+//		
+//		for (jj=0; jj<BED->num_x_vars; jj++) {
+//			mul_mp(temp, gamma_s,    &BED->additional_linears_starting[ii]->coord[jj]);
+//			mul_mp(temp2,one_minus_s,&BED->additional_linears_terminal[ii]->coord[jj]);
+//			
+//			add_mp(&Jv->entry[ii+offset][jj], temp, temp2);
+//		}
+//	} // √
+//	
+//	
+//	
+//	// NOW WE WILL WORK ON THE TARGET SYSTEM'S FUNCTION VALUES
+//	
+//	
+//	
+//	// make the homogenizing matrix for the $x$ variables
+//	mat_mp jac_homogenizing_matrix; init_mat_mp(jac_homogenizing_matrix,BED->num_v_vars,BED->num_v_vars);
+//	jac_homogenizing_matrix->rows = jac_homogenizing_matrix->cols = BED->num_v_vars;
+//	make_matrix_ID_mp(jac_homogenizing_matrix,BED->num_v_vars,BED->num_v_vars);
+//	
+//	for (ii=0; ii<BED->num_randomized_eqns; ii++)
+//		for (jj=0; jj<(BED->max_degree - (BED->randomized_degrees[ii]-1)); jj++)
+//			mul_mp(&jac_homogenizing_matrix->entry[ii][ii], &jac_homogenizing_matrix->entry[ii][ii], &curr_x_vars->coord[0]);
+//	
+//	for (ii=BED->num_randomized_eqns; ii<BED->num_v_vars; ii++)
+//		for (jj=0; jj<(BED->max_degree); jj++) // these are all degree 1
+//			mul_mp(&jac_homogenizing_matrix->entry[ii][ii], &jac_homogenizing_matrix->entry[ii][ii], &curr_x_vars->coord[0]);
+//	
+//	
+//	
+//	mat_mul_mp(Jf_pi_homogenized, BED->jac_with_proj, jac_homogenizing_matrix); // jac with proj having been set above with unperturbed values
+//	
+//	
+//	mul_mat_vec_mp(target_function_values, Jf_pi_homogenized, curr_v_vars);
+//	vec_mulcomp_mp(target_function_values_times_oneminus_s, target_function_values, one_minus_s);
+//	
+//	
+//	
+//	//  THE LINPROD START SYSTEM FUNCTION VALUES
+//	offset = BED->num_randomized_eqns + BED->num_additional_linears;
+//	// the product of the linears
+//	for (jj=0; jj<BED->num_jac_equations; jj++) {
+//		
+//		//perform the $x$ evaluation
+//		set_one_mp(&linprod_x->coord[jj]); // initialize to 1 for multiplication
+//		for (ii=0; ii<BED->max_degree; ++ii) {
+//			dot_product_mp(&lin_func_vals->entry[jj][ii],BED->starting_linears[jj][ii],curr_x_vars); // save into a buffer for calculating the derivative later.
+//			mul_mp(&linprod_x->coord[jj], &linprod_x->coord[jj], &lin_func_vals->entry[jj][ii]);// multiply linprod_x times the value we just created
+//		}
+//		
+//		//perform the $v$ evaluation
+//		dot_product_mp(temp, BED->v_linears[jj], curr_v_vars);
+//		
+//		//now set the combined $x,v$ value
+//		mul_mp(&start_function_values->coord[jj], &linprod_x->coord[jj], temp); // start_function_values = linprod_x(x)*linear(v)
+//		mul_mp(&linprod_times_gamma_s->coord[jj], gamma_s, &start_function_values->coord[jj]); // sets the value linprod_x*gamma*s
+//		
+//		
+//		neg_mp( &Jp->entry[jj + offset][0], &target_function_values->coord[jj]);  // temp = -target
+//		mul_mp( temp, BED->gamma, &start_function_values->coord[jj]);  // temp = gamma*linprod_x(x)*linear(v)
+//		add_mp( &Jp->entry[jj + offset][0], &Jp->entry[jj + offset][0], temp); // Jp = -target + gamma*start
+//	}
+//	
+//	//	print_point_to_screen_matlab(target_function_values,"target_f");
+//	//	print_point_to_screen_matlab(target_function_values_times_oneminus_s,"target_f_one_minus_s");
+//	//	print_point_to_screen_matlab(start_function_values,"start_f");
+//	//	print_point_to_screen_matlab(linprod_times_gamma_s,"start_f_gamma_s");
+//	//	print_comp_matlab(gamma_s,"gamma_s");
+//	
+//	
+//	offset = BED->num_randomized_eqns + BED->num_additional_linears; // N-r+k
+//	for (ii=0; ii<BED->num_jac_equations; ii++) {
+//		add_mp(&funcVals->coord[ii+offset], &target_function_values_times_oneminus_s->coord[ii], &linprod_times_gamma_s->coord[ii]);
+//	}
+//	
+//	
+//	
+//	
+//	
+//	
+//	
+//	
+//	// DERIVATIVES OF THE HOMOTOPY WRT V
+//	offset = BED->num_randomized_eqns + BED->num_additional_linears; // N-k+l
+//	for (ii=0; ii<BED->num_jac_equations; ii++) {
+//		for (jj=0; jj<BED->num_v_vars; jj++) {
+//			mul_mp(temp, &BED->v_linears[ii]->coord[jj], &linprod_x->coord[ii]);  // temp = M_ij * linprod_x(x)
+//			mul_mp(temp2, temp, gamma_s);                                      // temp2 = gamma*s*M_ij * linprod_x(x)
+//			
+//			//			std::stringstream converter;
+//			//			converter << "linprod_v_der_" << ii << "_" << jj;
+//			//			print_comp_matlab(temp, converter.str());
+//			//			converter.str("");
+//			
+//			mul_mp(temp, one_minus_s, &Jf_pi_homogenized->entry[ii][jj]);           // temp = (1-s)*(S*[Jf^T pi^T])_ij
+//			
+//			add_mp(&Jv->entry[ii+offset][jj+BED->num_x_vars], temp, temp2);    // Jv = temp + temp2
+//		}
+//	}
+//	// √ for sphere
+//	
+//	//	print_matrix_to_screen_matlab(Jf_pi_homogenized,"Jf_pi_homogenized");
+//	
+//	// now the x derivatives corresponding to the linprod start system
+//	
+//	// an implementation of the product rule
+//	for (mm=0; mm< BED->num_jac_equations; mm++) {
+//		for (kk=0; kk<BED->num_x_vars; kk++) { // for each variable
+//			set_zero_mp(&linprod_derivative_wrt_x->entry[mm][kk]); // initialize to 0 for the sum
+//			
+//			for (ii=0; ii<BED->max_degree; ++ii) { //  for each linear
+//				
+//				set_mp(running_prod, &BED->starting_linears[mm][ii]->coord[kk]);// initialize the product
+//				for (jj=0; jj<BED->max_degree; jj++) {
+//					if (jj!=ii) {
+//						mul_mp(running_prod,running_prod,&lin_func_vals->entry[mm][jj]); // the linear evaluated at curr_var_vals
+//					}
+//				}//re: jj
+//				add_mp(&linprod_derivative_wrt_x->entry[mm][kk],&linprod_derivative_wrt_x->entry[mm][kk],running_prod);
+//				
+//			}// re:ii
+//			
+//			dot_product_mp(temp, BED->v_linears[mm], curr_v_vars);  // these two lines multiply by  (v_linear •	v)
+//			mul_mp(&linprod_derivative_wrt_x->entry[mm][kk], &linprod_derivative_wrt_x->entry[mm][kk], temp);
+//		} // re: kk
+//	} // re: mm
+//	
+//	
+//	
+//	
+//	
+//	// NUMERICALLY DIFFERENTIATE THE derivative of the target jacobian system wrt $x$.
+//	comp_mp scale;  init_mp(scale);  set_zero_mp(scale);
+//	mpf_set_str(temp2->r,"1e-11",10);
+//	offset = BED->num_randomized_eqns + BED->num_additional_linears;
+//	for (ii=0; ii<BED->num_x_vars; ii++) {
+//		
+//		//go forward
+//		vec_cp_mp(perturbed_forward_variables, curr_x_vars);
+//		
+//		
+//		
+//		mpf_abs_mp(scale->r,&perturbed_forward_variables->coord[ii]);
+//		
+//		mul_mp(temp, scale, BED->perturbation);
+//		
+//		
+//		if (mpf_cmp(temp->r,temp2->r)<0) {
+//			mpf_set_str(temp->r,"1e-11",10);
+//			mpf_set_str(temp->i,"1e-11",10);
+//		}
+//		
+//		
+//		add_mp( &perturbed_forward_variables->coord[ii], &perturbed_forward_variables->coord[ii],temp);
+//		
+//		
+//		
+//		make_matrix_ID_mp(jac_homogenizing_matrix,BED->num_v_vars,BED->num_v_vars);
+//		for (kk=0; kk<BED->num_randomized_eqns; kk++)
+//			for (jj=0; jj<(BED->max_degree - (BED->randomized_degrees[kk]-1)); jj++) // -1 because differentiation
+//				mul_mp(&jac_homogenizing_matrix->entry[kk][kk], &jac_homogenizing_matrix->entry[kk][kk], &perturbed_forward_variables->coord[0]);
+//		
+//		for (kk=BED->num_randomized_eqns; kk<BED->num_v_vars; kk++)
+//			for (jj=0; jj<(BED->max_degree); jj++)
+//				mul_mp(&jac_homogenizing_matrix->entry[kk][kk], &jac_homogenizing_matrix->entry[kk][kk], &perturbed_forward_variables->coord[0]);
+//		
+//		// evaluate perturbed forwards
+//		evalProg_mp(unused_function_values, unused_parVals, unused_parDer,  //  unused output
+//					perturbed_Jv,  // <---- the output we need
+//					unused_Jp, //unused output
+//					perturbed_forward_variables, pathVars, BED->SLP); // input
+//		
+//		
+//		if (BED->randomize) {
+//			mat_mul_mp(perturbed_AtimesJ,BED->randomizer_matrix,perturbed_Jv);
+//		}
+//		else{
+//			mat_cp_mp(perturbed_AtimesJ,perturbed_Jv);
+//		}
+//		
+//		mat_cp_mp(tempmat1, BED->jac_with_proj);
+//		// copy in the transpose of the (randomized) jacobian
+//		for (mm=0; mm< (BED->num_randomized_eqns); mm++) {
+//			for (jj=1; jj<BED->num_x_vars; jj++) {
+//				set_mp(&tempmat1->entry[jj - 1][mm],&perturbed_AtimesJ->entry[mm][jj]);
+//			}
+//		}
+//		
+//		
+//		mat_mul_mp(tempmat3, tempmat1, jac_homogenizing_matrix);
+//		mul_mat_vec_mp(tempvec, tempmat3, curr_v_vars);
+//		
+//		
+//		
+//		//go backward
+//		
+//		vec_cp_mp(perturbed_backward_variables, curr_x_vars);
+//		sub_mp(&perturbed_backward_variables->coord[ii], &perturbed_backward_variables->coord[ii],temp);
+//		
+//		make_matrix_ID_mp(jac_homogenizing_matrix,BED->num_v_vars,BED->num_v_vars);
+//		for (kk=0; kk<BED->num_randomized_eqns; kk++)
+//			for (jj=0; jj<(BED->max_degree - (BED->randomized_degrees[kk]-1)); jj++)
+//				mul_mp(&jac_homogenizing_matrix->entry[kk][kk], &jac_homogenizing_matrix->entry[kk][kk], &perturbed_backward_variables->coord[0]);
+//		for (kk=BED->num_randomized_eqns; kk<BED->num_v_vars; kk++)
+//			for (jj=0; jj<(BED->max_degree); jj++)
+//				mul_mp(&jac_homogenizing_matrix->entry[kk][kk], &jac_homogenizing_matrix->entry[kk][kk], &perturbed_backward_variables->coord[0]);
+//		
+//		
+//		// evaluate perturbed back
+//		evalProg_mp(unused_function_values, unused_parVals, unused_parDer,  //  unused output
+//					perturbed_Jv,  // <---- the output we need
+//					unused_Jp, //unused output
+//					perturbed_backward_variables, pathVars, BED->SLP); // input
+//		
+//		
+//		mat_cp_mp(tempmat1, BED->jac_with_proj); // probably unnecessary
+//		
+//		// copy in the transpose of the (randomized) jacobian
+//		if (BED->randomize) {
+//			mat_mul_mp(perturbed_AtimesJ,BED->randomizer_matrix,perturbed_Jv);
+//		}
+//		else{
+//			mat_cp_mp(perturbed_AtimesJ,perturbed_Jv); // this is stupid
+//		}
+//		
+//		
+//		for (mm=0; mm< (BED->num_randomized_eqns); mm++) {
+//			for (jj=1; jj<BED->num_x_vars; jj++) {
+//				set_mp(&tempmat1->entry[jj - 1][mm], &perturbed_AtimesJ->entry[mm][jj]);
+//			}
+//		}
+//		
+//		mat_mul_mp(tempmat3, tempmat1, jac_homogenizing_matrix);
+//		mul_mat_vec_mp(tempvec2, tempmat3, curr_v_vars);
+//		
+//		
+//		vec_sub_mp(tempvec, tempvec, tempvec2); // tempvec = forward - backward
+//		
+//		div_mp(temp, BED->half, temp);   //this is repetitively wasteful.  temp here is the perturbation value.
+//		
+//		
+//		
+//		vec_mulcomp_mp(tempvec, tempvec, temp); //tempvec = (forward-backward)/(2h)
+//												// √ this is verified correct for sphere
+//		
+//		//		print_point_to_screen_matlab(tempvec,"Jv_target");
+//		
+//		vec_mulcomp_mp(tempvec, tempvec, one_minus_s);// now tempvec has the numerical derivatives wrt $x$ variable ii. (for all jac eqns)
+//		
+//		// now, combine this numerical derivative and the linprod derivative to get the exact values for the $x$ portion of the jacobian matrix to return
+//		
+//		for (mm=0; mm<BED->num_jac_equations; mm++) {
+//			mul_mp(temp, gamma_s, &linprod_derivative_wrt_x->entry[mm][ii]);
+//			add_mp(&Jv->entry[mm+offset][ii], &tempvec->coord[mm], temp);
+//			//			std::cout << "setting Jv[" << mm+offset << "][" << ii << "]\n";
+//		}
+//		
+//	}//re: ii for numerical diff
+//	clear_mp(scale);
+//	// END NUMERICAL DIFF wrt x
+//	
+//	
+//	
+//	//set the X PATCH values
+//	offset = BED->num_randomized_eqns + BED->num_additional_linears + BED->num_jac_equations;
+//	
+//	for (ii = 0; ii<BED->patch.num_patches; ii++)  // for each patch equation
+//	{ // funcVals = patchValues
+//		set_mp(&funcVals->coord[ii+offset], &patchValues->coord[ii]);
+//		
+//		// Jv = Jv_Patch
+//		for (jj = 0; jj<BED->num_x_vars; jj++) // for each variable
+//			set_mp(&Jv->entry[ii+offset][jj], &Jv_Patch->entry[ii][jj]);
+//	}
+//	
+//	
+//	offset = BED->num_randomized_eqns + BED->num_additional_linears + BED->num_jac_equations + BED->patch.num_patches;
+//	if (offset != BED->num_variables-1) {
+//		std::cout << "mismatch in number of blabla, line 2701;\n" << offset << " " << BED->num_variables-1 << std::endl;
+//		print_matrix_to_screen_matlab(Jv,"Jv");
+//		deliberate_segfault();
+//	}
+//	
+//	// V patch
+//	set_one_mp(temp2);
+//	dot_product_mp(temp, BED->v_patch, curr_v_vars);
+//	sub_mp(&funcVals->coord[BED->num_variables-1], temp, temp2);  // f = patch*v-1
+//	
+//	for (ii=0; ii<BED->num_v_vars; ii++)
+//		set_mp(&Jv->entry[BED->num_variables-1][BED->num_x_vars+ii], &BED->v_patch->coord[ii]);
+//	
+//	
+//	// finally, set parVals & parDer correctly
+//	
+//	change_size_point_mp(parVals, 1);  change_size_vec_mp(parDer, 1);
+//	parVals->size = parDer->size = 1;
+//	
+//	set_mp(&parVals->coord[0], pathVars); // s = t
+//	set_one_mp(&parDer->coord[0]);       // ds/dt = 1
+//	
+//	
+//	
+//	
+//	if (BED->verbose_level==10) {
+//        print_comp_matlab(pathVars,"t");
+//		//	print_matrix_to_screen_matlab( AtimesJ,"jac");
+//		//        print_point_to_screen_matlab(curr_x_vars,"currxvars");
+//		//        print_point_to_screen_matlab(curr_v_vars,"currvvars");
+//		print_point_to_screen_matlab(funcVals,"F_mp");
+//		//	print_point_to_screen_matlab(parVals,"parVals");
+//		//	print_point_to_screen_matlab(parDer,"parDer");
+//		//		print_matrix_to_screen_matlab(Jv,"Jv_mp");
+//		//	print_matrix_to_screen_matlab(Jp,"Jp");
+//		
+//		//        print_matrix_to_screen_matlab(BED->jac_with_proj,"jacwithproj");
+//		//these values are set in this function:  point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp
+//		//		print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
+//		
+//	}
+//	
+//	
+//	
+//	
+//	clear_vec_mp(curr_x_vars);
+//	clear_vec_mp(curr_v_vars);
+//	clear_vec_mp(patchValues);
+//	clear_vec_mp(temp_function_values);
+//	
+//	
+//	clear_vec_mp(AtimesF);
+//	clear_vec_mp(linprod_x);
+//	clear_vec_mp(linprod_times_gamma_s);
+//	clear_vec_mp(tempvec);
+//	clear_vec_mp(tempvec2);
+//	clear_vec_mp(start_function_values);
+//	
+//	clear_mat_mp(Jv_Patch);
+//	clear_mat_mp(tempmat);
+//	clear_mat_mp(lin_func_vals);
+//	
+//	
+//	
+//	clear_mat_mp(AtimesJ);
+//	clear_mat_mp(Jv_jac);
+//	clear_mat_mp(temp_jacobian_functions);
+//	clear_mat_mp(temp_jacobian_parameters);
+//	clear_mat_mp(linprod_derivative_wrt_x);
+//	
+//	clear_mp(running_prod);
+//	clear_mp(temp);
+//	clear_mp(temp2);
+//	clear_mp(temp3);
+//	clear_mp(gamma_s);
+//	clear_mp(one_minus_s);
+//	
+//	
+//	clear_vec_mp(target_function_values);
+//	clear_vec_mp(target_function_values_times_oneminus_s);
+//	clear_mat_mp(Jf_pi_homogenized);
+//	
+//	
+//	clear_vec_mp(unused_function_values);
+//	clear_vec_mp(unused_parVals);
+//	clear_vec_mp(unused_parDer);
+//	
+//	
+//	clear_mat_mp(unused_Jp);
+//	clear_mat_mp(perturbed_Jv);
+//	clear_mat_mp(perturbed_AtimesJ);
+//	clear_mat_mp(tempmat3);
+//	clear_mat_mp(tempmat1);
+//	clear_mat_mp(tempmat2);
+//	clear_mat_mp(jac_homogenizing_matrix);
+//	
+//	clear_vec_mp(perturbed_forward_variables);
+//	clear_vec_mp(perturbed_backward_variables);
+//	
+//	
+//	
+//	
+//	
+//	
+//	
+//	
+//#ifdef printpathnullspace_left
+//	BED->num_steps++;
+//	vec_mp dehommed; init_vec_mp(dehommed,BED->num_variables-1); dehommed->size = BED->num_variables-1;
+//	dehomogenize_mp(&dehommed,curr_x_vars);
+//	mpf_out_str (BED->FOUT, 10, 15, pathVars->r);
+//	fprintf(BED->FOUT," ");
+//	mpf_out_str (BED->FOUT, 10, 15, pathVars->i);
+//	fprintf(BED->FOUT," ");
+//	for (ii=0; ii<BED->num_variables-1; ++ii) {
+//		mpf_out_str (BED->FOUT, 10, 15, dehommed->coord[ii].r);
+//		fprintf(BED->FOUT," ");
+//		mpf_out_str (BED->FOUT, 10, 15, dehommed->coord[ii].i);
+//		fprintf(BED->FOUT," ");
+//		
+//	}
+//	fprintf(BED->FOUT,"\n");
+//	clear_vec_mp(dehommed);
+//#endif
+//	
+//	
+//	return 0;
+//}
 
 
 

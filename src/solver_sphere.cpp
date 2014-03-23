@@ -584,8 +584,6 @@ int sphere_eval_data_d::setup(const sphere_config & config,
 
 
 
-//TODO:  parallelize this solver
-
 
 int sphere_solver_master_entry_point(const witness_set						&W, // carries with it the start points, and the linears.
 									 solver_output							&solve_out, // new data goes in here

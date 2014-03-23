@@ -187,14 +187,14 @@ void surface_decomposition::main(vertex_set & V,
                            program_options,
                            solve_options);
 	
-	
-	
-	
+		
 	
 	this->output_main(program_options.output_dir);
 	V.print(program_options.output_dir/ "V.vertex");
 	
 	
+	mypause();
+
 	
     // actually perform the interslice on the bounding sphere curve.
 	compute_bounding_sphere(W_intersection_sphere, // the witness points we will track from
@@ -873,31 +873,41 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 	solve_out.get_noninfinite_w_mult_full(W_critcurve_crit);
 	
 	W_critcurve_crit.only_first_vars(num_variables); // i question this line. it might be better without it.
+	
+	W_critcurve_crit.print_to_screen();
+	
 	W_critcurve_crit.sort_for_real(&solve_options.T);
-	
 	ns_config.clear();
+	solve_out.reset();
 	
 	
-	//	witness_set W_crit2;
-	//	compute_crit_nullspace(&W_crit2, // the returned value
-	//						   W_surf,            // input the original witness set
-	//						   this->randomizer_matrix,
-	//						   &this->pi[1],
-	//						   this->randomized_degrees,
-	//						   2,  // dimension of ambient complex object
-	//						   2,   //  target dimension to find
-	//						   2,   // COdimension of the critical set to find.
-	//						   program_options,
-	//						   solve_options,
-	//						   &ns_config);
-	//	// this will use pi[1] to compute critical points
-	//
-	//	W_crit2.only_first_vars(num_variables);
-	//	W_crit2.sort_for_real(solve_options.T);
-	//
-	//	ns_config.clear();
-	//
-	//	W_critcurve_crit.merge(W_crit2);
+	
+	
+	if (0) {
+
+		compute_crit_nullspace(solve_out, // the returned value
+							   W_surf,            // input the original witness set
+							   this->randomizer_matrix,
+							   &this->pi[1],
+							   this->randomized_degrees,
+							   2,  // dimension of ambient complex object
+							   2,   //  target dimension to find
+							   2,   // COdimension of the critical set to find.
+							   program_options,
+							   solve_options,
+							   &ns_config);
+		// this will use pi[1] to compute critical points
+		
+		witness_set W_crit2;
+		solve_out.get_noninfinite_w_mult_full(W_crit2);
+		W_crit2.only_first_vars(num_variables);
+		W_crit2.sort_for_real(&solve_options.T);
+		
+		ns_config.clear();
+		
+		W_critcurve_crit.merge(W_crit2);
+	}
+	
 	
 	
 	if (have_sphere_radius) {
@@ -1298,124 +1308,114 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 		
 		curve_decomposition new_slice;
 		
-		while ((new_slice.num_edges==0) && (iterations<10)) {// try not to allow an empty edge, if rerun_empty is true.  break below.
+		std::stringstream converter;
+		converter << ii;
+		
+		int blabla;
+		parse_input_file(W_surf.input_filename, &blabla);
+		
+		preproc_data_clear(&solve_options.PPD); // ugh this sucks
+		parse_preproc_data("preproc_data", &solve_options.PPD);
+		
+		make_randomization_matrix_based_on_degrees(randomizer_matrix, randomized_degrees, W_surf.num_variables-W_surf.num_patches-W_surf.num_linears, solve_options.PPD.num_funcs);
+		
+		ml_config.set_randomizer(randomizer_matrix);
+		neg_mp(&multilin_linears[0]->coord[0], &projection_values_downstairs->coord[ii]);
+		
+		
+		
+		solve_options.robust = true;
+		
+		
+		solver_output fillme;
+		multilin_solver_master_entry_point(W_surf,         // witness_set
+										   fillme, // the new data is put here!
+										   multilin_linears,
+										   ml_config,
+										   solve_options);
+		
+		fillme.get_noninfinite_w_mult(slice_witness_set);
+		
+		fillme.reset();
+		
+		boost::filesystem::path slicename = W_surf.input_filename;
+		slicename += "_"; slicename += kindofslice; slicename += "slice_"; slicename += converter.str();
+		create_sliced_system(W_surf.input_filename, slicename, &multilin_linears[0], 1, W_surf);
+		
+		
+		parse_input_file(slicename, &blabla);
+		preproc_data_clear(&solve_options.PPD);
+		parse_preproc_data("preproc_data", &solve_options.PPD);
+		
+		
+		new_slice.reset();
+		
+		
+		slice_witness_set.num_variables = W_surf.num_variables;
+		slice_witness_set.input_filename = slicename;
+		slice_witness_set.add_linear(multilin_linears[1]);
+		slice_witness_set.add_patch(W_surf.patch_mp[0]);
+		slice_witness_set.variable_names = W_surf.variable_names;
+		slice_witness_set.dim = 1;
+		
+		
+		solve_options.complete_witness_set = 1;
+		
+		
+		new_slice.input_filename = slicename;
+		
+		new_slice.copy_sphere_bounds(*this);
+		
+		// we already know the component is self-conjugate (by entry condition), so we are free to call this function
+		// the memory for the multilin system will get erased in this call...
+		bool prev_quick_state = program_options.quick_run;
+		program_options.quick_run = false;
+		
+		new_slice.computeCurveSelfConj(slice_witness_set,
+									   &pi[1],
+									   V,
+									   program_options, solve_options);
+		
+		program_options.quick_run = prev_quick_state;
+		
+		if (iterations<3) {
+			solve_options.T.securityMaxNorm = 2*solve_options.T.securityMaxNorm;
+		}
+		else if (iterations< 7){
+			//				solve_options.T.final_tolerance = 0.5*solve_options.T.final_tolerance;
+			solve_options.T.securityMaxNorm = 10*solve_options.T.securityMaxNorm;
 			
-			std::stringstream converter;
-			converter << ii;
+			jalk->r = 1e-17;
+			d_to_mp(h, jalk);                 // h = 1e-10
 			
-			int blabla;
-			parse_input_file(W_surf.input_filename, &blabla);
-			
-			preproc_data_clear(&solve_options.PPD); // ugh this sucks
-			parse_preproc_data("preproc_data", &solve_options.PPD);
-			
-			make_randomization_matrix_based_on_degrees(randomizer_matrix, randomized_degrees, W_surf.num_variables-W_surf.num_patches-W_surf.num_linears, solve_options.PPD.num_funcs);
-			
-			ml_config.set_randomizer(randomizer_matrix);
-			neg_mp(&multilin_linears[0]->coord[0], &projection_values_downstairs->coord[ii]);
-			
-			
-			
-			solve_options.robust = true;
-			
-			
-			solver_output fillme;
-			multilin_solver_master_entry_point(W_surf,         // witness_set
-                                               fillme, // the new data is put here!
-                                               multilin_linears,
-                                               ml_config,
-                                               solve_options);
-			
-			fillme.get_noninfinite_w_mult(slice_witness_set);
-			
-			fillme.reset();
-			
-			boost::filesystem::path slicename = W_surf.input_filename;
-			slicename += "_"; slicename += kindofslice; slicename += "slice_"; slicename += converter.str();
-			create_sliced_system(W_surf.input_filename, slicename, &multilin_linears[0], 1, W_surf);
-			
-			
-			parse_input_file(slicename, &blabla);
-			preproc_data_clear(&solve_options.PPD);
-			parse_preproc_data("preproc_data", &solve_options.PPD);
-			
-			
-			new_slice.reset();
-			
-			
-			slice_witness_set.num_variables = W_surf.num_variables;
-			slice_witness_set.input_filename = slicename;
-			slice_witness_set.add_linear(multilin_linears[1]);
-			slice_witness_set.add_patch(W_surf.patch_mp[0]);
-			slice_witness_set.variable_names = W_surf.variable_names;
-			slice_witness_set.dim = 1;
-			
-			
-			solve_options.complete_witness_set = 1;
-			
-			
-			new_slice.input_filename = slicename;
-			
-			new_slice.copy_sphere_bounds(*this);
-			
-			// we already know the component is self-conjugate (by entry condition), so we are free to call this function
-			// the memory for the multilin system will get erased in this call...
-			bool prev_quick_state = program_options.quick_run;
-			program_options.quick_run = false;
-			
-			new_slice.computeCurveSelfConj(slice_witness_set,
-                                           &pi[1],
-                                           V,
-                                           program_options, solve_options);
-			
-			program_options.quick_run = prev_quick_state;
-			
-			if (iterations<3) {
-				solve_options.T.securityMaxNorm = 2*solve_options.T.securityMaxNorm;
-			}
-			else if (iterations< 7){
-				//				solve_options.T.final_tolerance = 0.5*solve_options.T.final_tolerance;
-				solve_options.T.securityMaxNorm = 10*solve_options.T.securityMaxNorm;
-				
-				jalk->r = 1e-17;
-				d_to_mp(h, jalk);                 // h = 1e-10
-				
-				get_comp_rand_real_mp(rand_perterb); //  rand_perterb = real rand
-				
-				
-				
-				mul_mp(rand_perterb,rand_perterb,h); // rand_perterb = small real rand
-				add_mp(&projection_values_downstairs->coord[ii],&projection_values_downstairs->coord[ii],rand_perterb); // perturb the projection value
-				
-				
-			}
-			else
-			{
-				jalk->r = 1e-16;
-				d_to_mp(h, jalk);                 // h = 1e-10
-				
-				get_comp_rand_real_mp(rand_perterb); //  rand_perterb = real rand
-				
-				mul_mp(rand_perterb,rand_perterb,h); // rand_perterb = small real rand
-				add_mp(&projection_values_downstairs->coord[ii],&projection_values_downstairs->coord[ii],rand_perterb); // perturb the projection value
-				
-				//				solve_options.T.final_tolerance = 0.1*solve_options.T.final_tolerance;
-				solve_options.T.securityMaxNorm = 100*solve_options.T.securityMaxNorm;
-			}
+			get_comp_rand_real_mp(rand_perterb); //  rand_perterb = real rand
 			
 			
 			
+			mul_mp(rand_perterb,rand_perterb,h); // rand_perterb = small real rand
+			add_mp(&projection_values_downstairs->coord[ii],&projection_values_downstairs->coord[ii],rand_perterb); // perturb the projection value
 			
 			
-			if (rerun_empty == false)
-				break;
+		}
+		else
+		{
+			jalk->r = 1e-16;
+			d_to_mp(h, jalk);                 // h = 1e-10
 			
-			iterations++;
+			get_comp_rand_real_mp(rand_perterb); //  rand_perterb = real rand
 			
-			slice_witness_set.reset();
+			mul_mp(rand_perterb,rand_perterb,h); // rand_perterb = small real rand
+			add_mp(&projection_values_downstairs->coord[ii],&projection_values_downstairs->coord[ii],rand_perterb); // perturb the projection value
 			
+			//				solve_options.T.final_tolerance = 0.1*solve_options.T.final_tolerance;
+			solve_options.T.securityMaxNorm = 100*solve_options.T.securityMaxNorm;
+		}
+		
+		
+		
+		slice_witness_set.reset();
 			
-		} // re: while loop
+
 		solve_options.reset_tracker_config();
 		
 		new_slice.add_projection(pi[1]);
