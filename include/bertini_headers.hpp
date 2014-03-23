@@ -3,18 +3,22 @@
 
 
 
-#ifndef MISSING_BERTINI_HEADERS_H
-#define MISSING_BERTINI_HEADERS_H
+#ifndef BERTINI_HEADERS_H
+#define BERTINI_HEADERS_H
 
 #include "mpi.h" // this *cannot* be inside an extern "C"{} wrapper.
 
 extern "C" {
+#include "bertini.h"
 #include "cascade.h"
 #include "parallel.h"
-#include "bertini.h"
+#include "localdim.h"
 }
 
 extern "C" {
+	
+int change_prec_prog_deriv(void const *ED, int prec);
+	
 void start_system_eval_data_clear_d(start_system_eval_data_d *SSED);//actually lives in bertini library...  testing if this works.
 
 void patch_eval_data_clear_d(patch_eval_data_d *PED);//another which lives in bertini

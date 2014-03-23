@@ -14,14 +14,13 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 						   nullspace_config *ns_config)
 {
 	//many of the 1's here should be replaced by the number of patch equations, or the number of variable_groups
-	
-	int ii, jj;
+
 	int offset;
 	witness_set Wtemp, Wtemp2;
 	
 	
 	
-	// get the max degree of the derivative functions.  this is unique to the left formulation
+	// get the max degree of the derivative functions.  this is unique to the left nullspace formulation, as the functions become mixed together
 	int max_degree;
 	
 	
@@ -36,9 +35,11 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 						   W,
 						   solve_options);
 	
-	solve_options.T.AMP_bound_on_degree = (double) max_degree+1;
+	if (program_options.numerical_derivative) {
+		ns_config->numerical_derivative = true;
+	}
 	
-	//	printf("max_degree: %d\nnum_jac_equations: %d\n",max_degree,ns_config->num_jac_equations);
+	solve_options.T.AMP_bound_on_degree = (double) max_degree+1;
 	
 	
 	//
@@ -72,9 +73,9 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 	}
 	
 	// setup for the multilin moves
-	//  these are for feeding into the multilin solver -- and that's it.  they'll be set in the while loop
+	//  these are for feeding into the multilin solver -- and that's it.  the majority will be overridden in the while loop as the start x linears
 	vec_mp *multilin_linears = (vec_mp *) br_malloc(ambient_dim*sizeof(vec_mp)); // target dim is the number of linears in the input witness set
-	for (ii=0; ii<ambient_dim; ii++) {
+	for (int ii=0; ii<ambient_dim; ii++) {
 		init_vec_mp2(multilin_linears[ii],W.num_variables, solve_options.T.AMP_max_prec);
 		multilin_linears[ii]->size = W.num_variables;
 		vec_cp_mp(multilin_linears[ii], W.L_mp[ii]);
@@ -85,20 +86,20 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 	
 	
 	// this is for performing the matrix inversion to get ahold of the $v$ values corresponding to $x$
-	mat_mp tempmat;  init_mat_mp(tempmat, ns_config->num_v_vars, ns_config->num_v_vars);
+	mat_mp tempmat;  init_mat_mp2(tempmat, ns_config->num_v_vars, ns_config->num_v_vars,solve_options.T.AMP_max_prec);
 	tempmat->rows = tempmat->cols = ns_config->num_v_vars;
 	
 	offset = ns_config->num_v_vars-1;
-	for (jj=0; jj<ns_config->num_v_vars; jj++)
+	for (int jj=0; jj<ns_config->num_v_vars; jj++)
 		set_mp(&tempmat->entry[offset][jj], &ns_config->v_patch->coord[jj]);
 	
 	// for holding the result of the matrix inversion
-	vec_mp result; init_vec_mp(result,ns_config->num_v_vars);  result->size = ns_config->num_v_vars;
+	vec_mp result; init_vec_mp2(result,ns_config->num_v_vars,solve_options.T.AMP_max_prec);  result->size = ns_config->num_v_vars;
 	
 	// use this for the matrix inversion
 	vec_mp invert_wrt_me;
-	init_vec_mp(invert_wrt_me,ns_config->num_v_vars); invert_wrt_me->size = ns_config->num_v_vars;
-	for (ii=0; ii<ns_config->num_v_vars-1; ii++)
+	init_vec_mp2(invert_wrt_me,ns_config->num_v_vars,solve_options.T.AMP_max_prec); invert_wrt_me->size = ns_config->num_v_vars;
+	for (int ii=0; ii<ns_config->num_v_vars-1; ii++)
 		set_zero_mp(&invert_wrt_me->coord[ii]); // set zero
 	
 	set_one_mp(&invert_wrt_me->coord[ns_config->num_v_vars-1]); // the last entry is set to 1 for the patch equation
@@ -108,7 +109,7 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 	
 	
 	
-	vec_mp temppoint;  init_vec_mp(temppoint, ns_config->num_x_vars + ns_config->num_v_vars);
+	vec_mp temppoint;  init_vec_mp2(temppoint, ns_config->num_x_vars + ns_config->num_v_vars,solve_options.T.AMP_max_prec);
 	temppoint->size = ns_config->num_x_vars + ns_config->num_v_vars;
 	
 	
@@ -129,33 +130,29 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 	int increment_status = 0;
 	while (increment_status!=-1) { // current_absolute_index incremented at the bottom of loop
 		
-		if (program_options.verbose_level>=6) {
+		if (program_options.verbose_level>=5) {
 			odo.print();
 		}
 		
 		
 		//copy in the linears for the solve
-		for (ii=0; ii<ambient_dim - target_dim + target_crit_codim; ii++) {
+		for (int ii=0; ii<target_crit_codim; ii++) {
 			vec_cp_mp(multilin_linears[ii], ns_config->starting_linears[odo.act_reg(ii)][odo.reg_val(ii)]);
 		}
 		// the remainder of the linears are left alone (stay stationary).
 		
-		if (program_options.verbose_level>=5) {
+		if (program_options.verbose_level>=6) {
 			std::cout << "moving FROM this set:\n";
-			for (ii=0; ii<W.num_linears; ii++) {
+			for (int ii=0; ii<W.num_linears; ii++) {
 				print_point_to_screen_matlab(W.L_mp[ii],"L");
 			}
 			std::cout << "\nTO this set:\n";
-			for (ii=0; ii<W.num_linears; ii++) {
+			for (int ii=0; ii<W.num_linears; ii++) {
 				print_point_to_screen_matlab(multilin_linears[ii],"ELL");
 			}
 		}
 		
 		solve_options.robust = true;
-		solve_options.allow_singular = 0;
-		solve_options.complete_witness_set = 1;
-		solve_options.allow_multiplicity = 0;
-		solve_options.allow_unsuccess = 0;
 		// actually solve WRT the linears
 		
 		
@@ -178,15 +175,14 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 		
 		//set the v_linears (M_i).
 		
-		for (ii=0; ii<ns_config->num_v_vars-1; ii++) { // deficient one because of the patch equation
+		for (int ii=0; ii<ns_config->num_v_vars-1; ii++) { // subtract one from upper limit because of the patch equation
 			
-			if (program_options.verbose_level>=5)
+			if (program_options.verbose_level>=7)
+			{
 				std::cout << "copy into tempmat v_linears[" << odo.inact_reg(ii) << "]\n";
-			
-			if (program_options.verbose_level>=6)
 				print_point_to_screen_matlab(ns_config->v_linears[odo.inact_reg(ii)], "v_linears");
-			
-			for (jj=0; jj<ns_config->num_v_vars; jj++)
+			}
+			for (int jj=0; jj<ns_config->num_v_vars; jj++)
 				set_mp(&tempmat->entry[ii][jj], &ns_config->v_linears[odo.inact_reg(ii)]->coord[jj]);
 		}
 		
@@ -200,19 +196,16 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 		{
 			
 			// invert the matrix for the v variables.
-			matrixSolve_LU_mp(result, tempmat,  invert_wrt_me, 1e-14, 1e9);
-			
-			
-			
+			matrixSolve_mp(result, tempmat,  invert_wrt_me);
 			
 			
 			offset = ns_config->num_x_vars;
-			for (jj=0; jj<ns_config->num_v_vars; jj++)
+			for (int jj=0; jj<ns_config->num_v_vars; jj++)
 				set_mp(&temppoint->coord[jj+offset], &result->coord[jj]);
 			
 			
-			for (ii=0; ii<W_step_one.num_points; ii++) {
-				for (jj=0; jj<ns_config->num_x_vars; jj++) {
+			for (int ii=0; ii<W_step_one.num_points; ii++) {
+				for (int jj=0; jj<ns_config->num_x_vars; jj++) {
 					set_mp(&temppoint->coord[jj], &W_step_one.pts_mp[ii]->coord[jj]);
 				}
 				W_linprod.add_point(temppoint);
@@ -227,7 +220,10 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 			W_step_one.cp_names(W); // necessary?
 			
 		}
+		
 	}
+	
+	
 	
 	for (int ii=0; ii<ambient_dim; ii++) {
 		clear_vec_mp(multilin_linears[ii]);
@@ -236,34 +232,29 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 	
 	clear_vec_mp(temppoint);
 	
+	int num_before = W_linprod.num_points;
+	W_linprod.sort_for_unique(&solve_options.T);
+	if (num_before - W_linprod.num_points>0) {
+		std::cout << "there were non-unique start points" << std::endl;
+		mypause();
+	}
 	
+	W_linprod.num_synth_vars = ns_config->num_v_vars;
 	W_linprod.copy_patches(W);
 	W_linprod.cp_names(W);
 	
 	//set some solver options
 	
-	if (program_options.quick_run) {
+	if (program_options.quick_run)
 		solve_options.robust = false;
-	}
 	else
-	{
 		solve_options.robust = true;
-	}
 	
-	solve_options.complete_witness_set = 0;
+	
+	
 	solve_options.use_midpoint_checker = 0;
 	
-	if (ambient_dim==target_crit_codim) {
-		solve_options.allow_multiplicity = 1;
-		solve_options.allow_singular = 1;
-	}
-	else
-	{
-		solve_options.allow_multiplicity = 0;
-		solve_options.allow_singular = 0;
-	}
-	
-	
+
 	
 	if (program_options.verbose_level>=6)
 		ns_config->print();
@@ -359,7 +350,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	fclose(IN);
 	
 	// set some integers
-	ns_config->num_v_vars = W.num_variables - 1 - target_crit_codim + 1;
+	ns_config->num_v_vars = (W.num_variables-1) - target_crit_codim + 1;
 	ns_config->num_x_vars = W.num_variables;
 	
 	ns_config->ambient_dim = ambient_dim;
@@ -403,7 +394,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	
 	if (ns_config->num_v_vars<0) {
 		std::cout << "ns_config's num_v_vars is " << ns_config->num_v_vars << "!!!" << std::endl;
-		mypause();
+		br_exit(8230);
 	}
 	
 	
@@ -457,7 +448,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	//the 'ns_config->starting_linears' will be used for the x variables.  we will homotope to these $k-\ell$ at a time
 	ns_config->starting_linears = (vec_mp **)br_malloc( num_jac_equations*sizeof(vec_mp *));
 	for (int ii=0; ii<num_jac_equations; ii++) {
-		ns_config->starting_linears[ii] = (vec_mp *) br_malloc((*max_degree)*sizeof(vec_mp)); //subtract 1 for differentiation
+		ns_config->starting_linears[ii] = (vec_mp *) br_malloc((*max_degree)*sizeof(vec_mp));
 		
 		make_matrix_random_mp(temp_getter,*max_degree, W.num_variables - W.num_synth_vars, solve_options.T.AMP_max_prec); // this matrix is nearly orthogonal
 		
@@ -465,14 +456,10 @@ void nullspace_config_setup(nullspace_config *ns_config,
 			init_vec_mp2(ns_config->starting_linears[ii][jj],W.num_variables,solve_options.T.AMP_max_prec);
 			ns_config->starting_linears[ii][jj]->size = W.num_variables;
 			
-			for (int kk=0; kk<W.num_variables - W.num_synth_vars; kk++) {
+			for (int kk=0; kk<W.num_variables - W.num_synth_vars; kk++) { // in the natural variables only
 				set_mp(&ns_config->starting_linears[ii][jj]->coord[kk], &temp_getter->entry[jj][kk]);
 			}
 			
-			//			set_zero_mp(&ns_config->starting_linears[ii][jj]->coord[0]);  // maybe? but prolly not
-			//			for (kk=0; kk<W.num_variables - W.num_synth_vars; kk++) {
-			//				get_comp_rand_mp(&ns_config->starting_linears[ii][jj]->coord[kk]);
-			//			}
 			for (int kk=W.num_variables - W.num_synth_vars; kk<W.num_variables; kk++) {
 				set_zero_mp(&ns_config->starting_linears[ii][jj]->coord[kk]);
 			}
@@ -566,12 +553,12 @@ void create_nullspace_system(boost::filesystem::path output_name,
 	OUT = safe_fopen_write(output_name.c_str());
 	
 	
-	fprintf(OUT, "CONFIG\n");
-	
-	IN = safe_fopen_read("config_real");
-	copyfile(IN,OUT);
-	fclose(IN);
-	fprintf(OUT, "\nEND;");
+//	fprintf(OUT, "CONFIG\n");
+//	
+//	IN = safe_fopen_read("config_real");
+//	copyfile(IN,OUT);
+//	fclose(IN);
+//	fprintf(OUT, "\nEND;");
 	fprintf(OUT, "\n\nINPUT\n");
 	
 	
@@ -612,9 +599,11 @@ void create_nullspace_system(boost::filesystem::path output_name,
 	
 	fprintf(OUT,"variable_group ");
 	for (ii=0;ii<numVars; ii++){
-		fprintf(OUT,"%s, ",vars[ii]);
+		fprintf(OUT,"%s",vars[ii]);
+		(ii==numVars-1) ? fprintf(OUT,";\n") : fprintf(OUT,", ");
 	}
 	
+	fprintf(OUT,"hom_variable_group ");
 	for (ii=0; ii<(ns_config->num_v_vars); ii++) {
 		fprintf(OUT,"synth%d",ii+1);
 		(ii==ns_config->num_v_vars-1) ? fprintf(OUT,";\n") : fprintf(OUT,", ");

@@ -189,6 +189,7 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 			{"detjac",		no_argument,			 0, 'd'},
 			{"debug", no_argument, 0, 'D'},
 			{"quick",no_argument,0,'q'},{"q",no_argument,0,'q'},
+			{"numer",no_argument,0,'n'},
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
@@ -203,6 +204,11 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 		
 		switch (choice)
 		{
+				
+			case 'n':
+				this->numerical_derivative = true;
+				break;
+				
 			case 'q':
 				this->quick_run = true;
 				break;
@@ -340,7 +346,7 @@ void BR_configuration::print_usage()
 
 void BR_configuration::init()
 {
-	
+	numerical_derivative = false;
 
 	quick_run = false;
 	this->debugwait = 0;

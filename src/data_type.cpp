@@ -1,7 +1,7 @@
 #include "data_type.hpp"
 #include "programConfiguration.hpp"
 
-#define SAMEPOINTTOL 1e-5
+#define SAMEPOINTTOL 1e-7
 
 std::string enum_lookup(int flag)
 {

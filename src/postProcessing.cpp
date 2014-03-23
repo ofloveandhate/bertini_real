@@ -10,6 +10,8 @@ void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check
 	
 	int num_nat_vars = num_variables-num_synth_vars;
 	
+	std::cout << num_nat_vars << " num_nat_vars" << std::endl;
+	
 	// sets the multiplicity and solution number in the endPoints data
 	//direct from the bertini library:
 	findMultSol(endPoints, num_pts_to_check, num_nat_vars, preProcData, T->final_tol_times_mult);
@@ -24,7 +26,7 @@ void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check
 	int num_finite_solns = BRfindFiniteSolns(endPoints, num_pts_to_check, num_nat_vars, T);
 	
 	
-	int num_real_solns = BRfindRealSolns(endPoints,num_pts_to_check,num_nat_vars,T);
+	int num_real_solns   = BRfindRealSolns(endPoints,num_pts_to_check,num_nat_vars,T);
 	
 	if (solve_options.verbose_level>=3)
 		printf("%d finite solutions, %d singular solutions, %d real solutions\n",num_finite_solns, num_singular_solns, num_real_solns);
@@ -88,8 +90,8 @@ void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check
 		meta.set_singular(endPoints[curr_ind].isSing);
 		meta.set_multiplicity(endPoints[curr_ind].multiplicity);
 		meta.set_successful(endPoints[curr_ind].success);
-		meta.add_input_index(endPoints[curr_ind].path_num);
 		meta.set_output_index(this->num_vertices);
+		meta.add_input_index(endPoints[curr_ind].path_num);
 		
 		add_solution(temp_vertex, meta);
 	}
@@ -207,6 +209,7 @@ int BRfindFiniteSolns(post_process_t *endPoints, int num_sols, int num_vars,
 			else{
 				endPoints[ii].isFinite = 0;
 			}
+			print_point_to_screen_matlab(dehom_d,"soln");
 			
 		}
 		else // high precision, do mp
@@ -226,7 +229,7 @@ int BRfindFiniteSolns(post_process_t *endPoints, int num_sols, int num_vars,
 			else{
 				endPoints[ii].isFinite = 0;
 			}
-			
+			print_point_to_screen_matlab(dehom_mp,"soln");
 		}
 	}
 	

@@ -731,18 +731,17 @@ void master_solver(solver_output & solve_out, const witness_set & W,
 /**
  sets the start_pts structure to hold all points in W
  
- \param startPts the value being set.  should be NULL input.
+ \param startPts the value being set.  should be NULL or uninitialized input.
  \param W the witness_set input
  
  */
 void generic_set_start_pts(point_data_d ** startPts,
                            const witness_set & W)
 {
-	int ii; // counters
 	
 	*startPts = (point_data_d *)br_malloc(W.num_points * sizeof(point_data_d));
 	
-	for (ii = 0; ii < W.num_points; ii++)
+	for (int ii = 0; ii < W.num_points; ii++)
 	{ // setup startPts[ii]
 		init_point_data_d(&(*startPts)[ii], W.num_variables); // also performs initialization on the point inside startPts
 		change_size_vec_d((*startPts)[ii].point,W.num_variables);
@@ -863,7 +862,7 @@ void serial_tracker_loop(trackingStats *trackCount,
 		//        print_point_to_screen_matlab(startPts_d[ii].point,"start");
         
 		if (solve_options.robust==true) {
-			robust_track_path(solution_counter, &EG,
+			robust_track_path(ii, &EG,
                               &startPts_d[ii], &startPts_mp[ii],
                               OUT, MIDOUT,
                               solve_options, ED_d, ED_mp,
@@ -872,7 +871,7 @@ void serial_tracker_loop(trackingStats *trackCount,
 		else{
 //            boost::timer::auto_cpu_timer t;
             // track the path
-			generic_track_path(solution_counter, &EG,
+			generic_track_path(ii, &EG,
                                &startPts_d[ii], &startPts_mp[ii],
                                OUT, MIDOUT,
                                &solve_options.T, ED_d, ED_mp,
@@ -1461,7 +1460,8 @@ void generic_track_path(int pathNum, endgame_data_t *EG_out,
 	EG_out->codim = 0; // this is ignored
 	
     T->first_step_of_path = 1;
-    
+    T->endgameSwitch = 0;
+	
     if (T->MPType == 2)
     { // track using AMP
         
@@ -1617,7 +1617,8 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 		
 		EG_out->retVal = 0;
 		T->first_step_of_path = 1;
-
+		T->endgameSwitch = 0;
+		
 		if (T->MPType == 2)
 		{ // track using AMP
 			
@@ -1734,9 +1735,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 				
 			}
 			
-			if (solve_options.verbose_level>=4) {
-				print_point_to_screen_matlab(solution_as_double,"failed_candidate_solution");
-			}
+			
 			
 			comp_d time_to_compare;
 			if (EG_out->prec < 64) {
@@ -1744,10 +1743,17 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 			else {
 				mp_to_d(time_to_compare, EG_out->PD_mp.time); }
 			
+			
+			if (solve_options.verbose_level>=4) {
+				print_point_to_screen_matlab(solution_as_double,"failed_candidate_solution");
+				print_comp_matlab(time_to_compare,"time");
+			}
+			
+			
 			solve_options.increment_num_paths_tracked();
 			
 			// if
-			if ( (time_to_compare->r < std::max(1e-2,1e-2*solve_options.T.endgameBoundary)) && (infNormVec_d(solution_as_double) > solve_options.T.finiteThreshold)) {
+			if ( (time_to_compare->r < std::max(1e-3,1e-2*solve_options.T.endgameBoundary)) && (infNormVec_d(solution_as_double) > solve_options.T.finiteThreshold)) {
 				if (solve_options.verbose_level>=2) {
 					print_point_to_screen_matlab(solution_as_double,"big_solution");
 					print_comp_matlab(time_to_compare,"at_time");
@@ -1793,9 +1799,21 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					
 					
 				case -3:
-					solve_options.T.minStepSizeBeforeEndGame *= 1e-2;
-					solve_options.T.minStepSizeDuringEndGame *= 1e-2;
-					solve_options.T.minStepSize *=  1e-2;
+					if (current_retval_counter<3) {
+						solve_options.T.minStepSizeBeforeEndGame *= 1e-1;
+						solve_options.T.minStepSizeDuringEndGame *= 1e-1;
+						solve_options.T.minStepSize *=  1e-1;
+					}
+					else if (current_retval_counter<4)
+					{
+						solve_options.T.maxStepSize = 0.01;
+					}
+					else{
+						solve_options.T.endgameNumber = 2;
+						solve_options.T.odePredictor  = MIN(8,solve_options.T.odePredictor+1);
+//						solve_options.T.screenOut = 2;
+					}
+					
 					break;
 					
 				case -4: // securitymax
@@ -1840,12 +1858,17 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 		iterations++;
 	} // re: while
 	
+	if (iterations==0 && EG_out->retVal==0) {
+		std::cout << "success path " << pathNum << std::endl;
+	}
 	if (iterations>1 && EG_out->retVal==0) {
 		std::cout << "resolution of " << pathNum << " was successful" << std::endl;
 	}
 	
-	if (EG_out->retVal!=0) {
+	if (iterations>1 && EG_out->retVal!=0) {
 		std::cout << "resolution of path " << pathNum << " failed, terminal retVal " << EG_out->retVal << std::endl;
+//		print_tracker(T);
+//		mypause();
 	}
 	solve_options.reset_tracker_config();
 	
