@@ -265,7 +265,8 @@ void system_randomizer::randomize(vec_d randomized_func_vals, mat_d randomized_j
 		mul_d(&temp_homogenizer_d->coord[ii],&temp_homogenizer_d->coord[ii-1],hom_var);
 	}
 	
-	
+	increase_size_mat_d(temp_jac_d,num_original_funcs,jacobian_vals->cols);
+	temp_jac_d->rows = num_original_funcs; temp_jac_d->cols = jacobian_vals->cols;
 	
 	// we do both function and jacobian randomization in the same loop for optimization.
 	for (int ii=0; ii<num_randomized_funcs; ii++) {
@@ -287,7 +288,7 @@ void system_randomizer::randomize(vec_d randomized_func_vals, mat_d randomized_j
 		//  functions
 		//
 		//////////////
-		
+		increase_size_vec_d(temp_funcs_d, num_original_funcs);  temp_funcs_d->size = num_original_funcs;
 		
 		for (int jj=0; jj<num_original_funcs; jj++) {
 			// structure_matrix[ii][jj] gives the degree deficiency
@@ -357,6 +358,10 @@ void system_randomizer::randomize(vec_d randomized_func_vals, mat_d randomized_j
 				mul_d(&temp_funcs_d->coord[jj], &temp_funcs_d->coord[jj], &func_vals->coord[jj]);
 				//temp_funcs_ = d•h^(d-1)•f_{jj}
 			}
+			else
+			{
+				set_zero_d(&temp_funcs_d->coord[jj]);
+			}
 		}
 		
 		//randomize
@@ -395,15 +400,15 @@ void system_randomizer::randomize(vec_mp randomized_func_vals, mat_mp randomized
 	increase_size_vec_mp(randomized_func_vals, num_randomized_funcs);
 	randomized_func_vals->size = num_randomized_funcs;
 	
-	print_point_to_screen_matlab(temp_homogenizer_mp,"temphom");
-	std::cout << max_degree_deficiency << std::endl;
 	// do a little precomputation
 	//0th entry is 1, having been set previously.
 	for (int ii=1; ii<=max_degree_deficiency; ii++) {
 		mul_mp(&temp_homogenizer_mp->coord[ii],&temp_homogenizer_mp->coord[ii-1],hom_var);
 	}
 	
-	
+	increase_size_mat_mp(temp_jac_mp,num_original_funcs,jacobian_vals->cols);
+	temp_jac_mp->rows = num_original_funcs;
+	temp_jac_mp->cols = jacobian_vals->cols;
 	
 	// we do both function and jacobian randomization in the same loop for optimization.
 	for (int ii=0; ii<num_randomized_funcs; ii++) {
@@ -426,6 +431,7 @@ void system_randomizer::randomize(vec_mp randomized_func_vals, mat_mp randomized
 		//
 		//////////////
 		
+		increase_size_vec_mp(temp_funcs_mp, num_original_funcs);  temp_funcs_mp->size = num_original_funcs;
 		
 		for (int jj=0; jj<num_original_funcs; jj++) {
 			// structure_matrix[ii][jj] gives the degree deficiency
@@ -494,6 +500,10 @@ void system_randomizer::randomize(vec_mp randomized_func_vals, mat_mp randomized
 					   &integer_coeffs_mp->coord[ structure_matrix[ii][jj] ], &temp_homogenizer_mp->coord[ structure_matrix[ii][jj]-1 ]); // this could be optimized if degree deficiency == 1.
 				mul_mp(&temp_funcs_mp->coord[jj], &temp_funcs_mp->coord[jj], &func_vals->coord[jj]);
 				//temp_funcs_ = d•h^(d-1)•f_{jj}
+			}
+			else
+			{
+				set_zero_mp(&temp_funcs_mp->coord[jj]);
 			}
 		}
 		
@@ -662,6 +672,10 @@ void system_randomizer::setup(int num_desired_rows, int num_funcs)
 		set_zero_mp(&integer_coeffs_mp->coord[ii]); // initialize
 		mpf_set_d(integer_coeffs_mp->coord[ii].r,ii); // set to integer value
 	}
+	
+	
+	change_size_mat_d(single_row_input_d,1,num_funcs);  single_row_input_d->rows = 1; single_row_input_d->cols = num_funcs;
+	change_size_mat_mp(single_row_input_mp,1,num_funcs);  single_row_input_mp->rows = 1; single_row_input_mp->cols = num_funcs;
 	
 	change_size_vec_d(temp_homogenizer_d,max_degree_deficiency+1);  temp_homogenizer_d->size = max_degree_deficiency+1;
 	change_size_vec_mp(temp_homogenizer_mp,max_degree_deficiency+1); temp_homogenizer_mp->size = max_degree_deficiency+1;
