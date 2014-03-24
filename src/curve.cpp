@@ -1275,13 +1275,7 @@ int curve_decomposition::get_additional_critpts(witness_set *W_additional,
 	
 	
 	
-	
-	solve_options.allow_singular = 1;
-	solve_options.complete_witness_set = 1;
-	solve_options.allow_multiplicity = 1;
-	solve_options.allow_unsuccess = 0;
-	
-	
+
 	
 	
 	solver_output fillme;

@@ -400,6 +400,11 @@ public:
 		return max_base_degree;
 	}
 	
+	int max_deficiency()
+	{
+		return max_degree_deficiency;
+	}
+	
 	
 	bool is_square()
 	{
@@ -439,24 +444,7 @@ public:
 	}
 	
 	
-	void change_prec(int new_prec)
-	{
-		change_prec_mat_mp(randomizer_matrix_mp, new_prec);
-		mat_cp_mp(randomizer_matrix_mp,randomizer_matrix_full_prec);
-		
-		change_prec_vec_mp(temp_homogenizer_mp,new_prec);
-		change_prec_vec_mp(temp_funcs_mp,new_prec);
-		change_prec_mat_mp(temp_jac_mp,new_prec);
-		
-		
-		change_prec_mat_mp(single_row_input_mp,new_prec);
-		
-		change_prec_vec_mp(integer_coeffs_mp,new_prec);
-		change_prec_mat_mp(temp_mat_mp,new_prec);
-		change_prec_vec_mp(temp_vec_mp,new_prec);
-		
-		
-	}
+	void change_prec(int new_prec);
 	
 	
 	
@@ -488,6 +476,10 @@ protected:
 	
 	void init()
 	{
+		
+		max_degree_deficiency = -1232;
+		max_base_degree = -21321;
+		
 		setup_indicator = false;
 		
 		init_mat_mp2(randomizer_matrix_full_prec,0,0,1024);

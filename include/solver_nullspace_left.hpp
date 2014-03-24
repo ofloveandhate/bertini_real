@@ -45,10 +45,7 @@ public:
 	int num_v_vars;  ///< N   number of variables in original problem statement (including homogenizing variables)
 	int num_x_vars;  ///< N-k+\ell
 	
-//	int num_randomized_eqns;	///< N-k (N-ambient_dim)
 	int max_degree;						///< the max degree of differentiated (randomized) functions
-//	std::vector<int> randomized_degrees; ///< the degrees of the randomized functions (not derivatives)
-//	std::vector<int> base_degrees;
 	
 	system_randomizer * randomizer;
 	
@@ -125,10 +122,8 @@ public:
 	int num_x_vars;  // N   number of variables in original problem statement (including homogenizing variables)
 	int num_v_vars;  // (N-k) + (k-\ell+1)
 	
-	int num_randomized_eqns;	// N-k (N-ambient_dim)
 	int max_degree;						// the max degree of differentiated (randomized) functions
-	std::vector<int> randomized_degrees;
-	std::vector<int> base_degrees;
+
 	
 	int num_additional_linears;
 	vec_mp *additional_linears_terminal;
@@ -208,7 +203,6 @@ public:
 		num_v_vars = 0;  // N   number of variables in original problem statement (including homogenizing variables)
 		num_x_vars = 0;  // N-k+\ell
 		
-		num_randomized_eqns = 0;	// N-k (N-ambient_dim)
 		max_degree = 0;						// the max degree of differentiated (randomized) functions
 		
 		
@@ -371,7 +365,6 @@ private:
 		
 		if (other.num_additional_linears>0) {
 			
-			this->randomized_degrees = other.randomized_degrees;
 			
 			this->additional_linears_terminal						= (vec_mp *) br_malloc(other.num_additional_linears*sizeof(vec_mp));
 			this->additional_linears_terminal_full_prec = (vec_mp *) br_malloc(other.num_additional_linears*sizeof(vec_mp));
@@ -462,7 +455,6 @@ private:
 		this->num_v_vars = other.num_v_vars;  // N   number of variables in original problem statement (including homogenizing variables)
 		this->num_x_vars = other.num_x_vars;  // N-k+\ell
 		
-		this->num_randomized_eqns = other.num_randomized_eqns;	// N-k (N-ambient_dim)
 		this->max_degree = other.max_degree;						// the max degree of differentiated (randomized) functions
 		
 		
@@ -509,10 +501,7 @@ public:
 	int num_x_vars;  // N   number of variables in original problem statement (including homogenizing variables)
 	int num_v_vars;  // (N-k) + (k-\ell+1)
 	
-	int num_randomized_eqns;	// N-k (N-ambient_dim)
 	int max_degree;						// the max degree of differentiated (randomized) functions
-	std::vector<int> randomized_degrees;
-	std::vector<int> base_degrees;
 	
 	int num_additional_linears;
 	vec_d *additional_linears_terminal;
@@ -577,7 +566,6 @@ public:
 		num_v_vars = 0;  // N   number of variables in original problem statement (including homogenizing variables)
 		num_x_vars = 0;  // N-k+\ell
 		
-		num_randomized_eqns = 0;	// N-k (N-ambient_dim)
 		max_degree = 0;						// the max degree of differentiated (randomized) functions
 		
 		
@@ -699,7 +687,6 @@ private:
 		
 		if (other.num_additional_linears>0) {
 			
-			this->randomized_degrees = other.randomized_degrees;
 			
 			this->additional_linears_terminal						= (vec_d *) br_malloc(other.num_additional_linears*sizeof(vec_d));
 			this->additional_linears_starting						= (vec_d *) br_malloc(other.num_additional_linears*sizeof(vec_d));
@@ -775,7 +762,6 @@ private:
 		this->num_v_vars = other.num_v_vars;  // N   number of variables in original problem statement (including homogenizing variables)
 		this->num_x_vars = other.num_x_vars;  // N-k+\ell
 		
-		this->num_randomized_eqns = other.num_randomized_eqns;	// N-k (N-ambient_dim)
 		this->max_degree = other.max_degree;						// the max degree of differentiated (randomized) functions
 		
 		
@@ -840,6 +826,9 @@ int check_isstart_nullspacejac_d(vec_d testpoint,
 								 tracker_config_t *T,
 								 void const *ED);
 
+int check_isstart_nullspacejac_mp(vec_mp testpoint,
+								  tracker_config_t *T,
+								  void const *ED);
 
 void check_nullspace_evaluator(point_mp current_values,
 							   void const *ED);

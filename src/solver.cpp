@@ -373,6 +373,9 @@ int solver_mp::send(parallelism_config & mpi_config)
 	
 	delete[] buffer;
 	
+	
+	randomizer->send(0, mpi_config);// this will crash.  this needs to be a bcast send.
+	
 	return SUCCESSFUL;
 }
 
@@ -434,6 +437,11 @@ int solver_mp::receive(parallelism_config & mpi_config)
 	this->curr_prec = buffer[0];
 	
 	delete[] buffer;
+	
+	
+	
+	randomizer->receive(0, mpi_config);// this will crash.  this needs to be a bcast send.
+	
 	return SUCCESSFUL;
 }
 
@@ -510,7 +518,7 @@ int solver_d::receive(parallelism_config & mpi_config)
         }
     }
     else if (MPType==2) {
-        this->setup(BED_mp->SLP);
+        this->setup(BED_mp->SLP, BED_mp->randomizer);
 		if (have_SLP) {
 			SLP_memory.capture_globals();
 		}

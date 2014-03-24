@@ -42,6 +42,7 @@ public:
 	
 	system_randomizer * randomizer;
 	bool have_rand;
+	bool made_own_rand;
 	bool have_mem;
 	
 	vec_mp *starting_linear;
@@ -89,7 +90,7 @@ public:
 	{
 		randomizer = new system_randomizer;
 		randomizer->setup(W.num_variables-W.num_linears-W.num_patches, solve_options.PPD.num_funcs);
-		
+		made_own_rand = true;
 		have_rand = true;
 	}
 	
@@ -101,6 +102,7 @@ public:
 	void set_randomizer(system_randomizer * _random)
 	{
 		randomizer = _random;
+		have_rand = true;
 	}
 	
 	
@@ -127,6 +129,7 @@ public:
 		SLP = new prog_t;
 		have_mem = false;
 		have_rand = false;
+		made_own_rand = false;
 		
 		starting_linear = (vec_mp *) br_malloc(2*sizeof(vec_mp));
 		init_vec_mp2(starting_linear[0],0,1024);
@@ -149,7 +152,7 @@ public:
 		clear_vec_mp(starting_linear[1]);
 		free(starting_linear);
 		
-		if (have_rand){
+		if (made_own_rand){
 			delete randomizer;
 		}
 		

@@ -329,6 +329,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	ns_config->randomizer = randomizer; // set the pointer.
 	
 	*max_degree = randomizer->max_degree()-1; // minus one for differentiated degree
+	ns_config->max_degree = *max_degree;
 //	int maxiii = 0;
 //	for (int ii=0; ii<randomizer_matrix->rows; ii++	) {
 //		ns_config->randomized_degrees.push_back(randomized_degrees[ii]); // store the full degree (not derivative).
@@ -338,7 +339,6 @@ void nullspace_config_setup(nullspace_config *ns_config,
 //	*max_degree = maxiii;
 //	
 //	
-//	//TODO: eliminate this file parsing
 //	FILE *IN = safe_fopen_read("deg.out"); //open the deg.out file for reading.
 //	for (int ii=0; ii<randomizer_matrix->cols; ++ii) {
 //		int tempint;

@@ -210,7 +210,7 @@ int sphere_eval_data_mp::setup(const sphere_config & config,
 	
 	
 	if (!config.have_rand) {
-		std::cout << "don't have randomization matrix!" << std::endl;
+		std::cout << "don't have randomizer set up!" << std::endl;
 		br_exit(-97621);
 	}
 	
@@ -307,7 +307,7 @@ int sphere_eval_data_mp::setup(const sphere_config & config,
 	
 	verbose_level = solve_options.verbose_level;
 	
-	solver_mp::setup(config.SLP);
+	solver_mp::setup(config.SLP, config.randomizer);
 	
 	generic_setup_patch(&patch,W);
 	
@@ -328,7 +328,6 @@ int sphere_eval_data_mp::setup(const sphere_config & config,
 		}
 	}
 	
-	randomizer = config.randomizer;
 	
 
 	
@@ -536,7 +535,7 @@ int sphere_eval_data_d::setup(const sphere_config & config,
 	
 	verbose_level = solve_options.verbose_level;
 	
-	solver_d::setup(config.SLP);
+	solver_d::setup(config.SLP, config.randomizer);
 	
 	generic_setup_patch(&patch,W);
 	
@@ -546,7 +545,6 @@ int sphere_eval_data_d::setup(const sphere_config & config,
 		set_one_d(this->gamma);
 	
 	
-	randomizer = config.randomizer;
 	
 	
 	if (this->MPType==2)
