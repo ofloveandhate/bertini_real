@@ -78,7 +78,7 @@ void nullspace_config::print()
 	std::cout << "# randomized equations: " << this->randomizer->num_rand_funcs() << std::endl;
 	std::cout << "max_degree:\t" << max_degree << std::endl;
 	
-	std::cout << this->randomizer << std::endl;
+	std::cout << *(this->randomizer) << std::endl;
 	
 	
 	for (int ii=0; ii<num_additional_linears; ii++) {
@@ -1803,7 +1803,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 			for (int mm=0; mm<BED->max_degree; mm++) { // max_degree is highest degree of a derivative.
 				mul_d(temp,temp,&curr_x_vars->coord[0]); // homogenize
 			}
-			set_d(&BED->jac_with_proj->entry[jj-1][ii+temp_jacobian_functions->rows],temp); // set into the transpose, to the right of the jacobian matrix
+			set_d(&BED->jac_with_proj->entry[jj-1][ii+BED->randomizer->num_rand_funcs()],temp); // set into the transpose, to the right of the jacobian matrix
 		}
 	} // this verified correct for paraboloid and torus base systems using matlab
 	
@@ -2532,7 +2532,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 			for (int mm=0; mm<BED->max_degree; mm++) { // max_degree is highest degree of a derivative.
 				mul_mp(temp,temp,&curr_x_vars->coord[0]); // homogenize
 			}
-			set_mp(&BED->jac_with_proj->entry[jj-1][ii+temp_jacobian_functions->rows],temp); // set into the transpose, to the right of the jacobian matrix
+			set_mp(&BED->jac_with_proj->entry[jj-1][ii+BED->randomizer->num_rand_funcs()],temp); // set into the transpose, to the right of the jacobian matrix
 		}
 	} // this verified correct for paraboloid and torus base systems using matlab
 	

@@ -321,7 +321,34 @@ public:
 	
 	friend std::ostream & operator<<(std::ostream &os, system_randomizer & s)
 	{
-		os << s.square_indicator << " " << s.setup_indicator << std::endl;
+		os << "square: " << s.square_indicator << ", is_ready: " << s.setup_indicator << std::endl;
+		os << "num_rand: " <<  s.num_randomized_funcs << ", num_orig " << s.num_original_funcs << std::endl;
+		os << "max_base_deg: " << s.max_base_degree << ", max_deficiency " << s.max_degree_deficiency << std::endl;
+		
+		print_matrix_to_screen_matlab(s.randomizer_matrix_d,"rand_mat");
+		
+		for (auto iter = s.structure_matrix.begin(); iter!=s.structure_matrix.end(); ++iter) {
+			for (auto jter = iter->begin(); jter!=iter->end(); ++jter) {
+				os << *jter << " ";
+			}
+			os << std::endl;
+		}
+		os << std::endl << std::endl;
+		
+		print_point_to_screen_matlab(s.integer_coeffs_d,"int_coeffs");
+		
+		std::cout << "randomized" << std::endl;
+		for (auto iter = s.randomized_degrees.begin(); iter!=s.randomized_degrees.end(); ++iter) {
+			std::cout << *iter << " ";
+		}
+		os << std::endl << std::endl;
+		
+		std::cout << "original" << std::endl;
+		for (auto iter = s.original_degrees.begin(); iter!=s.original_degrees.end(); ++iter) {
+			std::cout << *iter << " ";
+		}
+		os << std::endl;
+		
 		//TODO: add mode output here
 		return os;
 	}
@@ -478,7 +505,7 @@ protected:
 	{
 		
 		max_degree_deficiency = -1232;
-		max_base_degree = -21321;
+		max_base_degree = -1321;
 		
 		setup_indicator = false;
 		
