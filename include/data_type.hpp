@@ -287,12 +287,12 @@ private:
 	mat_d randomizer_matrix_d;
 	
 	int num_randomized_funcs;
-	int num_base_funcs;
+	int num_original_funcs;
 	
 	int max_base_degree;
 	int max_degree_deficiency;
 	std::vector<int> randomized_degrees;
-	std::vector<int> base_degrees;
+	std::vector<int> original_degrees;
 	
 	std::vector<std::vector<int>> structure_matrix;
 	
@@ -316,6 +316,17 @@ private:
 	
 	
 public:
+	
+	
+	
+	friend std::ostream & operator<<(std::ostream &os, system_randomizer & s)
+	{
+		os << s.square_indicator << " " << s.setup_indicator << std::endl;
+		//TODO: add mode output here
+		return os;
+	}
+	
+	
 	
 	system_randomizer()
 	{
@@ -374,6 +385,11 @@ public:
 		
 	}
 	
+	int num_base_funcs()
+	{
+		return num_original_funcs;
+	}
+	
 	int num_rand_funcs()
 	{
 		return num_randomized_funcs;
@@ -393,6 +409,33 @@ public:
 	bool is_ready()
 	{
 		return setup_indicator;
+	}
+	
+	
+	int base_degree(unsigned int loc)
+	{
+		if (loc>=original_degrees.size()) {
+			br_exit(123312);
+			return -1;
+		}
+		else{
+			return original_degrees[loc];
+		}
+	}
+	
+	mat_mp * get_mat_full_prec()
+	{
+		return &randomizer_matrix_full_prec;
+	}
+	
+	mat_d * get_mat_d()
+	{
+		return &randomizer_matrix_d;
+	}
+	
+	mat_mp * get_mat_mp()
+	{
+		return &randomizer_matrix_mp;
 	}
 	
 	
@@ -1607,7 +1650,7 @@ public:
 	int num_curr_projections;
 	vec_mp	*pi; // the projections
 	
-	system_randomizer randomizer;
+	system_randomizer * randomizer;
 
 	vec_mp sphere_center;
 	comp_mp sphere_radius;
@@ -1721,6 +1764,7 @@ protected:
 	
 	void init(){
 		
+		randomizer = new system_randomizer;
 
 		input_filename = "unset";
 		pi = NULL;
@@ -1752,11 +1796,11 @@ protected:
 	void copy(const decomposition & other)
 	{
 		
-
+		
 		patch_holder::copy(other);
 		
 		
-		this->randomizer = other.randomizer;
+		*this->randomizer = *other.randomizer;
 		
 		this->W = other.W;
 		
@@ -1788,7 +1832,7 @@ protected:
 	void clear()
 	{
 		
-
+		delete randomizer;
 		
 		if (num_curr_projections>0){
 			for (int ii=0; ii<num_curr_projections; ii++)

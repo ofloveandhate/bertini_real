@@ -326,9 +326,9 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	int toss;
 	parse_input_file(W.input_filename, &toss); // re-create the parsed files for the stuffs (namely the SLP).
 	
-	ns_config->randomizer = randomizer;
+	ns_config->randomizer = randomizer; // set the pointer.
 	
-	*max_degree = randomizer->max_degree();
+	*max_degree = randomizer->max_degree()-1; // minus one for differentiated degree
 //	int maxiii = 0;
 //	for (int ii=0; ii<randomizer_matrix->rows; ii++	) {
 //		ns_config->randomized_degrees.push_back(randomized_degrees[ii]); // store the full degree (not derivative).
@@ -356,7 +356,6 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	ns_config->ambient_dim = ambient_dim;
 	ns_config->target_dim = target_dim;
 	ns_config->target_crit_codim = target_crit_codim;
-	ns_config->max_degree = (*max_degree);
 	
 	ns_config->num_projections = ambient_dim - target_crit_codim + 1;
 	ns_config->target_projection = (vec_mp *) br_malloc(ns_config->num_projections * sizeof(vec_mp));
@@ -368,15 +367,9 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	
     
 	
-	// make the post-randomizer matrix $S$
 	int num_jac_equations = (ns_config->num_x_vars - 1);//N-1;  the subtraction of 1 is for the 1 hom-var
 	
 	
-	// copy the main randomizer matrix
-//	init_mat_mp2(ns_config->randomizer_matrix,randomizer_matrix->rows, randomizer_matrix->cols,solve_options.T.AMP_max_prec);
-//	ns_config->randomizer_matrix->rows = randomizer_matrix->rows;
-//	ns_config->randomizer_matrix->cols = randomizer_matrix->cols;
-//	mat_cp_mp(ns_config->randomizer_matrix, randomizer_matrix);
 	
 	if (randomizer->num_rand_funcs() != W.num_variables-W.num_patches-ambient_dim) {
 		std::cout << color::red();
@@ -387,8 +380,6 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	}
 	
 	ns_config->num_jac_equations = num_jac_equations;
-	
-	ns_config->num_randomized_eqns = W.num_variables-W.num_patches-ambient_dim;
 	
 	ns_config->num_v_linears = ns_config->num_jac_equations;
 	
@@ -616,8 +607,8 @@ void create_nullspace_system(boost::filesystem::path output_name,
 		write_vector_as_constants(ns_config->target_projection[ii], projname.str(), OUT);
 	}
 	
-	if (!is_identity(ns_config->randomizer_matrix)) {
-		write_matrix_as_constants(ns_config->randomizer_matrix, "r", OUT);
+	if (!ns_config->randomizer->is_square()) {
+		write_matrix_as_constants( *(ns_config->randomizer->get_mat_full_prec()), "r", OUT);
 	}
 	
 	
@@ -727,7 +718,7 @@ void createMatlabDerivative(boost::filesystem::path output_name,
 	
 	
 	OUT << "num_jac_equations = " << ns_config->num_jac_equations << ";\n";
-	OUT << "num_randomized_eqns = " << ns_config->num_randomized_eqns << ";\n";
+	OUT << "num_randomized_eqns = " << ns_config->randomizer->num_rand_funcs() << ";\n";
 	OUT << "target_crit_codim = " << ns_config->target_crit_codim << ";\n";
 	
 	// copy lines which do not declare items or define constants (keep these as symbolic objects)
@@ -781,8 +772,8 @@ void createMatlabDerivative(boost::filesystem::path output_name,
 	}
 	
 	OUT << "syms ";
-	for (ii=0; ii<ns_config->randomizer_matrix->rows; ii++) {
-		for (int jj=0; jj<ns_config->randomizer_matrix->cols; jj++) {
+	for (ii=0; ii<ns_config->randomizer->num_rand_funcs(); ii++) {
+		for (int jj=0; jj<ns_config->randomizer->num_base_funcs(); jj++) {
 			OUT << "r_" << ii+1 << "_" << jj+1 << " "	;
 		}
 	}
@@ -801,10 +792,10 @@ void createMatlabDerivative(boost::filesystem::path output_name,
 	OUT << "]; %collect the functions into a single matrix\n";
 	
 	// put in the randomization matrices.
-	if (!is_identity(ns_config->randomizer_matrix)) {
+	if (!ns_config->randomizer->is_square()) {
 		OUT << "R = [";
-		for (ii=0; ii<ns_config->randomizer_matrix->rows; ii++) {
-			for (int jj=0; jj<ns_config->randomizer_matrix->cols; jj++) {
+		for (ii=0; ii<ns_config->randomizer->num_rand_funcs(); ii++) {
+			for (int jj=0; jj<ns_config->randomizer->num_base_funcs(); jj++) {
 				OUT << "r_" << ii+1 << "_" << jj+1 << " "	;
 			}
 			OUT << ";\n";

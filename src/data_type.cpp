@@ -239,6 +239,18 @@ void system_randomizer::randomize(vec_d randomized_func_vals, mat_d randomized_j
 								  vec_d func_vals, mat_d jacobian_vals,
 								  comp_d hom_var)
 {
+	if (!is_ready()) {
+		std::cout << "trying to randomize_d, but is not set up!" << std::endl;
+		br_exit(-9509);
+	}
+	
+	
+	if (is_square()) {
+		mat_cp_d(randomized_jacobian,jacobian_vals);
+		vec_cp_d(randomized_func_vals,func_vals);
+	}
+	
+	
 	//ensure outputs are of correct size.
 	increase_size_mat_d(randomized_jacobian, num_randomized_funcs, jacobian_vals->cols);
 	randomized_jacobian->rows = num_randomized_funcs; randomized_jacobian->cols = jacobian_vals->cols;
@@ -262,7 +274,7 @@ void system_randomizer::randomize(vec_d randomized_func_vals, mat_d randomized_j
 		
 		
 		// copy the current randomizer coefficients into a single row matrix
-		for (int jj=0; jj<num_base_funcs; jj++) {
+		for (int jj=0; jj<num_original_funcs; jj++) {
 			set_d(&single_row_input_d->entry[0][jj], &randomizer_matrix_d->entry[ii][jj]); // this is repetitive, and wasteful.  optimize away.
 		} // at least is is just setting, not multiplying
 		
@@ -276,7 +288,7 @@ void system_randomizer::randomize(vec_d randomized_func_vals, mat_d randomized_j
 		//////////////
 		
 		
-		for (int jj=0; jj<num_base_funcs; jj++) {
+		for (int jj=0; jj<num_original_funcs; jj++) {
 			// structure_matrix[ii][jj] gives the degree deficiency
 			if (structure_matrix[ii][jj]>0) { // if must homogenize at least one degree.
 				mul_d(&temp_funcs_d->coord[jj],&func_vals->coord[jj], &temp_homogenizer_d->coord[ structure_matrix[ii][jj] ]);
@@ -306,7 +318,7 @@ void system_randomizer::randomize(vec_d randomized_func_vals, mat_d randomized_j
 		
 		
 		for (int kk=0; kk<jacobian_vals->cols; kk++) { // kk indexes the variables in jacobian_vals (columns in jacobian)
-			for (int jj=0; jj<num_base_funcs; jj++) { // jj indexes the original functions (rows in jacobian)
+			for (int jj=0; jj<num_original_funcs; jj++) { // jj indexes the original functions (rows in jacobian)
 													  // structure_matrix[ii][jj] gives the degree deficiency
 				if (structure_matrix[ii][jj]>0) { // must homogenize at least one degree.
 					mul_d(&temp_jac_d->entry[jj][kk],&jacobian_vals->entry[jj][kk], &temp_homogenizer_d->coord[ structure_matrix[ii][jj] ]);
@@ -336,7 +348,7 @@ void system_randomizer::randomize(vec_d randomized_func_vals, mat_d randomized_j
 		
 		
 		// for the last step, the first variable is the hom_var, and it must use the product rule.
-		for (int jj=0; jj<num_base_funcs; jj++) {
+		for (int jj=0; jj<num_original_funcs; jj++) {
 			if (structure_matrix[ii][jj]>0) { // only if we need to actually homogenize this function
 											  // we abuse the temp_funcs here and use as a temp storage area.
 				mul_d(&temp_funcs_d->coord[jj], //d•h^(d-1)
@@ -363,6 +375,18 @@ void system_randomizer::randomize(vec_mp randomized_func_vals, mat_mp randomized
 								  vec_mp func_vals, mat_mp jacobian_vals,
 								  comp_mp hom_var)
 {
+	if (!is_ready()) {
+		std::cout << "trying to randomize_mp, but is not set up!" << std::endl;
+		br_exit(-9510);
+	}
+	
+	
+	if (is_square()) {
+		mat_cp_mp(randomized_jacobian,jacobian_vals);
+		vec_cp_mp(randomized_func_vals,func_vals);
+		return;
+	}
+	
 	//ensure outputs are of correct size.
 	increase_size_mat_mp(randomized_jacobian, num_randomized_funcs, jacobian_vals->cols);
 	randomized_jacobian->rows = num_randomized_funcs; randomized_jacobian->cols = jacobian_vals->cols;
@@ -370,6 +394,8 @@ void system_randomizer::randomize(vec_mp randomized_func_vals, mat_mp randomized
 	increase_size_vec_mp(randomized_func_vals, num_randomized_funcs);
 	randomized_func_vals->size = num_randomized_funcs;
 	
+	print_point_to_screen_matlab(temp_homogenizer_mp,"temphom");
+	std::cout << max_degree_deficiency << std::endl;
 	// do a little precomputation
 	//0th entry is 1, having been set previously.
 	for (int ii=1; ii<=max_degree_deficiency; ii++) {
@@ -386,7 +412,7 @@ void system_randomizer::randomize(vec_mp randomized_func_vals, mat_mp randomized
 		
 		
 		// copy the current randomizer coefficients into a single row matrix
-		for (int jj=0; jj<num_base_funcs; jj++) {
+		for (int jj=0; jj<num_original_funcs; jj++) {
 			set_mp(&single_row_input_mp->entry[0][jj], &randomizer_matrix_mp->entry[ii][jj]); // this is repetitive, and wasteful.  optimize away.
 		} // at least is is just setting, not multiplying
 		
@@ -400,7 +426,7 @@ void system_randomizer::randomize(vec_mp randomized_func_vals, mat_mp randomized
 		//////////////
 		
 		
-		for (int jj=0; jj<num_base_funcs; jj++) {
+		for (int jj=0; jj<num_original_funcs; jj++) {
 			// structure_matrix[ii][jj] gives the degree deficiency
 			if (structure_matrix[ii][jj]>0) { // if must homogenize at least one degree.
 				mul_mp(&temp_funcs_mp->coord[jj],&func_vals->coord[jj], &temp_homogenizer_mp->coord[ structure_matrix[ii][jj] ]);
@@ -430,7 +456,7 @@ void system_randomizer::randomize(vec_mp randomized_func_vals, mat_mp randomized
 		
 		
 		for (int kk=0; kk<jacobian_vals->cols; kk++) { // kk indexes the variables in jacobian_vals (columns in jacobian)
-			for (int jj=0; jj<num_base_funcs; jj++) { // jj indexes the original functions (rows in jacobian)
+			for (int jj=0; jj<num_original_funcs; jj++) { // jj indexes the original functions (rows in jacobian)
 													  // structure_matrix[ii][jj] gives the degree deficiency
 				if (structure_matrix[ii][jj]>0) { // must homogenize at least one degree.
 					mul_mp(&temp_jac_mp->entry[jj][kk],&jacobian_vals->entry[jj][kk], &temp_homogenizer_mp->coord[ structure_matrix[ii][jj] ]);
@@ -460,7 +486,7 @@ void system_randomizer::randomize(vec_mp randomized_func_vals, mat_mp randomized
 		
 		
 		// for the last step, the first variable is the hom_var, and it must use the product rule.
-		for (int jj=0; jj<num_base_funcs; jj++) {
+		for (int jj=0; jj<num_original_funcs; jj++) {
 			if (structure_matrix[ii][jj]>0) { // only if we need to actually homogenize this function
 											  // we abuse the temp_funcs here and use as a temp storage area.
 				mul_mp(&temp_funcs_mp->coord[jj], //d•h^(d-1)
@@ -486,7 +512,7 @@ void system_randomizer::setup(int num_desired_rows, int num_funcs)
 {
 	
 	randomized_degrees.resize(0);
-	base_degrees.resize(0);
+	original_degrees.resize(0);
 	max_base_degree = 0;
 	
 	//get unique degrees
@@ -499,11 +525,11 @@ void system_randomizer::setup(int num_desired_rows, int num_funcs)
 	int tempdegree;
 	for (int ii=0; ii<num_funcs; ++ii) {
 		fscanf(IN,"%d\n",&tempdegree); // read data
-		base_degrees.push_back(tempdegree);
+		original_degrees.push_back(tempdegree);
 		
 		occurrence_counter = 0; // set the counter for how many times the current degree has already been found.
 		for (int jj=0; jj<ii; jj++) {
-			if (base_degrees[jj]==tempdegree) { // if previously stored degree is same as current one
+			if (original_degrees[jj]==tempdegree) { // if previously stored degree is same as current one
 				occurrence_counter++; // increment counter
 			}
 		}
@@ -521,14 +547,23 @@ void system_randomizer::setup(int num_desired_rows, int num_funcs)
 	fclose(IN);
 	
 	
+	
+	num_randomized_funcs = num_desired_rows;
+	num_original_funcs = num_funcs;
+	
+	
+	
 	if (num_desired_rows==num_funcs) {
 		make_matrix_ID_mp(randomizer_matrix_full_prec,num_funcs,num_funcs);
 		for (int ii=0; ii<num_desired_rows; ++ii) {
-			randomized_degrees.push_back(base_degrees[ii]);
+			randomized_degrees.push_back(original_degrees[ii]);
 		}
 		free(unique_degrees);
 		square_indicator = true;
 		setup_indicator = true;
+		
+		
+		
 		return;
 	}
 	else{
@@ -542,7 +577,7 @@ void system_randomizer::setup(int num_desired_rows, int num_funcs)
 	for (int ii=0; ii<num_unique_degrees; ii++) {
 		num_of_each_degree[ii] = 0;
 		for (int jj=0; jj<num_funcs; ++jj) {
-			if (unique_degrees[ii]==base_degrees[jj]) {
+			if (unique_degrees[ii]==original_degrees[jj]) {
 				num_of_each_degree[ii]++;
 			}
 		}
@@ -577,11 +612,11 @@ void system_randomizer::setup(int num_desired_rows, int num_funcs)
 		
 		int encountered_current_degree = 0;
 		for (int jj=0; jj<num_funcs; jj++) {
-			if ( base_degrees[jj]<= current_degree ) {
+			if ( original_degrees[jj]<= current_degree ) {
 				encountered_current_degree++;
 				if (encountered_current_degree >= counter){
 					get_comp_rand_real_mp(&randomizer_matrix_full_prec->entry[ii][jj]);
-					structure_matrix[ii][jj] = current_degree - base_degrees[jj];  // deficiency level
+					structure_matrix[ii][jj] = current_degree - original_degrees[jj];  // deficiency level
 				}
 				else{
 					set_zero_mp(&randomizer_matrix_full_prec->entry[ii][jj]);
@@ -616,9 +651,8 @@ void system_randomizer::setup(int num_desired_rows, int num_funcs)
 	
 	change_size_vec_d(temp_homogenizer_d,max_degree_deficiency+1);  temp_homogenizer_d->size = max_degree_deficiency+1;
 	change_size_vec_mp(temp_homogenizer_mp,max_degree_deficiency+1); temp_homogenizer_mp->size = max_degree_deficiency+1;
-	
-	num_randomized_funcs = num_desired_rows;
-	num_base_funcs = num_funcs;
+	set_one_d(&temp_homogenizer_d->coord[0]);
+	set_one_mp(&temp_homogenizer_mp->coord[0]);
 	
 	free(num_of_each_degree);
 	free(unique_degrees);
@@ -629,7 +663,7 @@ void system_randomizer::setup(int num_desired_rows, int num_funcs)
 
 void system_randomizer::send(int target, parallelism_config & mpi_config)
 {
-	// need to send base_degrees, randomized_degrees, randomizer_matrix_full_prec, max_degree_deficiency, and what else?
+	// need to send original_degrees, randomized_degrees, randomizer_matrix_full_prec, max_degree_deficiency, and what else?
 	
 	if (randomized_degrees.size()>0) {
 		
@@ -2874,7 +2908,7 @@ void decomposition::send(int target, parallelism_config & mpi_config)
 	
 	
 	
-	randomizer.send(target,mpi_config);
+	randomizer->send(target,mpi_config);
 
 
 
@@ -3026,7 +3060,7 @@ void decomposition::receive(int source, parallelism_config & mpi_config)
 
 	clear_vec_mp(tempvec);
 	
-	randomizer.receive(source,mpi_config);
+	randomizer->receive(source,mpi_config);
 	
 	return;
 }

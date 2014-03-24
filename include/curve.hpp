@@ -470,7 +470,7 @@ int verify_projection_ok(const witness_set & W,
 						 solver_configuration & solve_options);
 
 int verify_projection_ok(const witness_set & W,
-						 system_randomizer & randomizer,
+						 system_randomizer * randomizer,
 						 vec_mp * projection,
 						 solver_configuration & solve_options);
 

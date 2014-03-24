@@ -256,16 +256,10 @@ void midpoint_eval_data_mp::init()
     
 	
 	
-	
-	init_mat_mp(randomizer_matrix_bottom,1,1);randomizer_matrix_bottom->rows = randomizer_matrix_bottom->cols = 1;
-	init_mat_mp(randomizer_matrix_top,1,1);randomizer_matrix_top->rows = randomizer_matrix_top->cols = 1;
-	
-	
+
 	
 	if (this->MPType==2) {
-		init_mat_mp2(randomizer_matrix_bottom_full_prec, 0, 0,1024);
-		init_mat_mp2(randomizer_matrix_top_full_prec, 0, 0,1024);
-		
+
 		init_mp2(half_full_prec,1024);
 		set_zero_mp(half_full_prec);
 		mpf_set_str(half_full_prec->r,"0.5",10);
@@ -401,39 +395,40 @@ int midpoint_eval_data_mp::setup(midpoint_config & md_config,
 	this->mid_memory = md_config.systems[md_config.system_name_mid].memory;
 	this->SLP_mid = md_config.systems[md_config.system_name_mid].SLP;
 	this->num_mid_vars = md_config.systems[md_config.system_name_mid].num_variables;
-	mat_cp_mp(randomizer_matrix, md_config.systems[md_config.system_name_mid].randomizer_matrix); // use the built-in randomizer matrix for mid system
-	if (MPType == 2) {
-		mat_cp_mp(randomizer_matrix, md_config.systems[md_config.system_name_mid].randomizer_matrix);
-		mat_cp_mp(randomizer_matrix_full_prec, md_config.systems[md_config.system_name_mid].randomizer_matrix);
-	}
-	else{
-		mat_cp_mp(randomizer_matrix, md_config.systems[md_config.system_name_mid].randomizer_matrix);
-	}
-	
+
+	// need something here for randomizer mid
+	deliberate_segfault();
 	
 	
 	
 	this->top_memory = md_config.systems[md_config.system_name_top].memory;
 	this->SLP_top = md_config.systems[md_config.system_name_top].SLP;
 	this->num_top_vars = md_config.systems[md_config.system_name_top].num_variables;
-	if (MPType == 2) {
-		mat_cp_mp(randomizer_matrix_top, md_config.systems[md_config.system_name_top].randomizer_matrix);
-		mat_cp_mp(randomizer_matrix_top_full_prec, md_config.systems[md_config.system_name_top].randomizer_matrix);
-	}
-	else{
-		mat_cp_mp(randomizer_matrix_top, md_config.systems[md_config.system_name_top].randomizer_matrix);
-	}
+	
+	// need something here for randomizer top
+	deliberate_segfault();
+//	if (MPType == 2) {
+//		mat_cp_mp(randomizer_matrix_top, md_config.systems[md_config.system_name_top].randomizer_matrix);
+//		mat_cp_mp(randomizer_matrix_top_full_prec, md_config.systems[md_config.system_name_top].randomizer_matrix);
+//	}
+//	else{
+//		mat_cp_mp(randomizer_matrix_top, md_config.systems[md_config.system_name_top].randomizer_matrix);
+//	}
 	
 	this->bottom_memory = md_config.systems[md_config.system_name_bottom].memory;
 	this->SLP_bottom = md_config.systems[md_config.system_name_bottom].SLP;
 	this->num_bottom_vars = md_config.systems[md_config.system_name_bottom].num_variables;
-	if (MPType == 2) {
-		mat_cp_mp(randomizer_matrix_bottom, md_config.systems[md_config.system_name_bottom].randomizer_matrix);
-		mat_cp_mp(randomizer_matrix_bottom_full_prec, md_config.systems[md_config.system_name_bottom].randomizer_matrix);
-	}
-	else{
-		mat_cp_mp(randomizer_matrix_bottom, md_config.systems[md_config.system_name_bottom].randomizer_matrix);
-	}
+
+// need something here for randomizer bottom
+deliberate_segfault();
+
+//	if (MPType == 2) {
+//		mat_cp_mp(randomizer_matrix_bottom, md_config.systems[md_config.system_name_bottom].randomizer_matrix);
+//		mat_cp_mp(randomizer_matrix_bottom_full_prec, md_config.systems[md_config.system_name_bottom].randomizer_matrix);
+//	}
+//	else{
+//		mat_cp_mp(randomizer_matrix_bottom, md_config.systems[md_config.system_name_bottom].randomizer_matrix);
+//	}
 	
 	this->num_variables = num_mid_vars + num_bottom_vars + num_top_vars;
 	
@@ -553,9 +548,6 @@ void midpoint_eval_data_d::init()
 	this->num_top_vars = -1;
 	
     
-	
-	init_mat_d(randomizer_matrix_bottom,1,1);randomizer_matrix_bottom->rows = randomizer_matrix_bottom->cols = 1;
-	init_mat_d(randomizer_matrix_top,1,1); randomizer_matrix_top->rows = randomizer_matrix_top->cols = 1;
 }
 
 
@@ -665,19 +657,22 @@ int midpoint_eval_data_d::setup(midpoint_config & md_config,
 	this->mid_memory = md_config.systems[md_config.system_name_mid].memory;
 	this->SLP_mid = md_config.systems[md_config.system_name_mid].SLP;
 	this->num_mid_vars = md_config.systems[md_config.system_name_mid].num_variables;
-	mat_mp_to_d(randomizer_matrix, md_config.systems[md_config.system_name_mid].randomizer_matrix); // use the built-in randomizer matrix for mid system
+	randomizer = md_config.systems[md_config.system_name_mid].randomizer;
+//	mat_mp_to_d(randomizer_matrix, md_config.systems[md_config.system_name_mid].randomizer_matrix); // use the built-in randomizer matrix for mid system
 	
 	
 	this->top_memory = md_config.systems[md_config.system_name_top].memory;
 	this->SLP_top = md_config.systems[md_config.system_name_top].SLP;
 	this->num_top_vars = md_config.systems[md_config.system_name_top].num_variables;
-	mat_mp_to_d(randomizer_matrix_top, md_config.systems[md_config.system_name_top].randomizer_matrix);
+	randomizer_top = md_config.systems[md_config.system_name_top].randomizer;
+//	mat_mp_to_d(randomizer_matrix_top, md_config.systems[md_config.system_name_top].randomizer_matrix);
 	
 	
 	this->bottom_memory = md_config.systems[md_config.system_name_bottom].memory;
 	this->SLP_bottom = md_config.systems[md_config.system_name_bottom].SLP;
 	this->num_bottom_vars = md_config.systems[md_config.system_name_bottom].num_variables;
-	mat_mp_to_d(randomizer_matrix_bottom, md_config.systems[md_config.system_name_bottom].randomizer_matrix);
+	randomizer_bottom = md_config.systems[md_config.system_name_bottom].randomizer;
+//	mat_mp_to_d(randomizer_matrix_bottom, md_config.systems[md_config.system_name_bottom].randomizer_matrix);
 	
 	
 	
@@ -1032,13 +1027,12 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 //	print_point_to_screen_matlab(curr_mid_vars,"curr_mid_vars");
 	offset = 0;
 	evalProg_d(temp_function_values, parVals, parDer,
-               temp_jacobian_functions, unused_Jp, curr_mid_vars, pathVars, BED->SLP_mid);
+			   temp_jacobian_functions, unused_Jp, curr_mid_vars, pathVars, BED->SLP_mid);
 	
     
-	
+	BED->randomizer->randomize(AtimesF,AtimesJ,temp_function_values,temp_jacobian_functions,&curr_mid_vars->coord[0]);
 	// randomize
-	mul_mat_vec_d(AtimesF,BED->randomizer_matrix, temp_function_values);
-	mat_mul_d(AtimesJ,BED->randomizer_matrix,temp_jacobian_functions);
+	
 	
 	// for midpoint functions
 	for (ii=0; ii<AtimesF->size; ii++)
@@ -1054,20 +1048,19 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	BED->bottom_memory.set_globals_to_this();
 	
 	
-	offset = BED->randomizer_matrix->rows; //y0
+	offset = BED->randomizer->num_rand_funcs(); //y0
 	int offset_horizontal = BED->num_mid_vars;
 	evalProg_d(temp_function_values, parVals, parDer,
                temp_jacobian_functions, unused_Jp, curr_bottom_vars, pathVars, BED->SLP_bottom);
     
     //	std::cout << offset << " " << offset_horizontal << std::endl;
 	// randomize
-	mul_mat_vec_d(AtimesF,BED->randomizer_matrix_bottom, temp_function_values); // set values of AtimesF (A is randomization matrix)
+	BED->randomizer_bottom->randomize(AtimesF,AtimesJ,temp_function_values,temp_jacobian_functions,&curr_bottom_vars->coord[0]);
+	
 	for (ii=0; ii<AtimesF->size; ii++)  // for each function, after (real) randomization
 		set_d(&funcVals->coord[ii+offset], &AtimesF->coord[ii]);
     
-	
-	mat_mul_d(AtimesJ,BED->randomizer_matrix_bottom,temp_jacobian_functions);
-    //	print_matrix_to_screen_matlab(AtimesJ,"AtimesJy2");
+	//	print_matrix_to_screen_matlab(AtimesJ,"AtimesJy2");
 	for (ii=0; ii< AtimesJ->rows; ii++)
 		for (jj=0; jj< AtimesJ->cols; jj++)
 			set_d(&Jv->entry[ii+offset][jj+offset_horizontal],&AtimesJ->entry[ii][jj]);
@@ -1076,7 +1069,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	
 	
 	
-	offset = BED->randomizer_matrix->rows + BED->randomizer_matrix_bottom->rows; // y2
+	offset = BED->randomizer->num_rand_funcs() + BED->randomizer_bottom->num_rand_funcs(); // y2
 	offset_horizontal = BED->num_mid_vars + BED->num_bottom_vars;
 	
 	BED->top_memory.set_globals_to_this();
@@ -1084,14 +1077,14 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	evalProg_d(temp_function_values, parVals, parDer,
                temp_jacobian_functions, unused_Jp, curr_top_vars, pathVars, BED->SLP_top);
     
+	BED->randomizer_top->randomize(AtimesF,AtimesJ,temp_function_values,temp_jacobian_functions,&curr_top_vars->coord[0]);
+	
 	
 	// randomize
-	mul_mat_vec_d(AtimesF,BED->randomizer_matrix_top, temp_function_values); // set values of AtimesF (A is randomization matrix)
 	for (ii=0; ii<AtimesF->size; ii++)  // for each function, after (real) randomization
 		set_d(&funcVals->coord[ii+offset], &AtimesF->coord[ii]);
 	// the jacobian equations for orig
 	//  randomize the original functions and jacobian
-	mat_mul_d(AtimesJ,BED->randomizer_matrix_top,temp_jacobian_functions);
 	
 	for (ii=0; ii< AtimesJ->rows; ii++)
 		for (jj=0; jj< AtimesJ->cols; jj++)
@@ -1114,7 +1107,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	
 	
 	//the number of rows does not equal the number of variables.
-	offset = BED->randomizer_matrix->rows + BED->randomizer_matrix_bottom->rows + BED->randomizer_matrix_top->rows;
+	offset = BED->randomizer->num_rand_funcs() + BED->randomizer_bottom->num_rand_funcs() + BED->randomizer_top->num_rand_funcs();
 	
 	
 	dot_product_mindim(proj_mid, curr_mid_vars,BED->pi[0]);
@@ -1508,11 +1501,10 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	evalProg_mp(temp_function_values, parVals, parDer,
                 temp_jacobian_functions, unused_Jp, curr_mid_vars, pathVars, BED->SLP_mid);
 	
-	
+	BED->randomizer->randomize(AtimesF,AtimesJ,temp_function_values,temp_jacobian_functions,&curr_mid_vars->coord[0]);
 	
 	// randomize
-	mul_mat_vec_mp(AtimesF,BED->randomizer_matrix, temp_function_values);
-	mat_mul_mp(AtimesJ,BED->randomizer_matrix,temp_jacobian_functions);
+
 	
 	// for midpoint functions
 	for (ii=0; ii<AtimesF->size; ii++)
@@ -1527,19 +1519,18 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
 	BED->bottom_memory.set_globals_to_this();
 	
-	offset = BED->randomizer_matrix->rows; //y0
+	offset = BED->randomizer->num_rand_funcs(); //y0
 	int offset_horizontal = BED->num_mid_vars;
 	evalProg_mp(temp_function_values, parVals, parDer,
                 temp_jacobian_functions, unused_Jp, curr_bottom_vars, pathVars, BED->SLP_bottom);
 	
 	//	std::cout << offset << " " << offset_horizontal << std::endl;
 	// randomize
-	mul_mat_vec_mp(AtimesF,BED->randomizer_matrix_bottom, temp_function_values); // set values of AtimesF (A is randomization matrix)
+	BED->randomizer_bottom->randomize(AtimesF,AtimesJ,temp_function_values,temp_jacobian_functions,&curr_bottom_vars->coord[0]);
 	for (ii=0; ii<AtimesF->size; ii++)  // for each function, after (real) randomization
 		set_mp(&funcVals->coord[ii+offset], &AtimesF->coord[ii]);
 	
 	
-	mat_mul_mp(AtimesJ,BED->randomizer_matrix_bottom,temp_jacobian_functions);
 	//	print_matrix_to_screen_matlab(AtimesJ,"AtimesJy2");
 	for (ii=0; ii< AtimesJ->rows; ii++)
 		for (jj=0; jj< AtimesJ->cols; jj++)
@@ -1549,7 +1540,7 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
 	
 	
-	offset = BED->randomizer_matrix->rows + BED->randomizer_matrix_bottom->rows; // y2
+	offset = BED->randomizer->num_rand_funcs() + BED->randomizer_bottom->num_rand_funcs(); // y2
 	offset_horizontal = BED->num_mid_vars + BED->num_bottom_vars;
 	
 	BED->top_memory.set_globals_to_this();
@@ -1560,13 +1551,12 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
     
 	
 	// randomize
-	mul_mat_vec_mp(AtimesF,BED->randomizer_matrix_top, temp_function_values); // set values of AtimesF (A is randomization matrix)
+	BED->randomizer_top->randomize(AtimesF,AtimesJ,temp_function_values,temp_jacobian_functions,&curr_top_vars->coord[0]);
 	for (ii=0; ii<AtimesF->size; ii++)  // for each function, after (real) randomization
 		set_mp(&funcVals->coord[ii+offset], &AtimesF->coord[ii]);
 	
 	// the jacobian equations for orig
 	//  randomize the original functions and jacobian
-	mat_mul_mp(AtimesJ,BED->randomizer_matrix_top,temp_jacobian_functions);
 	for (ii=0; ii< AtimesJ->rows; ii++)
 		for (jj=0; jj< AtimesJ->cols; jj++)
 			set_mp(&Jv->entry[ii+offset][jj+offset_horizontal],&AtimesJ->entry[ii][jj]);
@@ -1589,7 +1579,7 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
 	
 	//the number of rows does not equal the number of variables.
-	offset = BED->randomizer_matrix->rows + BED->randomizer_matrix_bottom->rows + BED->randomizer_matrix_top->rows;
+	offset = BED->randomizer->num_rand_funcs() + BED->randomizer_bottom->num_rand_funcs() + BED->randomizer_top->num_rand_funcs();
 	
 	dot_product_mindim(proj_mid, curr_mid_vars,BED->pi[0]);
 	dot_product_mindim(proj_top, curr_top_vars,BED->pi[0]);
@@ -1973,14 +1963,10 @@ int change_midpoint_eval_prec(void const *ED, int new_prec)
 		mpf_set_q(BED->gamma->r, BED->gamma_rat[0]);
 		mpf_set_q(BED->gamma->i, BED->gamma_rat[1]);
 		
-		change_prec_mat_mp(BED->randomizer_matrix,new_prec);
-		mat_cp_mp(BED->randomizer_matrix,BED->randomizer_matrix_full_prec);
-		
-		change_prec_mat_mp(BED->randomizer_matrix_bottom,new_prec);
-		mat_cp_mp(BED->randomizer_matrix_bottom,BED->randomizer_matrix_bottom_full_prec);
-        
-		change_prec_mat_mp(BED->randomizer_matrix_top,new_prec);
-		mat_cp_mp(BED->randomizer_matrix_top,BED->randomizer_matrix_top_full_prec);
+		BED->randomizer->change_prec(new_prec);
+		BED->randomizer_bottom->change_prec(new_prec);
+		BED->randomizer_top->change_prec(new_prec);
+
 		
 		
 		for (int ii=0; ii<BED->num_projections; ii++) {
