@@ -155,20 +155,7 @@ void curve_decomposition::computeCurveSelfConj(const witness_set & W_curve,
 	// 2) randomize down to N-1 equations
 	// to get a square system for the homotopies in the following steps.
 	
-	this->randomizer.setup(W_curve.num_variables-W_curve.num_patches-1,solve_options.PPD.num_funcs);
-	
-//	//create the matrix
-//	init_mat_mp2(this->randomizer_matrix,
-//                 ,
-//                 solve_options.T.AMP_max_prec);
-//	
-//	
-//	//get the matrix and the degrees of the resulting randomized functions.
-//	make_randomization_matrix_based_on_degrees(this->randomizer_matrix, this->randomized_degrees, W_curve.num_variables-W_curve.num_patches-ambient_dim, solve_options.PPD.num_funcs);
-//	
-//	if (program_options.verbose_level>=4)
-//		print_matrix_to_screen_matlab(randomizer_matrix,"randomization");
-	
+	this->randomizer->setup(W_curve.num_variables-W_curve.num_patches-1,solve_options.PPD.num_funcs);
 	
 	
 	
@@ -213,6 +200,11 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	std::cout << "curve::interslice" << std::endl;
 #endif
 	
+	if (!this->randomizer->is_ready()) {
+		std::cout << "in interslice, randomizer is not set up properly." << std::endl;
+		deliberate_segfault();
+//		this->randomizer.setup(W_curve.num_variables-W_curve.num_patches-W_curve.num_linears, solve_options.PPD.num_funcs);
+	}
 	
 	V.set_curr_projection(projections[0]);
 	V.set_curr_input(W_crit_real.input_filename);
@@ -230,7 +222,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	solve_options.get_PPD();
 	
 	
-	this->randomizer.setup(W_curve.num_variables-W_curve.num_patches-W_curve.num_linears, solve_options.PPD.num_funcs);
+	
 	
 
 	
@@ -311,7 +303,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	
     
 	
-	multilin_config ml_config(solve_options,&this->randomizer);
+	multilin_config ml_config(solve_options,this->randomizer);
 	
 	solve_options.robust = true;
 	solve_options.backup_tracker_config();
@@ -979,7 +971,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		solve_options.complete_witness_set = 0;
 		solve_options.robust = true;
 		
-		ml_config.set_randomizer(&this->randomizer);
+		ml_config.set_randomizer(this->randomizer);
 		solver_output fillme;
 		multilin_solver_master_entry_point(W_midpt,         // witness_set
                                            fillme, // the new data is put here!
@@ -1111,7 +1103,7 @@ int curve_decomposition::compute_critical_points(const witness_set & W_curve,
 	std::cout << "curve::compute_critical_points" << std::endl;
 #endif
 	
-	if (!this->randomizer.is_ready()) {
+	if (!this->randomizer->is_ready()) {
 		std::cout << "randomizer is not setup at 1118 compute_critical_points" << std::endl;
 		br_exit(29889);
 	}
@@ -1124,7 +1116,7 @@ int curve_decomposition::compute_critical_points(const witness_set & W_curve,
 	nullspace_config ns_config;
 	compute_crit_nullspace(solve_out, // the returned value
                            W_curve,            // input the original witness set
-                           &this->randomizer,
+                           this->randomizer,
                            projections,
                            1,  // dimension of ambient complex object
                            1,   //  target dimension to find
@@ -1184,7 +1176,7 @@ int curve_decomposition::get_additional_critpts(witness_set *W_additional,
 	std::cout << "curve::get_additional_critpts" << std::endl;
 #endif
 	
-	if (!this->randomizer.is_ready()) {
+	if (!this->randomizer->is_ready()) {
 		std::cout << "randomizer is not ready to go" << std::endl;
 		br_exit(13091270);
 	}
@@ -1208,7 +1200,7 @@ int curve_decomposition::get_additional_critpts(witness_set *W_additional,
 	parse_preproc_data("preproc_data", &solve_options.PPD);
 	
 	
-	multilin_config ml_config(solve_options,&this->randomizer); // copies in the randomizer matrix and sets up the SLP & globals.
+	multilin_config ml_config(solve_options,this->randomizer); // copies in the randomizer matrix and sets up the SLP & globals.
 	
 	
 	vec_mp *multilin_linears = (vec_mp *) br_malloc(1*sizeof(vec_mp));
@@ -1223,7 +1215,7 @@ int curve_decomposition::get_additional_critpts(witness_set *W_additional,
     W_sphere.reset_patches();
     
     
-	sphere_config sp_config(&this->randomizer);
+	sphere_config sp_config(this->randomizer);
 	for (int jj=0; jj<W_curve.num_variables; jj++) {
         set_zero_mp(&multilin_linears[0]->coord[jj]);
     }
@@ -1355,7 +1347,7 @@ int verify_projection_ok(const witness_set & W,
 	randomizer.setup(W.num_variables-W.num_patches-W.dim, solve_options.PPD.num_funcs);
 	
 	
-	int invalid_flag = verify_projection_ok(W, randomizer, projection, solve_options);
+	int invalid_flag = verify_projection_ok(W, &randomizer, projection, solve_options);
 
 	
 	return invalid_flag;
@@ -1369,7 +1361,7 @@ int verify_projection_ok(const witness_set & W,
 
 
 int verify_projection_ok(const witness_set & W,
-                         system_randomizer & randomizer,
+                         system_randomizer * randomizer,
                          vec_mp * projection,
                          solver_configuration & solve_options)
 {
@@ -1399,14 +1391,14 @@ int verify_projection_ok(const witness_set & W,
 	
 	mat_mp AtimesJ; init_mat_mp(AtimesJ, 1, 1); AtimesJ->rows = AtimesJ->cols = 1;
 		
-	randomizer.randomize(temp_rand_point,AtimesJ,ED.funcVals,ED.Jv, &temp_rand_point->coord[0]);
+	randomizer->randomize(temp_rand_point,AtimesJ,ED.funcVals,ED.Jv, &temp_rand_point->coord[0]);
 	
 	mat_mp detme;  init_mat_mp(detme, W.num_variables-1, W.num_variables-1);
 	detme->cols = detme->rows= W.num_variables-1;
 	
 	
 	//inflate the matrix
-	int dim = W.num_variables - randomizer.num_rand_funcs() - 1;
+	int dim = W.num_variables - randomizer->num_rand_funcs() - 1;
 	
 	for (ii=0; ii< AtimesJ->rows; ++ii) {
 		for (jj=0; jj<AtimesJ->cols - 1; ++jj) {

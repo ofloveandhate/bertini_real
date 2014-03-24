@@ -246,7 +246,7 @@ void curve_decomposition::adaptive_sampler(vertex_set & V,
 	
 	
 
-	this->randomizer.setup( W.num_variables-W.num_patches-1, solve_options.PPD.num_funcs);
+	this->randomizer->setup( W.num_variables-W.num_patches-1, solve_options.PPD.num_funcs);
 	
 	
 	
@@ -300,7 +300,7 @@ void curve_decomposition::adaptive_sampler(vertex_set & V,
 	int num_refinements;
 	std::vector<int> current_indices;
 	
-	multilin_config ml_config(solve_options, &this->randomizer);
+	multilin_config ml_config(solve_options, this->randomizer);
 	
 	std::cout << num_edges << std::endl;
 	
@@ -568,7 +568,7 @@ void curve_decomposition::fixed_sampler(vertex_set & V,
 	
 	
 
-	this->randomizer.setup(W.num_variables-W.num_patches-1, solve_options.PPD.num_funcs);
+	this->randomizer->setup(W.num_variables-W.num_patches-1, solve_options.PPD.num_funcs);
 	
 	
 	
@@ -608,7 +608,7 @@ void curve_decomposition::fixed_sampler(vertex_set & V,
     witness_set Wnew; // to hold the output
 
 
-	multilin_config ml_config(solve_options,&this->randomizer);
+	multilin_config ml_config(solve_options,this->randomizer);
 	
 
 	comp_mp interval_width; init_mp2(interval_width,1024); set_zero_mp(interval_width);

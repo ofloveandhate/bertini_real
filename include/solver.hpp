@@ -705,8 +705,6 @@ public:
 	
 	comp_mp gamma;    ///< randomizer
 	mpq_t *gamma_rat; ///< randomizer
-	mat_mp randomizer_matrix;     ///< randomizer
-	mat_mp randomizer_matrix_full_prec;  ///< randomizer
 	
 	mpfr_prec_t curr_prec;
 	
@@ -725,15 +723,11 @@ public:
 	
 	void init(){
 		init_mp(gamma);
-		init_mat_mp(randomizer_matrix,0,0);
 		
 		if (this->MPType == 2 ) {
 			gamma_rat = (mpq_t *)br_malloc(2 * sizeof(mpq_t));
 			init_rat(gamma_rat);
-			init_mat_mp2(randomizer_matrix_full_prec,0,0,1024);
 		}
-		
-		randomizer = new system_randomizer;
 		
 		curr_prec = mpfr_get_default_prec();
 	}
@@ -783,11 +777,9 @@ protected:
 		cp_patch_mp(&this->patch, other.patch);
 	
 		set_mp(this->gamma, other.gamma);
-		mat_cp_mp(this->randomizer_matrix, other.randomizer_matrix);
 		
 		if (other.MPType==2) {
 			set_rat(this->gamma_rat, other.gamma_rat);
-			mat_cp_mp(this->randomizer_matrix_full_prec, other.randomizer_matrix_full_prec);
 		}
 		
 		this->curr_prec = other.curr_prec;
@@ -814,11 +806,9 @@ protected:
 		
 		
 		
-		clear_mat_mp(randomizer_matrix);
 		clear_mp(gamma);
 		
 		if (MPType==2) {
-			clear_mat_mp(randomizer_matrix_full_prec);
 			clear_rat(gamma_rat);
 			free(gamma_rat);
 		}
@@ -846,7 +836,6 @@ public:
 	patch_eval_data_d patch; ///< patch in x
 	
 	comp_d gamma;    ///< randomizer
-	mat_d randomizer_matrix;     ///< randomizer
 	
 	solver_mp *BED_mp; // why even have this?
     
@@ -913,10 +902,8 @@ protected:
 		solver::init();
 		
 		init_d(gamma);
-		init_mat_d(randomizer_matrix,0,0);
 		
 		if (MPType == 0) {
-			randomizer = new system_randomizer;
 		}
 	}
 	
@@ -924,18 +911,15 @@ protected:
 		
 		cp_patch_d(&this->patch, other.patch);
 		set_d(this->gamma, other.gamma);
-		mat_cp_d(this->randomizer_matrix, other.randomizer_matrix);
 	}
 	
 	void clear(){
 		
 		if (MPType==0) {
-			delete randomizer;
 		}
 		
 		patch_eval_data_clear_d(& this->patch);
 		
-		clear_mat_d(randomizer_matrix);
 		clear_d(gamma);
         
         

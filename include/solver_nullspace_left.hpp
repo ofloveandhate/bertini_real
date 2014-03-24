@@ -45,10 +45,10 @@ public:
 	int num_v_vars;  ///< N   number of variables in original problem statement (including homogenizing variables)
 	int num_x_vars;  ///< N-k+\ell
 	
-	int num_randomized_eqns;	///< N-k (N-ambient_dim)
+//	int num_randomized_eqns;	///< N-k (N-ambient_dim)
 	int max_degree;						///< the max degree of differentiated (randomized) functions
-	std::vector<int> randomized_degrees; ///< the degrees of the randomized functions (not derivatives)
-	std::vector<int> base_degrees;
+//	std::vector<int> randomized_degrees; ///< the degrees of the randomized functions (not derivatives)
+//	std::vector<int> base_degrees;
 	
 	system_randomizer * randomizer;
 	
@@ -66,11 +66,7 @@ public:
 	vec_mp v_patch; ///< length of this should be N-k+\ell
 	
 	vec_mp *target_projection; ///< # of these should be \ell
-	
-	mat_mp randomizer_matrix;  ///< R, the main randomizer matrix, which was passed in.  randomizes f and Jf down to N-k equations.
-	
-	//	mat_mp post_randomizer_matrix;  ///< S, for randomizing the jacobian subsystem down to N-k+\ell-1 equations
-	//
+
 	bool numerical_derivative;
 	
 	void clear();
@@ -93,8 +89,7 @@ private:
 	{
 		target_dim = ambient_dim = target_crit_codim = num_jac_equations = -1;
 		num_x_vars = num_v_vars = -1;
-		num_randomized_eqns = max_degree = -1;
-		
+		max_degree = -1;
 		numerical_derivative = false;
 		
 		starting_linears = NULL;
@@ -824,8 +819,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED);
 
 
-int nullspacejac_numerical_deriv_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp, point_d current_variable_values, comp_d pathVars, void const *ED);
-int nullspacejac_numerical_deriv_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED);
+
 
 int nullspacejac_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d in_d, point_mp in_mp, int in_prec, void const *ED_d, void const *ED_mp);
 

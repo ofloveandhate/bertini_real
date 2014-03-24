@@ -362,21 +362,7 @@ int solver_mp::send(parallelism_config & mpi_config)
 	
 	bcast_comp_mp(this->gamma, 0,0);
 	
-	int *buffer = new int[2];
-	buffer[0] = randomizer_matrix->rows;
-	buffer[1] = randomizer_matrix->cols;
-	
-	MPI_Bcast(buffer, 2, MPI_INT, 0, MPI_COMM_WORLD);
-	if (this->MPType==2) {
-        bcast_comp_rat(gamma_rat, 0, 0);
-		bcast_mat_mp(randomizer_matrix_full_prec, 0, 0);
-	}
-	else{
-		bcast_mat_mp(randomizer_matrix, 0, 0);
-	}
-	
-	delete[] buffer;
-	
+	int * buffer;
 	buffer = new int[1];
 	
 	
@@ -433,21 +419,10 @@ int solver_mp::receive(parallelism_config & mpi_config)
         
         bcast_comp_rat(gamma_rat, 1, 0);
         
-		init_mat_mp2(randomizer_matrix_full_prec,buffer[0],buffer[1],1024);
-		randomizer_matrix_full_prec->rows = buffer[0];
-		randomizer_matrix_full_prec->cols = buffer[1];
-		
-		bcast_mat_mp(randomizer_matrix_full_prec, 1, 0);
-		
-		init_mat_mp(randomizer_matrix,0,0);
-		mat_cp_mp(randomizer_matrix, randomizer_matrix_full_prec);
         
 	}
 	else{
-		init_mat_mp(randomizer_matrix,buffer[0],buffer[1]);
-		randomizer_matrix->rows = buffer[0];
-		randomizer_matrix->cols = buffer[1];
-		bcast_mat_mp(randomizer_matrix, 1, 0);
+
 	}
 	
 	delete[] buffer;
@@ -499,9 +474,7 @@ int solver_d::send(parallelism_config & mpi_config)
 	send_patch_d(&(this->patch));
     
 	bcast_comp_d(this->gamma, 0,0);
-	
-	bcast_mat_d(randomizer_matrix, 0, 0);
-	
+		
 	return SUCCESSFUL;
 }
 
@@ -550,7 +523,6 @@ int solver_d::receive(parallelism_config & mpi_config)
 	
 	bcast_comp_d(this->gamma, 1, 0);
 	
-	bcast_mat_d(randomizer_matrix, 1, 0);
 	
 	return SUCCESSFUL;
 }

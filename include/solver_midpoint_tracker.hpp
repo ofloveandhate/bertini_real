@@ -41,7 +41,9 @@ protected:
 	boost::filesystem::path input_filename;
 	SLP_global_pointers memory;
 	prog_t * SLP;
-	mat_mp randomizer_matrix;
+	
+	bool have_randomizer;
+	system_randomizer * randomizer;
 	int num_variables;
 	
 	bool have_SLP;
@@ -54,16 +56,15 @@ public:
 	{
 		
 		
-		int * buffer = new int[4];
-		buffer[0] = randomizer_matrix->rows;
-		buffer[1] = randomizer_matrix->cols;
-		buffer[2] = MPType;
-		buffer[3] = num_variables;
-		MPI_Bcast(buffer, 4, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+		int * buffer = new int[2];
+		buffer[0] = MPType;
+		buffer[1] = num_variables;
+		MPI_Bcast(buffer, 2, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
 		
 		delete [] buffer;
 		
-		bcast_mat_mp(randomizer_matrix,0,0);
+		//need something here  to send randomizer to everyone.
+		deliberate_segfault();
 		memory.set_globals_to_this();
 		bcast_prog_t(SLP, this->MPType, 0, 0); // last two arguments are: myid, headnode
 		memory.set_globals_null();
@@ -75,32 +76,28 @@ public:
 	{
 		
 		if (have_SLP) {
-			clear_mat_mp(randomizer_matrix);
 			memory.set_globals_to_this();
 			clearProg(SLP, this->MPType, 1); // 1 means call freeprogeval()
 		}
 		else
 		{
-			init_mat_mp2(randomizer_matrix,1,1,1024);
-			randomizer_matrix->rows = 1;
-			randomizer_matrix->cols = 1;
 			SLP = new prog_t;
 		}
 		
-		int * buffer = new int[4];
+		int * buffer = new int[2];
 		
-		MPI_Bcast(buffer, 4, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+		MPI_Bcast(buffer, 2, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
 		
-		change_size_mat_mp(randomizer_matrix,buffer[0],buffer[1]);
 
-		randomizer_matrix->rows = buffer[0];
-		randomizer_matrix->cols = buffer[1];
-		MPType = buffer[2];
-		num_variables = buffer[3];
+		MPType = buffer[0];
+		num_variables = buffer[1];
 		
 		
-		bcast_mat_mp(randomizer_matrix,1,0);
-		
+		// here, need something to receive from head.
+		deliberate_segfault();
+		randomizer = new system_randomizer;
+//		bcast_mat_mp(randomizer_matrix,1,0);
+		have_randomizer = true;
 		
 		delete [] buffer;
 		
@@ -149,6 +146,9 @@ public:
 	
 	void init()
 	{
+		
+		have_randomizer = false;
+		
 		num_variables = 0;
 		input_filename = "unset_input_filename_complete_system";
 		MPType = -1;
@@ -172,7 +172,6 @@ public:
 			
 			if (!other.have_SLP) {
 				delete this->SLP;
-				clear_mat_mp(this->randomizer_matrix);
 				this->have_SLP = false;
 			}
 			
@@ -183,11 +182,9 @@ public:
 			if (!this->have_SLP)
 			{
 				this->SLP = new prog_t;
-				init_mat_mp2(this->randomizer_matrix,1,1,1024);
-				this->randomizer_matrix->rows = 1; this->randomizer_matrix->cols = 1;
 			}
 			
-			mat_cp_mp(this->randomizer_matrix, other.randomizer_matrix);
+			
 			
 			cp_prog_t(this->SLP, other.SLP);
 			this->memory.set_globals_null();
@@ -197,16 +194,28 @@ public:
 			this->have_SLP = true;
 		}
 		
+		if (other.have_randomizer) {
+			randomizer = new system_randomizer;
+			*this->randomizer = *other.randomizer;
+			have_randomizer = true;
+		}
+		else{
+			randomizer = other.randomizer; // copy the pointer value only.
+		}
+		
+		
 		
 	}
 	
 	
 	void clear()
 	{
-
+		if (have_randomizer) {
+			delete randomizer;
+			have_randomizer = false;
+		}
 		
 		if (have_SLP) {
-			clear_mat_mp(randomizer_matrix);
 			memory.set_globals_to_this();
 			clearProg(SLP, this->MPType, 1); // 1 means call freeprogeval()
 			delete SLP;
@@ -224,12 +233,10 @@ public:
 		}
 		else{
 			SLP = new prog_t;
-			init_mat_mp2(randomizer_matrix,1,1,1024);
-			randomizer_matrix->rows = 1; randomizer_matrix->cols = 1;
 		}
 		
 		
-		
+		this->randomizer = D.randomizer;
 		
 		int blabla;  // i would like to move this.
 		parse_input_file(D.input_filename, &blabla);
@@ -250,13 +257,6 @@ public:
 		
 		preproc_data PPD;
 		parse_preproc_data("preproc_data", &PPD);
-		
-		//create the array of integers
-		std::vector<int> randomized_degrees;
-		
-		//get the matrix and the degrees of the resulting randomized functions.
-		make_randomization_matrix_based_on_degrees(randomizer_matrix, randomized_degrees, D.num_variables-D.num_patches-D.dimension, PPD.num_funcs);
-		
 		
 		
 		memory.capture_globals();
@@ -476,10 +476,8 @@ public:
 	prog_t *SLP_mid; // these are to be freed by the midpoint_setup object.
 	
 	
-	mat_mp randomizer_matrix_bottom;
-	mat_mp randomizer_matrix_top;
-	
-	
+	system_randomizer * randomizer_bottom;
+	system_randomizer * randomizer_top;
 	
 	vec_mp *pi;
 	int num_projections;
@@ -628,8 +626,7 @@ public:
 		
 		clear_mp(v_target);
 		clear_mp(u_target);
-		clear_mat_mp(randomizer_matrix_top);
-		clear_mat_mp(randomizer_matrix_bottom);
+
 		clear_mp(crit_val_left);
 		clear_mp(crit_val_right);
 		
@@ -703,8 +700,8 @@ public:
 		set_mp(v_target,other.v_target);
 		set_mp(u_target,other.u_target);
 		
-		mat_cp_mp(randomizer_matrix_top, other.randomizer_matrix_top);
-		mat_cp_mp(randomizer_matrix_bottom, other.randomizer_matrix_bottom);
+		randomizer_bottom = other.randomizer_bottom;
+		randomizer_top = other.randomizer_top;
 		
 		
 		set_mp(crit_val_left,other.crit_val_left);
@@ -717,9 +714,6 @@ public:
 		if (this->MPType==2) {
 			set_mp(v_target_full_prec,other.v_target_full_prec);
 			set_mp(u_target_full_prec,other.u_target_full_prec);
-			
-			mat_cp_mp(randomizer_matrix_top_full_prec,other.randomizer_matrix_top_full_prec);
-			mat_cp_mp(randomizer_matrix_bottom_full_prec,other.randomizer_matrix_bottom_full_prec);
 			
 			
 			set_mp(crit_val_left_full_prec,other.crit_val_left_full_prec);
@@ -768,8 +762,8 @@ public:
 	vec_d *pi;
 	int num_projections;
 	
-	mat_d randomizer_matrix_top;
-	mat_d randomizer_matrix_bottom;
+	system_randomizer * randomizer_bottom;
+	system_randomizer * randomizer_top;
 	
 	
 	//patch already lives in the base class.
@@ -919,9 +913,7 @@ private:
 		}
 		free(pi);
 		
-		
-		clear_mat_d(randomizer_matrix_top);
-		clear_mat_d(randomizer_matrix_bottom);
+
 	} // re: clear
 	
 	void init();
@@ -954,9 +946,8 @@ private:
 		set_d(v_target,other.v_target);
 		set_d(u_target,other.u_target);
 		
-		mat_cp_d(randomizer_matrix_top,other.randomizer_matrix_top);
-		mat_cp_d(randomizer_matrix_bottom,other.randomizer_matrix_bottom);
-		
+		randomizer_bottom = other.randomizer_bottom;
+		randomizer_top = other.randomizer_top;
 		
 		set_d(crit_val_left,other.crit_val_left);
 		set_d(crit_val_right,other.crit_val_right);
