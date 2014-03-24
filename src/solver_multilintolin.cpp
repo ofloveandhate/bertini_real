@@ -29,7 +29,7 @@ int multilintolin_eval_data_mp::setup(const multilin_config & config,
 {
 	
 	
-	if (!config.have_rand) {
+	if (!config.randomizer->is_ready()) {
 		std::cout << "don't have multilin randomization matrix!" << std::endl;
 		deliberate_segfault();
 	}
@@ -114,15 +114,10 @@ int multilintolin_eval_data_mp::setup(const multilin_config & config,
 			set_one_rat(this->gamma_rat);
 		}
 		
-		mat_cp_mp(randomizer_matrix_full_prec,
-				  config.randomizer_matrix);
 	}
 	
-	
-	mat_cp_mp(randomizer_matrix,
-			  config.randomizer_matrix);
 
-	
+
 	return 0;
 }
 
@@ -312,7 +307,7 @@ int multilintolin_eval_data_d::setup(const multilin_config & config,
 	
 	verbose_level = solve_options.verbose_level;
 	
-	solver_d::setup(config.SLP);
+	
 	
 	generic_setup_patch(&patch,W);
 	
@@ -323,15 +318,14 @@ int multilintolin_eval_data_d::setup(const multilin_config & config,
 	
 	
 	
-	mat_mp_to_d(randomizer_matrix,
-				config.randomizer_matrix);
-	
 	if (this->MPType==2)
 	{
 		this->BED_mp->setup(config, W, target_linears, solve_options);
 		rat_to_d(this->gamma, this->BED_mp->gamma_rat);
 	}
 	
+	
+	solver_d::setup(config.SLP);
 	return 0;
 }
 

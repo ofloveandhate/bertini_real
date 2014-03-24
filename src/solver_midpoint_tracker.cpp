@@ -630,7 +630,7 @@ int midpoint_eval_data_d::setup(midpoint_config & md_config,
                                 solver_configuration & solve_options)
 {
 	
-	solver_d::setup();
+	
 	
 	
 	
@@ -717,6 +717,9 @@ int midpoint_eval_data_d::setup(midpoint_config & md_config,
 		this->BED_mp->setup(md_config, W, solve_options); // must be called before the gamma line below.
 		rat_to_d(this->gamma, this->BED_mp->gamma_rat);
 	}
+	
+	
+	solver_d::setup();
 	
 	return SUCCESSFUL;
 }

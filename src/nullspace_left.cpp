@@ -3,9 +3,8 @@
 
 int compute_crit_nullspace(solver_output & solve_out, // the returned value
 						   const witness_set & W,
-						   mat_mp randomizer_matrix,
+						   system_randomizer * randomizer,
 						   vec_mp *pi, // an array of projections, the number of which is the target dimensions
-						   std::vector< int > randomized_degrees, // an array of integers holding the degrees of the randomized equations.
 						   int ambient_dim,
 						   int target_dim,
 						   int target_crit_codim,
@@ -30,8 +29,7 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 						   target_dim,
 						   target_crit_codim,
 						   &max_degree,
-						   randomized_degrees,
-						   randomizer_matrix,
+						   randomizer,
 						   W,
 						   solve_options);
 	
@@ -81,7 +79,7 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 		vec_cp_mp(multilin_linears[ii], W.L_mp[ii]);
 	}
 	
-	multilin_config ml_config(solve_options,randomizer_matrix);
+	multilin_config ml_config(solve_options,randomizer);
 	
 	
 	
@@ -319,8 +317,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 							int target_dim,
 							int target_crit_codim,
 							int *max_degree, // a pointer to the value
-							std::vector< int > randomized_degrees, // an array of randomized degrees
-							mat_mp randomizer_matrix,
+							system_randomizer * randomizer,
 							const witness_set & W,
 							solver_configuration & solve_options)
 {
@@ -329,25 +326,28 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	int toss;
 	parse_input_file(W.input_filename, &toss); // re-create the parsed files for the stuffs (namely the SLP).
 	
-	int maxiii = 0;
-	for (int ii=0; ii<randomizer_matrix->rows; ii++	) {
-		ns_config->randomized_degrees.push_back(randomized_degrees[ii]); // store the full degree (not derivative).
-		if ( (randomized_degrees[ii]-1) > maxiii)
-			maxiii = randomized_degrees[ii]-1; // minus one for the derivative
-	}
-	*max_degree = maxiii;
+	ns_config->randomizer = randomizer;
 	
-	
-	//TODO: eliminate this file parsing
-	FILE *IN = safe_fopen_read("deg.out"); //open the deg.out file for reading.
-	for (int ii=0; ii<randomizer_matrix->cols; ++ii) {
-		int tempint;
-		fscanf(IN,"%d\n",&tempint); // read data
-		std::cout << tempint << std::endl;
-		ns_config->base_degrees.push_back(tempint);
-		std::cout << ns_config->base_degrees[ii] << std::endl;
-	}// re: ii
-	fclose(IN);
+	*max_degree = randomizer->max_degree();
+//	int maxiii = 0;
+//	for (int ii=0; ii<randomizer_matrix->rows; ii++	) {
+//		ns_config->randomized_degrees.push_back(randomized_degrees[ii]); // store the full degree (not derivative).
+//		if ( (randomized_degrees[ii]-1) > maxiii)
+//			maxiii = randomized_degrees[ii]-1; // minus one for the derivative
+//	}
+//	*max_degree = maxiii;
+//	
+//	
+//	//TODO: eliminate this file parsing
+//	FILE *IN = safe_fopen_read("deg.out"); //open the deg.out file for reading.
+//	for (int ii=0; ii<randomizer_matrix->cols; ++ii) {
+//		int tempint;
+//		fscanf(IN,"%d\n",&tempint); // read data
+//		std::cout << tempint << std::endl;
+//		ns_config->base_degrees.push_back(tempint);
+//		std::cout << ns_config->base_degrees[ii] << std::endl;
+//	}// re: ii
+//	fclose(IN);
 	
 	// set some integers
 	ns_config->num_v_vars = (W.num_variables-1) - target_crit_codim + 1;
@@ -373,15 +373,15 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	
 	
 	// copy the main randomizer matrix
-	init_mat_mp2(ns_config->randomizer_matrix,randomizer_matrix->rows, randomizer_matrix->cols,solve_options.T.AMP_max_prec);
-	ns_config->randomizer_matrix->rows = randomizer_matrix->rows;
-	ns_config->randomizer_matrix->cols = randomizer_matrix->cols;
-	mat_cp_mp(ns_config->randomizer_matrix, randomizer_matrix);
+//	init_mat_mp2(ns_config->randomizer_matrix,randomizer_matrix->rows, randomizer_matrix->cols,solve_options.T.AMP_max_prec);
+//	ns_config->randomizer_matrix->rows = randomizer_matrix->rows;
+//	ns_config->randomizer_matrix->cols = randomizer_matrix->cols;
+//	mat_cp_mp(ns_config->randomizer_matrix, randomizer_matrix);
 	
-	if (randomizer_matrix->rows != W.num_variables-W.num_patches-ambient_dim) {
+	if (randomizer->num_rand_funcs() != W.num_variables-W.num_patches-ambient_dim) {
 		std::cout << color::red();
 		std::cout << "mismatch in number of equations...\n" << std::endl;
-		std::cout << "left: " << randomizer_matrix->rows << " right " << W.num_variables-W.num_patches-ambient_dim << std::endl;
+		std::cout << "left: " << randomizer->num_rand_funcs() << " right " << W.num_variables-W.num_patches-ambient_dim << std::endl;
 		std::cout << color::console_default();
 		br_exit(-1737);
 	}

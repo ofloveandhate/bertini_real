@@ -50,6 +50,7 @@ public:
 	std::vector<int> randomized_degrees; ///< the degrees of the randomized functions (not derivatives)
 	std::vector<int> base_degrees;
 	
+	system_randomizer * randomizer;
 	
 	vec_mp **starting_linears;	///< outer layer should have as many as there are randomized equations (N-k)
 								///< inside layer has number corresponding to max of randomized_degrees
