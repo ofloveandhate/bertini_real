@@ -248,6 +248,7 @@ void system_randomizer::randomize(vec_d randomized_func_vals, mat_d randomized_j
 	if (is_square()) {
 		mat_cp_d(randomized_jacobian,jacobian_vals);
 		vec_cp_d(randomized_func_vals,func_vals);
+		return;
 	}
 	
 	
@@ -506,11 +507,42 @@ void system_randomizer::randomize(vec_mp randomized_func_vals, mat_mp randomized
 }
 
 
-
+void system_randomizer::change_prec(int new_prec)
+{
+	if (!is_ready()) {
+		std::cout << "trying to change precision when not set up!" << std::endl;
+		br_exit(65621);
+	}
+	change_prec_mat_mp(randomizer_matrix_mp, new_prec);
+	mat_cp_mp(randomizer_matrix_mp,randomizer_matrix_full_prec);
+	
+	change_prec_vec_mp(temp_homogenizer_mp,new_prec);
+	change_prec_vec_mp(temp_funcs_mp,new_prec);
+	change_prec_mat_mp(temp_jac_mp,new_prec);
+	
+	
+	change_prec_mat_mp(single_row_input_mp,new_prec);
+	
+	change_prec_vec_mp(integer_coeffs_mp,new_prec);
+	change_prec_mat_mp(temp_mat_mp,new_prec);
+	change_prec_vec_mp(temp_vec_mp,new_prec);
+	
+	
+}
 
 void system_randomizer::setup(int num_desired_rows, int num_funcs)
 {
+	if (num_desired_rows==0) {
+		std::cout << "requested a randomizer for 0 output functions..." << std::endl;
+		br_exit(80146);
+	}
+	if (num_funcs==0) {
+		std::cout << "requested a randomizer for 0 input functions..." << std::endl;
+		br_exit(80147);
+	}
 	
+	
+	setup_indicator = false; // reset;
 	randomized_degrees.resize(0);
 	original_degrees.resize(0);
 	max_base_degree = 0;
@@ -552,23 +584,9 @@ void system_randomizer::setup(int num_desired_rows, int num_funcs)
 	num_original_funcs = num_funcs;
 	
 	
+
+	square_indicator = false;
 	
-	if (num_desired_rows==num_funcs) {
-		make_matrix_ID_mp(randomizer_matrix_full_prec,num_funcs,num_funcs);
-		for (int ii=0; ii<num_desired_rows; ++ii) {
-			randomized_degrees.push_back(original_degrees[ii]);
-		}
-		free(unique_degrees);
-		square_indicator = true;
-		setup_indicator = true;
-		
-		
-		
-		return;
-	}
-	else{
-		square_indicator = false;
-	}
 	//sort the unique degrees into decreasing order
 	qsort(unique_degrees, num_unique_degrees, sizeof(int), compare_integers_decreasing);
 	
@@ -634,10 +652,6 @@ void system_randomizer::setup(int num_desired_rows, int num_funcs)
 	}
 	
 	
-	mat_cp_mp(randomizer_matrix_mp,randomizer_matrix_full_prec);
-	mat_mp_to_d(randomizer_matrix_d,randomizer_matrix_full_prec);
-	
-	
 	max_degree_deficiency = unique_degrees[0] - unique_degrees[num_unique_degrees-1];
 	
 	change_size_vec_d(integer_coeffs_d,max_degree_deficiency+1);  integer_coeffs_d->size = max_degree_deficiency+1;
@@ -655,9 +669,24 @@ void system_randomizer::setup(int num_desired_rows, int num_funcs)
 	set_one_mp(&temp_homogenizer_mp->coord[0]);
 	
 	free(num_of_each_degree);
-	free(unique_degrees);
+
+	
+	if (num_desired_rows==num_funcs) {
+		make_matrix_ID_mp(randomizer_matrix_full_prec,num_funcs,num_funcs);
+		square_indicator = true;
+	}
+	else{
+		square_indicator = false;
+	}
+	
+	mat_cp_mp(randomizer_matrix_mp,randomizer_matrix_full_prec);
+	mat_mp_to_d(randomizer_matrix_d,randomizer_matrix_full_prec);
+	
 	
 	setup_indicator = true;
+	
+	
+	free(unique_degrees);
 }
 
 
@@ -682,6 +711,21 @@ void system_randomizer::send(int target, parallelism_config & mpi_config)
 	if ( (randomizer_matrix_full_prec->rows != 0) || (randomizer_matrix_full_prec->cols != 0)) {
 		send_mat_mp(randomizer_matrix_full_prec, target);
 	}
+	
+	
+	
+//	buffer = new int[num_randomized_eqns + base_degrees.size()];
+//	for (int ii=0; ii<num_randomized_eqns; ii++) {
+//		buffer[ii] = randomized_degrees[ii];
+//	}
+//	
+//	for (unsigned int ii=0; ii<base_degrees.size(); ii++) {
+//		buffer[ii+num_randomized_eqns] = base_degrees[ii];
+//	}
+//	
+//	MPI_Bcast(buffer, num_randomized_eqns+base_degrees.size(), MPI_INT, 0, mpi_config.my_communicator);
+//	delete[] buffer;
+	
 }
 
 

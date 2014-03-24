@@ -613,12 +613,14 @@ public:
 	{};
 	
 	
-	void setup(prog_t * _SLP)
+	void setup(prog_t * _SLP, system_randomizer * randy)
 	{
 		setupPreProcData(const_cast<char *>(preproc_file.c_str()), &this->preProcData);
 		//TODO: if there is a way, remove the above setup call, as it refers to parsing the preprocdata file, which is dumb.
 		this->SLP = _SLP; // assign the pointer
 		this->have_SLP = true;
+		
+		randomizer = randy;
 	}
 	
 	void setup()
@@ -762,9 +764,9 @@ public:
 	{};
 	
 	
-	void setup(prog_t * _SLP)
+	void setup(prog_t * _SLP, system_randomizer * randy)
 	{
-		solver::setup(_SLP);
+		solver::setup(_SLP, randy);
 	}
 	
 	void setup()
@@ -787,7 +789,6 @@ protected:
 	
 	void clear()
 	{
-		delete randomizer;
 		patch_eval_data_clear_mp(&this->patch);
 		
 //		for (int ii=0; ii<patch.patchCoeff->rows; ii++) {
@@ -817,6 +818,10 @@ protected:
         if (have_SLP && received_mpi) { // other wise don't have it, or someone else is responsible for clearing it.
             clearProg(this->SLP, this->MPType, 1); // 1 means call freeprogeval()
             delete[] SLP;
+		}
+		
+		if (received_mpi) {
+			;
 		}
 	}
 };
@@ -878,9 +883,9 @@ public:
 	{};
 	
 	
-	void setup(prog_t * _SLP)
+	void setup(prog_t * _SLP, system_randomizer * randy)
 	{
-		solver::setup(_SLP);
+		solver::setup(_SLP, randy);
 	}
 	
 	void setup()

@@ -30,7 +30,7 @@ int multilintolin_eval_data_mp::setup(const multilin_config & config,
 	
 	
 	if (!config.randomizer->is_ready()) {
-		std::cout << "don't have multilin randomization matrix!" << std::endl;
+		std::cout << "don't have multilin randomizer!" << std::endl;
 		deliberate_segfault();
 	}
 	
@@ -94,7 +94,7 @@ int multilintolin_eval_data_mp::setup(const multilin_config & config,
 	
 	verbose_level = solve_options.verbose_level;
 	
-	solver_mp::setup(config.SLP);
+	solver_mp::setup(config.SLP, config.randomizer);
 	
 	generic_setup_patch(&patch,W);
 	
@@ -325,7 +325,7 @@ int multilintolin_eval_data_d::setup(const multilin_config & config,
 	}
 	
 	
-	solver_d::setup(config.SLP);
+	solver_d::setup(config.SLP, config.randomizer);
 	return 0;
 }
 
@@ -688,11 +688,8 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	// combine everything
 	///////// / / / /  /   /
 	
-	
+	// randomize
 	BED->randomizer->randomize(AtimesF,AtimesJ,temp_function_values,temp_jacobian_functions,&current_variable_values->coord[0]);
-//	//perform the randomization multiplications
-//	mat_mul_d(AtimesJ,BED->randomizer_matrix,temp_jacobian_functions);
-//	mul_mat_vec_d(AtimesF,BED->randomizer_matrix, temp_function_values ); // set values of AtimesF (A is randomization matrix)
 	
 	for (int ii=0; ii<AtimesF->size; ii++)  // for each function, after (real orthogonal) randomization
 		set_d(&funcVals->coord[ii], &AtimesF->coord[ii]);
