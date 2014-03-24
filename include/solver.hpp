@@ -565,7 +565,9 @@ public:
 	int num_steps; ///< the number of evaluations made using this evaluator
 	int verbose_level;  ///< how verbose to be
 	
-	bool randomize;
+	system_randomizer * randomizer;
+	
+	bool randomize; // this should be eliminated
 	
     bool received_mpi;
 	
@@ -731,6 +733,8 @@ public:
 			init_mat_mp2(randomizer_matrix_full_prec,0,0,1024);
 		}
 		
+		randomizer = new system_randomizer;
+		
 		curr_prec = mpfr_get_default_prec();
 	}
 	
@@ -791,7 +795,7 @@ protected:
 	
 	void clear()
 	{
-
+		delete randomizer;
 		patch_eval_data_clear_mp(&this->patch);
 		
 //		for (int ii=0; ii<patch.patchCoeff->rows; ii++) {
@@ -893,6 +897,10 @@ public:
 	void setup()
 	{
 		solver::setup();
+		
+		if (MPType==2) {
+			
+		}
 	}
 protected:
 	
@@ -906,6 +914,10 @@ protected:
 		
 		init_d(gamma);
 		init_mat_d(randomizer_matrix,0,0);
+		
+		if (MPType == 0) {
+			randomizer = new system_randomizer;
+		}
 	}
 	
 	void copy(const solver_d & other){
@@ -917,6 +929,9 @@ protected:
 	
 	void clear(){
 		
+		if (MPType==0) {
+			delete randomizer;
+		}
 		
 		patch_eval_data_clear_d(& this->patch);
 		

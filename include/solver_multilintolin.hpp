@@ -34,14 +34,16 @@ class multilin_config
 {
 	
 public:
-	mat_mp randomizer_matrix;  ///< R, the main randomizer matrix, which was passed in.  randomizes f and Jf down to N-k equations.
+	
+	bool have_randomizer;
+	system_randomizer *randomizer;
+	
 	
 	SLP_global_pointers SLP_memory;
 	prog_t * SLP;
 	
 	int MPType;
 	
-	bool have_rand;
 	bool have_mem;
 	
 	
@@ -58,7 +60,7 @@ public:
 	
 	
 	multilin_config(solver_configuration & solve_options,
-					mat_mp _random)
+					system_randomizer * _random)
 	{
 		init();
 		
@@ -75,7 +77,7 @@ public:
 	}
 	
 	
-	multilin_config(mat_mp _random)
+	multilin_config(system_randomizer * _random)
 	{
 		init();
 		set_randomizer(_random);
@@ -83,14 +85,11 @@ public:
 	
 	void make_randomizer(const solver_configuration & solve_options, const witness_set & W)
 	{
-		std::vector< int > randomized_degrees;
-		//get the matrix and the degrees of the resulting randomized functions.
 		
+		randomizer = new system_randomizer;
+		have_randomizer = true;
+		this->randomizer->setup(W.num_variables-W.num_linears-W.num_patches, solve_options.PPD.num_funcs);
 		
-		std::cout << "making randomizer of size	" <<  W.num_variables-W.num_linears-W.num_patches << "x" << solve_options.PPD.num_funcs << std::endl;
-		make_randomization_matrix_based_on_degrees(this->randomizer_matrix, randomized_degrees, W.num_variables-W.num_linears-W.num_patches, solve_options.PPD.num_funcs);
-		
-		have_rand = true;
 	}
 	
 	
@@ -112,10 +111,9 @@ public:
 	
 	
 	
-	void set_randomizer(mat_mp _random)
+	void set_randomizer(system_randomizer * _random)
 	{
-		mat_cp_mp(randomizer_matrix, _random);
-		have_rand = true;
+		randomizer = _random;
 	}
 	
 	
@@ -130,19 +128,20 @@ public:
 	
 	void init()
 	{
-		init_mat_mp2(randomizer_matrix,1,1,1024); randomizer_matrix->rows = randomizer_matrix->cols = 1;
-		
+
 		SLP = new prog_t;
 		have_mem = false;
-		have_rand = false;
+		
+		have_randomizer = false;
 	}
 	
 	
 	void clear()
 	{
 		
-		
-		clear_mat_mp(randomizer_matrix);
+		if (have_randomizer) {
+			delete randomizer;
+		}
 		
 		SLP_memory.set_globals_to_this();
 		clearProg(SLP, this->MPType, 1); // 1 means call freeprogeval()

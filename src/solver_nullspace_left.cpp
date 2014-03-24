@@ -1156,7 +1156,7 @@ int nullspacejac_eval_data_d::setup(prog_t * _SLP,
 									solver_configuration & solve_options)
 {
 	
-	solver_d::setup(_SLP);
+	
 	
 	verbose_level = solve_options.verbose_level;
 	
@@ -1292,7 +1292,7 @@ int nullspacejac_eval_data_d::setup(prog_t * _SLP,
 	}
 	
 	
-	
+	solver_d::setup(_SLP);
 	
 	return SUCCESSFUL;
 }

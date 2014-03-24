@@ -326,18 +326,11 @@ int sphere_eval_data_mp::setup(const sphere_config & config,
 			set_one_mp(this->gamma);
 			set_one_rat(this->gamma_rat);
 		}
-		mat_cp_mp(randomizer_matrix_full_prec,
-				  config.randomizer_matrix);
 	}
 	
+	randomizer = config.randomizer;
 	
-	
-	mat_cp_mp(randomizer_matrix,
-			  config.randomizer_matrix);
-	
-	
-	
-	
+
 	
 	return 0;
 }
@@ -553,9 +546,7 @@ int sphere_eval_data_d::setup(const sphere_config & config,
 		set_one_d(this->gamma);
 	
 	
-	
-	mat_mp_to_d(randomizer_matrix,
-				config.randomizer_matrix);
+	randomizer = config.randomizer;
 	
 	
 	if (this->MPType==2)

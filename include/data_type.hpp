@@ -276,6 +276,237 @@ class function
 
 
 
+class system_randomizer
+{
+private:
+	bool square_indicator;
+	bool setup_indicator;
+	
+	mat_mp randomizer_matrix_full_prec;
+	mat_mp randomizer_matrix_mp;
+	mat_d randomizer_matrix_d;
+	
+	int num_randomized_funcs;
+	int num_base_funcs;
+	
+	int max_base_degree;
+	int max_degree_deficiency;
+	std::vector<int> randomized_degrees;
+	std::vector<int> base_degrees;
+	
+	std::vector<std::vector<int>> structure_matrix;
+	
+	
+	vec_mp integer_coeffs_mp;
+	mat_mp single_row_input_mp;
+	vec_mp temp_homogenizer_mp;
+	vec_mp temp_funcs_mp;
+	mat_mp temp_jac_mp;
+	mat_mp temp_mat_mp;
+	vec_mp temp_vec_mp;
+	
+	
+	vec_d integer_coeffs_d;
+	mat_d single_row_input_d;
+	vec_d temp_homogenizer_d;
+	vec_d temp_funcs_d;
+	mat_d temp_jac_d;
+	mat_d temp_mat_d;
+	vec_d temp_vec_d;
+	
+	
+public:
+	
+	system_randomizer()
+	{
+		init();
+	}
+	
+	
+	
+	system_randomizer & operator=( const system_randomizer & other)
+	{
+		copy(other);
+		return *this;
+	}
+	
+	system_randomizer(const system_randomizer & other)
+	{
+		init();
+		copy(other);
+	} // re: copy
+	
+	~system_randomizer()
+	{
+		clear_mat_mp(randomizer_matrix_full_prec);
+		clear_mat_mp(randomizer_matrix_mp);
+		clear_mat_d(randomizer_matrix_d);
+		
+		clear_vec_mp(temp_homogenizer_mp);
+		clear_vec_d(temp_homogenizer_d);
+		
+		
+		
+		
+		clear_vec_mp(integer_coeffs_mp);
+		clear_vec_d(integer_coeffs_d);
+		
+		
+		
+		clear_mat_d(single_row_input_d);
+		clear_mat_mp(single_row_input_mp);
+		
+		
+		
+		clear_vec_d(temp_funcs_d);
+		clear_vec_mp(temp_funcs_mp);
+		
+		clear_mat_d(temp_jac_d);
+		clear_mat_mp(temp_jac_mp);
+		
+		
+		clear_mat_d(temp_mat_d);
+		clear_mat_mp(temp_mat_mp);
+		
+		clear_vec_d(temp_vec_d);
+		clear_vec_mp(temp_vec_mp);
+		
+		
+	}
+	
+	int num_rand_funcs()
+	{
+		return num_randomized_funcs;
+	}
+	
+	int max_degree()
+	{
+		return max_base_degree;
+	}
+	
+	
+	bool is_square()
+	{
+		return square_indicator;
+	}
+	
+	bool is_ready()
+	{
+		return setup_indicator;
+	}
+	
+	
+	void change_prec(int new_prec)
+	{
+		change_prec_mat_mp(randomizer_matrix_mp, new_prec);
+		mat_cp_mp(randomizer_matrix_mp,randomizer_matrix_full_prec);
+		
+		change_prec_vec_mp(temp_homogenizer_mp,new_prec);
+		change_prec_vec_mp(temp_funcs_mp,new_prec);
+		change_prec_mat_mp(temp_jac_mp,new_prec);
+		
+		
+		change_prec_mat_mp(single_row_input_mp,new_prec);
+		
+		change_prec_vec_mp(integer_coeffs_mp,new_prec);
+		change_prec_mat_mp(temp_mat_mp,new_prec);
+		change_prec_vec_mp(temp_vec_mp,new_prec);
+		
+		
+	}
+	
+	
+	
+	void randomize(vec_d randomized_func_vals, mat_d randomized_jacobian,
+				   vec_d func_vals, mat_d jacobian_vals,
+				   comp_d hom_var);
+	
+	
+	
+	void randomize(vec_mp randomized_func_vals, mat_mp randomized_jacobian,
+				   vec_mp func_vals, mat_mp jacobian_vals,
+				   comp_mp hom_var);
+	
+	
+	/**
+	 parses "deg.out" for the degrees of the functions, and sets up the internals of this class object, for randomizing a system.
+	 */
+	void setup(int num_desired_rows, int num_funcs);
+	
+	
+	
+	
+	void send(int target, parallelism_config & mpi_config);
+	
+	void receive(int source, parallelism_config & mpi_config);
+	
+	
+protected:
+	
+	void init()
+	{
+		setup_indicator = false;
+		
+		init_mat_mp2(randomizer_matrix_full_prec,0,0,1024);
+		init_mat_mp(randomizer_matrix_mp,0,0);
+		init_mat_d(randomizer_matrix_d,0,0);
+		
+		
+		init_vec_mp(integer_coeffs_mp,0);
+		init_vec_d(integer_coeffs_d,0);
+		
+		
+		
+		init_mat_d(single_row_input_d,0,0);
+		init_mat_mp(single_row_input_mp,0,0);
+		
+		
+		
+		init_vec_d(temp_homogenizer_d,0);
+		init_vec_mp(temp_homogenizer_mp,0);
+		
+		init_vec_d(temp_funcs_d,0);
+		init_vec_mp(temp_funcs_mp,0);
+		
+		init_mat_d(temp_jac_d,0,0);
+		init_mat_mp(temp_jac_mp,0,0);
+		
+		
+		init_mat_d(temp_mat_d,0,0);
+		init_mat_mp(temp_mat_mp,0,0);
+		
+		init_vec_d(temp_vec_d,0);
+		init_vec_mp(temp_vec_mp,0);
+		
+		
+	}
+	
+	void copy(const system_randomizer & other)
+	{
+		std::cout << "copy code for system_randomizer class is incomplete" << std::endl;
+		br_exit(-1);
+		
+		max_degree_deficiency = other.max_degree_deficiency;
+		this->square_indicator = other.square_indicator;
+		
+		mat_cp_d(randomizer_matrix_d, other.randomizer_matrix_d);
+		if (other.randomizer_matrix_mp->rows>0 && other. randomizer_matrix_mp->cols>0) {
+			change_prec_mat_mp(randomizer_matrix_mp, mpf_get_prec(other.randomizer_matrix_mp->entry[0][0].r));
+		}
+		
+		mat_cp_mp(randomizer_matrix_mp, other.randomizer_matrix_mp);
+		mat_cp_mp(randomizer_matrix_full_prec, other.randomizer_matrix_full_prec);
+	}
+	
+	
+
+};//re: randomizer class
+
+
+
+
+
+
 class point_holder
 {
 	
@@ -1376,10 +1607,7 @@ public:
 	int num_curr_projections;
 	vec_mp	*pi; // the projections
 	
-	std::vector< int > randomized_degrees;
-	mat_mp randomizer_matrix;
-	
-
+	system_randomizer randomizer;
 
 	vec_mp sphere_center;
 	comp_mp sphere_radius;
@@ -1496,11 +1724,7 @@ protected:
 
 		input_filename = "unset";
 		pi = NULL;
-
-		init_mat_mp2(randomizer_matrix, 0, 0,1024);
-		randomizer_matrix->rows = randomizer_matrix->cols = 0;
 		
-		randomized_degrees.clear();
 		
 		num_curr_projections = 0;
 		num_variables = 0;
@@ -1532,7 +1756,7 @@ protected:
 		patch_holder::copy(other);
 		
 		
-		this->randomized_degrees = other.randomized_degrees;
+		this->randomizer = other.randomizer;
 		
 		this->W = other.W;
 		
@@ -1553,8 +1777,6 @@ protected:
 		}
 		
 		
-		init_mat_mp2(this->randomizer_matrix, 0, 0,1024); randomizer_matrix->rows = randomizer_matrix->cols = 0;
-		mat_cp_mp(this->randomizer_matrix, other.randomizer_matrix);
 		
 		
 		
@@ -1567,7 +1789,6 @@ protected:
 	{
 		
 
-		randomized_degrees.clear();
 		
 		if (num_curr_projections>0){
 			for (int ii=0; ii<num_curr_projections; ii++)
@@ -1579,9 +1800,7 @@ protected:
 		
 		counters.clear();
 		indices.clear();
-		randomized_degrees.clear();
 		
-		clear_mat_mp(randomizer_matrix);
 		
 		clear_mp(sphere_radius);
 		clear_vec_mp(sphere_center);
