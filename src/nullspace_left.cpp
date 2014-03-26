@@ -107,8 +107,8 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 	
 	
 	
-	vec_mp temppoint;  init_vec_mp2(temppoint, ns_config->num_x_vars + ns_config->num_v_vars,solve_options.T.AMP_max_prec);
-	temppoint->size = ns_config->num_x_vars + ns_config->num_v_vars;
+	vec_mp temppoint;  init_vec_mp2(temppoint, ns_config->num_natural_vars +ns_config->num_synth_vars + ns_config->num_v_vars,solve_options.T.AMP_max_prec);
+	temppoint->size = ns_config->num_natural_vars + ns_config->num_synth_vars + ns_config->num_v_vars;
 	
 	
 	witness_set W_step_one;
@@ -119,7 +119,7 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 	
 	
 	witness_set W_linprod;
-	W_linprod.num_variables = ns_config->num_x_vars + ns_config->num_v_vars;
+	W_linprod.num_variables = ns_config->num_natural_vars + ns_config->num_v_vars;
 	
 	
 	
@@ -197,13 +197,13 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 			matrixSolve_mp(result, tempmat,  invert_wrt_me);
 			
 			
-			offset = ns_config->num_x_vars;
+			offset = ns_config->num_natural_vars+ns_config->num_synth_vars;
 			for (int jj=0; jj<ns_config->num_v_vars; jj++)
 				set_mp(&temppoint->coord[jj+offset], &result->coord[jj]);
 			
 			
 			for (int ii=0; ii<W_step_one.num_points; ii++) {
-				for (int jj=0; jj<ns_config->num_x_vars; jj++) {
+				for (int jj=0; jj<ns_config->num_natural_vars+ns_config->num_synth_vars; jj++) {
 					set_mp(&temppoint->coord[jj], &W_step_one.pts_mp[ii]->coord[jj]);
 				}
 				W_linprod.add_point(temppoint);
@@ -237,7 +237,7 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 		mypause();
 	}
 	
-	W_linprod.num_synth_vars = ns_config->num_v_vars;
+	W_linprod.num_synth_vars = ns_config->num_v_vars+ns_config->num_synth_vars;
 	W_linprod.copy_patches(W);
 	W_linprod.cp_names(W);
 	
@@ -291,7 +291,7 @@ void ns_concluding_modifications(solver_output & solve_out,
 								 const witness_set & W,
 								 nullspace_config * ns_config)
 {
-	solve_out.num_variables  = ns_config->num_x_vars + ns_config->num_v_vars;
+	solve_out.num_variables  = ns_config->num_natural_vars + ns_config->num_v_vars;
 	solve_out.num_synth_vars = W.num_synth_vars + ns_config->num_v_vars;
 	
 	solve_out.add_patch(ns_config->v_patch);
@@ -326,38 +326,30 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	int toss;
 	parse_input_file(W.input_filename, &toss); // re-create the parsed files for the stuffs (namely the SLP).
 	
-	ns_config->randomizer = randomizer; // set the pointer.
+	ns_config->randomizer = randomizer; // set the pointer.  this randomizer is for the underlying system.
+										// we have a separate randomizer matrix for the part in the [jacobian | pi]•v part.
 	
 	*max_degree = randomizer->max_degree()-1; // minus one for differentiated degree
 	ns_config->max_degree = *max_degree;
-//	int maxiii = 0;
-//	for (int ii=0; ii<randomizer_matrix->rows; ii++	) {
-//		ns_config->randomized_degrees.push_back(randomized_degrees[ii]); // store the full degree (not derivative).
-//		if ( (randomized_degrees[ii]-1) > maxiii)
-//			maxiii = randomized_degrees[ii]-1; // minus one for the derivative
-//	}
-//	*max_degree = maxiii;
-//	
-//	
-//	FILE *IN = safe_fopen_read("deg.out"); //open the deg.out file for reading.
-//	for (int ii=0; ii<randomizer_matrix->cols; ++ii) {
-//		int tempint;
-//		fscanf(IN,"%d\n",&tempint); // read data
-//		std::cout << tempint << std::endl;
-//		ns_config->base_degrees.push_back(tempint);
-//		std::cout << ns_config->base_degrees[ii] << std::endl;
-//	}// re: ii
-//	fclose(IN);
+	
+	
 	
 	// set some integers
-	ns_config->num_v_vars = (W.num_variables-1) - target_crit_codim + 1;
-	ns_config->num_x_vars = W.num_variables;
+	
+	ns_config->num_projections = ambient_dim - target_crit_codim + 1;
+	
+	
+	ns_config->num_v_vars = (W.num_natural_vars()-1) - ambient_dim + ns_config->num_projections;
+	
+	
+	ns_config->num_synth_vars = W.num_synth_vars; // this may get a little crazy if we chain into this more than once.  this code is written to be called into only one time beyond the first.
+	ns_config->num_natural_vars = W.num_natural_vars();
 	
 	ns_config->ambient_dim = ambient_dim;
 	ns_config->target_dim = target_dim;
 	ns_config->target_crit_codim = target_crit_codim;
 	
-	ns_config->num_projections = ambient_dim - target_crit_codim + 1;
+	
 	ns_config->target_projection = (vec_mp *) br_malloc(ns_config->num_projections * sizeof(vec_mp));
 	for (int ii=0; ii<ns_config->num_projections; ii++) {
 		init_vec_mp2(ns_config->target_projection[ii], W.num_variables,solve_options.T.AMP_max_prec);
@@ -367,26 +359,54 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	
     
 	
-	int num_jac_equations = (ns_config->num_x_vars - 1);//N-1;  the subtraction of 1 is for the 1 hom-var
+	ns_config->num_jac_equations = (ns_config->num_natural_vars - 1);// N-1;  the subtraction of 1 is for the 1 hom-var.
+														// me must omit and previously added synthetic vars.
 	
-	
-	
-	if (randomizer->num_rand_funcs() != W.num_variables-W.num_patches-ambient_dim) {
-		std::cout << color::red();
-		std::cout << "mismatch in number of equations...\n" << std::endl;
-		std::cout << "left: " << randomizer->num_rand_funcs() << " right " << W.num_variables-W.num_patches-ambient_dim << std::endl;
-		std::cout << color::console_default();
-		br_exit(-1737);
-	}
-	
-	ns_config->num_jac_equations = num_jac_equations;
+	ns_config->num_additional_linears = target_dim - target_crit_codim;
 	
 	ns_config->num_v_linears = ns_config->num_jac_equations;
 	
-	if (ns_config->num_v_vars<0) {
-		std::cout << "ns_config's num_v_vars is " << ns_config->num_v_vars << "!!!" << std::endl;
-		br_exit(8230);
+	
+
+	// this check is correct.
+	int check_num_f = randomizer->num_rand_funcs() + ns_config->num_jac_equations + ns_config->num_additional_linears + W.num_patches + 1; // +1 for v patch from this incoming computation
+	int check_num_v = ns_config->num_natural_vars + ns_config->num_synth_vars + ns_config->num_v_vars;
+	if (check_num_f != check_num_v) {
+		std::cout << color::red();
+		std::cout << "mismatch in number of equations...\n" << std::endl;
+		std::cout << "left: " << check_num_f << " right " << check_num_v << std::endl;
+		std::cout << color::console_default();
+		br_exit(-1737);
 	}
+	else{
+		std::cout << "passed the square check in nullspace_left setup" << std::endl;
+	}
+	
+	
+	
+
+	
+	
+	// set up the matrix for lower randomization.
+	
+	init_mat_mp2(ns_config->lower_randomizer,ns_config->num_v_vars - ns_config->num_projections,randomizer->num_rand_funcs(),solve_options.T.AMP_max_prec);
+	ns_config->lower_randomizer->rows = ns_config->num_v_vars - ns_config->num_projections;
+	ns_config->lower_randomizer->cols = randomizer->num_rand_funcs();
+	
+	if (ns_config->lower_randomizer->rows != ns_config->lower_randomizer->cols) {
+		make_matrix_random_mp(ns_config->lower_randomizer,ns_config->num_v_vars - ns_config->num_projections,randomizer->num_rand_funcs(),solve_options.T.AMP_max_prec);
+		ns_config->randomize_lower = true;
+	}
+	else
+	{
+		make_matrix_ID_mp(ns_config->lower_randomizer,ns_config->num_v_vars - ns_config->num_projections,randomizer->num_rand_funcs());
+		ns_config->randomize_lower = false;
+	}
+	
+	
+	
+	
+	
 	
 	
 	// set up the linears in $v$  ( the M_i linears)
@@ -402,7 +422,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	
 	// the last of the linears will be used for the slicing, and passed on to later routines
 	int offset = ambient_dim - target_dim + target_crit_codim;
-	ns_config->num_additional_linears = target_dim - target_crit_codim;
+	
 	
 	ns_config->additional_linears_terminal = (vec_mp *)br_malloc((ns_config->num_additional_linears)*sizeof(vec_mp));
 	ns_config->additional_linears_starting = (vec_mp *)br_malloc((ns_config->num_additional_linears)*sizeof(vec_mp));
@@ -410,11 +430,18 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	for (int ii=0; ii<ns_config->num_additional_linears; ii++) {
 		init_vec_mp2(ns_config->additional_linears_terminal[ii],W.num_variables,solve_options.T.AMP_max_prec);
 		ns_config->additional_linears_terminal[ii]->size = W.num_variables;
-		for (int jj=0; jj<W.num_variables - W.num_synth_vars; jj++){
-			get_comp_rand_mp(&ns_config->additional_linears_terminal[ii]->coord[jj]); // should this be real?
+		if (0) {
+			for (int jj=0; jj<W.num_variables-W.num_synth_vars; jj++){
+				get_comp_rand_mp(&ns_config->additional_linears_terminal[ii]->coord[jj]); // should this be real?  no.
+			}
+			for (int jj=W.num_variables-W.num_synth_vars; jj<W.num_variables; jj++) {
+				set_zero_mp(&ns_config->additional_linears_terminal[ii]->coord[jj]);
+			}
 		}
-		for (int jj=W.num_variables - W.num_synth_vars; jj<W.num_variables; jj++) {
-			set_zero_mp(&ns_config->additional_linears_terminal[ii]->coord[jj]);
+		else{
+			for (int jj=0; jj<W.num_variables; jj++){
+				get_comp_rand_mp(&ns_config->additional_linears_terminal[ii]->coord[jj]); // should this be real?  no.
+			}
 		}
 		
 		init_vec_mp2(ns_config->additional_linears_starting[ii],W.num_variables,solve_options.T.AMP_max_prec);
@@ -432,27 +459,41 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	
 	
 	
-	mat_mp temp_getter;  init_mat_mp2(temp_getter,*max_degree, W.num_variables - W.num_synth_vars,solve_options.T.AMP_max_prec);
+	mat_mp temp_getter;  init_mat_mp2(temp_getter,*max_degree, W.num_variables,solve_options.T.AMP_max_prec);
 	temp_getter->rows = *max_degree;
-	temp_getter->cols = W.num_variables - W.num_synth_vars;
+	temp_getter->cols = W.num_variables;
 	
 	//the 'ns_config->starting_linears' will be used for the x variables.  we will homotope to these $k-\ell$ at a time
-	ns_config->starting_linears = (vec_mp **)br_malloc( num_jac_equations*sizeof(vec_mp *));
-	for (int ii=0; ii<num_jac_equations; ii++) {
+	ns_config->starting_linears = (vec_mp **)br_malloc( ns_config->num_jac_equations*sizeof(vec_mp *));
+	for (int ii=0; ii<ns_config->num_jac_equations; ii++) {
 		ns_config->starting_linears[ii] = (vec_mp *) br_malloc((*max_degree)*sizeof(vec_mp));
 		
-		make_matrix_random_mp(temp_getter,*max_degree, W.num_variables - W.num_synth_vars, solve_options.T.AMP_max_prec); // this matrix is nearly orthogonal
-		
-		for (int jj=0; jj<(*max_degree); jj++) {
-			init_vec_mp2(ns_config->starting_linears[ii][jj],W.num_variables,solve_options.T.AMP_max_prec);
-			ns_config->starting_linears[ii][jj]->size = W.num_variables;
+		if (0) {
+			make_matrix_random_mp(temp_getter,*max_degree, W.num_variables-W.num_synth_vars, solve_options.T.AMP_max_prec); // this matrix is nearly orthogonal
 			
-			for (int kk=0; kk<W.num_variables - W.num_synth_vars; kk++) { // in the natural variables only
-				set_mp(&ns_config->starting_linears[ii][jj]->coord[kk], &temp_getter->entry[jj][kk]);
+			for (int jj=0; jj<(*max_degree); jj++) {
+				init_vec_mp2(ns_config->starting_linears[ii][jj],W.num_variables,solve_options.T.AMP_max_prec);
+				ns_config->starting_linears[ii][jj]->size = W.num_variables;
+				
+				for (int kk=0; kk<W.num_variables - W.num_synth_vars; kk++) {
+					set_mp(&ns_config->starting_linears[ii][jj]->coord[kk], &temp_getter->entry[jj][kk]);
+				}
+				
+				for (int kk=W.num_variables - W.num_synth_vars; kk<W.num_variables; kk++) {
+					set_zero_mp(&ns_config->starting_linears[ii][jj]->coord[kk]);
+				}
 			}
+		}
+		else{
+			make_matrix_random_mp(temp_getter,*max_degree, W.num_variables, solve_options.T.AMP_max_prec); // this matrix is nearly orthogonal
 			
-			for (int kk=W.num_variables - W.num_synth_vars; kk<W.num_variables; kk++) {
-				set_zero_mp(&ns_config->starting_linears[ii][jj]->coord[kk]);
+			for (int jj=0; jj<(*max_degree); jj++) {
+				init_vec_mp2(ns_config->starting_linears[ii][jj],W.num_variables,solve_options.T.AMP_max_prec);
+				ns_config->starting_linears[ii][jj]->size = W.num_variables;
+				
+				for (int kk=0; kk<W.num_variables; kk++) {
+					set_mp(&ns_config->starting_linears[ii][jj]->coord[kk], &temp_getter->entry[jj][kk]);
+				}
 			}
 		}
 	}
@@ -587,17 +628,31 @@ void create_nullspace_system(boost::filesystem::path output_name,
 	//		(ii==ns_config->num_v_vars-1) ? fprintf(OUT,";\n") : fprintf(OUT,", ");
 	//	}
 	
-	
-	fprintf(OUT,"variable_group ");
-	for (ii=0;ii<numVars; ii++){
-		fprintf(OUT,"%s",vars[ii]);
-		(ii==numVars-1) ? fprintf(OUT,";\n") : fprintf(OUT,", ");
+	if (0) {
+		fprintf(OUT,"variable_group ");
+		for (ii=0;ii<numVars; ii++){
+			fprintf(OUT,"%s",vars[ii]);
+			(ii==numVars-1) ? fprintf(OUT,";\n") : fprintf(OUT,", ");
+		}
+		
+		fprintf(OUT,"hom_variable_group ");
+		for (ii=0; ii<(ns_config->num_v_vars); ii++) {
+			fprintf(OUT,"synth%d",ii+1);
+			(ii==ns_config->num_v_vars-1) ? fprintf(OUT,";\n") : fprintf(OUT,", ");
+		}
 	}
-	
-	fprintf(OUT,"hom_variable_group ");
-	for (ii=0; ii<(ns_config->num_v_vars); ii++) {
-		fprintf(OUT,"synth%d",ii+1);
-		(ii==ns_config->num_v_vars-1) ? fprintf(OUT,";\n") : fprintf(OUT,", ");
+	else
+	{
+		fprintf(OUT,"variable_group ");
+		for (ii=0;ii<numVars; ii++){
+			fprintf(OUT,"%s, ",vars[ii]);
+//			(ii==numVars-1) ? fprintf(OUT,";\n") : fprintf(OUT,", ");
+		}
+		
+		for (ii=0; ii<(ns_config->num_v_vars); ii++) {
+			fprintf(OUT,"synth%d",ii+1);
+			(ii==ns_config->num_v_vars-1) ? fprintf(OUT,";\n") : fprintf(OUT,", ");
+		}
 	}
 	
 	
@@ -693,14 +748,14 @@ void createMatlabDerivative(boost::filesystem::path output_name,
 	
 	OUT << "syms";
 	for (ii = 1; ii <= ns_config->num_projections; ii++)
-		for (int jj = 1; jj< ns_config->num_x_vars; jj++)
+		for (int jj = 1; jj< ns_config->num_natural_vars; jj++)
 			OUT << " pi_" << ii << "_" << jj+1;
 	OUT << "\n";
 	
 	OUT << "proj = [";
 	for (ii = 1; ii <= ns_config->num_projections; ii++){
 		OUT << "[";
-		for (int jj = 1; jj< ns_config->num_x_vars; jj++){
+		for (int jj = 1; jj< ns_config->num_natural_vars; jj++){
 			OUT << " pi_" << ii << "_" << jj+1 << ";";
 		}
 		OUT << " ] ";

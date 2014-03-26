@@ -542,12 +542,12 @@ void system_randomizer::change_prec(int new_prec)
 
 void system_randomizer::setup(int num_desired_rows, int num_funcs)
 {
-	if (num_desired_rows==0) {
-		std::cout << "requested a randomizer for 0 output functions..." << std::endl;
+	if (num_desired_rows<=0) {
+		std::cout << "requested a randomizer for <= 0 output functions..." << std::endl;
 		br_exit(80146);
 	}
-	if (num_funcs==0) {
-		std::cout << "requested a randomizer for 0 input functions..." << std::endl;
+	if (num_funcs<=0) {
+		std::cout << "requested a randomizer for <= 0 input functions..." << std::endl;
 		br_exit(80147);
 	}
 	
@@ -565,6 +565,7 @@ void system_randomizer::setup(int num_desired_rows, int num_funcs)
 	int num_unique_degrees = 0;
 	int occurrence_counter;
 	int tempdegree;
+	//TODO: this doesn't read correctly if there is more than one variable group.
 	for (int ii=0; ii<num_funcs; ++ii) {
 		fscanf(IN,"%d\n",&tempdegree); // read data
 		original_degrees.push_back(tempdegree);
