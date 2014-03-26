@@ -513,7 +513,10 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 	std::cout << color::bold("m") << "\ncomputing critical points of the critical curve" <<  color::console_default() << std::endl;
 	
 	
-//	solve_options.verbose_level = 10;
+	
+	
+	
+	
 	
 	solve_options.use_gamma_trick = 0;
 	
@@ -521,16 +524,57 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 	
 	solver_output solve_out;
 	
-	compute_crit_nullspace(solve_out, // the returned value
-						   W_surf,            // input the original witness set
-						   this->randomizer,
-						   &this->pi[0],
-						   2,  // dimension of ambient complex object
-						   2,   //  target dimension to find
-						   2,   // COdimension of the critical set to find.
-						   program_options,
-						   solve_options,
-						   &ns_config);
+
+	if (1) {
+		
+		int blabla;
+		parse_input_file(W_critcurve.input_filename,&blabla);
+		preproc_data_clear(&solve_options.PPD); // ugh this sucks
+		parse_preproc_data("preproc_data", &solve_options.PPD);
+		
+		
+		crit_curve.randomizer->setup(W_critcurve.num_variables - W_critcurve.num_patches - 1,solve_options.PPD.num_funcs);
+		
+		
+		compute_crit_nullspace(solve_out, // the returned value
+							   W_critcurve,            // input the original witness set
+							   crit_curve.randomizer,
+							   &this->pi[0],
+							   1,  // dimension of ambient complex object
+							   1,   //  target dimension to find
+							   1,   // COdimension of the critical set to find.
+							   program_options,
+							   solve_options,
+							   &ns_config);
+	}
+	else
+	{
+		int blabla;
+		parse_input_file(W_surf.input_filename,&blabla);
+		preproc_data_clear(&solve_options.PPD); // ugh this sucks
+		parse_preproc_data("preproc_data", &solve_options.PPD);
+		
+		
+
+		compute_crit_nullspace(solve_out, // the returned value
+							   W_surf,            // input the original witness set
+							   this->randomizer,
+							   &this->pi[0],
+							   2,  // dimension of ambient complex object
+							   2,   //  target dimension to find
+							   2,   // COdimension of the critical set to find.
+							   program_options,
+							   solve_options,
+							   &ns_config);
+		
+		
+		parse_input_file(W_critcurve.input_filename,&blabla);
+		preproc_data_clear(&solve_options.PPD); // ugh this sucks
+		parse_preproc_data("preproc_data", &solve_options.PPD);
+		crit_curve.randomizer->setup(W_critcurve.num_variables - W_critcurve.num_patches - 1,solve_options.PPD.num_funcs); // this is crap
+		
+		
+	}
 	// this will use pi[0] to compute critical points
 	
 	
@@ -546,31 +590,6 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 	
 	
 	
-	if (0) {
-
-		compute_crit_nullspace(solve_out, // the returned value
-							   W_surf,            // input the original witness set
-							   this->randomizer,
-							   &this->pi[1],
-							   2,  // dimension of ambient complex object
-							   2,   //  target dimension to find
-							   2,   // COdimension of the critical set to find.
-							   program_options,
-							   solve_options,
-							   &ns_config);
-		// this will use pi[1] to compute critical points
-		
-		witness_set W_crit2;
-		solve_out.get_noninfinite_w_mult_full(W_crit2);
-		W_crit2.only_first_vars(num_variables);
-		W_crit2.sort_for_real(&solve_options.T);
-		
-		ns_config.clear();
-		
-		W_critcurve_crit.merge(W_crit2);
-	}
-	
-	
 	
 	if (have_sphere_radius) {
 		W_critcurve_crit.sort_for_inside_sphere(sphere_radius, sphere_center);
@@ -583,9 +602,7 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 	
 	crit_curve.copy_sphere_bounds(*this); // copy the bounds into the critcurve.
 	
-	std::cout << "adskfajs" <<std::endl;
-	br_exit(12312312);
-	crit_curve.randomizer->setup(1,1);
+	
 	
 	std::cout << color::bold("m") << "intersecting critical curve with sphere" << color::console_default() << std::endl;
 	
