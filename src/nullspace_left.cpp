@@ -51,7 +51,7 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 	
 	
 	if (max_degree==0) {
-		// this will probably need tweaking when the dimension is higher.  but who really is going to decompose a linear surface?
+		// this will probably need tweaking when the dimension is higher than 1.  but who really is going to decompose a linear surface?
 		solve_out.copy_patches(W);
 		ns_concluding_modifications(solve_out, W, ns_config);
 		
@@ -119,7 +119,7 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 	
 	
 	witness_set W_linprod;
-	W_linprod.num_variables = ns_config->num_natural_vars + ns_config->num_v_vars;
+	W_linprod.num_variables = ns_config->num_natural_vars + ns_config->num_v_vars + ns_config->num_synth_vars;
 	
 	
 	
@@ -388,18 +388,21 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	
 	
 	// set up the matrix for lower randomization.
+	int num_lower_postrand = ns_config->num_v_vars - ns_config->num_projections;
+	int num_lower_prerand = randomizer->num_rand_funcs();
 	
-	init_mat_mp2(ns_config->lower_randomizer,ns_config->num_v_vars - ns_config->num_projections,randomizer->num_rand_funcs(),solve_options.T.AMP_max_prec);
-	ns_config->lower_randomizer->rows = ns_config->num_v_vars - ns_config->num_projections;
-	ns_config->lower_randomizer->cols = randomizer->num_rand_funcs();
+	init_mat_mp2(ns_config->lower_randomizer,num_lower_postrand,num_lower_prerand,solve_options.T.AMP_max_prec);
+	
+	ns_config->lower_randomizer->rows = num_lower_postrand;
+	ns_config->lower_randomizer->cols = num_lower_prerand;
 	
 	if (ns_config->lower_randomizer->rows != ns_config->lower_randomizer->cols) {
-		make_matrix_random_mp(ns_config->lower_randomizer,ns_config->num_v_vars - ns_config->num_projections,randomizer->num_rand_funcs(),solve_options.T.AMP_max_prec);
+		make_matrix_random_mp(ns_config->lower_randomizer,num_lower_postrand,num_lower_prerand,solve_options.T.AMP_max_prec);
 		ns_config->randomize_lower = true;
 	}
 	else
 	{
-		make_matrix_ID_mp(ns_config->lower_randomizer,ns_config->num_v_vars - ns_config->num_projections,randomizer->num_rand_funcs());
+		make_matrix_ID_mp(ns_config->lower_randomizer,num_lower_postrand,num_lower_prerand);
 		ns_config->randomize_lower = false;
 	}
 	

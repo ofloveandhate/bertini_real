@@ -524,7 +524,8 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 	
 	solver_output solve_out;
 	
-
+//	solve_options.verbose_level = program_options.verbose_level = 10;
+	
 	if (1) {
 		
 		int blabla;
