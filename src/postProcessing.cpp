@@ -10,6 +10,7 @@ void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check
 	
 	int num_nat_vars = num_variables-num_synth_vars;
 	
+	std::cout << num_nat_vars << " nat vars in post_process" << std::endl;
 	
 	// sets the multiplicity and solution number in the endPoints data
 	//direct from the bertini library:
@@ -208,7 +209,7 @@ int BRfindFiniteSolns(post_process_t *endPoints, int num_sols, int num_vars,
 			else{
 				endPoints[ii].isFinite = 0;
 			}
-//			print_point_to_screen_matlab(dehom_d,"soln");
+			print_point_to_screen_matlab(dehom_d,"soln");
 			
 		}
 		else // high precision, do mp
@@ -228,7 +229,7 @@ int BRfindFiniteSolns(post_process_t *endPoints, int num_sols, int num_vars,
 			else{
 				endPoints[ii].isFinite = 0;
 			}
-//			print_point_to_screen_matlab(dehom_mp,"soln");
+			print_point_to_screen_matlab(dehom_mp,"soln");
 		}
 	}
 	

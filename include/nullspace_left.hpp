@@ -166,7 +166,7 @@ public:
 			std::cout << inactive_registers[ii] << " ";
 		std::cout << "\t|\t";
 		
-		std::cout << "registers values: ";
+		std::cout << "register values: ";
 		for (int ii=0; ii<num_active_registers; ii++)
 			std::cout << registers[ii] << " ";
 		std::cout << "\n";

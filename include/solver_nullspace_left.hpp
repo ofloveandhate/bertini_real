@@ -43,11 +43,16 @@ public:
 	int num_projections;
 	
 	int num_v_vars;  ///< N   number of variables in original problem statement (including homogenizing variables)
-	int num_x_vars;  ///< N-k+\ell
+	int num_natural_vars;  ///< N-k+\ell
+	int num_synth_vars;
+	
 	
 	int max_degree;						///< the max degree of differentiated (randomized) functions
 	
 	system_randomizer * randomizer;
+	
+	bool randomize_lower;
+	mat_mp lower_randomizer;
 	
 	vec_mp **starting_linears;	///< outer layer should have as many as there are randomized equations (N-k)
 								///< inside layer has number corresponding to max of randomized_degrees
@@ -85,7 +90,7 @@ private:
 	void init()
 	{
 		target_dim = ambient_dim = target_crit_codim = num_jac_equations = -1;
-		num_x_vars = num_v_vars = -1;
+		num_natural_vars = num_v_vars = num_synth_vars = -1;
 		max_degree = -1;
 		numerical_derivative = false;
 		
@@ -118,9 +123,10 @@ public:
 	int ambient_dim;  // k			the dimension of the complex component we are looking IN.
 	int target_crit_codim;    // \ell.  must be at least one (1), and at most target_dim (r).
 	
-	int num_natural_vars;
-	int num_x_vars;  // N   number of variables in original problem statement (including homogenizing variables)
+	int num_natural_vars;  // N   number of variables in original problem statement (including homogenizing variables)
 	int num_v_vars;  // (N-k) + (k-\ell+1)
+	int num_synth_vars;
+	
 	
 	int max_degree;						// the max degree of differentiated (randomized) functions
 
@@ -150,15 +156,14 @@ public:
 	vec_mp v_patch;
 	vec_mp v_patch_full_prec;
 	
+	bool randomize_lower;
+	mat_mp lower_randomizer;
+	mat_mp lower_randomizer_full_prec;
 	
 	mat_mp jac_with_proj;
 	mat_mp jac_with_proj_full_prec;
 	
 	
-	comp_mp perturbation;
-	comp_mp perturbation_full_prec;
-	comp_mp half;
-	comp_mp half_full_prec;
 	
 	int num_projections;
 	vec_mp *target_projection; // # of these should be target_dim (for now)
@@ -199,9 +204,10 @@ public:
 		ambient_dim = 0;  // k			the dimension of the complex component we are looking IN.
 		target_crit_codim = 0;    // \ell.  must be at least one (1), and at most target_dim (r).
 		
-		num_natural_vars = 0;
-		num_v_vars = 0;  // N   number of variables in original problem statement (including homogenizing variables)
-		num_x_vars = 0;  // N-k+\ell
+		num_v_vars = -771;  // N   number of variables in original problem statement (including homogenizing variables)
+		num_natural_vars = -791;  // N-k+\ell
+		num_synth_vars = -1341;
+		
 		
 		max_degree = 0;						// the max degree of differentiated (randomized) functions
 		
@@ -290,8 +296,9 @@ private:
 		
 		clear_mat_mp(jac_with_proj);
 		
-		clear_mp(perturbation);
-		clear_mp(half);
+		clear_mat_mp(lower_randomizer);
+		
+
 		
 		
 		if (num_projections>0) {
@@ -304,6 +311,8 @@ private:
 		
 		
 		if (this->MPType==2) {
+			
+			clear_mat_mp(lower_randomizer_full_prec);
 			
 			if (num_additional_linears>0) {
 				for (int ii=0; ii<num_additional_linears; ii++) {
@@ -335,8 +344,7 @@ private:
 			
 			clear_vec_mp(v_patch_full_prec);
 			clear_mat_mp(jac_with_proj_full_prec);
-			clear_mp(perturbation_full_prec);
-			clear_mp(half_full_prec);
+
 			
 			
 			if (num_projections>0) {
@@ -424,11 +432,8 @@ private:
 		mat_cp_mp(this->jac_with_proj, other.jac_with_proj);
 		mat_cp_mp(this->jac_with_proj_full_prec, other.jac_with_proj_full_prec);
 		
-		set_mp(this->perturbation,other.perturbation);
-		set_mp(this->perturbation_full_prec,other.perturbation_full_prec);
+
 		
-		set_mp(this->half,other.half);
-		set_mp(this->half_full_prec, other.half_full_prec);
 		
 		
 		
@@ -451,9 +456,9 @@ private:
 		this->ambient_dim = other.ambient_dim;  // k			the dimension of the complex component we are looking IN.
 		this->target_crit_codim = other.target_crit_codim;    // \ell.  must be at least one (1), and at most target_dim (r).
 		
-		this->num_natural_vars = other.num_natural_vars;
 		this->num_v_vars = other.num_v_vars;  // N   number of variables in original problem statement (including homogenizing variables)
-		this->num_x_vars = other.num_x_vars;  // N-k+\ell
+		this->num_natural_vars = other.num_natural_vars;  // N-k+\ell
+		this->num_synth_vars = other.num_synth_vars;
 		
 		this->max_degree = other.max_degree;						// the max degree of differentiated (randomized) functions
 		
@@ -497,9 +502,9 @@ public:
 	int ambient_dim;  // k			the dimension of the complex component we are looking IN.
 	int target_crit_codim;    // \ell.  must be at least one (1), and at most target_dim (r).
 	
-	int num_natural_vars;
-	int num_x_vars;  // N   number of variables in original problem statement (including homogenizing variables)
+	int num_natural_vars;  // N   number of variables in original problem statement (including homogenizing variables)
 	int num_v_vars;  // (N-k) + (k-\ell+1)
+	int num_synth_vars;
 	
 	int max_degree;						// the max degree of differentiated (randomized) functions
 	
@@ -519,12 +524,12 @@ public:
 	
 	vec_d v_patch;
 	
+	bool randomize_lower;
+	mat_d lower_randomizer;
 	
 	mat_d jac_with_proj;
 	
 	
-	comp_d perturbation;
-	comp_d half;
 	
 	int num_projections;
 	vec_d *target_projection; // # of these should be target_dim (for now)
@@ -562,11 +567,11 @@ public:
 		ambient_dim = 0;  // k			the dimension of the complex component we are looking IN.
 		target_crit_codim = 0;    // \ell.  must be at least one (1), and at most target_dim (r).
 		
-		num_natural_vars = 0;
-		num_v_vars = 0;  // N   number of variables in original problem statement (including homogenizing variables)
-		num_x_vars = 0;  // N-k+\ell
+		num_synth_vars = -1631;
+		num_v_vars = -941;  // N   number of variables in original problem statement (including homogenizing variables)
+		num_natural_vars = -746;  // N-k+\ell
 		
-		max_degree = 0;						// the max degree of differentiated (randomized) functions
+		max_degree = -112;						// the max degree of differentiated (randomized) functions
 		
 		
 		num_projections = 0;
@@ -649,11 +654,10 @@ private:
 		
 		
 		clear_vec_d(v_patch);
-		
+		clear_mat_d(lower_randomizer);
 		clear_mat_d(jac_with_proj);
 		
-		clear_d(perturbation);
-		clear_d(half);
+
 		
 		
 		if (num_projections>0) {
@@ -736,9 +740,6 @@ private:
 		
 		mat_cp_d(this->jac_with_proj, other.jac_with_proj);
 		
-		set_d(this->perturbation,other.perturbation);
-		
-		set_d(this->half,other.half);
 		
 		
 		
@@ -758,9 +759,9 @@ private:
 		this->ambient_dim = other.ambient_dim;  // k			the dimension of the complex component we are looking IN.
 		this->target_crit_codim = other.target_crit_codim;    // \ell.  must be at least one (1), and at most target_dim (r).
 		
-		this->num_natural_vars = other.num_natural_vars;
 		this->num_v_vars = other.num_v_vars;  // N   number of variables in original problem statement (including homogenizing variables)
-		this->num_x_vars = other.num_x_vars;  // N-k+\ell
+		this->num_natural_vars = other.num_natural_vars;  // N-k+\ell
+		this->num_synth_vars = other.num_synth_vars;
 		
 		this->max_degree = other.max_degree;						// the max degree of differentiated (randomized) functions
 		

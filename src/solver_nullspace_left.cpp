@@ -172,14 +172,6 @@ void nullspacejac_eval_data_mp::init()
 	
 	init_mat_mp(lower_randomizer,0,0);
 	
-	init_mp(perturbation);
-	comp_d p; p->r = PERTURBATION_VALUE_mp; p->i = PERTURBATION_VALUE_mp;
-	d_to_mp(perturbation,p);
-    
-    
-	init_mp(half);
-	mpf_set_str(half->r, "0.5", 10);
-	mpf_set_str(half->i, "0.0", 10);
     
 	
 	
@@ -195,11 +187,6 @@ void nullspacejac_eval_data_mp::init()
 		init_mat_mp2(lower_randomizer_full_prec,0,0,1024);
 		init_vec_mp2(v_patch_full_prec,0,1024);
 		init_mat_mp2(jac_with_proj_full_prec,0,0,1024);
-		init_mp2(perturbation_full_prec,1024);
-		init_mp2(half_full_prec,1024);
-		d_to_mp(perturbation_full_prec,p);
-		mpf_set_str(half_full_prec->r, "0.5", 10);
-        mpf_set_str(half_full_prec->i, "0.0", 10);
 	}
 	
 	
@@ -609,8 +596,8 @@ int nullspacejac_eval_data_mp::setup(prog_t * _SLP,
 	jac_with_proj->cols = ns_config->num_v_vars;
 	
 	for (int ii=0; ii<ns_config->num_projections; ii++) {
-		init_vec_mp(target_projection[ii],ns_config->num_natural_vars);
-		target_projection[ii]->size =  ns_config->num_natural_vars;
+		init_vec_mp(target_projection[ii],ns_config->num_natural_vars+ ns_config->num_synth_vars);
+		target_projection[ii]->size =  ns_config->num_natural_vars+ ns_config->num_synth_vars;
 		vec_cp_mp(target_projection[ii], ns_config->target_projection[ii]);
 	}
 	
@@ -632,12 +619,12 @@ int nullspacejac_eval_data_mp::setup(prog_t * _SLP,
 	additional_linears_starting = (vec_mp *) br_malloc(ns_config->num_additional_linears*sizeof(vec_mp));
 	
 	for (int ii=0; ii<ns_config->num_additional_linears; ii++) {
-		init_vec_mp(additional_linears_terminal[ii], ns_config->num_natural_vars);
-		additional_linears_terminal[ii]->size = ns_config->num_natural_vars;
+		init_vec_mp(additional_linears_terminal[ii], ns_config->num_natural_vars+ ns_config->num_synth_vars);
+		additional_linears_terminal[ii]->size = ns_config->num_natural_vars+ ns_config->num_synth_vars;
 		vec_cp_mp(additional_linears_terminal[ii],ns_config->additional_linears_terminal[ii]);
 		
-		init_vec_mp(additional_linears_starting[ii], ns_config->num_natural_vars);
-		additional_linears_starting[ii]->size = ns_config->num_natural_vars;
+		init_vec_mp(additional_linears_starting[ii], ns_config->num_natural_vars+ ns_config->num_synth_vars);
+		additional_linears_starting[ii]->size = ns_config->num_natural_vars+ ns_config->num_synth_vars;
 		vec_cp_mp(additional_linears_starting[ii],ns_config->additional_linears_starting[ii]);
 	}
 	
@@ -646,8 +633,8 @@ int nullspacejac_eval_data_mp::setup(prog_t * _SLP,
 	for (int ii=0; ii<ns_config->num_jac_equations; ++ii) {
 		starting_linears[ii] = (vec_mp *)br_malloc(ns_config->max_degree*sizeof(vec_mp));
 		for (int jj=0; jj<ns_config->max_degree; jj++) {
-			init_vec_mp(starting_linears[ii][jj],W.num_variables);
-			starting_linears[ii][jj]->size = W.num_variables;
+			init_vec_mp(starting_linears[ii][jj],ns_config->num_natural_vars+ ns_config->num_synth_vars);
+			starting_linears[ii][jj]->size = ns_config->num_natural_vars+ ns_config->num_synth_vars;
 			
 			vec_cp_mp(starting_linears[ii][jj], ns_config->starting_linears[ii][jj]);
 		}
@@ -669,8 +656,8 @@ int nullspacejac_eval_data_mp::setup(prog_t * _SLP,
 		jac_with_proj_full_prec->cols = ns_config->num_v_vars;
 		
 		for (int ii=0; ii<ns_config->num_projections; ii++) {
-			init_vec_mp2(target_projection_full_prec[ii],ns_config->num_natural_vars,solve_options.T.AMP_max_prec);
-			target_projection_full_prec[ii]->size =  ns_config->num_natural_vars;
+			init_vec_mp2(target_projection_full_prec[ii],ns_config->num_natural_vars+ ns_config->num_synth_vars,solve_options.T.AMP_max_prec);
+			target_projection_full_prec[ii]->size =  ns_config->num_natural_vars+ ns_config->num_synth_vars;
 			vec_cp_mp(target_projection_full_prec[ii], ns_config->target_projection[ii]);
 
 		}
@@ -693,12 +680,12 @@ int nullspacejac_eval_data_mp::setup(prog_t * _SLP,
 		additional_linears_starting_full_prec = (vec_mp *) br_malloc(ns_config->num_additional_linears*sizeof(vec_mp));
 		
 		for (int ii=0; ii<ns_config->num_additional_linears; ii++) {
-			init_vec_mp2(additional_linears_terminal_full_prec[ii], ns_config->num_natural_vars,solve_options.T.AMP_max_prec);
-			additional_linears_terminal_full_prec[ii]->size = ns_config->num_natural_vars;
+			init_vec_mp2(additional_linears_terminal_full_prec[ii], ns_config->num_natural_vars+ ns_config->num_synth_vars,solve_options.T.AMP_max_prec);
+			additional_linears_terminal_full_prec[ii]->size = ns_config->num_natural_vars+ ns_config->num_synth_vars;
 			vec_cp_mp(additional_linears_terminal_full_prec[ii],ns_config->additional_linears_terminal[ii]);
 			
-			init_vec_mp2(additional_linears_starting_full_prec[ii], ns_config->num_natural_vars,solve_options.T.AMP_max_prec);
-			additional_linears_starting_full_prec[ii]->size = ns_config->num_natural_vars;
+			init_vec_mp2(additional_linears_starting_full_prec[ii], ns_config->num_natural_vars+ ns_config->num_synth_vars,solve_options.T.AMP_max_prec);
+			additional_linears_starting_full_prec[ii]->size = ns_config->num_natural_vars+ ns_config->num_synth_vars;
 			vec_cp_mp(additional_linears_starting_full_prec[ii],ns_config->additional_linears_starting[ii]);
 		}
 		
@@ -707,8 +694,8 @@ int nullspacejac_eval_data_mp::setup(prog_t * _SLP,
 		for (int ii=0; ii<ns_config->num_jac_equations; ++ii) {
 			starting_linears_full_prec[ii] = (vec_mp *)br_malloc(ns_config->max_degree*sizeof(vec_mp));
 			for (int jj=0; jj<ns_config->max_degree; jj++) {
-				init_vec_mp2(starting_linears_full_prec[ii][jj],W.num_variables,solve_options.T.AMP_max_prec);
-				starting_linears_full_prec[ii][jj]->size = W.num_variables;
+				init_vec_mp2(starting_linears_full_prec[ii][jj],ns_config->num_natural_vars+ ns_config->num_synth_vars,solve_options.T.AMP_max_prec);
+				starting_linears_full_prec[ii][jj]->size = ns_config->num_natural_vars+ ns_config->num_synth_vars;
 				
 				vec_cp_mp(starting_linears_full_prec[ii][jj], ns_config->starting_linears[ii][jj]);
 			}
@@ -862,10 +849,7 @@ void nullspacejac_eval_data_d::init()
 	int id;
 	MPI_Comm_rank(MPI_COMM_WORLD, &id);
 	
-	half->r = 0.5; half->i = 0.0;
-	
-	perturbation->r = PERTURBATION_VALUE; perturbation->i = PERTURBATION_VALUE;
-	
+
 	
 	target_projection = NULL; //
 	
@@ -1150,8 +1134,8 @@ int nullspacejac_eval_data_d::setup(prog_t * _SLP,
 	jac_with_proj->cols = ns_config->num_v_vars;
 	
 	for (int ii=0; ii<ns_config->num_projections; ii++) {
-		init_vec_d(target_projection[ii],ns_config->num_natural_vars);
-		target_projection[ii]->size =  ns_config->num_natural_vars;
+		init_vec_d(target_projection[ii],ns_config->num_natural_vars+ns_config->num_synth_vars);
+		target_projection[ii]->size =  ns_config->num_natural_vars+ns_config->num_synth_vars;
 		vec_mp_to_d(target_projection[ii], ns_config->target_projection[ii]); // copy in the projection
 	}
 	
@@ -1173,12 +1157,12 @@ int nullspacejac_eval_data_d::setup(prog_t * _SLP,
 	additional_linears_starting = (vec_d *) br_malloc(ns_config->num_additional_linears*sizeof(vec_d));
 	
 	for (int ii=0; ii<ns_config->num_additional_linears; ii++) {
-		init_vec_d(additional_linears_terminal[ii], ns_config->num_natural_vars);
-		additional_linears_terminal[ii]->size = ns_config->num_natural_vars;
+		init_vec_d(additional_linears_terminal[ii], ns_config->num_natural_vars+ns_config->num_synth_vars);
+		additional_linears_terminal[ii]->size = ns_config->num_natural_vars+ns_config->num_synth_vars;
 		vec_mp_to_d(additional_linears_terminal[ii],ns_config->additional_linears_terminal[ii]);
 		
-		init_vec_d(additional_linears_starting[ii], ns_config->num_natural_vars);
-		additional_linears_starting[ii]->size = ns_config->num_natural_vars;
+		init_vec_d(additional_linears_starting[ii], ns_config->num_natural_vars+ns_config->num_synth_vars);
+		additional_linears_starting[ii]->size = ns_config->num_natural_vars+ns_config->num_synth_vars;
 		vec_mp_to_d(additional_linears_starting[ii],ns_config->additional_linears_starting[ii]);
 	}
 	
@@ -1189,8 +1173,8 @@ int nullspacejac_eval_data_d::setup(prog_t * _SLP,
 	for (int ii=0; ii<ns_config->num_jac_equations; ++ii) {
 		starting_linears[ii] = (vec_d *)br_malloc(ns_config->max_degree*sizeof(vec_d));
 		for (int jj=0; jj<ns_config->max_degree; jj++) {
-			init_vec_d(starting_linears[ii][jj],W.num_variables);
-			starting_linears[ii][jj]->size = W.num_variables;
+			init_vec_d(starting_linears[ii][jj],ns_config->num_synth_vars+ns_config->num_natural_vars);
+			starting_linears[ii][jj]->size = ns_config->num_synth_vars+ns_config->num_natural_vars;
 			
 			vec_mp_to_d(starting_linears[ii][jj], ns_config->starting_linears[ii][jj]);
 		}
@@ -1367,36 +1351,42 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 	}
 	
 	
-	if (MPType==0) {
-		vec_d tempvec;  init_vec_d(tempvec,0);
-		for (int ii=0;ii<W.num_points;ii++)
-		{
-			vec_mp_to_d(tempvec,W.pts_mp[ii]);
-			if (check_isstart_nullspacejac_d(tempvec,&solve_options.T,ED_d)==0)
+	
+	if (1) {
+		if (MPType==0) {
+			vec_d tempvec;  init_vec_d(tempvec,0);
+			for (int ii=0;ii<W.num_points;ii++)
 			{
-				std::cout << "point " << ii << " doesn't appear to be a start point.  it will be refined before starting..." << std::endl;
+				vec_mp_to_d(tempvec,W.pts_mp[ii]);
+				if (check_isstart_nullspacejac_d(tempvec,&solve_options.T,ED_d)==0)
+				{
+					std::cout << "point " << ii << " doesn't appear to be a start point.  it will be refined before starting..." << std::endl;
+				}
+				
 			}
-			
+			clear_vec_d(tempvec);
 		}
-		clear_vec_d(tempvec);
-	}
-	else{
-		vec_mp tempvec;  init_vec_mp(tempvec,0);
-		for (int ii=0;ii<W.num_points;ii++)
-		{
-			vec_cp_mp(tempvec,W.pts_mp[ii]);
-			if (check_isstart_nullspacejac_mp(tempvec,&solve_options.T,ED_mp)==0)
+		else{
+			vec_mp tempvec;  init_vec_mp(tempvec,0);
+			for (int ii=0;ii<W.num_points;ii++)
 			{
-				std::cout << "point " << ii << " doesn't appear to be a start point.  it will be refined before starting..." << std::endl;
+				vec_cp_mp(tempvec,W.pts_mp[ii]);
+				if (check_isstart_nullspacejac_mp(tempvec,&solve_options.T,ED_mp)==0)
+				{
+					std::cout << "point " << ii << " doesn't appear to be a start point.  it will be refined before starting..." << std::endl;
+				}
+				
 			}
-			
+			clear_vec_mp(tempvec);
 		}
-		clear_vec_mp(tempvec);
+	}
+
+	
+	if (0) {
+		check_nullspace_evaluator(W.pts_mp[0],ED_d);
 	}
 	
 	
-	
-//	check_nullspace_evaluator(W.pts_mp[0],ED_d);
 	
 	master_solver(solve_out, W,
                   ED_d, ED_mp,
@@ -1802,6 +1792,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	else
 	{
 		
+		
 		if (BED->randomize_lower) {
 			mat_mul_d(tempmat1,BED->lower_randomizer,temp_jacobian_functions);
 		}
@@ -1929,6 +1920,8 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	///////////////
 	// DIFFERENTIATE THE derivative of the target jacobian system wrt $h,x_i$.
 	/////////////////
+	
+	//  compute ∂/∂h
 	
 	// tempmat1 will hold the second derivatives, omitting the homvar column (hence the minus 1), and omitting all synth variables, too
 	increase_size_mat_d(tempmat1,temp_function_values->size,BED->num_natural_vars-1);
@@ -2071,7 +2064,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	
 	
-	
+	change_size_mat_d(tempmat1,BED->randomizer->num_base_funcs(),BED->num_natural_vars+BED->num_synth_vars);
 	
 	// THE X VARS
 	curr_v_vars->size -= BED->num_projections; // truncate.  this is for optimization, not theoretical reasons
@@ -3175,8 +3168,7 @@ int change_nullspacejac_eval_prec(void const *ED, int new_prec)
 		change_prec_mat_mp(BED->jac_with_proj,new_prec);
 		mat_cp_mp(BED->jac_with_proj,BED->jac_with_proj_full_prec);
 		
-		change_prec_mp(BED->perturbation,new_prec);
-		change_prec_mp(BED->half,new_prec); // REMOVE THESE, they are remnants of numerical differentiation
+
 		
 		change_prec_mat_mp(BED->lower_randomizer,new_prec);
 		mat_cp_mp(BED->lower_randomizer,BED->lower_randomizer_full_prec);
@@ -3197,14 +3189,7 @@ int check_issoln_nullspacejac_d(endgame_data_t *EG,
 {
 	nullspacejac_eval_data_d *BED = (nullspacejac_eval_data_d *)ED; // to avoid having to cast every time
 	
-	
-	int ii;
-	
-	vec_d curr_v_vars; init_vec_d(curr_v_vars, BED->num_v_vars);
-	curr_v_vars->size = BED->num_v_vars;
-	
-	vec_d curr_x_vars; init_vec_d(curr_x_vars, BED->num_natural_vars);
-	curr_x_vars->size = BED->num_natural_vars;
+
 	
 	double n1, n2, max_rat;
 	point_d f;
@@ -3227,33 +3212,18 @@ int check_issoln_nullspacejac_d(endgame_data_t *EG,
 		vec_d terminal_pt;  init_vec_d(terminal_pt,1);
 		vec_mp_to_d(terminal_pt,EG->PD_mp.point);
 		evalProg_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, terminal_pt, EG->PD_d.time, BED->SLP);
-		//		lin_to_lin_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, terminal_pt, EG->PD_d.time, ED);
-		
-		
-		for (ii=0; ii<BED->num_natural_vars; ii++)
-			set_d(&curr_x_vars->coord[ii], &terminal_pt->coord[ii]);
-		
-		for (ii=0; ii<BED->num_v_vars; ii++)
-			set_d(&curr_v_vars->coord[ii], &terminal_pt->coord[ii+BED->num_natural_vars]);
-		
 		clear_vec_d(terminal_pt);
 	}
 	else{
 		evalProg_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_d.point, EG->PD_d.time, BED->SLP);
-		//		lin_to_lin_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_d.point, EG->PD_d.time, ED);
 		
-		for (ii=0; ii<BED->num_natural_vars; ii++)
-			set_d(&curr_x_vars->coord[ii], &EG->PD_d.point->coord[ii]);
-		
-		for (ii=0; ii<BED->num_v_vars; ii++)
-			set_d(&curr_v_vars->coord[ii], &EG->PD_d.point->coord[ii+BED->num_natural_vars]);
 		
 	}
 	
 	
 	if (EG->last_approx_prec>=64) {
 		vec_d prev_pt;  init_vec_d(prev_pt,1);
-		vec_mp_to_d(prev_pt,EG->PD_mp.point);
+		vec_mp_to_d(prev_pt,EG->last_approx_mp);
 		evalProg_d(f, e.parVals, e.parDer, e.Jv, e.Jp, prev_pt, EG->PD_d.time, BED->SLP);
 		clear_vec_d(prev_pt);}
 	else{
@@ -3270,7 +3240,7 @@ int check_issoln_nullspacejac_d(endgame_data_t *EG,
 	//	print_point_to_screen_matlab(EG->PD_d.point,"soln");
 	//	print_point_to_screen_matlab(e.funcVals,"howfaroff");	// compare the function values
 	int isSoln = 1;
-	for (ii = 0; (ii < BED->SLP->numFuncs) && isSoln; ii++)
+	for (int ii = 0; (ii < BED->SLP->numFuncs) && isSoln; ii++)
 	{
 		n1 = d_abs_d( &e.funcVals->coord[ii]); // corresponds to final point
 		n2 = d_abs_d( &f->coord[ii]); // corresponds to the previous point
@@ -3530,12 +3500,77 @@ void check_nullspace_evaluator(point_mp current_values,
 	point_d tempvec;  init_point_d(tempvec,0);
 	point_d tempvec2;  init_point_d(tempvec2,0);
 	make_vec_random_d(tempvec, current_values->size);
-	vec_cp_d(tempvec2, tempvec);
+	
 	
 	comp_d lambda;
-//	lambda->r = 2; lambda->i = 0;
-	get_comp_rand_d(lambda);
+	lambda->r = 2; lambda->i = 0;
+//	get_comp_rand_d(lambda);
 	
+	
+	vec_cp_d(tempvec2, tempvec);
+	for (ii=0; ii<BED->num_natural_vars+BED->num_synth_vars; ii++) {
+		mul_d(&tempvec2->coord[ii],&tempvec->coord[ii],lambda);
+	}
+	
+	print_point_to_screen_matlab(tempvec,"input");
+	printf("lambda = %lf+1i*%lf\n",lambda->r, lambda->i);
+	
+	set_zero_d(time);
+	BED->evaluator_function_d(e_d.funcVals, e_d.parVals, e_d.parDer, e_d.Jv, e_d.Jp, tempvec, time, ED);
+	BED->evaluator_function_d(e_d2.funcVals, e_d2.parVals, e_d2.parDer, e_d2.Jv, e_d2.Jp, tempvec2, time, ED);
+	
+	print_point_to_screen_matlab(e_d.funcVals,"f1");
+	print_point_to_screen_matlab(e_d2.funcVals,"f2");
+	print_matrix_to_screen_matlab(e_d.Jv,"j1");
+	print_matrix_to_screen_matlab(e_d2.Jv,"j2");
+	
+	set_one_d(time);
+	BED->evaluator_function_d(e_d.funcVals, e_d.parVals, e_d.parDer, e_d.Jv, e_d.Jp, tempvec, time, ED);
+	BED->evaluator_function_d(e_d2.funcVals, e_d2.parVals, e_d2.parDer, e_d2.Jv, e_d2.Jp, tempvec2, time, ED);
+	
+	print_point_to_screen_matlab(e_d.funcVals,"g1");
+	print_point_to_screen_matlab(e_d2.funcVals,"g2");
+	print_matrix_to_screen_matlab(e_d.Jv,"k1");
+	print_matrix_to_screen_matlab(e_d2.Jv,"k2");
+	
+	
+	
+	
+	
+	
+	
+	
+
+	vec_cp_d(tempvec2, tempvec);
+	for (ii=BED->num_natural_vars+BED->num_synth_vars; ii<BED->num_variables; ii++) {
+		mul_d(&tempvec2->coord[ii],&tempvec->coord[ii],lambda);
+	}
+	
+	print_point_to_screen_matlab(tempvec,"input");
+	printf("lambda = %lf+1i*%lf\n",lambda->r, lambda->i);
+	
+	set_zero_d(time);
+	BED->evaluator_function_d(e_d.funcVals, e_d.parVals, e_d.parDer, e_d.Jv, e_d.Jp, tempvec, time, ED);
+	BED->evaluator_function_d(e_d2.funcVals, e_d2.parVals, e_d2.parDer, e_d2.Jv, e_d2.Jp, tempvec2, time, ED);
+	
+	print_point_to_screen_matlab(e_d.funcVals,"f1");
+	print_point_to_screen_matlab(e_d2.funcVals,"f2");
+	print_matrix_to_screen_matlab(e_d.Jv,"j1");
+	print_matrix_to_screen_matlab(e_d2.Jv,"j2");
+	
+	set_one_d(time);
+	BED->evaluator_function_d(e_d.funcVals, e_d.parVals, e_d.parDer, e_d.Jv, e_d.Jp, tempvec, time, ED);
+	BED->evaluator_function_d(e_d2.funcVals, e_d2.parVals, e_d2.parDer, e_d2.Jv, e_d2.Jp, tempvec2, time, ED);
+	
+	print_point_to_screen_matlab(e_d.funcVals,"g1");
+	print_point_to_screen_matlab(e_d2.funcVals,"g2");
+	print_matrix_to_screen_matlab(e_d.Jv,"k1");
+	print_matrix_to_screen_matlab(e_d2.Jv,"k2");
+	
+	
+	
+	
+	vec_cp_d(tempvec2, tempvec);
 	for (ii=0; ii<BED->num_variables; ii++) {
 		mul_d(&tempvec2->coord[ii],&tempvec->coord[ii],lambda);
 	}
@@ -3560,6 +3595,11 @@ void check_nullspace_evaluator(point_mp current_values,
 	print_point_to_screen_matlab(e_d2.funcVals,"g2");
 	print_matrix_to_screen_matlab(e_d.Jv,"k1");
 	print_matrix_to_screen_matlab(e_d2.Jv,"k2");
+	
+	
+	
+	
+	
 	
 	
 	clear_eval_struct_d(e_d);

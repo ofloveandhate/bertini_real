@@ -140,6 +140,7 @@ public:
 	{
 		
 		if (have_randomizer) {
+			std::cout << "deleting randomizer" << std::endl;
 			delete randomizer;
 		}
 		
