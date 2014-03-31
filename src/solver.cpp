@@ -1856,18 +1856,21 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 		iterations++;
 	} // re: while
 	
-	if (iterations==0 && EG_out->retVal==0) {
-		std::cout << "success path " << pathNum << std::endl;
+	if (solve_options.verbose_level>=3) {
+		if (iterations==0 && EG_out->retVal==0) {
+			std::cout << "success path " << pathNum << std::endl;
+		}
+		if (iterations>1 && EG_out->retVal==0) {
+			std::cout << "resolution of " << pathNum << " was successful" << std::endl;
+		}
+		
+		if (iterations>1 && EG_out->retVal!=0) {
+			std::cout << "resolution of path " << pathNum << " failed, terminal retVal " << EG_out->retVal << std::endl;
+			//		print_tracker(T);
+			//		mypause();
+		}
 	}
-	if (iterations>1 && EG_out->retVal==0) {
-		std::cout << "resolution of " << pathNum << " was successful" << std::endl;
-	}
-	
-	if (iterations>1 && EG_out->retVal!=0) {
-		std::cout << "resolution of path " << pathNum << " failed, terminal retVal " << EG_out->retVal << std::endl;
-//		print_tracker(T);
-//		mypause();
-	}
+
 	solve_options.reset_tracker_config();
 	
 	return;
