@@ -361,20 +361,23 @@ int solver_mp::send(parallelism_config & mpi_config)
 	
 	
 	bcast_comp_mp(this->gamma, 0,0);
+	if (this->MPType==2) {
+        bcast_comp_rat(gamma_rat, 0, 0);
+	}
+	else{
+		
+	}
+	
 	
 	int * buffer;
 	buffer = new int[1];
-	
-	
 	buffer[0] = this->curr_prec;
-	
-	
 	MPI_Bcast(buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	
 	delete[] buffer;
 	
 	
-	randomizer->send(0, mpi_config);// this will crash.  this needs to be a bcast send.
+	
+	randomizer->bcast_send(mpi_config);
 	
 	return SUCCESSFUL;
 }
@@ -415,23 +418,17 @@ int solver_mp::receive(parallelism_config & mpi_config)
 	
 	bcast_comp_mp(this->gamma, 1,0);
 	
-	int *buffer = new int[2];
-	MPI_Bcast(buffer, 2, MPI_INT, 0, MPI_COMM_WORLD);
-	
 	if (this->MPType==2) {
-        
         bcast_comp_rat(gamma_rat, 1, 0);
-        
-        
 	}
 	else{
 
 	}
 	
-	delete[] buffer;
+
 	
 	
-	buffer = new int[1];
+	int *buffer = new int[1];
 	
 	MPI_Bcast(buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	this->curr_prec = buffer[0];
@@ -439,8 +436,8 @@ int solver_mp::receive(parallelism_config & mpi_config)
 	delete[] buffer;
 	
 	
-	
-	randomizer->receive(0, mpi_config);// this will crash.  this needs to be a bcast send.
+	randomizer = new system_randomizer;  have_randomizer_memory = true;
+	randomizer->bcast_receive(mpi_config);
 	
 	return SUCCESSFUL;
 }
@@ -483,6 +480,13 @@ int solver_d::send(parallelism_config & mpi_config)
     
 	bcast_comp_d(this->gamma, 0,0);
 		
+	
+	if (MPType==0) {
+		randomizer->bcast_send(mpi_config);
+	}
+
+	
+	
 	return SUCCESSFUL;
 }
 
@@ -531,6 +535,16 @@ int solver_d::receive(parallelism_config & mpi_config)
 	
 	bcast_comp_d(this->gamma, 1, 0);
 	
+	
+	if (MPType==0) {
+		randomizer = new system_randomizer; have_randomizer_memory = true;
+		randomizer->bcast_receive(mpi_config);
+	}
+	else
+	{
+		randomizer = BED_mp->randomizer; // i believe this was already accomplished
+	}
+
 	
 	return SUCCESSFUL;
 }

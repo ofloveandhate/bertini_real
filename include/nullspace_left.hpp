@@ -235,7 +235,10 @@ void createMatlabDerivative(boost::filesystem::path output_name,
 							nullspace_config *ns_config,
 							int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs);
 
-
+void create_matlab_determinantal_system(boost::filesystem::path output_name,
+										boost::filesystem::path input_name,
+										nullspace_config *ns_config,
+										int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs);
 
 
 

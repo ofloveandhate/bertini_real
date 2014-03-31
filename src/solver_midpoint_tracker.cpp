@@ -392,43 +392,27 @@ int midpoint_eval_data_mp::setup(midpoint_config & md_config,
 	}
 	
 	
+
+	
+	
 	this->mid_memory = md_config.systems[md_config.system_name_mid].memory;
 	this->SLP_mid = md_config.systems[md_config.system_name_mid].SLP;
 	this->num_mid_vars = md_config.systems[md_config.system_name_mid].num_variables;
-
-	// need something here for randomizer mid
-	deliberate_segfault();
-	
+	randomizer = md_config.systems[md_config.system_name_mid].randomizer;
 	
 	
 	this->top_memory = md_config.systems[md_config.system_name_top].memory;
 	this->SLP_top = md_config.systems[md_config.system_name_top].SLP;
 	this->num_top_vars = md_config.systems[md_config.system_name_top].num_variables;
+	randomizer_top = md_config.systems[md_config.system_name_top].randomizer;
 	
-	// need something here for randomizer top
-	deliberate_segfault();
-//	if (MPType == 2) {
-//		mat_cp_mp(randomizer_matrix_top, md_config.systems[md_config.system_name_top].randomizer_matrix);
-//		mat_cp_mp(randomizer_matrix_top_full_prec, md_config.systems[md_config.system_name_top].randomizer_matrix);
-//	}
-//	else{
-//		mat_cp_mp(randomizer_matrix_top, md_config.systems[md_config.system_name_top].randomizer_matrix);
-//	}
 	
 	this->bottom_memory = md_config.systems[md_config.system_name_bottom].memory;
 	this->SLP_bottom = md_config.systems[md_config.system_name_bottom].SLP;
 	this->num_bottom_vars = md_config.systems[md_config.system_name_bottom].num_variables;
-
-// need something here for randomizer bottom
-deliberate_segfault();
-
-//	if (MPType == 2) {
-//		mat_cp_mp(randomizer_matrix_bottom, md_config.systems[md_config.system_name_bottom].randomizer_matrix);
-//		mat_cp_mp(randomizer_matrix_bottom_full_prec, md_config.systems[md_config.system_name_bottom].randomizer_matrix);
-//	}
-//	else{
-//		mat_cp_mp(randomizer_matrix_bottom, md_config.systems[md_config.system_name_bottom].randomizer_matrix);
-//	}
+	randomizer_bottom = md_config.systems[md_config.system_name_bottom].randomizer;
+	
+	
 	
 	this->num_variables = num_mid_vars + num_bottom_vars + num_top_vars;
 	
@@ -658,21 +642,18 @@ int midpoint_eval_data_d::setup(midpoint_config & md_config,
 	this->SLP_mid = md_config.systems[md_config.system_name_mid].SLP;
 	this->num_mid_vars = md_config.systems[md_config.system_name_mid].num_variables;
 	randomizer = md_config.systems[md_config.system_name_mid].randomizer;
-//	mat_mp_to_d(randomizer_matrix, md_config.systems[md_config.system_name_mid].randomizer_matrix); // use the built-in randomizer matrix for mid system
 	
 	
 	this->top_memory = md_config.systems[md_config.system_name_top].memory;
 	this->SLP_top = md_config.systems[md_config.system_name_top].SLP;
 	this->num_top_vars = md_config.systems[md_config.system_name_top].num_variables;
 	randomizer_top = md_config.systems[md_config.system_name_top].randomizer;
-//	mat_mp_to_d(randomizer_matrix_top, md_config.systems[md_config.system_name_top].randomizer_matrix);
 	
 	
 	this->bottom_memory = md_config.systems[md_config.system_name_bottom].memory;
 	this->SLP_bottom = md_config.systems[md_config.system_name_bottom].SLP;
 	this->num_bottom_vars = md_config.systems[md_config.system_name_bottom].num_variables;
 	randomizer_bottom = md_config.systems[md_config.system_name_bottom].randomizer;
-//	mat_mp_to_d(randomizer_matrix_bottom, md_config.systems[md_config.system_name_bottom].randomizer_matrix);
 	
 	
 	

@@ -566,6 +566,8 @@ public:
 	int verbose_level;  ///< how verbose to be
 	
 	system_randomizer * randomizer;
+	bool have_randomizer_memory;
+	
 	
 	bool randomize; // this should be eliminated
 	
@@ -637,11 +639,16 @@ protected:
 			have_PPD = false;
 		}
 		
+		if (have_randomizer_memory) {
+			delete randomizer;
+		}
 	}
 	
 	void init()
 	{
-        
+        have_randomizer_memory = false;
+		
+		
         received_mpi = false;
         
 		randomize = true;
@@ -673,6 +680,7 @@ protected:
 		
 		this->SLP = other.SLP;
 		
+		randomizer = other.randomizer; // merely copy the pointer
 		
 		this->is_solution_checker_d = other.is_solution_checker_d;
 		this->is_solution_checker_mp = other.is_solution_checker_mp;

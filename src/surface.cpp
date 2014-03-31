@@ -175,11 +175,6 @@ void surface_decomposition::main(vertex_set & V,
     
     
     
-    
-    
-    
-    
-    
 	
 	compute_critical_curve(W_critcurve, // all input.
                            W_total_crit,
@@ -192,8 +187,7 @@ void surface_decomposition::main(vertex_set & V,
 	this->output_main(program_options.output_dir);
 	V.print(program_options.output_dir/ "V.vertex");
 	
-	
-	mypause();
+
 
 	
     // actually perform the interslice on the bounding sphere curve.
@@ -502,7 +496,7 @@ void surface_decomposition::compute_critcurve_witness_set(witness_set & W_critcu
 
 void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_crit,  // the computed value
                                                       const witness_set & W_surf,      // input witness set
-                                                      const witness_set & W_critcurve, // input witness set
+                                                      witness_set & W_critcurve, // input witness set
                                                       BR_configuration & program_options, //as usual, goes everywhere.
                                                       solver_configuration & solve_options) // wtb: a way to make this global
 {
@@ -526,7 +520,7 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 	
 //	solve_options.verbose_level = program_options.verbose_level = 10;
 	
-	if (1) {
+	if (0) {
 		
 		int blabla;
 		parse_input_file(W_critcurve.input_filename,&blabla);
@@ -548,7 +542,7 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 							   solve_options,
 							   &ns_config);
 	}
-	else
+	else if (0)
 	{
 		int blabla;
 		parse_input_file(W_surf.input_filename,&blabla);
@@ -575,6 +569,28 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 		crit_curve.randomizer->setup(W_critcurve.num_variables - W_critcurve.num_patches - 1,solve_options.PPD.num_funcs); // this is crap
 		
 		
+	}
+	else{
+		W_critcurve.only_first_vars(num_variables);
+		int blabla;
+		parse_input_file(W_critcurve.input_filename,&blabla);
+		preproc_data_clear(&solve_options.PPD); // ugh this sucks
+		parse_preproc_data("preproc_data", &solve_options.PPD);
+		
+		
+		crit_curve.randomizer->setup(W_critcurve.num_variables - W_critcurve.num_patches - 1,solve_options.PPD.num_funcs);
+		
+		
+		compute_crit_nullspace(solve_out, // the returned value
+							   W_critcurve,            // input the original witness set
+							   crit_curve.randomizer,
+							   &this->pi[0],
+							   1,  // dimension of ambient complex object
+							   1,   //  target dimension to find
+							   1,   // COdimension of the critical set to find.
+							   program_options,
+							   solve_options,
+							   &ns_config);
 	}
 	// this will use pi[0] to compute critical points
 	
@@ -626,9 +642,6 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 	W_critcurve_crit.merge(W_sphere_intersection);
 	
 	
-	
-	
-    
     
     return;
 }
@@ -678,7 +691,7 @@ void surface_decomposition::compute_critical_curve(const witness_set & W_critcur
 	
 	crit_curve.add_projection(pi[0]);
 	
-	crit_curve.num_variables = num_variables + num_variables-1;
+	crit_curve.num_variables = W_critcurve.num_variables;
 	
     std::cout << color::magenta() << "done decomposing critical curve" << color::console_default() << std::endl;
 	return;
@@ -1360,8 +1373,7 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 		preproc_data_clear(&solve_options.PPD);
 		parse_preproc_data("preproc_data", &solve_options.PPD);
 		
-		
-		curve_decomposition new_slice;
+
 		
 		
 		slice_witness_set.num_variables = W_surf.num_variables;
@@ -1375,16 +1387,16 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 		solve_options.complete_witness_set = 1;
 		
 		
-		new_slice.input_filename = slicename;
+		slices[ii].input_filename = slicename;
 		
-		new_slice.copy_sphere_bounds(*this);
+		slices[ii].copy_sphere_bounds(*this);
 		
 		// we already know the component is self-conjugate (by entry condition), so we are free to call this function
 		// the memory for the multilin system will get erased in this call...
 		bool prev_quick_state = program_options.quick_run;
-		program_options.quick_run = false;
+//		program_options.quick_run = false;
 		
-		new_slice.computeCurveSelfConj(slice_witness_set,
+		slices[ii].computeCurveSelfConj(slice_witness_set,
 									   &pi[1],
 									   V,
 									   program_options, solve_options);
@@ -1431,10 +1443,8 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 
 		solve_options.reset_tracker_config();
 		
-		new_slice.add_projection(pi[1]);
-		new_slice.num_variables = num_variables;
-		
-		slices[ii] = new_slice; // TODO: remove this unnecessary copy call.
+		slices[ii].add_projection(pi[1]);
+		slices[ii].num_variables = num_variables;
 		
 		
 		
@@ -2555,16 +2565,15 @@ void surface_decomposition::receive(int source, parallelism_config & mpi_config)
 	}
 	
 	//TODO: rewrite this to prevent unnecessary copy operation.
+	mid_slices.resize(c);
 	for (int ii=0; ii<c; ii++) {
-		curve_decomposition C;
-		C.receive(source, mpi_config);
-		mid_slices.push_back(C);
+		mid_slices[ii].receive(source,mpi_config);
 	}
 	
+	
+	crit_slices.resize(d);
 	for (int ii=0; ii<d; ii++) {
-		curve_decomposition C;
-		C.receive(source, mpi_config);
-		crit_slices.push_back(C);
+		crit_slices[ii].receive(source, mpi_config);
 	}
 	
 	crit_curve.receive(source, mpi_config);
