@@ -433,7 +433,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	for (int ii=0; ii<ns_config->num_additional_linears; ii++) {
 		init_vec_mp2(ns_config->additional_linears_terminal[ii],W.num_variables,solve_options.T.AMP_max_prec);
 		ns_config->additional_linears_terminal[ii]->size = W.num_variables;
-		if (0) {
+		if (1) {
 			for (int jj=0; jj<W.num_variables-W.num_synth_vars; jj++){
 				get_comp_rand_mp(&ns_config->additional_linears_terminal[ii]->coord[jj]); // should this be real?  no.
 			}
@@ -471,7 +471,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	for (int ii=0; ii<ns_config->num_jac_equations; ii++) {
 		ns_config->starting_linears[ii] = (vec_mp *) br_malloc((*max_degree)*sizeof(vec_mp));
 		
-		if (0) {
+		if (1) {
 			make_matrix_random_mp(temp_getter,*max_degree, W.num_variables-W.num_synth_vars, solve_options.T.AMP_max_prec); // this matrix is nearly orthogonal
 			
 			for (int jj=0; jj<(*max_degree); jj++) {
@@ -567,10 +567,17 @@ void create_nullspace_system(boost::filesystem::path output_name,
 	
 	// setup Matlab script
 	
-	
-	createMatlabDerivative("matlab_nullspace_system.m", "func_input_real",
-						   ns_config,
-						   numVars, vars, lineVars, numConstants, consts, lineConstants, numFuncs, funcs, lineFuncs);
+	if (0) {
+		createMatlabDerivative("matlab_nullspace_system.m", "func_input_real",
+							   ns_config,
+							   numVars, vars, lineVars, numConstants, consts, lineConstants, numFuncs, funcs, lineFuncs);
+	}
+	else{
+		create_matlab_determinantal_system("matlab_nullspace_system.m", "func_input_real",
+							   ns_config,
+							   numVars, vars, lineVars, numConstants, consts, lineConstants, numFuncs, funcs, lineFuncs);
+	}
+
 	
 	
 	
@@ -644,7 +651,7 @@ void create_nullspace_system(boost::filesystem::path output_name,
 			(ii==ns_config->num_v_vars-1) ? fprintf(OUT,";\n") : fprintf(OUT,", ");
 		}
 	}
-	else
+	else if (0)
 	{
 		fprintf(OUT,"variable_group ");
 		for (ii=0;ii<numVars; ii++){
@@ -655,6 +662,14 @@ void create_nullspace_system(boost::filesystem::path output_name,
 		for (ii=0; ii<(ns_config->num_v_vars); ii++) {
 			fprintf(OUT,"synth%d",ii+1);
 			(ii==ns_config->num_v_vars-1) ? fprintf(OUT,";\n") : fprintf(OUT,", ");
+		}
+	}
+	else
+	{
+		fprintf(OUT,"variable_group ");
+		for (ii=0;ii<numVars; ii++){
+			fprintf(OUT,"%s",vars[ii]);
+			(ii==numVars-1) ? fprintf(OUT,";\n") : fprintf(OUT,", ");
 		}
 	}
 	
@@ -920,6 +935,227 @@ void createMatlabDerivative(boost::filesystem::path output_name,
 	
 	return;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void create_matlab_determinantal_system(boost::filesystem::path output_name,
+							boost::filesystem::path input_name,
+							nullspace_config *ns_config,
+							int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs)
+/***************************************************************\
+ * USAGE: setup a Matlab script to perform the deflation         *
+ * ARGUMENTS: input file, declaration name, and number of lines  *
+ * RETURN VALUES: Matlab script                                  *
+ * NOTES:                                                        *
+ \***************************************************************/
+{
+	int ii, lineNumber = 1, declares = 0, strSize = 1;
+	char *str = (char *)br_malloc(strSize * sizeof(char));
+	
+	std::ifstream IN(input_name.c_str());
+	std::ofstream OUT(output_name.c_str());
+	// setup Bertini constants in Matlab
+	OUT << "syms I Pi;\n";
+	
+	// setup variables
+	OUT << "syms";
+	for (ii = 0; ii < numVars; ii++)
+		OUT << " " << vars[ii];
+	OUT << ";\nmy_var_names = [";
+	for (ii = 0; ii < numVars; ii++)
+		OUT << " " << vars[ii];
+	OUT << "];\n\n";
+	
+
+	
+	
+	
+	OUT << "syms";
+	for (ii = 1; ii <= ns_config->num_projections; ii++)
+		for (int jj = 1; jj< ns_config->num_natural_vars; jj++)
+			OUT << " pi_" << ii << "_" << jj+1;
+	OUT << "\n";
+	
+	OUT << "proj = [";
+	for (ii = 1; ii <= ns_config->num_projections; ii++){
+		OUT << "[";
+		for (int jj = 1; jj< ns_config->num_natural_vars; jj++){
+			OUT << " pi_" << ii << "_" << jj+1 << "";
+		}
+		OUT << " ]; ";
+	}
+	OUT << "];\n\n";
+	
+	// setup constants
+	if (numConstants > 0)
+	{
+		OUT << "syms";
+		for (ii = 0; ii < numConstants; ii++)
+			OUT << " " << consts[ii];
+		OUT << ";\n";
+	}
+	
+	OUT << "num_projections = " << ns_config->num_projections << ";\n";
+	OUT << "num_jac_equations = " << ns_config->num_jac_equations << ";\n";
+	OUT << "num_randomized_eqns = " << ns_config->randomizer->num_rand_funcs() << ";\n";
+	OUT << "target_crit_codim = " << ns_config->target_crit_codim << ";\n";
+	
+	int cont = 1;
+	// copy lines which do not declare items or define constants (keep these as symbolic objects)
+	while (cont)
+	{ // see if this line number declares items
+		declares = 0;
+		for (ii = 0; ii < numVars; ii++)
+			if (lineNumber == lineVars[ii])
+				declares = 1;
+		for (ii = 0; ii < numConstants; ii++)
+			if (lineNumber == lineConstants[ii])
+				declares = 1;
+		for (ii = 0; ii < numFuncs; ii++)
+			if (lineNumber == lineFuncs[ii])
+				declares = 1;
+		
+		std::string current_line;
+		getline(IN,current_line);
+		//		std::cout << "curr line: " << current_line << std::endl;
+		
+		if (declares)
+		{ // move past this line
+			
+		}
+		else
+		{ // check to see if this defines a constant - line must be of the form '[NAME]=[EXPRESSION];' OR EOF
+			
+			std::string name;
+			
+			size_t found=current_line.find('=');
+			if (found!=std::string::npos) {
+				name = current_line.substr(0,found);
+			}
+			
+			declares = 0;
+			// compare against constants
+			for (ii = 0; ii < numConstants; ii++)
+				if (strcmp(name.c_str(), consts[ii]) == 0)
+					declares = 1;
+			
+			if (!declares)// print line
+				OUT << current_line << std::endl;
+		}
+		
+		// increment lineNumber
+		lineNumber++;
+		
+		// test for EOF
+		if (IN.eof())
+			cont = 0;
+	}
+	
+	OUT << "syms ";
+	for (ii=0; ii<ns_config->randomizer->num_rand_funcs(); ii++) {
+		for (int jj=0; jj<ns_config->randomizer->num_base_funcs(); jj++) {
+			OUT << "r_" << ii+1 << "_" << jj+1 << " "	;
+		}
+	}
+	OUT << ";\n";
+	
+	
+	
+	
+	
+	
+	
+	// setup functions
+	OUT << "\nF_orig = [";
+	for (ii = 0; ii < numFuncs; ii++)
+		OUT << " " << funcs[ii] << ";";
+	OUT << "]; %collect the functions into a single matrix\n";
+	
+	// put in the randomization matrices.
+	if (!ns_config->randomizer->is_square()) {
+		OUT << "R = [";
+		for (ii=0; ii<ns_config->randomizer->num_rand_funcs(); ii++) {
+			for (int jj=0; jj<ns_config->randomizer->num_base_funcs(); jj++) {
+				OUT << "r_" << ii+1 << "_" << jj+1 << " "	;
+			}
+			OUT << ";\n";
+		}
+		OUT << "];\n\n";
+		
+		OUT << "F_rand = R*F_orig; % randomize\n";
+	}
+	else{
+		
+		OUT << "F_rand = F_orig; % no need to randomize\n";
+	}
+	
+	
+	// compute the jacobian
+	OUT << "J = [jacobian(F_rand,my_var_names); proj];  %compute the transpose of the jacobian\n";
+	OUT << "                                           %concatenate the projections\n\n";
+	
+	OUT << "new_eqn = det(J); \n\n";
+	
+	OUT << "OUT = fopen('derivative_polynomials_declaration','w'); %open the file to write\n";
+	
+	OUT << "fprintf(OUT, 'function ');\n";
+	OUT << "for ii=1:num_randomized_eqns\n";
+	OUT << "  fprintf(OUT, 'f%i',ii);\n";
+	OUT << "  if ii~=num_randomized_eqns\n";
+	OUT << "    fprintf(OUT,', ');\n";
+	OUT << "  else\n";
+	OUT << "    fprintf(OUT,';\\n');\n";
+	OUT << "  end %re: if\n";
+	OUT << "end\n\n";
+	
+	OUT << "for ii=1:num_randomized_eqns\n";
+	OUT << "  fprintf(OUT,'f%i = %s;\\n',ii,char(F_rand(ii)));\n";
+	OUT << "end\n\n";
+	
+	OUT << "fprintf(OUT, 'function der_func;\\n');\n";
+//	OUT << "for jj = 1:num_jac_equations\n";
+//	OUT << "  fprintf(OUT, 'der_func_%i', jj);\n";
+//	OUT << "  if jj~=num_jac_equations\n    fprintf(OUT,', ');\n  end %re: if\n";
+//	OUT << "end %re: jj\n";
+//	OUT << "fprintf(OUT,';\\n');\n\n";
+	
+	
+	OUT << "fprintf(OUT,'der_func = %s;\\n',char(new_eqn));";
+//	OUT << "for jj = 1:num_jac_equations\n";
+//	OUT << "  fprintf(OUT, 'der_func_%i = %s;  \\n',jj,char(new_eqns(jj)));\n";
+	//	OUT << "  for kk = 1:num_jac_equations\n";
+	//	OUT << "    fprintf(OUT,'%s\n',);\n";
+	//	OUT << "  end %re: kk\n";
+	//	OUT << "  for kk = 1:target_crit_codim\n";
+	//	OUT << "    fprintf(OUT,'pi_%i_%i*synth%i',kk,jj+1,kk+num_randomized_eqns);\n";
+	//	OUT << "    if kk~=target_crit_codim\n";
+	//	OUT << "      fprintf(OUT,' + ');\n";
+	//	OUT << "    else\n";
+	//	OUT << "      fprintf(OUT,';\\n');\n";
+	//	OUT << "    end %re: if\n";
+	//	OUT << "  end %re: kk\n";
+//	OUT << "end %re: jj\n\n";
+	
+	
+	
+	
+	// clear memory
+	free(str);
+	
+	return;
+}
+
 
 
 

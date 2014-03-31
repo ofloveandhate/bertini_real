@@ -498,6 +498,10 @@ public:
 	
 	void receive(int source, parallelism_config & mpi_config);
 	
+	void bcast_send(parallelism_config & mpi_config);
+	
+	void bcast_receive(parallelism_config & mpi_config);
+	
 	
 protected:
 	

@@ -551,7 +551,10 @@ void system_randomizer::setup(int num_desired_rows, int num_funcs)
 		br_exit(80147);
 	}
 	
-	
+	if (num_desired_rows>num_funcs) {
+		std::cout << "requested randomizer which would UP-randomize" << std::endl;
+		br_exit(80148);
+	}
 	setup_indicator = false; // reset;
 	randomized_degrees.resize(0);
 	original_degrees.resize(0);
@@ -707,20 +710,68 @@ void system_randomizer::setup(int num_desired_rows, int num_funcs)
 
 void system_randomizer::send(int target, parallelism_config & mpi_config)
 {
+	
+	std::cout << "system_randomizer::send" << std::endl;
+	
+	int sendme = setup_indicator;
+	MPI_Send(&sendme,1,MPI_INT,target,UNUSED,MPI_COMM_WORLD);
+
+	if (!setup_indicator) {
+		std::cout << "bailing on sending upsetup randomizer" << std::endl;
+		return;
+	}
+	
+	int *buffer = new int[1+2+2]; // square + size_of_randomizer + max_base + max_degree
+	buffer[0] = square_indicator;
+	buffer[1] = num_randomized_funcs;
+	buffer[2] = num_original_funcs;
+	buffer[3] = max_base_degree;
+	buffer[4] = max_degree_deficiency;
+	MPI_Send(buffer,5,MPI_INT,target,UNUSED,MPI_COMM_WORLD);
+	
+	delete[] buffer;
+	
 	// need to send original_degrees, randomized_degrees, randomizer_matrix_full_prec, max_degree_deficiency, and what else?
+	int size_to_send = num_randomized_funcs+num_original_funcs + num_randomized_funcs*num_original_funcs;
+	int *buffer2 = new int[size_to_send];
+	
+	
 	
 	if (randomized_degrees.size()>0) {
-		
-		int *buffer2 = new int[randomized_degrees.size()];
 		int cnt = 0;
 		for (auto iter = randomized_degrees.begin(); iter!=randomized_degrees.end(); iter++) {
 			buffer2[cnt] = *iter;
 			cnt++;
 		}
-		MPI_Send(buffer2, randomized_degrees.size(), MPI_INT, target, 1, MPI_COMM_WORLD);
-		delete [] buffer2;
+		
 	}
 	
+	int offset = num_randomized_funcs;
+	if (original_degrees.size()>0) {
+		int cnt = 0;
+		for (auto iter = original_degrees.begin(); iter!=original_degrees.end(); iter++) {
+			buffer2[cnt+offset] = *iter;
+			cnt++;
+		}
+	}
+	
+	
+	offset += num_original_funcs;
+	
+	int cnt = 0;
+	for (auto iter = structure_matrix.begin(); iter!=structure_matrix.end(); iter++) {
+		for (auto jter = iter->begin(); jter != iter->end(); jter++) {
+			buffer2[cnt+offset] = *jter;
+			cnt++;
+		}
+		
+	}
+
+	
+	
+	
+	MPI_Send(buffer2, size_to_send, MPI_INT, target, UNUSED, MPI_COMM_WORLD);
+	delete [] buffer2;
 	
 	
 	if ( (randomizer_matrix_full_prec->rows != 0) || (randomizer_matrix_full_prec->cols != 0)) {
@@ -729,53 +780,288 @@ void system_randomizer::send(int target, parallelism_config & mpi_config)
 	
 	
 	
-//	buffer = new int[num_randomized_eqns + base_degrees.size()];
-//	for (int ii=0; ii<num_randomized_eqns; ii++) {
-//		buffer[ii] = randomized_degrees[ii];
-//	}
-//	
-//	for (unsigned int ii=0; ii<base_degrees.size(); ii++) {
-//		buffer[ii+num_randomized_eqns] = base_degrees[ii];
-//	}
-//	
-//	MPI_Bcast(buffer, num_randomized_eqns+base_degrees.size(), MPI_INT, 0, mpi_config.my_communicator);
-//	delete[] buffer;
+	
+	// temps and things set up after you get the matrix and a few parameters.
+	//	vec_mp integer_coeffs_mp;
+	//	mat_mp single_row_input_mp;
+	//	vec_mp temp_homogenizer_mp;
+	//	vec_mp temp_funcs_mp;
+	//	mat_mp temp_jac_mp;
+	//	mat_mp temp_mat_mp;
+	//	vec_mp temp_vec_mp;
+	//
+	//
+	//	vec_d integer_coeffs_d;
+	//	mat_d single_row_input_d;
+	//	vec_d temp_homogenizer_d;
+	//	vec_d temp_funcs_d;
+	//	mat_d temp_jac_d;
+	//	mat_d temp_mat_d;
+	//	vec_d temp_vec_d;
+	
+	
+
 	
 }
 
 
 void system_randomizer::receive(int source, parallelism_config & mpi_config)
 {
+	std::cout << "system_randomizer::receive" << std::endl;
 	MPI_Status statty_mc_gatty;
 	
-	int num_rand_degrees = 0;
-	
-	if (num_rand_degrees>0) {
-		
-		int * buffer3 = new int[num_rand_degrees];
-		
-		MPI_Recv(buffer3, num_rand_degrees, MPI_INT, source, 1, MPI_COMM_WORLD, &statty_mc_gatty);
-		
-		for (int ii=0; ii<num_rand_degrees; ii++) {
-			randomized_degrees.push_back(buffer3[ii]);
-		}
-		delete [] buffer3;
+	int recvme;
+	MPI_Recv(&recvme,1,MPI_INT,source,UNUSED,MPI_COMM_WORLD,&statty_mc_gatty);
+	setup_indicator = recvme;
+	if (!setup_indicator) {
+		std::cout << "bailing from getting unsetup randomizer" << std::endl;
+		return;
 	}
 	
-	// receive some data, and then do setup of the auxiliarry temporary stuffs.
-	int rand_rows =0, rand_cols = 0;
-	change_size_mat_mp(randomizer_matrix_full_prec,rand_rows,rand_cols);
-	randomizer_matrix_full_prec->rows = rand_rows;//why are these not in the matrix size changer?
-	randomizer_matrix_full_prec->cols = rand_cols;
+	int *buffer = new int[1+2+2]; // square + size_of_randomizer + max_base + max_degree
+	MPI_Recv(buffer,5,MPI_INT,source,UNUSED,MPI_COMM_WORLD,&statty_mc_gatty);
 	
-	if ( (rand_rows != 0) || (rand_cols != 0)) {
+	square_indicator = buffer[0];
+	num_randomized_funcs = buffer[1];
+	num_original_funcs = buffer[2];
+	max_base_degree = buffer[3];
+	max_degree_deficiency = buffer[4];
+	
+	
+	delete[] buffer;
+	
+	// need to send original_degrees, randomized_degrees, randomizer_matrix_full_prec, max_degree_deficiency, and what else?
+	int size_to_receive = num_randomized_funcs+num_original_funcs + num_randomized_funcs*num_original_funcs;
+	int *buffer2 = new int[size_to_receive];
+	
+	
+	
+	
+	MPI_Recv(buffer2, size_to_receive, MPI_INT, source, UNUSED, MPI_COMM_WORLD,&statty_mc_gatty);
+	
+	int cnt = 0;
+	for (int ii=0; ii<num_randomized_funcs; ii++) {
+		randomized_degrees.push_back(buffer2[cnt]);
+		cnt++;
+	}
+	
+	for (int ii=0; ii<num_original_funcs; ii++) {
+		original_degrees.push_back(buffer2[cnt]);
+		cnt++;
+	}
+	
+	structure_matrix.resize(num_randomized_funcs);
+	for (int ii=0; ii<num_randomized_funcs; ii++) {
+		for (int jj=0; jj<num_original_funcs; jj++) {
+			structure_matrix[ii].push_back(buffer2[cnt]);
+			cnt++;
+		}
+	}
+	
+	
+	delete [] buffer2;
+	
+	change_size_mat_mp(randomizer_matrix_full_prec,num_randomized_funcs,num_original_funcs);
+	randomizer_matrix_full_prec->rows = num_randomized_funcs;
+	randomizer_matrix_full_prec->cols = num_original_funcs;
+	
+	
+	if ( (randomizer_matrix_full_prec->rows != 0) || (randomizer_matrix_full_prec->cols != 0)) {
 		receive_mat_mp(randomizer_matrix_full_prec, source);
 	}
+	
+	
+	
+	std::cout << "need to assemble the temps" << std::endl;
+	// temps and things set up after you get the matrix and a few parameters.
+	//	vec_mp integer_coeffs_mp;
+	//	mat_mp single_row_input_mp;
+	//	vec_mp temp_homogenizer_mp;
+	//	vec_mp temp_funcs_mp;
+	//	mat_mp temp_jac_mp;
+	//	mat_mp temp_mat_mp;
+	//	vec_mp temp_vec_mp;
+	//
+	//
+	//	vec_d integer_coeffs_d;
+	//	mat_d single_row_input_d;
+	//	vec_d temp_homogenizer_d;
+	//	vec_d temp_funcs_d;
+	//	mat_d temp_jac_d;
+	//	mat_d temp_mat_d;
+	//	vec_d temp_vec_d;
+	
 	
 }
 
 
 
+void system_randomizer::bcast_send(parallelism_config & mpi_config)
+{
+	
+	std::cout << "system_randomizer::bcast_send" << std::endl;
+	
+	int sendme = setup_indicator;
+	MPI_Bcast(&sendme,1,MPI_INT,mpi_config.head(),MPI_COMM_WORLD);
+	
+	if (!setup_indicator) {
+		std::cout << "bailing on sending unsetup randomizer" << std::endl;
+		return;
+	}
+	
+	int *buffer = new int[1+2+2]; // square + size_of_randomizer + max_base + max_degree
+	buffer[0] = square_indicator;
+	buffer[1] = num_randomized_funcs;
+	buffer[2] = num_original_funcs;
+	buffer[3] = max_base_degree;
+	buffer[4] = max_degree_deficiency;
+	MPI_Bcast(buffer,5,MPI_INT,mpi_config.head(),MPI_COMM_WORLD);
+	
+	delete[] buffer;
+	
+	// need to send original_degrees, randomized_degrees, randomizer_matrix_full_prec, max_degree_deficiency, and what else?
+	int size_to_send = num_randomized_funcs+num_original_funcs + num_randomized_funcs*num_original_funcs;
+	int *buffer2 = new int[size_to_send];
+	
+	
+	
+	if (randomized_degrees.size()>0) {
+		int cnt = 0;
+		for (auto iter = randomized_degrees.begin(); iter!=randomized_degrees.end(); iter++) {
+			buffer2[cnt] = *iter;
+			cnt++;
+		}
+		
+	}
+	
+	int offset = num_randomized_funcs;
+	if (original_degrees.size()>0) {
+		int cnt = 0;
+		for (auto iter = original_degrees.begin(); iter!=original_degrees.end(); iter++) {
+			buffer2[cnt+offset] = *iter;
+			cnt++;
+		}
+	}
+	
+	
+	offset += num_original_funcs;
+	
+	int cnt = 0;
+	for (auto iter = structure_matrix.begin(); iter!=structure_matrix.end(); iter++) {
+		for (auto jter = iter->begin(); jter != iter->end(); jter++) {
+			buffer2[cnt+offset] = *jter;
+			cnt++;
+		}
+		
+	}
+	
+	
+	std::cout << "sending structure matrix et al." << std::endl;
+	
+	MPI_Bcast(buffer2, size_to_send, MPI_INT, mpi_config.head(), MPI_COMM_WORLD);
+	delete [] buffer2;
+	
+	
+	if ( (randomizer_matrix_full_prec->rows != 0) || (randomizer_matrix_full_prec->cols != 0)) {
+		bcast_mat_mp(randomizer_matrix_full_prec, mpi_config.id(), mpi_config.head());
+	}
+	
+	
+
+	
+	
+	
+	
+}
+
+
+void system_randomizer::bcast_receive(parallelism_config & mpi_config)
+{
+	std::cout << "system_randomizer::bcast_receive" << std::endl;
+	
+	int recvme;
+	MPI_Bcast(&recvme,1,MPI_INT,mpi_config.head(),MPI_COMM_WORLD);
+	setup_indicator = recvme;
+	if (!setup_indicator) {
+		std::cout << "bailing from getting unsetup randomizer" << std::endl;
+		return;
+	}
+	
+	int *buffer = new int[1+2+2]; // square + size_of_randomizer + max_base + max_degree
+	MPI_Bcast(buffer,5,MPI_INT,mpi_config.head(),MPI_COMM_WORLD);
+	
+	square_indicator = buffer[0];
+	num_randomized_funcs = buffer[1];
+	num_original_funcs = buffer[2];
+	max_base_degree = buffer[3];
+	max_degree_deficiency = buffer[4];
+	
+	
+	delete[] buffer;
+
+	
+	
+	
+	// need to send original_degrees, randomized_degrees, randomizer_matrix_full_prec, max_degree_deficiency, and what else?
+	int size_to_receive = num_randomized_funcs+num_original_funcs + num_randomized_funcs*num_original_funcs;
+	int *buffer2 = new int[size_to_receive];
+	MPI_Bcast(buffer2, size_to_receive, MPI_INT, mpi_config.head(), MPI_COMM_WORLD);
+	
+	int cnt = 0;
+	for (int ii=0; ii<num_randomized_funcs; ii++) {
+		randomized_degrees.push_back(buffer2[cnt]);
+		cnt++;
+	}
+	
+	for (int ii=0; ii<num_original_funcs; ii++) {
+		original_degrees.push_back(buffer2[cnt]);
+		cnt++;
+	}
+	
+	structure_matrix.resize(num_randomized_funcs);
+	for (int ii=0; ii<num_randomized_funcs; ii++) {
+		for (int jj=0; jj<num_original_funcs; jj++) {
+			structure_matrix[ii].push_back(buffer2[cnt]);
+			cnt++;
+		}
+	}
+	
+	
+	delete [] buffer2;
+	
+	change_size_mat_mp(randomizer_matrix_full_prec,num_randomized_funcs,num_original_funcs);
+	randomizer_matrix_full_prec->rows = num_randomized_funcs;
+	randomizer_matrix_full_prec->cols = num_original_funcs;
+	
+	std::cout << "getting randomizer matrix" << std::endl;
+	if ( (randomizer_matrix_full_prec->rows != 0) || (randomizer_matrix_full_prec->cols != 0)) {
+		bcast_mat_mp(randomizer_matrix_full_prec, mpi_config.id(), mpi_config.head());
+		mat_cp_mp(randomizer_matrix_mp,randomizer_matrix_full_prec);
+		mat_mp_to_d(randomizer_matrix_d,randomizer_matrix_full_prec);
+	}
+	
+	
+	
+	
+	std::cout << "need to assemble the temps" << std::endl;
+	// temps and things set up after you get the matrix and a few parameters.
+	//	vec_mp integer_coeffs_mp;
+	//	mat_mp single_row_input_mp;
+	//	vec_mp temp_homogenizer_mp;
+	//	vec_mp temp_funcs_mp;
+	//	mat_mp temp_jac_mp;
+	//	mat_mp temp_mat_mp;
+	//	vec_mp temp_vec_mp;
+	//
+	//
+	//	vec_d integer_coeffs_d;
+	//	mat_d single_row_input_d;
+	//	vec_d temp_homogenizer_d;
+	//	vec_d temp_funcs_d;
+	//	mat_d temp_jac_d;
+	//	mat_d temp_mat_d;
+	//	vec_d temp_vec_d;
+}
 
 
 
@@ -1303,7 +1589,9 @@ void witness_set::only_first_vars(int num_vars)
 	this->patch_mp = (vec_mp *) br_realloc(this->patch_mp, trim_from_here* sizeof(vec_mp));
 	this->num_patches = trim_from_here;
 	
-	
+	for (int ii=0; ii<num_linears; ii++) {
+		L_mp[ii]->size = num_vars;
+	}
 	
 	clear_vec_mp(tempvec);
 	return;

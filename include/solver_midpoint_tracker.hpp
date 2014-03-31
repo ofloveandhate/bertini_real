@@ -64,7 +64,8 @@ public:
 		delete [] buffer;
 		
 		//need something here  to send randomizer to everyone.
-		deliberate_segfault();
+		randomizer->bcast_send(mpi_config);
+		
 		memory.set_globals_to_this();
 		bcast_prog_t(SLP, this->MPType, 0, 0); // last two arguments are: myid, headnode
 		memory.set_globals_null();
@@ -94,9 +95,8 @@ public:
 		
 		
 		// here, need something to receive from head.
-		deliberate_segfault();
 		randomizer = new system_randomizer;
-//		bcast_mat_mp(randomizer_matrix,1,0);
+		randomizer->bcast_receive(mpi_config);
 		have_randomizer = true;
 		
 		delete [] buffer;
@@ -250,7 +250,7 @@ public:
 		//	// setup a straight-line program, using the file(s) created by the parser
 		int numVars = setupProg(SLP, T->Precision, T->MPType);
 		if (num_variables != numVars) {
-			std::cout << "numvars is incorrect..." << std::endl;
+			std::cout << "numvars is incorrect...  setupprog gives " << numVars << ", but should be " << num_variables << "." << std::endl;
 			mypause();
 			br_exit(-57189); // this should be a throw or something
 		}
@@ -505,8 +505,6 @@ public:
 	comp_mp v_target_full_prec;
 	comp_mp u_target_full_prec;
 	
-	mat_mp randomizer_matrix_bottom_full_prec;
-	mat_mp randomizer_matrix_top_full_prec;
 	
 	comp_mp crit_val_left_full_prec;
 	comp_mp crit_val_right_full_prec;
@@ -649,8 +647,7 @@ public:
 			
 			clear_mp(v_target_full_prec);
 			clear_mp(u_target_full_prec);
-			clear_mat_mp(randomizer_matrix_top_full_prec);
-			clear_mat_mp(randomizer_matrix_bottom_full_prec);
+
 			clear_mp(crit_val_left_full_prec);
 			clear_mp(crit_val_right_full_prec);
 			

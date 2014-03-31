@@ -363,7 +363,7 @@ public:
     
     void compute_critcurve_critpts(witness_set & W_critcurve_crit, // the computed value
                                    const witness_set & W_surf, // input witness set
-                                   const witness_set & W_critcurve,
+                                   witness_set & W_critcurve,
                                    BR_configuration & program_options,
                                    solver_configuration & solve_options);
     
