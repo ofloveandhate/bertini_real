@@ -465,7 +465,6 @@ int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 		mat_cp_mp(lower_randomizer, lower_randomizer_full_prec);
 	}
 	else{ // MPType == 1
-        std::cout << "receiving mptype 1" << std::endl;
 		if (num_additional_linears>0) {
 			
 			this->additional_linears_terminal						= (vec_mp *) br_malloc(num_additional_linears*sizeof(vec_mp));
@@ -484,18 +483,15 @@ int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 		}
 		else {} // num_additional_linears == 0
 		
-		std::cout << "worker got additional linears" << std::endl;
 		
 		
 		
-		std::cout << "num_jac " << num_jac_equations << std::endl;
 		this->starting_linears = (vec_mp **) br_malloc(num_jac_equations*sizeof(vec_mp *));
 		
 		for (int ii=0; ii<num_jac_equations; ii++) {
 			this->starting_linears[ii] = (vec_mp *) br_malloc(max_degree*sizeof(vec_mp ));
 			for (int jj=0; jj<max_degree; jj++) {
 				init_vec_mp(this->starting_linears[ii][jj],num_natural_vars);  starting_linears[ii][jj]->size = num_natural_vars;
-				std::cout << "worker getting starting_linear[" << ii << "][" << jj << "]" << std::endl;
 				// recieve the starting linearsin full prec and convert
 				bcast_vec_mp(starting_linears[ii][jj], mpi_config.id(), mpi_config.head());
 			}

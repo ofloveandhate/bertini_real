@@ -131,7 +131,10 @@ int multilintolin_eval_data_mp::setup(const multilin_config & config,
 
 int multilintolin_eval_data_mp::send(parallelism_config & mpi_config)
 {
+#ifdef functionentry_output
 	std::cout << "multilintolin_eval_data_mp::send()" << std::endl;
+#endif
+	
 	int solver_choice = MULTILIN;
 	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
 	// send the confirmation integer, to ensure that we are sending the correct type.
@@ -174,7 +177,10 @@ int multilintolin_eval_data_mp::send(parallelism_config & mpi_config)
 
 int multilintolin_eval_data_mp::receive(parallelism_config & mpi_config)
 {
+#ifdef functionentry_output
 	std::cout << "multilintolin_eval_data_mp::receive()" << std::endl;
+#endif
+	
 	
 	int *buffer = new int[1];
 	MPI_Bcast(buffer, 1, MPI_INT, mpi_config.head(), MPI_COMM_WORLD);
@@ -345,8 +351,9 @@ int multilintolin_eval_data_d::setup(const multilin_config & config,
 
 int multilintolin_eval_data_d::send(parallelism_config & mpi_config)
 {
+#ifdef functionentry_output
     std::cout << "multilintolin_eval_data_d::send()" << std::endl;
-	
+#endif
     int solver_choice = MULTILIN;
 	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
 	// send the confirmation integer, to ensure that we are sending the correct type.

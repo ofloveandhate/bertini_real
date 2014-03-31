@@ -379,7 +379,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 		br_exit(-1737);
 	}
 	else{
-		std::cout << "passed the square check in nullspace_left setup" << std::endl;
+//		std::cout << "passed the square check in nullspace_left setup" << std::endl;
 	}
 	
 	

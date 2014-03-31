@@ -492,7 +492,7 @@ public:
 	void setup(int num_desired_rows, int num_funcs);
 	
 	
-	
+	void setup_temps();
 	
 	void send(int target, parallelism_config & mpi_config);
 	

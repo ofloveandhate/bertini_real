@@ -371,24 +371,23 @@ int midpoint_eval_data_mp::setup(midpoint_config & md_config,
 	bool bail_out = false;
 	if (md_config.systems.find( md_config.system_name_mid ) == md_config.systems.end())
 	{
-		std::cout << "don't have a system in memory for name " << md_config.system_name_mid << std::endl;
+		std::cout << "don't have a system in memory for mid name " << md_config.system_name_mid << std::endl;
 		bail_out = true;
 	}
 	if (md_config.systems.find( md_config.system_name_bottom ) == md_config.systems.end())
 	{
-		std::cout << "don't have a system in memory for name " << md_config.system_name_bottom << std::endl;
+		std::cout << "don't have a system in memory for bottom name " << md_config.system_name_bottom << std::endl;
 		bail_out = true;
 	}
 	if (md_config.systems.find( md_config.system_name_top ) == md_config.systems.end())
 	{
-		std::cout << "don't have a system in memory for name " << md_config.system_name_top << std::endl;
+		std::cout << "don't have a system in memory for top name " << md_config.system_name_top << std::endl;
 		bail_out = true;
 	}
 	
 	
 	if (bail_out) {
-		return -1;
-		//		br_exit(-1730);
+		return TOLERABLE_FAILURE;
 	}
 	
 	
@@ -690,7 +689,11 @@ int midpoint_eval_data_d::setup(midpoint_config & md_config,
 	
 	if (this->MPType==2)
 	{
-		this->BED_mp->setup(md_config, W, solve_options); // must be called before the gamma line below.
+		int retVal = this->BED_mp->setup(md_config, W, solve_options); // must be called before the gamma line below.
+		
+		if (retVal!=SUCCESSFUL) {
+			return TOLERABLE_FAILURE;
+		}
 		rat_to_d(this->gamma, this->BED_mp->gamma_rat);
 	}
 	
@@ -744,12 +747,13 @@ int midpoint_solver_master_entry_point(const witness_set						&W, // carries wit
 	midpoint_eval_data_d *ED_d = NULL;
 	midpoint_eval_data_mp *ED_mp = NULL;
 	
+	int setup_retVal = TOLERABLE_FAILURE;
 	
 	switch (solve_options.T.MPType) {
 		case 0:
 			ED_d = new midpoint_eval_data_d(0);
 			
-			ED_d->setup(md_config,
+			setup_retVal = ED_d->setup(md_config,
                         W,
                         solve_options);
 			break;
@@ -757,7 +761,7 @@ int midpoint_solver_master_entry_point(const witness_set						&W, // carries wit
 		case 1:
 			ED_mp = new midpoint_eval_data_mp(1);
 			
-			ED_mp->setup(md_config,
+			setup_retVal = ED_mp->setup(md_config,
                          W,
                          solve_options);
 			// initialize latest_newton_residual_mp
@@ -769,7 +773,7 @@ int midpoint_solver_master_entry_point(const witness_set						&W, // carries wit
 			ED_mp = ED_d->BED_mp;
 			
 			
-			ED_d->setup(md_config,
+			setup_retVal = ED_d->setup(md_config,
                         W,
                         solve_options);
 			
@@ -782,7 +786,9 @@ int midpoint_solver_master_entry_point(const witness_set						&W, // carries wit
 			break;
 	}
 	
-
+	if (setup_retVal != SUCCESSFUL) {
+		return TOLERABLE_FAILURE;
+	}
 	
 	master_solver(solve_out, W,
                   ED_d, ED_mp,

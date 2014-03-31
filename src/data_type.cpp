@@ -1,7 +1,7 @@
 #include "data_type.hpp"
 #include "programConfiguration.hpp"
 
-#define SAMEPOINTTOL 1e-7
+#define SAMEPOINTTOL 1e-6
 
 std::string enum_lookup(int flag)
 {
@@ -668,26 +668,7 @@ void system_randomizer::setup(int num_desired_rows, int num_funcs)
 	
 	max_degree_deficiency = unique_degrees[0] - unique_degrees[num_unique_degrees-1];
 	
-	change_size_vec_d(integer_coeffs_d,max_degree_deficiency+1);  integer_coeffs_d->size = max_degree_deficiency+1;
-	change_size_vec_mp(integer_coeffs_mp,max_degree_deficiency+1); integer_coeffs_mp->size = max_degree_deficiency+1;
 	
-	for (int ii=0; ii<=max_degree_deficiency; ii++) {
-		integer_coeffs_d->coord[ii].r = ii; integer_coeffs_d->coord[ii].i = 0;
-		set_zero_mp(&integer_coeffs_mp->coord[ii]); // initialize
-		mpf_set_d(integer_coeffs_mp->coord[ii].r,ii); // set to integer value
-	}
-	
-	
-	change_size_mat_d(single_row_input_d,1,num_funcs);  single_row_input_d->rows = 1; single_row_input_d->cols = num_funcs;
-	change_size_mat_mp(single_row_input_mp,1,num_funcs);  single_row_input_mp->rows = 1; single_row_input_mp->cols = num_funcs;
-	
-	change_size_vec_d(temp_homogenizer_d,max_degree_deficiency+1);  temp_homogenizer_d->size = max_degree_deficiency+1;
-	change_size_vec_mp(temp_homogenizer_mp,max_degree_deficiency+1); temp_homogenizer_mp->size = max_degree_deficiency+1;
-	set_one_d(&temp_homogenizer_d->coord[0]);
-	set_one_mp(&temp_homogenizer_mp->coord[0]);
-	
-	free(num_of_each_degree);
-
 	
 	if (num_desired_rows==num_funcs) {
 		make_matrix_ID_mp(randomizer_matrix_full_prec,num_funcs,num_funcs);
@@ -701,11 +682,47 @@ void system_randomizer::setup(int num_desired_rows, int num_funcs)
 	mat_mp_to_d(randomizer_matrix_d,randomizer_matrix_full_prec);
 	
 	
-	setup_indicator = true;
-	
-	
+	free(num_of_each_degree);
 	free(unique_degrees);
+	
+	
+	
+	
+	
+	
+	setup_temps();
+	
+	
 }
+
+
+void system_randomizer::setup_temps()
+{
+	change_size_vec_d(integer_coeffs_d,max_degree_deficiency+1);  integer_coeffs_d->size = max_degree_deficiency+1;
+	change_size_vec_mp(integer_coeffs_mp,max_degree_deficiency+1); integer_coeffs_mp->size = max_degree_deficiency+1;
+	
+	for (int ii=0; ii<=max_degree_deficiency; ii++) {
+		integer_coeffs_d->coord[ii].r = ii; integer_coeffs_d->coord[ii].i = 0;
+		set_zero_mp(&integer_coeffs_mp->coord[ii]); // initialize
+		mpf_set_d(integer_coeffs_mp->coord[ii].r,ii); // set to integer value
+	}
+	
+	
+	change_size_mat_d(single_row_input_d,1,num_original_funcs);  single_row_input_d->rows = 1; single_row_input_d->cols = num_original_funcs;
+	change_size_mat_mp(single_row_input_mp,1,num_original_funcs);  single_row_input_mp->rows = 1; single_row_input_mp->cols = num_original_funcs;
+	
+	change_size_vec_d(temp_homogenizer_d,max_degree_deficiency+1);  temp_homogenizer_d->size = max_degree_deficiency+1;
+	change_size_vec_mp(temp_homogenizer_mp,max_degree_deficiency+1); temp_homogenizer_mp->size = max_degree_deficiency+1;
+	set_one_d(&temp_homogenizer_d->coord[0]);
+	set_one_mp(&temp_homogenizer_mp->coord[0]);
+	
+	
+	
+	
+	setup_indicator = true;
+}
+
+
 
 
 void system_randomizer::send(int target, parallelism_config & mpi_config)
@@ -871,26 +888,9 @@ void system_randomizer::receive(int source, parallelism_config & mpi_config)
 	}
 	
 	
-	
-	std::cout << "need to assemble the temps" << std::endl;
+	setup_temps();
 	// temps and things set up after you get the matrix and a few parameters.
-	//	vec_mp integer_coeffs_mp;
-	//	mat_mp single_row_input_mp;
-	//	vec_mp temp_homogenizer_mp;
-	//	vec_mp temp_funcs_mp;
-	//	mat_mp temp_jac_mp;
-	//	mat_mp temp_mat_mp;
-	//	vec_mp temp_vec_mp;
-	//
-	//
-	//	vec_d integer_coeffs_d;
-	//	mat_d single_row_input_d;
-	//	vec_d temp_homogenizer_d;
-	//	vec_d temp_funcs_d;
-	//	mat_d temp_jac_d;
-	//	mat_d temp_mat_d;
-	//	vec_d temp_vec_d;
-	
+
 	
 }
 
@@ -898,8 +898,10 @@ void system_randomizer::receive(int source, parallelism_config & mpi_config)
 
 void system_randomizer::bcast_send(parallelism_config & mpi_config)
 {
-	
+#ifdef functionentry_output
 	std::cout << "system_randomizer::bcast_send" << std::endl;
+#endif
+	
 	
 	int sendme = setup_indicator;
 	MPI_Bcast(&sendme,1,MPI_INT,mpi_config.head(),MPI_COMM_WORLD);
@@ -956,8 +958,7 @@ void system_randomizer::bcast_send(parallelism_config & mpi_config)
 	}
 	
 	
-	std::cout << "sending structure matrix et al." << std::endl;
-	
+
 	MPI_Bcast(buffer2, size_to_send, MPI_INT, mpi_config.head(), MPI_COMM_WORLD);
 	delete [] buffer2;
 	
@@ -977,7 +978,13 @@ void system_randomizer::bcast_send(parallelism_config & mpi_config)
 
 void system_randomizer::bcast_receive(parallelism_config & mpi_config)
 {
+#ifdef functionentry_output
 	std::cout << "system_randomizer::bcast_receive" << std::endl;
+#endif
+	
+	
+	
+	
 	
 	int recvme;
 	MPI_Bcast(&recvme,1,MPI_INT,mpi_config.head(),MPI_COMM_WORLD);
@@ -1033,7 +1040,6 @@ void system_randomizer::bcast_receive(parallelism_config & mpi_config)
 	randomizer_matrix_full_prec->rows = num_randomized_funcs;
 	randomizer_matrix_full_prec->cols = num_original_funcs;
 	
-	std::cout << "getting randomizer matrix" << std::endl;
 	if ( (randomizer_matrix_full_prec->rows != 0) || (randomizer_matrix_full_prec->cols != 0)) {
 		bcast_mat_mp(randomizer_matrix_full_prec, mpi_config.id(), mpi_config.head());
 		mat_cp_mp(randomizer_matrix_mp,randomizer_matrix_full_prec);
@@ -1041,26 +1047,9 @@ void system_randomizer::bcast_receive(parallelism_config & mpi_config)
 	}
 	
 	
-	
-	
-	std::cout << "need to assemble the temps" << std::endl;
+	setup_temps();
 	// temps and things set up after you get the matrix and a few parameters.
-	//	vec_mp integer_coeffs_mp;
-	//	mat_mp single_row_input_mp;
-	//	vec_mp temp_homogenizer_mp;
-	//	vec_mp temp_funcs_mp;
-	//	mat_mp temp_jac_mp;
-	//	mat_mp temp_mat_mp;
-	//	vec_mp temp_vec_mp;
-	//
-	//
-	//	vec_d integer_coeffs_d;
-	//	mat_d single_row_input_d;
-	//	vec_d temp_homogenizer_d;
-	//	vec_d temp_funcs_d;
-	//	mat_d temp_jac_d;
-	//	mat_d temp_mat_d;
-	//	vec_d temp_vec_d;
+
 }
 
 
