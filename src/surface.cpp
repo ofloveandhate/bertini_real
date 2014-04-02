@@ -351,15 +351,14 @@ void surface_decomposition::beginning_stuff(const witness_set & W_surf,
 	parse_preproc_data("preproc_data", &solve_options.PPD);
 	
 	
-	
-	if (program_options.verbose_level>=2)
-		printf("checking if component is self-conjugate\n");
-	
-	//	checkSelfConjugate(W_surf,num_variables,program_options, W_surf.input_filename);
-	
-	//regenerate the various files, since we ran bertini since then and many files were deleted.
-	parse_input_file(program_options.input_deflated_filename);
-	
+	if (0) {
+		if (program_options.verbose_level>=2)
+			printf("checking if component is self-conjugate\n");
+		checkSelfConjugate(W_surf,num_variables,program_options, W_surf.input_filename);
+		
+		//regenerate the various files, since we ran bertini since then and many files were deleted.
+		parse_input_file(program_options.input_deflated_filename);
+	}
 	
 	
 	
@@ -516,8 +515,7 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 	
 	solver_output solve_out;
 	
-//	solve_options.verbose_level = program_options.verbose_level = 10;
-	
+
 	if (0) {
 		
 		int blabla;
@@ -542,68 +540,73 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 							   solve_options,
 							   &ns_config);
 	}
-	else if (0)
-	{
-		int blabla;
-		parse_input_file(W_surf.input_filename,&blabla);
-		preproc_data_clear(&solve_options.PPD); // ugh this sucks
-		parse_preproc_data("preproc_data", &solve_options.PPD);
-		
-		
 
-		compute_crit_nullspace(solve_out, // the returned value
-							   W_surf,            // input the original witness set
-							   this->randomizer,
-							   &this->pi[0],
-							   2,  // dimension of ambient complex object
-							   2,   //  target dimension to find
-							   2,   // COdimension of the critical set to find.
-							   program_options,
-							   solve_options,
-							   &ns_config);
-		
-		
-		parse_input_file(W_critcurve.input_filename,&blabla);
-		preproc_data_clear(&solve_options.PPD); // ugh this sucks
-		parse_preproc_data("preproc_data", &solve_options.PPD);
-		crit_curve.randomizer->setup(W_critcurve.num_variables - W_critcurve.num_patches - 1,solve_options.PPD.num_funcs); // this is crap
-		
-		
-	}
-	else{
-		W_critcurve.only_first_vars(num_variables);
-		int blabla;
-		parse_input_file(W_critcurve.input_filename,&blabla);
-		preproc_data_clear(&solve_options.PPD); // ugh this sucks
-		parse_preproc_data("preproc_data", &solve_options.PPD);
-		
-		
-		crit_curve.randomizer->setup(W_critcurve.num_variables - W_critcurve.num_patches - 1,solve_options.PPD.num_funcs);
-		
-		
-		compute_crit_nullspace(solve_out, // the returned value
-							   W_critcurve,            // input the original witness set
-							   crit_curve.randomizer,
-							   &this->pi[0],
-							   1,  // dimension of ambient complex object
-							   1,   //  target dimension to find
-							   1,   // COdimension of the critical set to find.
-							   program_options,
-							   solve_options,
-							   &ns_config);
-	}
-	// this will use pi[0] to compute critical points
+
+	//get crit points of the surface.
+	int blabla;
+	parse_input_file(W_surf.input_filename,&blabla);
+	preproc_data_clear(&solve_options.PPD); // ugh this sucks
+	parse_preproc_data("preproc_data", &solve_options.PPD);
 	
+	
+	
+	compute_crit_nullspace(solve_out, // the returned value
+						   W_surf,            // input the original witness set
+						   this->randomizer,
+						   &this->pi[0],
+						   2,  // dimension of ambient complex object
+						   2,   //  target dimension to find
+						   2,   // COdimension of the critical set to find.
+						   program_options,
+						   solve_options,
+						   &ns_config);
 	
 	solve_out.get_noninfinite_w_mult_full(W_critcurve_crit);
+	ns_config.clear();
+	solve_out.reset();
 	
 	W_critcurve_crit.only_first_vars(num_variables); // i question this line. it might be better without it.
 	
-	W_critcurve_crit.print_to_screen();
 	
-	W_critcurve_crit.sort_for_real(&solve_options.T);
+	
+	
+	//now get those critpoints which lie on the crit curve (there may be some intersection with the above)
+	W_critcurve.only_first_vars(num_variables);
+	parse_input_file(W_critcurve.input_filename,&blabla);
+	preproc_data_clear(&solve_options.PPD); // ugh this sucks
+	parse_preproc_data("preproc_data", &solve_options.PPD);
+	
+	
+	crit_curve.randomizer->setup(W_critcurve.num_variables - W_critcurve.num_patches - 1,solve_options.PPD.num_funcs);
+	
+	
+	compute_crit_nullspace(solve_out, // the returned value
+						   W_critcurve,            // input the original witness set
+						   crit_curve.randomizer,
+						   &this->pi[0],
+						   1,  // dimension of ambient complex object
+						   1,   //  target dimension to find
+						   1,   // COdimension of the critical set to find.
+						   program_options,
+						   solve_options,
+						   &ns_config);
+	
+	witness_set W_temp;
+	solve_out.get_noninfinite_w_mult_full(W_temp);
 	ns_config.clear();
 	solve_out.reset();
+	
+	W_temp.only_first_vars(num_variables); // i question this line. it might be better without it.
+	
+	W_critcurve_crit.merge(W_temp);
+	
+	W_critcurve_crit.sort_for_real(&solve_options.T);
+	W_critcurve_crit.sort_for_unique(&solve_options.T);
+	
+	W_critcurve_crit.print_to_screen();
+	
+	
+	
 	
 	
 	
@@ -634,7 +637,7 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 									  solve_options);
 	
 	
-	W_sphere_intersection.only_first_vars(W_surf.num_variables); // throw out the extra variables.
+	W_sphere_intersection.only_first_vars(this->num_variables); // throw out the extra variables.
 	
 	W_sphere_intersection.sort_for_real(&solve_options.T);
 	W_sphere_intersection.sort_for_unique(&solve_options.T);
