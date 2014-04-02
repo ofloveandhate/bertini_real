@@ -225,11 +225,11 @@ int nullspacejac_eval_data_mp::send(parallelism_config & mpi_config)
 	buffer[13] = lower_randomizer->cols;
 	// now can actually send the data.
 	
+	
+	
+	MPI_Bcast(buffer,14,MPI_INT, mpi_config.id(), mpi_config.my_communicator);
+	
 	delete[] buffer;
-	
-	MPI_Bcast(buffer,14,MPI_INT, 0, mpi_config.my_communicator);
-	
-	
 	
 	
 	if (this->MPType==2){
@@ -274,9 +274,7 @@ int nullspacejac_eval_data_mp::send(parallelism_config & mpi_config)
 			}
 		}
 		else{}
-		
 		bcast_mat_mp(lower_randomizer_full_prec,mpi_config.id(), mpi_config.head());
-		
 	}
 	else {
 		if (num_additional_linears>0) {
@@ -337,7 +335,7 @@ int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 	solver_mp::receive(mpi_config);
 	
 	// now can actually receive the data from whoever.
-	MPI_Bcast(buffer,14,MPI_INT, 0, mpi_config.my_communicator);
+	MPI_Bcast(buffer,14,MPI_INT, mpi_config.head(), mpi_config.my_communicator);
 	
 	num_additional_linears = buffer[0];
 	num_jac_equations = buffer[1];
@@ -457,7 +455,6 @@ int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 		change_size_mat_mp(lower_randomizer_full_prec,lower_rand_rows,lower_rand_cols);
 		lower_randomizer_full_prec->rows = lower_rand_rows;
 		lower_randomizer_full_prec->cols = lower_rand_cols;
-		
 		bcast_mat_mp(lower_randomizer_full_prec,mpi_config.id(), mpi_config.head());
 		mat_cp_mp(lower_randomizer, lower_randomizer_full_prec);
 	}
@@ -889,7 +886,7 @@ int nullspacejac_eval_data_d::send(parallelism_config & mpi_config)
 	solver_d::send(mpi_config);
 	
 	
-	int *buffer = new int[12];
+	int *buffer = new int[14];
 	
 	buffer[0] = num_additional_linears;
 	buffer[1] = num_jac_equations;
@@ -906,9 +903,12 @@ int nullspacejac_eval_data_d::send(parallelism_config & mpi_config)
 	
 	buffer[10] = num_synth_vars;
 	buffer[11] = randomize_lower;
+	buffer[12] = lower_randomizer->rows;
+	buffer[13] = lower_randomizer->cols;
+	
 	// now can actually send the data.
 	
-	MPI_Bcast(buffer,12,MPI_INT, 0, mpi_config.my_communicator);
+	MPI_Bcast(buffer,14,MPI_INT, mpi_config.head(), mpi_config.my_communicator);
 	
 	delete[] buffer;
 	
@@ -961,7 +961,7 @@ int nullspacejac_eval_data_d::send(parallelism_config & mpi_config)
 
 int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
 {
-    int *buffer = new int[12];
+    int *buffer = new int[14];
 	MPI_Bcast(buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	
 	if (buffer[0] != NULLSPACE){
@@ -984,7 +984,7 @@ int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
 	
 	
 	
-	MPI_Bcast(buffer,12,MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(buffer,14,MPI_INT, mpi_config.head(), mpi_config.my_communicator);
 	
 	
 	num_additional_linears = buffer[0];
@@ -1002,6 +1002,8 @@ int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
 	
 	num_synth_vars = buffer[10];
 	randomize_lower = buffer[11];
+	int lower_rand_rows = buffer[12];
+	int lower_rand_cols = buffer[13];
 	
 	delete[] buffer;
 	
@@ -1087,7 +1089,9 @@ int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
 		}
 	}
 	
-	
+	change_size_mat_d(lower_randomizer,lower_rand_rows,lower_rand_cols);
+	lower_randomizer->rows = lower_rand_rows;
+	lower_randomizer->cols = lower_rand_cols;
 	bcast_mat_d(lower_randomizer,mpi_config.id(), mpi_config.head());
 	
 	
@@ -1490,11 +1494,12 @@ void nullspace_slave_entry_point(solver_configuration & solve_options)
 	// call the file setup function
 	FILE *OUT = NULL, *midOUT = NULL;
 	
-	generic_setup_files(&OUT, "output",
-                        &midOUT, "midpath_data");
+	generic_setup_files(&OUT, "nullspace_left_output",
+                        &midOUT, "nullspace_left_midpath_data");
 	
 	trackingStats trackCount; init_trackingStats(&trackCount); // initialize trackCount to all 0
 	
+
 	worker_tracker_loop(&trackCount, OUT, midOUT,
 						ED_d, ED_mp,
 						solve_options);
