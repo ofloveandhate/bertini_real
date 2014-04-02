@@ -266,7 +266,6 @@ int nullspacejac_eval_data_mp::send(parallelism_config & mpi_config)
 		else{}
 		
 		bcast_vec_mp(v_patch_full_prec, mpi_config.id(), mpi_config.head());
-		bcast_mat_mp(jac_with_proj_full_prec, mpi_config.id(), mpi_config.head());
 		
 		
 		if (num_projections>0) {
@@ -307,7 +306,6 @@ int nullspacejac_eval_data_mp::send(parallelism_config & mpi_config)
 		
 		
 		bcast_vec_mp(v_patch, mpi_config.id(), mpi_config.head());
-		bcast_mat_mp(jac_with_proj, mpi_config.id(), mpi_config.head());
 		
 		
 		if (num_projections>0) {
@@ -439,8 +437,7 @@ int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 		jac_with_proj->rows = jac_with_proj_full_prec->rows = num_natural_vars-1;
 		jac_with_proj->cols = jac_with_proj_full_prec->cols = randomizer->num_rand_funcs()+num_projections;
 		
-		bcast_mat_mp(jac_with_proj_full_prec, mpi_config.id(), mpi_config.head()); //TODO: this can be eliminated.
-		mat_cp_mp(this->jac_with_proj, jac_with_proj_full_prec);
+
 		
 		
 		if (num_projections>0) {
@@ -511,7 +508,6 @@ int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 		init_mat_mp(jac_with_proj,num_natural_vars-1,randomizer->num_rand_funcs()+num_projections);
 		jac_with_proj->rows = num_natural_vars-1;
 		jac_with_proj->cols = randomizer->num_rand_funcs()+num_projections;
-		bcast_mat_mp(jac_with_proj, mpi_config.id(), mpi_config.head()); //TODO: this can be elinated
 		
 		
 		if (num_projections>0) {
@@ -949,7 +945,6 @@ int nullspacejac_eval_data_d::send(parallelism_config & mpi_config)
 	else{}
 	
 	bcast_vec_d(v_patch, mpi_config.id(), mpi_config.head());
-	bcast_mat_d(jac_with_proj, mpi_config.id(), mpi_config.head());
 	
 	
 	if (num_projections>0) {
@@ -989,7 +984,7 @@ int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
 	
 	
 	
-	MPI_Bcast(buffer,12,MPI_INT, 0, mpi_config.my_communicator);
+	MPI_Bcast(buffer,12,MPI_INT, mpi_config.head(), mpi_config.my_communicator);
 	
 	
 	num_additional_linears = buffer[0];
@@ -1061,7 +1056,6 @@ int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
 	
 	bcast_vec_d(v_patch, mpi_config.id(), mpi_config.head());
 	
-	bcast_mat_d(jac_with_proj, mpi_config.id(), mpi_config.head());
 	
 	
 	
@@ -1825,6 +1819,10 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 		}
 		
 	}
+	
+	increase_size_mat_d(BED->jac_with_proj,BED->num_natural_vars-1,BED->lower_randomizer->rows+BED->num_projections);
+	BED->jac_with_proj->rows = BED->num_natural_vars-1;
+	BED->jac_with_proj->cols = BED->lower_randomizer->rows+BED->num_projections;
 	
 	// transpose into beginning columns jac_with_proj
 	for (int ii=0; ii< tempmat1->rows; ii++)// for every function
@@ -2616,6 +2614,10 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 		}
 		
 	}
+	
+	increase_size_mat_mp(BED->jac_with_proj,BED->num_natural_vars-1,BED->lower_randomizer->rows+BED->num_projections);
+	BED->jac_with_proj->rows = BED->num_natural_vars-1;
+	BED->jac_with_proj->cols = BED->lower_randomizer->rows+BED->num_projections;
 	
 	// transpose into beginning columns jac_with_proj
 	for (int ii=0; ii< tempmat1->rows; ii++)// for every function
