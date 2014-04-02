@@ -412,33 +412,33 @@ public:
 		
 	}
 	
-	int num_base_funcs()
+	int num_base_funcs() const
 	{
 		return num_original_funcs;
 	}
 	
-	int num_rand_funcs()
+	int num_rand_funcs() const
 	{
 		return num_randomized_funcs;
 	}
 	
-	int max_degree()
+	int max_degree() const
 	{
 		return max_base_degree;
 	}
 	
-	int max_deficiency()
+	int max_deficiency() const
 	{
 		return max_degree_deficiency;
 	}
 	
 	
-	bool is_square()
+	bool is_square() const
 	{
 		return square_indicator;
 	}
 	
-	bool is_ready()
+	bool is_ready() const
 	{
 		return setup_indicator;
 	}
@@ -507,6 +507,8 @@ protected:
 	
 	void init()
 	{
+		num_randomized_funcs = -1223;
+		num_original_funcs = -976;
 		
 		max_degree_deficiency = -1232;
 		max_base_degree = -1321;
@@ -549,19 +551,70 @@ protected:
 	
 	void copy(const system_randomizer & other)
 	{
-		std::cout << "copy code for system_randomizer class is incomplete" << std::endl;
-		br_exit(-1);
+
 		
-		max_degree_deficiency = other.max_degree_deficiency;
-		this->square_indicator = other.square_indicator;
 		
-		mat_cp_d(randomizer_matrix_d, other.randomizer_matrix_d);
-		if (other.randomizer_matrix_mp->rows>0 && other. randomizer_matrix_mp->cols>0) {
-			change_prec_mat_mp(randomizer_matrix_mp, mpf_get_prec(other.randomizer_matrix_mp->entry[0][0].r));
+		if (other.is_ready()) {
+			square_indicator = other.square_indicator;
+			
+			num_original_funcs = other.num_original_funcs;
+			num_randomized_funcs = other.num_randomized_funcs;
+			
+			max_base_degree = other.max_base_degree;
+			max_degree_deficiency = other.max_degree_deficiency;
+			
+			mat_cp_d(randomizer_matrix_d, other.randomizer_matrix_d);
+			
+			if (other.randomizer_matrix_mp->rows>0 && other. randomizer_matrix_mp->cols>0) {
+				change_prec_mat_mp(randomizer_matrix_mp, mpf_get_prec(other.randomizer_matrix_mp->entry[0][0].r));
+			}
+			mat_cp_mp(randomizer_matrix_mp, other.randomizer_matrix_mp);
+			
+			mat_cp_mp(randomizer_matrix_full_prec, other.randomizer_matrix_full_prec);
+			
+			// these vectors are guaranteed to be nonempty by virtue of other being already setup.
+			
+			original_degrees.resize(0);
+			for (auto iter=other.original_degrees.begin(); iter!=other.original_degrees.end(); ++iter) {
+				original_degrees.push_back(*iter);
+			}
+			
+			randomized_degrees.resize(0);
+			for (auto iter=other.randomized_degrees.begin(); iter!=other.randomized_degrees.end(); ++iter) {
+				randomized_degrees.push_back(*iter);
+			}
+			
+
+			
+			structure_matrix.resize(other.structure_matrix.size());
+			for (unsigned int ii=0; ii<other.structure_matrix.size(); ++ii) {
+				structure_matrix[ii].resize(0);
+				for (auto jter = other.structure_matrix[ii].begin(); jter!= other.structure_matrix[ii].end(); ++jter) {
+					structure_matrix[ii].push_back(*jter);
+				}
+			}
+			
+			setup_temps();
+		}
+		else
+		{
+			setup_indicator = false;
+			
+			randomized_degrees.resize(0);
+			original_degrees.resize(0);
+			structure_matrix.resize(0);
+			
+			num_original_funcs = num_randomized_funcs = max_base_degree = max_degree_deficiency = -1;
+			
+			change_size_mat_mp(randomizer_matrix_full_prec,0,0);
+			change_size_mat_mp(randomizer_matrix_mp,0,0);
+			change_size_mat_d(randomizer_matrix_d,0,0);
+			randomizer_matrix_d->rows = randomizer_matrix_d->cols = randomizer_matrix_mp->rows = randomizer_matrix_mp->cols = randomizer_matrix_full_prec->rows = randomizer_matrix_full_prec->cols = 0;
+			
+			
+			
 		}
 		
-		mat_cp_mp(randomizer_matrix_mp, other.randomizer_matrix_mp);
-		mat_cp_mp(randomizer_matrix_full_prec, other.randomizer_matrix_full_prec);
 	}
 	
 	

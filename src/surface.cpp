@@ -369,11 +369,9 @@ void surface_decomposition::beginning_stuff(const witness_set & W_surf,
 	
 	
 	randomizer->setup(W_surf.num_variables-1-this->dimension,solve_options.PPD.num_funcs);
-//	//create the matrix
-//	init_mat_mp2(this->randomizer_matrix,W_surf.num_variables-1-this->dimension,solve_options.PPD.num_funcs,solve_options.T.AMP_max_prec);
-//	
-//	//get the matrix and the degrees of the resulting randomized functions.
-//	make_randomization_matrix_based_on_degrees(this->randomizer_matrix, this->randomized_degrees, W_surf.num_variables-1-dimension, solve_options.PPD.num_funcs);
+	
+	
+
 	
 	
 	
@@ -529,6 +527,8 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 		
 		
 		crit_curve.randomizer->setup(W_critcurve.num_variables - W_critcurve.num_patches - 1,solve_options.PPD.num_funcs);
+		
+		
 		
 		
 		compute_crit_nullspace(solve_out, // the returned value
