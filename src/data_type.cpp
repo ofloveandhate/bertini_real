@@ -727,9 +727,9 @@ void system_randomizer::setup_temps()
 
 void system_randomizer::send(int target, parallelism_config & mpi_config)
 {
-	
+#ifdef functionentry_output
 	std::cout << "system_randomizer::send" << std::endl;
-	
+#endif
 	int sendme = setup_indicator;
 	MPI_Send(&sendme,1,MPI_INT,target,UNUSED,MPI_COMM_WORLD);
 
@@ -797,34 +797,15 @@ void system_randomizer::send(int target, parallelism_config & mpi_config)
 	
 	
 	
-	
-	// temps and things set up after you get the matrix and a few parameters.
-	//	vec_mp integer_coeffs_mp;
-	//	mat_mp single_row_input_mp;
-	//	vec_mp temp_homogenizer_mp;
-	//	vec_mp temp_funcs_mp;
-	//	mat_mp temp_jac_mp;
-	//	mat_mp temp_mat_mp;
-	//	vec_mp temp_vec_mp;
-	//
-	//
-	//	vec_d integer_coeffs_d;
-	//	mat_d single_row_input_d;
-	//	vec_d temp_homogenizer_d;
-	//	vec_d temp_funcs_d;
-	//	mat_d temp_jac_d;
-	//	mat_d temp_mat_d;
-	//	vec_d temp_vec_d;
-	
-	
-
-	
 }
 
 
 void system_randomizer::receive(int source, parallelism_config & mpi_config)
 {
+#ifdef functionentry_output
 	std::cout << "system_randomizer::receive" << std::endl;
+#endif
+	
 	MPI_Status statty_mc_gatty;
 	
 	int recvme;

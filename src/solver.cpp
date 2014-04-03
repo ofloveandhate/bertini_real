@@ -2014,10 +2014,7 @@ void generic_setup_patch(patch_eval_data_d *P, const witness_set & W)
 
 void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W)
 {
-	if (P->patchCoeff->rows == W.num_patches && P->patchCoeff->cols == W.num_variables) {
-		std::cout << "appear to have already set up the patch!" << std::endl;
-		mypause();
-	}
+
 	
 	init_mat_rat(P->patchCoeff_rat, W.num_patches, W.num_variables);
 	
