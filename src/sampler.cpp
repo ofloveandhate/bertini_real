@@ -42,8 +42,7 @@ int main(int argC, char *args[])
 	
 	
 	
-	vertex_set V;
-	V.setup_vertices(directoryName / "V.vertex"); //setup V structure from V.vertex
+	
 	
     
 	
@@ -85,7 +84,8 @@ int main(int argC, char *args[])
 	}
 	
 	
-	
+	vertex_set V(decom_pointy->num_variables);
+	V.setup_vertices(directoryName / "V.vertex"); //setup V structure from V.vertex
 	
 	common_sampler_startup(*decom_pointy,
 						   sampler_options,
@@ -430,6 +430,11 @@ void curve_decomposition::adaptive_sampler(vertex_set & V,
 					
 					fillme.get_noninfinite_w_mult_full(Wnew);
 					
+					if (Wnew.num_points==0) {
+						std::cout << "tracker did not return any points.  this is essentially an uncaught exception" << std::endl;
+						// i have no idea what to do when this happens.
+						mypause();
+					}
 					
 					if (sampler_options.verbose_level>=3)
 						print_point_to_screen_matlab(Wnew.pts_mp[0], "new_solution");
@@ -473,8 +478,13 @@ void curve_decomposition::adaptive_sampler(vertex_set & V,
 					vec_cp_mp(temp_vertex.pt_mp,Wnew.pts_mp[0]);
 					temp_vertex.type = CURVE_SAMPLE_POINT;
 					
-                    
-					new_indices[sample_counter] = V.add_vertex(temp_vertex);
+                    if (sampler_options.no_duplicates){
+						new_indices[sample_counter] = index_in_vertices_with_add(V, temp_vertex);
+					}
+					else{
+						new_indices[sample_counter] = V.add_vertex(temp_vertex);
+					}
+					
 					sample_counter++;
 					
 					new_indices[sample_counter] = right_index;
@@ -676,8 +686,13 @@ void curve_decomposition::fixed_sampler(vertex_set & V,
 			vec_cp_mp(temp_vertex.pt_mp,Wnew.pts_mp[0]);
 			temp_vertex.type = CURVE_SAMPLE_POINT;
 			
-			
-			sample_indices[ii][jj] = V.add_vertex(temp_vertex);
+			if (sampler_options.no_duplicates){
+				sample_indices[ii][jj] = index_in_vertices_with_add(V, temp_vertex);
+			}
+			else
+			{
+				sample_indices[ii][jj] = V.add_vertex(temp_vertex);
+			}
 			
 			
 			Wnew.reset();
@@ -1235,8 +1250,13 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 				vec_cp_mp(temp_vertex.pt_mp,W_new.pts_mp[0]);
 				temp_vertex.type = SURFACE_SAMPLE_POINT;
 				
-				
-				rib_indices[jj][kk] = V.add_vertex(temp_vertex);
+				if (sampler_options.no_duplicates){
+					rib_indices[jj][kk] = index_in_vertices_with_add(V, temp_vertex);
+				}
+				else
+				{
+					rib_indices[jj][kk] = V.add_vertex(temp_vertex);
+				}
 				
 				
 			}

@@ -2005,7 +2005,7 @@ int vertex_set::search_for_point(vec_mp testpoint)
 int vertex_set::search_for_active_point(vec_mp testpoint)
 {
     int index = -1; // initialize the index we will return
-    
+
     // dehomogenize the testpoint into the internal temp container.
     for (int jj=1; jj<num_natural_variables; jj++) {
 		div_mp(&checker_1->coord[jj-1], &testpoint->coord[jj],  &testpoint->coord[0]);
@@ -2369,7 +2369,7 @@ int vertex_set::setup_vertices(boost::filesystem::path INfile)
 	fclose(IN);
 	
 	if (this->num_vertices!=num_vertices) {
-		printf("parity error in num_vertices.\n\texpected: %d\tactual: %d\n",this->num_vertices,num_vertices);
+		printf("parity error in num_vertices.\n\texpected: %d\tactual: %d\n",this->num_vertices,num_vertices); // this is totally impossible.
 		br_exit(25943);
 	}
 	
