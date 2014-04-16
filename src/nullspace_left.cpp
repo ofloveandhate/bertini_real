@@ -33,9 +33,6 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 						   W,
 						   solve_options);
 	
-	if (program_options.numerical_derivative) {
-		ns_config->numerical_derivative = true;
-	}
 	
 	solve_options.T.AMP_bound_on_degree = (double) max_degree+1;
 	

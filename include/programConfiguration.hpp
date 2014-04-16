@@ -281,7 +281,6 @@ public:
 	
 	bool quick_run;
 	bool user_sphere;
-	bool numerical_derivative;
 
 	bool user_projection; // bool
 	
@@ -306,7 +305,6 @@ public:
 	
 	bool merge_edges;
 	
-	int crit_solver;
 	
 
 	
@@ -356,6 +354,8 @@ public:
 	int use_gamma_trick;
 	mpf_t TOL;
 	
+	bool no_duplicates;
+	
 	bool use_fixed_sampler;
 	int target_num_samples;
 	
@@ -368,6 +368,7 @@ public:
 	
 	sampler_configuration()
 	{
+		no_duplicates = true;
 		use_fixed_sampler = false;
 		target_num_samples = 10;
 		

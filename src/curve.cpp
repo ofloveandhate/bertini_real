@@ -202,8 +202,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	
 	if (!this->randomizer->is_ready()) {
 		std::cout << "in interslice, randomizer is not set up properly." << std::endl;
-		deliberate_segfault();
-//		this->randomizer.setup(W_curve.num_variables-W_curve.num_patches-W_curve.num_linears, solve_options.PPD.num_funcs);
+		br_exit(5023);
 	}
 	
 	V.set_curr_projection(projections[0]);

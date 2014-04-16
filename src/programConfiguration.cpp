@@ -176,26 +176,27 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 		static struct option long_options[] =
 		{
 			/* These options set a flag. */
-			{"nostifle", no_argument,       0, 's'}, {"ns", no_argument,					0, 's'},
-			{"projection",		required_argument,			 0, 'p'}, {"p",		required_argument,			 0, 'p'}, {"pi",		required_argument,			 0, 'p'},
-			{"input",		required_argument,			 0, 'i'}, {"i",		required_argument,			 0, 'i'},
-			{"witness",		required_argument,			 0, 'w'}, {"w",		required_argument,			 0, 'w'},
-			{"help",		no_argument,			 0, 'h'}, {"h",		no_argument,			 0, 'h'},
-			{"version",		no_argument,			 0, 'v'}, {"v",		no_argument,			 0, 'v'},
-			{"output",		required_argument,			 0, 'o'}, {"out",		required_argument,			 0, 'o'}, {"o",		required_argument,			 0, 'o'},
-			{"verb",		required_argument,			 0, 'V'},
-			{"sphere",		required_argument,			 0, 'S'}, {"s",		required_argument,			 0, 'S'},
-			{"gammatrick",		required_argument,			 0, 'g'}, {"g",		required_argument,			 0, 'g'},
-			{"detjac",		no_argument,			 0, 'd'},
 			{"debug", no_argument, 0, 'D'},
-			{"quick",no_argument,0,'q'},{"q",no_argument,0,'q'},
-			{"numer",no_argument,0,'n'},
+			{"gammatrick",required_argument,0, 'g'}, {"g",required_argument, 0, 'g'},
+			{"verb",	required_argument,0, 'V'},
+			{"output",	required_argument,0, 'o'}, {"out",required_argument, 0, 'o'}, {"o",	required_argument, 0, 'o'},
+			{"nostifle", no_argument,       0, 's'}, {"ns", no_argument, 0, 's'},
+			{"nomerge",no_argument,0,'m'}, {"nm",no_argument,0,'m'},
+			{"projection",required_argument,0, 'p'}, {"p",required_argument,0, 'p'}, {"pi",	required_argument,0,'p'},
+			{"witness",required_argument, 0, 'w'}, {"w",required_argument, 0, 'w'},
+			{"sphere",required_argument, 0, 'S'}, {"s",required_argument, 0, 'S'},
+			{"input",required_argument,	0, 'i'}, {"i",required_argument, 0, 'i'},
+			
+			{"quick",no_argument,0,'q'}, {"q",no_argument,0,'q'},
+			
+			{"version",		no_argument,			 0, 'v'}, {"v",		no_argument,			 0, 'v'},
+			{"help",		no_argument,			 0, 'h'}, {"h",		no_argument,			 0, 'h'},
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
 		
-		choice = getopt_long_only (argc, argv, "D:d:g:b:V:o:s:r:p:w:i:v:h",
+		choice = getopt_long_only (argc, argv, "D:g:V:o:s:m:p:w:S:i:q:v:h",
 								   long_options, &option_index);
 		
 		/* Detect the end of the options. */
@@ -204,23 +205,11 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 		
 		switch (choice)
 		{
-				
-			case 'n':
-				this->numerical_derivative = true;
-				break;
-				
-			case 'q':
-				this->quick_run = true;
-				break;
-
-				
+	
 			case 'D':
 				this->debugwait = 1;
 				break;
-				
-			case 'd':
-				this->crit_solver = LINPRODTODETJAC;
-				break;
+		
 			case 'g':
 				this->use_gamma_trick = atoi(optarg);
 				if (! (this->use_gamma_trick==0 || this->use_gamma_trick==1) ) {
@@ -229,15 +218,10 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 				}
 				break;
 				
-				
-			case 'S':
-				user_sphere = true;
-				this->bounding_sphere_filename = boost::filesystem::absolute(optarg);
-				break;
-				
 			case 'V':
 				this->verbose_level = atoi(optarg);
 				break;
+
 				
 			case 'o':
 				this->output_dir = boost::filesystem::absolute(optarg);
@@ -247,7 +231,9 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 				this->stifle_text = "\0";
 				break;
 				
-				
+			case 'm':
+				this->merge_edges = false;
+				break;
 				
 			case 'p':
 				this->user_projection=1;
@@ -259,10 +245,20 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 				this->witness_set_filename = optarg;
 				break;
 				
+			case 'S':
+				user_sphere = true;
+				this->bounding_sphere_filename = boost::filesystem::absolute(optarg);
+				break;
+				
+				
 			case 'i': // input filename
 				this->input_filename = optarg;
 				break;
 				
+			case 'q':
+				this->quick_run = true;
+				break;
+
 			case 'v':
 				printf("\n BertiniReal(TM) v %s\n\n", BERTINI_REAL_VERSION_STRING);
 				exit(0);
@@ -272,7 +268,7 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 				
 				splash_screen();
 				
-				printf("\nThis is BertiniReal v %s, developed by\nDaniel A. Brake with Dan J. Bates,\nWenrui Hao, Jonathan D. Hauenstein,\nAndrew J. Sommmese, and Charles W. Wampler.\n\n", BERTINI_REAL_VERSION_STRING);
+				printf("\nThis is BertiniReal v %s, developed by\nDaniel A. Brake \n\nwith Dan J. Bates, Wenrui Hao, Jonathan D. Hauenstein,\nAndrew J. Sommmese, and Charles W. Wampler.\n\n", BERTINI_REAL_VERSION_STRING);
 				printf("Send email to brake@math.colostate.edu for details about BertiniReal.\n\n");
 				BR_configuration::print_usage();
 				exit(0);
@@ -284,25 +280,30 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 				
 			default:
 				BR_configuration::print_usage();
-				exit(0); // this indices a memory leak.
+				exit(0); //
 		}
 	}
 	
 	
-    
-	this->called_dir = boost::filesystem::absolute(boost::filesystem::current_path());
-	this->output_dir = boost::filesystem::absolute(this->output_dir);
-	this->working_dir = this->called_dir;
-	this->working_dir/="temp";
-	
-	/* Print any remaining command line arguments (not options). */
+    /* Print any remaining command line arguments (not options). */
 	if (optind < argc)
 	{
 		printf ("these options were not processed: ");
 		while (optind < argc)
 			printf ("%s ", argv[optind++]);
-		putchar ('\n');
+		printf("\n");
+		br_exit(-2363);
 	}
+	
+	
+	
+	
+	this->called_dir = boost::filesystem::absolute(boost::filesystem::current_path());
+	this->output_dir = boost::filesystem::absolute(this->output_dir);
+	this->working_dir = this->called_dir;
+	this->working_dir/="temp";
+	
+	
 	
 	return 0;
 }
@@ -346,7 +347,6 @@ void BR_configuration::print_usage()
 
 void BR_configuration::init()
 {
-	numerical_derivative = false;
 
 	quick_run = false;
 	this->debugwait = 0;
@@ -366,8 +366,6 @@ void BR_configuration::init()
 	
 	this->output_dir = boost::filesystem::absolute("output");
 	
-	
-	this->crit_solver = NULLSPACE;
 	
 	this->stifle_membership_screen = 1;
 	this->stifle_text = " > /dev/null ";
@@ -451,12 +449,13 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 			{"gammatrick",		required_argument,			 0, 'g'},
 			{"g",		required_argument,			 0, 'g'},
 			{"fixed",		required_argument,			 0, 'f'},
+			{"nd", no_argument,0,'d'},
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
 		
-		choice = getopt_long_only (argc, argv, "h:v:s:ve",
+		choice = getopt_long_only (argc, argv, "d:h:v:s:ve",
 															 long_options, &option_index);
 		
 		/* Detect the end of the options. */
@@ -465,6 +464,11 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 		
 		switch (choice)
 		{
+			case 'd':
+				no_duplicates = false;
+				break;
+				
+				
 			case 'f':
 				use_fixed_sampler = true;
 				target_num_samples = atoi(optarg);
