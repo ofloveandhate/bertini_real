@@ -139,33 +139,23 @@ private:
 
 
 
-
-
 class temps_mp
 {
-	std::map<std::string,int> name_indexer;
+public:
+	comp_mp * scalars;
 	vec_mp * vectors;
 	mat_mp * matrices;
 	
+	int num_scalars;
 	int num_vectors;
 	int num_matrices;
 	
-	
-	
-	
-	//	vec_mp operator[] (std::string name)
-	//	{
-	//		return vectors[name_indexer[name]];
-	//	}
-	
-	
-	
+	int curr_prec;
 	
 	temps_mp(){init();}
 	~temps_mp(){clear();}
 	
 	temps_mp & operator=(const temps_mp & other){
-		init();
 		copy(other);
 		
 		return *this;
@@ -178,31 +168,19 @@ class temps_mp
 	
 	
 	
-	void init(){
-		vectors = NULL;
-		matrices = NULL;
-		num_vectors = 0;
-		num_matrices = 0;
-	}
 	
-	void copy(const temps_mp &other)
+	
+	inline void clear_scalars()
 	{
-		for (int ii=0; ii<other.num_vectors; ii++) {
-			int new_index = this->add_vector();
-			vec_cp_mp(this->vectors[new_index],other.vectors[ii]);
+		if (num_scalars>0) {
+			for (int ii=0; ii<num_scalars; ii++) {
+				clear_mp(scalars[ii]);
+			}
+			free(scalars);
 		}
-		
-		for (int ii=0; ii<other.num_matrices; ii++) {
-			int new_index = this->add_matrix();
-			mat_cp_mp(this->matrices[new_index],other.matrices[ii]);
-		}
+		num_scalars=0;
 	}
 	
-	
-	void clear(){
-		clear_matrices();
-		clear_vectors();
-	}
 	
 	void clear_matrices()
 	{
@@ -212,6 +190,7 @@ class temps_mp
 			}
 			free(matrices);
 		}
+		num_matrices = 0;
 	}
 	
 	
@@ -223,10 +202,60 @@ class temps_mp
 			}
 			free(vectors);
 		}
+		num_vectors = 0;
 	}
 	
 	
-	int add_vector(){
+	
+	void ensure_have_scalars(int num_to_require)
+	{
+		if (num_scalars<num_to_require) {
+			for (int ii=num_scalars; ii<num_to_require; ii++) {
+				add_scalar();
+			}
+		}
+	}
+	
+	void ensure_have_vectors(int num_to_require)
+	{
+		if (num_vectors<num_to_require) {
+			for (int ii=num_vectors; ii<num_to_require; ii++) {
+				add_vector();
+			}
+		}
+	}
+	
+	void ensure_have_matrices(int num_to_require)
+	{
+		if (num_matrices<num_to_require) {
+			for (int ii=num_matrices; ii<num_to_require; ii++) {
+				add_matrix();
+			}
+		}
+	}
+	
+	
+	
+	
+	int add_scalar()
+	{
+		int new_index = num_scalars;
+		
+		if (num_scalars==0) {
+			scalars = (comp_mp *) br_malloc(sizeof(comp_mp));
+		}
+		else{
+			scalars = (comp_mp *) br_realloc(scalars,(num_scalars+1)*sizeof(comp_mp));
+		}
+		init_mp(scalars[new_index]);
+		
+		num_scalars++;
+		return new_index;
+	}
+	
+	
+	int add_vector()
+	{
 		int new_index = num_vectors;
 		if (num_vectors==0) {
 			vectors = (vec_mp *) br_malloc(sizeof(vec_mp));
@@ -237,12 +266,15 @@ class temps_mp
 		init_vec_mp(vectors[new_index],1);
 		vectors[new_index]->size = 1;
 		
+		num_vectors++;
 		return new_index;
+		
 		
 	}
 	
 	
-	int add_matrix(){
+	int add_matrix()
+	{
 		int new_index = num_matrices;
 		if (num_matrices==0) {
 			matrices = (mat_mp *) br_malloc(sizeof(mat_mp));
@@ -253,10 +285,269 @@ class temps_mp
 		init_mat_mp(matrices[new_index],1,1);
 		matrices[new_index]->rows = matrices[new_index]->cols = 1;
 		
+		num_matrices++;
 		return new_index;
 	}
 	
 	
+	void change_prec(int new_prec)
+	{
+		if (new_prec==curr_prec) {
+			return;
+		}
+		
+		for (int ii=0; ii<num_vectors; ii++) {
+			change_prec_mp(scalars[ii],new_prec);
+		}
+		for (int ii=0; ii<num_vectors; ii++) {
+			change_prec_vec_mp(vectors[ii],new_prec);
+		}
+		for (int ii=0; ii<num_matrices; ii++) {
+			change_prec_mat_mp(matrices[ii],new_prec);
+		}
+		
+		curr_prec = new_prec;
+	}
+	
+	
+	
+private:
+	
+	void init()
+	{
+		scalars = NULL;
+		vectors = NULL;
+		matrices = NULL;
+		
+		num_scalars = 0;
+		num_vectors = 0;
+		num_matrices = 0;
+		
+		curr_prec = mpfr_get_default_prec();
+	}
+	
+	void copy(const temps_mp &other)
+	{
+		for (int ii=0; ii<other.num_scalars; ii++) {
+			int new_index = this->add_scalar();
+			set_mp(this->scalars[new_index],other.scalars[ii]);
+		}
+		
+		for (int ii=0; ii<other.num_vectors; ii++) {
+			int new_index = this->add_vector();
+			vec_cp_mp(this->vectors[new_index],other.vectors[ii]);
+		}
+		
+		for (int ii=0; ii<other.num_matrices; ii++) {
+			int new_index = this->add_matrix();
+			mat_cp_mp(this->matrices[new_index],other.matrices[ii]);
+		}
+		
+		
+		this->change_prec(other.curr_prec);
+	}
+	
+	
+	void clear()
+	{
+		clear_matrices();
+		clear_vectors();
+		clear_scalars();
+	}
+};
+
+class temps_d
+{
+public:
+	comp_d * scalars;
+	vec_d * vectors;
+	mat_d * matrices;
+	
+	int num_scalars;
+	int num_vectors;
+	int num_matrices;
+	
+	
+	temps_d(){init();}
+	~temps_d(){clear();}
+	
+	temps_d & operator=(const temps_d & other){
+		copy(other);
+		
+		return *this;
+	}
+	
+	temps_d(const temps_d & other){
+		init();
+		copy(other);
+	}
+	
+	
+	
+	
+	
+	inline void clear_scalars()
+	{
+		if (num_scalars>0) {
+			for (int ii=0; ii<num_scalars; ii++) {
+				clear_d(scalars[ii]);
+			}
+			free(scalars);
+		}
+		num_scalars=0;
+	}
+	
+	
+	void clear_matrices()
+	{
+		if (num_matrices>0) {
+			for (int ii=0; ii<num_matrices; ii++) {
+				clear_mat_d(matrices[ii]);
+			}
+			free(matrices);
+		}
+		num_matrices = 0;
+	}
+	
+	
+	void clear_vectors()
+	{
+		if (num_vectors>0) {
+			for (int ii=0; ii<num_vectors; ii++) {
+				clear_vec_d(vectors[ii]);
+			}
+			free(vectors);
+		}
+		num_vectors = 0;
+	}
+	
+	
+	
+	void ensure_have_scalars(int num_to_require)
+	{
+		if (num_scalars<num_to_require) {
+			for (int ii=num_scalars; ii<num_to_require; ii++) {
+				add_scalar();
+			}
+		}
+	}
+	
+	void ensure_have_vectors(int num_to_require)
+	{
+		if (num_vectors<num_to_require) {
+			for (int ii=num_vectors; ii<num_to_require; ii++) {
+				add_vector();
+			}
+		}
+	}
+	
+	void ensure_have_matrices(int num_to_require)
+	{
+		if (num_matrices<num_to_require) {
+			for (int ii=num_matrices; ii<num_to_require; ii++) {
+				add_matrix();
+			}
+		}
+	}
+	
+	
+	
+	
+	int add_scalar()
+	{
+		int new_index = num_scalars;
+		
+		if (num_scalars==0) {
+			scalars = (comp_d *) br_malloc(sizeof(comp_d));
+		}
+		else{
+			scalars = (comp_d *) br_realloc(scalars,(num_scalars+1)*sizeof(comp_d));
+		}
+//		set_zero_d(scalars[new_index]);
+		
+		num_scalars++;
+		return new_index;
+	}
+	
+	
+	int add_vector()
+	{
+		int new_index = num_vectors;
+		if (num_vectors==0) {
+			vectors = (vec_d *) br_malloc(sizeof(vec_d));
+		}
+		else {
+			vectors = (vec_d *) br_realloc(vectors,(num_vectors+1)*sizeof(vec_d));
+		}
+		init_vec_d(vectors[new_index],1);
+		vectors[new_index]->size = 1;
+		
+		num_vectors++;
+		return new_index;
+		
+		
+	}
+	
+	
+	int add_matrix()
+	{
+		int new_index = num_matrices;
+		if (num_matrices==0) {
+			matrices = (mat_d *) br_malloc(sizeof(mat_d));
+		}
+		else {
+			matrices = (mat_d *) br_realloc(matrices,(num_matrices+1)*sizeof(mat_d));
+		}
+		init_mat_d(matrices[new_index],1,1);
+		matrices[new_index]->rows = matrices[new_index]->cols = 1;
+		
+		num_matrices++;
+		return new_index;
+	}
+	
+	
+	
+	
+	
+private:
+	
+	void init()
+	{
+		scalars = NULL;
+		vectors = NULL;
+		matrices = NULL;
+		
+		num_scalars = 0;
+		num_vectors = 0;
+		num_matrices = 0;
+	}
+	
+	void copy(const temps_d &other)
+	{
+		for (int ii=0; ii<other.num_scalars; ii++) {
+			int new_index = this->add_scalar();
+			set_d(this->scalars[new_index],other.scalars[ii]);
+		}
+		
+		for (int ii=0; ii<other.num_vectors; ii++) {
+			int new_index = this->add_vector();
+			vec_cp_d(this->vectors[new_index],other.vectors[ii]);
+		}
+		
+		for (int ii=0; ii<other.num_matrices; ii++) {
+			int new_index = this->add_matrix();
+			mat_cp_d(this->matrices[new_index],other.matrices[ii]);
+		}
+		
+	}
+	
+	
+	void clear()
+	{
+		clear_matrices();
+		clear_vectors();
+		clear_scalars();
+	}
 };
 
 
@@ -718,6 +1009,7 @@ public:
 	
 	mpfr_prec_t curr_prec;
 	
+	temps_mp temp_vars;
 	
 	solver_mp() : solver(){
 		this->MPType = 2;
@@ -852,6 +1144,7 @@ public:
 	
 	solver_mp *BED_mp; // why even have this?
     
+	temps_d temp_vars;
     
 	solver_d() : solver(){
 		init();

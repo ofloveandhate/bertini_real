@@ -109,6 +109,7 @@ private:
 
 
 
+
 // the mp version
 // this must be defined before the double version, because double has mp.
 class nullspacejac_eval_data_mp : public solver_mp
