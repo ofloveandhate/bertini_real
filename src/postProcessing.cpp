@@ -8,7 +8,7 @@ void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check
 								 const solver_configuration & solve_options)
 {
 	
-	int num_nat_vars = num_variables-num_synth_vars;
+	int num_nat_vars = num_natural_vars;
 	
 	
 	// sets the multiplicity and solution number in the endPoints data
@@ -160,6 +160,12 @@ void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check
 int BRfindSingularSolns(post_process_t *endPoints, int num_sols, int num_vars,
 												tracker_config_t *T )
 {
+	
+	if (num_vars<=1) {
+		std::cout << "requesting to find singular solutions, but using " << num_vars << " variables." << std::endl;
+	}
+	
+	
 	int sing_count=0;
 	
 	for (int ii = 0; ii < num_sols; ii++){
@@ -181,6 +187,11 @@ int BRfindSingularSolns(post_process_t *endPoints, int num_sols, int num_vars,
 int BRfindFiniteSolns(post_process_t *endPoints, int num_sols, int num_vars,
 											tracker_config_t *T )
 {
+	
+	if (num_vars<=1) {
+		std::cout << "requesting to find finite solutions, but using " << num_vars << " variables." << std::endl;
+	}
+	
 	int finite_count=0;
 	
 	
@@ -243,6 +254,11 @@ int BRfindFiniteSolns(post_process_t *endPoints, int num_sols, int num_vars,
 int BRfindRealSolns(post_process_t *endPoints, int num_sols, int num_vars,
 					  tracker_config_t *T )
 {
+	if (num_vars<=1) {
+		std::cout << "requesting to find real solutions, but using " << num_vars << " variables." << std::endl;
+	}
+	
+	
 	int real_count=0;
 	
 	

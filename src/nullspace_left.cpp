@@ -110,14 +110,14 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 	
 	witness_set W_step_one;
 	W_step_one.num_variables = W.num_variables;
-	W_step_one.num_synth_vars = W.num_synth_vars;
+	W_step_one.num_natural_vars = W.num_natural_vars;
 	W_step_one.copy_patches(W);
 	W_step_one.cp_names(W);
 	
 	
 	witness_set W_linprod;
 	W_linprod.num_variables = ns_config->num_natural_vars + ns_config->num_v_vars + ns_config->num_synth_vars;
-	
+	W_linprod.num_natural_vars = W.num_natural_vars;
 	
 	
 	double_odometer odo(ns_config->num_jac_equations, target_crit_codim, max_degree);
@@ -210,7 +210,7 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 			
 			W_step_one.reset();
 			W_step_one.num_variables = W.num_variables;
-			W_step_one.num_synth_vars = W.num_synth_vars;
+			W_step_one.num_natural_vars = W.num_natural_vars;
 			W_step_one.copy_patches(W);  // necessary?
 			W_step_one.cp_names(W); // necessary?
 			
@@ -234,7 +234,7 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 		mypause();
 	}
 	
-	W_linprod.num_synth_vars = ns_config->num_v_vars+ns_config->num_synth_vars;
+	W_linprod.num_natural_vars = ns_config->num_v_vars+ns_config->num_synth_vars;
 	W_linprod.copy_patches(W);
 	W_linprod.cp_names(W);
 	
@@ -267,7 +267,7 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 										   ns_config,
 										   solve_options);
 	
-
+	std::cout << ns_config->num_v_vars << std::endl;
 	
 	ns_concluding_modifications(solve_out, W, ns_config);
 	
@@ -289,7 +289,7 @@ void ns_concluding_modifications(solver_output & solve_out,
 								 nullspace_config * ns_config)
 {
 	solve_out.num_variables  = ns_config->num_natural_vars + ns_config->num_v_vars;
-	solve_out.num_synth_vars = W.num_synth_vars + ns_config->num_v_vars;
+	solve_out.num_natural_vars = W.num_natural_vars;
 	
 	solve_out.add_patch(ns_config->v_patch);
 	
@@ -336,11 +336,11 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	ns_config->num_projections = ambient_dim - target_crit_codim + 1;
 	
 	
-	ns_config->num_v_vars = (W.num_natural_vars()-1) - ambient_dim + ns_config->num_projections;
+	ns_config->num_v_vars = (W.num_natural_vars-1) - ambient_dim + ns_config->num_projections;
 	
 	
-	ns_config->num_synth_vars = W.num_synth_vars; // this may get a little crazy if we chain into this more than once.  this code is written to be called into only one time beyond the first.
-	ns_config->num_natural_vars = W.num_natural_vars();
+	ns_config->num_synth_vars = W.num_synth_vars(); // this may get a little crazy if we chain into this more than once.  this code is written to be called into only one time beyond the first.
+	ns_config->num_natural_vars = W.num_natural_vars;
 	
 	ns_config->ambient_dim = ambient_dim;
 	ns_config->target_dim = target_dim;
@@ -431,10 +431,10 @@ void nullspace_config_setup(nullspace_config *ns_config,
 		init_vec_mp2(ns_config->additional_linears_terminal[ii],W.num_variables,solve_options.T.AMP_max_prec);
 		ns_config->additional_linears_terminal[ii]->size = W.num_variables;
 		if (1) {
-			for (int jj=0; jj<W.num_variables-W.num_synth_vars; jj++){
+			for (int jj=0; jj<W.num_natural_vars; jj++){
 				get_comp_rand_mp(&ns_config->additional_linears_terminal[ii]->coord[jj]); // should this be real?  no.
 			}
-			for (int jj=W.num_variables-W.num_synth_vars; jj<W.num_variables; jj++) {
+			for (int jj=W.num_natural_vars; jj<W.num_variables; jj++) {
 				set_zero_mp(&ns_config->additional_linears_terminal[ii]->coord[jj]);
 			}
 		}
@@ -469,17 +469,17 @@ void nullspace_config_setup(nullspace_config *ns_config,
 		ns_config->starting_linears[ii] = (vec_mp *) br_malloc((*max_degree)*sizeof(vec_mp));
 		
 		if (1) {
-			make_matrix_random_mp(temp_getter,*max_degree, W.num_variables-W.num_synth_vars, solve_options.T.AMP_max_prec); // this matrix is nearly orthogonal
+			make_matrix_random_mp(temp_getter,*max_degree, W.num_natural_vars, solve_options.T.AMP_max_prec); // this matrix is nearly orthogonal
 			
 			for (int jj=0; jj<(*max_degree); jj++) {
 				init_vec_mp2(ns_config->starting_linears[ii][jj],W.num_variables,solve_options.T.AMP_max_prec);
 				ns_config->starting_linears[ii][jj]->size = W.num_variables;
 				
-				for (int kk=0; kk<W.num_variables - W.num_synth_vars; kk++) {
+				for (int kk=0; kk<W.num_natural_vars; kk++) {
 					set_mp(&ns_config->starting_linears[ii][jj]->coord[kk], &temp_getter->entry[jj][kk]);
 				}
 				
-				for (int kk=W.num_variables - W.num_synth_vars; kk<W.num_variables; kk++) {
+				for (int kk=W.num_natural_vars; kk<W.num_variables; kk++) {
 					set_zero_mp(&ns_config->starting_linears[ii][jj]->coord[kk]);
 				}
 			}

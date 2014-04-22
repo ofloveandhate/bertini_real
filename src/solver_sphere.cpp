@@ -221,7 +221,7 @@ int sphere_eval_data_mp::setup(const sphere_config & config,
 	
 	this->SLP_memory = config.SLP_memory;
 	
-	num_natural_vars = W.num_natural_vars();
+	num_natural_vars = W.num_natural_vars;
 	num_variables = W.num_variables;
 	
 	
@@ -524,7 +524,7 @@ int sphere_eval_data_d::setup(const sphere_config & config,
 	}
 	num_static_linears = W.num_linears;
 	
-    num_natural_vars = W.num_natural_vars();
+    num_natural_vars = W.num_natural_vars;
 	num_variables = W.num_variables;
 	
 	

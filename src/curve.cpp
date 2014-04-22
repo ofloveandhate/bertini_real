@@ -66,7 +66,7 @@ void curve_decomposition::main(vertex_set & V,
 	
 	
 	int self_conjugate = 1;
-	if (W.num_synth_vars==0) {
+	if (W.num_synth_vars()==0) {
 		
 		if (program_options.verbose_level>=2) {
 			printf("checking if component is self-conjugate\n");
@@ -1221,7 +1221,7 @@ int curve_decomposition::get_additional_critpts(witness_set *W_additional,
 	
 	for (int ii=0; ii<2; ii++) {
 		
-		for (int jj=0; jj<W_curve.num_natural_vars(); jj++) {
+		for (int jj=0; jj<W_curve.num_natural_vars; jj++) {
 			get_comp_rand_mp(&multilin_linears[0]->coord[jj]);
 		}
 		
