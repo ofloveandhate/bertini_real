@@ -627,7 +627,7 @@ void master_solver(solver_output & solve_out, const witness_set & W,
     int num_crossings = 0;
 	
 	solve_out.num_variables = W.num_variables;
-	solve_out.num_synth_vars = W.num_synth_vars;
+	solve_out.num_natural_vars = W.num_natural_vars;
 	
 	solve_out.copy_patches(W); // copy the patches over from the original witness set
 	solve_out.cp_names(W);

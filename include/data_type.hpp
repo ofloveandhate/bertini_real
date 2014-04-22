@@ -957,7 +957,7 @@ public:
 	int incidence_number;
 	
 	int num_variables;
-	int num_synth_vars;
+	int num_natural_vars;
 	
 
 
@@ -1009,7 +1009,7 @@ public:
 		this->input_filename = "unset_filename";
 		
 		this->num_variables = 0;
-		this->num_synth_vars = 0;
+		this->num_natural_vars = 0;
 		
 		
 		this->incidence_number = -1;
@@ -1039,7 +1039,7 @@ public:
 		this->incidence_number = other.incidence_number;
 		
 		this->num_variables = other.num_variables;
-		this->num_synth_vars = other.num_synth_vars;
+		this->num_natural_vars = other.num_natural_vars;
 	}
 
     
@@ -1047,9 +1047,9 @@ public:
     
 
 	
-    int num_natural_vars() const
+    int num_synth_vars() const
     {
-        return num_variables - num_synth_vars;
+        return num_variables - num_natural_vars;
     }
     
     

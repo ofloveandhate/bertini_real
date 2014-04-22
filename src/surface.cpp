@@ -67,9 +67,6 @@ void surface_decomposition::main(vertex_set & V,
 	
 	
 	
-
-	
-	
 	
 	
 	
@@ -155,23 +152,23 @@ void surface_decomposition::main(vertex_set & V,
     witness_set W_total_crit;
     
 	W_total_crit.merge(W_critcurve_crit);
-	W_total_crit.only_first_vars( this->num_variables); // chop down the number of variables
+//	W_total_crit.only_first_vars( this->num_variables); // chop down the number of variables
     
     
-	W_sphere_crit.only_first_vars(this->num_variables);
+//	W_sphere_crit.only_first_vars(this->num_variables);
     W_total_crit.merge(W_sphere_crit);
     
 	
-	W_singular_crit.only_first_vars(this->num_variables);
+//	W_singular_crit.only_first_vars(this->num_variables);
     W_total_crit.merge(W_singular_crit);
     
 	
     W_total_crit.input_filename = "total_crit___there-is-a-problem";
 	W_total_crit.sort_for_unique(&solve_options.T);
     
-    W_total_crit.print_to_screen();
-    
-    
+//    W_total_crit.print_to_screen();
+//    
+//    
     
     
     
@@ -565,17 +562,28 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 	ns_config.clear();
 	solve_out.reset();
 	
-	W_critcurve_crit.only_first_vars(num_variables); // i question this line. it might be better without it.
-	
-	
 	
 	
 	//now get those critpoints which lie on the crit curve (there may be some intersection with the above)
-	W_critcurve.only_first_vars(num_variables);
+	
+	W_critcurve.only_natural_vars();// trim off the synthetic variables for the input witness set for computing critical points
 	parse_input_file(W_critcurve.input_filename,&blabla);
 	preproc_data_clear(&solve_options.PPD); // ugh this sucks
 	parse_preproc_data("preproc_data", &solve_options.PPD);
 	
+	std::ifstream fin("deg.out");
+	int max_degree = 0;
+	int temp_degree;
+	for (int ii=0; ii<solve_options.PPD.num_funcs; ii++) {
+		fin >> temp_degree;
+		if (temp_degree>max_degree) {
+			max_degree = temp_degree;
+		}
+	}
+	fin.close();
+	
+	temp_degree = solve_options.T.AMP_bound_on_degree;
+	solve_options.T.AMP_bound_on_degree = max_degree;
 	
 	crit_curve.randomizer->setup(W_critcurve.num_variables - W_critcurve.num_patches - 1,solve_options.PPD.num_funcs);
 	
@@ -591,23 +599,25 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 						   solve_options,
 						   &ns_config);
 	
+	
+	
+	
 	witness_set W_temp;
 	solve_out.get_noninfinite_w_mult_full(W_temp);
 	ns_config.clear();
 	solve_out.reset();
 	
-	W_temp.only_first_vars(num_variables); // i question this line. it might be better without it.
 	
 	W_critcurve_crit.merge(W_temp);
 	
 	W_critcurve_crit.sort_for_real(&solve_options.T);
 	W_critcurve_crit.sort_for_unique(&solve_options.T);
 	
-	W_critcurve_crit.print_to_screen();
-	
-	
-	
-	
+//	W_critcurve_crit.print_to_screen();
+//	
+//	
+//	
+//	
 	
 	
 	
@@ -636,15 +646,13 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 									  program_options,
 									  solve_options);
 	
-	
-	W_sphere_intersection.only_first_vars(this->num_variables); // throw out the extra variables.
-	
+
 	W_sphere_intersection.sort_for_real(&solve_options.T);
 	W_sphere_intersection.sort_for_unique(&solve_options.T);
 	
 	W_critcurve_crit.merge(W_sphere_intersection);
 	
-	
+	solve_options.T.AMP_bound_on_degree = temp_degree;
     
     return;
 }
@@ -787,8 +795,6 @@ void surface_decomposition::deflate_and_split(std::map< std::pair<int,int>, witn
 			
 			if (W_reject.has_points()) {
 				std::cout << "found that current singular witness set had " << W_reject.num_points << " non-deflated points" << std::endl;
-				//				sleep(10); std::cout << "355" << std::endl;  W_reject.print_to_screen();
-				//				std::cout << "357" << std::endl;
 			}
 			
 			//TODO: this is an ideal place for a swap operator.
@@ -822,7 +828,7 @@ void surface_decomposition::compute_singular_crit(witness_set & W_singular_crit,
 	
 	
 	W_singular_crit.num_variables = this->num_variables;
-	W_singular_crit.num_synth_vars = 0;
+	W_singular_crit.num_natural_vars = this->num_variables;
 	W_singular_crit.copy_patches(*this);
 	for (auto iter = split_sets.begin(); iter!=split_sets.end(); ++iter) {
 		
@@ -835,6 +841,22 @@ void surface_decomposition::compute_singular_crit(witness_set & W_singular_crit,
 		parse_input_file(iter->second.input_filename,&blabla);
 		preproc_data_clear(&solve_options.PPD); // ugh this sucks
 		parse_preproc_data("preproc_data", &solve_options.PPD);
+		
+		std::ifstream fin("deg.out");
+		int max_degree = 0;
+		int temp_degree;
+		for (int ii=0; ii<solve_options.PPD.num_funcs; ii++) {
+			fin >> temp_degree;
+			if (temp_degree>max_degree) {
+				max_degree = temp_degree;
+			}
+		}
+		fin.close();
+		
+		temp_degree = solve_options.T.AMP_bound_on_degree;
+		solve_options.T.AMP_bound_on_degree = max_degree;
+		
+		
 		
 		
 		singular_curves[iter->first].randomizer->setup(iter->second.num_variables-iter->second.num_patches-1, solve_options.PPD.num_funcs);
@@ -856,12 +878,15 @@ void surface_decomposition::compute_singular_crit(witness_set & W_singular_crit,
 							   solve_options,
 							   &ns_config);
 		
+		
+		solve_options.T.AMP_bound_on_degree = temp_degree;
+		
 		witness_set W_this_round;
 		solve_out.get_noninfinite_w_mult_full(W_this_round);
 		
 		ns_config.clear();
 		
-		W_this_round.only_first_vars(this->num_variables);
+//		W_this_round.only_first_vars(this->num_variables);
 		W_this_round.sort_for_unique(&solve_options.T); // this could be made to be unnecessary, after rewriting a bit of solverout
 		W_this_round.sort_for_real(&solve_options.T);
 		W_this_round.sort_for_inside_sphere(sphere_radius,sphere_center);
@@ -906,7 +931,7 @@ void surface_decomposition::compute_singular_curves(const witness_set & W_total_
 		W_sphere_intersection.input_filename = iter->second.input_filename;
 		
 		
-		W_sphere_intersection.only_first_vars(this->num_variables); // throw out the extra variables.
+//		W_sphere_intersection.only_first_vars(this->num_variables); // throw out the extra variables.
 		W_sphere_intersection.sort_for_real(&solve_options.T);
 		W_sphere_intersection.sort_for_unique(&solve_options.T);
 		
@@ -1943,7 +1968,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	//copy in the start point as three points concatenated.
 	
 	W_midtrack.num_variables = this->num_variables + num_bottom_vars + num_top_vars;
-	W_midtrack.num_synth_vars = W_midtrack.num_variables - this->num_variables;
+	W_midtrack.num_natural_vars = this->num_variables;
 	change_size_vec_mp(W_midtrack.pts_mp[0], W_midtrack.num_variables); W_midtrack.pts_mp[0]->size = W_midtrack.num_variables; // destructive resize
 	
 	
@@ -2053,7 +2078,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 			int current_edge = crit_slices[ii+zz].edge_w_midpt(final_bottom_ind);
 			
 			if (current_edge<0) {
-				std::cout << "unable to find an edge in crit_slices[" << ii+zz << "] with midpoint " << final_bottom_ind << std::endl;
+				std::cout << "unable to find a degenerate edge in crit_slices[" << ii+zz << "] with midpoint " << final_bottom_ind << std::endl;
 //				std::cout << "making new degenerate edge" << std::endl;
 //				edge E(final_bottom_ind,final_bottom_ind,final_bottom_ind);
 //				current_edge = crit_slices[ii+zz].add_edge(E);

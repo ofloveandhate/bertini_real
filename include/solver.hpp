@@ -470,7 +470,7 @@ private:
 public:
 	
 	int num_variables;
-	int num_synth_vars;
+	int num_natural_vars;
 	
 	
 	int num_higher_multiplicities()
@@ -495,7 +495,7 @@ public:
 	void set_witness_set_nvars(witness_set & W_transfer)
 	{
 		W_transfer.num_variables = this->num_variables;
-		W_transfer.num_synth_vars = this->num_synth_vars;
+		W_transfer.num_natural_vars = this->num_natural_vars;
 	}
 	
 	void add_solution(const vertex & temp_vert, const solution_metadata & meta)

@@ -1163,7 +1163,7 @@ int witness_set::witnessSetParse(const boost::filesystem::path witness_set_file,
 	
 	
 	this->num_variables = num_vars;
-	this->num_synth_vars = 0;
+	this->num_natural_vars = num_vars;
 	
 	
 	vec_mp temp_vec;  init_vec_mp2(temp_vec, num_vars,1024); temp_vec->size = num_vars;
@@ -1281,17 +1281,14 @@ void witness_set::write_dehomogenized_coordinates(boost::filesystem::path filena
 	fprintf(OUT,"%d\n\n",this->num_points); // print the header line
 	for (ii=0; ii<this->num_points; ++ii) {
 		//		print_point_to_screen_matlab(pts_mp[ii],"hompt");
-		if (this->num_synth_vars>0) {
-			dehomogenize(&result,this->pts_mp[ii], num_variables-num_synth_vars);
+		if (this->num_synth_vars()>0) {
+			dehomogenize(&result,this->pts_mp[ii], num_natural_vars);
 		}
 		else{
 			dehomogenize(&result,this->pts_mp[ii]);
 		}
 		
-		
-		//		print_point_to_screen_matlab(result,"soln");
-		
-		for (jj=0; jj<this->num_variables-1; jj++) {
+		for (jj=0; jj<num_natural_vars-1; jj++) {
 			print_mp(OUT, 0, &result->coord[jj]);
 			fprintf(OUT, "\n");
 		}
@@ -1393,13 +1390,13 @@ void witness_set::print_to_screen() const
 	
 	std::stringstream varname;
 	
-	std::cout << "witness set has " << num_variables << " total variables, " << num_synth_vars << " synthetic vars." << std::endl;
+	std::cout << "witness set has " << num_variables << " total variables, " << num_natural_vars << " natural variables." << std::endl;
 	int ii;
 	printf("******\n%d points\n******\n",this->num_points);
 	std::cout << color::green();
 	for (ii=0; ii<this->num_points; ii++) {
 		
-		dehomogenize(&dehom, this->pts_mp[ii], num_variables - num_synth_vars);
+		dehomogenize(&dehom, this->pts_mp[ii], num_natural_vars);
 		
 		varname << "point_" << ii;
 		
@@ -1485,7 +1482,7 @@ void witness_set::print_to_file(boost::filesystem::path filename) const
 	
 	
 	
-	fprintf(OUT, "%d %d\n", num_patches, num_variables);// this is incorrect
+	fprintf(OUT, "%d %d\n", num_patches, num_variables);// TODO: this is incorrect
 	
 	for (int ii=0; ii < num_patches; ii++) {
 		
@@ -1513,7 +1510,7 @@ void witness_set::print_to_file(boost::filesystem::path filename) const
 
 void witness_set::only_natural_vars()
 {
-	witness_set::only_first_vars(this->num_variables - this->num_synth_vars);
+	witness_set::only_first_vars(num_natural_vars);
 }
 
 
@@ -1534,7 +1531,6 @@ void witness_set::only_first_vars(int num_vars)
 	}
 	
 	
-	this->num_synth_vars = this->num_synth_vars - (this->num_variables - num_vars); // is this line correct?
 	this->num_variables = num_vars;
 	
 	int patch_size_counter = 0, trim_from_here =  0;
@@ -1579,11 +1575,11 @@ void witness_set::sort_for_real(tracker_config_t * T)
 	int *real_indicator = new int[this->num_points];
 	int counter = 0;
 	
-	vec_mp result; init_vec_mp(result,num_variables-num_synth_vars-1);
-	result->size = num_variables-num_synth_vars-1;
+	vec_mp result; init_vec_mp(result,num_natural_vars-1);
+	result->size = num_natural_vars-1;
 	
 	for (ii=0; ii<this->num_points; ii++) {
-		for (int jj=1; jj<this->num_variables-this->num_synth_vars; jj++) {
+		for (int jj=1; jj<num_natural_vars; jj++) {
 			div_mp(&result->coord[jj-1], &this->pts_mp[ii]->coord[jj], &this->pts_mp[ii]->coord[0]);
 		}
 		real_indicator[ii] = checkForReal_mp(result, T->real_threshold);
@@ -1633,7 +1629,9 @@ void witness_set::sort_for_real(tracker_config_t * T)
 void witness_set::sort_for_unique(tracker_config_t * T)
 {
 	
-	
+	if (num_natural_vars==0) {
+		std::cout << "blabla" << std::endl;
+	}
 	
 	int curr_uniqueness;
 	int num_good_pts = 0;
@@ -1642,11 +1640,16 @@ void witness_set::sort_for_unique(tracker_config_t * T)
 	for (int ii = 0; ii<this->num_points; ++ii) {
 		curr_uniqueness = 1;
 		
+		int prev_size_1 = pts_mp[ii]->size;  pts_mp[ii]->size = num_natural_vars; // cache and change to natural number
+		
 		for (int jj=ii+1; jj<this->num_points; ++jj) {
+			int prev_size_2 = pts_mp[jj]->size; pts_mp[jj]->size = num_natural_vars; // cache and change to natural number
 			if ( isSamePoint_homogeneous_input(this->pts_mp[ii],this->pts_mp[jj]) ){
 				curr_uniqueness = 0;
 			}
+			pts_mp[jj]->size = prev_size_2; // restore
 		}
+		pts_mp[ii]->size = prev_size_1; // restore
 		
 		if (curr_uniqueness==1) {
 			is_unique.push_back(1);
@@ -1709,7 +1712,7 @@ void witness_set::sort_for_inside_sphere(comp_mp radius, vec_mp center)
 		
 		
 		
-		dehomogenize(&temp_vec, this->pts_mp[ii]);
+		dehomogenize(&temp_vec, this->pts_mp[ii],num_natural_vars);
 		temp_vec->size = center->size;
 		
 		norm_of_difference(temp->r, temp_vec, center);
@@ -1766,46 +1769,41 @@ void witness_set::merge(const witness_set & W_in)
 	//error checking first
 	if ( (this->num_variables==0) && (W_in.num_variables!=0) && (this->num_points==0)) {
 		this->num_variables = W_in.num_variables;
+		this->num_natural_vars = W_in.num_natural_vars;
 	}
-	else if ( (this->num_variables!=0) && (W_in.num_variables==0) ){
-		
-	}
-	else if ( (W_in.num_variables!=this->num_variables) && (W_in.num_points!=0) && (this->num_points!=0) ) {
+//	else if ( (this->num_variables!=0) && (W_in.num_variables==0) ){
+//		
+//	}
+	else if ( (W_in.num_variables!=this->num_variables) ) {//&& (W_in.num_points!=0) && (this->num_points!=0)
 		printf("merging two witness sets with differing numbers of variables.\n");
+		std::cout << "existing: " << this->num_variables << ", input: " << W_in.num_variables << std::endl;
+//		deliberate_segfault();
+	}
+	
+	
+	if (W_in.num_natural_vars != this->num_natural_vars) {
+		printf("merging two witness sets with differing numbers of natural variables. %d merging set, %d existing\n",
+			   W_in.num_natural_vars, this->num_natural_vars);
 		deliberate_segfault();
+//		br_exit(95);
 	}
 	
-	
-	if (W_in.num_synth_vars != this->num_synth_vars) {
-		printf("merging two witness sets with differing numbers of synthetic variables. %d merging set, %d existing\n",
-			   W_in.num_synth_vars, this->num_synth_vars);
-		br_exit(95);
-	}
-	
-	
+	//just mindlessly add the linears.  up to user to ensure linears get merged correctly.  no way to know what they want...
 	for (int ii = 0; ii<W_in.num_linears; ii++) {
-		int is_new = 1;
-		for (int jj = 0; jj<this->num_linears; jj++){
-			if (isSamePoint_inhomogeneous_input(this->L_mp[jj], W_in.L_mp[ii])) {
-				is_new = 0;
-				break;
-			}
-			else{
-				
-			}
-		}
-		
-		if (is_new==1)
-			witness_set::add_linear(W_in.L_mp[ii]);
+		witness_set::add_linear(W_in.L_mp[ii]);
 	}
+	
 	
 	for (int ii = 0; ii<W_in.num_points; ii++) {
 		int is_new = 1;
 		for (int jj = 0; jj<this->num_points; jj++){
-			if (isSamePoint_inhomogeneous_input(this->pts_mp[jj], W_in.pts_mp[ii])) {
-				is_new = 0;
-				break;
+			if (this->pts_mp[jj]->size == W_in.pts_mp[ii]->size) {
+				if (isSamePoint_inhomogeneous_input(this->pts_mp[jj], W_in.pts_mp[ii])) {
+					is_new = 0;
+					break;
+				}
 			}
+			
 		}
 		
 		if (is_new==1)
@@ -1867,7 +1865,7 @@ void witness_set::send(parallelism_config & mpi_config, int target)
     buffer[1] = comp_num;
     buffer[2] = incidence_number;
     buffer[3] = num_variables;
-    buffer[4] = num_synth_vars;
+    buffer[4] = num_natural_vars;
     buffer[5] = num_points;
     buffer[6] = num_linears;
     buffer[7] = num_patches;
@@ -1906,7 +1904,7 @@ void witness_set::receive(int source, parallelism_config & mpi_config)
     comp_num = buffer[1];
     incidence_number = buffer[2];
     num_variables = buffer[3];
-    num_synth_vars = buffer[4];
+    num_natural_vars = buffer[4];
     num_points = buffer[5];
     num_linears = buffer[6];
     num_patches = buffer[7];
@@ -1951,7 +1949,6 @@ void vertex::set_point(const vec_mp new_point)
 void vertex::send(int target, parallelism_config & mpi_config)
 {
 	
-//	print_point_to_screen_matlab(pt_mp,"sendpt");
 	send_vec_mp(pt_mp, target);
 	
 	send_vec_mp(projection_values, target);
@@ -2955,7 +2952,7 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 #endif
 
 	
-	int num_vars = W_crit.num_variables-W_crit.num_synth_vars-1;
+	int num_vars = W_crit.num_natural_vars-1;
 	
 	change_size_vec_mp(this->sphere_center, num_vars); //destructive resize
 	sphere_center->size = num_vars;

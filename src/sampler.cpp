@@ -232,7 +232,7 @@ void curve_decomposition::adaptive_sampler(vertex_set & V,
 	
 	W.input_filename = input_filename;
 	W.num_variables = num_variables;
-	W.num_synth_vars = num_variables - V.num_natural_variables;
+	W.num_natural_vars = V.num_natural_variables;
     
 	W.get_variable_names(num_variables);
 	
@@ -567,7 +567,7 @@ void curve_decomposition::fixed_sampler(vertex_set & V,
 	
 	W.input_filename = input_filename;
 	W.num_variables = num_variables;
-	W.num_synth_vars = num_variables - V.num_natural_variables;
+	W.num_natural_vars = V.num_natural_variables;
     
 //	W.get_variable_names();
 	
@@ -600,7 +600,7 @@ void curve_decomposition::fixed_sampler(vertex_set & V,
 	
 	if (target_projection->size < W.num_variables) {
 		increase_size_vec_mp(target_projection,W.num_variables); target_projection->size = W.num_variables;
-		for (int ii=W.num_synth_vars+1; ii<W.num_variables; ii++) {
+		for (int ii=W.num_natural_vars; ii<W.num_variables; ii++) {
 			set_zero_mp(&target_projection->coord[ii]);
 		}
 	}
@@ -1046,7 +1046,7 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 		//copy in the start point as three points concatenated.
 		
 		W_midtrack.num_variables = this->num_variables + num_bottom_vars + num_top_vars;
-		W_midtrack.num_synth_vars = W_midtrack.num_variables - this->num_variables;
+		W_midtrack.num_natural_vars = this->num_variables;
 		change_size_vec_mp(W_midtrack.pts_mp[0], W_midtrack.num_variables); W_midtrack.pts_mp[0]->size = W_midtrack.num_variables; // destructive resize
 		
 		
