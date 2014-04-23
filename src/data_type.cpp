@@ -3738,6 +3738,158 @@ void dot_product_mindim(comp_mp result, vec_mp left, vec_mp right)
 
 
 
+int take_determinant_d(comp_d determinant, mat_d source_matrix)
+{
+	
+	
+	
+	if (source_matrix->cols!=source_matrix->rows) {
+		printf("source matrix is not square! (%d rows, %d columns)\n",source_matrix->rows,source_matrix->cols);
+		exit(-108);
+	}
+	if (source_matrix->cols==0) {
+		printf("source matrix has 0 entries!");
+		exit(-109);
+	}
+	
+	int num_variables = source_matrix->cols;
+	int ii;
+	
+	
+	mat_d intermediate; init_mat_d(intermediate,0,0);
+	
+	int *rwnm = NULL; rwnm = NULL;
+	vec_d garbage; init_vec_d(garbage,0);
+	vec_d zerovec; init_vec_d(zerovec,0); change_size_vec_d(zerovec,num_variables); zerovec->size = num_variables;
+	
+	
+	for (ii=0; ii<num_variables; ii++) {
+		set_zero_d(&zerovec->coord[ii]);
+	}
+	
+	
+	
+	double tol = TOL_DOUBLE_PRECISION; //  these should be for realsies
+	double largeChange = LARGECHANGE_DOUBLEPRECISION;
+	
+	// returns x, intermediate.
+	
+	//	print_matrix_to_screen_matlab(source_matrix,"detme");
+	
+	int sign;
+	
+	int retval = LU_matrixSolve_d(garbage, intermediate, &rwnm, &sign, source_matrix, zerovec,tol,largeChange);
+	//the solution is in intermediate.
+	//error check.  solution failed if retval!=0
+	if (retval!=0) {
+		//		printf("LU decomposition failed (d)\n");
+		//		print_matrix_to_screen_matlab(intermediate,"failed_result");
+		//		print_matrix_to_screen_matlab(source_matrix,"source_matrix");
+		//		deliberate_segfault();
+		set_zero_d(determinant);
+	}
+	else{
+		//compute the determinant
+		set_one_d(determinant); // initialize
+		for (ii=0; ii<num_variables; ii++) {
+			mul_d(determinant,determinant,&intermediate->entry[rwnm[ii]][ii]);
+		}
+		determinant->r = determinant->r*sign;
+		determinant->i = determinant->i*sign;
+	}
+	//	print_matrix_to_screen_matlab(source_matrix,"detme");
+	//	printf("candidate=%lf+1i*%lf;det(detme)\n",determinant->r,determinant->i);
+	//	mypause();
+	// this verified correct via 20 samples in matlab.  dab.
+	
+	
+	clear_vec_d(garbage);
+	clear_vec_d(zerovec);
+	clear_mat_d(intermediate);
+	
+	return 0;
+}
+
+int take_determinant_mp(comp_mp determinant, mat_mp source_matrix)
+{
+	
+	
+	
+	if (source_matrix->cols!=source_matrix->rows) {
+		printf("source matrix is not square! (%d rows, %d columns)\n",source_matrix->rows,source_matrix->cols);
+		exit(-108);
+	}
+	if (source_matrix->cols==0) { // no need to check rows -- know they are equal already
+		printf("source matrix has 0 entries!");
+		exit(-109);
+	}
+	
+	int num_variables = source_matrix->cols;
+	int ii;
+	
+	mat_mp intermediate; init_mat_mp(intermediate,num_variables,num_variables);
+	intermediate->rows = intermediate->cols = num_variables;
+	vec_mp zerovec; init_vec_mp(zerovec,source_matrix->cols); change_size_vec_mp(zerovec,num_variables); zerovec->size = num_variables;
+	vec_mp garbage; init_vec_mp(garbage,source_matrix->cols); garbage->size = source_matrix->cols;
+	
+	int sign;
+	int *rwnm = NULL; rwnm = NULL;
+	
+	mpf_t tol;  mpfr_init(tol); // = 1e-14
+	mpf_t largeChange; mpfr_init(largeChange); //  = 1e11
+	
+	mpf_set_d(tol, TOL_MP); // tol is the minimum acceptable 1-norm for each row during decomposition
+	mpf_set_d(largeChange, LARGECHANGE_MP);
+	
+	
+	
+	
+	for (ii=0; ii<num_variables; ii++) {
+		set_zero_mp(&zerovec->coord[ii]);
+	}
+	
+	//  these should be for realsies
+	
+	// returns x, intermediate.
+	
+	//	print_matrix_to_screen_matlab(tempmat,"tempmat");
+	
+	
+	int retval = LU_matrixSolve_mp(garbage, intermediate, &rwnm, &sign, source_matrix, zerovec,tol,largeChange);
+	//the solution is in intermediate.
+	//error check.  solution failed if retval!=0
+	if (retval!=0) {
+		//		printf("LU decomposition failed (mp)\n");
+		//		print_matrix_to_screen_matlab_mp(intermediate,"failed_result");
+		//		print_matrix_to_screen_matlab_mp(source_matrix,"source_matrix");
+		//		deliberate_segfault();
+		set_zero_mp(determinant);
+	}
+	else{
+		//compute the determinant
+		set_one_mp(determinant); // initialize
+		for (ii=0; ii<num_variables; ii++) {
+			mul_mp(determinant,determinant,&intermediate->entry[rwnm[ii]][ii]);
+		}
+		if (sign==-1)
+		{
+			neg_mp(determinant,determinant);
+		}
+	}
+	//	print_matrix_to_screen_matlab(source_matrix,"detme");
+	//	printf("candidate=%lf+1i*%lf;det(detme)\n",determinant->r,determinant->i);
+	//	mypause();
+	// this verified correct via 20 samples in matlab.  dab.
+	
+	mpf_clear(tol);
+	mpf_clear(largeChange);
+	clear_mat_mp(intermediate);
+	clear_vec_mp(zerovec);
+	clear_vec_mp(garbage);
+	return 0;
+}
+
+
 
 /**
  computes the projection value given a homogeneous input.

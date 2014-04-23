@@ -1,9 +1,9 @@
 
 #choose some options.  by default, compiler optimization is turned off
-OPT= -Dverbose  -g  -Ddebug_compile -Dthresholding # -O3 #-Wdeprecated # -Dprintpathlinprod  -O3 -funroll-loops -fexpensive-optimizations
+OPT:= -Dverbose  -g  -Ddebug_compile -Dthresholding # -Dfunctionentry_output # -O3 #-Wdeprecated # -Dprintpathlinprod  -O3 -funroll-loops -fexpensive-optimizations
 
-
-
+COMPFLAGS= -Wsign-compare -Wformat -Wall # -Wunused-parameter -Wdocumentation -Wdocumentation-unknown-command
+OPT := $(OPT) $(COMPFLAGS)
 
 
 
@@ -42,13 +42,13 @@ endif
 
 ifeq ($(MACHINENAME),sam)
     #sam
-    INC:=-I/usr/local/include/ -I/usr/local/boost/include $(INC) 
+    INC:=-I/usr/local/mpfr/include/ -I/usr/local/include/ -I/usr/local/boost/include $(INC) 
     BISON=bison 
-    LIBS=-lm -L/usr/local/lib -lmpfr  -lgmp #
+    LIBS=-L/usr/local/lib/ -lm -L/usr/local/mpfr/lib/ -lmpfr -L/usr/local/lib/  -lgmp #
     COMPcc=mpicc -cc=gcc 
-	COMPpp = mpic++ -cxx=g++  
+	COMPpp = mpic++ -cxx=g++  -std=c++11
     STATICFLAG=
-	BERTINILIB:=$(HOME)/lib/libbertini.a
+	BERTINILIB:=$(HOME)/lib/libbertini_parallel.a
 	INSTALLPATH:=$(HOME)/bin
 	BERTINIHEADERS:= $(HOME)/code/bertini_source/include
 
@@ -97,7 +97,7 @@ INC:=$(INC) -I../include  -I$(BERTINIHEADERS) #this includes the header files fo
 
 ARGS= $(OPT) -D_HAVE_MPI $(MACHINESPECIFICS) $(INC)
 
-OBJFILES= parallelism.o derivative_systems.o data_type.o programConfiguration.o determinant_derivative.o output.o fileops.o isosingular.o checkSelfConjugate.o nullspace_left.o surface.o curve.o
+OBJFILES= parallelism.o derivative_systems.o data_type.o programConfiguration.o output.o fileops.o isosingular.o checkSelfConjugate.o nullspace_left.o surface.o curve.o
 
 SOLVERS= solver.o solver_midpoint_tracker.o solver_nullspace_left.o solver_multilintolin.o postProcessing.o solver_sphere.o
 

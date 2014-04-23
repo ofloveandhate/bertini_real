@@ -32,7 +32,6 @@
 #include "output.hpp"
 
 
-#include "solver_lintolin.hpp"
 #include "nullspace_left.hpp"
 #include "solver_sphere.hpp"
 

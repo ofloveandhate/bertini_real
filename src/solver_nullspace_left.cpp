@@ -3135,7 +3135,7 @@ int change_nullspacejac_eval_prec(void const *ED, int new_prec)
 		BED->randomizer->change_prec(new_prec);
 
 		
-		
+		BED->temp_vars.change_prec(new_prec);
 		
 		for (ii=0; ii<BED->num_additional_linears; ii++) {
 			change_prec_point_mp(BED->additional_linears_terminal[ii],new_prec);

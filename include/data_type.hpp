@@ -40,6 +40,12 @@
 
 
 
+#define TOL_DOUBLE_PRECISION 1e-13
+#define LARGECHANGE_DOUBLEPRECISION 1e14
+
+
+#define TOL_MP 1e-40
+#define LARGECHANGE_MP 1e50
 
 #define DEFAULT_MAX_PREC 1024
 
@@ -131,6 +137,11 @@ void dot_product_mp(comp_mp result, vec_mp one, vec_mp two);
 
 void dot_product_mindim(comp_d result, vec_d left, vec_d right);
 void dot_product_mindim(comp_mp result, vec_mp left, vec_mp right);
+
+
+int take_determinant_d(comp_d determinant, mat_d source_matrix);
+int take_determinant_mp(comp_mp determinant, mat_mp source_matrix);
+
 
 void projection_value_homogeneous_input(comp_d result, vec_d input, vec_d projection);
 void projection_value_homogeneous_input(comp_mp result, vec_mp input, vec_mp projection);
