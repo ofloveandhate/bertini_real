@@ -296,7 +296,7 @@ public:
 			return;
 		}
 		
-		for (int ii=0; ii<num_vectors; ii++) {
+		for (int ii=0; ii<num_scalars; ii++) {
 			change_prec_mp(scalars[ii],new_prec);
 		}
 		for (int ii=0; ii<num_vectors; ii++) {

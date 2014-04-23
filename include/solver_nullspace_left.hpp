@@ -21,7 +21,6 @@
 #include "fileops.hpp"
 #include "data_type.hpp"
 
-#include "determinant_derivative.hpp"
 #include "programConfiguration.hpp"
 #include "postProcessing.hpp"
 

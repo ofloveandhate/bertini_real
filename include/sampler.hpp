@@ -21,7 +21,6 @@
 #include "programConfiguration.hpp"
 #include "checkSelfConjugate.hpp"
 
-#include "solver_lintolin.hpp"
 #include "solver_multilintolin.hpp"
 #include "surface.hpp"
 #include "curve.hpp"
