@@ -979,12 +979,13 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 //		std::cout << std::endl;
 	}
 	
-	std::cout << "singular curves" << std::endl;
-	for (auto iter = singular_curves.begin(); iter!= singular_curves.end(); ++iter) {
-		iter->second.fixed_sampler(V,sampler_options,solve_options,target_num_samples);
-		
-		
+	if (singular_curves.size()>0) {
+		std::cout << "singular curves" << std::endl;
+		for (auto iter = singular_curves.begin(); iter!= singular_curves.end(); ++iter) {
+			iter->second.fixed_sampler(V,sampler_options,solve_options,target_num_samples);
+		}
 	}
+	
 
 	witness_set W_midtrack;
 	vec_mp blank_point;  init_vec_mp2(blank_point, 0,1024);

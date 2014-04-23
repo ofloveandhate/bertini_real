@@ -1511,11 +1511,7 @@ void generic_track_path(int pathNum, endgame_data_t *EG_out,
     }
     else if (T->MPType == 1)
     {
-        EG_out->pathNum = pathNum;
-        EG_out->codim = 0; // zero dimensional - this is ignored
-        
-        T->first_step_of_path = 1;
-        
+
         // track using MP
         EG_out->retVal = endgame_mp(T->endgameNumber, EG_out->pathNum, &EG_out->PD_mp, EG_out->last_approx_mp, Pin_mp, T, OUT, MIDOUT, ED_mp, eval_func_mp, find_dehom);
         
@@ -1880,108 +1876,6 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 
 
 
-// this is to be deprecated and removed shortly.  next time you see this, do it.
-void generic_track_path_d(int pathNum, endgame_data_t *EG_out,
-                          point_data_d *Pin,
-                          FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
-                          void const *ED_d, void const *ED_mp,
-                          int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
-                          int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-                          int (*change_prec)(void const *, int),
-                          int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *))
-{
-	
-	
-	
-	EG_out->pathNum = pathNum;
-	EG_out->codim = 0; // this is ignored
-	
-	T->first_step_of_path = 1;
-	
-	if (T->MPType == 2)
-	{ // track using AMP
-		EG_out->prec = EG_out->last_approx_prec = 52;
-		
-		EG_out->retVal = endgame_amp(T->endgameNumber, EG_out->pathNum, &EG_out->prec, &EG_out->first_increase, &EG_out->PD_d, &EG_out->PD_mp, &EG_out->last_approx_prec, EG_out->last_approx_d, EG_out->last_approx_mp, Pin, T, OUT, MIDOUT, ED_d, ED_mp, eval_func_d, eval_func_mp, change_prec, find_dehom);
-		
-		if (EG_out->prec == 52)
-		{ // copy over values in double precision
-			EG_out->latest_newton_residual_d = T->latest_newton_residual_d;
-			EG_out->t_val_at_latest_sample_point_d = T->t_val_at_latest_sample_point;
-			EG_out->error_at_latest_sample_point_d = T->error_at_latest_sample_point;
-			findFunctionResidual_conditionNumber_d(&EG_out->function_residual_d, &EG_out->condition_number, &EG_out->PD_d, ED_d, eval_func_d);
-		}
-		else
-		{ // make sure that the other MP things are set to the correct precision
-			mpf_clear(EG_out->function_residual_mp);
-			mpf_init2(EG_out->function_residual_mp, EG_out->prec);
-			
-			mpf_clear(EG_out->latest_newton_residual_mp);
-			mpf_init2(EG_out->latest_newton_residual_mp, EG_out->prec);
-			
-			mpf_clear(EG_out->t_val_at_latest_sample_point_mp);
-			mpf_init2(EG_out->t_val_at_latest_sample_point_mp, EG_out->prec);
-			
-			mpf_clear(EG_out->error_at_latest_sample_point_mp);
-			mpf_init2(EG_out->error_at_latest_sample_point_mp, EG_out->prec);
-			
-			// copy over the values
-			mpf_set(EG_out->latest_newton_residual_mp, T->latest_newton_residual_mp);
-			mpf_set_d(EG_out->t_val_at_latest_sample_point_mp, T->t_val_at_latest_sample_point);
-			mpf_set_d(EG_out->error_at_latest_sample_point_mp, T->error_at_latest_sample_point);
-			findFunctionResidual_conditionNumber_mp(EG_out->function_residual_mp, &EG_out->condition_number, &EG_out->PD_mp, ED_mp, eval_func_mp);
-		}
-	}
-	else if (T->MPType == 0)
-	{ // track using double precision
-		EG_out->prec = EG_out->last_approx_prec = 52;
-		
-		EG_out->retVal = endgame_d(T->endgameNumber, EG_out->pathNum, &EG_out->PD_d, EG_out->last_approx_d, Pin, T, OUT, MIDOUT, ED_d, eval_func_d, find_dehom);  // WHERE THE ACTUAL TRACKING HAPPENS
-		EG_out->first_increase = 0;
-		// copy over values in double precision
-		EG_out->latest_newton_residual_d = T->latest_newton_residual_d;
-		EG_out->t_val_at_latest_sample_point_d = T->t_val_at_latest_sample_point;
-		EG_out->error_at_latest_sample_point_d = T->error_at_latest_sample_point;
-		findFunctionResidual_conditionNumber_d(&EG_out->function_residual_d, &EG_out->condition_number, &EG_out->PD_d, ED_d, eval_func_d);
-	}
-	
-	
-	
-	return;
-}
-
-
-
-// this is to be deprecated and removed shortly.  next time you see this, do it.
-void generic_track_path_mp(int pathNum, endgame_data_t *EG_out,
-                           point_data_mp *Pin,
-                           FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
-                           void const *ED,
-                           int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-                           int (*change_prec)(void const *, int),
-                           int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *))
-{
-	
-	EG_out->pathNum = pathNum;
-    EG_out->codim = 0; // zero dimensional - this is ignored
-	
-    T->first_step_of_path = 1;
-	
-    // track using MP
-    EG_out->retVal = endgame_mp(T->endgameNumber, EG_out->pathNum, &EG_out->PD_mp, EG_out->last_approx_mp, Pin, T, OUT, MIDOUT, ED, eval_func_mp, find_dehom);
-	
-	
-    EG_out->prec = EG_out->last_approx_prec = T->Precision;
-    EG_out->first_increase = 0;
-	
-    // copy over the values
-    mpf_set(EG_out->latest_newton_residual_mp, T->latest_newton_residual_mp);
-    mpf_set_d(EG_out->t_val_at_latest_sample_point_mp, T->t_val_at_latest_sample_point);
-    mpf_set_d(EG_out->error_at_latest_sample_point_mp, T->error_at_latest_sample_point);
-    findFunctionResidual_conditionNumber_mp(EG_out->function_residual_mp, &EG_out->condition_number, &EG_out->PD_mp, ED, eval_func_mp);
-	
-    return;
-}
 
 
 

@@ -1347,22 +1347,6 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 
 
 
-void generic_track_path_d(int pathNum, endgame_data_t *EG_out,
-						  point_data_d *Pin,
-						  FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
-						  void const *ED_d, void const *ED_mp,
-						  int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
-						  int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-						  int (*change_prec)(void const *, int),
-						  int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *));
-
-void generic_track_path_mp(int pathNum, endgame_data_t *EG_out,
-						   point_data_mp *Pin,
-						   FILE *OUT, FILE *MIDOUT, tracker_config_t *T,
-						   void const *ED,
-						   int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
-						   int (*change_prec)(void const *, int),
-						   int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *));
 
 
 
