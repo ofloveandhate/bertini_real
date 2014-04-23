@@ -196,7 +196,7 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
 		
-		choice = getopt_long_only (argc, argv, "D:g:V:o:s:m:p:w:S:i:q:v:h",
+		choice = getopt_long_only (argc, argv, "Dg:V:o:smp:w:S:i:qvh", // if followed by colon, requires option.  two colons is optional
 								   long_options, &option_index);
 		
 		/* Detect the end of the options. */
