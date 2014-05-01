@@ -60,6 +60,7 @@ void nullspace_config::clear()
 		num_projections = 0;
 	}
 	
+	clear_mat_mp(lower_randomizer);
 }
 
 

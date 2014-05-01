@@ -1,3 +1,8 @@
+
+#ifndef _ISOSINGULAR_H
+#define _ISOSINGULAR_H
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -13,8 +18,6 @@
 #include <sstream>
 
 
-#ifndef _ISOSINGULAR_H
-#define _ISOSINGULAR_H
 
 
 #include "bertini_headers.hpp"

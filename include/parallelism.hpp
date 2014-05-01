@@ -1,5 +1,6 @@
 
-
+#ifndef BR_PARALLELISM_H
+#define BR_PARALLELISM_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,8 +40,7 @@
 //#include "solver_nullspace_left.hpp"
 
 
-#ifndef BR_PARALLELISM_H
-#define BR_PARALLELISM_H
+
 
 
 

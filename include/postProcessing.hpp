@@ -1,4 +1,9 @@
 
+#ifndef _POST_PROCESSING_H
+#define _POST_PROCESSING_H
+
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -15,8 +20,6 @@
 
 
 
-#ifndef _POST_PROCESSING_H
-#define _POST_PROCESSING_H
 
 
 #include "bertini_headers.hpp"

@@ -1,3 +1,7 @@
+#ifndef _CHECK_SELFCONJUGATE_H
+#define _CHECK_SELFCONJUGATE_H
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -12,17 +16,15 @@
 
 
 
-#ifndef _CHECK_SELFCONJUGATE_H
-#define _CHECK_SELFCONJUGATE_H
-
-
 
 
 #include "programConfiguration.hpp"
-#include "data_type.hpp"
 #include "fileops.hpp"
-
 #include "bertini_headers.hpp"
+#include "bertini_extensions.hpp"
+
+
+
 
 /**
  main function for performing self-conjugacy check.
@@ -36,10 +38,9 @@
  \return boolean integer indicating whether the component is self-conjugate.
  
  */
-bool checkSelfConjugate(const witness_set & W,
-                       int           num_vars,
-											 BR_configuration & program_options,
-											 boost::filesystem::path input_file);
+bool checkSelfConjugate(vec_mp test_point,
+						BR_configuration & program_options,
+						boost::filesystem::path input_file);
 
 
 
@@ -51,27 +52,24 @@ bool checkSelfConjugate(const witness_set & W,
  \param num_vars the number of variables in the problem, including homogeneous.
  \param input_file the name of the bertini input file
  */
-int get_incidence_number(const witness_set & W,
-												 int           num_vars,
-												 BR_configuration & program_options,
-												 boost::filesystem::path input_file);
+int get_incidence_number(vec_mp test_point, BR_configuration & program_options, boost::filesystem::path input_file);
 
 /**
  write a single point to "member_points"
  
  \param point_to_write the homogeneous point to write
  */
-int write_member_points_singlept(point_mp point_to_write);
+int write_member_points_singlept(vec_mp point_to_write);
 
 /**
-  write a single point, and its complex conjugate, to "member_points"
+ write a single point, and its complex conjugate, to "member_points"
  
  \param point_to_write the point to write
  */
-int write_member_points_sc(point_mp point_to_write);
+int write_member_points_sc(vec_mp point_to_write);
 
 /**
-  write the input file to feed bertini to perform membership testing
+ write the input file to feed bertini to perform membership testing
  
  \param outputFile the name of the file to write
  \param funcInput the name of the func_input file
@@ -88,7 +86,7 @@ void membership_test_input_file(boost::filesystem::path outputFile,
  
  \param component_numbers The returned value of this function.
  */
-void read_incidence_matrix(int *component_numbers);
+std::vector<int> read_incidence_matrix();
 
 /**
  read the incicence matrix

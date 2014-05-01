@@ -23,14 +23,12 @@
 #include <map>
 
 
-#define BERTINI_REAL_VERSION_STRING "0.0.378"
+#define BERTINI_REAL_VERSION_STRING "0.0.379"
 
-#include "data_type.hpp"
+enum {INACTIVE = 500, ACTIVE};
+enum {PARSING = 1000, TYPE_CONFIRMATION, DATA_TRANSMISSION, NUMPACKETS};
 
-
-
-
-#include "bertini_headers.hpp"
+#include "fileops.hpp"
 
 
 
@@ -289,13 +287,14 @@ public:
 	boost::filesystem::path bounding_sphere_filename;
 	boost::filesystem::path projection_filename;
 	boost::filesystem::path input_filename;
-	boost::filesystem::path witness_set_filename;
+
 	boost::filesystem::path input_deflated_filename;
 	boost::filesystem::path sphere_filename;
 	
 
 	
-
+	int target_dimension;
+	int target_component;
 	
 	
 	std::string bertini_command;

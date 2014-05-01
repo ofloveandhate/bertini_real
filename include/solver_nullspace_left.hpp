@@ -1,3 +1,7 @@
+#ifndef SOLVER_NULLSPACE_H
+#define SOLVER_NULLSPACE_H
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -25,8 +29,7 @@
 #include "postProcessing.hpp"
 
 
-#ifndef SOLVER_NULLSPACE_H
-#define SOLVER_NULLSPACE_H
+
 
 
 

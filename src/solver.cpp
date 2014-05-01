@@ -67,8 +67,8 @@ void get_projection(vec_mp *pi,
                     int num_projections)
 {
 	
-	int ii,jj;
-	for (ii=0; ii<num_projections; ii++) {
+
+	for (int ii=0; ii<num_projections; ii++) {
 		change_size_vec_mp(pi[ii], num_vars);  pi[ii]->size = num_vars;
 	}
 	
@@ -85,9 +85,9 @@ void get_projection(vec_mp *pi,
 			abort();
 		}
 		
-		for (ii=0; ii<num_projections; ii++) {
+		for (int ii=0; ii<num_projections; ii++) {
 			set_zero_mp(&pi[ii]->coord[0]);
-			for (jj=1; jj<num_vars; jj++) {
+			for (int jj=1; jj<num_vars; jj++) {
 				mpf_inp_str(pi[ii]->coord[jj].r, IN, 10);
 				mpf_inp_str(pi[ii]->coord[jj].i, IN, 10);
 				scanRestOfLine(IN);
@@ -101,9 +101,9 @@ void get_projection(vec_mp *pi,
 			init_mat_mp2(temp_getter,0,0,1024);
 			make_matrix_random_real_mp(temp_getter,num_projections, num_vars-1, 1024); // this matrix is ~orthogonal
 			
-			for (ii=0; ii<num_projections; ii++) {
+			for (int ii=0; ii<num_projections; ii++) {
 				set_zero_mp(&pi[ii]->coord[0]);
-				for (jj=1; jj<num_vars; jj++)
+				for (int jj=1; jj<num_vars; jj++)
 					set_mp(&pi[ii]->coord[jj], &temp_getter->entry[ii][jj-1]);
 				
 			}
@@ -113,9 +113,9 @@ void get_projection(vec_mp *pi,
 		}
 		else
 		{
-			for (ii=0; ii<num_projections; ii++) {
+			for (int ii=0; ii<num_projections; ii++) {
 				set_zero_mp(&pi[ii]->coord[0]);
-				for (jj=1; jj<num_vars; jj++)
+				for (int jj=1; jj<num_vars; jj++)
 					get_comp_rand_real_mp(&pi[ii]->coord[jj]);//, &temp_getter->entry[ii][jj-1]);
 				
 			}
@@ -123,6 +123,7 @@ void get_projection(vec_mp *pi,
 		}
 		
 	}
+	
 	
 	return;
 }
@@ -1927,11 +1928,6 @@ void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W)
 		br_exit(1801);
 	}
 	
-    //	for (int jj=0; jj<W.num_patches; jj++) {
-    //		print_point_to_screen_matlab(W.patch_mp[jj],"patch_jj");
-    //	}
-    //	std::cout << "W.num_variables " << W.num_variables << std::endl;
-    //	print_matrix_to_screen_matlab(P->patchCoeff, "patch_mat");
 	
 	
 	int varcounter = 0;

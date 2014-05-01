@@ -1,3 +1,8 @@
+#ifndef SOLVER_MIDPOINT_H
+#define SOLVER_MIDPOINT_H
+
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -11,8 +16,7 @@
 #include <mpf2mpfr.h>
 
 
-#ifndef SOLVER_MIDPOINT_H
-#define SOLVER_MIDPOINT_H
+
 
 #include "bertini_headers.hpp"
 

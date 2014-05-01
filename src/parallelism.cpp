@@ -35,7 +35,7 @@ int ubermaster_process::main_loop()
 	boost::timer::auto_cpu_timer t;
 	
 	
-	witness_set W;
+	
 	
 	
 	program_options.splash_screen();
@@ -58,7 +58,18 @@ int ubermaster_process::main_loop()
 	int num_vars = get_num_vars_PPD(solve_options.PPD);
 	
 	
-	W.witnessSetParse(program_options.witness_set_filename,num_vars);
+	witness_data data_mc_data;
+	data_mc_data.populate();
+	
+	data_mc_data.print();
+
+	
+	
+	witness_set W = data_mc_data.choose(program_options);
+	
+	if (W.num_points==0) {
+		return 1;
+	}
 	
 	program_options.MPType = MPType;
 	
@@ -66,9 +77,11 @@ int ubermaster_process::main_loop()
 	W.get_variable_names(num_vars);
 	W.input_filename = program_options.input_filename;
 	
-	int incidence_number = get_incidence_number(W,num_vars,
-												program_options,
-												program_options.input_filename);
+	W.print_to_screen();
+	
+	
+	
+	int incidence_number = get_incidence_number(W.pts_mp[0], program_options, program_options.input_filename);
 	
 	W.incidence_number = incidence_number;
 	

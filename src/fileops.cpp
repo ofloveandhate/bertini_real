@@ -9,7 +9,7 @@ int partition_parse(int **declarations,
 										int not_sc_flag)
 {
 	
-	FILE *IN = safe_fopen_read(input_filename.c_str());
+	FILE *IN = safe_fopen_read(input_filename);
 	
 	int retval = partitionParse(declarations, IN,
 															const_cast<char *> (functions_filename.c_str()),
@@ -109,8 +109,7 @@ FILE *safe_fopen_write(boost::filesystem::path filename)
 	if (OUT == NULL) {
 		printf("unable to open specified file to write: %s\n",filename.c_str());
 		fclose(OUT);
-		deliberate_segfault();
-//		br_exit(ERROR_FILE_NOT_EXIST);
+		br_exit(ERROR_FILE_NOT_EXIST);
 	}
 	else{
 	}
@@ -129,8 +128,7 @@ FILE *safe_fopen_append(boost::filesystem::path filename)
 	
 	if (S_ISDIR(stat_p.st_mode)){
 		printf("trying to open directory %s as a file!\n",filename.c_str());
-		deliberate_segfault();
-//		br_exit(ERROR_FILE_NOT_EXIST);
+		br_exit(ERROR_FILE_NOT_EXIST);
 	}
 	
 	
@@ -196,6 +194,162 @@ void read_matrix(boost::filesystem::path INfile, mat_mp matrix)
 	
 	fclose(IN);
 }
+
+
+
+void deliberate_segfault()
+{
+	printf("the following segfault is deliberate\n");
+	int *faulty = NULL;
+	faulty[-10] = faulty[10]+faulty[0];
+	
+}
+
+
+void br_exit(int errorCode)
+/***************************************************************\
+ * USAGE:                                                        *
+ * ARGUMENTS:                                                    *
+ * RETURN VALUES:                                                *
+ * NOTES: exits Bertini_real - either standard or using MPI           *
+ \***************************************************************/
+{
+	if (errorCode == 0)
+		errorCode = ERROR_OTHER;
+	
+	
+	printf("%s\n", "bertini_real quitting\n\a");
+	
+#ifdef debug_compile
+	deliberate_segfault();
+#endif
+	
+#ifdef _HAVE_MPI
+	MPI_Abort(MPI_COMM_WORLD, errorCode);
+#else
+	exit(errorCode);
+#endif
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+bool parseInteger( std::string const& text, int& results )
+{
+    std::istringstream parser( text );
+	parser >> results;
+	return !(parser.fail());// >> std::ws && parser.peek() == EOF;
+}
+
+int getInteger()
+{
+	
+	std::cin.ignore( std::numeric_limits<std::streampos>::max(), '\n' ) ;
+	std::cin.clear() ; // to be safe, clear error flags which may be set
+	
+	int results;
+	std::string line;
+	while (1){
+		while ( ! std::getline( std::cin, line )  )
+		{
+			
+			std::cin.ignore( std::numeric_limits<std::streampos>::max(), '\n' ) ;
+			std::cin.clear() ; // to be safe, clear error flags which may be set
+			
+		}
+		
+		if (! parseInteger( line, results )) {
+			std::cout << "Only 'numeric' value(s) allowed:" << std::endl;
+		}
+		else{
+			break;
+		}
+		
+	}
+	return results;
+}
+
+
+//  use this function to get input from the user and ensure it is an integer (actually fails to detect non-integer numeric inputs
+int get_int_choice(std::string display_string,int min_value,int max_value){
+	
+	std::cout << display_string;
+	
+	int userinput = min_value - 1;
+	
+	std::string tmpstr;
+	
+	while (1)
+	{
+		userinput = getInteger();
+		if (userinput <= max_value && userinput >= min_value){
+			break;
+		}
+		else{
+			std::cout << "value out of bounds." << std::endl;
+		}
+    }
+	return userinput;
+}
+
+
+
+int get_int_choice(std::string display_string,const std::set<int> & valid_values)
+{
+	if (valid_values.size()==0) {
+		std::cout << "trying to get int choice from empty set of valid values..." << std::endl;
+		return 0;
+	}
+	
+	
+	std::cout << display_string;
+	
+	int userinput = *(valid_values.begin()) - 1;
+	
+
+	while (1)
+	{
+		userinput = getInteger();
+		if (valid_values.find(userinput)==valid_values.end()){
+			std::cout << "value out of bounds." << std::endl;
+		}
+		else{
+			break;
+		}
+    }
+	return userinput;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

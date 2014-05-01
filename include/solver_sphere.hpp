@@ -1,3 +1,7 @@
+#ifndef _SPHERESOLVER_H
+#define _SPHERESOLVER_H
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -11,8 +15,6 @@
 #include <mpf2mpfr.h>
 
 
-#ifndef _SPHERESOLVER_H
-#define _SPHERESOLVER_H
 
 #include "bertini_headers.hpp"
 

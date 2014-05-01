@@ -1,5 +1,11 @@
 
 
+
+#ifndef _BERTINI_REAL_H
+#define _BERTINI_REAL_H
+
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -15,9 +21,6 @@
 
 
 
-
-#ifndef _BERTINI_REAL_H
-#define _BERTINI_REAL_H
 
 #include "bertini_headers.hpp"
 

@@ -106,8 +106,6 @@ int BR_configuration::startup()
 	IN = safe_fopen_read(this->input_filename.c_str());
 	fclose(IN);
 	
-	IN = safe_fopen_read(this->witness_set_filename.c_str());
-	fclose(IN);
 	
 	
 	if (this->user_projection) {
@@ -155,7 +153,7 @@ void BR_configuration::display_current_options()
 	
 	
 	printf("input_filename: %s\n",this->input_filename.c_str());
-	printf("witness_set_filename: %s\n",this->witness_set_filename.c_str());
+
 	
 	std::cout << "stifle_text: " << this->stifle_text << std::endl;
 	std::cout << "bertini_command: " << this->bertini_command << std::endl;
@@ -177,13 +175,14 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 		{
 			/* These options set a flag. */
 			{"debug", no_argument, 0, 'D'},
+			{"dim",required_argument,0,'d'}, {"d",required_argument,0,'d'},
+			{"component",required_argument,0,'c'}, {"comp",required_argument,0,'c'}, {"c",required_argument,0,'c'},
 			{"gammatrick",required_argument,0, 'g'}, {"g",required_argument, 0, 'g'},
 			{"verb",	required_argument,0, 'V'},
 			{"output",	required_argument,0, 'o'}, {"out",required_argument, 0, 'o'}, {"o",	required_argument, 0, 'o'},
 			{"nostifle", no_argument,       0, 's'}, {"ns", no_argument, 0, 's'},
 			{"nomerge",no_argument,0,'m'}, {"nm",no_argument,0,'m'},
 			{"projection",required_argument,0, 'p'}, {"p",required_argument,0, 'p'}, {"pi",	required_argument,0,'p'},
-			{"witness",required_argument, 0, 'w'}, {"w",required_argument, 0, 'w'},
 			{"sphere",required_argument, 0, 'S'}, {"s",required_argument, 0, 'S'},
 			{"input",required_argument,	0, 'i'}, {"i",required_argument, 0, 'i'},
 			
@@ -196,7 +195,7 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
 		
-		choice = getopt_long_only (argc, argv, "Dg:V:o:smp:w:S:i:qvh", // if followed by colon, requires option.  two colons is optional
+		choice = getopt_long_only (argc, argv, "d:c:Dg:V:o:smp:S:i:qvh", // if followed by colon, requires option.  two colons is optional
 								   long_options, &option_index);
 		
 		/* Detect the end of the options. */
@@ -205,7 +204,14 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 		
 		switch (choice)
 		{
-	
+			case 'd':
+				target_dimension = atoi(optarg);
+				break;
+				
+			case 'c':
+				target_component = atoi(optarg);
+				break;
+				
 			case 'D':
 				this->debugwait = 1;
 				break;
@@ -214,7 +220,7 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 				this->use_gamma_trick = atoi(optarg);
 				if (! (this->use_gamma_trick==0 || this->use_gamma_trick==1) ) {
 					printf("value for 'gammatrick' or 'g' must be 1 or 0\n");
-					exit(689);
+					br_exit(689);
 				}
 				break;
 				
@@ -241,9 +247,6 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 				break;
 				
 				
-			case 'w': // witness_set_filename
-				this->witness_set_filename = optarg;
-				break;
 				
 			case 'S':
 				user_sphere = true;
@@ -311,28 +314,9 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 
 void BR_configuration::print_usage()
 {
-//	
-//	{"nostifle", no_argument,       0, 's'}, {"ns", no_argument,					0, 's'},
-//	{"projection",		required_argument,			 0, 'p'},
-//	{"p",		required_argument,			 0, 'p'}, {"pi",		required_argument,			 0, 'p'},
-//	{"r",		required_argument,			 0, 'r'},
-//	{"input",		required_argument,			 0, 'i'}, {"i",		required_argument,			 0, 'i'},
-//	{"witness",		required_argument,			 0, 'w'}, {"w",		required_argument,			 0, 'w'},
-//	{"help",		no_argument,			 0, 'h'}, {"h",		no_argument,			 0, 'h'},
-//	{"version",		no_argument,			 0, 'v'}, {"v",		no_argument,			 0, 'v'},
-//	{"output",		required_argument,			 0, 'o'}, {"out",		required_argument,			 0, 'o'}, {"o",		required_argument,			 0, 'o'},
-//	{"verb",		required_argument,			 0, 'V'},
-//	{"box",		required_argument,			 0, 'b'}, {"b",		required_argument,			 0, 'b'},
-//	{"gammatrick",		required_argument,			 0, 'g'}, {"g",		required_argument,			 0, 'g'},
-//	{"detjac",		no_argument,			 0, 'd'},
-//	{"debug", no_argument, 0, 'D'},
-//	{"nomerge", no_argument, 0, 'm'},
-//	{"quick",no_argument,0,'q'},{"q",no_argument,0,'q'},
-	
 	printf("bertini_real has the following options:\n----------------------\n");
 	printf("option name(s)\t\t\targument\n\n");
 	printf("-p -pi -projection \t\t\t'filename'\n");
-	printf("-w -witness\t\t\t'filename'\n");
 	printf("-i -input\t\t\t'filename'\n");
 	printf("-ns -nostifle\t\t\t   --\n");
 	printf("-v -version\t\t\t   -- \n");
@@ -347,7 +331,9 @@ void BR_configuration::print_usage()
 
 void BR_configuration::init()
 {
-
+	target_component = -2;
+	target_dimension = -1;
+	
 	quick_run = false;
 	this->debugwait = 0;
 	this->max_deflations = 10;
@@ -362,7 +348,6 @@ void BR_configuration::init()
 	
 	this->input_filename = "input";
 	
-	this->witness_set_filename = "witness_set";
 	
 	this->output_dir = boost::filesystem::absolute("output");
 	

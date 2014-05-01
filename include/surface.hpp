@@ -1,4 +1,10 @@
 
+#ifndef SURFACE_H
+#define SURFACE_H
+
+
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -13,10 +19,6 @@
 
 
 #include <boost/filesystem.hpp>
-
-
-#ifndef SURFACE_H
-#define SURFACE_H
 
 #include "bertini_headers.hpp"
 
