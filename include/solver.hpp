@@ -1,3 +1,7 @@
+#ifndef SOLVER_MAIN_HEADER_H
+#define SOLVER_MAIN_HEADER_H
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -11,8 +15,7 @@
 #include <mpf2mpfr.h>
 
 #include <string>
-#ifndef SOLVER_MAIN_HEADER_H
-#define SOLVER_MAIN_HEADER_H
+
 
 #include "bertini_headers.hpp"
 

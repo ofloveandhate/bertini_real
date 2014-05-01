@@ -1,3 +1,6 @@
+#ifndef _FILEOPS_H
+#define _FILEOPS_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -19,10 +22,9 @@
 #include <dirent.h>
 
 #include <string>
+#include <sstream>
+#include <set>
 
-
-#ifndef _FILEOPS_H
-#define _FILEOPS_H
 
 
 #include "bertini_headers.hpp"
@@ -33,15 +35,14 @@ extern "C" {
 }
 
 
-#include "data_type.hpp"
-#include <boost/filesystem/path.hpp>
+#include "boost/filesystem.hpp"
 
 
 int partition_parse(int **declarations,
-										boost::filesystem::path input_filename,
-										boost::filesystem::path functions_filename,
-										boost::filesystem::path config_filename,
-										int not_sc_flag);
+					boost::filesystem::path input_filename,
+					boost::filesystem::path functions_filename,
+					boost::filesystem::path config_filename,
+					int not_sc_flag);
 
 
 /**
@@ -87,11 +88,47 @@ void copyfile(FILE *IN,FILE *OUT);
 void read_matrix(boost::filesystem::path INfile, mat_mp matrix);
 
 
+void br_exit(int errorCode);
 
-//void br_signal_handler(int s){
-//	
-//	mypause();
-//	
-//}
+void deliberate_segfault();
+
+
+/**
+ Have the user input a value untl it's an integer, return that value.
+ \return int - The integer the user inputted.
+ */
+int getInteger();
+
+
+
+
+/**
+ Parse a string that has an integer value in string form.
+ \param text  - The integer value as a string.
+ \param results - The value to set as a string.
+ \return bool - A boolean to indicate whether the parsing was successful or not.
+ */
+bool parseInteger( std::string const& text, int& results );
+
+/**
+ Display a menu option to the user and ask for an integer input within the specified range.
+ \param display_string - The menu as a string.
+ \param min_value - The minimum value allowed.
+ \param max_value - The maximum value allowed.
+ \return int - The integer the user specified.
+ */
+int get_int_choice(std::string display_string,int min_value,int max_value);
+
+
+/**
+ Display a menu option to the user and ask for an integer input within the specified range.
+ \param display_string - The menu as a string.
+ \param valid_values.  A std::set of valid integer values.  all others will be rejected.
+ \return int - The integer the user specified.
+ */
+int get_int_choice(std::string display_string,const std::set<int> & valid_values);
+
+
+
 #endif
 

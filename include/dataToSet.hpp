@@ -1,3 +1,5 @@
+#ifndef _DATA_TO_SET_H
+#define _DATA_TO_SET_H
 
 #include <dirent.h>
 
@@ -15,14 +17,26 @@
 #include "mpreal.hpp"  // <---- this header-only software graciously free to use for free projects, which this is.
 
 
-#ifndef _DATA_TO_SET_H
-#define _DATA_TO_SET_H
 
-#define DTSVERSION 1e-16
+
+#define DTSVERSION 1e-15
 
 
 #include "bertini_headers.hpp"
 #include "data_type.hpp"
+#include "fileops.hpp"
+
+
+
+
+
+
+
+
+
+
+
+
 
 void purge_previous_directory(char *directoryName);
 
@@ -39,18 +53,21 @@ int open_output_file(std::string outputName, std::ofstream & OUT);
 int open_output_file_append(std::string outputName, std::ofstream & OUT);
 
 
+
+
+
 /**
- *  @class "witness_data"
+ *  @class "witness_data_deprecated"
  *
  * contains a parsed witness_data file from Bertini's tracktype: 1 solver.
  *
  * \brief parsed witness_data file from Bertini's tracktype: 1 solver
  **/
-class witness_data {
+class witness_data_deprecated {
 	
 public:
 	
-	witness_data(){
+	witness_data_deprecated(){
 		this->component_number = -10;
 		this->dimension = -10;
 	}
@@ -112,7 +129,7 @@ complex_number complex_divide(complex_number z, complex_number w){
 }
 
 
-void witness_data::write_to_file(std::string directoryName, bool dehomogenize){
+void witness_data_deprecated::write_to_file(std::string directoryName, bool dehomogenize){
 	
 	using mpfr::mpreal;
 
@@ -445,7 +462,7 @@ void witness_data::write_to_file(std::string directoryName, bool dehomogenize){
 
 
 
-void write_summary(std::map< std::pair < int, int >, witness_data> gathered_data,
+void write_summary(std::map< std::pair < int, int >, witness_data_deprecated> gathered_data,
 									 int component_counter[],
 									 int codim_indicator[],
 									 int num_nonempty_codims,

@@ -1,3 +1,6 @@
+#ifndef NULLSPACE_H_
+#define NULLSPACE_H_
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,8 +15,7 @@
 #include <mpf2mpfr.h>
 
 
-#ifndef NULLSPACE_H_
-#define NULLSPACE_H_
+
 
 #include "bertini_headers.hpp"
 

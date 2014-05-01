@@ -1,3 +1,7 @@
+#ifndef _BR_OUTPUT_H
+#define _BR_OUTPUT_H
+
+
 #include <dirent.h>
 
 #include <stdio.h>
@@ -14,8 +18,7 @@
 
 #include <boost/filesystem/path.hpp>
 
-#ifndef _BR_OUTPUT_H
-#define _BR_OUTPUT_H
+
 
 #include "bertini_headers.hpp"
 

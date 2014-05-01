@@ -1,4 +1,5 @@
-
+#ifndef _SAMPLER_H
+#define _SAMPLER_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,8 +26,7 @@
 #include "surface.hpp"
 #include "curve.hpp"
 
-#ifndef _SAMPLER_H
-#define _SAMPLER_H
+
 
 
 

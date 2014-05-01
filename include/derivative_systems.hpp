@@ -1,3 +1,6 @@
+#ifndef DERIVATIVE_SYSTEMS_H
+#define DERIVATIVE_SYSTEMS_H
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,8 +31,7 @@
 
 
 
-#ifndef DERIVATIVE_SYSTEMS_H
-#define DERIVATIVE_SYSTEMS_H
+
 
 
 #include "bertini_headers.hpp"

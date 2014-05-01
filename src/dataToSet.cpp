@@ -1,6 +1,16 @@
 #include "dataToSet.hpp"
 
 
+
+
+
+
+
+
+
+
+
+
 #define PREDETERMINEDLENGTH 4096
 
 int main(int argC, char *args[]){
@@ -54,7 +64,7 @@ int main(int argC, char *args[]){
 	purge_previous_directory(const_cast<char *>( directoryName.c_str())); //this still works fine, after porting to c++
 	
 	//make directory to hold the data.
-	mkdir(directoryName.c_str(),0777);
+	mkdir(directoryName.c_str(),0700);
 	
 	
 	//get the number of variables, and number of nonempty codimensions.
@@ -84,7 +94,7 @@ int main(int argC, char *args[]){
 	
 	
 	
-	std::map< std::pair < int, int >, witness_data> gathered_data;
+	std::map< std::pair < int, int >, witness_data_deprecated> gathered_data;
 	
 	
 	//enter the loop for the points.
@@ -411,7 +421,7 @@ int main(int argC, char *args[]){
 	}
 	
 	
-	std::map < std::pair < int, int >, witness_data >::iterator iter;
+	std::map < std::pair < int, int >, witness_data_deprecated >::iterator iter;
 	for (iter=gathered_data.begin(); iter!=gathered_data.end();  iter++) {
 		iter->second.write_to_file(directoryName,dehomogenize);
 	}
@@ -433,7 +443,7 @@ int main(int argC, char *args[]){
 
 
 
-void write_summary(std::map< std::pair < int, int >, witness_data> gathered_data,
+void write_summary(std::map< std::pair < int, int >, witness_data_deprecated> gathered_data,
 									 int component_counter[],
 									 int codim_indicator[],
 									 int num_nonempty_codims,
@@ -469,7 +479,7 @@ void write_summary(std::map< std::pair < int, int >, witness_data> gathered_data
 	
 	OUT << "\ndim   comp   deg\n------------------\n";
 	
-	std::map < std::pair < int, int >, witness_data >::iterator iter;
+	std::map < std::pair < int, int >, witness_data_deprecated >::iterator iter;
 	for (iter=gathered_data.begin(); iter!=gathered_data.end();  iter++) {
 		OUT << iter->first.first << "      " << iter->first.second << "      " << iter->second.degree() << "\n";
 	}

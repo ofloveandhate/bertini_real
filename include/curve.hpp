@@ -1,4 +1,8 @@
 
+#ifndef CURVE_H
+#define CURVE_H
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -15,8 +19,6 @@
 #include <set>
 
 
-#ifndef CURVE_H
-#define CURVE_H
 
 
 

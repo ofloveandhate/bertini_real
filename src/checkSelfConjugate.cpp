@@ -5,150 +5,197 @@
 
 
 
-
-bool checkSelfConjugate(const witness_set & W,
-                       int           num_vars,
-											 BR_configuration & program_options,
-											 boost::filesystem::path input_file)
 /***************************************************************\
  * USAGE: check if component is self conjugate                  *
  * ARGUMENTS: witness set, # of variables and name of input file*
  * RETURN VALUES: 1-self conjugate; 0-non self conjugate   *
  * NOTES:                                                        *
  \***************************************************************/
+bool checkSelfConjugate(vec_mp test_point,
+						BR_configuration & program_options,
+						boost::filesystem::path input_file)
 {
-  int *declarations = NULL;
+	
+	
 	std::string bertini_command=program_options.bertini_command;
 	bertini_command.append(" input_membership_test ");
 	bertini_command.append(program_options.stifle_text);
-  FILE *IN = NULL;
-	
 
 	
 	
-  // setup input file
-  partition_parse(&declarations, input_file, "func_input_real", "config_real",0); // the 0 means not self conjugate
-
+	
+	
+	// setup input file
+	int *declarations = NULL;
+	partition_parse(&declarations, input_file, "func_input_real", "config_real",0); // the 0 means not self conjugate
+	free(declarations);
 	
 	
 	//check existence of the required witness_data file.
-	IN = safe_fopen_read("witness_data");
+	FILE *IN = safe_fopen_read("witness_data");
 	fclose(IN);
 	
 	
 	
 	
 	
-	
-
-	//only need to do this once.  we put the point and its conjugate into the same member points file and run the membership test simultaneously with one bertini call.
-  membership_test_input_file("input_membership_test", "func_input_real", "config_real",3);
+	//we put the point and its conjugate into the same member points file and run the membership test simultaneously with one bertini call.
+	membership_test_input_file("input_membership_test", "func_input_real", "config_real",3);
 	
 	
 	//setup  member_points file, including both the first witness point, and its complex-conjugate
-	write_member_points_sc(W.pts_mp[0]);//,fmt
+	write_member_points_sc(test_point);//,fmt
+	
+	
+	
 	
 	// Do membership test
-	std::cout << "*\n" << program_options.bertini_command << "\n*" << std::endl;
-  system(bertini_command.c_str());
+	if (program_options.verbose_level>=1) {
+		std::cout << "*\n" << program_options.bertini_command << "\n*" << std::endl;
+	}
 	
-	int *component_numbers;
-	component_numbers = (int *)br_malloc(2*sizeof(int));
+	system(bertini_command.c_str());  //TODO: eliminate this system call.
 	
-	read_incidence_matrix(component_numbers);
 
-  free(declarations);
+	std::vector<int> component_numbers = read_incidence_matrix();
 	
 	
 	
-  // delete temporary files
-
 	
 	if (component_numbers[0]==component_numbers[1]) {
-		printf("component IS self conjugate\n");
-		free(component_numbers);
+//		printf("component IS self conjugate\n");
 		return true;
 	}
 	else
 	{
-		printf("component is NOT self conjugate\n");
-		free(component_numbers);
+//		printf("component is NOT self conjugate\n");
 		return false;
 	}
-
+	
 	
 }
 
 
 
-
-
-int get_incidence_number(const witness_set & W,
-												 int           num_vars,
-												 BR_configuration & program_options,
-												 boost::filesystem::path input_file)
-/***************************************************************\
- * USAGE: check if component is self conjugate                  *
- * ARGUMENTS: witness set, # of variables and name of input file*
- * RETURN VALUES: 1-self conjugate; 0-non self conjugate   *
- * NOTES:                                                        *
- \***************************************************************/
+//TODO: this function has an error, in that it will only return the last component index the points lie on.
+std::vector<int> read_incidence_matrix()
 {
-  
-	std::string system_command=program_options.bertini_command;
-	system_command.append(" input_membership_test ");
-	system_command.append(program_options.stifle_text);
-  
 	
-  // setup input file
-	int *declarations = NULL;
-  partition_parse(&declarations, input_file, "func_input_real", "config_real",0); // the 0 means not self conjugate
-	free(declarations);
-	
-	
-	//check existence of the required witness_data file.
-	FILE *IN = NULL;
-	IN = safe_fopen_read("witness_data"); fclose(IN);
+	std::vector<int> component_numbers;
 	
 
 	
-	//only need to do this once.  we put the point and its conjugate into the same member points file and run the membership test simultaneously with one bertini call.
-  membership_test_input_file("input_membership_test", "func_input_real", "config_real",3);
 	
-	//setup  member_points file, including both the first witness point, and its complex-conjugate
-	write_member_points_singlept(W.pts_mp[0]);//,fmt
-	// Do membership test
-	std::cout << "*\n" << system_command << "\n*" << std::endl;
-  system(system_command.c_str());
+	//open incidence_matrix file
+	FILE *IN = safe_fopen_read("incidence_matrix");
 	
-	int component_number;
 	
-	read_incidence_matrix(&component_number);
 	
-	return component_number;
+	
+	int num_nonempty_codims;
+	fscanf(IN, "%d",&num_nonempty_codims);      // number of nonempty codimensions
+	
+	int total_num_components = 0; // create and initialize counter
+	for (int ii = 0; ii<num_nonempty_codims; ii++) {
+		int codim, num_components;
+		fscanf(IN, "%d",&codim);      // codimension  (iterated for each codimension)
+		fscanf(IN, "%d",&num_components);  // number of components (is whatever)
+		total_num_components = total_num_components+num_components;
+	}
+	
+	int num_pts;
+	fscanf(IN, "%d", &num_pts);    // number of points
+								  //	printf("reading incidence for %d pts\n",num_pts);
+	component_numbers.resize(num_pts);
+	
+	//and then a binary matrix indicating membership on which component
+	//from the appendices of the book:
+	//	% Binary matrix with one row per point, columns corresponding to components.
+	//	%                0 if given point is not on given component;
+	//	%                1 else .
+	for (int jj=0; jj<num_pts; jj++) {
+		int component_number=-10, component_indicator;;
+		for (int ii=0; ii<total_num_components; ii++)  // i don't this is correct if there is more than one nonempty codimension.
+												//TODO: check this iterator limit  !!!
+		{
+			fscanf(IN, "%d", &component_indicator);
+			if (component_indicator==1) {  //then is on this component
+				component_number = ii;
+			}
+		}
+		
+		if (component_number==-10) {
+			printf("it appears the candidate point lies on NO COMPONENT.\n");
+		}
+		
+		component_numbers[jj]=component_number;
+	}
+	
+	fclose(IN);
+	
+	
+	return component_numbers;
 }
 
 
 
-int write_member_points_singlept(point_mp point_to_write){
+
+
+
+int write_member_points_sc(vec_mp point_to_write)
+{
 	FILE *OUT = NULL;
 	int ii;
 	
 	
 	remove("member_points");
 	OUT = safe_fopen_write("member_points");
+	
+	
+	vec_mp result;
+	init_vec_mp(result,0);
+	dehomogenize(&result,point_to_write);
+	
+	fprintf(OUT,"2\n\n");
+	for(ii=0;ii<result->size;ii++)
+	{
+		print_mp(OUT,0,&result->coord[ii]);  fprintf(OUT,"\n");
+	}
+	
+	
+	comp_mp temp; init_mp(temp);
+	fprintf(OUT,"\n");
+	for(ii=0;ii<result->size;ii++)
+	{
+		conjugate_mp(temp, &result->coord[ii]);
+		print_mp(OUT,0,temp);  fprintf(OUT,"\n");
+	}
+	fclose(OUT);
+	
+	clear_vec_mp(result);  clear_mp(temp);
+	
+	return 0;
+}
 
+
+int write_member_points_singlept(vec_mp point_to_write)
+{
+	FILE *OUT = NULL;
+	
+	
+	
+	OUT = safe_fopen_write("member_points");
+	
 	
 	vec_mp result;
 	init_vec_mp(result,0);
 	dehomogenize(&result,point_to_write);
 	
 	fprintf(OUT,"1\n\n");
-	for(ii=0;ii<result->size;ii++){
+	for(int ii=0; ii<result->size; ii++){
 		print_mp(OUT,0,&result->coord[ii]);
 		fprintf(OUT,"\n");
 	}
-//		fprintf(OUT, fmt, result->coord[ii].r, result->coord[ii].i);
 	
 	
 	fclose(OUT);
@@ -161,99 +208,103 @@ int write_member_points_singlept(point_mp point_to_write){
 
 
 
-int write_member_points_sc(point_mp point_to_write){
-	FILE *OUT = NULL;
-	int ii;
+
+
+
+
+
+
+
+
+
+/***************************************************************\
+ * USAGE: setup input file to membership test                    *
+ * ARGUMENTS: name of output file, function & configuration input*
+ * RETURN VALUES: none                                           *
+ * NOTES:                                                        *
+ \***************************************************************/
+void membership_test_input_file(boost::filesystem::path outputFile,
+                                boost::filesystem::path funcInput,
+                                boost::filesystem::path configInput,
+                                int  tracktype)
+{
+	char ch;
+	FILE *OUT = safe_fopen_write(outputFile), *IN = NULL;
 	
 	
-	remove("member_points");
-	OUT = safe_fopen_write("member_points");
+	// setup configurations in OUT
+	fprintf(OUT, "CONFIG\n");
+	IN = safe_fopen_read(configInput);
+	
+	
+	while ((ch = fgetc(IN)) != EOF)
+		fprintf(OUT, "%c", ch);
+	fclose(IN);
+
+	fprintf(OUT, "TrackType: %d;\nDeleteTempFiles: 0;\nEND;\nINPUT\n",tracktype);
 
 	
-	vec_mp result;
-	init_vec_mp(result,0);
-	dehomogenize(&result,point_to_write);
+	// setup system in OUT
+	IN = safe_fopen_read(funcInput);
 	
-	fprintf(OUT,"2\n\n");
-	for(ii=0;ii<result->size;ii++)
-	{
-//		fprintf(OUT, fmt, result->coord[ii].r, result->coord[ii].i);
-		print_mp(OUT,0,&result->coord[ii]);  fprintf(OUT,"\n");
-	}
-	
-	
-	comp_mp temp; init_mp(temp);
-	fprintf(OUT,"\n");
-	for(ii=0;ii<result->size;ii++)
-	{
-		conjugate_mp(temp, &result->coord[ii]);
-		print_mp(OUT,0,temp);  fprintf(OUT,"\n");
-//		fprintf(OUT, fmt, result->coord[ii].r, -result->coord[ii].i);
-	}
+	while ((ch = fgetc(IN)) != EOF)
+		fprintf(OUT, "%c", ch);
+	fclose(IN);
+	fprintf(OUT, "END;\n");
 	fclose(OUT);
 	
-	clear_vec_mp(result);  clear_mp(temp);
-	
-	return 0;
+	return;
 }
 
 
 
 
-void read_incidence_matrix(int *component_numbers){
+
+
+
+/***************************************************************\
+ * USAGE: check if component is self conjugate                  *
+ * ARGUMENTS: witness set, # of variables and name of input file*
+ * RETURN VALUES: 1-self conjugate; 0-non self conjugate   *
+ * NOTES:                                                        *
+ \***************************************************************/
+int get_incidence_number(vec_mp test_point,
+						 BR_configuration & program_options,
+						 boost::filesystem::path input_file)
+{
+	
+	std::string system_command=program_options.bertini_command;
+	system_command.append(" input_membership_test ");
+	system_command.append(program_options.stifle_text);
+	
+	
+	// setup input file
+	int *declarations = NULL;
+	partition_parse(&declarations, input_file, "func_input_real", "config_real",0); // the 0 means not self conjugate
+	free(declarations);
+	
+	
+	//check existence of the required witness_data file.
 	FILE *IN = NULL;
-	int ii,jj;
-	int num_nonempty_codims, num_components, num_pts, codim;
-	int component_indicator, component_number,total_num_components=0;
-
-  //read incidence_matrix and see if it is self-conjugate
-  IN = fopen("incidence_matrix", "r");
-  if (IN == NULL)
-  {
-    printf("\n\nERROR: indicence_matrix file not produced.\n");
-    bexit(ERROR_FILE_NOT_EXIST);
-  }
+	IN = safe_fopen_read("witness_data"); fclose(IN);
 	
 	
-  fscanf(IN, "%d",&num_nonempty_codims);      // number of nonempty codimensions
 	
-	for (ii = 0; ii<num_nonempty_codims; ii++) {
-		fscanf(IN, "%d",&codim);      // codimension  (iterated for each codimension?)
-		fscanf(IN, "%d",&num_components);  // number of components (is whatever)
-		total_num_components = total_num_components+num_components;
-	}
-
+	//only need to do this once.  we put the point and its conjugate into the same member points file and run the membership test simultaneously with one bertini call.
+	membership_test_input_file("input_membership_test", "func_input_real", "config_real",3);
 	
-  fscanf(IN, "%d",&num_pts);    // number of points (should be 1)
-//	printf("reading incidence for %d pts\n",num_pts);
-
-	//and then a binary matrix indicating membership on which component
-	//from the appendices of the book:
-	//	% Binary matrix with one row per point, columns corresponding to components.
-	//	%                0 if given point is not on given component;
-	//	%                1 else .
-	for (jj=0; jj<num_pts; jj++) {
-		component_number=-10;
-		for(ii=0;ii<total_num_components;ii++)  // i don't this is correct if there is more than one nonempty codimension.
-			//todo: check this iterator limit  !!!
-		{
-			fscanf(IN, "%d", &component_indicator);
-			if (component_indicator==1) {  //then is on this component
-				component_number = ii;
-			}
-		}
-		
-		if (component_number==-10) {
-			printf("it appears the candidate point lies on NO COMPONENT.\n");
-		}
-		component_numbers[jj]=component_number;
-	}
+	//setup  member_points file, including both the first witness point, and its complex-conjugate
+	write_member_points_singlept(test_point);
 	
-	fclose(IN);
-
-
 	
-	return;
+	// Do membership test
+	std::cout << "*\n" << system_command << "\n*" << std::endl;
+	system(system_command.c_str());
+	
+	
+	std::vector<int> component_number = read_incidence_matrix();
+	
+	return component_number[0];
 }
 
 
@@ -264,16 +315,10 @@ void read_incidence_matrix_wrt_number(int *component_numbers, int given_incidenc
 	int num_nonempty_codims, num_components, num_pts, codim;
 	int component_indicator, component_number,total_num_components=0;
 	
-  //read incidence_matrix and see if it is self-conjugate
-  IN = fopen("incidence_matrix", "r");
-  if (IN == NULL)
-  {
-    printf("\n\nERROR: indicence_matrix file not produced.\n");
-    bexit(ERROR_FILE_NOT_EXIST);
-  }
+	//read incidence_matrix and see if it is self-conjugate
+	IN = safe_fopen_read("incidence_matrix");
 	
-	
-  fscanf(IN, "%d",&num_nonempty_codims);      // number of nonempty codimensions
+	fscanf(IN, "%d",&num_nonempty_codims);      // number of nonempty codimensions
 	
 	for (ii = 0; ii<num_nonempty_codims; ii++) {
 		fscanf(IN, "%d",&codim);      // codimension  (iterated for each codimension?)
@@ -282,7 +327,7 @@ void read_incidence_matrix_wrt_number(int *component_numbers, int given_incidenc
 	}
 	
 	
-  fscanf(IN, "%d",&num_pts);    // number of points (should be 1)
+	fscanf(IN, "%d",&num_pts);    // number of points (should be 1)
 	
 	//and then a binary matrix indicating membership on which component
 	//from the appendices of the book:
@@ -299,61 +344,18 @@ void read_incidence_matrix_wrt_number(int *component_numbers, int given_incidenc
 			}
 		}
 		if (component_number==0) {
-//			printf("test point did not lie on any component at all.\n");
+			//			printf("test point did not lie on any component at all.\n");
 			//			exit(-1);
 		}
 		component_numbers[jj]=component_number;
 	}
 	
 	fclose(IN);
-
+	
 	
 	return;
 }
 
-
-
-
-
-void membership_test_input_file(boost::filesystem::path outputFile,
-                                boost::filesystem::path funcInput,
-                                boost::filesystem::path configInput,
-                                int  tracktype)
-/***************************************************************\
- * USAGE: setup input file to membership test                    *
- * ARGUMENTS: name of output file, function & configuration input*
- * RETURN VALUES: none                                           *
- * NOTES:                                                        *
- \***************************************************************/
-{
-  char ch;
-  FILE *OUT = safe_fopen_write(outputFile), *IN = NULL;
-
-	
-  // setup configurations in OUT
-  fprintf(OUT, "CONFIG\n");
-  IN = safe_fopen_read(configInput);
-
-	
-	while ((ch = fgetc(IN)) != EOF)
-    fprintf(OUT, "%c", ch);
-  fclose(IN);
-  if(tracktype==3)
-    fprintf(OUT, "TrackType: %d;\nDeleteTempFiles: 1;\nEND;\nINPUT\n",tracktype);
-  else
-    fprintf(OUT, "TrackType: %d;\nDeleteTempFiles: 1;\nEND;\nINPUT\n",tracktype);
-	
-  // setup system in OUT
-  IN = safe_fopen_read(funcInput);
-
-  while ((ch = fgetc(IN)) != EOF)
-    fprintf(OUT, "%c", ch);
-  fclose(IN);
-  fprintf(OUT, "END;\n");
-  fclose(OUT);
-	
-  return;
-}
 
 
 

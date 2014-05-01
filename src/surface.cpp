@@ -351,7 +351,7 @@ void surface_decomposition::beginning_stuff(const witness_set & W_surf,
 	if (0) {
 		if (program_options.verbose_level>=2)
 			printf("checking if component is self-conjugate\n");
-		checkSelfConjugate(W_surf,num_variables,program_options, W_surf.input_filename);
+		checkSelfConjugate(W_surf.pts_mp[0],program_options, W_surf.input_filename);
 		
 		//regenerate the various files, since we ran bertini since then and many files were deleted.
 		parse_input_file(program_options.input_deflated_filename);
