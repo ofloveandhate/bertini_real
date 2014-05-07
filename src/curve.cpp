@@ -14,10 +14,13 @@ void curve_decomposition::main(vertex_set & V,
 #endif
 	
 	
-	
-	int num_vars = W.num_variables;
-	
+		
 	solve_options.robust = false;
+	
+	
+	component_num = W.comp_num;
+	dimension = W.dim;
+	num_variables = W.num_variables;
 	
 	
 	if (1) {
@@ -56,6 +59,8 @@ void curve_decomposition::main(vertex_set & V,
 	}
 	
 	
+	input_filename = W.input_filename;
+	
 	
 	// this wraps around a bertini routine
 	parse_input_file(W.input_filename);
@@ -91,23 +96,23 @@ void curve_decomposition::main(vertex_set & V,
 	
 	
 	
+	
 	if (program_options.user_sphere) {
 		read_sphere(program_options.bounding_sphere_filename);
 	}
 	
 	
 	
-	input_filename = W.input_filename;
-	component_num = W.comp_num;
-	dimension = W.dim;
-	num_variables = num_vars; //TODO: ELIMINATE ONE OF THESE.  THERE ARE TOO MANY.
+	
+	
+	
 	add_projection(projections[0]);
 	
 	if (self_conjugate==0)  //C is not self-conjugate
 	{
 		//Call non-self-conjugate case code
 		
-		computeCurveNotSelfConj(W, projections[0], V, num_vars,
+		computeCurveNotSelfConj(W, projections[0], V, num_variables,
                                 program_options, solve_options);
 		
 	}

@@ -2116,21 +2116,32 @@ witness_set witness_data::choose(BR_configuration & options)
 		
 		if (nonempty_dimensions.size()==1) {
 			
+			
 			target_dimension = nonempty_dimensions[0];
 			if (target_component==-1) { // want all components
 				return best_possible_automatic_set(options);
 			}
+			else if(target_component==-2) // this is default
+			{
+				if (dimension_component_counter[target_dimension].size()==1) {
+					return form_specific_witness_set(target_dimension,0);
+				}
+				else
+				{
+					return choose_set_interactive(options);
+				}
+			}
 			else{ // want a specific witness set
 				
-				std::cout << map_lookup_with_default(dimension_component_counter[target_dimension],target_component,0) << " " << dimension_component_counter[target_dimension][target_component] << std::endl;
+//				std::cout << map_lookup_with_default(dimension_component_counter[target_dimension],target_component,0) << " " << dimension_component_counter[target_dimension][target_component] << std::endl;
 				
-				print();
 				
 				if (map_lookup_with_default(dimension_component_counter[target_dimension],target_component,0)==0) {
 					std::cout << "you asked for component " << target_component << " (of dimension " << nonempty_dimensions[0] << ") which does not exist" << std::endl;
 					witness_set W(num_variables);
 					W.dim = nonempty_dimensions[0];
 					W.comp_num = -1;
+					deliberate_segfault();
 					return W;
 				}
 				else{
@@ -2334,7 +2345,7 @@ witness_set witness_data::choose_set_interactive(BR_configuration & options)
 	std::cout << "dimension " << options.target_dimension << std::endl;
 	for (auto jter = index_tracker[target_dimension].begin(); jter!= index_tracker[target_dimension].end(); ++jter) {
 		int first_index = *(jter->second.begin());
-		std::cout << "\tcomponent " << jter->first << ": multiplicity " << point_metadata[first_index].multiplicity << ", deflations needed: " << point_metadata[first_index].deflations_needed << std::endl;
+		std::cout << "\tcomponent " << jter->first << ": multiplicity " << point_metadata[first_index].multiplicity << ", deflations needed: " << point_metadata[first_index].deflations_needed << ", degree " << dimension_component_counter[target_dimension][jter->first] << std::endl;
 		
 	}
 	std::cout << std::endl;
@@ -3432,7 +3443,11 @@ int decomposition::read_sphere(const boost::filesystem::path & bounding_sphere_f
 #ifdef functionentry_output
 	std::cout << "decomposition::read_sphere" << std::endl;
 #endif
-
+	
+	if (num_variables<2) {
+		std::cout << "during read of sphere, decomposition of dimension	" << dimension << " has " << num_variables << " variables!" << std::endl;
+		mypause();
+	}
 
 	change_size_vec_mp(this->sphere_center, num_variables-1); //destructive resize
 	sphere_center->size = num_variables-1;

@@ -1515,9 +1515,14 @@ public:
 	void set_from_file(FILE *IN)
 	{
 		fscanf(IN,"%lf %d %lf %lf %d %d %d %d",
-			   &condition_number,&corank,&smallest_nonsing_value,
-			   &largest_nonsing_value,&typeflag,&multiplicity,
-			   &component_number,&deflations_needed);
+			   &condition_number,
+			   &corank,
+			   &smallest_nonsing_value,
+			   &largest_nonsing_value,
+			   &typeflag,
+			   &multiplicity,
+			   &component_number,
+			   &deflations_needed);
 	}
 	
 	
