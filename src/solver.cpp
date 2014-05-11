@@ -1592,7 +1592,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 	
 //	print_tracker(T);
 	
-	int iterations=0, max_iterations = 10;
+	int iterations=0, max_iterations = 3;
 	
 	solve_options.backup_tracker_config();
 	
