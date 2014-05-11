@@ -1911,8 +1911,32 @@ void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W)
 {
 
 	
-	init_mat_rat(P->patchCoeff_rat, W.num_patches, W.num_variables);
+	if (W.num_patches==0) {
+		std::cerr << "the number of patches in input W is 0.  this is not allowed, the number must be positive.\n" << std::endl;
+		br_exit(1801);
+	}
 	
+	
+    int total_num_vars_in_patches = 0;
+	for (int ii=0; ii<W.num_patches; ++ii) {
+		total_num_vars_in_patches += W.patch_mp[ii]->size;
+	}
+	
+	if (total_num_vars_in_patches > W.num_variables) {
+		std::cout << "parity mismatch in patches ("<< total_num_vars_in_patches <<") and number of variables ("<< W.num_variables <<")." << std::endl;
+		for (int ii=0; ii<W.num_patches; ++ii) {
+			std::cout << W.patch_mp[ii]->size << " ";
+		}
+		std::cout << std::endl;
+		br_exit(4013);
+	}
+	
+	
+	
+	
+	
+	
+	init_mat_rat(P->patchCoeff_rat, W.num_patches, W.num_variables);
 	init_mat_mp2(P->patchCoeff, W.num_patches, W.num_variables, mpf_get_default_prec());
 	
 	P->curr_prec = mpf_get_default_prec();
@@ -1920,13 +1944,9 @@ void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W)
 	P->patchCoeff->rows = W.num_patches;
 	P->patchCoeff->cols = W.num_variables;
 	
-    
 	
 	
-	if (W.num_patches==0) {
-		std::cerr << "the number of patches in input W is 0.  this is not allowed, the number must be positive.\n" << std::endl;
-		br_exit(1801);
-	}
+	
 	
 	
 	

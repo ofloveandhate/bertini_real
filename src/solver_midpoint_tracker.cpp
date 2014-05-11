@@ -2226,7 +2226,7 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 {
     midpoint_eval_data_mp *BED = (midpoint_eval_data_mp *)ED; // to avoid having to cast every time
 	
-	int ii;
+
 	int offset;
 	
 	mpf_t n1, n2, zero_thresh, max_rat;
@@ -2237,7 +2237,7 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	mpf_set_d(max_rat, T->ratioTol);
 	
 	
-	for (ii = 0; ii < T->numVars; ii++)
+	for (int ii = 0; ii < T->numVars; ii++)
 	{
         if (!(mpfr_number_p(EG->PD_mp.point->coord[ii].r) && mpfr_number_p(EG->PD_mp.point->coord[ii].i)))
 		{
@@ -2284,13 +2284,13 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	vec_cp_mp(terminal_pt,EG->PD_mp.point);
 	
 	
-	for (ii=0; ii<BED->num_mid_vars; ii++)
+	for (int ii=0; ii<BED->num_mid_vars; ii++)
 		set_mp(&curr_mid_vars->coord[ii], &terminal_pt->coord[ii]);
 	
-	for (ii=0; ii<BED->num_bottom_vars; ii++)
+	for (int ii=0; ii<BED->num_bottom_vars; ii++)
 		set_mp(&curr_bottom_vars->coord[ii], &terminal_pt->coord[ii+BED->num_mid_vars]);
 	
-	for (ii=0; ii<BED->num_top_vars; ii++)
+	for (int ii=0; ii<BED->num_top_vars; ii++)
 		set_mp(&curr_top_vars->coord[ii], &terminal_pt->coord[ii+BED->num_mid_vars+BED->num_bottom_vars]);
 	
 	
@@ -2309,7 +2309,7 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	increase_size_vec_mp(f_terminal,temp_function_values->size);
 	f_terminal->size = temp_function_values->size;
 	
-	for (ii=0; ii<temp_function_values->size; ii++)
+	for (int ii=0; ii<temp_function_values->size; ii++)
 		set_mp(&f_terminal->coord[ii], &temp_function_values->coord[ii]);
 	
 	
@@ -2322,7 +2322,7 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	increase_size_vec_mp(f_terminal,f_terminal->size + temp_function_values->size);
 	f_terminal->size = f_terminal->size + temp_function_values->size;
 	
-	for (ii=0; ii<temp_function_values->size; ii++)
+	for (int ii=0; ii<temp_function_values->size; ii++)
 		set_mp(&f_terminal->coord[ii+offset], &temp_function_values->coord[ii]);
 	
 	
@@ -2335,7 +2335,7 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	//resize output variables to correct size
 	increase_size_vec_mp(f_terminal,f_terminal->size + temp_function_values->size);
 	f_terminal->size = f_terminal->size + temp_function_values->size;
-	for (ii=0; ii<temp_function_values->size; ii++)
+	for (int ii=0; ii<temp_function_values->size; ii++)
 		set_mp(&f_terminal->coord[ii+offset], &temp_function_values->coord[ii]);
 	
 	
@@ -2356,13 +2356,13 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
     
     
 	
-	for (ii=0; ii<BED->num_mid_vars; ii++)
+	for (int ii=0; ii<BED->num_mid_vars; ii++)
 		set_mp(&curr_mid_vars->coord[ii], &prev_pt->coord[ii]);
 	
-	for (ii=0; ii<BED->num_bottom_vars; ii++)
+	for (int ii=0; ii<BED->num_bottom_vars; ii++)
 		set_mp(&curr_bottom_vars->coord[ii], &prev_pt->coord[ii+BED->num_mid_vars]);
 	
-	for (ii=0; ii<BED->num_top_vars; ii++)
+	for (int ii=0; ii<BED->num_top_vars; ii++)
 		set_mp(&curr_top_vars->coord[ii], &prev_pt->coord[ii+BED->num_mid_vars+BED->num_bottom_vars]);
 	
 	
@@ -2379,7 +2379,7 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	increase_size_vec_mp(f_prev,temp_function_values->size);
 	f_prev->size = temp_function_values->size;
 	
-	for (ii=0; ii<temp_function_values->size; ii++)
+	for (int ii=0; ii<temp_function_values->size; ii++)
 		set_mp(&f_prev->coord[ii], &temp_function_values->coord[ii]);
 	
 	
@@ -2391,7 +2391,7 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	increase_size_vec_mp(f_prev, f_prev->size + temp_function_values->size);
 	f_prev->size = f_prev->size + temp_function_values->size;
 	
-	for (ii=0; ii<temp_function_values->size; ii++)
+	for (int ii=0; ii<temp_function_values->size; ii++)
 		set_mp(&f_prev->coord[ii+offset], &temp_function_values->coord[ii]);
 	
     
@@ -2405,7 +2405,7 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	increase_size_vec_mp(f_prev, f_prev->size + temp_function_values->size);
 	f_prev->size = f_prev->size + temp_function_values->size;
 	
-	for (ii=0; ii<temp_function_values->size; ii++)
+	for (int ii=0; ii<temp_function_values->size; ii++)
 		set_mp(&f_prev->coord[ii+offset], &temp_function_values->coord[ii]);
 	
 	
@@ -2422,7 +2422,7 @@ int check_issoln_midpoint_mp(endgame_data_t *EG,
 	
 	// compare the function values
 	int isSoln = 1;
-	for (ii = 0; ii < f_terminal->size && isSoln; ii++)
+	for (int ii = 0; ii < f_terminal->size && isSoln; ii++)
 	{
 		mpf_abs_mp(n1, &f_terminal->coord[ii]);
 		mpf_abs_mp(n2, &f_prev->coord[ii]);

@@ -152,23 +152,18 @@ void surface_decomposition::main(vertex_set & V,
     witness_set W_total_crit;
     
 	W_total_crit.merge(W_critcurve_crit);
-//	W_total_crit.only_first_vars( this->num_variables); // chop down the number of variables
-    
-    
-//	W_sphere_crit.only_first_vars(this->num_variables);
+
     W_total_crit.merge(W_sphere_crit);
     
 	
-//	W_singular_crit.only_first_vars(this->num_variables);
+
     W_total_crit.merge(W_singular_crit);
     
 	
     W_total_crit.input_filename = "total_crit___there-is-a-problem";
 	W_total_crit.sort_for_unique(&solve_options.T);
     
-//    W_total_crit.print_to_screen();
-//    
-//    
+
     
     
     
@@ -1564,29 +1559,39 @@ void surface_decomposition::serial_connect(vertex_set & V, midpoint_config & md_
 #endif
 	
     
+	this->output_main(program_options.output_dir);
+	V.print(program_options.output_dir/ "V.vertex");
+	
+	
 	for (unsigned int ii=0; ii!=mid_slices.size(); ii++) { // each edge of each midslice will become a face.  degenerate edge => degenerate face.
 		
 		
 		for (int jj=0; jj<mid_slices[ii].num_edges; jj++) {
-			this->output_main(program_options.output_dir);
-			V.print(program_options.output_dir/ "V.vertex");
+			
 			
 			
 			//make face
 			
 			face F = make_face(ii,jj, V, md_config, solve_options, program_options);
 			
+			//			std::cout << "F.top " << F.top << std::endl;
+			//			std::cout << "F.bottom " << F.bottom << std::endl;
+			//			std::cout << "F.num_left " << F.num_left << std::endl;
+			//			std::cout << "F.num_right " << F.num_right << std::endl;
 			
 			
+			if (!F.is_degenerate())
+			{
+				add_face(F);
+				
+//					boost::filesystem::path::rename(program_options.output_dir / "F.faces");
+//					this->print_faces(program_options.output_dir + "_bak" / "F.faces");
+				this->print_faces(program_options.output_dir / "F.faces");
+//					this->output_main(program_options.output_dir);
+//					V.print(program_options.output_dir/ "V.vertex");
+			}
 			
-			std::cout << "F.top " << F.top << std::endl;
-			std::cout << "F.bottom " << F.bottom << std::endl;
-			std::cout << "F.num_left " << F.num_left << std::endl;
-			std::cout << "F.num_right " << F.num_right << std::endl;
-			std::cout << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n\n";
-			add_face(F);
-			
-			//			sleep(60);
+
 		}
 	}
 	
@@ -1864,13 +1869,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 	
 	
-	int num_bottom_vars, num_top_vars;
 	
-	
-	witness_set W_midtrack;
-	vec_mp blank_point;  init_vec_mp2(blank_point, 0,1024);
-	W_midtrack.add_point(blank_point);
-	clear_vec_mp(blank_point);
 	
 	
 	
@@ -1912,6 +1911,8 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	curve_decomposition * top_curve = curve_with_name(md_config.system_name_top);
 	curve_decomposition * bottom_curve = curve_with_name(md_config.system_name_bottom);
 	
+	//man, i hate checking for null...
+	
 	if (top_curve==NULL) {
 		std::cout << "did not find matching top curve: " << md_config.system_name_top << std::endl;
 		bail_out = true;
@@ -1936,8 +1937,8 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 	// get the bottom and top edges for this face.
 	
-	num_bottom_vars = md_config.num_bottom_vars();
-	num_top_vars = md_config.num_top_vars();
+	int num_bottom_vars = md_config.num_bottom_vars();
+	int num_top_vars = md_config.num_top_vars();
 	
 	F.bottom = bottom_curve->edge_w_midpt(mid_slices[ii].edges[jj].left); // index the *edge*
 	F.system_name_bottom = md_config.system_name_bottom;
@@ -1955,6 +1956,19 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 		bail_out = true;
 	}
 		
+	
+	if (num_bottom_vars==0) {
+		std::cout << "0 bottom variables" << std::endl;
+		bail_out = true;
+	}
+	
+	if (num_top_vars==0) {
+		std::cout << "0 top variables" << std::endl;
+		bail_out = true;
+	}
+	
+	
+	
 	if (bail_out) {
 		std::cout << color::red() << "bailing out " << ii << " " << jj << "." << std::endl;
 		
@@ -1966,6 +1980,10 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 	
 	//copy in the start point as three points concatenated.
+	witness_set W_midtrack;
+	vec_mp blank_point;  init_vec_mp2(blank_point, 0,1024);
+	W_midtrack.add_point(blank_point);
+	clear_vec_mp(blank_point);
 	
 	W_midtrack.num_variables = this->num_variables + num_bottom_vars + num_top_vars;
 	W_midtrack.num_natural_vars = this->num_variables;
