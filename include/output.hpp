@@ -1,6 +1,8 @@
 #ifndef _BR_OUTPUT_H
 #define _BR_OUTPUT_H
 
+/** \file output.hpp */
+
 
 #include <dirent.h>
 

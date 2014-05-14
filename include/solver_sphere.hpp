@@ -2,6 +2,9 @@
 #define _SPHERESOLVER_H
 
 
+/** \file solver_sphere.hpp */
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>

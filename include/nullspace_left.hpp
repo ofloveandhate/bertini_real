@@ -1,6 +1,7 @@
 #ifndef NULLSPACE_H_
 #define NULLSPACE_H_
 
+/** \file nullspace_left.hpp */
 
 #include <stdio.h>
 #include <stdlib.h>

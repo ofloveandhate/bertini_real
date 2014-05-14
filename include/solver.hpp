@@ -1,6 +1,8 @@
 #ifndef SOLVER_MAIN_HEADER_H
 #define SOLVER_MAIN_HEADER_H
 
+/** \file solver.hpp */
+
 
 #include <stdio.h>
 #include <stdlib.h>

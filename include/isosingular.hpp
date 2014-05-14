@@ -1,7 +1,8 @@
-
 #ifndef _ISOSINGULAR_H
 #define _ISOSINGULAR_H
 
+
+/** \file isosingular.hpp */
 
 #include <stdio.h>
 #include <stdlib.h>

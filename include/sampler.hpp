@@ -1,6 +1,11 @@
 #ifndef _SAMPLER_H
 #define _SAMPLER_H
 
+
+/** \file sampler.hpp */
+
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>

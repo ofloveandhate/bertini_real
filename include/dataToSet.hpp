@@ -1,6 +1,8 @@
 #ifndef _DATA_TO_SET_H
 #define _DATA_TO_SET_H
 
+/** \file dataToSet.hpp */
+
 #include <dirent.h>
 
 #include <sys/stat.h>

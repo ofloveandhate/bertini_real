@@ -1,8 +1,7 @@
-
 #ifndef _POST_PROCESSING_H
 #define _POST_PROCESSING_H
 
-
+/** \file postProcessing.hpp */
 
 #include <stdio.h>
 #include <stdlib.h>
