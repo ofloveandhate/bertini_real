@@ -2909,17 +2909,7 @@ int vertex_set::setup_vertices(boost::filesystem::path INfile)
 
 
 
-/**
- 
- //assumes all vertices have the same number of variables in them.
- 
- Output vertex structure as follows:
- # pts
- pt.1
- 
- pt.2
- 
- **/
+
 void vertex_set::print(boost::filesystem::path outputfile) const
 {
 	
@@ -3356,10 +3346,7 @@ int decomposition::setup(boost::filesystem::path INfile)
 
 
 
-/**
- Output curve overall info as follows:
- 
- **/
+
 void decomposition::print(boost::filesystem::path base)
 {
 	
@@ -3464,6 +3451,7 @@ int decomposition::read_sphere(const boost::filesystem::path & bounding_sphere_f
 		mpf_set_str(sphere_center->coord[jj-1].i,"0",10);
 	}
 	
+	//TODO: check this line for validity
 	int tmp_num_vars;
 	fscanf(IN,"%d",&tmp_num_vars); scanRestOfLine(IN);
 	
@@ -3929,7 +3917,7 @@ void decomposition::receive(int source, parallelism_config & mpi_config)
 
 
 
-// this sort should be optimized.  it is sloppy and wasteful right now.
+//TODO this sort should be optimized.  it is sloppy and wasteful right now.
 int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & index_tracker, vec_mp projections_input){
 	
 	

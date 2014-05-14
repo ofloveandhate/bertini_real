@@ -1,6 +1,10 @@
 #ifndef _FILEOPS_H
 #define _FILEOPS_H
 
+
+/** \file fileops.hpp */
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>

@@ -1,7 +1,7 @@
 #ifndef SOLVER_MIDPOINT_H
 #define SOLVER_MIDPOINT_H
 
-
+/** \file solver_midpoint_tracker.hpp */
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -1,6 +1,9 @@
 #ifndef BERTINI_EXTENSIONS_H
 #define BERTINI_EXTENSIONS_H
 
+/** \file bertini_extensions.hpp */
+
+
 #include "fileops.hpp"
 
 #include "bertini_headers.hpp"
@@ -15,12 +18,28 @@
 
 enum {VEC_MP = 4000, VEC_D, MAT_MP, MAT_D, COMP_MP, COMP_D, VEC_RAT, MAT_RAT, COMP_RAT, INDICES, DECOMPOSITION, CURVE, SURFACE, EDGE, CELL, FACE, UNUSED, VERTEX_SET, WITNESS_SET, VERTEX};
 
+/**
+ bertini_real's malloc.  will call br_exit if it fails to malloc correctly.
+ 
+ \return a pointer to the memory allocated.
+ \param size_t size the amount of memory to allocate.
+ */
 void *br_malloc(size_t size);
 
+/**
+ bertini_real's realloc.  will call br_exit if it fails to realloc correctly.
+ 
+ \return a pointer to memory reallocated
+ \param ptr the pointer to be reallocated
+ \param size the new size of the memory to be reallocated.
+ */
 void *br_realloc(void *ptr, size_t size);
 
 
-
+/**
+ \return boolean indicating whether the input matrix is the identity.
+ \param M test matrix
+ */
 bool is_identity(mat_d M);
 bool is_identity(mat_mp M);
 

@@ -2,6 +2,8 @@
 #define _CHECK_SELFCONJUGATE_H
 
 
+/** \file checkSelfConjugate.hpp */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>

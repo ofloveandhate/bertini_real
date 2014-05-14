@@ -1,10 +1,9 @@
-
-
-
-
-
 #ifndef BERTINI_HEADERS_H
 #define BERTINI_HEADERS_H
+
+
+/** \file bertini_headers.hpp */
+
 
 #include "mpi.h" // this *cannot* be inside an extern "C"{} wrapper.
 

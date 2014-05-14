@@ -3,6 +3,7 @@
 #define SURFACE_H
 
 
+/** \file surface.hpp */
 
 
 #include <stdio.h>
@@ -41,7 +42,9 @@
 
 
 /**
- the face data type..
+ \brief the 2-cell
+ 
+ The face data type.  Extends the functionality of the basic cell type, adding left and right indices of connected edges, top and bottom indices and system names, left and right projection values, and an index for which midslice it came from.  The midpoint member is inherited from the base class cell.
  */
 class face : public cell
 {

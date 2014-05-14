@@ -1,7 +1,7 @@
-
 #ifndef _PROGRAM_STARTUP_H
 #define _PROGRAM_STARTUP_H
 
+/** \file programConfiguration.hpp */
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -1,6 +1,10 @@
-
 #ifndef BR_PARALLELISM_H
 #define BR_PARALLELISM_H
+
+
+
+/** \file parallelism.hpp */
+
 
 #include <stdio.h>
 #include <stdlib.h>

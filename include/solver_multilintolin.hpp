@@ -2,6 +2,8 @@
 #ifndef _MULTILINSOLVER_H
 #define _MULTILINSOLVER_H
 
+/** \file solver_multilintolin.hpp */
+
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -1,7 +1,7 @@
-
 #ifndef CURVE_H
 #define CURVE_H
 
+/** \file curve.hpp */
 
 #include <stdio.h>
 #include <stdlib.h>
