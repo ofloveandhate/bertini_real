@@ -34,22 +34,24 @@
 
 
 
-
+/**
+ \brief config class for the multilin solver, so that SLP can be set up independently from the eval data.
+ */
 class multilin_config
 {
 	
 public:
 	
-	bool have_randomizer;
-	system_randomizer *randomizer;
+	bool have_randomizer; ///< indicator of whether have the randomizer
+	system_randomizer *randomizer; ///< pointer to randomizer
 	
 	
-	SLP_global_pointers SLP_memory;
-	prog_t * SLP;
+	SLP_global_pointers SLP_memory; ///< the memory for the SLP
+	prog_t * SLP; ///< a pointer to the SLP for the solver
 	
-	int MPType;
+	int MPType; ///< M.O.
 	
-	bool have_mem;
+	bool have_mem; ///< do we have the memory setup?
 	
 	
 	multilin_config(solver_configuration & solve_options,
@@ -88,6 +90,13 @@ public:
 		set_randomizer(_random);
 	}
 	
+	
+	/**
+	 \brief in the setup of this object, make a new system randomizer.
+	 
+	 \param solve_options the current state of the solver.
+	 \param W input witness set, witn numbers of linears, patches, and variables.
+	 */
 	void make_randomizer(const solver_configuration & solve_options, const witness_set & W)
 	{
 		
@@ -98,6 +107,10 @@ public:
 	}
 	
 	
+	/**
+	 \brief set up the program, and capture the memory, followed by setting up the PPD.
+	 \param solve_options The current state of the solver.
+	 */
 	void set_memory(solver_configuration & solve_options)
 	{
 		
@@ -115,7 +128,11 @@ public:
 	}
 	
 	
-	
+	/**
+	 \brief set up this object's randomizer to point to the same place as the input randomizer.
+	 
+	 \param _random a pointer to the randomizer this should point to.
+	 */
 	void set_randomizer(system_randomizer * _random)
 	{
 		randomizer = _random;
@@ -196,23 +213,23 @@ public:
 
 
 
-
-
-// the mp version
+/**
+\brief the evaluator data type for the multilin solver.
+ */
 // this must be defined before the double version, because double has mp.
 class multilintolin_eval_data_mp : public solver_mp
 {
 public:
 	
 	
-	int num_linears;
+	int num_linears; ///< how many linears it currently has.
 	
 	
 	
-	vec_mp *current_linear;						// has current precision
-	vec_mp *current_linear_full_prec; // carries full precision data for AMP
-	vec_mp *old_linear;								// has current precision
-	vec_mp *old_linear_full_prec;			// carries full precision data for AMP
+	vec_mp *current_linear;		///< the linear we are moving to, in current precision
+	vec_mp *current_linear_full_prec; ///< the linear we are moving to, in full precision
+	vec_mp *old_linear;				///< the linear we are moving away from, in current precision
+	vec_mp *old_linear_full_prec;			///< the linear we are moving away from, in full precision
 	
 	
 	
@@ -262,12 +279,32 @@ public:
 	
 	// MPI SENDS AND RECEIVES
 	
+	/**
+	 \brief bcast send for the multilin solver
+	 
+	 \return SUCCESSFUL
+	 \param mpi_config The current state of MPI
+	 */
 	int send(parallelism_config & mpi_config);
 	
+	/**
+	 \brief bcast receive for the multilin solver
+	 
+	 \return SUCCESSFUL
+	 \param mpi_config The current state of MPI
+	 */
 	int receive(parallelism_config & mpi_config);
 	
 	
-	
+	/**
+	 \brief set up in memory the system for solving, from the config object passed in, and the witness set.
+	 
+	 \return The number 0.
+	 \param config The config object for this evaluator, containing the SLP etc.
+	 \param W The input witness set containing start points
+	 \param target_linears The linears we move to.
+	 \param solve_options The current state of the solver.
+	 */
 	int setup(const multilin_config & config,
 			  const witness_set & W,
 			  vec_mp * target_linears,
@@ -375,13 +412,13 @@ class multilintolin_eval_data_d : public solver_d
 {
 public:
 	
-	multilintolin_eval_data_mp * BED_mp;
-	int num_linears;
+	multilintolin_eval_data_mp * BED_mp; ///< a pointer to the MP eval data, for AMP mode
+	int num_linears; ///< the number of linears.
 	
 	
 	
-	vec_d *current_linear;
-	vec_d *old_linear;
+	vec_d *current_linear;///< the linears we move TO
+	vec_d *old_linear; ///< the linears we move away FROM.
 	
 	
 	
@@ -421,7 +458,9 @@ public:
 	}
 	
 	
-	
+	/**
+	 \brief print useful information to the screen
+	 */
 	virtual void print()
 	{
 		solver_d::print();
@@ -447,13 +486,33 @@ public:
 	
 	
 	// MPI SENDS AND RECEIVES
-	
+	/**
+	 \brief bcast send for the multilin solver
+	 
+	 \return SUCCESSFUL
+	 \param mpi_config The current state of MPI
+	 */
 	int send(parallelism_config & mpi_config);
 	
+	
+	/**
+	 \brief bcast receive for the multilin solver
+	 
+	 \return SUCCESSFUL
+	 \param mpi_config The current state of MPI
+	 */
 	int receive(parallelism_config & mpi_config);
 	
-	
-	
+
+	/**
+	 \brief set up in memory the system for solving, from the config object passed in, and the witness set.
+	 
+	 \return The number 0.
+	 \param config The config object for this evaluator, containing the SLP etc.
+	 \param W The input witness set containing start points
+	 \param target_linears The linears we move to.
+	 \param solve_options The current state of the solver.
+	 */
 	int setup(const multilin_config & config,
 			  const witness_set & W,
 			  vec_mp * target_linears,
@@ -483,6 +542,16 @@ protected:
 
 
 
+/**
+ \brief The main way to get either the head or a serial process into moving linears around.
+ 
+ \return SUCCESSFUL
+ \param W the input witness set including start points, starting linears, and patches.
+ \param solve_out computed results and metadata go here.
+ \param new_linears the linears to which we wish to move.
+ \param config the multilin config object, which is passed in as argument to allow more efficient management of data.
+ \param solve_options the current state of the solver.
+ */
 int multilin_solver_master_entry_point(const witness_set & W, // carries with it the start points, and the linears.
 									   solver_output & solve_out, // new data goes in here
 									   vec_mp * new_linears,
@@ -491,34 +560,123 @@ int multilin_solver_master_entry_point(const witness_set & W, // carries with it
 
 
 
+/**
+ \brief how to get a worker to cooperate to move linears around.
+ 
+ a slave comes to this function empty-handed and leaves empty-handed, but helps do the work to move from one set of linears to another, by tracking some of the paths and sending the results to the head.
+ 
+ \return SUCCESSFUL
+ \param solve_options
+ */
 int multilin_slave_entry_point(solver_configuration & solve_options);
 
 
-//the new custom evaluator for this solver
 
+
+
+/**
+ \brief Evaluator function for the multilin solver.
+ 
+ \todo explain with diagram how this works
+ 
+ this function makes use of the temps_mp class for persistence of temporaries.
+ 
+ \return the number 0.
+ \param funcVals the computed function values.
+ \param parVals the computed parameter values.
+ \param parDer the computed derivatives with respect to parameters.
+ \param Jv the computed Jacobian with respect to the variables.
+ \param Jp the computed Jacobian with respect to the parameters (time).
+ \param vars The input variable values.
+ \param pathVars the current time
+ \param ED a pointer from which we type-cast, into the correct type.
+ */
 int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp, point_d vars, comp_d pathVars, void const *ED);
 
 
 
-
+/**
+ \brief Evaluator function for the multilin solver.
+ 
+ \see multilin_to_lin_eval_d
+ 
+ this function makes use of the temps_mp class for persistence of temporaries.
+ 
+ \return the number 0.
+ \param funcVals the computed function values.
+ \param parVals the computed parameter values.
+ \param parDer the computed derivatives with respect to parameters.
+ \param Jv the computed Jacobian with respect to the variables.
+ \param Jp the computed Jacobian with respect to the parameters (time).
+ \param current_variable_values The input variable values.
+ \param pathVars the current time
+ \param ED a pointer from which we type-cast, into the correct type.
+ */
 int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED);
 
 
 
+/**
+ \brief check whether an input point is a solution, by residuals and ratio tolerances.
+ 
+ \return a boolean indicating whether it is in fact a solution to the system.
+ \param EG the solution to check.
+ \param T the current tracker config, has tolerances.
+ \param ED the midtrack eval data.
+ */
 int check_issoln_multilintolin_d(endgame_data_t *EG,
 								 tracker_config_t *T,
 								 void const *ED);
+
+/**
+ \brief check whether an input point is a solution, by residuals and ratio tolerances.
+ 
+ \return a boolean indicating whether it is in fact a solution to the system.
+ \param EG the solution to check.
+ \param T the current tracker config, has tolerances.
+ \param ED the midtrack eval data.
+ */
 int check_issoln_multilintolin_mp(endgame_data_t *EG,
 								  tracker_config_t *T,
 								  void const *ED);
 
 
 
+
+/**
+ \brief dehomogenization method for this solver.
+ 
+
+ assumes have only a single non-homogeneous variable group with a leading homogenizing coordinate, and dehomogenizes.
+ 
+ returned (filled) type inferred by in_prec -- if in_prec<64, populate the double, else the mp.
+ 
+ This function fits the format for all Bertini dehomogenizers.
+ 
+ \return the number 0.
+ \param out_d returned double values
+ \param out_mp returned mp values, after dehomogenization
+ \param out_prec the precision of the output, and is set to = in_prec.
+ \param in_d input in double format, should only be populated if in_prec<64.
+ \param in_mp input point in mp format, populated if in_rec >= 64.
+ \param in_prec precision of the input point.
+ \param ED_d input evaluator, needed to get some other parameters.
+ \param ED_mp input evaluator, needed to get some other parameters.
+ */
 int multilintolin_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d in_d, point_mp in_mp, int in_prec, void const *ED_d, void const *ED_mp);
 
 
 
 
+/**
+ \brief change the precision of an MP multilin evaluator.
+ 
+ This function fits the format for all Bertini precision changers.
+ 
+ \return the number 0.
+ \param ED pointer to the evaluator data to change.
+ \param new_prec the precision to change to.
+ */
 int change_multilintolin_eval_prec(void const *ED, int new_prec);
 
 

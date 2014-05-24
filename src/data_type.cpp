@@ -3917,221 +3917,11 @@ void decomposition::receive(int source, parallelism_config & mpi_config)
 
 
 
-//TODO this sort should be optimized.  it is sloppy and wasteful right now.
-int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & index_tracker, vec_mp projections_input){
-	
-	
-	if (projections_input->size == 0) {
-		change_size_vec_mp(projections_sorted,1);
-		projections_sorted->size = 0;
-		return -1;
-	}
-	
-
-	
-	for (int ii=0; ii<projections_input->size; ii++) {
-		if (!(mpfr_number_p(projections_input->coord[ii].r) && mpfr_number_p(projections_input->coord[ii].i))) {
-			std::cout << "there was NAN in the projections to sort :(" << std::endl;
-			print_point_to_screen_matlab(projections_input, "projections_input");
-			
-			return -51;
-		}
-	}
-	
-	
-	
-	
-	
-	std::vector< int > index_tracker_non_unique;
-	std::vector< double > projvals_as_doubles;
-	
-	
-	vec_mp projections_sorted_non_unique;
-	init_vec_mp2(projections_sorted_non_unique,projections_input->size,1024);
-	projections_sorted_non_unique->size = projections_input->size;
-	
-	
-	
-	std::set<int> unsorted_indices;
-	for (int ii=0; ii<projections_input->size; ii++) {
-		unsorted_indices.insert(ii);
-	}
-	
-	
-	
-	
-	//sort by size
-	for (int ii=0; ii<projections_input->size; ii++) { // for each of the projection values input
-		double min = 1e20; // reset this bogus value
-		
-		int indicator = -1;
-		
-		// this loop finds the minimum projection value
-		for (std::set<int>::iterator set_iter = unsorted_indices.begin(); set_iter!=unsorted_indices.end(); set_iter++) {
-			
-			double curr = mpf_get_d(projections_input->coord[*set_iter].r); // convert projection value to a double for comparison
-			if ( curr < min) { // compare
-				indicator = *set_iter;
-				min = curr;
-			}
-		}
-		
-		if (indicator==-1) { // if min value was larger than a huge number
-			printf("min projection value was *insanely* large\n");
-			br_exit(1111);
-		}
-		
-		unsorted_indices.erase(indicator);
-		
-		projvals_as_doubles.push_back(min);
-		index_tracker_non_unique.push_back(indicator);
-		set_mp( &projections_sorted_non_unique->coord[ii],&projections_input->coord[indicator]);
-	}
-	
-	
-	
-	
-	// filter for uniqueness
-	
-	
-	double distinct_thresh = 1e-10;  // reasonable?  i hate hard-coded tolerances
-	
-	change_size_vec_mp(projections_sorted,1); projections_sorted->size = 1;
-	
-	index_tracker.push_back(index_tracker_non_unique[0]);
-	set_mp(&projections_sorted->coord[0],&projections_sorted_non_unique->coord[0])
-	int unique_counter = 1;
-	for (int ii=1; ii<projections_input->size; ii++) {
-		if ( fabs( projvals_as_doubles[ii-1]-projvals_as_doubles[ii]) < distinct_thresh) {
-			continue;
-		}
-		else
-		{
-			increase_size_vec_mp(projections_sorted,unique_counter+1); projections_sorted->size = unique_counter+1;
-			set_mp(&projections_sorted->coord[unique_counter],&projections_sorted_non_unique->coord[ii]);
-			unique_counter++;
-			
-			index_tracker.push_back(index_tracker_non_unique[ii]);
-		}
-	}
-	
-	
-	clear_vec_mp(projections_sorted_non_unique);
-	
-	return 0;
-}
 
 
 
-//input the raw number of variables including the homogeneous variable (of which there must be one)
-// assume the array of integers 'randomized_degrees' is already initialized to the correct size.
-void make_randomization_matrix_based_on_degrees(mat_mp randomization_matrix, std::vector< int > & randomized_degrees, int num_desired_rows, int num_funcs)
+int compare_integers_decreasing(const void * left_in, const void * right_in)
 {
-	int ii,jj;
-	
-	
-	
-	//get unique degrees
-	int *degrees = (int *) br_malloc(num_funcs*sizeof(int));
-	int *unique_degrees = (int *) br_malloc(num_funcs*sizeof(int));
-	
-	
-	FILE *IN = safe_fopen_read("deg.out"); //open the deg.out file for reading.
-	int num_unique_degrees = 0;
-	int occurrence_counter;
-	for (ii=0; ii<num_funcs; ++ii) {
-		fscanf(IN,"%d\n",&degrees[ii]); // read data
-		occurrence_counter = 0; // set the counter for how many timmes the current degree has already been found.
-		for (jj=0; jj<ii; jj++) {
-			if (degrees[jj]==degrees[ii]) { // if previously stored degree is same as current one
-				occurrence_counter++; // increment counter
-			}
-		}
-		
-		if (occurrence_counter==0) { // if did not find already in list
-			unique_degrees[num_unique_degrees] = degrees[ii]; // add to list of unique degrees.
-			num_unique_degrees++; // have one more unique degree
-		} // re: jj
-	}// re: ii
-	fclose(IN);
-	
-	
-	if (num_desired_rows==num_funcs) {
-		make_matrix_ID_mp(randomization_matrix,num_funcs,num_funcs);
-		for (ii=0; ii<num_desired_rows; ++ii) {
-			randomized_degrees.push_back(degrees[ii]);
-		}
-		free(degrees);
-		free(unique_degrees);
-		return;
-	}
-	
-	//sort the unique degrees into decreasing order
-	qsort(unique_degrees, num_unique_degrees, sizeof(int), compare_integers_decreasing);
-	
-	//count how many of each unique degree there are.
-	int *num_of_each_degree = (int *) br_malloc(num_unique_degrees*sizeof(int));
-	for (ii=0; ii<num_unique_degrees; ii++) {
-		num_of_each_degree[ii] = 0;
-		for (jj=0; jj<num_funcs; ++jj) {
-			if (unique_degrees[ii]==degrees[jj]) {
-				num_of_each_degree[ii]++;
-			}
-		}
-	}
-	
-	
-	
-
-	//resize the matrix
-	change_size_mat_mp(randomization_matrix,num_desired_rows,num_funcs);
-	randomization_matrix->rows = num_desired_rows; randomization_matrix->cols = num_funcs;
-	
-	
-	
-	int counter = 0;
-	int current_degree_index = 0; // start at the end
-	int current_degree;
-	for (ii=0; ii<num_desired_rows; ii++) {
-		
-		counter++;
-		if (counter>num_of_each_degree[current_degree_index]) {
-			current_degree_index++;
-			counter = 1;
-		}
-		
-		current_degree = unique_degrees[current_degree_index];
-		randomized_degrees.push_back(current_degree);
-		
-		int encountered_current_degree = 0;
-		for (jj=0; jj<num_funcs; jj++) {
-			if ( (degrees[jj]<= current_degree)  ) {
-				encountered_current_degree++;
-				if (encountered_current_degree >= counter){
-					get_comp_rand_real_mp(&randomization_matrix->entry[ii][jj]);
-				}
-				else{
-					set_zero_mp(&randomization_matrix->entry[ii][jj]);
-				}
-			}
-			else
-			{
-				set_zero_mp(&randomization_matrix->entry[ii][jj]);
-			}
-		}
-		
-		
-	}
-	
-	free(num_of_each_degree);
-	free(degrees);
-	free(unique_degrees);
-	
-	return;
-}
-
-
-int compare_integers_decreasing(const void * left_in, const void * right_in){
 	
 	int left = *(const int*)left_in;
 	int right = *(const int*)right_in;
@@ -4140,7 +3930,7 @@ int compare_integers_decreasing(const void * left_in, const void * right_in){
 	if (left<right) {
 		return 1;
 	}
-	else if(right > left){
+	else if (left>right){
 		return -1;
 	}
 	else{
@@ -4149,7 +3939,8 @@ int compare_integers_decreasing(const void * left_in, const void * right_in){
 	
 }
 
-int compare_integers_increasing(const void * left_in, const void * right_in){
+int compare_integers_increasing(const void * left_in, const void * right_in)
+{
 	
 	int left = *(const int*)left_in;
 	int right = *(const int*)right_in;
@@ -4158,7 +3949,7 @@ int compare_integers_increasing(const void * left_in, const void * right_in){
 	if (left>right) {
 		return 1;
 	}
-	else if(right < left){
+	else if(left < right){
 		return -1;
 	}
 	else{

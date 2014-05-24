@@ -158,16 +158,11 @@ void solver_configuration::init()
 	PPD.size = NULL;
 	PPD.type = NULL;
 	
-	allow_unsuccess = 0;
-	allow_singular = 0;
-	allow_multiplicity = 0;
-	allow_infinite = 0;
-	
+
 	path_number_modulus = 20;
 	
 	verbose_level = 0;
 	
-	show_status_summary = 0;
 	
 	use_midpoint_checker = 0;
 	
@@ -176,7 +171,6 @@ void solver_configuration::init()
 	use_gamma_trick = 0;
 	
 	
-	complete_witness_set = 1;
 }
 
 
@@ -605,12 +599,6 @@ void get_tracker_config(solver_configuration & solve_options,int MPType)
 
 
 
-
-
-void solver_clear_config(solver_configuration & options){
-	//has no fields which require clearing.
-	return;
-}
 
 
 
@@ -1421,10 +1409,12 @@ int receive_endpoints(trackingStats *trackCount,
 		}
 		else
 		{
-			//this conversion of type is total crap. i mean, really, what is the point?  all it does is put the data into a more useless format and waste time.
-			
 			//otherwise converged, but may have still had non-zero retval due to other reasons.
+			
+			
+			//this conversion of type is total crap. i mean, really, what is the point?  all it does is put the data into a more useless format and waste time.
 			endgamedata_to_endpoint(&endPoints[solution_counter], &((*EG_receives)[ii]));
+			
 			trackCount->successes++;
 			solution_counter++; // probably this could be eliminated
 		}

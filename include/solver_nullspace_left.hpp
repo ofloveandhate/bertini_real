@@ -36,45 +36,49 @@
 
 
 
-
+/**
+ \brief config class for left nullspace solver
+ 
+ \todo Remove the randomize_lower stuff.
+ \todo Rewrite nullspace code to make more of it members of this class.
+ */
 class nullspace_config
 {
 	
 public:
 	int target_dim;   ///< r			the dimension of the real set we are looking for
 	int ambient_dim;  ///< k			the dimension of the complex component we are looking IN.
-	int target_crit_codim;    // \ell.  must be at least one (1), and at most target_dim (r).
-	int num_jac_equations;    // the number of equations (after the randomization)
-	int num_projections;
+	int target_crit_codim;    ///< the COdimension of the target crit space.  must be at least one (1), and at most target_dim (r).
+	int num_jac_equations;    ///< the number of equations (after the randomization)
+	int num_projections;   ///< the number of projections stored
 	
-	int num_v_vars;  ///< N   number of variables in original problem statement (including homogenizing variables)
-	int num_natural_vars;  ///< N-k+\ell
-	int num_synth_vars;
+	int num_v_vars;  ///< N, the number of variables in original problem statement (including homogenizing variables)
+	int num_natural_vars;  ///< the number of natural variables, including the homogenizing variable.
+	int num_synth_vars;   ///< how many synthetic variable the input system to the overall method has. these would be the result of a previous nullspace computation, e.g.
 	
 	
-	int max_degree;						///< the max degree of differentiated (randomized) functions
+	int max_degree;    ///< the max degree of differentiated (randomized) functions
 	
-	system_randomizer * randomizer;
+	system_randomizer * randomizer; ///< randomizer for the underlying supplied system
 	
-	bool randomize_lower;
-	mat_mp lower_randomizer;
+	bool randomize_lower; ///< whether to randomize the lower part of the system, corresponding to the jacobian.
+	mat_mp lower_randomizer; ///< a randomization matrix for the lower jacobian part of the system.
 	
-	vec_mp **starting_linears;	///< outer layer should have as many as there are randomized equations (N-k)
-								///< inside layer has number corresponding to max of randomized_degrees
+	vec_mp **starting_linears;	///< outer layer should have as many as there are randomized equations (N-k).  inside layer has number corresponding to max of randomized_degrees
+				
 	
-	int num_additional_linears; ///<
-	vec_mp *additional_linears_terminal; ///<
-	vec_mp *additional_linears_starting; ///<
+	int num_additional_linears; ///<  these linears are for slicing, when finding witness points for a positive dimensional critical set.
+	vec_mp *additional_linears_terminal; ///<these linears are for slicing, when finding witness points for a positive dimensional critical set.
+	vec_mp *additional_linears_starting; ///<these linears are for slicing, when finding witness points for a positive dimensional critical set.
 	
 	
 	int num_v_linears;   ///< # is  (N), cause there are N equations in the subsystem.
-	vec_mp *v_linears;    ///<
+	vec_mp *v_linears;    ///< the actual v-linears, which are part of the start system.
 	
-	vec_mp v_patch; ///< length of this should be N-k+\ell
+	vec_mp v_patch; ///<  patch equation for the v-variables, to avoid the stupid all-zero degenerate solution. length of this should be N-k+ell
 	
-	vec_mp *target_projection; ///< # of these should be \ell
+	vec_mp *target_projection; ///< # of these should be ell
 
-	bool numerical_derivative;
 	
 	void clear();
 	
@@ -97,7 +101,6 @@ private:
 		target_dim = ambient_dim = target_crit_codim = num_jac_equations = -1;
 		num_natural_vars = num_v_vars = num_synth_vars = -1;
 		max_degree = -1;
-		numerical_derivative = false;
 		
 		starting_linears = NULL;
 		
@@ -117,63 +120,65 @@ private:
 
 // the mp version
 // this must be defined before the double version, because double has mp.
+
+/**
+ \brief the mp version of the eval data for left nullspace method.
+ */
 class nullspacejac_eval_data_mp : public solver_mp
 {
 public:
 	
-	prog_deriv_t * SLP_derivative;
+	prog_deriv_t * SLP_derivative; ///< pointer to a SLP-like class for evaluating a system with higher-order derivatives.
 	
 	
-	int num_jac_equations;
-	int target_dim;   // r			the dimension of the real set we are looking for
-	int ambient_dim;  // k			the dimension of the complex component we are looking IN.
-	int target_crit_codim;    // \ell.  must be at least one (1), and at most target_dim (r).
+	int num_jac_equations; ///< how many jacobian equations there are.
+	int target_dim;   ///< r			the dimension of the real set we are looking for
+	int ambient_dim;  ///< k			the dimension of the complex component we are looking IN.
+	int target_crit_codim;    ///< ell.  must be at least one (1), and at most target_dim (r).
 	
-	int num_natural_vars;  // N   number of variables in original problem statement (including homogenizing variables)
-	int num_v_vars;  // (N-k) + (k-\ell+1)
-	int num_synth_vars;
+	int num_natural_vars;  ///< N   number of variables in original problem statement (including homogenizing variables)
+	int num_v_vars;  ///< (N-k) + (k-ell+1)
+	int num_synth_vars; ///< how many pre-existing synthetic variables there are.
 	
 	
-	int max_degree;						// the max degree of differentiated (randomized) functions
+	int max_degree;						///< the max degree of differentiated (randomized) functions
 
 	
-	int num_additional_linears;
-	vec_mp *additional_linears_terminal;
-	vec_mp *additional_linears_terminal_full_prec;
+	int num_additional_linears; ///< the number of slicing linears, for finding witness sets of positive-dimensional critical sets.
+	vec_mp *additional_linears_terminal; ///< slicing linears
+	vec_mp *additional_linears_terminal_full_prec;///< slicing linears, in full precision for AMP
 	
-	vec_mp *additional_linears_starting;
-	vec_mp *additional_linears_starting_full_prec;
-	
-	
+	vec_mp *additional_linears_starting; ///< starting slicing linears.
+	vec_mp *additional_linears_starting_full_prec; ///< starting slicing linears in full precision for AMP.
 	
 	
 	
 	
-	vec_mp **starting_linears; // outer layer should have as many as there are randomized equations
-							   // inside layer has number corresponding to randomized_degrees
-	vec_mp **starting_linears_full_prec; // outer layer should have as many as there are randomized equations
-										 // inside layer has number corresponding to randomized_degrees
 	
 	
-	int num_v_linears;
-	vec_mp *v_linears;         // should be as many in here as there are randomized equations
-	vec_mp *v_linears_full_prec;         // should be as many in here as there are randomized equations
-	
-	vec_mp v_patch;
-	vec_mp v_patch_full_prec;
-	
-	bool randomize_lower;
-	mat_mp lower_randomizer;
-	mat_mp lower_randomizer_full_prec;
-	
-	mat_mp jac_with_proj;
-	mat_mp jac_with_proj_full_prec;
+	vec_mp **starting_linears; ///< starting linear-product linears. outer layer should have as many as there are randomized equations. inside layer has number corresponding to randomized_degrees.
+	vec_mp **starting_linears_full_prec; ///< starting linear-product linears. outer layer should have as many as there are randomized equations. inside layer has number corresponding to randomized_degrees.  in full precision for AMP.
 	
 	
+	int num_v_linears; ///< number of starting v-linears for the linear-product move.
+	vec_mp *v_linears;         ///< starting v-linears for the linear-product move.  should be as many in here as there are randomized equations
+	vec_mp *v_linears_full_prec;         ///< should be as many in here as there are randomized equations
 	
-	int num_projections;
-	vec_mp *target_projection; // # of these should be target_dim (for now)
-	vec_mp *target_projection_full_prec; // # of these should be target_dim (for now)
+	vec_mp v_patch; ///< the patch equation for the new v-variables.
+	vec_mp v_patch_full_prec; ///< the v-patch in full precision for AMP.
+	
+	bool randomize_lower; ///< boolean for performing lower-randomization.  \todo take this out.
+	mat_mp lower_randomizer; ///< randomization matrix for lower-randomization.
+	mat_mp lower_randomizer_full_prec; ///< randomization matrix for lower-randomization, full precision for AMP.
+	
+	mat_mp jac_with_proj; ///< matrix holding the jacobian with the projection vectors.  essentially a stored temporary.
+	mat_mp jac_with_proj_full_prec; ///< matrix holding the jacobian with the projection vectors.  essentially a stored temporary.
+	
+	
+	
+	int num_projections; ///< how many projections there are.
+	vec_mp *target_projection; ///< linear projection vectors for the nullity condition on the jacobian matrix.
+	vec_mp *target_projection_full_prec; ///< linear projection vectors for the nullity condition on the jacobian matrix.
 	
 	
 	// default initializer
@@ -247,12 +252,33 @@ public:
 	
 	// MPI SENDS AND RECEIVES
 	
+	/**
+	 \brief MPI broadcast send to all workers in communicator, for the nullspace solver.
+	 
+	 \return SUCCESSFUL
+	 \param mpi_config The current state of MPI.
+	 */
 	int send(parallelism_config & mpi_config);
 	
+	
+	/**
+	 \brief MPI broadcast recive from the head of the communicator, for the nullspace solver.
+	 
+	 \return SUCCESSFUL
+	 \param mpi_config The current state of MPI.
+	 */
 	int receive(parallelism_config & mpi_config);
 	
 	
-	
+	/**
+	 \brief populate the eval_data form the config object.
+	 
+	 \return SUCCESSFUL
+	 \param _SLP a pointer to the underlying SLP.
+	 \param ns_config a pointer to the nullspace_config from which to set up.
+	 \param W input witness set containing the patches, etc.
+	 \param solve_options The current state of the solver.
+	 */
 	int setup(prog_t * _SLP,
 			  nullspace_config *ns_config,
 			  witness_set & W,
@@ -493,11 +519,17 @@ private:
 
 // the double version
 // this must be defined after the mp version, because double has mp.
+
+/**
+ \brief double-format of the left-nullspace evaluator data.
+ 
+ \see nullspacejac_eval_data_mp
+ */
 class nullspacejac_eval_data_d : public solver_d
 {
 public:
 	
-	nullspacejac_eval_data_mp *BED_mp; // used only for AMP
+	nullspacejac_eval_data_mp *BED_mp; ///< pointer to the MP eval data. used only for AMP
 	
 	
 	prog_deriv_t * SLP_derivative;
@@ -608,12 +640,33 @@ public:
 	
 	// MPI SENDS AND RECEIVES
 	
+	/**
+	 \brief MPI broadcast send to all workers in communicator, for the nullspace solver.
+	 
+	 \return SUCCESSFUL
+	 \param mpi_config The current state of MPI.
+	 */
 	int send(parallelism_config & mpi_config);
 	
+	
+	/**
+	 \brief MPI broadcast recive from the head of the communicator, for the nullspace solver.
+	 
+	 \return SUCCESSFUL
+	 \param mpi_config The current state of MPI.
+	 */
 	int receive(parallelism_config & mpi_config);
 	
 	
-	
+	/**
+	 \brief populate the eval_data form the config object.
+	 
+	 \return SUCCESSFUL
+	 \param _SLP a pointer to the underlying SLP.
+	 \param ns_config a pointer to the nullspace_config from which to set up.
+	 \param W input witness set containing the patches, etc.
+	 \param solve_options The current state of the solver.
+	 */
 	int setup(prog_t * _SLP,
 			  nullspace_config *ns_config,
 			  witness_set & W,
@@ -789,12 +842,21 @@ private:
 
 
 
-/** the main function for finding critical conditions WRT a projection
+/** 
+ \brief the main function for finding critical conditions WRT a projection
+ 
+ \todo remove MPType as an input.
+ 
+ \return SUCCESSFUL
+ \param MPType The operating MPtype.
+ \param W input witness set, carrying with it the start points.
+ \param solve_out Computed solutions and metadata go here.
+ \param ns_config The nullspace config setup, previously computed.
+ \param solve_options The current state of the solver.
  */
-
-int nullspacejac_solver_master_entry_point(int										MPType,
-										   witness_set & W, // carries with it the start points, and the linears.
-										   solver_output & solve_out, // new data goes in here
+int nullspacejac_solver_master_entry_point(int MPType,
+										   witness_set & W,
+										   solver_output & solve_out,
 										   nullspace_config				*ns_config,
 										   solver_configuration		& solve_options);
 
@@ -806,43 +868,154 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 
 
 
-
+/**
+ \brief Evaluator function for the left nullspace solver.
+ 
+ \todo explain with diagram how this works
+ 
+ this function makes use of the temps_mp class for persistence of temporaries.
+ 
+ \return the number 0.
+ \param funcVals the computed function values.
+ \param parVals the computed parameter values.
+ \param parDer the computed derivatives with respect to parameters.
+ \param Jv the computed Jacobian with respect to the variables.
+ \param Jp the computed Jacobian with respect to the parameters (time).
+ \param current_variable_values The input variable values.
+ \param pathVars the current time
+ \param ED a pointer from which we type-cast, into the correct type.
+ */
 int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp, point_d current_variable_values, comp_d pathVars, void const *ED);
 
+
+/**
+ \brief Evaluator function for the left nullspace solver.
+ 
+ \see nullspacejac_eval_d
+ 
+ this function makes use of the temps_mp class for persistence of temporaries.
+ 
+ \return the number 0.
+ \param funcVals the computed function values.
+ \param parVals the computed parameter values.
+ \param parDer the computed derivatives with respect to parameters.
+ \param Jv the computed Jacobian with respect to the variables.
+ \param Jp the computed Jacobian with respect to the parameters (time).
+ \param current_variable_values The input variable values.
+ \param pathVars the current time
+ \param ED a pointer from which we type-cast, into the correct type.
+ */
 int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED);
 
 
 
-
+/**
+ \brief dehomogenization method for the left nullspace jacobian solver.
+ 
+ returned (filled) type inferred by in_prec -- if in_prec<64, populate the double, else the mp.
+ 
+ This function fits the format for all Bertini dehomogenizers.
+ 
+ \return the number 0.
+ \param out_d returned double values
+ \param out_mp returned mp values, after dehomogenization
+ \param out_prec the precision of the output, and is set to = in_prec.
+ \param in_d input in double format, should only be populated if in_prec<64.
+ \param in_mp input point in mp format, populated if in_rec >= 64.
+ \param in_prec precision of the input point.
+ \param ED_d input evaluator, needed to get some other parameters.
+ \param ED_mp input evaluator, needed to get some other parameters.
+ */
 int nullspacejac_dehom(point_d out_d, point_mp out_mp, int *out_prec, point_d in_d, point_mp in_mp, int in_prec, void const *ED_d, void const *ED_mp);
 
 
 
+/**
+ \brief change the precision of an MP nullspace evaluator.
+ 
+ This function fits the format for all Bertini precision changers.
+ 
+ \return the number 0.
+ \param ED pointer to the evaluator data to change.
+ \param new_prec the precision to change to.
+ */
 int change_nullspacejac_eval_prec(void const *ED, int new_prec);
 
 
 
+/**
+ \brief check whether an input point is a solution, by residuals and ratio tolerances.
+ 
+ \return a boolean indicating whether it is in fact a solution to the system.
+ \param EG the solution to check.
+ \param T the current tracker config, has tolerances.
+ \param ED the midtrack eval data.
+ */
 int check_issoln_nullspacejac_d(endgame_data_t *EG,
 								tracker_config_t *T,
 								void const *ED);
+
+/**
+ \brief check whether an input point is a solution, by residuals and ratio tolerances.
+ 
+ \see check_issoln_nullspacejac_d
+ 
+ \return a boolean indicating whether it is in fact a solution to the system.
+ \param EG the solution to check.
+ \param T the current tracker config, has tolerances.
+ \param ED the midtrack eval data.
+ */
 int check_issoln_nullspacejac_mp(endgame_data_t *EG,
 								 tracker_config_t *T,
 								 void const *ED);
 
+
+
+/**
+ \brief check whether an input point is a valid start point, by residuals of the functions.
+ 
+ \return a boolean indicating whether it is in fact a solution to the system.
+ \param testpoint the solution to check.
+ \param T the current tracker config, has tolerances.
+ \param ED the nullspace eval data in double form.
+ */
 int check_isstart_nullspacejac_d(vec_d testpoint,
 								 tracker_config_t *T,
 								 void const *ED);
 
+/**
+ \brief check whether an input point is a valid start point, by residuals of the functions.
+ 
+ \return a boolean indicating whether it is in fact a solution to the system.
+ \param testpoint the solution to check.
+ \param T the current tracker config, has tolerances.
+ \param ED the nullspace eval data in double form.
+ */
 int check_isstart_nullspacejac_mp(vec_mp testpoint,
 								  tracker_config_t *T,
 								  void const *ED);
 
+
+
+/**
+ \brief a small function for verifying the homogeneousness of the evaluator (for correctness), etc.
+ 
+ This function has no real purpose except for development.
+ 
+ \param current_values the input
+ \param ED the midtrack eval data.
+ */
 void check_nullspace_evaluator(point_mp current_values,
 							   void const *ED);
 
 
 
-
+/**
+ \brief the no-output entry point for a worker to help with a nullspace solve.  
+ 
+ this function is called *after* the worker has received the call-for-help broadcast from the master.
+ \param solve_options The current state of the solver.
+ */
 void nullspace_slave_entry_point(solver_configuration & solve_options);
 
 

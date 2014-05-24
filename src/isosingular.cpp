@@ -8,14 +8,6 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
 						  boost::filesystem::path witness_point_filename,
 						  boost::filesystem::path output_name,
 						  int max_deflations)
-/***************************************************************\
- * USAGE: Perform isosingular deflation for system at given point*
- * ARGUMENTS: name of file for polynomial system, point, command *
- *  to call Bertini & Matlab, and maximum number of deflations   *
- * RETURN VALUES: success or failure, number of deflations, and  *
- *  deflation sequence                                           *
- * NOTES:                                                        *
- \***************************************************************/
 {
 	int ii, success = 0, nullSpace = 0, *declarations = NULL;
 	char ch, *strStabilizationTest = NULL;
@@ -157,13 +149,6 @@ void isosingular_deflation_iteration(int *declarations,
 									 std::string matlab_command,
 									 int nullSpaceDim,
 									 int deflation_number)
-/***************************************************************\
- * USAGE: setup input file for one deflation iteration           *
- * ARGUMENTS: number of declaration statments, name of file,     *
- *  command to run Matlab, and dimension of nullspace            *
- * RETURN VALUES: creates new file                               *
- * NOTES:                                                        *
- \***************************************************************/
 {
 	int ii, numVars = 0, numFuncs = 0, numConstants = 0, minorSize = 0;
 	int *lineVars = NULL, *lineFuncs = NULL, *lineConstants = NULL, *degrees = NULL;
@@ -426,12 +411,6 @@ void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 void stabilization_input_file(boost::filesystem::path outputFile,
 							  boost::filesystem::path funcInput,
 							  boost::filesystem::path configInput)
-/***************************************************************\
- * USAGE: setup input file to test for stabilization             *
- * ARGUMENTS: name of output file, function & configuration input*
- * RETURN VALUES: none                                           *
- * NOTES:                                                        *
- \***************************************************************/
 {
 	char ch;
 	FILE *OUT = safe_fopen_write(outputFile.c_str());

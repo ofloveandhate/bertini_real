@@ -1,7 +1,11 @@
 #ifndef NULLSPACE_H_
 #define NULLSPACE_H_
 
-/** \file nullspace_left.hpp */
+/** 
+ \file nullspace_left.hpp 
+ 
+ \brief Methods for computing the left nullspace of a jacobian matrix, coupled with the system which generated it, and several linear projections.s
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,7 +18,6 @@
 #include <limits.h>
 #include <mpfr.h>
 #include <mpf2mpfr.h>
-
 
 
 
@@ -31,7 +34,10 @@
 #include "derivative_systems.hpp"
 
 
-
+/**
+ \brief An odometer of odometers, so to speak.
+ 
+ */
 class double_odometer
 {
 	
@@ -178,16 +184,19 @@ public:
 
 
 /**
- the main function for computing critical sets.
+ \brief the main function for computing critical sets.
  
- \param W_crit_real			the main returned structure.
+ \return SUCCESSFUL
+ \param solve_out The output class for all solvers.
  \param W								input witness_set.
- \param randomizer_matrix	randomizes the system down to the correct number of equations.
+ \param randomizer	randomizes the system down to the correct number of equations.
  \param pi							the set of projections to use.
- \param randomized_degrees		the degrees of the randomized functions, before differentiation.
- \param target_dim						the dimension of the object to find.
+ \param ambient_dim The dimension of the object containing this critical set.
+ \param target_dim The dimension of the critical object
+ \param target_crit_dim The dimension of the critical object.
  \param program_options				holds the configuration for the main program.  is a pointer so that it is mutable.
  \param solve_options					holds the configuration for any solvers called.  is a pointer so that it is mutable.
+ \param ns_config	nullspace_config object.  this is populated in this method.  must be empty as input.
  */
 int compute_crit_nullspace(solver_output & solve_out, // the returned value
 						   const witness_set & W,
@@ -202,18 +211,36 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 
 
 
+
+
+/**
+ \brief Put a few finishing details on the output from compute_crit_nullspace
+ 
+ \param solve_out Returning object from solver.
+ \param W input witness set
+ \param ns_config The nullspace solver config object.
+ */
 void ns_concluding_modifications(solver_output & solve_out,
 								 const witness_set & W,
 								 nullspace_config * ns_config);
 
+
+
+
+
+
 /**
- performs the setup for the nullspace_config which is used in the compute_crit_nullspace method, and is passed into the solverNullspace.
+ \brief performs the setup for the nullspace_config which is used in the compute_crit_nullspace method, and is passed into the solverNullspace.
  
  \param ns_config						the data structure we are setting up.
+ \param pi the projections to use.  there could be more than used.
+ \param ambient_dim the dimension of the containing object.
  \param target_dim					the dimension of the object we are detecting.
- \param randomized_degrees	array of integers holding the degree of each equation, *before* differentiation.
- \param randomizer_matrix		input matrix which randomizes the system down to the appropriate number of equations.
+ \param target_crit_codim COdimension of the critical set.
+ \param max_degree  computed -- the highest degree of any derivative of the system passed in.
+ \param randomizer		how the system is randomized to the correct number of equations.
  \param W										the input witness_set
+ \param solve_options The current solver setup.
  */
 void nullspace_config_setup(nullspace_config *ns_config,
 							vec_mp *pi, // an array of projections, the number of which is the target dimensions
@@ -227,17 +254,61 @@ void nullspace_config_setup(nullspace_config *ns_config,
 
 
 
+
+/**
+ \brief Create a Bertini input file with the nullspace system.
+ 
+ \param output_name The desired name of the output file.
+ \param input_name The name of the file from which to construct the new file.
+ \param program_options The current state of Bertini_real
+ \param ns_config nullspace config object.
+ */
 void create_nullspace_system(boost::filesystem::path output_name,
 							 boost::filesystem::path input_name,
 							 BR_configuration & program_options,
 							 nullspace_config *ns_config);
 
 
+/**
+ /brief Create a matlab file which will create left nullspace equations, and write it to a text file.
+ 
+ 
+ \param output_name the desired output file's name
+ \param input_name bertini input file out of which to create the new file.
+ \param ns_config the nullspace configuration.
+ \param numVars the number of variables
+ \param vars The names of the variables
+ \param lineVars the lines on which the variables appear
+ \param numConstants the number of constants
+ \param consts The names of the constants
+ \param lineConstants the lines on which the constants appear
+ \param numFuncs the number of functions
+ \param funcs The names of the functions
+ \param lineFuncs the lines on which the functions appear
+ */
 void createMatlabDerivative(boost::filesystem::path output_name,
 							boost::filesystem::path input_name,
 							nullspace_config *ns_config,
 							int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs);
 
+
+/**
+ \brief Create a matlab file which will take the determinant of the jacobian matrix, and write it to a text file.
+ 
+ 
+ \param output_name the desired output file's name
+ \param input_name bertini input file out of which to create the new file.
+ \param ns_config the nullspace configuration.
+ \param numVars the number of variables
+ \param vars The names of the variables
+ \param lineVars the lines on which the variables appear
+ \param numConstants the number of constants
+ \param consts The names of the constants
+ \param lineConstants the lines on which the constants appear
+ \param numFuncs the number of functions
+ \param funcs The names of the functions
+ \param lineFuncs the lines on which the functions appear
+ */
 void create_matlab_determinantal_system(boost::filesystem::path output_name,
 										boost::filesystem::path input_name,
 										nullspace_config *ns_config,

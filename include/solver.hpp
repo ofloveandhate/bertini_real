@@ -48,17 +48,31 @@ extern int *mem_needs_init_mp; // determine if mem_mp has been initialized
 
 
 
+/**
+ \brief A class that enables use of > 1 SLP for evaluation.
+ 
+ Because Bertini uses some global pointers to perform evaluation of an SLP, some trickery had to be developed in order to hold multiple SLP's simultaneously.  This class is that trickery.  It is capable of setting these Bertini-globals to the appropriate locations in memory for a particular SLP, and then making them go NULL so that the memory is essentially protected.
 
-// this class is ignorant of MPtype.
+ this class is ignorant of MPtype.
+ 
+ */
 class SLP_global_pointers
 {
 public:
 	
+	/**
+	 \brief Find the values of the globals, and copy them to the local, internal pointers in this class.
+	 */
 	void capture_globals();
 	
-	
+	/**
+	 \brief  Set the global pointers to be those in this object.
+	 */
 	void set_globals_to_this();
 	
+	/**
+	 \brief Override the global values to NULL.  it prevents accidental erasure.  This does NOT clear the memory, so beware memory leaks!!!
+	 */
 	void set_globals_null()
 	{
 		mem_d				= NULL;
@@ -68,7 +82,6 @@ public:
 		mem_needs_init_d	= NULL; // determine if mem_d has been initialized
 		mem_needs_init_mp	= NULL; // determine if mem_mp has been initialized
 	}
-	
 	
 	
 	
@@ -144,18 +157,31 @@ private:
 
 
 
+
+/**
+ \brief A flexible container for holding comp_mp, vec_mp, and mat_mp, allocated on the fly, but not cleared.  
+ 
+ 
+ \see temps_d
+ 
+ When an object of this type is stored over iterations of a function by being clever, you can spare many many init/clear calls from happening, which tend to be expensive for MP type
+ */
 class temps_mp
 {
 public:
-	comp_mp * scalars;
-	vec_mp * vectors;
-	mat_mp * matrices;
+	comp_mp * scalars; ///< the temporary comp_mp values.
+	vec_mp * vectors;///< the temporary vec_mp values.
+	mat_mp * matrices;///< the temporary mat_mp values.
 	
-	int num_scalars;
-	int num_vectors;
-	int num_matrices;
+	int num_scalars; ///< how many scalars have been allocated
+	int num_vectors;///< how many vectors have been allocated
+	int num_matrices;///< how many matrices have been allocated
 	
-	int curr_prec;
+	int curr_prec; ///< the current precision of all temps.  they must be all the same precision.
+	
+	
+	
+	
 	
 	temps_mp(){init();}
 	~temps_mp(){clear();}
@@ -174,7 +200,9 @@ public:
 	
 	
 	
-	
+	/**
+	 \brief purge this temp object of all scalars
+	 */
 	inline void clear_scalars()
 	{
 		if (num_scalars>0) {
@@ -186,7 +214,9 @@ public:
 		num_scalars=0;
 	}
 	
-	
+	/**
+	 \brief purge this temp object of all matrices
+	 */
 	void clear_matrices()
 	{
 		if (num_matrices>0) {
@@ -198,7 +228,9 @@ public:
 		num_matrices = 0;
 	}
 	
-	
+	/**
+	 \brief purge this temp object of all vectors
+	 */
 	void clear_vectors()
 	{
 		if (num_vectors>0) {
@@ -211,7 +243,11 @@ public:
 	}
 	
 	
-	
+	/**
+	 \brief ensure that this temp object has AT LEAST as many as the input requirement.  Does not ensure equality of quantity.
+	 
+	 \param num_to_require The number the user wants the temp object to have.
+	 */
 	void ensure_have_scalars(int num_to_require)
 	{
 		if (num_scalars<num_to_require) {
@@ -221,6 +257,11 @@ public:
 		}
 	}
 	
+	/**
+	 \brief ensure that this temp object has AT LEAST as many as the input requirement.  Does not ensure equality of quantity.
+	 
+	 \param num_to_require The number the user wants the temp object to have.
+	 */
 	void ensure_have_vectors(int num_to_require)
 	{
 		if (num_vectors<num_to_require) {
@@ -230,6 +271,11 @@ public:
 		}
 	}
 	
+	/**
+	 \brief ensure that this temp object has AT LEAST as many as the input requirement.  Does not ensure equality of quantity.
+	 
+	 \param num_to_require The number the user wants the temp object to have.
+	 */
 	void ensure_have_matrices(int num_to_require)
 	{
 		if (num_matrices<num_to_require) {
@@ -241,7 +287,11 @@ public:
 	
 	
 	
-	
+	/**
+	 \brief add a scalar to the lineup, regardless of how many there are.
+	 
+	 \return the index of the added scalar
+	 */
 	int add_scalar()
 	{
 		int new_index = num_scalars;
@@ -258,7 +308,11 @@ public:
 		return new_index;
 	}
 	
-	
+	/**
+	 \brief add a vector to the lineup, regardless of how many there are.
+	 
+	 \return the index of the added vector
+	 */
 	int add_vector()
 	{
 		int new_index = num_vectors;
@@ -277,7 +331,11 @@ public:
 		
 	}
 	
-	
+	/**
+	 \brief add a matrix to the lineup, regardless of how many there are.
+	 
+	 \return the index of the added matrix
+	 */
 	int add_matrix()
 	{
 		int new_index = num_matrices;
@@ -295,6 +353,11 @@ public:
 	}
 	
 	
+	/**
+	 \brief change the precision of all member scalars, vectors, and matrices.
+	 
+	 \param new_prec The precision to change to.
+	 */
 	void change_prec(int new_prec)
 	{
 		if (new_prec==curr_prec) {
@@ -361,16 +424,25 @@ private:
 	}
 };
 
+
+/**
+ \brief A flexible container for holding comp_d, vec_d, and mat_d, allocated on the fly, but not cleared.
+ 
+ 
+ \see temps_mp
+ 
+ When an object of this type is stored over iterations of a function by being clever, you can spare many many init/clear calls from happening, which tend to be expensive for MP type, and not so bad for doubles.  nonetheless, here it is.
+ */
 class temps_d
 {
 public:
-	comp_d * scalars;
-	vec_d * vectors;
-	mat_d * matrices;
+	comp_d * scalars;///< the temporary comp_mp values.
+	vec_d * vectors;///< the temporary vec_mp values.
+	mat_d * matrices;///< the temporary mat_mp values.
 	
-	int num_scalars;
-	int num_vectors;
-	int num_matrices;
+	int num_scalars;///< how many scalars have been allocated
+	int num_vectors;///< how many vectors have been allocated
+	int num_matrices;///< how many matrices have been allocated
 	
 	
 	temps_d(){init();}
@@ -390,7 +462,9 @@ public:
 	
 	
 	
-	
+	/**
+	 \brief purge this temp object of all scalars
+	 */
 	inline void clear_scalars()
 	{
 		if (num_scalars>0) {
@@ -402,7 +476,9 @@ public:
 		num_scalars=0;
 	}
 	
-	
+	/**
+	 \brief purge this temp object of all matrices
+	 */
 	void clear_matrices()
 	{
 		if (num_matrices>0) {
@@ -414,7 +490,9 @@ public:
 		num_matrices = 0;
 	}
 	
-	
+	/**
+	 \brief purge this temp object of all vectors
+	 */
 	void clear_vectors()
 	{
 		if (num_vectors>0) {
@@ -427,7 +505,11 @@ public:
 	}
 	
 	
-	
+	/**
+	 \brief ensure that this temp object has AT LEAST as many as the input requirement.  Does not ensure equality of quantity.
+	 
+	 \param num_to_require The number the user wants the temp object to have.
+	 */
 	void ensure_have_scalars(int num_to_require)
 	{
 		if (num_scalars<num_to_require) {
@@ -436,7 +518,11 @@ public:
 			}
 		}
 	}
-	
+	/**
+	 \brief ensure that this temp object has AT LEAST as many as the input requirement.  Does not ensure equality of quantity.
+	 
+	 \param num_to_require The number the user wants the temp object to have.
+	 */
 	void ensure_have_vectors(int num_to_require)
 	{
 		if (num_vectors<num_to_require) {
@@ -445,7 +531,11 @@ public:
 			}
 		}
 	}
-	
+	/**
+	 \brief ensure that this temp object has AT LEAST as many as the input requirement.  Does not ensure equality of quantity.
+	 
+	 \param num_to_require The number the user wants the temp object to have.
+	 */
 	void ensure_have_matrices(int num_to_require)
 	{
 		if (num_matrices<num_to_require) {
@@ -457,7 +547,11 @@ public:
 	
 	
 	
-	
+	/**
+	 \brief add a scalar to the lineup, regardless of how many there are.
+	 
+	 \return the index of the added scalar
+	 */
 	int add_scalar()
 	{
 		int new_index = num_scalars;
@@ -468,13 +562,16 @@ public:
 		else{
 			scalars = (comp_d *) br_realloc(scalars,(num_scalars+1)*sizeof(comp_d));
 		}
-//		set_zero_d(scalars[new_index]);
 		
 		num_scalars++;
 		return new_index;
 	}
 	
-	
+	/**
+	 \brief add a vector to the lineup, regardless of how many there are.
+	 
+	 \return the index of the added vector
+	 */
 	int add_vector()
 	{
 		int new_index = num_vectors;
@@ -493,7 +590,11 @@ public:
 		
 	}
 	
-	
+	/**
+	 \brief add a matrix to the lineup, regardless of how many there are.
+	 
+	 \return the index of the added matrix
+	 */
 	int add_matrix()
 	{
 		int new_index = num_matrices;
@@ -560,52 +661,66 @@ private:
 
 
 
-
+/**
+ 
+ \brief Holds the current state of the solver, including the all-important tracker_config_t struct.
+ 
+ This class offers setups for the solver, which are system-independent, including methods for storing a configuration for restoration later.
+ 
+ \todo move orthogonal_projection to a different configuration
+ */
 class solver_configuration : public parallelism_config
 {
 public:
 	
 	
-	bool orthogonal_projection;
-	bool use_real_thresholding;
-	bool robust;
-	tracker_config_t T;
-	tracker_config_t T_orig;
-	preproc_data PPD;
+	bool orthogonal_projection; ///< whether to require that randomly generated projection vectors are orthogonal
+	bool use_real_thresholding; ///< whether to threshold out the imaginary part of values declared real.
+	bool robust; ///< whether to use robust mode
+	tracker_config_t T; ///< the ubiquitous Bertini tracker configuration
+	tracker_config_t T_orig;///< a backup of the ubiquitous Bertini tracker configuration, made by the user
+	preproc_data PPD; ///< the structure of the current variable groups
 	
-	int allow_multiplicity;
-	int allow_singular;
-	int allow_infinite;
-	int allow_unsuccess;
+
 	
-	int path_number_modulus;
+	int path_number_modulus; ///< for display of path number to screen
 	
-	int verbose_level;
-	int show_status_summary;
+	int verbose_level; ///< controls how much info is printed to screen
 	
-	int use_midpoint_checker;
-	double midpoint_tol;
+	int use_midpoint_checker; ///< whether to use the midpoint checker.  use of the checker is currently broken in bertini_real.
+	double midpoint_tol; ///< how far apart midpoints must be to be considered distinct.
 	
-	int use_gamma_trick;
+	int use_gamma_trick;///< whether to use the gamma trick for start systems.
 	
-	int complete_witness_set;
 	
+	/**
+	 \brief copy the stored tracker config to the active one.
+	 */
 	void reset_tracker_config()
 	{
 		tracker_config_clear(&T);
 		cp_tracker_config_t(&T,&T_orig);
 	}
 	
+	/**
+	 \brief copy the active tracker config to the backup one.
+	 */
 	void backup_tracker_config()
 	{
 		tracker_config_clear(&T_orig);
 		cp_tracker_config_t(&T_orig,&T);
 	}
 	
+	
+	/**
+	 \brief tick the number of paths tracked by this process, under this solver_config.  if a multiple of 500, print to screen.
+	 
+	 \return The total number of paths tracked by this process so far.
+	 */
 	int increment_num_paths_tracked()
 	{
 		total_num_paths_tracked++;
-		if ((total_num_paths_tracked%500)==0) {
+		if ((total_num_paths_tracked%500)==0 && parallelism_config::is_head()) {
 			std::cout << "\t\t\t\t\ttracked " << total_num_paths_tracked << " paths total." << std::endl;
 		}
 		return total_num_paths_tracked;
@@ -645,22 +760,17 @@ public:
 		
 		cp_preproc_data(&(this->PPD), other.PPD);
 		
-		this->allow_multiplicity = other.allow_multiplicity;
-		this->allow_singular = other.allow_singular;
-		this->allow_infinite = other.allow_infinite;
-		this->allow_unsuccess = other.allow_unsuccess;
+
 		
 		this->path_number_modulus = other.path_number_modulus;
 		
 		this->verbose_level = other.verbose_level;
-		this->show_status_summary = other.show_status_summary;
 		
 		this->use_midpoint_checker = other.use_midpoint_checker;
 		this->midpoint_tol = other.midpoint_tol;
 		
 		this->use_gamma_trick = other.use_gamma_trick;
 		
-		this->complete_witness_set = other.complete_witness_set;
 		
 		this->use_real_thresholding = other.use_real_thresholding;
 		
@@ -670,7 +780,9 @@ public:
 	
 	void init();
 	
-	
+	/**
+	 \brief read in the preproc_data from file "preproc_data", and store in this object's PPD field.
+	 */
 	void get_PPD()
 	{
 		parse_preproc_data("preproc_data", &this->PPD);
@@ -689,20 +801,25 @@ private:
 
 
 
-class solver_output;
+class solver_output; //  that'd be a forward declaration, jim.
 
+
+
+/**
+ \brief Metadata for solutions produced by the tracker, and stored in solver_output.
+ */
 class solution_metadata
 {
 
 friend solver_output;
 	
-	std::vector<long long> input_index;
-	long long output_index;
-	int multiplicity;
-	bool is_finite;
-	bool is_singular;
-	bool is_successful;
-	bool is_real;
+	std::vector<long long> input_index; ///< the indices of the start points which ended here.
+	long long output_index; ///< the output index of the endpoint solution
+	int multiplicity; ///< how many paths ended here.
+	bool is_finite; ///< flag for whether has been declared finite.
+	bool is_singular;///< flag for whether has been declared singular.
+	bool is_successful;///< flag for whether tracker was successful, or gave up for some reason -- wish this stored the reason too.
+	bool is_real;///< flag for whether has been declared real.
 	
 public:
 	friend std::ostream & operator<<(std::ostream &os, const solution_metadata & t)
@@ -722,33 +839,65 @@ public:
 	
 	
 	
-	
+	/**
+	 \brief set the finiteness state
+	 \param state set is_finite to the state.
+	 */
 	void set_finite(bool state){
 		is_finite = state;
 	}
+	
+	/**
+	  \brief set the singularness state
+	  \param state set is_singular to the state.
+	  */
 	void set_singular(bool state){
 		is_singular = state;
 	}
+	
+	/**
+	 \brief set the successfulness state
+	 \param state set is_successful to the state.
+	 */
 	void set_successful(bool state){
 		is_successful = state;
 	}
 	
+	/**
+	 \brief set the multiplicity
+	 \param state set multiplicity to the state.
+	 */
 	void set_multiplicity(int state){
 		multiplicity = state;
 	}
 	
+	/**
+	 \brief set the realness state
+	 \param state set is_real to the state.
+	 */
 	void set_real(int state) {
 		is_real = state;
 	}
 	
+	/**
+	 \brief add another input start index which tracked to this solution
+	 \param new_ind the index to add.
+	 */
 	void add_input_index(long long new_ind){
 		input_index.push_back(new_ind);
 	}
+	
+	/**
+	 \brief set the output index for the found solution.  multiplicity>1 solutions are stored only once...
+	 \param new_ind the index to assert
+	 */
 	void set_output_index(long long new_ind){
 		output_index = new_ind;
 	}
 	
 };
+
+
 
 class solver_output : public patch_holder, public linear_holder, public name_holder, public vertex_set
 {
@@ -1248,9 +1397,15 @@ protected:
 
 
 /**
- reads in projection from file if user specified, creates one otherwise.
- --
- // currently defaults to create a random real projection with homogeneous value 0;
+ \brief reads in projection from file if user specified, creates one otherwise.
+ 
+ currently defaults to create a random real projection with homogeneous value 0;
+ 
+ \param pi the projection vectors to fill.  must be initted already, but not necessarily the correct size.
+ \param program_options The current state of Bertini_real.
+ \param solve_options the current state of the solver.
+ \param num_vars how many variables to set up, including the homogenizing variable.
+ \param num_projections how many proj vectors to set up.  again, these must already be allocated outside this call.
  */
 void get_projection(vec_mp *pi,
 					BR_configuration program_options,
@@ -1260,7 +1415,14 @@ void get_projection(vec_mp *pi,
 
 
 
-
+/**
+ \brief just before calling a solver, call this to adjust the tracker_config.
+ 
+ \todo add additional documentation on this method.
+ 
+ \param T the tracker_config_t to adjust
+ \param num_variables The number of variables in the current system
+ */
 void adjust_tracker_AMP(tracker_config_t * T, int num_variables);
 
 
@@ -1280,14 +1442,45 @@ int generic_setup_files(FILE ** OUT, boost::filesystem::path outname,
 						FILE ** MIDOUT, boost::filesystem::path midname);
 
 
-/** reads the tracker_config_t from file. */
+/** 
+ \brief reads the tracker_config_t from file, calling Bertini's setupConfig(), which reads the "config" file from disk.
+ 
+ \param solve_options the current state of the solver
+ \param MPType the current operating MP mode.
+ 
+ */
 void get_tracker_config(solver_configuration &solve_options,int MPType);
-void solver_clear_config(solver_configuration &options);
 
+
+
+/**
+ \brief The main function call for a master process to call in order to track paths; ED must already be set up. 
+ 
+ automatically switches between parallel and serial mode depending on solve_options.
+ 
+ \param solve_out The way data is transferred out of this function
+ \param W const input witness set, with points and patches
+ \param ED_d a pointer to an already-set-up evaluator in double.
+ \param ED_mp a pointer to an already-set-up evaluator in mp.
+ \param solve_options the current state of the solver.
+ */
 void master_solver(solver_output & solve_out, const witness_set & W,
 				   solver_d * ED_d, solver_mp * ED_mp,
 				   solver_configuration & solve_options);
 
+
+/**
+ \brief the mail loop for solving in serial.
+ 
+ \param trackCount collects statistics regarding paths
+ \param OUT open output file
+ \param midOUT open file for midpath data
+ \param endPoints the output from this function, the solutions
+ \param W the input witness set, including start points.
+ \param ED_d already populated abstract evaluator data in double.
+ \param ED_mp already populated abstract evaluator data in mp.
+ \param solve_options The current state of the solver config.
+ */
 void serial_tracker_loop(trackingStats *trackCount,
 						  FILE * OUT, FILE * midOUT,
 						  const witness_set & W,  // was the startpts file pointer.
@@ -1295,6 +1488,18 @@ void serial_tracker_loop(trackingStats *trackCount,
 						  solver_d * ED_d, solver_mp * ED_mp,
 						  solver_configuration & solve_options);
 
+/**
+ \brief the main loop for solving in parallel.
+ 
+ \param trackCount collects statistics regarding paths
+ \param OUT open output file
+ \param MIDOUT open file for midpath data
+ \param W the input witness set, including start points.
+ \param endPoints the output from this function, the solutions
+ \param ED_d already populated abstract evaluator data in double.
+ \param ED_mp already populated abstract evaluator data in mp.
+ \param solve_options The current state of the solver config.
+ */
 void master_tracker_loop(trackingStats *trackCount,
 						 FILE * OUT, FILE * MIDOUT,
 						 const witness_set & W,  // was the startpts file pointer.
@@ -1302,15 +1507,55 @@ void master_tracker_loop(trackingStats *trackCount,
 						 solver_d * ED_d, solver_mp * ED_mp,
 						 solver_configuration & solve_options);
 
+
+/**
+ \brief figure out how many paths to pass out this time
+ 
+ this number is calculated as n = int( 1 + (( int(1 + ((num_points - 1) / num_workers)) - 1) / 10))
+ and uses rounding.
+ 
+ \return the number of packets of data to be sent, using the method.
+ \param num_workers how many workers there are in this ring.
+ \param num_points how many paths there are left.
+ */
 int get_num_at_a_time(int num_workers, int num_points);
 
 
+
+/**
+ \brief send start points to a worker
+ 
+ 
+ \param next_worker the id of the worker to whom to send the work.
+ \param num_packets The number of start points to send
+ \param startPts_d the pointers to the data to send, in double
+ \param startPts_mp the pointers to the data to send, in MP
+ \param next_index the bottom index.  points sent will be consecutive, always.
+ \param solve_options the current state of the solver config.
+ */
 void send_start_points(int next_worker, int num_packets,
 					   point_data_d *startPts_d,
 					   point_data_mp *startPts_mp,
 					   int & next_index,
 					   solver_configuration & solve_options);
 
+
+/**
+ \brief as a mater, receive solution points from a worker
+ 
+ 
+ also checks for isSoln at the same time, after has received the end points.
+ 
+ \return the MPI ID of the worker received from.
+ \param trackCount collects statistics
+ \param EG_receives a pointer to a set of pointers into which to receive the data
+ \param max_incoming the largest number of points received so far.
+ \param solution_counter count the number of successful tracks
+ \param endPoints the container into which to receive the data.
+ \param ED_d pointer to the double evaluator_data
+ \param ED_mp pointer to the mp evaluator_data
+ \param solve_options The current state of the solver config.
+ */
 int receive_endpoints(trackingStats *trackCount,
 					  endgame_data_t **EG_receives, int & max_incoming,
 					  int & solution_counter,
@@ -1320,6 +1565,16 @@ int receive_endpoints(trackingStats *trackCount,
 
 
 
+/**
+ \brief as a worker, receive starts, track, and send the solutions
+ 
+ \param trackCount keeps track of statistics
+ \param OUT open file into which we can write
+ \param MIDOUT open file into which to print midpath data.
+ \param ED_d double format evaluator data.
+ \param ED_mp MP format evaluator data.
+ \param solve_options the current state of the solver config.
+ */
 void worker_tracker_loop(trackingStats *trackCount,
 						 FILE * OUT, FILE * MIDOUT,
 						 solver_d * ED_d, solver_mp * ED_mp,
@@ -1327,6 +1582,23 @@ void worker_tracker_loop(trackingStats *trackCount,
 
 
 
+/**
+ \brief a fairly low level functon, which calls trackpath from bertini
+ 
+ \param pathNum the ID of the path
+ \param EG_out the output data structure
+ \param Pin the input point data, double format.  may be NULL
+ \param Pin_mp the input point data, mp format, may be NULL depending on MPtype
+ \param OUT open file into which to print data
+ \param MIDOUT open file into which to print midpath data.
+ \param T the current tracker config
+ \param ED_d double format evaluator data
+ \param ED_mp mp format evaluator data
+ \param eval_func_d pointer to the double evaluator function.
+ \param eval_func_mp pointer to the mp evaluator function.
+ \param change_prec pointer to the precision changing function
+ \param find_dehom pointer to the dehomogenizing function
+ */
 void generic_track_path(int pathNum, endgame_data_t *EG_out,
 						point_data_d *Pin, point_data_mp *Pin_mp,
 						FILE *OUT, FILE *MIDOUT,
@@ -1337,7 +1609,23 @@ void generic_track_path(int pathNum, endgame_data_t *EG_out,
 						int (*change_prec)(void const *, int),
 						int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *));
 
-
+/**
+ \brief a fairly low level functon, which calls trackpath from bertini inside of a loop which checks retVal, and adjusts T with reruns as necessary, to get the path to declare success
+ 
+ \param pathNum the ID of the path
+ \param EG_out the output data structure
+ \param Pin the input point data, double format.  may be NULL
+ \param Pin_mp the input point data, mp format, may be NULL depending on MPtype
+ \param OUT open file into which to print data
+ \param MIDOUT open file into which to print midpath data.
+ \param solve_options the current state of the solver
+ \param ED_d double format solver derived type
+ \param ED_mp mp format solver derived type
+ \param eval_func_d pointer to the double evaluator function.
+ \param eval_func_mp pointer to the mp evaluator function.
+ \param change_prec pointer to the precision changing function
+ \param find_dehom pointer to the dehomogenizing function
+ */
 
 void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					   point_data_d *Pin, point_data_mp *Pin_mp,

@@ -175,26 +175,6 @@ void copyfile(FILE *IN,FILE *OUT)
 
 
 
-void read_matrix(boost::filesystem::path INfile, mat_mp matrix)
-{
-	int rows,cols, precision;
-	FILE *IN= safe_fopen_read(INfile);
-	fscanf(IN,"%d %d", &rows, &cols); scanRestOfLine(IN);
-	fscanf(IN,"%d", &precision); scanRestOfLine(IN);
-	init_mat_mp2(matrix,rows,cols,precision);
-	matrix->rows=rows; matrix->cols=cols;
-	
-	for (int ii=0;ii<matrix->rows;ii++)
-		for (int jj=0;jj<matrix->cols;jj++)
-		{
-			mpf_inp_str(matrix->entry[ii][jj].r, IN, 10);
-			mpf_inp_str(matrix->entry[ii][jj].i, IN, 10);
-			scanRestOfLine(IN);
-		}
-	
-	fclose(IN);
-}
-
 
 
 void deliberate_segfault()

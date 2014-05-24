@@ -1102,11 +1102,6 @@ void surface_decomposition::compute_sphere_witness_set(const witness_set & W_sur
 	
 	sphere_curve.randomizer->setup(W_surf.num_variables-W_surf.num_patches-W_surf.num_linears, solve_options.PPD.num_funcs);
 	
-//	make_randomization_matrix_based_on_degrees(randomizer_matrix, sphere_curve.randomized_degrees,
-//                                               W_surf.num_variables-W_surf.num_patches-W_surf.num_linears,
-//                                               solve_options.PPD.num_funcs);
-	// what do do about this??????????????????????????????????????
-//	sphere_curve.randomized_degrees.push_back(2);
 	
 	
 	multilin_config ml_config(solve_options,this->randomizer); // copies in the randomizer matrix and sets up the SLP & globals.
@@ -1138,10 +1133,6 @@ void surface_decomposition::compute_sphere_witness_set(const witness_set & W_sur
 		
 		
 		
-		solve_options.allow_singular = 0;
-		solve_options.complete_witness_set = 0;
-		solve_options.allow_multiplicity = 0;
-		solve_options.allow_unsuccess = 0;
 		
 		
 		solver_output fillme;
@@ -1178,10 +1169,6 @@ void surface_decomposition::compute_sphere_witness_set(const witness_set & W_sur
 	
 	
 	
-	solve_options.allow_singular = 0;
-	solve_options.complete_witness_set = 1;
-	solve_options.allow_multiplicity = 0;
-	solve_options.allow_unsuccess = 0;
 	
 	
 	
@@ -1407,7 +1394,6 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 		slice_witness_set.dim = 1;
 		
 		
-		solve_options.complete_witness_set = 1;
 		
 		
 		slices[ii].input_filename = slicename;
@@ -2515,25 +2501,20 @@ void surface_decomposition::send(int target, parallelism_config & mpi_config)
 	
 	
 	decomposition::send(target, mpi_config);
-	int * buffer = new int[5];
+	int * buffer = new int[4];
 	
-	buffer[0] = num_edges;
-	buffer[1] = num_faces;
+	buffer[0] = num_faces;
 	
-	buffer[2] = mid_slices.size();
-	buffer[3] = crit_slices.size();
-	buffer[4] = num_singular_curves;
+	buffer[1] = mid_slices.size();
+	buffer[2] = crit_slices.size();
+	buffer[3] = num_singular_curves;
 	
-	MPI_Send(buffer, 5, MPI_INT, target, SURFACE, MPI_COMM_WORLD);
+	MPI_Send(buffer, 4, MPI_INT, target, SURFACE, MPI_COMM_WORLD);
 	delete [] buffer;
 	
 	
 	
-	
-	
-	for (unsigned int ii=0; ii<num_edges; ii++) {
-		edges[ii].send(target, mpi_config);
-	}
+
 	
 	for (unsigned int ii=0; ii<num_faces; ii++) {
 		faces[ii].send(target, mpi_config);
@@ -2586,23 +2567,17 @@ void surface_decomposition::receive(int source, parallelism_config & mpi_config)
 	decomposition::receive(source, mpi_config);
 	
 	
-	int * buffer = new int[5];
-	MPI_Recv(buffer, 5, MPI_INT, source, SURFACE, MPI_COMM_WORLD, &statty_mc_gatty);
-	int a, b, c, d;
-	a = buffer[0];
-	b = buffer[1];
-	c = buffer[2];
-	d = buffer[3];
-	num_singular_curves = buffer[4];
+	int * buffer = new int[4];
+	MPI_Recv(buffer, 4, MPI_INT, source, SURFACE, MPI_COMM_WORLD, &statty_mc_gatty);
+	int b, c, d;
+	b = buffer[0];
+	c = buffer[1];
+	d = buffer[2];
+	num_singular_curves = buffer[3];
 	delete [] buffer;
 	
 	
 	
-	for (int ii=0; ii<a; ii++) {
-		edge E;
-		E.receive(source, mpi_config);
-		add_edge(E);
-	}
 	
 	for (int ii=0; ii<b; ii++) {
 		face F;
@@ -2677,7 +2652,7 @@ void surface_decomposition::print(boost::filesystem::path base)
 	boost::filesystem::path summaryname = base;
 	summaryname /= "S.surf";
 	FILE *OUT = safe_fopen_write(summaryname);
-	fprintf(OUT,"%d %d %ld %ld\n\n", num_faces, num_edges, mid_slices.size(), crit_slices.size());
+	fprintf(OUT,"%d 0 %ld %ld\n\n", num_faces, mid_slices.size(), crit_slices.size());
 	fprintf(OUT,"%ld\n",singular_curves.size());
 	for (auto iter = singular_curves.begin(); iter!=singular_curves.end(); ++iter) {
 		fprintf(OUT,"%d %d ",iter->first.first,iter->first.second); // TODO:  clean up this first.first nonsense.  it is terrible.

@@ -1099,6 +1099,114 @@ void print_tracker(const tracker_config_t * T)
 
 
 
+
+//TODO this sort should be optimized.  it is sloppy and wasteful right now.
+int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & index_tracker, vec_mp projections_input){
+	
+	
+	if (projections_input->size == 0) {
+		change_size_vec_mp(projections_sorted,1);
+		projections_sorted->size = 0;
+		return -1;
+	}
+	
+	
+	
+	for (int ii=0; ii<projections_input->size; ii++) {
+		if (!(mpfr_number_p(projections_input->coord[ii].r) && mpfr_number_p(projections_input->coord[ii].i))) {
+			std::cout << "there was NAN in the projections to sort :(" << std::endl;
+			print_point_to_screen_matlab(projections_input, "projections_input");
+			
+			return -51;
+		}
+	}
+	
+	
+	
+	
+	
+	std::vector< int > index_tracker_non_unique;
+	std::vector< double > projvals_as_doubles;
+	
+	
+	vec_mp projections_sorted_non_unique;
+	init_vec_mp2(projections_sorted_non_unique,projections_input->size,1024);
+	projections_sorted_non_unique->size = projections_input->size;
+	
+	
+	
+	std::set<int> unsorted_indices;
+	for (int ii=0; ii<projections_input->size; ii++) {
+		unsorted_indices.insert(ii);
+	}
+	
+	
+	
+	
+	//sort by size
+	for (int ii=0; ii<projections_input->size; ii++) { // for each of the projection values input
+		double min = 1e20; // reset this bogus value
+		
+		int indicator = -1;
+		
+		// this loop finds the minimum projection value
+		for (std::set<int>::iterator set_iter = unsorted_indices.begin(); set_iter!=unsorted_indices.end(); set_iter++) {
+			
+			double curr = mpf_get_d(projections_input->coord[*set_iter].r); // convert projection value to a double for comparison
+			if ( curr < min) { // compare
+				indicator = *set_iter;
+				min = curr;
+			}
+		}
+		
+		if (indicator==-1) { // if min value was larger than a huge number
+			printf("min projection value was *insanely* large\n");
+			br_exit(1111);
+		}
+		
+		unsorted_indices.erase(indicator);
+		
+		projvals_as_doubles.push_back(min);
+		index_tracker_non_unique.push_back(indicator);
+		set_mp( &projections_sorted_non_unique->coord[ii],&projections_input->coord[indicator]);
+	}
+	
+	
+	
+	
+	// filter for uniqueness
+	
+	
+	double distinct_thresh = 1e-10;  // reasonable?  i hate hard-coded tolerances
+									 //TODO: remove this tolerance, or make it explicitly controllable.
+	
+	change_size_vec_mp(projections_sorted,1); projections_sorted->size = 1;
+	
+	index_tracker.push_back(index_tracker_non_unique[0]);
+	set_mp(&projections_sorted->coord[0],&projections_sorted_non_unique->coord[0])
+	int unique_counter = 1;
+	for (int ii=1; ii<projections_input->size; ii++) {
+		if ( fabs( projvals_as_doubles[ii-1]-projvals_as_doubles[ii]) < distinct_thresh) {
+			continue;
+		}
+		else
+		{
+			increase_size_vec_mp(projections_sorted,unique_counter+1); projections_sorted->size = unique_counter+1;
+			set_mp(&projections_sorted->coord[unique_counter],&projections_sorted_non_unique->coord[ii]);
+			unique_counter++;
+			
+			index_tracker.push_back(index_tracker_non_unique[ii]);
+		}
+	}
+	
+	
+	clear_vec_mp(projections_sorted_non_unique);
+	
+	return 0;
+}
+
+
+
 void send_patch_d(patch_eval_data_d * patch)
 {
 	comp_d *patch_coeff = NULL;
