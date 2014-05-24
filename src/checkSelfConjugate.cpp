@@ -5,12 +5,6 @@
 
 
 
-/***************************************************************\
- * USAGE: check if component is self conjugate                  *
- * ARGUMENTS: witness set, # of variables and name of input file*
- * RETURN VALUES: 1-self conjugate; 0-non self conjugate   *
- * NOTES:                                                        *
- \***************************************************************/
 bool checkSelfConjugate(vec_mp test_point,
 						BR_configuration & program_options,
 						boost::filesystem::path input_file)
@@ -216,13 +210,6 @@ int write_member_points_singlept(vec_mp point_to_write)
 
 
 
-
-/***************************************************************\
- * USAGE: setup input file to membership test                    *
- * ARGUMENTS: name of output file, function & configuration input*
- * RETURN VALUES: none                                           *
- * NOTES:                                                        *
- \***************************************************************/
 void membership_test_input_file(boost::filesystem::path outputFile,
                                 boost::filesystem::path funcInput,
                                 boost::filesystem::path configInput,
@@ -262,12 +249,6 @@ void membership_test_input_file(boost::filesystem::path outputFile,
 
 
 
-/***************************************************************\
- * USAGE: check if component is self conjugate                  *
- * ARGUMENTS: witness set, # of variables and name of input file*
- * RETURN VALUES: 1-self conjugate; 0-non self conjugate   *
- * NOTES:                                                        *
- \***************************************************************/
 int get_incidence_number(vec_mp test_point,
 						 BR_configuration & program_options,
 						 boost::filesystem::path input_file)
@@ -308,53 +289,6 @@ int get_incidence_number(vec_mp test_point,
 }
 
 
-
-void read_incidence_matrix_wrt_number(int *component_numbers, int given_incidence_number){
-	FILE *IN = NULL;
-	int ii,jj;
-	int num_nonempty_codims, num_components, num_pts, codim;
-	int component_indicator, component_number,total_num_components=0;
-	
-	//read incidence_matrix and see if it is self-conjugate
-	IN = safe_fopen_read("incidence_matrix");
-	
-	fscanf(IN, "%d",&num_nonempty_codims);      // number of nonempty codimensions
-	
-	for (ii = 0; ii<num_nonempty_codims; ii++) {
-		fscanf(IN, "%d",&codim);      // codimension  (iterated for each codimension?)
-		fscanf(IN, "%d",&num_components);  // number of components (is whatever)
-		total_num_components = total_num_components+num_components;
-	}
-	
-	
-	fscanf(IN, "%d",&num_pts);    // number of points (should be 1)
-	
-	//and then a binary matrix indicating membership on which component
-	//from the appendices of the book:
-	//	% Binary matrix with one row per point, columns corresponding to components.
-	//	%                0 if given point is not on given component;
-	//	%                1 else .
-	for (jj=0; jj<num_pts; jj++) {
-		component_number=0;
-		for(ii=0;ii<total_num_components;ii++)  // i don't know if this is correct if there is more than one nonempty codimension.
-		{
-			fscanf(IN, "%d", &component_indicator);
-			if (component_indicator==1 && given_incidence_number==ii) {  //then is on this component
-				component_number++;
-			}
-		}
-		if (component_number==0) {
-			//			printf("test point did not lie on any component at all.\n");
-			//			exit(-1);
-		}
-		component_numbers[jj]=component_number;
-	}
-	
-	fclose(IN);
-	
-	
-	return;
-}
 
 
 

@@ -1299,6 +1299,8 @@ public:
 
 
 /**
+ \brief 0-cell 
+ 
  a bertini_real vertex, a 0-cell.  contains a point, its projection values, its type, whether its been removed, and an index into a set of filenames contained in the vertex_set.
  
  \todo remove the metadata from this, and instead track it in the vertex set, much like the solver_output
@@ -2021,6 +2023,14 @@ public:
 	}
 };
 
+
+
+
+
+
+
+
+
 /**
  \brief metadata for patches read in from witness_data
  
@@ -2219,20 +2229,6 @@ public:
 	
 	
 	
-	
-	
-
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
 private:
 	
 	void add_linear_w_meta(vec_mp lin, const witness_linear_metadata & meta)
@@ -2259,22 +2255,17 @@ private:
 	
 	
 	
-//	void init(){};
-//	
-//	void copy(const witness_data & other)
-//	{
-//		
-//	}
-	
-	
-	
 	
 };
 
 
 
 
-
+/**
+ \brief The base cell class.  All n-cells should inherit from this.
+ 
+ Contains a midpoint, methods to send and receive, etc.
+ */
 class cell
 {
 	

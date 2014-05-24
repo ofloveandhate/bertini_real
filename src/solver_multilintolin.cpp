@@ -308,6 +308,7 @@ int multilintolin_eval_data_d::setup(const multilin_config & config,
 		vec_mp_to_d(current_linear[ii],target_linears[ii]);
 		vec_mp_to_d(old_linear[ii],W.L_mp[ii]);
 	}
+	
 	num_linears = W.num_linears;
 	
 	num_variables = W.num_variables;

@@ -38,25 +38,45 @@
 #include "data_type.hpp"
 #include "isosingular.hpp"
 #include "programConfiguration.hpp"
-//#include "output.hpp"
+
 #include "surface.hpp"
 #include "curve.hpp"
-//#include "solver_nullspace_left.hpp"
 
 
+/**
+\defgroup mpienabled MPI-enabled classes
+
+ */
+
+/**
+ \defgroup send MPI Sends
+ */
+
+/**
+ \defgroup receive MPI Receives
+ */
+
+/**
+ \defgroup bcast MPI Bcasts (sends and receives)
+ */
 
 
-
-
+/**
+ \brief BR process base class -- holds current state of program and solver.
+ 
+ In order to make the program_options and solve_options 'globally' accessibly, we place them into the containing process.
+ */
 class process
 {
 
 public:
-	BR_configuration program_options;
-	solver_configuration solve_options;
+	BR_configuration program_options;///< holds the current state of Bertini_real
+	solver_configuration solve_options; ///< holds the current state of the solver
 	
-	int MPType;
-	virtual int main_loop();
+	int MPType; ///< operating MP type.
+	
+	
+	virtual int main_loop() = 0;
 	
 	virtual ~process()
 	{
@@ -68,6 +88,10 @@ public:
 };
 
 
+
+/**
+ \brief Master process, level 0.
+ */
 class ubermaster_process : public process
 {
 	
@@ -78,6 +102,13 @@ public:
 		this->solve_options = new_solve_options;
 	}
 	
+	
+	/**
+	 \brief Master Bertini_real procedure.
+	 
+	 Loads the witness_data, tracker config, and decomposes components of the user's choosing.
+	 \return An integer flag indicating the success of the loop.
+	 */
 	int main_loop();
 
 	
@@ -89,7 +120,9 @@ public:
 
 
 
-
+/**
+ \brief worker process, level 1.
+ */
 class worker_process : public process
 {
 public:
@@ -106,16 +139,14 @@ public:
 		
 	}
 	
+	/**
+	 \brief the listen-work loop for workers in an MPI ring.
+	 
+	 \return SUCCESSFUL flag from process.
+	 */
 	int main_loop();
 
 };
-
-
-
-
-
-
-
 
 
 

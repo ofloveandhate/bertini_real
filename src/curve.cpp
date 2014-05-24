@@ -297,9 +297,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	
 	
 	
-	solve_options.allow_multiplicity = 0;
-	solve_options.allow_singular = 1;
-	solve_options.complete_witness_set = 1;
+
 	
     
 	
@@ -318,7 +316,6 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 		neg_mp(&particular_projection->coord[0], &midpoints_downstairs->coord[ii]);
 		
 		
-		solve_options.complete_witness_set = 1;
 		
 		solver_output fillme;
 		multilin_solver_master_entry_point(W_curve,         // witness_set
@@ -347,8 +344,6 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	
     // 7) find edge endpoints
     
-	solve_options.allow_multiplicity = 1;
-	solve_options.allow_singular = 1;
 	
 	
 	witness_set Wleft, Wright;
@@ -966,9 +961,6 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		neg_mp(&particular_projection->coord[0], new_proj_val); // set it in the linear for tracking
 		
 		
-		solve_options.allow_multiplicity = 0;
-		solve_options.allow_singular = 1;
-		solve_options.complete_witness_set = 0;
 		solve_options.robust = true;
 		
 		ml_config.set_randomizer(this->randomizer);
@@ -1231,10 +1223,7 @@ int curve_decomposition::get_additional_critpts(witness_set *W_additional,
 		witness_set W_temp;
 		
 		
-		solve_options.allow_singular = 0;
-		solve_options.complete_witness_set = 0;
-		solve_options.allow_multiplicity = 0;
-		solve_options.allow_unsuccess = 0;
+
 		
 
 		solver_output fillme;
@@ -1306,24 +1295,6 @@ int curve_decomposition::get_additional_critpts(witness_set *W_additional,
 
 
 
-
-int get_sum_degrees(char filename[], int num_funcs){
-	int degsum = 0, tmpdeg, ii;
-	
-	FILE *IN;
-	
-	IN =  safe_fopen_read(filename);
-	
-	for (ii = 0; ii<num_funcs; ii++) {
-		fscanf(IN,"%d",&tmpdeg);
-		degsum += tmpdeg;
-	}
-	
-	fclose(IN);
-	
-	
-	return degsum;
-}
 
 
 
@@ -1551,18 +1522,7 @@ void curve_decomposition::print(boost::filesystem::path base)
 
 
 
-/**Output edge structure as follows:
- 
- the # of edges
- 
- for each edge:
- left index, mid index, right index
- end
- 
- endfile
- 
- 
- **/
+
 void curve_decomposition::print_edges(boost::filesystem::path outputfile)
 {
 #ifdef functionentry_output

@@ -1089,7 +1089,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	
 	
 	//
-	/// now three equations involving the projections, causing movement in the $u$ or \pi_0 direction.
+	// now three equations involving the projections, causing movement in the $u$ or \pi_0 direction.
 	//
 	
 	

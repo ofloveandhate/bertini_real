@@ -14,12 +14,12 @@
 
 
 
-
-int process::main_loop(){
-	std::cout << "the basic main loop for a generic process does nothing.  create a derived class." << std::endl;
-	
-	return SUCCESSFUL;
-}
+//
+//int process::main_loop(){
+//	std::cout << "the basic main loop for a generic process does nothing.  create a derived class." << std::endl;
+//	
+//	return SUCCESSFUL;
+//}
 
 
 

@@ -31,20 +31,11 @@
 
 #include "partitionParse.h"
 #include "programConfiguration.hpp"
-/**
- 
- */
-void Output_Main(BR_configuration program_options, decomposition & D, vertex_set & V);
 
 
 
 
 
-
-/**
- 
- */
-void print_matrix_to_file_mp(FILE *OUT, int digits, mat_mp );
 #endif
 
 

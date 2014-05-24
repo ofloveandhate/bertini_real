@@ -199,13 +199,7 @@ void common_sampler_startup(const decomposition & D,
 	
 	
 	solve_options.verbose_level = sampler_options.verbose_level;
-	if (solve_options.verbose_level>=2) {
-		solve_options.show_status_summary=1;
-	}
-	
-	
-	
-	
+
 	
 	
 	solve_options.T.ratioTol = 0.99999999; // manually assert to be more permissive.  i don't really like this.
@@ -214,7 +208,6 @@ void common_sampler_startup(const decomposition & D,
 	
 	solve_options.use_midpoint_checker = 0;
 	solve_options.use_gamma_trick = 0;
-	solve_options.allow_singular = 1;
     solve_options.robust = true;
 	
 }

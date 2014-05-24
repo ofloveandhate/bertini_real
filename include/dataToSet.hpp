@@ -39,7 +39,10 @@
 
 
 
-
+/**
+ \brief
+ 
+ */
 void purge_previous_directory(char *directoryName);
 
 void make_specific_output_name(std::string *specificOutputName,
@@ -59,7 +62,7 @@ int open_output_file_append(std::string outputName, std::ofstream & OUT);
 
 
 /**
- *  @class "witness_data_deprecated"
+ *  \class "witness_data_deprecated"
  *
  * contains a parsed witness_data file from Bertini's tracktype: 1 solver.
  *
