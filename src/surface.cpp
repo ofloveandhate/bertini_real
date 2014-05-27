@@ -87,11 +87,73 @@ void surface_decomposition::main(vertex_set & V,
     
 	
 	
-    
-    
-    
-    // now we get the critical points for the sphere intersection curve.
 	
+	///////////////////////////////
+	
+	std::map< std::pair<int,int>, witness_set > split_sets;
+	deflate_and_split(split_sets,
+					  higher_multiplicity_witness_sets,
+					  program_options,
+					  solve_options);
+	
+	
+	
+	witness_set W_singular_crit;
+	compute_singular_crit(W_singular_crit,
+						  split_sets,
+						  V,
+						  program_options,
+						  solve_options);
+	///////////////////////////////
+	
+	
+	
+	// merge together the critical points from both the critical curve and the sphere intersection curve.
+    witness_set W_total_crit;
+    
+	W_total_crit.merge(W_critcurve_crit);
+	W_total_crit.merge(W_singular_crit);
+	
+				
+				
+	if (have_sphere_radius) {
+		W_total_crit.sort_for_inside_sphere(sphere_radius, sphere_center);
+	}
+	else
+	{
+		this->compute_sphere_bounds(W_total_crit); // sets the radius and center in this decomposition.  Must propagate to the constituent decompositions as well.   fortunately, i have a method for that!!!
+	}
+	crit_curve.copy_sphere_bounds(*this); // copy the bounds into the critcurve.
+				
+				
+				
+	
+				std::cout << color::bold("m") << "intersecting critical curve with sphere" << color::console_default() << std::endl;
+				
+				W_critcurve_crit.input_filename = "input_critical_curve";
+				
+				
+				witness_set W_sphere_intersection;
+				// now get the sphere intersection critical points and ends of the interval
+				crit_curve.get_additional_critpts(&W_sphere_intersection,  // the returned value
+												  W_critcurve,       // all else here is input
+												  program_options,
+												  solve_options);
+				
+				
+				W_sphere_intersection.sort_for_real(&solve_options.T);
+				W_sphere_intersection.sort_for_unique(&solve_options.T);
+				
+				W_critcurve_crit.merge(W_sphere_intersection);
+				
+				
+	
+	
+	// now we get the critical points for the sphere intersection curve.
+	
+    
+    
+    
     // make the input file
 	create_sphere_system(W_surf.input_filename,
                          "input_surf_sphere",
@@ -114,58 +176,24 @@ void surface_decomposition::main(vertex_set & V,
                         program_options,
                         solve_options);
     
+	
+	
     this->sphere_curve.add_witness_set(W_sphere_crit,CRITICAL,V);
     
 	
 	
+	W_total_crit.merge(W_sphere_crit);
 	
-	
-	
-	///////////////////////////////
-	
-	// the bounding sphere must be set before here, or this will eat it.
-	
-	
-	std::map< std::pair<int,int>, witness_set > split_sets;
-	deflate_and_split(split_sets,
-					  higher_multiplicity_witness_sets,
-					  program_options,
-					  solve_options);
-	
-	
-	
-	witness_set W_singular_crit;
-	compute_singular_crit(W_singular_crit,
-						  split_sets,
-						  V,
-						  program_options,
-						  solve_options);
-	///////////////////////////////
-	
-	
-	
-	
-
-	
-    
-    // merge together the critical points from both the critical curve and the sphere intersection curve.
-    witness_set W_total_crit;
-    
-	W_total_crit.merge(W_critcurve_crit);
-
-    W_total_crit.merge(W_sphere_crit);
-    
-	
-
-    W_total_crit.merge(W_singular_crit);
-    
-	
-    W_total_crit.input_filename = "total_crit___there-is-a-problem";
+	W_total_crit.input_filename = "total_crit___there-is-a-problem";
 	W_total_crit.sort_for_unique(&solve_options.T);
     
 
     
     
+	
+	
+	
+	
     
 	
 	compute_critical_curve(W_critcurve, // all input.
@@ -506,32 +534,6 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 	nullspace_config ns_config; // this is set up in the nullspace call.
 	
 	solver_output solve_out;
-	
-
-	if (0) {
-		
-		int blabla;
-		parse_input_file(W_critcurve.input_filename,&blabla);
-		preproc_data_clear(&solve_options.PPD); // ugh this sucks
-		parse_preproc_data("preproc_data", &solve_options.PPD);
-		
-		
-		crit_curve.randomizer->setup(W_critcurve.num_variables - W_critcurve.num_patches - 1,solve_options.PPD.num_funcs);
-		
-		
-		
-		
-		compute_crit_nullspace(solve_out, // the returned value
-							   W_critcurve,            // input the original witness set
-							   crit_curve.randomizer,
-							   &this->pi[0],
-							   1,  // dimension of ambient complex object
-							   1,   //  target dimension to find
-							   1,   // COdimension of the critical set to find.
-							   program_options,
-							   solve_options,
-							   &ns_config);
-	}
 
 
 	//get crit points of the surface.
@@ -604,48 +606,9 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 	
 	
 	W_critcurve_crit.merge(W_temp);
-	
+	W_critcurve_crit.input_filename = "input_critical_curve";
 	W_critcurve_crit.sort_for_real(&solve_options.T);
 	W_critcurve_crit.sort_for_unique(&solve_options.T);
-	
-//	W_critcurve_crit.print_to_screen();
-//	
-//	
-//	
-//	
-	
-	
-	
-	if (have_sphere_radius) {
-		W_critcurve_crit.sort_for_inside_sphere(sphere_radius, sphere_center);
-	}
-	else
-	{
-		this->compute_sphere_bounds(W_critcurve_crit); // sets the radius and center in this decomposition.  Must propagate to the constituent decompositions as well.   fortunately, i have a method for that!!!
-	}
-	
-	
-	crit_curve.copy_sphere_bounds(*this); // copy the bounds into the critcurve.
-	
-	
-	
-	std::cout << color::bold("m") << "intersecting critical curve with sphere" << color::console_default() << std::endl;
-	
-	W_critcurve_crit.input_filename = "input_critical_curve";
-	
-	
-	witness_set W_sphere_intersection;
-	// now get the sphere intersection critical points and ends of the interval
-	crit_curve.get_additional_critpts(&W_sphere_intersection,  // the returned value
-									  W_critcurve,       // all else here is input
-									  program_options,
-									  solve_options);
-	
-
-	W_sphere_intersection.sort_for_real(&solve_options.T);
-	W_sphere_intersection.sort_for_unique(&solve_options.T);
-	
-	W_critcurve_crit.merge(W_sphere_intersection);
 	
 	solve_options.T.AMP_bound_on_degree = temp_degree;
     
@@ -881,15 +844,11 @@ void surface_decomposition::compute_singular_crit(witness_set & W_singular_crit,
 		
 		ns_config.clear();
 		
-//		W_this_round.only_first_vars(this->num_variables);
 		W_this_round.sort_for_unique(&solve_options.T); // this could be made to be unnecessary, after rewriting a bit of solverout
 		W_this_round.sort_for_real(&solve_options.T);
-		W_this_round.sort_for_inside_sphere(sphere_radius,sphere_center);
 		W_this_round.input_filename = iter->second.input_filename;
 		
 		singular_curves[iter->first].add_witness_set(W_this_round,CRITICAL,V); // creates the curve decomposition for this multiplicity
-		
-		
 		
 		W_singular_crit.merge(W_this_round);
 		
