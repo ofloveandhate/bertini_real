@@ -3486,6 +3486,7 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 		for (int ii=0; ii<num_vars; ii++) {
 			set_zero_mp(&sphere_center->coord[ii]);
 		}
+		this->have_sphere_radius = true;
 		return;
 	}
 	
@@ -3503,6 +3504,7 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 		real_threshold(sphere_center, 1e-13);
 #endif
 		clear_vec_mp(temp_vec);
+		this->have_sphere_radius = true;
 		return;
 	}
 	
