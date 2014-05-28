@@ -128,23 +128,25 @@ void surface_decomposition::main(vertex_set & V,
 				
 				
 	
-				std::cout << color::bold("m") << "intersecting critical curve with sphere" << color::console_default() << std::endl;
-				
-				W_critcurve_crit.input_filename = "input_critical_curve";
-				
-				
-				witness_set W_sphere_intersection;
-				// now get the sphere intersection critical points and ends of the interval
-				crit_curve.get_additional_critpts(&W_sphere_intersection,  // the returned value
-												  W_critcurve,       // all else here is input
-												  program_options,
-												  solve_options);
-				
-				
-				W_sphere_intersection.sort_for_real(&solve_options.T);
-				W_sphere_intersection.sort_for_unique(&solve_options.T);
-				
-				W_critcurve_crit.merge(W_sphere_intersection);
+	std::cout << color::bold("m") << "intersecting critical curve with sphere" << color::console_default() << std::endl;
+	
+	W_critcurve_crit.input_filename = "input_critical_curve";
+	
+	
+	witness_set W_sphere_intersection;
+	W_sphere_intersection.input_filename = "input_critical_curve";
+	// now get the sphere intersection critical points and ends of the interval
+	crit_curve.get_additional_critpts(&W_sphere_intersection,  // the returned value
+									  W_critcurve,       // all else here is input
+									  program_options,
+									  solve_options);
+	
+	crit_curve.add_witness_set(W_sphere_intersection,CRITICAL,V);
+	
+	W_sphere_intersection.sort_for_real(&solve_options.T);
+	W_sphere_intersection.sort_for_unique(&solve_options.T);
+	
+	W_total_crit.merge(W_sphere_intersection);
 				
 				
 	
