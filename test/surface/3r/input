@@ -1,0 +1,20 @@
+CONFIG
+
+tracktype:1;
+condnumthreshold: 1e90;
+singvalzerotol: 1e-90;
+
+
+END;
+
+INPUT
+variable_group c1, s1, c2, s2, c3, s3, x;
+function f1, f2, f3, f4, f5;
+
+f1 = 1.0*c1 - 1.0*s3*(1.0*c1*s2 + 1.0*c2*s1) + 1.0*c1*c2 - 1.0*s1*s2 + 1.0*c3*(c1*c2 - 1.0*s1*s2) - x;
+f2 = 1.0*s1 + 1.0*c1*s2 + 1.0*c2*s1 + 1.0*s3*(1.0*c1*c2 - 1.0*s1*s2) + 1.0*c3*(1.0*c1*s2 + c2*s1);
+f3 = c1^2 + s1^2 - 1;
+f4 = c2^2 + s2^2 - 1;
+f5 = c3^2 + s3^2 - 1;
+
+END;
