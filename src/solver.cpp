@@ -279,15 +279,14 @@ int solver::send(parallelism_config & mpi_config)
 {
 	
 	
-	int *buffer = new int[5];
+	int *buffer = new int[4];
 	
 	buffer[0] = this->num_variables;
 	buffer[1] = this->num_steps;
 	buffer[2] = this->verbose_level;
 	buffer[3] = this->MPType;
-	buffer[4] = int(randomize);
 	
-	MPI_Bcast(buffer, 5, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(buffer, 4, MPI_INT, 0, MPI_COMM_WORLD);
 	
 	send_preproc_data(&this->preProcData);
 	
@@ -302,16 +301,15 @@ int solver::receive(parallelism_config & mpi_config)
 {
 	
     
-	int *buffer = new int[5];
+	int *buffer = new int[4];
 	
     
-	MPI_Bcast(buffer, 5, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(buffer, 4, MPI_INT, 0, MPI_COMM_WORLD);
 	
 	this->num_variables = buffer[0];
 	this->num_steps = buffer[1];
 	this->verbose_level = buffer[2];
 	this->MPType = buffer[3];
-	randomize = buffer[4];
 	
 	receive_preproc_data(&this->preProcData);
 	have_PPD = true;
