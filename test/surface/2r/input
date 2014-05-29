@@ -1,0 +1,27 @@
+CONFIG
+
+%mptype:0;
+randomseed: 1;
+tracktype:1;
+odepredictor: 6;
+tracktolbeforeeg: 1e-7;
+tracktolduringeg: 1e-8;
+condnumthreshold: 1e190;
+singvalzerotol: 1e-90;
+securitymaxnorm: 1e8;
+degreebound: 2;
+coeffbound: 1;
+sharpendigits:32;
+
+END;
+
+INPUT
+variable_group c1, s1, c2, s2, x, y;
+function f1, f2, f3, f4;
+
+f1 = c1 - x + (c1*c2)/2 - (s1*s2)/2;
+f2 = s1 - y + (c1*s2)/2 + (c2*s1)/2;
+f3 = c1^2 + s1^2 - 1;
+f4 = c2^2 + s2^2 - 1;
+
+END;
