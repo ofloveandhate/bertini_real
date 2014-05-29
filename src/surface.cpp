@@ -22,10 +22,7 @@ void surface_decomposition::main(vertex_set & V,
 #ifdef functionentry_output
 	std::cout << "surface_main" << std::endl;
 #endif
-	
-#ifdef usetempfolders
-	program_options.move_to_temp();
-#endif
+
 	
 	// set some member information.
 	this->input_filename = W_surf.input_filename;
@@ -306,10 +303,7 @@ void surface_decomposition::main(vertex_set & V,
 	
 	clear_vec_mp(crit_downstairs); clear_vec_mp(midpoints_downstairs);
     
-#ifdef usetempfolders
-	// this is likely extremely broken.  i'd like to use temp folders, but it's not there yet.
-	program_options.move_to_called();
-#endif
+
 	
 	
 	

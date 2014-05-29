@@ -898,7 +898,11 @@ public:
 };
 
 
-
+/**
+ \brief Class for turning the output from a solver into a more useable form, namely into witness sets ultimately.
+ 
+ This class acts as a vertex_set, holding vertices and metadata.  The main call is post_process()
+ */
 class solver_output : public patch_holder, public linear_holder, public name_holder, public vertex_set
 {
 
@@ -914,8 +918,8 @@ private:
 	
 public:
 	
-	int num_variables;
-	int num_natural_vars;
+	int num_variables; ///< How many total variables there are.
+	int num_natural_vars; ///< how many main variables there are, including the homogenizing variable.
 	
 	
 	int num_higher_multiplicities()
@@ -937,12 +941,26 @@ public:
 		
 	}
 	
+	
+	
+	/**
+	 \brief Set the num_variables and num_natural_vars to be the number in this solver_output object.
+	 
+	 \param W_transfer The input mutable witness set.
+	 */
 	void set_witness_set_nvars(witness_set & W_transfer)
 	{
 		W_transfer.num_variables = this->num_variables;
 		W_transfer.num_natural_vars = this->num_natural_vars;
 	}
 	
+	
+	/**
+	 \brief Add a solution and metadata to this solver output object.
+	 
+	 \param temp_vertex The input vertex to pass in.
+	 \param meta The solution metadata, containing input indices, output indices, etc.
+	 */
 	void add_solution(const vertex & temp_vert, const solution_metadata & meta)
 	{
 
@@ -951,35 +969,87 @@ public:
 
 	}
 	
-	
+	/**
+	 \brief Get the finite solutions, including those which are singular or multiple, and put them in a witness set.
+	 
+	 This 'full' version also gets the linears and patches.
+	 
+	 \param W_transfer The input mutable witness set to populate.
+	 */
 	void get_noninfinite_w_mult_full(witness_set & W_transfer);
 	
+	
+	/**
+	 \brief Get the finite solutions, including those which are singular or multiple, and put them in a witness set.
+	 	 
+	 \param W_transfer The input mutable witness set to populate.
+	 */
 	void get_noninfinite_w_mult(witness_set & W_transfer);
 	
-	
+	/**
+	 \brief Get the nonsingular, finite, multiplicity one solutions, and put them in a witness set.
+	 
+	 \param W_transfer The input mutable witness set to populate.
+	 */
 	void get_nonsing_finite_multone(witness_set & W_transfer);
 	
+	/**
+	 \brief Assemble a map of multiplicities and points, for those solutions with multiplicity>1.
+	 
+	 \see get_multpos_full
+	 
+	 \param W_transfer The input mutable witness sets to populate.
+	 */
 	void get_multpos(std::map<int, witness_set> & W_transfer);
 		
+	
+	/**
+	 \brief Assemble a map of multiplicities and points, for those solutions with multiplicity>1.
+	 
+	 This 'full' version gets the linears and patches as well.
+	 
+	 \see get_multpos
+	 
+	 \param W_transfer The input mutable witness sets to populate.
+	 */
 	void get_multpos_full(std::map<int, witness_set> & W_transfer);
 
+	
+	/**
+	 \brief Get the singular points from a solution set, and put them into a witness set.
+	 
+	 \param W_transfer The input mutable witness set to populate.
+	 */
 	void get_sing(witness_set & W_transfer);
 	
 	
 	
-	
+	/**
+	 Put the patches and linears from this into the input witness set.
+	 
+	 \param W_transfer The input mutable witness set to populate.
+	 */
 	void get_patches_linears(witness_set & W_transfer)
 	{
 		get_patches(W_transfer);
 		get_linears(W_transfer);
 	}
 	
-	
+	/**
+	 Put the patches only from this into the input witness set.
+	 
+	 \param W_transfer The input mutable witness set to populate.
+	 */
 	void get_patches(witness_set & W_transfer)
 	{
 		W_transfer.copy_patches(*this);
 	}
 	
+	/**
+	 Put the linears only from this into the input witness set.
+	 
+	 \param W_transfer The input mutable witness set to populate.
+	 */
 	void get_linears(witness_set & W_transfer)
 	{
 		W_transfer.copy_linears(*this);
@@ -988,7 +1058,13 @@ public:
 	
 	
 	/**
-	 bertini_real's version of post-processing.  options are set via the solver_configuration.
+	 \brief Bertini_real's version of post-processing.  options are set via the solver_configuration.
+	 
+	 \param endPoints The input for the method, having been converted into this format previously.
+	 \param num_pts_to_check The number of endPoints.
+	 \param preProcData structure containing the variable groups.
+	 \param T The current tracker configuration.
+	 \param solve_options The current state of the solver.
 	 */
 	void post_process(post_process_t *endPoints, int num_pts_to_check,
 					  preproc_data *preProcData, tracker_config_t *T,
@@ -999,7 +1075,9 @@ public:
 
 
 
-
+/**
+ \brief Base class from whence all solver classes are derived.
+ */
 class solver
 {
 public:
@@ -1010,13 +1088,12 @@ public:
 	int num_steps; ///< the number of evaluations made using this evaluator
 	int verbose_level;  ///< how verbose to be
 	
-	system_randomizer * randomizer;
-	bool have_randomizer_memory;
+	system_randomizer * randomizer; ///< Pointer to a randomizer.
+	bool have_randomizer_memory; ///< whether have allocated a system_randomizer (and it will need clearing) or simply point to one.
 	
 	
-	bool randomize; // this should be eliminated
 	
-    bool received_mpi;
+    bool received_mpi; ///< Whether this solver has received its contents via MPI
 	
 	int MPType; ///< the multiple precision type for solve
 	preproc_data preProcData; ///< information related to the SLP for system
@@ -1096,7 +1173,6 @@ protected:
 		
         received_mpi = false;
         
-		randomize = true;
 		
 		this->preproc_file = "preproc_data";
 		this->function_file = "func_input";

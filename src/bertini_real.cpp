@@ -55,8 +55,7 @@ int main(int argC, char *args[])
 		
 		
 		if (solve_options.use_parallel()) {
-			int arbitrary_int = 1;
-			MPI_Bcast(&arbitrary_int,1,MPI_INT,0,MPI_COMM_WORLD);
+			MPI_Barrier(MPI_COMM_WORLD);
 		}
 
 	}
@@ -66,16 +65,28 @@ int main(int argC, char *args[])
 	
 	if (solve_options.is_head()) {
 		parse_input_file(program_options.input_filename, &MPType);
+		get_tracker_config(solve_options,MPType);
+		
+	}
+	else
+	{ // catch the bcast from parallel parsing. (which cannot be disabled)
+		int arbitrary_int;
+		MPI_Bcast(&arbitrary_int,1,MPI_INT,0,MPI_COMM_WORLD);
 	}
 	
-	MPI_Bcast(&MPType, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	
-	get_tracker_config(solve_options,MPType);
+	
+	if (solve_options.use_parallel()) {
+		MPI_Bcast(&MPType, 1, MPI_INT, 0, MPI_COMM_WORLD);
+		bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
+	}
+	
 	
 	initMP(solve_options.T.Precision); // set up some globals.
-
+	
+	
 	solve_options.use_midpoint_checker = 0;
-	solve_options.T.ratioTol = 0.9999999999999999999999999; // manually assert to be more permissive.  i don't really like this.
+//	solve_options.T.ratioTol = 0.9999999999999999999999999; // manually assert to be more permissive.  i don't really like this.
 	solve_options.verbose_level = program_options.verbose_level;
 	solve_options.use_gamma_trick = program_options.use_gamma_trick;
 	
