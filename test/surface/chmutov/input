@@ -1,0 +1,23 @@
+CONFIG
+
+tracktype:1;
+
+condnumthreshold:1e100;
+singvalzerotol:1e-30;
+
+securitymaxnorm:1e8;
+tracktolbeforeeg: 1e-6;
+odepredictor:7;
+printpathmodulus:100;
+numsamplepoints:3;
+sharpendigits:30;
+
+END;
+
+INPUT
+variable_group x, y, z;
+
+function f;
+f = 2*( x^2*(3-4*x^2)^2 + y^2*(3-4*y^2)^2 + z^2*(3-4*z^2)^2 ) - 3;
+
+END;
