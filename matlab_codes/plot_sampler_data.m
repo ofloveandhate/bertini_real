@@ -19,10 +19,10 @@ for ii = 1:length(sampler_data.edge)
 		plotme(jj,:) = vertices(sampler_data.edge(ii).samples(jj)+1).point(ind);
 	end
 	plotme = real(plotme);
-	h = main_plot_function(plotme,ind,curr_axis);
+	h = main_plot_function(plotme,1:length(ind),curr_axis);
 
 	set(h,'Color',colors(nondegen_edge_ind,:));
-	set(h,'LineWidth',2);
+	set(h,'LineWidth',3);
     
     
     handles(nondegen_edge_ind) = h;

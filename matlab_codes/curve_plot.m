@@ -11,12 +11,12 @@ for ii = 1:BRinfo.num_edges
 	mid_plot = BRinfo.vertices(BRinfo.edges(ii,2)).point;
 	right_plot = BRinfo.vertices(BRinfo.edges(ii,3)).point;
 	
-    if and(left_plot==mid_plot, mid_plot==right_plot)
-       continue; 
-    else
-        num_non_degen = num_non_degen+1;
-    end
-    
+	if and(left_plot==mid_plot, mid_plot==right_plot)
+		continue;
+	else
+		num_non_degen = num_non_degen+1;
+	end
+	
 end
 
 colors = jet(num_non_degen);
@@ -28,7 +28,8 @@ colors = jet(num_non_degen);
 
 
 
-create_axes_curve(BRinfo);
+create_axes_br();
+
 
 label_axes(plot_indices,BRinfo,plot_params.axes.main);
 
@@ -37,7 +38,9 @@ plot_projection(BRinfo,plot_indices);
 
 
 
-plot_vertices(plot_indices, BRinfo);
+vertices = plot_vertices(plot_indices, BRinfo);
+
+plot_params.init_cam_pos = adjust_axes_br(vertices,plot_params.axes.main);
 
 
 plot_params.handles.sample_edges = [];
@@ -50,12 +53,11 @@ if ~isempty(BRinfo.sampler_data)
 	plot_params.handles.sample_edges = plot_sampler_data(plot_indices, BRinfo.vertices,BRinfo.sampler_data,colors);
 end
 
+sphere_plot(BRinfo);
 
-
-% sync_axes();
 
 % colorbar
-make_discrete_colorbar(1,num_non_degen,plot_params.fontsize,'edge number');
+% make_discrete_colorbar(1,num_non_degen,plot_params.fontsize,'edge number');
 end
 
 
@@ -85,9 +87,9 @@ for ii = 1:BRinfo.num_edges
 	mid_plot = BRinfo.vertices(BRinfo.edges(ii,2)).point;
 	right_plot = BRinfo.vertices(BRinfo.edges(ii,3)).point;
 	
-    if and(left_plot==mid_plot, mid_plot==right_plot)
-       continue; 
-    end
+	if and(left_plot==mid_plot, mid_plot==right_plot)
+		continue;
+	end
 	switch length(ind)
 		case {2}
 			plotme = [left_plot(ind(1)) left_plot(ind(2));...
@@ -98,16 +100,21 @@ for ii = 1:BRinfo.num_edges
 			h = main_plot_function(plotme,[1 2], curr_axis);
 			
 		case {3}
-		
+			
 			plotme = [left_plot(ind(1)) left_plot(ind(2)) left_plot(ind(3));...
 				mid_plot(ind(1)) mid_plot(ind(2)) mid_plot(ind(3));...
 				right_plot(ind(1)) right_plot(ind(2)) right_plot(ind(3))];
 			plotme = real(plotme);
 			h = main_plot_function(plotme,[1 2 3], curr_axis);
-    end
-    plot_params.handles.edges(ii) = h;
-	set(h,'Color',colors(nondegen_edge_ind,:),'LineStyle','--','LineWidth',2);
-    nondegen_edge_ind = nondegen_edge_ind+1;
+	end
+	plot_params.handles.edges(ii) = h;
+	set(h,'Color',colors(nondegen_edge_ind,:),'LineWidth',3);
+	if isempty(BRinfo.sampler_data)
+		set(h,'LineStyle','-');
+	else
+		set(h,'LineStyle','--');
+	end
+	nondegen_edge_ind = nondegen_edge_ind+1;
 end
 
 
@@ -119,31 +126,6 @@ end
 
 
 
-
-function create_axes_curve(BRinfo)
-global plot_params
-
-
-
-curr_axes = axes('Parent',plot_params.figures.main_plot);
-set(curr_axes,'visible','on');
-hold(curr_axes,'on');
-
-set(curr_axes,'XLim',[BRinfo.center(plot_params.ind(1))-1.1*BRinfo.radius BRinfo.center(plot_params.ind(1))+1.1*BRinfo.radius]);
-set(curr_axes,'YLim',[BRinfo.center(plot_params.ind(2))-1.1*BRinfo.radius BRinfo.center(plot_params.ind(2))+1.1*BRinfo.radius]);
-
-if length(plot_params.ind)==3
-    set(curr_axes,'ZLim',[BRinfo.center(plot_params.ind(3))-1.1*BRinfo.radius BRinfo.center(plot_params.ind(3))+1.1*BRinfo.radius]);
-end
-
-set(curr_axes,'dataaspectratio',[1 1 1]);
-
-
-plot_params.axes.main = curr_axes;
-
-
-
-end
 
 
 

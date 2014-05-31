@@ -61,9 +61,9 @@ end
 fig1 = gcf;
 
 set(fig1,'PaperPositionMode','auto');
-set(gca,'FontSize',plot_params.fontsize-2);
+% set(gca,'FontSize',plot_params.fontsize-2);
 
-% labelText('FontName','Times New Roman');
+% labelText('FontName','Times New Roman','FontSize',plot_params.fontsize-2);
 
 % basename = sprintf('%s_%s',plotmode,dataname(1:end-4));
 

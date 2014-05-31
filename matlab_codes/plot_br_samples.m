@@ -1,9 +1,80 @@
-function varargout = plot_br_samples()
-
-clear all;
-close all;
+function varargout = plot_br_samples(varargin)
 
 global plot_params;
+
+
+
+
+if and(isfield(plot_params,'axes'),strcmp(get(gca,'Tag'),'bertini_real'));
+
+	if ~ishold
+		f = fieldnames(plot_params.axes);
+		for ii = 1:length(f)
+			delete(plot_params.axes.(f{ii}));
+			plot_params.axes = rmfield(plot_params.axes,f{ii});
+		end
+	end
+	
+
+	if isfield(plot_params.handles,'projection')
+		plot_params.handles = rmfield(plot_params.handles,'projection');
+	end
+	
+	
+	
+	f = fieldnames(plot_params.buttons);
+	for ii = 1:length(f)
+		delete(plot_params.buttons.(f{ii}));
+		plot_params.buttons = rmfield(plot_params.buttons,f{ii});
+	end
+	
+	
+	f = fieldnames(plot_params.panels);
+	for ii = 1:length(f)
+		delete(plot_params.panels.(f{ii}));
+		plot_params.panels = rmfield(plot_params.panels,f{ii});
+	end
+		
+end
+
+
+
+
+
+plot_params.use_custom_projection = false;
+
+
+if mod(length(varargin),2)~=0
+	error('must have setting-value pairs');
+end
+
+plot_params.use_custom_projection = false;
+
+for ii = 1:2:length(varargin)
+	
+	switch varargin{ii}
+		case 'proj'
+
+			
+			plot_params.use_custom_projection = true;
+			
+			if isa(varargin{ii+1},'function_handle')
+				plot_params.custom_projection = varargin{ii+1};
+			elseif strcmpi(varargin{ii+1},'natural')
+				plot_params.custom_projection = 'nattyproj';
+			else
+				error('value for ''proj'' must be a function handle or ''natural''');
+				
+			end
+			
+			
+			
+		otherwise
+			error('unexpected setting name ''%s''',varargin{ii})
+	end
+end
+
+
 
 
 if ~isempty(which('getmondim'))
@@ -12,45 +83,42 @@ if ~isempty(which('getmondim'))
 else
 	plot_params.window = [20 20 1280 768];
 end
-	
-
-plot_params.figures.supermain = figure(gcf);
+plot_params.figures.supermain = gcf;
 
 set(plot_params.figures.supermain,'Position',plot_params.window)
 set(plot_params.figures.supermain,'toolbar','figure');
 plot_params.figures.main_plot = plot_params.figures.supermain;
 
-plot_params.fontsize = 13;
+plot_params.fontsize = 28;
 
 	
+% set(plot_params.figures.main_plot,'CloseRequestFcn',@br_fig_close)
 
 
-cameratoolbar
 
-button_setup();
-
-load_and_render();
+load_and_render(1,varargin);
 
 
 if nargout==1
 	varargout{1} = plot_params;
 end
 
-
-
+hold off
 end%re: function
 
 
 
 
-function load_and_render(varargin)
+function load_and_render(defaultload,varargin)
 global plot_params
 
 BRinfo = [];
 sampler_data = [];
 
 
-if isempty(varargin)
+
+
+if defaultload
 
 	prev_filenames = dir('BRinfo*.mat');
 	max_found = -1;
@@ -118,6 +186,23 @@ end
 plot_params.dimension = BRinfo.dimension;
 
 
+if plot_params.use_custom_projection
+	
+	if isa(plot_params.custom_projection,'function_handle')
+		for ii = 1:BRinfo.num_vertices
+			asdf = plot_params.custom_projection(BRinfo.vertices(ii).point);
+			BRinfo.vertices(ii).point = asdf;
+		end
+		BRinfo.var_names = {};
+		for ii = 1:length(BRinfo.vertices(1).point)
+			BRinfo.var_names{ii} = ['proj_' num2str(ii)];
+		end
+		BRinfo.num_variables = length(BRinfo.vertices(1).point)+1;
+	else
+		%gotta make an anonymous function
+	end
+end
+
 ind = get_indices_interactive(sampler_data,BRinfo);
 
 plot_params.ind = ind;
@@ -136,9 +221,10 @@ end
 
 render_legends();
 
+button_setup();
 controls(BRinfo);
 
-save_routine
+% save_routine
 end
 
 
@@ -210,15 +296,12 @@ end
 
 % find any variables which have zero value uniformly.  should be
 % improved to find constant variables.
-function ind = find_constant_vars(data,dim)
+function ind = find_constant_vars(data)
 %
 zerothresh = 1e-7;
 
-if nargin < 2 
-	dim = 1;
-end
+
 biggies = abs(max(data)-min(data));
-% biggies = max(abs(data),[],dim);
 ind = find(biggies>zerothresh);
 
 end
@@ -246,11 +329,17 @@ end
 
 
 
+% function br_fig_close(src,evnt)
+% global plot_params
+% delete(plot_params.figures.main_plot)
+% clear plot_params
+% end
+
 function button_setup()
 global plot_params
 
-
-h = uipanel('units','pixels','position',[10 10 120 160],'visible','on');
+maxasdf = plot_params.window(4);
+h = uipanel('units','pixels','position',[10 maxasdf-210 120 200],'visible','on');
 plot_params.panels.buttons = h;
 
 
@@ -260,43 +349,85 @@ plot_params.buttons.save = uicontrol('Style', 'pushbutton', 'String', 'Save',...
 	
 plot_params.buttons.load = uicontrol('Style', 'pushbutton', 'String', 'Load & Render',...
         'Position', [10 40 100 20],...
-        'Callback', {@load_and_render},'Parent',h); 
+        'Callback', {@load_and_render,0},'Parent',h); 
 
 	
 plot_params.buttons.center = uicontrol('Style', 'pushbutton', 'String', 'Center',...
         'Position', [10 70 100 20],...
         'Callback', {@center_camera_on_selected_point},'Parent',h); 
 
-    plot_params.buttons.leap = uicontrol('Style', 'pushbutton', 'String', 'Leap',...
-        'Position', [10 100 100 20],...
-        'Callback', {@leap_figure_axes_control},'Parent',h); 
-    
-    plot_params.buttons.stl = uicontrol('Style', 'pushbutton', 'String', 'STL',...
-        'Position', [10 130 100 20],...
-        'Callback', {@fv_to_stl},'Parent',h); 
+plot_params.buttons.leap = uicontrol('Style', 'pushbutton', 'String', 'Leap',...
+	'Position', [10 100 100 20],...
+	'Callback', {@leap_figure_axes_control},'Parent',h); 
+
+plot_params.buttons.stl = uicontrol('Style', 'pushbutton', 'String', 'STL',...
+	'Position', [10 130 100 20],...
+	'Callback', {@fv_to_stl},'Parent',h); 
+
+buttontext = sprintf('FontSize %i',plot_params.fontsize);
+plot_params.buttons.fontsize = uicontrol('Style', 'pushbutton', 'String', buttontext,...
+	'Position', [10 160 100 20],...
+	'Callback', {@change_text_size},'Parent',h); 
+
+
 end
 
+
+
+function change_text_size(varargin)
+global plot_params
+
+new_fontsize = 'not_an_int';
+while ~isint(new_fontsize)
+	new_fontsize = input('new size: ');	
+end
+
+if new_fontsize~=plot_params.fontsize
+	set(labelText(gca),'FontSize',new_fontsize);%this function is from the exchange, and must be downloaded separately.
+	set(plot_params.buttons.fontsize,'String',sprintf('FontSize %i',new_fontsize));
+	plot_params.fontsize = new_fontsize;
+end
+
+
+
+
+
+end
+
+
+
+
+%from meibster at stackoverflow
+function answer = isint(n)
+
+if size(n) == [1 1]
+    answer = isreal(n) && isnumeric(n) && round(n) == n &&  n >0;
+else
+    answer = false;
+end
+
+
+end
 
 
 function camera_setup(BRinfo)
 global plot_params 
 
+cameratoolbar
 
-% view(3);  %yep, switch to view 3 by default for initial view.
-% set(plot_params.axes.vertices,'CameraViewAngle', 20);
 
 set(gca,'CameraTargetMode','manual');
 plot_params.scene.target = real(BRinfo.center(plot_params.ind));
 set(gca,'CameraTarget',plot_params.scene.target);
 
 
-init_campos = real(BRinfo.center(plot_params.ind));
-init_campos = init_campos + 9*BRinfo.radius;
+% init_campos = real(BRinfo.center(plot_params.ind));
+% init_campos = init_campos + 9*BRinfo.radius;
 
-plot_params.scene.campos = init_campos;
+plot_params.scene.campos = plot_params.init_cam_pos;
 
 set(gca,'CameraPosition',plot_params.scene.campos);
-set(gca,'CameraViewAngle',10);
+set(gca,'CameraViewAngle',70);
 rotate3d off
 
 end
@@ -373,7 +504,13 @@ plot_params.switches.show_critcurve = 0;
 plot_params.switches.show_spherecurve = 0;
 plot_params.switches.show_critslices = 0;
 plot_params.switches.show_midslices = 0;
-plot_params.switches.show_singular = 0;
+plot_params.switches.show_singular = 1;
+
+
+plot_params.switches.show_sphere = 0;
+
+
+
 end
 
 
@@ -382,7 +519,7 @@ function visibility_setup()
 global plot_params
 
 button_pos = get(plot_params.panels.buttons,'Position');
-init_y = button_pos(2)+button_pos(4)+5;
+init_y = 10;%button_pos(2)+button_pos(4)+5;
 
 
 plot_params.panels.visibility = uipanel('units','pixels','Position',[20 init_y 120 400],'visible','on');
@@ -398,7 +535,7 @@ num_checkboxes = 0;
 
 
 
-
+% this routine builds the checkboxes from the bottom
 
 
 
@@ -472,6 +609,16 @@ for ii = 1:length(f)
 end
 
 
+
+if plot_params.is_bounded == 0
+	pos =[checkbox.x,checkbox.y_start+checkbox.y_factor*num_checkboxes,checkbox.w,checkbox.h];
+	plot_params.checkboxes.sphere = uicontrol(...
+		'style','checkbox','units','pixels','position',pos,...
+		'String','bounding sphere','Value',plot_params.switches.show_sphere,'callback',{@flip_switch,'show_sphere'},...
+		'Parent',plot_params.panels.visibility); 
+	num_checkboxes = num_checkboxes+1;
+end
+	
 
 switch plot_params.dimension
 	case 1
@@ -730,7 +877,11 @@ end
 	
 	
 	
-	
+if plot_params.switches.show_sphere
+	set(plot_params.handles.sphere,'visible','on');
+else
+	set(plot_params.handles.sphere,'visible','off');
+end
 	
 	
 	
@@ -901,7 +1052,6 @@ end
 
 function flip_switch(varargin)
 global plot_params
-% length(varargin)
 
 switch_name = varargin{3};
 
@@ -916,10 +1066,6 @@ end
 
 twiddle_visibility(plot_params)
 end
-
-
-
-
 
 
 
@@ -953,8 +1099,8 @@ else
     plot_params.format_flag = 'epsc2';
 end
 
-
-render_into_file(plot_params,'-r150');
+plot_params.fontsize = 25;
+render_into_file(plot_params,'-r600');
 
 for ii = 1:length(f)
 	set(plot_params.panels.(f{ii}),'visible','on');
@@ -987,7 +1133,7 @@ end
 
 
 plot_params.handles.legend = legend(a,b); 
-set(plot_params.handles.legend,'Location','NorthEastOutside','Interpreter','none');
+set(plot_params.handles.legend,'Location','NorthEast','Interpreter','none');
 %,'Location','SouthEast','Parent',plot_params.axes.vertices
 end
 
@@ -1016,33 +1162,70 @@ function fv_to_stl(varargin)
 global plot_params
 
 fv = plot_params.faces_and_vertices;
-save('fv.mat','fv');
 
 
 
 %delete the bad degenerate faces.  
 degen = any(diff(fv.faces(:,[1:3 1]),[],2)==0,2);
-fv.faces(degen,:)
-  fv.faces(degen,:) = [];
-
-  fv.faces(1,:) = fv.faces(1,[3 2 1]);
-  
-  % Fix non-uniform face orientations
-  fv2 = unifyMeshNormals(fv,'alignTo',1);
-  % Solidify
-  thickened_fv = surf2solid(fv2,'thickness',0.09);
-  
-  
-  
-stlwrite('br_surf.stl',fv2);
+fv.faces(degen,:) = [];
 
 
+% now we will look for duplicate points
+num_dup = 0;
+for ii = 1:length(fv.vertices)
+	for jj = ii+1:length(fv.vertices)
+		if norm(fv.vertices(ii,:)-fv.vertices(jj,:))<0.00001
+			num_dup = num_dup+1;
+			[row_ind,col_ind] = find(fv.faces==jj);
+			if ~isempty(row_ind)
+				fv.faces(row_ind,col_ind) = jj;
+			end
+		end
+	end
+end
 
 
-stlwrite('br_thickened_surf.stl',thickened_fv);
+%remove unreferenced points.
+
+F = fv.faces;
+
+keep = [];
+for ii = 1:length(fv.vertices)
+	if ~any(any(fv.faces==ii))
+		[a,b] = find(fv.faces>ii);
+		for jj = 1:length(a)
+			F(a(jj),b(jj)) = F(a(jj),b(jj))-1;
+		end
+		
+	else
+		keep = [keep ii];
+	end
+end
+
+fv.vertices = fv.vertices(keep,:);
+fv.faces = F;
 
 
-figure, patch(thickened_fv,'FaceColor','g','FaceAlpha',0.5,'EdgeAlpha',0.5), axis image
+
+%delete the bad degenerate faces.  
+degen = any(diff(fv.faces(:,[1:3 1]),[],2)==0,2);
+fv.faces(degen,:) = [];
+
+fv.faces(1,:) = fv.faces(1,[3 2 1]);
+
+
+
+save('fv.mat','fv');
+stlwrite('br_surf.stl',fv);
+
+% Fix non-uniform face orientations
+%fv = unifyMeshNormals(fv,'alignTo',1);
+
+fv_unified = unifyMeshNormals(fv,'alignTo','in');
+save('fv.mat','fv_unified','-append');
+stlwrite('br_unified_surf.stl',fv_unified);
+
+
 
 end
 
@@ -1121,4 +1304,16 @@ function update_view_text()
 global plot_params
 set(plot_params.controls.viewdisplaytext,'string',['az ' num2str(plot_params.azimuth) ' el ' num2str(plot_params.elevation)]);
 end
+
+
+
+
+
+
+
+
+
+
+
+
 
