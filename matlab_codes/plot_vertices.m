@@ -1,9 +1,23 @@
 function vertices = plot_vertices(ind, BRinfo)
 global plot_params
 
+markersize = 13;
+
 curr_axis = plot_params.axes.main;
 
-names = {'UNSET', 'CRITICAL', 'SEMICRITICAL', 'MIDPOINT', 'ISOLATED', 'NEW', 'CURVE_SAMPLE_POINT', 'SURFACE_SAMPLE_POINT', 'REMOVED', 'PROBLEMATIC'};
+names = {'UNSET', 'CRITICAL', 'SEMICRITICAL', ...
+			'MIDPOINT', 'ISOLATED', 'NEW', ...
+			'CURVE_SAMPLE_POINT', 'SURFACE_SAMPLE_POINT', 'REMOVED', ...
+			'PROBLEMATIC'};
+		
+markers = {'x','o','s','d','^','v','>','<','p','h'};
+colors = [1 0 0;lines(length(names)-1)];
+
+for ii = 1:length(names)
+	indexed_markers.(names{ii}).marker = markers{ii};
+	indexed_markers.(names{ii}).color = colors(ii,:);
+end
+
 
 catnames = cell(length(names),1);
 
@@ -18,7 +32,7 @@ end
 plotme = zeros(BRinfo.num_vertices, length(ind));
 
 
-types = [];
+
 indices = zeros(BRinfo.num_vertices, 1);
 
 labels = cell(1,BRinfo.num_vertices);
@@ -27,10 +41,10 @@ labels = cell(1,BRinfo.num_vertices);
 vertices = zeros(BRinfo.num_vertices,length(ind));
 
 
-
+types = []; %initialize to blank
 for ii=1:BRinfo.num_vertices
     vertices(ii,:) = transpose(BRinfo.vertices(ii).point(ind));
-	plotme(ii,:) = transpose(BRinfo.vertices(ii).point(ind));
+	plotme(ii,:) = transpose(BRinfo.vertices(ii).point(ind)); % is this unnecessary?
 	indices(ii) = BRinfo.vertices(ii).type;
 	if isempty(find(unique(types)==indices(ii),1))
 		types = [types indices(ii)];
@@ -39,17 +53,17 @@ for ii=1:BRinfo.num_vertices
 	labels{ii} = [ '    ' num2str(ii-1)];
 end
 
-markers = {'+','o','*','.','x','s','d','^','v','>','<','p','h'};
 
-colors = lines(length(types));
 for ii = 1:length(types)
+	
+	curr_name = names{types(ii)-99};
 	
 	curr_points = real(plotme(indices==types(ii),:));
 	h = main_plot_function(curr_points,1:length(ind), curr_axis);
 	
 	
 	set(h,'LineStyle','none');
-	set(h,'Marker',markers{ii},'MarkerSize',10);
+	set(h,'Marker',indexed_markers.(curr_name).marker,'MarkerSize',markersize,'MarkerFaceColor',0.6*indexed_markers.(curr_name).color,'MarkerEdgeColor',indexed_markers.(curr_name).color);
 	set(h,'Color',colors(ii,:));
 	local_catname = ['ind_' num2str(types(ii))];
 	

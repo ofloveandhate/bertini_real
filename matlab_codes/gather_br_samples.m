@@ -6,7 +6,7 @@ function gather_br_samples()
 
 locations = strfind(dirname,'/');
 if length(locations)>0
-	dirname = dirname(locations(end)+1:end)
+	dirname = dirname(locations(end)+1:end);
 end
 
 BRinfo.dirname = dirname;
@@ -76,6 +76,7 @@ filename = [dirname '/' decomp.inputfilename];
 if ~isempty(dir(filename))
 	input = fileread(filename);
 else
+	display(sprintf('did not find input file at %s',dirname));
 	input = '';
 end
 
@@ -88,23 +89,19 @@ function [BRinfo] = gather_surface(dirname, BRinfo)
 
 BRinfo = parse_decomp(dirname,BRinfo);
 
-% .num_faces, BRinfo.faces, BRinfo.midpoint_slices, BRinfo.critpoint_slices, BRinfo.crit_curve, BRinfo.sphere_curve,BRinfo.sampler_data
 
 fin = fopen([dirname '/S.surf'],'r');
 
 [BRinfo.num_faces] = fscanf(fin,'%i',[1 1]);
 [BRinfo.num_edges] = fscanf(fin,'%i',[1 1]);
-[num_midpoint_slices] = fscanf(fin,'%i',[1 1]);
-[num_critpoint_slices] = fscanf(fin,'%i',[1 1]);
-[num_singular_curves] = fscanf(fin,'%i',[1 1]);
+[BRinfo.num_midpoint_slices] = fscanf(fin,'%i',[1 1]);
+[BRinfo.num_critpoint_slices] = fscanf(fin,'%i',[1 1]);
+BRinfo.num_singular_curves = fscanf(fin,'%i',[1 1]);
 BRinfo.singular_curve_multiplicities = [];
-for ii = 1:num_singular_curves
+for ii = 1:BRinfo.num_singular_curves
     BRinfo.singular_curve_multiplicities(ii,1:2) = fscanf(fin,'%i',[1 2]);
 end
 
-% BRinfo.midpoint_slices = [];
-% BRinfo.critpoint_slices = [];
-% BRinfo.crit_curve = [];
 
 fclose(fin);
 
@@ -112,30 +109,39 @@ fclose(fin);
 
 [BRinfo.faces] = gather_faces(dirname);
 
-
-for ii =1:num_midpoint_slices
-    a = gather_curve([dirname '/curve_midslice_' num2str(ii-1) ], []);
-	BRinfo.midpoint_slices(ii) = a;
+if BRinfo.num_midpoint_slices>0
+	for ii =1:BRinfo.num_midpoint_slices
+		a = gather_curve([dirname '/curve_midslice_' num2str(ii-1) ], []);
+		BRinfo.midpoint_slices{ii} = a;
+	end
+else
+	BRinfo.midpoint_slices = [];
 end
 
-for ii =1:num_critpoint_slices
-    a = gather_curve([dirname '/curve_critslice_' num2str(ii-1) ],[]);
-	[BRinfo.critpoint_slices(ii)] = a;
+if BRinfo.num_critpoint_slices>0
+	for ii =1:BRinfo.num_critpoint_slices
+		a = gather_curve([dirname '/curve_critslice_' num2str(ii-1) ],[]);
+		[BRinfo.critpoint_slices{ii}] = a;
+	end
+else
+	BRinfo.critpoint_slices = [];
 end
-
 a = gather_curve([dirname '/curve_crit'],[]);
 [BRinfo.crit_curve] = a;
 
 
 [BRinfo.sphere_curve] = gather_curve([dirname '/curve_sphere'],[]);
 
-% BRinfo.singular_curves = [];
-for ii = 1:num_singular_curves
-    a = gather_curve([dirname '/curve_singular_mult_' num2str(BRinfo.singular_curve_multiplicities(ii,1)) '_' num2str(BRinfo.singular_curve_multiplicities(ii,2))],[]);
-    [BRinfo.singular_curves(ii)] = a;
-    BRinfo.singular_names{ii} = a.inputfilename;
-end
+if BRinfo.num_singular_curves>0
 
+	for ii = 1:BRinfo.num_singular_curves
+		a = gather_curve([dirname '/curve_singular_mult_' num2str(BRinfo.singular_curve_multiplicities(ii,1)) '_' num2str(BRinfo.singular_curve_multiplicities(ii,2))],[]);
+		[BRinfo.singular_curves(ii)] = a;
+		BRinfo.singular_names{ii} = a.inputfilename;
+	end
+else
+	BRinfo.singular_curves = [];
+end
 
 BRinfo.sampler_data = gather_surface_samples(dirname);
 
@@ -186,7 +192,11 @@ end
 function BRinfo = parse_decomp(dirname,BRinfo)
 
 
-
+if isempty(dir([dirname '/' 'decomp']))
+	display(sprintf('did not find decomp at %s',dirname));
+	BRinfo = {};
+	return
+end
 
 fid = fopen([dirname '/' 'decomp'],'r');
 
@@ -314,19 +324,28 @@ function [curve] = gather_curve(dirname, curve)
 
 curve = parse_decomp(dirname,curve);
 
+filename = [dirname '/E.edge'];
 
-fid = fopen([dirname '/E.edge'],'r');
+if isempty(dir(filename))
+	display(sprintf('did not find edge file at %s',dirname));
+	curve.num_edges = 0;
+	curve.edges = [];
+else
+	fid = fopen(filename,'r');
 
-curve.num_edges = fscanf(fid,'%i\n',[1 1]);
+	curve.num_edges = fscanf(fid,'%i\n',[1 1]);
 
 
-curve.edges = zeros(curve.num_edges,3);  % 3, as left, mid, right
-for ii = 1:curve.num_edges
-	tmp = fscanf(fid,'%i',[1 3]);
-	curve.edges(ii,:) = tmp+1;
-end
+	curve.edges = zeros(curve.num_edges,3);  % 3, as left, mid, right
+	for ii = 1:curve.num_edges
+		tmp = fscanf(fid,'%i',[1 3]);
+		curve.edges(ii,:) = tmp+1;
+	end
+
+	fclose(fid);
 	
-fclose(fid);
+end
+
 
 
 
@@ -350,7 +369,7 @@ else
 	end
 	fclose(fid);
     
-    display('done gathering sampler data.');
+%     display('done gathering sampler data.');
 end
 
 
@@ -388,14 +407,14 @@ end
 
 for ii = 1:BRinfo.num_vertices
 	tmp_num_variables = fscanf(fid,'%i',[1 1]); % number variables
-	tmpvertex = zeros(tmp_num_variables-1,1);
+	tmpvertex = zeros(tmp_num_variables,1);
 	for jj = 1:tmp_num_variables
 		tmp = fscanf(fid,'%e %e\n',[1 2]);
 		tmpvertex(jj) = tmp(1)+1i*tmp(2);
 	end
 	
 	
-	BRinfo.vertices(ii).point = dehomogenize(tmpvertex);
+	BRinfo.vertices(ii).point = [dehomogenize(tmpvertex(1:num_natural_vars));tmpvertex(num_natural_vars+1:end)];
 	
 	num_proj_vals = fscanf(fid,'%i\n',[1 1]);
 	for jj = 1:num_proj_vals
