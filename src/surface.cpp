@@ -1172,7 +1172,7 @@ void surface_decomposition::compute_sphere_crit(const witness_set & W_intersecti
 	
 	nullspace_config ns_config;
 	
-	std::cout << "computing critical points of sphere curve" << std::endl;
+	std::cout << color::magenta() << "computing critical points of sphere curve" << color::console_default() << std::endl;
 	
 	solver_output solve_out;
 	
@@ -1271,9 +1271,6 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 	vec_cp_mp(multilin_linears[1],W_surf.L_mp[1]);
 	
 	
-	comp_mp rand_perterb;  init_mp(rand_perterb); comp_mp(h);  init_mp(h); comp_d jalk;
-	jalk->r = 10*solve_options.T.final_tolerance; jalk->i = 0.0;
-	d_to_mp(h, jalk);                 // h = 1e-10
 	
 	
 	
@@ -1289,12 +1286,11 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 	for (int ii=0; ii<projection_values_downstairs->size; ii++){
 		
 		
-		std::cout << color::magenta() << "decomposing the " << ii << "th " << kindofslice << " slice" << color::console_default() << std::endl;
+		std::cout << color::magenta() << "decomposing the " << ii << "th " << kindofslice << " slice, of " << projection_values_downstairs->size << color::console_default() << std::endl;
 		print_comp_matlab(&projection_values_downstairs->coord[ii], "target_proj");
 		
-		solve_options.backup_tracker_config();
+		solve_options.backup_tracker_config(); // TODO: this backed up config could be overwritten!!!
 		
-		int iterations=0;
 		
 		witness_set slice_witness_set; // deliberately scoped variable
 		
@@ -1314,6 +1310,9 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 		neg_mp(&multilin_linears[0]->coord[0], &projection_values_downstairs->coord[ii]);
 		
 		
+		if (program_options.verbose_level>=1) {
+			std::cout << color::green() << "getting slice witness points and linear" << color::console_default() << std::endl;
+		}
 		
 		solve_options.robust = true;
 		
@@ -1350,15 +1349,21 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 		
 		
 		
-		
 		slices[ii].input_filename = slicename;
-		
 		slices[ii].copy_sphere_bounds(*this);
+		
+		
+		
 		
 		// we already know the component is self-conjugate (by entry condition), so we are free to call this function
 		// the memory for the multilin system will get erased in this call...
 		bool prev_quick_state = program_options.quick_run;
 //		program_options.quick_run = false;
+		
+		if (program_options.verbose_level>=1) {
+			std::cout << color::green() << "computing slice" << color::console_default() << std::endl;
+		}
+		
 		
 		slices[ii].computeCurveSelfConj(slice_witness_set,
 									   &pi[1],
@@ -1367,44 +1372,9 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 		
 		program_options.quick_run = prev_quick_state;
 		
-		if (iterations<3) {
-			solve_options.T.securityMaxNorm = 2*solve_options.T.securityMaxNorm;
-		}
-		else if (iterations< 7){
-			//				solve_options.T.final_tolerance = 0.5*solve_options.T.final_tolerance;
-			solve_options.T.securityMaxNorm = 10*solve_options.T.securityMaxNorm;
-			
-			jalk->r = 1e-17;
-			d_to_mp(h, jalk);                 // h = 1e-10
-			
-			get_comp_rand_real_mp(rand_perterb); //  rand_perterb = real rand
-			
-			
-			
-			mul_mp(rand_perterb,rand_perterb,h); // rand_perterb = small real rand
-			add_mp(&projection_values_downstairs->coord[ii],&projection_values_downstairs->coord[ii],rand_perterb); // perturb the projection value
-			
-			
-		}
-		else
-		{
-			jalk->r = 1e-16;
-			d_to_mp(h, jalk);                 // h = 1e-10
-			
-			get_comp_rand_real_mp(rand_perterb); //  rand_perterb = real rand
-			
-			mul_mp(rand_perterb,rand_perterb,h); // rand_perterb = small real rand
-			add_mp(&projection_values_downstairs->coord[ii],&projection_values_downstairs->coord[ii],rand_perterb); // perturb the projection value
-			
-			//				solve_options.T.final_tolerance = 0.1*solve_options.T.final_tolerance;
-			solve_options.T.securityMaxNorm = 100*solve_options.T.securityMaxNorm;
-		}
-		
-		
+
 		
 		slice_witness_set.reset();
-			
-
 		solve_options.reset_tracker_config();
 		
 		slices[ii].add_projection(pi[1]);
@@ -1422,7 +1392,7 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 		
 	} // re: for loop
 	
-	clear_mp(rand_perterb);  clear_mp(h);
+	
 	clear_vec_mp(multilin_linears[0]);
 	clear_vec_mp(multilin_linears[1]);
 	free(multilin_linears);
@@ -1460,33 +1430,16 @@ void surface_decomposition::connect_the_dots(vertex_set & V,
 	std::cout << color::bold("m") << "***\n\nCONNECT THE DOTS\n\n***" << color::console_default() << std::endl;
     
 	
-	
-	
-	
-	
-	
-	
-	
 	midpoint_config md_config;
 	md_config.setup(*this, solve_options); // yep, pass 'this' object into another call. brilliant.
 	
 	
-	
-	
-	if (solve_options.use_parallel()) {
+	if (solve_options.use_parallel())
 		master_connect(V, md_config, solve_options, program_options);
-	}
 	else
-	{
 		serial_connect(V, md_config, solve_options, program_options);
-	}
 	
     
-    
-	
-	
-	
-	
 	
 	
 	return;

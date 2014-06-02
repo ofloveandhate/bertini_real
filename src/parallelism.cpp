@@ -14,12 +14,6 @@
 
 
 
-//
-//int process::main_loop(){
-//	std::cout << "the basic main loop for a generic process does nothing.  create a derived class." << std::endl;
-//	
-//	return SUCCESSFUL;
-//}
 
 
 
@@ -77,7 +71,10 @@ int ubermaster_process::main_loop()
 	W.get_variable_names(num_vars);
 	W.input_filename = program_options.input_filename;
 	
-	W.print_to_screen();
+	if (program_options.verbose_level>=1) {
+		W.print_to_screen();
+	}
+	
 	
 	
 	

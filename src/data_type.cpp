@@ -2397,8 +2397,6 @@ witness_set witness_data::choose_set_interactive(BR_configuration & options)
 		
 		//iterate over each point in the component
 		for (auto jter=index_tracker[target_dimension][*iter].begin(); jter!=index_tracker[target_dimension][*iter].end(); ++jter) {
-			std::cout << "adding point " << *jter << std::endl;
-			print_point_to_screen_matlab(pts_mp[*jter],"p");
 			W.add_point(pts_mp[*jter]);
 		}
 		
@@ -2885,7 +2883,6 @@ int vertex_set::setup_vertices(boost::filesystem::path INfile)
 			mpf_inp_str(temp_vertex.projection_values->coord[jj].i, IN, 10);
 		}
 		
-//		print_point_to_screen_matlab(temp_vertex.projection_values,"p");
 		fscanf(IN,"%d\n",&temp_vertex.input_filename_index);
 		fscanf(IN,"%d\n",&temp_vertex.type);
 		

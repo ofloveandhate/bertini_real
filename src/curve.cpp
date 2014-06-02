@@ -275,7 +275,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	
 	if (program_options.verbose_level>=-1) {
 		print_point_to_screen_matlab(crit_downstairs,"crit_downstairs");
-		print_point_to_screen_matlab(midpoints_downstairs,"midpoints_downstairs");
+//		print_point_to_screen_matlab(midpoints_downstairs,"midpoints_downstairs");
 	}
 	
 	
@@ -369,7 +369,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
     solve_options.use_gamma_trick = 0;
 	
 	for (int ii=0; ii<num_midpoints; ++ii) {
-		std::cout << color::brown() << "connecting midpoint downstairs " << ii << color::console_default() << std::endl;
+		std::cout << color::brown() << "connecting midpoint downstairs " << ii << " of " << num_midpoints << color::console_default() << std::endl;
         
         
         solve_options.backup_tracker_config();
