@@ -2016,7 +2016,7 @@ void witness_data::populate()
 				}
 			}
 		}
-		
+		clear_mat_mp(randomization_matrix);
 		
 		
 		//MATRIX W FOR HOMOGENIZATION
