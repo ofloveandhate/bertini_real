@@ -325,11 +325,74 @@ int solver::receive(parallelism_config & mpi_config)
 
 
 
+
+
+
+
+
+
+
+
+
 //////////////
 //
 //	SOLVER MP
 //
 ////////////
+
+
+void solver_mp::clear()
+{
+	
+	//	std::cout << "clearing mp patch" << std::endl;
+	
+	if (1) {
+		patch_eval_data_clear_mp(&this->patch);
+	}
+	else
+	{
+		for (int ii=0; ii<patch.patchCoeff->rows; ii++) {
+			//			std::cout << "ii " << ii << std::endl;
+			for (int jj=0; jj<patch.patchCoeff->cols; jj++) {
+				//				std::cout << "jj " << jj << std::endl;
+				mpq_clear(patch.patchCoeff_rat[ii][jj][0]);
+				mpq_clear(patch.patchCoeff_rat[ii][jj][1]);
+				
+				free(patch.patchCoeff_rat[ii][jj]);
+			}
+			free(patch.patchCoeff_rat[ii]);
+		}
+		free(patch.patchCoeff_rat);
+		
+		
+		clear_mat_mp(patch.patchCoeff);
+		
+	}
+	
+	
+	
+	
+	
+	
+	clear_mp(gamma);
+	
+	if (MPType==2) {
+		clear_rat(gamma_rat);
+		free(gamma_rat);
+	}
+	
+	
+	if (have_SLP && received_mpi) { // other wise don't have it, or someone else is responsible for clearing it.
+		clearProg(this->SLP, this->MPType, 1); // 1 means call freeprogeval()
+		delete[] SLP;
+	}
+	
+	if (received_mpi) {
+		;
+	}
+}
+
+
 
 int solver_mp::send(parallelism_config & mpi_config)
 {
@@ -446,6 +509,29 @@ int solver_mp::receive(parallelism_config & mpi_config)
 //	SOLVER D
 //
 ////////////
+
+
+
+void solver_d::clear(){
+	
+	if (MPType==0) {
+	}
+
+	//	std::cout << "clearing double patch" << std::endl;
+	patch_eval_data_clear_d(& this->patch);
+	
+	clear_d(gamma);
+	
+	
+	if (have_SLP && received_mpi) {
+		clearProg(this->SLP, this->MPType, 1); // 1 means call freeprogeval()
+		delete[] SLP;
+	}
+}
+
+
+
+
 
 int solver_d::send(parallelism_config & mpi_config)
 {
@@ -1872,6 +1958,15 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 
 void generic_setup_patch(patch_eval_data_d *P, const witness_set & W)
 {
+//	std::cout << "setting up double patch " << std::endl;
+	
+	
+	if (W.num_patches==0) {
+		std::cerr << "the number of patches in input W is 0.  this is not allowed, the number must be positive.\n" << std::endl;
+		br_exit(1800);
+	}
+	
+	
 	P->num_patches = W.num_patches;
 	init_mat_d(P->patchCoeff, W.num_patches, W.num_variables);
 	P->patchCoeff->rows = W.num_patches; P->patchCoeff->cols = W.num_variables;
@@ -1897,7 +1992,7 @@ void generic_setup_patch(patch_eval_data_d *P, const witness_set & W)
 
 void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W)
 {
-
+	
 	
 	if (W.num_patches==0) {
 		std::cerr << "the number of patches in input W is 0.  this is not allowed, the number must be positive.\n" << std::endl;
@@ -1920,6 +2015,13 @@ void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W)
 	}
 	
 	
+	
+	if (total_num_vars_in_patches < W.num_variables) {
+		std::cout << "parity mismatch in patches ("<< total_num_vars_in_patches <<") and number of variables ("<< W.num_variables <<")." << std::endl;\
+	}
+	
+	
+//	std::cout << "setting up mp patch, ii " << W.num_patches << " jj " << W.num_variables << std::endl;
 	
 	
 	
