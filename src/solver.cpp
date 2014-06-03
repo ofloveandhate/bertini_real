@@ -291,9 +291,9 @@ int solver::send(parallelism_config & mpi_config)
 	send_preproc_data(&this->preProcData);
 	
 	
+	delete[] buffer;
 	
 	
-	delete(buffer);
 	return SUCCESSFUL;
 }
 
@@ -318,7 +318,7 @@ int solver::receive(parallelism_config & mpi_config)
 	
 	
 	
-	delete(buffer);
+	delete[] buffer;
 	return SUCCESSFUL;
 }
 

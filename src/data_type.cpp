@@ -1991,7 +1991,7 @@ void witness_data::populate()
 	}
 	
 	
-	mpq_t *temp_rat = new mpq_t[2];  init_rat(temp_rat);
+	mpq_t *temp_rat = (mpq_t *) br_malloc(2*sizeof(mpq_t));
 	
 	
 	for (int mm=0; mm<num_nonempty_codims; mm++) {
@@ -2008,7 +2008,7 @@ void witness_data::populate()
 			for (int jj=0; jj<num_cols_randomization; jj++) {
 				if (numbertype==2) {
 					setup_comp_in_rat(temp_rat,IN);
-					rat_to_mp(&randomization_matrix->entry[ii][jj],temp_rat);
+					rat_to_mp(&randomization_matrix->entry[ii][jj],temp_rat); clear_rat(temp_rat);
 				}
 				else{
 					mpf_inp_str(randomization_matrix->entry[ii][jj].r, IN, 10);
@@ -2035,7 +2035,7 @@ void witness_data::populate()
 		for (int ii = 0; ii<num_entries_hom_patch_eqn; ii++) {
 			if (numbertype==2) {
 				setup_comp_in_rat(temp_rat,IN);
-				rat_to_mp(&temp_vec->coord[ii],temp_rat);
+				rat_to_mp(&temp_vec->coord[ii],temp_rat);  clear_rat(temp_rat);
 			}
 			else{
 				mpf_inp_str(temp_vec->coord[ii].r, IN, 10);
@@ -2050,7 +2050,7 @@ void witness_data::populate()
 		//   HOMVARCONST
 		comp_mp hom_variable_constant;  init_mp(hom_variable_constant);
 		setup_comp_in_rat(temp_rat,IN);
-		rat_to_mp(hom_variable_constant,temp_rat);
+		rat_to_mp(hom_variable_constant,temp_rat); clear_rat(temp_rat);
 		clear_mp(hom_variable_constant);
 		
 		
@@ -2066,7 +2066,7 @@ void witness_data::populate()
 			for (int jj=0; jj< num_lin_entries; jj++) {
 				if (numbertype==2) {
 					setup_comp_in_rat(temp_rat,IN);
-					rat_to_mp(&temp_vec->coord[jj],temp_rat);
+					rat_to_mp(&temp_vec->coord[jj],temp_rat); clear_rat(temp_rat);
 				}
 				else{
 					mpf_inp_str(temp_vec->coord[jj].r, IN, 10);
@@ -2093,7 +2093,7 @@ void witness_data::populate()
 		for (int ii = 0; ii<num_patch_coefficients; ii++) {
 			if (numbertype==2) {
 				setup_comp_in_rat(temp_rat,IN);
-				rat_to_mp(&temp_vec->coord[ii],temp_rat);
+				rat_to_mp(&temp_vec->coord[ii],temp_rat);  clear_rat(temp_rat);
 			}
 			else{
 				mpf_inp_str(temp_vec->coord[ii].r, IN, 10);
@@ -2106,11 +2106,13 @@ void witness_data::populate()
 		
 		//END REPEATED BLOCK (ONE FOR EACH NONEMPTY CODIM).
 	}
-	clear_rat(temp_rat);
-	delete [] temp_rat;
-	
 	
 	fclose(IN);
+	
+	free(temp_rat);
+	
+	
+	
 	
 	clear_vec_mp(temp_vec);
 	clear_vec_mp(prev_approx);
