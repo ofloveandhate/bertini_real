@@ -188,6 +188,206 @@ void curve_decomposition::computeCurveSelfConj(const witness_set & W_curve,
 
 
 
+//subfunctions
+int curve_decomposition::compute_critical_points(const witness_set & W_curve,
+                                                 vec_mp *projections,
+                                                 BR_configuration & program_options,
+                                                 solver_configuration & solve_options,
+                                                 witness_set & W_crit_real)
+{
+#ifdef functionentry_output
+	std::cout << "curve::compute_critical_points" << std::endl;
+#endif
+	
+	if (!this->randomizer->is_ready()) {
+		std::cout << "randomizer is not setup at compute_critical_points" << std::endl;
+		br_exit(29889);
+	}
+	
+	W_crit_real.input_filename = W_curve.input_filename;
+	
+	
+	solver_output solve_out;
+	
+	nullspace_config ns_config;
+	compute_crit_nullspace(solve_out, // the returned value
+                           W_curve,            // input the original witness set
+                           this->randomizer,
+                           projections,
+                           1,  // dimension of ambient complex object
+                           1,   //  target dimension to find
+                           1,   // COdimension of the critical set to find.
+                           program_options,
+                           solve_options,
+                           &ns_config);
+	ns_config.clear();
+	
+    
+	solve_out.get_noninfinite_w_mult_full(W_crit_real);
+	
+	
+	W_crit_real.only_first_vars(W_curve.num_variables); // trim the fat, since we are at the lowest level.
+	W_crit_real.sort_for_real(&solve_options.T);
+	W_crit_real.sort_for_unique(&solve_options.T);
+	
+	
+	if (have_sphere_radius) {
+		W_crit_real.sort_for_inside_sphere(sphere_radius, sphere_center);
+	}
+	else
+	{
+		std::cout << color::red() << "computing sphere bounds..." << color::console_default() << std::endl;
+		compute_sphere_bounds(W_crit_real);
+	}
+	
+	
+    witness_set W_additional;
+	// now get the sphere intersection critical points and ends of the interval
+	get_additional_critpts(&W_additional,  // the returned value
+                           W_curve,       // all else here is input
+                           program_options,
+                           solve_options);
+	
+    W_additional.sort_for_real(&solve_options.T);
+	W_additional.sort_for_unique(&solve_options.T);
+	
+	
+    
+    W_crit_real.merge(W_additional);
+	
+	
+	return SUCCESSFUL;
+}
+
+
+
+
+int curve_decomposition::get_additional_critpts(witness_set *W_additional,
+                                                const witness_set & W_curve,
+                                                BR_configuration & program_options,
+                                                solver_configuration & solve_options)
+{
+#ifdef functionentry_output
+	std::cout << "curve::get_additional_critpts" << std::endl;
+#endif
+	
+	if (!this->randomizer->is_ready()) {
+		std::cout << "randomizer is not ready to go" << std::endl;
+		br_exit(13091270);
+	}
+    
+    if (W_curve.num_linears!=1) {
+        std::cout << color::red() << "the input witness set to get_additional_critpts had an incorrect number of linears: " << W_curve.num_linears << color::console_default() << std::endl;
+        br_exit(-518);
+    }
+    
+    
+	//build up the start system
+	solve_options.robust = true;
+	
+	
+	int blabla;
+	
+	
+	
+	parse_input_file(W_curve.input_filename, &blabla);
+	preproc_data_clear(&solve_options.PPD); // ugh this sucks
+	parse_preproc_data("preproc_data", &solve_options.PPD);
+	
+	
+	multilin_config ml_config(solve_options,this->randomizer); // copies in the randomizer matrix and sets up the SLP & globals.
+	
+	
+	vec_mp *multilin_linears = (vec_mp *) br_malloc(1*sizeof(vec_mp));
+	init_vec_mp2(multilin_linears[0],W_curve.num_variables,solve_options.T.AMP_max_prec);
+	multilin_linears[0]->size = W_curve.num_variables;
+    
+	
+	witness_set W_sphere = W_curve;
+    //grab just the shell of the input witness set
+    W_sphere.reset_points();
+    W_sphere.reset_linears();
+    W_sphere.reset_patches();
+    
+    
+	sphere_config sp_config(this->randomizer);
+	for (int jj=0; jj<W_curve.num_variables; jj++) {
+        set_zero_mp(&multilin_linears[0]->coord[jj]);
+    }
+	
+	for (int ii=0; ii<2; ii++) {
+		
+		for (int jj=0; jj<W_curve.num_natural_vars; jj++) {
+			get_comp_rand_mp(&multilin_linears[0]->coord[jj]);
+		}
+		
+		vec_cp_mp(sp_config.starting_linear[ii], multilin_linears[0]);
+		
+		witness_set W_temp;
+		
+		
+		
+		
+		
+		solver_output fillme;
+		multilin_solver_master_entry_point(W_curve,         // witness_set
+                                           fillme, // the new data is put here!
+                                           multilin_linears,
+                                           ml_config,
+                                           solve_options);
+		
+		fillme.get_noninfinite_w_mult(W_temp); // should be ordered
+		
+		W_sphere.merge(W_temp); // copy in the points
+		
+	}
+	
+	clear_vec_mp(multilin_linears[0]);
+	free(multilin_linears);
+	
+	// no need to copy in any linears, because the following solve is 0-dimensional.
+    // we DO need to copy all the patches from the originating witness set, though.
+	W_sphere.copy_patches(W_curve);
+	
+	
+	
+	
+	
+	
+	// need to actually move to the sphere system now.
+    if (program_options.verbose_level>=1) {
+        std::cout << "sphere intersection computation" << std::endl;
+    }
+    
+	
+	
+	sp_config.set_memory(solve_options); // gets the SLP in memory, and sets up the global memory structures used for evaluation
+	sp_config.set_center(this->sphere_center);
+	sp_config.set_radius(this->sphere_radius);
+	
+	
+	
+	
+	
+	
+	solver_output fillme;
+	sphere_solver_master_entry_point(W_sphere,
+                                     fillme, // returned value
+                                     sp_config,
+                                     solve_options);
+	
+	//get stuff into W_additional from fillme.
+	fillme.get_noninfinite_w_mult_full(*W_additional);
+	
+	
+	return 0;
+}
+
+
+
+
+
+
 
 int curve_decomposition::interslice(const witness_set & W_curve,
                                     const witness_set & W_crit_real,
@@ -1084,201 +1284,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 
 
 
-//subfunctions
-int curve_decomposition::compute_critical_points(const witness_set & W_curve,
-                                                 vec_mp *projections,
-                                                 BR_configuration & program_options,
-                                                 solver_configuration & solve_options,
-                                                 witness_set & W_crit_real)
-{
-#ifdef functionentry_output
-	std::cout << "curve::compute_critical_points" << std::endl;
-#endif
-	
-	if (!this->randomizer->is_ready()) {
-		std::cout << "randomizer is not setup at 1118 compute_critical_points" << std::endl;
-		br_exit(29889);
-	}
 
-	W_crit_real.input_filename = W_curve.input_filename;
-	
-	
-	solver_output solve_out;
-	
-	nullspace_config ns_config;
-	compute_crit_nullspace(solve_out, // the returned value
-                           W_curve,            // input the original witness set
-                           this->randomizer,
-                           projections,
-                           1,  // dimension of ambient complex object
-                           1,   //  target dimension to find
-                           1,   // COdimension of the critical set to find.
-                           program_options,
-                           solve_options,
-                           &ns_config);
-	ns_config.clear();
-	
-    
-	
-	solve_out.get_noninfinite_w_mult_full(W_crit_real);
-	
-
-	W_crit_real.only_first_vars(W_curve.num_variables); // trim the fat, since we are at the lowest level.
-	W_crit_real.sort_for_real(&solve_options.T);
-	
-
-	
-	if (have_sphere_radius) {
-		W_crit_real.sort_for_inside_sphere(sphere_radius, sphere_center);
-	}
-	else
-	{
-		std::cout << color::red() << "computing sphere bounds..." << color::console_default() << std::endl;
-		compute_sphere_bounds(W_crit_real);
-	}
-	
-	
-    witness_set W_additional;
-	// now get the sphere intersection critical points and ends of the interval
-	get_additional_critpts(&W_additional,  // the returned value
-                           W_curve,       // all else here is input
-                           program_options,
-                           solve_options);
-	
-    W_additional.sort_for_real(&solve_options.T);
-	W_additional.sort_for_unique(&solve_options.T);
-	
-
-    
-    W_crit_real.merge(W_additional);
-	
-	
-	return SUCCESSFUL;
-}
-
-
-
-
-int curve_decomposition::get_additional_critpts(witness_set *W_additional,
-                                                const witness_set & W_curve,
-                                                BR_configuration & program_options,
-                                                solver_configuration & solve_options)
-{
-#ifdef functionentry_output
-	std::cout << "curve::get_additional_critpts" << std::endl;
-#endif
-	
-	if (!this->randomizer->is_ready()) {
-		std::cout << "randomizer is not ready to go" << std::endl;
-		br_exit(13091270);
-	}
-    
-    if (W_curve.num_linears!=1) {
-        std::cout << color::red() << "the input witness set to get_additional_critpts had an incorrect number of linears: " << W_curve.num_linears << color::console_default() << std::endl;
-        br_exit(-518);
-    }
-    
-    
-	//build up the start system
-	solve_options.robust = true;
-	
-	
-	int blabla;
-	
-	
-	
-	parse_input_file(W_curve.input_filename, &blabla);
-	preproc_data_clear(&solve_options.PPD); // ugh this sucks
-	parse_preproc_data("preproc_data", &solve_options.PPD);
-	
-	
-	multilin_config ml_config(solve_options,this->randomizer); // copies in the randomizer matrix and sets up the SLP & globals.
-	
-	
-	vec_mp *multilin_linears = (vec_mp *) br_malloc(1*sizeof(vec_mp));
-	init_vec_mp2(multilin_linears[0],W_curve.num_variables,solve_options.T.AMP_max_prec);
-	multilin_linears[0]->size = W_curve.num_variables;
-    
-	
-	witness_set W_sphere = W_curve;
-    //grab just the shell of the input witness set
-    W_sphere.reset_points();
-    W_sphere.reset_linears();
-    W_sphere.reset_patches();
-    
-    
-	sphere_config sp_config(this->randomizer);
-	for (int jj=0; jj<W_curve.num_variables; jj++) {
-        set_zero_mp(&multilin_linears[0]->coord[jj]);
-    }
-	
-	for (int ii=0; ii<2; ii++) {
-		
-		for (int jj=0; jj<W_curve.num_natural_vars; jj++) {
-			get_comp_rand_mp(&multilin_linears[0]->coord[jj]);
-		}
-		
-		vec_cp_mp(sp_config.starting_linear[ii], multilin_linears[0]);
-		
-		witness_set W_temp;
-		
-		
-
-		
-
-		solver_output fillme;
-		multilin_solver_master_entry_point(W_curve,         // witness_set
-                                           fillme, // the new data is put here!
-                                           multilin_linears,
-                                           ml_config,
-                                           solve_options);
-		
-		fillme.get_noninfinite_w_mult(W_temp); // should be ordered
-		
-		W_sphere.merge(W_temp); // copy in the points
-		
-	}
-	
-	clear_vec_mp(multilin_linears[0]);
-	free(multilin_linears);
-	
-	// no need to copy in any linears, because the following solve is 0-dimensional.
-    // we DO need to copy all the patches from the originating witness set, though.
-	W_sphere.copy_patches(W_curve);
-	
-	
-	
-	
-	
-	
-	// need to actually move to the sphere system now.
-    if (program_options.verbose_level>=1) {
-        std::cout << "sphere intersection computation" << std::endl;
-    }
-    
-	
-	
-	sp_config.set_memory(solve_options); // gets the SLP in memory, and sets up the global memory structures used for evaluation
-	sp_config.set_center(this->sphere_center);
-	sp_config.set_radius(this->sphere_radius);
-	
-	
-	
-
-	
-	
-	solver_output fillme;
-	sphere_solver_master_entry_point(W_sphere,
-                                     fillme, // returned value
-                                     sp_config,
-                                     solve_options);
-	
-	//get stuff into W_additional from fillme.
-	fillme.get_noninfinite_w_mult_full(*W_additional);
-	
-
-	return 0;
-}
 
 
 

@@ -16,16 +16,104 @@ void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check
 	findMultSol(endPoints, num_pts_to_check, num_nat_vars, preProcData, T->final_tol_times_mult);
 	
 	
-	//sets the singularity flag in endPoints.
-	//custom, derived from bertini's analagous call.
-	int num_singular_solns = BRfindSingularSolns(endPoints, num_pts_to_check, num_nat_vars, T);
+	int num_singular_solns = 0, num_real_solns = 0, num_finite_solns = 0;
 	
-	//sets the finite flag in endPoints.
-	//custom, derived from bertini's analagous call.
-	int num_finite_solns = BRfindFiniteSolns(endPoints, num_pts_to_check, num_nat_vars, T);
+		
+	if (0) { /// this code represents an attempt to get bertini's own postprocessing to do the work for me.  since in bertini_real, we only care about the first group (and in face some variables aren't even listed), the bertini PP fails to correctly set the isFinite bit.  so this remains in an impossible-to-get-to if-else.
+		
+		std::vector<int> origErrorIsInf;
+		origErrorIsInf.resize(num_pts_to_check);
+		
+		std::vector<double> origErrorEst;
+		origErrorEst.resize(num_pts_to_check);
+		
+		point_d *dehomPoints_d = T->MPType == 1 ? NULL : (point_d *)bmalloc(num_pts_to_check * sizeof(point_d));
+		point_mp *dehomPoints_mp = T->MPType == 0 ? NULL : (point_mp *)bmalloc(num_pts_to_check * sizeof(point_mp));
+		
+		
+		// setup the dehomogenized points and error estimates
+		for (int ii = 0; ii < num_pts_to_check; ii++)
+		{ // setup dehom
+			if (endPoints[ii].sol_prec < 64)
+			{ // setup _d
+				init_point_d(dehomPoints_d[ii], 0);
+				getDehomPoint_comp_d(dehomPoints_d[ii], &origErrorIsInf[ii], &origErrorEst[ii], endPoints[ii].sol_d, num_nat_vars+1, preProcData, endPoints[ii].accuracy_estimate);
+			}
+			else
+			{ // setup _mp
+				initMP(endPoints[ii].sol_prec);
+				init_point_mp(dehomPoints_mp[ii], 0);
+				getDehomPoint_comp_mp(dehomPoints_mp[ii], &origErrorIsInf[ii], &origErrorEst[ii], endPoints[ii].sol_mp, num_nat_vars+1, preProcData, endPoints[ii].accuracy_estimate);
+			}
+		}
+		if (preProcData->num_var_gp > 0)
+		{ // find the finite solutions
+			findFiniteSol(endPoints, dehomPoints_d, dehomPoints_mp, num_pts_to_check, 1000, preProcData, T->finiteThreshold);
+		}
+		else
+		{ // set finite as -1
+			for (int ii = 0; ii < num_pts_to_check; ii++)
+				endPoints[ii].isFinite = -1;
+		}
+		
+		// determine which ones are real
+		findRealSol(endPoints, dehomPoints_d, dehomPoints_mp, num_pts_to_check, 1000, preProcData, T->real_threshold);
+		
+		// determine which ones are singular
+		findSingSol(endPoints, dehomPoints_d, dehomPoints_mp, num_pts_to_check, 1000, preProcData, T->cond_num_threshold, T->final_tol_times_mult, 0);
+		
+		
+		for (int ii=0; ii<num_pts_to_check; ii++) {
+			if (endPoints[ii].isFinite==1) {
+				num_finite_solns++;
+			}
+			
+			if (endPoints[ii].isSing==1) {
+				num_singular_solns++;
+			}
+			
+			if (endPoints[ii].isReal==1) {
+				num_real_solns++;
+			}
+			
+		}
+		
+		
+		for (int ii = 0; ii < num_pts_to_check; ii++)
+		{
+			if (endPoints[ii].sol_prec < 64)
+			{
+				clear_point_d(dehomPoints_d[ii]);
+			}
+			else
+			{
+				clear_point_mp(dehomPoints_mp[ii]);
+			}
+		}
+		if (T->MPType != 1)
+			free(dehomPoints_d);
+		if (T->MPType != 0)
+			free(dehomPoints_mp);
+		
+		
+	}
+	else{
+		//sets the singularity flag in endPoints.
+		//custom, derived from bertini's analagous call.
+		num_singular_solns = BRfindSingularSolns(endPoints, num_pts_to_check, num_nat_vars, T);
+		
+		//sets the finite flag in endPoints.
+		//custom, derived from bertini's analagous call.
+		num_finite_solns = BRfindFiniteSolns(endPoints, num_pts_to_check, num_nat_vars, T);
+		
+		
+		num_real_solns   = BRfindRealSolns(endPoints,num_pts_to_check,num_nat_vars,T);
+	}
+			
+				
 	
 	
-	int num_real_solns   = BRfindRealSolns(endPoints,num_pts_to_check,num_nat_vars,T);
+	
 	
 	if (solve_options.verbose_level>=3)
 		printf("%d finite solutions, %d singular solutions, %d real solutions\n",num_finite_solns, num_singular_solns, num_real_solns);
@@ -39,6 +127,7 @@ void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check
 			//		int isFinite;     // finite flag: -1 - no finite/infinite distinction, 0 - infinite, 1 - finite
 			//		int isSing;       // singular flag: 0 - non-sigular, 1 - singular
 			printf("solution %d, success %d, multi %d, isFinite %d, isSing %d, isReal %d\n",ii,endPoints[ii].success,endPoints[ii].multiplicity,endPoints[ii].isFinite,endPoints[ii].isSing,endPoints[ii].isReal);
+			
 		}
 	}
 	
@@ -55,21 +144,12 @@ void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check
 			  boost::bind(&std::pair<long long, long long>::second, _1) <
 			  boost::bind(&std::pair<long long, long long>::second, _2));
 	
-//	if (solve_options.verbose_level>=8) {
-//		std::cout << std::endl;
-//		for (int ii=0; ii<num_pts_to_check; ii++) {
-//			std::cout << soln_indices[ii].first << " " << soln_indices[ii].second << std::endl;
-//		}
-//		std::cout << std::endl;
-//	}
 	
-	
-	
-
 	
 	vertex temp_vertex;
 	change_size_point_mp(temp_vertex.pt_mp,num_variables);
 	temp_vertex.pt_mp->size = num_variables;
+	
 	
 	//first, lets take care of the multiplicity 1 solutions
 	for (int ii=0; ii<num_pts_to_check; ii++) {
@@ -169,7 +249,7 @@ int BRfindSingularSolns(post_process_t *endPoints, int num_sols, int num_vars,
 	int sing_count=0;
 	
 	for (int ii = 0; ii < num_sols; ii++){
-		if ( (endPoints[ii].cond_est >  T->cond_num_threshold) || (endPoints[ii].cond_est < 0.0) )
+		if ( (endPoints[ii].cond_est >  T->cond_num_threshold) || (endPoints[ii].cond_est < 0.0) || (endPoints[ii].multiplicity!=1))
 			endPoints[ii].isSing = 1;
 		else
 			endPoints[ii].isSing = 0;

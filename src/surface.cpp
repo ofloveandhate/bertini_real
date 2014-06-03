@@ -2754,9 +2754,6 @@ void surface_decomposition::setup(boost::filesystem::path base)
 	specific_loc += "_sphere";
 	sphere_curve.setup(specific_loc);
 	
-	//	singular_curve.setup(specific_loc);
-	
-	
 	
 	
 	return;

@@ -155,10 +155,26 @@ void system_randomizer::randomize(vec_d randomized_func_vals, mat_d randomized_j
 								  vec_d func_vals, mat_d jacobian_vals,
 								  comp_d hom_var)
 {
+	bool bail_out = false;
+	
 	if (!is_ready()) {
 		std::cout << "trying to randomize_d, but is not set up!" << std::endl;
-		br_exit(-9509);
+		bail_out = true;
 	}
+	
+	if (func_vals->size != this->num_original_funcs) {
+		std::cout << "mismatch in number of expected input functions (" << num_original_funcs << ") and actual inputted-number of functions (" << func_vals->size << ")." << std::endl;
+		bail_out = true;
+	}
+	
+	if (jacobian_vals->rows != this->num_original_funcs) {
+		std::cout << "mismatch in size of expected input jacobian (" << num_original_funcs << ") and actual number of rows in jacobian (" << jacobian_vals->rows << ")." << std::endl;
+		bail_out = true;
+	}
+	
+	
+	if (bail_out)
+		br_exit(-9509);
 	
 	
 	if (is_square()) {
@@ -166,6 +182,7 @@ void system_randomizer::randomize(vec_d randomized_func_vals, mat_d randomized_j
 		vec_cp_d(randomized_func_vals,func_vals);
 		return;
 	}
+	
 	
 	
 	//ensure outputs are of correct size.
@@ -297,10 +314,27 @@ void system_randomizer::randomize(vec_mp randomized_func_vals, mat_mp randomized
 								  vec_mp func_vals, mat_mp jacobian_vals,
 								  comp_mp hom_var)
 {
+	bool bail_out = false;
+	
 	if (!is_ready()) {
-		std::cout << "trying to randomize_mp, but is not set up!" << std::endl;
-		br_exit(-9510);
+		std::cout << "trying to randomize_d, but is not set up!" << std::endl;
+		bail_out = true;
 	}
+	
+	if (func_vals->size != this->num_original_funcs) {
+		std::cout << "mismatch in number of expected input functions (" << num_original_funcs << ") and actual inputted-number of functions (" << func_vals->size << ")." << std::endl;
+		bail_out = true;
+	}
+	
+	if (jacobian_vals->rows != this->num_original_funcs) {
+		std::cout << "mismatch in size of expected input jacobian (" << num_original_funcs << ") and actual number of rows in jacobian (" << jacobian_vals->rows << ")." << std::endl;
+		bail_out = true;
+	}
+	
+	
+	if (bail_out)
+		br_exit(-9510);
+	
 	
 	
 	if (is_square()) {
@@ -3329,7 +3363,7 @@ int decomposition::setup(boost::filesystem::path INfile)
 	}
 	
 	
-	
+	clear_vec_mp(tempvec);
 	clear_vec_mp(temp_patch);
 	
 	fin.close();
