@@ -1628,7 +1628,6 @@ class solver_mp : public solver
 {
 	
 public:
-	int removeme;
 	
 	patch_eval_data_mp patch; ///< patch in x
 	
@@ -1715,43 +1714,7 @@ protected:
 		this->curr_prec = other.curr_prec;
 	}
 	
-	void clear()
-	{
-		patch_eval_data_clear_mp(&this->patch);
-		
-//		for (int ii=0; ii<patch.patchCoeff->rows; ii++) {
-//			for (int jj=0; jj<patch.patchCoeff->cols; jj++) {
-//				std::cout << jj << std::endl;
-//				mpq_clear(patch.patchCoeff_rat[ii][jj][0]);
-//				mpq_clear(patch.patchCoeff_rat[ii][jj][1]);
-//
-//				free(patch.patchCoeff_rat[ii][jj]);
-//			}
-//			free(patch.patchCoeff_rat[ii]);
-//		}
-//		free(patch.patchCoeff_rat);
-//		clear_mat_mp(patch.patchCoeff);
-		
-		
-		
-		
-		clear_mp(gamma);
-		
-		if (MPType==2) {
-			clear_rat(gamma_rat);
-			free(gamma_rat);
-		}
-        
-        
-        if (have_SLP && received_mpi) { // other wise don't have it, or someone else is responsible for clearing it.
-            clearProg(this->SLP, this->MPType, 1); // 1 means call freeprogeval()
-            delete[] SLP;
-		}
-		
-		if (received_mpi) {
-			;
-		}
-	}
+	void clear();
 };
 
 
@@ -1847,21 +1810,7 @@ protected:
 		set_d(this->gamma, other.gamma);
 	}
 	
-	void clear(){
-		
-		if (MPType==0) {
-		}
-		
-		patch_eval_data_clear_d(& this->patch);
-		
-		clear_d(gamma);
-        
-        
-        if (have_SLP && received_mpi) {
-            clearProg(this->SLP, this->MPType, 1); // 1 means call freeprogeval()
-            delete[] SLP;
-		}
-	}
+	void clear();
 	
 };
 
