@@ -1992,7 +1992,7 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
     midpoint_eval_data_d *BED = (midpoint_eval_data_d *)ED; // to avoid having to cast every time
 	
 	
-	int ii;
+
 	int offset;
 	
 	double n1, n2, max_rat;
@@ -2042,13 +2042,13 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 	}
 	
 	
-	for (ii=0; ii<BED->num_mid_vars; ii++)
+	for (int ii=0; ii<BED->num_mid_vars; ii++)
 		set_d(&curr_mid_vars->coord[ii], &terminal_pt->coord[ii]);
 	
-	for (ii=0; ii<BED->num_bottom_vars; ii++)
+	for (int ii=0; ii<BED->num_bottom_vars; ii++)
 		set_d(&curr_bottom_vars->coord[ii], &terminal_pt->coord[ii+BED->num_mid_vars]);
 	
-	for (ii=0; ii<BED->num_top_vars; ii++)
+	for (int ii=0; ii<BED->num_top_vars; ii++)
 		set_d(&curr_top_vars->coord[ii], &terminal_pt->coord[ii+BED->num_mid_vars+BED->num_bottom_vars]);
 	
 	
@@ -2065,7 +2065,7 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 	increase_size_vec_d(f_terminal,temp_function_values->size);
 	f_terminal->size = temp_function_values->size;
 	
-	for (ii=0; ii<temp_function_values->size; ii++)
+	for (int ii=0; ii<temp_function_values->size; ii++)
 		set_d(&f_terminal->coord[ii], &temp_function_values->coord[ii]);
 	
 	
@@ -2079,7 +2079,7 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 	increase_size_vec_d(f_terminal,f_terminal->size + temp_function_values->size);
 	f_terminal->size = f_terminal->size + temp_function_values->size;
 	
-	for (ii=0; ii<temp_function_values->size; ii++)
+	for (int ii=0; ii<temp_function_values->size; ii++)
 		set_d(&f_terminal->coord[ii+offset], &temp_function_values->coord[ii]);
 	
 	
@@ -2091,7 +2091,7 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 	//resize output variables to correct size
 	increase_size_vec_d(f_terminal,f_terminal->size + temp_function_values->size);
 	f_terminal->size = f_terminal->size + temp_function_values->size;
-	for (ii=0; ii<temp_function_values->size; ii++)
+	for (int ii=0; ii<temp_function_values->size; ii++)
 		set_d(&f_terminal->coord[ii+offset], &temp_function_values->coord[ii]);
 	
 	
@@ -2105,13 +2105,13 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 		vec_cp_d(prev_pt, EG->last_approx_d);
 	}
 	
-	for (ii=0; ii<BED->num_mid_vars; ii++)
+	for (int ii=0; ii<BED->num_mid_vars; ii++)
 		set_d(&curr_mid_vars->coord[ii], &prev_pt->coord[ii]);
 	
-	for (ii=0; ii<BED->num_bottom_vars; ii++)
+	for (int ii=0; ii<BED->num_bottom_vars; ii++)
 		set_d(&curr_bottom_vars->coord[ii], &prev_pt->coord[ii+BED->num_mid_vars]);
 	
-	for (ii=0; ii<BED->num_top_vars; ii++)
+	for (int ii=0; ii<BED->num_top_vars; ii++)
 		set_d(&curr_top_vars->coord[ii], &prev_pt->coord[ii+BED->num_mid_vars+BED->num_bottom_vars]);
 	
 	
@@ -2128,7 +2128,7 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 	increase_size_vec_d(f_prev,temp_function_values->size);
 	f_prev->size = temp_function_values->size;
 	
-	for (ii=0; ii<temp_function_values->size; ii++)
+	for (int ii=0; ii<temp_function_values->size; ii++)
 		set_d(&f_prev->coord[ii], &temp_function_values->coord[ii]);
 	
 	
@@ -2140,7 +2140,7 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 	increase_size_vec_d(f_prev, f_prev->size + temp_function_values->size);
 	f_prev->size = f_prev->size + temp_function_values->size;
     
-	for (ii=0; ii<temp_function_values->size; ii++)
+	for (int ii=0; ii<temp_function_values->size; ii++)
 		set_d(&f_prev->coord[ii+offset], &temp_function_values->coord[ii]);
 	
 	
@@ -2152,7 +2152,7 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 	increase_size_vec_d(f_prev, f_prev->size + temp_function_values->size);
 	f_prev->size = f_prev->size + temp_function_values->size;
 	
-	for (ii=0; ii<temp_function_values->size; ii++)
+	for (int ii=0; ii<temp_function_values->size; ii++)
 		set_d(&f_prev->coord[ii+offset], &temp_function_values->coord[ii]);
     
     
@@ -2164,7 +2164,7 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 	//	print_point_to_screen_matlab(EG->PD_d.point,"soln");
 	//	print_point_to_screen_matlab(e.funcVals,"howfaroff");	// compare the function values
 	int isSoln = 1;
-	for (ii = 0; (ii < f_terminal->size) && isSoln; ii++)
+	for (int ii = 0; (ii < f_terminal->size) && isSoln; ii++)
 	{
 		n1 = d_abs_d( &f_terminal->coord[ii]); // corresponds to final point
 		n2 = d_abs_d( &f_prev->coord[ii]); // corresponds to the previous point
@@ -2202,6 +2202,7 @@ int check_issoln_midpoint_d(endgame_data_t *EG,
 	
 	
 	clear_eval_struct_d(e);
+	clear_vec_d(f);
 	clear_vec_d(f_prev);
 	clear_vec_d(f_terminal);
     

@@ -41,6 +41,41 @@ int checkForReal_mp(point_mp Pt, double realTol);
 void findMultSol(post_process_t *endPoints, int num_sols, int num_vars, preproc_data *PPD, double finalTol);
 	
 	void bcast_prog_t(prog_t *Prog, int MPType, int my_id, int headnode);
+
+
+
+/**
+ from the bertini library.  the prototype is not in any header file.
+ */
+void findFiniteSol(post_process_t *endPoints, point_d *dehomPoints_d, point_mp *dehomPoints_mp, int num_sols, int num_vars, preproc_data *PPD, double maxNorm);
+
+/**
+ from the bertini library.  the prototype is not in any header file.
+ */
+void findRealSol(post_process_t *endPoints, point_d *dehomPoints_d, point_mp *dehomPoints_mp, int num_sols, int num_vars, preproc_data *PPD, double realTol);
+
+
+/**
+ from the bertini library.  the prototype is not in any header file.
+ */
+void findSingSol(post_process_t *endPoints, point_d *dehomPoints_d, point_mp *dehomPoints_mp, int num_sols, int num_vars, preproc_data *PPD, double maxCondNum, double finalTol, int regenToggle);
+
+
+
+
+/**
+ from the bertini library.  the prototype is not in any header file.
+ */
+void getDehomPoint_comp_d(point_d dehomPoint, int *origErrorIsInf, double *origErrorEst, comp_d *sol, int num_vars, preproc_data *PPD, double accuracyEstimate);
+
+
+/**
+ from the bertini library.  the prototype is not in any header file.
+ */
+void getDehomPoint_comp_mp(point_mp dehomPoint, int *origErrorIsInf, double *origErrorEst, comp_mp *sol, int num_vars, preproc_data *PPD, double accuracyEstimate);
+
+	
+	
 }
 
 

@@ -384,12 +384,12 @@ void BR_configuration::init()
 
 void sampler_configuration::splash_screen()
 {
-	printf("\n Sampler module for BertiniReal(TM) v%s\n\n", BERTINI_REAL_VERSION_STRING);
+	printf("\n Sampler module for BertiniReal(TM) v%s\n\n", SAMPLER_VERSION_STRING);
 	printf(" D.J. Bates, D. Brake,\n W. Hao, J.D. Hauenstein,\n A.J. Sommese, C.W. Wampler\n\n");
 	printf("(using GMP v%d.%d.%d, MPFR v%s)\n\n",
 				 __GNU_MP_VERSION, __GNU_MP_VERSION_MINOR, __GNU_MP_VERSION_PATCHLEVEL, mpfr_get_version());
 	
-	printf("Send email to brake@math.colostate.edu for details.\n\n");
+	printf("Send email to danielthebrake@gmail.com for details.\n\n");
 }
 
 
@@ -465,7 +465,7 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 				break;
 				
 			case 'v':
-				printf("\n Sampler module for BertiniReal(TM) v %s\n\n", BERTINI_REAL_VERSION_STRING);
+				printf("\n Sampler module for BertiniReal(TM) v %s\n\n", SAMPLER_VERSION_STRING);
 				exit(0);
 				break;
 				

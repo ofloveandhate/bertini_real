@@ -158,6 +158,400 @@ private:
 
 
 
+
+
+
+
+
+
+/**
+ \brief holds an SLP, system_randomizer, and SLP_global_pointers, for complete encapsulation of the system into one unit.
+ 
+ \ingroup mpienabled
+ 
+ complete with send/receive methods.
+ 
+ */
+class complete_system
+{
+	friend class midpoint_config;
+	friend class midpoint_eval_data_mp;
+	friend class midpoint_eval_data_d;
+	
+	
+protected:
+	
+	boost::filesystem::path input_filename;
+	SLP_global_pointers memory;
+	prog_t * SLP;
+	
+	bool have_randomizer;
+	system_randomizer * randomizer;
+	int num_variables;
+	
+	bool have_SLP;
+	
+	int MPType;
+	
+public:
+	
+	
+	/**
+	 \brief send the complete system to everyone in the communicator
+	 
+	 
+	 \param mpi_config the current state of MPI
+	 */
+	void bcast_send(parallelism_config & mpi_config)
+	{
+		
+		
+		int * buffer = new int[2];
+		buffer[0] = MPType;
+		buffer[1] = num_variables;
+		MPI_Bcast(buffer, 2, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+		
+		delete [] buffer;
+		
+		//need something here  to send randomizer to everyone.
+		randomizer->bcast_send(mpi_config);
+		
+		memory.set_globals_to_this();
+		bcast_prog_t(SLP, this->MPType, 0, 0); // last two arguments are: myid, headnode
+		memory.set_globals_null();
+	}
+	
+	
+	/**
+	 \brief receive from the head node
+	 
+	 
+	 \param mpi_config the current state of MPI
+	 */
+	void bcast_receive(parallelism_config & mpi_config)
+	{
+		
+		if (have_SLP) {
+			memory.set_globals_to_this();
+			clearProg(SLP, this->MPType, 1); // 1 means call freeprogeval()
+		}
+		else
+		{
+			SLP = new prog_t;
+		}
+		
+		int * buffer = new int[2];
+		
+		MPI_Bcast(buffer, 2, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+		
+		
+		MPType = buffer[0];
+		num_variables = buffer[1];
+		
+		
+		// here, need something to receive from head.
+		randomizer = new system_randomizer;
+		randomizer->bcast_receive(mpi_config);
+		have_randomizer = true;
+		
+		delete [] buffer;
+		
+		bcast_prog_t(SLP, MPType, 1, 0); // last two arguments are: myid, headnode
+		initEvalProg(MPType);
+		memory.capture_globals();
+		memory.set_globals_null();
+		
+		have_SLP = true;
+	}
+	
+	
+	
+	complete_system()
+	{
+		init();
+	}
+	
+	complete_system(const decomposition & D, tracker_config_t * T)
+	{
+		init();
+		get_system(D,T);
+	}
+	
+	
+	~complete_system()
+	{
+		clear();
+	}
+	
+	
+	complete_system & operator=( const complete_system & other)
+	{
+		init();
+		copy(other);
+		return *this;
+	}
+	
+	complete_system(const complete_system & other)
+	{
+		init();
+		copy(other);
+	} // re: copy
+	
+	
+	
+	void init()
+	{
+		
+		have_randomizer = false;
+		
+		num_variables = 0;
+		input_filename = "unset_input_filename_complete_system";
+		MPType = -1;
+		
+		have_SLP = false;
+	}
+	
+	
+	void copy(const complete_system & other)
+	{
+		
+		this->num_variables = other.num_variables;
+		
+		this->MPType = other.MPType;
+		
+		this->input_filename = other.input_filename;
+		
+		if (this->have_SLP) {
+			this->memory.set_globals_to_this();
+			clearProg(this->SLP, this->MPType, 1); // 1 means call freeprogeval()
+			
+			if (!other.have_SLP) {
+				delete this->SLP;
+				this->have_SLP = false;
+			}
+			
+		}
+		
+		if (other.have_SLP) {
+			
+			if (!this->have_SLP)
+			{
+				this->SLP = new prog_t;
+			}
+			
+			
+			
+			cp_prog_t(this->SLP, other.SLP);
+			this->memory.set_globals_null();
+			initEvalProg(this->MPType);
+			this->memory.capture_globals();
+			
+			this->have_SLP = true;
+		}
+		
+		if (other.have_randomizer) {
+			randomizer = new system_randomizer;
+			*this->randomizer = *other.randomizer;
+			have_randomizer = true;
+		}
+		else{
+			randomizer = other.randomizer; // copy the pointer value only.
+		}
+		
+		
+		
+	}
+	
+	
+	void clear()
+	{
+		if (have_randomizer) {
+			delete randomizer;
+			have_randomizer = false;
+		}
+		
+		if (have_SLP) {
+			memory.set_globals_to_this();
+			clearProg(SLP, this->MPType, 1); // 1 means call freeprogeval()
+			delete SLP;
+			have_SLP = false;
+		}
+		
+		
+	}
+	
+	
+	/**
+	 \brief set up a system, based on a decomposition.
+	 
+	 gets the randomizer as a pointer to a randomizer, based on the pointer in D.  sets up the SLP as local to this thing, and captures the memory to local as well.
+	 
+	 \param D the decomposition for which to set up a complete system
+	 \param T the current state of the tracker
+	 */
+	void get_system(const decomposition & D, tracker_config_t * T)
+	{
+		if (have_SLP) {
+			memory.set_globals_to_this();
+			clearProg(SLP, this->MPType, 1); // 1 means call freeprogeval()
+		}
+		else{
+			SLP = new prog_t;
+		}
+		
+		
+		this->randomizer = D.randomizer;
+		have_randomizer = false;
+		int blabla;  // i would like to move this.
+		parse_input_file(D.input_filename, &blabla);
+		num_variables = D.num_variables;
+		input_filename = D.input_filename;
+		this->MPType = T->MPType;
+		
+		
+		
+		
+		//	// setup a straight-line program, using the file(s) created by the parser
+		int numVars = setupProg(SLP, T->Precision, T->MPType);
+		if (num_variables != numVars) {
+			std::cout << "numvars is incorrect...  setupprog gives " << numVars << ", but should be " << num_variables << "." << std::endl;
+			mypause();
+			br_exit(-57189); // this should be a throw or something
+		}
+		
+		preproc_data PPD;
+		parse_preproc_data("preproc_data", &PPD);
+		
+		
+		memory.capture_globals();
+		memory.set_globals_null();
+		
+		
+		
+		preproc_data_clear(&PPD);
+		
+		have_SLP = true;
+		
+	}
+	
+	
+	
+	
+	/**
+	 \brief set up a system, based on a decomposition.
+	 
+	 gets the randomizer as a pointer to a randomizer, based on the pointer in D.  sets up the SLP as local to this thing, and captures the memory to local as well.
+	 
+	 \param D the decomposition for which to set up a complete system
+	 \param T the current state of the tracker
+	 */
+	void get_system(const boost::filesystem::path & new_input_name, system_randomizer * randy, tracker_config_t * T)
+	{
+		if (have_SLP) {
+			memory.set_globals_to_this();
+			clearProg(SLP, this->MPType, 1); // 1 means call freeprogeval()
+		}
+		else{
+			SLP = new prog_t;
+		}
+		
+		if (have_randomizer) {
+			delete randomizer;
+		}
+		
+		this->randomizer = randy;
+		have_randomizer = false;
+		int blabla;  // i would like to move this.
+		parse_input_file(new_input_name, &blabla);
+		input_filename = new_input_name;
+		this->MPType = T->MPType;
+		
+		
+		
+		
+		//	// setup a straight-line program, using the file(s) created by the parser
+		num_variables = setupProg(SLP, T->Precision, T->MPType);
+		have_SLP = true;
+		
+		preproc_data PPD;
+		parse_preproc_data("preproc_data", &PPD);
+		
+		
+		memory.capture_globals();
+		memory.set_globals_null();
+		
+		
+		
+		preproc_data_clear(&PPD);
+	}
+	
+	
+	
+	
+	
+	/**
+	 \brief set up a system, based on a decomposition.
+	 
+	 gets the randomizer as a pointer to a randomizer, based on the pointer in D.  sets up the SLP as local to this thing, and captures the memory to local as well.
+	 
+	 \param D the decomposition for which to set up a complete system
+	 \param T the current state of the tracker
+	 */
+	void get_system(const boost::filesystem::path & new_input_name, int num_func_in, int num_func_out, tracker_config_t * T)
+	{
+		if (have_SLP) {
+			memory.set_globals_to_this();
+			clearProg(SLP, this->MPType, 1); // 1 means call freeprogeval()
+		}
+		else{
+			SLP = new prog_t;
+		}
+		
+		if (have_randomizer) {
+			delete randomizer;
+		}
+		
+		
+		
+		
+		int blabla;  // i would like to move this.
+		parse_input_file(new_input_name, &blabla);
+		input_filename = new_input_name;
+		this->MPType = T->MPType;
+		
+		
+		//	// setup a straight-line program, using the file(s) created by the parser
+		num_variables = setupProg(SLP, T->Precision, T->MPType);
+		have_SLP = true;
+		
+		
+		randomizer = new system_randomizer;
+		randomizer->setup(num_func_out, num_func_in);
+		have_randomizer = true;
+		
+		
+		preproc_data PPD;
+		parse_preproc_data("preproc_data", &PPD);
+		
+		
+		memory.capture_globals();
+		memory.set_globals_null();
+		
+		
+		
+		preproc_data_clear(&PPD);
+	}
+	
+	
+	
+};
+
+
+
+
+
+
+
 /**
  \brief A flexible container for holding comp_mp, vec_mp, and mat_mp, allocated on the fly, but not cleared.  
  
@@ -1140,7 +1534,11 @@ public:
 	void setup(prog_t * _SLP, system_randomizer * randy)
 	{
 		setupPreProcData(const_cast<char *>(preproc_file.c_str()), &this->preProcData);
+		have_PPD = true;
+		
 		//TODO: if there is a way, remove the above setup call, as it refers to parsing the preprocdata file, which is dumb.
+		
+		
 		this->SLP = _SLP; // assign the pointer
 		this->have_SLP = true;
 		
