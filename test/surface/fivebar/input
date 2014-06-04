@@ -1,0 +1,42 @@
+CONFIG
+
+tracktype:1;
+
+% tracking settings
+securitymaxnorm: 1e8;
+
+
+% postprocessing settings
+condnumthreshold:1e60;
+
+
+
+END;
+
+INPUT
+
+variable_group t1, T1, t2, T2, t3, T3;
+
+%function f1, f2;
+function f3, f4, f5, f6;
+
+constant a0, a1, a2, a3, a4;
+
+a0 = 1;
+a1 = 1;
+a2 = 1;
+a3 = 1;
+a4 = 1;
+
+t4=( a0 + a1*t1 + a2*t2 + a3*t3 )/a4;
+T4=( a0 + a1*T1 + a2*T2 + a3*T3 )/a4 ;
+
+
+%f1 = a0 + a1*t1 + a2*t2 + a3*t3 + a4*t4 ;
+%f2 = a0 + a1*T1 + a2*T2 + a3*T3 + a4*T4 ;
+f3 = t1*T1-1 ;
+f4 = t2*T2-1 ;
+f5 = t3*T3-1 ;
+f6 = t4*T4-1 ;
+
+END;
