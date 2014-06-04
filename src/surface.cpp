@@ -253,9 +253,8 @@ void surface_decomposition::main(vertex_set & V,
 	
 	
 	if (program_options.verbose_level>=0) {
-        std::cout << color::green() << "the pi[0] projection values at which we will be slicing:\n\n" << color::console_default();
+        std::cout << color::green() << "the pi[0] critical projection values at which we will be slicing:\n\n" << color::console_default();
 		print_point_to_screen_matlab(crit_downstairs,"crit_down");
-		print_point_to_screen_matlab(midpoints_downstairs,"middown");
         
 	}
 	
@@ -1286,7 +1285,7 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 	for (int ii=0; ii<projection_values_downstairs->size; ii++){
 		
 		
-		std::cout << color::magenta() << "decomposing the " << ii << "th " << kindofslice << " slice, of " << projection_values_downstairs->size << color::console_default() << std::endl;
+		std::cout << color::magenta() << "decomposing " << kindofslice << " slice " << ii << " of " << projection_values_downstairs->size << color::console_default() << std::endl;
 		print_comp_matlab(&projection_values_downstairs->coord[ii], "target_proj");
 		
 		solve_options.backup_tracker_config(); // TODO: this backed up config could be overwritten!!!
@@ -1468,10 +1467,7 @@ void surface_decomposition::serial_connect(vertex_set & V, midpoint_config & md_
 			
 			face F = make_face(ii,jj, V, md_config, solve_options, program_options);
 			
-			//			std::cout << "F.top " << F.top << std::endl;
-			//			std::cout << "F.bottom " << F.bottom << std::endl;
-			//			std::cout << "F.num_left " << F.num_left << std::endl;
-			//			std::cout << "F.num_right " << F.num_right << std::endl;
+
 			
 			
 			if (!F.is_degenerate())
@@ -1501,7 +1497,6 @@ void surface_decomposition::master_connect(vertex_set & V, midpoint_config & md_
 #endif
 	
 	
-	boost::timer::auto_cpu_timer t;
     
 	MPI_Status statty_mc_gatty;
 	
@@ -1632,7 +1627,7 @@ void surface_decomposition::worker_connect(solver_configuration & solve_options,
 	MPI_Barrier(MPI_COMM_WORLD);
 	solve_options.robust = true;
 	
-//	std::cout << "worker getting md_congid" << std::endl;
+
 	midpoint_config md_config;
 	md_config.bcast_receive(solve_options);
 	//receive the md_config from the master.  it holds the three SLP's, as well as everything needed to run the system except:
@@ -1644,7 +1639,6 @@ void surface_decomposition::worker_connect(solver_configuration & solve_options,
 	
 	MPI_Barrier(MPI_COMM_WORLD);
 	
-//	std::cout << "worker getting surface" << std::endl;
 	this->receive(solve_options.head(), solve_options);
 	
 	
@@ -1747,10 +1741,9 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	//create the face
 	face F;
 	
-	std::cout << color::magenta() << "\n\n\n*****************************\nmidslice " << ii << " / " << this->mid_slices.size() <<  ", edge " << jj << " / " << mid_slices[ii].edges.size() << color::console_default() << "\n";
+
 	
 	if (mid_slices[ii].edges[jj].is_degenerate()) {
-//		std::cout << "no computation necessary -- midslice edge is degenerate" << std::endl;
 		return F;
 	}
 	
@@ -1769,6 +1762,10 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 	F.crit_slice_index = ii; // the index of which midslice this face came from.
 	F.midpt = mid_slices[ii].edges[jj].midpt; // index the point
+	
+	
+	std::cout << color::magenta() << "\n\n\n*****************************\nmidslice " << ii << " / " << this->mid_slices.size() <<  ", edge " << jj << " / " << mid_slices[ii].edges.size() << color::console_default() << "\n";
+	
 	
 	std::cout << color::brown() << "current midpoint: " <<  mid_slices[ii].edges[jj].midpt  << " " << color::console_default() << "\n";
 	
@@ -1798,8 +1795,10 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	md_config.system_name_mid = this->input_filename.filename().string();
 	
 	
-
-	std::cout << md_config.system_name_top << " " << md_config.system_name_bottom << std::endl;
+	if (program_options.verbose_level>=0) {
+		std::cout << md_config.system_name_top << " " << md_config.system_name_bottom << std::endl;
+	}
+	
 	
 	
 	curve_decomposition * top_curve = curve_with_name(md_config.system_name_top);

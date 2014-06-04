@@ -10,9 +10,7 @@ int main(int argC, char *args[])
 {
 
 
-	
-	
-	
+
 	////
 	//  INITIALIZATION
 	////
@@ -67,6 +65,7 @@ int main(int argC, char *args[])
 		parse_input_file(program_options.input_filename, &MPType);
 		get_tracker_config(solve_options,MPType);
 		
+		solve_options.T.ratioTol = 0.9999999999999999999999999; // manually assert to be more permissive.  i don't really like this.
 	}
 	else
 	{ // catch the bcast from parallel parsing. (which cannot be disabled)
@@ -76,7 +75,7 @@ int main(int argC, char *args[])
 	
 	
 	
-	if (solve_options.use_parallel()) {
+	if (solve_options.use_parallel()) { // everybody participates in this.
 		MPI_Bcast(&MPType, 1, MPI_INT, 0, MPI_COMM_WORLD);
 		bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
 	}
@@ -86,7 +85,6 @@ int main(int argC, char *args[])
 	
 	
 	solve_options.use_midpoint_checker = 0;
-	solve_options.T.ratioTol = 0.9999999999999999999999999; // manually assert to be more permissive.  i don't really like this.
 	solve_options.verbose_level = program_options.verbose_level;
 	solve_options.use_gamma_trick = program_options.use_gamma_trick;
 	
@@ -94,18 +92,16 @@ int main(int argC, char *args[])
 	
 	
 	if (solve_options.is_head()) {
-		
 		ubermaster_process current_process(program_options, solve_options);
 		current_process.main_loop();
 	}
 	else{
-		
 		worker_process current_process(program_options, solve_options);
 		current_process.main_loop();
 	}
 	
 	
-	
+	clearMP();
 
 	MPI_Finalize();
 	

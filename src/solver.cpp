@@ -1966,6 +1966,21 @@ void generic_setup_patch(patch_eval_data_d *P, const witness_set & W)
 		br_exit(1800);
 	}
 	
+	int total_num_vars_in_patches = 0;
+	for (int ii=0; ii<W.num_patches; ++ii) {
+		total_num_vars_in_patches += W.patch_mp[ii]->size;
+	}
+	
+	if (total_num_vars_in_patches > W.num_variables) {
+		std::cout << "parity mismatch in patches ("<< total_num_vars_in_patches <<") and number of variables ("<< W.num_variables <<")." << std::endl;
+		for (int ii=0; ii<W.num_patches; ++ii) {
+			std::cout << W.patch_mp[ii]->size << " ";
+		}
+		std::cout << std::endl;
+		br_exit(4012);
+	}
+	
+	
 	
 	P->num_patches = W.num_patches;
 	init_mat_d(P->patchCoeff, W.num_patches, W.num_variables);
@@ -2016,14 +2031,11 @@ void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W)
 	
 	
 	
-	if (total_num_vars_in_patches < W.num_variables) {
-		std::cout << "parity mismatch in patches ("<< total_num_vars_in_patches <<") and number of variables ("<< W.num_variables <<")." << std::endl;\
-	}
+//	if (total_num_vars_in_patches < W.num_variables) {
+//		std::cout << "parity mismatch in patches ("<< total_num_vars_in_patches <<") and number of variables ("<< W.num_variables <<")." << std::endl;\
+//	}
 	
-	
-//	std::cout << "setting up mp patch, ii " << W.num_patches << " jj " << W.num_variables << std::endl;
-	
-	
+
 	
 	
 	init_mat_rat(P->patchCoeff_rat, W.num_patches, W.num_variables);

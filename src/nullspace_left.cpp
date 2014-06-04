@@ -267,7 +267,6 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 										   ns_config,
 										   solve_options);
 	
-	std::cout << ns_config->num_v_vars << std::endl;
 	
 	ns_concluding_modifications(solve_out, W, ns_config);
 	

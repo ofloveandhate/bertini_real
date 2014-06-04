@@ -1126,9 +1126,9 @@ public:
 	~solver_configuration(){
 		tracker_config_clear(&this->T);
 		tracker_config_clear(&this->T_orig);
-		//		preproc_data_clear(&this->PPD);
+		preproc_data_clear(&this->PPD);
 	}
-	
+	 
 	
 	solver_configuration & operator=( const solver_configuration & other)
 	{
