@@ -55,10 +55,7 @@ int ubermaster_process::main_loop()
 	witness_data data_mc_data;
 	data_mc_data.populate();
 	
-	data_mc_data.print();
 
-	
-	
 	witness_set W = data_mc_data.choose(program_options);
 	
 	if (W.num_points==0) {
@@ -70,6 +67,9 @@ int ubermaster_process::main_loop()
 	
 	W.get_variable_names(num_vars);
 	W.input_filename = program_options.input_filename;
+	
+	
+		
 	
 	if (program_options.verbose_level>=1) {
 		W.print_to_screen();

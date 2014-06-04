@@ -1726,18 +1726,17 @@ void witness_set::merge(const witness_set & W_in)
 //	else if ( (this->num_variables!=0) && (W_in.num_variables==0) ){
 //		
 //	}
-	else if ( (W_in.num_variables!=this->num_variables) ) {//&& (W_in.num_points!=0) && (this->num_points!=0)
-		printf("merging two witness sets with differing numbers of variables.\n");
-		std::cout << "existing: " << this->num_variables << ", input: " << W_in.num_variables << std::endl;
-//		deliberate_segfault();
-	}
+//	else if ( (W_in.num_variables!=this->num_variables) ) {//&& (W_in.num_points!=0) && (this->num_points!=0)
+//		printf("merging two witness sets with differing numbers of variables.\n");
+//		std::cout << "existing: " << this->num_variables << ", input: " << W_in.num_variables << std::endl;
+////		deliberate_segfault();
+//	}
 	
 	
 	if (W_in.num_natural_vars != this->num_natural_vars) {
 		printf("merging two witness sets with differing numbers of natural variables. %d merging set, %d existing\n",
 			   W_in.num_natural_vars, this->num_natural_vars);
-		deliberate_segfault();
-//		br_exit(95);
+		br_exit(95);
 	}
 	
 	//just mindlessly add the linears.  up to user to ensure linears get merged correctly.  no way to know what they want...
@@ -1939,7 +1938,7 @@ void witness_data::populate()
 			}
 			
 			
-			
+			 
 			// previous approximation
 			fscanf(IN,"%d",&precision);
 			change_prec_vec_mp(temp_vec,precision);
@@ -2177,7 +2176,6 @@ witness_set witness_data::choose(BR_configuration & options)
 					witness_set W(num_variables);
 					W.dim = nonempty_dimensions[0];
 					W.comp_num = -1;
-					deliberate_segfault();
 					return W;
 				}
 				else{

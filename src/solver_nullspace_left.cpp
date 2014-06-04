@@ -1303,7 +1303,6 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 										   solver_configuration		& solve_options)
 {
 	
-	boost::timer::auto_cpu_timer t;
     
 	if (solve_options.use_parallel()) {
 		solve_options.call_for_help(NULLSPACE);
