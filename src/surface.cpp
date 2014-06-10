@@ -43,7 +43,7 @@ void surface_decomposition::main(vertex_set & V,
 		this->add_patch(W_surf.patch_mp[ii]);
 	
 	
-	this->beginning_stuff( W_surf, program_options, solve_options);
+	beginning_stuff( W_surf, program_options, solve_options);
 	
 	
     
@@ -138,10 +138,13 @@ void surface_decomposition::main(vertex_set & V,
 									  program_options,
 									  solve_options);
 	
-	crit_curve.add_witness_set(W_sphere_intersection,CRITICAL,V);
+	
 	
 	W_sphere_intersection.sort_for_real(&solve_options.T);
 	W_sphere_intersection.sort_for_unique(&solve_options.T);
+	
+	
+	crit_curve.add_witness_set(W_sphere_intersection,CRITICAL,V);
 	
 	W_total_crit.merge(W_sphere_intersection);
 				
@@ -1387,7 +1390,7 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 		this->output_main(program_options.output_dir);
 		V.print(program_options.output_dir/ "V.vertex");
 		
-		std::cout << color::magenta() << "DONE decomposing the " << ii << "th " << kindofslice << " slice" << color::console_default() << std::endl;
+		std::cout << color::magenta() << "DONE decomposing " << kindofslice << "slice " << ii << color::console_default() << std::endl;
 		
 	} // re: for loop
 	

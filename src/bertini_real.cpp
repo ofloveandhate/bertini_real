@@ -9,7 +9,7 @@ int main(int argC, char *args[])
  \***************************************************************/
 {
 
-
+	
 
 	////
 	//  INITIALIZATION
@@ -19,10 +19,11 @@ int main(int argC, char *args[])
 	
 	//instantiate options
 	BR_configuration program_options;
+	solver_configuration solve_options;
+	int MPType;
+	
 	
 	program_options.parse_commandline(argC, args); // everybody gets to parse the command line.
-	
-	
 	
 	
 	
@@ -34,7 +35,7 @@ int main(int argC, char *args[])
 	
 	
 	// set up the solver configuration
-	solver_configuration solve_options; 
+	
 	
 	
 	if (program_options.debugwait) {
@@ -59,7 +60,7 @@ int main(int argC, char *args[])
 	}
 	
 	
-	int MPType;
+	
 	
 	if (solve_options.is_head()) {
 		parse_input_file(program_options.input_filename, &MPType);

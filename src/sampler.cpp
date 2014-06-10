@@ -1661,7 +1661,20 @@ void  surface_decomposition::output_sampling_data(boost::filesystem::path base_p
 	}
 	
 	
-	
+	curve_location += "_singular_mult_";
+	if (singular_curves.size()>0) {
+		
+		
+		for (auto iter = singular_curves.begin(); iter!= singular_curves.end(); ++iter) {
+			boost::filesystem::path specific_loc = curve_location;
+			converter << iter->first.first << "_" << iter->first.second;
+			
+			specific_loc += converter.str();
+			converter.clear(); converter.str("");
+			
+			iter->second.output_sampling_data(specific_loc);
+		}
+	}
 	
 }
 
