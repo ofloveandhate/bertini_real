@@ -1,0 +1,13 @@
+CONFIG
+
+tracktype:1;
+securitymaxnorm: 1e8;
+END;
+
+
+INPUT
+variable_group x, y, z;
+function f;
+f = y*z*(x*2+y-z);
+
+END;
