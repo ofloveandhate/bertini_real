@@ -120,6 +120,13 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 	W_linprod.num_natural_vars = W.num_natural_vars;
 	
 	
+	if (program_options.quick_run<=1)
+		solve_options.robust = true;
+	else
+		solve_options.robust = false;
+	
+	
+	
 	double_odometer odo(ns_config->num_jac_equations, target_crit_codim, max_degree);
 	
 	int increment_status = 0;
@@ -147,7 +154,8 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 			}
 		}
 		
-		solve_options.robust = true;
+
+		
 		// actually solve WRT the linears
 		
 		
@@ -240,10 +248,10 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 	
 	//set some solver options
 	
-	if (program_options.quick_run)
-		solve_options.robust = false;
-	else
+	if (program_options.quick_run<=0)
 		solve_options.robust = true;
+	else
+		solve_options.robust = false;
 	
 	
 	

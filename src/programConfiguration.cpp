@@ -185,9 +185,8 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 			{"projection",required_argument,0, 'p'}, {"p",required_argument,0, 'p'}, {"pi",	required_argument,0,'p'},
 			{"sphere",required_argument, 0, 'S'}, {"s",required_argument, 0, 'S'},
 			{"input",required_argument,	0, 'i'}, {"i",required_argument, 0, 'i'},
-			
-			{"quick",no_argument,0,'q'}, {"q",no_argument,0,'q'},
-			
+			{"quick",no_argument,0,'q'}, {"q",no_argument,0,'Q'},
+			{"veryquick",no_argument,0,'q'}, {"vq",no_argument,0,'Q'},
 			{"version",		no_argument,			 0, 'v'}, {"v",		no_argument,			 0, 'v'},
 			{"help",		no_argument,			 0, 'h'}, {"h",		no_argument,			 0, 'h'},
 			{0, 0, 0, 0}
@@ -225,25 +224,25 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 				break;
 				
 			case 'V':
-				this->verbose_level = atoi(optarg);
+				verbose_level = atoi(optarg);
 				break;
 
 				
 			case 'o':
-				this->output_dir = boost::filesystem::absolute(optarg);
+				output_dir = boost::filesystem::absolute(optarg);
 				break;
 				
 			case 's':
-				this->stifle_text = "\0";
+				stifle_text = "\0";
 				break;
 				
 			case 'm':
-				this->merge_edges = false;
+				merge_edges = false;
 				break;
 				
 			case 'p':
-				this->user_projection=1;
-				this->projection_filename = optarg;
+				user_projection=1;
+				projection_filename = optarg;
 				break;
 				
 				
@@ -255,11 +254,15 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 				
 				
 			case 'i': // input filename
-				this->input_filename = optarg;
+				input_filename = optarg;
 				break;
 				
 			case 'q':
-				this->quick_run = true;
+				quick_run = 1;
+				break;
+				
+			case 'Q':
+				quick_run = 2;
 				break;
 
 			case 'v':
@@ -271,8 +274,9 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 				
 				splash_screen();
 				
-				printf("\nThis is BertiniReal v %s, developed by\nDaniel A. Brake \n\nwith Dan J. Bates, Wenrui Hao, Jonathan D. Hauenstein,\nAndrew J. Sommmese, and Charles W. Wampler.\n\n", BERTINI_REAL_VERSION_STRING);
-				printf("Send email to brake@math.colostate.edu for details about BertiniReal.\n\n");
+				printf("\nBertiniReal v %s, developed by\nDaniel A. Brake \n\nwith Dan J. Bates, Wenrui Hao, Jonathan D. Hauenstein,\nAndrew J. Sommmese, and Charles W. Wampler.\n\n", BERTINI_REAL_VERSION_STRING);
+				printf("Online at bertinireal.com\n\n");
+				printf("For immediate support, send email to danielthebrake@gmail.com.\n\n");
 				BR_configuration::print_usage();
 				exit(0);
 				break;
@@ -334,34 +338,34 @@ void BR_configuration::init()
 	target_component = -2;
 	target_dimension = -1;
 	
-	quick_run = false;
-	this->debugwait = 0;
-	this->max_deflations = 10;
+	quick_run = 0;
+	debugwait = 0;
+	max_deflations = 10;
 	
-	this->user_projection = 0;
-	this->projection_filename = "";
+	user_projection = 0;
+	projection_filename = "";
 	
 	
 	
 	user_sphere = false;
 	bounding_sphere_filename = "";
 	
-	this->input_filename = "input";
+	input_filename = "input";
 	
 	
-	this->output_dir = boost::filesystem::absolute("output");
+	output_dir = boost::filesystem::absolute("output");
 	
 	
-	this->stifle_membership_screen = 1;
-	this->stifle_text = " > /dev/null ";
+	stifle_membership_screen = 1;
+	stifle_text = " > /dev/null ";
 	
-	this->bertini_command = "~/bin/bertini_serial";
-	this->matlab_command = "matlab -nosplash -nodesktop -nojvm";
-	this->verbose_level = 0; // default to 0
+	bertini_command = "~/bin/bertini_serial";
+	matlab_command = "matlab -nosplash -nodesktop -nojvm";
+	verbose_level = 0; // default to 0
 	
-	this->MPType = 2;
+	MPType = 2;
 	
-	this->use_gamma_trick = 0;
+	use_gamma_trick = 0;
 	
 	merge_edges = true;
 	
@@ -384,18 +388,18 @@ void BR_configuration::init()
 
 void sampler_configuration::splash_screen()
 {
-	printf("\n Sampler module for BertiniReal(TM) v%s\n\n", SAMPLER_VERSION_STRING);
-	printf(" D.J. Bates, D. Brake,\n W. Hao, J.D. Hauenstein,\n A.J. Sommese, C.W. Wampler\n\n");
+	printf("\n Sampler module for Bertini_real(TM) v%s\n\n", SAMPLER_VERSION_STRING);
+	printf(" D. Brake, \n with D.J. Bates, W. Hao, \n J.D. Hauenstein, A.J. Sommese, and C.W. Wampler\n\n");
 	printf("(using GMP v%d.%d.%d, MPFR v%s)\n\n",
 				 __GNU_MP_VERSION, __GNU_MP_VERSION_MINOR, __GNU_MP_VERSION_PATCHLEVEL, mpfr_get_version());
-	
-	printf("Send email to danielthebrake@gmail.com for details.\n\n");
+	printf("See the website at www.bertinireal.com\n\n");
+	printf("Send email to danielthebrake@gmail.com for assistance.\n\n");
 }
 
 
 void sampler_configuration::print_usage()
 {
-	printf("bertini_real has the following options:\n");
+	printf("Bertini_real has the following options:\n");
 	printf("option name(s)\t\t\targument\n\n");
 	printf("-ns -nostifle\t\t\t   --\n");
 	printf("-v -version\t\t\t   -- \n");
@@ -405,6 +409,7 @@ void sampler_configuration::print_usage()
 	printf("-maxits -m \t\t\tint\n");
 	printf("-gammatrick -g \t\t\tbool\n");
 	printf("-fixed \t\t\tint number samples per edge\n");
+	printf("-projbin -pb \t\t\t -- turn on projection-based binning rather than distance based.\n");
 	printf("\n\n\n");
 	return;
 }
@@ -435,6 +440,8 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 			{"g",		required_argument,			 0, 'g'},
 			{"fixed",		required_argument,			 0, 'f'},
 			{"nd", no_argument,0,'d'},
+			{"projbin",		no_argument,			 0, 'b'},
+			{"pb", no_argument,0,'b'},
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
@@ -449,6 +456,12 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 		
 		switch (choice)
 		{
+			case 'b':
+				
+				use_projection_binning = true;
+				
+				break;
+				
 			case 'd':
 				no_duplicates = false;
 				break;
@@ -458,6 +471,10 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 				use_fixed_sampler = true;
 				target_num_samples = atoi(optarg);
 				
+				if (target_num_samples <= 3) {
+					std::cout << "The number of desired samples must be larger than 3, but you provided " << target_num_samples << std::endl;
+					exit(0);
+				}
 				break;
 				
 			case 's':
@@ -465,7 +482,7 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 				break;
 				
 			case 'v':
-				printf("\n Sampler module for BertiniReal(TM) v %s\n\n", SAMPLER_VERSION_STRING);
+				printf("\n Sampler module for Bertini_real(TM) version %s\n\n", SAMPLER_VERSION_STRING);
 				exit(0);
 				break;
 				
@@ -478,7 +495,7 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 				this->use_gamma_trick = atoi(optarg);
 				if (! (this->use_gamma_trick==0 || this->use_gamma_trick==1) ) {
 					printf("value for 'gammatrick' or 'g' must be 1 or 0\n");
-					exit(689);
+					exit(0);
 				}
 				break;
 				

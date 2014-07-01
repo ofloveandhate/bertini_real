@@ -698,7 +698,8 @@ public:
 	 \param V The vertex set holding the points into which the ribs index.
 	 */
 	std::vector< triangle > stitch_triangulation(const std::vector< std::vector< int > > & rib_indices,
-												 const vertex_set & V);
+												 vertex_set & V,
+												 bool bin_it_by_projection);
 	
 	
 	/**

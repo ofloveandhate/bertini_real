@@ -327,10 +327,12 @@ public:
 	 \param W_midpt Skeleton witness set coming from the precedin(containing) interslice call.
 	 \param V the vertex set to which this decomposition refers.
 	 \param pi_in The linear projection being used to decompose.
+	 \param program_options The current state of Bertini_real
 	 \param solve_options The current solver configuration.
 	 */
 	void merge(witness_set & W_midpt, vertex_set & V,
 			   vec_mp * pi_in,
+			   BR_configuration & program_options,
 			   solver_configuration & solve_options);
 	
 	
