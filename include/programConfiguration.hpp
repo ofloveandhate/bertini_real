@@ -375,7 +375,7 @@ public:
 	int stifle_membership_screen; ///< boolean controlling whether stifle_text is empty or " > /dev/null"
 	std::string stifle_text; ///< string to append to system commands to stifle screen output.
 	
-	bool quick_run;  ///< indicator of whether to use the robust solver wherever possible
+	int quick_run;  ///< indicator of whether to use the robust solver wherever possible
 	bool user_sphere; ///< flag for whether to read the sphere from a file, rather than compute it.
 
 	bool user_projection; // indicator for whether to read the projection from a file, rather than randomly choose it.
@@ -471,6 +471,8 @@ public:
 	bool use_fixed_sampler; ///< mode switch between adaptive and fixed-number.
 	int target_num_samples; ///< the number of samples per cell, more or less.
 	
+	bool use_projection_binning; ///< switch for whether to use a projection-value based binning method for stitching ribs of unequal length, or to use a distance-based method.
+	
 	/** 
 	 \brief get the sampler_configuration from the command line. */
 	int  parse_commandline(int argc, char **argv);
@@ -500,6 +502,7 @@ public:
 		use_fixed_sampler = false;
 		target_num_samples = 10;
 		
+		use_projection_binning = false;
 		
 		this->stifle_membership_screen = 1;
 		this->stifle_text = " > /dev/null ";

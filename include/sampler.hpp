@@ -137,8 +137,9 @@ void estimate_new_projection_value(comp_mp result, vec_mp left, vec_mp right, ve
  \param current_samples The constructed triangles from this method.
  */
 void triangulate_two_ribs(const std::vector< int > & rib1, const std::vector< int > & rib2,
-						  const vertex_set & V,
-						  std::vector< triangle> & current_samples);
+						  vertex_set & V,
+						  std::vector< triangle> & current_samples,
+						  bool bin_it_by_projection);
 
 
 /**
@@ -151,12 +152,28 @@ void triangulate_two_ribs(const std::vector< int > & rib1, const std::vector< in
  \param V the vertex set into which the ribs index.  it holds the points and their projection values.
  \param current_samples The constructed triangles from this method.
  */
-void triangulate_two_ribs_by_binning(const std::vector< int > & rib1, const std::vector< int > & rib2,
-									 const vertex_set & V,
-									 std::vector< triangle> & current_samples);
+void triangulate_two_ribs_by_projection_binning(const std::vector< int > & rib1, const std::vector< int > & rib2,
+												const vertex_set & V,
+												std::vector< triangle> & current_samples);
 
 
 
+
+
+
+/**
+ \brief construct the triangulation of two ribs of a face, when the ribs have an unequal number of points on them
+ 
+ \todo add a diagram illustrating this method
+ 
+ \param rib1 input vector of indices into V
+ \param rib2 the other input vector of indices into V
+ \param V the vertex set into which the ribs index.  it holds the points and their projection values.
+ \param current_samples The constructed triangles from this method.
+ */
+void triangulate_two_ribs_by_distance_binning(const std::vector< int > & rib1, const std::vector< int > & rib2,
+											  vertex_set & V,
+												std::vector< triangle> & current_samples);
 
 
 #endif

@@ -1396,7 +1396,7 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 
 		if (success_indicator_total) {
 			//stitch together the rib_indices
-			samples.push_back(stitch_triangulation(rib_indices,V));
+			samples.push_back(stitch_triangulation(rib_indices,V,sampler_options.use_projection_binning)); // last argument tells whether to use projection binning (true) or distance binning (false)
 		}
 		else{
 			continue;
@@ -1421,7 +1421,8 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 
 
 std::vector< triangle > surface_decomposition::stitch_triangulation(const std::vector< std::vector< int > > & rib_indices,
-																	const vertex_set & V)
+																	vertex_set & V,
+																	bool bin_it_by_projection)
 {
 #ifdef functionentry_output
 	std::cout << "surface_decomposition::stitch_triangulation" << std::endl;
@@ -1429,14 +1430,11 @@ std::vector< triangle > surface_decomposition::stitch_triangulation(const std::v
 	
 	std::vector< triangle > current_samples;
 	
-	triangle add_me;
-	
-
 
 	
 	
 	for (int ii = 0; ii<int(rib_indices.size()-1); ii++) {
-		triangulate_two_ribs(rib_indices[ii], rib_indices[ii+1], V, current_samples);
+		triangulate_two_ribs(rib_indices[ii], rib_indices[ii+1], V, current_samples, bin_it_by_projection);
 	}
 	
 	
@@ -1446,8 +1444,9 @@ std::vector< triangle > surface_decomposition::stitch_triangulation(const std::v
 
 
 void triangulate_two_ribs(const std::vector< int > & rib1, const std::vector< int > & rib2,
-						  const vertex_set & V,
-						  std::vector< triangle> & current_samples)
+						  vertex_set & V,
+						  std::vector< triangle> & current_samples,
+						  bool bin_it_by_projection)
 {
 	
 	triangle add_me;
@@ -1484,8 +1483,8 @@ void triangulate_two_ribs(const std::vector< int > & rib1, const std::vector< in
 			current_samples.push_back(add_me);
 			
 			add_me.v1 = rib1[jj];
-			add_me.v2 = rib1[jj+1];
-			add_me.v3 = rib2[jj+1];
+			add_me.v2 = rib2[jj+1];
+			add_me.v3 = rib1[jj+1];
 			
 			current_samples.push_back(add_me);
 			
@@ -1494,21 +1493,29 @@ void triangulate_two_ribs(const std::vector< int > & rib1, const std::vector< in
 	}
 	else{
 				
-		triangulate_two_ribs_by_binning(rib1, rib2,
-										V,
-										current_samples);
+		if (bin_it_by_projection){
+			triangulate_two_ribs_by_projection_binning(rib1, rib2,
+											V,
+											current_samples);
+		}
+		else
+		{
+			triangulate_two_ribs_by_distance_binning(rib1, rib2,
+													   V,
+													   current_samples);
+		}
 		
 		
 	}
 }
 
 
-void triangulate_two_ribs_by_binning(const std::vector< int > & rib1, const std::vector< int > & rib2,
+void triangulate_two_ribs_by_projection_binning(const std::vector< int > & rib1, const std::vector< int > & rib2,
 									 const vertex_set & V,
 									 std::vector< triangle> & current_samples)
 {
 #ifdef functionentry_output
-	std::cout << "triangulate_by_binning" << std::endl;
+	std::cout << "triangulate_by_projection_binning" << std::endl;
 #endif
 	
 	
@@ -1602,6 +1609,150 @@ void triangulate_two_ribs_by_binning(const std::vector< int > & rib1, const std:
 	clear_mp(interval_width);
 	return;
 }
+
+
+
+
+
+void triangulate_two_ribs_by_distance_binning(const std::vector< int > & rib1, const std::vector< int > & rib2,
+												vertex_set & V,
+												std::vector< triangle> & current_samples)
+{
+#ifdef functionentry_output
+	std::cout << "triangulate_by_distance_binning" << std::endl;
+#endif
+	
+	
+	
+	if (rib1.size()==0) {
+		std::cout << "rib1 had 0 size!" << std::endl;
+	}
+	if (rib2.size()==0) {
+		std::cout << "rib2 had 0 size!" << std::endl;
+	}
+	
+	if (rib1.size()==0 || rib2.size()==0) {
+		return;
+	}
+	
+	
+	
+	
+	
+	vec_mp base_test_point, dehom;
+	init_vec_mp(base_test_point,0); init_vec_mp(dehom,0);
+	
+	
+	comp_mp distances; init_mp(distances);
+
+	
+	const std::vector<int> * rib_w_more_entries, *rib_w_less_entries;
+	
+	if (rib1.size() > rib2.size()) {
+		rib_w_more_entries = & rib1;
+		rib_w_less_entries = & rib2;
+	}
+	else{
+		rib_w_more_entries = & rib2;
+		rib_w_less_entries = & rib1;
+	}
+	
+	unsigned int larger_size = rib_w_more_entries->size();
+	unsigned int smaller_size = rib_w_less_entries->size();
+	
+	unsigned int curr_ind = 0; // this will index in to the rib with more entries
+	unsigned int starting_ind;
+	
+	for (unsigned int ii=1; ii<smaller_size; ii++) {
+		
+		
+		starting_ind = curr_ind;
+		
+		dehomogenize(&base_test_point, V.vertices[rib_w_less_entries->at(ii)].pt_mp, V.num_natural_variables);
+		base_test_point->size = V.num_natural_variables-1;
+
+		dehomogenize(&dehom, V.vertices[rib_w_more_entries->at(curr_ind)].pt_mp, V.num_natural_variables);
+		dehom->size = V.num_natural_variables-1;
+		
+		norm_of_difference(distances->r, base_test_point, dehom);
+		
+		dehomogenize(&dehom, V.vertices[rib_w_more_entries->at(curr_ind+1)].pt_mp, V.num_natural_variables);
+		dehom->size = V.num_natural_variables-1;
+		norm_of_difference(distances->i, base_test_point, dehom);
+		
+		
+		// while the next candidate is closer than the previous one, and the index isn't maxed out
+		while ( (mpf_cmp(distances->r,distances->i)>0) && (curr_ind < (rib_w_more_entries->size()-2)) ) {
+			curr_ind++;  // increment the index used to keep track of which point we are targeting as candidate
+			
+			// copy the value into the previous one.  wasteful, but yeah.
+			mpf_set(distances->r, distances->i);
+			
+			
+			dehomogenize(&dehom, V.vertices[rib_w_more_entries->at(curr_ind+1)].pt_mp, V.num_natural_variables);
+			dehom->size = V.num_natural_variables-1;
+			norm_of_difference(distances->i, base_test_point, dehom);
+			
+		}
+		
+		
+		//ok, now curr_ind is the index of the local minimizer for distance to the base test point on the rib with more indices.
+		
+		
+		
+		unsigned int split_point = (curr_ind-starting_ind)/2+starting_ind;
+		
+		for (unsigned int kk=starting_ind; kk<split_point; kk++) {
+			
+			current_samples.push_back(
+									  triangle(
+											   rib_w_less_entries->at(ii-1),
+											   rib_w_more_entries->at(kk+1),
+											   rib_w_more_entries->at(kk))
+									  );
+			
+		}
+		
+		
+			current_samples.push_back(
+									  triangle(
+											   rib_w_less_entries->at(ii),
+											   rib_w_more_entries->at(split_point),
+											   rib_w_less_entries->at(ii-1))
+									  );
+		
+		for (unsigned int kk=split_point; kk<curr_ind;kk++) {
+			
+			current_samples.push_back(
+									  triangle(
+											   rib_w_less_entries->at(ii),
+											   rib_w_more_entries->at(kk+1),
+											   rib_w_more_entries->at(kk))
+									  );
+		}
+		
+	}
+	
+	for (unsigned int kk=curr_ind+1; kk<larger_size; kk++) {
+		current_samples.push_back(
+								  triangle(
+										   rib_w_less_entries->at(smaller_size-1),
+										   rib_w_more_entries->at(kk),
+										   rib_w_more_entries->at(kk-1))
+								  );
+	}
+	
+	clear_mp(distances);
+	clear_vec_mp(dehom);
+	clear_vec_mp(base_test_point);
+	return;
+}
+
+
+
+
+
+
 
 void  surface_decomposition::output_sampling_data(boost::filesystem::path base_path)
 {

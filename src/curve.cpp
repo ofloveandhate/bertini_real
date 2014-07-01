@@ -15,7 +15,6 @@ void curve_decomposition::main(vertex_set & V,
 	
 	
 		
-	solve_options.robust = false;
 	
 	
 	component_num = W.comp_num;
@@ -283,7 +282,12 @@ int curve_decomposition::get_additional_critpts(witness_set *W_additional,
     
     
 	//build up the start system
-	solve_options.robust = true;
+	if (program_options.quick_run<=1)
+		solve_options.robust = true;
+	else
+		solve_options.robust = false;
+	
+	
 	
 	
 	int blabla;
@@ -503,7 +507,16 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	
 	multilin_config ml_config(solve_options,this->randomizer);
 	
-	solve_options.robust = true;
+	
+	
+	if (program_options.quick_run<=1)
+		solve_options.robust = true;
+	else
+		solve_options.robust = false;
+	
+	
+	
+	
 	solve_options.backup_tracker_config();
 	
 	for (int ii=0; ii<num_midpoints; ii++) {
@@ -575,7 +588,13 @@ int curve_decomposition::interslice(const witness_set & W_curve,
         solve_options.backup_tracker_config();
         
 
-        solve_options.robust = true;
+        if (program_options.quick_run<=1)
+			solve_options.robust = true;
+		else
+			solve_options.robust = false;
+		
+		
+		
         int keep_going = 1;
         int iterations = 0;
 		int maxits = 2;
@@ -942,7 +961,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	*/
 	
 	if (program_options.merge_edges==true) {
-		this->merge(midpoint_witness_sets[0],V,projections,solve_options);
+		this->merge(midpoint_witness_sets[0],V,projections,program_options,solve_options);
 	}// re: if merge_edges==true
 	else
 	{
@@ -1075,6 +1094,7 @@ std::vector<int> curve_decomposition::get_merge_candidate(const vertex_set & V){
 void curve_decomposition::merge(witness_set & W_midpt,
                                 vertex_set & V,
                                 vec_mp * projections,
+								BR_configuration & program_options,
                                 solver_configuration & solve_options)
 {
 #ifdef functionentry_output
@@ -1161,7 +1181,13 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		neg_mp(&particular_projection->coord[0], new_proj_val); // set it in the linear for tracking
 		
 		
-		solve_options.robust = true;
+		if (program_options.quick_run<=1)
+			solve_options.robust = true;
+		else
+			solve_options.robust = false;
+		
+		
+		
 		
 		ml_config.set_randomizer(this->randomizer);
 		solver_output fillme;
@@ -1176,7 +1202,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		if (W_temp.num_points==0) {
 			std::cout << "merging multilin solver returned NO POINTS!!!" << std::endl;
 			continue;
-//TODO:  IMMEDIATELY, insert some catch code for when this returns 0 points.  ideally, you would improve the merge method to do a deeper search, so that many edges get merged simultaneously.
+//TODO:  IMMEDIATELY, insert some catch code for when this returns 0 points.
 		}
 
 		

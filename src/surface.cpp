@@ -429,17 +429,19 @@ void surface_decomposition::compute_critcurve_witness_set(witness_set & W_critcu
 #endif
 	
 	
+	
+	std::cout << color::bold("m") << "computing witness points for the critical curve" << color::console_default() << std::endl;
+    
+	
+	
 	// find witness points on the critical curve.
 	
 	
-	bool prev_quick_state = program_options.quick_run;
-	program_options.quick_run = false;
+	
+	solve_options.use_gamma_trick = 0;
 	
 	
 	nullspace_config ns_config;
-    
-	solve_options.use_gamma_trick = 0;
-	std::cout << color::bold("m") << "computing witness points for the critical curve" << color::console_default() << std::endl;
     
 	solver_output solve_out;
 	
@@ -463,13 +465,15 @@ void surface_decomposition::compute_critcurve_witness_set(witness_set & W_critcu
 	solve_out.get_multpos_full(higher_multiplicity_witness_sets);
 	//now we have a map of multiplicities and witness sets.  for each point of each multiplicity, we need to perform iso. defl.  this will enable us to get ahold of the singular curves.
 	
-//	W_critcurve.print_to_screen();
-//	//
-//	for (auto iter = higher_multiplicity_witness_sets.begin(); iter!=higher_multiplicity_witness_sets.end(); iter++) {
-//		std::cout << "found " << iter->second.num_points << " points of multiplicity " << iter->first << std::endl;
-//
-//		iter->second.print_to_screen();
-//	}
+
+	if (program_options.verbose_level>=2) {
+		for (auto iter = higher_multiplicity_witness_sets.begin(); iter!=higher_multiplicity_witness_sets.end(); iter++) {
+			std::cout << "found " << iter->second.num_points << " points of multiplicity " << iter->first << std::endl;
+			
+			iter->second.print_to_screen();
+		}
+	}
+	
 
 	
 	
@@ -501,9 +505,6 @@ void surface_decomposition::compute_critcurve_witness_set(witness_set & W_critcu
 		}
 	}
     
-	
-    program_options.quick_run = prev_quick_state;
-	
     return;
     
 }
@@ -1316,7 +1317,14 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 			std::cout << color::green() << "getting slice witness points and linear" << color::console_default() << std::endl;
 		}
 		
-		solve_options.robust = true;
+
+		
+		if (program_options.quick_run<=1)
+			solve_options.robust = true;
+		else
+			solve_options.robust = false;
+		
+		
 		
 		
 		solver_output fillme;
@@ -1326,8 +1334,9 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 										   ml_config,
 										   solve_options);
 		
-		fillme.get_noninfinite_w_mult(slice_witness_set);
+
 		
+		fillme.get_noninfinite_w_mult(slice_witness_set);
 		fillme.reset();
 		
 		boost::filesystem::path slicename = W_surf.input_filename;
@@ -1357,22 +1366,23 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 		
 		
 		
-		// we already know the component is self-conjugate (by entry condition), so we are free to call this function
 		// the memory for the multilin system will get erased in this call...
-		bool prev_quick_state = program_options.quick_run;
-//		program_options.quick_run = false;
+		
+
+		
 		
 		if (program_options.verbose_level>=1) {
 			std::cout << color::green() << "computing slice" << color::console_default() << std::endl;
 		}
 		
 		
+		
+		// we already know the component is self-conjugate (by entry condition), so we are free to call this function
 		slices[ii].computeCurveSelfConj(slice_witness_set,
 									   &pi[1],
 									   V,
 									   program_options, solve_options);
-		
-		program_options.quick_run = prev_quick_state;
+
 		
 
 		
@@ -1739,7 +1749,12 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 	// assert some solver options
 	solve_options.use_gamma_trick = 0;
-    solve_options.robust = true;
+	
+	if (program_options.quick_run<=1)
+		solve_options.robust = true;
+	else
+		solve_options.robust = false;
+    
 	
 	//create the face
 	face F;
@@ -1939,9 +1954,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	// make u, v target values.
 	
 	
-//	print_comp_matlab(&V.vertices[ crit_slices[ii].edges[0].midpt ].projection_values->coord[0],"a");
-//	print_comp_matlab(&V.vertices[ crit_slices[ii+1].edges[0].midpt ].projection_values->coord[0],"b");
-	
+
 	set_mp(md_config.crit_val_left,   &V.vertices[ crit_slices[ii].edges[0].midpt ].projection_values->coord[0]);
 	set_mp(md_config.crit_val_right,  &V.vertices[ crit_slices[ii+1].edges[0].midpt ].projection_values->coord[0]);
 	
@@ -2119,9 +2132,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				
 				
 				
-				//target midpoint e.w from paper.
 				
-				// this line has three index references in it.
 				set_mp(proj_mid, &V.vertices[ crit_slices[ii+zz].edges[current_edge].midpt ].projection_values->coord[1]);
 				
 				
