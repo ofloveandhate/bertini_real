@@ -135,6 +135,7 @@ void estimate_new_projection_value(comp_mp result, vec_mp left, vec_mp right, ve
  \param rib2 the other input vector of indices into V
  \param V the vertex set into which the ribs index.  it holds the points and their projection values.
  \param current_samples The constructed triangles from this method.
+ \param bin_it_by_projection Indicator of whether to bin by projection or distance.  true is by projection, false is by distance.
  */
 void triangulate_two_ribs(const std::vector< int > & rib1, const std::vector< int > & rib2,
 						  vertex_set & V,

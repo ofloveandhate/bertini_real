@@ -696,6 +696,7 @@ public:
 	 \return A triangulation of the face described by the input rib_indices.
 	 \param rib_indices The indices into V for the points.
 	 \param V The vertex set holding the points into which the ribs index.
+	 \param bin_it_by_projection Indicator of whether to bin by projection or distance.  True is projection, false is distance binning.
 	 */
 	std::vector< triangle > stitch_triangulation(const std::vector< std::vector< int > > & rib_indices,
 												 vertex_set & V,

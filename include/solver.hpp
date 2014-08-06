@@ -442,8 +442,9 @@ public:
 	 
 	 gets the randomizer as a pointer to a randomizer, based on the pointer in D.  sets up the SLP as local to this thing, and captures the memory to local as well.
 	 
-	 \param D the decomposition for which to set up a complete system
-	 \param T the current state of the tracker
+	 \param new_input_name The name of the file to parse into this complete_system.
+	 \param randy A pointer to a randomizer to use.
+	 \param T The current state of the tracker.
 	 */
 	void get_system(const boost::filesystem::path & new_input_name, system_randomizer * randy, tracker_config_t * T)
 	{
@@ -494,8 +495,10 @@ public:
 	 
 	 gets the randomizer as a pointer to a randomizer, based on the pointer in D.  sets up the SLP as local to this thing, and captures the memory to local as well.
 	 
-	 \param D the decomposition for which to set up a complete system
-	 \param T the current state of the tracker
+	 \param new_input_name The name of the file to parse into this complete_system.
+	 \param num_func_in The number of functions naturally appearing in the system.
+	 \param num_func_out The number of functions for output.  If less than number in, will result in randomizer.  If greater, will result in logical inconsistency.
+	 \param T The current state of the tracker (pointer to).
 	 */
 	void get_system(const boost::filesystem::path & new_input_name, int num_func_in, int num_func_out, tracker_config_t * T)
 	{
@@ -1352,7 +1355,7 @@ public:
 	/**
 	 \brief Add a solution and metadata to this solver output object.
 	 
-	 \param temp_vertex The input vertex to pass in.
+	 \param temp_vert The input vertex to pass in.
 	 \param meta The solution metadata, containing input indices, output indices, etc.
 	 */
 	void add_solution(const vertex & temp_vert, const solution_metadata & meta)
