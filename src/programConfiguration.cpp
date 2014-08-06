@@ -272,11 +272,9 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 				
 			case 'h':
 				
-				splash_screen();
-				
-				printf("\nBertiniReal v %s, developed by\nDaniel A. Brake \n\nwith Dan J. Bates, Wenrui Hao, Jonathan D. Hauenstein,\nAndrew J. Sommmese, and Charles W. Wampler.\n\n", BERTINI_REAL_VERSION_STRING);
+				printf("\nBertiniReal(TM) v %s.\n\n", BERTINI_REAL_VERSION_STRING);
 				printf("Online at bertinireal.com\n\n");
-				printf("For immediate support, send email to danielthebrake@gmail.com.\n\n");
+				printf("For immediate support, send email to danielthebrake@gmail.com\n\n");
 				BR_configuration::print_usage();
 				exit(0);
 				break;
