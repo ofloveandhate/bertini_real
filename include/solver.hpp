@@ -181,17 +181,19 @@ class complete_system
 	
 protected:
 	
-	boost::filesystem::path input_filename;
-	SLP_global_pointers memory;
-	prog_t * SLP;
+	boost::filesystem::path input_filename; ///< the name of the input file generating this system
+	SLP_global_pointers memory; ///< the memory for the SLP
+	prog_t * SLP; ///< the actual SLP.  a pointer to it.  comes with have_SLP, which indicates whether this object owns the SLP.
+	bool have_SLP; ///< indicator of whether this object owns the SLP
 	
-	bool have_randomizer;
-	system_randomizer * randomizer;
-	int num_variables;
 	
-	bool have_SLP;
+	bool have_randomizer; ///< indicator whether this object owns the randomizer
+	system_randomizer * randomizer; ///< pointer to a randomizer.  comes with have_randomizer to indicate ownership.
+	int num_variables; ///< the number of variables in the system.
 	
-	int MPType;
+	
+	
+	int MPType; ///< the MP type.
 	
 public:
 	
@@ -460,7 +462,7 @@ public:
 			delete randomizer;
 		}
 		
-		this->randomizer = randy;
+		this->randomizer = randy; // this could be eliminated via the use of smart pointers.
 		have_randomizer = false;
 		int blabla;  // i would like to move this.
 		parse_input_file(new_input_name, &blabla);

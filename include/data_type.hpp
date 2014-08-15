@@ -1256,6 +1256,16 @@ public:
 	 */
 	void write_dehomogenized_coordinates(boost::filesystem::path filename) const;
 	
+	/**
+	 write all the points to a file, first dehomogenizing.
+	 
+	 \param filename The name of the file to which to write.
+	 \param indices Set of indices of points to write to file.
+	 */
+	void write_dehomogenized_coordinates(boost::filesystem::path filename,std::set<unsigned int> indices) const;
+
+	
+	
 	
 	/**
 	 individual send, relative to MPI_COMM_WORLD
