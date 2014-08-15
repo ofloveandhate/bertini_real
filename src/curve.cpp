@@ -36,8 +36,9 @@ void curve_decomposition::main(vertex_set & V,
 		program_options.input_deflated_filename += converter.str();
 		converter.clear(); converter.str("");
 		
-		
-		W.write_dehomogenized_coordinates("witness_points_dehomogenized"); // write the points to file
+		std::set<unsigned int> zeroonly;
+		zeroonly.insert(0);
+		W.write_dehomogenized_coordinates("witness_points_dehomogenized",zeroonly); // write the points to file
 		int num_deflations, *deflation_sequence = NULL;
 		isosingular_deflation(&num_deflations, &deflation_sequence,
 							  program_options, W.input_filename,

@@ -1196,15 +1196,15 @@ int witness_set::witnessSetParse(const boost::filesystem::path witness_set_file,
 
 void witness_set::write_homogeneous_coordinates(boost::filesystem::path filename) const
 {
-	int ii,jj;
+
 	
 	FILE *OUT  = safe_fopen_write(filename.c_str()); // open the output file
 	
 	
 	fprintf(OUT,"%d\n\n",this->num_points); // print the header line
 	
-	for (ii=0; ii<this->num_points; ++ii) {
-		for (jj=0; jj<this->pts_mp[ii]->size; jj++) {
+	for (int ii=0; ii<this->num_points; ++ii) {
+		for (int jj=0; jj<this->pts_mp[ii]->size; jj++) {
 			print_mp(OUT,0,&this->pts_mp[ii]->coord[jj]);
 			fprintf(OUT,"\n");
 		}
@@ -1218,7 +1218,7 @@ void witness_set::write_homogeneous_coordinates(boost::filesystem::path filename
 
 void witness_set::write_dehomogenized_coordinates(boost::filesystem::path filename) const
 {
-	int ii,jj;
+
 	
 	vec_mp result; init_vec_mp(result,1);
 	
@@ -1226,8 +1226,7 @@ void witness_set::write_dehomogenized_coordinates(boost::filesystem::path filena
 	FILE *OUT = safe_fopen_write(filename.c_str()); // open the output file.
 	
 	fprintf(OUT,"%d\n\n",this->num_points); // print the header line
-	for (ii=0; ii<this->num_points; ++ii) {
-		//		print_point_to_screen_matlab(pts_mp[ii],"hompt");
+	for (int ii=0; ii<this->num_points; ++ii) {
 		if (this->num_synth_vars()>0) {
 			dehomogenize(&result,this->pts_mp[ii], num_natural_vars);
 		}
@@ -1235,7 +1234,7 @@ void witness_set::write_dehomogenized_coordinates(boost::filesystem::path filena
 			dehomogenize(&result,this->pts_mp[ii]);
 		}
 		
-		for (jj=0; jj<num_natural_vars-1; jj++) {
+		for (int jj=0; jj<num_natural_vars-1; jj++) {
 			print_mp(OUT, 0, &result->coord[jj]);
 			fprintf(OUT, "\n");
 		}
@@ -1250,18 +1249,59 @@ void witness_set::write_dehomogenized_coordinates(boost::filesystem::path filena
 
 
 
+void witness_set::write_dehomogenized_coordinates(boost::filesystem::path filename,std::set<unsigned int> indices) const
+{
+	
+	for (auto ii=indices.begin(); ii!=indices.end(); ++ii) {
+		if (*ii >= this->num_points) {
+			std::cout << "requested to print out-of-range point index " << *ii << " to a dehomogenized file." << std::endl;
+			br_exit(66190);
+		}
+	}
+	
+	
+	
+	
+	vec_mp result; init_vec_mp(result,1);
+	
+	
+	FILE *OUT = safe_fopen_write(filename.c_str()); // open the output file.
+	
+	fprintf(OUT,"%lu\n\n",indices.size()); // print the header line
+	for (auto ii=indices.begin(); ii!=indices.end(); ++ii) {
+		if (this->num_synth_vars()>0) {
+			dehomogenize(&result,this->pts_mp[*ii], num_natural_vars);
+		}
+		else{
+			dehomogenize(&result,this->pts_mp[*ii]);
+		}
+		
+		for (int jj=0; jj<num_natural_vars-1; jj++) {
+			print_mp(OUT, 0, &result->coord[jj]);
+			fprintf(OUT, "\n");
+		}
+		fprintf(OUT,"\n");
+	}
+	
+	fclose(OUT);
+	
+	clear_vec_mp(result);
+	return;
+}
+
+
 
 void witness_set::write_linears(boost::filesystem::path filename) const
 {
-	int ii,jj;
+
 	
 	FILE *OUT  = safe_fopen_write(filename.c_str()); // open the output file
 	
 	
 	fprintf(OUT,"%d\n\n",this->num_linears); // print the header line
 	
-	for (ii=0; ii<this->num_linears; ++ii) {
-		for (jj=0; jj<this->L_mp[ii]->size; jj++) {
+	for (int ii=0; ii<this->num_linears; ++ii) {
+		for (int jj=0; jj<this->L_mp[ii]->size; jj++) {
 			print_mp(OUT, 0, &this->L_mp[ii]->coord[jj]);
 			fprintf(OUT, "\n");
 		}
@@ -1277,16 +1317,16 @@ void witness_set::write_linears(boost::filesystem::path filename) const
 
 void witness_set::print_patches(boost::filesystem::path filename) const
 {
-	int ii,jj;
+
 	
 	FILE *OUT  = safe_fopen_write(filename); // open the output file
 	
 	
 	fprintf(OUT,"%d\n\n",this->num_patches); // print the header line
 	
-	for (ii=0; ii<this->num_patches; ++ii) {
+	for (int ii=0; ii<this->num_patches; ++ii) {
 		fprintf(OUT,"%d\n",this->patch_mp[ii]->size);
-		for (jj=0; jj<this->patch_mp[ii]->size; jj++) {
+		for (int jj=0; jj<this->patch_mp[ii]->size; jj++) {
 			print_mp(OUT, 0, &this->patch_mp[ii]->coord[jj]);
 			fprintf(OUT, "\n");
 		}

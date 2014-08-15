@@ -42,7 +42,7 @@ class multilin_config
 	
 public:
 	
-	bool have_randomizer; ///< indicator of whether have the randomizer
+	bool have_randomizer; ///< indicator of whether have and own the randomizer
 	system_randomizer *randomizer; ///< pointer to randomizer
 	
 	
