@@ -1355,7 +1355,7 @@ int get_num_at_a_time(int num_workers, int num_points)
 {
 	int num_packets = 1 + ((num_points - 1) / num_workers);
 	
-	num_packets = 1 + ((num_packets - 1) / 10);
+	num_packets = 1 + ((num_packets - 1) / 25);
 	
 	
 	return num_packets;

@@ -468,6 +468,7 @@ public:
 	
 	bool no_duplicates; ///< a flag for whether to never duplicate points in the vertex_set as it is constructed.
 	
+	bool use_distance_condition; ///< switch for adaptive modes, between distance or movement breaking of while loop.
 	bool use_fixed_sampler; ///< mode switch between adaptive and fixed-number.
 	int target_num_samples; ///< the number of samples per cell, more or less.
 	
@@ -500,26 +501,28 @@ public:
 	{
 		no_duplicates = true;
 		use_fixed_sampler = false;
+		use_distance_condition = false;
+		
 		target_num_samples = 10;
 		
 		use_projection_binning = false;
 		
-		this->stifle_membership_screen = 1;
-		this->stifle_text = " > /dev/null ";
+		stifle_membership_screen = 1;
+		stifle_text = " > /dev/null ";
 		
-		this->verbose_level = 0; // default to 0
+		verbose_level = 0; // default to 0
 		
-		this->maximum_num_iterations = 10;
+		maximum_num_iterations = 10;
 		
-		mpf_init(this->TOL);
-		mpf_set_d(this->TOL, 1e-1); // this should be made adaptive to the span of the projection values or the endpoints
+		mpf_init(TOL);
+		mpf_set_d(TOL, 1e-1); // this should be made adaptive to the span of the projection values or the endpoints
 		
-		this->use_gamma_trick = 0;
+		use_gamma_trick = 0;
 	};
 	
 	~sampler_configuration()
 	{
-		mpf_clear(this->TOL);	
+		mpf_clear(TOL);
 	}
 
 	

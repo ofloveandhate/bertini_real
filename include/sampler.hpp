@@ -107,7 +107,7 @@ int get_dir_mptype_dimen(boost::filesystem::path & Dir_Name, int & MPType, int &
  \param num_vars The number of vars to change the W to.
  
  */
-void set_witness_set_mp(witness_set *W, vec_mp L,vec_mp pts,int num_vars);
+void set_witness_set_mp(witness_set & W, vec_mp new_linear,vec_mp new_point);
 
 
 
@@ -124,6 +124,19 @@ void set_witness_set_mp(witness_set *W, vec_mp L,vec_mp pts,int num_vars);
  \param pi the linear projection to use.
  */
 void estimate_new_projection_value(comp_mp result, vec_mp left, vec_mp right, vec_mp pi);
+
+
+/**
+ \brief given two points and a projection, estimate a projection value for the point halfway between.
+ 
+ \param result the computed estimated projection value
+ \param estimated_point The computed estimated point.
+ \param left point one
+ \param right point two
+ \param pi the linear projection to use.
+ */
+void estimate_new_projection_value(comp_mp result, vec_mp estimated_point, vec_mp left, vec_mp right, vec_mp pi);
+
 
 
 /**
