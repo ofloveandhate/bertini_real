@@ -487,10 +487,29 @@ public:
 	 */
 	int adaptive_set_initial_sample_data();
 	
+	
+	
+	/**
+	 \brief Sample a curve using adaptive method based on convergence of the distance between next estimated point, and next computed point.
+	 
+	 \todo Add a better summary of the adaptive curve method.
+	 
+	 \ingroup samplermethods
+	 
+	 \param V the vertex set containing the points of the decomposition.
+	 \param sampler_options The current state of the sampler program.
+	 \param solve_options The current state of the solver and tracker configuration.
+	 */
+	void adaptive_sampler_movement(vertex_set &V,
+								   sampler_configuration & sampler_options,
+								   solver_configuration & solve_options);
+	
+	
+	
 	/**
 	\brief Sample a curve using adaptive method based on distance between computed samples, and a maximum number of refinement passes.
 	 
-	 \todo Add a better summary of the adaptive cufve method.
+	 \todo Add a better summary of the adaptive curve method.
 	
 	 \ingroup samplermethods
 	 
@@ -498,7 +517,7 @@ public:
 	 \param sampler_options The current state of the sampler program.
 	 \param solve_options The current state of the solver and tracker configuration.
 	*/
-	void adaptive_sampler(vertex_set &V,
+	void adaptive_sampler_distance(vertex_set &V,
 						  sampler_configuration & sampler_options,
 						  solver_configuration & solve_options);
 	

@@ -445,7 +445,7 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
 		
-		choice = getopt_long_only (argc, argv, "d:h:v:s:ve",
+		choice = getopt_long_only (argc, argv, "bdf:svt:g:V:m:h",
 															 long_options, &option_index);
 		
 		/* Detect the end of the options. */
