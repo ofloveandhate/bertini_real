@@ -262,7 +262,7 @@ void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 	char *str = (char *)br_malloc(strSize * sizeof(char));
 	
 	// setup Bertini constants in Matlab
-	fprintf(OUT, "syms I Pi;\n");
+	fprintf(OUT, "syms I Pi;\nI=1i;\n");
 	
 	// setup variables
 	fprintf(OUT, "syms");
@@ -383,7 +383,10 @@ void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 	fprintf(OUT, "    A = simplify(det(J(R(j,:),C(k,:))));\n");
 	fprintf(OUT, "    if A ~= 0\n");
 	fprintf(OUT, "      count = count + 1;\n");
-	fprintf(OUT, "      fprintf(OUT, 'f_%d_%cd = %cs;%cn', count, char(A/prod(deg(R(j,:)))));\n", deflation_number, '%', '%', '\\');
+	fprintf(OUT, "		curr_eqn = char(A/prod(deg(R(j,:))));\n");
+	fprintf(OUT, "		i_locations = regexp(curr_eqn,'[\\W\\s]i[\\W\\s]');\n");
+	fprintf(OUT, "		curr_eqn(i_locations+1) = 'I';\n");
+	fprintf(OUT, "      fprintf(OUT, 'f_%d_%cd = %cs;%cn', count, curr_eqn);\n", deflation_number, '%', '%', '\\');
 	fprintf(OUT, "    end;\n");
 	fprintf(OUT, "  end;\n");
 	fprintf(OUT, "end;\n");

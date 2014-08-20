@@ -746,7 +746,7 @@ void createMatlabDerivative(boost::filesystem::path output_name,
 	std::ifstream IN(input_name.c_str());
 	std::ofstream OUT(output_name.c_str());
 	// setup Bertini constants in Matlab
-	OUT << "syms I Pi;\n";
+	OUT << "syms I Pi;\nI = 1i;\n";
 	
 	// setup variables
 	OUT << "syms";
@@ -917,7 +917,11 @@ void createMatlabDerivative(boost::filesystem::path output_name,
 	OUT << "fprintf(OUT,';\\n');\n\n";
 	
 	OUT << "for jj = 1:num_jac_equations\n";
-	OUT << "  fprintf(OUT, 'der_func_%i = %s;  \\n',jj,char(new_eqns(jj)));\n";
+	
+	OUT << "	curr_eqn = char(new_eqns(jj));\n";
+	OUT << "	i_locations = regexp(curr_eqn,'[\\W\\s]i[\\W\\s]');\n";
+	OUT << "	curr_eqn(i_locations+1) = 'I';\n";
+	OUT << "  fprintf(OUT, 'der_func_%i = %s;  \\n',jj,curr_eqn);\n";
 	//	OUT << "  for kk = 1:num_jac_equations\n";
 	//	OUT << "    fprintf(OUT,'%s\n',);\n";
 	//	OUT << "  end %re: kk\n";
