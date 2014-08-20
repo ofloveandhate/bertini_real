@@ -1255,6 +1255,7 @@ void witness_set::write_dehomogenized_coordinates(boost::filesystem::path filena
 	for (auto ii=indices.begin(); ii!=indices.end(); ++ii) {
 		if (*ii >= this->num_points) {
 			std::cout << "requested to print out-of-range point index " << *ii << " to a dehomogenized file." << std::endl;
+			std::cout << "[this witness_set contains " << num_points << " points.]" << std::endl;
 			br_exit(66190);
 		}
 	}
@@ -2487,6 +2488,7 @@ witness_set witness_data::choose_set_interactive(BR_configuration & options)
 			W.add_patch(patch_mp[ii]);
 		}
 	}
+	
 	
 	return W;
 }

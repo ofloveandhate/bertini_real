@@ -27,14 +27,6 @@ int main(int argC, char *args[])
 	
 	
 	
-//	// set up the solver configuration
-
-	
-	
-	// split the input_file.  this must be called before setting up the solver config.
-	
-	
-	// set up the solver configuration
 	
 	
 	
@@ -63,13 +55,16 @@ int main(int argC, char *args[])
 	
 	
 	if (solve_options.is_head()) {
+		// split the input_file.  this must be called before setting up the solver config.
 		parse_input_file(program_options.input_filename, &MPType);
+		
+		// set up the solver configuration
 		get_tracker_config(solve_options,MPType);
 		
 		solve_options.T.ratioTol = 0.9999999999999999999999999; // manually assert to be more permissive.  i don't really like this.
 	}
 	else
-	{ // catch the bcast from parallel parsing. (which cannot be disabled)
+	{ // catch the bcast from parallel parsing (which cannot be disabled)
 		int arbitrary_int;
 		MPI_Bcast(&arbitrary_int,1,MPI_INT,0,MPI_COMM_WORLD);
 	}

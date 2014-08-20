@@ -29,7 +29,7 @@ int ubermaster_process::main_loop()
 	boost::timer::auto_cpu_timer t;
 	
 	
-	
+	program_options.MPType = MPType;
 	
 	
 	program_options.splash_screen();
@@ -62,7 +62,7 @@ int ubermaster_process::main_loop()
 		return 1;
 	}
 	
-	program_options.MPType = MPType;
+	
 	
 	
 	W.get_variable_names(num_vars);
