@@ -22,7 +22,8 @@ void surface_decomposition::main(vertex_set & V,
 #ifdef functionentry_output
 	std::cout << "surface_main" << std::endl;
 #endif
-
+	
+	
 	
 	// set some member information.
 	this->input_filename = W_surf.input_filename;
@@ -341,9 +342,11 @@ void surface_decomposition::beginning_stuff(const witness_set & W_surf,
 		program_options.input_deflated_filename += converter.str();
 		
 		
+		
+		
 		std::set<unsigned int> zeroonly;
 		zeroonly.insert(0);
-		W.write_dehomogenized_coordinates("witness_points_dehomogenized",zeroonly); // write the points to file
+		W_surf.write_dehomogenized_coordinates("witness_points_dehomogenized",zeroonly); // write the points to file
 		
 		
 		int num_deflations, *deflation_sequence = NULL;
