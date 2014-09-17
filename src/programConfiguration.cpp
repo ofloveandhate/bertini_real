@@ -124,8 +124,16 @@ int BR_configuration::startup()
 void BR_configuration::splash_screen()
 {
 	printf("\n BertiniReal(TM) v%s\n\n", BERTINI_REAL_VERSION_STRING);
-	printf(" Daniel A. Brake with\n Dan J. Bates, Wenrui Hao, Jonathon D. Hauenstein,\n Andrew J. Sommese, Charles W. Wampler\n\n");
+	printf(" D.A. Brake with\n D.J. Bates, W. Hao, J.D. Hauenstein,\n A.J. Sommese, C.W. Wampler\n\n");
 	printf("(using GMP v%d.%d.%d, MPFR v%s)\n\n", __GNU_MP_VERSION, __GNU_MP_VERSION_MINOR, __GNU_MP_VERSION_PATCHLEVEL, mpfr_get_version());
+	
+	
+	
+	
+	
+	bertini_splash_screen();
+	
+	
 	
 }
 
@@ -387,11 +395,17 @@ void BR_configuration::init()
 void sampler_configuration::splash_screen()
 {
 	printf("\n Sampler module for Bertini_real(TM) v%s\n\n", SAMPLER_VERSION_STRING);
-	printf(" D. Brake, \n with D.J. Bates, W. Hao, \n J.D. Hauenstein, A.J. Sommese, and C.W. Wampler\n\n");
+	printf(" D.A. Brake, \n with D.J. Bates, W. Hao, \n J.D. Hauenstein, A.J. Sommese, and C.W. Wampler\n\n");
 	printf("(using GMP v%d.%d.%d, MPFR v%s)\n\n",
 				 __GNU_MP_VERSION, __GNU_MP_VERSION_MINOR, __GNU_MP_VERSION_PATCHLEVEL, mpfr_get_version());
 	printf("See the website at www.bertinireal.com\n\n");
 	printf("Send email to danielthebrake@gmail.com for assistance.\n\n");
+	
+	
+	
+	bertini_splash_screen();
+	
+	
 }
 
 

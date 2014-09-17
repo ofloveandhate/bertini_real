@@ -22,8 +22,16 @@
 
 enum {VEC_MP = 4000, VEC_D, MAT_MP, MAT_D, COMP_MP, COMP_D, VEC_RAT, MAT_RAT, COMP_RAT, INDICES, DECOMPOSITION, CURVE, SURFACE, EDGE, CELL, FACE, UNUSED, VERTEX_SET, WITNESS_SET, VERTEX};
 
+
+
+
+
+void bertini_splash_screen();
+
+
+
 /**
- \brief bertini_real's malloc.  
+ \brief bertini_real's malloc.
  
  will call br_exit if it fails to malloc correctly.
  
