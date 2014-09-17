@@ -22,6 +22,7 @@
 #include <queue>
 #include <map>
 
+#include "bertini_extensions.hpp"
 
 #define BERTINI_REAL_VERSION_STRING "0.1.0"
 #define SAMPLER_VERSION_STRING "0.9.9"

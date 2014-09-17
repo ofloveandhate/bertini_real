@@ -4,6 +4,16 @@
 #define SAMEPOINTTOL 1e-6
 
 
+
+void bertini_splash_screen()
+{
+	printf("\n  Library-linked Bertini(TM) v%s", BERTINI_VERSION_STRING);
+	printf("\n   (%s)\n\n", BERTINI_DATE_STRING);
+	printf(" D.J. Bates, J.D. Hauenstein,\n A.J. Sommese, C.W. Wampler\n\n");
+	printf("(using GMP v%d.%d.%d, MPFR v%s)\n\n", __GNU_MP_VERSION, __GNU_MP_VERSION_MINOR, __GNU_MP_VERSION_PATCHLEVEL, mpfr_get_version());
+}
+
+
 void * br_malloc(size_t size)
 /***************************************************************\
  * USAGE:                                                        *
