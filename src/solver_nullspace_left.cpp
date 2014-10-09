@@ -1377,9 +1377,9 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 	if (0) {
 		if (MPType==0) {
 			vec_d tempvec;  init_vec_d(tempvec,0);
-			for (int ii=0;ii<W.num_points;ii++)
+			for (unsigned int ii=0;ii<W.num_points();ii++)
 			{
-				vec_mp_to_d(tempvec,W.pts_mp[ii]);
+				vec_mp_to_d(tempvec,*W.point(ii));
 				if (check_isstart_nullspacejac_d(tempvec,&solve_options.T,ED_d)==0)
 				{
 					std::cout << "point " << ii << " doesn't appear to be a start point.  it will be refined before starting..." << std::endl;
@@ -1390,9 +1390,9 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 		}
 		else{
 			vec_mp tempvec;  init_vec_mp(tempvec,0);
-			for (int ii=0;ii<W.num_points;ii++)
+			for (unsigned int ii=0;ii<W.num_points();ii++)
 			{
-				vec_cp_mp(tempvec,W.pts_mp[ii]);
+				vec_cp_mp(tempvec,*W.point(ii));
 				if (check_isstart_nullspacejac_mp(tempvec,&solve_options.T,ED_mp)==0)
 				{
 					std::cout << "point " << ii << " doesn't appear to be a start point.  it will be refined before starting..." << std::endl;
@@ -1405,7 +1405,7 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 
 	
 	if (0) {
-		check_nullspace_evaluator(W.pts_mp[0],ED_d);
+		check_nullspace_evaluator(*W.point(0),ED_d);
 	}
 	
 	

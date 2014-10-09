@@ -990,31 +990,31 @@ void system_randomizer::bcast_receive(parallelism_config & mpi_config)
 int point_holder::add_point(vec_mp new_point)
 {
 	
-	if (this->num_points!=0 && this->pts_mp==NULL) {
+	if (num_pts_!=0 && this->pts_mp_==NULL) {
 		printf("trying to add point to point_holder with non-zero num_points and NULL container!\n");
 		br_exit(9713);
 	}
 	
-	if (this->num_points==0 && this->pts_mp!=NULL) {
+	if (num_pts_==0 && this->pts_mp_!=NULL) {
 		printf("trying to add point to point_holder with num_points==0 and non-NULL container!\n");
 		br_exit(9713);
 	}
 	
 	
-	if (this->num_points==0) {
-		this->pts_mp = (vec_mp *)br_malloc(sizeof(vec_mp));
+	if (num_pts_==0) {
+		pts_mp_ = (vec_mp *)br_malloc(sizeof(vec_mp));
 	}
 	else{
-		this->pts_mp = (vec_mp *)br_realloc(pts_mp, (num_points+1) * sizeof(vec_mp));
+		pts_mp_ = (vec_mp *)br_realloc(pts_mp_, (num_pts_+1) * sizeof(vec_mp));
 	}
 	
-	init_vec_mp2(pts_mp[num_points], new_point->size, new_point->curr_prec);
-	this->pts_mp[num_points]->size = new_point->size;
-	vec_cp_mp(pts_mp[num_points], new_point);
+	init_vec_mp2(pts_mp_[num_pts_], new_point->size, new_point->curr_prec);
+	pts_mp_[num_pts_]->size = new_point->size;
+	vec_cp_mp(pts_mp_[num_pts_], new_point);
 	
-	num_points++;
+	num_pts_++;
 	
-	return num_points-1;
+	return num_pts_-1;
 }
 
 int patch_holder::add_patch(vec_mp new_patch)
@@ -1201,11 +1201,12 @@ void witness_set::write_homogeneous_coordinates(boost::filesystem::path filename
 	FILE *OUT  = safe_fopen_write(filename.c_str()); // open the output file
 	
 	
-	fprintf(OUT,"%d\n\n",this->num_points); // print the header line
+	fprintf(OUT,"%zu\n\n",num_points()); // print the header line
 	
-	for (int ii=0; ii<this->num_points; ++ii) {
-		for (int jj=0; jj<this->pts_mp[ii]->size; jj++) {
-			print_mp(OUT,0,&this->pts_mp[ii]->coord[jj]);
+	for (unsigned int ii=0; ii<num_points(); ++ii) {
+		vec_mp *curr_point = point(ii);
+		for ( int jj=0; jj< (*curr_point)->size; jj++) {
+			print_mp(OUT,0,&( (*curr_point)->coord[jj]));
 			fprintf(OUT,"\n");
 		}
 		fprintf(OUT,"\n");
@@ -1225,13 +1226,13 @@ void witness_set::write_dehomogenized_coordinates(boost::filesystem::path filena
 	
 	FILE *OUT = safe_fopen_write(filename.c_str()); // open the output file.
 	
-	fprintf(OUT,"%d\n\n",this->num_points); // print the header line
-	for (int ii=0; ii<this->num_points; ++ii) {
+	fprintf(OUT,"%zu\n\n",num_points()); // print the header line
+	for (unsigned int ii=0; ii<num_points(); ++ii) {
 		if (this->num_synth_vars()>0) {
-			dehomogenize(&result,this->pts_mp[ii], num_natural_vars);
+			dehomogenize(&result,*point(ii), num_natural_vars);
 		}
 		else{
-			dehomogenize(&result,this->pts_mp[ii]);
+			dehomogenize(&result,*point(ii));
 		}
 		
 		for (int jj=0; jj<num_natural_vars-1; jj++) {
@@ -1253,9 +1254,9 @@ void witness_set::write_dehomogenized_coordinates(boost::filesystem::path filena
 {
 	
 	for (auto ii=indices.begin(); ii!=indices.end(); ++ii) {
-		if (*ii >= this->num_points) {
+		if (*ii >= this->num_points()) {
 			std::cout << "requested to print out-of-range point index " << *ii << " to a dehomogenized file." << std::endl;
-			std::cout << "[this witness_set contains " << num_points << " points.]" << std::endl;
+			std::cout << "[this witness_set contains " << num_points() << " points.]" << std::endl;
 			br_exit(66190);
 		}
 	}
@@ -1271,10 +1272,10 @@ void witness_set::write_dehomogenized_coordinates(boost::filesystem::path filena
 	fprintf(OUT,"%lu\n\n",indices.size()); // print the header line
 	for (auto ii=indices.begin(); ii!=indices.end(); ++ii) {
 		if (this->num_synth_vars()>0) {
-			dehomogenize(&result,this->pts_mp[*ii], num_natural_vars);
+			dehomogenize(&result,*(this->point(*ii)), num_natural_vars);
 		}
 		else{
-			dehomogenize(&result,this->pts_mp[*ii]);
+			dehomogenize(&result,*(this->point(*ii)));
 		}
 		
 		for (int jj=0; jj<num_natural_vars-1; jj++) {
@@ -1385,11 +1386,11 @@ void witness_set::print_to_screen() const
 	std::cout << "input file name " << input_filename << std::endl;
 
 	int ii;
-	printf("******\n%d points\n******\n",this->num_points);
+	printf("******\n%zu points\n******\n",num_points());
 	std::cout << color::green();
-	for (ii=0; ii<this->num_points; ii++) {
+	for (unsigned ii=0; ii<num_points(); ii++) {
 		
-		dehomogenize(&dehom, this->pts_mp[ii], num_natural_vars);
+		dehomogenize(&dehom, *(point(ii)), num_natural_vars);
 		
 		varname << "point_" << ii;
 		
@@ -1399,27 +1400,27 @@ void witness_set::print_to_screen() const
 	std::cout << color::console_default();
 	
 	std::cout << color::blue();
-	printf("******\n%d linears\n******\n",this->num_linears);
+	printf("******\n%d linears\n******\n",num_linears);
 	
-	for (ii=0; ii<this->num_linears; ii++) {
+	for (ii=0; ii<num_linears; ii++) {
 		varname << "linear_" << ii;
-		print_point_to_screen_matlab(this->L_mp[ii],varname.str());
+		print_point_to_screen_matlab(L_mp[ii],varname.str());
 		varname.str("");
 	}
 	std::cout << color::console_default();
 	
 	std::cout << color::cyan();
-	printf("******\n%d patches\n******\n",this->num_patches);
+	printf("******\n%d patches\n******\n",num_patches);
 	
-	for (ii=0; ii<this->num_patches; ii++) {
+	for (ii=0; ii<num_patches; ii++) {
 		varname << "patch_" << ii;
-		print_point_to_screen_matlab(this->patch_mp[ii],varname.str());
+		print_point_to_screen_matlab(patch_mp[ii],varname.str());
 		varname.str("");
 	}
 	std::cout << color::console_default();
 	
 	std::cout << "variable names:\n";
-	for (ii=0; ii< int(this->variable_names.size()); ii++) {
+	for (unsigned ii=0; ii< this->variable_names.size(); ii++) {
 		std::cout << this->variable_names[ii] << "\n";
 	}
 	printf("\n\n");
@@ -1437,17 +1438,17 @@ void witness_set::print_to_file(boost::filesystem::path filename) const
 	FILE *OUT = safe_fopen_write(filename);
 	
 	
-	fprintf(OUT, "%d %d %d\n\n", this->num_points, this->dim, this->comp_num);
+	fprintf(OUT, "%zu %d %d\n\n", num_points(), this->dim, this->comp_num);
 	
 
 
-	for (int ii=0; ii < num_points; ii++) {
-		
-		//read the witness points into memory
-		for (int jj=0; jj < pts_mp[ii]->size; ++jj) {
-			mpf_out_str(OUT,10,0,pts_mp[ii]->coord[jj].r); // 10 is the base
+	for (unsigned int ii=0; ii < num_points(); ii++) {
+		vec_mp * curr_point = point(ii);
+		//print the witness points into file
+		for (int jj=0; jj < (*curr_point)->size; ++jj) {
+			mpf_out_str(OUT,10,0,(*curr_point)->coord[jj].r); // 10 is the base
 			fprintf(OUT," ");
-			mpf_out_str(OUT,10,0,pts_mp[ii]->coord[jj].i);
+			mpf_out_str(OUT,10,0,(*curr_point)->coord[jj].i);
 			fprintf(OUT,"\n");
 		}
 		fprintf(OUT,"\n");
@@ -1513,14 +1514,15 @@ void witness_set::only_first_vars(int num_vars)
 	vec_mp tempvec;  init_vec_mp2(tempvec, num_vars, 1024);
 	tempvec->size = num_vars;
 	
-	for (int ii=0; ii<this->num_points; ii++) {
+	for (unsigned int ii=0; ii<num_points(); ii++) {
+		vec_mp * curr_point = point(ii);
 		
 		for (int jj=0; jj<num_vars; jj++) {
-			set_mp(&tempvec->coord[jj], &this->pts_mp[ii]->coord[jj]);
+			set_mp(&tempvec->coord[jj], &(*curr_point)->coord[jj]);
 		}
 		
-		change_size_vec_mp(this->pts_mp[ii], num_vars);  this->pts_mp[ii]->size = num_vars;
-		vec_cp_mp(this->pts_mp[ii], tempvec);
+		change_size_vec_mp(*curr_point, num_vars);  (*curr_point)->size = num_vars;
+		vec_cp_mp(*curr_point, tempvec);
 	}
 	
 	
@@ -1561,19 +1563,19 @@ void witness_set::only_first_vars(int num_vars)
 void witness_set::sort_for_real(tracker_config_t * T)
 {
 	
+
 	
-	int ii;
 	
-	
-	int *real_indicator = new int[this->num_points];
+	int *real_indicator = new int[num_points()];
 	int counter = 0;
 	
 	vec_mp result; init_vec_mp(result,num_natural_vars-1);
 	result->size = num_natural_vars-1;
 	
-	for (ii=0; ii<this->num_points; ii++) {
+	for (unsigned int ii=0; ii<num_points(); ii++) {
+		vec_mp * curr_point = point(ii);
 		for (int jj=1; jj<num_natural_vars; jj++) {
-			div_mp(&result->coord[jj-1], &this->pts_mp[ii]->coord[jj], &this->pts_mp[ii]->coord[0]);
+			div_mp(&result->coord[jj-1], &(*curr_point)->coord[jj], &(*curr_point)->coord[0]);
 		}
 		real_indicator[ii] = checkForReal_mp(result, T->real_threshold);
 		
@@ -1586,11 +1588,12 @@ void witness_set::sort_for_real(tracker_config_t * T)
 	vec_mp *tempvec = (vec_mp *)br_malloc(counter * sizeof(vec_mp));
 	
 	counter = 0;  // reset
-	for (ii=0; ii<this->num_points; ii++) {
+	for (unsigned int ii=0; ii<num_points(); ii++) {
+		vec_mp * curr_point = point(ii);
 		if (real_indicator[ii]==1) {
 			
 			init_vec_mp2(tempvec[counter],this->num_variables,1024); tempvec[counter]->size = this->num_variables;
-			vec_cp_mp(tempvec[counter],this->pts_mp[ii]);
+			vec_cp_mp(tempvec[counter],*curr_point);
 			counter++;
 		}
 		else{
@@ -1601,13 +1604,13 @@ void witness_set::sort_for_real(tracker_config_t * T)
 	clear_vec_mp(result);
 	
 	
-	for (ii=0; ii<this->num_points; ii++) {
-		clear_vec_mp(this->pts_mp[ii]);
+	for (unsigned int ii=0; ii<num_points(); ii++) {
+		clear_vec_mp(*point(ii));
 	}
-	free(this->pts_mp);
+	free(pts_mp_);
 	
-	this->pts_mp = tempvec;
-	this->num_points = counter;
+	pts_mp_ = tempvec;
+	num_pts_ = counter;
 	
 	delete[] real_indicator;
 	return;
@@ -1630,19 +1633,22 @@ void witness_set::sort_for_unique(tracker_config_t * T)
 	int num_good_pts = 0;
 	std::vector<int> is_unique;
 	
-	for (int ii = 0; ii<this->num_points; ++ii) {
+	for (unsigned int ii = 0; ii<num_points(); ++ii) {
+		vec_mp *curr_point = point(ii);
+		
 		curr_uniqueness = 1;
 		
-		int prev_size_1 = pts_mp[ii]->size;  pts_mp[ii]->size = num_natural_vars; // cache and change to natural number
+		int prev_size_1 = (*curr_point)->size;  (*curr_point)->size = num_natural_vars; // cache and change to natural number
 		
-		for (int jj=ii+1; jj<this->num_points; ++jj) {
-			int prev_size_2 = pts_mp[jj]->size; pts_mp[jj]->size = num_natural_vars; // cache and change to natural number
-			if ( isSamePoint_homogeneous_input(this->pts_mp[ii],this->pts_mp[jj]) ){
+		for (unsigned int jj=ii+1; jj<num_points(); ++jj) {
+			vec_mp * inner_point = point(jj);
+			int prev_size_2 = (*inner_point)->size; (*inner_point)->size = num_natural_vars; // cache and change to natural number
+			if ( isSamePoint_homogeneous_input(*curr_point,*inner_point) ){
 				curr_uniqueness = 0;
 			}
-			pts_mp[jj]->size = prev_size_2; // restore
+			(*inner_point)->size = prev_size_2; // restore
 		}
-		pts_mp[ii]->size = prev_size_1; // restore
+		(*curr_point)->size = prev_size_1; // restore
 		
 		if (curr_uniqueness==1) {
 			is_unique.push_back(1);
@@ -1658,10 +1664,11 @@ void witness_set::sort_for_unique(tracker_config_t * T)
 	
 	vec_mp *transferme = (vec_mp *)br_malloc(num_good_pts*sizeof(vec_mp));
 	int counter = 0;
-	for (int ii=0; ii<this->num_points; ++ii) {
+	for (unsigned int ii=0; ii<num_points(); ++ii) {
 		if (is_unique[ii]==1) {
-			init_vec_mp2(transferme[counter],this->num_variables,1024);  transferme[counter]->size = this->num_variables;
-			vec_cp_mp(transferme[counter], this->pts_mp[ii]);
+			
+			init_vec_mp2(transferme[counter],num_variables,1024);  transferme[counter]->size = num_variables;
+			vec_cp_mp(transferme[counter], *point(ii));
 			counter++;
 		}
 	}
@@ -1671,14 +1678,14 @@ void witness_set::sort_for_unique(tracker_config_t * T)
 		exit(270);
 	}
 	
-	for (int ii=0; ii<this->num_points; ii++) {
-		clear_vec_mp(this->pts_mp[ii]);
+	for (unsigned int ii=0; ii<num_points(); ii++) {
+		clear_vec_mp(*point(ii));
 	}
-	free(this->pts_mp);
+	free(pts_mp_);
 	
 	
-	this->num_points = num_good_pts;
-	this->pts_mp = transferme;
+	num_pts_ = num_good_pts;
+	pts_mp_ = transferme;
 	
 	return;
 }
@@ -1701,11 +1708,11 @@ void witness_set::sort_for_inside_sphere(comp_mp radius, vec_mp center)
 	vec_mp temp_vec; init_vec_mp(temp_vec,0);
 	comp_mp temp; init_mp(temp);
 	
-	for (int ii = 0; ii<this->num_points; ++ii) {
+	for (unsigned int ii = 0; ii<num_points(); ++ii) {
 		
 		
 		
-		dehomogenize(&temp_vec, this->pts_mp[ii],num_natural_vars);
+		dehomogenize(&temp_vec, *point(ii),num_natural_vars);
 		temp_vec->size = center->size;
 		
 		norm_of_difference(temp->r, temp_vec, center);
@@ -1726,10 +1733,10 @@ void witness_set::sort_for_inside_sphere(comp_mp radius, vec_mp center)
 	
 	vec_mp *transferme = (vec_mp *)br_malloc(num_good_pts*sizeof(vec_mp));
 	int counter = 0;
-	for (int ii=0; ii<this->num_points; ++ii) {
+	for (unsigned int ii=0; ii<num_points(); ++ii) {
 		if (is_ok[ii]==1) {
 			init_vec_mp2(transferme[counter],0,1024);  transferme[counter]->size = 0;
-			vec_cp_mp(transferme[counter], this->pts_mp[ii]);
+			vec_cp_mp(transferme[counter], *point(ii));
 			counter++;
 		}
 	}
@@ -1739,14 +1746,14 @@ void witness_set::sort_for_inside_sphere(comp_mp radius, vec_mp center)
 		br_exit(271);
 	}
 	
-	for (int ii=0; ii<this->num_points; ii++) {
-		clear_vec_mp(this->pts_mp[ii]);
+	for (unsigned int ii=0; ii<num_points(); ii++) {
+		clear_vec_mp(*point(ii));
 	}
-	free(this->pts_mp);
+	free(pts_mp_);
 	
 	
-	this->num_points = num_good_pts;
-	this->pts_mp = transferme;
+	num_pts_ = num_good_pts;
+	pts_mp_ = transferme;
 	
 	clear_vec_mp(temp_vec);
 	clear_mp(temp);
@@ -1760,18 +1767,12 @@ void witness_set::merge(const witness_set & W_in)
 {
 	
 	//error checking first
-	if ( (this->num_variables==0) && (W_in.num_variables!=0) && (this->num_points==0)) {
-		this->num_variables = W_in.num_variables;
-		this->num_natural_vars = W_in.num_natural_vars;
+	if ( (num_variables==0) && (W_in.num_variables!=0) && (num_points()==0)) {
+		num_variables = W_in.num_variables;
+		num_natural_vars = W_in.num_natural_vars;
 	}
-//	else if ( (this->num_variables!=0) && (W_in.num_variables==0) ){
-//		
-//	}
-//	else if ( (W_in.num_variables!=this->num_variables) ) {//&& (W_in.num_points!=0) && (this->num_points!=0)
-//		printf("merging two witness sets with differing numbers of variables.\n");
-//		std::cout << "existing: " << this->num_variables << ", input: " << W_in.num_variables << std::endl;
-////		deliberate_segfault();
-//	}
+
+	
 	
 	
 	if (W_in.num_natural_vars != this->num_natural_vars) {
@@ -1786,11 +1787,13 @@ void witness_set::merge(const witness_set & W_in)
 	}
 	
 	
-	for (int ii = 0; ii<W_in.num_points; ii++) {
+	for (unsigned int ii = 0; ii<W_in.num_points(); ii++) {
 		int is_new = 1;
-		for (int jj = 0; jj<this->num_points; jj++){
-			if (this->pts_mp[jj]->size == W_in.pts_mp[ii]->size) {
-				if (isSamePoint_inhomogeneous_input(this->pts_mp[jj], W_in.pts_mp[ii])) {
+		vec_mp * in_point = W_in.point(ii);
+		for (unsigned int jj = 0; jj<num_points(); jj++){
+			vec_mp * curr_point = this->point(jj);
+			if ( (*curr_point)->size == (*in_point)->size) {
+				if (isSamePoint_inhomogeneous_input((*curr_point), (*in_point))) {
 					is_new = 0;
 					break;
 				}
@@ -1799,7 +1802,7 @@ void witness_set::merge(const witness_set & W_in)
 		}
 		
 		if (is_new==1)
-			witness_set::add_point(W_in.pts_mp[ii]);
+			witness_set::add_point( (*in_point) );
 	}
 	
 	
@@ -1858,7 +1861,7 @@ void witness_set::send(parallelism_config & mpi_config, int target)
     buffer[2] = incidence_number;
     buffer[3] = num_variables;
     buffer[4] = num_natural_vars;
-    buffer[5] = num_points;
+    buffer[5] = num_points();
     buffer[6] = num_linears;
     buffer[7] = num_patches;
     
@@ -1872,8 +1875,8 @@ void witness_set::send(parallelism_config & mpi_config, int target)
     for (int ii=0; ii<num_patches; ii++) {
         send_vec_mp(patch_mp[ii],target);
     }
-    for (int ii=0; ii<num_points; ii++) {
-        send_vec_mp(pts_mp[ii],target);
+    for (unsigned int ii=0; ii<num_points(); ii++) {
+        send_vec_mp( *point(ii) ,target);
     }
     
     char * namebuffer = (char *) br_malloc(1024*sizeof(char));
@@ -1897,7 +1900,7 @@ void witness_set::receive(int source, parallelism_config & mpi_config)
     incidence_number = buffer[2];
     num_variables = buffer[3];
     num_natural_vars = buffer[4];
-    num_points = buffer[5];
+    num_pts_ = buffer[5];
     num_linears = buffer[6];
     num_patches = buffer[7];
     
@@ -1915,7 +1918,7 @@ void witness_set::receive(int source, parallelism_config & mpi_config)
         add_patch(tempvec);
     }
     
-    for (int ii=0; ii<num_points; ii++) {
+	for (unsigned int ii=0; ii<num_pts_; ii++) {
         receive_vec_mp(tempvec,source);
         add_point(tempvec);
     }
@@ -1960,6 +1963,9 @@ void witness_data::populate()
 		int current_codimension,num_points_this_dim;
 		fscanf(IN,"%d %d",&current_codimension,&num_points_this_dim);
 		
+		
+		//std::cout << "getting codimension " << current_codimension << " with " << num_points_this_dim << " points " << std::endl;
+		
 		codim_indicator[ii] = current_codimension;
 		
 		int current_dimension = num_variables-1-current_codimension;
@@ -1992,10 +1998,13 @@ void witness_data::populate()
 			witness_point_metadata meta(current_dimension);
 			
 			meta.set_from_file(IN);
-
+			
+//			std::cout << meta << std::endl;
+//			mypause();
+			
 			int index = add_solution(temp_vec, meta);
 			
-			int num_existing_pts_this_comp = map_lookup_with_default( dimension_component_counter[current_dimension], meta.component_number, 0 );
+			int num_existing_pts_this_comp = map_lookup_with_default( dimension_component_counter[current_dimension], meta.component_number, 0 ); // the right hand 0 is the default if not found
 			
 			dimension_component_counter[current_dimension][meta.component_number] = num_existing_pts_this_comp+1;
 			index_tracker[current_dimension][meta.component_number].push_back(index);
@@ -2031,7 +2040,7 @@ void witness_data::populate()
 	}
 	
 	
-	mpq_t *temp_rat = (mpq_t *) br_malloc(2*sizeof(mpq_t));
+	mpq_t *temp_rat = (mpq_t *) br_malloc(2*sizeof(mpq_t)); // create and allocate two rationals.
 	
 	
 	for (int mm=0; mm<num_nonempty_codims; mm++) {
@@ -2309,7 +2318,7 @@ witness_set witness_data::best_possible_automatic_set(BR_configuration & options
 	for (auto iter=index_tracker[target_dimension].begin(); iter!=index_tracker[target_dimension].end(); ++iter) {
 		// iterate over components for target dimension
 		if (iter->second.size()==0) {
-			std::cout << "what the hell?" << std::endl;
+			std::cout << "detected a witness set with no points.  this should be impossible...  by definition a witness set has at least one point in it." << std::endl;
 			mypause();
 		}
 		else{
@@ -2333,10 +2342,10 @@ witness_set witness_data::best_possible_automatic_set(BR_configuration & options
 		
 		int current_index = index_tracker[target_dimension][*iter][0]; // guaranteed to exist, b/c nonempty.  already checked.
 		
-		if (checkSelfConjugate(pts_mp[current_index], options, options.input_filename)==true) {
+		if (checkSelfConjugate(*point(current_index), options, options.input_filename)==true) {
 			std::cout << "dim " << target_dimension << ", comp " << *iter << " is self-conjugate" << std::endl;
 			for (int ii=0; ii<dimension_component_counter[target_dimension][*iter]; ++ii) {
-				W.add_point(pts_mp[index_tracker[target_dimension][*iter][ii]]);
+				W.add_point( *point(index_tracker[target_dimension][*iter][ii]) );
 			}
 			sc_counter++;
 		}
@@ -2394,7 +2403,7 @@ witness_set witness_data::choose_set_interactive(BR_configuration & options)
 	
 	
 		
-	if (target_dimension==-1) { // all dimensions
+	if (target_dimension==-1) { // display all dimensions, which is default
 		
 		for (auto iter=index_tracker.begin(); iter!=index_tracker.end(); ++iter) {
 			std::cout << "dimension " << iter->first << std::endl;
@@ -2412,12 +2421,12 @@ witness_set witness_data::choose_set_interactive(BR_configuration & options)
 			valid_choices.insert(*iter);
 		}
 		
-		target_dimension = get_int_choice("\n\nchoose a dimension:\n",valid_choices);
-		
+		target_dimension = get_int_choice("\n\nchoose a single dimension:\n",valid_choices);
+		options.target_dimension = target_dimension;
 	}
 		
 	
-	std::cout << "dimension " << options.target_dimension << std::endl;
+	std::cout << "dimension " << target_dimension << std::endl;
 	for (auto jter = index_tracker[target_dimension].begin(); jter!= index_tracker[target_dimension].end(); ++jter) {
 		int first_index = *(jter->second.begin());
 		std::cout << "\tcomponent " << jter->first << ": multiplicity " << point_metadata[first_index].multiplicity << ", deflations needed: " << point_metadata[first_index].deflations_needed << ", degree " << dimension_component_counter[target_dimension][jter->first] << std::endl;
@@ -2472,7 +2481,7 @@ witness_set witness_data::choose_set_interactive(BR_configuration & options)
 		
 		//iterate over each point in the component
 		for (auto jter=index_tracker[target_dimension][*iter].begin(); jter!=index_tracker[target_dimension][*iter].end(); ++jter) {
-			W.add_point(pts_mp[*jter]);
+			W.add_point( *point(*jter) );
 		}
 		
 	}
@@ -2521,7 +2530,7 @@ witness_set witness_data::form_specific_witness_set(int dim, int comp)
 	
 	for (auto iter = index_tracker[dim][comp].begin(); iter!= index_tracker[dim][comp].end(); ++iter) {
 		//iter points to an index into the vertices stored in the vertex set.
-		W.add_point(pts_mp[*iter]);
+		W.add_point( *point(*iter) );
 	}
 	
 	
@@ -2696,17 +2705,18 @@ int vertex_set::compute_downstairs_crit_midpts(const witness_set & W,
 	
     int proj_index = this->get_proj_index(pi);
     
-	vec_mp projection_values; init_vec_mp2(projection_values,W.num_points,1024);
-	projection_values->size = W.num_points;
+	vec_mp projection_values; init_vec_mp2(projection_values,W.num_points(),1024);
+	projection_values->size = W.num_points();
 	
-	for (int ii=0; ii<W.num_points; ii++){
+	for (unsigned int ii=0; ii<W.num_points(); ii++){
+		vec_mp * curr_point = W.point(ii);
 		
-		for (int jj=0; jj<W.pts_mp[ii]->size; jj++) {
+		for (int jj=0; jj<(*curr_point)->size; jj++) {
 			
-			if (!(mpfr_number_p(W.pts_mp[ii]->coord[jj].r) && mpfr_number_p(W.pts_mp[ii]->coord[jj].i))) {
+			if (!(mpfr_number_p((*curr_point)->coord[jj].r) && mpfr_number_p((*curr_point)->coord[jj].i))) {
 				std::cout << color::red();
 				std::cout << "there was NAN in a coordinate for a point in the projections to sort :(" << std::endl;
-				print_point_to_screen_matlab(W.pts_mp[ii], "bad_point");
+				print_point_to_screen_matlab(*curr_point, "bad_point");
 				
 				print_point_to_screen_matlab(pi,"pi");
 				std::cout << color::console_default();
@@ -2716,7 +2726,7 @@ int vertex_set::compute_downstairs_crit_midpts(const witness_set & W,
 		}
 		
         
-        int curr_index = search_for_point(W.pts_mp[ii]);
+        int curr_index = search_for_point(*curr_point);
         
         if (curr_index < 0) {
             std::cout << color::red() << "trying to retrieve projection value from a non-stored point" << color::console_default() << std::endl;
@@ -3246,8 +3256,8 @@ int decomposition::add_witness_set(const witness_set & W, int add_type, vertex_s
     vertex temp_vertex;
     temp_vertex.type = add_type;
     
-    for (int ii=0; ii<W.num_points; ii++) {
-        vec_cp_mp(temp_vertex.pt_mp, W.pts_mp[ii]);
+    for (unsigned int ii=0; ii<W.num_points(); ii++) {
+        vec_cp_mp(temp_vertex.pt_mp, *W.point(ii));
         this->index_in_vertices_with_add(V, temp_vertex);
     }
     
@@ -3553,7 +3563,7 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 	change_size_vec_mp(this->sphere_center, num_vars); //destructive resize
 	sphere_center->size = num_vars;
 	
-	if (W_crit.num_points == 0) {
+	if (W_crit.num_points() == 0) {
 		set_zero_mp(sphere_radius);
 		mpf_set_str(sphere_radius->r, "3.0",10);
 		for (int ii=0; ii<num_vars; ii++) {
@@ -3564,11 +3574,11 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 	}
 	
 	vec_mp(temp_vec); init_vec_mp2(temp_vec,0,1024);
-	if (W_crit.num_points==1)
+	if (W_crit.num_points()==1)
 	{
 		set_zero_mp(sphere_radius);
 		mpf_set_str(sphere_radius->r, "3.0",10);
-		dehomogenize(&temp_vec, W_crit.pts_mp[0]);
+		dehomogenize(&temp_vec, *(W_crit.point(0)));
 		
 		for (int ii=0; ii<num_vars; ii++) {
 			set_mp(&sphere_center->coord[ii], &temp_vec->coord[ii]);
@@ -3605,14 +3615,14 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 	}
 	
 	
-	for (int ii=0; ii<W_crit.num_points; ii++) {
-		dehomogenize(&temp_vec, W_crit.pts_mp[ii], num_vars+1);
+	for (unsigned int ii=0; ii<W_crit.num_points(); ii++) {
+		dehomogenize(&temp_vec, *(W_crit.point(ii)), num_vars+1);
 		temp_vec->size = num_vars;
 		add_vec_mp(cumulative_sum, cumulative_sum, temp_vec);
 	}
 	
 	set_zero_mp(temp_mp);
-	mpf_set_d(temp_mp->r, double(W_crit.num_points));
+	mpf_set_d(temp_mp->r, double(W_crit.num_points()));
 	
 	
 	
@@ -3622,8 +3632,8 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 	
 	
 	
-	for (int ii=0; ii<W_crit.num_points; ii++) {
-		dehomogenize(&temp_vec, W_crit.pts_mp[ii], num_vars+1);
+	for (unsigned int ii=0; ii<W_crit.num_points(); ii++) {
+		dehomogenize(&temp_vec, *(W_crit.point(ii)), num_vars+1);
 		temp_vec->size = num_vars;
 		vec_sub_mp(temp_vec, temp_vec, sphere_center);
 		

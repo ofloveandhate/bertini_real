@@ -80,16 +80,16 @@ void get_projection(vec_mp *pi,
 		int tmp_num_vars;
 		fscanf(IN,"%d",&tmp_num_vars); scanRestOfLine(IN);
 		if (tmp_num_vars!=num_vars-1) {
-			printf("the number of variables appearing in the projection\nis not equal to the number of non-homogeneous variables in the problem\n");
-			printf("please modify file to have %d coordinate pairs.\n",num_vars-1);
+			printf("the number of variables declared in the projection\nis not equal to the number of non-homogeneous variables in the problem\n");
+			printf("please modify file to have %d coordinates, one per line.\n(imaginary part will be ignored if provided).\n",num_vars-1);
 			abort();
 		}
 		
 		for (int ii=0; ii<num_projections; ii++) {
 			set_zero_mp(&pi[ii]->coord[0]);
 			for (int jj=1; jj<num_vars; jj++) {
+				set_zero_mp(&pi[ii]->coord[jj]);
 				mpf_inp_str(pi[ii]->coord[jj].r, IN, 10);
-				mpf_inp_str(pi[ii]->coord[jj].i, IN, 10);
 				scanRestOfLine(IN);
 			}
 		}
@@ -261,7 +261,16 @@ void solver_output::get_sing(witness_set & W_transfer)
 }
 
 
-
+void solver_output::get_sing_finite(witness_set & W_transfer)
+{
+	for (auto index = ordering.begin(); index != ordering.end(); ++index) {
+		//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
+		if ( (metadata[index->first].is_singular && metadata[index->first].is_finite) ) {
+			W_transfer.add_point(vertices[index->first].pt_mp);
+		}
+	}
+	set_witness_set_nvars(W_transfer);
+}
 
 
 
@@ -736,7 +745,7 @@ void master_solver(solver_output & solve_out, const witness_set & W,
 	
 	trackingStats trackCount; init_trackingStats(&trackCount); // initialize trackCount to all 0
 	
-	post_process_t *endPoints = (post_process_t *)br_malloc(W.num_points * sizeof(post_process_t)); //overallocate, expecting full
+	post_process_t *endPoints = (post_process_t *)br_malloc(W.num_points() * sizeof(post_process_t)); //overallocate, expecting full
 	
 	
 	// call the file setup function
@@ -810,16 +819,16 @@ void generic_set_start_pts(point_data_d ** startPts,
                            const witness_set & W)
 {
 	
-	*startPts = (point_data_d *)br_malloc(W.num_points * sizeof(point_data_d));
+	*startPts = (point_data_d *)br_malloc(W.num_points() * sizeof(point_data_d));
 	
-	for (int ii = 0; ii < W.num_points; ii++)
+	for (unsigned int ii = 0; ii < W.num_points(); ii++)
 	{ // setup startPts[ii]
 		init_point_data_d(&(*startPts)[ii], W.num_variables); // also performs initialization on the point inside startPts
 		change_size_vec_d((*startPts)[ii].point,W.num_variables);
 		(*startPts)[ii].point->size = W.num_variables;
 		
 		//1 set the coordinates
-		vec_mp_to_d((*startPts)[ii].point, W.pts_mp[ii]);
+		vec_mp_to_d((*startPts)[ii].point, *W.point(ii));
 		
 		//2 set the start time to 1.
 		set_one_d((*startPts)[ii].time);
@@ -831,18 +840,17 @@ void generic_set_start_pts(point_data_d ** startPts,
 void generic_set_start_pts(point_data_mp ** startPts,
                            const witness_set & W)
 {
-	int ii; // counters
 	
-	(*startPts) = (point_data_mp *)br_malloc(W.num_points * sizeof(point_data_mp));
+	(*startPts) = (point_data_mp *)br_malloc(W.num_points() * sizeof(point_data_mp));
 	
-	for (ii = 0; ii < W.num_points; ii++)
+	for (unsigned int ii = 0; ii < W.num_points(); ii++)
 	{ // setup startPts[ii]
 		init_point_data_mp(&(*startPts)[ii], W.num_variables); // also performs initialization on the point inside startPts
 		change_size_vec_mp((*startPts)[ii].point,W.num_variables);
 		(*startPts)[ii].point->size = W.num_variables;
 		
 		//1 set the coordinates
-		vec_cp_mp((*startPts)[ii].point, W.pts_mp[ii]);
+		vec_cp_mp((*startPts)[ii].point, *W.point(ii));
 		
 		//2 set the start time to 1.
 		set_one_mp((*startPts)[ii].time);
@@ -907,20 +915,20 @@ void serial_tracker_loop(trackingStats *trackCount,
 	
 	
 	
-	trackCount->numPoints = W.num_points;
+	trackCount->numPoints = W.num_points();
 	int solution_counter = 0;
 	
 	
 	
 	// track each of the start points
 	
-	for (int ii = 0; ii < W.num_points; ii++)
+	for (unsigned int ii = 0; ii < W.num_points(); ii++)
 	{
 		if ((solve_options.verbose_level>=0) && (solve_options.path_number_modulus!=0) )
 		{
-			if ((ii%solve_options.path_number_modulus)==0 && (solve_options.path_number_modulus<W.num_points)) {
+			if ((ii%solve_options.path_number_modulus)==0 && (solve_options.path_number_modulus<W.num_points() )) {
 				std::cout << color::gray();
-				printf("tracking path %d of %d\n",ii,W.num_points);
+				std::cout << "tracking path " << ii << " of " << W.num_points() << std::endl;
 				std::cout << color::console_default();
 			}
 			
@@ -1016,7 +1024,7 @@ void serial_tracker_loop(trackingStats *trackCount,
 	
 	
 	//clear the data structures.
-    for (int ii = 0; ii < W.num_points; ii++)
+    for (unsigned int ii = 0; ii < W.num_points(); ii++)
     { // clear startPts[ii]
         clear_point_data_d(&startPts_d[ii]);
 		clear_point_data_mp(&startPts_mp[ii]);
@@ -1060,10 +1068,10 @@ void master_tracker_loop(trackingStats *trackCount,
 
 	
 	
-	trackCount->numPoints = W.num_points;
+	trackCount->numPoints = W.num_points();
 	int solution_counter = 0;
 	
-	int total_number_points = W.num_points;
+	int total_number_points = W.num_points();
 	MPI_Bcast(&total_number_points, 1, MPI_INT, solve_options.head(), MPI_COMM_WORLD);
 	
 	
@@ -1079,7 +1087,7 @@ void master_tracker_loop(trackingStats *trackCount,
 	// seed the workers
 	int next_index = 0;
 	
-	for (int ii=1; ii<solve_options.numprocs && next_index<W.num_points; ii++) {
+	for (int ii=1; ii<solve_options.numprocs && next_index<W.num_points(); ii++) {
 		int next_worker = solve_options.activate_next_worker();
         
 		int num_packets = get_num_at_a_time(solve_options.numprocs-1,total_number_points-next_index);
@@ -1134,13 +1142,13 @@ void master_tracker_loop(trackingStats *trackCount,
 	//clear the data structures.
 	switch (solve_options.T.MPType) {
 		case 1:
-			for (int ii = 0; ii < W.num_points; ii++)
+			for (int ii = 0; ii < W.num_points(); ii++)
 				clear_point_data_mp(&startPts_mp[ii]);
 			free(startPts_mp);
 			break;
 			
 		default:
-			for (int ii = 0; ii < W.num_points; ii++)
+			for (int ii = 0; ii < W.num_points(); ii++)
 				clear_point_data_d(&startPts_d[ii]);
 			free(startPts_d);
 			break;

@@ -76,7 +76,7 @@ void curve_decomposition::main(vertex_set & V,
 		if (program_options.verbose_level>=2) {
 			printf("checking if component is self-conjugate\n");
 		}
-		self_conjugate = checkSelfConjugate(W.pts_mp[0], program_options, W.input_filename);  //later:  could be passed in from user, if we want
+		self_conjugate = checkSelfConjugate( *W.point(0), program_options, W.input_filename);  //later:  could be passed in from user, if we want
 		
 		
 		
@@ -447,11 +447,11 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	
 	
 	
-	for (int ii=0; ii<W_crit_real.num_points; ii++){
+	for (unsigned int ii=0; ii<W_crit_real.num_points(); ii++){
 		
 		if (program_options.verbose_level>=8)
-			printf("adding point %d of %d from W_crit_real to vertices\n",ii,W_crit_real.num_points);
-		temp_vertex.set_point(W_crit_real.pts_mp[ii]);
+			printf("adding point %u of %zu from W_crit_real to vertices\n",ii,W_crit_real.num_points());
+		temp_vertex.set_point( *W_crit_real.point(ii));
 		temp_vertex.type = CRITICAL; // set type
 		
 		int I = index_in_vertices_with_add(V, temp_vertex);
@@ -548,9 +548,9 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 
 		if (program_options.verbose_level>=2) {
 			midpoint_witness_sets[ii].print_to_screen();
-            std::cout << "midpoint_downstairs " << ii << " had " << midpoint_witness_sets[ii].num_points << " real points" << std::endl;
+            std::cout << "midpoint_downstairs " << ii << " had " << midpoint_witness_sets[ii].num_points() << " real points" << std::endl;
 		}
-		edge_counter += midpoint_witness_sets[ii].num_points;
+		edge_counter += midpoint_witness_sets[ii].num_points();
 	}
 	
 	solve_options.reset_tracker_config();
@@ -644,13 +644,13 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 			Wright_real.sort_for_real(&solve_options.T);
 			Wleft_real.sort_for_real(&solve_options.T);
             
-            if (Wleft_real.num_points!=midpoint_witness_sets[ii].num_points) {
-                std::cout << color::red() << "had a critical failure\n moving left was deficient " << midpoint_witness_sets[ii].num_points-Wleft_real.num_points << " points" << color::console_default() << std::endl;
+            if (Wleft_real.num_points()!=midpoint_witness_sets[ii].num_points()) {
+                std::cout << color::red() << "had a critical failure\n moving left was deficient " << midpoint_witness_sets[ii].num_points()-Wleft_real.num_points() << " points" << color::console_default() << std::endl;
                 keep_going = 1;
             }
             
-            if (Wright_real.num_points!=midpoint_witness_sets[ii].num_points) {
-				std::cout << color::red() << "had a critical failure\n moving right was deficient " << midpoint_witness_sets[ii].num_points-Wright_real.num_points << " points" << color::console_default() << std::endl;
+            if (Wright_real.num_points()!=midpoint_witness_sets[ii].num_points()) {
+				std::cout << color::red() << "had a critical failure\n moving right was deficient " << midpoint_witness_sets[ii].num_points()-Wright_real.num_points() << " points" << color::console_default() << std::endl;
 				keep_going = 1;
             }
             
@@ -687,7 +687,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 				W_midpoint_replacement.reset_points();
 				
 				
-				for (int kk=0; kk<midpoint_witness_sets[ii].num_points; kk++) {
+				for (unsigned int kk=0; kk<midpoint_witness_sets[ii].num_points(); kk++) {
 					
 					W_single.reset_points();
 					W_single_sharpened.reset();
@@ -696,7 +696,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 					
 					//sharpen up the initial point.
 					
-					W_single.add_point(midpoint_witness_sets[ii].pts_mp[kk]);
+					W_single.add_point( *(midpoint_witness_sets[ii].point(kk)));
 					
 					
 					int prev_sharpen_digits = solve_options.T.sharpenDigits;
@@ -732,7 +732,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 					
 					neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii]);
 					int num_its = 0;
-					while (num_its < 1 && W_single_left.num_points==0) {
+					while (num_its < 1 && W_single_left.num_points()==0) {
 						W_single_left.reset();
 						
 						std::cout << num_its << "th iteration, going left, midpoint " << ii << std::endl;
@@ -772,7 +772,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 					neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii+1]);
 					num_its = 0;
 					
-					while (num_its < 1 && W_single_right.num_points==0) {
+					while (num_its < 1 && W_single_right.num_points()==0) {
 						W_single_right.reset();
 						
 						std::cout << num_its << "th iteration, going right, midpoint " << ii << std::endl;
@@ -816,13 +816,13 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 
 					
 					
-					if (W_single_right.num_points==1 && W_single_left.num_points==1) {
-						W_midpoint_replacement.add_point(midpoint_witness_sets[ii].pts_mp[kk]);
-						Wleft.add_point(W_single_left.pts_mp[0]);
-						Wright.add_point(W_single_right.pts_mp[0]);
+					if (W_single_right.num_points()==1 && W_single_left.num_points()==1) {
+						W_midpoint_replacement.add_point( *(midpoint_witness_sets[ii].point(kk)));
+						Wleft.add_point(*(W_single_left.point(0)));
+						Wright.add_point(*(W_single_right.point(0)));
 					}
 					else{
-						temp_vertex.set_point(midpoint_witness_sets[ii].pts_mp[kk]);
+						temp_vertex.set_point( *(midpoint_witness_sets[ii].point(kk)) ) ;
 						temp_vertex.type = PROBLEMATIC; // set type
 						index_in_vertices_with_add(V, temp_vertex);
 					}
@@ -843,19 +843,19 @@ int curve_decomposition::interslice(const witness_set & W_curve,
         solve_options.reset_tracker_config();
         
 		
-		for (int kk=0; kk<midpoint_witness_sets[ii].num_points; kk++) {
-			temp_vertex.set_point(midpoint_witness_sets[ii].pts_mp[kk]);
+		for (unsigned int kk=0; kk<midpoint_witness_sets[ii].num_points(); kk++) {
+			temp_vertex.set_point( *(midpoint_witness_sets[ii].point(kk)) );
 			temp_vertex.type = MIDPOINT; // set type
 			
 			temp_edge.midpt = index_in_vertices_with_add(V, temp_vertex); // gets the index of the new midpoint as it is added
 			
-			temp_vertex.set_point(Wleft.pts_mp[kk]);
+			temp_vertex.set_point( *(Wleft.point(kk)) );
 			temp_vertex.type = NEW; // set type
 			
 			temp_edge.left  = index_in_vertices_with_add(V, temp_vertex);
 			
 			
-			temp_vertex.set_point(Wright.pts_mp[kk]);
+			temp_vertex.set_point( *(Wright.point(kk)) );
 			temp_vertex.type = NEW; // set type
 			
 			temp_edge.right = index_in_vertices_with_add(V, temp_vertex);
@@ -1200,7 +1200,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		
 		fillme.get_noninfinite_w_mult_full(W_temp); // should be ordered
 
-		if (W_temp.num_points==0) {
+		if (W_temp.num_points()==0) {
 			std::cout << "merging multilin solver returned NO POINTS!!!" << std::endl;
 			continue;
 //TODO:  IMMEDIATELY, insert some catch code for when this returns 0 points.
@@ -1209,7 +1209,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		
         // each member of W_temp should real.  if a member of V already, mark index.  else, add to V, and mark.
 		vertex temp_vertex;
-		temp_vertex.set_point(W_temp.pts_mp[0]);
+		temp_vertex.set_point( *(W_temp.point(0)));
 		temp_vertex.type = MIDPOINT;
 		
 		edge temp_edge; // create new empty edge
@@ -1853,23 +1853,28 @@ void diag_homotopy_start_file(boost::filesystem::path startFile,
     
 
 	// output the number of start points
-    fprintf(OUT,"%d\n\n",W.num_points*W.num_points);
+    fprintf(OUT,"%zu\n\n",W.num_points()*W.num_points());
 	
 	
 	comp_mp temp; init_mp(temp);
 	vec_mp result; init_vec_mp(result,0);
 	vec_mp result2; init_vec_mp(result2,0);
 	
-	for (int ii=0; ii<W.num_points; ii++){
-		change_prec_vec_mp(result,W.pts_mp[ii]->curr_prec);
-		dehomogenize(&result,W.pts_mp[ii]);
+	for (unsigned int ii=0; ii<W.num_points(); ii++){
 		
-		for (int jj=0; jj<W.num_points; jj++) { // output {w \bar{w}}'
+		vec_mp * outer_point = W.point(ii);
+		
+		change_prec_vec_mp(result,(*outer_point)->curr_prec);
+		dehomogenize(&result,*outer_point);
+		
+		for (unsigned int jj=0; jj<W.num_points(); jj++) { // output {w \bar{w}}'
 			
-			change_prec_vec_mp(result,W.pts_mp[jj]->curr_prec);
-			dehomogenize(&result2,W.pts_mp[jj]);
+			vec_mp * inner_point = W.point(jj);
 			
-			change_prec_mp(temp,W.pts_mp[jj]->curr_prec);
+			change_prec_vec_mp(result,(*inner_point)->curr_prec);
+			dehomogenize(&result2,*inner_point);
+			
+			change_prec_mp(temp,(*inner_point)->curr_prec);
 			
 			for(int kk=0; kk<W.num_variables-1;kk++) {
 				print_mp(OUT, 0, &result->coord[kk]); fprintf(OUT, "\n");

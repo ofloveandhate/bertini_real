@@ -58,7 +58,7 @@ int ubermaster_process::main_loop()
 
 	witness_set W = data_mc_data.choose(program_options);
 	
-	if (W.num_points==0) {
+	if (W.num_points()==0) {
 		return 1;
 	}
 	
@@ -78,9 +78,7 @@ int ubermaster_process::main_loop()
 	
 	
 	
-	int incidence_number = get_incidence_number(W.pts_mp[0], program_options, program_options.input_filename);
 	
-	W.incidence_number = incidence_number;
 	
 	vertex_set V(num_vars);
 	
@@ -100,9 +98,17 @@ int ubermaster_process::main_loop()
     }
     
 	
-	
-	switch (W.dim) {
-		case 1:
+	if (program_options.primary_mode==BERTINIREAL) {
+		
+		
+		int incidence_number = get_incidence_number( *(W.point(0)), program_options, program_options.input_filename);
+		
+		W.incidence_number = incidence_number;
+		
+		
+		
+		switch (W.dim) {
+			case 1:
 			{
 				curve_decomposition C;
 				
@@ -127,37 +133,43 @@ int ubermaster_process::main_loop()
 				V.print(program_options.output_dir/ "V.vertex");
 				
 			}
-			break;
-			
-			
-		case 2:
-		{
-			
-			surface_decomposition S;
-			S.component_num = W.comp_num;
-			
-			std::stringstream converter;
-			converter << "_dim_" << S.dimension << "_comp_" << S.component_num;
-			program_options.output_dir += converter.str();
-			
-			
-			// surface
-			S.main(V, W, pi, program_options, solve_options);
-			
-			
-			
-			
-			S.output_main(program_options.output_dir);
-			
-			V.print(program_options.output_dir/ "V.vertex");
+				break;
+				
+				
+			case 2:
+			{
+				
+				surface_decomposition S;
+				S.component_num = W.comp_num;
+				
+				std::stringstream converter;
+				converter << "_dim_" << S.dimension << "_comp_" << S.component_num;
+				program_options.output_dir += converter.str();
+				
+				
+				// surface
+				S.main(V, W, pi, program_options, solve_options);
+				
+				
+				
+				
+				S.output_main(program_options.output_dir);
+				
+				V.print(program_options.output_dir/ "V.vertex");
+			}
+				break;
+				
+			default:
+			{
+				std::cout << "bertini_real not programmed for components of dimension " << W.dim << std::endl;
+			}
+				break;
 		}
-			break;
-			
-		default:
-		{
-			std::cout << "bertini_real not programmed for components of dimension " << W.dim << std::endl;
-		}
-			break;
+		
+	}
+	else if(program_options.primary_mode==CRIT)
+	{
+		critreal(W,pi,V);
 	}
 	
 	
@@ -176,7 +188,58 @@ int ubermaster_process::main_loop()
 
 
 
+void ubermaster_process::critreal(witness_set & W, vec_mp *pi, vertex_set & V)
+{
+	
+	
+	
+	system_randomizer randomizer;
+	
+	randomizer.setup(W.num_variables-1-W.dim,solve_options.PPD.num_funcs);
+	
+	
+	
+	print_point_to_screen_matlab(pi[0],"pi");
 
+	FILE *OUT;
+	OUT = safe_fopen_write("most_recent_pi");
+	
+	print_vec_out_mp(OUT, pi[0]); /* Print vector to file */
+	fclose(OUT);
+	
+	nullspace_config ns_config; // this is set up in the nullspace call.
+	
+	solver_output solve_out;
+	
+	
+	
+	
+	compute_crit_nullspace(solve_out, // the returned value
+						   W,            // input the original witness set
+						   &randomizer,
+						   pi,
+						   W.dim,  // dimension of ambient complex object
+						   W.dim,   //  target dimension to find
+						   W.dim,   // COdimension of the critical set to find.
+						   program_options,
+						   solve_options,
+						   &ns_config);
+	
+	
+	witness_set W_crit, W_nonsing, W_sing;
+	
+	solve_out.get_noninfinite_w_mult_full(W_crit);
+	solve_out.get_nonsing_finite_multone(W_nonsing);
+	solve_out.get_sing_finite(W_sing);
+	
+	W_crit.write_dehomogenized_coordinates("crit_data");
+	W_nonsing.write_dehomogenized_coordinates("nonsingular");
+	W_sing.write_dehomogenized_coordinates("singular");
+	
+	
+	
+	return;
+}
 
 
 
