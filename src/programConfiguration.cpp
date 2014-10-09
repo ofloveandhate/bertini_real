@@ -197,12 +197,13 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 			{"veryquick",no_argument,0,'q'}, {"vq",no_argument,0,'Q'},
 			{"version",		no_argument,			 0, 'v'}, {"v",		no_argument,			 0, 'v'},
 			{"help",		no_argument,			 0, 'h'}, {"h",		no_argument,			 0, 'h'},
+			{"mode",required_argument,0,'M'}, {"m",required_argument,0,'M'},
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
 		
-		choice = getopt_long_only (argc, argv, "d:c:Dg:V:o:smp:S:i:qvh", // if followed by colon, requires option.  two colons is optional
+		choice = getopt_long_only (argc, argv, "d:c:Dg:V:o:smp:S:i:qvhM:", // if followed by colon, requires option.  two colons is optional
 								   long_options, &option_index);
 		
 		/* Detect the end of the options. */
@@ -287,6 +288,27 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 				exit(0);
 				break;
 				
+				
+			case 'M':
+			{
+				std::string usermode = optarg;
+				
+				std::cout << usermode << std::endl;
+				
+				if (usermode=="bertini_real") {
+					this->primary_mode = BERTINIREAL;
+				}
+				else if (usermode=="crit") {
+					this->primary_mode = CRIT;
+				}
+				else
+				{
+					std::cout << "bad mode of operation.  acceptable options are [bertini_real] and crit." << std::endl;
+					br_exit(69154);
+				}
+				
+				break;
+			}
 			case '?':
 				/* getopt_long already printed an error message. */
 				break;
@@ -374,6 +396,8 @@ void BR_configuration::init()
 	use_gamma_trick = 0;
 	
 	merge_edges = true;
+	
+	primary_mode = BERTINIREAL;
 	
 	return;
 }

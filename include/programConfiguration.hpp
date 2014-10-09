@@ -33,7 +33,7 @@ enum {PARSING = 1000, TYPE_CONFIRMATION, DATA_TRANSMISSION, NUMPACKETS};
 #include "fileops.hpp"
 
 
-
+enum {BERTINIREAL=-9000,CRIT=-8999};
 
 ///////////
 //
@@ -380,6 +380,8 @@ public:
 	bool user_sphere; ///< flag for whether to read the sphere from a file, rather than compute it.
 
 	bool user_projection; // indicator for whether to read the projection from a file, rather than randomly choose it.
+	
+	int primary_mode;
 	
 	int MPType; ///< store M.O.
 	

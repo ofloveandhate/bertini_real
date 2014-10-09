@@ -606,10 +606,37 @@ protected:
 class point_holder
 {
 	
+
+protected:
+	
+	vec_mp *pts_mp_; ///< an array of vec_mp, which are structs and require manual initialization and clearing.
+	size_t num_pts_; ///< the number of stored points.
+	
 public:
 	
-	vec_mp *pts_mp; ///< an array of vec_mp, which are structs and require manual initialization and clearing.
-	int num_points; ///< the number of stored points.
+	vec_mp * point(unsigned int index) const
+	{
+		if (index < num_pts_) {
+			return &pts_mp_[index];
+		}
+		else
+		{
+			br_exit(-9834718);
+			return NULL;
+		}
+		
+	}
+	
+	
+	/**
+	 get the number of points in the point holder
+	 
+	 \return the current number of points
+	 */
+	size_t num_points() const
+	{
+		return num_pts_;
+	}
 	
 	
 	/**
@@ -617,10 +644,11 @@ public:
 	 
 	 \param other an input point_holder from which to copy all the points.
 	 */
-	void copy_points(const point_holder & other) {
+	void copy_points(const point_holder & other)
+	{
 		
-        for (int ii=0; ii<other.num_points; ii++)
-			add_point(other.pts_mp[ii]);
+        for (unsigned int ii=0; ii<other.num_pts_; ii++)
+			add_point(other.pts_mp_[ii]);
     }
 	
 	
@@ -631,7 +659,7 @@ public:
 	 */
 	inline bool has_no_points() const
 	{
-		if (num_points==0) {
+		if (num_pts_==0) {
 			return true;
 		}
 		else{
@@ -647,7 +675,7 @@ public:
 	 */
 	inline bool has_points() const
 	{
-		if (num_points==0) {
+		if (num_pts_==0) {
 			return false;
 		}
 		else{
@@ -663,15 +691,15 @@ public:
 	 */
 	void reset_points()
 	{
-		for (int ii =0; ii<this->num_points; ii++)
-			clear_vec_mp(this->pts_mp[ii]);
+		for (unsigned int ii =0; ii<num_pts_; ii++)
+			clear_vec_mp(pts_mp_[ii]);
 		
-		if (this->num_points>0) {
-			free(this->pts_mp);
+		if (num_pts_>0) {
+			free(pts_mp_);
 		}
 		
-		this->num_points = 0;
-		this->pts_mp = NULL;
+		num_pts_ = 0;
+		pts_mp_ = NULL;
 	}
 	
 	
@@ -728,8 +756,8 @@ private:
 	
 	void init()
 	{
-		this->pts_mp = NULL; // potential data loss if used improperly, which i may.
-		this->num_points = 0;
+		pts_mp_ = NULL; // potential data loss if used improperly, which i may.
+		num_pts_ = 0;
 	}
 	
 	void clear(){
@@ -1947,7 +1975,7 @@ public:
 	int dimension;
 	
 	int corank, typeflag, multiplicity, component_number, deflations_needed;
-	double condition_number, smallest_nonsing_value, largest_nonsing_value;
+	double condition_number, smallest_nonzero_sing_value, largest_zero_sing_value;
 	
 
 	/**
@@ -1960,13 +1988,38 @@ public:
 		fscanf(IN,"%lf %d %lf %lf %d %d %d %d",
 			   &condition_number,
 			   &corank,
-			   &smallest_nonsing_value,
-			   &largest_nonsing_value,
-			   &typeflag,
+			   &smallest_nonzero_sing_value,
+			   &largest_zero_sing_value,
+			   &typeflag, // 10 is nonsingular, 15 is singular
 			   &multiplicity,
 			   &component_number,
 			   &deflations_needed);
 	}
+	
+	
+	
+	
+	/**
+	 output to a stream.  only really usable with std::cout.
+	 \param os the stream to put this text on.
+	 \param s the system randomizer to write.
+	 */
+	friend std::ostream & operator<<(std::ostream &os, witness_point_metadata & s)
+	{
+		os << "condition_number " << s.condition_number << "\n";
+		os << "corank " << s.corank << "\n";
+		os << "smallest_nonzero_sing_value " << s.smallest_nonzero_sing_value << "\n";
+		os << "largest_zero_sing_value " << s.largest_zero_sing_value << "\n";
+		os << "typeflag " << s.typeflag << "\n";
+		os << "multiplicity " << s.multiplicity << "\n";
+		os << "component_number " << s.component_number << "\n";
+		os << "deflations_needed " << s.deflations_needed << std::endl;
+		
+		return os;
+	}
+	
+	
+	
 	
 	
 	/**
@@ -1997,8 +2050,8 @@ public:
 		component_number = other.component_number;
 		deflations_needed = other.deflations_needed;
 		condition_number = other.condition_number;
-		smallest_nonsing_value = other.smallest_nonsing_value;
-		largest_nonsing_value = other.largest_nonsing_value;
+		smallest_nonzero_sing_value = other.smallest_nonzero_sing_value;
+		largest_zero_sing_value = other.largest_zero_sing_value;
 	}
 	
 	
@@ -2200,8 +2253,8 @@ public:
 			std::cout << std::endl;
 		}
 		
-		for (int ii=0; ii<num_points; ii++) {
-			print_point_to_screen_matlab(pts_mp[ii],"p");
+		for (unsigned int ii=0; ii<num_pts_; ii++) {
+			print_point_to_screen_matlab(pts_mp_[ii],"p");
 		}
 	}
 	

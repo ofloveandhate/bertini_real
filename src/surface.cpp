@@ -379,7 +379,7 @@ void surface_decomposition::beginning_stuff(const witness_set & W_surf,
 	if (0) {
 		if (program_options.verbose_level>=2)
 			printf("checking if component is self-conjugate\n");
-		checkSelfConjugate(W_surf.pts_mp[0],program_options, W_surf.input_filename);
+		checkSelfConjugate( *(W_surf.point(0)),program_options, W_surf.input_filename);
 		
 		//regenerate the various files, since we ran bertini since then and many files were deleted.
 		parse_input_file(program_options.input_deflated_filename);
@@ -475,7 +475,7 @@ void surface_decomposition::compute_critcurve_witness_set(witness_set & W_critcu
 
 	if (program_options.verbose_level>=2) {
 		for (auto iter = higher_multiplicity_witness_sets.begin(); iter!=higher_multiplicity_witness_sets.end(); iter++) {
-			std::cout << "found " << iter->second.num_points << " points of multiplicity " << iter->first << std::endl;
+			std::cout << "found " << iter->second.num_points() << " points of multiplicity " << iter->first << std::endl;
 			
 			iter->second.print_to_screen();
 		}
@@ -725,7 +725,7 @@ void surface_decomposition::deflate_and_split(std::map< std::pair<int,int>, witn
 			
 			
 			W_only_one_witness_point.reset_points();
-			W_only_one_witness_point.add_point(active_set.pts_mp[0]); // exists by entrance condition
+			W_only_one_witness_point.add_point( *(active_set.point(0)) ); // exists by entrance condition
 			W_only_one_witness_point.write_dehomogenized_coordinates("singular_witness_points_dehomogenized"); // write the points to file
 			
 			
@@ -758,7 +758,7 @@ void surface_decomposition::deflate_and_split(std::map< std::pair<int,int>, witn
 			
 			
 			if (W_reject.has_points()) {
-				std::cout << "found that current singular witness set had " << W_reject.num_points << " non-deflated points" << std::endl;
+				std::cout << "found that current singular witness set had " << W_reject.num_points() << " non-deflated points" << std::endl;
 			}
 			
 			//TODO: this is an ideal place for a swap operator.
@@ -962,17 +962,19 @@ int find_matching_singular_witness_points(witness_set & W_match,
 	
 	
 	
-	evalProg_mp(ED.funcVals, ED.parVals, ED.parDer, ED.Jv, ED.Jp, W.pts_mp[0], zerotime, &SLP);
+	evalProg_mp(ED.funcVals, ED.parVals, ED.parDer, ED.Jv, ED.Jp, *W.point(0), zerotime, &SLP);
 	int hypothesis_corank = svd_jacobi_mp_prec(U, E, V, ED.Jv, tol, T->Precision); // this wraps around svd_jacobi_mp.
 	
 	
 	
 	std::vector< bool > validity_flag;
 	validity_flag.push_back(true);
-	for (int zz = 1;zz<W.num_points;++zz) // by hypothesis, the first (0th) point satisfies the deflation
+	for (unsigned int zz = 1;zz<W.num_points();++zz) // by hypothesis, the first (0th) point satisfies the deflation
 	{
 		
-		evalProg_mp(ED.funcVals, ED.parVals, ED.parDer, ED.Jv, ED.Jp, W.pts_mp[zz], zerotime, &SLP);
+		vec_mp * curr_point = W.point(zz);
+		
+		evalProg_mp(ED.funcVals, ED.parVals, ED.parDer, ED.Jv, ED.Jp, *curr_point, zerotime, &SLP);
 		
 		// first, check that the point satifies the system.
 		if (d_vec_abs_mp(ED.funcVals)>T->final_tol_times_mult) { // is this the correct measure of the vector to compare?
@@ -995,14 +997,14 @@ int find_matching_singular_witness_points(witness_set & W_match,
 	}
 	
 	
-	for (int zz=0; zz<W.num_points; zz++) {
+	for (unsigned int zz=0; zz<W.num_points(); zz++) {
 		if (validity_flag[zz]==true) { // trivially true for first point -- it generated the deflation!
-			W_match.add_point(W.pts_mp[zz]);
+			W_match.add_point(*(W.point(zz)));
 		}
 		else
 		{
 			std::cout << "adding reject point" << std::endl;
-			W_reject.add_point(W.pts_mp[zz]);
+			W_reject.add_point(*(W.point(zz)));
 		}
 	}
 	
@@ -1905,27 +1907,27 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 	W_midtrack.num_variables = this->num_variables + num_bottom_vars + num_top_vars;
 	W_midtrack.num_natural_vars = this->num_variables;
-	change_size_vec_mp(W_midtrack.pts_mp[0], W_midtrack.num_variables); W_midtrack.pts_mp[0]->size = W_midtrack.num_variables; // destructive resize
+	change_size_vec_mp( *W_midtrack.point(0), W_midtrack.num_variables); (*W_midtrack.point(0))->size = W_midtrack.num_variables; // destructive resize
 	
 	
 	// mid
 	int var_counter = 0;
 	for (int kk=0; kk<this->num_variables; kk++) {
-		set_mp(&W_midtrack.pts_mp[0]->coord[kk], &V.vertices[mid_slices[ii].edges[jj].midpt].pt_mp->coord[kk]);
+		set_mp(&((*W_midtrack.point(0))->coord[kk]), &V.vertices[mid_slices[ii].edges[jj].midpt].pt_mp->coord[kk]);
 		var_counter++;
 	}
 	
 	// bottom
 	int offset = var_counter;
 	for (int kk=0; kk<num_bottom_vars; kk++) {
-		set_mp(&W_midtrack.pts_mp[0]->coord[kk+offset], &V.vertices[mid_slices[ii].edges[jj].left].pt_mp->coord[kk]); // y0
+		set_mp(&((*W_midtrack.point(0))->coord[kk+offset]), &V.vertices[mid_slices[ii].edges[jj].left].pt_mp->coord[kk]); // y0
 		var_counter++;
 	}
 	
 	// top
 	offset = var_counter;
 	for (int kk=0; kk<num_top_vars; kk++) {
-		set_mp(&W_midtrack.pts_mp[0]->coord[kk+offset], &V.vertices[mid_slices[ii].edges[jj].right].pt_mp->coord[kk]); // y2
+		set_mp(&((*W_midtrack.point(0))->coord[kk+offset]), &V.vertices[mid_slices[ii].edges[jj].right].pt_mp->coord[kk]); // y2
 		var_counter++;
 	}
 	
@@ -2221,7 +2223,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				
 				// should get a single point back from this solver.
 				
-				if (W_new.num_points==0) {
+				if (W_new.num_points()==0) {
 					std::cout << color::red() << "midpoint tracker did not return any points :(" << color::console_default() << std::endl;
 					possible_edges.erase(current_edge);
 					continue;
@@ -2232,19 +2234,19 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				
 				// get only the midpoint coordinates out of the returned point
 				for (int tt = 0; tt<this->num_variables; tt++) {
-					set_mp(&found_point->coord[tt], &W_new.pts_mp[0]->coord[tt]);
+					set_mp(&found_point->coord[tt], & (*W_new.point(0))->coord[tt]);
 				}
 				
 				int offset = md_config.num_mid_vars();
 				// get only the bottom coordinates out of the returned point
 				for (int tt = 0; tt<md_config.num_bottom_vars(); tt++) {
-					set_mp(&bottom_found->coord[tt], &W_new.pts_mp[0]->coord[offset+tt]);
+					set_mp(&bottom_found->coord[tt], & (*W_new.point(0))->coord[offset+tt]);
 				}
 				
 				offset += md_config.num_bottom_vars();
 				// get only the top coordinates out of the returned point
 				for (int tt = 0; tt<md_config.num_top_vars(); tt++) {
-					set_mp(&top_found->coord[tt], &W_new.pts_mp[0]->coord[offset+tt]);
+					set_mp(&top_found->coord[tt], & (*W_new.point(0))->coord[offset+tt]);
 				}
 				
 				//need to look the found point up in vertex set V

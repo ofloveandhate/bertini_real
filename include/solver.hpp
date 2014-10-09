@@ -1423,6 +1423,17 @@ public:
 	
 	
 	
+	
+	/**
+	 \brief Get the singular and finite points from a solution set, and put them into a witness set.
+	 
+	 \param W_transfer The input mutable witness set to populate.
+	 */
+	void get_sing_finite(witness_set & W_transfer);
+	
+	
+	
+	
 	/**
 	 Put the patches and linears from this into the input witness set.
 	 

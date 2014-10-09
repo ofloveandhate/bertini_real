@@ -207,9 +207,9 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 				set_mp(&temppoint->coord[jj+offset], &result->coord[jj]);
 			
 			
-			for (int ii=0; ii<W_step_one.num_points; ii++) {
+			for (unsigned int ii=0; ii<W_step_one.num_points(); ii++) {
 				for (int jj=0; jj<ns_config->num_natural_vars+ns_config->num_synth_vars; jj++) {
-					set_mp(&temppoint->coord[jj], &W_step_one.pts_mp[ii]->coord[jj]);
+					set_mp(&temppoint->coord[jj], & (*W_step_one.point(ii))->coord[jj]);
 				}
 				W_linprod.add_point(temppoint);
 			}
@@ -235,9 +235,9 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 	
 	clear_vec_mp(temppoint);
 	
-	int num_before = W_linprod.num_points;
+	int num_before = W_linprod.num_points();
 	W_linprod.sort_for_unique(&solve_options.T);
-	if (num_before - W_linprod.num_points>0) {
+	if (num_before - W_linprod.num_points()>0) {
 		std::cout << "there were non-unique start points" << std::endl;
 		mypause();
 	}

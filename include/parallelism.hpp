@@ -111,7 +111,7 @@ public:
 	 */
 	int main_loop();
 
-	
+	void critreal(witness_set & W, vec_mp *pi, vertex_set & V);
 	~ubermaster_process()
 	{
 		

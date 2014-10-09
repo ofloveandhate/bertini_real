@@ -415,7 +415,7 @@ void curve_decomposition::adaptive_sampler_movement(vertex_set & V,
 					
                     
 					if (sampler_options.verbose_level>=3) {
-						print_point_to_screen_matlab(W.pts_mp[0],"startpt");
+						print_point_to_screen_matlab(*W.point(0),"startpt");
 						print_comp_matlab(&W.L_mp[0]->coord[0],"initial_projection_value");
 						print_comp_matlab(target_projection_value,"target_projection_value");
 					}
@@ -437,17 +437,17 @@ void curve_decomposition::adaptive_sampler_movement(vertex_set & V,
 					
 					fillme.get_noninfinite_w_mult_full(Wnew);
 					
-					if (Wnew.num_points==0) {
+					if (Wnew.num_points()==0) {
 						std::cout << "tracker did not return any points.  this is essentially an uncaught exception" << std::endl;
 						// i have no idea what to do when this happens.
 						mypause();
 					}
 					
 					if (sampler_options.verbose_level>=3)
-						print_point_to_screen_matlab(Wnew.pts_mp[0], "new_solution");
+						print_point_to_screen_matlab(*Wnew.point(0), "new_solution");
 					
 					
-					dehomogenize(&new_point_dehomogenized,Wnew.pts_mp[0]);
+					dehomogenize(&new_point_dehomogenized,*Wnew.point(0));
 					
 					
 					// check how far away we were from the LEFT interval point
@@ -469,7 +469,7 @@ void curve_decomposition::adaptive_sampler_movement(vertex_set & V,
 					
 					
 					
-					vec_cp_mp(temp_vertex.pt_mp,Wnew.pts_mp[0]);
+					vec_cp_mp(temp_vertex.pt_mp,*Wnew.point(0));
 					temp_vertex.type = CURVE_SAMPLE_POINT;
 					
                     if (sampler_options.no_duplicates){
@@ -734,7 +734,7 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 					
                     
 					if (sampler_options.verbose_level>=3) {
-						print_point_to_screen_matlab(W.pts_mp[0],"startpt");
+						print_point_to_screen_matlab(*W.point(0),"startpt");
 						print_comp_matlab(&W.L_mp[0]->coord[0],"initial_projection_value");
 						print_comp_matlab(target_projection_value,"target_projection_value");
 					}
@@ -756,14 +756,14 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 					
 					fillme.get_noninfinite_w_mult_full(Wnew);
 					
-					if (Wnew.num_points==0) {
+					if (Wnew.num_points()==0) {
 						std::cout << "tracker did not return any points.  this is essentially an uncaught exception" << std::endl;
 						// i have no idea what to do when this happens.
 						mypause();
 					}
 					
 					if (sampler_options.verbose_level>=3)
-						print_point_to_screen_matlab(Wnew.pts_mp[0], "new_solution");
+						print_point_to_screen_matlab(*Wnew.point(0), "new_solution");
 					
 					
 					
@@ -771,7 +771,7 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 					
 					// check how far away we were from the LEFT interval point
 					norm_of_difference(dist_away,
-                                       Wnew.pts_mp[0], // the current new point
+                                       *Wnew.point(0), // the current new point
                                        V.vertices[left_index].pt_mp);// jj is left, jj+1 is right
 					
 					if ( mpf_cmp(dist_away, sampler_options.TOL )>0 ){
@@ -788,7 +788,7 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 					
 					// check how far away we were from the RIGHT interval point
 					norm_of_difference(dist_away,
-                                       Wnew.pts_mp[0], // the current new point
+                                       *Wnew.point(0), // the current new point
                                        V.vertices[right_index].pt_mp);
 					
 					if (mpf_cmp(dist_away, sampler_options.TOL ) > 0){
@@ -801,7 +801,7 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 					interval_counter++;
 					
 					
-					vec_cp_mp(temp_vertex.pt_mp,Wnew.pts_mp[0]);
+					vec_cp_mp(temp_vertex.pt_mp,*Wnew.point(0));
 					temp_vertex.type = CURVE_SAMPLE_POINT;
 					
                     if (sampler_options.no_duplicates){
@@ -988,7 +988,7 @@ void curve_decomposition::fixed_sampler(vertex_set & V,
 			
 			
 			if (sampler_options.verbose_level>=3) {
-				print_point_to_screen_matlab(W.pts_mp[0],"startpt");
+				print_point_to_screen_matlab(*W.point(0),"startpt");
 				print_comp_matlab(&W.L_mp[0]->coord[0],"initial_projection_value");
 				print_comp_matlab(target_projection_value,"target_projection_value");
 			}
@@ -1006,11 +1006,11 @@ void curve_decomposition::fixed_sampler(vertex_set & V,
 			
 			fillme.get_noninfinite_w_mult_full(Wnew);
 			
-			if (Wnew.num_points==0) {
+			if (Wnew.num_points()==0) {
 				//TODO: ah shit!  this ain't good.  how to deal with it?
 			}
 			
-			vec_cp_mp(temp_vertex.pt_mp,Wnew.pts_mp[0]);
+			vec_cp_mp(temp_vertex.pt_mp,*Wnew.point(0));
 			temp_vertex.type = CURVE_SAMPLE_POINT;
 			
 			if (sampler_options.no_duplicates){
@@ -1484,13 +1484,14 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 		
 		W_midtrack.num_variables = this->num_variables + num_bottom_vars + num_top_vars;
 		W_midtrack.num_natural_vars = this->num_variables;
-		change_size_vec_mp(W_midtrack.pts_mp[0], W_midtrack.num_variables); W_midtrack.pts_mp[0]->size = W_midtrack.num_variables; // destructive resize
+		change_size_vec_mp(*W_midtrack.point(0), W_midtrack.num_variables);
+		(*W_midtrack.point(0))->size = W_midtrack.num_variables; // destructive resize
 		
 		
 		// mid
 		int var_counter = 0;
 		for (int kk=0; kk<this->num_variables; kk++) {
-			set_mp(&W_midtrack.pts_mp[0]->coord[kk], &V.vertices[faces[ii].midpt].pt_mp->coord[kk]);
+			set_mp(&(*W_midtrack.point(0))->coord[kk], &V.vertices[faces[ii].midpt].pt_mp->coord[kk]);
 			var_counter++;
 		}
 		
@@ -1498,14 +1499,14 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 		// bottom
 		int offset = var_counter;
 		for (int kk=0; kk<num_bottom_vars; kk++) {
-			set_mp(&W_midtrack.pts_mp[0]->coord[kk+offset], &V.vertices[mid_slices[slice_ind].edges[mid_edge].left].pt_mp->coord[kk]); // y0
+			set_mp(& (*W_midtrack.point(0))->coord[kk+offset], &V.vertices[mid_slices[slice_ind].edges[mid_edge].left].pt_mp->coord[kk]); // y0
 			var_counter++;
 		}
 		
 		// top
 		offset = var_counter;
 		for (int kk=0; kk<num_top_vars; kk++) {
-			set_mp(&W_midtrack.pts_mp[0]->coord[kk+offset], &V.vertices[mid_slices[slice_ind].edges[mid_edge].right].pt_mp->coord[kk]); // y2
+			set_mp(& (*W_midtrack.point(0))->coord[kk+offset], &V.vertices[mid_slices[slice_ind].edges[mid_edge].right].pt_mp->coord[kk]); // y2
 			var_counter++;
 		}
 		
@@ -1672,14 +1673,14 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 			else {
 				witness_set W_new;
 				fillme.get_noninfinite_w_mult_full(W_new);
-				if (W_new.num_points==0) {
+				if (W_new.num_points()==0) {
 					std::cout << color::red() << "midpoint tracker did not return any points :(" << color::console_default() << std::endl;
 					rib_indices[jj][1] = -1;
 					// do something other than continue here.  this is terrible.
 					continue;
 				}
 				else{
-					vec_cp_mp(temp_vertex.pt_mp,W_new.pts_mp[0]);
+					vec_cp_mp(temp_vertex.pt_mp,*W_new.point(0));
 					temp_vertex.type = SURFACE_SAMPLE_POINT;
 					
 					if (sampler_options.no_duplicates){
@@ -1709,9 +1710,9 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 				
 
 				// copy in the start point for the multilin method, as the terminal point from the previous call.
-				vec_cp_mp(W_multilin.pts_mp[0],V.vertices[rib_indices[jj][kk-1]].pt_mp);
+				vec_cp_mp(*W_multilin.point(0),V.vertices[rib_indices[jj][kk-1]].pt_mp);
 				
-				W_multilin.pts_mp[0]->size = this->num_variables;
+				(*W_multilin.point(0))->size = this->num_variables;
 				
 				neg_mp(&W_multilin.L_mp[0]->coord[0],&V.vertices[rib_indices[jj][kk-1]].projection_values->coord[0]);
 				neg_mp(&W_multilin.L_mp[1]->coord[0],&V.vertices[rib_indices[jj][kk-1]].projection_values->coord[1]);
@@ -1758,7 +1759,7 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 				fillme.get_noninfinite_w_mult_full(W_new);
 				
 				
-				if (W_new.num_points==0) {
+				if (W_new.num_points()==0) {
 					std::cout << color::red() << "multilin tracker did not return any points :(" << color::console_default() << std::endl;
 					rib_indices[jj][kk] = -1;
 					// do something other than continue here.  this is terrible.
@@ -1766,7 +1767,7 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 				}
 				
 
-				vec_cp_mp(temp_vertex.pt_mp,W_new.pts_mp[0]);
+				vec_cp_mp(temp_vertex.pt_mp,*W_new.point(0));
 				temp_vertex.type = SURFACE_SAMPLE_POINT;
 				
 				if (sampler_options.no_duplicates){
