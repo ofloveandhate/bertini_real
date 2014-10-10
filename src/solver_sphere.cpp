@@ -221,34 +221,34 @@ int sphere_eval_data_mp::setup(const sphere_config & config,
 	
 	this->SLP_memory = config.SLP_memory;
 	
-	num_natural_vars = W.num_natural_vars;
-	num_variables = W.num_variables;
+	num_natural_vars = W.num_natural_variables();
+	num_variables = W.num_variables();
 	
 	
 	// set up the vectors to hold the linears.
 	if (this->num_static_linears==0) {
-		static_linear = (vec_mp *) br_malloc(W.num_linears*sizeof(vec_mp));
+		static_linear = (vec_mp *) br_malloc(W.num_linears()*sizeof(vec_mp));
 	}
 	else
 	{
-		static_linear = (vec_mp *) br_realloc(static_linear, W.num_linears*sizeof(vec_mp));
+		static_linear = (vec_mp *) br_realloc(static_linear, W.num_linears()*sizeof(vec_mp));
 	}
 	
-	for (int ii=0; ii<W.num_linears; ii++) {
+	for (unsigned int ii=0; ii<W.num_linears(); ii++) {
 		init_vec_mp(static_linear[ii],0);
-		vec_cp_mp(static_linear[ii],W.L_mp[ii]);
+		vec_cp_mp(static_linear[ii],*W.linear(ii));
 	}
 	
 	
 	
 	set_mp(this->radius, config.radius);
 	vec_cp_mp(this->center, config.center);
-	if (this->center->size < W.num_variables) {
+	if (this->center->size < W.num_variables()) {
         int old_size = this->center->size;
-        increase_size_vec_mp(this->center, W.num_variables);
-        this->center->size = W.num_variables;
+        increase_size_vec_mp(this->center, W.num_variables());
+        this->center->size = W.num_variables();
         
-        for (int ii=old_size; ii<W.num_variables; ii++) {
+        for (int ii=old_size; ii<W.num_variables(); ii++) {
             set_zero_mp(&this->center->coord[ii]);
         }
     }
@@ -258,12 +258,12 @@ int sphere_eval_data_mp::setup(const sphere_config & config,
 		
 		set_mp(this->radius_full_prec, config.radius);
 		vec_cp_mp(this->center_full_prec, config.center);
-        if (this->center_full_prec->size < W.num_variables) {
+        if (this->center_full_prec->size < W.num_variables()) {
             int old_size = this->center_full_prec->size;
-            increase_size_vec_mp(this->center_full_prec, W.num_variables);
-            this->center_full_prec->size = W.num_variables;
+            increase_size_vec_mp(this->center_full_prec, W.num_variables());
+            this->center_full_prec->size = W.num_variables();
             
-            for (int ii=old_size; ii<W.num_variables; ii++) {
+            for (int ii=old_size; ii<W.num_variables(); ii++) {
                 set_zero_mp(&this->center_full_prec->coord[ii]);
             }
         }
@@ -271,21 +271,21 @@ int sphere_eval_data_mp::setup(const sphere_config & config,
         
 		
 		if (this->num_static_linears==0) {
-			static_linear_full_prec = (vec_mp *) br_malloc(W.num_linears*sizeof(vec_mp));
+			static_linear_full_prec = (vec_mp *) br_malloc(W.num_linears()*sizeof(vec_mp));
 		}
 		else
 		{
-			static_linear_full_prec = (vec_mp *) br_realloc(static_linear_full_prec, W.num_linears*sizeof(vec_mp));
+			static_linear_full_prec = (vec_mp *) br_realloc(static_linear_full_prec, W.num_linears()*sizeof(vec_mp));
 		}
 		
-		for (int ii=0; ii<W.num_linears; ii++) {
+		for (unsigned int ii=0; ii<W.num_linears(); ii++) {
 			init_vec_mp2(static_linear_full_prec[ii],0,1024);
 			
-			vec_cp_mp(static_linear_full_prec[ii], W.L_mp[ii]);
+			vec_cp_mp(static_linear_full_prec[ii], *W.linear(ii));
 		}
 	}
 	
-	this->num_static_linears = W.num_linears;
+	this->num_static_linears = W.num_linears();
 	
 	
 	
@@ -499,33 +499,33 @@ int sphere_eval_data_d::setup(const sphere_config & config,
 	mp_to_d(radius, config.radius);
 	vec_mp_to_d(center, config.center);
     
-    if (this->center->size < W.num_variables) {
+    if (this->center->size < W.num_variables()) {
         int old_size = this->center->size;
-        increase_size_vec_d(this->center, W.num_variables);
-        this->center->size = W.num_variables;
+        increase_size_vec_d(this->center, W.num_variables());
+        this->center->size = W.num_variables();
         
-        for (int ii=old_size; ii<W.num_variables; ii++) {
+        for (int ii=old_size; ii<W.num_variables(); ii++) {
             set_zero_d(&this->center->coord[ii]);
         }
     }
     
     
 	if (this->num_static_linears==0) {
-		static_linear = (vec_d *) br_malloc(W.num_linears*sizeof(vec_d));
+		static_linear = (vec_d *) br_malloc(W.num_linears()*sizeof(vec_d));
 	}
 	else
 	{
-		static_linear = (vec_d *) br_realloc(static_linear, W.num_linears*sizeof(vec_d));
+		static_linear = (vec_d *) br_realloc(static_linear, W.num_linears()*sizeof(vec_d));
 	}
 	
-	for (int ii=0; ii<W.num_linears; ii++) {
+	for (unsigned int ii=0; ii<W.num_linears(); ii++) {
 		init_vec_d(static_linear[ii],0);
-		vec_mp_to_d(static_linear[ii],W.L_mp[ii]);
+		vec_mp_to_d(static_linear[ii],*W.linear(ii));
 	}
-	num_static_linears = W.num_linears;
+	num_static_linears = W.num_linears();
 	
-    num_natural_vars = W.num_natural_vars;
-	num_variables = W.num_variables;
+    num_natural_vars = W.num_natural_variables();
+	num_variables = W.num_variables();
 	
 	
 	
@@ -618,7 +618,7 @@ int sphere_solver_master_entry_point(const witness_set						&W, // carries with 
 			
 			
 			
-			adjust_tracker_AMP(& (solve_options.T), W.num_variables);
+			adjust_tracker_AMP(& (solve_options.T), W.num_variables());
 			
 			break;
 		default:
@@ -651,9 +651,9 @@ int sphere_solver_master_entry_point(const witness_set						&W, // carries with 
 	}
 	
 	
-	for (int jj=0; jj<W.num_linears; jj++)
+	for (unsigned int jj=0; jj<W.num_linears(); jj++)
 	{
-		solve_out.add_linear(W.L_mp[jj]);
+		solve_out.add_linear(*W.linear(jj));
 	}
 	
 	return SUCCESSFUL;

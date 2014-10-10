@@ -26,9 +26,9 @@ void surface_decomposition::main(vertex_set & V,
 	
 	
 	// set some member information.
-	this->input_filename = W_surf.input_filename;
-	this->num_variables = W_surf.num_variables;
-	this->component_num = W_surf.comp_num;
+	this->input_filename = W_surf.input_filename();
+	this->num_variables = W_surf.num_variables();
+	this->component_num = W_surf.component_number();
     
 	add_projection(pi[0]); // add to *this
 	add_projection(pi[1]); // add to *this
@@ -40,8 +40,9 @@ void surface_decomposition::main(vertex_set & V,
 	
     
 	//copy the patch over into this object
-	for (int ii=0; ii<W_surf.num_patches; ii++)
-		this->add_patch(W_surf.patch_mp[ii]);
+	this->copy_patches(W_surf);
+	
+
 	
 	
 	beginning_stuff( W_surf, program_options, solve_options);
@@ -128,11 +129,11 @@ void surface_decomposition::main(vertex_set & V,
 	
 	std::cout << color::bold("m") << "intersecting critical curve with sphere" << color::console_default() << std::endl;
 	
-	W_critcurve_crit.input_filename = "input_critical_curve";
+	W_critcurve_crit.set_input_filename("input_critical_curve");
 	
 	
 	witness_set W_sphere_intersection;
-	W_sphere_intersection.input_filename = "input_critical_curve";
+	W_sphere_intersection.set_input_filename("input_critical_curve");
 	// now get the sphere intersection critical points and ends of the interval
 	crit_curve.get_additional_critpts(&W_sphere_intersection,  // the returned value
 									  W_critcurve,       // all else here is input
@@ -158,7 +159,7 @@ void surface_decomposition::main(vertex_set & V,
     
     
     // make the input file
-	create_sphere_system(W_surf.input_filename,
+	create_sphere_system(W_surf.input_filename(),
                          "input_surf_sphere",
                          sphere_radius,
                          sphere_center,
@@ -187,7 +188,7 @@ void surface_decomposition::main(vertex_set & V,
 	
 	W_total_crit.merge(W_sphere_crit);
 	
-	W_total_crit.input_filename = "total_crit___there-is-a-problem";
+	W_total_crit.set_input_filename("total_crit___there-is-a-problem");
 	W_total_crit.sort_for_unique(&solve_options.T);
     
 
@@ -338,7 +339,7 @@ void surface_decomposition::beginning_stuff(const witness_set & W_surf,
 		program_options.input_deflated_filename = program_options.input_filename;
 		
 		std::stringstream converter;
-		converter << "_dim_" << W_surf.dim << "_comp_" << W_surf.comp_num << "_deflated";
+		converter << "_dim_" << W_surf.dimension() << "_comp_" << W_surf.component_number() << "_deflated";
 		program_options.input_deflated_filename += converter.str();
 		
 		
@@ -379,7 +380,7 @@ void surface_decomposition::beginning_stuff(const witness_set & W_surf,
 	if (0) {
 		if (program_options.verbose_level>=2)
 			printf("checking if component is self-conjugate\n");
-		checkSelfConjugate( *(W_surf.point(0)),program_options, W_surf.input_filename);
+		checkSelfConjugate( *(W_surf.point(0)),program_options, W_surf.input_filename());
 		
 		//regenerate the various files, since we ran bertini since then and many files were deleted.
 		parse_input_file(program_options.input_deflated_filename);
@@ -392,7 +393,7 @@ void surface_decomposition::beginning_stuff(const witness_set & W_surf,
 	}
 	
 	
-	randomizer->setup(W_surf.num_variables-1-this->dimension,solve_options.PPD.num_funcs);
+	randomizer->setup(W_surf.num_variables()-1-this->dimension,solve_options.PPD.num_funcs);
 	
 	
 
@@ -466,7 +467,7 @@ void surface_decomposition::compute_critcurve_witness_set(witness_set & W_critcu
 	
 	solve_out.get_nonsing_finite_multone(W_critcurve);
 	solve_out.get_patches_linears(W_critcurve);
-	solve_out.cp_names(W_critcurve);
+	solve_out.copy_names(W_critcurve);
 	
 	
 	solve_out.get_multpos_full(higher_multiplicity_witness_sets);
@@ -492,7 +493,7 @@ void surface_decomposition::compute_critcurve_witness_set(witness_set & W_critcu
 	
 	W_critcurve.write_dehomogenized_coordinates("W_curve"); // write the points to file
 	
-	W_critcurve.input_filename = "input_critical_curve";
+	W_critcurve.set_input_filename("input_critical_curve");
 	
 	// this system describes the system for the critical curve
 	create_nullspace_system("input_critical_curve",
@@ -504,11 +505,13 @@ void surface_decomposition::compute_critcurve_witness_set(witness_set & W_critcu
     
     // adjust the size of the linears to match the number of variables.  this should be a method in the witness set data type.
     
-    for (int ii=0; ii<W_critcurve.num_linears; ii++) {
-		increase_size_vec_mp(W_critcurve.L_mp[ii], W_critcurve.num_variables); W_critcurve.L_mp[ii]->size = W_critcurve.num_variables;
+    for (unsigned int ii=0; ii<W_critcurve.num_linears(); ii++) {
+		vec_mp * curr_linear = W_critcurve.linear(ii);
 		
-		for (int jj=W_surf.num_variables; jj<W_critcurve.num_variables; jj++) {
-			set_zero_mp(&W_critcurve.L_mp[ii]->coord[jj]);
+		increase_size_vec_mp(*curr_linear, W_critcurve.num_variables()); (*curr_linear)->size = W_critcurve.num_variables();
+		
+		for (int jj=W_surf.num_variables(); jj<W_critcurve.num_variables(); jj++) {
+			set_zero_mp(&((*curr_linear))->coord[jj]);
 		}
 	}
     
@@ -544,7 +547,7 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 
 	//get crit points of the surface.
 	int blabla;
-	parse_input_file(W_surf.input_filename,&blabla);
+	parse_input_file(W_surf.input_filename(),&blabla);
 	preproc_data_clear(&solve_options.PPD); // ugh this sucks
 	parse_preproc_data("preproc_data", &solve_options.PPD);
 	
@@ -570,7 +573,7 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 	//now get those critpoints which lie on the crit curve (there may be some intersection with the above)
 	
 	W_critcurve.only_natural_vars();// trim off the synthetic variables for the input witness set for computing critical points
-	parse_input_file(W_critcurve.input_filename,&blabla);
+	parse_input_file(W_critcurve.input_filename(),&blabla);
 	preproc_data_clear(&solve_options.PPD); // ugh this sucks
 	parse_preproc_data("preproc_data", &solve_options.PPD);
 	
@@ -588,7 +591,7 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 	temp_degree = solve_options.T.AMP_bound_on_degree;
 	solve_options.T.AMP_bound_on_degree = max_degree;
 	
-	crit_curve.randomizer->setup(W_critcurve.num_variables - W_critcurve.num_patches - 1,solve_options.PPD.num_funcs);
+	crit_curve.randomizer->setup(W_critcurve.num_variables() - W_critcurve.num_patches() - 1,solve_options.PPD.num_funcs);
 	
 	
 	compute_crit_nullspace(solve_out, // the returned value
@@ -612,7 +615,7 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 	
 	
 	W_critcurve_crit.merge(W_temp);
-	W_critcurve_crit.input_filename = "input_critical_curve";
+	W_critcurve_crit.set_input_filename("input_critical_curve");
 	W_critcurve_crit.sort_for_real(&solve_options.T);
 	W_critcurve_crit.sort_for_unique(&solve_options.T);
 	
@@ -644,10 +647,10 @@ void surface_decomposition::compute_critical_curve(const witness_set & W_critcur
 	vec_mp temp_proj; init_vec_mp2(temp_proj,0,1024);
 	vec_cp_mp(temp_proj, pi[0]);
 	std::cout << temp_proj->size << std::endl;
-	increase_size_vec_mp(temp_proj, W_critcurve.num_variables); // nondestructive increase in size
-    temp_proj->size = W_critcurve.num_variables;
+	increase_size_vec_mp(temp_proj, W_critcurve.num_variables()); // nondestructive increase in size
+    temp_proj->size = W_critcurve.num_variables();
     
-	for ( int ii=this->num_variables; ii<W_critcurve.num_variables; ii++) {
+	for ( int ii=this->num_variables; ii<W_critcurve.num_variables(); ii++) {
 		set_zero_mp(&temp_proj->coord[ii]);
 	}
 	
@@ -666,7 +669,7 @@ void surface_decomposition::compute_critical_curve(const witness_set & W_critcur
 	
 	crit_curve.add_projection(pi[0]);
 	
-	crit_curve.num_variables = W_critcurve.num_variables;
+	crit_curve.num_variables = W_critcurve.num_variables();
 	
     std::cout << color::magenta() << "done decomposing critical curve" << color::console_default() << std::endl;
 	return;
@@ -738,8 +741,8 @@ void surface_decomposition::deflate_and_split(std::map< std::pair<int,int>, witn
 								  program_options.max_deflations);
 			free(deflation_sequence);
 			
-			active_set.input_filename = singcurve_filename;
-			active_set.dim = 1; //why again does a witness set need a dimension?
+			active_set.set_input_filename(singcurve_filename);
+			active_set.set_dimension(1); //why again does a witness set need a dimension?
 			
 			int blabla;
 			parse_input_file(singcurve_filename,&blabla);
@@ -754,7 +757,7 @@ void surface_decomposition::deflate_and_split(std::map< std::pair<int,int>, witn
 												  active_set,//input witness set
 												  solve_options);
 			
-			split_sets[curr_index].input_filename = singcurve_filename;
+			split_sets[curr_index].set_input_filename(singcurve_filename);
 			
 			
 			if (W_reject.has_points()) {
@@ -791,8 +794,8 @@ void surface_decomposition::compute_singular_crit(witness_set & W_singular_crit,
 	
 	
 	
-	W_singular_crit.num_variables = this->num_variables;
-	W_singular_crit.num_natural_vars = this->num_variables;
+	W_singular_crit.set_num_variables(this->num_variables);
+	W_singular_crit.set_num_natural_variables(this->num_variables);
 	W_singular_crit.copy_patches(*this);
 	for (auto iter = split_sets.begin(); iter!=split_sets.end(); ++iter) {
 		
@@ -802,7 +805,7 @@ void surface_decomposition::compute_singular_crit(witness_set & W_singular_crit,
 		
 		
 		int blabla;
-		parse_input_file(iter->second.input_filename,&blabla);
+		parse_input_file(iter->second.input_filename(),&blabla);
 		preproc_data_clear(&solve_options.PPD); // ugh this sucks
 		parse_preproc_data("preproc_data", &solve_options.PPD);
 		
@@ -823,7 +826,7 @@ void surface_decomposition::compute_singular_crit(witness_set & W_singular_crit,
 		
 		
 		
-		singular_curves[iter->first].randomizer->setup(iter->second.num_variables-iter->second.num_patches-1, solve_options.PPD.num_funcs);
+		singular_curves[iter->first].randomizer->setup(iter->second.num_variables()-iter->second.num_patches()-1, solve_options.PPD.num_funcs);
 
 		
 		
@@ -852,7 +855,7 @@ void surface_decomposition::compute_singular_crit(witness_set & W_singular_crit,
 		
 		W_this_round.sort_for_unique(&solve_options.T); // this could be made to be unnecessary, after rewriting a bit of solverout
 		W_this_round.sort_for_real(&solve_options.T);
-		W_this_round.input_filename = iter->second.input_filename;
+		W_this_round.set_input_filename(iter->second.input_filename());
 		
 		singular_curves[iter->first].add_witness_set(W_this_round,CRITICAL,V); // creates the curve decomposition for this multiplicity
 		
@@ -876,7 +879,7 @@ void surface_decomposition::compute_singular_curves(const witness_set & W_total_
 	
 	for (auto iter = split_sets.begin(); iter!=split_sets.end(); ++iter) {
 		
-		singular_curves[iter->first].input_filename = iter->second.input_filename;
+		singular_curves[iter->first].input_filename = iter->second.input_filename();
 		singular_curves[iter->first].copy_sphere_bounds(*this);
 		
 		
@@ -888,7 +891,7 @@ void surface_decomposition::compute_singular_curves(const witness_set & W_total_
 															program_options,
 															solve_options);
 		
-		W_sphere_intersection.input_filename = iter->second.input_filename;
+		W_sphere_intersection.set_input_filename(iter->second.input_filename());
 		
 		
 //		W_sphere_intersection.only_first_vars(this->num_variables); // throw out the extra variables.
@@ -898,7 +901,7 @@ void surface_decomposition::compute_singular_curves(const witness_set & W_total_
 		singular_curves[iter->first].add_witness_set(W_sphere_intersection,CRITICAL,V); // creates the curve decomposition for this multiplicity
 		
 		W_sphere_intersection.merge(W_total_crit);
-		W_sphere_intersection.input_filename = "should_have_already_been_added_elsewhere";
+		W_sphere_intersection.set_input_filename("should_have_already_been_added_elsewhere");
 		
 		
 		
@@ -1055,7 +1058,7 @@ void surface_decomposition::compute_sphere_witness_set(const witness_set & W_sur
 	
 	
 	
-	parse_input_file(W_surf.input_filename, &blabla);
+	parse_input_file(W_surf.input_filename(), &blabla);
 	preproc_data_clear(&solve_options.PPD); // ugh this sucks
 	parse_preproc_data("preproc_data", &solve_options.PPD);
 	
@@ -1067,7 +1070,7 @@ void surface_decomposition::compute_sphere_witness_set(const witness_set & W_sur
 	}
 	
 	
-	sphere_curve.randomizer->setup(W_surf.num_variables-W_surf.num_patches-W_surf.num_linears, solve_options.PPD.num_funcs);
+	sphere_curve.randomizer->setup(W_surf.num_variables()-W_surf.num_patches()-W_surf.num_linears(), solve_options.PPD.num_funcs);
 	
 	
 	
@@ -1076,11 +1079,11 @@ void surface_decomposition::compute_sphere_witness_set(const witness_set & W_sur
     
 	vec_mp *multilin_linears = (vec_mp *) br_malloc(2*sizeof(vec_mp));
     
-	init_vec_mp2(multilin_linears[0],W_surf.num_variables,solve_options.T.AMP_max_prec);
-	multilin_linears[0]->size = W_surf.num_variables;
+	init_vec_mp2(multilin_linears[0],W_surf.num_variables(),solve_options.T.AMP_max_prec);
+	multilin_linears[0]->size = W_surf.num_variables();
     
 	init_vec_mp2(multilin_linears[1],0,solve_options.T.AMP_max_prec);
-	vec_cp_mp(multilin_linears[1],W_surf.L_mp[1]);
+	vec_cp_mp(multilin_linears[1],*W_surf.linear(1));
 	
     
     
@@ -1090,7 +1093,7 @@ void surface_decomposition::compute_sphere_witness_set(const witness_set & W_sur
 	
 	for (int ii=0; ii<2; ii++) {
 		
-		for (int jj=0; jj<W_surf.num_variables; jj++) {
+		for (int jj=0; jj<W_surf.num_variables(); jj++) {
 			get_comp_rand_mp(&multilin_linears[0]->coord[jj]);
 		}
 		
@@ -1122,7 +1125,7 @@ void surface_decomposition::compute_sphere_witness_set(const witness_set & W_sur
 	
 	
 	
-	W_sphere.add_linear(W_surf.L_mp[1]);
+	W_sphere.add_linear(*W_surf.linear(1));
 	W_sphere.copy_patches(W_surf); //.patch_mp[0]
 	
 	
@@ -1149,7 +1152,7 @@ void surface_decomposition::compute_sphere_witness_set(const witness_set & W_sur
 	
 	fillme.get_noninfinite_w_mult_full(W_intersection_sphere);
 	
-	W_intersection_sphere.input_filename = "input_surf_sphere";
+	W_intersection_sphere.set_input_filename("input_surf_sphere");
 	
 }
 
@@ -1176,7 +1179,7 @@ void surface_decomposition::compute_sphere_crit(const witness_set & W_intersecti
     
     
     
-	sphere_curve.randomizer->setup(W_intersection_sphere.num_variables-W_intersection_sphere.num_patches-1, solve_options.PPD.num_funcs);
+	sphere_curve.randomizer->setup(W_intersection_sphere.num_variables()-W_intersection_sphere.num_patches()-1, solve_options.PPD.num_funcs);
     
 	
 	
@@ -1206,7 +1209,7 @@ void surface_decomposition::compute_sphere_crit(const witness_set & W_intersecti
 	W_sphere_crit.sort_for_unique(&solve_options.T);
 	W_sphere_crit.sort_for_real(&solve_options.T);
     
-	W_sphere_crit.input_filename = "input_surf_sphere";
+	W_sphere_crit.set_input_filename("input_surf_sphere");
 	
 	return;
 }
@@ -1236,7 +1239,7 @@ void surface_decomposition::compute_bounding_sphere(const witness_set & W_inters
                                   solve_options,
                                   V);
 	
-	sphere_curve.input_filename = W_intersection_sphere.input_filename;
+	sphere_curve.input_filename = W_intersection_sphere.input_filename();
 	this->sphere_curve.add_projection(pi[0]);
 	this->sphere_curve.num_variables = num_variables;
 	
@@ -1277,10 +1280,10 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 	vec_mp *multilin_linears = (vec_mp *) br_malloc(2*sizeof(vec_mp));
 	
 	
-	init_vec_mp2(multilin_linears[0], W_surf.num_variables,1024);
-	init_vec_mp2(multilin_linears[1], W_surf.num_variables,1024);
+	init_vec_mp2(multilin_linears[0], W_surf.num_variables(),1024);
+	init_vec_mp2(multilin_linears[1], W_surf.num_variables(),1024);
 	vec_cp_mp(multilin_linears[0],pi[0]);
-	vec_cp_mp(multilin_linears[1],W_surf.L_mp[1]);
+	vec_cp_mp(multilin_linears[1],*W_surf.linear(1));
 	
 	
 	
@@ -1289,7 +1292,7 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 	slices.resize(projection_values_downstairs->size);
 	
 	int blabla;
-	parse_input_file(W_surf.input_filename, & blabla);
+	parse_input_file(W_surf.input_filename(), & blabla);
 	
 	
 	
@@ -1312,7 +1315,7 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 		converter << ii;
 		
 		int blabla;
-		parse_input_file(W_surf.input_filename, &blabla);
+		parse_input_file(W_surf.input_filename(), &blabla);
 		
 		preproc_data_clear(&solve_options.PPD); // ugh this sucks
 		parse_preproc_data("preproc_data", &solve_options.PPD);
@@ -1348,9 +1351,9 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 		fillme.get_noninfinite_w_mult(slice_witness_set);
 		fillme.reset();
 		
-		boost::filesystem::path slicename = W_surf.input_filename;
+		boost::filesystem::path slicename = W_surf.input_filename();
 		slicename += "_"; slicename += kindofslice; slicename += "slice_"; slicename += converter.str();
-		create_sliced_system(W_surf.input_filename, slicename, &multilin_linears[0], 1, W_surf);
+		create_sliced_system(W_surf.input_filename(), slicename, &multilin_linears[0], 1, W_surf);
 		
 		
 		parse_input_file(slicename, &blabla);
@@ -1360,12 +1363,12 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 
 		
 		
-		slice_witness_set.num_variables = W_surf.num_variables;
-		slice_witness_set.input_filename = slicename;
+		slice_witness_set.set_num_variables(W_surf.num_variables());
+		slice_witness_set.set_input_filename(slicename);
 		slice_witness_set.add_linear(multilin_linears[1]);
-		slice_witness_set.add_patch(W_surf.patch_mp[0]);
-		slice_witness_set.variable_names = W_surf.variable_names;
-		slice_witness_set.dim = 1;
+		slice_witness_set.add_patch(*W_surf.patch(0));
+		slice_witness_set.copy_names(W_surf);
+		slice_witness_set.set_dimension(1);
 		
 		
 		
@@ -1905,9 +1908,9 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	W_midtrack.add_point(blank_point);
 	clear_vec_mp(blank_point);
 	
-	W_midtrack.num_variables = this->num_variables + num_bottom_vars + num_top_vars;
-	W_midtrack.num_natural_vars = this->num_variables;
-	change_size_vec_mp( *W_midtrack.point(0), W_midtrack.num_variables); (*W_midtrack.point(0))->size = W_midtrack.num_variables; // destructive resize
+	W_midtrack.set_num_variables(this->num_variables + num_bottom_vars + num_top_vars);
+	W_midtrack.set_num_natural_variables(this->num_variables);
+	change_size_vec_mp( *W_midtrack.point(0), W_midtrack.num_variables()); (*W_midtrack.point(0))->size = W_midtrack.num_variables(); // destructive resize
 	
 	
 	// mid
@@ -1940,16 +1943,16 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	//copy in the patches appropriate for the systems we will be tracking on.  this could be improved.
 	W_midtrack.reset_patches();
 	
-	for (int qq = 0; qq<this->num_patches; qq++) {
-		W_midtrack.add_patch(this->patch_mp[qq]);
+	for (unsigned int qq = 0; qq<this->num_patches(); qq++) {
+		W_midtrack.add_patch(*this->patch(qq));
 	}
 	
-	for (int qq = 0; qq<bottom_curve->num_patches; qq++) {
-		W_midtrack.add_patch(bottom_curve->patch_mp[qq]);
+	for (unsigned int qq = 0; qq<bottom_curve->num_patches(); qq++) {
+		W_midtrack.add_patch(*bottom_curve->patch(qq));
 	}
 	
-	for (int qq = 0; qq<top_curve->num_patches; qq++) {
-		W_midtrack.add_patch(top_curve->patch_mp[qq]);
+	for (unsigned int qq = 0; qq<top_curve->num_patches(); qq++) {
+		W_midtrack.add_patch(*top_curve->patch(qq));
 	}
 	
 	
@@ -2818,7 +2821,7 @@ void create_sliced_system(boost::filesystem::path input_file, boost::filesystem:
 	
 	
 	
-	if (W.variable_names.size()==0) {
+	if (W.num_var_names()==0) {
 		std::cout << "trying to create a sliced system, but witness set does not have the variable names." << std::endl;
 		deliberate_segfault();
 	}
@@ -2855,18 +2858,18 @@ void create_sliced_system(boost::filesystem::path input_file, boost::filesystem:
 	}
 	for (int ii=0; ii<num_to_add; ii++) {
 		fprintf(OUT,"supp_lin_%d = supp_lin_%d_1",indicators[ii],indicators[ii]);
-		for (int jj=1; jj<W.num_variables; jj++) {
-			fprintf(OUT," + %s*supp_lin_%d_%d",W.variable_names[jj].c_str(), indicators[ii],jj+1);
+		for (int jj=1; jj<W.num_variables(); jj++) {
+			fprintf(OUT," + %s*supp_lin_%d_%d",W.name(jj).c_str(), indicators[ii],jj+1);
 		}
 		fprintf(OUT, ";\n\n");
 	}
 	fprintf(OUT,"END;\n\n\n\n");
 	
     
-    for (int ii=0; ii<W.num_patches; ii++) {
+    for (unsigned int ii=0; ii<W.num_patches(); ii++) {
 		std::stringstream linname;
 		linname << "patch_" << ii;
-		write_vector_as_constants(W.patch_mp[ii], linname.str(), OUT);
+		write_vector_as_constants(*W.patch(ii), linname.str(), OUT);
 		linname.clear();  linname.str("");
 	}
     
@@ -2903,7 +2906,7 @@ void create_sphere_system(boost::filesystem::path input_file, boost::filesystem:
 	// a bit of error checking
     
 	
-	if (W.variable_names.size()==0) {
+	if (W.num_var_names()==0) {
 		std::cout << color::red() << "trying to create a sphere system, but witness set does not have the variable names." << color::console_default() << std::endl;
 		br_exit(-9846);
 	}
@@ -2936,14 +2939,14 @@ void create_sphere_system(boost::filesystem::path input_file, boost::filesystem:
 	fprintf(OUT,"function sphere_%d;\n",rand_index);
     
 	fprintf(OUT,"sphere_%d = ",rand_index);
-	for (int jj=1; jj<W.num_variables; jj++) { // start at 1 to omit the homogenizing variable
-		fprintf(OUT," (%s-(", W.variable_names[jj].c_str());
+	for (int jj=1; jj<W.num_variables(); jj++) { // start at 1 to omit the homogenizing variable
+		fprintf(OUT," (%s-(", W.name(jj).c_str());
 		mpf_out_str(OUT,10,0,sphere_center->coord[jj-1].r);
 		fprintf(OUT,"+I*");
 		mpf_out_str(OUT,10,0,sphere_center->coord[jj-1].i);
 		fprintf(OUT,"))^2");
 		
-		if (jj!=W.num_variables-1) {
+		if (jj!=W.num_variables()-1) {
 			fprintf(OUT," + ");
 		}
 		
@@ -2955,10 +2958,10 @@ void create_sphere_system(boost::filesystem::path input_file, boost::filesystem:
     
 	fprintf(OUT, ";\n\nEND;\n\n\n\n\n");
 	
-    for (int ii=0; ii<W.num_patches; ii++) {
+    for (unsigned int ii=0; ii<W.num_patches(); ii++) {
 		std::stringstream linname;
 		linname << "patch_" << ii;
-		write_vector_as_constants(W.patch_mp[ii], linname.str(), OUT);
+		write_vector_as_constants(*W.patch(ii), linname.str(), OUT);
 		linname.clear();  linname.str("");
 	}
     

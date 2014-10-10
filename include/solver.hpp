@@ -1349,8 +1349,8 @@ public:
 	 */
 	void set_witness_set_nvars(witness_set & W_transfer)
 	{
-		W_transfer.num_variables = this->num_variables;
-		W_transfer.num_natural_vars = this->num_natural_vars;
+		W_transfer.set_num_variables(this->num_variables);
+		W_transfer.set_num_natural_variables(this->num_natural_vars);
 	}
 	
 	

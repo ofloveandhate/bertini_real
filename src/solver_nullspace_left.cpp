@@ -1317,7 +1317,7 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 	setupProg(&SLP, solve_options.T.Precision, solve_options.T.MPType);
 	
 	
-	solve_options.T.numVars = W.num_variables;
+	solve_options.T.numVars = W.num_variables();
 	
 	nullspacejac_eval_data_d *ED_d = NULL;
 	nullspacejac_eval_data_mp *ED_mp = NULL;
@@ -1356,7 +1356,7 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 			
 			
 			
-			adjust_tracker_AMP(& (solve_options.T), W.num_variables); // & initialize latest_newton_residual_mp
+			adjust_tracker_AMP(& (solve_options.T), W.num_variables()); // & initialize latest_newton_residual_mp
 			
 			break;
 		default:

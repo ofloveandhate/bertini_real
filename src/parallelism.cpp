@@ -66,7 +66,7 @@ int ubermaster_process::main_loop()
 	
 	
 	W.get_variable_names(num_vars);
-	W.input_filename = program_options.input_filename;
+	W.set_input_filename(program_options.input_filename);
 	
 	
 		
@@ -86,14 +86,14 @@ int ubermaster_process::main_loop()
 	
 	
 	
-	vec_mp *pi = (vec_mp *) br_malloc(W.dim*sizeof(vec_mp ));
-	for (int ii=0; ii<W.dim; ii++) {
-		init_vec_mp2(pi[ii],W.num_variables, solve_options.T.AMP_max_prec);
-		pi[ii]->size = W.num_variables;
+	vec_mp *pi = (vec_mp *) br_malloc(W.dimension()*sizeof(vec_mp ));
+	for (int ii=0; ii<W.dimension(); ii++) {
+		init_vec_mp2(pi[ii],W.num_variables(), solve_options.T.AMP_max_prec);
+		pi[ii]->size = W.num_variables();
 	}
-	get_projection(pi, program_options, solve_options, W.num_variables, W.dim);
+	get_projection(pi, program_options, solve_options, W.num_variables(), W.dimension());
 	
-    for (int ii=0; ii<W.dim; ii++) {
+    for (int ii=0; ii<W.dimension(); ii++) {
         V.add_projection(pi[ii]);
     }
     
@@ -101,18 +101,17 @@ int ubermaster_process::main_loop()
 	if (program_options.primary_mode==BERTINIREAL) {
 		
 		
-		int incidence_number = get_incidence_number( *(W.point(0)), program_options, program_options.input_filename);
 		
-		W.incidence_number = incidence_number;
-		
+		W.set_incidence_number(get_incidence_number( *(W.point(0)), program_options, program_options.input_filename));
 		
 		
-		switch (W.dim) {
+		
+		switch (W.dimension()) {
 			case 1:
 			{
 				curve_decomposition C;
 				
-				C.component_num = W.comp_num;
+				C.component_num = W.component_number();
 				
 				
 				std::stringstream converter;
@@ -140,7 +139,7 @@ int ubermaster_process::main_loop()
 			{
 				
 				surface_decomposition S;
-				S.component_num = W.comp_num;
+				S.component_num = W.component_number();
 				
 				std::stringstream converter;
 				converter << "_dim_" << S.dimension << "_comp_" << S.component_num;
@@ -161,7 +160,7 @@ int ubermaster_process::main_loop()
 				
 			default:
 			{
-				std::cout << "bertini_real not programmed for components of dimension " << W.dim << std::endl;
+				std::cout << "bertini_real not programmed for components of dimension " << W.dimension() << std::endl;
 			}
 				break;
 		}
@@ -177,7 +176,7 @@ int ubermaster_process::main_loop()
 
 	
 	
-	for (int ii=0; ii<W.dim; ii++)
+	for (int ii=0; ii<W.dimension(); ii++)
 		clear_vec_mp(pi[ii]);
 	
 	// dismiss the workers
@@ -195,7 +194,7 @@ void ubermaster_process::critreal(witness_set & W, vec_mp *pi, vertex_set & V)
 	
 	system_randomizer randomizer;
 	
-	randomizer.setup(W.num_variables-1-W.dim,solve_options.PPD.num_funcs);
+	randomizer.setup(W.num_variables()-1-W.dimension(),solve_options.PPD.num_funcs);
 	
 	
 	
@@ -218,9 +217,9 @@ void ubermaster_process::critreal(witness_set & W, vec_mp *pi, vertex_set & V)
 						   W,            // input the original witness set
 						   &randomizer,
 						   pi,
-						   W.dim,  // dimension of ambient complex object
-						   W.dim,   //  target dimension to find
-						   W.dim,   // COdimension of the critical set to find.
+						   W.dimension(),  // dimension of ambient complex object
+						   W.dimension(),   //  target dimension to find
+						   W.dimension(),   // COdimension of the critical set to find.
 						   program_options,
 						   solve_options,
 						   &ns_config);

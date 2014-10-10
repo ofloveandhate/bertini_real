@@ -779,7 +779,7 @@ int midpoint_solver_master_entry_point(const witness_set						&W, // carries wit
 			
 			
 			
-			adjust_tracker_AMP( &(solve_options.T), W.num_variables);
+			adjust_tracker_AMP( &(solve_options.T), W.num_variables());
 			// initialize latest_newton_residual_mp
 			break;
 		default:

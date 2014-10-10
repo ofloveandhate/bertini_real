@@ -108,7 +108,7 @@ public:
 	void make_randomizer(const solver_configuration & solve_options, const witness_set & W)
 	{
 		randomizer = new system_randomizer;
-		randomizer->setup(W.num_variables-W.num_linears-W.num_patches, solve_options.PPD.num_funcs);
+		randomizer->setup(W.num_variables()-W.num_linears()-W.num_patches(), solve_options.PPD.num_funcs);
 		made_own_rand = true;
 		have_rand = true;
 	}
