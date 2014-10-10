@@ -316,7 +316,7 @@ int curve_decomposition::get_additional_critpts(witness_set *W_additional,
     
     
 	sphere_config sp_config(this->randomizer);
-	for (unsigned int jj=0; jj<W_curve.num_variables(); jj++) {
+	for (int jj=0; jj<W_curve.num_variables(); jj++) {
         set_zero_mp(&multilin_linears[0]->coord[jj]);
     }
 	
@@ -452,7 +452,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 		if (program_options.verbose_level>=8)
 			printf("adding point %u of %zu from W_crit_real to vertices\n",ii,W_crit_real.num_points());
 		temp_vertex.set_point( *W_crit_real.point(ii));
-		temp_vertex.type = CRITICAL; // set type
+		temp_vertex.set_type(CRITICAL); // set type
 		
 		int I = index_in_vertices_with_add(V, temp_vertex);
 		crit_point_counter[I] = 0;
@@ -824,7 +824,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 					}
 					else{
 						temp_vertex.set_point( *(midpoint_witness_sets[ii].point(kk)) ) ;
-						temp_vertex.type = PROBLEMATIC; // set type
+						temp_vertex.set_type(PROBLEMATIC); // set type
 						index_in_vertices_with_add(V, temp_vertex);
 					}
 					
@@ -846,18 +846,18 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 		
 		for (unsigned int kk=0; kk<midpoint_witness_sets[ii].num_points(); kk++) {
 			temp_vertex.set_point( *(midpoint_witness_sets[ii].point(kk)) );
-			temp_vertex.type = MIDPOINT; // set type
+			temp_vertex.set_type(MIDPOINT); // set type
 			
 			temp_edge.midpt = index_in_vertices_with_add(V, temp_vertex); // gets the index of the new midpoint as it is added
 			
 			temp_vertex.set_point( *(Wleft.point(kk)) );
-			temp_vertex.type = NEW; // set type
+			temp_vertex.set_type(NEW); // set type
 			
 			temp_edge.left  = index_in_vertices_with_add(V, temp_vertex);
 			
 			
 			temp_vertex.set_point( *(Wright.point(kk)) );
-			temp_vertex.type = NEW; // set type
+			temp_vertex.set_type(NEW); // set type
 			
 			temp_edge.right = index_in_vertices_with_add(V, temp_vertex);
 			
@@ -934,8 +934,8 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 //		
 //		if (num_occurrences_local==0) {
 			
-            //			vec_cp_mp(temp_vertex.pt_mp, V.vertices[curr_index].pt_mp);// set point
-            //			projection_value_homogeneous_input(temp_vertex.projVal_mp,  V.vertices[curr_index].pt_mp,projections[0]);
+            //			vec_cp_mp(temp_vertex.pt_mp, V[curr_index].pt_mp);// set point
+            //			projection_value_homogeneous_input(temp_vertex.projVal_mp,  V[curr_index].pt_mp,projections[0]);
             //			temp_vertex.type = ISOLATED; // set type
 			
 			edge E(curr_index,curr_index,curr_index);
@@ -971,15 +971,15 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 		// since we are not merging, we need to NOT leave the type indicator as NEW, because it may throw off later merges.
 		for (std::set<int>::iterator setiter = found_indices_right.begin(); setiter != found_indices_right.end(); setiter++) {
 			int curr_index = *setiter;
-			if (V.vertices[curr_index].type==NEW) { // only need to look at one of right and left here.
-				V.vertices[curr_index].type = SEMICRITICAL;
+			if (V[curr_index].type()==NEW) { // only need to look at one of right and left here.
+				V[curr_index].set_type(SEMICRITICAL);
 			}
 		}
 		
 		for (std::set<int>::iterator setiter = found_indices_left.begin(); setiter != found_indices_left.end(); setiter++) {
 			int curr_index = *setiter;
-			if (V.vertices[curr_index].type==NEW) { // only need to look at one of right and left here.
-				V.vertices[curr_index].type = SEMICRITICAL;
+			if (V[curr_index].type()==NEW) { // only need to look at one of right and left here.
+				V[curr_index].set_type(SEMICRITICAL);
 			}
 		}
 		
@@ -1034,7 +1034,7 @@ std::vector<int> curve_decomposition::get_merge_candidate(const vertex_set & V){
 	for (int tentative_right_edge=0; tentative_right_edge < this->num_edges; tentative_right_edge++) {
 //		std::cout << "looking at edge " << tentative_right_edge << " for merge candidate" << std::endl;
 		
-		if (V.vertices[edges[tentative_right_edge].left].type == NEW && V.vertices[edges[tentative_right_edge].right].type != NEW) {
+		if (V[edges[tentative_right_edge].left].type() == NEW && V[edges[tentative_right_edge].right].type() != NEW) {
 			// found a starting point for the merges
 			
 			if (edges[tentative_right_edge].is_degenerate())
@@ -1064,12 +1064,12 @@ std::vector<int> curve_decomposition::get_merge_candidate(const vertex_set & V){
 					//gotta do something careful here?   i suspect that this happens when two points are very near to each other...
 				}
 				
-//				std::cout << tentative_left_edge << " tent left, with left point type " << V.vertices[edges[tentative_left_edge].left].type << std::endl;
+//				std::cout << tentative_left_edge << " tent left, with left point type " << V[edges[tentative_left_edge].left].type << std::endl;
 				
 				tentative_edge_list.push_back(tentative_left_edge);
 				
 				
-				if (V.vertices[edges[tentative_left_edge].left].type != NEW) {
+				if (V[edges[tentative_left_edge].left].type() != NEW) {
 					break;
 				}
 				
@@ -1162,7 +1162,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		
 		// get the projection value of the midpoint we will be moving from.
 		//arbitrarily chose to move from the midpoint of the left edge.
-		projection_value_homogeneous_input(&particular_projection->coord[0], V.vertices[edges[moving_edge].midpt].pt_mp, projections[0]);
+		projection_value_homogeneous_input(&particular_projection->coord[0], *V[edges[moving_edge].midpt].point(), projections[0]);
 		neg_mp(&particular_projection->coord[0],&particular_projection->coord[0]);
 		
 		
@@ -1170,11 +1170,11 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		W_midpt.add_linear(particular_projection);
 		
 		W_midpt.reset_points();
-		W_midpt.add_point(V.vertices[edges[moving_edge].midpt].pt_mp);
+		W_midpt.add_point(*V[edges[moving_edge].midpt].point());
 		// I arbitrarily chose the left edge's midpoint as source to track to new midpoint.
 		
-		projection_value_homogeneous_input(temp,V.vertices[edges[leftmost_edge].left].pt_mp,projections[0]);
-		projection_value_homogeneous_input(temp2,V.vertices[edges[rightmost_edge].right].pt_mp,projections[0]);
+		projection_value_homogeneous_input(temp,*V[edges[leftmost_edge].left].point(),projections[0]);
+		projection_value_homogeneous_input(temp2,*V[edges[rightmost_edge].right].point(),projections[0]);
 		
 		
 		add_mp(new_proj_val, temp, temp2);
@@ -1211,7 +1211,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
         // each member of W_temp should real.  if a member of V already, mark index.  else, add to V, and mark.
 		vertex temp_vertex;
 		temp_vertex.set_point( *(W_temp.point(0)));
-		temp_vertex.type = MIDPOINT;
+		temp_vertex.set_type(MIDPOINT);
 		
 		edge temp_edge; // create new empty edge
 		
@@ -1233,20 +1233,20 @@ void curve_decomposition::merge(witness_set & W_midpt,
 			if (zz==0){ // rightmost edge
 				temp_edge.removed_points.push_back(edges[merge_me_away].left);
 				temp_edge.removed_points.push_back(edges[merge_me_away].midpt);
-				V.vertices[edges[merge_me_away].midpt].removed = 1;
-				V.vertices[edges[merge_me_away].left].removed = 1;
+				V[edges[merge_me_away].midpt].set_removed(true);
+				V[edges[merge_me_away].left].set_removed(true);
 			}
 			else if (zz==edges_to_merge.size()-1){ // leftmost edge
 //				temp_edge.removed_points.push_back(edges[merge_me_away].right);
 				temp_edge.removed_points.push_back(edges[merge_me_away].midpt);
-				V.vertices[edges[merge_me_away].midpt].removed = 1;
-//				V.vertices[edges[merge_me_away].right].removed = 1;
+				V[edges[merge_me_away].midpt].set_removed(true);
+//				V[edges[merge_me_away].right].removed = 1;
 			}
 			else {
 				temp_edge.removed_points.push_back(edges[merge_me_away].left);
 				temp_edge.removed_points.push_back(edges[merge_me_away].midpt);
-				V.vertices[edges[merge_me_away].midpt].removed = 1;
-				V.vertices[edges[merge_me_away].left].removed = 1;
+				V[edges[merge_me_away].midpt].set_removed(true);
+				V[edges[merge_me_away].left].set_removed(true);
 			}
 		}
 
@@ -1645,8 +1645,8 @@ void curve_decomposition::computeCurveNotSelfConj(const witness_set & W_in,
 	
 	
 	vertex temp_vertex;
-	change_size_vec_mp(temp_vertex.pt_mp,num_vars); temp_vertex.pt_mp->size = num_vars;
-	temp_vertex.type = ISOLATED;
+	change_size_vec_mp(*temp_vertex.point(),num_vars); (*temp_vertex.point())->size = num_vars;
+	temp_vertex.set_type(ISOLATED);
 	
 	
 	vec_mp cur_sol,cur_sol_bar;

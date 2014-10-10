@@ -192,7 +192,7 @@ void solver_output::get_noninfinite_w_mult(witness_set & W_transfer)
 	for (auto index = ordering.begin(); index != ordering.end(); ++index) {
 		//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
 		if (metadata[index->first].is_finite) {
-			W_transfer.add_point(vertices[index->first].pt_mp);
+			W_transfer.add_point(*vertices_[index->first].point());
 		}
 	}
 	
@@ -205,7 +205,7 @@ void solver_output::get_nonsing_finite_multone(witness_set & W_transfer)
 	for (auto index = ordering.begin(); index != ordering.end(); ++index) {
 		//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
 		if ( (metadata[index->first].is_finite) && (!metadata[index->first].is_singular) && (metadata[index->first].multiplicity==1) ) {
-			W_transfer.add_point(vertices[index->first].pt_mp);
+			W_transfer.add_point(*vertices_[index->first].point());
 		}
 	}
 	
@@ -221,7 +221,7 @@ void solver_output::get_multpos(std::map<int, witness_set> & W_transfer)
 		int num_added_points = 0;
 		for (auto index = metadata.begin(); index != metadata.end(); ++index) {
 			if ((index->multiplicity== *mult_ind) && (index->is_finite))  {
-				W_transfer[*mult_ind].add_point(vertices[index->output_index].pt_mp);
+				W_transfer[*mult_ind].add_point(*vertices_[index->output_index].point());
 				num_added_points++;
 			}
 		}
@@ -254,7 +254,7 @@ void solver_output::get_sing(witness_set & W_transfer)
 	for (auto index = ordering.begin(); index != ordering.end(); ++index) {
 		//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
 		if ( (metadata[index->first].is_singular) ) {
-			W_transfer.add_point(vertices[index->first].pt_mp);
+			W_transfer.add_point(*vertices_[index->first].point());
 		}
 	}
 	set_witness_set_nvars(W_transfer);
@@ -266,7 +266,7 @@ void solver_output::get_sing_finite(witness_set & W_transfer)
 	for (auto index = ordering.begin(); index != ordering.end(); ++index) {
 		//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
 		if ( (metadata[index->first].is_singular && metadata[index->first].is_finite) ) {
-			W_transfer.add_point(vertices[index->first].pt_mp);
+			W_transfer.add_point(*vertices_[index->first].point());
 		}
 	}
 	set_witness_set_nvars(W_transfer);

@@ -237,7 +237,7 @@ void curve_decomposition::adaptive_sampler_movement(vertex_set & V,
 	
 	W.set_input_filename(input_filename);
 	W.set_num_variables(num_variables);
-	W.set_num_natural_variables(V.num_natural_variables);
+	W.set_num_natural_variables(V.num_natural_variables());
     
 	W.get_variable_names(num_variables);
 	
@@ -394,15 +394,15 @@ void curve_decomposition::adaptive_sampler_movement(vertex_set & V,
 				if(refine_current[jj]==1) //
 				{
                     
-					vec_cp_mp(startpt,V.vertices[startpt_index].pt_mp);
-					set_mp(&(start_projection->coord[0]), &V.vertices[startpt_index].projection_values->coord[0]);
+					vec_cp_mp(startpt,*V[startpt_index].point());
+					set_mp(&(start_projection->coord[0]), &(*V[startpt_index].projection_values())->coord[0]);
 					neg_mp(&(start_projection->coord[0]), &(start_projection->coord[0]));
 					
 					
 					estimate_new_projection_value(target_projection_value,				// the new value
 												  estimated_point,
-                                                  V.vertices[left_index].pt_mp,	//
-                                                  V.vertices[right_index].pt_mp, // two points input
+                                                  *V[left_index].point(),	//
+                                                  *V[right_index].point(), // two points input
                                                   pi[0]);												// projection (in homogeneous coordinates)
 					
 					
@@ -468,8 +468,8 @@ void curve_decomposition::adaptive_sampler_movement(vertex_set & V,
 					
 					
 					
-					vec_cp_mp(temp_vertex.pt_mp,*Wnew.point(0));
-					temp_vertex.type = CURVE_SAMPLE_POINT;
+					vec_cp_mp(*temp_vertex.point(),*Wnew.point(0));
+					temp_vertex.set_type(CURVE_SAMPLE_POINT);
 					
                     if (sampler_options.no_duplicates){
 						new_indices[sample_counter] = index_in_vertices_with_add(V, temp_vertex);
@@ -557,7 +557,7 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 	
 	W.set_input_filename(input_filename);
 	W.set_num_variables(num_variables);
-	W.set_num_natural_variables(V.num_natural_variables);
+	W.set_num_natural_variables(V.num_natural_variables());
     
 	W.get_variable_names(num_variables);
 	
@@ -708,14 +708,14 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 				if(refine_current[jj]==1) //
 				{
                     
-					vec_cp_mp(startpt,V.vertices[startpt_index].pt_mp);
-					set_mp(&(start_projection->coord[0]), &V.vertices[startpt_index].projection_values->coord[0]);
+					vec_cp_mp(startpt,*V[startpt_index].point());
+					set_mp(&(start_projection->coord[0]), &(*V[startpt_index].projection_values())->coord[0]);
 					neg_mp(&(start_projection->coord[0]), &(start_projection->coord[0]));
 					
 					
 					estimate_new_projection_value(target_projection_value,				// the new value
-                                                  V.vertices[left_index].pt_mp,	//
-                                                  V.vertices[right_index].pt_mp, // two points input
+                                                  *V[left_index].point(),	//
+                                                  *V[right_index].point(), // two points input
                                                   pi[0]);												// projection (in homogeneous coordinates)
 					
 					
@@ -765,7 +765,7 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 					// check how far away we were from the LEFT interval point
 					norm_of_difference(dist_away,
                                        *Wnew.point(0), // the current new point
-                                       V.vertices[left_index].pt_mp);// jj is left, jj+1 is right
+                                       *V[left_index].point());// jj is left, jj+1 is right
 					
 					if ( mpf_cmp(dist_away, sampler_options.TOL )>0 ){
 						refine_next[interval_counter] = true;
@@ -782,7 +782,7 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 					// check how far away we were from the RIGHT interval point
 					norm_of_difference(dist_away,
                                        *Wnew.point(0), // the current new point
-                                       V.vertices[right_index].pt_mp);
+                                       *V[right_index].point());
 					
 					if (mpf_cmp(dist_away, sampler_options.TOL ) > 0){
 						refine_next[interval_counter] = 1;
@@ -794,8 +794,8 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 					interval_counter++;
 					
 					
-					vec_cp_mp(temp_vertex.pt_mp,*Wnew.point(0));
-					temp_vertex.type = CURVE_SAMPLE_POINT;
+					vec_cp_mp(*temp_vertex.point(),*Wnew.point(0));
+					temp_vertex.set_type(CURVE_SAMPLE_POINT);
 					
                     if (sampler_options.no_duplicates){
 						new_indices[sample_counter] = index_in_vertices_with_add(V, temp_vertex);
@@ -887,7 +887,7 @@ void curve_decomposition::fixed_sampler(vertex_set & V,
 	
 	W.set_input_filename(input_filename);
 	W.set_num_variables(num_variables);
-	W.set_num_natural_variables(V.num_natural_variables);
+	W.set_num_natural_variables(V.num_natural_variables());
     
 
 	W.copy_patches(*this);
@@ -953,19 +953,19 @@ void curve_decomposition::fixed_sampler(vertex_set & V,
 		
 		std::cout << "\tsampling edge " << ii << std::endl;
 		
-		neg_mp(& (*W.linear(0))->coord[0],&V.vertices[edges[ii].midpt].projection_values->coord[V.curr_projection]);
+		neg_mp(& (*W.linear(0))->coord[0],&(*V[edges[ii].midpt].projection_values())->coord[V.curr_projection()]);
 		
 		W.reset_points();
-		W.add_point(V.vertices[edges[ii].midpt].pt_mp);
+		W.add_point(*V[edges[ii].midpt].point());
 		
 		
 		mpf_set_d(num_intervals->r,double(target_num_samples-1));
 		
-		sub_mp(interval_width,&V.vertices[edges[ii].right].projection_values->coord[V.curr_projection],&V.vertices[edges[ii].left].projection_values->coord[V.curr_projection]);
+		sub_mp(interval_width,&(*V[edges[ii].right].projection_values())->coord[V.curr_projection()],&(*V[edges[ii].left].projection_values())->coord[V.curr_projection()]);
 		
 		div_mp(interval_width,interval_width,num_intervals);
 		
-		set_mp(target_projection_value,&V.vertices[edges[ii].left].projection_values->coord[V.curr_projection]);
+		set_mp(target_projection_value,&(*V[edges[ii].left].projection_values())->coord[V.curr_projection()]);
 		
 		//add once to get us off 0
 		add_mp(target_projection_value,target_projection_value,interval_width);
@@ -1001,8 +1001,8 @@ void curve_decomposition::fixed_sampler(vertex_set & V,
 				//TODO: ah shit!  this ain't good.  how to deal with it?
 			}
 			
-			vec_cp_mp(temp_vertex.pt_mp,*Wnew.point(0));
-			temp_vertex.type = CURVE_SAMPLE_POINT;
+			vec_cp_mp(*temp_vertex.point(),*Wnew.point(0));
+			temp_vertex.set_type(CURVE_SAMPLE_POINT);
 			
 			if (sampler_options.no_duplicates){
 				sample_indices[ii][jj] = index_in_vertices_with_add(V, temp_vertex);
@@ -1132,12 +1132,12 @@ void curve_decomposition::adaptive_set_initial_refinement_flags(int & num_refine
 		
 		for (int jj=0; jj<num_variables-1; jj++) {
 			div_mp(&temp1->coord[jj],
-                   &V.vertices[sample_indices[current_edge][ii]].pt_mp->coord[jj+1],
-                   &V.vertices[sample_indices[current_edge][ii]].pt_mp->coord[0]);
+                   &(*V[sample_indices[current_edge][ii]].point())->coord[jj+1],
+                   &(*V[sample_indices[current_edge][ii]].point())->coord[0]);
 			
 			div_mp(&temp2->coord[jj],
-                   &V.vertices[sample_indices[current_edge][ii+1]].pt_mp->coord[jj+1],
-                   &V.vertices[sample_indices[current_edge][ii+1]].pt_mp->coord[0]);
+                   &(*V[sample_indices[current_edge][ii+1]].point())->coord[jj+1],
+                   &(*V[sample_indices[current_edge][ii+1]].point())->coord[0]);
 		}
 		
 		norm_of_difference(dist_away, temp1, temp2); // get the distance between the two adjacent points.
@@ -1482,7 +1482,7 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 		// mid
 		int var_counter = 0;
 		for (int kk=0; kk<this->num_variables; kk++) {
-			set_mp(&(*W_midtrack.point(0))->coord[kk], &V.vertices[faces[ii].midpt].pt_mp->coord[kk]);
+			set_mp(&(*W_midtrack.point(0))->coord[kk], &(*V[faces[ii].midpt].point())->coord[kk]);
 			var_counter++;
 		}
 		
@@ -1490,14 +1490,14 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 		// bottom
 		int offset = var_counter;
 		for (int kk=0; kk<num_bottom_vars; kk++) {
-			set_mp(& (*W_midtrack.point(0))->coord[kk+offset], &V.vertices[mid_slices[slice_ind].edges[mid_edge].left].pt_mp->coord[kk]); // y0
+			set_mp(& (*W_midtrack.point(0))->coord[kk+offset], &(*V[mid_slices[slice_ind].edges[mid_edge].left].point())->coord[kk]); // y0
 			var_counter++;
 		}
 		
 		// top
 		offset = var_counter;
 		for (int kk=0; kk<num_top_vars; kk++) {
-			set_mp(& (*W_midtrack.point(0))->coord[kk+offset], &V.vertices[mid_slices[slice_ind].edges[mid_edge].right].pt_mp->coord[kk]); // y2
+			set_mp(& (*W_midtrack.point(0))->coord[kk+offset], &(*V[mid_slices[slice_ind].edges[mid_edge].right].point())->coord[kk]); // y2
 			var_counter++;
 		}
 		
@@ -1520,8 +1520,8 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 		
 		// make u, v target values.
 		
-		set_mp(md_config.crit_val_left,   &V.vertices[ crit_slices[slice_ind].edges[0].midpt ].projection_values->coord[0]);
-		set_mp(md_config.crit_val_right,  &V.vertices[ crit_slices[slice_ind+1].edges[0].midpt ].projection_values->coord[0]);
+		set_mp(md_config.crit_val_left,   &(*V[ crit_slices[slice_ind].edges[0].midpt ].projection_values())->coord[0]);
+		set_mp(md_config.crit_val_right,  &(*V[ crit_slices[slice_ind+1].edges[0].midpt ].projection_values())->coord[0]);
 		
 		
 		
@@ -1594,18 +1594,18 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 		//check the two rows.
 		
 		for (int zz=0; zz<int(rib_indices[0].size())-1; zz++) {
-			if (mpf_cmp(V.vertices[rib_indices[0][zz]].projection_values->coord[1].r, V.vertices[rib_indices[0][zz+1]].projection_values->coord[1].r) > 0) {
+			if (mpf_cmp((*V[rib_indices[0][zz]].projection_values())->coord[1].r, (*V[rib_indices[0][zz+1]].projection_values())->coord[1].r) > 0) {
 				std::cout << "out of order, cuz these are off:" << std::endl;
-				print_comp_matlab(V.vertices[rib_indices[0][zz]].projection_values->coord,"l");
-				print_comp_matlab(V.vertices[rib_indices[0][zz+1]].projection_values->coord,"r");
+				print_comp_matlab((*V[rib_indices[0][zz]].projection_values())->coord,"l");
+				print_comp_matlab((*V[rib_indices[0][zz+1]].projection_values())->coord,"r");
 			}
 		}
 		
 		for (int zz=0; zz<int(rib_indices[target_num_samples-1].size())-1; zz++) {
-			if (mpf_cmp(V.vertices[rib_indices[target_num_samples-1][zz]].projection_values->coord[1].r, V.vertices[rib_indices[target_num_samples-1][zz+1]].projection_values->coord[1].r) > 0) {
+			if (mpf_cmp((*V[rib_indices[target_num_samples-1][zz]].projection_values())->coord[1].r, (*V[rib_indices[target_num_samples-1][zz+1]].projection_values())->coord[1].r) > 0) {
 				std::cout << "out of order, cuz these are off:" << std::endl;
-				print_comp_matlab(V.vertices[rib_indices[target_num_samples-1][zz]].projection_values->coord,"l");
-				print_comp_matlab(V.vertices[rib_indices[target_num_samples-1][zz+1]].projection_values->coord,"r");
+				print_comp_matlab((*V[rib_indices[target_num_samples-1][zz]].projection_values())->coord,"l");
+				print_comp_matlab((*V[rib_indices[target_num_samples-1][zz+1]].projection_values())->coord,"r");
 			}
 		}
 		
@@ -1665,8 +1665,8 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 					continue;
 				}
 				else{
-					vec_cp_mp(temp_vertex.pt_mp,*W_new.point(0));
-					temp_vertex.type = SURFACE_SAMPLE_POINT;
+					vec_cp_mp(*temp_vertex.point(),*W_new.point(0));
+					temp_vertex.set_type(SURFACE_SAMPLE_POINT);
 					
 					if (sampler_options.no_duplicates){
 						rib_indices[jj][1] = index_in_vertices_with_add(V, temp_vertex);
@@ -1695,12 +1695,12 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 				
 
 				// copy in the start point for the multilin method, as the terminal point from the previous call.
-				vec_cp_mp(*W_multilin.point(0),V.vertices[rib_indices[jj][kk-1]].pt_mp);
+				vec_cp_mp(*W_multilin.point(0),*V[rib_indices[jj][kk-1]].point());
 				
 				(*W_multilin.point(0))->size = this->num_variables;
 				
-				neg_mp(&(*W_multilin.linear(0))->coord[0],&V.vertices[rib_indices[jj][kk-1]].projection_values->coord[0]);
-				neg_mp(&(*W_multilin.linear(1))->coord[0],&V.vertices[rib_indices[jj][kk-1]].projection_values->coord[1]);
+				neg_mp(&(*W_multilin.linear(0))->coord[0],&(*V[rib_indices[jj][kk-1]].projection_values())->coord[0]);
+				neg_mp(&(*W_multilin.linear(1))->coord[0],&(*V[rib_indices[jj][kk-1]].projection_values())->coord[1]);
 				
 				
 				
@@ -1715,9 +1715,9 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 				
 				// pi1
 				// target_proj_1 = (top-bottom)*md_config.v_target + bottom
-				sub_mp(temp,&V.vertices[ curr_top_index ].projection_values->coord[1],&V.vertices[ curr_bottom_index ].projection_values->coord[1]);
+				sub_mp(temp,&(*V[ curr_top_index ].projection_values())->coord[1],&(*V[ curr_bottom_index ].projection_values())->coord[1]);
 				mul_mp(temp,temp,md_config.v_target);
-				add_mp(temp,temp,&V.vertices[ curr_bottom_index ].projection_values->coord[1])
+				add_mp(temp,temp,&(*V[ curr_bottom_index ].projection_values())->coord[1])
 				neg_mp(&target_multilin_linears[1]->coord[0],temp);
 				
 				
@@ -1752,8 +1752,8 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 				}
 				
 
-				vec_cp_mp(temp_vertex.pt_mp,*W_new.point(0));
-				temp_vertex.type = SURFACE_SAMPLE_POINT;
+				vec_cp_mp(*temp_vertex.point(),*W_new.point(0));
+				temp_vertex.set_type(SURFACE_SAMPLE_POINT);
 				
 				if (sampler_options.no_duplicates){
 					rib_indices[jj][kk] = index_in_vertices_with_add(V, temp_vertex);
@@ -1931,8 +1931,8 @@ void triangulate_two_ribs_by_projection_binning(const std::vector< int > & rib1,
 	comp_mp interval_width, temp; init_mp(interval_width);  init_mp(temp);
 
 	sub_mp(interval_width,
-		   &V.vertices[rib_w_less_entries->at(nbins-1)].projection_values->coord[1],
-		   &V.vertices[rib_w_less_entries->at(0)].projection_values->coord[1]);
+		   &(*V[rib_w_less_entries->at(nbins-1)].get_projection_values())->coord[1],
+		   &(*V[rib_w_less_entries->at(0)].get_projection_values())->coord[1]);
 	
 	
 	set_zero_mp(&bins->coord[0]);
@@ -1940,8 +1940,8 @@ void triangulate_two_ribs_by_projection_binning(const std::vector< int > & rib1,
 	
 	for (int ii=1; ii<nbins-1; ii++) {
 		sub_mp(temp,
-			   &V.vertices[rib_w_less_entries->at(ii)].projection_values->coord[1],
-			   &V.vertices[rib_w_less_entries->at(0)].projection_values->coord[1]);
+			   &(*V[rib_w_less_entries->at(ii)].get_projection_values())->coord[1],
+			   &(*V[rib_w_less_entries->at(0)].get_projection_values())->coord[1]);
 		div_mp(&bins->coord[ii], temp, interval_width);
 	}
 	
@@ -1949,8 +1949,8 @@ void triangulate_two_ribs_by_projection_binning(const std::vector< int > & rib1,
 	
 	
 	sub_mp(interval_width,
-		   &V.vertices[rib_w_more_entries->back()].projection_values->coord[1],
-		   &V.vertices[rib_w_more_entries->at(0)].projection_values->coord[1]);
+		   &(*V[rib_w_more_entries->back()].get_projection_values())->coord[1],
+		   &(*V[rib_w_more_entries->at(0)].get_projection_values())->coord[1]);
 	
 	
 	//both ribs are guaranteed (by hypothesis) to have increasing projection values in pi[1].
@@ -1963,8 +1963,8 @@ void triangulate_two_ribs_by_projection_binning(const std::vector< int > & rib1,
 		}
 		else{
 			sub_mp(temp,
-				   &V.vertices[rib_w_more_entries->at(ii+1)].projection_values->coord[1],
-				   &V.vertices[rib_w_more_entries->at(0)].projection_values->coord[1]);
+				   &(*V[rib_w_more_entries->at(ii+1)].get_projection_values())->coord[1],
+				   &(*V[rib_w_more_entries->at(0)].get_projection_values())->coord[1]);
 			div_mp(temp, temp, interval_width);
 		}
 		
@@ -2048,16 +2048,16 @@ void triangulate_two_ribs_by_distance_binning(const std::vector< int > & rib1, c
 		
 		starting_ind = curr_ind;
 		
-		dehomogenize(&base_test_point, V.vertices[rib_w_less_entries->at(ii)].pt_mp, V.num_natural_variables);
-		base_test_point->size = V.num_natural_variables-1;
+		dehomogenize(&base_test_point, *V[rib_w_less_entries->at(ii)].point(), V.num_natural_variables());
+		base_test_point->size = V.num_natural_variables()-1;
 
-		dehomogenize(&dehom, V.vertices[rib_w_more_entries->at(curr_ind)].pt_mp, V.num_natural_variables);
-		dehom->size = V.num_natural_variables-1;
+		dehomogenize(&dehom, *V[rib_w_more_entries->at(curr_ind)].point(), V.num_natural_variables());
+		dehom->size = V.num_natural_variables()-1;
 		
 		norm_of_difference(distances->r, base_test_point, dehom);
 		
-		dehomogenize(&dehom, V.vertices[rib_w_more_entries->at(curr_ind+1)].pt_mp, V.num_natural_variables);
-		dehom->size = V.num_natural_variables-1;
+		dehomogenize(&dehom, *V[rib_w_more_entries->at(curr_ind+1)].point(), V.num_natural_variables());
+		dehom->size = V.num_natural_variables()-1;
 		norm_of_difference(distances->i, base_test_point, dehom);
 		
 		
@@ -2069,8 +2069,8 @@ void triangulate_two_ribs_by_distance_binning(const std::vector< int > & rib1, c
 			mpf_set(distances->r, distances->i);
 			
 			
-			dehomogenize(&dehom, V.vertices[rib_w_more_entries->at(curr_ind+1)].pt_mp, V.num_natural_variables);
-			dehom->size = V.num_natural_variables-1;
+			dehomogenize(&dehom, *V[rib_w_more_entries->at(curr_ind+1)].point(), V.num_natural_variables());
+			dehom->size = V.num_natural_variables()-1;
 			norm_of_difference(distances->i, base_test_point, dehom);
 			
 		}

@@ -1538,7 +1538,7 @@ void surface_decomposition::master_connect(vertex_set & V, midpoint_config & md_
 	
 	
 	
-	if (V.num_vertices > 1e5) {
+	if (V.num_vertices() > 1e5) {
 		std::cout << color::red() << "attempting to transmit over 1e5 points to all workers..." << color::console_default() << std::endl;
 	}
 	
@@ -1806,22 +1806,22 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 	// get the type of system for the top and bottom edges.  this is determined by reading the system name for the midpoints.
 	// info on the files from which the points came from.
-	int bottom_input_index = V.vertices[mid_slices[ii].edges[jj].left].input_filename_index;
-	int top_input_index = V.vertices[mid_slices[ii].edges[jj].right].input_filename_index;
+	int bottom_input_index = V[mid_slices[ii].edges[jj].left].input_filename_index();
+	int top_input_index = V[mid_slices[ii].edges[jj].right].input_filename_index();
 	
 	bool bail_out = false;
-	if (md_config.systems.find(V.filenames[bottom_input_index].string())==md_config.systems.end()) {
-		std::cout << "bottom system is " << V.filenames[bottom_input_index] << ", which is not in md_config" << std::endl;
+	if (md_config.systems.find(V.filename(bottom_input_index).string())==md_config.systems.end()) {
+		std::cout << "bottom system is " << V.filename(bottom_input_index) << ", which is not in md_config" << std::endl;
 		bail_out = true;
 	}
-	if (md_config.systems.find(V.filenames[top_input_index].string())==md_config.systems.end()) {
-		std::cout << "top system is " << V.filenames[top_input_index] << ", which is not in md_config" << std::endl;
+	if (md_config.systems.find(V.filename(top_input_index).string())==md_config.systems.end()) {
+		std::cout << "top system is " << V.filename(top_input_index) << ", which is not in md_config" << std::endl;
 		bail_out = true;
 	}
 	
 	
-	md_config.system_name_bottom = V.filenames[bottom_input_index].filename().string();
-	md_config.system_name_top = V.filenames[top_input_index].filename().string();
+	md_config.system_name_bottom = V.filename(bottom_input_index).filename().string();
+	md_config.system_name_top = V.filename(top_input_index).filename().string();
 	md_config.system_name_mid = this->input_filename.filename().string();
 	
 	
@@ -1916,21 +1916,21 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	// mid
 	int var_counter = 0;
 	for (int kk=0; kk<this->num_variables; kk++) {
-		set_mp(&((*W_midtrack.point(0))->coord[kk]), &V.vertices[mid_slices[ii].edges[jj].midpt].pt_mp->coord[kk]);
+		set_mp(&((*W_midtrack.point(0))->coord[kk]), &(*V[mid_slices[ii].edges[jj].midpt].point())->coord[kk]);
 		var_counter++;
 	}
 	
 	// bottom
 	int offset = var_counter;
 	for (int kk=0; kk<num_bottom_vars; kk++) {
-		set_mp(&((*W_midtrack.point(0))->coord[kk+offset]), &V.vertices[mid_slices[ii].edges[jj].left].pt_mp->coord[kk]); // y0
+		set_mp(&((*W_midtrack.point(0))->coord[kk+offset]), &(*V[mid_slices[ii].edges[jj].left].point())->coord[kk]); // y0
 		var_counter++;
 	}
 	
 	// top
 	offset = var_counter;
 	for (int kk=0; kk<num_top_vars; kk++) {
-		set_mp(&((*W_midtrack.point(0))->coord[kk+offset]), &V.vertices[mid_slices[ii].edges[jj].right].pt_mp->coord[kk]); // y2
+		set_mp(&((*W_midtrack.point(0))->coord[kk+offset]), &(*V[mid_slices[ii].edges[jj].right].point())->coord[kk]); // y2
 		var_counter++;
 	}
 	
@@ -1967,8 +1967,8 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 	
 
-	set_mp(md_config.crit_val_left,   &V.vertices[ crit_slices[ii].edges[0].midpt ].projection_values->coord[0]);
-	set_mp(md_config.crit_val_right,  &V.vertices[ crit_slices[ii+1].edges[0].midpt ].projection_values->coord[0]);
+	set_mp(md_config.crit_val_left,   &(*V[ crit_slices[ii].edges[0].midpt ].projection_values())->coord[0]);
+	set_mp(md_config.crit_val_right,  &(*V[ crit_slices[ii+1].edges[0].midpt ].projection_values())->coord[0]);
 	
 	
 	// the u direction corresponds to pi[0].
@@ -2039,8 +2039,8 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 		std::cout << "final top: " << final_top_ind << ", final bottom:	" << final_bottom_ind << std::endl;
 		
 		// get the projection values of top and bottom final points.
-		set_mp(proj_top, &V.vertices[ final_top_ind ].projection_values->coord[1]);
-		set_mp(proj_bottom, &V.vertices[ final_bottom_ind ].projection_values->coord[1]);
+		set_mp(proj_top, &(*V[ final_top_ind ].projection_values())->coord[1]);
+		set_mp(proj_bottom, &(*V[ final_bottom_ind ].projection_values())->coord[1]);
 		
 		// i think the projection values have already been thresholded
 		if (solve_options.use_real_thresholding) {
@@ -2092,9 +2092,9 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				// we gotta be moving from lower to higher...  so temp > temp2 is required
 				bool correct_interval = false;
 				if (matches_end) {
-					set_mp(temp , &V.vertices[ crit_slices[ii+zz].edges[qq].midpt].projection_values->coord[1]);
-					set_mp(temp2, &V.vertices[ final_bottom_ind].projection_values->coord[1]);
-					set_mp(temp3, &V.vertices[ final_top_ind].projection_values->coord[1]);
+					set_mp(temp , &(*V[ crit_slices[ii+zz].edges[qq].midpt].projection_values())->coord[1]);
+					set_mp(temp2, &(*V[ final_bottom_ind].projection_values())->coord[1]);
+					set_mp(temp3, &(*V[ final_top_ind].projection_values())->coord[1]);
 					correct_interval =  ( mpf_get_d(temp3->r) > mpf_get_d(temp->r)) && (mpf_get_d(temp->r) > mpf_get_d(temp2->r)) ;
 				}
 				
@@ -2145,7 +2145,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				
 				
 				
-				set_mp(proj_mid, &V.vertices[ crit_slices[ii+zz].edges[current_edge].midpt ].projection_values->coord[1]);
+				set_mp(proj_mid, &(*V[ crit_slices[ii+zz].edges[current_edge].midpt ].projection_values())->coord[1]);
 				
 				
 				
@@ -2215,9 +2215,9 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				//print some display to screen
 				if (solve_options.verbose_level >= 3)
 				{
-					print_point_to_screen_matlab(V.vertices[mid_slices[ii].edges[jj].right].pt_mp,"top_start");
-					print_point_to_screen_matlab(V.vertices[mid_slices[ii].edges[jj].left].pt_mp,"bottom_start");
-					print_point_to_screen_matlab(V.vertices[ crit_slices[ii+zz].edges[current_edge].midpt ].pt_mp,"midpoint_target");
+					print_point_to_screen_matlab((*V[mid_slices[ii].edges[jj].right].point()),"top_start");
+					print_point_to_screen_matlab((*V[mid_slices[ii].edges[jj].left].point()),"bottom_start");
+					print_point_to_screen_matlab((*V[ crit_slices[ii+zz].edges[current_edge].midpt ].point()),"midpoint_target");
 				}
 				
 				

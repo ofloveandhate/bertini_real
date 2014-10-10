@@ -2554,8 +2554,8 @@ witness_set witness_data::form_specific_witness_set(int dim, int comp)
 
 void vertex::set_point(const vec_mp new_point)
 {
-	change_prec_vec_mp(this->pt_mp, new_point->curr_prec);
-	vec_cp_mp(this->pt_mp, new_point);
+	change_prec_vec_mp(this->pt_mp_, new_point->curr_prec);
+	vec_cp_mp(this->pt_mp_, new_point);
 }
 
 
@@ -2564,14 +2564,14 @@ void vertex::set_point(const vec_mp new_point)
 void vertex::send(int target, parallelism_config & mpi_config)
 {
 	
-	send_vec_mp(pt_mp, target);
+	send_vec_mp(pt_mp_, target);
 	
-	send_vec_mp(projection_values, target);
+	send_vec_mp(projection_values_, target);
 	
 	int * buffer = (int *) br_malloc(3*sizeof(int));
-	buffer[0] = type;
-	buffer[1] = removed;
-	buffer[2] = input_filename_index;
+	buffer[0] = type_;
+	buffer[1] = removed_;
+	buffer[2] = input_filename_index_;
 	
 	MPI_Send(buffer, 3, MPI_INT, target, VERTEX, MPI_COMM_WORLD);
 	free(buffer);
@@ -2585,14 +2585,14 @@ void vertex::receive(int source, parallelism_config & mpi_config)
 	int * buffer = (int *) br_malloc(3*sizeof(int));
 	
 	
-	receive_vec_mp(pt_mp, source);
-	receive_vec_mp(projection_values, source);
+	receive_vec_mp(pt_mp_, source);
+	receive_vec_mp(projection_values_, source);
 	
 	MPI_Recv(buffer, 3, MPI_INT, source, VERTEX, MPI_COMM_WORLD, &statty_mc_gatty);
 	
-	type = buffer[0];
-	removed = buffer[1];
-	input_filename_index = buffer[2];
+	type_ = buffer[0];
+	removed_ = buffer[1];
+	input_filename_index_ = buffer[2];
 //	print_point_to_screen_matlab(pt_mp,"recvpt");
 	free(buffer);
 }
@@ -2619,24 +2619,25 @@ int vertex_set::search_for_active_point(vec_mp testpoint)
     int index = -1; // initialize the index we will return
 
     // dehomogenize the testpoint into the internal temp container.
-    for (int jj=1; jj<num_natural_variables; jj++) {
-		div_mp(&checker_1->coord[jj-1], &testpoint->coord[jj],  &testpoint->coord[0]);
+    for (int jj=1; jj<num_natural_variables_; jj++) {
+		div_mp(&checker_1_->coord[jj-1], &testpoint->coord[jj],  &testpoint->coord[0]);
 	}
     
     
 	//	WTB: a faster comparison search.
-	for (int ii=0; ii<num_vertices; ii++) {
+	for (unsigned int ii=0; ii<num_vertices_; ii++) {
 		
 		int current_index = ii;
 		
-		if (vertices[current_index].removed==0) {
+		if (vertices_[current_index].is_removed()==0) {
+			vec_mp* current_point = vertices_[current_index].point();
 			
 			// dehomogenize the current point under investigation
-			for (int jj=1; jj<num_natural_variables; jj++) {
-				div_mp(&checker_2->coord[jj-1], &vertices[current_index].pt_mp->coord[jj], &vertices[current_index].pt_mp->coord[0]);
+			for (int jj=1; jj<num_natural_variables_; jj++) {
+				div_mp(&checker_2_->coord[jj-1], &(*current_point)->coord[jj], &(*current_point)->coord[0]);
 			}
 			
-			if (isSamePoint_inhomogeneous_input(checker_1, checker_2)){
+			if (isSamePoint_inhomogeneous_input(checker_1_, checker_2_)){
 				index = current_index;
 				break;
 			}
@@ -2660,22 +2661,24 @@ int vertex_set::search_for_removed_point(vec_mp testpoint)
     
     // dehomogenize the testpoint into the internal temp container.
     
-    for (int jj=1; jj<num_natural_variables; jj++) {
-		div_mp(&checker_1->coord[jj-1], &testpoint->coord[jj],  &testpoint->coord[0]);
+    for (int jj=1; jj<num_natural_variables_; jj++) {
+		div_mp(&checker_1_->coord[jj-1], &testpoint->coord[jj],  &testpoint->coord[0]);
 	}
     
     
     //	WTB: a faster comparison search.
-    for (int ii=0; ii<num_vertices; ii++) {
+    for (unsigned int ii=0; ii<num_vertices_; ii++) {
 		int current_index = ii;
 		
-		if (vertices[current_index].removed==1) {
+		if (vertices_[current_index].is_removed()) {
 			
-			for (int jj=1; jj<num_natural_variables; jj++) {
-				div_mp(&checker_2->coord[jj-1], &vertices[current_index].pt_mp->coord[jj], &vertices[current_index].pt_mp->coord[0]);
+			vec_mp * current_point = vertices_[current_index].point();
+			
+			for (int jj=1; jj<num_natural_variables_; jj++) {
+				div_mp(&checker_2_->coord[jj-1], &(*current_point)->coord[jj], &(*current_point)->coord[0]);
 			}
 			
-			if (isSamePoint_inhomogeneous_input(checker_1, checker_2)){
+			if (isSamePoint_inhomogeneous_input(checker_1_, checker_2_)){
 				index = current_index;
 				break;
 			}
@@ -2736,7 +2739,7 @@ int vertex_set::compute_downstairs_crit_midpts(const witness_set & W,
         
 
         
-        set_mp(&projection_values->coord[ii], &vertices[curr_index].projection_values->coord[proj_index]);
+        set_mp(&projection_values->coord[ii], & (*vertices_[curr_index].projection_values())->coord[proj_index]);
         
 		
 		
@@ -2794,11 +2797,11 @@ int vertex_set::compute_downstairs_crit_midpts(const witness_set & W,
 
 std::vector<int> vertex_set::assert_projection_value(const std::set< int > & relevant_indices, comp_mp new_value)
 {
-    if (this->curr_projection<0) {
+    if (this->curr_projection_<0) {
         std::cout << color::red() << "trying to assert projection value (current index) without having index set" << color::console_default() << std::endl;
         br_exit(-91621);
     }
-    return assert_projection_value(relevant_indices,new_value,this->curr_projection);
+    return assert_projection_value(relevant_indices,new_value,this->curr_projection_);
 }
 
 std::vector<int> vertex_set::assert_projection_value(const std::set< int > & relevant_indices, comp_mp new_value, int proj_index)
@@ -2807,7 +2810,7 @@ std::vector<int> vertex_set::assert_projection_value(const std::set< int > & rel
     
     comp_mp temp; init_mp(temp);
     
-    if ( proj_index > num_projections ) {
+    if ( proj_index > num_projections_ ) {
         std::cout << color::red() << "trying to assert projection value, but index of projection is larger than possible" << color::console_default() << std::endl;
 		br_exit(3091); // throw?
     }
@@ -2815,16 +2818,16 @@ std::vector<int> vertex_set::assert_projection_value(const std::set< int > & rel
     for (std::set<int>::iterator ii=relevant_indices.begin(); ii!=relevant_indices.end(); ii++) {
         //*ii
         
-        sub_mp(temp, &vertices[*ii].projection_values->coord[proj_index], new_value);
+        sub_mp(temp, &(*vertices_[*ii].projection_values())->coord[proj_index], new_value);
         if (fabs(mpf_get_d(temp->r))>0.0001) {
             std::cout << "trying to assert projection value of " << mpf_get_d(new_value->r)
-				      << " but original value is " << mpf_get_d(vertices[*ii].projection_values->coord[proj_index].r) << std::endl;
+				      << " but original value is " << mpf_get_d((*vertices_[*ii].projection_values())->coord[proj_index].r) << std::endl;
             std::cout << "point index is " << *ii << std::endl;
 			bad_indices.push_back(*ii);
 			continue;
         }
         
-        set_mp(&vertices[*ii].projection_values->coord[proj_index], new_value);
+        set_mp(&(*vertices_[*ii].projection_values())->coord[proj_index], new_value);
     }
     
     
@@ -2851,18 +2854,18 @@ int vertex_set::add_vertex(const vertex source_vertex)
 //	}
 	
 	
-	this->vertices.push_back(source_vertex);
+	vertices_.push_back(source_vertex);
 	
 	
-	if (this->vertices[num_vertices].projection_values->size < this->num_projections) {
-		increase_size_vec_mp(this->vertices[num_vertices].projection_values, this->num_projections );
-		this->vertices[num_vertices].projection_values->size = this->num_projections;
+	if ((*vertices_[num_vertices_].projection_values())->size < num_projections_) {
+		increase_size_vec_mp((*vertices_[num_vertices_].projection_values()), num_projections_ );
+		(*vertices_[num_vertices_].projection_values())->size = num_projections_;
 	}
 	
-	for (int ii=0; ii<this->num_projections; ii++){
+	for (int ii=0; ii<this->num_projections_; ii++){
 		bool compute_proj_val = false;
 		
-		if (! (mpfr_number_p( vertices[num_vertices].projection_values->coord[ii].r) && mpfr_number_p( vertices[num_vertices].projection_values->coord[ii].i)  ) )
+		if (! (mpfr_number_p( (*vertices_[num_vertices_].projection_values())->coord[ii].r) && mpfr_number_p( (*vertices_[num_vertices_].projection_values())->coord[ii].i)  ) )
 		{
 			compute_proj_val = true;
 		}
@@ -2873,11 +2876,11 @@ int vertex_set::add_vertex(const vertex source_vertex)
 		
 		
 		if (compute_proj_val==true) {
-			projection_value_homogeneous_input(&vertices[num_vertices].projection_values->coord[ii],
-											   vertices[num_vertices].pt_mp,
-											   projections[ii]);
+			projection_value_homogeneous_input(&(*vertices_[num_vertices_].projection_values())->coord[ii],
+											   *vertices_[num_vertices_].point(),
+											   projections_[ii]);
 #ifdef thresholding
-            real_threshold(&vertices[num_vertices].projection_values->coord[ii],1e-13);
+            real_threshold(&(*vertices_[num_vertices_].projection_values())->coord[ii],1e-13);
 #endif
 		}
 		
@@ -2885,24 +2888,24 @@ int vertex_set::add_vertex(const vertex source_vertex)
 	
     
 	
-	if (vertices[num_vertices].input_filename_index == -1)
+	if (vertices_[num_vertices_].input_filename_index() == -1)
 	{
-		vertices[num_vertices].input_filename_index = curr_input_index;
+		vertices_[num_vertices_].set_input_filename_index(curr_input_index_);
 	}
 		
 	
-	this->num_vertices++;
-	return this->num_vertices-1;
+	this->num_vertices_++;
+	return this->num_vertices_-1;
 }
 
 
 void vertex_set::print_to_screen()
 {
-	printf("vertex set has %d vertices:\n\n",this->num_vertices);
-	for (int ii=0; ii<this->num_vertices; ++ii) {
-		print_point_to_screen_matlab(this->vertices[ii].pt_mp,"vert");
-		print_point_to_screen_matlab(this->vertices[ii].projection_values,"projection_values");
-		printf("type: %d\n", this->vertices[ii].type);
+	printf("vertex set has %zu vertices:\n\n",num_vertices_);
+	for (unsigned int ii=0; ii<this->num_vertices_; ++ii) {
+		print_point_to_screen_matlab(*vertices_[ii].point(),"vert");
+		print_point_to_screen_matlab(*vertices_[ii].projection_values(),"projection_values");
+		printf("type: %d\n", vertices_[ii].type());
 	}
 }
 
@@ -2911,16 +2914,16 @@ int vertex_set::setup_vertices(boost::filesystem::path INfile)
 //setup the vertex structure
 {
 	FILE *IN = safe_fopen_read(INfile);
-	int num_vertices;
+	unsigned int temp_num_vertices;
 	int num_vars;
 	int tmp_num_projections;
 	int tmp_num_filenames;
-	fscanf(IN, "%d %d %d %d\n\n", &num_vertices, &tmp_num_projections, &this->num_natural_variables, &tmp_num_filenames);
+	fscanf(IN, "%u %d %d %d\n\n", &temp_num_vertices, &tmp_num_projections, &num_natural_variables_, &tmp_num_filenames);
 	
 	
-	vec_mp temp_vec; init_vec_mp2(temp_vec,num_natural_variables,1024);
+	vec_mp temp_vec; init_vec_mp2(temp_vec,num_natural_variables_,1024);
 	for (int ii=0; ii<tmp_num_projections; ii++) {
-		for (int jj=0; jj<num_natural_variables; jj++) {
+		for (int jj=0; jj<num_natural_variables_; jj++) {
 			mpf_inp_str(temp_vec->coord[jj].r, IN, 10);
 			mpf_inp_str(temp_vec->coord[jj].i, IN, 10);
 		}
@@ -2939,7 +2942,7 @@ int vertex_set::setup_vertices(boost::filesystem::path INfile)
 		char * buffer = new char[tmp_size];
 		fgets(buffer, tmp_size, IN);
 		boost::filesystem::path temppath = buffer;
-		this->filenames.push_back(temppath);
+		this->filenames_.push_back(temppath);
 		
 		delete [] buffer;
 	}
@@ -2948,30 +2951,34 @@ int vertex_set::setup_vertices(boost::filesystem::path INfile)
 	
 	vertex temp_vertex;
 	
-	for (int ii=0; ii<num_vertices; ii++)
+	for (unsigned int ii=0; ii<temp_num_vertices; ii++)
 	{
 		fscanf(IN, "%d\n", &num_vars);
-		if (temp_vertex.pt_mp->size != num_vars) {
-			change_size_vec_mp(temp_vertex.pt_mp,num_vars); temp_vertex.pt_mp->size = num_vars;
+		if ((*temp_vertex.point())->size != num_vars) {
+			change_size_vec_mp(*temp_vertex.point(),num_vars); (*temp_vertex.point())->size = num_vars;
 		}
 		
 		for (int jj=0; jj<num_vars; jj++)
 		{
-			mpf_inp_str(temp_vertex.pt_mp->coord[jj].r, IN, 10);
-			mpf_inp_str(temp_vertex.pt_mp->coord[jj].i, IN, 10);
+			mpf_inp_str((*temp_vertex.point())->coord[jj].r, IN, 10);
+			mpf_inp_str((*temp_vertex.point())->coord[jj].i, IN, 10);
 		}
 		
 		int temp_num;
 		fscanf(IN,"%d\n",&temp_num);
-		increase_size_vec_mp(temp_vertex.projection_values,temp_num);
-		temp_vertex.projection_values->size = temp_num;
+		increase_size_vec_mp(*temp_vertex.projection_values(),temp_num);
+		(*temp_vertex.projection_values())->size = temp_num;
 		for (int jj=0; jj<temp_num; jj++) {
-			mpf_inp_str(temp_vertex.projection_values->coord[jj].r, IN, 10);
-			mpf_inp_str(temp_vertex.projection_values->coord[jj].i, IN, 10);
+			mpf_inp_str((*temp_vertex.projection_values())->coord[jj].r, IN, 10);
+			mpf_inp_str((*temp_vertex.projection_values())->coord[jj].i, IN, 10);
 		}
 		
-		fscanf(IN,"%d\n",&temp_vertex.input_filename_index);
-		fscanf(IN,"%d\n",&temp_vertex.type);
+		int temp_int;
+		fscanf(IN,"%d\n",&temp_int);
+		temp_vertex.set_input_filename_index(temp_int);
+		
+		fscanf(IN,"%d\n",&temp_int);
+	   temp_vertex.set_type(temp_int);
 		
 		vertex_set::add_vertex(temp_vertex);
 	}
@@ -2980,12 +2987,12 @@ int vertex_set::setup_vertices(boost::filesystem::path INfile)
 	
 	fclose(IN);
 	
-	if (this->num_vertices!=num_vertices) {
-		printf("parity error in num_vertices.\n\texpected: %d\tactual: %d\n",this->num_vertices,num_vertices); // this is totally impossible.
+	if (this->num_vertices_!=temp_num_vertices) {
+		printf("parity error in num_vertices.\n\texpected: %zu\tactual: %u\n",num_vertices_,temp_num_vertices); // this is totally impossible.
 		br_exit(25943);
 	}
 	
-	return num_vertices;
+	return num_vertices_;
 }
 
 
@@ -3000,50 +3007,50 @@ void vertex_set::print(boost::filesystem::path outputfile) const
 	FILE *OUT = safe_fopen_write(outputfile);
 	
 	// output the number of vertices
-	fprintf(OUT,"%d %d %d %lu\n\n",num_vertices,num_projections, num_natural_variables, filenames.size());
+	fprintf(OUT,"%zu %d %d %lu\n\n",num_vertices_,num_projections_, num_natural_variables_, filenames_.size());
 	
 	
 	
-	for (int ii=0; ii<num_projections; ii++) {
-		for (int jj=0; jj<num_natural_variables; jj++) {
-			print_mp(OUT, 0, &projections[ii]->coord[jj]);
+	for (int ii=0; ii<num_projections_; ii++) {
+		for (int jj=0; jj<num_natural_variables_; jj++) {
+			print_mp(OUT, 0, &projections_[ii]->coord[jj]);
 			fprintf(OUT,"\n");
 		}
 		fprintf(OUT,"\n");
 	}
 	
 	
-	for (unsigned int ii=0; ii!=filenames.size(); ii++) {
-		int strleng = filenames[ii].string().size() + 1; // +1 for the null character
+	for (unsigned int ii=0; ii!=filenames_.size(); ii++) {
+		int strleng = filenames_[ii].string().size() + 1; // +1 for the null character
 		char * buffer = new char[strleng];
-		memcpy(buffer, filenames[ii].c_str(), strleng);
+		memcpy(buffer, filenames_[ii].c_str(), strleng);
 		fprintf(OUT,"%d\n",strleng);
 		fprintf(OUT,"%s\n",buffer);
 		delete [] buffer;
 	}
 	
-	for (int ii = 0; ii < num_vertices; ii++)
+	for (unsigned int ii = 0; ii < num_vertices_; ii++)
 	{ // output points
-		fprintf(OUT,"%d\n", vertices[ii].pt_mp->size);
-		for(int jj=0;jj<vertices[ii].pt_mp->size;jj++) {
-			print_mp(OUT, 0, &vertices[ii].pt_mp->coord[jj]);
+		fprintf(OUT,"%d\n", (*vertices_[ii].get_point())->size);
+		for(int jj=0;jj<(*vertices_[ii].get_point())->size;jj++) {
+			print_mp(OUT, 0, &(*vertices_[ii].get_point())->coord[jj]);
 			fprintf(OUT,"\n");
 		}
 		
-		fprintf(OUT,"%d\n",vertices[ii].projection_values->size);
-		for(int jj=0;jj<vertices[ii].projection_values->size;jj++) {
-			print_mp(OUT, 0, &vertices[ii].projection_values->coord[jj]);
+		fprintf(OUT,"%d\n",(*vertices_[ii].get_projection_values())->size);
+		for(int jj=0;jj<(*vertices_[ii].get_projection_values())->size;jj++) {
+			print_mp(OUT, 0, &(*vertices_[ii].get_projection_values())->coord[jj]);
 			fprintf(OUT,"\n");
 		}
 		
-		fprintf(OUT,"%d\n",vertices[ii].input_filename_index);
+		fprintf(OUT,"%d\n",vertices_[ii].input_filename_index());
 		
 		fprintf(OUT,"\n");
-		if (vertices[ii].removed==1) {
+		if (vertices_[ii].is_removed()) {
 			fprintf(OUT,"%d\n\n",REMOVED);
 		}
 		else{
-			fprintf(OUT,"%d\n\n",vertices[ii].type);
+			fprintf(OUT,"%d\n\n",vertices_[ii].type());
 		}
 	}
 	
@@ -3061,31 +3068,31 @@ void vertex_set::send(int target, parallelism_config & mpi_config)
 {
 	
 
-	int num_filenames = filenames.size();
+	int num_filenames = filenames_.size();
 	
 	
 	int * buffer2 = new int[6];
-	buffer2[0] = num_natural_variables;
-	buffer2[1] = num_projections;
-	buffer2[2] = curr_projection;
+	buffer2[0] = num_natural_variables_;
+	buffer2[1] = num_projections_;
+	buffer2[2] = curr_projection_;
 	buffer2[3] = num_filenames;
-	buffer2[4] = curr_input_index;
-	buffer2[5] = num_vertices;
+	buffer2[4] = curr_input_index_;
+	buffer2[5] = num_vertices_;
 	
 	MPI_Send(buffer2, 6, MPI_INT, target, VERTEX_SET, MPI_COMM_WORLD);
 	
 	delete [] buffer2;
 //	std::cout << "sending " << num_projections << " projections" << std::endl;
 	
-	buffer2 = new int[num_projections];
-	for (int ii=0; ii<num_projections; ii++) {
-		buffer2[ii] = projections[ii]->size;
+	buffer2 = new int[num_projections_];
+	for (int ii=0; ii<num_projections_; ii++) {
+		buffer2[ii] = projections_[ii]->size;
 	}
-	MPI_Send(buffer2, num_projections, MPI_INT, target, VERTEX_SET, MPI_COMM_WORLD);
+	MPI_Send(buffer2, num_projections_, MPI_INT, target, VERTEX_SET, MPI_COMM_WORLD);
 	delete [] buffer2;
 	
-	for (int ii=0; ii<num_projections; ii++) {
-		send_vec_mp(projections[ii],target);
+	for (int ii=0; ii<num_projections_; ii++) {
+		send_vec_mp(projections_[ii],target);
 	}
 
 //	std::cout << "sending " << num_filenames << " filenames" << std::endl;
@@ -3093,9 +3100,9 @@ void vertex_set::send(int target, parallelism_config & mpi_config)
 		char * buffer;
 		
 		
-		int strleng = filenames[ii].string().size()+1;
+		int strleng = filenames_[ii].string().size()+1;
 		buffer = new char[strleng];
-		memcpy(buffer, filenames[ii].string().c_str(), strleng-1); // this sucks
+		memcpy(buffer, filenames_[ii].string().c_str(), strleng-1); // this sucks
 		buffer[strleng-1] = '\0';
 		
 		MPI_Send(&strleng, 1, MPI_INT, target, VERTEX_SET, MPI_COMM_WORLD);
@@ -3107,8 +3114,8 @@ void vertex_set::send(int target, parallelism_config & mpi_config)
 	}
 	
 	
-	for (int ii=0; ii<num_vertices; ii++) {
-		vertices[ii].send(target, mpi_config);
+	for (unsigned int ii=0; ii<num_vertices_; ii++) {
+		vertices_[ii].send(target, mpi_config);
 	}
 	
 	
@@ -3133,10 +3140,10 @@ void vertex_set::receive(int source, parallelism_config & mpi_config)
 	
 	int temp_num_natural_variables = buffer2[0];
 	int temp_num_projections = buffer2[1];
-	curr_projection = buffer2[2];
+	curr_projection_ = buffer2[2];
 	int temp_num_filenames = buffer2[3];
-	curr_input_index = buffer2[4];
-	int temp_num_vertices = buffer2[5];
+	curr_input_index_ = buffer2[4];
+	unsigned int temp_num_vertices = buffer2[5];
 	
 	delete [] buffer2;
 	
@@ -3163,7 +3170,7 @@ void vertex_set::receive(int source, parallelism_config & mpi_config)
 	clear_vec_mp(tempvec);
 	delete [] buffer2;
 	
-	if (num_projections!=temp_num_projections) {
+	if (num_projections_!=temp_num_projections) {
 		std::cout << "num_projections doesn't match!" << std::endl;
 	}
 	
@@ -3176,7 +3183,7 @@ void vertex_set::receive(int source, parallelism_config & mpi_config)
 		buffer = new char[strleng];
 //		std::cout << "recving filename length " << strleng << std::endl;
 		MPI_Recv(&buffer[0], strleng, MPI_CHAR, source, VERTEX_SET, MPI_COMM_WORLD, &statty_mc_gatty);
-		filenames.push_back(boost::filesystem::path(std::string(buffer)));
+		filenames_.push_back(boost::filesystem::path(std::string(buffer)));
 		
 		delete [] buffer;
 		
@@ -3187,13 +3194,13 @@ void vertex_set::receive(int source, parallelism_config & mpi_config)
 	
 
 	
-	for (int ii=0; ii<temp_num_vertices; ii++) {
+	for (unsigned int ii=0; ii<temp_num_vertices; ii++) {
 		vertex tempvert;
 		tempvert.receive(source, mpi_config);
 		add_vertex(tempvert);
 	}
 	
-	if (num_vertices != temp_num_vertices) {
+	if (num_vertices_ != temp_num_vertices) {
 		std::cout << "logical inconsistency.  do not have correct num vertices." << std::endl;
 	}
 	
@@ -3255,10 +3262,10 @@ int decomposition::add_witness_set(const witness_set & W, int add_type, vertex_s
     V.set_curr_input(W.input_filename());
     
     vertex temp_vertex;
-    temp_vertex.type = add_type;
+    temp_vertex.set_type(add_type);
     
     for (unsigned int ii=0; ii<W.num_points(); ii++) {
-        vec_cp_mp(temp_vertex.pt_mp, *W.point(ii));
+        vec_cp_mp(*temp_vertex.point(), *W.point(ii));
         this->index_in_vertices_with_add(V, temp_vertex);
     }
     
@@ -3274,12 +3281,12 @@ int decomposition::add_vertex(vertex_set & V, vertex source_vertex)
 	
 	int current_index = V.add_vertex(source_vertex);
 	
-	if (this->counters.find(source_vertex.type) == this->counters.end()) {
-		this->counters[source_vertex.type] = 0;
+	if (counters.find(source_vertex.type()) == counters.end()) {
+		counters[source_vertex.type()] = 0;
 	}
 	
-	this->counters[source_vertex.type]++;
-	this->indices[source_vertex.type].push_back(current_index);
+	counters[source_vertex.type()]++;
+	indices[source_vertex.type()].push_back(current_index);
 	
 	return current_index;
 }
@@ -3314,7 +3321,7 @@ int decomposition::index_in_vertices(vertex_set & V,
 int decomposition::index_in_vertices_with_add(vertex_set &V,
 											  vertex vert)
 {
-	int index = decomposition::index_in_vertices(V, vert.pt_mp);
+	int index = decomposition::index_in_vertices(V, *vert.point());
 	
 	if (index==-1) {
 		index = decomposition::add_vertex(V, vert);
