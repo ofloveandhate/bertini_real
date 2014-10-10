@@ -776,11 +776,36 @@ private:
 class patch_holder
 {
 
+protected:
+	
+	vec_mp *patch_mp_;   ///< an array of patch_mp's
+	size_t num_patches_; ///< the number of patches stored in this object.
+	
 public:
 	
-	vec_mp *patch_mp;   ///< an array of patch_mp's
-	int num_patches; ///< the number of patches stored in this object.
 	
+	/**
+	 \brief  query how many patches are being held.
+	 query how many patches are being held.
+	 
+	 \return the number of patches.
+	 */
+	inline size_t num_patches() const
+	{
+		return num_patches_;
+	}
+	
+	
+	/**
+	\brief get a pointer to the patch at index
+	 
+	 \return a pointer to the i^th patch.
+	 \param index The index of the patch you want
+	 */
+	inline vec_mp * patch(unsigned int index) const
+	{
+		return &patch_mp_[index];
+	}
 	
 	
 	/**
@@ -792,8 +817,8 @@ public:
 	 */
 	void copy_patches(const patch_holder & other) {
 		
-        for (int ii=0; ii<other.num_patches; ii++)
-			add_patch(other.patch_mp[ii]);
+        for (unsigned int ii=0; ii<other.num_patches_; ii++)
+			add_patch(other.patch_mp_[ii]);
     }
 	
 	
@@ -805,15 +830,15 @@ public:
 	 */
 	void reset_patches()
 	{
-		for (int ii =0; ii<this->num_patches; ii++)
-			clear_vec_mp(this->patch_mp[ii]);
+		for (unsigned int ii =0; ii<num_patches_; ii++)
+			clear_vec_mp(patch_mp_[ii]);
 		
-		if (this->num_patches>0) {
-			free(this->patch_mp);
+		if (num_patches_>0) {
+			free(patch_mp_);
 		}
 		
-		this->num_patches = 0;
-		this->patch_mp = NULL;
+		num_patches_ = 0;
+		patch_mp_ = NULL;
 	}
 	
 	
@@ -870,8 +895,8 @@ private:
 	
 	void init()
 	{
-		this->patch_mp = NULL;
-		this->num_patches = 0;
+		this->patch_mp_ = NULL;
+		this->num_patches_ = 0;
 	}
 	
 	void clear(){
@@ -888,10 +913,37 @@ private:
 class linear_holder
 {
 	
+protected:
+	
+	vec_mp *L_mp_;  ///< a pointer array of vec_mp's as linears.
+	size_t num_linears_; ///< the number of linears in this collection.
+	
+	
+	
 public:
 	
-	vec_mp *L_mp;  ///< a pointer array of vec_mp's as linears.
-	int num_linears; ///< the number of linears in this collection.
+	/**
+	 \brief  query how many patches are being held.
+	 query how many patches are being held.
+	 
+	 \return the number of patches.
+	 */
+	inline size_t num_linears() const
+	{
+		return num_linears_;
+	}
+	
+	
+	/**
+	 \brief get a pointer to the patch at index
+	 
+	 \return a pointer to the i^th patch.
+	 \param index The index of the patch you want
+	 */
+	inline vec_mp * linear(unsigned int index) const
+	{
+		return &L_mp_[index];
+	}
 	
 	
 	/**
@@ -900,8 +952,8 @@ public:
 	 \param other the linear_holder from which to copy all the linears.
 	 */
 	void copy_linears(const linear_holder & other) {
-        for (int ii=0; ii<other.num_linears; ii++)
-			add_linear(other.L_mp[ii]);
+        for (unsigned int ii=0; ii<other.num_linears_; ii++)
+			add_linear(other.L_mp_[ii]);
     }
 	
 	
@@ -910,15 +962,15 @@ public:
 	 */
 	void reset_linears()
 	{
-		for (int ii =0; ii<num_linears; ii++)
-			clear_vec_mp(L_mp[ii]);
+		for (unsigned int ii =0; ii<num_linears_; ii++)
+			clear_vec_mp(L_mp_[ii]);
 		
-		if (this->num_linears>0) {
-			free(L_mp);
+		if (num_linears_>0) {
+			free(L_mp_);
 		}
 		
-		num_linears = 0;
-		L_mp = NULL;
+		num_linears_ = 0;
+		L_mp_ = NULL;
 	}
 	
 	
@@ -973,8 +1025,8 @@ private:
 	
 	void init()
 	{
-		this->L_mp = NULL;
-		this->num_linears = 0;
+		this->L_mp_ = NULL;
+		this->num_linears_ = 0;
 	}
 	
 	void clear(){
@@ -988,17 +1040,52 @@ private:
  */
 class name_holder
 {
-public:
+
+	
+private:
 	
 	std::vector< std::string > variable_names; ///< the names.
 	
+public:
 	
+	
+	/**
+	 \brief get how many names there are.
+	 
+	 \return the number of stored names
+	 */
+	inline size_t num_var_names() const
+	{
+		return variable_names.size();
+	}
+	
+	
+	/**
+	 \brief get the ith variable name
+	 */
+	inline std::string name(unsigned int index) const
+	{
+		if (index>=variable_names.size()) {
+			throw std::out_of_range("trying to get variable name, requested index is out of bounds");
+		}
+		else
+		{
+			return variable_names[index];
+		}
+		
+	}
+	
+	
+	
+	/**
+	 \brief reset the names to empty.
+	 */
 	void reset_names()
 	{
 		variable_names.resize(0);
 	}
 	
-	void cp_names(const name_holder & nomnom)
+	void copy_names(const name_holder & nomnom)
 	{
 		this->variable_names = nomnom.variable_names;
 	}
@@ -1039,28 +1126,193 @@ public:
 class witness_set : public patch_holder, public linear_holder, public point_holder, public name_holder
 {
 	
-public:
+protected:
 	
 	//begin data members
 	
 
-	int dim;
-	int comp_num;
-	int incidence_number;
+	int dim_;
+	int comp_num_;
+	int incid_num_;
 	
-	int num_variables;
-	int num_natural_vars;
-	
-
-
+	int num_vars_;
+	int num_natty_vars_;
 	
 
-	
-	boost::filesystem::path input_filename;
-	function input_file;
+
+	boost::filesystem::path input_filename_;
+	function input_file_;
 	
 	
 	// end data members
+	
+	
+public:
+	
+	/**
+	 \brief get the name of the bertini input file for this witness set
+	 
+	 \return the path of the file
+	 */
+	inline boost::filesystem::path input_filename() const
+	{
+		return input_filename_;
+	}
+	
+	/**
+	 \brief set the name of the bertini input file
+	 
+	 \param new_input_filename The new name of the file
+	 */
+	void set_input_filename(boost::filesystem::path new_input_filename)
+	{
+		input_filename_ = new_input_filename;
+	}
+	
+	/**
+	 \brief get the dimension of the set represented by the witness set.
+	 
+	 \return the integer dimension of the component.
+	 */
+	inline int dimension() const
+	{
+		return dim_;
+	}
+	
+	/**
+	 \brief set the dimension of the witness set
+	 
+	 \param new_dim the dimension of the set
+	 */
+	void set_dimension(int new_dim)
+	{
+		dim_ = new_dim;
+	}
+	
+	
+	
+	
+	
+	
+	/**
+	 \brief get the component number of the set represented by the witness set.
+	 
+	 \return the index the component.
+	 */
+	inline int component_number() const
+	{
+		return comp_num_;
+	}
+	
+	
+	/**
+	 \brief sets the component number
+	 
+	 \param new_comp_num The new component number to set.
+	 */
+	void set_component_number(int new_comp_num)
+	{
+		comp_num_ = new_comp_num;
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	/**
+	 \brief get the number of variables in the set
+	 
+	 \return the number of variables
+	 */
+	inline int num_variables() const
+	{
+		return num_vars_;
+	}
+	
+	
+	
+	/**
+	 \brief sets the total number of variables for the set
+	 
+	 \param new_num_vars the new total number of variables
+	 */
+	void set_num_variables(int new_num_vars)
+	{
+		num_vars_ = new_num_vars;
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	/**
+	 \brief get the number of natural variables in the set (those in the first group, including the homogenizing variable if present).
+	 
+	 \return the number of natural variables (those in the first variable group.
+	 */
+	inline int num_natural_variables() const
+	{
+		return num_natty_vars_;
+	}
+	
+	/**
+	 \brief set the number of natural variables.  
+	 
+	 \param new_num_nat_vars The new number of natural variables
+	 */
+	void set_num_natural_variables(int new_num_nat_vars)
+	{
+		num_natty_vars_ = new_num_nat_vars;
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	/**
+	 \brief get the incidence number for the witness set.  by default, is negative value.
+	 
+	 \return the incidence number, which is used for reading membership from bertini membership testing.
+	 */
+	inline int incidence_number() const
+	{
+		return incid_num_;
+	}
+	
+	
+	
+	/**
+	 \brief set the incidence number, probably after having determined it somehow.
+	 
+	 \param new_incidence the new incidence number to assign to the witness set.
+	 */
+	void set_incidence_number(int new_incidence)
+	{
+		incid_num_ = new_incidence;
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	
 	
@@ -1072,7 +1324,7 @@ public:
 	witness_set(int nvar)
 	{
 		init();
-		num_variables = num_natural_vars = nvar;
+		num_vars_ = num_natty_vars_ = nvar;
 	};
 	
 	witness_set(){
@@ -1088,6 +1340,12 @@ public:
 	
 	
 	// assignment
+	/**
+	 \brief custom assignment call.
+	 
+	 \return the new witness set
+	 \param other the other witness set to copy from.
+	 */
 	witness_set& operator=( const witness_set& other)
 	{
 		reset();
@@ -1096,49 +1354,72 @@ public:
   }
 	
 	
-	//copy operator.  must be explicitly declared because the underlying c structures use pointers.
+	/**
+	 \brief copy operator.  
+	 
+	 must be explicitly declared because the underlying c structures use pointers.
+	 
+	 \param other the other witness set to copy from.
+	 */
 	witness_set(const witness_set & other)
 	{
 		init();
 		copy(other);
 	}
 	
+	
+	/**
+	 \brief get her ready for action.
+	 */
 	void init()
 	{
-		this->input_filename = "unset_filename";
+		input_filename_ = "unset_filename";
 		
-		this->num_variables = 0;
-		this->num_natural_vars = 0;
+		num_vars_ = 0;
+		num_natty_vars_ = 0;
 		
 		
-		this->incidence_number = -1;
-		this->comp_num = this->dim = -1;
+		incid_num_ = -1;
+		comp_num_ = dim_ = -1;
 		
 		
 		
 	}
 	
+	
+	/** 
+	 \brief perform a total deep copy of the witness set
+	 
+	 \param other the other witness set to copy from.
+	 */
 	void copy(const witness_set & other)
 	{
 		
 		copy_skeleton(other);
 
-		cp_names(other);
+		copy_names(other);
 		copy_points(other);
 		copy_patches(other);
 		copy_linears(other);
 	}
 	
+	
+	
+	/**
+	 \brief copy only the witness_set data members, but not any inherited members.
+	 
+	 \param other the other witness set to copy from.
+	 */
     void copy_skeleton(const witness_set & other)
 	{
-		this->input_filename = other.input_filename;
+		this->input_filename_ = other.input_filename_;
 		
-		this->dim = other.dim;
-		this->comp_num = other.comp_num;
-		this->incidence_number = other.incidence_number;
+		this->dim_ = other.dim_;
+		this->comp_num_ = other.comp_num_;
+		this->incid_num_ = other.incid_num_;
 		
-		this->num_variables = other.num_variables;
-		this->num_natural_vars = other.num_natural_vars;
+		this->num_vars_ = other.num_vars_;
+		this->num_natty_vars_ = other.num_natty_vars_;
 	}
 
     
@@ -1148,18 +1429,59 @@ public:
 	
     int num_synth_vars() const
     {
-        return num_variables - num_natural_vars;
+        return num_vars_ - num_natty_vars_;
     }
     
-    
+	
+	/**
+	 \brief get rid of any variables which are synthetic
+	 */
 	void only_natural_vars();
+	
+	/**
+	 \brief trim off all but a number of variables.  trims linears, patches, and points.
+	 
+	 \param num_vars the number of variables to keep
+	 */
 	void only_first_vars(int num_vars);
+	
+	/**
+	 \brief keep only the real points (upon dehomogenization)
+	 
+	 \param T the current state of the tracker, for the real tolerance.
+	 */
 	void sort_for_real(tracker_config_t * T);
+	
+	/**
+	 \brief keep only the uniqie points (upon dehomogenization)
+	 
+	 \param T the current state of the tracker, for the unique tolerance.
+	 */
 	void sort_for_unique(tracker_config_t * T);
+	
+	
+	
+	/**
+	 \brief keep only the points which are inside the sphere (upon dehomogenization)
+	 
+	 \param radius The radius of the sphere
+	 \param center The center of the sphere.
+	 */
 	void sort_for_inside_sphere(comp_mp radius, vec_mp center);
 	
+	
+	/**
+	 \brief read in the witness set from a file, which MUST be formatted correctly.  for details on the format, see this code, or \see print_to_file()
+	 
+	 \param witness_set_file the path of the file to parse into this object
+	 \param num_vars the number of variables in the witness set.  sadly, you have to set this manually at the time, as the header does not contain the information.  the is due to Bertini reasons.
+	 */
 	int  witnessSetParse(const boost::filesystem::path witness_set_file, const int num_vars);
 	
+	
+	/**
+	 \brief empty the set.  calls clear()
+	 */
 	void reset()
 	{
 		clear();
@@ -1167,6 +1489,10 @@ public:
 	
 	
 	
+	
+	/**
+	 \brief clear the entire contents of the witness set
+	 */
 	void clear()
 	{
 		
@@ -1301,7 +1627,7 @@ public:
 	 \param target the ID target of the communication
 	 \param mpi_config the current MPI state, as implemented in bertini_real
 	 */
-    void send(parallelism_config & mpi_config, int target);
+    void send(parallelism_config & mpi_config, int target) const;
 	
 	/**
 	 individual receive, relative to MPI_COMM_WORLD

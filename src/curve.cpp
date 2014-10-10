@@ -17,9 +17,9 @@ void curve_decomposition::main(vertex_set & V,
 		
 	
 	
-	component_num = W.comp_num;
-	dimension = W.dim;
-	num_variables = W.num_variables;
+	component_num = W.component_number();
+	dimension = W.dimension();
+	num_variables = W.num_variables();
 	
 	
 	if (1) {
@@ -29,10 +29,10 @@ void curve_decomposition::main(vertex_set & V,
 			printf("performing isosingular deflation\n");
 		
 		
-		program_options.input_deflated_filename = W.input_filename;
+		program_options.input_deflated_filename = W.input_filename();
 		
 		std::stringstream converter;
-		converter << "_dim_" << W.dim << "_comp_" << W.comp_num << "_deflated";
+		converter << "_dim_" << W.dimension() << "_comp_" << W.component_number() << "_deflated";
 		program_options.input_deflated_filename += converter.str();
 		converter.clear(); converter.str("");
 		
@@ -41,7 +41,7 @@ void curve_decomposition::main(vertex_set & V,
 		W.write_dehomogenized_coordinates("witness_points_dehomogenized",zeroonly); // write the points to file
 		int num_deflations, *deflation_sequence = NULL;
 		isosingular_deflation(&num_deflations, &deflation_sequence,
-							  program_options, W.input_filename,
+							  program_options, W.input_filename(),
 							  "witness_points_dehomogenized",
 							  program_options.input_deflated_filename,
 							  program_options.max_deflations);
@@ -51,7 +51,7 @@ void curve_decomposition::main(vertex_set & V,
 		
 		
 		
-		W.input_filename = program_options.input_deflated_filename;
+		W.set_input_filename(program_options.input_deflated_filename);
 	}
 	else {
 		program_options.input_deflated_filename = program_options.input_filename;
@@ -59,11 +59,11 @@ void curve_decomposition::main(vertex_set & V,
 	}
 	
 	
-	input_filename = W.input_filename;
+	input_filename = W.input_filename();
 	
 	
 	// this wraps around a bertini routine
-	parse_input_file(W.input_filename);
+	parse_input_file(W.input_filename());
 	
 	preproc_data_clear(&solve_options.PPD);
 	parse_preproc_data("preproc_data", &solve_options.PPD);
@@ -76,7 +76,7 @@ void curve_decomposition::main(vertex_set & V,
 		if (program_options.verbose_level>=2) {
 			printf("checking if component is self-conjugate\n");
 		}
-		self_conjugate = checkSelfConjugate( *W.point(0), program_options, W.input_filename);  //later:  could be passed in from user, if we want
+		self_conjugate = checkSelfConjugate( *W.point(0), program_options, W.input_filename());  //later:  could be passed in from user, if we want
 		
 		
 		
@@ -156,7 +156,7 @@ void curve_decomposition::computeCurveSelfConj(const witness_set & W_curve,
 	// 2) randomize down to N-1 equations
 	// to get a square system for the homotopies in the following steps.
 	
-	this->randomizer->setup(W_curve.num_variables-W_curve.num_patches-1,solve_options.PPD.num_funcs);
+	this->randomizer->setup(W_curve.num_variables()-W_curve.num_patches()-1,solve_options.PPD.num_funcs);
 	
 	
 	
@@ -204,7 +204,7 @@ int curve_decomposition::compute_critical_points(const witness_set & W_curve,
 		br_exit(29889);
 	}
 	
-	W_crit_real.input_filename = W_curve.input_filename;
+	W_crit_real.set_input_filename(W_curve.input_filename());
 	
 	
 	solver_output solve_out;
@@ -226,7 +226,7 @@ int curve_decomposition::compute_critical_points(const witness_set & W_curve,
 	solve_out.get_noninfinite_w_mult_full(W_crit_real);
 	
 	
-	W_crit_real.only_first_vars(W_curve.num_variables); // trim the fat, since we are at the lowest level.
+	W_crit_real.only_first_vars(W_curve.num_variables()); // trim the fat, since we are at the lowest level.
 	W_crit_real.sort_for_real(&solve_options.T);
 	W_crit_real.sort_for_unique(&solve_options.T);
 	
@@ -276,8 +276,8 @@ int curve_decomposition::get_additional_critpts(witness_set *W_additional,
 		br_exit(13091270);
 	}
     
-    if (W_curve.num_linears!=1) {
-        std::cout << color::red() << "the input witness set to get_additional_critpts had an incorrect number of linears: " << W_curve.num_linears << color::console_default() << std::endl;
+    if (W_curve.num_linears()!=1) {
+        std::cout << color::red() << "the input witness set to get_additional_critpts had an incorrect number of linears: " << W_curve.num_linears() << color::console_default() << std::endl;
         br_exit(-518);
     }
     
@@ -295,7 +295,7 @@ int curve_decomposition::get_additional_critpts(witness_set *W_additional,
 	
 	
 	
-	parse_input_file(W_curve.input_filename, &blabla);
+	parse_input_file(W_curve.input_filename(), &blabla);
 	preproc_data_clear(&solve_options.PPD); // ugh this sucks
 	parse_preproc_data("preproc_data", &solve_options.PPD);
 	
@@ -304,8 +304,8 @@ int curve_decomposition::get_additional_critpts(witness_set *W_additional,
 	
 	
 	vec_mp *multilin_linears = (vec_mp *) br_malloc(1*sizeof(vec_mp));
-	init_vec_mp2(multilin_linears[0],W_curve.num_variables,solve_options.T.AMP_max_prec);
-	multilin_linears[0]->size = W_curve.num_variables;
+	init_vec_mp2(multilin_linears[0],W_curve.num_variables(),solve_options.T.AMP_max_prec);
+	multilin_linears[0]->size = W_curve.num_variables();
     
 	
 	witness_set W_sphere = W_curve;
@@ -316,13 +316,13 @@ int curve_decomposition::get_additional_critpts(witness_set *W_additional,
     
     
 	sphere_config sp_config(this->randomizer);
-	for (int jj=0; jj<W_curve.num_variables; jj++) {
+	for (unsigned int jj=0; jj<W_curve.num_variables(); jj++) {
         set_zero_mp(&multilin_linears[0]->coord[jj]);
     }
 	
 	for (int ii=0; ii<2; ii++) {
 		
-		for (int jj=0; jj<W_curve.num_natural_vars; jj++) {
+		for (int jj=0; jj<W_curve.num_natural_variables(); jj++) {
 			get_comp_rand_mp(&multilin_linears[0]->coord[jj]);
 		}
 		
@@ -412,18 +412,18 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	}
 	
 	V.set_curr_projection(projections[0]);
-	V.set_curr_input(W_crit_real.input_filename);
+	V.set_curr_input(W_crit_real.input_filename());
 	
 	this->W = W_curve; // copy in the witness set
 	
-	for (int ii=0; ii<W_curve.num_patches; ii++)
-		this->add_patch(W_curve.patch_mp[ii]);
+	this->copy_patches(W_curve);
 	
-	this->num_variables = W_crit_real.num_variables;
-	input_filename = W_curve.input_filename;
+	
+	this->num_variables = W_crit_real.num_variables();
+	input_filename = W_curve.input_filename();
 	
 	int blabla;
-	parse_input_file(W_curve.input_filename, &blabla);
+	parse_input_file(W_curve.input_filename(), &blabla);
 	solve_options.get_PPD();
 	
 	
@@ -488,7 +488,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	
 	
     
-	V.set_curr_input(W_curve.input_filename);
+	V.set_curr_input(W_curve.input_filename());
 	
 	int edge_counter = 0; // set the counter
 	
@@ -497,7 +497,8 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	midpoint_witness_sets.resize(num_midpoints);
 	
 	
-    vec_mp particular_projection;  init_vec_mp(particular_projection,W_curve.num_variables); particular_projection->size = W_curve.num_variables;
+    vec_mp particular_projection;  init_vec_mp(particular_projection,W_curve.num_variables());
+		particular_projection->size = W_curve.num_variables();
 	vec_cp_mp(particular_projection,projections[0]);
 	
 	
@@ -1342,7 +1343,7 @@ int verify_projection_ok(const witness_set & W,
 	
 	
 	system_randomizer randomizer;
-	randomizer.setup(W.num_variables-W.num_patches-W.dim, solve_options.PPD.num_funcs);
+	randomizer.setup(W.num_variables()-W.num_patches()-W.dimension(), solve_options.PPD.num_funcs);
 	
 	
 	int invalid_flag = verify_projection_ok(W, &randomizer, projection, solve_options);
@@ -1366,12 +1367,12 @@ int verify_projection_ok(const witness_set & W,
 	
 	int invalid_flag;
 	
-	parse_input_file(W.input_filename);
+	parse_input_file(W.input_filename());
 	
 	
-	vec_mp temp_rand_point;  init_vec_mp(temp_rand_point,W.num_variables); temp_rand_point->size = W.num_variables;
+	vec_mp temp_rand_point;  init_vec_mp(temp_rand_point,W.num_variables()); temp_rand_point->size = W.num_variables();
 	set_one_mp(&temp_rand_point->coord[0]); // first coordinate must be 1
-	for (int ii=1; ii<W.num_variables; ++ii) {
+	for (int ii=1; ii<W.num_variables(); ++ii) {
 		get_comp_rand_mp(&temp_rand_point->coord[ii]);
 	}
 	
@@ -1392,8 +1393,8 @@ int verify_projection_ok(const witness_set & W,
 	randomizer->randomize(temp_rand_point,AtimesJ,ED.funcVals,ED.Jv, &temp_rand_point->coord[0]); // temp_rand_point is the first argument simply to save the creation/deletion of a vec_mp to hold the randomized function values.
 	
 
-	mat_mp detme;  init_mat_mp(detme, W.num_variables-1, W.num_variables-1);
-	detme->cols = detme->rows= W.num_variables-1;
+	mat_mp detme;  init_mat_mp(detme, W.num_variables()-1, W.num_variables()-1);
+	detme->cols = detme->rows= W.num_variables()-1;
 	
 	
 	//set the matrix
@@ -1403,9 +1404,9 @@ int verify_projection_ok(const witness_set & W,
 		}
 	}
 	
-	int offset = W.num_variables-1 - W.dim;
-	for (int jj=0; jj < W.dim; jj++){
-		for (int ii=0; ii<W.num_variables-1; ii++) {
+	int offset = W.num_variables()-1 - W.dimension();
+	for (int jj=0; jj < W.dimension(); jj++){
+		for (int ii=0; ii<W.num_variables()-1; ii++) {
 			set_mp(&detme->entry[offset+jj][ii], &projection[jj]->coord[ii+1]);
 		}
 	}
@@ -1610,7 +1611,7 @@ void curve_decomposition::computeCurveNotSelfConj(const witness_set & W_in,
     
 	
 	int *declarations = NULL;
-    partition_parse(&declarations, W_in.input_filename, "func_input_nsc", "config_nsc",1);
+    partition_parse(&declarations, W_in.input_filename(), "func_input_nsc", "config_nsc",1);
 	// optional:  here perform sanity checks
 	free(declarations);
 	
@@ -1618,7 +1619,7 @@ void curve_decomposition::computeCurveNotSelfConj(const witness_set & W_in,
 	
 	
     //generate input file
-    diag_homotopy_input_file("input_NSC", "func_input_nsc","func_inputbar","config_nsc",W_in.L_mp[0],num_vars-1);
+    diag_homotopy_input_file("input_NSC", "func_input_nsc","func_inputbar","config_nsc",*W_in.linear(0),num_vars-1);
     //generate start file
 	diag_homotopy_start_file("start_NSC",  W_in);
 	
@@ -1876,7 +1877,7 @@ void diag_homotopy_start_file(boost::filesystem::path startFile,
 			
 			change_prec_mp(temp,(*inner_point)->curr_prec);
 			
-			for(int kk=0; kk<W.num_variables-1;kk++) {
+			for(int kk=0; kk<W.num_variables()-1;kk++) {
 				print_mp(OUT, 0, &result->coord[kk]); fprintf(OUT, "\n");
 				
 				conjugate_mp(temp, &result2->coord[kk] )

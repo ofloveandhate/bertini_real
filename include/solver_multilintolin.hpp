@@ -102,7 +102,7 @@ public:
 		
 		randomizer = new system_randomizer;
 		have_randomizer = true;
-		this->randomizer->setup(W.num_variables-W.num_linears-W.num_patches, solve_options.PPD.num_funcs);
+		this->randomizer->setup(W.num_variables()-W.num_linears()-W.num_patches(), solve_options.PPD.num_funcs);
 		
 	}
 	

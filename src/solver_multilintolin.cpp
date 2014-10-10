@@ -42,49 +42,51 @@ int multilintolin_eval_data_mp::setup(const multilin_config & config,
 	this->SLP_memory = config.SLP_memory;
 	
 	
-	num_variables = W.num_variables;
+	num_variables = W.num_variables();
 	
 	
 	// set up the vectors to hold the two linears.
 	if (this->num_linears==0) {
-		current_linear = (vec_mp *) br_malloc(W.num_linears*sizeof(vec_mp));
-		old_linear = (vec_mp *) br_malloc(W.num_linears*sizeof(vec_mp));
+		current_linear = (vec_mp *) br_malloc(W.num_linears()*sizeof(vec_mp));
+		old_linear = (vec_mp *) br_malloc(W.num_linears()*sizeof(vec_mp));
 	}
 	else
 	{
-		current_linear = (vec_mp *) br_realloc(current_linear, W.num_linears*sizeof(vec_mp));
-		old_linear = (vec_mp *) br_realloc(old_linear, W.num_linears*sizeof(vec_mp));
+		current_linear = (vec_mp *) br_realloc(current_linear, W.num_linears()*sizeof(vec_mp));
+		old_linear = (vec_mp *) br_realloc(old_linear, W.num_linears()*sizeof(vec_mp));
 	}
 	
-	for (int ii=0; ii<W.num_linears; ii++) {
+	
+	//actually do the transfer
+	for (unsigned int ii=0; ii<W.num_linears(); ii++) {
 		init_vec_mp(current_linear[ii],0);
 		init_vec_mp(old_linear[ii],0);
 		vec_cp_mp(current_linear[ii],target_linears[ii]);
-		vec_cp_mp(old_linear[ii],W.L_mp[ii]);
+		vec_cp_mp(old_linear[ii],*W.linear(ii));
 	}
 	
 	
 	if (this->MPType==2) {
 		if (this->num_linears==0) {
-			current_linear_full_prec = (vec_mp *) br_malloc(W.num_linears*sizeof(vec_mp));
-			old_linear_full_prec = (vec_mp *) br_malloc(W.num_linears*sizeof(vec_mp));
+			current_linear_full_prec = (vec_mp *) br_malloc(W.num_linears()*sizeof(vec_mp));
+			old_linear_full_prec = (vec_mp *) br_malloc(W.num_linears()*sizeof(vec_mp));
 		}
 		else
 		{
-			current_linear_full_prec = (vec_mp *) br_realloc(current_linear_full_prec, W.num_linears*sizeof(vec_mp));
-			old_linear_full_prec = (vec_mp *) br_realloc(old_linear_full_prec, W.num_linears*sizeof(vec_mp));
+			current_linear_full_prec = (vec_mp *) br_realloc(current_linear_full_prec, W.num_linears()*sizeof(vec_mp));
+			old_linear_full_prec = (vec_mp *) br_realloc(old_linear_full_prec, W.num_linears()*sizeof(vec_mp));
 		}
 		
-		for (int ii=0; ii<W.num_linears; ii++) {
+		for (unsigned int ii=0; ii<W.num_linears(); ii++) {
 			init_vec_mp2(current_linear_full_prec[ii],0,1024);
 			init_vec_mp2(old_linear_full_prec[ii],0,1024);
 			
 			vec_cp_mp(current_linear_full_prec[ii],target_linears[ii]);
-			vec_cp_mp(old_linear_full_prec[ii],W.L_mp[ii]);
+			vec_cp_mp(old_linear_full_prec[ii],*W.linear(ii));
 		}
 	}
 	
-	this->num_linears= W.num_linears;
+	this->num_linears= W.num_linears();
 	
 	
 	
@@ -293,25 +295,25 @@ int multilintolin_eval_data_d::setup(const multilin_config & config,
 	SLP_memory = config.SLP_memory;
 	// set up the vectors to hold the two linears.
 	if (this->num_linears==0) {
-		current_linear = (vec_d *) br_malloc(W.num_linears*sizeof(vec_d));
-		old_linear = (vec_d *) br_malloc(W.num_linears*sizeof(vec_d));
+		current_linear = (vec_d *) br_malloc(W.num_linears()*sizeof(vec_d));
+		old_linear = (vec_d *) br_malloc(W.num_linears()*sizeof(vec_d));
 	}
 	else
 	{
-		current_linear = (vec_d *) br_realloc(current_linear, W.num_linears*sizeof(vec_d));
-		old_linear = (vec_d *) br_realloc(old_linear, W.num_linears*sizeof(vec_d));
+		current_linear = (vec_d *) br_realloc(current_linear, W.num_linears()*sizeof(vec_d));
+		old_linear = (vec_d *) br_realloc(old_linear, W.num_linears()*sizeof(vec_d));
 	}
 	
-	for (int ii=0; ii<W.num_linears; ii++) {
+	for (unsigned int ii=0; ii<W.num_linears(); ii++) {
 		init_vec_d(current_linear[ii],0);
 		init_vec_d(old_linear[ii],0);
 		vec_mp_to_d(current_linear[ii],target_linears[ii]);
-		vec_mp_to_d(old_linear[ii],W.L_mp[ii]);
+		vec_mp_to_d(old_linear[ii],*W.linear(ii));
 	}
 	
-	num_linears = W.num_linears;
+	num_linears = W.num_linears();
 	
-	num_variables = W.num_variables;
+	num_variables = W.num_variables();
 	
 	
 	verbose_level = solve_options.verbose_level;
@@ -486,7 +488,7 @@ int multilin_solver_master_entry_point(const witness_set & W, // carries with it
 			
 			
 			
-			adjust_tracker_AMP(& (solve_options.T), W.num_variables);
+			adjust_tracker_AMP(& (solve_options.T), W.num_variables());
 			// initialize latest_newton_residual_mp
 			break;
 		default:
@@ -520,7 +522,7 @@ int multilin_solver_master_entry_point(const witness_set & W, // carries with it
 	}
 	
 	
-	for (int jj=0; jj<W.num_linears; jj++)
+	for (unsigned int jj=0; jj<W.num_linears(); jj++)
 	{
 		solve_out.add_linear(target_linears[jj]);
 	}

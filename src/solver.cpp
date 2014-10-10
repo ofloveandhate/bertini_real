@@ -708,11 +708,11 @@ void master_solver(solver_output & solve_out, const witness_set & W,
 	
     int num_crossings = 0;
 	
-	solve_out.num_variables = W.num_variables;
-	solve_out.num_natural_vars = W.num_natural_vars;
+	solve_out.num_variables = W.num_variables();
+	solve_out.num_natural_vars = W.num_natural_variables();
 	
 	solve_out.copy_patches(W); // copy the patches over from the original witness set
-	solve_out.cp_names(W);
+	solve_out.copy_names(W);
 	
 	
 	if (solve_options.use_parallel()) {
@@ -798,7 +798,7 @@ void master_solver(solver_output & solve_out, const witness_set & W,
 	
     //clear the endpoints here
 	for (int ii=0; ii<trackCount.successes; ii++) {
-		clear_post_process_t(&endPoints[ii],W.num_variables);
+		clear_post_process_t(&endPoints[ii],W.num_variables());
 	}
 	free(endPoints);
 }
@@ -823,9 +823,9 @@ void generic_set_start_pts(point_data_d ** startPts,
 	
 	for (unsigned int ii = 0; ii < W.num_points(); ii++)
 	{ // setup startPts[ii]
-		init_point_data_d(&(*startPts)[ii], W.num_variables); // also performs initialization on the point inside startPts
-		change_size_vec_d((*startPts)[ii].point,W.num_variables);
-		(*startPts)[ii].point->size = W.num_variables;
+		init_point_data_d(&(*startPts)[ii], W.num_variables()); // also performs initialization on the point inside startPts
+		change_size_vec_d((*startPts)[ii].point,W.num_variables());
+		(*startPts)[ii].point->size = W.num_variables();
 		
 		//1 set the coordinates
 		vec_mp_to_d((*startPts)[ii].point, *W.point(ii));
@@ -845,9 +845,9 @@ void generic_set_start_pts(point_data_mp ** startPts,
 	
 	for (unsigned int ii = 0; ii < W.num_points(); ii++)
 	{ // setup startPts[ii]
-		init_point_data_mp(&(*startPts)[ii], W.num_variables); // also performs initialization on the point inside startPts
-		change_size_vec_mp((*startPts)[ii].point,W.num_variables);
-		(*startPts)[ii].point->size = W.num_variables;
+		init_point_data_mp(&(*startPts)[ii], W.num_variables()); // also performs initialization on the point inside startPts
+		change_size_vec_mp((*startPts)[ii].point,W.num_variables());
+		(*startPts)[ii].point->size = W.num_variables();
 		
 		//1 set the coordinates
 		vec_cp_mp((*startPts)[ii].point, *W.point(ii));
@@ -1142,13 +1142,13 @@ void master_tracker_loop(trackingStats *trackCount,
 	//clear the data structures.
 	switch (solve_options.T.MPType) {
 		case 1:
-			for (int ii = 0; ii < W.num_points(); ii++)
+			for (unsigned int ii = 0; ii < W.num_points(); ii++)
 				clear_point_data_mp(&startPts_mp[ii]);
 			free(startPts_mp);
 			break;
 			
 		default:
-			for (int ii = 0; ii < W.num_points(); ii++)
+			for (unsigned int ii = 0; ii < W.num_points(); ii++)
 				clear_point_data_d(&startPts_d[ii]);
 			free(startPts_d);
 			break;
@@ -1969,20 +1969,20 @@ void generic_setup_patch(patch_eval_data_d *P, const witness_set & W)
 //	std::cout << "setting up double patch " << std::endl;
 	
 	
-	if (W.num_patches==0) {
+	if (W.num_patches()==0) {
 		std::cerr << "the number of patches in input W is 0.  this is not allowed, the number must be positive.\n" << std::endl;
 		br_exit(1800);
 	}
 	
 	int total_num_vars_in_patches = 0;
-	for (int ii=0; ii<W.num_patches; ++ii) {
-		total_num_vars_in_patches += W.patch_mp[ii]->size;
+	for (unsigned int ii=0; ii<W.num_patches(); ++ii) {
+		total_num_vars_in_patches += (*W.patch(ii))->size;
 	}
 	
-	if (total_num_vars_in_patches > W.num_variables) {
-		std::cout << "parity mismatch in patches ("<< total_num_vars_in_patches <<") and number of variables ("<< W.num_variables <<")." << std::endl;
-		for (int ii=0; ii<W.num_patches; ++ii) {
-			std::cout << W.patch_mp[ii]->size << " ";
+	if (total_num_vars_in_patches > W.num_variables()) {
+		std::cout << "parity mismatch in patches ("<< total_num_vars_in_patches <<") and number of variables (" << W.num_variables() <<")." << std::endl;
+		for (unsigned int ii=0; ii<W.num_patches(); ++ii) {
+			std::cout << (*W.patch(ii))->size << " ";
 		}
 		std::cout << std::endl;
 		br_exit(4012);
@@ -1990,23 +1990,25 @@ void generic_setup_patch(patch_eval_data_d *P, const witness_set & W)
 	
 	
 	
-	P->num_patches = W.num_patches;
-	init_mat_d(P->patchCoeff, W.num_patches, W.num_variables);
-	P->patchCoeff->rows = W.num_patches; P->patchCoeff->cols = W.num_variables;
+	P->num_patches = W.num_patches();
+	init_mat_d(P->patchCoeff, W.num_patches(), W.num_variables());
+	P->patchCoeff->rows = W.num_patches(); P->patchCoeff->cols = W.num_variables();
 	
 	int varcounter = 0;
-	for (int jj=0; jj<W.num_patches; jj++) {
+	for (unsigned int jj=0; jj<W.num_patches(); jj++) {
+		vec_mp * curr_patch = W.patch(jj);
+		
 		for (int ii=0; ii<varcounter; ii++) {
 			set_zero_d(&P->patchCoeff->entry[jj][ii]);
 		}
 		
 		int offset = varcounter;
-		for (int ii = 0; ii < W.patch_mp[jj]->size ; ii++){
-			mp_to_d(&P->patchCoeff->entry[jj][ii+offset],&W.patch_mp[jj]->coord[ii]);
+		for (int ii = 0; ii < (*curr_patch)->size ; ii++){
+			mp_to_d(&P->patchCoeff->entry[jj][ii+offset],&(*curr_patch)->coord[ii]);
 			varcounter++;
 		}
 		
-		for (int ii=varcounter; ii<W.num_variables; ii++) {
+		for (int ii=varcounter; ii<W.num_variables(); ii++) {
 			set_zero_d(&P->patchCoeff->entry[jj][ii]);
 		}
 	}
@@ -2017,21 +2019,21 @@ void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W)
 {
 	
 	
-	if (W.num_patches==0) {
+	if (W.num_patches()==0) {
 		std::cerr << "the number of patches in input W is 0.  this is not allowed, the number must be positive.\n" << std::endl;
 		br_exit(1801);
 	}
 	
 	
     int total_num_vars_in_patches = 0;
-	for (int ii=0; ii<W.num_patches; ++ii) {
-		total_num_vars_in_patches += W.patch_mp[ii]->size;
+	for (unsigned int ii=0; ii<W.num_patches(); ++ii) {
+		total_num_vars_in_patches += (*W.patch(ii))->size;
 	}
 	
-	if (total_num_vars_in_patches > W.num_variables) {
-		std::cout << "parity mismatch in patches ("<< total_num_vars_in_patches <<") and number of variables ("<< W.num_variables <<")." << std::endl;
-		for (int ii=0; ii<W.num_patches; ++ii) {
-			std::cout << W.patch_mp[ii]->size << " ";
+	if (total_num_vars_in_patches > W.num_variables()) {
+		std::cout << "parity mismatch in patches ("<< total_num_vars_in_patches <<") and number of variables (" << W.num_variables() <<")." << std::endl;
+		for (unsigned int ii=0; ii<W.num_patches(); ++ii) {
+			std::cout << (*W.patch(ii))->size << " ";
 		}
 		std::cout << std::endl;
 		br_exit(4013);
@@ -2046,13 +2048,13 @@ void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W)
 
 	
 	
-	init_mat_rat(P->patchCoeff_rat, W.num_patches, W.num_variables);
-	init_mat_mp2(P->patchCoeff, W.num_patches, W.num_variables, mpf_get_default_prec());
+	init_mat_rat(P->patchCoeff_rat, W.num_patches(), W.num_variables());
+	init_mat_mp2(P->patchCoeff, W.num_patches(), W.num_variables(), mpf_get_default_prec());
 	
 	P->curr_prec = mpf_get_default_prec();
-	P->num_patches = W.num_patches;
-	P->patchCoeff->rows = W.num_patches;
-	P->patchCoeff->cols = W.num_variables;
+	P->num_patches = W.num_patches();
+	P->patchCoeff->rows = W.num_patches();
+	P->patchCoeff->cols = W.num_variables();
 	
 	
 	
@@ -2061,21 +2063,21 @@ void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W)
 	
 	
 	int varcounter = 0;
-	for (int jj=0; jj<W.num_patches; jj++) {
-		
+	for (unsigned int jj=0; jj<W.num_patches(); jj++) {
+		vec_mp * curr_patch = W.patch(jj);
 		for (int ii=0; ii<varcounter; ii++) {
 			set_zero_mp(&P->patchCoeff->entry[jj][ii]);
 			set_zero_rat(P->patchCoeff_rat[jj][ii]);
 		}
 		
 		int offset = varcounter;
-		for (int ii = 0; ii < W.patch_mp[jj]->size; ii++){
-			set_mp(&P->patchCoeff->entry[jj][ii+offset],&W.patch_mp[jj]->coord[ii]);
-			mp_to_rat(P->patchCoeff_rat[jj][ii+offset], &W.patch_mp[jj]->coord[ii]);
+		for (int ii = 0; ii < (*curr_patch)->size; ii++){
+			set_mp(&P->patchCoeff->entry[jj][ii+offset],&(*curr_patch)->coord[ii]);
+			mp_to_rat(P->patchCoeff_rat[jj][ii+offset], &(*curr_patch)->coord[ii]);
 			varcounter++;
 		}
 		
-		for (int ii=varcounter; ii<W.num_variables; ii++) {
+		for (int ii=varcounter; ii<W.num_variables(); ii++) {
 			set_zero_mp(&P->patchCoeff->entry[jj][ii]);
 			set_zero_rat(P->patchCoeff_rat[jj][ii]);
 		}
