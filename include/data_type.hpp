@@ -1671,16 +1671,102 @@ public:
  */
 class vertex
 {
+
+private:
+	point_mp pt_mp_; ///< the main data for this class -- the point.
+	
+	
+	vec_mp  projection_values_; ///< a vector containing the projection values.
+	
+	int type_;  ///< See enum.
+	bool removed_; ///< boolean integer whether the vertex has been 'removed' by a merge process.
+	int input_filename_index_; ///< index into the vertex_set's vector of filenames.
+	
 public:
 	
-	point_mp pt_mp; ///< the main data for this class -- the point.
+	
+	/**
+	 \brief get the index of the originating file name
+	 
+	 \return the integer index
+	 */
+	inline int input_filename_index() const
+	{
+		return input_filename_index_;
+	}
 	
 	
-	vec_mp  projection_values; ///< a vector containing the projection values.
+	/**
+	 \brief set the index
+	 
+	 \param new_index the new index to set in the vertex
+	 */
+	void set_input_filename_index(int new_index)
+	{
+		input_filename_index_ = new_index;
+	}
 	
-	int type;  ///< See enum.
-	int removed; ///< boolean integer whether the vertex has been 'removed' by a merge process.
-	int input_filename_index; ///< index into the vertex_set's vector of filenames.
+	
+	/**
+	 \brief get the projection values.
+	 \return the projection values in vec_mp form
+	 */
+	inline vec_mp* projection_values()
+	{
+		return &projection_values_;
+	}
+	
+	
+	const vec_mp* get_projection_values() const
+	{
+		return &projection_values_;
+	}
+	
+	
+	
+	/**
+	 \brief set the type of the vertex
+	 
+	 \param new_type the new type for the vertex
+	 */
+	void set_type(int new_type)
+	{
+		type_ = new_type;
+	}
+	
+	
+	/**
+	 \brief get the type of the vertex
+	 
+	 \return the type, in integer form
+	 */
+	int type() const
+	{
+		return type_;
+	}
+	
+	
+	
+	/**
+	 \brief set the vertex to be 'removed'
+	 
+	 \param new_val the new value for the flag
+	 */
+	void set_removed(bool new_val)
+	{
+		removed_ = new_val;
+	}
+	
+	
+	/**
+	 \brief query whether the vertex has been set to 'removed'
+	 
+	 \return whether it has been removed.
+	 */
+	bool is_removed() const
+	{
+		return removed_;
+	}
 	
 	vertex()
 	{
@@ -1711,9 +1797,9 @@ public:
 	 */
 	void print() const
 	{
-		print_point_to_screen_matlab(pt_mp,"point");
-		print_point_to_screen_matlab(projection_values,"projection_values");
-		std::cout << "type: " << type << std::endl;
+		print_point_to_screen_matlab(pt_mp_,"point");
+		print_point_to_screen_matlab(projection_values_,"projection_values");
+		std::cout << "type: " << type_ << std::endl;
 	}
 	
 	
@@ -1724,6 +1810,24 @@ public:
 	 \param new_point the input point to be set.
 	 */
 	void set_point(const vec_mp new_point);
+	
+	
+	const vec_mp* get_point() const
+	{
+		return &pt_mp_;
+	}
+	
+	
+	/**
+	 \brief get the point in the vertex
+	 
+	 \return the point in vec_mp form
+	 */
+	vec_mp* point()
+	{
+		return &pt_mp_;
+	}
+	
 	
 	
 	/**
@@ -1755,33 +1859,33 @@ private:
 	
 	void clear()
 	{
-		clear_vec_mp(this->pt_mp);
-		clear_vec_mp(this->projection_values);
+		clear_vec_mp(this->pt_mp_);
+		clear_vec_mp(this->projection_values_);
 	}
 	
 	void copy(const vertex & other)
 	{
-		set_point(other.pt_mp);
+		set_point(other.pt_mp_);
 		
-		vec_cp_mp(this->projection_values, other.projection_values);
-		this->type = other.type;
+		vec_cp_mp(this->projection_values_, other.projection_values_);
+		this->type_ = other.type_;
 		
-		this->input_filename_index = other.input_filename_index;
-		this->removed = other.removed;
+		this->input_filename_index_ = other.input_filename_index_;
+		this->removed_ = other.removed_;
 	}
 	
 	
 	void init()
 	{
-		init_point_mp2(this->projection_values,0,1024);
-		init_point_mp2(this->pt_mp,1,64);
-		this->pt_mp->size = 1;
-		set_zero_mp(&pt_mp->coord[0]);
-		this->projection_values->size = 0;
-		this->type = UNSET;
+		init_point_mp2(this->projection_values_,0,1024);
+		init_point_mp2(this->pt_mp_,1,64);
+		this->pt_mp_->size = 1;
+		set_zero_mp(&pt_mp_->coord[0]);
+		this->projection_values_->size = 0;
+		this->type_ = UNSET;
 		
-		this->removed = 0;
-		this->input_filename_index = -1;
+		this->removed_ = false;
+		this->input_filename_index_ = -1;
 	}
 };
 
@@ -1796,28 +1900,95 @@ private:
  */
 class vertex_set
 {
+
+protected:
+	
+	vec_mp *projections_; ///< a pointer array of projection vectors.
+	int num_projections_; ///< the number of projections.  this should match the dimension of the object being decomposed.
+	int curr_projection_; ///< the projection currently being used.
+	
+	int curr_input_index_; ///< the index of the current input file.
+	std::vector< boost::filesystem::path > filenames_; ///< the set of filenames from which vertices arise.
+	
+	std::vector<vertex> vertices_;  ///< the main storage of points in the decomposition.
+	size_t num_vertices_; ///< the number of vertices found so far.
+	
+	int num_natural_variables_;  ///< the number of natural variables appearing in the problem to solve.
+	
+	
+	
+	mpf_t abs_;
+	mpf_t zerothresh_;
+	comp_mp diff_;
+	vec_mp checker_1_;
+	vec_mp checker_2_;
+	
+	
 public:
 	
-	vec_mp *projections; ///< a pointer array of projection vectors.
-	int num_projections; ///< the number of projections.  this should match the dimension of the object being decomposed.
-	int curr_projection; ///< the projection currently being used.
-	
-	int curr_input_index; ///< the index of the current input file.
-	std::vector< boost::filesystem::path > filenames; ///< the set of filenames from which vertices arise.
-	
-	std::vector<vertex> vertices;  ///< the main storage of points in the decomposition.
-	int num_vertices; ///< the number of vertices found so far.
-	
-	int num_natural_variables;  ///< the number of natural variables appearing in the problem to solve.
 	
 	
 	
-	mpf_t abs;
-	mpf_t zerothresh;
-	comp_mp diff;
-	vec_mp checker_1;
-	vec_mp checker_2;
+	/**
+	 \brief get the currently active projection
+	 
+	 \return the index of the current projection
+	 */
+	inline int curr_projection() const
+	{
+		return curr_projection_;
+	}
 	
+	
+	
+	
+	/**
+	 \brief get the number of natural variables
+	 
+	 \return the number of natural variables
+	 */
+	inline int num_natural_variables() const
+	{
+		return num_natural_variables_;
+	}
+	
+	
+	/**
+	 \brief get the number of vertices.
+	 
+	 \return the number of vertices stored in this vertex set
+	 */
+	inline unsigned int num_vertices() const
+	{
+		return num_vertices_;
+	}
+	
+	/**
+	 \return the ith vertex
+	 */
+	const vertex& operator [](unsigned int index) const
+	{
+		return vertices_[index];
+	}
+	
+	/**
+	 \return the ith vertex
+	 */
+	vertex & operator [](unsigned int index)
+	{
+		return vertices_[index];
+	}
+	
+	
+	boost::filesystem::path filename(unsigned int index) const
+	{
+		if (index >= filenames_.size()) {
+			throw std::out_of_range("trying to access filename out of range");
+		}
+		
+		
+		return filenames_[index];
+	}
 	
 	
 	void print_to_screen(); ///< operator for displaying information to screen
@@ -1887,11 +2058,11 @@ public:
 	 */
 	void set_num_vars(int num_vars)
 	{
-		this->num_natural_variables = num_vars;
+		this->num_natural_variables_ = num_vars;
 		
-		change_size_vec_mp(checker_1, num_vars);
-		change_size_vec_mp(checker_2, num_vars);
-		checker_1->size = checker_2->size = num_vars;
+		change_size_vec_mp(checker_1_, num_vars);
+		change_size_vec_mp(checker_2_, num_vars);
+		checker_1_->size = checker_2_->size = num_vars;
 	}
 	
 	
@@ -1953,7 +2124,7 @@ public:
 		
 		
 		int counter = 0;
-		for (std::vector<boost::filesystem::path>::iterator ii = filenames.begin(); ii!= filenames.end(); ++ii) {
+		for (std::vector<boost::filesystem::path>::iterator ii = filenames_.begin(); ii!= filenames_.end(); ++ii) {
 			
 			if (*ii == el_nom) {
 				nom_index = counter;
@@ -1963,11 +2134,11 @@ public:
 		}
 		
 		if (nom_index==-1) {
-			filenames.push_back(el_nom);
+			filenames_.push_back(el_nom);
 			nom_index = counter;
 		}
 		
-		curr_input_index = nom_index;
+		curr_input_index_ = nom_index;
 		return nom_index;
 	}
 	
@@ -2068,14 +2239,14 @@ public:
         
         if (proj_index==-1) {
             int init_size = new_proj->size;
-            new_proj->size = this->num_natural_variables;
+            new_proj->size = this->num_natural_variables_;
             
 			proj_index = add_projection(new_proj);
             
             new_proj->size = init_size;
 		}
 		
-        curr_projection = proj_index;
+        curr_projection_ = proj_index;
         
 //        std::cout << "curr_projection is now: " << curr_projection << std::endl;
 		return proj_index;
@@ -2093,13 +2264,13 @@ public:
     int get_proj_index(vec_mp proj) const
     {
         int init_size = proj->size;
-        proj->size = this->num_natural_variables;
+        proj->size = this->num_natural_variables_;
         
         
         int proj_index = -1;
         
-        for (int ii=0; ii<num_projections; ii++) {
-			if (isSamePoint_inhomogeneous_input(projections[ii],proj)) {
+        for (int ii=0; ii<num_projections_; ii++) {
+			if (isSamePoint_inhomogeneous_input(projections_[ii],proj)) {
 				proj_index = ii;
 				break;
 			}
@@ -2122,36 +2293,36 @@ public:
 	 */
 	int add_projection(vec_mp proj){
 		
-		if (this->num_projections==0) {
-			projections = (vec_mp *) br_malloc(sizeof(vec_mp));
+		if (this->num_projections_==0) {
+			projections_ = (vec_mp *) br_malloc(sizeof(vec_mp));
 		}
 		else{
-			this->projections = (vec_mp *)br_realloc(this->projections, (this->num_projections+1) * sizeof(vec_mp));
+			this->projections_ = (vec_mp *)br_realloc(this->projections_, (this->num_projections_+1) * sizeof(vec_mp));
 		}
 		
 		
-		init_vec_mp2(this->projections[num_projections],num_natural_variables,DEFAULT_MAX_PREC);
-		this->projections[num_projections]->size = num_natural_variables;
+		init_vec_mp2(this->projections_[num_projections_],num_natural_variables_,DEFAULT_MAX_PREC);
+		this->projections_[num_projections_]->size = num_natural_variables_;
 		
 		
-		if (proj->size != num_natural_variables) {
+		if (proj->size != num_natural_variables_) {
 			vec_mp tempvec;
-			init_vec_mp2(tempvec,num_natural_variables,DEFAULT_MAX_PREC); tempvec->size = num_natural_variables;
-			for (int kk=0; kk<num_natural_variables; kk++) {
+			init_vec_mp2(tempvec,num_natural_variables_,DEFAULT_MAX_PREC); tempvec->size = num_natural_variables_;
+			for (int kk=0; kk<num_natural_variables_; kk++) {
 				set_mp(&tempvec->coord[kk], &proj->coord[kk]);
 			}
-			vec_cp_mp(projections[num_projections], tempvec);
+			vec_cp_mp(projections_[num_projections_], tempvec);
 			clear_vec_mp(tempvec);
 		}
 		else
 		{
-			vec_cp_mp(projections[num_projections], proj);
+			vec_cp_mp(projections_[num_projections_], proj);
 		}
 		
 
-		num_projections++;
+		num_projections_++;
 		
-		return num_projections;
+		return num_projections_;
 	}
 	
 	
@@ -2184,15 +2355,15 @@ public:
 	 */
 	void reset()
 	{
-		for (int ii=0; ii<num_projections; ii++) {
-			clear_vec_mp(projections[ii]);
+		for (int ii=0; ii<num_projections_; ii++) {
+			clear_vec_mp(projections_[ii]);
 		}
-		num_projections = 0;
+		num_projections_ = 0;
 		
-		filenames.resize(0);
+		filenames_.resize(0);
 		
-		vertices.resize(0);
-		num_vertices = 0;
+		vertices_.resize(0);
+		num_vertices_ = 0;
 		
 		clear();
 		init();
@@ -2202,82 +2373,82 @@ protected:
 	void init()
 	{
 		
-		num_projections = 0;
-		projections = NULL;
-		curr_projection = -1;
+		num_projections_ = 0;
+		projections_ = NULL;
+		curr_projection_ = -1;
 		
-		curr_input_index = -2;
+		curr_input_index_ = -2;
 		
-		this->num_vertices = 0;
-		this->num_natural_variables = 0;
+		this->num_vertices_ = 0;
+		this->num_natural_variables_ = 0;
 		
-		init_vec_mp(checker_1,0);
-		init_vec_mp(checker_2,0);
+		init_vec_mp(checker_1_,0);
+		init_vec_mp(checker_2_,0);
 		
 		
 		
-		init_mp(this->diff);
+		init_mp(this->diff_);
 
-		mpf_init(abs);
-		mpf_init(zerothresh);
-		mpf_set_d(zerothresh, 1e-8);
+		mpf_init(abs_);
+		mpf_init(zerothresh_);
+		mpf_set_d(zerothresh_, 1e-8);
 	}
 	
 	
 	void copy(const vertex_set &other)
 	{
-		this->curr_projection = other.curr_projection;
-		if (this->num_projections==0 && other.num_projections>0) {
-			projections = (vec_mp *) br_malloc(other.num_projections*sizeof(vec_mp));
+		this->curr_projection_ = other.curr_projection_;
+		if (this->num_projections_==0 && other.num_projections_>0) {
+			projections_ = (vec_mp *) br_malloc(other.num_projections_*sizeof(vec_mp));
 		}
-		else if(this->num_projections>0 && other.num_projections>0) {
-			projections = (vec_mp *) br_realloc(projections,other.num_projections*sizeof(vec_mp));
+		else if(this->num_projections_>0 && other.num_projections_>0) {
+			projections_ = (vec_mp *) br_realloc(projections_,other.num_projections_*sizeof(vec_mp));
 		}
-		else if (this->num_projections>0 && other.num_projections==0){
-			for (int ii=0; ii<this->num_projections; ii++) {
-				clear_vec_mp(projections[ii]);
+		else if (this->num_projections_>0 && other.num_projections_==0){
+			for (int ii=0; ii<this->num_projections_; ii++) {
+				clear_vec_mp(projections_[ii]);
 			}
-			free(projections);
+			free(projections_);
 		}
 		
-		for (int ii=0; ii<other.num_projections; ii++) {
-			if (ii>=this->num_projections){
-				init_vec_mp2(projections[ii],1,1024); projections[ii]->size = 1;
+		for (int ii=0; ii<other.num_projections_; ii++) {
+			if (ii>=this->num_projections_){
+				init_vec_mp2(projections_[ii],1,1024); projections_[ii]->size = 1;
 			}
-			vec_cp_mp(projections[ii],other.projections[ii]);
+			vec_cp_mp(projections_[ii],other.projections_[ii]);
 		}
 		
-		this->num_projections = other.num_projections;
+		this->num_projections_ = other.num_projections_;
 		
 		
-		curr_input_index = other.curr_input_index;
-		filenames = other.filenames;
+		curr_input_index_ = other.curr_input_index_;
+		filenames_ = other.filenames_;
 		
 		
-		this->num_vertices = other.num_vertices;
-		this->num_natural_variables = other.num_natural_variables;
+		this->num_vertices_ = other.num_vertices_;
+		this->num_natural_variables_ = other.num_natural_variables_;
 		
-		this->vertices = other.vertices;
+		this->vertices_ = other.vertices_;
 		
-		vec_cp_mp(this->checker_1,other.checker_1);
-		vec_cp_mp(this->checker_2,other.checker_2);
+		vec_cp_mp(this->checker_1_,other.checker_1_);
+		vec_cp_mp(this->checker_2_,other.checker_2_);
 		
 	}
 	
 	void clear()
 	{
-		clear_vec_mp(checker_1);
-		clear_vec_mp(checker_2);
+		clear_vec_mp(checker_1_);
+		clear_vec_mp(checker_2_);
 		
-		clear_mp(diff);
+		clear_mp(diff_);
 		
-		mpf_clear(abs);
-		mpf_clear(zerothresh);
+		mpf_clear(abs_);
+		mpf_clear(zerothresh_);
 		
-		for (int ii=0; ii<num_projections; ii++) {
-			clear_vec_mp(projections[ii]);
+		for (int ii=0; ii<num_projections_; ii++) {
+			clear_vec_mp(projections_[ii]);
 		}
-		free(projections);
+		free(projections_);
 	}
 
 };

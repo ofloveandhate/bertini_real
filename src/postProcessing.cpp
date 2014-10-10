@@ -147,8 +147,8 @@ void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check
 	
 	
 	vertex temp_vertex;
-	change_size_point_mp(temp_vertex.pt_mp,num_variables);
-	temp_vertex.pt_mp->size = num_variables;
+	change_size_point_mp(*temp_vertex.point(),num_variables);
+	(*temp_vertex.point())->size = num_variables;
 	
 	
 	//first, lets take care of the multiplicity 1 solutions
@@ -160,7 +160,7 @@ void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check
 		}
 		
 		
-		endpoint_to_vec_mp(temp_vertex.pt_mp, &endPoints[curr_ind]);
+		endpoint_to_vec_mp(*temp_vertex.point(), &endPoints[curr_ind]);
 		
 		solution_metadata meta;
 
@@ -169,7 +169,7 @@ void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check
 		meta.set_singular(endPoints[curr_ind].isSing);
 		meta.set_multiplicity(endPoints[curr_ind].multiplicity);
 		meta.set_successful(endPoints[curr_ind].success);
-		meta.set_output_index(this->num_vertices);
+		meta.set_output_index(this->num_vertices_);
 		meta.add_input_index(endPoints[curr_ind].path_num);
 		
 		add_solution(temp_vertex, meta);
@@ -193,7 +193,7 @@ void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check
 			occuring_multiplicities.push_back(endPoints[curr_ind].multiplicity);
 		}
 		
-		endpoint_to_vec_mp(temp_vertex.pt_mp, &endPoints[curr_ind]);
+		endpoint_to_vec_mp(*temp_vertex.point(), &endPoints[curr_ind]);
 		
 		
 		solution_metadata meta;
@@ -211,14 +211,14 @@ void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check
 				
 			}
 		}
-		meta.set_output_index(this->num_vertices);
+		meta.set_output_index(this->num_vertices());
 		
 		add_solution(temp_vertex, meta);
 	}
 	
 	
 	std::sort(occuring_multiplicities.begin(), occuring_multiplicities.end());
-	for (int ii=0; ii<num_vertices; ii++) {
+	for (unsigned int ii=0; ii<num_vertices(); ii++) {
 		for (auto jj = metadata[ii].input_index.begin(); jj!=metadata[ii].input_index.end(); ++jj) {
 			ordering.push_back(std::pair<long long, long long>(ii,*jj));
 		}
