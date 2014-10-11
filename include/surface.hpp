@@ -72,7 +72,7 @@ public:
 	
 	friend std::ostream & operator<<(std::ostream &os, const face & f)
 	{
-		os << f.midpt << std::endl;
+		os << f.midpt() << std::endl;
 		os << f.crit_slice_index << std::endl << f.top << " " << f.bottom << std::endl;
 		os << f.system_name_top << " " << f.system_name_bottom << std::endl;
 		
@@ -106,8 +106,8 @@ public:
 	 */
 	virtual void read_from_stream( std::istream &os )
 	{
-		
-		os >> midpt;
+		int tmp;
+		os >> tmp;  midpt(tmp);
 		os >> crit_slice_index >> top >> bottom;
 		os >> system_name_top >> system_name_bottom;
 		

@@ -1791,13 +1791,13 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 	
 	F.crit_slice_index = ii; // the index of which midslice this face came from.
-	F.midpt = mid_slices[ii].edges[jj].midpt; // index the point
+	F.midpt( mid_slices[ii].edges[jj].midpt() ); // index the point
 	
 	
 	std::cout << color::magenta() << "\n\n\n*****************************\nmidslice " << ii << " / " << this->mid_slices.size() <<  ", edge " << jj << " / " << mid_slices[ii].edges.size() << color::console_default() << "\n";
 	
 	
-	std::cout << color::brown() << "current midpoint: " <<  mid_slices[ii].edges[jj].midpt  << " " << color::console_default() << "\n";
+	std::cout << color::brown() << "current midpoint: " <<  mid_slices[ii].edges[jj].midpt()  << " " << color::console_default() << "\n";
 	
 	
 	
@@ -1806,8 +1806,8 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 	// get the type of system for the top and bottom edges.  this is determined by reading the system name for the midpoints.
 	// info on the files from which the points came from.
-	int bottom_input_index = V[mid_slices[ii].edges[jj].left].input_filename_index();
-	int top_input_index = V[mid_slices[ii].edges[jj].right].input_filename_index();
+	int bottom_input_index = V[mid_slices[ii].edges[jj].left()].input_filename_index();
+	int top_input_index = V[mid_slices[ii].edges[jj].right()].input_filename_index();
 	
 	bool bail_out = false;
 	if (md_config.systems.find(V.filename(bottom_input_index).string())==md_config.systems.end()) {
@@ -1863,10 +1863,10 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	int num_bottom_vars = md_config.num_bottom_vars();
 	int num_top_vars = md_config.num_top_vars();
 	
-	F.bottom = bottom_curve->edge_w_midpt(mid_slices[ii].edges[jj].left); // index the *edge*
+	F.bottom = bottom_curve->edge_w_midpt(mid_slices[ii].edges[jj].left()); // index the *edge*
 	F.system_name_bottom = md_config.system_name_bottom;
 	
-	F.top= top_curve->edge_w_midpt(mid_slices[ii].edges[jj].right); // index the *edge*
+	F.top= top_curve->edge_w_midpt(mid_slices[ii].edges[jj].right()); // index the *edge*
 	F.system_name_top = md_config.system_name_top;
 	
 	if (F.bottom < 0) { // this would happen because the bottom point was of type PROBLEMATIC
@@ -1896,7 +1896,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 		std::cout << color::red() << "bailing out " << ii << " " << jj << "." << std::endl;
 		
 		std::cout << "tracking from these point indices:" << std::endl;
-		std::cout <<  mid_slices[ii].edges[jj].left  << " " << mid_slices[ii].edges[jj].midpt  << " "  << mid_slices[ii].edges[jj].right << color::console_default() << std::endl;
+		std::cout <<  mid_slices[ii].edges[jj].left()  << " " << mid_slices[ii].edges[jj].midpt()  << " "  << mid_slices[ii].edges[jj].right() << color::console_default() << std::endl;
 		
 		return F;
 	}
@@ -1916,21 +1916,21 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	// mid
 	int var_counter = 0;
 	for (int kk=0; kk<this->num_variables; kk++) {
-		set_mp(&((*W_midtrack.point(0))->coord[kk]), &(*V[mid_slices[ii].edges[jj].midpt].point())->coord[kk]);
+		set_mp(&((*W_midtrack.point(0))->coord[kk]), &(*V[mid_slices[ii].edges[jj].midpt()].point())->coord[kk]);
 		var_counter++;
 	}
 	
 	// bottom
 	int offset = var_counter;
 	for (int kk=0; kk<num_bottom_vars; kk++) {
-		set_mp(&((*W_midtrack.point(0))->coord[kk+offset]), &(*V[mid_slices[ii].edges[jj].left].point())->coord[kk]); // y0
+		set_mp(&((*W_midtrack.point(0))->coord[kk+offset]), &(*V[mid_slices[ii].edges[jj].left()].point())->coord[kk]); // y0
 		var_counter++;
 	}
 	
 	// top
 	offset = var_counter;
 	for (int kk=0; kk<num_top_vars; kk++) {
-		set_mp(&((*W_midtrack.point(0))->coord[kk+offset]), &(*V[mid_slices[ii].edges[jj].right].point())->coord[kk]); // y2
+		set_mp(&((*W_midtrack.point(0))->coord[kk+offset]), &(*V[mid_slices[ii].edges[jj].right()].point())->coord[kk]); // y2
 		var_counter++;
 	}
 	
@@ -1967,8 +1967,8 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 	
 
-	set_mp(md_config.crit_val_left,   &(*V[ crit_slices[ii].edges[0].midpt ].projection_values())->coord[0]);
-	set_mp(md_config.crit_val_right,  &(*V[ crit_slices[ii+1].edges[0].midpt ].projection_values())->coord[0]);
+	set_mp(md_config.crit_val_left,   &(*V[ crit_slices[ii].edges[0].midpt() ].projection_values())->coord[0]);
+	set_mp(md_config.crit_val_right,  &(*V[ crit_slices[ii+1].edges[0].midpt() ].projection_values())->coord[0]);
 	
 	
 	// the u direction corresponds to pi[0].
@@ -1976,12 +1976,12 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 		if (zz==0) {
 			std::cout << "\n      <<=========   going left" << std::endl;
 			std::cout << "tracking from these point indices:" << std::endl;
-			std::cout <<  mid_slices[ii].edges[jj].left  << " " << mid_slices[ii].edges[jj].midpt  << " "  << mid_slices[ii].edges[jj].right << std::endl;
+			std::cout <<  mid_slices[ii].edges[jj].left()  << " " << mid_slices[ii].edges[jj].midpt()  << " "  << mid_slices[ii].edges[jj].right() << std::endl;
 		}
 		else{
 			std::cout << "\n\n           going right   =======>> " << std::endl;
 			std::cout << "tracking from these point indices:" << std::endl;
-			std::cout <<  mid_slices[ii].edges[jj].left  << " " << mid_slices[ii].edges[jj].midpt  << " "  << mid_slices[ii].edges[jj].right << std::endl;
+			std::cout <<  mid_slices[ii].edges[jj].left()  << " " << mid_slices[ii].edges[jj].midpt()  << " "  << mid_slices[ii].edges[jj].right() << std::endl;
 		}
 		
 		
@@ -1993,15 +1993,15 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 		if (zz==0) {
 			
 			set_zero_mp(md_config.u_target);
-			final_bottom_ind = bottom_curve->edges[F.bottom].left;
-			final_top_ind = top_curve->edges[F.top].left;
+			final_bottom_ind = bottom_curve->edges[F.bottom].left();
+			final_top_ind = top_curve->edges[F.top].left();
 			
 		}
 		else{ // zz==1, and going right
 			
 			set_one_mp(md_config.u_target);
-			final_bottom_ind = bottom_curve->edges[F.bottom].right;
-			final_top_ind = top_curve->edges[F.top].right;
+			final_bottom_ind = bottom_curve->edges[F.bottom].right();
+			final_top_ind = top_curve->edges[F.top].right();
 			
 		}
 		
@@ -2085,14 +2085,14 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				
 				int qq = *poss_iter;
 				
-				bool matches_end = ((crit_slices[ii+zz].edges[qq].left == current_bottom_ind) || (crit_slices[ii+zz].edges[qq].right == current_bottom_ind));
+				bool matches_end = ((crit_slices[ii+zz].edges[qq].left() == current_bottom_ind) || (crit_slices[ii+zz].edges[qq].right() == current_bottom_ind));
 				bool already_found = (found_edges.find(qq)!=found_edges.end());
 				
 				
 				// we gotta be moving from lower to higher...  so temp > temp2 is required
 				bool correct_interval = false;
 				if (matches_end) {
-					set_mp(temp , &(*V[ crit_slices[ii+zz].edges[qq].midpt].projection_values())->coord[1]);
+					set_mp(temp , &(*V[ crit_slices[ii+zz].edges[qq].midpt()].projection_values())->coord[1]);
 					set_mp(temp2, &(*V[ final_bottom_ind].projection_values())->coord[1]);
 					set_mp(temp3, &(*V[ final_top_ind].projection_values())->coord[1]);
 					correct_interval =  ( mpf_get_d(temp3->r) > mpf_get_d(temp->r)) && (mpf_get_d(temp->r) > mpf_get_d(temp2->r)) ;
@@ -2105,7 +2105,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 					
 					if (program_options.verbose_level>=1) {
 						std::cout << "candidate [" << candidate_counter << "] = " <<
-						crit_slices[ii+zz].edges[qq].left << " " << crit_slices[ii+zz].edges[qq].midpt << " " << crit_slices[ii+zz].edges[qq].right <<  std::endl;
+						crit_slices[ii+zz].edges[qq].left() << " " << crit_slices[ii+zz].edges[qq].midpt() << " " << crit_slices[ii+zz].edges[qq].right() <<  std::endl;
 					}
 					
 					
@@ -2138,14 +2138,14 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				
 				if (program_options.verbose_level>=-1) {
 					//					std::cout << "face #: " << this->num_faces << ", zz: " << zz << ", current_edge: " << current_edge << std::endl;
-					std::cout << "tracking to these indices: " << final_bottom_ind << " " << crit_slices[ii+zz].edges[current_edge].midpt << " " << final_top_ind << std::endl;
+					std::cout << "tracking to these indices: " << final_bottom_ind << " " << crit_slices[ii+zz].edges[current_edge].midpt() << " " << final_top_ind << std::endl;
 				}
 				
 				
 				
 				
 				
-				set_mp(proj_mid, &(*V[ crit_slices[ii+zz].edges[current_edge].midpt ].projection_values())->coord[1]);
+				set_mp(proj_mid, &(*V[ crit_slices[ii+zz].edges[current_edge].midpt() ].projection_values())->coord[1]);
 				
 				
 				
@@ -2215,9 +2215,9 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				//print some display to screen
 				if (solve_options.verbose_level >= 3)
 				{
-					print_point_to_screen_matlab((*V[mid_slices[ii].edges[jj].right].point()),"top_start");
-					print_point_to_screen_matlab((*V[mid_slices[ii].edges[jj].left].point()),"bottom_start");
-					print_point_to_screen_matlab((*V[ crit_slices[ii+zz].edges[current_edge].midpt ].point()),"midpoint_target");
+					print_point_to_screen_matlab((*V[mid_slices[ii].edges[jj].right()].point()),"top_start");
+					print_point_to_screen_matlab((*V[mid_slices[ii].edges[jj].left()].point()),"bottom_start");
+					print_point_to_screen_matlab((*V[ crit_slices[ii+zz].edges[current_edge].midpt() ].point()),"midpoint_target");
 				}
 				
 				
@@ -2280,7 +2280,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				//search among the current edge possibilities for the one containing the found (mid) point
 				int index_in_set = -1;
 				for (std::set<int>::iterator possibility_iter=possible_edges.begin(); possibility_iter!=possible_edges.end(); possibility_iter++) {
-					if (found_index == crit_slices[ii+zz].edges[*possibility_iter].midpt) {
+					if (found_index == crit_slices[ii+zz].edges[*possibility_iter].midpt()) {
 						index_in_set = *possibility_iter;
 						break;
 					}
@@ -2308,21 +2308,21 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 					int next_edge = index_in_set; // index the *edge*
 					
 					if (program_options.verbose_level>=0) {
-						std::cout << "added_edge " << next_edge << ", l m r: " << crit_slices[ii+zz].edges[next_edge].left << " " << crit_slices[ii+zz].edges[next_edge].midpt << " " << crit_slices[ii+zz].edges[next_edge].right << std::endl;
+						std::cout << "added_edge " << next_edge << ", l m r: " << crit_slices[ii+zz].edges[next_edge].left() << " " << crit_slices[ii+zz].edges[next_edge].midpt() << " " << crit_slices[ii+zz].edges[next_edge].right() << std::endl;
 					}
 					
 					
 					
 					
-					if ( (next_edge<0) || !(  (crit_slices[ii+zz].edges[next_edge].left!=current_bottom_ind) ||  crit_slices[ii+zz].edges[next_edge].right!=current_bottom_ind))  {
+					if ( (next_edge<0) || !(  (crit_slices[ii+zz].edges[next_edge].left()!=current_bottom_ind) ||  crit_slices[ii+zz].edges[next_edge].right()!=current_bottom_ind))  {
 						continue;
 					}
 					
-					if (crit_slices[ii+zz].edges[next_edge].left==current_bottom_ind) {
-						current_bottom_ind = current_top_ind = crit_slices[ii+zz].edges[next_edge].right; // the upper value
+					if (crit_slices[ii+zz].edges[next_edge].left()==current_bottom_ind) {
+						current_bottom_ind = current_top_ind = crit_slices[ii+zz].edges[next_edge].right(); // the upper value
 					}
 					else {
-						current_bottom_ind = current_top_ind = crit_slices[ii+zz].edges[next_edge].left; // the lower value
+						current_bottom_ind = current_top_ind = crit_slices[ii+zz].edges[next_edge].left(); // the lower value
 					}
 					
 					// keep track of those edges we found.

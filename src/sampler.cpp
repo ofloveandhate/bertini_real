@@ -953,19 +953,19 @@ void curve_decomposition::fixed_sampler(vertex_set & V,
 		
 		std::cout << "\tsampling edge " << ii << std::endl;
 		
-		neg_mp(& (*W.linear(0))->coord[0],&(*V[edges[ii].midpt].projection_values())->coord[V.curr_projection()]);
+		neg_mp(& (*W.linear(0))->coord[0],&(*V[edges[ii].midpt()].projection_values())->coord[V.curr_projection()]);
 		
 		W.reset_points();
-		W.add_point(*V[edges[ii].midpt].point());
+		W.add_point(*V[edges[ii].midpt()].point());
 		
 		
 		mpf_set_d(num_intervals->r,double(target_num_samples-1));
 		
-		sub_mp(interval_width,&(*V[edges[ii].right].projection_values())->coord[V.curr_projection()],&(*V[edges[ii].left].projection_values())->coord[V.curr_projection()]);
+		sub_mp(interval_width,&(*V[edges[ii].right()].projection_values())->coord[V.curr_projection()],&(*V[edges[ii].left()].projection_values())->coord[V.curr_projection()]);
 		
 		div_mp(interval_width,interval_width,num_intervals);
 		
-		set_mp(target_projection_value,&(*V[edges[ii].left].projection_values())->coord[V.curr_projection()]);
+		set_mp(target_projection_value,&(*V[edges[ii].left()].projection_values())->coord[V.curr_projection()]);
 		
 		//add once to get us off 0
 		add_mp(target_projection_value,target_projection_value,interval_width);
@@ -1056,9 +1056,9 @@ int  curve_decomposition::adaptive_set_initial_sample_data()
 	{
 		sample_indices[ii].resize(3);
 		
-		sample_indices[ii][0] = edges[ii].left;
-		sample_indices[ii][1] = edges[ii].midpt;
-		sample_indices[ii][2] = edges[ii].right;
+		sample_indices[ii][0] = edges[ii].left();
+		sample_indices[ii][1] = edges[ii].midpt();
+		sample_indices[ii][2] = edges[ii].right();
 		
 	}
 	
@@ -1089,13 +1089,13 @@ int  curve_decomposition::fixed_set_initial_sample_data(int target_num_samples)
 	{
 		sample_indices[ii].resize(num_samples_each_edge[ii]);
 		if (num_samples_each_edge[ii]==1) {
-			sample_indices[ii][0] = edges[ii].midpt;
+			sample_indices[ii][0] = edges[ii].midpt();
 		}
 		else
 		{
-			sample_indices[ii][0] = edges[ii].left;
+			sample_indices[ii][0] = edges[ii].left();
 			
-			sample_indices[ii][target_num_samples-1] = edges[ii].right;
+			sample_indices[ii][target_num_samples-1] = edges[ii].right();
 		}
 		
 		
@@ -1482,22 +1482,22 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 		// mid
 		int var_counter = 0;
 		for (int kk=0; kk<this->num_variables; kk++) {
-			set_mp(&(*W_midtrack.point(0))->coord[kk], &(*V[faces[ii].midpt].point())->coord[kk]);
+			set_mp(&(*W_midtrack.point(0))->coord[kk], &(*V[faces[ii].midpt()].point())->coord[kk]);
 			var_counter++;
 		}
 		
-		int mid_edge = mid_slices[slice_ind].edge_w_midpt(faces[ii].midpt);
+		int mid_edge = mid_slices[slice_ind].edge_w_midpt(faces[ii].midpt());
 		// bottom
 		int offset = var_counter;
 		for (int kk=0; kk<num_bottom_vars; kk++) {
-			set_mp(& (*W_midtrack.point(0))->coord[kk+offset], &(*V[mid_slices[slice_ind].edges[mid_edge].left].point())->coord[kk]); // y0
+			set_mp(& (*W_midtrack.point(0))->coord[kk+offset], &(*V[mid_slices[slice_ind].edges[mid_edge].left()].point())->coord[kk]); // y0
 			var_counter++;
 		}
 		
 		// top
 		offset = var_counter;
 		for (int kk=0; kk<num_top_vars; kk++) {
-			set_mp(& (*W_midtrack.point(0))->coord[kk+offset], &(*V[mid_slices[slice_ind].edges[mid_edge].right].point())->coord[kk]); // y2
+			set_mp(& (*W_midtrack.point(0))->coord[kk+offset], &(*V[mid_slices[slice_ind].edges[mid_edge].right()].point())->coord[kk]); // y2
 			var_counter++;
 		}
 		
@@ -1520,8 +1520,8 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 		
 		// make u, v target values.
 		
-		set_mp(md_config.crit_val_left,   &(*V[ crit_slices[slice_ind].edges[0].midpt ].projection_values())->coord[0]);
-		set_mp(md_config.crit_val_right,  &(*V[ crit_slices[slice_ind+1].edges[0].midpt ].projection_values())->coord[0]);
+		set_mp(md_config.crit_val_left,   &(*V[ crit_slices[slice_ind].edges[0].midpt() ].projection_values())->coord[0]);
+		set_mp(md_config.crit_val_right,  &(*V[ crit_slices[slice_ind+1].edges[0].midpt() ].projection_values())->coord[0]);
 		
 		
 		

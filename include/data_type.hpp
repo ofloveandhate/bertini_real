@@ -85,7 +85,8 @@ std::string enum_lookup(int flag);
 
 
 template <typename key_type, typename value_type>
-value_type map_lookup_with_default(const  std::map <key_type,value_type> & mc_mapperson, const key_type & lookup_key, const value_type& default_value ) {
+value_type map_lookup_with_default(const  std::map <key_type,value_type> & mc_mapperson, const key_type & lookup_key, const value_type& default_value )
+{
 	typename std::map<key_type,value_type>::const_iterator it = mc_mapperson.find( lookup_key );
 	if ( it == mc_mapperson.end() ) {
 		return default_value;
@@ -2468,13 +2469,116 @@ typedef std::pair<int,int> witness_set_index;
  */
 class witness_point_metadata
 {
-public:
-	int dimension;
+
+	int dimension_;
 	
-	int corank, typeflag, multiplicity, component_number, deflations_needed;
-	double condition_number, smallest_nonzero_sing_value, largest_zero_sing_value;
+	int corank_, typeflag_, multiplicity_, component_number_, deflations_needed_;
+	double condition_number_, smallest_nonzero_sing_value_, largest_zero_sing_value_;
+	
+	
+	
+	
+public:
+	
+	
+	/**
+	 \brief get the largest zero singular value
+	 \return largest zero singular value
+	 */
+	inline double largest_zero_sing_value() const
+	{
+		return largest_zero_sing_value_;
+	}
+	
+	
+	
+	/**
+	 \brief get the smallest nonzero singular value
+	 \return smallest nonsingular value
+	 */
+	inline double smallest_nonzero_sing_value() const
+	{
+		return smallest_nonzero_sing_value_;
+	}
+	
+	
+	
+	/**
+	 \brief get the condition number
+	 \return condition number
+	 */
+	inline double condition_number() const
+	{
+		return condition_number_;
+	}
+	
 	
 
+	
+	/**
+	 \brief get the number of deflations needed
+	 \return num_deflations_needed
+	 */
+	inline int num_deflations_needed() const
+	{
+		return deflations_needed_;
+	}
+	
+	
+	
+	/**
+	 \brief get the multiplicity
+	 \return multiplicity	 */
+	inline int multiplicity() const
+	{
+		return multiplicity_;
+	}
+	
+	
+	
+	
+	/**
+	 \brief get the type
+	 \return type
+	 */
+	inline int type() const
+	{
+		return typeflag_;
+	}
+	
+	/**
+	 \brief get the corank
+	 \return corank
+	 */
+	inline int corank() const
+	{
+		return corank_;
+	}
+	
+	
+	/**
+	 \brief get the dimension
+	 \return dimension
+	 */
+	inline int dimension() const
+	{
+		return dimension_;
+	}
+	
+	
+	
+	/**
+	 \brief get the component number
+	 \return component number
+	 */
+	inline int component_number() const
+	{
+		return component_number_;
+	}
+	
+	
+	
+	
 	/**
 	 read the metadata from the witness_data file.  call only at the appropriate point.
 	 
@@ -2483,14 +2587,14 @@ public:
 	void set_from_file(FILE *IN)
 	{
 		fscanf(IN,"%lf %d %lf %lf %d %d %d %d",
-			   &condition_number,
-			   &corank,
-			   &smallest_nonzero_sing_value,
-			   &largest_zero_sing_value,
-			   &typeflag, // 10 is nonsingular, 15 is singular
-			   &multiplicity,
-			   &component_number,
-			   &deflations_needed);
+			   &condition_number_,
+			   &corank_,
+			   &smallest_nonzero_sing_value_,
+			   &largest_zero_sing_value_,
+			   &typeflag_, // 10 is nonsingular, 15 is singular
+			   &multiplicity_,
+			   &component_number_,
+			   &deflations_needed_);
 	}
 	
 	
@@ -2503,14 +2607,14 @@ public:
 	 */
 	friend std::ostream & operator<<(std::ostream &os, witness_point_metadata & s)
 	{
-		os << "condition_number " << s.condition_number << "\n";
-		os << "corank " << s.corank << "\n";
-		os << "smallest_nonzero_sing_value " << s.smallest_nonzero_sing_value << "\n";
-		os << "largest_zero_sing_value " << s.largest_zero_sing_value << "\n";
-		os << "typeflag " << s.typeflag << "\n";
-		os << "multiplicity " << s.multiplicity << "\n";
-		os << "component_number " << s.component_number << "\n";
-		os << "deflations_needed " << s.deflations_needed << std::endl;
+		os << "condition_number " << s.condition_number_ << "\n";
+		os << "corank " << s.corank_ << "\n";
+		os << "smallest_nonzero_sing_value " << s.smallest_nonzero_sing_value_ << "\n";
+		os << "largest_zero_sing_value " << s.largest_zero_sing_value_ << "\n";
+		os << "typeflag " << s.typeflag_ << "\n";
+		os << "multiplicity " << s.multiplicity_ << "\n";
+		os << "component_number " << s.component_number_ << "\n";
+		os << "deflations_needed " << s.deflations_needed_ << std::endl;
 		
 		return os;
 	}
@@ -2525,7 +2629,7 @@ public:
 	 
 	 \param dim the dimension to set to.
 	 */
-	witness_point_metadata(int dim){dimension = dim;}
+	witness_point_metadata(int new_dim){dimension_ = new_dim;}
 	
 	
 	witness_point_metadata(){};
@@ -2540,15 +2644,15 @@ public:
 	
 	void copy(const witness_point_metadata& other)
 	{
-		dimension = other.dimension;
-		corank = other.corank;
-		typeflag = other.typeflag;
-		multiplicity = other.multiplicity;
-		component_number = other.component_number;
-		deflations_needed = other.deflations_needed;
-		condition_number = other.condition_number;
-		smallest_nonzero_sing_value = other.smallest_nonzero_sing_value;
-		largest_zero_sing_value = other.largest_zero_sing_value;
+		dimension_ = other.dimension_;
+		corank_ = other.corank_;
+		typeflag_ = other.typeflag_;
+		multiplicity_ = other.multiplicity_;
+		component_number_ = other.component_number_;
+		deflations_needed_ = other.deflations_needed_;
+		condition_number_ = other.condition_number_;
+		smallest_nonzero_sing_value_ = other.smallest_nonzero_sing_value_;
+		largest_zero_sing_value_ = other.largest_zero_sing_value_;
 	}
 	
 	
@@ -2562,23 +2666,32 @@ public:
  */
 class witness_linear_metadata
 {
+	int dim_;
 	
 public:
 	
-	int dimension;
+	
+	/**
+	 get the dimension
+	 \return the dimension
+	 */
+	inline int dimension() const
+	{
+		return dim_;
+	}
 	
 	
-	witness_linear_metadata(int dim){dimension = dim;}
+	witness_linear_metadata(int new_dim){dim_ = new_dim;}
 	
 	witness_linear_metadata(){};
 	witness_linear_metadata(const witness_linear_metadata& other)
 	{
-		dimension = other.dimension;
+		dim_ = other.dim_;
 	}
 	
 	witness_linear_metadata& operator=(const witness_linear_metadata &other)
 	{
-		dimension = other.dimension;
+		dim_ = other.dim_;
 		return *this;
 	}
 };
@@ -2598,8 +2711,19 @@ public:
  */
 class witness_patch_metadata
 {
+	int dim_;
 	
 public:
+	
+	/**
+	 get the dimension
+	 \return the dimension
+	 */
+	inline int dimension() const
+	{
+		return dim_;
+	}
+	
 	
 	witness_patch_metadata(){};
 	
@@ -2608,22 +2732,22 @@ public:
 	 constructor, setting the dimension in the process
 	 \param dim the dimension to set.
 	 */
-	witness_patch_metadata(int dim){dimension = dim;}
+	witness_patch_metadata(int new_dim){dim_ = new_dim;}
 
 	
 	witness_patch_metadata(const witness_patch_metadata& other)
 	{
-		dimension = other.dimension;
+		dim_ = other.dim_;
 	}
 	
 	witness_patch_metadata& operator=(const witness_patch_metadata &other)
 	{
-		dimension = other.dimension;
+		dim_ = other.dim_;
 		return *this;
 	}
 	
 	
-	int dimension;
+	
 };
 
 
@@ -2647,10 +2771,21 @@ private:
 	std::map<int,std::map<int,int> > dimension_component_counter;
 	std::map<int,std::map<int,std::vector<int>>> index_tracker;
 	
+	
+	int num_variables_;
+	
 public:
 	
-	int num_variables;
 	
+	/**
+	 \brief get the number of variables
+	 
+	 \return the number of variables
+	 */
+	inline int num_variables() const
+	{
+		return num_variables_;
+	}
 	
 	
 	void reset()
@@ -2683,7 +2818,7 @@ public:
 	witness_set best_possible_automatic_set(BR_configuration & options);
 	witness_set choose_set_interactive(BR_configuration & options); // lets the user choose a set, and returns a copy of it.
 	
-	witness_set form_specific_witness_set(int dim, int comp);
+	witness_set form_specific_witness_set(int dim, int comp)	;
 	
 	
 	
@@ -2719,7 +2854,7 @@ public:
 	/**
 	 print the witness_data to screen
 	 */
-	void print()
+	void print() const
 	{
 		
 		std::cout << "the nonempty dimensions:" << std::endl;
@@ -2754,30 +2889,6 @@ public:
 			print_point_to_screen_matlab(pts_mp_[ii],"p");
 		}
 	}
-	
-	
-	
-//	witness_data()
-//	{
-//		init();
-//	}
-	
-	
-//	//copy operator.
-//	witness_data(const witness_data & other)
-//	{
-//		init();
-////		copy(other);
-//	}
-//	
-//	
-//	// assignment
-//	witness_data& operator=( const witness_data& other)
-//	{
-//		reset();
-////		copy(other);
-//		return *this;
-//	}
 	
 	
 	
@@ -2831,24 +2942,49 @@ class cell
 	
 private:
 
+	int midpt_; ///< index into vertex set
+	
 	
 public:
-	int midpt; ///< index into vertex set
 	
-	
-	friend std::istream & operator>>(std::istream &os, cell & c)
+	/**
+	 \brief get the midpoint
+	 
+	 \return the index of the midpoint
+	 */
+	inline int midpt() const
 	{
-		os >> c.midpt;
-		return os;
+		return midpt_;
 	}
 	
-	void copy(const cell & other){
-		this->midpt = other.midpt;
+	/**
+	 \brief set the midpoint
+	 
+	 \param the new index of the midpoint
+	 \return the new index of the midpoint
+	 */
+	int midpt(int new_mid)
+	{
+		return midpt_ = new_mid;
+	}
+	
+	
+	
+	
+	
+	friend std::istream & operator>>(std::istream &is,  cell & c)
+	{
+		is >> c.midpt_;
+		return is;
+	}
+	
+	inline void copy(const cell & other){
+		midpt(other.midpt());
 	}
 	
 	void send(int target, parallelism_config & mpi_config)
 	{
-		int buffer = midpt;
+		int buffer = midpt();
 		MPI_Send(&buffer, 1, MPI_INT, target, CELL, MPI_COMM_WORLD);
 	}
 	
@@ -2857,7 +2993,7 @@ public:
 		MPI_Status statty_mc_gatty;
 		int buffer;
 		MPI_Recv(&buffer, 1, MPI_INT, source, CELL, MPI_COMM_WORLD, &statty_mc_gatty);
-		midpt = buffer;
+		midpt(buffer);
 	}
 	
 	virtual void read_from_stream( std::istream &is ) = 0;
@@ -2873,32 +3009,124 @@ public:
  */
 class edge : public cell
 {
-public:
-	int left;  ///< index into vertices
-	int right; ///< index into vertices
-	int midpt; ///<  index into vertices
+	int left_;  ///< index into vertices
+	int right_; ///< index into vertices
 	
-	std::vector< int > removed_points;
+	std::vector< int > removed_points_;
+	
+	
+public:
+	
+	
+	typedef std::vector< int >::iterator removed_iterator;
+	typedef std::vector< int >::const_iterator removed_const_iterator;
+	
+	
+	removed_iterator removed_begin(){return removed_points_.begin();}
+	
+	removed_const_iterator removed_begin() const {return removed_points_.begin();}
+	
+	removed_iterator removed_end(){return removed_points_.end();}
+	
+	removed_const_iterator removed_end() const {return removed_points_.end();}
+	
+	
+	
+	
+	/**
+	 \brief adds a point as a removed point.  tacks on to the end of the vector
+	 
+	 \param new_removed_point the index of the point to add
+	 \return the index of the point
+	 */
+	int add_removed_point(int new_removed_point)
+	{
+		removed_points_.push_back(new_removed_point);
+		return new_removed_point;
+	}
+	
+	
+	/**
+	 \brief get the right point
+	 
+	 \return the index of the right point
+	 */
+	inline int right() const
+	{
+		return right_;
+	}
+	
+	
+	/**
+	 \brief set the left point
+	 \param new_right the new index of the left point
+	 \return the index of the left point
+	 */
+	int right(int new_right)
+	{
+		return right_ = new_right;
+	}
+	
+	
+	
+	
+	
+	/**
+	 \brief get the left point
+	 
+	 \return the index of the left point
+	 */
+	inline int left() const
+	{
+		return left_;
+	}
+	
+	
+	/**
+	 \brief set the left point
+	 \param new_left the new index of the left point
+	 \return the index of the left point
+	 */
+	int left(int new_left)
+	{
+		return left_ = new_left;
+	}
+	
+	
+	
+	
+	
+	
+
+	
+	
+	
+	
+	
+	
 	
 	
 	
 	edge() : cell()
 	{
-		left = right = midpt = -1;
+		left_ = right_ = -1;
 	}
 	
-	edge(int left_, int midpt_, int right_)
+	edge(int new_left, int new_midpt, int new_right)
 	{
-		this->left = left_;
-		this->right = right_;
-		this->midpt = midpt_;
+		left(new_left);
+		right(new_right);
+		midpt(new_midpt);
 	}
+	
+	
+	
 	
 	// other defaults are correct for this type.
 	
 	inline bool is_degenerate()
 	{
-		if ((left == right) || (left==midpt) || (right==midpt))
+		if ((left() == right()) || (left()==midpt()) || (right()==midpt()))
 			return true;
 		else
 			return false;
@@ -2908,20 +3136,20 @@ public:
 	{
 		int * buffer = new int[4];
 		
-		buffer[0] = left;
-		buffer[1] = midpt;
-		buffer[2] = right;
-		buffer[3] = removed_points.size();
+		buffer[0] = left();
+		buffer[1] = midpt();
+		buffer[2] = right();
+		buffer[3] = removed_points_.size();
 		
 		MPI_Send(buffer, 4, MPI_INT, target, EDGE, MPI_COMM_WORLD);
 		
 		delete [] buffer;
 		
-		buffer = new int[removed_points.size()];
-		for (unsigned int ii=0; ii!=removed_points.size(); ii++) {
-			buffer[ii] = removed_points[ii];
+		buffer = new int[removed_points_.size()];
+		for (unsigned int ii=0; ii!=removed_points_.size(); ii++) {
+			buffer[ii] = removed_points_[ii];
 		}
-		MPI_Send(buffer, removed_points.size(), MPI_INT, target, EDGE, MPI_COMM_WORLD);
+		MPI_Send(buffer, removed_points_.size(), MPI_INT, target, EDGE, MPI_COMM_WORLD);
 		delete [] buffer;
 		
 
@@ -2933,9 +3161,9 @@ public:
 		int * buffer = new int[4];
 		MPI_Recv(buffer, 4, MPI_INT, source, EDGE, MPI_COMM_WORLD, &statty_mc_gatty);
 		
-		left  = buffer[0];
-		midpt = buffer[1];
-		right = buffer[2];
+		left(buffer[0]);
+		midpt(buffer[1]);
+		right(buffer[2]);
 		
 		int temp_num_removed = buffer[3];
 		
@@ -2945,7 +3173,7 @@ public:
 		buffer = new int[temp_num_removed];
 		MPI_Recv(buffer, temp_num_removed, MPI_INT, source, EDGE, MPI_COMM_WORLD, &statty_mc_gatty);
 		for (int ii=0; ii<temp_num_removed; ii++) {
-			removed_points.push_back(buffer[ii]);
+			removed_points_.push_back(buffer[ii]);
 		}
 		
 		delete [] buffer;
@@ -2983,6 +3211,10 @@ class decomposition : public patch_holder
 {
 
 public:
+	
+	
+	
+	
 	std::map< int , int > counters;
 	std::map< int , std::vector< int > > indices;
 	
@@ -2997,6 +3229,9 @@ public:
 	
 	system_randomizer * randomizer; ///< the randomizer for the decomposition.
 
+	
+	
+	
 	vec_mp sphere_center; ///< the center of the sphere.
 	comp_mp sphere_radius; ///< the radius of the sphere.
 	bool have_sphere_radius; ///< indicates whether the decomposition has the radius set, or needs one still.
@@ -3004,6 +3239,9 @@ public:
 	boost::filesystem::path input_filename; ///< the name of the text file in which the system resides.
 //	function input_file;
 	
+	
+	
+public:
 	
 	
     
