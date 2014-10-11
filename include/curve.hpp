@@ -73,9 +73,9 @@ public:
         std::set< int > ind;
         
         for (int ii=0; ii<num_edges; ii++) {
-            ind.insert(edges[ii].left);
-            ind.insert(edges[ii].midpt);
-            ind.insert(edges[ii].right);
+            ind.insert(edges[ii].left());
+            ind.insert(edges[ii].midpt());
+            ind.insert(edges[ii].right());
         }
         
         return ind;
@@ -163,7 +163,7 @@ public:
 	{
 		
 		for (int ii=0; ii<num_edges; ii++){
-			if (this->edges[ii].midpt == ind){
+			if (this->edges[ii].midpt() == ind){
 				
 				if (edges[ii].is_degenerate()) {
 					continue;
@@ -188,7 +188,7 @@ public:
 	{
 		
 		for (int ii=0; ii<num_edges; ii++){
-			if (this->edges[ii].left == ind){
+			if (this->edges[ii].left() == ind){
 				
 				if (edges[ii].is_degenerate()) {
 					continue;
@@ -212,7 +212,7 @@ public:
 	{
 		
 		for (int ii=0; ii<num_edges; ii++){
-			if (this->edges[ii].right == ind){
+			if (this->edges[ii].right() == ind){
 				
 				if (edges[ii].is_degenerate()) {
 					continue;
@@ -237,7 +237,7 @@ public:
 	{
 		
 		for (int ii=0; ii<num_edges; ii++){
-			if (this->edges[ii].midpt == ind){
+			if (this->edges[ii].midpt() == ind){
 				return ii;
 			}
 		}
@@ -256,7 +256,7 @@ public:
 	{
 		
 		for (int ii=0; ii<num_edges; ii++){
-			if (this->edges[ii].left == ind){
+			if (this->edges[ii].left() == ind){
 				return ii;
 			}
 		}
@@ -275,7 +275,7 @@ public:
 	{
 		
 		for (int ii=0; ii<num_edges; ii++){
-			if (this->edges[ii].right == ind){
+			if (this->edges[ii].right() == ind){
 				return ii;
 			}
 		}
@@ -296,8 +296,7 @@ public:
 		
 		for (int ii=0; ii<num_edges; ii++){
 			
-			for (std::vector<int>::iterator iter=edges[ii].removed_points.begin();
-				 iter!=edges[ii].removed_points.end(); ++iter) {
+			for (auto iter=edges[ii].removed_begin(); iter!=edges[ii].removed_end(); ++iter) {
 				if (*iter == ind){
 					return ii;
 				}

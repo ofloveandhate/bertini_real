@@ -1945,15 +1945,15 @@ void witness_data::populate()
 	int num_nonempty_codims;
 
 	
-	fscanf(IN,"%d %d", &num_variables, &num_nonempty_codims);
+	fscanf(IN,"%d %d", &num_variables_, &num_nonempty_codims);
 	
 	
 	
 	vec_mp prev_approx;
-	init_vec_mp(prev_approx,num_variables); prev_approx->size = num_variables;
+	init_vec_mp(prev_approx,num_variables_); prev_approx->size = num_variables_;
 	
 	vec_mp temp_vec;
-	init_vec_mp(temp_vec,num_variables); temp_vec->size = num_variables;
+	init_vec_mp(temp_vec,num_variables_); temp_vec->size = num_variables_;
 	
 	
 	//create counters and initialize to zeros
@@ -1969,7 +1969,7 @@ void witness_data::populate()
 		
 		codim_indicator[ii] = current_codimension;
 		
-		int current_dimension = num_variables-1-current_codimension;
+		int current_dimension = num_variables_-1-current_codimension;
 		
 		nonempty_dimensions.push_back(current_dimension);
 		
@@ -1980,7 +1980,7 @@ void witness_data::populate()
 			// last approximation
 			fscanf(IN,"%d",&precision);
 			change_prec_vec_mp(temp_vec,precision);
-			for (int kk=0; kk<num_variables; kk++) {
+			for (int kk=0; kk<num_variables_; kk++) {
 				mpf_inp_str(temp_vec->coord[kk].r, IN, 10); // 10 is the base
 				mpf_inp_str(temp_vec->coord[kk].i, IN, 10);
 			}
@@ -1990,7 +1990,7 @@ void witness_data::populate()
 			// previous approximation
 			fscanf(IN,"%d",&precision);
 			change_prec_vec_mp(temp_vec,precision);
-			for (int kk=0; kk<num_variables; kk++) {
+			for (int kk=0; kk<num_variables_; kk++) {
 				mpf_inp_str(prev_approx->coord[kk].r, IN, 10); // 10 is the base
 				mpf_inp_str(prev_approx->coord[kk].i, IN, 10);
 			}
@@ -2000,19 +2000,17 @@ void witness_data::populate()
 			
 			meta.set_from_file(IN);
 			
-//			std::cout << meta << std::endl;
-//			mypause();
-			
+
 			int index = add_solution(temp_vec, meta);
 			
-			int num_existing_pts_this_comp = map_lookup_with_default( dimension_component_counter[current_dimension], meta.component_number, 0 ); // the right hand 0 is the default if not found
+			int num_existing_pts_this_comp = map_lookup_with_default( dimension_component_counter[current_dimension], meta.component_number(), 0 ); // the right hand 0 is the default if not found
 			
-			dimension_component_counter[current_dimension][meta.component_number] = num_existing_pts_this_comp+1;
-			index_tracker[current_dimension][meta.component_number].push_back(index);
+			dimension_component_counter[current_dimension][meta.component_number()] = num_existing_pts_this_comp+1;
+			index_tracker[current_dimension][meta.component_number()].push_back(index);
 			
 			
-			if (meta.component_number+1 > component_counter[ii]) {
-				component_counter[ii]  = meta.component_number+1;  // keeps track of the number of components per dimension
+			if (meta.component_number()+1 > component_counter[ii]) {
+				component_counter[ii]  = meta.component_number()+1;  // keeps track of the number of components per dimension
 			}
 			
 			
@@ -2048,7 +2046,7 @@ void witness_data::populate()
 		//BEGIN REPEATING BLOCK, one per nonempty codimension
 		int current_codimension;
 		current_codimension = codim_indicator[mm];
-		int current_dimension = num_variables-1-current_codimension;
+		int current_dimension = num_variables_-1-current_codimension;
 		
 		int num_rows_randomization, num_cols_randomization;
 		fscanf(IN,"%d %d",&num_rows_randomization,&num_cols_randomization);
@@ -2224,7 +2222,7 @@ witness_set witness_data::choose(BR_configuration & options)
 				
 				if (map_lookup_with_default(dimension_component_counter[target_dimension],target_component,0)==0) {
 					std::cout << "you asked for component " << target_component << " (of dimension " << nonempty_dimensions[0] << ") which does not exist" << std::endl;
-					witness_set W(num_variables);
+					witness_set W(num_variables());
 					W.set_dimension(nonempty_dimensions[0]);
 					W.set_component_number(-1);
 					return W;
@@ -2245,7 +2243,7 @@ witness_set witness_data::choose(BR_configuration & options)
 		if (dimension_component_counter.find(target_dimension)==dimension_component_counter.end()) {
 			std::cout << "there are no components of dimension " << options.target_dimension << std::endl;
 			
-			witness_set W(num_variables);
+			witness_set W(num_variables());
 			W.set_dimension(options.target_dimension);
 			W.set_component_number(-1);
 			return W;
@@ -2266,7 +2264,7 @@ witness_set witness_data::choose(BR_configuration & options)
 				// want both a specific dimension and component number
 				if (map_lookup_with_default(dimension_component_counter[target_dimension],target_component,0)==0) {
 					std::cout << "you asked for a component (" << target_component << ") which does not exist" << std::endl;
-					witness_set W(num_variables);
+					witness_set W(num_variables());
 					W.set_dimension(target_dimension);
 					W.set_component_number(-1);
 					return W;
@@ -2303,7 +2301,7 @@ witness_set witness_data::best_possible_automatic_set(BR_configuration & options
 #endif
 	int target_dimension = options.target_dimension;
 	
-	witness_set W(num_variables); // create blank witness set
+	witness_set W(num_variables()); // create blank witness set
 	W.set_dimension(target_dimension);
 	W.set_component_number(-1);
 	
@@ -2323,7 +2321,7 @@ witness_set witness_data::best_possible_automatic_set(BR_configuration & options
 			mypause();
 		}
 		else{
-			if (point_metadata[iter->second[0]].deflations_needed==0) {
+			if (point_metadata[iter->second[0]].num_deflations_needed()==0) {
 				components_with_no_deflations_needed.push_back(iter->first);
 			}
 		}
@@ -2363,13 +2361,13 @@ witness_set witness_data::best_possible_automatic_set(BR_configuration & options
 	else{
 		
 		for (unsigned int ii=0; ii<linear_metadata.size(); ii++) {
-			if (linear_metadata[ii].dimension == target_dimension) {
+			if (linear_metadata[ii].dimension() == target_dimension) {
 				W.add_linear(*linear(ii));
 			}
 		}
 		
 		for (unsigned int ii=0; ii<patch_metadata.size(); ii++) {
-			if (patch_metadata[ii].dimension == target_dimension) {
+			if (patch_metadata[ii].dimension() == target_dimension) {
 				W.add_patch(*patch(ii));
 			}
 		}
@@ -2412,7 +2410,7 @@ witness_set witness_data::choose_set_interactive(BR_configuration & options)
 				
 				
 				int first_index = *(jter->second.begin());
-				std::cout << "\tcomponent " << jter->first << ": multiplicity " << point_metadata[first_index].multiplicity << ", deflations needed: " << point_metadata[first_index].deflations_needed << std::endl;
+				std::cout << "\tcomponent " << jter->first << ": multiplicity " << point_metadata[first_index].multiplicity() << ", deflations needed: " << point_metadata[first_index].num_deflations_needed() << std::endl;
 			}
 			std::cout << std::endl;
 		}
@@ -2430,7 +2428,7 @@ witness_set witness_data::choose_set_interactive(BR_configuration & options)
 	std::cout << "dimension " << target_dimension << std::endl;
 	for (auto jter = index_tracker[target_dimension].begin(); jter!= index_tracker[target_dimension].end(); ++jter) {
 		int first_index = *(jter->second.begin());
-		std::cout << "\tcomponent " << jter->first << ": multiplicity " << point_metadata[first_index].multiplicity << ", deflations needed: " << point_metadata[first_index].deflations_needed << ", degree " << dimension_component_counter[target_dimension][jter->first] << std::endl;
+		std::cout << "\tcomponent " << jter->first << ": multiplicity " << point_metadata[first_index].multiplicity() << ", deflations needed: " << point_metadata[first_index].num_deflations_needed() << ", degree " << dimension_component_counter[target_dimension][jter->first] << std::endl;
 		
 	}
 	std::cout << std::endl;
@@ -2444,7 +2442,7 @@ witness_set witness_data::choose_set_interactive(BR_configuration & options)
 	
 	if (num_components==0) {
 		for (unsigned int ii=0; ii<dimension_component_counter[target_dimension].size(); ++ii) {
-			if (point_metadata[index_tracker[target_dimension][ii][0]].multiplicity==1) {
+			if (point_metadata[index_tracker[target_dimension][ii][0]].multiplicity()==1) {
 				chosen_few.insert(ii);
 			}
 			
@@ -2468,7 +2466,7 @@ witness_set witness_data::choose_set_interactive(BR_configuration & options)
 	
 	
 	//3. return the set via a copy.
-	witness_set W(num_variables);
+	witness_set W(num_variables());
 	
 	W.set_dimension(target_dimension);
 	if (chosen_few.size()==1) {
@@ -2488,13 +2486,13 @@ witness_set witness_data::choose_set_interactive(BR_configuration & options)
 	}
 	
 	for (unsigned int ii=0; ii<linear_metadata.size(); ii++) {
-		if (linear_metadata[ii].dimension == target_dimension) {
+		if (linear_metadata[ii].dimension() == target_dimension) {
 			W.add_linear(*linear(ii));
 		}
 	}
 	
 	for (unsigned int ii=0; ii<patch_metadata.size(); ii++) {
-		if (patch_metadata[ii].dimension == target_dimension) {
+		if (patch_metadata[ii].dimension() == target_dimension) {
 			W.add_patch(*patch(ii));
 		}
 	}
@@ -2509,7 +2507,7 @@ witness_set witness_data::choose_set_interactive(BR_configuration & options)
 
 witness_set witness_data::form_specific_witness_set(int dim, int comp)
 {
-	witness_set W(num_variables);
+	witness_set W(num_variables());
 	
 	W.set_dimension(dim);
 	W.set_component_number(comp);
@@ -2536,13 +2534,13 @@ witness_set witness_data::form_specific_witness_set(int dim, int comp)
 	
 	
 	for (unsigned int ii=0; ii<linear_metadata.size(); ii++) {
-		if (linear_metadata[ii].dimension == dim) {
+		if (linear_metadata[ii].dimension() == dim) {
 			W.add_linear(*linear(ii));
 		}
 	}
 	
 	for (unsigned int ii=0; ii<patch_metadata.size(); ii++) {
-		if (patch_metadata[ii].dimension == dim) {
+		if (patch_metadata[ii].dimension() == dim) {
 			W.add_patch(*patch(ii));
 		}
 	}
