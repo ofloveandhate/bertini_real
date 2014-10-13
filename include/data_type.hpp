@@ -3434,12 +3434,31 @@ public:
 	
 	
 	
+
+	/**
+	 \brief get a shared pointer to the randomizer within
+	 
+	 \return the shared pointer to the system randomizer
+	 */
+	std::shared_ptr<system_randomizer> randomizer() const
+	{
+		return randomizer_;
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	std::map< int , int > counters;
 	std::map< int , std::vector< int > > indices;
 	
 	witness_set W;
 	
-	int num_variables; ///< the number of variables in the decomposition
+	
 	int dimension; ///< the dimension of the decomposition
 	int component_num; ///< the component number.
 	
@@ -3457,20 +3476,32 @@ public:
 	
 	
 	
+	
 	/**
-	 \brief get a shared pointer to the randomizer within
+	 \brief get the number of variables in the decomposition
 	 
-	 \return the shared pointer to the system randomizer
+	 \return the number of variables
 	 */
-	std::shared_ptr<system_randomizer> randomizer() const
+	inline int num_variables() const
 	{
-		return randomizer_;
+		return num_variables_;
+	}
+	
+	/**
+	 \brief set the number of variables
+	 
+	 \param new_num_variables the new number of variables
+	 \return the number of variables
+	 */
+	int set_num_variables(int new_num_variables)
+	{
+		return num_variables_ = new_num_variables;
 	}
 	
 protected:
 	
 	
-	
+	int num_variables_; ///< the number of variables in the decomposition
 	
 
 	
@@ -3492,7 +3523,7 @@ protected:
 		
 		
 		num_curr_projections = 0;
-		num_variables = 0;
+		num_variables_ = 0;
 		dimension = -1;
 		component_num = -1;
 		
@@ -3529,7 +3560,7 @@ protected:
 		
 		this->counters = other.counters;
 		this->indices = other.indices;
-		this->num_variables = other.num_variables;
+		this->num_variables_ = other.num_variables_;
 		this->dimension = other.dimension;
 		this->component_num = other.component_num;
 		

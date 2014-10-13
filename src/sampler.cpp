@@ -84,7 +84,7 @@ int main(int argC, char *args[])
 	}
 	
 	
-	vertex_set V(decom_pointy->num_variables);
+	vertex_set V(decom_pointy->num_variables());
 	V.setup_vertices(directoryName / "V.vertex"); //setup V structure from V.vertex
 	
 	common_sampler_startup(*decom_pointy,
@@ -236,10 +236,10 @@ void curve_decomposition::adaptive_sampler_movement(vertex_set & V,
 	solve_options.get_PPD();
 	
 	W.set_input_filename(input_filename);
-	W.set_num_variables(num_variables);
+	W.set_num_variables(num_variables());
 	W.set_num_natural_variables(V.num_natural_variables());
     
-	W.get_variable_names(num_variables);
+	W.get_variable_names(num_variables());
 	
 	
 	W.copy_patches(*this);
@@ -262,7 +262,7 @@ void curve_decomposition::adaptive_sampler_movement(vertex_set & V,
 	
 	
 	
-	int	num_vars = num_variables;
+	int	num_vars = this->num_variables();
 	
 	
 	witness_set Wnew;
@@ -556,10 +556,10 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 	solve_options.get_PPD();
 	
 	W.set_input_filename(input_filename);
-	W.set_num_variables(num_variables);
+	W.set_num_variables(this->num_variables());
 	W.set_num_natural_variables(V.num_natural_variables());
     
-	W.get_variable_names(num_variables);
+	W.get_variable_names(num_variables());
 	
 	W.copy_patches(*this);
 	
@@ -579,7 +579,7 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 	
 	
 	
-	int	num_vars = num_variables;
+	int	num_vars = num_variables();
 	
 	
 	witness_set Wnew;
@@ -886,7 +886,7 @@ void curve_decomposition::fixed_sampler(vertex_set & V,
 	solve_options.get_PPD();
 	
 	W.set_input_filename(input_filename);
-	W.set_num_variables(num_variables);
+	W.set_num_variables(num_variables());
 	W.set_num_natural_variables(V.num_natural_variables());
     
 
@@ -1120,8 +1120,8 @@ void curve_decomposition::adaptive_set_initial_refinement_flags(int & num_refine
 
 	mpf_t dist_away;  mpf_init(dist_away);
 	
-	vec_mp temp1, temp2;  init_vec_mp(temp1,num_variables-1); init_vec_mp(temp2,num_variables-1);
-	temp1->size = temp2->size = num_variables-1;
+	vec_mp temp1, temp2;  init_vec_mp(temp1,num_variables()-1); init_vec_mp(temp2,num_variables()-1);
+	temp1->size = temp2->size = num_variables()-1;
 	
 	current_indices[0] = sample_indices[current_edge][0];
 	for (int ii=0; ii<(num_samples_each_edge[current_edge]-1); ii++) {
@@ -1130,7 +1130,7 @@ void curve_decomposition::adaptive_set_initial_refinement_flags(int & num_refine
 		
 		current_indices[ii+1] = sample_indices[current_edge][ii+1];
 		
-		for (int jj=0; jj<num_variables-1; jj++) {
+		for (int jj=0; jj<num_variables()-1; jj++) {
 			div_mp(&temp1->coord[jj],
                    &(*V[sample_indices[current_edge][ii]].point())->coord[jj+1],
                    &(*V[sample_indices[current_edge][ii]].point())->coord[0]);
@@ -1373,7 +1373,7 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 	solve_options.get_PPD();
 	
 	
-	this->randomizer()->setup(this->num_variables-this->num_patches()-2, solve_options.PPD.num_funcs);
+	this->randomizer()->setup(this->num_variables()-this->num_patches()-2, solve_options.PPD.num_funcs);
 	
 	
 	
@@ -1382,8 +1382,8 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 	
 	witness_set W_multilin;
 	
-	W_multilin.set_num_variables(this->num_variables);
-	W_multilin.set_num_natural_variables(this->num_variables);
+	W_multilin.set_num_variables(this->num_variables());
+	W_multilin.set_num_natural_variables(this->num_variables());
 	
 	W_multilin.add_point(blank_point);
 	
@@ -1393,8 +1393,8 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 	W_multilin.add_patch((*this->patch(0)));
 	
 	vec_mp * target_multilin_linears = (vec_mp *) br_malloc(2*sizeof(vec_mp));
-	init_vec_mp2(target_multilin_linears[0],this->num_variables,1024); target_multilin_linears[0]->size = this->num_variables;
-	init_vec_mp2(target_multilin_linears[1],this->num_variables,1024); target_multilin_linears[1]->size = this->num_variables;
+	init_vec_mp2(target_multilin_linears[0],this->num_variables(),1024); target_multilin_linears[0]->size = this->num_variables();
+	init_vec_mp2(target_multilin_linears[1],this->num_variables(),1024); target_multilin_linears[1]->size = this->num_variables();
 	
 	vec_cp_mp(target_multilin_linears[0],this->pi[0]);
 	vec_cp_mp(target_multilin_linears[1],this->pi[1]);
@@ -1466,22 +1466,22 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 		bottom_ = curve_with_name(faces[ii].system_name_bottom);
 		top_ = curve_with_name(faces[ii].system_name_top);
 		
-		int num_bottom_vars = bottom_->num_variables;
-		int num_top_vars = top_->num_variables;
+		int num_bottom_vars = bottom_->num_variables();
+		int num_top_vars = top_->num_variables();
 		
 				
 		
 		//copy in the start point as three points concatenated.
 		
-		W_midtrack.set_num_variables(this->num_variables + num_bottom_vars + num_top_vars);
-		W_midtrack.set_num_natural_variables(this->num_variables);
+		W_midtrack.set_num_variables(this->num_variables() + num_bottom_vars + num_top_vars);
+		W_midtrack.set_num_natural_variables(this->num_variables());
 		change_size_vec_mp(*W_midtrack.point(0), W_midtrack.num_variables());
 		(*W_midtrack.point(0))->size = W_midtrack.num_variables(); // destructive resize
 		
 		
 		// mid
 		int var_counter = 0;
-		for (int kk=0; kk<this->num_variables; kk++) {
+		for (int kk=0; kk<this->num_variables(); kk++) {
 			set_mp(&(*W_midtrack.point(0))->coord[kk], &(*V[faces[ii].midpt()].point())->coord[kk]);
 			var_counter++;
 		}
@@ -1697,7 +1697,7 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 				// copy in the start point for the multilin method, as the terminal point from the previous call.
 				vec_cp_mp(*W_multilin.point(0),*V[rib_indices[jj][kk-1]].point());
 				
-				(*W_multilin.point(0))->size = this->num_variables;
+				(*W_multilin.point(0))->size = this->num_variables();
 				
 				neg_mp(&(*W_multilin.linear(0))->coord[0],&(*V[rib_indices[jj][kk-1]].projection_values())->coord[0]);
 				neg_mp(&(*W_multilin.linear(1))->coord[0],&(*V[rib_indices[jj][kk-1]].projection_values())->coord[1]);
