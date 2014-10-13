@@ -708,7 +708,7 @@ int verify_projection_ok(const witness_set & W,
  \param solve_options The current state of the solver.
  */
 int verify_projection_ok(const witness_set & W,
-						 system_randomizer * randomizer,
+						 std::shared_ptr<system_randomizer> randomizer,
 						 vec_mp * projection,
 						 solver_configuration & solve_options);
 

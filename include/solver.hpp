@@ -18,6 +18,8 @@
 
 #include <string>
 
+#include <memory>
+
 
 #include "bertini_headers.hpp"
 
@@ -188,7 +190,8 @@ protected:
 	
 	
 	bool have_randomizer; ///< indicator whether this object owns the randomizer
-	system_randomizer * randomizer; ///< pointer to a randomizer.  comes with have_randomizer to indicate ownership.
+	std::shared_ptr<system_randomizer> randomizer_; ///< pointer to a randomizer.  comes with have_randomizer to indicate ownership.
+	
 	int num_variables; ///< the number of variables in the system.
 	
 	
@@ -196,6 +199,11 @@ protected:
 	int MPType; ///< the MP type.
 	
 public:
+	
+	std::shared_ptr<system_randomizer> randomizer()
+	{
+		return randomizer_;
+	}
 	
 	
 	/**
@@ -216,7 +224,7 @@ public:
 		delete [] buffer;
 		
 		//need something here  to send randomizer to everyone.
-		randomizer->bcast_send(mpi_config);
+		randomizer_->bcast_send(mpi_config);
 		
 		memory.set_globals_to_this();
 		bcast_prog_t(SLP, this->MPType, 0, 0); // last two arguments are: myid, headnode
@@ -252,9 +260,9 @@ public:
 		
 		
 		// here, need something to receive from head.
-		randomizer = new system_randomizer;
-		randomizer->bcast_receive(mpi_config);
-		have_randomizer = true;
+		randomizer_ = std::make_shared<system_randomizer> (*(new system_randomizer));
+		
+		randomizer_->bcast_receive(mpi_config);
 		
 		delete [] buffer;
 		
@@ -351,14 +359,8 @@ public:
 			this->have_SLP = true;
 		}
 		
-		if (other.have_randomizer) {
-			randomizer = new system_randomizer;
-			*this->randomizer = *other.randomizer;
-			have_randomizer = true;
-		}
-		else{
-			randomizer = other.randomizer; // copy the pointer value only.
-		}
+		
+		randomizer_ = other.randomizer_; // copy the shared pointer value.
 		
 		
 		
@@ -367,10 +369,7 @@ public:
 	
 	void clear()
 	{
-		if (have_randomizer) {
-			delete randomizer;
-			have_randomizer = false;
-		}
+
 		
 		if (have_SLP) {
 			memory.set_globals_to_this();
@@ -402,7 +401,7 @@ public:
 		}
 		
 		
-		this->randomizer = D.randomizer;
+		this->randomizer_ = D.randomizer();
 		have_randomizer = false;
 		int blabla;  // i would like to move this.
 		parse_input_file(D.input_filename, &blabla);
@@ -448,7 +447,7 @@ public:
 	 \param randy A pointer to a randomizer to use.
 	 \param T The current state of the tracker.
 	 */
-	void get_system(const boost::filesystem::path & new_input_name, system_randomizer * randy, tracker_config_t * T)
+	void get_system(const boost::filesystem::path & new_input_name, std::shared_ptr<system_randomizer> randy, tracker_config_t * T)
 	{
 		if (have_SLP) {
 			memory.set_globals_to_this();
@@ -458,12 +457,10 @@ public:
 			SLP = new prog_t;
 		}
 		
-		if (have_randomizer) {
-			delete randomizer;
-		}
 		
-		this->randomizer = randy; // this could be eliminated via the use of smart pointers.
-		have_randomizer = false;
+		
+		this->randomizer_ = randy; // this could be eliminated via the use of smart pointers.  i'm doing that right now!!
+
 		int blabla;  // i would like to move this.
 		parse_input_file(new_input_name, &blabla);
 		input_filename = new_input_name;
@@ -512,9 +509,7 @@ public:
 			SLP = new prog_t;
 		}
 		
-		if (have_randomizer) {
-			delete randomizer;
-		}
+
 		
 		
 		
@@ -530,9 +525,8 @@ public:
 		have_SLP = true;
 		
 		
-		randomizer = new system_randomizer;
-		randomizer->setup(num_func_out, num_func_in);
-		have_randomizer = true;
+		randomizer_ = std::make_shared<system_randomizer>(*(new system_randomizer));
+		randomizer_->setup(num_func_out, num_func_in);
 		
 		
 		preproc_data PPD;
@@ -1490,7 +1484,30 @@ public:
  */
 class solver
 {
+	
+protected:
+	
+	std::shared_ptr<system_randomizer> randomizer_; ///< Pointer to a randomizer.
+	
+	
+	
 public:
+	
+	/**
+	 \brief get a shared pointer to the randomizer
+	 
+	 \return a shared pointer to the randomizer
+	 */
+	std::shared_ptr<system_randomizer> randomizer()
+	{
+		return randomizer_;
+	}
+	
+	
+	void set_randomizer(std::shared_ptr<system_randomizer> randy)
+	{
+		randomizer_ = randy;
+	}
 	
 	boost::filesystem::path preproc_file;
 	boost::filesystem::path function_file;
@@ -1498,8 +1515,6 @@ public:
 	int num_steps; ///< the number of evaluations made using this evaluator
 	int verbose_level;  ///< how verbose to be
 	
-	system_randomizer * randomizer; ///< Pointer to a randomizer.
-	bool have_randomizer_memory; ///< whether have allocated a system_randomizer (and it will need clearing) or simply point to one.
 	
 	
 	
@@ -1547,7 +1562,7 @@ public:
 	{};
 	
 	
-	void setup(prog_t * _SLP, system_randomizer * randy)
+	void setup(prog_t * _SLP, std::shared_ptr<system_randomizer> randy)
 	{
 		setupPreProcData(const_cast<char *>(preproc_file.c_str()), &this->preProcData);
 		have_PPD = true;
@@ -1558,7 +1573,7 @@ public:
 		this->SLP = _SLP; // assign the pointer
 		this->have_SLP = true;
 		
-		randomizer = randy;
+		randomizer_ = randy;
 	}
 	
 	void setup()
@@ -1575,15 +1590,11 @@ protected:
 			have_PPD = false;
 		}
 		
-		if (have_randomizer_memory) {
-			delete randomizer;
-		}
 	}
 	
 	void init()
 	{
-        have_randomizer_memory = false;
-		
+
 		
         received_mpi = false;
         
@@ -1615,7 +1626,7 @@ protected:
 		
 		this->SLP = other.SLP;
 		
-		randomizer = other.randomizer; // merely copy the pointer
+		randomizer_ = other.randomizer_; // merely copy the pointer
 		
 		this->is_solution_checker_d = other.is_solution_checker_d;
 		this->is_solution_checker_mp = other.is_solution_checker_mp;
@@ -1707,7 +1718,7 @@ public:
 	{};
 	
 	
-	void setup(prog_t * _SLP, system_randomizer * randy)
+	void setup(prog_t * _SLP, std::shared_ptr<system_randomizer> randy)
 	{
 		solver::setup(_SLP, randy);
 	}
@@ -1791,7 +1802,7 @@ public:
 	{};
 	
 	
-	void setup(prog_t * _SLP, system_randomizer * randy)
+	void setup(prog_t * _SLP, std::shared_ptr<system_randomizer> randy)
 	{
 		solver::setup(_SLP, randy);
 	}

@@ -3,7 +3,7 @@
 
 int compute_crit_nullspace(solver_output & solve_out, // the returned value
 						   const witness_set & W,
-						   system_randomizer * randomizer,
+						   std::shared_ptr<system_randomizer> randomizer,
 						   vec_mp *pi, // an array of projections, the number of which is the target dimensions
 						   int ambient_dim,
 						   int target_dim,
@@ -321,7 +321,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 							int target_dim,
 							int target_crit_codim,
 							int *max_degree, // a pointer to the value
-							system_randomizer * randomizer,
+							std::shared_ptr<system_randomizer> randomizer,
 							const witness_set & W,
 							solver_configuration & solve_options)
 {
@@ -330,7 +330,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 	int toss;
 	parse_input_file(W.input_filename(), &toss); // re-create the parsed files for the stuffs (namely the SLP).
 	
-	ns_config->randomizer = randomizer; // set the pointer.  this randomizer is for the underlying system.
+	ns_config->set_randomizer(randomizer); // set the pointer.  this randomizer is for the underlying system.
 										// we have a separate randomizer matrix for the part in the [jacobian | pi]•v part.
 	
 	*max_degree = randomizer->max_degree()-1; // minus one for differentiated degree
@@ -684,8 +684,8 @@ void create_nullspace_system(boost::filesystem::path output_name,
 		write_vector_as_constants(ns_config->target_projection[ii], projname.str(), OUT);
 	}
 	
-	if (!ns_config->randomizer->is_square()) {
-		write_matrix_as_constants( *(ns_config->randomizer->get_mat_full_prec()), "r", OUT);
+	if (!ns_config->randomizer()->is_square()) {
+		write_matrix_as_constants( *(ns_config->randomizer()->get_mat_full_prec()), "r", OUT);
 	}
 	
 	
@@ -795,7 +795,7 @@ void createMatlabDerivative(boost::filesystem::path output_name,
 	
 	
 	OUT << "num_jac_equations = " << ns_config->num_jac_equations << ";\n";
-	OUT << "num_randomized_eqns = " << ns_config->randomizer->num_rand_funcs() << ";\n";
+	OUT << "num_randomized_eqns = " << ns_config->randomizer()->num_rand_funcs() << ";\n";
 	OUT << "target_crit_codim = " << ns_config->target_crit_codim << ";\n";
 	
 	// copy lines which do not declare items or define constants (keep these as symbolic objects)
@@ -849,8 +849,8 @@ void createMatlabDerivative(boost::filesystem::path output_name,
 	}
 	
 	OUT << "syms ";
-	for (ii=0; ii<ns_config->randomizer->num_rand_funcs(); ii++) {
-		for (int jj=0; jj<ns_config->randomizer->num_base_funcs(); jj++) {
+	for (ii=0; ii<ns_config->randomizer()->num_rand_funcs(); ii++) {
+		for (int jj=0; jj<ns_config->randomizer()->num_base_funcs(); jj++) {
 			OUT << "r_" << ii+1 << "_" << jj+1 << " "	;
 		}
 	}
@@ -869,10 +869,10 @@ void createMatlabDerivative(boost::filesystem::path output_name,
 	OUT << "]; %collect the functions into a single matrix\n";
 	
 	// put in the randomization matrices.
-	if (!ns_config->randomizer->is_square()) {
+	if (!ns_config->randomizer()->is_square()) {
 		OUT << "R = [";
-		for (ii=0; ii<ns_config->randomizer->num_rand_funcs(); ii++) {
-			for (int jj=0; jj<ns_config->randomizer->num_base_funcs(); jj++) {
+		for (ii=0; ii<ns_config->randomizer()->num_rand_funcs(); ii++) {
+			for (int jj=0; jj<ns_config->randomizer()->num_base_funcs(); jj++) {
 				OUT << "r_" << ii+1 << "_" << jj+1 << " "	;
 			}
 			OUT << ";\n";
@@ -1016,7 +1016,7 @@ void create_matlab_determinantal_system(boost::filesystem::path output_name,
 	
 	OUT << "num_projections = " << ns_config->num_projections << ";\n";
 	OUT << "num_jac_equations = " << ns_config->num_jac_equations << ";\n";
-	OUT << "num_randomized_eqns = " << ns_config->randomizer->num_rand_funcs() << ";\n";
+	OUT << "num_randomized_eqns = " << ns_config->randomizer()->num_rand_funcs() << ";\n";
 	OUT << "target_crit_codim = " << ns_config->target_crit_codim << ";\n";
 	
 	int cont = 1;
@@ -1071,8 +1071,8 @@ void create_matlab_determinantal_system(boost::filesystem::path output_name,
 	}
 	
 	OUT << "syms ";
-	for (ii=0; ii<ns_config->randomizer->num_rand_funcs(); ii++) {
-		for (int jj=0; jj<ns_config->randomizer->num_base_funcs(); jj++) {
+	for (ii=0; ii<ns_config->randomizer()->num_rand_funcs(); ii++) {
+		for (int jj=0; jj<ns_config->randomizer()->num_base_funcs(); jj++) {
 			OUT << "r_" << ii+1 << "_" << jj+1 << " "	;
 		}
 	}
@@ -1091,10 +1091,10 @@ void create_matlab_determinantal_system(boost::filesystem::path output_name,
 	OUT << "]; %collect the functions into a single matrix\n";
 	
 	// put in the randomization matrices.
-	if (!ns_config->randomizer->is_square()) {
+	if (!ns_config->randomizer()->is_square()) {
 		OUT << "R = [";
-		for (ii=0; ii<ns_config->randomizer->num_rand_funcs(); ii++) {
-			for (int jj=0; jj<ns_config->randomizer->num_base_funcs(); jj++) {
+		for (ii=0; ii<ns_config->randomizer()->num_rand_funcs(); ii++) {
+			for (int jj=0; jj<ns_config->randomizer()->num_base_funcs(); jj++) {
 				OUT << "r_" << ii+1 << "_" << jj+1 << " "	;
 			}
 			OUT << ";\n";

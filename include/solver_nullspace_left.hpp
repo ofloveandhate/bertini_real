@@ -45,7 +45,23 @@
 class nullspace_config
 {
 	
+protected:
+	std::shared_ptr<system_randomizer> randomizer_; ///< randomizer for the underlying supplied system
+
+	
 public:
+	
+	std::shared_ptr<system_randomizer> randomizer()
+	{
+		return randomizer_;
+	}
+	
+	
+	void set_randomizer(std::shared_ptr<system_randomizer> randy)
+	{
+		randomizer_ = randy;
+	}
+	
 	int target_dim;   ///< r			the dimension of the real set we are looking for
 	int ambient_dim;  ///< k			the dimension of the complex component we are looking IN.
 	int target_crit_codim;    ///< the COdimension of the target crit space.  must be at least one (1), and at most target_dim (r).
@@ -59,7 +75,6 @@ public:
 	
 	int max_degree;    ///< the max degree of differentiated (randomized) functions
 	
-	system_randomizer * randomizer; ///< randomizer for the underlying supplied system
 	
 	bool randomize_lower; ///< whether to randomize the lower part of the system, corresponding to the jacobian.
 	mat_mp lower_randomizer; ///< a randomization matrix for the lower jacobian part of the system.

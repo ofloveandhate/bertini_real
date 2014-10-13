@@ -215,7 +215,7 @@ void ubermaster_process::critreal(witness_set & W, vec_mp *pi, vertex_set & V)
 	
 	compute_crit_nullspace(solve_out, // the returned value
 						   W,            // input the original witness set
-						   &randomizer,
+						   std::make_shared<system_randomizer>(randomizer),
 						   pi,
 						   W.dimension(),  // dimension of ambient complex object
 						   W.dimension(),   //  target dimension to find

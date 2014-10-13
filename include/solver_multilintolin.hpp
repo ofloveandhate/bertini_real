@@ -40,10 +40,32 @@
 class multilin_config
 {
 	
+	std::shared_ptr<system_randomizer> randomizer_; ///< pointer to randomizer
+	
 public:
 	
-	bool have_randomizer; ///< indicator of whether have and own the randomizer
-	system_randomizer *randomizer; ///< pointer to randomizer
+	/**
+	 \brief get a shared pointer to the randomizer
+	 
+	 \return a shared pointer to the randomizer
+	 */
+	std::shared_ptr<system_randomizer> randomizer()
+	{
+		return randomizer_;
+	}
+	
+	
+	/**
+	 \brief set up this object's randomizer to point to the same place as the input randomizer.
+	 
+	 \param _random a pointer to the randomizer this should point to.
+	 */
+	void set_randomizer(std::shared_ptr<system_randomizer> _random)
+	{
+		randomizer_ = _random;
+	}
+	
+	
 	
 	
 	SLP_global_pointers SLP_memory; ///< the memory for the SLP
@@ -67,7 +89,7 @@ public:
 	
 	
 	multilin_config(solver_configuration & solve_options,
-					system_randomizer * _random)
+					std::shared_ptr<system_randomizer> _random)
 	{
 		init();
 		
@@ -84,7 +106,7 @@ public:
 	}
 	
 	
-	multilin_config(system_randomizer * _random)
+	multilin_config(std::shared_ptr<system_randomizer> _random)
 	{
 		init();
 		set_randomizer(_random);
@@ -100,9 +122,8 @@ public:
 	void make_randomizer(const solver_configuration & solve_options, const witness_set & W)
 	{
 		
-		randomizer = new system_randomizer;
-		have_randomizer = true;
-		this->randomizer->setup(W.num_variables()-W.num_linears()-W.num_patches(), solve_options.PPD.num_funcs);
+		randomizer_ = std::make_shared<system_randomizer>(*(new system_randomizer));
+		randomizer_->setup(W.num_variables()-W.num_linears()-W.num_patches(), solve_options.PPD.num_funcs);
 		
 	}
 	
@@ -128,15 +149,7 @@ public:
 	}
 	
 	
-	/**
-	 \brief set up this object's randomizer to point to the same place as the input randomizer.
-	 
-	 \param _random a pointer to the randomizer this should point to.
-	 */
-	void set_randomizer(system_randomizer * _random)
-	{
-		randomizer = _random;
-	}
+	
 	
 	
 	
@@ -154,17 +167,12 @@ public:
 		SLP = new prog_t;
 		have_mem = false;
 		
-		have_randomizer = false;
 	}
 	
 	
 	void clear()
 	{
 		
-		if (have_randomizer) {
-			std::cout << "deleting randomizer" << std::endl;
-			delete randomizer;
-		}
 		
 		SLP_memory.set_globals_to_this();
 		clearProg(SLP, this->MPType, 1); // 1 means call freeprogeval()
@@ -305,7 +313,7 @@ public:
 	 \param target_linears The linears we move to.
 	 \param solve_options The current state of the solver.
 	 */
-	int setup(const multilin_config & config,
+	int setup(multilin_config & config,
 			  const witness_set & W,
 			  vec_mp * target_linears,
 			  solver_configuration & solve_options);
@@ -513,7 +521,7 @@ public:
 	 \param target_linears The linears we move to.
 	 \param solve_options The current state of the solver.
 	 */
-	int setup(const multilin_config & config,
+	int setup(multilin_config & config,
 			  const witness_set & W,
 			  vec_mp * target_linears,
 			  solver_configuration & solve_options);
@@ -555,7 +563,7 @@ protected:
 int multilin_solver_master_entry_point(const witness_set & W, // carries with it the start points, and the linears.
 									   solver_output & solve_out, // new data goes in here
 									   vec_mp * new_linears,
-									   const multilin_config &		config,
+									   multilin_config &		config,
 									   solver_configuration		& solve_options);
 
 

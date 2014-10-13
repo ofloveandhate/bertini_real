@@ -393,7 +393,7 @@ void surface_decomposition::beginning_stuff(const witness_set & W_surf,
 	}
 	
 	
-	randomizer->setup(W_surf.num_variables()-1-this->dimension,solve_options.PPD.num_funcs);
+	randomizer()->setup(W_surf.num_variables()-1-this->dimension,solve_options.PPD.num_funcs);
 	
 	
 
@@ -402,7 +402,7 @@ void surface_decomposition::beginning_stuff(const witness_set & W_surf,
 	
 	
 	if (!verify_projection_ok(W_surf,
-                              this->randomizer,
+                              this->randomizer(),
                               this->pi,
                               solve_options))
 	{
@@ -455,7 +455,7 @@ void surface_decomposition::compute_critcurve_witness_set(witness_set & W_critcu
 	
 	compute_crit_nullspace(solve_out,	// the returned value
                            W_surf,            // input the original witness set
-                           this->randomizer,
+                           this->randomizer(),
                            this->pi,
                            2,  // dimension of ambient complex object
                            2,   //  target dimension to find
@@ -555,7 +555,7 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 	
 	compute_crit_nullspace(solve_out, // the returned value
 						   W_surf,            // input the original witness set
-						   this->randomizer,
+						   this->randomizer(),
 						   &this->pi[0],
 						   2,  // dimension of ambient complex object
 						   2,   //  target dimension to find
@@ -591,12 +591,12 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 	temp_degree = solve_options.T.AMP_bound_on_degree;
 	solve_options.T.AMP_bound_on_degree = max_degree;
 	
-	crit_curve.randomizer->setup(W_critcurve.num_variables() - W_critcurve.num_patches() - 1,solve_options.PPD.num_funcs);
+	crit_curve.randomizer()->setup(W_critcurve.num_variables() - W_critcurve.num_patches() - 1,solve_options.PPD.num_funcs);
 	
 	
 	compute_crit_nullspace(solve_out, // the returned value
 						   W_critcurve,            // input the original witness set
-						   crit_curve.randomizer,
+						   crit_curve.randomizer(),
 						   &this->pi[0],
 						   1,  // dimension of ambient complex object
 						   1,   //  target dimension to find
@@ -826,7 +826,7 @@ void surface_decomposition::compute_singular_crit(witness_set & W_singular_crit,
 		
 		
 		
-		singular_curves[iter->first].randomizer->setup(iter->second.num_variables()-iter->second.num_patches()-1, solve_options.PPD.num_funcs);
+		singular_curves[iter->first].randomizer()->setup(iter->second.num_variables()-iter->second.num_patches()-1, solve_options.PPD.num_funcs);
 
 		
 		
@@ -836,7 +836,7 @@ void surface_decomposition::compute_singular_crit(witness_set & W_singular_crit,
 		
 		compute_crit_nullspace(solve_out,                   // the returned value
 							   iter->second,            // input the witness set with linears
-							   singular_curves[iter->first].randomizer,
+							   singular_curves[iter->first].randomizer(),
 							   &(this->pi[0]),
 							   1,                                // dimension of ambient complex object
 							   1,                                //  target dimension to find
@@ -1064,17 +1064,17 @@ void surface_decomposition::compute_sphere_witness_set(const witness_set & W_sur
 	
     
     
-	if (!this->randomizer->is_ready()) {
+	if (!this->randomizer()->is_ready()) {
 		std::cout << "randomizer not ready" << std::endl;
 		br_exit(19355);
 	}
 	
 	
-	sphere_curve.randomizer->setup(W_surf.num_variables()-W_surf.num_patches()-W_surf.num_linears(), solve_options.PPD.num_funcs);
+	sphere_curve.randomizer()->setup(W_surf.num_variables()-W_surf.num_patches()-W_surf.num_linears(), solve_options.PPD.num_funcs);
 	
 	
 	
-	multilin_config ml_config(solve_options,this->randomizer); // copies in the randomizer matrix and sets up the SLP & globals.
+	multilin_config ml_config(solve_options,this->randomizer()); // copies in the randomizer matrix and sets up the SLP & globals.
 	
     
 	vec_mp *multilin_linears = (vec_mp *) br_malloc(2*sizeof(vec_mp));
@@ -1088,7 +1088,7 @@ void surface_decomposition::compute_sphere_witness_set(const witness_set & W_sur
     
     
 	witness_set W_sphere;
-	sphere_config sp_config(sphere_curve.randomizer);
+	sphere_config sp_config(sphere_curve.randomizer());
 	
 	
 	for (int ii=0; ii<2; ii++) {
@@ -1179,7 +1179,7 @@ void surface_decomposition::compute_sphere_crit(const witness_set & W_intersecti
     
     
     
-	sphere_curve.randomizer->setup(W_intersection_sphere.num_variables()-W_intersection_sphere.num_patches()-1, solve_options.PPD.num_funcs);
+	sphere_curve.randomizer()->setup(W_intersection_sphere.num_variables()-W_intersection_sphere.num_patches()-1, solve_options.PPD.num_funcs);
     
 	
 	
@@ -1193,7 +1193,7 @@ void surface_decomposition::compute_sphere_crit(const witness_set & W_intersecti
 	
 	compute_crit_nullspace(solve_out,                   // the returned value
                            W_intersection_sphere,            // input the witness set with linears
-                           sphere_curve.randomizer,
+                           sphere_curve.randomizer(),
                            &(this->pi[0]),
                            1,                                // dimension of ambient complex object
                            1,                                //  target dimension to find
@@ -1321,7 +1321,7 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 		parse_preproc_data("preproc_data", &solve_options.PPD);
 		
 
-		ml_config.set_randomizer(this->randomizer);
+		ml_config.set_randomizer(this->randomizer());
 		neg_mp(&multilin_linears[0]->coord[0], &projection_values_downstairs->coord[ii]);
 		
 		

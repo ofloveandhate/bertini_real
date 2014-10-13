@@ -80,10 +80,10 @@ void nullspace_config::print()
 	
 	std::cout << "# additional linears: " << this->num_additional_linears << std::endl;
 	std::cout << "# jacobian equations: " << this->num_jac_equations << std::endl;
-	std::cout << "# randomized equations: " << this->randomizer->num_rand_funcs() << std::endl;
+	std::cout << "# randomized equations: " << this->randomizer_->num_rand_funcs() << std::endl;
 	std::cout << "max_degree:\t" << max_degree << std::endl;
 	
-	std::cout << *(this->randomizer) << std::endl;
+	std::cout << *(this->randomizer_) << std::endl;
 	
 	
 	for (int ii=0; ii<num_additional_linears; ii++) {
@@ -429,12 +429,12 @@ int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 		bcast_vec_mp(v_patch_full_prec, mpi_config.id(), mpi_config.head());
 		vec_cp_mp(this->v_patch, v_patch_full_prec);
 		
-		init_mat_mp2(jac_with_proj_full_prec, num_natural_vars-1, randomizer->num_rand_funcs()+num_projections,1024);
+		init_mat_mp2(jac_with_proj_full_prec, num_natural_vars-1, randomizer()->num_rand_funcs()+num_projections,1024);
 		
 		
-		init_mat_mp(jac_with_proj, num_natural_vars-1, randomizer->num_rand_funcs()+num_projections);
+		init_mat_mp(jac_with_proj, num_natural_vars-1, randomizer()->num_rand_funcs()+num_projections);
 		jac_with_proj->rows = jac_with_proj_full_prec->rows = num_natural_vars-1;
-		jac_with_proj->cols = jac_with_proj_full_prec->cols = randomizer->num_rand_funcs()+num_projections;
+		jac_with_proj->cols = jac_with_proj_full_prec->cols = randomizer()->num_rand_funcs()+num_projections;
 		
 
 		
@@ -503,9 +503,9 @@ int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 		bcast_vec_mp(v_patch, mpi_config.id(), mpi_config.head());
 		//		std::cout << "a";
 		
-		init_mat_mp(jac_with_proj,num_natural_vars-1,randomizer->num_rand_funcs()+num_projections);
+		init_mat_mp(jac_with_proj,num_natural_vars-1,randomizer()->num_rand_funcs()+num_projections);
 		jac_with_proj->rows = num_natural_vars-1;
-		jac_with_proj->cols = randomizer->num_rand_funcs()+num_projections;
+		jac_with_proj->cols = randomizer()->num_rand_funcs()+num_projections;
 		
 		
 		if (num_projections>0) {
@@ -542,7 +542,7 @@ int nullspacejac_eval_data_mp::setup(prog_t * _SLP,
 	
 	verbose_level = solve_options.verbose_level;
 	
-	solver_mp::setup(_SLP, ns_config->randomizer);
+	solver_mp::setup(_SLP, ns_config->randomizer());
 	
 	generic_setup_patch(&patch,W);
 	
@@ -592,7 +592,7 @@ int nullspacejac_eval_data_mp::setup(prog_t * _SLP,
 	
 	max_degree = ns_config->max_degree;
 
-	this->randomizer = ns_config->randomizer;
+	this->set_randomizer(ns_config->randomizer());
 	
 	randomize_lower = ns_config->randomize_lower;
 	mat_cp_mp(lower_randomizer,ns_config->lower_randomizer);
@@ -732,7 +732,7 @@ void nullspacejac_eval_data_mp::print()
     std::cout << "num_natural_vars " << num_natural_vars << std::endl;
     std::cout << "num_natural_vars " << num_natural_vars << std::endl;
     std::cout << "num_v_vars " << num_v_vars << std::endl;
-    std::cout << "num_randomized_eqns " << randomizer->num_rand_funcs() << std::endl;
+    std::cout << "num_randomized_eqns " << randomizer()->num_rand_funcs() << std::endl;
     std::cout << "max_degree " << max_degree << std::endl;
     
     
@@ -785,7 +785,7 @@ void nullspacejac_eval_data_mp::print()
 	}
     
     
-	std::cout << *randomizer << std::endl;
+	std::cout << *randomizer() << std::endl;
     
     
     print_comp_matlab(gamma,"gamma");
@@ -1203,7 +1203,7 @@ int nullspacejac_eval_data_d::setup(prog_t * _SLP,
 	}
 	
 	
-	solver_d::setup(_SLP, ns_config->randomizer);
+	solver_d::setup(_SLP, ns_config->randomizer());
 	
 	
 	if (this->MPType==2)
@@ -1244,7 +1244,7 @@ void nullspacejac_eval_data_d::print()
     std::cout << "num_synth_vars " << num_synth_vars << std::endl;
     std::cout << "num_v_vars " << num_v_vars << std::endl;
 	
-    std::cout << "num_randomized_eqns " << randomizer->num_rand_funcs() << std::endl;
+    std::cout << "num_randomized_eqns " << randomizer()->num_rand_funcs() << std::endl;
     std::cout << "max_degree " << max_degree << std::endl;
     
 	std::cout << "lower randomize: " << randomize_lower << std::endl;
@@ -1262,10 +1262,10 @@ void nullspacejac_eval_data_d::print()
 	}
 	
 	
-	std::cout << randomizer->num_rand_funcs() << " " << num_additional_linears << " " << num_jac_equations << " " << patch.num_patches << std::endl;
+	std::cout << randomizer()->num_rand_funcs() << " " << num_additional_linears << " " << num_jac_equations << " " << patch.num_patches << std::endl;
 	
 	
-	std::cout << *randomizer << std::endl;
+	std::cout << *randomizer() << std::endl;
 }
 
 
@@ -1714,7 +1714,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	
 	// randomize
-	BED->randomizer->randomize(*AtimesF,*AtimesJ,*temp_function_values,*temp_jacobian_functions, &(*curr_x_vars)->coord[0]);
+	BED->randomizer()->randomize(*AtimesF,*AtimesJ,*temp_function_values,*temp_jacobian_functions, &(*curr_x_vars)->coord[0]);
 	
 	for (int ii=0; ii<(*AtimesF)->size; ii++)  // for each function, after (real) randomization
 		set_d(&funcVals->coord[ii], &(*AtimesF)->coord[ii]);
@@ -1749,7 +1749,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	
 	
-	offset = BED->randomizer->num_rand_funcs();
+	offset = BED->randomizer()->num_rand_funcs();
 	for (int ii=0; ii< BED->num_additional_linears; ii++) {
 		
 		dot_product_d(*temp, BED->additional_linears_terminal[ii], *curr_x_vars); //temp = terminal(x)
@@ -1787,7 +1787,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	// HOMOGENIZE the jacobian matrix for the supplemental equations.
 	
 	for (int ii=0; ii<(*temp_jacobian_functions)->rows; ++ii) {
-		int degree_deficiency = BED->max_degree+1-BED->randomizer->base_degree(ii);
+		int degree_deficiency = BED->max_degree+1-BED->randomizer()->base_degree(ii);
 		
 		if (degree_deficiency==0) { // jacobian value already set with correct homogenization
 			continue;
@@ -1806,8 +1806,8 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	
 	
-	if (!BED->randomizer->is_square()) {
-		mat_mul_d(*AtimesJ,*(BED->randomizer->get_mat_d()),*temp_jacobian_functions);
+	if (!BED->randomizer()->is_square()) {
+		mat_mul_d(*AtimesJ,*(BED->randomizer()->get_mat_d()),*temp_jacobian_functions);
 		
 		if (BED->randomize_lower) {
 			mat_mul_d(*tempmat1,BED->lower_randomizer,*AtimesJ);
@@ -1867,7 +1867,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	
 	//  THE LINPROD START SYSTEM FUNCTION VALUES
-	offset = BED->randomizer->num_rand_funcs() + BED->num_additional_linears;
+	offset = BED->randomizer()->num_rand_funcs() + BED->num_additional_linears;
 	// the product of the linears
 	for (int jj=0; jj<BED->num_jac_equations; jj++) {
 		
@@ -1894,7 +1894,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	// mix the start and target into final function value to return.
 	
-	offset = BED->randomizer->num_rand_funcs() + BED->num_additional_linears;
+	offset = BED->randomizer()->num_rand_funcs() + BED->num_additional_linears;
 	for (int ii=0; ii<BED->num_jac_equations; ii++) {
 		add_d(&funcVals->coord[ii+offset], &(*target_function_values_times_oneminus_s)->coord[ii], &(*linprod_times_gamma_s)->coord[ii]);
 	}
@@ -1907,7 +1907,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	
 	// DERIVATIVES OF THE start and target WRT V
-	offset = BED->randomizer->num_rand_funcs() + BED->num_additional_linears;
+	offset = BED->randomizer()->num_rand_funcs() + BED->num_additional_linears;
 	for (int ii=0; ii<BED->num_jac_equations; ii++) {
 		for (int jj=0; jj<BED->num_v_vars; jj++) {
 			mul_d(*temp, &BED->v_linears[ii]->coord[jj], &(*linprod_x)->coord[ii]);  // temp = M_ij * linprod_x(x)
@@ -1959,7 +1959,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	increase_size_mat_d(*tempmat1,(*temp_function_values)->size,BED->num_natural_vars-1);
 	(*tempmat1)->rows = (*temp_function_values)->size; (*tempmat1)->cols = BED->num_natural_vars-1;
 	
-	offset = BED->randomizer->num_rand_funcs() + BED->num_additional_linears;
+	offset = BED->randomizer()->num_rand_funcs() + BED->num_additional_linears;
 	
 	
 	// this one is different from the x derivatives because h is the homogenizing variable for the problem,
@@ -1969,9 +1969,9 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	int local_offset = derivative_offset-1; // local_offset indexes into the vector containing second derivatives.
 											//  the -1 is because we increment this at the beginning of the nested for loop
 	
-	for (int func_index=0; func_index<BED->randomizer->num_base_funcs(); func_index++) { // iterate over each function
+	for (int func_index=0; func_index<BED->randomizer()->num_base_funcs(); func_index++) { // iterate over each function
 		
-		int degree_deficiency = BED->max_degree+1 - BED->randomizer->base_degree(func_index);// +1 is because maxdegree is deg of derivatives,
+		int degree_deficiency = BED->max_degree+1 - BED->randomizer()->base_degree(func_index);// +1 is because maxdegree is deg of derivatives,
 																							 //and base_degrees is deg of natural function before differentiation.
 		int entry_counter = 0; // indexes into the column we will set.  easier this way.
 		for (int ii=0; ii<BED->num_natural_vars+BED->num_synth_vars; ii++){
@@ -2030,8 +2030,8 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	// ok, now tempmat1 has in it all the derivatives of the derivatives of the system f.
 	//  we are trying to get d/dx( [(R*Jf)^T | pi^T] v).
 	
-	if (!BED->randomizer->is_square()) {
-		mat_mul_d(*tempmat2, *(BED->randomizer->get_mat_d()), *tempmat1); // randomize
+	if (!BED->randomizer()->is_square()) {
+		mat_mul_d(*tempmat2, *(BED->randomizer()->get_mat_d()), *tempmat1); // randomize
 		
 		if (BED->randomize_lower) {
 			mat_mul_d(*tempmat1,BED->lower_randomizer,*tempmat2);
@@ -2096,7 +2096,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	
 	
-	change_size_mat_d(*tempmat1,BED->randomizer->num_base_funcs(),BED->num_natural_vars+BED->num_synth_vars);
+	change_size_mat_d(*tempmat1,BED->randomizer()->num_base_funcs(),BED->num_natural_vars+BED->num_synth_vars);
 	
 	// THE X VARS
 	(*curr_v_vars)->size -= BED->num_projections; // truncate.  this is for optimization, not theoretical reasons
@@ -2105,9 +2105,9 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 		
 		
 		local_offset = derivative_offset-1; // initialize.  we count up from here
-		for (int func_index=0; func_index<BED->randomizer->num_base_funcs(); func_index++) { // iterate over each function
+		for (int func_index=0; func_index<BED->randomizer()->num_base_funcs(); func_index++) { // iterate over each function
 			
-			int degree_deficiency = BED->max_degree+1 - BED->randomizer->base_degree(func_index);
+			int degree_deficiency = BED->max_degree+1 - BED->randomizer()->base_degree(func_index);
 			int entry_counter = 0;
 			for (int ii=0; ii<BED->num_natural_vars+BED->num_synth_vars; ii++){
 				for (int jj=ii; jj<BED->num_natural_vars+BED->num_synth_vars; jj++) {
@@ -2145,8 +2145,8 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 		// ok, now tempmat1 has in it all the (homogenized) derivatives of the derivatives of the system f.
 		//  we are trying to get d/dx( [(R*Jf)^T | h^d•pi^T] v) = ( R*d/dx(Jf) )^T v_truncate.
 		
-		if (!BED->randomizer->is_square()) {
-			mat_mul_d(*tempmat2, *(BED->randomizer->get_mat_d()), *tempmat1); // randomize
+		if (!BED->randomizer()->is_square()) {
+			mat_mul_d(*tempmat2, *(BED->randomizer()->get_mat_d()), *tempmat1); // randomize
 			
 			if (BED->randomize_lower) {
 				mat_mul_d(*tempmat1,BED->lower_randomizer,*tempmat2);
@@ -2197,7 +2197,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	
 	
 	//set the X PATCH values
-	offset = BED->randomizer->num_rand_funcs() + BED->num_additional_linears + BED->num_jac_equations;
+	offset = BED->randomizer()->num_rand_funcs() + BED->num_additional_linears + BED->num_jac_equations;
 	
 	for (int ii = 0; ii<BED->patch.num_patches; ii++)  // for each patch equation
 	{ // funcVals = patchValues
@@ -2209,7 +2209,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	}
 	
 	
-	offset = BED->randomizer->num_rand_funcs() + BED->num_additional_linears + BED->num_jac_equations + BED->patch.num_patches;
+	offset = BED->randomizer()->num_rand_funcs() + BED->num_additional_linears + BED->num_jac_equations + BED->patch.num_patches;
 	if (offset != BED->num_variables-1) {
 		std::cout << "mismatch in number of blabla, line 2701;\n" << offset << " " << BED->num_variables-1 << std::endl;
 		print_matrix_to_screen_matlab(Jv,"Jv");
@@ -2463,7 +2463,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	
 	
 	// randomize
-	BED->randomizer->randomize(*AtimesF,*AtimesJ,*temp_function_values,*temp_jacobian_functions, &(*curr_x_vars)->coord[0]);
+	BED->randomizer()->randomize(*AtimesF,*AtimesJ,*temp_function_values,*temp_jacobian_functions, &(*curr_x_vars)->coord[0]);
 	
 	for (int ii=0; ii<(*AtimesF)->size; ii++)  // for each function, after (real) randomization
 		set_mp(&funcVals->coord[ii], &(*AtimesF)->coord[ii]);
@@ -2498,7 +2498,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	
 	
 	
-	offset = BED->randomizer->num_rand_funcs();
+	offset = BED->randomizer()->num_rand_funcs();
 	for (int ii=0; ii< BED->num_additional_linears; ii++) {
 		
 		dot_product_mp(*temp, BED->additional_linears_terminal[ii], *curr_x_vars); //temp = terminal(x)
@@ -2536,7 +2536,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	// HOMOGENIZE the jacobian matrix for the supplemental equations.
 	
 	for (int ii=0; ii<(*temp_jacobian_functions)->rows; ++ii) {
-		int degree_deficiency = BED->max_degree+1-BED->randomizer->base_degree(ii);
+		int degree_deficiency = BED->max_degree+1-BED->randomizer()->base_degree(ii);
 		
 		if (degree_deficiency==0) { // jacobian value already set with correct homogenization
 			continue;
@@ -2555,8 +2555,8 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	
 	
 	
-	if (!BED->randomizer->is_square()) {
-		mat_mul_mp(*AtimesJ,*(BED->randomizer->get_mat_mp()),*temp_jacobian_functions);
+	if (!BED->randomizer()->is_square()) {
+		mat_mul_mp(*AtimesJ,*(BED->randomizer()->get_mat_mp()),*temp_jacobian_functions);
 		
 		if (BED->randomize_lower) {
 			mat_mul_mp(*tempmat1,BED->lower_randomizer,*AtimesJ);
@@ -2616,7 +2616,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	
 	
 	//  THE LINPROD START SYSTEM FUNCTION VALUES
-	offset = BED->randomizer->num_rand_funcs() + BED->num_additional_linears;
+	offset = BED->randomizer()->num_rand_funcs() + BED->num_additional_linears;
 	// the product of the linears
 	for (int jj=0; jj<BED->num_jac_equations; jj++) {
 		
@@ -2643,7 +2643,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	
 	// mix the start and target into final function value to return.
 	
-	offset = BED->randomizer->num_rand_funcs() + BED->num_additional_linears;
+	offset = BED->randomizer()->num_rand_funcs() + BED->num_additional_linears;
 	for (int ii=0; ii<BED->num_jac_equations; ii++) {
 		add_mp(&funcVals->coord[ii+offset], &(*target_function_values_times_oneminus_s)->coord[ii], &(*linprod_times_gamma_s)->coord[ii]);
 	}
@@ -2656,7 +2656,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	
 	
 	// DERIVATIVES OF THE start and target WRT V
-	offset = BED->randomizer->num_rand_funcs() + BED->num_additional_linears;
+	offset = BED->randomizer()->num_rand_funcs() + BED->num_additional_linears;
 	for (int ii=0; ii<BED->num_jac_equations; ii++) {
 		for (int jj=0; jj<BED->num_v_vars; jj++) {
 			mul_mp(*temp, &BED->v_linears[ii]->coord[jj], &(*linprod_x)->coord[ii]);  // temp = M_ij * linprod_x(x)
@@ -2708,7 +2708,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	increase_size_mat_mp(*tempmat1,(*temp_function_values)->size,BED->num_natural_vars-1);
 	(*tempmat1)->rows = (*temp_function_values)->size; (*tempmat1)->cols = BED->num_natural_vars-1;
 	
-	offset = BED->randomizer->num_rand_funcs() + BED->num_additional_linears;
+	offset = BED->randomizer()->num_rand_funcs() + BED->num_additional_linears;
 	
 	
 	// this one is different from the x derivatives because h is the homogenizing variable for the problem,
@@ -2718,9 +2718,9 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	int local_offset = derivative_offset-1; // local_offset indexes into the vector containing second derivatives.
 											//  the -1 is because we increment this at the beginning of the nested for loop
 	
-	for (int func_index=0; func_index<BED->randomizer->num_base_funcs(); func_index++) { // iterate over each function
+	for (int func_index=0; func_index<BED->randomizer()->num_base_funcs(); func_index++) { // iterate over each function
 		
-		int degree_deficiency = BED->max_degree+1 - BED->randomizer->base_degree(func_index);// +1 is because maxdegree is deg of derivatives,
+		int degree_deficiency = BED->max_degree+1 - BED->randomizer()->base_degree(func_index);// +1 is because maxdegree is deg of derivatives,
 																							 //and base_degrees is deg of natural function before differentiation.
 		int entry_counter = 0; // indexes into the column we will set.  easier this way.
 		for (int ii=0; ii<BED->num_natural_vars+BED->num_synth_vars; ii++){
@@ -2779,8 +2779,8 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	// ok, now tempmat1 has in it all the derivatives of the derivatives of the system f.
 	//  we are trying to get d/dx( [(R*Jf)^T | pi^T] v).
 	
-	if (!BED->randomizer->is_square()) {
-		mat_mul_mp(*tempmat2, *(BED->randomizer->get_mat_mp()), *tempmat1); // randomize
+	if (!BED->randomizer()->is_square()) {
+		mat_mul_mp(*tempmat2, *(BED->randomizer()->get_mat_mp()), *tempmat1); // randomize
 		
 		if (BED->randomize_lower) {
 			mat_mul_mp(*tempmat1,BED->lower_randomizer,*tempmat2);
@@ -2846,7 +2846,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	
 	
 	
-	change_size_mat_mp(*tempmat1,BED->randomizer->num_base_funcs(),BED->num_natural_vars+BED->num_synth_vars);
+	change_size_mat_mp(*tempmat1,BED->randomizer()->num_base_funcs(),BED->num_natural_vars+BED->num_synth_vars);
 	
 	// THE X VARS
 	(*curr_v_vars)->size -= BED->num_projections; // truncate.  this is for optimization, not theoretical reasons
@@ -2855,9 +2855,9 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 		
 		
 		local_offset = derivative_offset-1; // initialize.  we count up from here
-		for (int func_index=0; func_index<BED->randomizer->num_base_funcs(); func_index++) { // iterate over each function
+		for (int func_index=0; func_index<BED->randomizer()->num_base_funcs(); func_index++) { // iterate over each function
 			
-			int degree_deficiency = BED->max_degree+1 - BED->randomizer->base_degree(func_index);
+			int degree_deficiency = BED->max_degree+1 - BED->randomizer()->base_degree(func_index);
 			int entry_counter = 0;
 			for (int ii=0; ii<BED->num_natural_vars+BED->num_synth_vars; ii++){
 				for (int jj=ii; jj<BED->num_natural_vars+BED->num_synth_vars; jj++) {
@@ -2895,8 +2895,8 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 		// ok, now tempmat1 has in it all the (homogenized) derivatives of the derivatives of the system f.
 		//  we are trying to get d/dx( [(R*Jf)^T | h^d•pi^T] v) = ( R*d/dx(Jf) )^T v_truncate.
 		
-		if (!BED->randomizer->is_square()) {
-			mat_mul_mp(*tempmat2, *(BED->randomizer->get_mat_mp()), *tempmat1); // randomize
+		if (!BED->randomizer()->is_square()) {
+			mat_mul_mp(*tempmat2, *(BED->randomizer()->get_mat_mp()), *tempmat1); // randomize
 			
 			if (BED->randomize_lower) {
 				mat_mul_mp(*tempmat1,BED->lower_randomizer,*tempmat2);
@@ -2947,7 +2947,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	
 	
 	//set the X PATCH values
-	offset = BED->randomizer->num_rand_funcs() + BED->num_additional_linears + BED->num_jac_equations;
+	offset = BED->randomizer()->num_rand_funcs() + BED->num_additional_linears + BED->num_jac_equations;
 	
 	for (int ii = 0; ii<BED->patch.num_patches; ii++)  // for each patch equation
 	{ // funcVals = patchValues
@@ -2959,7 +2959,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	}
 	
 	
-	offset = BED->randomizer->num_rand_funcs() + BED->num_additional_linears + BED->num_jac_equations + BED->patch.num_patches;
+	offset = BED->randomizer()->num_rand_funcs() + BED->num_additional_linears + BED->num_jac_equations + BED->patch.num_patches;
 	if (offset != BED->num_variables-1) {
 		std::cout << "mismatch in number of blabla, line 2701;\n" << offset << " " << BED->num_variables-1 << std::endl;
 		print_matrix_to_screen_matlab(Jv,"Jv");
@@ -3132,7 +3132,7 @@ int change_nullspacejac_eval_prec(void const *ED, int new_prec)
 		mpf_set_q(BED->gamma->r, BED->gamma_rat[0]);
 		mpf_set_q(BED->gamma->i, BED->gamma_rat[1]);
 		
-		BED->randomizer->change_prec(new_prec);
+		BED->randomizer()->change_prec(new_prec);
 
 		
 		BED->temp_vars.change_prec(new_prec);

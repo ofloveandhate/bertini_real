@@ -27,6 +27,7 @@
 #include <sstream>
 #include <map>
 
+#include <memory>
 
 #include "bertini_headers.hpp"
 
@@ -3210,34 +3211,7 @@ public:
 class decomposition : public patch_holder
 {
 
-public:
-	
-	
-	
-	
-	std::map< int , int > counters;
-	std::map< int , std::vector< int > > indices;
-	
-	witness_set W;
-	
-	int num_variables; ///< the number of variables in the decomposition
-	int dimension; ///< the dimension of the decomposition
-	int component_num; ///< the component number.
-	
-	int num_curr_projections; ///< the number of projections stored in the decomposition.  should match the dimension when complete.
-	vec_mp	*pi; ///< the projections used to decompose.  first ones are used to decompose nested objects.
-	
-	system_randomizer * randomizer; ///< the randomizer for the decomposition.
 
-	
-	
-	
-	vec_mp sphere_center; ///< the center of the sphere.
-	comp_mp sphere_radius; ///< the radius of the sphere.
-	bool have_sphere_radius; ///< indicates whether the decomposition has the radius set, or needs one still.
-	
-	boost::filesystem::path input_filename; ///< the name of the text file in which the system resides.
-//	function input_file;
 	
 	
 	
@@ -3450,7 +3424,60 @@ public:
 	 */
 	void receive(int source, parallelism_config & mpi_config);
 	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	std::map< int , int > counters;
+	std::map< int , std::vector< int > > indices;
+	
+	witness_set W;
+	
+	int num_variables; ///< the number of variables in the decomposition
+	int dimension; ///< the dimension of the decomposition
+	int component_num; ///< the component number.
+	
+	int num_curr_projections; ///< the number of projections stored in the decomposition.  should match the dimension when complete.
+	vec_mp	*pi; ///< the projections used to decompose.  first ones are used to decompose nested objects.
+	
+	
+	
+	vec_mp sphere_center; ///< the center of the sphere.
+	comp_mp sphere_radius; ///< the radius of the sphere.
+	bool have_sphere_radius; ///< indicates whether the decomposition has the radius set, or needs one still.
+	
+	boost::filesystem::path input_filename; ///< the name of the text file in which the system resides.
+											//	function input_file;
+	
+	
+	
+	/**
+	 \brief get a shared pointer to the randomizer within
+	 
+	 \return the shared pointer to the system randomizer
+	 */
+	std::shared_ptr<system_randomizer> randomizer() const
+	{
+		return randomizer_;
+	}
+	
 protected:
+	
+	
+	
+	
+
+	
+	std::shared_ptr<system_randomizer> randomizer_; ///< the randomizer for the decomposition.
+	
+
+	
 	
 	int add_vertex(vertex_set &V, vertex source_vertex);
 	
@@ -3458,7 +3485,7 @@ protected:
 	
 	void init(){
 		
-		randomizer = new system_randomizer;
+		randomizer_ = std::make_shared<system_randomizer> (*(new system_randomizer()));
 
 		input_filename = "unset";
 		pi = NULL;
@@ -3494,7 +3521,7 @@ protected:
 		patch_holder::copy(other);
 		
 		
-		*this->randomizer = *other.randomizer;
+		this->randomizer_ = other.randomizer_;//make_shared<system_randomizer>( *other.randomizer_ );
 		
 		this->W = other.W;
 		
@@ -3526,7 +3553,6 @@ protected:
 	void clear()
 	{
 		
-		delete randomizer;
 		
 		if (num_curr_projections>0){
 			for (int ii=0; ii<num_curr_projections; ii++)
