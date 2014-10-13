@@ -3353,7 +3353,7 @@ int decomposition::setup(boost::filesystem::path INfile)
 	
 	getline(fin, tempstr);
 	converter << tempstr;
-	converter >> this->num_variables >> this->dimension;
+	converter >> this->num_variables_ >> this->dimension;
 	converter.clear(); converter.str("");
 	
 
@@ -3373,8 +3373,8 @@ int decomposition::setup(boost::filesystem::path INfile)
 		}
 	}
 	
-	vec_mp tempvec; init_vec_mp2(tempvec, this->num_variables,1024);
-	tempvec->size = this->num_variables;
+	vec_mp tempvec; init_vec_mp2(tempvec, this->num_variables_,1024);
+	tempvec->size = this->num_variables_;
 	
 
 	for (int ii=0; ii<dimension; ii++) {
@@ -3456,7 +3456,7 @@ void decomposition::print(boost::filesystem::path base)
 	
 	fprintf(OUT,"%s\n",input_filename.filename().c_str());
 	
-	fprintf(OUT,"%d %d\n\n",num_variables, dimension);
+	fprintf(OUT,"%d %d\n\n",num_variables(), dimension);
 	
 	fprintf(OUT, "%d\n", int(this->counters.size()));
 	
@@ -3521,13 +3521,13 @@ int decomposition::read_sphere(const boost::filesystem::path & bounding_sphere_f
 	std::cout << "decomposition::read_sphere" << std::endl;
 #endif
 	
-	if (num_variables<2) {
-		std::cout << "during read of sphere, decomposition of dimension	" << dimension << " has " << num_variables << " variables!" << std::endl;
+	if (num_variables_<2) {
+		std::cout << "during read of sphere, decomposition of dimension	" << dimension << " has " << num_variables_ << " variables!" << std::endl;
 		mypause();
 	}
 
-	change_size_vec_mp(this->sphere_center, num_variables-1); //destructive resize
-	sphere_center->size = num_variables-1;
+	change_size_vec_mp(this->sphere_center, num_variables_-1); //destructive resize
+	sphere_center->size = num_variables_-1;
 	
 	
 	FILE *IN = safe_fopen_read(bounding_sphere_filename);
@@ -3536,7 +3536,7 @@ int decomposition::read_sphere(const boost::filesystem::path & bounding_sphere_f
 	mpf_set_str(sphere_radius->i,"0",10);
 	
 	
-	for (int jj=1; jj<num_variables; jj++) {
+	for (int jj=1; jj<num_variables_; jj++) {
 		mpf_inp_str(sphere_center->coord[jj-1].r, IN, 10);
 		mpf_set_str(sphere_center->coord[jj-1].i,"0",10);
 	}
@@ -3737,7 +3737,7 @@ void decomposition::send(int target, parallelism_config & mpi_config)
 	
 	//pack and send numbers of things.
 	buffer2 = new int[9];
-	buffer2[0] = num_variables;
+	buffer2[0] = num_variables();
 	buffer2[1] = dimension;
 	buffer2[2] = component_num;
 	buffer2[3] = num_curr_projections;
@@ -3873,7 +3873,7 @@ void decomposition::receive(int source, parallelism_config & mpi_config)
 	buffer2 = new int[9];
 	
 	MPI_Recv(buffer2, 9, MPI_INT, source, 6, MPI_COMM_WORLD, &statty_mc_gatty);
-	num_variables = buffer2[0];
+	set_num_variables(buffer2[0]);
 	dimension = buffer2[1];
 	component_num = buffer2[2];
 	int temp_num_projections = buffer2[3];

@@ -27,7 +27,7 @@ void surface_decomposition::main(vertex_set & V,
 	
 	// set some member information.
 	this->input_filename = W_surf.input_filename();
-	this->num_variables = W_surf.num_variables();
+	set_num_variables(W_surf.num_variables());
 	this->component_num = W_surf.component_number();
     
 	add_projection(pi[0]); // add to *this
@@ -650,7 +650,7 @@ void surface_decomposition::compute_critical_curve(const witness_set & W_critcur
 	increase_size_vec_mp(temp_proj, W_critcurve.num_variables()); // nondestructive increase in size
     temp_proj->size = W_critcurve.num_variables();
     
-	for ( int ii=this->num_variables; ii<W_critcurve.num_variables(); ii++) {
+	for ( int ii=this->num_variables(); ii<W_critcurve.num_variables(); ii++) {
 		set_zero_mp(&temp_proj->coord[ii]);
 	}
 	
@@ -669,7 +669,7 @@ void surface_decomposition::compute_critical_curve(const witness_set & W_critcur
 	
 	crit_curve.add_projection(pi[0]);
 	
-	crit_curve.num_variables = W_critcurve.num_variables();
+	crit_curve.set_num_variables(W_critcurve.num_variables());
 	
     std::cout << color::magenta() << "done decomposing critical curve" << color::console_default() << std::endl;
 	return;
@@ -709,7 +709,7 @@ void surface_decomposition::deflate_and_split(std::map< std::pair<int,int>, witn
 		
 		
 		witness_set active_set = iter->second; // seed the loop/  this sucks because it duplicates data
-		active_set.only_first_vars(this->num_variables);
+		active_set.only_first_vars(this->num_variables());
 		
 		witness_set W_only_one_witness_point;
 		W_only_one_witness_point.copy_skeleton(active_set);
@@ -794,8 +794,8 @@ void surface_decomposition::compute_singular_crit(witness_set & W_singular_crit,
 	
 	
 	
-	W_singular_crit.set_num_variables(this->num_variables);
-	W_singular_crit.set_num_natural_variables(this->num_variables);
+	W_singular_crit.set_num_variables(this->num_variables());
+	W_singular_crit.set_num_natural_variables(this->num_variables());
 	W_singular_crit.copy_patches(*this);
 	for (auto iter = split_sets.begin(); iter!=split_sets.end(); ++iter) {
 		
@@ -1241,7 +1241,7 @@ void surface_decomposition::compute_bounding_sphere(const witness_set & W_inters
 	
 	sphere_curve.input_filename = W_intersection_sphere.input_filename();
 	this->sphere_curve.add_projection(pi[0]);
-	this->sphere_curve.num_variables = num_variables;
+	this->sphere_curve.set_num_variables(this->num_variables());
 	
 	
 	std::cout << color::magenta() << "done decomposing sphere curve" << color::console_default() << std::endl;
@@ -1402,7 +1402,7 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 		solve_options.reset_tracker_config();
 		
 		slices[ii].add_projection(pi[1]);
-		slices[ii].num_variables = num_variables;
+		slices[ii].set_num_variables(this->num_variables());
 		
 		
 		
@@ -1782,7 +1782,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	comp_mp temp, temp2, temp3; init_mp2(temp,1024); init_mp2(temp2,1024); init_mp2(temp3,1024);
 	comp_mp numer, denom; init_mp2(numer,1024); init_mp2(denom,1024);
 	comp_mp proj_top, proj_bottom, proj_mid; init_mp2(proj_mid,1024); init_mp2(proj_bottom,1024); init_mp2(proj_top,1024);
-	vec_mp found_point; init_vec_mp2(found_point, this->num_variables,1024); found_point->size = this->num_variables;
+	vec_mp found_point; init_vec_mp2(found_point, this->num_variables(),1024); found_point->size = this->num_variables();
 	
 	
 	
@@ -1908,14 +1908,14 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	W_midtrack.add_point(blank_point);
 	clear_vec_mp(blank_point);
 	
-	W_midtrack.set_num_variables(this->num_variables + num_bottom_vars + num_top_vars);
-	W_midtrack.set_num_natural_variables(this->num_variables);
+	W_midtrack.set_num_variables(this->num_variables() + num_bottom_vars + num_top_vars);
+	W_midtrack.set_num_natural_variables(this->num_variables());
 	change_size_vec_mp( *W_midtrack.point(0), W_midtrack.num_variables()); (*W_midtrack.point(0))->size = W_midtrack.num_variables(); // destructive resize
 	
 	
 	// mid
 	int var_counter = 0;
-	for (int kk=0; kk<this->num_variables; kk++) {
+	for (int kk=0; kk<this->num_variables(); kk++) {
 		set_mp(&((*W_midtrack.point(0))->coord[kk]), &(*V[mid_slices[ii].edges[jj].midpt()].point())->coord[kk]);
 		var_counter++;
 	}
@@ -2236,7 +2236,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				init_vec_mp(bottom_found,md_config.num_bottom_vars());
 				
 				// get only the midpoint coordinates out of the returned point
-				for (int tt = 0; tt<this->num_variables; tt++) {
+				for (int tt = 0; tt<this->num_variables(); tt++) {
 					set_mp(&found_point->coord[tt], & (*W_new.point(0))->coord[tt]);
 				}
 				

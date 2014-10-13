@@ -19,7 +19,7 @@ void curve_decomposition::main(vertex_set & V,
 	
 	component_num = W.component_number();
 	dimension = W.dimension();
-	num_variables = W.num_variables();
+	set_num_variables(W.num_variables());
 	
 	
 	if (1) {
@@ -112,7 +112,7 @@ void curve_decomposition::main(vertex_set & V,
 	{
 		//Call non-self-conjugate case code
 		
-		computeCurveNotSelfConj(W, projections[0], V, num_variables,
+		computeCurveNotSelfConj(W, projections[0], V, num_variables(),
                                 program_options, solve_options);
 		
 	}
@@ -419,7 +419,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	this->copy_patches(W_curve);
 	
 	
-	this->num_variables = W_crit_real.num_variables();
+	set_num_variables(W_crit_real.num_variables());
 	input_filename = W_curve.input_filename();
 	
 	int blabla;
