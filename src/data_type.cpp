@@ -3837,7 +3837,7 @@ void decomposition::send(int target, parallelism_config & mpi_config)
 	
 	
 	
-	randomizer->send(target,mpi_config);
+	randomizer_->send(target,mpi_config);
 
 
 
@@ -3989,7 +3989,7 @@ void decomposition::receive(int source, parallelism_config & mpi_config)
 
 	clear_vec_mp(tempvec);
 	
-	randomizer->receive(source,mpi_config);
+	randomizer_->receive(source,mpi_config);
 	
 	return;
 }

@@ -397,19 +397,19 @@ int midpoint_eval_data_mp::setup(midpoint_config & md_config,
 	this->mid_memory = md_config.systems[md_config.system_name_mid].memory;
 	this->SLP_mid = md_config.systems[md_config.system_name_mid].SLP;
 	this->num_mid_vars = md_config.systems[md_config.system_name_mid].num_variables;
-	randomizer = md_config.systems[md_config.system_name_mid].randomizer;
+	randomizer_ = md_config.systems[md_config.system_name_mid].randomizer();
 	
 	
 	this->top_memory = md_config.systems[md_config.system_name_top].memory;
 	this->SLP_top = md_config.systems[md_config.system_name_top].SLP;
 	this->num_top_vars = md_config.systems[md_config.system_name_top].num_variables;
-	randomizer_top = md_config.systems[md_config.system_name_top].randomizer;
+	randomizer_top = md_config.systems[md_config.system_name_top].randomizer();
 	
 	
 	this->bottom_memory = md_config.systems[md_config.system_name_bottom].memory;
 	this->SLP_bottom = md_config.systems[md_config.system_name_bottom].SLP;
 	this->num_bottom_vars = md_config.systems[md_config.system_name_bottom].num_variables;
-	randomizer_bottom = md_config.systems[md_config.system_name_bottom].randomizer;
+	randomizer_bottom = md_config.systems[md_config.system_name_bottom].randomizer();
 	
 	
 	
@@ -640,19 +640,19 @@ int midpoint_eval_data_d::setup(midpoint_config & md_config,
 	this->mid_memory = md_config.systems[md_config.system_name_mid].memory;
 	this->SLP_mid = md_config.systems[md_config.system_name_mid].SLP;
 	this->num_mid_vars = md_config.systems[md_config.system_name_mid].num_variables;
-	randomizer = md_config.systems[md_config.system_name_mid].randomizer;
+	randomizer_ = md_config.systems[md_config.system_name_mid].randomizer();
 	
 	
 	this->top_memory = md_config.systems[md_config.system_name_top].memory;
 	this->SLP_top = md_config.systems[md_config.system_name_top].SLP;
 	this->num_top_vars = md_config.systems[md_config.system_name_top].num_variables;
-	randomizer_top = md_config.systems[md_config.system_name_top].randomizer;
+	randomizer_top = md_config.systems[md_config.system_name_top].randomizer();
 	
 	
 	this->bottom_memory = md_config.systems[md_config.system_name_bottom].memory;
 	this->SLP_bottom = md_config.systems[md_config.system_name_bottom].SLP;
 	this->num_bottom_vars = md_config.systems[md_config.system_name_bottom].num_variables;
-	randomizer_bottom = md_config.systems[md_config.system_name_bottom].randomizer;
+	randomizer_bottom = md_config.systems[md_config.system_name_bottom].randomizer();
 	
 	
 	
@@ -1017,7 +1017,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 			   temp_jacobian_functions, unused_Jp, curr_mid_vars, pathVars, BED->SLP_mid);
 	
     
-	BED->randomizer->randomize(AtimesF,AtimesJ,temp_function_values,temp_jacobian_functions,&curr_mid_vars->coord[0]);
+	BED->randomizer()->randomize(AtimesF,AtimesJ,temp_function_values,temp_jacobian_functions,&curr_mid_vars->coord[0]);
 	// randomize
 	
 	
@@ -1035,7 +1035,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	BED->bottom_memory.set_globals_to_this();
 	
 	
-	offset = BED->randomizer->num_rand_funcs(); //y0
+	offset = BED->randomizer()->num_rand_funcs(); //y0
 	int offset_horizontal = BED->num_mid_vars;
 	evalProg_d(temp_function_values, parVals, parDer,
                temp_jacobian_functions, unused_Jp, curr_bottom_vars, pathVars, BED->SLP_bottom);
@@ -1056,7 +1056,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	
 	
 	
-	offset = BED->randomizer->num_rand_funcs() + BED->randomizer_bottom->num_rand_funcs(); // y2
+	offset = BED->randomizer()->num_rand_funcs() + BED->randomizer_bottom->num_rand_funcs(); // y2
 	offset_horizontal = BED->num_mid_vars + BED->num_bottom_vars;
 	
 	BED->top_memory.set_globals_to_this();
@@ -1094,7 +1094,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	
 	
 	//the number of rows does not equal the number of variables.
-	offset = BED->randomizer->num_rand_funcs() + BED->randomizer_bottom->num_rand_funcs() + BED->randomizer_top->num_rand_funcs();
+	offset = BED->randomizer()->num_rand_funcs() + BED->randomizer_bottom->num_rand_funcs() + BED->randomizer_top->num_rand_funcs();
 	
 	
 	dot_product_mindim(proj_mid, curr_mid_vars,BED->pi[0]);
@@ -1488,7 +1488,7 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	evalProg_mp(temp_function_values, parVals, parDer,
                 temp_jacobian_functions, unused_Jp, curr_mid_vars, pathVars, BED->SLP_mid);
 	
-	BED->randomizer->randomize(AtimesF,AtimesJ,temp_function_values,temp_jacobian_functions,&curr_mid_vars->coord[0]);
+	BED->randomizer()->randomize(AtimesF,AtimesJ,temp_function_values,temp_jacobian_functions,&curr_mid_vars->coord[0]);
 	
 	// randomize
 
@@ -1506,7 +1506,7 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
 	BED->bottom_memory.set_globals_to_this();
 	
-	offset = BED->randomizer->num_rand_funcs(); //y0
+	offset = BED->randomizer()->num_rand_funcs(); //y0
 	int offset_horizontal = BED->num_mid_vars;
 	evalProg_mp(temp_function_values, parVals, parDer,
                 temp_jacobian_functions, unused_Jp, curr_bottom_vars, pathVars, BED->SLP_bottom);
@@ -1527,7 +1527,7 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
 	
 	
-	offset = BED->randomizer->num_rand_funcs() + BED->randomizer_bottom->num_rand_funcs(); // y2
+	offset = BED->randomizer()->num_rand_funcs() + BED->randomizer_bottom->num_rand_funcs(); // y2
 	offset_horizontal = BED->num_mid_vars + BED->num_bottom_vars;
 	
 	BED->top_memory.set_globals_to_this();
@@ -1566,7 +1566,7 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
 	
 	//the number of rows does not equal the number of variables.
-	offset = BED->randomizer->num_rand_funcs() + BED->randomizer_bottom->num_rand_funcs() + BED->randomizer_top->num_rand_funcs();
+	offset = BED->randomizer()->num_rand_funcs() + BED->randomizer_bottom->num_rand_funcs() + BED->randomizer_top->num_rand_funcs();
 	
 	dot_product_mindim(proj_mid, curr_mid_vars,BED->pi[0]);
 	dot_product_mindim(proj_top, curr_top_vars,BED->pi[0]);
@@ -1950,7 +1950,7 @@ int change_midpoint_eval_prec(void const *ED, int new_prec)
 		mpf_set_q(BED->gamma->r, BED->gamma_rat[0]);
 		mpf_set_q(BED->gamma->i, BED->gamma_rat[1]);
 		
-		BED->randomizer->change_prec(new_prec);
+		BED->randomizer()->change_prec(new_prec);
 		BED->randomizer_bottom->change_prec(new_prec);
 		BED->randomizer_top->change_prec(new_prec);
 

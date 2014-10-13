@@ -203,13 +203,13 @@ int sphere_eval_data_mp::receive(parallelism_config & mpi_config)
 	
 }
 
-int sphere_eval_data_mp::setup(const sphere_config & config,
+int sphere_eval_data_mp::setup(sphere_config & config,
 							   const witness_set & W,
 							   solver_configuration & solve_options)
 {
 	
 	
-	if (!config.have_rand) {
+	if (config.randomizer().use_count()==0) {
 		std::cout << "don't have randomizer set up!" << std::endl;
 		br_exit(-97621);
 	}
@@ -307,7 +307,7 @@ int sphere_eval_data_mp::setup(const sphere_config & config,
 	
 	verbose_level = solve_options.verbose_level;
 	
-	solver_mp::setup(config.SLP, config.randomizer);
+	solver_mp::setup(config.SLP, config.randomizer());
 	
 	generic_setup_patch(&patch,W);
 	
@@ -486,7 +486,7 @@ int sphere_eval_data_d::receive(parallelism_config & mpi_config)
 }
 
 
-int sphere_eval_data_d::setup(const sphere_config & config,
+int sphere_eval_data_d::setup(sphere_config & config,
 							  const witness_set & W,
 							  solver_configuration & solve_options)
 {
@@ -535,7 +535,7 @@ int sphere_eval_data_d::setup(const sphere_config & config,
 	
 	verbose_level = solve_options.verbose_level;
 	
-	solver_d::setup(config.SLP, config.randomizer);
+	solver_d::setup(config.SLP, config.randomizer());
 	
 	generic_setup_patch(&patch,W);
 	
@@ -576,7 +576,7 @@ int sphere_eval_data_d::setup(const sphere_config & config,
 
 int sphere_solver_master_entry_point(const witness_set						&W, // carries with it the start points, and the linears.
 									 solver_output							&solve_out, // new data goes in here
-									 const sphere_config &		config,
+									 sphere_config &		config,
 									 solver_configuration		& solve_options)
 {
 	
@@ -777,16 +777,16 @@ int sphere_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat
 	
 	vec_d patchValues; init_vec_d(patchValues, 0);
 	vec_d temp_function_values; init_vec_d(temp_function_values,0);
-	vec_d AtimesF; init_vec_d(AtimesF,BED->randomizer->num_rand_funcs()); AtimesF->size = BED->randomizer->num_rand_funcs();// declare  // initialize
+	vec_d AtimesF; init_vec_d(AtimesF,BED->randomizer()->num_rand_funcs()); AtimesF->size = BED->randomizer()->num_rand_funcs();// declare  // initialize
 	
 	
 	
-	mat_d temp_jacobian_functions; init_mat_d(temp_jacobian_functions,BED->randomizer->num_base_funcs(),BED->num_variables);
-	temp_jacobian_functions->rows = BED->randomizer->num_base_funcs(); temp_jacobian_functions->cols = BED->num_variables;
+	mat_d temp_jacobian_functions; init_mat_d(temp_jacobian_functions,BED->randomizer()->num_base_funcs(),BED->num_variables);
+	temp_jacobian_functions->rows = BED->randomizer()->num_base_funcs(); temp_jacobian_functions->cols = BED->num_variables;
 	mat_d temp_jacobian_parameters; init_mat_d(temp_jacobian_parameters,0,0);
 	mat_d Jv_Patch; init_mat_d(Jv_Patch, 0, 0);
-	mat_d AtimesJ; init_mat_d(AtimesJ,BED->randomizer->num_rand_funcs(),BED->num_variables);
-	AtimesJ->rows = BED->randomizer->num_rand_funcs(); AtimesJ->cols = BED->num_variables;
+	mat_d AtimesJ; init_mat_d(AtimesJ,BED->randomizer()->num_rand_funcs(),BED->num_variables);
+	AtimesJ->rows = BED->randomizer()->num_rand_funcs(); AtimesJ->cols = BED->num_variables;
 	
 	
 	//set the sizes
@@ -831,14 +831,14 @@ int sphere_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat
 	//
 	///////////////////////////////////
 	
-	BED->randomizer->randomize(AtimesF,AtimesJ,temp_function_values,temp_jacobian_functions,&current_variable_values->coord[0]);
+	BED->randomizer()->randomize(AtimesF,AtimesJ,temp_function_values,temp_jacobian_functions,&current_variable_values->coord[0]);
 
 	
 	for (ii=0; ii<AtimesF->size; ii++)  // for each function, after (real orthogonal) randomization
 		set_d(&funcVals->coord[ii], &AtimesF->coord[ii]);
 	
 	
-	for (ii = 0; ii < BED->randomizer->num_rand_funcs(); ii++)
+	for (ii = 0; ii < BED->randomizer()->num_rand_funcs(); ii++)
 		for (jj = 0; jj < BED->num_variables; jj++)
 			set_d(&Jv->entry[ii][jj],&AtimesJ->entry[ii][jj]);
 	
@@ -865,7 +865,7 @@ int sphere_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat
 	//
 	//////////////////////////
 	
-	offset = BED->randomizer->num_rand_funcs();
+	offset = BED->randomizer()->num_rand_funcs();
 	
 	mul_d(func_val_sphere, BED->radius, BED->radius);
 	neg_d(func_val_sphere, func_val_sphere);
@@ -1103,16 +1103,16 @@ int sphere_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv
 	
 	vec_mp patchValues; init_vec_mp(patchValues, 0);
 	vec_mp temp_function_values; init_vec_mp(temp_function_values,0);
-	vec_mp AtimesF; init_vec_mp(AtimesF,BED->randomizer->num_rand_funcs()); AtimesF->size = BED->randomizer->num_rand_funcs();// declare  // initialize
+	vec_mp AtimesF; init_vec_mp(AtimesF,BED->randomizer()->num_rand_funcs()); AtimesF->size = BED->randomizer()->num_rand_funcs();// declare  // initialize
 	
 	
 	
-	mat_mp temp_jacobian_functions; init_mat_mp(temp_jacobian_functions,BED->randomizer->num_base_funcs(),BED->num_variables);
-	temp_jacobian_functions->rows = BED->randomizer->num_base_funcs(); temp_jacobian_functions->cols = BED->num_variables;
+	mat_mp temp_jacobian_functions; init_mat_mp(temp_jacobian_functions,BED->randomizer()->num_base_funcs(),BED->num_variables);
+	temp_jacobian_functions->rows = BED->randomizer()->num_base_funcs(); temp_jacobian_functions->cols = BED->num_variables;
 	mat_mp temp_jacobian_parameters; init_mat_mp(temp_jacobian_parameters,0,0);
 	mat_mp Jv_Patch; init_mat_mp(Jv_Patch, 0, 0);
-	mat_mp AtimesJ; init_mat_mp(AtimesJ,BED->randomizer->num_rand_funcs(),BED->num_variables);
-	AtimesJ->rows = BED->randomizer->num_rand_funcs(); AtimesJ->cols = BED->num_variables;
+	mat_mp AtimesJ; init_mat_mp(AtimesJ,BED->randomizer()->num_rand_funcs(),BED->num_variables);
+	AtimesJ->rows = BED->randomizer()->num_rand_funcs(); AtimesJ->cols = BED->num_variables;
 	
 	
 	//set the sizes
@@ -1157,14 +1157,14 @@ int sphere_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv
 	//
 	///////////////////////////////////
 	
-	BED->randomizer->randomize(AtimesF,AtimesJ,temp_function_values,temp_jacobian_functions,&current_variable_values->coord[0]);
+	BED->randomizer()->randomize(AtimesF,AtimesJ,temp_function_values,temp_jacobian_functions,&current_variable_values->coord[0]);
 	
 	
 	for (ii=0; ii<AtimesF->size; ii++)  // for each function, after (real orthogonal) randomization
 		set_mp(&funcVals->coord[ii], &AtimesF->coord[ii]);
 	
 	
-	for (ii = 0; ii < BED->randomizer->num_rand_funcs(); ii++)
+	for (ii = 0; ii < BED->randomizer()->num_rand_funcs(); ii++)
 		for (jj = 0; jj < BED->num_variables; jj++)
 			set_mp(&Jv->entry[ii][jj],&AtimesJ->entry[ii][jj]);
 	
@@ -1191,7 +1191,7 @@ int sphere_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv
 	//
 	//////////////////////////
 	
-	offset = BED->randomizer->num_rand_funcs();
+	offset = BED->randomizer()->num_rand_funcs();
 	
 	mul_mp(func_val_sphere, BED->radius, BED->radius);
 	neg_mp(func_val_sphere, func_val_sphere);
@@ -1509,7 +1509,7 @@ int change_sphere_eval_prec(void const *ED, int new_prec)
 		setprec_mp(BED->two, new_prec);
 		set_mp(BED->two, BED->two_full_prec);
 		
-		BED->randomizer->change_prec(new_prec);
+		BED->randomizer()->change_prec(new_prec);
 		
 	}
 	

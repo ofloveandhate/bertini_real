@@ -442,7 +442,7 @@ int solver_mp::send(parallelism_config & mpi_config)
 	
 	
 	
-	randomizer->bcast_send(mpi_config);
+	randomizer_->bcast_send(mpi_config);
 	
 	return SUCCESSFUL;
 }
@@ -501,8 +501,8 @@ int solver_mp::receive(parallelism_config & mpi_config)
 	delete[] buffer;
 	
 	
-	randomizer = new system_randomizer;  have_randomizer_memory = true;
-	randomizer->bcast_receive(mpi_config);
+	randomizer_ = std::make_shared<system_randomizer> (*(new system_randomizer));
+	randomizer_->bcast_receive(mpi_config);
 	
 	return SUCCESSFUL;
 }
@@ -570,7 +570,7 @@ int solver_d::send(parallelism_config & mpi_config)
 		
 	
 	if (MPType==0) {
-		randomizer->bcast_send(mpi_config);
+		randomizer_->bcast_send(mpi_config);
 	}
 
 	
@@ -610,7 +610,7 @@ int solver_d::receive(parallelism_config & mpi_config)
         }
     }
     else if (MPType==2) {
-        this->setup(BED_mp->SLP, BED_mp->randomizer);
+        this->setup(BED_mp->SLP, BED_mp->randomizer());
 		if (have_SLP) {
 			SLP_memory.capture_globals();
 		}
@@ -625,12 +625,12 @@ int solver_d::receive(parallelism_config & mpi_config)
 	
 	
 	if (MPType==0) {
-		randomizer = new system_randomizer; have_randomizer_memory = true;
-		randomizer->bcast_receive(mpi_config);
+		randomizer_ = std::make_shared<system_randomizer>( *( new system_randomizer));
+		randomizer_->bcast_receive(mpi_config);
 	}
 	else
 	{
-		randomizer = BED_mp->randomizer; // i believe this was already accomplished
+		randomizer_ = BED_mp->randomizer(); // i believe this was already accomplished
 	}
 
 	

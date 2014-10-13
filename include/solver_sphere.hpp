@@ -45,17 +45,29 @@
  */
 class sphere_config
 {
-	
+	std::shared_ptr<system_randomizer> randomizer_; ///< randomizer for the main system being intersected.
+
 public:
+	
+	
+	/**
+	 \brief get a shared pointer to the randomizer
+	 
+	 \return a shared pointer to the randomizer
+	 */
+	std::shared_ptr<system_randomizer> randomizer()
+	{
+		return randomizer_;
+	}
+	
+	
 	
 	SLP_global_pointers SLP_memory; ///< the memory containing the temps for the evaluation of the SLP
 	prog_t * SLP; ///< a pointer to the SLP in memory
 	
 	int MPType; ///< current operating MP mode
 	
-	system_randomizer * randomizer; ///< randomizer for the main system being intersected.
-	bool have_rand; ///< whether have the randomizer in memory
-	bool made_own_rand; ///< whether this config made its own randomizer, or it simply contains a pointer to a randomizer which some other object owns.
+	
 	bool have_mem; ///< whether have the memory set up for SLP
 	
 	vec_mp *starting_linear;  ///< the set of starting linears for the linear product.  There should damn well be two of them.
@@ -76,7 +88,7 @@ public:
 	
 	
 	sphere_config(solver_configuration & solve_options,
-				  system_randomizer * _random)
+				  std::shared_ptr<system_randomizer> _random)
 	{
 		init();
 		
@@ -93,7 +105,7 @@ public:
 	}
 	
 	
-	sphere_config(system_randomizer * _random)
+	sphere_config(std::shared_ptr<system_randomizer> _random)
 	{
 		init();
 		set_randomizer(_random);
@@ -107,10 +119,8 @@ public:
 	 */
 	void make_randomizer(const solver_configuration & solve_options, const witness_set & W)
 	{
-		randomizer = new system_randomizer;
-		randomizer->setup(W.num_variables()-W.num_linears()-W.num_patches(), solve_options.PPD.num_funcs);
-		made_own_rand = true;
-		have_rand = true;
+		randomizer_ = std::make_shared<system_randomizer>(*(new system_randomizer));
+		randomizer_->setup(W.num_variables()-W.num_linears()-W.num_patches(), solve_options.PPD.num_funcs);
 	}
 	
 	/**
@@ -128,10 +138,9 @@ public:
 	 
 	 \param _random Pointer to the randomizer to use.
 	 */
-	void set_randomizer(system_randomizer * _random)
+	void set_randomizer(std::shared_ptr<system_randomizer> _random)
 	{
-		randomizer = _random;
-		have_rand = true;
+		randomizer_ = _random;
 	}
 	
 	/**
@@ -195,8 +204,7 @@ protected:
 		
 		SLP = new prog_t;
 		have_mem = false;
-		have_rand = false;
-		made_own_rand = false;
+
 		
 		starting_linear = (vec_mp *) br_malloc(2*sizeof(vec_mp));
 		init_vec_mp2(starting_linear[0],0,1024);
@@ -217,9 +225,6 @@ protected:
 		clear_vec_mp(starting_linear[1]);
 		free(starting_linear);
 		
-		if (made_own_rand){
-			delete randomizer;
-		}
 		
 		SLP_memory.set_globals_to_this();
 		clearProg(SLP, this->MPType, 1); // 1 means call freeprogeval()
@@ -343,7 +348,7 @@ public:
 	 \param W witness set containing the static linears.
 	 \param solve_options The current state of the solver.
 	 */
-	int setup(const sphere_config & config,
+	int setup(sphere_config & config,
 			  const witness_set & W,
 			  solver_configuration & solve_options);
 	
@@ -579,7 +584,7 @@ public:
 	 \param W witness set containing the static linears.
 	 \param solve_options The current state of the solver.
 	 */
-	int setup(const sphere_config & config,
+	int setup(sphere_config & config,
 			  const witness_set & W,
 			  solver_configuration & solve_options);
 	
@@ -658,7 +663,7 @@ protected:
  */
 int sphere_solver_master_entry_point(const witness_set & W,
 									 solver_output & solve_out,
-									 const sphere_config & config,
+									 sphere_config & config,
 									 solver_configuration & solve_options);
 
 

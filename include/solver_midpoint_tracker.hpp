@@ -301,8 +301,8 @@ public:
 		// these are to be freed by the midpoint_setup object.
 	
 	
-	system_randomizer * randomizer_bottom; ///< pointer to randomizer for bottom edge.
-	system_randomizer * randomizer_top; ///< pointer to randomizer for top edge.
+	std::shared_ptr<system_randomizer> randomizer_bottom; ///< pointer to randomizer for bottom edge.
+	std::shared_ptr<system_randomizer> randomizer_top; ///< pointer to randomizer for top edge.
 	
 	vec_mp *pi; ///< projection vectors
 	int num_projections; ///< projection vectors.  this should be 2 when filled.
@@ -630,8 +630,8 @@ public:
 	vec_d *pi; ///< the projection being used.  should be exactly 2 when fully populated.
 	int num_projections; ///< the number of projections.
 	
-	system_randomizer * randomizer_bottom; ///< a pointer to the randomizer for the bottom system
-	system_randomizer * randomizer_top;///< a pointer to the randomizer for the top system
+	std::shared_ptr<system_randomizer> randomizer_bottom; ///< a pointer to the randomizer for the bottom system
+	std::shared_ptr<system_randomizer> randomizer_top;///< a pointer to the randomizer for the top system
 	
 	
 	//patch already lives in the base class.

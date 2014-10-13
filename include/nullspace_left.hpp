@@ -200,7 +200,7 @@ public:
  */
 int compute_crit_nullspace(solver_output & solve_out, // the returned value
 						   const witness_set & W,
-						   system_randomizer * randomizer,
+						   std::shared_ptr<system_randomizer> randomizer,
 						   vec_mp *pi,
 						   int ambient_dim,
 						   int target_dim, // this should also be the number of vectors in the *pi entry
@@ -248,7 +248,7 @@ void nullspace_config_setup(nullspace_config *ns_config,
 							int target_dim,
 							int target_crit_codim,
 							int *max_degree, // a pointer to the value
-							system_randomizer * randomizer,
+							std::shared_ptr<system_randomizer> randomizer,
 							const witness_set & W,
 							solver_configuration & solve_options);
 

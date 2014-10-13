@@ -22,14 +22,14 @@ void multilintolin_eval_data_mp::init()
 
 
 
-int multilintolin_eval_data_mp::setup(const multilin_config & config,
+int multilintolin_eval_data_mp::setup(multilin_config & config,
 									  const witness_set & W,
 									  vec_mp * target_linears,
 									  solver_configuration & solve_options)
 {
 	
 	
-	if (!config.randomizer->is_ready()) {
+	if (!config.randomizer()->is_ready()) {
 		std::cout << "don't have multilin randomizer!" << std::endl;
 		deliberate_segfault();
 	}
@@ -96,7 +96,7 @@ int multilintolin_eval_data_mp::setup(const multilin_config & config,
 	
 	verbose_level = solve_options.verbose_level;
 	
-	solver_mp::setup(config.SLP, config.randomizer);
+	solver_mp::setup(config.SLP, config.randomizer());
 	
 	generic_setup_patch(&patch,W);
 	
@@ -286,7 +286,7 @@ void multilintolin_eval_data_d::init()
 
 
 
-int multilintolin_eval_data_d::setup(const multilin_config & config,
+int multilintolin_eval_data_d::setup(multilin_config & config,
 									 const witness_set & W,
 									 vec_mp * target_linears,
 									 solver_configuration & solve_options)
@@ -336,7 +336,7 @@ int multilintolin_eval_data_d::setup(const multilin_config & config,
 	}
 	
 	
-	solver_d::setup(config.SLP, config.randomizer);
+	solver_d::setup(config.SLP, config.randomizer());
 	return 0;
 }
 
@@ -441,7 +441,7 @@ int multilintolin_eval_data_d::receive(parallelism_config & mpi_config)
 int multilin_solver_master_entry_point(const witness_set & W, // carries with it the start points, and the linears.
 									   solver_output & solve_out, // new data goes in here
 									   vec_mp * target_linears,
-									   const multilin_config &		config,
+									   multilin_config &		config,
 									   solver_configuration		& solve_options)
 {
 	
@@ -652,15 +652,15 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	
 	vec_d patchValues; init_vec_d(patchValues, 0);
 	vec_d temp_function_values; init_vec_d(temp_function_values,0);
-	vec_d AtimesF; init_vec_d(AtimesF,BED->randomizer->num_rand_funcs()); AtimesF->size = BED->randomizer->num_rand_funcs();// declare  // initialize
+	vec_d AtimesF; init_vec_d(AtimesF,BED->randomizer()->num_rand_funcs()); AtimesF->size = BED->randomizer()->num_rand_funcs();// declare  // initialize
 	
 	
-	mat_d temp_jacobian_functions; init_mat_d(temp_jacobian_functions,BED->randomizer->num_base_funcs(),BED->num_variables);
-	temp_jacobian_functions->rows = BED->randomizer->num_base_funcs(); temp_jacobian_functions->cols = BED->num_variables;
+	mat_d temp_jacobian_functions; init_mat_d(temp_jacobian_functions,BED->randomizer()->num_base_funcs(),BED->num_variables);
+	temp_jacobian_functions->rows = BED->randomizer()->num_base_funcs(); temp_jacobian_functions->cols = BED->num_variables;
 	mat_d temp_jacobian_parameters; init_mat_d(temp_jacobian_parameters,0,0);
 	mat_d Jv_Patch; init_mat_d(Jv_Patch, 0, 0);
-	mat_d AtimesJ; init_mat_d(AtimesJ,BED->randomizer->num_rand_funcs(),BED->num_variables);
-	AtimesJ->rows = BED->randomizer->num_rand_funcs(); AtimesJ->cols = BED->num_variables;
+	mat_d AtimesJ; init_mat_d(AtimesJ,BED->randomizer()->num_rand_funcs(),BED->num_variables);
+	AtimesJ->rows = BED->randomizer()->num_rand_funcs(); AtimesJ->cols = BED->num_variables;
 	
 	
 	//set the sizes
@@ -705,7 +705,7 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	///////// / / / /  /   /
 	
 	// randomize
-	BED->randomizer->randomize(AtimesF,AtimesJ,temp_function_values,temp_jacobian_functions,&current_variable_values->coord[0]);
+	BED->randomizer()->randomize(AtimesF,AtimesJ,temp_function_values,temp_jacobian_functions,&current_variable_values->coord[0]);
 	
 	for (int ii=0; ii<AtimesF->size; ii++)  // for each function, after (real orthogonal) randomization
 		set_d(&funcVals->coord[ii], &AtimesF->coord[ii]);
@@ -774,7 +774,7 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	
 	//first, the entries related to the functions
 	
-	for (int ii = 0; ii < BED->randomizer->num_rand_funcs(); ii++)
+	for (int ii = 0; ii < BED->randomizer()->num_rand_funcs(); ii++)
 		for (int jj = 0; jj < BED->num_variables; jj++)
 			set_d(&Jv->entry[ii][jj],&AtimesJ->entry[ii][jj]);
 	
@@ -828,7 +828,7 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 		print_point_to_screen_matlab(funcVals,"F");
 		print_matrix_to_screen_matlab(Jv,"Jv");
 		print_matrix_to_screen_matlab(Jp,"Jp");
-		std::cout << BED->randomizer << std::endl;//
+		std::cout << BED->randomizer() << std::endl;//
 		
 	}
 	
@@ -888,18 +888,18 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	
 	vec_mp patchValues; init_vec_mp(patchValues, 0);
 	vec_mp temp_function_values; init_vec_mp(temp_function_values,0);
-	vec_mp AtimesF; init_vec_mp(AtimesF,BED->randomizer->num_rand_funcs()); AtimesF->size = BED->randomizer->num_rand_funcs();// declare  // initialize
+	vec_mp AtimesF; init_vec_mp(AtimesF,BED->randomizer()->num_rand_funcs()); AtimesF->size = BED->randomizer()->num_rand_funcs();// declare  // initialize
 	
 		
 	
 	
 	
-	mat_mp temp_jacobian_functions; init_mat_mp(temp_jacobian_functions,BED->randomizer->num_base_funcs(),BED->num_variables);
-	temp_jacobian_functions->rows = BED->randomizer->num_base_funcs(); temp_jacobian_functions->cols = BED->num_variables;
+	mat_mp temp_jacobian_functions; init_mat_mp(temp_jacobian_functions,BED->randomizer()->num_base_funcs(),BED->num_variables);
+	temp_jacobian_functions->rows = BED->randomizer()->num_base_funcs(); temp_jacobian_functions->cols = BED->num_variables;
 	mat_mp temp_jacobian_parameters; init_mat_mp(temp_jacobian_parameters,0,0);
 	mat_mp Jv_Patch; init_mat_mp(Jv_Patch, 0, 0);
-	mat_mp AtimesJ; init_mat_mp(AtimesJ,BED->randomizer->num_rand_funcs(),BED->num_variables);
-	AtimesJ->rows = BED->randomizer->num_rand_funcs(); AtimesJ->cols = BED->num_variables;
+	mat_mp AtimesJ; init_mat_mp(AtimesJ,BED->randomizer()->num_rand_funcs(),BED->num_variables);
+	AtimesJ->rows = BED->randomizer()->num_rand_funcs(); AtimesJ->cols = BED->num_variables;
 	
 	
 	//set the sizes
@@ -944,7 +944,7 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	// combine everything
 	///////// / / / /  /   /
 	
-	BED->randomizer->randomize(AtimesF,AtimesJ,temp_function_values,temp_jacobian_functions,&current_variable_values->coord[0]);
+	BED->randomizer()->randomize(AtimesF,AtimesJ,temp_function_values,temp_jacobian_functions,&current_variable_values->coord[0]);
 
 	//perform the randomization multiplications
 //	mat_mul_mp(AtimesJ,BED->randomizer_matrix,temp_jacobian_functions);
@@ -1017,7 +1017,7 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	
 	//first, the entries related to the functions
 	
-	for (int ii = 0; ii < BED->randomizer->num_rand_funcs(); ii++)
+	for (int ii = 0; ii < BED->randomizer()->num_rand_funcs(); ii++)
 		for (int jj = 0; jj < BED->num_variables; jj++)
 			set_mp(&Jv->entry[ii][jj],&AtimesJ->entry[ii][jj]);
 	
@@ -1074,7 +1074,7 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 		print_point_to_screen_matlab(funcVals,"F_mp");
 		print_matrix_to_screen_matlab(Jv,"Jv_mp");
 		print_matrix_to_screen_matlab(Jp,"Jp_mp");
-		std::cout << BED->randomizer << std::endl;
+		std::cout << BED->randomizer() << std::endl;
 	}
 	
 	
@@ -1235,7 +1235,7 @@ int change_multilintolin_eval_prec(void const *ED, int new_prec)
 			change_prec_point_mp(BED->old_linear[ii],new_prec);
 			vec_cp_mp(BED->old_linear[ii], BED->old_linear_full_prec[ii]);
 		}
-		BED->randomizer->change_prec(new_prec);
+		BED->randomizer()->change_prec(new_prec);
 		
 	}
 	
