@@ -11,22 +11,22 @@ void midpoint_config::setup(const surface_decomposition & surf,
 	
 	this->MPType = solve_options.T.MPType;
     
-    add_projection(surf.pi[0]);
-	add_projection(surf.pi[1]);
+    add_projection(*(surf.pi(0)));
+	add_projection(*(surf.pi(1)));
     
 	
-	systems[surf.input_filename.filename().string()] = complete_system(); // this pattern avoids a time-wasting copy pattern.
-	systems[surf.input_filename.filename().string()].get_system(surf, &solve_options.T);
+	systems[surf.input_filename().filename().string()] = complete_system(); // this pattern avoids a time-wasting copy pattern.
+	systems[surf.input_filename().filename().string()].get_system(surf, &solve_options.T);
 	
-	systems[surf.crit_curve.input_filename.filename().string()] = complete_system();// this pattern avoids a time-wasting copy pattern.
-	systems[surf.crit_curve.input_filename.filename().string()].get_system(surf.crit_curve, &solve_options.T);
+	systems[surf.crit_curve.input_filename().filename().string()] = complete_system();// this pattern avoids a time-wasting copy pattern.
+	systems[surf.crit_curve.input_filename().filename().string()].get_system(surf.crit_curve, &solve_options.T);
 	
-	systems[surf.sphere_curve.input_filename.filename().string()] = complete_system();// this pattern avoids a time-wasting copy pattern.
-	systems[surf.sphere_curve.input_filename.filename().string()].get_system(surf.sphere_curve, &solve_options.T);
+	systems[surf.sphere_curve.input_filename().filename().string()] = complete_system();// this pattern avoids a time-wasting copy pattern.
+	systems[surf.sphere_curve.input_filename().filename().string()].get_system(surf.sphere_curve, &solve_options.T);
 	
 	for (auto iter = surf.singular_curves.begin(); iter!=surf.singular_curves.end(); ++iter) {
-		systems[iter->second.input_filename.filename().string()] = complete_system();// this pattern avoids a time-wasting copy pattern.
-		systems[iter->second.input_filename.filename().string()].get_system(iter->second, &solve_options.T);
+		systems[iter->second.input_filename().filename().string()] = complete_system();// this pattern avoids a time-wasting copy pattern.
+		systems[iter->second.input_filename().filename().string()].get_system(iter->second, &solve_options.T);
 	}
 	
 }

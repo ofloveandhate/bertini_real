@@ -926,7 +926,7 @@ void serial_tracker_loop(trackingStats *trackCount,
 	{
 		if ((solve_options.verbose_level>=0) && (solve_options.path_number_modulus!=0) )
 		{
-			if ((ii%solve_options.path_number_modulus)==0 && (solve_options.path_number_modulus<W.num_points() )) {
+			if ((ii%solve_options.path_number_modulus)==0 && ( unsigned(solve_options.path_number_modulus)<W.num_points() )) {
 				std::cout << color::gray();
 				std::cout << "tracking path " << ii << " of " << W.num_points() << std::endl;
 				std::cout << color::console_default();
@@ -1087,7 +1087,7 @@ void master_tracker_loop(trackingStats *trackCount,
 	// seed the workers
 	int next_index = 0;
 	
-	for (int ii=1; ii<solve_options.numprocs && next_index<W.num_points(); ii++) {
+	for (unsigned int ii=1; ii<solve_options.numprocs && next_index<W.num_points(); ii++) {
 		int next_worker = solve_options.activate_next_worker();
         
 		int num_packets = get_num_at_a_time(solve_options.numprocs-1,total_number_points-next_index);

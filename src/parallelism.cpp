@@ -111,11 +111,11 @@ int ubermaster_process::main_loop()
 			{
 				curve_decomposition C;
 				
-				C.component_num = W.component_number();
+				C.set_component_number(W.component_number());
 				
 				
 				std::stringstream converter;
-				converter << "_dim_" << C.dimension << "_comp_" << C.component_num;
+				converter << "_dim_" << C.dimension() << "_comp_" << C.component_number();
 				program_options.output_dir += converter.str();
 				
 				// curve
@@ -139,10 +139,10 @@ int ubermaster_process::main_loop()
 			{
 				
 				surface_decomposition S;
-				S.component_num = W.component_number();
+				S.set_component_number(W.component_number());
 				
 				std::stringstream converter;
-				converter << "_dim_" << S.dimension << "_comp_" << S.component_num;
+				converter << "_dim_" << S.dimension() << "_comp_" << S.component_number();
 				program_options.output_dir += converter.str();
 				
 				

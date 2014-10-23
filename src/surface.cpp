@@ -26,9 +26,9 @@ void surface_decomposition::main(vertex_set & V,
 	
 	
 	// set some member information.
-	this->input_filename = W_surf.input_filename();
+	set_input_filename(W_surf.input_filename());
 	set_num_variables(W_surf.num_variables());
-	this->component_num = W_surf.component_number();
+	set_component_number(W_surf.component_number());
     
 	add_projection(pi[0]); // add to *this
 	add_projection(pi[1]); // add to *this
@@ -393,7 +393,7 @@ void surface_decomposition::beginning_stuff(const witness_set & W_surf,
 	}
 	
 	
-	randomizer()->setup(W_surf.num_variables()-1-this->dimension,solve_options.PPD.num_funcs);
+	randomizer()->setup(W_surf.num_variables()-1-this->dimension(),solve_options.PPD.num_funcs);
 	
 	
 
@@ -403,7 +403,7 @@ void surface_decomposition::beginning_stuff(const witness_set & W_surf,
 	
 	if (!verify_projection_ok(W_surf,
                               this->randomizer(),
-                              this->pi,
+                              this->pi(),
                               solve_options))
 	{
 		std::cout << "the projections being used appear to suffer rank deficiency with Jacobian matrix..." << std::endl;
@@ -456,7 +456,7 @@ void surface_decomposition::compute_critcurve_witness_set(witness_set & W_critcu
 	compute_crit_nullspace(solve_out,	// the returned value
                            W_surf,            // input the original witness set
                            this->randomizer(),
-                           this->pi,
+                           this->pi(),
                            2,  // dimension of ambient complex object
                            2,   //  target dimension to find
                            1,   // COdimension of the critical set to find.
@@ -556,7 +556,7 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 	compute_crit_nullspace(solve_out, // the returned value
 						   W_surf,            // input the original witness set
 						   this->randomizer(),
-						   &this->pi[0],
+						   this->pi(),
 						   2,  // dimension of ambient complex object
 						   2,   //  target dimension to find
 						   2,   // COdimension of the critical set to find.
@@ -597,7 +597,7 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 	compute_crit_nullspace(solve_out, // the returned value
 						   W_critcurve,            // input the original witness set
 						   crit_curve.randomizer(),
-						   &this->pi[0],
+						   this->pi(),
 						   1,  // dimension of ambient complex object
 						   1,   //  target dimension to find
 						   1,   // COdimension of the critical set to find.
@@ -645,7 +645,7 @@ void surface_decomposition::compute_critical_curve(const witness_set & W_critcur
     
 	//fluff up the projection to have 0 entries for all the synthetic variables.
 	vec_mp temp_proj; init_vec_mp2(temp_proj,0,1024);
-	vec_cp_mp(temp_proj, pi[0]);
+	vec_cp_mp(temp_proj, *this->pi(0));
 	std::cout << temp_proj->size << std::endl;
 	increase_size_vec_mp(temp_proj, W_critcurve.num_variables()); // nondestructive increase in size
     temp_proj->size = W_critcurve.num_variables();
@@ -667,7 +667,7 @@ void surface_decomposition::compute_critical_curve(const witness_set & W_critcur
 	
 	clear_vec_mp(temp_proj);
 	
-	crit_curve.add_projection(pi[0]);
+	crit_curve.add_projection(*this->pi(0));
 	
 	crit_curve.set_num_variables(W_critcurve.num_variables());
 	
@@ -837,7 +837,7 @@ void surface_decomposition::compute_singular_crit(witness_set & W_singular_crit,
 		compute_crit_nullspace(solve_out,                   // the returned value
 							   iter->second,            // input the witness set with linears
 							   singular_curves[iter->first].randomizer(),
-							   &(this->pi[0]),
+							   this->pi(),
 							   1,                                // dimension of ambient complex object
 							   1,                                //  target dimension to find
 							   1,                                // COdimension of the critical set to find.
@@ -879,7 +879,7 @@ void surface_decomposition::compute_singular_curves(const witness_set & W_total_
 	
 	for (auto iter = split_sets.begin(); iter!=split_sets.end(); ++iter) {
 		
-		singular_curves[iter->first].input_filename = iter->second.input_filename();
+		singular_curves[iter->first].set_input_filename(iter->second.input_filename());
 		singular_curves[iter->first].copy_sphere_bounds(*this);
 		
 		
@@ -913,11 +913,11 @@ void surface_decomposition::compute_singular_curves(const witness_set & W_total_
 		// we already know the component is self-conjugate (by entry condition), so we are free to call this function
 		singular_curves[iter->first].interslice(iter->second,
 												W_sphere_intersection,
-												&pi[0],
+												this->pi(),
 												program_options,
 												solve_options,
 												V);
-		singular_curves[iter->first].add_projection(this->pi[0]);
+		singular_curves[iter->first].add_projection(*this->pi(0));
 		
 		num_singular_curves++;
 		
@@ -1194,7 +1194,7 @@ void surface_decomposition::compute_sphere_crit(const witness_set & W_intersecti
 	compute_crit_nullspace(solve_out,                   // the returned value
                            W_intersection_sphere,            // input the witness set with linears
                            sphere_curve.randomizer(),
-                           &(this->pi[0]),
+                           this->pi(0),
                            1,                                // dimension of ambient complex object
                            1,                                //  target dimension to find
                            1,                                // COdimension of the critical set to find.
@@ -1234,13 +1234,13 @@ void surface_decomposition::compute_bounding_sphere(const witness_set & W_inters
 	// then feed it to the interslice algorithm
 	this->sphere_curve.interslice(W_intersection_sphere, // the witness set with a single linear and some patches.
                                   W_crit, // the critical points
-                                  &pi[0],
+                                  pi(0),
                                   program_options,
                                   solve_options,
                                   V);
 	
-	sphere_curve.input_filename = W_intersection_sphere.input_filename();
-	this->sphere_curve.add_projection(pi[0]);
+	sphere_curve.set_input_filename(W_intersection_sphere.input_filename());
+	this->sphere_curve.add_projection(*pi(0));
 	this->sphere_curve.set_num_variables(this->num_variables());
 	
 	
@@ -1282,7 +1282,7 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 	
 	init_vec_mp2(multilin_linears[0], W_surf.num_variables(),1024);
 	init_vec_mp2(multilin_linears[1], W_surf.num_variables(),1024);
-	vec_cp_mp(multilin_linears[0],pi[0]);
+	vec_cp_mp(multilin_linears[0],*pi(0));
 	vec_cp_mp(multilin_linears[1],*W_surf.linear(1));
 	
 	
@@ -1372,7 +1372,7 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 		
 		
 		
-		slices[ii].input_filename = slicename;
+		slices[ii].set_input_filename(slicename);
 		slices[ii].copy_sphere_bounds(*this);
 		
 		
@@ -1391,7 +1391,7 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 		
 		// we already know the component is self-conjugate (by entry condition), so we are free to call this function
 		slices[ii].computeCurveSelfConj(slice_witness_set,
-									   &pi[1],
+									   pi(1),
 									   V,
 									   program_options, solve_options);
 
@@ -1401,7 +1401,7 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 		slice_witness_set.reset();
 		solve_options.reset_tracker_config();
 		
-		slices[ii].add_projection(pi[1]);
+		slices[ii].add_projection(*pi(1));
 		slices[ii].set_num_variables(this->num_variables());
 		
 		
@@ -1484,7 +1484,7 @@ void surface_decomposition::serial_connect(vertex_set & V, midpoint_config & md_
 	for (unsigned int ii=0; ii!=mid_slices.size(); ii++) { // each edge of each midslice will become a face.  degenerate edge => degenerate face.
 		
 		
-		for (int jj=0; jj<mid_slices[ii].num_edges; jj++) {
+		for (unsigned int jj=0; jj<mid_slices[ii].num_edges(); jj++) {
 			
 			
 			
@@ -1560,9 +1560,9 @@ void surface_decomposition::master_connect(vertex_set & V, midpoint_config & md_
 	for (unsigned int ii=0; ii!=mid_slices.size(); ii++) { // each edge of each midslice will become a face.  degenerate edge => degenerate face.
 		
 		
-		for (int jj=0; jj<mid_slices[ii].num_edges; jj++) {
+		for (unsigned int jj=0; jj<mid_slices[ii].num_edges(); jj++) {
 			
-			if (mid_slices[ii].edges[jj].is_degenerate()) {
+			if (mid_slices[ii].get_edge(jj).is_degenerate()) {
 				continue;
 			}
 			
@@ -1773,7 +1773,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 
 	
-	if (mid_slices[ii].edges[jj].is_degenerate()) {
+	if (mid_slices[ii].get_edge(jj).is_degenerate()) {
 		return F;
 	}
 	
@@ -1791,13 +1791,13 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 	
 	F.crit_slice_index = ii; // the index of which midslice this face came from.
-	F.midpt( mid_slices[ii].edges[jj].midpt() ); // index the point
+	F.midpt( mid_slices[ii].get_edge(jj).midpt() ); // index the point
 	
 	
-	std::cout << color::magenta() << "\n\n\n*****************************\nmidslice " << ii << " / " << this->mid_slices.size() <<  ", edge " << jj << " / " << mid_slices[ii].edges.size() << color::console_default() << "\n";
+	std::cout << color::magenta() << "\n\n\n*****************************\nmidslice " << ii << " / " << this->mid_slices.size() <<  ", edge " << jj << " / " << mid_slices[ii].num_edges() << color::console_default() << "\n";
 	
 	
-	std::cout << color::brown() << "current midpoint: " <<  mid_slices[ii].edges[jj].midpt()  << " " << color::console_default() << "\n";
+	std::cout << color::brown() << "current midpoint: " <<  mid_slices[ii].get_edge(jj).midpt()  << " " << color::console_default() << "\n";
 	
 	
 	
@@ -1806,8 +1806,8 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 	// get the type of system for the top and bottom edges.  this is determined by reading the system name for the midpoints.
 	// info on the files from which the points came from.
-	int bottom_input_index = V[mid_slices[ii].edges[jj].left()].input_filename_index();
-	int top_input_index = V[mid_slices[ii].edges[jj].right()].input_filename_index();
+	int bottom_input_index = V[mid_slices[ii].get_edge(jj).left()].input_filename_index();
+	int top_input_index = V[mid_slices[ii].get_edge(jj).right()].input_filename_index();
 	
 	bool bail_out = false;
 	if (md_config.systems.find(V.filename(bottom_input_index).string())==md_config.systems.end()) {
@@ -1822,7 +1822,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 	md_config.system_name_bottom = V.filename(bottom_input_index).filename().string();
 	md_config.system_name_top = V.filename(top_input_index).filename().string();
-	md_config.system_name_mid = this->input_filename.filename().string();
+	md_config.system_name_mid = this->input_filename().filename().string();
 	
 	
 	if (program_options.verbose_level>=0) {
@@ -1848,11 +1848,11 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 	
 	
-	if (crit_slices[ii].num_edges == 0) {
+	if (crit_slices[ii].num_edges() == 0) {
 		std::cout << "critslice " << ii << " has no edges!" << std::endl;
 		bail_out = true;
 	}
-	if (crit_slices[ii+1].num_edges == 0) {
+	if (crit_slices[ii+1].num_edges() == 0) {
 		std::cout << "critslice " << ii+1 << " has no edges!" << std::endl;
 		bail_out = true;
 	}
@@ -1863,10 +1863,10 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	int num_bottom_vars = md_config.num_bottom_vars();
 	int num_top_vars = md_config.num_top_vars();
 	
-	F.bottom = bottom_curve->edge_w_midpt(mid_slices[ii].edges[jj].left()); // index the *edge*
+	F.bottom = bottom_curve->edge_w_midpt(mid_slices[ii].get_edge(jj).left()); // index the *edge*
 	F.system_name_bottom = md_config.system_name_bottom;
 	
-	F.top= top_curve->edge_w_midpt(mid_slices[ii].edges[jj].right()); // index the *edge*
+	F.top= top_curve->edge_w_midpt(mid_slices[ii].get_edge(jj).right()); // index the *edge*
 	F.system_name_top = md_config.system_name_top;
 	
 	if (F.bottom < 0) { // this would happen because the bottom point was of type PROBLEMATIC
@@ -1896,7 +1896,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 		std::cout << color::red() << "bailing out " << ii << " " << jj << "." << std::endl;
 		
 		std::cout << "tracking from these point indices:" << std::endl;
-		std::cout <<  mid_slices[ii].edges[jj].left()  << " " << mid_slices[ii].edges[jj].midpt()  << " "  << mid_slices[ii].edges[jj].right() << color::console_default() << std::endl;
+		std::cout <<  mid_slices[ii].get_edge(jj).left()  << " " << mid_slices[ii].get_edge(jj).midpt()  << " "  << mid_slices[ii].get_edge(jj).right() << color::console_default() << std::endl;
 		
 		return F;
 	}
@@ -1916,21 +1916,21 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	// mid
 	int var_counter = 0;
 	for (int kk=0; kk<this->num_variables(); kk++) {
-		set_mp(&((*W_midtrack.point(0))->coord[kk]), &(*V[mid_slices[ii].edges[jj].midpt()].point())->coord[kk]);
+		set_mp(&((*W_midtrack.point(0))->coord[kk]), &(*V[mid_slices[ii].get_edge(jj).midpt()].point())->coord[kk]);
 		var_counter++;
 	}
 	
 	// bottom
 	int offset = var_counter;
 	for (int kk=0; kk<num_bottom_vars; kk++) {
-		set_mp(&((*W_midtrack.point(0))->coord[kk+offset]), &(*V[mid_slices[ii].edges[jj].left()].point())->coord[kk]); // y0
+		set_mp(&((*W_midtrack.point(0))->coord[kk+offset]), &(*V[mid_slices[ii].get_edge(jj).left()].point())->coord[kk]); // y0
 		var_counter++;
 	}
 	
 	// top
 	offset = var_counter;
 	for (int kk=0; kk<num_top_vars; kk++) {
-		set_mp(&((*W_midtrack.point(0))->coord[kk+offset]), &(*V[mid_slices[ii].edges[jj].right()].point())->coord[kk]); // y2
+		set_mp(&((*W_midtrack.point(0))->coord[kk+offset]), &(*V[mid_slices[ii].get_edge(jj).right()].point())->coord[kk]); // y2
 		var_counter++;
 	}
 	
@@ -1967,8 +1967,8 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 	
 
-	set_mp(md_config.crit_val_left,   &(*V[ crit_slices[ii].edges[0].midpt() ].projection_values())->coord[0]);
-	set_mp(md_config.crit_val_right,  &(*V[ crit_slices[ii+1].edges[0].midpt() ].projection_values())->coord[0]);
+	set_mp(md_config.crit_val_left,   &(*V[ crit_slices[ii].get_edge(0).midpt() ].projection_values())->coord[0]);
+	set_mp(md_config.crit_val_right,  &(*V[ crit_slices[ii+1].get_edge(0).midpt() ].projection_values())->coord[0]);
 	
 	
 	// the u direction corresponds to pi[0].
@@ -1976,12 +1976,12 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 		if (zz==0) {
 			std::cout << "\n      <<=========   going left" << std::endl;
 			std::cout << "tracking from these point indices:" << std::endl;
-			std::cout <<  mid_slices[ii].edges[jj].left()  << " " << mid_slices[ii].edges[jj].midpt()  << " "  << mid_slices[ii].edges[jj].right() << std::endl;
+			std::cout <<  mid_slices[ii].get_edge(jj).left()  << " " << mid_slices[ii].get_edge(jj).midpt()  << " "  << mid_slices[ii].get_edge(jj).right() << std::endl;
 		}
 		else{
 			std::cout << "\n\n           going right   =======>> " << std::endl;
 			std::cout << "tracking from these point indices:" << std::endl;
-			std::cout <<  mid_slices[ii].edges[jj].left()  << " " << mid_slices[ii].edges[jj].midpt()  << " "  << mid_slices[ii].edges[jj].right() << std::endl;
+			std::cout <<  mid_slices[ii].get_edge(jj).left()  << " " << mid_slices[ii].get_edge(jj).midpt()  << " "  << mid_slices[ii].get_edge(jj).right() << std::endl;
 		}
 		
 		
@@ -1993,15 +1993,15 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 		if (zz==0) {
 			
 			set_zero_mp(md_config.u_target);
-			final_bottom_ind = bottom_curve->edges[F.bottom].left();
-			final_top_ind = top_curve->edges[F.top].left();
+			final_bottom_ind = bottom_curve->get_edge(F.bottom).left();
+			final_top_ind = top_curve->get_edge(F.top).left();
 			
 		}
 		else{ // zz==1, and going right
 			
 			set_one_mp(md_config.u_target);
-			final_bottom_ind = bottom_curve->edges[F.bottom].right();
-			final_top_ind = top_curve->edges[F.top].right();
+			final_bottom_ind = bottom_curve->get_edge(F.bottom).right();
+			final_top_ind = top_curve->get_edge(F.top).right();
 			
 		}
 		
@@ -2064,7 +2064,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 		std::set< int > possible_edges;
 		
 		
-		for (int rr = 0; rr< crit_slices[ii+zz].num_edges; rr++){
+		for (unsigned int rr = 0; rr< crit_slices[ii+zz].num_edges(); rr++){
 			possible_edges.insert(rr);}
 		
 		
@@ -2085,27 +2085,27 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				
 				int qq = *poss_iter;
 				
-				bool matches_end = ((crit_slices[ii+zz].edges[qq].left() == current_bottom_ind) || (crit_slices[ii+zz].edges[qq].right() == current_bottom_ind));
+				bool matches_end = ((crit_slices[ii+zz].get_edge(qq).left() == current_bottom_ind) || (crit_slices[ii+zz].get_edge(qq).right() == current_bottom_ind));
 				bool already_found = (found_edges.find(qq)!=found_edges.end());
 				
 				
 				// we gotta be moving from lower to higher...  so temp > temp2 is required
 				bool correct_interval = false;
 				if (matches_end) {
-					set_mp(temp , &(*V[ crit_slices[ii+zz].edges[qq].midpt()].projection_values())->coord[1]);
+					set_mp(temp , &(*V[ crit_slices[ii+zz].get_edge(qq).midpt()].projection_values())->coord[1]);
 					set_mp(temp2, &(*V[ final_bottom_ind].projection_values())->coord[1]);
 					set_mp(temp3, &(*V[ final_top_ind].projection_values())->coord[1]);
 					correct_interval =  ( mpf_get_d(temp3->r) > mpf_get_d(temp->r)) && (mpf_get_d(temp->r) > mpf_get_d(temp2->r)) ;
 				}
 				
-				bool degenerate = crit_slices[ii+zz].edges[qq].is_degenerate();
+				bool degenerate = crit_slices[ii+zz].get_edge(qq).is_degenerate();
 				
 				if ( (!already_found) && matches_end && correct_interval && (!degenerate) ) { //
 					candidates.push_back(qq);
 					
 					if (program_options.verbose_level>=1) {
 						std::cout << "candidate [" << candidate_counter << "] = " <<
-						crit_slices[ii+zz].edges[qq].left() << " " << crit_slices[ii+zz].edges[qq].midpt() << " " << crit_slices[ii+zz].edges[qq].right() <<  std::endl;
+						crit_slices[ii+zz].get_edge(qq).left() << " " << crit_slices[ii+zz].get_edge(qq).midpt() << " " << crit_slices[ii+zz].get_edge(qq).right() <<  std::endl;
 					}
 					
 					
@@ -2138,14 +2138,14 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				
 				if (program_options.verbose_level>=-1) {
 					//					std::cout << "face #: " << this->num_faces << ", zz: " << zz << ", current_edge: " << current_edge << std::endl;
-					std::cout << "tracking to these indices: " << final_bottom_ind << " " << crit_slices[ii+zz].edges[current_edge].midpt() << " " << final_top_ind << std::endl;
+					std::cout << "tracking to these indices: " << final_bottom_ind << " " << crit_slices[ii+zz].get_edge(current_edge).midpt() << " " << final_top_ind << std::endl;
 				}
 				
 				
 				
 				
 				
-				set_mp(proj_mid, &(*V[ crit_slices[ii+zz].edges[current_edge].midpt() ].projection_values())->coord[1]);
+				set_mp(proj_mid, &(*V[ crit_slices[ii+zz].get_edge(current_edge).midpt() ].projection_values())->coord[1]);
 				
 				
 				
@@ -2215,9 +2215,9 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				//print some display to screen
 				if (solve_options.verbose_level >= 3)
 				{
-					print_point_to_screen_matlab((*V[mid_slices[ii].edges[jj].right()].point()),"top_start");
-					print_point_to_screen_matlab((*V[mid_slices[ii].edges[jj].left()].point()),"bottom_start");
-					print_point_to_screen_matlab((*V[ crit_slices[ii+zz].edges[current_edge].midpt() ].point()),"midpoint_target");
+					print_point_to_screen_matlab((*V[mid_slices[ii].get_edge(jj).right()].point()),"top_start");
+					print_point_to_screen_matlab((*V[mid_slices[ii].get_edge(jj).left()].point()),"bottom_start");
+					print_point_to_screen_matlab((*V[ crit_slices[ii+zz].get_edge(current_edge).midpt() ].point()),"midpoint_target");
 				}
 				
 				
@@ -2267,7 +2267,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				
 				if (solve_options.verbose_level>=1) {
 					
-					projection_value_homogeneous_input(temp, found_point, pi[1]);
+					projection_value_homogeneous_input(temp, found_point, *pi(1));
 					print_comp_matlab(temp, "found_point_proj_val");
 					vec_mp tempvec; init_vec_mp(tempvec,0);
 					dehomogenize(&tempvec, found_point);
@@ -2280,7 +2280,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				//search among the current edge possibilities for the one containing the found (mid) point
 				int index_in_set = -1;
 				for (std::set<int>::iterator possibility_iter=possible_edges.begin(); possibility_iter!=possible_edges.end(); possibility_iter++) {
-					if (found_index == crit_slices[ii+zz].edges[*possibility_iter].midpt()) {
+					if (found_index == crit_slices[ii+zz].get_edge(*possibility_iter).midpt()) {
 						index_in_set = *possibility_iter;
 						break;
 					}
@@ -2308,21 +2308,21 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 					int next_edge = index_in_set; // index the *edge*
 					
 					if (program_options.verbose_level>=0) {
-						std::cout << "added_edge " << next_edge << ", l m r: " << crit_slices[ii+zz].edges[next_edge].left() << " " << crit_slices[ii+zz].edges[next_edge].midpt() << " " << crit_slices[ii+zz].edges[next_edge].right() << std::endl;
+						std::cout << "added_edge " << next_edge << ", l m r: " << crit_slices[ii+zz].get_edge(next_edge).left() << " " << crit_slices[ii+zz].get_edge(next_edge).midpt() << " " << crit_slices[ii+zz].get_edge(next_edge).right() << std::endl;
 					}
 					
 					
 					
 					
-					if ( (next_edge<0) || !(  (crit_slices[ii+zz].edges[next_edge].left()!=current_bottom_ind) ||  crit_slices[ii+zz].edges[next_edge].right()!=current_bottom_ind))  {
+					if ( (next_edge<0) || !(  (crit_slices[ii+zz].get_edge(next_edge).left()!=current_bottom_ind) ||  crit_slices[ii+zz].get_edge(next_edge).right()!=current_bottom_ind))  {
 						continue;
 					}
 					
-					if (crit_slices[ii+zz].edges[next_edge].left()==current_bottom_ind) {
-						current_bottom_ind = current_top_ind = crit_slices[ii+zz].edges[next_edge].right(); // the upper value
+					if (crit_slices[ii+zz].get_edge(next_edge).left()==current_bottom_ind) {
+						current_bottom_ind = current_top_ind = crit_slices[ii+zz].get_edge(next_edge).right(); // the upper value
 					}
 					else {
-						current_bottom_ind = current_top_ind = crit_slices[ii+zz].edges[next_edge].left(); // the lower value
+						current_bottom_ind = current_top_ind = crit_slices[ii+zz].get_edge(next_edge).left(); // the lower value
 					}
 					
 					// keep track of those edges we found.

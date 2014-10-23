@@ -748,29 +748,29 @@ public:
 	curve_decomposition * curve_with_name(const std::string & findme)
 	{
 		
-		if (findme.compare(crit_curve.input_filename.filename().string())==0) {
+		if (findme.compare(crit_curve.input_filename().filename().string())==0) {
 			return &crit_curve;
 		}
 		
-		if (findme.compare(sphere_curve.input_filename.filename().string())==0) {
+		if (findme.compare(sphere_curve.input_filename().filename().string())==0) {
 			return &sphere_curve;
 		}
 		for (auto iter = singular_curves.begin(); iter!=singular_curves.end(); ++iter) {
-			if (findme.compare(iter->second.input_filename.filename().string())==0) {
+			if (findme.compare(iter->second.input_filename().filename().string())==0) {
 				return &(iter->second);
 			}
 		}
 		
 		
 		for (auto iter = mid_slices.begin(); iter!=mid_slices.end(); ++iter) {
-			if (findme.compare(iter->input_filename.filename().string())==0) {
+			if (findme.compare(iter->input_filename().filename().string())==0) {
 				return &(*iter);
 			}
 		}
 		
 		
 		for (auto iter = crit_slices.begin(); iter!=crit_slices.end(); ++iter) {
-			if (findme.compare(iter->input_filename.filename().string())==0) {
+			if (findme.compare(iter->input_filename().filename().string())==0) {
 				return &(*iter);
 			}
 		}
@@ -821,7 +821,7 @@ protected:
 	{
 		num_singular_curves = 0;
 		num_faces = 0;
-		dimension = 2;
+		set_dimension(2);
 	}
 	
 	void clear()

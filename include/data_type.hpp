@@ -3227,18 +3227,18 @@ public:
  \param proj the projection to add.
  */
 	void add_projection(vec_mp proj){
-		if (this->num_curr_projections==0) {
-			pi = (vec_mp *) br_malloc(sizeof(vec_mp));
+		if (this->num_curr_projections_==0) {
+			pi_ = (vec_mp *) br_malloc(sizeof(vec_mp));
 		}
 		else{
-			this->pi = (vec_mp *)br_realloc(this->pi, (this->num_curr_projections+1) * sizeof(vec_mp));
+			this->pi_ = (vec_mp *)br_realloc(this->pi_, (this->num_curr_projections_+1) * sizeof(vec_mp));
 		}
 		
-		init_vec_mp2(this->pi[num_curr_projections],proj->size,DEFAULT_MAX_PREC);
-		this->pi[num_curr_projections]->size = proj->size;
+		init_vec_mp2(this->pi_[num_curr_projections_],proj->size,DEFAULT_MAX_PREC);
+		this->pi_[num_curr_projections_]->size = proj->size;
 		
-		vec_cp_mp(pi[num_curr_projections], proj);
-		num_curr_projections++;
+		vec_cp_mp(pi_[num_curr_projections_], proj);
+		num_curr_projections_++;
 		
 	}
 	
@@ -3377,16 +3377,26 @@ public:
 	
 	
 	
-	
+	/**
+	 default constructor.
+	 */
 	decomposition(){
 		init();
 	}
 	
+	
+	/**
+	 default destructor.
+	 */
 	virtual ~decomposition()
 	{
 		this->clear();
 	}
 	
+	
+	/**
+	 assignment
+	 */
 	decomposition & operator=(const decomposition& other){
 		
 		this->init();
@@ -3396,6 +3406,10 @@ public:
 		return *this;
 	}
 	
+	
+	/**
+	 copy
+	 */
 	decomposition(const decomposition & other){
 		
 		this->init();
@@ -3453,29 +3467,6 @@ public:
 	
 	
 	
-	std::map< int , int > counters;
-	std::map< int , std::vector< int > > indices;
-	
-	witness_set W;
-	
-	
-	int dimension; ///< the dimension of the decomposition
-	int component_num; ///< the component number.
-	
-	int num_curr_projections; ///< the number of projections stored in the decomposition.  should match the dimension when complete.
-	vec_mp	*pi; ///< the projections used to decompose.  first ones are used to decompose nested objects.
-	
-	
-	
-	vec_mp sphere_center; ///< the center of the sphere.
-	comp_mp sphere_radius; ///< the radius of the sphere.
-	bool have_sphere_radius; ///< indicates whether the decomposition has the radius set, or needs one still.
-	
-	boost::filesystem::path input_filename; ///< the name of the text file in which the system resides.
-											//	function input_file;
-	
-	
-	
 	
 	/**
 	 \brief get the number of variables in the decomposition
@@ -3498,9 +3489,192 @@ public:
 		return num_variables_ = new_num_variables;
 	}
 	
+	
+	
+	/**
+	 \brief get the name of the bertini input file for this witness set
+	 
+	 \return the path of the file
+	 */
+	inline boost::filesystem::path input_filename() const
+	{
+		return input_filename_;
+	}
+	
+	/**
+	 \brief set the name of the bertini input file
+	 
+	 \param new_input_filename The new name of the file
+	 */
+	void set_input_filename(boost::filesystem::path new_input_filename)
+	{
+		input_filename_ = new_input_filename;
+	}
+	
+	
+	
+	
+	
+	/**
+	 \brief get the dimension of the set represented by the witness set.
+	 
+	 \return the integer dimension of the component.
+	 */
+	inline int dimension() const
+	{
+		return dim_;
+	}
+	
+	/**
+	 \brief set the dimension of the witness set
+	 
+	 \param new_dim the dimension of the set
+	 */
+	void set_dimension(int new_dim)
+	{
+		dim_ = new_dim;
+	}
+	
+	
+	
+	
+	
+	
+	/**
+	 \brief get the component number of the set represented by the witness set.
+	 
+	 \return the index the component.
+	 */
+	inline int component_number() const
+	{
+		return comp_num_;
+	}
+	
+	
+	/**
+	 \brief sets the component number
+	 
+	 \param new_comp_num The new component number to set.
+	 */
+	void set_component_number(int new_comp_num)
+	{
+		comp_num_ = new_comp_num;
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+
+	
+
+	
+	
+	/**
+	 \brief get the witness set associated with the decomposition
+	 
+	 \return the witness set which generated the decomposition
+	 */
+	witness_set get_W() const
+	{
+		return W_;
+	}
+	
+	
+	/**
+	 \brief get the number of current projections
+	 \return the number of currently held projections
+	 */
+	inline int num_curr_projections() const
+	{
+		return num_curr_projections_;
+	}
+	
+	
+	/**
+	 \brief get a pointer to the beginning of the array of projections.  
+  
+	 \return pointer to the 0th projection.  will be NULL if have no projections.
+	 */
+	inline vec_mp* pi()
+	{
+		if (num_curr_projections_>0) {
+			return &pi_[0];
+		}
+		else
+		{
+			return NULL;
+		}
+	}
+	
+	
+	/**
+	 \brief get a pointer to the ith projections.
+  
+	 \return pointer to the ith projection.  will throw if out of range
+	 */
+	inline vec_mp* pi(int index) const
+	{
+		if (index >= num_curr_projections_) {
+			throw std::out_of_range("trying to access an out of range projection in decomposition");
+		}
+		else
+		{
+			return &pi_[index];
+		}
+	}
+	
+	
+	
+	
+	vec_mp sphere_center; ///< the center of the sphere.
+	comp_mp sphere_radius; ///< the radius of the sphere.
+	bool have_sphere_radius; ///< indicates whether the decomposition has the radius set, or needs one still.
+	
+	
+	
 protected:
 	
 	
+	int num_curr_projections_; ///< the number of projections stored in the decomposition.  should match the dimension when complete.
+	vec_mp	*pi_; ///< the projections used to decompose.  first ones are used to decompose nested objects.
+	
+	
+	
+
+	
+	
+	
+	/**
+	 \brief set the witness set.
+	 
+	 \param new_w the new witness set to set.
+	 */
+	void set_W(const witness_set & new_w)
+	{
+		W_ = new_w;
+	}
+	
+	
+	
+	witness_set W_;
+	
+	boost::filesystem::path input_filename_; ///< the name of the text file in which the system resides.
+	
+	
+	int dim_; ///< the dimension of the decomposition
+	int comp_num_; ///< the component number.
+	
+	
+	//	function input_file;
 	int num_variables_; ///< the number of variables in the decomposition
 	
 
@@ -3518,14 +3692,14 @@ protected:
 		
 		randomizer_ = std::make_shared<system_randomizer> (*(new system_randomizer()));
 
-		input_filename = "unset";
-		pi = NULL;
+		input_filename_ = "unset";
+		pi_ = NULL;
 		
 		
-		num_curr_projections = 0;
+		num_curr_projections_ = 0;
 		num_variables_ = 0;
-		dimension = -1;
-		component_num = -1;
+		dim_ = -1;
+		comp_num_ = -1;
 		
 		init_mp2(sphere_radius,DEFAULT_MAX_PREC);
 		init_vec_mp2(sphere_center,0,1024);
@@ -3554,22 +3728,30 @@ protected:
 		
 		this->randomizer_ = other.randomizer_;//make_shared<system_randomizer>( *other.randomizer_ );
 		
-		this->W = other.W;
+		this->W_ = other.W_;
 		
-		this->input_filename = other.input_filename;
+		this->input_filename_ = other.input_filename_;
 		
-		this->counters = other.counters;
-		this->indices = other.indices;
 		this->num_variables_ = other.num_variables_;
-		this->dimension = other.dimension;
-		this->component_num = other.component_num;
+		this->dim_ = other.dim_;
+		this->comp_num_ = other.comp_num_;
 		
-		this->num_curr_projections = other.num_curr_projections;
-		this->pi = (vec_mp *) br_malloc(other.num_curr_projections * sizeof(vec_mp));
-		for (int ii = 0; ii<other.num_curr_projections; ii++) {
-			init_vec_mp2(this->pi[ii],other.pi[ii]->size,DEFAULT_MAX_PREC);
-			this->pi[ii]->size = other.pi[ii]->size;
-			vec_cp_mp(this->pi[ii], other.pi[ii])
+		
+		if (this->num_curr_projections_==0) {
+			this->pi_ = (vec_mp *) br_malloc(other.num_curr_projections_ * sizeof(vec_mp));
+		}
+		else{
+			for (int ii=0; ii<num_curr_projections_; ii++) {
+				clear_vec_mp(pi_[ii]);
+			}
+			this->pi_ = (vec_mp *) br_realloc(this->pi_,other.num_curr_projections_ * sizeof(vec_mp));
+		}
+		
+		this->num_curr_projections_ = other.num_curr_projections_;
+		for (int ii = 0; ii<other.num_curr_projections_; ii++) {
+			init_vec_mp2(this->pi_[ii],other.pi_[ii]->size,DEFAULT_MAX_PREC);
+			this->pi_[ii]->size = other.pi_[ii]->size;
+			vec_cp_mp(this->pi_[ii], other.pi_[ii])
 		}
 		
 		
@@ -3585,16 +3767,14 @@ protected:
 	{
 		
 		
-		if (num_curr_projections>0){
-			for (int ii=0; ii<num_curr_projections; ii++)
-				clear_vec_mp(pi[ii]);
-			free(pi);
+		if (num_curr_projections_>0){
+			for (int ii=0; ii<num_curr_projections_; ii++)
+				clear_vec_mp(pi_[ii]);
+			free(pi_);
 		}
-		num_curr_projections = 0;
+		num_curr_projections_ = 0;
 		
-		
-		counters.clear();
-		indices.clear();
+	
 		
 		
 		clear_mp(sphere_radius);

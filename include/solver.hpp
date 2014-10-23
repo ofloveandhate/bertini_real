@@ -404,9 +404,9 @@ public:
 		this->randomizer_ = D.randomizer();
 		have_randomizer = false;
 		int blabla;  // i would like to move this.
-		parse_input_file(D.input_filename, &blabla);
+		parse_input_file(D.input_filename(), &blabla);
 		num_variables = D.num_variables();
-		input_filename = D.input_filename;
+		input_filename = D.input_filename();
 		this->MPType = T->MPType;
 		
 		
