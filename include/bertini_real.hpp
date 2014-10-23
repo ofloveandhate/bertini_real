@@ -32,7 +32,8 @@
 #include "isosingular.hpp"
 #include "programConfiguration.hpp"
 
-#include "output.hpp"
+
+
 
 #include "surface.hpp"
 #include "curve.hpp"

@@ -28,7 +28,8 @@
 #include "data_type.hpp"
 #include "solver_multilintolin.hpp"
 #include "solver_nullspace_left.hpp"
-#include "output.hpp"
+
+
 
 
 #include "derivative_systems.hpp"

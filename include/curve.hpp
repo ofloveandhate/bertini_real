@@ -31,7 +31,7 @@
 #include "data_type.hpp"
 #include "isosingular.hpp"
 #include "programConfiguration.hpp"
-#include "output.hpp"
+
 
 
 #include "nullspace_left.hpp"
@@ -50,14 +50,43 @@ class curve_decomposition : public decomposition
 	std::vector< std::vector<int >> sample_indices;
 	
 	
+	std::vector<edge> edges_; ///< The edges (1-cells) computed by Bertini_real
+	size_t      num_edges_;  ///< How many edges this decomposition currently has.  This could also be inferred from edges.size()
+	
+	
+	
 	friend class surface_decomposition;
 	
 public:
 	
-	std::vector<edge> edges; ///< The edges (1-cells) computed by Bertini_real
-	int      num_edges;  ///< How many edges this decomposition currently has.  This could also be inferred from edges.size()
+	
+	/** 
+	 \brief get the number of edges in the curve
+	 
+	 \return the number of edges in the decomposition
+	 */
+	unsigned int num_edges() const
+	{
+		return num_edges_;
+	}
 	
 	
+	/**
+	 \brief get an edge of the curve.  they are stored in the order in which they were computed.
+	 
+	 \param index the index of the edge you want.
+	 
+	 \return the ith edge
+	 */
+	edge get_edge(unsigned int index) const
+	{
+		
+		if (index>=num_edges_) {
+			throw std::out_of_range("trying to get edge out of range");
+		}
+		
+		return edges_[index];
+	}
 	
 	
 	
@@ -72,10 +101,10 @@ public:
     {
         std::set< int > ind;
         
-        for (int ii=0; ii<num_edges; ii++) {
-            ind.insert(edges[ii].left());
-            ind.insert(edges[ii].midpt());
-            ind.insert(edges[ii].right());
+        for (auto iter=edges_.begin(); iter!=edges_.end(); iter++) {
+            ind.insert(iter->left());
+            ind.insert(iter->midpt());
+            ind.insert(iter->right());
         }
         
         return ind;
@@ -94,9 +123,9 @@ public:
 	 */
 	int add_edge(edge new_edge)
 	{
-		num_edges++;
-		edges.push_back(new_edge);
-		return num_edges-1; // -1 to correct for the fencepost problem
+		num_edges_++;
+		edges_.push_back(new_edge);
+		return num_edges_-1; // -1 to correct for the fencepost problem
 	}
 	
 	/**
@@ -162,10 +191,10 @@ public:
 	int nondegenerate_edge_w_midpt(int ind)
 	{
 		
-		for (int ii=0; ii<num_edges; ii++){
-			if (this->edges[ii].midpt() == ind){
+		for (unsigned int ii=0; ii<num_edges_; ii++){
+			if (this->edges_[ii].midpt() == ind){
 				
-				if (edges[ii].is_degenerate()) {
+				if (edges_[ii].is_degenerate()) {
 					continue;
 				}
 				
@@ -187,10 +216,10 @@ public:
 	int nondegenerate_edge_w_left(int ind)
 	{
 		
-		for (int ii=0; ii<num_edges; ii++){
-			if (this->edges[ii].left() == ind){
+		for (unsigned int ii=0; ii<num_edges_; ii++){
+			if (this->edges_[ii].left() == ind){
 				
-				if (edges[ii].is_degenerate()) {
+				if (edges_[ii].is_degenerate()) {
 					continue;
 				}
 				
@@ -211,10 +240,10 @@ public:
 	int nondegenerate_edge_w_right(int ind)
 	{
 		
-		for (int ii=0; ii<num_edges; ii++){
-			if (this->edges[ii].right() == ind){
+		for (unsigned int ii=0; ii<num_edges_; ii++){
+			if (this->edges_[ii].right() == ind){
 				
-				if (edges[ii].is_degenerate()) {
+				if (edges_[ii].is_degenerate()) {
 					continue;
 				}
 				
@@ -236,8 +265,8 @@ public:
 	int edge_w_midpt(int ind)
 	{
 		
-		for (int ii=0; ii<num_edges; ii++){
-			if (this->edges[ii].midpt() == ind){
+		for (unsigned int ii=0; ii<num_edges_; ii++){
+			if (this->edges_[ii].midpt() == ind){
 				return ii;
 			}
 		}
@@ -255,8 +284,8 @@ public:
 	int edge_w_left(int ind)
 	{
 		
-		for (int ii=0; ii<num_edges; ii++){
-			if (this->edges[ii].left() == ind){
+		for (unsigned int ii=0; ii<num_edges_; ii++){
+			if (this->edges_[ii].left() == ind){
 				return ii;
 			}
 		}
@@ -274,8 +303,8 @@ public:
 	int edge_w_right(int ind)
 	{
 		
-		for (int ii=0; ii<num_edges; ii++){
-			if (this->edges[ii].right() == ind){
+		for (unsigned int ii=0; ii<num_edges_; ii++){
+			if (this->edges_[ii].right() == ind){
 				return ii;
 			}
 		}
@@ -294,9 +323,9 @@ public:
 	int edge_w_removed(int ind)
 	{
 		
-		for (int ii=0; ii<num_edges; ii++){
+		for (unsigned int ii=0; ii<num_edges_; ii++){
 			
-			for (auto iter=edges[ii].removed_begin(); iter!=edges[ii].removed_end(); ++iter) {
+			for (auto iter=edges_[ii].removed_begin(); iter!=edges_[ii].removed_end(); ++iter) {
 				if (*iter == ind){
 					return ii;
 				}
@@ -620,22 +649,22 @@ protected:
 	
 	void clear()
 	{
-		edges.clear();
-		num_edges = 0;
+		edges_.clear();
+		num_edges_ = 0;
 	}
 	
 	void init(){
 		
-		num_edges = 0;
-		dimension = 1;
+		num_edges_ = 0;
+		set_dimension(1);
 	}
 	
 	
 	void copy(const curve_decomposition & other)
 	{
 		decomposition::copy(other);
-		this->edges = other.edges;
-		this->num_edges = other.num_edges;
+		this->edges_ = other.edges_;
+		this->num_edges_ = other.num_edges_;
 	}
 	
 }; // end curve_decomposition

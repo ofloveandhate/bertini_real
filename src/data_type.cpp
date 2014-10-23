@@ -3279,12 +3279,6 @@ int decomposition::add_vertex(vertex_set & V, vertex source_vertex)
 	
 	int current_index = V.add_vertex(source_vertex);
 	
-	if (counters.find(source_vertex.type()) == counters.end()) {
-		counters[source_vertex.type()] = 0;
-	}
-	
-	counters[source_vertex.type()]++;
-	indices[source_vertex.type()].push_back(current_index);
 	
 	return current_index;
 }
@@ -3349,35 +3343,20 @@ int decomposition::setup(boost::filesystem::path INfile)
 	
 	
 	getline(fin, tempstr);
-	input_filename = directoryName / tempstr;
+	set_input_filename(directoryName / tempstr);
 	
 	getline(fin, tempstr);
 	converter << tempstr;
-	converter >> this->num_variables_ >> this->dimension;
+	converter >> this->num_variables_ >> this->dim_;
 	converter.clear(); converter.str("");
 	
 
-	int num_types;
-	fin >> num_types;
-	
-	
-	for (int ii =0; ii<num_types; ii++) {
-		int current_type, num_this_type, current_index;
-		fin >> current_type >> num_this_type;
 
-		this->counters[current_type] = num_this_type;
-		
-		for (int jj=0; jj<num_this_type; jj++) {
-			fin >> current_index;
-			this->indices[current_type].push_back(current_index);
-		}
-	}
-	
 	vec_mp tempvec; init_vec_mp2(tempvec, this->num_variables_,1024);
 	tempvec->size = this->num_variables_;
 	
 
-	for (int ii=0; ii<dimension; ii++) {
+	for (int ii=0; ii<dimension(); ii++) {
 		int temp_size;
 		fin >> temp_size;
 		
@@ -3443,7 +3422,7 @@ void decomposition::print(boost::filesystem::path base)
 	std::cout << "decomposition::print" << std::endl;
 #endif
 	
-	if (dimension != num_curr_projections) {
+	if (dimension() != num_curr_projections()) {
 //		std::cout << "decomposition was short projections\nneeded	" << this->dimension << " but had " << num_curr_projections << std::endl;;
 	}
 	
@@ -3454,29 +3433,16 @@ void decomposition::print(boost::filesystem::path base)
 	
 	FILE *OUT = safe_fopen_write(base / "decomp");
 	
-	fprintf(OUT,"%s\n",input_filename.filename().c_str());
+	fprintf(OUT,"%s\n",input_filename().filename().c_str());
 	
-	fprintf(OUT,"%d %d\n\n",num_variables(), dimension);
-	
-	fprintf(OUT, "%d\n", int(this->counters.size()));
-	
-	std::map< int, int>::iterator type_iter;
-	for (type_iter = this->counters.begin(); type_iter!= this->counters.end(); type_iter++) {
-		fprintf(OUT, "%d %d\n",type_iter->first, type_iter->second);  // print the number corresponding to the type, and the number of that type.
-		
-		for (int jj = 0; jj<type_iter->second; jj++) {
-			fprintf(OUT, "%d\n", indices[type_iter->first][jj]);
-		}
-		fprintf(OUT,"\n");
-	}
-	fprintf(OUT,"\n");
+	fprintf(OUT,"%d %d\n\n",num_variables(), dimension());
 	
 	
-	for (ii=0; ii<num_curr_projections; ii++) {
-		fprintf(OUT,"%d\n",pi[ii]->size);
-		for(int jj=0;jj<pi[ii]->size;jj++)
+	for (ii=0; ii<num_curr_projections(); ii++) {
+		fprintf(OUT,"%d\n",pi_[ii]->size);
+		for(int jj=0;jj<pi_[ii]->size;jj++)
 		{
-			print_mp(OUT, 0, &pi[ii]->coord[jj]);
+			print_mp(OUT, 0, &pi_[ii]->coord[jj]);
 			fprintf(OUT,"\n");
 		}
 		fprintf(OUT,"\n");
@@ -3522,12 +3488,12 @@ int decomposition::read_sphere(const boost::filesystem::path & bounding_sphere_f
 #endif
 	
 	if (num_variables_<2) {
-		std::cout << "during read of sphere, decomposition of dimension	" << dimension << " has " << num_variables_ << " variables!" << std::endl;
+		std::cout << "during read of sphere, decomposition of dimension	" << dimension() << " has " << num_variables() << " variables!" << std::endl;
 		mypause();
 	}
 
-	change_size_vec_mp(this->sphere_center, num_variables_-1); //destructive resize
-	sphere_center->size = num_variables_-1;
+	change_size_vec_mp(this->sphere_center, num_variables()-1); //destructive resize
+	sphere_center->size = num_variables()-1;
 	
 	
 	FILE *IN = safe_fopen_read(bounding_sphere_filename);
@@ -3536,7 +3502,7 @@ int decomposition::read_sphere(const boost::filesystem::path & bounding_sphere_f
 	mpf_set_str(sphere_radius->i,"0",10);
 	
 	
-	for (int jj=1; jj<num_variables_; jj++) {
+	for (int jj=1; jj<num_variables(); jj++) {
 		mpf_inp_str(sphere_center->coord[jj-1].r, IN, 10);
 		mpf_set_str(sphere_center->coord[jj-1].i,"0",10);
 	}
@@ -3697,12 +3663,12 @@ void decomposition::output_main(const boost::filesystem::path base)
 	
 	copyfile("witness_data",base / "witness_data"); // this is wrong for nested decompositions.
 	
-	W.print_to_file(base / "witness_set");
+	W_.print_to_file(base / "witness_set");
 	
 	
 // TODO:  this should be a write call, not a copy!
-	if (input_filename.filename().string().compare("unset")) {
-		copyfile(input_filename, base / input_filename.filename());
+	if (input_filename().filename().string().compare("unset")) {
+		copyfile(input_filename(), base / input_filename().filename());
 	}
 	else{
 //		std::cout << "not copying inputfile because name was unset -- " << input_filename << std::endl;
@@ -3714,7 +3680,7 @@ void decomposition::output_main(const boost::filesystem::path base)
 	OUT = safe_fopen_write("Dir_Name");
 	fprintf(OUT,"%s\n",base.c_str());
 	fprintf(OUT,"%d\n",2);//remove this
-	fprintf(OUT,"%d\n",dimension);
+	fprintf(OUT,"%d\n",dimension());
 	fclose(OUT);
 	
 	
@@ -3736,73 +3702,27 @@ void decomposition::send(int target, parallelism_config & mpi_config)
 	
 	
 	//pack and send numbers of things.
-	buffer2 = new int[9];
+	buffer2 = new int[7];
 	buffer2[0] = num_variables();
-	buffer2[1] = dimension;
-	buffer2[2] = component_num;
-	buffer2[3] = num_curr_projections;
+	buffer2[1] = dimension();
+	buffer2[2] = component_number();
+	buffer2[3] = num_curr_projections();
 
 	buffer2[4] = num_patches();
 	buffer2[5] = have_sphere_radius;
-	int strleng = input_filename.string().size() + 1;
+	int strleng = input_filename().string().size() + 1;
 	buffer2[6] = strleng;
-	buffer2[7] = counters.size();
-	buffer2[8] = indices.size();
-	MPI_Send(buffer2, 9, MPI_INT, target, 6, MPI_COMM_WORLD);
+
+	MPI_Send(buffer2, 7, MPI_INT, target, 6, MPI_COMM_WORLD);
 	delete [] buffer2;
 	
 	
 	
-	if (counters.size()>0) {
-
-		//pack and send the counters.
-		int * buffer3 = new int[2*counters.size()];
-		int cnt = 0;
-		for (auto iter = counters.begin(); iter!=counters.begin(); iter++) {
-			buffer3[2*cnt] = iter->first;
-			buffer3[2*cnt+1] = iter->second;
-		}
-		MPI_Send(buffer3, 2*counters.size(), MPI_INT, target, 2, MPI_COMM_WORLD);
-		delete [] buffer3;
-	}
 	
 	
-	
-
-	int * intbuff = new int[2];
-
-	//pack and send the indices
-	
-	if (indices.size()>0) {
-		for (auto iter = indices.begin(); iter!=indices.end(); iter++) { // a std::map<int, std::vectors<ints>>
-			
-			intbuff[0] = iter->first;
-			int num_these_indices = iter->second.size();
-			
-			intbuff[1] = num_these_indices;
-			MPI_Send(intbuff, 2, MPI_INT, target, 4, MPI_COMM_WORLD);
-			
-			
-
-			if (num_these_indices>0) {
-				int * buffer4 = new int[num_these_indices];
-				int cnt = 0;
-				for (auto jter = iter->second.begin(); jter != iter->second.end(); jter++) {
-					buffer4[cnt] = *jter;
-					cnt++;
-				}
-				MPI_Send(buffer4, num_these_indices, MPI_INT, target, 5, MPI_COMM_WORLD);
-				delete [] buffer4;
-			}
-			
-		}
-	}
-	delete [] intbuff;
-	
-	
-	if (num_curr_projections>0) {
-		for (int ii=0; ii<num_curr_projections; ii++) {
-			send_vec_mp(pi[ii],target);
+	if (num_curr_projections()>0) {
+		for (int ii=0; ii<num_curr_projections(); ii++) {
+			send_vec_mp(pi_[ii],target);
 		}
 	}
 	
@@ -3829,7 +3749,7 @@ void decomposition::send(int target, parallelism_config & mpi_config)
 	
 	if (strleng>1) {
 		char * buffer = new char[strleng];
-		memcpy(buffer, input_filename.c_str(), strleng);
+		memcpy(buffer, input_filename().c_str(), strleng);
 		MPI_Send(buffer, strleng, MPI_CHAR, target, 7, MPI_COMM_WORLD);
 		delete [] buffer;
 	}
@@ -3870,19 +3790,17 @@ void decomposition::receive(int source, parallelism_config & mpi_config)
 	
 	
 	
-	buffer2 = new int[9];
+	buffer2 = new int[7];
 	
-	MPI_Recv(buffer2, 9, MPI_INT, source, 6, MPI_COMM_WORLD, &statty_mc_gatty);
+	MPI_Recv(buffer2, 7, MPI_INT, source, 6, MPI_COMM_WORLD, &statty_mc_gatty);
 	set_num_variables(buffer2[0]);
-	dimension = buffer2[1];
-	component_num = buffer2[2];
+	dim_ = buffer2[1];
+	comp_num_ = buffer2[2];
 	int temp_num_projections = buffer2[3];
 	int temp_num_patches = buffer2[4];
 	have_sphere_radius = buffer2[5];
 	int strleng = buffer2[6];
-	
-	int num_counters = buffer2[7];
-	int num_indices = buffer2[8];
+
 	delete [] buffer2;
 	
 	
@@ -3901,44 +3819,7 @@ void decomposition::receive(int source, parallelism_config & mpi_config)
 //	std::cout << num_indices << std::endl;
 	
 	
-	if (num_counters>0) {
-		int * buffer3 = new int[2*num_counters];
-		MPI_Recv(buffer3, 2*num_counters, MPI_INT, source, 2, MPI_COMM_WORLD, &statty_mc_gatty);
-		for (int ii=0; ii<num_counters; ii++) {
-			counters[buffer3[2*ii]] = buffer3[2*ii+1]; // counters is a map, this is ok.
-		}
-		delete [] buffer3;
-	}
-	
-	
-	int * intbuff = new int[2];
-	
 
-	if (num_indices>0) {
-		for (int ii=0; ii<num_indices; ii++) {
-			
-			MPI_Recv(intbuff, 2, MPI_INT, source, 4, MPI_COMM_WORLD, &statty_mc_gatty);
-			int indices_index_lol = intbuff[0];
-			int num_these_indices = intbuff[1];
-			
-			
-			
-			std::vector<int> tempind;
-			
-			if (num_these_indices>0) {
-
-				int * buffer3 = new int[num_these_indices];
-				MPI_Recv(buffer3, num_these_indices, MPI_INT, source, 5, MPI_COMM_WORLD, &statty_mc_gatty);
-				for (int jj=0; jj<num_these_indices; jj++) {
-					tempind.push_back(buffer3[jj]);
-				}
-				delete [] buffer3;
-			}
-			
-			indices[indices_index_lol] = tempind;
-		}
-	}
-	
 	
 	
 	
@@ -3978,13 +3859,12 @@ void decomposition::receive(int source, parallelism_config & mpi_config)
 		char * buffer = new char[strleng];
 		MPI_Recv(buffer, strleng, MPI_CHAR, source, 7, MPI_COMM_WORLD, &statty_mc_gatty);
 		
-		input_filename = buffer;
+		set_input_filename(buffer);
 		delete [] buffer;
 	}
 	
 	
-	
-	delete [] intbuff;
+
 	
 
 	clear_vec_mp(tempvec);
