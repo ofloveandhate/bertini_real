@@ -13,7 +13,7 @@ bool checkSelfConjugate(vec_mp test_point,
 	
 	std::string bertini_command=program_options.bertini_command;
 	bertini_command.append(" input_membership_test ");
-	bertini_command.append(program_options.stifle_text);
+	bertini_command.append(program_options.stifle_text());
 
 	
 	
@@ -44,7 +44,7 @@ bool checkSelfConjugate(vec_mp test_point,
 	
 	
 	// Do membership test
-	if (program_options.verbose_level>=1) {
+	if (program_options.verbose_level()>=1) {
 		std::cout << "*\n" << program_options.bertini_command << "\n*" << std::endl;
 	}
 	
@@ -256,7 +256,7 @@ int get_incidence_number(vec_mp test_point,
 	
 	std::string system_command=program_options.bertini_command;
 	system_command.append(" input_membership_test ");
-	system_command.append(program_options.stifle_text);
+	system_command.append(program_options.stifle_text());
 	
 	
 	// setup input file

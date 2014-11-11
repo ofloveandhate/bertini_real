@@ -30,7 +30,7 @@ int main(int argC, char *args[])
 	
 	
 	
-	if (program_options.debugwait) {
+	if (program_options.debugwait()) {
 		std::cout << "in debug mode, waiting to start so you can attach to this process" << std::endl;
 		if (solve_options.is_head()) {
 			std::cout << "master PID: " << getpid() << std::endl;
@@ -81,7 +81,7 @@ int main(int argC, char *args[])
 	
 	
 	solve_options.use_midpoint_checker = 0;
-	solve_options.verbose_level = program_options.verbose_level;
+	solve_options.verbose_level(program_options.verbose_level());
 	solve_options.use_gamma_trick = program_options.use_gamma_trick;
 	
 

@@ -102,10 +102,8 @@ int get_dir_mptype_dimen(boost::filesystem::path & Dir_Name, int & MPType, int &
  \todo remove this function, or make a method of the witness_set class.
  
  \param W the witness set to modify.
- \param L the linear to set
- \param pts the input point
- \param num_vars The number of vars to change the W to.
- 
+ \param new_linear the linear to set
+ \param new_point the input point 
  */
 void set_witness_set_mp(witness_set & W, vec_mp new_linear,vec_mp new_point);
 

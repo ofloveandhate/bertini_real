@@ -694,7 +694,7 @@ void system_randomizer::send(int target, parallelism_config & mpi_config)
 	buffer[2] = num_original_funcs;
 	buffer[3] = max_base_degree;
 	buffer[4] = max_degree_deficiency;
-	MPI_Send(buffer,5,MPI_INT,target,UNUSED,MPI_COMM_WORLD);
+	MPI_Send(buffer,5,MPI_INT,target, SYSTEM_RANDOMIZER ,mpi_config.comm());
 	
 	delete[] buffer;
 	
@@ -737,7 +737,7 @@ void system_randomizer::send(int target, parallelism_config & mpi_config)
 	
 	
 	
-	MPI_Send(buffer2, size_to_send, MPI_INT, target, UNUSED, MPI_COMM_WORLD);
+	MPI_Send(buffer2, size_to_send, MPI_INT, target, SYSTEM_RANDOMIZER, mpi_config.comm());
 	delete [] buffer2;
 	
 	
@@ -767,7 +767,7 @@ void system_randomizer::receive(int source, parallelism_config & mpi_config)
 	}
 	
 	int *buffer = new int[1+2+2]; // square + size_of_randomizer + max_base + max_degree
-	MPI_Recv(buffer,5,MPI_INT,source,UNUSED,MPI_COMM_WORLD,&statty_mc_gatty);
+	MPI_Recv(buffer,5,MPI_INT,source,SYSTEM_RANDOMIZER,mpi_config.comm(),&statty_mc_gatty);
 	
 	square_indicator = buffer[0];
 	num_randomized_funcs = buffer[1];
@@ -785,7 +785,7 @@ void system_randomizer::receive(int source, parallelism_config & mpi_config)
 	
 	
 	
-	MPI_Recv(buffer2, size_to_receive, MPI_INT, source, UNUSED, MPI_COMM_WORLD,&statty_mc_gatty);
+	MPI_Recv(buffer2, size_to_receive, MPI_INT, source, SYSTEM_RANDOMIZER, mpi_config.comm(),&statty_mc_gatty);
 	
 	int cnt = 0;
 	for (int ii=0; ii<num_randomized_funcs; ii++) {
@@ -1676,7 +1676,7 @@ void witness_set::sort_for_unique(tracker_config_t * T)
 	
 	if (counter!= num_good_pts) {
 		printf("counter mismatch\n");
-		exit(270);
+		br_exit(270);
 	}
 	
 	for (unsigned int ii=0; ii<num_points(); ii++) {
@@ -1866,7 +1866,7 @@ void witness_set::send(parallelism_config & mpi_config, int target) const
     buffer[6] = num_linears();
     buffer[7] = num_patches();
     
-    MPI_Send(buffer, 8, MPI_INT, WITNESS_SET, target, mpi_config.my_communicator);
+    MPI_Send(buffer, 8, MPI_INT, WITNESS_SET, target, mpi_config.comm());
     
     free(buffer);
     
@@ -1894,7 +1894,7 @@ void witness_set::receive(int source, parallelism_config & mpi_config)
 	int *buffer = new int[8];
     
     
-    MPI_Recv(buffer, 8, MPI_INT, WITNESS_SET, source, mpi_config.my_communicator, &statty_mc_gatty);
+    MPI_Recv(buffer, 8, MPI_INT, WITNESS_SET, source, mpi_config.comm(), &statty_mc_gatty);
     
     set_dimension(buffer[0]);
     comp_num_ = buffer[1];
@@ -2069,11 +2069,13 @@ void witness_data::populate()
 		
 		//MATRIX W FOR HOMOGENIZATION
 		//  same length as the randomization matrix
-		int hom_mat[num_rows_randomization][num_cols_randomization];
-		for (int ii=0; ii<num_rows_randomization; ii++)
-			for (int jj=0; jj<num_cols_randomization; jj++)
-				fscanf(IN,"%d",&hom_mat[ii][jj]);
+		homogenization_matrix_.resize(num_rows_randomization);
+		for (int ii=0; ii<num_rows_randomization; ii++){
+			homogenization_matrix_[ii].resize(num_cols_randomization);
+			for (int jj=0; jj<num_cols_randomization; jj++){
+				fscanf(IN,"%d",&homogenization_matrix_[ii][jj]);}
 		
+		}
 		
 		
 		int num_entries_hom_patch_eqn;
@@ -2571,7 +2573,7 @@ void vertex::send(int target, parallelism_config & mpi_config)
 	buffer[1] = removed_;
 	buffer[2] = input_filename_index_;
 	
-	MPI_Send(buffer, 3, MPI_INT, target, VERTEX, MPI_COMM_WORLD);
+	MPI_Send(buffer, 3, MPI_INT, target, VERTEX, mpi_config.comm());
 	free(buffer);
 	
 }
@@ -2586,7 +2588,7 @@ void vertex::receive(int source, parallelism_config & mpi_config)
 	receive_vec_mp(pt_mp_, source);
 	receive_vec_mp(projection_values_, source);
 	
-	MPI_Recv(buffer, 3, MPI_INT, source, VERTEX, MPI_COMM_WORLD, &statty_mc_gatty);
+	MPI_Recv(buffer, 3, MPI_INT, source, VERTEX, mpi_config.comm(), &statty_mc_gatty);
 	
 	type_ = buffer[0];
 	removed_ = buffer[1];
@@ -2707,7 +2709,7 @@ int vertex_set::compute_downstairs_crit_midpts(const witness_set & W,
 	
     int proj_index = this->get_proj_index(pi);
     
-	vec_mp projection_values; init_vec_mp2(projection_values,W.num_points(),1024);
+	vec_mp projection_values; init_vec_mp2(projection_values, int(W.num_points()) ,1024);
 	projection_values->size = W.num_points();
 	
 	for (unsigned int ii=0; ii<W.num_points(); ii++){
@@ -3464,11 +3466,11 @@ void decomposition::print(boost::filesystem::path base)
     
     fprintf(OUT,"\n\n");
     
-    print_mp(OUT, 0, this->sphere_radius);
-    fprintf(OUT, "\n%d\n",this->sphere_center->size);
+    print_mp(OUT, 0, this->sphere_radius_);
+    fprintf(OUT, "\n%d\n",this->sphere_center_->size);
     
-    for (int jj=0; jj<this->sphere_center->size; jj++) {
-        print_mp(OUT, 0, &this->sphere_center->coord[jj]);
+    for (int jj=0; jj<this->sphere_center_->size; jj++) {
+        print_mp(OUT, 0, &this->sphere_center_->coord[jj]);
         fprintf(OUT, "\n");
     }
     fprintf(OUT,"\n");
@@ -3492,19 +3494,19 @@ int decomposition::read_sphere(const boost::filesystem::path & bounding_sphere_f
 		mypause();
 	}
 
-	change_size_vec_mp(this->sphere_center, num_variables()-1); //destructive resize
-	sphere_center->size = num_variables()-1;
+	change_size_vec_mp(this->sphere_center_, num_variables()-1); //destructive resize
+	sphere_center_->size = num_variables()-1;
 	
 	
 	FILE *IN = safe_fopen_read(bounding_sphere_filename);
 	
-	mpf_inp_str(sphere_radius->r, IN, 10);
-	mpf_set_str(sphere_radius->i,"0",10);
+	mpf_inp_str(sphere_radius_->r, IN, 10);
+	mpf_set_str(sphere_radius_->i,"0",10);
 	
 	
 	for (int jj=1; jj<num_variables(); jj++) {
-		mpf_inp_str(sphere_center->coord[jj-1].r, IN, 10);
-		mpf_set_str(sphere_center->coord[jj-1].i,"0",10);
+		mpf_inp_str(sphere_center_->coord[jj-1].r, IN, 10);
+		mpf_set_str(sphere_center_->coord[jj-1].i,"0",10);
 	}
 	
 	//TODO: check this line for validity
@@ -3515,7 +3517,7 @@ int decomposition::read_sphere(const boost::filesystem::path & bounding_sphere_f
 	fclose(IN);
 	
 	
-	have_sphere_radius = true;
+	have_sphere_ = true;
 	
 	
 	return SUCCESSFUL;
@@ -3533,34 +3535,34 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 	
 	int num_vars = W_crit.num_natural_variables()-1;
 	
-	change_size_vec_mp(this->sphere_center, num_vars); //destructive resize
-	sphere_center->size = num_vars;
+	change_size_vec_mp(this->sphere_center_, num_vars); //destructive resize
+	sphere_center_->size = num_vars;
 	
 	if (W_crit.num_points() == 0) {
-		set_zero_mp(sphere_radius);
-		mpf_set_str(sphere_radius->r, "3.0",10);
+		set_zero_mp(sphere_radius_);
+		mpf_set_str(sphere_radius_->r, "3.0",10);
 		for (int ii=0; ii<num_vars; ii++) {
-			set_zero_mp(&sphere_center->coord[ii]);
+			set_zero_mp(&sphere_center_->coord[ii]);
 		}
-		this->have_sphere_radius = true;
+		this->have_sphere_ = true;
 		return;
 	}
 	
 	vec_mp(temp_vec); init_vec_mp2(temp_vec,0,1024);
 	if (W_crit.num_points()==1)
 	{
-		set_zero_mp(sphere_radius);
-		mpf_set_str(sphere_radius->r, "3.0",10);
+		set_zero_mp(sphere_radius_);
+		mpf_set_str(sphere_radius_->r, "3.0",10);
 		dehomogenize(&temp_vec, *(W_crit.point(0)));
 		
 		for (int ii=0; ii<num_vars; ii++) {
-			set_mp(&sphere_center->coord[ii], &temp_vec->coord[ii]);
+			set_mp(&sphere_center_->coord[ii], &temp_vec->coord[ii]);
 		}
 #ifdef thresholding
-		real_threshold(sphere_center, 1e-13);
+		real_threshold(sphere_center_, 1e-13);
 #endif
 		clear_vec_mp(temp_vec);
-		this->have_sphere_radius = true;
+		this->have_sphere_ = true;
 		return;
 	}
 	
@@ -3573,8 +3575,8 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 	comp_mp temp_rad; init_mp2(temp_rad,1024);
 	set_zero_mp(temp_rad);
 	
-	set_one_mp(sphere_radius);
-	neg_mp(sphere_radius,sphere_radius); // set to impossibly low value.
+	set_one_mp(sphere_radius_);
+	neg_mp(sphere_radius_,sphere_radius_); // set to impossibly low value.
 	
 	
 	comp_mp temp_mp;  init_mp2(temp_mp,1024);
@@ -3600,7 +3602,7 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 	
 	
 	for (int ii=0; ii<num_vars; ii++) {
-		div_mp(&sphere_center->coord[ii], &cumulative_sum->coord[ii], temp_mp);
+		div_mp(&sphere_center_->coord[ii], &cumulative_sum->coord[ii], temp_mp);
 	}
 	
 	
@@ -3608,15 +3610,15 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 	for (unsigned int ii=0; ii<W_crit.num_points(); ii++) {
 		dehomogenize(&temp_vec, *(W_crit.point(ii)), num_vars+1);
 		temp_vec->size = num_vars;
-		vec_sub_mp(temp_vec, temp_vec, sphere_center);
+		vec_sub_mp(temp_vec, temp_vec, sphere_center_);
 		
 		
 		twoNormVec_mp(temp_vec, temp_mp);
 		mpf_abs_mp(temp_rad->r, temp_mp);
 		
 		
-		if (mpf_cmp(sphere_radius->r, temp_rad->r) < 0){
-			set_mp(sphere_radius, temp_rad);
+		if (mpf_cmp(sphere_radius_->r, temp_rad->r) < 0){
+			set_mp(sphere_radius_, temp_rad);
 		}
 	}
 	
@@ -3624,7 +3626,7 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 	
 	mpf_set_str(temp_rad->r,"2.0",10);
 	mpf_set_str(temp_rad->i,"0.0",10);
-	mul_mp(sphere_radius,temp_rad,sphere_radius);  // double the radius to be safe.
+	mul_mp(sphere_radius_,temp_rad,sphere_radius_);  // double the radius to be safe.
 	
 	
 	clear_mp(temp_mp); clear_mp(temp_rad);
@@ -3632,9 +3634,9 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 	
 	
 	
-	this->have_sphere_radius = true;
+	this->have_sphere_ = true;
 #ifdef thresholding
-	real_threshold(sphere_center,1e-13);
+	real_threshold(sphere_center_,1e-13);
 #endif
 
 	return;
@@ -3709,7 +3711,7 @@ void decomposition::send(int target, parallelism_config & mpi_config)
 	buffer2[3] = num_curr_projections();
 
 	buffer2[4] = num_patches();
-	buffer2[5] = have_sphere_radius;
+	buffer2[5] = int(have_sphere_);
 	int strleng = input_filename().string().size() + 1;
 	buffer2[6] = strleng;
 
@@ -3739,10 +3741,10 @@ void decomposition::send(int target, parallelism_config & mpi_config)
 	
 	
 	
-	if (have_sphere_radius) {
+	if (have_sphere_) {
 
-		send_vec_mp(sphere_center,target);
-		send_comp_mp(sphere_radius,target);
+		send_vec_mp(sphere_center_,target);
+		send_comp_mp(sphere_radius_,target);
 	}
 	
 	
@@ -3798,7 +3800,7 @@ void decomposition::receive(int source, parallelism_config & mpi_config)
 	comp_num_ = buffer2[2];
 	int temp_num_projections = buffer2[3];
 	int temp_num_patches = buffer2[4];
-	have_sphere_radius = buffer2[5];
+	have_sphere_ = bool(buffer2[5]);
 	int strleng = buffer2[6];
 
 	delete [] buffer2;
@@ -3850,9 +3852,9 @@ void decomposition::receive(int source, parallelism_config & mpi_config)
 	
 	
 	
-	if (have_sphere_radius) {
-		receive_vec_mp(sphere_center,source);
-		receive_comp_mp(sphere_radius,source);
+	if (have_sphere_) {
+		receive_vec_mp(sphere_center_,source);
+		receive_comp_mp(sphere_radius_,source);
 	}
 	
 	if (strleng>1) {

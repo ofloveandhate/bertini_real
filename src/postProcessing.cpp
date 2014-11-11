@@ -115,11 +115,11 @@ void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check
 	
 	
 	
-	if (solve_options.verbose_level>=3)
+	if (solve_options.verbose_level()>=3)
 		printf("%d finite solutions, %d singular solutions, %d real solutions\n",num_finite_solns, num_singular_solns, num_real_solns);
 	
 	
-	if (solve_options.verbose_level>=3) {
+	if (solve_options.verbose_level()>=3) {
 		for (int ii=0; ii<num_pts_to_check; ++ii) {
 			//		int success;      // success flag
 			//		int multiplicity; // multiplicity

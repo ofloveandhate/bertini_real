@@ -18,13 +18,13 @@ void midpoint_config::setup(const surface_decomposition & surf,
 	systems[surf.input_filename().filename().string()] = complete_system(); // this pattern avoids a time-wasting copy pattern.
 	systems[surf.input_filename().filename().string()].get_system(surf, &solve_options.T);
 	
-	systems[surf.crit_curve.input_filename().filename().string()] = complete_system();// this pattern avoids a time-wasting copy pattern.
-	systems[surf.crit_curve.input_filename().filename().string()].get_system(surf.crit_curve, &solve_options.T);
+	systems[surf.crit_curve().input_filename().filename().string()] = complete_system();// this pattern avoids a time-wasting copy pattern.
+	systems[surf.crit_curve().input_filename().filename().string()].get_system(surf.crit_curve(), &solve_options.T);
 	
-	systems[surf.sphere_curve.input_filename().filename().string()] = complete_system();// this pattern avoids a time-wasting copy pattern.
-	systems[surf.sphere_curve.input_filename().filename().string()].get_system(surf.sphere_curve, &solve_options.T);
+	systems[surf.sphere_curve().input_filename().filename().string()] = complete_system();// this pattern avoids a time-wasting copy pattern.
+	systems[surf.sphere_curve().input_filename().filename().string()].get_system(surf.sphere_curve(), &solve_options.T);
 	
-	for (auto iter = surf.singular_curves.begin(); iter!=surf.singular_curves.end(); ++iter) {
+	for (auto iter = surf.singular_curves_iter_begin(); iter!=surf.singular_curves_iter_end(); ++iter) {
 		systems[iter->second.input_filename().filename().string()] = complete_system();// this pattern avoids a time-wasting copy pattern.
 		systems[iter->second.input_filename().filename().string()].get_system(iter->second, &solve_options.T);
 	}
@@ -74,7 +74,7 @@ void midpoint_config::bcast_send(parallelism_config & mpi_config)
 	buffer[1] = num_systems_to_send;
 	buffer[2] = num_projections;
 	
-	MPI_Bcast(buffer, 3, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(buffer, 3, MPI_INT, mpi_config.head(), mpi_config.comm());
 	
 	delete [] buffer;
 	
@@ -95,7 +95,7 @@ void midpoint_config::bcast_send(parallelism_config & mpi_config)
 		counter++;
 	}
 	
-	MPI_Bcast(buffer, num_systems_to_send, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(buffer, num_systems_to_send, MPI_INT, mpi_config.head(), mpi_config.comm());
 	
 	delete [] buffer;
 	
@@ -106,7 +106,7 @@ void midpoint_config::bcast_send(parallelism_config & mpi_config)
 	strcpy(bla, sendme.c_str());
 	bla[sendme.size()] = '\0';
 	
-	MPI_Bcast(bla, sendme.size(), MPI_CHAR, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(bla, sendme.size(), MPI_CHAR, mpi_config.head(), mpi_config.comm());
 	
 	
 	delete [] bla;
@@ -131,7 +131,7 @@ void midpoint_config::bcast_receive(parallelism_config & mpi_config)
 	
 	int * buffer = new int[3];
 	
-	MPI_Bcast(buffer, 3, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(buffer, 3, MPI_INT, mpi_config.head(), mpi_config.comm());
 	
 	MPType = buffer[0];
 	int num_systems_to_receive = buffer[1];
@@ -140,7 +140,7 @@ void midpoint_config::bcast_receive(parallelism_config & mpi_config)
 	delete [] buffer;
 	
 	buffer = new int[num_systems_to_receive];
-	MPI_Bcast(buffer, num_systems_to_receive, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(buffer, num_systems_to_receive, MPI_INT, mpi_config.head(), mpi_config.comm());
 	
 	
 	int num_chars = 0;
@@ -156,7 +156,7 @@ void midpoint_config::bcast_receive(parallelism_config & mpi_config)
 	
 	
 	char * charbuff = new char[num_chars+1]; // +1?  for null char?
-	MPI_Bcast(charbuff, num_chars, MPI_CHAR, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(charbuff, num_chars, MPI_CHAR, mpi_config.head(), mpi_config.comm());
 	
 	int charcounter = 0;
 	
@@ -302,7 +302,7 @@ int midpoint_eval_data_mp::send(parallelism_config & mpi_config)
 	
 	std::cout << "why are you sending midpoint_eval_data_mp?  it's not intended to be called that way" << std::endl;
 	int solver_choice = MIDPOINT_SOLVER;
-	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.comm());
 	// send the confirmation integer, to ensure that we are sending the correct type.
 	
 	//send the base class stuff.
@@ -310,7 +310,7 @@ int midpoint_eval_data_mp::send(parallelism_config & mpi_config)
 	
 	int *buffer = new int[12];
 	
-	MPI_Bcast(buffer,12,MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(buffer,12,MPI_INT, mpi_config.head(), mpi_config.comm());
 	
 	delete[] buffer;
     
@@ -343,7 +343,7 @@ int midpoint_eval_data_mp::receive(parallelism_config & mpi_config)
     
     
     
-	MPI_Bcast(buffer,12,MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(buffer,12,MPI_INT, mpi_config.head(), mpi_config.comm());
 	
 	
 	
@@ -360,7 +360,7 @@ int midpoint_eval_data_mp::setup(midpoint_config & md_config,
                                  solver_configuration & solve_options)
 {
 	
-	verbose_level = solve_options.verbose_level;
+	verbose_level(solve_options.verbose_level());
 	
 	solver_mp::setup();
 	
@@ -541,7 +541,7 @@ int midpoint_eval_data_d::send(parallelism_config & mpi_config)
 #endif
 	std::cout << "why are you sending midpoint_eval_data_d?  it's not intended to be called that way" << std::endl;
 	int solver_choice = MIDPOINT_SOLVER;
-	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.comm());
 	// send the confirmation integer, to ensure that we are sending the correct type.
 	
 	//send the base class stuff.
@@ -553,7 +553,7 @@ int midpoint_eval_data_d::send(parallelism_config & mpi_config)
 	
 	// now can actually send the data.
 	
-	MPI_Bcast(buffer,12,MPI_INT, 0, mpi_config.my_communicator);
+	MPI_Bcast(buffer,12,MPI_INT, 0, mpi_config.comm());
 	
 	delete[] buffer;
     return SUCCESSFUL;
@@ -581,7 +581,7 @@ int midpoint_eval_data_d::receive(parallelism_config & mpi_config)
 	
 	
 	
-	MPI_Bcast(buffer,12,MPI_INT, 0, mpi_config.my_communicator);
+	MPI_Bcast(buffer,12,MPI_INT, 0, mpi_config.comm());
 	
 	
     
@@ -609,7 +609,7 @@ int midpoint_eval_data_d::setup(midpoint_config & md_config,
 	
 	
 	
-	verbose_level = solve_options.verbose_level;
+	verbose_level(solve_options.verbose_level());
 	
 	generic_setup_patch(&patch,W);
 	
@@ -736,8 +736,8 @@ int midpoint_solver_master_entry_point(const witness_set						&W, // carries wit
                                        solver_configuration		& solve_options)
 {
     
-	bool prev_state = solve_options.force_no_parallel;// create a backup value to restore to.
-	solve_options.force_no_parallel = true;
+	bool prev_state = solve_options.force_no_parallel();// create a backup value to restore to.
+	solve_options.force_no_parallel(true);
 	
 	
 	if (solve_options.use_parallel()) {
@@ -765,7 +765,7 @@ int midpoint_solver_master_entry_point(const witness_set						&W, // carries wit
                          W,
                          solve_options);
 			// initialize latest_newton_residual_mp
-			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+			mpf_init(solve_options.T.latest_newton_residual_mp);   //   <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		case 2:
 			ED_d = new midpoint_eval_data_d(2);
@@ -794,7 +794,7 @@ int midpoint_solver_master_entry_point(const witness_set						&W, // carries wit
                   ED_d, ED_mp,
                   solve_options);
     
-	solve_options.force_no_parallel = prev_state; // restore
+	solve_options.force_no_parallel(prev_state); // restore
 	
 	switch (solve_options.T.MPType) {
 		case 0:
@@ -850,7 +850,7 @@ void midpoint_slave_entry_point(solver_configuration & solve_options)
 			
 			ED_mp->receive(solve_options);
 			// initialize latest_newton_residual_mp
-			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+			mpf_init(solve_options.T.latest_newton_residual_mp);   //  <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		case 2:
 			ED_d = new midpoint_eval_data_d(2);
@@ -863,7 +863,7 @@ void midpoint_slave_entry_point(solver_configuration & solve_options)
 			
 			
 			// initialize latest_newton_residual_mp
-			mpf_init2(solve_options.T.latest_newton_residual_mp,solve_options.T.AMP_max_prec);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+			mpf_init2(solve_options.T.latest_newton_residual_mp,solve_options.T.AMP_max_prec);   //   <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		default:
 			break;
@@ -1284,7 +1284,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
     set_one_d(&parDer->coord[0]);       // ds/dt = 1
 	
     
-	if ( (BED->verbose_level==14) || (BED->verbose_level == -14)) {
+	if ( (BED->verbose_level()==14) || (BED->verbose_level() == -14)) {
 		std::cout << color::blue();
 		printf("t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
 		std::cout << color::console_default();
@@ -1753,7 +1753,7 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	
     
 	
-	if ( (BED->verbose_level==14) || (BED->verbose_level == -14)) {
+	if ( (BED->verbose_level()==14) || (BED->verbose_level() == -14)) {
 		std::cout << color::blue();
 		print_comp_matlab(pathVars,"t");
 		std::cout << color::console_default();
@@ -1931,7 +1931,7 @@ int change_midpoint_eval_prec(void const *ED, int new_prec)
 	
 	if (new_prec != BED->curr_prec){
 		// change the precision for the patch
-		if (BED->verbose_level >=8)
+		if (BED->verbose_level() >=8)
 		{
 			std::cout << color::brown();
 			printf("prec  %ld\t-->\t%d\n",BED->curr_prec, new_prec);
@@ -2502,7 +2502,7 @@ int check_isstart_midpoint_d(point_d testpoint,
 	set_one_d(time);
 	
 	
-	double tol = (1e-9);
+	double tol = T->funcResTol;
 	
 	midpoint_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, testpoint, time, ED);
 	

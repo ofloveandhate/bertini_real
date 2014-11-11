@@ -45,6 +45,10 @@ class solver_configuration; // forward declaration
  */
 void endgamedata_to_endpoint(post_process_t *endPoint, endgame_data_t *EG);
 
+
+
+
+
 /**
  \brief Vertini_real's own method of finding SINGULAR solutions among a collection of post_process_t's.
  
@@ -60,6 +64,9 @@ int BRfindSingularSolns(post_process_t *endPoints,
 						int num_sols, int num_vars,
 						tracker_config_t *T );
 
+
+
+
 /**
  \brief Bertini_real's own method of finding FINITE solutions among a collection of post_process_t's.
  
@@ -74,6 +81,9 @@ int BRfindFiniteSolns(post_process_t *endPoints, int num_sols, int num_vars,
 
 
 
+
+
+
 /**
  \brief Bertini_real's method for determining which solutions are real.
  
@@ -85,6 +95,8 @@ int BRfindFiniteSolns(post_process_t *endPoints, int num_sols, int num_vars,
  */
 int BRfindRealSolns(post_process_t *endPoints, int num_sols, int num_vars,
 					tracker_config_t *T );
+
+
 
 
 /**

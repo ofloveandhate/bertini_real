@@ -62,7 +62,6 @@ void SLP_global_pointers::set_globals_to_this()
 
 void get_projection(vec_mp *pi,
                     BR_configuration program_options,
-                    const solver_configuration & solve_options,
                     int num_vars,
                     int num_projections)
 {
@@ -75,7 +74,7 @@ void get_projection(vec_mp *pi,
 	
 	
 	//assumes the vector pi is already initialized
-	if (program_options.user_projection==1) {
+	if (program_options.user_projection()) {
 		FILE *IN = safe_fopen_read(program_options.projection_filename.c_str()); // we are already assured this file exists, but safe fopen anyway.
 		int tmp_num_vars;
 		fscanf(IN,"%d",&tmp_num_vars); scanRestOfLine(IN);
@@ -96,7 +95,7 @@ void get_projection(vec_mp *pi,
 		fclose(IN);
 	}
 	else{
-		if (solve_options.orthogonal_projection) {
+		if (program_options.orthogonal_projection()) {
 			mat_mp temp_getter;
 			init_mat_mp2(temp_getter,0,0,1024);
 			make_matrix_random_real_mp(temp_getter,num_projections, num_vars-1, 1024); // this matrix is ~orthogonal
@@ -148,8 +147,6 @@ void solver_configuration::init()
 {
 	total_num_paths_tracked = 0;
 	
-	orthogonal_projection = true;
-	use_real_thresholding = false;
 	robust = false;
 	
 	PPD.num_funcs = 0;
@@ -161,7 +158,7 @@ void solver_configuration::init()
 
 	path_number_modulus = 20;
 	
-	verbose_level = 0;
+	verbose_level_ = 0;
 	
 	
 	use_midpoint_checker = 0;
@@ -292,7 +289,7 @@ int solver::send(parallelism_config & mpi_config)
 	
 	buffer[0] = this->num_variables;
 	buffer[1] = this->num_steps;
-	buffer[2] = this->verbose_level;
+	buffer[2] = this->verbose_level_;
 	buffer[3] = this->MPType;
 	
 	MPI_Bcast(buffer, 4, MPI_INT, 0, MPI_COMM_WORLD);
@@ -317,7 +314,7 @@ int solver::receive(parallelism_config & mpi_config)
 	
 	this->num_variables = buffer[0];
 	this->num_steps = buffer[1];
-	this->verbose_level = buffer[2];
+	this->verbose_level(buffer[2]);
 	this->MPType = buffer[3];
 	
 	receive_preproc_data(&this->preProcData);
@@ -871,8 +868,6 @@ void serial_tracker_loop(trackingStats *trackCount,
 {
 	
 	
-	
-	
     
 	
 	int (*curr_eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *) = NULL;
@@ -924,7 +919,7 @@ void serial_tracker_loop(trackingStats *trackCount,
 	
 	for (unsigned int ii = 0; ii < W.num_points(); ii++)
 	{
-		if ((solve_options.verbose_level>=0) && (solve_options.path_number_modulus!=0) )
+		if ((solve_options.verbose_level()>=0) && (solve_options.path_number_modulus!=0) )
 		{
 			if ((ii%solve_options.path_number_modulus)==0 && ( unsigned(solve_options.path_number_modulus)<W.num_points() )) {
 				std::cout << color::gray();
@@ -997,13 +992,13 @@ void serial_tracker_loop(trackingStats *trackCount,
 			
 			trackCount->failures++;
 			
-			if (solve_options.verbose_level>=3) {
+			if (solve_options.verbose_level()>=3) {
                 
 				printf("\nthere was a path failure tracking witness point %d\nretVal = %d; issoln = %d\n",ii,EG.retVal, issoln);
 				
 				print_path_retVal_message(EG.retVal);
 				
-				if (solve_options.verbose_level >= 5) {
+				if (solve_options.verbose_level() >= 5) {
 					if (EG.prec < 64)
 						print_point_to_screen_matlab(EG.PD_d.point,"bad_terminal_point");
 					else
@@ -1075,7 +1070,7 @@ void master_tracker_loop(trackingStats *trackCount,
 	MPI_Bcast(&total_number_points, 1, MPI_INT, solve_options.head(), MPI_COMM_WORLD);
 	
 	
-	int max_incoming = get_num_at_a_time(solve_options.numprocs-1,total_number_points);
+	int max_incoming = get_num_at_a_time(solve_options.num_procs()-1,total_number_points);
 	// setup the rest of the structures
 	endgame_data_t * EG_receives = (endgame_data_t *) br_malloc(max_incoming*sizeof(endgame_data_t)); //this will hold the temp solution data produced for each individual track
 	for (int ii=0; ii<max_incoming; ii++) {
@@ -1087,10 +1082,10 @@ void master_tracker_loop(trackingStats *trackCount,
 	// seed the workers
 	int next_index = 0;
 	
-	for (unsigned int ii=1; ii<solve_options.numprocs && next_index<W.num_points(); ii++) {
+	for (unsigned int ii=1; ii<solve_options.num_procs() && next_index<W.num_points(); ii++) {
 		int next_worker = solve_options.activate_next_worker();
         
-		int num_packets = get_num_at_a_time(solve_options.numprocs-1,total_number_points-next_index);
+		int num_packets = get_num_at_a_time(solve_options.num_procs()-1,total_number_points-next_index);
 //		std::cout << "master seeding " << num_packets << " packets to worker" << next_worker << std::endl;
 		send_start_points(next_worker, num_packets,
                           startPts_d,
@@ -1118,7 +1113,7 @@ void master_tracker_loop(trackingStats *trackCount,
         int next_worker = solve_options.activate_next_worker();
         
 		
-        send_start_points(next_worker, get_num_at_a_time(solve_options.numprocs-1,total_number_points-next_index),
+        send_start_points(next_worker, get_num_at_a_time(solve_options.num_procs()-1,total_number_points-next_index),
                           startPts_d,
                           startPts_mp,
                           next_index,
@@ -1134,7 +1129,7 @@ void master_tracker_loop(trackingStats *trackCount,
 						  endPoints,
 						  ED_d, ED_mp,
 						  solve_options);
-	}
+	} // re: while have active
 	
 	
 	solve_options.send_all_available(0);
@@ -1287,7 +1282,7 @@ void worker_tracker_loop(trackingStats *trackCount,
 			int current_index =  indices_incoming[ii];
 			
 			
-			if ((solve_options.verbose_level>=0) && (solve_options.path_number_modulus!=0) && (solve_options.path_number_modulus < total_number_points) )
+			if ((solve_options.verbose_level()>=0) && (solve_options.path_number_modulus!=0) && (solve_options.path_number_modulus < total_number_points) )
 			{
 				if ((current_index%solve_options.path_number_modulus)==0) {
 					std::cout << color::gray();
@@ -1464,7 +1459,7 @@ int receive_endpoints(trackingStats *trackCount,
 			
 			trackCount->failures++;
 			
-			if (solve_options.verbose_level>=1) {
+			if (solve_options.verbose_level()>=1) {
 				printf("\nthere was a path failure tracking witness point %d\nretVal = %d; issoln = %d\n",
 					   (*EG_receives)[ii].pathNum, (*EG_receives)[ii].retVal, issoln);
 				
@@ -1477,7 +1472,7 @@ int receive_endpoints(trackingStats *trackCount,
 				//                 void const *ED_d, void const *ED_mp)
 				//
 				//
-				if (solve_options.verbose_level >= 4) {
+				if (solve_options.verbose_level() >= 4) {
 					if ((*EG_receives)[ii].prec < 64){
                         int out_prec;
                         vec_d temp; init_vec_d(temp,0);
@@ -1687,7 +1682,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 	EG_out->retVal = -876; // set to bad return value
 	while ((iterations<max_iterations) && (EG_out->retVal!=0)) {
 		
-		if (solve_options.verbose_level>=4) {
+		if (solve_options.verbose_level()>=4) {
 			std::cout << color::gray() << "\t\tpath " << pathNum << ", pass " << iterations << color::console_default() << std::endl;
 		}
 		// reset a few things here
@@ -1821,7 +1816,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 				mp_to_d(time_to_compare, EG_out->PD_mp.time); }
 			
 			
-			if (solve_options.verbose_level>=4) {
+			if (solve_options.verbose_level()>=4) {
 				print_point_to_screen_matlab(solution_as_double,"failed_candidate_solution");
 				print_comp_matlab(time_to_compare,"time");
 			}
@@ -1831,7 +1826,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 			
 			// if
 			if ( (time_to_compare->r < std::max(1e-3,1e-2*solve_options.T.endgameBoundary)) && (infNormVec_d(solution_as_double) > solve_options.T.finiteThreshold)) {
-				if (solve_options.verbose_level>=2) {
+				if (solve_options.verbose_level()>=2) {
 					print_point_to_screen_matlab(solution_as_double,"big_solution");
 					print_comp_matlab(time_to_compare,"at_time");
 					std::cout << "discarding non-finite solution.\n\n" << std::endl;
@@ -1843,7 +1838,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 			clear_vec_d(solution_as_double);
 			
 			
-			if (solve_options.verbose_level>=3){
+			if (solve_options.verbose_level()>=3){
 				print_path_retVal_message(EG_out->retVal);
 				std::cout << color::red() << "solution had non-zero retVal " << EG_out->retVal << " (" << current_retval_counter << ")th occurrence on iteration " << iterations << "." << color::console_default() << std::endl;
 			}
@@ -1935,7 +1930,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 		iterations++;
 	} // re: while
 	
-	if (solve_options.verbose_level>=3) {
+	if (solve_options.verbose_level()>=3) {
 		if (iterations==0 && EG_out->retVal==0) {
 			std::cout << "success path " << pathNum << std::endl;
 		}
@@ -1991,7 +1986,7 @@ void generic_setup_patch(patch_eval_data_d *P, const witness_set & W)
 	
 	
 	P->num_patches = W.num_patches();
-	init_mat_d(P->patchCoeff, W.num_patches(), W.num_variables());
+	init_mat_d(P->patchCoeff, int(W.num_patches()), W.num_variables());
 	P->patchCoeff->rows = W.num_patches(); P->patchCoeff->cols = W.num_variables();
 	
 	int varcounter = 0;
@@ -2048,8 +2043,8 @@ void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W)
 
 	
 	
-	init_mat_rat(P->patchCoeff_rat, W.num_patches(), W.num_variables());
-	init_mat_mp2(P->patchCoeff, W.num_patches(), W.num_variables(), mpf_get_default_prec());
+	init_mat_rat(P->patchCoeff_rat, int(W.num_patches()), W.num_variables());
+	init_mat_mp2(P->patchCoeff, int(W.num_patches()), W.num_variables(), mpf_get_default_prec());
 	
 	P->curr_prec = mpf_get_default_prec();
 	P->num_patches = W.num_patches();

@@ -94,7 +94,7 @@ int multilintolin_eval_data_mp::setup(multilin_config & config,
 	
 	
 	
-	verbose_level = solve_options.verbose_level;
+	verbose_level(solve_options.verbose_level());
 	
 	solver_mp::setup(config.SLP, config.randomizer());
 	
@@ -138,7 +138,7 @@ int multilintolin_eval_data_mp::send(parallelism_config & mpi_config)
 #endif
 	
 	int solver_choice = MULTILIN;
-	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.comm());
 	// send the confirmation integer, to ensure that we are sending the correct type.
 	
 	//send the base class stuff.
@@ -152,7 +152,7 @@ int multilintolin_eval_data_mp::send(parallelism_config & mpi_config)
 	
 	// now can actually send the data.
 	
-	MPI_Bcast(buffer,1,MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(buffer,1,MPI_INT, mpi_config.head(), mpi_config.comm());
 	
 	delete[] buffer;
 	
@@ -196,7 +196,7 @@ int multilintolin_eval_data_mp::receive(parallelism_config & mpi_config)
 	
 	
 	// now can actually receive the data from whoever.
-	MPI_Bcast(buffer, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(buffer, 1, MPI_INT, mpi_config.head(), mpi_config.comm());
 	num_linears = buffer[0];
 	delete[] buffer;
 	
@@ -316,7 +316,7 @@ int multilintolin_eval_data_d::setup(multilin_config & config,
 	num_variables = W.num_variables();
 	
 	
-	verbose_level = solve_options.verbose_level;
+	verbose_level(solve_options.verbose_level());
 	
 	
 	
@@ -358,7 +358,7 @@ int multilintolin_eval_data_d::send(parallelism_config & mpi_config)
     std::cout << "multilintolin_eval_data_d::send()" << std::endl;
 #endif
     int solver_choice = MULTILIN;
-	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.comm());
 	// send the confirmation integer, to ensure that we are sending the correct type.
     
     if (this->MPType==2) {
@@ -372,7 +372,7 @@ int multilintolin_eval_data_d::send(parallelism_config & mpi_config)
 	// now can actually send the data.
 	int *buffer = new int[1];
 	buffer[0] = num_linears;
-	MPI_Bcast(buffer, 1, MPI_INT, mpi_config.head() , mpi_config.my_communicator);
+	MPI_Bcast(buffer, 1, MPI_INT, mpi_config.head() , mpi_config.comm());
 	delete[] buffer;
 	
 	for (int ii=0; ii<num_linears; ii++) {
@@ -411,7 +411,7 @@ int multilintolin_eval_data_d::receive(parallelism_config & mpi_config)
 	
 	
 	
-	MPI_Bcast(buffer, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(buffer, 1, MPI_INT, mpi_config.head(), mpi_config.comm());
 	num_linears = buffer[0];
 	delete[] buffer;
 	
@@ -473,7 +473,7 @@ int multilin_solver_master_entry_point(const witness_set & W, // carries with it
 						 target_linears,
 						 solve_options);
 			// initialize latest_newton_residual_mp
-			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+			mpf_init(solve_options.T.latest_newton_residual_mp);   //    <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		case 2:
 			ED_d = new multilintolin_eval_data_d(2);
@@ -567,7 +567,7 @@ int multilin_slave_entry_point(solver_configuration & solve_options)
 			ED_mp->receive(solve_options);
 			
 			// initialize latest_newton_residual_mp
-			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+			mpf_init(solve_options.T.latest_newton_residual_mp);   //    <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		case 2:
 			ED_d = new multilintolin_eval_data_d(2);
@@ -578,7 +578,7 @@ int multilin_slave_entry_point(solver_configuration & solve_options)
 			
 			
 			// initialize latest_newton_residual_mp
-			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+			mpf_init(solve_options.T.latest_newton_residual_mp);   //    <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		default:
 			break;
@@ -817,7 +817,7 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	
 	// done!  yay!
 	
-	if (BED->verbose_level==12) {
+	if (BED->verbose_level()==12) {
 		//uncomment to see screen output of important variables at each solve step.
 		printf("gamma = %lf+1i*%lf;\n", BED->gamma->r, BED->gamma->i);
 		printf("time = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
@@ -1060,7 +1060,7 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	
 	// done!  yay!
 	
-	if (BED->verbose_level==12) {
+	if (BED->verbose_level()==12) {
 		//uncomment to see screen output of important variables at each solve step.
 		print_comp_matlab(pathVars, "t");
 		printf("BED->num_linears = %d\n",BED->num_linears);
@@ -1215,7 +1215,7 @@ int change_multilintolin_eval_prec(void const *ED, int new_prec)
 	
 	if (new_prec != BED->curr_prec){
 		
-		if (BED->verbose_level >=8){
+		if (BED->verbose_level() >=8){
 			std::cout << color::brown();
 			printf("prec  %lu\t-->\t%d\n",BED->curr_prec, new_prec);
 			std::cout << color::console_default();

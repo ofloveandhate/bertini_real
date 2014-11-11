@@ -219,7 +219,7 @@ public:
 		int * buffer = new int[2];
 		buffer[0] = MPType;
 		buffer[1] = num_variables;
-		MPI_Bcast(buffer, 2, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+		MPI_Bcast(buffer, 2, MPI_INT, mpi_config.head(), mpi_config.comm());
 		
 		delete [] buffer;
 		
@@ -252,7 +252,7 @@ public:
 		
 		int * buffer = new int[2];
 		
-		MPI_Bcast(buffer, 2, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+		MPI_Bcast(buffer, 2, MPI_INT, mpi_config.head(), mpi_config.comm());
 		
 		
 		MPType = buffer[0];
@@ -1064,11 +1064,15 @@ private:
  */
 class solver_configuration : public parallelism_config
 {
+	
+	int verbose_level_; ///< controls how much info is printed to screen
+	
+	
+	
 public:
 	
 	
-	bool orthogonal_projection; ///< whether to require that randomly generated projection vectors are orthogonal
-	bool use_real_thresholding; ///< whether to threshold out the imaginary part of values declared real.
+	
 	bool robust; ///< whether to use robust mode
 	tracker_config_t T; ///< the ubiquitous Bertini tracker configuration
 	tracker_config_t T_orig;///< a backup of the ubiquitous Bertini tracker configuration, made by the user
@@ -1078,12 +1082,37 @@ public:
 	
 	int path_number_modulus; ///< for display of path number to screen
 	
-	int verbose_level; ///< controls how much info is printed to screen
+	
 	
 	int use_midpoint_checker; ///< whether to use the midpoint checker.  use of the checker is currently broken in bertini_real.
 	double midpoint_tol; ///< how far apart midpoints must be to be considered distinct.
 	
 	int use_gamma_trick;///< whether to use the gamma trick for start systems.
+	
+	
+	
+	/**
+	 \brief get the level of verbosity
+	 
+	 \return the level of verbosity
+	 */
+	inline int verbose_level() const
+	{
+		return verbose_level_;
+	}
+	
+	/**
+	 \brief set the level of verbosity
+	 
+	 \param new_level the new level of verbosity
+	 */
+	int verbose_level(int new_level)
+	{
+		return verbose_level_ = new_level;
+	}
+	
+	
+	
 	
 	
 	/**
@@ -1157,16 +1186,14 @@ public:
 		
 		this->path_number_modulus = other.path_number_modulus;
 		
-		this->verbose_level = other.verbose_level;
+		this->verbose_level(other.verbose_level());
 		
 		this->use_midpoint_checker = other.use_midpoint_checker;
 		this->midpoint_tol = other.midpoint_tol;
 		
 		this->use_gamma_trick = other.use_gamma_trick;
 		
-		
-		this->use_real_thresholding = other.use_real_thresholding;
-		
+
 	}
 	
 	
@@ -1305,7 +1332,7 @@ private:
 	
 	std::vector< solution_metadata > metadata;
 	
-	std::vector< std::pair<long long, long long>> ordering; /// created in the post-processing.
+	std::vector< std::pair<long long, long long> > ordering; /// created in the post-processing.
 
 	std::vector< int > occuring_multiplicities;
 	
@@ -1490,8 +1517,37 @@ protected:
 	std::shared_ptr<system_randomizer> randomizer_; ///< Pointer to a randomizer.
 	
 	
+	int verbose_level_;  ///< how verbose to be
+	
 	
 public:
+	
+	
+	
+	/**
+	 \brief get the level of verbosity
+	 
+	 \return the level of verbosity
+	 */
+	inline int verbose_level() const
+	{
+		return verbose_level_;
+	}
+	
+	/**
+	 \brief set the level of verbosity
+	 
+	 \param new_level the new level of verbosity
+	 */
+	int verbose_level(int new_level)
+	{
+		return verbose_level_ = new_level;
+	}
+	
+	
+	
+	
+	
 	
 	/**
 	 \brief get a shared pointer to the randomizer
@@ -1513,7 +1569,7 @@ public:
 	boost::filesystem::path function_file;
 	
 	int num_steps; ///< the number of evaluations made using this evaluator
-	int verbose_level;  ///< how verbose to be
+	
 	
 	
 	
@@ -1608,7 +1664,7 @@ protected:
 		num_variables = 0;
 		
 		this->num_steps = 0;
-		this->verbose_level = 0;
+		this->verbose_level_ = 0;
 		
 		// initialize the function handles.
 		is_solution_checker_d = NULL;
@@ -1638,7 +1694,7 @@ protected:
 		
 		this->num_variables = other.num_variables;
 		this->MPType = other.MPType;
-		this->verbose_level = other.verbose_level;
+		this->verbose_level_ = other.verbose_level_;
 		this->num_steps = other.num_steps;
 	}
 };  // re: generic solver BASE class
@@ -1853,13 +1909,11 @@ protected:
  
  \param pi the projection vectors to fill.  must be initted already, but not necessarily the correct size.
  \param program_options The current state of Bertini_real.
- \param solve_options the current state of the solver.
  \param num_vars how many variables to set up, including the homogenizing variable.
  \param num_projections how many proj vectors to set up.  again, these must already be allocated outside this call.
  */
 void get_projection(vec_mp *pi,
 					BR_configuration program_options,
-					const solver_configuration & solve_options,
 					int num_vars,
 					int num_projections);
 

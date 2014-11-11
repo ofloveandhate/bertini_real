@@ -68,10 +68,13 @@
  */
 class process
 {
-
-public:
+protected:
 	BR_configuration program_options;///< holds the current state of Bertini_real
 	solver_configuration solve_options; ///< holds the current state of the solver
+	
+	
+public:
+
 	
 	int MPType; ///< operating MP type.
 	

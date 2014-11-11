@@ -50,6 +50,7 @@
 #define DEFAULT_MAX_PREC 1024
 
 
+
 class parallelism_config; // a forward declaration
 class BR_configuration;   // a forward declaration
 
@@ -154,7 +155,7 @@ private:
 	std::vector<int> randomized_degrees; ///< a vector of integers keeping track of the degrees of the output functions.
 	std::vector<int> original_degrees; ///< a vector of integers keeping track of the degrees of the input functions.
 	
-	std::vector<std::vector<int>> structure_matrix; ///< matrix of integers indicating the degree deficiency of each input function relative to the degree of the output functions.
+	std::vector<std::vector<int> > structure_matrix; ///< matrix of integers indicating the degree deficiency of each input function relative to the degree of the output functions.
 	
 	
 	vec_mp integer_coeffs_mp;
@@ -1999,7 +2000,7 @@ public:
 	/**
 	 \brief add a new vertex to the set.
 	 
-	 \param new_vertex
+	 \param new_vertex vertex to add to the set.
 	 \return the index of the added vertex
 	 */
 	int add_vertex(const vertex new_vertex);
@@ -2628,7 +2629,7 @@ public:
 	 \brief constructor, setting the dimension in the process.
 	 constructor, setting the dimension in the process.
 	 
-	 \param dim the dimension to set to.
+	 \param new_dim the dimension to set to.
 	 */
 	witness_point_metadata(int new_dim){dimension_ = new_dim;}
 	
@@ -2731,7 +2732,7 @@ public:
 	
 	/**
 	 constructor, setting the dimension in the process
-	 \param dim the dimension to set.
+	 \param new_dim the dimension to set.
 	 */
 	witness_patch_metadata(int new_dim){dim_ = new_dim;}
 
@@ -2770,9 +2771,9 @@ private:
 	
 	std::vector<int> nonempty_dimensions;
 	std::map<int,std::map<int,int> > dimension_component_counter;
-	std::map<int,std::map<int,std::vector<int>>> index_tracker;
+	std::map<int,std::map<int,std::vector<int> > > index_tracker;
 	
-	
+	std::vector< std::vector< int> > homogenization_matrix_;
 	int num_variables_;
 	
 public:
@@ -2941,7 +2942,7 @@ private:
 class cell
 {
 	
-private:
+protected:
 
 	int midpt_; ///< index into vertex set
 	
@@ -2961,7 +2962,7 @@ public:
 	/**
 	 \brief set the midpoint
 	 
-	 \param the new index of the midpoint
+	 \param new_mid the new index of the midpoint
 	 \return the new index of the midpoint
 	 */
 	int midpt(int new_mid)
@@ -2972,31 +2973,52 @@ public:
 	
 	
 	
-	
+	/**
+	 \brief get a cell from an input stream
+	 */
 	friend std::istream & operator>>(std::istream &is,  cell & c)
 	{
 		is >> c.midpt_;
 		return is;
 	}
 	
+	/**
+	 \brief copy to another cell
+	 \param other the other cell to copy to
+	 */
 	inline void copy(const cell & other){
 		midpt(other.midpt());
 	}
 	
+	/**
+	 \brief send cell to target in communicator
+	 \param target the integer id of the target of the send
+	 \param mpi_config the current state of parallelism
+	 */
 	void send(int target, parallelism_config & mpi_config)
 	{
 		int buffer = midpt();
-		MPI_Send(&buffer, 1, MPI_INT, target, CELL, MPI_COMM_WORLD);
+		MPI_Send(&buffer, 1, MPI_INT, target, CELL, mpi_config.comm());
 	}
 	
+	
+	/**
+	 \brief receive cell from source in communicator
+	 \param source the integer id of the source of the send
+	 \param mpi_config the current state of parallelism
+	 */
 	void receive(int source, parallelism_config & mpi_config)
 	{
 		MPI_Status statty_mc_gatty;
 		int buffer;
-		MPI_Recv(&buffer, 1, MPI_INT, source, CELL, MPI_COMM_WORLD, &statty_mc_gatty);
+		MPI_Recv(&buffer, 1, MPI_INT, source, CELL, mpi_config.comm(), &statty_mc_gatty);
 		midpt(buffer);
 	}
 	
+	/**
+	 \brief virtual read_from_stream function which enforces all cells to have this functtion.
+	 \param is input stream from whom to read
+	 */
 	virtual void read_from_stream( std::istream &is ) = 0;
 	
 };
@@ -3113,6 +3135,13 @@ public:
 		left_ = right_ = -1;
 	}
 	
+	
+	/**
+	 \brief construct edge from left mid and right indices
+	 \param new_left the new left index for constructed edge
+	 \param new_midpt the new mid index for constructed edge
+	 \param new_right the new right index for constructed edge
+	 */
 	edge(int new_left, int new_midpt, int new_right)
 	{
 		left(new_left);
@@ -3125,6 +3154,10 @@ public:
 	
 	// other defaults are correct for this type.
 	
+	/**
+	 check whether the edge is degenerate
+	 \return true if the edge is degenerate, false if not.
+	 */
 	inline bool is_degenerate()
 	{
 		if ((left() == right()) || (left()==midpt()) || (right()==midpt()))
@@ -3133,6 +3166,13 @@ public:
 			return false;
 	}
 	
+	
+	
+	/**
+	 \brief send to a single target
+	 \param target to whom to send this edge
+	 \param mpi_config the current state of parallelism
+	 */
 	void send(int target, parallelism_config & mpi_config)
 	{
 		int * buffer = new int[4];
@@ -3142,7 +3182,7 @@ public:
 		buffer[2] = right();
 		buffer[3] = removed_points_.size();
 		
-		MPI_Send(buffer, 4, MPI_INT, target, EDGE, MPI_COMM_WORLD);
+		MPI_Send(buffer, 4, MPI_INT, target, EDGE, mpi_config.comm());
 		
 		delete [] buffer;
 		
@@ -3150,29 +3190,34 @@ public:
 		for (unsigned int ii=0; ii!=removed_points_.size(); ii++) {
 			buffer[ii] = removed_points_[ii];
 		}
-		MPI_Send(buffer, removed_points_.size(), MPI_INT, target, EDGE, MPI_COMM_WORLD);
+		MPI_Send(buffer, removed_points_.size(), MPI_INT, target, EDGE, mpi_config.comm());
 		delete [] buffer;
 		
 
 	}
 	
+	
+	/**
+	 \brief receive from a single source
+	 \param source from whom to receive this edge
+	 \param mpi_config the current state of parallelism
+	 */
 	void receive(int source, parallelism_config & mpi_config)
 	{
 		MPI_Status statty_mc_gatty;
 		int * buffer = new int[4];
-		MPI_Recv(buffer, 4, MPI_INT, source, EDGE, MPI_COMM_WORLD, &statty_mc_gatty);
+		MPI_Recv(buffer, 4, MPI_INT, source, EDGE, mpi_config.comm(), &statty_mc_gatty);
 		
 		left(buffer[0]);
 		midpt(buffer[1]);
 		right(buffer[2]);
-		
 		int temp_num_removed = buffer[3];
 		
 		
 		delete [] buffer;
 		
 		buffer = new int[temp_num_removed];
-		MPI_Recv(buffer, temp_num_removed, MPI_INT, source, EDGE, MPI_COMM_WORLD, &statty_mc_gatty);
+		MPI_Recv(buffer, temp_num_removed, MPI_INT, source, EDGE, mpi_config.comm(), &statty_mc_gatty);
 		for (int ii=0; ii<temp_num_removed; ii++) {
 			removed_points_.push_back(buffer[ii]);
 		}
@@ -3182,10 +3227,14 @@ public:
 	}
 	
 	
-	
-	virtual void read_from_stream( std::istream &os )
+	/**
+	 \brief get edge from input stream.  this function is defunct, and needs implementation apparently.
+	 \param is the stream from whom to read
+	 */
+	virtual void read_from_stream( std::istream &is )
 	{
 		
+		is >> left_ >> midpt_ >> right_;
 	}
 	
 	
@@ -3336,19 +3385,19 @@ public:
 	 
 	 Sub-decompositions will often want to inherit the bounding sphere of another.  This method lets you copy from one to another.
 	 
+	 \throws invalid_argument if the input decomposition has no sphere yet
 	 
 	 \param other the decomposition which already holds sphere bounds.
 	 */
 	void copy_sphere_bounds(const decomposition & other)
 	{
-		if (!other.have_sphere_radius) {
-			std::cout << "trying to copy sphere bounds from a decomposition which does not have them set!" << std::endl;
-			br_exit(72471);
+		if (!other.have_sphere_) {
+			throw std::invalid_argument("trying to copy sphere bounds from a decomposition which does not have them set!");
 		}
 		
-		set_mp(this->sphere_radius, other.sphere_radius);
-		vec_cp_mp(this->sphere_center, other.sphere_center);
-		this->have_sphere_radius = true;
+		set_mp(this->sphere_radius_, other.sphere_radius_);
+		vec_cp_mp(this->sphere_center_, other.sphere_center_);
+		this->have_sphere_ = true;
 	}
 	
 	
@@ -3601,16 +3650,17 @@ public:
 	
 	/**
 	 \brief get a pointer to the beginning of the array of projections.  
-  
+	 \throws out of range if set of projections is empty when this is requested
 	 \return pointer to the 0th projection.  will be NULL if have no projections.
 	 */
-	inline vec_mp* pi()
+	inline vec_mp* pi() const
 	{
 		if (num_curr_projections_>0) {
 			return &pi_[0];
 		}
 		else
 		{
+			throw std::out_of_range("trying get pointer for projections, but have no projections");
 			return NULL;
 		}
 	}
@@ -3618,7 +3668,7 @@ public:
 	
 	/**
 	 \brief get a pointer to the ith projections.
-  
+	 \throws out of range if trying to get out of range projection
 	 \return pointer to the ith projection.  will throw if out of range
 	 */
 	inline vec_mp* pi(int index) const
@@ -3634,14 +3684,62 @@ public:
 	
 	
 	
+	/**
+	 \brief test for whether the sphere is set
+	 */
+	inline bool have_sphere() const
+	{
+		return have_sphere_;
+	}
 	
-	vec_mp sphere_center; ///< the center of the sphere.
-	comp_mp sphere_radius; ///< the radius of the sphere.
-	bool have_sphere_radius; ///< indicates whether the decomposition has the radius set, or needs one still.
+	/**
+	 get pointer to the sphere radius
+	 
+	 \return pointer to the sphere radius
+	 */
+	comp_mp* sphere_radius()
+	{
+		return &sphere_radius_;
+	}
+	
+	/**
+	 \brief get pointer to the sphere's center
+	 
+	 \return pointer to the sphere's center
+	 */
+	vec_mp* sphere_center()
+	{
+		return &sphere_center_;
+	}
+	
+	
+	/**
+	 \brief set the radius of the sphere
+	 \param new_radius the radius of the sphere
+	 */
+	void set_sphere_radius(comp_mp new_radius)
+	{
+		set_mp(sphere_radius_, new_radius);
+	}
+	
+	
+	/**
+	 \brief set the center of the sphere
+	 \param new_center the center of the sphere
+	 */
+	void set_sphere_center(vec_mp new_center)
+	{
+		vec_cp_mp(sphere_center_,new_center);
+	}
 	
 	
 	
 protected:
+	
+	vec_mp sphere_center_; ///< the center of the sphere.
+	comp_mp sphere_radius_; ///< the radius of the sphere.
+	bool have_sphere_; ///< indicates whether the decomposition has the radius set, or needs one still.
+	
 	
 	
 	int num_curr_projections_; ///< the number of projections stored in the decomposition.  should match the dimension when complete.
@@ -3665,7 +3763,7 @@ protected:
 	
 	
 	
-	witness_set W_;
+	witness_set W_; ///< generating witness set
 	
 	boost::filesystem::path input_filename_; ///< the name of the text file in which the system resides.
 	
@@ -3701,13 +3799,13 @@ protected:
 		dim_ = -1;
 		comp_num_ = -1;
 		
-		init_mp2(sphere_radius,DEFAULT_MAX_PREC);
-		init_vec_mp2(sphere_center,0,1024);
-		sphere_center->size = 0;
-		have_sphere_radius = false;
+		init_mp2(sphere_radius_,DEFAULT_MAX_PREC);
+		init_vec_mp2(sphere_center_,0,1024);
+		sphere_center_->size = 0;
+		have_sphere_ = false;
 		
-		set_one_mp(sphere_radius);
-		neg_mp(sphere_radius,sphere_radius);
+		set_one_mp(sphere_radius_);
+		neg_mp(sphere_radius_,sphere_radius_);
 		
 
 		
@@ -3777,8 +3875,8 @@ protected:
 	
 		
 		
-		clear_mp(sphere_radius);
-		clear_vec_mp(sphere_center);
+		clear_mp(sphere_radius_);
+		clear_vec_mp(sphere_center_);
 		
 
 		

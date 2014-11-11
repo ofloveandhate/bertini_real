@@ -8,6 +8,7 @@
  */
 
 
+#include <iostream>
 #include "fileops.hpp"
 
 #include "bertini_headers.hpp"
@@ -20,7 +21,11 @@
 #define TOL_MP 1e-40
 #define LARGECHANGE_MP 1e50
 
-enum {VEC_MP = 4000, VEC_D, MAT_MP, MAT_D, COMP_MP, COMP_D, VEC_RAT, MAT_RAT, COMP_RAT, INDICES, DECOMPOSITION, CURVE, SURFACE, EDGE, CELL, FACE, UNUSED, VERTEX_SET, WITNESS_SET, VERTEX};
+
+
+static double SAMEPOINTTOL = 1e-6;
+
+enum {VEC_MP = 4000, VEC_D, MAT_MP, MAT_D, COMP_MP, COMP_D, VEC_RAT, MAT_RAT, COMP_RAT, INDICES, DECOMPOSITION, CURVE, SURFACE, EDGE, CELL, FACE, UNUSED, VERTEX_SET, WITNESS_SET, VERTEX, SYSTEM_RANDOMIZER};
 
 
 
@@ -699,3 +704,5 @@ void print_comp_matlab(const comp_d M,std::string name);
 
 
 #endif
+
+
