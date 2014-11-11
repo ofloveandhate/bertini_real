@@ -198,7 +198,7 @@ int nullspacejac_eval_data_mp::send(parallelism_config & mpi_config)
 {
 	
 	int solver_choice = NULLSPACE;
-	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.comm());
 	// send the confirmation integer, to ensure that we are sending the correct type.
 	
 	//send the base class stuff.
@@ -228,7 +228,7 @@ int nullspacejac_eval_data_mp::send(parallelism_config & mpi_config)
 	
 	
 	
-	MPI_Bcast(buffer,14,MPI_INT, mpi_config.id(), mpi_config.my_communicator);
+	MPI_Bcast(buffer,14,MPI_INT, mpi_config.id(), mpi_config.comm());
 	
 	delete[] buffer;
 	
@@ -336,7 +336,7 @@ int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 	solver_mp::receive(mpi_config);
 	
 	// now can actually receive the data from whoever.
-	MPI_Bcast(buffer,14,MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(buffer,14,MPI_INT, mpi_config.head(), mpi_config.comm());
 	
 	num_additional_linears = buffer[0];
 	num_jac_equations = buffer[1];
@@ -540,7 +540,7 @@ int nullspacejac_eval_data_mp::setup(prog_t * _SLP,
                                      solver_configuration & solve_options)
 {
 	
-	verbose_level = solve_options.verbose_level;
+	verbose_level(solve_options.verbose_level());
 	
 	solver_mp::setup(_SLP, ns_config->randomizer());
 	
@@ -873,7 +873,7 @@ int nullspacejac_eval_data_d::send(parallelism_config & mpi_config)
 {
     
     int solver_choice = NULLSPACE;
-	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.comm());
 	// send the confirmation integer, to ensure that we are sending the correct type.
     
     if (this->MPType==2) {
@@ -909,7 +909,7 @@ int nullspacejac_eval_data_d::send(parallelism_config & mpi_config)
 	
 	// now can actually send the data.
 	
-	MPI_Bcast(buffer,14,MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(buffer,14,MPI_INT, mpi_config.head(), mpi_config.comm());
 	
 	delete[] buffer;
 	
@@ -985,7 +985,7 @@ int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
 	
 	
 	
-	MPI_Bcast(buffer,14,MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(buffer,14,MPI_INT, mpi_config.head(), mpi_config.comm());
 	
 	
 	num_additional_linears = buffer[0];
@@ -1110,7 +1110,7 @@ int nullspacejac_eval_data_d::setup(prog_t * _SLP,
 	
 	
 	
-	verbose_level = solve_options.verbose_level;
+	verbose_level(solve_options.verbose_level());
 	
 	generic_setup_patch(&patch,W);
 	
@@ -1296,11 +1296,11 @@ void nullspacejac_eval_data_d::print()
 
 
 
-int nullspacejac_solver_master_entry_point(int										MPType,
-										   witness_set						&W, // carries with it the start points, and the linears.
-										   solver_output & solve_out, // new data goes in here
+int nullspacejac_solver_master_entry_point(int							MPType,
+										   witness_set					&W, // carries with it the start points, and the linears.
+										   solver_output				& solve_out, // new data goes in here
 										   nullspace_config				*ns_config,
-										   solver_configuration		& solve_options)
+										   solver_configuration			& solve_options)
 {
 	
     
@@ -1341,7 +1341,7 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 						 W,
 						 solve_options);
 			// initialize latest_newton_residual_mp
-			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+			mpf_init(solve_options.T.latest_newton_residual_mp);   //  <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		case 2:
 			ED_d = new nullspacejac_eval_data_d(2);
@@ -1363,15 +1363,7 @@ int nullspacejac_solver_master_entry_point(int										MPType,
 			break;
 	}
 	
-//	if (solve_options.T.MPType==0) {
-//		ns_config->print();
-//		ED_d->print();
-//	}
-//	else{
-//		ns_config->print();
-//		ED_mp->print();
-//	}
-	
+
 	
 	
 	if (0) {
@@ -1472,7 +1464,7 @@ void nullspace_slave_entry_point(solver_configuration & solve_options)
 			ED_mp->receive(solve_options);
 			
 			// initialize latest_newton_residual_mp
-			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+			mpf_init(solve_options.T.latest_newton_residual_mp);   //   <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		case 2:
 			ED_d = new nullspacejac_eval_data_d(2);
@@ -1483,7 +1475,7 @@ void nullspace_slave_entry_point(solver_configuration & solve_options)
 			
 			
 			// initialize latest_newton_residual_mp
-			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+			mpf_init(solve_options.T.latest_newton_residual_mp);   //  <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		default:
 			break;
@@ -2235,7 +2227,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 	set_one_d(&parDer->coord[0]);       // ds/dt = 1
 	
 	
-	if (BED->verbose_level==10 || BED->verbose_level==-10) {
+	if (BED->verbose_level()==10 || BED->verbose_level()==-10) {
 		printf("t = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
 		//	print_matrix_to_screen_matlab(jac_homogenizing_matrix,"jac_hom_1044");
 		//	print_matrix_to_screen_matlab(BED->post_randomizer_matrix,"S");
@@ -2253,7 +2245,7 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
 //		print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
 		mypause();
 		//	std::cout << "\n\n**************\n\n";
-		if (BED->verbose_level<0) {
+		if (BED->verbose_level()<0) {
 			
 		}
 		
@@ -2986,7 +2978,7 @@ int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat
 	
 	
 	
-	if (BED->verbose_level==10) {
+	if (BED->verbose_level()==10) {
         print_comp_matlab(pathVars,"t");
 		//	print_matrix_to_screen_matlab( AtimesJ,"jac");
 //        print_point_to_screen_matlab(curr_x_vars,"currxvars");
@@ -3119,7 +3111,7 @@ int change_nullspacejac_eval_prec(void const *ED, int new_prec)
 		// change the precision for the patch
 		changePatchPrec_mp(new_prec, &BED->patch);
 		
-		if (BED->verbose_level >=8)
+		if (BED->verbose_level() >=8)
 			printf("prec  %lu\t-->\t%d\n",BED->curr_prec, new_prec);
 		
 		BED->SLP->precision = new_prec;
@@ -3416,7 +3408,7 @@ int check_isstart_nullspacejac_d(vec_d testpoint,
 	set_one_d(time);
 	
 	
-	double tol = (1e-9); // TODO: replace this with appropriate merbobber.
+	double tol = T->funcResTol;
 	
 	nullspacejac_eval_d(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, testpoint, time, ED);
 	
@@ -3453,7 +3445,7 @@ int check_isstart_nullspacejac_mp(vec_mp testpoint,
 	set_one_mp(time);
 	
 	
-	double tol = (1e-9); // TODO: replace this with appropriate merbobber.
+	double tol = T->funcResTol;
 	
 	nullspacejac_eval_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, testpoint, time, ED);
 	

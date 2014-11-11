@@ -77,7 +77,7 @@ int sphere_eval_data_mp::send(parallelism_config & mpi_config)
 {
 	
 	int solver_choice = SPHERE_SOLVER;
-	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.comm());
 	// send the confirmation integer, to ensure that we are sending the correct type.
 	
 	//send the base class stuff.
@@ -92,7 +92,7 @@ int sphere_eval_data_mp::send(parallelism_config & mpi_config)
 	buffer[0] = num_natural_vars;
 	buffer[1] = num_static_linears;
 	
-	MPI_Bcast(buffer,2,MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(buffer,2,MPI_INT, mpi_config.head(), mpi_config.comm());
 	
 	delete[] buffer;
 	
@@ -146,7 +146,7 @@ int sphere_eval_data_mp::receive(parallelism_config & mpi_config)
 	
 	
 	// now can actually receive the data from whoever.
-	MPI_Bcast(buffer, 2, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(buffer, 2, MPI_INT, mpi_config.head(), mpi_config.comm());
 	
 	num_natural_vars = buffer[0];
 	num_static_linears = buffer[1];
@@ -305,7 +305,7 @@ int sphere_eval_data_mp::setup(sphere_config & config,
 	
 	// the usual
 	
-	verbose_level = solve_options.verbose_level;
+	verbose_level(solve_options.verbose_level());
 	
 	solver_mp::setup(config.SLP, config.randomizer());
 	
@@ -397,7 +397,7 @@ int sphere_eval_data_d::send(parallelism_config & mpi_config)
 {
 	
 	int solver_choice = SPHERE_SOLVER;
-	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(&solver_choice, 1, MPI_INT, mpi_config.head(), mpi_config.comm());
 	// send the confirmation integer, to ensure that we are sending the correct type.
     
     if (this->MPType==2) {
@@ -415,7 +415,7 @@ int sphere_eval_data_d::send(parallelism_config & mpi_config)
 	buffer[0] = num_natural_vars;
 	buffer[1] = num_static_linears;
 	
-	MPI_Bcast(buffer,2,MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(buffer,2,MPI_INT, mpi_config.head(), mpi_config.comm());
 	
 	delete[] buffer;
 	
@@ -460,7 +460,7 @@ int sphere_eval_data_d::receive(parallelism_config & mpi_config)
 	
 	
 	// now can actually receive the data from whoever.
-	MPI_Bcast(buffer, 2, MPI_INT, mpi_config.head(), mpi_config.my_communicator);
+	MPI_Bcast(buffer, 2, MPI_INT, mpi_config.head(), mpi_config.comm());
 	
 	num_natural_vars = buffer[0];
 	num_static_linears = buffer[1];
@@ -533,7 +533,7 @@ int sphere_eval_data_d::setup(sphere_config & config,
 		vec_mp_to_d(starting_linear[ii],config.starting_linear[ii]);
 	}
 	
-	verbose_level = solve_options.verbose_level;
+	verbose_level(solve_options.verbose_level());
 	
 	solver_d::setup(config.SLP, config.randomizer());
 	
@@ -604,7 +604,7 @@ int sphere_solver_master_entry_point(const witness_set						&W, // carries with 
 						 W,
 						 solve_options);
 			// initialize latest_newton_residual_mp
-			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+			mpf_init(solve_options.T.latest_newton_residual_mp);   //    <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		case 2:
 			ED_d = new sphere_eval_data_d(2);
@@ -692,7 +692,7 @@ int sphere_slave_entry_point(solver_configuration & solve_options)
 			ED_mp->receive(solve_options);
 			
 			// initialize latest_newton_residual_mp
-			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+			mpf_init(solve_options.T.latest_newton_residual_mp);   //   <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		case 2:
 			ED_d = new sphere_eval_data_d(2);
@@ -703,7 +703,7 @@ int sphere_slave_entry_point(solver_configuration & solve_options)
 			
 			
 			// initialize latest_newton_residual_mp
-			mpf_init(solve_options.T.latest_newton_residual_mp);   //<------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+			mpf_init(solve_options.T.latest_newton_residual_mp);   //   <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		default:
 			break;
@@ -1029,7 +1029,7 @@ int sphere_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat
 	
 	// done!  yay!
 	
-	if (BED->verbose_level==16 || BED->verbose_level==-16) {
+	if (BED->verbose_level()==16 || BED->verbose_level()==-16) {
 		//uncomment to see screen output of important variables at each solve step.
 		print_point_to_screen_matlab(BED->center,"center");
 		print_comp_matlab(BED->radius,"radius");
@@ -1348,7 +1348,7 @@ int sphere_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv
 	
 	// done!  yay!
 	
-	if (BED->verbose_level==16 || BED->verbose_level==-16) {
+	if (BED->verbose_level()==16 || BED->verbose_level()==-16) {
 		//uncomment to see screen output of important variables at each solve step.
 		
 		print_comp_matlab(pathVars, "t_mp");
@@ -1478,7 +1478,7 @@ int change_sphere_eval_prec(void const *ED, int new_prec)
 	
 	if (new_prec != BED->curr_prec){
 		
-		if (BED->verbose_level >=8){
+		if (BED->verbose_level() >=8){
 			std::cout << color::brown();
 			printf("prec  %ld\t-->\t%d\n",BED->curr_prec, new_prec);
 			std::cout << color::console_default();

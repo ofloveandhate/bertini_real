@@ -103,12 +103,6 @@ void isosingular_deflation_iteration(int *declarations,
 
 
 
-/***************************************************************\
- * USAGE:             *
- * ARGUMENTS: name of output file, function & configuration input*
- * RETURN VALUES: none                                           *
- * NOTES:                                                        *
- \***************************************************************/
 
 
 /**

@@ -206,7 +206,7 @@ void common_sampler_startup(const decomposition & D,
 	
 	
 	
-	solve_options.verbose_level = sampler_options.verbose_level;
+	solve_options.verbose_level(sampler_options.verbose_level());
 
 	
 	
@@ -338,17 +338,17 @@ void curve_decomposition::adaptive_sampler_movement(vertex_set & V,
 								// this should be the only place this counter is reset.
 			
 			
-			if (sampler_options.verbose_level>=0)
+			if (sampler_options.verbose_level()>=0)
 				printf("edge %d, pass %d, %d refinements\n",ii,pass_number,num_refinements);
 			
-			if (sampler_options.verbose_level>=2) {
+			if (sampler_options.verbose_level()>=2) {
 				printf("the current indices:\n");
 				for (int jj=0; jj<prev_num_samp; jj++)
 					printf("%d ",current_indices[jj]);
 				printf("\n\n");
 			}
 			
-			if (sampler_options.verbose_level>=3) {
+			if (sampler_options.verbose_level()>=3) {
 				printf("refine_flag:\n");
 				for (int jj=0; jj<prev_num_samp-1; jj++) {
                     printf("%s ",refine_current[jj]?"1":"0");
@@ -365,7 +365,7 @@ void curve_decomposition::adaptive_sampler_movement(vertex_set & V,
 				
 				
 				
-				if (sampler_options.verbose_level>=2)
+				if (sampler_options.verbose_level()>=2)
 					printf("interval %d of %d\n",jj,prev_num_samp-1);
 				
 				
@@ -413,16 +413,16 @@ void curve_decomposition::adaptive_sampler_movement(vertex_set & V,
 					set_witness_set_mp(W, start_projection,startpt); // set the witness point and linear in the input for the lintolin solver.
 					
                     
-					if (sampler_options.verbose_level>=3) {
+					if (sampler_options.verbose_level()>=3) {
 						print_point_to_screen_matlab(*W.point(0),"startpt");
 						print_comp_matlab(& (*W.linear(0))->coord[0],"initial_projection_value");
 						print_comp_matlab(target_projection_value,"target_projection_value");
 					}
 					
-					if (sampler_options.verbose_level>=5)
+					if (sampler_options.verbose_level()>=5)
 						W.print_to_screen();
 					
-					if (sampler_options.verbose_level>=10) {
+					if (sampler_options.verbose_level()>=10) {
 						mypause();
 					}
 					
@@ -442,7 +442,7 @@ void curve_decomposition::adaptive_sampler_movement(vertex_set & V,
 						mypause();
 					}
 					
-					if (sampler_options.verbose_level>=3)
+					if (sampler_options.verbose_level()>=3)
 						print_point_to_screen_matlab(*Wnew.point(0), "new_solution");
 					
 					
@@ -487,7 +487,7 @@ void curve_decomposition::adaptive_sampler_movement(vertex_set & V,
 					
 				}
 				else {
-					if (sampler_options.verbose_level>=2)
+					if (sampler_options.verbose_level()>=2)
 						printf("adding sample %d\n",sample_counter);
 					
 					refine_next[interval_counter] = 0;
@@ -498,13 +498,13 @@ void curve_decomposition::adaptive_sampler_movement(vertex_set & V,
 			}
             
 			
-			if (sampler_options.verbose_level>=1) // print by default
+			if (sampler_options.verbose_level()>=1) // print by default
 				printf("\n\n");
 			
 			if( (num_refinements == 0) || (pass_number >= sampler_options.maximum_num_iterations) ) // if have no need for new samples
 			{
 				
-				if (sampler_options.verbose_level>=1) // print by default
+				if (sampler_options.verbose_level()>=1) // print by default
 					printf("breaking\nsample_counter = %d\n",sample_counter);
 				
 				
@@ -523,7 +523,7 @@ void curve_decomposition::adaptive_sampler_movement(vertex_set & V,
 			}
             
 		}//while loop
-		if (sampler_options.verbose_level>=2) {
+		if (sampler_options.verbose_level()>=2) {
 			printf("exiting while loop\n");
 		}
 		printf("\n");
@@ -652,17 +652,17 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 								// this should be the only place this counter is reset.
 			
 			
-			if (sampler_options.verbose_level>=0)
+			if (sampler_options.verbose_level()>=0)
 				printf("edge %d, pass %d, %d refinements\n",ii,pass_number,num_refinements);
 			
-			if (sampler_options.verbose_level>=1) {
+			if (sampler_options.verbose_level()>=1) {
 				printf("the current indices:\n");
 				for (int jj=0; jj<prev_num_samp; jj++)
 					printf("%d ",current_indices[jj]);
 				printf("\n\n");
 			}
 			
-			if (sampler_options.verbose_level>=1) {
+			if (sampler_options.verbose_level()>=1) {
 				printf("refine_flag:\n");
 				for (int jj=0; jj<prev_num_samp-1; jj++) {
                     printf("%s ",refine_current[jj]?"1":"0");
@@ -679,7 +679,7 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 				
 				
 				
-				if (sampler_options.verbose_level>=2)
+				if (sampler_options.verbose_level()>=2)
 					printf("interval %d of %d\n",jj,prev_num_samp-1);
 				
 				
@@ -726,16 +726,16 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 					set_witness_set_mp(W, start_projection, startpt); // set the witness point and linear in the input for the lintolin solver.
 					
                     
-					if (sampler_options.verbose_level>=3) {
+					if (sampler_options.verbose_level()>=3) {
 						print_point_to_screen_matlab(*W.point(0),"startpt");
 						print_comp_matlab(& (*W.linear(0))->coord[0],"initial_projection_value");
 						print_comp_matlab(target_projection_value,"target_projection_value");
 					}
 					
-					if (sampler_options.verbose_level>=5)
+					if (sampler_options.verbose_level()>=5)
 						W.print_to_screen();
 					
-					if (sampler_options.verbose_level>=10) {
+					if (sampler_options.verbose_level()>=10) {
 						mypause();
 					}
 					
@@ -755,7 +755,7 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 						mypause();
 					}
 					
-					if (sampler_options.verbose_level>=3)
+					if (sampler_options.verbose_level()>=3)
 						print_point_to_screen_matlab(*Wnew.point(0), "new_solution");
 					
 					
@@ -813,7 +813,7 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 					
 				}
 				else {
-					if (sampler_options.verbose_level>=2)
+					if (sampler_options.verbose_level()>=2)
 						printf("adding sample %d\n",sample_counter);
 					
 					refine_next[interval_counter] = 0;
@@ -824,13 +824,13 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 			}
             
 			
-			if (sampler_options.verbose_level>=1) // print by default
+			if (sampler_options.verbose_level()>=1) // print by default
 				printf("\n\n");
 			
 			if( (num_refinements == 0) || (pass_number >= sampler_options.maximum_num_iterations) ) // if have no need for new samples
 			{
 				
-				if (sampler_options.verbose_level>=1) // print by default
+				if (sampler_options.verbose_level()>=1) // print by default
 					printf("breaking\nsample_counter = %d\n",sample_counter);
 				
 				
@@ -849,7 +849,7 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 			}
             
 		}//while loop
-		if (sampler_options.verbose_level>=2) {
+		if (sampler_options.verbose_level()>=2) {
 			printf("exiting while loop\n");
 		}
 		printf("\n");
@@ -876,7 +876,6 @@ void curve_decomposition::fixed_sampler(vertex_set & V,
 									  solver_configuration & solve_options,
 									  int target_num_samples)
 {
-    //should reparse here
 	
 	witness_set W;
 	
@@ -978,13 +977,13 @@ void curve_decomposition::fixed_sampler(vertex_set & V,
 			
 			
 			
-			if (sampler_options.verbose_level>=3) {
+			if (sampler_options.verbose_level()>=3) {
 				print_point_to_screen_matlab(*W.point(0),"startpt");
 				print_comp_matlab(&(*W.linear(0))->coord[0],"initial_projection_value");
 				print_comp_matlab(target_projection_value,"target_projection_value");
 			}
 			
-			if (sampler_options.verbose_level>=5)
+			if (sampler_options.verbose_level()>=5)
 				W.print_to_screen();
 			
 			
@@ -998,6 +997,7 @@ void curve_decomposition::fixed_sampler(vertex_set & V,
 			fillme.get_noninfinite_w_mult_full(Wnew);
 			
 			if (Wnew.num_points()==0) {
+				std::cout << "curve sampler returned no points!" << std::endl;
 				//TODO: ah shit!  this ain't good.  how to deal with it?
 			}
 			
@@ -1325,33 +1325,33 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 	
 	
 	std::cout << "critical curve" << std::endl;
-	crit_curve.fixed_sampler(V,sampler_options,solve_options,target_num_samples);
+	crit_curve().fixed_sampler(V,sampler_options,solve_options,target_num_samples);
 
 	
 	
 	
 	std::cout << "sphere curve" << std::endl;
-	sphere_curve.fixed_sampler(V,sampler_options,solve_options,target_num_samples);
+	sphere_curve().fixed_sampler(V,sampler_options,solve_options,target_num_samples);
 
 	
 	
 	
 	std::cout << "mid slices" << std::endl;
-	for (unsigned int ii=0; ii<mid_slices.size(); ii++) {
-		mid_slices[ii].fixed_sampler(V,sampler_options,solve_options,target_num_samples);
+	for (auto ii=mid_slices_iter_begin(); ii!=mid_slices_iter_end(); ii++) {
+		ii->fixed_sampler(V,sampler_options,solve_options,target_num_samples);
 	}
 	
 	
 	
 	std::cout << "critical slices" << std::endl;
-	for (unsigned int ii=0; ii<crit_slices.size(); ii++) {
-		crit_slices[ii].fixed_sampler(V,sampler_options,solve_options,target_num_samples);
+	for (auto ii=crit_slices_iter_begin(); ii!=crit_slices_iter_end(); ii++) {
+		ii->fixed_sampler(V,sampler_options,solve_options,target_num_samples);
 	}
 	
 	
-	if (singular_curves.size()>0) {
+	if (num_singular_curves()>0) {
 		std::cout << "singular curves" << std::endl;
-		for (auto iter = singular_curves.begin(); iter!= singular_curves.end(); ++iter) {
+		for (auto iter = singular_curves_iter_begin(); iter!= singular_curves_iter_end(); ++iter) {
 			iter->second.fixed_sampler(V,sampler_options,solve_options,target_num_samples);
 		}
 	}
@@ -1436,7 +1436,7 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 		
 		
 		std::cout << "face " << ii << std::endl;
-		if (sampler_options.verbose_level>=1) {
+		if (sampler_options.verbose_level()>=1) {
 			std::cout << faces[ii];
 		}
 		
@@ -1449,9 +1449,12 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 		}
 		
 		
-		int slice_ind = faces[ii].crit_slice_index;
+		int slice_ind = faces[ii].crit_slice_index();
 		
 
+		curve_decomposition & current_midslice = mid_slices_[slice_ind];
+		curve_decomposition & left_critslice = crit_slices_[slice_ind];
+		curve_decomposition & right_critslice = crit_slices_[slice_ind+1];
 		
 		
 		curve_decomposition * top_, *bottom_;
@@ -1459,12 +1462,12 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 		
 		// get the system types
 		md_config.system_name_mid = this->input_filename().filename().string();
-		md_config.system_name_top = faces[ii].system_name_top;
-		md_config.system_name_bottom = faces[ii].system_name_bottom;
+		md_config.system_name_top = faces[ii].system_name_top();
+		md_config.system_name_bottom = faces[ii].system_name_bottom();
 		
 		
-		bottom_ = curve_with_name(faces[ii].system_name_bottom);
-		top_ = curve_with_name(faces[ii].system_name_top);
+		bottom_ = curve_with_name(faces[ii].system_name_bottom());
+		top_ = curve_with_name(faces[ii].system_name_top());
 		
 		int num_bottom_vars = bottom_->num_variables();
 		int num_top_vars = top_->num_variables();
@@ -1486,18 +1489,18 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 			var_counter++;
 		}
 		
-		int mid_edge = mid_slices[slice_ind].edge_w_midpt(faces[ii].midpt());
+		int mid_edge = current_midslice.edge_w_midpt(faces[ii].midpt());
 		// bottom
 		int offset = var_counter;
 		for (int kk=0; kk<num_bottom_vars; kk++) {
-			set_mp(& (*W_midtrack.point(0))->coord[kk+offset], &(*V[mid_slices[slice_ind].get_edge(mid_edge).left()].point())->coord[kk]); // y0
+			set_mp(& (*W_midtrack.point(0))->coord[kk+offset], &(*V[current_midslice.get_edge(mid_edge).left()].point())->coord[kk]); // y0
 			var_counter++;
 		}
 		
 		// top
 		offset = var_counter;
 		for (int kk=0; kk<num_top_vars; kk++) {
-			set_mp(& (*W_midtrack.point(0))->coord[kk+offset], &(*V[mid_slices[slice_ind].get_edge(mid_edge).right()].point())->coord[kk]); // y2
+			set_mp(& (*W_midtrack.point(0))->coord[kk+offset], &(*V[current_midslice.get_edge(mid_edge).right()].point())->coord[kk]); // y2
 			var_counter++;
 		}
 		
@@ -1520,8 +1523,8 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 		
 		// make u, v target values.
 		
-		set_mp(md_config.crit_val_left,   &(*V[ crit_slices[slice_ind].get_edge(0).midpt() ].projection_values())->coord[0]);
-		set_mp(md_config.crit_val_right,  &(*V[ crit_slices[slice_ind+1].get_edge(0).midpt() ].projection_values())->coord[0]);
+		set_mp(md_config.crit_val_left,   &(*V[ left_critslice.get_edge(0).midpt() ].projection_values())->coord[0]);
+		set_mp(md_config.crit_val_right,  &(*V[ right_critslice.get_edge(0).midpt() ].projection_values())->coord[0]);
 		
 		
 		
@@ -1543,41 +1546,42 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 		
 		//TODO: remove duplicates.
 		
-		for (unsigned int jj=0; jj<faces[ii].num_left; jj++) {
-			int asdf = faces[ii].left[jj];
+		for (unsigned int jj=0; jj<faces[ii].num_left(); jj++) {
+			int asdf = faces[ii].left_edge(jj);
 			
-			for (unsigned int kk = 0; kk< crit_slices[slice_ind].sample_indices[asdf].size(); kk++) {
+			for (unsigned int kk = 0; kk< left_critslice.sample_indices[asdf].size(); kk++) {
 				if (jj>0 && kk==0) {
-					if (crit_slices[slice_ind].sample_indices[asdf][kk]==rib_indices[0].back()) {
+					if (left_critslice.sample_indices[asdf][kk]==rib_indices[0].back()) {
 						continue;
 					}
 					
 				}
 				
-				rib_indices[0].push_back(crit_slices[slice_ind].sample_indices[asdf][kk]);
+				rib_indices[0].push_back(left_critslice.sample_indices[asdf][kk]);
 				
 			}
+			
 		}
 			
-		for (unsigned int jj=0; jj<faces[ii].num_right; jj++) {
-			int asdf = faces[ii].right[jj];
-			for (unsigned int kk = 0; kk< crit_slices[slice_ind+1].sample_indices[asdf].size(); kk++) {
+		for (unsigned int jj=0; jj<faces[ii].num_right(); jj++) {
+			int asdf = faces[ii].right_edge(jj);
+			for (unsigned int kk = 0; kk< right_critslice.sample_indices[asdf].size(); kk++) {
 				
 				if (jj>0 && kk==0) {
-					if (crit_slices[slice_ind+1].sample_indices[asdf][kk]==rib_indices[target_num_samples-1].back()) {
+					if (right_critslice.sample_indices[asdf][kk]==rib_indices[target_num_samples-1].back()) {
 						continue;
 					}
 					
 				}
 				
-				rib_indices[target_num_samples-1].push_back(crit_slices[slice_ind+1].sample_indices[asdf][kk]);
+				rib_indices[target_num_samples-1].push_back(right_critslice.sample_indices[asdf][kk]);
 			}
 		}
 		
 		
 		
 		
-		if (sampler_options.verbose_level>=1) {
+		if (sampler_options.verbose_level()>=1) {
 			
 			for (unsigned int jj=0; jj<rib_indices[0].size(); jj++) {
 				std::cout << rib_indices[0][jj] << " ";
@@ -1638,8 +1642,8 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 			
 			
 
-			rib_indices[jj][0] = bottom_->sample_indices[faces[ii].bottom][jj];
-			rib_indices[jj][target_num_samples-1] = top_->sample_indices[faces[ii].top][jj];
+			rib_indices[jj][0] = bottom_->sample_indices[faces[ii].bottom_edge()][jj];
+			rib_indices[jj][target_num_samples-1] = top_->sample_indices[faces[ii].top_edge()][jj];
 			
 			
 			
@@ -1651,6 +1655,7 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 																	   md_config,
 																	   solve_options);
 			if (success_indicator!=SUCCESSFUL) {
+				std::cout << color::red() << "something horrible happened" << color::console_default() << std::endl;
 				rib_indices[jj][1] = -1;
 				success_indicator_total = false;
 				break;
@@ -1665,8 +1670,9 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 					continue;
 				}
 				else{
-					vec_cp_mp(*temp_vertex.point(),*W_new.point(0));
+					
 					temp_vertex.set_type(SURFACE_SAMPLE_POINT);
+					temp_vertex.set_point(*W_new.point(0));
 					
 					if (sampler_options.no_duplicates){
 						rib_indices[jj][1] = index_in_vertices_with_add(V, temp_vertex);
@@ -1735,6 +1741,7 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 				
 				
 				if (success_indicator!=SUCCESSFUL) {
+					std::cout << color::red() << "something horrible happened" << color::console_default() << std::endl;
 					rib_indices[jj][kk] = -1;
 					success_indicator_total = false;
 					break;
@@ -1752,7 +1759,7 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 				}
 				
 
-				vec_cp_mp(*temp_vertex.point(),*W_new.point(0));
+				temp_vertex.set_point(*(W_new.point(0)));
 				temp_vertex.set_type(SURFACE_SAMPLE_POINT);
 				
 				if (sampler_options.no_duplicates){
@@ -1767,6 +1774,7 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 			}
 			
 			if (!success_indicator_total) {
+				std::cout << color::red() << "something horrible happened" << color::console_default() << std::endl;
 				break;
 			}
 			
@@ -1779,6 +1787,7 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 			samples.push_back(stitch_triangulation(rib_indices,V,sampler_options.use_projection_binning)); // last argument tells whether to use projection binning (true) or distance binning (false)
 		}
 		else{
+			std::cout << color::red() << "something horrible happened" << color::console_default() << std::endl;
 			continue;
 		}
 		
@@ -1808,13 +1817,20 @@ std::vector< triangle > surface_decomposition::stitch_triangulation(const std::v
 	std::cout << "surface_decomposition::stitch_triangulation" << std::endl;
 #endif
 	
+	
+	if (0) {
+		for (auto ii = rib_indices.begin(); ii!=rib_indices.end(); ii++) {
+			for (auto jj=ii->begin(); jj!=ii->end(); jj++) {
+				std::cout << *jj << " ";
+			}
+			std::cout << std::endl;
+		}
+	}
+	
 	std::vector< triangle > current_samples;
 	
-
-	
-	
-	for (int ii = 0; ii<int(rib_indices.size()-1); ii++) {
-		triangulate_two_ribs(rib_indices[ii], rib_indices[ii+1], V, current_samples, bin_it_by_projection);
+	for (auto ii = rib_indices.begin(); ii!=rib_indices.end()-1; ii++) {
+		triangulate_two_ribs(*ii, *(ii+1), V, current_samples, bin_it_by_projection);
 	}
 	
 	
@@ -1829,25 +1845,27 @@ void triangulate_two_ribs(const std::vector< int > & rib1, const std::vector< in
 						  bool bin_it_by_projection)
 {
 	
+	
+	
 	triangle add_me;
 	
 	if (rib1.size()==1 && rib2.size()==1) {
 		return;
 	}
 	else if (rib1.size()==1) {
-		add_me.v1 = rib1[0];
+		add_me.set_v1(rib1[0]);
 		for (int jj = 0; jj<int(rib2.size()-1); jj++) {
-			add_me.v2 = rib2[jj];
-			add_me.v3 = rib2[jj+1];
+			add_me.set_v2(rib2[jj]);
+			add_me.set_v3(rib2[jj+1]);
 			
 			current_samples.push_back(add_me);
 		}
 	}
 	else if (rib2.size()==1) {
-		add_me.v1 = rib2[0];
+		add_me.set_v1(rib2[0]);
 		for (int jj = 0; jj<int(rib1.size()-1); jj++) {
-			add_me.v2 = rib1[jj];
-			add_me.v3 = rib1[jj+1];
+			add_me.set_v2(rib1[jj]);
+			add_me.set_v3(rib1[jj+1]);
 			
 			current_samples.push_back(add_me);
 		}
@@ -1856,17 +1874,12 @@ void triangulate_two_ribs(const std::vector< int > & rib1, const std::vector< in
 	{
 		
 		for (int jj = 0; jj<int(rib1.size()-1); jj++) {
-			add_me.v1 = rib1[jj];
-			add_me.v2 = rib2[jj];
-			add_me.v3 = rib2[jj+1];
-			
+			add_me.set_v(rib1[jj], rib2[jj], rib2[jj+1]);
 			current_samples.push_back(add_me);
 			
-			add_me.v1 = rib1[jj];
-			add_me.v2 = rib2[jj+1];
-			add_me.v3 = rib1[jj+1];
-			
+			add_me.set_v(rib1[jj], rib2[jj+1], rib1[jj+1]);
 			current_samples.push_back(add_me);
+			
 			
 		}
 		
@@ -1907,6 +1920,7 @@ void triangulate_two_ribs_by_projection_binning(const std::vector< int > & rib1,
 	}
 	
 	if (rib1.size()==0 || rib2.size()==0) {
+		
 		return;
 	}
 
@@ -2091,6 +2105,7 @@ void triangulate_two_ribs_by_distance_binning(const std::vector< int > & rib1, c
 											   rib_w_more_entries->at(kk))
 									  );
 			
+			
 		}
 		
 		
@@ -2101,6 +2116,9 @@ void triangulate_two_ribs_by_distance_binning(const std::vector< int > & rib1, c
 											   rib_w_less_entries->at(ii-1))
 									  );
 		
+		
+		
+		
 		for (unsigned int kk=split_point; kk<curr_ind;kk++) {
 			
 			current_samples.push_back(
@@ -2109,6 +2127,9 @@ void triangulate_two_ribs_by_distance_binning(const std::vector< int > & rib1, c
 											   rib_w_more_entries->at(kk+1),
 											   rib_w_more_entries->at(kk))
 									  );
+			
+			
+			
 		}
 		
 	}
@@ -2158,17 +2179,17 @@ void  surface_decomposition::output_sampling_data(boost::filesystem::path base_p
 	
 	
 	
-	crit_curve.output_sampling_data(base_path / "curve_crit");
+	crit_curve_.output_sampling_data(base_path / "curve_crit");
 	
 
-	sphere_curve.output_sampling_data(base_path / "curve_sphere");
+	sphere_curve_.output_sampling_data(base_path / "curve_sphere");
 	
 	
 	boost::filesystem::path curve_location = base_path / "curve";
 	
 	std::stringstream converter;
 	
-	for (unsigned int ii=0; ii<mid_slices.size(); ii++) {
+	for (unsigned int ii=0; ii<mid_slices_.size(); ii++) {
 		boost::filesystem::path specific_loc = curve_location;
 		
 		converter << ii;
@@ -2177,10 +2198,10 @@ void  surface_decomposition::output_sampling_data(boost::filesystem::path base_p
 		converter.clear(); converter.str("");
 		
 		
-		mid_slices[ii].output_sampling_data(specific_loc);
+		mid_slices_[ii].output_sampling_data(specific_loc);
 	}
 	
-	for (unsigned int ii=0; ii<crit_slices.size(); ii++) {
+	for (unsigned int ii=0; ii<crit_slices_.size(); ii++) {
 		boost::filesystem::path specific_loc = curve_location;
 		
 		converter << ii;
@@ -2188,17 +2209,17 @@ void  surface_decomposition::output_sampling_data(boost::filesystem::path base_p
 		specific_loc += converter.str();
 		converter.clear(); converter.str("");
 		
-		crit_slices[ii].output_sampling_data(specific_loc);
+		crit_slices_[ii].output_sampling_data(specific_loc);
 	}
 	
 	
 	curve_location += "_singular_mult_";
-	if (singular_curves.size()>0) {
+	if (num_singular_curves()>0) {
 		
 		
-		for (auto iter = singular_curves.begin(); iter!= singular_curves.end(); ++iter) {
+		for (auto iter = singular_curves_.begin(); iter!= singular_curves_.end(); ++iter) {
 			boost::filesystem::path specific_loc = curve_location;
-			converter << iter->first.first << "_" << iter->first.second;
+			converter << iter->first.multiplicity() << "_" << iter->first.index();
 			
 			specific_loc += converter.str();
 			converter.clear(); converter.str("");

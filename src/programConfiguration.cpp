@@ -55,28 +55,28 @@ void parse_input_file(boost::filesystem::path filename, int * MPType)
 
 void prog_config::move_to_temp()
 {
-	if (!boost::filesystem::exists(this->working_dir)) {
-		boost::filesystem::create_directory(this->working_dir);
+	if (!boost::filesystem::exists(this->working_dir())) {
+		boost::filesystem::create_directory(this->working_dir());
 	}
 	
-	if (!boost::filesystem::is_directory(this->working_dir)) {
+	if (!boost::filesystem::is_directory(this->working_dir())) {
 		std::cerr << "trying to move into a directory which is a regular file!" << std::endl;
 		// add error code here
 	}
 	
-	chdir(this->working_dir.c_str());
+	chdir(this->working_dir().c_str());
 	
-	if (this->verbose_level>=3)
-		std::cout << "moved to working_dir '" << this->working_dir.string() << "'" << std::endl;
+	if (this->verbose_level()>=3)
+		std::cout << "moved to working_dir '" << this->working_dir().string() << "'" << std::endl;
 }
 
 void prog_config::move_to_called()
 {
 	
-	chdir(this->called_dir.c_str());
+	chdir(this->called_dir().c_str());
 	
-	if (this->verbose_level>=3)
-		std::cout << "moved to called_dir '" << this->called_dir.string() << "'" << std::endl;
+	if (this->verbose_level()>=3)
+		std::cout << "moved to called_dir '" << this->called_dir().string() << "'" << std::endl;
 }
 
 
@@ -108,12 +108,12 @@ int BR_configuration::startup()
 	
 	
 	
-	if (this->user_projection) {
+	if (this->user_projection()) {
 		IN = safe_fopen_read(this->projection_filename.c_str());
 		fclose(IN);
 	}
 	
-	if (this->user_sphere) {
+	if (this->user_sphere()) {
 		IN = safe_fopen_read(this->bounding_sphere_filename.c_str());
 		fclose(IN);
 	}
@@ -143,8 +143,8 @@ void BR_configuration::display_current_options()
 {
 	printf("current options:\n\n");
 	
-	printf("user_projection: %d",this->user_projection);
-	if (this->user_projection)
+	printf("user_projection: %d",this->user_projection());
+	if (this->user_projection())
 		printf(", %s\n",this->projection_filename.c_str());
 	else
 		printf("\n");
@@ -153,8 +153,8 @@ void BR_configuration::display_current_options()
 
 	
 	
-	printf("user_sphere: %d",user_sphere);
-	if (user_sphere)
+	printf("user_sphere: %d",user_sphere());
+	if (user_sphere())
 		printf(", %s\n",bounding_sphere_filename.c_str());
 	else
 		printf("\n");
@@ -163,9 +163,9 @@ void BR_configuration::display_current_options()
 	printf("input_filename: %s\n",this->input_filename.c_str());
 
 	
-	std::cout << "stifle_text: " << this->stifle_text << std::endl;
+	std::cout << "stifle_text: " << this->stifle_text() << std::endl;
 	std::cout << "bertini_command: " << this->bertini_command << std::endl;
-	std::cout << "output_directory base name: " << this->output_dir << std::endl;
+	std::cout << "output_directory base name: " << this->output_dir() << std::endl;
 	
 }
 
@@ -221,7 +221,7 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 				break;
 				
 			case 'D':
-				this->debugwait = 1;
+				this->debugwait(true);
 				break;
 		
 			case 'g':
@@ -233,31 +233,31 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 				break;
 				
 			case 'V':
-				verbose_level = atoi(optarg);
+				verbose_level(atoi(optarg));
 				break;
 
 				
 			case 'o':
-				output_dir = boost::filesystem::absolute(optarg);
+				output_dir(boost::filesystem::absolute(optarg));
 				break;
 				
 			case 's':
-				stifle_text = "\0";
+				stifle_text("\0");
 				break;
 				
 			case 'm':
-				merge_edges = false;
+				merge_edges(false);
 				break;
 				
 			case 'p':
-				user_projection=1;
+				user_projection(true);
 				projection_filename = optarg;
 				break;
 				
 				
 				
 			case 'S':
-				user_sphere = true;
+				user_sphere(true);
 				this->bounding_sphere_filename = boost::filesystem::absolute(optarg);
 				break;
 				
@@ -267,11 +267,11 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 				break;
 				
 			case 'q':
-				quick_run = 1;
+				quick_run(1);
 				break;
 				
 			case 'Q':
-				quick_run = 2;
+				quick_run(2);
 				break;
 
 			case 'v':
@@ -333,10 +333,13 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 	
 	
 	
-	this->called_dir = boost::filesystem::absolute(boost::filesystem::current_path());
-	this->output_dir = boost::filesystem::absolute(this->output_dir);
-	this->working_dir = this->called_dir;
-	this->working_dir/="temp";
+	this->set_called_dir(boost::filesystem::absolute(boost::filesystem::current_path()));
+	this->output_dir(boost::filesystem::absolute(this->output_dir()));
+	
+	boost::filesystem::path new_name = this->called_dir();
+	new_name/="temp";
+	this->working_dir(new_name);
+
 	
 	
 	
@@ -366,36 +369,36 @@ void BR_configuration::init()
 	target_component = -2;
 	target_dimension = -1;
 	
-	quick_run = 0;
-	debugwait = 0;
-	max_deflations = 10;
+	quick_run_ = 0;
+	debugwait_ = false;
+	max_deflations_ = 10;
 	
-	user_projection = 0;
+	user_projection_ = false;
 	projection_filename = "";
 	
+	orthogonal_projection_ = true;
 	
-	
-	user_sphere = false;
+	user_sphere_ = false;
 	bounding_sphere_filename = "";
 	
 	input_filename = "input";
 	
 	
-	output_dir = boost::filesystem::absolute("output");
+	output_dir(boost::filesystem::absolute("output"));
 	
 	
-	stifle_membership_screen = 1;
-	stifle_text = " > /dev/null ";
+	stifle_membership_screen_ = true;
+	stifle_text_ = " > /dev/null ";
 	
 	bertini_command = "~/bin/bertini_serial";
 	matlab_command = "matlab -nosplash -nodesktop -nojvm";
-	verbose_level = 0; // default to 0
+	verbose_level(0); // default to 0
 	
 	MPType = 2;
 	
 	use_gamma_trick = 0;
 	
-	merge_edges = true;
+	merge_edges_ = true;
 	
 	primary_mode = BERTINIREAL;
 	
@@ -536,7 +539,7 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 				break;
 				
 			case 'V':
-				this->verbose_level = atoi(optarg);
+				this->verbose_level(atoi(optarg));
 				break;
 				
 			case 'm':

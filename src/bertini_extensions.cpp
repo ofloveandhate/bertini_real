@@ -1,7 +1,7 @@
 
 #include "bertini_extensions.hpp"
 
-#define SAMEPOINTTOL 1e-6
+
 
 
 

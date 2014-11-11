@@ -45,9 +45,9 @@
 class curve_decomposition : public decomposition
 {
 	
-	std::vector<int> num_samples_each_edge;
+	std::vector<int> num_samples_each_edge; ///< the number of samples on each edge, where there is a strict correspondence between elements of this vector and edges.
 	
-	std::vector< std::vector<int >> sample_indices;
+	std::vector< std::vector<int > > sample_indices; ///< the indices of the vertices for the samples on the edges.
 	
 	
 	std::vector<edge> edges_; ///< The edges (1-cells) computed by Bertini_real
@@ -55,7 +55,7 @@ class curve_decomposition : public decomposition
 	
 	
 	
-	friend class surface_decomposition;
+	friend class surface_decomposition; ///< declared to be friend.  i dislike this.
 	
 public:
 	
@@ -389,7 +389,6 @@ public:
 	\brief the main function for computing the self-intersection of a non-self-conjugate dimension 1 component.
 	 
 	 \param W		the witness set
-	 \param pi	the projection for this decomposition
 	 \param V		the vertex set being passed around.  C indexes into here.
 	 \param num_vars		the total number of variables in the problem.
 	 \param program_options		main structure holding configuration
@@ -397,7 +396,6 @@ public:
 	 
 	 */
 	void 	computeCurveNotSelfConj(const witness_set		& W,
-									vec_mp					pi,
 									vertex_set				&V,
 									int						num_vars,
 									BR_configuration		& program_options,

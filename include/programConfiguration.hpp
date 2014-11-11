@@ -52,24 +52,45 @@ class parallelism_config
 	
 protected:
 	
+	bool force_no_parallel_;
+	int headnode_;
+	int my_id_, my_id_global_;
+	int numprocs_;
+	MPI_Comm   my_communicator_;
+	
+	int worker_level_; // higher worker level means more tedious work, in a sense.  worker_level 0 is uber-master.  worker_level 1 will be the next level down in management, etc.  the exact usage of this is relative to the process being run.
+	
+	
+	
+	std::map< int, int> worker_status_;
+	
+	std::queue< int > available_workers_;
+	
+	
 	
 public:
-	bool force_no_parallel;
-	int headnode;
-	int my_id, my_id_global;
-	int numprocs;
-	MPI_Comm   my_communicator;
+	
+	/**
+	 \brief get the state of whether forcing no parallel at the current time
+	 \return indicator of whether parallelism currently turned off
+	 */
+	bool force_no_parallel()
+	{
+		return force_no_parallel_;
+	}
 	
 	
-
+	/**
+	 \brief set the value of force_no_parallel, to turn on/off parallelism
+	 
+	 \param new_val the new value to set it to
+	 */
+	void force_no_parallel(bool new_val)
+	{
+		force_no_parallel_ = new_val;
+	}
 	
-	int worker_level; // higher worker level means more tedious work, in a sense.  worker_level 0 is uber-master.  worker_level 1 will be the next level down in management, etc.  the exact usage of this is relative to the process being run.
 	
-
-	
-	std::map< int, int> worker_status;
-	
-	std::queue< int > available_workers;
 	
 	
 	parallelism_config(){
@@ -84,7 +105,7 @@ public:
 	 */
 	inline bool is_head()
 	{
-		if (my_id == headnode)
+		if (my_id_ == headnode_)
 			return true;
 		else
 			return false;
@@ -98,7 +119,7 @@ public:
 	 \return Indicator of whether to use parallel mode.
 	 */
 	inline bool use_parallel(){
-		if (numprocs>1 && force_no_parallel!=true)
+		if (numprocs_>1 && force_no_parallel_!=true)
 			return true;
 		else
 			return false;
@@ -115,55 +136,73 @@ public:
 	 \param why An integer to feed to MPI_Abort.
 	 */
 	void abort(int why){
-		MPI_Abort(my_communicator,why);
+		MPI_Abort(my_communicator_,why);
 	}
 	
 	/**
 	 Get the current communicator
 	 \return the currently stored communicator
 	 */
-	inline MPI_Comm comm(){return my_communicator;}
+	inline MPI_Comm comm(){return my_communicator_;}
 	
 	/**
 	 \brief Get the ID of the supervisor
 	 
 	 \return the ID of the head node, supervisor, or whatever you want to call it.
 	 */
-	inline int head(){return headnode;}
+	inline int head(){return headnode_;}
 	
 	/**
 	 \brief Get the ID of this process
 	 
 	 \return the ID
 	 */
-	inline int id(){ return my_id;}
+	inline int id(){ return my_id_;}
 	
 	/**
 	 \brief  Get the worker level
 	 
 	 \return the worker level
 	 */
-	inline int level(){return worker_level;}
+	inline int level(){return worker_level_;}
 	
 	/**
 	 \brief Get how many workers there are in the current communicator
 	 
 	 \return The number of workers.
 	 */
-	inline int size(){ return numprocs;}
+	inline int num_procs(){ return numprocs_;}
+	
+	
+	
+	
+	/**
+	 \brief Get how many workers there are in the current communicator
+	 
+	 \return The number of workers.
+	 */
+	inline int size(){ return numprocs_;}
 	
 	
 	/**
 	 \brief Set up the vector of available workers, based on how many processors there are.
+	 \throws logic_error if the set of active workers is not empty.
 	 
 	 It also sets up the workers to be listed as inactive.
 	 */
 	void init_active_workers()
 	{
-
-		for (int ii=1; ii<this->numprocs; ii++) {
-			available_workers.push(ii);
-			worker_status[ii] = INACTIVE;
+		if (!available_workers_.empty()) {
+			throw std::logic_error("set of available workers is not empty at call of init_active_workers...  it must be empty.  some previous process did not finish properly, dismissing all workers at the end.");
+		}
+		
+		while (!available_workers_.empty())
+			available_workers_.pop();
+		
+		
+		for (int ii=1; ii<this->numprocs_; ii++) {
+			available_workers_.push(ii);
+			worker_status_[ii] = INACTIVE;
 		}
 		
 		
@@ -177,14 +216,14 @@ public:
 	 */
 	int activate_next_worker()
 	{
-		int worker_id = available_workers.front();
-		available_workers.pop();
+		int worker_id = available_workers_.front();
+		available_workers_.pop();
 		
-		if (worker_status[worker_id] == ACTIVE) {
+		if (worker_status_[worker_id] == ACTIVE) {
 			std::cout << "master tried making worker" << worker_id << " active when it was already active" << std::endl;
 			MPI_Abort(MPI_COMM_WORLD,1);
 		}
-		worker_status[worker_id] = ACTIVE;
+		worker_status_[worker_id] = ACTIVE;
 		
 
 		return worker_id;
@@ -197,14 +236,14 @@ public:
 	 */
 	void deactivate(int worker_id)
 	{
-		if (worker_status[worker_id] == INACTIVE) {
+		if (worker_status_[worker_id] == INACTIVE) {
 			std::cout << "master tried decativating worker" << worker_id << " when it was already inactive" << std::endl;
 			MPI_Abort(MPI_COMM_WORLD,2);
 		}
-		worker_status[worker_id] = INACTIVE;
+		worker_status_[worker_id] = INACTIVE;
 		
 		
-		available_workers.push(worker_id);
+		available_workers_.push(worker_id);
 	}
 	
 	
@@ -217,10 +256,10 @@ public:
 	 */
 	void send_all_available(int numtosend)
 	{
-		while (available_workers.size()>0)  {
-			int sendtome = available_workers.front();
+		while (available_workers_.size()>0)  {
+			int sendtome = available_workers_.front();
 			MPI_Send(&numtosend, 1, MPI_INT, sendtome, NUMPACKETS, MPI_COMM_WORLD);
-			available_workers.pop();
+			available_workers_.pop();
 		}
 	}
 	
@@ -246,7 +285,7 @@ public:
 	 */
 	bool have_available()
 	{
-		if (available_workers.size()==0) {
+		if (available_workers_.size()==0) {
 			return false;
 		}
 		else
@@ -264,8 +303,8 @@ public:
 	bool have_active()
 	{
 		bool yep = false;
-		for (int ii=1; ii<this->numprocs; ii++) {
-			if (this->worker_status[ii]==ACTIVE) {
+		for (int ii=1; ii<this->numprocs_; ii++) {
+			if (this->worker_status_[ii]==ACTIVE) {
 				yep = true;
 				break;
 			}
@@ -281,8 +320,8 @@ public:
 	int num_active()
 	{
 		int num = 0;
-		for (int ii=1; ii<this->numprocs; ii++) {
-			if (this->worker_status[ii]==ACTIVE) {
+		for (int ii=1; ii<this->numprocs_; ii++) {
+			if (this->worker_status_[ii]==ACTIVE) {
 				num++;
 			}
 		}
@@ -295,22 +334,22 @@ private:
 	void init()
 	{
 		
-		force_no_parallel = false;
-		numprocs = 1;
-		headnode = 0;
+		force_no_parallel_ = false;
+		numprocs_ = 1;
+		headnode_ = 0;
 		
-		MPI_Comm_size(MPI_COMM_WORLD, &this->numprocs);
-		MPI_Comm_rank(MPI_COMM_WORLD, &this->my_id);
+		MPI_Comm_size(MPI_COMM_WORLD, &this->numprocs_);
+		MPI_Comm_rank(MPI_COMM_WORLD, &this->my_id_);
 		
 		
 		if (is_head())
-			worker_level = 0;
+			worker_level_ = 0;
 		else
-			worker_level = 1;
+			worker_level_ = 1;
 		
 		
 		
-		my_communicator = MPI_COMM_WORLD; // default communicator is MPI_COMM_WORLD
+		my_communicator_ = MPI_COMM_WORLD; // default communicator is MPI_COMM_WORLD
 		
         
         
@@ -344,16 +383,102 @@ class prog_config
 private:
 	
 	
+	int verbose_level_;
+	
+	boost::filesystem::path called_dir_;
+	boost::filesystem::path working_dir_;
+	boost::filesystem::path output_dir_;
+	
+protected:
+	
+	/**
+	 \brief set the name of the called directory
+	 \param new_name the new name of the called directory.
+	 */
+	void set_called_dir(boost::filesystem::path new_name)
+	{
+		called_dir_ = new_name;
+	}
 	
 public:
 	
-
+	/**
+	 get the directory from which the program was called
+	 
+	 \return the directory in which the user was, when the prog_config was created.
+	 */
+	boost::filesystem::path called_dir() const
+	{
+		return called_dir_;
+	}
 	
-	int verbose_level;
 	
-	boost::filesystem::path called_dir;
-	boost::filesystem::path working_dir;
-	boost::filesystem::path output_dir;
+	/**
+	 get the working directory
+	 
+	 \return the working directory
+	 */
+	boost::filesystem::path working_dir() const
+	{
+		return working_dir_;
+	}
+	
+	
+	/**
+	 \brief set the name of the working directory
+	 
+	 \param new_name the new name of the working directory
+	 */
+	void working_dir(boost::filesystem::path new_name)
+	{
+		working_dir_ = new_name;
+	}
+	
+	
+	
+	/**
+	 get the output directory
+	 
+	 \return the output directory
+	 */
+	boost::filesystem::path output_dir() const
+	{
+		return output_dir_;
+	}
+	
+	
+	/**
+	 \brief set the name of the output directory
+	 
+	 \param new_name the new name of the output directory
+	 */
+	void output_dir(boost::filesystem::path new_name)
+	{
+		output_dir_ = new_name;
+	}
+	
+	
+	
+	/**
+	 \brief get the level of verbosity
+	 
+	 \return the level of verbosity
+	 */
+	inline int verbose_level() const
+	{
+		return verbose_level_;
+	}
+	
+	/**
+	 \brief set the level of verbosity
+	 
+	 \param new_level the new level of verbosity
+	 */
+	int verbose_level(int new_level)
+	{
+		return verbose_level_ = new_level;
+	}
+	
 	
 	void move_to_temp();
 	
@@ -369,30 +494,55 @@ public:
  */
 class BR_configuration : public prog_config
 {
+	bool orthogonal_projection_;
+	
+	bool debugwait_; ///< flag for whether to wait 30 seconds before starting, and print the master process ID to screen.
+	int max_deflations_; ///< the maximum allowable number of deflation iterations before it gives up.
+	
+	bool stifle_membership_screen_; ///< boolean controlling whether stifle_text is empty or " > /dev/null"
+	std::string stifle_text_; ///<
+	
+	int quick_run_;  ///< indicator of whether to use the robust solver wherever possible
+	
+	
+	bool user_sphere_; ///< flag for whether to read the sphere from a file, rather than compute it.
+	
+	bool user_projection_; ///< indicator for whether to read the projection from a file, rather than randomly choose it.
+	
+	bool merge_edges_; ///< a mode switch, indicates whether should be merging.
 public:
 	
-	int max_deflations; ///< the maximum allowable number of deflation iterations before it gives up.
-	int debugwait; ///< flag for whether to wait 30 seconds before starting, and print the master process ID to screen.
-	int stifle_membership_screen; ///< boolean controlling whether stifle_text is empty or " > /dev/null"
-	std::string stifle_text; ///< string to append to system commands to stifle screen output.
+	/** 
+	 \brief query whether should merge edges
+	 \return whether we should merge edges or not
+	 */
+	bool merge_edges()
+	{
+		return merge_edges_;
+	}
 	
-	int quick_run;  ///< indicator of whether to use the robust solver wherever possible
-	bool user_sphere; ///< flag for whether to read the sphere from a file, rather than compute it.
-
-	bool user_projection; // indicator for whether to read the projection from a file, rather than randomly choose it.
 	
-	int primary_mode;
+	/**
+	 \brief set whether should merge edges
+	 \param new_val set whether we should merge edges or not
+	 */
+	void merge_edges(bool new_val)
+	{
+		merge_edges_ = new_val;
+	}
+	
+	int primary_mode; ///< mode of operation -- bertini_real is default, but there is also crit method for computing critical points.
 	
 	int MPType; ///< store M.O.
 	
 	boost::filesystem::path bounding_sphere_filename; ///< name of file to read if user_sphere==true
 	boost::filesystem::path projection_filename; ///name of file to read if user_projection==true
 	boost::filesystem::path input_filename; ///< name of the input file to read -- by default it's "input"
-
+	
 	boost::filesystem::path input_deflated_filename; ///< the name of the file post-deflation
 	boost::filesystem::path sphere_filename; ///< the name of the sphere file.  this seems like a duplicate.
 	
-
+	
 	
 	int target_dimension;  ///< the dimension to shoot for
 	int target_component;  ///< the integer index of the component to decompose.  by default, it's -2, which indicates 'ask me'.
@@ -403,10 +553,179 @@ public:
 	
 	bool use_gamma_trick; ///< indicator for whether to use the gamma trick in a particular solver.
 	
-	bool merge_edges; ///< a mode switch, indicates whether should be merging.
+	
+	
+	
+	
+	
+	
+	
+	/**
+	 \brief whether to read projection from file.
+	 \return whether to read the projection from a user-created and specified file.
+	 */
+	bool user_projection()
+	{
+		return user_projection_;
+	}
+	
+	/**
+	 \brief set whether to read projection from file.
+	 \param new_val whether to read the projection from a user-created and specified file.
+	 */
+	void user_projection(bool new_val)
+	{
+		user_projection_ = new_val;
+	}
+	
+	
+	/**
+	 \brief whether to read sphere parameters from file.
+	 \return whether to read the sphere parameters from a user-created and specified file.
+	 */
+	bool user_sphere()
+	{
+		return user_sphere_;
+	}
+	
+	
+	
+	/**
+	 \brief set whether to read sphere parameters from file.
+	 \param new_val whether to read the sphere parameters from a user-created and specified file.
+	 */
+	void user_sphere(bool new_val)
+	{
+		user_sphere_ = new_val;
+	}
+	
+	/**
+	 \brief get the level of quick.  higher == faster (less robust)
+	 \return the level of quickness
+	 */
+	int quick_run()
+	{
+		return quick_run_;
+	}
+	
+	/**
+	 \brief set the level of quickness
+	 \param new_val the new level
+	 */
+	void quick_run(int new_val)
+	{
+		quick_run_ = new_val;
+	}
+	
+	
+	
+	
+	/**
+	 \brief the stifling text for system commands
+	 \return string to append to system commands to stifle screen output.
+	 */
+	std::string stifle_text() const
+	{
+		return stifle_text_;
+	}
+	
+	/**
+	 \brief set the stifling text
+	 \param new_val the new stifling text
+	 */
+	void stifle_text(std::string new_val)
+	{
+		stifle_text_ = new_val;
+	}
+	
+	
+	
+	/**
+	 \brief should we wait for 30 seconds before running program?
+	 \return whether we should.  true==yes
+	 */
+	bool debugwait() const
+	{
+		return debugwait_;
+	}
+	
+	/**
+	 \brief set value for question -- should we wait for 30 seconds before running program?
+	 \param new_val the new value for the debugwait parameter
+	 */
+	void debugwait(bool new_val)
+	{
+		debugwait_ = new_val;
+	}
+	
+	
+	/**
+	 how many times it is ok to deflate
+	 \return how many times to deflate, at maximum.  default is 10.
+	 */
+	int max_deflations() const
+	{
+		return max_deflations_;
+	}
+	
+	/**
+	 \brief set the maximum number of deflations
+	 */
+	void max_deflations(int new_val)
+	{
+		max_deflations_ = new_val;
+	}
+	
+	
+	/**
+	 \brief query whether we should stifle some screen output
+	 \return whether we should.
+	 */
+	bool stifle_membership_screen() const
+	{
+		return stifle_membership_screen_;
+	}
+	
+	/**
+	 \brief set whether should stifle the membership testing screen output
+	 */
+	void stifle_membership_screen(bool new_val)
+	{
+		stifle_membership_screen_ = new_val;
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	/**
+	 get whether should use orthogonal projection.  default is yes
+	 */
+	bool orthogonal_projection()
+	{
+		return orthogonal_projection_;
+	}
+	
+	
+	
+	
 	
 	
 
+	
+	
+	
+	
+	
+	
 	
 	
 	/** 
@@ -513,7 +832,7 @@ public:
 		stifle_membership_screen = 1;
 		stifle_text = " > /dev/null ";
 		
-		verbose_level = 0; // default to 0
+
 		
 		maximum_num_iterations = 10;
 		

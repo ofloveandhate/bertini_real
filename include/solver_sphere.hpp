@@ -192,9 +192,11 @@ public:
 	}
 	
 protected:
+	
+	
 	void copy(const sphere_config & other)
 	{
-		
+		//TODO: write this function.
 		//ah yes, this problem.
 		//		this->SLP = other.SLP;// this needs to be a deep copy
 	}

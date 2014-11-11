@@ -39,7 +39,7 @@ int ubermaster_process::main_loop()
 	program_options.startup(); // tests for existence of necessary files, etc.
 	
 	//if desired, display the options
-	if (program_options.verbose_level>=3)
+	if (program_options.verbose_level()>=3)
 		program_options.display_current_options();
 	
 	
@@ -71,7 +71,7 @@ int ubermaster_process::main_loop()
 	
 		
 	
-	if (program_options.verbose_level>=1) {
+	if (program_options.verbose_level()>=1) {
 		W.print_to_screen();
 	}
 	
@@ -91,7 +91,7 @@ int ubermaster_process::main_loop()
 		init_vec_mp2(pi[ii],W.num_variables(), solve_options.T.AMP_max_prec);
 		pi[ii]->size = W.num_variables();
 	}
-	get_projection(pi, program_options, solve_options, W.num_variables(), W.dimension());
+	get_projection(pi, program_options, W.num_variables(), W.dimension());
 	
     for (int ii=0; ii<W.dimension(); ii++) {
         V.add_projection(pi[ii]);
@@ -113,23 +113,25 @@ int ubermaster_process::main_loop()
 				
 				C.set_component_number(W.component_number());
 				
-				
+				boost::filesystem::path temp_name = program_options.output_dir();
 				std::stringstream converter;
 				converter << "_dim_" << C.dimension() << "_comp_" << C.component_number();
-				program_options.output_dir += converter.str();
+				temp_name += converter.str();
+				
+				program_options.output_dir(temp_name);
 				
 				// curve
 				C.main(V, W, pi, program_options, solve_options);
 				
-				if (program_options.verbose_level>=2)
+				if (program_options.verbose_level()>=2)
 					printf("outputting data\n");
 				
 				
 				
 				
-				C.output_main(program_options.output_dir);
+				C.output_main(program_options.output_dir());
 				
-				V.print(program_options.output_dir/ "V.vertex");
+				V.print(program_options.output_dir()/ "V.vertex");
 				
 			}
 				break;
@@ -141,9 +143,12 @@ int ubermaster_process::main_loop()
 				surface_decomposition S;
 				S.set_component_number(W.component_number());
 				
+				boost::filesystem::path temp_name = program_options.output_dir();
 				std::stringstream converter;
 				converter << "_dim_" << S.dimension() << "_comp_" << S.component_number();
-				program_options.output_dir += converter.str();
+				temp_name += converter.str();
+				
+				program_options.output_dir(temp_name);
 				
 				
 				// surface
@@ -152,9 +157,9 @@ int ubermaster_process::main_loop()
 				
 				
 				
-				S.output_main(program_options.output_dir);
+				S.output_main(program_options.output_dir());
 				
-				V.print(program_options.output_dir/ "V.vertex");
+				V.print(program_options.output_dir()/ "V.vertex");
 			}
 				break;
 				
@@ -276,7 +281,7 @@ int worker_process::main_loop()
 		
 		MPI_Bcast(&solver_choice, 1, MPI_INT, solve_options.head(), MPI_COMM_WORLD);
 		
-		if ( (solver_choice!=0) && (solve_options.id()==1) && (solve_options.verbose_level>=1)) {
+		if ( (solver_choice!=0) && (solve_options.id()==1) && (solve_options.verbose_level()>=1)) {
 			std::cout << "received call for help for solver " << enum_lookup(solver_choice) << std::endl;
 		}
 		

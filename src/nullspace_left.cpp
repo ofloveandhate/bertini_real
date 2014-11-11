@@ -63,7 +63,7 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 	
 	
 	//  2.  Do a bunch of homotopies in $x$, each set of which will be followed by a single linear solve in $v$.
-	if (program_options.verbose_level>=3) {
+	if (program_options.verbose_level()>=3) {
 		std::cout << "building up linprod start system for left nullspace" << std::endl;
 	}
 	
@@ -120,7 +120,7 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 	W_linprod.set_num_natural_variables(W.num_natural_variables());
 	
 	
-	if (program_options.quick_run<=1)
+	if (program_options.quick_run()<=1)
 		solve_options.robust = true;
 	else
 		solve_options.robust = false;
@@ -132,7 +132,7 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 	int increment_status = 0;
 	while (increment_status!=-1) { // current_absolute_index incremented at the bottom of loop
 		
-		if (program_options.verbose_level>=5) {
+		if (program_options.verbose_level()>=5) {
 			odo.print();
 		}
 		
@@ -143,7 +143,7 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 		}
 		// the remainder of the linears are left alone (stay stationary).
 		
-		if (program_options.verbose_level>=6) {
+		if (program_options.verbose_level()>=6) {
 			std::cout << "moving FROM this set:\n";
 			for (unsigned int ii=0; ii<W.num_linears(); ii++) {
 				print_point_to_screen_matlab(*W.linear(ii),"L");
@@ -180,7 +180,7 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 		
 		for (int ii=0; ii<ns_config->num_v_vars-1; ii++) { // subtract one from upper limit because of the patch equation
 			
-			if (program_options.verbose_level>=7)
+			if (program_options.verbose_level()>=7)
 			{
 				std::cout << "copy into tempmat v_linears[" << odo.inact_reg(ii) << "]\n";
 				print_point_to_screen_matlab(ns_config->v_linears[odo.inact_reg(ii)], "v_linears");
@@ -248,7 +248,7 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 	
 	//set some solver options
 	
-	if (program_options.quick_run<=0)
+	if (program_options.quick_run()<=0)
 		solve_options.robust = true;
 	else
 		solve_options.robust = false;
@@ -259,12 +259,12 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 	
 
 	
-	if (program_options.verbose_level>=6)
+	if (program_options.verbose_level()>=6)
 		ns_config->print();
 	
 	
 	
-	if (program_options.verbose_level>=3) {
+	if (program_options.verbose_level()>=3) {
 		std::cout << "running nullspace method" << std::endl;
 	}
 	

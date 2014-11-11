@@ -25,7 +25,7 @@ void curve_decomposition::main(vertex_set & V,
 	if (1) {
 		// perform an isosingular deflation
 		// note: somehow, you do not need witness_data to perform isosingular deflation
-		if (program_options.verbose_level>=2)
+		if (program_options.verbose_level()>=2)
 			printf("performing isosingular deflation\n");
 		
 		
@@ -44,7 +44,7 @@ void curve_decomposition::main(vertex_set & V,
 							  program_options, W.input_filename(),
 							  "witness_points_dehomogenized",
 							  program_options.input_deflated_filename,
-							  program_options.max_deflations);
+							  program_options.max_deflations());
 		free(deflation_sequence);
 		
 		
@@ -73,7 +73,7 @@ void curve_decomposition::main(vertex_set & V,
 	int self_conjugate = 1;
 	if (W.num_synth_vars()==0) {
 		
-		if (program_options.verbose_level>=2) {
+		if (program_options.verbose_level()>=2) {
 			printf("checking if component is self-conjugate\n");
 		}
 		self_conjugate = checkSelfConjugate( *W.point(0), program_options, W.input_filename());  //later:  could be passed in from user, if we want
@@ -81,7 +81,7 @@ void curve_decomposition::main(vertex_set & V,
 		
 		
 		if ( verify_projection_ok(W,projections,solve_options) == 1 ){
-			if (program_options.verbose_level>=1) {
+			if (program_options.verbose_level()>=1) {
 				printf("verified projection is ok\n");
 			}
 		}
@@ -97,7 +97,7 @@ void curve_decomposition::main(vertex_set & V,
 	
 	
 	
-	if (program_options.user_sphere) {
+	if (program_options.user_sphere()) {
 		read_sphere(program_options.bounding_sphere_filename);
 	}
 	
@@ -112,7 +112,7 @@ void curve_decomposition::main(vertex_set & V,
 	{
 		//Call non-self-conjugate case code
 		
-		computeCurveNotSelfConj(W, projections[0], V, num_variables(),
+		computeCurveNotSelfConj(W, V, num_variables(),
                                 program_options, solve_options);
 		
 	}
@@ -231,8 +231,8 @@ int curve_decomposition::compute_critical_points(const witness_set & W_curve,
 	W_crit_real.sort_for_unique(&solve_options.T);
 	
 	
-	if (have_sphere_radius) {
-		W_crit_real.sort_for_inside_sphere(sphere_radius, sphere_center);
+	if (have_sphere()) {
+		W_crit_real.sort_for_inside_sphere(*sphere_radius(), *sphere_center());
 	}
 	else
 	{
@@ -283,7 +283,7 @@ int curve_decomposition::get_additional_critpts(witness_set *W_additional,
     
     
 	//build up the start system
-	if (program_options.quick_run<=1)
+	if (program_options.quick_run()<=1)
 		solve_options.robust = true;
 	else
 		solve_options.robust = false;
@@ -360,15 +360,15 @@ int curve_decomposition::get_additional_critpts(witness_set *W_additional,
 	
 	
 	// need to actually move to the sphere system now.
-    if (program_options.verbose_level>=1) {
+    if (program_options.verbose_level()>=1) {
         std::cout << "sphere intersection computation" << std::endl;
     }
     
 	
 	
 	sp_config.set_memory(solve_options); // gets the SLP in memory, and sets up the global memory structures used for evaluation
-	sp_config.set_center(this->sphere_center);
-	sp_config.set_radius(this->sphere_radius);
+	sp_config.set_center(*this->sphere_center());
+	sp_config.set_radius(*this->sphere_radius());
 	
 	
 	
@@ -449,7 +449,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	
 	for (unsigned int ii=0; ii<W_crit_real.num_points(); ii++){
 		
-		if (program_options.verbose_level>=8)
+		if (program_options.verbose_level()>=8)
 			printf("adding point %u of %zu from W_crit_real to vertices\n",ii,W_crit_real.num_points());
 		temp_vertex.set_point( *W_crit_real.point(ii));
 		temp_vertex.set_type(CRITICAL); // set type
@@ -478,7 +478,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	
 	int num_midpoints = midpoints_downstairs->size;
 	
-	if (program_options.verbose_level>=-1) {
+	if (program_options.verbose_level()>=-1) {
 		print_point_to_screen_matlab(crit_downstairs,"crit_downstairs");
 //		print_point_to_screen_matlab(midpoints_downstairs,"midpoints_downstairs");
 	}
@@ -511,7 +511,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	
 	
 	
-	if (program_options.quick_run<=1)
+	if (program_options.quick_run()<=1)
 		solve_options.robust = true;
 	else
 		solve_options.robust = false;
@@ -523,7 +523,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	
 	for (int ii=0; ii<num_midpoints; ii++) {
 		
-		if (program_options.verbose_level>=2) {
+		if (program_options.verbose_level()>=2) {
 			
 			printf("solving midpoints upstairs %d, projection value %lf\n",ii,mpf_get_d(midpoints_downstairs->coord[ii].r));
 		}
@@ -543,11 +543,11 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 
 
 		midpoint_witness_sets[ii].sort_for_real(&solve_options.T);
-		midpoint_witness_sets[ii].sort_for_inside_sphere(sphere_radius, sphere_center);
+		midpoint_witness_sets[ii].sort_for_inside_sphere(*sphere_radius(), *sphere_center());
 		
 		
 
-		if (program_options.verbose_level>=2) {
+		if (program_options.verbose_level()>=2) {
 			midpoint_witness_sets[ii].print_to_screen();
             std::cout << "midpoint_downstairs " << ii << " had " << midpoint_witness_sets[ii].num_points() << " real points" << std::endl;
 		}
@@ -590,7 +590,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
         solve_options.backup_tracker_config();
         
 
-        if (program_options.quick_run<=1)
+        if (program_options.quick_run()<=1)
 			solve_options.robust = true;
 		else
 			solve_options.robust = false;
@@ -607,7 +607,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
             keep_going = 0; // we would like to stop computing
             
             
-            if (program_options.verbose_level>=2)
+            if (program_options.verbose_level()>=2)
 			{
                 print_comp_matlab(&crit_downstairs->coord[ii],"left ");
 				print_comp_matlab(&crit_downstairs->coord[ii+1],"right ");
@@ -900,7 +900,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 			
 			
 			
-			if (program_options.verbose_level>=2) {
+			if (program_options.verbose_level()>=2) {
 				printf("done connecting upstairs midpoint %d (downstairs midpoint %d)\n",kk,ii);
                 
 				printf("indices of left, mid, right: %d %d %d\n",temp_edge.left(),temp_edge.midpt(),temp_edge.right());
@@ -962,7 +962,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	//             //              \\
 	*/
 	
-	if (program_options.merge_edges==true) {
+	if (program_options.merge_edges()) {
 		this->merge(midpoint_witness_sets[0],V,projections,program_options,solve_options);
 	}// re: if merge_edges==true
 	else
@@ -992,7 +992,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 	
 	//done
 	
-	if (program_options.verbose_level>=0) {
+	if (program_options.verbose_level()>=0) {
 		printf("num_edges = %zu\n",num_edges_);
 	}
 	
@@ -1128,7 +1128,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		
 		int moving_edge = edges_to_merge[int(edges_to_merge.size())/2];
 		
-		if (solve_options.verbose_level>=1) {
+		if (solve_options.verbose_level()>=1) {
 			std::cout << color::cyan() << "merging edges: ";
 			for (int zz=edges_to_merge.size()-1; zz>=0; zz--) {
 				std::cout << edges_to_merge[zz] << " ";
@@ -1179,7 +1179,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		neg_mp(&particular_projection->coord[0], new_proj_val); // set it in the linear for tracking
 		
 		
-		if (program_options.quick_run<=1)
+		if (program_options.quick_run()<=1)
 			solve_options.robust = true;
 		else
 			solve_options.robust = false;
@@ -1584,12 +1584,11 @@ void curve_decomposition::print_edges(boost::filesystem::path outputfile)
 
 
 
-void curve_decomposition::computeCurveNotSelfConj(const witness_set & W_in,
-                                                  vec_mp         pi_mp,
+void curve_decomposition::computeCurveNotSelfConj(const witness_set		&W_in,
                                                   vertex_set			&V,
-                                                  int           num_vars,
-                                                  BR_configuration & program_options,
-                                                  solver_configuration & solve_options)
+                                                  int					num_vars,
+                                                  BR_configuration		&program_options,
+                                                  solver_configuration	&solve_options)
 
 {
 #ifdef functionentry_output

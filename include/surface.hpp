@@ -48,43 +48,275 @@
  */
 class face : public cell
 {
+	
+	std::vector<int>	left_edges_;  ///< index into vertices
+	std::vector<int>	right_edges_; ///< index into vertices
+	
+	int top_edge_index_;			///<  index of the top edge in the appropriate decomposition, as indicated by system_name_top.
+	int bottom_edge_index_;			///< index of the bottom edge in the appropriate decomposition, as indicated by system_name_bottom.
+	
+	
+	std::string system_name_bottom_; ///< the plain text name of the bottom edge's system.  e.g. crit_curve
+	std::string system_name_top_; ///< the plain text name of the top edge's system.  e.g. crit_curve
+	
+	int crit_slice_index_; ///< which midpoint slice this face came from.
+	
+	
+	
+	comp_mp left_crit_val_; ///< the pi_0 projection value of the left crit slice
+	comp_mp right_crit_val_; ///< the pi_0 projection value of the right crit slice
+	
 public:
 	
-  std::vector<int>	left;  ///< index into vertices
-  std::vector<int>	right; ///< index into vertices
+	/**
+	 \brief get a pointer to the comp_mp of the left critical value.
+	 \return pointer to a comp_mp of the critical value of the left edge.
+	 */
+	comp_mp * left_crit_val()
+	{
+		return & left_crit_val_;
+	}
 	
-	int top;			///<  index of the top edge in the appropriate decomposition, as indicated by system_name_top.
-	int bottom;			///< index of the bottom edge in the appropriate decomposition, as indicated by system_name_bottom.
+	/**
+	 \brief set the projection value of the left critical edge
+	 \param new_left_crit_val the new value of the projection for left edge
+	 */
+	void set_left_crit_val(comp_mp new_left_crit_val)
+	{
+		set_mp(left_crit_val_,new_left_crit_val);
+	}
 	
-	unsigned int num_left;		///< the number of left mapped edges.
-	unsigned int num_right;	 ///< the number of right mapped edges.
+	/**
+	 \brief get a pointer to the comp_mp of the right critical value.
+	 \return pointer to a comp_mp of the critical value of the right edge.
+	 */
+	comp_mp * right_crit_val()
+	{
+		return & right_crit_val_;
+	}
 	
 	
-	comp_mp left_crit_val; ///< the pi_0 projection value of the left crit slice
-	comp_mp right_crit_val; ///< the pi_0 projection value of the right crit slice
+	/**
+	 \brief set the projection value of the right critical edge
+	 \param new_right_crit_val the new value of the projection for right edge
+	 */
+	void set_right_crit_val(comp_mp new_right_crit_val)
+	{
+		set_mp(right_crit_val_,new_right_crit_val);
+	}
 	
-	std::string system_name_bottom; ///< the plain text name of the bottom edge's system.  e.g. crit_curve
-	std::string system_name_top; ///< the plain text name of the top edge's system.  e.g. crit_curve
+	
+	/**
+	 \brief add an edge to set of found edges.
+	 \param index the index of the edge
+	 */
+	void add_left_edge(int index)
+	{
+		left_edges_.push_back(index);
+	}
+	
+	
+	
+	/**
+	 \brief add an edge to set of found edges.
+	 \param index the index of the edge
+	 */
+	void add_right_edge(int index)
+	{
+		right_edges_.push_back(index);
+	}
+	
+	
+	
+	
+	/**
+	 \brief get the bottom edge index
+	 \return the index of the bottom edge
+	 */
+	int bottom_edge() const
+	{
+		return bottom_edge_index_;
+	}
+	
+	
+	/**
+	 \brief set the bottom edge index
+	 \param index the new index to set
+	 \return the index of the bottom edge
+	 */
+	int set_bottom_edge(int index)
+	{
+		return bottom_edge_index_ = index;
+	}
+	
+	
+	/**
+	 \brief get the top edge index
+	 \return the index of the top edge
+	 */
+	int top_edge() const
+	{
+		return top_edge_index_;
+	}
+	
+	
+	/**
+	 \brief get the top edge index
+	 \param index the new index
+	 \return the index of the top edge
+	 */
+	int set_top_edge(int index)
+	{
+		return top_edge_index_ = index;
+	}
+	
+	
+	
+	
+	
+	
+	
+	/**
+	 \brief set the name of the top system
+	 \param new_name the new name of the top system
+	 */
+	void system_name_top(std::string new_name)
+	{
+		system_name_top_ = new_name;
+	}
+	
+	/**
+	 \brief get the name of the top system
+	 \return the string name of the top system
+	 */
+	std::string system_name_top() const
+	{
+		return system_name_top_;
+	}
+	
+	
+	
+	/**
+	 \brief set the name of the top system
+	 \param new_name the new name of the bottom system
+	 */
+	void system_name_bottom(std::string new_name)
+	{
+		system_name_bottom_ = new_name;
+	}
+	
+	/**
+	 \brief get the name of the bottom system
+	 \return the string name of the bottom system
+	 */
+	std::string system_name_bottom() const
+	{
+		return system_name_bottom_;
+	}
+	
+	
+	
+	/**
+	 \brief get the index of the crit slice to which this corresponds
+	 \return the index of the critical slice to which this cell corresponds
+	 */
+	int crit_slice_index() const
+	{
+		return crit_slice_index_;
+	}
+	
+	
+	/**
+	 \brief set the index of the crit slice to which this corresponds
+	 \param new_index the new index
+	 \return the index of the critical slice to which this cell corresponds
+	 */
+	int crit_slice_index(int new_index)
+	{
+		return crit_slice_index_ = new_index;
+	}
+	
+	
+	/**
+	 \brief get the index of the left edge
+	 \return the index
+	 \param index the index to look up.
+	 */
+	int left_edge(unsigned int index) const
+	{
+		if (index>=left_edges_.size()) {
+			throw std::out_of_range("trying to access left edge, index out of range");
+			return -1;
+		}
+		else
+		{
+			return left_edges_[index];
+		}
+	}
 
 	
-	int crit_slice_index; ///< which midpoint slice this face came from.
+	/**
+	 \brief get the index of the right edge
+	 \return the index
+	 \param index the index to look up.
+	 \throws out_of_range, if the index exceeds the size of the right edges
+	 */
+	int right_edge(unsigned int index) const
+	{
+		if (index>=right_edges_.size()) {
+			throw std::out_of_range("trying to access right edge, index out of range");
+			return -1;
+		}
+		else
+		{
+			return right_edges_[index];
+		}
+	}
 	
+	
+	
+	
+	
+	/**
+	 \brief get the number of left edges
+	 \return the number of left edges
+	 */
+	unsigned int num_left() const
+	{ return left_edges_.size();	 ///< the number of left mapped edges.
+	}
+	
+	/**
+	 \brief get the number of right edges
+	 \return the number of right edges
+	 */
+	unsigned int num_right() const
+	{ return right_edges_.size();	 ///< the number of right mapped edges.
+	}
+	
+	
+	
+
+	
+	
+
+	
+
 	
 	friend std::ostream & operator<<(std::ostream &os, const face & f)
 	{
 		os << f.midpt() << std::endl;
-		os << f.crit_slice_index << std::endl << f.top << " " << f.bottom << std::endl;
-		os << f.system_name_top << " " << f.system_name_bottom << std::endl;
+		os << f.crit_slice_index_ << std::endl << f.top_edge_index_ << " " << f.bottom_edge_index_ << std::endl;
+		os << f.system_name_top_ << " " << f.system_name_bottom_ << std::endl;
 		
-		os << f.left.size() << std::endl;
-		for (int jj=0; jj<int(f.left.size()); jj++) {
-			os << f.left[jj] << " ";
+		os << f.num_left() << std::endl;
+		for (auto jj=f.left_edges_.begin(); jj!=f.left_edges_.end(); jj++) {
+			os << *jj << " ";
 		}
 		os << std::endl;
 		
-		os << f.right.size() << std::endl;
-		for (int jj=0; jj<int(f.right.size()); jj++) {
-			os << f.right[jj] << " ";
+		os << f.num_right() << std::endl;
+		for (auto jj=f.right_edges_.begin(); jj!=f.right_edges_.end(); jj++) {
+			os << *jj << " ";
 		}
 		os << std::endl << std::endl;
 		
@@ -106,22 +338,26 @@ public:
 	 */
 	virtual void read_from_stream( std::istream &os )
 	{
+		
+		
 		int tmp;
 		os >> tmp;  midpt(tmp);
-		os >> crit_slice_index >> top >> bottom;
-		os >> system_name_top >> system_name_bottom;
+		os >> crit_slice_index_ >> top_edge_index_ >> bottom_edge_index_;
+		os >> system_name_top_ >> system_name_bottom_;
 		
-		os >> num_left;
-		left.resize(num_left);
-		for (unsigned int jj=0; jj<num_left; jj++) {
-			os >> left[jj];
+		unsigned int temp_num_left;
+		os >> temp_num_left;
+		left_edges_.resize(temp_num_left);
+		for (unsigned int jj=0; jj<temp_num_left; jj++) {
+			os >> left_edges_[jj];
 		}
 		
 
-		os >> num_right;
-		right.resize(num_right);
-		for (unsigned int jj=0; jj<num_right; jj++) {
-			os >> right[jj];
+		unsigned temp_num_right;
+		os >> temp_num_right;
+		right_edges_.resize(temp_num_right);
+		for (unsigned int jj=0; jj<temp_num_right; jj++) {
+			os >> right_edges_[jj];
 		}
 	}
 	
@@ -132,8 +368,8 @@ public:
 	}
 	
 	~face(){
-		clear_mp(left_crit_val);
-		clear_mp(right_crit_val);
+		clear_mp(left_crit_val_);
+		clear_mp(right_crit_val_);
 	}
 	
 	face(const face & other){
@@ -159,6 +395,8 @@ public:
 	 */
 	void send(int target, parallelism_config & mpi_config);
 	
+	
+	
 	/**
 	 \brief single-source MPI receive of a face.
 	 
@@ -174,7 +412,7 @@ public:
 	 */
 	bool is_degenerate()
 	{
-		if (crit_slice_index<0) {
+		if (crit_slice_index_<0) {
 			return true;
 		}
 		else{
@@ -184,47 +422,65 @@ public:
 	
 private:
 	
-	
-	
 	void init()
 	{
-		system_name_top = "UNSET_TOP";
-		system_name_bottom = "UNSET_BOTTOM";
+		system_name_top_ = "UNSET_TOP";
+		system_name_bottom_ = "UNSET_BOTTOM";
 		
 		
-		init_mp2(left_crit_val,1024);
-		init_mp2(right_crit_val,1024);
+		init_mp2(left_crit_val_,1024);
+		init_mp2(right_crit_val_,1024);
 		
-		num_left = num_right = 0;
-		top = bottom = -1;
-		crit_slice_index = -1;
+		left_edges_.resize(0);
+		right_edges_.resize(0);
+		top_edge_index_ = bottom_edge_index_ = -1;
+		crit_slice_index_ = -1;
+
+		
 	}
+	
 	
 	
 	void copy(const face & other)
 	{
+
+				
 		cell::copy(other);
 		
-		this->system_name_bottom = other.system_name_bottom;
-		this->system_name_top = other.system_name_top;
+		this->system_name_bottom_ = other.system_name_bottom_;
+		this->system_name_top_ = other.system_name_top_;
 		
 		
-		this->crit_slice_index = other.crit_slice_index;
+		this->crit_slice_index_ = other.crit_slice_index_;
 		
-		this->left = other.left;
-		this->right = other.right;
+		this->left_edges_.clear();
+		for (auto ii = other.left_edges_.begin(); ii!=other.left_edges_.end(); ii++) {
+			this->left_edges_.push_back(*ii);
+		}
 		
-		this->top = other.top;
-		this->bottom = other.bottom;
+		this->right_edges_.clear();
+		for (auto ii = other.right_edges_.begin(); ii!=other.right_edges_.end(); ii++) {
+			this->right_edges_.push_back(*ii);
+		}
 		
-		this->num_left = other.num_left;
-		this->num_right = other.num_right;
+		this->top_edge_index_ = other.top_edge_index_;
+		this->bottom_edge_index_ = other.bottom_edge_index_;
 		
-		set_mp(this->left_crit_val, other.left_crit_val);
-		set_mp(this->right_crit_val, other.right_crit_val);
+		
+		set_mp(this->left_crit_val_, other.left_crit_val_);
+		set_mp(this->right_crit_val_, other.right_crit_val_);
 	}
 	
 };
+
+
+
+
+
+
+
+
+
 
 
 /**
@@ -232,19 +488,48 @@ private:
  */
 class triangle
 {
+	long long v1_; ///< point index 1.
+	long long v2_; ///< point index 2.
+	long long v3_; ///< point index 3.
 public:
-	long long v1; ///< point index 1.
-	long long v2; ///< point index 2.
-	long long v3; ///< point index 3.
 	
+	void set_v(long long new_v1, long long new_v2, long long new_v3)
+	{
+		v1_ = new_v1;
+		v2_ = new_v2;
+		v3_ = new_v3;
+		
+	}
+	
+	void set_v1(long long new_v){
+		v1_ = new_v;
+	}
+	
+	void set_v2(long long new_v){
+		v2_ = new_v;
+	}
+	
+	void set_v3(long long new_v){
+		v3_ = new_v;
+	}
+	
+	
+	inline long long v1() const
+	{return v1_;}
 
+	inline long long v2() const
+	{return v2_;}
+	
+	inline long long v3() const
+	{return v3_;}
+	
 	triangle(){};
 	
-	triangle(long long _v1,long long _v2,long long _v3)
+	triangle(long long new_v1,long long new_v2,long long new_v3)
 	{
-		v1 = _v1;
-		v2 = _v2;
-		v3 = _v3;
+		v1_ = new_v1;
+		v2_ = new_v2;
+		v3_ = new_v3;
 		
 	}
 	
@@ -253,7 +538,7 @@ public:
 	{
 		
 		
-		os << t.v1 << " " << t.v2 << " " << t.v3;
+		os << t.v1_ << " " << t.v2_ << " " << t.v3_;
 		
 		return os;
 	}
@@ -266,15 +551,15 @@ public:
 	 */
 	bool is_degenerate()
 	{
-		if (v1==v2) {
+		if (v1_==v2_) {
 			return true;
 		}
 		
-		if (v2==v3) {
+		if (v2_==v3_) {
 			return true;
 		}
 		
-		if (v1==v3) {
+		if (v1_==v3_) {
 			return true;
 		}
 		
@@ -282,6 +567,161 @@ public:
 	}
 };
 
+
+
+
+
+class singular_object_metadata
+{
+	unsigned int multiplicity_;
+	unsigned int index_;
+	
+public:
+	
+	
+	singular_object_metadata(){multiplicity_ = index_ = 0;}
+	
+	/**
+	 constructor for setting both multiplicity and index
+	 \param mult the multiplicity of the object
+	 \param ind the index of the object.  this should start at 0, in principle.
+	 */
+	singular_object_metadata(unsigned int mult, unsigned int ind)
+	{
+		multiplicity_ = mult;
+		index_ = ind;
+	}
+	
+	/**
+	 get the multiplicity
+	 \return the multiplicity
+	 */
+	unsigned int multiplicity() const
+	{return multiplicity_;}
+	
+	/**
+	 \brief set the multiplicity
+	 \param new_multiplicity the new multiplicity
+	 */
+	void set_multiplicity(unsigned int new_multiplicity){multiplicity_ = new_multiplicity;};
+	
+	
+	
+	/**
+	 get the index
+	 \return the multiplicity
+	 */
+	unsigned int index() const
+	{return index_;}
+	
+	
+	/**
+	 \brief set the index
+	 \param new_index the new index
+	 */
+	void set_index(unsigned int new_index){index_ = new_index;};
+	
+	
+	/**
+	 basic equality comparitor.  both multiplicity and index must be the same.
+	 \return true if multiplicity and index are == for rhs and lhs
+	 \param lhs left hand side of comparison
+	 \param rhs right hand side of comparison
+	 */
+	friend bool operator==(const singular_object_metadata & lhs, const singular_object_metadata & rhs)
+	{
+		if (lhs.multiplicity_==rhs.multiplicity_ && lhs.index_==rhs.index_) {
+			return true;
+		}
+		else{
+			return false;}
+	}
+	
+	
+	/**
+	 basic inequality comparitor.  either multiplicity or index must be the different.
+	 \return true if multiplicity or index are != for rhs and lhs.  false if both ==.
+	 \param lhs left hand side of comparison
+	 \param rhs right hand side of comparison
+	 */
+	friend bool operator!=(const singular_object_metadata & lhs, const singular_object_metadata & rhs)
+	{
+		if (lhs.multiplicity_!=rhs.multiplicity_ || lhs.index_!=rhs.index_) {
+			return true;
+		}
+		else{
+			return false;}
+	}
+
+	
+	
+	
+	/**
+	 basic less than comparitor.
+	 \return true if lhs.multiplicity<rhs.multiplicity.  false if rhs.multiplicity<lhs.multiplicity.  otherwise, multiplicities are equal, and we sort on index.  true if lhs.index<rhs.index, else false.
+	 \param lhs left hand side of comparison
+	 \param rhs right hand side of comparison
+	 */
+	friend bool operator<(const singular_object_metadata & lhs, const singular_object_metadata & rhs)
+	{
+		if (lhs.multiplicity_<rhs.multiplicity_){
+			return true;
+		}
+		else if (rhs.multiplicity_<lhs.multiplicity_){
+			return false;
+		}
+		else if (lhs.index_<rhs.index_)
+		{
+			return true;
+		}
+		else{
+			return false;
+		}
+	}
+
+	
+	
+	/**
+	 basic less than or equal to comparitor.
+	 \return !(rhs<lhs)
+	 \param lhs left hand side of comparison
+	 \param rhs right hand side of comparison
+	 */
+	friend bool operator<=(const singular_object_metadata & lhs, const singular_object_metadata & rhs)
+	{
+		return !(rhs<lhs);
+	}
+
+	
+	/**
+	 basic greater than comparitor.
+	 \return (rhs<lhs)
+	 \param lhs left hand side of comparison
+	 \param rhs right hand side of comparison
+	 */
+	friend bool operator>(const singular_object_metadata & lhs, const singular_object_metadata & rhs)
+	{
+		return rhs<lhs;
+	}
+
+	
+	
+	/**
+	 basic greater than or equal to comparitor.
+	 \return !(lhs<rhs)
+	 \param lhs left hand side of comparison
+	 \param rhs right hand side of comparison
+	 */
+	friend bool operator>=(const singular_object_metadata & lhs, const singular_object_metadata & rhs)
+	{
+		return  !(lhs < rhs);
+	}
+
+	
+	
+	
+	
+};
 
 
 /**
@@ -300,18 +740,120 @@ class surface_decomposition : public decomposition
 	
 	std::vector<int> num_samples_each_face; ///< the number of samples per face
 	
-	std::vector< std::vector< triangle >> samples; ///< refined triangulation of the surface.
+	std::vector< std::vector< triangle > > samples; ///< refined triangulation of the surface.
+	
+	
+	
+	std::vector< curve_decomposition > mid_slices_; ///< the mid slice curves, occurring halfway between critical points of critical curves.
+	std::vector< curve_decomposition > crit_slices_; ///< critical slice curves, occurring at critial points of critical curves.
+	curve_decomposition crit_curve_; ///< the main critical curve, being nonsingular.
+	curve_decomposition sphere_curve_; ///< the intersection of the surface and a sphere.
+	
+	std::map<singular_object_metadata,curve_decomposition> singular_curves_; ///<  the singular curves, which are formally but not really part of the critical curve.
+	size_t num_singular_curves_; ///< how many singular curves are there.
+	
+	
 	
 	
 public:
 	
-	std::vector< curve_decomposition > mid_slices; ///< the mid slice curves, occurring halfway between critical points of critical curves.
-	std::vector< curve_decomposition > crit_slices; ///< critical slice curves, occurring at critial points of critical curves.
-	curve_decomposition crit_curve; ///< the main critical curve, being nonsingular.
-	curve_decomposition sphere_curve; ///< the intersection of the surface and a sphere.
 	
-	std::map<std::pair<int,int>,curve_decomposition> singular_curves; ///<  the singular curves, which are formally but not really part of the critical curve.
-	int num_singular_curves; ///< how many singular curves are there.
+	/**
+	 \brief query the number of singular curves in the decomposition.
+	 \return the number of singular curves in the decomposition.
+	 */
+	unsigned int num_singular_curves() const
+	{
+		return num_singular_curves_;
+	}
+	
+	
+	const std::map<singular_object_metadata,curve_decomposition>::const_iterator singular_curves_iter_begin() const
+	{
+		return singular_curves_.begin();
+	}
+	
+	
+	
+	const std::map<singular_object_metadata,curve_decomposition>::const_iterator singular_curves_iter_end() const
+	{
+		return singular_curves_.end();
+	}
+	
+	
+	std::map<singular_object_metadata,curve_decomposition>::iterator singular_curves_iter_begin()
+	{
+		return singular_curves_.begin();
+	}
+	
+	
+	
+	std::map<singular_object_metadata,curve_decomposition>::iterator singular_curves_iter_end()
+	{
+		return singular_curves_.end();
+	}
+	
+	
+	
+	
+	std::vector< curve_decomposition >::iterator mid_slices_iter_begin()
+	{
+		return mid_slices_.begin();
+	}
+	
+	std::vector< curve_decomposition >::iterator mid_slices_iter_end()
+	{
+		return mid_slices_.end();
+	}
+	
+	
+	
+	std::vector< curve_decomposition >::iterator crit_slices_iter_begin()
+	{
+		return crit_slices_.begin();
+	}
+	
+	std::vector< curve_decomposition >::iterator crit_slices_iter_end()
+	{
+		return crit_slices_.end();
+	}
+	
+	
+	
+	/**
+	 \brief get a const reference to the critical curve.
+	 \return a reference to the critical curve decomposition.
+	 */
+	const curve_decomposition & crit_curve() const
+	{return crit_curve_;}
+	
+	/**
+	 \brief get a reference to the critical curve.
+	 \return a mutable reference to the critical curve decomposition.
+	 */
+	curve_decomposition & crit_curve()
+	{return crit_curve_;}
+	
+	
+	
+	
+	
+	
+	/**
+	 \brief get a const reference to the sphere curve.
+	 \return a reference to the sphere curve decomposition.
+	 */
+	const curve_decomposition & sphere_curve() const
+	{return sphere_curve_;}
+	
+	
+	
+	/**
+	 \brief get a mutable reference to the sphere curve.
+	 \return a reference to the sphere curve decomposition.
+	 */
+	curve_decomposition & sphere_curve()
+	{return sphere_curve_;}
 	
 	
 	/**
@@ -402,7 +944,7 @@ public:
 	 \param program_options The current state of Bertini_real.
 	 \param solve_options The current state of the solver.
 	 */
-	void deflate_and_split(std::map< std::pair<int,int>, witness_set > & split_sets,
+	void deflate_and_split(std::map< singular_object_metadata, witness_set > & split_sets,
 						   std::map<int, witness_set > & higher_multiplicity_witness_sets,
 						   BR_configuration & program_options,
 						   solver_configuration & solve_options);
@@ -419,7 +961,7 @@ public:
 	 \param solve_options The current state of the Solver.
 	 */
 	void compute_singular_crit(witness_set & W_singular_crit,
-							   const std::map<std::pair<int,int>, witness_set> & split_sets,
+							   const std::map<singular_object_metadata, witness_set> & split_sets,
 							   vertex_set & V,
 							   BR_configuration & program_options,
 							   solver_configuration & solve_options);
@@ -437,7 +979,7 @@ public:
 	 \param solve_options The current state of the solver.
 	 */
 	void compute_singular_curves(const witness_set & W_total_crit,
-								 const std::map< std::pair<int,int>, witness_set> & split_sets,
+								 const std::map< singular_object_metadata, witness_set> & split_sets,
 								 vertex_set & V,
 								 BR_configuration & program_options,
 								 solver_configuration & solve_options);
@@ -453,7 +995,6 @@ public:
 	 \param slices the computed slice curve decompositions.
 	 \param program_options The current state of Bertini_real
 	 \param solve_options The current state of the solver.
-	 \param rerun_empty A flag of whether to adjust the tracker config and rerun any empty decompositions.
 	 \param kindofslice A string indicating what kind of slice you are decompositon -- purely for screen output.
 	 */
 	void compute_slices(const witness_set W_surf,
@@ -462,7 +1003,6 @@ public:
 											std::vector< curve_decomposition > & slices,
 											BR_configuration & program_options,
 											solver_configuration & solve_options,
-											bool rerun_empty,
 											std::string kindofslice);
 	
 	
@@ -486,13 +1026,11 @@ public:
 	 \brief compute critical points of the regular critical curve.
 	 
 	 \param W_critcurve_crit The computed value, containing the critical points of the critical curve.
-	 \param W_surf Witness point for the surface itself.  I believe this should be unnecessary.
 	 \param W_critcurve Witness set for the critical curve.
 	 \param program_options The current state of Bertini_real
 	 \param solve_options The current state of the solver.
 	 */
     void compute_critcurve_critpts(witness_set & W_critcurve_crit, // the computed value
-                                   const witness_set & W_surf, // input witness set
                                    witness_set & W_critcurve,
                                    BR_configuration & program_options,
                                    solver_configuration & solve_options);
@@ -582,14 +1120,12 @@ public:
 	 \todo Remove pi as an input for this function.
 	 
 	 \param V The vertex set into which all the points have been collected.
-	 \param pi the projections.  Seems unnecessary considering they have already been stored in this object.
 	 \param program_options The current state of Bertini_real
 	 \param solve_options The current state of the solver.
 	 */
 	void connect_the_dots(vertex_set & V,
-												 vec_mp *pi,
-												 BR_configuration & program_options,
-												 solver_configuration & solve_options);
+						  BR_configuration & program_options,
+						  solver_configuration & solve_options);
 	
 	
 	/**
@@ -748,28 +1284,28 @@ public:
 	curve_decomposition * curve_with_name(const std::string & findme)
 	{
 		
-		if (findme.compare(crit_curve.input_filename().filename().string())==0) {
-			return &crit_curve;
+		if (findme.compare(crit_curve_.input_filename().filename().string())==0) {
+			return &crit_curve_;
 		}
 		
-		if (findme.compare(sphere_curve.input_filename().filename().string())==0) {
-			return &sphere_curve;
+		if (findme.compare(sphere_curve_.input_filename().filename().string())==0) {
+			return &sphere_curve_;
 		}
-		for (auto iter = singular_curves.begin(); iter!=singular_curves.end(); ++iter) {
+		for (auto iter = singular_curves_.begin(); iter!=singular_curves_.end(); ++iter) {
 			if (findme.compare(iter->second.input_filename().filename().string())==0) {
 				return &(iter->second);
 			}
 		}
 		
 		
-		for (auto iter = mid_slices.begin(); iter!=mid_slices.end(); ++iter) {
+		for (auto iter = mid_slices_.begin(); iter!=mid_slices_.end(); ++iter) {
 			if (findme.compare(iter->input_filename().filename().string())==0) {
 				return &(*iter);
 			}
 		}
 		
 		
-		for (auto iter = crit_slices.begin(); iter!=crit_slices.end(); ++iter) {
+		for (auto iter = crit_slices_.begin(); iter!=crit_slices_.end(); ++iter) {
 			if (findme.compare(iter->input_filename().filename().string())==0) {
 				return &(*iter);
 			}
@@ -809,17 +1345,17 @@ protected:
 		
 		this->num_faces = other.num_faces;
 		
-		this->mid_slices = other.mid_slices;
-		this->crit_slices = other.crit_slices;
-		this->crit_curve = other.crit_curve;
-		this->singular_curves = other.singular_curves;
-		this->num_singular_curves = other.num_singular_curves;
+		this->mid_slices_ = other.mid_slices_;
+		this->crit_slices_ = other.crit_slices_;
+		this->crit_curve_ = other.crit_curve_;
+		this->singular_curves_ = other.singular_curves_;
+		this->num_singular_curves_ = other.num_singular_curves_;
 	}
 	
 	
 	void init()
 	{
-		num_singular_curves = 0;
+		num_singular_curves_ = 0;
 		num_faces = 0;
 		set_dimension(2);
 	}
@@ -895,7 +1431,7 @@ void create_sphere_system(boost::filesystem::path input_file, boost::filesystem:
  \param temp_num_crit The number of critslices.  Should be temp_num_mid+1.
  \param INfile The name of the file to read.
  */
-void read_summary(std::vector<std::pair<int,int>> & singular_multiplicities,
+void read_summary(std::vector<singular_object_metadata > & singular_multiplicities,
 				  int & temp_num_mid,
 				  int & temp_num_crit,
 				  boost::filesystem::path INfile);
