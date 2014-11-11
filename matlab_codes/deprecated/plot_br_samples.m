@@ -27,7 +27,7 @@ if and(isfield(plot_params,'axes'),strcmp(get(gca,'Tag'),'bertini_real'));
 		delete(plot_params.buttons.(f{ii}));
 		plot_params.buttons = rmfield(plot_params.buttons,f{ii});
 	end
-	
+	plot_params = rmfield(plot_params,'buttons');
 	
 	f = fieldnames(plot_params.panels);
 	for ii = 1:length(f)
@@ -35,6 +35,14 @@ if and(isfield(plot_params,'axes'),strcmp(get(gca,'Tag'),'bertini_real'));
 		plot_params.panels = rmfield(plot_params.panels,f{ii});
 	end
 		
+	
+	if isfield(plot_params.handles,'vertices')
+		plot_params.handles = rmfield(plot_params.handles,'vertices');
+	end
+	
+	plot_params = rmfield(plot_params,'handles');
+	
+	plot_params = rmfield(plot_params,'legend');
 end
 
 
@@ -224,7 +232,7 @@ render_legends();
 button_setup();
 controls(BRinfo);
 
-% save_routine
+save_routine
 end
 
 

@@ -136,7 +136,8 @@ if BRinfo.num_singular_curves>0
 
 	for ii = 1:BRinfo.num_singular_curves
 		a = gather_curve([dirname '/curve_singular_mult_' num2str(BRinfo.singular_curve_multiplicities(ii,1)) '_' num2str(BRinfo.singular_curve_multiplicities(ii,2))],[]);
-		[BRinfo.singular_curves(ii)] = a;
+		
+		BRinfo.singular_curves{ii} = a;
 		BRinfo.singular_names{ii} = a.inputfilename;
 	end
 else
@@ -200,28 +201,13 @@ end
 
 fid = fopen([dirname '/' 'decomp'],'r');
 
-% nchars = fscanf(fid,'%i\n',[1 1]);
 BRinfo.inputfilename = fscanf(fid,'%s\n',[1 1]);
 
 
 BRinfo.num_variables = fscanf(fid,'%i',[1 1]);
 BRinfo.dimension = fscanf(fid,'%i',[1 1]);
 
-BRinfo.vertex.num_types = fscanf(fid,'%i',[1 1]);
 
-
-BRinfo.vertex.types = zeros(BRinfo.vertex.num_types,1);
-BRinfo.vertex.counters = zeros(BRinfo.vertex.num_types,1);
-BRinfo.vertex.indices = zeros(BRinfo.vertex.num_types,1);
-
-for ii =1:BRinfo.vertex.num_types
-	BRinfo.vertex.types(ii) = fscanf(fid,'%i',[1 1]);
-	BRinfo.vertex.counters(ii) = fscanf(fid,'%i\n',[1 1]);
-	for jj = 1:BRinfo.vertex.counters(ii)
-		BRinfo.vertex.indices(ii,jj) = fscanf(fid,'%i\n',[1 1]);
-	end
-	
-end
 
 
 BRinfo.pi = zeros(BRinfo.num_variables,BRinfo.dimension);

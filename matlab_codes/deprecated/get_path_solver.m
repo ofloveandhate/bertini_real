@@ -11,10 +11,14 @@
 %
 
 
-function get_path_linprod()
+function get_path_solver(solver)
 
 
-fid = fopen('pathtrack_linprod','r');
+if nargin<1
+	solver = 'linprod';
+end
+
+fid = fopen(sprintf('pathtrack_%s',solver),'r');
 
 
 
@@ -46,7 +50,7 @@ endgame = str2num(parsed{4});
  data(1).MPType = MPType;
  data(1).odepredictor = odepredictor;
  data(1).endgame = endgame;
- 
+ data(1).solver = solver;
  
 for ii = 1:num_pts
 	display(sprintf('reading path %i',ii));
@@ -71,6 +75,6 @@ fclose(fid);
 
 
 
-save(sprintf('pathdata_linprod_ode%i_eg%i_mp%i.mat',odepredictor,endgame,MPType),'data','-v6');
+save(sprintf('pathdata_%s_ode%i_eg%i_mp%i.mat',solver,odepredictor,endgame,MPType),'data','-v6');
 
 end%re: function

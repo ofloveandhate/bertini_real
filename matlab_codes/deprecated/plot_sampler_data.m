@@ -21,6 +21,9 @@ for ii = 1:length(sampler_data.edge)
 	plotme = real(plotme);
 	h = main_plot_function(plotme,1:length(ind),curr_axis);
 
+	colors
+	nondegen_edge_ind
+	
 	set(h,'Color',colors(nondegen_edge_ind,:));
 	set(h,'LineWidth',3);
     

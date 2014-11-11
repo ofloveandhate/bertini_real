@@ -27,5 +27,5 @@ end
 
 newname = sprintf('%s_%i',picname,max(filenumbers)+1);
 
-
+display(sprintf('saving with filename: %s',newname));
 end

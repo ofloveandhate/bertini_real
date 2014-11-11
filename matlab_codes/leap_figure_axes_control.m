@@ -174,7 +174,7 @@ end
 function orbit_camera()
 global config
 
-while 1;
+while 1
     
 %     display('orbiting camera');
     current_frame = matleap(1);
@@ -185,11 +185,10 @@ while 1;
     end
     
     a = (current_frame.pointables.position-config.origin)/100;
-%     a = min((current_frame.pointables.position-config.origin),100)/100;
-    a(abs(a)<0.10) = 0;
+
+	a(abs(a)<0.10) = 0;
     
     
-%     pause
     %get dtheta, dphi from the frame
     dtheta = 10;
     dphi = 5;

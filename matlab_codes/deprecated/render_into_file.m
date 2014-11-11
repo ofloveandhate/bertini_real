@@ -20,9 +20,9 @@
 %
 
 % daniel brake
-% colorado state, north carolina state, notre dame
+% colorado state university
 % mathematics
-% 2013-14
+% 2013
 % danielthebrake@gmail.com
 
 
@@ -57,10 +57,15 @@ else
 end
 
 
+
 fig1 = gcf;
 
 set(fig1,'PaperPositionMode','auto');
+% set(gca,'FontSize',plot_params.fontsize-2);
 
+% labelText('FontName','Times New Roman','FontSize',plot_params.fontsize-2);
+
+% basename = sprintf('%s_%s',plotmode,dataname(1:end-4));
 
 currname = increment_name(plot_params.basename);
 nameforfile = sprintf('%s.%s',currname,plot_params.format);
@@ -70,7 +75,7 @@ for ii = 2:length(varargin)
     evalme = sprintf('%s,''%s''',evalme,varargin{ii});
 end
 evalme = sprintf('%s);',evalme);
-display(evalme);
+evalme
 eval(evalme);
 end
 

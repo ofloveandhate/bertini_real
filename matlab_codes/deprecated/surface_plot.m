@@ -235,7 +235,7 @@ for kk = 1:length(BRinfo.critpoint_slices)
 		
 		
 		if ~isempty(BRinfo.critpoint_slices{kk}.sampler_data)
-			a = plot_sampler_data(plot_indices, BRinfo.vertices,BRinfo.critpoint_slices{kk}.sampler_data,colors);
+			a = plot_sampler_data(plot_indices, BRinfo.vertices,BRinfo.critpoint_slices{kk}.sampler_data,jet(BRinfo.critpoint_slices{kk}.num_edges));
 			plot_params.handles.refinements.critslice = horzcat(plot_params.handles.refinements.critslice,a);
 		end
 		

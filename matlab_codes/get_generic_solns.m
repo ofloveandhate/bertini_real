@@ -3,10 +3,9 @@ function solns = get_generic_solns(filename,num_vars)
 if ~ischar(filename)
 	display('input not a string');
 	return;
-else if isempty(dir(filename))
-	display(sprintf('folder has no file with the name %s',filename));
-	return;
-	end
+elseif isempty(dir(filename))
+	error(sprintf('folder has no file with the name %s',filename));
+end
 
 
 fid = fopen(filename,'r');	
