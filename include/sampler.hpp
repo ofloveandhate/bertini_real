@@ -146,46 +146,49 @@ void estimate_new_projection_value(comp_mp result, vec_mp estimated_point, vec_m
  \param rib2 the other input vector of indices into V
  \param V the vertex set into which the ribs index.  it holds the points and their projection values.
  \param current_samples The constructed triangles from this method.
- \param bin_it_by_projection Indicator of whether to bin by projection or distance.  true is by projection, false is by distance.
  */
 void triangulate_two_ribs(const std::vector< int > & rib1, const std::vector< int > & rib2,
 						  vertex_set & V,
-						  std::vector< triangle> & current_samples,
-						  bool bin_it_by_projection);
-
-
-/**
- \brief construct the triangulation of two ribs of a face, when the ribs have an unequal number of points on them
- 
- \todo add a diagram illustrating this method
- 
- \param rib1 input vector of indices into V
- \param rib2 the other input vector of indices into V
- \param V the vertex set into which the ribs index.  it holds the points and their projection values.
- \param current_samples The constructed triangles from this method.
- */
-void triangulate_two_ribs_by_projection_binning(const std::vector< int > & rib1, const std::vector< int > & rib2,
-												const vertex_set & V,
-												std::vector< triangle> & current_samples);
-
-
+						  std::vector< triangle> & current_samples);
 
 
 
 
 /**
- \brief construct the triangulation of two ribs of a face, when the ribs have an unequal number of points on them
+ \brief triangulate two ribs, each with at least two entries, by iterating from left to right, and always constructing the more equilateral triangle of the two candidates.  
  
- \todo add a diagram illustrating this method
+ the end of the loop simply constructs every triangle between the two ribs until it reaches the end.  
  
- \param rib1 input vector of indices into V
- \param rib2 the other input vector of indices into V
- \param V the vertex set into which the ribs index.  it holds the points and their projection values.
- \param current_samples The constructed triangles from this method.
+ \param rib1 a rib.
+ \param rib2 a rib adjacent to rib1
+ \param V the vertex set into which the ribs index.
+ \param current_samples the triangulation being built.
  */
-void triangulate_two_ribs_by_distance_binning(const std::vector< int > & rib1, const std::vector< int > & rib2,
-											  vertex_set & V,
+void triangulate_two_ribs_by_angle_optimization(const std::vector< int > & rib1, const std::vector< int > & rib2,
+												vertex_set & V,
 												std::vector< triangle> & current_samples);
+
+
+
+/**
+ \brief compute square of difference between angle and \f$\pi/3\f$ radians.
+ 
+ \param temp a temporary variable.  comp_mp's are expensive to initialize and clear, so this is passed in for optimization.
+ \param length1 the length of one of the adjacent sides
+ \param length2 the length of the other adjacent side
+ \param dot_prod the dot product of the vectors representing the two adjacent legs of the triangle.
+ \return the square of the difference of the computed angle, and \f$\pi/3\f$.
+ */
+double compute_square_of_difference_from_sixtydegrees(comp_mp temp, comp_mp length1, comp_mp length2, comp_mp dot_prod);
+
+
+
+
+
+
+
+
+
 
 
 #endif

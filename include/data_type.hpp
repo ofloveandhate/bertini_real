@@ -109,6 +109,185 @@ value_type map_lookup_with_default(const  std::map <key_type,value_type> & mc_ma
 
 
 
+/**
+ \brief An odometer of odometers, so to speak.
+ 
+ */
+class double_odometer
+{
+	
+private:
+	
+	
+	int increment_registers(){
+		
+		int carry = 1; // seed carry so that it causes addition of at least the last entry of the odometer
+		for (int ii=num_active_registers-1; ii>=0; ii--) { // count down from the end of the indexes
+			
+			if (carry==1)
+				registers[ii]++;
+			
+			if ( registers[ii]>=(bases[active_registers[ii]]) ) {
+				registers[ii] = 0;
+				carry = 1;
+			}
+			else{
+				carry = 0;
+				break;
+			}
+		}
+		return carry;  // if return 1, then need to increment the functions.
+		
+	};
+	
+	
+	int increment_active_registers(){
+		int carry = 1; // seed 1
+		
+		for (int ii=num_active_registers-1; ii>=0; ii--) {
+			
+			if (carry==1){
+				
+				active_registers[ii]++;
+				for (int jj=ii+1; jj<num_active_registers; jj++) {
+					active_registers[jj] = active_registers[jj-1]+1;
+				}
+			}
+			
+			if (active_registers[num_active_registers-1]>=num_total_registers) {
+				carry = 1;
+			}
+			else{
+				carry = 0;
+				break; // all done!
+			}
+			
+		}
+		
+		int local_counter = 0;
+		for (int ii=0; (ii<num_total_registers) && (local_counter<num_inactive_registers) ; ii++) {
+			if (std::find(active_registers.begin(), active_registers.end(), ii)==active_registers.end())
+			{
+				inactive_registers[local_counter] = ii;
+				local_counter++;
+			}
+		}
+		
+		return carry;
+	};
+	
+public:
+	
+	int num_total_registers;
+	int num_active_registers;
+	int num_inactive_registers;
+	// create and seed the function indices -- keep track of which functions we are working on
+	
+	std::vector< int > inactive_registers; // of length total - active
+	std::vector< int > active_registers; // of length num_active_registers
+	
+	std::vector< int > bases; // of length num_total_registers
+	std::vector< int > registers;
+	
+	double_odometer()
+	{
+		num_total_registers = num_active_registers = num_inactive_registers = 0;
+	}
+	
+	double_odometer(int num_total_, int num_active_, int uniform_base)
+	{
+		num_total_registers = num_total_;
+		num_active_registers = num_active_;
+		num_inactive_registers = num_total_registers - num_active_registers;
+		
+		for (int ii=0; ii<num_active_registers; ii++)
+			active_registers.push_back(ii);
+		
+		for (int ii=num_active_registers; ii<num_total_registers; ii++)
+			inactive_registers.push_back(ii);
+		
+		for (int ii=0; ii<num_active_registers; ii++)
+			registers.push_back(0);
+		
+		for (int ii=0; ii<num_total_registers; ii++)
+			bases.push_back(uniform_base);
+		
+	}
+	
+	
+	double_odometer(int num_total_, int num_active_, const std::vector<int> & new_bases)
+	{
+		num_total_registers = num_total_;
+		num_active_registers = num_active_;
+		num_inactive_registers = num_total_registers - num_active_registers;
+		
+		if ( num_total_!= int(new_bases.size()) ) {
+			throw std::logic_error("size mismatch in creation of double odometer.  num_total must equal size of base");
+		}
+		
+		for (int ii=0; ii<num_active_registers; ii++)
+			active_registers.push_back(ii);
+		
+		for (int ii=num_active_registers; ii<num_total_registers; ii++)
+			inactive_registers.push_back(ii);
+		
+		for (int ii=0; ii<num_active_registers; ii++)
+			registers.push_back(0);
+		
+		for (int ii=0; ii<num_total_registers; ii++){
+			bases.push_back(new_bases[ii]);
+			std::cout << bases[ii] << std::endl;
+		}
+		
+	}
+	
+	
+	
+	
+	int reg_val(int reggie){
+		return registers[reggie];
+	}
+	
+	int act_reg(int reggie){
+		return active_registers[reggie];
+	}
+	
+	int inact_reg(int reggie){
+		return inactive_registers[reggie];
+	}
+	
+	int increment(){
+		
+		if (double_odometer::increment_registers()!=0) {
+			if (double_odometer::increment_active_registers()!=0)
+				return -1;
+			else
+				return 1;
+		}
+		else
+			return 0;
+	};
+	
+	void print(){
+		std::cout << "active: ";
+		for (int ii=0; ii<num_active_registers; ii++)
+			std::cout << active_registers[ii] << " ";
+		std::cout << "\t|\t";
+		
+		
+		std::cout << "inactive: ";
+		for (int ii=0; ii<num_inactive_registers; ii++)
+			std::cout << inactive_registers[ii] << " ";
+		std::cout << "\t|\t";
+		
+		std::cout << "register values: ";
+		for (int ii=0; ii<num_active_registers; ii++)
+			std::cout << registers[ii] << " ";
+		std::cout << "\n";
+	}
+};
+
+
 
 
 
@@ -178,6 +357,28 @@ private:
 	
 public:
 	
+	int deficiency(unsigned int randomized_func, unsigned int base_index)
+	{
+		return structure_matrix[randomized_func][base_index];
+	}
+	
+	std::vector<int> & rand_degrees()
+	{
+		return randomized_degrees;
+	}
+	
+	
+	int randomized_degree(unsigned int index)
+	{
+		if (index>= randomized_degrees.size()) {
+			throw std::out_of_range("trying to access a randomized degree out of range");
+		}
+		
+		return randomized_degrees[index];
+	}
+	
+	
+
 	
 	/**
 	 output to a stream.  only really usable with std::cout, as it calls print_matrix_to_screen_matlab
@@ -345,13 +546,14 @@ public:
 	 */
 	int base_degree(unsigned int loc)
 	{
+		
+		
+		
 		if (loc>=original_degrees.size()) {
-			br_exit(123312);
-			return -1;
+			throw std::out_of_range("trying to access an original degree out of range");
 		}
-		else{
-			return original_degrees[loc];
-		}
+		
+		return original_degrees[loc];
 	}
 	
 	/**
@@ -617,15 +819,14 @@ protected:
 	
 public:
 	
-	vec_mp * point(unsigned int index) const
+	vec_mp & point(unsigned int index) const
 	{
 		if (index < num_pts_) {
-			return &pts_mp_[index];
+			return pts_mp_[index];
 		}
 		else
 		{
-			br_exit(-9834718);
-			return NULL;
+			throw std::out_of_range("trying to get a point in point_holder which is out of range");
 		}
 		
 	}
@@ -805,9 +1006,13 @@ public:
 	 \return a pointer to the i^th patch.
 	 \param index The index of the patch you want
 	 */
-	inline vec_mp * patch(unsigned int index) const
+	inline vec_mp & patch(unsigned int index) const
 	{
-		return &patch_mp_[index];
+		if (index >= num_patches_) {
+			throw std::out_of_range("trying to access an out-of-range patch");
+		}
+		else
+			return patch_mp_[index];
 	}
 	
 	
@@ -943,9 +1148,13 @@ public:
 	 \return a pointer to the i^th patch.
 	 \param index The index of the patch you want
 	 */
-	inline vec_mp * linear(unsigned int index) const
+	inline vec_mp & linear(unsigned int index) const
 	{
-		return &L_mp_[index];
+		if (index>= num_linears_) {
+			throw std::out_of_range("trying to access out-of-range linear");
+		}
+		else
+			return L_mp_[index];
 	}
 	
 	
@@ -1714,15 +1923,15 @@ public:
 	 \brief get the projection values.
 	 \return the projection values in vec_mp form
 	 */
-	inline vec_mp* projection_values()
+	inline vec_mp& projection_values()
 	{
-		return &projection_values_;
+		return projection_values_;
 	}
 	
 	
-	const vec_mp* get_projection_values() const
+	const vec_mp& get_projection_values() const
 	{
-		return &projection_values_;
+		return projection_values_;
 	}
 	
 	
@@ -1815,9 +2024,9 @@ public:
 	void set_point(const vec_mp new_point);
 	
 	
-	const vec_mp* get_point() const
+	const vec_mp & get_point() const
 	{
-		return &pt_mp_;
+		return pt_mp_;
 	}
 	
 	
@@ -1826,9 +2035,9 @@ public:
 	 
 	 \return the point in vec_mp form
 	 */
-	vec_mp* point()
+	vec_mp& point()
 	{
-		return &pt_mp_;
+		return pt_mp_;
 	}
 	
 	
@@ -3237,7 +3446,10 @@ public:
 		is >> left_ >> midpt_ >> right_;
 	}
 	
-	
+	friend std::ostream & operator<<(std::ostream & out, const edge & E){
+		out << E.left_ << " " << E.midpt_ << " " << E.right_;
+		return out;
+	}
 	
 };
 
@@ -3411,8 +3623,12 @@ public:
 	void output_main(const boost::filesystem::path base);
 	
 	
-	
-	
+	/**
+	 \brief copy the component number, filename, number of variables, and witness set itself into the decomposition.
+	 
+	 \param W the witness set with the data.
+	 */
+	void copy_data_from_witness_set(const witness_set & W);
 	
 	
 	/**
@@ -3632,7 +3848,7 @@ public:
 	 
 	 \return the witness set which generated the decomposition
 	 */
-	witness_set get_W() const
+	const witness_set& get_W() const
 	{
 		return W_;
 	}
@@ -3653,15 +3869,14 @@ public:
 	 \throws out of range if set of projections is empty when this is requested
 	 \return pointer to the 0th projection.  will be NULL if have no projections.
 	 */
-	inline vec_mp* pi() const
+	inline vec_mp& pi() const
 	{
 		if (num_curr_projections_>0) {
-			return &pi_[0];
+			return pi_[0];
 		}
 		else
 		{
 			throw std::out_of_range("trying get pointer for projections, but have no projections");
-			return NULL;
 		}
 	}
 	
@@ -3671,14 +3886,14 @@ public:
 	 \throws out of range if trying to get out of range projection
 	 \return pointer to the ith projection.  will throw if out of range
 	 */
-	inline vec_mp* pi(int index) const
+	inline vec_mp& pi(int index) const
 	{
 		if (index >= num_curr_projections_) {
 			throw std::out_of_range("trying to access an out of range projection in decomposition");
 		}
 		else
 		{
-			return &pi_[index];
+			return pi_[index];
 		}
 	}
 	
@@ -3697,9 +3912,9 @@ public:
 	 
 	 \return pointer to the sphere radius
 	 */
-	comp_mp* sphere_radius()
+	comp_mp& sphere_radius()
 	{
-		return &sphere_radius_;
+		return sphere_radius_;
 	}
 	
 	/**
@@ -3707,9 +3922,9 @@ public:
 	 
 	 \return pointer to the sphere's center
 	 */
-	vec_mp* sphere_center()
+	vec_mp& sphere_center()
 	{
-		return &sphere_center_;
+		return sphere_center_;
 	}
 	
 	
@@ -3730,6 +3945,49 @@ public:
 	void set_sphere_center(vec_mp new_center)
 	{
 		vec_cp_mp(sphere_center_,new_center);
+	}
+	
+	
+	
+	void clone(const decomposition & other)
+	{
+		patch_holder::copy(other);
+		
+		
+		this->randomizer_ = std::make_shared<system_randomizer>( *other.randomizer_ );
+		
+		this->W_ = other.W_;
+		
+		this->input_filename_ = other.input_filename_;
+		
+		this->num_variables_ = other.num_variables_;
+		this->dim_ = other.dim_;
+		this->comp_num_ = other.comp_num_;
+		
+		
+		if (this->num_curr_projections_==0) {
+			this->pi_ = (vec_mp *) br_malloc(other.num_curr_projections_ * sizeof(vec_mp));
+		}
+		else{
+			for (int ii=0; ii<num_curr_projections_; ii++) {
+				clear_vec_mp(pi_[ii]);
+			}
+			this->pi_ = (vec_mp *) br_realloc(this->pi_,other.num_curr_projections_ * sizeof(vec_mp));
+		}
+		
+		this->num_curr_projections_ = other.num_curr_projections_;
+		for (int ii = 0; ii<other.num_curr_projections_; ii++) {
+			init_vec_mp2(this->pi_[ii],other.pi_[ii]->size,DEFAULT_MAX_PREC);
+			this->pi_[ii]->size = other.pi_[ii]->size;
+			vec_cp_mp(this->pi_[ii], other.pi_[ii])
+		}
+		
+		
+		
+		
+		
+		copy_sphere_bounds(other);
+
 	}
 	
 	

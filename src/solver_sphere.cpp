@@ -236,7 +236,7 @@ int sphere_eval_data_mp::setup(sphere_config & config,
 	
 	for (unsigned int ii=0; ii<W.num_linears(); ii++) {
 		init_vec_mp(static_linear[ii],0);
-		vec_cp_mp(static_linear[ii],*W.linear(ii));
+		vec_cp_mp(static_linear[ii],W.linear(ii));
 	}
 	
 	
@@ -281,7 +281,7 @@ int sphere_eval_data_mp::setup(sphere_config & config,
 		for (unsigned int ii=0; ii<W.num_linears(); ii++) {
 			init_vec_mp2(static_linear_full_prec[ii],0,1024);
 			
-			vec_cp_mp(static_linear_full_prec[ii], *W.linear(ii));
+			vec_cp_mp(static_linear_full_prec[ii], W.linear(ii));
 		}
 	}
 	
@@ -520,7 +520,7 @@ int sphere_eval_data_d::setup(sphere_config & config,
 	
 	for (unsigned int ii=0; ii<W.num_linears(); ii++) {
 		init_vec_d(static_linear[ii],0);
-		vec_mp_to_d(static_linear[ii],*W.linear(ii));
+		vec_mp_to_d(static_linear[ii],W.linear(ii));
 	}
 	num_static_linears = W.num_linears();
 	
@@ -646,14 +646,18 @@ int sphere_solver_master_entry_point(const witness_set						&W, // carries with 
 			delete ED_d;
 			break;
 		default:
-			br_exit(399);
+		{
+			std::stringstream printme;
+			printme << "trying to use an MPType which is not 0, 1, or 2.  yours is " << solve_options.T.MPType << std::endl;
+			throw std::logic_error(printme.str());
 			break;
+		}
 	}
 	
 	
 	for (unsigned int jj=0; jj<W.num_linears(); jj++)
 	{
-		solve_out.add_linear(*W.linear(jj));
+		solve_out.add_linear(W.linear(jj));
 	}
 	
 	return SUCCESSFUL;

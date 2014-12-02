@@ -794,7 +794,6 @@ public:
 	bool use_fixed_sampler; ///< mode switch between adaptive and fixed-number.
 	int target_num_samples; ///< the number of samples per cell, more or less.
 	
-	bool use_projection_binning; ///< switch for whether to use a projection-value based binning method for stitching ribs of unequal length, or to use a distance-based method.
 	
 	/** 
 	 \brief get the sampler_configuration from the command line. */
@@ -826,9 +825,7 @@ public:
 		use_distance_condition = false;
 		
 		target_num_samples = 10;
-		
-		use_projection_binning = false;
-		
+				
 		stifle_membership_screen = 1;
 		stifle_text = " > /dev/null ";
 		

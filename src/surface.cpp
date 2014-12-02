@@ -23,12 +23,9 @@ void surface_decomposition::main(vertex_set & V,
 	std::cout << "surface_main" << std::endl;
 #endif
 	
+	decomposition::copy_data_from_witness_set(W_surf);
 	
 	
-	// set some member information.
-	set_input_filename(W_surf.input_filename());
-	set_num_variables(W_surf.num_variables());
-	set_component_number(W_surf.component_number());
     
 	add_projection(pi[0]); // add to *this
 	add_projection(pi[1]); // add to *this
@@ -115,7 +112,8 @@ void surface_decomposition::main(vertex_set & V,
 				
 				
 	if (have_sphere()) {
-		W_total_crit.sort_for_inside_sphere(*sphere_radius(), *sphere_center());
+		std::cout << "sorting for inside sphere" << std::endl;
+		W_total_crit.sort_for_inside_sphere(sphere_radius(), sphere_center());
 	}
 	else
 	{
@@ -134,7 +132,7 @@ void surface_decomposition::main(vertex_set & V,
 	witness_set W_sphere_intersection;
 	W_sphere_intersection.set_input_filename("input_critical_curve");
 	// now get the sphere intersection critical points and ends of the interval
-	crit_curve_.get_additional_critpts(&W_sphere_intersection,  // the returned value
+	crit_curve_.get_sphere_intersection_pts(&W_sphere_intersection,  // the returned value
 									  W_critcurve,       // all else here is input
 									  program_options,
 									  solve_options);
@@ -160,8 +158,8 @@ void surface_decomposition::main(vertex_set & V,
     // make the input file
 	create_sphere_system(W_surf.input_filename(),
                          "input_surf_sphere",
-                         *sphere_radius(),
-                         *sphere_center(),
+                         sphere_radius(),
+                         sphere_center(),
                          W_surf);
     
     // get witness points
@@ -377,7 +375,7 @@ void surface_decomposition::beginning_stuff(const witness_set & W_surf,
 	if (0) {
 		if (program_options.verbose_level()>=2)
 			printf("checking if component is self-conjugate\n");
-		checkSelfConjugate( *(W_surf.point(0)),program_options, W_surf.input_filename());
+		checkSelfConjugate( W_surf.point(0),program_options, W_surf.input_filename());
 		
 		//regenerate the various files, since we ran bertini since then and many files were deleted.
 		parse_input_file(program_options.input_deflated_filename);
@@ -400,7 +398,7 @@ void surface_decomposition::beginning_stuff(const witness_set & W_surf,
 	
 	if (!verify_projection_ok(W_surf,
                               this->randomizer(),
-                              this->pi(),
+                              &(this->pi()),
                               solve_options))
 	{
 		std::cout << "the projections being used appear to suffer rank deficiency with Jacobian matrix..." << std::endl;
@@ -453,7 +451,7 @@ void surface_decomposition::compute_critcurve_witness_set(witness_set & W_critcu
 	compute_crit_nullspace(solve_out,	// the returned value
                            W_surf,            // input the original witness set
                            this->randomizer(),
-                           this->pi(),
+                           &(this->pi()),
                            2,  // dimension of ambient complex object
                            2,   //  target dimension to find
                            1,   // COdimension of the critical set to find.
@@ -503,15 +501,27 @@ void surface_decomposition::compute_critcurve_witness_set(witness_set & W_critcu
     // adjust the size of the linears to match the number of variables.  this should be a method in the witness set data type.
     
     for (unsigned int ii=0; ii<W_critcurve.num_linears(); ii++) {
-		vec_mp * curr_linear = W_critcurve.linear(ii);
+		vec_mp & curr_linear = W_critcurve.linear(ii);
 		
-		increase_size_vec_mp(*curr_linear, W_critcurve.num_variables()); (*curr_linear)->size = W_critcurve.num_variables();
+		increase_size_vec_mp(curr_linear, W_critcurve.num_variables()); curr_linear->size = W_critcurve.num_variables();
 		
 		for (int jj=W_surf.num_variables(); jj<W_critcurve.num_variables(); jj++) {
-			set_zero_mp(&((*curr_linear))->coord[jj]);
+			set_zero_mp(&(curr_linear)->coord[jj]);
 		}
 	}
-    
+	
+	
+	W_critcurve.only_natural_vars();// trim off the synthetic variables for the input witness set for computing critical points
+	int blabla;
+	parse_input_file("input_critical_curve", &blabla);
+	preproc_data_clear(&solve_options.PPD); // ugh this sucks
+	parse_preproc_data("preproc_data", &solve_options.PPD);
+	
+	
+	crit_curve_.randomizer()->setup(W_critcurve.num_variables() - W_critcurve.num_patches() - 1,solve_options.PPD.num_funcs);
+	
+	
+	
     return;
     
 }
@@ -543,83 +553,91 @@ void surface_decomposition::compute_critcurve_critpts(witness_set & W_critcurve_
 
 	//get crit points of the surface.
 	int blabla;
-//	parse_input_file(W_surf.input_filename(),&blabla);
-//	preproc_data_clear(&solve_options.PPD); // ugh this sucks
-//	parse_preproc_data("preproc_data", &solve_options.PPD);
-//	
-//	
-//	
-//	compute_crit_nullspace(solve_out, // the returned value
-//						   W_surf,            // input the original witness set
-//						   this->randomizer(),
-//						   this->pi(),
-//						   2,  // dimension of ambient complex object
-//						   2,   //  target dimension to find
-//						   2,   // COdimension of the critical set to find.
-//						   program_options,
-//						   solve_options,
-//						   &ns_config);
-//	
-//	solve_out.get_noninfinite_w_mult_full(W_critcurve_crit);
-//	ns_config.clear();
-//	solve_out.reset();
 	
-	
-	
-	//now get those critpoints which lie on the crit curve (there may be some intersection with the above)
-	
-	W_critcurve.only_natural_vars();// trim off the synthetic variables for the input witness set for computing critical points
-	parse_input_file(W_critcurve.input_filename(),&blabla);
-	preproc_data_clear(&solve_options.PPD); // ugh this sucks
-	parse_preproc_data("preproc_data", &solve_options.PPD);
-	
-	std::ifstream fin("deg.out");
-	int max_degree = 0;
-	int temp_degree;
-	for (int ii=0; ii<solve_options.PPD.num_funcs; ii++) {
-		fin >> temp_degree;
-		if (temp_degree>max_degree) {
-			max_degree = temp_degree;
-		}
+	if (0) {
+		
+		
+		parse_input_file(this->get_W().input_filename(),&blabla);
+		preproc_data_clear(&solve_options.PPD); // ugh this sucks
+		parse_preproc_data("preproc_data", &solve_options.PPD);
+		
+		
+		
+		compute_crit_nullspace(solve_out, // the returned value
+							   this->get_W(),            // input the original witness set
+							   this->randomizer(),
+							   &this->pi(),
+							   2,  // dimension of ambient complex object
+							   2,   //  target dimension to find
+							   2,   // COdimension of the critical set to find.
+							   program_options,
+							   solve_options,
+							   &ns_config);
+		
+		solve_out.get_noninfinite_w_mult_full(W_critcurve_crit);
+		ns_config.clear();
+		solve_out.reset();
+		
 	}
-	fin.close();
-	
-	
-	temp_degree = solve_options.T.AMP_bound_on_degree;
-	solve_options.T.AMP_bound_on_degree = max_degree;
-	
-	crit_curve_.randomizer()->setup(W_critcurve.num_variables() - W_critcurve.num_patches() - 1,solve_options.PPD.num_funcs);
-	
-	
-	compute_crit_nullspace(solve_out, // the returned value
-						   W_critcurve,            // input the original witness set
-						   crit_curve_.randomizer(),
-						   this->pi(),
-						   1,  // dimension of ambient complex object
-						   1,   //  target dimension to find
-						   1,   // COdimension of the critical set to find.
-						   program_options,
-						   solve_options,
-						   &ns_config);
-	
-	
-	
-	
-	witness_set W_temp;
-	solve_out.get_noninfinite_w_mult_full(W_temp);
-	ns_config.clear();
-	solve_out.reset();
-	
-	
-	W_critcurve_crit.merge(W_temp);
+	else {
+		//now get those critpoints which lie on the crit curve (there may be some intersection with the above)
+		
+		parse_input_file(W_critcurve.input_filename(),&blabla);
+		preproc_data_clear(&solve_options.PPD); // ugh this sucks
+		parse_preproc_data("preproc_data", &solve_options.PPD);
+		
+		
+		int temp_degree = solve_options.T.AMP_bound_on_degree;
+		std::ifstream fin("deg.out");
+		int max_degree = 0;
+		for (int ii=0; ii<solve_options.PPD.num_funcs; ii++) {
+			fin >> temp_degree;
+			if (temp_degree>max_degree) {
+				max_degree = temp_degree;
+			}
+		}
+		fin.close();
+		solve_options.T.AMP_bound_on_degree = max_degree;
+		
+		
+		
+		
+		compute_crit_nullspace(solve_out, // the returned value
+							   W_critcurve,            // input the original witness set
+							   crit_curve_.randomizer(),
+							   &(this->pi()),
+							   1,  // dimension of ambient complex object
+							   1,   //  target dimension to find
+							   1,   // COdimension of the critical set to find.
+							   program_options,
+							   solve_options,
+							   &ns_config);
+		
+		
+		solve_options.T.AMP_bound_on_degree = temp_degree; //reset
+		
+		witness_set W_temp;
+		solve_out.get_noninfinite_w_mult_full(W_temp);
+		ns_config.clear();
+		solve_out.reset();
+		W_critcurve_crit.merge(W_temp);
+	}
+
 	W_critcurve_crit.set_input_filename("input_critical_curve");
 	W_critcurve_crit.sort_for_real(&solve_options.T);
 	W_critcurve_crit.sort_for_unique(&solve_options.T);
 	
-	solve_options.T.AMP_bound_on_degree = temp_degree; //reset
+	
+	if (have_sphere()) {
+		W_critcurve_crit.sort_for_inside_sphere(sphere_radius(), sphere_center());
+	}
+	
     
     return;
 }
+
+
+
 
 void surface_decomposition::compute_critical_curve(const witness_set & W_critcurve,
                                                    const witness_set & W_critpts,
@@ -642,7 +660,7 @@ void surface_decomposition::compute_critical_curve(const witness_set & W_critcur
     
 	//fluff up the projection to have 0 entries for all the synthetic variables.
 	vec_mp temp_proj; init_vec_mp2(temp_proj,0,1024);
-	vec_cp_mp(temp_proj, *this->pi(0));
+	vec_cp_mp(temp_proj, this->pi(0));
 	std::cout << temp_proj->size << std::endl;
 	increase_size_vec_mp(temp_proj, W_critcurve.num_variables()); // nondestructive increase in size
     temp_proj->size = W_critcurve.num_variables();
@@ -664,7 +682,7 @@ void surface_decomposition::compute_critical_curve(const witness_set & W_critcur
 	
 	clear_vec_mp(temp_proj);
 	
-	crit_curve_.add_projection(*this->pi(0));
+	crit_curve_.add_projection(this->pi(0));
 	
 	crit_curve_.set_num_variables(W_critcurve.num_variables());
 	
@@ -725,7 +743,7 @@ void surface_decomposition::deflate_and_split(std::map< singular_object_metadata
 			
 			
 			W_only_one_witness_point.reset_points();
-			W_only_one_witness_point.add_point( *(active_set.point(0)) ); // exists by entrance condition
+			W_only_one_witness_point.add_point( active_set.point(0) ); // exists by entrance condition
 			W_only_one_witness_point.write_dehomogenized_coordinates("singular_witness_points_dehomogenized"); // write the points to file
 			
 			
@@ -834,7 +852,7 @@ void surface_decomposition::compute_singular_crit(witness_set & W_singular_crit,
 		compute_crit_nullspace(solve_out,                   // the returned value
 							   iter->second,            // input the witness set with linears
 							   singular_curves_[iter->first].randomizer(),
-							   this->pi(),
+							   &(this->pi()),
 							   1,                                // dimension of ambient complex object
 							   1,                                //  target dimension to find
 							   1,                                // COdimension of the critical set to find.
@@ -854,6 +872,9 @@ void surface_decomposition::compute_singular_crit(witness_set & W_singular_crit,
 		W_this_round.sort_for_real(&solve_options.T);
 		W_this_round.set_input_filename(iter->second.input_filename());
 		
+		if (have_sphere()) {
+			W_this_round.sort_for_inside_sphere(sphere_radius(), sphere_center());
+		}
 		singular_curves_[iter->first].add_witness_set(W_this_round,CRITICAL,V); // creates the curve decomposition for this multiplicity
 		
 		W_singular_crit.merge(W_this_round);
@@ -883,7 +904,7 @@ void surface_decomposition::compute_singular_curves(const witness_set & W_total_
 		std::cout << "getting sphere intersection with singular curve " << iter->first.multiplicity() << " " << iter->first.index() << std::endl;
 		witness_set W_sphere_intersection;
 		// now get the sphere intersection critical points and ends of the interval
-		singular_curves_[iter->first].get_additional_critpts(&W_sphere_intersection,  // the returned value
+		singular_curves_[iter->first].get_sphere_intersection_pts(&W_sphere_intersection,  // the returned value
 															iter->second,       // all else here is input
 															program_options,
 															solve_options);
@@ -910,11 +931,11 @@ void surface_decomposition::compute_singular_curves(const witness_set & W_total_
 		// we already know the component is self-conjugate (by entry condition), so we are free to call this function
 		singular_curves_[iter->first].interslice(iter->second,
 												W_sphere_intersection,
-												this->pi(),
+												&(this->pi()),
 												program_options,
 												solve_options,
 												V);
-		singular_curves_[iter->first].add_projection(*this->pi(0));
+		singular_curves_[iter->first].add_projection(this->pi(0));
 		
 		num_singular_curves_++;
 		
@@ -962,7 +983,7 @@ int find_matching_singular_witness_points(witness_set & W_match,
 	
 	
 	
-	evalProg_mp(ED.funcVals, ED.parVals, ED.parDer, ED.Jv, ED.Jp, *W.point(0), zerotime, &SLP);
+	evalProg_mp(ED.funcVals, ED.parVals, ED.parDer, ED.Jv, ED.Jp, W.point(0), zerotime, &SLP);
 	int hypothesis_corank = svd_jacobi_mp_prec(U, E, V, ED.Jv, tol, T->Precision); // this wraps around svd_jacobi_mp.
 	
 	
@@ -972,9 +993,9 @@ int find_matching_singular_witness_points(witness_set & W_match,
 	for (unsigned int zz = 1;zz<W.num_points();++zz) // by hypothesis, the first (0th) point satisfies the deflation
 	{
 		
-		vec_mp * curr_point = W.point(zz);
+		vec_mp & curr_point = W.point(zz);
 		
-		evalProg_mp(ED.funcVals, ED.parVals, ED.parDer, ED.Jv, ED.Jp, *curr_point, zerotime, &SLP);
+		evalProg_mp(ED.funcVals, ED.parVals, ED.parDer, ED.Jv, ED.Jp, curr_point, zerotime, &SLP);
 		
 		// first, check that the point satifies the system.
 		if (d_vec_abs_mp(ED.funcVals)>T->final_tol_times_mult) { // is this the correct measure of the vector to compare?
@@ -999,12 +1020,12 @@ int find_matching_singular_witness_points(witness_set & W_match,
 	
 	for (unsigned int zz=0; zz<W.num_points(); zz++) {
 		if (validity_flag[zz]==true) { // trivially true for first point -- it generated the deflation!
-			W_match.add_point(*(W.point(zz)));
+			W_match.add_point(W.point(zz));
 		}
 		else
 		{
 			std::cout << "adding reject point" << std::endl;
-			W_reject.add_point(*(W.point(zz)));
+			W_reject.add_point(W.point(zz));
 		}
 	}
 	
@@ -1045,8 +1066,10 @@ void surface_decomposition::compute_sphere_witness_set(const witness_set & W_sur
 #endif
     
 	
-    
-    
+	if (program_options.verbose_level()>=0) {
+		std::cout << color::magenta() << "getting sphere witness set" << color::console_default() << std::endl;
+	}
+	
 	//build up the start system
 	solve_options.robust = true;
 	solve_options.use_gamma_trick = 0;
@@ -1062,8 +1085,7 @@ void surface_decomposition::compute_sphere_witness_set(const witness_set & W_sur
     
     
 	if (!this->randomizer()->is_ready()) {
-		std::cout << "randomizer not ready" << std::endl;
-		br_exit(19355);
+		throw std::logic_error("randomizer not ready");
 	}
 	
 	
@@ -1080,7 +1102,7 @@ void surface_decomposition::compute_sphere_witness_set(const witness_set & W_sur
 	multilin_linears[0]->size = W_surf.num_variables();
     
 	init_vec_mp2(multilin_linears[1],0,solve_options.T.AMP_max_prec);
-	vec_cp_mp(multilin_linears[1],*W_surf.linear(1));
+	vec_cp_mp(multilin_linears[1],W_surf.linear(1));
 	
     
     
@@ -1122,7 +1144,7 @@ void surface_decomposition::compute_sphere_witness_set(const witness_set & W_sur
 	
 	
 	
-	W_sphere.add_linear(*W_surf.linear(1));
+	W_sphere.add_linear(W_surf.linear(1));
 	W_sphere.copy_patches(W_surf); //.patch_mp[0]
 	
 	
@@ -1131,8 +1153,8 @@ void surface_decomposition::compute_sphere_witness_set(const witness_set & W_sur
 	
 	
 	sp_config.set_memory(solve_options);
-	sp_config.set_center(*(this->sphere_center()));
-	sp_config.set_radius(*(this->sphere_radius()));
+	sp_config.set_center(this->sphere_center());
+	sp_config.set_radius(this->sphere_radius());
 	
 	
 	
@@ -1191,7 +1213,7 @@ void surface_decomposition::compute_sphere_crit(const witness_set & W_intersecti
 	compute_crit_nullspace(solve_out,                   // the returned value
                            W_intersection_sphere,            // input the witness set with linears
                            sphere_curve_.randomizer(),
-                           this->pi(0),
+                           &(this->pi(0)),
                            1,                                // dimension of ambient complex object
                            1,                                //  target dimension to find
                            1,                                // COdimension of the critical set to find.
@@ -1231,13 +1253,13 @@ void surface_decomposition::compute_bounding_sphere(const witness_set & W_inters
 	// then feed it to the interslice algorithm
 	this->sphere_curve_.interslice(W_intersection_sphere, // the witness set with a single linear and some patches.
                                   W_crit, // the critical points
-                                  pi(0),
+                                  &(pi(0)),
                                   program_options,
                                   solve_options,
                                   V);
 	
 	sphere_curve_.set_input_filename(W_intersection_sphere.input_filename());
-	this->sphere_curve_.add_projection(*pi(0));
+	this->sphere_curve_.add_projection(pi(0));
 	this->sphere_curve_.set_num_variables(this->num_variables());
 	
 	
@@ -1278,8 +1300,8 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 	
 	init_vec_mp2(multilin_linears[0], W_surf.num_variables(),1024);
 	init_vec_mp2(multilin_linears[1], W_surf.num_variables(),1024);
-	vec_cp_mp(multilin_linears[0],*pi(0));
-	vec_cp_mp(multilin_linears[1],*W_surf.linear(1));
+	vec_cp_mp(multilin_linears[0],pi(0));
+	vec_cp_mp(multilin_linears[1],W_surf.linear(1));
 	
 	
 	
@@ -1362,7 +1384,7 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 		slice_witness_set.set_num_variables(W_surf.num_variables());
 		slice_witness_set.set_input_filename(slicename);
 		slice_witness_set.add_linear(multilin_linears[1]);
-		slice_witness_set.add_patch(*W_surf.patch(0));
+		slice_witness_set.add_patch(W_surf.patch(0));
 		slice_witness_set.copy_names(W_surf);
 		slice_witness_set.set_dimension(1);
 		
@@ -1387,7 +1409,7 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 		
 		// we already know the component is self-conjugate (by entry condition), so we are free to call this function
 		slices[ii].computeCurveSelfConj(slice_witness_set,
-									   pi(1),
+									   &(pi(1)),
 									   V,
 									   program_options, solve_options);
 
@@ -1397,7 +1419,7 @@ void surface_decomposition::compute_slices(const witness_set W_surf,
 		slice_witness_set.reset();
 		solve_options.reset_tracker_config();
 		
-		slices[ii].add_projection(*pi(1));
+		slices[ii].add_projection(pi(1));
 		slices[ii].set_num_variables(this->num_variables());
 		
 		
@@ -1908,27 +1930,28 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 	W_midtrack.set_num_variables(this->num_variables() + num_bottom_vars + num_top_vars);
 	W_midtrack.set_num_natural_variables(this->num_variables());
-	change_size_vec_mp( *W_midtrack.point(0), W_midtrack.num_variables()); (*W_midtrack.point(0))->size = W_midtrack.num_variables(); // destructive resize
+	change_size_vec_mp( W_midtrack.point(0), W_midtrack.num_variables());
+	W_midtrack.point(0)->size = W_midtrack.num_variables(); // destructive resize
 	
 	
 	// mid
 	int var_counter = 0;
 	for (int kk=0; kk<this->num_variables(); kk++) {
-		set_mp(&((*W_midtrack.point(0))->coord[kk]), &(*V[current_midslice.get_edge(jj).midpt()].point())->coord[kk]);
+		set_mp(&(W_midtrack.point(0)->coord[kk]), &(V[current_midslice.get_edge(jj).midpt()].point())->coord[kk]);
 		var_counter++;
 	}
 	
 	// bottom
 	int offset = var_counter;
 	for (int kk=0; kk<num_bottom_vars; kk++) {
-		set_mp(&((*W_midtrack.point(0))->coord[kk+offset]), &(*V[current_midslice.get_edge(jj).left()].point())->coord[kk]); // y0
+		set_mp(&(W_midtrack.point(0)->coord[kk+offset]), &(V[current_midslice.get_edge(jj).left()].point())->coord[kk]); // y0
 		var_counter++;
 	}
 	
 	// top
 	offset = var_counter;
 	for (int kk=0; kk<num_top_vars; kk++) {
-		set_mp(&((*W_midtrack.point(0))->coord[kk+offset]), &(*V[current_midslice.get_edge(jj).right()].point())->coord[kk]); // y2
+		set_mp(&(W_midtrack.point(0)->coord[kk+offset]), &(V[current_midslice.get_edge(jj).right()].point())->coord[kk]); // y2
 		var_counter++;
 	}
 	
@@ -1942,15 +1965,15 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	W_midtrack.reset_patches();
 	
 	for (unsigned int qq = 0; qq<this->num_patches(); qq++) {
-		W_midtrack.add_patch(*this->patch(qq));
+		W_midtrack.add_patch(this->patch(qq));
 	}
 	
 	for (unsigned int qq = 0; qq<bottom_curve->num_patches(); qq++) {
-		W_midtrack.add_patch(*bottom_curve->patch(qq));
+		W_midtrack.add_patch(bottom_curve->patch(qq));
 	}
 	
 	for (unsigned int qq = 0; qq<top_curve->num_patches(); qq++) {
-		W_midtrack.add_patch(*top_curve->patch(qq));
+		W_midtrack.add_patch(top_curve->patch(qq));
 	}
 	
 	
@@ -1965,8 +1988,8 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 	
 	
 
-	set_mp(md_config.crit_val_left,   &(*V[ left_critslice.get_edge(0).midpt() ].projection_values())->coord[0]);
-	set_mp(md_config.crit_val_right,  &(*V[ right_critslice.get_edge(0).midpt() ].projection_values())->coord[0]);
+	set_mp(md_config.crit_val_left,   &(V[ left_critslice.get_edge(0).midpt() ].projection_values())->coord[0]);
+	set_mp(md_config.crit_val_right,  &(V[ right_critslice.get_edge(0).midpt() ].projection_values())->coord[0]);
 	
 	
 	// the u direction corresponds to pi[0].
@@ -2036,8 +2059,8 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 		std::cout << "final top: " << final_top_ind << ", final bottom:	" << final_bottom_ind << std::endl;
 		
 		// get the projection values of top and bottom final points.
-		set_mp(proj_top, &(*V[ final_top_ind ].projection_values())->coord[1]);
-		set_mp(proj_bottom, &(*V[ final_bottom_ind ].projection_values())->coord[1]);
+		set_mp(proj_top, &(V[ final_top_ind ].projection_values())->coord[1]);
+		set_mp(proj_bottom, &(V[ final_bottom_ind ].projection_values())->coord[1]);
 		
 		// i think the projection values have already been thresholded
 		
@@ -2090,9 +2113,9 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				// we gotta be moving from lower to higher...  so temp > temp2 is required
 				bool correct_interval = false;
 				if (matches_end) {
-					set_mp(temp , &(*V[ target_critslice.get_edge(qq).midpt()].projection_values())->coord[1]);
-					set_mp(temp2, &(*V[ final_bottom_ind].projection_values())->coord[1]);
-					set_mp(temp3, &(*V[ final_top_ind].projection_values())->coord[1]);
+					set_mp(temp , &(V[ target_critslice.get_edge(qq).midpt()].projection_values())->coord[1]);
+					set_mp(temp2, &(V[ final_bottom_ind].projection_values())->coord[1]);
+					set_mp(temp3, &(V[ final_top_ind].projection_values())->coord[1]);
 					correct_interval =  ( mpf_get_d(temp3->r) > mpf_get_d(temp->r)) && (mpf_get_d(temp->r) > mpf_get_d(temp2->r)) ;
 				}
 				
@@ -2143,7 +2166,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				
 				
 				
-				set_mp(proj_mid, &(*V[ target_critslice.get_edge(current_edge).midpt() ].projection_values())->coord[1]);
+				set_mp(proj_mid, &(V[ target_critslice.get_edge(current_edge).midpt() ].projection_values())->coord[1]);
 				
 				
 				
@@ -2213,9 +2236,9 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				//print some display to screen
 				if (solve_options.verbose_level() >= 3)
 				{
-					print_point_to_screen_matlab((*V[current_midslice.get_edge(jj).right()].point()),"top_start");
-					print_point_to_screen_matlab((*V[current_midslice.get_edge(jj).left()].point()),"bottom_start");
-					print_point_to_screen_matlab((*V[target_critslice.get_edge(current_edge).midpt() ].point()),"midpoint_target");
+					print_point_to_screen_matlab((V[current_midslice.get_edge(jj).right()].point()),"top_start");
+					print_point_to_screen_matlab((V[current_midslice.get_edge(jj).left()].point()),"bottom_start");
+					print_point_to_screen_matlab((V[target_critslice.get_edge(current_edge).midpt() ].point()),"midpoint_target");
 				}
 				
 				
@@ -2235,19 +2258,19 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				
 				// get only the midpoint coordinates out of the returned point
 				for (int tt = 0; tt<this->num_variables(); tt++) {
-					set_mp(&found_point->coord[tt], & (*W_new.point(0))->coord[tt]);
+					set_mp(&found_point->coord[tt], & W_new.point(0)->coord[tt]);
 				}
 				
 				int offset = md_config.num_mid_vars();
 				// get only the bottom coordinates out of the returned point
 				for (int tt = 0; tt<md_config.num_bottom_vars(); tt++) {
-					set_mp(&bottom_found->coord[tt], & (*W_new.point(0))->coord[offset+tt]);
+					set_mp(&bottom_found->coord[tt], & W_new.point(0)->coord[offset+tt]);
 				}
 				
 				offset += md_config.num_bottom_vars();
 				// get only the top coordinates out of the returned point
 				for (int tt = 0; tt<md_config.num_top_vars(); tt++) {
-					set_mp(&top_found->coord[tt], & (*W_new.point(0))->coord[offset+tt]);
+					set_mp(&top_found->coord[tt], & W_new.point(0)->coord[offset+tt]);
 				}
 				
 				//need to look the found point up in vertex set V
@@ -2265,7 +2288,7 @@ face surface_decomposition::make_face(int ii, int jj, vertex_set & V,
 				
 				if (solve_options.verbose_level()>=1) {
 					
-					projection_value_homogeneous_input(temp, found_point, *pi(1));
+					projection_value_homogeneous_input(temp, found_point, pi(1));
 					print_comp_matlab(temp, "found_point_proj_val");
 					vec_mp tempvec; init_vec_mp(tempvec,0);
 					dehomogenize(&tempvec, found_point);
@@ -2765,6 +2788,7 @@ void surface_decomposition::setup(boost::filesystem::path base)
 		converter.clear(); converter.str("");
 		
 		singular_curves_[*iter].setup(specific_loc);
+		num_singular_curves_++;
 	}
 	
 	boost::filesystem::path specific_loc = curve_location;
@@ -2865,7 +2889,7 @@ void create_sliced_system(boost::filesystem::path input_file, boost::filesystem:
     for (unsigned int ii=0; ii<W.num_patches(); ii++) {
 		std::stringstream linname;
 		linname << "patch_" << ii;
-		write_vector_as_constants(*W.patch(ii), linname.str(), OUT);
+		write_vector_as_constants(W.patch(ii), linname.str(), OUT);
 		linname.clear();  linname.str("");
 	}
     
@@ -2903,8 +2927,7 @@ void create_sphere_system(boost::filesystem::path input_file, boost::filesystem:
     
 	
 	if (W.num_var_names()==0) {
-		std::cout << color::red() << "trying to create a sphere system, but witness set does not have the variable names." << color::console_default() << std::endl;
-		br_exit(-9846);
+		throw std::logic_error("trying to create a sphere system, but witness set does not have the variable names.");
 	}
 	
 	
@@ -2957,7 +2980,7 @@ void create_sphere_system(boost::filesystem::path input_file, boost::filesystem:
     for (unsigned int ii=0; ii<W.num_patches(); ii++) {
 		std::stringstream linname;
 		linname << "patch_" << ii;
-		write_vector_as_constants(*W.patch(ii), linname.str(), OUT);
+		write_vector_as_constants(W.patch(ii), linname.str(), OUT);
 		linname.clear();  linname.str("");
 	}
     

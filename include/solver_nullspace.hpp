@@ -32,14 +32,15 @@
 #include "postProcessing.hpp"
 
 
-
+namespace nullspace_handedness{
+	enum {LEFT=0, RIGHT};
+}
 
 
 
 /**
  \brief config class for left nullspace solver
  
- \todo Remove the randomize_lower stuff.
  \todo Rewrite nullspace code to make more of it members of this class.
  */
 class nullspace_config
@@ -48,8 +49,12 @@ class nullspace_config
 protected:
 	std::shared_ptr<system_randomizer> randomizer_; ///< randomizer for the underlying supplied system
 
+	int side_;
 	
 public:
+	
+	void set_side(int new_side){ side_ = new_side;};
+	int side(){ return side_;};
 	
 	std::shared_ptr<system_randomizer> randomizer()
 	{
@@ -75,9 +80,6 @@ public:
 	
 	int max_degree;    ///< the max degree of differentiated (randomized) functions
 	
-	
-	bool randomize_lower; ///< whether to randomize the lower part of the system, corresponding to the jacobian.
-	mat_mp lower_randomizer; ///< a randomization matrix for the lower jacobian part of the system.
 	
 	vec_mp **starting_linears;	///< outer layer should have as many as there are randomized equations (N-k).  inside layer has number corresponding to max of randomized_degrees
 				
@@ -141,7 +143,12 @@ private:
  */
 class nullspacejac_eval_data_mp : public solver_mp
 {
+	int side_;
+	
 public:
+	
+	int side(){ return side_;};
+	
 	
 	prog_deriv_t * SLP_derivative; ///< pointer to a SLP-like class for evaluating a system with higher-order derivatives.
 	
@@ -182,9 +189,7 @@ public:
 	vec_mp v_patch; ///< the patch equation for the new v-variables.
 	vec_mp v_patch_full_prec; ///< the v-patch in full precision for AMP.
 	
-	bool randomize_lower; ///< boolean for performing lower-randomization.  \todo take this out.
-	mat_mp lower_randomizer; ///< randomization matrix for lower-randomization.
-	mat_mp lower_randomizer_full_prec; ///< randomization matrix for lower-randomization, full precision for AMP.
+
 	
 	mat_mp jac_with_proj; ///< matrix holding the jacobian with the projection vectors.  essentially a stored temporary.
 	mat_mp jac_with_proj_full_prec; ///< matrix holding the jacobian with the projection vectors.  essentially a stored temporary.
@@ -285,6 +290,11 @@ public:
 	int receive(parallelism_config & mpi_config);
 	
 	
+	
+	void set_sidedness(int which_side);
+	
+	void set_function_handles(int which_side);
+	
 	/**
 	 \brief populate the eval_data form the config object.
 	 
@@ -320,16 +330,32 @@ private:
 		}
 		
 		
+	
 		
 		if (num_jac_equations>0) {
-			for (int ii=0; ii<num_jac_equations; ii++) {
-				for (int jj=0; jj<max_degree; jj++) {
-					clear_vec_mp(starting_linears[ii][jj]);
+			if (side_ == nullspace_handedness::LEFT) {
+				for (int ii=0; ii<num_jac_equations; ii++) {
+					for (int jj=0; jj<max_degree; jj++) {
+						clear_vec_mp(starting_linears[ii][jj]);
+					}
+					free(starting_linears[ii]);
 				}
-				free(starting_linears[ii]);
 			}
+			else
+			{
+				for (int ii=0; ii<randomizer()->num_rand_funcs(); ii++) {
+					for (int jj=0; jj<randomizer()->randomized_degree(ii)-1; jj++) {
+						clear_vec_mp(starting_linears[ii][jj]);
+					}
+					free(starting_linears[ii]);
+				}
+			}
+			
 			free(starting_linears);
 		}
+		
+		
+		
 		
 		if (num_v_linears>0) {
 			for (int ii=0; ii<num_v_linears; ii++) {
@@ -342,8 +368,6 @@ private:
 		clear_vec_mp(v_patch);
 		
 		clear_mat_mp(jac_with_proj);
-		
-		clear_mat_mp(lower_randomizer);
 		
 
 		
@@ -358,8 +382,6 @@ private:
 		
 		
 		if (this->MPType==2) {
-			
-			clear_mat_mp(lower_randomizer_full_prec);
 			
 			if (num_additional_linears>0) {
 				for (int ii=0; ii<num_additional_linears; ii++) {
@@ -376,13 +398,30 @@ private:
 			
 			
 			
-			for (int ii=0; ii<num_jac_equations; ii++){
-				for (int jj=0; jj<max_degree; jj++) {
-					clear_vec_mp(starting_linears_full_prec[ii][jj]);
+			if (num_jac_equations>0) {
+				if (side_ == nullspace_handedness::LEFT) {
+					for (int ii=0; ii<num_jac_equations; ii++) {
+						for (int jj=0; jj<max_degree; jj++) {
+							clear_vec_mp(starting_linears_full_prec[ii][jj]);
+						}
+						free(starting_linears_full_prec[ii]);
+					}
 				}
-				free(starting_linears_full_prec[ii]);
+				else
+				{
+					for (int ii=0; ii<randomizer()->num_rand_funcs(); ii++) {
+						for (int jj=0; jj<randomizer()->randomized_degree(ii)-1; jj++) {
+							clear_vec_mp(starting_linears_full_prec[ii][jj]);
+						}
+						free(starting_linears_full_prec[ii]);
+					}
+				}
+				
+				free(starting_linears_full_prec);
 			}
-			free(starting_linears_full_prec);
+			
+			
+			
 			
 			for (int ii=0; ii<num_v_linears; ii++)
 				clear_vec_mp(v_linears_full_prec[ii]);
@@ -542,7 +581,14 @@ private:
  */
 class nullspacejac_eval_data_d : public solver_d
 {
+	int side_;
+	
 public:
+	
+	int side()
+	{
+		return side_;
+	}
 	
 	nullspacejac_eval_data_mp *BED_mp; ///< pointer to the MP eval data. used only for AMP
 	
@@ -577,9 +623,7 @@ public:
 	
 	vec_d v_patch;
 	
-	bool randomize_lower;
-	mat_d lower_randomizer;
-	
+
 	mat_d jac_with_proj;
 	
 	
@@ -673,6 +717,14 @@ public:
 	int receive(parallelism_config & mpi_config);
 	
 	
+	
+	
+	void set_sidedness(int which_side);
+	
+	void set_function_handles(int which_side);
+	
+	
+	
 	/**
 	 \brief populate the eval_data form the config object.
 	 
@@ -709,13 +761,26 @@ private:
 		
 		
 		
+		
 		if (num_jac_equations>0) {
-			for (int ii=0; ii<num_jac_equations; ii++) {
-				for (int jj=0; jj<max_degree; jj++) {
-					clear_vec_d(starting_linears[ii][jj]);
+			if (side_ == nullspace_handedness::LEFT) {
+				for (int ii=0; ii<num_jac_equations; ii++) {
+					for (int jj=0; jj<max_degree; jj++) {
+						clear_vec_d(starting_linears[ii][jj]);
+					}
+					free(starting_linears[ii]);
 				}
-				free(starting_linears[ii]);
 			}
+			else
+			{
+				for (int ii=0; ii<randomizer()->num_rand_funcs(); ii++) {
+					for (int jj=0; jj<randomizer()->randomized_degree(ii)-1; jj++) {
+						clear_vec_d(starting_linears[ii][jj]);
+					}
+					free(starting_linears[ii]);
+				}
+			}
+			
 			free(starting_linears);
 		}
 		
@@ -728,7 +793,6 @@ private:
 		
 		
 		clear_vec_d(v_patch);
-		clear_mat_d(lower_randomizer);
 		clear_mat_d(jac_with_proj);
 		
 
@@ -900,7 +964,7 @@ int nullspacejac_solver_master_entry_point(int MPType,
  \param pathVars the current time
  \param ED a pointer from which we type-cast, into the correct type.
  */
-int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp, point_d current_variable_values, comp_d pathVars, void const *ED);
+int nullspacejac_left_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp, point_d current_variable_values, comp_d pathVars, void const *ED);
 
 
 /**
@@ -920,7 +984,74 @@ int nullspacejac_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d J
  \param pathVars the current time
  \param ED a pointer from which we type-cast, into the correct type.
  */
-int nullspacejac_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED);
+int nullspacejac_left_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED);
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ \brief Evaluator function for the right nullspace solver.
+ 
+ \todo explain with diagram how this works
+ 
+ this function makes use of the temps_mp class for persistence of temporaries.
+ 
+ \return the number 0.
+ \param funcVals the computed function values.
+ \param parVals the computed parameter values.
+ \param parDer the computed derivatives with respect to parameters.
+ \param Jv the computed Jacobian with respect to the variables.
+ \param Jp the computed Jacobian with respect to the parameters (time).
+ \param current_variable_values The input variable values.
+ \param pathVars the current time
+ \param ED a pointer from which we type-cast, into the correct type.
+ */
+int nullspacejac_right_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp, point_d current_variable_values, comp_d pathVars, void const *ED);
+
+
+
+
+
+/**
+ \brief Evaluator function for the right nullspace solver.
+ 
+ \see nullspacejac_right_eval_d
+ 
+ this function makes use of the temps_mp class for persistence of temporaries.
+ 
+ \return the number 0.
+ \param funcVals the computed function values.
+ \param parVals the computed parameter values.
+ \param parDer the computed derivatives with respect to parameters.
+ \param Jv the computed Jacobian with respect to the variables.
+ \param Jp the computed Jacobian with respect to the parameters (time).
+ \param current_variable_values The input variable values.
+ \param pathVars the current time
+ \param ED a pointer from which we type-cast, into the correct type.
+ */
+int nullspacejac_right_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp, point_mp current_variable_values, comp_mp pathVars, void const *ED);
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

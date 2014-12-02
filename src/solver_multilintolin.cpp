@@ -62,7 +62,7 @@ int multilintolin_eval_data_mp::setup(multilin_config & config,
 		init_vec_mp(current_linear[ii],0);
 		init_vec_mp(old_linear[ii],0);
 		vec_cp_mp(current_linear[ii],target_linears[ii]);
-		vec_cp_mp(old_linear[ii],*W.linear(ii));
+		vec_cp_mp(old_linear[ii],W.linear(ii));
 	}
 	
 	
@@ -82,7 +82,7 @@ int multilintolin_eval_data_mp::setup(multilin_config & config,
 			init_vec_mp2(old_linear_full_prec[ii],0,1024);
 			
 			vec_cp_mp(current_linear_full_prec[ii],target_linears[ii]);
-			vec_cp_mp(old_linear_full_prec[ii],*W.linear(ii));
+			vec_cp_mp(old_linear_full_prec[ii],W.linear(ii));
 		}
 	}
 	
@@ -308,7 +308,7 @@ int multilintolin_eval_data_d::setup(multilin_config & config,
 		init_vec_d(current_linear[ii],0);
 		init_vec_d(old_linear[ii],0);
 		vec_mp_to_d(current_linear[ii],target_linears[ii]);
-		vec_mp_to_d(old_linear[ii],*W.linear(ii));
+		vec_mp_to_d(old_linear[ii],W.linear(ii));
 	}
 	
 	num_linears = W.num_linears();

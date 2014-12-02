@@ -101,75 +101,6 @@ int ubermaster_process::main_loop()
 	if (program_options.primary_mode==BERTINIREAL) {
 		
 		
-		
-		W.set_incidence_number(get_incidence_number( *(W.point(0)), program_options, program_options.input_filename));
-		
-		
-		
-		switch (W.dimension()) {
-			case 1:
-			{
-				curve_decomposition C;
-				
-				C.set_component_number(W.component_number());
-				
-				boost::filesystem::path temp_name = program_options.output_dir();
-				std::stringstream converter;
-				converter << "_dim_" << C.dimension() << "_comp_" << C.component_number();
-				temp_name += converter.str();
-				
-				program_options.output_dir(temp_name);
-				
-				// curve
-				C.main(V, W, pi, program_options, solve_options);
-				
-				if (program_options.verbose_level()>=2)
-					printf("outputting data\n");
-				
-				
-				
-				
-				C.output_main(program_options.output_dir());
-				
-				V.print(program_options.output_dir()/ "V.vertex");
-				
-			}
-				break;
-				
-				
-			case 2:
-			{
-				
-				surface_decomposition S;
-				S.set_component_number(W.component_number());
-				
-				boost::filesystem::path temp_name = program_options.output_dir();
-				std::stringstream converter;
-				converter << "_dim_" << S.dimension() << "_comp_" << S.component_number();
-				temp_name += converter.str();
-				
-				program_options.output_dir(temp_name);
-				
-				
-				// surface
-				S.main(V, W, pi, program_options, solve_options);
-				
-				
-				
-				
-				S.output_main(program_options.output_dir());
-				
-				V.print(program_options.output_dir()/ "V.vertex");
-			}
-				break;
-				
-			default:
-			{
-				std::cout << "bertini_real not programmed for components of dimension " << W.dimension() << std::endl;
-			}
-				break;
-		}
-		
 	}
 	else if(program_options.primary_mode==CRIT)
 	{
@@ -183,11 +114,89 @@ int ubermaster_process::main_loop()
 	
 	for (int ii=0; ii<W.dimension(); ii++)
 		clear_vec_mp(pi[ii]);
+	free(pi);
+	
 	
 	// dismiss the workers
 	int sendme = TERMINATE;
 	MPI_Bcast(&sendme, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	return SUCCESSFUL;
+}
+
+
+
+
+
+void ubermaster_process::bertini_real(witness_set & W, vec_mp *pi, vertex_set & V)
+{
+	
+	
+	W.set_incidence_number(get_incidence_number( W.point(0), program_options, program_options.input_filename));
+	
+	
+	
+	switch (W.dimension()) {
+		case 1:
+		{
+			curve_decomposition C;
+			
+			boost::filesystem::path temp_name = program_options.output_dir();
+			std::stringstream converter;
+			converter << "_dim_" << C.dimension() << "_comp_" << C.component_number();
+			temp_name += converter.str();
+			
+			program_options.output_dir(temp_name);
+			
+			// curve
+			C.main(V, W, pi, program_options, solve_options);
+			
+			if (program_options.verbose_level()>=2)
+				printf("outputting data\n");
+			
+			
+			
+			
+			C.output_main(program_options.output_dir());
+			
+			V.print(program_options.output_dir()/ "V.vertex");
+			
+		}
+			break;
+			
+			
+		case 2:
+		{
+			
+			
+			surface_decomposition S;
+			
+			boost::filesystem::path temp_name = program_options.output_dir();
+			std::stringstream converter;
+			converter << "_dim_" << S.dimension() << "_comp_" << S.component_number();
+			temp_name += converter.str();
+			
+			program_options.output_dir(temp_name);
+			
+			
+			// surface
+			S.main(V, W, pi, program_options, solve_options);
+			
+			
+			
+			
+			S.output_main(program_options.output_dir());
+			
+			V.print(program_options.output_dir()/ "V.vertex");
+		}
+			break;
+			
+		default:
+		{
+			std::cout << "bertini_real not programmed for components of dimension " << W.dimension() << std::endl;
+		}
+			break;
+	}
+	
 }
 
 
@@ -218,7 +227,7 @@ void ubermaster_process::critreal(witness_set & W, vec_mp *pi, vertex_set & V)
 	
 	
 	
-	compute_crit_nullspace(solve_out, // the returned value
+	compute_crit_nullspace_left(solve_out, // the returned value
 						   W,            // input the original witness set
 						   std::make_shared<system_randomizer>(randomizer),
 						   pi,

@@ -34,7 +34,7 @@
 
 
 
-#include "nullspace_left.hpp"
+#include "nullspace.hpp"
 #include "solver_sphere.hpp"
 
 /**
@@ -56,6 +56,8 @@ class curve_decomposition : public decomposition
 	
 	
 	friend class surface_decomposition; ///< declared to be friend.  i dislike this.
+	
+	
 	
 public:
 	
@@ -370,13 +372,13 @@ public:
 	 Includes deflation, etc.
 	 
 	 \param V The vertex set which runs through everything.
-	 \param W The input witness set for the curve, computed probably by Bertini's tracktype:1.
+	 \param W_curve The input witness set for the curve, computed probably by Bertini's tracktype:1.
 	 \param pi A set of pointers to vec_mp's containing the projection being used.
 	 \param program_options The current state of Bertini_real.
 	 \param solve_options The current state of the solver routines.
 	 */
 	void main(vertex_set & V,
-			  witness_set & W,
+			  witness_set & W_curve,
 			  vec_mp *pi,
 			  BR_configuration & program_options,
 			  solver_configuration & solve_options);
@@ -392,14 +394,12 @@ public:
 	 \param V		the vertex set being passed around.  C indexes into here.
 	 \param num_vars		the total number of variables in the problem.
 	 \param program_options		main structure holding configuration
-	 \param	solve_options			structure holding options to pass to a solver.
 	 
 	 */
 	void 	computeCurveNotSelfConj(const witness_set		& W,
 									vertex_set				&V,
 									int						num_vars,
-									BR_configuration		& program_options,
-									solver_configuration	& solve_options);
+									BR_configuration		& program_options);
 	
 	
 	
@@ -474,7 +474,7 @@ public:
 	 \param program_options The current state of Bertini_real
 	 \param solve_options The current state of the solver.
 	 */
-	int get_additional_critpts(witness_set *W_crit_real,
+	int get_sphere_intersection_pts(witness_set *W_crit_real,
 							   const witness_set & W,
 							   BR_configuration & program_options,
 							   solver_configuration & solve_options);

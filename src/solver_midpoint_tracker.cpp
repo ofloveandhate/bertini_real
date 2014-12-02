@@ -11,8 +11,8 @@ void midpoint_config::setup(const surface_decomposition & surf,
 	
 	this->MPType = solve_options.T.MPType;
     
-    add_projection(*(surf.pi(0)));
-	add_projection(*(surf.pi(1)));
+    add_projection(surf.pi(0));
+	add_projection(surf.pi(1));
     
 	
 	systems[surf.input_filename().filename().string()] = complete_system(); // this pattern avoids a time-wasting copy pattern.

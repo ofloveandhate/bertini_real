@@ -158,6 +158,7 @@ public:
 	 */
 	void copy(const multilin_config & other)
 	{
+		this->randomizer_ = other.randomizer_;
 		//TODO: write this function
 		//ah yes, this problem.
 		//		this->SLP = other.SLP;// this needs to be a deep copy

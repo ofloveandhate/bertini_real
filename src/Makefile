@@ -1,8 +1,9 @@
 
 #choose some options.  by default, compiler optimization is turned off
-OPT:= -Dverbose  -g  -Ddebug_compile -Dthresholding # -Dfunctionentry_output # -O3 #-Wdeprecated # -Dprintpathlinprod  -O3 -funroll-loops -fexpensive-optimizations
+OPT:= -Dverbose  -g   -Dthresholding # -Ddebug_compile -Dfunctionentry_output # -O3 #-Wdeprecated # -Dprintpathlinprod  -O3 -funroll-loops -fexpensive-optimizations
 
-COMPFLAGS= -Wsign-compare -Wformat -Wall # -Wunused-parameter -Wdocumentation -Wdocumentation-unknown-command
+COMPFLAGS=  -pedantic -Wall -ansi -Wsign-compare -Wformat -Wbind-to-temporary-copy -Wno-c++11-extensions -Wambiguous-member-template -Wextra-tokens -Wunused-parameter -Wdocumentation -Wdocumentation-unknown-command
+
 OPT := $(OPT) $(COMPFLAGS)
 
 
@@ -35,7 +36,7 @@ ifeq ($(MACHINENAME),MACBRAKE)
 	INSTALLPATH:=$(HOME)/bin
 	BERTINIHEADERS:=$(HOME)/bertini_source/include
 
-	BOOSTLOC := /usr/local/Cellar/boost/1.54.0/lib/
+	BOOSTLOC := /usr/local/Cellar/boost/1.56.0/lib/
 	BOOSTSUFFIX:=-mt
 	MACHINESPECIFICS:= 
 endif
@@ -97,9 +98,9 @@ INC:=$(INC) -I../include  -I$(BERTINIHEADERS) #this includes the header files fo
 
 ARGS= $(OPT) -D_HAVE_MPI $(MACHINESPECIFICS) $(INC)
 
-OBJFILES= bertini_extensions.o data_type.o parallelism.o derivative_systems.o programConfiguration.o fileops.o isosingular.o checkSelfConjugate.o curve.o surface.o nullspace_left.o 
+OBJFILES= bertini_extensions.o data_type.o parallelism.o derivative_systems.o programConfiguration.o fileops.o isosingular.o checkSelfConjugate.o curve.o surface.o nullspace.o
 
-SOLVERS= solver.o solver_midpoint_tracker.o solver_nullspace_left.o solver_multilintolin.o postProcessing.o solver_sphere.o
+SOLVERS= solver.o solver_midpoint_tracker.o solver_nullspace.o solver_multilintolin.o postProcessing.o solver_sphere.o
 
 FLEXFILES=lex.partitionParse.o 
 

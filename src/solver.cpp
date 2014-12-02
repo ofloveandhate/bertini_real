@@ -189,7 +189,7 @@ void solver_output::get_noninfinite_w_mult(witness_set & W_transfer)
 	for (auto index = ordering.begin(); index != ordering.end(); ++index) {
 		//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
 		if (metadata[index->first].is_finite) {
-			W_transfer.add_point(*vertices_[index->first].point());
+			W_transfer.add_point(vertices_[index->first].point());
 		}
 	}
 	
@@ -202,7 +202,7 @@ void solver_output::get_nonsing_finite_multone(witness_set & W_transfer)
 	for (auto index = ordering.begin(); index != ordering.end(); ++index) {
 		//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
 		if ( (metadata[index->first].is_finite) && (!metadata[index->first].is_singular) && (metadata[index->first].multiplicity==1) ) {
-			W_transfer.add_point(*vertices_[index->first].point());
+			W_transfer.add_point(vertices_[index->first].point());
 		}
 	}
 	
@@ -218,7 +218,7 @@ void solver_output::get_multpos(std::map<int, witness_set> & W_transfer)
 		int num_added_points = 0;
 		for (auto index = metadata.begin(); index != metadata.end(); ++index) {
 			if ((index->multiplicity== *mult_ind) && (index->is_finite))  {
-				W_transfer[*mult_ind].add_point(*vertices_[index->output_index].point());
+				W_transfer[*mult_ind].add_point(vertices_[index->output_index].point());
 				num_added_points++;
 			}
 		}
@@ -251,7 +251,7 @@ void solver_output::get_sing(witness_set & W_transfer)
 	for (auto index = ordering.begin(); index != ordering.end(); ++index) {
 		//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
 		if ( (metadata[index->first].is_singular) ) {
-			W_transfer.add_point(*vertices_[index->first].point());
+			W_transfer.add_point(vertices_[index->first].point());
 		}
 	}
 	set_witness_set_nvars(W_transfer);
@@ -263,7 +263,7 @@ void solver_output::get_sing_finite(witness_set & W_transfer)
 	for (auto index = ordering.begin(); index != ordering.end(); ++index) {
 		//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
 		if ( (metadata[index->first].is_singular && metadata[index->first].is_finite) ) {
-			W_transfer.add_point(*vertices_[index->first].point());
+			W_transfer.add_point(vertices_[index->first].point());
 		}
 	}
 	set_witness_set_nvars(W_transfer);
@@ -292,7 +292,7 @@ int solver::send(parallelism_config & mpi_config)
 	buffer[2] = this->verbose_level_;
 	buffer[3] = this->MPType;
 	
-	MPI_Bcast(buffer, 4, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(buffer, 4, MPI_INT, 0, mpi_config.comm());
 	
 	send_preproc_data(&this->preProcData);
 	
@@ -310,7 +310,7 @@ int solver::receive(parallelism_config & mpi_config)
 	int *buffer = new int[4];
 	
     
-	MPI_Bcast(buffer, 4, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(buffer, 4, MPI_INT, 0, mpi_config.comm());
 	
 	this->num_variables = buffer[0];
 	this->num_steps = buffer[1];
@@ -349,34 +349,8 @@ int solver::receive(parallelism_config & mpi_config)
 
 void solver_mp::clear()
 {
-	
-	//	std::cout << "clearing mp patch" << std::endl;
-	
-	if (1) {
-		patch_eval_data_clear_mp(&this->patch);
-	}
-	else
-	{
-		for (int ii=0; ii<patch.patchCoeff->rows; ii++) {
-			//			std::cout << "ii " << ii << std::endl;
-			for (int jj=0; jj<patch.patchCoeff->cols; jj++) {
-				//				std::cout << "jj " << jj << std::endl;
-				mpq_clear(patch.patchCoeff_rat[ii][jj][0]);
-				mpq_clear(patch.patchCoeff_rat[ii][jj][1]);
-				
-				free(patch.patchCoeff_rat[ii][jj]);
-			}
-			free(patch.patchCoeff_rat[ii]);
-		}
-		free(patch.patchCoeff_rat);
-		
-		
-		clear_mat_mp(patch.patchCoeff);
-		
-	}
-	
-	
-	
+
+	patch_eval_data_clear_mp(&this->patch);
 	
 	
 	
@@ -411,7 +385,7 @@ int solver_mp::send(parallelism_config & mpi_config)
     else
         num_SLP = 0;
     
-    MPI_Bcast(&num_SLP, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&num_SLP, 1, MPI_INT, 0, mpi_config.comm());
     
     for (int ii=0; ii<num_SLP; ii++) {
         bcast_prog_t(this->SLP, MPType, 0, 0);
@@ -434,7 +408,7 @@ int solver_mp::send(parallelism_config & mpi_config)
 	int * buffer;
 	buffer = new int[1];
 	buffer[0] = this->curr_prec;
-	MPI_Bcast(buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(buffer, 1, MPI_INT, 0, mpi_config.comm());
 	delete[] buffer;
 	
 	
@@ -458,7 +432,7 @@ int solver_mp::receive(parallelism_config & mpi_config)
     
     received_mpi = true;
     int num_SLP;
-    MPI_Bcast(&num_SLP, 1, MPI_INT, 0, MPI_COMM_WORLD); // get the number of SLP's to receieve
+    MPI_Bcast(&num_SLP, 1, MPI_INT, 0, mpi_config.comm()); // get the number of SLP's to receieve
     
     if (num_SLP>0) {
         prog_t * _SLP = new prog_t[num_SLP];//(prog_t *) br_malloc(num_SLP*sizeof(prog_t));
@@ -492,7 +466,7 @@ int solver_mp::receive(parallelism_config & mpi_config)
 	
 	int *buffer = new int[1];
 	
-	MPI_Bcast(buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(buffer, 1, MPI_INT, 0, mpi_config.comm());
 	this->curr_prec = buffer[0];
 	
 	delete[] buffer;
@@ -550,7 +524,7 @@ int solver_d::send(parallelism_config & mpi_config)
         else
             num_SLP = 0;
         
-        MPI_Bcast(&num_SLP, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&num_SLP, 1, MPI_INT, 0, mpi_config.comm());
         
         for (int ii=0; ii<num_SLP; ii++) {
             //		std::cout << "master bcasting the SLP, MPType" << this->MPType << std::endl;
@@ -591,7 +565,7 @@ int solver_d::receive(parallelism_config & mpi_config)
         
         
         int num_SLP;
-        MPI_Bcast(&num_SLP, 1, MPI_INT, 0, MPI_COMM_WORLD); // get the number of SLP's to receieve
+        MPI_Bcast(&num_SLP, 1, MPI_INT, 0, mpi_config.comm()); // get the number of SLP's to receieve
         
         if (num_SLP>0) {
             prog_t * _SLP = new prog_t[num_SLP];
@@ -825,7 +799,7 @@ void generic_set_start_pts(point_data_d ** startPts,
 		(*startPts)[ii].point->size = W.num_variables();
 		
 		//1 set the coordinates
-		vec_mp_to_d((*startPts)[ii].point, *W.point(ii));
+		vec_mp_to_d((*startPts)[ii].point, W.point(ii));
 		
 		//2 set the start time to 1.
 		set_one_d((*startPts)[ii].time);
@@ -847,7 +821,7 @@ void generic_set_start_pts(point_data_mp ** startPts,
 		(*startPts)[ii].point->size = W.num_variables();
 		
 		//1 set the coordinates
-		vec_cp_mp((*startPts)[ii].point, *W.point(ii));
+		vec_cp_mp((*startPts)[ii].point, W.point(ii));
 		
 		//2 set the start time to 1.
 		set_one_mp((*startPts)[ii].time);
@@ -1082,11 +1056,10 @@ void master_tracker_loop(trackingStats *trackCount,
 	// seed the workers
 	int next_index = 0;
 	
-	for (unsigned int ii=1; ii<solve_options.num_procs() && next_index<W.num_points(); ii++) {
+	for (unsigned int ii=1; int(ii)<solve_options.num_procs() && next_index< int(W.num_points()); ii++) {
 		int next_worker = solve_options.activate_next_worker();
         
 		int num_packets = get_num_at_a_time(solve_options.num_procs()-1,total_number_points-next_index);
-//		std::cout << "master seeding " << num_packets << " packets to worker" << next_worker << std::endl;
 		send_start_points(next_worker, num_packets,
                           startPts_d,
                           startPts_mp,
@@ -1971,13 +1944,13 @@ void generic_setup_patch(patch_eval_data_d *P, const witness_set & W)
 	
 	int total_num_vars_in_patches = 0;
 	for (unsigned int ii=0; ii<W.num_patches(); ++ii) {
-		total_num_vars_in_patches += (*W.patch(ii))->size;
+		total_num_vars_in_patches += W.patch(ii)->size;
 	}
 	
 	if (total_num_vars_in_patches > W.num_variables()) {
 		std::cout << "parity mismatch in patches ("<< total_num_vars_in_patches <<") and number of variables (" << W.num_variables() <<")." << std::endl;
 		for (unsigned int ii=0; ii<W.num_patches(); ++ii) {
-			std::cout << (*W.patch(ii))->size << " ";
+			std::cout << W.patch(ii)->size << " ";
 		}
 		std::cout << std::endl;
 		br_exit(4012);
@@ -1991,15 +1964,15 @@ void generic_setup_patch(patch_eval_data_d *P, const witness_set & W)
 	
 	int varcounter = 0;
 	for (unsigned int jj=0; jj<W.num_patches(); jj++) {
-		vec_mp * curr_patch = W.patch(jj);
+		vec_mp & curr_patch = W.patch(jj);
 		
 		for (int ii=0; ii<varcounter; ii++) {
 			set_zero_d(&P->patchCoeff->entry[jj][ii]);
 		}
 		
 		int offset = varcounter;
-		for (int ii = 0; ii < (*curr_patch)->size ; ii++){
-			mp_to_d(&P->patchCoeff->entry[jj][ii+offset],&(*curr_patch)->coord[ii]);
+		for (int ii = 0; ii < curr_patch->size ; ii++){
+			mp_to_d(&P->patchCoeff->entry[jj][ii+offset],&curr_patch->coord[ii]);
 			varcounter++;
 		}
 		
@@ -2022,13 +1995,13 @@ void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W)
 	
     int total_num_vars_in_patches = 0;
 	for (unsigned int ii=0; ii<W.num_patches(); ++ii) {
-		total_num_vars_in_patches += (*W.patch(ii))->size;
+		total_num_vars_in_patches += W.patch(ii)->size;
 	}
 	
 	if (total_num_vars_in_patches > W.num_variables()) {
 		std::cout << "parity mismatch in patches ("<< total_num_vars_in_patches <<") and number of variables (" << W.num_variables() <<")." << std::endl;
 		for (unsigned int ii=0; ii<W.num_patches(); ++ii) {
-			std::cout << (*W.patch(ii))->size << " ";
+			std::cout << W.patch(ii)->size << " ";
 		}
 		std::cout << std::endl;
 		br_exit(4013);
@@ -2059,16 +2032,16 @@ void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W)
 	
 	int varcounter = 0;
 	for (unsigned int jj=0; jj<W.num_patches(); jj++) {
-		vec_mp * curr_patch = W.patch(jj);
+		vec_mp & curr_patch = W.patch(jj);
 		for (int ii=0; ii<varcounter; ii++) {
 			set_zero_mp(&P->patchCoeff->entry[jj][ii]);
 			set_zero_rat(P->patchCoeff_rat[jj][ii]);
 		}
 		
 		int offset = varcounter;
-		for (int ii = 0; ii < (*curr_patch)->size; ii++){
-			set_mp(&P->patchCoeff->entry[jj][ii+offset],&(*curr_patch)->coord[ii]);
-			mp_to_rat(P->patchCoeff_rat[jj][ii+offset], &(*curr_patch)->coord[ii]);
+		for (int ii = 0; ii < curr_patch->size; ii++){
+			set_mp(&P->patchCoeff->entry[jj][ii+offset],&curr_patch->coord[ii]);
+			mp_to_rat(P->patchCoeff_rat[jj][ii+offset], &curr_patch->coord[ii]);
 			varcounter++;
 		}
 		

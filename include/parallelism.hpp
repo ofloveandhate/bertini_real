@@ -114,7 +114,14 @@ public:
 	 */
 	int main_loop();
 
+	void bertini_real(witness_set & W, vec_mp *pi, vertex_set & V);
+	
+	
 	void critreal(witness_set & W, vec_mp *pi, vertex_set & V);
+	
+	
+	
+	
 	~ubermaster_process()
 	{
 		

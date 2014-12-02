@@ -64,16 +64,22 @@ public:
 	
 	SLP_global_pointers SLP_memory; ///< the memory containing the temps for the evaluation of the SLP
 	prog_t * SLP; ///< a pointer to the SLP in memory
+	bool have_mem; ///< whether have the memory set up for SLP
+	
 	
 	int MPType; ///< current operating MP mode
 	
 	
-	bool have_mem; ///< whether have the memory set up for SLP
+	
 	
 	vec_mp *starting_linear;  ///< the set of starting linears for the linear product.  There should damn well be two of them.
 	
+	
+	
 	vec_mp center; ///< the center of the sphere in complex coordinates.
 	comp_mp radius;///< the radius of the sphere.
+	
+	
 	
 	sphere_config(solver_configuration & solve_options,
 				  const witness_set & W)
@@ -196,6 +202,7 @@ protected:
 	
 	void copy(const sphere_config & other)
 	{
+		this->randomizer_ = other.randomizer_;
 		//TODO: write this function.
 		//ah yes, this problem.
 		//		this->SLP = other.SLP;// this needs to be a deep copy

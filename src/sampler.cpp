@@ -257,7 +257,7 @@ void curve_decomposition::adaptive_sampler_movement(vertex_set & V,
 	adaptive_set_initial_sample_data();
 	
 	
-	V.set_curr_projection(*pi(0));
+	V.set_curr_projection(pi(0));
 	V.set_curr_input(W.input_filename());
 	
 	
@@ -270,7 +270,7 @@ void curve_decomposition::adaptive_sampler_movement(vertex_set & V,
 	
 	vec_mp target_projection;
 	init_vec_mp(target_projection,num_vars); target_projection->size = num_vars;
-	vec_cp_mp(target_projection,*pi(0)); // copy the projection into target_projection
+	vec_cp_mp(target_projection,pi(0)); // copy the projection into target_projection
 	
 	
 	vec_mp startpt;
@@ -282,7 +282,7 @@ void curve_decomposition::adaptive_sampler_movement(vertex_set & V,
 	
 	vec_mp start_projection;
 	init_vec_mp(start_projection,num_vars);  start_projection->size = num_vars;
-	vec_cp_mp(start_projection,*pi(0)); // grab the projection, copy it into start_projection
+	vec_cp_mp(start_projection,pi(0)); // grab the projection, copy it into start_projection
 	
 	
 	vec_mp new_point_dehomogenized; init_vec_mp(new_point_dehomogenized, num_vars-1);
@@ -394,16 +394,16 @@ void curve_decomposition::adaptive_sampler_movement(vertex_set & V,
 				if(refine_current[jj]==1) //
 				{
                     
-					vec_cp_mp(startpt,*V[startpt_index].point());
-					set_mp(&(start_projection->coord[0]), &(*V[startpt_index].projection_values())->coord[0]);
+					vec_cp_mp(startpt,V[startpt_index].point());
+					set_mp(&(start_projection->coord[0]), &(V[startpt_index].projection_values())->coord[0]);
 					neg_mp(&(start_projection->coord[0]), &(start_projection->coord[0]));
 					
 					
 					estimate_new_projection_value(target_projection_value,				// the new value
 												  estimated_point,
-                                                  *V[left_index].point(),	//
-                                                  *V[right_index].point(), // two points input
-                                                  *pi(0));												// projection (in homogeneous coordinates)
+                                                  V[left_index].point(),	//
+                                                  V[right_index].point(), // two points input
+                                                  pi(0));												// projection (in homogeneous coordinates)
 					
 					
                     
@@ -414,8 +414,8 @@ void curve_decomposition::adaptive_sampler_movement(vertex_set & V,
 					
                     
 					if (sampler_options.verbose_level()>=3) {
-						print_point_to_screen_matlab(*W.point(0),"startpt");
-						print_comp_matlab(& (*W.linear(0))->coord[0],"initial_projection_value");
+						print_point_to_screen_matlab(W.point(0),"startpt");
+						print_comp_matlab(& W.linear(0)->coord[0],"initial_projection_value");
 						print_comp_matlab(target_projection_value,"target_projection_value");
 					}
 					
@@ -443,10 +443,10 @@ void curve_decomposition::adaptive_sampler_movement(vertex_set & V,
 					}
 					
 					if (sampler_options.verbose_level()>=3)
-						print_point_to_screen_matlab(*Wnew.point(0), "new_solution");
+						print_point_to_screen_matlab(Wnew.point(0), "new_solution");
 					
 					
-					dehomogenize(&new_point_dehomogenized,*Wnew.point(0));
+					dehomogenize(&new_point_dehomogenized,Wnew.point(0));
 					
 					
 					// check how far away we were from the LEFT interval point
@@ -468,7 +468,7 @@ void curve_decomposition::adaptive_sampler_movement(vertex_set & V,
 					
 					
 					
-					vec_cp_mp(*temp_vertex.point(),*Wnew.point(0));
+					vec_cp_mp(temp_vertex.point(),Wnew.point(0));
 					temp_vertex.set_type(CURVE_SAMPLE_POINT);
 					
                     if (sampler_options.no_duplicates){
@@ -574,7 +574,7 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 	adaptive_set_initial_sample_data();
 	
 	
-	V.set_curr_projection(*pi(0));
+	V.set_curr_projection(pi(0));
 	V.set_curr_input(W.input_filename());
 	
 	
@@ -587,7 +587,7 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 	
 	vec_mp target_projection;
 	init_vec_mp(target_projection,num_vars); target_projection->size = num_vars;
-	vec_cp_mp(target_projection,*pi(0)); // copy the projection into target_projection
+	vec_cp_mp(target_projection,pi(0)); // copy the projection into target_projection
 	
 	
 	vec_mp startpt;
@@ -596,7 +596,7 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 	
 	vec_mp start_projection;
 	init_vec_mp(start_projection,num_vars);  start_projection->size = num_vars;
-	vec_cp_mp(start_projection,*pi(0)); // grab the projection, copy it into start_projection
+	vec_cp_mp(start_projection,pi(0)); // grab the projection, copy it into start_projection
 	
 
 	
@@ -708,15 +708,15 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 				if(refine_current[jj]==1) //
 				{
                     
-					vec_cp_mp(startpt,*V[startpt_index].point());
-					set_mp(&(start_projection->coord[0]), &(*V[startpt_index].projection_values())->coord[0]);
+					vec_cp_mp(startpt,V[startpt_index].point());
+					set_mp(&(start_projection->coord[0]), &(V[startpt_index].projection_values())->coord[0]);
 					neg_mp(&(start_projection->coord[0]), &(start_projection->coord[0]));
 					
 					
 					estimate_new_projection_value(target_projection_value,				// the new value
-                                                  *V[left_index].point(),	//
-                                                  *V[right_index].point(), // two points input
-                                                  *pi(0));												// projection (in homogeneous coordinates)
+                                                  V[left_index].point(),	//
+                                                  V[right_index].point(), // two points input
+                                                  pi(0));												// projection (in homogeneous coordinates)
 					
 					
                     
@@ -727,8 +727,8 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 					
                     
 					if (sampler_options.verbose_level()>=3) {
-						print_point_to_screen_matlab(*W.point(0),"startpt");
-						print_comp_matlab(& (*W.linear(0))->coord[0],"initial_projection_value");
+						print_point_to_screen_matlab(W.point(0),"startpt");
+						print_comp_matlab(& (W.linear(0))->coord[0],"initial_projection_value");
 						print_comp_matlab(target_projection_value,"target_projection_value");
 					}
 					
@@ -756,7 +756,7 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 					}
 					
 					if (sampler_options.verbose_level()>=3)
-						print_point_to_screen_matlab(*Wnew.point(0), "new_solution");
+						print_point_to_screen_matlab(Wnew.point(0), "new_solution");
 					
 					
 					
@@ -764,8 +764,8 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 					
 					// check how far away we were from the LEFT interval point
 					norm_of_difference(dist_away,
-                                       *Wnew.point(0), // the current new point
-                                       *V[left_index].point());// jj is left, jj+1 is right
+									   Wnew.point(0), // the current new point
+                                       V[left_index].point());// jj is left, jj+1 is right
 					
 					if ( mpf_cmp(dist_away, sampler_options.TOL )>0 ){
 						refine_next[interval_counter] = true;
@@ -781,8 +781,8 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 					
 					// check how far away we were from the RIGHT interval point
 					norm_of_difference(dist_away,
-                                       *Wnew.point(0), // the current new point
-                                       *V[right_index].point());
+                                       Wnew.point(0), // the current new point
+                                       V[right_index].point());
 					
 					if (mpf_cmp(dist_away, sampler_options.TOL ) > 0){
 						refine_next[interval_counter] = 1;
@@ -794,7 +794,7 @@ void curve_decomposition::adaptive_sampler_distance(vertex_set & V,
 					interval_counter++;
 					
 					
-					vec_cp_mp(*temp_vertex.point(),*Wnew.point(0));
+					vec_cp_mp(temp_vertex.point(),Wnew.point(0));
 					temp_vertex.set_type(CURVE_SAMPLE_POINT);
 					
                     if (sampler_options.no_duplicates){
@@ -903,7 +903,7 @@ void curve_decomposition::fixed_sampler(vertex_set & V,
 	
 	fixed_set_initial_sample_data(target_num_samples);
 	
-	V.set_curr_projection(*pi(0));
+	V.set_curr_projection(pi(0));
 	V.set_curr_input(W.input_filename());
 	
 	
@@ -913,7 +913,7 @@ void curve_decomposition::fixed_sampler(vertex_set & V,
 	
 	//where we will move to
 	vec_mp target_projection; init_vec_mp2(target_projection,1,1024); target_projection->size = 1;
-	vec_cp_mp(target_projection,*pi(0)); // copy the projection into target_projection
+	vec_cp_mp(target_projection,pi(0)); // copy the projection into target_projection
 	
 	if (target_projection->size < W.num_variables()) {
 		increase_size_vec_mp(target_projection,W.num_variables()); target_projection->size = W.num_variables();
@@ -952,19 +952,19 @@ void curve_decomposition::fixed_sampler(vertex_set & V,
 		
 		std::cout << "\tsampling edge " << ii << std::endl;
 		
-		neg_mp(& (*W.linear(0))->coord[0],&(*V[get_edge(ii).midpt()].projection_values())->coord[V.curr_projection()]);
+		neg_mp(& (W.linear(0))->coord[0],&(V[get_edge(ii).midpt()].projection_values())->coord[V.curr_projection()]);
 		
 		W.reset_points();
-		W.add_point(*V[get_edge(ii).midpt()].point());
+		W.add_point(V[get_edge(ii).midpt()].point());
 		
 		
 		mpf_set_d(num_intervals->r,double(target_num_samples-1));
 		
-		sub_mp(interval_width,&(*V[get_edge(ii).right()].projection_values())->coord[V.curr_projection()],&(*V[get_edge(ii).left()].projection_values())->coord[V.curr_projection()]);
+		sub_mp(interval_width,&(V[get_edge(ii).right()].projection_values())->coord[V.curr_projection()],&(V[get_edge(ii).left()].projection_values())->coord[V.curr_projection()]);
 		
 		div_mp(interval_width,interval_width,num_intervals);
 		
-		set_mp(target_projection_value,&(*V[get_edge(ii).left()].projection_values())->coord[V.curr_projection()]);
+		set_mp(target_projection_value,&(V[get_edge(ii).left()].projection_values())->coord[V.curr_projection()]);
 		
 		//add once to get us off 0
 		add_mp(target_projection_value,target_projection_value,interval_width);
@@ -978,8 +978,8 @@ void curve_decomposition::fixed_sampler(vertex_set & V,
 			
 			
 			if (sampler_options.verbose_level()>=3) {
-				print_point_to_screen_matlab(*W.point(0),"startpt");
-				print_comp_matlab(&(*W.linear(0))->coord[0],"initial_projection_value");
+				print_point_to_screen_matlab(W.point(0),"startpt");
+				print_comp_matlab(&W.linear(0)->coord[0],"initial_projection_value");
 				print_comp_matlab(target_projection_value,"target_projection_value");
 			}
 			
@@ -1001,7 +1001,7 @@ void curve_decomposition::fixed_sampler(vertex_set & V,
 				//TODO: ah shit!  this ain't good.  how to deal with it?
 			}
 			
-			vec_cp_mp(*temp_vertex.point(),*Wnew.point(0));
+			vec_cp_mp(temp_vertex.point(),Wnew.point(0));
 			temp_vertex.set_type(CURVE_SAMPLE_POINT);
 			
 			if (sampler_options.no_duplicates){
@@ -1132,12 +1132,12 @@ void curve_decomposition::adaptive_set_initial_refinement_flags(int & num_refine
 		
 		for (int jj=0; jj<num_variables()-1; jj++) {
 			div_mp(&temp1->coord[jj],
-                   &(*V[sample_indices[current_edge][ii]].point())->coord[jj+1],
-                   &(*V[sample_indices[current_edge][ii]].point())->coord[0]);
+                   &(V[sample_indices[current_edge][ii]].point())->coord[jj+1],
+                   &(V[sample_indices[current_edge][ii]].point())->coord[0]);
 			
 			div_mp(&temp2->coord[jj],
-                   &(*V[sample_indices[current_edge][ii+1]].point())->coord[jj+1],
-                   &(*V[sample_indices[current_edge][ii+1]].point())->coord[0]);
+                   &(V[sample_indices[current_edge][ii+1]].point())->coord[jj+1],
+                   &(V[sample_indices[current_edge][ii+1]].point())->coord[0]);
 		}
 		
 		norm_of_difference(dist_away, temp1, temp2); // get the distance between the two adjacent points.
@@ -1387,17 +1387,17 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 	
 	W_multilin.add_point(blank_point);
 	
-	W_multilin.add_linear(*pi(0));
-	W_multilin.add_linear(*pi(1));
+	W_multilin.add_linear(pi(0));
+	W_multilin.add_linear(pi(1));
 	
-	W_multilin.add_patch((*this->patch(0)));
+	W_multilin.add_patch(this->patch(0));
 	
 	vec_mp * target_multilin_linears = (vec_mp *) br_malloc(2*sizeof(vec_mp));
 	init_vec_mp2(target_multilin_linears[0],this->num_variables(),1024); target_multilin_linears[0]->size = this->num_variables();
 	init_vec_mp2(target_multilin_linears[1],this->num_variables(),1024); target_multilin_linears[1]->size = this->num_variables();
 	
-	vec_cp_mp(target_multilin_linears[0],*pi(0));
-	vec_cp_mp(target_multilin_linears[1],*pi(1));
+	vec_cp_mp(target_multilin_linears[0],pi(0));
+	vec_cp_mp(target_multilin_linears[1],pi(1));
 	
 	
 	
@@ -1428,7 +1428,7 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 	
 	
 	
-	V.set_curr_projection(*pi(0));
+	V.set_curr_projection(pi(0));
 	V.set_curr_input(this->input_filename());
 
 	//once you have the fixed samples of the curves, down here is just making the integer triangles.
@@ -1478,14 +1478,14 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 		
 		W_midtrack.set_num_variables(this->num_variables() + num_bottom_vars + num_top_vars);
 		W_midtrack.set_num_natural_variables(this->num_variables());
-		change_size_vec_mp(*W_midtrack.point(0), W_midtrack.num_variables());
-		(*W_midtrack.point(0))->size = W_midtrack.num_variables(); // destructive resize
+		change_size_vec_mp(W_midtrack.point(0), W_midtrack.num_variables());
+		W_midtrack.point(0)->size = W_midtrack.num_variables(); // destructive resize
 		
 		
 		// mid
 		int var_counter = 0;
 		for (int kk=0; kk<this->num_variables(); kk++) {
-			set_mp(&(*W_midtrack.point(0))->coord[kk], &(*V[faces[ii].midpt()].point())->coord[kk]);
+			set_mp(&W_midtrack.point(0)->coord[kk], &(V[faces[ii].midpt()].point())->coord[kk]);
 			var_counter++;
 		}
 		
@@ -1493,14 +1493,14 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 		// bottom
 		int offset = var_counter;
 		for (int kk=0; kk<num_bottom_vars; kk++) {
-			set_mp(& (*W_midtrack.point(0))->coord[kk+offset], &(*V[current_midslice.get_edge(mid_edge).left()].point())->coord[kk]); // y0
+			set_mp(& W_midtrack.point(0)->coord[kk+offset], &(V[current_midslice.get_edge(mid_edge).left()].point())->coord[kk]); // y0
 			var_counter++;
 		}
 		
 		// top
 		offset = var_counter;
 		for (int kk=0; kk<num_top_vars; kk++) {
-			set_mp(& (*W_midtrack.point(0))->coord[kk+offset], &(*V[current_midslice.get_edge(mid_edge).right()].point())->coord[kk]); // y2
+			set_mp(& W_midtrack.point(0)->coord[kk+offset], &(V[current_midslice.get_edge(mid_edge).right()].point())->coord[kk]); // y2
 			var_counter++;
 		}
 		
@@ -1523,8 +1523,8 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 		
 		// make u, v target values.
 		
-		set_mp(md_config.crit_val_left,   &(*V[ left_critslice.get_edge(0).midpt() ].projection_values())->coord[0]);
-		set_mp(md_config.crit_val_right,  &(*V[ right_critslice.get_edge(0).midpt() ].projection_values())->coord[0]);
+		set_mp(md_config.crit_val_left,   &(V[ left_critslice.get_edge(0).midpt() ].projection_values())->coord[0]);
+		set_mp(md_config.crit_val_right,  &(V[ right_critslice.get_edge(0).midpt() ].projection_values())->coord[0]);
 		
 		
 		
@@ -1598,18 +1598,18 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 		//check the two rows.
 		
 		for (int zz=0; zz<int(rib_indices[0].size())-1; zz++) {
-			if (mpf_cmp((*V[rib_indices[0][zz]].projection_values())->coord[1].r, (*V[rib_indices[0][zz+1]].projection_values())->coord[1].r) > 0) {
+			if (mpf_cmp((V[rib_indices[0][zz]].projection_values())->coord[1].r, (V[rib_indices[0][zz+1]].projection_values())->coord[1].r) > 0) {
 				std::cout << "out of order, cuz these are off:" << std::endl;
-				print_comp_matlab((*V[rib_indices[0][zz]].projection_values())->coord,"l");
-				print_comp_matlab((*V[rib_indices[0][zz+1]].projection_values())->coord,"r");
+				print_comp_matlab((V[rib_indices[0][zz]].projection_values())->coord,"l");
+				print_comp_matlab((V[rib_indices[0][zz+1]].projection_values())->coord,"r");
 			}
 		}
 		
 		for (int zz=0; zz<int(rib_indices[target_num_samples-1].size())-1; zz++) {
-			if (mpf_cmp((*V[rib_indices[target_num_samples-1][zz]].projection_values())->coord[1].r, (*V[rib_indices[target_num_samples-1][zz+1]].projection_values())->coord[1].r) > 0) {
+			if (mpf_cmp((V[rib_indices[target_num_samples-1][zz]].projection_values())->coord[1].r, (V[rib_indices[target_num_samples-1][zz+1]].projection_values())->coord[1].r) > 0) {
 				std::cout << "out of order, cuz these are off:" << std::endl;
-				print_comp_matlab((*V[rib_indices[target_num_samples-1][zz]].projection_values())->coord,"l");
-				print_comp_matlab((*V[rib_indices[target_num_samples-1][zz+1]].projection_values())->coord,"r");
+				print_comp_matlab((V[rib_indices[target_num_samples-1][zz]].projection_values())->coord,"l");
+				print_comp_matlab((V[rib_indices[target_num_samples-1][zz+1]].projection_values())->coord,"r");
 			}
 		}
 		
@@ -1639,9 +1639,8 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 			set_mp(md_config.v_target,interval_width); // start on the bottom one
 
 			
+		
 			
-			
-
 			rib_indices[jj][0] = bottom_->sample_indices[faces[ii].bottom_edge()][jj];
 			rib_indices[jj][target_num_samples-1] = top_->sample_indices[faces[ii].top_edge()][jj];
 			
@@ -1672,7 +1671,7 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 				else{
 					
 					temp_vertex.set_type(SURFACE_SAMPLE_POINT);
-					temp_vertex.set_point(*W_new.point(0));
+					temp_vertex.set_point(W_new.point(0));
 					
 					if (sampler_options.no_duplicates){
 						rib_indices[jj][1] = index_in_vertices_with_add(V, temp_vertex);
@@ -1701,12 +1700,12 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 				
 
 				// copy in the start point for the multilin method, as the terminal point from the previous call.
-				vec_cp_mp(*W_multilin.point(0),*V[rib_indices[jj][kk-1]].point());
+				vec_cp_mp(W_multilin.point(0),V[rib_indices[jj][kk-1]].point());
 				
-				(*W_multilin.point(0))->size = this->num_variables();
+				W_multilin.point(0)->size = this->num_variables();
 				
-				neg_mp(&(*W_multilin.linear(0))->coord[0],&(*V[rib_indices[jj][kk-1]].projection_values())->coord[0]);
-				neg_mp(&(*W_multilin.linear(1))->coord[0],&(*V[rib_indices[jj][kk-1]].projection_values())->coord[1]);
+				neg_mp(&W_multilin.linear(0)->coord[0],&(V[rib_indices[jj][kk-1]].projection_values())->coord[0]);
+				neg_mp(&W_multilin.linear(1)->coord[0],&(V[rib_indices[jj][kk-1]].projection_values())->coord[1]);
 				
 				
 				
@@ -1721,9 +1720,9 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 				
 				// pi1
 				// target_proj_1 = (top-bottom)*md_config.v_target + bottom
-				sub_mp(temp,&(*V[ curr_top_index ].projection_values())->coord[1],&(*V[ curr_bottom_index ].projection_values())->coord[1]);
+				sub_mp(temp,&(V[ curr_top_index ].projection_values())->coord[1],&(V[ curr_bottom_index ].projection_values())->coord[1]);
 				mul_mp(temp,temp,md_config.v_target);
-				add_mp(temp,temp,&(*V[ curr_bottom_index ].projection_values())->coord[1])
+				add_mp(temp,temp,&(V[ curr_bottom_index ].projection_values())->coord[1])
 				neg_mp(&target_multilin_linears[1]->coord[0],temp);
 				
 				
@@ -1759,7 +1758,7 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 				}
 				
 
-				temp_vertex.set_point(*(W_new.point(0)));
+				temp_vertex.set_point(W_new.point(0));
 				temp_vertex.set_type(SURFACE_SAMPLE_POINT);
 				
 				if (sampler_options.no_duplicates){
@@ -1784,7 +1783,7 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 
 		if (success_indicator_total) {
 			//stitch together the rib_indices
-			samples.push_back(stitch_triangulation(rib_indices,V,sampler_options.use_projection_binning)); // last argument tells whether to use projection binning (true) or distance binning (false)
+			samples.push_back(stitch_triangulation(rib_indices,V)); // last argument tells whether to use projection binning (true) or distance binning (false)
 		}
 		else{
 			std::cout << color::red() << "something horrible happened" << color::console_default() << std::endl;
@@ -1810,27 +1809,16 @@ void surface_decomposition::fixed_sampler(vertex_set & V,
 
 
 std::vector< triangle > surface_decomposition::stitch_triangulation(const std::vector< std::vector< int > > & rib_indices,
-																	vertex_set & V,
-																	bool bin_it_by_projection)
+																	vertex_set & V)
 {
 #ifdef functionentry_output
 	std::cout << "surface_decomposition::stitch_triangulation" << std::endl;
 #endif
 	
-	
-	if (0) {
-		for (auto ii = rib_indices.begin(); ii!=rib_indices.end(); ii++) {
-			for (auto jj=ii->begin(); jj!=ii->end(); jj++) {
-				std::cout << *jj << " ";
-			}
-			std::cout << std::endl;
-		}
-	}
-	
 	std::vector< triangle > current_samples;
 	
 	for (auto ii = rib_indices.begin(); ii!=rib_indices.end()-1; ii++) {
-		triangulate_two_ribs(*ii, *(ii+1), V, current_samples, bin_it_by_projection);
+		triangulate_two_ribs(*ii, *(ii+1), V, current_samples);
 	}
 	
 	
@@ -1841,313 +1829,459 @@ std::vector< triangle > surface_decomposition::stitch_triangulation(const std::v
 
 void triangulate_two_ribs(const std::vector< int > & rib1, const std::vector< int > & rib2,
 						  vertex_set & V,
-						  std::vector< triangle> & current_samples,
-						  bool bin_it_by_projection)
+						  std::vector< triangle> & current_samples)
 {
 	
 	
-	
-	triangle add_me;
+	if (rib1.size()==0 || rib2.size()==0) {
+		std::cout << "empty rib!" << std::endl;
+		return;
+	}
 	
 	if (rib1.size()==1 && rib2.size()==1) {
 		return;
 	}
-	else if (rib1.size()==1) {
-		add_me.set_v1(rib1[0]);
-		for (int jj = 0; jj<int(rib2.size()-1); jj++) {
-			add_me.set_v2(rib2[jj]);
-			add_me.set_v3(rib2[jj+1]);
-			
-			current_samples.push_back(add_me);
-		}
-	}
-	else if (rib2.size()==1) {
-		add_me.set_v1(rib2[0]);
-		for (int jj = 0; jj<int(rib1.size()-1); jj++) {
-			add_me.set_v2(rib1[jj]);
-			add_me.set_v3(rib1[jj+1]);
-			
-			current_samples.push_back(add_me);
-		}
-	}
-	else if (rib1.size()==rib2.size())
-	{
-		
-		for (int jj = 0; jj<int(rib1.size()-1); jj++) {
-			add_me.set_v(rib1[jj], rib2[jj], rib2[jj+1]);
-			current_samples.push_back(add_me);
-			
-			add_me.set_v(rib1[jj], rib2[jj+1], rib1[jj+1]);
-			current_samples.push_back(add_me);
-			
-			
-		}
-		
-	}
-	else{
-				
-		if (bin_it_by_projection){
-			triangulate_two_ribs_by_projection_binning(rib1, rib2,
-											V,
-											current_samples);
-		}
-		else
-		{
-			triangulate_two_ribs_by_distance_binning(rib1, rib2,
-													   V,
-													   current_samples);
-		}
-		
-		
-	}
-}
-
-
-void triangulate_two_ribs_by_projection_binning(const std::vector< int > & rib1, const std::vector< int > & rib2,
-									 const vertex_set & V,
-									 std::vector< triangle> & current_samples)
-{
-#ifdef functionentry_output
-	std::cout << "triangulate_by_projection_binning" << std::endl;
-#endif
 	
 	
-	if (rib1.size()==0) {
-		std::cout << "rib1 had 0 size!" << std::endl;
-	}
-	if (rib2.size()==0) {
-		std::cout << "rib2 had 0 size!" << std::endl;
-	}
+	triangulate_two_ribs_by_angle_optimization(rib1, rib2, V, current_samples);
 	
-	if (rib1.size()==0 || rib2.size()==0) {
-		
-		return;
-	}
-
-	
-	const std::vector<int> * rib_w_more_entries, *rib_w_less_entries;
-	
-	if (rib1.size() > rib2.size()) {
-		rib_w_more_entries = & rib1;
-		rib_w_less_entries = & rib2;
-	}
-	else{
-		rib_w_more_entries = & rib2;
-		rib_w_less_entries = & rib1;
-	}
-	
-	int nbins = rib_w_less_entries->size();
-	
-	
-	vec_mp bins; init_vec_mp(bins, nbins);
-	bins->size = nbins;
-	
-	comp_mp interval_width, temp; init_mp(interval_width);  init_mp(temp);
-
-	sub_mp(interval_width,
-		   &(*V[rib_w_less_entries->at(nbins-1)].get_projection_values())->coord[1],
-		   &(*V[rib_w_less_entries->at(0)].get_projection_values())->coord[1]);
-	
-	
-	set_zero_mp(&bins->coord[0]);
-	set_one_mp(&bins->coord[nbins-1]);
-	
-	for (int ii=1; ii<nbins-1; ii++) {
-		sub_mp(temp,
-			   &(*V[rib_w_less_entries->at(ii)].get_projection_values())->coord[1],
-			   &(*V[rib_w_less_entries->at(0)].get_projection_values())->coord[1]);
-		div_mp(&bins->coord[ii], temp, interval_width);
-	}
-	
-	//ok, have the bins.  now to actually bin the larger of the two ribs.
-	
-	
-	sub_mp(interval_width,
-		   &(*V[rib_w_more_entries->back()].get_projection_values())->coord[1],
-		   &(*V[rib_w_more_entries->at(0)].get_projection_values())->coord[1]);
-	
-	
-	//both ribs are guaranteed (by hypothesis) to have increasing projection values in pi[1].
-	unsigned int curr_bin_ind = 1; // start at the lowest.
-	
-	for (unsigned int ii=0; ii<rib_w_more_entries->size()-1; ii++) {
-		
-		if (ii==rib_w_more_entries->size()-2) {
-			set_one_mp(temp);
-		}
-		else{
-			sub_mp(temp,
-				   &(*V[rib_w_more_entries->at(ii+1)].get_projection_values())->coord[1],
-				   &(*V[rib_w_more_entries->at(0)].get_projection_values())->coord[1]);
-			div_mp(temp, temp, interval_width);
-		}
-		
-		current_samples.push_back(triangle(rib_w_less_entries->at(curr_bin_ind-1), rib_w_more_entries->at(ii), rib_w_more_entries->at(ii+1)));
-		
-		while ((mpf_cmp(temp->r, bins->coord[curr_bin_ind].r)>=0)) {// || (ii==(rib_w_more_entries->size()-2))
-			current_samples.push_back(triangle(rib_w_less_entries->at(curr_bin_ind-1), rib_w_less_entries->at(curr_bin_ind), rib_w_more_entries->at(ii+1)));
-			
-			
-			if (curr_bin_ind==rib_w_less_entries->size()-1) {
-				break;
-			}
-			curr_bin_ind++;
-			
-		}
-
-		
-	}
-	
-	
-	clear_vec_mp(bins);
-	clear_mp(interval_width);
-	return;
 }
 
 
 
 
 
-void triangulate_two_ribs_by_distance_binning(const std::vector< int > & rib1, const std::vector< int > & rib2,
-												vertex_set & V,
-												std::vector< triangle> & current_samples)
+
+void triangulate_two_ribs_by_angle_optimization(const std::vector< int > & rib1, const std::vector< int > & rib2,
+											  vertex_set & V,
+											  std::vector< triangle> & current_samples)
 {
 #ifdef functionentry_output
 	std::cout << "triangulate_by_distance_binning" << std::endl;
 #endif
 	
 	
+	bool bail_out = false;
 	
 	if (rib1.size()==0) {
 		std::cout << "rib1 had 0 size!" << std::endl;
+		bail_out = true;
 	}
 	if (rib2.size()==0) {
 		std::cout << "rib2 had 0 size!" << std::endl;
+		bail_out = true;
 	}
 	
-	if (rib1.size()==0 || rib2.size()==0) {
+	
+	if (bail_out) {
 		return;
 	}
 	
 	
+	int num_vars = V.num_natural_variables();
 	
+	unsigned int num_vectors_needed = 9;
+	vec_mp * bulk_vectors = (vec_mp *) br_malloc(num_vectors_needed* sizeof(vec_mp));
 	
+	for (unsigned int ii=0; ii<num_vectors_needed; ii++) {
+		init_vec_mp(bulk_vectors[ii],num_vars);  bulk_vectors[ii]->size = num_vars;
+		
+	}
 	
-	vec_mp base_test_point, dehom;
-	init_vec_mp(base_test_point,0); init_vec_mp(dehom,0);
-	
-	
-	comp_mp distances; init_mp(distances);
+	vec_mp *A = &bulk_vectors[0], *B = &bulk_vectors[1], *C = &bulk_vectors[2], *D = &bulk_vectors[3];
+
+
+	vec_mp *AB = &bulk_vectors[4];
+	vec_mp *AC = &bulk_vectors[5];
+	vec_mp *BC = &bulk_vectors[6];
+	vec_mp *DA = &bulk_vectors[7];
+	vec_mp *DC = &bulk_vectors[8];
 
 	
-	const std::vector<int> * rib_w_more_entries, *rib_w_less_entries;
 	
-	if (rib1.size() > rib2.size()) {
-		rib_w_more_entries = & rib1;
-		rib_w_less_entries = & rib2;
-	}
-	else{
-		rib_w_more_entries = & rib2;
-		rib_w_less_entries = & rib1;
-	}
+	// seed the advancing loop.
+	dehomogenize(B, V[rib1[0]].point(), num_vars);
+	(*B)->size = num_vars-1;
+	real_threshold(*B,1e-10);
+	dehomogenize(D, V[rib2[0]].point(), num_vars);
+	(*D)->size = num_vars-1;
+	real_threshold(*D,1e-10);
 	
-	unsigned int larger_size = rib_w_more_entries->size();
-	unsigned int smaller_size = rib_w_less_entries->size();
 	
-	unsigned int curr_ind = 0; // this will index in to the rib with more entries
-	unsigned int starting_ind;
+	comp_mp cos_angle_CAB, cos_angle_BCA, cos_angle_ABC;
+	init_mp(cos_angle_CAB); init_mp(cos_angle_BCA); init_mp(cos_angle_ABC);
 	
-	for (unsigned int ii=1; ii<smaller_size; ii++) {
-		
-		
-		starting_ind = curr_ind;
-		
-		dehomogenize(&base_test_point, *V[rib_w_less_entries->at(ii)].point(), V.num_natural_variables());
-		base_test_point->size = V.num_natural_variables()-1;
+	comp_mp cos_angle_DCA, cos_angle_ADC, cos_angle_CAD;
+	init_mp(cos_angle_DCA); init_mp(cos_angle_ADC); init_mp(cos_angle_CAD);
+	
+	
+	comp_mp length_AB, length_AC, length_BC, length_DA, length_DC;
+	init_mp(length_AB); init_mp(length_AC); init_mp(length_BC); init_mp(length_DA); init_mp(length_DC);
+	
+	comp_mp dot_CAB, dot_BCA, dot_ABC;
+	init_mp(dot_CAB); init_mp(dot_BCA); init_mp(dot_ABC);
+	
+	comp_mp dot_DCA, dot_ADC, dot_CAD;
+	init_mp(dot_DCA); init_mp(dot_ADC); init_mp(dot_CAD);
+	
+	comp_mp temp;  init_mp(temp);
+	comp_d temp_d;
+	
+	unsigned int curr_index_rib1 = 0, curr_index_rib2 = 0;
+	bool moved_1 = true, moved_2 = true;  //this is an intial condition to get them both set properly.  all subsequent iterations have only one as moved==true, and the other is always false.
+	while (curr_index_rib1 < rib1.size()-1 // neither rib size is 0, so this -1 is ok, won't underflow
+		   &&
+		   curr_index_rib2 < rib2.size()-1)
+	{
 
-		dehomogenize(&dehom, *V[rib_w_more_entries->at(curr_ind)].point(), V.num_natural_variables());
-		dehom->size = V.num_natural_variables()-1;
+#ifdef debug_compile
+		int a =rib1[curr_index_rib1];
+		int b =rib1[curr_index_rib1+1];
+		int c =rib2[curr_index_rib2];
+		int d =rib2[curr_index_rib2+1];
 		
-		norm_of_difference(distances->r, base_test_point, dehom);
+		std::cout << rib1[curr_index_rib1] << " " << rib1[curr_index_rib1+1] << std::endl;
+		std::cout << rib2[curr_index_rib2] << " " << rib2[curr_index_rib2+1] << std::endl;
+#endif
 		
-		dehomogenize(&dehom, *V[rib_w_more_entries->at(curr_ind+1)].point(), V.num_natural_variables());
-		dehom->size = V.num_natural_variables()-1;
-		norm_of_difference(distances->i, base_test_point, dehom);
-		
-		
-		// while the next candidate is closer than the previous one, and the index isn't maxed out
-		while ( (mpf_cmp(distances->r,distances->i)>0) && (curr_ind < (rib_w_more_entries->size()-2)) ) {
-			curr_ind++;  // increment the index used to keep track of which point we are targeting as candidate
+		if (moved_1) {
+			vec_mp * temp_vec = A; // swap
+			A = B;
+			B = temp_vec;
+			dehomogenize(B, V[rib1[curr_index_rib1+1]].point(), num_vars);
+			(*B)->size = num_vars-1;
+			real_threshold(*B,1e-10);
+
 			
-			// copy the value into the previous one.  wasteful, but yeah.
-			mpf_set(distances->r, distances->i);
+			vec_sub_mp(*AB, *B,*A);
 			
 			
-			dehomogenize(&dehom, *V[rib_w_more_entries->at(curr_ind+1)].point(), V.num_natural_variables());
-			dehom->size = V.num_natural_variables()-1;
-			norm_of_difference(distances->i, base_test_point, dehom);
 			
+			twoNormVec_mp(*AB, length_AB);
+		}
+							   
+		if (moved_2){ // moved_smaller
+			vec_mp * temp_vec = C; // swap
+			C = D;
+			D = temp_vec;
+			dehomogenize(D, V[rib2[curr_index_rib2+1]].point(), num_vars);
+			(*D)->size = num_vars-1;
+			
+			real_threshold(*D,1e-10);
+			
+			vec_sub_mp(*DC, *C,*D);
+			twoNormVec_mp(*DC, length_DC);
 		}
 		
 		
-		//ok, now curr_ind is the index of the local minimizer for distance to the base test point on the rib with more indices.
+		
+//		A           --->           B
+//		  ***********************
+//		  *- <--              *
+//		  * -  --           *
+//		  *  -   --       *    --
+//		| *   -         *   ---
+//		| *    -      *  <--
+//		| *     -   *
+//		\/*      -*
+//		  *     * -
+//		  *   *    -
+//		  * *       -
+//		  *-----------
+//		C    <--       D
 		
 		
 		
-		unsigned int split_point = (curr_ind-starting_ind)/2+starting_ind;
+//        AC, BC, DA,
 		
-		for (unsigned int kk=starting_ind; kk<split_point; kk++) {
-			
-			current_samples.push_back(
-									  triangle(
-											   rib_w_less_entries->at(ii-1),
-											   rib_w_more_entries->at(kk+1),
-											   rib_w_more_entries->at(kk))
-									  );
-			
+		vec_sub_mp(*AC, *C,*A);
+		vec_sub_mp(*BC, *C,*B);
+		vec_sub_mp(*DA, *A,*D);
+		
+		
+		
+		print_point_to_screen_matlab(*A,"A");
+		print_point_to_screen_matlab(*B,"B");
+		print_point_to_screen_matlab(*C,"C");
+		print_point_to_screen_matlab(*D,"D");
+		
+		print_point_to_screen_matlab(*AB,"AB");
+		print_point_to_screen_matlab(*AC,"AC");
+		print_point_to_screen_matlab(*BC,"BC");
+		print_point_to_screen_matlab(*DA,"DA");
+		print_point_to_screen_matlab(*DC,"DC");
+		
+		
+		
+		// now have the 5 vectors for the test computed.  (5 because the two triangles share a common leg)
+		
+		dot_product_mp(dot_CAB, *AC, *AB);
+		
+		dot_product_mp(dot_BCA, *AC, *BC);
+		
+		dot_product_mp(dot_ABC, *AB, *BC);
+		neg_mp(dot_ABC,dot_ABC);
+		
+		dot_product_mp(dot_DCA, *DC, *AC);
+		
+		dot_product_mp(dot_ADC, *DA, *DC);
+		
+		
+		dot_product_mp(dot_CAD, *DA, *AC);
+		neg_mp(dot_CAD,dot_CAD);
+		
+		twoNormVec_mp(*AC, length_AC);
+		twoNormVec_mp(*BC, length_BC);
+		twoNormVec_mp(*DA, length_DA);
+		
+		
+		double thresh = 3;
+		int advance = 0;
+		bool aspect_ok_rib1 = true, aspect_ok_rib2 = true;
+		
+		div_mp(temp,length_BC,length_DC);
+		mp_to_d(temp_d, temp);
+		double aspect11 = temp_d->r;
+		if ( temp_d->r  > thresh) {
+			aspect_ok_rib1 = false;
+		}
+		div_mp(temp,length_BC,length_AC);
+		mp_to_d(temp_d, temp);
+		double aspect12 = temp_d->r;
+//		if ( temp_d->r  > thresh) {
+//			aspect_ok_rib1 = false;
+//		}
+//		
+		
+		
+		div_mp(temp,length_DA,length_AB);
+		mp_to_d(temp_d, temp);
+		double aspect21 = temp_d->r;
+		if (temp_d->r > thresh) {
+			aspect_ok_rib2 = false;
+		}
+		div_mp(temp,length_DA,length_AC);
+		mp_to_d(temp_d, temp);
+		double aspect22 = temp_d->r;
+//		if (temp_d->r > thresh) {
+//			aspect_ok_rib2 = false;
+//		}
+
+		
+		
+		if(!aspect_ok_rib1 && aspect_ok_rib2) {
+			advance = 2;
+		}
+		else if(!aspect_ok_rib2 && aspect_ok_rib1) {
+			advance = 1;
+		}
+		else if (!aspect_ok_rib2 && !aspect_ok_rib1)
+		{
+			if (aspect11 < aspect21 && aspect12 < aspect22) {
+				advance = 1;
+			}
+			else if (aspect11 > aspect21 && aspect12 > aspect22)
+			{
+				advance = 2;
+			}
+			else if (aspect11 < aspect21)
+			{
+				advance = 1;
+			}
+			else{
+				advance = 2;
+			}
 			
 		}
-		
-		
-			current_samples.push_back(
-									  triangle(
-											   rib_w_less_entries->at(ii),
-											   rib_w_more_entries->at(split_point),
-											   rib_w_less_entries->at(ii-1))
-									  );
-		
-		
-		
-		
-		for (unsigned int kk=split_point; kk<curr_ind;kk++) {
+		else
+		{// the below lines computes the sum of the squares of the differences of the absolute values of the cosines of two of the angles in one of the triangles.
 			
-			current_samples.push_back(
-									  triangle(
-											   rib_w_less_entries->at(ii),
-											   rib_w_more_entries->at(kk+1),
-											   rib_w_more_entries->at(kk))
-									  );
+			//CAB
+			double total_error_rib1 = compute_square_of_difference_from_sixtydegrees(temp, length_AC, length_AB, dot_CAB);
+#ifdef debug_compile
+			print_comp_matlab(dot_CAB,"CAB");
+			std::cout << c << " " << a << " " << b << " " << total_error_rib1 << std::endl;
+#endif
 			
 			
+			//BCA
+			double angle_BCA = compute_square_of_difference_from_sixtydegrees(temp, length_BC, length_AC, dot_BCA);
+#ifdef debug_compile
+			print_comp_matlab(dot_BCA,"BCA");
+			std::cout << b << " " << c << " " << a << " " << angle_BCA << std::endl;
+#endif
+			total_error_rib1 += angle_BCA;
 			
+			//ABC
+			double angle_ABC = compute_square_of_difference_from_sixtydegrees(temp, length_BC, length_AB, dot_ABC);
+			total_error_rib1 += angle_ABC;
+#ifdef debug_compile
+			print_comp_matlab(dot_ABC,"ABC");
+			std::cout << a << " " << b << " " << c << " " << angle_ABC << std::endl;
+#endif
+			
+			
+			
+			
+			
+			
+			//DCA
+			double total_error_rib2 = compute_square_of_difference_from_sixtydegrees(temp, length_DC, length_AC, dot_DCA);
+#ifdef debug_compile
+			print_comp_matlab(dot_DCA,"DCA");
+			std::cout << d << " " << c << " " << a << " " << total_error_rib2 << std::endl;
+#endif
+			
+			//ADC
+			
+			double angle_ADC = compute_square_of_difference_from_sixtydegrees(temp, length_DA, length_DC, dot_ADC);
+			
+			total_error_rib2+= angle_ADC;
+#ifdef debug_compile
+			print_comp_matlab(dot_ADC,"ADC");
+			std::cout << a << " " << d << " " << c << " " << angle_ADC << std::endl;
+#endif
+			//CAD
+			double angle_CAD = compute_square_of_difference_from_sixtydegrees(temp, length_AC, length_DA, dot_CAD);
+			total_error_rib2 += angle_CAD;
+			
+#ifdef debug_compile
+			print_comp_matlab(dot_CAD,"CAD");
+			std::cout << c << " " << a << " " << d << " " << angle_CAD << std::endl;
+#endif
+			
+			
+			if (total_error_rib1 < total_error_rib2) {
+				advance = 1;
+			}
+			else{
+				advance = 2;
+			}
 		}
 		
+		if (advance==1) { // if the 1 triangle is more equilateral than the 2 triangle.
+			current_samples.push_back(
+									  triangle(// triangle A B C
+											   rib1[curr_index_rib1], //A
+											   rib1[curr_index_rib1+1], //B
+											   rib2[curr_index_rib2]) //C
+									  );
+			moved_1 = true;  curr_index_rib1++;
+			moved_2 = false;
+			
+		}
+		else
+		{
+			current_samples.push_back(
+									  triangle(// triangle C A D
+											   rib2[curr_index_rib2], //C
+											   rib1[curr_index_rib1], //A
+											   rib2[curr_index_rib2+1]) //D
+									  );
+			moved_1 = false;
+			moved_2 = true; curr_index_rib2++;
+		}
+		
+	} // re: while loop.
+	
+	
+	
+	// now down here, we have triangulated until one of the ribs is on its last point, so there is no more testing that can be done.  you simply have to connect the rest into triangles.
+	
+	const std::vector< int > *exhausted_rib, *rib_still_going;
+	unsigned int index_still_going, terminal_index;
+	bool flip;
+	
+	if (curr_index_rib1==rib1.size()-1) {
+		exhausted_rib = &rib1;
+		rib_still_going = &rib2;
+		index_still_going = curr_index_rib2;
+		terminal_index = curr_index_rib1;
+		flip = false;
+	}
+	else
+	{
+		exhausted_rib = &rib2;
+		rib_still_going = &rib1;
+		index_still_going = curr_index_rib1;
+		terminal_index = curr_index_rib2;
+		flip = true;
 	}
 	
-	for (unsigned int kk=curr_ind+1; kk<larger_size; kk++) {
-		current_samples.push_back(
-								  triangle(
-										   rib_w_less_entries->at(smaller_size-1),
-										   rib_w_more_entries->at(kk),
-										   rib_w_more_entries->at(kk-1))
-								  );
+	
+	for (; index_still_going < rib_still_going->size()-1; index_still_going++) { // initializer deliberately empty
+		
+		long long v1, v2, v3;
+		if (flip) {
+			v1 = rib_still_going->at(index_still_going);
+			v2 = rib_still_going->at(index_still_going+1);
+		}
+		else
+		{
+			v1 = rib_still_going->at(index_still_going+1);
+			v2 = rib_still_going->at(index_still_going);
+		}
+		v3 = exhausted_rib->at(terminal_index);
+		
+		current_samples.push_back( triangle(v1,v2,v3) );
 	}
 	
-	clear_mp(distances);
-	clear_vec_mp(dehom);
-	clear_vec_mp(base_test_point);
+	
+	
+	
+	clear_mp(cos_angle_CAB); clear_mp(cos_angle_BCA); clear_mp(cos_angle_ABC);
+	clear_mp(cos_angle_DCA); clear_mp(cos_angle_ADC); clear_mp(cos_angle_CAD);
+	
+	
+	clear_mp(length_AB); clear_mp(length_AC); clear_mp(length_BC); clear_mp(length_DA); clear_mp(length_DC);
+	clear_mp(dot_CAB); clear_mp(dot_BCA); clear_mp(dot_ABC);
+	clear_mp(dot_DCA); clear_mp(dot_ADC); clear_mp(dot_CAD);
+	
+	clear_mp(temp);
+	// clean up at the end.  i wish scope was deletion!
+	
+	for (unsigned int ii=0; ii<num_vectors_needed; ii++) {
+		clear_vec_mp(bulk_vectors[ii]);
+	}
+	free(bulk_vectors);
+	
+	
+	
 	return;
 }
+
+
+
+
+
+double compute_square_of_difference_from_sixtydegrees(comp_mp temp, comp_mp length1, comp_mp length2, comp_mp dot_prod)
+{
+	comp_d cos;
+	
+	mul_mp(temp, length1, length2);
+	div_mp(temp, dot_prod, temp);
+	mp_to_d(cos, temp);
+	double error = fabs(cos->r - 0.5);
+	
+	
+//	double angle = acos(cos->r);
+//	double pi_over_three = acos(-1)/3;
+//	double error = fabs(angle-pi_over_three);
+
+	
+//	div_mp(temp, length1,length2)
+//	mp_to_d(cos,temp);
+//	double error2 = fabs(cos->r - 1);
+//	
+//	div_mp(temp, length2,length1)
+//	mp_to_d(cos,temp);
+//	double error3 = fabs(cos->r - 1);
+//	
+//	double error = error1 + error2 + error3;
+	
+	return error*error;//*error*error
+}
+
 
 
 

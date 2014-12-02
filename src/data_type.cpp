@@ -205,12 +205,12 @@ void system_randomizer::randomize(vec_d randomized_func_vals, mat_d randomized_j
 	for (int ii=0; ii<num_randomized_funcs; ii++) {
 		// this must be done in a loop because each output (randomized function) has a different homogeneous structure.
 		//
-		// optimization could be done by looking at the previous function's structure and omitting previously done calculations (for the second and subsequent functions)
+		//TODO: optimization could be done by looking at the previous function's structure and omitting previously done calculations (for the second and subsequent functions)
 		
 		
 		// copy the current randomizer coefficients into a single row matrix
 		for (int jj=0; jj<num_original_funcs; jj++) {
-			set_d(&single_row_input_d->entry[0][jj], &randomizer_matrix_d->entry[ii][jj]); // this is repetitive, and wasteful.  optimize away.
+			set_d(&single_row_input_d->entry[0][jj], &randomizer_matrix_d->entry[ii][jj]); //TODO this is repetitive, and wasteful.  optimize away.
 		} // at least is is just setting, not multiplying
 		
 		
@@ -502,7 +502,8 @@ void system_randomizer::setup(int num_desired_rows, int num_funcs)
 	}
 	
 	if (num_desired_rows>num_funcs) {
-		std::cout << "requested randomizer which would UP-randomize" << std::endl;
+		std::cout << "requested randomizer which would UP-randomize." << std::endl;
+		std::cout << num_desired_rows << " > " << num_funcs << ", which is not allowed" << std::endl;
 		br_exit(80148);
 	}
 	setup_indicator = false; // reset;
@@ -578,55 +579,71 @@ void system_randomizer::setup(int num_desired_rows, int num_funcs)
 		iter->resize(num_funcs);
 	}
 	
-	int counter = 0;
-	int current_degree_index = 0; // start at the end
-	int current_degree;
-	for (int ii=0; ii<num_desired_rows; ii++) {
-		
-		counter++;
-		if (counter>num_of_each_degree[current_degree_index]) {
-			current_degree_index++;
-			counter = 1;
-		}
-		
-		current_degree = unique_degrees[current_degree_index];
-		randomized_degrees.push_back(current_degree);
-		
-		int encountered_current_degree = 0;
-		for (int jj=0; jj<num_funcs; jj++) {
-			if ( original_degrees[jj]<= current_degree ) {
-				encountered_current_degree++;
-				if (encountered_current_degree >= counter){
-					get_comp_rand_real_mp(&randomizer_matrix_full_prec->entry[ii][jj]);
-					structure_matrix[ii][jj] = current_degree - original_degrees[jj];  // deficiency level
+	
+	
+	
+	if (num_desired_rows==num_funcs) {
+		for (int ii=0; ii<num_desired_rows; ii++) {
+			randomized_degrees.push_back(original_degrees[ii]);
+			
+			for (int jj=0; jj<num_funcs; jj++) {
+				if (ii==jj) {
+					structure_matrix[ii][jj] = max_base_degree - original_degrees[ii];
 				}
 				else{
+					structure_matrix[ii][jj] = 0;
+				}
+			}
+		}
+		make_matrix_ID_mp(randomizer_matrix_full_prec,num_funcs,num_funcs);
+		square_indicator = true;
+	}
+	else{
+		
+		int counter = 0;
+		int current_degree_index = 0; // start at the end
+		
+		for (int ii=0; ii<num_desired_rows; ii++) {
+		
+			counter++;
+			if (counter>num_of_each_degree[current_degree_index]) {
+				current_degree_index++;
+				counter = 1;
+			}
+			
+			int current_degree = unique_degrees[current_degree_index];
+			randomized_degrees.push_back(current_degree);
+			
+			int encountered_current_degree = 0;
+			for (int jj=0; jj<num_funcs; jj++) {
+				if ( original_degrees[jj]<= current_degree ) {
+					encountered_current_degree++;
+					if (encountered_current_degree >= counter){
+						get_comp_rand_real_mp(&randomizer_matrix_full_prec->entry[ii][jj]);
+						structure_matrix[ii][jj] = current_degree - original_degrees[jj];  // deficiency level
+					}
+					else{
+						set_zero_mp(&randomizer_matrix_full_prec->entry[ii][jj]);
+						structure_matrix[ii][jj] = 0;
+					}
+				}
+				else
+				{
 					set_zero_mp(&randomizer_matrix_full_prec->entry[ii][jj]);
 					structure_matrix[ii][jj] = 0;
 				}
 			}
-			else
-			{
-				set_zero_mp(&randomizer_matrix_full_prec->entry[ii][jj]);
-				structure_matrix[ii][jj] = 0;
-			}
+			
+
 		}
 		
-		
+		square_indicator = false;
 	}
 	
 	
 	max_degree_deficiency = unique_degrees[0] - unique_degrees[num_unique_degrees-1];
 	
 	
-	
-	if (num_desired_rows==num_funcs) {
-		make_matrix_ID_mp(randomizer_matrix_full_prec,num_funcs,num_funcs);
-		square_indicator = true;
-	}
-	else{
-		square_indicator = false;
-	}
 	
 	mat_cp_mp(randomizer_matrix_mp,randomizer_matrix_full_prec);
 	mat_mp_to_d(randomizer_matrix_d,randomizer_matrix_full_prec);
@@ -1203,9 +1220,9 @@ void witness_set::write_homogeneous_coordinates(boost::filesystem::path filename
 	fprintf(OUT,"%zu\n\n",num_points()); // print the header line
 	
 	for (unsigned int ii=0; ii<num_points(); ++ii) {
-		vec_mp *curr_point = point(ii);
-		for ( int jj=0; jj< (*curr_point)->size; jj++) {
-			print_mp(OUT,0,&( (*curr_point)->coord[jj]));
+		vec_mp &curr_point = point(ii);
+		for ( int jj=0; jj< curr_point->size; jj++) {
+			print_mp(OUT,0,&( curr_point->coord[jj]));
 			fprintf(OUT,"\n");
 		}
 		fprintf(OUT,"\n");
@@ -1228,10 +1245,10 @@ void witness_set::write_dehomogenized_coordinates(boost::filesystem::path filena
 	fprintf(OUT,"%zu\n\n",num_points()); // print the header line
 	for (unsigned int ii=0; ii<num_points(); ++ii) {
 		if (this->num_synth_vars()>0) {
-			dehomogenize(&result,*point(ii), num_natty_vars_);
+			dehomogenize(&result,point(ii), num_natty_vars_);
 		}
 		else{
-			dehomogenize(&result,*point(ii));
+			dehomogenize(&result,point(ii));
 		}
 		
 		for (int jj=0; jj<num_natty_vars_-1; jj++) {
@@ -1271,10 +1288,10 @@ void witness_set::write_dehomogenized_coordinates(boost::filesystem::path filena
 	fprintf(OUT,"%lu\n\n",indices.size()); // print the header line
 	for (auto ii=indices.begin(); ii!=indices.end(); ++ii) {
 		if (this->num_synth_vars()>0) {
-			dehomogenize(&result,*(this->point(*ii)), num_natty_vars_);
+			dehomogenize(&result,this->point(*ii), num_natty_vars_);
 		}
 		else{
-			dehomogenize(&result,*(this->point(*ii)));
+			dehomogenize(&result,this->point(*ii));
 		}
 		
 		for (int jj=0; jj<num_natty_vars_-1; jj++) {
@@ -1302,8 +1319,8 @@ void witness_set::write_linears(boost::filesystem::path filename) const
 	fprintf(OUT,"%zu\n\n",num_linears()); // print the header line
 	
 	for (unsigned int ii=0; ii<num_linears(); ++ii) {
-		for (int jj=0; jj<(*linear(ii))->size; jj++) {
-			print_mp(OUT, 0, &(*linear(ii))->coord[jj]);
+		for (int jj=0; jj<linear(ii)->size; jj++) {
+			print_mp(OUT, 0, &linear(ii)->coord[jj]);
 			fprintf(OUT, "\n");
 		}
 		fprintf(OUT,"\n");
@@ -1326,9 +1343,9 @@ void witness_set::print_patches(boost::filesystem::path filename) const
 	fprintf(OUT,"%zu\n\n",num_patches()); // print the header line
 	
 	for (unsigned int ii=0; ii<num_patches(); ++ii) {
-		fprintf(OUT,"%d\n",(*patch(ii))->size);
-		for (int jj=0; jj<(*patch(ii))->size; jj++) {
-			print_mp(OUT, 0, &(*patch(ii))->coord[jj]);
+		fprintf(OUT,"%d\n",patch(ii)->size);
+		for (int jj=0; jj<patch(ii)->size; jj++) {
+			print_mp(OUT, 0, &patch(ii)->coord[jj]);
 			fprintf(OUT, "\n");
 		}
 		fprintf(OUT,"\n");
@@ -1389,7 +1406,7 @@ void witness_set::print_to_screen() const
 	std::cout << color::green();
 	for (unsigned ii=0; ii<num_points(); ii++) {
 		
-		dehomogenize(&dehom, *(point(ii)), num_natty_vars_);
+		dehomogenize(&dehom, point(ii), num_natty_vars_);
 		
 		varname << "point_" << ii;
 		
@@ -1403,7 +1420,7 @@ void witness_set::print_to_screen() const
 	
 	for (unsigned ii=0; ii<num_linears(); ii++) {
 		varname << "linear_" << ii;
-		print_point_to_screen_matlab(*linear(ii),varname.str());
+		print_point_to_screen_matlab(linear(ii),varname.str());
 		varname.str("");
 	}
 	std::cout << color::console_default();
@@ -1413,7 +1430,7 @@ void witness_set::print_to_screen() const
 	
 	for (unsigned ii=0; ii<num_patches(); ii++) {
 		varname << "patch_" << ii;
-		print_point_to_screen_matlab(*patch(ii),varname.str());
+		print_point_to_screen_matlab(patch(ii),varname.str());
 		varname.str("");
 	}
 	std::cout << color::console_default();
@@ -1442,12 +1459,12 @@ void witness_set::print_to_file(boost::filesystem::path filename) const
 
 
 	for (unsigned int ii=0; ii < num_points(); ii++) {
-		vec_mp * curr_point = point(ii);
+		vec_mp & curr_point = point(ii);
 		//print the witness points into file
-		for (int jj=0; jj < (*curr_point)->size; ++jj) {
-			mpf_out_str(OUT,10,0,(*curr_point)->coord[jj].r); // 10 is the base
+		for (int jj=0; jj < curr_point->size; ++jj) {
+			mpf_out_str(OUT,10,0,curr_point->coord[jj].r); // 10 is the base
 			fprintf(OUT," ");
-			mpf_out_str(OUT,10,0,(*curr_point)->coord[jj].i);
+			mpf_out_str(OUT,10,0,curr_point->coord[jj].i);
 			fprintf(OUT,"\n");
 		}
 		fprintf(OUT,"\n");
@@ -1462,10 +1479,10 @@ void witness_set::print_to_file(boost::filesystem::path filename) const
 	
 	for (unsigned int ii=0; ii < num_linears(); ii++) {
 
-		for (int jj=0; jj < (*linear(ii))->size; jj++) {
-			mpf_out_str(OUT,10,0,(*linear(ii))->coord[jj].r); // 10 is the base
+		for (int jj=0; jj < linear(ii)->size; jj++) {
+			mpf_out_str(OUT,10,0,linear(ii)->coord[jj].r); // 10 is the base
 			fprintf(OUT," ");
-			mpf_out_str(OUT,10,0,(*linear(ii))->coord[jj].i);
+			mpf_out_str(OUT,10,0,linear(ii)->coord[jj].i);
 			fprintf(OUT,"\n");
 		}
 		
@@ -1479,13 +1496,13 @@ void witness_set::print_to_file(boost::filesystem::path filename) const
 	
 	for (unsigned int ii=0; ii < num_patches(); ii++) {
 		
-		vec_mp * curr_patch = patch(ii);
+		vec_mp & curr_patch = patch(ii);
 		
 		//read the patch into memory
-		for (int jj=0; jj < (*curr_patch)->size; jj++) {
-			mpf_out_str(OUT,10,0,(*curr_patch)->coord[jj].r); // 10 is the base
+		for (int jj=0; jj < curr_patch->size; jj++) {
+			mpf_out_str(OUT,10,0,curr_patch->coord[jj].r); // 10 is the base
 			fprintf(OUT," ");
-			mpf_out_str(OUT,10,0,(*curr_patch)->coord[jj].i);
+			mpf_out_str(OUT,10,0,curr_patch->coord[jj].i);
 			fprintf(OUT,"\n");
 		}
 		
@@ -1515,14 +1532,14 @@ void witness_set::only_first_vars(int num_vars)
 	tempvec->size = num_vars;
 	
 	for (unsigned int ii=0; ii<num_points(); ii++) {
-		vec_mp * curr_point = point(ii);
+		vec_mp & curr_point = point(ii);
 		
 		for (int jj=0; jj<num_vars; jj++) {
-			set_mp(&tempvec->coord[jj], &(*curr_point)->coord[jj]);
+			set_mp(&tempvec->coord[jj], &curr_point->coord[jj]);
 		}
 		
-		change_size_vec_mp(*curr_point, num_vars);  (*curr_point)->size = num_vars;
-		vec_cp_mp(*curr_point, tempvec);
+		change_size_vec_mp(curr_point, num_vars);  curr_point->size = num_vars;
+		vec_cp_mp(curr_point, tempvec);
 	}
 	
 	
@@ -1530,7 +1547,7 @@ void witness_set::only_first_vars(int num_vars)
 	
 	int patch_size_counter = 0, trim_from_here =  0;
 	for (unsigned int ii=0; ii<num_patches(); ii++) {
-		patch_size_counter += (*patch(ii))->size;
+		patch_size_counter += patch(ii)->size;
 		if (patch_size_counter == num_vars)
 		{
 			trim_from_here = ii+1;
@@ -1544,14 +1561,14 @@ void witness_set::only_first_vars(int num_vars)
 	}
 	
 	for (unsigned int ii=trim_from_here; ii<num_patches(); ii++) {
-		clear_vec_mp(*patch(ii));
+		clear_vec_mp(patch(ii));
 	}
 	
 	patch_mp_ = (vec_mp *) br_realloc(patch_mp_, trim_from_here* sizeof(vec_mp));
 	num_patches_ = trim_from_here;
 	
 	for (unsigned int ii=0; ii<num_linears(); ii++) {
-		(*linear(ii))->size = num_vars;
+		linear(ii)->size = num_vars;
 	}
 	
 	clear_vec_mp(tempvec);
@@ -1573,9 +1590,9 @@ void witness_set::sort_for_real(tracker_config_t * T)
 	result->size = num_natty_vars_-1;
 	
 	for (unsigned int ii=0; ii<num_points(); ii++) {
-		vec_mp * curr_point = point(ii);
+		vec_mp & curr_point = point(ii);
 		for (int jj=1; jj<num_natty_vars_; jj++) {
-			div_mp(&result->coord[jj-1], &(*curr_point)->coord[jj], &(*curr_point)->coord[0]);
+			div_mp(&result->coord[jj-1], &curr_point->coord[jj], &curr_point->coord[0]);
 		}
 		real_indicator[ii] = checkForReal_mp(result, T->real_threshold);
 		
@@ -1589,11 +1606,11 @@ void witness_set::sort_for_real(tracker_config_t * T)
 	
 	counter = 0;  // reset
 	for (unsigned int ii=0; ii<num_points(); ii++) {
-		vec_mp * curr_point = point(ii);
+		vec_mp & curr_point = point(ii);
 		if (real_indicator[ii]==1) {
 			
 			init_vec_mp2(tempvec[counter],this->num_vars_,1024); tempvec[counter]->size = this->num_vars_;
-			vec_cp_mp(tempvec[counter],*curr_point);
+			vec_cp_mp(tempvec[counter],curr_point);
 			counter++;
 		}
 		else{
@@ -1605,7 +1622,7 @@ void witness_set::sort_for_real(tracker_config_t * T)
 	
 	
 	for (unsigned int ii=0; ii<num_points(); ii++) {
-		clear_vec_mp(*point(ii));
+		clear_vec_mp(point(ii));
 	}
 	free(pts_mp_);
 	
@@ -1626,8 +1643,7 @@ void witness_set::sort_for_unique(tracker_config_t * T)
 {
 	
 	if (num_vars_==0) {
-		std::cout << "blabla" << std::endl;
-		br_exit(55127);
+		throw std::logic_error("sorting witness set with 0 variables for uniqueness");
 	}
 	
 	int curr_uniqueness;
@@ -1635,21 +1651,21 @@ void witness_set::sort_for_unique(tracker_config_t * T)
 	std::vector<int> is_unique;
 	
 	for (unsigned int ii = 0; ii<num_points(); ++ii) {
-		vec_mp *curr_point = point(ii);
+		vec_mp &curr_point = point(ii);
 		
 		curr_uniqueness = 1;
 		
-		int prev_size_1 = (*curr_point)->size;  (*curr_point)->size = num_natty_vars_; // cache and change to natural number
+		int prev_size_1 = curr_point->size;  curr_point->size = num_natty_vars_; // cache and change to natural number
 		
 		for (unsigned int jj=ii+1; jj<num_points(); ++jj) {
-			vec_mp * inner_point = point(jj);
-			int prev_size_2 = (*inner_point)->size; (*inner_point)->size = num_natty_vars_; // cache and change to natural number
-			if ( isSamePoint_homogeneous_input(*curr_point,*inner_point) ){
+			vec_mp & inner_point = point(jj);
+			int prev_size_2 = inner_point->size; inner_point->size = num_natty_vars_; // cache and change to natural number
+			if ( isSamePoint_homogeneous_input(curr_point,inner_point) ){
 				curr_uniqueness = 0;
 			}
-			(*inner_point)->size = prev_size_2; // restore
+			inner_point->size = prev_size_2; // restore
 		}
-		(*curr_point)->size = prev_size_1; // restore
+		curr_point->size = prev_size_1; // restore
 		
 		if (curr_uniqueness==1) {
 			is_unique.push_back(1);
@@ -1669,20 +1685,21 @@ void witness_set::sort_for_unique(tracker_config_t * T)
 		if (is_unique[ii]==1) {
 			
 			init_vec_mp2(transferme[counter],num_vars_,1024);  transferme[counter]->size = num_vars_;
-			vec_cp_mp(transferme[counter], *point(ii));
+			vec_cp_mp(transferme[counter], point(ii));
 			counter++;
 		}
 	}
 	
 	if (counter!= num_good_pts) {
-		printf("counter mismatch\n");
-		br_exit(270);
+		std::logic_error("counter mismatch");
 	}
 	
-	for (unsigned int ii=0; ii<num_points(); ii++) {
-		clear_vec_mp(*point(ii));
+	if (num_points()>0) {
+		for (unsigned int ii=0; ii<num_points(); ii++) {
+			clear_vec_mp(point(ii));
+		}
+		free(pts_mp_);
 	}
-	free(pts_mp_);
 	
 	
 	num_pts_ = num_good_pts;
@@ -1713,7 +1730,7 @@ void witness_set::sort_for_inside_sphere(comp_mp radius, vec_mp center)
 		
 		
 		
-		dehomogenize(&temp_vec, *point(ii),num_natty_vars_);
+		dehomogenize(&temp_vec, point(ii),num_natty_vars_);
 		temp_vec->size = center->size;
 		
 		norm_of_difference(temp->r, temp_vec, center);
@@ -1737,7 +1754,7 @@ void witness_set::sort_for_inside_sphere(comp_mp radius, vec_mp center)
 	for (unsigned int ii=0; ii<num_points(); ++ii) {
 		if (is_ok[ii]==1) {
 			init_vec_mp2(transferme[counter],0,1024);  transferme[counter]->size = 0;
-			vec_cp_mp(transferme[counter], *point(ii));
+			vec_cp_mp(transferme[counter], point(ii));
 			counter++;
 		}
 	}
@@ -1748,7 +1765,7 @@ void witness_set::sort_for_inside_sphere(comp_mp radius, vec_mp center)
 	}
 	
 	for (unsigned int ii=0; ii<num_points(); ii++) {
-		clear_vec_mp(*point(ii));
+		clear_vec_mp(point(ii));
 	}
 	free(pts_mp_);
 	
@@ -1784,17 +1801,17 @@ void witness_set::merge(const witness_set & W_in)
 	
 	//just mindlessly add the linears.  up to user to ensure linears get merged correctly.  no way to know what they want...
 	for (unsigned int ii = 0; ii<W_in.num_linears(); ii++) {
-		witness_set::add_linear(*W_in.linear(ii));
+		witness_set::add_linear(W_in.linear(ii));
 	}
 	
 	
 	for (unsigned int ii = 0; ii<W_in.num_points(); ii++) {
 		int is_new = 1;
-		vec_mp * in_point = W_in.point(ii);
+		vec_mp & in_point = W_in.point(ii);
 		for (unsigned int jj = 0; jj<num_points(); jj++){
-			vec_mp * curr_point = this->point(jj);
-			if ( (*curr_point)->size == (*in_point)->size) {
-				if (isSamePoint_inhomogeneous_input((*curr_point), (*in_point))) {
+			vec_mp & curr_point = this->point(jj);
+			if ( curr_point->size == in_point->size) {
+				if (isSamePoint_inhomogeneous_input(curr_point, in_point)) {
 					is_new = 0;
 					break;
 				}
@@ -1803,7 +1820,7 @@ void witness_set::merge(const witness_set & W_in)
 		}
 		
 		if (is_new==1)
-			witness_set::add_point( (*in_point) );
+			witness_set::add_point( (in_point) );
 	}
 	
 	
@@ -1811,8 +1828,8 @@ void witness_set::merge(const witness_set & W_in)
 		int is_new = 1;
 		
 		for (unsigned int jj = 0; jj<this->num_patches(); jj++){
-			if ( (*this->patch(jj))->size ==  (*W_in.patch(ii))->size) {
-				if (isSamePoint_inhomogeneous_input(*patch(jj), *W_in.patch(ii))) {
+			if ( this->patch(jj)->size ==  W_in.patch(ii)->size) {
+				if (isSamePoint_inhomogeneous_input(patch(jj), W_in.patch(ii))) {
 					is_new = 0;
 					break;
 				}
@@ -1820,7 +1837,7 @@ void witness_set::merge(const witness_set & W_in)
 		}
 		
 		if (is_new==1)
-			witness_set::add_patch(*W_in.patch(ii));
+			witness_set::add_patch(W_in.patch(ii));
 	}
 	
 	
@@ -1871,13 +1888,13 @@ void witness_set::send(parallelism_config & mpi_config, int target) const
     free(buffer);
     
     for (unsigned int ii=0; ii<num_linears(); ii++) {
-        send_vec_mp( *linear(ii),target);
+        send_vec_mp( linear(ii),target);
     }
     for (unsigned int ii=0; ii<num_patches(); ii++) {
-        send_vec_mp( *patch(ii),target);
+        send_vec_mp( patch(ii),target);
     }
     for (unsigned int ii=0; ii<num_points(); ii++) {
-        send_vec_mp( *point(ii) ,target);
+        send_vec_mp( point(ii) ,target);
     }
     
     char * namebuffer = (char *) br_malloc(1024*sizeof(char));
@@ -2343,10 +2360,10 @@ witness_set witness_data::best_possible_automatic_set(BR_configuration & options
 		
 		int current_index = index_tracker[target_dimension][*iter][0]; // guaranteed to exist, b/c nonempty.  already checked.
 		
-		if (checkSelfConjugate(*point(current_index), options, options.input_filename)==true) {
+		if (checkSelfConjugate(point(current_index), options, options.input_filename)==true) {
 			std::cout << "dim " << target_dimension << ", comp " << *iter << " is self-conjugate" << std::endl;
 			for (int ii=0; ii<dimension_component_counter[target_dimension][*iter]; ++ii) {
-				W.add_point( *point(index_tracker[target_dimension][*iter][ii]) );
+				W.add_point( point(index_tracker[target_dimension][*iter][ii]) );
 			}
 			sc_counter++;
 		}
@@ -2364,13 +2381,13 @@ witness_set witness_data::best_possible_automatic_set(BR_configuration & options
 		
 		for (unsigned int ii=0; ii<linear_metadata.size(); ii++) {
 			if (linear_metadata[ii].dimension() == target_dimension) {
-				W.add_linear(*linear(ii));
+				W.add_linear(linear(ii));
 			}
 		}
 		
 		for (unsigned int ii=0; ii<patch_metadata.size(); ii++) {
 			if (patch_metadata[ii].dimension() == target_dimension) {
-				W.add_patch(*patch(ii));
+				W.add_patch(patch(ii));
 			}
 		}
 		
@@ -2482,20 +2499,20 @@ witness_set witness_data::choose_set_interactive(BR_configuration & options)
 		
 		//iterate over each point in the component
 		for (auto jter=index_tracker[target_dimension][*iter].begin(); jter!=index_tracker[target_dimension][*iter].end(); ++jter) {
-			W.add_point( *point(*jter) );
+			W.add_point( point(*jter) );
 		}
 		
 	}
 	
 	for (unsigned int ii=0; ii<linear_metadata.size(); ii++) {
 		if (linear_metadata[ii].dimension() == target_dimension) {
-			W.add_linear(*linear(ii));
+			W.add_linear(linear(ii));
 		}
 	}
 	
 	for (unsigned int ii=0; ii<patch_metadata.size(); ii++) {
 		if (patch_metadata[ii].dimension() == target_dimension) {
-			W.add_patch(*patch(ii));
+			W.add_patch(patch(ii));
 		}
 	}
 	
@@ -2531,19 +2548,19 @@ witness_set witness_data::form_specific_witness_set(int dim, int comp)
 	
 	for (auto iter = index_tracker[dim][comp].begin(); iter!= index_tracker[dim][comp].end(); ++iter) {
 		//iter points to an index into the vertices stored in the vertex set.
-		W.add_point( *point(*iter) );
+		W.add_point( point(*iter) );
 	}
 	
 	
 	for (unsigned int ii=0; ii<linear_metadata.size(); ii++) {
 		if (linear_metadata[ii].dimension() == dim) {
-			W.add_linear(*linear(ii));
+			W.add_linear(linear(ii));
 		}
 	}
 	
 	for (unsigned int ii=0; ii<patch_metadata.size(); ii++) {
 		if (patch_metadata[ii].dimension() == dim) {
-			W.add_patch(*patch(ii));
+			W.add_patch(patch(ii));
 		}
 	}
 	
@@ -2630,11 +2647,11 @@ int vertex_set::search_for_active_point(vec_mp testpoint)
 		int current_index = ii;
 		
 		if (vertices_[current_index].is_removed()==0) {
-			vec_mp* current_point = vertices_[current_index].point();
+			vec_mp& current_point = vertices_[current_index].point();
 			
 			// dehomogenize the current point under investigation
 			for (int jj=1; jj<num_natural_variables_; jj++) {
-				div_mp(&checker_2_->coord[jj-1], &(*current_point)->coord[jj], &(*current_point)->coord[0]);
+				div_mp(&checker_2_->coord[jj-1], &(current_point)->coord[jj], &(current_point)->coord[0]);
 			}
 			
 			if (isSamePoint_inhomogeneous_input(checker_1_, checker_2_)){
@@ -2672,10 +2689,10 @@ int vertex_set::search_for_removed_point(vec_mp testpoint)
 		
 		if (vertices_[current_index].is_removed()) {
 			
-			vec_mp * current_point = vertices_[current_index].point();
+			vec_mp & current_point = vertices_[current_index].point();
 			
 			for (int jj=1; jj<num_natural_variables_; jj++) {
-				div_mp(&checker_2_->coord[jj-1], &(*current_point)->coord[jj], &(*current_point)->coord[0]);
+				div_mp(&checker_2_->coord[jj-1], &(current_point)->coord[jj], &(current_point)->coord[0]);
 			}
 			
 			if (isSamePoint_inhomogeneous_input(checker_1_, checker_2_)){
@@ -2713,14 +2730,14 @@ int vertex_set::compute_downstairs_crit_midpts(const witness_set & W,
 	projection_values->size = W.num_points();
 	
 	for (unsigned int ii=0; ii<W.num_points(); ii++){
-		vec_mp * curr_point = W.point(ii);
+		vec_mp & curr_point = W.point(ii);
 		
-		for (int jj=0; jj<(*curr_point)->size; jj++) {
+		for (int jj=0; jj<curr_point->size; jj++) {
 			
-			if (!(mpfr_number_p((*curr_point)->coord[jj].r) && mpfr_number_p((*curr_point)->coord[jj].i))) {
+			if (!(mpfr_number_p(curr_point->coord[jj].r) && mpfr_number_p(curr_point->coord[jj].i))) {
 				std::cout << color::red();
 				std::cout << "there was NAN in a coordinate for a point in the projections to sort :(" << std::endl;
-				print_point_to_screen_matlab(*curr_point, "bad_point");
+				print_point_to_screen_matlab(curr_point, "bad_point");
 				
 				print_point_to_screen_matlab(pi,"pi");
 				std::cout << color::console_default();
@@ -2730,7 +2747,7 @@ int vertex_set::compute_downstairs_crit_midpts(const witness_set & W,
 		}
 		
         
-        int curr_index = search_for_point(*curr_point);
+        int curr_index = search_for_point(curr_point);
         
         if (curr_index < 0) {
             std::cout << color::red() << "trying to retrieve projection value from a non-stored point" << color::console_default() << std::endl;
@@ -2739,7 +2756,7 @@ int vertex_set::compute_downstairs_crit_midpts(const witness_set & W,
         
 
         
-        set_mp(&projection_values->coord[ii], & (*vertices_[curr_index].projection_values())->coord[proj_index]);
+        set_mp(&projection_values->coord[ii], & (vertices_[curr_index].projection_values())->coord[proj_index]);
         
 		
 		
@@ -2818,16 +2835,16 @@ std::vector<int> vertex_set::assert_projection_value(const std::set< int > & rel
     for (std::set<int>::iterator ii=relevant_indices.begin(); ii!=relevant_indices.end(); ii++) {
         //*ii
         
-        sub_mp(temp, &(*vertices_[*ii].projection_values())->coord[proj_index], new_value);
+        sub_mp(temp, &(vertices_[*ii].projection_values())->coord[proj_index], new_value);
         if (fabs(mpf_get_d(temp->r))>0.0001) {
             std::cout << "trying to assert projection value of " << mpf_get_d(new_value->r)
-				      << " but original value is " << mpf_get_d((*vertices_[*ii].projection_values())->coord[proj_index].r) << std::endl;
+				      << " but original value is " << mpf_get_d((vertices_[*ii].projection_values())->coord[proj_index].r) << std::endl;
             std::cout << "point index is " << *ii << std::endl;
 			bad_indices.push_back(*ii);
 			continue;
         }
         
-        set_mp(&(*vertices_[*ii].projection_values())->coord[proj_index], new_value);
+        set_mp(&(vertices_[*ii].projection_values())->coord[proj_index], new_value);
     }
     
     
@@ -2857,15 +2874,15 @@ int vertex_set::add_vertex(const vertex source_vertex)
 	vertices_.push_back(source_vertex);
 	
 	
-	if ((*vertices_[num_vertices_].projection_values())->size < num_projections_) {
-		increase_size_vec_mp((*vertices_[num_vertices_].projection_values()), num_projections_ );
-		(*vertices_[num_vertices_].projection_values())->size = num_projections_;
+	if ((vertices_[num_vertices_].projection_values())->size < num_projections_) {
+		increase_size_vec_mp((vertices_[num_vertices_].projection_values()), num_projections_ );
+		(vertices_[num_vertices_].projection_values())->size = num_projections_;
 	}
 	
 	for (int ii=0; ii<this->num_projections_; ii++){
 		bool compute_proj_val = false;
 		
-		if (! (mpfr_number_p( (*vertices_[num_vertices_].projection_values())->coord[ii].r) && mpfr_number_p( (*vertices_[num_vertices_].projection_values())->coord[ii].i)  ) )
+		if (! (mpfr_number_p( (vertices_[num_vertices_].projection_values())->coord[ii].r) && mpfr_number_p( (vertices_[num_vertices_].projection_values())->coord[ii].i)  ) )
 		{
 			compute_proj_val = true;
 		}
@@ -2876,11 +2893,11 @@ int vertex_set::add_vertex(const vertex source_vertex)
 		
 		
 		if (compute_proj_val==true) {
-			projection_value_homogeneous_input(&(*vertices_[num_vertices_].projection_values())->coord[ii],
-											   *vertices_[num_vertices_].point(),
+			projection_value_homogeneous_input(&(vertices_[num_vertices_].projection_values())->coord[ii],
+											   vertices_[num_vertices_].point(),
 											   projections_[ii]);
 #ifdef thresholding
-            real_threshold(&(*vertices_[num_vertices_].projection_values())->coord[ii],1e-13);
+            real_threshold(&(vertices_[num_vertices_].projection_values())->coord[ii],1e-13);
 #endif
 		}
 		
@@ -2903,8 +2920,8 @@ void vertex_set::print_to_screen()
 {
 	printf("vertex set has %zu vertices:\n\n",num_vertices_);
 	for (unsigned int ii=0; ii<this->num_vertices_; ++ii) {
-		print_point_to_screen_matlab(*vertices_[ii].point(),"vert");
-		print_point_to_screen_matlab(*vertices_[ii].projection_values(),"projection_values");
+		print_point_to_screen_matlab(vertices_[ii].point(),"vert");
+		print_point_to_screen_matlab(vertices_[ii].projection_values(),"projection_values");
 		printf("type: %d\n", vertices_[ii].type());
 	}
 }
@@ -2954,23 +2971,23 @@ int vertex_set::setup_vertices(boost::filesystem::path INfile)
 	for (unsigned int ii=0; ii<temp_num_vertices; ii++)
 	{
 		fscanf(IN, "%d\n", &num_vars);
-		if ((*temp_vertex.point())->size != num_vars) {
-			change_size_vec_mp(*temp_vertex.point(),num_vars); (*temp_vertex.point())->size = num_vars;
+		if ((temp_vertex.point())->size != num_vars) {
+			change_size_vec_mp(temp_vertex.point(),num_vars); (temp_vertex.point())->size = num_vars;
 		}
 		
 		for (int jj=0; jj<num_vars; jj++)
 		{
-			mpf_inp_str((*temp_vertex.point())->coord[jj].r, IN, 10);
-			mpf_inp_str((*temp_vertex.point())->coord[jj].i, IN, 10);
+			mpf_inp_str((temp_vertex.point())->coord[jj].r, IN, 10);
+			mpf_inp_str((temp_vertex.point())->coord[jj].i, IN, 10);
 		}
 		
 		int temp_num;
 		fscanf(IN,"%d\n",&temp_num);
-		increase_size_vec_mp(*temp_vertex.projection_values(),temp_num);
-		(*temp_vertex.projection_values())->size = temp_num;
+		increase_size_vec_mp(temp_vertex.projection_values(),temp_num);
+		(temp_vertex.projection_values())->size = temp_num;
 		for (int jj=0; jj<temp_num; jj++) {
-			mpf_inp_str((*temp_vertex.projection_values())->coord[jj].r, IN, 10);
-			mpf_inp_str((*temp_vertex.projection_values())->coord[jj].i, IN, 10);
+			mpf_inp_str((temp_vertex.projection_values())->coord[jj].r, IN, 10);
+			mpf_inp_str((temp_vertex.projection_values())->coord[jj].i, IN, 10);
 		}
 		
 		int temp_int;
@@ -3031,15 +3048,15 @@ void vertex_set::print(boost::filesystem::path outputfile) const
 	
 	for (unsigned int ii = 0; ii < num_vertices_; ii++)
 	{ // output points
-		fprintf(OUT,"%d\n", (*vertices_[ii].get_point())->size);
-		for(int jj=0;jj<(*vertices_[ii].get_point())->size;jj++) {
-			print_mp(OUT, 0, &(*vertices_[ii].get_point())->coord[jj]);
+		fprintf(OUT,"%d\n", (vertices_[ii].get_point())->size);
+		for(int jj=0;jj<(vertices_[ii].get_point())->size;jj++) {
+			print_mp(OUT, 0, &(vertices_[ii].get_point())->coord[jj]);
 			fprintf(OUT,"\n");
 		}
 		
-		fprintf(OUT,"%d\n",(*vertices_[ii].get_projection_values())->size);
-		for(int jj=0;jj<(*vertices_[ii].get_projection_values())->size;jj++) {
-			print_mp(OUT, 0, &(*vertices_[ii].get_projection_values())->coord[jj]);
+		fprintf(OUT,"%d\n",(vertices_[ii].get_projection_values())->size);
+		for(int jj=0;jj<(vertices_[ii].get_projection_values())->size;jj++) {
+			print_mp(OUT, 0, &(vertices_[ii].get_projection_values())->coord[jj]);
 			fprintf(OUT,"\n");
 		}
 		
@@ -3265,7 +3282,7 @@ int decomposition::add_witness_set(const witness_set & W, int add_type, vertex_s
     temp_vertex.set_type(add_type);
     
     for (unsigned int ii=0; ii<W.num_points(); ii++) {
-        vec_cp_mp(*temp_vertex.point(), *W.point(ii));
+        vec_cp_mp(temp_vertex.point(), W.point(ii));
         this->index_in_vertices_with_add(V, temp_vertex);
     }
     
@@ -3315,7 +3332,7 @@ int decomposition::index_in_vertices(vertex_set & V,
 int decomposition::index_in_vertices_with_add(vertex_set &V,
 											  vertex vert)
 {
-	int index = decomposition::index_in_vertices(V, *vert.point());
+	int index = decomposition::index_in_vertices(V, vert.point());
 	
 	if (index==-1) {
 		index = decomposition::add_vertex(V, vert);
@@ -3454,10 +3471,10 @@ void decomposition::print(boost::filesystem::path base)
 	fprintf(OUT,"%zu\n\n",this->num_patches()); // print the header line
 	
 	for (unsigned ii=0; ii<this->num_patches(); ++ii) {
-		vec_mp * curr_patch = patch(ii);
-		fprintf(OUT,"%d\n",(*curr_patch)->size);
-		for (int jj=0; jj<(*curr_patch)->size; jj++) {
-			print_mp(OUT, 0, &(*curr_patch)->coord[jj]);
+		vec_mp & curr_patch = patch(ii);
+		fprintf(OUT,"%d\n",curr_patch->size);
+		for (int jj=0; jj<curr_patch->size; jj++) {
+			print_mp(OUT, 0, &curr_patch->coord[jj]);
 			fprintf(OUT, "\n");
 		}
 		fprintf(OUT,"\n");
@@ -3553,7 +3570,7 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 	{
 		set_zero_mp(sphere_radius_);
 		mpf_set_str(sphere_radius_->r, "3.0",10);
-		dehomogenize(&temp_vec, *(W_crit.point(0)));
+		dehomogenize(&temp_vec, W_crit.point(0));
 		
 		for (int ii=0; ii<num_vars; ii++) {
 			set_mp(&sphere_center_->coord[ii], &temp_vec->coord[ii]);
@@ -3591,7 +3608,7 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 	
 	
 	for (unsigned int ii=0; ii<W_crit.num_points(); ii++) {
-		dehomogenize(&temp_vec, *(W_crit.point(ii)), num_vars+1);
+		dehomogenize(&temp_vec, W_crit.point(ii), num_vars+1);
 		temp_vec->size = num_vars;
 		add_vec_mp(cumulative_sum, cumulative_sum, temp_vec);
 	}
@@ -3608,7 +3625,7 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 	
 	
 	for (unsigned int ii=0; ii<W_crit.num_points(); ii++) {
-		dehomogenize(&temp_vec, *(W_crit.point(ii)), num_vars+1);
+		dehomogenize(&temp_vec, W_crit.point(ii), num_vars+1);
 		temp_vec->size = num_vars;
 		vec_sub_mp(temp_vec, temp_vec, sphere_center_);
 		
@@ -3643,6 +3660,16 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 }
 
 
+
+void decomposition::copy_data_from_witness_set(const witness_set & W)
+{
+	// set some member information.
+	set_input_filename(W.input_filename());
+	set_num_variables(W.num_variables());
+	set_component_number(W.component_number());
+	
+	this->W_ = W;
+}
 
 void decomposition::output_main(const boost::filesystem::path base)
 {
@@ -3734,7 +3761,7 @@ void decomposition::send(int target, parallelism_config & mpi_config)
 	if ( num_patches()>0) {
 
 		for (unsigned int ii=0; ii<num_patches(); ii++) {
-			send_vec_mp(*patch(ii),target);
+			send_vec_mp(patch(ii),target);
 		}
 	}
 	

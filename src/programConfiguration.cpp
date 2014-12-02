@@ -448,7 +448,6 @@ void sampler_configuration::print_usage()
 	printf("-maxits -m \t\t\tint\n");
 	printf("-gammatrick -g \t\t\tbool\n");
 	printf("-fixed \t\t\tint number samples per edge\n");
-	printf("-projbin -pb \t\t\t -- turn on projection-based binning rather than distance based.\n");
 	printf("\n\n\n");
 	return;
 }
@@ -479,8 +478,6 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 			{"g",		required_argument,			 0, 'g'},
 			{"fixed",		required_argument,			 0, 'f'},
 			{"nd", no_argument,0,'d'},
-			{"projbin",		no_argument,			 0, 'b'},
-			{"pb", no_argument,0,'b'},
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
@@ -494,13 +491,7 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 			break;
 		
 		switch (choice)
-		{
-			case 'b':
-				
-				use_projection_binning = true;
-				
-				break;
-				
+		{				
 			case 'd':
 				no_duplicates = false;
 				break;

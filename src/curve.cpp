@@ -3,7 +3,7 @@
 
 
 void curve_decomposition::main(vertex_set & V,
-                               witness_set & W, // not const, will be modified
+                               witness_set & W_curve, // not const, will be modified
                                vec_mp *projections,
                                BR_configuration & program_options,
                                solver_configuration & solve_options)
@@ -17,9 +17,6 @@ void curve_decomposition::main(vertex_set & V,
 		
 	
 	
-	set_component_number(W.component_number());
-
-	set_num_variables(W.num_variables());
 	
 	
 	if (1) {
@@ -29,19 +26,19 @@ void curve_decomposition::main(vertex_set & V,
 			printf("performing isosingular deflation\n");
 		
 		
-		program_options.input_deflated_filename = W.input_filename();
+		program_options.input_deflated_filename = W_curve.input_filename();
 		
 		std::stringstream converter;
-		converter << "_dim_" << W.dimension() << "_comp_" << W.component_number() << "_deflated";
+		converter << "_dim_" << W_curve.dimension() << "_comp_" << W_curve.component_number() << "_deflated";
 		program_options.input_deflated_filename += converter.str();
 		converter.clear(); converter.str("");
 		
 		std::set<unsigned int> zeroonly;
 		zeroonly.insert(0);
-		W.write_dehomogenized_coordinates("witness_points_dehomogenized",zeroonly); // write the points to file
+		W_curve.write_dehomogenized_coordinates("witness_points_dehomogenized",zeroonly); // write the points to file
 		int num_deflations, *deflation_sequence = NULL;
 		isosingular_deflation(&num_deflations, &deflation_sequence,
-							  program_options, W.input_filename(),
+							  program_options, W_curve.input_filename(),
 							  "witness_points_dehomogenized",
 							  program_options.input_deflated_filename,
 							  program_options.max_deflations());
@@ -51,7 +48,7 @@ void curve_decomposition::main(vertex_set & V,
 		
 		
 		
-		W.set_input_filename(program_options.input_deflated_filename);
+		W_curve.set_input_filename(program_options.input_deflated_filename);
 	}
 	else {
 		program_options.input_deflated_filename = program_options.input_filename;
@@ -59,11 +56,12 @@ void curve_decomposition::main(vertex_set & V,
 	}
 	
 	
-	set_input_filename(W.input_filename());
+	decomposition::copy_data_from_witness_set(W_curve);
+	
 	
 	
 	// this wraps around a bertini routine
-	parse_input_file(W.input_filename());
+	parse_input_file(W_curve.input_filename());
 	
 	preproc_data_clear(&solve_options.PPD);
 	parse_preproc_data("preproc_data", &solve_options.PPD);
@@ -71,23 +69,22 @@ void curve_decomposition::main(vertex_set & V,
 	
 	
 	int self_conjugate = 1;
-	if (W.num_synth_vars()==0) {
+	if (W_curve.num_synth_vars()==0) {
 		
 		if (program_options.verbose_level()>=2) {
 			printf("checking if component is self-conjugate\n");
 		}
-		self_conjugate = checkSelfConjugate( *W.point(0), program_options, W.input_filename());  //later:  could be passed in from user, if we want
+		self_conjugate = checkSelfConjugate( W_curve.point(0), program_options, W_curve.input_filename());  //later:  could be passed in from user, if we want
 		
 		
 		
-		if ( verify_projection_ok(W,projections,solve_options) == 1 ){
+		if ( verify_projection_ok(W_curve,projections,solve_options) == 1 ){
 			if (program_options.verbose_level()>=1) {
 				printf("verified projection is ok\n");
 			}
 		}
 		else{
 			printf("the projection is invalid, in that the jacobian of the randomized system\nbecomes singular at a random point, when the projection is concatenated\n");
-			
 			br_exit(196);
 		}
 		
@@ -112,15 +109,15 @@ void curve_decomposition::main(vertex_set & V,
 	{
 		//Call non-self-conjugate case code
 		
-		computeCurveNotSelfConj(W, V, num_variables(),
-                                program_options, solve_options);
+		computeCurveNotSelfConj(W_curve, V, num_variables(),
+                                program_options);
 		
 	}
 	else
 	{
 		//Call self-conjugate case code
 		
-		computeCurveSelfConj(W,
+		computeCurveSelfConj(W_curve,
                              projections,
                              V,
                              program_options, solve_options);
@@ -200,8 +197,7 @@ int curve_decomposition::compute_critical_points(const witness_set & W_curve,
 #endif
 	
 	if (!this->randomizer()->is_ready()) {
-		std::cout << "randomizer is not setup at compute_critical_points" << std::endl;
-		br_exit(29889);
+		std::logic_error("randomizer is not setup at compute_critical_points");
 	}
 	
 	W_crit_real.set_input_filename(W_curve.input_filename());
@@ -232,7 +228,7 @@ int curve_decomposition::compute_critical_points(const witness_set & W_curve,
 	
 	
 	if (have_sphere()) {
-		W_crit_real.sort_for_inside_sphere(*sphere_radius(), *sphere_center());
+		W_crit_real.sort_for_inside_sphere(sphere_radius(), sphere_center());
 	}
 	else
 	{
@@ -243,7 +239,7 @@ int curve_decomposition::compute_critical_points(const witness_set & W_curve,
 	
     witness_set W_additional;
 	// now get the sphere intersection critical points and ends of the interval
-	get_additional_critpts(&W_additional,  // the returned value
+	get_sphere_intersection_pts(&W_additional,  // the returned value
                            W_curve,       // all else here is input
                            program_options,
                            solve_options);
@@ -262,23 +258,23 @@ int curve_decomposition::compute_critical_points(const witness_set & W_curve,
 
 
 
-int curve_decomposition::get_additional_critpts(witness_set *W_additional,
+int curve_decomposition::get_sphere_intersection_pts(witness_set *W_additional,
                                                 const witness_set & W_curve,
                                                 BR_configuration & program_options,
                                                 solver_configuration & solve_options)
 {
 #ifdef functionentry_output
-	std::cout << "curve::get_additional_critpts" << std::endl;
+	std::cout << "curve::get_sphere_intersection_pts" << std::endl;
 #endif
 	
 	if (!this->randomizer()->is_ready()) {
-		std::cout << "randomizer is not ready to go" << std::endl;
-		br_exit(13091270);
+		throw std::logic_error("randomizer is not ready to go at get_sphere_intersection_pts");
 	}
     
     if (W_curve.num_linears()!=1) {
-        std::cout << color::red() << "the input witness set to get_additional_critpts had an incorrect number of linears: " << W_curve.num_linears() << color::console_default() << std::endl;
-        br_exit(-518);
+		std::stringstream ss;
+		ss << "the input witness set to get_additional_critpts had an incorrect number of linears: " << W_curve.num_linears() << std::endl;
+		throw std::logic_error(ss.str());
     }
     
     
@@ -367,8 +363,8 @@ int curve_decomposition::get_additional_critpts(witness_set *W_additional,
 	
 	
 	sp_config.set_memory(solve_options); // gets the SLP in memory, and sets up the global memory structures used for evaluation
-	sp_config.set_center(*this->sphere_center());
-	sp_config.set_radius(*this->sphere_radius());
+	sp_config.set_center(this->sphere_center());
+	sp_config.set_radius(this->sphere_radius());
 	
 	
 	
@@ -407,8 +403,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 #endif
 	
 	if (!this->randomizer()->is_ready()) {
-		std::cout << "in interslice, randomizer is not set up properly." << std::endl;
-		br_exit(5023);
+		throw std::logic_error("in interslice, randomizer is not set up properly.");
 	}
 	
 	V.set_curr_projection(projections[0]);
@@ -451,7 +446,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 		
 		if (program_options.verbose_level()>=8)
 			printf("adding point %u of %zu from W_crit_real to vertices\n",ii,W_crit_real.num_points());
-		temp_vertex.set_point( *W_crit_real.point(ii));
+		temp_vertex.set_point( W_crit_real.point(ii));
 		temp_vertex.set_type(CRITICAL); // set type
 		
 		int I = index_in_vertices_with_add(V, temp_vertex);
@@ -543,7 +538,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 
 
 		midpoint_witness_sets[ii].sort_for_real(&solve_options.T);
-		midpoint_witness_sets[ii].sort_for_inside_sphere(*sphere_radius(), *sphere_center());
+		midpoint_witness_sets[ii].sort_for_inside_sphere(sphere_radius(), sphere_center());
 		
 		
 
@@ -697,7 +692,7 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 					
 					//sharpen up the initial point.
 					
-					W_single.add_point( *(midpoint_witness_sets[ii].point(kk)));
+					W_single.add_point( midpoint_witness_sets[ii].point(kk));
 					
 					
 					int prev_sharpen_digits = solve_options.T.sharpenDigits;
@@ -818,12 +813,12 @@ int curve_decomposition::interslice(const witness_set & W_curve,
 					
 					
 					if (W_single_right.num_points()==1 && W_single_left.num_points()==1) {
-						W_midpoint_replacement.add_point( *(midpoint_witness_sets[ii].point(kk)));
-						Wleft.add_point(*(W_single_left.point(0)));
-						Wright.add_point(*(W_single_right.point(0)));
+						W_midpoint_replacement.add_point( midpoint_witness_sets[ii].point(kk));
+						Wleft.add_point(W_single_left.point(0));
+						Wright.add_point(W_single_right.point(0));
 					}
 					else{
-						temp_vertex.set_point( *(midpoint_witness_sets[ii].point(kk)) ) ;
+						temp_vertex.set_point( midpoint_witness_sets[ii].point(kk) ) ;
 						temp_vertex.set_type(PROBLEMATIC); // set type
 						index_in_vertices_with_add(V, temp_vertex);
 					}
@@ -845,18 +840,18 @@ int curve_decomposition::interslice(const witness_set & W_curve,
         
 		
 		for (unsigned int kk=0; kk<midpoint_witness_sets[ii].num_points(); kk++) {
-			temp_vertex.set_point( *(midpoint_witness_sets[ii].point(kk)) );
+			temp_vertex.set_point( midpoint_witness_sets[ii].point(kk) );
 			temp_vertex.set_type(MIDPOINT); // set type
 			
 			temp_edge.midpt(index_in_vertices_with_add(V, temp_vertex)); // gets the index of the new midpoint as it is added
 			
-			temp_vertex.set_point( *(Wleft.point(kk)) );
+			temp_vertex.set_point( Wleft.point(kk) );
 			temp_vertex.set_type(NEW); // set type
 			
 			temp_edge.left(index_in_vertices_with_add(V, temp_vertex));
 			
 			
-			temp_vertex.set_point( *(Wright.point(kk)) );
+			temp_vertex.set_point( Wright.point(kk) );
 			temp_vertex.set_type(NEW); // set type
 			
 			temp_edge.right(index_in_vertices_with_add(V, temp_vertex));
@@ -1158,7 +1153,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		
 		// get the projection value of the midpoint we will be moving from.
 		//arbitrarily chose to move from the midpoint of the left edge.
-		projection_value_homogeneous_input(&particular_projection->coord[0], *V[edges_[moving_edge].midpt()].point(), projections[0]);
+		projection_value_homogeneous_input(&particular_projection->coord[0], V[edges_[moving_edge].midpt()].point(), projections[0]);
 		neg_mp(&particular_projection->coord[0],&particular_projection->coord[0]);
 		
 		
@@ -1166,11 +1161,11 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		W_midpt.add_linear(particular_projection);
 		
 		W_midpt.reset_points();
-		W_midpt.add_point(*V[edges_[moving_edge].midpt()].point());
+		W_midpt.add_point(V[edges_[moving_edge].midpt()].point());
 		// I arbitrarily chose the left edge's midpoint as source to track to new midpoint.
 		
-		projection_value_homogeneous_input(temp,*V[edges_[leftmost_edge].left()].point(),projections[0]);
-		projection_value_homogeneous_input(temp2,*V[edges_[rightmost_edge].right()].point(),projections[0]);
+		projection_value_homogeneous_input(temp,V[edges_[leftmost_edge].left()].point(),projections[0]);
+		projection_value_homogeneous_input(temp2,V[edges_[rightmost_edge].right()].point(),projections[0]);
 		
 		
 		add_mp(new_proj_val, temp, temp2);
@@ -1206,7 +1201,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		
         // each member of W_temp should real.  if a member of V already, mark index.  else, add to V, and mark.
 		vertex temp_vertex;
-		temp_vertex.set_point( *(W_temp.point(0)));
+		temp_vertex.set_point( W_temp.point(0) );
 		temp_vertex.set_type(MIDPOINT);
 		
 		edge temp_edge; // create new empty edge
@@ -1260,7 +1255,7 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		for (unsigned int ii = 0; ii<this->num_edges_; ii++) {
 			bool remove_flag = false;
 			for (unsigned int zz=0; zz!=edges_to_merge.size(); zz++) {
-				if (edges_to_merge[zz] == ii) {
+				if (edges_to_merge[zz] == int(ii)) {
 					remove_flag = true;
 				}
 			}
@@ -1276,8 +1271,9 @@ void curve_decomposition::merge(witness_set & W_midpt,
 		
 		
 		if (num_removed_edges!= edges_to_merge.size()) {
-			std::cout << "claiming to have merged away " << num_removed_edges << " edges, but had " << edges_to_merge.size() << " in the list to merge" << std::endl;
-			br_exit(-524);
+			std::stringstream ss;
+			ss << "claiming to have merged away " << num_removed_edges << " edges, but had " << edges_to_merge.size() << " in the list to merge.";
+			throw std::logic_error(ss.str());
 		}
 		
 		//swap this's edge info to post-merge info.
@@ -1587,8 +1583,7 @@ void curve_decomposition::print_edges(boost::filesystem::path outputfile)
 void curve_decomposition::computeCurveNotSelfConj(const witness_set		&W_in,
                                                   vertex_set			&V,
                                                   int					num_vars,
-                                                  BR_configuration		&program_options,
-                                                  solver_configuration	&solve_options)
+                                                  BR_configuration		&program_options)
 
 {
 #ifdef functionentry_output
@@ -1616,7 +1611,7 @@ void curve_decomposition::computeCurveNotSelfConj(const witness_set		&W_in,
 	
 	
     //generate input file
-    diag_homotopy_input_file("input_NSC", "func_input_nsc","func_inputbar","config_nsc",*W_in.linear(0),num_vars-1);
+    diag_homotopy_input_file("input_NSC", "func_input_nsc","func_inputbar","config_nsc", W_in.linear(0),num_vars-1);
     //generate start file
 	diag_homotopy_start_file("start_NSC",  W_in);
 	
@@ -1627,8 +1622,9 @@ void curve_decomposition::computeCurveNotSelfConj(const witness_set		&W_in,
 	
     int retVal = system(bertini_system_command.c_str());
 	if (retVal!=0) {
-		std::cout << "system calling bertini for diagonal intersection returned nonzero value!" << std::endl;
-		br_exit(retVal);
+		std::stringstream ss;
+		ss << "system calling bertini for diagonal intersection returned nonzero value: " << retVal;
+		throw std::runtime_error(ss.str());
 	}
 	
 	rename("witness_data_0","witness_data");
@@ -1642,7 +1638,7 @@ void curve_decomposition::computeCurveNotSelfConj(const witness_set		&W_in,
 	
 	
 	vertex temp_vertex;
-	change_size_vec_mp(*temp_vertex.point(),num_vars); (*temp_vertex.point())->size = num_vars;
+	change_size_vec_mp(temp_vertex.point(),num_vars); temp_vertex.point()->size = num_vars;
 	temp_vertex.set_type(ISOLATED);
 	
 	
@@ -1860,19 +1856,19 @@ void diag_homotopy_start_file(boost::filesystem::path startFile,
 	
 	for (unsigned int ii=0; ii<W.num_points(); ii++){
 		
-		vec_mp * outer_point = W.point(ii);
+		vec_mp & outer_point = W.point(ii);
 		
-		change_prec_vec_mp(result,(*outer_point)->curr_prec);
-		dehomogenize(&result,*outer_point);
+		change_prec_vec_mp(result,outer_point->curr_prec);
+		dehomogenize(&result,outer_point);
 		
 		for (unsigned int jj=0; jj<W.num_points(); jj++) { // output {w \bar{w}}'
 			
-			vec_mp * inner_point = W.point(jj);
+			vec_mp & inner_point = W.point(jj);
 			
-			change_prec_vec_mp(result,(*inner_point)->curr_prec);
-			dehomogenize(&result2,*inner_point);
+			change_prec_vec_mp(result,inner_point->curr_prec);
+			dehomogenize(&result2,inner_point);
 			
-			change_prec_mp(temp,(*inner_point)->curr_prec);
+			change_prec_mp(temp,inner_point->curr_prec);
 			
 			for(int kk=0; kk<W.num_variables()-1;kk++) {
 				print_mp(OUT, 0, &result->coord[kk]); fprintf(OUT, "\n");
