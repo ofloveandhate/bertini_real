@@ -66,11 +66,11 @@
  
  In order to make the program_options and solve_options 'globally' accessibly, we place them into the containing process.
  */
-class process
+class Process
 {
 protected:
-	BR_configuration program_options;///< holds the current state of Bertini_real
-	solver_configuration solve_options; ///< holds the current state of the solver
+	BertiniRealConfig program_options;///< holds the current state of Bertini_real
+	SolverConfiguration solve_options; ///< holds the current state of the solver
 	
 	
 public:
@@ -81,7 +81,7 @@ public:
 	
 	virtual int main_loop() = 0;
 	
-	virtual ~process()
+	virtual ~Process()
 	{
 		
 	};
@@ -95,12 +95,12 @@ public:
 /**
  \brief Master process, level 0.
  */
-class ubermaster_process : public process
+class UbermasterProcess : public Process
 {
 	
 public:
 	
-	ubermaster_process(BR_configuration & new_options, solver_configuration & new_solve_options){
+	UbermasterProcess(BertiniRealConfig & new_options, SolverConfiguration & new_solve_options){
 		this->program_options = new_options;
 		this->solve_options = new_solve_options;
 	}
@@ -114,8 +114,15 @@ public:
 	 */
 	int main_loop();
 
-	void critreal(witness_set & W, vec_mp *pi, vertex_set & V);
-	~ubermaster_process()
+	void bertini_real(WitnessSet & W, vec_mp *pi, VertexSet & V);
+	
+	
+	void critreal(WitnessSet & W, vec_mp *pi, VertexSet & V);
+	
+	
+	
+	
+	~UbermasterProcess()
 	{
 		
 	}
@@ -126,18 +133,18 @@ public:
 /**
  \brief worker process, level 1.
  */
-class worker_process : public process
+class WorkerProcess : public Process
 {
 public:
 	
-	worker_process(BR_configuration & new_options, solver_configuration & new_solve_options){
+	WorkerProcess(BertiniRealConfig & new_options, SolverConfiguration & new_solve_options){
 		this->program_options = new_options;
 		this->solve_options = new_solve_options;
 	}
 	
 	
 	
-	~worker_process()
+	~WorkerProcess()
 	{
 		
 	}
@@ -154,8 +161,20 @@ public:
 
 
 
-
-
+/**
+ \brief reads in projection from file if user specified, creates one otherwise.
+ 
+ currently defaults to create a random real projection with homogeneous value 0;
+ 
+ \param pi the projection vectors to fill.  must be initted already, but not necessarily the correct size.
+ \param program_options The current state of Bertini_real.
+ \param num_vars how many variables to set up, including the homogenizing variable.
+ \param num_projections how many proj vectors to set up.  again, these must already be allocated outside this call.
+ */
+void get_projection(vec_mp *pi,
+					BertiniRealConfig program_options,
+					int num_vars,
+					int num_projections);
 
 
 

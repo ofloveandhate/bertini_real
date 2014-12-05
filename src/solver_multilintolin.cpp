@@ -22,10 +22,10 @@ void multilintolin_eval_data_mp::init()
 
 
 
-int multilintolin_eval_data_mp::setup(multilin_config & config,
-									  const witness_set & W,
+int multilintolin_eval_data_mp::setup(MultilinConfiguration & config,
+									  const WitnessSet & W,
 									  vec_mp * target_linears,
-									  solver_configuration & solve_options)
+									  SolverConfiguration & solve_options)
 {
 	
 	
@@ -62,7 +62,7 @@ int multilintolin_eval_data_mp::setup(multilin_config & config,
 		init_vec_mp(current_linear[ii],0);
 		init_vec_mp(old_linear[ii],0);
 		vec_cp_mp(current_linear[ii],target_linears[ii]);
-		vec_cp_mp(old_linear[ii],*W.linear(ii));
+		vec_cp_mp(old_linear[ii],W.linear(ii));
 	}
 	
 	
@@ -82,7 +82,7 @@ int multilintolin_eval_data_mp::setup(multilin_config & config,
 			init_vec_mp2(old_linear_full_prec[ii],0,1024);
 			
 			vec_cp_mp(current_linear_full_prec[ii],target_linears[ii]);
-			vec_cp_mp(old_linear_full_prec[ii],*W.linear(ii));
+			vec_cp_mp(old_linear_full_prec[ii],W.linear(ii));
 		}
 	}
 	
@@ -96,7 +96,7 @@ int multilintolin_eval_data_mp::setup(multilin_config & config,
 	
 	verbose_level(solve_options.verbose_level());
 	
-	solver_mp::setup(config.SLP, config.randomizer());
+	SolverMultiplePrecision::setup(config.SLP, config.randomizer());
 	
 	generic_setup_patch(&patch,W);
 	
@@ -131,7 +131,7 @@ int multilintolin_eval_data_mp::setup(multilin_config & config,
 
 
 
-int multilintolin_eval_data_mp::send(parallelism_config & mpi_config)
+int multilintolin_eval_data_mp::send(ParallelismConfig & mpi_config)
 {
 #ifdef functionentry_output
 	std::cout << "multilintolin_eval_data_mp::send()" << std::endl;
@@ -142,7 +142,7 @@ int multilintolin_eval_data_mp::send(parallelism_config & mpi_config)
 	// send the confirmation integer, to ensure that we are sending the correct type.
 	
 	//send the base class stuff.
-	solver_mp::send(mpi_config);
+	SolverMultiplePrecision::send(mpi_config);
 	
 	
 	int *buffer = new int[1];
@@ -177,7 +177,7 @@ int multilintolin_eval_data_mp::send(parallelism_config & mpi_config)
 
 
 
-int multilintolin_eval_data_mp::receive(parallelism_config & mpi_config)
+int multilintolin_eval_data_mp::receive(ParallelismConfig & mpi_config)
 {
 #ifdef functionentry_output
 	std::cout << "multilintolin_eval_data_mp::receive()" << std::endl;
@@ -192,7 +192,7 @@ int multilintolin_eval_data_mp::receive(parallelism_config & mpi_config)
 		mpi_config.abort(777);
 	}
 	
-	solver_mp::receive(mpi_config);
+	SolverMultiplePrecision::receive(mpi_config);
 	
 	
 	// now can actually receive the data from whoever.
@@ -259,7 +259,7 @@ void multilintolin_eval_data_d::init()
 	
 	if (this->MPType==2){
 		this->BED_mp = new multilintolin_eval_data_mp(2);
-		solver_d::BED_mp = this->BED_mp;                   //   <---------  you gotta do this cuz of masking problems.
+		SolverDoublePrecision::BED_mp = this->BED_mp;                   //   <---------  you gotta do this cuz of masking problems.
 	}
 	else{
 		this->BED_mp = NULL;
@@ -286,10 +286,10 @@ void multilintolin_eval_data_d::init()
 
 
 
-int multilintolin_eval_data_d::setup(multilin_config & config,
-									 const witness_set & W,
+int multilintolin_eval_data_d::setup(MultilinConfiguration & config,
+									 const WitnessSet & W,
 									 vec_mp * target_linears,
-									 solver_configuration & solve_options)
+									 SolverConfiguration & solve_options)
 {
 	
 	SLP_memory = config.SLP_memory;
@@ -308,7 +308,7 @@ int multilintolin_eval_data_d::setup(multilin_config & config,
 		init_vec_d(current_linear[ii],0);
 		init_vec_d(old_linear[ii],0);
 		vec_mp_to_d(current_linear[ii],target_linears[ii]);
-		vec_mp_to_d(old_linear[ii],*W.linear(ii));
+		vec_mp_to_d(old_linear[ii],W.linear(ii));
 	}
 	
 	num_linears = W.num_linears();
@@ -336,7 +336,7 @@ int multilintolin_eval_data_d::setup(multilin_config & config,
 	}
 	
 	
-	solver_d::setup(config.SLP, config.randomizer());
+	SolverDoublePrecision::setup(config.SLP, config.randomizer());
 	return 0;
 }
 
@@ -352,7 +352,7 @@ int multilintolin_eval_data_d::setup(multilin_config & config,
 
 
 
-int multilintolin_eval_data_d::send(parallelism_config & mpi_config)
+int multilintolin_eval_data_d::send(ParallelismConfig & mpi_config)
 {
 #ifdef functionentry_output
     std::cout << "multilintolin_eval_data_d::send()" << std::endl;
@@ -367,7 +367,7 @@ int multilintolin_eval_data_d::send(parallelism_config & mpi_config)
     
     
 	//send the base class stuff.
-	solver_d::send(mpi_config);
+	SolverDoublePrecision::send(mpi_config);
 	
 	// now can actually send the data.
 	int *buffer = new int[1];
@@ -383,7 +383,7 @@ int multilintolin_eval_data_d::send(parallelism_config & mpi_config)
 	return SUCCESSFUL;
 }
 
-int multilintolin_eval_data_d::receive(parallelism_config & mpi_config)
+int multilintolin_eval_data_d::receive(ParallelismConfig & mpi_config)
 {
 #ifdef functionentry_output
 	std::cout << "multilintolin_eval_data_d::receive()" << std::endl;
@@ -405,7 +405,7 @@ int multilintolin_eval_data_d::receive(parallelism_config & mpi_config)
     
     
 
-	solver_d::receive(mpi_config);
+	SolverDoublePrecision::receive(mpi_config);
 	
 	// now can actually receive the data from whoever.
 	
@@ -438,14 +438,18 @@ int multilintolin_eval_data_d::receive(parallelism_config & mpi_config)
 
 
 
-int multilin_solver_master_entry_point(const witness_set & W, // carries with it the start points, and the linears.
-									   solver_output & solve_out, // new data goes in here
+int multilin_solver_master_entry_point(const WitnessSet & W, // carries with it the start points, and the linears.
+									   SolverOutput & solve_out, // new data goes in here
 									   vec_mp * target_linears,
-									   multilin_config &		config,
-									   solver_configuration		& solve_options)
+									   MultilinConfiguration &		config,
+									   SolverConfiguration		& solve_options)
 {
 	
+	bool prev_parallel_state = solve_options.force_no_parallel();
 	
+	if ( int(W.num_points()) < solve_options.num_procs()-1) {
+		solve_options.force_no_parallel(true);
+	}
 	
 	if (solve_options.use_parallel()) {
 		solve_options.call_for_help(MULTILIN);
@@ -527,6 +531,8 @@ int multilin_solver_master_entry_point(const witness_set & W, // carries with it
 		solve_out.add_linear(target_linears[jj]);
 	}
 	
+	solve_options.force_no_parallel(prev_parallel_state);
+
 	
 	return SUCCESSFUL;
 	
@@ -539,7 +545,7 @@ int multilin_solver_master_entry_point(const witness_set & W, // carries with it
 
 
 
-int multilin_slave_entry_point(solver_configuration & solve_options)
+int multilin_slave_entry_point(SolverConfiguration & solve_options)
 {
 	
 	

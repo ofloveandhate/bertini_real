@@ -6,7 +6,7 @@
 
 
 bool checkSelfConjugate(vec_mp test_point,
-						BR_configuration & program_options,
+						BertiniRealConfig & program_options,
 						boost::filesystem::path input_file)
 {
 	
@@ -250,7 +250,7 @@ void membership_test_input_file(boost::filesystem::path outputFile,
 
 
 int get_incidence_number(vec_mp test_point,
-						 BR_configuration & program_options,
+						 BertiniRealConfig & program_options,
 						 boost::filesystem::path input_file)
 {
 	

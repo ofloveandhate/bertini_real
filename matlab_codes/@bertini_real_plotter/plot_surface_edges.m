@@ -6,17 +6,20 @@ function br_plotter = plot_surface_edges(br_plotter)
 
 
 handle_counter = 0;
-br_plotter.handles.critcurve_labels = [];
-br_plotter.handles.spherecurve_labels = [];
-br_plotter.handles.refinements.critcurve = [];
-br_plotter.handles.critcurve = [];
+
 
 if br_plotter.BRinfo.crit_curve.num_edges>0
 	
+	if isfield(br_plotter.options,'use_fixed_linestyle')
+			style = br_plotter.options.linestyle;
+		else
+			style = '-';
+	end
+		
 	[br_plotter.handles.critcurve, ...
 		br_plotter.handles.refinements.critcurve, ...
 		br_plotter.handles.critcurve_labels] ...
-		  = plot_subcurve(br_plotter,br_plotter.BRinfo.crit_curve,'critcurve','-','r');
+		  = plot_subcurve(br_plotter,br_plotter.BRinfo.crit_curve,'critcurve',style,'r');
 	
 	
 
@@ -35,15 +38,20 @@ end
 
 
 
-br_plotter.handles.refinements.spherecurve = [];
-br_plotter.handles.spherecurve = [];
+
 if isfield(br_plotter.BRinfo,'sphere_curve')
 	if br_plotter.BRinfo.sphere_curve.num_edges>0
+		
+		if isfield(br_plotter.options,'use_fixed_linestyle')
+			style = br_plotter.options.linestyle;
+		else
+			style = '-.';
+		end
 		
 		[br_plotter.handles.spherecurve, ...
 			br_plotter.handles.refinements.spherecurve, ...
 			br_plotter.handles.spherecurve_labels] ...
-			  = plot_subcurve(br_plotter,br_plotter.BRinfo.sphere_curve,'spherecurve','-.','c');
+			  = plot_subcurve(br_plotter,br_plotter.BRinfo.sphere_curve,'spherecurve',style,'c');
 	
 		if ~isempty(br_plotter.handles.spherecurve)
 			handle_counter = handle_counter+1;
@@ -58,21 +66,26 @@ end
 num_midslices = length(br_plotter.BRinfo.midpoint_slices);
 num_crit_slices = length(br_plotter.BRinfo.critpoint_slices);
 
-colors = jet(num_midslices+num_crit_slices);
+colors = br_plotter.options.colormap(num_midslices+num_crit_slices);
 
 
 
 
 
-br_plotter.handles.crittext = [];
-br_plotter.handles.critslices = [];
-br_plotter.handles.refinements.critslice = [];
+
 firstone = 1;
+
+if isfield(br_plotter.options,'use_fixed_linestyle')
+	style = br_plotter.options.linestyle;
+else
+	style = ':';
+end
+		
 for kk = 1:num_crit_slices
 	color_index = 1+2*(kk-1);
 	
 	[handie_mc_handhand, refinement_handles, label_handles] ...
-		= plot_subcurve(br_plotter,br_plotter.BRinfo.critpoint_slices{kk},sprintf('crit.%d.',kk),':','m',colors(color_index,:));
+		= plot_subcurve(br_plotter,br_plotter.BRinfo.critpoint_slices{kk},sprintf('crit.%d.',kk),style,'m',colors(color_index,:));
 	
 	br_plotter.handles.crittext = [br_plotter.handles.crittext;label_handles];
 	br_plotter.handles.critslices = [br_plotter.handles.critslices;handie_mc_handhand];
@@ -94,21 +107,25 @@ end
 
 
 
-br_plotter.handles.midtext = [];
-br_plotter.handles.midslices = [];
-br_plotter.handles.refinements.midslice = [];
 
+if isfield(br_plotter.options,'use_fixed_linestyle')
+	style = br_plotter.options.linestyle;
+else
+	style = '--';
+end
+		
 
+added = false;
 for kk = 1:length(br_plotter.BRinfo.midpoint_slices)
 	color_index = 2*(kk);
 	[handie_mc_handhand, refinement_handles, label_handles] ...
-		= plot_subcurve(br_plotter,br_plotter.BRinfo.midpoint_slices{kk},sprintf('mid.%d.',kk),'--','g',colors(color_index,:));
+		= plot_subcurve(br_plotter,br_plotter.BRinfo.midpoint_slices{kk},sprintf('mid.%d.',kk),style,'g',colors(color_index,:));
 	
 	br_plotter.handles.midtext = [br_plotter.handles.midtext;label_handles];
 	br_plotter.handles.midslices = [br_plotter.handles.midslices;handie_mc_handhand];
 	br_plotter.handles.refinements.midslice = [br_plotter.handles.refinements.midslice;refinement_handles];
 	
-	if kk==1
+	if and(added==false,~isempty(handie_mc_handhand))
 		handle_counter = handle_counter+1;
 		br_plotter.legend.surface_edges.handles(handle_counter) = handie_mc_handhand(1);
 		br_plotter.legend.surface_edges.text{handle_counter} = 'midslices';
@@ -123,10 +140,14 @@ end
 
 
 
-br_plotter.handles.singtext = [];
-br_plotter.handles.singular_curves = [];
-br_plotter.handles.refinements.singularcurve = [];
 
+
+if isfield(br_plotter.options,'use_fixed_linestyle')
+	style = br_plotter.options.linestyle;
+else
+	style = ':';
+end
+		
 if isfield(br_plotter.BRinfo,'singular_curves')
 	
 	
@@ -135,7 +156,7 @@ if isfield(br_plotter.BRinfo,'singular_curves')
 	for kk = 1:length(br_plotter.BRinfo.singular_curves)
 		
 		
-		[handie_mc_handhand, refinement_handles, label_handles] = plot_subcurve(br_plotter,br_plotter.BRinfo.singular_curves{kk},sprintf('sing.%d.',kk),':','b');
+		[handie_mc_handhand, refinement_handles, label_handles] = plot_subcurve(br_plotter,br_plotter.BRinfo.singular_curves{kk},sprintf('sing.%d.',kk),style,'b');
 	
 
 		br_plotter.handles.singtext = [br_plotter.handles.singtext;label_handles];
@@ -166,7 +187,7 @@ end
 
 
 
-function [edge_handles, refinement_handles, text_handle] = plot_subcurve(br_plotter,curve,name,style,text_color,color)
+function [edge_handles, refinement_handles, text_handle] = plot_subcurve(br_plotter,curve,name,style,text_color,desiredcolor)
 
 
 curr_axes = br_plotter.axes.main;
@@ -197,9 +218,9 @@ end
 
 
 if nargin==6
-	colors = repmat(color,[num_nondegen 1]);
+	colors = repmat(desiredcolor,[num_nondegen 1]);
 else
-	colors = 0.8*jet(num_nondegen);
+	colors = 0.8*br_plotter.options.colormap(num_nondegen);
 end
 
 
@@ -219,7 +240,7 @@ for ii =1:num_nondegen
 	curve_edge_points = br_plotter.fv.vertices(curr_edge,:);
 
 	h = plot3(curve_edge_points(:,1),curve_edge_points(:,2),curve_edge_points(:,3),'Parent',curr_axes);
-	
+
 	set(h,'Color',colors(ii,:));
 	set(h,'LineStyle',style,'LineWidth',br_plotter.options.line_thickness);
 
@@ -242,10 +263,13 @@ if br_plotter.options.labels
 end
 
 
-if ~isempty(br_plotter.BRinfo.sphere_curve.sampler_data)
-	refinement_handles = plot_curve_samples(br_plotter,curve.sampler_data,style);
+if ~isempty(br_plotter.BRinfo.sampler_data)
+	if nargin==6
+		refinement_handles = plot_curve_samples(br_plotter,curve.sampler_data,style, desiredcolor);
+	else
+		refinement_handles = plot_curve_samples(br_plotter,curve.sampler_data,style);
+	end
 end
-
 
 
 		

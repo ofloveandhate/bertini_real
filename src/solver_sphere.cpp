@@ -1,7 +1,7 @@
 #include "solver_sphere.hpp"
 
 
-void sphere_config::set_memory(solver_configuration & solve_options)
+void SphereConfiguration::set_memory(SolverConfiguration & solve_options)
 {
 	
 	//TODO: should i assume here that the input file is already parsed??  (as i already do)
@@ -73,7 +73,7 @@ void sphere_eval_data_mp::init()
 }
 
 
-int sphere_eval_data_mp::send(parallelism_config & mpi_config)
+int sphere_eval_data_mp::send(ParallelismConfig & mpi_config)
 {
 	
 	int solver_choice = SPHERE_SOLVER;
@@ -81,7 +81,7 @@ int sphere_eval_data_mp::send(parallelism_config & mpi_config)
 	// send the confirmation integer, to ensure that we are sending the correct type.
 	
 	//send the base class stuff.
-	solver_mp::send(mpi_config);
+	SolverMultiplePrecision::send(mpi_config);
 	
 	
 	// now can actually send the data.
@@ -131,7 +131,7 @@ int sphere_eval_data_mp::send(parallelism_config & mpi_config)
 	return SUCCESSFUL;
 }
 
-int sphere_eval_data_mp::receive(parallelism_config & mpi_config)
+int sphere_eval_data_mp::receive(ParallelismConfig & mpi_config)
 {
 	
 	int *buffer = new int[2];
@@ -142,7 +142,7 @@ int sphere_eval_data_mp::receive(parallelism_config & mpi_config)
 		mpi_config.abort(777);
 	}
 	
-	solver_mp::receive(mpi_config);
+	SolverMultiplePrecision::receive(mpi_config);
 	
 	
 	// now can actually receive the data from whoever.
@@ -203,9 +203,9 @@ int sphere_eval_data_mp::receive(parallelism_config & mpi_config)
 	
 }
 
-int sphere_eval_data_mp::setup(sphere_config & config,
-							   const witness_set & W,
-							   solver_configuration & solve_options)
+int sphere_eval_data_mp::setup(SphereConfiguration & config,
+							   const WitnessSet & W,
+							   SolverConfiguration & solve_options)
 {
 	
 	
@@ -236,7 +236,7 @@ int sphere_eval_data_mp::setup(sphere_config & config,
 	
 	for (unsigned int ii=0; ii<W.num_linears(); ii++) {
 		init_vec_mp(static_linear[ii],0);
-		vec_cp_mp(static_linear[ii],*W.linear(ii));
+		vec_cp_mp(static_linear[ii],W.linear(ii));
 	}
 	
 	
@@ -281,7 +281,7 @@ int sphere_eval_data_mp::setup(sphere_config & config,
 		for (unsigned int ii=0; ii<W.num_linears(); ii++) {
 			init_vec_mp2(static_linear_full_prec[ii],0,1024);
 			
-			vec_cp_mp(static_linear_full_prec[ii], *W.linear(ii));
+			vec_cp_mp(static_linear_full_prec[ii], W.linear(ii));
 		}
 	}
 	
@@ -307,7 +307,7 @@ int sphere_eval_data_mp::setup(sphere_config & config,
 	
 	verbose_level(solve_options.verbose_level());
 	
-	solver_mp::setup(config.SLP, config.randomizer());
+	SolverMultiplePrecision::setup(config.SLP, config.randomizer());
 	
 	generic_setup_patch(&patch,W);
 	
@@ -362,7 +362,7 @@ void sphere_eval_data_d::init()
 	if (this->MPType==2)
 	{
 		this->BED_mp = new sphere_eval_data_mp(2);
-		solver_d::BED_mp = this->BED_mp;                   //   <---------  you gotta do this cuz of masking problems.
+		SolverDoublePrecision::BED_mp = this->BED_mp;                   //   <---------  you gotta do this cuz of masking problems.
 	}
 	else{
 		this->BED_mp = NULL;
@@ -393,7 +393,7 @@ void sphere_eval_data_d::init()
 
 
 
-int sphere_eval_data_d::send(parallelism_config & mpi_config)
+int sphere_eval_data_d::send(ParallelismConfig & mpi_config)
 {
 	
 	int solver_choice = SPHERE_SOLVER;
@@ -406,7 +406,7 @@ int sphere_eval_data_d::send(parallelism_config & mpi_config)
     
     
 	//send the base class stuff.
-	solver_d::send(mpi_config);
+	SolverDoublePrecision::send(mpi_config);
 	
 	
 	
@@ -436,7 +436,7 @@ int sphere_eval_data_d::send(parallelism_config & mpi_config)
 	return SUCCESSFUL;
 }
 
-int sphere_eval_data_d::receive(parallelism_config & mpi_config)
+int sphere_eval_data_d::receive(ParallelismConfig & mpi_config)
 {
 	
     int *buffer = new int[1];
@@ -455,7 +455,7 @@ int sphere_eval_data_d::receive(parallelism_config & mpi_config)
     
     
 	
-	solver_d::receive(mpi_config);
+	SolverDoublePrecision::receive(mpi_config);
 	
 	
 	
@@ -486,9 +486,9 @@ int sphere_eval_data_d::receive(parallelism_config & mpi_config)
 }
 
 
-int sphere_eval_data_d::setup(sphere_config & config,
-							  const witness_set & W,
-							  solver_configuration & solve_options)
+int sphere_eval_data_d::setup(SphereConfiguration & config,
+							  const WitnessSet & W,
+							  SolverConfiguration & solve_options)
 {
 	
 	SLP_memory = config.SLP_memory;
@@ -520,7 +520,7 @@ int sphere_eval_data_d::setup(sphere_config & config,
 	
 	for (unsigned int ii=0; ii<W.num_linears(); ii++) {
 		init_vec_d(static_linear[ii],0);
-		vec_mp_to_d(static_linear[ii],*W.linear(ii));
+		vec_mp_to_d(static_linear[ii],W.linear(ii));
 	}
 	num_static_linears = W.num_linears();
 	
@@ -535,7 +535,7 @@ int sphere_eval_data_d::setup(sphere_config & config,
 	
 	verbose_level(solve_options.verbose_level());
 	
-	solver_d::setup(config.SLP, config.randomizer());
+	SolverDoublePrecision::setup(config.SLP, config.randomizer());
 	
 	generic_setup_patch(&patch,W);
 	
@@ -574,10 +574,10 @@ int sphere_eval_data_d::setup(sphere_config & config,
 
 
 
-int sphere_solver_master_entry_point(const witness_set						&W, // carries with it the start points, and the linears.
-									 solver_output							&solve_out, // new data goes in here
-									 sphere_config &		config,
-									 solver_configuration		& solve_options)
+int sphere_solver_master_entry_point(const WitnessSet						&W, // carries with it the start points, and the linears.
+									 SolverOutput							&solve_out, // new data goes in here
+									 SphereConfiguration &		config,
+									 SolverConfiguration		& solve_options)
 {
 	
 	if (solve_options.use_parallel()) {
@@ -646,14 +646,18 @@ int sphere_solver_master_entry_point(const witness_set						&W, // carries with 
 			delete ED_d;
 			break;
 		default:
-			br_exit(399);
+		{
+			std::stringstream printme;
+			printme << "trying to use an MPType which is not 0, 1, or 2.  yours is " << solve_options.T.MPType << std::endl;
+			throw std::logic_error(printme.str());
 			break;
+		}
 	}
 	
 	
 	for (unsigned int jj=0; jj<W.num_linears(); jj++)
 	{
-		solve_out.add_linear(*W.linear(jj));
+		solve_out.add_linear(W.linear(jj));
 	}
 	
 	return SUCCESSFUL;
@@ -664,7 +668,7 @@ int sphere_solver_master_entry_point(const witness_set						&W, // carries with 
 
 
 
-int sphere_slave_entry_point(solver_configuration & solve_options)
+int sphere_slave_entry_point(SolverConfiguration & solve_options)
 {
 	
 	

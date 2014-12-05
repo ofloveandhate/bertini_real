@@ -22,9 +22,6 @@
 #define LARGECHANGE_MP 1e50
 
 
-
-static double SAMEPOINTTOL = 1e-6;
-
 enum {VEC_MP = 4000, VEC_D, MAT_MP, MAT_D, COMP_MP, COMP_D, VEC_RAT, MAT_RAT, COMP_RAT, INDICES, DECOMPOSITION, CURVE, SURFACE, EDGE, CELL, FACE, UNUSED, VERTEX_SET, WITNESS_SET, VERTEX, SYSTEM_RANDOMIZER};
 
 
@@ -227,7 +224,7 @@ void projection_value_homogeneous_input(comp_mp result, vec_mp input, vec_mp pro
  \param right The second input
  
  */
-int isSamePoint_inhomogeneous_input(point_d left, point_d right);
+int isSamePoint_inhomogeneous_input(point_d left, point_d right, double tolerance);
 /**
  \brief tests whether two point given in already-dehomogenized form are the same, using a defined threshold.
  
@@ -236,7 +233,7 @@ int isSamePoint_inhomogeneous_input(point_d left, point_d right);
  \param right The second input
  
  */
-int isSamePoint_inhomogeneous_input(point_mp left, point_mp right);
+int isSamePoint_inhomogeneous_input(point_mp left, point_mp right, double tolerance);
 
 
 
@@ -248,7 +245,7 @@ int isSamePoint_inhomogeneous_input(point_mp left, point_mp right);
  \param right The second input
  
  */
-int isSamePoint_homogeneous_input(point_d left, point_d right);
+int isSamePoint_homogeneous_input(point_d left, point_d right, double tolerance);
 /**
  \brief tests whether two point given in homogenized form are the same, using a defined threshold.
  
@@ -257,7 +254,7 @@ int isSamePoint_homogeneous_input(point_d left, point_d right);
  \param right The second input
  
  */
-int isSamePoint_homogeneous_input(point_mp left, point_mp right);
+int isSamePoint_homogeneous_input(point_mp left, point_mp right, double tolerance);
 
 
 /**

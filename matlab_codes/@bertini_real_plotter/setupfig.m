@@ -19,5 +19,7 @@ function setupfig(br_plotter,varargin)
 								'NumberTitle','off',...
 								'Position',br_plotter.window);
 
+	set(fig,'color','w');
+	
 	br_plotter.figures.main = fig;
 end %re: setupfig

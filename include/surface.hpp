@@ -27,7 +27,7 @@
 #include "fileops.hpp"
 
 
-#include "nullspace_left.hpp"
+#include "nullspace.hpp"
 
 #include "solver_midpoint_tracker.hpp"
 
@@ -42,24 +42,24 @@
 
 
 /**
- \brief the 2-cell
+ \brief the 2-Cell
  
- The face data type.  Extends the functionality of the basic cell type, adding left and right indices of connected edges, top and bottom indices and system names, left and right projection values, and an index for which midslice it came from.  The midpoint member is inherited from the base class cell.
+ The Face data type.  Extends the functionality of the basic Cell type, adding left and right indices of connected edges, top and bottom indices and system names, left and right projection values, and an index for which midslice it came from.  The midpoint member is inherited from the base class Cell.
  */
-class face : public cell
+class Face : public Cell
 {
 	
 	std::vector<int>	left_edges_;  ///< index into vertices
 	std::vector<int>	right_edges_; ///< index into vertices
 	
-	int top_edge_index_;			///<  index of the top edge in the appropriate decomposition, as indicated by system_name_top.
-	int bottom_edge_index_;			///< index of the bottom edge in the appropriate decomposition, as indicated by system_name_bottom.
+	int top_edge_index_;			///<  index of the top edge in the appropriate Decomposition, as indicated by system_name_top.
+	int bottom_edge_index_;			///< index of the bottom edge in the appropriate Decomposition, as indicated by system_name_bottom.
 	
 	
 	std::string system_name_bottom_; ///< the plain text name of the bottom edge's system.  e.g. crit_curve
 	std::string system_name_top_; ///< the plain text name of the top edge's system.  e.g. crit_curve
 	
-	int crit_slice_index_; ///< which midpoint slice this face came from.
+	int crit_slice_index_; ///< which midpoint slice this Face came from.
 	
 	
 	
@@ -218,7 +218,7 @@ public:
 	
 	/**
 	 \brief get the index of the crit slice to which this corresponds
-	 \return the index of the critical slice to which this cell corresponds
+	 \return the index of the critical slice to which this Cell corresponds
 	 */
 	int crit_slice_index() const
 	{
@@ -229,7 +229,7 @@ public:
 	/**
 	 \brief set the index of the crit slice to which this corresponds
 	 \param new_index the new index
-	 \return the index of the critical slice to which this cell corresponds
+	 \return the index of the critical slice to which this Cell corresponds
 	 */
 	int crit_slice_index(int new_index)
 	{
@@ -302,7 +302,7 @@ public:
 	
 
 	
-	friend std::ostream & operator<<(std::ostream &os, const face & f)
+	friend std::ostream & operator<<(std::ostream &os, const Face & f)
 	{
 		os << f.midpt() << std::endl;
 		os << f.crit_slice_index_ << std::endl << f.top_edge_index_ << " " << f.bottom_edge_index_ << std::endl;
@@ -324,7 +324,7 @@ public:
 	}
 	
 	
-	friend std::istream & operator>>(std::istream &os, face & f)
+	friend std::istream & operator>>(std::istream &os, Face & f)
 	{
 		
 		f.read_from_stream(os);
@@ -332,9 +332,9 @@ public:
 	}
 	
 	/**
-	 \brief read a face from an input stream.
+	 \brief read a Face from an input stream.
 	 
-	 \param os the istream input stream to pass into this face.
+	 \param os the istream input stream to pass into this Face.
 	 */
 	virtual void read_from_stream( std::istream &os )
 	{
@@ -362,22 +362,22 @@ public:
 	}
 	
 	
-	face() : cell()
+	Face() : Cell()
 	{
 		init();
 	}
 	
-	~face(){
+	~Face(){
 		clear_mp(left_crit_val_);
 		clear_mp(right_crit_val_);
 	}
 	
-	face(const face & other){
+	Face(const Face & other){
 		init();
 		copy(other);
 	}
 	
-	face& operator=(const face & other){
+	Face& operator=(const Face & other){
 
 		init();
 		
@@ -387,26 +387,26 @@ public:
 	
 	
 	/**
-	 \brief single-target MPI send of a face.
+	 \brief single-target MPI send of a Face.
 	 
 	 
-	 \param target The ID of the MPI target to send the face to.
+	 \param target The ID of the MPI target to send the Face to.
 	 \param mpi_config The current state of MPI
 	 */
-	void send(int target, parallelism_config & mpi_config);
+	void send(int target, ParallelismConfig & mpi_config);
 	
 	
 	
 	/**
-	 \brief single-source MPI receive of a face.
+	 \brief single-source MPI receive of a Face.
 	 
-	 \param source The ID of the MPI source from whom to receive a face.
+	 \param source The ID of the MPI source from whom to receive a Face.
 	 \param mpi_config The current state of MPI
 	 */
-	void receive(int source, parallelism_config & mpi_config);
+	void receive(int source, ParallelismConfig & mpi_config);
 	
 	/**
-	 \brief Test a face for degeneracy, based on which crit slice the face is from.
+	 \brief Test a Face for degeneracy, based on which crit slice the Face is from.
 	 
 	 \return Boolean, true if degenerate (crit_slice_index < 0), false if not.
 	 */
@@ -441,11 +441,11 @@ private:
 	
 	
 	
-	void copy(const face & other)
+	void copy(const Face & other)
 	{
 
 				
-		cell::copy(other);
+		Cell::copy(other);
 		
 		this->system_name_bottom_ = other.system_name_bottom_;
 		this->system_name_top_ = other.system_name_top_;
@@ -484,9 +484,9 @@ private:
 
 
 /**
- \brief A simple triangle class, holding three integers referring to points in a vertex set.
+ \brief A simple Triangle class, holding three integers referring to points in a vertex set.
  */
-class triangle
+class Triangle
 {
 	long long v1_; ///< point index 1.
 	long long v2_; ///< point index 2.
@@ -523,9 +523,9 @@ public:
 	inline long long v3() const
 	{return v3_;}
 	
-	triangle(){};
+	Triangle(){};
 	
-	triangle(long long new_v1,long long new_v2,long long new_v3)
+	Triangle(long long new_v1,long long new_v2,long long new_v3)
 	{
 		v1_ = new_v1;
 		v2_ = new_v2;
@@ -534,7 +534,7 @@ public:
 	}
 	
 	
-	friend std::ostream & operator<<(std::ostream &os, const triangle & t)
+	friend std::ostream & operator<<(std::ostream &os, const Triangle & t)
 	{
 		
 		
@@ -545,7 +545,7 @@ public:
 	
 	
 	/**
-	 \brief test a triangle for degeneracy.
+	 \brief test a Triangle for degeneracy.
 	 
 	 \return true if degenerate, false if not.
 	 */
@@ -571,7 +571,7 @@ public:
 
 
 
-class singular_object_metadata
+class SingularObjectMetadata
 {
 	unsigned int multiplicity_;
 	unsigned int index_;
@@ -579,14 +579,14 @@ class singular_object_metadata
 public:
 	
 	
-	singular_object_metadata(){multiplicity_ = index_ = 0;}
+	SingularObjectMetadata(){multiplicity_ = index_ = 0;}
 	
 	/**
 	 constructor for setting both multiplicity and index
 	 \param mult the multiplicity of the object
 	 \param ind the index of the object.  this should start at 0, in principle.
 	 */
-	singular_object_metadata(unsigned int mult, unsigned int ind)
+	SingularObjectMetadata(unsigned int mult, unsigned int ind)
 	{
 		multiplicity_ = mult;
 		index_ = ind;
@@ -628,7 +628,7 @@ public:
 	 \param lhs left hand side of comparison
 	 \param rhs right hand side of comparison
 	 */
-	friend bool operator==(const singular_object_metadata & lhs, const singular_object_metadata & rhs)
+	friend bool operator==(const SingularObjectMetadata & lhs, const SingularObjectMetadata & rhs)
 	{
 		if (lhs.multiplicity_==rhs.multiplicity_ && lhs.index_==rhs.index_) {
 			return true;
@@ -644,7 +644,7 @@ public:
 	 \param lhs left hand side of comparison
 	 \param rhs right hand side of comparison
 	 */
-	friend bool operator!=(const singular_object_metadata & lhs, const singular_object_metadata & rhs)
+	friend bool operator!=(const SingularObjectMetadata & lhs, const SingularObjectMetadata & rhs)
 	{
 		if (lhs.multiplicity_!=rhs.multiplicity_ || lhs.index_!=rhs.index_) {
 			return true;
@@ -662,7 +662,7 @@ public:
 	 \param lhs left hand side of comparison
 	 \param rhs right hand side of comparison
 	 */
-	friend bool operator<(const singular_object_metadata & lhs, const singular_object_metadata & rhs)
+	friend bool operator<(const SingularObjectMetadata & lhs, const SingularObjectMetadata & rhs)
 	{
 		if (lhs.multiplicity_<rhs.multiplicity_){
 			return true;
@@ -687,7 +687,7 @@ public:
 	 \param lhs left hand side of comparison
 	 \param rhs right hand side of comparison
 	 */
-	friend bool operator<=(const singular_object_metadata & lhs, const singular_object_metadata & rhs)
+	friend bool operator<=(const SingularObjectMetadata & lhs, const SingularObjectMetadata & rhs)
 	{
 		return !(rhs<lhs);
 	}
@@ -699,7 +699,7 @@ public:
 	 \param lhs left hand side of comparison
 	 \param rhs right hand side of comparison
 	 */
-	friend bool operator>(const singular_object_metadata & lhs, const singular_object_metadata & rhs)
+	friend bool operator>(const SingularObjectMetadata & lhs, const SingularObjectMetadata & rhs)
 	{
 		return rhs<lhs;
 	}
@@ -712,7 +712,7 @@ public:
 	 \param lhs left hand side of comparison
 	 \param rhs right hand side of comparison
 	 */
-	friend bool operator>=(const singular_object_metadata & lhs, const singular_object_metadata & rhs)
+	friend bool operator>=(const SingularObjectMetadata & lhs, const SingularObjectMetadata & rhs)
 	{
 		return  !(lhs < rhs);
 	}
@@ -725,31 +725,31 @@ public:
 
 
 /**
- \brief Bertini_real surface decomposition.
+ \brief Bertini_real surface Decomposition.
  
  includes methods to add vertices, look up vertices, etc
  */
-class surface_decomposition : public decomposition
+class Surface : public Decomposition
 {
 	
-	std::vector<face> faces;
+	std::vector<Face> faces_;
 	//these counters keep track of the number of things
 	
-	unsigned int      num_faces; ///< how many faces are there
+	unsigned int      num_faces_; ///< how many faces are there
 	
 	
-	std::vector<int> num_samples_each_face; ///< the number of samples per face
+	std::vector<int> num_samples_each_face_; ///< the number of samples per Face
 	
-	std::vector< std::vector< triangle > > samples; ///< refined triangulation of the surface.
+	std::vector< std::vector< Triangle > > samples_; ///< refined triangulation of the surface.
 	
 	
 	
-	std::vector< curve_decomposition > mid_slices_; ///< the mid slice curves, occurring halfway between critical points of critical curves.
-	std::vector< curve_decomposition > crit_slices_; ///< critical slice curves, occurring at critial points of critical curves.
-	curve_decomposition crit_curve_; ///< the main critical curve, being nonsingular.
-	curve_decomposition sphere_curve_; ///< the intersection of the surface and a sphere.
+	std::vector< Curve > mid_slices_; ///< the mid slice curves, occurring halfway between critical points of critical curves.
+	std::vector< Curve > crit_slices_; ///< critical slice curves, occurring at critial points of critical curves.
+	Curve crit_curve_; ///< the main critical curve, being nonsingular.
+	Curve sphere_curve_; ///< the intersection of the surface and a sphere.
 	
-	std::map<singular_object_metadata,curve_decomposition> singular_curves_; ///<  the singular curves, which are formally but not really part of the critical curve.
+	std::map<SingularObjectMetadata,Curve> singular_curves_; ///<  the singular curves, which are formally but not really part of the critical curve.
 	size_t num_singular_curves_; ///< how many singular curves are there.
 	
 	
@@ -757,10 +757,20 @@ class surface_decomposition : public decomposition
 	
 public:
 	
+	/**
+	 \brief get the number of faces in the surface.
+	 
+	 \return the number of faces.
+	 */
+	unsigned int num_faces()
+	{
+		return num_faces_;
+	}
+	
 	
 	/**
-	 \brief query the number of singular curves in the decomposition.
-	 \return the number of singular curves in the decomposition.
+	 \brief query the number of singular curves in the Decomposition.
+	 \return the number of singular curves in the Decomposition.
 	 */
 	unsigned int num_singular_curves() const
 	{
@@ -768,27 +778,27 @@ public:
 	}
 	
 	
-	const std::map<singular_object_metadata,curve_decomposition>::const_iterator singular_curves_iter_begin() const
+	const std::map<SingularObjectMetadata,Curve>::const_iterator singular_curves_iter_begin() const
 	{
 		return singular_curves_.begin();
 	}
 	
 	
 	
-	const std::map<singular_object_metadata,curve_decomposition>::const_iterator singular_curves_iter_end() const
+	const std::map<SingularObjectMetadata,Curve>::const_iterator singular_curves_iter_end() const
 	{
 		return singular_curves_.end();
 	}
 	
 	
-	std::map<singular_object_metadata,curve_decomposition>::iterator singular_curves_iter_begin()
+	std::map<SingularObjectMetadata,Curve>::iterator singular_curves_iter_begin()
 	{
 		return singular_curves_.begin();
 	}
 	
 	
 	
-	std::map<singular_object_metadata,curve_decomposition>::iterator singular_curves_iter_end()
+	std::map<SingularObjectMetadata,Curve>::iterator singular_curves_iter_end()
 	{
 		return singular_curves_.end();
 	}
@@ -796,24 +806,24 @@ public:
 	
 	
 	
-	std::vector< curve_decomposition >::iterator mid_slices_iter_begin()
+	std::vector< Curve >::iterator mid_slices_iter_begin()
 	{
 		return mid_slices_.begin();
 	}
 	
-	std::vector< curve_decomposition >::iterator mid_slices_iter_end()
+	std::vector< Curve >::iterator mid_slices_iter_end()
 	{
 		return mid_slices_.end();
 	}
 	
 	
 	
-	std::vector< curve_decomposition >::iterator crit_slices_iter_begin()
+	std::vector< Curve >::iterator crit_slices_iter_begin()
 	{
 		return crit_slices_.begin();
 	}
 	
-	std::vector< curve_decomposition >::iterator crit_slices_iter_end()
+	std::vector< Curve >::iterator crit_slices_iter_end()
 	{
 		return crit_slices_.end();
 	}
@@ -822,16 +832,16 @@ public:
 	
 	/**
 	 \brief get a const reference to the critical curve.
-	 \return a reference to the critical curve decomposition.
+	 \return a reference to the critical curve Decomposition.
 	 */
-	const curve_decomposition & crit_curve() const
+	const Curve & crit_curve() const
 	{return crit_curve_;}
 	
 	/**
 	 \brief get a reference to the critical curve.
-	 \return a mutable reference to the critical curve decomposition.
+	 \return a mutable reference to the critical curve Decomposition.
 	 */
-	curve_decomposition & crit_curve()
+	Curve & crit_curve()
 	{return crit_curve_;}
 	
 	
@@ -841,23 +851,23 @@ public:
 	
 	/**
 	 \brief get a const reference to the sphere curve.
-	 \return a reference to the sphere curve decomposition.
+	 \return a reference to the sphere curve Decomposition.
 	 */
-	const curve_decomposition & sphere_curve() const
+	const Curve & sphere_curve() const
 	{return sphere_curve_;}
 	
 	
 	
 	/**
 	 \brief get a mutable reference to the sphere curve.
-	 \return a reference to the sphere curve decomposition.
+	 \return a reference to the sphere curve Decomposition.
 	 */
-	curve_decomposition & sphere_curve()
+	Curve & sphere_curve()
 	{return sphere_curve_;}
 	
 	
 	/**
-	 \brief set up the faces in a surface decomposition from a file
+	 \brief set up the faces in a surface Decomposition from a file
 	 
 	 \param load_from_me the name of the file to read.
 	 */
@@ -865,22 +875,22 @@ public:
 	
 	
 	/**
-	 \brief set up a surface_decomposition from a set of files
+	 \brief set up a Surface from a set of files
 	 
-	 \param base the folder in which the decomposition lives.
+	 \param base the folder in which the Decomposition lives.
 	 */
 	void setup(boost::filesystem::path base);
 	
 	
 	/**
-	 \brief print a surface decomposition to a set of files located in folder base.
+	 \brief print a surface Decomposition to a set of files located in folder base.
 	 
-	 \param base the name of the folder to which to print the decomposition.
+	 \param base the name of the folder to which to print the Decomposition.
 	 */
 	void print(boost::filesystem::path base);
 	
 	/**
-	 \brief print all the faces in a decomposition to a file named outputfile.
+	 \brief print all the faces in a Decomposition to a file named outputfile.
 	 
 	 \param outputfile the name of the file into which to dump the faces (and a bit of header).
 	 */
@@ -891,16 +901,16 @@ public:
 	
 
 	/**
-	 \brief add a face after it has been constructed.
+	 \brief add a Face after it has been constructed.
 	 
 	 also increments a counter.
 	 
-	 \param F the constructed face to add to the decomposition.
+	 \param F the constructed Face to add to the Decomposition.
 	 */
-	void add_face(const face & F)
+	void add_face(const Face & F)
 	{
-		faces.push_back(F);
-		num_faces++;
+		faces_.push_back(F);
+		num_faces_++;
 	}
 	
 
@@ -911,17 +921,17 @@ public:
 	/**
 	 \brief The main outer method for decomposing a surface in Bertini_real.
 	 
-	 \param V the vertex_set into which to deposit the found points, along with their metadata.
+	 \param V the VertexSet into which to deposit the found points, along with their metadata.
 	 \param W the input witness set for the surface, complete with points, linears, and patches.
 	 \param pi the two linear projection vectors to use.
 	 \param program_options The current state of Bertini_real
 	 \param solve_options The current state of the solver.
 	 */
-	void main(vertex_set & V,
-						const witness_set & W,
+	void main(VertexSet & V,
+						const WitnessSet & W,
 						vec_mp *pi,
-						BR_configuration & program_options,
-						solver_configuration & solve_options);
+						BertiniRealConfig & program_options,
+						SolverConfiguration & solve_options);
 	
 	
 	/**
@@ -931,9 +941,9 @@ public:
 	 \param program_options The current state of Bertini_real
 	 \param solve_options The current state of the solver.
 	*/
-	void beginning_stuff(const witness_set & W_surf,
-						BR_configuration & program_options,
-						 solver_configuration & solve_options);
+	void beginning_stuff(const WitnessSet & W_surf,
+						BertiniRealConfig & program_options,
+						 SolverConfiguration & solve_options);
 	
 	
 	/**
@@ -944,10 +954,10 @@ public:
 	 \param program_options The current state of Bertini_real.
 	 \param solve_options The current state of the solver.
 	 */
-	void deflate_and_split(std::map< singular_object_metadata, witness_set > & split_sets,
-						   std::map<int, witness_set > & higher_multiplicity_witness_sets,
-						   BR_configuration & program_options,
-						   solver_configuration & solve_options);
+	void deflate_and_split(std::map< SingularObjectMetadata, WitnessSet > & split_sets,
+						   std::map<int, WitnessSet > & higher_multiplicity_witness_sets,
+						   BertiniRealConfig & program_options,
+						   SolverConfiguration & solve_options);
 	
 	/**
 	 \brief compute the critical points of all singular curves.
@@ -960,11 +970,11 @@ public:
 	 \param program_options The current state of Bertini_real
 	 \param solve_options The current state of the Solver.
 	 */
-	void compute_singular_crit(witness_set & W_singular_crit,
-							   const std::map<singular_object_metadata, witness_set> & split_sets,
-							   vertex_set & V,
-							   BR_configuration & program_options,
-							   solver_configuration & solve_options);
+	void compute_singular_crit(WitnessSet & W_singular_crit,
+							   const std::map<SingularObjectMetadata, WitnessSet> & split_sets,
+							   VertexSet & V,
+							   BertiniRealConfig & program_options,
+							   SolverConfiguration & solve_options);
 	
 	
 	/**
@@ -978,11 +988,11 @@ public:
 	 \param program_options The current state of Bertini_real.
 	 \param solve_options The current state of the solver.
 	 */
-	void compute_singular_curves(const witness_set & W_total_crit,
-								 const std::map< singular_object_metadata, witness_set> & split_sets,
-								 vertex_set & V,
-								 BR_configuration & program_options,
-								 solver_configuration & solve_options);
+	void compute_singular_curves(const WitnessSet & W_total_crit,
+								 const std::map< SingularObjectMetadata, WitnessSet> & split_sets,
+								 VertexSet & V,
+								 BertiniRealConfig & program_options,
+								 SolverConfiguration & solve_options);
 	
 	
 	
@@ -997,12 +1007,12 @@ public:
 	 \param solve_options The current state of the solver.
 	 \param kindofslice A string indicating what kind of slice you are decompositon -- purely for screen output.
 	 */
-	void compute_slices(const witness_set W_surf,
-											vertex_set & V,
+	void compute_slices(const WitnessSet W_surf,
+											VertexSet & V,
 											vec_mp projection_values_downstairs,
-											std::vector< curve_decomposition > & slices,
-											BR_configuration & program_options,
-											solver_configuration & solve_options,
+											std::vector< Curve > & slices,
+											BertiniRealConfig & program_options,
+											SolverConfiguration & solve_options,
 											std::string kindofslice);
 	
 	
@@ -1015,11 +1025,11 @@ public:
 	 \param program_options The current state of Bertini_real
 	 \param solve_options The current state of the solver.
 	 */
-    void compute_critcurve_witness_set(witness_set & W_critcurve,
-									   std::map<int, witness_set> & higher_multiplicity_witness_sets,
-                                       const witness_set & W_surf,
-                                       BR_configuration & program_options,
-                                       solver_configuration & solve_options);
+    void compute_critcurve_witness_set(WitnessSet & W_critcurve,
+									   std::map<int, WitnessSet> & higher_multiplicity_witness_sets,
+                                       const WitnessSet & W_surf,
+                                       BertiniRealConfig & program_options,
+                                       SolverConfiguration & solve_options);
     
 	
 	/**
@@ -1030,10 +1040,10 @@ public:
 	 \param program_options The current state of Bertini_real
 	 \param solve_options The current state of the solver.
 	 */
-    void compute_critcurve_critpts(witness_set & W_critcurve_crit, // the computed value
-                                   witness_set & W_critcurve,
-                                   BR_configuration & program_options,
-                                   solver_configuration & solve_options);
+    void compute_critcurve_critpts(WitnessSet & W_critcurve_crit, // the computed value
+                                   WitnessSet & W_critcurve,
+                                   BertiniRealConfig & program_options,
+                                   SolverConfiguration & solve_options);
     
     
 	/**
@@ -1041,7 +1051,7 @@ public:
 	 
 	 Assumes have the critical points and witness points already computed.  This essentially performs interslice.
 	 
-	 \see curve_decomposition::interslice
+	 \see Curve::interslice
 	 
 	 
 	 \param W_critcurve Witness set for the critical curve.
@@ -1050,11 +1060,11 @@ public:
 	 \param program_options The current state of Bertini_real
 	 \param solve_options The current state of the solver.
 	 */
-	void compute_critical_curve(const witness_set & W_critcurve,
-                                const witness_set & W_critpts,
-                                vertex_set & V,
-                                BR_configuration & program_options,
-                                solver_configuration & solve_options);
+	void compute_critical_curve(const WitnessSet & W_critcurve,
+                                const WitnessSet & W_critpts,
+                                VertexSet & V,
+                                BertiniRealConfig & program_options,
+                                SolverConfiguration & solve_options);
 	
 	
 	
@@ -1070,33 +1080,33 @@ public:
 	 \param program_options The current state of Bertini_real.
 	 \param solve_options The current state of the solver.
 	 */
-	void compute_sphere_witness_set(const witness_set & W_surf,
-									witness_set & W_intersection_sphere,//
-									BR_configuration & program_options,//
-									solver_configuration & solve_options);
+	void compute_sphere_witness_set(const WitnessSet & W_surf,
+									WitnessSet & W_intersection_sphere,//
+									BertiniRealConfig & program_options,//
+									SolverConfiguration & solve_options);
 	
 	
 	/**
 	 \brief Compute critical points of the sphere curve, from the previously computed witness points.
 	 
-	 \see surface_decomposition::compute_sphere_witness_set
+	 \see Surface::compute_sphere_witness_set
 	 
 	 \param W_intersection_sphere The witness set for the curve, computed by compute_sphere_witness_set
 	 \param W_sphere_crit The computed returned value, the critical points of the sphere curve.
 	 \param program_options The current state of Bertini_real
 	 \param solve_options The current state of the solver.
 	 */
-	void compute_sphere_crit(const witness_set & W_intersection_sphere,
-													 witness_set & W_sphere_crit,
-													 BR_configuration & program_options,
-													 solver_configuration & solve_options);
+	void compute_sphere_crit(const WitnessSet & W_intersection_sphere,
+													 WitnessSet & W_sphere_crit,
+													 BertiniRealConfig & program_options,
+													 SolverConfiguration & solve_options);
 	
 
 	/**
 	 \brief Performs interslice on the sphere curve, using the critical points and the witness points.
 	 
-	 \see surface_decomposition::compute_sphere_crit
-	 \see surface_decomposition::compute_sphere_witness_set
+	 \see Surface::compute_sphere_crit
+	 \see Surface::compute_sphere_witness_set
 	 
 	 
 	 \param W_intersection_sphere Input witness set for the curve.
@@ -1105,17 +1115,17 @@ public:
 	 \param program_options The current state of Bertini_real
 	 \param solve_options The current state of the solver.
 	 */
-	void compute_bounding_sphere(const witness_set & W_intersection_sphere,
-															 const witness_set & W_crit,
-															 vertex_set & V,
-															 BR_configuration & program_options,
-															solver_configuration & solve_options);
+	void compute_bounding_sphere(const WitnessSet & W_intersection_sphere,
+															 const WitnessSet & W_crit,
+															 VertexSet & V,
+															 BertiniRealConfig & program_options,
+															SolverConfiguration & solve_options);
 	
 	
 	/**
-	 \brief Main outer method for obtaining faces of the decomposition.
+	 \brief Main outer method for obtaining faces of the Decomposition.
 	 
-	 Switches between serial_connect and master_connect depending on parallel mode.  Produces the faces of the decomposition by calling the midpoint tracker.
+	 Switches between serial_connect and master_connect depending on parallel mode.  Produces the faces of the Decomposition by calling the midpoint tracker.
 	 
 	 \todo Remove pi as an input for this function.
 	 
@@ -1123,9 +1133,9 @@ public:
 	 \param program_options The current state of Bertini_real
 	 \param solve_options The current state of the solver.
 	 */
-	void connect_the_dots(vertex_set & V,
-						  BR_configuration & program_options,
-						  solver_configuration & solve_options);
+	void connect_the_dots(VertexSet & V,
+						  BertiniRealConfig & program_options,
+						  SolverConfiguration & solve_options);
 	
 	
 	/**
@@ -1138,74 +1148,74 @@ public:
 	 \param program_options The current state of Bertini_real
 	 \param solve_options The current state of the solver.
 	 */
-	void serial_connect(vertex_set & V,
-						midpoint_config & md_config,
-						solver_configuration & solve_options,
-						BR_configuration & program_options);
+	void serial_connect(VertexSet & V,
+						MidpointConfiguration & md_config,
+						SolverConfiguration & solve_options,
+						BertiniRealConfig & program_options);
 	
 	
 	/**
 	 \brief The master parallel mode for producing the faces.
 	 
-	 In a loop, sends workers indices of faces to make, and receives the completed faces.  Then adds the face to this decomposition.
+	 In a loop, sends workers indices of faces to make, and receives the completed faces.  Then adds the Face to this Decomposition.
 	 
 	 \param V the vertex set into which all the decompositions index.
 	 \param md_config The already-set-up midpoint tracker config object.
 	 \param program_options The current state of Bertini_real
 	 \param solve_options The current state of the solver.
 	 */
-	void master_connect(vertex_set & V,
-						midpoint_config & md_config,
-						solver_configuration & solve_options,
-						BR_configuration & program_options);
+	void master_connect(VertexSet & V,
+						MidpointConfiguration & md_config,
+						SolverConfiguration & solve_options,
+						BertiniRealConfig & program_options);
 	
 	/**
 	 \brief The worker mode for producing faces.
 	 
-	 Worker receives the md_config, surface to be connected, and vertex set from the master, then waits for an index to connect up.  It connects, and then sends back the completed face to the master.
+	 Worker receives the md_config, surface to be connected, and vertex set from the master, then waits for an index to connect up.  It connects, and then sends back the completed Face to the master.
 	 
 	 \param program_options The current state of Bertini_real
 	 \param solve_options The current state of the solver.
 	 */
-	void worker_connect(solver_configuration & solve_options,
-						BR_configuration & program_options);
+	void worker_connect(SolverConfiguration & solve_options,
+						BertiniRealConfig & program_options);
 	
 	
 	/**
-	 \brief Send the next worker the index of the face to make.
+	 \brief Send the next worker the index of the Face to make.
 	 
-	 \param ii which critslice the face will correspond to.
-	 \param jj which edge on the critslice the face will correspond to.
-	 \param next_worker The MPI ID of the worker to request to make the face.
+	 \param ii which critslice the Face will correspond to.
+	 \param jj which edge on the critslice the Face will correspond to.
+	 \param next_worker The MPI ID of the worker to request to make the Face.
 	 \param mpi_config the current state of MPI.
 	 */
-	void master_face_requester(int ii, int jj, int next_worker, parallelism_config & mpi_config);
+	void master_face_requester(int ii, int jj, int next_worker, ParallelismConfig & mpi_config);
 	
 	
 	/**
-	 \brief As a worker, receive the indices of the face to make.
+	 \brief As a worker, receive the indices of the Face to make.
 	 
-	 \param ii which critslice the face will correspond to.
-	 \param jj which edge on the critslice the face will correspond to.
+	 \param ii which critslice the Face will correspond to.
+	 \param jj which edge on the critslice the Face will correspond to.
 	 \param mpi_config the current state of MPI.
 	 */
-	void worker_face_requester(int & ii, int & jj, parallelism_config & mpi_config);
+	void worker_face_requester(int & ii, int & jj, ParallelismConfig & mpi_config);
 	
 	
 	/**
-	 \brief  Actually make the face for the ii-th midslice and the jj-th edge, calling the midtrack solver.
+	 \brief  Actually make the Face for the ii-th midslice and the jj-th edge, calling the midtrack solver.
 	 
-	 \return The constructed face (which may be degenerate).
-	 \param ii which critslice the face will correspond to.
-	 \param jj which edge on the critslice the face will correspond to.
-	 \param V the vertex set containing the vertices for the total decomposition.
+	 \return The constructed Face (which may be degenerate).
+	 \param ii which critslice the Face will correspond to.
+	 \param jj which edge on the critslice the Face will correspond to.
+	 \param V the vertex set containing the vertices for the total Decomposition.
 	 \param md_config The already-set-up midtrack config.
 	 \param solve_options The current state of the solver.
 	 \param program_options The current state of Bertini_real.
 	 */
-	face make_face(int ii, int jj, vertex_set & V,
-				   midpoint_config & md_config,
-				   solver_configuration & solve_options, BR_configuration & program_options);
+	Face make_face(int ii, int jj, VertexSet & V,
+				   MidpointConfiguration & md_config,
+				   SolverConfiguration & solve_options, BertiniRealConfig & program_options);
 	
 	
 	
@@ -1213,7 +1223,7 @@ public:
 	
 	
 	/**
-	 \brief Method for sampling a surface so that each face contains approximately the same number of triangles.
+	 \brief Method for sampling a surface so that each Face contains approximately the same number of triangles.
 	 
 	 \todo Parallelize the sampler.
 	 
@@ -1221,22 +1231,20 @@ public:
 	 \param sampler_options The current state of the sampler program.
 	 \param solve_options The current state of the solver.
 	 */
-	void fixed_sampler(vertex_set &V,
+	void fixed_sampler(VertexSet &V,
 					   sampler_configuration & sampler_options,
-					   solver_configuration & solve_options);
+					   SolverConfiguration & solve_options);
 	
 	
 	/**
 	 \brief Outer method for connecting the computed samples into triangles.
 	 
-	 \return A triangulation of the face described by the input rib_indices.
+	 \return A triangulation of the Face described by the input rib_indices.
 	 \param rib_indices The indices into V for the points.
 	 \param V The vertex set holding the points into which the ribs index.
-	 \param bin_it_by_projection Indicator of whether to bin by projection or distance.  True is projection, false is distance binning.
 	 */
-	std::vector< triangle > stitch_triangulation(const std::vector< std::vector< int > > & rib_indices,
-												 vertex_set & V,
-												 bool bin_it_by_projection);
+	std::vector< Triangle > stitch_triangulation(const std::vector< std::vector< int > > & rib_indices,
+												 VertexSet & V);
 	
 	
 	/**
@@ -1251,24 +1259,24 @@ public:
 	
 	
 	
-	surface_decomposition() : decomposition()
+	Surface() : Decomposition()
 	{
 		this->init();
 	}
 	
-	surface_decomposition & operator=(const surface_decomposition& other){
+	Surface & operator=(const Surface& other){
 		this->init();
 		this->copy(other);
 		return *this;
 	}
 	
-	surface_decomposition(const surface_decomposition & other){
+	Surface(const Surface & other){
 		this->init();
 		this->copy(other);
 	}
 	
 	
-	~surface_decomposition()
+	~Surface()
 	{
 		this->clear();
 	}
@@ -1281,7 +1289,7 @@ public:
 	 \return A pointer to the curve with the name, or NULL if it is not found.
 	 \param findme The name you want to appear as the input_filename of the curve.
 	 */
-	curve_decomposition * curve_with_name(const std::string & findme)
+	Curve * curve_with_name(const std::string & findme)
 	{
 		
 		if (findme.compare(crit_curve_.input_filename().filename().string())==0) {
@@ -1319,31 +1327,31 @@ public:
 	
 	
 	/**
-	 \brief Single-target MPI send function for a surface_decomposition..
+	 \brief Single-target MPI send function for a Surface..
 	 
 	 \param target The MPI ID of the process to send it to.
 	 \param mpi_config The current state of MPI.
 	 */
-	void send(int target, parallelism_config & mpi_config);
+	void send(int target, ParallelismConfig & mpi_config);
 	
 	/**
 	 \brief Single-source MPI receive function.
 	 
-	 \param source The MPI ID of the person from whom to receive the surface_decomposition.
+	 \param source The MPI ID of the person from whom to receive the Surface.
 	 \param mpi_config The current state of MPI.
 	 */
-	void receive(int source, parallelism_config & mpi_config);
+	void receive(int source, ParallelismConfig & mpi_config);
 	
 protected:
 	
 	
-	void copy(const surface_decomposition & other)
+	void copy(const Surface & other)
 	{
-		decomposition::copy(other);
+		Decomposition::copy(other);
 		
-		this->faces = other.faces;
+		this->faces_ = other.faces_;
 		
-		this->num_faces = other.num_faces;
+		this->num_faces_ = other.num_faces_;
 		
 		this->mid_slices_ = other.mid_slices_;
 		this->crit_slices_ = other.crit_slices_;
@@ -1356,7 +1364,7 @@ protected:
 	void init()
 	{
 		num_singular_curves_ = 0;
-		num_faces = 0;
+		num_faces_ = 0;
 		set_dimension(2);
 	}
 	
@@ -1382,10 +1390,10 @@ protected:
  \param W Input witness set, which you want to split in terms of which points do/not satisfy its input file (which was produced by isosingular deflation).
  \param solve_options The current state of the solver.
  */
-int find_matching_singular_witness_points(witness_set & W_match,
-										  witness_set & W_reject,
-										  const witness_set & W,
-										  solver_configuration & solve_options);
+int find_matching_singular_witness_points(WitnessSet & W_match,
+										  WitnessSet & W_reject,
+										  const WitnessSet & W,
+										  SolverConfiguration & solve_options);
 
 
 /**
@@ -1399,7 +1407,7 @@ int find_matching_singular_witness_points(witness_set & W_match,
  */
 void create_sliced_system(boost::filesystem::path input_file, boost::filesystem::path output_file,
 													vec_mp * linears, int num_to_add,
-													const witness_set & W);
+													const WitnessSet & W);
 
 
 
@@ -1415,23 +1423,23 @@ void create_sliced_system(boost::filesystem::path input_file, boost::filesystem:
 void create_sphere_system(boost::filesystem::path input_file, boost::filesystem::path output_file,
 													comp_mp sphere_radius,
 													vec_mp sphere_center,
-													const witness_set & W);
+													const WitnessSet & W);
 
 
 /**
  \brief Read the file named INfile, and get the S.surf information from it.
  
  
- \see surface_decomposition::print
+ \see Surface::print
  
- This function is used when reading a decomposition back in from files.
+ This function is used when reading a Decomposition back in from files.
  
- \param singular_multiplicities A returned value, containing the multiplicity information for the decomposition.
+ \param singular_multiplicities A returned value, containing the multiplicity information for the Decomposition.
  \param temp_num_mid The number of midslices.
  \param temp_num_crit The number of critslices.  Should be temp_num_mid+1.
  \param INfile The name of the file to read.
  */
-void read_summary(std::vector<singular_object_metadata > & singular_multiplicities,
+void read_summary(std::vector<SingularObjectMetadata > & singular_multiplicities,
 				  int & temp_num_mid,
 				  int & temp_num_crit,
 				  boost::filesystem::path INfile);

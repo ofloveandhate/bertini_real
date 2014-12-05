@@ -1,15 +1,13 @@
 function br_plotter = plot_faces(br_plotter)
 
 if br_plotter.options.monocolor
-	plot_faces_monocolor(br_plotter)
+	plot_faces_monocolor(br_plotter);
 else
-	plot_faces_multicolor(br_plotter)
+	plot_faces_multicolor(br_plotter);
 end
 
 
 end
-
-
 
 
 
@@ -53,10 +51,10 @@ curr_axis = br_plotter.axes.main;
 
 txt = cell(br_plotter.BRinfo.num_faces,1);
 pos = zeros(br_plotter.BRinfo.num_faces,length(ind));
-br_plotter.handles.faces = [];
 
 
-colors = jet(num_faces);
+
+colors = br_plotter.options.colormap(num_faces);
 
 
 local.vertices = br_plotter.fv.vertices;
@@ -288,13 +286,8 @@ curr_axis = br_plotter.axes.main;
 
 txt = cell(br_plotter.BRinfo.num_faces,1);
 pos = zeros(br_plotter.BRinfo.num_faces,length(ind));
-br_plotter.handles.faces = [];
 
 
-% colors = jet(num_faces);
-
-
-% local.vertices = br_plotter.fv.vertices;
 
 for ii = 1:num_faces
 	if br_plotter.BRinfo.faces(ii).midslice_index == -1 % degenerate face, or there was a severe problem with the face
@@ -437,7 +430,6 @@ try
 		'EdgeAlpha',br_plotter.options.edge_alpha,...
 		'Parent',curr_axis);
 catch
-	ii
 	local_face_index
 	local.faces
 	pause

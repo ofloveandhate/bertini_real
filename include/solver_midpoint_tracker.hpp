@@ -35,7 +35,7 @@
 
 
 //forward declarations:
-class midpoint_config;
+class MidpointConfiguration;
 class midpoint_eval_data_mp;
 class midpoint_eval_data_d;
 
@@ -48,7 +48,7 @@ class midpoint_eval_data_d;
 
 
 
-class surface_decomposition; // forward declaration
+class Surface; // forward declaration
 
 
 
@@ -56,12 +56,12 @@ class surface_decomposition; // forward declaration
  \brief configuration class for the midpoint solver.
  
  */
-class midpoint_config
+class MidpointConfiguration
 {
 public:
-	friend class complete_system;
+	friend class CompleteSystem;
 	
-	std::map<std::string, complete_system> systems; ///< the systems available for tracking.
+	std::map<std::string, CompleteSystem> systems; ///< the systems available for tracking.
 	
 	
     
@@ -85,16 +85,16 @@ public:
     
     
 	
-	midpoint_config(){
+	MidpointConfiguration(){
 		init();
 	}
 	
-	~midpoint_config(){
+	~MidpointConfiguration(){
 		clear();
 	}
 	
 	
-	midpoint_config & operator=(const midpoint_config & other)
+	MidpointConfiguration & operator=(const MidpointConfiguration & other)
 	{
 		init();
 		
@@ -102,7 +102,7 @@ public:
 		return *this;
 	}
 	
-	midpoint_config(const midpoint_config & other)
+	MidpointConfiguration(const MidpointConfiguration & other)
 	{
 		init();
 		
@@ -135,8 +135,8 @@ public:
 	 \param surf the surface we will connect dots on, to build faces.
 	 \param solve_options the current state of the solver.
 	 */
-	void setup(const surface_decomposition & surf,
-               solver_configuration & solve_options);
+	void setup(const Surface & surf,
+               SolverConfiguration & solve_options);
     
 	
 	/**
@@ -144,7 +144,7 @@ public:
 	 
 	 \param mpi_config the current state of mpi
 	 */
-    void bcast_send(parallelism_config & mpi_config);
+    void bcast_send(ParallelismConfig & mpi_config);
 	
 	/**
 	 \brief broadcast receive a config from headnode in mpi communicator.
@@ -152,7 +152,7 @@ public:
 	 \param mpi_config the current state of mpi.
 	 
 	 */
-    void bcast_receive(parallelism_config & mpi_config);
+    void bcast_receive(ParallelismConfig & mpi_config);
 
 	
 	/**
@@ -183,7 +183,7 @@ public:
 	 */
 	int num_top_vars()
 	{
-		return systems[system_name_top].num_variables;
+		return systems[system_name_top].num_variables();
 	}
 	
 	
@@ -194,7 +194,7 @@ public:
 	 */
 	int num_bottom_vars()
 	{
-		return systems[system_name_bottom].num_variables;
+		return systems[system_name_bottom].num_variables();
 	}
 	
 	
@@ -205,7 +205,7 @@ public:
 	 */
 	int num_mid_vars()
 	{
-		return systems[system_name_mid].num_variables;
+		return systems[system_name_mid].num_variables();
 	}
 	
 	
@@ -215,7 +215,7 @@ public:
 	
 private:
     
-	void copy(const midpoint_config & other){
+	void copy(const MidpointConfiguration & other){
 		
 		this->MPType = other.MPType;
 		
@@ -280,7 +280,7 @@ private:
  */
 
 // this must be defined before the double version, because double has mp.
-class midpoint_eval_data_mp : public solver_mp
+class midpoint_eval_data_mp : public SolverMultiplePrecision
 {
 public:
 	
@@ -289,11 +289,11 @@ public:
 	int num_top_vars; ///< the number of variables for the top edge.
 	
     
-	SLP_global_pointers top_memory; ///< the memory for the top system
-	SLP_global_pointers mid_memory; ///< the memory for the middle system
-	SLP_global_pointers bottom_memory; ///< the memory for the bottom system
+	StraightLineProgramGlobalPointers top_memory; ///< the memory for the top system
+	StraightLineProgramGlobalPointers mid_memory; ///< the memory for the middle system
+	StraightLineProgramGlobalPointers bottom_memory; ///< the memory for the bottom system
 	
-	// these are all merely pointers, and should only be assigned to memory set by the SLP creation routine inside of setupProg(), by the midpoint_config::setup() call
+	// these are all merely pointers, and should only be assigned to memory set by the SLP creation routine inside of setupProg(), by the MidpointConfiguration::setup() call
 	
 	prog_t *SLP_top; ///< pointer to SLP for top edge.
 	prog_t *SLP_bottom; ///< pointer to SLP for bottom edge.
@@ -301,8 +301,8 @@ public:
 		// these are to be freed by the midpoint_setup object.
 	
 	
-	std::shared_ptr<system_randomizer> randomizer_bottom; ///< pointer to randomizer for bottom edge.
-	std::shared_ptr<system_randomizer> randomizer_top; ///< pointer to randomizer for top edge.
+	std::shared_ptr<SystemRandomizer> randomizer_bottom; ///< pointer to randomizer for bottom edge.
+	std::shared_ptr<SystemRandomizer> randomizer_top; ///< pointer to randomizer for top edge.
 	
 	vec_mp *pi; ///< projection vectors
 	int num_projections; ///< projection vectors.  this should be 2 when filled.
@@ -344,14 +344,14 @@ public:
 	
 	
 	// default initializer
-	midpoint_eval_data_mp() : solver_mp(){
+	midpoint_eval_data_mp() : SolverMultiplePrecision(){
 		
 		reset_counters();
 		
 		init();
 	}
 	
-	midpoint_eval_data_mp(int mp) : solver_mp(mp){
+	midpoint_eval_data_mp(int mp) : SolverMultiplePrecision(mp){
 		
 		this->MPType = mp;
 		reset_counters();
@@ -405,40 +405,40 @@ public:
 	/**
 	 \brief a non-usable broadcast send method.  midpoint_solver is intended for use in what appears to be a serial mode, even though it is used by many processors.  
 	 
-	 \see surface_decomposition::make_face
+	 \see Surface::make_face
 	 
 	 \todo convert the name to bcast_send
 	 
 	 \return SUCCESSFUL
 	 \param mpi_config the current state of MPI
 	 */
-	int send(parallelism_config & mpi_config);
+	int send(ParallelismConfig & mpi_config);
 	
 	
 	/**
 	 \brief a non-usable broadcast receive method.  midpoint_solver is intended for use in what appears to be a serial mode, even though it is used by many processors.
 	 
-	 \see surface_decomposition::make_face
+	 \see Surface::make_face
 	 
 	 \todo convert the name to bcast_receive
 	 
 	 \return SUCCESSFUL
 	 \param mpi_config the current state of MPI
 	 */
-	int receive(parallelism_config & mpi_config);
+	int receive(ParallelismConfig & mpi_config);
 	
 	
 	/**
-	 \brief main setup call, taking in midpoint_config and a witness set, and producing a ready-to-go solver.
+	 \brief main setup call, taking in MidpointConfiguration and a witness set, and producing a ready-to-go solver.
 	 
 	 \return SUCCESSFUL
 	 \param md_config Configuration for the midpoint tracker
 	 \param W input witness set
 	 \param solve_options the current state of the solver
 	 */
-	int setup(midpoint_config & md_config,
-              const witness_set & W,
-              solver_configuration & solve_options);
+	int setup(MidpointConfiguration & md_config,
+              const WitnessSet & W,
+              SolverConfiguration & solve_options);
 	
 	
 	
@@ -540,7 +540,7 @@ public:
 	
 	void copy(const midpoint_eval_data_mp & other)
 	{
-		solver_mp::copy(other);
+		SolverMultiplePrecision::copy(other);
 		
 		this->num_mid_vars = other.num_mid_vars;
 		this->num_top_vars = other.num_top_vars;
@@ -609,7 +609,7 @@ public:
 
 // the double version
 // this must be defined after the mp version, because double has mp.
-class midpoint_eval_data_d : public solver_d
+class midpoint_eval_data_d : public SolverDoublePrecision
 {
 public:
 	
@@ -619,9 +619,9 @@ public:
 	int num_top_vars;///< the number of variables in the top system
 	int num_bottom_vars;///< the number of variables in the bottom system
 	
-	SLP_global_pointers bottom_memory;///< the memory for the bottom system
-	SLP_global_pointers top_memory;///< the memory for the top system
-	SLP_global_pointers mid_memory;///< the memory for the mid system
+	StraightLineProgramGlobalPointers bottom_memory;///< the memory for the bottom system
+	StraightLineProgramGlobalPointers top_memory;///< the memory for the top system
+	StraightLineProgramGlobalPointers mid_memory;///< the memory for the mid system
 	
 	prog_t *SLP_bottom; ///< a pointer to the SLP for the bottom system
 	prog_t *SLP_top;///< a pointer to the SLP for the top system
@@ -630,8 +630,8 @@ public:
 	vec_d *pi; ///< the projection being used.  should be exactly 2 when fully populated.
 	int num_projections; ///< the number of projections.
 	
-	std::shared_ptr<system_randomizer> randomizer_bottom; ///< a pointer to the randomizer for the bottom system
-	std::shared_ptr<system_randomizer> randomizer_top;///< a pointer to the randomizer for the top system
+	std::shared_ptr<SystemRandomizer> randomizer_bottom; ///< a pointer to the randomizer for the bottom system
+	std::shared_ptr<SystemRandomizer> randomizer_top;///< a pointer to the randomizer for the top system
 	
 	
 	//patch already lives in the base class.
@@ -652,14 +652,14 @@ public:
 	
 	
 	// default initializer
-	midpoint_eval_data_d() : solver_d(){
+	midpoint_eval_data_d() : SolverDoublePrecision(){
 		
 		reset_counters();
 		
 		init();
 	}
 	
-	midpoint_eval_data_d(int mp) : solver_d(mp){
+	midpoint_eval_data_d(int mp) : SolverDoublePrecision(mp){
 		
 		this->MPType = mp;
 		reset_counters();
@@ -717,7 +717,7 @@ public:
 	midpoint_eval_data_d(const midpoint_eval_data_d & other)
 	{
 		init();
-		solver_d();
+		SolverDoublePrecision();
 		midpoint_eval_data_d();
 		
 		//no need to clear or reset counters, as this is a new object.
@@ -734,7 +734,7 @@ public:
 	 \return SUCCESSFUL
 	 \param mpi_config the current state of MPI
 	 */
-	int send(parallelism_config & mpi_config);
+	int send(ParallelismConfig & mpi_config);
 	
 	/**
 	 \brief a non-usable broadcast receive.  this type is not intended to be sent about.
@@ -744,20 +744,20 @@ public:
 	 \return SUCCESSFUL
 	 \param mpi_config the current state of MPI
 	 */
-	int receive(parallelism_config & mpi_config);
+	int receive(ParallelismConfig & mpi_config);
 	
 	
 	/**
-	 \brief main setup call, taking in midpoint_config and a witness set, and producing a ready-to-go solver.
+	 \brief main setup call, taking in MidpointConfiguration and a witness set, and producing a ready-to-go solver.
 	 
 	 \return SUCCESSFUL
 	 \param md_config Configuration for the midpoint tracker
 	 \param W input witness set
 	 \param solve_options the current state of the solver
 	 */
-	int setup(midpoint_config & md_config,
-              const witness_set & W,
-              solver_configuration & solve_options);
+	int setup(MidpointConfiguration & md_config,
+              const WitnessSet & W,
+              SolverConfiguration & solve_options);
 	
 	/**
 	 \brief add a projection to the solver.
@@ -822,7 +822,7 @@ private:
 	{
 		
 		
-		solver_d::copy(other);
+		SolverDoublePrecision::copy(other);
 		
 		this->num_mid_vars = other.num_mid_vars;
 		this->num_top_vars = other.num_top_vars;
@@ -873,10 +873,10 @@ private:
  \param solve_options the current state of the solver
  */
 
-int midpoint_solver_master_entry_point(const witness_set & W, // carries with it the start points, and the linears.
-                                       solver_output & solve_out, // new data goes in here
-                                       midpoint_config & md_config,
-                                       solver_configuration		& solve_options);
+int midpoint_solver_master_entry_point(const WitnessSet & W, // carries with it the start points, and the linears.
+                                       SolverOutput & solve_out, // new data goes in here
+                                       MidpointConfiguration & md_config,
+                                       SolverConfiguration		& solve_options);
 
 
 
@@ -887,7 +887,7 @@ int midpoint_solver_master_entry_point(const witness_set & W, // carries with it
  
  \todo: explain with diagram how this works
  
- this function makes use of the temps_mp class for persistence of temporaries.
+ this function makes use of the TemporariesMultiplePrecision class for persistence of temporaries.
  
  \return the number 0.
  \param funcVals the computed function values.
@@ -907,7 +907,7 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
  
  \todo: explain with diagram how this works
  
- this function makes use of the temps_mp class for persistence of temporaries.
+ this function makes use of the TemporariesMultiplePrecision class for persistence of temporaries.
  
  \return the number 0.
  \param funcVals the computed function values.
@@ -1020,7 +1020,7 @@ void check_midpoint_evaluator(point_mp current_values,
  
  \param solve_options The current state of the solver.
  */
-void midpoint_slave_entry_point(solver_configuration & solve_options);
+void midpoint_slave_entry_point(SolverConfiguration & solve_options);
 
 
 

@@ -157,7 +157,9 @@ if br_plotter.options.labels
 	end
 
 	if br_plotter.options.labels
-		[br_plotter.checkboxes.label_faces, cb_params] = make_switch_checkbox('face labels', 'label_faces', cb_params, h, br_plotter);
+		if ~isempty(br_plotter.handles.faces)
+			[br_plotter.checkboxes.label_faces, cb_params] = make_switch_checkbox('face labels', 'label_faces', cb_params, h, br_plotter);
+		end
 	end
 
 end %if options.labels
@@ -192,8 +194,9 @@ end
 cb_params.x_pad = 0;
 [br_plotter.checkboxes.surface_curve_raw, cb_params] = make_switch_checkbox('raw curves', 'raw_curves_main', cb_params, h, br_plotter);
 
-[br_plotter.checkboxes.display_faces, cb_params] = make_switch_checkbox('raw faces', 'display_faces', cb_params, h, br_plotter);
-
+if ~isempty(br_plotter.handles.faces)
+	[br_plotter.checkboxes.display_faces, cb_params] = make_switch_checkbox('raw faces', 'display_faces', cb_params, h, br_plotter);
+end
 
 cb_params.curr_y = cb_params.curr_y+10;
 
@@ -220,8 +223,9 @@ if have_refinements
 	cb_params.x_pad = 0;
 	
 	[br_plotter.checkboxes.curve_refinements, cb_params] = make_switch_checkbox('curve refinements', 'main', cb_params, h, br_plotter,'curve_refinements');
-	[br_plotter.checkboxes.display_face_samples, cb_params] = make_switch_checkbox('face samples', 'display_face_samples', cb_params, h, br_plotter);
-
+	if ~isempty(br_plotter.handles.faces)
+		[br_plotter.checkboxes.display_face_samples, cb_params] = make_switch_checkbox('face samples', 'display_face_samples', cb_params, h, br_plotter);
+	end
 end
 
 
@@ -335,7 +339,7 @@ end
 function [checkbox_handle, cb_params] = make_switch_checkbox(switch_text, switch_name, cb_params, panel_handle, br_plotter, groupname)
 
 
-position =[cb_params.x_pad cb_params.curr_y cb_params.w-5-3*cb_params.x_pad cb_params.h]
+position =[cb_params.x_pad cb_params.curr_y cb_params.w-5-3*cb_params.x_pad cb_params.h];
 
 if nargin == 6
 	
