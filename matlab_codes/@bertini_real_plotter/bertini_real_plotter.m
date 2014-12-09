@@ -1,18 +1,33 @@
+%
 %a class for plotting the data from a bertini_real run of any computable
 %dimension
 %
 %
 % options: 
-%	'autosave'
-%	'vertices', 'vert'
-%	'filename'
-%	'proj'
-%	'mono', 'monocolor'
-%	'labels'
+%	'autosave'          - bool [true]
+%	'vertices', 'vert'  - bool [true]
+%	'filename', 'file   - string [BRinfo*.mat]
+%	'proj'              - handle to function.  no default
+%	'mono', 'monocolor' - color or RGB triple.  not on by default
+%	'labels'            - bool [true]
+%   'colormap'          - handle to colormap generating function [@jet]
+%   'linestyle'         - string, sets all curves to have this style. 
+%                            no default, curves have style by type.
+%	'faces'             - bool [true]
 %
 %
 %
 %
+
+
+% daniel brake
+% danielthebrake@gmail.com
+% university of notre dame
+% applied and computational mathematics and statistics
+% 2014
+
+
+
 classdef bertini_real_plotter < handle
 	
 	
@@ -42,9 +57,7 @@ classdef bertini_real_plotter < handle
 		
 		is_bounded = [];
 		fv = [];
-		
-		cam_pos = [];
-		
+				
 		format = '';
 		format_flag = '';
 	end
@@ -82,10 +95,12 @@ classdef bertini_real_plotter < handle
 			br_plotter.options.fontsizes.labels = 16;
 			br_plotter.options.fontsizes.axis = 20;
 			br_plotter.options.line_thickness = 3;
-			br_plotter.options.autosave = false;
+			br_plotter.options.autosave = true;
 			br_plotter.options.labels = true;
 			br_plotter.options.monocolor = false;
 			br_plotter.options.render_vertices = true;
+			br_plotter.options.colormap = @jet;
+			br_plotter.options.faces = true;
 		end
 		
 		
@@ -149,7 +164,7 @@ classdef bertini_real_plotter < handle
 						end
 						
 						
-					case 'filename'
+					case {'filename','file'}
 						br_plotter.filename = command_line_options{ii+1};
 						if ~ischar(br_plotter.filename)
 							error('filename argument must be a filename')
@@ -168,7 +183,15 @@ classdef bertini_real_plotter < handle
 							error('value for ''proj'' must be a function handle or ''natural''');
 						end
 
-
+					case {'colormap'}
+						tmp = command_line_options{ii+1};
+						if isa(tmp,'function_handle')
+							br_plotter.options.colormap = tmp;
+						else
+							error('value for ''colormap'' must be a handle to a function generating a colormap for an integer number of colors; e.g. @jet');
+						end
+						
+						
 					case {'mono','monocolor'}
 						br_plotter.options.monocolor = true;
 						
@@ -206,6 +229,10 @@ classdef bertini_real_plotter < handle
 							
 						end
 						
+						
+						
+						br_plotter.options.colormap = @(num_colors) repmat(br_plotter.options.monocolor_color,num_colors,1);
+						
 					case 'labels'
 						tentative_arg = command_line_options{ii+1};
 						
@@ -228,6 +255,14 @@ classdef bertini_real_plotter < handle
 								error('bad option %f for labels',tentative_arg);
 							end
 						end
+						
+					case 'linestyle'
+						br_plotter.options.linestyle = command_line_options{ii+1};
+						br_plotter.options.use_fixed_linestyle = true;
+						
+						
+					case 'faces'
+						br_plotter.options.faces =  command_line_options{ii+1};
 						
 					otherwise
 						error('unexpected option name ''%s''',command_line_options{ii})
@@ -401,7 +436,7 @@ classdef bertini_real_plotter < handle
 		
 		curve_plot(br_plotter)
 		
-		handles = plot_curve_samples(br_plotter,sampler_data,style)
+		handles = plot_curve_samples(br_plotter,sampler_data,style, color)
 		
 		% common to all dimensions
 		sphere_plot(br_plotter)

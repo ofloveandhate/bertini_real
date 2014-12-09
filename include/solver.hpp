@@ -58,7 +58,7 @@ extern int *mem_needs_init_mp; // determine if mem_mp has been initialized
  this class is ignorant of MPtype.
  
  */
-class SLP_global_pointers
+class StraightLineProgramGlobalPointers
 {
 public:
 	
@@ -87,21 +87,21 @@ public:
 	
 	
 	
-	SLP_global_pointers()
+	StraightLineProgramGlobalPointers()
 	{
 		init();
 	}
 	
 	
 	
-	SLP_global_pointers & operator=( const SLP_global_pointers & other)
+	StraightLineProgramGlobalPointers & operator=( const StraightLineProgramGlobalPointers & other)
 	{
 		init();
 		copy(other);
 		return *this;
 	}
 	
-	SLP_global_pointers(const SLP_global_pointers & other)
+	StraightLineProgramGlobalPointers(const StraightLineProgramGlobalPointers & other)
 	{
 		init();
 		copy(other);
@@ -124,7 +124,7 @@ protected:
 		this->local_mem_needs_init_mp = NULL; // determine if mem_mp has been initialized
 	}
 	
-	void copy(const SLP_global_pointers & other)
+	void copy(const StraightLineProgramGlobalPointers & other)
 	{
 		if (other.local_mem_d!=NULL)
 			this->local_mem_d = other.local_mem_d;
@@ -167,32 +167,26 @@ private:
 
 
 /**
- \brief holds an SLP, system_randomizer, and SLP_global_pointers, for complete encapsulation of the system into one unit.
+ \brief holds an SLP, SystemRandomizer, and StraightLineProgramGlobalPointers, for complete encapsulation of the system into one unit.
  
  \ingroup mpienabled
  
  complete with send/receive methods.
  
  */
-class complete_system
+class CompleteSystem
 {
-	friend class midpoint_config;
-	friend class midpoint_eval_data_mp;
-	friend class midpoint_eval_data_d;
+	
+	boost::filesystem::path input_filename_; ///< the name of the input file generating this system
+	StraightLineProgramGlobalPointers memory_; ///< the memory for the SLP
+	prog_t * SLP_; ///< the actual SLP.  a pointer to it.  comes with have_SLP, which indicates whether this object owns the SLP.
+	bool have_SLP_; ///< indicator of whether this object owns the SLP
 	
 	
-protected:
+	bool have_randomizer_; ///< indicator whether this object owns the randomizer
+	std::shared_ptr<SystemRandomizer> randomizer_; ///< pointer to a randomizer.  comes with have_randomizer to indicate ownership.
 	
-	boost::filesystem::path input_filename; ///< the name of the input file generating this system
-	SLP_global_pointers memory; ///< the memory for the SLP
-	prog_t * SLP; ///< the actual SLP.  a pointer to it.  comes with have_SLP, which indicates whether this object owns the SLP.
-	bool have_SLP; ///< indicator of whether this object owns the SLP
-	
-	
-	bool have_randomizer; ///< indicator whether this object owns the randomizer
-	std::shared_ptr<system_randomizer> randomizer_; ///< pointer to a randomizer.  comes with have_randomizer to indicate ownership.
-	
-	int num_variables; ///< the number of variables in the system.
+	int num_variables_; ///< the number of variables in the system.
 	
 	
 	
@@ -200,7 +194,59 @@ protected:
 	
 public:
 	
-	std::shared_ptr<system_randomizer> randomizer()
+	
+	/**
+	 get a the pointer to the SLP for this system
+	 */
+	prog_t * SLP_pointer()
+	{
+		return SLP_;
+	}
+	
+	/**
+	 get the memory for the system
+	 */
+	StraightLineProgramGlobalPointers memory()
+	{
+		return memory_;
+	}
+	
+	/**
+	 get the input file name
+	 \return the name of the input file which was parsed into this CompleteSystem
+	 */
+	boost::filesystem::path input_filename() const
+	{
+		return input_filename_;
+	}
+	
+	/**
+	 set the input file name
+	 \param new_name the name of the input file which was parsed into this CompleteSystem
+	 */
+	void set_input_filename(const boost::filesystem::path & new_name)
+	{
+		input_filename_ = new_name;
+	}
+	
+	/**
+	 \brief get the number of variables in the system
+	 
+	 \return the number of variables in the system
+	 */
+	int num_variables() const
+	{
+		return num_variables_;
+	}
+	
+	int num_variables()
+	{
+		return num_variables_;
+	}
+	/**
+	 \brief get a shared pointer to the randomizer
+	 */
+	std::shared_ptr<SystemRandomizer> randomizer()
 	{
 		return randomizer_;
 	}
@@ -212,13 +258,13 @@ public:
 	 
 	 \param mpi_config the current state of MPI
 	 */
-	void bcast_send(parallelism_config & mpi_config)
+	void bcast_send(ParallelismConfig & mpi_config)
 	{
 		
 		
 		int * buffer = new int[2];
 		buffer[0] = MPType;
-		buffer[1] = num_variables;
+		buffer[1] = num_variables();
 		MPI_Bcast(buffer, 2, MPI_INT, mpi_config.head(), mpi_config.comm());
 		
 		delete [] buffer;
@@ -226,9 +272,9 @@ public:
 		//need something here  to send randomizer to everyone.
 		randomizer_->bcast_send(mpi_config);
 		
-		memory.set_globals_to_this();
-		bcast_prog_t(SLP, this->MPType, 0, 0); // last two arguments are: myid, headnode
-		memory.set_globals_null();
+		memory_.set_globals_to_this();
+		bcast_prog_t(SLP_, this->MPType, 0, 0); // last two arguments are: myid, headnode
+		memory_.set_globals_null();
 	}
 	
 	
@@ -238,16 +284,16 @@ public:
 	 
 	 \param mpi_config the current state of MPI
 	 */
-	void bcast_receive(parallelism_config & mpi_config)
+	void bcast_receive(ParallelismConfig & mpi_config)
 	{
 		
-		if (have_SLP) {
-			memory.set_globals_to_this();
-			clearProg(SLP, this->MPType, 1); // 1 means call freeprogeval()
+		if (have_SLP_) {
+			memory_.set_globals_to_this();
+			clearProg(SLP_, this->MPType, 1); // 1 means call freeprogeval()
 		}
 		else
 		{
-			SLP = new prog_t;
+			SLP_ = new prog_t;
 		}
 		
 		int * buffer = new int[2];
@@ -256,52 +302,54 @@ public:
 		
 		
 		MPType = buffer[0];
-		num_variables = buffer[1];
-		
-		
-		// here, need something to receive from head.
-		randomizer_ = std::make_shared<system_randomizer> (*(new system_randomizer));
-		
-		randomizer_->bcast_receive(mpi_config);
+		num_variables_ = buffer[1];
 		
 		delete [] buffer;
 		
-		bcast_prog_t(SLP, MPType, 1, 0); // last two arguments are: myid, headnode
-		initEvalProg(MPType);
-		memory.capture_globals();
-		memory.set_globals_null();
 		
-		have_SLP = true;
+		// here, need something to receive from head.
+		randomizer_ = std::make_shared<SystemRandomizer> (*(new SystemRandomizer));
+		
+		randomizer_->bcast_receive(mpi_config);
+		
+		
+		
+		bcast_prog_t(SLP_, MPType, 1, 0); // last two arguments are: myid, headnode
+		initEvalProg(MPType);
+		memory_.capture_globals();
+		memory_.set_globals_null();
+		
+		have_SLP_ = true;
 	}
 	
 	
 	
-	complete_system()
+	CompleteSystem()
 	{
 		init();
 	}
 	
-	complete_system(const decomposition & D, tracker_config_t * T)
+	CompleteSystem(const Decomposition & D, tracker_config_t * T)
 	{
 		init();
 		get_system(D,T);
 	}
 	
 	
-	~complete_system()
+	~CompleteSystem()
 	{
 		clear();
 	}
 	
 	
-	complete_system & operator=( const complete_system & other)
+	CompleteSystem & operator=( const CompleteSystem & other)
 	{
 		init();
 		copy(other);
 		return *this;
 	}
 	
-	complete_system(const complete_system & other)
+	CompleteSystem(const CompleteSystem & other)
 	{
 		init();
 		copy(other);
@@ -312,51 +360,51 @@ public:
 	void init()
 	{
 		
-		have_randomizer = false;
+		have_randomizer_ = false;
 		
-		num_variables = 0;
-		input_filename = "unset_input_filename_complete_system";
+		num_variables_ = 0;
+		input_filename_ = "unset_input_filename_complete_system";
 		MPType = -1;
 		
-		have_SLP = false;
+		have_SLP_ = false;
 	}
 	
 	
-	void copy(const complete_system & other)
+	void copy(const CompleteSystem & other)
 	{
 		
-		this->num_variables = other.num_variables;
+		this->num_variables_ = other.num_variables();
 		
 		this->MPType = other.MPType;
 		
-		this->input_filename = other.input_filename;
+		set_input_filename(other.input_filename());
 		
-		if (this->have_SLP) {
-			this->memory.set_globals_to_this();
-			clearProg(this->SLP, this->MPType, 1); // 1 means call freeprogeval()
+		if (this->have_SLP_) {
+			this->memory_.set_globals_to_this();
+			clearProg(this->SLP_, this->MPType, 1); // 1 means call freeprogeval()
 			
-			if (!other.have_SLP) {
-				delete this->SLP;
-				this->have_SLP = false;
+			if (!other.have_SLP_) {
+				delete this->SLP_;
+				this->have_SLP_ = false;
 			}
 			
 		}
 		
-		if (other.have_SLP) {
+		if (other.have_SLP_) {
 			
-			if (!this->have_SLP)
+			if (!this->have_SLP_)
 			{
-				this->SLP = new prog_t;
+				this->SLP_ = new prog_t;
 			}
 			
 			
 			
-			cp_prog_t(this->SLP, other.SLP);
-			this->memory.set_globals_null();
+			cp_prog_t(this->SLP_, other.SLP_);
+			this->memory_.set_globals_null();
 			initEvalProg(this->MPType);
-			this->memory.capture_globals();
+			this->memory_.capture_globals();
 			
-			this->have_SLP = true;
+			this->have_SLP_ = true;
 		}
 		
 		
@@ -371,11 +419,11 @@ public:
 	{
 
 		
-		if (have_SLP) {
-			memory.set_globals_to_this();
-			clearProg(SLP, this->MPType, 1); // 1 means call freeprogeval()
-			delete SLP;
-			have_SLP = false;
+		if (have_SLP_) {
+			memory_.set_globals_to_this();
+			clearProg(SLP_, this->MPType, 1); // 1 means call freeprogeval()
+			delete SLP_;
+			have_SLP_ = false;
 		}
 		
 		
@@ -383,39 +431,39 @@ public:
 	
 	
 	/**
-	 \brief set up a system, based on a decomposition.
+	 \brief set up a system, based on a Decomposition.
 	 
 	 gets the randomizer as a pointer to a randomizer, based on the pointer in D.  sets up the SLP as local to this thing, and captures the memory to local as well.
 	 
-	 \param D the decomposition for which to set up a complete system
+	 \param D the Decomposition for which to set up a complete system
 	 \param T the current state of the tracker
 	 */
-	void get_system(const decomposition & D, tracker_config_t * T)
+	void get_system(const Decomposition & D, tracker_config_t * T)
 	{
-		if (have_SLP) {
-			memory.set_globals_to_this();
-			clearProg(SLP, this->MPType, 1); // 1 means call freeprogeval()
+		if (have_SLP_) {
+			memory_.set_globals_to_this();
+			clearProg(SLP_, this->MPType, 1); // 1 means call freeprogeval()
 		}
 		else{
-			SLP = new prog_t;
+			SLP_ = new prog_t;
 		}
 		
 		
 		this->randomizer_ = D.randomizer();
-		have_randomizer = false;
+		have_randomizer_ = false;
 		int blabla;  // i would like to move this.
 		parse_input_file(D.input_filename(), &blabla);
-		num_variables = D.num_variables();
-		input_filename = D.input_filename();
+		num_variables_ = D.num_variables();
+		set_input_filename(D.input_filename());
 		this->MPType = T->MPType;
 		
 		
 		
 		
 		//	// setup a straight-line program, using the file(s) created by the parser
-		int numVars = setupProg(SLP, T->Precision, T->MPType);
-		if (num_variables != numVars) {
-			std::cout << "numvars is incorrect...  setupprog gives " << numVars << ", but should be " << num_variables << "." << std::endl;
+		int numVars = setupProg(SLP_, T->Precision, T->MPType);
+		if (num_variables() != numVars) {
+			std::cout << "numvars is incorrect...  setupprog gives " << numVars << ", but should be " << num_variables() << "." << std::endl;
 			mypause();
 			br_exit(-57189); // this should be a throw or something
 		}
@@ -424,14 +472,14 @@ public:
 		parse_preproc_data("preproc_data", &PPD);
 		
 		
-		memory.capture_globals();
-		memory.set_globals_null();
+		memory_.capture_globals();
+		memory_.set_globals_null();
 		
 		
 		
 		preproc_data_clear(&PPD);
 		
-		have_SLP = true;
+		have_SLP_ = true;
 		
 	}
 	
@@ -439,22 +487,22 @@ public:
 	
 	
 	/**
-	 \brief set up a system, based on a decomposition.
+	 \brief set up a system, based on a Decomposition.
 	 
 	 gets the randomizer as a pointer to a randomizer, based on the pointer in D.  sets up the SLP as local to this thing, and captures the memory to local as well.
 	 
-	 \param new_input_name The name of the file to parse into this complete_system.
+	 \param new_input_name The name of the file to parse into this CompleteSystem.
 	 \param randy A pointer to a randomizer to use.
 	 \param T The current state of the tracker.
 	 */
-	void get_system(const boost::filesystem::path & new_input_name, std::shared_ptr<system_randomizer> randy, tracker_config_t * T)
+	void get_system(const boost::filesystem::path & new_input_name, std::shared_ptr<SystemRandomizer> randy, tracker_config_t * T)
 	{
-		if (have_SLP) {
-			memory.set_globals_to_this();
-			clearProg(SLP, this->MPType, 1); // 1 means call freeprogeval()
+		if (have_SLP_) {
+			memory_.set_globals_to_this();
+			clearProg(SLP_, this->MPType, 1); // 1 means call freeprogeval()
 		}
 		else{
-			SLP = new prog_t;
+			SLP_ = new prog_t;
 		}
 		
 		
@@ -463,22 +511,22 @@ public:
 
 		int blabla;  // i would like to move this.
 		parse_input_file(new_input_name, &blabla);
-		input_filename = new_input_name;
+		set_input_filename(new_input_name);
 		this->MPType = T->MPType;
 		
 		
 		
 		
 		//	// setup a straight-line program, using the file(s) created by the parser
-		num_variables = setupProg(SLP, T->Precision, T->MPType);
-		have_SLP = true;
+		num_variables_ = setupProg(SLP_, T->Precision, T->MPType);
+		have_SLP_ = true;
 		
 		preproc_data PPD;
 		parse_preproc_data("preproc_data", &PPD);
 		
 		
-		memory.capture_globals();
-		memory.set_globals_null();
+		memory_.capture_globals();
+		memory_.set_globals_null();
 		
 		
 		
@@ -490,23 +538,23 @@ public:
 	
 	
 	/**
-	 \brief set up a system, based on a decomposition.
+	 \brief set up a system, based on a Decomposition.
 	 
 	 gets the randomizer as a pointer to a randomizer, based on the pointer in D.  sets up the SLP as local to this thing, and captures the memory to local as well.
 	 
-	 \param new_input_name The name of the file to parse into this complete_system.
+	 \param new_input_name The name of the file to parse into this CompleteSystem.
 	 \param num_func_in The number of functions naturally appearing in the system.
 	 \param num_func_out The number of functions for output.  If less than number in, will result in randomizer.  If greater, will result in logical inconsistency.
 	 \param T The current state of the tracker (pointer to).
 	 */
 	void get_system(const boost::filesystem::path & new_input_name, int num_func_in, int num_func_out, tracker_config_t * T)
 	{
-		if (have_SLP) {
-			memory.set_globals_to_this();
-			clearProg(SLP, this->MPType, 1); // 1 means call freeprogeval()
+		if (have_SLP_) {
+			memory_.set_globals_to_this();
+			clearProg(SLP_, this->MPType, 1); // 1 means call freeprogeval()
 		}
 		else{
-			SLP = new prog_t;
+			SLP_ = new prog_t;
 		}
 		
 
@@ -516,16 +564,16 @@ public:
 		
 		int blabla;  // i would like to move this.
 		parse_input_file(new_input_name, &blabla);
-		input_filename = new_input_name;
+		set_input_filename(new_input_name);
 		this->MPType = T->MPType;
 		
 		
 		//	// setup a straight-line program, using the file(s) created by the parser
-		num_variables = setupProg(SLP, T->Precision, T->MPType);
-		have_SLP = true;
+		num_variables_ = setupProg(SLP_, T->Precision, T->MPType);
+		have_SLP_ = true;
 		
 		
-		randomizer_ = std::make_shared<system_randomizer>(*(new system_randomizer));
+		randomizer_ = std::make_shared<SystemRandomizer>(*(new SystemRandomizer));
 		randomizer_->setup(num_func_out, num_func_in);
 		
 		
@@ -533,8 +581,8 @@ public:
 		parse_preproc_data("preproc_data", &PPD);
 		
 		
-		memory.capture_globals();
-		memory.set_globals_null();
+		memory_.capture_globals();
+		memory_.set_globals_null();
 		
 		
 		
@@ -555,11 +603,11 @@ public:
  \brief A flexible container for holding comp_mp, vec_mp, and mat_mp, allocated on the fly, but not cleared.  
  
  
- \see temps_d
+ \see TemporariesDoublePrecision
  
  When an object of this type is stored over iterations of a function by being clever, you can spare many many init/clear calls from happening, which tend to be expensive for MP type
  */
-class temps_mp
+class TemporariesMultiplePrecision
 {
 public:
 	comp_mp * scalars; ///< the temporary comp_mp values.
@@ -576,16 +624,16 @@ public:
 	
 	
 	
-	temps_mp(){init();}
-	~temps_mp(){clear();}
+	TemporariesMultiplePrecision(){init();}
+	~TemporariesMultiplePrecision(){clear();}
 	
-	temps_mp & operator=(const temps_mp & other){
+	TemporariesMultiplePrecision & operator=(const TemporariesMultiplePrecision & other){
 		copy(other);
 		
 		return *this;
 	}
 	
-	temps_mp(const temps_mp & other){
+	TemporariesMultiplePrecision(const TemporariesMultiplePrecision & other){
 		init();
 		copy(other);
 	}
@@ -787,7 +835,7 @@ private:
 		curr_prec = mpfr_get_default_prec();
 	}
 	
-	void copy(const temps_mp &other)
+	void copy(const TemporariesMultiplePrecision &other)
 	{
 		for (int ii=0; ii<other.num_scalars; ii++) {
 			int new_index = this->add_scalar();
@@ -822,11 +870,11 @@ private:
  \brief A flexible container for holding comp_d, vec_d, and mat_d, allocated on the fly, but not cleared.
  
  
- \see temps_mp
+ \see TemporariesMultiplePrecision
  
  When an object of this type is stored over iterations of a function by being clever, you can spare many many init/clear calls from happening, which tend to be expensive for MP type, and not so bad for doubles.  nonetheless, here it is.
  */
-class temps_d
+class TemporariesDoublePrecision
 {
 public:
 	comp_d * scalars;///< the temporary comp_mp values.
@@ -838,16 +886,16 @@ public:
 	int num_matrices;///< how many matrices have been allocated
 	
 	
-	temps_d(){init();}
-	~temps_d(){clear();}
+	TemporariesDoublePrecision(){init();}
+	~TemporariesDoublePrecision(){clear();}
 	
-	temps_d & operator=(const temps_d & other){
+	TemporariesDoublePrecision & operator=(const TemporariesDoublePrecision & other){
 		copy(other);
 		
 		return *this;
 	}
 	
-	temps_d(const temps_d & other){
+	TemporariesDoublePrecision(const TemporariesDoublePrecision & other){
 		init();
 		copy(other);
 	}
@@ -1021,7 +1069,7 @@ private:
 		num_matrices = 0;
 	}
 	
-	void copy(const temps_d &other)
+	void copy(const TemporariesDoublePrecision &other)
 	{
 		for (int ii=0; ii<other.num_scalars; ii++) {
 			int new_index = this->add_scalar();
@@ -1062,7 +1110,7 @@ private:
  
  \todo move orthogonal_projection to a different configuration
  */
-class solver_configuration : public parallelism_config
+class SolverConfiguration : public ParallelismConfig
 {
 	
 	int verbose_level_; ///< controls how much info is printed to screen
@@ -1142,37 +1190,37 @@ public:
 	int increment_num_paths_tracked()
 	{
 		total_num_paths_tracked++;
-		if ((total_num_paths_tracked%500)==0 && parallelism_config::is_head()) {
+		if ((total_num_paths_tracked%500)==0 && ParallelismConfig::is_head()) {
 			std::cout << "\t\t\t\t\ttracked " << total_num_paths_tracked << " paths total." << std::endl;
 		}
 		return total_num_paths_tracked;
 	}
 	
-	solver_configuration(){
+	SolverConfiguration(){
 		init();
 	}
-	~solver_configuration(){
+	~SolverConfiguration(){
 		tracker_config_clear(&this->T);
 		tracker_config_clear(&this->T_orig);
 		preproc_data_clear(&this->PPD);
 	}
 	 
 	
-	solver_configuration & operator=( const solver_configuration & other)
+	SolverConfiguration & operator=( const SolverConfiguration & other)
 	{
 		init();
 		copy(other);
 		return *this;
 	}
 	
-	solver_configuration(const solver_configuration & other)
+	SolverConfiguration(const SolverConfiguration & other)
 	{
 		init();
 		copy(other);
 	} // re: copy
 	
 	
-	void copy(const solver_configuration & other)
+	void copy(const SolverConfiguration & other)
 	{
 		cp_tracker_config_t(&this->T, &other.T);
 		cp_tracker_config_t(&this->T_orig, &other.T_orig);
@@ -1221,17 +1269,17 @@ private:
 
 
 
-class solver_output; //  that'd be a forward declaration, jim.
+class SolverOutput; //  that'd be a forward declaration, jim.
 
 
 
 /**
- \brief Metadata for solutions produced by the tracker, and stored in solver_output.
+ \brief Metadata for solutions produced by the tracker, and stored in SolverOutput.
  */
-class solution_metadata
+class SolutionMetadata
 {
 
-friend solver_output;
+friend SolverOutput;
 	
 	std::vector<long long> input_index; ///< the indices of the start points which ended here.
 	long long output_index; ///< the output index of the endpoint solution
@@ -1242,7 +1290,7 @@ friend solver_output;
 	bool is_real;///< flag for whether has been declared real.
 	
 public:
-	friend std::ostream & operator<<(std::ostream &os, const solution_metadata & t)
+	friend std::ostream & operator<<(std::ostream &os, const SolutionMetadata & t)
 	{
 		
 		
@@ -1321,16 +1369,16 @@ public:
 /**
  \brief Class for turning the output from a solver into a more useable form, namely into witness sets ultimately.
  
- This class acts as a vertex_set, holding vertices and metadata.  The main call is post_process()
+ This class acts as a VertexSet, holding vertices and metadata.  The main call is post_process()
  */
-class solver_output : public patch_holder, public linear_holder, public name_holder, public vertex_set
+class SolverOutput : public PatchHolder, public LinearHolder, public NameHolder, public VertexSet
 {
 
 	
 	
 private:
 	
-	std::vector< solution_metadata > metadata;
+	std::vector< SolutionMetadata > metadata;
 	
 	std::vector< std::pair<long long, long long> > ordering; /// created in the post-processing.
 
@@ -1349,7 +1397,7 @@ public:
 	
 	void reset()
 	{
-		vertex_set::reset();
+		VertexSet::reset();
 		reset_names();
 		reset_linears();
 		reset_patches();
@@ -1364,11 +1412,11 @@ public:
 	
 	
 	/**
-	 \brief Set the num_variables and num_natural_vars to be the number in this solver_output object.
+	 \brief Set the num_variables and num_natural_vars to be the number in this SolverOutput object.
 	 
 	 \param W_transfer The input mutable witness set.
 	 */
-	void set_witness_set_nvars(witness_set & W_transfer)
+	void set_witness_set_nvars(WitnessSet & W_transfer)
 	{
 		W_transfer.set_num_variables(this->num_variables);
 		W_transfer.set_num_natural_variables(this->num_natural_vars);
@@ -1381,7 +1429,7 @@ public:
 	 \param temp_vert The input vertex to pass in.
 	 \param meta The solution metadata, containing input indices, output indices, etc.
 	 */
-	void add_solution(const vertex & temp_vert, const solution_metadata & meta)
+	void add_solution(const Vertex & temp_vert, const SolutionMetadata & meta)
 	{
 
 		add_vertex(temp_vert);
@@ -1396,7 +1444,7 @@ public:
 	 
 	 \param W_transfer The input mutable witness set to populate.
 	 */
-	void get_noninfinite_w_mult_full(witness_set & W_transfer);
+	void get_noninfinite_w_mult_full(WitnessSet & W_transfer);
 	
 	
 	/**
@@ -1404,14 +1452,14 @@ public:
 	 	 
 	 \param W_transfer The input mutable witness set to populate.
 	 */
-	void get_noninfinite_w_mult(witness_set & W_transfer);
+	void get_noninfinite_w_mult(WitnessSet & W_transfer);
 	
 	/**
 	 \brief Get the nonsingular, finite, multiplicity one solutions, and put them in a witness set.
 	 
 	 \param W_transfer The input mutable witness set to populate.
 	 */
-	void get_nonsing_finite_multone(witness_set & W_transfer);
+	void get_nonsing_finite_multone(WitnessSet & W_transfer);
 	
 	/**
 	 \brief Assemble a map of multiplicities and points, for those solutions with multiplicity>1.
@@ -1420,7 +1468,7 @@ public:
 	 
 	 \param W_transfer The input mutable witness sets to populate.
 	 */
-	void get_multpos(std::map<int, witness_set> & W_transfer);
+	void get_multpos(std::map<int, WitnessSet> & W_transfer);
 		
 	
 	/**
@@ -1432,7 +1480,7 @@ public:
 	 
 	 \param W_transfer The input mutable witness sets to populate.
 	 */
-	void get_multpos_full(std::map<int, witness_set> & W_transfer);
+	void get_multpos_full(std::map<int, WitnessSet> & W_transfer);
 
 	
 	/**
@@ -1440,7 +1488,7 @@ public:
 	 
 	 \param W_transfer The input mutable witness set to populate.
 	 */
-	void get_sing(witness_set & W_transfer);
+	void get_sing(WitnessSet & W_transfer);
 	
 	
 	
@@ -1450,7 +1498,7 @@ public:
 	 
 	 \param W_transfer The input mutable witness set to populate.
 	 */
-	void get_sing_finite(witness_set & W_transfer);
+	void get_sing_finite(WitnessSet & W_transfer);
 	
 	
 	
@@ -1460,7 +1508,7 @@ public:
 	 
 	 \param W_transfer The input mutable witness set to populate.
 	 */
-	void get_patches_linears(witness_set & W_transfer)
+	void get_patches_linears(WitnessSet & W_transfer)
 	{
 		get_patches(W_transfer);
 		get_linears(W_transfer);
@@ -1471,7 +1519,7 @@ public:
 	 
 	 \param W_transfer The input mutable witness set to populate.
 	 */
-	void get_patches(witness_set & W_transfer)
+	void get_patches(WitnessSet & W_transfer)
 	{
 		W_transfer.copy_patches(*this);
 	}
@@ -1481,7 +1529,7 @@ public:
 	 
 	 \param W_transfer The input mutable witness set to populate.
 	 */
-	void get_linears(witness_set & W_transfer)
+	void get_linears(WitnessSet & W_transfer)
 	{
 		W_transfer.copy_linears(*this);
 	}
@@ -1489,7 +1537,7 @@ public:
 	
 	
 	/**
-	 \brief Bertini_real's version of post-processing.  options are set via the solver_configuration.
+	 \brief Bertini_real's version of post-processing.  options are set via the SolverConfiguration.
 	 
 	 \param endPoints The input for the method, having been converted into this format previously.
 	 \param num_pts_to_check The number of endPoints.
@@ -1499,7 +1547,7 @@ public:
 	 */
 	void post_process(post_process_t *endPoints, int num_pts_to_check,
 					  preproc_data *preProcData, tracker_config_t *T,
-					  const solver_configuration & solve_options);
+					  const SolverConfiguration & solve_options);
 	
 	
 };
@@ -1509,12 +1557,12 @@ public:
 /**
  \brief Base class from whence all solver classes are derived.
  */
-class solver
+class Solver
 {
 	
 protected:
 	
-	std::shared_ptr<system_randomizer> randomizer_; ///< Pointer to a randomizer.
+	std::shared_ptr<SystemRandomizer> randomizer_; ///< Pointer to a randomizer.
 	
 	
 	int verbose_level_;  ///< how verbose to be
@@ -1554,13 +1602,13 @@ public:
 	 
 	 \return a shared pointer to the randomizer
 	 */
-	std::shared_ptr<system_randomizer> randomizer()
+	std::shared_ptr<SystemRandomizer> randomizer()
 	{
 		return randomizer_;
 	}
 	
 	
-	void set_randomizer(std::shared_ptr<system_randomizer> randy)
+	void set_randomizer(std::shared_ptr<SystemRandomizer> randy)
 	{
 		randomizer_ = randy;
 	}
@@ -1574,11 +1622,11 @@ public:
 	
 	
 	
-    bool received_mpi; ///< Whether this solver has received its contents via MPI
+    bool received_mpi; ///< Whether this Solver has received its contents via MPI
 	
 	int MPType; ///< the multiple precision type for solve
 	preproc_data preProcData; ///< information related to the SLP for system
-	SLP_global_pointers SLP_memory;
+	StraightLineProgramGlobalPointers SLP_memory;
 	prog_t *SLP; ///< the SLP
 	bool have_SLP, have_PPD;
 	
@@ -1595,30 +1643,30 @@ public:
 	int (*is_solution_checker_d)(endgame_data_t *, tracker_config_t *, void const *);
 	int (*is_solution_checker_mp)(endgame_data_t *, tracker_config_t *, void const *);
 	
-	solver(){
+	Solver(){
 		init();
 	}
 	
 	
-	solver(int new_mp_type){
+	Solver(int new_mp_type){
 		init();
 		this->MPType = new_mp_type;
 	}
 	
-	virtual ~solver()
+	virtual ~Solver()
 	{
-		solver::clear();
+		Solver::clear();
 	}
 	
-	virtual int send(parallelism_config & mpi_config);
+	virtual int send(ParallelismConfig & mpi_config);
 	
-	virtual int receive(parallelism_config & mpi_config);
+	virtual int receive(ParallelismConfig & mpi_config);
 	
 	virtual void print()
 	{};
 	
 	
-	void setup(prog_t * _SLP, std::shared_ptr<system_randomizer> randy)
+	void setup(prog_t * _SLP, std::shared_ptr<SystemRandomizer> randy)
 	{
 		setupPreProcData(const_cast<char *>(preproc_file.c_str()), &this->preProcData);
 		have_PPD = true;
@@ -1677,7 +1725,7 @@ protected:
 	// these referenced functions will need to be programmed into the derived classes.
 	
 	
-	void copy(const solver & other){
+	void copy(const Solver & other){
 		cp_preproc_data(&this->preProcData, other.preProcData);
 		
 		this->SLP = other.SLP;
@@ -1697,7 +1745,7 @@ protected:
 		this->verbose_level_ = other.verbose_level_;
 		this->num_steps = other.num_steps;
 	}
-};  // re: generic solver BASE class
+};  // re: generic Solver BASE class
 
 
 
@@ -1707,7 +1755,7 @@ protected:
 
 
 
-class solver_mp : public solver
+class SolverMultiplePrecision : public Solver
 {
 	
 public:
@@ -1719,15 +1767,15 @@ public:
 	
 	mpfr_prec_t curr_prec;
 	
-	temps_mp temp_vars;
+	TemporariesMultiplePrecision temp_vars;
 	
-	solver_mp() : solver(){
+	SolverMultiplePrecision() : Solver(){
 		this->MPType = 2;
 		init();
 	}; // re: default constructor
 	
 	
-	solver_mp(int new_mp_type) : solver(new_mp_type){
+	SolverMultiplePrecision(int new_mp_type) : Solver(new_mp_type){
 		this->MPType = new_mp_type;
 		init();
 	}; // re: default constructor
@@ -1746,46 +1794,46 @@ public:
 	
 	
 	
-	virtual ~solver_mp(){
-		solver_mp::clear();
+	virtual ~SolverMultiplePrecision(){
+		SolverMultiplePrecision::clear();
 	}// re: default destructor
 	
 	
 	
 	
-	solver_mp & operator=( const solver_mp & other)
+	SolverMultiplePrecision & operator=( const SolverMultiplePrecision & other)
 	{
-		solver::operator= (other);
+		Solver::operator= (other);
 		copy(other);
 		return *this;
 	}  // re: assigment
 	
 	
-	solver_mp(const solver_mp & other) : solver(other){
+	SolverMultiplePrecision(const SolverMultiplePrecision & other) : Solver(other){
 		copy(other);
 	} // re: copy
 	
-	virtual int send(parallelism_config & mpi_config);
+	virtual int send(ParallelismConfig & mpi_config);
 	
 	
-	virtual int receive(parallelism_config & mpi_config);
+	virtual int receive(ParallelismConfig & mpi_config);
 	
 	virtual void print()
 	{};
 	
 	
-	void setup(prog_t * _SLP, std::shared_ptr<system_randomizer> randy)
+	void setup(prog_t * _SLP, std::shared_ptr<SystemRandomizer> randy)
 	{
-		solver::setup(_SLP, randy);
+		Solver::setup(_SLP, randy);
 	}
 	
 	void setup()
 	{
-		solver::setup();
+		Solver::setup();
 	}
 protected:
 	
-	void copy(const solver_mp & other){
+	void copy(const SolverMultiplePrecision & other){
 		cp_patch_mp(&this->patch, other.patch);
 	
 		set_mp(this->gamma, other.gamma);
@@ -1807,7 +1855,7 @@ protected:
 
 
 
-class solver_d : public solver
+class SolverDoublePrecision : public Solver
 {
 	
 public:
@@ -1816,56 +1864,56 @@ public:
 	
 	comp_d gamma;    ///< randomizer
 	
-	solver_mp *BED_mp; // why even have this?
+	SolverMultiplePrecision *BED_mp; // why even have this?
     
-	temps_d temp_vars;
+	TemporariesDoublePrecision temp_vars;
     
-	solver_d() : solver(){
+	SolverDoublePrecision() : Solver(){
 		init();
 	} // re: default constructor
 	
 	
-	solver_d(int new_mp_type) : solver(new_mp_type){
+	SolverDoublePrecision(int new_mp_type) : Solver(new_mp_type){
 		init();
 	} // re: default constructor
 	
 	
 	
-	virtual ~solver_d(){
-		solver_d::clear();
+	virtual ~SolverDoublePrecision(){
+		SolverDoublePrecision::clear();
 	}// re: default destructor
 	
 	
-	solver_d & operator=( const solver_d & other)
+	SolverDoublePrecision & operator=( const SolverDoublePrecision & other)
 	{
-		solver::operator= (other);
+		Solver::operator= (other);
 		
 		copy(other);
 		return *this;
 	}  // re: assigment
 	
 	
-	solver_d(const solver_d & other) : solver(other){
+	SolverDoublePrecision(const SolverDoublePrecision & other) : Solver(other){
 		copy(other);
 	} // re: copy
 	
-	virtual int send(parallelism_config & mpi_config);
+	virtual int send(ParallelismConfig & mpi_config);
 	
 	
-	virtual int receive(parallelism_config & mpi_config);
+	virtual int receive(ParallelismConfig & mpi_config);
 	
 	virtual void print()
 	{};
 	
 	
-	void setup(prog_t * _SLP, std::shared_ptr<system_randomizer> randy)
+	void setup(prog_t * _SLP, std::shared_ptr<SystemRandomizer> randy)
 	{
-		solver::setup(_SLP, randy);
+		Solver::setup(_SLP, randy);
 	}
 	
 	void setup()
 	{
-		solver::setup();
+		Solver::setup();
 		
 		if (MPType==2) {
 			
@@ -1879,7 +1927,7 @@ protected:
 	
 	void init()
 	{
-		solver::init();
+		Solver::init();
 		
 		init_d(gamma);
 		
@@ -1887,7 +1935,7 @@ protected:
 		}
 	}
 	
-	void copy(const solver_d & other){
+	void copy(const SolverDoublePrecision & other){
 		
 		cp_patch_d(&this->patch, other.patch);
 		set_d(this->gamma, other.gamma);
@@ -1902,25 +1950,10 @@ protected:
 
 
 
-/**
- \brief reads in projection from file if user specified, creates one otherwise.
- 
- currently defaults to create a random real projection with homogeneous value 0;
- 
- \param pi the projection vectors to fill.  must be initted already, but not necessarily the correct size.
- \param program_options The current state of Bertini_real.
- \param num_vars how many variables to set up, including the homogenizing variable.
- \param num_projections how many proj vectors to set up.  again, these must already be allocated outside this call.
- */
-void get_projection(vec_mp *pi,
-					BR_configuration program_options,
-					int num_vars,
-					int num_projections);
-
 
 
 /**
- \brief just before calling a solver, call this to adjust the tracker_config.
+ \brief just before calling a Solver, call this to adjust the tracker_config.
  
  \todo add additional documentation on this method.
  
@@ -1933,14 +1966,14 @@ void adjust_tracker_AMP(tracker_config_t * T, int num_variables);
 
 
 void generic_set_start_pts(point_data_d ** startPts,
-						   const witness_set & W);
+						   const WitnessSet & W);
 
 void generic_set_start_pts(point_data_mp ** startPts,
-						   const witness_set & W);
+						   const WitnessSet & W);
 
-void generic_setup_patch(patch_eval_data_d *P, const witness_set & W); // for mp type 0
-void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W);// for my type 2
-void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W, int prec); // for mp type 1
+void generic_setup_patch(patch_eval_data_d *P, const WitnessSet & W); // for mp type 0
+void generic_setup_patch(patch_eval_data_mp *P, const WitnessSet & W);// for my type 2
+void generic_setup_patch(patch_eval_data_mp *P, const WitnessSet & W, int prec); // for mp type 1
 
 int generic_setup_files(FILE ** OUT, boost::filesystem::path outname,
 						FILE ** MIDOUT, boost::filesystem::path midname);
@@ -1949,11 +1982,11 @@ int generic_setup_files(FILE ** OUT, boost::filesystem::path outname,
 /** 
  \brief reads the tracker_config_t from file, calling Bertini's setupConfig(), which reads the "config" file from disk.
  
- \param solve_options the current state of the solver
+ \param solve_options the current state of the Solver
  \param MPType the current operating MP mode.
  
  */
-void get_tracker_config(solver_configuration &solve_options,int MPType);
+void get_tracker_config(SolverConfiguration &solve_options,int MPType);
 
 
 
@@ -1966,11 +1999,11 @@ void get_tracker_config(solver_configuration &solve_options,int MPType);
  \param W const input witness set, with points and patches
  \param ED_d a pointer to an already-set-up evaluator in double.
  \param ED_mp a pointer to an already-set-up evaluator in mp.
- \param solve_options the current state of the solver.
+ \param solve_options the current state of the Solver.
  */
-void master_solver(solver_output & solve_out, const witness_set & W,
-				   solver_d * ED_d, solver_mp * ED_mp,
-				   solver_configuration & solve_options);
+void master_solver(SolverOutput & solve_out, const WitnessSet & W,
+				   SolverDoublePrecision * ED_d, SolverMultiplePrecision * ED_mp,
+				   SolverConfiguration & solve_options);
 
 
 /**
@@ -1983,14 +2016,14 @@ void master_solver(solver_output & solve_out, const witness_set & W,
  \param W the input witness set, including start points.
  \param ED_d already populated abstract evaluator data in double.
  \param ED_mp already populated abstract evaluator data in mp.
- \param solve_options The current state of the solver config.
+ \param solve_options The current state of the Solver config.
  */
 void serial_tracker_loop(trackingStats *trackCount,
 						  FILE * OUT, FILE * midOUT,
-						  const witness_set & W,  // was the startpts file pointer.
+						  const WitnessSet & W,  // was the startpts file pointer.
 						  post_process_t *endPoints,
-						  solver_d * ED_d, solver_mp * ED_mp,
-						  solver_configuration & solve_options);
+						  SolverDoublePrecision * ED_d, SolverMultiplePrecision * ED_mp,
+						  SolverConfiguration & solve_options);
 
 /**
  \brief the main loop for solving in parallel.
@@ -2002,14 +2035,14 @@ void serial_tracker_loop(trackingStats *trackCount,
  \param endPoints the output from this function, the solutions
  \param ED_d already populated abstract evaluator data in double.
  \param ED_mp already populated abstract evaluator data in mp.
- \param solve_options The current state of the solver config.
+ \param solve_options The current state of the Solver config.
  */
 void master_tracker_loop(trackingStats *trackCount,
 						 FILE * OUT, FILE * MIDOUT,
-						 const witness_set & W,  // was the startpts file pointer.
+						 const WitnessSet & W,  // was the startpts file pointer.
 						 post_process_t *endPoints,
-						 solver_d * ED_d, solver_mp * ED_mp,
-						 solver_configuration & solve_options);
+						 SolverDoublePrecision * ED_d, SolverMultiplePrecision * ED_mp,
+						 SolverConfiguration & solve_options);
 
 
 /**
@@ -2035,13 +2068,13 @@ int get_num_at_a_time(int num_workers, int num_points);
  \param startPts_d the pointers to the data to send, in double
  \param startPts_mp the pointers to the data to send, in MP
  \param next_index the bottom index.  points sent will be consecutive, always.
- \param solve_options the current state of the solver config.
+ \param solve_options the current state of the Solver config.
  */
 void send_start_points(int next_worker, int num_packets,
 					   point_data_d *startPts_d,
 					   point_data_mp *startPts_mp,
 					   int & next_index,
-					   solver_configuration & solve_options);
+					   SolverConfiguration & solve_options);
 
 
 /**
@@ -2058,14 +2091,14 @@ void send_start_points(int next_worker, int num_packets,
  \param endPoints the container into which to receive the data.
  \param ED_d pointer to the double evaluator_data
  \param ED_mp pointer to the mp evaluator_data
- \param solve_options The current state of the solver config.
+ \param solve_options The current state of the Solver config.
  */
 int receive_endpoints(trackingStats *trackCount,
 					  endgame_data_t **EG_receives, int & max_incoming,
 					  int & solution_counter,
 					  post_process_t *endPoints,
-					  solver_d * ED_d, solver_mp * ED_mp,
-					  solver_configuration & solve_options);
+					  SolverDoublePrecision * ED_d, SolverMultiplePrecision * ED_mp,
+					  SolverConfiguration & solve_options);
 
 
 
@@ -2077,12 +2110,12 @@ int receive_endpoints(trackingStats *trackCount,
  \param MIDOUT open file into which to print midpath data.
  \param ED_d double format evaluator data.
  \param ED_mp MP format evaluator data.
- \param solve_options the current state of the solver config.
+ \param solve_options the current state of the Solver config.
  */
 void worker_tracker_loop(trackingStats *trackCount,
 						 FILE * OUT, FILE * MIDOUT,
-						 solver_d * ED_d, solver_mp * ED_mp,
-						 solver_configuration & solve_options);
+						 SolverDoublePrecision * ED_d, SolverMultiplePrecision * ED_mp,
+						 SolverConfiguration & solve_options);
 
 
 
@@ -2122,9 +2155,9 @@ void generic_track_path(int pathNum, endgame_data_t *EG_out,
  \param Pin_mp the input point data, mp format, may be NULL depending on MPtype
  \param OUT open file into which to print data
  \param MIDOUT open file into which to print midpath data.
- \param solve_options the current state of the solver
- \param ED_d double format solver derived type
- \param ED_mp mp format solver derived type
+ \param solve_options the current state of the Solver
+ \param ED_d double format Solver derived type
+ \param ED_mp mp format Solver derived type
  \param eval_func_d pointer to the double evaluator function.
  \param eval_func_mp pointer to the mp evaluator function.
  \param change_prec pointer to the precision changing function
@@ -2134,8 +2167,8 @@ void generic_track_path(int pathNum, endgame_data_t *EG_out,
 void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					   point_data_d *Pin, point_data_mp *Pin_mp,
 					   FILE *OUT, FILE *MIDOUT,
-					   solver_configuration & solve_options,
-					   solver_d *ED_d, solver_mp *ED_mp,
+					   SolverConfiguration & solve_options,
+					   SolverDoublePrecision *ED_d, SolverMultiplePrecision *ED_mp,
 					   int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
 					   int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 					   int (*change_prec)(void const *, int),

@@ -40,7 +40,7 @@
  
  \return SUCCESSFUL
  \param solve_out The output class for all solvers.
- \param W								input witness_set.
+ \param W								input WitnessSet.
  \param randomizer	randomizes the system down to the correct number of equations.
  \param pi							the set of projections to use.
  \param ambient_dim The dimension of the object containing this critical set.
@@ -48,18 +48,18 @@
  \param target_crit_dim The dimension of the critical object.
  \param program_options				holds the configuration for the main program.  is a pointer so that it is mutable.
  \param solve_options					holds the configuration for any solvers called.  is a pointer so that it is mutable.
- \param ns_config	nullspace_config object.  this is populated in this method.  must be empty as input.
+ \param ns_config	NullspaceConfiguration object.  this is populated in this method.  must be empty as input.
  */
-int compute_crit_nullspace(solver_output & solve_out, // the returned value
-								const witness_set & W,
-								std::shared_ptr<system_randomizer> randomizer,
+int compute_crit_nullspace(SolverOutput & solve_out, // the returned value
+								const WitnessSet & W,
+								std::shared_ptr<SystemRandomizer> randomizer,
 								vec_mp *pi,
 								int ambient_dim,
 								int target_dim, // this should also be the number of vectors in the *pi entry
 								int target_crit_dim,
-								BR_configuration & program_options,
-								solver_configuration & solve_options,
-								nullspace_config *ns_config);
+								BertiniRealConfig & program_options,
+								SolverConfiguration & solve_options,
+								NullspaceConfiguration *ns_config);
 
 
 
@@ -71,7 +71,7 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
  
  \return SUCCESSFUL
  \param solve_out The output class for all solvers.
- \param W								input witness_set.
+ \param W								input WitnessSet.
  \param randomizer	randomizes the system down to the correct number of equations.
  \param pi							the set of projections to use.
  \param ambient_dim The dimension of the object containing this critical set.
@@ -79,18 +79,18 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
  \param target_crit_dim The dimension of the critical object.
  \param program_options				holds the configuration for the main program.  is a pointer so that it is mutable.
  \param solve_options					holds the configuration for any solvers called.  is a pointer so that it is mutable.
- \param ns_config	nullspace_config object.  this is populated in this method.  must be empty as input.
+ \param ns_config	NullspaceConfiguration object.  this is populated in this method.  must be empty as input.
  */
-int compute_crit_nullspace_left(solver_output & solve_out, // the returned value
-						   const witness_set & W,
-						   std::shared_ptr<system_randomizer> randomizer,
+int compute_crit_nullspace_left(SolverOutput & solve_out, // the returned value
+						   const WitnessSet & W,
+						   std::shared_ptr<SystemRandomizer> randomizer,
 						   vec_mp *pi,
 						   int ambient_dim,
 						   int target_dim, // this should also be the number of vectors in the *pi entry
 						   int target_crit_dim,
-						   BR_configuration & program_options,
-						   solver_configuration & solve_options,
-						   nullspace_config *ns_config);
+						   BertiniRealConfig & program_options,
+						   SolverConfiguration & solve_options,
+						   NullspaceConfiguration *ns_config);
 
 
 
@@ -104,7 +104,7 @@ int compute_crit_nullspace_left(solver_output & solve_out, // the returned value
 
 
 /**
- \brief performs the setup for the nullspace_config which is used in the compute_crit_nullspace method, and is passed into the solverNullspace.
+ \brief performs the setup for the NullspaceConfiguration which is used in the compute_crit_nullspace method, and is passed into the solverNullspace.
  
  \param ns_config						the data structure we are setting up.
  \param pi the projections to use.  there could be more than used.
@@ -113,18 +113,18 @@ int compute_crit_nullspace_left(solver_output & solve_out, // the returned value
  \param target_crit_codim COdimension of the critical set.
  \param max_degree  computed -- the highest degree of any derivative of the system passed in.
  \param randomizer		how the system is randomized to the correct number of equations.
- \param W										the input witness_set
+ \param W										the input WitnessSet
  \param solve_options The current solver setup.
  */
-void nullspace_config_setup_left(nullspace_config *ns_config,
+void nullspace_config_setup_left(NullspaceConfiguration *ns_config,
 							vec_mp *pi, // an array of projections, the number of which is the target dimensions
 							int ambient_dim,
 							int target_dim,
 							int target_crit_codim,
 							int *max_degree, // a pointer to the value
-							std::shared_ptr<system_randomizer> randomizer,
-							const witness_set & W,
-							solver_configuration & solve_options);
+							std::shared_ptr<SystemRandomizer> randomizer,
+							const WitnessSet & W,
+							SolverConfiguration & solve_options);
 
 
 
@@ -144,22 +144,22 @@ void nullspace_config_setup_left(nullspace_config *ns_config,
  
  \return SUCCESSFUL
  \param solve_out The output class for all solvers.
- \param W								input witness_set.
+ \param W								input WitnessSet.
  \param randomizer	randomizes the system down to the correct number of equations.
  \param pi							the set of projections to use.
  \param ambient_dim The dimension of the object containing this critical set.
  \param program_options				holds the configuration for the main program.  is a pointer so that it is mutable.
  \param solve_options					holds the configuration for any solvers called.  is a pointer so that it is mutable.
- \param ns_config	nullspace_config object.  this is populated in this method.  must be empty as input.
+ \param ns_config	NullspaceConfiguration object.  this is populated in this method.  must be empty as input.
  */
-int compute_crit_nullspace_right(solver_output & solve_out, // the returned value
-						   const witness_set & W,
-						   std::shared_ptr<system_randomizer> randomizer,
+int compute_crit_nullspace_right(SolverOutput & solve_out, // the returned value
+						   const WitnessSet & W,
+						   std::shared_ptr<SystemRandomizer> randomizer,
 						   vec_mp *pi,
 						   int ambient_dim,
-						   BR_configuration & program_options,
-						   solver_configuration & solve_options,
-						   nullspace_config *ns_config);
+						   BertiniRealConfig & program_options,
+						   SolverConfiguration & solve_options,
+						   NullspaceConfiguration *ns_config);
 
 
 
@@ -167,23 +167,23 @@ int compute_crit_nullspace_right(solver_output & solve_out, // the returned valu
 
 
 /**
- \brief performs the setup for the nullspace_config which is used in the compute_crit_nullspace method, and is passed into the solverNullspace.
+ \brief performs the setup for the NullspaceConfiguration which is used in the compute_crit_nullspace method, and is passed into the solverNullspace.
  
  \param ns_config						the data structure we are setting up.
  \param pi the projections to use.  there could be more than used.
  \param ambient_dim the dimension of the containing object.
  \param max_degree  computed -- the highest degree of any derivative of the system passed in.
  \param randomizer		how the system is randomized to the correct number of equations.
- \param W										the input witness_set
+ \param W										the input WitnessSet
  \param solve_options The current solver setup.
  */
-void nullspace_config_setup_right(nullspace_config *ns_config,
+void nullspace_config_setup_right(NullspaceConfiguration *ns_config,
 								  vec_mp *pi, // an array of projections, the number of which is the target dimensions
 								  int ambient_dim,
 								  int *max_degree, // a pointer to the value
-								  std::shared_ptr<system_randomizer> randomizer,
-								  const witness_set & W,
-								  solver_configuration & solve_options);
+								  std::shared_ptr<SystemRandomizer> randomizer,
+								  const WitnessSet & W,
+								  SolverConfiguration & solve_options);
 
 
 
@@ -201,9 +201,9 @@ void nullspace_config_setup_right(nullspace_config *ns_config,
  \param W input witness set
  \param ns_config The nullspace solver config object.
  */
-void ns_concluding_modifications(solver_output & solve_out,
-								 const witness_set & W,
-								 nullspace_config * ns_config);
+void ns_concluding_modifications(SolverOutput & solve_out,
+								 const WitnessSet & W,
+								 NullspaceConfiguration * ns_config);
 
 
 
@@ -222,8 +222,8 @@ void ns_concluding_modifications(solver_output & solve_out,
  */
 void create_nullspace_system(boost::filesystem::path output_name,
 							 boost::filesystem::path input_name,
-							 BR_configuration & program_options,
-							 nullspace_config *ns_config);
+							 BertiniRealConfig & program_options,
+							 NullspaceConfiguration *ns_config);
 
 
 /**
@@ -245,7 +245,7 @@ void create_nullspace_system(boost::filesystem::path output_name,
  */
 void createMatlabDerivative(boost::filesystem::path output_name,
 							boost::filesystem::path input_name,
-							nullspace_config *ns_config,
+							NullspaceConfiguration *ns_config,
 							int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs);
 
 
@@ -268,7 +268,7 @@ void createMatlabDerivative(boost::filesystem::path output_name,
  */
 void create_matlab_determinantal_system(boost::filesystem::path output_name,
 										boost::filesystem::path input_name,
-										nullspace_config *ns_config,
+										NullspaceConfiguration *ns_config,
 										int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs);
 
 

@@ -18,8 +18,8 @@ int main(int argC, char *args[])
 	
 	
 	//instantiate options
-	BR_configuration program_options;
-	solver_configuration solve_options;
+	BertiniRealConfig program_options;
+	SolverConfiguration solve_options;
 	int MPType;
 	
 	
@@ -88,12 +88,46 @@ int main(int argC, char *args[])
 	
 	
 	if (solve_options.is_head()) {
-		ubermaster_process current_process(program_options, solve_options);
-		current_process.main_loop();
+		UbermasterProcess current_process(program_options, solve_options);
+		
+		try{
+			current_process.main_loop();
+		}
+		catch (std::runtime_error e)
+		{
+			std::cout << "uncaught runtime exception from ubermaster process caught in bertini_real;" << std::endl;
+			std::cout << e.what() << std::endl;
+		}
+		catch (std::logic_error e)
+		{
+			std::cout << "uncaught logic exception from ubermaster process caught in bertini_real;" << std::endl;
+			std::cout << e.what() << std::endl;
+		}
+		catch (std::exception e){
+			std::cout << "uncaught other exception from ubermaster process caught in bertini_real;" << std::endl;
+			std::cout << e.what() << std::endl;
+		}
 	}
 	else{
-		worker_process current_process(program_options, solve_options);
-		current_process.main_loop();
+		WorkerProcess current_process(program_options, solve_options);
+		
+		try{
+			current_process.main_loop();
+		}
+		catch (std::runtime_error e)
+		{
+			std::cout << "uncaught runtime exception from ubermaster process caught in bertini_real;" << std::endl;
+			std::cout << e.what() << std::endl;
+		}
+		catch (std::logic_error e)
+		{
+			std::cout << "uncaught logic exception from ubermaster process caught in bertini_real;" << std::endl;
+			std::cout << e.what() << std::endl;
+		}
+		catch (std::exception e){
+			std::cout << "uncaught other exception from worker process caught in bertini_real;" << std::endl;
+			std::cout << e.what() << std::endl;
+		}
 	}
 	
 	

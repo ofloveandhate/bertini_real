@@ -617,7 +617,7 @@ void projection_value_homogeneous_input(comp_mp result, vec_mp input, vec_mp pro
 
 
 
-int isSamePoint_inhomogeneous_input(point_d left, point_d right){
+int isSamePoint_inhomogeneous_input(point_d left, point_d right, double tolerance){
 	
 	if (left->size!=right->size) {
 		printf("attempting to isSamePoint_inhom_d with disparate sized points.\n");
@@ -627,14 +627,14 @@ int isSamePoint_inhomogeneous_input(point_d left, point_d right){
 	}
 	
 	
-	int indicator = isSamePoint(left,NULL,52,right,NULL,52,SAMEPOINTTOL);
+	int indicator = isSamePoint(left,NULL,52,right,NULL,52,tolerance);
 	
 	
 	return indicator;
 }
 
 
-int isSamePoint_inhomogeneous_input(point_mp left, point_mp right){
+int isSamePoint_inhomogeneous_input(point_mp left, point_mp right, double tolerance){
 	
 	if (left->size!=right->size) {
 		printf("attempting to isSamePoint_inhom_mp with disparate sized points.\n");
@@ -643,7 +643,7 @@ int isSamePoint_inhomogeneous_input(point_mp left, point_mp right){
 		//		exit(-287);
 	}
 	
-	int indicator = isSamePoint(NULL,left,65,NULL,right,65,SAMEPOINTTOL); // make the bertini library call
+	int indicator = isSamePoint(NULL,left,65,NULL,right,65,tolerance); // make the bertini library call
 	
 	
 	return indicator;
@@ -651,7 +651,7 @@ int isSamePoint_inhomogeneous_input(point_mp left, point_mp right){
 
 
 
-int isSamePoint_homogeneous_input(point_d left, point_d right){
+int isSamePoint_homogeneous_input(point_d left, point_d right, double tolerance){
 	
 	if (left->size!=right->size) {
 		printf("attempting to isSamePoint_hom_d with disparate sized points.\n");
@@ -666,7 +666,7 @@ int isSamePoint_homogeneous_input(point_d left, point_d right){
 	dehomogenize(&dehom_left,left);
 	dehomogenize(&dehom_right,right);
 	
-	int indicator = isSamePoint(dehom_left,NULL,52,dehom_right,NULL,52,SAMEPOINTTOL);
+	int indicator = isSamePoint(dehom_left,NULL,52,dehom_right,NULL,52,tolerance);
 	
 	clear_vec_d(dehom_left); clear_vec_d(dehom_right);
 	
@@ -674,7 +674,7 @@ int isSamePoint_homogeneous_input(point_d left, point_d right){
 }
 
 
-int isSamePoint_homogeneous_input(point_mp left, point_mp right){
+int isSamePoint_homogeneous_input(point_mp left, point_mp right, double tolerance){
 	
 	if (left->size!=right->size) {
 		printf("attempting to isSamePoint_hom_mp with disparate sized points.\n");
@@ -689,7 +689,7 @@ int isSamePoint_homogeneous_input(point_mp left, point_mp right){
 	dehomogenize(&dehom_left,left);
 	dehomogenize(&dehom_right,right);
 	
-	int indicator = isSamePoint(NULL,dehom_left,65,NULL,dehom_right,65,SAMEPOINTTOL); // make the bertini library call
+	int indicator = isSamePoint(NULL,dehom_left,65,NULL,dehom_right,65,tolerance); // make the bertini library call
 	
 	clear_vec_mp(dehom_left); clear_vec_mp(dehom_right);
 	

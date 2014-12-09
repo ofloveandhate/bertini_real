@@ -30,7 +30,7 @@ plot_edge_points(br_plotter);
 
 
 if ~isempty(br_plotter.BRinfo.sampler_data)
-	br_plotter.handles.sample_edges = plot_curve_samples(br_plotter,br_plotter.BRinfo.sampler_data);
+	br_plotter.handles.sample_edges = plot_curve_samples(br_plotter,br_plotter.BRinfo.sampler_data,'-');
 end
 
 sphere_plot(br_plotter);

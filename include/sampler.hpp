@@ -54,21 +54,21 @@
  
  \ingroup samplermethods
  
- \param D the base-class-type decomposition to refine.
+ \param D the base-class-type Decomposition to refine.
  \param sampler_options The current state of sampler.
  \param solve_options the current state of the solver configuration.
  */
-void common_sampler_startup(const decomposition & D,
+void common_sampler_startup(const Decomposition & D,
 							sampler_configuration & sampler_options,
-							solver_configuration & solve_options);
+							SolverConfiguration & solve_options);
 
 
 
 
 /**
- \brief get the MPType, name of the directory to sample, and the dimension of the decomposition.
+ \brief get the MPType, name of the directory to sample, and the dimension of the Decomposition.
  
- \todo replace this function which reads decomposition metadata from a file in the directory.
+ \todo replace this function which reads Decomposition metadata from a file in the directory.
  
  \return the MPType
  \param Dir_Name the name read in by this function
@@ -99,13 +99,13 @@ int get_dir_mptype_dimen(boost::filesystem::path & Dir_Name, int & MPType, int &
 /**
  \brief Set the linear and point in a witness set to the input L and pts.
  
- \todo remove this function, or make a method of the witness_set class.
+ \todo remove this function, or make a method of the WitnessSet class.
  
  \param W the witness set to modify.
  \param new_linear the linear to set
  \param new_point the input point 
  */
-void set_witness_set_mp(witness_set & W, vec_mp new_linear,vec_mp new_point);
+void set_witness_set_mp(WitnessSet & W, vec_mp new_linear,vec_mp new_point);
 
 
 
@@ -148,16 +148,16 @@ void estimate_new_projection_value(comp_mp result, vec_mp estimated_point, vec_m
  \param current_samples The constructed triangles from this method.
  */
 void triangulate_two_ribs(const std::vector< int > & rib1, const std::vector< int > & rib2,
-						  vertex_set & V,
-						  std::vector< triangle> & current_samples);
+						  VertexSet & V,
+						  std::vector< Triangle> & current_samples);
 
 
 
 
 /**
- \brief triangulate two ribs, each with at least two entries, by iterating from left to right, and always constructing the more equilateral triangle of the two candidates.  
+ \brief triangulate two ribs, each with at least two entries, by iterating from left to right, and always constructing the more equilateral Triangle of the two candidates.  
  
- the end of the loop simply constructs every triangle between the two ribs until it reaches the end.  
+ the end of the loop simply constructs every Triangle between the two ribs until it reaches the end.  
  
  \param rib1 a rib.
  \param rib2 a rib adjacent to rib1
@@ -165,8 +165,8 @@ void triangulate_two_ribs(const std::vector< int > & rib1, const std::vector< in
  \param current_samples the triangulation being built.
  */
 void triangulate_two_ribs_by_angle_optimization(const std::vector< int > & rib1, const std::vector< int > & rib2,
-												vertex_set & V,
-												std::vector< triangle> & current_samples);
+												VertexSet & V, double real_thresh,
+												std::vector< Triangle> & current_samples);
 
 
 
@@ -176,7 +176,7 @@ void triangulate_two_ribs_by_angle_optimization(const std::vector< int > & rib1,
  \param temp a temporary variable.  comp_mp's are expensive to initialize and clear, so this is passed in for optimization.
  \param length1 the length of one of the adjacent sides
  \param length2 the length of the other adjacent side
- \param dot_prod the dot product of the vectors representing the two adjacent legs of the triangle.
+ \param dot_prod the dot product of the vectors representing the two adjacent legs of the Triangle.
  \return the square of the difference of the computed angle, and \f$\pi/3\f$.
  */
 double compute_square_of_difference_from_sixtydegrees(comp_mp temp, comp_mp length1, comp_mp length2, comp_mp dot_prod);

@@ -47,12 +47,9 @@
 
 
 
-#define DEFAULT_MAX_PREC 1024
 
-
-
-class parallelism_config; // a forward declaration
-class BR_configuration;   // a forward declaration
+class ParallelismConfig; // a forward declaration
+class BertiniRealConfig;   // a forward declaration
 
 /*** low-level data types. ***/
 
@@ -113,7 +110,7 @@ value_type map_lookup_with_default(const  std::map <key_type,value_type> & mc_ma
  \brief An odometer of odometers, so to speak.
  
  */
-class double_odometer
+class DoubleOdometer
 {
 	
 private:
@@ -189,12 +186,12 @@ public:
 	std::vector< int > bases; // of length num_total_registers
 	std::vector< int > registers;
 	
-	double_odometer()
+	DoubleOdometer()
 	{
 		num_total_registers = num_active_registers = num_inactive_registers = 0;
 	}
 	
-	double_odometer(int num_total_, int num_active_, int uniform_base)
+	DoubleOdometer(int num_total_, int num_active_, int uniform_base)
 	{
 		num_total_registers = num_total_;
 		num_active_registers = num_active_;
@@ -215,7 +212,7 @@ public:
 	}
 	
 	
-	double_odometer(int num_total_, int num_active_, const std::vector<int> & new_bases)
+	DoubleOdometer(int num_total_, int num_active_, const std::vector<int> & new_bases)
 	{
 		num_total_registers = num_total_;
 		num_active_registers = num_active_;
@@ -258,8 +255,8 @@ public:
 	
 	int increment(){
 		
-		if (double_odometer::increment_registers()!=0) {
-			if (double_odometer::increment_active_registers()!=0)
+		if (DoubleOdometer::increment_registers()!=0) {
+			if (DoubleOdometer::increment_active_registers()!=0)
 				return -1;
 			else
 				return 1;
@@ -298,7 +295,7 @@ public:
  
  This class is intended to hold what Bertini would need to produce a straight-line program for evaluation.
  */
-class function
+class Function
 {
 	std::string func;  //symbolic representation of function (straight from input file).
 										 // this class is woefully incomplete.
@@ -309,14 +306,14 @@ class function
 /**
  \brief Comprehensive system randomization, based on deg.out.
  
- The system_randomizer is created based on the desired size to randomize down to, and the degrees of the functions, which are contained in the 'deg.out' file, which must pre-exist.
+ The SystemRandomizer is created based on the desired size to randomize down to, and the degrees of the functions, which are contained in the 'deg.out' file, which must pre-exist.
  
  This class does not keep track of the desired mp mode, and always populates all three randomizer matrices.
  
  This class is capable of randomizing for systems with a single hom_variable_group (set hom_var = 1), and a single variable_group.
  
  */
-class system_randomizer
+class SystemRandomizer
 {
 private:
 	bool square_indicator; ///< a boolean indicating whether the system is square.
@@ -386,7 +383,7 @@ public:
 	 \param os the stream to put this text on.
 	 \param s the system randomizer to write.
 	 */
-	friend std::ostream & operator<<(std::ostream &os, system_randomizer & s)
+	friend std::ostream & operator<<(std::ostream &os, SystemRandomizer & s)
 	{
 		os << "square: " << s.square_indicator << ", is_ready: " << s.setup_indicator << std::endl;
 		os << "num_rand: " <<  s.num_randomized_funcs << ", num_orig " << s.num_original_funcs << std::endl;
@@ -422,28 +419,28 @@ public:
 	
 	
 
-	system_randomizer()
+	SystemRandomizer()
 	{
 		init();
 	}
 	
 	
 
-	system_randomizer & operator=( const system_randomizer & other)
+	SystemRandomizer & operator=( const SystemRandomizer & other)
 	{
 		copy(other);
 		return *this;
 	}
 	
 
-	system_randomizer(const system_randomizer & other)
+	SystemRandomizer(const SystemRandomizer & other)
 	{
 		init();
 		copy(other);
 	} // re: copy
 	
 
-	~system_randomizer()
+	~SystemRandomizer()
 	{
 		clear_mat_mp(randomizer_matrix_full_prec);
 		clear_mat_mp(randomizer_matrix_mp);
@@ -531,7 +528,7 @@ public:
 	
 	
 	/**
-	 \brief indicates whether the system_randomizer is ready to go.
+	 \brief indicates whether the SystemRandomizer is ready to go.
 	 \return bool setup_indicator
 	 */
 	bool is_ready() const
@@ -586,7 +583,7 @@ public:
 	
 	
 	/**
-	 \brief changes the precision of the system_randomizer
+	 \brief changes the precision of the SystemRandomizer
 	 \param new_prec new precision.
 	 */
 	void change_prec(int new_prec);
@@ -639,46 +636,46 @@ public:
 	/**
 	 \brief single-target send
 	 
-	 send system_randomizer to a single target.
+	 send SystemRandomizer to a single target.
 	 
 	 \param target the id of the target.  
 	 \param mpi_config container holding the mpi_config for the caller.
 	 */
-	void send(int target, parallelism_config & mpi_config);
+	void send(int target, ParallelismConfig & mpi_config);
 	
 	
 	
 	/**
 	 \brief single-source receive
 	 
-	 receive system_randomizer from a single source.
+	 receive SystemRandomizer from a single source.
 	 
 	 \param source the id of the source.
 	 \param mpi_config container holding the mpi_config for the caller.
 	 */
-	void receive(int source, parallelism_config & mpi_config);
+	void receive(int source, ParallelismConfig & mpi_config);
 	
 	
 	/**
 	 \brief collective MPI_COMM_WORLD broadcast send
 	 
-	 \see vertex_set::bcast_receive
+	 \see VertexSet::bcast_receive
 	 
-	 Send the system_randomizer to everyone in MPI_COMM_WORLD.
+	 Send the SystemRandomizer to everyone in MPI_COMM_WORLD.
 	 
 	 \param mpi_config The current state of MPI, as represented in Bertini_real
 	 */
-	void bcast_send(parallelism_config & mpi_config);
+	void bcast_send(ParallelismConfig & mpi_config);
 	
 	
 	/**
 	 \brief Collective MPI_COMM_WORLD broadcast receive
 	 
-	 Receive the system_randomizer from someone in MPI_COMM_WORLD.
+	 Receive the SystemRandomizer from someone in MPI_COMM_WORLD.
 	 
 	 \param mpi_config The current state of MPI, as represented in Bertini_real
 	 */
-	void bcast_receive(parallelism_config & mpi_config);
+	void bcast_receive(ParallelismConfig & mpi_config);
 	
 	
 protected:
@@ -727,7 +724,7 @@ protected:
 		
 	}
 	
-	void copy(const system_randomizer & other)
+	void copy(const SystemRandomizer & other)
 	{
 
 		
@@ -808,7 +805,7 @@ protected:
  
  This class gives a way to commit vec_mp's into a class object.  The major data members are pts_mp and num_pts.  The most important member function is add_point(p)
  */
-class point_holder
+class PointHolder
 {
 	
 
@@ -826,7 +823,7 @@ public:
 		}
 		else
 		{
-			throw std::out_of_range("trying to get a point in point_holder which is out of range");
+			throw std::out_of_range("trying to get a point in PointHolder which is out of range");
 		}
 		
 	}
@@ -844,11 +841,11 @@ public:
 	
 	
 	/**
-	 copy all the points from one point_holder to this one.
+	 copy all the points from one PointHolder to this one.
 	 
-	 \param other an input point_holder from which to copy all the points.
+	 \param other an input PointHolder from which to copy all the points.
 	 */
-	void copy_points(const point_holder & other)
+	void copy_points(const PointHolder & other)
 	{
 		
         for (unsigned int ii=0; ii<other.num_pts_; ii++)
@@ -857,7 +854,7 @@ public:
 	
 	
 	/**
-	 indicate whether the point_holder has at zero points in it.
+	 indicate whether the PointHolder has at zero points in it.
 	 
 	 \return a boolean, true if num_points==0, false otherwise
 	 */
@@ -873,7 +870,7 @@ public:
 	
 	
 	/**
-	 indicate whether the point_holder has at least one point in it.
+	 indicate whether the PointHolder has at least one point in it.
 	 
 	 \return a boolean, true if num_points>0, false if num_points==0
 	 */
@@ -908,7 +905,7 @@ public:
 	
 	
 	/**
-	 \brief add a point to the point_holder
+	 \brief add a point to the PointHolder
 	 
 	 \return the index of the new point.
 	 \param new_point the point to add.
@@ -917,12 +914,12 @@ public:
 	
 	
 	
-	point_holder(){
+	PointHolder(){
 		init();
 	}
 	
 	
-	~point_holder(){ // the destructor
+	~PointHolder(){ // the destructor
 		
 		clear();
 		
@@ -930,7 +927,7 @@ public:
 	
 	
 	// assignment
-	point_holder& operator=( const point_holder & other) {
+	PointHolder& operator=( const PointHolder & other) {
 		
 		reset_points();
 		
@@ -940,14 +937,14 @@ public:
 	
 	
 	//copy operator.  must be explicitly declared because the underlying c structures use pointers.
-	point_holder(const point_holder & other){
+	PointHolder(const PointHolder & other){
 		init();
 		copy(other);
 	}
 	
 	
 	
-	void copy(const point_holder & other)
+	void copy(const PointHolder & other)
 	{
 		copy_points(other);
 	}
@@ -977,7 +974,7 @@ private:
  
  This class offers a way to hold a set of vec_mp's as patch_mp members in a class with automated initting and clearing.
  */
-class patch_holder
+class PatchHolder
 {
 
 protected:
@@ -1017,13 +1014,13 @@ public:
 	
 	
 	/**
-	 \brief copy all the patches from another patch_holder
+	 \brief copy all the patches from another PatchHolder
 	 
-	 Copy all the stored mp patches from another patch_holder object, without testing for uniqueness.
+	 Copy all the stored mp patches from another PatchHolder object, without testing for uniqueness.
 	 
-	 \param other the patch_holder from which to copy.
+	 \param other the PatchHolder from which to copy.
 	 */
-	void copy_patches(const patch_holder & other) {
+	void copy_patches(const PatchHolder & other) {
 		
         for (unsigned int ii=0; ii<other.num_patches_; ii++)
 			add_patch(other.patch_mp_[ii]);
@@ -1034,7 +1031,7 @@ public:
 	/**
 	 \brief resets the patch holder to empty.
 	 
-	 Reset the patch_holder to 0 patches.
+	 Reset the PatchHolder to 0 patches.
 	 */
 	void reset_patches()
 	{
@@ -1060,12 +1057,12 @@ public:
 	
 	
 	
-	patch_holder(){
+	PatchHolder(){
 		init();
 	}
 	
 	
-	~patch_holder(){ // the destructor
+	~PatchHolder(){ // the destructor
 		
 		clear();
 		
@@ -1073,7 +1070,7 @@ public:
 	
 	
 	// assignment
-	patch_holder& operator=( const patch_holder& other) {
+	PatchHolder& operator=( const PatchHolder& other) {
 		
 		reset_patches();
 		
@@ -1083,14 +1080,14 @@ public:
 	
 	
 	//copy operator.  must be explicitly declared because the underlying c structures use pointers.
-	patch_holder(const patch_holder & other){
+	PatchHolder(const PatchHolder & other){
 		init();
 		copy(other);
 	}
 	
 	
 	
-	void copy(const patch_holder & other)
+	void copy(const PatchHolder & other)
 	{
 		copy_patches(other);
 	}
@@ -1118,7 +1115,7 @@ private:
  
  This class offers automated collection of vec_mp's as L_mp.  This is necessary because the vec_mp type must be initted and cleared manually.
  */
-class linear_holder
+class LinearHolder
 {
 	
 protected:
@@ -1159,11 +1156,11 @@ public:
 	
 	
 	/**
-	 \brief copies all linears from another linear_holder.
+	 \brief copies all linears from another LinearHolder.
 	 
-	 \param other the linear_holder from which to copy all the linears.
+	 \param other the LinearHolder from which to copy all the linears.
 	 */
-	void copy_linears(const linear_holder & other) {
+	void copy_linears(const LinearHolder & other) {
         for (unsigned int ii=0; ii<other.num_linears_; ii++)
 			add_linear(other.L_mp_[ii]);
     }
@@ -1196,12 +1193,12 @@ public:
 	
 	
 	
-	linear_holder(){
+	LinearHolder(){
 		init();
 	}
 	
 	
-	~linear_holder(){ // the destructor
+	~LinearHolder(){ // the destructor
 		
 		clear();
 		
@@ -1209,7 +1206,7 @@ public:
 	
 	
 	// assignment
-	linear_holder& operator=( const linear_holder& other) {
+	LinearHolder& operator=( const LinearHolder& other) {
 		reset_linears();
 		copy(other);
 		return *this;
@@ -1217,14 +1214,14 @@ public:
 	
 	
 	//copy operator.  must be explicitly declared because the underlying c structures use pointers.
-	linear_holder(const linear_holder & other){
+	LinearHolder(const LinearHolder & other){
 		init();
 		copy(other);
 	}
 	
 	
 	
-	void copy(const linear_holder & other)
+	void copy(const LinearHolder & other)
 	{
 		copy_linears(other);
 	}
@@ -1250,7 +1247,7 @@ private:
 /** 
  \brief holds the names of variables
  */
-class name_holder
+class NameHolder
 {
 
 	
@@ -1297,7 +1294,7 @@ public:
 		variable_names.resize(0);
 	}
 	
-	void copy_names(const name_holder & nomnom)
+	void copy_names(const NameHolder & nomnom)
 	{
 		this->variable_names = nomnom.variable_names;
 	}
@@ -1335,7 +1332,7 @@ public:
  
  A witness set gets two numbers of variables, one is the total number appearing in it, and the other [more importantly] is the numebr of natural variables contained therein.  The witness set is assumed to be in correspondence to a variable group with a single leading homogenizing variable, and automatically dehomogenizes points for uniqueness and reality testing.
  */
-class witness_set : public patch_holder, public linear_holder, public point_holder, public name_holder
+class WitnessSet : public PatchHolder, public LinearHolder, public PointHolder, public NameHolder
 {
 	
 protected:
@@ -1353,7 +1350,7 @@ protected:
 
 
 	boost::filesystem::path input_filename_;
-	function input_file_;
+	Function input_file_;
 	
 	
 	// end data members
@@ -1533,18 +1530,18 @@ public:
 	
 	// default constructor
 	
-	witness_set(int nvar)
+	WitnessSet(int nvar)
 	{
 		init();
 		num_vars_ = num_natty_vars_ = nvar;
 	};
 	
-	witness_set(){
+	WitnessSet(){
 		init();
 	}
 	
 	
-	~witness_set(){ // the destructor
+	~WitnessSet(){ // the destructor
 		
 		clear();
 		
@@ -1558,7 +1555,7 @@ public:
 	 \return the new witness set
 	 \param other the other witness set to copy from.
 	 */
-	witness_set& operator=( const witness_set& other)
+	WitnessSet& operator=( const WitnessSet& other)
 	{
 		reset();
 		copy(other);
@@ -1573,7 +1570,7 @@ public:
 	 
 	 \param other the other witness set to copy from.
 	 */
-	witness_set(const witness_set & other)
+	WitnessSet(const WitnessSet & other)
 	{
 		init();
 		copy(other);
@@ -1604,7 +1601,7 @@ public:
 	 
 	 \param other the other witness set to copy from.
 	 */
-	void copy(const witness_set & other)
+	void copy(const WitnessSet & other)
 	{
 		
 		copy_skeleton(other);
@@ -1618,11 +1615,11 @@ public:
 	
 	
 	/**
-	 \brief copy only the witness_set data members, but not any inherited members.
+	 \brief copy only the WitnessSet data members, but not any inherited members.
 	 
 	 \param other the other witness set to copy from.
 	 */
-    void copy_skeleton(const witness_set & other)
+    void copy_skeleton(const WitnessSet & other)
 	{
 		this->input_filename_ = other.input_filename_;
 		
@@ -1734,7 +1731,7 @@ public:
 	 
 	 \param W_in The witness set containing data you want to copy.
 	 */
-	void merge(const witness_set & W_in);
+	void merge(const WitnessSet & W_in, tracker_config_t * T);
 	
 	
 
@@ -1839,7 +1836,7 @@ public:
 	 \param target the ID target of the communication
 	 \param mpi_config the current MPI state, as implemented in bertini_real
 	 */
-    void send(parallelism_config & mpi_config, int target) const;
+    void send(ParallelismConfig & mpi_config, int target) const;
 	
 	/**
 	 individual receive, relative to MPI_COMM_WORLD
@@ -1847,7 +1844,7 @@ public:
 	 \param source the ID source of the communication
 	 \param mpi_config the current MPI state, as implemented in bertini_real
 	 */
-    void receive(int source, parallelism_config & mpi_config);
+    void receive(int source, ParallelismConfig & mpi_config);
 };
 
 
@@ -1877,11 +1874,11 @@ public:
 /**
  \brief 0-cell 
  
- a bertini_real vertex, a 0-cell.  contains a point, its projection values, its type, whether its been removed, and an index into a set of filenames contained in the vertex_set.
+ a bertini_real Vertex, a 0-cell.  contains a point, its projection values, its type, whether its been removed, and an index into a set of filenames contained in the VertexSet.
  
- \todo remove the metadata from this, and instead track it in the vertex set, much like the solver_output
+ \todo remove the metadata from this, and instead track it in the Vertex set, much like the solver_output
  */
-class vertex
+class Vertex
 {
 
 private:
@@ -1891,7 +1888,7 @@ private:
 	vec_mp  projection_values_; ///< a vector containing the projection values.
 	
 	int type_;  ///< See enum.
-	bool removed_; ///< boolean integer whether the vertex has been 'removed' by a merge process.
+	bool removed_; ///< boolean integer whether the Vertex has been 'removed' by a merge process.
 	int input_filename_index_; ///< index into the vertex_set's vector of filenames.
 	
 public:
@@ -1911,7 +1908,7 @@ public:
 	/**
 	 \brief set the index
 	 
-	 \param new_index the new index to set in the vertex
+	 \param new_index the new index to set in the Vertex
 	 */
 	void set_input_filename_index(int new_index)
 	{
@@ -1937,9 +1934,9 @@ public:
 	
 	
 	/**
-	 \brief set the type of the vertex
+	 \brief set the type of the Vertex
 	 
-	 \param new_type the new type for the vertex
+	 \param new_type the new type for the Vertex
 	 */
 	void set_type(int new_type)
 	{
@@ -1948,7 +1945,7 @@ public:
 	
 	
 	/**
-	 \brief get the type of the vertex
+	 \brief get the type of the Vertex
 	 
 	 \return the type, in integer form
 	 */
@@ -1960,7 +1957,7 @@ public:
 	
 	
 	/**
-	 \brief set the vertex to be 'removed'
+	 \brief set the Vertex to be 'removed'
 	 
 	 \param new_val the new value for the flag
 	 */
@@ -1971,7 +1968,7 @@ public:
 	
 	
 	/**
-	 \brief query whether the vertex has been set to 'removed'
+	 \brief query whether the Vertex has been set to 'removed'
 	 
 	 \return whether it has been removed.
 	 */
@@ -1980,32 +1977,32 @@ public:
 		return removed_;
 	}
 	
-	vertex()
+	Vertex()
 	{
 		init();
 	}
 	
-	~vertex()
+	~Vertex()
 	{
 		clear();
 		
 	}
 	
-	vertex & operator=(const vertex & other)
+	Vertex & operator=(const Vertex & other)
 	{
 		copy(other);
 		return *this;
 	}
 	
-	vertex(const vertex& other)
+	Vertex(const Vertex& other)
 	{
 		init();
 		copy(other);
 	}
 	
 	/**
-	 /brief prints the vertex to the screen
-	 Prints the vertex to the screen
+	 /brief prints the Vertex to the screen
+	 Prints the Vertex to the screen
 	 */
 	void print() const
 	{
@@ -2031,7 +2028,7 @@ public:
 	
 	
 	/**
-	 \brief get the point in the vertex
+	 \brief get the point in the Vertex
 	 
 	 \return the point in vec_mp form
 	 */
@@ -2045,27 +2042,27 @@ public:
 	/**
 	 \brief single target mpi send.
 	 
-	 Send the vertex to a single target.
+	 Send the Vertex to a single target.
 	 
-	 \see vertex::receive
+	 \see Vertex::receive
 	 
 	 \param target The MPI ID of the target for this send
 	 \param mpi_config current mpi settings
 	 */
-	void send(int target, parallelism_config & mpi_config);
+	void send(int target, ParallelismConfig & mpi_config);
 	
 	
 	/**
 	 \brief single source receive.
 	 
-	 Receive a vertex from a single source.
+	 Receive a Vertex from a single source.
 	 
-	 \see vertex::send
+	 \see Vertex::send
 	 
 	 \param source The MPI ID of hte source.
 	 \param mpi_config current mpi settings
 	 */
-	void receive(int source, parallelism_config & mpi_config);
+	void receive(int source, ParallelismConfig & mpi_config);
 	
 private:
 	
@@ -2075,7 +2072,7 @@ private:
 		clear_vec_mp(this->projection_values_);
 	}
 	
-	void copy(const vertex & other)
+	void copy(const Vertex & other)
 	{
 		set_point(other.pt_mp_);
 		
@@ -2106,11 +2103,11 @@ private:
 /**
  \brief the main structure for storing vertices.  
  
- The vertex_set is bertini_real's main method for storing data.  We essentially construct a graph of vertices, consisting of edges and faces.
+ The VertexSet is bertini_real's main method for storing data.  We essentially construct a graph of vertices, consisting of edges and faces.
  
  there are methods in place to add vertices, and perform lookups.
  */
-class vertex_set
+class VertexSet
 {
 
 protected:
@@ -2122,24 +2119,57 @@ protected:
 	int curr_input_index_; ///< the index of the current input file.
 	std::vector< boost::filesystem::path > filenames_; ///< the set of filenames from which vertices arise.
 	
-	std::vector<vertex> vertices_;  ///< the main storage of points in the decomposition.
+	std::vector<Vertex> vertices_;  ///< the main storage of points in the real numerical cellular decomposition.
 	size_t num_vertices_; ///< the number of vertices found so far.
 	
 	int num_natural_variables_;  ///< the number of natural variables appearing in the problem to solve.
 	
 	
-	
+	double same_point_tolerance_;
 	mpf_t abs_;
 	mpf_t zerothresh_;
 	comp_mp diff_;
 	vec_mp checker_1_;
 	vec_mp checker_2_;
 	
-	
+	tracker_config_t * T_;
 public:
 	
+	/**
+	 get the tracker config struct
+	 
+	 \return a pointer to the tracker config.
+	 */
+	tracker_config_t * T() const
+	{
+		return T_;
+	}
 	
+	/**
+	 set the tracker config pointer
+	 
+	 \param new_T a pointer to the tracker config.
+	 */
+	void set_tracker_config(tracker_config_t * new_T)
+	{
+		T_ = new_T;
+	}
 	
+	/**
+	 get the tolerance for two points being the same
+	 */
+	double same_point_tolerance()
+	{
+		return same_point_tolerance_;
+	}
+	
+	/**
+	 \brief set the tolerance for points being the same
+	 */
+	void set_same_point_tolerance(double new_tolerance)
+	{
+		same_point_tolerance_ = new_tolerance;
+	}
 	
 	/**
 	 \brief get the currently active projection
@@ -2168,7 +2198,7 @@ public:
 	/**
 	 \brief get the number of vertices.
 	 
-	 \return the number of vertices stored in this vertex set
+	 \return the number of vertices stored in this Vertex set
 	 */
 	inline unsigned int num_vertices() const
 	{
@@ -2176,17 +2206,17 @@ public:
 	}
 	
 	/**
-	 \return the ith vertex
+	 \return the ith Vertex
 	 */
-	const vertex& operator [](unsigned int index) const
+	const Vertex& operator [](unsigned int index) const
 	{
 		return vertices_[index];
 	}
 	
 	/**
-	 \return the ith vertex
+	 \return the ith Vertex
 	 */
-	vertex & operator [](unsigned int index)
+	Vertex & operator [](unsigned int index)
 	{
 		return vertices_[index];
 	}
@@ -2207,20 +2237,20 @@ public:
 	
 	
 	/**
-	 \brief add a new vertex to the set.
+	 \brief add a new Vertex to the set.
 	 
-	 \param new_vertex vertex to add to the set.
-	 \return the index of the added vertex
+	 \param new_vertex Vertex to add to the set.
+	 \return the index of the added Vertex
 	 */
-	int add_vertex(const vertex new_vertex);
+	int add_vertex(const Vertex new_vertex);
 	
 	
 	/**
-	 \brief create a vertex_set from a file.
+	 \brief create a VertexSet from a file.
 	 
-	 Read in a vertex_set from a file.
+	 Read in a VertexSet from a file.
 	 
-	 \param INfile the file to parse and store in a vertex_set
+	 \param INfile the file to parse and store in a VertexSet
 	 \return the number of vertices read in.
 	 */
 	int setup_vertices(boost::filesystem::path INfile);
@@ -2229,11 +2259,11 @@ public:
 	
 	
 	
-	vertex_set(){
+	VertexSet(){
 		init();
 	}
 	
-	vertex_set(int num_vars){
+	VertexSet(int num_vars){
 		init();
 		
 		set_num_vars(num_vars);
@@ -2244,27 +2274,27 @@ public:
 
 	
 	
-	vertex_set & operator=( const vertex_set& other) {
+	VertexSet & operator=( const VertexSet& other) {
 		init();
 		copy(other);
 		return *this;
 	}
 	
-	vertex_set(const vertex_set &other)
+	VertexSet(const VertexSet &other)
 	{
 		init();
 		copy(other);
 	}
 	
-	~vertex_set()
+	~VertexSet()
 	{
-		vertex_set::clear();
+		VertexSet::clear();
 	}
 	
 	
 	
 	/**
-	 sets the number of variables for the vertex_set.
+	 sets the number of variables for the VertexSet.
 	 
 	 \param num_vars the number of {\em natural} variables
 	 */
@@ -2280,13 +2310,13 @@ public:
 	
 	
 	/**
-	 \brief write vertex_set to a file, readable by bertini_real again.
+	 \brief write VertexSet to a file, readable by bertini_real again.
 	 
 	 
-	 write the vertex_set to a file.
+	 write the VertexSet to a file.
 	 \see setup_vertices
 	 
-	 Output vertex structure as follows:
+	 Output Vertex structure as follows:
 	 
 	 [
 	 num_vertices num_projections num_natural_variables filenames.size()
@@ -2311,7 +2341,7 @@ public:
 	]
 	 
 	 
-	 \param outputfile the name of the file to write the vertex_set to.
+	 \param outputfile the name of the file to write the VertexSet to.
 	 */
 	void print(boost::filesystem::path outputfile) const;
 	
@@ -2329,9 +2359,7 @@ public:
         
 		if ( el_nom.string().compare("unset_filename")==0 )
 		{
-			std::cout << "trying to set curr_input from unset_filename" << std::endl;
-			
-			br_exit(-59251);
+			throw std::logic_error("trying to set curr_input from unset_filename");
 		}
 		
 		
@@ -2397,7 +2425,7 @@ public:
 	/**
 	 \brief Compute projections values, and midpoints, of a set of points with respect to a projection.
 	 
-	 This function computes \f$\pi(x)\f$ for each of the points \f$x\f$ in witness_set W.  Then it sorts them, and computes averages.
+	 This function computes \f$\pi(x)\f$ for each of the points \f$x\f$ in WitnessSet W.  Then it sorts them, and computes averages.
 	 
 	 The output is stored in crit_downstairs and midpoints_downstairs, both pre-initialized vec_mp's.  This function also produces a std::vector<int> named index_tracker which contains the sorting of W according to \f$\pi(W)\f$.
 	 
@@ -2408,18 +2436,19 @@ public:
      \param pi						the projection we are retrieving projection values with respect to.
      \return the integer SUCCESSFUL.
      */
-    int compute_downstairs_crit_midpts(const witness_set & W,
+    int compute_downstairs_crit_midpts(const WitnessSet & W,
                                        vec_mp crit_downstairs,
                                        vec_mp midpoints_downstairs,
                                        std::vector< int > & index_tracker,
-                                       vec_mp pi);
-    
-    
+									   vec_mp pi,
+									   tracker_config_t * T);
+	
+	
 	/**
 	 
-	 sets the value of the [current] projection for each vertex which has index in the set of relevant indices.
+	 sets the value of the [current] projection for each Vertex which has index in the set of relevant indices.
 	 
-	 \param relevant_indices set of vertex indices
+	 \param relevant_indices set of Vertex indices
 	 \param new_value the new value you want to set the projection value to
 	 \return a vector of indices for which this operation failed, because the new and old values were too far away from each other.
 	 */
@@ -2427,9 +2456,9 @@ public:
 	
 	/**
 	 
-	 sets the value of the [proj_index] projection for each vertex which has index in the set of relevant indices.
+	 sets the value of the [proj_index] projection for each Vertex which has index in the set of relevant indices.
 	 
-	 \param relevant_indices set of vertex indices
+	 \param relevant_indices set of Vertex indices
 	 \param new_value the new value you want to set the projection value to
 	 \param proj_index the index of the projection you want to assert.
 	 \return a vector of indices for which this operation failed, because the new and old values were too far away from each other.
@@ -2468,7 +2497,7 @@ public:
 	/**
 	 \brief query the index of a projection.
 	 
-	 Want to find out the index of a projection in this vertex_set? pass it into this function.
+	 Want to find out the index of a projection in this VertexSet? pass it into this function.
 	 
 	 \param proj the projection to query
 	 \return the index of the projection, or -1 if it doesn't exist.
@@ -2482,7 +2511,7 @@ public:
         int proj_index = -1;
         
         for (int ii=0; ii<num_projections_; ii++) {
-			if (isSamePoint_inhomogeneous_input(projections_[ii],proj)) {
+			if (isSamePoint_inhomogeneous_input(projections_[ii],proj,same_point_tolerance_)) {
 				proj_index = ii;
 				break;
 			}
@@ -2513,13 +2542,13 @@ public:
 		}
 		
 		
-		init_vec_mp2(this->projections_[num_projections_],num_natural_variables_,DEFAULT_MAX_PREC);
+		init_vec_mp2(this->projections_[num_projections_],num_natural_variables_,T_->AMP_max_prec);
 		this->projections_[num_projections_]->size = num_natural_variables_;
 		
 		
 		if (proj->size != num_natural_variables_) {
 			vec_mp tempvec;
-			init_vec_mp2(tempvec,num_natural_variables_,DEFAULT_MAX_PREC); tempvec->size = num_natural_variables_;
+			init_vec_mp2(tempvec,num_natural_variables_,T_->AMP_max_prec); tempvec->size = num_natural_variables_;
 			for (int kk=0; kk<num_natural_variables_; kk++) {
 				set_mp(&tempvec->coord[kk], &proj->coord[kk]);
 			}
@@ -2542,24 +2571,24 @@ public:
 	/**
 	 \brief single target mpi send
 	 
-	 Send a vertex_set to a single target process.
+	 Send a VertexSet to a single target process.
 	 
 	 \param target who to send to
 	 \param mpi_config the current mpi configuration
 	 */
-	void send(int target, parallelism_config & mpi_config);
+	void send(int target, ParallelismConfig & mpi_config);
 	
 	
 	
 	/**
 	 \brief single source mpi receive
 	 
-	 Receive a vertex_set from a single source.
+	 Receive a VertexSet from a single source.
 	 
 	 \param source the source of the receive
 	 \param mpi_config the current mpi configuration
 	 */
-	void receive(int source, parallelism_config & mpi_config);
+	void receive(int source, ParallelismConfig & mpi_config);
 	
 	
 	/**
@@ -2584,7 +2613,9 @@ protected:
 	
 	void init()
 	{
+		T_ = NULL;
 		
+		same_point_tolerance_ = 1e-5;
 		num_projections_ = 0;
 		projections_ = NULL;
 		curr_projection_ = -1;
@@ -2607,8 +2638,11 @@ protected:
 	}
 	
 	
-	void copy(const vertex_set &other)
+	void copy(const VertexSet &other)
 	{
+		set_tracker_config(other.T());
+		
+		
 		this->curr_projection_ = other.curr_projection_;
 		if (this->num_projections_==0 && other.num_projections_>0) {
 			projections_ = (vec_mp *) br_malloc(other.num_projections_*sizeof(vec_mp));
@@ -2670,15 +2704,12 @@ protected:
 
 
 
-typedef std::pair<int,int> witness_set_index;
-
-
 /**
- \brief metadata for witness points, for the witness_data class.
+ \brief metadata for witness points, for the NumericalIrreducibleDecomposition class.
  
  
  */
-class witness_point_metadata
+class WitnessPointMetadata
 {
 
 	int dimension_;
@@ -2816,7 +2847,7 @@ public:
 	 \param os the stream to put this text on.
 	 \param s the system randomizer to write.
 	 */
-	friend std::ostream & operator<<(std::ostream &os, witness_point_metadata & s)
+	friend std::ostream & operator<<(std::ostream &os, WitnessPointMetadata & s)
 	{
 		os << "condition_number " << s.condition_number_ << "\n";
 		os << "corank " << s.corank_ << "\n";
@@ -2840,20 +2871,20 @@ public:
 	 
 	 \param new_dim the dimension to set to.
 	 */
-	witness_point_metadata(int new_dim){dimension_ = new_dim;}
+	WitnessPointMetadata(int new_dim){dimension_ = new_dim;}
 	
 	
-	witness_point_metadata(){};
+	WitnessPointMetadata(){};
 	
-	witness_point_metadata(const witness_point_metadata& other){copy(other);}
+	WitnessPointMetadata(const WitnessPointMetadata& other){copy(other);}
 	
-	witness_point_metadata& operator=( const witness_point_metadata& other)
+	WitnessPointMetadata& operator=( const WitnessPointMetadata& other)
 	{
 		copy(other);
 		return *this;
 	}
 	
-	void copy(const witness_point_metadata& other)
+	void copy(const WitnessPointMetadata& other)
 	{
 		dimension_ = other.dimension_;
 		corank_ = other.corank_;
@@ -2875,7 +2906,7 @@ public:
  
  metadata for linears read in from the witness_data file.
  */
-class witness_linear_metadata
+class WitnessLinearMetadata
 {
 	int dim_;
 	
@@ -2892,15 +2923,15 @@ public:
 	}
 	
 	
-	witness_linear_metadata(int new_dim){dim_ = new_dim;}
+	WitnessLinearMetadata(int new_dim){dim_ = new_dim;}
 	
-	witness_linear_metadata(){};
-	witness_linear_metadata(const witness_linear_metadata& other)
+	WitnessLinearMetadata(){};
+	WitnessLinearMetadata(const WitnessLinearMetadata& other)
 	{
 		dim_ = other.dim_;
 	}
 	
-	witness_linear_metadata& operator=(const witness_linear_metadata &other)
+	WitnessLinearMetadata& operator=(const WitnessLinearMetadata &other)
 	{
 		dim_ = other.dim_;
 		return *this;
@@ -2920,7 +2951,7 @@ public:
  
  metadata for patches read in from witness_data
  */
-class witness_patch_metadata
+class WitnessPatchMetadata
 {
 	int dim_;
 	
@@ -2936,22 +2967,22 @@ public:
 	}
 	
 	
-	witness_patch_metadata(){};
+	WitnessPatchMetadata(){};
 	
 	
 	/**
 	 constructor, setting the dimension in the process
 	 \param new_dim the dimension to set.
 	 */
-	witness_patch_metadata(int new_dim){dim_ = new_dim;}
+	WitnessPatchMetadata(int new_dim){dim_ = new_dim;}
 
 	
-	witness_patch_metadata(const witness_patch_metadata& other)
+	WitnessPatchMetadata(const WitnessPatchMetadata& other)
 	{
 		dim_ = other.dim_;
 	}
 	
-	witness_patch_metadata& operator=(const witness_patch_metadata &other)
+	WitnessPatchMetadata& operator=(const WitnessPatchMetadata &other)
 	{
 		dim_ = other.dim_;
 		return *this;
@@ -2969,14 +3000,14 @@ public:
  
  This class reads in witness_data, and produces witness_sets based on user's choice.
  */
-class witness_data : public patch_holder, public linear_holder, public point_holder
+class NumericalIrreducibleDecomposition : public PatchHolder, public LinearHolder, public PointHolder
 {
 	
 private:
 	
-	std::vector< witness_point_metadata > point_metadata;
-	std::vector< witness_linear_metadata > linear_metadata;
-	std::vector< witness_patch_metadata > patch_metadata;
+	std::vector< WitnessPointMetadata > point_metadata;
+	std::vector< WitnessLinearMetadata > linear_metadata;
+	std::vector< WitnessPatchMetadata > patch_metadata;
 	
 	std::vector<int> nonempty_dimensions;
 	std::map<int,std::map<int,int> > dimension_component_counter;
@@ -3012,24 +3043,26 @@ public:
 	}
 	
 	
-	
-	void populate(); ///< fills this object with the sets in witness_data.
+	/** fills this object with the sets in witness_data.
+	 \param T the current state of the tracker configuration
+	 */
+	void populate(tracker_config_t * T);
 	
 	
 	
 	/**
 	 \brief outermost method for choosing a witness set to construct.
 	 
-	 This function uses information stored in BR_configuration to construct a witness set.
+	 This function uses information stored in BertiniRealConfig to construct a witness set.
 	 
 	 \param options the current program state.
 	 \return the chosen witness set.  may be empty.
 	 */
-	witness_set choose(BR_configuration & options);
-	witness_set best_possible_automatic_set(BR_configuration & options);
-	witness_set choose_set_interactive(BR_configuration & options); // lets the user choose a set, and returns a copy of it.
+	WitnessSet choose(BertiniRealConfig & options);
+	WitnessSet best_possible_automatic_set(BertiniRealConfig & options);
+	WitnessSet choose_set_interactive(BertiniRealConfig & options); // lets the user choose a set, and returns a copy of it.
 	
-	witness_set form_specific_witness_set(int dim, int comp)	;
+	WitnessSet form_specific_witness_set(int dim, int comp)	;
 	
 	
 	
@@ -3096,9 +3129,6 @@ public:
 			std::cout << std::endl;
 		}
 		
-		for (unsigned int ii=0; ii<num_pts_; ii++) {
-			print_point_to_screen_matlab(pts_mp_[ii],"p");
-		}
 	}
 	
 	
@@ -3113,20 +3143,20 @@ public:
 	
 private:
 	
-	void add_linear_w_meta(vec_mp lin, const witness_linear_metadata & meta)
+	void add_linear_w_meta(vec_mp lin, const WitnessLinearMetadata & meta)
 	{
 		add_linear(lin);
 		linear_metadata.push_back(meta);
 	}
 	
-	void add_patch_w_meta(vec_mp pat, const witness_patch_metadata & meta)
+	void add_patch_w_meta(vec_mp pat, const WitnessPatchMetadata & meta)
 	{
 		add_patch(pat);
 		patch_metadata.push_back(meta);
 	}
 	
 	
-	int add_solution(vec_mp pt, const witness_point_metadata & meta)
+	int add_solution(vec_mp pt, const WitnessPointMetadata & meta)
 	{
 		
 		int ind = add_point(pt);
@@ -3148,12 +3178,12 @@ private:
  
  Contains a midpoint, methods to send and receive, etc.
  */
-class cell
+class Cell
 {
 	
 protected:
 
-	int midpt_; ///< index into vertex set
+	int midpt_; ///< index into Vertex set
 	
 	
 public:
@@ -3185,7 +3215,7 @@ public:
 	/**
 	 \brief get a cell from an input stream
 	 */
-	friend std::istream & operator>>(std::istream &is,  cell & c)
+	friend std::istream & operator>>(std::istream &is,  Cell & c)
 	{
 		is >> c.midpt_;
 		return is;
@@ -3195,7 +3225,7 @@ public:
 	 \brief copy to another cell
 	 \param other the other cell to copy to
 	 */
-	inline void copy(const cell & other){
+	inline void copy(const Cell & other){
 		midpt(other.midpt());
 	}
 	
@@ -3204,7 +3234,7 @@ public:
 	 \param target the integer id of the target of the send
 	 \param mpi_config the current state of parallelism
 	 */
-	void send(int target, parallelism_config & mpi_config)
+	void send(int target, ParallelismConfig & mpi_config)
 	{
 		int buffer = midpt();
 		MPI_Send(&buffer, 1, MPI_INT, target, CELL, mpi_config.comm());
@@ -3216,7 +3246,7 @@ public:
 	 \param source the integer id of the source of the send
 	 \param mpi_config the current state of parallelism
 	 */
-	void receive(int source, parallelism_config & mpi_config)
+	void receive(int source, ParallelismConfig & mpi_config)
 	{
 		MPI_Status statty_mc_gatty;
 		int buffer;
@@ -3239,7 +3269,7 @@ public:
  
  the edge data type.  has three indices: left, right, midpt.
  */
-class edge : public cell
+class Edge : public Cell
 {
 	int left_;  ///< index into vertices
 	int right_; ///< index into vertices
@@ -3339,7 +3369,7 @@ public:
 	
 	
 	
-	edge() : cell()
+	Edge() : Cell()
 	{
 		left_ = right_ = -1;
 	}
@@ -3351,7 +3381,7 @@ public:
 	 \param new_midpt the new mid index for constructed edge
 	 \param new_right the new right index for constructed edge
 	 */
-	edge(int new_left, int new_midpt, int new_right)
+	Edge(int new_left, int new_midpt, int new_right)
 	{
 		left(new_left);
 		right(new_right);
@@ -3382,7 +3412,7 @@ public:
 	 \param target to whom to send this edge
 	 \param mpi_config the current state of parallelism
 	 */
-	void send(int target, parallelism_config & mpi_config)
+	void send(int target, ParallelismConfig & mpi_config)
 	{
 		int * buffer = new int[4];
 		
@@ -3411,7 +3441,7 @@ public:
 	 \param source from whom to receive this edge
 	 \param mpi_config the current state of parallelism
 	 */
-	void receive(int source, parallelism_config & mpi_config)
+	void receive(int source, ParallelismConfig & mpi_config)
 	{
 		MPI_Status statty_mc_gatty;
 		int * buffer = new int[4];
@@ -3446,7 +3476,7 @@ public:
 		is >> left_ >> midpt_ >> right_;
 	}
 	
-	friend std::ostream & operator<<(std::ostream & out, const edge & E){
+	friend std::ostream & operator<<(std::ostream & out, const Edge & E){
 		out << E.left_ << " " << E.midpt_ << " " << E.right_;
 		return out;
 	}
@@ -3464,12 +3494,12 @@ public:
 
 
 /**
- \brief base decomposition class.  curves and surfaces inherit from this.
+ \brief base Decomposition class.  curves and surfaces inherit from this.
  
- The decomposition class holds the basic information for any dimensional decomposition -- a witness set which generated it, the number of variables, the dimension, which component it represents, the projections, the randomizer, the sphere, the input file name.
+ The Decomposition class holds the basic information for any dimensional decomposition -- a witness set which generated it, the number of variables, the dimension, which component it represents, the projections, the randomizer, the sphere, the input file name.
  
  */
-class decomposition : public patch_holder
+class Decomposition : public PatchHolder
 {
 
 
@@ -3495,7 +3525,7 @@ public:
 			this->pi_ = (vec_mp *)br_realloc(this->pi_, (this->num_curr_projections_+1) * sizeof(vec_mp));
 		}
 		
-		init_vec_mp2(this->pi_[num_curr_projections_],proj->size,DEFAULT_MAX_PREC);
+		init_vec_mp2(this->pi_[num_curr_projections_],proj->size,proj->curr_prec);
 		this->pi_[num_curr_projections_]->size = proj->size;
 		
 		vec_cp_mp(pi_[num_curr_projections_], proj);
@@ -3505,43 +3535,43 @@ public:
 	
 	
 	/**
-	 \brief commit a set of points to the vertex set, associating them with the input file for this decomposition.
+	 \brief commit a set of points to the Vertex set, associating them with the input file for this decomposition.
 	 
 	 \todo rename this function to something more accurately descriptive
 	 
 	 \return the number 0.  this seems pointless.
 	 \param W the witness set containing the points to add.
 	 \param add_type the type the points will inherit.  {\em e.g.} CRITICAL
-	 \param V the vertex set to add the points to.
+	 \param V the Vertex set to add the points to.
 	 */
-    int add_witness_set(const witness_set & W, int add_type, vertex_set & V);
+    int add_witness_set(const WitnessSet & W, int add_type, VertexSet & V);
     
 	
 	/**
 	 \brief Find the index of a testpoint.
 	 
-	 Search the vertex set passed in for testpoint.  This happens relative to this decomposition for no reason whatsoever.
-	 \todo change this to be a property of the vertex set
+	 Search the Vertex set passed in for testpoint.  This happens relative to this decomposition for no reason whatsoever.
+	 \todo change this to be a property of the Vertex set
 	 
 	 \return the index of the point, or -1 if not found.
-	 \param V the vertex set in which to search
+	 \param V the Vertex set in which to search
 	 \param testpoint the point for which to search
 	 */
-	int index_in_vertices(vertex_set &V,
+	int index_in_vertices(VertexSet &V,
                           vec_mp testpoint);
 	
 	
 	/**
-	 \brief search for a testvertex, and add it to vertex set, and this decomposition, if not found.
+	 \brief search for a testvertex, and add it to Vertex set, and this decomposition, if not found.
 	 
-	 Search the passed in vertex set for the testvertex -- and add it to the vertex set, and its index to the decomposition if not found.
+	 Search the passed in Vertex set for the testvertex -- and add it to the Vertex set, and its index to the decomposition if not found.
 	 
 	 \return the index of the point, or -1 if not found.
-	 \param V the vertex set in which to search
-	 \param vert a vertex with point for which to search.
+	 \param V the Vertex set in which to search
+	 \param vert a Vertex with point for which to search.
 	 */
-	int index_in_vertices_with_add(vertex_set &V,
-                                   vertex vert);
+	int index_in_vertices_with_add(VertexSet &V,
+                                   Vertex vert);
 	
 	/** 
 	 set up the base decomposition class from a file
@@ -3589,22 +3619,22 @@ public:
 	 
 	 \param W_crit the witness set containing the critical points to capture inside the sphere
 	 */
-	void compute_sphere_bounds(const witness_set & W_crit);
+	void compute_sphere_bounds(const WitnessSet & W_crit);
 	
 	
 	/**
-	 \brief copy the bounds from another decomposition
+	 \brief copy the bounds from another Decomposition
 	 
 	 Sub-decompositions will often want to inherit the bounding sphere of another.  This method lets you copy from one to another.
 	 
-	 \throws invalid_argument if the input decomposition has no sphere yet
+	 \throws invalid_argument if the input Decomposition has no sphere yet
 	 
-	 \param other the decomposition which already holds sphere bounds.
+	 \param other the Decomposition which already holds sphere bounds.
 	 */
-	void copy_sphere_bounds(const decomposition & other)
+	void copy_sphere_bounds(const Decomposition & other)
 	{
 		if (!other.have_sphere_) {
-			throw std::invalid_argument("trying to copy sphere bounds from a decomposition which does not have them set!");
+			throw std::invalid_argument("trying to copy sphere bounds from a Decomposition which does not have them set!");
 		}
 		
 		set_mp(this->sphere_radius_, other.sphere_radius_);
@@ -3614,25 +3644,25 @@ public:
 	
 	
 	/**
-	 \brief the main way to print a decomposition to a file.
+	 \brief the main way to print a Decomposition to a file.
 	 
-	 This method backs up the existing folder to one siffixed with "_bak", and creates a new folder with the correct name, to which it prints the decomposition in text file format.
+	 This method backs up the existing folder to one siffixed with "_bak", and creates a new folder with the correct name, to which it prints the Decomposition in text file format.
 	 
-	 \param base the base folder name to print the decomposition.
+	 \param base the base folder name to print the Decomposition.
 	 */
 	void output_main(const boost::filesystem::path base);
 	
 	
 	/**
-	 \brief copy the component number, filename, number of variables, and witness set itself into the decomposition.
+	 \brief copy the component number, filename, number of variables, and witness set itself into the Decomposition.
 	 
 	 \param W the witness set with the data.
 	 */
-	void copy_data_from_witness_set(const witness_set & W);
+	void copy_data_from_witness_set(const WitnessSet & W);
 	
 	
 	/**
-	 reset decomposition to empty.
+	 reset Decomposition to empty.
 	 */
 	void reset()
 	{
@@ -3645,7 +3675,7 @@ public:
 	/**
 	 default constructor.
 	 */
-	decomposition(){
+	Decomposition(){
 		init();
 	}
 	
@@ -3653,7 +3683,7 @@ public:
 	/**
 	 default destructor.
 	 */
-	virtual ~decomposition()
+	virtual ~Decomposition()
 	{
 		this->clear();
 	}
@@ -3662,7 +3692,7 @@ public:
 	/**
 	 assignment
 	 */
-	decomposition & operator=(const decomposition& other){
+	Decomposition & operator=(const Decomposition& other){
 		
 		this->init();
 		
@@ -3675,7 +3705,7 @@ public:
 	/**
 	 copy
 	 */
-	decomposition(const decomposition & other){
+	Decomposition(const Decomposition & other){
 		
 		this->init();
 		
@@ -3686,22 +3716,22 @@ public:
 	/**
 	 \brief single target MPI send.
 	 
-	 Send base decomposition to another process.
+	 Send base Decomposition to another process.
 	 
 	 \param target the ID of the worker to which to send.
 	 \param mpi_config the current configuration of MPI
 	 */
-	void send(int target, parallelism_config & mpi_config);
+	void send(int target, ParallelismConfig & mpi_config);
 	
 	/**
 	 \brief single source MPI receive.
 	 
-	 Receive base decomposition from another process.
+	 Receive base Decomposition from another process.
 	 
 	 \param source the ID of the process from which to receive
 	 \param mpi_config the current configuration of MPI
 	 */
-	void receive(int source, parallelism_config & mpi_config);
+	void receive(int source, ParallelismConfig & mpi_config);
 	
 	
 	
@@ -3719,7 +3749,7 @@ public:
 	 
 	 \return the shared pointer to the system randomizer
 	 */
-	std::shared_ptr<system_randomizer> randomizer() const
+	std::shared_ptr<SystemRandomizer> randomizer() const
 	{
 		return randomizer_;
 	}
@@ -3734,7 +3764,7 @@ public:
 	
 	
 	/**
-	 \brief get the number of variables in the decomposition
+	 \brief get the number of variables in the Decomposition
 	 
 	 \return the number of variables
 	 */
@@ -3844,11 +3874,11 @@ public:
 	
 	
 	/**
-	 \brief get the witness set associated with the decomposition
+	 \brief get the witness set associated with the Decomposition
 	 
-	 \return the witness set which generated the decomposition
+	 \return the witness set which generated the Decomposition
 	 */
-	const witness_set& get_W() const
+	const WitnessSet& get_W() const
 	{
 		return W_;
 	}
@@ -3889,7 +3919,7 @@ public:
 	inline vec_mp& pi(int index) const
 	{
 		if (index >= num_curr_projections_) {
-			throw std::out_of_range("trying to access an out of range projection in decomposition");
+			throw std::out_of_range("trying to access an out of range projection in Decomposition");
 		}
 		else
 		{
@@ -3949,12 +3979,12 @@ public:
 	
 	
 	
-	void clone(const decomposition & other)
+	void clone(const Decomposition & other)
 	{
-		patch_holder::copy(other);
+		PatchHolder::copy(other);
 		
 		
-		this->randomizer_ = std::make_shared<system_randomizer>( *other.randomizer_ );
+		this->randomizer_ = std::make_shared<SystemRandomizer>( *other.randomizer_ );
 		
 		this->W_ = other.W_;
 		
@@ -3977,7 +4007,7 @@ public:
 		
 		this->num_curr_projections_ = other.num_curr_projections_;
 		for (int ii = 0; ii<other.num_curr_projections_; ii++) {
-			init_vec_mp2(this->pi_[ii],other.pi_[ii]->size,DEFAULT_MAX_PREC);
+			init_vec_mp2(this->pi_[ii],other.pi_[ii]->size,other.pi_[ii]->curr_prec);
 			this->pi_[ii]->size = other.pi_[ii]->size;
 			vec_cp_mp(this->pi_[ii], other.pi_[ii])
 		}
@@ -3996,11 +4026,11 @@ protected:
 	
 	vec_mp sphere_center_; ///< the center of the sphere.
 	comp_mp sphere_radius_; ///< the radius of the sphere.
-	bool have_sphere_; ///< indicates whether the decomposition has the radius set, or needs one still.
+	bool have_sphere_; ///< indicates whether the Decomposition has the radius set, or needs one still.
 	
 	
 	
-	int num_curr_projections_; ///< the number of projections stored in the decomposition.  should match the dimension when complete.
+	int num_curr_projections_; ///< the number of projections stored in the Decomposition.  should match the dimension when complete.
 	vec_mp	*pi_; ///< the projections used to decompose.  first ones are used to decompose nested objects.
 	
 	
@@ -4014,39 +4044,38 @@ protected:
 	 
 	 \param new_w the new witness set to set.
 	 */
-	void set_W(const witness_set & new_w)
+	void set_W(const WitnessSet & new_w)
 	{
 		W_ = new_w;
 	}
 	
 	
 	
-	witness_set W_; ///< generating witness set
+	WitnessSet W_; ///< generating witness set
 	
 	boost::filesystem::path input_filename_; ///< the name of the text file in which the system resides.
 	
 	
-	int dim_; ///< the dimension of the decomposition
+	int dim_; ///< the dimension of the Decomposition
 	int comp_num_; ///< the component number.
 	
 	
 	//	function input_file;
-	int num_variables_; ///< the number of variables in the decomposition
+	int num_variables_; ///< the number of variables in the Decomposition
+	
+	
+	std::shared_ptr<SystemRandomizer> randomizer_; ///< the randomizer for the Decomposition.
 	
 
 	
-	std::shared_ptr<system_randomizer> randomizer_; ///< the randomizer for the decomposition.
 	
-
-	
-	
-	int add_vertex(vertex_set &V, vertex source_vertex);
+	int add_vertex(VertexSet &V, Vertex source_vertex);
 	
 	
 	
 	void init(){
 		
-		randomizer_ = std::make_shared<system_randomizer> (*(new system_randomizer()));
+		randomizer_ = std::make_shared<SystemRandomizer> (*(new SystemRandomizer()));
 
 		input_filename_ = "unset";
 		pi_ = NULL;
@@ -4057,32 +4086,24 @@ protected:
 		dim_ = -1;
 		comp_num_ = -1;
 		
-		init_mp2(sphere_radius_,DEFAULT_MAX_PREC);
+		init_mp2(sphere_radius_,1024);
 		init_vec_mp2(sphere_center_,0,1024);
 		sphere_center_->size = 0;
 		have_sphere_ = false;
 		
 		set_one_mp(sphere_radius_);
 		neg_mp(sphere_radius_,sphere_radius_);
-		
-
-		
-
-
-		
-		
-		
 	}
 	
 	
-	void copy(const decomposition & other)
+	
+	
+	void copy(const Decomposition & other)
 	{
+		PatchHolder::copy(other);
 		
 		
-		patch_holder::copy(other);
-		
-		
-		this->randomizer_ = other.randomizer_;//make_shared<system_randomizer>( *other.randomizer_ );
+		this->randomizer_ = other.randomizer_;
 		
 		this->W_ = other.W_;
 		
@@ -4105,12 +4126,10 @@ protected:
 		
 		this->num_curr_projections_ = other.num_curr_projections_;
 		for (int ii = 0; ii<other.num_curr_projections_; ii++) {
-			init_vec_mp2(this->pi_[ii],other.pi_[ii]->size,DEFAULT_MAX_PREC);
+			init_vec_mp2(this->pi_[ii],other.pi_[ii]->size,1024);
 			this->pi_[ii]->size = other.pi_[ii]->size;
 			vec_cp_mp(this->pi_[ii], other.pi_[ii])
 		}
-		
-		
 		
 		
 		
@@ -4145,7 +4164,7 @@ protected:
 	
 
 	
-}; // end decomposition
+}; // end Decomposition
 
 
 

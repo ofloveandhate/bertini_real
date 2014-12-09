@@ -47,7 +47,7 @@ enum {BERTINIREAL=-9000,CRIT=-8999};
  
  
  */
-class parallelism_config
+class ParallelismConfig
 {
 	
 protected:
@@ -93,7 +93,7 @@ public:
 	
 	
 	
-	parallelism_config(){
+	ParallelismConfig(){
 		init();
 	}
 	
@@ -375,7 +375,7 @@ private:
 /**
  \brief Base class for program configuations.
  
- Both sampler_configuration and BR_configuration inherit from this.
+ Both sampler_configuration and BertiniRealConfig inherit from this.
  */
 class prog_config
 {
@@ -492,7 +492,7 @@ public:
  \brief holds the current state of configuration for Bertini_real.
  
  */
-class BR_configuration : public prog_config
+class BertiniRealConfig : public prog_config
 {
 	bool orthogonal_projection_;
 	
@@ -734,7 +734,7 @@ public:
 	
 	
 	/** 
-	 \brief get the BR_configuration from the command line. 
+	 \brief get the BertiniRealConfig from the command line. 
 	 
 	 \return the number 0.
 	 \param argC the command count, from main()
@@ -763,7 +763,7 @@ public:
 	void display_current_options();
 	
 	
-	BR_configuration() : prog_config()
+	BertiniRealConfig() : prog_config()
 	{
 		
         init();
@@ -771,7 +771,7 @@ public:
 	
 	void init();
 	
-}; //re: BR_configuration
+}; //re: BertiniRealConfig
 
 
 

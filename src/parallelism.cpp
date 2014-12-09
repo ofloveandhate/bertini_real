@@ -23,7 +23,7 @@
 
 
 
-int ubermaster_process::main_loop()
+int UbermasterProcess::main_loop()
 {
 	
 	boost::timer::auto_cpu_timer t;
@@ -52,13 +52,14 @@ int ubermaster_process::main_loop()
 	int num_vars = get_num_vars_PPD(solve_options.PPD);
 	
 	
-	witness_data data_mc_data;
-	data_mc_data.populate();
+	NumericalIrreducibleDecomposition witness_data;
+	witness_data.populate(&solve_options.T);
 	
 
-	witness_set W = data_mc_data.choose(program_options);
+	WitnessSet W = witness_data.choose(program_options);
 	
 	if (W.num_points()==0) {
+		std::cout << "no witness points, cannot decompose anything..." << std::endl;
 		return 1;
 	}
 	
@@ -80,11 +81,11 @@ int ubermaster_process::main_loop()
 	
 	
 	
-	vertex_set V(num_vars);
+	VertexSet V(num_vars);
 	
+	V.set_tracker_config(&solve_options.T);
 	
-	
-	
+	V.set_same_point_tolerance(solve_options.T.final_tol_times_mult);
 	
 	vec_mp *pi = (vec_mp *) br_malloc(W.dimension()*sizeof(vec_mp ));
 	for (int ii=0; ii<W.dimension(); ii++) {
@@ -99,7 +100,7 @@ int ubermaster_process::main_loop()
     
 	
 	if (program_options.primary_mode==BERTINIREAL) {
-		
+		bertini_real(W,pi,V);
 		
 	}
 	else if(program_options.primary_mode==CRIT)
@@ -127,26 +128,27 @@ int ubermaster_process::main_loop()
 
 
 
-void ubermaster_process::bertini_real(witness_set & W, vec_mp *pi, vertex_set & V)
+void UbermasterProcess::bertini_real(WitnessSet & W, vec_mp *pi, VertexSet & V)
 {
 	
 	
 	W.set_incidence_number(get_incidence_number( W.point(0), program_options, program_options.input_filename));
+	
+	boost::filesystem::path temp_name = program_options.output_dir();
+	std::stringstream converter;
+	converter << "_dim_" << W.dimension() << "_comp_" << W.component_number();
+	temp_name += converter.str();
+	
+	program_options.output_dir(temp_name);
+	
 	
 	
 	
 	switch (W.dimension()) {
 		case 1:
 		{
-			curve_decomposition C;
-			
-			boost::filesystem::path temp_name = program_options.output_dir();
-			std::stringstream converter;
-			converter << "_dim_" << C.dimension() << "_comp_" << C.component_number();
-			temp_name += converter.str();
-			
-			program_options.output_dir(temp_name);
-			
+			Curve C;
+		
 			// curve
 			C.main(V, W, pi, program_options, solve_options);
 			
@@ -168,15 +170,7 @@ void ubermaster_process::bertini_real(witness_set & W, vec_mp *pi, vertex_set & 
 		{
 			
 			
-			surface_decomposition S;
-			
-			boost::filesystem::path temp_name = program_options.output_dir();
-			std::stringstream converter;
-			converter << "_dim_" << S.dimension() << "_comp_" << S.component_number();
-			temp_name += converter.str();
-			
-			program_options.output_dir(temp_name);
-			
+			Surface S;
 			
 			// surface
 			S.main(V, W, pi, program_options, solve_options);
@@ -201,12 +195,12 @@ void ubermaster_process::bertini_real(witness_set & W, vec_mp *pi, vertex_set & 
 
 
 
-void ubermaster_process::critreal(witness_set & W, vec_mp *pi, vertex_set & V)
+void UbermasterProcess::critreal(WitnessSet & W, vec_mp *pi, VertexSet & V)
 {
 	
 	
 	
-	system_randomizer randomizer;
+	SystemRandomizer randomizer;
 	
 	randomizer.setup(W.num_variables()-1-W.dimension(),solve_options.PPD.num_funcs);
 	
@@ -220,16 +214,16 @@ void ubermaster_process::critreal(witness_set & W, vec_mp *pi, vertex_set & V)
 	print_vec_out_mp(OUT, pi[0]); /* Print vector to file */
 	fclose(OUT);
 	
-	nullspace_config ns_config; // this is set up in the nullspace call.
+	NullspaceConfiguration ns_config; // this is set up in the nullspace call.
 	
-	solver_output solve_out;
+	SolverOutput solve_out;
 	
 	
 	
 	
 	compute_crit_nullspace_left(solve_out, // the returned value
 						   W,            // input the original witness set
-						   std::make_shared<system_randomizer>(randomizer),
+						   std::make_shared<SystemRandomizer>(randomizer),
 						   pi,
 						   W.dimension(),  // dimension of ambient complex object
 						   W.dimension(),   //  target dimension to find
@@ -239,7 +233,7 @@ void ubermaster_process::critreal(witness_set & W, vec_mp *pi, vertex_set & V)
 						   &ns_config);
 	
 	
-	witness_set W_crit, W_nonsing, W_sing;
+	WitnessSet W_crit, W_nonsing, W_sing;
 	
 	solve_out.get_noninfinite_w_mult_full(W_crit);
 	solve_out.get_nonsing_finite_multone(W_nonsing);
@@ -275,10 +269,7 @@ void ubermaster_process::critreal(witness_set & W, vec_mp *pi, vertex_set & V)
 
 
 
-
-
-
-int worker_process::main_loop()
+int WorkerProcess::main_loop()
 {
 	int single_int_buffer = 0;
 	
@@ -301,7 +292,7 @@ int worker_process::main_loop()
 				
 			case MIDPOINT_SOLVER:
 			{
-				surface_decomposition S;
+				Surface S;
 				S.worker_connect(solve_options, program_options);
 			}
 				break;
@@ -332,6 +323,82 @@ int worker_process::main_loop()
 	
 	return SUCCESSFUL;
 }
+
+
+
+
+
+
+
+
+
+void get_projection(vec_mp *pi,
+					BertiniRealConfig program_options,
+					int num_vars,
+					int num_projections)
+{
+	
+	
+	for (int ii=0; ii<num_projections; ii++) {
+		change_size_vec_mp(pi[ii], num_vars);  pi[ii]->size = num_vars;
+	}
+	
+	
+	
+	//assumes the vector pi is already initialized
+	if (program_options.user_projection()) {
+		FILE *IN = safe_fopen_read(program_options.projection_filename.c_str()); // we are already assured this file exists, but safe fopen anyway.
+		int tmp_num_vars;
+		fscanf(IN,"%d",&tmp_num_vars); scanRestOfLine(IN);
+		if (tmp_num_vars!=num_vars-1) {
+			printf("the number of variables declared in the projection\nis not equal to the number of non-homogeneous variables in the problem\n");
+			printf("please modify file to have %d coordinates, one per line.\n(imaginary part will be ignored if provided).\n",num_vars-1);
+			abort();
+		}
+		
+		for (int ii=0; ii<num_projections; ii++) {
+			set_zero_mp(&pi[ii]->coord[0]);
+			for (int jj=1; jj<num_vars; jj++) {
+				set_zero_mp(&pi[ii]->coord[jj]);
+				mpf_inp_str(pi[ii]->coord[jj].r, IN, 10);
+				scanRestOfLine(IN);
+			}
+		}
+		fclose(IN);
+	}
+	else{
+		if (program_options.orthogonal_projection()) {
+			mat_mp temp_getter;
+			init_mat_mp2(temp_getter,0,0,1024);
+			make_matrix_random_real_mp(temp_getter,num_projections, num_vars-1, 1024); // this matrix is ~orthogonal
+			
+			for (int ii=0; ii<num_projections; ii++) {
+				set_zero_mp(&pi[ii]->coord[0]);
+				for (int jj=1; jj<num_vars; jj++)
+					set_mp(&pi[ii]->coord[jj], &temp_getter->entry[ii][jj-1]);
+				
+			}
+			
+			clear_mat_mp(temp_getter);
+			
+		}
+		else
+		{
+			for (int ii=0; ii<num_projections; ii++) {
+				set_zero_mp(&pi[ii]->coord[0]);
+				for (int jj=1; jj<num_vars; jj++)
+					get_comp_rand_real_mp(&pi[ii]->coord[jj]);//, &temp_getter->entry[ii][jj-1]);
+				
+			}
+			
+		}
+		
+	}
+	
+	
+	return;
+}
+
 
 
 

@@ -3,16 +3,16 @@
 
 
 
-int compute_crit_nullspace(solver_output & solve_out, // the returned value
-						   const witness_set & W,
-						   std::shared_ptr<system_randomizer> randomizer,
+int compute_crit_nullspace(SolverOutput & solve_out, // the returned value
+						   const WitnessSet & W,
+						   std::shared_ptr<SystemRandomizer> randomizer,
 						   vec_mp *pi,
 						   int ambient_dim,
 						   int target_dim, // this should also be the number of vectors in the *pi entry
 						   int target_crit_dim,
-						   BR_configuration & program_options,
-						   solver_configuration & solve_options,
-						   nullspace_config *ns_config)
+						   BertiniRealConfig & program_options,
+						   SolverConfiguration & solve_options,
+						   NullspaceConfiguration *ns_config)
 {
 	if (1) { // target_dim==target_crit_codim
 		return compute_crit_nullspace_right(solve_out, // the returned value
@@ -42,21 +42,21 @@ int compute_crit_nullspace(solver_output & solve_out, // the returned value
 
 
 
-int compute_crit_nullspace_left(solver_output & solve_out, // the returned value
-								const witness_set & W,
-								std::shared_ptr<system_randomizer> randomizer,
+int compute_crit_nullspace_left(SolverOutput & solve_out, // the returned value
+								const WitnessSet & W,
+								std::shared_ptr<SystemRandomizer> randomizer,
 								vec_mp *pi, // an array of projections, the number of which is the target dimensions
 								int ambient_dim,
 								int target_dim,
 								int target_crit_codim,
-								BR_configuration & program_options,
-								solver_configuration & solve_options,
-								nullspace_config *ns_config)
+								BertiniRealConfig & program_options,
+								SolverConfiguration & solve_options,
+								NullspaceConfiguration *ns_config)
 {
 	//many of the 1's here should be replaced by the number of patch equations, or the number of variable_groups
 	
 	int offset;
-	witness_set Wtemp, Wtemp2;
+	WitnessSet Wtemp, Wtemp2;
 	
 	
 	
@@ -94,7 +94,7 @@ int compute_crit_nullspace_left(solver_output & solve_out, // the returned value
 		ns_concluding_modifications(solve_out, W, ns_config);
 		
 		
-		std::cout << "the highest degree of any derivative equation is 0.  Returning empty solver_output." << std::endl;
+		std::cout << "the highest degree of any derivative equation is 0.  Returning empty SolverOutput." << std::endl;
 		//then there cannot possibly be any critical points, with respect to ANY projection.  simply return an empty but complete set.
 		
 		return 0;
@@ -117,7 +117,7 @@ int compute_crit_nullspace_left(solver_output & solve_out, // the returned value
 		vec_cp_mp(multilin_linears[ii], W.linear(ii));
 	}
 	
-	multilin_config ml_config(solve_options,randomizer);
+	MultilinConfiguration ml_config(solve_options,randomizer);
 	
 	
 	
@@ -149,14 +149,14 @@ int compute_crit_nullspace_left(solver_output & solve_out, // the returned value
 	temppoint->size = ns_config->num_natural_vars + ns_config->num_synth_vars + ns_config->num_v_vars;
 	
 	
-	witness_set W_step_one;
+	WitnessSet W_step_one;
 	W_step_one.set_num_variables(W.num_variables());
 	W_step_one.set_num_natural_variables(W.num_natural_variables());
 	W_step_one.copy_patches(W);
 	W_step_one.copy_names(W);
 	
 	
-	witness_set W_linprod;
+	WitnessSet W_linprod;
 	W_linprod.set_num_variables(ns_config->num_natural_vars + ns_config->num_v_vars + ns_config->num_synth_vars);
 	W_linprod.set_num_natural_variables(W.num_natural_variables());
 	
@@ -168,7 +168,7 @@ int compute_crit_nullspace_left(solver_output & solve_out, // the returned value
 	
 	
 	
-	double_odometer odo(ns_config->num_jac_equations, target_crit_codim, max_degree);
+	DoubleOdometer odo(ns_config->num_jac_equations, target_crit_codim, max_degree);
 	
 	int increment_status = 0;
 	while (increment_status!=-1) { // current_absolute_index incremented at the bottom of loop
@@ -200,17 +200,17 @@ int compute_crit_nullspace_left(solver_output & solve_out, // the returned value
 		// actually solve WRT the linears
 		
 		
-		solver_output fillme;
-		multilin_solver_master_entry_point(W,         // witness_set
+		SolverOutput fillme;
+		multilin_solver_master_entry_point(W,         // WitnessSet
 										   fillme, // the new data is put here!
 										   multilin_linears,
 										   ml_config,
 										   solve_options);
 		
-		witness_set Wtemp;
+		WitnessSet Wtemp;
 		fillme.get_noninfinite_w_mult_full(Wtemp); // should be ordered
 		
-		W_step_one.merge(Wtemp);
+		W_step_one.merge(Wtemp, &solve_options.T);
 		
 		Wtemp.reset();
 		
@@ -343,15 +343,15 @@ int compute_crit_nullspace_left(solver_output & solve_out, // the returned value
 
 
 
-void nullspace_config_setup_left(nullspace_config *ns_config,
+void nullspace_config_setup_left(NullspaceConfiguration *ns_config,
 								 vec_mp *pi, // an array of projections, the number of which is the target dimensions
 								 int ambient_dim,
 								 int target_dim,
 								 int target_crit_codim,
 								 int *max_degree, // a pointer to the value
-								 std::shared_ptr<system_randomizer> randomizer,
-								 const witness_set & W,
-								 solver_configuration & solve_options)
+								 std::shared_ptr<SystemRandomizer> randomizer,
+								 const WitnessSet & W,
+								 SolverConfiguration & solve_options)
 {
 	
 	ns_config->set_side(nullspace_handedness::LEFT);
@@ -534,14 +534,14 @@ void nullspace_config_setup_left(nullspace_config *ns_config,
 
 
 
-int compute_crit_nullspace_right(solver_output & solve_out, // the returned value
-						   const witness_set & W,
-						   std::shared_ptr<system_randomizer> randomizer,
+int compute_crit_nullspace_right(SolverOutput & solve_out, // the returned value
+						   const WitnessSet & W,
+						   std::shared_ptr<SystemRandomizer> randomizer,
 						   vec_mp *pi, // an array of projections, the number of which is the target dimensions
 						   int ambient_dim,
-						   BR_configuration & program_options,
-						   solver_configuration & solve_options,
-						   nullspace_config *ns_config)
+						   BertiniRealConfig & program_options,
+						   SolverConfiguration & solve_options,
+						   NullspaceConfiguration *ns_config)
 {
 	//many of the 1's here should be replaced by the number of patch equations, or the number of variable_groups
 	
@@ -571,7 +571,7 @@ int compute_crit_nullspace_right(solver_output & solve_out, // the returned valu
 		ns_concluding_modifications(solve_out, W, ns_config);
 		
 		
-		std::cout << "the highest degree of any derivative equation is 0.  Returning empty solver_output." << std::endl;
+		std::cout << "the highest degree of any derivative equation is 0.  Returning empty SolverOutput." << std::endl;
 		//then there cannot possibly be any critical points, with respect to ANY projection.  simply return an empty but complete set.
 		
 		return 0;
@@ -595,7 +595,7 @@ int compute_crit_nullspace_right(solver_output & solve_out, // the returned valu
 	
 	
 	int offset;
-	witness_set Wtemp, Wtemp2;
+	WitnessSet Wtemp, Wtemp2;
 	
 	
 	//  2.  Do a bunch of homotopies in $x$, each set of which will be followed by a single linear solve in $v$.
@@ -612,7 +612,7 @@ int compute_crit_nullspace_right(solver_output & solve_out, // the returned valu
 		vec_cp_mp(multilin_linears[ii], W.linear(ii));
 	}
 	
-	multilin_config ml_config(solve_options,randomizer);
+	MultilinConfiguration ml_config(solve_options,randomizer);
 	
 	
 	
@@ -645,14 +645,14 @@ int compute_crit_nullspace_right(solver_output & solve_out, // the returned valu
 	temppoint->size = ns_config->num_natural_vars + ns_config->num_synth_vars + ns_config->num_v_vars;
 	
 	
-	witness_set W_step_one;
+	WitnessSet W_step_one;
 	W_step_one.set_num_variables(W.num_variables());
 	W_step_one.set_num_natural_variables(W.num_natural_variables());
 	W_step_one.copy_patches(W);
 	W_step_one.copy_names(W);
 	
 	
-	witness_set W_linprod;
+	WitnessSet W_linprod;
 	W_linprod.set_num_variables(ns_config->num_natural_vars + ns_config->num_v_vars + ns_config->num_synth_vars);
 	W_linprod.set_num_natural_variables(W.num_natural_variables());
 	
@@ -697,17 +697,17 @@ int compute_crit_nullspace_right(solver_output & solve_out, // the returned valu
 				// actually solve WRT the linears
 				
 				
-				solver_output fillme;
-				multilin_solver_master_entry_point(W,         // witness_set
+				SolverOutput fillme;
+				multilin_solver_master_entry_point(W,         // WitnessSet
 												   fillme, // the new data is put here!
 												   multilin_linears,
 												   ml_config,
 												   solve_options);
 				
-				witness_set Wtemp;
+				WitnessSet Wtemp;
 				fillme.get_noninfinite_w_mult_full(Wtemp); // should be ordered
 				
-				W_step_one.merge(Wtemp);
+				W_step_one.merge(Wtemp, &solve_options.T);
 				
 				Wtemp.reset();
 				
@@ -844,13 +844,13 @@ int compute_crit_nullspace_right(solver_output & solve_out, // the returned valu
 
 
 
-void nullspace_config_setup_right(nullspace_config *ns_config,
+void nullspace_config_setup_right(NullspaceConfiguration *ns_config,
 								  vec_mp *pi, // an array of projections, the number of which is the target dimensions
 								  int ambient_dim,
 								  int *max_degree, // a pointer to the value
-								  std::shared_ptr<system_randomizer> randomizer,
-								  const witness_set & W,
-								  solver_configuration & solve_options)
+								  std::shared_ptr<SystemRandomizer> randomizer,
+								  const WitnessSet & W,
+								  SolverConfiguration & solve_options)
 {
 	
 	ns_config->set_side(nullspace_handedness::RIGHT);
@@ -1006,9 +1006,9 @@ void nullspace_config_setup_right(nullspace_config *ns_config,
 
 
 
-void ns_concluding_modifications(solver_output & solve_out,
-								 const witness_set & W,
-								 nullspace_config * ns_config)
+void ns_concluding_modifications(SolverOutput & solve_out,
+								 const WitnessSet & W,
+								 NullspaceConfiguration * ns_config)
 {
 	solve_out.num_variables  = ns_config->num_natural_vars + ns_config->num_v_vars;
 	solve_out.num_natural_vars = W.num_natural_variables();
@@ -1031,8 +1031,8 @@ void ns_concluding_modifications(solver_output & solve_out,
 
 void create_nullspace_system(boost::filesystem::path output_name,
 							 boost::filesystem::path input_name,
-							 BR_configuration & program_options,
-							 nullspace_config *ns_config)
+							 BertiniRealConfig & program_options,
+							 NullspaceConfiguration *ns_config)
 /***************************************************************\
  * USAGE: setup input file for one deflation iteration           *
  * ARGUMENTS: number of declaration statments, name of file,     *
@@ -1237,7 +1237,7 @@ void create_nullspace_system(boost::filesystem::path output_name,
 
 void createMatlabDerivative(boost::filesystem::path output_name,
 							boost::filesystem::path input_name,
-							nullspace_config *ns_config,
+							NullspaceConfiguration *ns_config,
 							int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs)
 /***************************************************************\
  * USAGE: setup a Matlab script to perform the deflation         *
@@ -1465,7 +1465,7 @@ void createMatlabDerivative(boost::filesystem::path output_name,
 
 void create_matlab_determinantal_system(boost::filesystem::path output_name,
 										boost::filesystem::path input_name,
-										nullspace_config *ns_config,
+										NullspaceConfiguration *ns_config,
 										int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs)
 /***************************************************************\
  * USAGE: setup a Matlab script to perform the deflation         *

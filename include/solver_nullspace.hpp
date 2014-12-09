@@ -43,11 +43,11 @@ namespace nullspace_handedness{
  
  \todo Rewrite nullspace code to make more of it members of this class.
  */
-class nullspace_config
+class NullspaceConfiguration
 {
 	
 protected:
-	std::shared_ptr<system_randomizer> randomizer_; ///< randomizer for the underlying supplied system
+	std::shared_ptr<SystemRandomizer> randomizer_; ///< randomizer for the underlying supplied system
 
 	int side_;
 	
@@ -56,13 +56,13 @@ public:
 	void set_side(int new_side){ side_ = new_side;};
 	int side(){ return side_;};
 	
-	std::shared_ptr<system_randomizer> randomizer()
+	std::shared_ptr<SystemRandomizer> randomizer()
 	{
 		return randomizer_;
 	}
 	
 	
-	void set_randomizer(std::shared_ptr<system_randomizer> randy)
+	void set_randomizer(std::shared_ptr<SystemRandomizer> randy)
 	{
 		randomizer_ = randy;
 	}
@@ -99,13 +99,13 @@ public:
 	
 	void clear();
 	
-	nullspace_config(){
+	NullspaceConfiguration(){
 		init();
 	}
 	
 	void print();
 	
-	~nullspace_config()
+	~NullspaceConfiguration()
 	{
 		clear();
 	}
@@ -141,7 +141,7 @@ private:
 /**
  \brief the mp version of the eval data for left nullspace method.
  */
-class nullspacejac_eval_data_mp : public solver_mp
+class nullspacejac_eval_data_mp : public SolverMultiplePrecision
 {
 	int side_;
 	
@@ -202,14 +202,14 @@ public:
 	
 	
 	// default initializer
-	nullspacejac_eval_data_mp() : solver_mp(){
+	nullspacejac_eval_data_mp() : SolverMultiplePrecision(){
 		
 		reset_counters();
 		
 		init();
 	}
 	
-	nullspacejac_eval_data_mp(int mp) : solver_mp(mp){
+	nullspacejac_eval_data_mp(int mp) : SolverMultiplePrecision(mp){
 		
 		this->MPType = mp;
 		reset_counters();
@@ -262,7 +262,7 @@ public:
 	{
 		
 		
-		solver_mp();
+		SolverMultiplePrecision();
 		nullspacejac_eval_data_mp();
 		
 		//no need to clear or reset counters, as this is a new object.
@@ -278,7 +278,7 @@ public:
 	 \return SUCCESSFUL
 	 \param mpi_config The current state of MPI.
 	 */
-	int send(parallelism_config & mpi_config);
+	int send(ParallelismConfig & mpi_config);
 	
 	
 	/**
@@ -287,7 +287,7 @@ public:
 	 \return SUCCESSFUL
 	 \param mpi_config The current state of MPI.
 	 */
-	int receive(parallelism_config & mpi_config);
+	int receive(ParallelismConfig & mpi_config);
 	
 	
 	
@@ -300,14 +300,14 @@ public:
 	 
 	 \return SUCCESSFUL
 	 \param _SLP a pointer to the underlying SLP.
-	 \param ns_config a pointer to the nullspace_config from which to set up.
+	 \param ns_config a pointer to the NullspaceConfiguration from which to set up.
 	 \param W input witness set containing the patches, etc.
 	 \param solve_options The current state of the solver.
 	 */
 	int setup(prog_t * _SLP,
-			  nullspace_config *ns_config,
-			  witness_set & W,
-			  solver_configuration & solve_options);
+			  NullspaceConfiguration *ns_config,
+			  WitnessSet & W,
+			  SolverConfiguration & solve_options);
 	
 	
 	
@@ -579,7 +579,7 @@ private:
  
  \see nullspacejac_eval_data_mp
  */
-class nullspacejac_eval_data_d : public solver_d
+class nullspacejac_eval_data_d : public SolverDoublePrecision
 {
 	int side_;
 	
@@ -633,14 +633,14 @@ public:
 	
 	
 	// default initializer
-	nullspacejac_eval_data_d() : solver_d(){
+	nullspacejac_eval_data_d() : SolverDoublePrecision(){
 		
 		reset_counters();
 		
 		init();
 	}
 	
-	nullspacejac_eval_data_d(int mp) : solver_d(mp){
+	nullspacejac_eval_data_d(int mp) : SolverDoublePrecision(mp){
 		
 		this->MPType = mp;
 		reset_counters();
@@ -689,7 +689,7 @@ public:
 	nullspacejac_eval_data_d(const nullspacejac_eval_data_d & other)
 	{
 		init();
-		solver_d();
+		SolverDoublePrecision();
 		nullspacejac_eval_data_d();
 		
 		//no need to clear or reset counters, as this is a new object.
@@ -705,7 +705,7 @@ public:
 	 \return SUCCESSFUL
 	 \param mpi_config The current state of MPI.
 	 */
-	int send(parallelism_config & mpi_config);
+	int send(ParallelismConfig & mpi_config);
 	
 	
 	/**
@@ -714,7 +714,7 @@ public:
 	 \return SUCCESSFUL
 	 \param mpi_config The current state of MPI.
 	 */
-	int receive(parallelism_config & mpi_config);
+	int receive(ParallelismConfig & mpi_config);
 	
 	
 	
@@ -730,14 +730,14 @@ public:
 	 
 	 \return SUCCESSFUL
 	 \param _SLP a pointer to the underlying SLP.
-	 \param ns_config a pointer to the nullspace_config from which to set up.
+	 \param ns_config a pointer to the NullspaceConfiguration from which to set up.
 	 \param W input witness set containing the patches, etc.
 	 \param solve_options The current state of the solver.
 	 */
 	int setup(prog_t * _SLP,
-			  nullspace_config *ns_config,
-			  witness_set & W,
-			  solver_configuration & solve_options);
+			  NullspaceConfiguration *ns_config,
+			  WitnessSet & W,
+			  SolverConfiguration & solve_options);
 	
 	
 private:
@@ -934,10 +934,10 @@ private:
  \param solve_options The current state of the solver.
  */
 int nullspacejac_solver_master_entry_point(int MPType,
-										   witness_set & W,
-										   solver_output & solve_out,
-										   nullspace_config				*ns_config,
-										   solver_configuration		& solve_options);
+										   WitnessSet & W,
+										   SolverOutput & solve_out,
+										   NullspaceConfiguration				*ns_config,
+										   SolverConfiguration		& solve_options);
 
 
 
@@ -952,7 +952,7 @@ int nullspacejac_solver_master_entry_point(int MPType,
  
  \todo explain with diagram how this works
  
- this function makes use of the temps_mp class for persistence of temporaries.
+ this function makes use of the TemporariesMultiplePrecision class for persistence of temporaries.
  
  \return the number 0.
  \param funcVals the computed function values.
@@ -972,7 +972,7 @@ int nullspacejac_left_eval_d(point_d funcVals, point_d parVals, vec_d parDer, ma
  
  \see nullspacejac_eval_d
  
- this function makes use of the temps_mp class for persistence of temporaries.
+ this function makes use of the TemporariesMultiplePrecision class for persistence of temporaries.
  
  \return the number 0.
  \param funcVals the computed function values.
@@ -1003,7 +1003,7 @@ int nullspacejac_left_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer
  
  \todo explain with diagram how this works
  
- this function makes use of the temps_mp class for persistence of temporaries.
+ this function makes use of the TemporariesMultiplePrecision class for persistence of temporaries.
  
  \return the number 0.
  \param funcVals the computed function values.
@@ -1026,7 +1026,7 @@ int nullspacejac_right_eval_d(point_d funcVals, point_d parVals, vec_d parDer, m
  
  \see nullspacejac_right_eval_d
  
- this function makes use of the temps_mp class for persistence of temporaries.
+ this function makes use of the TemporariesMultiplePrecision class for persistence of temporaries.
  
  \return the number 0.
  \param funcVals the computed function values.
@@ -1162,7 +1162,7 @@ void check_nullspace_evaluator(point_mp current_values,
  this function is called *after* the worker has received the call-for-help broadcast from the master.
  \param solve_options The current state of the solver.
  */
-void nullspace_slave_entry_point(solver_configuration & solve_options);
+void nullspace_slave_entry_point(SolverConfiguration & solve_options);
 
 
 

@@ -3,7 +3,7 @@
 
 
 int isosingular_deflation(int *num_deflations, int **deflation_sequence,
-						  BR_configuration & program_options,
+						  BertiniRealConfig & program_options,
 						  boost::filesystem::path inputFile,
 						  boost::filesystem::path witness_point_filename,
 						  boost::filesystem::path output_name,
@@ -425,7 +425,7 @@ void stabilization_input_file(boost::filesystem::path outputFile,
 	while ((ch = fgetc(IN)) != EOF)
 		fprintf(OUT, "%c", ch);
 	fclose(IN);
-	fprintf(OUT, "TrackType: 6;\nReducedOnly: 1;\nDeleteTempFiles: 0;\nTargetTolMultiplier: 1e4; %% this line added so that computed solutions fed in from BR will not falsely cause to fail -- DAB\nEND;\nINPUT\n");
+	fprintf(OUT, "TrackType: 6;\nReducedOnly: 1;\nDeleteTempFiles: 0;\nTargetTolMultiplier: 1e2; %% this line added so that computed solutions fed in from BR will not falsely cause to fail -- DAB\nEND;\nINPUT\n");
 	
 	// setup system in OUT
 	IN = safe_fopen_read(funcInput.c_str());

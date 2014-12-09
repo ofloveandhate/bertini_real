@@ -6,7 +6,7 @@
 
 
 
-void nullspace_config::clear()
+void NullspaceConfiguration::clear()
 {
 	
 	
@@ -75,7 +75,7 @@ void nullspace_config::clear()
 
 
 
-void nullspace_config::print()
+void NullspaceConfiguration::print()
 {
 	std::stringstream converter;
 	
@@ -146,7 +146,7 @@ void nullspace_config::print()
 
 ///////////////
 //
-//   end the nullspace_config
+//   end the NullspaceConfiguration
 //
 /////////////
 
@@ -237,7 +237,7 @@ void nullspacejac_eval_data_mp::init()
 }
 
 
-int nullspacejac_eval_data_mp::send(parallelism_config & mpi_config)
+int nullspacejac_eval_data_mp::send(ParallelismConfig & mpi_config)
 {
 	
 	int solver_choice = NULLSPACE;
@@ -245,7 +245,7 @@ int nullspacejac_eval_data_mp::send(parallelism_config & mpi_config)
 	// send the confirmation integer, to ensure that we are sending the correct type.
 	
 	//send the base class stuff.
-	solver_mp::send(mpi_config);
+	SolverMultiplePrecision::send(mpi_config);
 	
 	
 	int *buffer = new int[12];
@@ -384,7 +384,7 @@ int nullspacejac_eval_data_mp::send(parallelism_config & mpi_config)
 
 
 
-int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
+int nullspacejac_eval_data_mp::receive(ParallelismConfig & mpi_config)
 {
 	int *buffer = new int[12];
 	MPI_Bcast(buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -394,7 +394,7 @@ int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 		mpi_config.abort(777);
 	}
 	
-	solver_mp::receive(mpi_config);
+	SolverMultiplePrecision::receive(mpi_config);
 	
 	// now can actually receive the data from whoever.
 	MPI_Bcast(buffer,12,MPI_INT, mpi_config.head(), mpi_config.comm());
@@ -624,14 +624,14 @@ int nullspacejac_eval_data_mp::receive(parallelism_config & mpi_config)
 }
 
 int nullspacejac_eval_data_mp::setup(prog_t * _SLP,
-                                     nullspace_config *ns_config,
-                                     witness_set & W,
-                                     solver_configuration & solve_options)
+                                     NullspaceConfiguration *ns_config,
+                                     WitnessSet & W,
+                                     SolverConfiguration & solve_options)
 {
 	
 	verbose_level(solve_options.verbose_level());
 	
-	solver_mp::setup(_SLP, ns_config->randomizer());
+	SolverMultiplePrecision::setup(_SLP, ns_config->randomizer());
 	
 	generic_setup_patch(&patch,W);
 	
@@ -1007,10 +1007,10 @@ void nullspacejac_eval_data_d::init()
 	
 	if (this->MPType==2){
 		this->BED_mp = new nullspacejac_eval_data_mp(2);
-        solver_d::BED_mp = this->BED_mp;
+        SolverDoublePrecision::BED_mp = this->BED_mp;
     }
     
-	else{this->BED_mp = NULL; solver_d::BED_mp = NULL;}
+	else{this->BED_mp = NULL; SolverDoublePrecision::BED_mp = NULL;}
 	
 	
 	side_ = -1;
@@ -1046,7 +1046,7 @@ void nullspacejac_eval_data_d::init()
 }
 
 
-int nullspacejac_eval_data_d::send(parallelism_config & mpi_config)
+int nullspacejac_eval_data_d::send(ParallelismConfig & mpi_config)
 {
     
     int solver_choice = NULLSPACE;
@@ -1061,7 +1061,7 @@ int nullspacejac_eval_data_d::send(parallelism_config & mpi_config)
 	
 	
 	//send the base class stuff.
-	solver_d::send(mpi_config);
+	SolverDoublePrecision::send(mpi_config);
 	
 	
 	int *buffer = new int[12];
@@ -1148,7 +1148,7 @@ int nullspacejac_eval_data_d::send(parallelism_config & mpi_config)
 	return SUCCESSFUL;
 }
 
-int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
+int nullspacejac_eval_data_d::receive(ParallelismConfig & mpi_config)
 {
     int *buffer = new int[12];
 	MPI_Bcast(buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -1167,7 +1167,7 @@ int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
     
 	
 	
-	solver_d::receive(mpi_config);
+	SolverDoublePrecision::receive(mpi_config);
 	
 	// now can actually receive the data from whoever.
 	
@@ -1303,9 +1303,9 @@ int nullspacejac_eval_data_d::receive(parallelism_config & mpi_config)
 
 
 int nullspacejac_eval_data_d::setup(prog_t * _SLP,
-									nullspace_config *ns_config,
-									witness_set & W,
-									solver_configuration & solve_options)
+									NullspaceConfiguration *ns_config,
+									WitnessSet & W,
+									SolverConfiguration & solve_options)
 {
 	
 	
@@ -1423,7 +1423,7 @@ int nullspacejac_eval_data_d::setup(prog_t * _SLP,
 	
 	
 	
-	solver_d::setup(_SLP, ns_config->randomizer());
+	SolverDoublePrecision::setup(_SLP, ns_config->randomizer());
 	
 	
 	if (this->MPType==2)
@@ -1524,10 +1524,10 @@ void nullspacejac_eval_data_d::print()
 
 
 int nullspacejac_solver_master_entry_point(int							MPType,
-										   witness_set					&W, // carries with it the start points, and the linears.
-										   solver_output				& solve_out, // new data goes in here
-										   nullspace_config				*ns_config,
-										   solver_configuration			& solve_options)
+										   WitnessSet					&W, // carries with it the start points, and the linears.
+										   SolverOutput				& solve_out, // new data goes in here
+										   NullspaceConfiguration				*ns_config,
+										   SolverConfiguration			& solve_options)
 {
 	
     
@@ -1665,7 +1665,7 @@ int nullspacejac_solver_master_entry_point(int							MPType,
 
 
 
-void nullspace_slave_entry_point(solver_configuration & solve_options)
+void nullspace_slave_entry_point(SolverConfiguration & solve_options)
 {
 	
 	

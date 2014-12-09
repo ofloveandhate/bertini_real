@@ -1,5 +1,10 @@
-function handles = plot_curve_samples(br_plotter,sampler_data,style)
+function handles = plot_curve_samples(br_plotter,sampler_data,style,desiredcolor)
 
+if nargin == 4
+	repeat_colors = true;
+else
+	repeat_colors = false;
+end
 
 ind = br_plotter.indices;
 
@@ -22,8 +27,11 @@ for ii = 1:size(sampler_data.sample_sizes,1)
 	
 end
 
-colors = jet(num_non_degen);
-
+if repeat_colors
+	colors = repmat(desiredcolor,[num_non_degen 1]);
+else
+	colors = br_plotter.options.colormap(num_non_degen);
+end
 
 
 

@@ -2,11 +2,11 @@
 #include "surface.hpp"
 
 
-void midpoint_config::setup(const surface_decomposition & surf,
-                            solver_configuration & solve_options)
+void MidpointConfiguration::setup(const Surface & surf,
+                            SolverConfiguration & solve_options)
 {
 #ifdef functionentry_output
-	std::cout << "midpoint_config::setup" << std::endl;
+	std::cout << "MidpointConfiguration::setup" << std::endl;
 #endif
 	
 	this->MPType = solve_options.T.MPType;
@@ -15,17 +15,17 @@ void midpoint_config::setup(const surface_decomposition & surf,
 	add_projection(surf.pi(1));
     
 	
-	systems[surf.input_filename().filename().string()] = complete_system(); // this pattern avoids a time-wasting copy pattern.
+	systems[surf.input_filename().filename().string()] = CompleteSystem(); // this pattern avoids a time-wasting copy pattern.
 	systems[surf.input_filename().filename().string()].get_system(surf, &solve_options.T);
 	
-	systems[surf.crit_curve().input_filename().filename().string()] = complete_system();// this pattern avoids a time-wasting copy pattern.
+	systems[surf.crit_curve().input_filename().filename().string()] = CompleteSystem();// this pattern avoids a time-wasting copy pattern.
 	systems[surf.crit_curve().input_filename().filename().string()].get_system(surf.crit_curve(), &solve_options.T);
 	
-	systems[surf.sphere_curve().input_filename().filename().string()] = complete_system();// this pattern avoids a time-wasting copy pattern.
+	systems[surf.sphere_curve().input_filename().filename().string()] = CompleteSystem();// this pattern avoids a time-wasting copy pattern.
 	systems[surf.sphere_curve().input_filename().filename().string()].get_system(surf.sphere_curve(), &solve_options.T);
 	
 	for (auto iter = surf.singular_curves_iter_begin(); iter!=surf.singular_curves_iter_end(); ++iter) {
-		systems[iter->second.input_filename().filename().string()] = complete_system();// this pattern avoids a time-wasting copy pattern.
+		systems[iter->second.input_filename().filename().string()] = CompleteSystem();// this pattern avoids a time-wasting copy pattern.
 		systems[iter->second.input_filename().filename().string()].get_system(iter->second, &solve_options.T);
 	}
 	
@@ -35,7 +35,7 @@ void midpoint_config::setup(const surface_decomposition & surf,
 
 
 
-void midpoint_config::init()
+void MidpointConfiguration::init()
 {
 	
 	num_projections = 0;
@@ -59,10 +59,10 @@ void midpoint_config::init()
 
 
 
-void midpoint_config::bcast_send(parallelism_config & mpi_config)
+void MidpointConfiguration::bcast_send(ParallelismConfig & mpi_config)
 {
 #ifdef functionentry_output
-	std::cout << "midpoint_config::initial_send" << std::endl;
+	std::cout << "MidpointConfiguration::initial_send" << std::endl;
 #endif
 	
 	
@@ -122,11 +122,11 @@ void midpoint_config::bcast_send(parallelism_config & mpi_config)
 	
 }
 
-void midpoint_config::bcast_receive(parallelism_config & mpi_config)
+void MidpointConfiguration::bcast_receive(ParallelismConfig & mpi_config)
 {
 	
 #ifdef functionentry_output
-	std::cout << "midpoint_config::initial_receive" << std::endl;
+	std::cout << "MidpointConfiguration::initial_receive" << std::endl;
 #endif
 	
 	int * buffer = new int[3];
@@ -179,9 +179,9 @@ void midpoint_config::bcast_receive(parallelism_config & mpi_config)
 	
 	// finally, get the systems from broadcaster.
 	for (int ii=0; ii<num_systems_to_receive; ii++) {
-		systems[names[ii]] = complete_system();
+		systems[names[ii]] = CompleteSystem();
 		systems[names[ii]].bcast_receive(mpi_config);
-		systems[names[ii]].input_filename = names[ii];
+		systems[names[ii]].set_input_filename(names[ii]);
 	}
 	
 	
@@ -294,7 +294,7 @@ void midpoint_eval_data_mp::init()
 }
 
 
-int midpoint_eval_data_mp::send(parallelism_config & mpi_config)
+int midpoint_eval_data_mp::send(ParallelismConfig & mpi_config)
 {
 #ifdef functionentry_output
 	std::cout << "midpoint_eval_data_mp::send" << std::endl;
@@ -306,7 +306,7 @@ int midpoint_eval_data_mp::send(parallelism_config & mpi_config)
 	// send the confirmation integer, to ensure that we are sending the correct type.
 	
 	//send the base class stuff.
-	solver_mp::send(mpi_config);
+	SolverMultiplePrecision::send(mpi_config);
 	
 	int *buffer = new int[12];
 	
@@ -320,7 +320,7 @@ int midpoint_eval_data_mp::send(parallelism_config & mpi_config)
 
 
 
-int midpoint_eval_data_mp::receive(parallelism_config & mpi_config)
+int midpoint_eval_data_mp::receive(ParallelismConfig & mpi_config)
 {
 #ifdef functionentry_output
 	std::cout << "midpoint_eval_data_mp::receive" << std::endl;
@@ -335,7 +335,7 @@ int midpoint_eval_data_mp::receive(parallelism_config & mpi_config)
 	// now can actually receive the data from whomever.
     
     //the base class receive
-	solver_mp::receive(mpi_config);
+	SolverMultiplePrecision::receive(mpi_config);
 	
 	
     
@@ -355,14 +355,14 @@ int midpoint_eval_data_mp::receive(parallelism_config & mpi_config)
 
 
 
-int midpoint_eval_data_mp::setup(midpoint_config & md_config,
-                                 const witness_set & W,
-                                 solver_configuration & solve_options)
+int midpoint_eval_data_mp::setup(MidpointConfiguration & md_config,
+                                 const WitnessSet & W,
+                                 SolverConfiguration & solve_options)
 {
 	
 	verbose_level(solve_options.verbose_level());
 	
-	solver_mp::setup();
+	SolverMultiplePrecision::setup();
 	
 	generic_setup_patch(&patch,W);
 	
@@ -394,21 +394,21 @@ int midpoint_eval_data_mp::setup(midpoint_config & md_config,
 
 	
 	
-	this->mid_memory = md_config.systems[md_config.system_name_mid].memory;
-	this->SLP_mid = md_config.systems[md_config.system_name_mid].SLP;
-	this->num_mid_vars = md_config.systems[md_config.system_name_mid].num_variables;
+	mid_memory = md_config.systems[md_config.system_name_mid].memory();
+	SLP_mid = md_config.systems[md_config.system_name_mid].SLP_pointer();
+	num_mid_vars = md_config.systems[md_config.system_name_mid].num_variables();
 	randomizer_ = md_config.systems[md_config.system_name_mid].randomizer();
 	
 	
-	this->top_memory = md_config.systems[md_config.system_name_top].memory;
-	this->SLP_top = md_config.systems[md_config.system_name_top].SLP;
-	this->num_top_vars = md_config.systems[md_config.system_name_top].num_variables;
+	top_memory = md_config.systems[md_config.system_name_top].memory();
+	SLP_top = md_config.systems[md_config.system_name_top].SLP_pointer();
+	num_top_vars = md_config.systems[md_config.system_name_top].num_variables();
 	randomizer_top = md_config.systems[md_config.system_name_top].randomizer();
 	
 	
-	this->bottom_memory = md_config.systems[md_config.system_name_bottom].memory;
-	this->SLP_bottom = md_config.systems[md_config.system_name_bottom].SLP;
-	this->num_bottom_vars = md_config.systems[md_config.system_name_bottom].num_variables;
+	bottom_memory = md_config.systems[md_config.system_name_bottom].memory();
+	SLP_bottom = md_config.systems[md_config.system_name_bottom].SLP_pointer();
+	num_bottom_vars = md_config.systems[md_config.system_name_bottom].num_variables();
 	randomizer_bottom = md_config.systems[md_config.system_name_bottom].randomizer();
 	
 	
@@ -501,7 +501,7 @@ void midpoint_eval_data_d::init()
 	if (this->MPType==2)
     {
 		this->BED_mp = new midpoint_eval_data_mp(2);
-        solver_d::BED_mp = this->BED_mp;
+        SolverDoublePrecision::BED_mp = this->BED_mp;
     }
 	else{
 		this->BED_mp = NULL;
@@ -534,7 +534,7 @@ void midpoint_eval_data_d::init()
 }
 
 
-int midpoint_eval_data_d::send(parallelism_config & mpi_config)
+int midpoint_eval_data_d::send(ParallelismConfig & mpi_config)
 {
 #ifdef functionentry_output
 	std::cout << "midpoint_eval_data_d::send" << std::endl;
@@ -545,7 +545,7 @@ int midpoint_eval_data_d::send(parallelism_config & mpi_config)
 	// send the confirmation integer, to ensure that we are sending the correct type.
 	
 	//send the base class stuff.
-	solver_d::send(mpi_config);
+	SolverDoublePrecision::send(mpi_config);
 	
 	
 	
@@ -559,7 +559,7 @@ int midpoint_eval_data_d::send(parallelism_config & mpi_config)
     return SUCCESSFUL;
 }
 
-int midpoint_eval_data_d::receive(parallelism_config & mpi_config)
+int midpoint_eval_data_d::receive(ParallelismConfig & mpi_config)
 {
 	
 #ifdef functionentry_output
@@ -575,7 +575,7 @@ int midpoint_eval_data_d::receive(parallelism_config & mpi_config)
 		mpi_config.abort(777);
 	}
 	
-	solver_d::receive(mpi_config);
+	SolverDoublePrecision::receive(mpi_config);
 	
 	// now can actually receive the data from whoever.
 	
@@ -600,9 +600,9 @@ int midpoint_eval_data_d::receive(parallelism_config & mpi_config)
 
 
 
-int midpoint_eval_data_d::setup(midpoint_config & md_config,
-                                const witness_set & W,
-                                solver_configuration & solve_options)
+int midpoint_eval_data_d::setup(MidpointConfiguration & md_config,
+                                const WitnessSet & W,
+                                SolverConfiguration & solve_options)
 {
 	
 	
@@ -637,21 +637,21 @@ int midpoint_eval_data_d::setup(midpoint_config & md_config,
 	}
 	
 
-	this->mid_memory = md_config.systems[md_config.system_name_mid].memory;
-	this->SLP_mid = md_config.systems[md_config.system_name_mid].SLP;
-	this->num_mid_vars = md_config.systems[md_config.system_name_mid].num_variables;
+	this->mid_memory = md_config.systems[md_config.system_name_mid].memory();
+	this->SLP_mid = md_config.systems[md_config.system_name_mid].SLP_pointer();
+	this->num_mid_vars = md_config.systems[md_config.system_name_mid].num_variables();
 	randomizer_ = md_config.systems[md_config.system_name_mid].randomizer();
 	
 	
-	this->top_memory = md_config.systems[md_config.system_name_top].memory;
-	this->SLP_top = md_config.systems[md_config.system_name_top].SLP;
-	this->num_top_vars = md_config.systems[md_config.system_name_top].num_variables;
+	this->top_memory = md_config.systems[md_config.system_name_top].memory();
+	this->SLP_top = md_config.systems[md_config.system_name_top].SLP_pointer();
+	this->num_top_vars = md_config.systems[md_config.system_name_top].num_variables();
 	randomizer_top = md_config.systems[md_config.system_name_top].randomizer();
 	
 	
-	this->bottom_memory = md_config.systems[md_config.system_name_bottom].memory;
-	this->SLP_bottom = md_config.systems[md_config.system_name_bottom].SLP;
-	this->num_bottom_vars = md_config.systems[md_config.system_name_bottom].num_variables;
+	this->bottom_memory = md_config.systems[md_config.system_name_bottom].memory();
+	this->SLP_bottom = md_config.systems[md_config.system_name_bottom].SLP_pointer();
+	this->num_bottom_vars = md_config.systems[md_config.system_name_bottom].num_variables();
 	randomizer_bottom = md_config.systems[md_config.system_name_bottom].randomizer();
 	
 	
@@ -698,7 +698,7 @@ int midpoint_eval_data_d::setup(midpoint_config & md_config,
 	}
 	
 	
-	solver_d::setup();
+	SolverDoublePrecision::setup();
 	
 	return SUCCESSFUL;
 }
@@ -730,10 +730,10 @@ int midpoint_eval_data_d::setup(midpoint_config & md_config,
 
 
 
-int midpoint_solver_master_entry_point(const witness_set						&W, // carries with it the start points, and the linears.
-                                       solver_output & solve_out, // new data goes in here
-                                       midpoint_config & md_config,
-                                       solver_configuration		& solve_options)
+int midpoint_solver_master_entry_point(const WitnessSet						&W, // carries with it the start points, and the linears.
+                                       SolverOutput & solve_out, // new data goes in here
+                                       MidpointConfiguration & md_config,
+                                       SolverConfiguration		& solve_options)
 {
     
 	bool prev_state = solve_options.force_no_parallel();// create a backup value to restore to.
@@ -821,7 +821,7 @@ int midpoint_solver_master_entry_point(const witness_set						&W, // carries wit
 
 
 
-void midpoint_slave_entry_point(solver_configuration & solve_options)
+void midpoint_slave_entry_point(SolverConfiguration & solve_options)
 {
 	
 	

@@ -19,7 +19,7 @@ end
 
 function sampler_faces = plot_surf_samples_multicolor(br_plotter)
 
-colors = jet(length(br_plotter.BRinfo.sampler_data));
+colors = br_plotter.options.colormap(length(br_plotter.BRinfo.sampler_data));
 
 total_num_faces = 0;
 for ii = 1:length(br_plotter.BRinfo.sampler_data)
@@ -29,7 +29,7 @@ end
 sampler_faces = zeros(total_num_faces,3);
 
 
-br_plotter.handles.surface_samples = [];
+
 
 ind_so_far = 1;
 
@@ -43,14 +43,11 @@ if ~isempty(br_plotter.BRinfo.sampler_data)
 		tmp_fv.faces = br_plotter.BRinfo.sampler_data{ii}+1;
 		tmp_fv.faces(any(br_plotter.fv.faces<=0,2),:) = []; % omit problematic faces.
 		
-		max_recursive(tmp_fv.faces)
-		min_recursive(tmp_fv.faces)
-		
 		num_this_time = size(tmp_fv.faces,1);
 		
 		%plot the BR face
 		h = patch(tmp_fv);
-		set(h,'FaceColor',colors(ii,:),'FaceAlpha',br_plotter.options.face_alpha,'EdgeColor',0.985*colors(ii,:),'EdgeAlpha',br_plotter.options.edge_alpha);
+		set(h,'FaceColor',colors(ii,:),'FaceAlpha',br_plotter.options.face_alpha,'EdgeColor',0.8*colors(ii,:),'EdgeAlpha',br_plotter.options.edge_alpha);
 		br_plotter.handles.surface_samples(ii) = h;
 		
 		% add the faces to the total face blabal

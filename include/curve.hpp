@@ -38,34 +38,55 @@
 #include "solver_sphere.hpp"
 
 /**
- \brief A bertini_real cell curve decomposition.
+ \brief A bertini_real cell curve Decomposition.
  
  includes methods to add vertices, look up vertices, etc
  */
-class curve_decomposition : public decomposition
+class Curve : public Decomposition
 {
 	
-	std::vector<int> num_samples_each_edge; ///< the number of samples on each edge, where there is a strict correspondence between elements of this vector and edges.
+	std::vector<unsigned int> num_samples_each_edge_; ///< the number of samples on each edge, where there is a strict correspondence between elements of this vector and edges.
 	
-	std::vector< std::vector<int > > sample_indices; ///< the indices of the vertices for the samples on the edges.
-	
-	
-	std::vector<edge> edges_; ///< The edges (1-cells) computed by Bertini_real
-	size_t      num_edges_;  ///< How many edges this decomposition currently has.  This could also be inferred from edges.size()
+	std::vector< std::vector<int > > sample_indices_; ///< the indices of the vertices for the samples on the edges.
 	
 	
+	std::vector<Edge> edges_; ///< The edges (1-cells) computed by Bertini_real
+	size_t      num_edges_;  ///< How many edges this Decomposition currently has.  This could also be inferred from edges.size()
 	
-	friend class surface_decomposition; ///< declared to be friend.  i dislike this.
 	
-	
+
 	
 public:
 	
 	
+	unsigned int num_samples_on_edge(unsigned int edge_index)
+	{
+		if (edge_index >= num_samples_each_edge_.size()) {
+			throw std::out_of_range("trying to access num_samples_each_edge_ of out of range index");
+		}
+		
+		return num_samples_each_edge_[edge_index];
+	}
+	
+	
+	int sample_index(unsigned int edge_index, unsigned int vertex_index)
+	{
+		if (edge_index>=num_edges()) {
+			throw std::out_of_range("when accessing sample index, trying to access edge index out of range");
+		}
+		
+		if (vertex_index >= sample_indices_[edge_index].size()) {
+			throw std::out_of_range("when accessing sample index, trying to access vertex index out of range");
+		}
+		
+		return sample_indices_[edge_index][vertex_index];
+		
+	}
+	
 	/** 
 	 \brief get the number of edges in the curve
 	 
-	 \return the number of edges in the decomposition
+	 \return the number of edges in the Decomposition
 	 */
 	unsigned int num_edges() const
 	{
@@ -80,11 +101,11 @@ public:
 	 
 	 \return the ith edge
 	 */
-	edge get_edge(unsigned int index) const
+	Edge get_edge(unsigned int index) const
 	{
 		
 		if (index>=num_edges_) {
-			throw std::out_of_range("trying to get edge out of range");
+			throw std::out_of_range("trying to get Edge out of range");
 		}
 		
 		return edges_[index];
@@ -93,23 +114,23 @@ public:
 	
 	
 	/**
-	 \brief Get the set of all vertex indices to which this decomposition refers.
+	 \brief Get the set of all Vertex indices to which this Decomposition refers.
 	 
 	 This set is computed by reading all the edges.
 	 
-	 \return a std::set of ALL the vertex indices occuring in this decomposition.
+	 \return a std::set of ALL the Vertex indices occuring in this Decomposition.
 	 */
 	std::set< int > all_edge_indices()
     {
-        std::set< int > ind;
+        std::set< int > index_set;
         
         for (auto iter=edges_.begin(); iter!=edges_.end(); iter++) {
-            ind.insert(iter->left());
-            ind.insert(iter->midpt());
-            ind.insert(iter->right());
+            index_set.insert(iter->left());
+            index_set.insert(iter->midpt());
+            index_set.insert(iter->right());
         }
         
-        return ind;
+        return index_set;
     }
 	
 	
@@ -123,7 +144,7 @@ public:
 	 \return the index of the edge just added.
 	 \param new_edge the edge to add.
 	 */
-	int add_edge(edge new_edge)
+	int add_edge(Edge new_edge)
 	{
 		num_edges_++;
 		edges_.push_back(new_edge);
@@ -131,20 +152,20 @@ public:
 	}
 	
 	/**
-	 \brief Read a decomposition from text file.
+	 \brief Read a Decomposition from text file.
 	 
-	 This function takes in the name of a folder containing a decomposition to set up, and parses the two folders "containing_folder/decomp" and "containing_folder/E.edge".  Note that the vertex_set is set up separately from decompositions.
+	 This function takes in the name of a folder containing a Decomposition to set up, and parses the two folders "containing_folder/decomp" and "containing_folder/E.edge".  Note that the VertexSet is set up separately from decompositions.
 	 
 	 \return the number 1.  Seems stupid.
 	 
-	 \param containing_folder The name of the folder containing the decomposition.
+	 \param containing_folder The name of the folder containing the Decomposition.
 	 */
 	int setup(boost::filesystem::path containing_folder);
 	
 	
 	
 	/**
-	 \brief open a folder as an edges file, and parse it into the vector of edges in this decomposition.
+	 \brief open a folder as an edges file, and parse it into the vector of edges in this Decomposition.
 	 
 	 \todo Add code ensuring the file is valid.  Probably would be best in xml.
 	 
@@ -156,7 +177,7 @@ public:
 	
 	/**
 	 
-	 \brief Write all the edges in this decomposition to a file.
+	 \brief Write all the edges in this Decomposition to a file.
 	 
 	 the format is 
 	 
@@ -172,9 +193,9 @@ public:
 	
 	
 	/**
-	 \brief print the complete curve decomposition, including the base decomposition class.
+	 \brief print the complete curve Decomposition, including the base Decomposition class.
 	 
-	 \param base The name of the base folder to print the decomposition to.
+	 \param base The name of the base folder to print the Decomposition to.
 	 */
 	void print(boost::filesystem::path base);
 	
@@ -185,7 +206,7 @@ public:
 	
 	
 	/**
-	 \brief Search this decomposition for an nondegenerate edge with input point index as midpoint.
+	 \brief Search this Decomposition for an nondegenerate edge with input point index as midpoint.
 	 
 	 \param ind The index to search for.
 	 \return The index of the found edge, or -10 if no edge had the point as midpoint.
@@ -210,7 +231,7 @@ public:
 	
 	
 	/**
-	 \brief Search this decomposition for an nondegenerate edge with input point index as left point.
+	 \brief Search this Decomposition for an nondegenerate edge with input point index as left point.
 	 
 	 \param ind The index to search for.
 	 \return The index of the found edge, or -11 if no edge had the point as left point.
@@ -234,7 +255,7 @@ public:
 	
 	
 	/**
-	 \brief Search this decomposition for an nondegenerate edge with input point index as right point.
+	 \brief Search this Decomposition for an nondegenerate edge with input point index as right point.
 	 
 	 \param ind The index to search for.
 	 \return The index of the found edge, or -12 if no edge had the point as right point.
@@ -259,7 +280,7 @@ public:
 	
 	
 	/**
-	 \brief Search this decomposition for any edge (degenerate or not) with input point index as mid point.
+	 \brief Search this Decomposition for any edge (degenerate or not) with input point index as mid point.
 	 
 	 \param ind The index to search for.
 	 \return The index of the found edge, or -10 if no edge had the point as mid point.
@@ -278,7 +299,7 @@ public:
 	
 	
 	/**
-	 \brief Search this decomposition for any edge (degenerate or not) with input point index as left point.
+	 \brief Search this Decomposition for any edge (degenerate or not) with input point index as left point.
 	 
 	 \param ind The index to search for.
 	 \return The index of the found edge, or -11 if no edge had the point as left point.
@@ -297,7 +318,7 @@ public:
 	
 	
 	/**
-	 \brief Search this decomposition for any edge (degenerate or not) with input point index as right point.
+	 \brief Search this Decomposition for any edge (degenerate or not) with input point index as right point.
 	 
 	 \param ind The index to search for.
 	 \return The index of the found edge, or -12 if no edge had the point as right point.
@@ -317,7 +338,7 @@ public:
 	
 	
 	/**
-	 \brief Search this decomposition for any edge (degenerate or not) with input point index as a removed point.
+	 \brief Search this Decomposition for any edge (degenerate or not) with input point index as a removed point.
 	 
 	 \param ind The index to search for.
 	 \return The index of the found edge, or -13 if no edge had the point as a removed point.
@@ -344,9 +365,9 @@ public:
 	 \brief  Find candidates for merging, by finding vertices with type NEW.
 	 
 	 \return a vector of integers containing the indices of edges to merge together into a single new edge.
-	 \param V The vertex set to which the decomposition refers.
+	 \param V The Vertex set to which the Decomposition refers.
 	 */
-	std::vector<int> get_merge_candidate(const vertex_set & V);
+	std::vector<int> get_merge_candidate(const VertexSet & V);
 	
 	
 	/**
@@ -355,15 +376,15 @@ public:
 	 \todo Make this function callable even outside the interslice method.
 	 
 	 \param W_midpt Skeleton witness set coming from the precedin(containing) interslice call.
-	 \param V the vertex set to which this decomposition refers.
+	 \param V the Vertex set to which this Decomposition refers.
 	 \param pi_in The linear projection being used to decompose.
 	 \param program_options The current state of Bertini_real
 	 \param solve_options The current solver configuration.
 	 */
-	void merge(witness_set & W_midpt, vertex_set & V,
+	void merge(WitnessSet & W_midpt, VertexSet & V,
 			   vec_mp * pi_in,
-			   BR_configuration & program_options,
-			   solver_configuration & solve_options);
+			   BertiniRealConfig & program_options,
+			   SolverConfiguration & solve_options);
 	
 	
 	/**
@@ -371,17 +392,17 @@ public:
 	 
 	 Includes deflation, etc.
 	 
-	 \param V The vertex set which runs through everything.
+	 \param V The Vertex set which runs through everything.
 	 \param W_curve The input witness set for the curve, computed probably by Bertini's tracktype:1.
 	 \param pi A set of pointers to vec_mp's containing the projection being used.
 	 \param program_options The current state of Bertini_real.
 	 \param solve_options The current state of the solver routines.
 	 */
-	void main(vertex_set & V,
-			  witness_set & W_curve,
+	void main(VertexSet & V,
+			  WitnessSet & W_curve,
 			  vec_mp *pi,
-			  BR_configuration & program_options,
-			  solver_configuration & solve_options);
+			  BertiniRealConfig & program_options,
+			  SolverConfiguration & solve_options);
 	
 	
 	
@@ -391,32 +412,33 @@ public:
 	\brief the main function for computing the self-intersection of a non-self-conjugate dimension 1 component.
 	 
 	 \param W		the witness set
-	 \param V		the vertex set being passed around.  C indexes into here.
+	 \param V		the Vertex set being passed around.  C indexes into here.
 	 \param num_vars		the total number of variables in the problem.
 	 \param program_options		main structure holding configuration
 	 
 	 */
-	void 	computeCurveNotSelfConj(const witness_set		& W,
-									vertex_set				&V,
+	void 	computeCurveNotSelfConj(const WitnessSet		& W,
+									VertexSet				&V,
 									int						num_vars,
-									BR_configuration		& program_options);
+									BertiniRealConfig		& program_options,
+									SolverConfiguration & solve_options);
 	
 	
 	
 	/**
 	 \brief the main function for computing cell decom for a curve.  only for use on a self-conjugate component.
 	 
-	 \param W	witness_set containing linears, patches, points, etc.  much info and calculation performed from this little guy.
+	 \param W	WitnessSet containing linears, patches, points, etc.  much info and calculation performed from this little guy.
 	 \param pi the set of projections to use.  in this case, there should be only 1.
-	 \param V		vertex set structure into which to place collected data.
+	 \param V		Vertex set structure into which to place collected data.
 	 \param options program configuration.
 	 \param solve_options solver configuration.
 	 */
-	void computeCurveSelfConj(const witness_set & W,
+	void computeCurveSelfConj(const WitnessSet & W,
 							  vec_mp *pi,
-							  vertex_set &V,
-							  BR_configuration & options,
-							  solver_configuration & solve_options);
+							  VertexSet &V,
+							  BertiniRealConfig & options,
+							  SolverConfiguration & solve_options);
 	
 	
 	
@@ -432,14 +454,14 @@ public:
 	 \param pi The projection being used to decompose.
 	 \param program_options The current state of Bertini_real
 	 \param solve_options The current state of the solver.
-	 \param V The vertex set being used to contain the computed points.
+	 \param V The Vertex set being used to contain the computed points.
 	 */
-	int interslice(const witness_set & W_curve,
-				   const witness_set & W_crit_real,
+	int interslice(const WitnessSet & W_curve,
+				   const WitnessSet & W_crit_real,
 				   vec_mp *pi,
-				   BR_configuration & program_options,
-				   solver_configuration & solve_options,
-				   vertex_set & V);
+				   BertiniRealConfig & program_options,
+				   SolverConfiguration & solve_options,
+				   VertexSet & V);
 	
 	
 	
@@ -453,11 +475,11 @@ public:
 	 \param solve_options The current state of the solver.
 	 \param W_crit_real The computed value, containing the real critical points of the curve.
 	 */
-	int compute_critical_points(const witness_set & W_curve,
+	int compute_critical_points(const WitnessSet & W_curve,
 								vec_mp *pi,
-								BR_configuration & program_options,
-								solver_configuration & solve_options,
-								witness_set & W_crit_real);
+								BertiniRealConfig & program_options,
+								SolverConfiguration & solve_options,
+								WitnessSet & W_crit_real);
 	
 	
 	
@@ -474,10 +496,10 @@ public:
 	 \param program_options The current state of Bertini_real
 	 \param solve_options The current state of the solver.
 	 */
-	int get_sphere_intersection_pts(witness_set *W_crit_real,
-							   const witness_set & W,
-							   BR_configuration & program_options,
-							   solver_configuration & solve_options);
+	int get_sphere_intersection_pts(WitnessSet *W_crit_real,
+							   const WitnessSet & W,
+							   BertiniRealConfig & program_options,
+							   SolverConfiguration & solve_options);
 	
 	
 	/**
@@ -486,7 +508,7 @@ public:
 	 \param target Who to send to.
 	 \param mpi_config The state of MPI.
 	 */
-	void send(int target, parallelism_config & mpi_config);
+	void send(int target, ParallelismConfig & mpi_config);
 	
 	
 	/**
@@ -495,7 +517,7 @@ public:
 	 \param source Who to receive from.
 	 \param mpi_config The state of MPI.
 	 */
-	void receive(int source, parallelism_config & mpi_config);
+	void receive(int source, ParallelismConfig & mpi_config);
 	
 	
 	
@@ -505,7 +527,7 @@ public:
 	/**
 	 \brief Initialize a curve for sampling by the adaptive method.
 	 
-	 \see curve_decomposition::adaptive_sampler
+	 \see Curve::adaptive_sampler
 	 
 	 \ingroup samplermethods
 	 
@@ -522,13 +544,13 @@ public:
 	 
 	 \ingroup samplermethods
 	 
-	 \param V the vertex set containing the points of the decomposition.
+	 \param V the Vertex set containing the points of the Decomposition.
 	 \param sampler_options The current state of the sampler program.
 	 \param solve_options The current state of the solver and tracker configuration.
 	 */
-	void adaptive_sampler_movement(vertex_set &V,
+	void adaptive_sampler_movement(VertexSet &V,
 								   sampler_configuration & sampler_options,
-								   solver_configuration & solve_options);
+								   SolverConfiguration & solve_options);
 	
 	
 	
@@ -539,13 +561,13 @@ public:
 	
 	 \ingroup samplermethods
 	 
-	 \param V the vertex set containing the points of the decomposition.
+	 \param V the Vertex set containing the points of the Decomposition.
 	 \param sampler_options The current state of the sampler program.
 	 \param solve_options The current state of the solver and tracker configuration.
 	*/
-	void adaptive_sampler_distance(vertex_set &V,
+	void adaptive_sampler_distance(VertexSet &V,
 						  sampler_configuration & sampler_options,
-						  solver_configuration & solve_options);
+						  SolverConfiguration & solve_options);
 	
 	
 	
@@ -555,14 +577,14 @@ public:
 	 \param num_refinements The number of intervals to refine.
 	 \param refine_flags The mutable vector of bools indicating whether to refine a particular interval.
 	 \param current_indices Indices of points between which to refine (or not).
-	 \param V The vertex set storing the points.
+	 \param V The Vertex set storing the points.
 	 \param current_edge The index of which edge is being refined.
 	 \param sampler_options The current state of the program.
 	 */
 	void adaptive_set_initial_refinement_flags(int & num_refinements,
 											   std::vector<bool> & refine_flags,
 											   std::vector<int> & current_indices,
-											   vertex_set &V,
+											   VertexSet &V,
 											   int current_edge, sampler_configuration & sampler_options);
 	
 	
@@ -580,14 +602,14 @@ public:
 	 
 	 \todo Add a description ofthe method with picture right here.
 	 
-	 \param V the vertex set containing the points computed.
+	 \param V the Vertex set containing the points computed.
 	 \param sampler_options The current state of the sampler program.
 	 \param solve_options The current state of the solver.
 	 \param target_num_samples The number of points to get on each edge, including boundary points.
 	 */
-	void fixed_sampler(vertex_set &V,
+	void fixed_sampler(VertexSet &V,
 					   sampler_configuration & sampler_options,
-					   solver_configuration & solve_options,
+					   SolverConfiguration & solve_options,
 					   int target_num_samples);
 	
 	
@@ -611,7 +633,7 @@ public:
 	{
 		
 		
-		decomposition::reset();
+		Decomposition::reset();
 		
 		this->clear();
 		this->init();
@@ -619,23 +641,23 @@ public:
 		
 	}
 	
-	curve_decomposition() : decomposition()
+	Curve() : Decomposition()
 	{
 		this->init();
 	}
 	
-	curve_decomposition & operator=(const curve_decomposition& other){
+	Curve & operator=(const Curve& other){
 		this->init();
 		this->copy(other);
 		return *this;
 	}
 	
-	curve_decomposition(const curve_decomposition & other){
+	Curve(const Curve & other){
 		this->init();
 		this->copy(other);
 	}
 	
-	~curve_decomposition()
+	~Curve()
 	{
 		this->clear();
 	}
@@ -658,14 +680,14 @@ protected:
 	}
 	
 	
-	void copy(const curve_decomposition & other)
+	void copy(const Curve & other)
 	{
-		decomposition::copy(other);
+		Decomposition::copy(other);
 		this->edges_ = other.edges_;
 		this->num_edges_ = other.num_edges_;
 	}
 	
-}; // end curve_decomposition
+}; // end Curve
 
 
 
@@ -703,7 +725,7 @@ void 	diag_homotopy_input_file(boost::filesystem::path outputFile,
  \param W the input witness set
  */
 void 	diag_homotopy_start_file(boost::filesystem::path startFile,
-								 const witness_set & W);
+								 const WitnessSet & W);
 
 
 
@@ -720,9 +742,9 @@ void 	diag_homotopy_start_file(boost::filesystem::path startFile,
  \param projection The linear projection being checked.
  \param solve_options The current state of the solver.
  */
-int verify_projection_ok(const witness_set & W,
+int verify_projection_ok(const WitnessSet & W,
 						 vec_mp * projection,
-						 solver_configuration & solve_options);
+						 SolverConfiguration & solve_options);
 
 
 /**
@@ -734,10 +756,10 @@ int verify_projection_ok(const witness_set & W,
  \param projection The linear projection being checked.
  \param solve_options The current state of the solver.
  */
-int verify_projection_ok(const witness_set & W,
-						 std::shared_ptr<system_randomizer> randomizer,
+int verify_projection_ok(const WitnessSet & W,
+						 std::shared_ptr<SystemRandomizer> randomizer,
 						 vec_mp * projection,
-						 solver_configuration & solve_options);
+						 SolverConfiguration & solve_options);
 
 
 

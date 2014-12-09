@@ -43,9 +43,9 @@
  \see midpoint_config
  \see multilin_config
  */
-class sphere_config
+class SphereConfiguration
 {
-	std::shared_ptr<system_randomizer> randomizer_; ///< randomizer for the main system being intersected.
+	std::shared_ptr<SystemRandomizer> randomizer_; ///< randomizer for the main system being intersected.
 
 public:
 	
@@ -55,14 +55,14 @@ public:
 	 
 	 \return a shared pointer to the randomizer
 	 */
-	std::shared_ptr<system_randomizer> randomizer()
+	std::shared_ptr<SystemRandomizer> randomizer()
 	{
 		return randomizer_;
 	}
 	
 	
 	
-	SLP_global_pointers SLP_memory; ///< the memory containing the temps for the evaluation of the SLP
+	StraightLineProgramGlobalPointers SLP_memory; ///< the memory containing the temps for the evaluation of the SLP
 	prog_t * SLP; ///< a pointer to the SLP in memory
 	bool have_mem; ///< whether have the memory set up for SLP
 	
@@ -81,8 +81,8 @@ public:
 	
 	
 	
-	sphere_config(solver_configuration & solve_options,
-				  const witness_set & W)
+	SphereConfiguration(SolverConfiguration & solve_options,
+				  const WitnessSet & W)
 	{
 		init();
 		
@@ -93,8 +93,8 @@ public:
 	
 	
 	
-	sphere_config(solver_configuration & solve_options,
-				  std::shared_ptr<system_randomizer> _random)
+	SphereConfiguration(SolverConfiguration & solve_options,
+				  std::shared_ptr<SystemRandomizer> _random)
 	{
 		init();
 		
@@ -104,14 +104,14 @@ public:
 	}
 	
 	
-	sphere_config(solver_configuration & solve_options)
+	SphereConfiguration(SolverConfiguration & solve_options)
 	{
 		init();
 		set_memory(solve_options);
 	}
 	
 	
-	sphere_config(std::shared_ptr<system_randomizer> _random)
+	SphereConfiguration(std::shared_ptr<SystemRandomizer> _random)
 	{
 		init();
 		set_randomizer(_random);
@@ -123,9 +123,9 @@ public:
 	 \param solve_options The current state of the solver.
 	 \param W the input witness set with the patches, and numbers of variables and linears.
 	 */
-	void make_randomizer(const solver_configuration & solve_options, const witness_set & W)
+	void make_randomizer(const SolverConfiguration & solve_options, const WitnessSet & W)
 	{
-		randomizer_ = std::make_shared<system_randomizer>(*(new system_randomizer));
+		randomizer_ = std::make_shared<SystemRandomizer>(*(new SystemRandomizer));
 		randomizer_->setup(W.num_variables()-W.num_linears()-W.num_patches(), solve_options.PPD.num_funcs);
 	}
 	
@@ -136,7 +136,7 @@ public:
 	 
 	 \param solve_options The current state of the solver.
 	 */
-	void set_memory(solver_configuration & solve_options);
+	void set_memory(SolverConfiguration & solve_options);
 	
 	
 	/**
@@ -144,7 +144,7 @@ public:
 	 
 	 \param _random Pointer to the randomizer to use.
 	 */
-	void set_randomizer(std::shared_ptr<system_randomizer> _random)
+	void set_randomizer(std::shared_ptr<SystemRandomizer> _random)
 	{
 		randomizer_ = _random;
 	}
@@ -174,18 +174,18 @@ public:
 	
 	
 	
-	sphere_config()
+	SphereConfiguration()
 	{
 		init();
 	}
 	
-	sphere_config(const sphere_config & other)
+	SphereConfiguration(const SphereConfiguration & other)
 	{
 		init();
 		copy(other);
 	}
 	
-	sphere_config & operator=(const sphere_config & other)
+	SphereConfiguration & operator=(const SphereConfiguration & other)
 	{
 		init();
 		copy(other);
@@ -193,14 +193,14 @@ public:
 	}
 	
 	
-	~sphere_config(){
+	~SphereConfiguration(){
 		clear();
 	}
 	
 protected:
 	
 	
-	void copy(const sphere_config & other)
+	void copy(const SphereConfiguration & other)
 	{
 		this->randomizer_ = other.randomizer_;
 		//TODO: write this function.
@@ -265,7 +265,7 @@ protected:
 /**
  \brief The multiple-precision evaluator data for the sphere intersection solver.
  */
-class sphere_eval_data_mp : public solver_mp
+class sphere_eval_data_mp : public SolverMultiplePrecision
 {
 public:
 	
@@ -289,17 +289,17 @@ public:
 	
 	
 	// default initializer
-	sphere_eval_data_mp() : solver_mp(){
+	sphere_eval_data_mp() : SolverMultiplePrecision(){
 		init();
 	}
 	
-	sphere_eval_data_mp(int mp) : solver_mp(mp){
+	sphere_eval_data_mp(int mp) : SolverMultiplePrecision(mp){
 		this->MPType = mp;
 		init();
 	}
 	
 	
-	sphere_eval_data_mp(const sphere_eval_data_mp & other) : solver_mp(other)
+	sphere_eval_data_mp(const sphere_eval_data_mp & other) : SolverMultiplePrecision(other)
 	{
 		init();
 		copy(other);
@@ -338,7 +338,7 @@ public:
 	 \return SUCCESSFUL
 	 \param mpi_config The current state of MPI
 	 */
-	int send(parallelism_config & mpi_config);
+	int send(ParallelismConfig & mpi_config);
 	
 	/**
 	 \brief MPI-broadcast receive for the eval data.
@@ -346,7 +346,7 @@ public:
 	 \return SUCCESSFUL
 	 \param mpi_config The current state of MPI
 	 */
-	int receive(parallelism_config & mpi_config);
+	int receive(ParallelismConfig & mpi_config);
 	
 	
 	/**
@@ -357,9 +357,9 @@ public:
 	 \param W witness set containing the static linears.
 	 \param solve_options The current state of the solver.
 	 */
-	int setup(sphere_config & config,
-			  const witness_set & W,
-			  solver_configuration & solve_options);
+	int setup(SphereConfiguration & config,
+			  const WitnessSet & W,
+			  SolverConfiguration & solve_options);
 	
 	
 	
@@ -418,7 +418,7 @@ protected:
 	
 	void copy(const sphere_eval_data_mp & other)
 	{
-		solver_mp::copy(other);
+		SolverMultiplePrecision::copy(other);
 		
 		
 		if (this->num_static_linears==0) {
@@ -486,7 +486,7 @@ protected:
 
 // the mp version
 // this must be defined before the double version, because double has mp.
-class sphere_eval_data_d : public solver_d
+class sphere_eval_data_d : public SolverDoublePrecision
 {
 public:
 	
@@ -508,18 +508,18 @@ public:
 	
 	
 	// default initializer
-	sphere_eval_data_d() : solver_d(){
+	sphere_eval_data_d() : SolverDoublePrecision(){
 		init();
 	}
 	
-	sphere_eval_data_d(int mp) : solver_d(mp)
+	sphere_eval_data_d(int mp) : SolverDoublePrecision(mp)
 	{
 		this->MPType = mp;
 		init();
 	}
 	
 	
-	sphere_eval_data_d(const sphere_eval_data_d & other) : solver_d(other)
+	sphere_eval_data_d(const sphere_eval_data_d & other) : SolverDoublePrecision(other)
 	{
 		init();
 		copy(other);
@@ -541,7 +541,7 @@ public:
 	
 	virtual void print()
 	{
-		solver_d::print();
+		SolverDoublePrecision::print();
 		
 		std::cout << "sphere evaluator data (double):" << std::endl;
 		for (int ii=0; ii<num_static_linears; ii++) {
@@ -574,7 +574,7 @@ public:
 	 
 	 \param mpi_config The current state of MPI
 	 */
-	int send(parallelism_config & mpi_config);
+	int send(ParallelismConfig & mpi_config);
 	
 	
 	/**
@@ -582,7 +582,7 @@ public:
 	 
 	 \param mpi_config The current state of MPI
 	 */
-	int receive(parallelism_config & mpi_config);
+	int receive(ParallelismConfig & mpi_config);
 	
 	
 	/**
@@ -593,9 +593,9 @@ public:
 	 \param W witness set containing the static linears.
 	 \param solve_options The current state of the solver.
 	 */
-	int setup(sphere_config & config,
-			  const witness_set & W,
-			  solver_configuration & solve_options);
+	int setup(SphereConfiguration & config,
+			  const WitnessSet & W,
+			  SolverConfiguration & solve_options);
 	
 	
 	
@@ -632,7 +632,7 @@ protected:
 	
 	void copy(const sphere_eval_data_d & other)
 	{
-		solver_d::copy(other);
+		SolverDoublePrecision::copy(other);
 		
 		
 		if (this->num_static_linears==0) {
@@ -667,13 +667,13 @@ protected:
  \return SUCCESSFUL
  \param W input witness set with start points and linears.
  \param solve_out The returned constructed data and metadata goes here.
- \param config The sphere_config object with the SLP, etc.
+ \param config The SphereConfiguration object with the SLP, etc.
  \param solve_options The current state of the solver.
  */
-int sphere_solver_master_entry_point(const witness_set & W,
-									 solver_output & solve_out,
-									 sphere_config & config,
-									 solver_configuration & solve_options);
+int sphere_solver_master_entry_point(const WitnessSet & W,
+									 SolverOutput & solve_out,
+									 SphereConfiguration & config,
+									 SolverConfiguration & solve_options);
 
 
 /**
@@ -684,7 +684,7 @@ int sphere_solver_master_entry_point(const witness_set & W,
  \return SUCCESSFUL
  \param solve_options The current state of MPI
  */
-int sphere_slave_entry_point(solver_configuration & solve_options);
+int sphere_slave_entry_point(SolverConfiguration & solve_options);
 
 
 
@@ -715,7 +715,7 @@ int sphere_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat
  
  \todo explain with diagram how this works
  
- this function makes use of the temps_mp class for persistence of temporaries.
+ this function makes use of the TemporariesMultiplePrecision class for persistence of temporaries.
  
  \return the number 0.
  \param funcVals the computed function values.

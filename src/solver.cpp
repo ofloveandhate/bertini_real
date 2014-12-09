@@ -12,7 +12,7 @@ extern int *mem_needs_init_mp; // determine if mem_mp has been initialized
 
 
 
-void SLP_global_pointers::capture_globals()
+void StraightLineProgramGlobalPointers::capture_globals()
 {
 	
 	local_mem_d = mem_d;
@@ -46,7 +46,7 @@ void SLP_global_pointers::capture_globals()
 	
 }
 
-void SLP_global_pointers::set_globals_to_this()
+void StraightLineProgramGlobalPointers::set_globals_to_this()
 {
 	mem_d							= local_mem_d;
 	mem_mp						= local_mem_mp;
@@ -60,72 +60,7 @@ void SLP_global_pointers::set_globals_to_this()
 
 
 
-void get_projection(vec_mp *pi,
-                    BR_configuration program_options,
-                    int num_vars,
-                    int num_projections)
-{
-	
 
-	for (int ii=0; ii<num_projections; ii++) {
-		change_size_vec_mp(pi[ii], num_vars);  pi[ii]->size = num_vars;
-	}
-	
-	
-	
-	//assumes the vector pi is already initialized
-	if (program_options.user_projection()) {
-		FILE *IN = safe_fopen_read(program_options.projection_filename.c_str()); // we are already assured this file exists, but safe fopen anyway.
-		int tmp_num_vars;
-		fscanf(IN,"%d",&tmp_num_vars); scanRestOfLine(IN);
-		if (tmp_num_vars!=num_vars-1) {
-			printf("the number of variables declared in the projection\nis not equal to the number of non-homogeneous variables in the problem\n");
-			printf("please modify file to have %d coordinates, one per line.\n(imaginary part will be ignored if provided).\n",num_vars-1);
-			abort();
-		}
-		
-		for (int ii=0; ii<num_projections; ii++) {
-			set_zero_mp(&pi[ii]->coord[0]);
-			for (int jj=1; jj<num_vars; jj++) {
-				set_zero_mp(&pi[ii]->coord[jj]);
-				mpf_inp_str(pi[ii]->coord[jj].r, IN, 10);
-				scanRestOfLine(IN);
-			}
-		}
-		fclose(IN);
-	}
-	else{
-		if (program_options.orthogonal_projection()) {
-			mat_mp temp_getter;
-			init_mat_mp2(temp_getter,0,0,1024);
-			make_matrix_random_real_mp(temp_getter,num_projections, num_vars-1, 1024); // this matrix is ~orthogonal
-			
-			for (int ii=0; ii<num_projections; ii++) {
-				set_zero_mp(&pi[ii]->coord[0]);
-				for (int jj=1; jj<num_vars; jj++)
-					set_mp(&pi[ii]->coord[jj], &temp_getter->entry[ii][jj-1]);
-				
-			}
-			
-			clear_mat_mp(temp_getter);
-			
-		}
-		else
-		{
-			for (int ii=0; ii<num_projections; ii++) {
-				set_zero_mp(&pi[ii]->coord[0]);
-				for (int jj=1; jj<num_vars; jj++)
-					get_comp_rand_real_mp(&pi[ii]->coord[jj]);//, &temp_getter->entry[ii][jj-1]);
-				
-			}
-			
-		}
-		
-	}
-	
-	
-	return;
-}
 
 
 
@@ -143,7 +78,7 @@ void adjust_tracker_AMP(tracker_config_t * T, int num_variables)
 
 
 
-void solver_configuration::init()
+void SolverConfiguration::init()
 {
 	total_num_paths_tracked = 0;
 	
@@ -174,7 +109,7 @@ void solver_configuration::init()
 
 
 
-void solver_output::get_noninfinite_w_mult_full(witness_set & W_transfer)
+void SolverOutput::get_noninfinite_w_mult_full(WitnessSet & W_transfer)
 {
 	get_noninfinite_w_mult(W_transfer);
 	
@@ -184,7 +119,7 @@ void solver_output::get_noninfinite_w_mult_full(witness_set & W_transfer)
 	
 }
 
-void solver_output::get_noninfinite_w_mult(witness_set & W_transfer)
+void SolverOutput::get_noninfinite_w_mult(WitnessSet & W_transfer)
 {
 	for (auto index = ordering.begin(); index != ordering.end(); ++index) {
 		//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
@@ -197,7 +132,7 @@ void solver_output::get_noninfinite_w_mult(witness_set & W_transfer)
 }
 
 
-void solver_output::get_nonsing_finite_multone(witness_set & W_transfer)
+void SolverOutput::get_nonsing_finite_multone(WitnessSet & W_transfer)
 {
 	for (auto index = ordering.begin(); index != ordering.end(); ++index) {
 		//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
@@ -209,7 +144,7 @@ void solver_output::get_nonsing_finite_multone(witness_set & W_transfer)
 	set_witness_set_nvars(W_transfer);
 }
 
-void solver_output::get_multpos(std::map<int, witness_set> & W_transfer)
+void SolverOutput::get_multpos(std::map<int, WitnessSet> & W_transfer)
 {
 	
 	//for each multiplicity, construct the witness_sets
@@ -232,7 +167,7 @@ void solver_output::get_multpos(std::map<int, witness_set> & W_transfer)
 	
 }
 
-void solver_output::get_multpos_full(std::map<int, witness_set> & W_transfer)
+void SolverOutput::get_multpos_full(std::map<int, WitnessSet> & W_transfer)
 {
 	
 	get_multpos(W_transfer);
@@ -246,7 +181,7 @@ void solver_output::get_multpos_full(std::map<int, witness_set> & W_transfer)
 
 
 
-void solver_output::get_sing(witness_set & W_transfer)
+void SolverOutput::get_sing(WitnessSet & W_transfer)
 {
 	for (auto index = ordering.begin(); index != ordering.end(); ++index) {
 		//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
@@ -258,7 +193,7 @@ void solver_output::get_sing(witness_set & W_transfer)
 }
 
 
-void solver_output::get_sing_finite(witness_set & W_transfer)
+void SolverOutput::get_sing_finite(WitnessSet & W_transfer)
 {
 	for (auto index = ordering.begin(); index != ordering.end(); ++index) {
 		//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
@@ -281,7 +216,7 @@ void solver_output::get_sing_finite(witness_set & W_transfer)
 
 
 
-int solver::send(parallelism_config & mpi_config)
+int Solver::send(ParallelismConfig & mpi_config)
 {
 	
 	
@@ -303,7 +238,7 @@ int solver::send(parallelism_config & mpi_config)
 	return SUCCESSFUL;
 }
 
-int solver::receive(parallelism_config & mpi_config)
+int Solver::receive(ParallelismConfig & mpi_config)
 {
 	
     
@@ -347,7 +282,7 @@ int solver::receive(parallelism_config & mpi_config)
 ////////////
 
 
-void solver_mp::clear()
+void SolverMultiplePrecision::clear()
 {
 
 	patch_eval_data_clear_mp(&this->patch);
@@ -374,9 +309,9 @@ void solver_mp::clear()
 
 
 
-int solver_mp::send(parallelism_config & mpi_config)
+int SolverMultiplePrecision::send(ParallelismConfig & mpi_config)
 {
-	solver::send(mpi_config);
+	Solver::send(mpi_config);
 	
     
     int num_SLP;
@@ -419,10 +354,10 @@ int solver_mp::send(parallelism_config & mpi_config)
 }
 
 
-int solver_mp::receive(parallelism_config & mpi_config)
+int SolverMultiplePrecision::receive(ParallelismConfig & mpi_config)
 {
 	
-	solver::receive(mpi_config);
+	Solver::receive(mpi_config);
 	
 	
     if (this->have_SLP) {
@@ -472,7 +407,7 @@ int solver_mp::receive(parallelism_config & mpi_config)
 	delete[] buffer;
 	
 	
-	randomizer_ = std::make_shared<system_randomizer> (*(new system_randomizer));
+	randomizer_ = std::make_shared<SystemRandomizer> (*(new SystemRandomizer));
 	randomizer_->bcast_receive(mpi_config);
 	
 	return SUCCESSFUL;
@@ -492,7 +427,7 @@ int solver_mp::receive(parallelism_config & mpi_config)
 
 
 
-void solver_d::clear(){
+void SolverDoublePrecision::clear(){
 	
 	if (MPType==0) {
 	}
@@ -513,9 +448,9 @@ void solver_d::clear(){
 
 
 
-int solver_d::send(parallelism_config & mpi_config)
+int SolverDoublePrecision::send(ParallelismConfig & mpi_config)
 {
-	solver::send(mpi_config);
+	Solver::send(mpi_config);
 	
     if (this->MPType == 0) {
         int num_SLP;
@@ -550,11 +485,11 @@ int solver_d::send(parallelism_config & mpi_config)
 }
 
 
-int solver_d::receive(parallelism_config & mpi_config)
+int SolverDoublePrecision::receive(ParallelismConfig & mpi_config)
 {
     
 	
-	solver::receive(mpi_config);
+	Solver::receive(mpi_config);
     
     if (this->MPType == 0) {
         received_mpi = true;
@@ -596,7 +531,7 @@ int solver_d::receive(parallelism_config & mpi_config)
 	
 	
 	if (MPType==0) {
-		randomizer_ = std::make_shared<system_randomizer>( *( new system_randomizer));
+		randomizer_ = std::make_shared<SystemRandomizer>( *( new SystemRandomizer));
 		randomizer_->bcast_receive(mpi_config);
 	}
 	else
@@ -621,7 +556,7 @@ int solver_d::receive(parallelism_config & mpi_config)
 
 
 
-void get_tracker_config(solver_configuration & solve_options,int MPType)
+void get_tracker_config(SolverConfiguration & solve_options,int MPType)
 {
 	
 	//necessary for the setupConfig call
@@ -669,9 +604,9 @@ void get_tracker_config(solver_configuration & solve_options,int MPType)
 
 
 
-void master_solver(solver_output & solve_out, const witness_set & W,
-                   solver_d * ED_d, solver_mp * ED_mp,
-                   solver_configuration & solve_options)
+void master_solver(SolverOutput & solve_out, const WitnessSet & W,
+                   SolverDoublePrecision * ED_d, SolverMultiplePrecision * ED_mp,
+                   SolverConfiguration & solve_options)
 {
 	
 	
@@ -783,11 +718,11 @@ void master_solver(solver_output & solve_out, const witness_set & W,
  sets the start_pts structure to hold all points in W
  
  \param startPts the value being set.  should be NULL or uninitialized input.
- \param W the witness_set input
+ \param W the WitnessSet input
  
  */
 void generic_set_start_pts(point_data_d ** startPts,
-                           const witness_set & W)
+                           const WitnessSet & W)
 {
 	
 	*startPts = (point_data_d *)br_malloc(W.num_points() * sizeof(point_data_d));
@@ -809,7 +744,7 @@ void generic_set_start_pts(point_data_d ** startPts,
 
 
 void generic_set_start_pts(point_data_mp ** startPts,
-                           const witness_set & W)
+                           const WitnessSet & W)
 {
 	
 	(*startPts) = (point_data_mp *)br_malloc(W.num_points() * sizeof(point_data_mp));
@@ -835,10 +770,10 @@ void generic_set_start_pts(point_data_mp ** startPts,
 
 void serial_tracker_loop(trackingStats *trackCount,
                           FILE * OUT, FILE * MIDOUT,
-                          const witness_set & W,  // was the startpts file pointer.
+                          const WitnessSet & W,  // was the startpts file pointer.
                           post_process_t *endPoints,
-                          solver_d * ED_d, solver_mp * ED_mp,
-                          solver_configuration & solve_options)
+                          SolverDoublePrecision * ED_d, SolverMultiplePrecision * ED_mp,
+                          SolverConfiguration & solve_options)
 {
 	
 	
@@ -1009,10 +944,10 @@ void serial_tracker_loop(trackingStats *trackCount,
 
 void master_tracker_loop(trackingStats *trackCount,
                          FILE * OUT, FILE * MIDOUT,
-                         const witness_set & W,  // was the startpts file pointer.
+                         const WitnessSet & W,  // was the startpts file pointer.
                          post_process_t *endPoints,
-                         solver_d * ED_d, solver_mp * ED_mp,
-                         solver_configuration & solve_options)
+                         SolverDoublePrecision * ED_d, SolverMultiplePrecision * ED_mp,
+                         SolverConfiguration & solve_options)
 {
 	
 	
@@ -1127,8 +1062,8 @@ void master_tracker_loop(trackingStats *trackCount,
 
 void worker_tracker_loop(trackingStats *trackCount,
                          FILE * OUT, FILE * MIDOUT,
-                         solver_d * ED_d, solver_mp * ED_mp,
-                         solver_configuration & solve_options)
+                         SolverDoublePrecision * ED_d, SolverMultiplePrecision * ED_mp,
+                         SolverConfiguration & solve_options)
 {
 	
 	
@@ -1341,7 +1276,7 @@ void send_start_points(int next_worker, int num_packets,
                        point_data_d *startPts_d,
                        point_data_mp *startPts_mp,
                        int & next_index,
-                       solver_configuration & solve_options)
+                       SolverConfiguration & solve_options)
 {
 	MPI_Send(&num_packets, 1, MPI_INT, next_worker, NUMPACKETS, MPI_COMM_WORLD);
 	
@@ -1378,8 +1313,8 @@ int receive_endpoints(trackingStats *trackCount,
                       endgame_data_t **EG_receives, int & max_incoming,
                       int & solution_counter,
                       post_process_t *endPoints,
-                      solver_d * ED_d, solver_mp * ED_mp,
-                      solver_configuration & solve_options)
+                      SolverDoublePrecision * ED_d, SolverMultiplePrecision * ED_mp,
+                      SolverConfiguration & solve_options)
 {
     
 	//now to receive data
@@ -1591,13 +1526,13 @@ void generic_track_path(int pathNum, endgame_data_t *EG_out,
 //		vec_d solution_as_double; init_vec_d(solution_as_double,0);
 //		if (EG_out->prec < 64){
 //			int out_prec;
-//			solver_d * evalll = (solver_d *)ED_d;
+//			SolverDoublePrecision * evalll = (SolverDoublePrecision *)ED_d;
 //			evalll->dehomogenizer(solution_as_double, NULL, &out_prec, EG_out->PD_d.point,NULL,52,evalll, NULL);
 //			
 //			
 //		}
 //		else{
-//			solver_mp * evalll = (solver_mp *)ED_mp;
+//			SolverMultiplePrecision * evalll = (SolverMultiplePrecision *)ED_mp;
 //			
 //			int out_prec;
 //			vec_mp temp2; init_vec_mp(temp2,0);
@@ -1625,8 +1560,8 @@ void generic_track_path(int pathNum, endgame_data_t *EG_out,
 void robust_track_path(int pathNum, endgame_data_t *EG_out,
                        point_data_d *Pin, point_data_mp *Pin_mp,
                        FILE *OUT, FILE *MIDOUT,
-                       solver_configuration & solve_options,
-                       solver_d *ED_d, solver_mp *ED_mp,
+                       SolverConfiguration & solve_options,
+                       SolverDoublePrecision *ED_d, SolverMultiplePrecision *ED_mp,
                        int (*eval_func_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *),
                        int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
                        int (*change_prec)(void const *, int),
@@ -1932,7 +1867,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 
 
 
-void generic_setup_patch(patch_eval_data_d *P, const witness_set & W)
+void generic_setup_patch(patch_eval_data_d *P, const WitnessSet & W)
 {
 //	std::cout << "setting up double patch " << std::endl;
 	
@@ -1983,7 +1918,7 @@ void generic_setup_patch(patch_eval_data_d *P, const witness_set & W)
 }
 
 
-void generic_setup_patch(patch_eval_data_mp *P, const witness_set & W)
+void generic_setup_patch(patch_eval_data_mp *P, const WitnessSet & W)
 {
 	
 	

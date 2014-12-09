@@ -151,7 +151,7 @@ std::string enum_lookup(int flag)
 
 
 
-void system_randomizer::randomize(vec_d randomized_func_vals, mat_d randomized_jacobian,
+void SystemRandomizer::randomize(vec_d randomized_func_vals, mat_d randomized_jacobian,
 								  vec_d func_vals, mat_d jacobian_vals,
 								  comp_d hom_var)
 {
@@ -310,7 +310,7 @@ void system_randomizer::randomize(vec_d randomized_func_vals, mat_d randomized_j
 }
 
 
-void system_randomizer::randomize(vec_mp randomized_func_vals, mat_mp randomized_jacobian,
+void SystemRandomizer::randomize(vec_mp randomized_func_vals, mat_mp randomized_jacobian,
 								  vec_mp func_vals, mat_mp jacobian_vals,
 								  comp_mp hom_var)
 {
@@ -467,7 +467,7 @@ void system_randomizer::randomize(vec_mp randomized_func_vals, mat_mp randomized
 }
 
 
-void system_randomizer::change_prec(int new_prec)
+void SystemRandomizer::change_prec(int new_prec)
 {
 	if (!is_ready()) {
 		std::cout << "trying to change precision when not set up!" << std::endl;
@@ -490,29 +490,31 @@ void system_randomizer::change_prec(int new_prec)
 	
 }
 
-void system_randomizer::setup(int num_desired_rows, int num_funcs)
+void SystemRandomizer::setup(int num_desired_rows, int num_funcs)
 {
 	if (num_desired_rows<=0) {
-		std::cout << "requested a randomizer for <= 0 output functions..." << std::endl;
-		br_exit(80146);
+		throw std::logic_error("requested a randomizer for <= 0 output functions...");
 	}
 	if (num_funcs<=0) {
-		std::cout << "requested a randomizer for <= 0 input functions..." << std::endl;
-		br_exit(80147);
+		throw std::logic_error("requested a randomizer for <= 0 input functions...");
 	}
 	
 	if (num_desired_rows>num_funcs) {
-		std::cout << "requested randomizer which would UP-randomize." << std::endl;
-		std::cout << num_desired_rows << " > " << num_funcs << ", which is not allowed" << std::endl;
-		br_exit(80148);
+		
+		std::stringstream ss;
+		ss << "requested randomizer which would UP-randomize." << std::endl;
+		ss << num_desired_rows << " > " << num_funcs << ", which is not allowed" << std::endl;
+		
+		throw std::logic_error(ss.str());
 	}
+	
 	setup_indicator = false; // reset;
 	randomized_degrees.resize(0);
 	original_degrees.resize(0);
 	max_base_degree = 0;
 	
 	//get unique degrees
-	int *unique_degrees = (int *) br_malloc(num_funcs*sizeof(int));
+	int *unique_degrees = new int[num_funcs];
 	
 	
 	FILE *IN = safe_fopen_read("deg.out"); //open the deg.out file for reading.
@@ -650,7 +652,7 @@ void system_randomizer::setup(int num_desired_rows, int num_funcs)
 	
 	
 	free(num_of_each_degree);
-	free(unique_degrees);
+	delete [] unique_degrees;
 	
 	
 	
@@ -663,7 +665,7 @@ void system_randomizer::setup(int num_desired_rows, int num_funcs)
 }
 
 
-void system_randomizer::setup_temps()
+void SystemRandomizer::setup_temps()
 {
 	change_size_vec_d(integer_coeffs_d,max_degree_deficiency+1);  integer_coeffs_d->size = max_degree_deficiency+1;
 	change_size_vec_mp(integer_coeffs_mp,max_degree_deficiency+1); integer_coeffs_mp->size = max_degree_deficiency+1;
@@ -692,10 +694,10 @@ void system_randomizer::setup_temps()
 
 
 
-void system_randomizer::send(int target, parallelism_config & mpi_config)
+void SystemRandomizer::send(int target, ParallelismConfig & mpi_config)
 {
 #ifdef functionentry_output
-	std::cout << "system_randomizer::send" << std::endl;
+	std::cout << "SystemRandomizer::send" << std::endl;
 #endif
 	int sendme = setup_indicator;
 	MPI_Send(&sendme,1,MPI_INT,target,UNUSED,MPI_COMM_WORLD);
@@ -767,10 +769,10 @@ void system_randomizer::send(int target, parallelism_config & mpi_config)
 }
 
 
-void system_randomizer::receive(int source, parallelism_config & mpi_config)
+void SystemRandomizer::receive(int source, ParallelismConfig & mpi_config)
 {
 #ifdef functionentry_output
-	std::cout << "system_randomizer::receive" << std::endl;
+	std::cout << "SystemRandomizer::receive" << std::endl;
 #endif
 	
 	MPI_Status statty_mc_gatty;
@@ -844,10 +846,10 @@ void system_randomizer::receive(int source, parallelism_config & mpi_config)
 
 
 
-void system_randomizer::bcast_send(parallelism_config & mpi_config)
+void SystemRandomizer::bcast_send(ParallelismConfig & mpi_config)
 {
 #ifdef functionentry_output
-	std::cout << "system_randomizer::bcast_send" << std::endl;
+	std::cout << "SystemRandomizer::bcast_send" << std::endl;
 #endif
 	
 	
@@ -924,10 +926,10 @@ void system_randomizer::bcast_send(parallelism_config & mpi_config)
 }
 
 
-void system_randomizer::bcast_receive(parallelism_config & mpi_config)
+void SystemRandomizer::bcast_receive(ParallelismConfig & mpi_config)
 {
 #ifdef functionentry_output
-	std::cout << "system_randomizer::bcast_receive" << std::endl;
+	std::cout << "SystemRandomizer::bcast_receive" << std::endl;
 #endif
 	
 	
@@ -1004,16 +1006,16 @@ void system_randomizer::bcast_receive(parallelism_config & mpi_config)
 
 
 
-int point_holder::add_point(vec_mp new_point)
+int PointHolder::add_point(vec_mp new_point)
 {
 	
 	if (num_pts_!=0 && this->pts_mp_==NULL) {
-		printf("trying to add point to point_holder with non-zero num_points and NULL container!\n");
+		printf("trying to add point to PointHolder with non-zero num_points and NULL container!\n");
 		br_exit(9713);
 	}
 	
 	if (num_pts_==0 && this->pts_mp_!=NULL) {
-		printf("trying to add point to point_holder with num_points==0 and non-NULL container!\n");
+		printf("trying to add point to PointHolder with num_points==0 and non-NULL container!\n");
 		br_exit(9713);
 	}
 	
@@ -1034,7 +1036,7 @@ int point_holder::add_point(vec_mp new_point)
 	return num_pts_-1;
 }
 
-int patch_holder::add_patch(vec_mp new_patch)
+int PatchHolder::add_patch(vec_mp new_patch)
 {
 	
 	if (num_patches_!=0 && patch_mp_==NULL) {
@@ -1072,7 +1074,7 @@ int patch_holder::add_patch(vec_mp new_patch)
 }
 
 
-int linear_holder::add_linear(vec_mp new_linear)
+int LinearHolder::add_linear(vec_mp new_linear)
 {
 	
 	if (num_linears_!=0 && L_mp_==NULL) {
@@ -1109,7 +1111,7 @@ int linear_holder::add_linear(vec_mp new_linear)
 
 
 
-int witness_set::witnessSetParse(const boost::filesystem::path witness_set_file, const int num_vars)
+int WitnessSet::witnessSetParse(const boost::filesystem::path witness_set_file, const int num_vars)
 {
 	
 	
@@ -1210,7 +1212,7 @@ int witness_set::witnessSetParse(const boost::filesystem::path witness_set_file,
 
 
 
-void witness_set::write_homogeneous_coordinates(boost::filesystem::path filename) const
+void WitnessSet::write_homogeneous_coordinates(boost::filesystem::path filename) const
 {
 
 	
@@ -1233,7 +1235,7 @@ void witness_set::write_homogeneous_coordinates(boost::filesystem::path filename
 	return;
 }
 
-void witness_set::write_dehomogenized_coordinates(boost::filesystem::path filename) const
+void WitnessSet::write_dehomogenized_coordinates(boost::filesystem::path filename) const
 {
 
 	
@@ -1266,13 +1268,13 @@ void witness_set::write_dehomogenized_coordinates(boost::filesystem::path filena
 
 
 
-void witness_set::write_dehomogenized_coordinates(boost::filesystem::path filename,std::set<unsigned int> indices) const
+void WitnessSet::write_dehomogenized_coordinates(boost::filesystem::path filename,std::set<unsigned int> indices) const
 {
 	
 	for (auto ii=indices.begin(); ii!=indices.end(); ++ii) {
 		if (*ii >= this->num_points()) {
 			std::cout << "requested to print out-of-range point index " << *ii << " to a dehomogenized file." << std::endl;
-			std::cout << "[this witness_set contains " << num_points() << " points.]" << std::endl;
+			std::cout << "[this WitnessSet contains " << num_points() << " points.]" << std::endl;
 			br_exit(66190);
 		}
 	}
@@ -1309,7 +1311,7 @@ void witness_set::write_dehomogenized_coordinates(boost::filesystem::path filena
 
 
 
-void witness_set::write_linears(boost::filesystem::path filename) const
+void WitnessSet::write_linears(boost::filesystem::path filename) const
 {
 
 	
@@ -1333,7 +1335,7 @@ void witness_set::write_linears(boost::filesystem::path filename) const
 
 
 
-void witness_set::print_patches(boost::filesystem::path filename) const
+void WitnessSet::print_patches(boost::filesystem::path filename) const
 {
 
 	
@@ -1356,12 +1358,12 @@ void witness_set::print_patches(boost::filesystem::path filename) const
 	return;
 }
 
-void witness_set::read_patches_from_file(boost::filesystem::path filename)
+void WitnessSet::read_patches_from_file(boost::filesystem::path filename)
 {
 	
 	FILE *IN = safe_fopen_read(filename);
 	
-	witness_set::reset_patches();
+	WitnessSet::reset_patches();
 	int curr_num_patches;
 	fscanf(IN,"%d\n",&curr_num_patches);
 	
@@ -1377,7 +1379,7 @@ void witness_set::read_patches_from_file(boost::filesystem::path filename)
 			scanRestOfLine(IN);
 		}
 		
-		witness_set::add_patch(temp_patch);
+		WitnessSet::add_patch(temp_patch);
 	}
 	
 	clear_vec_mp(temp_patch);
@@ -1388,7 +1390,7 @@ void witness_set::read_patches_from_file(boost::filesystem::path filename)
 
 
 
-void witness_set::print_to_screen() const
+void WitnessSet::print_to_screen() const
 {
 	
 	vec_mp dehom;  init_vec_mp(dehom,1); dehom->size = 1;
@@ -1446,7 +1448,7 @@ void witness_set::print_to_screen() const
 }
 
 
-void witness_set::print_to_file(boost::filesystem::path filename) const
+void WitnessSet::print_to_file(boost::filesystem::path filename) const
 {
 	// print back into the same format we parse from.
 	
@@ -1492,7 +1494,7 @@ void witness_set::print_to_file(boost::filesystem::path filename) const
 	
 	
 	
-	fprintf(OUT, "%zu %d\n", num_patches(), num_vars_);// TODO: this is incorrect
+	fprintf(OUT, "%zu %d\n", num_patches(), num_vars_);
 	
 	for (unsigned int ii=0; ii < num_patches(); ii++) {
 		
@@ -1519,13 +1521,13 @@ void witness_set::print_to_file(boost::filesystem::path filename) const
 }
 
 
-void witness_set::only_natural_vars()
+void WitnessSet::only_natural_vars()
 {
-	witness_set::only_first_vars(num_natty_vars_);
+	WitnessSet::only_first_vars(num_natty_vars_);
 }
 
 
-void witness_set::only_first_vars(int num_vars)
+void WitnessSet::only_first_vars(int num_vars)
 {
 	
 	vec_mp tempvec;  init_vec_mp2(tempvec, num_vars, 1024);
@@ -1577,7 +1579,7 @@ void witness_set::only_first_vars(int num_vars)
 
 
 
-void witness_set::sort_for_real(tracker_config_t * T)
+void WitnessSet::sort_for_real(tracker_config_t * T)
 {
 	
 
@@ -1639,7 +1641,7 @@ void witness_set::sort_for_real(tracker_config_t * T)
 
 
 // T is necessary for the tolerances.
-void witness_set::sort_for_unique(tracker_config_t * T)
+void WitnessSet::sort_for_unique(tracker_config_t * T)
 {
 	
 	if (num_vars_==0) {
@@ -1660,7 +1662,7 @@ void witness_set::sort_for_unique(tracker_config_t * T)
 		for (unsigned int jj=ii+1; jj<num_points(); ++jj) {
 			vec_mp & inner_point = point(jj);
 			int prev_size_2 = inner_point->size; inner_point->size = num_natty_vars_; // cache and change to natural number
-			if ( isSamePoint_homogeneous_input(curr_point,inner_point) ){
+			if ( isSamePoint_homogeneous_input(curr_point,inner_point,T->final_tol_times_mult) ){
 				curr_uniqueness = 0;
 			}
 			inner_point->size = prev_size_2; // restore
@@ -1712,7 +1714,7 @@ void witness_set::sort_for_unique(tracker_config_t * T)
 
 
 
-void witness_set::sort_for_inside_sphere(comp_mp radius, vec_mp center)
+void WitnessSet::sort_for_inside_sphere(comp_mp radius, vec_mp center)
 {
 	
 	
@@ -1781,7 +1783,7 @@ void witness_set::sort_for_inside_sphere(comp_mp radius, vec_mp center)
 
 
 
-void witness_set::merge(const witness_set & W_in)
+void WitnessSet::merge(const WitnessSet & W_in, tracker_config_t * T)
 {
 	
 	//error checking first
@@ -1801,7 +1803,7 @@ void witness_set::merge(const witness_set & W_in)
 	
 	//just mindlessly add the linears.  up to user to ensure linears get merged correctly.  no way to know what they want...
 	for (unsigned int ii = 0; ii<W_in.num_linears(); ii++) {
-		witness_set::add_linear(W_in.linear(ii));
+		WitnessSet::add_linear(W_in.linear(ii));
 	}
 	
 	
@@ -1811,7 +1813,7 @@ void witness_set::merge(const witness_set & W_in)
 		for (unsigned int jj = 0; jj<num_points(); jj++){
 			vec_mp & curr_point = this->point(jj);
 			if ( curr_point->size == in_point->size) {
-				if (isSamePoint_inhomogeneous_input(curr_point, in_point)) {
+				if (isSamePoint_inhomogeneous_input(curr_point, in_point, T->final_tol_times_mult)) {
 					is_new = 0;
 					break;
 				}
@@ -1820,7 +1822,7 @@ void witness_set::merge(const witness_set & W_in)
 		}
 		
 		if (is_new==1)
-			witness_set::add_point( (in_point) );
+			WitnessSet::add_point( (in_point) );
 	}
 	
 	
@@ -1829,7 +1831,7 @@ void witness_set::merge(const witness_set & W_in)
 		
 		for (unsigned int jj = 0; jj<this->num_patches(); jj++){
 			if ( this->patch(jj)->size ==  W_in.patch(ii)->size) {
-				if (isSamePoint_inhomogeneous_input(patch(jj), W_in.patch(ii))) {
+				if (isSamePoint_inhomogeneous_input(patch(jj), W_in.patch(ii), T->final_tol_times_mult)) {
 					is_new = 0;
 					break;
 				}
@@ -1837,7 +1839,7 @@ void witness_set::merge(const witness_set & W_in)
 		}
 		
 		if (is_new==1)
-			witness_set::add_patch(W_in.patch(ii));
+			WitnessSet::add_patch(W_in.patch(ii));
 	}
 	
 	
@@ -1860,7 +1862,7 @@ void witness_set::merge(const witness_set & W_in)
 
 
 
-void witness_set::send(parallelism_config & mpi_config, int target) const
+void WitnessSet::send(ParallelismConfig & mpi_config, int target) const
 {
     //send all the data to the other party
     
@@ -1904,7 +1906,7 @@ void witness_set::send(parallelism_config & mpi_config, int target) const
     return;
 }
 
-void witness_set::receive(int source, parallelism_config & mpi_config)
+void WitnessSet::receive(int source, ParallelismConfig & mpi_config)
 {
     MPI_Status statty_mc_gatty;
     
@@ -1950,7 +1952,7 @@ void witness_set::receive(int source, parallelism_config & mpi_config)
 
 
 
-void witness_data::populate()
+void NumericalIrreducibleDecomposition::populate(tracker_config_t * T)
 {
 	FILE *IN;
 	
@@ -2013,7 +2015,7 @@ void witness_data::populate()
 			}
 			
 			
-			witness_point_metadata meta(current_dimension);
+			WitnessPointMetadata meta(current_dimension);
 			
 			meta.set_from_file(IN);
 			
@@ -2049,7 +2051,7 @@ void witness_data::populate()
 	fscanf(IN,"%d",&numbertype);
 	
 	if (numbertype==2 || numbertype==1) {
-		change_prec_vec_mp(temp_vec,1024); // TODO: make this adapt to settings.
+		change_prec_vec_mp(temp_vec,T->AMP_max_prec); 
 	}
 	else {
 		change_prec_vec_mp(temp_vec,64);
@@ -2141,7 +2143,7 @@ void witness_data::populate()
 				}
 			}
 			
-			add_linear_w_meta(temp_vec, witness_linear_metadata(current_dimension));
+			add_linear_w_meta(temp_vec, WitnessLinearMetadata(current_dimension));
 			
 		}
 		
@@ -2169,7 +2171,7 @@ void witness_data::populate()
 			
 		}
 		
-		add_patch_w_meta(temp_vec, witness_patch_metadata(current_dimension));
+		add_patch_w_meta(temp_vec, WitnessPatchMetadata(current_dimension));
 		
 		//END REPEATED BLOCK (ONE FOR EACH NONEMPTY CODIM).
 	}
@@ -2203,10 +2205,10 @@ void witness_data::populate()
 
 
 
-witness_set witness_data::choose(BR_configuration & options)
+WitnessSet NumericalIrreducibleDecomposition::choose(BertiniRealConfig & options)
 {
 #ifdef functionentry_output
-	std::cout << "witness_data::choose" << std::endl;
+	std::cout << "NumericalIrreducibleDecomposition::choose" << std::endl;
 #endif
 
 	int target_dimension = options.target_dimension;
@@ -2241,7 +2243,7 @@ witness_set witness_data::choose(BR_configuration & options)
 				
 				if (map_lookup_with_default(dimension_component_counter[target_dimension],target_component,0)==0) {
 					std::cout << "you asked for component " << target_component << " (of dimension " << nonempty_dimensions[0] << ") which does not exist" << std::endl;
-					witness_set W(num_variables());
+					WitnessSet W(num_variables());
 					W.set_dimension(nonempty_dimensions[0]);
 					W.set_component_number(-1);
 					return W;
@@ -2262,7 +2264,7 @@ witness_set witness_data::choose(BR_configuration & options)
 		if (dimension_component_counter.find(target_dimension)==dimension_component_counter.end()) {
 			std::cout << "there are no components of dimension " << options.target_dimension << std::endl;
 			
-			witness_set W(num_variables());
+			WitnessSet W(num_variables());
 			W.set_dimension(options.target_dimension);
 			W.set_component_number(-1);
 			return W;
@@ -2283,7 +2285,7 @@ witness_set witness_data::choose(BR_configuration & options)
 				// want both a specific dimension and component number
 				if (map_lookup_with_default(dimension_component_counter[target_dimension],target_component,0)==0) {
 					std::cout << "you asked for a component (" << target_component << ") which does not exist" << std::endl;
-					witness_set W(num_variables());
+					WitnessSet W(num_variables());
 					W.set_dimension(target_dimension);
 					W.set_component_number(-1);
 					return W;
@@ -2313,14 +2315,14 @@ witness_set witness_data::choose(BR_configuration & options)
 
 
 
-witness_set witness_data::best_possible_automatic_set(BR_configuration & options)
+WitnessSet NumericalIrreducibleDecomposition::best_possible_automatic_set(BertiniRealConfig & options)
 {
 #ifdef functionentry_output
-	std::cout << "witness_data::best_possible_automatic_set" << std::endl;
+	std::cout << "NumericalIrreducibleDecomposition::best_possible_automatic_set" << std::endl;
 #endif
 	int target_dimension = options.target_dimension;
 	
-	witness_set W(num_variables()); // create blank witness set
+	WitnessSet W(num_variables()); // create blank witness set
 	W.set_dimension(target_dimension);
 	W.set_component_number(-1);
 	
@@ -2406,10 +2408,10 @@ witness_set witness_data::best_possible_automatic_set(BR_configuration & options
 
 
 // lets the user choose a set, and returns a copy of it.
-witness_set witness_data::choose_set_interactive(BR_configuration & options)
+WitnessSet NumericalIrreducibleDecomposition::choose_set_interactive(BertiniRealConfig & options)
 {
 #ifdef functionentry_output
-	std::cout << "witness_data::choose_set_interactive" << std::endl;
+	std::cout << "NumericalIrreducibleDecomposition::choose_set_interactive" << std::endl;
 #endif
 	int target_dimension = options.target_dimension;
 	
@@ -2485,7 +2487,7 @@ witness_set witness_data::choose_set_interactive(BR_configuration & options)
 	
 	
 	//3. return the set via a copy.
-	witness_set W(num_variables());
+	WitnessSet W(num_variables());
 	
 	W.set_dimension(target_dimension);
 	if (chosen_few.size()==1) {
@@ -2524,9 +2526,9 @@ witness_set witness_data::choose_set_interactive(BR_configuration & options)
 
 
 
-witness_set witness_data::form_specific_witness_set(int dim, int comp)
+WitnessSet NumericalIrreducibleDecomposition::form_specific_witness_set(int dim, int comp)
 {
-	witness_set W(num_variables());
+	WitnessSet W(num_variables());
 	
 	W.set_dimension(dim);
 	W.set_component_number(comp);
@@ -2547,7 +2549,7 @@ witness_set witness_data::form_specific_witness_set(int dim, int comp)
 	// ok, it exists.  lets form it.
 	
 	for (auto iter = index_tracker[dim][comp].begin(); iter!= index_tracker[dim][comp].end(); ++iter) {
-		//iter points to an index into the vertices stored in the vertex set.
+		//iter points to an index into the vertices stored in the Vertex set.
 		W.add_point( point(*iter) );
 	}
 	
@@ -2564,12 +2566,11 @@ witness_set witness_data::form_specific_witness_set(int dim, int comp)
 		}
 	}
 	
-	
 	return W;
 }
 
 
-void vertex::set_point(const vec_mp new_point)
+void Vertex::set_point(const vec_mp new_point)
 {
 	change_prec_vec_mp(this->pt_mp_, new_point->curr_prec);
 	vec_cp_mp(this->pt_mp_, new_point);
@@ -2578,7 +2579,7 @@ void vertex::set_point(const vec_mp new_point)
 
 
 
-void vertex::send(int target, parallelism_config & mpi_config)
+void Vertex::send(int target, ParallelismConfig & mpi_config)
 {
 	
 	send_vec_mp(pt_mp_, target);
@@ -2596,7 +2597,7 @@ void vertex::send(int target, parallelism_config & mpi_config)
 }
 
 
-void vertex::receive(int source, parallelism_config & mpi_config)
+void Vertex::receive(int source, ParallelismConfig & mpi_config)
 {
 	MPI_Status statty_mc_gatty;
 	int * buffer = (int *) br_malloc(3*sizeof(int));
@@ -2617,7 +2618,7 @@ void vertex::receive(int source, parallelism_config & mpi_config)
 
 
 
-int vertex_set::search_for_point(vec_mp testpoint)
+int VertexSet::search_for_point(vec_mp testpoint)
 {
     int index = -1;
 	
@@ -2631,7 +2632,7 @@ int vertex_set::search_for_point(vec_mp testpoint)
 }
 
 
-int vertex_set::search_for_active_point(vec_mp testpoint)
+int VertexSet::search_for_active_point(vec_mp testpoint)
 {
     int index = -1; // initialize the index we will return
 
@@ -2654,7 +2655,7 @@ int vertex_set::search_for_active_point(vec_mp testpoint)
 				div_mp(&checker_2_->coord[jj-1], &(current_point)->coord[jj], &(current_point)->coord[0]);
 			}
 			
-			if (isSamePoint_inhomogeneous_input(checker_1_, checker_2_)){
+			if (isSamePoint_inhomogeneous_input(checker_1_, checker_2_, same_point_tolerance_)){
 				index = current_index;
 				break;
 			}
@@ -2670,7 +2671,7 @@ int vertex_set::search_for_active_point(vec_mp testpoint)
 
 
 
-int vertex_set::search_for_removed_point(vec_mp testpoint)
+int VertexSet::search_for_removed_point(vec_mp testpoint)
 {
     
     int index = -1; // initialize the index we will return
@@ -2695,7 +2696,7 @@ int vertex_set::search_for_removed_point(vec_mp testpoint)
 				div_mp(&checker_2_->coord[jj-1], &(current_point)->coord[jj], &(current_point)->coord[0]);
 			}
 			
-			if (isSamePoint_inhomogeneous_input(checker_1_, checker_2_)){
+			if (isSamePoint_inhomogeneous_input(checker_1_, checker_2_, same_point_tolerance_)){
 				index = current_index;
 				break;
 			}
@@ -2713,11 +2714,12 @@ int vertex_set::search_for_removed_point(vec_mp testpoint)
 
 
 
-int vertex_set::compute_downstairs_crit_midpts(const witness_set & W,
+int VertexSet::compute_downstairs_crit_midpts(const WitnessSet & W,
                                                vec_mp crit_downstairs,
                                                vec_mp midpoints_downstairs,
                                                std::vector< int > & index_tracker,
-                                               vec_mp pi)
+                                               vec_mp pi,
+											  tracker_config_t * T)
 {
     
     
@@ -2771,7 +2773,7 @@ int vertex_set::compute_downstairs_crit_midpts(const witness_set & W,
 	
 	
 #ifdef thresholding
-	real_threshold(projection_values, 1e-10);
+	real_threshold(projection_values, T->real_threshold);
 #endif
 	
 	
@@ -2812,7 +2814,7 @@ int vertex_set::compute_downstairs_crit_midpts(const witness_set & W,
 
 
 
-std::vector<int> vertex_set::assert_projection_value(const std::set< int > & relevant_indices, comp_mp new_value)
+std::vector<int> VertexSet::assert_projection_value(const std::set< int > & relevant_indices, comp_mp new_value)
 {
     if (this->curr_projection_<0) {
         std::cout << color::red() << "trying to assert projection value (current index) without having index set" << color::console_default() << std::endl;
@@ -2821,7 +2823,7 @@ std::vector<int> vertex_set::assert_projection_value(const std::set< int > & rel
     return assert_projection_value(relevant_indices,new_value,this->curr_projection_);
 }
 
-std::vector<int> vertex_set::assert_projection_value(const std::set< int > & relevant_indices, comp_mp new_value, int proj_index)
+std::vector<int> VertexSet::assert_projection_value(const std::set< int > & relevant_indices, comp_mp new_value, int proj_index)
 {
 	std::vector<int> bad_indices;
     
@@ -2856,17 +2858,17 @@ std::vector<int> vertex_set::assert_projection_value(const std::set< int > & rel
 
 
 
-int vertex_set::add_vertex(const vertex source_vertex)
+int VertexSet::add_vertex(const Vertex source_vertex)
 {
 	
 	
 //	if (this->num_projections <= 0) {
-//		std::cout << color::red() << "vertex set has no projections!!!" << color::console_default() << std::endl;
+//		std::cout << color::red() << "Vertex set has no projections!!!" << color::console_default() << std::endl;
 //		br_exit(-9644);
 //	}
 //	
 //	if (curr_input_index<0 && source_vertex.input_filename_index == -1) {
-//		std::cout << color::red() << "adding points to vertex set, but input file index unset." << color::console_default() << std::endl;
+//		std::cout << color::red() << "adding points to Vertex set, but input file index unset." << color::console_default() << std::endl;
 //		br_exit(6711);
 //	}
 	
@@ -2916,9 +2918,9 @@ int vertex_set::add_vertex(const vertex source_vertex)
 }
 
 
-void vertex_set::print_to_screen()
+void VertexSet::print_to_screen()
 {
-	printf("vertex set has %zu vertices:\n\n",num_vertices_);
+	printf("Vertex set has %zu vertices:\n\n",num_vertices_);
 	for (unsigned int ii=0; ii<this->num_vertices_; ++ii) {
 		print_point_to_screen_matlab(vertices_[ii].point(),"vert");
 		print_point_to_screen_matlab(vertices_[ii].projection_values(),"projection_values");
@@ -2927,8 +2929,8 @@ void vertex_set::print_to_screen()
 }
 
 
-int vertex_set::setup_vertices(boost::filesystem::path INfile)
-//setup the vertex structure
+int VertexSet::setup_vertices(boost::filesystem::path INfile)
+//setup the Vertex structure
 {
 	FILE *IN = safe_fopen_read(INfile);
 	unsigned int temp_num_vertices;
@@ -2966,7 +2968,7 @@ int vertex_set::setup_vertices(boost::filesystem::path INfile)
 	
 	
 	
-	vertex temp_vertex;
+	Vertex temp_vertex;
 	
 	for (unsigned int ii=0; ii<temp_num_vertices; ii++)
 	{
@@ -2997,7 +2999,7 @@ int vertex_set::setup_vertices(boost::filesystem::path INfile)
 		fscanf(IN,"%d\n",&temp_int);
 	   temp_vertex.set_type(temp_int);
 		
-		vertex_set::add_vertex(temp_vertex);
+		VertexSet::add_vertex(temp_vertex);
 	}
 	
 	
@@ -3018,7 +3020,7 @@ int vertex_set::setup_vertices(boost::filesystem::path INfile)
 
 
 
-void vertex_set::print(boost::filesystem::path outputfile) const
+void VertexSet::print(boost::filesystem::path outputfile) const
 {
 	
 	FILE *OUT = safe_fopen_write(outputfile);
@@ -3081,7 +3083,7 @@ void vertex_set::print(boost::filesystem::path outputfile) const
 
 
 
-void vertex_set::send(int target, parallelism_config & mpi_config)
+void VertexSet::send(int target, ParallelismConfig & mpi_config)
 {
 	
 
@@ -3146,7 +3148,7 @@ void vertex_set::send(int target, parallelism_config & mpi_config)
 }
 
 
-void vertex_set::receive(int source, parallelism_config & mpi_config)
+void VertexSet::receive(int source, ParallelismConfig & mpi_config)
 {
 	MPI_Status statty_mc_gatty;
 	
@@ -3212,7 +3214,7 @@ void vertex_set::receive(int source, parallelism_config & mpi_config)
 
 	
 	for (unsigned int ii=0; ii<temp_num_vertices; ii++) {
-		vertex tempvert;
+		Vertex tempvert;
 		tempvert.receive(source, mpi_config);
 		add_vertex(tempvert);
 	}
@@ -3269,16 +3271,16 @@ void vertex_set::receive(int source, parallelism_config & mpi_config)
 
 
 
-int decomposition::add_witness_set(const witness_set & W, int add_type, vertex_set & V)
+int Decomposition::add_witness_set(const WitnessSet & W, int add_type, VertexSet & V)
 {
 #ifdef functionentry_output
-	std::cout << "decomposition::add_witness_set" << std::endl;
+	std::cout << "Decomposition::add_witness_set" << std::endl;
 #endif
 	
 	
     V.set_curr_input(W.input_filename());
     
-    vertex temp_vertex;
+    Vertex temp_vertex;
     temp_vertex.set_type(add_type);
     
     for (unsigned int ii=0; ii<W.num_points(); ii++) {
@@ -3290,10 +3292,10 @@ int decomposition::add_witness_set(const witness_set & W, int add_type, vertex_s
 }
 
 
-int decomposition::add_vertex(vertex_set & V, vertex source_vertex)
+int Decomposition::add_vertex(VertexSet & V, Vertex source_vertex)
 {
 #ifdef functionentry_output
-	std::cout << "decomposition::add_vertex" << std::endl;
+	std::cout << "Decomposition::add_vertex" << std::endl;
 #endif
 	
 	int current_index = V.add_vertex(source_vertex);
@@ -3307,11 +3309,11 @@ int decomposition::add_vertex(vertex_set & V, vertex source_vertex)
 
 
 
-int decomposition::index_in_vertices(vertex_set & V,
+int Decomposition::index_in_vertices(VertexSet & V,
 									 vec_mp testpoint)
 {
 #ifdef functionentry_output
-	std::cout << "decomposition::index_in_vertices" << std::endl;
+	std::cout << "Decomposition::index_in_vertices" << std::endl;
 #endif
 	int index = -1;
 	
@@ -3327,15 +3329,14 @@ int decomposition::index_in_vertices(vertex_set & V,
 
 
 
-//TODO: make T here a pointer
 
-int decomposition::index_in_vertices_with_add(vertex_set &V,
-											  vertex vert)
+int Decomposition::index_in_vertices_with_add(VertexSet &V,
+											  Vertex vert)
 {
-	int index = decomposition::index_in_vertices(V, vert.point());
+	int index = Decomposition::index_in_vertices(V, vert.point());
 	
 	if (index==-1) {
-		index = decomposition::add_vertex(V, vert);
+		index = Decomposition::add_vertex(V, vert);
 	}
 	
 	return index;
@@ -3352,7 +3353,7 @@ int decomposition::index_in_vertices_with_add(vertex_set &V,
 
 
 
-int decomposition::setup(boost::filesystem::path INfile)
+int Decomposition::setup(boost::filesystem::path INfile)
 {
 	boost::filesystem::path directoryName = INfile.parent_path();
 
@@ -3388,7 +3389,7 @@ int decomposition::setup(boost::filesystem::path INfile)
 			mpf_set_str(tempvec->coord[jj].i, const_cast<char *>(im.c_str()), 10);
 		}
 		
-		decomposition::add_projection(tempvec);
+		Decomposition::add_projection(tempvec);
 	}
 	
 	
@@ -3415,7 +3416,7 @@ int decomposition::setup(boost::filesystem::path INfile)
 			mpf_set_str(temp_patch->coord[jj].i, const_cast<char *>(im.c_str()), 10);
 		}
 		
-		decomposition::add_patch(temp_patch);
+		Decomposition::add_patch(temp_patch);
 	}
 	
 	
@@ -3434,15 +3435,15 @@ int decomposition::setup(boost::filesystem::path INfile)
 
 
 
-void decomposition::print(boost::filesystem::path base)
+void Decomposition::print(boost::filesystem::path base)
 {
 	
 #ifdef functionentry_output
-	std::cout << "decomposition::print" << std::endl;
+	std::cout << "Decomposition::print" << std::endl;
 #endif
 	
 	if (dimension() != num_curr_projections()) {
-//		std::cout << "decomposition was short projections\nneeded	" << this->dimension << " but had " << num_curr_projections << std::endl;;
+//		std::cout << "Decomposition was short projections\nneeded	" << this->dimension << " but had " << num_curr_projections << std::endl;;
 	}
 	
 	
@@ -3500,14 +3501,14 @@ void decomposition::print(boost::filesystem::path base)
 
 
 
-int decomposition::read_sphere(const boost::filesystem::path & bounding_sphere_filename)
+int Decomposition::read_sphere(const boost::filesystem::path & bounding_sphere_filename)
 {
 #ifdef functionentry_output
-	std::cout << "decomposition::read_sphere" << std::endl;
+	std::cout << "Decomposition::read_sphere" << std::endl;
 #endif
 	
 	if (num_variables_<2) {
-		std::cout << "during read of sphere, decomposition of dimension	" << dimension() << " has " << num_variables() << " variables!" << std::endl;
+		std::cout << "during read of sphere, Decomposition of dimension	" << dimension() << " has " << num_variables() << " variables!" << std::endl;
 		mypause();
 	}
 
@@ -3526,10 +3527,6 @@ int decomposition::read_sphere(const boost::filesystem::path & bounding_sphere_f
 		mpf_set_str(sphere_center_->coord[jj-1].i,"0",10);
 	}
 	
-	//TODO: check this line for validity
-	int tmp_num_vars;
-	fscanf(IN,"%d",&tmp_num_vars); scanRestOfLine(IN);
-	
 	
 	fclose(IN);
 	
@@ -3542,11 +3539,11 @@ int decomposition::read_sphere(const boost::filesystem::path & bounding_sphere_f
 
 
 
-void decomposition::compute_sphere_bounds(const witness_set & W_crit)
+void Decomposition::compute_sphere_bounds(const WitnessSet & W_crit)
 {
 	
 #ifdef functionentry_output
-	std::cout << "decomposition::compute_sphere_bounds" << std::endl;
+	std::cout << "Decomposition::compute_sphere_bounds" << std::endl;
 #endif
 
 	
@@ -3661,7 +3658,7 @@ void decomposition::compute_sphere_bounds(const witness_set & W_crit)
 
 
 
-void decomposition::copy_data_from_witness_set(const witness_set & W)
+void Decomposition::copy_data_from_witness_set(const WitnessSet & W)
 {
 	// set some member information.
 	set_input_filename(W.input_filename());
@@ -3671,10 +3668,10 @@ void decomposition::copy_data_from_witness_set(const witness_set & W)
 	this->W_ = W;
 }
 
-void decomposition::output_main(const boost::filesystem::path base)
+void Decomposition::output_main(const boost::filesystem::path base)
 {
 #ifdef functionentry_output
-	std::cout << "decomposition::output_main" << std::endl;
+	std::cout << "Decomposition::output_main" << std::endl;
 #endif
 
 	FILE *OUT;
@@ -3720,10 +3717,10 @@ void decomposition::output_main(const boost::filesystem::path base)
 
 
 
-void decomposition::send(int target, parallelism_config & mpi_config)
+void Decomposition::send(int target, ParallelismConfig & mpi_config)
 {
 #ifdef functionentry_output
-	std::cout << "decomposition::send" << std::endl;
+	std::cout << "Decomposition::send" << std::endl;
 #endif
 
 	
@@ -3798,10 +3795,10 @@ void decomposition::send(int target, parallelism_config & mpi_config)
 
 
 
-void decomposition::receive(int source, parallelism_config & mpi_config)
+void Decomposition::receive(int source, ParallelismConfig & mpi_config)
 {
 #ifdef functionentry_output
-	std::cout << "decomposition::receive" << std::endl;
+	std::cout << "Decomposition::receive" << std::endl;
 #endif
 
 	

@@ -41,7 +41,7 @@
  
  */
 bool checkSelfConjugate(vec_mp test_point,
-						BR_configuration & program_options,
+						BertiniRealConfig & program_options,
 						boost::filesystem::path input_file);
 
 
@@ -56,7 +56,7 @@ bool checkSelfConjugate(vec_mp test_point,
  
  \return the incidence number for the component, relative to the incidence_matrix file.
  */
-int get_incidence_number(vec_mp test_point, BR_configuration & program_options, boost::filesystem::path input_file);
+int get_incidence_number(vec_mp test_point, BertiniRealConfig & program_options, boost::filesystem::path input_file);
 
 /**
  \brief write a single point to "member_points"

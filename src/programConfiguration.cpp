@@ -81,7 +81,7 @@ void prog_config::move_to_called()
 
 
 
-int BR_configuration::startup()
+int BertiniRealConfig::startup()
 /***************************************************************\
  * USAGE:    prepares the variables inputname and startname
  *      for use later in the program
@@ -121,7 +121,7 @@ int BR_configuration::startup()
 	return 0;
 }
 
-void BR_configuration::splash_screen()
+void BertiniRealConfig::splash_screen()
 {
 	printf("\n BertiniReal(TM) v%s\n\n", BERTINI_REAL_VERSION_STRING);
 	printf(" D.A. Brake with\n D.J. Bates, W. Hao, J.D. Hauenstein,\n A.J. Sommese, C.W. Wampler\n\n");
@@ -139,7 +139,7 @@ void BR_configuration::splash_screen()
 
 
 
-void BR_configuration::display_current_options()
+void BertiniRealConfig::display_current_options()
 {
 	printf("current options:\n\n");
 	
@@ -172,7 +172,7 @@ void BR_configuration::display_current_options()
 
 
 
-int  BR_configuration::parse_commandline(int argc, char **argv)
+int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 {
 	// this code created based on gnu.org's description of getopt_long
 	int choice;
@@ -284,7 +284,7 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 				printf("\nBertiniReal(TM) v %s.\n\n", BERTINI_REAL_VERSION_STRING);
 				printf("Online at bertinireal.com\n\n");
 				printf("For immediate support, send email to danielthebrake@gmail.com\n\n");
-				BR_configuration::print_usage();
+				BertiniRealConfig::print_usage();
 				exit(0);
 				break;
 				
@@ -314,7 +314,7 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 				break;
 				
 			default:
-				BR_configuration::print_usage();
+				BertiniRealConfig::print_usage();
 				exit(0); //
 		}
 	}
@@ -347,7 +347,7 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 }
 
 
-void BR_configuration::print_usage()
+void BertiniRealConfig::print_usage()
 {
 	printf("bertini_real has the following options:\n----------------------\n");
 	printf("option name(s)\t\t\targument\n\n");
@@ -364,7 +364,7 @@ void BR_configuration::print_usage()
 	return;
 }
 
-void BR_configuration::init()
+void BertiniRealConfig::init()
 {
 	target_component = -2;
 	target_dimension = -1;

@@ -1,6 +1,6 @@
 
 #choose some options.  by default, compiler optimization is turned off
-OPT:= -Dverbose  -g   -Dthresholding # -Ddebug_compile -Dfunctionentry_output # -O3 #-Wdeprecated # -Dprintpathlinprod  -O3 -funroll-loops -fexpensive-optimizations
+OPT:= -Dverbose  -g   -Dthresholding # -Dfunctionentry_output # -Ddebug_compile  -O3 #-Wdeprecated # -Dprintpathlinprod  -O3 -funroll-loops -fexpensive-optimizations
 
 COMPFLAGS=  -pedantic -Wall -ansi -Wsign-compare -Wformat -Wbind-to-temporary-copy -Wno-c++11-extensions -Wambiguous-member-template -Wextra-tokens -Wunused-parameter -Wdocumentation -Wdocumentation-unknown-command
 
@@ -34,7 +34,7 @@ ifeq ($(MACHINENAME),MACBRAKE)
     STATICFLAG=#  on macintosh, do not static compile (get missing lcrt0.o problem)
 	BERTINILIB:=$(HOME)/lib/libbertini_parallel.a
 	INSTALLPATH:=$(HOME)/bin
-	BERTINIHEADERS:=$(HOME)/bertini_source/include
+	BERTINIHEADERS:=$(HOME)/bertini_source_1.4.1modded/include
 
 	BOOSTLOC := /usr/local/Cellar/boost/1.56.0/lib/
 	BOOSTSUFFIX:=-mt
