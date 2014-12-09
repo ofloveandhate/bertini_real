@@ -163,9 +163,9 @@ public:
 
 /**
  \brief reads in projection from file if user specified, creates one otherwise.
- 
+
  currently defaults to create a random real projection with homogeneous value 0;
- 
+
  \param pi the projection vectors to fill.  must be initted already, but not necessarily the correct size.
  \param program_options The current state of Bertini_real.
  \param num_vars how many variables to set up, including the homogenizing variable.

@@ -86,7 +86,7 @@ int main(int argC, char *args[])
 	
 	
 	
-		common_sampler_startup(*decom_pointy,
+	common_sampler_startup(*decom_pointy,
 						   sampler_options,
 						   solve_options);// this does nothing so far.  want to abstract it.
 	
@@ -2074,19 +2074,19 @@ void triangulate_two_ribs_by_angle_optimization(const std::vector< int > & rib1,
 
 		
 		
-		
-		
-		
+			
+			
+			
 		// the below lines computes the sum of the squares of the differences of the absolute values of the cosines of two of the angles in one of the triangles.
-		
+			
 		//CAB
 		double total_error_rib1 = compute_square_of_difference_from_sixtydegrees(temp, length_AC, length_AB, dot_CAB);
 #ifdef debug_compile
 		print_comp_matlab(dot_CAB,"CAB");
 		std::cout << c << " " << a << " " << b << " " << total_error_rib1 << std::endl;
 #endif
-		
-		
+			
+			
 		//BCA
 		double angle_BCA = compute_square_of_difference_from_sixtydegrees(temp, length_BC, length_AC, dot_BCA);
 #ifdef debug_compile
@@ -2094,7 +2094,7 @@ void triangulate_two_ribs_by_angle_optimization(const std::vector< int > & rib1,
 		std::cout << b << " " << c << " " << a << " " << angle_BCA << std::endl;
 #endif
 		total_error_rib1 += angle_BCA;
-		
+			
 		//ABC
 		double angle_ABC = compute_square_of_difference_from_sixtydegrees(temp, length_BC, length_AB, dot_ABC);
 		total_error_rib1 += angle_ABC;
@@ -2102,23 +2102,23 @@ void triangulate_two_ribs_by_angle_optimization(const std::vector< int > & rib1,
 		print_comp_matlab(dot_ABC,"ABC");
 		std::cout << a << " " << b << " " << c << " " << angle_ABC << std::endl;
 #endif
-		
-		
-		
-		
-		
-		
+			
+			
+			
+			
+			
+			
 		//DCA
 		double total_error_rib2 = compute_square_of_difference_from_sixtydegrees(temp, length_DC, length_AC, dot_DCA);
 #ifdef debug_compile
 		print_comp_matlab(dot_DCA,"DCA");
 		std::cout << d << " " << c << " " << a << " " << total_error_rib2 << std::endl;
 #endif
-		
+			
 		//ADC
-		
+			
 		double angle_ADC = compute_square_of_difference_from_sixtydegrees(temp, length_DA, length_DC, dot_ADC);
-		
+			
 		total_error_rib2+= angle_ADC;
 #ifdef debug_compile
 		print_comp_matlab(dot_ADC,"ADC");
@@ -2127,14 +2127,14 @@ void triangulate_two_ribs_by_angle_optimization(const std::vector< int > & rib1,
 		//CAD
 		double angle_CAD = compute_square_of_difference_from_sixtydegrees(temp, length_AC, length_DA, dot_CAD);
 		total_error_rib2 += angle_CAD;
-		
+			
 #ifdef debug_compile
 		print_comp_matlab(dot_CAD,"CAD");
 		std::cout << c << " " << a << " " << d << " " << angle_CAD << std::endl;
 #endif
 		
 		
-		
+			
 		
 		
 		if ((total_error_rib1>0.25) && (total_error_rib2>0.25)){
@@ -2179,9 +2179,9 @@ void triangulate_two_ribs_by_angle_optimization(const std::vector< int > & rib1,
 //			}
 //		}
 		
-		
-		
-		
+	
+	
+	
 		if (advance==1) { // if the 1 Triangle is more equilateral than the 2 Triangle.
 			current_samples.push_back(
 									  Triangle(// Triangle A B C
@@ -2191,7 +2191,7 @@ void triangulate_two_ribs_by_angle_optimization(const std::vector< int > & rib1,
 									  );
 			moved_1 = true;  curr_index_rib1++;
 			moved_2 = false;
-			
+	
 		}
 		else
 		{
@@ -2204,7 +2204,7 @@ void triangulate_two_ribs_by_angle_optimization(const std::vector< int > & rib1,
 			moved_1 = false;
 			moved_2 = true; curr_index_rib2++;
 		}
-		
+	
 	} // re: while loop.
 	
 	
@@ -2221,7 +2221,7 @@ void triangulate_two_ribs_by_angle_optimization(const std::vector< int > & rib1,
 		index_still_going = curr_index_rib2;
 		terminal_index = curr_index_rib1;
 		flip = false;
-	}
+		}
 	else
 	{
 		exhausted_rib = &rib2;
@@ -2230,7 +2230,7 @@ void triangulate_two_ribs_by_angle_optimization(const std::vector< int > & rib1,
 		terminal_index = curr_index_rib2;
 		flip = true;
 	}
-	
+		
 	
 	for (; index_still_going < rib_still_going->size()-1; index_still_going++) { // initializer deliberately empty
 		
@@ -2238,14 +2238,14 @@ void triangulate_two_ribs_by_angle_optimization(const std::vector< int > & rib1,
 		if (flip) {
 			v1 = rib_still_going->at(index_still_going);
 			v2 = rib_still_going->at(index_still_going+1);
-		}
+	}
 		else
 		{
 			v1 = rib_still_going->at(index_still_going+1);
 			v2 = rib_still_going->at(index_still_going);
 		}
 		v3 = exhausted_rib->at(terminal_index);
-		
+	
 		current_samples.push_back( Triangle(v1,v2,v3) );
 	}
 	

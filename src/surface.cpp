@@ -302,7 +302,7 @@ void Surface::main(VertexSet & V,
 	
 	clear_vec_mp(crit_downstairs); clear_vec_mp(midpoints_downstairs);
     
-	
+
 	if (program_options.verbose_level()>=0) {
 		std::cout << "decomposed surface has " << num_faces() << " faces" << std::endl;
 	}
