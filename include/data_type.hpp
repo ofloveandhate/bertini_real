@@ -2137,7 +2137,7 @@ public:
 	
 	/**
 	 get the tracker config struct
-	
+	 
 	 \return a pointer to the tracker config.
 	 */
 	tracker_config_t * T() const
@@ -2147,7 +2147,7 @@ public:
 	
 	/**
 	 set the tracker config pointer
-	
+	 
 	 \param new_T a pointer to the tracker config.
 	 */
 	void set_tracker_config(tracker_config_t * new_T)
@@ -2442,8 +2442,8 @@ public:
                                        std::vector< int > & index_tracker,
 									   vec_mp pi,
 									   tracker_config_t * T);
-    
-    
+	
+	
 	/**
 	 
 	 sets the value of the [current] projection for each Vertex which has index in the set of relevant indices.
@@ -3129,7 +3129,7 @@ public:
 			std::cout << std::endl;
 		}
 		
-		}
+	}
 	
 	
 	
@@ -4063,11 +4063,11 @@ protected:
 	//	function input_file;
 	int num_variables_; ///< the number of variables in the Decomposition
 	
-
+	
 	std::shared_ptr<SystemRandomizer> randomizer_; ///< the randomizer for the Decomposition.
 	
-	
 
+	
 	
 	int add_vertex(VertexSet &V, Vertex source_vertex);
 	
@@ -4094,10 +4094,10 @@ protected:
 		set_one_mp(sphere_radius_);
 		neg_mp(sphere_radius_,sphere_radius_);
 	}
-		
-
-		
-
+	
+	
+	
+	
 	void copy(const Decomposition & other)
 	{
 		PatchHolder::copy(other);

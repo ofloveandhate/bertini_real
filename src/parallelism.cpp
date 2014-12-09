@@ -107,11 +107,11 @@ int UbermasterProcess::main_loop()
 	{
 		critreal(W,pi,V);
 	}
-		
 	
 	
 	
 
+	
 	
 	for (int ii=0; ii<W.dimension(); ii++)
 		clear_vec_mp(pi[ii]);
@@ -129,18 +129,18 @@ int UbermasterProcess::main_loop()
 
 
 void UbermasterProcess::bertini_real(WitnessSet & W, vec_mp *pi, VertexSet & V)
-		{
-			
+{
+	
 	
 	W.set_incidence_number(get_incidence_number( W.point(0), program_options, program_options.input_filename));
 	
-			boost::filesystem::path temp_name = program_options.output_dir();
-			std::stringstream converter;
+	boost::filesystem::path temp_name = program_options.output_dir();
+	std::stringstream converter;
 	converter << "_dim_" << W.dimension() << "_comp_" << W.component_number();
-			temp_name += converter.str();
-			
-			program_options.output_dir(temp_name);
-			
+	temp_name += converter.str();
+	
+	program_options.output_dir(temp_name);
+	
 	
 	
 	

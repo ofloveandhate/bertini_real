@@ -759,7 +759,7 @@ public:
 	
 	/**
 	 \brief get the number of faces in the surface.
-	
+	 
 	 \return the number of faces.
 	 */
 	unsigned int num_faces()
