@@ -582,12 +582,6 @@ void get_tracker_config(SolverConfiguration & solve_options,int MPType)
 	
 	mpf_init2(solve_options.T.latest_newton_residual_mp, solve_options.T.AMP_max_prec);
 	
-    //	if (solve_options.T.final_tolerance > solve_options.T.real_threshold)
-    if (solve_options.T.real_threshold < 1e-6) {
-        solve_options.T.real_threshold = 1e-6;
-    }
-    
-	
 	
 	cp_tracker_config_t(&solve_options.T_orig,&solve_options.T);
 	
@@ -610,7 +604,7 @@ void master_solver(SolverOutput & solve_out, const WitnessSet & W,
 {
 	
 	
-	
+	initMP(mpf_get_default_prec());
 	
     int num_crossings = 0;
 	
@@ -630,7 +624,7 @@ void master_solver(SolverOutput & solve_out, const WitnessSet & W,
 		settings_buffer[0] = solve_options.robust;
 		settings_buffer[1] = solve_options.use_gamma_trick;
 		
-		MPI_Bcast(settings_buffer,2,MPI_INT, 0, MPI_COMM_WORLD);
+		MPI_Bcast(settings_buffer,2,MPI_INT, 0, solve_options.comm());
 		free(settings_buffer);
 		
 		switch (solve_options.T.MPType) {
@@ -954,6 +948,9 @@ void master_tracker_loop(trackingStats *trackCount,
 	point_data_d *startPts_d = NULL;
 	point_data_mp *startPts_mp = NULL;
 	
+	
+	
+	
 	switch (solve_options.T.MPType) {
 		case 1:
 			generic_set_start_pts(&startPts_mp, W);
@@ -976,7 +973,7 @@ void master_tracker_loop(trackingStats *trackCount,
 	int solution_counter = 0;
 	
 	int total_number_points = W.num_points();
-	MPI_Bcast(&total_number_points, 1, MPI_INT, solve_options.head(), MPI_COMM_WORLD);
+	MPI_Bcast(&total_number_points, 1, MPI_INT, solve_options.head(), solve_options.comm());
 	
 	
 	int max_incoming = get_num_at_a_time(solve_options.num_procs()-1,total_number_points);
@@ -1120,11 +1117,11 @@ void worker_tracker_loop(trackingStats *trackCount,
 	
 	int numStartPts = 1;
 	
-	MPI_Bcast(&total_number_points, 1, MPI_INT, solve_options.head(), MPI_COMM_WORLD);
+	MPI_Bcast(&total_number_points, 1, MPI_INT, solve_options.head(), solve_options.comm());
 	while (1)
 	{
         //		std::cout << "worker" << solve_options.id() << " receiving work" << std::endl;
-		MPI_Recv(&numStartPts, 1, MPI_INT, solve_options.head(), NUMPACKETS, MPI_COMM_WORLD, &statty_mc_gatty);
+		MPI_Recv(&numStartPts, 1, MPI_INT, solve_options.head(), NUMPACKETS, solve_options.comm(), &statty_mc_gatty);
 		// recv next set of start points
 		
 		if (numStartPts==0) {
@@ -1167,7 +1164,7 @@ void worker_tracker_loop(trackingStats *trackCount,
 			max_num_allocated = numStartPts;
 		}
 		
-		MPI_Recv(indices_incoming, numStartPts, MPI_INT, solve_options.head(), INDICES, MPI_COMM_WORLD, &statty_mc_gatty);
+		MPI_Recv(indices_incoming, numStartPts, MPI_INT, solve_options.head(), INDICES, solve_options.comm(), &statty_mc_gatty);
 		
 		for (int ii=0; ii<numStartPts; ii++) {
 			switch (solve_options.T.MPType) {
@@ -1232,9 +1229,11 @@ void worker_tracker_loop(trackingStats *trackCount,
 			
             
 		}// re: for (ii=0; ii<W.num_points ;ii++)
-        
-		MPI_Send(&numStartPts, 1, MPI_INT, solve_options.head(), NUMPACKETS, MPI_COMM_WORLD);
-		send_recv_endgame_data_t(&EG, &numStartPts, solve_options.T.MPType, solve_options.head(), 1);
+		
+		
+		MPI_Send(&numStartPts, 1, MPI_INT, solve_options.head(), NUMPACKETS, solve_options.comm());
+		
+		send_recv_endgame_data_t(&EG, &numStartPts, solve_options.T.MPType, solve_options.head(), 1); //1 is 'issending'
 		
 		
 	}
@@ -1278,7 +1277,7 @@ void send_start_points(int next_worker, int num_packets,
                        int & next_index,
                        SolverConfiguration & solve_options)
 {
-	MPI_Send(&num_packets, 1, MPI_INT, next_worker, NUMPACKETS, MPI_COMM_WORLD);
+	MPI_Send(&num_packets, 1, MPI_INT, next_worker, NUMPACKETS, solve_options.comm());
 	
 	int *indices_outgoing = new int[num_packets];
 	
@@ -1288,7 +1287,7 @@ void send_start_points(int next_worker, int num_packets,
 	}
 	
     
-	MPI_Send(indices_outgoing, num_packets, MPI_INT, next_worker, INDICES, MPI_COMM_WORLD);
+	MPI_Send(indices_outgoing, num_packets, MPI_INT, next_worker, INDICES, solve_options.comm());
 	
 	
 	
@@ -1316,13 +1315,20 @@ int receive_endpoints(trackingStats *trackCount,
                       SolverDoublePrecision * ED_d, SolverMultiplePrecision * ED_mp,
                       SolverConfiguration & solve_options)
 {
-    
+	
+	
 	//now to receive data
 	int num_incoming;
 	MPI_Status statty_mc_gatty;
-	MPI_Recv(&num_incoming, 1, MPI_INT, MPI_ANY_SOURCE, NUMPACKETS, MPI_COMM_WORLD, &statty_mc_gatty);
-	
 
+	MPI_Recv(&num_incoming, 1, MPI_INT, MPI_ANY_SOURCE, NUMPACKETS, solve_options.comm(), &statty_mc_gatty);
+	
+	if (statty_mc_gatty.MPI_SOURCE>= int(solve_options.num_procs()) || statty_mc_gatty.MPI_SOURCE<0) {
+		std::cout << statty_mc_gatty.MPI_SOURCE << ", " << solve_options.num_procs() << std::endl;
+		mypause();
+	}
+	
+	
 	if (num_incoming > max_incoming) {
 		std::cout << "the impossible happened -- want to receive more endpoints than max" << std::endl;
 	}
@@ -1579,13 +1585,14 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 	
 	int iterations=0, max_iterations = 3;
 	
-	solve_options.backup_tracker_config();
+	solve_options.backup_tracker_config("robust_init");
 	
 	
 	
 	std::map <int,int> setting_increments;
     
-    
+	solve_options.increment_num_paths_tracked();
+	
 	
 	EG_out->retVal = -876; // set to bad return value
 	while ((iterations<max_iterations) && (EG_out->retVal!=0)) {
@@ -1681,10 +1688,6 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 		
 		
 		
-        //TODO: PUT the is_solution check right here.
-		
-		
-		
 		
 		
 		
@@ -1695,7 +1698,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 		// get how many times we have changed settings due to this type of failure.
 		int current_retval_counter = map_lookup_with_default( setting_increments, EG_out->retVal, 0 ); // how many times have we encountered this retval?
 		
-		if ( !(EG_out->retVal==0  )) {  // ||   EG_out->retVal==-50
+		if ( EG_out->retVal!=0 ) {  // ||   EG_out->retVal==-50
 			
 			vec_d solution_as_double; init_vec_d(solution_as_double,0);
 			if (EG_out->prec < 64){
@@ -1730,7 +1733,6 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 			}
 			
 			
-			solve_options.increment_num_paths_tracked();
 			
 			// if
 			if ( (time_to_compare->r < std::max(1e-3,1e-2*solve_options.T.endgameBoundary)) && (infNormVec_d(solution_as_double) > solve_options.T.finiteThreshold)) {
@@ -1765,10 +1767,12 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
                     solve_options.T.endgameNumber = 2;
                     
 					
-					if (current_retval_counter>2) {
-						solve_options.T.odePredictor  = MIN(8,solve_options.T.odePredictor+1);
+					if (current_retval_counter>=0) { // changing predictor
+						solve_options.T.odePredictor  = (solve_options.T.odePredictor+1) %9;
 					}
-					
+					if (current_retval_counter>=2) {
+						solve_options.T.maxStepSize *= 0.1;
+					}
 					
 					break;
 					
@@ -1853,7 +1857,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 		}
 	}
 
-	solve_options.reset_tracker_config();
+	solve_options.restore_tracker_config("robust_init");
 	
 	return;
 } // re: robust_track_path
@@ -1998,6 +2002,21 @@ int generic_setup_files(FILE ** OUT, boost::filesystem::path outname,
 	
 	return SUCCESSFUL;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

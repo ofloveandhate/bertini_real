@@ -155,6 +155,7 @@ public:
 	
 	/**
 	 \brief a mediocre function, which purports to copy from one MultilinConfiguration to another.  this is broken.
+	 \param other The MultilinConfiguration from which to copy.
 	 */
 	void copy(const MultilinConfiguration & other)
 	{

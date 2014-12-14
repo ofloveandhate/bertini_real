@@ -1094,7 +1094,7 @@ void create_nullspace_system(boost::filesystem::path output_name,
 	
 	// run Matlab script
 	std::stringstream converter;
-	converter << program_options.matlab_command << " < matlab_nullspace_system.m";
+	converter << program_options.matlab_command() << " < matlab_nullspace_system.m";
 	system(converter.str().c_str());
 	converter.clear(); converter.str("");
 	

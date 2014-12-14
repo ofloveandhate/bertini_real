@@ -42,6 +42,8 @@ void parse_input_file(boost::filesystem::path filename, int * MPType)
 	int my_id = 0, num_processes = 1, headnode = 0; // headnode is always 0
 	
 	
+	int bcastme = PARSING;
+	MPI_Bcast(&bcastme, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	//end parser-bertini essentials
 	
 	
@@ -103,18 +105,18 @@ int BertiniRealConfig::startup()
 	
 	//test for presence of necessary files
 	FILE *IN;
-	IN = safe_fopen_read(this->input_filename.c_str());
+	IN = safe_fopen_read(this->input_filename());
 	fclose(IN);
 	
 	
 	
 	if (this->user_projection()) {
-		IN = safe_fopen_read(this->projection_filename.c_str());
+		IN = safe_fopen_read(this->projection_filename());
 		fclose(IN);
 	}
 	
 	if (this->user_sphere()) {
-		IN = safe_fopen_read(this->bounding_sphere_filename.c_str());
+		IN = safe_fopen_read(this->bounding_sphere_filename());
 		fclose(IN);
 	}
 	
@@ -141,31 +143,31 @@ void BertiniRealConfig::splash_screen()
 
 void BertiniRealConfig::display_current_options()
 {
-	printf("current options:\n\n");
+	std::cout << "current options:\n\n";
 	
-	printf("user_projection: %d",this->user_projection());
+	std::cout << "user_projection: " << user_projection();
 	if (this->user_projection())
-		printf(", %s\n",this->projection_filename.c_str());
+		std::cout << ", " << projection_filename_.string() << ",\n";
 	else
-		printf("\n");
+		std::cout << "\n";
 	
 	
 
 	
 	
-	printf("user_sphere: %d",user_sphere());
+	std::cout << "user_sphere: " << user_sphere();
 	if (user_sphere())
-		printf(", %s\n",bounding_sphere_filename.c_str());
+		std::cout << ", " << bounding_sphere_filename_.string() << "\n";
 	else
-		printf("\n");
+		std::cout << "\n";
 	
 	
-	printf("input_filename: %s\n",this->input_filename.c_str());
+	std::cout << "input_filename: " << input_filename_.string() << "\n";
 
 	
-	std::cout << "stifle_text: " << this->stifle_text() << std::endl;
-	std::cout << "bertini_command: " << this->bertini_command << std::endl;
-	std::cout << "output_directory base name: " << this->output_dir() << std::endl;
+	std::cout << "stifle_text: " << stifle_text() << "\n";
+	std::cout << "matlab_command: " << matlab_command() << "\n";
+	std::cout << "output_directory base name: " << output_dir() << std::endl;
 	
 }
 
@@ -213,11 +215,11 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 		switch (choice)
 		{
 			case 'd':
-				target_dimension = atoi(optarg);
+				target_dimension_ = atoi(optarg);
 				break;
 				
 			case 'c':
-				target_component = atoi(optarg);
+				target_component_ = atoi(optarg);
 				break;
 				
 			case 'D':
@@ -225,11 +227,7 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 				break;
 		
 			case 'g':
-				this->use_gamma_trick = atoi(optarg);
-				if (! (this->use_gamma_trick==0 || this->use_gamma_trick==1) ) {
-					printf("value for 'gammatrick' or 'g' must be 1 or 0\n");
-					br_exit(689);
-				}
+				this->use_gamma_trick_ = atoi(optarg);
 				break;
 				
 			case 'V':
@@ -251,19 +249,19 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 				
 			case 'p':
 				user_projection(true);
-				projection_filename = optarg;
+				projection_filename_ = boost::filesystem::absolute(optarg);
 				break;
 				
 				
 				
 			case 'S':
 				user_sphere(true);
-				this->bounding_sphere_filename = boost::filesystem::absolute(optarg);
+				this->bounding_sphere_filename_ = boost::filesystem::absolute(optarg);
 				break;
 				
 				
 			case 'i': // input filename
-				input_filename = optarg;
+				input_filename_ = optarg;
 				break;
 				
 			case 'q':
@@ -296,15 +294,15 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 				std::cout << usermode << std::endl;
 				
 				if (usermode=="bertini_real") {
-					this->primary_mode = BERTINIREAL;
+					this->primary_mode_ = BERTINIREAL;
 				}
 				else if (usermode=="crit") {
-					this->primary_mode = CRIT;
+					this->primary_mode_ = CRIT;
 				}
 				else
 				{
 					std::cout << "bad mode of operation.  acceptable options are [bertini_real] and crit." << std::endl;
-					br_exit(69154);
+					exit(0);
 				}
 				
 				break;
@@ -366,41 +364,39 @@ void BertiniRealConfig::print_usage()
 
 void BertiniRealConfig::init()
 {
-	target_component = -2;
-	target_dimension = -1;
+	target_component_ = -2;
+	target_dimension_ = -1;
 	
 	quick_run_ = 0;
 	debugwait_ = false;
 	max_deflations_ = 10;
 	
 	user_projection_ = false;
-	projection_filename = "";
+	projection_filename_ = "";
 	
 	orthogonal_projection_ = true;
 	
 	user_sphere_ = false;
-	bounding_sphere_filename = "";
+	bounding_sphere_filename_ = "";
 	
-	input_filename = "input";
+	input_filename_ = "input";
 	
 	
-	output_dir(boost::filesystem::absolute("output"));
+	output_dir(boost::filesystem::absolute("./output"));
 	
 	
 	stifle_membership_screen_ = true;
 	stifle_text_ = " > /dev/null ";
 	
-	bertini_command = "~/bin/bertini_serial";
-	matlab_command = "matlab -nosplash -nodesktop -nojvm";
+	matlab_command_ = "matlab -nosplash -nodesktop -nojvm";
 	verbose_level(0); // default to 0
 	
-	MPType = 2;
 	
-	use_gamma_trick = 0;
+	use_gamma_trick_ = false;
 	
 	merge_edges_ = true;
 	
-	primary_mode = BERTINIREAL;
+	primary_mode_ = BERTINIREAL;
 	
 	return;
 }

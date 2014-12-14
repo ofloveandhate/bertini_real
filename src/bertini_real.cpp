@@ -31,17 +31,15 @@ int main(int argC, char *args[])
 	
 	
 	if (program_options.debugwait()) {
-		std::cout << "in debug mode, waiting to start so you can attach to this process" << std::endl;
+		
 		if (solve_options.is_head()) {
+			std::cout << "in debug mode, waiting to start so you can attach to this process" << std::endl;
 			std::cout << "master PID: " << getpid() << std::endl;
 			for (int ii=0; ii<30; ii++) {
 				std::cout << "starting program in " << 30-ii << " seconds" << std::endl;
 				sleep(1);
 				std::cout << "\033[F"; // that's a line up movement.  only works with some terminals
 			}
-		}
-		else{
-			sleep(30);
 		}
 		
 		
@@ -56,7 +54,7 @@ int main(int argC, char *args[])
 	
 	if (solve_options.is_head()) {
 		// split the input_file.  this must be called before setting up the solver config.
-		parse_input_file(program_options.input_filename, &MPType);
+		parse_input_file(program_options.input_filename(), &MPType);
 		
 		// set up the solver configuration
 		get_tracker_config(solve_options,MPType);
@@ -66,13 +64,15 @@ int main(int argC, char *args[])
 	else
 	{ // catch the bcast from parallel parsing (which cannot be disabled)
 		int arbitrary_int;
-		MPI_Bcast(&arbitrary_int,1,MPI_INT,0,MPI_COMM_WORLD);
+		MPI_Bcast(&arbitrary_int,1,MPI_INT,0,MPI_COMM_WORLD); // first is declaration that a parse is going to happen.
+		MPI_Bcast(&arbitrary_int,1,MPI_INT,0,MPI_COMM_WORLD); // second is the bcast from the parse.
+															  //yes, you do have to do both of these.
 	}
 	
 	
 	
+	
 	if (solve_options.use_parallel()) { // everybody participates in this.
-		MPI_Bcast(&MPType, 1, MPI_INT, 0, MPI_COMM_WORLD);
 		bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
 	}
 	
@@ -82,7 +82,7 @@ int main(int argC, char *args[])
 	
 	solve_options.use_midpoint_checker = 0;
 	solve_options.verbose_level(program_options.verbose_level());
-	solve_options.use_gamma_trick = program_options.use_gamma_trick;
+	solve_options.use_gamma_trick = program_options.use_gamma_trick();
 	
 
 	

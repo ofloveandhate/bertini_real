@@ -1236,15 +1236,6 @@ public:
 					   SolverConfiguration & solve_options);
 	
 	
-	/**
-	 \brief Outer method for connecting the computed samples into triangles.
-	 
-	 \return A triangulation of the Face described by the input rib_indices.
-	 \param rib_indices The indices into V for the points.
-	 \param V The vertex set holding the points into which the ribs index.
-	 */
-	std::vector< Triangle > stitch_triangulation(const std::vector< std::vector< int > > & rib_indices,
-												 VertexSet & V);
 	
 	
 	/**

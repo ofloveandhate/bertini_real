@@ -53,28 +53,6 @@ class BertiniRealConfig;   // a forward declaration
 
 /*** low-level data types. ***/
 
-enum {SUCCESSFUL=0, CRITICAL_FAILURE=-10, TOLERABLE_FAILURE=-1};
-
-
-enum {SYSTEM_CRIT = -1600, SYSTEM_SPHERE};
-
-//The following lets us use words instead of numbers to indicate vertex type.
-enum {UNSET= 100, CRITICAL, SEMICRITICAL, MIDPOINT, ISOLATED, NEW, CURVE_SAMPLE_POINT, SURFACE_SAMPLE_POINT, REMOVED, PROBLEMATIC};
-
-
-
-// enum for worker mode choice
-enum {NULLSPACE = 3000, LINPRODTODETJAC, DETJACTODETJAC, LINTOLIN, MULTILIN, MIDPOINT_SOLVER, SPHERE_SOLVER};
-
-enum {TERMINATE = 2000, INITIAL_STATE};
-
-
-
-
-
-
-
-std::string enum_lookup(int flag);
 
 
 
@@ -83,6 +61,19 @@ std::string enum_lookup(int flag);
 
 
 
+
+
+
+
+
+/**
+ a templated function for looking up a value in a map by key, without accidentally creating a key-value pair when it didn't previously exist, and when it doesn't exist, gives back a default value.
+ 
+ \return the value of the key, if it exists.  if nexists, returns default_value (which was input)
+ \param mc_mapperson the map to look into.
+ \param lookup_key the key to search for in the map.
+ \param default_value If the map doesn't hold an entry for the lookup_key, returns this value.
+ */
 template <typename key_type, typename value_type>
 value_type map_lookup_with_default(const  std::map <key_type,value_type> & mc_mapperson, const key_type & lookup_key, const value_type& default_value )
 {
@@ -115,7 +106,10 @@ class DoubleOdometer
 	
 private:
 	
-	
+	/**
+	 roll one mile.
+	 \return 1 if rolled over, 0 if not.  if 1, then need to increment the functions.
+	 */
 	int increment_registers(){
 		
 		int carry = 1; // seed carry so that it causes addition of at least the last entry of the odometer
@@ -186,11 +180,23 @@ public:
 	std::vector< int > bases; // of length num_total_registers
 	std::vector< int > registers;
 	
+	
+	/**
+	 constructor
+	 */
 	DoubleOdometer()
 	{
 		num_total_registers = num_active_registers = num_inactive_registers = 0;
 	}
 	
+	
+	/**
+	 constructor
+	 
+	 \param num_total_ the number of total registers there will be.
+	 \param num_active_ the number of active registers there will be total.  this must be ≤ num_total_.  If == num_total_, this is a traditional car odometer.
+	 \param uniform_base the base of all registers.  if 10, this is a traditional car odometer
+	 */
 	DoubleOdometer(int num_total_, int num_active_, int uniform_base)
 	{
 		num_total_registers = num_total_;
@@ -211,7 +217,13 @@ public:
 		
 	}
 	
-	
+	/**
+	 constructor
+	 
+	 \param num_total_ the number of total registers there will be.
+	 \param num_active_ the number of active registers there will be total.  this must be ≤ num_total_.  If == num_total_, this is a traditional car odometer.
+	 \param new_bases the base of all registers.  if all 10, this is a traditional car odometer.  The number in here must match num_total_.
+	 */
 	DoubleOdometer(int num_total_, int num_active_, const std::vector<int> & new_bases)
 	{
 		num_total_registers = num_total_;
@@ -240,19 +252,39 @@ public:
 	
 	
 	
-	
+	/**
+	 get the register value at position
+	 \param reggie the index of the register to get.
+	 */
 	int reg_val(int reggie){
 		return registers[reggie];
 	}
 	
+	/**
+	 get the active register value at position
+	 \param reggie the index of the ACTIVE register to get.
+	 */
 	int act_reg(int reggie){
 		return active_registers[reggie];
 	}
 	
+	
+	/**
+	 get the inactive register value at position
+	 \param reggie the index of the INACTIVE register to get.
+	 */
 	int inact_reg(int reggie){
 		return inactive_registers[reggie];
 	}
 	
+	
+	/**
+	 a wrapper for incrementing.
+	 
+	 \return -1 if completely done. 0 if didn't roll over.  1 if rolled over, but not done, just moving to next active register.
+	 
+	 
+	 */
 	int increment(){
 		
 		if (DoubleOdometer::increment_registers()!=0) {
@@ -265,6 +297,10 @@ public:
 			return 0;
 	};
 	
+	
+	/**
+	 print to cout
+	 */
 	void print(){
 		std::cout << "active: ";
 		for (int ii=0; ii<num_active_registers; ii++)
@@ -297,7 +333,7 @@ public:
  */
 class Function
 {
-	std::string func;  //symbolic representation of function (straight from input file).
+	std::string func;  ///< symbolic representation of function (straight from input file).
 										 // this class is woefully incomplete.
 };
 
@@ -354,17 +390,38 @@ private:
 	
 public:
 	
+	
+	/**
+	 not all functions are of the same degree, and when randomizing, if there is a deficiency of a function with respect to another, you must homogenize.  this helps give that info.
+	 
+	 \param randomized_func The index of the output function.
+	 \param base_index The index of the input function.
+	 \return the level of deficiency of randomized_func with respect to base_index.
+	 */
 	int deficiency(unsigned int randomized_func, unsigned int base_index)
 	{
 		return structure_matrix[randomized_func][base_index];
 	}
 	
+	
+	/**
+	 get a reference to the degrees of the output functions for this randomizer.
+	 
+	 \return the degrees in vector form.
+	 */
 	std::vector<int> & rand_degrees()
 	{
 		return randomized_degrees;
 	}
 	
 	
+	/**
+	 get the degree of a particular randomized function.
+	 
+	 \throws out_of_range if there isn't any such function.
+	 \param index the index of the output function.
+	 \return the degree of the output function
+	 */
 	int randomized_degree(unsigned int index)
 	{
 		if (index>= randomized_degrees.size()) {
@@ -418,28 +475,40 @@ public:
 	}
 	
 	
-
+	/**
+	 constructor
+	 */
 	SystemRandomizer()
 	{
 		init();
 	}
 	
 	
-
+	/**
+	 assignment operator
+	 \param other another SystemRandomizer to copy from.
+	 */
 	SystemRandomizer & operator=( const SystemRandomizer & other)
 	{
 		copy(other);
 		return *this;
 	}
 	
-
+	/**
+	 copy constructor
+	 */
 	SystemRandomizer(const SystemRandomizer & other)
 	{
 		init();
 		copy(other);
 	} // re: copy
 	
-
+	
+	/**
+	 destructor
+	 
+	 because the SystemRandomizer uses Bertini data types, there are lots of pointers, and this must be done explicitly.
+	 */
 	~SystemRandomizer()
 	{
 		clear_mat_mp(randomizer_matrix_full_prec);
@@ -680,6 +749,10 @@ public:
 	
 protected:
 	
+	
+	/**
+	 because the SystemRandomizer uses Bertini data types, there are lots of pointers, and this must be done explicitly.
+	 */
 	void init()
 	{
 		num_randomized_funcs = -1223;
@@ -724,6 +797,11 @@ protected:
 		
 	}
 	
+	
+	
+	/**
+	 because the SystemRandomizer uses Bertini data types, there are lots of pointers, and this must be done explicitly.
+	 */
 	void copy(const SystemRandomizer & other)
 	{
 
@@ -816,6 +894,14 @@ protected:
 	
 public:
 	
+	
+	/**
+	 get the ith point
+	 
+	 \return a reference to the point at the requested index.
+	 \param index the index of the point to retrieve.
+	 \throws out_of_range if the requested point does not exist.
+	 */
 	vec_mp & point(unsigned int index) const
 	{
 		if (index < num_pts_) {
@@ -913,20 +999,28 @@ public:
 	int add_point(vec_mp new_point);
 	
 	
-	
+	/**
+	 constructor
+	 */
 	PointHolder(){
 		init();
 	}
 	
 	
-	~PointHolder(){ // the destructor
+	/**
+	 destructor
+	 */
+	~PointHolder(){ // the
 		
 		clear();
 		
 	}
 	
-	
-	// assignment
+	/**
+	 assignment
+	 
+	 \param other the other to copy from.
+	 */
 	PointHolder& operator=( const PointHolder & other) {
 		
 		reset_points();
@@ -935,15 +1029,22 @@ public:
 		return *this;
 	}
 	
-	
-	//copy operator.  must be explicitly declared because the underlying c structures use pointers.
+	/**
+	 copy operator.  must be explicitly declared because the underlying c structures use pointers.
+	 
+	 \param other the other to copy from
+	 */
 	PointHolder(const PointHolder & other){
 		init();
 		copy(other);
 	}
 	
 	
-	
+	/**
+	 copy from one to another.
+	 
+	 \param other the other to copy from
+	 */
 	void copy(const PointHolder & other)
 	{
 		copy_points(other);
@@ -954,13 +1055,19 @@ public:
 private:
 	
 	
-	
+	/**
+	 set up the pointers to good value.
+	 */
 	void init()
 	{
-		pts_mp_ = NULL; // potential data loss if used improperly, which i may.
+		pts_mp_ = NULL; // potential data loss if used improperly.
 		num_pts_ = 0;
 	}
 	
+	
+	/**
+	 purge the held data.
+	 */
 	void clear(){
 		reset_points();
 	}
@@ -1056,12 +1163,18 @@ public:
 	int add_patch(vec_mp new_patch);
 	
 	
-	
+	/**
+	 constructor
+	 */
 	PatchHolder(){
 		init();
 	}
 	
 	
+	
+	/**
+	 destructor
+	 */
 	~PatchHolder(){ // the destructor
 		
 		clear();
@@ -1069,7 +1182,9 @@ public:
 	}
 	
 	
-	// assignment
+	/**
+	 assignment
+	 */
 	PatchHolder& operator=( const PatchHolder& other) {
 		
 		reset_patches();
@@ -1078,15 +1193,20 @@ public:
 		return *this;
 	}
 	
-	
-	//copy operator.  must be explicitly declared because the underlying c structures use pointers.
-	PatchHolder(const PatchHolder & other){
+	/**
+	 copy operator.  must be explicitly declared because the underlying c structures use pointers.
+	*/
+	 PatchHolder(const PatchHolder & other){
 		init();
 		copy(other);
 	}
 	
 	
-	
+	/**
+	 copy from another
+	 
+	 \param other the other to copy from.
+	 */
 	void copy(const PatchHolder & other)
 	{
 		copy_patches(other);
@@ -1097,13 +1217,19 @@ public:
 private:
 	
 	
-	
+	/**
+	 initialize
+	 */
 	void init()
 	{
 		this->patch_mp_ = NULL;
 		this->num_patches_ = 0;
 	}
 	
+	
+	/**
+	 purge old patches
+	 */
 	void clear(){
 		reset_patches();
 	}
@@ -1271,6 +1397,8 @@ public:
 	
 	/**
 	 \brief get the ith variable name
+	 \param index The index of the name desired.
+	 \return the ith name.
 	 */
 	inline std::string name(unsigned int index) const
 	{
@@ -1635,7 +1763,11 @@ public:
 
     
 
-	
+	/**
+	 get the number of synthetic variables
+	 
+	 \return the number of synthetic variables held.
+	 */
     int num_synth_vars() const
     {
         return num_vars_ - num_natty_vars_;
@@ -1682,10 +1814,11 @@ public:
 	/**
 	 \brief read in the witness set from a file, which MUST be formatted correctly.  for details on the format, see this code, or \see print_to_file()
 	 
+	 \return 0, for no good reason.
 	 \param witness_set_file the path of the file to parse into this object
 	 \param num_vars the number of variables in the witness set.  sadly, you have to set this manually at the time, as the header does not contain the information.  the is due to Bertini reasons.
 	 */
-	int  witnessSetParse(const boost::filesystem::path witness_set_file, const int num_vars);
+	int  Parse(const boost::filesystem::path witness_set_file, const int num_vars);
 	
 	
 	/**
@@ -1730,6 +1863,7 @@ public:
 	 Should you want to straight-up merge the contents of two witness sets with the same number of natural variables, you may, using this function.  All the points, linears, and patches will be copied from the input into the existing one on which you call this function.
 	 
 	 \param W_in The witness set containing data you want to copy.
+	 \param T Bertini's tracker_config_t object, with settings for telling whether two points are the same.
 	 */
 	void merge(const WitnessSet & W_in, tracker_config_t * T);
 	
@@ -2157,6 +2291,7 @@ public:
 	
 	/**
 	 get the tolerance for two points being the same
+	 \return the L2 tolerance for whether two points are the same.
 	 */
 	double same_point_tolerance()
 	{
@@ -2165,6 +2300,7 @@ public:
 	
 	/**
 	 \brief set the tolerance for points being the same
+	 \param new_tolerance The new tolerance.  This is for telling whether two points are the same.
 	 */
 	void set_same_point_tolerance(double new_tolerance)
 	{
@@ -2206,18 +2342,26 @@ public:
 	}
 	
 	/**
-	 \return the ith Vertex
+	 \return the ith Vertex, or a reference to it.
+	 \param index The index of the vertex to get.
 	 */
 	const Vertex& operator [](unsigned int index) const
 	{
+		if (index >= vertices_.size()) {
+			throw std::out_of_range("trying to access Vertex out of range in VertexSet.");
+		}
 		return vertices_[index];
 	}
 	
 	/**
-	 \return the ith Vertex
+	 \return the ith Vertex, or a reference to it.
+	 \param index The index of the vertex to get.
 	 */
 	Vertex & operator [](unsigned int index)
 	{
+		if (index >= vertices_.size()) {
+			throw std::out_of_range("trying to access Vertex out of range in VertexSet.");
+		}
 		return vertices_[index];
 	}
 	
@@ -2242,7 +2386,7 @@ public:
 	 \param new_vertex Vertex to add to the set.
 	 \return the index of the added Vertex
 	 */
-	int add_vertex(const Vertex new_vertex);
+	int add_vertex(const Vertex & new_vertex);
 	
 	
 	/**
@@ -2302,9 +2446,9 @@ public:
 	{
 		this->num_natural_variables_ = num_vars;
 		
-		change_size_vec_mp(checker_1_, num_vars);
-		change_size_vec_mp(checker_2_, num_vars);
-		checker_1_->size = checker_2_->size = num_vars;
+		change_size_vec_mp(checker_1_, num_vars-1);
+		change_size_vec_mp(checker_2_, num_vars-1);
+		checker_1_->size = checker_2_->size = num_vars-1;
 	}
 	
 	
@@ -2434,6 +2578,7 @@ public:
      \param midpoints_downstairs	the bisection of each interval in crit_downstairs.
      \param index_tracker			the indices of the points in W.
      \param pi						the projection we are retrieving projection values with respect to.
+	 \param T pointer to a Bertini tracker_config_t object, holding the necessary settings for this method.
      \return the integer SUCCESSFUL.
      */
     int compute_downstairs_crit_midpts(const WitnessSet & W,
@@ -3055,13 +3200,36 @@ public:
 	 
 	 This function uses information stored in BertiniRealConfig to construct a witness set.
 	 
-	 \param options the current program state.
+	 \param options The current state of the program.  If the user passed in a particular component or dimension, this is how it gets into this method.
 	 \return the chosen witness set.  may be empty.
 	 */
 	WitnessSet choose(BertiniRealConfig & options);
+	
+	
+	/**
+	 form a witness set automagically, based on the user's call time options.
+	 
+	 \param options The current state of the program.  If the user passed in a particular component or dimension, this is how it gets into this method.
+	 \return the best possible witness set, based on the user's choices at call time to Bertini_real.
+	 */
 	WitnessSet best_possible_automatic_set(BertiniRealConfig & options);
+	
+	/**
+	 If there are multiple dimensions and components, then the user needs to choose which he wishes to decompose.  This method is that choice.
+	 
+	 \param options The current state of the program.  If the user passed in a particular component or dimension, this is how it gets into this method.
+	 \return A formed witness set, from the user's choices.
+	 */
 	WitnessSet choose_set_interactive(BertiniRealConfig & options); // lets the user choose a set, and returns a copy of it.
 	
+	
+	/**
+	 retreive from the NID the specific witness set of particular dimension and component number.  If either doesn't exist, then the returned witness set is empty.
+	 
+	 \return The specific witness set desired.  May be empty if the dimension or component number correspond to something don't exist.
+	 \param dim The desired dimension
+	 \param comp The desired component number.  Starts at 0.
+	 */
 	WitnessSet form_specific_witness_set(int dim, int comp)	;
 	
 	
@@ -3095,8 +3263,13 @@ public:
 //		return os;
 //	}
 	
+	
+	
+	
 	/**
-	 print the witness_data to screen
+	 print the witness_data to std::cout
+	 
+	 \todo replace this with a friend operator << ()
 	 */
 	void print() const
 	{
@@ -3214,6 +3387,9 @@ public:
 	
 	/**
 	 \brief get a cell from an input stream
+	 \return reference to the input stream, so you can chain inputs together.
+	 \param is the input stream to get from.
+	 \param c Cell to get from stream.
 	 */
 	friend std::istream & operator>>(std::istream &is,  Cell & c)
 	{
@@ -3264,224 +3440,7 @@ public:
 
 
 
-/**
- \brief 1-cell.
- 
- the edge data type.  has three indices: left, right, midpt.
- */
-class Edge : public Cell
-{
-	int left_;  ///< index into vertices
-	int right_; ///< index into vertices
-	
-	std::vector< int > removed_points_;
-	
-	
-public:
-	
-	
-	typedef std::vector< int >::iterator removed_iterator;
-	typedef std::vector< int >::const_iterator removed_const_iterator;
-	
-	
-	removed_iterator removed_begin(){return removed_points_.begin();}
-	
-	removed_const_iterator removed_begin() const {return removed_points_.begin();}
-	
-	removed_iterator removed_end(){return removed_points_.end();}
-	
-	removed_const_iterator removed_end() const {return removed_points_.end();}
-	
-	
-	
-	
-	/**
-	 \brief adds a point as a removed point.  tacks on to the end of the vector
-	 
-	 \param new_removed_point the index of the point to add
-	 \return the index of the point
-	 */
-	int add_removed_point(int new_removed_point)
-	{
-		removed_points_.push_back(new_removed_point);
-		return new_removed_point;
-	}
-	
-	
-	/**
-	 \brief get the right point
-	 
-	 \return the index of the right point
-	 */
-	inline int right() const
-	{
-		return right_;
-	}
-	
-	
-	/**
-	 \brief set the left point
-	 \param new_right the new index of the left point
-	 \return the index of the left point
-	 */
-	int right(int new_right)
-	{
-		return right_ = new_right;
-	}
-	
-	
-	
-	
-	
-	/**
-	 \brief get the left point
-	 
-	 \return the index of the left point
-	 */
-	inline int left() const
-	{
-		return left_;
-	}
-	
-	
-	/**
-	 \brief set the left point
-	 \param new_left the new index of the left point
-	 \return the index of the left point
-	 */
-	int left(int new_left)
-	{
-		return left_ = new_left;
-	}
-	
-	
-	
-	
-	
-	
 
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	Edge() : Cell()
-	{
-		left_ = right_ = -1;
-	}
-	
-	
-	/**
-	 \brief construct edge from left mid and right indices
-	 \param new_left the new left index for constructed edge
-	 \param new_midpt the new mid index for constructed edge
-	 \param new_right the new right index for constructed edge
-	 */
-	Edge(int new_left, int new_midpt, int new_right)
-	{
-		left(new_left);
-		right(new_right);
-		midpt(new_midpt);
-	}
-	
-	
-	
-	
-	// other defaults are correct for this type.
-	
-	/**
-	 check whether the edge is degenerate
-	 \return true if the edge is degenerate, false if not.
-	 */
-	inline bool is_degenerate()
-	{
-		if ((left() == right()) || (left()==midpt()) || (right()==midpt()))
-			return true;
-		else
-			return false;
-	}
-	
-	
-	
-	/**
-	 \brief send to a single target
-	 \param target to whom to send this edge
-	 \param mpi_config the current state of parallelism
-	 */
-	void send(int target, ParallelismConfig & mpi_config)
-	{
-		int * buffer = new int[4];
-		
-		buffer[0] = left();
-		buffer[1] = midpt();
-		buffer[2] = right();
-		buffer[3] = removed_points_.size();
-		
-		MPI_Send(buffer, 4, MPI_INT, target, EDGE, mpi_config.comm());
-		
-		delete [] buffer;
-		
-		buffer = new int[removed_points_.size()];
-		for (unsigned int ii=0; ii!=removed_points_.size(); ii++) {
-			buffer[ii] = removed_points_[ii];
-		}
-		MPI_Send(buffer, removed_points_.size(), MPI_INT, target, EDGE, mpi_config.comm());
-		delete [] buffer;
-		
-
-	}
-	
-	
-	/**
-	 \brief receive from a single source
-	 \param source from whom to receive this edge
-	 \param mpi_config the current state of parallelism
-	 */
-	void receive(int source, ParallelismConfig & mpi_config)
-	{
-		MPI_Status statty_mc_gatty;
-		int * buffer = new int[4];
-		MPI_Recv(buffer, 4, MPI_INT, source, EDGE, mpi_config.comm(), &statty_mc_gatty);
-		
-		left(buffer[0]);
-		midpt(buffer[1]);
-		right(buffer[2]);
-		int temp_num_removed = buffer[3];
-		
-		
-		delete [] buffer;
-		
-		buffer = new int[temp_num_removed];
-		MPI_Recv(buffer, temp_num_removed, MPI_INT, source, EDGE, mpi_config.comm(), &statty_mc_gatty);
-		for (int ii=0; ii<temp_num_removed; ii++) {
-			removed_points_.push_back(buffer[ii]);
-		}
-		
-		delete [] buffer;
-		
-	}
-	
-	
-	/**
-	 \brief get edge from input stream.  this function is defunct, and needs implementation apparently.
-	 \param is the stream from whom to read
-	 */
-	virtual void read_from_stream( std::istream &is )
-	{
-		
-		is >> left_ >> midpt_ >> right_;
-	}
-	
-	friend std::ostream & operator<<(std::ostream & out, const Edge & E){
-		out << E.left_ << " " << E.midpt_ << " " << E.right_;
-		return out;
-	}
-	
-};
 
 
 
@@ -3691,6 +3650,8 @@ public:
 	
 	/**
 	 assignment
+	 \return The assigned decomposition.
+	 \param other The input decomposition, from which to assign.
 	 */
 	Decomposition & operator=(const Decomposition& other){
 		
@@ -3703,7 +3664,8 @@ public:
 	
 	
 	/**
-	 copy
+	 copy-constructor
+	 \param other Another decomposition from which to copy-construct.
 	 */
 	Decomposition(const Decomposition & other){
 		
@@ -3914,6 +3876,7 @@ public:
 	/**
 	 \brief get a pointer to the ith projections.
 	 \throws out of range if trying to get out of range projection
+	 \param index The index of the projection you want to get.
 	 \return pointer to the ith projection.  will throw if out of range
 	 */
 	inline vec_mp& pi(int index) const
@@ -3931,6 +3894,7 @@ public:
 	
 	/**
 	 \brief test for whether the sphere is set
+	 \return Whether have the sphere radius and center set, whether from file or computed from a set of points.
 	 */
 	inline bool have_sphere() const
 	{
@@ -3979,6 +3943,11 @@ public:
 	
 	
 	
+	/**
+	 make a deep copy of another Decomposition
+	 
+	 \param other The other Decomposition, from which to clone into this.
+	 */
 	void clone(const Decomposition & other)
 	{
 		PatchHolder::copy(other);

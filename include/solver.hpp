@@ -197,6 +197,7 @@ public:
 	
 	/**
 	 get a the pointer to the SLP for this system
+	 \return A pointer to the SLP.
 	 */
 	prog_t * SLP_pointer()
 	{
@@ -205,6 +206,7 @@ public:
 	
 	/**
 	 get the memory for the system
+	 \return the SLP memory object stored internally to this class.
 	 */
 	StraightLineProgramGlobalPointers memory()
 	{
@@ -245,6 +247,7 @@ public:
 	}
 	/**
 	 \brief get a shared pointer to the randomizer
+	 \return a shared pointer to the randomizer object stored in this CompleteSystem.
 	 */
 	std::shared_ptr<SystemRandomizer> randomizer()
 	{
@@ -1116,6 +1119,7 @@ class SolverConfiguration : public ParallelismConfig
 	int verbose_level_; ///< controls how much info is printed to screen
 	
 	
+	std::map< std::string, std::pair<bool, tracker_config_t> > tracker_config_backups_;
 	
 public:
 	
@@ -1153,6 +1157,7 @@ public:
 	 \brief set the level of verbosity
 	 
 	 \param new_level the new level of verbosity
+	 \return The verbosity level, which you just put in.
 	 */
 	int verbose_level(int new_level)
 	{
@@ -1165,20 +1170,46 @@ public:
 	
 	/**
 	 \brief copy the stored tracker config to the active one.
+	 \param lookup_key A string by which to reference the tracker config.  Tracker configs must be restored from before they are backed up to again.
 	 */
-	void reset_tracker_config()
+	void restore_tracker_config(std::string lookup_key)
 	{
-		tracker_config_clear(&T);
-		cp_tracker_config_t(&T,&T_orig);
+		if (tracker_config_backups_.find(lookup_key)==tracker_config_backups_.end()){
+			throw std::logic_error("trying to restore from a backup tracker config which does not exist: " + lookup_key);
+		}
+		else{
+			cp_tracker_config_t(&T, &tracker_config_backups_[lookup_key].second);
+			tracker_config_backups_[lookup_key].first = true;
+		}
 	}
 	
 	/**
 	 \brief copy the active tracker config to the backup one.
+	 
+	 the tracker config is backed up, and locked for overwriting.  It *must* be restored before it is backed up to again.
+	 
+	 \param lookup_key A string by which to refer to the tracker config.
 	 */
-	void backup_tracker_config()
+	void backup_tracker_config(std::string lookup_key)
 	{
-		tracker_config_clear(&T_orig);
-		cp_tracker_config_t(&T_orig,&T);
+		
+		if (tracker_config_backups_.find(lookup_key)==tracker_config_backups_.end()) {
+			tracker_config_backups_[lookup_key].first = false;
+			mpf_init2(tracker_config_backups_[lookup_key].second.latest_newton_residual_mp, T.AMP_max_prec);
+			cp_tracker_config_t(&(tracker_config_backups_[lookup_key].second), &T);
+		}
+		else{ // already have one of this name.  check and see if available.
+			if (tracker_config_backups_[lookup_key].first == false) {
+				std::stringstream ss;
+				ss << "trying to back up to currently locked tracker backup: " << lookup_key;
+				throw std::logic_error(ss.str());
+			}
+			else{
+				tracker_config_clear(&(tracker_config_backups_[lookup_key].second));
+				cp_tracker_config_t(&(tracker_config_backups_[lookup_key].second), &T);
+				tracker_config_backups_[lookup_key].first = false;
+			}
+		}
 	}
 	
 	
@@ -1203,6 +1234,10 @@ public:
 		tracker_config_clear(&this->T);
 		tracker_config_clear(&this->T_orig);
 		preproc_data_clear(&this->PPD);
+		
+		for (auto iter = tracker_config_backups_.begin(); iter!=tracker_config_backups_.end(); iter++) {
+			tracker_config_clear( &iter->second.second);
+		}
 	}
 	 
 	
@@ -1586,6 +1621,7 @@ public:
 	 \brief set the level of verbosity
 	 
 	 \param new_level the new level of verbosity
+	 \return The verbosity level, which you just put in.
 	 */
 	int verbose_level(int new_level)
 	{
@@ -2173,6 +2209,12 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					   int (*eval_func_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *),
 					   int (*change_prec)(void const *, int),
 					   int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *));
+
+
+
+
+
+
 
 
 

@@ -137,19 +137,6 @@ void estimate_new_projection_value(comp_mp result, vec_mp estimated_point, vec_m
 
 
 
-/**
- \brief construct the triangulation of two ribs of a face
- 
- \todo add a diagram illustrating this method
- 
- \param rib1 input vector of indices into V
- \param rib2 the other input vector of indices into V
- \param V the vertex set into which the ribs index.  it holds the points and their projection values.
- \param current_samples The constructed triangles from this method.
- */
-void triangulate_two_ribs(const std::vector< int > & rib1, const std::vector< int > & rib2,
-						  VertexSet & V,
-						  std::vector< Triangle> & current_samples);
 
 
 
@@ -159,10 +146,11 @@ void triangulate_two_ribs(const std::vector< int > & rib1, const std::vector< in
  
  the end of the loop simply constructs every Triangle between the two ribs until it reaches the end.  
  
- \param rib1 a rib.
- \param rib2 a rib adjacent to rib1
+ \param rib1 a rib of integer indices in a VertexSet.
+ \param rib2 a rib adjacent to rib1, of integer indices in a VertexSet
  \param V the vertex set into which the ribs index.
- \param current_samples the triangulation being built.
+ \param real_thresh The threshold of imaginary part, so that a point is thresholded to be real.
+ \param current_samples The triangulation being built.
  */
 void triangulate_two_ribs_by_angle_optimization(const std::vector< int > & rib1, const std::vector< int > & rib2,
 												VertexSet & V, double real_thresh,

@@ -185,7 +185,7 @@ void Surface::main(VertexSet & V,
 	
 	W_total_crit.merge(W_sphere_crit,&solve_options.T);
 	
-	W_total_crit.set_input_filename("total_crit___there-is-a-problem");
+	W_total_crit.set_input_filename("W_total_crit_nonexistant_filename");
 	W_total_crit.sort_for_unique(&solve_options.T);
     
 
@@ -335,11 +335,12 @@ void Surface::beginning_stuff(const WitnessSet & W_surf,
 			printf("performing isosingular deflation\n");
 		
 		
-		program_options.input_deflated_filename = program_options.input_filename;
+
+		boost::filesystem::path temp_path = program_options.input_filename();
 		
 		std::stringstream converter;
 		converter << "_dim_" << W_surf.dimension() << "_comp_" << W_surf.component_number() << "_deflated";
-		program_options.input_deflated_filename += converter.str();
+		temp_path += converter.str();
 		
 		
 		
@@ -352,43 +353,43 @@ void Surface::beginning_stuff(const WitnessSet & W_surf,
 		int num_deflations, *deflation_sequence = NULL;
 		
 		isosingular_deflation(&num_deflations, &deflation_sequence, program_options,
-							  program_options.input_filename,
+							  program_options.input_filename(),
 							  "witness_points_dehomogenized",
-							  program_options.input_deflated_filename, // the desired output name
+							  temp_path, // the desired output name
 							  program_options.max_deflations());
 		free(deflation_sequence);
 		
 		
-		
+		program_options.set_input_deflated_filename(temp_path);
 		converter.clear(); converter.str("");
 	}
 	else {
-		program_options.input_deflated_filename = program_options.input_filename;
+		program_options.set_input_deflated_filename(program_options.input_filename());
 	}
 	
 	
 	
 	
 	// this wraps around a bertini routine
-	parse_input_file(program_options.input_deflated_filename);
+	parse_input_file(program_options.input_deflated_filename());
 	
 	preproc_data_clear(&solve_options.PPD);
 	parse_preproc_data("preproc_data", &solve_options.PPD);
 	
 	
-	if (0) {
+	if (1) {
 		if (program_options.verbose_level()>=2)
 			printf("checking if component is self-conjugate\n");
 		checkSelfConjugate( W_surf.point(0),program_options, W_surf.input_filename());
 		
 		//regenerate the various files, since we ran bertini since then and many files were deleted.
-		parse_input_file(program_options.input_deflated_filename);
+		parse_input_file(program_options.input_deflated_filename());
 	}
 	
 	
 	
 	if (program_options.user_sphere()) {
-		read_sphere(program_options.bounding_sphere_filename);
+		read_sphere(program_options.bounding_sphere_filename());
 	}
 	
 	
@@ -496,7 +497,7 @@ void Surface::compute_critcurve_witness_set(WitnessSet & W_critcurve,
 	
 	// this system describes the system for the critical curve
 	create_nullspace_system("input_critical_curve",
-                            boost::filesystem::path(program_options.called_dir()) / program_options.input_deflated_filename,
+                            boost::filesystem::path(program_options.called_dir()) / program_options.input_deflated_filename(),
                             program_options, &ns_config);
     
     
@@ -624,7 +625,7 @@ void Surface::compute_critcurve_critpts(WitnessSet & W_critcurve_crit,  // the c
 		solve_out.get_noninfinite_w_mult_full(W_temp);
 		ns_config.clear();
 		solve_out.reset();
-		W_critcurve_crit.merge(W_temp,&solve_options.T);
+		W_critcurve_crit.merge(W_temp,&solve_options.T);//(*&!@U#H*DB(F*&^@#*&$^(*#&YFNSD
 	}
 
 	W_critcurve_crit.set_input_filename("input_critical_curve");
@@ -712,16 +713,23 @@ void Surface::deflate_and_split(std::map< SingularObjectMetadata, WitnessSet > &
 											  SolverConfiguration & solve_options)
 {
 	
-	for (auto iter = higher_multiplicity_witness_sets.begin(); iter!=higher_multiplicity_witness_sets.end(); ++iter) {
-		std::cout << "multiplicity " << iter->first << std::endl;
+
+	if (higher_multiplicity_witness_sets.size()==0) {
+		return;
 	}
 	
+	
+	WitnessSet needed_no_deflation;
+	needed_no_deflation.copy_skeleton(higher_multiplicity_witness_sets.begin()->second);
+	
 	for (auto iter = higher_multiplicity_witness_sets.begin(); iter!=higher_multiplicity_witness_sets.end(); ++iter) {
-		std::cout << std::endl << color::magenta() << "splitting points for multiplicity " << iter->first << " singular curve" << color::console_default() << std::endl;
+		
+		if (program_options.verbose_level()>=0) {
+			std::cout << std::endl << color::magenta() << "splitting points for multiplicity " << iter->first << " singular curve" << color::console_default() << std::endl;
+		}
+		
 		
 		int num_this_multiplicity = 0;
-		
-		
 		
 		
 		
@@ -742,7 +750,7 @@ void Surface::deflate_and_split(std::map< SingularObjectMetadata, WitnessSet > &
 			
 			converter << "_singcurve_mult_" << iter->first << "_" << num_this_multiplicity;
 			
-			boost::filesystem::path singcurve_filename = program_options.input_filename;
+			boost::filesystem::path singcurve_filename = program_options.input_filename();
 			singcurve_filename += converter.str(); converter.clear(); converter.str("");
 			
 			
@@ -754,10 +762,12 @@ void Surface::deflate_and_split(std::map< SingularObjectMetadata, WitnessSet > &
 			
 			int num_deflations, *deflation_sequence = NULL;
 			isosingular_deflation(&num_deflations, &deflation_sequence, program_options,
-								  program_options.input_filename, // start from the beginning.
+								  program_options.input_filename(), // start from the beginning.
 								  "singular_witness_points_dehomogenized",
 								  singcurve_filename,
 								  program_options.max_deflations());
+			
+			
 			if (num_deflations==0) {
 				std::cout << "found a point which did not need deflation!!!" << std::endl;
 				print_point_to_screen_matlab(active_set.point(0),"anomaly");
@@ -1255,7 +1265,12 @@ void Surface::compute_bounding_sphere(const WitnessSet & W_intersection_sphere,
     
 	program_options.merge_edges(false);
 	
-	this->sphere_curve_.compute_sphere_bounds(W_crit); // inflate around this thing because the interslice method requires having bounds in place.
+	comp_mp temp; init_mp(temp);
+	set_zero_mp(temp);
+	mpf_set_d(temp->r, 1.1);
+	mul_mp(temp, temp, this->sphere_radius())
+	this->sphere_curve_.set_sphere_radius(temp);
+	this->sphere_curve_.set_sphere_center(this->sphere_center());
 	
 	std::cout << color::magenta() << "entering interslice for sphere" << color::console_default() << std::endl;
 	// then feed it to the interslice algorithm
@@ -1326,11 +1341,13 @@ void Surface::compute_slices(const WitnessSet W_surf,
 	
 	for (int ii=0; ii<projection_values_downstairs->size; ii++){
 		
+		if (program_options.verbose_level()>=0) {
+			std::cout << color::magenta() << "decomposing " << kindofslice << " slice " << ii << " of " << projection_values_downstairs->size << color::console_default() << std::endl;
+			print_comp_matlab(&projection_values_downstairs->coord[ii], "target_proj");
+		}
 		
-		std::cout << color::magenta() << "decomposing " << kindofslice << " slice " << ii << " of " << projection_values_downstairs->size << color::console_default() << std::endl;
-		print_comp_matlab(&projection_values_downstairs->coord[ii], "target_proj");
 		
-		solve_options.backup_tracker_config(); // TODO: this backed up config could be overwritten!!!
+		solve_options.backup_tracker_config("surface_slice");
 		
 		
 		WitnessSet slice_witness_set; // deliberately scoped variable
@@ -1425,7 +1442,7 @@ void Surface::compute_slices(const WitnessSet W_surf,
 
 		
 		slice_witness_set.reset();
-		solve_options.reset_tracker_config();
+		solve_options.restore_tracker_config("surface_slice");
 		
 		slices[ii].add_projection(pi(1));
 		slices[ii].set_num_variables(this->num_variables());
@@ -1438,7 +1455,11 @@ void Surface::compute_slices(const WitnessSet W_surf,
 		this->output_main(program_options.output_dir());
 		V.print(program_options.output_dir()/ "V.vertex");
 		
-		std::cout << color::magenta() << "DONE decomposing " << kindofslice << "slice " << ii << color::console_default() << std::endl;
+		
+		if (program_options.verbose_level()>=0) {
+			std::cout << color::magenta() << "DONE decomposing " << kindofslice << "slice " << ii << color::console_default() << std::endl;
+		}
+		
 		
 	} // re: for loop
 	
@@ -1594,7 +1615,7 @@ void Surface::master_connect(VertexSet & V, MidpointConfiguration & md_config, S
 			int next_worker = solve_options.activate_next_worker();
 			
 			int send_num_faces = 1;// num_faces doubles as the keep_going signal.  if 0, the worker halts.
-			MPI_Send(&send_num_faces, 1, MPI_INT, next_worker, NUMPACKETS, MPI_COMM_WORLD);
+			MPI_Send(&send_num_faces, 1, MPI_INT, next_worker, NUMPACKETS, solve_options.comm());
 			
 			
 			master_face_requester(ii,jj, next_worker, solve_options);
@@ -1609,7 +1630,7 @@ void Surface::master_connect(VertexSet & V, MidpointConfiguration & md_config, S
 			{
 				//perform blocking receive of the Face.
 				int recv_num_faces;
-				MPI_Recv(&recv_num_faces, 1, MPI_INT, MPI_ANY_SOURCE, NUMPACKETS, MPI_COMM_WORLD, &statty_mc_gatty);
+				MPI_Recv(&recv_num_faces, 1, MPI_INT, MPI_ANY_SOURCE, NUMPACKETS, solve_options.comm(), &statty_mc_gatty);
 				bool added_face = false;
 				for (int qq = 0; qq<recv_num_faces; qq++) {
 					Face F;
@@ -1645,7 +1666,7 @@ void Surface::master_connect(VertexSet & V, MidpointConfiguration & md_config, S
 	
 	while (solve_options.have_active()) {
 		int recv_num_faces;
-		MPI_Recv(&recv_num_faces, 1, MPI_INT, MPI_ANY_SOURCE, NUMPACKETS, MPI_COMM_WORLD, &statty_mc_gatty);
+		MPI_Recv(&recv_num_faces, 1, MPI_INT, MPI_ANY_SOURCE, NUMPACKETS, solve_options.comm(), &statty_mc_gatty);
 		for (int ii=0; ii<recv_num_faces; ii++) {
 			Face F;
 			F.receive(statty_mc_gatty.MPI_SOURCE, solve_options);
@@ -1708,7 +1729,7 @@ void Surface::worker_connect(SolverConfiguration & solve_options, BertiniRealCon
 		// get the continue or discontinue signal.
 		int keep_going;
 		MPI_Status statty_mc_gatty;
-		MPI_Recv(&keep_going, 1, MPI_INT, solve_options.head(), NUMPACKETS, MPI_COMM_WORLD, &statty_mc_gatty);
+		MPI_Recv(&keep_going, 1, MPI_INT, solve_options.head(), NUMPACKETS, solve_options.comm(), &statty_mc_gatty);
 		if (keep_going==0) {
 			break;
 		}
@@ -1726,7 +1747,7 @@ void Surface::worker_connect(SolverConfiguration & solve_options, BertiniRealCon
 		
 		//send the Face back to master.
 		int send_num_faces = 1;
-		MPI_Send(&send_num_faces, 1, MPI_INT, solve_options.head(), NUMPACKETS, MPI_COMM_WORLD);
+		MPI_Send(&send_num_faces, 1, MPI_INT, solve_options.head(), NUMPACKETS, solve_options.comm());
 		
 		F.send(solve_options.head(), solve_options);
 	}
@@ -2150,13 +2171,17 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 					//                                print_comp_matlab(temp ,"critslices[].proj_val_1");
 					//                                print_comp_matlab(temp2,"final_bottom_proj_1");
 					//                            }
-					//							std::cout << "edge " << qq << " excluded: " << correct_interval << " direction, " << matches_end << " matches, " << already_found << "  already found" << std::endl;
-					//
+					if (program_options.verbose_level()>=4) {
+						std::cout << "edge " << qq << " excluded: " << correct_interval << " correct_interval, " << matches_end << " matches_end, " << already_found << "  already_found" << std::endl;
+					}
+					
+					
 				}
 				
 			}
+
 			
-			std::cout << std::endl;
+			
 			
 			
 			if (candidate_counter==0) {
@@ -2168,7 +2193,7 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 			{
 				int current_edge = candidates[qq];
 				
-				if (program_options.verbose_level()>=-1) {
+				if (program_options.verbose_level()>=0) {
 					//					std::cout << "Face #: " << this->num_faces << ", zz: " << zz << ", current_edge: " << current_edge << std::endl;
 					std::cout << "tracking to these indices: " << final_bottom_ind << " " << target_critslice.get_edge(current_edge).midpt() << " " << final_top_ind << std::endl;
 				}
@@ -3041,7 +3066,7 @@ void Face::send(int target, ParallelismConfig & mpi_config)
 	buffer[5] = system_name_top_.size();
 	buffer[6] = crit_slice_index_;
 	
-	MPI_Send(buffer, 7, MPI_INT, target, FACE, MPI_COMM_WORLD);
+	MPI_Send(buffer, 7, MPI_INT, target, FACE, mpi_config.comm());
 	delete[] buffer;
 	
 	
@@ -3050,7 +3075,7 @@ void Face::send(int target, ParallelismConfig & mpi_config)
 		for (unsigned int ii=0; ii<num_left(); ii++) {
 			buffer[ii] = left_edges_[ii];
 		}
-		MPI_Send(buffer, num_left(), MPI_INT, target, FACE, MPI_COMM_WORLD);
+		MPI_Send(buffer, num_left(), MPI_INT, target, FACE, mpi_config.comm());
 		delete[] buffer;
 	}
 	
@@ -3062,7 +3087,7 @@ void Face::send(int target, ParallelismConfig & mpi_config)
 		for (unsigned int ii=0; ii<num_right(); ii++) {
 			buffer[ii] = right_edges_[ii];
 		}
-		MPI_Send(buffer, num_right(), MPI_INT, target, FACE, MPI_COMM_WORLD);
+		MPI_Send(buffer, num_right(), MPI_INT, target, FACE, mpi_config.comm());
 		delete[] buffer;
 	}
 	
@@ -3079,7 +3104,7 @@ void Face::send(int target, ParallelismConfig & mpi_config)
 	char * charbuff = new char[num_to_send];
 	strcpy(charbuff, sendme.c_str());
 	charbuff[num_to_send-1] = '\0';
-	MPI_Send(&charbuff[0], num_to_send, MPI_CHAR, target, FACE, MPI_COMM_WORLD);
+	MPI_Send(&charbuff[0], num_to_send, MPI_CHAR, target, FACE, mpi_config.comm());
 	delete [] charbuff;
 	
 	
@@ -3104,7 +3129,7 @@ void Face::receive(int source, ParallelismConfig & mpi_config)
 	MPI_Status statty_mc_gatty;
 	int * buffer= new int[7];
 	
-	MPI_Recv(buffer, 7, MPI_INT, source, FACE, MPI_COMM_WORLD, &statty_mc_gatty);
+	MPI_Recv(buffer, 7, MPI_INT, source, FACE, mpi_config.comm(), &statty_mc_gatty);
 	
 	int tmp_size_left = buffer[0];
 	int tmp_size_right = buffer[1];
@@ -3119,7 +3144,7 @@ void Face::receive(int source, ParallelismConfig & mpi_config)
 	
 	if (tmp_size_left>0) {
 		int * buffer2 = new int[tmp_size_left];
-		MPI_Recv(buffer2, tmp_size_left, MPI_INT, source, FACE, MPI_COMM_WORLD, &statty_mc_gatty);
+		MPI_Recv(buffer2, tmp_size_left, MPI_INT, source, FACE, mpi_config.comm(), &statty_mc_gatty);
 		for (int ii=0; ii<tmp_size_left; ii++) {
 			add_left_edge(buffer2[ii]);
 		}
@@ -3130,7 +3155,7 @@ void Face::receive(int source, ParallelismConfig & mpi_config)
 	
 	if (tmp_size_right>0) {
 		int * buffer3 = new int[tmp_size_right];
-		MPI_Recv(buffer3, tmp_size_right, MPI_INT, source, FACE, MPI_COMM_WORLD, &statty_mc_gatty);
+		MPI_Recv(buffer3, tmp_size_right, MPI_INT, source, FACE, mpi_config.comm(), &statty_mc_gatty);
 		for (int ii=0; ii<tmp_size_right; ii++) {
 			add_right_edge(buffer3[ii]);
 		}
@@ -3147,7 +3172,7 @@ void Face::receive(int source, ParallelismConfig & mpi_config)
 	
 	char * charbuff = new char[nchars_name_bottom+nchars_name_top+1];
 	
-	MPI_Recv(charbuff, nchars_name_bottom+nchars_name_top+1, MPI_CHAR, source, FACE, MPI_COMM_WORLD, &statty_mc_gatty);
+	MPI_Recv(charbuff, nchars_name_bottom+nchars_name_top+1, MPI_CHAR, source, FACE, mpi_config.comm(), &statty_mc_gatty);
 	
 	std::stringstream converter;
 	for (int jj=0; jj<nchars_name_bottom; ++jj) {

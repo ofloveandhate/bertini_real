@@ -27,8 +27,6 @@
 #define BERTINI_REAL_VERSION_STRING "0.1.0"
 #define SAMPLER_VERSION_STRING "0.9.9"
 
-enum {INACTIVE = 500, ACTIVE};
-enum {PARSING = 1000, TYPE_CONFIRMATION, DATA_TRANSMISSION, NUMPACKETS};
 
 #include "fileops.hpp"
 
@@ -92,7 +90,9 @@ public:
 	
 	
 	
-	
+	/**
+	 default constructor
+	 */
 	ParallelismConfig(){
 		init();
 	}
@@ -271,9 +271,8 @@ public:
 	 */
 	void call_for_help(int solver_type)
 	{
-
-		MPI_Bcast(&solver_type, 1, MPI_INT, head(), MPI_COMM_WORLD);
 		
+		MPI_Bcast(&solver_type, 1, MPI_INT, id(), MPI_COMM_WORLD);
 		init_active_workers();
 		
 	}
@@ -377,7 +376,7 @@ private:
  
  Both sampler_configuration and BertiniRealConfig inherit from this.
  */
-class prog_config
+class prog_config : public ParallelismConfig
 {
 	
 private:
@@ -473,6 +472,7 @@ public:
 	 \brief set the level of verbosity
 	 
 	 \param new_level the new level of verbosity
+	 \return The verbosity level, which you just put in.
 	 */
 	int verbose_level(int new_level)
 	{
@@ -510,7 +510,146 @@ class BertiniRealConfig : public prog_config
 	bool user_projection_; ///< indicator for whether to read the projection from a file, rather than randomly choose it.
 	
 	bool merge_edges_; ///< a mode switch, indicates whether should be merging.
+	
+	
+	
+	int primary_mode_; ///< mode of operation -- bertini_real is default, but there is also crit method for computing critical points.
+	
+	
+	boost::filesystem::path bounding_sphere_filename_; ///< name of file to read if user_sphere==true
+	boost::filesystem::path projection_filename_; ///name of file to read if user_projection==true
+	boost::filesystem::path input_filename_; ///< name of the input file to read -- by default it's "input"
+	
+	boost::filesystem::path input_deflated_filename_; ///< the name of the file post-deflation
+	
+	
+	
+	int target_dimension_;  ///< the dimension to shoot for
+	int target_component_;  ///< the integer index of the component to decompose.  by default, it's -2, which indicates 'ask me'.
+	
+	
+	std::string matlab_command_; ///< the string for how to call matlab.
+	
+	bool use_gamma_trick_; ///< indicator for whether to use the gamma trick in a particular solver.
+	
+	
+	
+	
+	
 public:
+	
+	/**
+	 get the mode for the program.  by default, it's bertini_real
+	 */
+	int primary_mode() const
+	{
+		return primary_mode_;
+	}
+	
+	/**
+	 get the path to the input_deflated file.
+	 
+	 \return the path to the input_deflated file.
+	 */
+	boost::filesystem::path input_deflated_filename() const{
+		return input_deflated_filename_;
+	}
+	
+	
+	
+	/**
+	 set the path to the input_deflated file.
+	 
+	 \param new_name the path to the input_deflated file.
+	 */
+	void set_input_deflated_filename(const boost::filesystem::path & new_name)
+	{
+		input_deflated_filename_ = new_name;
+	}
+	
+	
+	/**
+	 get the path to the projection file.
+	 
+	 \return the path to the projection file.
+	 */
+	boost::filesystem::path projection_filename() const{
+		return projection_filename_;
+	}
+	
+	/**
+	 get the path to the Bertini input file.
+	 
+	 \return the path to the input file.
+	 */
+	boost::filesystem::path input_filename() const{
+		return input_filename_;
+	}
+	
+	
+	/**
+	 get the path to the sphere file.
+	 
+	 \return the path to the sphere file.
+	 */
+	boost::filesystem::path bounding_sphere_filename() const{
+		return bounding_sphere_filename_;
+	}
+	
+	
+	/**
+	 get the command for calling Matlab via system(), which I hate doing anyway...  ugh.
+	 
+	 \return the string for calling Matlab.
+	 */
+	std::string matlab_command() const
+	{
+		return matlab_command_;
+	}
+	
+	
+	
+	
+	
+	/**
+	 get the target dimension.  by default, this is -1, which is 'ask the user'
+	 \return the dimension.
+	 */
+	int target_dimension() const{
+		return target_dimension_;
+	}
+	
+	
+	
+	/**
+	 set the target dimension.
+	 \param new_dim the dimension.
+	 */
+	void set_target_dimension(int new_dim)
+	{
+		target_dimension_ = new_dim;
+	}
+	
+	
+	/**
+	 get the number of the target component to decompose.
+	 \return the target component.  default is -2, which is 'ask the user'
+	 */
+	int target_component() const
+	{
+		return target_component_;
+	}
+	
+	/**
+	 get whether are supposed to use the gamma trick.  default is no.
+	 
+	 \return whether using gamma trick
+	 */
+	bool use_gamma_trick() const
+	{
+		return use_gamma_trick_;
+	}
+	
 	
 	/** 
 	 \brief query whether should merge edges
@@ -531,27 +670,7 @@ public:
 		merge_edges_ = new_val;
 	}
 	
-	int primary_mode; ///< mode of operation -- bertini_real is default, but there is also crit method for computing critical points.
 	
-	int MPType; ///< store M.O.
-	
-	boost::filesystem::path bounding_sphere_filename; ///< name of file to read if user_sphere==true
-	boost::filesystem::path projection_filename; ///name of file to read if user_projection==true
-	boost::filesystem::path input_filename; ///< name of the input file to read -- by default it's "input"
-	
-	boost::filesystem::path input_deflated_filename; ///< the name of the file post-deflation
-	boost::filesystem::path sphere_filename; ///< the name of the sphere file.  this seems like a duplicate.
-	
-	
-	
-	int target_dimension;  ///< the dimension to shoot for
-	int target_component;  ///< the integer index of the component to decompose.  by default, it's -2, which indicates 'ask me'.
-	
-	
-	std::string bertini_command; ///< the string of what to call for bertini.
-	std::string matlab_command; ///< the string for how to call matlab.
-	
-	bool use_gamma_trick; ///< indicator for whether to use the gamma trick in a particular solver.
 	
 	
 	
@@ -670,6 +789,7 @@ public:
 	
 	/**
 	 \brief set the maximum number of deflations
+	 \param new_val the new value for the maximum number of deflations
 	 */
 	void max_deflations(int new_val)
 	{
@@ -688,6 +808,7 @@ public:
 	
 	/**
 	 \brief set whether should stifle the membership testing screen output
+	 \param new_val The new value for setting, whether to stifle screen output.
 	 */
 	void stifle_membership_screen(bool new_val)
 	{
@@ -708,6 +829,7 @@ public:
 	
 	/**
 	 get whether should use orthogonal projection.  default is yes
+	 \return whether we are using an orthogonal projection.  default internally is yes.
 	 */
 	bool orthogonal_projection()
 	{

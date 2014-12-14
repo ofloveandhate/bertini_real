@@ -11,14 +11,6 @@ bool checkSelfConjugate(vec_mp test_point,
 {
 	
 	
-	std::string bertini_command=program_options.bertini_command;
-	bertini_command.append(" input_membership_test ");
-	bertini_command.append(program_options.stifle_text());
-
-	
-	
-	
-	
 	// setup input file
 	int *declarations = NULL;
 	partition_parse(&declarations, input_file, "func_input_real", "config_real",0); // the 0 means not self conjugate
@@ -32,7 +24,6 @@ bool checkSelfConjugate(vec_mp test_point,
 	
 	
 	
-	
 	//we put the point and its conjugate into the same member points file and run the membership test simultaneously with one bertini call.
 	membership_test_input_file("input_membership_test", "func_input_real", "config_real",3);
 	
@@ -41,16 +32,12 @@ bool checkSelfConjugate(vec_mp test_point,
 	write_member_points_sc(test_point);//,fmt
 	
 	
+	int blabla;
+	parse_input_file("input_membership_test", &blabla);
+	membershipMain(13423, blabla, 0, 1, 0);
+	initMP(mpf_get_default_prec());
 	
 	
-	// Do membership test
-	if (program_options.verbose_level()>=1) {
-		std::cout << "*\n" << program_options.bertini_command << "\n*" << std::endl;
-	}
-	
-	system(bertini_command.c_str());  //TODO: eliminate this system call.
-	
-
 	std::vector<int> component_numbers = read_incidence_matrix();
 	
 	
@@ -254,10 +241,7 @@ int get_incidence_number(vec_mp test_point,
 						 boost::filesystem::path input_file)
 {
 	
-	std::string system_command=program_options.bertini_command;
-	system_command.append(" input_membership_test ");
-	system_command.append(program_options.stifle_text());
-	
+
 	
 	// setup input file
 	int *declarations = NULL;
@@ -278,9 +262,15 @@ int get_incidence_number(vec_mp test_point,
 	write_member_points_singlept(test_point);
 	
 	
-	// Do membership test
-	std::cout << "*\n" << system_command << "\n*" << std::endl;
-	system(system_command.c_str());
+//	std::vector<std::string> command_line_options;
+//	command_line_options.push_back("input_membership_test");
+//	
+	int blabla;
+	parse_input_file("input_membership_test", &blabla);
+	membershipMain(13423, blabla, 0, 1, 0);
+	initMP(mpf_get_default_prec());
+	
+//	bertini_main_wrapper(command_line_options, 1, 0,0);
 	
 	
 	std::vector<int> component_number = read_incidence_matrix();

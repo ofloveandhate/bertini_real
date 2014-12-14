@@ -13,39 +13,31 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
 	char ch, *strStabilizationTest = NULL;
 	FILE *IN = NULL, *OUT = NULL;
 	
-	std::stringstream converter;
-	converter << program_options.bertini_command << " input_stabilization_test " << witness_point_filename;
-	std::string bertini_system_command = converter.str();
-	converter.clear(); converter.str("");
 	
 	// remove previous files.
 	
 	
 	//open the input file.
 	partition_parse(&declarations, inputFile, "func_input_real" , "config_real" ,0); // the 0 means not self conjugate mode
-	
+																					 //why is this necessary?
 	
 	
 	// setup input file to test for stabilization
 	stabilization_input_file("input_stabilization_test", "func_input_real", "config_real");
 	
 	
-	printf("\nPerforming a stabilization test\n");
-	
-	
+	std::cout << "Performing a stabilization test\n";
 	
 	remove("isosingular_summary");
 	
-	//print the command to the screen
-	std::cout << "running system command " << bertini_system_command << std::endl;
+
 	
-	// perform stabilization test
-	if (system(bertini_system_command.c_str())!=0){
-		std::cout << "system command '" << bertini_system_command << "' did not return 0" << std::endl;
-		br_exit(ERROR_CONFIGURATION);
-	}
-	
-	
+	// you cannot call stabilization test in parallel
+	int blabla;
+	parse_input_file("input_stabilization_test", &blabla);
+	// seed, mptype, startName, my_id,  num_processes, headnode
+	witnessGeneration(0, blabla, const_cast<char*>(witness_point_filename.c_str()), 0,1,0);
+	initMP(mpf_get_default_prec());
 	
 	// read in the file
 	
@@ -60,18 +52,20 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
 	// loop until successful or run out of iterations
 	while (*num_deflations < max_deflations && !success)
 	{ // create input file for deflation
-		isosingular_deflation_iteration(declarations, "func_input_real", program_options.matlab_command, nullSpace, *num_deflations + 1);
+		isosingular_deflation_iteration(declarations, "func_input_real", program_options.matlab_command(), nullSpace, *num_deflations + 1);
 		
 		// setup input file to test for stabilization
 		stabilization_input_file("input_stabilization_test", "func_input_real", "config_real");
 		
+		// you cannot call stabilization test in parallel
+		int blabla;
+		parse_input_file("input_stabilization_test", &blabla);
+					// seed, mptype, startName, my_id,  num_processes, headnode
+		witnessGeneration(2565279, blabla, const_cast<char*>(witness_point_filename.c_str()), 0,1,0);
+		initMP(mpf_get_default_prec());
 		
-		// perform stabilization test
-		printf("\nPerforming a stabilization test\n");
-		if (system(bertini_system_command.c_str())!=0){
-			std::cout << "system command '" << bertini_system_command << "' did not return 0" << std::endl;
-			br_exit(ERROR_CONFIGURATION);
-		}
+		
+
 		
 		
 		// read in the file
@@ -383,7 +377,7 @@ void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 	fprintf(OUT, "    A = simplify(det(J(R(j,:),C(k,:))));\n");
 	fprintf(OUT, "    if A ~= 0\n");
 	fprintf(OUT, "      count = count + 1;\n");
-	fprintf(OUT, "		curr_eqn = char(A/prod(deg(R(j,:))));\n");
+	fprintf(OUT, "		curr_eqn = char(2*A/prod(deg(R(j,:))));%%\n");
 	fprintf(OUT, "		i_locations = regexp(curr_eqn,'[\\W\\s]i[\\W\\s]');\n");
 	fprintf(OUT, "		curr_eqn(i_locations+1) = 'I';\n");
 	fprintf(OUT, "      fprintf(OUT, 'f_%d_%cd = %cs;%cn', count, curr_eqn);\n", deflation_number, '%', '%', '\\');
@@ -425,7 +419,7 @@ void stabilization_input_file(boost::filesystem::path outputFile,
 	while ((ch = fgetc(IN)) != EOF)
 		fprintf(OUT, "%c", ch);
 	fclose(IN);
-	fprintf(OUT, "TrackType: 6;\nReducedOnly: 1;\nDeleteTempFiles: 0;\nTargetTolMultiplier: 1e2; %% this line added so that computed solutions fed in from BR will not falsely cause to fail -- DAB\nEND;\nINPUT\n");
+	fprintf(OUT, "TrackType: 6;\nMultOneOnly: 1;\nDeleteTempFiles: 0;\nTargetTolMultiplier: 1e3; %% this line added so that computed solutions fed in from BR will not falsely cause to fail -- DAB\nEND;\nINPUT\n");
 	
 	// setup system in OUT
 	IN = safe_fopen_read(funcInput.c_str());

@@ -170,7 +170,7 @@ other .
              { // print to FUNCFILEPARTITION
 	       if(is_func && add_in)
 	       {
-                 fprintf(FUNCFILEPARTITION, ",L,Lbar;\n");
+                 fprintf(FUNCFILEPARTITION, ",bertini_real_L,bertini_real_Lbar;\n");
                  fprintf(FUNCFILEPARTITION,"pathvariable s;\n");
                  fprintf(FUNCFILEPARTITION,"parameter t;\n");
                  fprintf(FUNCFILEPARTITION,"t = s;\n\n");

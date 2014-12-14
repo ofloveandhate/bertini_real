@@ -21,37 +21,33 @@ void Curve::main(VertexSet & V,
 	
 	if (1) {
 		// perform an isosingular deflation
-		// note: somehow, you do not need witness_data to perform isosingular deflation
-		if (program_options.verbose_level()>=2)
-			printf("performing isosingular deflation\n");
-		
-		
-		program_options.input_deflated_filename = W_curve.input_filename();
+		boost::filesystem::path temp_path = W_curve.input_filename();
 		
 		std::stringstream converter;
 		converter << "_dim_" << W_curve.dimension() << "_comp_" << W_curve.component_number() << "_deflated";
-		program_options.input_deflated_filename += converter.str();
+		temp_path += converter.str();
 		converter.clear(); converter.str("");
 		
 		std::set<unsigned int> zeroonly;
 		zeroonly.insert(0);
 		W_curve.write_dehomogenized_coordinates("witness_points_dehomogenized",zeroonly); // write the points to file
+		
 		int num_deflations, *deflation_sequence = NULL;
 		isosingular_deflation(&num_deflations, &deflation_sequence,
 							  program_options, W_curve.input_filename(),
 							  "witness_points_dehomogenized",
-							  program_options.input_deflated_filename,
+							  temp_path, // output name
 							  program_options.max_deflations());
 		free(deflation_sequence);
 		
 		
 		
+		program_options.set_input_deflated_filename(temp_path);
 		
-		
-		W_curve.set_input_filename(program_options.input_deflated_filename);
+		W_curve.set_input_filename(temp_path);
 	}
 	else {
-		program_options.input_deflated_filename = program_options.input_filename;
+		program_options.set_input_deflated_filename(program_options.input_filename());
 		//nothing
 	}
 	
@@ -95,17 +91,14 @@ void Curve::main(VertexSet & V,
 	
 	
 	if (program_options.user_sphere()) {
-		read_sphere(program_options.bounding_sphere_filename);
+		read_sphere(program_options.bounding_sphere_filename());
 	}
 	
 	
 	
+	this->add_projection(projections[0]);
 	
-	
-	
-	add_projection(projections[0]);
-	
-	if (self_conjugate==0)  //C is not self-conjugate
+	if (!self_conjugate)  //C is not self-conjugate
 	{
 		//Call non-self-conjugate case code
 		
@@ -222,9 +215,11 @@ int Curve::compute_critical_points(const WitnessSet & W_curve,
 	solve_out.get_noninfinite_w_mult_full(W_crit_real);
 	
 	
+	
 	W_crit_real.only_first_vars(W_curve.num_variables()); // trim the fat, since we are at the lowest level.
 	W_crit_real.sort_for_real(&solve_options.T);
 	W_crit_real.sort_for_unique(&solve_options.T);
+	
 	
 	
 	if (have_sphere()) {
@@ -398,6 +393,9 @@ int Curve::interslice(const WitnessSet & W_curve,
                                     VertexSet & V)
 {
 	
+	
+	int num_missing_indicator = 0;
+	
 #ifdef functionentry_output
 	std::cout << "curve::interslice" << std::endl;
 #endif
@@ -473,9 +471,8 @@ int Curve::interslice(const WitnessSet & W_curve,
 	
 	int num_midpoints = midpoints_downstairs->size;
 	
-	if (program_options.verbose_level()>=-1) {
+	if (program_options.verbose_level()>=0) {
 		print_point_to_screen_matlab(crit_downstairs,"crit_downstairs");
-//		print_point_to_screen_matlab(midpoints_downstairs,"midpoints_downstairs");
 	}
 	
 	
@@ -514,7 +511,7 @@ int Curve::interslice(const WitnessSet & W_curve,
 	
 	
 	
-	solve_options.backup_tracker_config();
+	solve_options.backup_tracker_config("getting_midpoints");
 	
 	for (int ii=0; ii<num_midpoints; ii++) {
 		
@@ -537,9 +534,12 @@ int Curve::interslice(const WitnessSet & W_curve,
 		fillme.get_noninfinite_w_mult_full(midpoint_witness_sets[ii]); // is ordered
 
 
-		midpoint_witness_sets[ii].sort_for_real(&solve_options.T);
-		midpoint_witness_sets[ii].sort_for_inside_sphere(sphere_radius(), sphere_center());
 		
+		midpoint_witness_sets[ii].sort_for_real(&solve_options.T);
+		
+		if (have_sphere()) {
+			midpoint_witness_sets[ii].sort_for_inside_sphere(sphere_radius(), sphere_center());
+		}
 		
 
 		if (program_options.verbose_level()>=2) {
@@ -549,7 +549,7 @@ int Curve::interslice(const WitnessSet & W_curve,
 		edge_counter += midpoint_witness_sets[ii].num_points();
 	}
 	
-	solve_options.reset_tracker_config();
+	solve_options.restore_tracker_config("getting_midpoints");
 	
 	
     // 7) find edge endpoints
@@ -582,7 +582,7 @@ int Curve::interslice(const WitnessSet & W_curve,
 		std::cout << color::brown() << "connecting midpoint downstairs " << ii << " of " << num_midpoints << color::console_default() << std::endl;
         
         
-        solve_options.backup_tracker_config();
+        solve_options.backup_tracker_config("midpoint_connect");
         
 
         if (program_options.quick_run()<=1)
@@ -662,8 +662,8 @@ int Curve::interslice(const WitnessSet & W_curve,
 				
                 solve_options.T.endgameNumber = 2;
                 // what else can i do here to improve the probability of success?
-                solve_options.T.basicNewtonTol   *= 1e-1; // tracktolbeforeeg
-                solve_options.T.endgameNewtonTol *= 1e-1; // tracktolduringeg
+                solve_options.T.basicNewtonTol   *= 1e-2; // tracktolbeforeeg
+                solve_options.T.endgameNewtonTol *= 1e-2; // tracktolduringeg
 //				solve_options.T.maxStepSize *= 0.5;
 //				solve_options.T.odePredictor = 7;
 				std::cout << "tracktolBEFOREeg: "	<< solve_options.T.basicNewtonTol << " tracktolDURINGeg: "	<< solve_options.T.endgameNewtonTol << std::endl;
@@ -702,7 +702,7 @@ int Curve::interslice(const WitnessSet & W_curve,
 					
 					SolverOutput fillme;
 					multilin_solver_master_entry_point(W_single,         // input WitnessSet
-													   fillme, // the new data is put here!
+													   fillme,           // the new data is put here!
 													   &particular_projection,
 													   ml_config,
 													   solve_options);
@@ -710,7 +710,10 @@ int Curve::interslice(const WitnessSet & W_curve,
 					fillme.get_noninfinite_w_mult_full(W_single_sharpened);
 					fillme.reset();
 
-					
+					if (W_single_sharpened.num_points()==0) {
+						std::cout << "sharpening failed" << std::endl;
+						mypause();
+					}
 					
 					solve_options.T.sharpenDigits = prev_sharpen_digits;
 					
@@ -739,10 +742,10 @@ int Curve::interslice(const WitnessSet & W_curve,
 						else if (num_its == 1) { // on second try, go to straight-up predictor
 							solve_options.T.maxNewtonIts = 1;
 						}
-						else if (num_its == 2){
-							solve_options.T.maxNewtonIts = 2;
-							sub_mp(&particular_projection->coord[0], &particular_projection->coord[0], temp);
-						}
+//						else if (num_its == 2){
+//							solve_options.T.maxNewtonIts = 2;
+//							sub_mp(&particular_projection->coord[0], &particular_projection->coord[0], temp);
+//						}
 						else{ //try many steps for correction.
 							solve_options.T.maxNewtonIts = 4;
 							solve_options.T.outputLevel = 3;
@@ -779,13 +782,13 @@ int Curve::interslice(const WitnessSet & W_curve,
 						else if (num_its == 1) { // on second try, go to straight-up predictor
 							solve_options.T.maxNewtonIts = 1;
 						}
-						else if (num_its == 2){
-							solve_options.T.maxNewtonIts = 2;
-							add_mp(&particular_projection->coord[0], &particular_projection->coord[0], temp);
-						}
+//						else if (num_its == 2){
+//							solve_options.T.maxNewtonIts = 2;
+//							add_mp(&particular_projection->coord[0], &particular_projection->coord[0], temp);
+//						}
 						else{ //try many steps for correction.
 							solve_options.T.maxNewtonIts = 4;
-							solve_options.T.outputLevel = 3;
+//							solve_options.T.outputLevel = 3;
 						}
 						SolverOutput fillme;
 						multilin_solver_master_entry_point(W_single_sharpened,         // WitnessSet
@@ -798,10 +801,10 @@ int Curve::interslice(const WitnessSet & W_curve,
 						fillme.reset();
 						
 						
-						if (num_its==3) {
-//							std::cout << "paused for inspecting output file" << std::endl;
-//							sleep(600);
-						}
+//						if (num_its==3) {
+////							std::cout << "paused for inspecting output file" << std::endl;
+////							sleep(600);
+//						}
 						W_single_right.sort_for_real(&solve_options.T);
 						
 						num_its++;
@@ -836,7 +839,7 @@ int Curve::interslice(const WitnessSet & W_curve,
 		}
 		
 		
-        solve_options.reset_tracker_config();
+        solve_options.restore_tracker_config("midpoint_connect");
         
 		
 		for (unsigned int kk=0; kk<midpoint_witness_sets[ii].num_points(); kk++) {
@@ -897,9 +900,8 @@ int Curve::interslice(const WitnessSet & W_curve,
 			
 			if (program_options.verbose_level()>=2) {
 				printf("done connecting upstairs midpoint %d (downstairs midpoint %d)\n",kk,ii);
-                
-				printf("indices of left, mid, right: %d %d %d\n",temp_edge.left(),temp_edge.midpt(),temp_edge.right());
-				printf("\n\n");
+				
+				std::cout << "constructed edge: " << temp_edge << std::endl << std::endl;;
 			}
 		}
 		Wleft.reset();
@@ -1448,7 +1450,7 @@ void Curve::send(int target, ParallelismConfig & mpi_config)
 	
 	Decomposition::send(target, mpi_config);
 	unsigned int temp_num_edges = num_edges_;
-	MPI_Send(&temp_num_edges, 1, MPI_UNSIGNED, target, CURVE, MPI_COMM_WORLD);
+	MPI_Send(&temp_num_edges, 1, MPI_UNSIGNED, target, CURVE, mpi_config.comm());
 	for (unsigned int ii=0; ii<num_edges_; ii++) {
 		edges_[ii].send(target, mpi_config);
 	}
@@ -1470,7 +1472,7 @@ void Curve::receive(int source, ParallelismConfig & mpi_config)
 	MPI_Status statty_mc_gatty;
 	
 	unsigned int temp_num_edges;
-	MPI_Recv(&temp_num_edges, 1, MPI_UNSIGNED, source, CURVE, MPI_COMM_WORLD, &statty_mc_gatty);
+	MPI_Recv(&temp_num_edges, 1, MPI_UNSIGNED, source, CURVE, mpi_config.comm(), &statty_mc_gatty);
 	
 	
 	for (unsigned int ii=0; ii<temp_num_edges; ii++) {
@@ -1594,11 +1596,6 @@ void Curve::computeCurveNotSelfConj(const WitnessSet		&W_in,
 	
 	// num_vars includes the homogeneous variable
 	
-	
-    
-	std::string bertini_system_command = program_options.bertini_command;
-	bertini_system_command.append(" input_NSC start_NSC");
-	
     FILE *IN = NULL;
     
 	
@@ -1620,12 +1617,17 @@ void Curve::computeCurveNotSelfConj(const WitnessSet		&W_in,
 	
 	copyfile("witness_data","witness_data_0");
 	
-    int retVal = system(bertini_system_command.c_str());
-	if (retVal!=0) {
-		std::stringstream ss;
-		ss << "system calling bertini for diagonal intersection returned nonzero value: " << retVal;
-		throw std::runtime_error(ss.str());
-	}
+	
+	std::vector<std::string> command_line_options;
+	command_line_options.push_back("input_NSC");
+	command_line_options.push_back("start_NSC");
+	
+	
+	program_options.call_for_help(BERTINI_MAIN);
+	bertini_main_wrapper(command_line_options, program_options.num_procs(), 0,0);
+	
+	
+	
 	
 	rename("witness_data_0","witness_data");
 	
