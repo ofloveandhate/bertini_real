@@ -95,10 +95,9 @@ int main(int argC, char *args[])
 	VertexSet V(decom_pointy->num_variables());
 	
 	V.set_tracker_config(&solve_options.T);
-	
-	
-	
 	V.setup_vertices(directoryName / "V.vertex"); //setup V structure from V.vertex
+	V.set_same_point_tolerance(1e1*solve_options.T.real_threshold);
+	
 	
 	/////////
 	////////
@@ -1645,9 +1644,15 @@ void Surface::fixed_sampler(VertexSet & V,
 
 			
 		
+			try {
+				rib_indices[jj][0] = bottom_->sample_index(faces_[ii].bottom_edge(),jj);
+				rib_indices[jj][target_num_samples-1] = top_->sample_index(faces_[ii].top_edge(),jj);
+			} catch (std::logic_error e) {
+				std::cout << "not completing sampling this face.  reason:" << std::endl << e.what() << std::endl;
+				success_indicator_total = false;
+				break;
+			}
 			
-			rib_indices[jj][0] = bottom_->sample_index(faces_[ii].bottom_edge(),jj);
-			rib_indices[jj][target_num_samples-1] = top_->sample_index(faces_[ii].top_edge(),jj);
 			
 			
 			
@@ -1746,7 +1751,7 @@ void Surface::fixed_sampler(VertexSet & V,
 				
 				if (success_indicator!=SUCCESSFUL) {
 					std::cout << color::red() << "something horrible happened" << color::console_default() << std::endl;
-					rib_indices[jj][kk] = -1;
+					rib_indices[jj].resize(kk);
 					success_indicator_total = false;
 					break;
 				}
@@ -1757,22 +1762,25 @@ void Surface::fixed_sampler(VertexSet & V,
 				
 				if (W_new.num_points()==0) {
 					std::cout << color::red() << "multilin tracker did not return any points :(" << color::console_default() << std::endl;
-					rib_indices[jj][kk] = -1;
+					rib_indices[jj].resize(kk);
 					// do something other than continue here.  this is terrible.
-					continue;
+					success_indicator_total = false;
+					break;
 				}
 				
 
 				temp_vertex.set_point(W_new.point(0));
 				temp_vertex.set_type(SURFACE_SAMPLE_POINT);
 				
-				if (sampler_options.no_duplicates){
-					rib_indices[jj][kk] = index_in_vertices_with_add(V, temp_vertex);
-				}
-				else
-				{
-					rib_indices[jj][kk] = V.add_vertex(temp_vertex);
-				}
+				rib_indices[jj][kk] = V.add_vertex(temp_vertex);
+				
+//				if (sampler_options.no_duplicates){
+//					rib_indices[jj][kk] = index_in_vertices_with_add(V, temp_vertex);
+//				}
+//				else
+//				{
+//					
+//				}
 				
 				
 			}
@@ -1788,7 +1796,21 @@ void Surface::fixed_sampler(VertexSet & V,
 
 		if (success_indicator_total) {
 			//stitch together the rib_indices
-			samples_.push_back(stitch_triangulation(rib_indices,V)); // last argument tells whether to use projection binning (true) or distance binning (false)
+			
+			
+			std::vector< Triangle > current_samples;
+			for (auto rib_iter = rib_indices.begin(); rib_iter!=rib_indices.end()-1; rib_iter++) {
+				
+				if (rib_iter->size()==0 || (rib_iter+1)->size()==0) {
+					std::cout << "empty rib!" << std::endl;
+					continue;
+				}
+				triangulate_two_ribs_by_angle_optimization(*rib_iter, *(rib_iter+1), V, (V.T())->real_threshold, current_samples);
+			}
+			
+			
+			samples_.push_back(current_samples); // last argument tells whether to use projection binning (true) or distance binning (false)
+			current_samples.clear();
 		}
 		else{
 			std::cout << color::red() << "something horrible happened" << color::console_default() << std::endl;
@@ -1813,44 +1835,6 @@ void Surface::fixed_sampler(VertexSet & V,
 
 
 
-std::vector< Triangle > Surface::stitch_triangulation(const std::vector< std::vector< int > > & rib_indices,
-																	VertexSet & V)
-{
-#ifdef functionentry_output
-	std::cout << "Surface::stitch_triangulation" << std::endl;
-#endif
-	
-	std::vector< Triangle > current_samples;
-	
-	for (auto ii = rib_indices.begin(); ii!=rib_indices.end()-1; ii++) {
-		triangulate_two_ribs(*ii, *(ii+1), V, current_samples);
-	}
-	
-	
-		
-	return current_samples;
-}
-
-
-void triangulate_two_ribs(const std::vector< int > & rib1, const std::vector< int > & rib2,
-						  VertexSet & V,
-						  std::vector< Triangle> & current_samples)
-{
-	
-	
-	if (rib1.size()==0 || rib2.size()==0) {
-		std::cout << "empty rib!" << std::endl;
-		return;
-	}
-	
-	if (rib1.size()==1 && rib2.size()==1) {
-		return;
-	}
-	
-	
-	triangulate_two_ribs_by_angle_optimization(rib1, rib2, V, (V.T())->real_threshold, current_samples);
-	
-}
 
 
 
@@ -1877,6 +1861,10 @@ void triangulate_two_ribs_by_angle_optimization(const std::vector< int > & rib1,
 		bail_out = true;
 	}
 	
+	if (rib1.size()==1 && rib2.size()==1) {
+		std::cout << "both ribs have size 1!" << std::endl;
+		bail_out = true;
+	}
 	
 	if (bail_out) {
 		return;

@@ -37,6 +37,247 @@
 #include "nullspace.hpp"
 #include "solver_sphere.hpp"
 
+
+
+
+/**
+ \brief 1-cell.
+ 
+ the edge data type.  has three indices: left, right, midpt.
+ */
+class Edge : public Cell
+{
+	int left_;  ///< index into vertices
+	int right_; ///< index into vertices
+	
+	std::vector< int > removed_points_;
+	
+	
+public:
+	
+	
+	typedef std::vector< int >::iterator removed_iterator;
+	typedef std::vector< int >::const_iterator removed_const_iterator;
+	
+	/**
+	 \return get an iterator to the beginning of the set of removed points, which were merged away in the merge operation.
+	 */
+	inline removed_iterator removed_begin(){return removed_points_.begin();}
+	
+	/**
+	 \return get an iterator to the beginning of the set of removed points, which were merged away in the merge operation.
+	 */
+	inline removed_const_iterator removed_begin() const {return removed_points_.begin();}
+	
+	/**
+	 \return get an iterator to the end of the set of removed points, which were merged away in the merge operation.
+	 */
+	inline removed_iterator removed_end(){return removed_points_.end();}
+	
+	/**
+	 \return get an iterator to the end of the set of removed points, which were merged away in the merge operation.
+	 */
+	inline removed_const_iterator removed_end() const {return removed_points_.end();}
+	
+	
+	
+	
+	/**
+	 \brief adds a point as a removed point.  tacks on to the end of the vector
+	 
+	 \param new_removed_point the index of the point to add
+	 \return the index of the point
+	 */
+	int add_removed_point(int new_removed_point)
+	{
+		removed_points_.push_back(new_removed_point);
+		return new_removed_point;
+	}
+	
+	
+	/**
+	 \brief get the right point
+	 
+	 \return the index of the right point
+	 */
+	inline int right() const
+	{
+		return right_;
+	}
+	
+	
+	/**
+	 \brief set the left point
+	 \param new_right the new index of the left point
+	 \return the index of the left point
+	 */
+	int right(int new_right)
+	{
+		return right_ = new_right;
+	}
+	
+	
+	
+	
+	
+	/**
+	 \brief get the left point
+	 
+	 \return the index of the left point
+	 */
+	inline int left() const
+	{
+		return left_;
+	}
+	
+	
+	/**
+	 \brief set the left point
+	 \param new_left the new index of the left point
+	 \return the index of the left point
+	 */
+	int left(int new_left)
+	{
+		return left_ = new_left;
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	/**
+	 default constructor
+	 */
+	Edge() : Cell()
+	{
+		left_ = right_ = -1;
+	}
+	
+	
+	/**
+	 \brief construct edge from left mid and right indices
+	 \param new_left the new left index for constructed edge
+	 \param new_midpt the new mid index for constructed edge
+	 \param new_right the new right index for constructed edge
+	 */
+	Edge(int new_left, int new_midpt, int new_right)
+	{
+		left(new_left);
+		right(new_right);
+		midpt(new_midpt);
+	}
+	
+	
+	
+	
+	/**
+	 check whether the edge is degenerate
+	 \return true if the edge is degenerate, false if not.
+	 */
+	inline bool is_degenerate()
+	{
+		if ((left() == right()) && (left()==midpt()) && (right()==midpt()))
+			return true;
+		else
+			return false;
+	}
+	
+	
+	
+	/**
+	 \brief send to a single target
+	 \param target to whom to send this edge
+	 \param mpi_config the current state of parallelism
+	 */
+	void send(int target, ParallelismConfig & mpi_config)
+	{
+		int * buffer = new int[4];
+		
+		buffer[0] = left();
+		buffer[1] = midpt();
+		buffer[2] = right();
+		buffer[3] = removed_points_.size();
+		
+		MPI_Send(buffer, 4, MPI_INT, target, EDGE, mpi_config.comm());
+		
+		delete [] buffer;
+		
+		buffer = new int[removed_points_.size()];
+		for (unsigned int ii=0; ii!=removed_points_.size(); ii++) {
+			buffer[ii] = removed_points_[ii];
+		}
+		MPI_Send(buffer, removed_points_.size(), MPI_INT, target, EDGE, mpi_config.comm());
+		delete [] buffer;
+		
+		
+	}
+	
+	
+	/**
+	 \brief receive from a single source
+	 \param source from whom to receive this edge
+	 \param mpi_config the current state of parallelism
+	 */
+	void receive(int source, ParallelismConfig & mpi_config)
+	{
+		MPI_Status statty_mc_gatty;
+		int * buffer = new int[4];
+		MPI_Recv(buffer, 4, MPI_INT, source, EDGE, mpi_config.comm(), &statty_mc_gatty);
+		
+		left(buffer[0]);
+		midpt(buffer[1]);
+		right(buffer[2]);
+		int temp_num_removed = buffer[3];
+		
+		
+		delete [] buffer;
+		
+		buffer = new int[temp_num_removed];
+		MPI_Recv(buffer, temp_num_removed, MPI_INT, source, EDGE, mpi_config.comm(), &statty_mc_gatty);
+		for (int ii=0; ii<temp_num_removed; ii++) {
+			removed_points_.push_back(buffer[ii]);
+		}
+		
+		delete [] buffer;
+		
+	}
+	
+	
+	/**
+	 \brief get edge from input stream.  this function is defunct, and needs implementation apparently.
+	 \param is the stream from whom to read
+	 */
+	virtual void read_from_stream( std::istream &is )
+	{
+		
+		is >> left_ >> midpt_ >> right_;
+	}
+	
+	friend std::ostream & operator<<(std::ostream & out, const Edge & E){
+		out << E.left_ << " " << E.midpt_ << " " << E.right_;
+		return out;
+	}
+	
+};
+
+
+
+
+
+
+
+
+
 /**
  \brief A bertini_real cell curve Decomposition.
  
@@ -59,6 +300,14 @@ class Curve : public Decomposition
 public:
 	
 	
+	/**
+	 query how many samples there are on an edge
+	 
+	 \throws out of range if there aren't as many edges as needed to do the lookup.
+	 
+	 \param edge_index the index of the edge, for which to query.
+	 \return the number of samples on edge i
+	 */
 	unsigned int num_samples_on_edge(unsigned int edge_index)
 	{
 		if (edge_index >= num_samples_each_edge_.size()) {
@@ -69,14 +318,30 @@ public:
 	}
 	
 	
+	
+	
+	/**
+	 get the index of sample on edge, at index position
+	 
+	 \throws out of range if there aren't as many edges as needed to do the lookup, or if there aren't that many samples..
+	 
+	 \param edge_index the index of the edge, for which to query.
+	 \param vertex_index the position of the vertex you want the index of.
+	 \return the index of the point, in the vertex set
+	 */
 	int sample_index(unsigned int edge_index, unsigned int vertex_index)
 	{
 		if (edge_index>=num_edges()) {
-			throw std::out_of_range("when accessing sample index, trying to access edge index out of range");
+			std::stringstream ss;
+			ss << "when accessing sample index, trying to access EDGE index out of range" << "\n" << "edge_index: "  << edge_index << " vertex_index: " << vertex_index;
+			throw std::out_of_range(ss.str());
+
 		}
 		
 		if (vertex_index >= sample_indices_[edge_index].size()) {
-			throw std::out_of_range("when accessing sample index, trying to access vertex index out of range");
+			std::stringstream ss;
+			ss << "when accessing sample index, trying to access VERTEX index out of range" << "\n" << "edge_index: "  << edge_index << " vertex_index: " << vertex_index;
+			throw std::out_of_range(ss.str());
 		}
 		
 		return sample_indices_[edge_index][vertex_index];
@@ -415,7 +680,7 @@ public:
 	 \param V		the Vertex set being passed around.  C indexes into here.
 	 \param num_vars		the total number of variables in the problem.
 	 \param program_options		main structure holding configuration
-	 
+	 \param solve_options the current state of the solver.
 	 */
 	void 	computeCurveNotSelfConj(const WitnessSet		& W,
 									VertexSet				&V,
@@ -641,22 +906,38 @@ public:
 		
 	}
 	
+	
+	/**
+	 constructor
+	 */
 	Curve() : Decomposition()
 	{
 		this->init();
 	}
-	
+
+	/**
+	 
+	assignment operator
+	 */
 	Curve & operator=(const Curve& other){
 		this->init();
 		this->copy(other);
 		return *this;
 	}
 	
+	
+	/** 
+	 copy constructor
+	 */
 	Curve(const Curve & other){
 		this->init();
 		this->copy(other);
 	}
 	
+	
+	/** 
+	 destructor
+	 */
 	~Curve()
 	{
 		this->clear();
@@ -667,19 +948,28 @@ public:
 	
 protected:
 	
+	/**
+	 clear the contents.  not a complete reset.
+	 */
 	void clear()
 	{
 		edges_.clear();
 		num_edges_ = 0;
 	}
 	
+	
+	/**
+	 get ready!
+	 */
 	void init(){
 		
 		num_edges_ = 0;
 		set_dimension(1);
 	}
 	
-	
+	/**
+	 copy the contents from one to the other.
+	 */
 	void copy(const Curve & other)
 	{
 		Decomposition::copy(other);

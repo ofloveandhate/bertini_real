@@ -2,7 +2,7 @@
 #define SOLVER_NULLSPACE_H
 
 
-/** \file solver_nullspace_left.hpp */
+/** \file solver_nullspace.hpp */
 
 
 #include <stdio.h>

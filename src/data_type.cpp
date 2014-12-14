@@ -3,137 +3,6 @@
 
 
 
-std::string enum_lookup(int flag)
-{
-	switch (flag) {
-		case SUCCESSFUL:
-			return "SUCCESSFUL";
-			break;
-			
-		case CRITICAL_FAILURE:
-			return "CRITICAL_FAILURE";
-			break;
-			
-		case TOLERABLE_FAILURE:
-			return "TOLERABLE_FAILURE";
-			break;
-			
-		case UNSET:
-			return "UNSET";
-			break;
-			
-		case CRITICAL:
-			return "CRITICAL";
-			break;
-			
-		case NEW:
-			return "NEW";
-			break;
-			
-		case MIDPOINT:
-			return "MIDPOINT";
-			break;
-			
-		case ISOLATED:
-			return "ISOLATED";
-			break;			
-			
-		case NULLSPACE:
-			return "NULLSPACE";
-			break;
-			
-		case LINPRODTODETJAC:
-			return "LINPRODTODETJAC";
-			break;
-			
-		case DETJACTODETJAC:
-			return "DETJACTODETJAC";
-			break;
-			
-		case LINTOLIN:
-			return "LINTOLIN";
-			break;
-			
-		case MULTILIN:
-			return "MULTILIN";
-			break;
-		
-		case MIDPOINT_SOLVER:
-			return "MIDPOINT_SOLVER";
-			break;
-			
-		case SPHERE_SOLVER:
-			return "SPHERE_SOLVER";
-			break;
-						
-			
-		case TERMINATE:
-			return "TERMINATE";
-			break;
-			
-		case INITIAL_STATE:
-			return "INITIAL_STATE";
-			break;
-			
-			
-		case PARSING:
-			return "PARSING";
-			break;
-			
-		case TYPE_CONFIRMATION:
-			return "TYPE_CONFIRMATION";
-			break;
-			
-		case DATA_TRANSMISSION:
-			return "DATA_TRANSMISSION";
-			break;
-			
-		case NUMPACKETS:
-			return "NUMPACKETS";
-			break;
-			
-		case INACTIVE:
-			return "INACTIVE";
-			break;
-			
-		case VEC_MP:
-			return "VEC_MP";
-			break;
-			
-		case VEC_D:
-			return "VEC_D";
-			break;
-			
-		case MAT_MP:
-			return "MAT_MP";
-			break;
-			
-		case MAT_D:
-			return "MAT_D";
-			break;
-			
-		case COMP_MP:
-			return "COMP_MP";
-			break;
-			
-		case COMP_D:
-			return "COMP_D";
-			break;
-			
-		case INDICES:
-			return "INDICES";
-			break;
-			
-			
-		default:
-			break;
-	}
-	
-	return "unknown...  check out data_type.cpp";
-}
-
-
-
 
 
 
@@ -470,8 +339,7 @@ void SystemRandomizer::randomize(vec_mp randomized_func_vals, mat_mp randomized_
 void SystemRandomizer::change_prec(int new_prec)
 {
 	if (!is_ready()) {
-		std::cout << "trying to change precision when not set up!" << std::endl;
-		br_exit(65621);
+		throw std::logic_error("trying to change precision when not set up!");
 	}
 	change_prec_mat_mp(randomizer_matrix_mp, new_prec);
 	mat_cp_mp(randomizer_matrix_mp,randomizer_matrix_full_prec);
@@ -700,7 +568,7 @@ void SystemRandomizer::send(int target, ParallelismConfig & mpi_config)
 	std::cout << "SystemRandomizer::send" << std::endl;
 #endif
 	int sendme = setup_indicator;
-	MPI_Send(&sendme,1,MPI_INT,target,UNUSED,MPI_COMM_WORLD);
+	MPI_Send(&sendme,1,MPI_INT,target,UNUSED,mpi_config.comm());
 
 	if (!setup_indicator) {
 		std::cout << "bailing on sending upsetup randomizer" << std::endl;
@@ -778,7 +646,7 @@ void SystemRandomizer::receive(int source, ParallelismConfig & mpi_config)
 	MPI_Status statty_mc_gatty;
 	
 	int recvme;
-	MPI_Recv(&recvme,1,MPI_INT,source,UNUSED,MPI_COMM_WORLD,&statty_mc_gatty);
+	MPI_Recv(&recvme,1,MPI_INT,source,UNUSED,mpi_config.comm(),&statty_mc_gatty);
 	setup_indicator = recvme;
 	if (!setup_indicator) {
 		std::cout << "bailing from getting unsetup randomizer" << std::endl;
@@ -854,7 +722,7 @@ void SystemRandomizer::bcast_send(ParallelismConfig & mpi_config)
 	
 	
 	int sendme = setup_indicator;
-	MPI_Bcast(&sendme,1,MPI_INT,mpi_config.head(),MPI_COMM_WORLD);
+	MPI_Bcast(&sendme,1,MPI_INT,mpi_config.head(),mpi_config.comm());
 	
 	if (!setup_indicator) {
 		std::cout << "bailing on sending unsetup randomizer" << std::endl;
@@ -867,7 +735,7 @@ void SystemRandomizer::bcast_send(ParallelismConfig & mpi_config)
 	buffer[2] = num_original_funcs;
 	buffer[3] = max_base_degree;
 	buffer[4] = max_degree_deficiency;
-	MPI_Bcast(buffer,5,MPI_INT,mpi_config.head(),MPI_COMM_WORLD);
+	MPI_Bcast(buffer,5,MPI_INT,mpi_config.head(),mpi_config.comm());
 	
 	delete[] buffer;
 	
@@ -909,7 +777,7 @@ void SystemRandomizer::bcast_send(ParallelismConfig & mpi_config)
 	
 	
 
-	MPI_Bcast(buffer2, size_to_send, MPI_INT, mpi_config.head(), MPI_COMM_WORLD);
+	MPI_Bcast(buffer2, size_to_send, MPI_INT, mpi_config.head(), mpi_config.comm());
 	delete [] buffer2;
 	
 	
@@ -937,7 +805,7 @@ void SystemRandomizer::bcast_receive(ParallelismConfig & mpi_config)
 	
 	
 	int recvme;
-	MPI_Bcast(&recvme,1,MPI_INT,mpi_config.head(),MPI_COMM_WORLD);
+	MPI_Bcast(&recvme,1,MPI_INT,mpi_config.head(),mpi_config.comm());
 	setup_indicator = recvme;
 	if (!setup_indicator) {
 		std::cout << "bailing from getting unsetup randomizer" << std::endl;
@@ -945,7 +813,7 @@ void SystemRandomizer::bcast_receive(ParallelismConfig & mpi_config)
 	}
 	
 	int *buffer = new int[1+2+2]; // square + size_of_randomizer + max_base + max_degree
-	MPI_Bcast(buffer,5,MPI_INT,mpi_config.head(),MPI_COMM_WORLD);
+	MPI_Bcast(buffer,5,MPI_INT,mpi_config.head(),mpi_config.comm());
 	
 	square_indicator = buffer[0];
 	num_randomized_funcs = buffer[1];
@@ -962,7 +830,7 @@ void SystemRandomizer::bcast_receive(ParallelismConfig & mpi_config)
 	// need to send original_degrees, randomized_degrees, randomizer_matrix_full_prec, max_degree_deficiency, and what else?
 	int size_to_receive = num_randomized_funcs+num_original_funcs + num_randomized_funcs*num_original_funcs;
 	int *buffer2 = new int[size_to_receive];
-	MPI_Bcast(buffer2, size_to_receive, MPI_INT, mpi_config.head(), MPI_COMM_WORLD);
+	MPI_Bcast(buffer2, size_to_receive, MPI_INT, mpi_config.head(), mpi_config.comm());
 	
 	int cnt = 0;
 	for (int ii=0; ii<num_randomized_funcs; ii++) {
@@ -1111,7 +979,7 @@ int LinearHolder::add_linear(vec_mp new_linear)
 
 
 
-int WitnessSet::witnessSetParse(const boost::filesystem::path witness_set_file, const int num_vars)
+int WitnessSet::Parse(const boost::filesystem::path witness_set_file, const int num_vars)
 {
 	
 	
@@ -1796,9 +1664,9 @@ void WitnessSet::merge(const WitnessSet & W_in, tracker_config_t * T)
 	
 	
 	if (W_in.num_natty_vars_ != this->num_natty_vars_) {
-		printf("merging two witness sets with differing numbers of natural variables. %d merging set, %d existing\n",
-			   W_in.num_natural_variables(), this->num_natural_variables());
-		br_exit(95);
+		std::stringstream ss;
+		ss << "merging two witness sets with differing numbers of natural variables. "<< W_in.num_natural_variables() <<" merging set, "<< this->num_natural_variables() << " existing\n",
+		throw std::logic_error(ss.str());
 	}
 	
 	//just mindlessly add the linears.  up to user to ensure linears get merged correctly.  no way to know what they want...
@@ -1812,13 +1680,26 @@ void WitnessSet::merge(const WitnessSet & W_in, tracker_config_t * T)
 		vec_mp & in_point = W_in.point(ii);
 		for (unsigned int jj = 0; jj<num_points(); jj++){
 			vec_mp & curr_point = this->point(jj);
-			if ( curr_point->size == in_point->size) {
-				if (isSamePoint_inhomogeneous_input(curr_point, in_point, T->final_tol_times_mult)) {
-					is_new = 0;
-					break;
-				}
+			
+			//cache the sizes
+			int in_size = in_point->size;
+			int curr_size = curr_point->size;
+			
+			
+			in_point->size = this->num_natural_variables();
+			curr_point->size = this->num_natural_variables();
+			
+			if (isSamePoint_homogeneous_input(curr_point, in_point, T->final_tol_times_mult)) {
+				is_new = 0;
+				
+				in_point->size = in_size;
+				curr_point->size = curr_size;
+				break;
 			}
 			
+			// restore the sizes
+			in_point->size = in_size;
+			curr_point->size = curr_size;
 		}
 		
 		if (is_new==1)
@@ -2211,8 +2092,8 @@ WitnessSet NumericalIrreducibleDecomposition::choose(BertiniRealConfig & options
 	std::cout << "NumericalIrreducibleDecomposition::choose" << std::endl;
 #endif
 
-	int target_dimension = options.target_dimension;
-	int target_component = options.target_component;
+	int target_dimension = options.target_dimension();
+	int target_component = options.target_component();
 	
 	
 	
@@ -2262,10 +2143,10 @@ WitnessSet NumericalIrreducibleDecomposition::choose(BertiniRealConfig & options
 		
 		
 		if (dimension_component_counter.find(target_dimension)==dimension_component_counter.end()) {
-			std::cout << "there are no components of dimension " << options.target_dimension << std::endl;
+			std::cout << "there are no components of dimension " << options.target_dimension() << std::endl;
 			
 			WitnessSet W(num_variables());
-			W.set_dimension(options.target_dimension);
+			W.set_dimension(options.target_dimension());
 			W.set_component_number(-1);
 			return W;
 		}
@@ -2320,7 +2201,7 @@ WitnessSet NumericalIrreducibleDecomposition::best_possible_automatic_set(Bertin
 #ifdef functionentry_output
 	std::cout << "NumericalIrreducibleDecomposition::best_possible_automatic_set" << std::endl;
 #endif
-	int target_dimension = options.target_dimension;
+	int target_dimension = options.target_dimension();
 	
 	WitnessSet W(num_variables()); // create blank witness set
 	W.set_dimension(target_dimension);
@@ -2362,7 +2243,7 @@ WitnessSet NumericalIrreducibleDecomposition::best_possible_automatic_set(Bertin
 		
 		int current_index = index_tracker[target_dimension][*iter][0]; // guaranteed to exist, b/c nonempty.  already checked.
 		
-		if (checkSelfConjugate(point(current_index), options, options.input_filename)==true) {
+		if (checkSelfConjugate(point(current_index), options, options.input_filename())==true) {
 			std::cout << "dim " << target_dimension << ", comp " << *iter << " is self-conjugate" << std::endl;
 			for (int ii=0; ii<dimension_component_counter[target_dimension][*iter]; ++ii) {
 				W.add_point( point(index_tracker[target_dimension][*iter][ii]) );
@@ -2413,7 +2294,7 @@ WitnessSet NumericalIrreducibleDecomposition::choose_set_interactive(BertiniReal
 #ifdef functionentry_output
 	std::cout << "NumericalIrreducibleDecomposition::choose_set_interactive" << std::endl;
 #endif
-	int target_dimension = options.target_dimension;
+	int target_dimension = options.target_dimension();
 	
 	std::cout << "the nonempty dimensions:" << std::endl;
 	for (auto iter=nonempty_dimensions.begin(); iter!=nonempty_dimensions.end(); ++iter) {
@@ -2442,7 +2323,7 @@ WitnessSet NumericalIrreducibleDecomposition::choose_set_interactive(BertiniReal
 		}
 		
 		target_dimension = get_int_choice("\n\nchoose a single dimension:\n",valid_choices);
-		options.target_dimension = target_dimension;
+		options.set_target_dimension(target_dimension);
 	}
 		
 	
@@ -2753,10 +2634,13 @@ int VertexSet::compute_downstairs_crit_midpts(const WitnessSet & W,
         
         if (curr_index < 0) {
             std::cout << color::red() << "trying to retrieve projection value from a non-stored point" << color::console_default() << std::endl;
+			print_point_to_screen_matlab(curr_point,"curr_point");
+			
+			print_to_screen();
             mypause();
         }
         
-
+		
         
         set_mp(&projection_values->coord[ii], & (vertices_[curr_index].projection_values())->coord[proj_index]);
         
@@ -2766,7 +2650,6 @@ int VertexSet::compute_downstairs_crit_midpts(const WitnessSet & W,
 		{
 			print_comp_matlab(&projection_values->coord[ii],"not_a_number");
 			print_point_to_screen_matlab(pi,"pi");
-			
 		}
 		
 	}
@@ -2825,15 +2708,17 @@ std::vector<int> VertexSet::assert_projection_value(const std::set< int > & rele
 
 std::vector<int> VertexSet::assert_projection_value(const std::set< int > & relevant_indices, comp_mp new_value, int proj_index)
 {
-	std::vector<int> bad_indices;
-    
-    comp_mp temp; init_mp(temp);
+	
     
     if ( proj_index > num_projections_ ) {
-        std::cout << color::red() << "trying to assert projection value, but index of projection is larger than possible" << color::console_default() << std::endl;
-		br_exit(3091); // throw?
+		throw std::out_of_range("trying to assert projection value, but index of projection is larger than possible");
     }
-    
+	
+	std::vector<int> bad_indices;
+	
+	comp_mp temp; init_mp(temp);
+	
+	
     for (std::set<int>::iterator ii=relevant_indices.begin(); ii!=relevant_indices.end(); ii++) {
         //*ii
         
@@ -2843,7 +2728,6 @@ std::vector<int> VertexSet::assert_projection_value(const std::set< int > & rele
 				      << " but original value is " << mpf_get_d((vertices_[*ii].projection_values())->coord[proj_index].r) << std::endl;
             std::cout << "point index is " << *ii << std::endl;
 			bad_indices.push_back(*ii);
-			continue;
         }
         
         set_mp(&(vertices_[*ii].projection_values())->coord[proj_index], new_value);
@@ -2858,7 +2742,7 @@ std::vector<int> VertexSet::assert_projection_value(const std::set< int > & rele
 
 
 
-int VertexSet::add_vertex(const Vertex source_vertex)
+int VertexSet::add_vertex(const Vertex & source_vertex)
 {
 	
 	
@@ -2920,9 +2804,15 @@ int VertexSet::add_vertex(const Vertex source_vertex)
 
 void VertexSet::print_to_screen()
 {
+	
+	vec_mp temp; init_vec_mp(temp,0); temp->size = 0;
 	printf("Vertex set has %zu vertices:\n\n",num_vertices_);
 	for (unsigned int ii=0; ii<this->num_vertices_; ++ii) {
-		print_point_to_screen_matlab(vertices_[ii].point(),"vert");
+		std::stringstream ss;  ss << "vertex_" << ii;
+		dehomogenize(&temp, vertices_[ii].point(), num_natural_variables());
+		temp->size = num_natural_variables()-1;
+		
+		print_point_to_screen_matlab(temp,ss.str());
 		print_point_to_screen_matlab(vertices_[ii].projection_values(),"projection_values");
 		printf("type: %d\n", vertices_[ii].type());
 	}
@@ -3098,16 +2988,19 @@ void VertexSet::send(int target, ParallelismConfig & mpi_config)
 	buffer2[4] = curr_input_index_;
 	buffer2[5] = num_vertices_;
 	
-	MPI_Send(buffer2, 6, MPI_INT, target, VERTEX_SET, MPI_COMM_WORLD);
+	MPI_Send(buffer2, 6, MPI_INT, target, VERTEX_SET,  mpi_config.comm());
 	
 	delete [] buffer2;
+	
+	
+	MPI_Send(&same_point_tolerance_,1,MPI_DOUBLE,target,VERTEX_SET, mpi_config.comm());
 //	std::cout << "sending " << num_projections << " projections" << std::endl;
 	
 	buffer2 = new int[num_projections_];
 	for (int ii=0; ii<num_projections_; ii++) {
 		buffer2[ii] = projections_[ii]->size;
 	}
-	MPI_Send(buffer2, num_projections_, MPI_INT, target, VERTEX_SET, MPI_COMM_WORLD);
+	MPI_Send(buffer2, num_projections_, MPI_INT, target, VERTEX_SET,  mpi_config.comm());
 	delete [] buffer2;
 	
 	for (int ii=0; ii<num_projections_; ii++) {
@@ -3124,9 +3017,9 @@ void VertexSet::send(int target, ParallelismConfig & mpi_config)
 		memcpy(buffer, filenames_[ii].string().c_str(), strleng-1); // this sucks
 		buffer[strleng-1] = '\0';
 		
-		MPI_Send(&strleng, 1, MPI_INT, target, VERTEX_SET, MPI_COMM_WORLD);
+		MPI_Send(&strleng, 1, MPI_INT, target, VERTEX_SET,  mpi_config.comm());
 //		std::cout << "sending filename length " << strleng << " " << filenames[ii].string() << std::endl;
-		MPI_Send(&buffer[0], strleng, MPI_CHAR, target, VERTEX_SET, MPI_COMM_WORLD);
+		MPI_Send(&buffer[0], strleng, MPI_CHAR, target, VERTEX_SET,  mpi_config.comm());
 		
 		delete [] buffer;
 		
@@ -3153,7 +3046,7 @@ void VertexSet::receive(int source, ParallelismConfig & mpi_config)
 	MPI_Status statty_mc_gatty;
 	
 	int * buffer2 = new int[6];
-	MPI_Recv(buffer2, 6, MPI_INT, source, VERTEX_SET, MPI_COMM_WORLD, &statty_mc_gatty);
+	MPI_Recv(buffer2, 6, MPI_INT, source, VERTEX_SET,  mpi_config.comm(), &statty_mc_gatty);
 	
 	
 	
@@ -3166,6 +3059,8 @@ void VertexSet::receive(int source, ParallelismConfig & mpi_config)
 	
 	delete [] buffer2;
 	
+	MPI_Recv(&same_point_tolerance_,1,MPI_DOUBLE,source,VERTEX_SET, mpi_config.comm(), &statty_mc_gatty);
+	
 	set_num_vars(temp_num_natural_variables);
 	
 	
@@ -3173,7 +3068,7 @@ void VertexSet::receive(int source, ParallelismConfig & mpi_config)
 	
 	buffer2 = new int[temp_num_projections];
 	
-	MPI_Recv(buffer2, temp_num_projections, MPI_INT, source, VERTEX_SET, MPI_COMM_WORLD, &statty_mc_gatty);
+	MPI_Recv(buffer2, temp_num_projections, MPI_INT, source, VERTEX_SET,  mpi_config.comm(), &statty_mc_gatty);
 
 	
 	
@@ -3197,11 +3092,11 @@ void VertexSet::receive(int source, ParallelismConfig & mpi_config)
 	for (int ii=0; ii<temp_num_filenames; ii++) {
 		char * buffer; int strleng;
 		
-		MPI_Recv(&strleng, 1, MPI_INT, source, VERTEX_SET, MPI_COMM_WORLD, &statty_mc_gatty);
+		MPI_Recv(&strleng, 1, MPI_INT, source, VERTEX_SET,  mpi_config.comm(), &statty_mc_gatty);
 		
 		buffer = new char[strleng];
 //		std::cout << "recving filename length " << strleng << std::endl;
-		MPI_Recv(&buffer[0], strleng, MPI_CHAR, source, VERTEX_SET, MPI_COMM_WORLD, &statty_mc_gatty);
+		MPI_Recv(&buffer[0], strleng, MPI_CHAR, source, VERTEX_SET,  mpi_config.comm(), &statty_mc_gatty);
 		filenames_.push_back(boost::filesystem::path(std::string(buffer)));
 		
 		delete [] buffer;
@@ -3739,7 +3634,7 @@ void Decomposition::send(int target, ParallelismConfig & mpi_config)
 	int strleng = input_filename().string().size() + 1;
 	buffer2[6] = strleng;
 
-	MPI_Send(buffer2, 7, MPI_INT, target, 6, MPI_COMM_WORLD);
+	MPI_Send(buffer2, 7, MPI_INT, target, 6, mpi_config.comm());
 	delete [] buffer2;
 	
 	
@@ -3776,7 +3671,7 @@ void Decomposition::send(int target, ParallelismConfig & mpi_config)
 	if (strleng>1) {
 		char * buffer = new char[strleng];
 		memcpy(buffer, input_filename().c_str(), strleng);
-		MPI_Send(buffer, strleng, MPI_CHAR, target, 7, MPI_COMM_WORLD);
+		MPI_Send(buffer, strleng, MPI_CHAR, target, 7, mpi_config.comm());
 		delete [] buffer;
 	}
 	
@@ -3818,7 +3713,7 @@ void Decomposition::receive(int source, ParallelismConfig & mpi_config)
 	
 	buffer2 = new int[7];
 	
-	MPI_Recv(buffer2, 7, MPI_INT, source, 6, MPI_COMM_WORLD, &statty_mc_gatty);
+	MPI_Recv(buffer2, 7, MPI_INT, source, 6, mpi_config.comm(), &statty_mc_gatty);
 	set_num_variables(buffer2[0]);
 	dim_ = buffer2[1];
 	comp_num_ = buffer2[2];
@@ -3883,7 +3778,7 @@ void Decomposition::receive(int source, ParallelismConfig & mpi_config)
 	
 	if (strleng>1) {
 		char * buffer = new char[strleng];
-		MPI_Recv(buffer, strleng, MPI_CHAR, source, 7, MPI_COMM_WORLD, &statty_mc_gatty);
+		MPI_Recv(buffer, strleng, MPI_CHAR, source, 7, mpi_config.comm(), &statty_mc_gatty);
 		
 		set_input_filename(buffer);
 		delete [] buffer;

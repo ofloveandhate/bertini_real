@@ -26,7 +26,7 @@ MACHINE_SPECIFICS:=
   #check environment variable $(MACHINENAME), if defined
 ifeq ($(MACHINENAME),MACBRAKE)
     #dan brake's machine.  he uses different places for his includes, etc.
-    INC:= -I/usr/local/include  -I/usr/local/Cellar/mpich2/3.0.4/include $(INC) 
+	INC:= -I/usr/local/include   $(INC)  #-I/usr/local/Cellar/mpich2/3.0.4/include
     BISON=bison# bison in path already
     LIBS=  -lm -L/usr/local/lib/ -lmpfr -lgmp          #-lm -lmpfr -lgmp# brake has libraries in path for linking, via brew.  no need to specify here
     COMPcc = mpicc -cc=clang 
@@ -34,7 +34,7 @@ ifeq ($(MACHINENAME),MACBRAKE)
     STATICFLAG=#  on macintosh, do not static compile (get missing lcrt0.o problem)
 	BERTINILIB:=$(HOME)/lib/libbertini_parallel.a
 	INSTALLPATH:=$(HOME)/bin
-	BERTINIHEADERS:=$(HOME)/bertini_source_1.4.1modded/include
+	BERTINIHEADERS:=$(HOME)/bertini_source_1.4.1/include
 
 	BOOSTLOC := /usr/local/Cellar/boost/1.56.0/lib/
 	BOOSTSUFFIX:=-mt

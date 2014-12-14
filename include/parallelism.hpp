@@ -5,43 +5,18 @@
 
 /** \file parallelism.hpp */
 
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <math.h>
 #include <gmp.h>
-#include <mpfr.h>
-#include <mpf2mpfr.h>
-
-#include <time.h>
-#include <float.h>
-#include <limits.h>
-
-#include <sstream>
-#include <iostream>
-
-
-
-
-
-
-#include "bertini_headers.hpp"
 
 #include "programConfiguration.hpp"
+#include "solver.hpp"
 
 
-#include "fileops.hpp"
-#include "checkSelfConjugate.hpp"
-
-#include "data_type.hpp"
-#include "isosingular.hpp"
-#include "programConfiguration.hpp"
 
 #include "surface.hpp"
 #include "curve.hpp"
 
+
+#include "data_type.hpp"
 
 /**
 \defgroup mpienabled MPI-enabled classes
@@ -72,11 +47,11 @@ protected:
 	BertiniRealConfig program_options;///< holds the current state of Bertini_real
 	SolverConfiguration solve_options; ///< holds the current state of the solver
 	
-	
+	int MPType; ///< operating MP type.
 public:
 
 	
-	int MPType; ///< operating MP type.
+	
 	
 	
 	virtual int main_loop() = 0;
@@ -175,6 +150,9 @@ void get_projection(vec_mp *pi,
 					BertiniRealConfig program_options,
 					int num_vars,
 					int num_projections);
+
+
+
 
 
 

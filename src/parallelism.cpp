@@ -29,9 +29,6 @@ int UbermasterProcess::main_loop()
 	boost::timer::auto_cpu_timer t;
 	
 	
-	program_options.MPType = MPType;
-	
-	
 	program_options.splash_screen();
 	
 	
@@ -67,7 +64,7 @@ int UbermasterProcess::main_loop()
 	
 	
 	W.get_variable_names(num_vars);
-	W.set_input_filename(program_options.input_filename);
+	W.set_input_filename(program_options.input_filename());
 	
 	
 		
@@ -85,7 +82,8 @@ int UbermasterProcess::main_loop()
 	
 	V.set_tracker_config(&solve_options.T);
 	
-	V.set_same_point_tolerance(solve_options.T.final_tol_times_mult);
+	V.set_same_point_tolerance(solve_options.T.real_threshold);
+
 	
 	vec_mp *pi = (vec_mp *) br_malloc(W.dimension()*sizeof(vec_mp ));
 	for (int ii=0; ii<W.dimension(); ii++) {
@@ -99,11 +97,11 @@ int UbermasterProcess::main_loop()
     }
     
 	
-	if (program_options.primary_mode==BERTINIREAL) {
+	if (program_options.primary_mode()==BERTINIREAL) {
 		bertini_real(W,pi,V);
 		
 	}
-	else if(program_options.primary_mode==CRIT)
+	else if(program_options.primary_mode()==CRIT)
 	{
 		critreal(W,pi,V);
 	}
@@ -132,8 +130,8 @@ void UbermasterProcess::bertini_real(WitnessSet & W, vec_mp *pi, VertexSet & V)
 {
 	
 	
-	W.set_incidence_number(get_incidence_number( W.point(0), program_options, program_options.input_filename));
-	
+	W.set_incidence_number(get_incidence_number( W.point(0), program_options, program_options.input_filename()));
+
 	boost::filesystem::path temp_name = program_options.output_dir();
 	std::stringstream converter;
 	converter << "_dim_" << W.dimension() << "_comp_" << W.component_number();
@@ -281,7 +279,7 @@ int WorkerProcess::main_loop()
 		
 		MPI_Bcast(&solver_choice, 1, MPI_INT, solve_options.head(), MPI_COMM_WORLD);
 		
-		if ( (solver_choice!=0) && (solve_options.id()==1) && (solve_options.verbose_level()>=1)) {
+		if ( (solve_options.id()==1) && (program_options.verbose_level()>=2)) { //(solver_choice!=0) &&
 			std::cout << "received call for help for solver " << enum_lookup(solver_choice) << std::endl;
 		}
 		
@@ -298,7 +296,10 @@ int WorkerProcess::main_loop()
 				break;
 				
 			case PARSING:
-				MPI_Bcast(&single_int_buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
+				MPI_Bcast(&single_int_buffer, 1, MPI_INT, 0, MPI_COMM_WORLD); // this catches a broadcast from Bertini's parser...
+				if (single_int_buffer!=0) {
+					std::cout << single_int_buffer << std::endl;
+				}
 				break;
 				
 			case MULTILIN:
@@ -308,11 +309,17 @@ int WorkerProcess::main_loop()
 			case SPHERE_SOLVER:
 				sphere_slave_entry_point(this->solve_options);
 				break;
-				
+			
+			case BERTINI_MAIN:
+			{
+				std::vector<std::string> command_line_options;
+				bertini_main_wrapper(command_line_options, solve_options.num_procs(), solve_options.id(), solve_options.head());
+				break;
+			}
 			case TERMINATE:
 				break;
-				
 			default:
+				std::cout << "received unknown" << std::endl;
 				break;
 		}
 	}
@@ -347,7 +354,7 @@ void get_projection(vec_mp *pi,
 	
 	//assumes the vector pi is already initialized
 	if (program_options.user_projection()) {
-		FILE *IN = safe_fopen_read(program_options.projection_filename.c_str()); // we are already assured this file exists, but safe fopen anyway.
+		FILE *IN = safe_fopen_read(program_options.projection_filename()); // we are already assured this file exists, but safe fopen anyway.
 		int tmp_num_vars;
 		fscanf(IN,"%d",&tmp_num_vars); scanRestOfLine(IN);
 		if (tmp_num_vars!=num_vars-1) {
@@ -398,6 +405,11 @@ void get_projection(vec_mp *pi,
 	
 	return;
 }
+
+
+
+
+
 
 
 

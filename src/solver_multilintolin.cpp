@@ -185,7 +185,7 @@ int multilintolin_eval_data_mp::receive(ParallelismConfig & mpi_config)
 	
 	
 	int *buffer = new int[1];
-	MPI_Bcast(buffer, 1, MPI_INT, mpi_config.head(), MPI_COMM_WORLD);
+	MPI_Bcast(buffer, 1, MPI_INT, mpi_config.head(), mpi_config.comm());
 	
 	if (buffer[0] != MULTILIN) {
 		std::cout << "worker failed to confirm it is receiving the multilin type eval data" << std::endl;
@@ -391,7 +391,7 @@ int multilintolin_eval_data_d::receive(ParallelismConfig & mpi_config)
 	
     int *buffer = new int[1];
 	
-	MPI_Bcast(buffer, 1, MPI_INT, mpi_config.head(), MPI_COMM_WORLD);
+	MPI_Bcast(buffer, 1, MPI_INT, mpi_config.head(), mpi_config.comm());
 	if (buffer[0] != MULTILIN){
 		std::cout << "worker failed to confirm it is receiving the multilin type eval data" << std::endl;
 		mpi_config.abort(777);
@@ -553,7 +553,7 @@ int multilin_slave_entry_point(SolverConfiguration & solve_options)
 	bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
 	
 	int *settings_buffer = (int *) br_malloc(2*sizeof(int));
-	MPI_Bcast(settings_buffer,2,MPI_INT, 0,MPI_COMM_WORLD);
+	MPI_Bcast(settings_buffer,2,MPI_INT, 0,solve_options.comm());
 	solve_options.robust = settings_buffer[0];
 	solve_options.use_gamma_trick = settings_buffer[1];
 	free(settings_buffer);
@@ -1256,13 +1256,25 @@ int check_issoln_multilintolin_d(endgame_data_t *EG,
 								 tracker_config_t *T,
 								 void const *ED)
 {
+	
+	
+	
+	
+	if (EG->last_approx_prec<64) {
+		if (EG->last_approx_d->size==0) {
+			return 0;
+		}
+	}
+	else{
+		if (EG->last_approx_mp->size==0) {
+			return 0;
+		}
+	}
+	
+	
 	multilintolin_eval_data_d *BED = (multilintolin_eval_data_d *)ED; // to avoid having to cast every time
 	
 	BED->SLP_memory.set_globals_to_this();
-	int ii;
-	
-	
-	
 	
 	double n1, n2, max_rat;
 	point_d f;
@@ -1303,7 +1315,7 @@ int check_issoln_multilintolin_d(endgame_data_t *EG,
 	
 	// compare the function values
 	int isSoln = 1;
-	for (ii = 0; (ii < BED->SLP->numFuncs) && isSoln; ii++)
+	for (int ii = 0; (ii < BED->SLP->numFuncs) && isSoln; ii++)
 	{
 		n1 = d_abs_d( &e.funcVals->coord[ii]); // corresponds to final point
 		n2 = d_abs_d( &f->coord[ii]); // corresponds to the previous point
@@ -1346,11 +1358,28 @@ int check_issoln_multilintolin_mp(endgame_data_t *EG,
 								  tracker_config_t *T,
 								  void const *ED)
 {
-	multilintolin_eval_data_mp *BED = (multilintolin_eval_data_mp *)ED; // to avoid having to cast every time
-	BED->SLP_memory.set_globals_to_this();
-	int ii;
 	
-	for (ii = 0; ii < T->numVars; ii++)
+	
+	multilintolin_eval_data_mp *BED = (multilintolin_eval_data_mp *)ED; // to avoid having to cast every time
+	
+	
+	if (EG->last_approx_prec<64) {
+		if (EG->last_approx_d->size==0) {
+			return 0;
+		}
+	}
+	else{
+		if (EG->last_approx_mp->size==0) {
+			return 0;
+		}
+	}
+	
+	
+	
+	BED->SLP_memory.set_globals_to_this();
+
+	
+	for (int ii = 0; ii < T->numVars; ii++)
 	{
 		if (!(mpfr_number_p(EG->PD_mp.point->coord[ii].r) && mpfr_number_p(EG->PD_mp.point->coord[ii].i)))
 		{
@@ -1379,6 +1408,8 @@ int check_issoln_multilintolin_mp(endgame_data_t *EG,
 	double tol = MAX(my_guarantor, pow(10,-num_digits));
 	mpf_set_d(zero_thresh, tol);
 	
+	
+	
 	//this one guaranteed by entry condition
 	//	multilin_to_lin_eval_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, ED);
 	evalProg_mp(e.funcVals, e.parVals, e.parDer, e.Jv, e.Jp, EG->PD_mp.point, EG->PD_mp.time, BED->SLP);
@@ -1401,7 +1432,7 @@ int check_issoln_multilintolin_mp(endgame_data_t *EG,
 	
 	// compare the function values
 	int isSoln = 1;
-	for (ii = 0; ii < BED->SLP->numFuncs && isSoln; ii++)
+	for (int ii = 0; ii < BED->SLP->numFuncs && isSoln; ii++)
 	{
 		mpf_abs_mp(n1, &e.funcVals->coord[ii]);
 		mpf_abs_mp(n2, &f->coord[ii]);

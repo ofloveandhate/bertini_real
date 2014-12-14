@@ -326,7 +326,7 @@ int midpoint_eval_data_mp::receive(ParallelismConfig & mpi_config)
 	std::cout << "midpoint_eval_data_mp::receive" << std::endl;
 #endif
 	int *buffer = new int[12]; // allocate 12 here because we will be sending 12 integers
-	MPI_Bcast(buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(buffer, 1, MPI_INT, 0, mpi_config.comm());
 	
 	if (buffer[0] != MIDPOINT_SOLVER) {
 		std::cout << "worker failed to confirm it is receiving the midpoint solver type eval data" << std::endl;
@@ -568,7 +568,7 @@ int midpoint_eval_data_d::receive(ParallelismConfig & mpi_config)
 	
 	
 	int *buffer = new int[12];
-	MPI_Bcast(buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(buffer, 1, MPI_INT, 0, mpi_config.comm());
 	
 	if (buffer[0] != MIDPOINT_SOLVER){
 		std::cout << "worker failed to confirm it is receiving the midpoint solver type eval data" << std::endl;
@@ -829,7 +829,7 @@ void midpoint_slave_entry_point(SolverConfiguration & solve_options)
 	bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
 	
 	int *settings_buffer = (int *) br_malloc(2*sizeof(int));
-	MPI_Bcast(settings_buffer,2,MPI_INT, 0,MPI_COMM_WORLD);
+	MPI_Bcast(settings_buffer,2,MPI_INT, 0, solve_options.comm());
 	solve_options.robust = settings_buffer[0];
 	solve_options.use_gamma_trick = settings_buffer[1];
 	free(settings_buffer);
