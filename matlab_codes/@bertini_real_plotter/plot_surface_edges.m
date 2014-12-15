@@ -117,6 +117,10 @@ end
 
 added = false;
 for kk = 1:length(br_plotter.BRinfo.midpoint_slices)
+	if strcmp( br_plotter.BRinfo.midpoint_slices{kk}.inputfilename,'unset')
+		continue;
+	end
+	
 	color_index = 2*(kk);
 	[handie_mc_handhand, refinement_handles, label_handles] ...
 		= plot_subcurve(br_plotter,br_plotter.BRinfo.midpoint_slices{kk},sprintf('mid.%d.',kk),style,'g',colors(color_index,:));

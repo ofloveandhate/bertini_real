@@ -32,6 +32,11 @@ end
 
 switch br_plotter.dimension
 	case 2
+		
+		if and(~br_plotter.options.render_faces, ~br_plotter.options.render_curves)
+			br_plotter.switches.display_vertices = 1;
+		end
+		
 	%         plot_params.switches.display_faces = 1;
 	%         plot_params.switches.display_face_samples = 0;
 		if isempty(br_plotter.handles.surface_samples)

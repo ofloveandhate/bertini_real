@@ -33,8 +33,9 @@ switch br_plotter.dimension
         
 
 	case 2 % a surface
-		cb_params = make_surface_checks(br_plotter, cb_params);
-
+		if or(br_plotter.options.render_faces, br_plotter.options.render_curves)
+			cb_params = make_surface_checks(br_plotter, cb_params);
+		end
 		%end 3d case
 	otherwise
 		
@@ -114,48 +115,50 @@ end
 
 
 if br_plotter.options.labels
-	[br_plotter.checkboxes.label_critcurve, cb_params] = make_switch_checkbox('critcurve labels', 'label_critcurve', cb_params, h, br_plotter);
-	[br_plotter.checkboxes.label_spherecurve, cb_params] = make_switch_checkbox('spherecurve labels', 'label_spherecurve', cb_params, h, br_plotter);
+	if br_plotter.options.render_curves
+		[br_plotter.checkboxes.label_critcurve, cb_params] = make_switch_checkbox('critcurve labels', 'label_critcurve', cb_params, h, br_plotter);
+		[br_plotter.checkboxes.label_spherecurve, cb_params] = make_switch_checkbox('spherecurve labels', 'label_spherecurve', cb_params, h, br_plotter);
 
 
 
 
-	if ~isempty(br_plotter.handles.midtext)
-		new_color = get(br_plotter.handles.midtext);
-		new_color = new_color.Color;
-	else
-		new_color = [0 0 0];
-	end
-
-	[br_plotter.checkboxes.label_midedges, cb_params] = make_switch_checkbox('mideedge labels', 'label_midedges', cb_params, h, br_plotter);
-	set(br_plotter.checkboxes.label_midedges,'ForeGroundColor',new_color(1,:));
-
-
-
-	if ~isempty(br_plotter.handles.crittext)
-		new_color = get(br_plotter.handles.crittext);
-		new_color = new_color.Color;
-	else
-		new_color = [0 0 0];
-	end
-
-	[br_plotter.checkboxes.label_critedges, cb_params] = make_switch_checkbox('criteedge labels', 'label_critedges', cb_params, h, br_plotter);
-	set(br_plotter.checkboxes.label_critedges,'ForeGroundColor',new_color(1,:));
-
-
-
-	if ~isempty(br_plotter.handles.singular_curves)
-		if ~isempty(br_plotter.handles.singtext)
-			new_color = get(br_plotter.handles.singtext);
+		if ~isempty(br_plotter.handles.midtext)
+			new_color = get(br_plotter.handles.midtext);
 			new_color = new_color.Color;
 		else
 			new_color = [0 0 0];
 		end
 
-		[br_plotter.checkboxes.label_singular, cb_params] = make_switch_checkbox('singedge labels', 'label_singular', cb_params, h, br_plotter);
-		set(br_plotter.checkboxes.label_critedges,'ForeGroundColor',new_color(1,:));
-	end
+		[br_plotter.checkboxes.label_midedges, cb_params] = make_switch_checkbox('mideedge labels', 'label_midedges', cb_params, h, br_plotter);
+		set(br_plotter.checkboxes.label_midedges,'ForeGroundColor',new_color(1,:));
 
+
+
+		if ~isempty(br_plotter.handles.crittext)
+			new_color = get(br_plotter.handles.crittext);
+			new_color = new_color.Color;
+		else
+			new_color = [0 0 0];
+		end
+
+		[br_plotter.checkboxes.label_critedges, cb_params] = make_switch_checkbox('criteedge labels', 'label_critedges', cb_params, h, br_plotter);
+		set(br_plotter.checkboxes.label_critedges,'ForeGroundColor',new_color(1,:));
+
+
+
+		if ~isempty(br_plotter.handles.singular_curves)
+			if ~isempty(br_plotter.handles.singtext)
+				new_color = get(br_plotter.handles.singtext);
+				new_color = new_color.Color;
+			else
+				new_color = [0 0 0];
+			end
+
+			[br_plotter.checkboxes.label_singular, cb_params] = make_switch_checkbox('singedge labels', 'label_singular', cb_params, h, br_plotter);
+			set(br_plotter.checkboxes.label_critedges,'ForeGroundColor',new_color(1,:));
+		end
+
+	end
 	if br_plotter.options.labels
 		if ~isempty(br_plotter.handles.faces)
 			[br_plotter.checkboxes.label_faces, cb_params] = make_switch_checkbox('face labels', 'label_faces', cb_params, h, br_plotter);
@@ -173,33 +176,39 @@ cb_params.curr_y = cb_params.curr_y+10;
 
 cb_params.x_pad = 10;
 
-[br_plotter.checkboxes.show_critcurve, cb_params] = make_switch_checkbox('crit curve', 'show_critcurve', cb_params, h, br_plotter);
+if br_plotter.options.render_curves
+	[br_plotter.checkboxes.show_critcurve, cb_params] = make_switch_checkbox('crit curve', 'show_critcurve', cb_params, h, br_plotter);
 
 
-if ~br_plotter.is_bounded
-	[br_plotter.checkboxes.show_spherecurve, cb_params] = make_switch_checkbox('sphere curve', 'show_spherecurve', cb_params, h, br_plotter);
-end
+	if ~br_plotter.is_bounded
+		[br_plotter.checkboxes.show_spherecurve, cb_params] = make_switch_checkbox('sphere curve', 'show_spherecurve', cb_params, h, br_plotter);
+	end
 
 
-[br_plotter.checkboxes.show_critslices, cb_params] = make_switch_checkbox('critslices', 'show_critslices', cb_params, h, br_plotter);
+	[br_plotter.checkboxes.show_critslices, cb_params] = make_switch_checkbox('critslices', 'show_critslices', cb_params, h, br_plotter);
 
-[br_plotter.checkboxes.show_midslices, cb_params] = make_switch_checkbox('midslices', 'show_midslices', cb_params, h, br_plotter);
+	[br_plotter.checkboxes.show_midslices, cb_params] = make_switch_checkbox('midslices', 'show_midslices', cb_params, h, br_plotter);
 
 
 
-if ~isempty(br_plotter.handles.singular_curves)
-	[br_plotter.checkboxes.show_singular, cb_params] = make_switch_checkbox('singular curves', 'show_singular', cb_params, h, br_plotter);
-end
+	if ~isempty(br_plotter.handles.singular_curves)
+		[br_plotter.checkboxes.show_singular, cb_params] = make_switch_checkbox('singular curves', 'show_singular', cb_params, h, br_plotter);
+	end
 
-cb_params.x_pad = 0;
-[br_plotter.checkboxes.surface_curve_raw, cb_params] = make_switch_checkbox('raw curves', 'raw_curves_main', cb_params, h, br_plotter);
+	cb_params.x_pad = 0;
+	[br_plotter.checkboxes.surface_curve_raw, cb_params] = make_switch_checkbox('raw curves', 'raw_curves_main', cb_params, h, br_plotter);
+
+end % re: if render_curves
+
 
 if ~isempty(br_plotter.handles.faces)
 	[br_plotter.checkboxes.display_faces, cb_params] = make_switch_checkbox('raw faces', 'display_faces', cb_params, h, br_plotter);
 end
 
-cb_params.curr_y = cb_params.curr_y+10;
 
+if or(br_plotter.options.render_faces,br_plotter.options.render_curves)
+	cb_params.curr_y = cb_params.curr_y+10;
+end
 
 if have_refinements
 	
@@ -209,20 +218,24 @@ if have_refinements
 	cb_params.x_pad = 10;
 	
 	%[checkbox_handle, cb_params] = make_switch_checkbox(switch_text, switch_name, cb_params, panel_handle, br_plotter, groupname)
-	if ~isempty(br_plotter.handles.singular_curves)
-		[br_plotter.checkboxes.show_singcurve_refinement, cb_params] = make_switch_checkbox('singular curve refinements', 'show_singularcurve', cb_params, h, br_plotter,'curve_refinements');
-	end
 	
-	if ~br_plotter.is_bounded
-		[br_plotter.checkboxes.show_spherecurve_refinement, cb_params] = make_switch_checkbox('sphere curve refinements', 'show_spherecurve', cb_params, h, br_plotter,'curve_refinements');
-	end
-	[br_plotter.checkboxes.show_critcurve_refinement, cb_params] = make_switch_checkbox('crit curve refinements', 'show_critcurve', cb_params, h, br_plotter,'curve_refinements');
-	[br_plotter.checkboxes.show_critslice_refinement, cb_params] = make_switch_checkbox('crit slice refinements', 'show_critslices', cb_params, h, br_plotter,'curve_refinements');
-	[br_plotter.checkboxes.show_midslice_refinement, cb_params] = make_switch_checkbox('mid slice refinements', 'show_midslices', cb_params, h, br_plotter,'curve_refinements');
+	if br_plotter.options.render_curves
+		if ~isempty(br_plotter.handles.singular_curves)
+			[br_plotter.checkboxes.show_singcurve_refinement, cb_params] = make_switch_checkbox('singular curve refinements', 'show_singularcurve', cb_params, h, br_plotter,'curve_refinements');
+		end
+
+		if ~br_plotter.is_bounded
+			[br_plotter.checkboxes.show_spherecurve_refinement, cb_params] = make_switch_checkbox('sphere curve refinements', 'show_spherecurve', cb_params, h, br_plotter,'curve_refinements');
+		end
+		[br_plotter.checkboxes.show_critcurve_refinement, cb_params] = make_switch_checkbox('crit curve refinements', 'show_critcurve', cb_params, h, br_plotter,'curve_refinements');
+		[br_plotter.checkboxes.show_critslice_refinement, cb_params] = make_switch_checkbox('crit slice refinements', 'show_critslices', cb_params, h, br_plotter,'curve_refinements');
+		[br_plotter.checkboxes.show_midslice_refinement, cb_params] = make_switch_checkbox('mid slice refinements', 'show_midslices', cb_params, h, br_plotter,'curve_refinements');
+
+		cb_params.x_pad = 0;
+
+		[br_plotter.checkboxes.curve_refinements, cb_params] = make_switch_checkbox('curve refinements', 'main', cb_params, h, br_plotter,'curve_refinements');
+	end%re: if render_curves
 	
-	cb_params.x_pad = 0;
-	
-	[br_plotter.checkboxes.curve_refinements, cb_params] = make_switch_checkbox('curve refinements', 'main', cb_params, h, br_plotter,'curve_refinements');
 	if ~isempty(br_plotter.handles.faces)
 		[br_plotter.checkboxes.display_face_samples, cb_params] = make_switch_checkbox('face samples', 'display_face_samples', cb_params, h, br_plotter);
 	end

@@ -96,11 +96,16 @@ classdef bertini_real_plotter < handle
 			br_plotter.options.fontsizes.axis = 20;
 			br_plotter.options.line_thickness = 3;
 			br_plotter.options.autosave = true;
+			
 			br_plotter.options.labels = true;
 			br_plotter.options.monocolor = false;
+			
 			br_plotter.options.render_vertices = true;
+			br_plotter.options.render_curves = true;
+			br_plotter.options.render_faces = true;
+			
 			br_plotter.options.colormap = @jet;
-			br_plotter.options.faces = true;
+			
 		end
 		
 		
@@ -138,6 +143,30 @@ classdef bertini_real_plotter < handle
 								error('bad option %f for autosave',tentative_arg);
 							end
 						end
+					
+					case {'curves','curve'}
+						tentative_arg = command_line_options{ii+1};
+						
+						if ischar(tentative_arg)
+							switch tentative_arg
+								case {'y','yes','true'}
+									br_plotter.options.render_curves = true;
+								case {'n','no','none','false'}
+									br_plotter.options.render_curves = false;
+								otherwise
+									error('bad option %s for curves',tentative_arg);
+							end
+							
+						else
+							if tentative_arg==1
+								br_plotter.options.render_curves = true;
+							elseif tentative_arg==0
+								br_plotter.options.render_curves = false;
+							else
+								error('bad option %f for curves',tentative_arg);
+							end
+						end
+						
 						
 					case {'vertices','vert'}
 						
@@ -147,7 +176,7 @@ classdef bertini_real_plotter < handle
 							switch tentative_arg
 								case {'y','yes','true'}
 									br_plotter.options.render_vertices = true;
-								case {'n','no','false'}
+								case {'n','no','none','false'}
 									br_plotter.options.render_vertices = false;
 								otherwise
 									error('bad option %s for vertices',tentative_arg);
@@ -240,7 +269,7 @@ classdef bertini_real_plotter < handle
 							switch tentative_arg
 								case {'y','yes','true'}
 									br_plotter.options.labels = true;
-								case {'n','no','false'}
+								case {'n','no','none','false'}
 									br_plotter.options.labels = false;
 								otherwise
 									error('bad option %s for labels',tentative_arg);
@@ -262,8 +291,30 @@ classdef bertini_real_plotter < handle
 						
 						
 					case 'faces'
-						br_plotter.options.faces =  command_line_options{ii+1};
 						
+						tentative_arg = command_line_options{ii+1};
+						
+						if ischar(tentative_arg)
+							switch tentative_arg
+								case {'y','yes','true'}
+									br_plotter.options.render_faces = true;
+								case {'n','no','none','false'}
+									br_plotter.options.render_faces = false;
+								otherwise
+									error('bad option %s for faces',tentative_arg);
+							end
+							
+						else
+							if tentative_arg==1
+								br_plotter.options.render_faces = true;
+							elseif tentative_arg==0
+								br_plotter.options.render_faces = false;
+							else
+								error('bad option %f for faces',tentative_arg);
+							end
+						end
+						
+												
 					otherwise
 						error('unexpected option name ''%s''',command_line_options{ii})
 				end
