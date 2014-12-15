@@ -88,8 +88,10 @@ void restore_bertini_files_dotbak();
  */
 void purge_previous_directory(char *directoryName);
 
+
+
 /**
- opens a file to read, giving fatal error if cannot.
+ opens a file to read, throwing runtime_error if cannot.
  
  \return A file pointer, just opened in 'r' mode.
  \param filename the name of the file to open.
@@ -97,7 +99,7 @@ void purge_previous_directory(char *directoryName);
 FILE *safe_fopen_read(boost::filesystem::path filename);
 
 /**
- opens a file to write, giving fatal error if cannot.
+ opens a file to write, throwing runtime_error if cannot.
  
  \return A file pointer, just opened in 'w' mode.
  \param filename the name of the file to open.
@@ -105,12 +107,13 @@ FILE *safe_fopen_read(boost::filesystem::path filename);
 FILE *safe_fopen_write(boost::filesystem::path filename);
 
 /**
- opens a file to append, giving fatal error if cannot.
+ opens a file to append, throwing runtime_error if cannot.
  
  \return A file pointer, just opened in 'a' mode.
  \param filename the name of the file to open.
  */
 FILE *safe_fopen_append(boost::filesystem::path filename);
+
 
 
 

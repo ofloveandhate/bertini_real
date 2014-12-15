@@ -5,27 +5,31 @@
 %names.
 
 % daniel brake
-% colorado state university
-% mathematics
-% 2013
+% colorado state university, north carolina state university, notre dame
+% mathematics and applied mathematics
+% 2013-14
 % danielthebrake@gmail.com
 
 
 
-function newname = increment_name(picname)
+function newname = increment_name(basename)
 
-file_list = dir([picname '_*']);
+file_list = dir([basename '_*']);
 if ~isempty(file_list)
 	filenumbers = zeros(1,length(file_list));
 	for ii = 1:length(file_list)
-
-		filenumbers(ii) = str2double(file_list(ii).name(length(picname)+2:end-4));%subtract 4 to remove extension
+		potential_number = str2double(file_list(ii).name(length(basename)+2:end-4));
+		if isnan(potential_number)
+			potential_number = -1;
+		end
+		
+		filenumbers(ii) = potential_number;%subtract 4 to remove extension
 	end
 else
 	filenumbers = 0;
 end
 
-newname = sprintf('%s_%i',picname,max(filenumbers)+1);
+newname = sprintf('%s_%i',basename,max(filenumbers)+1);
 
 
 end

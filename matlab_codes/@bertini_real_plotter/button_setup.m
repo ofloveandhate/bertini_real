@@ -26,8 +26,9 @@ curr_y = 0;
 [curr_y, br_plotter.buttons.leap] = make_button('Leap Motion', {@leap_figure_axes_control}, horiz_pad, vert_spacing, curr_y, br_plotter.panels.buttons, height, width);
 
 
-[curr_y, br_plotter.buttons.stl] = make_button('Save to STL', {@fv_to_stl,br_plotter.fv}, horiz_pad, vert_spacing, curr_y, br_plotter.panels.buttons, height, width);
-
+if br_plotter.options.render_faces
+	[curr_y, br_plotter.buttons.stl] = make_button('Save to STL', {@fv_to_stl,br_plotter.fv}, horiz_pad, vert_spacing, curr_y, br_plotter.panels.buttons, height, width);
+end
 
 [curr_y, br_plotter.buttons.fontsize] = make_button('FontSize', {@br_plotter.change_text_size}, horiz_pad, vert_spacing, curr_y, br_plotter.panels.buttons, height, width);
 
@@ -43,7 +44,7 @@ if br_plotter.dimension == 2
 	[curr_y, br_plotter.buttons.alpha] = make_button(buttontext, {@br_plotter.change_alpha}, horiz_pad, vert_spacing, curr_y, br_plotter.panels.buttons, height, width);
 end
 
-set(br_plotter.panels.buttons,'position',[horiz_pad    vertical_size-curr_y-vert_spacing-2     width+2*horiz_pad+2    curr_y+vert_spacing+2]) 
+set(br_plotter.panels.buttons,'position',[horiz_pad    vertical_size-curr_y-vert_spacing-2     width+2*horiz_pad+2    curr_y+vert_spacing+2]);
 
 
 

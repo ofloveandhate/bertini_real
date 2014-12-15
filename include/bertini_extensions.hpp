@@ -22,15 +22,54 @@
 #define LARGECHANGE_MP 1e50
 
 
+enum {SUCCESSFUL=0, CRITICAL_FAILURE=-10, TOLERABLE_FAILURE=-1};
 
-static double SAMEPOINTTOL = 1e-6;
+
+enum {SYSTEM_CRIT = -1600, SYSTEM_SPHERE};
+
+//The following lets us use words instead of numbers to indicate vertex type.
+enum {UNSET= 100, CRITICAL, SEMICRITICAL, MIDPOINT, ISOLATED, NEW, CURVE_SAMPLE_POINT, SURFACE_SAMPLE_POINT, REMOVED, PROBLEMATIC};
+
+
+
+// enum for worker mode choice
+enum {NULLSPACE = 3000, LINPRODTODETJAC, DETJACTODETJAC, LINTOLIN, MULTILIN, MIDPOINT_SOLVER, SPHERE_SOLVER, BERTINI_MAIN};
+
+enum {TERMINATE = 2000, INITIAL_STATE};
+
+
 
 enum {VEC_MP = 4000, VEC_D, MAT_MP, MAT_D, COMP_MP, COMP_D, VEC_RAT, MAT_RAT, COMP_RAT, INDICES, DECOMPOSITION, CURVE, SURFACE, EDGE, CELL, FACE, UNUSED, VERTEX_SET, WITNESS_SET, VERTEX, SYSTEM_RANDOMIZER};
 
 
 
+enum {INACTIVE = 500, ACTIVE};
+enum {PARSING = 1000, TYPE_CONFIRMATION, DATA_TRANSMISSION, NUMPACKETS};
 
 
+
+extern "C"{
+	void parallel_diff_worker(int my_id, int num_processes, int headnode);
+}
+
+
+
+/**
+ look up an integer, for what it means in the world of enumerations.
+ */
+std::string enum_lookup(int flag);
+
+
+
+
+
+int bertini_main_wrapper(const std::vector<std::string> & options,  int num_processes, int my_id, int headnode);
+
+
+
+/**
+ Print the Bertini splash screen to the screen.
+ */
 void bertini_splash_screen();
 
 
@@ -222,42 +261,50 @@ void projection_value_homogeneous_input(comp_mp result, vec_mp input, vec_mp pro
 /**
  \brief tests whether two point given in already-dehomogenized form are the same, using a defined threshold.
  
+ no need to dehomogenize - is inhomogeneous by assumption
+ 
  \return boolean integer indicating whether ||left-right||_2<tol
  \param left The first input
  \param right The second input
- 
+ \param tolerance The L_2 separation distance for the two points to be considered the same
  */
-int isSamePoint_inhomogeneous_input(point_d left, point_d right);
+int isSamePoint_inhomogeneous_input(point_d left, point_d right, double tolerance);
 /**
  \brief tests whether two point given in already-dehomogenized form are the same, using a defined threshold.
  
+  no need to dehomogenize - is inhomogeneous by assumption
+ 
  \return boolean integer indicating whether ||left-right||_2<tol
  \param left The first input
  \param right The second input
- 
+ \param tolerance The L_2 separation distance for the two points to be considered the same
  */
-int isSamePoint_inhomogeneous_input(point_mp left, point_mp right);
+int isSamePoint_inhomogeneous_input(point_mp left, point_mp right, double tolerance);
 
 
 
 /**
  \brief tests whether two point given in homogenized form are the same, using a defined threshold.
  
+ dehomogenizes the points before testing.
+ 
  \return boolean integer indicating whether ||left-right||_2<tol
  \param left The first input
  \param right The second input
- 
+ \param tolerance The L_2 separation tolerance for the points
  */
-int isSamePoint_homogeneous_input(point_d left, point_d right);
+int isSamePoint_homogeneous_input(point_d left, point_d right, double tolerance);
 /**
  \brief tests whether two point given in homogenized form are the same, using a defined threshold.
  
+  dehomogenizes the points before testing.
+ 
  \return boolean integer indicating whether ||left-right||_2<tol
  \param left The first input
  \param right The second input
- 
+ \param tolerance The L_2 separation tolerance for the points
  */
-int isSamePoint_homogeneous_input(point_mp left, point_mp right);
+int isSamePoint_homogeneous_input(point_mp left, point_mp right, double tolerance);
 
 
 /**

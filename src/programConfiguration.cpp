@@ -42,6 +42,8 @@ void parse_input_file(boost::filesystem::path filename, int * MPType)
 	int my_id = 0, num_processes = 1, headnode = 0; // headnode is always 0
 	
 	
+	int bcastme = PARSING;
+	MPI_Bcast(&bcastme, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	//end parser-bertini essentials
 	
 	
@@ -81,7 +83,7 @@ void prog_config::move_to_called()
 
 
 
-int BR_configuration::startup()
+int BertiniRealConfig::startup()
 /***************************************************************\
  * USAGE:    prepares the variables inputname and startname
  *      for use later in the program
@@ -103,25 +105,25 @@ int BR_configuration::startup()
 	
 	//test for presence of necessary files
 	FILE *IN;
-	IN = safe_fopen_read(this->input_filename.c_str());
+	IN = safe_fopen_read(this->input_filename());
 	fclose(IN);
 	
 	
 	
 	if (this->user_projection()) {
-		IN = safe_fopen_read(this->projection_filename.c_str());
+		IN = safe_fopen_read(this->projection_filename());
 		fclose(IN);
 	}
 	
 	if (this->user_sphere()) {
-		IN = safe_fopen_read(this->bounding_sphere_filename.c_str());
+		IN = safe_fopen_read(this->bounding_sphere_filename());
 		fclose(IN);
 	}
 	
 	return 0;
 }
 
-void BR_configuration::splash_screen()
+void BertiniRealConfig::splash_screen()
 {
 	printf("\n BertiniReal(TM) v%s\n\n", BERTINI_REAL_VERSION_STRING);
 	printf(" D.A. Brake with\n D.J. Bates, W. Hao, J.D. Hauenstein,\n A.J. Sommese, C.W. Wampler\n\n");
@@ -139,40 +141,40 @@ void BR_configuration::splash_screen()
 
 
 
-void BR_configuration::display_current_options()
+void BertiniRealConfig::display_current_options()
 {
-	printf("current options:\n\n");
+	std::cout << "current options:\n\n";
 	
-	printf("user_projection: %d",this->user_projection());
+	std::cout << "user_projection: " << user_projection();
 	if (this->user_projection())
-		printf(", %s\n",this->projection_filename.c_str());
+		std::cout << ", " << projection_filename_.string() << ",\n";
 	else
-		printf("\n");
+		std::cout << "\n";
 	
 	
 
 	
 	
-	printf("user_sphere: %d",user_sphere());
+	std::cout << "user_sphere: " << user_sphere();
 	if (user_sphere())
-		printf(", %s\n",bounding_sphere_filename.c_str());
+		std::cout << ", " << bounding_sphere_filename_.string() << "\n";
 	else
-		printf("\n");
+		std::cout << "\n";
 	
 	
-	printf("input_filename: %s\n",this->input_filename.c_str());
+	std::cout << "input_filename: " << input_filename_.string() << "\n";
 
 	
-	std::cout << "stifle_text: " << this->stifle_text() << std::endl;
-	std::cout << "bertini_command: " << this->bertini_command << std::endl;
-	std::cout << "output_directory base name: " << this->output_dir() << std::endl;
+	std::cout << "stifle_text: " << stifle_text() << "\n";
+	std::cout << "matlab_command: " << matlab_command() << "\n";
+	std::cout << "output_directory base name: " << output_dir() << std::endl;
 	
 }
 
 
 
 
-int  BR_configuration::parse_commandline(int argc, char **argv)
+int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 {
 	// this code created based on gnu.org's description of getopt_long
 	int choice;
@@ -213,11 +215,11 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 		switch (choice)
 		{
 			case 'd':
-				target_dimension = atoi(optarg);
+				target_dimension_ = atoi(optarg);
 				break;
 				
 			case 'c':
-				target_component = atoi(optarg);
+				target_component_ = atoi(optarg);
 				break;
 				
 			case 'D':
@@ -225,11 +227,7 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 				break;
 		
 			case 'g':
-				this->use_gamma_trick = atoi(optarg);
-				if (! (this->use_gamma_trick==0 || this->use_gamma_trick==1) ) {
-					printf("value for 'gammatrick' or 'g' must be 1 or 0\n");
-					br_exit(689);
-				}
+				this->use_gamma_trick_ = atoi(optarg);
 				break;
 				
 			case 'V':
@@ -251,19 +249,19 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 				
 			case 'p':
 				user_projection(true);
-				projection_filename = optarg;
+				projection_filename_ = boost::filesystem::absolute(optarg);
 				break;
 				
 				
 				
 			case 'S':
 				user_sphere(true);
-				this->bounding_sphere_filename = boost::filesystem::absolute(optarg);
+				this->bounding_sphere_filename_ = boost::filesystem::absolute(optarg);
 				break;
 				
 				
 			case 'i': // input filename
-				input_filename = optarg;
+				input_filename_ = optarg;
 				break;
 				
 			case 'q':
@@ -284,7 +282,7 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 				printf("\nBertiniReal(TM) v %s.\n\n", BERTINI_REAL_VERSION_STRING);
 				printf("Online at bertinireal.com\n\n");
 				printf("For immediate support, send email to danielthebrake@gmail.com\n\n");
-				BR_configuration::print_usage();
+				BertiniRealConfig::print_usage();
 				exit(0);
 				break;
 				
@@ -296,15 +294,15 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 				std::cout << usermode << std::endl;
 				
 				if (usermode=="bertini_real") {
-					this->primary_mode = BERTINIREAL;
+					this->primary_mode_ = BERTINIREAL;
 				}
 				else if (usermode=="crit") {
-					this->primary_mode = CRIT;
+					this->primary_mode_ = CRIT;
 				}
 				else
 				{
 					std::cout << "bad mode of operation.  acceptable options are [bertini_real] and crit." << std::endl;
-					br_exit(69154);
+					exit(0);
 				}
 				
 				break;
@@ -314,7 +312,7 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 				break;
 				
 			default:
-				BR_configuration::print_usage();
+				BertiniRealConfig::print_usage();
 				exit(0); //
 		}
 	}
@@ -347,7 +345,7 @@ int  BR_configuration::parse_commandline(int argc, char **argv)
 }
 
 
-void BR_configuration::print_usage()
+void BertiniRealConfig::print_usage()
 {
 	printf("bertini_real has the following options:\n----------------------\n");
 	printf("option name(s)\t\t\targument\n\n");
@@ -364,43 +362,41 @@ void BR_configuration::print_usage()
 	return;
 }
 
-void BR_configuration::init()
+void BertiniRealConfig::init()
 {
-	target_component = -2;
-	target_dimension = -1;
+	target_component_ = -2;
+	target_dimension_ = -1;
 	
 	quick_run_ = 0;
 	debugwait_ = false;
 	max_deflations_ = 10;
 	
 	user_projection_ = false;
-	projection_filename = "";
+	projection_filename_ = "";
 	
 	orthogonal_projection_ = true;
 	
 	user_sphere_ = false;
-	bounding_sphere_filename = "";
+	bounding_sphere_filename_ = "";
 	
-	input_filename = "input";
+	input_filename_ = "input";
 	
 	
-	output_dir(boost::filesystem::absolute("output"));
+	output_dir(boost::filesystem::absolute("./output"));
 	
 	
 	stifle_membership_screen_ = true;
 	stifle_text_ = " > /dev/null ";
 	
-	bertini_command = "~/bin/bertini_serial";
-	matlab_command = "matlab -nosplash -nodesktop -nojvm";
+	matlab_command_ = "matlab -nosplash -nodesktop -nojvm";
 	verbose_level(0); // default to 0
 	
-	MPType = 2;
 	
-	use_gamma_trick = 0;
+	use_gamma_trick_ = false;
 	
 	merge_edges_ = true;
 	
-	primary_mode = BERTINIREAL;
+	primary_mode_ = BERTINIREAL;
 	
 	return;
 }
@@ -448,7 +444,6 @@ void sampler_configuration::print_usage()
 	printf("-maxits -m \t\t\tint\n");
 	printf("-gammatrick -g \t\t\tbool\n");
 	printf("-fixed \t\t\tint number samples per edge\n");
-	printf("-projbin -pb \t\t\t -- turn on projection-based binning rather than distance based.\n");
 	printf("\n\n\n");
 	return;
 }
@@ -479,8 +474,6 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 			{"g",		required_argument,			 0, 'g'},
 			{"fixed",		required_argument,			 0, 'f'},
 			{"nd", no_argument,0,'d'},
-			{"projbin",		no_argument,			 0, 'b'},
-			{"pb", no_argument,0,'b'},
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
@@ -494,13 +487,7 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 			break;
 		
 		switch (choice)
-		{
-			case 'b':
-				
-				use_projection_binning = true;
-				
-				break;
-				
+		{				
 			case 'd':
 				no_duplicates = false;
 				break;

@@ -1,8 +1,9 @@
 
 #choose some options.  by default, compiler optimization is turned off
-OPT:= -Dverbose  -g  -Ddebug_compile -Dthresholding # -Dfunctionentry_output # -O3 #-Wdeprecated # -Dprintpathlinprod  -O3 -funroll-loops -fexpensive-optimizations
+OPT:= -Dverbose  -g   -Dthresholding # -Dfunctionentry_output # -Ddebug_compile  -O3 #-Wdeprecated # -Dprintpathlinprod  -O3 -funroll-loops -fexpensive-optimizations
 
-COMPFLAGS= -Wsign-compare -Wformat -Wall # -Wunused-parameter -Wdocumentation -Wdocumentation-unknown-command
+COMPFLAGS=  -pedantic -Wall -ansi -Wsign-compare -Wformat -Wbind-to-temporary-copy -Wno-c++11-extensions -Wambiguous-member-template -Wextra-tokens -Wunused-parameter -Wdocumentation -Wdocumentation-unknown-command
+
 OPT := $(OPT) $(COMPFLAGS)
 
 
@@ -25,7 +26,7 @@ MACHINE_SPECIFICS:=
   #check environment variable $(MACHINENAME), if defined
 ifeq ($(MACHINENAME),MACBRAKE)
     #dan brake's machine.  he uses different places for his includes, etc.
-    INC:= -I/usr/local/include  -I/usr/local/Cellar/mpich2/3.0.4/include $(INC) 
+	INC:= -I/usr/local/include   $(INC)  #-I/usr/local/Cellar/mpich2/3.0.4/include
     BISON=bison# bison in path already
     LIBS=  -lm -L/usr/local/lib/ -lmpfr -lgmp          #-lm -lmpfr -lgmp# brake has libraries in path for linking, via brew.  no need to specify here
     COMPcc = mpicc -cc=clang 
@@ -33,9 +34,9 @@ ifeq ($(MACHINENAME),MACBRAKE)
     STATICFLAG=#  on macintosh, do not static compile (get missing lcrt0.o problem)
 	BERTINILIB:=$(HOME)/lib/libbertini_parallel.a
 	INSTALLPATH:=$(HOME)/bin
-	BERTINIHEADERS:=$(HOME)/bertini_source/include
+	BERTINIHEADERS:=$(HOME)/bertini_source_1.4.1/include
 
-	BOOSTLOC := /usr/local/Cellar/boost/1.54.0/lib/
+	BOOSTLOC := /usr/local/Cellar/boost/1.56.0/lib/
 	BOOSTSUFFIX:=-mt
 	MACHINESPECIFICS:= 
 endif
@@ -97,9 +98,9 @@ INC:=$(INC) -I../include  -I$(BERTINIHEADERS) #this includes the header files fo
 
 ARGS= $(OPT) -D_HAVE_MPI $(MACHINESPECIFICS) $(INC)
 
-OBJFILES= bertini_extensions.o data_type.o parallelism.o derivative_systems.o programConfiguration.o fileops.o isosingular.o checkSelfConjugate.o curve.o surface.o nullspace_left.o 
+OBJFILES= bertini_extensions.o data_type.o parallelism.o derivative_systems.o programConfiguration.o fileops.o isosingular.o checkSelfConjugate.o curve.o surface.o nullspace.o
 
-SOLVERS= solver.o solver_midpoint_tracker.o solver_nullspace_left.o solver_multilintolin.o postProcessing.o solver_sphere.o
+SOLVERS= solver.o solver_midpoint_tracker.o solver_nullspace.o solver_multilintolin.o postProcessing.o solver_sphere.o
 
 FLEXFILES=lex.partitionParse.o 
 

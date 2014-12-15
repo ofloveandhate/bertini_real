@@ -50,7 +50,7 @@
  \param max_deflations The maximum number of allowable deflations iterations.
  */
 int isosingular_deflation(int *num_deflations, int **deflation_sequence,
-						  BR_configuration & program_options,
+						  BertiniRealConfig & program_options,
 						  boost::filesystem::path inputFile,
 						  boost::filesystem::path witness_point_filename,
 						  boost::filesystem::path output_name,

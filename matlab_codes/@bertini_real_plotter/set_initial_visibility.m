@@ -32,6 +32,11 @@ end
 
 switch br_plotter.dimension
 	case 2
+		
+		if and(~br_plotter.options.render_faces, ~br_plotter.options.render_curves)
+			br_plotter.switches.display_vertices = 1;
+		end
+		
 	%         plot_params.switches.display_faces = 1;
 	%         plot_params.switches.display_face_samples = 0;
 		if isempty(br_plotter.handles.surface_samples)
@@ -41,11 +46,16 @@ switch br_plotter.dimension
 			br_plotter.switches.curve_refinements.main = 0;
 			br_plotter.switches.curve_refinements.show_midslices = 0;
 			br_plotter.switches.curve_refinements.show_critslices = 0;
-			br_plotter.switches.curve_refinements.show_spherecurve = 0;
-			br_plotter.switches.curve_refinements.show_critcurve = 0;
-			br_plotter.switches.curve_refinements.show_singularcurve = 0;
+			br_plotter.switches.curve_refinements.show_spherecurve = 1;
+			br_plotter.switches.curve_refinements.show_critcurve = 1;
+			br_plotter.switches.curve_refinements.show_singularcurve = 1;
 
-
+			br_plotter.switches.raw_curves_main = 1;
+			br_plotter.switches.show_critcurve = 1;
+			br_plotter.switches.show_spherecurve = 1;
+			br_plotter.switches.show_critslices = 0;
+			br_plotter.switches.show_midslices = 0;
+			br_plotter.switches.show_singular = 1;
 		else
 			br_plotter.switches.display_faces = 0;
 			br_plotter.switches.display_face_samples = 1;
@@ -57,15 +67,24 @@ switch br_plotter.dimension
 			br_plotter.switches.curve_refinements.show_critcurve = 1;
 			br_plotter.switches.curve_refinements.show_singularcurve = 1;
 			
+			br_plotter.switches.raw_curves_main = 0;
+			br_plotter.switches.show_critcurve = 1;
+			br_plotter.switches.show_spherecurve = 1;
+			br_plotter.switches.show_critslices = 0;
+			br_plotter.switches.show_midslices = 0;
+			br_plotter.switches.show_singular = 1;
 			
 		end
 		
-		br_plotter.switches.raw_curves_main = 0;
-		br_plotter.switches.show_critcurve = 0;
-		br_plotter.switches.show_spherecurve = 0;
-		br_plotter.switches.show_critslices = 0;
-		br_plotter.switches.show_midslices = 0;
-		br_plotter.switches.show_singular = 1;
+		if isempty(br_plotter.handles.faces) %user chose not to plot the faces
+			if isempty(br_plotter.BRinfo.sampler_data)
+				br_plotter.switches.curve_refinements.main = 0;
+				br_plotter.switches.raw_curves_main = 1;
+			else
+				br_plotter.switches.curve_refinements.main = 1;
+				br_plotter.switches.raw_curves_main = 0;
+			end
+		end
 	
 	case 1
 
@@ -97,7 +116,7 @@ function common_init(br_plotter)
 
 br_plotter.switches.display_projection = 0;
 
-br_plotter.switches.main_axes = 1;
+br_plotter.switches.main_axes = 0;
 
 br_plotter.switches.show_sphere = 0;
 

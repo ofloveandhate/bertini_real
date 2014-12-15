@@ -5,6 +5,259 @@
 
 
 
+
+
+
+
+
+std::string enum_lookup(int flag)
+{
+	switch (flag) {
+		case SUCCESSFUL:
+			return "SUCCESSFUL";
+			break;
+			
+		case CRITICAL_FAILURE:
+			return "CRITICAL_FAILURE";
+			break;
+			
+		case TOLERABLE_FAILURE:
+			return "TOLERABLE_FAILURE";
+			break;
+			
+		case UNSET:
+			return "UNSET";
+			break;
+			
+		case CRITICAL:
+			return "CRITICAL";
+			break;
+			
+		case NEW:
+			return "NEW";
+			break;
+			
+		case MIDPOINT:
+			return "MIDPOINT";
+			break;
+			
+		case ISOLATED:
+			return "ISOLATED";
+			break;
+			
+		case NULLSPACE:
+			return "NULLSPACE";
+			break;
+			
+		case LINPRODTODETJAC:
+			return "LINPRODTODETJAC";
+			break;
+			
+		case DETJACTODETJAC:
+			return "DETJACTODETJAC";
+			break;
+			
+		case LINTOLIN:
+			return "LINTOLIN";
+			break;
+			
+		case MULTILIN:
+			return "MULTILIN";
+			break;
+			
+		case MIDPOINT_SOLVER:
+			return "MIDPOINT_SOLVER";
+			break;
+			
+		case SPHERE_SOLVER:
+			return "SPHERE_SOLVER";
+			break;
+			
+		case BERTINI_MAIN:
+			return "BERTINI_MAIN";
+			break;
+		case TERMINATE:
+			return "TERMINATE";
+			break;
+			
+		case INITIAL_STATE:
+			return "INITIAL_STATE";
+			break;
+			
+			
+		case PARSING:
+			return "PARSING";
+			break;
+			
+		case TYPE_CONFIRMATION:
+			return "TYPE_CONFIRMATION";
+			break;
+			
+		case DATA_TRANSMISSION:
+			return "DATA_TRANSMISSION";
+			break;
+			
+		case NUMPACKETS:
+			return "NUMPACKETS";
+			break;
+			
+		case INACTIVE:
+			return "INACTIVE";
+			break;
+			
+		case VEC_MP:
+			return "VEC_MP";
+			break;
+			
+		case VEC_D:
+			return "VEC_D";
+			break;
+			
+		case MAT_MP:
+			return "MAT_MP";
+			break;
+			
+		case MAT_D:
+			return "MAT_D";
+			break;
+			
+		case COMP_MP:
+			return "COMP_MP";
+			break;
+			
+		case COMP_D:
+			return "COMP_D";
+			break;
+			
+		case INDICES:
+			return "INDICES";
+			break;
+			
+			
+		default:
+			break;
+	}
+	
+	return "unknown...  check out data_type.cpp";
+}
+
+
+
+int bertini_main_wrapper(const std::vector<std::string> & options, int num_processes, int my_id, int headnode)
+{
+	if (my_id == headnode)
+	{ // headnode controls the overall execution
+		
+		
+		std::cout << "calling bertini's main with options:" << std::endl;
+		// convert the vector to char array
+		std::vector< char const * > args;  args.push_back(NULL);
+		for (auto iter=options.begin(); iter!=options.end(); iter++) {
+			std::cout << *iter << std::endl;
+			
+			args.push_back(iter->c_str());
+		}
+		
+		int argC = options.size()+1;
+		
+		bclock_t time1, time2;
+		int trackType, genType = 0, MPType, userHom, sharpenOnly, needToDiff, remove_temp, useParallelDiff = 0;
+		double parse_time;
+		unsigned int currentSeed;
+		char *inputName = NULL, *startName = NULL;
+		
+		
+		
+		// standard execution
+		bclock(&time1);
+		
+		// setup inputName
+		if (argC >= 2 && args[1] != NULL)
+		{ // inputName is args[1]
+			inputName = (char *)bmalloc((strlen(args[1]) + 1) * sizeof(char));
+			strcpy(inputName, args[1]);
+			
+			// setup startName
+			if (argC >= 3 && args[2] != NULL)
+			{ // startName is args[2]
+				startName = (char *)bmalloc((strlen(args[2]) + 1) * sizeof(char));
+				strcpy(startName, args[2]);
+			}
+			else
+			{ // default to 'start'
+				startName = (char *)bmalloc(6 * sizeof(char));
+				strcpy(startName, "start");
+			}
+		}
+		else
+		{ // default to 'input' & 'start'
+			inputName = (char *)bmalloc(6 * sizeof(char));
+			strcpy(inputName, "input");
+			startName = (char *)bmalloc(6 * sizeof(char));
+			strcpy(startName, "start");
+		}
+		
+		// parse the input file and seed the random number generator
+		parse_input(inputName, &trackType, &MPType, &genType, &userHom, &currentSeed, &sharpenOnly, &needToDiff, &remove_temp, useParallelDiff, my_id, num_processes, headnode);
+		
+		// remove the output files from possibly previous runs - delete only files not needed
+		remove_output_files(trackType, sharpenOnly, 1);
+		
+		bclock(&time2);
+		totalTime(&parse_time, time1, time2);
+		
+		// call the main functions
+		if (sharpenOnly)
+		{ // sharpen the endpoints from a previous run
+			sharpen_process_main(MPType, trackType, currentSeed, my_id, num_processes, headnode);
+		}
+		else
+		{ // do either function evaluation, zero dimensional or positive dimensional tracking
+			if (trackType == 0)
+			{ // zero dimensional tracking
+				zero_dim_main(MPType, parse_time, currentSeed, startName, my_id, num_processes, headnode);
+			}
+			else if (1 <= trackType && trackType <= 7)
+			{ // positive dimensional tracking
+				pos_dim_main(trackType, genType, MPType, currentSeed, startName, my_id, num_processes, headnode);
+			}
+			else if (trackType == -4 || trackType == -3)
+			{ // function evaluation
+				function_eval_main(trackType == -3, MPType, currentSeed, startName, my_id, num_processes, headnode);
+			}
+			else if (trackType == -2 || trackType == -1)
+			{ // newton evaluation
+				newton_eval_main(trackType == -1, MPType, currentSeed, startName, my_id, num_processes, headnode);
+			}
+		}
+		
+		free(inputName);
+		free(startName);
+		
+		if (remove_temp)  // remove temporary files
+			remove_temp_files();
+		
+	}
+	else
+	{ // worker process
+		parallel_diff_worker(my_id, num_processes, headnode);
+		
+		worker_process_main(my_id, num_processes, headnode);
+	}
+	
+	initMP(mpf_get_default_prec());
+	
+	return 0;
+	
+	
+}
+
+
+
+
+
+
+
 void bertini_splash_screen()
 {
 	printf("\n  Library-linked Bertini(TM) v%s", BERTINI_VERSION_STRING);
@@ -617,7 +870,7 @@ void projection_value_homogeneous_input(comp_mp result, vec_mp input, vec_mp pro
 
 
 
-int isSamePoint_inhomogeneous_input(point_d left, point_d right){
+int isSamePoint_inhomogeneous_input(point_d left, point_d right, double tolerance){
 	
 	if (left->size!=right->size) {
 		printf("attempting to isSamePoint_inhom_d with disparate sized points.\n");
@@ -627,31 +880,139 @@ int isSamePoint_inhomogeneous_input(point_d left, point_d right){
 	}
 	
 	
-	int indicator = isSamePoint(left,NULL,52,right,NULL,52,SAMEPOINTTOL);
+	int indicator = isSamePoint(left,NULL,52,right,NULL,52,tolerance);
 	
 	
 	return indicator;
 }
 
 
-int isSamePoint_inhomogeneous_input(point_mp left, point_mp right){
+int isSamePoint_inhomogeneous_input(point_mp left, point_mp right, double tolerance){
 	
 	if (left->size!=right->size) {
-		printf("attempting to isSamePoint_inhom_mp with disparate sized points.\n");
-		std::cout << "left: " << left->size << "\t right: " << right->size << std::endl;
-		deliberate_segfault();
-		//		exit(-287);
+		std::stringstream ss;
+		ss << "attempting to isSamePoint_inhom_mp with disparate sized points.\n";
+		ss << "left: " << left->size << "\t right: " << right->size;
+		throw std::logic_error(ss.str());
 	}
 	
-	int indicator = isSamePoint(NULL,left,65,NULL,right,65,SAMEPOINTTOL); // make the bertini library call
 	
 	
-	return indicator;
+	comp_mp temp1, temp2;  init_mp(temp1); init_mp(temp2);
+	comp_mp one;  init_mp(one); set_one_mp(one);
+	//double infNormVec_mp(vec_mp X)
+	for (int ii=0; ii<left->size; ii++) {
+		abs_mp(temp1, &left->coord[ii]);
+		abs_mp(temp2, &right->coord[ii]); // take the absolute values of the two coordinates.
+		
+		// compare them.
+		if ( mpf_cmp(temp1->r, temp2->r)<0 ) {  // if left smaller than right,
+			
+			if (mpf_cmp(temp2->r,one->r)>0) { // if the max abs value bigger than 1.
+											//scale by temp2
+				div_mp(temp1, &left->coord[ii], temp2);
+				div_mp(temp2, &right->coord[ii], temp2);
+				
+				sub_mp(temp1, temp1, temp2);  // temp1 = temp1-temp2
+				abs_mp(temp2, temp1);  // temp2 = |temp1|
+				
+				if (mpf_get_d(temp2->r) > tolerance) {
+					
+					
+//					std::cout << "different points, coord " <<  ii << std::endl;
+//					std::cout << "left smaller than right, scaled." << std::endl;
+//					print_comp_matlab(temp2,"infnormthiscoord");
+//					print_point_to_screen_matlab(left,"left");
+//					print_point_to_screen_matlab(right,"right");
+					
+					clear_mp(temp1); clear_mp(temp2); clear_mp(one);
+					return 0;
+				}
+				
+			}
+			else{ // no need to scale, because bigger coord was smaller than 1.
+				sub_mp(temp1, &left->coord[ii], &right->coord[ii]); // take difference
+				abs_mp(temp2, temp1); // absolute value that difference
+				if (mpf_get_d(temp2->r)> tolerance) { // if bigger than allowed tolerance, reject as not the same point.
+					
+//					
+//					std::cout << "different points, coord " <<  ii << std::endl;
+//					std::cout << "left smaller than right, noscale." << std::endl;
+//					print_comp_matlab(temp2,"infnormthiscoord");
+//					print_point_to_screen_matlab(left,"left");
+//					print_point_to_screen_matlab(right,"right");
+					
+					clear_mp(temp1); clear_mp(temp2); clear_mp(one);
+					return 0;
+				}
+			}
+		}
+		else {  // if right smaller than left,
+			
+			if (mpf_cmp(temp1->r,one->r)>0) { // if the larger absolute value is bigger than 1.
+											//scale by temp1, cuz it was bigger than temp2 and > 1
+				
+				div_mp(temp2, &right->coord[ii], temp1);
+				div_mp(temp1, &left->coord[ii], temp1);
+				
+//				print_comp_matlab(temp1,"left_coord_scaled");
+//				print_comp_matlab(temp2,"right_coord_scaled");
+				sub_mp(temp1, temp1, temp2);
+				
+//				print_comp_matlab(temp1,"diff");
+				abs_mp(temp2, temp1);  // temp2 = |temp1|
+				
+				if (mpf_get_d(temp2->r) > tolerance) {
+					
+					
+//					std::cout << "different points, coord " <<  ii << std::endl;
+//					std::cout << "right smaller than left, scaled." << std::endl;
+//					print_comp_matlab(temp2,"infnormthiscoord");
+//					print_point_to_screen_matlab(left,"left");
+//					print_point_to_screen_matlab(right,"right");
+					
+					clear_mp(temp1); clear_mp(temp2); clear_mp(one);
+					return 0;
+				}
+			}
+			else{
+				sub_mp(temp1, &left->coord[ii], &right->coord[ii]); // take difference
+				abs_mp(temp2, temp1); // absolute value that difference
+				if (mpf_get_d(temp2->r)> tolerance) { // if bigger than allowed tolerance, reject as not the same point.
+					
+					
+//					std::cout << "different points, coord " <<  ii << std::endl;
+//					std::cout << "right smaller than left, noscale." << std::endl;
+//					print_comp_matlab(temp2,"infnormthiscoord");
+//					print_point_to_screen_matlab(left,"left");
+//					print_point_to_screen_matlab(right,"right");
+					
+					clear_mp(temp1); clear_mp(temp2); clear_mp(one);
+					return 0;
+				}
+			}
+		}
+		
+		
+	}
+	
+	
+	
+//	if (!isSamePoint(NULL,left,64,NULL,right,64,tolerance)) {
+//		std::cout << "same points according to relative error infinity norm, but not same according to L2" << std::endl;
+//		print_point_to_screen_matlab(left,"left");
+//		print_point_to_screen_matlab(right,"right");
+//		mypause();
+//	}
+	
+	clear_mp(temp1); clear_mp(temp2); clear_mp(one);
+	return 1; //made it all the way down here, must be the same!!!
+	
 }
 
 
 
-int isSamePoint_homogeneous_input(point_d left, point_d right){
+int isSamePoint_homogeneous_input(point_d left, point_d right, double tolerance){
 	
 	if (left->size!=right->size) {
 		printf("attempting to isSamePoint_hom_d with disparate sized points.\n");
@@ -666,7 +1027,7 @@ int isSamePoint_homogeneous_input(point_d left, point_d right){
 	dehomogenize(&dehom_left,left);
 	dehomogenize(&dehom_right,right);
 	
-	int indicator = isSamePoint(dehom_left,NULL,52,dehom_right,NULL,52,SAMEPOINTTOL);
+	int indicator = isSamePoint(dehom_left,NULL,52,dehom_right,NULL,52,tolerance);
 	
 	clear_vec_d(dehom_left); clear_vec_d(dehom_right);
 	
@@ -674,7 +1035,7 @@ int isSamePoint_homogeneous_input(point_d left, point_d right){
 }
 
 
-int isSamePoint_homogeneous_input(point_mp left, point_mp right){
+int isSamePoint_homogeneous_input(point_mp left, point_mp right, double tolerance){
 	
 	if (left->size!=right->size) {
 		printf("attempting to isSamePoint_hom_mp with disparate sized points.\n");
@@ -689,7 +1050,9 @@ int isSamePoint_homogeneous_input(point_mp left, point_mp right){
 	dehomogenize(&dehom_left,left);
 	dehomogenize(&dehom_right,right);
 	
-	int indicator = isSamePoint(NULL,dehom_left,65,NULL,dehom_right,65,SAMEPOINTTOL); // make the bertini library call
+
+	int indicator = isSamePoint_inhomogeneous_input(dehom_left, dehom_right, tolerance);
+	
 	
 	clear_vec_mp(dehom_left); clear_vec_mp(dehom_right);
 	
@@ -1171,7 +1534,6 @@ int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & inde
 		
 		if (indicator==-1) { // if min value was larger than a huge number
 			printf("min projection value was *insanely* large\n");
-			br_exit(1111);
 		}
 		
 		unsorted_indices.erase(indicator);
@@ -1187,7 +1549,7 @@ int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & inde
 	// filter for uniqueness
 	
 	
-	double distinct_thresh = 1e-10;  // reasonable?  i hate hard-coded tolerances
+	double distinct_thresh = 1e-4;  // reasonable?  i hate hard-coded tolerances
 									 //TODO: remove this tolerance, or make it explicitly controllable.
 	
 	change_size_vec_mp(projections_sorted,1); projections_sorted->size = 1;
@@ -1196,7 +1558,19 @@ int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & inde
 	set_mp(&projections_sorted->coord[0],&projections_sorted_non_unique->coord[0])
 	int unique_counter = 1;
 	for (int ii=1; ii<projections_input->size; ii++) {
-		if ( fabs( projvals_as_doubles[ii-1]-projvals_as_doubles[ii]) < distinct_thresh) {
+		
+		double compare_me_lower, compare_me_upper;
+		if (fabs(projvals_as_doubles[ii-1])>1) {
+			compare_me_lower = 1;
+			compare_me_upper = projvals_as_doubles[ii]/projvals_as_doubles[ii-1];
+		}
+		else{
+			compare_me_lower = projvals_as_doubles[ii-1];
+			compare_me_upper = projvals_as_doubles[ii];
+		}
+		
+		
+		if ( fabs(compare_me_upper-compare_me_lower) < distinct_thresh) { //fabs( projvals_as_doubles[ii-1]-projvals_as_doubles[ii])
 			continue;
 		}
 		else

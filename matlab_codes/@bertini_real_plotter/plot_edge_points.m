@@ -20,7 +20,7 @@ for ii = 1:br_plotter.BRinfo.num_edges
 	
 end
 
-colors = jet(num_non_degen);
+colors = br_plotter.options.colormap(num_non_degen);
 
 
 

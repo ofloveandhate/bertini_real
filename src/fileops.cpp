@@ -72,24 +72,18 @@ FILE *safe_fopen_read(boost::filesystem::path filename)
 	FILE* IN;
 	
 	if (boost::filesystem::is_directory(filename)){
-		std::cerr << "trying to open directory " << filename.string() << " as a file!" << std::endl;
-		br_exit(ERROR_FILE_NOT_EXIST);
+		throw std::runtime_error("trying to open directory " + filename.string() + " as a file!");
 	}
 	
 	if (!boost::filesystem::exists(filename)){
-		std::cerr << "unable to find specified file to read: " << filename.string() << std::endl;
-		br_exit(ERROR_FILE_NOT_EXIST);
+		throw std::runtime_error("unable to find specified file to read: " + filename.string());
 	}
 	
 	
 	IN = fopen(filename.c_str(),"r");
 
 	if (IN == NULL) {
-		std::cerr << "failed to open file: " << filename.string() << std::endl;
-		fclose(IN);
-		br_exit(ERROR_FILE_NOT_EXIST);
-	}
-	else{
+		throw std::runtime_error("failed to open file, pointer is NULL: " + filename.string());
 	}
 	
 	return IN;
@@ -107,11 +101,7 @@ FILE *safe_fopen_write(boost::filesystem::path filename)
 	
 	
 	if (OUT == NULL) {
-		printf("unable to open specified file to write: %s\n",filename.c_str());
-		fclose(OUT);
-		br_exit(ERROR_FILE_NOT_EXIST);
-	}
-	else{
+		throw std::runtime_error("unable to open specified file to write: " + filename.string());
 	}
 	
 	return OUT;
@@ -127,8 +117,7 @@ FILE *safe_fopen_append(boost::filesystem::path filename)
 	stat (filename.c_str(), &stat_p);
 	
 	if (S_ISDIR(stat_p.st_mode)){
-		printf("trying to open directory %s as a file!\n",filename.c_str());
-		br_exit(ERROR_FILE_NOT_EXIST);
+		throw std::runtime_error("trying to open directory as a file: " + filename.string());
 	}
 	
 	
@@ -136,11 +125,7 @@ FILE *safe_fopen_append(boost::filesystem::path filename)
 	
 	
 	if (OUT == NULL) {
-		printf("unable to open specified file to write: %s\n",filename.c_str());
-		fclose(OUT);
-		br_exit(ERROR_FILE_NOT_EXIST);
-	}
-	else{
+		throw std::runtime_error("unable to open specified file to write: " + filename.string());
 	}
 	
 	return OUT;
@@ -149,14 +134,11 @@ FILE *safe_fopen_append(boost::filesystem::path filename)
 
 void copyfile(boost::filesystem::path input_file, boost::filesystem::path OUTfile)
 {
-	char ch;
-	FILE *IN,*OUT;
 	
-	IN  = safe_fopen_read(const_cast< char*> (input_file.c_str()));
-	OUT = safe_fopen_write(const_cast< char*> (OUTfile.c_str()));
+	FILE *IN  = safe_fopen_read(input_file);
+	FILE *OUT = safe_fopen_write(OUTfile);
 	
-	while ((ch = fgetc(IN)) != EOF)
-		fprintf(OUT, "%c", ch);
+	copyfile(IN,OUT);
 	
 	fclose(IN);
 	fclose(OUT);
@@ -197,8 +179,7 @@ void br_exit(int errorCode)
 	if (errorCode == 0)
 		errorCode = ERROR_OTHER;
 	
-	
-	printf("%s\n", "bertini_real quitting\n\a");
+	std::cout << "bertini_real quitting\a" << std::endl;
 	
 #ifdef debug_compile
 	deliberate_segfault();
@@ -234,6 +215,10 @@ bool parseInteger( std::string const& text, int& results )
 	parser >> results;
 	return !(parser.fail());// >> std::ws && parser.peek() == EOF;
 }
+
+
+
+
 
 int getInteger()
 {

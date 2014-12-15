@@ -3,9 +3,9 @@
 
 
 
-void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check,
+void SolverOutput::post_process(post_process_t *endPoints, int num_pts_to_check,
 								 preproc_data *preProcData, tracker_config_t *T,
-								 const solver_configuration & solve_options)
+								 const SolverConfiguration & solve_options)
 {
 	
 	int num_nat_vars = num_natural_vars;
@@ -146,9 +146,9 @@ void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check
 	
 	
 	
-	vertex temp_vertex;
-	change_size_point_mp(*temp_vertex.point(),num_variables);
-	(*temp_vertex.point())->size = num_variables;
+	Vertex temp_vertex;
+	change_size_point_mp(temp_vertex.point(),num_variables);
+	(temp_vertex.point())->size = num_variables;
 	
 	
 	//first, lets take care of the multiplicity 1 solutions
@@ -160,9 +160,9 @@ void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check
 		}
 		
 		
-		endpoint_to_vec_mp(*temp_vertex.point(), &endPoints[curr_ind]);
+		endpoint_to_vec_mp(temp_vertex.point(), &endPoints[curr_ind]);
 		
-		solution_metadata meta;
+		SolutionMetadata meta;
 
 		meta.set_real(endPoints[curr_ind].isReal);
 		meta.set_finite(endPoints[curr_ind].isFinite);
@@ -183,20 +183,26 @@ void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check
 	for (int ii=0; ii<num_pts_to_check; ii++) {
 		int curr_ind = soln_indices[ii].first;
 		
-		if (endPoints[curr_ind].multiplicity<=1) {
+		if (endPoints[curr_ind].multiplicity==1) {
 			continue;
 		}
 		
-
+		if (endPoints[curr_ind].multiplicity<1) {
+			endpoint_to_vec_mp(temp_vertex.point(), &endPoints[curr_ind]);
+//			print_point_to_screen_matlab(temp_vertex.point(),"multsol");
+			continue;
+		}
+		
+		
 		
 		if ( find(occuring_multiplicities.begin(),occuring_multiplicities.end(),endPoints[curr_ind].multiplicity)==occuring_multiplicities.end()) {
 			occuring_multiplicities.push_back(endPoints[curr_ind].multiplicity);
 		}
 		
-		endpoint_to_vec_mp(*temp_vertex.point(), &endPoints[curr_ind]);
+		endpoint_to_vec_mp(temp_vertex.point(), &endPoints[curr_ind]);
+//		print_point_to_screen_matlab(temp_vertex.point(),"multsol");
 		
-		
-		solution_metadata meta;
+		SolutionMetadata meta;
 		meta.set_finite(endPoints[curr_ind].isFinite);
 		meta.set_singular(endPoints[curr_ind].isSing);
 		meta.set_multiplicity(endPoints[curr_ind].multiplicity);
@@ -208,7 +214,7 @@ void solver_output::post_process(post_process_t *endPoints, int num_pts_to_check
 			
 			if (endPoints[inner_ind].sol_num==endPoints[curr_ind].sol_num) {
 				meta.add_input_index(endPoints[inner_ind].path_num);
-				
+//				std::cout << endPoints[inner_ind].path_num << " ";
 			}
 		}
 		meta.set_output_index(this->num_vertices());

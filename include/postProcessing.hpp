@@ -33,7 +33,7 @@
 
 
 
-class solver_configuration; // forward declaration
+class SolverConfiguration; // forward declaration
 
 /**
  \brief Conversion function for turning endgame_data_t into post_process_t.

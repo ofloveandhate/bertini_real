@@ -37,10 +37,10 @@
 /**
  \brief config class for the multilin solver, so that SLP can be set up independently from the eval data.
  */
-class multilin_config
+class MultilinConfiguration
 {
 	
-	std::shared_ptr<system_randomizer> randomizer_; ///< pointer to randomizer
+	std::shared_ptr<SystemRandomizer> randomizer_; ///< pointer to randomizer
 	
 public:
 	
@@ -49,7 +49,7 @@ public:
 	 
 	 \return a shared pointer to the randomizer
 	 */
-	std::shared_ptr<system_randomizer> randomizer()
+	std::shared_ptr<SystemRandomizer> randomizer()
 	{
 		return randomizer_;
 	}
@@ -60,7 +60,7 @@ public:
 	 
 	 \param _random a pointer to the randomizer this should point to.
 	 */
-	void set_randomizer(std::shared_ptr<system_randomizer> _random)
+	void set_randomizer(std::shared_ptr<SystemRandomizer> _random)
 	{
 		randomizer_ = _random;
 	}
@@ -68,7 +68,7 @@ public:
 	
 	
 	
-	SLP_global_pointers SLP_memory; ///< the memory for the SLP
+	StraightLineProgramGlobalPointers SLP_memory; ///< the memory for the SLP
 	prog_t * SLP; ///< a pointer to the SLP for the solver
 	
 	int MPType; ///< M.O.
@@ -76,8 +76,8 @@ public:
 	bool have_mem; ///< do we have the memory setup?
 	
 	
-	multilin_config(solver_configuration & solve_options,
-					const witness_set & W)
+	MultilinConfiguration(SolverConfiguration & solve_options,
+					const WitnessSet & W)
 	{
 		init();
 		
@@ -88,8 +88,8 @@ public:
 	
 	
 	
-	multilin_config(solver_configuration & solve_options,
-					std::shared_ptr<system_randomizer> _random)
+	MultilinConfiguration(SolverConfiguration & solve_options,
+					std::shared_ptr<SystemRandomizer> _random)
 	{
 		init();
 		
@@ -99,14 +99,14 @@ public:
 	}
 	
 	
-	multilin_config(solver_configuration & solve_options)
+	MultilinConfiguration(SolverConfiguration & solve_options)
 	{
 		init();
 		set_memory(solve_options);
 	}
 	
 	
-	multilin_config(std::shared_ptr<system_randomizer> _random)
+	MultilinConfiguration(std::shared_ptr<SystemRandomizer> _random)
 	{
 		init();
 		set_randomizer(_random);
@@ -119,10 +119,10 @@ public:
 	 \param solve_options the current state of the solver.
 	 \param W input witness set, witn numbers of linears, patches, and variables.
 	 */
-	void make_randomizer(const solver_configuration & solve_options, const witness_set & W)
+	void make_randomizer(const SolverConfiguration & solve_options, const WitnessSet & W)
 	{
 		
-		randomizer_ = std::make_shared<system_randomizer>(*(new system_randomizer));
+		randomizer_ = std::make_shared<SystemRandomizer>(*(new SystemRandomizer));
 		randomizer_->setup(W.num_variables()-W.num_linears()-W.num_patches(), solve_options.PPD.num_funcs);
 		
 	}
@@ -132,7 +132,7 @@ public:
 	 \brief set up the program, and capture the memory, followed by setting up the PPD.
 	 \param solve_options The current state of the solver.
 	 */
-	void set_memory(solver_configuration & solve_options)
+	void set_memory(SolverConfiguration & solve_options)
 	{
 		
 		//TODO: should i assume here that the input file is already parsed??
@@ -154,10 +154,12 @@ public:
 	
 	
 	/**
-	 \brief a mediocre function, which purports to copy from one multilin_config to another.  this is broken.
+	 \brief a mediocre function, which purports to copy from one MultilinConfiguration to another.  this is broken.
+	 \param other The MultilinConfiguration from which to copy.
 	 */
-	void copy(const multilin_config & other)
+	void copy(const MultilinConfiguration & other)
 	{
+		this->randomizer_ = other.randomizer_;
 		//TODO: write this function
 		//ah yes, this problem.
 		//		this->SLP = other.SLP;// this needs to be a deep copy
@@ -183,18 +185,18 @@ public:
 	
 	
 	
-	multilin_config()
+	MultilinConfiguration()
 	{
 		init();
 	}
 	
-	multilin_config(const multilin_config & other)
+	MultilinConfiguration(const MultilinConfiguration & other)
 	{
 		init();
 		copy(other);
 	}
 	
-	multilin_config & operator=(const multilin_config & other)
+	MultilinConfiguration & operator=(const MultilinConfiguration & other)
 	{
 		init();
 		copy(other);
@@ -202,7 +204,7 @@ public:
 	}
 	
 	
-	~multilin_config(){
+	~MultilinConfiguration(){
 		clear();
 	}
 };
@@ -227,7 +229,7 @@ public:
 \brief the evaluator data type for the multilin solver.
  */
 // this must be defined before the double version, because double has mp.
-class multilintolin_eval_data_mp : public solver_mp
+class multilintolin_eval_data_mp : public SolverMultiplePrecision
 {
 public:
 	
@@ -244,19 +246,19 @@ public:
 	
 	
 	// default initializer
-	multilintolin_eval_data_mp() : solver_mp(){
+	multilintolin_eval_data_mp() : SolverMultiplePrecision(){
 		std::cout << "instantiating multilin eval d without declaring mp type"	 << std::endl;
 		mypause();
 		init();
 	}
 	
-	multilintolin_eval_data_mp(int mp) : solver_mp(mp){
+	multilintolin_eval_data_mp(int mp) : SolverMultiplePrecision(mp){
 		this->MPType = mp;
 		init();
 	}
 	
 	
-	multilintolin_eval_data_mp(const multilintolin_eval_data_mp & other) : solver_mp(other)
+	multilintolin_eval_data_mp(const multilintolin_eval_data_mp & other) : SolverMultiplePrecision(other)
 	{
 		this->MPType = other.MPType;
 		init();
@@ -295,7 +297,7 @@ public:
 	 \return SUCCESSFUL
 	 \param mpi_config The current state of MPI
 	 */
-	int send(parallelism_config & mpi_config);
+	int send(ParallelismConfig & mpi_config);
 	
 	/**
 	 \brief bcast receive for the multilin solver
@@ -303,7 +305,7 @@ public:
 	 \return SUCCESSFUL
 	 \param mpi_config The current state of MPI
 	 */
-	int receive(parallelism_config & mpi_config);
+	int receive(ParallelismConfig & mpi_config);
 	
 	
 	/**
@@ -315,10 +317,10 @@ public:
 	 \param target_linears The linears we move to.
 	 \param solve_options The current state of the solver.
 	 */
-	int setup(multilin_config & config,
-			  const witness_set & W,
+	int setup(MultilinConfiguration & config,
+			  const WitnessSet & W,
 			  vec_mp * target_linears,
-			  solver_configuration & solve_options);
+			  SolverConfiguration & solve_options);
 	
 	
 	
@@ -355,7 +357,7 @@ protected:
 	
 	void copy(const multilintolin_eval_data_mp & other)
 	{
-		solver_mp::copy(other);
+		SolverMultiplePrecision::copy(other);
 		
 		
 		if (this->num_linears==0) {
@@ -418,7 +420,7 @@ protected:
 
 // the mp version
 // this must be defined before the double version, because double has mp.
-class multilintolin_eval_data_d : public solver_d
+class multilintolin_eval_data_d : public SolverDoublePrecision
 {
 public:
 	
@@ -433,13 +435,13 @@ public:
 	
 	
 	// default initializer
-	multilintolin_eval_data_d() : solver_d(){
+	multilintolin_eval_data_d() : SolverDoublePrecision(){
 		std::cout << "instantiating multilin eval d without declaring mp type"	 << std::endl;
 		mypause();
 		init();
 	}
 	
-	multilintolin_eval_data_d(int mp) : solver_d(mp)
+	multilintolin_eval_data_d(int mp) : SolverDoublePrecision(mp)
 	{
 		this->MPType = mp;
 		
@@ -447,7 +449,7 @@ public:
 	}
 	
 	
-	multilintolin_eval_data_d(const multilintolin_eval_data_d & other) : solver_d(other)
+	multilintolin_eval_data_d(const multilintolin_eval_data_d & other) : SolverDoublePrecision(other)
 	{
 		this->MPType = other.MPType;
 		init();
@@ -473,7 +475,7 @@ public:
 	 */
 	virtual void print()
 	{
-		solver_d::print();
+		SolverDoublePrecision::print();
 		
 		std::cout << "multilintolin evaluator data (double):" << std::endl;
 		for (int ii=0; ii<num_linears; ii++) {
@@ -502,7 +504,7 @@ public:
 	 \return SUCCESSFUL
 	 \param mpi_config The current state of MPI
 	 */
-	int send(parallelism_config & mpi_config);
+	int send(ParallelismConfig & mpi_config);
 	
 	
 	/**
@@ -511,7 +513,7 @@ public:
 	 \return SUCCESSFUL
 	 \param mpi_config The current state of MPI
 	 */
-	int receive(parallelism_config & mpi_config);
+	int receive(ParallelismConfig & mpi_config);
 	
 
 	/**
@@ -523,10 +525,10 @@ public:
 	 \param target_linears The linears we move to.
 	 \param solve_options The current state of the solver.
 	 */
-	int setup(multilin_config & config,
-			  const witness_set & W,
+	int setup(MultilinConfiguration & config,
+			  const WitnessSet & W,
 			  vec_mp * target_linears,
-			  solver_configuration & solve_options);
+			  SolverConfiguration & solve_options);
 	
 	
 	
@@ -562,11 +564,11 @@ protected:
  \param config the multilin config object, which is passed in as argument to allow more efficient management of data.
  \param solve_options the current state of the solver.
  */
-int multilin_solver_master_entry_point(const witness_set & W, // carries with it the start points, and the linears.
-									   solver_output & solve_out, // new data goes in here
+int multilin_solver_master_entry_point(const WitnessSet & W, // carries with it the start points, and the linears.
+									   SolverOutput & solve_out, // new data goes in here
 									   vec_mp * new_linears,
-									   multilin_config &		config,
-									   solver_configuration		& solve_options);
+									   MultilinConfiguration &		config,
+									   SolverConfiguration		& solve_options);
 
 
 
@@ -578,7 +580,7 @@ int multilin_solver_master_entry_point(const witness_set & W, // carries with it
  \return SUCCESSFUL
  \param solve_options the current state of the solver config.
  */
-int multilin_slave_entry_point(solver_configuration & solve_options);
+int multilin_slave_entry_point(SolverConfiguration & solve_options);
 
 
 
@@ -589,7 +591,7 @@ int multilin_slave_entry_point(solver_configuration & solve_options);
  
  \todo explain with diagram how this works
  
- this function makes use of the temps_mp class for persistence of temporaries.
+ this function makes use of the TemporariesMultiplePrecision class for persistence of temporaries.
  
  \return the number 0.
  \param funcVals the computed function values.
@@ -610,7 +612,7 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
  
  \see multilin_to_lin_eval_d
  
- this function makes use of the temps_mp class for persistence of temporaries.
+ this function makes use of the TemporariesMultiplePrecision class for persistence of temporaries.
  
  \return the number 0.
  \param funcVals the computed function values.
