@@ -3,7 +3,7 @@
 AM_YFLAGS = -d -p `basename $* | sed 's,y$$,,'`
 AM_LFLAGS = -s -P`basename $* | sed 's,l$$,,'` -olex.yy.c
 
-AM_CPPFLAGS = -Iinclude
+AM_CPPFLAGS = -I$(top_srcdir)/include
 
 ACLOCAL_AMFLAGS = -I m4
 
