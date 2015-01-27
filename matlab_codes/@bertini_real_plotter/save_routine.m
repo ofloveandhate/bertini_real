@@ -10,15 +10,16 @@ for ii = 1:length(f)
 end
 
 
-if or(br_plotter.switches.display_faces == 1,br_plotter.switches.display_face_samples == 1)
-    br_plotter.format = 'png';
-    br_plotter.format_flag = 'png';
+if and(br_plotter.options.render_faces,or(br_plotter.switches.display_faces == 1,br_plotter.switches.display_face_samples == 1))
+    br_plotter.options.format = 'png';
+    br_plotter.options.format_flag = 'png';
+	render_into_file(br_plotter.options,'-r300');
 else
-    br_plotter.format = 'eps';
-    br_plotter.format_flag = 'epsc2';
+    br_plotter.options.format = 'eps';
+    br_plotter.options.format_flag = 'epsc2';
+	render_into_file(br_plotter.options);
 end
 
-render_into_file(br_plotter);
 
 for ii = 1:length(f)
 	set(br_plotter.panels.(f{ii}),'visible','on');

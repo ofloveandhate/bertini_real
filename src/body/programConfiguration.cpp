@@ -125,7 +125,7 @@ int BertiniRealConfig::startup()
 
 void BertiniRealConfig::splash_screen()
 {
-	printf("\n BertiniReal(TM) v%s\n\n", BERTINI_REAL_VERSION_STRING);
+	printf("\n BertiniReal(TM) v%s\n\n", VERSION);
 	printf(" D.A. Brake with\n D.J. Bates, W. Hao, J.D. Hauenstein,\n A.J. Sommese, C.W. Wampler\n\n");
 	printf("(using GMP v%d.%d.%d, MPFR v%s)\n\n", __GNU_MP_VERSION, __GNU_MP_VERSION_MINOR, __GNU_MP_VERSION_PATCHLEVEL, mpfr_get_version());
 	
@@ -273,13 +273,13 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 				break;
 
 			case 'v':
-				printf("\n BertiniReal(TM) v %s\n\n", BERTINI_REAL_VERSION_STRING);
+				printf("\n BertiniReal(TM) v %s\n\n", VERSION);
 				exit(0);
 				break;
 				
 			case 'h':
 				
-				printf("\nBertiniReal(TM) v %s.\n\n", BERTINI_REAL_VERSION_STRING);
+				printf("\nBertiniReal(TM) v %s.\n\n", VERSION);
 				printf("Online at bertinireal.com\n\n");
 				printf("For immediate support, send email to danielthebrake@gmail.com\n\n");
 				BertiniRealConfig::print_usage();
@@ -417,12 +417,12 @@ void BertiniRealConfig::init()
 
 void sampler_configuration::splash_screen()
 {
-	printf("\n Sampler module for Bertini_real(TM) v%s\n\n", SAMPLER_VERSION_STRING);
+	printf("\n Sampler module for Bertini_real(TM) v%s\n\n", VERSION);
 	printf(" D.A. Brake, \n with D.J. Bates, W. Hao, \n J.D. Hauenstein, A.J. Sommese, and C.W. Wampler\n\n");
 	printf("(using GMP v%d.%d.%d, MPFR v%s)\n\n",
 				 __GNU_MP_VERSION, __GNU_MP_VERSION_MINOR, __GNU_MP_VERSION_PATCHLEVEL, mpfr_get_version());
 	printf("See the website at www.bertinireal.com\n\n");
-	printf("Send email to danielthebrake@gmail.com for assistance.\n\n");
+	printf("Send email to %s for assistance.\n\n",PACKAGE_BUGREPORT);
 	
 	
 	
@@ -508,7 +508,7 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 				break;
 				
 			case 'v':
-				printf("\n Sampler module for Bertini_real(TM) version %s\n\n", SAMPLER_VERSION_STRING);
+				printf("\n Sampler module for Bertini_real(TM) version %s\n\n", VERSION);
 				exit(0);
 				break;
 				
