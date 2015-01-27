@@ -29,7 +29,7 @@
 function plot_params = render_into_file(varargin)
 %
 
-
+display(varargin)
 if isempty(varargin)
 	
 	plot_params.fontsize = 16;
@@ -48,6 +48,10 @@ elseif and(ischar(varargin{1} ), length(varargin)==1)
 	
 elseif isstruct(varargin{1})
 	plot_params = varargin{1};
+	
+	if ~isfield(plot_params,'basename')
+		error('incomplete plot_params.  add field ''basename''');
+	end
 else
 	plot_params.fontsize = 16;
 	plot_params.window = get(gcf,'Position');
@@ -56,11 +60,9 @@ else
 	plot_params.basename = 'default_filename';
 end
 
-
 fig1 = gcf;
 
 set(fig1,'PaperPositionMode','auto');
-
 
 currname = increment_name(plot_params.basename);
 nameforfile = sprintf('%s.%s',currname,plot_params.format);

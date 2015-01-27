@@ -1,0 +1,10 @@
+#this is src/parse/Makemodule.am
+
+
+noinst_LIBRARIES += libpartitionParse.a
+
+
+
+libpartitionParse_a_SOURCES = src/parse/partitionParse.l
+
+

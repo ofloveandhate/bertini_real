@@ -1831,10 +1831,7 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 	
 	
 	
-	comp_mp temp, temp2, temp3; init_mp2(temp,1024); init_mp2(temp2,1024); init_mp2(temp3,1024);
-	comp_mp numer, denom; init_mp2(numer,1024); init_mp2(denom,1024);
-	comp_mp proj_top, proj_bottom, proj_mid; init_mp2(proj_mid,1024); init_mp2(proj_bottom,1024); init_mp2(proj_top,1024);
-	vec_mp found_point; init_vec_mp2(found_point, this->num_variables(),1024); found_point->size = this->num_variables();
+	
 	
 	
 	
@@ -1952,6 +1949,15 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 		
 		return F;
 	}
+	
+	
+	
+	
+	
+	comp_mp temp, temp2, temp3; init_mp2(temp,1024); init_mp2(temp2,1024); init_mp2(temp3,1024);
+	comp_mp numer, denom; init_mp2(numer,1024); init_mp2(denom,1024);
+	comp_mp proj_top, proj_bottom, proj_mid; init_mp2(proj_mid,1024); init_mp2(proj_bottom,1024); init_mp2(proj_top,1024);
+	vec_mp found_point; init_vec_mp2(found_point, this->num_variables(),1024); found_point->size = this->num_variables();
 	
 	
 	//copy in the start point as three points concatenated.

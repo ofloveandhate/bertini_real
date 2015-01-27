@@ -765,7 +765,7 @@ int midpoint_solver_master_entry_point(const WitnessSet						&W, // carries with
                          W,
                          solve_options);
 			// initialize latest_newton_residual_mp
-			mpf_init(solve_options.T.latest_newton_residual_mp);   //   <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+//			mpf_init(solve_options.T.latest_newton_residual_mp);   //   <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		case 2:
 			ED_d = new midpoint_eval_data_d(2);
@@ -850,7 +850,7 @@ void midpoint_slave_entry_point(SolverConfiguration & solve_options)
 			
 			ED_mp->receive(solve_options);
 			// initialize latest_newton_residual_mp
-			mpf_init(solve_options.T.latest_newton_residual_mp);   //  <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+//			mpf_init(solve_options.T.latest_newton_residual_mp);   //  <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		case 2:
 			ED_d = new midpoint_eval_data_d(2);
@@ -863,7 +863,7 @@ void midpoint_slave_entry_point(SolverConfiguration & solve_options)
 			
 			
 			// initialize latest_newton_residual_mp
-			mpf_init2(solve_options.T.latest_newton_residual_mp,solve_options.T.AMP_max_prec);   //   <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+//			mpf_init2(solve_options.T.latest_newton_residual_mp,solve_options.T.AMP_max_prec);   //   <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		default:
 			break;

@@ -477,7 +477,7 @@ int multilin_solver_master_entry_point(const WitnessSet & W, // carries with it 
 						 target_linears,
 						 solve_options);
 			// initialize latest_newton_residual_mp
-			mpf_init(solve_options.T.latest_newton_residual_mp);   //    <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+//			mpf_init(solve_options.T.latest_newton_residual_mp);   //    <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		case 2:
 			ED_d = new multilintolin_eval_data_d(2);
@@ -573,7 +573,7 @@ int multilin_slave_entry_point(SolverConfiguration & solve_options)
 			ED_mp->receive(solve_options);
 			
 			// initialize latest_newton_residual_mp
-			mpf_init(solve_options.T.latest_newton_residual_mp);   //    <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+//			mpf_init(solve_options.T.latest_newton_residual_mp);   //    <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		case 2:
 			ED_d = new multilintolin_eval_data_d(2);
@@ -584,7 +584,7 @@ int multilin_slave_entry_point(SolverConfiguration & solve_options)
 			
 			
 			// initialize latest_newton_residual_mp
-			mpf_init(solve_options.T.latest_newton_residual_mp);   //    <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+//			mpf_init(solve_options.T.latest_newton_residual_mp);   //    <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		default:
 			break;

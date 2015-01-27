@@ -1178,6 +1178,7 @@ public:
 			throw std::logic_error("trying to restore from a backup tracker config which does not exist: " + lookup_key);
 		}
 		else{
+			tracker_config_clear(&T);
 			cp_tracker_config_t(&T, &tracker_config_backups_[lookup_key].second);
 			tracker_config_backups_[lookup_key].first = true;
 		}

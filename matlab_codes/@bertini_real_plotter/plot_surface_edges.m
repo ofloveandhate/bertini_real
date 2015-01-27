@@ -66,7 +66,7 @@ end
 num_midslices = length(br_plotter.BRinfo.midpoint_slices);
 num_crit_slices = length(br_plotter.BRinfo.critpoint_slices);
 
-colors = br_plotter.options.colormap(num_midslices+num_crit_slices);
+colors = br_plotter.options.colormap(2*num_midslices+1);
 
 
 
@@ -120,7 +120,6 @@ for kk = 1:length(br_plotter.BRinfo.midpoint_slices)
 	if strcmp( br_plotter.BRinfo.midpoint_slices{kk}.inputfilename,'unset')
 		continue;
 	end
-	
 	color_index = 2*(kk);
 	[handie_mc_handhand, refinement_handles, label_handles] ...
 		= plot_subcurve(br_plotter,br_plotter.BRinfo.midpoint_slices{kk},sprintf('mid.%d.',kk),style,'g',colors(color_index,:));

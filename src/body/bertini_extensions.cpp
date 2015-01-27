@@ -1015,10 +1015,10 @@ int isSamePoint_inhomogeneous_input(point_mp left, point_mp right, double tolera
 int isSamePoint_homogeneous_input(point_d left, point_d right, double tolerance){
 	
 	if (left->size!=right->size) {
-		printf("attempting to isSamePoint_hom_d with disparate sized points.\n");
-		std::cout << "left: " << left->size << "\t right: " << right->size << std::endl;
-		deliberate_segfault();
-		//		exit(-287);
+		std::stringstream ss;
+		ss << "attempting to isSamePoint_hom_d with disparate sized points.\n";
+		ss << "left: " << left->size << "\t right: " << right->size;
+		throw std::logic_error(ss.str());
 	}
 	
 	vec_d dehom_left;  init_vec_d(dehom_left,left->size-1);  dehom_left->size = left->size-1;
@@ -1038,10 +1038,10 @@ int isSamePoint_homogeneous_input(point_d left, point_d right, double tolerance)
 int isSamePoint_homogeneous_input(point_mp left, point_mp right, double tolerance){
 	
 	if (left->size!=right->size) {
-		printf("attempting to isSamePoint_hom_mp with disparate sized points.\n");
-		std::cout << "left: " << left->size << "\t right: " << right->size << std::endl;
-		deliberate_segfault();
-		//		exit(-287);
+		std::stringstream ss;
+		ss << "attempting to isSamePoint_hom_mp with disparate sized points.\n";
+		ss << "left: " << left->size << "\t right: " << right->size;
+		throw std::logic_error(ss.str());
 	}
 	
 	vec_mp dehom_left;  init_vec_mp2(dehom_left,left->size-1,left->curr_prec);  dehom_left->size = left->size-1;
@@ -1067,10 +1067,10 @@ void real_threshold(comp_mp blabla, double threshold)
 	comp_d temp;
 	mp_to_d(temp, blabla);
 	
-    if (fabs(temp->r) < threshold) {
-		mpf_set_str( blabla->r, "0.0", 10);
-	}
-    
+//    if (fabs(temp->r) < threshold) {
+//		mpf_set_str( blabla->r, "0.0", 10);
+//	}
+	
 	if (fabs(temp->i) < threshold) {
 		mpf_set_str( blabla->i, "0.0", 10);
 	}
@@ -1090,10 +1090,10 @@ void real_threshold(vec_mp blabla, double threshold)
 	for (int ii=0; ii<blabla->size; ii++) {
 		mp_to_d(temp, &blabla->coord[ii]);
         
-        if (fabs(temp->r) < threshold) {
-			mpf_set_str( blabla->coord[ii].r, "0.0", 10);
-		}
-        
+//        if (fabs(temp->r) < threshold) {
+//			mpf_set_str( blabla->coord[ii].r, "0.0", 10);
+//		}
+		
 		if (fabs(temp->i) < threshold) {
 			mpf_set_str( blabla->coord[ii].i, "0.0", 10);
 		}
@@ -1112,9 +1112,9 @@ void real_threshold(mat_mp blabla, double threshold)
 	for (int jj=0; jj<blabla->cols; jj++) {
 		for (int ii=0; ii<blabla->rows; ii++) {
 			mp_to_d(temp, &blabla->entry[ii][jj]);
-            if ( fabs(temp->r) < threshold) {
-				mpf_set_str( blabla->entry[ii][jj].r, "0.0", 10);
-			}
+//            if ( fabs(temp->r) < threshold) {
+//				mpf_set_str( blabla->entry[ii][jj].r, "0.0", 10);
+//			}
 			if ( fabs(temp->i) < threshold) {
 				mpf_set_str( blabla->entry[ii][jj].i, "0.0", 10);
 			}

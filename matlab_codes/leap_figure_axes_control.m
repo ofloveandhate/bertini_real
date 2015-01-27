@@ -2,10 +2,11 @@ function [] = leap_figure_axes_control(varargin)
 
 global config
 
-% config.mutating_axes = gca;
 config.dead_zone = zeros(3,1);
 
-% figure(gcf);
+
+cameratoolbar
+
 
 t0 = clock;
 while 1
@@ -41,13 +42,13 @@ while 1
     switch num_pointers
 
         case 1
-            orbit_camera();
+            orbit_camera(1);
             
         case 2
-            glide();
+            glide(2);
             
         case 3
-            view_pan();
+            view_pan(3);
             
         case 4
             
@@ -79,7 +80,7 @@ while 1
     
     f = matleap(1);
     
-    curr_num_pointers = length(f.pointables);
+    curr_num_pointers = num_extended(f);
     if curr_num_pointers==prev_num_pointers%,curr_num_pointers~=0
         if etime(clock,t_start)>1
             break
@@ -99,7 +100,7 @@ end
 
 
 
-function glide()
+function glide(required_num_fingers)
 global config
 % display('gliding');
 
@@ -107,15 +108,15 @@ av_origin = (config.origin(1,:)+ config.origin(2,:))/2;
 while 1;
     
 %     display('gliding camera');
-    current_frame = matleap(1);
-    num_fingers = length(current_frame.pointables);
+    current_frame = matleap(1); 
     
-    if num_fingers ~= 2
+	if num_extended(current_frame) ~= required_num_fingers
         break
-    end
+	end
     
-    curr_av_pos = (current_frame.pointables(1).position + current_frame.pointables(2).position)/2;
-    
+	curr_av_pos = get_average_position(current_frame);
+	
+	
     a = (curr_av_pos-av_origin)/100;
 %     a = min((current_frame.pointables.position-config.origin),100)/100;
     a(abs(a)<0.10) = 0;
@@ -133,7 +134,7 @@ end
 end
 
 
-function view_pan()
+function view_pan(required_num_fingers)
 
 global config
 
@@ -145,18 +146,14 @@ while 1;
    
 %     display('orbiting camera');
     current_frame = matleap(1);
-    num_fingers = length(current_frame.pointables);
-    
-    if num_fingers == 0
+
+	if num_extended(current_frame) ~= required_num_fingers
         break
-    end
-%     current_frame.pointables(1).position
-%     current_frame.pointables(2).position
-%     cat(1,current_frame.pointables.position)
+	end
     
     curr_av_pos = mean(cat(1,current_frame.pointables.position));
     
-%     pause
+
     a = (curr_av_pos-av_origin)/100;
 %     a = min((current_frame.pointables.position-config.origin),100)/100;
     a(abs(a)<0.10) = 0;
@@ -172,20 +169,19 @@ end
 
 
 
-function orbit_camera()
+function orbit_camera(required_num_fingers)
 global config
 
 while 1
     
 %     display('orbiting camera');
     current_frame = matleap(1);
-    num_fingers = length(current_frame.pointables);
     
-    if num_fingers ~= 1
+    if num_extended(current_frame) ~= required_num_fingers
         break
     end
     
-    a = (current_frame.pointables.position-config.origin)/100;
+    a = (get_average_position(current_frame)-config.origin)/100;
 
 	a(abs(a)<0.10) = 0;
     
@@ -204,14 +200,14 @@ end
 function success = establish_origin(num_pointers)
 global config
 
-% display(sprintf('establishing origin for %i pointers',num_pointers));
+display(sprintf('establishing origin for %i pointers',num_pointers));
 
 config.origin = zeros(num_pointers,3);
 
 t0 = clock;
 have_lock = false;
 
-positions = zeros(60,3,num_pointers);
+positions = zeros(60,3,num_pointers); % why 60, again?
 num_consecutive_frames = 0;
 num_nonconsecutive_frames = 0;
 prevframeid = 0;
@@ -225,9 +221,7 @@ while ~have_lock
         prevframeid= current_frame.id;
     end
     
-    num_fingers = length(current_frame.pointables);
-    
-    if num_fingers ~= num_pointers
+    if num_extended(current_frame) ~= num_pointers
         t0 = clock;
         num_consecutive_frames = 1;
         num_nonconsecutive_frames = num_nonconsecutive_frames+1;
@@ -236,8 +230,14 @@ while ~have_lock
         num_nonconsecutive_frames = 1;
         num_consecutive_frames = num_consecutive_frames+1;
         
-        positions(num_consecutive_frames,:,:) = cat(3,current_frame.pointables.position);
-%         positions(1:num_consecutive_frames,:,1)
+		extended_counter = 0;
+		for ii = 1:num_pointers
+			if current_frame.pointables(ii).is_extended
+				extended_counter = extended_counter+1;
+				positions(num_consecutive_frames,:,extended_counter) = current_frame.pointables.position;
+				
+			end
+		end
         
     end
     
@@ -248,8 +248,6 @@ while ~have_lock
         
         for ii = 1:num_pointers
             config.origin(ii,:) = mean(positions(1:num_consecutive_frames,:,ii));
-%             a = mean(positions(1:num_consecutive_frames,:,ii));
-%             stats = sqrt(var(positions(1:num_consecutive_frames,:,ii)));
         end
         
 
@@ -282,3 +280,28 @@ end
 end
 
 
+
+
+function curr_av_pos = get_average_position(current_frame)
+curr_av_pos = zeros(1,3);
+
+for ii = 1:num_extended(current_frame)
+	if current_frame.pointables(ii).is_extended
+		curr_av_pos = curr_av_pos + current_frame.pointables(ii).position;
+	end
+end
+curr_av_pos = curr_av_pos/num_extended(current_frame);
+
+end
+	
+function num = num_extended(frame)
+num = 0;
+
+for ii = 1:length(frame.pointables)
+	if frame.pointables(ii).is_extended
+		num = num+1;
+	end
+end
+
+
+end

@@ -603,8 +603,8 @@ int sphere_solver_master_entry_point(const WitnessSet						&W, // carries with i
 			ED_mp->setup(config,
 						 W,
 						 solve_options);
-			// initialize latest_newton_residual_mp
-			mpf_init(solve_options.T.latest_newton_residual_mp);   //    <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+//			// initialize latest_newton_residual_mp
+//			mpf_init(solve_options.T.latest_newton_residual_mp);   //    <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		case 2:
 			ED_d = new sphere_eval_data_d(2);
@@ -696,7 +696,7 @@ int sphere_slave_entry_point(SolverConfiguration & solve_options)
 			ED_mp->receive(solve_options);
 			
 			// initialize latest_newton_residual_mp
-			mpf_init(solve_options.T.latest_newton_residual_mp);   //   <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+//			mpf_init(solve_options.T.latest_newton_residual_mp);   //   <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		case 2:
 			ED_d = new sphere_eval_data_d(2);
@@ -707,7 +707,7 @@ int sphere_slave_entry_point(SolverConfiguration & solve_options)
 			
 			
 			// initialize latest_newton_residual_mp
-			mpf_init(solve_options.T.latest_newton_residual_mp);   //   <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+//			mpf_init(solve_options.T.latest_newton_residual_mp);   //   <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		default:
 			break;
