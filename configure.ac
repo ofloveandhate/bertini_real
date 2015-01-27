@@ -3,8 +3,8 @@
 
 
 
-#we're building bertini_real, version 0.1.1, and the corresponding email is dan brake's
-AC_INIT([bertini_real], [0.1.1], [danielthebrake@gmail.com],[bertini_real], [http://www.danielthebrake.org/])
+#we're building bertini_real, version 1.0.0, and the corresponding email is dan brake's
+AC_INIT([bertini_real], [1.0.0], [danielthebrake@gmail.com],[bertini_real], [http://www.danielthebrake.org/])
 
 
 # Force autoconf to be at least this version number:
@@ -34,6 +34,13 @@ AC_CONFIG_FILES([Makefile])
 #find the CC compiler
 AC_PROG_CXX
 
+
+#enable the creation of shared libraries
+AC_ENABLE_SHARED
+
+#enable the creation of static libraries
+AC_ENABLE_STATIC
+
 #set up for building libraries
 AC_PROG_LIBTOOL
 
@@ -52,11 +59,7 @@ AC_PROG_MKDIR_P
 #fire up libtool
 LT_INIT
 
-#enable the creation of shared libraries
-AC_ENABLE_SHARED
 
-#enable the creation of static libraries
-AC_ENABLE_STATIC
 
 
 
@@ -103,7 +106,7 @@ AX_BOOST_REGEX
 AX_BOOST_TIMER
 
 
-
+AM_CONFIG_HEADER(config.h)
 
 
 #wrap it up.
