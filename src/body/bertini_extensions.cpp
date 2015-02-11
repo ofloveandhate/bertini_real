@@ -688,7 +688,7 @@ int take_determinant_d(comp_d determinant, mat_d source_matrix)
 	
 	mat_d intermediate; init_mat_d(intermediate,0,0);
 	
-	int *rwnm = NULL; rwnm = NULL;
+	int *rwnm = NULL;
 	vec_d garbage; init_vec_d(garbage,0);
 	vec_d zerovec; init_vec_d(zerovec,0); change_size_vec_d(zerovec,num_variables); zerovec->size = num_variables;
 	
@@ -727,12 +727,9 @@ int take_determinant_d(comp_d determinant, mat_d source_matrix)
 		determinant->r = determinant->r*sign;
 		determinant->i = determinant->i*sign;
 	}
-	//	print_matrix_to_screen_matlab(source_matrix,"detme");
-	//	printf("candidate=%lf+1i*%lf;det(detme)\n",determinant->r,determinant->i);
-	//	mypause();
 	// this verified correct via 20 samples in matlab.  dab.
 	
-	
+	free(rwnm);
 	clear_vec_d(garbage);
 	clear_vec_d(zerovec);
 	clear_mat_d(intermediate);
@@ -762,7 +759,7 @@ int take_determinant_mp(comp_mp determinant, mat_mp source_matrix)
 	vec_mp garbage; init_vec_mp(garbage,source_matrix->cols); garbage->size = source_matrix->cols;
 	
 	int sign;
-	int *rwnm = NULL; rwnm = NULL;
+	int *rwnm = NULL;
 	
 	mpf_t tol;  mpfr_init(tol); // = 1e-14
 	mpf_t largeChange; mpfr_init(largeChange); //  = 1e11
@@ -810,6 +807,7 @@ int take_determinant_mp(comp_mp determinant, mat_mp source_matrix)
 	//	mypause();
 	// this verified correct via 20 samples in matlab.  dab.
 	
+	free(rwnm);
 	mpf_clear(tol);
 	mpf_clear(largeChange);
 	clear_mat_mp(intermediate);
