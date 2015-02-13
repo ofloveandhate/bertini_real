@@ -88,7 +88,7 @@ AC_SEARCH_LIBS([__gmpz_init],[gmp], [],[
 
 #find bertini
 AC_SEARCH_LIBS([head_zero_dim_track_d],[bertini-parallel], [],[
-	AC_MSG_ERROR([unable to find libbertini-parallel._])
+	AC_MSG_ERROR([unable to find libbertini-parallel])
 ])
 
 #find the math library
@@ -98,13 +98,14 @@ AC_SEARCH_LIBS([cos], [m], [], [
 
 
 
-AX_BOOST_BASE([1.53],, [AC_MSG_ERROR([bertini_real needs Boost, but it was not found in your system])])
+AX_BOOST_BASE([1.50],, [AC_MSG_ERROR([bertini_real needs Boost, but it was not found in your system])])
 AX_BOOST_SYSTEM
 AX_BOOST_FILESYSTEM
-AX_BOOST_CHRONO
+
 AX_BOOST_REGEX
 AX_BOOST_TIMER
 
+AX_BOOST_CHRONO
 
 AM_CONFIG_HEADER(config.h)
 
