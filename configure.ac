@@ -22,9 +22,6 @@ AM_INIT_AUTOMAKE([1.13 subdir-objects])
 #the language for BertiniReal is C++
 AC_LANG([C++])
 
-#use the local m4 folder.
-ACLOCAL_AMFLAGS = -I m4
-
 #another directive to use the m4 folder
 AC_CONFIG_MACRO_DIR([m4])
 
