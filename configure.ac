@@ -84,9 +84,9 @@ AC_SEARCH_LIBS([__gmpz_init],[gmp], [],[
 ])
 
 #find bertini
-AC_SEARCH_LIBS([head_zero_dim_track_d],[bertini-parallel], [],[
-	AC_MSG_ERROR([unable to find libbertini-parallel]),$MPI_CXXLDFLAGS
-])
+AC_SEARCH_LIBS([head_zero_dim_track_d],[bertini-parallel], [],
+	[AC_MSG_ERROR([unable to find libbertini-parallel])],
+	$MPI_CXXLDFLAGS)
 
 #find the math library
 AC_SEARCH_LIBS([cos], [m], [], [
