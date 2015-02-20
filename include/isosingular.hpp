@@ -61,8 +61,7 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
 /**
  \brief Create a matlab .m file to perform symbolic determinants of minors.
  
- \todo add diagram to this documentation
- 
+ Write a .m file, which must be called by matlab, to perform symbolic deflation of a system.  Computes minors of the Jacobian matrix, and write them into a new system.
  
  \param OUT an open file to which to write
  \param numVars the number of variables 

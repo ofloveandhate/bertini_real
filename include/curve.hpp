@@ -432,8 +432,6 @@ public:
 	/**
 	 \brief open a folder as an edges file, and parse it into the vector of edges in this Decomposition.
 	 
-	 \todo Add code ensuring the file is valid.  Probably would be best in xml.
-	 
 	 \return the number of edges added
 	 \param INfile the name of the file to open and read as an edge file.
 	 */

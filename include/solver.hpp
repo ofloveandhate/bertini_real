@@ -1111,7 +1111,6 @@ private:
  
  This class offers setups for the solver, which are system-independent, including methods for storing a configuration for restoration later.
  
- \todo move orthogonal_projection to a different configuration
  */
 class SolverConfiguration : public ParallelismConfig
 {
@@ -1992,7 +1991,7 @@ protected:
 /**
  \brief just before calling a Solver, call this to adjust the tracker_config.
  
- \todo add additional documentation on this method.
+ This function ensures that the correct things inside T are intialized to the correct values, including at least one MP variable, and several other settings.
  
  \param T the tracker_config_t to adjust
  \param num_variables The number of variables in the current system
