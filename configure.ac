@@ -22,9 +22,6 @@ AM_INIT_AUTOMAKE([1.13 subdir-objects])
 #the language for BertiniReal is C++
 AC_LANG([C++])
 
-#use the local m4 folder.
-ACLOCAL_AMFLAGS = -I m4
-
 #another directive to use the m4 folder
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -87,9 +84,9 @@ AC_SEARCH_LIBS([__gmpz_init],[gmp], [],[
 ])
 
 #find bertini
-AC_SEARCH_LIBS([head_zero_dim_track_d],[bertini-parallel], [],[
-	AC_MSG_ERROR([unable to find libbertini-parallel])
-])
+AC_SEARCH_LIBS([head_zero_dim_track_d],[bertini-parallel], [],
+	[AC_MSG_ERROR([unable to find libbertini-parallel])],
+	$MPI_CXXLDFLAGS)
 
 #find the math library
 AC_SEARCH_LIBS([cos], [m], [], [

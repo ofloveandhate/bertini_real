@@ -5,9 +5,10 @@ tracktype: 1;
 END;
 
 INPUT
-variable_group x, y, z;
+variable_group x1, y, z;
 function f1;
 
+x = x1+1;
 f1 = x^6 + y^6 + z^6 -1;
 
 END;
