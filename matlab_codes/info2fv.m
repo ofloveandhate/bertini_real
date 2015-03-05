@@ -1,3 +1,8 @@
+% fv = info2fv(BRinfo)
+%
+% extract the faces from a bertini_real output.
+
+
 function [fv] = info2fv(BRinfo)
 
 
