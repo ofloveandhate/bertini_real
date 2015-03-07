@@ -388,7 +388,7 @@ void BertiniRealConfig::init()
 	stifle_membership_screen_ = true;
 	stifle_text_ = " > /dev/null ";
 	
-	matlab_command_ = "matlab -nosplash -nodesktop -nojvm";
+	matlab_command_ = "matlab -nosplash -nodesktop -nojvm -r ";
 	verbose_level(0); // default to 0
 	
 	

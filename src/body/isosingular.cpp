@@ -193,7 +193,7 @@ void isosingular_deflation_iteration(int *declarations,
 	printf("\nPerforming an isosingular deflation\n");
 	
 	std::stringstream converter;
-	converter << matlab_command << " < matlab_deflate.m";
+	converter << matlab_command << "matlab_deflate";
 	system(converter.str().c_str());
 	converter.clear(); converter.str("");
 	
@@ -397,7 +397,7 @@ void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 	fprintf(OUT, "    fprintf(OUT, ',');\n");
 	fprintf(OUT, "  end;\n");
 	fprintf(OUT, "end;\n");
-	
+	fprintf(OUT, "\nexit\n");
 	// clear memory
 	free(str);
 	

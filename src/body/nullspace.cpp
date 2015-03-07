@@ -1094,7 +1094,7 @@ void create_nullspace_system(boost::filesystem::path output_name,
 	
 	// run Matlab script
 	std::stringstream converter;
-	converter << program_options.matlab_command() << " < matlab_nullspace_system.m";
+	converter << program_options.matlab_command() << "matlab_nullspace_system";
 	system(converter.str().c_str());
 	converter.clear(); converter.str("");
 	
@@ -1440,7 +1440,7 @@ void createMatlabDerivative(boost::filesystem::path output_name,
 	//	OUT << "    end %re: if\n";
 	//	OUT << "  end %re: kk\n";
 	OUT << "end %re: jj\n\n";
-	
+	OUT << "\nexit %exit the script\n";
 	
 	
 	
