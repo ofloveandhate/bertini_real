@@ -48,6 +48,14 @@ extern "C" {
 
 
 /**
+\brief Enter a 1-second open-sleep cycle until the desired file is found.  Potentially an infinite loop if the file is never generated.
+
+\param name The name of the file you want to wait on.
+*/
+void WaitOnGeneratedFile(const std::string & name);
+
+
+/**
  \brief parse a bertini input file into two separate files, according to the two inputs; also counts the numbers of several types of declarations.
  
  A wrapper around partitionParse.  

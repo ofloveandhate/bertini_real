@@ -1,6 +1,23 @@
 #include "fileops.hpp"
 
 
+void WaitOnGeneratedFile(const std::string & name)
+{
+	
+	FILE *IN = fopen(name.c_str(),"r");
+	int num_waits = 0;
+	while (IN==NULL){
+		sleep(1); 
+		if (num_waits==0)
+			printf("waiting for %s\n",name.c_str());
+		else if (num_waits%15==0)
+			printf("waiting for file '%s' (it's been %d seconds)\n",name.c_str(),num_waits);
+		IN = fopen(name.c_str(),"r");
+	}
+	fclose(IN);
+}
+
+
 
 int partition_parse(int **declarations,
 										boost::filesystem::path input_filename,

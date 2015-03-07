@@ -198,6 +198,9 @@ void isosingular_deflation_iteration(int *declarations,
 	converter.clear(); converter.str("");
 	
 	
+	WaitOnGeneratedFile("derivative_polynomials_declaration");
+	WaitOnGeneratedFile("deflation_polynomials");
+	
 	
 	
 	// setup new file
@@ -212,6 +215,7 @@ void isosingular_deflation_iteration(int *declarations,
 	while ((ch = fgetc(IN)) != EOF)
 		fprintf(OUT, "%c", ch);
 	fclose(IN);
+	
 	
 	
 	

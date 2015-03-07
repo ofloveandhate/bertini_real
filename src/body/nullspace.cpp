@@ -1194,7 +1194,7 @@ void create_nullspace_system(boost::filesystem::path output_name,
 		write_matrix_as_constants( *(ns_config->randomizer()->get_mat_full_prec()), "r", OUT);
 	}
 	
-	
+	WaitOnGeneratedFile("derivative_polynomials_declaration");
 	
 	IN = safe_fopen_read("derivative_polynomials_declaration");
 	while ((ch = fgetc(IN)) != EOF)
@@ -1645,7 +1645,7 @@ void create_matlab_determinantal_system(boost::filesystem::path output_name,
 	//	OUT << "fprintf(OUT,';\\n');\n\n";
 	
 	
-	OUT << "fprintf(OUT,'der_func = %s;\\n',char(new_eqn));";
+	OUT << "fprintf(OUT,'der_func = %s;\\n',char(new_eqn));\n\n";
 	//	OUT << "for jj = 1:num_jac_equations\n";
 	//	OUT << "  fprintf(OUT, 'der_func_%i = %s;  \\n',jj,char(new_eqns(jj)));\n";
 	//	OUT << "  for kk = 1:num_jac_equations\n";
@@ -1661,7 +1661,7 @@ void create_matlab_determinantal_system(boost::filesystem::path output_name,
 	//	OUT << "  end %re: kk\n";
 	//	OUT << "end %re: jj\n\n";
 	
-	
+	OUT << "exit %quit the script\n";
 	
 	
 	// clear memory
