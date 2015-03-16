@@ -583,8 +583,6 @@ void get_tracker_config(SolverConfiguration & solve_options,int MPType)
 	mpf_init2(solve_options.T.latest_newton_residual_mp, solve_options.T.AMP_max_prec);
 	
 	
-	cp_tracker_config_t(&solve_options.T_orig,&solve_options.T);
-	
 	
 	return;
 }
