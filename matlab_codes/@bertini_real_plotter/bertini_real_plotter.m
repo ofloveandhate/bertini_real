@@ -452,14 +452,15 @@ classdef bertini_real_plotter < handle
 		end
 		
 		
-% 		% the deletion call
-% 		function delete(br_plotter)
-% 			if ~isempty(br_plotter.figures)
-% 				if ishandle(br_plotter.figures.main)
-% 					delete(br_plotter.figures.main);
-% 				end
-% 			end
-% 		end 
+		function delete_panels(br_plotter)
+			
+			b = fieldnames(br_plotter.panels);
+			for ii = 1:length(b)
+				delete(br_plotter.panels.(b{ii}));
+			end
+		end
+		
+		
 		
 		
 		

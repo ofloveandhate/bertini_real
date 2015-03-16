@@ -1,10 +1,7 @@
 function result = dehomogenize(point)
 
-result =[];
-
 if length(point)<2
-	display('point too short to dehomogenize');
-	return;
+	error('point too short to dehomogenize');
 end
 
 result = point(2:end)/point(1);
