@@ -1126,7 +1126,8 @@ public:
 	
 	bool robust; ///< whether to use robust mode
 	tracker_config_t T; ///< the ubiquitous Bertini tracker configuration
-	tracker_config_t T_orig;///< a backup of the ubiquitous Bertini tracker configuration, made by the user
+
+	
 	preproc_data PPD; ///< the structure of the current variable groups
 	
 
@@ -1232,7 +1233,6 @@ public:
 	}
 	~SolverConfiguration(){
 		tracker_config_clear(&this->T);
-		tracker_config_clear(&this->T_orig);
 		preproc_data_clear(&this->PPD);
 		
 		for (auto iter = tracker_config_backups_.begin(); iter!=tracker_config_backups_.end(); iter++) {
@@ -1258,7 +1258,6 @@ public:
 	void copy(const SolverConfiguration & other)
 	{
 		cp_tracker_config_t(&this->T, &other.T);
-		cp_tracker_config_t(&this->T_orig, &other.T_orig);
 		
 		this->total_num_paths_tracked = other.total_num_paths_tracked;
 		this->robust = other.robust;
