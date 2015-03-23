@@ -4105,7 +4105,7 @@ protected:
 			copy_sphere_bounds(other);
 		}
 		else{
-			this.have_sphere_ = false;
+			this->have_sphere_ = false;
 		}
 		
 		
