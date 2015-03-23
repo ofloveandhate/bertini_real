@@ -17,7 +17,7 @@ switch length(br_plotter.indices)
 		num_samp = 20;
 		[x,y,z] = sphere(num_samp);
 		h = patch(surf2patch(radius*x+center(1),radius*y+center(2),radius*z+center(3)));
-		set(h,'FaceAlpha',0.03,'EdgeColor','none','FaceColor','k');
+		set(h,'FaceAlpha',0.1,'EdgeColor','none','FaceColor','k');
 		br_plotter.handles.sphere = h;
 	otherwise
 		display('bad length(ind) in sphere_plot.')

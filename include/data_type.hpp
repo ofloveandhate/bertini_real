@@ -4101,8 +4101,13 @@ protected:
 		}
 		
 		
+		if (other.have_sphere_) {
+			copy_sphere_bounds(other);
+		}
+		else{
+			this.have_sphere_ = false;
+		}
 		
-		copy_sphere_bounds(other);
 		
 		return;
 	}
