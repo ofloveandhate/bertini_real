@@ -2,6 +2,10 @@ CONFIG
 
 tracktype: 1;
 
+randomseed: 2;
+
+imagthreshold: 1e-4;
+printpathmodulus: 0;
 END;
 
 INPUT
