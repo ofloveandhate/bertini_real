@@ -2515,7 +2515,6 @@ int VertexSet::search_for_point(vec_mp testpoint)
 
 int VertexSet::search_for_active_point(vec_mp testpoint)
 {
-    int index = -1; // initialize the index we will return
 
     // dehomogenize the testpoint into the internal temp container.
     for (int jj=1; jj<num_natural_variables_; jj++) {
@@ -2524,12 +2523,13 @@ int VertexSet::search_for_active_point(vec_mp testpoint)
     
     
 	//	WTB: a faster comparison search.
-	for (unsigned int ii=0; ii<num_vertices_; ii++) {
+	int current_index = 0;
+	for (auto curr_vert=vertices_.begin(); curr_vert!=vertices_.end(); curr_vert++) {
 		
-		int current_index = ii;
 		
-		if (vertices_[current_index].is_removed()==0) {
-			vec_mp& current_point = vertices_[current_index].point();
+		
+		if (!curr_vert->is_removed()) {
+			vec_mp& current_point = curr_vert->point();
 			
 			// dehomogenize the current point under investigation
 			for (int jj=1; jj<num_natural_variables_; jj++) {
@@ -2537,26 +2537,19 @@ int VertexSet::search_for_active_point(vec_mp testpoint)
 			}
 			
 			if (isSamePoint_inhomogeneous_input(checker_1_, checker_2_, same_point_tolerance_)){
-				index = current_index;
-				break;
+				return current_index;
 			}
-			
-			if (index!=-1)
-				break;
-			
 		}
+		current_index++;
 	}
     
-    return index;
+    return -1;
 }
 
 
 
 int VertexSet::search_for_removed_point(vec_mp testpoint)
 {
-    
-    int index = -1; // initialize the index we will return
-    
     
     // dehomogenize the testpoint into the internal temp container.
     
@@ -2566,8 +2559,9 @@ int VertexSet::search_for_removed_point(vec_mp testpoint)
     
     
     //	WTB: a faster comparison search.
-    for (unsigned int ii=0; ii<num_vertices_; ii++) {
-		int current_index = ii;
+	int current_index = 0;
+	for (auto curr_vert = vertices_.begin(); curr_vert!=vertices_.end(); curr_vert++) {
+		
 		
 		if (vertices_[current_index].is_removed()) {
 			
@@ -2578,17 +2572,14 @@ int VertexSet::search_for_removed_point(vec_mp testpoint)
 			}
 			
 			if (isSamePoint_inhomogeneous_input(checker_1_, checker_2_, same_point_tolerance_)){
-				index = current_index;
-				break;
+				return current_index;
 			}
 			
-			if (index!=-1)
-				break;
-			
 		}
+		current_index++;
 	}
     
-    return index;
+    return -1;
 }
 
 

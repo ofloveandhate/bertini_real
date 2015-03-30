@@ -12,7 +12,7 @@ fontsize = br_plotter.options.fontsizes.labels;
 pi = br_plotter.BRinfo.pi;
 
 labeltext = {};
-br_plotter.handles.projection = zeros(length(ind),1);
+br_plotter.handles.projection = zeros(br_plotter.BRinfo.dimension,1);
 for ii = 1:br_plotter.BRinfo.dimension
 	switch length(ind)
 		case {2}

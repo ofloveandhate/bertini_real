@@ -1,9 +1,19 @@
 CONFIG
 
 tracktype:1;
-tracktolbeforeeg: 1e-9;%
-securitylevel: 1;
+tracktolbeforeeg: 1e-6;%
+securitylevel: 0;
+securitymaxnorm: 1e10;
+
+odepredictor: 7;
+
+imagthreshold: 1e-5;
+
 MAXNEWTONITS:3;
+
+
+printpathmodulus: 40;
+
 END;
 
 INPUT

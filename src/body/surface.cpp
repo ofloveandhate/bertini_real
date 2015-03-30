@@ -85,9 +85,12 @@ void Surface::main(VertexSet & V,
 	
 	///////////////////////////////
 	
+	WitnessSet points_which_needed_no_deflation;
 	std::map< SingularObjectMetadata, WitnessSet > split_sets;
+	
 	deflate_and_split(split_sets,
 					  higher_multiplicity_witness_sets,
+					  points_which_needed_no_deflation,
 					  program_options,
 					  solve_options);
 	
@@ -709,6 +712,7 @@ void Surface::compute_critical_curve(const WitnessSet & W_critcurve,
 
 void Surface::deflate_and_split(std::map< SingularObjectMetadata, WitnessSet > & split_sets,
 											  std::map<int, WitnessSet > & higher_multiplicity_witness_sets,
+								WitnessSet & points_which_needed_no_deflation,
 											  BertiniRealConfig & program_options,
 											  SolverConfiguration & solve_options)
 {
@@ -719,8 +723,8 @@ void Surface::deflate_and_split(std::map< SingularObjectMetadata, WitnessSet > &
 	}
 	
 	
-	WitnessSet needed_no_deflation;
-	needed_no_deflation.copy_skeleton(higher_multiplicity_witness_sets.begin()->second);
+	WitnessSet points_which_needed_no_deflation;
+	points_which_needed_no_deflation.copy_skeleton(higher_multiplicity_witness_sets.begin()->second);
 	
 	for (auto iter = higher_multiplicity_witness_sets.begin(); iter!=higher_multiplicity_witness_sets.end(); ++iter) {
 		
@@ -769,6 +773,7 @@ void Surface::deflate_and_split(std::map< SingularObjectMetadata, WitnessSet > &
 			
 			
 			if (num_deflations==0) {
+				points_which_needed_no_deflation.add_point(active_set.point(0));
 				std::cout << "found a point which did not need deflation!!!" << std::endl;
 				print_point_to_screen_matlab(active_set.point(0),"anomaly");
 			}
