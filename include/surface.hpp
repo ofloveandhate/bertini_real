@@ -956,6 +956,7 @@ public:
 	 */
 	void deflate_and_split(std::map< SingularObjectMetadata, WitnessSet > & split_sets,
 						   std::map<int, WitnessSet > & higher_multiplicity_witness_sets,
+						   WitnessSet & points_which_needed_no_deflation,
 						   BertiniRealConfig & program_options,
 						   SolverConfiguration & solve_options);
 	
