@@ -1,0 +1,30 @@
+CONFIG
+
+sharpendigits: 30;
+
+odepredictor: 7;
+endgamenum: 2;
+
+
+tracktolbeforeeg: 1e-6;
+
+tracktype: 1;
+
+securitymaxnorm: 1e16;
+
+imagthreshold: 1e-5;
+
+
+END;
+
+INPUT
+
+variable_group x, y, z;
+
+
+function f1;
+
+f1 = 16*x^3+16*y^3-31*z^3+24*x^2*z-48*x^2*y-48*x*y^2+24*y^2*z-54*3^(1/2)*z^2-72*z;
+
+
+END;
