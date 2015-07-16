@@ -1,5 +1,16 @@
 function br_plotter = plot_edge_points(br_plotter)
 
+if isfield(br_plotter.options,'use_fixed_linestyle')
+    style = br_plotter.options.linestyle;
+else
+    if isempty(br_plotter.BRinfo.sampler_data)
+        style = '-';
+    else
+        style = '--';
+    end
+end
+
+
 %
 curr_axis = br_plotter.axes.main;
 
@@ -51,16 +62,10 @@ for ii = 1:br_plotter.BRinfo.num_edges
 			plotme = real(plotme);
 			h = main_plot_function(plotme,[1 2 3], curr_axis);
 	end
-	br_plotter.handles.edges(ii) = h;
-	set(h,'Color',colors(nondegen_edge_ind,:),'LineWidth',3);
-	if isempty(br_plotter.BRinfo.sampler_data)
-		set(h,'LineStyle','-');
-	else
-		set(h,'LineStyle','--');
-	end
+	br_plotter.handles.edges(nondegen_edge_ind) = h;
+	set(h,'Color',colors(nondegen_edge_ind,:),'LineWidth',3,'LineStyle',style);
 	nondegen_edge_ind = nondegen_edge_ind+1;
 end
-
 
 
 end

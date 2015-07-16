@@ -22,13 +22,16 @@
 % daniel brake
 % colorado state, north carolina state, notre dame
 % mathematics
-% 2013-14
+% 2013-15
 % danielthebrake@gmail.com
 
 
 function plot_params = render_into_file(varargin)
 %
 
+[~, default_filename, ~] = fileparts(pwd);
+default_filename = default_filename(~isspace(default_filename));
+			
 display(varargin)
 if isempty(varargin)
 	
@@ -36,7 +39,7 @@ if isempty(varargin)
 	plot_params.window = get(gcf,'Position');
 	plot_params.format = 'eps';
 	plot_params.format_flag = 'epsc2';
-	plot_params.basename = 'default_filename';
+	plot_params.basename = default_filename;
 elseif and(ischar(varargin{1} ), length(varargin)==1)
 	
 	plot_params.fontsize = 16;
@@ -57,7 +60,7 @@ else
 	plot_params.window = get(gcf,'Position');
 	plot_params.format = 'eps';
 	plot_params.format_flag = 'epsc2';
-	plot_params.basename = 'default_filename';
+	plot_params.basename = default_filename;
 end
 
 fig1 = gcf;

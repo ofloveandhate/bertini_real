@@ -24,7 +24,7 @@
 % danielthebrake@gmail.com
 % university of notre dame
 % applied and computational mathematics and statistics
-% 2014
+% 2014, 2015
 
 
 
@@ -35,7 +35,7 @@ classdef bertini_real_plotter < handle
 		BRinfo = [];
 % 		scene = scene_manipulator();
 		
-		window = [20 20 1280 720];
+		window = [20 20 640 640];
 		figures = []
 		axes = [];
 		handles = [];
@@ -101,8 +101,11 @@ classdef bertini_real_plotter < handle
 			br_plotter.options.render_curves = true;
 			br_plotter.options.render_faces = true;
 			
-			br_plotter.options.colormap = @jet;
-			
+            if isempty(which('parula'))
+                br_plotter.options.colormap = @jet;
+            else
+                br_plotter.options.colormap = @parula;
+            end
 		end
 		
 		

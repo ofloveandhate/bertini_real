@@ -4,13 +4,13 @@ function setupfig(br_plotter,varargin)
 		error('setupfig takes only pairs of arguments');
 	end
 
-	if ~isempty(which('getmondim'))
-		mondim = getmondim;
-		mondim(3:4) = min(mondim(3:4));
-		br_plotter.window = [20 20 mondim(3)-60 mondim(4)-130];
-	end
+% 	if ~isempty(which('getmondim'))
+% 		mondim = getmondim;
+% 		mondim(3:4) = min(mondim(3:4));
+% 		br_plotter.window = [20 20 mondim(3)-60 mondim(4)-130];
+% 	end
 
-	fig = figure();
+	fig = gcf;
 
 	set(fig,'PaperPositionMode','auto');
 
