@@ -1,0 +1,110 @@
+
+
+	\newcommand{\manualpath}{.}
+	
+	
+	
+	
+\usepackage{listings}
+\lstset{language=}
+
+
+\renewcommand\lstlistingname{File}
+\renewcommand\lstlistlistingname{Files}
+
+
+
+
+
+
+	\lstset{numbers=left, numberstyle=\tiny, stepnumber=1, numbersep=5pt,captionpos=b,frame=none,breaklines=true,basicstyle=\small}
+	\usepackage{amsgen,amsmath,amstext,amsbsy,amsopn,amssymb}
+	\usepackage{graphicx,color,epsfig}
+	\usepackage[colorlinks]{hyperref}
+	\usepackage{float}
+	\usepackage[english]{babel}
+	\usepackage[left=1.25in,right=1.25in,top=1.25in,bottom=1.25in]{geometry} %
+	\usepackage[singlespacing]{setspace}%line spacing, set default to double
+	
+	\usepackage{array}
+	\usepackage{makeidx}
+	\makeindex
+	
+	
+	\usepackage[format=plain,indention=.5cm,margin=10pt,font={small,singlespacing}]{caption}%custom captions.
+	
+	
+	
+	\graphicspath{{\manualpath/diagrams/}{\manualpath/screencaps/}}
+
+
+
+
+
+\newcommand{\inputslocation}{\manualpath/inputs/}
+
+
+
+
+%\usepackage[boxed,linesnumbered]{algorithm2e}
+%
+%
+%
+
+
+
+% Alter some LaTeX defaults for better treatment of figures:
+    % See p.105 of "TeX Unbound" for suggested values.
+    % See pp. 199-200 of Lamport's "LaTeX" book for details.
+    %   General parameters, for ALL pages:
+    \renewcommand{\topfraction}{0.9}	% max fraction of floats at top
+    \renewcommand{\bottomfraction}{0.8}	% max fraction of floats at bottom
+    %   Parameters for TEXT pages (not float pages):
+    \setcounter{topnumber}{2}
+    \setcounter{bottomnumber}{2}
+    \setcounter{totalnumber}{4}     % 2 may work better
+    \setcounter{dbltopnumber}{2}    % for 2-column pages
+    \renewcommand{\dbltopfraction}{0.9}	% fit big float above 2-col. text
+    \renewcommand{\textfraction}{0.07}	% allow minimal text w. figs
+    %   Parameters for FLOAT pages (not text pages):
+    \renewcommand{\floatpagefraction}{0.7}	% require fuller float pages
+	% N.B.: floatpagefraction MUST be less than topfraction !!
+    \renewcommand{\dblfloatpagefraction}{0.7}	% require fuller float pages
+
+	% remember to use [htp] or [htpb] for placement
+
+ 
+
+%scaling for the screen caps used in the manual
+\newcommand{\screencapsize}{0.41}
+
+%for inputting paramotopy input files
+\newcommand{\File}[3]{
+\begin{center}
+\begin{minipage}{0.98\linewidth}
+\lstinputlisting[frame=none,
+	breaklines=true,
+	caption={#1},
+	label=#2]{\inputslocation#3}
+\end{minipage}
+\end{center}
+}
+
+
+%for inputting bertini real input files
+\newcommand{\Filenobox}[3]{
+
+\lstinputlisting[frame=none,
+	breaklines=true,
+	caption={#1},
+	label=#2]{\inputslocation#3}
+
+}
+
+\usepackage{marginnote}
+\renewcommand*{\marginfont}{\color{red}\sffamily\tiny}
+\newcommand{\comment}[1]{\textcolor{red}{$\star$}\marginnote{#1}}
+
+
+
+%\newcommand*{\SkipTocEntry}{\addtocontents{toc}{\gobblefour}}
