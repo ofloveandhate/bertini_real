@@ -16,7 +16,7 @@ function create_axes(br_plotter)
 
 
 
-			set(curr_axes,'Position', [0.2 0.2 0.6 0.6]);
+			set(curr_axes,'Position', [0.1 0.1 0.8 0.8]);
 			br_plotter.axes.main = curr_axes;
 
 end

@@ -1,0 +1,145 @@
+\documentclass[10pt]{article}
+
+
+
+\input{br_manual_header.tex}
+
+\begin{document}
+
+
+\pagestyle{plain} 
+	\pagenumbering{roman} 
+	\setcounter{page}{1}
+
+
+
+
+\thispagestyle{empty}
+
+
+\begin{center}
+
+
+\quad % put in a space so the following vspace command succeeds
+\vspace{3in}
+
+
+{\LARGE Bertini\_Real}\\[\baselineskip]
+User's Manual
+\vskip0.5in
+
+\comment{need a sweet picture here}
+
+\vfill%\vskip2in
+%\includegraphics[width = 0.55\linewidth]{}
+
+\end{center}
+\null
+\vfill
+\begin{singlespace}
+Manual by\\
+Pierce Cunneen \& Daniel Brake\\
+University of Notre Dame \\
+ACMS \hfill \today
+\end{singlespace}
+\newpage
+
+
+
+
+
+	\tableofcontents
+	\eject
+	\pagenumbering{arabic} 
+	\setcounter{page}{1}
+	\eject
+
+
+
+\section{Introduction}
+
+
+Welcome to Bertini\_real, software for real algebraic geometry.  This manual is intended to help the user operate this piece of numerical software, to obtain useful and high-quality results from decomposing real algebraic curves and surfaces.
+
+Bertini\_real is compiled software, links against a parallel version of Bertini 1 compiled as a library, and requires Matlab and the Symbolic Computation toolbox.  It also requires several other libraries, including a few from Boost, and an installation of MPI.  All libraries should be compiled using the same compilers.  
+
+\subsection{Contact}
+\label{sec:contact}
+
+\subsection*{Acknowledgements}
+\begin{itemize}
+\item  This research utilized the CSU ISTeC Cray HPC System supported by NSF Grant CNS-0923386.
+\item  This material is based upon work supported by the National Science Foundation under Grants No. DMS-1025564 and DMS-1115668.
+\end{itemize}
+
+\subsection{License}
+\label{sec:license}
+
+\subsection*{Disclaimer}
+
+Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the National Science Foundation or any other organization.
+
+
+
+
+\clearpage
+\section{Quick Start}
+\label{sec:started}
+
+\section{Compilation and Installation}
+
+
+
+\clearpage
+\section{Using Bertini\_Real}
+\label{sec:running}
+
+\section{Troubleshooting}
+
+\section{Visualization}
+
+\section{3D Printing}
+
+\clearpage
+
+\appendix
+\section{Output Formats}
+
+
+\subsection{.curve}
+
+
+(num\_variables total) num\_vertices num\_edges \\
+num\_V0 num\_V1 num\_midpts num\_newpts \\
+
+indices of V0  \\
+indices of V1  \\
+indices of midpoints \\
+indices of added\_points
+
+projection excluding the homogeneous 0 coordinate.\\
+
+\File{Example C.curve file. }{C.curve}{C.curve}
+
+\subsection{.edge}
+
+
+\subsection{.vert}
+
+
+
+
+%\ifx\standalonemode\undefined
+%
+%\else
+%	\begin{singlespace}
+%	\bibliographystyle{ieeetr}
+%	\bibliography{bibliobiblioparama}
+%	\end{singlespace}
+%	
+%	\begin{singlespace}
+%	\printindex
+%	\end{singlespace}
+%\fi
+
+\end{document}

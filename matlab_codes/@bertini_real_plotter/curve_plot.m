@@ -30,7 +30,15 @@ plot_edge_points(br_plotter);
 
 
 if ~isempty(br_plotter.BRinfo.sampler_data)
-	br_plotter.handles.sample_edges = plot_curve_samples(br_plotter,br_plotter.BRinfo.sampler_data,'-');
+    
+    if isfield(br_plotter.options,'use_fixed_linestyle')
+        style = br_plotter.options.linestyle;
+    else
+        style = '-';
+    end
+
+
+	br_plotter.handles.sample_edges = plot_curve_samples(br_plotter,br_plotter.BRinfo.sampler_data,style);
 end
 
 sphere_plot(br_plotter);

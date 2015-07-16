@@ -712,7 +712,7 @@ void Surface::compute_critical_curve(const WitnessSet & W_critcurve,
 
 void Surface::deflate_and_split(std::map< SingularObjectMetadata, WitnessSet > & split_sets,
 											  std::map<int, WitnessSet > & higher_multiplicity_witness_sets,
-								WitnessSet & points_which_needed_no_deflation,
+											WitnessSet & points_which_needed_no_deflation,
 											  BertiniRealConfig & program_options,
 											  SolverConfiguration & solve_options)
 {
@@ -721,9 +721,9 @@ void Surface::deflate_and_split(std::map< SingularObjectMetadata, WitnessSet > &
 	if (higher_multiplicity_witness_sets.size()==0) {
 		return;
 	}
-	
-	
-	WitnessSet points_which_needed_no_deflation;
+//	
+//	
+//	WitnessSet points_which_needed_no_deflation;
 	points_which_needed_no_deflation.copy_skeleton(higher_multiplicity_witness_sets.begin()->second);
 	
 	for (auto iter = higher_multiplicity_witness_sets.begin(); iter!=higher_multiplicity_witness_sets.end(); ++iter) {
