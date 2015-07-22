@@ -87,11 +87,11 @@ Any opinions, findings, and conclusions or recommendations expressed in this mat
 
 Bertini\_Real can be downloaded from http://bertinireal.com/download.html. Use of Bertini\_Real depends on Bertini, which itself has several important dependencies (see section 3)
 Once installed, you can run Bertini\_real on an input file from the command line. After navigating to the working directory of the input file, the flow of Bertini\_real is as follows:
-\begin{itemize}
-\item Run Bertini on an input file using the ``tracktype: 1'' setting. This is done by typing in the command line: 'bertini ' with an input file named 'input'. Bertini will produce a Numerical Irreducible Decomposition that will be used by Bertini\_real.
-\item Run Bertini\_Real on the same input file. Similarly, just type 'bertini\_real' in the command line. Bertini\_Real will provide a cellular decomposition of the real portion of a one- or two- dimensional complex algebraic set.
-\item Visualize the results of Bertini\_real in MATLAB. Enter MATLAB and call gather\_br\_samples, which parses the output results of Bertini\_real into a .mat file, and then call Bertini\_real\_plotter, which will plot the curve or surface in MATLAB (N.B. The MATLAB executable must be on the path to the input file for Bertini\_real to run).
-\end{itemize}
+\begin{enumerate}
+\item Run Bertini on an input file using the ``tracktype: 1'' setting. This is done by typing in the command line: \texttt{bertini} with an input file named `input'. Bertini will produce a Numerical Irreducible Decomposition that will be used by Bertini\_real.
+\item Run Bertini\_Real on the same input file. Similarly, just type \texttt{bertini\_real} in the command line. Bertini\_Real will provide a cellular decomposition of the real portion of a one- or two- dimensional complex algebraic set.
+\item Visualize the results of Bertini\_real in MATLAB. Enter MATLAB and call gather\_br\_samples, which parses the output results of Bertini\_real into a .mat file, and then call bertini\_real\_plotter, which will plot the curve or surface in MATLAB (N.B. The MATLAB executable must be on the path to the input file for Bertini\_real to run).
+\end{enumerate}
 \label{sec:started}
 
 \section{Compilation and Installation}
@@ -99,9 +99,9 @@ Once installed, you can run Bertini\_real on an input file from the command line
 Before installing Bertini\_real, you must first be sure to have several libraries and dependencies that the software requires. \par
 First, you must install Bertini (as a library).  The Bertini source code can be found \newline at https://bertini.nd.edu/download.html. Download the Bertini source code using the ./configure \&\& make \&\& make install process. \par
 Bertini itself has the following dependencies: a C++ compiler capable of the C++ 11 standard, an MPI (such as MPICH2), Boost $>$= 1.53, MPFR, and GMP. Instructions specifically for Mac users are listed below. If on Linux, use the package manager provided (e.g. apt-get). Unfortunately, Windows users are unsupported at this time, except possibly through Cygwin or a virtual machine. If interested in porting Bertini and Bertini\_real to windows, please contact Dr. Brake at dbrake@nd.edu. Bertini\_real also is dependent on MATLAB. Once Bertini and all the necessary dependencies are installed, navigate to the directory containing Bertini\_real and install Bertini\_real via the ./configure \&\& make \&\& make install process. \par
-\subsection{Installation of Bertini/bertini\_real on MacIntosh}
+\subsection{Installation of Bertini/bertini\_real on macIntosh}
 
-\indent If you are using a Mac, we encourage the use of Homebrew (http://brew.sh) to install these packages. After installing Homebrew itself, installing the previously listed dependencies becomes simple. In terminal, just type,``brew search \_\_\_\_'' to list packages related to \_\_\_\_, where \_\_\_\_ is your search (for example, GMP, Boost, or MPICH2). To download via Homebrew, type in terminal,``brew install \_\_\_\_''.
+\indent If you are using a mac, we encourage the use of Homebrew (http://brew.sh) to install these packages. After installing Homebrew itself, installing the previously listed dependencies becomes simple. In terminal, just type, \texttt{brew search \_\_\_\_} to list packages related to \_\_\_\_, where \_\_\_\_ is your search (for example, GMP, Boost, or MPICH2). To download via Homebrew, type in terminal: \texttt{brew install \_\_\_\_}.
 
 
 \clearpage
