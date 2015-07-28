@@ -73,15 +73,17 @@ AS_IF([test "$have_CXX_mpi" = "yes"],
 # the form of the following commands --
 # AC_SEARCH_LIBS(function, libraries-list, action-if-found, action-if-not-found, extra-libraries)
 
+#find gmp
+AC_SEARCH_LIBS([__gmpz_init],[gmp], [],[
+	AC_MSG_ERROR([unable to find gmp])
+])
+
 # find mpfr
 AC_SEARCH_LIBS([mpfr_get_version],[mpfr], [],[
 	AC_MSG_ERROR([unable to find mpfr])
 ])
 
-#find gmp
-AC_SEARCH_LIBS([__gmpz_init],[gmp], [],[
-	AC_MSG_ERROR([unable to find gmp])
-])
+
 
 #find bertini
 AC_SEARCH_LIBS([head_zero_dim_track_d],[bertini-parallel], [],
