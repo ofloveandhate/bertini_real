@@ -1,11 +1,9 @@
 \documentclass[10pt]{article}
-
-
 \input{br_manual_header.tex}
 
+\usepackage{graphicx}
+
 \begin{document}
-
-
 \pagestyle{plain} 
 	\pagenumbering{roman} 
 	\setcounter{page}{1}
@@ -82,31 +80,64 @@ Any opinions, findings, and conclusions or recommendations expressed in this mat
 
 \clearpage
 \section{Quick Start}
-
-Bertini\_real can be downloaded from http://bertinireal.com/download.html. Use of Bertini\_real depends on Bertini, which itself has several important dependencies (see section 3)
-Once installed, you can run Bertini\_real on an input file from the command line. After navigating to the working directory of the input file, the flow of Bertini\_real is as follows:
-\begin{enumerate}
-\item Run Bertini on an input file using the ``tracktype: 1'' setting. This is done by typing in the command line: \texttt{bertini} with an input file named `input'. Bertini will produce a Numerical Irreducible Decomposition that will be used by Bertini\_real.
-\item Run Bertini\_real on the same input file. Similarly, just type \texttt{bertini\_real} in the command line. Bertini\_real will provide a cellular decomposition of the real portion of a one- or two- dimensional complex algebraic set.
-\item Visualize the results of Bertini\_real in MATLAB. Enter MATLAB and call \texttt{gather\_br\_samples}, which parses the output results of  into a .mat file, and then call \texttt{bertini\_real\_plotter}, which will plot the curve or surface in MATLAB (N.B. The MATLAB executable must be on the path to the input file for Bertini\_real to run).
-\end{enumerate}
 \label{sec:started}
 
+Bertini\_real can be downloaded from \url{http://bertinireal.com/download.html}. Use of Bertini\_real depends on Bertini, which itself has several important dependencies (see section \ref{sec:installation})
+Once installed, you can run Bertini\_real on an input file from the command line. After navigating to the working directory of the input file, the flow of Bertini\_real is as follows:
+\begin{enumerate}
+\item Run Bertini on an input file using the \texttt{tracktype:1} setting. This is done by typing in the command line: \texttt{bertini} with an input file named \texttt{input}. Bertini will produce a Numerical Irreducible Decomposition that will be used by Bertini\_real.
+\item Run Bertini\_real on the same input file. Similarly, just type \texttt{bertini\_real} in the command line. Bertini\_real will provide a cellular decomposition of the real portion of a one- or two- dimensional complex algebraic set.
+\item Visualize the results of Bertini\_real in MATLAB. Enter MATLAB and call \texttt{gather\_br\_samples}, which parses the output results of  into a .mat file, and then call \texttt{bertini\_real\_plotter}, which will plot the curve or surface in MATLAB (N.B. The MATLAB executable must be on the path to the input file for Bertini\_real to run). 
+\end{enumerate}
+
+\subsection{A Quick Example: The Cayley Cubic}
+This section will outline the steps to running Bertini, Bertini\_real, and finally visualizing the Cayley Cubic, an interesting 3D surface. The first step is to create an input file. Open up a text editor and create a file called \texttt{input}. 
+Below is the text for this input file.. A key feature to notice is the second line, where the \texttt{tracktype} configuration is set to 1. This configuration setting is necessary for Bertini\_real to run.  \newline \newline
+\texttt{CONFIG \newline
+tracktype:1;\newline
+imagthreshold:1e-5;\newline
+END;\newline
+INPUT\newline
+variable\_group x, y, z;\newline
+function f;\newline
+$f = 4 * (x^2 + y^2 + z^2) + 16*x*y*z - 1$;\newline
+END; \newline}
+\clearpage
+Once the input file is created, running Bertini is simple. Simply navigate in the command line to the directory of the input file and type \texttt{bertini}. This will run Bertini, creating the Numerical Irreducible Decomposition needed for Bertini\_real. The following should print to terminal/shell: \par
+\begin{figure}[!hb]
+	\includegraphics[width = 11cm, height = 5cm]{CayleyCubicBertiniRun.png}
+\end{figure}
+
+
+Once Bertini is finished, the output can be verified as satisfactory. Then, Bertini\_real can be run by calling \texttt{bertini\_real} in the command line. This should take roughly 20-30 seconds, with the final terminal/shell output appearing below:
+\begin{figure}[!hb]
+	\includegraphics[width = 11cm, height = 5cm]{CayleyCubicBertiniRealRun.png}
+\end{figure}
+
+Finally, MATLAB can be used to visualize the result from the Bertini\_real run. Open MATLAB and call \texttt{gather\_br\_samples}, which generates a .mat file. Then, call \texttt{bertini\_real\_plotter}. This will create a MATLAB figure, pictured below. 
+
+\begin{figure}[!hb]
+	\includegraphics[width = 11cm, height = 5cm]{CayleyCubic.png}
+\end{figure}
+
+
 \section{Compilation and Installation}
+\label{sec:installation}
+
 \subsection{Installation}
 Before installing Bertini\_real, you must first be sure to have several libraries and dependencies that the software requires. \par
-First, you must install Bertini (as a library).  The Bertini source code can be found \newline at https://bertini.nd.edu/download.html. Download the Bertini source code using the ./configure \&\& make \&\& make install process. \par
-Bertini itself has the following dependencies: a C++ compiler capable of the C++ 11 standard, an MPI (such as MPICH2), Boost $>$= 1.53, MPFR, and GMP. Instructions specifically for mac users are listed below. If on Linux, use the package manager provided (e.g. apt-get). Unfortunately, Windows users are unsupported at this time, except possibly through Cygwin or a virtual machine. If interested in porting Bertini and Bertini\_real to windows, please contact Dr. Brake at dbrake@nd.edu. Bertini\_real also is dependent on MATLAB. Once Bertini and all the necessary dependencies are installed, navigate to the directory containing Bertini\_real and install Bertini\_real via the ./configure \&\& make \&\& make install process. \par
-\subsection{Installation of Bertini/Bertini\_real on macIntosh}
+First, you must install Bertini (as a library).  The Bertini source code can be found \newline at \url{https://bertini.nd.edu/download.html}. Download the Bertini source code using the \texttt{./configure} \&\& \texttt{make} \&\& \texttt{make install} process.  Bertini itself has the following dependencies: a C++ compiler capable of the C++ 11 standard, an MPI (such as MPICH2), Boost $>$= 1.53, MPFR, and GMP. Instructions specifically for mac users are listed below. If on Linux, use the package manager provided (e.g. apt-get). Unfortunately, Windows users are unsupported at this time, except possibly through Cygwin or a virtual machine. If interested in porting Bertini and Bertini\_real to windows, please contact Dr. Brake at dbrake@nd.edu. Bertini\_real also is dependent on MATLAB. Once Bertini and all the necessary dependencies are installed, navigate to the directory containing Bertini\_real and install Bertini\_real via the \texttt{./configure} \&\& \texttt{make} \&\& \texttt{make install} process. \par
+\subsection{Installation of Bertini/Bertini\_real on macintosh}
 
-\indent If you are using a mac, we encourage the use of Homebrew (http://brew.sh) to install these packages. After installing Homebrew itself, installing the previously listed dependencies becomes simple. In terminal, just type, \texttt{brew search \_\_\_\_} to list packages related to \_\_\_\_, where \_\_\_\_ is your search (for example, GMP, Boost, or MPICH2). To download via Homebrew, type in terminal: \texttt{brew install \_\_\_\_}.
+\indent If you are using a mac, we encourage the use of Homebrew (\url{http://brew.sh}) to install these packages. After installing Homebrew itself, installing the previously listed dependencies becomes simple. In terminal,  type \texttt{brew search \_\_\_\_} to list packages related to \_\_\_\_, where \_\_\_\_ is your search (for example, GMP, Boost, or MPICH2). To download via Homebrew, type in terminal \texttt{brew install \_\_\_\_}.
 
 
 \clearpage
 \section{Using Bertini\_Real}
 \label{sec:running}
+
 \subsection{Input File}
-Running Bertini\_real starts with creating a valid input file for Bertini to run on.  With regards to Bertini\_real, the important point about the input file is the tracktype setting. The input file must have the following configuration setting: \texttt{tracktype:1}, which specifies a basic positive dimensional run for Bertini. Using this setting allows for the necessary output files to be produced for Bertini\_real to run. For more information on the structure and syntax of input files, please see the Bertini User Manual  (https://bertini.nd.edu/BertiniUsersManual.pdf).
+Running Bertini\_real starts with creating a valid input file for Bertini to run on.  With regards to Bertini\_real, the important point about the input file is the tracktype setting. The input file must have the following configuration setting: \texttt{tracktype:1}, which specifies a basic positive dimensional run for Bertini. Using this setting allows for the necessary output files to be produced for Bertini\_real to run. For more information on the structure and syntax of input files, please see the Bertini User Manual  (\url{https://bertini.nd.edu/BertiniUsersManual.pdf}).
 
 \subsection{Running Bertini}
 Once a valid input file has been created, Bertini can be run on the input file. This simply amounts to typing on the command line: \texttt{bertini filename}. If the input file is named \texttt{input}, then no filename is needed. Running Bertini will produce the witness points, the points on the curve or surface, which Bertini\_real will later track. Running Bertini also produces the witness linears which are used in the regeneration and slicing steps of the algorithm. The necessary file for Bertini\_real is called \texttt{witness\_data}. 
@@ -146,17 +177,17 @@ Below are the command line options for Bertini\_real. These are placed after the
 
 \section{Visualization}
 After running Bertini\_real, the output results can be visualized in MATLAB. First, open MATLAB and call \texttt{gather\_br\_samples}. This parses the output from Bertini\_real into a .mat file. Then, call \texttt{bertini\_real\_plotter}, which creates a handle class object and facilitates selection of parts of the decomposition to view. There are many options, all of which are documents and displayed via \texttt{help bertini\_real\_plotter} in MATLAB. To run bertini\_real\_plotter with a specific option, type in MATLAB \texttt{bertini\_real\_plotter(`option', `option\_argument')}, where the option\_argument will vary depending on the option you decide to alter. The options are listed below. 
-
+\subsection{Visualization options}
 \begin{itemize}
 
 \item \texttt{`autosave'} \newline
-By default, the autosave option is on. Thus, the autosave option can be used if you do not want a figure to be automatically saved to the working directory upon creation. Either 'false' or 0 can be used to disable autosave. (e.g. \texttt{bertini\_real\_plotter(`autosave', `false')}).
+By default, the autosave option is on. Thus, the autosave option can be used if you do not want a figure to be automatically saved to the working directory upon creation. Either `false' or 0 can be used to disable autosave. (e.g. \texttt{bertini\_real\_plotter(`autosave', `false')}).
 
 \item \texttt{`colormap'} \newline
 Users can alter the colormap used by MATLAB with the `colormap' option by providing a handle to another color map. A full list of built-in colormaps can be found online on the MATLAB help site. \newline (e.g. Using the summer colormap: \texttt{bertini\_real\_plotter(`colormap', @summer)})
 
 \item \texttt{`curve'} or \texttt{`curves'} \newline
-By default, the figure created by \texttt{bertini\_real\_plotter} allows the user to display raw curves on the figure. The user can disable this option by setting `curve'  or `curves' to false. To disable curves, the user can use '`n', `no', `none', `false', and 0. \newline (e.g \texttt{bertini\_real\_plotter(`curve', `false')})
+By default, the figure created by \texttt{bertini\_real\_plotter} allows the user to display raw curves on the figure. The user can disable this option by setting `curve'  or `curves' to false. To disable curves, the user can use `n', `no', `none', `false', and 0. \newline (e.g \texttt{bertini\_real\_plotter(`curve', `false')})
 
 \item \texttt{`faces'} \newline
 By default, the figure created in MATLAB will show both the raw curves and faces. By setting `faces' to false, only the option to display the raw curves will be given. To disable faces, you can use `n', `no', `none', `false', and 0. \newline (e.g \texttt{bertini\_real\_plotter(`faces', 'none')})
