@@ -120,6 +120,7 @@ Finally, MATLAB can be used to visualize the result from the Bertini\_real run. 
 	\includegraphics[width = 11cm, height = 5cm]{CayleyCubic.png}
 \end{figure}
 
+If you've been able to reproduce the above figure, then you've mastered the basics of bertini\_real. 
 
 \section{Compilation and Installation}
 \label{sec:installation}
@@ -171,9 +172,20 @@ Below are the command line options for Bertini\_real. These are placed after the
 \item \texttt{-version} or \texttt{-v} \newline Displays the version of Bertini\_real running on your computer. Has no required argument. 
 \end{itemize}
 
+\subsection{Additional Features}
 
+Bertini\_real is parallel enabled, using MPI. To use multiple processors, call it as you would any other MPI program: \texttt{mpiexec [options] bertini\_real}. \par
+If you are happy with the results of the bertini\_real decomposition, you may wish to refine the triangulation of the surface or curve. This can be acheived using the \texttt{sampler} program after calling \texttt{bertini\_real}. Call \texttt{sampler} on the command line, e.g. \texttt{sampler -fixed 10} to sample each cell to have $10^d$ samples on it, where d is the dimension of the component. 
 
 \section{Troubleshooting}
+\subsection{MATLAB executable}
+A common error is not having the MATLAB executable on the path to your working directory when calling \texttt{bertini\_real}. Bertini\_real requires MATLAB to run properly, and thus failure to include the MATLAB executable on the path will cause bertini\_real to fail. Below is an example of the terminal output displayed when bertini\_real is unable to locate the MATLAB executable: 
+
+\begin{figure}[!hb]
+\includegraphics[width = 13cm, height = 7cm]{MATLAB_Executable_Failure}
+\end{figure}
+
+Fixing this error involves editing \texttt{bash\_profile}. From your home directory, open \texttt{.bash\_profile} and add the following line: \texttt{export PATH=/PATH/TO/MATLAB.app/bin:\$PATH} where \texttt{PATH/TO/MATLAB.app} points to the location of the MATLAB executable. If you do not have, type \texttt{touch .bash\_profile}, which will create \texttt{.bash\_profile}, and then add \texttt{export PATH=/PATH/TO/MATLAB.app/bin:\$PATH}. This should result in the MATLAB executable being added to the path whenever opening terminal. 
 
 \section{Visualization}
 After running Bertini\_real, the output results can be visualized in MATLAB. First, open MATLAB and call \texttt{gather\_br\_samples}. This parses the output from Bertini\_real into a .mat file. Then, call \texttt{bertini\_real\_plotter}, which creates a handle class object and facilitates selection of parts of the decomposition to view. There are many options, all of which are documents and displayed via \texttt{help bertini\_real\_plotter} in MATLAB. To run bertini\_real\_plotter with a specific option, type in MATLAB \texttt{bertini\_real\_plotter(`option', `option\_argument')}, where the option\_argument will vary depending on the option you decide to alter. The options are listed below. 
