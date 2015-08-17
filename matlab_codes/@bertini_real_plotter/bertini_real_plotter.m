@@ -6,13 +6,14 @@
 % options: 
 %	'autosave'          - bool [true]
 %	'vertices', 'vert'  - bool [true]
-%	'filename', 'file   - string [BRinfo*.mat]
+%	'filename', 'file'   - string [BRinfo*.mat]
 %	'proj'              - handle to function.  no default
 %	'mono', 'monocolor' - color or RGB triple.  not on by default
 %	'labels'            - bool [true]
-%   'colormap'          - handle to colormap generating function [@jet]
-%   'linestyle'         - string, sets all curves to have this style. 
+%  	'colormap'          - handle to colormap generating function [@jet]
+%  	'linestyle'         - string, sets all curves to have this style. 
 %                            no default, curves have style by type.
+%	'curves', 'curve'   - bool [true]
 %	'faces'             - bool [true]
 %
 %
