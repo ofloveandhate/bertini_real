@@ -488,6 +488,52 @@ public:
 	
 	
 	
+	/**
+	 \brief set up a system, from a filename and a tracker_config_t.
+	 
+	 doesn't do any randomization.  sets up the SLP as local to this thing, and captures the memory to local as well.
+	 
+	 \param input_filename the name of the file for which to set up a complete system
+	 \param T the current state of the tracker
+	 */
+	void get_system(const boost::filesystem::path & input_filename, tracker_config_t * T)
+	{
+		if (have_SLP_) {
+			memory_.set_globals_to_this();
+			clearProg(SLP_, this->MPType, 1); // 1 means call freeprogeval()
+		}
+		else{
+			SLP_ = new prog_t;
+		}
+		
+		
+		int blabla;  // i would like to move this.
+		parse_input_file(input_filename, &blabla);
+		
+		
+		set_input_filename(input_filename);
+		this->MPType = T->MPType;
+		
+		
+		
+		
+		//	// setup a straight-line program, using the file(s) created by the parser
+		num_variables_ = setupProg(SLP_, T->Precision, T->MPType);
+		
+		preproc_data PPD;
+		parse_preproc_data("preproc_data", &PPD);
+		
+		
+		memory_.capture_globals();
+		memory_.set_globals_null();
+		
+		
+		
+		preproc_data_clear(&PPD);
+		
+		have_SLP_ = true;
+		
+	}
 	
 	/**
 	 \brief set up a system, based on a Decomposition.
@@ -591,7 +637,6 @@ public:
 		
 		preproc_data_clear(&PPD);
 	}
-	
 	
 	
 };

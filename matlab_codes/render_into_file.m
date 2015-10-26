@@ -7,10 +7,7 @@
 %  plotmode -- a string which forms the basis of a filename
 
 %  plot_params -- a structure with data members for setting up the save.
-%      members:  fontsize, an integer
-%                window, a 4-element vector in standard matlab format for
-%                     specifying the window into which to plot.
-%                format, a string for the format to save.  see the print
+%      members:  format, a string for the format to save.  see the print
 %                         help.
 %                format_flag, again a string for the save driver to use.
 %
@@ -36,16 +33,13 @@ display(varargin)
 if isempty(varargin)
 	
 	plot_params.fontsize = 16;
-	plot_params.window = get(gcf,'Position');
 	plot_params.format = 'eps';
-	plot_params.format_flag = 'epsc2';
+	plot_params.format_flag = 'psc2';
 	plot_params.basename = default_filename;
 elseif and(ischar(varargin{1} ), length(varargin)==1)
 	
-	plot_params.fontsize = 16;
-	plot_params.window = get(gcf,'Position');
 	plot_params.format = 'eps';
-	plot_params.format_flag = 'epsc2';
+	plot_params.format_flag = 'psc2';
 	
 	plot_params.basename = varargin{1};
 	
@@ -56,10 +50,9 @@ elseif isstruct(varargin{1})
 		error('incomplete plot_params.  add field ''basename''');
 	end
 else
-	plot_params.fontsize = 16;
 	plot_params.window = get(gcf,'Position');
 	plot_params.format = 'eps';
-	plot_params.format_flag = 'epsc2';
+	plot_params.format_flag = 'psc2';
 	plot_params.basename = default_filename;
 end
 
@@ -67,8 +60,16 @@ fig1 = gcf;
 
 set(fig1,'PaperPositionMode','auto');
 
+fig1.PaperSize = fig1.PaperPosition(3:4);
+
+
+
+
 currname = increment_name(plot_params.basename);
 nameforfile = sprintf('%s.%s',currname,plot_params.format);
+
+
+
 
 evalme = sprintf('print(fig1,''%s'',''-d%s''',nameforfile,plot_params.format_flag);
 for ii = 2:length(varargin)

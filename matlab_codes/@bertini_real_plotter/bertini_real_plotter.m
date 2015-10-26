@@ -1,6 +1,6 @@
 %
-%a class for plotting the data from a bertini_real run of any computable
-%dimension
+% a class for plotting the data from a bertini_real run of any computable
+% dimension
 %
 %
 % options: 
@@ -36,7 +36,7 @@ classdef bertini_real_plotter < handle
 		BRinfo = [];
 % 		scene = scene_manipulator();
 		
-		window = [20 20 640 640];
+		window = [20 20 1024 768];
 		figures = []
 		axes = [];
 		handles = [];
@@ -92,7 +92,7 @@ classdef bertini_real_plotter < handle
 			br_plotter.options.fontsizes.legend = 12;
 			br_plotter.options.fontsizes.labels = 16;
 			br_plotter.options.fontsizes.axis = 20;
-			br_plotter.options.line_thickness = 3;
+			br_plotter.options.line_thickness = 6;
 			br_plotter.options.autosave = true;
 			
 			br_plotter.options.labels = true;
@@ -395,13 +395,13 @@ classdef bertini_real_plotter < handle
 			end
 			
 			
+			br_plotter.options.plotted = 1;
+			
+			
+			
 			button_setup(br_plotter);
 			
 			controls(br_plotter);
-			
-			
-			br_plotter.options.plotted = 1;
-			
 			
 			if br_plotter.options.autosave
 				try
@@ -462,6 +462,8 @@ classdef bertini_real_plotter < handle
 			for ii = 1:length(b)
 				delete(br_plotter.panels.(b{ii}));
 			end
+			br_plotter.panels = [];
+			
 		end
 		
 		
@@ -534,9 +536,41 @@ classdef bertini_real_plotter < handle
 		
 		
 		
-	
-		
+		function resizeui(br_plotter,srcHandle,eventData,varargin)
+			br_plotter.window = br_plotter.figures.main.Position;
+			w = br_plotter.window;
+			if ~isempty(br_plotter.panels)
 				
+				p = br_plotter.panels.buttons.Position;
+				set(br_plotter.panels.buttons,'position',[5    w(4)-p(4)-5     p(3)    p(4)]);
+				
+				c = br_plotter.panels.common_visibility.Position;
+				v = br_plotter.panels.vertex.Position;
+				s = br_plotter.panels.surface.Position;
+				
+				
+
+				if c(4)+v(4)+s(4)+30 > w(4)-p(4)
+					
+					
+					set(br_plotter.panels.common_visibility,'position',[w(3)-c(3)-5 5 c(3)    c(4)]);
+					Q = 10+c(4);
+					set(br_plotter.panels.vertex,'position',[w(3)-v(3)-5 Q v(3)    v(4)]);
+					Q = Q+5+v(4);
+					set(br_plotter.panels.surface,'position',[w(3)-s(3)-5 Q s(3)    s(4)]);
+				else
+					set(br_plotter.panels.common_visibility,'position',[5 5 c(3) c(4)]);
+					Q = 10+c(4);
+					set(br_plotter.panels.vertex,'position',[5 Q v(3) v(4)]);
+					Q = Q+5+v(4);
+					set(br_plotter.panels.surface,'position',[5 Q s(3) s(4)]);
+				end
+				
+				
+				
+				
+			end
+		end	
 				
 	end%re: methods
 	

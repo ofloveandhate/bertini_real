@@ -1,7 +1,7 @@
 function button_setup(br_plotter)
 
 
-vertical_size = br_plotter.window(4);
+
 h = uipanel('units','pixels','visible','on');
 br_plotter.panels.buttons = h;
 
@@ -44,8 +44,8 @@ if br_plotter.dimension == 2
 	[curr_y, br_plotter.buttons.alpha] = make_button(buttontext, {@br_plotter.change_alpha}, horiz_pad, vert_spacing, curr_y, br_plotter.panels.buttons, height, width);
 end
 
+vertical_size = br_plotter.window(4);
 set(br_plotter.panels.buttons,'position',[horiz_pad    vertical_size-curr_y-vert_spacing-2     width+2*horiz_pad+2    curr_y+vert_spacing+2]);
-
 
 
 end

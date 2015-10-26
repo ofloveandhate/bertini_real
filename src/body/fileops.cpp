@@ -13,6 +13,7 @@ void WaitOnGeneratedFile(const std::string & name)
 		else if (num_waits%15==0)
 			printf("waiting for file '%s' (it's been %d seconds)\n",name.c_str(),num_waits);
 		IN = fopen(name.c_str(),"r");
+		num_waits++;
 	}
 	fclose(IN);
 }
