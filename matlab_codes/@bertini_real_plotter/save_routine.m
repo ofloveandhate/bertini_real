@@ -16,7 +16,7 @@ if and(br_plotter.options.render_faces,or(br_plotter.switches.display_faces == 1
 	render_into_file(br_plotter.options,'-r300');
 else
     br_plotter.options.format = 'eps';
-    br_plotter.options.format_flag = 'epsc2';
+    br_plotter.options.format_flag = 'psc2';
 	render_into_file(br_plotter.options);
 end
 

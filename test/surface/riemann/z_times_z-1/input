@@ -1,0 +1,55 @@
+% the example from page 340, brown and churchill
+
+%>> syms xw yw xz yz
+%>> w = xw+i*yw;
+%>> z = xz+i*yz;
+%>> w^2 - (z)*(z-1)
+%ans =
+%(xw + yw*1i)^2 - (xz + yz*1i)*(xz - 1 + yz*1i)
+%>> expand(ans)
+%ans =
+%xw^2 + xw*yw*2i - xz^2 - xz*yz*2i + xz - yw^2 + yz^2 + yz*1i
+
+
+CONFIG
+
+tracktype:1;
+tracktolbeforeeg: 1e-7;
+tracktolduringeg: 1e-8;
+finaltol: 1e-13;
+odepredictor: 7;
+
+
+endgamenum: 2;
+numsamplepoints: 5;
+
+securitylevel: 1;
+
+sharpendigits: 100;
+condnumthreshold: 1e60;
+pathtruncationthreshold: 1e20;
+
+endpointfinitethreshold: 1e15;
+
+maxcyclenum: 12;
+
+maxstepsize: 0.01;
+
+maxstepsbeforenewton: 0;
+
+securitymaxnorm: 1e15;
+
+END;
+
+
+INPUT
+
+variable_group xz, yz, xw, yw;
+
+function f_real, f_imag;
+
+f_real = xw^2 - xz^2 + xz - yw^2 + yz^2;
+
+f_imag = xw*yw*2  - xz*yz*2 + yz;
+
+END;

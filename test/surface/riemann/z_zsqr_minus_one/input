@@ -1,0 +1,44 @@
+% the example from page 340, brown and churchill
+
+CONFIG
+
+tracktype:1;
+tracktolbeforeeg: 1e-7;
+tracktolduringeg: 1e-8;
+finaltol: 1e-13;
+odepredictor: 7;
+
+
+endgamenum: 2;
+numsamplepoints: 5;
+
+securitylevel: 1;
+
+sharpendigits: 100;
+condnumthreshold: 1e60;
+pathtruncationthreshold: 1e20;
+
+endpointfinitethreshold: 1e15;
+
+maxcyclenum: 12;
+
+maxstepsize: 0.01;
+
+maxstepsbeforenewton: 0;
+
+securitymaxnorm: 1e15;
+
+END;
+
+
+INPUT
+
+variable_group xz, yz, xw, yw;
+
+function f_real, f_imag;
+
+f_real = xw^2 - xz^3 + 3*xz*yz^2 + xz - yw^2;
+
+f_imag = xw*yw*2 - xz^2*yz*3 + yz^3 + yz;
+
+END;

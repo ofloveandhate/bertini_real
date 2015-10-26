@@ -1,0 +1,22 @@
+CONFIG
+
+maxnorm: 1e10;
+securitymaxnorm: 1e10;
+condnumthreshold: 1e30;
+odepredictor: 6;
+sharpendigits: 40;
+
+tracktype:1;
+
+END;
+
+INPUT
+
+variable_group xw, yw, xz, yz;
+
+function f1, f2;
+
+f1 = xw^2-yw^2  - xz;
+f2 = 2*xw*yw - yz;
+
+END;
