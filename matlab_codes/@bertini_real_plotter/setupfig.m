@@ -21,8 +21,11 @@ function setupfig(br_plotter,varargin)
 								'Position',br_plotter.window);
 
 	set(fig,'color','w');
-	
-	set(fig,'SizeChangedFcn',@br_plotter.resizeui);
-	
+
+	if isprop(fig,'SizeChangedFcn')
+		set(fig,'SizeChangedFcn',@br_plotter.resizeui);
+	else
+		set(fig,'ResizeFcn',@br_plotter.resizeui);
+	end
 	br_plotter.figures.main = fig;
 end %re: setupfig
