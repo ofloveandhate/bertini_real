@@ -1765,10 +1765,10 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
                     solve_options.T.endgameNumber = 2;
                     
 					
-					if (current_retval_counter>=0) { // changing predictor
+					if (iterations>0) { // changing predictor
 						solve_options.T.odePredictor  = (solve_options.T.odePredictor+1) %9;
 					}
-					if (current_retval_counter>=2) {
+					if (iterations>=2) {
 						solve_options.T.maxStepSize *= 0.1;
 					}
 					
@@ -1781,26 +1781,21 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					
 					
 				case -3:
-					if (current_retval_counter<3) {
-						solve_options.T.minStepSizeBeforeEndGame *= 1e-1;
-						solve_options.T.minStepSizeDuringEndGame *= 1e-1;
-						solve_options.T.minStepSize *=  1e-1;
-					}
-					else if (current_retval_counter<4)
-					{
-						solve_options.T.maxStepSize = 0.01;
-					}
-					else{
+					
+					solve_options.T.minStepSizeBeforeEndGame *= 1e-1;
+					solve_options.T.minStepSizeDuringEndGame *= 1e-1;
+					solve_options.T.minStepSize *=  1e-1;
+					
+					if (iterations<1) {
 						solve_options.T.endgameNumber = 2;
 						solve_options.T.odePredictor  = MIN(8,solve_options.T.odePredictor+1);
-//						solve_options.T.screenOut = 2;
 					}
 					
 					break;
 					
 				case -4: // securitymax
 					
-					if (current_retval_counter<6) {
+					if (iterations<2) {
 						solve_options.T.securityMaxNorm *= 10;  // exponential increase by 10's
 																//						std::cout << "increasing securityMaxNorm to " << solve_options.T.securityMaxNorm << std::endl;
 					}
@@ -1814,7 +1809,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					
 					break;
 				case -2:
-					if (current_retval_counter<6) {
+					if (iterations<2) {
 						solve_options.T.goingToInfinity *= 10;  // exponential increase by 10's
 					}
 					else
@@ -1824,6 +1819,11 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 						solve_options.T.securityLevel = 1;
 					}
 					
+					break;
+					
+				case -200: // cycle number too high
+					solve_options.T.endgameNumber = 2;
+					solve_options.T.cycle_num_max +=3 ;
 					break;
 				default:
 					

@@ -1,6 +1,10 @@
 
 function fv_to_stl(src,hndl,fv)
 
+if nargin==0
+	error('must pass an fv to this function');
+end
+
 if nargin==1
 	fv = src;
 end
