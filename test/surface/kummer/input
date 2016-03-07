@@ -1,13 +1,28 @@
 CONFIG
 
 tracktype: 1;
+
+securitylevel:1;
+
+pathtruncationthreshold: 1e14;
+endpointfinitethreshold: 1e9;
+
+odepredictor: 6;
+
+endgamenum: 2;
+
+numsamplepoints: 4;
+
+sharpendigits: 30;
+
+condnumthreshold: 1e30;
+
 END;
 
 
 INPUT
 variable_group x, y, z;
-function f1, f2;
+function f1;
 
 f1 = x^4+y^4+z^4 - (y^2*z^2+z^2*x^2+x^2*y^2) - (x^2+y^2+z^2) +1;
-f2 = z-0;
 END;

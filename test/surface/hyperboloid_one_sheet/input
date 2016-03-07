@@ -1,0 +1,22 @@
+CONFIG
+tracktype: 1;
+odepredictor: 6;
+endgamenum:2;
+
+numsamplepoints: 4;
+
+sharpendigits: 30;
+
+finaltol: 1e-13;
+
+END;
+
+INPUT
+
+variable_group x, y, z;
+
+function f;
+
+f = x^2+y^2-z^2-1;
+
+END;
