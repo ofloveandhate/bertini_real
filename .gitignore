@@ -4,6 +4,11 @@
 *.toc
 *.synctex.*
 
+*.stl
+
+*.eps
+*.png
+
 sampler
 bertini_real
 libpartitionParse*
@@ -17,6 +22,7 @@ startRPD*
 witness_data_*
 member_points
 main_data
+midout*
 midpath_data
 preproc_data
 BRinfo*

@@ -123,14 +123,18 @@ for edge_index = 1:BRinfo.num_edges
 end
 
 
+convhulls.vertices = fv.vertices;
+convhulls.faces = [];
 
 for ii = 1:length(fv_vertices_to_convhull)
 	local_indices = fv_vertices_to_convhull{ii};
 	
 	try
-		q = convhulln(fv.vertices(local_indices,:));
+		q = convhulln(fv.vertices(local_indices,:)); %(end:-1:1)
 		q = local_indices(q);
+		q = q(:,[3 2 1]);
 		fv.faces = [fv.faces;q];
+		convhulls.faces = [convhulls.faces;q];
 	catch
 		warning('computation of convex hull for index %i failed',ii);
 	end
@@ -141,9 +145,12 @@ end
 
 
 if opt.render
-	h = patch(fv);
+	h = patch(convhulls);
 	set(h,'FaceAlpha',0.2);
-	set(gca,'DataAspectRatio',[1 1 1])
+	set(gca,'DataAspectRatio',[1 1 1]);
+	set(h,'FaceColor',[0 1 0]);
+	set(h,'EdgeColor',[0 0.5 0]);
+	cameratoolbar
 	rotate3d on 
 end
 

@@ -34,10 +34,14 @@ if opt.crit
 	curve.vertices = pc_vertices;
 	
 	temp_fv = curve_pipe_surface(curve,use_sampled,...
-			'radius',opt.radius,'n',opt.n,'render',false,'write_stl',false);
+			'radius',opt.radius,'n',opt.n,'render',opt.render_curves,'write_stl',false);
 	
 	fv.faces = [fv.faces; temp_fv.faces+size(fv.vertices,1)];
 	fv.vertices = [fv.vertices; temp_fv.vertices];
+end
+
+if opt.render_curves
+	hold on
 end
 
 if opt.sphere
@@ -45,7 +49,7 @@ if opt.sphere
 	curve.vertices = pc_vertices;
 	
 	temp_fv = curve_pipe_surface(curve,use_sampled,...
-			'radius',opt.radius,'n',opt.n,'render',false,'write_stl',false);
+			'radius',opt.radius,'n',opt.n,'render',opt.render_curves,'write_stl',false);
 	
 	fv.faces = [fv.faces; temp_fv.faces+size(fv.vertices,1)];
 	fv.vertices = [fv.vertices; temp_fv.vertices];
@@ -57,7 +61,7 @@ if opt.sing
 		curve.vertices = pc_vertices;
 
 		temp_fv = curve_pipe_surface(curve,use_sampled,...
-			'radius',opt.radius,'n',opt.n,'render',false,'write_stl',false);
+			'radius',opt.radius,'n',opt.n,'render',opt.render_curves,'write_stl',false);
 
 		fv.faces = [fv.faces; temp_fv.faces+size(fv.vertices,1)];
 		fv.vertices = [fv.vertices; temp_fv.vertices];
@@ -69,7 +73,7 @@ if opt.midslice
 		curve = BRinfo.midpoint_slices{ii};
 		curve.vertices = pc_vertices;
 		temp_fv = curve_pipe_surface(curve,use_sampled,...
-			'radius',opt.radius,'n',opt.n,'render',false,'write_stl',false);
+			'radius',opt.radius,'n',opt.n,'render',opt.render_curves,'write_stl',false);
 
 		fv.faces = [fv.faces; temp_fv.faces+size(fv.vertices,1)];
 		fv.vertices = [fv.vertices; temp_fv.vertices];
@@ -81,7 +85,7 @@ if opt.critslice
 		curve = BRinfo.critpoint_slices{ii};
 		curve.vertices = pc_vertices;
 		temp_fv = curve_pipe_surface(curve,use_sampled,...
-			'radius',opt.radius,'n',opt.n,'render',false,'write_stl',false);
+			'radius',opt.radius,'n',opt.n,'render',opt.render_curves,'write_stl',false);
 
 		fv.faces = [fv.faces; temp_fv.faces+size(fv.vertices,1)];
 		fv.vertices = [fv.vertices; temp_fv.vertices];
@@ -90,11 +94,15 @@ end
 
 if opt.render
 	h = patch(fv);
-	set(h,'FaceAlpha',0.2);
+	set(h,'FaceAlpha',0.1);
+	set(h,'EdgeAlpha',0.1);
+	set(h,'FaceColor',[0 0 1]);
+	set(h,'EdgeColor',[0 0 0.5]);
 	set(gca,'DataAspectRatio',[1 1 1])
 	rotate3d on 
 end
 
+hold off
 
 end
 
@@ -114,6 +122,7 @@ opt.critslice = true;
 opt.radius = 0.15;
 opt.n = 31;
 
+opt.render_curves = true;
 opt.render = true;
 opt.write_to_stl = false;
 

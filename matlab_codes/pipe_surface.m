@@ -145,6 +145,8 @@ end
 if render
 	h = patch(fv);
 	set(h,'FaceAlpha',0.2);
+	set(h,'FaceColor',[1 0 0]);
+	set(h,'EdgeColor',[0.5 0 0]);
 end
 
 fv.left_cap = 1:n+1;
