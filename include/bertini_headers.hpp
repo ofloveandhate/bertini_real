@@ -4,7 +4,7 @@
 
 /* \file bertini_headers.hpp */
 
-
+#include <cstddef>
 #include "mpi.h" // this *cannot* be inside an extern "C"{} wrapper.
 
 extern "C" {

@@ -6,7 +6,7 @@
  
  contains the classes and method for the triple-system tracker, midpoint_tracker.
  */
-
+#include <cstddef>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>

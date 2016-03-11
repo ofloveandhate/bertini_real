@@ -1,0 +1,49 @@
+
+
+
+CONFIG
+
+tracktype:1;
+tracktolbeforeeg: 1e-7;
+tracktolduringeg: 1e-8;
+finaltol: 1e-13;
+odepredictor: 7;
+
+
+endgamenum: 2;
+numsamplepoints: 5;
+
+securitylevel: 1;
+
+sharpendigits: 100;
+condnumthreshold: 1e60;
+pathtruncationthreshold: 1e20;
+
+endpointfinitethreshold: 1e10;
+
+maxcyclenum: 12;
+
+maxstepsize: 0.05;
+
+maxstepsbeforenewton: 0;
+
+securitymaxnorm: 1e15;
+
+END;
+
+
+INPUT
+
+variable_group xs, ys, Xz, Yz;
+
+function f_real, f_imag;
+
+
+xz = 10*Xz;
+yz = 10*Yz;
+
+f_real = 4*xz - 4*xs*xz + 4*ys*yz + 5*xs*xz^2 + 3*xs*xz^3 - 5*xs*yz^2 + 6*xz*yz^2 + 3*ys*yz^3 - 5*xz^2 - 2*xz^3 + 5*yz^2 - 9*xs*xz*yz^2 - 9*xz^2*ys*yz - 10*xz*ys*yz + 1;
+
+f_imag =  yz*4 - xs*yz*4 - xz*ys*4 - xz*yz*10 + xz^2*ys*5 - xs*yz^3*3 + xz^3*ys*3 - xz^2*yz*6 - ys*yz^2*5 + yz^3*2 + xs*xz^2*yz*9 - xz*ys*yz^2*9 + xs*xz*yz*10;
+
+END;

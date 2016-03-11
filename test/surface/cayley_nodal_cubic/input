@@ -1,0 +1,29 @@
+CONFIG
+
+tracktype:1;
+
+odepredictor: 6;
+
+sharpendigits: 60;
+
+condnumthreshold: 1e60;
+pathtruncationthreshold: 1e10;
+
+endpointfinitethreshold: 1e10;
+
+
+END;
+
+INPUT
+
+variable_group x, y, z;
+
+function f;
+
+f = 2*(x*y+x*z+y*z)-5*(x^2*y+x^2*z+x*y^2+x*z^2+y^2*z+y*z^2);
+
+
+
+
+
+END;

@@ -7,7 +7,7 @@
  \brief Direct extensions to Bertini, including single-target/source MPI sending and receiving
  */
 
-
+#include <cstddef>
 #include <iostream>
 #include "fileops.hpp"
 

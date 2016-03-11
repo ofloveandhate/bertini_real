@@ -7,7 +7,7 @@
  
  \brief contains core of the functions for isosingular deflation, which are not found in Bertini.
  */
-
+#include <cstddef>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>

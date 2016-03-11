@@ -5,7 +5,7 @@
 #include "config.h"
 
 
-
+#include <cstddef>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -49,8 +49,8 @@ class ParallelismConfig
 	
 protected:
 	
-	bool force_no_parallel_;
-	int headnode_;
+	bool force_no_parallel_ = false;
+	int headnode_ = 0;
 	int my_id_, my_id_global_;
 	int numprocs_;
 	MPI_Comm   my_communicator_;
@@ -381,7 +381,7 @@ class prog_config : public ParallelismConfig
 private:
 	
 	
-	int verbose_level_;
+	int verbose_level_ = 0;
 	
 	boost::filesystem::path called_dir_;
 	boost::filesystem::path working_dir_;
@@ -501,7 +501,7 @@ class BertiniRealConfig : public prog_config
 	bool stifle_membership_screen_; ///< boolean controlling whether stifle_text is empty or " > /dev/null"
 	std::string stifle_text_; ///<
 	
-	int quick_run_;  ///< indicator of whether to use the robust solver wherever possible
+	int quick_run_ = false;  ///< indicator of whether to use the robust solver wherever possible
 	
 	
 	bool user_sphere_; ///< flag for whether to read the sphere from a file, rather than compute it.

@@ -60,8 +60,9 @@ fig1 = gcf;
 
 set(fig1,'PaperPositionMode','auto');
 
-fig1.PaperSize = fig1.PaperPosition(3:4);
-
+if isfield(fig1,'PaperSize')
+	fig1.PaperSize = fig1.PaperPosition(3:4);
+end
 
 
 

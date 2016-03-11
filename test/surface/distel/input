@@ -1,7 +1,12 @@
 CONFIG
 printpathmodulus:45;
 tracktype: 1;
-securitymaxnorm: 1e4;
+securitymaxnorm: 1e10;
+
+
+securitylevel: 1;
+
+endgamenum: 2;
 
 CONDNUMTHRESHOLD: 1e20;
 imagthreshold: 1e-4;

@@ -1,8 +1,11 @@
 CONFIG
 
-randomseed: 8;
+randomseed: 0;
 
-sharpendigits: 16;
+endgamenum: 2;
+
+imagthreshold: 1e-5;
+sharpendigits: 30;
 tracktype: 1;
 securitymaxnorm: 1e6;
 %tracktolbeforeeg:1e-4;

@@ -6,7 +6,7 @@
  \file fileops.hpp 
  
  */
-
+#include <cstddef>
 #include <iostream>
 
 #include <stdio.h>
