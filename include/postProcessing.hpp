@@ -2,7 +2,7 @@
 #define _POST_PROCESSING_H
 
 /** \file postProcessing.hpp */
-
+#include <cstddef>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>

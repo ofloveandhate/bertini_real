@@ -2,7 +2,7 @@
 #define CURVE_H
 
 /** \file curve.hpp */
-
+#include <cstddef>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>

@@ -6,7 +6,7 @@
  
  \brief Methods for computing points such that a vector is in the left or right nullspace of a jacobian matrix, coupled with the system which generated it, and several linear projections.
  */
-
+#include <cstddef>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>

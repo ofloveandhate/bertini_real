@@ -4,7 +4,7 @@
 
 
 /** \file parallelism.hpp */
-
+#include <cstddef>
 #include <gmp.h>
 
 #include "programConfiguration.hpp"
