@@ -581,6 +581,7 @@ void Curve::adaptive_sampler_distance(VertexSet & V,
 	V.set_curr_projection(pi(0));
 	V.set_curr_input(W.input_filename());
 	
+	auto curr_proj_index = V.curr_projection();
 	
 	
 	int	num_vars = num_variables();
@@ -614,7 +615,11 @@ void Curve::adaptive_sampler_distance(VertexSet & V,
 	
 	
 
-
+	vec_mp dehom_left, dehom_right;
+	init_vec_mp(dehom_left,num_vars-1);   dehom_left->size  = num_vars-1;
+	init_vec_mp(dehom_right,num_vars-1);  dehom_right->size = num_vars-1;
+	
+	
 	
 	Vertex temp_vertex;
     
@@ -713,7 +718,7 @@ void Curve::adaptive_sampler_distance(VertexSet & V,
 				{
                     
 					vec_cp_mp(startpt,V[startpt_index].point());
-					set_mp(&(start_projection->coord[0]), &(V[startpt_index].projection_values())->coord[0]);
+					set_mp(&(start_projection->coord[0]), &(V[startpt_index].projection_values())->coord[curr_proj_index]);
 					neg_mp(&(start_projection->coord[0]), &(start_projection->coord[0]));
 					
 					
@@ -764,12 +769,15 @@ void Curve::adaptive_sampler_distance(VertexSet & V,
 					
 					
 					
-					
+					dehomogenize(&dehom_left,Wnew.point(0),num_vars);
+					dehomogenize(&dehom_right,V[left_index].point(),num_vars);
+					dehom_right->size = num_vars-1;
+					dehom_left->size = num_vars-1;
 					
 					// check how far away we were from the LEFT interval point
 					norm_of_difference(dist_away,
-									   Wnew.point(0), // the current new point
-                                       V[left_index].point());// jj is left, jj+1 is right
+									   dehom_left, // the current new point
+                                       dehom_right);// jj is left, jj+1 is right
 					
 					if ( mpf_cmp(dist_away, sampler_options.TOL )>0 ){
 						refine_next[interval_counter] = true;
@@ -781,12 +789,13 @@ void Curve::adaptive_sampler_distance(VertexSet & V,
 					interval_counter++;
 					
 					
-					
+					dehomogenize(&dehom_right,V[right_index].point(),num_vars);
+					dehom_right->size = num_vars-1;
 					
 					// check how far away we were from the RIGHT interval point
 					norm_of_difference(dist_away,
-                                       Wnew.point(0), // the current new point
-                                       V[right_index].point());
+                                       dehom_left, // the current new point
+                                       dehom_right);
 					
 					if (mpf_cmp(dist_away, sampler_options.TOL ) > 0){
 						refine_next[interval_counter] = 1;
@@ -866,6 +875,7 @@ void Curve::adaptive_sampler_distance(VertexSet & V,
 	
 	clear_mp(temp); clear_mp(temp1); clear_mp(target_projection_value);
 	clear_vec_mp(start_projection); clear_vec_mp(target_projection);
+	clear_vec_mp(dehom_right); clear_vec_mp(dehom_left);
 	clear_vec_mp(startpt);
     mpf_clear(dist_away);
 	
@@ -1167,18 +1177,22 @@ void Curve::adaptive_set_initial_refinement_flags(int & num_refinements, std::ve
 void estimate_new_projection_value(comp_mp result, vec_mp left, vec_mp right, vec_mp pi){
 	int ii;
 	
-	if (left->size != right->size) {
-		printf("attempting to estimate_new_projection_value on vectors of different size\n");
+	if (left->size < pi->size) {
+		printf("left point too short in estimate new projection value\n");
 		deliberate_segfault();
 	}
 	
+	if (right->size < pi->size) {
+		printf("left point too short in estimate new projection value\n");
+		deliberate_segfault();
+	}
     //	print_point_to_screen_matlab(left,"left");
     //	print_point_to_screen_matlab(right,"right");
     //	print_point_to_screen_matlab(pi,"pi");
 	
 	vec_mp dehom_left, dehom_right;
-	init_vec_mp(dehom_left,left->size-1);   dehom_left->size  = left->size-1;
-	init_vec_mp(dehom_right,right->size-1); dehom_right->size = right->size-1;
+	init_vec_mp(dehom_left,pi->size-1);   dehom_left->size  = pi->size-1;
+	init_vec_mp(dehom_right,pi->size-1);  dehom_right->size = pi->size-1;
 	
 	dehomogenize(&dehom_left,left,pi->size);
 	dehomogenize(&dehom_right,right,pi->size);
@@ -1349,7 +1363,7 @@ void Surface::fixed_sampler(VertexSet & V,
 	
 	std::cout << "critical slices" << std::endl;
 	for (auto ii=crit_slices_iter_begin(); ii!=crit_slices_iter_end(); ii++) {
-		ii->fixed_sampler(V,sampler_options,solve_options,target_num_samples);
+		ii->adaptive_sampler_distance(V,sampler_options,solve_options);
 	}
 	
 	
@@ -1364,7 +1378,9 @@ void Surface::fixed_sampler(VertexSet & V,
 	
 	
 	
-	
+	vec_mp dehom_left, dehom_right;
+	init_vec_mp(dehom_left,0);   dehom_left->size  = 0;
+	init_vec_mp(dehom_right,0); dehom_right->size = 0;
 	
 	
 	vec_mp blank_point;  init_vec_mp2(blank_point, 0,1024);
@@ -1424,7 +1440,9 @@ void Surface::fixed_sampler(VertexSet & V,
 	mpf_set_d(num_intervals->r,double(target_num_samples-1));
 	div_mp(interval_width,interval_width,num_intervals);
 	
-	
+	mpf_t dist_away; mpf_init(dist_away);
+	comp_mp target_projection_value;
+	init_mp2(target_projection_value,1024);
 	
 	comp_mp temp, temp2;
 	init_mp2(temp,1024); init_mp2(temp2,1024);
@@ -1690,6 +1708,24 @@ void Surface::fixed_sampler(VertexSet & V,
 					{
 						rib_indices[jj][1] = V.add_vertex(temp_vertex);
 					}
+					{
+						// copy in the start point for the multilin method, as the terminal point from the previous call.
+						vec_cp_mp(W_multilin.point(0),V[rib_indices[jj][1]].point());
+						W_multilin.point(0)->size = this->num_variables();
+						neg_mp(&W_multilin.linear(0)->coord[0],&(V[rib_indices[jj][1]].projection_values())->coord[0]);
+						neg_mp(&W_multilin.linear(1)->coord[0],&(V[rib_indices[jj][1]].projection_values())->coord[1]);
+						
+						
+						
+						// need to set the values of the projections in the linears -- they are not unit-scaled as is the midpoint tracker.
+						
+						// pi0
+						// target_proj_0 = (right-left)*md_config.u_target + left
+						sub_mp(temp, md_config.crit_val_right, md_config.crit_val_left);
+						mul_mp(temp, temp, md_config.u_target);
+						add_mp(temp,temp,md_config.crit_val_left);
+						neg_mp(&target_multilin_linears[0]->coord[0],temp);
+					}
 				}
 				
 				
@@ -1704,86 +1740,175 @@ void Surface::fixed_sampler(VertexSet & V,
 			
 			
 			
+			std::vector<int> refined_rib;
+			refined_rib.push_back(curr_bottom_index);
+			refined_rib.push_back(curr_top_index);
 			
-			for (int kk=2; kk<target_num_samples-1; kk++) {
-				add_mp(md_config.v_target,md_config.v_target,interval_width);
+			
+			std::vector<bool> refine_flags(1, true);
+			bool need_refinement = true;
+			
+			std::cout << "going into refinement\n";
+			while (need_refinement)
+			{
+				std::cout << "refining rib " << jj << "\n";
+				for (auto qwer : refine_flags)
+					std::cout << qwer << " ";
+				std::cout << std::endl;
 				
-
-				// copy in the start point for the multilin method, as the terminal point from the previous call.
-				vec_cp_mp(W_multilin.point(0),V[rib_indices[jj][kk-1]].point());
+				for (auto qwer : refined_rib)
+					std::cout << qwer << " ";
+				std::cout << std::endl;
 				
-				W_multilin.point(0)->size = this->num_variables();
+				assert( (refine_flags.size() == refined_rib.size()-1) && "refinement flags must be one less than num entries on rib");
 				
-				neg_mp(&W_multilin.linear(0)->coord[0],&(V[rib_indices[jj][kk-1]].projection_values())->coord[0]);
-				neg_mp(&W_multilin.linear(1)->coord[0],&(V[rib_indices[jj][kk-1]].projection_values())->coord[1]);
-				
-				
-				
-				// need to set the values of the projections in the linears -- they are not unit-scaled as is the midpoint tracker.
-				
-				// pi0
-				// target_proj_0 = (right-left)*md_config.u_target + left
-				sub_mp(temp, md_config.crit_val_right, md_config.crit_val_left);
-				mul_mp(temp, temp, md_config.u_target);
-				add_mp(temp,temp,md_config.crit_val_left);
-				neg_mp(&target_multilin_linears[0]->coord[0],temp);
-				
-				// pi1
-				// target_proj_1 = (top-bottom)*md_config.v_target + bottom
-				sub_mp(temp,&(V[ curr_top_index ].projection_values())->coord[1],&(V[ curr_bottom_index ].projection_values())->coord[1]);
-				mul_mp(temp,temp,md_config.v_target);
-				add_mp(temp,temp,&(V[ curr_bottom_index ].projection_values())->coord[1])
-				neg_mp(&target_multilin_linears[1]->coord[0],temp);
-				
-				
-				
-				
-				
-				SolverOutput fillme;
-				int success_indicator = multilin_solver_master_entry_point(W_multilin,         // WitnessSet
-																		   fillme, // the new data is put here!
-																		   target_multilin_linears,
-																		   ml_config,
-																		   solve_options);
-				
-				
-				
-				
-				if (success_indicator!=SUCCESSFUL) {
-					std::cout << color::red() << "something horrible happened" << color::console_default() << std::endl;
-					rib_indices[jj].resize(kk);
-					success_indicator_total = false;
-					break;
+				std::vector<int> temp_rib;
+				std::vector<bool> refine_flags_next;
+				need_refinement = false; // reset to no, in case don't need.  will set to true if point too far apart
+			
+				for (unsigned rr=0; rr<refine_flags.size(); ++rr) {
+					temp_rib.push_back(refined_rib[rr]);
+					if (refine_flags[rr]) {
+						estimate_new_projection_value(target_projection_value,				// the new value
+													  V[refined_rib[rr]].point(),	//
+													  V[refined_rib[rr+1]].point(), // two points input
+													  pi(1));
+						
+						neg_mp(&target_multilin_linears[1]->coord[0],target_projection_value);
+						print_comp_matlab(&target_multilin_linears[1]->coord[0],"pi1val");
+						
+						SolverOutput track_result;
+						success_indicator = multilin_solver_master_entry_point(W_multilin,         // WitnessSet
+																			   track_result, // the new data is put here!
+																			   target_multilin_linears,
+																			   ml_config,
+																			   solve_options);
+						
+						WitnessSet W_new;
+						track_result.get_noninfinite_w_mult_full(W_new);
+						
+						if (W_new.num_points()==0) {
+							std::cout << color::red() << "multilin tracker did not return any noninfinite points :(" << color::console_default() << std::endl;
+							success_indicator_total = false;
+							need_refinement = false; // bail out of the refinement loop...
+							break;
+						}
+						
+						temp_vertex.set_point(W_new.point(0));
+						temp_vertex.set_type(SURFACE_SAMPLE_POINT);
+						temp_rib.push_back(V.add_vertex(temp_vertex));
+						
+						
+						dehomogenize(&dehom_left,V[refined_rib[rr]].point());
+						dehomogenize(&dehom_right,W_new.point(0));
+						
+						norm_of_difference(dist_away,
+										   dehom_left, // the current new point
+										   dehom_right);
+						
+						
+						refine_flags_next.push_back(mpf_cmp(dist_away, sampler_options.TOL)>0);
+						if (refine_flags_next.back())
+							need_refinement = true;
+						
+						
+						dehomogenize(&dehom_left,V[refined_rib[rr+1]].point());
+						
+						norm_of_difference(dist_away,
+										   dehom_left, // the current new point
+										   dehom_right);
+						
+						
+						refine_flags_next.push_back(mpf_cmp(dist_away, sampler_options.TOL)>0);
+						if (refine_flags_next.back())
+							need_refinement = true;
+						
+						
+					}
+					else
+					{
+						refine_flags_next.push_back(false);
+					}
+					
 				}
-				
-				WitnessSet W_new;
-				fillme.get_noninfinite_w_mult_full(W_new);
-				
-				
-				if (W_new.num_points()==0) {
-					std::cout << color::red() << "multilin tracker did not return any points :(" << color::console_default() << std::endl;
-					rib_indices[jj].resize(kk);
-					// do something other than continue here.  this is terrible.
-					success_indicator_total = false;
-					break;
-				}
-				
-
-				temp_vertex.set_point(W_new.point(0));
-				temp_vertex.set_type(SURFACE_SAMPLE_POINT);
-				
-				rib_indices[jj][kk] = V.add_vertex(temp_vertex);
-				
-//				if (sampler_options.no_duplicates){
-//					rib_indices[jj][kk] = index_in_vertices_with_add(V, temp_vertex);
-//				}
-//				else
-//				{
-//					
-//				}
-				
-				
+				temp_rib.push_back(refined_rib.back());
+				swap(temp_rib,refined_rib);
+				swap(refine_flags_next,refine_flags);
 			}
+			std::cout << "done refining" << std::endl;
+			for (auto qwer : refined_rib)
+				std::cout << qwer << " ";
+			std::cout << std::endl;
+			
+			swap(rib_indices[jj], refined_rib);
+			
+//			for (int kk=2; kk<target_num_samples-1; kk++) {
+//
+//				std::cout << "rib so far" << std::endl;
+//				for (auto qwer : overall_refined_rib)
+//					std::cout << qwer << " ";
+//				std::cout << std::endl;
+//				
+//				std::vector<int> temp_rib;
+//				temp_rib.push_back(curr_bottom_index);
+//				
+//				
+//				add_mp(md_config.v_target,md_config.v_target,interval_width);
+//				
+//
+//
+//				
+//				print_comp_matlab(&target_multilin_linears[1]->coord[0],"pi1val");
+//				
+//				
+//				SolverOutput fillme;
+//				int success_indicator = multilin_solver_master_entry_point(W_multilin,         // WitnessSet
+//																		   fillme, // the new data is put here!
+//																		   target_multilin_linears,
+//																		   ml_config,
+//																		   solve_options);
+//				
+//				
+//				
+//				if (success_indicator!=SUCCESSFUL) {
+//					std::cout << color::red() << "something horrible happened" << color::console_default() << std::endl;
+//					rib_indices[jj].resize(kk);
+//					success_indicator_total = false;
+//					break;
+//				}
+//				
+//				WitnessSet W_new;
+//				fillme.get_noninfinite_w_mult_full(W_new);
+//				
+//				
+//				if (W_new.num_points()==0) {
+//					std::cout << color::red() << "multilin tracker did not return any noninfinite points :(" << color::console_default() << std::endl;
+//					rib_indices[jj].resize(kk);
+//					// do something other than continue here.  this is terrible.
+//					success_indicator_total = false;
+//					break;
+//				}
+//				
+//				
+//				dehomogenize(&dehom_left,V[temp_rib.back()].point());
+//				dehomogenize(&dehom_right,W_new.point(0));
+//				
+//				print_point_to_screen_matlab(pi(1),"p1");
+//				print_point_to_screen_matlab(dehom_left,"left_sample");
+//				print_point_to_screen_matlab(dehom_right,"right_sample");
+//				
+//				
+//				norm_of_difference(dist_away,
+//								   dehom_left, // the current new point
+//								   dehom_right);
+//				
+//				temp_vertex.set_point(W_new.point(0));
+//				temp_vertex.set_type(SURFACE_SAMPLE_POINT);
+//				
+//				
+//				overall_refined_rib.insert(overall_refined_rib.end(),temp_rib.begin(), temp_rib.end());
+//				
+//			} // for (int kk=2; kk<target_num_samples-1; kk++), sampling a single rib
 			
 			if (!success_indicator_total) {
 				std::cout << color::red() << "something horrible happened" << color::console_default() << std::endl;
@@ -1791,7 +1916,7 @@ void Surface::fixed_sampler(VertexSet & V,
 			}
 			
 			
-		}
+		} // re: (int jj=1; jj<target_num_samples-1; jj++) that is, sampling the ribs for an entire face
 		
 
 		if (success_indicator_total) {
@@ -1819,9 +1944,10 @@ void Surface::fixed_sampler(VertexSet & V,
 		
 		
 
-	}
-	
-	
+		
+	} // re: for ii, that is for the faces
+	clear_mp(target_projection_value);
+	mpf_clear(dist_away);
 	clear_mp(temp);
 	clear_mp(temp2);
 	clear_mp(interval_width);
@@ -1830,6 +1956,8 @@ void Surface::fixed_sampler(VertexSet & V,
 	clear_vec_mp(target_multilin_linears[0]);
 	clear_vec_mp(target_multilin_linears[1]);
 	free(target_multilin_linears);
+	
+	clear_vec_mp(dehom_right);clear_vec_mp(dehom_left);
 	return;
 }
 

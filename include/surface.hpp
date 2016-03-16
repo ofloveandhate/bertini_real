@@ -412,7 +412,7 @@ public:
 	 */
 	bool is_degenerate()
 	{
-		if (crit_slice_index_<0) {
+		if (crit_slice_index_<0 || left_edges_.size()==0 || right_edges_.size()==0) {
 			return true;
 		}
 		else{
