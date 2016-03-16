@@ -72,7 +72,7 @@ public:
 	 \brief get a pointer to the comp_mp of the left critical value.
 	 \return pointer to a comp_mp of the critical value of the left edge.
 	 */
-	comp_mp * left_crit_val()
+	const comp_mp * left_crit_val() const
 	{
 		return & left_crit_val_;
 	}
@@ -90,7 +90,7 @@ public:
 	 \brief get a pointer to the comp_mp of the right critical value.
 	 \return pointer to a comp_mp of the critical value of the right edge.
 	 */
-	comp_mp * right_crit_val()
+	const comp_mp * right_crit_val() const
 	{
 		return & right_crit_val_;
 	}
@@ -393,7 +393,7 @@ public:
 	 \param target The ID of the MPI target to send the Face to.
 	 \param mpi_config The current state of MPI
 	 */
-	void send(int target, ParallelismConfig & mpi_config);
+	void send(int target, ParallelismConfig & mpi_config) const;
 	
 	
 	
@@ -410,14 +410,19 @@ public:
 	 
 	 \return Boolean, true if degenerate (crit_slice_index < 0), false if not.
 	 */
-	bool is_degenerate()
+	bool is_degenerate() const
 	{
-		if (crit_slice_index_<0 || left_edges_.size()==0 || right_edges_.size()==0) {
+		if (crit_slice_index_<0) {
 			return true;
 		}
 		else{
 			return false;
 		}
+	}
+	
+	bool is_malformed() const
+	{
+		return (left_edges_.size()==0 || right_edges_.size()==0);
 	}
 	
 private:
@@ -762,7 +767,7 @@ public:
 	 
 	 \return the number of faces.
 	 */
-	unsigned int num_faces()
+	unsigned int num_faces() const
 	{
 		return num_faces_;
 	}
@@ -806,24 +811,24 @@ public:
 	
 	
 	
-	std::vector< Curve >::iterator mid_slices_iter_begin()
+	std::vector< Curve >::iterator mid_slices_iter_begin() 
 	{
 		return mid_slices_.begin();
 	}
 	
-	std::vector< Curve >::iterator mid_slices_iter_end()
+	std::vector< Curve >::iterator mid_slices_iter_end() 
 	{
 		return mid_slices_.end();
 	}
 	
 	
 	
-	std::vector< Curve >::iterator crit_slices_iter_begin()
+	std::vector< Curve >::iterator crit_slices_iter_begin() 
 	{
 		return crit_slices_.begin();
 	}
 	
-	std::vector< Curve >::iterator crit_slices_iter_end()
+	std::vector< Curve >::iterator crit_slices_iter_end() 
 	{
 		return crit_slices_.end();
 	}
@@ -887,14 +892,14 @@ public:
 	 
 	 \param base the name of the folder to which to print the Decomposition.
 	 */
-	void print(boost::filesystem::path base);
+	void print(boost::filesystem::path base) const;
 	
 	/**
 	 \brief print all the faces in a Decomposition to a file named outputfile.
 	 
 	 \param outputfile the name of the file into which to dump the faces (and a bit of header).
 	 */
-	void print_faces(boost::filesystem::path outputfile);
+	void print_faces(boost::filesystem::path outputfile) const;
 	
 	
 
@@ -1190,7 +1195,7 @@ public:
 	 \param next_worker The MPI ID of the worker to request to make the Face.
 	 \param mpi_config the current state of MPI.
 	 */
-	void master_face_requester(int ii, int jj, int next_worker, ParallelismConfig & mpi_config);
+	void master_face_requester(int ii, int jj, int next_worker, ParallelismConfig & mpi_config) const;
 	
 	
 	/**
@@ -1200,7 +1205,7 @@ public:
 	 \param jj which edge on the critslice the Face will correspond to.
 	 \param mpi_config the current state of MPI.
 	 */
-	void worker_face_requester(int & ii, int & jj, ParallelismConfig & mpi_config);
+	void worker_face_requester(int & ii, int & jj, ParallelismConfig & mpi_config) const;
 	
 	
 	/**
@@ -1237,14 +1242,26 @@ public:
 					   SolverConfiguration & solve_options);
 	
 	
+	/**
+	\brief Sample a face of the surface.
+
+	\param face_index The integer index of the face to sample.
+	*/
+	void FixedSampleFace(int face_index, VertexSet & V, sampler_configuration & sampler_options,
+										SolverConfiguration & solve_options);
+
 	
-	
+	/**
+	Given straight-line sampled ribs on a face, stitch together to form a triangulation, and add to the samples have for the surface.
+	*/
+	void StitchRibs(std::vector<std::vector<int> > const& ribs, VertexSet & V);
+
 	/**
 	 \brief Write the results of a sampling run to a folder.
 	 
 	 \param base_path The name of the folder into which to write the sampling data.
 	 */
-	void  output_sampling_data(boost::filesystem::path base_path);
+	void  output_sampling_data(boost::filesystem::path base_path) const;
 	
 	
 	
@@ -1281,7 +1298,7 @@ public:
 	 \return A pointer to the curve with the name, or NULL if it is not found.
 	 \param findme The name you want to appear as the input_filename of the curve.
 	 */
-	Curve * curve_with_name(const std::string & findme)
+	const Curve * curve_with_name(const std::string & findme) const
 	{
 		
 		if (findme.compare(crit_curve_.input_filename().filename().string())==0) {
@@ -1324,7 +1341,7 @@ public:
 	 \param target The MPI ID of the process to send it to.
 	 \param mpi_config The current state of MPI.
 	 */
-	void send(int target, ParallelismConfig & mpi_config);
+	void send(int target, ParallelismConfig & mpi_config) const;
 	
 	/**
 	 \brief Single-source MPI receive function.

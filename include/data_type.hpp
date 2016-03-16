@@ -301,7 +301,7 @@ public:
 	/**
 	 print to cout
 	 */
-	void print(){
+	void print() const{
 		std::cout << "active: ";
 		for (int ii=0; ii<num_active_registers; ii++)
 			std::cout << active_registers[ii] << " ";
@@ -398,7 +398,7 @@ public:
 	 \param base_index The index of the input function.
 	 \return the level of deficiency of randomized_func with respect to base_index.
 	 */
-	int deficiency(unsigned int randomized_func, unsigned int base_index)
+	int deficiency(unsigned int randomized_func, unsigned int base_index) const
 	{
 		return structure_matrix[randomized_func][base_index];
 	}
@@ -409,7 +409,7 @@ public:
 	 
 	 \return the degrees in vector form.
 	 */
-	std::vector<int> & rand_degrees()
+	const std::vector<int>& rand_degrees() const
 	{
 		return randomized_degrees;
 	}
@@ -422,7 +422,7 @@ public:
 	 \param index the index of the output function.
 	 \return the degree of the output function
 	 */
-	int randomized_degree(unsigned int index)
+	int randomized_degree(unsigned int index) const
 	{
 		if (index>= randomized_degrees.size()) {
 			throw std::out_of_range("trying to access a randomized degree out of range");
@@ -610,7 +610,7 @@ public:
 	 \return int degree of original function with input index.
 	 \param loc the index of the base function to get degree of.
 	 */
-	int base_degree(unsigned int loc)
+	int base_degree(unsigned int loc) const
 	{
 		
 		
@@ -2172,7 +2172,17 @@ public:
 	}
 	
 	
-	
+	/**
+	 \brief get the point in the Vertex
+	 
+	 \return the point in vec_mp form
+	 */
+	const vec_mp& point() const
+	{
+		return pt_mp_;
+	}
+
+
 	/**
 	 \brief single target mpi send.
 	 
@@ -2183,7 +2193,7 @@ public:
 	 \param target The MPI ID of the target for this send
 	 \param mpi_config current mpi settings
 	 */
-	void send(int target, ParallelismConfig & mpi_config);
+	void send(int target, ParallelismConfig & mpi_config) const;
 	
 	
 	/**
@@ -2293,7 +2303,7 @@ public:
 	 get the tolerance for two points being the same
 	 \return the L2 tolerance for whether two points are the same.
 	 */
-	double same_point_tolerance()
+	double same_point_tolerance() const
 	{
 		return same_point_tolerance_;
 	}
@@ -2345,7 +2355,19 @@ public:
 	 \return the ith Vertex, or a reference to it.
 	 \param index The index of the vertex to get.
 	 */
-	const Vertex& operator [](unsigned int index) const
+	const Vertex& GetVertex(unsigned int index) const
+	{
+		if (index >= vertices_.size()) {
+			throw std::out_of_range("trying to access Vertex out of range in VertexSet.");
+		}
+		return vertices_[index];
+	}
+
+	/**
+	 \return the ith Vertex, or a reference to it.
+	 \param index The index of the vertex to get.
+	 */
+	const Vertex& operator[](unsigned int index) const
 	{
 		if (index >= vertices_.size()) {
 			throw std::out_of_range("trying to access Vertex out of range in VertexSet.");
@@ -2357,7 +2379,7 @@ public:
 	 \return the ith Vertex, or a reference to it.
 	 \param index The index of the vertex to get.
 	 */
-	Vertex & operator [](unsigned int index)
+	Vertex & operator[](unsigned int index)
 	{
 		if (index >= vertices_.size()) {
 			throw std::out_of_range("trying to access Vertex out of range in VertexSet.");
@@ -2377,7 +2399,7 @@ public:
 	}
 	
 	
-	void print_to_screen(); ///< operator for displaying information to screen
+	void print_to_screen() const; ///< operator for displaying information to screen
 	
 	
 	/**
@@ -2721,7 +2743,7 @@ public:
 	 \param target who to send to
 	 \param mpi_config the current mpi configuration
 	 */
-	void send(int target, ParallelismConfig & mpi_config);
+	void send(int target, ParallelismConfig & mpi_config) const;
 	
 	
 	
@@ -3410,7 +3432,7 @@ public:
 	 \param target the integer id of the target of the send
 	 \param mpi_config the current state of parallelism
 	 */
-	void send(int target, ParallelismConfig & mpi_config)
+	void send(int target, ParallelismConfig & mpi_config) const
 	{
 		int buffer = midpt();
 		MPI_Send(&buffer, 1, MPI_INT, target, CELL, mpi_config.comm());
@@ -3517,7 +3539,7 @@ public:
 	 \param testpoint the point for which to search
 	 */
 	int index_in_vertices(VertexSet &V,
-                          vec_mp testpoint);
+                          vec_mp testpoint) const;
 	
 	
 	/**
@@ -3546,7 +3568,7 @@ public:
 	 
 	 \param outputfile the name of the file to which to write.
 	 */
-	virtual void print(boost::filesystem::path outputfile);
+	virtual void print(boost::filesystem::path outputfile) const;
 	
 	
 	
@@ -3609,7 +3631,7 @@ public:
 	 
 	 \param base the base folder name to print the Decomposition.
 	 */
-	void output_main(const boost::filesystem::path base);
+	void output_main(const boost::filesystem::path base) const;
 	
 	
 	/**
@@ -3683,7 +3705,7 @@ public:
 	 \param target the ID of the worker to which to send.
 	 \param mpi_config the current configuration of MPI
 	 */
-	void send(int target, ParallelismConfig & mpi_config);
+	void send(int target, ParallelismConfig & mpi_config) const;
 	
 	/**
 	 \brief single source MPI receive.

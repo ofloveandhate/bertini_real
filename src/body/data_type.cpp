@@ -2460,7 +2460,7 @@ void Vertex::set_point(const vec_mp new_point)
 
 
 
-void Vertex::send(int target, ParallelismConfig & mpi_config)
+void Vertex::send(int target, ParallelismConfig & mpi_config) const
 {
 	
 	send_vec_mp(pt_mp_, target);
@@ -2793,7 +2793,7 @@ int VertexSet::add_vertex(const Vertex & source_vertex)
 }
 
 
-void VertexSet::print_to_screen()
+void VertexSet::print_to_screen() const
 {
 	
 	vec_mp temp; init_vec_mp(temp,0); temp->size = 0;
@@ -2804,7 +2804,7 @@ void VertexSet::print_to_screen()
 		temp->size = num_natural_variables()-1;
 		
 		print_point_to_screen_matlab(temp,ss.str());
-		print_point_to_screen_matlab(vertices_[ii].projection_values(),"projection_values");
+		print_point_to_screen_matlab(vertices_[ii].get_projection_values(),"projection_values");
 		printf("type: %d\n", vertices_[ii].type());
 	}
 }
@@ -2964,7 +2964,7 @@ void VertexSet::print(boost::filesystem::path outputfile) const
 
 
 
-void VertexSet::send(int target, ParallelismConfig & mpi_config)
+void VertexSet::send(int target, ParallelismConfig & mpi_config) const
 {
 	
 
@@ -2983,8 +2983,8 @@ void VertexSet::send(int target, ParallelismConfig & mpi_config)
 	
 	delete [] buffer2;
 	
-	
-	MPI_Send(&same_point_tolerance_,1,MPI_DOUBLE,target,VERTEX_SET, mpi_config.comm());
+	auto send_me = same_point_tolerance_;
+	MPI_Send(&send_me,1,MPI_DOUBLE,target,VERTEX_SET, mpi_config.comm());
 //	std::cout << "sending " << num_projections << " projections" << std::endl;
 	
 	buffer2 = new int[num_projections_];
@@ -3018,7 +3018,7 @@ void VertexSet::send(int target, ParallelismConfig & mpi_config)
 	
 	
 	for (unsigned int ii=0; ii<num_vertices_; ii++) {
-		vertices_[ii].send(target, mpi_config);
+		GetVertex(ii).send(target, mpi_config);
 	}
 	
 	
@@ -3196,7 +3196,7 @@ int Decomposition::add_vertex(VertexSet & V, Vertex source_vertex)
 
 
 int Decomposition::index_in_vertices(VertexSet & V,
-									 vec_mp testpoint)
+									 vec_mp testpoint) const
 {
 #ifdef functionentry_output
 	std::cout << "Decomposition::index_in_vertices" << std::endl;
@@ -3321,7 +3321,7 @@ int Decomposition::setup(boost::filesystem::path INfile)
 
 
 
-void Decomposition::print(boost::filesystem::path base)
+void Decomposition::print(boost::filesystem::path base) const
 {
 	
 #ifdef functionentry_output
@@ -3370,7 +3370,7 @@ void Decomposition::print(boost::filesystem::path base)
     
     fprintf(OUT,"\n\n");
     
-    print_mp(OUT, 0, this->sphere_radius_);
+    print_mp(OUT, 0, const_cast<_comp_mp*>(this->sphere_radius_));
     fprintf(OUT, "\n%d\n",this->sphere_center_->size);
     
     for (int jj=0; jj<this->sphere_center_->size; jj++) {
@@ -3554,7 +3554,7 @@ void Decomposition::copy_data_from_witness_set(const WitnessSet & W)
 	this->W_ = W;
 }
 
-void Decomposition::output_main(const boost::filesystem::path base)
+void Decomposition::output_main(const boost::filesystem::path base) const
 {
 #ifdef functionentry_output
 	std::cout << "Decomposition::output_main" << std::endl;
@@ -3603,7 +3603,7 @@ void Decomposition::output_main(const boost::filesystem::path base)
 
 
 
-void Decomposition::send(int target, ParallelismConfig & mpi_config)
+void Decomposition::send(int target, ParallelismConfig & mpi_config) const
 {
 #ifdef functionentry_output
 	std::cout << "Decomposition::send" << std::endl;

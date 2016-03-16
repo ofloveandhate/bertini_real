@@ -1649,6 +1649,10 @@ protected:
 	
 public:
 	
+	bool IsRandomized() const
+	{
+		return !randomizer_->is_square();
+	}
 	
 	
 	/**

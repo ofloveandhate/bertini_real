@@ -1765,7 +1765,7 @@ void Surface::worker_connect(SolverConfiguration & solve_options, BertiniRealCon
 
 
 
-void Surface::master_face_requester(int ii, int jj, int next_worker, ParallelismConfig & mpi_config)
+void Surface::master_face_requester(int ii, int jj, int next_worker, ParallelismConfig & mpi_config) const
 {
 #ifdef functionentry_output
 	std::cout << "surface::master_face_requester" << std::endl;
@@ -1782,7 +1782,7 @@ void Surface::master_face_requester(int ii, int jj, int next_worker, Parallelism
 }
 
 
-void Surface::worker_face_requester(int & ii, int & jj, ParallelismConfig & mpi_config)
+void Surface::worker_face_requester(int & ii, int & jj, ParallelismConfig & mpi_config) const
 {
 #ifdef functionentry_output
 	std::cout << "surface::worker_face_requester" << std::endl;
@@ -1885,8 +1885,8 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 	
 	
 	
-	Curve * top_curve = curve_with_name(md_config.system_name_top);
-	Curve * bottom_curve = curve_with_name(md_config.system_name_bottom);
+	const Curve * top_curve = curve_with_name(md_config.system_name_top);
+	const Curve * bottom_curve = curve_with_name(md_config.system_name_bottom);
 	
 	//man, i hate checking for null...
 	
@@ -2490,7 +2490,7 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 
 
 
-void Surface::send(int target, ParallelismConfig & mpi_config)
+void Surface::send(int target, ParallelismConfig & mpi_config) const
 {
 #ifdef functionentry_output
 	std::cout << "surface::send" << std::endl;
@@ -2515,17 +2515,17 @@ void Surface::send(int target, ParallelismConfig & mpi_config)
 	
 
 	
-	for (auto ii=faces_.begin(); ii!=faces_.end(); ii++) {
-		ii->send(target, mpi_config);
+	for (auto f=faces_.begin(); f!=faces_.end(); f++) {
+		f->send(target, mpi_config);
 	}
 	
 	
-	for (auto ii=mid_slices_.begin(); ii!=mid_slices_.end(); ii++) {
-		ii->send(target, mpi_config);
+	for (auto s=mid_slices_.begin(); s!=mid_slices_.end(); s++) {
+		s->send(target, mpi_config);
 	}
 	
-	for (auto ii=crit_slices_.begin(); ii!=crit_slices_.end(); ii++) {
-		ii->send(target, mpi_config);
+	for (auto s=crit_slices_.begin(); s!=crit_slices_.end(); s++) {
+		s->send(target, mpi_config);
 	}
 	
 	crit_curve_.send(target, mpi_config);
@@ -2633,7 +2633,7 @@ void Surface::receive(int source, ParallelismConfig & mpi_config)
 
 
 
-void Surface::print(boost::filesystem::path base)
+void Surface::print(boost::filesystem::path base) const
 {
 	
 #ifdef functionentry_output
@@ -2721,7 +2721,7 @@ void Surface::print(boost::filesystem::path base)
 
 
 
-void Surface::print_faces(boost::filesystem::path outputfile)
+void Surface::print_faces(boost::filesystem::path outputfile) const
 {
 #ifdef functionentry_output
 	std::cout << "surface::print_faces" << std::endl;
@@ -3056,7 +3056,7 @@ void create_sphere_system(boost::filesystem::path input_file, boost::filesystem:
 
 
 
-void Face::send(int target, ParallelismConfig & mpi_config)
+void Face::send(int target, ParallelismConfig & mpi_config) const
 {
 #ifdef functionentry_output
 	std::cout << "Face::send" << std::endl;

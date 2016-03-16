@@ -775,13 +775,14 @@ void serial_tracker_loop(trackingStats *trackCount,
     int (*curr_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = NULL;
 	int (*change_prec)(void const *, int) = NULL;
 	int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *) = NULL;
-	
+	bool randomized;
 	switch (solve_options.T.MPType) {
 		case 0:
 			curr_eval_d = ED_d->evaluator_function_d;
 			curr_eval_mp = ED_d->evaluator_function_mp;
 			change_prec = ED_d->precision_changer;
 			find_dehom = ED_d->dehomogenizer;
+			randomized = ED_d->IsRandomized();
 			break;
             
 		default:
@@ -789,6 +790,7 @@ void serial_tracker_loop(trackingStats *trackCount,
 			curr_eval_mp = ED_mp->evaluator_function_mp;
 			change_prec = ED_mp->precision_changer;
 			find_dehom = ED_mp->dehomogenizer;
+			randomized = ED_mp->IsRandomized();
 			break;
 			
 	}
@@ -864,21 +866,26 @@ void serial_tracker_loop(trackingStats *trackCount,
 		
 		int issoln;
 		
-		switch (solve_options.T.MPType) {
-			case 0:
-                issoln = ED_d->is_solution_checker_d(&EG,  &solve_options.T, ED_d);
-                
-				break;
-				
-			default:
-				
-				if (EG.prec<64){
-					issoln = ED_mp->is_solution_checker_d(&EG,  &solve_options.T, ED_d); }
-				else {
-					issoln = ED_mp->is_solution_checker_mp(&EG, &solve_options.T, ED_mp); }
-				break;
+		if (randomized){
+			switch (solve_options.T.MPType) {
+				case 0:
+	                issoln = ED_d->is_solution_checker_d(&EG,  &solve_options.T, ED_d);
+	                
+					break;
+					
+				default:
+					
+					if (EG.prec<64){
+						issoln = ED_mp->is_solution_checker_d(&EG,  &solve_options.T, ED_d); }
+					else {
+						issoln = ED_mp->is_solution_checker_mp(&EG, &solve_options.T, ED_mp); }
+					break;
+			}
 		}
-		
+		else
+		{
+			issoln = true;
+		}
 		
 		
 		//get the terminal time in double form
@@ -1067,7 +1074,7 @@ void worker_tracker_loop(trackingStats *trackCount,
     int (*curr_eval_mp)(point_mp, point_mp, vec_mp, mat_mp, mat_mp, point_mp, comp_mp, void const *) = NULL;
 	int (*change_prec)(void const *, int) = NULL;
 	int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *) = NULL;
-	
+
 	switch (solve_options.T.MPType) {
 		case 0:
 			curr_eval_d = ED_d->evaluator_function_d;
@@ -1326,6 +1333,16 @@ int receive_endpoints(trackingStats *trackCount,
 		mypause();
 	}
 	
+	bool randomized;
+	switch (solve_options.T.MPType) {
+		case 0:
+			randomized = ED_d->IsRandomized();
+			break;
+		default:
+			randomized = ED_mp->IsRandomized();
+			break;
+	}
+				
 	
 	if (num_incoming > max_incoming) {
 		std::cout << "the impossible happened -- want to receive more endpoints than max" << std::endl;
@@ -1342,21 +1359,25 @@ int receive_endpoints(trackingStats *trackCount,
 	for (int ii=0; ii<num_incoming; ii++) {
 		int issoln;
 
-		switch (solve_options.T.MPType) {
-			case 0:
-				issoln = ED_d->is_solution_checker_d( &(*EG_receives)[ii],  &solve_options.T, ED_d);
-				
-				break;
-				
-			default:
-				
-				if ((*EG_receives)[ii].prec<64){
-					issoln = ED_mp->is_solution_checker_d( &((*EG_receives)[ii]), &solve_options.T, ED_d); } // this function call is a reference!
-				else {
-					issoln = ED_mp->is_solution_checker_mp( &((*EG_receives)[ii]), &solve_options.T, ED_mp); } // this function call is a reference!
-				break;
+		if (randomized)
+		{
+			switch (solve_options.T.MPType) {
+				case 0:
+					issoln = ED_d->is_solution_checker_d( &(*EG_receives)[ii],  &solve_options.T, ED_d);
+					
+					break;
+					
+				default:
+					
+					if ((*EG_receives)[ii].prec<64){
+						issoln = ED_mp->is_solution_checker_d( &((*EG_receives)[ii]), &solve_options.T, ED_d); } // this function call is a reference!
+					else {
+						issoln = ED_mp->is_solution_checker_mp( &((*EG_receives)[ii]), &solve_options.T, ED_mp); } // this function call is a reference!
+					break;
+			}
 		}
-		
+		else
+			issoln = true;
 		
 		
 		//get the terminal time in double form
