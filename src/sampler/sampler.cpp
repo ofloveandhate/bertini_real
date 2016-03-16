@@ -629,8 +629,9 @@ void Curve::adaptive_sampler_distance(VertexSet & V,
 	std::vector<int> current_indices;
 	
 	MultilinConfiguration ml_config(solve_options, this->randomizer());
-	
-	std::cout << "sampling " << num_edges() << " edges " << std::endl;
+
+	if (sampler_options.verbose_level()>=1)
+		std::cout << "sampling " << num_edges() << " edges " << std::endl;
 	
 	
 	for (unsigned int ii=0; ii<num_edges(); ii++) // for each of the edges
@@ -661,17 +662,17 @@ void Curve::adaptive_sampler_distance(VertexSet & V,
 								// this should be the only place this counter is reset.
 			
 			
-			if (sampler_options.verbose_level()>=0)
+			if (sampler_options.verbose_level()>=1)
 				printf("edge %d, pass %d, %d refinements\n",ii,pass_number,num_refinements);
 			
-			if (sampler_options.verbose_level()>=1) {
+			if (sampler_options.verbose_level()>=2) {
 				printf("the current indices:\n");
 				for (int jj=0; jj<prev_num_samp; jj++)
 					printf("%d ",current_indices[jj]);
 				printf("\n\n");
 			}
 			
-			if (sampler_options.verbose_level()>=1) {
+			if (sampler_options.verbose_level()>=3) {
 				printf("refine_flag:\n");
 				for (int jj=0; jj<prev_num_samp-1; jj++) {
                     printf("%s ",refine_current[jj]?"1":"0");
@@ -707,13 +708,9 @@ void Curve::adaptive_sampler_distance(VertexSet & V,
 				right_index = current_indices[jj+1];
 				
 				
-				if (new_indices[sample_counter-1]!=left_index) {
-					printf("index mismatch\n");
-					exit(1);
-				}
+				assert (new_indices[sample_counter-1]!=left_index);
 				
-                
-				
+
 				if(refine_current[jj]==1) //
 				{
                     
@@ -759,9 +756,8 @@ void Curve::adaptive_sampler_distance(VertexSet & V,
 					fillme.get_noninfinite_w_mult_full(Wnew);
 					
 					if (Wnew.num_points()==0) {
-						std::cout << "tracker did not return any points.  this is essentially an uncaught exception" << std::endl;
-						// i have no idea what to do when this happens.
-						mypause();
+						std::cout << "tracker did not return any points." << std::endl;
+						continue;
 					}
 					
 					if (sampler_options.verbose_level()>=3)
@@ -865,7 +861,7 @@ void Curve::adaptive_sampler_distance(VertexSet & V,
 		if (sampler_options.verbose_level()>=2) {
 			printf("exiting while loop\n");
 		}
-		printf("\n");
+
 	}  // re: ii (for each edge)
 	
 	
@@ -1733,7 +1729,8 @@ void Surface::FixedSampleFace(int face_index, VertexSet & V, sampler_configurati
 		std::vector<bool> refine_flags(1, true);
 		bool need_refinement = true;
 		
-		while (need_refinement)
+		unsigned pass_number = 0;
+		while (need_refinement && pass_number < sampler_options.maximum_num_iterations)
 		{
 			assert( (refine_flags.size() == refined_rib.size()-1) && "refinement flags must be one less than num entries on rib");
 			
@@ -1808,7 +1805,9 @@ void Surface::FixedSampleFace(int face_index, VertexSet & V, sampler_configurati
 			temp_rib.push_back(refined_rib.back());
 			swap(temp_rib,refined_rib);
 			swap(refine_flags_next,refine_flags);
-		}
+
+			++pass_number;
+		} // re: while
 		
 		swap(ribs[jj], refined_rib);
 		
@@ -1818,7 +1817,7 @@ void Surface::FixedSampleFace(int face_index, VertexSet & V, sampler_configurati
 			continue;
 		}
 		
-	} // re: (int jj=1; jj<target_num_samples-1; jj++) that is, sampling the ribs for an entire face
+	}
 	
 	
 	StitchRibs(ribs,V);
