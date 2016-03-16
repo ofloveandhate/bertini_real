@@ -1835,80 +1835,10 @@ void Surface::fixed_sampler(VertexSet & V,
 				swap(temp_rib,refined_rib);
 				swap(refine_flags_next,refine_flags);
 			}
-			std::cout << "done refining" << std::endl;
-			for (auto qwer : refined_rib)
-				std::cout << qwer << " ";
-			std::cout << std::endl;
+
 			
 			swap(rib_indices[jj], refined_rib);
 			
-//			for (int kk=2; kk<target_num_samples-1; kk++) {
-//
-//				std::cout << "rib so far" << std::endl;
-//				for (auto qwer : overall_refined_rib)
-//					std::cout << qwer << " ";
-//				std::cout << std::endl;
-//				
-//				std::vector<int> temp_rib;
-//				temp_rib.push_back(curr_bottom_index);
-//				
-//				
-//				add_mp(md_config.v_target,md_config.v_target,interval_width);
-//				
-//
-//
-//				
-//				print_comp_matlab(&target_multilin_linears[1]->coord[0],"pi1val");
-//				
-//				
-//				SolverOutput fillme;
-//				int success_indicator = multilin_solver_master_entry_point(W_multilin,         // WitnessSet
-//																		   fillme, // the new data is put here!
-//																		   target_multilin_linears,
-//																		   ml_config,
-//																		   solve_options);
-//				
-//				
-//				
-//				if (success_indicator!=SUCCESSFUL) {
-//					std::cout << color::red() << "something horrible happened" << color::console_default() << std::endl;
-//					rib_indices[jj].resize(kk);
-//					success_indicator_total = false;
-//					break;
-//				}
-//				
-//				WitnessSet W_new;
-//				fillme.get_noninfinite_w_mult_full(W_new);
-//				
-//				
-//				if (W_new.num_points()==0) {
-//					std::cout << color::red() << "multilin tracker did not return any noninfinite points :(" << color::console_default() << std::endl;
-//					rib_indices[jj].resize(kk);
-//					// do something other than continue here.  this is terrible.
-//					success_indicator_total = false;
-//					break;
-//				}
-//				
-//				
-//				dehomogenize(&dehom_left,V[temp_rib.back()].point());
-//				dehomogenize(&dehom_right,W_new.point(0));
-//				
-//				print_point_to_screen_matlab(pi(1),"p1");
-//				print_point_to_screen_matlab(dehom_left,"left_sample");
-//				print_point_to_screen_matlab(dehom_right,"right_sample");
-//				
-//				
-//				norm_of_difference(dist_away,
-//								   dehom_left, // the current new point
-//								   dehom_right);
-//				
-//				temp_vertex.set_point(W_new.point(0));
-//				temp_vertex.set_type(SURFACE_SAMPLE_POINT);
-//				
-//				
-//				overall_refined_rib.insert(overall_refined_rib.end(),temp_rib.begin(), temp_rib.end());
-//				
-//			} // for (int kk=2; kk<target_num_samples-1; kk++), sampling a single rib
 			
 			if (!success_indicator_total) {
 				std::cout << color::red() << "something horrible happened" << color::console_default() << std::endl;
