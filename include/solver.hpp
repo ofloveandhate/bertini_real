@@ -1267,7 +1267,7 @@ public:
 	int increment_num_paths_tracked()
 	{
 		total_num_paths_tracked++;
-		if ((total_num_paths_tracked%500)==0 && ParallelismConfig::is_head()) {
+		if (verbose_level()>=0 && (total_num_paths_tracked%500)==0 && ParallelismConfig::is_head()) {
 			std::cout << "\t\t\t\t\ttracked " << total_num_paths_tracked << " paths total." << std::endl;
 		}
 		return total_num_paths_tracked;

@@ -960,7 +960,8 @@ void Curve::fixed_sampler(VertexSet & V,
 		else{
 		}
 		
-		std::cout << "\tsampling edge " << ii << std::endl;
+		if (sampler_options.verbose_level() >= 1)
+			std::cout << "\tsampling edge " << ii << std::endl;
 		
 		neg_mp(& (W.linear(0))->coord[0],&(V[get_edge(ii).midpt()].projection_values())->coord[V.curr_projection()]);
 		

@@ -2,13 +2,45 @@
 
 bin_PROGRAMS += sampler
 
-sampler_SOURCES = src/sampler/sampler.cpp include/sampler.hpp\
-src/body/bertini_extensions.cpp src/body/data_type.cpp src/body/parallelism.cpp src/body/derivative_systems.cpp src/body/programConfiguration.cpp src/body/fileops.cpp src/body/isosingular.cpp src/body/checkSelfConjugate.cpp src/body/curve.cpp src/body/surface.cpp src/body/nullspace.cpp \
-src/solvers/solver.cpp src/solvers/solver_midpoint_tracker.cpp src/solvers/solver_nullspace.cpp src/solvers/solver_multilintolin.cpp \
-src/solvers/postProcessing.cpp src/solvers/solver_sphere.cpp\
-include/bertini_real.hpp \
-include/bertini_extensions.hpp include/data_type.hpp include/parallelism.hpp include/derivative_systems.hpp include/programConfiguration.hpp include/fileops.hpp include/isosingular.hpp include/checkSelfConjugate.hpp include/curve.hpp include/surface.hpp include/nullspace.hpp \
-include/solver.hpp include/solver_midpoint_tracker.hpp include/solver_nullspace.hpp include/solver_multilintolin.hpp include/postProcessing.hpp include/solver_sphere.hpp
+sampler_SOURCES = \
+	src/sampler/sampler.cpp include/sampler.hpp \
+	src/body/bertini_extensions.cpp \
+	src/body/data_type.cpp \
+	src/body/parallelism.cpp \
+	src/body/derivative_systems.cpp \
+	src/body/programConfiguration.cpp \
+	src/body/fileops.cpp \
+	src/body/isosingular.cpp \
+	src/body/checkSelfConjugate.cpp \
+	src/body/curve.cpp src/body/surface.cpp \
+	src/body/nullspace.cpp \
+	src/solvers/solver.cpp \
+	src/solvers/solver_midpoint_tracker.cpp \
+	src/solvers/solver_nullspace.cpp \
+	src/solvers/solver_multilintolin.cpp \
+	src/solvers/postProcessing.cpp \
+	src/solvers/solver_sphere.cpp \
+	include/bertini_real.hpp \
+	include/bertini_extensions.hpp \
+	include/bertini_headers.hpp\
+	include/partitionParse.h\
+	include/data_type.hpp \
+	include/parallelism.hpp \
+	include/derivative_systems.hpp \
+	include/programConfiguration.hpp \
+	include/fileops.hpp \
+	include/isosingular.hpp \
+	include/checkSelfConjugate.hpp \
+	include/curve.hpp \
+	include/surface.hpp \
+	include/nullspace.hpp \
+	include/solver.hpp \
+	include/solver_midpoint_tracker.hpp \
+	include/solver_nullspace.hpp \
+	include/solver_multilintolin.hpp \
+	include/postProcessing.hpp \
+	include/solver_sphere.hpp \
+	include/color.hpp src/body/color.cpp
 
 
 sampler_LDADD = libpartitionParse.a $(BOOST_FILESYSTEM_LIB) $(BOOST_SYSTEM_LIB)  $(BOOST_CHRONO_LIB) $(BOOST_REGEX_LIB) $(BOOST_TIMER_LIB) $(MPI_CXXLDFLAGS)

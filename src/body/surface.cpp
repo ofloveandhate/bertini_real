@@ -127,7 +127,7 @@ void Surface::main(VertexSet & V,
 				
 				
 	
-	std::cout << color::bold("m") << "intersecting critical curve with sphere" << color::console_default() << std::endl;
+	std::cout << color::bold('m') << "intersecting critical curve with sphere" << color::console_default() << std::endl;
 	
 	W_critcurve_crit.set_input_filename("input_critical_curve");
 	
@@ -441,7 +441,7 @@ void Surface::compute_critcurve_witness_set(WitnessSet & W_critcurve,
 	
 	
 	
-	std::cout << color::bold("m") << "computing witness points for the critical curve" << color::console_default() << std::endl;
+	std::cout << color::bold('m') << "computing witness points for the critical curve" << color::console_default() << std::endl;
     
 	
 	
@@ -544,7 +544,7 @@ void Surface::compute_critcurve_critpts(WitnessSet & W_critcurve_crit,  // the c
 	std::cout << "surface::compute_critcurve_critpts" << std::endl;
 #endif
 	
-	std::cout << color::bold("m") << "\ncomputing critical points of the critical curve" <<  color::console_default() << std::endl;
+	std::cout << color::bold('m') << "\ncomputing critical points of the critical curve" <<  color::console_default() << std::endl;
 	
 	
 	
@@ -658,7 +658,7 @@ void Surface::compute_critical_curve(const WitnessSet & W_critcurve,
 #endif
 	
 	
-    std::cout << color::bold("m") << "interslicing critical curve" << color::console_default() << std::endl;
+    std::cout << color::bold('m') << "interslicing critical curve" << color::console_default() << std::endl;
     
 	
     
@@ -1502,7 +1502,7 @@ void Surface::connect_the_dots(VertexSet & V,
 	std::cout << "surface::connect_the_dots" << std::endl;
 #endif
 	
-	std::cout << color::bold("m") << "***\n\nCONNECT THE DOTS\n\n***" << color::console_default() << std::endl;
+	std::cout << color::bold('m') << "***\n\nCONNECT THE DOTS\n\n***" << color::console_default() << std::endl;
     
 	
 	MidpointConfiguration md_config;
