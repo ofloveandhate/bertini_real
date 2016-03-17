@@ -1241,7 +1241,14 @@ public:
 					   sampler_configuration & sampler_options,
 					   SolverConfiguration & solve_options);
 	
-	
+	/**
+	\brief Sample the member curves.
+.
+	*/
+	void FixedSampleCurves(VertexSet & V, sampler_configuration & sampler_options,
+										SolverConfiguration & solve_options);
+
+
 	/**
 	\brief Sample a face of the surface.
 

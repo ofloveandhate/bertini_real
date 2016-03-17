@@ -284,17 +284,12 @@ public:
  includes methods to add vertices, look up vertices, etc
  */
 class Curve : public Decomposition
-{
-	
-	std::vector<unsigned int> num_samples_each_edge_; ///< the number of samples on each edge, where there is a strict correspondence between elements of this vector and edges.
-	
+{	
 	std::vector< std::vector<int > > sample_indices_; ///< the indices of the vertices for the samples on the edges.
 	
 	
 	std::vector<Edge> edges_; ///< The edges (1-cells) computed by Bertini_real
 	size_t      num_edges_;  ///< How many edges this Decomposition currently has.  This could also be inferred from edges.size()
-	
-	
 
 	
 public:
@@ -310,11 +305,11 @@ public:
 	 */
 	unsigned int num_samples_on_edge(unsigned int edge_index) const
 	{
-		if (edge_index >= num_samples_each_edge_.size()) {
-			throw std::out_of_range("trying to access num_samples_each_edge_ of out of range index");
+		if (edge_index >= sample_indices_.size()) {
+			throw std::out_of_range("trying to access sample_indices_ of out of range index");
 		}
 		
-		return num_samples_each_edge_[edge_index];
+		return sample_indices_[edge_index].size();
 	}
 	
 	

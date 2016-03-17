@@ -1375,11 +1375,11 @@ public:
 		
 		os << t.output_index << std::endl;
 		for (auto iter=t.input_index.begin(); iter!=t.input_index.end(); ++iter) {
-			std::cout << *iter << " ";
+			os << *iter << " ";
 		}
-		std::cout << std::endl;
+		os << std::endl;
 		
-		std::cout << t.multiplicity << " " << t.is_finite << " " << t.is_singular << " " << t.is_successful;
+		os << t.multiplicity << " " << t.is_finite << " " << t.is_singular << " " << t.is_successful;
 		
 		return os;
 	}
