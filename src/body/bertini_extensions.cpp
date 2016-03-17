@@ -321,7 +321,7 @@ void *br_realloc(void *ptr, size_t size)
 
 
 
-bool is_identity(mat_d M)
+bool is_identity(const mat_d M)
 {
 	
 	
@@ -396,7 +396,7 @@ bool is_identity(mat_mp M)
 
 
 
-void norm_of_difference(mpf_t result, vec_mp left, vec_mp right)
+void norm_of_difference(mpf_t result, const vec_mp left, const vec_mp right)
 {
 	if (left->size!=right->size || left->size == 0) {
 		printf("attempting to take difference of two vectors not of the same size! (%d!=%d)\n",left->size,right->size);
@@ -423,7 +423,28 @@ void norm_of_difference(mpf_t result, vec_mp left, vec_mp right)
 }
 
 
-void dehomogenize(point_d *result, point_d dehom_me)
+void norm_of_difference_mindim(mpf_t result, const vec_mp left, const vec_mp right)
+{
+	using std::min;
+	auto ls = left->size;
+	auto rs = right->size;
+	auto m = min(ls,rs);
+
+	vec_mp a, b;
+	init_vec_mp(a,m);
+	vec_cp_mp(a, left);
+	a->size = m;
+
+	init_vec_mp(b,m);
+	vec_cp_mp(b, right);
+	b->size = m;
+
+	norm_of_difference(result, a, b);
+	return;
+}
+
+
+void dehomogenize(point_d *result, const point_d dehom_me)
 {
 	comp_d denom;
 	change_size_vec_d(*result,dehom_me->size-1);
@@ -437,7 +458,7 @@ void dehomogenize(point_d *result, point_d dehom_me)
 	return;
 }
 
-void dehomogenize(point_mp *result, point_mp dehom_me)
+void dehomogenize(point_mp *result, const point_mp dehom_me)
 {
 	if (dehom_me->size==0 || dehom_me->size==1) {
 		printf("attempting to dehomogenize a vector of length 0 or 1\n");
@@ -458,7 +479,7 @@ void dehomogenize(point_mp *result, point_mp dehom_me)
 	return;
 }
 
-void dehomogenize(point_mp *result, point_mp dehom_me, int num_variables)
+void dehomogenize(point_mp *result, const point_mp dehom_me, int num_variables)
 {
 	if (dehom_me->size==0 || dehom_me->size==1) {
 		printf("attempting to dehomogenize a vector of length 0 or 1\n");
@@ -486,7 +507,7 @@ void dehomogenize(point_mp *result, point_mp dehom_me, int num_variables)
 
 
 
-void dehomogenize(point_d *result, point_d dehom_me, int num_variables)
+void dehomogenize(point_d *result, const point_d dehom_me, int num_variables)
 {
 	if (dehom_me->size==0 || dehom_me->size==1) {
 		printf("attempting to dehomogenize a vector of length 0 or 1\n");
@@ -510,7 +531,7 @@ void dehomogenize(point_d *result, point_d dehom_me, int num_variables)
 }
 
 
-void nonconj_transpose(mat_d Res, mat_d M)  /* Stores NON-CONJUGATE transpose of M in Res. */
+void nonconj_transpose(mat_d Res, const mat_d M)  /* Stores NON-CONJUGATE transpose of M in Res. */
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -556,7 +577,7 @@ void nonconj_transpose(mat_d Res, mat_d M)  /* Stores NON-CONJUGATE transpose of
 	return;
 }
 
-void nonconj_transpose(mat_mp Res, mat_mp M)  /* Stores NON-CONJUGATE transpose of M in Res. */
+void nonconj_transpose(mat_mp Res, const mat_mp M)  /* Stores NON-CONJUGATE transpose of M in Res. */
 /***************************************************************\
  * USAGE:                                                        *
  * ARGUMENTS:                                                    *
@@ -604,7 +625,7 @@ void nonconj_transpose(mat_mp Res, mat_mp M)  /* Stores NON-CONJUGATE transpose 
 
 
 
-void dot_product_d(comp_d result, vec_d left, vec_d right)
+void dot_product_d(comp_d result, const vec_d left, const vec_d right)
 {
 	if (left->size!=right->size) {
 		printf("attempting to dot_d two vectors not of the same size! (%d!=%d)\n",left->size,right->size);
@@ -620,7 +641,7 @@ void dot_product_d(comp_d result, vec_d left, vec_d right)
 	}
 }
 
-void dot_product_mp(comp_mp result, vec_mp left, vec_mp right)
+void dot_product_mp(comp_mp result, const vec_mp left, const vec_mp right)
 {
 	if (left->size!=right->size) {
 		printf("attempting to dot_mp two vectors not of the same size! (%d!=%d)\n",left->size,right->size);
@@ -639,7 +660,7 @@ void dot_product_mp(comp_mp result, vec_mp left, vec_mp right)
 
 
 
-void dot_product_mindim(comp_d result, vec_d left, vec_d right)
+void dot_product_mindim(comp_d result, const vec_d left, const vec_d right)
 {
 	
 	set_zero_d(result);
@@ -652,7 +673,7 @@ void dot_product_mindim(comp_d result, vec_d left, vec_d right)
 }
 
 
-void dot_product_mindim(comp_mp result, vec_mp left, vec_mp right)
+void dot_product_mindim(comp_mp result, const vec_mp left, const vec_mp right)
 {
 	
 	set_zero_mp(result);
@@ -668,7 +689,7 @@ void dot_product_mindim(comp_mp result, vec_mp left, vec_mp right)
 
 
 
-int take_determinant_d(comp_d determinant, mat_d source_matrix)
+int take_determinant_d(comp_d determinant, const mat_d source_matrix)
 {
 	
 	
@@ -708,7 +729,7 @@ int take_determinant_d(comp_d determinant, mat_d source_matrix)
 	
 	int sign;
 	
-	int retval = LU_matrixSolve_d(garbage, intermediate, &rwnm, &sign, source_matrix, zerovec,tol,largeChange);
+	int retval = LU_matrixSolve_d(garbage, intermediate, &rwnm, &sign, const_cast<_mat_d*>(source_matrix), zerovec,tol,largeChange);
 	//the solution is in intermediate.
 	//error check.  solution failed if retval!=0
 	if (retval!=0) {
@@ -737,7 +758,7 @@ int take_determinant_d(comp_d determinant, mat_d source_matrix)
 	return 0;
 }
 
-int take_determinant_mp(comp_mp determinant, mat_mp source_matrix)
+int take_determinant_mp(comp_mp determinant, const mat_mp source_matrix)
 {
 	
 	
@@ -781,7 +802,7 @@ int take_determinant_mp(comp_mp determinant, mat_mp source_matrix)
 	//	print_matrix_to_screen_matlab(tempmat,"tempmat");
 	
 	
-	int retval = LU_matrixSolve_mp(garbage, intermediate, &rwnm, &sign, source_matrix, zerovec,tol,largeChange);
+	int retval = LU_matrixSolve_mp(garbage, intermediate, &rwnm, &sign, const_cast<_mat_mp*>(source_matrix), zerovec,tol,largeChange);
 	//the solution is in intermediate.
 	//error check.  solution failed if retval!=0
 	if (retval!=0) {
@@ -823,7 +844,7 @@ int take_determinant_mp(comp_mp determinant, mat_mp source_matrix)
  
  double type
  */
-void projection_value_homogeneous_input(comp_d result, vec_d input, vec_d projection)
+void projection_value_homogeneous_input(comp_d result, const vec_d input, const vec_d projection)
 {
 	set_zero_d(result);
 	comp_d temp;
@@ -850,7 +871,7 @@ void projection_value_homogeneous_input(comp_d result, vec_d input, vec_d projec
  
  mp type
  */
-void projection_value_homogeneous_input(comp_mp result, vec_mp input, vec_mp projection)
+void projection_value_homogeneous_input(comp_mp result, const vec_mp input, const vec_mp projection)
 {
 	
 	
@@ -868,7 +889,7 @@ void projection_value_homogeneous_input(comp_mp result, vec_mp input, vec_mp pro
 
 
 
-int isSamePoint_inhomogeneous_input(point_d left, point_d right, double tolerance){
+int isSamePoint_inhomogeneous_input(const point_d left, const point_d right, double tolerance){
 	
 	if (left->size!=right->size) {
 		printf("attempting to isSamePoint_inhom_d with disparate sized points.\n");
@@ -878,14 +899,14 @@ int isSamePoint_inhomogeneous_input(point_d left, point_d right, double toleranc
 	}
 	
 	
-	int indicator = isSamePoint(left,NULL,52,right,NULL,52,tolerance);
+	int indicator = isSamePoint(const_cast<_point_d*>(left),NULL,52,const_cast<_point_d*>(right),NULL,52,tolerance);
 	
 	
 	return indicator;
 }
 
 
-int isSamePoint_inhomogeneous_input(point_mp left, point_mp right, double tolerance){
+int isSamePoint_inhomogeneous_input(const point_mp left, const point_mp right, double tolerance){
 	
 	if (left->size!=right->size) {
 		std::stringstream ss;
@@ -893,8 +914,6 @@ int isSamePoint_inhomogeneous_input(point_mp left, point_mp right, double tolera
 		ss << "left: " << left->size << "\t right: " << right->size;
 		throw std::logic_error(ss.str());
 	}
-	
-	
 	
 	comp_mp temp1, temp2;  init_mp(temp1); init_mp(temp2);
 	comp_mp one;  init_mp(one); set_one_mp(one);
@@ -915,14 +934,6 @@ int isSamePoint_inhomogeneous_input(point_mp left, point_mp right, double tolera
 				abs_mp(temp2, temp1);  // temp2 = |temp1|
 				
 				if (mpf_get_d(temp2->r) > tolerance) {
-					
-					
-//					std::cout << "different points, coord " <<  ii << std::endl;
-//					std::cout << "left smaller than right, scaled." << std::endl;
-//					print_comp_matlab(temp2,"infnormthiscoord");
-//					print_point_to_screen_matlab(left,"left");
-//					print_point_to_screen_matlab(right,"right");
-					
 					clear_mp(temp1); clear_mp(temp2); clear_mp(one);
 					return 0;
 				}
@@ -932,14 +943,6 @@ int isSamePoint_inhomogeneous_input(point_mp left, point_mp right, double tolera
 				sub_mp(temp1, &left->coord[ii], &right->coord[ii]); // take difference
 				abs_mp(temp2, temp1); // absolute value that difference
 				if (mpf_get_d(temp2->r)> tolerance) { // if bigger than allowed tolerance, reject as not the same point.
-					
-//					
-//					std::cout << "different points, coord " <<  ii << std::endl;
-//					std::cout << "left smaller than right, noscale." << std::endl;
-//					print_comp_matlab(temp2,"infnormthiscoord");
-//					print_point_to_screen_matlab(left,"left");
-//					print_point_to_screen_matlab(right,"right");
-					
 					clear_mp(temp1); clear_mp(temp2); clear_mp(one);
 					return 0;
 				}
@@ -953,22 +956,11 @@ int isSamePoint_inhomogeneous_input(point_mp left, point_mp right, double tolera
 				div_mp(temp2, &right->coord[ii], temp1);
 				div_mp(temp1, &left->coord[ii], temp1);
 				
-//				print_comp_matlab(temp1,"left_coord_scaled");
-//				print_comp_matlab(temp2,"right_coord_scaled");
 				sub_mp(temp1, temp1, temp2);
 				
-//				print_comp_matlab(temp1,"diff");
 				abs_mp(temp2, temp1);  // temp2 = |temp1|
 				
 				if (mpf_get_d(temp2->r) > tolerance) {
-					
-					
-//					std::cout << "different points, coord " <<  ii << std::endl;
-//					std::cout << "right smaller than left, scaled." << std::endl;
-//					print_comp_matlab(temp2,"infnormthiscoord");
-//					print_point_to_screen_matlab(left,"left");
-//					print_point_to_screen_matlab(right,"right");
-					
 					clear_mp(temp1); clear_mp(temp2); clear_mp(one);
 					return 0;
 				}
@@ -977,14 +969,6 @@ int isSamePoint_inhomogeneous_input(point_mp left, point_mp right, double tolera
 				sub_mp(temp1, &left->coord[ii], &right->coord[ii]); // take difference
 				abs_mp(temp2, temp1); // absolute value that difference
 				if (mpf_get_d(temp2->r)> tolerance) { // if bigger than allowed tolerance, reject as not the same point.
-					
-					
-//					std::cout << "different points, coord " <<  ii << std::endl;
-//					std::cout << "right smaller than left, noscale." << std::endl;
-//					print_comp_matlab(temp2,"infnormthiscoord");
-//					print_point_to_screen_matlab(left,"left");
-//					print_point_to_screen_matlab(right,"right");
-					
 					clear_mp(temp1); clear_mp(temp2); clear_mp(one);
 					return 0;
 				}
@@ -994,15 +978,6 @@ int isSamePoint_inhomogeneous_input(point_mp left, point_mp right, double tolera
 		
 	}
 	
-	
-	
-//	if (!isSamePoint(NULL,left,64,NULL,right,64,tolerance)) {
-//		std::cout << "same points according to relative error infinity norm, but not same according to L2" << std::endl;
-//		print_point_to_screen_matlab(left,"left");
-//		print_point_to_screen_matlab(right,"right");
-//		mypause();
-//	}
-	
 	clear_mp(temp1); clear_mp(temp2); clear_mp(one);
 	return 1; //made it all the way down here, must be the same!!!
 	
@@ -1010,7 +985,7 @@ int isSamePoint_inhomogeneous_input(point_mp left, point_mp right, double tolera
 
 
 
-int isSamePoint_homogeneous_input(point_d left, point_d right, double tolerance){
+int isSamePoint_homogeneous_input(const point_d left, const point_d right, double tolerance){
 	
 	if (left->size!=right->size) {
 		std::stringstream ss;
@@ -1033,7 +1008,7 @@ int isSamePoint_homogeneous_input(point_d left, point_d right, double tolerance)
 }
 
 
-int isSamePoint_homogeneous_input(point_mp left, point_mp right, double tolerance){
+int isSamePoint_homogeneous_input(const point_mp left, const point_mp right, double tolerance){
 	
 	if (left->size!=right->size) {
 		std::stringstream ss;
@@ -1264,7 +1239,7 @@ void print_path_retVal_message(int retVal){
 
 
 
-int get_num_vars_PPD(preproc_data PPD){
+int get_num_vars_PPD(const preproc_data PPD){
 	int num_vars = 0; // initialize
 	
 
@@ -1281,7 +1256,7 @@ int get_num_vars_PPD(preproc_data PPD){
 
 
 
-void cp_patch_mp(patch_eval_data_mp *PED, patch_eval_data_mp PED_input)
+void cp_patch_mp(patch_eval_data_mp *PED, const patch_eval_data_mp PED_input)
 {
 	PED->num_patches = PED_input.num_patches;
 	
@@ -1299,7 +1274,7 @@ void cp_patch_mp(patch_eval_data_mp *PED, patch_eval_data_mp PED_input)
 }
 
 
-void cp_patch_d(patch_eval_data_d *PED, patch_eval_data_d PED_input)
+void cp_patch_d(patch_eval_data_d *PED, const patch_eval_data_d PED_input)
 {
 	PED->num_patches = PED_input.num_patches;
 	
@@ -1472,7 +1447,7 @@ void print_tracker(const tracker_config_t * T)
 
 
 //TODO this sort should be optimized.  it is sloppy and wasteful right now.
-int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & index_tracker, vec_mp projections_input){
+int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & index_tracker, const vec_mp projections_input){
 	
 	
 	if (projections_input->size == 0) {
@@ -1589,7 +1564,7 @@ int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & inde
 
 
 
-void send_patch_d(patch_eval_data_d * patch)
+void send_patch_d(const patch_eval_data_d * patch)
 {
 	comp_d *patch_coeff = NULL;
 	patch_eval_data_d_int PED_int;
@@ -1599,7 +1574,7 @@ void send_patch_d(patch_eval_data_d * patch)
 	create_comp_d(&mpi_comp_d);
 	create_patch_eval_data_d_int(&mpi_patch_d_int);
 	// setup PED_int
-	cp_patch_d_int(&PED_int, patch, &patch_coeff, 0);
+	cp_patch_d_int(&PED_int, const_cast<patch_eval_data_d *>(patch), &patch_coeff, 0);
 	
 	// broadcast patch structures
 	MPI_Bcast(&PED_int, 1, mpi_patch_d_int, 0, MPI_COMM_WORLD);
@@ -1638,7 +1613,7 @@ void receive_patch_d(patch_eval_data_d * patch)
 }
 
 
-void send_patch_mp(patch_eval_data_mp * patch)
+void send_patch_mp(const patch_eval_data_mp * patch)
 {
 	char *patchStr = NULL;
 	patch_eval_data_mp_int PED_int;
@@ -1647,7 +1622,7 @@ void send_patch_mp(patch_eval_data_mp * patch)
 	// setup mpi_patch_int
 	create_patch_eval_data_mp_int(&mpi_patch_int);
 	// setup PED_int
-	cp_patch_mp_int(&PED_int, patch, &patchStr, 0, 0);
+	cp_patch_mp_int(&PED_int, const_cast<patch_eval_data_mp *>(patch), &patchStr, 0, 0);
 	
 	// send PED_int
 	MPI_Bcast(&PED_int, 1, mpi_patch_int, 0, MPI_COMM_WORLD);
@@ -1686,7 +1661,7 @@ void receive_patch_mp(patch_eval_data_mp * patch)
 
 
 
-void send_preproc_data(preproc_data *PPD){
+void send_preproc_data(const preproc_data *PPD){
 	
 	
 	int *buffer = new int[3];
@@ -1737,7 +1712,7 @@ void receive_preproc_data(preproc_data *PPD){
 
 
 
-void send_mat_d(mat_d A, int target)
+void send_mat_d(const mat_d A, int target)
 {
     int num_entries;
     MPI_Datatype mpi_mat_d_int, mpi_comp_d;
@@ -1749,7 +1724,7 @@ void send_mat_d(mat_d A, int target)
     create_comp_d(&mpi_comp_d);
     
     // setup A_int and entries
-    cp_mat_d_int(&A_int, A, &entries, 0);
+    cp_mat_d_int(&A_int, const_cast<_mat_d*>(A), &entries, 0);
     num_entries = A->rows * A->cols;
     
     // send A_int
@@ -1802,7 +1777,7 @@ void receive_mat_d(mat_d A, int source)
 
 
 
-void send_mat_mp(mat_mp A, int target)
+void send_mat_mp(const mat_mp A, int target)
 {
     MPI_Datatype mpi_mat_mp_int;
     mat_mp_int A_int;
@@ -1812,7 +1787,7 @@ void send_mat_mp(mat_mp A, int target)
     create_mat_mp_int(&mpi_mat_mp_int);
     
     
-    cp_mat_mp_int(&A_int, A, &Astr, 1, 0);
+    cp_mat_mp_int(&A_int, const_cast<_mat_mp*>(A), &Astr, 1, 0);
     
     // send A_int and Astr
     MPI_Send(&A_int, 1, mpi_mat_mp_int, target, MAT_MP, MPI_COMM_WORLD);
@@ -1856,7 +1831,7 @@ void receive_mat_mp(mat_mp A, int source)
 
 
 
-void send_mat_rat(mat_d A_d, mat_mp A_mp, mpq_t ***A_rat, int target)
+void send_mat_rat(const mat_d A_d, const mat_mp A_mp, const mpq_t ***A_rat, int target)
 {
     MPI_Datatype mpi_mat_rat;
     mat_rat_int A_int;
@@ -1923,7 +1898,7 @@ void receive_mat_rat(mat_d A_d, mat_mp A_mp, mpq_t ***A_rat, int source)
 
 
 
-void send_vec_d(vec_d b, int target)
+void send_vec_d(const vec_d b, int target)
 {
     MPI_Datatype mpi_point_d_int, mpi_comp_d;
     point_d_int b_int;
@@ -1934,7 +1909,7 @@ void send_vec_d(vec_d b, int target)
     create_comp_d(&mpi_comp_d);
     
     // setup b_int and entries
-    cp_point_d_int(&b_int, b, &entries, 0, 0, 0);
+    cp_point_d_int(&b_int, const_cast<_point_d*>(b), &entries, 0, 0, 0);
     
     // send b_int
     MPI_Send(&b_int, 1, mpi_point_d_int, target, VEC_D, MPI_COMM_WORLD);
@@ -1983,7 +1958,7 @@ void receive_vec_d(vec_d b, int source)
 
 
 
-void send_vec_mp(vec_mp b, int target)
+void send_vec_mp(const vec_mp b, int target)
 {
     MPI_Datatype mpi_vec_mp_int;
     point_mp_int b_int;
@@ -1993,7 +1968,7 @@ void send_vec_mp(vec_mp b, int target)
     create_point_mp_int(&mpi_vec_mp_int);
     
     // setup b_int and bstr
-    cp_point_mp_int(&b_int, b, &bstr, 0, 0, 0);
+    cp_point_mp_int(&b_int, const_cast<_point_mp*>(b), &bstr, 0, 0, 0);
     
     // send b_int and bstr
     MPI_Send(&b_int, 1, mpi_vec_mp_int, target, VEC_MP, MPI_COMM_WORLD);
@@ -2037,7 +2012,7 @@ void receive_vec_mp(vec_mp b, int source)
 
 
 
-void send_vec_rat(mpq_t ***b, int size, int target)
+void send_vec_rat(const mpq_t ***b, int size, int target)
 {
     MPI_Datatype mpi_point_rat;
     point_rat_int b_int;
@@ -2102,7 +2077,7 @@ void receive_vec_rat(mpq_t ***b, int size, int source)
 
 
 
-void send_comp_d(comp_d c, int target)
+void send_comp_d(const comp_d c, int target)
 {
     MPI_Datatype mpi_comp_d;
     create_comp_d(&mpi_comp_d);
@@ -2129,7 +2104,7 @@ void receive_comp_d(comp_d c, int source)
 
 
 
-void send_comp_num_d(comp_d *c, int num, int target)
+void send_comp_num_d(const comp_d *c, int num, int target)
 {
     MPI_Datatype mpi_comp_d;
     create_comp_d(&mpi_comp_d);
@@ -2156,7 +2131,7 @@ void receive_comp_num_d(comp_d *c, int num, int source)
 
 
 
-void send_comp_mp(comp_mp c, int target)
+void send_comp_mp(const comp_mp c, int target)
 {
     char *str = NULL;
     comp_mp_int c_int;
@@ -2164,7 +2139,7 @@ void send_comp_mp(comp_mp c, int target)
     create_comp_mp_int(&mpi_comp_mp_int);
     
     // send data
-    cp_comp_mp_int(&c_int, c, &str, 0, 0);
+    cp_comp_mp_int(&c_int, const_cast<_comp_mp*>(c), &str, 0, 0);
     // send c_int
     MPI_Send(&c_int, 1, mpi_comp_mp_int, target, COMP_MP, MPI_COMM_WORLD);
     // send str
@@ -2205,7 +2180,7 @@ void receive_comp_mp(comp_mp c, int source)
 
 
 
-void send_comp_num_mp(comp_mp *c, int num, int target)
+void send_comp_num_mp(const comp_mp *c, int num, int target)
 {
     int i, j, total = 0, currLoc = 0;
     comp_mp_int *c_int = (comp_mp_int *)bmalloc(num * sizeof(comp_mp_int));
@@ -2216,7 +2191,7 @@ void send_comp_num_mp(comp_mp *c, int num, int target)
     // send data
     for (i = 0; i < num; i++)
     { // setup c_int[i]
-        cp_comp_mp_int(&c_int[i], &c[i], &tempStr, 0, 0);
+        cp_comp_mp_int(&c_int[i], const_cast<_comp_mp*>(c[i]), &tempStr, 0, 0);
         // update
         total += c_int[i].totalLength;
         str = (char *)brealloc(str, total * sizeof(char));
@@ -2287,7 +2262,7 @@ void receive_comp_num_mp(comp_mp *c, int num, int source)
 
 
 
-void send_comp_rat(mpq_t c[2], int target)
+void send_comp_rat(const mpq_t c[2], int target)
 {
     comp_rat_int c_int;
     char *str = NULL;
@@ -2295,7 +2270,7 @@ void send_comp_rat(mpq_t c[2], int target)
     create_comp_rat_int(&mpi_comp_rat_int);
     
     // send data
-    cp_comp_rat_int(&c_int, c, &str, 0, 0);
+    cp_comp_rat_int(&c_int, const_cast<mpq_t*>(c), &str, 0, 0);
     // send c_int
     MPI_Send(&c_int, 1, mpi_comp_rat_int, target, COMP_RAT, MPI_COMM_WORLD);
     // send str
@@ -2339,7 +2314,7 @@ void receive_comp_rat(mpq_t c[2], int source)
 
 
 
-void send_comp_num_rat(mpq_t c[][2], int num, int target)
+void send_comp_num_rat(const mpq_t c[][2], int num, int target)
 {
     int i, j, total = 0, currLoc = 0;
     comp_rat_int *c_int = (comp_rat_int *)bmalloc(num * sizeof(comp_rat_int));
@@ -2350,7 +2325,7 @@ void send_comp_num_rat(mpq_t c[][2], int num, int target)
     // send data
     for (i = 0; i < num; i++)
     { // setup c_int[i]
-        cp_comp_rat_int(&c_int[i], c[i], &tempStr, 0, 0);
+        cp_comp_rat_int(&c_int[i], const_cast<mpq_t*>(c[i]), &tempStr, 0, 0);
         // update
         total += c_int[i].length[0] + c_int[i].length[1];
         str = (char *)brealloc(str, total * sizeof(char));

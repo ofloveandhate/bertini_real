@@ -102,7 +102,7 @@ void *br_realloc(void *ptr, size_t size);
  \return boolean indicating whether the input matrix is the identity.
  \param M test matrix
  */
-bool is_identity(mat_d M);
+bool is_identity(const mat_d M);
 
 /**
  \brief test whether a matrix is the identity
@@ -110,7 +110,7 @@ bool is_identity(mat_d M);
  \return boolean indicating whether the input matrix is the identity.
  \param M test matrix
  */
-bool is_identity(mat_mp M);
+bool is_identity(const mat_mp M);
 
 
 
@@ -127,24 +127,17 @@ bool is_identity(mat_mp M);
  \param left First input vector
  \param right Second input vector
  */
-void norm_of_difference(mpf_t result, vec_mp left, vec_mp right);
+void norm_of_difference(mpf_t result, const vec_mp left, const vec_mp right);
+
 
 /**
- \brief Dehomogenize a vector assuming there is a single variable group and the leading coordinate is the homogenizing variable.
+ \brief compute the (multiple-precision) 2-norm of the difference of two vectors of the differing length, using the minimal dimension.
  
- \param result The computed value.
- \param dehom_me The vector to dehomogenize
+ \param result the returned computed norm
+ \param left First input vector
+ \param right Second input vector
  */
-void dehomogenize(point_d *result, point_d dehom_me);
-/**
- \brief Dehomogenize only the first n variables of a vector assuming there is a single variable group and the leading coordinate is the homogenizing variable.
- 
- \param result The computed value.
- \param dehom_me The vector to dehomogenize
- \param num_variables the total number of variables, including the homogenizing variable.
- */
-void dehomogenize(point_d *result, point_d dehom_me, int num_variables);
-
+void norm_of_difference_mindim(mpf_t result, const vec_mp left, const vec_mp right);
 
 
 /**
@@ -153,7 +146,7 @@ void dehomogenize(point_d *result, point_d dehom_me, int num_variables);
  \param result The computed value.
  \param dehom_me The vector to dehomogenize
  */
-void dehomogenize(point_mp *result, point_mp dehom_me);
+void dehomogenize(point_d *result, const point_d dehom_me);
 /**
  \brief Dehomogenize only the first n variables of a vector assuming there is a single variable group and the leading coordinate is the homogenizing variable.
  
@@ -161,7 +154,25 @@ void dehomogenize(point_mp *result, point_mp dehom_me);
  \param dehom_me The vector to dehomogenize
  \param num_variables the total number of variables, including the homogenizing variable.
  */
-void dehomogenize(point_mp *result, point_mp dehom_me, int num_variables);
+void dehomogenize(point_d *result, const point_d dehom_me, int num_variables);
+
+
+
+/**
+ \brief Dehomogenize a vector assuming there is a single variable group and the leading coordinate is the homogenizing variable.
+ 
+ \param result The computed value.
+ \param dehom_me The vector to dehomogenize
+ */
+void dehomogenize(point_mp *result, const point_mp dehom_me);
+/**
+ \brief Dehomogenize only the first n variables of a vector assuming there is a single variable group and the leading coordinate is the homogenizing variable.
+ 
+ \param result The computed value.
+ \param dehom_me The vector to dehomogenize
+ \param num_variables the total number of variables, including the homogenizing variable.
+ */
+void dehomogenize(point_mp *result, const point_mp dehom_me, int num_variables);
 
 
 
@@ -171,14 +182,14 @@ void dehomogenize(point_mp *result, point_mp dehom_me, int num_variables);
  \param Res the result of the operation
  \param M the input matrix
  */
-void nonconj_transpose(mat_d Res, mat_d M);
+void nonconj_transpose(mat_d Res, const mat_d M);
 /**
  \brief Compute the non-conjugate transpose of a complex matrix M.
  
  \param Res the result of the operation
  \param M the input matrix
  */
-void nonconj_transpose(mat_mp Res, mat_mp M);
+void nonconj_transpose(mat_mp Res, const mat_mp M);
 
 
 
@@ -189,7 +200,7 @@ void nonconj_transpose(mat_mp Res, mat_mp M);
  \param one The first input vector.
  \param two The second input vector.
  */
-void dot_product_d(comp_d result, vec_d one, vec_d two);
+void dot_product_d(comp_d result, const vec_d one, const vec_d two);
 /**
  \brief Compute the non-conjugate dot product of two vectors of the same size only
  
@@ -197,7 +208,7 @@ void dot_product_d(comp_d result, vec_d one, vec_d two);
  \param one The first input vector.
  \param two The second input vector.
  */
-void dot_product_mp(comp_mp result, vec_mp one, vec_mp two);
+void dot_product_mp(comp_mp result, const vec_mp one, const vec_mp two);
 
 
 /**
@@ -207,7 +218,7 @@ void dot_product_mp(comp_mp result, vec_mp one, vec_mp two);
  \param left The first input vector.
  \param right The second input vector.
  */
-void dot_product_mindim(comp_d result, vec_d left, vec_d right);
+void dot_product_mindim(comp_d result, const vec_d left, const vec_d right);
 /**
  \brief Compute the non-conjugate dot product of two complex vectors of possibly differing length, only for the first computable number of variables.
  
@@ -215,7 +226,7 @@ void dot_product_mindim(comp_d result, vec_d left, vec_d right);
  \param left The first input vector.
  \param right The second input vector.
  */
-void dot_product_mindim(comp_mp result, vec_mp left, vec_mp right);
+void dot_product_mindim(comp_mp result, const vec_mp left, const vec_mp right);
 
 
 
@@ -226,7 +237,7 @@ void dot_product_mindim(comp_mp result, vec_mp left, vec_mp right);
  \param determinant The computed value.
  \param source_matrix The matrix to compute the determinant of.
  */
-int take_determinant_d(comp_d determinant, mat_d source_matrix);
+int take_determinant_d(comp_d determinant, const mat_d source_matrix);
 /**
  \brief Compute the determinant of a matrix
  
@@ -234,7 +245,7 @@ int take_determinant_d(comp_d determinant, mat_d source_matrix);
  \param determinant The computed value.
  \param source_matrix The matrix to compute the determinant of.
  */
-int take_determinant_mp(comp_mp determinant, mat_mp source_matrix);
+int take_determinant_mp(comp_mp determinant, const mat_mp source_matrix);
 
 
 
@@ -246,7 +257,7 @@ int take_determinant_mp(comp_mp determinant, mat_mp source_matrix);
  \param input The input point.
  \param projection The vector representing the linear projection.
  */
-void projection_value_homogeneous_input(comp_d result, vec_d input, vec_d projection);
+void projection_value_homogeneous_input(comp_d result, const vec_d input, const vec_d projection);
 /**
  \brief Compute the linear projection value of a point, given homogenenous coordinates for the point.
  
@@ -255,7 +266,7 @@ void projection_value_homogeneous_input(comp_d result, vec_d input, vec_d projec
  \param input The input point.
  \param projection The vector representing the linear projection.
  */
-void projection_value_homogeneous_input(comp_mp result, vec_mp input, vec_mp projection);
+void projection_value_homogeneous_input(comp_mp result, const vec_mp input, const vec_mp projection);
 
 
 /**
@@ -268,7 +279,7 @@ void projection_value_homogeneous_input(comp_mp result, vec_mp input, vec_mp pro
  \param right The second input
  \param tolerance The L_2 separation distance for the two points to be considered the same
  */
-int isSamePoint_inhomogeneous_input(point_d left, point_d right, double tolerance);
+int isSamePoint_inhomogeneous_input(const point_d left, const point_d right, double tolerance);
 /**
  \brief tests whether two point given in already-dehomogenized form are the same, using a defined threshold.
  
@@ -279,7 +290,7 @@ int isSamePoint_inhomogeneous_input(point_d left, point_d right, double toleranc
  \param right The second input
  \param tolerance The L_2 separation distance for the two points to be considered the same
  */
-int isSamePoint_inhomogeneous_input(point_mp left, point_mp right, double tolerance);
+int isSamePoint_inhomogeneous_input(const point_mp left, const point_mp right, double tolerance);
 
 
 
@@ -293,7 +304,7 @@ int isSamePoint_inhomogeneous_input(point_mp left, point_mp right, double tolera
  \param right The second input
  \param tolerance The L_2 separation tolerance for the points
  */
-int isSamePoint_homogeneous_input(point_d left, point_d right, double tolerance);
+int isSamePoint_homogeneous_input(const point_d left, const point_d right, double tolerance);
 /**
  \brief tests whether two point given in homogenized form are the same, using a defined threshold.
  
@@ -304,7 +315,7 @@ int isSamePoint_homogeneous_input(point_d left, point_d right, double tolerance)
  \param right The second input
  \param tolerance The L_2 separation tolerance for the points
  */
-int isSamePoint_homogeneous_input(point_mp left, point_mp right, double tolerance);
+int isSamePoint_homogeneous_input(const point_mp left, const point_mp right, double tolerance);
 
 
 /**
@@ -349,7 +360,7 @@ void print_path_retVal_message(int retVal);
  \return The computed number of variables
  \param PPD the preproc_data from which to compute.  This must be populated from the parsed input file elsewhere.
  */
-int get_num_vars_PPD(preproc_data PPD);
+int get_num_vars_PPD(const preproc_data PPD);
 
 
 /**
@@ -358,14 +369,14 @@ int get_num_vars_PPD(preproc_data PPD);
  \param PED The patch into which to copy.
  \param PED_input The patch from which to copy.
  */
-void cp_patch_mp(patch_eval_data_mp *PED, patch_eval_data_mp PED_input);
+void cp_patch_mp(patch_eval_data_mp *PED, const patch_eval_data_mp PED_input);
 /**
  \brief copy a bertini patch structure
  
  \param PED The patch into which to copy.
  \param PED_input The patch from which to copy.
  */
-void cp_patch_d(patch_eval_data_d *PED, patch_eval_data_d PED_input);
+void cp_patch_d(patch_eval_data_d *PED, const patch_eval_data_d PED_input);
 
 
 
@@ -406,7 +417,7 @@ void print_tracker(const tracker_config_t * T);
  \param index_tracker The order the inputs get sorted into.  It's a permutation vector.
  \param projections_input The projection values you want to sort.
  */
-int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & index_tracker, vec_mp projections_input);
+int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & index_tracker, const vec_mp projections_input);
 
 
 /**
@@ -434,7 +445,7 @@ int compare_integers_increasing(const void * left_in, const void * right_in);
  
  \param patch a pointer to a patch to send
  */
-void send_patch_mp   (patch_eval_data_mp * patch);
+void send_patch_mp   (const patch_eval_data_mp * patch);
 /**
  \brief Broadcast receive a patch from 0
  
@@ -449,7 +460,7 @@ void receive_patch_mp(patch_eval_data_mp * patch);
  
  \param patch a pointer to a patch to send
  */
-void send_patch_d   (patch_eval_data_d * patch);
+void send_patch_d   (const patch_eval_data_d * patch);
 /**
  \brief Broadcast receive a patch from 0
  
@@ -465,7 +476,7 @@ void receive_patch_d(patch_eval_data_d * patch);
  
  \param PPD a pointer to a preproc_data to send
  */
-void send_preproc_data(preproc_data *PPD);
+void send_preproc_data(const preproc_data *PPD);
 /**
  \brief Broadcast receive a preproc_data from 0
  
@@ -482,7 +493,7 @@ void receive_preproc_data(preproc_data *PPD);
  \param A matrix to send
  \param target Where to send it relative to MPI_COMM_WORLD
  */
-void send_mat_d(mat_d A, int target);
+void send_mat_d(const mat_d A, int target);
 /**
  \brief receive a matrix from a single source.
  
@@ -498,7 +509,7 @@ void receive_mat_d(mat_d A, int source);
  \param A matrix to send
  \param target Where to send it relative to MPI_COMM_WORLD
  */
-void send_mat_mp(mat_mp A, int target);
+void send_mat_mp(const mat_mp A, int target);
 /**
  \brief receive a matrix from a single source.
  
@@ -516,7 +527,7 @@ void receive_mat_mp(mat_mp A, int source);
  \param A_rat The rational matrix to send
  \param target Where to send it relative to MPI_COMM_WORLD
  */
-void send_mat_rat(mat_d A_d, mat_mp A_mp, mpq_t ***A_rat, int target);
+void send_mat_rat(const mat_d A_d, const mat_mp A_mp, const mpq_t ***A_rat, int target);
 /**
  \brief Simultaneously receive a double, mp, and rational matrix from a single source.
  
@@ -535,7 +546,7 @@ void receive_mat_rat(mat_d A_d, mat_mp A_mp, mpq_t ***A_rat, int source);
  \param b matrix to send
  \param target Where to send it, relative to MPI_COMM_WORLD
  */
-void send_vec_d(vec_d b, int target);
+void send_vec_d(const vec_d b, int target);
 /**
  \brief receive a vector from a single source.
  
@@ -550,7 +561,7 @@ void receive_vec_d(vec_d b, int source);
  \param b matrix to send
  \param target Where to send it, relative to MPI_COMM_WORLD
  */
-void send_vec_mp(vec_mp b, int target);
+void send_vec_mp(const vec_mp b, int target);
 /**
  \brief receive a vector from a single source.
  
@@ -567,7 +578,7 @@ void receive_vec_mp(vec_mp b, int source);
  \param size the number of entries
  \param target Where to send it, relative to MPI_COMM_WORLD
  */
-void send_vec_rat(mpq_t ***b, int size, int target);
+void send_vec_rat(const mpq_t ***b, int size, int target);
 /**
  \brief receive a vector from a single source.
  
@@ -587,7 +598,7 @@ void receive_vec_rat(mpq_t ***b, int size, int source);
  \param c Number to send
  \param target Where to send it, relative to MPI_COMM_WORLD
  */
-void send_comp_d(comp_d c, int target);
+void send_comp_d(const comp_d c, int target);
 /**
  \brief Receive a complex number from a single source.
  
@@ -612,7 +623,7 @@ void receive_comp_d(comp_d c, int source);
  \param num How many there are
  \param target Where to send it, relative to MPI_COMM_WORLD
  */
-void send_comp_num_d(comp_d *c, int num, int target);
+void send_comp_num_d(const comp_d *c, int num, int target);
 /**
  \brief Receive an array of complex numbers from a single source.
  
@@ -635,7 +646,7 @@ void receive_comp_num_d(comp_d *c, int num, int source);
  \param c Number to send
  \param target Where to send it, relative to MPI_COMM_WORLD
  */
-void send_comp_mp(comp_mp c, int target);
+void send_comp_mp(const comp_mp c, int target);
 /**
  \brief Receive a complex number from a single source.
  
@@ -652,7 +663,7 @@ void receive_comp_mp(comp_mp c, int source);
  \param num How many of them there are.
  \param target Where to send them, relative to MPI_COMM_WORLD
  */
-void send_comp_num_mp(comp_mp *c, int num, int target);
+void send_comp_num_mp(const comp_mp *c, int num, int target);
 /**
  \brief Receive an array of complex numbers from a single target.
  
@@ -669,7 +680,7 @@ void receive_comp_num_mp(comp_mp *c, int num, int source);
  \param c number to send
  \param target Where to send it, relative to MPI_COMM_WORLD
  */
-void send_comp_rat(mpq_t c[2], int target);
+void send_comp_rat(const mpq_t c[2], int target);
 /**
  \brief Receive a complex number from a single source.
  
@@ -686,7 +697,7 @@ void receive_comp_rat(mpq_t c[2], int source);
  \param num How many of them there are.
  \param target Where to send them, relative to MPI_COMM_WORLD
  */
-void send_comp_num_rat(mpq_t c[][2], int num, int target);
+void send_comp_num_rat(const mpq_t c[][2], int num, int target);
 /**
  \brief Receive an array of complex numbers from a single target.
  
@@ -694,7 +705,7 @@ void send_comp_num_rat(mpq_t c[][2], int num, int target);
  \param num How many of them there are.
  \param source Where to receive them from, relative to MPI_COMM_WORLD
  */
-void receive_comp_num_rat(mpq_t c[][2], int num, int source);
+void receive_comp_num_rat(const mpq_t c[][2], int num, int source);
 
 
 

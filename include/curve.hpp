@@ -62,7 +62,7 @@ public:
 	/**
 	 \return get an iterator to the beginning of the set of removed points, which were merged away in the merge operation.
 	 */
-	inline removed_iterator removed_begin(){return removed_points_.begin();}
+	inline removed_iterator removed_begin() {return removed_points_.begin();}
 	
 	/**
 	 \return get an iterator to the beginning of the set of removed points, which were merged away in the merge operation.
@@ -72,7 +72,7 @@ public:
 	/**
 	 \return get an iterator to the end of the set of removed points, which were merged away in the merge operation.
 	 */
-	inline removed_iterator removed_end(){return removed_points_.end();}
+	inline removed_iterator removed_end() {return removed_points_.end();}
 	
 	/**
 	 \return get an iterator to the end of the set of removed points, which were merged away in the merge operation.
@@ -184,7 +184,7 @@ public:
 	 check whether the edge is degenerate
 	 \return true if the edge is degenerate, false if not.
 	 */
-	inline bool is_degenerate()
+	inline bool is_degenerate() const
 	{
 		if ((left() == right()) && (left()==midpt()) && (right()==midpt()))
 			return true;
@@ -199,7 +199,7 @@ public:
 	 \param target to whom to send this edge
 	 \param mpi_config the current state of parallelism
 	 */
-	void send(int target, ParallelismConfig & mpi_config)
+	void send(int target, ParallelismConfig & mpi_config) const
 	{
 		int * buffer = new int[4];
 		
@@ -228,7 +228,7 @@ public:
 	 \param source from whom to receive this edge
 	 \param mpi_config the current state of parallelism
 	 */
-	void receive(int source, ParallelismConfig & mpi_config)
+	void receive(int source, ParallelismConfig & mpi_config) 
 	{
 		MPI_Status statty_mc_gatty;
 		int * buffer = new int[4];
@@ -284,17 +284,12 @@ public:
  includes methods to add vertices, look up vertices, etc
  */
 class Curve : public Decomposition
-{
-	
-	std::vector<unsigned int> num_samples_each_edge_; ///< the number of samples on each edge, where there is a strict correspondence between elements of this vector and edges.
-	
+{	
 	std::vector< std::vector<int > > sample_indices_; ///< the indices of the vertices for the samples on the edges.
 	
 	
 	std::vector<Edge> edges_; ///< The edges (1-cells) computed by Bertini_real
 	size_t      num_edges_;  ///< How many edges this Decomposition currently has.  This could also be inferred from edges.size()
-	
-	
 
 	
 public:
@@ -308,13 +303,13 @@ public:
 	 \param edge_index the index of the edge, for which to query.
 	 \return the number of samples on edge i
 	 */
-	unsigned int num_samples_on_edge(unsigned int edge_index)
+	unsigned int num_samples_on_edge(unsigned int edge_index) const
 	{
-		if (edge_index >= num_samples_each_edge_.size()) {
-			throw std::out_of_range("trying to access num_samples_each_edge_ of out of range index");
+		if (edge_index >= sample_indices_.size()) {
+			throw std::out_of_range("trying to access sample_indices_ of out of range index");
 		}
 		
-		return num_samples_each_edge_[edge_index];
+		return sample_indices_[edge_index].size();
 	}
 	
 	
@@ -329,7 +324,7 @@ public:
 	 \param vertex_index the position of the vertex you want the index of.
 	 \return the index of the point, in the vertex set
 	 */
-	int sample_index(unsigned int edge_index, unsigned int vertex_index)
+	int sample_index(unsigned int edge_index, unsigned int vertex_index) const
 	{
 		if (edge_index>=num_edges()) {
 			std::stringstream ss;
@@ -385,7 +380,7 @@ public:
 	 
 	 \return a std::set of ALL the Vertex indices occuring in this Decomposition.
 	 */
-	std::set< int > all_edge_indices()
+	std::set< int > all_edge_indices() const
     {
         std::set< int > index_set;
         
@@ -452,7 +447,7 @@ public:
 	 
 	 \param outputfile The name of the file to write to.
 	 */
-	void print_edges(boost::filesystem::path outputfile);
+	void print_edges(boost::filesystem::path outputfile) const;
 	
 	
 	/**
@@ -460,7 +455,7 @@ public:
 	 
 	 \param base The name of the base folder to print the Decomposition to.
 	 */
-	void print(boost::filesystem::path base);
+	void print(boost::filesystem::path base) const;
 	
 	
 	
@@ -474,7 +469,7 @@ public:
 	 \param ind The index to search for.
 	 \return The index of the found edge, or -10 if no edge had the point as midpoint.
 	 */
-	int nondegenerate_edge_w_midpt(int ind)
+	int nondegenerate_edge_w_midpt(int ind) const
 	{
 		
 		for (unsigned int ii=0; ii<num_edges_; ii++){
@@ -499,7 +494,7 @@ public:
 	 \param ind The index to search for.
 	 \return The index of the found edge, or -11 if no edge had the point as left point.
 	 */
-	int nondegenerate_edge_w_left(int ind)
+	int nondegenerate_edge_w_left(int ind) const
 	{
 		
 		for (unsigned int ii=0; ii<num_edges_; ii++){
@@ -523,7 +518,7 @@ public:
 	 \param ind The index to search for.
 	 \return The index of the found edge, or -12 if no edge had the point as right point.
 	 */
-	int nondegenerate_edge_w_right(int ind)
+	int nondegenerate_edge_w_right(int ind) const
 	{
 		
 		for (unsigned int ii=0; ii<num_edges_; ii++){
@@ -548,7 +543,7 @@ public:
 	 \param ind The index to search for.
 	 \return The index of the found edge, or -10 if no edge had the point as mid point.
 	 */
-	int edge_w_midpt(int ind)
+	int edge_w_midpt(int ind) const
 	{
 		
 		for (unsigned int ii=0; ii<num_edges_; ii++){
@@ -567,7 +562,7 @@ public:
 	 \param ind The index to search for.
 	 \return The index of the found edge, or -11 if no edge had the point as left point.
 	 */
-	int edge_w_left(int ind)
+	int edge_w_left(int ind) const
 	{
 		
 		for (unsigned int ii=0; ii<num_edges_; ii++){
@@ -586,7 +581,7 @@ public:
 	 \param ind The index to search for.
 	 \return The index of the found edge, or -12 if no edge had the point as right point.
 	 */
-	int edge_w_right(int ind)
+	int edge_w_right(int ind) const
 	{
 		
 		for (unsigned int ii=0; ii<num_edges_; ii++){
@@ -606,7 +601,7 @@ public:
 	 \param ind The index to search for.
 	 \return The index of the found edge, or -13 if no edge had the point as a removed point.
 	 */
-	int edge_w_removed(int ind)
+	int edge_w_removed(int ind) const
 	{
 		
 		for (unsigned int ii=0; ii<num_edges_; ii++){
@@ -630,7 +625,7 @@ public:
 	 \return a vector of integers containing the indices of edges to merge together into a single new edge.
 	 \param V The Vertex set to which the Decomposition refers.
 	 */
-	std::vector<int> get_merge_candidate(const VertexSet & V);
+	std::vector<int> get_merge_candidate(const VertexSet & V) const;
 	
 	
 	/**
@@ -771,7 +766,7 @@ public:
 	 \param target Who to send to.
 	 \param mpi_config The state of MPI.
 	 */
-	void send(int target, ParallelismConfig & mpi_config);
+	void send(int target, ParallelismConfig & mpi_config) const;
 	
 	
 	/**
@@ -881,7 +876,7 @@ public:
 	 
 	 \param samplingName The name of the file to write.
 	 */
-	void  output_sampling_data(boost::filesystem::path samplingName);
+	void  output_sampling_data(boost::filesystem::path samplingName) const;
 	
 	
 	

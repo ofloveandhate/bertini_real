@@ -1015,7 +1015,8 @@ int Curve::interslice(const WitnessSet & W_curve,
 
 
 //returns <-1> if no candidate found
-std::vector<int> Curve::get_merge_candidate(const VertexSet & V){
+std::vector<int> Curve::get_merge_candidate(const VertexSet & V) const
+{
 	
 #ifdef functionentry_output
 	std::cout << "curve::get_merge_candidate" << std::endl;
@@ -1440,7 +1441,7 @@ int verify_projection_ok(const WitnessSet & W,
 
 
 
-void Curve::send(int target, ParallelismConfig & mpi_config)
+void Curve::send(int target, ParallelismConfig & mpi_config) const
 {
 #ifdef functionentry_output
 	std::cout << "curve::send" << std::endl;
@@ -1531,7 +1532,7 @@ int Curve::setup_edges(boost::filesystem::path INfile)
 
 
 
-void Curve::print(boost::filesystem::path base)
+void Curve::print(boost::filesystem::path base) const
 {
 #ifdef functionentry_output
 	std::cout << "curve::print" << std::endl;
@@ -1553,7 +1554,7 @@ void Curve::print(boost::filesystem::path base)
 
 
 
-void Curve::print_edges(boost::filesystem::path outputfile)
+void Curve::print_edges(boost::filesystem::path outputfile) const
 {
 #ifdef functionentry_output
 	std::cout << "curve::print_edges" << std::endl;

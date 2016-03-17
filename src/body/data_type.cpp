@@ -2460,7 +2460,7 @@ void Vertex::set_point(const vec_mp new_point)
 
 
 
-void Vertex::send(int target, ParallelismConfig & mpi_config)
+void Vertex::send(int target, ParallelismConfig & mpi_config) const
 {
 	
 	send_vec_mp(pt_mp_, target);
@@ -2793,7 +2793,7 @@ int VertexSet::add_vertex(const Vertex & source_vertex)
 }
 
 
-void VertexSet::print_to_screen()
+void VertexSet::print_to_screen() const
 {
 	
 	vec_mp temp; init_vec_mp(temp,0); temp->size = 0;
@@ -2804,7 +2804,7 @@ void VertexSet::print_to_screen()
 		temp->size = num_natural_variables()-1;
 		
 		print_point_to_screen_matlab(temp,ss.str());
-		print_point_to_screen_matlab(vertices_[ii].projection_values(),"projection_values");
+		print_point_to_screen_matlab(vertices_[ii].get_projection_values(),"projection_values");
 		printf("type: %d\n", vertices_[ii].type());
 	}
 }
@@ -2964,7 +2964,7 @@ void VertexSet::print(boost::filesystem::path outputfile) const
 
 
 
-void VertexSet::send(int target, ParallelismConfig & mpi_config)
+void VertexSet::send(int target, ParallelismConfig & mpi_config) const
 {
 	
 
@@ -2983,8 +2983,8 @@ void VertexSet::send(int target, ParallelismConfig & mpi_config)
 	
 	delete [] buffer2;
 	
-	
-	MPI_Send(&same_point_tolerance_,1,MPI_DOUBLE,target,VERTEX_SET, mpi_config.comm());
+	auto send_me = same_point_tolerance_;
+	MPI_Send(&send_me,1,MPI_DOUBLE,target,VERTEX_SET, mpi_config.comm());
 //	std::cout << "sending " << num_projections << " projections" << std::endl;
 	
 	buffer2 = new int[num_projections_];
@@ -3018,7 +3018,7 @@ void VertexSet::send(int target, ParallelismConfig & mpi_config)
 	
 	
 	for (unsigned int ii=0; ii<num_vertices_; ii++) {
-		vertices_[ii].send(target, mpi_config);
+		GetVertex(ii).send(target, mpi_config);
 	}
 	
 	
@@ -3196,7 +3196,7 @@ int Decomposition::add_vertex(VertexSet & V, Vertex source_vertex)
 
 
 int Decomposition::index_in_vertices(VertexSet & V,
-									 vec_mp testpoint)
+									 vec_mp testpoint) const
 {
 #ifdef functionentry_output
 	std::cout << "Decomposition::index_in_vertices" << std::endl;
@@ -3321,7 +3321,7 @@ int Decomposition::setup(boost::filesystem::path INfile)
 
 
 
-void Decomposition::print(boost::filesystem::path base)
+void Decomposition::print(boost::filesystem::path base) const
 {
 	
 #ifdef functionentry_output
@@ -3370,7 +3370,7 @@ void Decomposition::print(boost::filesystem::path base)
     
     fprintf(OUT,"\n\n");
     
-    print_mp(OUT, 0, this->sphere_radius_);
+    print_mp(OUT, 0, const_cast<_comp_mp*>(this->sphere_radius_));
     fprintf(OUT, "\n%d\n",this->sphere_center_->size);
     
     for (int jj=0; jj<this->sphere_center_->size; jj++) {
@@ -3554,7 +3554,7 @@ void Decomposition::copy_data_from_witness_set(const WitnessSet & W)
 	this->W_ = W;
 }
 
-void Decomposition::output_main(const boost::filesystem::path base)
+void Decomposition::output_main(const boost::filesystem::path base) const
 {
 #ifdef functionentry_output
 	std::cout << "Decomposition::output_main" << std::endl;
@@ -3603,7 +3603,7 @@ void Decomposition::output_main(const boost::filesystem::path base)
 
 
 
-void Decomposition::send(int target, ParallelismConfig & mpi_config)
+void Decomposition::send(int target, ParallelismConfig & mpi_config) const
 {
 #ifdef functionentry_output
 	std::cout << "Decomposition::send" << std::endl;
@@ -3846,128 +3846,6 @@ int compare_integers_increasing(const void * left_in, const void * right_in)
 
 
 
-
-
-
-namespace color {
-	int color_to_int(const std::string c)
-	{
-		
-		if(c.compare("k") == 0){
-			return 30;
-		}
-		else if(c.compare("r") == 0){
-			return 31;
-		}
-		else if(c.compare("g") == 0){
-			return 32;
-		}
-		else if(c.compare("y") == 0){
-			return 33;
-		}
-		else if (c.compare("b") == 0) {
-			return 34;
-		}
-		else if(c.compare("m") == 0){
-			return 35;
-		}
-		else if(c.compare("c") == 0){
-			return 36;
-		}
-		else if(c.compare("l") == 0){
-			return 37;
-		}
-		
-		return 30;
-		
-	}
-	
-	
-	std::string bold(std::string new_color)
-	{
-		std::stringstream ss;
-		ss << "\033[1;" << color_to_int(new_color) << "m" ;     //;
-		return ss.str();
-	}
-	
-	std::string dark(std::string new_color)
-	{
-		std::stringstream ss;
-		ss << "\033[2;" << color_to_int(new_color) << "m" ;     //;
-		return ss.str();
-	}
-	
-	
-	std::string underline(std::string new_color)
-	{
-		std::stringstream ss;
-		ss << "\033[4;" << color_to_int(new_color) << "m" ;     //;
-		return ss.str();
-	}
-	
-	
-	std::string background(std::string new_color)
-	{
-		std::stringstream ss;
-		ss << "\033[7;" << color_to_int(new_color) << "m" ;     //;
-		return ss.str();
-	}
-	
-	
-	std::string strike(std::string new_color)
-	{
-		std::stringstream ss;
-		ss << "\033[9;" << color_to_int(new_color) << "m" ;     //;
-		return ss.str();
-	}
-	
-	std::string console_default(){
-		return "\033[0m";
-	}
-	
-	std::string black(){
-		return "\033[0;30m";
-	}
-	
-	std::string red(){
-		return "\033[0;31m";
-	}
-	
-	std::string green(){
-		return "\033[0;32m";
-	}
-	
-	
-	std::string brown(){
-		return "\033[0;33m";
-	}
-	
-	std::string blue(){
-		return "\033[0;34m";
-	}
-	
-	std::string magenta(){
-		return "\033[0;35m";
-	}
-	
-	std::string cyan(){
-		return "\033[0;36m";
-	}
-	
-	std::string gray(){
-		return "\033[0;37m";
-	}
-	
-	
-	//black - 30
-	//red - 31
-	//green - 32
-	//brown - 33
-	//blue - 34
-	//magenta - 35
-	//cyan - 36
-	//lightgray - 37
-}
 
 
 
