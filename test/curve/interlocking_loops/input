@@ -1,0 +1,16 @@
+CONFIG
+
+tracktype:1
+
+END;
+
+INPUT
+
+variable_group x, y, z;
+
+function f,g;
+
+f = x *(x^2 + y^2 -1);
+g = z *((y-1)^2 + z^2 -1);
+
+END;
