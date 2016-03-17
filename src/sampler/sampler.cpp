@@ -454,7 +454,7 @@ void Curve::adaptive_sampler_movement(VertexSet & V,
 					
 					
 					// check how far away we were from the LEFT interval point
-					norm_of_difference(dist_moved,
+					norm_of_difference_mindim(dist_moved,
                                        new_point_dehomogenized, // the current new point
                                        estimated_point);// the estimated point which generated the new point
 					
@@ -759,7 +759,7 @@ void Curve::adaptive_sampler_distance(VertexSet & V,
 					dehom_left->size = num_vars-1;
 					
 					// check how far away we were from the LEFT interval point
-					norm_of_difference(dist_away,
+					norm_of_difference_mindim(dist_away,
 									   dehom_left, // the current new point
                                        dehom_right);// jj is left, jj+1 is right
 					
@@ -777,7 +777,7 @@ void Curve::adaptive_sampler_distance(VertexSet & V,
 					dehom_right->size = num_vars-1;
 					
 					// check how far away we were from the RIGHT interval point
-					norm_of_difference(dist_away,
+					norm_of_difference_mindim(dist_away,
                                        dehom_left, // the current new point
                                        dehom_right);
 					
@@ -1098,7 +1098,7 @@ void Curve::adaptive_set_initial_refinement_flags(int & num_refinements, std::ve
                    &(V[sample_index(current_edge,ii+1)].point())->coord[0]);
 		}
 		
-		norm_of_difference(dist_away, dehom1, dehom2); // get the distance between the two adjacent points.
+		norm_of_difference_mindim(dist_away, dehom1, dehom2); // get the distance between the two adjacent points.
 		
 		if ( mpf_cmp(dist_away, sampler_options.TOL)>0 ){
 			refine_flags[ii] = true;
@@ -1517,7 +1517,7 @@ void Surface::FixedSampleFace(int face_index, VertexSet & V, sampler_configurati
 	
 	
 	
-	if (sampler_options.verbose_level()>=1) {
+	if (sampler_options.verbose_level()>=2) {
 		std::cout << "left rib, from left curve edges:\n";
 		for (unsigned int jj=0; jj<ribs[0].size(); jj++) {
 			std::cout << ribs[0][jj] << " ";
@@ -1549,21 +1549,17 @@ void Surface::FixedSampleFace(int face_index, VertexSet & V, sampler_configurati
 		add_mp(md_config.u_target,md_config.u_target,interval_width);
 		set_mp(md_config.v_target,half); // start on the bottom one
 		
-		bool success_indicator_total = true;
 
 
 
 		int curr_bottom_index;
 		int curr_top_index;
-
 		try {
-			std::cout << bottom << " " << top << '\n';
 			curr_bottom_index = bottom->sample_index(curr_face.bottom_edge(),jj);
 			curr_top_index = top->sample_index(curr_face.top_edge(),jj);			
 		} 
 		catch (std::logic_error& e) {
 			std::cout << "not completing sampling this face.  reason:" << std::endl << e.what() << std::endl;
-			success_indicator_total = false;
 			continue;
 		}
 		
@@ -1581,7 +1577,6 @@ void Surface::FixedSampleFace(int face_index, VertexSet & V, sampler_configurati
 		int startpt_index;
 		if (success_indicator!=SUCCESSFUL) {
 			std::cout << color::red() << "midpoint solver unsuccesful at generating first point on rib" << color::console_default() << std::endl;
-			success_indicator_total = false;
 			continue;
 		}
 		else {
@@ -1617,12 +1612,13 @@ void Surface::FixedSampleFace(int face_index, VertexSet & V, sampler_configurati
 		
 		
 		
-		std::vector<int> refined_rib(2);
+		std::vector<int> refined_rib(3);
 		refined_rib[0] = curr_bottom_index;
-		refined_rib[1] = curr_top_index;
+		refined_rib[1] = startpt_index;
+		refined_rib[2] = curr_top_index;
 		
 		
-		std::vector<bool> refine_flags(1, true);
+		std::vector<bool> refine_flags(2, true); // guarantee at least 5 points on the rib.  seems reasonable
 		bool need_refinement = true;
 		unsigned pass_number = 0;
 		while ( need_refinement && (pass_number < sampler_options.maximum_num_iterations) )
@@ -1633,9 +1629,6 @@ void Surface::FixedSampleFace(int face_index, VertexSet & V, sampler_configurati
 			std::vector<bool> refine_flags_next;
 			need_refinement = false; // reset to no, in case don't need.  will set to true if point too far apart
 			
-			for (auto& asdf : refined_rib)
-				std::cout << asdf << std::endl;
-			std::cout << "\n\n";
 			for (unsigned rr=0; rr<refine_flags.size(); ++rr) {
 				temp_rib.push_back(refined_rib[rr]);
 				if (refine_flags[rr]) {
@@ -1646,7 +1639,7 @@ void Surface::FixedSampleFace(int face_index, VertexSet & V, sampler_configurati
 
 					neg_mp(&target_multilin_linears[1]->coord[0],target_projection_value);
 					
-					if (sampler_options.verbose_level()>=1)
+					if (sampler_options.verbose_level()>=4)
 					{
 						std::cout << "refining rib, tracking from\n";
 						print_point_to_screen_matlab(W_multilin.point(0),"startpt");
@@ -1674,17 +1667,15 @@ void Surface::FixedSampleFace(int face_index, VertexSet & V, sampler_configurati
 
 					if (W_new.num_points()==0) {
 						std::cout << color::red() << "multilin tracker did not return any noninfinite points :(" << color::console_default() << std::endl;
-						success_indicator_total = false;
-						need_refinement = false; // bail out of the refinement loop...
-						break;
+						refine_flags_next.push_back(false);
+						continue;
 					}
 
 					
 					dehomogenize(&dehom_right,W_new.point(0));
-					print_point_to_screen_matlab(dehom_right,"solution");
 					if (!checkForReal_mp(dehom_right, (V.T())->real_threshold))
 					{
-						mypause();
+						std::cout << color::red() << "got non-real solution sample... something strange going on!" << color::console_default() << '\n';
 						refine_flags_next.push_back(false);
 						continue;
 						
@@ -1696,7 +1687,7 @@ void Surface::FixedSampleFace(int face_index, VertexSet & V, sampler_configurati
 					temp_rib.push_back(V.add_vertex(temp_vertex));
 
 					dehomogenize(&dehom_left,V[refined_rib[rr]].point());
-					norm_of_difference(dist_away,
+					norm_of_difference_mindim(dist_away,
 									   dehom_left, // the current new point
 									   dehom_right);
 					
@@ -1708,7 +1699,7 @@ void Surface::FixedSampleFace(int face_index, VertexSet & V, sampler_configurati
 					
 					dehomogenize(&dehom_left,V[refined_rib[rr+1]].point());
 					
-					norm_of_difference(dist_away,
+					norm_of_difference_mindim(dist_away,
 									   dehom_left, // the current new point
 									   dehom_right);
 					
@@ -1716,15 +1707,11 @@ void Surface::FixedSampleFace(int face_index, VertexSet & V, sampler_configurati
 					refine_flags_next.push_back(mpf_cmp(dist_away, sampler_options.TOL)>0);
 					if (refine_flags_next.back())
 						need_refinement = true;
-					
-					
-				}
+				} // re: if refine_flags[rr]
 				else
-				{
 					refine_flags_next.push_back(false);
-				}
 				
-			}
+			} // re: for (unsigned rr=0
 			temp_rib.push_back(refined_rib.back());
 			swap(temp_rib,refined_rib);
 			swap(refine_flags_next,refine_flags);
@@ -1733,13 +1720,6 @@ void Surface::FixedSampleFace(int face_index, VertexSet & V, sampler_configurati
 		} // re: while
 		
 		swap(ribs[jj], refined_rib);
-		
-		
-		if (!success_indicator_total) {
-			std::cout << color::red() << "generating rib was unsuccesful" << color::console_default() << std::endl;
-			continue;
-		}
-		
 	}
 	
 	//check the ribs.

@@ -129,6 +129,17 @@ bool is_identity(const mat_mp M);
  */
 void norm_of_difference(mpf_t result, const vec_mp left, const vec_mp right);
 
+
+/**
+ \brief compute the (multiple-precision) 2-norm of the difference of two vectors of the differing length, using the minimal dimension.
+ 
+ \param result the returned computed norm
+ \param left First input vector
+ \param right Second input vector
+ */
+void norm_of_difference_mindim(mpf_t result, const vec_mp left, const vec_mp right);
+
+
 /**
  \brief Dehomogenize a vector assuming there is a single variable group and the leading coordinate is the homogenizing variable.
  

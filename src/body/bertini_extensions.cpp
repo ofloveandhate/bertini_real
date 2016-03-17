@@ -423,6 +423,27 @@ void norm_of_difference(mpf_t result, const vec_mp left, const vec_mp right)
 }
 
 
+void norm_of_difference_mindim(mpf_t result, const vec_mp left, const vec_mp right)
+{
+	using std::min;
+	auto ls = left->size;
+	auto rs = right->size;
+	auto m = min(ls,rs);
+
+	vec_mp a, b;
+	init_vec_mp(a,m);
+	vec_cp_mp(a, left);
+	a->size = m;
+
+	init_vec_mp(b,m);
+	vec_cp_mp(b, right);
+	b->size = m;
+
+	norm_of_difference(result, a, b);
+	return;
+}
+
+
 void dehomogenize(point_d *result, const point_d dehom_me)
 {
 	comp_d denom;
