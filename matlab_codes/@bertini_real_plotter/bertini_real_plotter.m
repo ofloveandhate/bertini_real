@@ -72,6 +72,12 @@ classdef bertini_real_plotter < handle
 			
 			load_data(br_plotter);
 			
+			if br_plotter.BRinfo.num_vertices==0
+				warning('your decomposition contains 0 vertices.  The real part appears to be empty.  Plotting will now terminate.')
+				display(br_plotter.BRinfo);
+				return;
+			end
+			
 			if br_plotter.options.use_custom_projection
 				preprocess_data(br_plotter);
 			end
@@ -375,7 +381,11 @@ classdef bertini_real_plotter < handle
 		
 		function plot(br_plotter)
 			
-			
+			if br_plotter.BRinfo.num_vertices==0
+				warning('your decomposition contains 0 vertices.  The real part appears to be empty.')
+				return;
+			end
+				
 			setupfig(br_plotter);
 			
 			
