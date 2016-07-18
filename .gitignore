@@ -9,6 +9,24 @@
 *.eps
 *.png
 
+*.fls
+*.bbl
+*.glo
+*.ilg
+*.ind
+*.ist
+*.xdy
+*.fdb_latexmk
+*.blg
+*.acn
+
+*.mat
+
+nullspace_left_output
+nullspace_left_midpath_data
+
+partitionParse.c
+
 sampler
 bertini_real
 libpartitionParse*

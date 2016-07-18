@@ -1,0 +1,14 @@
+\section{Quick Summary}
+\label{sec:started}
+
+Here's a super brief description of how to get and use this software:
+
+Bertini\_real can be downloaded from \url{http://bertinireal.com/download.html}, or cloned from \href{https://github.com/ofloveandhate/bertini_real}{its Github repo}.  Use of Bertini\_real depends on Bertini, which itself has several important dependencies (see section \ref{sec:installation})
+Once installed, you can run Bertini\_real on an input file from the command line. After navigating to the working directory of the input file, the flow of Bertini\_real is as follows:
+\begin{enumerate}
+\item Run Bertini on an input file using the \texttt{tracktype:1} setting. This is done by typing in the command line: \texttt{bertini} with an input file named \texttt{input}. Bertini will produce a Numerical Irreducible Decomposition that will be used by Bertini\_real.
+\item Run Bertini\_real on the same input file. Similarly, just type \texttt{bertini\_real} in the command line. Bertini\_real will provide a cellular decomposition of the real portion of a one- or two- dimensional complex algebraic set.
+\item Visualize the results of Bertini\_real in Matlab. Enter Matlab and call \texttt{gather\_br\_samples}, which parses the output results of  into a .mat file, and then call \texttt{bertini\_real\_plotter}, which will plot the curve or surface in Matlab.  Please note that the Matlab executable must be on the path to the input file for Bertini\_real to run). 
+\end{enumerate}
+
+

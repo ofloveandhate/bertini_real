@@ -136,7 +136,7 @@ for ii = 1:length(fv_vertices_to_convhull)
 		fv.faces = [fv.faces;q];
 		convhulls.faces = [convhulls.faces;q];
 	catch
-		warning('computation of convex hull for index %i failed',ii);
+%		warning('computation of convex hull for index %i failed',ii);
 	end
 	
 	
