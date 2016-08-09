@@ -2227,9 +2227,9 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 				sub_mp(numer, proj_mid, proj_bottom); // p2(e.w) - p2(w0);
 				div_mp(md_config.v_target, numer, denom); // [p2(e.w) - p2(w0)] / [p2(w2) - p2(w0)]
 				
-				
-				
-				
+#ifdef thresholding
+				real_threshold(md_config.v_target,solve_options.T.real_threshold);
+#endif
 				
 				
 				

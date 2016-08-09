@@ -515,14 +515,15 @@ int Curve::interslice(const WitnessSet & W_curve,
 	
 	for (int ii=0; ii<num_midpoints; ii++) {
 		
-		if (program_options.verbose_level()>=2) {
-			
-			printf("solving midpoints upstairs %d, projection value %lf\n",ii,mpf_get_d(midpoints_downstairs->coord[ii].r));
-		}
-		
 		neg_mp(&particular_projection->coord[0], &midpoints_downstairs->coord[ii]);
 		
+		real_threshold(&particular_projection->coord[0],solve_options.T.real_threshold);
+
 		
+		if (program_options.verbose_level()>=2) {
+			printf("solving midpoints upstairs %d, projection value ",ii);
+			print_comp_matlab(&particular_projection->coord[0],"p");
+		}
 		
 		SolverOutput fillme;
 		multilin_solver_master_entry_point(W_curve,         // WitnessSet

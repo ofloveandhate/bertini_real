@@ -2645,10 +2645,8 @@ int VertexSet::compute_downstairs_crit_midpts(const WitnessSet & W,
 		
 	}
 	
-	
-#ifdef thresholding
+
 	real_threshold(projection_values, T->real_threshold);
-#endif
 	
 	
 	change_size_vec_mp(crit_downstairs,1); // destructive resize
@@ -2677,6 +2675,8 @@ int VertexSet::compute_downstairs_crit_midpts(const WitnessSet & W,
 		add_mp(temp, &crit_downstairs->coord[ii], &crit_downstairs->coord[ii+1]);
 		mul_mp(&midpoints_downstairs->coord[ii], temp, half);
 	}
+	
+	real_threshold(midpoints_downstairs, T->real_threshold);
 	
 	clear_mp(temp);
 	clear_mp(half);
@@ -2773,9 +2773,7 @@ int VertexSet::add_vertex(const Vertex & source_vertex)
 			projection_value_homogeneous_input(&(vertices_[num_vertices_].projection_values())->coord[ii],
 											   vertices_[num_vertices_].point(),
 											   projections_[ii]);
-#ifdef thresholding
             real_threshold(&(vertices_[num_vertices_].projection_values())->coord[ii],1e-13);
-#endif
 		}
 		
 	}
@@ -3458,9 +3456,9 @@ void Decomposition::compute_sphere_bounds(const WitnessSet & W_crit)
 		for (int ii=0; ii<num_vars; ii++) {
 			set_mp(&sphere_center_->coord[ii], &temp_vec->coord[ii]);
 		}
-#ifdef thresholding
+
 		real_threshold(sphere_center_, 1e-13);
-#endif
+
 		clear_vec_mp(temp_vec);
 		this->have_sphere_ = true;
 		return;
@@ -3535,9 +3533,9 @@ void Decomposition::compute_sphere_bounds(const WitnessSet & W_crit)
 	
 	
 	this->have_sphere_ = true;
-#ifdef thresholding
+
 	real_threshold(sphere_center_,1e-13);
-#endif
+
 
 	return;
 }
