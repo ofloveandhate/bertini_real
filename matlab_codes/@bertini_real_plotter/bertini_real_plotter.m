@@ -16,6 +16,19 @@
 %	'curves', 'curve'   - bool [true]
 %	'faces'             - bool [true]
 %
+%   'colorfn'           - handle to function of x, for generating color
+%                            data.  no default value.  if this is not
+%                            specified, then the colors for the faces
+%                            correspond to the entire face, in the order
+%                            computed.  An example of using this colorfn
+%                            would be to pass a handle to a function
+%                            computing the distance between x and the
+%                            origin, perhaps.
+%
+%    'num_colors'        - integer [64] the number of colors used in the
+%							colormap, particularly used when you use the 
+%							'colorfn' option, to
+%							specify a function used for coloring the surface.
 %
 %
 %
@@ -25,7 +38,7 @@
 % danielthebrake@gmail.com
 % university of notre dame
 % applied and computational mathematics and statistics
-% 2014, 2015
+% 2014, 2015, 2016
 
 
 
@@ -108,6 +121,9 @@ classdef bertini_real_plotter < handle
 			br_plotter.options.render_curves = true;
 			br_plotter.options.render_faces = true;
 			
+			br_plotter.options.use_colorfn = false;
+			
+			br_plotter.options.num_colors = 64;
             if isempty(which('parula'))
                 br_plotter.options.colormap = @jet;
             else
@@ -227,6 +243,23 @@ classdef bertini_real_plotter < handle
 							error('value for ''colormap'' must be a handle to a function generating a colormap for an integer number of colors; e.g. @jet');
 						end
 						
+					case {'colorfn'}
+						tmp = command_line_options{ii+1};
+						if isa(tmp,'function_handle')
+							br_plotter.options.use_colorfn = true;
+							br_plotter.options.colorfn = tmp;
+						else
+							error('value for ''colorfn'' must be a handle to a function accepting a vector and returning a scalar');
+						end
+					
+					
+					case {'num_colors'}
+						tmp = command_line_options{ii+1};
+						if ~isint(tmp)
+							error('value for ''num_colors'' must be in integer');
+						end
+						
+						br_plotter.options.num_colors = tmp;
 						
 					case {'mono','monocolor'}
 						br_plotter.options.monocolor = true;
@@ -253,7 +286,7 @@ classdef bertini_real_plotter < handle
 									br_plotter.options.monocolor_color = [0 0 0];
 								
 								otherwise
-									error('input color string must be one of r g b m c y k.  you can also specify a 1x3 RGB color vector');
+									error('input color string for mono must be one of r g b m c y k.  you can also specify a 1x3 RGB color vector');
 							end
 						else
 							[m,n] = size(tentative_color);

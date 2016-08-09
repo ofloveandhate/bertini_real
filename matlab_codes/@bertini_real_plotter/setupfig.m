@@ -21,7 +21,9 @@ function setupfig(br_plotter,varargin)
 								'Position',br_plotter.window);
 
 	set(fig,'color','w');
-
+	
+	colormap(fig,br_plotter.options.colormap(br_plotter.options.num_colors))
+	
 	if isprop(fig,'SizeChangedFcn')
 		set(fig,'SizeChangedFcn',@br_plotter.resizeui);
 	else
