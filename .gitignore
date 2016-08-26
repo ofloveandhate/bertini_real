@@ -22,6 +22,8 @@
 
 *.mat
 
+*sublime-workspace 
+
 nullspace_left_output
 nullspace_left_midpath_data
 
