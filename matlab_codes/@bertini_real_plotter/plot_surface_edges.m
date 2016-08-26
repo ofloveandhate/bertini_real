@@ -132,6 +132,7 @@ for kk = 1:length(br_plotter.BRinfo.midpoint_slices)
 		handle_counter = handle_counter+1;
 		br_plotter.legend.surface_edges.handles(handle_counter) = handie_mc_handhand(1);
 		br_plotter.legend.surface_edges.text{handle_counter} = 'midslices';
+		added = true;
 	end
 	
 	
