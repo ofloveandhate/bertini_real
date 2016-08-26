@@ -82,7 +82,7 @@ int UbermasterProcess::main_loop()
 	
 	V.set_tracker_config(&solve_options.T);
 	
-	V.set_same_point_tolerance(solve_options.T.real_threshold);
+	V.set_same_point_tolerance(1e1*solve_options.T.real_threshold);
 
 	
 	vec_mp *pi = (vec_mp *) br_malloc(W.dimension()*sizeof(vec_mp ));
