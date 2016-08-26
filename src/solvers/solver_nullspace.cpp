@@ -1567,8 +1567,6 @@ int nullspacejac_solver_master_entry_point(int							MPType,
 						 ns_config,
 						 W,
 						 solve_options);
-			// initialize latest_newton_residual_mp
-//			mpf_init(solve_options.T.latest_newton_residual_mp);   //  <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		case 2:
 			ED_d = new nullspacejac_eval_data_d(2);
@@ -1588,46 +1586,6 @@ int nullspacejac_solver_master_entry_point(int							MPType,
 			break;
 		default:
 			break;
-	}
-	
-
-	
-	
-	if (0) {
-		if (MPType==0) {
-			vec_d tempvec;  init_vec_d(tempvec,0);
-			for (unsigned int ii=0;ii<W.num_points();ii++)
-			{
-				vec_mp_to_d(tempvec,W.point(ii));
-				if (check_isstart_nullspacejac_d(tempvec,&solve_options.T,ED_d)==0)
-				{
-					std::cout << "point " << ii << " doesn't appear to be a start point.  it will be refined before starting..." << std::endl;
-				}
-				
-			}
-			clear_vec_d(tempvec);
-		}
-		else{
-			vec_mp tempvec;  init_vec_mp(tempvec,0);
-			for (unsigned int ii=0;ii<W.num_points();ii++)
-			{
-				vec_cp_mp(tempvec,W.point(ii));
-				if (check_isstart_nullspacejac_mp(tempvec,&solve_options.T,ED_mp)==0)
-				{
-					std::cout << "point " << ii << " doesn't appear to be a start point.  it will be refined before starting..." << std::endl;
-				}
-				
-			}
-			clear_vec_mp(tempvec);
-		}
-	}
-	
-	if (0){
-		if (W.num_points()>0) {
-			check_nullspace_evaluator(W.point(0),ED_d);
-		}
-		
-		mypause();
 	}
 	
 	
@@ -1693,19 +1651,11 @@ void nullspace_slave_entry_point(SolverConfiguration & solve_options)
 			ED_mp = new nullspacejac_eval_data_mp(1);
 			ED_mp->receive(solve_options);
 			
-			// initialize latest_newton_residual_mp
-//			mpf_init(solve_options.T.latest_newton_residual_mp);   //   <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		case 2:
 			ED_d = new nullspacejac_eval_data_d(2);
 			ED_mp = ED_d->BED_mp;
 			ED_d->receive(solve_options);
-			
-			
-			
-			
-			// initialize latest_newton_residual_mp
-//			mpf_init(solve_options.T.latest_newton_residual_mp);   //  <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		default:
 			break;

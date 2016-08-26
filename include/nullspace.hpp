@@ -226,27 +226,7 @@ void create_nullspace_system(boost::filesystem::path output_name,
 							 NullspaceConfiguration *ns_config);
 
 
-/**
- /brief Create a matlab file which will create left nullspace equations, and write it to a text file.
- 
- 
- \param output_name the desired output file's name
- \param input_name bertini input file out of which to create the new file.
- \param ns_config the nullspace configuration.
- \param numVars the number of variables
- \param vars The names of the variables
- \param lineVars the lines on which the variables appear
- \param numConstants the number of constants
- \param consts The names of the constants
- \param lineConstants the lines on which the constants appear
- \param numFuncs the number of functions
- \param funcs The names of the functions
- \param lineFuncs the lines on which the functions appear
- */
-void createMatlabDerivative(boost::filesystem::path output_name,
-							boost::filesystem::path input_name,
-							NullspaceConfiguration *ns_config,
-							int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs);
+
 
 
 /**
