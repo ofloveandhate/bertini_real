@@ -1522,7 +1522,7 @@ int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & inde
 	// filter for uniqueness
 	
 	
-	double distinct_thresh = 1e-4;  // reasonable?  i hate hard-coded tolerances
+	double distinct_thresh = 1e-7;  // reasonable?  i hate hard-coded tolerances
 									 //TODO: remove this tolerance, or make it explicitly controllable.
 	
 	change_size_vec_mp(projections_sorted,1); projections_sorted->size = 1;
