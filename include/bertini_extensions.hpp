@@ -7,12 +7,13 @@
  \brief Direct extensions to Bertini, including single-target/source MPI sending and receiving
  */
 
-#include <cstddef>
-#include <iostream>
+#include "universal_includes.hpp"
+// #include <cstddef>
+// #include <iostream>
+
+
+// #include "bertini_headers.hpp"
 #include "fileops.hpp"
-
-#include "bertini_headers.hpp"
-
 
 #define TOL_DOUBLE_PRECISION 1e-13
 #define LARGECHANGE_DOUBLEPRECISION 1e14

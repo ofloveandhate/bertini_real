@@ -38,7 +38,14 @@ bertini_real_SOURCES = \
 	include/solver_multilintolin.hpp \
 	include/postProcessing.hpp \
 	include/solver_sphere.hpp \
-	include/color.hpp src/body/color.cpp
+	include/color.hpp src/body/color.cpp \
+	include/system_randomizer.hpp src/body/system_randomizer.cpp \
+	include/decomposition.hpp src/body/decomposition.cpp \
+	include/vertex.hpp src/body/vertex.cpp \
+	include/vertex_set.hpp src/body/vertex_set.cpp \
+	include/witness_set.hpp src/body/witness_set.cpp \
+	include/nid.hpp src/body/nid.cpp \
+	include/holders.hpp src/body/holders.cpp
 
 
 bertini_real_LDADD = libpartitionParse.a $(BOOST_FILESYSTEM_LIB) $(BOOST_SYSTEM_LIB)  $(BOOST_CHRONO_LIB) $(BOOST_REGEX_LIB) $(BOOST_TIMER_LIB) $(MPI_CXXLDFLAGS)

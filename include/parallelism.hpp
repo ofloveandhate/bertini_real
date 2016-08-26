@@ -15,7 +15,7 @@
 #include "surface.hpp"
 #include "curve.hpp"
 
-
+#include "nid.hpp"
 #include "data_type.hpp"
 
 /**

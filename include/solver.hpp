@@ -30,6 +30,11 @@
 
 
 #include "postProcessing.hpp"
+
+#include "system_randomizer.hpp"
+#include "decomposition.hpp"
+#include "limbo.hpp"
+
 ///////////
 //
 //    SOLVER CONFIGURATION
