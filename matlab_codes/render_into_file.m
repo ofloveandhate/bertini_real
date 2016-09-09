@@ -72,7 +72,7 @@ nameforfile = sprintf('%s.%s',currname,plot_params.format);
 
 
 
-evalme = sprintf('print(fig1,''-bestfit'',''%s'',''-d%s''',nameforfile,plot_params.format_flag);
+evalme = sprintf('print(fig1,''%s'',''-d%s''',nameforfile,plot_params.format_flag);
 for ii = 2:length(varargin)
     evalme = sprintf('%s,''%s''',evalme,varargin{ii});
 end
