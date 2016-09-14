@@ -9,6 +9,8 @@
 *.eps
 *.png
 
+partitionParse.c
+
 sampler
 bertini_real
 libpartitionParse*
