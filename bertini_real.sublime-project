@@ -33,7 +33,8 @@
 				".deps",
 				".libs",
 				"autom4te.cache",
-				"generated_documentation"]
+				"generated_documentation",
+				"config"]
 		}
 	],
 
