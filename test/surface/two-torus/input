@@ -1,0 +1,26 @@
+CONFIG
+tracktype: 1;
+
+securitylevel: 1;
+
+pathtruncationthreshold: 1e10;
+endpointfinitethreshold: 1e10;
+
+condnumthreshold: 1e30;
+
+endgamenum: 2;
+odepredictor: 7;
+
+
+END;
+
+INPUT
+
+variable_group x, y, z;
+
+function f;
+
+f = (x *(x - 1)^2 *(x - 2) + y^2)^2 + z^2 - 0.04;
+
+
+END;

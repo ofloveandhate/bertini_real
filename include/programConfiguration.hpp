@@ -494,7 +494,7 @@ public:
 class BertiniRealConfig : public prog_config
 {
 	bool orthogonal_projection_;
-	
+	bool compute_cycle_numbers_ = false; ///< whether we should compute cycle numbers for edges and faces
 	bool debugwait_; ///< flag for whether to wait 30 seconds before starting, and print the master process ID to screen.
 	int max_deflations_; ///< the maximum allowable number of deflation iterations before it gives up.
 	

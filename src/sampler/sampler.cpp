@@ -214,7 +214,7 @@ void common_sampler_startup(const Decomposition & D,
 
 	
 	
-	solve_options.T.ratioTol = 0.99999999; // manually assert to be more permissive.  i don't really like this.
+	solve_options.T.ratioTol = 1; // manually assert to be more permissive.  i don't really like this.
 	
 	
 	

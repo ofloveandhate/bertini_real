@@ -1,0 +1,46 @@
+CONFIG
+
+randomseed: 2;
+
+tracktype: 1;
+
+finaltol: 1e-15;
+
+ampmaxprec: 3096;
+ampsafetydigits1: 30;
+ampsafetydigits2: 30;
+
+maxnumbersteps: 50000;
+
+pathtruncationthreshold: 1e30;
+endpointfinitethreshold: 1e12;
+
+sharpendigits: 60;
+
+endgamenum: 2;
+numsamplepoints: 20;
+
+odepredictor: 2;
+
+condnumthreshold: 1e300;
+
+tracktolbeforeeg: 1e-8;
+maxnewtonits: 2;
+
+maxstepsbeforenewton: 0;
+
+securitylevel: 1;
+
+imagthreshold: 1e-7;
+END;
+
+INPUT
+
+variable_group x, y, z;
+
+function f1;
+
+f1 = x^2+y^2*z - z^2;
+
+
+END;

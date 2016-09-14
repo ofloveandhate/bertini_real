@@ -2105,16 +2105,11 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 		set_mp(proj_top, &(V[ final_top_ind ].projection_values())->coord[1]);
 		set_mp(proj_bottom, &(V[ final_bottom_ind ].projection_values())->coord[1]);
 		
-		// i think the projection values have already been thresholded
 		
-#ifdef thresholding
-			if (fabs(mpf_get_d(proj_top->i))<1e-10)
-				mpf_set_str(proj_top->i,"0.0",10);
-			
-			if (fabs(mpf_get_d(proj_bottom->i))<1e-10)
-				mpf_set_str(proj_bottom->i,"0.0",10);
-			
-#endif
+		
+		// i think the projection values have already been thresholded
+		real_threshold(proj_top,solve_options.T.real_threshold);
+		real_threshold(proj_bottom,solve_options.T.real_threshold);
 		
 		
 		//initialize current index trackers.
@@ -2217,9 +2212,9 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 				
 				
 				
-#ifdef thresholding
+
 					real_threshold(proj_mid,solve_options.T.real_threshold);
-#endif
+
 				
 				
 				
@@ -2227,9 +2222,9 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 				sub_mp(numer, proj_mid, proj_bottom); // p2(e.w) - p2(w0);
 				div_mp(md_config.v_target, numer, denom); // [p2(e.w) - p2(w0)] / [p2(w2) - p2(w0)]
 				
-				
-				
-				
+
+				real_threshold(md_config.v_target,solve_options.T.real_threshold);
+
 				
 				
 				
