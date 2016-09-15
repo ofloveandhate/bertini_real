@@ -30,7 +30,9 @@ nullspace_left_midpath_data
 partitionParse.c
 
 sampler
+!sampler/
 bertini_real
+!bertini_real/
 libpartitionParse*
 
 generated_documentation
