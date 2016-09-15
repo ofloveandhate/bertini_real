@@ -25,9 +25,9 @@
 #include <queue>
 #include <map>
 
-#include "bertini_extensions.hpp"
+#include "bertini1/bertini_extensions.hpp"
 
-#include "fileops.hpp"
+#include "io/fileops.hpp"
 
 
 enum {BERTINIREAL=-9000,CRIT=-8999};

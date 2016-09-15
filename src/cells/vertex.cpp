@@ -1,4 +1,4 @@
-#include "vertex.hpp"
+#include "cells/vertex.hpp"
 
 void Vertex::set_point(const vec_mp new_point)
 {

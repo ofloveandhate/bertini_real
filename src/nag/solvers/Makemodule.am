@@ -1,2 +1,21 @@
-#this is src/solvers/Makemodule.am
+#this is src/nag/solvers/Makemodule.am
 
+nag_solvers_sources = \
+	src/nag/solvers/solver.cpp \
+	src/nag/solvers/solver_midpoint_tracker.cpp \
+	src/nag/solvers/solver_multilintolin.cpp \
+	src/nag/solvers/solver_nullspace.cpp \
+	src/nag/solvers/solver_sphere.cpp \
+	src/nag/solvers/postProcessing.cpp 
+
+
+nag_solvers_headers = \
+	include/nag/solvers/solver.hpp \
+	include/nag/solvers/solver_midpoint_tracker.hpp \
+	include/nag/solvers/solver_multilintolin.hpp \
+	include/nag/solvers/solver_nullspace.hpp \
+	include/nag/solvers/postProcessing.hpp \
+	include/nag/solvers/solver_sphere.hpp 
+
+
+nag_solvers = $(nag_solvers_headers) $(nag_solvers_sources) 

@@ -17,9 +17,9 @@
 #include <mpf2mpfr.h>
 
 #include "programConfiguration.hpp"
-#include "fileops.hpp"
-#include "bertini_headers.hpp"
-#include "bertini_extensions.hpp"
+#include "io/fileops.hpp"
+#include "bertini1/bertini_headers.hpp"
+#include "bertini1/bertini_extensions.hpp"
 
 
 /**

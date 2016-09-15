@@ -22,24 +22,24 @@
 
 
 
-#include "bertini_headers.hpp"
+#include "bertini1/bertini_headers.hpp"
 
-#include "checkSelfConjugate.hpp"
+#include "decompositions/checkSelfConjugate.hpp"
 
-#include "fileops.hpp"
+#include "io/fileops.hpp"
 
 #include "data_type.hpp"
-#include "isosingular.hpp"
+#include "symbolics/isosingular.hpp"
 #include "programConfiguration.hpp"
 
 
 
-#include "nullspace.hpp"
-#include "solver_sphere.hpp"
+#include "symbolics/nullspace.hpp"
+#include "nag/solvers/solver_sphere.hpp"
 
 
-#include "edge.hpp"
-#include "decomposition.hpp"
+#include "cells/edge.hpp"
+#include "decompositions/decomposition.hpp"
 
 
 

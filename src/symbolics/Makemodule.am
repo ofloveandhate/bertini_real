@@ -1,0 +1,13 @@
+symbolics_sources = \
+	src/symbolics/derivative_systems.cpp \
+	src/symbolics/isosingular.cpp \
+	src/symbolics/nullspace.cpp 
+
+symbolics_headers = \
+	include/symbolics/derivative_systems.hpp \
+	include/symbolics/isosingular.hpp \
+	include/symbolics/nullspace.hpp 
+
+
+symbolics = $(symbolics_headers) $(symbolics_sources) 
+

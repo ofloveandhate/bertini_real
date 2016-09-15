@@ -1,5 +1,5 @@
-#include "solver_midpoint_tracker.hpp"
-#include "surface.hpp"
+#include "nag/solvers/solver_midpoint_tracker.hpp"
+#include "decompositions/surface.hpp"
 
 
 void MidpointConfiguration::setup(const Surface & surf,

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "holders.hpp"
+#include "containers/holders.hpp"
 #include "programConfiguration.hpp"
-#include "color.hpp"
+#include "io/color.hpp"
 
 /** 
  \brief a woefully incomplete class to contain systems which bertini will parse.

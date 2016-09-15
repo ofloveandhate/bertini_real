@@ -1,9 +1,9 @@
 #pragma once
 
-#include "holders.hpp"
-#include "system_randomizer.hpp"
-#include "witness_set.hpp"
-#include "vertex_set.hpp"
+#include "containers/holders.hpp"
+#include "nag/system_randomizer.hpp"
+#include "nag/witness_set.hpp"
+#include "containers/vertex_set.hpp"
 
 /**
  \brief base Decomposition class.  curves and surfaces inherit from this.

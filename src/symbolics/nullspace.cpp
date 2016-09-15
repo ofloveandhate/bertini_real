@@ -1,4 +1,4 @@
-#include "nullspace.hpp"
+#include "symbolics/nullspace.hpp"
 
 
 
@@ -14,28 +14,16 @@ int compute_crit_nullspace(SolverOutput & solve_out, // the returned value
 						   SolverConfiguration & solve_options,
 						   NullspaceConfiguration *ns_config)
 {
-	if (1) { // target_dim==target_crit_codim
-		return compute_crit_nullspace_right(solve_out, // the returned value
-											W,            // input the original witness set
-											randomizer,
-											pi,
-											ambient_dim,  // dimension of ambient complex object
-											program_options,
-											solve_options,
-											ns_config);
-	}
-	else{
-		return compute_crit_nullspace_left(solve_out, // the returned value
-										   W,            // input the original witness set
-										   randomizer,
-										   pi,
-										   ambient_dim,  // dimension of ambient complex object
-										   target_dim,   //  target dimension to find
-										   target_crit_dim,   // COdimension of the critical set to find.
-										   program_options,
-										   solve_options,
-										   ns_config);
-	}
+	// formerly conditionally called the left method here, but it never works out favorably in terms of paths tracked, so just call right method now.
+	return compute_crit_nullspace_right(solve_out, // the returned value
+										W,            // input the original witness set
+										randomizer,
+										pi,
+										ambient_dim,  // dimension of ambient complex object
+										program_options,
+										solve_options,
+										ns_config);
+
 	
 }
 

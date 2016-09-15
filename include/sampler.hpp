@@ -19,17 +19,17 @@
 #include <mpf2mpfr.h>
 
 
-#include "bertini_headers.hpp"
+#include "bertini1/bertini_headers.hpp"
 
 
-#include "fileops.hpp"
+#include "io/fileops.hpp"
 #include "data_type.hpp"
 #include "programConfiguration.hpp"
-#include "checkSelfConjugate.hpp"
+#include "decompositions/checkSelfConjugate.hpp"
 
-#include "solver_multilintolin.hpp"
-#include "surface.hpp"
-#include "curve.hpp"
+#include "nag/solvers/solver_multilintolin.hpp"
+#include "decompositions/surface.hpp"
+#include "decompositions/curve.hpp"
 
 
 

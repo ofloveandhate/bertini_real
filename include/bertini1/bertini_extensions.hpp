@@ -12,8 +12,8 @@
 // #include <iostream>
 
 
-// #include "bertini_headers.hpp"
-#include "fileops.hpp"
+// #include "bertini1/bertini_headers.hpp"
+#include "io/fileops.hpp"
 
 #define TOL_DOUBLE_PRECISION 1e-13
 #define LARGECHANGE_DOUBLEPRECISION 1e14

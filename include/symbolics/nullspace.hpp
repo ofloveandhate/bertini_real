@@ -21,19 +21,19 @@
 
 
 
-#include "bertini_headers.hpp"
+#include "bertini1/bertini_headers.hpp"
 
 
-#include "fileops.hpp"
+#include "io/fileops.hpp"
 #include "data_type.hpp"
-#include "solver_multilintolin.hpp"
-#include "solver_nullspace.hpp"
+#include "nag/solvers/solver_multilintolin.hpp"
+#include "nag/solvers/solver_nullspace.hpp"
 
 
 #include "double_odometer.hpp"
 
 
-#include "derivative_systems.hpp"
+#include "symbolics/derivative_systems.hpp"
 
 /**
  \brief the main function for computing critical sets.

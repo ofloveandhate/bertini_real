@@ -1,4 +1,4 @@
-#include "isosingular.hpp"
+#include "symbolics/isosingular.hpp"
 
 
 

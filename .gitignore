@@ -114,8 +114,10 @@ lt~*
 ltversion*
 .dirstamp
 
-
+.deps
+*.a
+*.la
 *.Po
 *.o
-
+*.lo
 

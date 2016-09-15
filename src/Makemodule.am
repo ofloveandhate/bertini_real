@@ -1,3 +1,21 @@
-#this is src/body/Makemodule.am
+#this is src/Makemodule.am
 
 
+unclassified_sources = \
+	src/bertini_real.cpp \
+	src/data_type.cpp \
+	src/parallelism.cpp \
+	src/programConfiguration.cpp
+
+
+unclassified_headers = \
+	include/double_odometer.hpp \
+	include/forward_declarations.hpp \
+	include/limbo.hpp \
+	include/universal_includes.hpp \
+	include/bertini_real.hpp \
+	include/data_type.hpp \
+	include/parallelism.hpp \
+	include/programConfiguration.hpp
+
+unclassified = $(unclassified_headers) $(unclassified_sources)

@@ -1,4 +1,4 @@
-#include "color.hpp"
+#include "io/color.hpp"
 
 namespace color {
 	std::string color_to_int(const char c)

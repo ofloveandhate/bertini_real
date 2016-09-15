@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "bertini_extensions.hpp"
+#include "bertini1/bertini_extensions.hpp"
 #include "programConfiguration.hpp"
 
 

@@ -1,4 +1,4 @@
-#include "solver.hpp"
+#include "nag/solvers/solver.hpp"
 
 
 extern _comp_d  **mem_d;

@@ -12,7 +12,7 @@ bin_PROGRAMS =
 BUILT_SOURCES =
 CLEANFILES =
 noinst_LIBRARIES =
-
+noinst_LTLIBRARIES =
 
 
 include_HEADERS =
@@ -23,13 +23,53 @@ SUFFIXES = .c .h .y .l
 
 
 
-#now include the Makemodule files from the subdirectories.  they will add on to the variables whi
+#now include the Makemodule files from the subdirectories.  they will add on to the variables which are declared above.
 
+
+
+# some sublibraries
+include src/Makemodule.am  #unclassified
+
+include src/bertini1/Makemodule.am #bertini1
+include src/cells/Makemodule.am #cells
+include src/containers/Makemodule.am #containers
+include src/decompositions/Makemodule.am #decompositions
+include src/io/Makemodule.am #io
+include src/nag/Makemodule.am #nag
+include src/symbolics/Makemodule.am #symbolics
+
+
+noinst_LTLIBRARIES += libbr_common.la
+libbr_common_ladir = $(includedir)/bertini_real
+
+libbr_common_la_SOURCES = \
+	$(unclassified_sources) \
+	$(bertini1_sources) \
+	$(cells_sources) \
+	$(containers_sources) \
+	$(decompositions_sources) \
+	$(io_sources) \
+	$(nag_sources) \
+	$(symbolics_sources)
+
+libbr_common_la_HEADERS = \
+	$(unclassified_headers) \
+	$(bertini1_headers) \
+	$(cells_headers) \
+	$(containers_headers) \
+	$(decompositions_headers) \
+	$(io_headers) \
+	$(nag_headers) \
+	$(symbolics_headers)
+
+libbr_common_la_LIBADD = libpartitionParse.a $(BOOST_FILESYSTEM_LIB) $(BOOST_SYSTEM_LIB) $(BOOST_CHRONO_LIB) $(BOOST_REGEX_LIB) $(BOOST_TIMER_LIB) $(MPI_CXXLDFLAGS)
+
+libbr_common_la_CXXFLAGS = -D_HAVE_MPI -std=c++11 $(BOOST_CPPFLAGS) $(MPI_CXXFLAGS)
+
+# the two programs build from this source code
 include src/bertini_real/Makemodule.am
 include src/sampler/Makemodule.am
-include src/solvers/Makemodule.am
-include src/parse/Makemodule.am
-include src/body/Makemodule.am
+
 
 
 

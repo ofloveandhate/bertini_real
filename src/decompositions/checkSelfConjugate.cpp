@@ -1,4 +1,4 @@
-#include "checkSelfConjugate.hpp"
+#include "decompositions/checkSelfConjugate.hpp"
 
 
 

@@ -1,8 +1,8 @@
 #pragma once
 
 
-#include "vertex.hpp"
-#include "witness_set.hpp"
+#include "cells/vertex.hpp"
+#include "nag/witness_set.hpp"
 
 /**
  \brief the main structure for storing vertices.  

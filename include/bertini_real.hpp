@@ -21,22 +21,22 @@
 
 
 
-#include "bertini_headers.hpp"
+#include "bertini1/bertini_headers.hpp"
 
 
-#include "fileops.hpp"
-#include "checkSelfConjugate.hpp"
+#include "io/fileops.hpp"
+#include "decompositions/checkSelfConjugate.hpp"
 
 
 #include "data_type.hpp"
-#include "isosingular.hpp"
+#include "symbolics/isosingular.hpp"
 #include "programConfiguration.hpp"
 
 
 
 
-#include "surface.hpp"
-#include "curve.hpp"
+#include "decompositions/surface.hpp"
+#include "decompositions/curve.hpp"
 #include "parallelism.hpp"
 
 #endif

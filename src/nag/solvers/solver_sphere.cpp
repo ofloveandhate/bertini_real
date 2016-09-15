@@ -1,4 +1,4 @@
-#include "solver_sphere.hpp"
+#include "nag/solvers/solver_sphere.hpp"
 
 
 void SphereConfiguration::set_memory(SolverConfiguration & solve_options)

@@ -2,8 +2,8 @@
 
 
 
-#include "bertini_extensions.hpp"
-#include "fileops.hpp"
+#include "bertini1/bertini_extensions.hpp"
+#include "io/fileops.hpp"
 
 
 

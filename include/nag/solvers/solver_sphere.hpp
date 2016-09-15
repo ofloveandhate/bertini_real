@@ -19,15 +19,15 @@
 
 
 
-#include "bertini_headers.hpp"
+#include "bertini1/bertini_headers.hpp"
 
 
 
-#include "solver.hpp"
-#include "fileops.hpp"
+#include "nag/solvers/solver.hpp"
+#include "io/fileops.hpp"
 #include "data_type.hpp"
 #include "programConfiguration.hpp"
-#include "postProcessing.hpp"
+#include "nag/solvers/postProcessing.hpp"
 
 
 

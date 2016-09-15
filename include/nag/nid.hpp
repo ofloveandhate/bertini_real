@@ -1,9 +1,9 @@
 #pragma once
 
 
-#include "witness_set.hpp"
+#include "nag/witness_set.hpp"
 #include "limbo.hpp"
-#include "checkSelfConjugate.hpp"
+#include "decompositions/checkSelfConjugate.hpp"
 
 /**
  \brief metadata for witness points, for the NumericalIrreducibleDecomposition class.

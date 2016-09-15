@@ -8,14 +8,14 @@
 #include <gmp.h>
 
 #include "programConfiguration.hpp"
-#include "solver.hpp"
+#include "nag/solvers/solver.hpp"
 
 
 
-#include "surface.hpp"
-#include "curve.hpp"
+#include "decompositions/surface.hpp"
+#include "decompositions/curve.hpp"
 
-#include "nid.hpp"
+#include "nag/nid.hpp"
 #include "data_type.hpp"
 
 /**

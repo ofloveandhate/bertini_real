@@ -29,7 +29,7 @@
 
 #include <memory>
 
-#include "bertini_headers.hpp"
+#include "bertini1/bertini_headers.hpp"
 
 #include <boost/timer/timer.hpp>
 #include "boost/filesystem.hpp"
@@ -40,11 +40,11 @@
 #include <boost/serialization/split_member.hpp>
 #include <boost/bind.hpp>
 
-#include "bertini_extensions.hpp"
-#include "fileops.hpp"
-#include "checkSelfConjugate.hpp"
+#include "bertini1/bertini_extensions.hpp"
+#include "io/fileops.hpp"
+#include "decompositions/checkSelfConjugate.hpp"
 
-#include "color.hpp"
+#include "io/color.hpp"
 
 
 

@@ -21,27 +21,27 @@
 
 #include <boost/filesystem.hpp>
 
-#include "bertini_headers.hpp"
+#include "bertini1/bertini_headers.hpp"
 
 
-#include "fileops.hpp"
+#include "io/fileops.hpp"
 
 
-#include "nullspace.hpp"
+#include "symbolics/nullspace.hpp"
 
-#include "solver_midpoint_tracker.hpp"
+#include "nag/solvers/solver_midpoint_tracker.hpp"
 
-#include "checkSelfConjugate.hpp"
-#include "curve.hpp"
+#include "decompositions/checkSelfConjugate.hpp"
+#include "decompositions/curve.hpp"
 #include "data_type.hpp"
-#include "isosingular.hpp"
+#include "symbolics/isosingular.hpp"
 #include "programConfiguration.hpp"
 
-#include "solver_sphere.hpp"
+#include "nag/solvers/solver_sphere.hpp"
 
 
-#include "face.hpp"
-#include "decomposition.hpp"
+#include "cells/face.hpp"
+#include "decompositions/decomposition.hpp"
 
 
 

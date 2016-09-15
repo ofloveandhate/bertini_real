@@ -1,0 +1,11 @@
+cells_sources = src/cells/vertex.cpp
+cells_headers = \
+	include/cells/cell.hpp \
+	include/cells/edge.hpp \
+	include/cells/face.hpp \
+	include/cells/vertex.hpp
+
+
+
+cells = $(cells_headers) $(cells_sources) 
+

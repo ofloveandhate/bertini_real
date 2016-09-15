@@ -1,4 +1,4 @@
-#include "curve.hpp"
+#include "decompositions/curve.hpp"
 
 
 
