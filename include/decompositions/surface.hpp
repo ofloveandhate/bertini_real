@@ -29,7 +29,7 @@
 
 #include "symbolics/nullspace.hpp"
 
-#include "nag/solvers/solver_midpoint_tracker.hpp"
+#include "nag/solvers/midpoint.hpp"
 
 #include "decompositions/checkSelfConjugate.hpp"
 #include "decompositions/curve.hpp"
@@ -37,7 +37,7 @@
 #include "symbolics/isosingular.hpp"
 #include "programConfiguration.hpp"
 
-#include "nag/solvers/solver_sphere.hpp"
+#include "nag/solvers/sphere_intersection.hpp"
 
 
 #include "cells/face.hpp"

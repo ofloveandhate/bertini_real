@@ -1,4 +1,4 @@
-#include "nag/solvers/solver_sphere.hpp"
+#include "nag/solvers/sphere_intersection.hpp"
 
 
 void SphereConfiguration::set_memory(SolverConfiguration & solve_options)

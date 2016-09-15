@@ -35,7 +35,7 @@
 
 
 #include "symbolics/nullspace.hpp"
-#include "nag/solvers/solver_sphere.hpp"
+#include "nag/solvers/sphere_intersection.hpp"
 
 
 #include "cells/edge.hpp"

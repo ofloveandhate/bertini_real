@@ -1,4 +1,4 @@
-#include "nag/solvers/solver_nullspace.hpp"
+#include "nag/solvers/nullspace.hpp"
 
 
 

@@ -27,7 +27,7 @@
 #include "programConfiguration.hpp"
 #include "decompositions/checkSelfConjugate.hpp"
 
-#include "nag/solvers/solver_multilintolin.hpp"
+#include "nag/solvers/multilintolin.hpp"
 #include "decompositions/surface.hpp"
 #include "decompositions/curve.hpp"
 

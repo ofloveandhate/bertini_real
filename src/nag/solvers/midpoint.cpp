@@ -1,4 +1,4 @@
-#include "nag/solvers/solver_midpoint_tracker.hpp"
+#include "nag/solvers/midpoint.hpp"
 #include "decompositions/surface.hpp"
 
 

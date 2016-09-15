@@ -5,7 +5,9 @@ bin_PROGRAMS += sampler
 samplerdir = $(includedir)/bertini_real/sampler
 
 sampler_SOURCES = \
-	src/sampler/sampler.cpp
+	src/sampler/sampler.cpp \
+	src/sampler/curve_methods.cpp \
+	src/sampler/surface_methods.cpp
 
 sampler_HEADERS = \
 	include/sampler.hpp
