@@ -87,7 +87,7 @@ AC_SEARCH_LIBS([mpfr_get_version],[mpfr], [],[
 
 #find bertini
 AC_SEARCH_LIBS([head_zero_dim_track_d],[bertini-parallel], [],
-	[AC_MSG_ERROR([unable to find libbertini-parallel])],
+	[AC_MSG_ERROR([unable to find libbertini-parallel.  please build and install bertini1 from source.  bertini.nd.edu])],
 	$MPI_CXXLDFLAGS)
 
 #find the math library
