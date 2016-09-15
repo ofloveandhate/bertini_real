@@ -6,30 +6,14 @@
  \file fileops.hpp 
  
  */
-#include <cstddef>
+
 #include <iostream>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <math.h>
-
-#include <time.h>
-#include <float.h>
-#include <limits.h>
-
-#include <gmp.h>
-#include <mpfr.h>
-#include <mpf2mpfr.h>
-
-#include <sys/stat.h>         /* declare the 'stat' structure */
+#include <sys/stat.h>        //  declare the 'stat' structure 
 #include <sys/types.h>
 
 
 #include <dirent.h>
-
-#include <string>
 #include <sstream>
 #include <set>
 

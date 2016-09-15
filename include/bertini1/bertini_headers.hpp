@@ -5,6 +5,10 @@
 /* \file bertini_headers.hpp */
 
 #include <cstddef>
+#include <gmp.h>
+#include <mpfr.h>
+#include <mpf2mpfr.h>
+
 #include "mpi.h" // this *cannot* be inside an extern "C"{} wrapper.
 
 extern "C" {

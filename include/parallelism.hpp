@@ -4,15 +4,8 @@
 
 
 /** \file parallelism.hpp */
-#include <cstddef>
-#include <gmp.h>
 
 #include <boost/timer/timer.hpp>
-
-#include "programConfiguration.hpp"
-#include "nag/solvers/solver.hpp"
-
-
 
 #include "decompositions/surface.hpp"
 #include "decompositions/curve.hpp"

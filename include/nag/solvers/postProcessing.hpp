@@ -1,28 +1,14 @@
 #ifndef _POST_PROCESSING_H
 #define _POST_PROCESSING_H
 
-/** \file postProcessing.hpp */
-#include <cstddef>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <math.h>
-#include <gmp.h>
-#include <time.h>
-#include <float.h>
-#include <limits.h>
-#include <mpfr.h>
-#include <mpf2mpfr.h>
+/** \file postProcessing.hpp 
 
-#include <getopt.h>
-
-
+\brief For adding metadata to output from the various solvers.
+*/
 
 #include <boost/bind.hpp>
 
 #include "bertini1/bertini_headers.hpp"
-
 
 #include "io/fileops.hpp"
 #include "nag/solvers/solver.hpp"

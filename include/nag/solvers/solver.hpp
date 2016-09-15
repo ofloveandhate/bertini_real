@@ -3,22 +3,6 @@
 
 /** \file solver.hpp */
 
-#include <cstddef>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <math.h>
-#include <gmp.h>
-#include <time.h>
-#include <float.h>
-#include <limits.h>
-#include <mpfr.h>
-#include <mpf2mpfr.h>
-
-#include <string>
-
-#include <memory>
 
 
 #include "bertini1/bertini_headers.hpp"

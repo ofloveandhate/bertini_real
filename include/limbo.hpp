@@ -1,6 +1,6 @@
 #pragma once
 
-
+#include <map>
 
 /**
  a templated function for looking up a value in a map by key, without accidentally creating a key-value pair when it didn't previously exist, and when it doesn't exist, gives back a default value.

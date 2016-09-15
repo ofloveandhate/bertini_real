@@ -6,20 +6,6 @@
  
  \brief Methods for computing points such that a vector is in the left or right nullspace of a jacobian matrix, coupled with the system which generated it, and several linear projections.
  */
-#include <cstddef>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <math.h>
-#include <gmp.h>
-#include <time.h>
-#include <float.h>
-#include <limits.h>
-#include <mpfr.h>
-#include <mpf2mpfr.h>
-
-
 
 #include "bertini1/bertini_headers.hpp"
 

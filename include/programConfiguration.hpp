@@ -4,26 +4,9 @@
 /** \file programConfiguration.hpp */
 #include "config.h"
 
-
-#include <cstddef>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <math.h>
-#include <gmp.h>
-#include <time.h>
-#include <float.h>
-#include <limits.h>
-#include <mpfr.h>
-#include <mpf2mpfr.h>
-
-#include <getopt.h> 
-
-#include <boost/filesystem.hpp>
-#include <iostream>
-#include <queue>
 #include <map>
+#include <getopt.h> 
+#include <queue>
 
 #include "bertini1/bertini_extensions.hpp"
 

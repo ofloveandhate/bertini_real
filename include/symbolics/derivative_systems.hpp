@@ -2,32 +2,6 @@
 #define DERIVATIVE_SYSTEMS_H
 
 /** \file derivative_systems.hpp */
-#include <cstddef>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <math.h>
-#include <gmp.h>
-#include <time.h>
-#include <float.h>
-#include <limits.h>
-#include <mpfr.h>
-#include <mpf2mpfr.h>
-
-#include <vector>
-#include <map>
-#include <iostream>
-#include <string>
-#include <sstream>
-#include <fstream>
-#include <cmath>
-#include <unistd.h>
-#include <errno.h>
-#include <sys/wait.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-
 
 
 /**
