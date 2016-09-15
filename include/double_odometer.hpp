@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 /**
  \brief An odometer of odometers, so to speak.
  

@@ -33,6 +33,8 @@ sampler
 bertini_real
 libpartitionParse*
 
+generated_documentation
+
 output*
 isosingular_summary
 *.out
@@ -114,8 +116,12 @@ lt~*
 ltversion*
 .dirstamp
 
-
+.libs
+.deps
+*.a
+*.la
 *.Po
 *.o
-
+*.lo
+*.o-*
 
