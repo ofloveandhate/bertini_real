@@ -575,6 +575,80 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 
 
 
+void get_projection(vec_mp *pi,
+					BertiniRealConfig program_options,
+					int num_vars,
+					int num_projections)
+{
+	
+	
+	for (int ii=0; ii<num_projections; ii++) {
+		change_size_vec_mp(pi[ii], num_vars);  pi[ii]->size = num_vars;
+	}
+	
+	
+	
+	//assumes the vector pi is already initialized
+	if (program_options.user_projection()) {
+		FILE *IN = safe_fopen_read(program_options.projection_filename()); // we are already assured this file exists, but safe fopen anyway.
+		int tmp_num_vars;
+		fscanf(IN,"%d",&tmp_num_vars); scanRestOfLine(IN);
+		if (tmp_num_vars!=num_vars-1) {
+			printf("the number of variables declared in the projection\nis not equal to the number of non-homogeneous variables in the problem\n");
+			printf("please modify file to have %d coordinates, one per line.\n(imaginary part will be ignored if provided).\n",num_vars-1);
+			abort();
+		}
+		
+		for (int ii=0; ii<num_projections; ii++) {
+			set_zero_mp(&pi[ii]->coord[0]);
+			for (int jj=1; jj<num_vars; jj++) {
+				set_zero_mp(&pi[ii]->coord[jj]);
+				mpf_inp_str(pi[ii]->coord[jj].r, IN, 10);
+				scanRestOfLine(IN);
+			}
+		}
+		fclose(IN);
+	}
+	else{
+		if (program_options.orthogonal_projection()) {
+			mat_mp temp_getter;
+			init_mat_mp2(temp_getter,0,0,1024);
+			make_matrix_random_real_mp(temp_getter,num_projections, num_vars-1, 1024); // this matrix is ~orthogonal
+			
+			for (int ii=0; ii<num_projections; ii++) {
+				set_zero_mp(&pi[ii]->coord[0]);
+				for (int jj=1; jj<num_vars; jj++)
+					set_mp(&pi[ii]->coord[jj], &temp_getter->entry[ii][jj-1]);
+				
+			}
+			
+			clear_mat_mp(temp_getter);
+			
+		}
+		else
+		{
+			for (int ii=0; ii<num_projections; ii++) {
+				set_zero_mp(&pi[ii]->coord[0]);
+				for (int jj=1; jj<num_vars; jj++)
+					get_comp_rand_real_mp(&pi[ii]->coord[jj]);//, &temp_getter->entry[ii][jj-1]);
+				
+			}
+			
+		}
+		
+	}
+	
+	
+	return;
+}
+
+
+
+
+
+
+
+
 
 
 
