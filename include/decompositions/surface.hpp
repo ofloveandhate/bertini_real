@@ -7,12 +7,11 @@
 
 
 #include "nag/solvers/midpoint.hpp"
-
 #include "decompositions/curve.hpp"
-
 #include "cells/face.hpp"
 
-
+#include "symbolics/sphere_intersection.hpp"
+#include "symbolics/slicing.hpp"
 
 
 
@@ -942,34 +941,9 @@ int find_matching_singular_witness_points(WitnessSet & W_match,
 										  SolverConfiguration & solve_options);
 
 
-/**
- \brief Write a Bertini input file which slices at input linears.
- 
- \param input_file The name of the input file to which we are appending functions.
- \param output_file The name of the output file, which will have the sliced system in it.
- \param linears The linear functions to slice with.
- \param num_to_add The number of linears we are adding on.  This should match the number of vec_mp in linears.
- \param W The input witness set.
- */
-void create_sliced_system(boost::filesystem::path input_file, boost::filesystem::path output_file,
-													vec_mp * linears, int num_to_add,
-													const WitnessSet & W);
 
 
 
-/**
- \brief Write a Bertini input file corresponding to the intersection of the input system with a sphere of a given center and radius.
- 
- \param input_file The name of the input file to which we are appending functions.
- \param output_file The name of the output file, which will have the sphere system in it.
- \param sphere_radius The radius of the sphere.
- \param sphere_center The center of the sphere
- \param W the input witness set.
- */
-void create_sphere_system(boost::filesystem::path input_file, boost::filesystem::path output_file,
-													comp_mp sphere_radius,
-													vec_mp sphere_center,
-													const WitnessSet & W);
 
 
 /**

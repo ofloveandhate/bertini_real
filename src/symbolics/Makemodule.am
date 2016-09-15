@@ -1,11 +1,16 @@
 symbolics_sources = \
 	src/symbolics/derivative_systems.cpp \
 	src/symbolics/isosingular.cpp \
-	src/symbolics/nullspace.cpp 
+	src/symbolics/nullspace.cpp \
+	src/symbolics/sphere_intersection.cpp \
+	src/symbolics/slicing.cpp 
+
 
 symbolics_headers = \
 	include/symbolics/derivative_systems.hpp \
 	include/symbolics/isosingular.hpp \
+	include/symbolics/slicing.hpp \
+	include/symbolics/sphere_intersection.hpp \
 	include/symbolics/nullspace.hpp 
 
 

@@ -62,7 +62,7 @@ libbr_common_la_HEADERS = \
 	$(nag_headers) \
 	$(symbolics_headers)
 
-libbr_common_la_LIBADD = libpartitionParse.a $(BOOST_FILESYSTEM_LIB) $(BOOST_SYSTEM_LIB) $(BOOST_CHRONO_LIB) $(BOOST_REGEX_LIB) $(BOOST_TIMER_LIB) $(MPI_CXXLDFLAGS)
+libbr_common_la_LIBADD = libpartitionParse.la $(BOOST_FILESYSTEM_LIB) $(BOOST_SYSTEM_LIB) $(BOOST_CHRONO_LIB) $(BOOST_REGEX_LIB) $(BOOST_TIMER_LIB) $(MPI_CXXLDFLAGS)
 
 libbr_common_la_CXXFLAGS = -D_HAVE_MPI -std=c++11 $(BOOST_CPPFLAGS) $(MPI_CXXFLAGS)
 

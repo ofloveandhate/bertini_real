@@ -1,4 +1,7 @@
-cells_sources = src/cells/vertex.cpp
+cells_sources = \
+	src/cells/vertex.cpp \
+	src/cells/face.cpp 
+	
 cells_headers = \
 	include/cells/cell.hpp \
 	include/cells/edge.hpp \
