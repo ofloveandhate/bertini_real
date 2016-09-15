@@ -1,9 +1,9 @@
 #this is src/io/Makemodule.am
 
 
-noinst_LIBRARIES += libpartitionParse.a
+noinst_LTLIBRARIES += libpartitionParse.la
 
-libpartitionParse_a_SOURCES = src/io/partitionParse.l
+libpartitionParse_la_SOURCES = src/io/partitionParse.l
 
 io_sources = \
 	src/io/color.cpp \
