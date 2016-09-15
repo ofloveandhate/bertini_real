@@ -28,15 +28,15 @@ SUFFIXES = .c .h .y .l
 
 
 # some sublibraries
-include src/Makemodule.am  #unclassified
+include src/Makemodule.am  					#unclassified
 
-include src/bertini1/Makemodule.am #bertini1
-include src/cells/Makemodule.am #cells
-include src/containers/Makemodule.am #containers
-include src/decompositions/Makemodule.am #decompositions
-include src/io/Makemodule.am #io
-include src/nag/Makemodule.am #nag
-include src/symbolics/Makemodule.am #symbolics
+include src/bertini1/Makemodule.am 			#bertini1
+include src/cells/Makemodule.am 			#cells
+include src/containers/Makemodule.am 		#containers
+include src/decompositions/Makemodule.am 	#decompositions
+include src/io/Makemodule.am 				#io
+include src/nag/Makemodule.am 				#nag
+include src/symbolics/Makemodule.am 		#symbolics
 
 
 noinst_LTLIBRARIES += libbr_common.la
@@ -64,9 +64,8 @@ libbr_common_la_HEADERS = \
 
 libbr_common_la_LIBADD = libpartitionParse.la $(BOOST_FILESYSTEM_LIB) $(BOOST_SYSTEM_LIB) $(BOOST_CHRONO_LIB) $(BOOST_REGEX_LIB) $(BOOST_TIMER_LIB) $(MPI_CXXLDFLAGS)
 
-libbr_common_la_CXXFLAGS = -D_HAVE_MPI $(BOOST_CPPFLAGS) $(MPI_CXXFLAGS)
 
-# the two programs build from this source code
+# the two programs built from this source code
 include src/bertini_real/Makemodule.am
 include src/sampler/Makemodule.am
 
