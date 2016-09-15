@@ -116,10 +116,12 @@ lt~*
 ltversion*
 .dirstamp
 
+.libs
 .deps
 *.a
 *.la
 *.Po
 *.o
 *.lo
+*.o-*
 

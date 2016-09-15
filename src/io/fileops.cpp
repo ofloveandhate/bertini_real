@@ -193,21 +193,14 @@ void br_exit(int errorCode)
  * RETURN VALUES:                                                *
  * NOTES: exits Bertini_real - either standard or using MPI           *
  \***************************************************************/
-{
-	if (errorCode == 0)
-		errorCode = ERROR_OTHER;
-	
+{	
 	std::cout << "bertini_real quitting\a" << std::endl;
 	
 #ifdef debug_compile
 	deliberate_segfault();
 #endif
 	
-#ifdef _HAVE_MPI
 	MPI_Abort(MPI_COMM_WORLD, errorCode);
-#else
-	exit(errorCode);
-#endif
 }
 
 

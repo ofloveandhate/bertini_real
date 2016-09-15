@@ -8,7 +8,7 @@
  \brief contains core of the functions for isosingular deflation, which are not found in Bertini.
  */
 
-#include "bertini1/bertini_headers.hpp"
+
 #include "io/fileops.hpp"
 #include "symbolics/derivative_systems.hpp"
 

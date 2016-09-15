@@ -2,7 +2,7 @@
 
 /** \file cell.hpp */
 
-
+#include "programConfiguration.hpp"
 
 /**
  \brief The base cell class.  All n-cells should inherit from this.

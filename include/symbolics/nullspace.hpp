@@ -7,9 +7,6 @@
  \brief Methods for computing points such that a vector is in the left or right nullspace of a jacobian matrix, coupled with the system which generated it, and several linear projections.
  */
 
-#include "bertini1/bertini_headers.hpp"
-
-
 #include "io/fileops.hpp"
 #include "nag/solvers/multilintolin.hpp"
 #include "nag/solvers/nullspace.hpp"

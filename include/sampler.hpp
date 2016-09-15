@@ -7,9 +7,6 @@
 
 #include <boost/timer/timer.hpp>
 
-#include "bertini1/bertini_headers.hpp"
-
-
 #include "io/fileops.hpp"
 
 #include "programConfiguration.hpp"

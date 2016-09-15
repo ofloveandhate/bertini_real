@@ -2,7 +2,7 @@
 
 /** \file data_type.hpp */
 
-#include "bertini1/bertini_headers.hpp"
+#include "bertini1/bertini_extensions.hpp"
 #include "programConfiguration.hpp"
 /**
  \brief Comprehensive system randomization, based on deg.out.

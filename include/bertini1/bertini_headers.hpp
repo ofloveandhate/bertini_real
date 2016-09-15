@@ -9,13 +9,13 @@
 #include <mpfr.h>
 #include <mpf2mpfr.h>
 
-#include "mpi.h" // this *cannot* be inside an extern "C"{} wrapper.
+#include <mpi.h> // this *cannot* be inside an extern "C"{} wrapper.
 
 extern "C" {
-#include "bertini.h"
-#include "cascade.h"
-#include "parallel.h"
-#include "localdim.h"
+#include <bertini.h>
+#include <cascade.h>
+#include <parallel.h>
+#include <localdim.h>
 }
 
 extern "C" {

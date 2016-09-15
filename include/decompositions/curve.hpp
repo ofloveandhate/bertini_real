@@ -6,24 +6,16 @@
 
 #include <set>
 
-
-#include "bertini1/bertini_headers.hpp"
+#include "cells/edge.hpp"
 
 #include "decompositions/checkSelfConjugate.hpp"
-
-#include "io/fileops.hpp"
+#include "decompositions/decomposition.hpp"
 
 #include "symbolics/isosingular.hpp"
-#include "programConfiguration.hpp"
-
-
-
 #include "symbolics/nullspace.hpp"
+
 #include "nag/solvers/sphere_intersection.hpp"
 
-
-#include "cells/edge.hpp"
-#include "decompositions/decomposition.hpp"
 
 
 

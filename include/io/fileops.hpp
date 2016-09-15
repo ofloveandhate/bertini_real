@@ -12,14 +12,15 @@
 #include <sys/stat.h>        //  declare the 'stat' structure 
 #include <sys/types.h>
 
-
+#include <mpi.h> // this *cannot* be inside an extern "C"{} wrapper.
+ 
 #include <dirent.h>
 #include <sstream>
 #include <set>
 
 
 
-#include "bertini1/bertini_headers.hpp"
+// #include "bertini1/bertini_headers.hpp"
 
 
 extern "C" {

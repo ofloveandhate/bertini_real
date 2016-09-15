@@ -1,5 +1,5 @@
-#ifndef _PROGRAM_STARTUP_H
-#define _PROGRAM_STARTUP_H
+#ifndef PROGRAM_CONFIGURATION
+#define PROGRAM_CONFIGURATION
 
 /** \file programConfiguration.hpp */
 #include "config.h"

@@ -5,9 +5,6 @@
 /** \file bertini_real.hpp */
 
 
-#include "bertini1/bertini_headers.hpp"
-
-
 #include "io/fileops.hpp"
 #include "decompositions/checkSelfConjugate.hpp"
 
