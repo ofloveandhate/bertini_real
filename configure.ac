@@ -57,7 +57,7 @@ AC_PROG_MKDIR_P
 LT_INIT
 
 
-AX_CXX_COMPILE_STDCXX_11
+AX_CXX_COMPILE_STDCXX_14
 
 
 #this calls a file in the m4/ directory, which sets up the MPI wrapper stuffs
