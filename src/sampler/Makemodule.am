@@ -12,6 +12,4 @@ sampler_SOURCES = \
 sampler_HEADERS = \
 	include/sampler.hpp
 
-sampler_LDADD = libpartitionParse.la libbr_common.la $(BOOST_FILESYSTEM_LIB) $(BOOST_SYSTEM_LIB)  $(BOOST_CHRONO_LIB) $(BOOST_REGEX_LIB) $(BOOST_TIMER_LIB) $(MPI_CXXLDFLAGS)
-
-sampler_CXXFLAGS = -D_HAVE_MPI -std=c++11 $(BOOST_CPPFLAGS) $(MPI_CXXFLAGS)
+sampler_LDADD = libbr_common.la $(BOOST_FILESYSTEM_LIB) $(BOOST_SYSTEM_LIB)  $(BOOST_CHRONO_LIB) $(BOOST_REGEX_LIB) $(BOOST_TIMER_LIB) $(MPI_CXXLDFLAGS)

@@ -3,8 +3,8 @@
 
 
 
-#we're building bertini_real, version 1.0.0, and the corresponding email is dan brake's
-AC_INIT([bertini_real], [1.0.0], [danielthebrake@gmail.com],[bertini_real], [http://www.danielthebrake.org/])
+#we're building bertini_real, version 1.1.0, and the corresponding email is dan brake's
+AC_INIT([bertini_real], [1.1.0], [danielthebrake@gmail.com],[bertini_real], [http://www.danielthebrake.org/])
 
 
 # Force autoconf to be at least this version number:
@@ -57,7 +57,7 @@ AC_PROG_MKDIR_P
 LT_INIT
 
 
-
+AX_CXX_COMPILE_STDCXX_11
 
 
 #this calls a file in the m4/ directory, which sets up the MPI wrapper stuffs

@@ -3,7 +3,7 @@
 AM_YFLAGS = -d -p `basename $* | sed 's,y$$,,'`
 AM_LFLAGS = -s -P`basename $* | sed 's,l$$,,'` -olex.yy.c
 
-AM_CPPFLAGS = -I$(top_srcdir)/include
+AM_CPPFLAGS = -I$(top_srcdir)/include -D_HAVE_MPI $(BOOST_CPPFLAGS) $(MPI_CXXFLAGS)
 
 ACLOCAL_AMFLAGS = -I m4
 
@@ -64,7 +64,7 @@ libbr_common_la_HEADERS = \
 
 libbr_common_la_LIBADD = libpartitionParse.la $(BOOST_FILESYSTEM_LIB) $(BOOST_SYSTEM_LIB) $(BOOST_CHRONO_LIB) $(BOOST_REGEX_LIB) $(BOOST_TIMER_LIB) $(MPI_CXXLDFLAGS)
 
-libbr_common_la_CXXFLAGS = -D_HAVE_MPI -std=c++11 $(BOOST_CPPFLAGS) $(MPI_CXXFLAGS)
+libbr_common_la_CXXFLAGS = -D_HAVE_MPI $(BOOST_CPPFLAGS) $(MPI_CXXFLAGS)
 
 # the two programs build from this source code
 include src/bertini_real/Makemodule.am
