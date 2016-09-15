@@ -236,3 +236,32 @@ public:
 
 
 
+/**
+\brief Holds metadata for an edge.  Namely, the cycle numbers.
+
+Edges produce cycle numbers as you track from the generic midpoint out to either boundary point.  This metadata class holds this information.
+*/
+class EdgeMetadata
+{
+private:
+	int cycle_number_left_;
+	int cycle_number_right_;
+public:
+	EdgeMetadata(int ell, int arr) : cycle_number_left_(ell), cycle_number_right_(arr)
+	{	}
+
+	auto CycleNumLeft()
+	{
+		return cycle_number_left_;
+	}
+
+	auto CycleNumRight()
+	{
+		return cycle_number_right_;
+	}
+
+};
+
+
+
+
