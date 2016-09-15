@@ -19,15 +19,13 @@
 
 
 
-
+#include <boost/bind.hpp>
 
 #include "bertini1/bertini_headers.hpp"
 
 
 #include "io/fileops.hpp"
-#include "data_type.hpp"
 #include "nag/solvers/solver.hpp"
-
 #include "programConfiguration.hpp"
 
 

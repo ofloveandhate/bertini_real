@@ -18,12 +18,13 @@
 #include <mpfr.h>
 #include <mpf2mpfr.h>
 
+#include <boost/timer/timer.hpp>
 
 #include "bertini1/bertini_headers.hpp"
 
 
 #include "io/fileops.hpp"
-#include "data_type.hpp"
+
 #include "programConfiguration.hpp"
 #include "decompositions/checkSelfConjugate.hpp"
 

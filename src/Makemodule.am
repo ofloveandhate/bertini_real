@@ -3,7 +3,6 @@
 
 unclassified_sources = \
 	src/bertini_real.cpp \
-	src/data_type.cpp \
 	src/parallelism.cpp \
 	src/programConfiguration.cpp
 
@@ -14,8 +13,10 @@ unclassified_headers = \
 	include/limbo.hpp \
 	include/universal_includes.hpp \
 	include/bertini_real.hpp \
-	include/data_type.hpp \
 	include/parallelism.hpp \
 	include/programConfiguration.hpp
+
+#include/data_type.hpp 
+#src/data_type.cpp 
 
 unclassified = $(unclassified_headers) $(unclassified_sources)

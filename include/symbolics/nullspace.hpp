@@ -25,14 +25,9 @@
 
 
 #include "io/fileops.hpp"
-#include "data_type.hpp"
 #include "nag/solvers/multilintolin.hpp"
 #include "nag/solvers/nullspace.hpp"
-
-
 #include "double_odometer.hpp"
-
-
 #include "symbolics/derivative_systems.hpp"
 
 /**

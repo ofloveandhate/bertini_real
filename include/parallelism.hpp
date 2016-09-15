@@ -7,6 +7,8 @@
 #include <cstddef>
 #include <gmp.h>
 
+#include <boost/timer/timer.hpp>
+
 #include "programConfiguration.hpp"
 #include "nag/solvers/solver.hpp"
 
@@ -16,7 +18,6 @@
 #include "decompositions/curve.hpp"
 
 #include "nag/nid.hpp"
-#include "data_type.hpp"
 
 /**
 \defgroup mpienabled MPI-enabled classes

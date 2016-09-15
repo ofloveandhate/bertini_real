@@ -25,7 +25,6 @@
 
 #include "nag/solvers/solver.hpp"
 #include "io/fileops.hpp"
-#include "data_type.hpp"
 #include "programConfiguration.hpp"
 #include "nag/solvers/postProcessing.hpp"
 

@@ -24,13 +24,8 @@
 #include "bertini1/bertini_headers.hpp"
 
 #include "io/fileops.hpp"
-#include "data_type.hpp"
-
 #include "programConfiguration.hpp"
-
-
 #include "nag/solvers/postProcessing.hpp"
-
 #include "nag/system_randomizer.hpp"
 #include "decompositions/decomposition.hpp"
 #include "limbo.hpp"

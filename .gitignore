@@ -33,6 +33,8 @@ sampler
 bertini_real
 libpartitionParse*
 
+generated_documentation
+
 output*
 isosingular_summary
 *.out

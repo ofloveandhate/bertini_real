@@ -38,12 +38,7 @@
 
 
 #include "bertini1/bertini_headers.hpp"
-
-
-
 #include "programConfiguration.hpp"
-#include "data_type.hpp"
-
 #include "io/fileops.hpp"
 
 

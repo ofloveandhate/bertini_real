@@ -28,7 +28,6 @@
 #include "decompositions/checkSelfConjugate.hpp"
 
 
-#include "data_type.hpp"
 #include "symbolics/isosingular.hpp"
 #include "programConfiguration.hpp"
 

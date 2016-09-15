@@ -33,7 +33,6 @@
 
 #include "decompositions/checkSelfConjugate.hpp"
 #include "decompositions/curve.hpp"
-#include "data_type.hpp"
 #include "symbolics/isosingular.hpp"
 #include "programConfiguration.hpp"
 
