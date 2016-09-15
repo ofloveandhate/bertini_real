@@ -4,19 +4,13 @@
 
 
 /** \file parallelism.hpp */
-#include <cstddef>
-#include <gmp.h>
 
-#include "programConfiguration.hpp"
-#include "solver.hpp"
+#include <boost/timer/timer.hpp>
 
+#include "decompositions/surface.hpp"
+#include "decompositions/curve.hpp"
 
-
-#include "surface.hpp"
-#include "curve.hpp"
-
-#include "nid.hpp"
-#include "data_type.hpp"
+#include "nag/nid.hpp"
 
 /**
 \defgroup mpienabled MPI-enabled classes
@@ -133,23 +127,6 @@ public:
 
 };
 
-
-
-
-/**
- \brief reads in projection from file if user specified, creates one otherwise.
- 
- currently defaults to create a random real projection with homogeneous value 0;
- 
- \param pi the projection vectors to fill.  must be initted already, but not necessarily the correct size.
- \param program_options The current state of Bertini_real.
- \param num_vars how many variables to set up, including the homogenizing variable.
- \param num_projections how many proj vectors to set up.  again, these must already be allocated outside this call.
- */
-void get_projection(vec_mp *pi,
-					BertiniRealConfig program_options,
-					int num_vars,
-					int num_projections);
 
 
 

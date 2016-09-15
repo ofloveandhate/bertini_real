@@ -1,33 +1,16 @@
-#ifndef _PROGRAM_STARTUP_H
-#define _PROGRAM_STARTUP_H
+#ifndef PROGRAM_CONFIGURATION
+#define PROGRAM_CONFIGURATION
 
 /** \file programConfiguration.hpp */
 #include "config.h"
 
-
-#include <cstddef>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <math.h>
-#include <gmp.h>
-#include <time.h>
-#include <float.h>
-#include <limits.h>
-#include <mpfr.h>
-#include <mpf2mpfr.h>
-
-#include <getopt.h> 
-
-#include <boost/filesystem.hpp>
-#include <iostream>
-#include <queue>
 #include <map>
+#include <getopt.h> 
+#include <queue>
 
-#include "bertini_extensions.hpp"
+#include "bertini1/bertini_extensions.hpp"
 
-#include "fileops.hpp"
+#include "io/fileops.hpp"
 
 
 enum {BERTINIREAL=-9000,CRIT=-8999};
@@ -1027,6 +1010,23 @@ void parse_preproc_data(boost::filesystem::path filename, preproc_data *PPD);
 
 
 
+
+
+
+/**
+ \brief reads in projection from file if user specified, creates one otherwise.
+ 
+ currently defaults to create a random real projection with homogeneous value 0;
+ 
+ \param pi the projection vectors to fill.  must be initted already, but not necessarily the correct size.
+ \param program_options The current state of Bertini_real.
+ \param num_vars how many variables to set up, including the homogenizing variable.
+ \param num_projections how many proj vectors to set up.  again, these must already be allocated outside this call.
+ */
+void get_projection(vec_mp *pi,
+					BertiniRealConfig program_options,
+					int num_vars,
+					int num_projections);
 
 
 

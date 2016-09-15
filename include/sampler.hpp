@@ -5,31 +5,16 @@
 /** \file sampler.hpp */
 
 
-#include <cstddef>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <math.h>
-#include <gmp.h>
-#include <time.h>
-#include <float.h>
-#include <limits.h>
-#include <mpfr.h>
-#include <mpf2mpfr.h>
+#include <boost/timer/timer.hpp>
 
+#include "io/fileops.hpp"
 
-#include "bertini_headers.hpp"
-
-
-#include "fileops.hpp"
-#include "data_type.hpp"
 #include "programConfiguration.hpp"
-#include "checkSelfConjugate.hpp"
+#include "decompositions/checkSelfConjugate.hpp"
 
-#include "solver_multilintolin.hpp"
-#include "surface.hpp"
-#include "curve.hpp"
+#include "nag/solvers/multilintolin.hpp"
+#include "decompositions/surface.hpp"
+#include "decompositions/curve.hpp"
 
 
 

@@ -2,53 +2,14 @@
 
 bin_PROGRAMS += sampler
 
+samplerdir = $(includedir)/bertini_real/sampler
+
 sampler_SOURCES = \
-	src/sampler/sampler.cpp include/sampler.hpp \
-	src/body/bertini_extensions.cpp \
-	src/body/data_type.cpp \
-	src/body/parallelism.cpp \
-	src/body/derivative_systems.cpp \
-	src/body/programConfiguration.cpp \
-	src/body/fileops.cpp \
-	src/body/isosingular.cpp \
-	src/body/checkSelfConjugate.cpp \
-	src/body/curve.cpp src/body/surface.cpp \
-	src/body/nullspace.cpp \
-	src/solvers/solver.cpp \
-	src/solvers/solver_midpoint_tracker.cpp \
-	src/solvers/solver_nullspace.cpp \
-	src/solvers/solver_multilintolin.cpp \
-	src/solvers/postProcessing.cpp \
-	src/solvers/solver_sphere.cpp \
-	include/bertini_real.hpp \
-	include/bertini_extensions.hpp \
-	include/bertini_headers.hpp\
-	include/partitionParse.h\
-	include/data_type.hpp \
-	include/parallelism.hpp \
-	include/derivative_systems.hpp \
-	include/programConfiguration.hpp \
-	include/fileops.hpp \
-	include/isosingular.hpp \
-	include/checkSelfConjugate.hpp \
-	include/curve.hpp \
-	include/surface.hpp \
-	include/nullspace.hpp \
-	include/solver.hpp \
-	include/solver_midpoint_tracker.hpp \
-	include/solver_nullspace.hpp \
-	include/solver_multilintolin.hpp \
-	include/postProcessing.hpp \
-	include/solver_sphere.hpp \
-	include/color.hpp src/body/color.cpp \
-	include/system_randomizer.hpp src/body/system_randomizer.cpp \
-	include/decomposition.hpp src/body/decomposition.cpp \
-	include/vertex.hpp src/body/vertex.cpp \
-	include/vertex_set.hpp src/body/vertex_set.cpp \
-	include/witness_set.hpp src/body/witness_set.cpp \
-	include/nid.hpp src/body/nid.cpp \
-	include/holders.hpp src/body/holders.cpp
+	src/sampler/sampler.cpp \
+	src/sampler/curve_methods.cpp \
+	src/sampler/surface_methods.cpp
 
-sampler_LDADD = libpartitionParse.a $(BOOST_FILESYSTEM_LIB) $(BOOST_SYSTEM_LIB)  $(BOOST_CHRONO_LIB) $(BOOST_REGEX_LIB) $(BOOST_TIMER_LIB) $(MPI_CXXLDFLAGS)
+sampler_HEADERS = \
+	include/sampler.hpp
 
-sampler_CXXFLAGS = -D_HAVE_MPI -std=c++11 $(BOOST_CPPFLAGS) $(MPI_CXXFLAGS)
+sampler_LDADD = libbr_common.la $(BOOST_FILESYSTEM_LIB) $(BOOST_SYSTEM_LIB)  $(BOOST_CHRONO_LIB) $(BOOST_REGEX_LIB) $(BOOST_TIMER_LIB) $(MPI_CXXLDFLAGS)
