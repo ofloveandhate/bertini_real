@@ -74,11 +74,15 @@ int main(int argC, char *args[])
 			
 		}
 			break;
-			
+		case -1:
+		{
+			std::cout << "sampler unable to proceed\n";
+			return 12461;
+		}
 		default:
 		{
 			std::cout << "sampler not capable of sampling anything but dimension 1 or 2.  this is of dim " << dimension << std::endl;
-			return 0;
+			return 12462;
 		}
 			break;
 	}
@@ -2344,6 +2348,16 @@ int get_dir_mptype_dimen(boost::filesystem::path & Dir_Name, int & MPType, int &
     
 	std::string tempstr;
 	std::ifstream fin("Dir_Name");
+
+	if (!fin.is_open())
+	{
+		std::cout << color::red() << "did not find a decomposition in this directory.  currently uses file `Dir_Name` to record the name of the directory of the decomposition.  please ensure you have a completed decomposition in this directory, and `Dir_Name` is intact, specifying the correct location.\n" << color::console_default();
+		dimension = -1;
+		MPType = -1;
+		Dir_Name = "missing";
+		return MPType;
+	}
+
 	fin >> tempstr;
 	fin >> MPType;
 	fin >> dimension;
