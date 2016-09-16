@@ -392,14 +392,12 @@ int Curve::interslice(const WitnessSet & W_curve,
                                     SolverConfiguration & solve_options,
                                     VertexSet & V)
 {
-	
-	
-	int num_missing_indicator = 0;
-	
 #ifdef functionentry_output
 	std::cout << "curve::interslice" << std::endl;
 #endif
-	
+
+	int num_missing_indicator = 0;
+
 	if (!this->randomizer()->is_ready()) {
 		throw std::logic_error("in interslice, randomizer is not set up properly.");
 	}
@@ -435,11 +433,6 @@ int Curve::interslice(const WitnessSet & W_curve,
 	
 	
 	std::map<int, int> crit_point_counter;
-	
-	
-	
-	
-	
 	for (unsigned int ii=0; ii<W_crit_real.num_points(); ii++){
 		
 		if (program_options.verbose_level()>=8)
@@ -459,7 +452,7 @@ int Curve::interslice(const WitnessSet & W_curve,
     
 	vec_mp crit_downstairs; init_vec_mp(crit_downstairs,0);
 	vec_mp midpoints_downstairs; init_vec_mp(midpoints_downstairs,0);
-	std::vector< int > index_tracker;
+	std::vector< int > index_tracker; // apparently unused except in the following call
 	
     V.compute_downstairs_crit_midpts(W_crit_real,
                                      crit_downstairs,
@@ -469,10 +462,10 @@ int Curve::interslice(const WitnessSet & W_curve,
 
 	
 	
-	int num_midpoints = midpoints_downstairs->size;
+	
 	
 	if (program_options.verbose_level()>=0) {
-		print_point_to_screen_matlab(crit_downstairs,"crit_downstairs");
+		print_point_to_screen_matlab(crit_downstairs,"curve_interslice_crit_downstairs");
 	}
 	
 	
@@ -482,24 +475,17 @@ int Curve::interslice(const WitnessSet & W_curve,
     
 	V.set_curr_input(W_curve.input_filename());
 	
+	
+	auto num_midpoints = midpoints_downstairs->size;
+
 	int edge_counter = 0; // set the counter
-	
-	
 	std::vector< WitnessSet> midpoint_witness_sets;
 	midpoint_witness_sets.resize(num_midpoints);
-	
-	
+	MultilinConfiguration ml_config(solve_options,this->randomizer());
     vec_mp particular_projection;  init_vec_mp(particular_projection,W_curve.num_variables());
 		particular_projection->size = W_curve.num_variables();
 	vec_cp_mp(particular_projection,projections[0]);
 	
-	
-	
-
-	
-    
-	
-	MultilinConfiguration ml_config(solve_options,this->randomizer());
 	
 	
 	
@@ -508,410 +494,28 @@ int Curve::interslice(const WitnessSet & W_curve,
 	else
 		solve_options.robust = false;
 	
-	
-	
-	
-	solve_options.backup_tracker_config("getting_midpoints");
-	
-	for (int ii=0; ii<num_midpoints; ii++) {
-		
-		neg_mp(&particular_projection->coord[0], &midpoints_downstairs->coord[ii]);
-		
-		real_threshold(&particular_projection->coord[0],solve_options.T.real_threshold);
-
-		
-		if (program_options.verbose_level()>=2) {
-			printf("solving midpoints upstairs %d, projection value ",ii);
-			print_comp_matlab(&particular_projection->coord[0],"p");
-		}
-		
-		SolverOutput fillme;
-		multilin_solver_master_entry_point(W_curve,         // WitnessSet
-                                           fillme, // the new data is put here!
-                                           &particular_projection,
-                                           ml_config,
-                                           solve_options);
-		
-		fillme.get_noninfinite_w_mult_full(midpoint_witness_sets[ii]); // is ordered
 
 
-		
-		midpoint_witness_sets[ii].sort_for_real(&solve_options.T);
-		
-		if (have_sphere()) {
-			midpoint_witness_sets[ii].sort_for_inside_sphere(sphere_radius(), sphere_center());
-		}
-		
-
-		if (program_options.verbose_level()>=2) {
-			midpoint_witness_sets[ii].print_to_screen();
-            std::cout << "midpoint_downstairs " << ii << " had " << midpoint_witness_sets[ii].num_points() << " real points" << std::endl;
-		}
-		edge_counter += midpoint_witness_sets[ii].num_points();
-	}
 	
-	solve_options.restore_tracker_config("getting_midpoints");
+	MidSlice(edge_counter, midpoint_witness_sets, ml_config, W_curve, particular_projection,midpoints_downstairs,program_options,solve_options);
 	
 	
-    // 7) find edge endpoints
-    
-	
-	
-	WitnessSet Wleft, Wright;
-	
-	Edge temp_edge;
-	comp_mp left_proj_val; init_mp(left_proj_val);
-	comp_mp right_proj_val; init_mp(right_proj_val);
-	
-	
-	
-	std::set<int> found_indices_left;
-	std::set<int> found_indices_right;
-    
-	std::map<int, std::vector< int > > edge_occurence_tracker_left;
-	std::map<int, std::vector< int > > edge_occurence_tracker_right;
-	
-    std::vector< std::set< int > > found_indices_crit;
+	std::vector< std::set< int > > found_indices_crit;
     std::vector< std::set< int > > found_indices_mid;
-    
-    found_indices_mid.resize(num_midpoints);
-    found_indices_crit.resize(num_midpoints+1);
-    
-    solve_options.use_gamma_trick = 0;
+    std::set<int> found_indices_left;
+	std::set<int> found_indices_right;
+	ConnectTheDots(found_indices_crit, found_indices_mid, 
+					found_indices_left, found_indices_right,
+					crit_point_counter,
+					V,
+					crit_downstairs,
+					midpoints_downstairs,
+					particular_projection,
+		midpoint_witness_sets,
+		ml_config,
+					program_options, solve_options);
+
 	
-	for (int ii=0; ii<num_midpoints; ++ii) {
-		std::cout << color::brown() << "connecting midpoint downstairs " << ii << " of " << num_midpoints << color::console_default() << std::endl;
-        
-        
-        solve_options.backup_tracker_config("midpoint_connect");
-        
-
-        if (program_options.quick_run()<=1)
-			solve_options.robust = true;
-		else
-			solve_options.robust = false;
-		
-		
-		
-        int keep_going = 1;
-        int iterations = 0;
-		int maxits = 2;
-        while (keep_going==1 && (iterations<maxits))
-        {
-            
-            iterations++;
-            keep_going = 0; // we would like to stop computing
-            
-            
-            if (program_options.verbose_level()>=2)
-			{
-                print_comp_matlab(&crit_downstairs->coord[ii],"left ");
-				print_comp_matlab(&crit_downstairs->coord[ii+1],"right ");
-			}
-			
-	
-			SolverOutput fillme;
-			
-			neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii]);
-            multilin_solver_master_entry_point(midpoint_witness_sets[ii],         // input WitnessSet
-                                               fillme, // the new data is put here!
-                                               &particular_projection,
-                                               ml_config,
-                                               solve_options);
-			
-			fillme.get_noninfinite_w_mult_full(Wleft); // should be ordered
-			
-            
-			
-			fillme.reset();
-			
-            neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii+1]);
-            multilin_solver_master_entry_point(midpoint_witness_sets[ii],         // WitnessSet
-                                               fillme, // the new data is put here!
-                                               &particular_projection,
-                                               ml_config,
-                                               solve_options);
-			
-			fillme.get_noninfinite_w_mult_full(Wright); // should be ordered
-			
-			
-			WitnessSet Wright_real = Wright; // this is unnecessary
-			WitnessSet Wleft_real = Wleft;   // this is unnecessary
-            
-			Wright_real.sort_for_real(&solve_options.T);
-			Wleft_real.sort_for_real(&solve_options.T);
-            
-            if (Wleft_real.num_points()!=midpoint_witness_sets[ii].num_points()) {
-                std::cout << color::red() << "had a critical failure\n moving left was deficient " << midpoint_witness_sets[ii].num_points()-Wleft_real.num_points() << " points" << color::console_default() << std::endl;
-                keep_going = 1;
-            }
-            
-            if (Wright_real.num_points()!=midpoint_witness_sets[ii].num_points()) {
-				std::cout << color::red() << "had a critical failure\n moving right was deficient " << midpoint_witness_sets[ii].num_points()-Wright_real.num_points() << " points" << color::console_default() << std::endl;
-				keep_going = 1;
-            }
-            
-            if (!keep_going) {
-                // this is good, it means we have same number out as in, so we can do a full mapping.
-                break;
-            }
-            else if (iterations<maxits){
-              //tighten some tolerances, change it up.
-                Wleft.reset();
-                Wright.reset();
-                std::cout << "trying to recover the failure..." << std::endl;
-				
-                solve_options.T.endgameNumber = 2;
-                // what else can i do here to improve the probability of success?
-                solve_options.T.basicNewtonTol   *= 1e-2; // tracktolbeforeeg
-                solve_options.T.endgameNewtonTol *= 1e-2; // tracktolduringeg
-//				solve_options.T.maxStepSize *= 0.5;
-//				solve_options.T.odePredictor = 7;
-				std::cout << "tracktolBEFOREeg: "	<< solve_options.T.basicNewtonTol << " tracktolDURINGeg: "	<< solve_options.T.endgameNewtonTol << std::endl;
-            }
-			else
-			{
-				Wleft.reset_points();
-                Wright.reset_points();
-				
-				WitnessSet W_single = midpoint_witness_sets[ii];
-				WitnessSet W_single_sharpened;
-				
-				
-				
-				WitnessSet W_single_right,W_single_left,W_midpoint_replacement = midpoint_witness_sets[ii];
-				
-				W_midpoint_replacement.reset_points();
-				
-				
-				for (unsigned int kk=0; kk<midpoint_witness_sets[ii].num_points(); kk++) {
-					
-					W_single.reset_points();
-					W_single_sharpened.reset();
-					
-					
-					
-					//sharpen up the initial point.
-					
-					W_single.add_point( midpoint_witness_sets[ii].point(kk));
-					
-					
-					int prev_sharpen_digits = solve_options.T.sharpenDigits;
-					solve_options.T.sharpenDigits = MIN(4*solve_options.T.sharpenDigits,300);
-					
-					neg_mp(&particular_projection->coord[0], &midpoints_downstairs->coord[ii]);
-					
-					SolverOutput fillme;
-					multilin_solver_master_entry_point(W_single,         // input WitnessSet
-													   fillme,           // the new data is put here!
-													   &particular_projection,
-													   ml_config,
-													   solve_options);
-					
-					fillme.get_noninfinite_w_mult_full(W_single_sharpened);
-					fillme.reset();
-
-					if (W_single_sharpened.num_points()==0) {
-						std::cout << "sharpening failed" << std::endl;
-						mypause();
-					}
-					
-					solve_options.T.sharpenDigits = prev_sharpen_digits;
-					
-					
-					
-					
-					
-					//go left and right
-					
-					comp_mp one_e_minus_four;  init_mp2(one_e_minus_four,1024);
-					set_zero_mp(one_e_minus_four);  mpf_set_str(one_e_minus_four->r,"1e-4",10);
-					
-					comp_mp temp;  init_mp2(temp,1024);
-					sub_mp(temp, &crit_downstairs->coord[num_midpoints], &crit_downstairs->coord[0]);
-					
-					neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii]);
-					int num_its = 0;
-					while (num_its < 1 && W_single_left.num_points()==0) {
-						W_single_left.reset();
-						
-						std::cout << num_its << "th iteration, going left, midpoint " << ii << std::endl;
-						
-						if (num_its == 0) { // on first try, go default
-							solve_options.T.maxNewtonIts = 2;
-						}
-						else if (num_its == 1) { // on second try, go to straight-up predictor
-							solve_options.T.maxNewtonIts = 1;
-						}
-//						else if (num_its == 2){
-//							solve_options.T.maxNewtonIts = 2;
-//							sub_mp(&particular_projection->coord[0], &particular_projection->coord[0], temp);
-//						}
-						else{ //try many steps for correction.
-							solve_options.T.maxNewtonIts = 4;
-							solve_options.T.outputLevel = 3;
-						}
-						
-						SolverOutput fillme;
-						multilin_solver_master_entry_point(W_single_sharpened,         // WitnessSet
-														   fillme, // the new data is put here!
-														   &particular_projection,
-														   ml_config,
-														   solve_options);
-						// get stuff from fillme
-						fillme.get_noninfinite_w_mult_full(W_single_left);
-						fillme.reset();
-						
-						W_single_left.sort_for_real(&solve_options.T);
-						
-						num_its++;
-					}
-					
-					
-					
-					neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii+1]);
-					num_its = 0;
-					
-					while (num_its < 1 && W_single_right.num_points()==0) {
-						W_single_right.reset();
-						
-						std::cout << num_its << "th iteration, going right, midpoint " << ii << std::endl;
-						
-						if (num_its == 0) { // on first try, go default
-							solve_options.T.maxNewtonIts = 2;
-						}
-						else if (num_its == 1) { // on second try, go to straight-up predictor
-							solve_options.T.maxNewtonIts = 1;
-						}
-//						else if (num_its == 2){
-//							solve_options.T.maxNewtonIts = 2;
-//							add_mp(&particular_projection->coord[0], &particular_projection->coord[0], temp);
-//						}
-						else{ //try many steps for correction.
-							solve_options.T.maxNewtonIts = 4;
-//							solve_options.T.outputLevel = 3;
-						}
-						SolverOutput fillme;
-						multilin_solver_master_entry_point(W_single_sharpened,         // WitnessSet
-														   fillme, // the new data is put here!
-														   &particular_projection,
-														   ml_config,
-														   solve_options);
-						//get stuff from fillme
-						fillme.get_noninfinite_w_mult_full(W_single_right);
-						fillme.reset();
-						
-						
-//						if (num_its==3) {
-////							std::cout << "paused for inspecting output file" << std::endl;
-////							sleep(600);
-//						}
-						W_single_right.sort_for_real(&solve_options.T);
-						
-						num_its++;
-					}
-					
-					
-
-
-					
-					
-					if (W_single_right.num_points()==1 && W_single_left.num_points()==1) {
-						W_midpoint_replacement.add_point( midpoint_witness_sets[ii].point(kk));
-						Wleft.add_point(W_single_left.point(0));
-						Wright.add_point(W_single_right.point(0));
-					}
-					else{
-						temp_vertex.set_point( midpoint_witness_sets[ii].point(kk) ) ;
-						temp_vertex.set_type(PROBLEMATIC); // set type
-						index_in_vertices_with_add(V, temp_vertex);
-					}
-					
-					
-				}
-				
-				
-				
-				midpoint_witness_sets[ii].reset_points();
-				midpoint_witness_sets[ii].copy_points(W_midpoint_replacement);
-				
-			}
-			
-		}
-		
-		
-        solve_options.restore_tracker_config("midpoint_connect");
-        
-		
-		for (unsigned int kk=0; kk<midpoint_witness_sets[ii].num_points(); kk++) {
-			temp_vertex.set_point( midpoint_witness_sets[ii].point(kk) );
-			temp_vertex.set_type(MIDPOINT); // set type
-			
-			temp_edge.midpt(index_in_vertices_with_add(V, temp_vertex)); // gets the index of the new midpoint as it is added
-			
-			temp_vertex.set_point( Wleft.point(kk) );
-			temp_vertex.set_type(NEW); // set type
-			
-			temp_edge.left(index_in_vertices_with_add(V, temp_vertex));
-			
-			
-			temp_vertex.set_point( Wright.point(kk) );
-			temp_vertex.set_type(NEW); // set type
-			
-			temp_edge.right(index_in_vertices_with_add(V, temp_vertex));
-			
-			// keep track of those indices we found.
-			
-			found_indices_left.insert(temp_edge.left());
-			found_indices_right.insert(temp_edge.right());
-			
-            
-            found_indices_crit[ii].insert(temp_edge.left());
-            found_indices_crit[ii+1].insert(temp_edge.right());
-            found_indices_mid[ii].insert(temp_edge.midpt());
-
-            
-			int edge_num = add_edge(temp_edge);
-			edge_occurence_tracker_left[temp_edge.left()].push_back(edge_num);
-			edge_occurence_tracker_right[temp_edge.right()].push_back(edge_num);
-			
-			
-			// count the number of times a critical point is tracked *to*.  this is for degenerate edge testing.  those which never get tracked to, make degenerate edges (isolated points are included in this).
-			if (crit_point_counter.find(temp_edge.left())==crit_point_counter.end()) {
-				crit_point_counter[temp_edge.left()] = 1;
-			}
-			else{
-				crit_point_counter[temp_edge.left()] ++;
-			}
-			
-			
-			
-			if (crit_point_counter.find(temp_edge.right())==crit_point_counter.end()) {
-				crit_point_counter[temp_edge.right()] = 1;
-			}
-			else{
-				crit_point_counter[temp_edge.right()] ++;
-			}
-			
-			
-			
-			
-			
-			
-			
-			if (program_options.verbose_level()>=2) {
-				printf("done connecting upstairs midpoint %d (downstairs midpoint %d)\n",kk,ii);
-				
-				std::cout << "constructed edge: " << temp_edge << std::endl << std::endl;;
-			}
-		}
-		Wleft.reset();
-		Wright.reset();
-		
-        
-        
-	}//re: for ii
-	clear_mp(left_proj_val); clear_mp(right_proj_val);
 	
 	
     for (int ii=0; ii<num_midpoints; ii++) {
@@ -928,18 +532,7 @@ int Curve::interslice(const WitnessSet & W_curve,
 	std::map<int,int>::iterator crit_pt_iterator;
 	for (crit_pt_iterator = crit_point_counter.begin(); crit_pt_iterator != crit_point_counter.end(); crit_pt_iterator++) {
 		int curr_index = crit_pt_iterator->first;
-//		int num_occurrences_local = crit_pt_iterator->second;
-//		
-//		if (num_occurrences_local==0) {
-			
-            //			vec_cp_mp(temp_vertex.pt_mp, V[curr_index].pt_mp);// set point
-            //			projection_value_homogeneous_input(temp_vertex.projVal_mp,  V[curr_index].pt_mp,projections[0]);
-            //			temp_vertex.type = ISOLATED; // set type
-			
-			Edge E(curr_index,curr_index,curr_index);
-			
-			add_edge(E);
-//		}
+		AddEdge(Edge(curr_index,curr_index,curr_index), EdgeMetaData(0,0));
 	}
 	
 	
@@ -961,7 +554,7 @@ int Curve::interslice(const WitnessSet & W_curve,
 	*/
 	
 	if (program_options.merge_edges()) {
-		this->merge(midpoint_witness_sets[0],V,projections,program_options,solve_options);
+		this->Merge(midpoint_witness_sets[0],V,projections,program_options,solve_options);
 	}// re: if merge_edges==true
 	else
 	{
@@ -1006,6 +599,410 @@ int Curve::interslice(const WitnessSet & W_curve,
 
 
 
+
+
+
+void Curve::MidSlice(int& edge_counter, 
+					std::vector<WitnessSet> &midpoint_witness_sets,
+					MultilinConfiguration& ml_config,
+					WitnessSet const& W_curve,
+					vec_mp& particular_projection,
+					vec_mp& midpoints_downstairs,
+					BertiniRealConfig & program_options,
+                    SolverConfiguration & solve_options)
+{
+	////////////////////////////
+	// slice between each pair of critical points
+	////////////////////////////
+	auto num_midpoints = midpoints_downstairs->size;
+
+	solve_options.backup_tracker_config("getting_midpoints");
+	
+	for (size_t ii=0; ii<num_midpoints; ++ii) {
+		
+		neg_mp(&particular_projection->coord[0], &midpoints_downstairs->coord[ii]);
+		
+		real_threshold(&particular_projection->coord[0],solve_options.T.real_threshold);
+
+		
+		if (program_options.verbose_level()>=2) {
+			printf("solving midpoints upstairs %zu, projection value ",ii);
+			print_comp_matlab(&particular_projection->coord[0],"p");
+		}
+		
+		SolverOutput fillme;
+		multilin_solver_master_entry_point(W_curve,         // WitnessSet
+                                           fillme, // the new data is put here!
+                                           &particular_projection,
+                                           ml_config,
+                                           solve_options);
+		
+		fillme.get_noninfinite_w_mult_full(midpoint_witness_sets[ii]); // is ordered
+
+
+		
+		midpoint_witness_sets[ii].sort_for_real(&solve_options.T);
+		
+		if (have_sphere()) {
+			midpoint_witness_sets[ii].sort_for_inside_sphere(sphere_radius(), sphere_center());
+		}
+		
+
+		if (program_options.verbose_level()>=2) {
+			midpoint_witness_sets[ii].print_to_screen();
+            std::cout << "midpoint_downstairs " << ii << " had " << midpoint_witness_sets[ii].num_points() << " real points" << std::endl;
+		}
+		edge_counter += midpoint_witness_sets[ii].num_points();
+	}
+	
+	solve_options.restore_tracker_config("getting_midpoints");
+}
+
+
+
+
+void Curve::ConnectTheDots(
+					std::vector< std::set< int > >& found_indices_crit,
+					std::vector< std::set< int > >& found_indices_mid,
+					std::set< int >& found_indices_left, std::set< int >& found_indices_right,
+					std::map<int, int> &crit_point_counter,
+					VertexSet& V,
+					vec_mp& crit_downstairs,
+					vec_mp& midpoints_downstairs,
+					vec_mp& particular_projection,
+					std::vector<WitnessSet> &midpoint_witness_sets,
+					MultilinConfiguration & ml_config,
+					BertiniRealConfig & program_options,
+                    SolverConfiguration & solve_options)
+{
+
+	auto num_midpoints = midpoint_witness_sets.size();
+
+	WitnessSet Wleft, Wright;
+	std::vector<int> cycle_nums_left, cycle_nums_right;
+	
+	comp_mp left_proj_val; init_mp(left_proj_val);
+	comp_mp right_proj_val; init_mp(right_proj_val);
+	
+	
+	Vertex temp_vertex;
+	
+    
+	std::map<int, std::vector< int > > edge_occurence_tracker_left;
+	std::map<int, std::vector< int > > edge_occurence_tracker_right;
+	
+    
+    
+    found_indices_mid.resize(num_midpoints);
+    found_indices_crit.resize(num_midpoints+1);
+    
+    solve_options.use_gamma_trick = 0;
+	
+	for (decltype(num_midpoints) ii=0; ii<num_midpoints; ++ii) {
+		std::cout << color::brown() << "connecting midpoint downstairs, " << ii << " of " << num_midpoints << color::console_default() << std::endl;
+        
+        cycle_nums_left.clear();
+		cycle_nums_right.clear();
+
+        solve_options.backup_tracker_config("midpoint_connect");
+        
+
+        if (program_options.quick_run()<=1)
+			solve_options.robust = true;
+		else
+			solve_options.robust = false;
+		
+		
+		
+        bool try_again = true;
+        int iterations = 0;
+		int maxits = 2;
+        while (try_again && (iterations<maxits))
+        {
+            
+            iterations++;
+            try_again = false; // we would like to stop computing
+            
+            
+            if (program_options.verbose_level()>=2)
+			{
+                print_comp_matlab(&crit_downstairs->coord[ii],  "left_proj_val ");
+				print_comp_matlab(&crit_downstairs->coord[ii+1],"right_proj_val ");
+			}
+			
+	
+			SolverOutput fillme;
+			// track left
+			neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii]);
+            multilin_solver_master_entry_point(midpoint_witness_sets[ii],         // input WitnessSet
+                                               fillme, // the new data is put here!
+                                               &particular_projection,
+                                               ml_config,
+                                               solve_options);
+			
+			fillme.get_noninfinite_w_mult_full(Wleft); // should be ordered
+			cycle_nums_left = fillme.get_cyclenums_noninfinite_w_mult();
+            
+			
+			fillme.reset();
+			// track right
+            neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii+1]);
+            multilin_solver_master_entry_point(midpoint_witness_sets[ii],         // WitnessSet
+                                               fillme, // the new data is put here!
+                                               &particular_projection,
+                                               ml_config,
+                                               solve_options);
+			
+			fillme.get_noninfinite_w_mult_full(Wright); // should be ordered
+			cycle_nums_right = fillme.get_cyclenums_noninfinite_w_mult();
+			
+			WitnessSet Wright_real = Wright; // this feels unnecessary
+			WitnessSet Wleft_real = Wleft;   // this feels unnecessary
+            
+			Wright_real.sort_for_real(&solve_options.T);
+			Wleft_real.sort_for_real(&solve_options.T);
+            
+            if (Wleft_real.num_points()!=midpoint_witness_sets[ii].num_points()) {
+                std::cout << color::red() << "had a critical failure\n moving left was deficient " << midpoint_witness_sets[ii].num_points()-Wleft_real.num_points() << " points" << color::console_default() << std::endl;
+                try_again = true;
+            }
+            
+            if (Wright_real.num_points()!=midpoint_witness_sets[ii].num_points()) {
+				std::cout << color::red() << "had a critical failure\n moving right was deficient " << midpoint_witness_sets[ii].num_points()-Wright_real.num_points() << " points" << color::console_default() << std::endl;
+				try_again = true;
+            }
+            
+            if (!try_again) {
+                // this is good, it means we have same number out as in, so we can do a full mapping.
+                break;
+            }
+            else if (iterations<maxits){
+              //tighten some tolerances, change it up.
+                Wleft.reset();
+                Wright.reset();
+                cycle_nums_left.clear();
+				cycle_nums_right.clear();
+                std::cout << "trying to recover the failure by tightening tolerances..." << std::endl;
+				
+                solve_options.T.endgameNumber = 2;
+                // what else can i do here to improve the probability of success?
+                solve_options.T.basicNewtonTol   *= 1e-2; // tracktolbeforeeg
+                solve_options.T.endgameNewtonTol *= 1e-2; // tracktolduringeg
+				std::cout << "tracktolBEFOREeg: "	<< solve_options.T.basicNewtonTol << " tracktolDURINGeg: "	<< solve_options.T.endgameNewtonTol << std::endl;
+            }
+			else
+			{
+				Wleft.reset_points();
+                Wright.reset_points();
+				cycle_nums_left.clear();
+				cycle_nums_right.clear();
+
+				WitnessSet W_single = midpoint_witness_sets[ii];
+				WitnessSet W_single_sharpened;
+				
+				
+				
+				WitnessSet W_single_right,W_single_left,W_midpoint_replacement = midpoint_witness_sets[ii];
+				
+				W_midpoint_replacement.reset_points();
+				
+				
+				for (unsigned int kk=0; kk<midpoint_witness_sets[ii].num_points(); kk++) {
+					
+					W_single.reset_points();
+					W_single_sharpened.reset();
+					
+					
+					
+					//sharpen up the initial point.
+					
+					W_single.add_point( midpoint_witness_sets[ii].point(kk));
+					
+					
+					int prev_sharpen_digits = solve_options.T.sharpenDigits;
+					solve_options.T.sharpenDigits = MIN(4*solve_options.T.sharpenDigits,300);
+					
+					neg_mp(&particular_projection->coord[0], &midpoints_downstairs->coord[ii]);
+					
+					SolverOutput fillme;
+					multilin_solver_master_entry_point(W_single,         // input WitnessSet
+													   fillme,           // the new data is put here!
+													   &particular_projection,
+													   ml_config,
+													   solve_options);
+					
+					fillme.get_noninfinite_w_mult_full(W_single_sharpened);
+					fillme.reset();
+
+					if (W_single_sharpened.num_points()==0) {
+						std::cout << "sharpening failed, which sucks because the sharpened point was theoretically generic with respect to the system currently being used" << std::endl;
+						mypause();
+					}
+					
+					solve_options.T.sharpenDigits = prev_sharpen_digits;
+					
+					
+					
+					std::vector<int> c1, c2;
+					
+					//go left and right
+					comp_mp temp;  init_mp2(temp,1024);
+					sub_mp(temp, &crit_downstairs->coord[num_midpoints], &crit_downstairs->coord[0]);
+					
+					neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii]);
+					
+					for (unsigned num_its = 0; num_its < 1 && W_single_left.num_points()==0; ++num_its) {
+						W_single_left.reset();
+						
+						std::cout << num_its << "th attempt, going left, midpoint " << ii << std::endl;
+						
+						if (num_its > 0) // this is only marginally interesting.  something much better could be done.  just setting this is not likely to help.
+							solve_options.T.maxNewtonIts = 2;
+						
+						SolverOutput fillme;
+						multilin_solver_master_entry_point(W_single_sharpened,         // WitnessSet
+														   fillme, // the new data is put here!
+														   &particular_projection,
+														   ml_config,
+														   solve_options);
+						// get stuff from fillme
+						fillme.get_noninfinite_w_mult_full(W_single_left);
+						c1 = fillme.get_cyclenums_noninfinite_w_mult();
+						fillme.reset();
+						
+						W_single_left.sort_for_real(&solve_options.T);
+					}
+					
+					
+					
+					neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii+1]);
+					
+					for (unsigned num_its = 0; num_its < 1 && W_single_right.num_points()==0; num_its++) {
+						W_single_right.reset();
+						
+						std::cout << num_its << "th attempt, going right, midpoint " << ii << std::endl;
+						
+						if (num_its > 0) // this is only marginally interesting.  something much better could be done.  just setting this is not likely to help.
+							solve_options.T.maxNewtonIts = 2;
+
+						SolverOutput fillme;
+						multilin_solver_master_entry_point(W_single_sharpened,         // WitnessSet
+														   fillme, // the new data is put here!
+														   &particular_projection,
+														   ml_config,
+														   solve_options);
+						//get stuff from fillme
+						fillme.get_noninfinite_w_mult_full(W_single_right);
+						c2 = fillme.get_cyclenums_noninfinite_w_mult();
+						fillme.reset();
+						
+						W_single_right.sort_for_real(&solve_options.T);
+					}
+					
+					
+
+
+					
+					
+					if (W_single_right.num_points()==1 && W_single_left.num_points()==1) {
+
+						assert(c1.size()==1);
+						assert(c2.size()==1);
+
+						W_midpoint_replacement.add_point( midpoint_witness_sets[ii].point(kk));
+						Wleft.add_point(W_single_left.point(0));
+						Wright.add_point(W_single_right.point(0));
+						cycle_nums_left.push_back(c1.back());
+						cycle_nums_right.push_back(c2.back());
+					}
+					else{
+						temp_vertex.set_point( midpoint_witness_sets[ii].point(kk) ) ;
+						temp_vertex.set_type(PROBLEMATIC); // set type
+						index_in_vertices_with_add(V, temp_vertex);
+					}
+				}
+				
+				
+				
+				midpoint_witness_sets[ii].reset_points();
+				midpoint_witness_sets[ii].copy_points(W_midpoint_replacement);
+			}
+			
+		}
+        solve_options.restore_tracker_config("midpoint_connect");
+        
+		
+
+
+
+		for (unsigned int kk=0; kk<midpoint_witness_sets[ii].num_points(); kk++) {
+
+			Edge temp_edge;
+
+			temp_vertex.set_point( midpoint_witness_sets[ii].point(kk) );
+			temp_vertex.set_type(MIDPOINT); // set type
+			
+			temp_edge.midpt(index_in_vertices_with_add(V, temp_vertex)); // gets the index of the new midpoint as it is added
+			
+			temp_vertex.set_point( Wleft.point(kk) );
+			temp_vertex.set_type(NEW); // set type
+			
+			temp_edge.left(index_in_vertices_with_add(V, temp_vertex));
+			
+			
+			temp_vertex.set_point( Wright.point(kk) );
+			temp_vertex.set_type(NEW); // set type
+			
+			temp_edge.right(index_in_vertices_with_add(V, temp_vertex));
+			
+			// keep track of those indices we found.
+			
+			found_indices_left.insert(temp_edge.left());
+			found_indices_right.insert(temp_edge.right());
+			
+            
+            found_indices_crit[ii].insert(temp_edge.left());
+            found_indices_crit[ii+1].insert(temp_edge.right());
+            found_indices_mid[ii].insert(temp_edge.midpt());
+
+            EdgeMetaData md(cycle_nums_left[kk],cycle_nums_right[kk]);
+
+			auto edge_num = AddEdge(temp_edge, md);
+			edge_occurence_tracker_left[temp_edge.left()].push_back(edge_num);
+			edge_occurence_tracker_right[temp_edge.right()].push_back(edge_num);
+			
+			
+			// count the number of times a critical point is tracked *to*.  this is for degenerate edge testing.  those which never get tracked to, make degenerate edges (isolated points are included in this).
+			if (crit_point_counter.find(temp_edge.left())==crit_point_counter.end()) {
+				crit_point_counter[temp_edge.left()] = 1;
+			}
+			else{
+				crit_point_counter[temp_edge.left()] ++;
+			}
+			
+			
+			
+			if (crit_point_counter.find(temp_edge.right())==crit_point_counter.end()) {
+				crit_point_counter[temp_edge.right()] = 1;
+			}
+			else{
+				crit_point_counter[temp_edge.right()] ++;
+			}
+			
+			
+			
+			
+			if (program_options.verbose_level()>=2) {
+				printf("done connecting upstairs midpoint %d (downstairs midpoint %lu)\n",kk,ii);
+				std::cout << "constructed edge: " << temp_edge << std::endl << std::endl;;
+			}
+		}
+		Wleft.reset();
+		Wright.reset();
+		
+	}//re: for ii, tracking left and right
+	clear_mp(left_proj_val); clear_mp(right_proj_val);
+}
 
 
 
@@ -1088,7 +1085,7 @@ std::vector<int> Curve::get_merge_candidate(const VertexSet & V) const
 
 
 
-void Curve::merge(WitnessSet & W_midpt,
+void Curve::Merge(WitnessSet & W_midpt,
                                 VertexSet & V,
                                 vec_mp * projections,
 								BertiniRealConfig & program_options,
@@ -1218,6 +1215,9 @@ void Curve::merge(WitnessSet & W_midpt,
 		
 		// copy over the removed points for all the edges we are going to merge.
 
+		EdgeMetaData md(edge_metadata_[leftmost_edge].CycleNumLeft(),
+						edge_metadata_[rightmost_edge].CycleNumRight());
+
 		for (unsigned int zz=0; zz!=edges_to_merge.size(); zz++) {
 			int merge_me_away = edges_to_merge[zz];  //set an index into the merge edges
 			for (auto vec_iter = edges_[merge_me_away].removed_begin(); vec_iter!=edges_[merge_me_away].removed_end(); vec_iter++)
@@ -1232,10 +1232,8 @@ void Curve::merge(WitnessSet & W_midpt,
 				V[edges_[merge_me_away].left()].set_removed(true);
 			}
 			else if (zz==edges_to_merge.size()-1){ // leftmost edge
-//				temp_edge.removed_points.push_back(edges[merge_me_away].right());
 				temp_edge.add_removed_point(edges_[merge_me_away].midpt());
 				V[edges_[merge_me_away].midpt()].set_removed(true);
-//				V[edges_[merge_me_away].right()].removed = 1;
 			}
 			else {
 				temp_edge.add_removed_point(edges_[merge_me_away].left());
@@ -1245,11 +1243,9 @@ void Curve::merge(WitnessSet & W_midpt,
 			}
 		}
 
-		add_edge(temp_edge);
+		AddEdge(temp_edge,md);
 		// tacks this onto the end of the edge vector
-		
-        //		std::cout << "adding edge " << temp_edge.left << " " << temp_edge.midpt << " " << temp_edge.right << " " << std::endl;
-		//add the new_edge
+
 		
 		
 		// delete the old edges // note that we can't do this *IN* the loop because we were using indexes into the edge set.  have to do it after added new edge
@@ -1455,6 +1451,7 @@ void Curve::send(int target, ParallelismConfig & mpi_config) const
 	MPI_Send(&temp_num_edges, 1, MPI_UNSIGNED, target, CURVE, mpi_config.comm());
 	for (unsigned int ii=0; ii<num_edges_; ii++) {
 		edges_[ii].send(target, mpi_config);
+		edge_metadata_[ii].send(target, mpi_config);
 	}
 	
 }
@@ -1480,7 +1477,10 @@ void Curve::receive(int source, ParallelismConfig & mpi_config)
 	for (unsigned int ii=0; ii<temp_num_edges; ii++) {
 		Edge E;
 		E.receive(source, mpi_config);
-		add_edge(E);
+
+		EdgeMetaData md;
+		md.receive(source, mpi_config);
+		AddEdge(E,md);
 	}
 	
 }
@@ -1494,7 +1494,7 @@ int Curve::setup(boost::filesystem::path containing_folder){
 	Decomposition::setup(containing_folder / "decomp");
 	
 	setup_edges(containing_folder / "E.edge");
-	
+	setup_cycle_numbers(containing_folder / "CN.cnums");
 	
 	return 1;
 }
@@ -1519,7 +1519,35 @@ int Curve::setup_edges(boost::filesystem::path INfile)
 	
 	for(unsigned int ii=0;ii<temp_num_edges;ii++) {
 		fscanf(IN,"%d %d %d",&left, &midpt, &right); scanRestOfLine(IN);
-		add_edge(Edge(left, midpt, right));
+		AddEdge(Edge(left, midpt, right),EdgeMetaData());
+	}
+	
+	fclose(IN);
+	return this->num_edges_;
+}
+
+
+int Curve::setup_cycle_numbers(boost::filesystem::path INfile)
+{
+#ifdef functionentry_output
+	std::cout << "curve::setup_cycle_numbers" << std::endl;
+#endif
+	
+	
+	FILE *IN = safe_fopen_read(INfile);
+	
+	unsigned int temp_num_edges;
+	
+	fscanf(IN, "%u\n", &temp_num_edges);
+
+	if (temp_num_edges != num_edges())
+		throw std::runtime_error("mismatch in number of cycle number data, and number of edges in curve in file " + INfile.string());
+
+	int left, right;
+	
+	for(unsigned int ii=0;ii<temp_num_edges;ii++) {
+		fscanf(IN,"%d %d",&left, &right); scanRestOfLine(IN);
+		edge_metadata_[ii] = EdgeMetaData(left,right);
 	}
 	
 	fclose(IN);
@@ -1530,23 +1558,17 @@ int Curve::setup_edges(boost::filesystem::path INfile)
 
 
 
-
-
-
 void Curve::print(boost::filesystem::path base) const
 {
 #ifdef functionentry_output
 	std::cout << "curve::print" << std::endl;
 #endif
-	
-    //	std::cout << "printing curve Decomposition to folder " << base << std::endl;
-	
+
 	Decomposition::print(base);
-	
 	boost::filesystem::path edgefile = base / "E.edge";
-	
 	Curve::print_edges(edgefile);
-	
+	boost::filesystem::path cycle_num_file = base / "CN.cnums";
+	Curve::print_cycle_numbers(cycle_num_file);
 }
 
 
@@ -1577,7 +1599,23 @@ void Curve::print_edges(boost::filesystem::path outputfile) const
 
 
 
-
+void Curve::print_cycle_numbers(boost::filesystem::path outputfile) const
+{
+#ifdef functionentry_output
+	std::cout << "curve::print_cycle_numbers" << std::endl;
+#endif
+	
+	FILE *OUT = safe_fopen_write(outputfile);
+	
+	// output the number of vertices
+	fprintf(OUT,"%zu\n\n",num_edges_);
+	
+	for(unsigned int ii=0; ii<num_edges_; ii++)
+		fprintf(OUT,"%d %d \n",
+                edge_metadata_[ii].CycleNumLeft(),
+                edge_metadata_[ii].CycleNumRight());
+	fclose(OUT);
+}
 
 
 

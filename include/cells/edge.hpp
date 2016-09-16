@@ -241,25 +241,73 @@ public:
 
 Edges produce cycle numbers as you track from the generic midpoint out to either boundary point.  This metadata class holds this information.
 */
-class EdgeMetadata
+class EdgeCycleNumbers
 {
 private:
-	int cycle_number_left_;
-	int cycle_number_right_;
+	int cycle_number_left_ = -1;
+	int cycle_number_right_ = -1;
 public:
-	EdgeMetadata(int ell, int arr) : cycle_number_left_(ell), cycle_number_right_(arr)
+	EdgeCycleNumbers(int ell, int arr) : cycle_number_left_(ell), cycle_number_right_(arr)
 	{	}
 
-	auto CycleNumLeft()
+	EdgeCycleNumbers() = default;
+
+	void CycleNumLeft(int c)
+	{
+		cycle_number_left_ = c;
+	}
+
+	void CycleNumRight(int c)
+	{
+		cycle_number_right_ = c;
+	}
+
+	auto CycleNumLeft() const
 	{
 		return cycle_number_left_;
 	}
 
-	auto CycleNumRight()
+	auto CycleNumRight() const
 	{
 		return cycle_number_right_;
 	}
 
+
+
+	/**
+	 \brief send to a single target
+	 \param target to whom to send this edge
+	 \param mpi_config the current state of parallelism
+	 */
+	void send(int target, ParallelismConfig & mpi_config) const
+	{
+		int * buffer = new int[2];
+		
+		buffer[0] = CycleNumLeft();
+		buffer[1] = CycleNumRight();
+		
+		MPI_Send(buffer, 2, MPI_INT, target, EDGE, mpi_config.comm());
+		
+		delete [] buffer;
+	}
+	
+	
+	/**
+	 \brief receive from a single source
+	 \param source from whom to receive this edge
+	 \param mpi_config the current state of parallelism
+	 */
+	void receive(int source, ParallelismConfig & mpi_config) 
+	{
+		MPI_Status statty_mc_gatty;
+		int * buffer = new int[2];
+		MPI_Recv(buffer, 2, MPI_INT, source, EDGE, mpi_config.comm(), &statty_mc_gatty);
+		
+		CycleNumLeft(buffer[0]);
+		CycleNumRight(buffer[1]);
+
+		delete [] buffer;		
+	}
 };
 
 

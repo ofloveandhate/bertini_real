@@ -126,7 +126,7 @@ void SolverOutput::post_process(post_process_t *endPoints, int num_pts_to_check,
 			//		int isReal;       // real flag:  0 - not real, 1 - real
 			//		int isFinite;     // finite flag: -1 - no finite/infinite distinction, 0 - infinite, 1 - finite
 			//		int isSing;       // singular flag: 0 - non-sigular, 1 - singular
-			printf("solution %d, success %d, multi %d, isFinite %d, isSing %d, isReal %d\n",ii,endPoints[ii].success,endPoints[ii].multiplicity,endPoints[ii].isFinite,endPoints[ii].isSing,endPoints[ii].isReal);
+			printf("solution %d, success %d, multi %d, isFinite %d, isSing %d, isReal %d, cycle_num %d\n",ii,endPoints[ii].success,endPoints[ii].multiplicity,endPoints[ii].isFinite,endPoints[ii].isSing,endPoints[ii].isReal,endPoints[ii].cycle_num);
 			
 		}
 	}

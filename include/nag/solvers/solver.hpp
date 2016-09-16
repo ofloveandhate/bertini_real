@@ -1351,24 +1351,19 @@ friend SolverOutput;
 	bool is_singular;///< flag for whether has been declared singular.
 	bool is_successful;///< flag for whether tracker was successful, or gave up for some reason -- wish this stored the reason too.
 	bool is_real;///< flag for whether has been declared real.
+	int cycle_number_ = -1;  ///< the cycle number of the path taken to the solution.  This number can regularize the path, if used correctly.
 	
 public:
-	friend std::ostream & operator<<(std::ostream &os, const SolutionMetadata & t)
+	
+	void SetCycleNumber(int c)
 	{
-		
-		
-		os << t.output_index << std::endl;
-		for (auto iter=t.input_index.begin(); iter!=t.input_index.end(); ++iter) {
-			os << *iter << " ";
-		}
-		os << std::endl;
-		
-		os << t.multiplicity << " " << t.is_finite << " " << t.is_singular << " " << t.is_successful;
-		
-		return os;
+		cycle_number_ = c;
 	}
-	
-	
+
+	auto CycleNumber() const
+	{
+		return cycle_number_;
+	}
 	
 	/**
 	 \brief set the finiteness state
@@ -1426,6 +1421,21 @@ public:
 		output_index = new_ind;
 	}
 	
+
+	friend std::ostream & operator<<(std::ostream &os, const SolutionMetadata & t)
+	{
+		
+		
+		os << t.output_index << std::endl;
+		for (auto iter=t.input_index.begin(); iter!=t.input_index.end(); ++iter) {
+			os << *iter << ' ';
+		}
+		os << '\n';
+		
+		os << t.multiplicity << ' ' << t.is_finite << ' ' << t.is_singular << ' ' << t.is_successful << ' ' << t.CycleNumber();
+		
+		return os;
+	}
 };
 
 
@@ -1509,6 +1519,7 @@ public:
 	 */
 	void get_noninfinite_w_mult_full(WitnessSet & W_transfer);
 	
+	std::vector<int> get_cyclenums_noninfinite_w_mult();
 	
 	/**
 	 \brief Get the finite solutions, including those which are singular or multiple, and put them in a witness set.
