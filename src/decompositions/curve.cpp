@@ -64,13 +64,13 @@ void Curve::main(VertexSet & V,
 	
 	
 	
-	int self_conjugate = 1;
+	bool self_conjugate = true;
 	if (W_curve.num_synth_vars()==0) {
 		
 		if (program_options.verbose_level()>=2) {
 			printf("checking if component is self-conjugate\n");
 		}
-		self_conjugate = checkSelfConjugate( W_curve.point(0), program_options, W_curve.input_filename());  //later:  could be passed in from user, if we want
+		self_conjugate = checkSelfConjugate( W_curve.point(0), program_options, program_options.input_filename());  //later:  could be passed in from user, if we want
 		
 		
 		
