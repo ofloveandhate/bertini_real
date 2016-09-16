@@ -198,7 +198,7 @@ void isosingular_deflation_iteration(int *declarations,
 	converter.clear(); converter.str("");
 	
 	
-	WaitOnGeneratedFile("derivative_polynomials_declaration");
+	WaitOnGeneratedFile("deflation_polynomials_declaration");
 	WaitOnGeneratedFile("deflation_polynomials");
 	
 	
