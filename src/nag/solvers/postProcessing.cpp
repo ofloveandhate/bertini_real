@@ -169,6 +169,7 @@ void SolverOutput::post_process(post_process_t *endPoints, int num_pts_to_check,
 		meta.set_singular(endPoints[curr_ind].isSing);
 		meta.set_multiplicity(endPoints[curr_ind].multiplicity);
 		meta.set_successful(endPoints[curr_ind].success);
+		meta.SetCycleNumber(endPoints[curr_ind].cycle_num);
 		meta.set_output_index(this->num_vertices_);
 		meta.add_input_index(endPoints[curr_ind].path_num);
 		
@@ -189,7 +190,6 @@ void SolverOutput::post_process(post_process_t *endPoints, int num_pts_to_check,
 		
 		if (endPoints[curr_ind].multiplicity<1) {
 			endpoint_to_vec_mp(temp_vertex.point(), &endPoints[curr_ind]);
-//			print_point_to_screen_matlab(temp_vertex.point(),"multsol");
 			continue;
 		}
 		
@@ -200,7 +200,6 @@ void SolverOutput::post_process(post_process_t *endPoints, int num_pts_to_check,
 		}
 		
 		endpoint_to_vec_mp(temp_vertex.point(), &endPoints[curr_ind]);
-//		print_point_to_screen_matlab(temp_vertex.point(),"multsol");
 		
 		SolutionMetadata meta;
 		meta.set_finite(endPoints[curr_ind].isFinite);
@@ -214,7 +213,6 @@ void SolverOutput::post_process(post_process_t *endPoints, int num_pts_to_check,
 			
 			if (endPoints[inner_ind].sol_num==endPoints[curr_ind].sol_num) {
 				meta.add_input_index(endPoints[inner_ind].path_num);
-//				std::cout << endPoints[inner_ind].path_num << " ";
 			}
 		}
 		meta.set_output_index(this->num_vertices());
