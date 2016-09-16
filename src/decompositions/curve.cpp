@@ -1494,7 +1494,7 @@ int Curve::setup(boost::filesystem::path containing_folder){
 	Decomposition::setup(containing_folder / "decomp");
 	
 	setup_edges(containing_folder / "E.edge");
-	setup_cycle_numbers(containing_folder / "CN.cnums");
+	setup_cycle_numbers(containing_folder / "curve.cnums");
 	
 	return 1;
 }
@@ -1567,7 +1567,7 @@ void Curve::print(boost::filesystem::path base) const
 	Decomposition::print(base);
 	boost::filesystem::path edgefile = base / "E.edge";
 	Curve::print_edges(edgefile);
-	boost::filesystem::path cycle_num_file = base / "CN.cnums";
+	boost::filesystem::path cycle_num_file = base / "curve.cnums";
 	Curve::print_cycle_numbers(cycle_num_file);
 }
 
