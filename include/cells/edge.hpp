@@ -308,6 +308,12 @@ public:
 
 		delete [] buffer;		
 	}
+
+	friend std::ostream& operator<<(std::ostream& out, EdgeCycleNumbers const& e)
+	{
+		out << e.CycleNumLeft() << " " << e.CycleNumRight();
+		return out;
+	}
 };
 
 

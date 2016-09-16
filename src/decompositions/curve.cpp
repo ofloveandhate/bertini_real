@@ -1091,9 +1091,9 @@ void Curve::Merge(WitnessSet & W_midpt,
 								BertiniRealConfig & program_options,
                                 SolverConfiguration & solve_options)
 {
-#ifdef functionentry_output
-	std::cout << "curve::merge" << std::endl;
-#endif
+	#ifdef functionentry_output
+		std::cout << "curve::merge" << std::endl;
+	#endif
 	
 	
 	

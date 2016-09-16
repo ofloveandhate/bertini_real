@@ -207,7 +207,7 @@ void SolverOutput::post_process(post_process_t *endPoints, int num_pts_to_check,
 		meta.set_singular(endPoints[curr_ind].isSing);
 		meta.set_multiplicity(endPoints[curr_ind].multiplicity);
 		meta.set_successful(endPoints[curr_ind].success);
-		
+		meta.SetCycleNumber(endPoints[curr_ind].cycle_num);
 
 		for (int jj=0; jj<num_pts_to_check; jj++) {
 			int inner_ind = soln_indices[jj].first;
