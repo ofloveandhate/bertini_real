@@ -9,7 +9,11 @@ sampler_SOURCES = \
 	src/sampler/curve_methods.cpp \
 	src/sampler/surface_methods.cpp
 
-sampler_HEADERS = \
+sampler_SOURCES += \
 	include/sampler.hpp
 
 sampler_LDADD = libbr_common.la $(BOOST_FILESYSTEM_LIB) $(BOOST_SYSTEM_LIB)  $(BOOST_CHRONO_LIB) $(BOOST_REGEX_LIB) $(BOOST_TIMER_LIB) $(MPI_CXXLDFLAGS)
+
+rootinclude_HEADERS += \
+	include/sampler.hpp
+
