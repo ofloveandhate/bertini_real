@@ -69,8 +69,10 @@ end
 currname = increment_name(plot_params.basename);
 nameforfile = sprintf('%s.%s',currname,plot_params.format);
 
-
-
+varargin
+if strcmp(plot_params.format,'eps')
+	varargin = [varargin, {'-fillpage'}]
+end
 
 evalme = sprintf('print(fig1,''%s'',''-d%s''',nameforfile,plot_params.format_flag);
 for ii = 2:length(varargin)
