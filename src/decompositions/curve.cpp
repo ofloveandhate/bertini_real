@@ -14,42 +14,33 @@ void Curve::main(VertexSet & V,
 #endif
 	
 	
-		
+	// perform an isosingular deflation
+	boost::filesystem::path temp_path = W_curve.input_filename();
+	
+	std::stringstream converter;
+	converter << "_dim_" << W_curve.dimension() << "_comp_" << W_curve.component_number() << "_deflated";
+	temp_path += converter.str();
+	converter.clear(); converter.str("");
+	
+	std::set<unsigned int> zeroonly;
+	zeroonly.insert(0);
+	W_curve.write_dehomogenized_coordinates("witness_points_dehomogenized",zeroonly); // write the points to file
+	
+	int num_deflations, *deflation_sequence = NULL;
+	isosingular_deflation(&num_deflations, &deflation_sequence,
+						  program_options, W_curve.input_filename(),
+						  "witness_points_dehomogenized",
+						  temp_path, // output name
+						  program_options.max_deflations());
+	free(deflation_sequence); // ugh, eww, and gross.  sorry, dear reader.  i know...
+	
+
 	
 	
+	program_options.set_input_deflated_filename(temp_path);
 	
-	
-	if (1) {
-		// perform an isosingular deflation
-		boost::filesystem::path temp_path = W_curve.input_filename();
-		
-		std::stringstream converter;
-		converter << "_dim_" << W_curve.dimension() << "_comp_" << W_curve.component_number() << "_deflated";
-		temp_path += converter.str();
-		converter.clear(); converter.str("");
-		
-		std::set<unsigned int> zeroonly;
-		zeroonly.insert(0);
-		W_curve.write_dehomogenized_coordinates("witness_points_dehomogenized",zeroonly); // write the points to file
-		
-		int num_deflations, *deflation_sequence = NULL;
-		isosingular_deflation(&num_deflations, &deflation_sequence,
-							  program_options, W_curve.input_filename(),
-							  "witness_points_dehomogenized",
-							  temp_path, // output name
-							  program_options.max_deflations());
-		free(deflation_sequence);
-		
-		
-		
-		program_options.set_input_deflated_filename(temp_path);
-		
-		W_curve.set_input_filename(temp_path);
-	}
-	else {
-		program_options.set_input_deflated_filename(program_options.input_filename());
-		//nothing
-	}
+	W_curve.set_input_filename(temp_path);
+
 	
 	
 	Decomposition::copy_data_from_witness_set(W_curve);
@@ -1013,11 +1004,11 @@ void Curve::ConnectTheDots(
 
 
 //returns <-1> if no candidate found
-std::vector<int> Curve::get_merge_candidate(const VertexSet & V) const
+std::vector<int> Curve::GetMergeCandidates(const VertexSet & V) const
 {
 	
 #ifdef functionentry_output
-	std::cout << "curve::get_merge_candidate" << std::endl;
+	std::cout << "curve::GetMergeCandidates" << std::endl;
 #endif
 	
 	
@@ -1107,7 +1098,7 @@ void Curve::Merge(WitnessSet & W_midpt,
 	MultilinConfiguration ml_config(solve_options);
 	
 	
-	std::vector< int > edges_to_merge = this->get_merge_candidate(V);
+	std::vector< int > edges_to_merge = this->GetMergeCandidates(V);
 	
 	
 	comp_mp new_proj_val;  init_mp2(new_proj_val,1024);
@@ -1134,10 +1125,7 @@ void Curve::Merge(WitnessSet & W_midpt,
 		
 		if (edges_to_merge.back() < 0) {
 			std::cout << "error: attemping to merge an edge with negative index!" << std::endl;
-//			
-//			std::cout << "<" << edges[left_edge_w_pt].left << " " << edges[left_edge_w_pt].midpt << " " << edges[left_edge_w_pt].right << "> <";
-//			std::cout << edges[right_edge_w_pt].left << " " << edges[right_edge_w_pt].midpt << " " << edges[right_edge_w_pt].right << ">" << std::endl;
-//			
+	
 			// do something better than break!
 			break;                  
 		}
@@ -1248,20 +1236,24 @@ void Curve::Merge(WitnessSet & W_midpt,
 
 		
 		
-		// delete the old edges // note that we can't do this *IN* the loop because we were using indexes into the edge set.  have to do it after added new edge
+		// delete the old edges 
+		// note that we can't do this *IN* the loop because we were using indexes into the edge set.  have to do it after added new edge
 		std::vector< Edge > post_merge_edges;
-		// this should be changed.
+		std::vector< EdgeMetaData > post_merge_metedata;
+
 		unsigned int num_removed_edges = 0;
 		for (unsigned int ii = 0; ii<this->num_edges_; ii++) {
 			bool remove_flag = false;
 			for (unsigned int zz=0; zz!=edges_to_merge.size(); zz++) {
-				if (edges_to_merge[zz] == int(ii)) {
+				if (edges_to_merge[zz] == ii) {
 					remove_flag = true;
+					break;
 				}
 			}
 			
 			if (remove_flag==false) { // if don't want to remove the edge // (ii!=left_edge_w_pt) && (ii!=right_edge_w_pt)
 				post_merge_edges.push_back( this->edges_[ii]);
+				post_merge_metedata.push_back( this->edge_metadata_[ii]);
 			}
 			else{
 				num_removed_edges++;
@@ -1278,9 +1270,10 @@ void Curve::Merge(WitnessSet & W_midpt,
 		
 		//swap this's edge info to post-merge info.
 		this->edges_.swap(post_merge_edges);
+		this->edge_metadata_.swap(post_merge_metedata);
 		this->num_edges_ = this->edges_.size();
 		
-		edges_to_merge = this->get_merge_candidate(V);
+		edges_to_merge = this->GetMergeCandidates(V);
 	}// re: while
 	clear_mp(half); clear_mp(temp); clear_mp(temp2);
 	

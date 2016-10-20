@@ -427,7 +427,7 @@ public:
 	 \return a vector of integers containing the indices of edges to merge together into a single new edge.
 	 \param V The Vertex set to which the Decomposition refers.
 	 */
-	std::vector<int> get_merge_candidate(const VertexSet & V) const;
+	std::vector<int> GetMergeCandidates(const VertexSet & V) const;
 	
 	
 	/**
