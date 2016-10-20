@@ -33,14 +33,20 @@
  */
 class Curve : public Decomposition
 {	
+
+public:
+	using EdgeMetaData = EdgeCycleNumbers;
+private:
+
 	std::vector< std::vector<int > > sample_indices_; ///< the indices of the vertices for the samples on the edges.
 	
 	
 	std::vector<Edge> edges_; ///< The edges (1-cells) computed by Bertini_real
 	size_t      num_edges_;  ///< How many edges this Decomposition currently has.  This could also be inferred from edges.size()
 
-	
+	std::vector<EdgeMetaData> edge_metadata_; ///< attaches a piece of metadata to each edge.
 public:
+	
 	
 	
 	/**
@@ -119,7 +125,15 @@ public:
 		return edges_[index];
 	}
 	
-	
+
+	EdgeMetaData GetMetadata(unsigned int index) const
+	{
+		if (index>=num_edges_) {
+			throw std::out_of_range("trying to get Edge out of range");
+		}
+		
+		return edge_metadata_[index];
+	}
 	
 	/**
 	 \brief Get the set of all Vertex indices to which this Decomposition refers.
@@ -152,13 +166,30 @@ public:
 	 \return the index of the edge just added.
 	 \param new_edge the edge to add.
 	 */
-	int add_edge(Edge new_edge)
+	// int add_edge(Edge new_edge)
+	// {
+	// 	num_edges_++;
+	// 	edges_.push_back(new_edge);
+	// 	return num_edges_-1; // -1 to correct for the fencepost problem
+	// }
+	
+	/**
+	 \brief Commit an edge to the curve.
+	 
+	 Increments the edge counter, and pushes the edge to the pack of the vector of edges.
+	 
+	 \return the index of the edge just added.
+	 \param new_edge the edge to add.
+	 \param md The computed metadata to add.
+	 */
+	int AddEdge(Edge new_edge, EdgeMetaData md)
 	{
 		num_edges_++;
 		edges_.push_back(new_edge);
+		edge_metadata_.push_back(md);
 		return num_edges_-1; // -1 to correct for the fencepost problem
 	}
-	
+
 	/**
 	 \brief Read a Decomposition from text file.
 	 
@@ -180,7 +211,7 @@ public:
 	 */
 	int setup_edges(boost::filesystem::path INfile);
 	
-	
+	int setup_cycle_numbers(boost::filesystem::path INfile);
 	/**
 	 
 	 \brief Write all the edges in this Decomposition to a file.
@@ -197,7 +228,7 @@ public:
 	 */
 	void print_edges(boost::filesystem::path outputfile) const;
 	
-	
+	void print_cycle_numbers(boost::filesystem::path outputfile) const;
 	/**
 	 \brief print the complete curve Decomposition, including the base Decomposition class.
 	 
@@ -366,14 +397,37 @@ public:
 		return -13;
 	}
 	
-	
+	void MidSlice(int& edge_counter, 
+					std::vector<WitnessSet> &midpoint_witness_sets,
+					MultilinConfiguration& ml_config,
+					WitnessSet const& W_curve,
+					vec_mp& particular_projection,
+					vec_mp& midpoints_downstairs,
+					BertiniRealConfig & program_options,
+                    SolverConfiguration & solve_options);
+
+
+	void ConnectTheDots(
+		std::vector< std::set< int > >& found_indices_crit,
+					std::vector< std::set< int > >& found_indices_mid,
+					std::set< int >& found_indices_left, std::set< int >& found_indices_right,
+					std::map<int, int> &crit_point_counter,
+					VertexSet& V,
+					vec_mp& crit_downstairs,
+					vec_mp& midpoints_downstairs,
+					vec_mp& particular_projection,
+					std::vector<WitnessSet> &midpoint_witness_sets,
+					MultilinConfiguration & ml_config,
+					BertiniRealConfig & program_options,
+                    SolverConfiguration & solve_options);
+
 	/**
 	 \brief  Find candidates for merging, by finding vertices with type NEW.
 	 
 	 \return a vector of integers containing the indices of edges to merge together into a single new edge.
 	 \param V The Vertex set to which the Decomposition refers.
 	 */
-	std::vector<int> get_merge_candidate(const VertexSet & V) const;
+	std::vector<int> GetMergeCandidates(const VertexSet & V) const;
 	
 	
 	/**
@@ -387,7 +441,7 @@ public:
 	 \param program_options The current state of Bertini_real
 	 \param solve_options The current solver configuration.
 	 */
-	void merge(WitnessSet & W_midpt, VertexSet & V,
+	void Merge(WitnessSet & W_midpt, VertexSet & V,
 			   vec_mp * pi_in,
 			   BertiniRealConfig & program_options,
 			   SolverConfiguration & solve_options);

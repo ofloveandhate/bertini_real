@@ -260,8 +260,7 @@ function [dirname,dimension] = parse_dirname()
 
 
 if isempty('Dir_Name')
-	display('no file ''Dir_Name''.  please run bertini_real');
-	return;
+	error('no file ''Dir_Name''.  please run bertini_real');
 end
 
 fid = fopen('Dir_Name','r');
@@ -354,12 +353,36 @@ else
 		end
 	end
 	fclose(fid);
-    
-%     display('done gathering sampler data.');
+end
+
+
+filename = [dirname '/' 'curve.cnums'];
+if isempty(dir(filename))
+	curve.cycle_numbers = [];
+else
+    curve = gather_curve_cycle_numbers(filename,curve);
 end
 
 
 curve.input = read_input(dirname,curve);
+end
+
+function curve = gather_curve_cycle_numbers(filename, curve)
+
+    fid = fopen(filename,'r');
+    
+    tmp_num_edges = fscanf(fid,'%i',[1 1]);
+    if tmp_num_edges ~= curve.num_edges
+        error('curve cycle numbers does not have same number of entries as the curve has edges (%i!=%i)',tmp_num_edges,curve.num_edges);
+    end
+    
+    curve.cycle_numbers = zeros(curve.num_edges,2);  % 2, as left, right
+    for ii = 1:curve.num_edges
+        tmp = fscanf(fid,'%i',[1 2]);
+        curve.cycle_numbers(ii,:) = tmp;
+    end
+    fclose(fid);
+    
 end
 
 

@@ -126,7 +126,7 @@ void SolverOutput::post_process(post_process_t *endPoints, int num_pts_to_check,
 			//		int isReal;       // real flag:  0 - not real, 1 - real
 			//		int isFinite;     // finite flag: -1 - no finite/infinite distinction, 0 - infinite, 1 - finite
 			//		int isSing;       // singular flag: 0 - non-sigular, 1 - singular
-			printf("solution %d, success %d, multi %d, isFinite %d, isSing %d, isReal %d\n",ii,endPoints[ii].success,endPoints[ii].multiplicity,endPoints[ii].isFinite,endPoints[ii].isSing,endPoints[ii].isReal);
+			printf("solution %d, success %d, multi %d, isFinite %d, isSing %d, isReal %d, cycle_num %d\n",ii,endPoints[ii].success,endPoints[ii].multiplicity,endPoints[ii].isFinite,endPoints[ii].isSing,endPoints[ii].isReal,endPoints[ii].cycle_num);
 			
 		}
 	}
@@ -169,6 +169,7 @@ void SolverOutput::post_process(post_process_t *endPoints, int num_pts_to_check,
 		meta.set_singular(endPoints[curr_ind].isSing);
 		meta.set_multiplicity(endPoints[curr_ind].multiplicity);
 		meta.set_successful(endPoints[curr_ind].success);
+		meta.SetCycleNumber(endPoints[curr_ind].cycle_num);
 		meta.set_output_index(this->num_vertices_);
 		meta.add_input_index(endPoints[curr_ind].path_num);
 		
@@ -189,7 +190,6 @@ void SolverOutput::post_process(post_process_t *endPoints, int num_pts_to_check,
 		
 		if (endPoints[curr_ind].multiplicity<1) {
 			endpoint_to_vec_mp(temp_vertex.point(), &endPoints[curr_ind]);
-//			print_point_to_screen_matlab(temp_vertex.point(),"multsol");
 			continue;
 		}
 		
@@ -200,21 +200,19 @@ void SolverOutput::post_process(post_process_t *endPoints, int num_pts_to_check,
 		}
 		
 		endpoint_to_vec_mp(temp_vertex.point(), &endPoints[curr_ind]);
-//		print_point_to_screen_matlab(temp_vertex.point(),"multsol");
 		
 		SolutionMetadata meta;
 		meta.set_finite(endPoints[curr_ind].isFinite);
 		meta.set_singular(endPoints[curr_ind].isSing);
 		meta.set_multiplicity(endPoints[curr_ind].multiplicity);
 		meta.set_successful(endPoints[curr_ind].success);
-		
+		meta.SetCycleNumber(endPoints[curr_ind].cycle_num);
 
 		for (int jj=0; jj<num_pts_to_check; jj++) {
 			int inner_ind = soln_indices[jj].first;
 			
 			if (endPoints[inner_ind].sol_num==endPoints[curr_ind].sol_num) {
 				meta.add_input_index(endPoints[inner_ind].path_num);
-//				std::cout << endPoints[inner_ind].path_num << " ";
 			}
 		}
 		meta.set_output_index(this->num_vertices());

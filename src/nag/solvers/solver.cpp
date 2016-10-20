@@ -106,7 +106,17 @@ void SolverConfiguration::init()
 }
 
 
+std::vector<int> SolverOutput::get_cyclenums_noninfinite_w_mult()
+{
+	std::vector<int> cycle_nums;
 
+	for (auto index = ordering.begin(); index != ordering.end(); ++index) {
+		//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
+		if (metadata[index->first].is_finite)
+			cycle_nums.push_back(metadata[index->first].CycleNumber());
+	}
+	return cycle_nums;
+}
 
 
 void SolverOutput::get_noninfinite_w_mult_full(WitnessSet & W_transfer)
@@ -118,6 +128,7 @@ void SolverOutput::get_noninfinite_w_mult_full(WitnessSet & W_transfer)
 	set_witness_set_nvars(W_transfer);
 	
 }
+
 
 void SolverOutput::get_noninfinite_w_mult(WitnessSet & W_transfer)
 {
