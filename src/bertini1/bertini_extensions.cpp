@@ -1447,7 +1447,10 @@ void print_tracker(const tracker_config_t * T)
 
 
 //TODO this sort should be optimized.  it is sloppy and wasteful right now.
-int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & index_tracker, const vec_mp projections_input){
+int sort_increasing_by_real(vec_mp projections_sorted, 
+							std::vector< int > & index_tracker, 
+							const vec_mp projections_input,
+							double distinct_thresh){
 	
 	
 	if (projections_input->size == 0) {
@@ -1520,10 +1523,6 @@ int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & inde
 	
 	
 	// filter for uniqueness
-	
-	
-	double distinct_thresh = 1e-7;  // reasonable?  i hate hard-coded tolerances
-									 //TODO: remove this tolerance, or make it explicitly controllable.
 	
 	change_size_vec_mp(projections_sorted,1); projections_sorted->size = 1;
 	

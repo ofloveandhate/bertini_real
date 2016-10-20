@@ -412,8 +412,9 @@ void print_tracker(const tracker_config_t * T);
  \param projections_sorted The output value.
  \param index_tracker The order the inputs get sorted into.  It's a permutation vector.
  \param projections_input The projection values you want to sort.
+ \param distinct_thresh The separation value for determining if two values are distinct or not.  You should be able to set this pretty small, but it should also be a function of the level of sharpening /  accuracy requested from the tracker.
  */
-int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & index_tracker, const vec_mp projections_input);
+int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & index_tracker, const vec_mp projections_input, double distinct_thresh);
 
 
 /**

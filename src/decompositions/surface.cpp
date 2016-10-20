@@ -661,7 +661,8 @@ void Surface::compute_critical_curve(const WitnessSet & W_critcurve,
     std::cout << color::bold('m') << "interslicing critical curve" << color::console_default() << std::endl;
     
 	
-    
+    if (program_options.verbose_level() >= 3)
+		W_critpts.print_to_screen();
     
 	program_options.merge_edges(false);
 	
