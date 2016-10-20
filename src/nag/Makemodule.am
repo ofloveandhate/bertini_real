@@ -17,3 +17,10 @@ nag_headers += $(nag_solvers_headers)
 nag_sources += $(nag_solvers_sources)
 
 nag = $(nag_headers) $(nag_sources) 
+
+nag_includedir = $(includedir)/bertini_real/nag
+nag_include_HEADERS = \
+	include/nag/nid.hpp \
+	include/nag/system_randomizer.hpp \
+	include/nag/witness_set.hpp
+

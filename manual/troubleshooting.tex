@@ -6,7 +6,7 @@
 	\begin{itemize}
 	\item Compilation fails, with an error due to send calls for MPI.  
 
-	You are probably using OpenMPI, and their implementation does not use {\tt const}-correctness.  Daniel needs to modify the code in {\tt bertini_extensions} to cast away constness for these send calls.  Send him an email to poke him.  Or, use a different implementation of MPI.  MPICH2, versions 3.04 and up are known to compile using the code as written. 
+	You are probably using OpenMPI, and their implementation does not use {\tt const}-correctness.  Dani needs to modify the code in {\tt bertini\_extensions} to cast away constness for these send calls.  Send him an email to poke him.  Or, use a different implementation of MPI.  MPICH2, versions 3.04 and up are known to compile using the code as written. 
 	\end{itemize}
 
 \subsection{Bertini}

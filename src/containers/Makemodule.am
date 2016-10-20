@@ -7,3 +7,7 @@ containers_headers = \
 
 containers = $(containers_headers) $(containers_sources) 
 
+containers_includedir = $(includedir)/bertini_real/containers
+containers_include_HEADERS = \
+	include/containers/holders.hpp \
+	include/containers/vertex_set.hpp

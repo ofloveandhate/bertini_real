@@ -12,3 +12,9 @@ cells_headers = \
 
 cells = $(cells_headers) $(cells_sources) 
 
+cells_includedir = $(includedir)/bertini_real/cells
+cells_include_HEADERS = \
+	include/cells/cell.hpp \
+	include/cells/edge.hpp \
+	include/cells/face.hpp \
+	include/cells/vertex.hpp 
