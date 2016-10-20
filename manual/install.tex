@@ -204,6 +204,7 @@ Perform the following build/install steps for the \textbf{MPFR} and \textbf{MPC}
 \item Extract the tarball using tar (e.g., \textbf{\texttt{tar -xf mpfr-3.1.3.tar.bz2}}). This will create a sub-folder with the source for the given package
 cd into that source folder (e.g., \textbf{\texttt{cd mpfr-3.1.3}})
 \item Type \textbf{\texttt{libtoolize}} into the command line and press enter. This will add the files, once they have been compiled, to the shared library.
+\item Generate {\tt configure}, by running the command {\tt autoreconf -i}.
 \item Read the README and/or INSTALL file if present
 \item Note that for the current version of \textbf{mpc (0.9)} there is a change that may need to be made to have the build work successfully. You need to edit the line of "mpc.h"
 

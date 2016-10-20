@@ -15,13 +15,15 @@ noinst_LIBRARIES =
 noinst_LTLIBRARIES =
 
 
+#installed headers
 include_HEADERS =
-
+rootinclude_HEADERS =
 
 SUFFIXES = .c .h .y .l
 #see https://www.gnu.org/software/automake/manual/html_node/Suffixes.html
 
 
+rootincludedir = $(includedir)/bertini_real
 
 #now include the Makemodule files from the subdirectories.  they will add on to the variables which are declared above.
 
@@ -52,7 +54,7 @@ libbr_common_la_SOURCES = \
 	$(nag_sources) \
 	$(symbolics_sources)
 
-libbr_common_la_HEADERS = \
+libbr_common_la_SOURCES += \
 	$(unclassified_headers) \
 	$(bertini1_headers) \
 	$(cells_headers) \
