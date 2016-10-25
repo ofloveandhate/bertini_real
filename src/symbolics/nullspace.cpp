@@ -933,7 +933,7 @@ void nullspace_config_setup_right(NullspaceConfiguration *ns_config,
 	ns_config->starting_linears = (vec_mp **)br_malloc( randomizer->num_rand_funcs()*sizeof(vec_mp *));
 	for (int ii=0; ii<randomizer->num_rand_funcs(); ii++) {
 		
-		unsigned int curr_degree = randomizer->randomized_degree(ii)-1;
+		int curr_degree = std::max(0,randomizer->randomized_degree(ii)-1);
 		
 		
 		ns_config->starting_linears[ii] = (vec_mp *) br_malloc(curr_degree*sizeof(vec_mp));

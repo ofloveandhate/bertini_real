@@ -854,14 +854,6 @@ void projection_value_homogeneous_input(comp_d result, const vec_d input, const 
 	}
 	set_d(temp, result);
 	div_d(result, temp, &input->coord[0]);
-	//
-	//	if (result->i < 1e-14) {
-	//		result->i = 0.0;
-	//	}
-	
-	//	if (result->i < 1e-13) {
-	//		result->i = 0.0;
-	//	}
 	
 	return;
 }
