@@ -1526,6 +1526,8 @@ int Curve::setup_cycle_numbers(boost::filesystem::path INfile)
 	std::cout << "curve::setup_cycle_numbers" << std::endl;
 #endif
 	
+	if (!boost::filesystem::exists(INfile))
+		return 0;
 	
 	FILE *IN = safe_fopen_read(INfile);
 	
