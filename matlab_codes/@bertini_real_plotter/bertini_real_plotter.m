@@ -2,10 +2,14 @@
 % a class for plotting the data from a bertini_real run of any computable
 % dimension
 %
+% example invokation: 
+% bertini_real_plotter('autosave',false,'vertices',false,'linestyle','-','colormap',@jet,'colorfn',@norm,'num_colors',200,'curves',false)
+%
 %
 % options: 
-%	'autosave'          - bool [true]
-%	'vertices', 'vert'  - bool [true]
+%	'autosave'          - bool [false]
+%	'vertices', 'vert'  - bool [false]  for large samplings, this causes
+%							rendering to be very slow.
 %	'filename', 'file'   - string [BRinfo*.mat]
 %	'proj'              - handle to function.  no default
 %	'mono', 'monocolor' - color or RGB triple.  not on by default
@@ -29,12 +33,13 @@
 %							colormap, particularly used when you use the 
 %							'colorfn' option, to
 %							specify a function used for coloring the surface.
+%							also, 'numcolors'
 %
 %
 %
-
-
-% daniel brake
+%
+%
+% dani brake
 % danielthebrake@gmail.com
 % university of notre dame
 % applied and computational mathematics and statistics
@@ -82,7 +87,7 @@ classdef bertini_real_plotter < handle
 			
 			set_options(br_plotter,varargin);
 			
-			
+			set_filename(br_plotter);
 			load_data(br_plotter);
 			
 			if br_plotter.BRinfo.num_vertices==0
@@ -112,12 +117,12 @@ classdef bertini_real_plotter < handle
 			br_plotter.options.fontsizes.labels = 16;
 			br_plotter.options.fontsizes.axis = 20;
 			br_plotter.options.line_thickness = 6;
-			br_plotter.options.autosave = true;
+			br_plotter.options.autosave = false;
 			
 			br_plotter.options.labels = true;
 			br_plotter.options.monocolor = false;
 			
-			br_plotter.options.render_vertices = true;
+			br_plotter.options.render_vertices = false;
 			br_plotter.options.render_curves = true;
 			br_plotter.options.render_faces = true;
 			
@@ -131,7 +136,7 @@ classdef bertini_real_plotter < handle
             end
 		end
 		
-		
+		%parses the command line options fed into the constructor.
 		function set_options(br_plotter,command_line_options)
 			
 			
@@ -142,7 +147,7 @@ classdef bertini_real_plotter < handle
 			
 			for ii = 1:2:length(command_line_options)-1
 				
-				switch command_line_options{ii}
+				switch lower(command_line_options{ii})
 					case 'autosave'
 						
 						tentative_arg = command_line_options{ii+1};
@@ -253,7 +258,7 @@ classdef bertini_real_plotter < handle
 						end
 					
 					
-					case {'num_colors'}
+					case {'num_colors','numcolors'}
 						tmp = command_line_options{ii+1};
 						if ~isint(tmp)
 							error('value for ''num_colors'' must be in integer');
@@ -362,9 +367,35 @@ classdef bertini_real_plotter < handle
 		end
 		
 		
+		
+		% uses internally set variable 'filename' to load a .mat file
+		% containing data gathered previously.
 		function load_data(br_plotter)
-			
 			if isempty(br_plotter.filename)
+				error('unset filename in br_plotter object');
+			end
+			
+			if isempty(dir(br_plotter.filename))
+				error('nexists file with name ''%s''',br_plotter.filename);
+			end
+			
+			file_variables = whos('-file',br_plotter.filename);
+			
+			if ismember('BRinfo', {file_variables.name})
+				temp = load(br_plotter.filename);
+				br_plotter.BRinfo = temp.BRinfo;
+			else
+				error('file ''%s'' does not contain variable ''BRinfo''',br_plotter.filename);
+			end
+			
+			[br_plotter.options.containing, br_plotter.options.basename, ~] = fileparts(pwd);
+			br_plotter.dimension = br_plotter.BRinfo.dimension;
+		end
+		
+		
+		function set_filename(br_plotter, new_filename)
+			
+			if nargin==1
 				prev_filenames = dir('BRinfo*.mat');
 				
 				if isempty(prev_filenames)
@@ -379,38 +410,14 @@ classdef bertini_real_plotter < handle
 					if max_found < curr_num
 						max_found = curr_num;
 					end
-
 				end
 				br_plotter.filename = ['BRinfo' num2str(max_found) '.mat'];
+				
+			else	
+				br_plotter.filename = new_filename;
 			end
 			
-			
-			
-			if isempty(dir(br_plotter.filename))
-				error('nexists file with name ''%s''',br_plotter.filename);
-			end
-			
-			
-			file_variables = whos('-file',br_plotter.filename);
-			
-			if ismember('BRinfo', {file_variables.name})
-				temp = load(br_plotter.filename);
-				br_plotter.BRinfo = temp.BRinfo;
-			else
-				error('file ''%s'' does not contain variable ''BRinfo''',br_plotter.filename);
-			end
-			
-			
-			
-			
-			
-
-			[br_plotter.options.containing, br_plotter.options.basename, ~] = fileparts(pwd);
-
-			br_plotter.dimension = br_plotter.BRinfo.dimension;
-
 		end
-		
 		
 		function plot(br_plotter)
 			
@@ -462,7 +469,6 @@ classdef bertini_real_plotter < handle
 		function set_label_text_size(br_plotter,~,~,new_size)
 			
 			f = fieldnames(br_plotter.handles.vertex_text);
-			
 			for ii = 1:length(f)
 				set(br_plotter.handles.vertex_text.(f{ii}),'FontSize',new_size);
 			end
@@ -521,117 +527,64 @@ classdef bertini_real_plotter < handle
 
 		get_indices(br_plotter)
 		
+		
+		
+		
+		%functions specific to surfaces
+		surface_plot(br_plotter)
+		handles = plot_surface_edges(br_plotter)
+		
+		
+		%functions specific to curves
+		curve_plot(br_plotter)
+		handles = plot_curve_samples(br_plotter,sampler_data,style, color)
+		
+		
+		% common to all dimensions
+		sphere_plot(br_plotter)
+		plot_vertices(br_plotter)
+		plot_edge_points(br_plotter)
+		
 		setupfig(br_plotter,varargin)
 		
 		create_axes(br_plotter)
 		label_axes(br_plotter)
 		sync_axes(br_plotter)
 		
-		visibility_setup(br_plotter)
-		
-		surface_plot(br_plotter)
-		handles = plot_surface_edges(br_plotter)
-		
-		
-		curve_plot(br_plotter)
-		
-		handles = plot_curve_samples(br_plotter,sampler_data,style, color)
-		
-		% common to all dimensions
-		sphere_plot(br_plotter)
-		plot_vertices(br_plotter)
-		
-		plot_edge_points(br_plotter)
-		
-		
-		
 		render_legends(br_plotter)
-		
+		visibility_setup(br_plotter)
 		
 		
 		
 		% calls the initial_visibility, visibility_setup, and
 		% twiddle_visibility functions
 		controls(br_plotter)
-		
 		camera_setup(br_plotter)
 		
-		center_camera_on_selected_point(br_plotter,source, event)
 		
-		save_routine(br_plotter,varargin) % is a callback function
 		
 		
 		% setup the interactive buttons
 		button_setup(br_plotter)
-		
-		
-		
-		%http://www.mathworks.com/help/matlab/matlab_oop/class-methods-for-graphics-callbacks.html
-		
-		
-		change_alpha(br_plotter,source,event) % is a callback function
-		change_text_size(br_plotter,source,event)% is a callback function
-
 		set_initial_visibility(br_plotter)
 		twiddle_visibility(br_plotter)
 		
+		
+		
+		
+		% callback functions
+		
+		% for more info on associating callbacks with buttons, see e.g.
+		% http://www.mathworks.com/help/matlab/matlab_oop/class-methods-for-graphics-callbacks.html
+		change_alpha(br_plotter,source,event) % is a callback function
+		change_text_size(br_plotter,source,event)% is a callback function
+		center_camera_on_selected_point(br_plotter,source, event)
+		save_routine(br_plotter,varargin) % is a callback function
 		flip_switch(br_plotter,srcHandle,eventData,varargin)
+		resizeui(br_plotter,srcHandle,eventData,varargin)
 		
 		
-		
-		function resizeui(br_plotter,srcHandle,eventData,varargin)
-			br_plotter.window = get(br_plotter.figures.main,'Position');
-			w = br_plotter.window;
-			if ~isempty(br_plotter.panels)
-				
-				p = get(br_plotter.panels.buttons,'Position');
-				set(br_plotter.panels.buttons,'position',[5    w(4)-p(4)-5     p(3)    p(4)]);
-				
-				
-				c = get(br_plotter.panels.common_visibility,'Position');
-				total_vertical_size = c(4);
-				if isfield(br_plotter.panels,'vertex')
-					v = get(br_plotter.panels.vertex,'Position');
-					total_vertical_size = total_vertical_size+v(4);
-				end
-				
-				if isfield(br_plotter.panels,'surface')
-					s = get(br_plotter.panels.surface,'Position');
-					total_vertical_size = total_vertical_size+s(4);
-				end
-				
-				if isfield(br_plotter.panels,'curve')
-					cu = get(br_plotter.panels.curve,'Position');
-					total_vertical_size = total_vertical_size+cu(4);
-				end
-				
-
-				if total_vertical_size+30 > w(4)-p(4)
-					P = w(3)-c(3)-5;
-				else
-					P = 5;
-				end
-				
-				set(br_plotter.panels.common_visibility,'position',[P 5 c(3)    c(4)]);
-				Q = 10+c(4);
-				if isfield(br_plotter.panels,'vertex')
-					set(br_plotter.panels.vertex,'position',[P Q v(3)    v(4)]);
-					Q = Q+5+v(4);
-				end
-
-				if isfield(br_plotter.panels,'surface')
-					set(br_plotter.panels.surface,'position',[P Q s(3)    s(4)]);
-					Q = Q+5+s(4);
-				end
-
-				if isfield(br_plotter.panels,'curve')
-					set(br_plotter.panels.curve,'position',[P Q cu(3)    cu(4)]);
-					Q = Q+5+cu(4);
-				end				
-				
-			end
-		end	
-				
+	
 	end%re: methods
 	
 	
