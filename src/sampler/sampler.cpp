@@ -7,6 +7,205 @@
 
 
 
+void sampler_configuration::SetDefaults()
+{
+	no_duplicates = true;
+	use_distance_condition = false;
+	
+	target_num_samples = 10;
+			
+	stifle_membership_screen = 1;
+	stifle_text = " > /dev/null ";
+	
+
+	minimum_num_iterations = 1;
+	maximum_num_iterations = 10;
+	
+	mpf_init(TOL);
+	mpf_set_d(TOL, 1e-1); // this should be made adaptive to the span of the projection values or the endpoints
+	
+	use_gamma_trick = 0;
+
+	mode = Mode::Adaptive;
+}
+
+
+
+void sampler_configuration::splash_screen()
+{
+	printf("\n Sampler module for Bertini_real(TM) v%s\n\n", VERSION);
+	printf(" D.A. Brake, \n with D.J. Bates, W. Hao, \n J.D. Hauenstein, A.J. Sommese, and C.W. Wampler\n\n");
+	printf("(using GMP v%d.%d.%d, MPFR v%s)\n\n",
+				 __GNU_MP_VERSION, __GNU_MP_VERSION_MINOR, __GNU_MP_VERSION_PATCHLEVEL, mpfr_get_version());
+	printf("See the website at www.bertinireal.com\n\n");
+	printf("Send email to %s for assistance.\n\n",PACKAGE_BUGREPORT);
+	
+	
+	
+	bertini_splash_screen();
+	
+	
+}
+
+
+void sampler_configuration::print_usage()
+{
+	std::cout << "Bertini_real has the following options:\n";
+	std::cout << "option name(s)\t\t\targument\n\n";
+	std::cout << "-ns -nostifle\t\t\t   --\n";
+	std::cout << "-v -version\t\t\t   -- \n";
+	std::cout << "-h -help\t\t\t   --\n";
+	std::cout << "-t -tol -tolerance \t\tdouble > 0\n";
+	std::cout << "-verb\t\t\t\tint\n";
+	std::cout << "-maxits \t\t\tint\n";
+	std::cout << "-gammatrick -g \t\t\tbool\n";
+	std::cout << "-numsamples \t\t\tint number samples per edge\n";
+	std::cout << "-mode -m \t\t\tchar sampling mode.  'f' fixed, ['a'] adaptive\n";
+	std::cout << "\n\n\n";
+	return;
+}
+
+int  sampler_configuration::parse_commandline(int argc, char **argv)
+{
+	// this code created based on gnu.org's description of getopt_long
+	int choice;
+	
+	while (1)
+	{
+		static struct option long_options[] =
+		{
+			/* These options set a flag. */
+			{"nostifle", no_argument,       0, 's'},
+			{"ns", no_argument,       0, 's'},
+			{"help",		no_argument,			 0, 'h'},
+			{"h",		no_argument,			 0, 'h'},
+			{"version",		no_argument,			 0, 'v'},
+			{"v",		no_argument,			 0, 'v'},
+			{"verb",		required_argument,			 0, 'V'},
+			{"tolerance",		required_argument,			 0, 't'},
+			{"tol",		required_argument,			 0, 't'},
+			{"t",		required_argument,			 0, 't'},
+			{"maxits",		required_argument,			 0, 'm'},
+			{"gammatrick",		required_argument,			 0, 'g'},
+			{"g",		required_argument,			 0, 'g'},
+			{"numsamples",		required_argument,			 0, 'n'},
+			{"nd", no_argument,0,'d'},
+			{"m",		required_argument,			 0, 'M'},
+			{"mode",		required_argument,			 0, 'M'},
+			{0, 0, 0, 0}
+		};
+		/* getopt_long stores the option index here. */
+		int option_index = 0;
+		
+		choice = getopt_long_only (argc, argv, "bdf:svt:g:V:m:hM:", // colon requires option, two is optional
+															 long_options, &option_index);
+		
+		/* Detect the end of the options. */
+		if (choice == -1)
+			break;
+		
+		switch (choice)
+		{				
+			case 'd':
+				no_duplicates = false;
+				break;
+				
+				
+			case 'n':
+				target_num_samples = atoi(optarg);
+				
+				if (target_num_samples <= 3) {
+					std::cout << "The number of desired samples must be larger than 3, but you provided " << target_num_samples << std::endl;
+					exit(0);
+				}
+				break;
+				
+			case 's':
+				this->stifle_text = "\0";
+				break;
+				
+			case 'v':
+				printf("\n Sampler module for Bertini_real(TM) version %s\n\n", VERSION);
+				exit(0);
+				break;
+				
+			case 't':
+				
+				mpf_set_str(this->TOL,optarg,10);
+				break;
+				
+			case 'g':
+				this->use_gamma_trick = atoi(optarg);
+				if (! (this->use_gamma_trick==0 || this->use_gamma_trick==1) ) {
+					printf("value for 'gammatrick' or 'g' must be 1 or 0\n");
+					exit(0);
+				}
+				break;
+				
+			case 'V':
+				this->verbose_level(atoi(optarg));
+				break;
+				
+			case 'm':
+				this->maximum_num_iterations = atoi(optarg);
+				break;
+			
+			case 'M':
+			{
+				std::string curr_opt{optarg};
+				if (curr_opt.size()!=1){
+					std::cout << "option to 'mode' must be a single character.  valid modes are 'a' and 'f'\n";
+					exit(0);
+				}
+				
+				switch (curr_opt[0])
+				{
+					case 'a':
+						mode = Mode::Adaptive;
+						break;
+
+					case 'f':
+						mode = Mode::Fixed;
+						break;
+				}
+				break;
+			}
+			case 'h':
+				
+				sampler_configuration::print_usage();
+				exit(0);
+				break;
+				
+			case '?':
+				/* getopt_long already printed an error message. */
+				break;
+				
+			default:
+				sampler_configuration::print_usage();
+				exit(0);
+		}
+	}
+	
+	/* Instead of reporting ‘--verbose’
+	 and ‘--brief’ as they are encountered,
+	 we report the final status resulting from them. */
+	
+	
+	/* Print any remaining command line arguments (not options). */
+	if (optind < argc)
+	{
+		printf ("non-option ARGV-elements: ");
+		while (optind < argc)
+			printf ("%s ", argv[optind++]);
+		putchar ('\n');
+	}
+	
+	return 0;
+}
+
+
+
+
 
 
 
@@ -115,22 +314,26 @@ int main(int argC, char *args[])
 	switch (dimension) {
 		case 1:
 		{
-			if (sampler_options.use_fixed_sampler) 
-				C.fixed_sampler(V,
-								sampler_options,
-								solve_options,
-								sampler_options.target_num_samples);
-			else{
-				if (sampler_options.use_distance_condition) 
-					C.adaptive_sampler_distance(V,
-												sampler_options,
-												solve_options);
-				else
-					C.adaptive_sampler_movement(V,
-												sampler_options,
-												solve_options);
-			}
-			
+			switch (sampler_options.mode){
+				case sampler_configuration::Mode::Fixed:
+					C.fixed_sampler(V,
+									sampler_options,
+									solve_options,
+									sampler_options.target_num_samples);
+					break;
+				case sampler_configuration::Mode::Adaptive:
+				{
+					if (sampler_options.use_distance_condition) 
+						C.adaptive_sampler_distance(V,
+													sampler_options,
+													solve_options);
+					else
+						C.adaptive_sampler_movement(V,
+													sampler_options,
+													solve_options);
+					break;
+				}
+			} // switch
 			C.output_sampling_data(directoryName);
 			V.print(directoryName / "V_samp.vertex");
 			
@@ -140,13 +343,25 @@ int main(int argC, char *args[])
 			
 		case 2:
 		{
-			surf_input.fixed_sampler(V,
-									 sampler_options,
-									 solve_options);
-			
-			surf_input.output_sampling_data(directoryName);
-			V.print(directoryName / "V_samp.vertex");
-
+			switch (sampler_options.mode){
+				case sampler_configuration::Mode::Fixed:
+				{
+					surf_input.fixed_sampler(V,
+											 sampler_options,
+											 solve_options);
+					
+					break;
+				}
+				case sampler_configuration::Mode::Adaptive:
+				{
+					surf_input.AdaptiveSampler(V,
+											 sampler_options,
+											 solve_options);
+					break;
+				}
+				surf_input.output_sampling_data(directoryName);
+				V.print(directoryName / "V_samp.vertex");
+			} // switch
 			break;
 		}	
 		default:

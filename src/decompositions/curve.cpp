@@ -1935,7 +1935,17 @@ void diag_homotopy_start_file(boost::filesystem::path startFile,
 
 
 
+/**
+Gets the interval the edge corresponds to, in terms of projection value.
+*/
+int Curve::ProjectionIntervalIndex(int edge_index)
+{
+	if (edge_index >= num_edges())
+		throw std::runtime_error("edge index exceeds number of stored edges");
 
+	
+	return 0;
+}
 
 
 
