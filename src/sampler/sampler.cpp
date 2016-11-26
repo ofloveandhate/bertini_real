@@ -359,9 +359,11 @@ int main(int argC, char *args[])
 											 solve_options);
 					break;
 				}
-				surf_input.output_sampling_data(directoryName);
-				V.print(directoryName / "V_samp.vertex");
 			} // switch
+
+			surf_input.output_sampling_data(directoryName);
+			V.print(directoryName / "V_samp.vertex");
+			
 			break;
 		}	
 		default:

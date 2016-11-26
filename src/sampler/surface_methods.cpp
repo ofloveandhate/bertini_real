@@ -573,7 +573,7 @@ std::vector<int> Surface::AdaptiveNumSamplesPerRib(sampler_configuration & sampl
 
 	for (int ii=0; ii<n; ++ii)
 	{
-		num.push_back(ii+3);//sampler_options.target_num_samples
+		num.push_back(ii+5);//sampler_options.target_num_samples
 	}
 	return num;
 }
@@ -584,7 +584,6 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 										SolverConfiguration & solve_options,
 								std::vector<int> const& num_ribs_between_crits)
 {
-	int target_num_samples = sampler_options.target_num_samples; 
 
 	const Face& curr_face = faces_[face_index];
 	
@@ -598,11 +597,9 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 	vec_mp dehom_left, dehom_right; init_vec_mp(dehom_left,0);  dehom_left->size  = 0; init_vec_mp(dehom_right,0); dehom_right->size = 0;
 	vec_mp blank_point;  init_vec_mp2(blank_point, 0,1024);
 	
-	comp_mp interval_width; init_mp2(interval_width,1024); set_one_mp(interval_width);
-	comp_mp num_intervals;  init_mp2(num_intervals,1024); set_zero_mp(num_intervals);
 	
-	mpf_set_d(num_intervals->r,double(target_num_samples-1));
-	div_mp(interval_width,interval_width,num_intervals);
+	
+	
 	
 	mpf_t dist_away; mpf_init(dist_away);
 	comp_mp target_projection_value; init_mp2(target_projection_value,1024);
@@ -739,11 +736,16 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 	
 	
 	
+	auto bottom_edge_index = bottom->nondegenerate_edge_w_midpt(current_midslice.get_edge(mid_edge).left());
+	// auto b_edge = bottom->get_edge(bottom_edge_index);
+	auto interval_ind = bottom->ProjectionIntervalIndex(bottom_edge_index,V);
+	auto num_ribs = num_ribs_between_crits[interval_ind];
 	
-	
-	
-	
-	
+	comp_mp interval_width; init_mp2(interval_width,1024); set_one_mp(interval_width);
+	comp_mp num_intervals;  init_mp2(num_intervals,1024); set_zero_mp(num_intervals);
+
+	mpf_set_d(num_intervals->r,double(num_ribs-1));
+	div_mp(interval_width,interval_width,num_intervals);
 	
 	
 	
@@ -751,7 +753,7 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 	
 	//we need to sample the ribs
 	std::vector< std::vector<int> > ribs;
-	ribs.resize(target_num_samples);
+	ribs.resize(num_ribs);
 	
 	
 	
@@ -772,10 +774,10 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 		int right_edge_index = curr_face.right_edge(jj);
 		for (unsigned int kk = 0; kk< right_critslice.num_samples_on_edge(right_edge_index); kk++) {
 			if (jj>0 && kk==0)
-				if (right_critslice.sample_index(right_edge_index,kk)==ribs[target_num_samples-1].back())
+				if (right_critslice.sample_index(right_edge_index,kk)==ribs[num_ribs-1].back())
 					continue;
 			
-			ribs[target_num_samples-1].push_back(right_critslice.sample_index(right_edge_index,kk));
+			ribs[num_ribs-1].push_back(right_critslice.sample_index(right_edge_index,kk));
 		}
 	}
 	
@@ -790,8 +792,8 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 		std::cout << std::endl;
 
 		std::cout << "right rib, from right curve edges:\n";
-		for (unsigned int jj=0; jj<ribs[target_num_samples-1].size(); jj++) {
-			std::cout << ribs[target_num_samples-1][jj] << " ";
+		for (unsigned int jj=0; jj<ribs[num_ribs-1].size(); jj++) {
+			std::cout << ribs[num_ribs-1][jj] << " ";
 		}
 		std::cout << std::endl;
 	}
@@ -807,7 +809,7 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 	//initialize to 0
 	set_zero_mp(md_config.u_target); // start at the left
 	
-	for (int jj=1; jj<target_num_samples-1; jj++) {
+	for (int jj=1; jj<num_ribs-1; jj++) {
 		if (sampler_options.verbose_level()>=1)
 			std::cout << "sampling rib " << jj << std::endl;
 

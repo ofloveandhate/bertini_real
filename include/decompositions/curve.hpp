@@ -697,7 +697,7 @@ public:
 	/**
 	Gets the interval the edge corresponds to, in terms of projection value.
 	*/
-	int ProjectionIntervalIndex(int edge_index, const VertexSet & v);
+	int ProjectionIntervalIndex(int edge_index, const VertexSet & v) const;
 	
 	
 	
