@@ -815,7 +815,7 @@ public:
 	\brief Sample the member curves.
 .
 	*/
-	void AdaptiveSampleCurves(VertexSet & V, sampler_configuration & sampler_options,
+	std::vector<int> AdaptiveSampleCurves(VertexSet & V, sampler_configuration & sampler_options,
 										SolverConfiguration & solve_options);
 
 
@@ -825,7 +825,7 @@ public:
 	\param face_index The integer index of the face to sample.
 	*/
 	void AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configuration & sampler_options,
-										SolverConfiguration & solve_options);
+										SolverConfiguration & solve_options, std::vector<int> const& num_ribs_between_crits);
 
 
 

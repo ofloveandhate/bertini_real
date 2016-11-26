@@ -508,7 +508,7 @@ void Surface::AdaptiveSampler(VertexSet & V,
 							SolverConfiguration & solve_options)
 {
 	
-	AdaptiveSampleCurves(V, sampler_options, solve_options);
+	auto num_ribs_between_crits = AdaptiveSampleCurves(V, sampler_options, solve_options);
 
 	//once you have the fixed samples of the curves, down here is just making the integer triangles.
 	for (unsigned int ii=0; ii<num_faces(); ii++) {
@@ -520,14 +520,14 @@ void Surface::AdaptiveSampler(VertexSet & V,
 		if (sampler_options.verbose_level()>=1)
 			std::cout << faces_[ii];
 
-		AdaptiveSampleFace(ii, V, sampler_options, solve_options);
+		AdaptiveSampleFace(ii, V, sampler_options, solve_options, num_ribs_between_crits);
 	} // re: for ii, that is for the faces
 	
 	return;
 }
 
 
-void Surface::AdaptiveSampleCurves(VertexSet & V,
+std::vector<int> Surface::AdaptiveSampleCurves(VertexSet & V,
 								sampler_configuration & sampler_options,
 								SolverConfiguration & solve_options)
 {
@@ -537,30 +537,31 @@ void Surface::AdaptiveSampleCurves(VertexSet & V,
 	std::vector<int> num_slices_between_crits = AdaptiveNumSamplesPerRib(sampler_options);
 	assert(num_slices_between_crits.size()==NumMidSlices());
 
-	int target_num_samples = sampler_options.target_num_samples; 
 	
-	std::cout << "critical curve" << std::endl;
+	std::cout << "sampling critical curve" << std::endl;
 	crit_curve().fixed_sampler(V,sampler_options,solve_options,num_slices_between_crits);
 
-	std::cout << "sphere curve" << std::endl;
+	std::cout << "sampling sphere curve" << std::endl;
 	sphere_curve().fixed_sampler(V,sampler_options,solve_options,num_slices_between_crits);
 
-	std::cout << "mid slices" << std::endl;
+	std::cout << "sampling mid slices" << std::endl;
 	for (auto ii=mid_slices_iter_begin(); ii!=mid_slices_iter_end(); ii++) {
 		ii->adaptive_sampler_distance(V,sampler_options,solve_options);
 	}
 	
-	std::cout << "critical slices" << std::endl;
+	std::cout << "sampling critical slices" << std::endl;
 	for (auto ii=crit_slices_iter_begin(); ii!=crit_slices_iter_end(); ii++) {
 		ii->adaptive_sampler_distance(V,sampler_options,solve_options);
 	}
 	
 	if (num_singular_curves()>0) {
-		std::cout << "singular curves" << std::endl;
+		std::cout << "sampling singular curves" << std::endl;
 		for (auto iter = singular_curves_iter_begin(); iter!= singular_curves_iter_end(); ++iter) {
 			iter->second.fixed_sampler(V,sampler_options,solve_options,num_slices_between_crits);
 		}
 	}
+
+	return num_slices_between_crits;
 }
 
 
@@ -580,7 +581,8 @@ std::vector<int> Surface::AdaptiveNumSamplesPerRib(sampler_configuration & sampl
 
 
 void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configuration & sampler_options,
-										SolverConfiguration & solve_options)
+										SolverConfiguration & solve_options,
+								std::vector<int> const& num_ribs_between_crits)
 {
 	int target_num_samples = sampler_options.target_num_samples; 
 

@@ -1954,22 +1954,20 @@ int Curve::ProjectionIntervalIndex(int edge_index, const VertexSet & V)
 	double minval{1e200};
 	int loc = -1;
 
-
-	print_point_to_screen_matlab(crit_slice_values,"crit_slices_values");
-	print_comp_matlab(&ps->coord[0],"compared_coord");
-
 	for (int ii=0; ii<crit_slice_values->size; ++ii)
 	{
 		
 		sub_mp(temp, &ps->coord[0], &crit_slice_values->coord[ii]);
 		auto c = d_abs_mp(temp);
-		std::cout << c << std::endl;
 		if (c < minval)
 		{
 			minval = c;
 			loc = ii;
 		}
 	}
+
+	if (minval > 1e-5)
+		std::cout << "returned index for projection interval index is almost certainly wrong\n\n";
 
 	clear_mp(temp);
 	return loc;
