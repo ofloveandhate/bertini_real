@@ -656,7 +656,7 @@ public:
 	 */
 	int fixed_set_initial_sample_data(int target_num_samples);
 	
-	int fixed_set_initial_sample_data(std::vector<int> const& num_samples_per_interval);
+	int fixed_set_initial_sample_data(std::vector<int> const& num_samples_per_interval, VertexSet const& V);
 	/**
 	 \brief Sample a curve so it has an equal number of points per edge, including boundary points.
 	 
@@ -691,13 +691,13 @@ public:
 	 
 	 \param samplingName The name of the file to write.
 	 */
-	void  output_sampling_data(boost::filesystem::path samplingName) const;
+	void output_sampling_data(boost::filesystem::path samplingName) const;
 	
 	
 	/**
 	Gets the interval the edge corresponds to, in terms of projection value.
 	*/
-	int ProjectionIntervalIndex(int edge_index);
+	int ProjectionIntervalIndex(int edge_index, const VertexSet & v);
 	
 	
 	
@@ -773,7 +773,6 @@ protected:
 	 get ready!
 	 */
 	void init(){
-		
 		num_edges_ = 0;
 		set_dimension(1);
 	}

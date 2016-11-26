@@ -107,7 +107,7 @@ int Decomposition::setup(boost::filesystem::path INfile)
 	converter.clear(); converter.str("");
 	
 
-
+	comp_mp temp; init_mp2(temp, 1024);
 	vec_mp tempvec; init_vec_mp2(tempvec, this->num_variables_,1024);
 	tempvec->size = this->num_variables_;
 	
@@ -155,12 +155,52 @@ int Decomposition::setup(boost::filesystem::path INfile)
 		Decomposition::add_patch(temp_patch);
 	}
 	
+
+	fin >> tempstr;
+	mpf_set_str(temp->r, const_cast<char *>(tempstr.c_str()), 10);
+
+	fin >> tempstr;
+	mpf_set_str(temp->i, const_cast<char *>(tempstr.c_str()), 10);
+	set_sphere_radius(temp);
+
+	int curr_size;
+	fin >> curr_size;
+	if (curr_size!=num_variables_-1)
+		std::cout << "sphere has incorrect number of variables (" << curr_size << ") when reading decomposition into memory\n";
+
+	change_size_vec_mp(tempvec,curr_size); tempvec->size = curr_size;
+	for (int jj=0; jj<curr_size; jj++) {
+		std::string re, im;
+		fin >> re >> im; // this line is correct
 	
-	clear_vec_mp(tempvec);
-	clear_vec_mp(temp_patch);
+		mpf_set_str(tempvec->coord[jj].r, const_cast<char *>(re.c_str()), 10);
+		mpf_set_str(tempvec->coord[jj].i, const_cast<char *>(im.c_str()), 10);
+	}
+	set_sphere_center(tempvec);
+
+
+	fin >> curr_size;
+	change_size_vec_mp(tempvec,curr_size); tempvec->size = curr_size;
+	for (int jj=0; jj<curr_size; jj++) {
+		std::string re, im;
+		fin >> re >> im; // this line is correct
 	
+		mpf_set_str(tempvec->coord[jj].r, const_cast<char *>(re.c_str()), 10);
+		mpf_set_str(tempvec->coord[jj].i, const_cast<char *>(im.c_str()), 10);
+	}
+	SetCritSliceValues(tempvec);
+
+
+
+	if (fin.eof())
+		std::cout << "premature end of file when reading decomposition from file";
+
 	fin.close();
 	
+
+	clear_vec_mp(tempvec);
+	clear_vec_mp(temp_patch);
+	clear_mp(temp);
 	
 	
 	return 0;
@@ -182,9 +222,6 @@ void Decomposition::print(boost::filesystem::path base) const
 //		std::cout << "Decomposition was short projections\nneeded	" << this->dimension << " but had " << num_curr_projections << std::endl;;
 	}
 	
-	
-	int ii;
-	
 	boost::filesystem::create_directory(base);
 	
 	FILE *OUT = safe_fopen_write(base / "decomp");
@@ -194,7 +231,7 @@ void Decomposition::print(boost::filesystem::path base) const
 	fprintf(OUT,"%d %d\n\n",num_variables(), dimension());
 	
 	
-	for (ii=0; ii<num_curr_projections(); ii++) {
+	for (int ii=0; ii<num_curr_projections(); ii++) {
 		fprintf(OUT,"%d\n",pi_[ii]->size);
 		for(int jj=0;jj<pi_[ii]->size;jj++)
 		{
@@ -221,14 +258,19 @@ void Decomposition::print(boost::filesystem::path base) const
     fprintf(OUT,"\n\n");
     
     print_mp(OUT, 0, const_cast<_comp_mp*>(this->sphere_radius_));
-    fprintf(OUT, "\n%d\n",this->sphere_center_->size);
     
+    fprintf(OUT, "\n%d\n",this->sphere_center_->size); 
     for (int jj=0; jj<this->sphere_center_->size; jj++) {
         print_mp(OUT, 0, &this->sphere_center_->coord[jj]);
         fprintf(OUT, "\n");
     }
     fprintf(OUT,"\n");
     
+    fprintf(OUT, "\n%d\n",this->crit_slice_values->size);
+    for (int jj=0; jj<this->crit_slice_values->size; jj++) {
+        print_mp(OUT, 0, &this->crit_slice_values->coord[jj]);
+        fprintf(OUT, "\n");
+    }
 	fclose(OUT);
 	
 	
@@ -265,7 +307,6 @@ int Decomposition::read_sphere(const boost::filesystem::path & bounding_sphere_f
 	
 	
 	fclose(IN);
-	
 	
 	have_sphere_ = true;
 	
@@ -516,15 +557,9 @@ void Decomposition::send(int target, ParallelismConfig & mpi_config) const
 		delete [] buffer;
 	}
 	
-	
-	
-	
 	randomizer_->send(target,mpi_config);
 
-
-
-	
-	
+	send_vec_mp(crit_slice_values, target);
 	
 	return;
 }
@@ -566,23 +601,6 @@ void Decomposition::receive(int source, ParallelismConfig & mpi_config)
 	delete [] buffer2;
 	
 	
-//	std::cout << "receieved:" << std::endl;
-//	std::cout << num_variables << std::endl;
-//	std::cout << dimension << std::endl;
-//	std::cout << component_num << std::endl;
-//	std::cout << temp_num_projections << std::endl;
-//	std::cout << num_rand_degrees << std::endl;
-//	std::cout << rand_rows << std::endl;
-//	std::cout << rand_cols << std::endl;
-//	std::cout << temp_num_patches << std::endl;
-//	std::cout << have_sphere_radius << std::endl;
-//	std::cout << strleng << std::endl;
-//	std::cout << num_counters << std::endl;
-//	std::cout << num_indices << std::endl;
-	
-	
-
-	
 	
 	
 	if (temp_num_projections>0) {
@@ -593,10 +611,6 @@ void Decomposition::receive(int source, ParallelismConfig & mpi_config)
 		}
 	}
 	
-	
-	
-
-
 	
 	
 	
@@ -633,6 +647,8 @@ void Decomposition::receive(int source, ParallelismConfig & mpi_config)
 	
 	randomizer_->receive(source,mpi_config);
 	
+	receive_vec_mp(crit_slice_values, source);
+
 	return;
 }
 

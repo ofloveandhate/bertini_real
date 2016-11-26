@@ -534,7 +534,7 @@ void Surface::AdaptiveSampleCurves(VertexSet & V,
 
 	// first we need to compute the set of numbers of ribs per face. 
 	// this is determined by the widths in terms of projection value.
-	auto num_slices_between_crits = AdaptiveNumSamplesPerRib(sampler_options);
+	std::vector<int> num_slices_between_crits = AdaptiveNumSamplesPerRib(sampler_options);
 	assert(num_slices_between_crits.size()==NumMidSlices());
 
 	int target_num_samples = sampler_options.target_num_samples; 
@@ -572,7 +572,7 @@ std::vector<int> Surface::AdaptiveNumSamplesPerRib(sampler_configuration & sampl
 
 	for (int ii=0; ii<n; ++ii)
 	{
-		num.push_back(sampler_options.target_num_samples);
+		num.push_back(ii+3);//sampler_options.target_num_samples
 	}
 	return num;
 }

@@ -452,8 +452,8 @@ int Curve::interslice(const WitnessSet & W_curve,
 	
 
 	
-	
-	
+	std::cout << "a" << std::endl;
+	SetCritSliceValues(crit_downstairs);
 	
 	if (program_options.verbose_level()>=0) {
 		print_point_to_screen_matlab(crit_downstairs,"curve_interslice_crit_downstairs");
@@ -1447,6 +1447,7 @@ void Curve::send(int target, ParallelismConfig & mpi_config) const
 		edge_metadata_[ii].send(target, mpi_config);
 	}
 	
+	send_vec_mp(crit_slice_values, target);
 }
 
 
@@ -1938,13 +1939,39 @@ void diag_homotopy_start_file(boost::filesystem::path startFile,
 /**
 Gets the interval the edge corresponds to, in terms of projection value.
 */
-int Curve::ProjectionIntervalIndex(int edge_index)
+int Curve::ProjectionIntervalIndex(int edge_index, const VertexSet & V)
 {
 	if (edge_index >= num_edges())
 		throw std::runtime_error("edge index exceeds number of stored edges");
 
-	
-	return 0;
+	comp_mp temp;
+	init_mp(temp);
+
+
+	const auto& v = V.GetVertex(edges_[edge_index].left());
+	const auto& ps = v.get_projection_values();
+
+	double minval{-1e200};
+	int loc = -1;
+
+
+	print_point_to_screen_matlab(crit_slice_values,"crit_slices_values");
+	print_comp_matlab(&ps->coord[0],"compared_coord");
+
+	for (int ii=0; ii<crit_slice_values->size; ++ii)
+	{
+		
+		sub_mp(temp, &ps->coord[0], &crit_slice_values->coord[ii]);
+		auto c = d_abs_mp(temp);
+		if (c < minval)
+		{
+			minval = c;
+			loc = ii;
+		}
+	}
+
+	clear_mp(temp);
+	return loc;
 }
 
 

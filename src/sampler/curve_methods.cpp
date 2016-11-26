@@ -664,7 +664,7 @@ void Curve::fixed_sampler(VertexSet & V,
 	
 	
 	
-	fixed_set_initial_sample_data(num_samples_per_interval);
+	fixed_set_initial_sample_data(num_samples_per_interval, V);
 	
 	V.set_curr_projection(pi(0));
 	V.set_curr_input(W.input_filename());
@@ -710,7 +710,7 @@ void Curve::fixed_sampler(VertexSet & V,
 		if (get_edge(ii).is_degenerate()) 
 			continue;
 		
-		auto interval_ind = ProjectionIntervalIndex(ii);
+		auto interval_ind = ProjectionIntervalIndex(ii, V);
 		auto num_samples_on_edge = num_samples_per_interval[interval_ind];
 
 		if (sampler_options.verbose_level() >= 1)
@@ -1011,7 +1011,7 @@ int  Curve::fixed_set_initial_sample_data(int target_num_samples)
 }
 
 
-int  Curve::fixed_set_initial_sample_data(std::vector<int> const& num_samples_per_interval)
+int  Curve::fixed_set_initial_sample_data(std::vector<int> const& num_samples_per_interval, VertexSet const& V)
 {
 	
 	sample_indices_.resize(num_edges());
@@ -1022,8 +1022,9 @@ int  Curve::fixed_set_initial_sample_data(std::vector<int> const& num_samples_pe
 		else
 		{
 			const auto & e = get_edge(ii);
-			auto interval_ind = ProjectionIntervalIndex(ii);
+			auto interval_ind = ProjectionIntervalIndex(ii, V);
 			auto c = num_samples_per_interval[interval_ind];
+			std::cout << interval_ind << " " << c << " " << std::endl;
 			sample_indices_[ii].resize(c);
 			sample_indices_[ii][0] = e.left();
 			sample_indices_[ii][c-1] = e.right();
