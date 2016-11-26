@@ -1951,7 +1951,7 @@ int Curve::ProjectionIntervalIndex(int edge_index, const VertexSet & V)
 	const auto& v = V.GetVertex(edges_[edge_index].left());
 	const auto& ps = v.get_projection_values();
 
-	double minval{-1e200};
+	double minval{1e200};
 	int loc = -1;
 
 
@@ -1963,6 +1963,7 @@ int Curve::ProjectionIntervalIndex(int edge_index, const VertexSet & V)
 		
 		sub_mp(temp, &ps->coord[0], &crit_slice_values->coord[ii]);
 		auto c = d_abs_mp(temp);
+		std::cout << c << std::endl;
 		if (c < minval)
 		{
 			minval = c;
