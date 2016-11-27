@@ -363,7 +363,7 @@ int main(int argC, char *args[])
 
 			surf_input.output_sampling_data(directoryName);
 			V.print(directoryName / "V_samp.vertex");
-			
+
 			break;
 		}	
 		default:
@@ -1009,6 +1009,57 @@ double compute_square_of_difference_from_sixtydegrees(comp_mp temp, comp_mp leng
 
 
 
+
+// if x> 0.5
+// 	cycle_num = c2;
+// 	pi_out = 1;
+// 	pi_mid = 0.5;
+// 	p = (x-0.5)*2;
+// 	r = pi_out + (pi_mid - pi_out) * (1-p)^cycle_num;
+// else
+// 	cycle_num = c1;
+// 	pi_out = 0;
+// 	pi_mid = 0.5;
+// 	p = x*2;
+// 	r = pi_out + (pi_mid - pi_out) * (1-p)^cycle_num;
+// end
+void ScaleByCycleNum(comp_mp result, comp_mp input, int cycle_num_l, int cycle_num_r)
+{
+	comp_mp one;  init_mp(one); set_one_mp(one);
+	comp_mp two;  init_mp(two); mpf_set_str(two->r, "2.0", 10); mpf_set_str(two->i, "0.0", 10);
+	comp_mp half;  init_mp(half); mpf_set_str(half->r, "0.5", 10); mpf_set_str(half->i, "0.0", 10);
+
+	comp_mp temp1, temp2; init_mp(temp1); init_mp(temp2);
+	comp_mp p; init_mp(p);
+
+	// pi_out + (pi_mid - pi_out) * (1-p)^cycle_num;
+	if ( mpf_get_d(input->r)>=0.5 )
+	{
+		// p = (x-0.5)*2;
+		sub_mp(temp1, input, half);
+		mul_mp(p, temp1 ,two);
+
+		sub_mp(temp1, one, p);
+		exp_mp_int(temp2, temp1, cycle_num_r);
+		mul_mp(temp1, half, temp2);
+		// 1 - (0.5) * (1-p)^cycle_num_r;
+
+
+		sub_mp(result, one, temp1);
+	}
+	else
+	{
+		// p = x*2
+		sub_mp(temp1, half, input);
+		mul_mp(p, temp1, two);
+		sub_mp(temp1, one, p);
+		exp_mp_int(temp2, temp1, cycle_num_l);
+		mul_mp(result, half, temp2);
+		// r = 0.5 * (1-p)^cycle_num
+	}
+
+	clear_mp(one); clear_mp(half); clear_mp(temp1); clear_mp(temp2); clear_mp(p); clear_mp(two);
+}
 
 
 
