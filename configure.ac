@@ -3,7 +3,7 @@
 
 
 
-#we're building bertini_real, version 1.3.0, and the corresponding email is dan brake's
+#we're building bertini_real, version 1.3.0, and the corresponding email is dani brake's
 AC_INIT([bertini_real], [1.3.0], [danielthebrake@gmail.com],[bertini_real], [http://www.danielthebrake.org/])
 
 
