@@ -1061,7 +1061,6 @@ int  Curve::fixed_set_initial_sample_data(std::vector<int> const& num_samples_pe
 			const auto & e = get_edge(ii);
 			auto interval_ind = ProjectionIntervalIndex(ii, V);
 			auto c = num_samples_per_interval[interval_ind];
-			std::cout << interval_ind << " " << c << " " << std::endl;
 			sample_indices_[ii].resize(c);
 			sample_indices_[ii][0] = e.left();
 			sample_indices_[ii][c-1] = e.right();

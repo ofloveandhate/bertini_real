@@ -819,26 +819,17 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 	
 	Vertex temp_vertex;
 	
-
-	print_point_to_screen_matlab(u_proj_values,"raw");
 		
 	for (int jj=1; jj<num_ribs-1; jj++) {
 		if (sampler_options.verbose_level()>=1)
 			std::cout << "sampling rib " << jj << std::endl;
 
-		// set_mp(md_config.u_target, &u_proj_values->coord[jj]);
 		ScaleByCycleNum(md_config.u_target, &u_proj_values->coord[jj], cycle_num_l, cycle_num_r);
-
-		print_comp_matlab(&u_proj_values->coord[jj],"source");
-		print_comp_matlab(md_config.u_target,"u_target");
 
 		set_mp(md_config.v_target,half); 
 		
 
-
-
-		int curr_bottom_index;
-		int curr_top_index;
+		int curr_bottom_index, curr_top_index;
 		try {
 			curr_bottom_index = bottom->sample_index(curr_face.bottom_edge(),jj);
 			curr_top_index = top->sample_index(curr_face.top_edge(),jj);			
