@@ -680,7 +680,7 @@ public:
 
 	\see fixed_sampler
 	*/
-	void fixed_sampler(VertexSet &V,
+	void SemiFixedSampler(VertexSet &V,
 					   sampler_configuration & sampler_options,
 					   SolverConfiguration & solve_options,
 					   std::vector<int> const& target_num_samples);

@@ -634,7 +634,7 @@ void Curve::adaptive_sampler_distance(VertexSet & V,
 
 
 
-void Curve::fixed_sampler(VertexSet & V,
+void Curve::SemiFixedSampler(VertexSet & V,
 									  sampler_configuration & sampler_options,
 									  SolverConfiguration & solve_options,
 									  std::vector<int> const& num_samples_per_interval)
@@ -689,11 +689,12 @@ void Curve::fixed_sampler(VertexSet & V,
 	
 
 	
-	comp_mp temp, temp1, target_projection_value;
-	init_mp2(temp,1024);  init_mp2(temp1,1024); init_mp2(target_projection_value,1024);
+	comp_mp temp, temp1, temp2, target_projection_value;
+	init_mp2(temp,1024);  init_mp2(temp1,1024); init_mp2(temp2,1024); init_mp2(target_projection_value,1024);
     
-	
-	
+	comp_mp proj_interval_width; init_mp(proj_interval_width);
+	comp_mp proj_interval_left_endpoint; init_mp(proj_interval_left_endpoint);
+
 	Vertex temp_vertex;
     WitnessSet Wnew; // to hold the output
 
@@ -704,47 +705,81 @@ void Curve::fixed_sampler(VertexSet & V,
 	comp_mp interval_width; init_mp2(interval_width,1024); set_zero_mp(interval_width);
 	comp_mp num_intervals;  init_mp2(num_intervals,1024); set_zero_mp(num_intervals);
 	
+	vec_mp pre_cycle_scaled_p; init_vec_mp(pre_cycle_scaled_p,0); pre_cycle_scaled_p->size = 0;
+	vec_mp final_proj_values; init_vec_mp(final_proj_values,0); final_proj_values->size = 0;
 
 	for (unsigned int ii=0; ii<num_edges(); ii++) // for each of the edges
 	{
 		if (get_edge(ii).is_degenerate()) 
 			continue;
 		
-		auto interval_ind = ProjectionIntervalIndex(ii, V);
-		auto num_samples_on_edge = num_samples_per_interval[interval_ind];
 
 		if (sampler_options.verbose_level() >= 1)
 			std::cout << "\tsampling edge " << ii << std::endl;
-		
+
+
+		// set up the starting linear and point
 		neg_mp(& (W.linear(0))->coord[0],&(V[get_edge(ii).midpt()].projection_values())->coord[V.curr_projection()]);
-		
 		W.reset_points();
 		W.add_point(V[get_edge(ii).midpt()].point());
-		
-		
-		mpf_set_d(num_intervals->r,static_cast<double>(num_samples_on_edge-1));
-		
-		sub_mp(interval_width,&(V[get_edge(ii).right()].projection_values())->coord[V.curr_projection()],&(V[get_edge(ii).left()].projection_values())->coord[V.curr_projection()]);
-		
+
+
+
+
+		auto interval_ind = ProjectionIntervalIndex(ii, V);
+		auto num_samples_on_edge = num_samples_per_interval[interval_ind]-1;
+		mpf_set_d(num_intervals->r,static_cast<double>(num_samples_on_edge));
+
+		set_one_mp(interval_width);
 		div_mp(interval_width,interval_width,num_intervals);
+
+
+		// these are not strictly necessary, but they make the later lines easier to read
+		sub_mp(proj_interval_width,&(V[get_edge(ii).right()].projection_values())->coord[V.curr_projection()],&(V[get_edge(ii).left()].projection_values())->coord[V.curr_projection()]);
+		set_mp(proj_interval_left_endpoint, &(V[get_edge(ii).left()].projection_values())->coord[V.curr_projection()]);
 		
-		set_mp(target_projection_value,&(V[get_edge(ii).left()].projection_values())->coord[V.curr_projection()]);
+		// delete this line?
+		// set_mp(target_projection_value,&(V[get_edge(ii).left()].projection_values())->coord[V.curr_projection()]);
 		
-		//add once to get us off 0
-		add_mp(target_projection_value,target_projection_value,interval_width);
+		change_size_vec_mp(pre_cycle_scaled_p, num_samples_on_edge);
+		pre_cycle_scaled_p->size = num_samples_on_edge;
+
+		change_size_vec_mp(final_proj_values, num_samples_on_edge);
+		final_proj_values->size = num_samples_on_edge;
 		
-		for (int jj=1; jj<num_samples_on_edge-1; jj++) {
+		set_zero_mp(&pre_cycle_scaled_p->coord[0]);
+		for (int qq=1; qq<num_samples_on_edge; ++qq)
+		{
+			// compute the raw proj value in [0,1]
+			add_mp(&pre_cycle_scaled_p->coord[qq],&pre_cycle_scaled_p->coord[qq-1],interval_width);
+
+			const auto c_nums = GetMetadata(ii);
+
+			// use the cycle numbers to scale toward the endpoints.
+			ScaleByCycleNum(temp2, &pre_cycle_scaled_p->coord[qq], c_nums.CycleNumLeft(), c_nums.CycleNumRight());
+
+			// finally, scale the cycle-number-scaled values into the interval we are working on, 
+			// to make the final projection values
+			mul_mp(temp1, temp2, proj_interval_width);
+			add_mp(&final_proj_values->coord[qq], proj_interval_left_endpoint, temp1);
+		}
+
+		
+
+		
+
+		for (int jj=1; jj<num_samples_on_edge; jj++) {
 			
 			
 			
-			neg_mp(&target_projection->coord[0],target_projection_value); // take the opposite :)
+			neg_mp(&target_projection->coord[0],&final_proj_values->coord[jj]); // take the opposite :)
 			
 			
 			
 			if (sampler_options.verbose_level()>=3) {
 				print_point_to_screen_matlab(W.point(0),"startpt");
 				print_comp_matlab(&W.linear(0)->coord[0],"initial_projection_value");
-				print_comp_matlab(target_projection_value,"target_projection_value");
+				print_comp_matlab(&target_projection->coord[0],"target_projection_value");
 			}
 			
 			if (sampler_options.verbose_level()>=5)
@@ -791,8 +826,10 @@ void Curve::fixed_sampler(VertexSet & V,
 	
 	
 	
-	clear_mp(temp); clear_mp(temp1);
+	clear_mp(temp); clear_mp(temp1); clear_mp(temp2);
 	clear_vec_mp(target_projection);
+	clear_vec_mp(pre_cycle_scaled_p);
+	clear_vec_mp(final_proj_values);
 	clear_mp(target_projection_value);
 	clear_mp(interval_width);
 	clear_mp(num_intervals);

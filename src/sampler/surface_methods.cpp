@@ -1,6 +1,6 @@
 #include "sampler.hpp"
 
-
+#include <boost/math/common_factor.hpp>
 
 
 
@@ -539,10 +539,10 @@ std::vector<int> Surface::AdaptiveSampleCurves(VertexSet & V,
 
 	
 	std::cout << "sampling critical curve" << std::endl;
-	crit_curve().fixed_sampler(V,sampler_options,solve_options,num_slices_between_crits);
+	crit_curve().SemiFixedSampler(V,sampler_options,solve_options,num_slices_between_crits);
 
 	std::cout << "sampling sphere curve" << std::endl;
-	sphere_curve().fixed_sampler(V,sampler_options,solve_options,num_slices_between_crits);
+	sphere_curve().SemiFixedSampler(V,sampler_options,solve_options,num_slices_between_crits);
 
 	std::cout << "sampling mid slices" << std::endl;
 	for (auto ii=mid_slices_iter_begin(); ii!=mid_slices_iter_end(); ii++) {
@@ -557,7 +557,7 @@ std::vector<int> Surface::AdaptiveSampleCurves(VertexSet & V,
 	if (num_singular_curves()>0) {
 		std::cout << "sampling singular curves" << std::endl;
 		for (auto iter = singular_curves_iter_begin(); iter!= singular_curves_iter_end(); ++iter) {
-			iter->second.fixed_sampler(V,sampler_options,solve_options,num_slices_between_crits);
+			iter->second.SemiFixedSampler(V,sampler_options,solve_options,num_slices_between_crits);
 		}
 	}
 
@@ -573,7 +573,7 @@ std::vector<int> Surface::AdaptiveNumSamplesPerRib(sampler_configuration & sampl
 
 	for (int ii=0; ii<n; ++ii)
 	{
-		num.push_back(ii+5);//sampler_options.target_num_samples
+		num.push_back(sampler_options.target_num_samples);//sampler_options.target_num_samples
 	}
 	return num;
 }
@@ -735,7 +735,7 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 	
 	
 	
-	
+	auto top_edge_index    = top->   nondegenerate_edge_w_midpt(current_midslice.get_edge(mid_edge).right());
 	auto bottom_edge_index = bottom->nondegenerate_edge_w_midpt(current_midslice.get_edge(mid_edge).left());
 	// auto b_edge = bottom->get_edge(bottom_edge_index);
 	auto interval_ind = bottom->ProjectionIntervalIndex(bottom_edge_index,V);
@@ -744,13 +744,29 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 	comp_mp interval_width; init_mp2(interval_width,1024); set_one_mp(interval_width);
 	comp_mp num_intervals;  init_mp2(num_intervals,1024); set_zero_mp(num_intervals);
 
-	mpf_set_d(num_intervals->r,double(num_ribs-1));
+	mpf_set_d(num_intervals->r,num_ribs-1);
 	div_mp(interval_width,interval_width,num_intervals);
 	
+
+
+	auto top_left_cycle_num = top->GetMetadata(top_edge_index).CycleNumLeft();
+	auto bottom_left_cycle_num = bottom->GetMetadata(bottom_edge_index).CycleNumLeft();
+
+	auto top_right_cycle_num = top->GetMetadata(top_edge_index).CycleNumRight();
+	auto bottom_right_cycle_num = bottom->GetMetadata(bottom_edge_index).CycleNumRight();
+
+	auto cycle_num_l = boost::math::lcm(top_left_cycle_num, bottom_left_cycle_num);
+	auto cycle_num_r = boost::math::lcm(top_right_cycle_num, bottom_right_cycle_num);
+		
+	// pi_out + (pi_mid - pi_out) * (1-p)^cycle_num;
+
+	vec_mp u_proj_values;  init_vec_mp(u_proj_values,num_ribs-1); u_proj_values->size = num_ribs-1;
+	set_zero_mp(&u_proj_values->coord[0]);
+	for (int ii=1; ii<num_ribs-1; ++ii)
+		add_mp(&u_proj_values->coord[ii], &u_proj_values->coord[ii-1] , interval_width);
+
 	
-	
-	
-	
+
 	//we need to sample the ribs
 	std::vector< std::vector<int> > ribs;
 	ribs.resize(num_ribs);
@@ -804,17 +820,19 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 	Vertex temp_vertex;
 	
 
-	
-	
-	//initialize to 0
-	set_zero_mp(md_config.u_target); // start at the left
-	
+	print_point_to_screen_matlab(u_proj_values,"raw");
+		
 	for (int jj=1; jj<num_ribs-1; jj++) {
 		if (sampler_options.verbose_level()>=1)
 			std::cout << "sampling rib " << jj << std::endl;
 
-		add_mp(md_config.u_target,md_config.u_target,interval_width);
-		set_mp(md_config.v_target,half); // start on the bottom one
+		// set_mp(md_config.u_target, &u_proj_values->coord[jj]);
+		ScaleByCycleNum(md_config.u_target, &u_proj_values->coord[jj], cycle_num_l, cycle_num_r);
+
+		print_comp_matlab(&u_proj_values->coord[jj],"source");
+		print_comp_matlab(md_config.u_target,"u_target");
+
+		set_mp(md_config.v_target,half); 
 		
 
 
@@ -846,36 +864,33 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 			std::cout << color::red() << "midpoint solver unsuccesful at generating first point on rib" << color::console_default() << std::endl;
 			continue;
 		}
-		else {
-			WitnessSet W_new;
-			fillme.get_noninfinite_w_mult_full(W_new);
-			if (W_new.num_points()==0) {
-				std::cout << color::red() << "midpoint tracker did not return any noninfinite points" << color::console_default() << std::endl;
-				continue;
-			}
-			else{
-				
-				temp_vertex.set_type(SURFACE_SAMPLE_POINT);
-				temp_vertex.set_point(W_new.point(0));
-				startpt_index = V.add_vertex(temp_vertex);
 
-				// need to set the values of the projections in the linears -- they are not unit-scaled as is the midpoint tracker.
-
-				// copy in the start point for the multilin method, as the terminal point from the previous call.
-				vec_cp_mp(W_multilin.point(0),V[startpt_index].point());
-				W_multilin.point(0)->size = this->num_variables();
-				neg_mp(&W_multilin.linear(0)->coord[0],&(V[startpt_index].projection_values())->coord[0]);
-				neg_mp(&W_multilin.linear(1)->coord[0],&(V[startpt_index].projection_values())->coord[1]);
-				
-				real_threshold(&W_multilin.linear(0)->coord[0],(V.T())->real_threshold);
-				real_threshold(&W_multilin.linear(1)->coord[0],(V.T())->real_threshold);
-
-				neg_mp(&target_multilin_linears[0]->coord[0],&(V[startpt_index].projection_values())->coord[0]);
-
-				real_threshold(&target_multilin_linears[0]->coord[0],(V.T())->real_threshold);								
-				// projection value 1 will be set later, when contructing the rib.
-			}
+		WitnessSet W_new;
+		fillme.get_noninfinite_w_mult_full(W_new);
+		if (W_new.num_points()==0) {
+			std::cout << color::red() << "midpoint tracker did not return any noninfinite points" << color::console_default() << std::endl;
+			continue;
 		}
+
+		temp_vertex.set_type(SURFACE_SAMPLE_POINT);
+		temp_vertex.set_point(W_new.point(0));
+		startpt_index = V.add_vertex(temp_vertex);
+
+		// need to set the values of the projections in the linears -- they are not unit-scaled as is the midpoint tracker.
+
+		// copy in the start point for the multilin method, as the terminal point from the previous call.
+		vec_cp_mp(W_multilin.point(0),V[startpt_index].point());
+		W_multilin.point(0)->size = this->num_variables();
+		neg_mp(&W_multilin.linear(0)->coord[0],&(V[startpt_index].projection_values())->coord[0]);
+		neg_mp(&W_multilin.linear(1)->coord[0],&(V[startpt_index].projection_values())->coord[1]);
+		
+		real_threshold(&W_multilin.linear(0)->coord[0],(V.T())->real_threshold);
+		real_threshold(&W_multilin.linear(1)->coord[0],(V.T())->real_threshold);
+
+		neg_mp(&target_multilin_linears[0]->coord[0],&(V[startpt_index].projection_values())->coord[0]);
+
+		real_threshold(&target_multilin_linears[0]->coord[0],(V.T())->real_threshold);								
+		// projection value 1 will be set later, when contructing the rib.
 		
 		
 		
@@ -1117,8 +1132,6 @@ void  Surface::output_sampling_data(boost::filesystem::path base_path) const
 	}
 	
 }
-
-
 
 
 
