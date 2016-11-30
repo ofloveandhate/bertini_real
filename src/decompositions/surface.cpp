@@ -255,7 +255,7 @@ void Surface::main(VertexSet & V,
 	
 	
 	
-	
+	SetCritSliceValues(crit_downstairs);
 	
 	if (program_options.verbose_level()>=0) {
         std::cout << color::green() << "the pi[0] critical projection values at which we will be slicing:\n\n" << color::console_default();

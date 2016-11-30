@@ -829,7 +829,7 @@ public:
 
 
 
-	std::vector<int> AdaptiveNumSamplesPerRib(sampler_configuration & sampler_options);
+	std::vector<int> AdaptiveNumSamplesPerRib(VertexSet const& V, sampler_configuration & sampler_options);
 
 
 

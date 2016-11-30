@@ -17,8 +17,10 @@ void sampler_configuration::SetDefaults()
 	stifle_membership_screen = 1;
 	stifle_text = " > /dev/null ";
 	
+	max_num_ribs = 20;
+	min_num_ribs = 3;
 
-	minimum_num_iterations = 1;
+	minimum_num_iterations = 2;
 	maximum_num_iterations = 10;
 	
 	mpf_init(TOL);
@@ -57,11 +59,15 @@ void sampler_configuration::print_usage()
 	std::cout << "-h -help\t\t\t   --\n";
 	std::cout << "-t -tol -tolerance \t\tdouble > 0\n";
 	std::cout << "-verb\t\t\t\tint\n";
-	std::cout << "-maxits \t\t\tint\n";
+	std::cout << "-minits \t\t\tint minimum number of passes for adaptive curve or surface refining\n";
+	std::cout << "-maxits \t\t\tint maximum number of passes for adaptive curve or surface refining\n";
+	std::cout << "-maxribs \t\t\tint maximum number of ribs for adaptive surface refining\n";
+	std::cout << "-minribs \t\t\tint minimum number of ribs for adaptive surface refining\n";
 	std::cout << "-gammatrick -g \t\t\tbool\n";
 	std::cout << "-numsamples \t\t\tint number samples per edge\n";
 	std::cout << "-mode -m \t\t\tchar sampling mode.  'f' fixed, ['a'] adaptive\n";
 	std::cout << "\n\n\n";
+	std::cout.flush();
 	return;
 }
 
@@ -85,7 +91,10 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 			{"tolerance",		required_argument,			 0, 't'},
 			{"tol",		required_argument,			 0, 't'},
 			{"t",		required_argument,			 0, 't'},
+			{"minits",		required_argument,			 0, 'l'},
 			{"maxits",		required_argument,			 0, 'm'},
+			{"maxribs",		required_argument,			 0, 'R'},
+			{"minribs",		required_argument,			 0, 'r'},
 			{"gammatrick",		required_argument,			 0, 'g'},
 			{"g",		required_argument,			 0, 'g'},
 			{"numsamples",		required_argument,			 0, 'n'},
@@ -97,7 +106,7 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
 		
-		choice = getopt_long_only (argc, argv, "bdf:svt:g:V:m:hM:", // colon requires option, two is optional
+		choice = getopt_long_only (argc, argv, "bdf:svt:g:V:l:m:R:r:hM:", // colon requires option, two is optional
 															 long_options, &option_index);
 		
 		/* Detect the end of the options. */
@@ -126,6 +135,7 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 				
 			case 'v':
 				printf("\n Sampler module for Bertini_real(TM) version %s\n\n", VERSION);
+				std::cout << "for help, use option '-h'\n\n";
 				exit(0);
 				break;
 				
@@ -145,7 +155,11 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 			case 'V':
 				this->verbose_level(atoi(optarg));
 				break;
-				
+
+			case 'l':
+				this->minimum_num_iterations = atoi(optarg);
+				break;
+
 			case 'm':
 				this->maximum_num_iterations = atoi(optarg);
 				break;
@@ -170,6 +184,15 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 				}
 				break;
 			}
+
+			case 'R':
+				this->max_num_ribs = atoi(optarg);
+				break;
+
+			case 'r':
+				this->min_num_ribs = atoi(optarg);
+				break;
+
 			case 'h':
 				
 				sampler_configuration::print_usage();

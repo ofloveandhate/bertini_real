@@ -452,7 +452,6 @@ int Curve::interslice(const WitnessSet & W_curve,
 	
 
 	
-	std::cout << "a" << std::endl;
 	SetCritSliceValues(crit_downstairs);
 	
 	if (program_options.verbose_level()>=0) {
@@ -1446,8 +1445,6 @@ void Curve::send(int target, ParallelismConfig & mpi_config) const
 		edges_[ii].send(target, mpi_config);
 		edge_metadata_[ii].send(target, mpi_config);
 	}
-	
-	send_vec_mp(crit_slice_values, target);
 }
 
 

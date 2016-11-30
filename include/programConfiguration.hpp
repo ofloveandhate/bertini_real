@@ -904,6 +904,8 @@ public:
 	Mode mode; ///< mode switch between adaptive and fixed-number.
 	int target_num_samples; ///< the number of samples per cell, more or less.
 	
+	int max_num_ribs;
+	int min_num_ribs;
 	
 	/** 
 	 \brief get the sampler_configuration from the command line. */

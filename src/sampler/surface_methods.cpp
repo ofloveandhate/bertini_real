@@ -534,7 +534,7 @@ std::vector<int> Surface::AdaptiveSampleCurves(VertexSet & V,
 
 	// first we need to compute the set of numbers of ribs per face. 
 	// this is determined by the widths in terms of projection value.
-	std::vector<int> num_slices_between_crits = AdaptiveNumSamplesPerRib(sampler_options);
+	std::vector<int> num_slices_between_crits = AdaptiveNumSamplesPerRib(V, sampler_options);
 	assert(num_slices_between_crits.size()==NumMidSlices());
 
 	
@@ -566,15 +566,95 @@ std::vector<int> Surface::AdaptiveSampleCurves(VertexSet & V,
 
 
 
-std::vector<int> Surface::AdaptiveNumSamplesPerRib(sampler_configuration & sampler_options)
+std::vector<int> Surface::AdaptiveNumSamplesPerRib(VertexSet const& V, sampler_configuration & sampler_options)
 {
 	std::vector<int> num;
 	auto n = NumMidSlices();
 
+	comp_mp temp1;  init_mp(temp1); set_zero_mp(temp1);
+	comp_mp temp2;  init_mp(temp2); set_zero_mp(temp2);
+	comp_mp temp3;  init_mp(temp3); set_zero_mp(temp3);
+	const auto& crit_slice_values = CritSliceValues();
+	vec_mp projection_interval_width; init_vec_mp(projection_interval_width,n); projection_interval_width->size = n;
+	vec_mp estimated_slice_width; init_vec_mp(estimated_slice_width,n); estimated_slice_width->size = n;
+
+	vec_mp max_widths_found; init_vec_mp(max_widths_found,n); max_widths_found->size = n;
+
+	vec_mp tempvec1, tempvec2; 
+	init_vec_mp(tempvec1,0); tempvec1->size = 0;init_vec_mp(tempvec2,0); tempvec2->size = 0;
+
+	for (int ii = 0; ii < n; ++ii)
+	{
+		sub_mp(&projection_interval_width->coord[ii], &crit_slice_values->coord[ii+1], &crit_slice_values->coord[ii]);
+
+		set_double_mp(&max_widths_found->coord[ii], -10, 0);
+	}
+
+	for (const auto& curr_face : faces_)
+	{
+		auto interval_ind = curr_face.crit_slice_index();
+
+		const Curve* bottom = curve_with_name(curr_face.system_name_bottom());
+
+		dehomogenize(&tempvec1,V[bottom->get_edge(curr_face.bottom_edge()).left()].point());
+		dehomogenize(&tempvec2,V[bottom->get_edge(curr_face.bottom_edge()).midpt()].point());
+
+		norm_of_difference_mindim(temp1->r,
+                                       tempvec1, 
+                                       tempvec2);
+		dehomogenize(&tempvec1,V[bottom->get_edge(curr_face.bottom_edge()).right()].point());
+		norm_of_difference_mindim(temp2->r,
+                                       tempvec1, 
+                                       tempvec2);
+		add_mp(temp3, temp2, temp1);
+		if (mpf_cmp(temp3->r, max_widths_found->coord[interval_ind].r) > 0)
+			mpf_set(max_widths_found->coord[interval_ind].r, temp1->r);
+
+
+
+		const Curve* top = curve_with_name(curr_face.system_name_top());
+
+		dehomogenize(&tempvec1,V[top->get_edge(curr_face.top_edge()).left()].point());
+		dehomogenize(&tempvec2,V[top->get_edge(curr_face.top_edge()).midpt()].point());
+
+		norm_of_difference_mindim(temp1->r,
+                                       tempvec1, 
+                                       tempvec2);
+		dehomogenize(&tempvec1,V[top->get_edge(curr_face.top_edge()).right()].point());
+		norm_of_difference_mindim(temp2->r,
+                                       tempvec1, 
+                                       tempvec2);
+		add_mp(temp3, temp2, temp1);
+		if (mpf_cmp(temp3->r, max_widths_found->coord[interval_ind].r) > 0)
+			mpf_set(max_widths_found->coord[interval_ind].r, temp1->r);
+	}
+
+
+
+	mpf_set(temp1->r, sampler_options.TOL);  // mpreal
+
+	comp_d temp_d;
 	for (int ii=0; ii<n; ++ii)
 	{
-		num.push_back(sampler_options.target_num_samples);//sampler_options.target_num_samples
+		div_mp(temp2, &max_widths_found->coord[ii], temp1);
+		mp_to_d(temp_d, temp2);	
+
+		int est_num = std::ceil(temp_d->r); 
+
+
+		{
+			auto M = std::min(est_num, sampler_options.max_num_ribs);
+			auto m = std::max(est_num, sampler_options.min_num_ribs);
+			num.push_back(std::max(m, M));
+		}
 	}
+
+
+	clear_mp(temp1); clear_mp(temp2); clear_mp(temp3);
+	clear_vec_mp(projection_interval_width);
+	clear_vec_mp(estimated_slice_width);
+	clear_vec_mp(max_widths_found);
+	clear_vec_mp(tempvec1); clear_vec_mp(tempvec2);
 	return num;
 }
 
@@ -755,9 +835,11 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 	auto top_right_cycle_num = top->GetMetadata(top_edge_index).CycleNumRight();
 	auto bottom_right_cycle_num = bottom->GetMetadata(bottom_edge_index).CycleNumRight();
 
-	auto cycle_num_l = boost::math::lcm(top_left_cycle_num, bottom_left_cycle_num);
-	auto cycle_num_r = boost::math::lcm(top_right_cycle_num, bottom_right_cycle_num);
-		
+	// auto cycle_num_l = boost::math::lcm(top_left_cycle_num, bottom_left_cycle_num);
+	// auto cycle_num_r = boost::math::lcm(top_right_cycle_num, bottom_right_cycle_num);
+	
+	auto cycle_num_l = 2;
+	auto cycle_num_r = 2;
 	// pi_out + (pi_mid - pi_out) * (1-p)^cycle_num;
 
 	vec_mp u_proj_values;  init_vec_mp(u_proj_values,num_ribs-1); u_proj_values->size = num_ribs-1;
@@ -948,8 +1030,9 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 					dehomogenize(&dehom_right,W_new.point(0));
 					if (!checkForReal_mp(dehom_right, (V.T())->real_threshold))
 					{
-						std::cout << color::red() << "got non-real solution sample... something strange going on!" << color::console_default() << '\n';
+						std::cout << color::red() << "got non-real solution sample... something strange going on!\n\nnot refining this interval any more..." << color::console_default() << '\n';
 						refine_flags_next.push_back(false);
+						mypause();
 						continue;
 						
 					}
@@ -988,6 +1071,13 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 			temp_rib.push_back(refined_rib.back());
 			swap(temp_rib,refined_rib);
 			swap(refine_flags_next,refine_flags);
+
+			if (pass_number<sampler_options.minimum_num_iterations)
+			{
+				for (auto b : refine_flags_next)
+					b = true;
+				need_refinement = true;
+			}
 
 			++pass_number;
 		} // re: while

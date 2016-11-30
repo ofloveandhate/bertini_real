@@ -110,7 +110,7 @@ void Curve::adaptive_sampler_movement(VertexSet & V,
 		while (1) // breaking condition is all samples being less than TOL away from each other (in the infty norm sense).
 		{
             
-			refine_next.resize(prev_num_samp+num_refinements-1);; // allocate refinement flag
+			refine_next.resize(prev_num_samp+num_refinements-1); // allocate refinement flag
             
 			std::vector<int> new_indices;
 			new_indices.resize(prev_num_samp+num_refinements);
@@ -237,7 +237,7 @@ void Curve::adaptive_sampler_movement(VertexSet & V,
                                        new_point_dehomogenized, // the current new point
                                        estimated_point);// the estimated point which generated the new point
 					
-					if ( mpf_cmp(dist_moved, sampler_options.TOL )>0 ){
+					if ( mpf_cmp(dist_moved, sampler_options.TOL )>0  || (pass_number+1 < sampler_options.minimum_num_iterations)){
 						refine_next[interval_counter] = true;
 						refine_next[interval_counter+1] = true;
 						num_refinements+=2;
@@ -756,7 +756,9 @@ void Curve::SemiFixedSampler(VertexSet & V,
 			const auto c_nums = GetMetadata(ii);
 
 			// use the cycle numbers to scale toward the endpoints.
-			ScaleByCycleNum(temp2, &pre_cycle_scaled_p->coord[qq], c_nums.CycleNumLeft(), c_nums.CycleNumRight());
+			//c_nums.CycleNumLeft()
+			//c_nums.CycleNumRight()
+			ScaleByCycleNum(temp2, &pre_cycle_scaled_p->coord[qq], 2, 2);
 
 			// finally, scale the cycle-number-scaled values into the interval we are working on, 
 			// to make the final projection values
@@ -1087,27 +1089,26 @@ void Curve::adaptive_set_initial_refinement_flags(int & num_refinements, std::ve
 	
 	current_indices[0] = sample_indices_[current_edge][0];
 	for (unsigned int ii=0; ii<num_samples_on_edge(current_edge)-1; ii++) {
-		refine_flags[ii] = false;
-		
+		refine_flags[ii] = true;
+		num_refinements++;
 		
 		current_indices[ii+1] = sample_index(current_edge,ii+1);
 		
-		for (int jj=0; jj<num_variables()-1; jj++) {
-			div_mp(&dehom1->coord[jj],
-                   &(V[sample_index(current_edge,ii)].point())->coord[jj+1],
-                   &(V[sample_index(current_edge,ii)].point())->coord[0]);
+		// for (int jj=0; jj<num_variables()-1; jj++) {
+		// 	div_mp(&dehom1->coord[jj],
+  //                  &(V[sample_index(current_edge,ii)].point())->coord[jj+1],
+  //                  &(V[sample_index(current_edge,ii)].point())->coord[0]);
 			
-			div_mp(&dehom2->coord[jj],
-                   &(V[sample_index(current_edge,ii+1)].point())->coord[jj+1],
-                   &(V[sample_index(current_edge,ii+1)].point())->coord[0]);
-		}
+		// 	div_mp(&dehom2->coord[jj],
+  //                  &(V[sample_index(current_edge,ii+1)].point())->coord[jj+1],
+  //                  &(V[sample_index(current_edge,ii+1)].point())->coord[0]);
+		// }
 		
-		norm_of_difference_mindim(dist_away, dehom1, dehom2); // get the distance between the two adjacent points.
+		// norm_of_difference_mindim(dist_away, dehom1, dehom2); // get the distance between the two adjacent points.
 		
-		if ( mpf_cmp(dist_away, sampler_options.TOL)>0 ){
-			refine_flags[ii] = true;
-			num_refinements++;
-		}
+		// if ( mpf_cmp(dist_away, sampler_options.TOL)>0 ){
+			
+		// }
 	}
 	
 	clear_vec_mp(dehom1); clear_vec_mp(dehom2);
