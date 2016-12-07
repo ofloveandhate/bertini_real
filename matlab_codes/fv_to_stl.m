@@ -98,59 +98,55 @@ function [answer, cancelled] = getopt()
 
 Title = 'Bertini_real STL options';
 
-%%%% SETTING DIALOG OPTIONS
-Options.WindowStyle = 'modal';
-Options.Resize = 'on';
-Options.Interpreter = 'none';
-Options.CancelButton = 'on';
-Options.ApplyButton = 'off';
-Options.ButtonNames = {'Continue','Cancel'}; %<- default names, included here just for illustration
+%%%% SETTING DIALOG options
+% options.WindowStyle = 'modal';
+options.Resize = 'on';
+options.Interpreter = 'none';
+options.CancelButton = 'on';
+options.ApplyButton = 'off';
+options.ButtonNames = {'Continue','Cancel'}; %<- default names, included here just for illustration
 
 
-Prompt = {};
-Formats = {};
-default_answers = struct([]);
-
-
-
-
-Prompt(1,:) = {'Choose your STL options',[],[]};
-Formats(1,1).type = 'text';
-Formats(1,1).size = [-1 0];
-% Formats(1,1).span = [1 2]; % item is 1 field x 4 fields
+% prompt = {};
+% formats = {};
+% default_answers = struct([]);
 
 
 
 
 
-Prompt(2,:) = {'Align faces', 'align','this can take a loooong time'};
-Formats(2,1).type = 'check';
-default_answers(1).align = false;
+
+prompt(1,:) = {'Align faces', 'align','this can take a loooong time'};
+formats(1,1).type = 'check';
+default_answers.align = false;
 
 
-Prompt(3,:) = {'Remove duplicate points', 'remove_duplicates','this also can take a loooong time'};
-Formats(3,1).type = 'check';
-default_answers(1).remove_duplicates = false;
+prompt(2,:) = {'Remove duplicate points', 'remove_duplicates','this also can take a loooong time'};
+formats(2,1).type = 'check';
+default_answers.remove_duplicates = false;
 
 
-Prompt(4,:) = {'duplicate dist tolerance', 'duplicate_tolerance',[]};
-Formats(3,2).type = 'edit';
-Formats(3,2).format = 'float';
-Formats(3,2).size = [100 0];
-Formats(3,2).limits = [0 1e10];
-default_answers(1).duplicate_tolerance = 1e-4;
+prompt(3,:) = {'duplicate dist tolerance', 'duplicate_tolerance',[]};
+formats(2,2).type = 'edit';
+formats(2,2).format = 'float';
+formats(2,2).size = [100 0];
+formats(2,2).limits = [0 1e10];
+formats(2,2).required = 'on';
+
+default_answers.duplicate_tolerance = 1e-4;
 
 
 
-Prompt(5,:) = {'Filename', 'filename',[]};
-Formats(4,1).type = 'edit';
-Formats(4,1).format = 'text';
-Formats(4,1).size = [200 0];
+prompt(4,:) = {'Filename', 'filename',[]};
+formats(3,1).type = 'edit';
+formats(3,1).format = 'text';
+formats(3,1).size = [200 0];
+formats(3,1).limits = [0 1];
 default_answers.filename = 'br_surf';
 
 
 
-[answer,cancelled] = inputsdlg(Prompt,Title,Formats,default_answers,Options);
+[answer,cancelled] = inputsdlg(prompt,Title,formats,default_answers,options);
 
 
 end

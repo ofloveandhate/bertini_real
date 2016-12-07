@@ -883,10 +883,16 @@ public:
 class sampler_configuration : public prog_config
 {
 public:
+	enum class Mode{
+		Fixed,
+		Adaptive
+	};
+
+
 	int stifle_membership_screen; ///< boolean controlling whether stifle_text is empty or " > /dev/null"
 	std::string stifle_text; ///< the text to append to system() commands to stifle screen output
 	
-	
+	int minimum_num_iterations; ///< the minimum number of passes for iterative adaptive sampling
 	int maximum_num_iterations; ///< the maximum number of passes for iterative adaptive sampling
 	
 	int use_gamma_trick; ///< indicator for whether to use the gamma trick.
@@ -895,9 +901,11 @@ public:
 	bool no_duplicates; ///< a flag for whether to never duplicate points in the vertex_set as it is constructed.
 	
 	bool use_distance_condition; ///< switch for adaptive modes, between distance or movement breaking of while loop.
-	bool use_fixed_sampler; ///< mode switch between adaptive and fixed-number.
+	Mode mode; ///< mode switch between adaptive and fixed-number.
 	int target_num_samples; ///< the number of samples per cell, more or less.
 	
+	int max_num_ribs;
+	int min_num_ribs;
 	
 	/** 
 	 \brief get the sampler_configuration from the command line. */
@@ -922,25 +930,13 @@ public:
 	/**
 	 \brief default constructor, contains some default settings.
 	 */
+
+	void SetDefaults();
+
+
 	sampler_configuration()
 	{
-		no_duplicates = true;
-		use_fixed_sampler = false;
-		use_distance_condition = false;
-		
-		target_num_samples = 10;
-				
-		stifle_membership_screen = 1;
-		stifle_text = " > /dev/null ";
-		
-
-		
-		maximum_num_iterations = 10;
-		
-		mpf_init(TOL);
-		mpf_set_d(TOL, 1e-1); // this should be made adaptive to the span of the projection values or the endpoints
-		
-		use_gamma_trick = 0;
+		SetDefaults();
 	};
 	
 	~sampler_configuration()

@@ -44,7 +44,7 @@ end
 br_plotter.fv.vertices = zeros(br_plotter.BRinfo.num_vertices,length(ind));
 
 
-types = 100:109; %initialize to blank
+types = 100:109; %initialize to blank  eww i hate these magic constants.  sorry.
 
 for ii=1:br_plotter.BRinfo.num_vertices
 	

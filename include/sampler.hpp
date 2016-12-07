@@ -155,7 +155,7 @@ void triangulate_two_ribs_by_angle_optimization(const std::vector< int > & rib1,
 double compute_square_of_difference_from_sixtydegrees(comp_mp temp, comp_mp length1, comp_mp length2, comp_mp dot_prod);
 
 
-
+void ScaleByCycleNum(comp_mp result, comp_mp input, int cycle_num_l, int cycle_num_r);
 
 
 

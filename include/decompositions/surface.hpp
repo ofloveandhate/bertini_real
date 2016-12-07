@@ -296,6 +296,7 @@ public:
 	 
 	 \return the number of faces.
 	 */
+	inline
 	unsigned int num_faces() const
 	{
 		return num_faces_;
@@ -306,32 +307,45 @@ public:
 	 \brief query the number of singular curves in the Decomposition.
 	 \return the number of singular curves in the Decomposition.
 	 */
+	inline
 	unsigned int num_singular_curves() const
 	{
 		return num_singular_curves_;
 	}
 	
-	
+	inline
+	auto NumMidSlices() const
+	{
+		return mid_slices_.size();
+	}
+
+	inline
+	auto NumCritSlices() const
+	{
+		return crit_slices_.size();
+	}
+
+	inline
 	const std::map<SingularObjectMetadata,Curve>::const_iterator singular_curves_iter_begin() const
 	{
 		return singular_curves_.begin();
 	}
 	
 	
-	
+	inline
 	const std::map<SingularObjectMetadata,Curve>::const_iterator singular_curves_iter_end() const
 	{
 		return singular_curves_.end();
 	}
 	
-	
+	inline
 	std::map<SingularObjectMetadata,Curve>::iterator singular_curves_iter_begin()
 	{
 		return singular_curves_.begin();
 	}
 	
 	
-	
+	inline
 	std::map<SingularObjectMetadata,Curve>::iterator singular_curves_iter_end()
 	{
 		return singular_curves_.end();
@@ -340,11 +354,14 @@ public:
 	
 	
 	
+	inline
 	std::vector< Curve >::iterator mid_slices_iter_begin() 
 	{
 		return mid_slices_.begin();
 	}
 	
+
+	inline
 	std::vector< Curve >::iterator mid_slices_iter_end() 
 	{
 		return mid_slices_.end();
@@ -352,11 +369,13 @@ public:
 	
 	
 	
+	inline
 	std::vector< Curve >::iterator crit_slices_iter_begin() 
 	{
 		return crit_slices_.begin();
 	}
 	
+	inline
 	std::vector< Curve >::iterator crit_slices_iter_end() 
 	{
 		return crit_slices_.end();
@@ -563,6 +582,7 @@ public:
     void compute_critcurve_witness_set(WitnessSet & W_critcurve,
 									   std::map<int, WitnessSet> & higher_multiplicity_witness_sets,
                                        const WitnessSet & W_surf,
+                                       int pi_ind,
                                        BertiniRealConfig & program_options,
                                        SolverConfiguration & solve_options);
     
@@ -577,6 +597,7 @@ public:
 	 */
     void compute_critcurve_critpts(WitnessSet & W_critcurve_crit, // the computed value
                                    WitnessSet & W_critcurve,
+                                   int pi_ind,
                                    BertiniRealConfig & program_options,
                                    SolverConfiguration & solve_options);
     
@@ -787,6 +808,33 @@ public:
 										SolverConfiguration & solve_options);
 
 	
+
+	void AdaptiveSampler(VertexSet &V,
+					   sampler_configuration & sampler_options,
+					   SolverConfiguration & solve_options);
+	
+	/**
+	\brief Sample the member curves.
+.
+	*/
+	std::vector<int> AdaptiveSampleCurves(VertexSet & V, sampler_configuration & sampler_options,
+										SolverConfiguration & solve_options);
+
+
+	/**
+	\brief Sample a face of the surface.
+
+	\param face_index The integer index of the face to sample.
+	*/
+	void AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configuration & sampler_options,
+										SolverConfiguration & solve_options, std::vector<int> const& num_ribs_between_crits);
+
+
+
+	std::vector<int> AdaptiveNumSamplesPerRib(VertexSet const& V, sampler_configuration & sampler_options);
+
+
+
 	/**
 	Given straight-line sampled ribs on a face, stitch together to form a triangulation, and add to the samples have for the surface.
 	*/
