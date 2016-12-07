@@ -582,6 +582,7 @@ public:
     void compute_critcurve_witness_set(WitnessSet & W_critcurve,
 									   std::map<int, WitnessSet> & higher_multiplicity_witness_sets,
                                        const WitnessSet & W_surf,
+                                       int pi_ind,
                                        BertiniRealConfig & program_options,
                                        SolverConfiguration & solve_options);
     
@@ -596,6 +597,7 @@ public:
 	 */
     void compute_critcurve_critpts(WitnessSet & W_critcurve_crit, // the computed value
                                    WitnessSet & W_critcurve,
+                                   int pi_ind,
                                    BertiniRealConfig & program_options,
                                    SolverConfiguration & solve_options);
     

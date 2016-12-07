@@ -54,6 +54,7 @@ void Surface::main(VertexSet & V,
     compute_critcurve_witness_set(W_critcurve,
 								  higher_multiplicity_witness_sets,
                                   W_surf,
+                                  0,
                                   program_options,
                                   solve_options);
     
@@ -70,6 +71,7 @@ void Surface::main(VertexSet & V,
     WitnessSet W_critcurve_crit;
     compute_critcurve_critpts(W_critcurve_crit, // the computed value
                               W_critcurve,
+                              0,
                               program_options,
                               solve_options);
     
@@ -432,6 +434,7 @@ void Surface::beginning_stuff(const WitnessSet & W_surf,
 void Surface::compute_critcurve_witness_set(WitnessSet & W_critcurve,
 														  std::map<int, WitnessSet> & higher_multiplicity_witness_sets,
                                                           const WitnessSet & W_surf,
+                                                          int pi_ind,
                                                           BertiniRealConfig & program_options,
                                                           SolverConfiguration & solve_options)
 {
@@ -536,15 +539,16 @@ void Surface::compute_critcurve_witness_set(WitnessSet & W_critcurve,
 
 
 void Surface::compute_critcurve_critpts(WitnessSet & W_critcurve_crit,  // the computed value
-                                                      WitnessSet & W_critcurve, // input witness set
-                                                      BertiniRealConfig & program_options, //as usual, goes everywhere.
-                                                      SolverConfiguration & solve_options) // wtb: a way to make this global
+                                      WitnessSet & W_critcurve, // input witness set
+                                      int pi_ind,
+                                      BertiniRealConfig & program_options, //as usual, goes everywhere.
+                                      SolverConfiguration & solve_options) // wtb: a way to make this global
 {
 #ifdef functionentry_output
 	std::cout << "surface::compute_critcurve_critpts" << std::endl;
 #endif
 	
-	std::cout << color::bold('m') << "\ncomputing critical points of the critical curve" <<  color::console_default() << std::endl;
+	
 	
 	
 	
@@ -562,74 +566,48 @@ void Surface::compute_critcurve_critpts(WitnessSet & W_critcurve_crit,  // the c
 	//get crit points of the surface.
 	int blabla;
 	
-	if (0) {
-		
-		
-		parse_input_file(this->get_W().input_filename(),&blabla);
-		preproc_data_clear(&solve_options.PPD); // ugh this sucks
-		parse_preproc_data("preproc_data", &solve_options.PPD);
-		
-		
-		
-		compute_crit_nullspace(solve_out, // the returned value
-							   this->get_W(),            // input the original witness set
-							   this->randomizer(),
-							   &this->pi(),
-							   2,  // dimension of ambient complex object
-							   2,   //  target dimension to find
-							   2,   // COdimension of the critical set to find.
-							   program_options,
-							   solve_options,
-							   &ns_config);
-		
-		solve_out.get_noninfinite_w_mult_full(W_critcurve_crit);
-		ns_config.clear();
-		solve_out.reset();
-		
-	}
-	else {
-		//now get those critpoints which lie on the crit curve (there may be some intersection with the above)
-		
-		parse_input_file(W_critcurve.input_filename(),&blabla);
-		preproc_data_clear(&solve_options.PPD); // ugh this sucks
-		parse_preproc_data("preproc_data", &solve_options.PPD);
-		
-		
-		int temp_degree = solve_options.T.AMP_bound_on_degree;
-		std::ifstream fin("deg.out");
-		int max_degree = 0;
-		for (int ii=0; ii<solve_options.PPD.num_funcs; ii++) {
-			fin >> temp_degree;
-			if (temp_degree>max_degree) {
-				max_degree = temp_degree;
-			}
+	parse_input_file(W_critcurve.input_filename(),&blabla);
+	preproc_data_clear(&solve_options.PPD); // ugh this sucks
+	parse_preproc_data("preproc_data", &solve_options.PPD);
+	
+	
+	int temp_degree = solve_options.T.AMP_bound_on_degree;
+	std::ifstream fin("deg.out");
+	int max_degree = 0;
+	for (int ii=0; ii<solve_options.PPD.num_funcs; ii++) {
+		fin >> temp_degree;
+		if (temp_degree>max_degree) {
+			max_degree = temp_degree;
 		}
-		fin.close();
-		solve_options.T.AMP_bound_on_degree = max_degree;
-		
-		
-		
-		
-		compute_crit_nullspace(solve_out, // the returned value
-							   W_critcurve,            // input the original witness set
-							   crit_curve_.randomizer(),
-							   &(this->pi()),
-							   1,  // dimension of ambient complex object
-							   1,   //  target dimension to find
-							   1,   // COdimension of the critical set to find.
-							   program_options,
-							   solve_options,
-							   &ns_config);
-		
-		
-		solve_options.T.AMP_bound_on_degree = temp_degree; //reset
-		
-		WitnessSet W_temp;
-		solve_out.get_noninfinite_w_mult_full(W_temp);
-		ns_config.clear();
-		solve_out.reset();
-		W_critcurve_crit.merge(W_temp,&solve_options.T);//(*&!@U#H*DB(F*&^@#*&$^(*#&YFNSD
 	}
+	fin.close();
+	
+
+	
+	std::cout << color::bold('m') << "\ncomputing critical points of the critical curve WRT pi_" << pi_ind <<  color::console_default() << std::endl;
+	solve_options.T.AMP_bound_on_degree = max_degree;
+	compute_crit_nullspace(solve_out, // the returned value
+						   W_critcurve,            // input the original witness set
+						   crit_curve_.randomizer(),
+						   &(this->pi())+pi_ind,
+						   1,  // dimension of ambient complex object
+						   1,   //  target dimension to find
+						   1,   // COdimension of the critical set to find.
+						   program_options,
+						   solve_options,
+						   &ns_config);
+	
+	
+	solve_options.T.AMP_bound_on_degree = temp_degree; //reset
+	
+	WitnessSet W_temp;
+	solve_out.get_noninfinite_w_mult_full(W_temp);
+	ns_config.clear();
+	solve_out.reset();
+	W_critcurve_crit.merge(W_temp,&solve_options.T);//(*&!@U#H*DB(F*&^@#*&$^(*#&YFNSD
+
+
+
 
 	W_critcurve_crit.set_input_filename("input_critical_curve");
 	W_critcurve_crit.sort_for_real(&solve_options.T);
