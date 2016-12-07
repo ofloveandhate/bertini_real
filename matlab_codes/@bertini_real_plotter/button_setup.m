@@ -17,7 +17,7 @@ curr_y = 0;
 
 [curr_y, br_plotter.buttons.save] = make_button('Save', @br_plotter.save_routine, horiz_pad, vert_spacing, curr_y, br_plotter.panels.buttons, height, width);
 
-[curr_y, br_plotter.buttons.load] = make_button('Load & Render', {@br_plotter.load_and_render,0}, horiz_pad, vert_spacing, curr_y, br_plotter.panels.buttons, height, width);
+[curr_y, br_plotter.buttons.load] = make_button('Load & Render', {@br_plotter.load_and_render}, horiz_pad, vert_spacing, curr_y, br_plotter.panels.buttons, height, width);
 
 
 [curr_y, br_plotter.buttons.center] = make_button('Center Camera', {@br_plotter.center_camera_on_selected_point}, horiz_pad, vert_spacing, curr_y, br_plotter.panels.buttons, height, width);

@@ -419,6 +419,13 @@ classdef bertini_real_plotter < handle
 			
 		end
 		
+		function load_and_render(br_plotter,source, event)
+			
+			
+			
+		end
+		
+		
 		function plot(br_plotter)
 			
 			if br_plotter.BRinfo.num_vertices==0
