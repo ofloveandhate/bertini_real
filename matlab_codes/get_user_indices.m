@@ -26,29 +26,24 @@ default_answers = struct([]);
 names = make_names(suggested_indices, BRinfo);
 
 
-Prompt(1,:) = {'Choose the variables you want to plot',[],[]};
-Formats(1,1).type = 'text';
-Formats(1,1).size = [-1 0];
-% Formats(1,1).span = [1 2]; % item is 1 field x 4 fields
 
 
 
-
-Prompt(2,:) = {' x   ','var1',[]};
-Formats(2,1).type = 'list';
-Formats(2,1).style = 'popupmenu';
-Formats(2,1).size = [80 0];
-Formats(2,1).items = names;%{'Black','White','Red','Blue','Green','Yellow','Orange'};
+Prompt(1,:) = {' x   ','var1',[]};
+Formats(1,1).type = 'list';
+Formats(1,1).style = 'popupmenu';
+Formats(1,1).size = [80 0];
+Formats(1,1).items = names;%{'Black','White','Red','Blue','Green','Yellow','Orange'};
 
 default_answers(1).var1 = suggested_indices(1);
 
 
 
-Prompt(3,:) = {' y   ','var2',[]};
-Formats(3,1).type = 'list';
-Formats(3,1).style = 'popupmenu';
-Formats(3,1).size = [80 0];
-Formats(3,1).items = names;%{'Black','White','Red','Blue','Green','Yellow','Orange'};
+Prompt(2,:) = {' y   ','var2',[]};
+Formats(2,1).type = 'list';
+Formats(2,1).style = 'popupmenu';
+Formats(2,1).size = [80 0];
+Formats(2,1).items = names;%{'Black','White','Red','Blue','Green','Yellow','Orange'};
 
 default_answers.var2 = suggested_indices(2);
 
@@ -56,11 +51,11 @@ default_answers.var2 = suggested_indices(2);
 if BRinfo.num_variables-1>=3
 	
 	names{end+1} = '-';
-	Prompt(4,:) = {' z   ','var3',[]};
-	Formats(4,1).type = 'list';
-	Formats(4,1).style = 'popupmenu';
-	Formats(4,1).size = [80 0];
-	Formats(4,1).items = names;%{'Black','White','Red','Blue','Green','Yellow','Orange'};
+	Prompt(3,:) = {' z   ','var3',[]};
+	Formats(3,1).type = 'list';
+	Formats(3,1).style = 'popupmenu';
+	Formats(3,1).size = [80 0];
+	Formats(3,1).items = names;%{'Black','White','Red','Blue','Green','Yellow','Orange'};
 
 	default_answers.var3 = suggested_indices(3);
 
