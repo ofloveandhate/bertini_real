@@ -76,12 +76,28 @@ void Surface::main(VertexSet & V,
                               solve_options);
     
     
-    this->crit_curve_.add_witness_set(W_critcurve_crit,CRITICAL,V);
+    this->crit_curve_.add_witness_set(W_critcurve_crit,Critical,V);
     
-    
-    
-    
-    
+    if (0)
+    {
+	    WitnessSet W_critcurve1;
+		std::map< int, WitnessSet> higher_multiplicity_witness_sets1;
+		
+		
+	    compute_critcurve_witness_set(W_critcurve1,
+									  higher_multiplicity_witness_sets1,
+	                                  W_surf,
+	                                  1,
+	                                  program_options,
+	                                  solve_options);
+		
+		
+	    compute_critcurve_critpts(W_critcurve_crit, // the computed value
+	                              W_critcurve1,
+	                              1,
+	                              program_options,
+	                              solve_options);
+    }
 	
 	
 	
@@ -148,7 +164,7 @@ void Surface::main(VertexSet & V,
 	W_sphere_intersection.sort_for_unique(&solve_options.T);
 	
 	
-	crit_curve_.add_witness_set(W_sphere_intersection,CRITICAL,V);
+	crit_curve_.add_witness_set(W_sphere_intersection,Critical,V);
 	
 	W_total_crit.merge(W_sphere_intersection,&solve_options.T);
 				
@@ -184,7 +200,7 @@ void Surface::main(VertexSet & V,
     
 	
 	
-    this->sphere_curve_.add_witness_set(W_sphere_crit,CRITICAL,V);
+    this->sphere_curve_.add_witness_set(W_sphere_crit,Critical,V);
     
 	
 	
@@ -877,7 +893,7 @@ void Surface::compute_singular_crit(WitnessSet & W_singular_crit,
 		if (have_sphere()) {
 			W_this_round.sort_for_inside_sphere(sphere_radius(), sphere_center());
 		}
-		singular_curves_[iter->first].add_witness_set(W_this_round,CRITICAL,V); // creates the curve Decomposition for this multiplicity
+		singular_curves_[iter->first].add_witness_set(W_this_round,Critical,V); // creates the curve Decomposition for this multiplicity
 		
 		W_singular_crit.merge(W_this_round,&solve_options.T);
 		
@@ -918,7 +934,7 @@ void Surface::compute_singular_curves(const WitnessSet & W_total_crit,
 		W_sphere_intersection.sort_for_real(&solve_options.T);
 		W_sphere_intersection.sort_for_unique(&solve_options.T);
 		
-		singular_curves_[iter->first].add_witness_set(W_sphere_intersection,CRITICAL,V); // creates the curve Decomposition for this multiplicity
+		singular_curves_[iter->first].add_witness_set(W_sphere_intersection,Critical,V); // creates the curve Decomposition for this multiplicity
 		
 		W_sphere_intersection.merge(W_total_crit,&solve_options.T);
 		W_sphere_intersection.set_input_filename("should_have_already_been_added_elsewhere");

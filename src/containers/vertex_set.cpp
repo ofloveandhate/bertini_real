@@ -279,7 +279,7 @@ int VertexSet::add_vertex(const Vertex & source_vertex)
 			projection_value_homogeneous_input(&(vertices_[num_vertices_].projection_values())->coord[ii],
 											   vertices_[num_vertices_].point(),
 											   projections_[ii]);
-            real_threshold(&(vertices_[num_vertices_].projection_values())->coord[ii],1e-13);
+            // real_threshold(&(vertices_[num_vertices_].projection_values())->coord[ii],1e-13);
 		}
 		
 	}
@@ -382,7 +382,7 @@ int VertexSet::setup_vertices(boost::filesystem::path INfile)
 		temp_vertex.set_input_filename_index(temp_int);
 		
 		fscanf(IN,"%d\n",&temp_int);
-	   temp_vertex.set_type(temp_int);
+	   temp_vertex.set_type(static_cast<VertexType>(temp_int));
 		
 		VertexSet::add_vertex(temp_vertex);
 	}
@@ -450,12 +450,7 @@ void VertexSet::print(boost::filesystem::path outputfile) const
 		fprintf(OUT,"%d\n",vertices_[ii].input_filename_index());
 		
 		fprintf(OUT,"\n");
-		if (vertices_[ii].is_removed()) {
-			fprintf(OUT,"%d\n\n",REMOVED);
-		}
-		else{
-			fprintf(OUT,"%d\n\n",vertices_[ii].type());
-		}
+		fprintf(OUT,"%d\n\n",vertices_[ii].type());
 	}
 	
 	

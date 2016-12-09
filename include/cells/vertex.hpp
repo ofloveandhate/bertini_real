@@ -21,8 +21,7 @@ private:
 	
 	vec_mp  projection_values_; ///< a vector containing the projection values.
 	
-	int type_;  ///< See enum.
-	bool removed_; ///< boolean integer whether the Vertex has been 'removed' by a merge process.
+	VertexType type_;  ///< See enum.
 	int input_filename_index_; ///< index into the vertex_set's vector of filenames.
 	
 public:
@@ -68,27 +67,44 @@ public:
 	
 	
 	/**
-	 \brief set the type of the Vertex
+	 \brief set the type of the Vertex, completely overwriting the old one.
 	 
 	 \param new_type the new type for the Vertex
 	 */
-	void set_type(int new_type)
+	void set_type(VertexType const& new_type)
 	{
 		type_ = new_type;
 	}
 	
-	
+	/**
+	 \brief set the type of the Vertex
+	 
+	 \param new_type the new type for the Vertex
+	 */
+	void add_type(VertexType const& new_type)
+	{
+		type_ |= new_type;
+	}
+
 	/**
 	 \brief get the type of the Vertex
 	 
 	 \return the type, in integer form
 	 */
-	int type() const
+	VertexType type() const
 	{
 		return type_;
 	}
 	
-	
+	/**
+	 \brief set the type of the Vertex
+	 
+	 \param new_type the new type for the Vertex
+	 */
+	void remove_type(VertexType const& new_type)
+	{
+		type_ ^= new_type;
+	}
 	
 	/**
 	 \brief set the Vertex to be 'removed'
@@ -97,7 +113,10 @@ public:
 	 */
 	void set_removed(bool new_val)
 	{
-		removed_ = new_val;
+		if (new_val)
+			type_ |= Removed;
+		else
+			type_ ^= Removed;
 	}
 	
 	
@@ -108,9 +127,20 @@ public:
 	 */
 	bool is_removed() const
 	{
-		return removed_;
+		return is_type(Removed);
 	}
 	
+	/**
+	 \brief query whether the Vertex has been set to 'removed'
+	 
+	 \return whether it has been removed.
+	 */
+	bool is_type(VertexType test_type) const
+	{
+		return type_ & test_type;
+	}
+
+
 	Vertex()
 	{
 		init();
@@ -224,7 +254,6 @@ private:
 		this->type_ = other.type_;
 		
 		this->input_filename_index_ = other.input_filename_index_;
-		this->removed_ = other.removed_;
 	}
 	
 	
@@ -235,9 +264,8 @@ private:
 		this->pt_mp_->size = 1;
 		set_zero_mp(&pt_mp_->coord[0]);
 		this->projection_values_->size = 0;
-		this->type_ = UNSET;
+		this->type_ = Unset;
 		
-		this->removed_ = false;
 		this->input_filename_index_ = -1;
 	}
 };

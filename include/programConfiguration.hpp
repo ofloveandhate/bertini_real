@@ -358,6 +358,8 @@ public:
 	\brief Write some structured meta data to a file, including things like runtime, number of processors used, and version of program used.
 	*/
 	void PrintMetadata(boost::filesystem::path const& filename) const;
+
+	void PrintPointTypeMapping(boost::filesystem::path const& filename) const;
 };
 
 

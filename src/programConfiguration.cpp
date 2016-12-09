@@ -247,7 +247,28 @@ void ProgramConfigBase::PrintMetadata(boost::filesystem::path const& filename) c
 }
 
 
+void ProgramConfigBase::PrintPointTypeMapping(boost::filesystem::path const& filename) const
+{
+	//The following lets us use words instead of numbers to indicate vertex type.
+//enum {UNSET= 100, CRITICAL, SEMICRITICAL, MIDPOINT, ISOLATED, NEW, CURVE_SAMPLE_POINT, SURFACE_SAMPLE_POINT, REMOVED, PROBLEMATIC};
 
+	FILE *OUT = safe_fopen_write(filename);
+
+	fprintf(OUT,"10\n\n");
+	fprintf(OUT,"Unset %d\n",Unset);
+	fprintf(OUT,"Critical %d\n",Critical);
+	fprintf(OUT,"Semicritical %d\n",Semicritical);
+	fprintf(OUT,"Midpoint %d\n",Midpoint);
+	fprintf(OUT,"Isolated %d\n",Isolated);
+	fprintf(OUT,"New %d\n",New);
+	fprintf(OUT,"Curve_sample_point %d\n",Curve_sample_point);
+	fprintf(OUT,"Surface_sample_point %d\n",Surface_sample_point);
+	fprintf(OUT,"Removed %d\n",Removed);
+	fprintf(OUT,"Problematic %d\n",Problematic);
+	
+	fclose(OUT);
+
+}
 
 
 

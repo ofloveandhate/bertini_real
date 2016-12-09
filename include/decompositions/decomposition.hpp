@@ -56,7 +56,7 @@ public:
 	 \param add_type the type the points will inherit.  {\em e.g.} CRITICAL
 	 \param V the Vertex set to add the points to.
 	 */
-    int add_witness_set(const WitnessSet & W, int add_type, VertexSet & V);
+    int add_witness_set(const WitnessSet & W, VertexType add_type, VertexSet & V);
     
 	
 	/**
