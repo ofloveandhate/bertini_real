@@ -53,9 +53,160 @@ void parse_input_file(boost::filesystem::path filename, int * MPType)
 
 
 
+void ParallelismConfig::init()
+{
+	
+	force_no_parallel_ = false;
+	numprocs_ = 1;
+	headnode_ = 0;
+	
+	MPI_Comm_size(MPI_COMM_WORLD, &this->numprocs_);
+	MPI_Comm_rank(MPI_COMM_WORLD, &this->my_id_);
+	
+	
+	if (is_head())
+		worker_level_ = 0;
+	else
+		worker_level_ = 1;
+	
+	
+	
+	my_communicator_ = MPI_COMM_WORLD; // default communicator is MPI_COMM_WORLD
+	
+    
+    
+    
+	//		MPI_Group orig_group, new_group;
+	//
+	//		/* Extract the original group handle */
+	//
+	//		MPI_Comm_group(MPI_COMM_WORLD, &orig_group);
+	//
+	//		/* Create new communicator and then perform collective communications */
+	//
+	//		MPI_Comm_create(MPI_COMM_WORLD, orig_group, &my_communicator);
+	//
+	//		MPI_Comm_size(my_communicator, &this->numprocs);
+	//		MPI_Comm_rank(my_communicator, &this->my_id);
+	return;
+}
 
 
-void prog_config::move_to_temp()
+void ParallelismConfig::init_active_workers()
+{
+	if (!available_workers_.empty()) {
+		throw std::logic_error("set of available workers is not empty at call of init_active_workers...  it must be empty.  some previous process did not finish properly, dismissing all workers at the end.");
+	}
+	
+	while (!available_workers_.empty())
+		available_workers_.pop();
+	
+	
+	for (int ii=1; ii<this->numprocs_; ii++) {
+		available_workers_.push(ii);
+		worker_status_[ii] = INACTIVE;
+	}
+	
+	
+}
+
+
+int ParallelismConfig::activate_next_worker()
+{
+	int worker_id = available_workers_.front();
+	available_workers_.pop();
+	
+	if (worker_status_[worker_id] == ACTIVE) {
+		std::cout << "master tried making worker" << worker_id << " active when it was already active" << std::endl;
+		MPI_Abort(MPI_COMM_WORLD,1);
+	}
+	worker_status_[worker_id] = ACTIVE;
+	
+
+	return worker_id;
+}
+
+
+void ParallelismConfig::deactivate(int worker_id)
+{
+	if (worker_status_[worker_id] == INACTIVE) {
+		std::cout << "master tried decativating worker" << worker_id << " when it was already inactive" << std::endl;
+		MPI_Abort(MPI_COMM_WORLD,2);
+	}
+	worker_status_[worker_id] = INACTIVE;
+	
+	
+	available_workers_.push(worker_id);
+}
+
+
+
+void ParallelismConfig::send_all_available(int numtosend)
+{
+	while (available_workers_.size()>0)  {
+		int sendtome = available_workers_.front();
+		MPI_Send(&numtosend, 1, MPI_INT, sendtome, NUMPACKETS, MPI_COMM_WORLD);
+		available_workers_.pop();
+	}
+}
+
+
+void ParallelismConfig::call_for_help(int solver_type)
+{
+	
+	MPI_Bcast(&solver_type, 1, MPI_INT, id(), MPI_COMM_WORLD);
+	init_active_workers();
+	
+}
+
+bool ParallelismConfig::have_available()
+{
+	if (available_workers_.size()==0) {
+		return false;
+	}
+	else
+	{
+		return true;
+	}
+	
+}
+
+bool ParallelismConfig::have_active()
+{
+	bool yep = false;
+	for (int ii=1; ii<this->numprocs_; ii++) {
+		if (this->worker_status_[ii]==ACTIVE) {
+			yep = true;
+			break;
+		}
+	}
+	return yep;
+}
+
+int ParallelismConfig::num_active()
+{
+	int num = 0;
+	for (int ii=1; ii<this->numprocs_; ii++) {
+		if (this->worker_status_[ii]==ACTIVE) {
+			num++;
+		}
+	}
+	return num;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+void ProgramConfigBase::move_to_temp()
 {
 	if (!boost::filesystem::exists(this->working_dir())) {
 		boost::filesystem::create_directory(this->working_dir());
@@ -72,7 +223,7 @@ void prog_config::move_to_temp()
 		std::cout << "moved to working_dir '" << this->working_dir().string() << "'" << std::endl;
 }
 
-void prog_config::move_to_called()
+void ProgramConfigBase::move_to_called()
 {
 	
 	chdir(this->called_dir().c_str());
@@ -80,6 +231,25 @@ void prog_config::move_to_called()
 	if (this->verbose_level()>=3)
 		std::cout << "moved to called_dir '" << this->called_dir().string() << "'" << std::endl;
 }
+
+
+void ProgramConfigBase::PrintMetadata(boost::filesystem::path const& filename) const
+{
+	FILE *OUT = safe_fopen_write(filename);
+
+	fprintf(OUT, "%s\n", VERSION);
+	fprintf(OUT, "%s\n", called_dir_.c_str());
+	fprintf(OUT, "%s\n", timer_.format().c_str());
+	fprintf(OUT, "%d\n", this->num_procs());
+
+	
+	fclose(OUT);
+}
+
+
+
+
+
 
 
 

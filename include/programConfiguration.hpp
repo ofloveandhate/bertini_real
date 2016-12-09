@@ -7,6 +7,7 @@
 #include <map>
 #include <getopt.h> 
 #include <queue>
+#include <boost/timer/timer.hpp>
 
 #include "bertini1/bertini_extensions.hpp"
 
@@ -85,7 +86,7 @@ public:
 	 
 	 \return Indicator of whether the process thinks it is currently the head.
 	 */
-	inline bool is_head()
+	inline bool is_head() const 
 	{
 		if (my_id_ == headnode_)
 			return true;
@@ -100,13 +101,11 @@ public:
 	 
 	 \return Indicator of whether to use parallel mode.
 	 */
-	inline bool use_parallel(){
+	inline bool use_parallel() const {
 		if (numprocs_>1 && force_no_parallel_!=true)
 			return true;
 		else
 			return false;
-		
-		
 	}
 	
 	
@@ -125,35 +124,35 @@ public:
 	 Get the current communicator
 	 \return the currently stored communicator
 	 */
-	inline MPI_Comm comm(){return my_communicator_;}
+	inline MPI_Comm comm() const {return my_communicator_;}
 	
 	/**
 	 \brief Get the ID of the supervisor
 	 
 	 \return the ID of the head node, supervisor, or whatever you want to call it.
 	 */
-	inline int head(){return headnode_;}
+	inline int head() const {return headnode_;}
 	
 	/**
 	 \brief Get the ID of this process
 	 
 	 \return the ID
 	 */
-	inline int id(){ return my_id_;}
+	inline int id() const { return my_id_;}
 	
 	/**
 	 \brief  Get the worker level
 	 
 	 \return the worker level
 	 */
-	inline int level(){return worker_level_;}
+	inline int level() const {return worker_level_;}
 	
 	/**
 	 \brief Get how many workers there are in the current communicator
 	 
 	 \return The number of workers.
 	 */
-	inline int num_procs(){ return numprocs_;}
+	inline int num_procs() const { return numprocs_;}
 	
 	
 	
@@ -163,7 +162,7 @@ public:
 	 
 	 \return The number of workers.
 	 */
-	inline int size(){ return numprocs_;}
+	inline int size() const { return numprocs_;}
 	
 	
 	/**
@@ -172,23 +171,7 @@ public:
 	 
 	 It also sets up the workers to be listed as inactive.
 	 */
-	void init_active_workers()
-	{
-		if (!available_workers_.empty()) {
-			throw std::logic_error("set of available workers is not empty at call of init_active_workers...  it must be empty.  some previous process did not finish properly, dismissing all workers at the end.");
-		}
-		
-		while (!available_workers_.empty())
-			available_workers_.pop();
-		
-		
-		for (int ii=1; ii<this->numprocs_; ii++) {
-			available_workers_.push(ii);
-			worker_status_[ii] = INACTIVE;
-		}
-		
-		
-	}
+	void init_active_workers();
 	
 	/**
 	 \brief Get the next available worker, relist it as active, and return its id.
@@ -196,37 +179,14 @@ public:
 	 Available workers are stored as a queue of integers, and work is assigned to the front of the vector.  This method pops the front entry of the queue, relists it as active, and returns its ID.
 	 \return the ID of the next worker.
 	 */
-	int activate_next_worker()
-	{
-		int worker_id = available_workers_.front();
-		available_workers_.pop();
-		
-		if (worker_status_[worker_id] == ACTIVE) {
-			std::cout << "master tried making worker" << worker_id << " active when it was already active" << std::endl;
-			MPI_Abort(MPI_COMM_WORLD,1);
-		}
-		worker_status_[worker_id] = ACTIVE;
-		
-
-		return worker_id;
-	}
+	int activate_next_worker();
 	
 	/**
 	 \brief Take an active worker, relist it as inactive, and make it available.  If the worker is not active, it calls MPI_Abort
 	 
 	 \param worker_id The id of the worker to deactivate.
 	 */
-	void deactivate(int worker_id)
-	{
-		if (worker_status_[worker_id] == INACTIVE) {
-			std::cout << "master tried decativating worker" << worker_id << " when it was already inactive" << std::endl;
-			MPI_Abort(MPI_COMM_WORLD,2);
-		}
-		worker_status_[worker_id] = INACTIVE;
-		
-		
-		available_workers_.push(worker_id);
-	}
+	void deactivate(int worker_id);
 	
 	
 	/**
@@ -236,14 +196,7 @@ public:
 	 
 	 \param numtosend The integer number to send.
 	 */
-	void send_all_available(int numtosend)
-	{
-		while (available_workers_.size()>0)  {
-			int sendtome = available_workers_.front();
-			MPI_Send(&numtosend, 1, MPI_INT, sendtome, NUMPACKETS, MPI_COMM_WORLD);
-			available_workers_.pop();
-		}
-	}
+	void send_all_available(int numtosend);
 	
 	
 	/**
@@ -251,104 +204,38 @@ public:
 	 
 	 \param solver_type The case-index of the type of help the head wants.
 	 */
-	void call_for_help(int solver_type)
-	{
-		
-		MPI_Bcast(&solver_type, 1, MPI_INT, id(), MPI_COMM_WORLD);
-		init_active_workers();
-		
-	}
+	void call_for_help(int solver_type);
 	
 	/**
 	 \brief check if there are available workers.
 	 
 	 \return a boolean indicating if there are available workers.
 	 */
-	bool have_available()
-	{
-		if (available_workers_.size()==0) {
-			return false;
-		}
-		else
-		{
-			return true;
-		}
-		
-	}
-	
+	bool have_available();	
 	/**
 	 \brief check if there are workers working.
 	 
 	 \return A boolean indicating whether there are workers with the status 'ACTIVE'.
 	 */
-	bool have_active()
-	{
-		bool yep = false;
-		for (int ii=1; ii<this->numprocs_; ii++) {
-			if (this->worker_status_[ii]==ACTIVE) {
-				yep = true;
-				break;
-			}
-		}
-		return yep;
-	}
+	bool have_active();
 	
 	/**
 	 \brief Get the number of workers listed as active.
 	 
 	 \return the number of workers listed as Active.
 	 */
-	int num_active()
-	{
-		int num = 0;
-		for (int ii=1; ii<this->numprocs_; ii++) {
-			if (this->worker_status_[ii]==ACTIVE) {
-				num++;
-			}
-		}
-		return num;
-	}
+	int num_active();
 	
 	
 private:
 	
-	void init()
-	{
-		
-		force_no_parallel_ = false;
-		numprocs_ = 1;
-		headnode_ = 0;
-		
-		MPI_Comm_size(MPI_COMM_WORLD, &this->numprocs_);
-		MPI_Comm_rank(MPI_COMM_WORLD, &this->my_id_);
-		
-		
-		if (is_head())
-			worker_level_ = 0;
-		else
-			worker_level_ = 1;
-		
-		
-		
-		my_communicator_ = MPI_COMM_WORLD; // default communicator is MPI_COMM_WORLD
-		
-        
-        
-        
-		//		MPI_Group orig_group, new_group;
-		//
-		//		/* Extract the original group handle */
-		//
-		//		MPI_Comm_group(MPI_COMM_WORLD, &orig_group);
-		//
-		//		/* Create new communicator and then perform collective communications */
-		//
-		//		MPI_Comm_create(MPI_COMM_WORLD, orig_group, &my_communicator);
-		//
-		//		MPI_Comm_size(my_communicator, &this->numprocs);
-		//		MPI_Comm_rank(my_communicator, &this->my_id);
-		return;
-	}
+	/**
+	\brief initialize the parallelism config
+
+	called in the constructor.
+	*/
+	void init();
+	
 };
 
 
@@ -358,7 +245,7 @@ private:
  
  Both sampler_configuration and BertiniRealConfig inherit from this.
  */
-class prog_config : public ParallelismConfig
+class ProgramConfigBase : public ParallelismConfig
 {
 	
 private:
@@ -370,6 +257,7 @@ private:
 	boost::filesystem::path working_dir_;
 	boost::filesystem::path output_dir_;
 	
+	boost::timer::cpu_timer timer_;
 protected:
 	
 	/**
@@ -386,7 +274,7 @@ public:
 	/**
 	 get the directory from which the program was called
 	 
-	 \return the directory in which the user was, when the prog_config was created.
+	 \return the directory in which the user was, when the ProgramConfigBase was created.
 	 */
 	boost::filesystem::path called_dir() const
 	{
@@ -466,6 +354,10 @@ public:
 	
 	void move_to_called();
 	
+	/**
+	\brief Write some structured meta data to a file, including things like runtime, number of processors used, and version of program used.
+	*/
+	void PrintMetadata(boost::filesystem::path const& filename) const;
 };
 
 
@@ -474,7 +366,7 @@ public:
  \brief holds the current state of configuration for Bertini_real.
  
  */
-class BertiniRealConfig : public prog_config
+class BertiniRealConfig : public ProgramConfigBase
 {
 	bool orthogonal_projection_;
 	bool compute_cycle_numbers_ = false; ///< whether we should compute cycle numbers for edges and faces
@@ -867,7 +759,7 @@ public:
 	void display_current_options();
 	
 	
-	BertiniRealConfig() : prog_config()
+	BertiniRealConfig() : ProgramConfigBase()
 	{
 		
         init();
@@ -880,7 +772,7 @@ public:
 
 
 
-class sampler_configuration : public prog_config
+class sampler_configuration : public ProgramConfigBase
 {
 public:
 	enum class Mode{
