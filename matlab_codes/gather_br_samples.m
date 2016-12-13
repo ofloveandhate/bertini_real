@@ -38,15 +38,24 @@ switch BRinfo.dimension
 	
 end
 
+BRinfo.run_metadata = gather_run_metadata(BRinfo.dirname);
+BRinfo.vertex_types = gather_vertex_types(BRinfo.dirname);
+
 tmpnames = get_names(BRinfo.num_variables);
 BRinfo.var_names = tmpnames(2:end);
 
 display('done gathering decomposition.');
 
+filename = generate_filename();
+
+display('writing data to file.');
+save(filename,'BRinfo');
+
+display(['file saved to ' filename]);
+end%re: function
 
 
-
-
+function filename = generate_filename()
 
 prev_filenames = dir('BRinfo*.mat');
 max_found = -1;
@@ -61,16 +70,63 @@ for ii = 1:length(prev_filenames)
 end
 
 filename = ['BRinfo' num2str(max_found+1) '.mat'];
-
-display('writing data to file.');
-save(filename,'BRinfo');
-
-display(['file saved to ' filename]);
-end%re: function
+end
 
 
+function md = gather_run_metadata(dirname)
+	fname = [dirname '/run_metadata'];
+	if ~isempty(dir(fname))
+
+		fin = fopen(fname,'r');
+
+		md.version.string = fgetl(fin);
+		md.dir.string = fgetl(fin);
+		md.time.string = fgetl(fin);
+		md.parallel.numprocs = fscanf(fin,'%i');
+		fclose(fin);
+
+		pds = strfind(md.version.string, '.');
+
+		md.version.major = str2num(md.version.string(1:pds(1)));
+		md.version.minor = str2num(md.version.string(pds(1)+1:pds(2)));
+		md.version.subminor = str2num(md.version.string(pds(2)+1:end));
+		
+		md.version.number = 100*md.version.major + md.version.minor + 0.01 * md.version.subminor;
+		
+	else
+		
+		md.version.string = 'earlier than 1.4';
+		md.version.major = 1;
+		md.version.minor = 3;
+		md.version.subminor = 0;
+		md.version.number = 130;
+	end
+end
 
 
+function md = gather_vertex_types(dirname)
+	fname = [dirname '/vertex_types'];
+	if ~isempty(dir(fname))
+
+		fin = fopen(fname,'r');
+		md.num_types = fscanf(fin, '%i\n',[1 1]);
+		md.names = cell(md.num_types,1);
+		md.nums = zeros(md.num_types,1);
+		for ii = 1:md.num_types
+			type = fscanf(fin,'%s ',[1 1]);
+			num = fscanf(fin,'%i');
+			
+			md.by_type.(type) = num;
+			md.names{ii} = type;
+			md.nums(ii) = num;
+		end
+		fclose(fin);
+		
+	else
+		error('no ''vertex_types'' file found.  please use the version of the matlab code which came with your bertini real version');
+	end
+	
+end
 function input = read_input(dirname,decomp)
 filename = [dirname '/' decomp.inputfilename];
 if ~isempty(dir(filename))

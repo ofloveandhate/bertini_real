@@ -331,7 +331,7 @@ void Surface::FixedSampleFace(int face_index, VertexSet & V, sampler_configurati
 			}
 			else{
 				
-				temp_vertex.set_type(SURFACE_SAMPLE_POINT);
+				temp_vertex.set_type(Surface_sample_point);
 				temp_vertex.set_point(W_new.point(0));
 				startpt_index = V.add_vertex(temp_vertex);
 
@@ -426,7 +426,7 @@ void Surface::FixedSampleFace(int face_index, VertexSet & V, sampler_configurati
 
 
 					temp_vertex.set_point(W_new.point(0));
-					temp_vertex.set_type(SURFACE_SAMPLE_POINT);
+					temp_vertex.set_type(Surface_sample_point);
 					temp_rib.push_back(V.add_vertex(temp_vertex));
 
 					dehomogenize(&dehom_left,V[refined_rib[rr]].point());
@@ -945,7 +945,7 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 			continue;
 		}
 
-		temp_vertex.set_type(SURFACE_SAMPLE_POINT);
+		temp_vertex.set_type(Surface_sample_point);
 		temp_vertex.set_point(W_new.point(0));
 		startpt_index = V.add_vertex(temp_vertex);
 
@@ -1039,7 +1039,7 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 
 
 					temp_vertex.set_point(W_new.point(0));
-					temp_vertex.set_type(SURFACE_SAMPLE_POINT);
+					temp_vertex.set_type(Surface_sample_point);
 					temp_rib.push_back(V.add_vertex(temp_vertex));
 
 					dehomogenize(&dehom_left,V[refined_rib[rr]].point());

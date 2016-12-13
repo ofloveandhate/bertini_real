@@ -8,10 +8,18 @@
 
 
 
-
-
-std::string enum_lookup(int flag)
+std::string enum_lookup(int flag, int hint)
 {
+	if (hint)
+	{
+		std::stringstream s;
+	for (const auto& t : VertexTypes)
+		if (flag & t)
+			s << t << " ";
+	return s.str();
+	}
+	else
+	{
 	switch (flag) {
 		case SUCCESSFUL:
 			return "SUCCESSFUL";
@@ -23,26 +31,6 @@ std::string enum_lookup(int flag)
 			
 		case TOLERABLE_FAILURE:
 			return "TOLERABLE_FAILURE";
-			break;
-			
-		case UNSET:
-			return "UNSET";
-			break;
-			
-		case CRITICAL:
-			return "CRITICAL";
-			break;
-			
-		case NEW:
-			return "NEW";
-			break;
-			
-		case MIDPOINT:
-			return "MIDPOINT";
-			break;
-			
-		case ISOLATED:
-			return "ISOLATED";
 			break;
 			
 		case NULLSPACE:
@@ -137,7 +125,7 @@ std::string enum_lookup(int flag)
 		default:
 			break;
 	}
-	
+	}
 	return "unknown...  check out data_type.cpp";
 }
 
@@ -1032,9 +1020,9 @@ void real_threshold(comp_mp blabla, double threshold)
 	comp_d temp;
 	mp_to_d(temp, blabla);
 	
-//    if (fabs(temp->r) < threshold) {
-//		mpf_set_str( blabla->r, "0.0", 10);
-//	}
+   if (fabs(temp->r) < threshold) {
+		mpf_set_str( blabla->r, "0.0", 10);
+	}
 	
 	if (fabs(temp->i) < threshold) {
 		mpf_set_str( blabla->i, "0.0", 10);
@@ -1055,9 +1043,9 @@ void real_threshold(vec_mp blabla, double threshold)
 	for (int ii=0; ii<blabla->size; ii++) {
 		mp_to_d(temp, &blabla->coord[ii]);
         
-//        if (fabs(temp->r) < threshold) {
-//			mpf_set_str( blabla->coord[ii].r, "0.0", 10);
-//		}
+       if (fabs(temp->r) < threshold) {
+			mpf_set_str( blabla->coord[ii].r, "0.0", 10);
+		}
 		
 		if (fabs(temp->i) < threshold) {
 			mpf_set_str( blabla->coord[ii].i, "0.0", 10);

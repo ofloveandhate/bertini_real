@@ -252,7 +252,7 @@ void Curve::adaptive_sampler_movement(VertexSet & V,
 					
 					
 					vec_cp_mp(temp_vertex.point(),Wnew.point(0));
-					temp_vertex.set_type(CURVE_SAMPLE_POINT);
+					temp_vertex.set_type(Curve_sample_point);
 					
                     if (sampler_options.no_duplicates){
 						new_indices[sample_counter] = index_in_vertices_with_add(V, temp_vertex);
@@ -571,7 +571,7 @@ void Curve::adaptive_sampler_distance(VertexSet & V,
 					
 					
 					vec_cp_mp(temp_vertex.point(),Wnew.point(0));
-					temp_vertex.set_type(CURVE_SAMPLE_POINT);
+					temp_vertex.set_type(Curve_sample_point);
 					
                     if (sampler_options.no_duplicates){
 						new_indices[sample_counter] = index_in_vertices_with_add(V, temp_vertex);
@@ -803,7 +803,7 @@ void Curve::SemiFixedSampler(VertexSet & V,
 			}
 			
 			vec_cp_mp(temp_vertex.point(),Wnew.point(0));
-			temp_vertex.set_type(CURVE_SAMPLE_POINT);
+			temp_vertex.set_type(Curve_sample_point);
 			
 			if (sampler_options.no_duplicates){
 				sample_indices_[ii][jj] = index_in_vertices_with_add(V, temp_vertex);
@@ -972,7 +972,7 @@ void Curve::fixed_sampler(VertexSet & V,
 			}
 			
 			vec_cp_mp(temp_vertex.point(),Wnew.point(0));
-			temp_vertex.set_type(CURVE_SAMPLE_POINT);
+			temp_vertex.set_type(Curve_sample_point);
 			
 			if (sampler_options.no_duplicates){
 				sample_indices_[ii][jj] = index_in_vertices_with_add(V, temp_vertex);

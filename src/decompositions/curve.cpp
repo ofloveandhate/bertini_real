@@ -211,7 +211,11 @@ int Curve::compute_critical_points(const WitnessSet & W_curve,
 	W_crit_real.sort_for_real(&solve_options.T);
 	W_crit_real.sort_for_unique(&solve_options.T);
 	
-	
+	if (program_options.verbose_level()>=2)
+	{
+		std::cout << color::green() << "the critical points of the curve:\n\n" << color::console_default();
+		W_crit_real.print_to_screen();
+	}
 	
 	if (have_sphere()) {
 		W_crit_real.sort_for_inside_sphere(sphere_radius(), sphere_center());
@@ -429,7 +433,7 @@ int Curve::interslice(const WitnessSet & W_curve,
 		if (program_options.verbose_level()>=8)
 			printf("adding point %u of %zu from W_crit_real to vertices\n",ii,W_crit_real.num_points());
 		temp_vertex.set_point( W_crit_real.point(ii));
-		temp_vertex.set_type(CRITICAL); // set type
+		temp_vertex.set_type(Critical); // set type
 		
 		int I = index_in_vertices_with_add(V, temp_vertex);
 		crit_point_counter[I] = 0;
@@ -507,13 +511,14 @@ int Curve::interslice(const WitnessSet & W_curve,
 
 	
 	
-	
-    for (int ii=0; ii<num_midpoints; ii++) {
-		std::vector<int> bad_crit = V.assert_projection_value(found_indices_crit[ii], &crit_downstairs->coord[ii]);
-        std::vector<int> bad_mid = V.assert_projection_value(found_indices_mid[ii], &midpoints_downstairs->coord[ii]);
-    }
-	std::vector<int> bad_crit = V.assert_projection_value(found_indices_crit[num_midpoints], &crit_downstairs->coord[num_midpoints]);
-	
+	if (1)
+	{
+	    for (int ii=0; ii<num_midpoints; ii++) {
+			std::vector<int> bad_crit = V.assert_projection_value(found_indices_crit[ii], &crit_downstairs->coord[ii]);
+	        std::vector<int> bad_mid = V.assert_projection_value(found_indices_mid[ii], &midpoints_downstairs->coord[ii]);
+	    }
+		std::vector<int> bad_crit = V.assert_projection_value(found_indices_crit[num_midpoints], &crit_downstairs->coord[num_midpoints]);
+	}
 	
 	
 	
@@ -549,18 +554,20 @@ int Curve::interslice(const WitnessSet & W_curve,
 	else
 	{
 		
-		// since we are not merging, we need to NOT leave the type indicator as NEW, because it may throw off later merges.
+		// since we are not merging, we need to NOT leave the type indicator as , because it may throw off later merges.
 		for (std::set<int>::iterator setiter = found_indices_right.begin(); setiter != found_indices_right.end(); setiter++) {
 			int curr_index = *setiter;
-			if (V[curr_index].type()==NEW) { // only need to look at one of right and left here.
-				V[curr_index].set_type(SEMICRITICAL);
+			if (V[curr_index].is_type(New)) { // only need to look at one of right and left here.
+				V[curr_index].set_type(Semicritical);
+				V[curr_index].remove_type(New);
 			}
 		}
 		
 		for (std::set<int>::iterator setiter = found_indices_left.begin(); setiter != found_indices_left.end(); setiter++) {
 			int curr_index = *setiter;
-			if (V[curr_index].type()==NEW) { // only need to look at one of right and left here.
-				V[curr_index].set_type(SEMICRITICAL);
+			if (V[curr_index].is_type(New)) { // only need to look at one of right and left here.
+				V[curr_index].set_type(Semicritical);
+				V[curr_index].remove_type(New);
 			}
 		}
 		
@@ -617,7 +624,7 @@ void Curve::MidSlice(int& edge_counter,
 		
 		if (program_options.verbose_level()>=2) {
 			printf("solving midpoints upstairs %zu, projection value ",ii);
-			print_comp_matlab(&particular_projection->coord[0],"p");
+			print_comp_matlab(&midpoints_downstairs->coord[ii],"p");
 		}
 		
 		SolverOutput fillme;
@@ -907,7 +914,7 @@ void Curve::ConnectTheDots(
 					}
 					else{
 						temp_vertex.set_point( midpoint_witness_sets[ii].point(kk) ) ;
-						temp_vertex.set_type(PROBLEMATIC); // set type
+						temp_vertex.set_type(Problematic); // set type
 						index_in_vertices_with_add(V, temp_vertex);
 					}
 				}
@@ -930,18 +937,18 @@ void Curve::ConnectTheDots(
 			Edge temp_edge;
 
 			temp_vertex.set_point( midpoint_witness_sets[ii].point(kk) );
-			temp_vertex.set_type(MIDPOINT); // set type
+			temp_vertex.set_type(Midpoint); // set type
 			
 			temp_edge.midpt(index_in_vertices_with_add(V, temp_vertex)); // gets the index of the new midpoint as it is added
 			
 			temp_vertex.set_point( Wleft.point(kk) );
-			temp_vertex.set_type(NEW); // set type
+			temp_vertex.set_type(New); // set type
 			
 			temp_edge.left(index_in_vertices_with_add(V, temp_vertex));
 			
 			
 			temp_vertex.set_point( Wright.point(kk) );
-			temp_vertex.set_type(NEW); // set type
+			temp_vertex.set_type(New); // set type
 			
 			temp_edge.right(index_in_vertices_with_add(V, temp_vertex));
 			
@@ -1016,11 +1023,11 @@ std::vector<int> Curve::GetMergeCandidates(const VertexSet & V) const
 	default_found_edges.push_back(-1);
     
 	
-	// looking for edges with the type NEW, by looking at the left endpoint
+	// looking for edges with the type New, by looking at the left endpoint
 	for (unsigned int tentative_right_edge=0; tentative_right_edge < this->num_edges_; tentative_right_edge++) {
 //		std::cout << "looking at edge " << tentative_right_edge << " for merge candidate" << std::endl;
 		
-		if (V[edges_[tentative_right_edge].left()].type() == NEW && V[edges_[tentative_right_edge].right()].type() != NEW) {
+		if (V[edges_[tentative_right_edge].left()].type() == New && V[edges_[tentative_right_edge].right()].type() != New) {
 			// found a starting point for the merges
 			
 			if (edges_[tentative_right_edge].is_degenerate())
@@ -1051,7 +1058,7 @@ std::vector<int> Curve::GetMergeCandidates(const VertexSet & V) const
 				tentative_edge_list.push_back(tentative_left_edge);
 				
 				
-				if (V[edges_[tentative_left_edge].left()].type() != NEW) {
+				if (V[edges_[tentative_left_edge].left()].type() != New) {
 					break;
 				}
 				
@@ -1190,7 +1197,7 @@ void Curve::Merge(WitnessSet & W_midpt,
         // each member of W_temp should real.  if a member of V already, mark index.  else, add to V, and mark.
 		Vertex temp_vertex;
 		temp_vertex.set_point( W_temp.point(0) );
-		temp_vertex.set_type(MIDPOINT);
+		temp_vertex.set_type(Midpoint);
 		
 		Edge temp_edge; // create new empty edge
 		
@@ -1674,7 +1681,7 @@ void Curve::computeCurveNotSelfConj(const WitnessSet		&W_in,
 	
 	Vertex temp_vertex;
 	change_size_vec_mp(temp_vertex.point(),num_vars); temp_vertex.point()->size = num_vars;
-	temp_vertex.set_type(ISOLATED);
+	temp_vertex.set_type(Isolated);
 	
 	
 	vec_mp cur_sol,cur_sol_bar;

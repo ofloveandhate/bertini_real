@@ -7,7 +7,7 @@
 
 
 
-int Decomposition::add_witness_set(const WitnessSet & W, int add_type, VertexSet & V)
+int Decomposition::add_witness_set(const WitnessSet & W, VertexType add_type, VertexSet & V)
 {
 #ifdef functionentry_output
 	std::cout << "Decomposition::add_witness_set" << std::endl;

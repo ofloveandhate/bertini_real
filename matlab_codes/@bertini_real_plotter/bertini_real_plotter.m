@@ -106,6 +106,10 @@ classdef bertini_real_plotter < handle
 				return;
 			end
 			
+			if ~isfield(br_plotter.BRinfo,'run_metadata')
+				br_plotter.BRinfo.run_metadata.version.number = 103;
+			end
+			
 			if br_plotter.options.use_custom_projection
 				preprocess_data(br_plotter);
 			end

@@ -189,6 +189,8 @@ void UbermasterProcess::bertini_real(WitnessSet & W, vec_mp *pi, VertexSet & V)
 			break;
 	}
 	
+	program_options.PrintMetadata(program_options.output_dir() / "run_metadata");
+	program_options.PrintPointTypeMapping(program_options.output_dir() / "vertex_types");
 }
 
 
