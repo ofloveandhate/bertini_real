@@ -2116,13 +2116,17 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 		// candidates
 		std::set< int > found_edges;
 		std::set< int > possible_edges;
+		std::set< int > remaining_possible_edges;
 		
 		
-		for (unsigned int rr = 0; rr< target_critslice.num_edges(); rr++){
-			possible_edges.insert(rr);}
+		for (unsigned int rr = 0; rr< target_critslice.num_edges(); rr++)
+		{
+			possible_edges.insert(rr);
+			remaining_possible_edges.insert(rr);
+		}
 		
 		
-		while ((current_top_ind != final_top_ind) && (possible_edges.size()>0)) // int yy=0; yy<target_critslice.num_edges; yy++
+		while ((current_top_ind != final_top_ind) && (remaining_possible_edges.size()>0)) // int yy=0; yy<target_critslice.num_edges; yy++
 		{
 			
 			std::cout << "target bottom: " << final_bottom_ind << " current bottom: " << current_bottom_ind << " current top: " << current_top_ind << " final top: " << final_top_ind << std::endl;
@@ -2135,7 +2139,7 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 
 			
 			int candidate_counter = 0;
-			for (std::set<int>::iterator poss_iter=possible_edges.begin(); poss_iter != possible_edges.end(); poss_iter++) {
+			for (std::set<int>::iterator poss_iter=remaining_possible_edges.begin(); poss_iter != remaining_possible_edges.end(); poss_iter++) {
 				
 				int qq = *poss_iter;
 				
@@ -2152,9 +2156,18 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 					correct_interval =  ( mpf_get_d(temp3->r) > mpf_get_d(temp->r)) && (mpf_get_d(temp->r) > mpf_get_d(temp2->r)) ;
 				}
 				
+				// we gotta be moving from lower to higher...  so temp > temp2 is required
+				bool within_bounds = false;
+				if (matches_end) {
+					set_mp(temp , &(V[ target_critslice.get_edge(qq).right()].projection_values())->coord[1]);
+					set_mp(temp2, &(V[ final_bottom_ind].projection_values())->coord[1]);
+					set_mp(temp3, &(V[ final_top_ind].projection_values())->coord[1]);
+					within_bounds =  ( mpf_get_d(temp3->r) >= mpf_get_d(temp->r)) && (mpf_get_d(temp->r) > mpf_get_d(temp2->r)) ;
+				}
+
 				bool degenerate = target_critslice.get_edge(qq).is_degenerate();
 				
-				if ( (!already_found) && matches_end && correct_interval && (!degenerate) ) { //
+				if ( (!already_found) && matches_end && correct_interval && (!degenerate) && within_bounds ) { //
 					candidates.push_back(qq);
 					
 					if (program_options.verbose_level()>=1) {
@@ -2186,7 +2199,7 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 			
 			
 			if (candidate_counter==0) {
-				std::cout << "found 0 candidates for bottom index " << current_bottom_ind << std::endl;
+				std::cout << color::red() << "found 0 candidates for bottom index " << current_bottom_ind << color::console_default() << std::endl;
 				break; // out of the while loop
 			}
 			
@@ -2286,41 +2299,48 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 				
 				if (W_new.num_points()==0) {
 					std::cout << color::red() << "midpoint tracker did not return any points :(" << color::console_default() << std::endl;
-					possible_edges.erase(current_edge);
+					remaining_possible_edges.erase(current_edge);
 					continue;
 				}
 				
-				vec_mp top_found, bottom_found;  init_vec_mp(top_found,md_config.num_top_vars());
-				init_vec_mp(bottom_found,md_config.num_bottom_vars());
 				
 				// get only the midpoint coordinates out of the returned point
 				for (int tt = 0; tt<this->num_variables(); tt++) {
 					set_mp(&found_point->coord[tt], & W_new.point(0)->coord[tt]);
 				}
 				
-				int offset = md_config.num_mid_vars();
-				// get only the bottom coordinates out of the returned point
-				for (int tt = 0; tt<md_config.num_bottom_vars(); tt++) {
-					set_mp(&bottom_found->coord[tt], & W_new.point(0)->coord[offset+tt]);
-				}
-				
-				offset += md_config.num_bottom_vars();
-				// get only the top coordinates out of the returned point
-				for (int tt = 0; tt<md_config.num_top_vars(); tt++) {
-					set_mp(&top_found->coord[tt], & W_new.point(0)->coord[offset+tt]);
-				}
-				
 				//need to look the found point up in vertex set V
 				int found_index = index_in_vertices(V, found_point);
-				std::cout << index_in_vertices(V, bottom_found) << " bottom_found" << std::endl;
-				std::cout << index_in_vertices(V, top_found) << " top_found" << std::endl;
+
 				
-				clear_vec_mp(bottom_found);
-				clear_vec_mp(top_found);
+				
+				
+				
+				
+				
 				
 				
 				if (solve_options.verbose_level()>=0) {
+					vec_mp top_found, bottom_found;  init_vec_mp(top_found,md_config.num_top_vars());
+					init_vec_mp(bottom_found,md_config.num_bottom_vars());
+
+					int offset = md_config.num_mid_vars();
+					// get only the bottom coordinates out of the returned point
+					for (int tt = 0; tt<md_config.num_bottom_vars(); tt++) {
+						set_mp(&bottom_found->coord[tt], & W_new.point(0)->coord[offset+tt]);
+					}
+					
+					offset += md_config.num_bottom_vars();
+					// get only the top coordinates out of the returned point
+					for (int tt = 0; tt<md_config.num_top_vars(); tt++) {
+						set_mp(&top_found->coord[tt], & W_new.point(0)->coord[offset+tt]);
+					}
+					print_point_to_screen_matlab(found_point,"found_point");
+					std::cout << index_in_vertices(V, bottom_found) << " bottom_found" << std::endl;
+					std::cout << index_in_vertices(V, top_found) << " top_found" << std::endl;
 					std::cout << "found_index of point: " << found_index << std::endl;
+					clear_vec_mp(bottom_found);
+					clear_vec_mp(top_found);
 				}
 				
 				if (solve_options.verbose_level()>=1) {
@@ -2337,7 +2357,7 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 				
 				//search among the current edge possibilities for the one containing the found (mid) point
 				int index_in_set = -1;
-				for (std::set<int>::iterator possibility_iter=possible_edges.begin(); possibility_iter!=possible_edges.end(); possibility_iter++) {
+				for (std::set<int>::iterator possibility_iter=remaining_possible_edges.begin(); possibility_iter!=remaining_possible_edges.end(); possibility_iter++) {
 					if (found_index == target_critslice.get_edge(*possibility_iter).midpt()) {
 						index_in_set = *possibility_iter;
 						break;
@@ -2349,14 +2369,24 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 				if (index_in_set < 0) {
 					index_in_set = target_critslice.edge_w_removed(found_index);
 					
-					if (index_in_set>=0 && solve_options.verbose_level()>=1) {
+					if (index_in_set>=0 && solve_options.verbose_level()>=0) {
 						std::cout << color::green() << "found point as removed point from edge " << index_in_set << color::console_default() << std::endl;
 					}
 				}
 				
+
+				//search among the overall set of possibilities.  this includes ones we have already tracked to.
+				if (index_in_set < 0) {
+					for (std::set<int>::iterator possibility_iter=possible_edges.begin(); possibility_iter!=possible_edges.end(); possibility_iter++) {
+						if (found_index == target_critslice.get_edge(*possibility_iter).midpt()) {
+							index_in_set = *possibility_iter;
+							break;
+						}
+					}
+				}
 				
 				if (index_in_set < 0 && solve_options.verbose_level()>=0) {
-					std::cout << color::red() << "did not find the indexed point as the midpoint of any current possibility." << color::console_default() << std::endl;
+					std::cout << color::blue() << "did not find the indexed point as the midpoint of any current possibility." << color::console_default() << std::endl;
 				}
 				
 				//perhaps check for the point as left or right point of an edge?
@@ -2366,9 +2396,8 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 					int next_edge = index_in_set; // index the *edge*
 					
 					if (program_options.verbose_level()>=0) {
-						std::cout << "added_edge " << next_edge << ", l m r: " << target_critslice.get_edge(next_edge).left() << " " << target_critslice.get_edge(next_edge).midpt() << " " << target_critslice.get_edge(next_edge).right() << std::endl;
+						std::cout << "added_edge " << next_edge << ", l m r: " << target_critslice.get_edge(next_edge).left() << " " << target_critslice.get_edge(next_edge).midpt() << " " << target_critslice.get_edge(next_edge).right() << "\n\n";
 					}
-					
 					
 					
 					
@@ -2387,8 +2416,8 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 					found_edges.insert(next_edge);
 					
 					// erase both the currently testing edge, and the found one, from the list of possibilities.
-					possible_edges.erase(current_edge);
-					possible_edges.erase(next_edge);
+					remaining_possible_edges.erase(current_edge);
+					remaining_possible_edges.erase(next_edge);
 					
 					
 					// add the next edge to the set we can connect together.
@@ -2405,7 +2434,7 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 				else
 				{
 					//didn't find, so simply remove from the list of possibilities.
-					possible_edges.erase(current_edge);
+					remaining_possible_edges.erase(current_edge);
 				}
 				
 			}//re: for qq
