@@ -1360,7 +1360,7 @@ public:
 		cycle_number_ = c;
 	}
 
-	auto CycleNumber() const
+	int CycleNumber() const
 	{
 		return cycle_number_;
 	}
