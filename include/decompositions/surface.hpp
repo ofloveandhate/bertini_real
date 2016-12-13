@@ -314,13 +314,13 @@ public:
 	}
 	
 	inline
-	auto NumMidSlices() const
+	size_t NumMidSlices() const
 	{
 		return mid_slices_.size();
 	}
 
 	inline
-	auto NumCritSlices() const
+	size_t NumCritSlices() const
 	{
 		return crit_slices_.size();
 	}
