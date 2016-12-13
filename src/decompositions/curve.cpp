@@ -511,7 +511,7 @@ int Curve::interslice(const WitnessSet & W_curve,
 
 	
 	
-	if (0)
+	if (1)
 	{
 	    for (int ii=0; ii<num_midpoints; ii++) {
 			std::vector<int> bad_crit = V.assert_projection_value(found_indices_crit[ii], &crit_downstairs->coord[ii]);
