@@ -141,7 +141,7 @@ void BertiniRealConfig::splash_screen()
 
 
 
-void BertiniRealConfig::display_current_options()
+void BertiniRealConfig::display_current_options() 
 {
 	std::cout << "current options:\n\n";
 	
@@ -168,6 +168,18 @@ void BertiniRealConfig::display_current_options()
 	std::cout << "stifle_text: " << stifle_text() << "\n";
 	std::cout << "matlab_command: " << matlab_command() << "\n";
 	std::cout << "output_directory base name: " << output_dir() << std::endl;
+
+	// Which symbolic Engine
+	switch(symbolic_engine())
+	  {
+	  case SymEngine::Matlab:
+	    std::cout << "Using Matlab as the symbolic engine.\n";
+	    break;
+	  case SymEngine::Python:
+	    std::cout << "Using Python as the symbolic engine.\n";
+	    break;
+	  }
+
 	
 }
 
@@ -200,12 +212,13 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 			{"version",		no_argument,			 0, 'v'}, {"v",		no_argument,			 0, 'v'},
 			{"help",		no_argument,			 0, 'h'}, {"h",		no_argument,			 0, 'h'},
 			{"mode",required_argument,0,'M'}, {"m",required_argument,0,'M'},
+			{"symengine",required_argument,0,'E'},{"E",required_argument,0, 'E'},
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
 		
-		choice = getopt_long_only (argc, argv, "d:c:Dg:V:o:smp:S:i:qvhM:", // if followed by colon, requires option.  two colons is optional
+		choice = getopt_long_only (argc, argv, "d:c:Dg:V:o:smp:S:i:qvhM:E:", // if followed by colon, requires option.  two colons is optional
 								   long_options, &option_index);
 		
 		/* Detect the end of the options. */
@@ -307,6 +320,33 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 				
 				break;
 			}
+
+			case 'E': // symbolic Engine
+			{
+			  std::string use_engine = optarg;
+
+			  // converting input_engine to lowercase
+			  std::transform(use_engine.begin(),use_engine.end(),use_engine.begin(), ::tolower);
+			  std::string check1="matlab";
+			  std::string check2="python";
+				
+			  if (use_engine.compare(check1)==0) 
+				{
+					this->engine_ = SymEngine::Matlab;
+				}
+			  else if (use_engine.compare(check2)==0) 
+				{
+					this->engine_ = SymEngine::Python;
+				}
+				else
+				{
+					std::cout << "bad mode of symbolic engine.  acceptable options are Matlab and Python." << std::endl;
+					exit(0);
+				}
+				
+				break; 
+			}
+
 			case '?':
 				/* getopt_long already printed an error message. */
 				break;
@@ -358,6 +398,7 @@ void BertiniRealConfig::print_usage()
 	printf("-q -quick\t\t\t --\n");
 	printf("-debug\t\t\t --\n");
 	printf("-gammatrick\t\t\t bool\n");
+	printf("-symengine -E\t\t\t 'symengine'\n");
 	printf("\n\n\n");
 	return;
 }
@@ -397,6 +438,7 @@ void BertiniRealConfig::init()
 	merge_edges_ = true;
 	
 	primary_mode_ = BERTINIREAL;
+	engine_ = SymEngine::Matlab; // setting default to Matlab symbolic engine
 	
 	return;
 }
@@ -444,6 +486,7 @@ void sampler_configuration::print_usage()
 	printf("-maxits -m \t\t\tint\n");
 	printf("-gammatrick -g \t\t\tbool\n");
 	printf("-fixed \t\t\tint number samples per edge\n");
+	printf("-symengine -E \t\t\tsymbolic engine being used\n");
 	printf("\n\n\n");
 	return;
 }
@@ -479,7 +522,7 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
 		
-		choice = getopt_long_only (argc, argv, "bdf:svt:g:V:m:h",
+		choice = getopt_long_only (argc, argv, "bdf:svt:g:V:m:hE:",
 															 long_options, &option_index);
 		
 		/* Detect the end of the options. */
@@ -538,7 +581,7 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 				sampler_configuration::print_usage();
 				exit(0);
 				break;
-				
+			  
 			case '?':
 				/* getopt_long already printed an error message. */
 				break;

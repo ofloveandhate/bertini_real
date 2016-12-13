@@ -66,6 +66,35 @@ void createMatlabDeflation(FILE *OUT,
 
 
 /**
+ \brief Create a python .py file to perform symbolic determinants of minors.
+ 
+ Write a .py file, which must be called by python, to perform symbolic deflation of a system.  Computes minors of the Jacobian matrix, and write them into a new system.
+ 
+ \param OUT an open file to which to write
+ \param numVars the number of variables 
+ \param vars The names of the variables
+ \param lineVars the lines on which the variables occur.
+ \param numConstants the number of constants
+ \param consts the names of the constants
+ \param lineConstants the lines on which the constants appear
+ \param numFuncs the number of functions in the input file being deflated
+ \param funcs the functions being deflated
+ \param lineFuncs the lines on which the functions appear.
+ \param IN open file from which to read.
+ \param minorSize the size of the minor matrices to append determinants of.
+ \param degrees the degrees of the functions
+ \param deflation_number the integer index of the deflation iteration.
+ */
+void createPythonDeflation(FILE *OUT,
+						   int numVars, char **vars, int *lineVars,
+						   int numConstants, char **consts, int *lineConstants,
+						   int numFuncs, char **funcs, int *lineFuncs,
+						   FILE *IN,
+						   int minorSize, int *degrees, int deflation_number);
+
+
+
+/**
  \brief setup input file for one deflation iteration
  
  \param declarations The numbers of various types of items appearing in the input file
@@ -76,7 +105,7 @@ void createMatlabDeflation(FILE *OUT,
  */
 void isosingular_deflation_iteration(int *declarations,
 									 boost::filesystem::path inputOutputName,
-									 std::string matlab_command, int nullSpaceDim, int deflation_number);
+									 BertiniRealConfig & program_options, int nullSpaceDim, int deflation_number);
 
 
 
