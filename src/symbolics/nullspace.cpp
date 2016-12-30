@@ -1033,51 +1033,52 @@ void create_nullspace_system(boost::filesystem::path output_name,
 	// setup functions
 	rewind(IN);
 	parse_names(&numFuncs, &funcs, &lineFuncs, IN, const_cast< char *>("function"), declarations[9]);
-	
+	rewind(IN);
 
-	// INSERT SWITCH FOR MATLAB / PYTHON HERE
-	auto engine = program_options.symbolic_engine();
 
-	// MATLAB SECTION
-	if (engine == SymEngine::Matlab)
-	  {
-		rewind(IN);
+	switch (program_options.symbolic_engine())
+	{
+		case SymEngine::Matlab:
+		{
+			std::cout << "using matlab to create critical system\n\n";
+			
+			// setup Matlab script
+			create_matlab_determinantal_system("matlab_nullspace_system.m", "func_input_real",
+							   ns_config, numVars, vars, lineVars, numConstants,
+							   consts, lineConstants, numFuncs, funcs, lineFuncs);
 
-		// setup Matlab script
-		create_matlab_determinantal_system("matlab_nullspace_system.m", "func_input_real",
-						   ns_config, numVars, vars, lineVars, numConstants,
-						   consts, lineConstants, numFuncs, funcs, lineFuncs);
+			// run Matlab script
+			std::stringstream converter;
+			converter << program_options.matlab_command() << " matlab_nullspace_system";
+			system(converter.str().c_str());
+			converter.clear(); converter.str("");
+			break;
+		}
 
-		// run Matlab script
-		std::stringstream converter;
-		converter << program_options.matlab_command() << " matlab_nullspace_system";
-		system(converter.str().c_str());
-		converter.clear(); converter.str("");
-	  }
+		case SymEngine::Python:
+		{
+			std::cout << "using python to create critical system\n\n";
 
-	// PYTHON SECTION
-	else if (engine == SymEngine::Python)
-	  {
-		rewind(IN);
-		OUT = safe_fopen_write("python_nullspace_system.py");
+			OUT = safe_fopen_write("python_nullspace_system.py");
 
-		
-		create_python_determinantal_system(OUT, IN,
-						   ns_config, numVars, vars, lineVars, numConstants,
-						   consts, lineConstants, numFuncs, funcs, lineFuncs);
+			std::cout << "creating python script\n\n";
+			create_python_determinantal_system(OUT, IN,
+							   ns_config, numVars, vars, lineVars, numConstants,
+							   consts, lineConstants, numFuncs, funcs, lineFuncs);
 
-		fclose(OUT);
+			fclose(OUT);
 
-		// run Python script
-		execlp("python", "python", "python_nullspace_system.py", (char*) NULL);
-	  }
-
-	else
-	  {
-		printf("There was an error with choosing a nullspace symbolic engine. BIG ERROR, GO FIX!");
-	  }
+			// run Python script
+			std::cout << "invoking python\n\n";
+			system("python python_nullspace_system.py");
+			// execlp("python", "python", "python_nullspace_system.py", (char*) NULL);
+			std::cout << "done invoking python\n\n";
+			break;
+		}
+	} 
 
 	fclose(IN);
+
 
 	// setup new file	
 	OUT = safe_fopen_write(output_name.c_str());
@@ -1350,7 +1351,7 @@ void create_python_determinantal_system( FILE *OUT,
  * NOTES:                                                        *
  \***************************************************************/
 {
-  int ii, lineNumber = 1, declares = 0, strSize = 1, cont = 1, strLength = 0;
+	int ii, lineNumber = 1, declares = 0, strSize = 1, cont = 1, strLength = 0;
 	char *str = (char *)br_malloc(strSize * sizeof(char));
 
 	char ch;
