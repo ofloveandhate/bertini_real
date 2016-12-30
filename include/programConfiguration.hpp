@@ -7,7 +7,10 @@
 #include <map>
 #include <getopt.h> 
 #include <queue>
+
+#include <algorithm>
 #include <boost/timer/timer.hpp>
+
 
 #include "bertini1/bertini_extensions.hpp"
 
@@ -15,6 +18,8 @@
 
 
 enum {BERTINIREAL=-9000,CRIT=-8999};
+
+enum class SymEngine{Matlab, Python}; // this is to indicate which symbolic engine will run the decompositions; currently default is Matlab
 
 ///////////
 //
@@ -408,7 +413,7 @@ class BertiniRealConfig : public ProgramConfigBase
 	
 	bool use_gamma_trick_; ///< indicator for whether to use the gamma trick in a particular solver.
 	
-	
+        SymEngine engine_; ///< the symbolic class variable that indicates which symbolic engine the user desires. Default is currently Matlab	
 	
 	
 	
@@ -711,20 +716,24 @@ public:
 	{
 		return orthogonal_projection_;
 	}
-	
-	
-	
-	
-	
-	
 
-	
-	
-	
-	
-	
-	
-	
+        /**
+        get which symbolic engine is being used. The default (currently) is Matlab
+        \return whether we are using Matlab or Python. default is Matlab
+        */
+
+        SymEngine symbolic_engine() const
+        {
+	  return engine_;
+	}
+
+       /** 
+       \brief set which symbolic engine is being used. 
+       */
+  	void symbolic_engine(SymEngine new_engine_)
+	{
+	  engine_ = new_engine_;
+	}
 	
 	/** 
 	 \brief  display options to user. */
@@ -769,6 +778,11 @@ public:
 	
 	void init();
 	
+	SymEngine sym_engine() {
+		return engine_;
+	}
+
+
 }; //re: BertiniRealConfig
 
 

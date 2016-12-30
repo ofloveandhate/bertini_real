@@ -3,7 +3,7 @@
 
 
 int isosingular_deflation(int *num_deflations, int **deflation_sequence,
-						  BertiniRealConfig & program_options,
+			  BertiniRealConfig & program_options,  
 						  boost::filesystem::path inputFile,
 						  boost::filesystem::path witness_point_filename,
 						  boost::filesystem::path output_name,
@@ -52,7 +52,7 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
 	// loop until successful or run out of iterations
 	while (*num_deflations < max_deflations && !success)
 	{ // create input file for deflation
-		isosingular_deflation_iteration(declarations, "func_input_real", program_options.matlab_command(), nullSpace, *num_deflations + 1);
+		isosingular_deflation_iteration(declarations, "func_input_real", program_options, nullSpace, *num_deflations + 1);
 		
 		// setup input file to test for stabilization
 		stabilization_input_file("input_stabilization_test", "func_input_real", "config_real");
@@ -140,7 +140,7 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
 
 void isosingular_deflation_iteration(int *declarations,
 									 boost::filesystem::path inputOutputName,
-									 std::string matlab_command,
+				      BertiniRealConfig & program_options, 
 									 int nullSpaceDim,
 									 int deflation_number)
 {
@@ -180,23 +180,50 @@ void isosingular_deflation_iteration(int *declarations,
 	for (ii = 0; ii < numFuncs; ii++)
 		fscanf(OUT, "%d", &degrees[ii]);
 	fclose(OUT);;
-	
-	// setup Matlab script
-	rewind(IN);
-	
-	OUT = safe_fopen_write("matlab_deflate.m");
-	minorSize = numVars - declarations[1] - nullSpaceDim + 1;
-	createMatlabDeflation(OUT, numVars, vars, lineVars, numConstants, consts, lineConstants, numFuncs, funcs, lineFuncs, IN, minorSize, degrees, deflation_number);
-	fclose(OUT);
-	
-	// run Matlab script
-	printf("\nPerforming an isosingular deflation\n");
-	
-	std::stringstream converter;
-	converter << matlab_command << "matlab_deflate";
-	system(converter.str().c_str());
-	converter.clear(); converter.str("");
-	
+
+
+	// INSERT SWITCH FOR MATLAB / PYTHON HERE
+	auto engine = program_options.symbolic_engine();
+
+	// MATLAB SECTION
+	if (engine == SymEngine::Matlab)
+	  {
+	    auto matlab_command = program_options.matlab_command(); 
+	    // setup Matlab script
+	    rewind(IN);
+
+	    OUT = safe_fopen_write("matlab_deflate.m");
+	    minorSize = numVars - declarations[1] - nullSpaceDim + 1;
+	    createMatlabDeflation(OUT, numVars, vars, lineVars, numConstants, consts, lineConstants, numFuncs, funcs, lineFuncs, IN, minorSize, degrees, deflation_number);
+	    fclose(OUT);
+
+	    // run Matlab script
+	    printf("\nPerforming an isosingular deflation\n");
+
+	    std::stringstream converter;
+	    converter << matlab_command << "matlab_deflate";
+	    system(converter.str().c_str());
+	    converter.clear(); converter.str("");
+	  }
+
+	// PYTHON SECTION
+        else if (engine == SymEngine::Python)
+	  {
+	    // Create Python Script
+	    rewind(IN);
+	    OUT = safe_fopen_write("python_deflate.py");	    
+	    minorSize = numVars - declarations[1] - nullSpaceDim + 1;
+	    createPythonDeflation(OUT, numVars, vars, lineVars, numConstants, consts, lineConstants, numFuncs, funcs, lineFuncs, IN, minorSize, degrees, deflation_number);
+	    fclose(OUT);
+
+	    //run Python script
+	    printf("\nPerforming an isosingular deflation\n");
+	    execlp("python", "python", "python_deflate.py", (char*) NULL);
+	  }
+	else
+	  {
+	    printf("There is no symbolic engine being called for the isosingular deflation.\n BIG PROBLEM HERE!!!!");
+	  }
 	
 	WaitOnGeneratedFile("deflation_polynomials_declaration");
 	WaitOnGeneratedFile("deflation_polynomials");
@@ -407,6 +434,282 @@ void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 	
 	return;
 }
+
+
+void createPythonDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs, FILE *IN, int minorSize, int *degrees, int deflation_number)
+/***************************************************************
+ * USAGE: setup a Python script to perform the deflation         *
+ * ARGUMENTS: input file, declaration name, and number of lines  *
+ * RETURN VALUES: Python script                                  *
+ * NOTES:                                                        *
+ ***************************************************************/
+{
+  int ii, lineNumber = 1, cont = 1, declares = 0, strLength = 0, strSize = 1;
+  char ch;
+  char *str = (char *)br_malloc(strSize * sizeof(char));
+
+  //setup Python libraries
+  fprintf(OUT, "import numpy as np\nfrom numpy import array\n");
+  fprintf(OUT, "import math\nimport itertools\nfrom itertools import combinations\n");
+  fprintf(OUT, "import sympy as sp\nfrom sympy import *\n");
+  fprintf(OUT, "import scipy as sci\nimport pickle\n\n");
+
+  // setup nchoosek function
+  fprintf(OUT,"def my_nchoosek( r, n ):\n");
+  fprintf(OUT,"\tcnt = 0\n");
+  fprintf(OUT,"\tfor i in combinations(range(1,r+1),n):\n");
+  fprintf(OUT,"\t\tif cnt == 0:\n");
+  fprintf(OUT,"\t\t\tR = Matrix([i])\n");
+  fprintf(OUT,"\t\telse:\n");
+  fprintf(OUT,"\t\t\tR_i = Matrix([i])\n");
+  fprintf(OUT,"\t\t\tR = R.row_insert(cnt,R_i)\n");
+  fprintf(OUT,"\t\tcnt = cnt + 1\n");
+  fprintf(OUT,"\treturn R;\n\n");
+
+  // setup Bertini constants in Python
+  fprintf(OUT, "from numpy import pi\nfrom sympy import sin, cos, Matrix, simplify, var\n");
+  fprintf(OUT, "from sympy.abc import I, pi\nI=1j\n");
+
+  // setup variables
+  fprintf(OUT, "\n# variables\n");
+  fprintf(OUT, "var('");
+  for (ii = 0; ii < numVars; ii++)
+    {
+      fprintf(OUT, "%s", vars[ii]);
+      if (ii < numVars-1)
+	fprintf(OUT,", ");
+    }
+  
+  fprintf(OUT, "')\nX = Matrix([");
+  for (ii = 0; ii < numVars; ii++)
+    {
+      fprintf(OUT, "%s", vars[ii]);
+      if (ii < numVars - 1)
+		    fprintf(OUT, ", ");
+	}
+	fprintf(OUT, "])\n");
+	
+	// setup constants
+	if (numConstants > 0)
+	{
+	  fprintf(OUT, "\n# Constants \n");
+	  fprintf(OUT, "var('");
+	  for (ii = 0; ii < numConstants; ii++)
+	    {
+	      fprintf(OUT, "%s", consts[ii]);
+	      if (ii < numConstants-1)
+		fprintf(OUT, ", ");
+	    }
+	  fprintf(OUT, "')\n");
+	}
+
+	// setup degrees
+	fprintf(OUT, "\n# Degrees of the equations\n");
+	fprintf(OUT, "deg = np.array([");
+	for (ii = 0; ii < numFuncs; ii++)
+	  {
+	    fprintf(OUT, "%d", degrees[ii]);
+	    if (ii < numFuncs - 1)
+	      fprintf(OUT, ", ");
+	  }
+	fprintf(OUT, "])\n");
+
+	// copy lines which do not declare items or define constants (keep these as symbolic objects)
+	while (cont)
+	  { // see if this line number declares items
+	    declares = 0;
+	    for (ii = 0; ii < numVars; ii++)
+	      {
+		if (lineNumber == lineVars[ii])
+		  declares = 1;
+	      }
+	    for (ii = 0; ii < numConstants; ii++)
+	      {
+		if (lineNumber == lineConstants[ii])
+		  declares = 1;
+	      }
+	    for (ii = 0; ii < numFuncs; ii++)
+	      {
+		if (lineNumber == lineFuncs[ii])
+		  declares = 1;
+	      }
+
+	    if (declares)
+	      { // move past this line
+		do
+		  { // read in character
+		    ch = fgetc(IN);
+		  } while (ch != '\n' && ch != EOF);
+	      }
+	    else
+	      { // check to see if this defines a constant - line must be of the form '[NAME]=[EXPRESSION];' OR EOF
+		ch = fgetc(IN);
+		if (ch != EOF)
+		  { // definition line
+		    strLength = 0;
+		    do
+		      { // add to str
+			if (strLength + 1 == strSize)
+			  { // increase strSize
+			    strSize *= 2;
+			    str = (char *)br_realloc(str, strSize * sizeof(char));
+			  }
+			str[strLength] = ch;
+			strLength++;
+		      } while ((ch = fgetc(IN)) != '=');
+		    str[strLength] = '\0';
+		    strLength++;
+
+		    // compare against constants
+		    declares = 0;
+		    for (ii = 0; ii < numConstants; ii++)
+		      {
+			if (strcmp(str, consts[ii]) == 0)
+			  declares = 1;
+		      }
+
+		    if (declares)
+		      { // move past this line
+			do
+			  { // read in character
+			    ch = fgetc(IN);
+			  } while (ch != '\n' && ch != EOF);
+		      }
+		    else
+		      { // print line
+			fprintf(OUT, "%s=Matrix([", str);
+			do
+			  { // read in character & print it
+			    ch = fgetc(IN);
+			    if (ch != EOF)
+			      {
+				if (ch == '^')
+				  {
+				    fprintf(OUT, "**");
+				  }
+				else if (ch == ';')
+				  {
+				    fprintf(OUT, "])");
+				  }
+				else
+				  {
+				    fprintf(OUT, "%c", ch);
+				  }
+			      }
+			  } while (ch != '\n' && ch != EOF);
+		      }
+		  }
+	      }
+
+	    // increment lineNumber
+	    lineNumber++;
+
+	    // test for EOF
+	    if (ch == EOF)
+	      cont = 0;
+	  }
+
+	// setup functions
+	fprintf(OUT, "\n# Matrix of the functions\n");
+	fprintf(OUT, "\nF = sp.Matrix(");
+	for (ii = 0; ii < numFuncs; ii++)
+	  {
+	    if(ii == 0)
+	      {
+		fprintf(OUT, "%s)\n", funcs[ii]);
+	      }
+	    else
+	      {
+		fprintf(OUT, "F = F.col_insert(%i,%s)\n", ii,funcs[ii]);
+	      }
+	  }
+	fprintf(OUT, "\n");
+	
+	// compute the jacobian
+	fprintf(OUT, "J = F.jacobian(X)\n");
+	
+	// find the combinations of the rows & columns
+	fprintf(OUT, "\n# getting combinations of the outputs\n");
+	fprintf(OUT, "R = my_nchoosek(%d,%d);\nC = my_nchoosek(%d,%d)\n", numFuncs, minorSize, numVars, minorSize); // changed to nchoosek april 16, 2013 DAB.
+	fprintf(OUT, "\n# getting the sizes of R and C\n");
+	fprintf(OUT, "r_t = Matrix([R.shape])\nc_t = Matrix([C.shape])\n");
+	fprintf(OUT, "\n# Turning the sizes into an array\n");
+	fprintf(OUT, "rv = np.array([r_t])\ncv = np.array([c_t])\n");
+	fprintf(OUT, "\n# Getting the first element in the array of sizes\n");
+	fprintf(OUT, "r = rv.item(0)\nc = cv.item(0)\n");
+	
+	// loop over rows & columns printing the nonzero minors to a file
+	fprintf(OUT, "count = 0;\n");
+	fprintf(OUT, "\n# Opening the first output file\n");
+	fprintf(OUT, "fo = open(\"deflation_polynomials\",\"wb\")\n");
+	fprintf(OUT, "for j in range(1,r+1):\n");
+	fprintf(OUT, "\tfor k in range(1,c+1):\n");
+	fprintf(OUT, "\t\ttemp_R = np.array(R.row(j-1))\n");
+	fprintf(OUT, "\t\ttemp_C = np.array(C.row(k-1))\n");
+	fprintf(OUT, "\n# Calculating whether temp_R is a 1x1 Matrix or not\n");
+	fprintf(OUT, "\t\ttR_s = np.array([temp_R.shape])\n");
+	fprintf(OUT, "\n# Choosing the rows in the determinant\n");
+	fprintf(OUT, "\t\tif tR_s.item(0)*tR_s.item(1) > 1:\n");
+	fprintf(OUT, "\t\t\tmyJ_r = Matrix([J.row(temp_R.item(0)-1),J.row(temp_R.item(1)-1)])\n");
+	fprintf(OUT, "\t\telse:\n");
+	fprintf(OUT, "\t\t\tmyJ_r = Matrix([J.row(temp_R.item(0)-1)])\n");
+	fprintf(OUT, "\n# Calculating whether temp_C is singular or not\n");
+	fprintf(OUT, "\t\ttC_s = np.array([temp_C.shape])\n");
+	fprintf(OUT, "\n# Choosing the columns of the determinant\n");
+	fprintf(OUT, "\t\tif tC_s.item(0)*tC_s.item(1) > 1:\n");
+	fprintf(OUT, "\t\t\tmyA_1a = np.array(myJ_r.col(temp_C.item(0)-1))\n");
+    	fprintf(OUT, "\t\t\tmyA_1b = np.array(myJ_r.col(temp_C.item(1)-1))\n");
+    	fprintf(OUT, "\t\t\tmyA_1 = np.array([[myA_1a.item(0),myA_1b.item(0)],[myA_1a.item(1),myA_1b.item(1)]])\n");
+	fprintf(OUT, "\t\telse:\n");
+	fprintf(OUT, "\t\t\tmyA_1 = np.array([myJ_r.col(temp_C.item(0)-1)])\n");
+	fprintf(OUT, "\t\tmyA = Matrix(myA_1)\n");
+	fprintf(OUT, "\t\tmydet = myA.det()\n");
+	fprintf(OUT, "\t\tA = simplify(mydet)\n");
+	fprintf(OUT, "\t\tif A != 0:\n");
+	fprintf(OUT, "\t\t\tcount = count + 1\n");
+	fprintf(OUT, "\t\t\ttx = temp_R.item(0)-1\n");
+	fprintf(OUT, "\t\t\tif temp_R.size > 1:\n");
+    	fprintf(OUT, "\t\t\t\tty = temp_R.item(1)-1\n");
+	fprintf(OUT, "\t\t\telse:\n");
+	fprintf(OUT, "\t\t\t\tty = 0\n");
+	fprintf(OUT, "\t\t\tmydeg = np.array([deg.item(tx),deg.item(ty)])\n");
+    	fprintf(OUT, "\t\t\tmyprod = np.multiply(mydeg.item(0),mydeg.item(1))\n");
+    	fprintf(OUT, "\t\t\tmyfunc = 2*A/myprod\n");
+    	fprintf(OUT, "\t\t\tmyfunc2 = simplify(myfunc)\n");
+    	fprintf(OUT, "\t\t\tcurr_eqn = str(myfunc)\n");
+    	fprintf(OUT, "\t\t\ttf_i = curr_eqn.find(\"1j\")\n");
+    	fprintf(OUT, "\t\t\tif tf_i != -1:\n");
+    	fprintf(OUT, "\t\t\t\tcurr_eqn = str.replace(\"1j\",\"I\")\n");
+    	fprintf(OUT, "\t\t\tfunc_ida = \"f_1_%%i = \" %% count\n");
+	fprintf(OUT, "\t\t\tfunc_idb = str(curr_eqn)\n");
+	fprintf(OUT, "\t\t\tfunc_id = func_ida+func_idb+\";\\n\"\n");
+    	fprintf(OUT, "\t\t\tfo.write(func_id.replace(\"**\",\"^\"))\n");
+    	fprintf(OUT, "fo.close()\n\n");
+	
+	fprintf(OUT, "\n# Opening the second output file\n");
+    	fprintf(OUT, "fo = open(\"deflation_polynomials_declaration\",\"wb\")\n");
+	fprintf(OUT, "mystr4 = \"\"\n");
+    	fprintf(OUT, "for j in range(1,count+1):\n");
+    	fprintf(OUT, "\tmystr2a = \"f_1_%%i\" %% (j)\n");
+    	fprintf(OUT, "\tif j == count:\n");
+    	fprintf(OUT, "\t\tmystr2b = \";\\n\"\n");
+   	fprintf(OUT, "\telse:\n");
+    	fprintf(OUT, "\t\tmystr2b = \", \"\n");
+    	fprintf(OUT, "\tmystr3 = \"%%s%%s\" %% (mystr2a,mystr2b)\n");
+    	fprintf(OUT, "\tmystr4 = \"%%s%%s\" %% (mystr4,mystr3)\n");
+	fprintf(OUT, "\tif mystr2b == \";\\n\":\n");
+	fprintf(OUT, "\t\tfo.write(mystr4)\n");
+	fprintf(OUT, "\t\tfo.write(\"\\n\")\n");
+
+    	fprintf(OUT, "fo.close()\n\n");
+
+	// clear memory
+	free(str);
+	
+	return;
+}
+
+
 
 
 void stabilization_input_file(boost::filesystem::path outputFile,
