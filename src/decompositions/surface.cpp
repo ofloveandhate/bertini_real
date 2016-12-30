@@ -227,7 +227,6 @@ void Surface::main(VertexSet & V,
 		
 	
 	this->output_main(program_options.output_dir());
-	program_options.PrintPointTypeMapping(program_options.output_dir() / "vertex_types");
 	V.print(program_options.output_dir()/ "V.vertex");
 	
 

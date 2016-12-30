@@ -480,6 +480,9 @@ void Decomposition::output_main(const boost::filesystem::path base) const
 	
 	this->print(base); // using polymorphism and virtualism here!
 	
+	PrintPointTypeMapping(base / "vertex_types");
+
+
 	OUT = safe_fopen_write("Dir_Name");
 	fprintf(OUT,"%s\n",base.c_str());
 	fprintf(OUT,"%d\n",2);//remove this
