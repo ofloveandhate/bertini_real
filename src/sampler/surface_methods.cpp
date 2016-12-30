@@ -787,7 +787,7 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 		var_counter++;
 	}
 	
-	int mid_edge = current_midslice.edge_w_midpt(curr_face.midpt());
+	int mid_edge = current_midslice.nondegenerate_edge_w_midpt(curr_face.midpt());
 	// bottom
 	int offset = var_counter;
 	for (int kk=0; kk<num_bottom_vars; kk++) {
@@ -818,6 +818,18 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 	auto top_edge_index    = top->   nondegenerate_edge_w_midpt(current_midslice.get_edge(mid_edge).right());
 	auto bottom_edge_index = bottom->nondegenerate_edge_w_midpt(current_midslice.get_edge(mid_edge).left());
 	// auto b_edge = bottom->get_edge(bottom_edge_index);
+
+	if (bottom_edge_index<0)
+	{
+		std::cout << color::red() << "unable to find bottom edge w midpoint index " << current_midslice.get_edge(mid_edge).left() << color::console_default() << std::endl;
+	}
+
+	if (top_edge_index<0)
+	{
+		std::cout << color::red() << "unable to find bottom edge w midpoint index " << current_midslice.get_edge(mid_edge).right() << color::console_default() << std::endl;
+	}
+
+
 	auto interval_ind = bottom->ProjectionIntervalIndex(bottom_edge_index,V);
 	auto num_ribs = num_ribs_between_crits[interval_ind];
 	

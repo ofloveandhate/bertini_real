@@ -613,7 +613,7 @@ void Curve::MidSlice(int& edge_counter,
 	////////////////////////////
 	auto num_midpoints = midpoints_downstairs->size;
 
-	solve_options.backup_tracker_config("getting_midpoints");
+	
 	
 	for (size_t ii=0; ii<num_midpoints; ++ii) {
 		
@@ -627,6 +627,8 @@ void Curve::MidSlice(int& edge_counter,
 			print_comp_matlab(&midpoints_downstairs->coord[ii],"p");
 		}
 		
+		solve_options.backup_tracker_config("getting_midpoints_" + std::to_string(ii));
+
 		SolverOutput fillme;
 		multilin_solver_master_entry_point(W_curve,         // WitnessSet
                                            fillme, // the new data is put here!
@@ -635,24 +637,92 @@ void Curve::MidSlice(int& edge_counter,
                                            solve_options);
 		
 		fillme.get_noninfinite_w_mult_full(midpoint_witness_sets[ii]); // is ordered
+		// there can theoretically be 0 singular points, unless they are infinite.  otherwise, path crossing almost certainly happened...
 
+		auto num_total_midslice_points = midpoint_witness_sets[ii].num_points();
+		if (program_options.verbose_level()>=4) {
+			midpoint_witness_sets[ii].print_to_screen();
+            std::cout << "midpoint_downstairs " << ii << " had " << midpoint_witness_sets[ii].num_points() << " real and complex points total" << std::endl;
+		}
 
+		midpoint_witness_sets[ii].sort_for_unique(&solve_options.T);
+		auto num_unique_midslice_points = midpoint_witness_sets[ii].num_points();
+
+		if (num_total_midslice_points - num_unique_midslice_points)
+		{
+			std::cout << color::red() << "there were non-unique midpoints.\n" << color::console_default();
+			std::cout << "trying to recover the failure by tightening tracking tolerances..." << std::endl;
+				
+            solve_options.T.endgameNumber = 2;
+            // what else can i do here to improve the probability of success?
+            solve_options.T.basicNewtonTol   *= 1e-2; // tracktolbeforeeg
+            solve_options.T.endgameNewtonTol *= 1e-2; // tracktolduringeg
+			std::cout << "new temporaary tracktolBEFOREeg: "	<< solve_options.T.basicNewtonTol << " tracktolDURINGeg: "	<< solve_options.T.endgameNewtonTol << std::endl;
+
+			SolverOutput fillme2;
+			multilin_solver_master_entry_point(W_curve,         // WitnessSet
+                                           fillme2, // the new data is put here!
+                                           &particular_projection,
+                                           ml_config,
+                                           solve_options);
+
+			midpoint_witness_sets[ii].clear();
+
+			fillme2.get_noninfinite_w_mult_full(midpoint_witness_sets[ii]); // is ordered
+		}
 		
+		midpoint_witness_sets[ii].sort_for_unique(&solve_options.T);
+		num_unique_midslice_points = midpoint_witness_sets[ii].num_points();
+
+		if (num_total_midslice_points - num_unique_midslice_points)
+		{
+			std::cout << color::red() << "there were non-unique midpoints.  your decomposition is possibly incorrect about the missed points, if the path crossings obscured real points\n" << color::console_default();
+		}
+
+
+		if (program_options.verbose_level()>=4) {
+			midpoint_witness_sets[ii].print_to_screen();
+            std::cout << "midpoint_downstairs " << ii << " had " << midpoint_witness_sets[ii].num_points() << " real and complex points total" << std::endl;
+		}
+
 		midpoint_witness_sets[ii].sort_for_real(&solve_options.T);
-		
+		auto num_real_midslice_points = midpoint_witness_sets[ii].num_points();
+
+		if (program_options.verbose_level()>=3) {
+			if (num_total_midslice_points - num_real_midslice_points)
+			{
+				midpoint_witness_sets[ii].print_to_screen();
+            	std::cout << "midpoint_downstairs " << ii << " had " << midpoint_witness_sets[ii].num_points() << " real points total" << std::endl;
+            }
+            else
+            {
+            	std::cout << "all midpoints real\n";
+            }
+		}
+
 		if (have_sphere()) {
 			midpoint_witness_sets[ii].sort_for_inside_sphere(sphere_radius(), sphere_center());
 		}
-		
+		auto num_real_interior_midslice_points = midpoint_witness_sets[ii].num_points();
 
 		if (program_options.verbose_level()>=2) {
-			midpoint_witness_sets[ii].print_to_screen();
-            std::cout << "midpoint_downstairs " << ii << " had " << midpoint_witness_sets[ii].num_points() << " real points" << std::endl;
+			if (num_real_midslice_points - num_real_interior_midslice_points)
+			{
+				midpoint_witness_sets[ii].print_to_screen();
+            	std::cout << "midpoint_downstairs " << ii << " had " << midpoint_witness_sets[ii].num_points() << " real points inside sphere of interest" << std::endl;
+			}
+			else
+			{
+				std::cout << "all real midpoints are inside sphere\n";
+			}
 		}
+
 		edge_counter += midpoint_witness_sets[ii].num_points();
+
+		solve_options.restore_tracker_config("getting_midpoints_" + std::to_string(ii));
 	}
 	
-	solve_options.restore_tracker_config("getting_midpoints");
+	
 }
 
 
@@ -1946,7 +2016,11 @@ Gets the interval the edge corresponds to, in terms of projection value.
 int Curve::ProjectionIntervalIndex(int edge_index, const VertexSet & V) const
 {
 	if (edge_index >= num_edges())
-		throw std::runtime_error("edge index exceeds number of stored edges");
+	{
+		std::stringstream err_msg;
+		err_msg << "edge index " << edge_index << " exceeds number of stored edges " << num_edges();
+		throw std::runtime_error(err_msg.str());
+	}
 
 	comp_mp temp;
 	init_mp(temp);

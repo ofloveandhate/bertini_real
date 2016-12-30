@@ -227,6 +227,7 @@ void Surface::main(VertexSet & V,
 		
 	
 	this->output_main(program_options.output_dir());
+	program_options.PrintPointTypeMapping(program_options.output_dir() / "vertex_types");
 	V.print(program_options.output_dir()/ "V.vertex");
 	
 
@@ -716,9 +717,7 @@ void Surface::deflate_and_split(std::map< SingularObjectMetadata, WitnessSet > &
 	if (higher_multiplicity_witness_sets.size()==0) {
 		return;
 	}
-//	
-//	
-//	WitnessSet points_which_needed_no_deflation;
+
 	points_which_needed_no_deflation.copy_skeleton(higher_multiplicity_witness_sets.begin()->second);
 	
 	for (auto iter = higher_multiplicity_witness_sets.begin(); iter!=higher_multiplicity_witness_sets.end(); ++iter) {
@@ -755,6 +754,7 @@ void Surface::deflate_and_split(std::map< SingularObjectMetadata, WitnessSet > &
 			
 			W_only_one_witness_point.reset_points();
 			W_only_one_witness_point.add_point( active_set.point(0) ); // exists by entrance condition
+			W_only_one_witness_point.real_threshold_points(solve_options.T.real_threshold);
 			W_only_one_witness_point.write_dehomogenized_coordinates("singular_witness_points_dehomogenized"); // write the points to file
 			
 			
