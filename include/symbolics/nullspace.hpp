@@ -224,8 +224,8 @@ void create_nullspace_system(boost::filesystem::path output_name,
  \param funcs The names of the functions
  \param lineFuncs the lines on which the functions appear
  */
-void create_matlab_determinantal_system(FILE *OUT,
-										FILE *IN,
+void create_matlab_determinantal_system(boost::filesystem::path output_name,
+										boost::filesystem::path input_name,
 										NullspaceConfiguration *ns_config,
 										int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs);
 
