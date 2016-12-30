@@ -279,7 +279,7 @@ int VertexSet::add_vertex(const Vertex & source_vertex)
 			projection_value_homogeneous_input(&(vertices_[num_vertices_].projection_values())->coord[ii],
 											   vertices_[num_vertices_].point(),
 											   projections_[ii]);
-            real_threshold(&(vertices_[num_vertices_].projection_values())->coord[ii],1e-13);
+            // real_threshold(&(vertices_[num_vertices_].projection_values())->coord[ii],1e-13);
 		}
 		
 	}
@@ -382,7 +382,7 @@ int VertexSet::setup_vertices(boost::filesystem::path INfile)
 		temp_vertex.set_input_filename_index(temp_int);
 		
 		fscanf(IN,"%d\n",&temp_int);
-	   temp_vertex.set_type(temp_int);
+	   temp_vertex.set_type(static_cast<VertexType>(temp_int));
 		
 		VertexSet::add_vertex(temp_vertex);
 	}
@@ -405,7 +405,7 @@ int VertexSet::setup_vertices(boost::filesystem::path INfile)
 
 
 
-void VertexSet::print(boost::filesystem::path outputfile) const
+void VertexSet::print(boost::filesystem::path const& outputfile) const
 {
 	
 	FILE *OUT = safe_fopen_write(outputfile);
@@ -450,12 +450,7 @@ void VertexSet::print(boost::filesystem::path outputfile) const
 		fprintf(OUT,"%d\n",vertices_[ii].input_filename_index());
 		
 		fprintf(OUT,"\n");
-		if (vertices_[ii].is_removed()) {
-			fprintf(OUT,"%d\n\n",REMOVED);
-		}
-		else{
-			fprintf(OUT,"%d\n\n",vertices_[ii].type());
-		}
+		fprintf(OUT,"%d\n\n",vertices_[ii].type());
 	}
 	
 	
@@ -466,8 +461,216 @@ void VertexSet::print(boost::filesystem::path outputfile) const
 
 
 
+int VertexSet::set_curr_input(boost::filesystem::path const& el_nom)
+{
+	
+	int nom_index = -1;
+    
+	if ( el_nom.string().compare("unset_filename")==0 )
+	{
+		throw std::logic_error("trying to set curr_input from unset_filename");
+	}
+	
+	
+	int counter = 0;
+	for (std::vector<boost::filesystem::path>::iterator ii = filenames_.begin(); ii!= filenames_.end(); ++ii) {
+		
+		if (*ii == el_nom) {
+			nom_index = counter;
+			break;
+		}
+		counter++;
+	}
+	
+	if (nom_index==-1) {
+		filenames_.push_back(el_nom);
+		nom_index = counter;
+	}
+	
+	curr_input_index_ = nom_index;
+	return nom_index;
+}
+
+int VertexSet::get_proj_index(vec_mp proj) const
+{
+    int init_size = proj->size;
+    proj->size = this->num_natural_variables_;
+    
+    
+    int proj_index = -1;
+    
+    for (int ii=0; ii<num_projections_; ii++) {
+		if (isSamePoint_inhomogeneous_input(projections_[ii],proj,same_point_tolerance_)) {
+			proj_index = ii;
+			break;
+		}
+	}
+    
+    proj->size = init_size;
+    
+    return proj_index;
+}
+
+int VertexSet::set_curr_projection(vec_mp new_proj){
+    
+    int proj_index = get_proj_index(new_proj);
+    
+    if (proj_index==-1) {
+        int init_size = new_proj->size;
+        new_proj->size = this->num_natural_variables_;
+        
+		proj_index = add_projection(new_proj);
+        
+        new_proj->size = init_size;
+	}
+	
+    curr_projection_ = proj_index;
+    
+//        std::cout << "curr_projection is now: " << curr_projection << std::endl;
+	return proj_index;
+}
 
 
+
+int VertexSet::add_projection(vec_mp proj){
+	
+	if (this->num_projections_==0) {
+		projections_ = (vec_mp *) br_malloc(sizeof(vec_mp));
+	}
+	else{
+		this->projections_ = (vec_mp *)br_realloc(this->projections_, (this->num_projections_+1) * sizeof(vec_mp));
+	}
+	
+	
+	init_vec_mp2(this->projections_[num_projections_],num_natural_variables_,T_->AMP_max_prec);
+	this->projections_[num_projections_]->size = num_natural_variables_;
+	
+	
+	if (proj->size != num_natural_variables_) {
+		vec_mp tempvec;
+		init_vec_mp2(tempvec,num_natural_variables_,T_->AMP_max_prec); tempvec->size = num_natural_variables_;
+		for (int kk=0; kk<num_natural_variables_; kk++) {
+			set_mp(&tempvec->coord[kk], &proj->coord[kk]);
+		}
+		vec_cp_mp(projections_[num_projections_], tempvec);
+		clear_vec_mp(tempvec);
+	}
+	else
+	{
+		vec_cp_mp(projections_[num_projections_], proj);
+	}
+	
+
+	num_projections_++;
+	
+	return num_projections_;
+}
+
+
+void VertexSet::reset()
+{
+	for (int ii=0; ii<num_projections_; ii++) {
+		clear_vec_mp(projections_[ii]);
+	}
+	num_projections_ = 0;
+	
+	filenames_.resize(0);
+	
+	vertices_.resize(0);
+	num_vertices_ = 0;
+	
+	clear();
+	init();
+}
+
+
+void VertexSet::init()
+{
+	T_ = NULL;
+	
+	same_point_tolerance_ = 1e-8;
+	num_projections_ = 0;
+	projections_ = NULL;
+	curr_projection_ = -1;
+	
+	curr_input_index_ = -2;
+	
+	this->num_vertices_ = 0;
+	this->num_natural_variables_ = 0;
+	
+	init_vec_mp(checker_1_,0);
+	init_vec_mp(checker_2_,0);
+	
+	
+	
+	init_mp(this->diff_);
+
+	mpf_init(abs_);
+	mpf_init(zerothresh_);
+	mpf_set_d(zerothresh_, 1e-8);
+}
+
+
+
+void VertexSet::copy(const VertexSet &other)
+{
+	set_tracker_config(other.T());
+	
+	
+	this->curr_projection_ = other.curr_projection_;
+	if (this->num_projections_==0 && other.num_projections_>0) {
+		projections_ = (vec_mp *) br_malloc(other.num_projections_*sizeof(vec_mp));
+	}
+	else if(this->num_projections_>0 && other.num_projections_>0) {
+		projections_ = (vec_mp *) br_realloc(projections_,other.num_projections_*sizeof(vec_mp));
+	}
+	else if (this->num_projections_>0 && other.num_projections_==0){
+		for (int ii=0; ii<this->num_projections_; ii++) {
+			clear_vec_mp(projections_[ii]);
+		}
+		free(projections_);
+	}
+	
+	for (int ii=0; ii<other.num_projections_; ii++) {
+		if (ii>=this->num_projections_){
+			init_vec_mp2(projections_[ii],1,1024); projections_[ii]->size = 1;
+		}
+		vec_cp_mp(projections_[ii],other.projections_[ii]);
+	}
+	
+	this->num_projections_ = other.num_projections_;
+	
+	
+	curr_input_index_ = other.curr_input_index_;
+	filenames_ = other.filenames_;
+	
+	
+	this->num_vertices_ = other.num_vertices_;
+	this->num_natural_variables_ = other.num_natural_variables_;
+	
+	this->vertices_ = other.vertices_;
+	
+	vec_cp_mp(this->checker_1_,other.checker_1_);
+	vec_cp_mp(this->checker_2_,other.checker_2_);
+	
+}
+
+
+void VertexSet::clear()
+{
+	clear_vec_mp(checker_1_);
+	clear_vec_mp(checker_2_);
+	
+	clear_mp(diff_);
+	
+	mpf_clear(abs_);
+	mpf_clear(zerothresh_);
+	
+	for (int ii=0; ii<num_projections_; ii++) {
+		clear_vec_mp(projections_[ii]);
+	}
+	free(projections_);
+}
 void VertexSet::send(int target, ParallelismConfig & mpi_config) const
 {
 	

@@ -741,7 +741,7 @@ int midpoint_solver_master_entry_point(const WitnessSet						&W, // carries with
 	
 	
 	if (solve_options.use_parallel()) {
-		solve_options.call_for_help(MIDPOINT);
+		solve_options.call_for_help(MIDPOINT_SOLVER);
 	}
 	
 	midpoint_eval_data_d *ED_d = NULL;

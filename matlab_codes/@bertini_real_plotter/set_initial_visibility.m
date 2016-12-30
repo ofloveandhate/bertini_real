@@ -22,7 +22,7 @@ if br_plotter.options.render_vertices
 	f = br_plotter.legend.vertices.types;
 
 	for ii = 1:length(f)
-		if strcmp('CRITICAL',f{ii})
+		if or(strcmp('Critical',f{ii}),strcmp('CRITICAL',f{ii}))
 			br_plotter.switches.vertex_set.(f{ii}) = 1;
 		else
 			br_plotter.switches.vertex_set.(f{ii}) = 0;

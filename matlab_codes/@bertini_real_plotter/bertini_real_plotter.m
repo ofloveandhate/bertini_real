@@ -82,12 +82,22 @@ classdef bertini_real_plotter < handle
 		
 		
 		function br_plotter = bertini_real_plotter(varargin)
-			
+			initialize(br_plotter);
 			set_default_options(br_plotter);
-			
 			set_options(br_plotter,varargin);
-			
 			set_filename(br_plotter);
+			load(br_plotter);
+			plot(br_plotter);
+		end %re: bertini_real_plotter() constructor
+		
+		function initialize(br_plotter)
+			initialize_handles_surface(br_plotter);
+		end
+		
+		initialize_handles_surface(br_plotter);
+			
+			
+		function load(br_plotter)
 			load_data(br_plotter);
 			
 			if br_plotter.BRinfo.num_vertices==0
@@ -96,16 +106,16 @@ classdef bertini_real_plotter < handle
 				return;
 			end
 			
+			if ~isfield(br_plotter.BRinfo,'run_metadata')
+				br_plotter.BRinfo.run_metadata.version.number = 103;
+			end
+			
 			if br_plotter.options.use_custom_projection
 				preprocess_data(br_plotter);
 			end
 			
 			get_indices(br_plotter);
-			
-			plot(br_plotter);
-		end %re: bertini_real_plotter() constructor
-		
-		
+		end
 		
 		function set_default_options(br_plotter)
 			br_plotter.options.use_custom_projection = false;
@@ -399,25 +409,37 @@ classdef bertini_real_plotter < handle
 				prev_filenames = dir('BRinfo*.mat');
 				
 				if isempty(prev_filenames)
-					error('no obvious BRinfo files to load');
-				end
-				
-				max_found = -1;
+					br_plotter.filename = uigetfile();
+				else
+					max_found = -1;
 
-				for ii = 1:length(prev_filenames)
-					curr_name = prev_filenames(ii).name;
-					curr_num = str2double(curr_name(7:end-4));
-					if max_found < curr_num
-						max_found = curr_num;
+					for ii = 1:length(prev_filenames)
+						curr_name = prev_filenames(ii).name;
+						curr_num = str2double(curr_name(7:end-4));
+						if max_found < curr_num
+							max_found = curr_num;
+						end
 					end
+					br_plotter.filename = ['BRinfo' num2str(max_found) '.mat'];
 				end
-				br_plotter.filename = ['BRinfo' num2str(max_found) '.mat'];
-				
 			else	
 				br_plotter.filename = new_filename;
 			end
 			
 		end
+		
+
+		
+		function load_and_render(br_plotter,source, event)
+			
+			[FileName,PathName,FilterIndex] = uigetfile();
+			br_plotter.filename = [PathName FileName];
+			
+			load(br_plotter);
+			plot(br_plotter);
+			
+		end
+		
 		
 		function plot(br_plotter)
 			

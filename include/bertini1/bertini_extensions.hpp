@@ -23,8 +23,23 @@ enum {SUCCESSFUL=0, CRITICAL_FAILURE=-10, TOLERABLE_FAILURE=-1};
 
 enum {SYSTEM_CRIT = -1600, SYSTEM_SPHERE};
 
-//The following lets us use words instead of numbers to indicate vertex type.
-enum {UNSET= 100, CRITICAL, SEMICRITICAL, MIDPOINT, ISOLATED, NEW, CURVE_SAMPLE_POINT, SURFACE_SAMPLE_POINT, REMOVED, PROBLEMATIC};
+using VertexType = int;
+
+constexpr VertexType Unset = 0;
+constexpr VertexType Critical = 1;
+constexpr VertexType Semicritical = 2;
+constexpr VertexType Midpoint = 4;
+constexpr VertexType Isolated = 8;
+constexpr VertexType New = 16;
+constexpr VertexType Curve_sample_point = 32;
+constexpr VertexType Surface_sample_point = 64;
+constexpr VertexType Removed = 128;
+constexpr VertexType Problematic = 256;
+
+// //The following lets us use words instead of numbers to indicate vertex type.
+// enum VertexType {Unset= 100, Critical, Semicritical, Midpoint, Isolated, New, Curve_sample_point, Surface_sample_point, Removed, Problematic};
+
+constexpr VertexType VertexTypes[]{Unset, Critical, Semicritical, Midpoint, Isolated, New, Curve_sample_point, Surface_sample_point, Removed, Problematic};
 
 
 
@@ -53,7 +68,7 @@ extern "C"{
 /**
  look up an integer, for what it means in the world of enumerations.
  */
-std::string enum_lookup(int flag);
+std::string enum_lookup(int flag, int hint=0);
 
 
 

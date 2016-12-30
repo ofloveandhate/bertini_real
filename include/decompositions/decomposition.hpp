@@ -56,7 +56,7 @@ public:
 	 \param add_type the type the points will inherit.  {\em e.g.} CRITICAL
 	 \param V the Vertex set to add the points to.
 	 */
-    int add_witness_set(const WitnessSet & W, int add_type, VertexSet & V);
+    int add_witness_set(const WitnessSet & W, VertexType add_type, VertexSet & V);
     
 	
 	/**
@@ -543,9 +543,19 @@ public:
 	}
 	
 	
-	
+	void SetCritSliceValues(vec_mp & p)
+	{	
+		vec_cp_mp(crit_slice_values, p);
+	}
+
+	vec_mp& CritSliceValues() 
+	{
+		return crit_slice_values;
+	}
+
 protected:
 	
+	vec_mp crit_slice_values;
 	vec_mp sphere_center_; ///< the center of the sphere.
 	comp_mp sphere_radius_; ///< the radius of the sphere.
 	bool have_sphere_; ///< indicates whether the Decomposition has the radius set, or needs one still.
@@ -615,6 +625,9 @@ protected:
 		
 		set_one_mp(sphere_radius_);
 		neg_mp(sphere_radius_,sphere_radius_);
+
+		init_vec_mp(crit_slice_values,0);
+		crit_slice_values->size = 0;
 	}
 	
 	
@@ -667,8 +680,6 @@ protected:
 	
 	void clear()
 	{
-		
-		
 		if (num_curr_projections_>0){
 			for (int ii=0; ii<num_curr_projections_; ii++)
 				clear_vec_mp(pi_[ii]);
@@ -676,14 +687,10 @@ protected:
 		}
 		num_curr_projections_ = 0;
 		
-	
-		
-		
 		clear_mp(sphere_radius_);
 		clear_vec_mp(sphere_center_);
 		
-
-		
+		clear_vec_mp(crit_slice_values);
 	}
 	
 	

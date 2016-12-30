@@ -656,7 +656,7 @@ public:
 	 */
 	int fixed_set_initial_sample_data(int target_num_samples);
 	
-	
+	int fixed_set_initial_sample_data(std::vector<int> const& num_samples_per_interval, VertexSet const& V);
 	/**
 	 \brief Sample a curve so it has an equal number of points per edge, including boundary points.
 	 
@@ -674,14 +674,30 @@ public:
 	
 	
 	/**
+	in this method, we take in a vector of integers.  the length of the vector must correspond to the number of intervals of the curve, in terms of projection values.
+
+	while sampling, we look at each edge, and find the correct number of samples for the edge individually.
+
+	\see fixed_sampler
+	*/
+	void SemiFixedSampler(VertexSet &V,
+					   sampler_configuration & sampler_options,
+					   SolverConfiguration & solve_options,
+					   std::vector<int> const& target_num_samples);
+
+
+	/**
 	 \brief Dump the curve's sampler data to a file.
 	 
 	 \param samplingName The name of the file to write.
 	 */
-	void  output_sampling_data(boost::filesystem::path samplingName) const;
+	void output_sampling_data(boost::filesystem::path samplingName) const;
 	
 	
-	
+	/**
+	Gets the interval the edge corresponds to, in terms of projection value.
+	*/
+	int ProjectionIntervalIndex(int edge_index, const VertexSet & v) const;
 	
 	
 	
@@ -757,7 +773,6 @@ protected:
 	 get ready!
 	 */
 	void init(){
-		
 		num_edges_ = 0;
 		set_dimension(1);
 	}

@@ -189,6 +189,8 @@ void UbermasterProcess::bertini_real(WitnessSet & W, vec_mp *pi, VertexSet & V)
 			break;
 	}
 	
+	program_options.PrintMetadata(program_options.output_dir() / "run_metadata");
+	program_options.PrintPointTypeMapping(program_options.output_dir() / "vertex_types");
 }
 
 
@@ -216,10 +218,17 @@ void UbermasterProcess::critreal(WitnessSet & W, vec_mp *pi, VertexSet & V)
 	
 	SolverOutput solve_out;
 	
-	
-	
-	
-	compute_crit_nullspace_left(solve_out, // the returned value
+	if (1)
+		compute_crit_nullspace_right(solve_out, // the returned value
+										W,            // input the original witness set
+										std::make_shared<SystemRandomizer>(randomizer),
+										pi,
+										W.dimension(),  // dimension of ambient complex object
+										program_options,
+										solve_options,
+										&ns_config);
+	else
+		compute_crit_nullspace_left(solve_out, // the returned value
 						   W,            // input the original witness set
 						   std::make_shared<SystemRandomizer>(randomizer),
 						   pi,

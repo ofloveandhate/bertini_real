@@ -854,7 +854,7 @@ void nullspacejac_eval_data_mp::print()
     std::cout << "target_crit_codim " << target_crit_codim << std::endl;
     
     std::cout << "num_natural_vars " << num_natural_vars << std::endl;
-    std::cout << "num_natural_vars " << num_natural_vars << std::endl;
+    std::cout << "num_synth_vars " << num_synth_vars << std::endl;
     std::cout << "num_v_vars " << num_v_vars << std::endl;
     std::cout << "num_randomized_eqns " << randomizer()->num_rand_funcs() << std::endl;
     std::cout << "max_degree " << max_degree << std::endl;

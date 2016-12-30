@@ -53,9 +53,160 @@ void parse_input_file(boost::filesystem::path filename, int * MPType)
 
 
 
+void ParallelismConfig::init()
+{
+	
+	force_no_parallel_ = false;
+	numprocs_ = 1;
+	headnode_ = 0;
+	
+	MPI_Comm_size(MPI_COMM_WORLD, &this->numprocs_);
+	MPI_Comm_rank(MPI_COMM_WORLD, &this->my_id_);
+	
+	
+	if (is_head())
+		worker_level_ = 0;
+	else
+		worker_level_ = 1;
+	
+	
+	
+	my_communicator_ = MPI_COMM_WORLD; // default communicator is MPI_COMM_WORLD
+	
+    
+    
+    
+	//		MPI_Group orig_group, new_group;
+	//
+	//		/* Extract the original group handle */
+	//
+	//		MPI_Comm_group(MPI_COMM_WORLD, &orig_group);
+	//
+	//		/* Create new communicator and then perform collective communications */
+	//
+	//		MPI_Comm_create(MPI_COMM_WORLD, orig_group, &my_communicator);
+	//
+	//		MPI_Comm_size(my_communicator, &this->numprocs);
+	//		MPI_Comm_rank(my_communicator, &this->my_id);
+	return;
+}
 
 
-void prog_config::move_to_temp()
+void ParallelismConfig::init_active_workers()
+{
+	if (!available_workers_.empty()) {
+		throw std::logic_error("set of available workers is not empty at call of init_active_workers...  it must be empty.  some previous process did not finish properly, dismissing all workers at the end.");
+	}
+	
+	while (!available_workers_.empty())
+		available_workers_.pop();
+	
+	
+	for (int ii=1; ii<this->numprocs_; ii++) {
+		available_workers_.push(ii);
+		worker_status_[ii] = INACTIVE;
+	}
+	
+	
+}
+
+
+int ParallelismConfig::activate_next_worker()
+{
+	int worker_id = available_workers_.front();
+	available_workers_.pop();
+	
+	if (worker_status_[worker_id] == ACTIVE) {
+		std::cout << "master tried making worker" << worker_id << " active when it was already active" << std::endl;
+		MPI_Abort(MPI_COMM_WORLD,1);
+	}
+	worker_status_[worker_id] = ACTIVE;
+	
+
+	return worker_id;
+}
+
+
+void ParallelismConfig::deactivate(int worker_id)
+{
+	if (worker_status_[worker_id] == INACTIVE) {
+		std::cout << "master tried decativating worker" << worker_id << " when it was already inactive" << std::endl;
+		MPI_Abort(MPI_COMM_WORLD,2);
+	}
+	worker_status_[worker_id] = INACTIVE;
+	
+	
+	available_workers_.push(worker_id);
+}
+
+
+
+void ParallelismConfig::send_all_available(int numtosend)
+{
+	while (available_workers_.size()>0)  {
+		int sendtome = available_workers_.front();
+		MPI_Send(&numtosend, 1, MPI_INT, sendtome, NUMPACKETS, MPI_COMM_WORLD);
+		available_workers_.pop();
+	}
+}
+
+
+void ParallelismConfig::call_for_help(int solver_type)
+{
+	
+	MPI_Bcast(&solver_type, 1, MPI_INT, id(), MPI_COMM_WORLD);
+	init_active_workers();
+	
+}
+
+bool ParallelismConfig::have_available()
+{
+	if (available_workers_.size()==0) {
+		return false;
+	}
+	else
+	{
+		return true;
+	}
+	
+}
+
+bool ParallelismConfig::have_active()
+{
+	bool yep = false;
+	for (int ii=1; ii<this->numprocs_; ii++) {
+		if (this->worker_status_[ii]==ACTIVE) {
+			yep = true;
+			break;
+		}
+	}
+	return yep;
+}
+
+int ParallelismConfig::num_active()
+{
+	int num = 0;
+	for (int ii=1; ii<this->numprocs_; ii++) {
+		if (this->worker_status_[ii]==ACTIVE) {
+			num++;
+		}
+	}
+	return num;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+void ProgramConfigBase::move_to_temp()
 {
 	if (!boost::filesystem::exists(this->working_dir())) {
 		boost::filesystem::create_directory(this->working_dir());
@@ -72,7 +223,7 @@ void prog_config::move_to_temp()
 		std::cout << "moved to working_dir '" << this->working_dir().string() << "'" << std::endl;
 }
 
-void prog_config::move_to_called()
+void ProgramConfigBase::move_to_called()
 {
 	
 	chdir(this->called_dir().c_str());
@@ -80,6 +231,46 @@ void prog_config::move_to_called()
 	if (this->verbose_level()>=3)
 		std::cout << "moved to called_dir '" << this->called_dir().string() << "'" << std::endl;
 }
+
+
+void ProgramConfigBase::PrintMetadata(boost::filesystem::path const& filename) const
+{
+	FILE *OUT = safe_fopen_write(filename);
+
+	fprintf(OUT, "%s\n", VERSION);
+	fprintf(OUT, "%s\n", called_dir_.c_str());
+	fprintf(OUT, "%s\n", timer_.format().c_str());
+	fprintf(OUT, "%d\n", this->num_procs());
+
+	
+	fclose(OUT);
+}
+
+
+void ProgramConfigBase::PrintPointTypeMapping(boost::filesystem::path const& filename) const
+{
+	//The following lets us use words instead of numbers to indicate vertex type.
+//enum {UNSET= 100, CRITICAL, SEMICRITICAL, MIDPOINT, ISOLATED, NEW, CURVE_SAMPLE_POINT, SURFACE_SAMPLE_POINT, REMOVED, PROBLEMATIC};
+
+	FILE *OUT = safe_fopen_write(filename);
+
+	fprintf(OUT,"10\n\n");
+	fprintf(OUT,"Unset %d\n",Unset);
+	fprintf(OUT,"Critical %d\n",Critical);
+	fprintf(OUT,"Semicritical %d\n",Semicritical);
+	fprintf(OUT,"Midpoint %d\n",Midpoint);
+	fprintf(OUT,"Isolated %d\n",Isolated);
+	fprintf(OUT,"New %d\n",New);
+	fprintf(OUT,"Curve_sample_point %d\n",Curve_sample_point);
+	fprintf(OUT,"Surface_sample_point %d\n",Surface_sample_point);
+	fprintf(OUT,"Removed %d\n",Removed);
+	fprintf(OUT,"Problematic %d\n",Problematic);
+	
+	fclose(OUT);
+
+}
+
+
 
 
 
@@ -443,171 +634,6 @@ void BertiniRealConfig::init()
 	return;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void sampler_configuration::splash_screen()
-{
-	printf("\n Sampler module for Bertini_real(TM) v%s\n\n", VERSION);
-	printf(" D.A. Brake, \n with D.J. Bates, W. Hao, \n J.D. Hauenstein, A.J. Sommese, and C.W. Wampler\n\n");
-	printf("(using GMP v%d.%d.%d, MPFR v%s)\n\n",
-				 __GNU_MP_VERSION, __GNU_MP_VERSION_MINOR, __GNU_MP_VERSION_PATCHLEVEL, mpfr_get_version());
-	printf("See the website at www.bertinireal.com\n\n");
-	printf("Send email to %s for assistance.\n\n",PACKAGE_BUGREPORT);
-	
-	
-	
-	bertini_splash_screen();
-	
-	
-}
-
-
-void sampler_configuration::print_usage()
-{
-	printf("Bertini_real has the following options:\n");
-	printf("option name(s)\t\t\targument\n\n");
-	printf("-ns -nostifle\t\t\t   --\n");
-	printf("-v -version\t\t\t   -- \n");
-	printf("-h -help\t\t\t   --\n");
-	printf("-t -tol -tolerance \t\tdouble > 0\n");
-	printf("-verb\t\t\t\tint\n");
-	printf("-maxits -m \t\t\tint\n");
-	printf("-gammatrick -g \t\t\tbool\n");
-	printf("-fixed \t\t\tint number samples per edge\n");
-	printf("-symengine -E \t\t\tsymbolic engine being used\n");
-	printf("\n\n\n");
-	return;
-}
-
-int  sampler_configuration::parse_commandline(int argc, char **argv)
-{
-	// this code created based on gnu.org's description of getopt_long
-	int choice;
-	
-	while (1)
-	{
-		static struct option long_options[] =
-		{
-			/* These options set a flag. */
-			{"nostifle", no_argument,       0, 's'},
-			{"ns", no_argument,       0, 's'},
-			{"help",		no_argument,			 0, 'h'},
-			{"h",		no_argument,			 0, 'h'},
-			{"version",		no_argument,			 0, 'v'},
-			{"v",		no_argument,			 0, 'v'},
-			{"verb",		required_argument,			 0, 'V'},
-			{"tolerance",		required_argument,			 0, 't'},
-			{"tol",		required_argument,			 0, 't'},
-			{"t",		required_argument,			 0, 't'},
-			{"m",		required_argument,			 0, 'm'},
-			{"maxits",		required_argument,			 0, 'm'},
-			{"gammatrick",		required_argument,			 0, 'g'},
-			{"g",		required_argument,			 0, 'g'},
-			{"fixed",		required_argument,			 0, 'f'},
-			{"nd", no_argument,0,'d'},
-			{0, 0, 0, 0}
-		};
-		/* getopt_long stores the option index here. */
-		int option_index = 0;
-		
-		choice = getopt_long_only (argc, argv, "bdf:svt:g:V:m:hE:",
-															 long_options, &option_index);
-		
-		/* Detect the end of the options. */
-		if (choice == -1)
-			break;
-		
-		switch (choice)
-		{				
-			case 'd':
-				no_duplicates = false;
-				break;
-				
-				
-			case 'f':
-				use_fixed_sampler = true;
-				target_num_samples = atoi(optarg);
-				
-				if (target_num_samples <= 3) {
-					std::cout << "The number of desired samples must be larger than 3, but you provided " << target_num_samples << std::endl;
-					exit(0);
-				}
-				break;
-				
-			case 's':
-				this->stifle_text = "\0";
-				break;
-				
-			case 'v':
-				printf("\n Sampler module for Bertini_real(TM) version %s\n\n", VERSION);
-				exit(0);
-				break;
-				
-			case 't':
-				
-				mpf_set_str(this->TOL,optarg,10);
-				break;
-				
-			case 'g':
-				this->use_gamma_trick = atoi(optarg);
-				if (! (this->use_gamma_trick==0 || this->use_gamma_trick==1) ) {
-					printf("value for 'gammatrick' or 'g' must be 1 or 0\n");
-					exit(0);
-				}
-				break;
-				
-			case 'V':
-				this->verbose_level(atoi(optarg));
-				break;
-				
-			case 'm':
-				this->maximum_num_iterations = atoi(optarg);
-				break;
-				
-			case 'h':
-				
-				sampler_configuration::print_usage();
-				exit(0);
-				break;
-			  
-			case '?':
-				/* getopt_long already printed an error message. */
-				break;
-				
-			default:
-				sampler_configuration::print_usage();
-				exit(0);
-		}
-	}
-	
-	/* Instead of reporting ‘--verbose’
-	 and ‘--brief’ as they are encountered,
-	 we report the final status resulting from them. */
-	
-	
-	/* Print any remaining command line arguments (not options). */
-	if (optind < argc)
-	{
-		printf ("non-option ARGV-elements: ");
-		while (optind < argc)
-			printf ("%s ", argv[optind++]);
-		putchar ('\n');
-	}
-	
-	return 0;
-}
 
 
 

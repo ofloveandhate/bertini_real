@@ -262,12 +262,12 @@ public:
 		cycle_number_right_ = c;
 	}
 
-	auto CycleNumLeft() const
+	int CycleNumLeft() const
 	{
 		return cycle_number_left_;
 	}
 
-	auto CycleNumRight() const
+	int CycleNumRight() const
 	{
 		return cycle_number_right_;
 	}
