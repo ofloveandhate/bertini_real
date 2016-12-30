@@ -717,22 +717,26 @@ public:
 		return orthogonal_projection_;
 	}
 
-        /**
-        get which symbolic engine is being used. The default (currently) is Matlab
-        \return whether we are using Matlab or Python. default is Matlab
-        */
+    /**
+    \brief Get which symbolic engine is being used. 
 
-        SymEngine symbolic_engine() const
-        {
-	  return engine_;
+    The default (currently) is Matlab
+    
+    \return whether we are using Matlab or Python. default is Matlab
+    */
+
+    SymEngine symbolic_engine() const
+    {
+		return engine_;
 	}
 
-       /** 
-       \brief set which symbolic engine is being used. 
-       */
-  	void symbolic_engine(SymEngine new_engine_)
+
+   /** 
+   \brief set which symbolic engine is being used. 
+   */
+  	void symbolic_engine(SymEngine new_engine)
 	{
-	  engine_ = new_engine_;
+		engine_ = new_engine;
 	}
 	
 	/** 
@@ -777,10 +781,6 @@ public:
 	};
 	
 	void init();
-	
-	SymEngine sym_engine() {
-		return engine_;
-	}
 
 
 }; //re: BertiniRealConfig

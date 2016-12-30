@@ -173,57 +173,53 @@ void isosingular_deflation_iteration(int *declarations,
 	// setup functions
 	rewind(IN);
 	parse_names(&numFuncs, &funcs, &lineFuncs, IN, const_cast< char *>("function"), declarations[9]);
-	
+	rewind(IN);
+
+
 	// read in the degrees
 	degrees = (int *)br_malloc(numFuncs * sizeof(int));
 	OUT = safe_fopen_read("deg.out");
 	for (ii = 0; ii < numFuncs; ii++)
 		fscanf(OUT, "%d", &degrees[ii]);
-	fclose(OUT);;
+	fclose(OUT);
 
 
-	// INSERT SWITCH FOR MATLAB / PYTHON HERE
-	auto engine = program_options.symbolic_engine();
+	printf("\nPerforming an isosingular deflation\n");
 
-	// MATLAB SECTION
-	if (engine == SymEngine::Matlab)
-	  {
-	    auto matlab_command = program_options.matlab_command(); 
-	    // setup Matlab script
-	    rewind(IN);
+	switch (program_options.symbolic_engine())
+	{
+		case SymEngine::Matlab:
+		{
+			// setup Matlab script
+			OUT = safe_fopen_write("matlab_deflate.m");
+			minorSize = numVars - declarations[1] - nullSpaceDim + 1;
+			createMatlabDeflation(OUT, numVars, vars, lineVars, numConstants, consts, lineConstants, numFuncs, funcs, lineFuncs, IN, minorSize, degrees, deflation_number);
 
-	    OUT = safe_fopen_write("matlab_deflate.m");
-	    minorSize = numVars - declarations[1] - nullSpaceDim + 1;
-	    createMatlabDeflation(OUT, numVars, vars, lineVars, numConstants, consts, lineConstants, numFuncs, funcs, lineFuncs, IN, minorSize, degrees, deflation_number);
-	    fclose(OUT);
+			fclose(OUT);
 
-	    // run Matlab script
-	    printf("\nPerforming an isosingular deflation\n");
+			// run Matlab script
+			std::stringstream converter;
+			converter << program_options.matlab_command() << "matlab_deflate";
+			system(converter.str().c_str());
+			converter.clear(); converter.str("");
+			break;
+		}
 
-	    std::stringstream converter;
-	    converter << matlab_command << "matlab_deflate";
-	    system(converter.str().c_str());
-	    converter.clear(); converter.str("");
-	  }
+    	case SymEngine::Python:
+		{
+			// Create Python Script
+			OUT = safe_fopen_write("python_deflate.py");	    
+			minorSize = numVars - declarations[1] - nullSpaceDim + 1;
+			createPythonDeflation(OUT, numVars, vars, lineVars, numConstants, consts, lineConstants, numFuncs, funcs, lineFuncs, IN, minorSize, degrees, deflation_number);
+			fclose(OUT);
 
-	// PYTHON SECTION
-        else if (engine == SymEngine::Python)
-	  {
-	    // Create Python Script
-	    rewind(IN);
-	    OUT = safe_fopen_write("python_deflate.py");	    
-	    minorSize = numVars - declarations[1] - nullSpaceDim + 1;
-	    createPythonDeflation(OUT, numVars, vars, lineVars, numConstants, consts, lineConstants, numFuncs, funcs, lineFuncs, IN, minorSize, degrees, deflation_number);
-	    fclose(OUT);
-
-	    //run Python script
-	    printf("\nPerforming an isosingular deflation\n");
-	    execlp("python", "python", "python_deflate.py", (char*) NULL);
-	  }
-	else
-	  {
-	    printf("There is no symbolic engine being called for the isosingular deflation.\n BIG PROBLEM HERE!!!!");
-	  }
+			//run Python script
+			std::cout << "inkoving python\n";
+			system("python python_deflate.py");
+			std::cout << "done inkoving python\n";
+			break;
+		}
+	} // switch
 	
 	WaitOnGeneratedFile("deflation_polynomials_declaration");
 	WaitOnGeneratedFile("deflation_polynomials");
@@ -444,185 +440,188 @@ void createPythonDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
  * NOTES:                                                        *
  ***************************************************************/
 {
-  int ii, lineNumber = 1, cont = 1, declares = 0, strLength = 0, strSize = 1;
-  char ch;
-  char *str = (char *)br_malloc(strSize * sizeof(char));
+	int ii, lineNumber = 1, cont = 1, declares = 0, strLength = 0, strSize = 1;
+	char ch;
+	char *str = (char *)br_malloc(strSize * sizeof(char));
 
-  //setup Python libraries
-  fprintf(OUT, "import numpy as np\nfrom numpy import array\n");
-  fprintf(OUT, "import math\nimport itertools\nfrom itertools import combinations\n");
-  fprintf(OUT, "import sympy as sp\nfrom sympy import *\n");
-  fprintf(OUT, "import scipy as sci\nimport pickle\n\n");
+	//setup Python libraries
+	fprintf(OUT, "import numpy as np\nfrom numpy import array\n");
+	fprintf(OUT, "import math\nimport itertools\nfrom itertools import combinations\n");
+	fprintf(OUT, "import sympy as sp\nfrom sympy import *\n");
+	fprintf(OUT, "import scipy as sci\nimport pickle\n\n");
 
-  // setup nchoosek function
-  fprintf(OUT,"def my_nchoosek( r, n ):\n");
-  fprintf(OUT,"\tcnt = 0\n");
-  fprintf(OUT,"\tfor i in combinations(range(1,r+1),n):\n");
-  fprintf(OUT,"\t\tif cnt == 0:\n");
-  fprintf(OUT,"\t\t\tR = Matrix([i])\n");
-  fprintf(OUT,"\t\telse:\n");
-  fprintf(OUT,"\t\t\tR_i = Matrix([i])\n");
-  fprintf(OUT,"\t\t\tR = R.row_insert(cnt,R_i)\n");
-  fprintf(OUT,"\t\tcnt = cnt + 1\n");
-  fprintf(OUT,"\treturn R;\n\n");
+	// setup nchoosek function
+	fprintf(OUT,"def my_nchoosek( r, n ):\n");
+	fprintf(OUT,"\tcnt = 0\n");
+	fprintf(OUT,"\tfor i in combinations(range(1,r+1),n):\n");
+	fprintf(OUT,"\t\tif cnt == 0:\n");
+	fprintf(OUT,"\t\t\tR = Matrix([i])\n");
+	fprintf(OUT,"\t\telse:\n");
+	fprintf(OUT,"\t\t\tR_i = Matrix([i])\n");
+	fprintf(OUT,"\t\t\tR = R.row_insert(cnt,R_i)\n");
+	fprintf(OUT,"\t\tcnt = cnt + 1\n");
+	fprintf(OUT,"\treturn R;\n\n");
 
-  // setup Bertini constants in Python
-  fprintf(OUT, "from numpy import pi\nfrom sympy import sin, cos, Matrix, simplify, var\n");
-  fprintf(OUT, "from sympy.abc import I, pi\nI=1j\n");
+	// setup Bertini constants in Python
+	fprintf(OUT, "from numpy import pi\nfrom sympy import sin, cos, Matrix, simplify, var\n");
+	fprintf(OUT, "from sympy.abc import I, pi\nI=1j\n");
 
-  // setup variables
-  fprintf(OUT, "\n# variables\n");
-  fprintf(OUT, "var('");
-  for (ii = 0; ii < numVars; ii++)
-    {
-      fprintf(OUT, "%s", vars[ii]);
-      if (ii < numVars-1)
-	fprintf(OUT,", ");
-    }
+	// setup variables
+	fprintf(OUT, "\n# variables\n");
+	fprintf(OUT, "var('");
+	for (ii = 0; ii < numVars; ii++)
+	{
+		fprintf(OUT, "%s", vars[ii]);
+		if (ii < numVars-1)
+			fprintf(OUT,", ");
+	}
   
-  fprintf(OUT, "')\nX = Matrix([");
-  for (ii = 0; ii < numVars; ii++)
-    {
-      fprintf(OUT, "%s", vars[ii]);
-      if (ii < numVars - 1)
-		    fprintf(OUT, ", ");
+	fprintf(OUT, "')\nX = Matrix([");
+	for (ii = 0; ii < numVars; ii++)
+	{
+		fprintf(OUT, "%s", vars[ii]);
+		if (ii < numVars - 1)
+			fprintf(OUT, ", ");
 	}
 	fprintf(OUT, "])\n");
 	
 	// setup constants
 	if (numConstants > 0)
 	{
-	  fprintf(OUT, "\n# Constants \n");
-	  fprintf(OUT, "var('");
-	  for (ii = 0; ii < numConstants; ii++)
-	    {
-	      fprintf(OUT, "%s", consts[ii]);
-	      if (ii < numConstants-1)
-		fprintf(OUT, ", ");
-	    }
-	  fprintf(OUT, "')\n");
+		fprintf(OUT, "\n# Constants \n");
+		fprintf(OUT, "var('");
+		for (ii = 0; ii < numConstants; ii++)
+		{
+			fprintf(OUT, "%s", consts[ii]);
+			if (ii < numConstants-1)
+				fprintf(OUT, ", ");
+		}
+		fprintf(OUT, "')\n");
 	}
 
 	// setup degrees
 	fprintf(OUT, "\n# Degrees of the equations\n");
 	fprintf(OUT, "deg = np.array([");
 	for (ii = 0; ii < numFuncs; ii++)
-	  {
-	    fprintf(OUT, "%d", degrees[ii]);
-	    if (ii < numFuncs - 1)
-	      fprintf(OUT, ", ");
-	  }
+	{
+		fprintf(OUT, "%d", degrees[ii]);
+		if (ii < numFuncs - 1)
+			fprintf(OUT, ", ");
+	}
 	fprintf(OUT, "])\n");
 
 	// copy lines which do not declare items or define constants (keep these as symbolic objects)
 	while (cont)
-	  { // see if this line number declares items
-	    declares = 0;
-	    for (ii = 0; ii < numVars; ii++)
-	      {
-		if (lineNumber == lineVars[ii])
-		  declares = 1;
-	      }
-	    for (ii = 0; ii < numConstants; ii++)
-	      {
-		if (lineNumber == lineConstants[ii])
-		  declares = 1;
-	      }
-	    for (ii = 0; ii < numFuncs; ii++)
-	      {
-		if (lineNumber == lineFuncs[ii])
-		  declares = 1;
-	      }
+	{ // see if this line number declares items
+		declares = 0;
+		for (ii = 0; ii < numVars; ii++)
+		{
+			if (lineNumber == lineVars[ii])
+				declares = 1;
+		}
 
-	    if (declares)
-	      { // move past this line
-		do
-		  { // read in character
-		    ch = fgetc(IN);
-		  } while (ch != '\n' && ch != EOF);
-	      }
-	    else
-	      { // check to see if this defines a constant - line must be of the form '[NAME]=[EXPRESSION];' OR EOF
-		ch = fgetc(IN);
-		if (ch != EOF)
-		  { // definition line
-		    strLength = 0;
-		    do
-		      { // add to str
-			if (strLength + 1 == strSize)
-			  { // increase strSize
-			    strSize *= 2;
-			    str = (char *)br_realloc(str, strSize * sizeof(char));
-			  }
-			str[strLength] = ch;
-			strLength++;
-		      } while ((ch = fgetc(IN)) != '=');
-		    str[strLength] = '\0';
-		    strLength++;
+		for (ii = 0; ii < numConstants; ii++)
+		{
+			if (lineNumber == lineConstants[ii])
+				declares = 1;
+		}
+		for (ii = 0; ii < numFuncs; ii++)
+		{
+			if (lineNumber == lineFuncs[ii])
+				declares = 1;
+		}
 
-		    // compare against constants
-		    declares = 0;
-		    for (ii = 0; ii < numConstants; ii++)
-		      {
-			if (strcmp(str, consts[ii]) == 0)
-			  declares = 1;
-		      }
-
-		    if (declares)
-		      { // move past this line
+		if (declares)
+		{ // move past this line
 			do
-			  { // read in character
-			    ch = fgetc(IN);
-			  } while (ch != '\n' && ch != EOF);
-		      }
-		    else
-		      { // print line
-			fprintf(OUT, "%s=Matrix([", str);
-			do
-			  { // read in character & print it
-			    ch = fgetc(IN);
-			    if (ch != EOF)
-			      {
-				if (ch == '^')
-				  {
-				    fprintf(OUT, "**");
-				  }
-				else if (ch == ';')
-				  {
-				    fprintf(OUT, "])");
-				  }
+			{ // read in character
+				ch = fgetc(IN);
+			} 
+			while (ch != '\n' && ch != EOF);
+		}
+		else
+		{ // check to see if this defines a constant - line must be of the form '[NAME]=[EXPRESSION];' OR EOF
+			ch = fgetc(IN);
+			if (ch != EOF)
+			{ // definition line
+				strLength = 0;
+				do
+				{ // add to str
+					if (strLength + 1 == strSize)
+					{ // increase strSize
+					strSize *= 2;
+					str = (char *)br_realloc(str, strSize * sizeof(char));
+					}
+					str[strLength] = ch;
+					strLength++;
+				} 
+				while ((ch = fgetc(IN)) != '=');
+
+				str[strLength] = '\0';
+				strLength++;
+
+				// compare against constants
+				declares = 0;
+				for (ii = 0; ii < numConstants; ii++)
+				{
+					if (strcmp(str, consts[ii]) == 0)
+						declares = 1;
+				}
+
+				if (declares)
+				{ // move past this line
+					do
+					{ // read in character
+						ch = fgetc(IN);
+					} 
+					while (ch != '\n' && ch != EOF);
+				}
 				else
-				  {
-				    fprintf(OUT, "%c", ch);
-				  }
-			      }
-			  } while (ch != '\n' && ch != EOF);
-		      }
-		  }
-	      }
+				{ // print line
+					fprintf(OUT, "%s=Matrix([", str);
+					do
+					{ // read in character & print it
+						ch = fgetc(IN);
+						if (ch != EOF)
+						{
+						if (ch == '^')
+						{
+						fprintf(OUT, "**");
+						}
+						else if (ch == ';')
+						{
+						fprintf(OUT, "])");
+						}
+						else
+						{
+						fprintf(OUT, "%c", ch);
+						}
+						}
+					} 
+					while (ch != '\n' && ch != EOF);
+				} // else
+			} // if
+		} // else
 
-	    // increment lineNumber
-	    lineNumber++;
+		// increment lineNumber
+		lineNumber++;
 
-	    // test for EOF
-	    if (ch == EOF)
-	      cont = 0;
-	  }
+		// test for EOF
+		if (ch == EOF)
+			cont = 0;
+	}  // while
 
 	// setup functions
 	fprintf(OUT, "\n# Matrix of the functions\n");
 	fprintf(OUT, "\nF = sp.Matrix(");
 	for (ii = 0; ii < numFuncs; ii++)
-	  {
-	    if(ii == 0)
-	      {
-		fprintf(OUT, "%s)\n", funcs[ii]);
-	      }
-	    else
-	      {
-		fprintf(OUT, "F = F.col_insert(%i,%s)\n", ii,funcs[ii]);
-	      }
-	  }
+	{
+		if (ii == 0)
+			fprintf(OUT, "%s)\n", funcs[ii]);
+		else
+			fprintf(OUT, "F = F.col_insert(%i,%s)\n", ii,funcs[ii]);
+	}
+
 	fprintf(OUT, "\n");
 	
 	// compute the jacobian
@@ -643,65 +642,66 @@ void createPythonDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 	fprintf(OUT, "\n# Opening the first output file\n");
 	fprintf(OUT, "fo = open(\"deflation_polynomials\",\"wb\")\n");
 	fprintf(OUT, "for j in range(1,r+1):\n");
-	fprintf(OUT, "\tfor k in range(1,c+1):\n");
-	fprintf(OUT, "\t\ttemp_R = np.array(R.row(j-1))\n");
-	fprintf(OUT, "\t\ttemp_C = np.array(C.row(k-1))\n");
+		fprintf(OUT, "\tfor k in range(1,c+1):\n");
+			fprintf(OUT, "\t\ttemp_R = np.array(R.row(j-1))\n");
+			fprintf(OUT, "\t\ttemp_C = np.array(C.row(k-1))\n");
 	fprintf(OUT, "\n# Calculating whether temp_R is a 1x1 Matrix or not\n");
-	fprintf(OUT, "\t\ttR_s = np.array([temp_R.shape])\n");
+			fprintf(OUT, "\t\ttR_s = np.array([temp_R.shape])\n");
 	fprintf(OUT, "\n# Choosing the rows in the determinant\n");
-	fprintf(OUT, "\t\tif tR_s.item(0)*tR_s.item(1) > 1:\n");
-	fprintf(OUT, "\t\t\tmyJ_r = Matrix([J.row(temp_R.item(0)-1),J.row(temp_R.item(1)-1)])\n");
-	fprintf(OUT, "\t\telse:\n");
-	fprintf(OUT, "\t\t\tmyJ_r = Matrix([J.row(temp_R.item(0)-1)])\n");
+			fprintf(OUT, "\t\tif tR_s.item(0)*tR_s.item(1) > 1:\n");
+				fprintf(OUT, "\t\t\tmyJ_r = Matrix([J.row(temp_R.item(0)-1),J.row(temp_R.item(1)-1)])\n");
+			fprintf(OUT, "\t\telse:\n");
+				fprintf(OUT, "\t\t\tmyJ_r = Matrix([J.row(temp_R.item(0)-1)])\n");
 	fprintf(OUT, "\n# Calculating whether temp_C is singular or not\n");
-	fprintf(OUT, "\t\ttC_s = np.array([temp_C.shape])\n");
+			fprintf(OUT, "\t\ttC_s = np.array([temp_C.shape])\n");
 	fprintf(OUT, "\n# Choosing the columns of the determinant\n");
-	fprintf(OUT, "\t\tif tC_s.item(0)*tC_s.item(1) > 1:\n");
-	fprintf(OUT, "\t\t\tmyA_1a = np.array(myJ_r.col(temp_C.item(0)-1))\n");
-    	fprintf(OUT, "\t\t\tmyA_1b = np.array(myJ_r.col(temp_C.item(1)-1))\n");
-    	fprintf(OUT, "\t\t\tmyA_1 = np.array([[myA_1a.item(0),myA_1b.item(0)],[myA_1a.item(1),myA_1b.item(1)]])\n");
-	fprintf(OUT, "\t\telse:\n");
-	fprintf(OUT, "\t\t\tmyA_1 = np.array([myJ_r.col(temp_C.item(0)-1)])\n");
-	fprintf(OUT, "\t\tmyA = Matrix(myA_1)\n");
-	fprintf(OUT, "\t\tmydet = myA.det()\n");
-	fprintf(OUT, "\t\tA = simplify(mydet)\n");
-	fprintf(OUT, "\t\tif A != 0:\n");
-	fprintf(OUT, "\t\t\tcount = count + 1\n");
-	fprintf(OUT, "\t\t\ttx = temp_R.item(0)-1\n");
-	fprintf(OUT, "\t\t\tif temp_R.size > 1:\n");
-    	fprintf(OUT, "\t\t\t\tty = temp_R.item(1)-1\n");
-	fprintf(OUT, "\t\t\telse:\n");
-	fprintf(OUT, "\t\t\t\tty = 0\n");
-	fprintf(OUT, "\t\t\tmydeg = np.array([deg.item(tx),deg.item(ty)])\n");
-    	fprintf(OUT, "\t\t\tmyprod = np.multiply(mydeg.item(0),mydeg.item(1))\n");
-    	fprintf(OUT, "\t\t\tmyfunc = 2*A/myprod\n");
-    	fprintf(OUT, "\t\t\tmyfunc2 = simplify(myfunc)\n");
-    	fprintf(OUT, "\t\t\tcurr_eqn = str(myfunc)\n");
-    	fprintf(OUT, "\t\t\ttf_i = curr_eqn.find(\"1j\")\n");
-    	fprintf(OUT, "\t\t\tif tf_i != -1:\n");
-    	fprintf(OUT, "\t\t\t\tcurr_eqn = str.replace(\"1j\",\"I\")\n");
-    	fprintf(OUT, "\t\t\tfunc_ida = \"f_1_%%i = \" %% count\n");
-	fprintf(OUT, "\t\t\tfunc_idb = str(curr_eqn)\n");
-	fprintf(OUT, "\t\t\tfunc_id = func_ida+func_idb+\";\\n\"\n");
-    	fprintf(OUT, "\t\t\tfo.write(func_id.replace(\"**\",\"^\"))\n");
-    	fprintf(OUT, "fo.close()\n\n");
+			fprintf(OUT, "\t\tif tC_s.item(0)*tC_s.item(1) > 1:\n");
+				fprintf(OUT, "\t\t\tmyA_1a = np.array(myJ_r.col(temp_C.item(0)-1))\n");
+				fprintf(OUT, "\t\t\tmyA_1b = np.array(myJ_r.col(temp_C.item(1)-1))\n");
+				fprintf(OUT, "\t\t\tmyA_1 = np.array([[myA_1a.item(0),myA_1b.item(0)],[myA_1a.item(1),myA_1b.item(1)]])\n");
+			fprintf(OUT, "\t\telse:\n");
+				fprintf(OUT, "\t\t\tmyA_1 = np.array([myJ_r.col(temp_C.item(0)-1)])\n");
+			fprintf(OUT, "\t\tmyA = Matrix(myA_1)\n");
+			fprintf(OUT, "\t\tmydet = myA.det()\n");
+			fprintf(OUT, "\t\tA = simplify(mydet)\n");
+			fprintf(OUT, "\t\tif A != 0:\n");
+				fprintf(OUT, "\t\t\tcount = count + 1\n");
+				fprintf(OUT, "\t\t\ttx = temp_R.item(0)-1\n");
+				fprintf(OUT, "\t\t\tif temp_R.size > 1:\n");
+					fprintf(OUT, "\t\t\t\tty = temp_R.item(1)-1\n");
+				fprintf(OUT, "\t\t\telse:\n");
+					fprintf(OUT, "\t\t\t\tty = 0\n");
+				fprintf(OUT, "\t\t\tmydeg = np.array([deg.item(tx),deg.item(ty)])\n");
+				fprintf(OUT, "\t\t\tmyprod = np.multiply(mydeg.item(0),mydeg.item(1))\n");
+				fprintf(OUT, "\t\t\tmyfunc = 2*A/myprod\n");
+				fprintf(OUT, "\t\t\tmyfunc2 = simplify(myfunc)\n");
+				fprintf(OUT, "\t\t\tcurr_eqn = str(myfunc)\n");
+				fprintf(OUT, "\t\t\ttf_i = curr_eqn.find(\"1j\")\n");
+				fprintf(OUT, "\t\t\tif tf_i != -1:\n");
+					fprintf(OUT, "\t\t\t\tcurr_eqn = str.replace(\"1j\",\"I\")\n");
+				fprintf(OUT, "\t\t\tfunc_ida = \"f_%d_%%i = \" %% count\n", deflation_number);
+				fprintf(OUT, "\t\t\tfunc_idb = str(curr_eqn)\n");
+				fprintf(OUT, "\t\t\tfunc_id = func_ida+func_idb+\";\\n\"\n");
+				fprintf(OUT, "\t\t\tfo.write(func_id.replace(\"**\",\"^\"))\n");
+	fprintf(OUT, "fo.close()\n\n");
 	
 	fprintf(OUT, "\n# Opening the second output file\n");
-    	fprintf(OUT, "fo = open(\"deflation_polynomials_declaration\",\"wb\")\n");
+	fprintf(OUT, "fo = open(\"deflation_polynomials_declaration\",\"wb\")\n");
 	fprintf(OUT, "mystr4 = \"\"\n");
-    	fprintf(OUT, "for j in range(1,count+1):\n");
-    	fprintf(OUT, "\tmystr2a = \"f_1_%%i\" %% (j)\n");
-    	fprintf(OUT, "\tif j == count:\n");
-    	fprintf(OUT, "\t\tmystr2b = \";\\n\"\n");
-   	fprintf(OUT, "\telse:\n");
-    	fprintf(OUT, "\t\tmystr2b = \", \"\n");
-    	fprintf(OUT, "\tmystr3 = \"%%s%%s\" %% (mystr2a,mystr2b)\n");
-    	fprintf(OUT, "\tmystr4 = \"%%s%%s\" %% (mystr4,mystr3)\n");
-	fprintf(OUT, "\tif mystr2b == \";\\n\":\n");
-	fprintf(OUT, "\t\tfo.write(mystr4)\n");
-	fprintf(OUT, "\t\tfo.write(\"\\n\")\n");
+	fprintf(OUT, "for j in range(1,count+1):\n");
+		fprintf(OUT, "\tmystr2a = \"f_%d_%%i\" %% (j)\n", deflation_number);
+		fprintf(OUT, "\tif j == count:\n");
+			fprintf(OUT, "\t\tmystr2b = \";\\n\"\n");
+		fprintf(OUT, "\telse:\n");
+			fprintf(OUT, "\t\tmystr2b = \", \"\n");
+		fprintf(OUT, "\tmystr3 = \"%%s%%s\" %% (mystr2a,mystr2b)\n");
+		fprintf(OUT, "\tmystr4 = \"%%s%%s\" %% (mystr4,mystr3)\n");
 
-    	fprintf(OUT, "fo.close()\n\n");
+
+	fprintf(OUT, "\n\nfo.write(\"function \")\n");
+	fprintf(OUT, "fo.write(mystr4)\n");
+	fprintf(OUT, "fo.write(\"\\n\")\n");
+	fprintf(OUT, "fo.close()\n\n");
 
 	// clear memory
 	free(str);

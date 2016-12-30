@@ -1033,54 +1033,52 @@ void create_nullspace_system(boost::filesystem::path output_name,
 	// setup functions
 	rewind(IN);
 	parse_names(&numFuncs, &funcs, &lineFuncs, IN, const_cast< char *>("function"), declarations[9]);
-	
+	rewind(IN);
 
-	// INSERT SWITCH FOR MATLAB / PYTHON HERE
-	auto engine = program_options.symbolic_engine();
 
-	// MATLAB SECTION
-	if (engine == SymEngine::Matlab)
-	  {
-	    rewind(IN);
+	switch (program_options.symbolic_engine())
+	{
+		case SymEngine::Matlab:
+		{
+			std::cout << "using matlab to create critical system\n\n";
+			
+			// setup Matlab script
+			create_matlab_determinantal_system("matlab_nullspace_system.m", "func_input_real",
+							   ns_config, numVars, vars, lineVars, numConstants,
+							   consts, lineConstants, numFuncs, funcs, lineFuncs);
 
-	    OUT = safe_fopen_write("matlab_nullspace_system.m");
-	    
-	    // setup Matlab script
-	    create_matlab_determinantal_system(OUT, IN,
-					       ns_config, numVars, vars, lineVars, numConstants,
-					       consts, lineConstants, numFuncs, funcs, lineFuncs);
-	    fclose(OUT);
+			// run Matlab script
+			std::stringstream converter;
+			converter << program_options.matlab_command() << " matlab_nullspace_system";
+			system(converter.str().c_str());
+			converter.clear(); converter.str("");
+			break;
+		}
 
-	    // run Matlab script
-	    std::stringstream converter;
-	    converter << program_options.matlab_command() << " matlab_nullspace_system";
-	    system(converter.str().c_str());
-	    converter.clear(); converter.str("");
-	  }
+		case SymEngine::Python:
+		{
+			std::cout << "using python to create critical system\n\n";
 
-	// PYTHON SECTION
-	else if (engine == SymEngine::Python)
-	  {
-	    rewind(IN);
-	    OUT = safe_fopen_write("python_nullspace_system.py");
+			OUT = safe_fopen_write("python_nullspace_system.py");
 
-	    
-	    create_python_determinantal_system(OUT, IN,
-					       ns_config, numVars, vars, lineVars, numConstants,
-					       consts, lineConstants, numFuncs, funcs, lineFuncs);
+			std::cout << "creating python script\n\n";
+			create_python_determinantal_system(OUT, IN,
+							   ns_config, numVars, vars, lineVars, numConstants,
+							   consts, lineConstants, numFuncs, funcs, lineFuncs);
 
-	    fclose(OUT);
+			fclose(OUT);
 
-	    // run Python script
-	    execlp("python", "python", "python_nullspace_system.py", (char*) NULL);
-	  }
-
-	else
-	  {
-	    printf("There was an error with choosing a nullspace symbolic engine. BIG ERROR, GO FIX!");
-	  }
+			// run Python script
+			std::cout << "invoking python\n\n";
+			system("python python_nullspace_system.py");
+			// execlp("python", "python", "python_nullspace_system.py", (char*) NULL);
+			std::cout << "done invoking python\n\n";
+			break;
+		}
+	} 
 
 	fclose(IN);
+
 
 	// setup new file	
 	OUT = safe_fopen_write(output_name.c_str());
@@ -1153,10 +1151,10 @@ void create_nullspace_system(boost::filesystem::path output_name,
 
 
 
-void create_matlab_determinantal_system( FILE *OUT,
-					FILE *IN,
-					NullspaceConfiguration *ns_config,
-					int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs)
+void create_matlab_determinantal_system(boost::filesystem::path output_name,
+										boost::filesystem::path input_name,
+										NullspaceConfiguration *ns_config,
+										int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs)
 /***************************************************************\
  * USAGE: setup a Matlab script to perform the deflation         *
  * ARGUMENTS: input file, declaration name, and number of lines  *
@@ -1164,205 +1162,178 @@ void create_matlab_determinantal_system( FILE *OUT,
  * NOTES:                                                        *
  \***************************************************************/
 {
-  int ii, lineNumber = 1, declares = 0, strSize = 1;
-  char *str = (char *)br_malloc(strSize * sizeof(char));
-  char ch;
-  int strLength = 0;
-
-  // setup Bertini constants in Matlab
-  fprintf(OUT, "syms I Pi;\n");
-
-  // setup variables
-  fprintf(OUT, "syms");
-  for (ii = 0; ii < numVars; ii++)
-    {
-      fprintf(OUT, " %s", vars[ii]);
-    }
-  fprintf(OUT,";\nmy_var_names = [");
-  for (ii = 0; ii < numVars; ii++)
-    {
-      fprintf(OUT, " %s", vars[ii]);
-    }
-  fprintf(OUT, "];\n\n");
-
-  fprintf(OUT, "syms");
-  for (ii = 1; ii <= ns_config->num_projections; ii++)
-    {
-      for (int jj = 1; jj< ns_config->num_natural_vars; jj++)
-	{
-	  fprintf(OUT, " pi_%i_%i", ii, jj+1);
-	  fprintf(OUT, "\n");
-
-	  fprintf(OUT, "proj = [");
-	  for (ii = 1; ii <= ns_config->num_projections; ii++)
-	    {
-	      fprintf(OUT, "[");
-	      for (int jj = 1; jj< ns_config->num_natural_vars; jj++)
-		{
-		  fprintf(OUT, " pi_%i_%i", ii, jj+1);
+	int ii, lineNumber = 1, declares = 0, strSize = 1;
+	char *str = (char *)br_malloc(strSize * sizeof(char));
+	
+	std::ifstream IN(input_name.c_str());
+	std::ofstream OUT(output_name.c_str());
+	// setup Bertini constants in Matlab
+	OUT << "syms I Pi;\n";
+	
+	// setup variables
+	OUT << "syms";
+	for (ii = 0; ii < numVars; ii++)
+		OUT << " " << vars[ii];
+	OUT << ";\nmy_var_names = [";
+	for (ii = 0; ii < numVars; ii++)
+		OUT << " " << vars[ii];
+	OUT << "];\n\n";
+	
+	
+	
+	
+	
+	OUT << "syms";
+	for (ii = 1; ii <= ns_config->num_projections; ii++)
+		for (int jj = 1; jj< ns_config->num_natural_vars; jj++)
+			OUT << " pi_" << ii << "_" << jj+1;
+	OUT << "\n";
+	
+	OUT << "proj = [";
+	for (ii = 1; ii <= ns_config->num_projections; ii++){
+		OUT << "[";
+		for (int jj = 1; jj< ns_config->num_natural_vars; jj++){
+			OUT << " pi_" << ii << "_" << jj+1 << "";
 		}
-	      fprintf(OUT, " ]; ");
-	    }
-	  fprintf(OUT, "];\n\n");
+		OUT << " ]; ";
 	}
-    }
-
-  // setup constants
-  if (numConstants > 0)
-    {
-      fprintf(OUT, "syms");
-      for (ii = 0; ii < numConstants; ii++)
-	fprintf(OUT, " %s", consts[ii]);
-      fprintf(OUT, ";\n");
-    }
-
-  fprintf(OUT, "num_projections = %i;\n", ns_config->num_projections);
-  fprintf(OUT, "num_jac_equations = %i;\n", ns_config->num_jac_equations);
-  fprintf(OUT, "num_randomized_eqns = %i;\n", ns_config->randomizer()->num_rand_funcs());
-  fprintf(OUT, "target_crit_codim = %i;\n", ns_config->target_crit_codim);
-
-  int cont = 1;
-  // copy lines which do not declare items or define constants (keep these as symbolic objects)
-  while (cont)
-    { // see if this line number declares items
-      declares = 0;
-      for (ii = 0; ii < numVars; ii++)
-	if (lineNumber == lineVars[ii])
-	  declares = 1;
-      for (ii = 0; ii < numConstants; ii++)
-	if (lineNumber == lineConstants[ii])
-	  declares = 1;
-      for (ii = 0; ii < numFuncs; ii++)
-	if (lineNumber == lineFuncs[ii])
-	  declares = 1;
-
-     	if (declares)
-		{ // move past this line
-			do
-			{ // read in character
-				ch = fgetc(IN);
-			} while (ch != '\n' && ch != EOF);
-		}
+	OUT << "];\n\n";
+	
+	// setup constants
+	if (numConstants > 0)
+	{
+		OUT << "syms";
+		for (ii = 0; ii < numConstants; ii++)
+			OUT << " " << consts[ii];
+		OUT << ";\n";
+	}
+	
+	OUT << "num_projections = " << ns_config->num_projections << ";\n";
+	OUT << "num_jac_equations = " << ns_config->num_jac_equations << ";\n";
+	OUT << "num_randomized_eqns = " << ns_config->randomizer()->num_rand_funcs() << ";\n";
+	OUT << "target_crit_codim = " << ns_config->target_crit_codim << ";\n";
+	
+	int cont = 1;
+	// copy lines which do not declare items or define constants (keep these as symbolic objects)
+	while (cont)
+	{ // see if this line number declares items
+		declares = 0;
+		for (ii = 0; ii < numVars; ii++)
+			if (lineNumber == lineVars[ii])
+				declares = 1;
+		for (ii = 0; ii < numConstants; ii++)
+			if (lineNumber == lineConstants[ii])
+				declares = 1;
+		for (ii = 0; ii < numFuncs; ii++)
+			if (lineNumber == lineFuncs[ii])
+				declares = 1;
+		
+		std::string current_line;
+		getline(IN,current_line);
+		//		std::cout << "curr line: " << current_line << std::endl;
+		
+		if (declares)
+		{} // move past this line
 		else
 		{ // check to see if this defines a constant - line must be of the form '[NAME]=[EXPRESSION];' OR EOF
-			ch = fgetc(IN);
-			if (ch != EOF)
-			{ // definition line
-				strLength = 0;
-				do
-				{ // add to str
-					if (strLength + 1 == strSize)
-					{ // increase strSize
-						strSize *= 2;
-						str = (char *)br_realloc(str, strSize * sizeof(char));
-					}
-					str[strLength] = ch;
-					strLength++;
-				} while ((ch = fgetc(IN)) != '=');
-				str[strLength] = '\0';
-				strLength++;
-				
-				// compare against constants
-				declares = 0;
-				for (ii = 0; ii < numConstants; ii++)
-					if (strcmp(str, consts[ii]) == 0)
-						declares = 1;
-				
-				if (declares)
-				{ // move past this line
-					do
-					{ // read in character
-						ch = fgetc(IN);
-					} while (ch != '\n' && ch != EOF);
-				}
-				else
-				{ // print line
-					fprintf(OUT, "%s=", str);
-					do
-					{ // read in character & print it
-						ch = fgetc(IN);
-						if (ch != EOF)
-							fprintf(OUT, "%c", ch);
-					} while (ch != '\n' && ch != EOF);
-				}
+			
+			std::string name;
+			size_t found=current_line.find('=');
+			if (found!=std::string::npos) {
+				name = current_line.substr(0,found);
 			}
+			
+			declares = 0;
+			// compare against constants
+			for (ii = 0; ii < numConstants; ii++)
+				if (strcmp(name.c_str(), consts[ii]) == 0)
+					declares = 1;
+			
+			if (!declares)// print line
+				OUT << current_line << std::endl;
 		}
 		
 		// increment lineNumber
 		lineNumber++;
 		
 		// test for EOF
-		if (ch == EOF)
+		if (IN.eof())
 			cont = 0;
 	}
-  
-  fprintf(OUT, "syms ");
-  for (ii=0; ii<ns_config->randomizer()->num_rand_funcs(); ii++)
-    {
-      for (int jj=0; jj<ns_config->randomizer()->num_base_funcs(); jj++)
-	{
-	  fprintf(OUT, "r_%i_%i ", ii+1, jj+1)	;
+	
+	OUT << "syms ";
+	for (ii=0; ii<ns_config->randomizer()->num_rand_funcs(); ii++) {
+		for (int jj=0; jj<ns_config->randomizer()->num_base_funcs(); jj++) {
+			OUT << "r_" << ii+1 << "_" << jj+1 << " "	;
+		}
 	}
-    }
-  fprintf(OUT, ";\n");
-
-  // setup functions
-  fprintf(OUT, "\nF_orig = [");
-  for (ii = 0; ii < numFuncs; ii++)
-    fprintf(OUT, " %s;", funcs[ii]);
-  fprintf(OUT, "]; %collect the functions into a single matrix\n");
-
-  // put in the randomization matrices.
-  if (!ns_config->randomizer()->is_square())
-    {
-      fprintf(OUT, "R = [");
-      for (ii=0; ii<ns_config->randomizer()->num_rand_funcs(); ii++)
-	{
-	  for (int jj=0; jj<ns_config->randomizer()->num_base_funcs(); jj++)
-	    {
-	      fprintf(OUT, "r_%i_%i ", ii+1, jj+1);
-	    }
-	  fprintf(OUT, ";\n");
+	OUT << ";\n";
+	
+	
+	
+	
+	
+	
+	
+	// setup functions
+	OUT << "\nF_orig = [";
+	for (ii = 0; ii < numFuncs; ii++)
+		OUT << " " << funcs[ii] << ";";
+	OUT << "]; %collect the functions into a single matrix\n";
+	
+	// put in the randomization matrices.
+	if (!ns_config->randomizer()->is_square()) {
+		OUT << "R = [";
+		for (ii=0; ii<ns_config->randomizer()->num_rand_funcs(); ii++) {
+			for (int jj=0; jj<ns_config->randomizer()->num_base_funcs(); jj++) {
+				OUT << "r_" << ii+1 << "_" << jj+1 << " "	;
+			}
+			OUT << ";\n";
+		}
+		OUT << "];\n\n";
+		
+		OUT << "F_rand = R*F_orig; % randomize\n";
 	}
-      fprintf(OUT, "];\n\n");
-      fprintf(OUT, "F_rand = R*F_orig; % randomize\n");
-    }
-  else
-    {
-      fprintf(OUT, "F_rand = F_orig; % no need to randomize\n");
-    }
-
-  // compute the jacobian
-  fprintf(OUT, "J = [jacobian(F_rand,my_var_names); proj];  %compute the transpose of the jacobian\n");
-  fprintf(OUT, "                                           %concatenate the projections\n\n");
-
-  fprintf(OUT, "new_eqn = det(J); \n\n");
-
-  fprintf(OUT, "OUT = fopen('derivative_polynomials_declaration','w'); %open the file to write\n");
-
-  fprintf(OUT, "fprintf(OUT, 'function ');\n");
-  fprintf(OUT, "for ii=1:num_randomized_eqns\n");
-  fprintf(OUT, "  fprintf(OUT, 'f%i',ii);\n");
-  fprintf(OUT, "  if ii~=num_randomized_eqns\n");
-  fprintf(OUT, "    fprintf(OUT,', ');\n");
-  fprintf(OUT, "  else\n");
-  fprintf(OUT, "    fprintf(OUT,';\\n');\n");
-  fprintf(OUT, "  end %re: if\n");
-  fprintf(OUT, "end\n\n");
-
-  fprintf(OUT, "for ii=1:num_randomized_eqns\n");
-  fprintf(OUT, "  fprintf(OUT,'f%i = %s;\\n',ii,char(F_rand(ii)));\n");
-  fprintf(OUT, "end\n\n");
-
-  fprintf(OUT, "fprintf(OUT, 'function der_func;\\n');\n");
-  fprintf(OUT, "fprintf(OUT,'der_func = %s;\\n',char(new_eqn));\n\n");
-
-  fprintf(OUT, "exit %quit the script\n");
-
-  // clear memory
-  free(str);
-  return;
+	else{
+		
+		OUT << "F_rand = F_orig; % no need to randomize\n";
+	}
+	
+	
+	// compute the jacobian
+	OUT << "J = [jacobian(F_rand,my_var_names); proj];  %compute the transpose of the jacobian\n";
+	OUT << "                                           %concatenate the projections\n\n";
+	
+	OUT << "new_eqn = det(J); \n\n";
+	
+	OUT << "OUT = fopen('derivative_polynomials_declaration','w'); %open the file to write\n";
+	
+	OUT << "fprintf(OUT, 'function ');\n";
+	OUT << "for ii=1:num_randomized_eqns\n";
+	OUT << "  fprintf(OUT, 'f%i',ii);\n";
+	OUT << "  if ii~=num_randomized_eqns\n";
+	OUT << "    fprintf(OUT,', ');\n";
+	OUT << "  else\n";
+	OUT << "    fprintf(OUT,';\\n');\n";
+	OUT << "  end %re: if\n";
+	OUT << "end\n\n";
+	
+	OUT << "for ii=1:num_randomized_eqns\n";
+	OUT << "  fprintf(OUT,'f%i = %s;\\n',ii,char(F_rand(ii)));\n";
+	OUT << "end\n\n";
+	
+	OUT << "fprintf(OUT, 'function der_func;\\n');\n";
+	OUT << "fprintf(OUT,'der_func = %s;\\n',char(new_eqn));\n\n";
+	
+	OUT << "exit %quit the script\n";
+	
+	
+	// clear memory
+	free(str);
+	
+	return;
 }
+
 
 
 
@@ -1380,7 +1351,7 @@ void create_python_determinantal_system( FILE *OUT,
  * NOTES:                                                        *
  \***************************************************************/
 {
-  int ii, lineNumber = 1, declares = 0, strSize = 1, cont = 1, strLength = 0;
+	int ii, lineNumber = 1, declares = 0, strSize = 1, cont = 1, strLength = 0;
 	char *str = (char *)br_malloc(strSize * sizeof(char));
 
 	char ch;
@@ -1388,8 +1359,8 @@ void create_python_determinantal_system( FILE *OUT,
 	// set up Python libraries
 	fprintf(OUT, "import numpy as np\nfrom numpy import array\n");
 	fprintf(OUT, "import math\nimport algopy as ap\nfrom algopy import UTPM, exp\n");
-    	fprintf(OUT, "import sympy as sp\nfrom sympy import sin, cos, Matrix, var\n");
-    	fprintf(OUT, "import scipy as sci\n\n");
+		fprintf(OUT, "import sympy as sp\nfrom sympy import sin, cos, Matrix, var\n");
+		fprintf(OUT, "import scipy as sci\n\n");
 
 
 	// setup Bertini constants in Python
@@ -1400,20 +1371,20 @@ void create_python_determinantal_system( FILE *OUT,
 	fprintf(OUT,"var('");
 	for (ii = 0; ii < numVars; ii++)
 	  {
-	    fprintf(OUT, "%s", vars[ii]);
-	    if (ii < numVars-1)
-	      {
+		fprintf(OUT, "%s", vars[ii]);
+		if (ii < numVars-1)
+		  {
 		fprintf(OUT,", ");
-	      }
+		  }
 	  }
 	fprintf(OUT, "')\nvar_names = Matrix([");
 	for (ii = 0; ii < numVars; ii++)
 	  {
-	    fprintf(OUT, "%s", vars[ii]);
-	    if (ii < numVars - 1)
-	      {
+		fprintf(OUT, "%s", vars[ii]);
+		if (ii < numVars - 1)
+		  {
 		fprintf(OUT, ", ");
-	      }
+		  }
 	  }
 	fprintf(OUT, "])\n\n");
 	
@@ -1421,19 +1392,19 @@ void create_python_determinantal_system( FILE *OUT,
 	// symbolic variables
 	for (ii = 1; ii <= ns_config->num_projections; ii++)
 	  {
-	    for (int jj = 1; jj< ns_config->num_natural_vars; jj++)
-	      {
+		for (int jj = 1; jj< ns_config->num_natural_vars; jj++)
+		  {
 		fprintf(OUT, "pi_%i_%i,", ii, jj+1);
-	      }
+		  }
 	  }
 	
 	fprintf(OUT, " = sp.symbols('");
 	for (ii = 1; ii <= ns_config->num_projections; ii++)
 	  {
-	    for (int jj = 1; jj< ns_config->num_natural_vars; jj++)
-	      {
+		for (int jj = 1; jj< ns_config->num_natural_vars; jj++)
+		  {
 		fprintf(OUT, "pi_%i_%i,", ii, jj+1);
-	      }
+		  }
 	  }
 	
 	fprintf(OUT, "')\n\n");
@@ -1442,36 +1413,36 @@ void create_python_determinantal_system( FILE *OUT,
 	fprintf(OUT, "proj = np.array([");
 	for (ii = 1; ii <= ns_config->num_projections; ii++)
 	  {
-	    fprintf(OUT,"[");
-	    for (int jj = 1; jj< ns_config->num_natural_vars; jj++)
-	      {
+		fprintf(OUT,"[");
+		for (int jj = 1; jj< ns_config->num_natural_vars; jj++)
+		  {
 		fprintf(OUT, "pi_%i_%i,", ii, jj+1);
-	      }
-	    if(ii<ns_config->num_projections)
-	      {
+		  }
+		if(ii<ns_config->num_projections)
+		  {
 		fprintf(OUT,"],");
-	      }
-	    else
-	      {
+		  }
+		else
+		  {
 		fprintf(OUT,"]");
-	      }
+		  }
 	  }
 	fprintf(OUT, "])\n\n");
 	
 	// setup constants
 	if (numConstants > 0)
 	  {
-	    fprintf(OUT, "\n# Constants \n");
-	    fprintf(OUT, "var('");
-      	    for (ii = 0; ii < numConstants; ii++)
-	      {
+		fprintf(OUT, "\n# Constants \n");
+		fprintf(OUT, "var('");
+			for (ii = 0; ii < numConstants; ii++)
+		  {
 		fprintf(OUT, "%s", consts[ii]);
 		if (ii < numConstants-1)
 		  {
-		    fprintf(OUT, ", ");
+			fprintf(OUT, ", ");
 		  }
-	      }
-	    fprintf(OUT, "')\n\n");
+		  }
+		fprintf(OUT, "')\n\n");
 	  }
 
 	// set up degrees
@@ -1484,109 +1455,109 @@ void create_python_determinantal_system( FILE *OUT,
 	// copy lines which do not declare items or define constants (keep these as symbolic objects)
 	while (cont)
 	  { // see if this line number declares items
-	    declares = 0;
-	    for (ii = 0; ii < numVars; ii++)
-	      {
+		declares = 0;
+		for (ii = 0; ii < numVars; ii++)
+		  {
 		if (lineNumber == lineVars[ii])
 		  declares = 1;
-	      }
-	    for (ii = 0; ii < numConstants; ii++)
-	      {
+		  }
+		for (ii = 0; ii < numConstants; ii++)
+		  {
 		if (lineNumber == lineConstants[ii])
 		  declares = 1;
-	      }
-	    for (ii = 0; ii < numFuncs; ii++)
-	      {
+		  }
+		for (ii = 0; ii < numFuncs; ii++)
+		  {
 		if (lineNumber == lineFuncs[ii])
 		  declares = 1;
-	      }
+		  }
 
-	    if (declares)
-	      { // move past this line
+		if (declares)
+		  { // move past this line
 		do
 		  { // read in character
-		    ch = fgetc(IN);
+			ch = fgetc(IN);
 		  } while (ch != '\n' && ch != EOF);
-	      }
-	    else
-	      { // check to see if this defines a constant - line must be of the form '[NAME]=[EXPRESSION];' OR EOF
+		  }
+		else
+		  { // check to see if this defines a constant - line must be of the form '[NAME]=[EXPRESSION];' OR EOF
 		ch = fgetc(IN);
 		if (ch != EOF)
 		  { // definition line
-		    strLength = 0;
-		    do
-		      { // add to str
+			strLength = 0;
+			do
+			  { // add to str
 			if (strLength + 1 == strSize)
 			  { // increase strSize
-			    strSize *= 2;
-			    str = (char *)br_realloc(str, strSize * sizeof(char));
+				strSize *= 2;
+				str = (char *)br_realloc(str, strSize * sizeof(char));
 			  }
 			str[strLength] = ch;
 			strLength++;
-		      } while ((ch = fgetc(IN)) != '=');
-		    str[strLength] = '\0';
-		    strLength++;
+			  } while ((ch = fgetc(IN)) != '=');
+			str[strLength] = '\0';
+			strLength++;
 
-		    // compare against constants
-		    declares = 0;
-		    for (ii = 0; ii < numConstants; ii++)
-		      {
+			// compare against constants
+			declares = 0;
+			for (ii = 0; ii < numConstants; ii++)
+			  {
 			if (strcmp(str, consts[ii]) == 0)
 			  declares = 1;
-		      }
+			  }
 
-		    if (declares)
-		      { // move past this line
+			if (declares)
+			  { // move past this line
 			do
 			  { // read in character
-			    ch = fgetc(IN);
+				ch = fgetc(IN);
 			  } while (ch != '\n' && ch != EOF);
-		      }
-		    else
-		      { // print line
+			  }
+			else
+			  { // print line
 			fprintf(OUT, "%s=Matrix([", str);
 			do
 			  { // read in character & print it
-			    ch = fgetc(IN);
-			    if (ch != EOF)
-			      {
+				ch = fgetc(IN);
+				if (ch != EOF)
+				  {
 				if (ch == '^')
 				  {
-				    fprintf(OUT, "**");
+					fprintf(OUT, "**");
 				  }
 				else if (ch == ';')
 				  {
-				    fprintf(OUT, "])");
+					fprintf(OUT, "])");
 				  }
 				else
 				  {
-				    fprintf(OUT, "%c", ch);
+					fprintf(OUT, "%c", ch);
 				  }
-			      }
+				  }
 			  } while (ch != '\n' && ch != EOF);
-		      }
+			  }
 		  }
-	      }
+		  }
 
-	    // increment lineNumber
-	    lineNumber++;
+		// increment lineNumber
+		lineNumber++;
 
-	    // test for EOF
-	    if (ch == EOF)
-	      cont = 0;
+		// test for EOF
+		if (ch == EOF)
+		  cont = 0;
 	  }
 	
 	fprintf(OUT, "\n#Random Functions\n");
 	for (int ii=0; ii < ns_config->randomizer()->num_rand_funcs(); ii++)
 	  {
-	    for (int jj=0; jj < ns_config->randomizer()->num_base_funcs(); jj++)
-	      {
+		for (int jj=0; jj < ns_config->randomizer()->num_base_funcs(); jj++)
+		  {
 		fprintf(OUT,"r_%i%i", ii+1, jj+1);
 		if(jj < (ns_config->randomizer()->num_base_funcs()-1))
 		  {
-		    fprintf(OUT,",");
+			fprintf(OUT,",");
 		  }
-	      }
+		  }
 	  }
 	
 	fprintf(OUT," = sp.symbols('");
@@ -1594,14 +1565,14 @@ void create_python_determinantal_system( FILE *OUT,
 
 	for (int ii=0; ii < ns_config->randomizer()->num_rand_funcs(); ii++)
 	  {
-	    for (int jj=0; jj < ns_config->randomizer()->num_base_funcs(); jj++)
-	      {
+		for (int jj=0; jj < ns_config->randomizer()->num_base_funcs(); jj++)
+		  {
 		fprintf(OUT,"r_%i%i", ii+1, jj+1);
 		if(jj < (ns_config->randomizer()->num_base_funcs()-1))
 		  {
-		    fprintf(OUT,",");
+			fprintf(OUT,",");
 		  }
-	      }
+		  }
 	  }
 	fprintf(OUT,"')\n\n");
 		
@@ -1610,11 +1581,11 @@ void create_python_determinantal_system( FILE *OUT,
 	fprintf(OUT, "F_orig = sp.Matrix([");
 	for (ii = 0; ii < numFuncs; ii++)
 	  {
-	    fprintf(OUT, "%s", funcs[ii]);
-	    if (ii < numFuncs - 1)
-	      {
+		fprintf(OUT, "%s", funcs[ii]);
+		if (ii < numFuncs - 1)
+		  {
 		fprintf(OUT, "],");
-	      }
+		  }
 	  }
 	fprintf(OUT, "])\n\n");
 	
@@ -1622,31 +1593,31 @@ void create_python_determinantal_system( FILE *OUT,
 	fprintf(OUT, "# randomization matrix\n");
 	if(!ns_config->randomizer()->is_square())
 	  {
-	    fprintf(OUT, "R = Matrix([");
-	    for (ii=0; ii<ns_config->randomizer()->num_rand_funcs(); ii++)
-	      {
+		fprintf(OUT, "R = Matrix([");
+		for (ii=0; ii<ns_config->randomizer()->num_rand_funcs(); ii++)
+		  {
 		fprintf(OUT, "[");
 		for (int jj=0; jj<ns_config->randomizer()->num_base_funcs(); jj++)
 		  {
-		    fprintf(OUT, "r_%i_%i", ii+1, jj+1);
-		    if (jj < ns_config->randomizer()->num_base_funcs() - 1)
-		      {
+			fprintf(OUT, "r_%i_%i", ii+1, jj+1);
+			if (jj < ns_config->randomizer()->num_base_funcs() - 1)
+			  {
 			fprintf(OUT, ",");
-		      }
+			  }
 		  }
 		fprintf(OUT, "]");
 		if (ii < ns_config->randomizer()->num_rand_funcs() -1)
 		  {
-		    fprintf(OUT,",");
+			fprintf(OUT,",");
 		  }
-	      }
-	    fprintf(OUT,"])\n\n");
+		  }
+		fprintf(OUT,"])\n\n");
 
-	    fprintf(OUT, "F_rand = R*F_orig\n\n");
+		fprintf(OUT, "F_rand = R*F_orig\n\n");
 	  }
 	else
 	  {
-	    fprintf(OUT, "F_rand = F_orig\n\n");
+		fprintf(OUT, "F_rand = F_orig\n\n");
 	  }
 	
 	
@@ -1692,7 +1663,7 @@ void create_python_determinantal_system( FILE *OUT,
 	fprintf(OUT, "\tfo.write(mystr3.replace(\"**\",\"^\"))\n");
 	fprintf(OUT, "mystr4 = \"function der_func;\\n\"\n");
 	fprintf(OUT, "mystr5a = \"der_func = \"\n");
-        fprintf(OUT, "mystr5b = str(new_eqn) \n");
+		fprintf(OUT, "mystr5b = str(new_eqn) \n");
 	fprintf(OUT, "mystr5 = mystr5a+mystr5b+\";\\n\"\n");
 	fprintf(OUT, "fo.write(mystr4)\n");
 	fprintf(OUT, "fo.write(mystr5.replace(\"**\",\"^\"))\n");
