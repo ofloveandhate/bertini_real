@@ -22,7 +22,9 @@
 
 *.mat
 
-*sublime-workspace 
+*.pyc
+
+*sublime-workspace
 
 nullspace_left_output
 nullspace_left_midpath_data
@@ -126,4 +128,3 @@ ltversion*
 *.o
 *.lo
 *.o-*
-
