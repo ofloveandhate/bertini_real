@@ -157,7 +157,7 @@ int VertexSet::compute_downstairs_crit_midpts(const WitnessSet & W,
 	change_size_vec_mp(crit_downstairs,1); // destructive resize
 	crit_downstairs->size = 1;
 	
-	retVal = sort_increasing_by_real(crit_downstairs, index_tracker, projection_values, 1e-20);
+	retVal = sort_increasing_by_real(crit_downstairs, index_tracker, projection_values, 1e-30);
 	
 	clear_vec_mp(projection_values); // done with this data.  clear it.
 	
