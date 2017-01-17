@@ -1812,7 +1812,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					break;
 					
 					
-				case -3:
+				case -3: // minstepsize
 					
 					solve_options.T.minStepSizeBeforeEndGame *= 1e-1;
 					solve_options.T.minStepSizeDuringEndGame *= 1e-1;

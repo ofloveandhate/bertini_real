@@ -119,6 +119,11 @@ public:
 		pts_mp_ = NULL;
 	}
 	
+	void real_threshold_points(double threshold)
+	{
+		for (unsigned int ii = 0; ii<num_pts_; ii++)
+			real_threshold(pts_mp_[ii], threshold);
+	}
 	
 	/**
 	 \brief add a point to the PointHolder
