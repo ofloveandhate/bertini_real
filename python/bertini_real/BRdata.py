@@ -13,6 +13,8 @@ class BRdata(object):
         self.vertices = []
         self.directory_info = ParsingFunctions.parse_directory_name()
         self.find_directory(self.directory_info[0])
+        print("gathering data from " + self.directory)
+
         self.dimension = int(self.directory_info[2])
 
         # gather vertices
@@ -24,20 +26,19 @@ class BRdata(object):
             # polynomial is a surface
             self.gather_surface(self.directory)
 
-        print("Done gathering decomposition")
+        print("done gathering decomposition")
 
 
 
     def find_directory(self,directory_path):
         directories = directory_path.split('/')
-        print(directories)
         if len(directories) > 1:
             self.directory = directories[-1]
         else:
             self.directory = directory_path
 
 
-            
+
     def gather_vertices(self):
         vertex_file_name = "V.vertex"
         # print self.directory
@@ -124,3 +125,40 @@ class BRdata(object):
 
     def gather_curve(self, directory):
         self.curve =  Curve(directory)
+
+
+def filenumber():
+    import fnmatch
+    import os
+
+    pattern = 'BRdata*.pkl'
+
+    files = os.listdir('.')
+    highest_number = -1
+
+    for name in files:
+        if fnmatch.fnmatch(name, pattern):
+            try:
+                current_number = int(name[6:-4])
+                if current_number > highest_number:
+                    highest_number = current_number
+            except ValueError:
+                continue
+
+    return highest_number+1
+
+
+if __name__ == "__main__":
+
+    a = filenumber()
+
+    fileName = "BRdata" + str(a) + ".pkl"
+    fileObject = open(fileName,'wb')
+
+    b = BRdata()
+
+    print("saving to file " + fileName)
+
+    import pickle
+    pickle.dump(b,fileObject)
+    fileObject.close()
