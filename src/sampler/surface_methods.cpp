@@ -646,7 +646,7 @@ std::vector<int> Surface::AdaptiveNumSamplesPerRib(VertexSet const& V, sampler_c
 		{
 			auto M = std::min(est_num, sampler_options.max_num_ribs);
 			auto m = std::max(est_num, sampler_options.min_num_ribs);
-			num.push_back(std::max(m, M));
+			num.push_back(std::max(m, M)+2);
 		}
 	}
 
