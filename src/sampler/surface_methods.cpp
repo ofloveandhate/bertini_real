@@ -609,7 +609,7 @@ std::vector<int> Surface::AdaptiveNumSamplesPerRib(VertexSet const& V, sampler_c
                                        tempvec2);
 		add_mp(temp3, temp2, temp1);
 		if (mpf_cmp(temp3->r, max_widths_found->coord[interval_ind].r) > 0)
-			mpf_set(max_widths_found->coord[interval_ind].r, temp1->r);
+			mpf_set(max_widths_found->coord[interval_ind].r, temp3->r);
 
 
 
@@ -627,7 +627,7 @@ std::vector<int> Surface::AdaptiveNumSamplesPerRib(VertexSet const& V, sampler_c
                                        tempvec2);
 		add_mp(temp3, temp2, temp1);
 		if (mpf_cmp(temp3->r, max_widths_found->coord[interval_ind].r) > 0)
-			mpf_set(max_widths_found->coord[interval_ind].r, temp1->r);
+			mpf_set(max_widths_found->coord[interval_ind].r, temp3->r);
 	}
 
 
