@@ -1110,6 +1110,13 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 		}
 	}
 
+	if (num_ribs%2==0)
+	{
+		// need to insert the sampling from the midslice into the mix.
+		ribs.insert(ribs.begin() + num_ribs/2, current_midslice.SamplesOnEdge(mid_edge));
+	}
+
+
 	StitchRibs(ribs,V);
 
 	

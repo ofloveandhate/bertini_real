@@ -67,7 +67,14 @@ public:
 	}
 	
 	
-	
+	const std::vector<int >& SamplesOnEdge(unsigned int edge_index) const
+	{
+		if (edge_index >= sample_indices_.size()) {
+			throw std::out_of_range("trying to access sample_indices_ of out of range index");
+		}
+		
+		return sample_indices_[edge_index];
+	}
 	
 	/**
 	 get the index of sample on edge, at index position
