@@ -17,7 +17,7 @@ void Surface::fixed_sampler(VertexSet & V,
 		if (faces_[ii].is_degenerate() || faces_[ii].is_malformed())
 			continue;
 		
-		std::cout << "Face " << ii << std::endl;
+		std::cout << "Face " << ii << " of " << num_faces() << std::endl;
 		if (sampler_options.verbose_level()>=1)
 			std::cout << faces_[ii];
 
@@ -516,7 +516,7 @@ void Surface::AdaptiveSampler(VertexSet & V,
 		if (faces_[ii].is_degenerate() || faces_[ii].is_malformed())
 			continue;
 		
-		std::cout << "Face " << ii << std::endl;
+		std::cout << "Face " << ii << " of " << num_faces() << std::endl;
 		if (sampler_options.verbose_level()>=1)
 			std::cout << faces_[ii];
 
@@ -583,6 +583,7 @@ std::vector<int> Surface::AdaptiveNumSamplesPerRib(VertexSet const& V, sampler_c
 	vec_mp tempvec1, tempvec2; 
 	init_vec_mp(tempvec1,0); tempvec1->size = 0;init_vec_mp(tempvec2,0); tempvec2->size = 0;
 
+	// initialize the max found widths to -10, to force next blob to find something useful.
 	for (int ii = 0; ii < n; ++ii)
 	{
 		sub_mp(&projection_interval_width->coord[ii], &crit_slice_values->coord[ii+1], &crit_slice_values->coord[ii]);
