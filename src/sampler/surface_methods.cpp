@@ -1083,14 +1083,18 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 			} // re: for (unsigned rr=0
 			temp_rib.push_back(refined_rib.back());
 			swap(temp_rib,refined_rib);
-			swap(refine_flags_next,refine_flags);
 
 			if (pass_number<sampler_options.minimum_num_iterations)
 			{
-				for (auto b : refine_flags_next)
-					b = true;
+				for (int uu = 0; uu < refine_flags_next.size(); ++uu)
+					refine_flags_next[uu] = true;
+
 				need_refinement = true;
 			}
+			
+			swap(refine_flags_next,refine_flags);
+
+			
 
 			++pass_number;
 		} // re: while

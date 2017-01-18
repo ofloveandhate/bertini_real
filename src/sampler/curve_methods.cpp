@@ -597,9 +597,16 @@ void Curve::adaptive_sampler_distance(VertexSet & V,
 					interval_counter++;
 					sample_counter++;
 				}
-			}
+			} // re: for jj
             
-			refine_current = refine_next; // reassign this pointer
+            if (pass_number<sampler_options.minimum_num_iterations)
+			{
+				for (int uu = 0; uu < refine_next.size(); ++uu)
+					refine_next[uu] = true;
+				num_refinements = refine_next.size();
+			}
+
+			refine_current = refine_next; // reassign 
 			current_indices.swap(new_indices);
             
 			prev_num_samp=sample_counter; // update the number of samples
