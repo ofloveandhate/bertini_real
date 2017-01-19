@@ -9,13 +9,9 @@ if BRinfo.dimension~=2
 	error('input decomposition must be a surface');
 end
 
-opt = set_options(varargin);
+opt = set_options(varargin, BRinfo);
 
-if ~isempty(BRinfo.sampler_data)
-	use_sampled = true;
-else
-	use_sampled = false;
-end
+
 
 fv.faces = [];
 fv.vertices = [];
@@ -33,7 +29,7 @@ if opt.crit
 	curve = BRinfo.crit_curve;
 	curve.vertices = pc_vertices;
 	
-	temp_fv = curve_pipe_surface(curve,use_sampled,...
+	temp_fv = curve_pipe_surface(curve,opt.use_sampled,...
 			'radius',opt.radius,'n',opt.n,'render',opt.render_curves,'write_stl',false);
 	
 	fv.faces = [fv.faces; temp_fv.faces+size(fv.vertices,1)];
@@ -48,7 +44,7 @@ if opt.sphere
 	curve = BRinfo.sphere_curve;
 	curve.vertices = pc_vertices;
 	
-	temp_fv = curve_pipe_surface(curve,use_sampled,...
+	temp_fv = curve_pipe_surface(curve,opt.use_sampled,...
 			'radius',opt.radius,'n',opt.n,'render',opt.render_curves,'write_stl',false);
 	
 	fv.faces = [fv.faces; temp_fv.faces+size(fv.vertices,1)];
@@ -60,7 +56,7 @@ if opt.sing
 		curve = BRinfo.singular_curves{ii};
 		curve.vertices = pc_vertices;
 
-		temp_fv = curve_pipe_surface(curve,use_sampled,...
+		temp_fv = curve_pipe_surface(curve,opt.use_sampled,...
 			'radius',opt.radius,'n',opt.n,'render',opt.render_curves,'write_stl',false);
 
 		fv.faces = [fv.faces; temp_fv.faces+size(fv.vertices,1)];
@@ -72,7 +68,7 @@ if opt.midslice
 	for ii = 1:length(BRinfo.midpoint_slices)
 		curve = BRinfo.midpoint_slices{ii};
 		curve.vertices = pc_vertices;
-		temp_fv = curve_pipe_surface(curve,use_sampled,...
+		temp_fv = curve_pipe_surface(curve,opt.use_sampled,...
 			'radius',opt.radius,'n',opt.n,'render',opt.render_curves,'write_stl',false);
 
 		fv.faces = [fv.faces; temp_fv.faces+size(fv.vertices,1)];
@@ -84,7 +80,7 @@ if opt.critslice
 	for ii = 1:length(BRinfo.critpoint_slices)
 		curve = BRinfo.critpoint_slices{ii};
 		curve.vertices = pc_vertices;
-		temp_fv = curve_pipe_surface(curve,use_sampled,...
+		temp_fv = curve_pipe_surface(curve,opt.use_sampled,...
 			'radius',opt.radius,'n',opt.n,'render',opt.render_curves,'write_stl',false);
 
 		fv.faces = [fv.faces; temp_fv.faces+size(fv.vertices,1)];
@@ -107,7 +103,7 @@ hold off
 end
 
 
-function opt = set_options(command_line_options)
+function opt = set_options(command_line_options, BRinfo)
 
 if mod(length(command_line_options),2)~=0
 	error('must have option-value pairs');
@@ -125,6 +121,12 @@ opt.n = 31;
 opt.render_curves = true;
 opt.render = true;
 opt.write_to_stl = false;
+
+if ~isempty(BRinfo.sampler_data)
+	opt.use_sampled = true;
+else
+	opt.use_sampled = false;
+end
 
 for ii = 1:2:length(command_line_options)-1
 	val = command_line_options{ii+1};
@@ -148,6 +150,8 @@ for ii = 1:2:length(command_line_options)-1
 			opt.render = val;
 		case 'write_stl'
 			opt.write_to_stl = val;
+		case 'sampled'
+			opt.use_sampled = val;
 		otherwise
 			error('bad option %s',command_line_options{ii});
 	end
