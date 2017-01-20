@@ -364,10 +364,13 @@ public:
 	*/
 	void PrintMetadata(boost::filesystem::path const& filename) const;
 
-	void PrintPointTypeMapping(boost::filesystem::path const& filename) const;
 };
 
 
+/**
+\brief Write a file contanining the indices of vertex types.
+*/
+void PrintPointTypeMapping(boost::filesystem::path const& filename);
 
 /**
  \brief holds the current state of configuration for Bertini_real.

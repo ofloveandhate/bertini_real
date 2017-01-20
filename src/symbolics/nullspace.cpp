@@ -1061,7 +1061,6 @@ void create_nullspace_system(boost::filesystem::path output_name,
 
 			OUT = safe_fopen_write("python_nullspace_system.py");
 
-			std::cout << "creating python script\n\n";
 			create_python_determinantal_system(OUT, IN,
 							   ns_config, numVars, vars, lineVars, numConstants,
 							   consts, lineConstants, numFuncs, funcs, lineFuncs);
@@ -1069,10 +1068,8 @@ void create_nullspace_system(boost::filesystem::path output_name,
 			fclose(OUT);
 
 			// run Python script
-			std::cout << "invoking python\n\n";
+			std::cout << "calling `python python_nullspace_system.py`\n\n";
 			system("python python_nullspace_system.py");
-			// execlp("python", "python", "python_nullspace_system.py", (char*) NULL);
-			std::cout << "done invoking python\n\n";
 			break;
 		}
 	} 
@@ -1586,14 +1583,13 @@ void create_python_determinantal_system( FILE *OUT,
 		
 	// setup functions
 	fprintf(OUT,"# functions\n");
-	fprintf(OUT, "F_orig = sp.Matrix([");
+	fprintf(OUT, "F_orig = sp.Matrix([ ");
 	for (ii = 0; ii < numFuncs; ii++)
 	  {
-	    fprintf(OUT, "%s", funcs[ii]);
-	    if (ii < numFuncs - 1)
-	      {
-		fprintf(OUT, ", ");
-	      }
+		fprintf(OUT, "%s", funcs[ii]);
+		if (ii < numFuncs - 1)
+			fprintf(OUT, ", ");
+
 	  }
 	fprintf(OUT, "])\n\n");
 	
@@ -1647,24 +1643,24 @@ void create_python_determinantal_system( FILE *OUT,
 	fprintf(OUT, "n = 0\n");
 	fprintf(OUT, "while ( n < num_randomized_eqns):\n");
 	fprintf(OUT, "\tm = n + 1\n");
-	fprintf(OUT, "\tmystr2a = \"f%%i\" %% m\n");
+	fprintf(OUT, "\tfunc_base_str = \"f%%i\" %% m\n");
 	fprintf(OUT, "\tn = n + 1\n");
 	fprintf(OUT, "\tif n != num_randomized_eqns:\n");
-	fprintf(OUT, "\t\tmystr2b = \", \"\n");
+	fprintf(OUT, "\t\teol_str = \", \"\n");
 	fprintf(OUT, "\telse:\n");
-	fprintf(OUT, "\t\tmystr2b = \";\\n\"\n");
-	fprintf(OUT, "\tmystr2 = mystr2a + mystr2b\n");
+	fprintf(OUT, "\t\teol_str = \";\\n\"\n");
+	fprintf(OUT, "\tmystr2 = func_base_str + eol_str\n");
 	fprintf(OUT, "\tfo.write(mystr2)\n\n");
 	
 	// second loop
 	fprintf(OUT, "n = 0\n");
 	fprintf(OUT, "while (n < num_randomized_eqns):\n");
 	fprintf(OUT, "\tm = n+1\n");
-	fprintf(OUT, "\tmystr3a = \"f%%i = \" %% m\n");
-	fprintf(OUT, "\tmystr3b = str(F_rand[n])\n");
+	fprintf(OUT, "\tfunc_decl_str = \"f%%i = \" %% m\n");
+	fprintf(OUT, "\tfunc_def_str = str(F_rand[n])\n");
 	fprintf(OUT, "\tn = n+1\n");
-	fprintf(OUT, "\tmystr3c = \";\\n\"\n");
-	fprintf(OUT, "\tmystr3 = mystr3a + mystr3b + mystr3c\n");
+	fprintf(OUT, "\teol_str = \";\\n\"\n");
+	fprintf(OUT, "\tmystr3 = func_decl_str + func_def_str + eol_str\n");
 	fprintf(OUT, "\tfo.write(mystr3.replace(\"**\",\"^\"))\n");
 	fprintf(OUT, "mystr4 = \"function der_func;\\n\"\n");
 	fprintf(OUT, "mystr5a = \"der_func = \"\n");

@@ -613,7 +613,7 @@ void Curve::MidSlice(int& edge_counter,
 	////////////////////////////
 	auto num_midpoints = midpoints_downstairs->size;
 
-	solve_options.backup_tracker_config("getting_midpoints");
+	
 	
 	for (size_t ii=0; ii<num_midpoints; ++ii) {
 		
@@ -627,6 +627,8 @@ void Curve::MidSlice(int& edge_counter,
 			print_comp_matlab(&midpoints_downstairs->coord[ii],"p");
 		}
 		
+		solve_options.backup_tracker_config("getting_midpoints_" + std::to_string(ii));
+
 		SolverOutput fillme;
 		multilin_solver_master_entry_point(W_curve,         // WitnessSet
                                            fillme, // the new data is put here!
@@ -635,24 +637,92 @@ void Curve::MidSlice(int& edge_counter,
                                            solve_options);
 		
 		fillme.get_noninfinite_w_mult_full(midpoint_witness_sets[ii]); // is ordered
+		// there can theoretically be 0 singular points, unless they are infinite.  otherwise, path crossing almost certainly happened...
 
+		auto num_total_midslice_points = midpoint_witness_sets[ii].num_points();
+		if (program_options.verbose_level()>=4) {
+			midpoint_witness_sets[ii].print_to_screen();
+            std::cout << "midpoint_downstairs " << ii << " had " << midpoint_witness_sets[ii].num_points() << " real and complex points total" << std::endl;
+		}
 
+		midpoint_witness_sets[ii].sort_for_unique(&solve_options.T);
+		auto num_unique_midslice_points = midpoint_witness_sets[ii].num_points();
+
+		if (num_total_midslice_points - num_unique_midslice_points)
+		{
+			std::cout << color::red() << "there were non-unique midpoints.\n" << color::console_default();
+			std::cout << "trying to recover the failure by tightening tracking tolerances..." << std::endl;
+				
+            solve_options.T.endgameNumber = 2;
+            // what else can i do here to improve the probability of success?
+            solve_options.T.basicNewtonTol   *= 1e-2; // tracktolbeforeeg
+            solve_options.T.endgameNewtonTol *= 1e-2; // tracktolduringeg
+			std::cout << "new temporaary tracktolBEFOREeg: "	<< solve_options.T.basicNewtonTol << " tracktolDURINGeg: "	<< solve_options.T.endgameNewtonTol << std::endl;
+
+			SolverOutput fillme2;
+			multilin_solver_master_entry_point(W_curve,         // WitnessSet
+                                           fillme2, // the new data is put here!
+                                           &particular_projection,
+                                           ml_config,
+                                           solve_options);
+
+			midpoint_witness_sets[ii].clear();
+
+			fillme2.get_noninfinite_w_mult_full(midpoint_witness_sets[ii]); // is ordered
+		}
 		
+		midpoint_witness_sets[ii].sort_for_unique(&solve_options.T);
+		num_unique_midslice_points = midpoint_witness_sets[ii].num_points();
+
+		if (num_total_midslice_points - num_unique_midslice_points)
+		{
+			std::cout << color::red() << "there were non-unique midpoints.  your decomposition is possibly incorrect about the missed points, if the path crossings obscured real points\n" << color::console_default();
+		}
+
+
+		if (program_options.verbose_level()>=4) {
+			midpoint_witness_sets[ii].print_to_screen();
+            std::cout << "midpoint_downstairs " << ii << " had " << midpoint_witness_sets[ii].num_points() << " real and complex points total" << std::endl;
+		}
+
 		midpoint_witness_sets[ii].sort_for_real(&solve_options.T);
-		
+		auto num_real_midslice_points = midpoint_witness_sets[ii].num_points();
+
+		if (program_options.verbose_level()>=3) {
+			if (num_total_midslice_points - num_real_midslice_points)
+			{
+				midpoint_witness_sets[ii].print_to_screen();
+            	std::cout << "midpoint_downstairs " << ii << " had " << midpoint_witness_sets[ii].num_points() << " real points total" << std::endl;
+            }
+            else
+            {
+            	std::cout << "all midpoints real\n";
+            }
+		}
+
 		if (have_sphere()) {
 			midpoint_witness_sets[ii].sort_for_inside_sphere(sphere_radius(), sphere_center());
 		}
-		
+		auto num_real_interior_midslice_points = midpoint_witness_sets[ii].num_points();
 
 		if (program_options.verbose_level()>=2) {
-			midpoint_witness_sets[ii].print_to_screen();
-            std::cout << "midpoint_downstairs " << ii << " had " << midpoint_witness_sets[ii].num_points() << " real points" << std::endl;
+			if (num_real_midslice_points - num_real_interior_midslice_points)
+			{
+				midpoint_witness_sets[ii].print_to_screen();
+            	std::cout << "midpoint_downstairs " << ii << " had " << midpoint_witness_sets[ii].num_points() << " real points inside sphere of interest" << std::endl;
+			}
+			else
+			{
+				std::cout << "all real midpoints are inside sphere\n";
+			}
 		}
+
 		edge_counter += midpoint_witness_sets[ii].num_points();
+
+		solve_options.restore_tracker_config("getting_midpoints_" + std::to_string(ii));
 	}
 	
-	solve_options.restore_tracker_config("getting_midpoints");
+	
 }
 
 
@@ -718,7 +788,7 @@ void Curve::ConnectTheDots(
         {
             
             iterations++;
-            try_again = false; // we would like to stop computing
+            try_again = false; // assume we would like to stop computing
             
             
             if (program_options.verbose_level()>=2)
@@ -728,30 +798,30 @@ void Curve::ConnectTheDots(
 			}
 			
 	
-			SolverOutput fillme;
+			SolverOutput fillme0;
 			// track left
 			neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii]);
             multilin_solver_master_entry_point(midpoint_witness_sets[ii],         // input WitnessSet
-                                               fillme, // the new data is put here!
+                                               fillme0, // the new data is put here!
                                                &particular_projection,
                                                ml_config,
                                                solve_options);
 			
-			fillme.get_noninfinite_w_mult_full(Wleft); // should be ordered
-			cycle_nums_left = fillme.get_cyclenums_noninfinite_w_mult();
+			fillme0.get_noninfinite_w_mult_full(Wleft); // should be ordered
+			cycle_nums_left = fillme0.get_cyclenums_noninfinite_w_mult();
             
 			
-			fillme.reset();
+			fillme0.reset();
 			// track right
             neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii+1]);
             multilin_solver_master_entry_point(midpoint_witness_sets[ii],         // WitnessSet
-                                               fillme, // the new data is put here!
+                                               fillme0, // the new data is put here!
                                                &particular_projection,
                                                ml_config,
                                                solve_options);
 			
-			fillme.get_noninfinite_w_mult_full(Wright); // should be ordered
-			cycle_nums_right = fillme.get_cyclenums_noninfinite_w_mult();
+			fillme0.get_noninfinite_w_mult_full(Wright); // should be ordered
+			cycle_nums_right = fillme0.get_cyclenums_noninfinite_w_mult();
 			
 			WitnessSet Wright_real = Wright; // this feels unnecessary
 			WitnessSet Wleft_real = Wleft;   // this feels unnecessary
@@ -771,7 +841,7 @@ void Curve::ConnectTheDots(
             
             if (!try_again) {
                 // this is good, it means we have same number out as in, so we can do a full mapping.
-                break;
+                break; // break the while
             }
             else if (iterations<maxits){
               //tighten some tolerances, change it up.
@@ -786,6 +856,8 @@ void Curve::ConnectTheDots(
                 solve_options.T.basicNewtonTol   *= 1e-2; // tracktolbeforeeg
                 solve_options.T.endgameNewtonTol *= 1e-2; // tracktolduringeg
 				std::cout << "tracktolBEFOREeg: "	<< solve_options.T.basicNewtonTol << " tracktolDURINGeg: "	<< solve_options.T.endgameNewtonTol << std::endl;
+
+				continue;
             }
 			else
 			{
@@ -808,7 +880,8 @@ void Curve::ConnectTheDots(
 					
 					W_single.reset_points();
 					W_single_sharpened.reset();
-					
+					W_single_right.reset();
+					W_single_left.reset();
 					
 					
 					//sharpen up the initial point.
@@ -816,39 +889,39 @@ void Curve::ConnectTheDots(
 					W_single.add_point( midpoint_witness_sets[ii].point(kk));
 					
 					
-					int prev_sharpen_digits = solve_options.T.sharpenDigits;
-					solve_options.T.sharpenDigits = MIN(4*solve_options.T.sharpenDigits,300);
-					
-					neg_mp(&particular_projection->coord[0], &midpoints_downstairs->coord[ii]);
-					
-					SolverOutput fillme;
-					multilin_solver_master_entry_point(W_single,         // input WitnessSet
-													   fillme,           // the new data is put here!
-													   &particular_projection,
-													   ml_config,
-													   solve_options);
-					
-					fillme.get_noninfinite_w_mult_full(W_single_sharpened);
-					fillme.reset();
+							int prev_sharpen_digits = solve_options.T.sharpenDigits;
+							solve_options.T.sharpenDigits = MIN(4*solve_options.T.sharpenDigits,300);
+							
+							neg_mp(&particular_projection->coord[0], &midpoints_downstairs->coord[ii]);
+							
+							SolverOutput fillme1;
+							multilin_solver_master_entry_point(W_single,         // input WitnessSet
+															   fillme1,           // the new data is put here!
+															   &particular_projection,
+															   ml_config,
+															   solve_options);
+							
+							fillme1.get_noninfinite_w_mult_full(W_single_sharpened);
+							fillme1.reset();
 
-					if (W_single_sharpened.num_points()==0) {
-						std::cout << "sharpening failed, which sucks because the sharpened point was theoretically generic with respect to the system currently being used" << std::endl;
-						mypause();
-					}
+							if (W_single_sharpened.num_points()==0) {
+								std::cout << "sharpening failed, which sucks because the sharpened point was theoretically generic with respect to the system currently being used" << std::endl;
+								mypause();
+							}
+							
+							solve_options.T.sharpenDigits = prev_sharpen_digits;
 					
-					solve_options.T.sharpenDigits = prev_sharpen_digits;
-					
-					
-					
-					std::vector<int> c1, c2;
 					
 					//go left and right
-					comp_mp temp;  init_mp2(temp,1024);
-					sub_mp(temp, &crit_downstairs->coord[num_midpoints], &crit_downstairs->coord[0]);
+
+
+					std::vector<int> c1, c2;
 					
+					// go left for this single midpoint
+
 					neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii]);
 					
-					for (unsigned num_its = 0; num_its < 1 && W_single_left.num_points()==0; ++num_its) {
+					for (unsigned num_its = 0; num_its < 2 && W_single_left.num_points()==0; ++num_its) {
 						W_single_left.reset();
 						
 						std::cout << num_its << "th attempt, going left, midpoint " << ii << std::endl;
@@ -856,25 +929,31 @@ void Curve::ConnectTheDots(
 						if (num_its > 0) // this is only marginally interesting.  something much better could be done.  just setting this is not likely to help.
 							solve_options.T.maxNewtonIts = 2;
 						
-						SolverOutput fillme;
+						SolverOutput fillme2;
 						multilin_solver_master_entry_point(W_single_sharpened,         // WitnessSet
-														   fillme, // the new data is put here!
+														   fillme2, // the new data is put here!
 														   &particular_projection,
 														   ml_config,
 														   solve_options);
-						// get stuff from fillme
-						fillme.get_noninfinite_w_mult_full(W_single_left);
-						c1 = fillme.get_cyclenums_noninfinite_w_mult();
-						fillme.reset();
+						// get stuff from fillme2
+						fillme2.get_noninfinite_w_mult_full(W_single_left);
+						c1 = fillme2.get_cyclenums_noninfinite_w_mult();
+						fillme2.reset();
 						
+						assert(c1.size()==W_single_left.num_points());
 						W_single_left.sort_for_real(&solve_options.T);
+						if (W_single_left.num_points()==0)
+						{
+							c1.resize(0);
+							std::cout << "tracking left yielded a non-real point\n";
+						}
 					}
 					
 					
-					
+					// go right for this single midpoint
 					neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii+1]);
 					
-					for (unsigned num_its = 0; num_its < 1 && W_single_right.num_points()==0; num_its++) {
+					for (unsigned num_its = 0; num_its < 2 && W_single_right.num_points()==0; num_its++) {
 						W_single_right.reset();
 						
 						std::cout << num_its << "th attempt, going right, midpoint " << ii << std::endl;
@@ -882,18 +961,23 @@ void Curve::ConnectTheDots(
 						if (num_its > 0) // this is only marginally interesting.  something much better could be done.  just setting this is not likely to help.
 							solve_options.T.maxNewtonIts = 2;
 
-						SolverOutput fillme;
+						SolverOutput fillme2;
 						multilin_solver_master_entry_point(W_single_sharpened,         // WitnessSet
-														   fillme, // the new data is put here!
+														   fillme2, // the new data is put here!
 														   &particular_projection,
 														   ml_config,
 														   solve_options);
-						//get stuff from fillme
-						fillme.get_noninfinite_w_mult_full(W_single_right);
-						c2 = fillme.get_cyclenums_noninfinite_w_mult();
-						fillme.reset();
-						
+						//get stuff from fillme2
+						fillme2.get_noninfinite_w_mult_full(W_single_right);
+						c2 = fillme2.get_cyclenums_noninfinite_w_mult();
+						fillme2.reset();
+						assert(c2.size()==W_single_right.num_points());
 						W_single_right.sort_for_real(&solve_options.T);
+						if (W_single_right.num_points()==0)
+						{
+							c2.resize(0);
+							std::cout << "tracking right yielded a non-real point\n";
+						}
 					}
 					
 					
@@ -901,10 +985,7 @@ void Curve::ConnectTheDots(
 
 					
 					
-					if (W_single_right.num_points()==1 && W_single_left.num_points()==1) {
-
-						assert(c1.size()==1);
-						assert(c2.size()==1);
+					if ( (W_single_right.num_points()==1) && (W_single_left.num_points()==1)) {
 
 						W_midpoint_replacement.add_point( midpoint_witness_sets[ii].point(kk));
 						Wleft.add_point(W_single_left.point(0));
@@ -917,15 +998,16 @@ void Curve::ConnectTheDots(
 						temp_vertex.set_type(Problematic); // set type
 						index_in_vertices_with_add(V, temp_vertex);
 					}
-				}
+				} // for each midpoint in this fiber
 				
 				
 				
 				midpoint_witness_sets[ii].reset_points();
 				midpoint_witness_sets[ii].copy_points(W_midpoint_replacement);
-			}
+				break;
+			} // else
 			
-		}
+		} // while
         solve_options.restore_tracker_config("midpoint_connect");
         
 		
@@ -1946,7 +2028,11 @@ Gets the interval the edge corresponds to, in terms of projection value.
 int Curve::ProjectionIntervalIndex(int edge_index, const VertexSet & V) const
 {
 	if (edge_index >= num_edges())
-		throw std::runtime_error("edge index exceeds number of stored edges");
+	{
+		std::stringstream err_msg;
+		err_msg << "edge index " << edge_index << " exceeds number of stored edges " << num_edges();
+		throw std::runtime_error(err_msg.str());
+	}
 
 	comp_mp temp;
 	init_mp(temp);
