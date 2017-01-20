@@ -1371,11 +1371,11 @@ void create_python_determinantal_system( FILE *OUT,
 	fprintf(OUT,"var('");
 	for (ii = 0; ii < numVars; ii++)
 	  {
-		fprintf(OUT, "%s", vars[ii]);
-		if (ii < numVars-1)
-		  {
-		fprintf(OUT,", ");
-		  }
+	    fprintf(OUT, "%s ", vars[ii]);
+	    if (ii < numVars-1)
+	      {
+		fprintf(OUT," ");
+	      }
 	  }
 	fprintf(OUT, "')\nvar_names = Matrix([");
 	for (ii = 0; ii < numVars; ii++)
@@ -1392,19 +1392,27 @@ void create_python_determinantal_system( FILE *OUT,
 	// symbolic variables
 	for (ii = 1; ii <= ns_config->num_projections; ii++)
 	  {
-		for (int jj = 1; jj< ns_config->num_natural_vars; jj++)
+	    for (int jj = 1; jj< ns_config->num_natural_vars; jj++)
+	      {
+		fprintf(OUT, "pi_%i_%i", ii, jj+1);
+		if ((jj+1 ==  ns_config->num_natural_vars) && (ii == ns_config->num_projections))
 		  {
-		fprintf(OUT, "pi_%i_%i,", ii, jj+1);
+		    fprintf(OUT, " ");
 		  }
+		else
+		  {
+		    fprintf(OUT, ", ");
+		  }
+	      }
 	  }
 	
 	fprintf(OUT, " = sp.symbols('");
 	for (ii = 1; ii <= ns_config->num_projections; ii++)
 	  {
-		for (int jj = 1; jj< ns_config->num_natural_vars; jj++)
-		  {
-		fprintf(OUT, "pi_%i_%i,", ii, jj+1);
-		  }
+	    for (int jj = 1; jj< ns_config->num_natural_vars; jj++)
+	      {
+		fprintf(OUT, "pi_%i_%i ", ii, jj+1);
+	      }
 	  }
 	
 	fprintf(OUT, "')\n\n");
@@ -1553,11 +1561,15 @@ void create_python_determinantal_system( FILE *OUT,
 		for (int jj=0; jj < ns_config->randomizer()->num_base_funcs(); jj++)
 		  {
 		fprintf(OUT,"r_%i%i", ii+1, jj+1);
-		if(jj < (ns_config->randomizer()->num_base_funcs()-1))
+		if ((jj+1 ==  ns_config->randomizer()->num_base_funcs()) && (ii == ns_config->randomizer()->num_rand_funcs()))
 		  {
-			fprintf(OUT,",");
+		    fprintf(OUT, " ");
 		  }
+		else
+		  {
+		    fprintf(OUT, ", ");
 		  }
+	      }
 	  }
 	
 	fprintf(OUT," = sp.symbols('");
@@ -1565,14 +1577,10 @@ void create_python_determinantal_system( FILE *OUT,
 
 	for (int ii=0; ii < ns_config->randomizer()->num_rand_funcs(); ii++)
 	  {
-		for (int jj=0; jj < ns_config->randomizer()->num_base_funcs(); jj++)
-		  {
-		fprintf(OUT,"r_%i%i", ii+1, jj+1);
-		if(jj < (ns_config->randomizer()->num_base_funcs()-1))
-		  {
-			fprintf(OUT,",");
-		  }
-		  }
+	    for (int jj=0; jj < ns_config->randomizer()->num_base_funcs(); jj++)
+	      {
+		fprintf(OUT,"r_%i%i ", ii+1, jj+1);
+	      }
 	  }
 	fprintf(OUT,"')\n\n");
 		
@@ -1581,11 +1589,11 @@ void create_python_determinantal_system( FILE *OUT,
 	fprintf(OUT, "F_orig = sp.Matrix([");
 	for (ii = 0; ii < numFuncs; ii++)
 	  {
-		fprintf(OUT, "%s", funcs[ii]);
-		if (ii < numFuncs - 1)
-		  {
-		fprintf(OUT, "],");
-		  }
+	    fprintf(OUT, "%s", funcs[ii]);
+	    if (ii < numFuncs - 1)
+	      {
+		fprintf(OUT, ", ");
+	      }
 	  }
 	fprintf(OUT, "])\n\n");
 	
@@ -1655,15 +1663,12 @@ void create_python_determinantal_system( FILE *OUT,
 	fprintf(OUT, "\tmystr3a = \"f%%i = \" %% m\n");
 	fprintf(OUT, "\tmystr3b = str(F_rand[n])\n");
 	fprintf(OUT, "\tn = n+1\n");
-	fprintf(OUT, "\tif n != num_randomized_eqns:\n");
-	fprintf(OUT, "\t\tmystr3c = \", \"\n");
-	fprintf(OUT, "\telse:\n");
-	fprintf(OUT, "\t\tmystr3c = \";\\n\"\n");
+	fprintf(OUT, "\tmystr3c = \";\\n\"\n");
 	fprintf(OUT, "\tmystr3 = mystr3a + mystr3b + mystr3c\n");
 	fprintf(OUT, "\tfo.write(mystr3.replace(\"**\",\"^\"))\n");
 	fprintf(OUT, "mystr4 = \"function der_func;\\n\"\n");
 	fprintf(OUT, "mystr5a = \"der_func = \"\n");
-		fprintf(OUT, "mystr5b = str(new_eqn) \n");
+	fprintf(OUT, "mystr5b = str(new_eqn) \n");
 	fprintf(OUT, "mystr5 = mystr5a+mystr5b+\";\\n\"\n");
 	fprintf(OUT, "fo.write(mystr4)\n");
 	fprintf(OUT, "fo.write(mystr5.replace(\"**\",\"^\"))\n");
