@@ -4,10 +4,7 @@
 *.toc
 *.synctex.*
 
-*.stl
 
-*.eps
-*.png
 
 *.fls
 *.bbl
@@ -39,7 +36,8 @@ libpartitionParse*
 
 generated_documentation
 
-output*
+*.cache*
+
 isosingular_summary
 *.out
 rawout*
@@ -53,18 +51,7 @@ midpath_data
 preproc_data
 BRinfo*
 Dir_Name
-test/*.eps
-test/*/*.eps
-test/*/*/*.eps
-test/*.png
-test/*/*.png
-test/*/*/*.png
-test/*.stl
-test/*/*.stl
-test/*/*/*.stl
-test/*.mat
-test/*/*.mat
-test/*/*/*.mat
+
 *_solutions
 start
 start_parameters
