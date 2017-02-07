@@ -2,8 +2,9 @@
 
 *.eps
 *.png
-
+*.py
 *.mat
+*myexamples
 
 output*
 
@@ -27,6 +28,7 @@ start_parameters
 failed_paths
 final_parameters
 func_input
+func_input_rand
 config_real
 func_input_real
 raw_data
