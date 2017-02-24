@@ -5,7 +5,7 @@
 % filename - the name of the file to parse and deflate
 % defl_iteration -- a somewhat arbitrary number, used to indicate which
 % step in the deflation sequence we are in.  ideally, increment it by 1
-% each time you deflate, so that you don't try to repeat function numbers.
+% each time you deflate, so that you don't repeat function numbers.
 % minorsize -- the size of the minors of which you take the determinant,
 % when adding more functions to the system to deflate
 %
