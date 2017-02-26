@@ -214,9 +214,8 @@ void isosingular_deflation_iteration(int *declarations,
 			fclose(OUT);
 
 			//run Python script
-			std::cout << "inkoving python\n";
+			std::cout << "inkoving `python python_deflate.py`\n";
 			system("python python_deflate.py");
-			std::cout << "done inkoving python\n";
 			break;
 		}
 	} // switch

@@ -247,7 +247,7 @@ void ProgramConfigBase::PrintMetadata(boost::filesystem::path const& filename) c
 }
 
 
-void ProgramConfigBase::PrintPointTypeMapping(boost::filesystem::path const& filename) const
+void PrintPointTypeMapping(boost::filesystem::path const& filename)
 {
 	//The following lets us use words instead of numbers to indicate vertex type.
 //enum {UNSET= 100, CRITICAL, SEMICRITICAL, MIDPOINT, ISOLATED, NEW, CURVE_SAMPLE_POINT, SURFACE_SAMPLE_POINT, REMOVED, PROBLEMATIC};
