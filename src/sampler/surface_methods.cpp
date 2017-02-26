@@ -17,7 +17,7 @@ void Surface::fixed_sampler(VertexSet & V,
 		if (faces_[ii].is_degenerate() || faces_[ii].is_malformed())
 			continue;
 		
-		std::cout << "Face " << ii << std::endl;
+		std::cout << "Face " << ii << " of " << num_faces() << std::endl;
 		if (sampler_options.verbose_level()>=1)
 			std::cout << faces_[ii];
 
@@ -516,7 +516,7 @@ void Surface::AdaptiveSampler(VertexSet & V,
 		if (faces_[ii].is_degenerate() || faces_[ii].is_malformed())
 			continue;
 		
-		std::cout << "Face " << ii << std::endl;
+		std::cout << "Face " << ii << " of " << num_faces() << std::endl;
 		if (sampler_options.verbose_level()>=1)
 			std::cout << faces_[ii];
 
@@ -583,6 +583,7 @@ std::vector<int> Surface::AdaptiveNumSamplesPerRib(VertexSet const& V, sampler_c
 	vec_mp tempvec1, tempvec2; 
 	init_vec_mp(tempvec1,0); tempvec1->size = 0;init_vec_mp(tempvec2,0); tempvec2->size = 0;
 
+	// initialize the max found widths to -10, to force next blob to find something useful.
 	for (int ii = 0; ii < n; ++ii)
 	{
 		sub_mp(&projection_interval_width->coord[ii], &crit_slice_values->coord[ii+1], &crit_slice_values->coord[ii]);
@@ -608,7 +609,7 @@ std::vector<int> Surface::AdaptiveNumSamplesPerRib(VertexSet const& V, sampler_c
                                        tempvec2);
 		add_mp(temp3, temp2, temp1);
 		if (mpf_cmp(temp3->r, max_widths_found->coord[interval_ind].r) > 0)
-			mpf_set(max_widths_found->coord[interval_ind].r, temp1->r);
+			mpf_set(max_widths_found->coord[interval_ind].r, temp3->r);
 
 
 
@@ -626,7 +627,7 @@ std::vector<int> Surface::AdaptiveNumSamplesPerRib(VertexSet const& V, sampler_c
                                        tempvec2);
 		add_mp(temp3, temp2, temp1);
 		if (mpf_cmp(temp3->r, max_widths_found->coord[interval_ind].r) > 0)
-			mpf_set(max_widths_found->coord[interval_ind].r, temp1->r);
+			mpf_set(max_widths_found->coord[interval_ind].r, temp3->r);
 	}
 
 
@@ -645,7 +646,7 @@ std::vector<int> Surface::AdaptiveNumSamplesPerRib(VertexSet const& V, sampler_c
 		{
 			auto M = std::min(est_num, sampler_options.max_num_ribs);
 			auto m = std::max(est_num, sampler_options.min_num_ribs);
-			num.push_back(std::max(m, M));
+			num.push_back(std::max(m, M)+2);
 		}
 	}
 
@@ -1082,14 +1083,18 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 			} // re: for (unsigned rr=0
 			temp_rib.push_back(refined_rib.back());
 			swap(temp_rib,refined_rib);
-			swap(refine_flags_next,refine_flags);
 
 			if (pass_number<sampler_options.minimum_num_iterations)
 			{
-				for (auto b : refine_flags_next)
-					b = true;
+				for (int uu = 0; uu < refine_flags_next.size(); ++uu)
+					refine_flags_next[uu] = true;
+
 				need_refinement = true;
 			}
+			
+			swap(refine_flags_next,refine_flags);
+
+			
 
 			++pass_number;
 		} // re: while
@@ -1108,6 +1113,13 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 			}
 		}
 	}
+
+	if (num_ribs%2==0)
+	{
+		// need to insert the sampling from the midslice into the mix.
+		ribs.insert(ribs.begin() + num_ribs/2, current_midslice.SamplesOnEdge(mid_edge));
+	}
+
 
 	StitchRibs(ribs,V);
 

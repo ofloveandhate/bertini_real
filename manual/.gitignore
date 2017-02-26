@@ -1,0 +1,12 @@
+*.acr
+*.alg
+*.glg
+*.gls
+
+*.out
+
+*.log
+*.aux
+*.idx
+*.toc
+*.synctex.*
