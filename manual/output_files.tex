@@ -227,6 +227,7 @@ There are several files written for every curve decomposed, into the containing 
 \begin{itemize}
 	\item {\tt output/curve.cnums} -- \ref{sec:curve.cnums}
 	\item {\tt output/E.edge} -- \ref{sec:e.edge}
+	\item {\tt output/samp.curvesamp} -- \ref{sec:samp.curvesamp}
 \end{itemize}
 
 
@@ -268,6 +269,26 @@ END FOR
 
 
 
+\subsubsection{\tt output/samp.curvesamp}
+\label{sec:samp.curvesamp}
+
+The curve sampling file contains points in order, on edges.  The points are referred to by 0-based indices into a new V.vertex file created, preserving the initial one from the decomposition.
+
+\begin{center}\begin{minipage}{0.9\linewidth}
+\begin{lstlisting}[language=c++, caption={\tt output/samp.curvesamp}, captionpos=b]
+num_edges
+
+FOR // each edge
+	num_samples_on_edge
+	FOR // each sample on edge
+		sample_index
+	END FOR
+END FOR
+\end{lstlisting}
+\end{minipage}\end{center}
+
+
+
 
 
 
@@ -279,6 +300,7 @@ END FOR
 \begin{itemize}
 	\item {\tt output/F.faces} -- \ref{sec:f.faces}
 	\item {\tt output/S.surf} -- \ref{sec:s.surf}
+	\item {\tt output/samp.surfsamp} -- \ref{sec:samp.surfsamp}
 \end{itemize}
 
 \subsubsection{\tt F.faces}
@@ -322,5 +344,22 @@ END FOR
 
 
 
+\subsubsection{\tt output/samp.surfsamp}
+\label{sec:samp.surfsamp}
+
+
+
+\begin{center}\begin{minipage}{0.9\linewidth}
+\begin{lstlisting}[language=c++, caption={\tt output/samp.surfsamp}, captionpos=b]
+num_faces
+
+FOR // each face
+	num_triangles_on_face
+	FOR // each triangle
+		vert_1 vert_2 vert_3
+	END FOR
+END FOR
+\end{lstlisting}
+\end{minipage}\end{center}
 
 
