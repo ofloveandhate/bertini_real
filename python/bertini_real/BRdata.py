@@ -1,3 +1,4 @@
+#miscellaneous operating system interfaces
 import os
 import ParsingFunctions
 
@@ -5,8 +6,13 @@ from Dehomogenize import dehomogenize
 from Surface import Surface, Curve
 from Util import next_filenumber
 
-
+#class called BRdata that is made up of objects
+#defining function named init that takes in parameter self
 class BRdata(object):
+#a python function or just by common convention?
+# first argument of every class method, including init is always a reference to current instance of class
+#this argument is always named self
+#like an object blueprint?
     def __init__(self):
         self.filenames = []
         self.num_vertices = 0
@@ -29,7 +35,8 @@ class BRdata(object):
         print("done gathering decomposition")
 
 
-
+#function find_directory that takes in self and the directory path
+#len() returns the length of someting
     def find_directory(self,directory_path):
         directories = directory_path.split('/')
         if len(directories) > 1:
@@ -38,7 +45,7 @@ class BRdata(object):
             self.directory = directory_path
 
 
-
+#gets the vertices
     def gather_vertices(self):
         vertex_file_name = "V.vertex"
         # print self.directory
@@ -140,7 +147,8 @@ if __name__ == "__main__":
     b = BRdata()
 
     print("saving to file " + fileName)
-
+#create pickle
     import pickle
+#call pickle.dump() to serialize data
     pickle.dump(b,fileObject)
     fileObject.close()

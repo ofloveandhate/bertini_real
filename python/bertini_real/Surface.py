@@ -1,7 +1,10 @@
 import ParsingFunctions
 import os
+#creates a class called surface that is made up of objects
 class Surface(object):
+#defines functional init that takes parameters self and directory
 	def __init__(self, directory):
+#initial state of the object in class?
 		self.directory = directory
 		self.inputfilename = None
 		self.num_variables = 0
@@ -35,11 +38,11 @@ class Surface(object):
 		self.gather_curves(self.directory)
 		self.gather_surface_samples(self.directory)
 		self.read_input(self.directory)
-
+#function parse_decomp that takes in self, directory,
 	def parse_decomp(self, directory):
 		decomposition_data = ParsingFunctions.parse_decomposition(directory)
 		self.inputfilename = decomposition_data['input file name']
-		self.pi = decomposition_data['Pi info'] 
+		self.pi = decomposition_data['Pi info']
 		self.patch = decomposition_data['Patch Vectors']
 		self.radius = decomposition_data["radius"]
 		self.center = decomposition_data["center"]
@@ -62,7 +65,7 @@ class Surface(object):
 		for ii in xrange(self.num_critical_slices):
 			new_curve = Curve(directory + '/curve_critslice_' + str(ii))
 			self.critical_point_slices.append(new_curve)
-		
+
 		critical_curve = Curve(directory + '/curve_crit')
 		self.critical_curve.append(critical_curve)
 		sphere_curve = Curve(directory + '/curve_crit')
@@ -116,7 +119,7 @@ class Curve(Surface):
 		self.parse_curve_sampler(self.directory)
 		self.read_input(self.directory)
 
-	
+
 	def parse_edge(self, directory):
 		edge_data = ParsingFunctions.parse_Edges(directory)
 		self.num_edges = edge_data['number of edges']
@@ -124,11 +127,3 @@ class Curve(Surface):
 
 	def parse_curve_sampler(self, directory):
 		self.curve_sampler_data = ParsingFunctions.parse_Curve_Sampler(directory)
-	
-
-
-
-
-
-
-
