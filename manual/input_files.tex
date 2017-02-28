@@ -62,37 +62,9 @@ variable_group z3;
 
 In the case of user-defined homotopies, the keyword is \texttt{variable}, and all variables should be defined in the same line.
 
-\item{PATHVARIABLES:}
-The pathvariable, often denoted by the letter “t”, is the independent variable that is controlled during homotopy continuation. In Bertini, the homotopy always moves from the start system at $t = 1$ to the target system at $t = 0$. A pathvariable must be declared in the \texttt{input} file \textbf{ONLY} if the user is specifying the entire homotopy (i.e., \texttt{USERHOMOTOPY} is set to 1). In that case, it is also necessary to declare at least one parameter, as described in the next item. The keyword for pathvariables is \texttt{pathvariable}.
 
-\item{PARAMETERS:}
-Homotopy continuation relies on the ability to cast a given polynomial system as a member of a parameterized family of polynomial systems. Such parameterized families (especially those which occur naturally) constitute one of the powerful advantages numerical methods in algebraic geometry have over symbolic methods. Sometimes there is only one parameter involved, but sometimes there are several. Please note, though, that user-defined parameters should be used only in the case of user-defined homotopies. Regardless of the number of parameters, each parameter depends directly upon the pathvariable. As a result, the user must both declare each parameter and assign to it an expression depending only upon the pathvariable to it. Here is an example:
-\begin{center}\begin{minipage}{0.9\linewidth}
 
-\begin{lstlisting}[language=c++, caption=Adapted from \cite{BM13}, captionpos=b]
-...
-parameter p1, p2;
-...
-p1 = t^2;
-p2 = t^3;
-...
-\end{lstlisting}
-\end{minipage}\end{center}
 
-For technical reasons, in the case of a user-provided homotopy, Bertini always assumes that there is at least one parameter (even if there is no apparent need for one). In the case that the user wishes to build a homotopy depending only upon the pathvariable, it is necessary to declare a parameter, set it to the pathvariable in the assignments section, and then to use only that parameter (and \textbf{NOT} the pathvariable) in the functions. Here is an example:
-\begin{center}\begin{minipage}{0.9\linewidth}
-
-\begin{lstlisting}[language=c++, caption=Adapted from \cite{BM13}, captionpos=b]
-...
-pathvariable t;
-parameter s;
-...
-s=t;
-...
-\end{lstlisting}
-\end{minipage}\end{center}
-
-No parameters should appear in the \texttt{input} file unless the homotopy is defined by the user, and the pathvariable should never appear explicitly in any homotopy function.
 
 \item{CONSTANTS:}
 Bertini will accept numbers in either standard notation (e.g., 3.14159 or 0.0023) or scientific notation (e.g., 3.14159e1 or 2.3e-3). No decimal point is needed in the case of an integer. To define complex numbers, simply use the reserved symbol I for $\sqrt{-1}$, e.g., \texttt{1.35 + 0.98*I}. Please note that the multiplication symbol * is always necessary, i.e. concatenation does not
