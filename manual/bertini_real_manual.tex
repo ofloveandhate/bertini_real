@@ -1,4 +1,4 @@
-\documentclass[10pt]{article}
+\documentclass[10pt, twoside]{article}
 
 
 \input{br_manual_header.tex}
@@ -7,8 +7,7 @@
 \begin{document}
 \pagestyle{plain} 
 
-	\pagenumbering{roman} 
-	\setcounter{page}{1}
+	
 
 
 \begin{titlepage}
@@ -50,20 +49,19 @@
 \end{titlepage}
 
 
-
-
-	\tableofcontents
-	\eject
-	\pagenumbering{arabic} 
+\pagenumbering{roman} 
 	\setcounter{page}{1}
-	\eject
+\begingroup\setlength{\parskip}{0pt plus .1pt}
+	\tableofcontents
+	\newpage
+\endgroup
 
 
 
 
-
-
-
+\pagenumbering{arabic} 
+	\setcounter{page}{1}
+\setlength{\parskip}{1em} %custom spacing between paragraphs 
 \input{introduction}
 
 
@@ -127,9 +125,11 @@
 
 
 \newpage
+
+\begingroup\setlength{\parskip}{0pt plus .1pt}
 \setglossarystyle{altlist}
 \printglossary[type=\acronymtype]
-
+\endgroup
 
 
 
