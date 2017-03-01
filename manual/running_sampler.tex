@@ -1,3 +1,52 @@
 
 \section{Running Sampler}
-If you are happy with the results of the Bertini\_real decomposition, you may wish to refine the triangulation of the surface or curve. This can be acheived using the \texttt{sampler} program after calling \texttt{bertini\_real}. Call \texttt{sampler} on the command line, e.g. \texttt{sampler -fixed 10} to sample each cell to have approximately $10^d$ samples on it, where $d$ is the dimension of the component. 
+
+\subsection{About Sampler}
+ \begin{itemize}
+  \item If you are happy with the results of the Bertini\_real decomposition, you may wish to refine the triangulation of the surface or curve. This can be acheived using the \texttt{sampler} program after calling \texttt{bertini\_real}. 
+  \item This section will show you how to:
+   \begin{enumerate}
+   	\item Properly run sampler, with visual examples
+   	\item Use the different algorithms to shape curves and surfaces
+   	\item Use matlab to better visualize curves and surfaces
+   \end{enumerate}
+ \end{itemize}  
+
+ \subsection{Curves}
+ 	\subsubsection{Running Sampler (Using an Example)}
+ 	\begin{itemize}
+ 		\item In order to show how to properly run sampler, I will be using an example of a curve, going through each step to make sure the basics of sampler are covered.
+ 		\begin{enumerate}
+ 			\item First, choose the curve you wish to produce. (In this case I am choosing the 'eistute\_sphere', which is found in the 'intersections' file which can be found in the 'zoo' file)
+ 			%add picture here
+ 			\item Invoke 'bertini' and 'bertini\_real'
+ 			%add picture here
+ 			\item Invoke 'sampler'
+ 			%add picture here
+ 			\item Now use Matlab to produce the image of the curve
+ 			%add picture here
+ 			\item Go to the folder that holds your curve, then type 'gather\_br\_samples'
+ 		    \item To produce the image, type in 'bertini\_real\_plotter'
+ 			%add matlab pics
+ 			\item you should end up with a figure along with matlab's display of viewing options
+ 			%add resulting pic
+ 		\end{enumerate}
+ 	\end{itemize}
+ 	\subsubsection{Algorithms and Tau}
+ 	\begin{itemize}
+ 		\item Summary: %DANI: summary about algorithms and tau 
+ 		\item Types of algorithms:
+ 		\begin{enumerate}
+ 			\item %types of algorithm with a one sentence description about each
+
+
+
+
+
+
+
+
+
+
+
+% EXTRA NOTES THAT I MIGHT USE(IGNORE THIS): Call \texttt{sampler} on the command line, e.g. \texttt{sampler -fixed 10} to sample each cell to have approximately $10^d$ samples on it, where $d$ is the dimension of the component. 
