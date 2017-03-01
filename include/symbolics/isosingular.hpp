@@ -37,6 +37,22 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
 
 
 /**
+\brief Create a Matlab .m file which calls `deflate_no_subst` from the matlab_codes folder.
+
+this method of deflating prevents the substitution of subfunctions into the functions while deflating, which can be helpful in preventing expression swell.
+
+\param OUT the file to write to.  ideally named 'matlab_deflate.m'.
+\param filename The name of the input file to deflate
+\param deflation_number The sequential number of deflations having been run.  Increment by 1 between calls to prevent duplicate symbols.
+\param minorSize the size of the minors of the jacobian of which to take determinants.
+\param degrees An array of integers containing the degrees of the functions.  Likely obtained from the bertini parser.
+*/
+bool createMatlabDeflationNoSubst(std::string const& filename, int deflation_number, int minorSize, int* degrees, boost::filesystem::path inputOutputName);
+
+
+
+
+/**
  \brief Create a matlab .m file to perform symbolic determinants of minors.
  
  Write a .m file, which must be called by matlab, to perform symbolic deflation of a system.  Computes minors of the Jacobian matrix, and write them into a new system.
@@ -56,8 +72,7 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
  \param degrees the degrees of the functions
  \param deflation_number the integer index of the deflation iteration.
  */
-void createMatlabDeflation(FILE *OUT,
-						   int numVars, char **vars, int *lineVars,
+bool createMatlabDeflation(int numVars, char **vars, int *lineVars,
 						   int numConstants, char **consts, int *lineConstants,
 						   int numFuncs, char **funcs, int *lineFuncs,
 						   FILE *IN,
@@ -85,14 +100,21 @@ void createMatlabDeflation(FILE *OUT,
  \param degrees the degrees of the functions
  \param deflation_number the integer index of the deflation iteration.
  */
-void createPythonDeflation(FILE *OUT,
-						   int numVars, char **vars, int *lineVars,
+bool createPythonDeflation(int numVars, char **vars, int *lineVars,
 						   int numConstants, char **consts, int *lineConstants,
 						   int numFuncs, char **funcs, int *lineFuncs,
 						   FILE *IN,
 						   int minorSize, int *degrees, int deflation_number);
 
 
+
+/**
+\brief turn the two files `deflation_polynomials` and `deflation_polynomials_declaration`, together with the original input file, into the final deflated input file.
+
+
+*/
+void DeflPolyDeclAndPolyToFinal(boost::filesystem::path inputOutputName, FILE* IN,
+				int *declarations);
 
 /**
  \brief setup input file for one deflation iteration

@@ -404,6 +404,8 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 			{"help",		no_argument,			 0, 'h'}, {"h",		no_argument,			 0, 'h'},
 			{"mode",required_argument,0,'M'}, {"m",required_argument,0,'M'},
 			{"symengine",required_argument,0,'E'},{"E",required_argument,0, 'E'},
+			{"symnosubst",	no_argument,			 0, 't'},
+			{"symallowsubst",	no_argument,			 0, 'T'},
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
@@ -538,6 +540,18 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 				break; 
 			}
 
+			case 't':
+			{
+				this->sym_prevent_subst(true);
+				break;
+			}
+
+			case 'T':
+			{
+				this->sym_prevent_subst(false);
+				break;
+			}
+
 			case '?':
 				/* getopt_long already printed an error message. */
 				break;
@@ -590,6 +604,8 @@ void BertiniRealConfig::print_usage()
 	printf("-debug\t\t\t --\n");
 	printf("-gammatrick\t\t\t bool\n");
 	printf("-symengine -E\t\t\t 'symengine'\n");
+	printf("-symnosubst\t\t\t -- prevent substitution of subfunctions during deflation and other sym ops.  default.\n");
+	printf("-symallowsubst\t\t\t -- allow substitution of subfunctions during deflation and other sym ops\n");
 	printf("\n\n\n");
 	return;
 }
@@ -621,6 +637,8 @@ void BertiniRealConfig::init()
 	stifle_text_ = " > /dev/null ";
 	
 	matlab_command_ = "matlab -nosplash -nodesktop -nojvm -r ";
+	python_command_ = "python ";
+	
 	verbose_level(0); // default to 0
 	
 	
@@ -630,7 +648,7 @@ void BertiniRealConfig::init()
 	
 	primary_mode_ = BERTINIREAL;
 	engine_ = SymEngine::Matlab; // setting default to Matlab symbolic engine
-	
+	prevent_sym_substitution_ = true;
 	return;
 }
 

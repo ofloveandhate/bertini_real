@@ -186,48 +186,72 @@ void isosingular_deflation_iteration(int *declarations,
 
 	printf("\nPerforming an isosingular deflation\n");
 
+	bool need_run_tofinal;
+	minorSize = numVars - declarations[1] - nullSpaceDim + 1;
 	switch (program_options.symbolic_engine())
 	{
 		case SymEngine::Matlab:
 		{
 			// setup Matlab script
-			OUT = safe_fopen_write("matlab_deflate.m");
-			minorSize = numVars - declarations[1] - nullSpaceDim + 1;
-			createMatlabDeflation(OUT, numVars, vars, lineVars, numConstants, consts, lineConstants, numFuncs, funcs, lineFuncs, IN, minorSize, degrees, deflation_number);
+			if (program_options.sym_prevent_subst())
+				need_run_tofinal = createMatlabDeflationNoSubst("deflation_input_file", deflation_number, minorSize, degrees, inputOutputName);
+			else
+				need_run_tofinal = createMatlabDeflation(numVars, vars, lineVars, numConstants, consts, lineConstants, numFuncs, funcs, lineFuncs, IN, minorSize, degrees, deflation_number);
 
-			fclose(OUT);
+			// call the matlab script we just wrote
+			program_options.CallMatlab("matlab_deflate");
 
-			// run Matlab script
-			std::stringstream converter;
-			converter << program_options.matlab_command() << "matlab_deflate";
-			system(converter.str().c_str());
-			converter.clear(); converter.str("");
 			break;
 		}
 
     	case SymEngine::Python:
 		{
-			// Create Python Script
-			OUT = safe_fopen_write("python_deflate.py");	    
-			minorSize = numVars - declarations[1] - nullSpaceDim + 1;
-			createPythonDeflation(OUT, numVars, vars, lineVars, numConstants, consts, lineConstants, numFuncs, funcs, lineFuncs, IN, minorSize, degrees, deflation_number);
-			fclose(OUT);
+			// create a python script
+			need_run_tofinal = createPythonDeflation(numVars, vars, lineVars, numConstants, consts, lineConstants, numFuncs, funcs, lineFuncs, IN, minorSize, degrees, deflation_number);
 
 			//run Python script
-			std::cout << "inkoving `python python_deflate.py`\n";
-			system("python python_deflate.py");
+			program_options.CallPython("python_deflate.py");
+
 			break;
 		}
 	} // switch
 	
+	
+	if (need_run_tofinal)
+		DeflPolyDeclAndPolyToFinal(inputOutputName, IN, declarations);
+	
+	
+	// clear memory
+	free(str);
+	free(degrees);
+	for (ii = 0; ii < numVars; ii++)
+		free(vars[ii]);
+	free(vars);
+	free(lineVars);
+	for (ii = 0; ii < numConstants; ii++)
+		free(consts[ii]);
+	free(consts);
+	free(lineConstants);
+	for (ii = 0; ii < numFuncs; ii++)
+		free(funcs[ii]);
+	free(funcs);
+	free(lineFuncs);
+	
+	return;
+}
+
+
+
+void DeflPolyDeclAndPolyToFinal(boost::filesystem::path inputOutputName, FILE* IN,
+				int *declarations)
+{
 	WaitOnGeneratedFile("deflation_polynomials_declaration");
 	WaitOnGeneratedFile("deflation_polynomials");
 	
-	
-	
 	// setup new file
-	OUT = safe_fopen_write(inputOutputName.c_str());
+	FILE * OUT = safe_fopen_write(inputOutputName.c_str());
 	rewind(IN);
+	char ch;
 	while ((ch = fgetc(IN)) != EOF)
 		fprintf(OUT, "%c", ch);
 	fclose(IN);
@@ -249,27 +273,34 @@ void isosingular_deflation_iteration(int *declarations,
 	
 	// increment the number of function declarations
 	declarations[9]++;
-	
-	// clear memory
-	free(str);
-	free(degrees);
-	for (ii = 0; ii < numVars; ii++)
-		free(vars[ii]);
-	free(vars);
-	free(lineVars);
-	for (ii = 0; ii < numConstants; ii++)
-		free(consts[ii]);
-	free(consts);
-	free(lineConstants);
-	for (ii = 0; ii < numFuncs; ii++)
-		free(funcs[ii]);
-	free(funcs);
-	free(lineFuncs);
-	
-	return;
 }
 
-void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs, FILE *IN, int minorSize, int *degrees, int deflation_number)
+
+bool createMatlabDeflationNoSubst(std::string const& filename, int deflation_number, int minorSize, int* degrees, boost::filesystem::path inputOutputName)
+{
+
+	FILE* OUT = safe_fopen_write("matlab_deflate.m");
+
+	std::cout << "sam cavender, please implement this function 'createMatlabDeflationNoSubst'\n\n";
+	exit(-12937126); // delete this exit, and the above cout statement.
+
+
+	// write to the file pointer OUT using fprintf statements,
+	// the content of the file should be a call to deflate_no_subst().
+	// no need to call matlab in here on the generated file, that's done at a higher level
+	
+	// you probably need to rename the file generated from matlab, so that it is called inputOutputName
+	// so modify the matlab code, to take another argument, which is the name of the output file
+
+	return false;// return false, indicating that there's no need to unify the two files 
+	// for the declaration and definitions of the deflation polynomials.
+}
+
+
+
+
+
+bool createMatlabDeflation(int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs, FILE *IN, int minorSize, int *degrees, int deflation_number)
 /***************************************************************\
  * USAGE: setup a Matlab script to perform the deflation         *
  * ARGUMENTS: input file, declaration name, and number of lines  *
@@ -277,6 +308,8 @@ void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
  * NOTES:                                                        *
  \***************************************************************/
 {
+	FILE* OUT = safe_fopen_write("matlab_deflate.m");
+
 	int ii, lineNumber = 1, cont = 1, declares = 0, strLength = 0, strSize = 1;
 	char ch;
 	char *str = (char *)br_malloc(strSize * sizeof(char));
@@ -427,11 +460,13 @@ void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 	// clear memory
 	free(str);
 	
-	return;
+	fclose(OUT);
+
+	return true;
 }
 
 
-void createPythonDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs, FILE *IN, int minorSize, int *degrees, int deflation_number)
+bool createPythonDeflation(int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs, FILE *IN, int minorSize, int *degrees, int deflation_number)
 /***************************************************************
  * USAGE: setup a Python script to perform the deflation         *
  * ARGUMENTS: input file, declaration name, and number of lines  *
@@ -439,6 +474,7 @@ void createPythonDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
  * NOTES:                                                        *
  ***************************************************************/
 {
+	FILE* OUT = safe_fopen_write("python_deflate.py");
 	int ii, lineNumber = 1, cont = 1, declares = 0, strLength = 0, strSize = 1;
 	char ch;
 	char *str = (char *)br_malloc(strSize * sizeof(char));
@@ -704,8 +740,8 @@ void createPythonDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 
 	// clear memory
 	free(str);
-	
-	return;
+	fclose(OUT);
+	return true;
 }
 
 
