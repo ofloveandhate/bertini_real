@@ -13,6 +13,7 @@
  \end{itemize}  
 
  \subsection{Curves}
+ 
  	\subsubsection{Running Sampler (Using an Example)}
  	\begin{itemize}
  		\item In order to show how to properly run sampler, I will be using an example of a curve, going through each step to make sure the basics of sampler are covered.
@@ -32,20 +33,61 @@
  			%add resulting pic
  		\end{enumerate}
  	\end{itemize}
- 	\subsubsection{Algorithms and Tau}
- 	\begin{itemize}
- 		\item Summary: %DANI: summary about algorithms and tau 
- 		\item Types of algorithms:
- 		\begin{enumerate}
- 			\item %types of algorithm with a one sentence description about each
 
 
 
 
+ 	\subsubsection{Available curve sampling algorithms}
+ 	
+
+ 	There are three curve sampling algorithms available in the Sampler module for Bertini\_real.
+
+ 	\begin{enumerate}
+
+ 		\item {\tt -m a} -- Adaptive -- by movement of a predicted point.  Default choice.
+
+ 		\item {\tt -m f} -- Fixed -- every edge gets the same number of points
+
+ 		\item {\tt -m d} -- Adaptive -- by distance between consective samples
+
+ 	\end{enumerate}
+
+The modes are accessed by calling sampler with the appropriate mode switch.
 
 
+\paragraph{Curve sampling algorithm: Adaptive by movement}
+
+This algorithm refines edge-by-edge until the predicted point, and the computed point, are close to each other.  It reduces sample density in regions of the curve which are flat, and has higher density in regions of high curvature.
+
+\begin{center}
+\begin{figure}[H]
+\includegraphics[scale = 0.4]{curve_sampling_adaptive_movement}
+\caption[Adaptive-movement curve sampling]{Sampling a curve using movement-adaptive method.  New points are computed on the curve by bisecting intervals until the distance between the estimated midpoint and actual midpoint is less than convergence threshold $\tau$.}
+\end{figure}
+\end{center}
+
+\paragraph{Curve sampling algorithm: Adaptive by distance}
+
+The adaptive-by-distance refinement algorithm refines the edge by bisection until the distance between consecutive samples is less than some user-set threshold, or a maximum number of refinement iterations has been computed.  This algorithm works well, but over-samples flat regions of the curve, where relatively few points should be necessary.  
+
+\begin{center}
+\begin{figure}[H]
+\includegraphics[scale = 0.4]{curve_sampling_adaptive_distance}
+\caption[Adaptive-distance curve sampling]{Sampling a curve using distance-adaptive method.  New points are computed on the curve by bisecting intervals for which the distance between consecutive samples is larger than the convergence threshold $\tau$.}
+\end{figure}
+\end{center}
 
 
+\paragraph{Curve sampling algorithm: Fixed number}
+
+This curve sampling algorithm produces a fixed (by the user) number of sample points per edge of the decomposed curve.  
+
+\begin{center}
+\begin{figure}[H]
+\includegraphics[scale = 0.4]{curve_sampling_fixed}
+\caption[Fixed-number sampling of a curve -- how it works]{Fixed-number sampling of a curve.  The midpoint is homotoped so that a fixed number of sample points are computed on each edge of the curve.  The sample points are spaced uniformly in projection value, not in space.}
+\end{figure}
+\end{center}
 
 
 
