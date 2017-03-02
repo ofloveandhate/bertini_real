@@ -796,7 +796,8 @@ class sampler_configuration : public ProgramConfigBase
 public:
 	enum class Mode{
 		Fixed,
-		Adaptive
+		AdaptiveConsecDistance,
+		AdaptivePredMovement
 	};
 
 

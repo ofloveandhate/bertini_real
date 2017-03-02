@@ -520,7 +520,13 @@ void Surface::AdaptiveSampler(VertexSet & V,
 		if (sampler_options.verbose_level()>=1)
 			std::cout << faces_[ii];
 
-		AdaptiveSampleFace(ii, V, sampler_options, solve_options, num_ribs_between_crits);
+		try{
+			AdaptiveSampleFace(ii, V, sampler_options, solve_options, num_ribs_between_crits);
+		}
+		catch (std::exception & e)
+		{
+			std::cout << "bailed out on face " << ii << ".  reason: " << e.what() << std::endl;
+		}
 	} // re: for ii, that is for the faces
 	
 	return;
@@ -818,16 +824,17 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 	
 	auto top_edge_index    = top->   nondegenerate_edge_w_midpt(current_midslice.get_edge(mid_edge).right());
 	auto bottom_edge_index = bottom->nondegenerate_edge_w_midpt(current_midslice.get_edge(mid_edge).left());
-	// auto b_edge = bottom->get_edge(bottom_edge_index);
 
 	if (bottom_edge_index<0)
 	{
 		std::cout << color::red() << "unable to find bottom edge w midpoint index " << current_midslice.get_edge(mid_edge).left() << color::console_default() << std::endl;
+		throw std::runtime_error("bad bottom index");
 	}
 
 	if (top_edge_index<0)
 	{
-		std::cout << color::red() << "unable to find bottom edge w midpoint index " << current_midslice.get_edge(mid_edge).right() << color::console_default() << std::endl;
+		std::cout << color::red() << "unable to find top edge w midpoint index " << current_midslice.get_edge(mid_edge).right() << color::console_default() << std::endl;
+		throw std::runtime_error("bad top index");
 	}
 
 

@@ -3,7 +3,7 @@ import ParsingFunctions
 
 from Dehomogenize import dehomogenize
 from Surface import Surface, Curve
-
+from Util import next_filenumber
 
 
 class BRdata(object):
@@ -127,30 +127,12 @@ class BRdata(object):
         self.curve =  Curve(directory)
 
 
-def filenumber():
-    import fnmatch
-    import os
 
-    pattern = 'BRdata*.pkl'
-
-    files = os.listdir('.')
-    highest_number = -1
-
-    for name in files:
-        if fnmatch.fnmatch(name, pattern):
-            try:
-                current_number = int(name[6:-4])
-                if current_number > highest_number:
-                    highest_number = current_number
-            except ValueError:
-                continue
-
-    return highest_number+1
 
 
 if __name__ == "__main__":
 
-    a = filenumber()
+    a = next_filenumber()
 
     fileName = "BRdata" + str(a) + ".pkl"
     fileObject = open(fileName,'wb')
