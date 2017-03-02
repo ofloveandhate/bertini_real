@@ -56,35 +56,41 @@ The modes are accessed by calling sampler with the appropriate mode switch.
 
 This algorithm refines edge-by-edge until the predicted point, and the computed point, are close to each other.  It reduces sample density in regions of the curve which are flat, and has higher density in regions of high curvature.
 
-\begin{center}
+
 \begin{figure}[H]
+\begin{center}
 \includegraphics[scale = 0.4]{curve_sampling_adaptive_movement}
 \caption[Adaptive-movement curve sampling]{Sampling a curve using movement-adaptive method.  New points are computed on the curve by bisecting intervals until the distance between the estimated midpoint and actual midpoint is less than convergence threshold $\tau$.}
-\end{figure}
 \end{center}
+\end{figure}
+
 
 \paragraph{Curve sampling algorithm: Adaptive by distance}
 
 The adaptive-by-distance refinement algorithm refines the edge by bisection until the distance between consecutive samples is less than some user-set threshold, or a maximum number of refinement iterations has been computed.  This algorithm works well, but over-samples flat regions of the curve, where relatively few points should be necessary.  
 
-\begin{center}
+
 \begin{figure}[H]
+\begin{center}
 \includegraphics[scale = 0.4]{curve_sampling_adaptive_distance}
 \caption[Adaptive-distance curve sampling]{Sampling a curve using distance-adaptive method.  New points are computed on the curve by bisecting intervals for which the distance between consecutive samples is larger than the convergence threshold $\tau$.}
-\end{figure}
 \end{center}
+\end{figure}
+
 
 
 \paragraph{Curve sampling algorithm: Fixed number}
 
 This curve sampling algorithm produces a fixed (by the user) number of sample points per edge of the decomposed curve.  
 
-\begin{center}
+
 \begin{figure}[H]
+\begin{center}
 \includegraphics[scale = 0.4]{curve_sampling_fixed}
 \caption[Fixed-number sampling of a curve -- how it works]{Fixed-number sampling of a curve.  The midpoint is homotoped so that a fixed number of sample points are computed on each edge of the curve.  The sample points are spaced uniformly in projection value, not in space.}
-\end{figure}
 \end{center}
+\end{figure}
+
 
 
 
