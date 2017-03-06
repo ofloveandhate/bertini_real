@@ -307,7 +307,6 @@ void Curve::adaptive_sampler_movement(VertexSet & V,
 		if (sampler_options.verbose_level()>=2) {
 			printf("exiting while loop\n");
 		}
-		printf("\n");
 	}  // re: ii (for each edge)
 	
 	
@@ -806,6 +805,7 @@ void Curve::SemiFixedSampler(VertexSet & V,
 			
 			if (Wnew.num_points()==0) {
 				std::cout << "curve sampler returned no points!" << std::endl;
+				break;
 				//TODO: ah shit!  this ain't good.  how to deal with it?
 			}
 			
