@@ -4,6 +4,7 @@
 *.png
 *.py
 *.mat
+*.pkl
 *myexamples
 
 output*
