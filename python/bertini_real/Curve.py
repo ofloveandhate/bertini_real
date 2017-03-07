@@ -31,4 +31,4 @@ class Curve(Decomposition):
 		self.edges = edge_data['edges']
 
 	def parse_curve_sampler(self, directory):
-		self.curve_sampler_data = ParsingFunctions.parse_Curve_Sampler(directory)
+		self.sampler_data = ParsingFunctions.parse_Curve_Sampler(directory)

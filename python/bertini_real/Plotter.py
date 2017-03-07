@@ -16,6 +16,9 @@ class BRplotter(object):
     def plot(self):
         print("plotting object of dimension " + str(self.decomposition.dimension))
         self.fig = plt.figure()
+
+        #print(self.decomposition)
+
         if self.decomposition.num_variables==2:
             self.ax = self.fig.add_subplot(111)
         else:
@@ -80,6 +83,24 @@ class BRplotter(object):
         else:
             self.ax.plot(xs, ys, zs, zdir='z', c=None)#v['point'][
 
+
+        #print(self.decomposition.curve.curve_sampler_data)
+        #print(self.sampler_data)
+        print(self.decomposition.curve.sampler_data)
+        # get indicies from self.decomposition.curve.curve_sampler_data[]
+        #where is this?
+        #for item in self.decomposition.curve.curve_sampler_data
+            #x=[]
+            #y=[]
+            #z=[]
+                #for
+                #x.append()
+                #y.append()
+                #z.append()
+    #print(self.decomposition.curve.curve_sampler_data)
+
+        #those indicies index into self.decomposition.vertices
+
     def PlotSurface(self, surf):
         print("PlotSurface unimplemented yet")
 
@@ -98,3 +119,5 @@ if __name__ == "__main__":
      b = BRplotter()
      b.ReadMostRecent()
      b.plot()
+
+#print(self.decomposition)
