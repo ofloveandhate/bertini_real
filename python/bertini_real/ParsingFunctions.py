@@ -186,10 +186,18 @@ def parse_Edges(directory):
 def parse_Curve_Sampler(directory):
 	filename = directory + '/samp.curvesamp'
 	if not os.path.isfile(filename):
-		return []
+		return [[]] #no curve sampling to parse, so return empty sampling
+
 	with open(filename, 'r') as f:
-		## Finish function when you have an example with curve sampler files
+		num_edges = int(f.readline().replace('\n', '')) 
+		f.readline() # read blank line.
 		sampler_data = []
+
+		for ii in xrange(num_edges):
+			num_samples = int(f.readline().replace('\n', ''))
+			sampler_data.append(f.readline().replace('\n', '').split())
+			f.readline() # read blank line.
+			
 		return sampler_data
 
 
