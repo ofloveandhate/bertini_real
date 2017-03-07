@@ -3,13 +3,7 @@
 function br_plotter = curve_plot(br_plotter)
 %
 
-
-
-
-
-
 create_axes(br_plotter);
-
 
 label_axes(br_plotter);
 
