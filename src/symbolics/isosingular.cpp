@@ -290,10 +290,12 @@ bool createMatlabDeflationNoSubst(std::string const& filename, int deflation_num
 
 	for (int ii = 0; ii < numFuncs; ++ii)
 		fprintf(OUT,"%d ",degrees[ii]);
-	fprintf(OUT,"];");
+	fprintf(OUT,"];\n\n");
 
 
 	fprintf(OUT, "deflate_no_subst(filename,deflation_number,minorSize,degrees,OutputName);\n\n");
+
+	fprintf(OUT, "exit");
 
 	fclose(OUT);
 

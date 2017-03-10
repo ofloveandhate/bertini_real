@@ -648,7 +648,7 @@ void BertiniRealConfig::init()
 
 	primary_mode_ = BERTINIREAL;
 	engine_ = SymEngine::Matlab; // setting default to Matlab symbolic engine
-	prevent_sym_substitution_ = true;
+	prevent_sym_substitution_ = false;
 	return;
 }
 
