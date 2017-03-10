@@ -1,6 +1,6 @@
 % [] = deflate_no_subst(filename, defl_iteration, minorsize)
 %
-% computes a deflated system from an input system. 
+% computes a deflated system from an input system.
 %
 % filename - the name of the file to parse and deflate
 % defl_iteration -- a somewhat arbitrary number, used to indicate which
@@ -9,10 +9,10 @@
 % minorsize -- the size of the minors of which you take the determinant,
 % when adding more functions to the system to deflate
 %
-% dani brake 
+% dani brake
 % 2017
 
-function deflate_no_subst(filename,defl_iteration, minorsize)
+function deflate_no_subst(filename,defl_iteration, minorsize, degrees, OutputName)
 
 b = bertini_input(filename); % from the Bertini_tropical package
 
@@ -24,7 +24,7 @@ num_funcs = size(b.functions,1);
 vars = sym(zeros(1,num_vars));
 for ii = 1:num_vars
 	eval(sprintf('syms %s',system_variables{ii}));  %make the variable be a symbol in matlab memory
-	vars(ii) = sym(system_variables{ii}); 
+	vars(ii) = sym(system_variables{ii});
 	%vars is used in the jacobian call, so that only those derivatives are computed
 end
 
@@ -57,7 +57,7 @@ orig_subfunc_args = cell(num_subfuncs,2);
 fprintf('\tsetting up subfunctions in memory\n')
 
 for ii = 1:num_subfuncs
-	
+
 	curr_subfunc_args = '';
 	curr_subfunc_args_for_regexp = '';
 	for jj = 1:num_vars
@@ -68,12 +68,12 @@ for ii = 1:num_subfuncs
 	end
 	curr_subfunc_args = curr_subfunc_args(1:end-2);
 	curr_subfunc_args_for_regexp = [curr_subfunc_args_for_regexp(1:end-4) '\s*'];
-	
-	
+
+
 	orig_subfunc_args{ii,1} = curr_subfunc_args; %store it.
 	orig_subfunc_args{ii,2} = curr_subfunc_args_for_regexp; %store it.
-	
-	
+
+
 	currstr = sprintf('syms %s(%s)',b.subfunction{ii,1},curr_subfunc_args);
 	eval(currstr);
 end
@@ -92,7 +92,7 @@ for ii = 1:length(function_names)
 		oldpattern = sprintf('(\\W|^)%s(\\W|$)',subfunc_names{jj});
 		newname = sprintf('%s(%s)',subfunc_names{jj},orig_subfunc_args{jj,1});
 		newpattern = sprintf('$1%s$2',newname);
-		curr_func = regexprep(curr_func,oldpattern,newpattern); 
+		curr_func = regexprep(curr_func,oldpattern,newpattern);
 	end
 	f(ii) = eval(curr_func);
 end
@@ -112,19 +112,19 @@ is_zero_derivative = zeros(length(subfunc_names),num_vars);
 fprintf('\tcomputing partial derivatives of subfunctions\n');
 for ii = 1:length(subfunc_names)
 	for jj = 1:num_vars
-		
+
 		if absolute_var_deps(ii,jj)~=0
-			
+
 			curr_subfunc = b.symbol_value(subfunc_names{ii});
-			
+
 			for kk = 1:num_subfuncs
 				oldpattern = sprintf('(\\W|^)%s(\\W|$)',subfunc_names{kk});
 				newname = sprintf('%s(%s)',subfunc_names{kk},orig_subfunc_args{kk,1});
 				newpattern = sprintf('$1%s$2',newname);
-				curr_subfunc = regexprep(curr_subfunc,oldpattern,newpattern); 
+				curr_subfunc = regexprep(curr_subfunc,oldpattern,newpattern);
 			end
-			
-			
+
+
 			current_derivative = diff(eval(curr_subfunc),system_variables{jj});
 			if current_derivative==0
 				is_zero_derivative(ii,jj) = 1;
@@ -137,8 +137,8 @@ for ii = 1:length(subfunc_names)
 		else
 			is_zero_derivative(ii,jj) = 1;
 		end
-		
-		
+
+
 	end
 end
 
@@ -150,12 +150,14 @@ count = 0;
 
 
 defl_fns = sym([]);
+coeffs = defl_fns;
 for j = 1:r
 	for k = 1:c
 		A = det(J(R(j,:),C(k,:)));
 		if A ~= 0
-			count = count + 1;
-			defl_fns(end+1) = A;
+            count = count + 1;
+            defl_fns(end+1) = A;
+            coeffs(end+1) = 2/prod(degrees(R(j,:)));
 		end
 	end
 end
@@ -187,7 +189,6 @@ fprintf('\tdoing subfuncion substitutions for defl_fns\n')
 %now we substitute away the subfunction f(...) statements, by the names of
 %the original subfunctions.
 
-
 for ii = 1:length(defl_fns)
 	curr_deflfn = char(defl_fns(ii));
 	for jj = 1:length(subfunc_names)
@@ -196,8 +197,10 @@ for ii = 1:length(defl_fns)
 		newname = sprintf('%s',subfunc_names{jj});
 		newpattern = sprintf('$1%s$2',newname);
 		curr_deflfn = regexprep(curr_deflfn,oldpattern,newpattern);
-	end
-	defl_fns(ii) = curr_deflfn;
+    end
+    
+    curr_coeff = char(coeffs(ii));
+	defl_fns(ii) = sprintf('%s*(%s)',curr_coeff,curr_deflfn);
 end
 
 
@@ -217,15 +220,15 @@ for ii = length(new_subfunc_names):-1:1
 		for kk = 1:num_vars
 			oldname = sprintf('diff\\(%s\\(%s\\),\\s*%s)',orig_subfunc_names{jj},orig_subfunc_args{jj,2},system_variables{kk});
 			oldpattern = sprintf('(\\W|^)%s(\\W|$)',oldname);
-			
+
 			newname = sprintf('DIFF_%s_%s',orig_subfunc_names{jj},system_variables{kk});
 			newpattern = sprintf('$1%s$2',newname);
 			curr_subfunc = regexprep(curr_subfunc,oldpattern,newpattern);
 		end
-		
+
 		oldname = sprintf('%s\\(%s\\)',orig_subfunc_names{jj},orig_subfunc_args{jj,2});
 		oldpattern = sprintf('(\\W|^)%s(\\W|$)',oldname);
-		
+
 		newname = orig_subfunc_names{jj};
 		newpattern = sprintf('$1%s$2',newname);
 		curr_subfunc = regexprep(curr_subfunc,oldpattern,newpattern);
@@ -238,7 +241,12 @@ for ii = 1:length(defl_fns)
 	b.declare_and_define(sprintf('defl_%i_%i',defl_iteration,ii),defl_fns(ii),'function');
 end
 
-output_filename = sprintf('%s_deflated_%i',filename,defl_iteration);
+if nargin == 4
+    output_filename = sprintf('%s_deflated_%i',filename,defl_iteration);
+else
+    output_filename = OutputName;
+end
+
 write_bertini_input_file(b.variable_group, b.functions,'filename',output_filename,'options',b.config,'constants',b.constant,'subfunctions',b.subfunction);
 
 
