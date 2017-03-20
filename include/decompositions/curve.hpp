@@ -684,7 +684,7 @@ public:
 	 */
 	int fixed_set_initial_sample_data(int target_num_samples);
 	
-	int fixed_set_initial_sample_data(std::vector<int> const& num_samples_per_interval, VertexSet const& V);
+	int semi_fixed_set_initial_sample_data(std::vector<int> const& num_samples_per_interval, VertexSet const& V);
 	/**
 	 \brief Sample a curve so it has an equal number of points per edge, including boundary points.
 	 

@@ -4,7 +4,11 @@
 
 
 
-
+////////////////
+//
+//  High level curve samplers.  Edge samplers below these.
+//
+//////////////
 
 
 
@@ -53,7 +57,7 @@ void Curve::SemiFixedSampler(VertexSet & V,
 									  SolverConfiguration & solve_options,
 									  std::vector<int> const& num_samples_per_interval)
 {
-	
+	semi_fixed_set_initial_sample_data(num_samples_per_interval, V);
 
 	for (unsigned int ii=0; ii<num_edges(); ii++) // for each of the edges
 	{
@@ -78,7 +82,7 @@ void Curve::FixedSampler(VertexSet & V,
 {
 	
 	
-	
+	fixed_set_initial_sample_data(target_num_samples);
 
 	for (unsigned int ii=0; ii<num_edges(); ii++) // for each of the edges
 	{
@@ -728,8 +732,7 @@ void Curve::SampleEdgeSemiFixed(	int ii,
 	
 	
 	
-	fixed_set_initial_sample_data(num_samples_per_interval, V);
-	
+
 	V.set_curr_projection(pi(0));
 	V.set_curr_input(W.input_filename());
 	
@@ -813,7 +816,9 @@ void Curve::SampleEdgeSemiFixed(	int ii,
 		// use the cycle numbers to scale toward the endpoints.
 		//c_nums.CycleNumLeft()
 		//c_nums.CycleNumRight()
-		ScaleByCycleNum(temp2, &pre_cycle_scaled_p->coord[qq], 2, 2);
+		int left_cycle_num = 2; // these really should be programmatically set rather than hard-coded.  changeme.
+		int right_cycle_num = 2;
+		ScaleByCycleNum(temp2, &pre_cycle_scaled_p->coord[qq], left_cycle_num, right_cycle_num);
 
 		// finally, scale the cycle-number-scaled values into the interval we are working on, 
 		// to make the final projection values
@@ -920,7 +925,7 @@ void Curve::SampleEdgeFixed(	int ii,
 	
 	
 	
-	fixed_set_initial_sample_data(target_num_samples);
+
 	
 	V.set_curr_projection(pi(0));
 	V.set_curr_input(W.input_filename());
@@ -1084,7 +1089,7 @@ int  Curve::fixed_set_initial_sample_data(int target_num_samples)
 }
 
 
-int  Curve::fixed_set_initial_sample_data(std::vector<int> const& num_samples_per_interval, VertexSet const& V)
+int  Curve::semi_fixed_set_initial_sample_data(std::vector<int> const& num_samples_per_interval, VertexSet const& V)
 {
 	
 	sample_indices_.resize(num_edges());
