@@ -84,20 +84,8 @@ class BRplotter(object):
             self.ax.plot(xs, ys, zs, zdir='z', c=None)#v['point'][
 
 
-        #print(self.decomposition.curve.curve_sampler_data)
-        #print(self.sampler_data)
-        print(self.decomposition.curve.sampler_data)
+
         # get indicies from self.decomposition.curve.curve_sampler_data[]
-        #where is this?
-        #for item in self.decomposition.curve.curve_sampler_data
-            #x=[]
-            #y=[]
-            #z=[]
-                #for
-                #x.append()
-                #y.append()
-                #z.append()
-    #print(self.decomposition.curve.curve_sampler_data)
 
         #those indicies index into self.decomposition.vertices
 
