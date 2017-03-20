@@ -238,84 +238,76 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 
 int main(int argC, char *args[])
 {
-	
-	boost::timer::auto_cpu_timer t;
-	
-	
 	MPI_Init(&argC,&args);
 	
-	
-	boost::filesystem::path inputName, witnessSetName, samplingNamenew;
-	
-	
-	
-	
-	
-	
-	
 	sampler_configuration sampler_options;
-	
-	sampler_options.splash_screen();
 	sampler_options.parse_commandline(argC, args);
     
 	
+	if (sampler_options.is_head())
+	{
+		boost::timer::auto_cpu_timer t;
+		SamplerMaster(sampler_options);
+	}
+	else
+	{
+		SamplerWorker(sampler_options);
+	}
 	
+	clearMP();
+	MPI_Finalize();
+	
+	return 0;
+}
+
+
+
+void SamplerMaster(sampler_configuration & sampler_options)
+{
+	sampler_options.splash_screen();
+	
+	boost::filesystem::path inputName, witnessSetName, samplingNamenew;
 	int MPType, dimension;
 	
 	boost::filesystem::path directoryName;
 	
 	get_dir_mptype_dimen( directoryName, MPType, dimension);
-	
-	
-	
-	
-	
-    
-	
 	witnessSetName = directoryName / "WitnessSet";
 	samplingNamenew = directoryName;
 	
 	
-	SolverConfiguration solve_options;
 	
 	
-	//only one will be used.  i don't know how to avoid this duplicity.
-	Curve C;
-	Surface surf_input;
+	//only one will be used.  i don't know how to avoid this duplicity.  sorry.
+	// no, wait, i do.  it's by using polymorphism, i think.  that's not a pressing matter to me.
+	Curve curve;
+	Surface surf;
 	
 	Decomposition * decom_pointy; // this feels unnecessary
 	switch (dimension) {
 		case 1:
 		{
-			C.setup(directoryName);
-			decom_pointy = &C;
-			
-		}
+			curve.setup(directoryName);
+			decom_pointy = &curve;
 			break;
+		}
 			
 		case 2:
 		{
-			surf_input.setup(directoryName);
-			decom_pointy = &surf_input;
-			
-		}
+			surf.setup(directoryName);
+			decom_pointy = &surf;
 			break;
-		case -1:
-		{
-			std::cout << "sampler unable to proceed\n";
-			return 12461;
 		}
 		default:
 		{
-			std::cout << "sampler not capable of sampling anything but dimension 1 or 2.  this is of dim " << dimension << std::endl;
-			return 12462;
+			throw std::runtime_error("invalid dimension of object to sample.  you sure you have a valid decomposition?");
 		}
-			break;
 	}
 	
 	
 	
-	
+	SolverConfiguration solve_options;
+
 	common_sampler_startup(*decom_pointy,
 						   sampler_options,
 						   solve_options);
@@ -336,32 +328,32 @@ int main(int argC, char *args[])
 	//
 	//  Generate new sampling data
 	//
-    
+	   
 
 	switch (dimension) {
 		case 1:
 		{
 			switch (sampler_options.mode){
 				case sampler_configuration::Mode::Fixed:
-					C.FixedSampler(V,
+					curve.FixedSampler(V,
 									sampler_options,
 									solve_options,
 									sampler_options.target_num_samples);
 					break;
 				case sampler_configuration::Mode::AdaptiveConsecDistance:
 
-					C.AdaptiveDistanceSampler(V,
+					curve.AdaptiveDistanceSampler(V,
 												sampler_options,
 												solve_options);
 					break;
 
 				case sampler_configuration::Mode::AdaptivePredMovement:
-					C.AdaptiveMovementSampler(V,
+					curve.AdaptiveMovementSampler(V,
 												sampler_options,
 												solve_options);
 					break;
 			} // switch
-			C.output_sampling_data(directoryName);
+			curve.output_sampling_data(directoryName);
 			V.print(directoryName / "V_samp.vertex");
 			
 			break;
@@ -373,7 +365,7 @@ int main(int argC, char *args[])
 			switch (sampler_options.mode){
 				case sampler_configuration::Mode::Fixed:
 				{
-					surf_input.fixed_sampler(V,
+					surf.fixed_sampler(V,
 											 sampler_options,
 											 solve_options);
 					
@@ -383,7 +375,7 @@ int main(int argC, char *args[])
 					std::cout << "adaptive by movement not implemented for surfaces, using adaptive by distance\n\n";
 				case sampler_configuration::Mode::AdaptiveConsecDistance:
 				{
-					surf_input.AdaptiveSampler(V,
+					surf.AdaptiveSampler(V,
 											 sampler_options,
 											 solve_options);
 					break;
@@ -391,7 +383,7 @@ int main(int argC, char *args[])
 
 			} // switch
 
-			surf_input.output_sampling_data(directoryName);
+			surf.output_sampling_data(directoryName);
 			V.print(directoryName / "V_samp.vertex");
 
 			break;
@@ -399,24 +391,13 @@ int main(int argC, char *args[])
 		default:
 			break;
 	}
-    
-	
-	
-	//
-	//   Done with the main call
-	////
-	/////
-	///////
-	////////
-
-	
-	clearMP();
-	MPI_Finalize();
-	
-	return 0;
 }
 
 
+void SamplerWorker(sampler_configuration & sampler_options)
+{
+	
+}
 
 void common_sampler_startup(const Decomposition & D,
 							sampler_configuration & sampler_options,
