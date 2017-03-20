@@ -615,12 +615,33 @@ public:
 	 \param sampler_options The current state of the sampler program.
 	 \param solve_options The current state of the solver and tracker configuration.
 	 */
-	void adaptive_sampler_movement(VertexSet &V,
+	void AdaptiveMovementSampler(VertexSet &V,
 								   sampler_configuration & sampler_options,
 								   SolverConfiguration & solve_options);
 	
 	
-	
+	void SampleEdgeAdaptiveMovement(	int ii,
+								VertexSet & V,
+								sampler_configuration & sampler_options,
+								SolverConfiguration & solve_options);
+
+	void SampleEdgeAdaptiveDistance(	int ii,
+								VertexSet & V,
+								sampler_configuration & sampler_options,
+								SolverConfiguration & solve_options);
+
+	void SampleEdgeSemiFixed(	int ii,
+								VertexSet & V,
+								sampler_configuration & sampler_options,
+								SolverConfiguration & solve_options,
+								std::vector<int> const& num_samples_per_interval);
+
+	void SampleEdgeFixed(	int ii,
+								VertexSet & V,
+								sampler_configuration & sampler_options,
+								SolverConfiguration & solve_options,
+									  int target_num_samples);
+
 	/**
 	\brief Sample a curve using adaptive method based on distance between computed samples, and a maximum number of refinement passes.
 	 
@@ -632,7 +653,7 @@ public:
 	 \param sampler_options The current state of the sampler program.
 	 \param solve_options The current state of the solver and tracker configuration.
 	*/
-	void adaptive_sampler_distance(VertexSet &V,
+	void AdaptiveDistanceSampler(VertexSet &V,
 						  sampler_configuration & sampler_options,
 						  SolverConfiguration & solve_options);
 	
@@ -674,7 +695,7 @@ public:
 	 \param solve_options The current state of the solver.
 	 \param target_num_samples The number of points to get on each edge, including boundary points.
 	 */
-	void fixed_sampler(VertexSet &V,
+	void FixedSampler(VertexSet &V,
 					   sampler_configuration & sampler_options,
 					   SolverConfiguration & solve_options,
 					   int target_num_samples);
@@ -685,7 +706,7 @@ public:
 
 	while sampling, we look at each edge, and find the correct number of samples for the edge individually.
 
-	\see fixed_sampler
+	\see FixedSampler
 	*/
 	void SemiFixedSampler(VertexSet &V,
 					   sampler_configuration & sampler_options,

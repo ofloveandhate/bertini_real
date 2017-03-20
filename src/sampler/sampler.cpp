@@ -343,20 +343,20 @@ int main(int argC, char *args[])
 		{
 			switch (sampler_options.mode){
 				case sampler_configuration::Mode::Fixed:
-					C.fixed_sampler(V,
+					C.FixedSampler(V,
 									sampler_options,
 									solve_options,
 									sampler_options.target_num_samples);
 					break;
 				case sampler_configuration::Mode::AdaptiveConsecDistance:
 
-					C.adaptive_sampler_distance(V,
+					C.AdaptiveDistanceSampler(V,
 												sampler_options,
 												solve_options);
 					break;
 
 				case sampler_configuration::Mode::AdaptivePredMovement:
-					C.adaptive_sampler_movement(V,
+					C.AdaptiveMovementSampler(V,
 												sampler_options,
 												solve_options);
 					break;

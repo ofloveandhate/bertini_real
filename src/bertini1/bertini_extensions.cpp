@@ -617,7 +617,7 @@ void dot_product_d(comp_d result, const vec_d left, const vec_d right)
 {
 	if (left->size!=right->size) {
 		printf("attempting to dot_d two vectors not of the same size! (%d!=%d)\n",left->size,right->size);
-		br_exit(5901);
+		throw std::runtime_error("attempting to dot_d two vectors not of the same size");
 	}
 	
 	set_zero_d(result);
@@ -633,7 +633,7 @@ void dot_product_mp(comp_mp result, const vec_mp left, const vec_mp right)
 {
 	if (left->size!=right->size) {
 		printf("attempting to dot_mp two vectors not of the same size! (%d!=%d)\n",left->size,right->size);
-		br_exit(5902);
+		throw std::runtime_error("attempting to dot_mp two vectors not of the same size");
 	}
 	
 	set_zero_mp(result);
