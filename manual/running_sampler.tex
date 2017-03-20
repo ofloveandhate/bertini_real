@@ -15,24 +15,40 @@
  \subsection{Curves}
  
  	\subsubsection{Running Sampler (Using an Example)}
- 	\begin{itemize}
- 		\item In order to show how to properly run sampler, I will be using an example of a curve, going through each step to make sure the basics of sampler are covered.
- 		\begin{enumerate}
- 			\item First, choose the curve you wish to produce. (In this case I am choosing the 'eistute\_sphere', which is found in the 'intersections' file which can be found in the 'zoo' file)
- 			%add picture here
- 			\item Invoke 'bertini' and 'bertini\_real'
- 			%add picture here
- 			\item Invoke 'sampler'
- 			%add picture here
- 			\item Now use Matlab to produce the image of the curve
- 			%add picture here
- 			\item Go to the folder that holds your curve, then type 'gather\_br\_samples'
- 		    \item To produce the image, type in 'bertini\_real\_plotter'
- 			%add matlab pics
- 			\item you should end up with a figure along with matlab's display of viewing options
- 			%add resulting pic
- 		\end{enumerate}
- 	\end{itemize}
+ 	 In order to show how to properly run sampler, I will be using an example of a curve, going through each step to make sure the basics of sampler are covered.
+ 		\begin{longtabu} to \textwidth {
+    X[1,c]
+    X[1,c]}
+\hline
+\rowfont\bfseries
+\textbf{Instructions} & \textbf{Screen Shot} \\
+\hline  \\ 
+\endfirsthead
+\caption[]{\textit{Continued from previous page}}\\
+\hline
+\textbf{Instructions} & \textbf{Screen Shot} \\
+\hline \\
+\endhead
+\bottomrule \multicolumn{2}{r}{\textit{Continued on next page}} \\
+\endfoot
+\bottomrule \multicolumn{2}{r}{\textit{}} \\
+\endlastfoot
+First, choose the curve you wish to produce. (In this case I am choosing the 'eistute\_sphere', which is found in the 'intersections' file which can be found in the 'zoo' file) & \includegraphics[width=0.4\textwidth]{curvesampler1}  \\  \\  \\
+\hline \\
+Invoke 'bertini' and 'bertini\_real' & \includegraphics [width=0.4\textwidth]{curvesampler2} \\ \\ \\ 
+\hline \\
+Invoke 'sampler' & \includegraphics [width=0.4\textwidth]{curvesampler3} \\ \\ \\
+\hline \\ 
+Now use Matlab to produce the image of the curve
+\begin{enumerate} 
+	\item Go to the folder that holds your curve, then type 'gather\_br\_samples'
+	\item To produce the image, type in 'bertini\_real\_plotter'
+	\item you should end up with a figure along with matlab's display of viewing options
+\end{enumerate}
+& \includegraphics [width=0.4\textwidth]{curvesampler4.png} \\ \\ \\ 
+  
+\end{longtabu}
+
 
  	\subsubsection{Available curve sampling algorithms}
  	
@@ -43,9 +59,9 @@
 
  		\item {\tt -m a} -- Adaptive -- by movement of a predicted point.  Default choice.
 
- 		\item {\tt -m f} -- Fixed -- every edge gets the same number of points
-
  		\item {\tt -m d} -- Adaptive -- by distance between consective samples
+
+ 		\item {\tt -m f} -- Fixed -- every edge gets the same number of points
 
  	\end{enumerate}
 
@@ -63,7 +79,12 @@ This algorithm refines edge-by-edge until the predicted point, and the computed 
 \caption[Adaptive-movement curve sampling]{Sampling a curve using movement-adaptive method.  New points are computed on the curve by bisecting intervals until the distance between the estimated midpoint and actual midpoint is less than convergence threshold $\tau$.}
 \end{center}
 \end{figure}
-
+ 
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.5\textwidth]{curvesampler_adm.png}
+\caption{This is an example of sampling a curve using the adaptive by movement mode. To replicate this, when invoking sampler, type in 'sampler -m a'}
+\end{figure}
 
 \paragraph{Curve sampling algorithm: Adaptive by distance}
 
@@ -75,6 +96,12 @@ The adaptive-by-distance refinement algorithm refines the edge by bisection unti
 \includegraphics[scale = 0.4]{curve_sampling_adaptive_distance}
 \caption[Adaptive-distance curve sampling]{Sampling a curve using distance-adaptive method.  New points are computed on the curve by bisecting intervals for which the distance between consecutive samples is larger than the convergence threshold $\tau$.}
 \end{center}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.5\textwidth]{curvesampler_add.png}
+\caption{This is an example of sampling a curve using the adaptive by distance mode. To replicate this, when invoking sampler, type in 'sampler -m d'}
 \end{figure}
 
 
@@ -91,7 +118,25 @@ This curve sampling algorithm produces a fixed (by the user) number of sample po
 \end{center}
 \end{figure}
 
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.5\textwidth]{curvesampler_f.png}
+\caption{This is an example of sampling a curve using fixed mode. To replicate this, when invoking sampler, type in 'sampler -m f'}
+\end{figure}
+
+\subsection{Surfaces}
+
+\subsubsection{Running Sampler (Using an Example)}
+
+\subsubsection{Available surface sampling algorithms}
+
+
+
 
 
 
 % EXTRA NOTES THAT I MIGHT USE(IGNORE THIS): Call \texttt{sampler} on the command line, e.g. \texttt{sampler -fixed 10} to sample each cell to have approximately $10^d$ samples on it, where $d$ is the dimension of the component. 
+
+
+
+
