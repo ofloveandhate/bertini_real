@@ -35,25 +35,25 @@ void Surface::FixedSampleCurves(VertexSet & V,
 	int target_num_samples = sampler_options.target_num_samples; 
 	
 	std::cout << "critical curve" << std::endl;
-	crit_curve().fixed_sampler(V,sampler_options,solve_options,target_num_samples);
+	crit_curve().FixedSampler(V,sampler_options,solve_options,target_num_samples);
 
 	std::cout << "sphere curve" << std::endl;
-	sphere_curve().fixed_sampler(V,sampler_options,solve_options,target_num_samples);
+	sphere_curve().FixedSampler(V,sampler_options,solve_options,target_num_samples);
 
 	std::cout << "mid slices" << std::endl;
 	for (auto ii=mid_slices_iter_begin(); ii!=mid_slices_iter_end(); ii++) {
-		ii->adaptive_sampler_distance(V,sampler_options,solve_options);
+		ii->AdaptiveDistanceSampler(V,sampler_options,solve_options);
 	}
 	
 	std::cout << "critical slices" << std::endl;
 	for (auto ii=crit_slices_iter_begin(); ii!=crit_slices_iter_end(); ii++) {
-		ii->adaptive_sampler_distance(V,sampler_options,solve_options);
+		ii->AdaptiveDistanceSampler(V,sampler_options,solve_options);
 	}
 	
 	if (num_singular_curves()>0) {
 		std::cout << "singular curves" << std::endl;
 		for (auto iter = singular_curves_iter_begin(); iter!= singular_curves_iter_end(); ++iter) {
-			iter->second.fixed_sampler(V,sampler_options,solve_options,target_num_samples);
+			iter->second.FixedSampler(V,sampler_options,solve_options,target_num_samples);
 		}
 	}
 }
@@ -520,7 +520,13 @@ void Surface::AdaptiveSampler(VertexSet & V,
 		if (sampler_options.verbose_level()>=1)
 			std::cout << faces_[ii];
 
-		AdaptiveSampleFace(ii, V, sampler_options, solve_options, num_ribs_between_crits);
+		try{
+			AdaptiveSampleFace(ii, V, sampler_options, solve_options, num_ribs_between_crits);
+		}
+		catch (std::exception & e)
+		{
+			std::cout << "bailed out on face " << ii << ".  reason: " << e.what() << std::endl;
+		}
 	} // re: for ii, that is for the faces
 	
 	return;
@@ -546,12 +552,12 @@ std::vector<int> Surface::AdaptiveSampleCurves(VertexSet & V,
 
 	std::cout << "sampling mid slices" << std::endl;
 	for (auto ii=mid_slices_iter_begin(); ii!=mid_slices_iter_end(); ii++) {
-		ii->adaptive_sampler_distance(V,sampler_options,solve_options);
+		ii->AdaptiveDistanceSampler(V,sampler_options,solve_options);
 	}
 	
 	std::cout << "sampling critical slices" << std::endl;
 	for (auto ii=crit_slices_iter_begin(); ii!=crit_slices_iter_end(); ii++) {
-		ii->adaptive_sampler_distance(V,sampler_options,solve_options);
+		ii->AdaptiveDistanceSampler(V,sampler_options,solve_options);
 	}
 	
 	if (num_singular_curves()>0) {
@@ -818,16 +824,17 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 	
 	auto top_edge_index    = top->   nondegenerate_edge_w_midpt(current_midslice.get_edge(mid_edge).right());
 	auto bottom_edge_index = bottom->nondegenerate_edge_w_midpt(current_midslice.get_edge(mid_edge).left());
-	// auto b_edge = bottom->get_edge(bottom_edge_index);
 
 	if (bottom_edge_index<0)
 	{
 		std::cout << color::red() << "unable to find bottom edge w midpoint index " << current_midslice.get_edge(mid_edge).left() << color::console_default() << std::endl;
+		throw std::runtime_error("bad bottom index");
 	}
 
 	if (top_edge_index<0)
 	{
-		std::cout << color::red() << "unable to find bottom edge w midpoint index " << current_midslice.get_edge(mid_edge).right() << color::console_default() << std::endl;
+		std::cout << color::red() << "unable to find top edge w midpoint index " << current_midslice.get_edge(mid_edge).right() << color::console_default() << std::endl;
+		throw std::runtime_error("bad top index");
 	}
 
 

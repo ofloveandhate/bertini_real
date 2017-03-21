@@ -1,8 +1,8 @@
-                             Bertini Real(TM) version 1.0
+                             Bertini Real(TM) version 1.0-1.4
                 Authors:  D.A. Brake, D. Bates, J. Hauenstein, 
 			   W. Hao, A. Sommese, and C. Wampler
                            http://bertinireal.com
-                               Copyright (C) 2014-15
+                               Copyright (C) 2014-17
 
                                      *NOTICE*
 
