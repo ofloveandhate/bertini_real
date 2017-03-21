@@ -380,7 +380,7 @@ int main(int argC, char *args[])
 					break;
 				}
 				case sampler_configuration::Mode::AdaptivePredMovement:
-					std::cout << "adaptive by movement not implemented for surfaces, using adaptive by distance\n\n";
+					std::cout << color::red() << "adaptive by movement not implemented for surfaces, using adaptive by distance" << color::console_default() << "\n\n";
 				case sampler_configuration::Mode::AdaptiveConsecDistance:
 				{
 					surf_input.AdaptiveSampler(V,
