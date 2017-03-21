@@ -3,7 +3,7 @@
 
 \subsection{About Sampler}
  \begin{itemize}
-  \item If you are happy with the results of the Bertini\_real decomposition, you may wish to refine the triangulation of the surface or curve. This can be acheived using the \texttt{sampler} program after calling \texttt{bertini\_real}. 
+  \item If you are happy with the results of the Bertini\_real decomposition, you may wish to refine the triangulation of the surface or curve. This can be acheived using the \texttt{sampler} program after calling \texttt{bertini\_real}. Sampler can be used on both curves and surfaces. 
   \item This section will show you how to:
    \begin{enumerate}
    	\item Properly run sampler, with visual examples
@@ -16,9 +16,9 @@
  
  	\subsubsection{Running Sampler (Using an Example)}
  	 In order to show how to properly run sampler, I will be using an example of a curve, going through each step to make sure the basics of sampler are covered.
- 		\begin{longtabu} to \textwidth {
-    X[1,c]
-    X[1,c]}
+ \begin{longtabu} to \textwidth {
+ X[1,c]
+ X[1,c]}
 \hline
 \rowfont\bfseries
 \textbf{Instructions} & \textbf{Screen Shot} \\
@@ -35,9 +35,9 @@
 \endlastfoot
 First, choose the curve you wish to produce. (In this case I am choosing the 'eistute\_sphere', which is found in the 'intersections' file which can be found in the 'zoo' file) & \includegraphics[width=0.4\textwidth]{curvesampler1}  \\  \\  \\
 \hline \\
-Invoke 'bertini' and 'bertini\_real' & \includegraphics [width=0.4\textwidth]{curvesampler2} \\ \\ \\ 
+Invoke 'bertini' and 'bertini\_real' by entering in each on the command line individually & \includegraphics [width=0.4\textwidth]{curvesampler2} \\ \\ \\ 
 \hline \\
-Invoke 'sampler' & \includegraphics [width=0.4\textwidth]{curvesampler3} \\ \\ \\
+Invoke 'sampler' by entering it in on the command line & \includegraphics [width=0.4\textwidth]{curvesampler3} \\ \\ \\
 \hline \\ 
 Now use Matlab to produce the image of the curve
 \begin{enumerate} 
@@ -126,7 +126,44 @@ This curve sampling algorithm produces a fixed (by the user) number of sample po
 
 \subsection{Surfaces}
 
+
 \subsubsection{Running Sampler (Using an Example)}
+
+This section will guide you through running sampler using a surface. One thing to note is that it may take longer to invoke the sampler when using it on surfaces due to the amount of computation being done.
+
+\begin{longtabu} to \textwidth {
+ X[1,c]
+ X[1,c]}
+\hline
+\rowfont\bfseries
+\textbf{Instructions} & \textbf{Screen Shot} \\
+\hline  \\ 
+\endfirsthead
+\caption[]{\textit{Continued from previous page}}\\
+\hline
+\textbf{Instructions} & \textbf{Screen Shot} \\
+\hline \\
+\endhead
+\bottomrule \multicolumn{2}{r}{\textit{Continued on next page}} \\
+\endfoot
+\bottomrule \multicolumn{2}{r}{\textit{}} \\
+\endlastfoot
+First, choose the surface you wish to produce. (In this case I am choosing the 'sphere', which is just found in the surfaces file. Once you enter into this file, you are ready to invoke:
+\begin{itemize} 
+\item bertini 
+\item bertini\_real 
+\item sampler
+\end{itemize} & \includegraphics[width=0.4\textwidth]{surfacesampler1}  \\  \\  \\
+\hline \\
+Once sampler has been invoked, go to matlab and follow the same steps layed out for the sampler curve process, by gathering and plotting. Depending on refinements, you will end up with a sphere with fewer or more points. Here are the two matlab commands:
+\begin{itemize} 
+\item gather\_br\_samples 
+\item bertini\_real\_plotter
+\end{itemize}
+ & \includegraphics [width=0.4\textwidth]{surfacesampler2} \\ \\ \\   
+\end{longtabu}
+
+
 
 \subsubsection{Available surface sampling algorithms}
 
