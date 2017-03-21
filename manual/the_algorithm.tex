@@ -25,6 +25,19 @@ Decomposing an algebraic curve numerically can be summarized easily in six steps
 A curve is decomposed with respect to projection onto a (randomly chosen) real linear projection, $\pi_0(x)$.
 
 
+What does it mean to decompose a curve?  To turn compute a set of {\em edges} that describe the curve.  An edge is a 1-dimensional object, having two points as boundary, and a general point in the middle, together with a homotopy which can be used to track the midpoints between the boundary points.  Phew.  See Figure~\ref{fig:edge}.
+
+
+
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width = 2in]{edge}
+\caption{An edge, a 1-cell, as a component of a curve decomposition.}
+\label{fig:edge}
+\end{center}
+\end{figure}
+
 
 \subsubsection{Critical points}
 
@@ -115,7 +128,29 @@ Decomposing an algebraic surface numerically is similar to that of a curve, and 
 \end{enumerate}
 
 
+To decompose a surface is to compute a set of {\em faces}.  A face is a 2-cell, containing a set of bounding edges, and a general point in the middle, which can be tracked using a homotopy, staying within the boundary.  See Figure~\ref{fig:face}
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width = 2in]{face}
+\caption{A face, a 2-cell, as a component of a surface decomposition.  Its boundary consists of edges from curve decompositions.}
+\label{fig:face}
+\end{center}
+\end{figure}
+
 A surface is decomposed with respect to projection onto a pair of (randomly chosen) real linear projections, $\pi_0(x)$ and $\pi_1(x)$, together which may be referred to as $\pi(x)$.
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width = 5in]{surface_method}
+\caption{Numerical cellular decomposition of the Whitney Umbrella using Bertini\_real.}
+\label{fig:decomposing_surface}
+\end{center}
+\end{figure}
+
+
+
+
 
 
 \subsubsection{Critical curves}
@@ -208,9 +243,9 @@ Anywho, the midpoints are connected to midpoints.  The midpoints of midslice edg
 
 \subsubsection{Merge [optional]}
 
-The algorithm for merging faces does not yet appear in the literature.  Let's write it!  Should be a short paper, probably targeting a conference proceedings.  Contant Dani Brake to co-author it with them.
+The algorithm for merging faces does not yet appear in the literature, though it has been described verbally by Charles Wampler.  Let's write it!  Should be a short paper, probably targeting a conference proceedings.  Contact Dani Brake to co-author it with them.
 
 
-\subsection{Sample [optional]}
+\subsubsection{Sample [optional]}
 This section is described in much greater detail in Section~\ref{sec:sampler_surface}.  For now, suffice it to say that \eqref{eqn:midtrack} is used to track around the midpoint of each face, producing additional points on the face, and that a proper triangulation is maintained.  There are choices about how to sample.  One might think this a trivial problem.  Indeed, in three dimensions, there are many many algorithms for adaptively and optimally triangulating surfaces.  However, in higher dimensions the normal vector doesn't exist, and cross-products cannot be taken, so much of the machinery from 3d breaks.  Bummer.  Go check out the section on {\tt sampler} for more.
 
