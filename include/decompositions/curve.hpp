@@ -821,7 +821,7 @@ protected:
 
 
 
-
+void WorkerSampleCurve(sampler_configuration & sampler_options, SolverConfiguration & solve_options);
 
 
 

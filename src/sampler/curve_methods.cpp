@@ -4,6 +4,12 @@
 
 
 
+void WorkerSampleCurve(sampler_configuration & sampler_options, SolverConfiguration & solve_options)
+{}
+
+
+
+
 ////////////////
 //
 //  High level curve samplers.  Edge samplers below these.
@@ -914,7 +920,7 @@ void Curve::SampleEdgeFixed(	int ii,
 {
 	bool prev_state = solve_options.force_no_parallel();// create a backup value to restore to.
 	solve_options.force_no_parallel(true);
-	
+
 	WitnessSet W;
 	
 	

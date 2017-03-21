@@ -968,7 +968,7 @@ protected:
 };
 
 
-
+void WorkerSampleSurface(sampler_configuration & sampler_options, SolverConfiguration & solve_options);
 
 
 //

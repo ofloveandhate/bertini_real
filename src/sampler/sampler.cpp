@@ -442,19 +442,19 @@ void SamplerWorker(sampler_configuration & sampler_options)
 		// get the task to perform.  yes, everyone has to participate, because of B1 things.  ugh.
 		MPI_Bcast(&routine, 1, MPI_INT, solve_options.head(), MPI_COMM_WORLD);
 		
-		if ( (solve_options.id()==1) && (sampler_options.verbose_level()>=0)) { //(routine!=0) &&
+		if ( (solve_options.id()==1) && (sampler_options.verbose_level()>=2)) { //(routine!=0) &&
 			std::cout << "sampler worker received call for help for solver " << enum_lookup(routine) << " (code " << routine << ")" << std::endl;
 		}
 		
 		switch (routine) {
 			case SAMPLE_CURVE:
 			{
-				
+				WorkerSampleCurve(sampler_options, solve_options);
 				break;
 			}	
 			case SAMPLE_SURFACE:
 			{
-				
+				WorkerSampleSurface(sampler_options, solve_options);
 				break;
 			}
 			case PARSING:
