@@ -13,12 +13,13 @@
  \end{itemize}  
 
  \subsection{Curves}
- 
+ \label{sec:sampler_curve}
+
  	\subsubsection{Running Sampler (Using an Example)}
  	 In order to show how to properly run sampler, I will be using an example of a curve, going through each step to make sure the basics of sampler are covered.
  \begin{longtabu} to \textwidth {
- X[1,c]
- X[1,c]}
+ X[1,c,m]
+ X[1,c,m]}
 \hline
 \rowfont\bfseries
 \textbf{Instructions} & \textbf{Screen Shot} \\
@@ -33,7 +34,7 @@
 \endfoot
 \bottomrule \multicolumn{2}{r}{\textit{}} \\
 \endlastfoot
-First, choose the curve you wish to produce. (In this case I am choosing the 'eistute\_sphere', which is found in the 'intersections' file which can be found in the 'zoo' file) & \vcenter{\includegraphics[width=0.4\textwidth]{curvesampler1}}  \\  \\  \\
+First, choose the curve you wish to produce. (In this case I am choosing the 'eistute\_sphere', which is found in the 'intersections' file which can be found in the 'zoo' file) & \includegraphics[width=0.4\textwidth]{curvesampler1}\\  
 \hline \\
 Invoke 'bertini' and 'bertini\_real' by entering in each on the command line individually & \includegraphics [width=0.4\textwidth]{curvesampler2} \\ \\ \\ 
 \hline \\
@@ -125,7 +126,7 @@ This curve sampling algorithm produces a fixed (by the user) number of sample po
 \end{figure}
 
 \subsection{Surfaces}
-
+\label{sec:sampler_surface}
 
 \subsubsection{Running Sampler (Using an Example)}
 
@@ -165,15 +166,39 @@ Once sampler has been invoked, go to matlab and follow the same steps layed out 
 
 
 
+
+
+
 \subsubsection{Available surface sampling algorithms}
 
 
+There are currently about two surface sampling algorithms, one of which is generally far superior to the other.  The inferior method is left for posterity, because it produces interesting patterns on some surfaces.  
+
+\begin{enumerate}
+\item {\tt -m a} – Adaptive – Default choice.  Will be adaptive on distance moved, once it's implemented.  Sorry, we're not there yet on this one.
+\item {\tt -m d} – Adaptive – Also default choice, because adaptive-movement collapses to the adaptive-distance method, until movement is implemented.  The sampling of critical-like curves are non-uniform, having somewhat-uniformly spaced samplings in terms of projection value across the entire curve.  Slices and ribs are distance-adaptively sampled.
+\item {\tt -m f} – Fixed – every edge of every critical-like curve gets the same number of points, and slices and ribs are sampled distance-adaptively.
+\end{enumerate}
+
+In short, the difference between distance-adaptive and fixed sampling is twofold:
+\begin{itemize}
+
+  \item Fixed sampling has the same number of ribs on each face, regardless of size
+
+  \item Adaptive sampling spaces the ribs by cycle number, better approximating regions of the surface coming together at a singularity or critical point.
+
+\end{itemize}
 
 
+In all surface sampling algorithms, new points in the surface are computed by exploiting the homotopy \eqref{eqn:midtrack} from Section~\ref{sec:connect_surface}.  We will first discuss the weaker of the two methods, because it is briefer and easier to explain.
+
+\paragraph{Surface sampling algorithm: Fixed}
+
+In the fixed-number surface sampling algorithm, 
 
 
-% EXTRA NOTES THAT I MIGHT USE(IGNORE THIS): Call \texttt{sampler} on the command line, e.g. \texttt{sampler -fixed 10} to sample each cell to have approximately $10^d$ samples on it, where $d$ is the dimension of the component. 
+\paragraph{Surface sampling algorithm: Adaptive by distance}
 
-
+ This means that wider edges will have more samples.  However, all edges in a single projection interval will have the same number of samples.  They are also scaled by the cycle number (this is a lie, the cycle number is fixed at 2 due to technical reasons for now).
 
 
