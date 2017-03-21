@@ -243,7 +243,28 @@ int main(int argC, char *args[])
 	sampler_configuration sampler_options;
 	sampler_options.parse_commandline(argC, args);
     
-	
+
+	if (false) { // sampler_options.debugwait()
+		
+		if (sampler_options.is_head()) {
+			std::cout << "in debug mode, waiting to start so you can attach a debugger to this process" << std::endl;
+			std::cout << "master PID: " << getpid() << std::endl;
+			for (int ii=0; ii<30; ii++) {
+				std::cout << "starting program in " << 30-ii << " seconds" << std::endl;
+				sleep(1);
+				std::cout << "\033[F"; // that's a line up movement.  only works with some terminals
+			}
+		}
+		
+		
+		if (sampler_options.use_parallel()) {
+			MPI_Barrier(MPI_COMM_WORLD);
+		}
+
+	}
+
+
+
 	if (sampler_options.is_head())
 	{
 		boost::timer::auto_cpu_timer t;
@@ -254,7 +275,7 @@ int main(int argC, char *args[])
 		SamplerWorker(sampler_options);
 	}
 	
-	clearMP();
+	
 	MPI_Finalize();
 	
 	return 0;
@@ -313,7 +334,14 @@ void SamplerMaster(sampler_configuration & sampler_options)
 						   solve_options);
 	
 	
-	
+	if (solve_options.use_parallel())
+	{
+		int routine = TRACKER_CONFIG;
+		MPI_Bcast(&routine, 1, MPI_INT, solve_options.head(), MPI_COMM_WORLD);
+		bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
+	}
+
+
 	VertexSet V(decom_pointy->num_variables());
 	
 	V.set_tracker_config(&solve_options.T);
@@ -391,13 +419,72 @@ void SamplerMaster(sampler_configuration & sampler_options)
 		default:
 			break;
 	}
+
+	// dismiss the workers
+	int sendme = TERMINATE;
+	MPI_Bcast(&sendme, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	clearMP();
 }
 
 
 void SamplerWorker(sampler_configuration & sampler_options)
 {
 	
+	int routine = INITIAL_STATE;
+	
+	SolverConfiguration solve_options;
+	
+	bool have_tracker_config = false;
+
+	
+
+	while (routine != TERMINATE) {
+		// get the task to perform.  yes, everyone has to participate, because of B1 things.  ugh.
+		MPI_Bcast(&routine, 1, MPI_INT, solve_options.head(), MPI_COMM_WORLD);
+		
+		if ( (solve_options.id()==1) && (sampler_options.verbose_level()>=0)) { //(routine!=0) &&
+			std::cout << "sampler worker received call for help for solver " << enum_lookup(routine) << " (code " << routine << ")" << std::endl;
+		}
+		
+		switch (routine) {
+			case SAMPLE_CURVE:
+			{
+				
+				break;
+			}	
+			case SAMPLE_SURFACE:
+			{
+				
+				break;
+			}
+			case PARSING:
+			{
+				int single_int_buffer = 0;
+				MPI_Bcast(&single_int_buffer, 1, MPI_INT, 0, MPI_COMM_WORLD); // this catches a broadcast from Bertini's parser...
+				break;
+			}
+			case TRACKER_CONFIG:
+			{
+				if (have_tracker_config)
+					throw std::runtime_error("worker getting tracker config AGAIN");
+
+				bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
+				have_tracker_config = true;
+				initMP(solve_options.T.Precision);
+				break;
+			}
+			case TERMINATE:
+				break;
+			default:
+				std::cout << "received unknown routine: " << enum_lookup(routine) << std::endl;
+				break;
+		}
+	}
+	clearMP();
 }
+
+
+
 
 void common_sampler_startup(const Decomposition & D,
 							sampler_configuration & sampler_options,

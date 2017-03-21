@@ -67,7 +67,12 @@ std::string enum_lookup(int flag, int hint)
 		case TERMINATE:
 			return "TERMINATE";
 			break;
-			
+		case SAMPLE_CURVE:
+			return "SAMPLE_CURVE";
+		case SAMPLE_SURFACE:
+			return "SAMPLE_SURFACE";
+		case TRACKER_CONFIG:
+			return "TRACKER_CONFIG";
 		case INITIAL_STATE:
 			return "INITIAL_STATE";
 			break;
