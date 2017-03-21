@@ -1,4 +1,6 @@
 
+%{\tt asdf}
+
 \section{Running Sampler}
 
 \subsection{About Sampler}
@@ -34,16 +36,16 @@
 \endfoot
 \bottomrule \multicolumn{2}{r}{\textit{}} \\
 \endlastfoot
-First, choose the curve you wish to produce. (In this case I am choosing the 'eistute\_sphere', which is found in the 'intersections' file which can be found in the 'zoo' file) & \includegraphics[width=0.4\textwidth]{curvesampler1}\\  
+First, choose the curve you wish to produce. (In this case I am choosing the {\tt eistute\_sphere}, which is found in the {\tt intersections} file which can be found in the {\tt zoo} file) & \includegraphics[width=0.4\textwidth]{curvesampler1}  \\  \\  \\
 \hline \\
-Invoke 'bertini' and 'bertini\_real' by entering in each on the command line individually & \includegraphics [width=0.4\textwidth]{curvesampler2} \\ \\ \\ 
+Invoke {\tt bertini} and {\tt bertini\_real} by entering in each on the command line individually & \includegraphics [width=0.4\textwidth]{curvesampler2} \\ \\ \\ 
 \hline \\
-Invoke 'sampler' by entering it in on the command line & \includegraphics [width=0.4\textwidth]{curvesampler3} \\ \\ \\
+Invoke {\tt sampler} by entering it in on the command line & \includegraphics [width=0.4\textwidth]{curvesampler3} \\ \\ \\
 \hline \\ 
 Now use Matlab to produce the image of the curve
 \begin{enumerate} 
-	\item Go to the folder that holds your curve, then type 'gather\_br\_samples'
-	\item To produce the image, type in 'bertini\_real\_plotter'
+	\item Go to the folder that holds your curve, then type {\tt gather\_br\_samples}
+	\item To produce the image, type in {\tt bertini\_real\_plotter}
 	\item you should end up with a figure along with matlab's display of viewing options
 \end{enumerate}
 & \includegraphics [width=0.4\textwidth]{curvesampler4.png} \\ \\ \\ 
@@ -84,7 +86,7 @@ This algorithm refines edge-by-edge until the predicted point, and the computed 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.5\textwidth]{curvesampler_adm.png}
-\caption{This is an example of sampling a curve using the adaptive by movement mode. To replicate this, when invoking sampler, type in 'sampler -m a'}
+\caption{This is an example of sampling a curve using the adaptive by movement mode. To replicate this, when invoking sampler, type in {\tt sampler -m a}}
 \end{figure}
 
 \paragraph{Curve sampling algorithm: Adaptive by distance}
@@ -102,7 +104,7 @@ The adaptive-by-distance refinement algorithm refines the edge by bisection unti
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.5\textwidth]{curvesampler_add.png}
-\caption{This is an example of sampling a curve using the adaptive by distance mode. To replicate this, when invoking sampler, type in 'sampler -m d'}
+\caption{This is an example of sampling a curve using the adaptive by distance mode. To replicate this, when invoking sampler, type in { \tt sampler -m d}}
 \end{figure}
 
 
@@ -122,7 +124,7 @@ This curve sampling algorithm produces a fixed (by the user) number of sample po
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.5\textwidth]{curvesampler_f.png}
-\caption{This is an example of sampling a curve using fixed mode. To replicate this, when invoking sampler, type in 'sampler -m f'}
+\caption{This is an example of sampling a curve using fixed mode. To replicate this, when invoking sampler, type in {\tt sampler -m f}}
 \end{figure}
 
 \subsection{Surfaces}
@@ -133,8 +135,8 @@ This curve sampling algorithm produces a fixed (by the user) number of sample po
 This section will guide you through running sampler using a surface. One thing to note is that it may take longer to invoke the sampler when using it on surfaces due to the amount of computation being done.
 
 \begin{longtabu} to \textwidth {
- X[1,c]
- X[1,c]}
+ X[1,c,m]
+ X[1,c,m]}
 \hline
 \rowfont\bfseries
 \textbf{Instructions} & \textbf{Screen Shot} \\
@@ -149,17 +151,17 @@ This section will guide you through running sampler using a surface. One thing t
 \endfoot
 \bottomrule \multicolumn{2}{r}{\textit{}} \\
 \endlastfoot
-First, choose the surface you wish to produce. (In this case I am choosing the 'sphere', which is just found in the surfaces file. Once you enter into this file, you are ready to invoke:
+First, choose the surface you wish to produce. (In this case I am choosing the {\tt sphere}, which is just found in the surfaces file. Once you enter into this file, you are ready to invoke:
 \begin{itemize} 
-\item bertini 
-\item bertini\_real 
-\item sampler
+\item {\tt bertini} 
+\item {\tt bertini\_real} 
+\item {\tt sampler}
 \end{itemize} & \includegraphics[width=0.4\textwidth]{surfacesampler1}  \\  \\  \\
 \hline \\
 Once sampler has been invoked, go to matlab and follow the same steps layed out for the sampler curve process, by gathering and plotting. Depending on refinements, you will end up with a sphere with fewer or more points. Here are the two matlab commands:
 \begin{itemize} 
-\item gather\_br\_samples 
-\item bertini\_real\_plotter
+\item {\tt gather\_br\_samples} 
+\item {\tt bertini\_real\_plotter}
 \end{itemize}
  & \includegraphics [width=0.4\textwidth]{surfacesampler2} \\ \\ \\   
 \end{longtabu}
