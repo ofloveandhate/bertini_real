@@ -1,11 +1,13 @@
 
 \section{Install}
-
-
 \label{sec:installation}
-	This section of the manual focuses on how to install the necessary dependencies and programs needed to run Bertini\_real on a user's computer. The instructions provided describe the process for Linux, Mac, and Windows operating systems.  If you need help or encounter an problem, please file an issue on github at \href{https://github.com/ofloveandhate/bertini_real/issues}{github.com/ofloveandhate/bertini\_real/issues}.  This is preferred over email.
 
-	When installing Bertini\_real, there are a number of steps required in order to successfully install and run the program. They are:
+
+This section of the manual focuses on how to install the necessary dependencies and programs needed to run Bertini\_real on a user's computer. The instructions provided describe the process for Linux, Mac, and Windows operating systems.  If you need help or encounter an problem, please file an issue on Github at 
+\href{https://github.com/ofloveandhate/bertini_real/issues}{github.com/ofloveandhate/bertini\_real/issues}.  
+This is preferred over email.
+
+When installing Bertini\_real, there are a number of steps required in order to successfully install and run the program. They are:
 \begin{enumerate}
 \item Installing the \glspl{dependent}
 \item Installing Bertini
@@ -38,7 +40,7 @@ Before installing Bertini and then Bertini\_real, there are a number of packages
 \item Bertini, {\bf parallel version compiled from source and installed as library}.
 \item \gls{mpi} (same one as Bertini was compiled with)
 \item Boost $>$= 1.53
-\item {\tt autoconf}, {\tt automake}, {\tt make}, {\tt libtool}.  {\em Please use your package manager}.  Also, maybe {\tt pkg-config}
+\item {\tt autoconf}, {\tt automake}, {\tt make}, {\tt libtool}.  {\em Please use your package manager}.  Also, maybe {\tt pkg-config}.  If you hate the autotools, please set up CMake for Bertini\_real, and do a pull request.
 \end{itemize} 
 
 
@@ -74,9 +76,13 @@ and for visualization
 
 
 
+\clearpage
+\input{install_linux}
 
-\include{install_linux}
-\include{install_osx}
+\clearpage
+\input{install_osx}
+
+\clearpage
 \input{install_windows}
 
 
