@@ -25,7 +25,7 @@
 %							if this is non-empty, only those faces with
 %							indices in this array will be rendered.
 %							IMPORTANT NOTE:  the indices in this array
-%							should be 0-based, not 1-based.  
+%							should be 1-based, not 0-based.  
 %	'touchingedgesonly'	- bool [true] Only render edges of curves touching 
 %							faces rendered.  Conditional on object being a
 %							surface.  For native curves, this will be false
@@ -390,7 +390,7 @@ classdef bertini_real_plotter < handle
 							error('argument for ''whichfaces'' must be integer array');
 						end
 						
-						br_plotter.options.which_faces = tentative_arg+1;
+						br_plotter.options.which_faces = tentative_arg;
 						
 					case 'touchingedgesonly'
 						tentative_arg = command_line_options{ii+1};
@@ -427,6 +427,16 @@ classdef bertini_real_plotter < handle
 			[br_plotter.options.containing, br_plotter.options.basename, ~] = fileparts(pwd);
 			br_plotter.dimension = br_plotter.BRinfo.dimension;
 			
+			if isfield(br_plotter.BRinfo.run_metadata.version, 'gather')
+				if br_plotter.BRinfo.run_metadata.version.gather < 150
+					error('this version of bertini_real_plotter requires data gathered with gather_br_samples at least 150.  please re-gather');
+				end
+
+			else
+				error('this version of bertini_real_plotter requires data gathered with gather_br_samples at least 150.  please re-gather');
+			end
+
+
 			if isempty(br_plotter.options.which_faces)
 				br_plotter.options.which_faces = 1:br_plotter.BRinfo.num_faces;
 			elseif max(br_plotter.options.which_faces) > br_plotter.BRinfo.num_faces
@@ -435,8 +445,14 @@ classdef bertini_real_plotter < handle
 					br_plotter.BRinfo.num_faces);
 			end
 			
+				
+			
 			if (br_plotter.BRinfo.dimension == 1)
 				br_plotter.options.touching_edges_only = false;
+			elseif (br_plotter.BRinfo.dimension == 2)
+				if length(br_plotter.options.which_faces)==br_plotter.BRinfo.num_faces
+					br_plotter.options.touching_edges_only = false;
+				end
 			end
 			
 		end

@@ -92,7 +92,7 @@ function md = gather_run_metadata(dirname)
 		md.version.subminor = str2num(md.version.string(pds(2)+1:end));
 		
 		md.version.number = 100*md.version.major + md.version.minor + 0.01 * md.version.subminor;
-		
+		md.version.gather = 150;
 	else
 		
 		md.version.string = 'earlier than 1.4';
@@ -216,11 +216,11 @@ fid = fopen([dirname '/F.faces'],'r');
 num_faces = fscanf(fid,'%i\n',[1 1]);
 
 for ii = 1:num_faces
-	[faces(ii).midpoint] = fscanf(fid,'%i', [1 1]);
-	faces(ii).midslice_index = fscanf(fid,'%i\n', [1 1]);
+	[faces(ii).midpoint] = fscanf(fid,'%i', [1 1])+1;
+	faces(ii).midslice_index = fscanf(fid,'%i\n', [1 1])+1;
 	
-	faces(ii).top = fscanf(fid,'%i',[1 1]);
-	faces(ii).bottom = fscanf(fid,'%i\n',[1 1]);
+	faces(ii).top = fscanf(fid,'%i',[1 1])+1;
+	faces(ii).bottom = fscanf(fid,'%i\n',[1 1])+1;
 	
 	faces(ii).system_top = fscanf(fid,'%s',[1 1]);
 	faces(ii).system_bottom = fscanf(fid,'%s\n',[1 1]);
@@ -229,13 +229,13 @@ for ii = 1:num_faces
 	faces(ii).num_left = fscanf(fid,'%i\n',[1 1]); 
 	faces(ii).left = zeros(1,faces(ii).num_left); % preallocate
 	for jj = 1:faces(ii).num_left
-		faces(ii).left(jj) = fscanf(fid,'%i\n',[1 1]);
+		faces(ii).left(jj) = fscanf(fid,'%i\n',[1 1])+1;
 	end
 	
 	[faces(ii).num_right] = fscanf(fid,'%i\n',[1 1]);
 	faces(ii).right = zeros(1,faces(ii).num_right);
 	for jj = 1:faces(ii).num_right
-		faces(ii).right(jj) = fscanf(fid,'%i\n',[1 1]);
+		faces(ii).right(jj) = fscanf(fid,'%i\n',[1 1])+1;
 	end
 	
 
@@ -350,7 +350,7 @@ for ii = 1:num_faces
     sampler_data{ii} = zeros(num_triangles_this_edge,3);
     for jj = 1:num_triangles_this_edge
         temp_triangle = fscanf(fid,'%i',[1 3]);
-        sampler_data{ii}(jj,:) = temp_triangle;
+        sampler_data{ii}(jj,:) = temp_triangle+1;
     end
 end
 
@@ -405,7 +405,7 @@ else
 		curve.sampler_data.sample_sizes(ii) = num_samples;
 		for jj=1:num_samples
 			tmp_ind = fscanf(fid,'%i\n',[1 1]);
-			curve.sampler_data.edge(ii).samples(jj) = tmp_ind;
+			curve.sampler_data.edge(ii).samples(jj) = tmp_ind+1;
 		end
 	end
 	fclose(fid);
