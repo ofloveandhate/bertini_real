@@ -15,8 +15,8 @@ num_non_degen = 0;
 indicator = zeros(size(sampler_data.sample_sizes,1),1);
 for ii = 1:size(sampler_data.sample_sizes,1)
 	
-	left_point = br_plotter.BRinfo.vertices(sampler_data.edge(ii).samples(1)+1).point(1:br_plotter.BRinfo.num_variables-1);
-	right_point = br_plotter.BRinfo.vertices(sampler_data.edge(ii).samples(end)+1).point(1:br_plotter.BRinfo.num_variables-1);
+	left_point = br_plotter.BRinfo.vertices(sampler_data.edge(ii).samples(1)).point(1:br_plotter.BRinfo.num_variables-1);
+	right_point = br_plotter.BRinfo.vertices(sampler_data.edge(ii).samples(end)).point(1:br_plotter.BRinfo.num_variables-1);
 	
 	if norm(left_point-right_point)<1e-8
 		continue;
@@ -48,7 +48,7 @@ for ii = 1:length(sampler_data.edge)
        continue; 
 	end
     
-	plotme = br_plotter.fv.vertices(curr_samples+1,:);
+	plotme = br_plotter.fv.vertices(curr_samples,:);
 	
 
 	h = main_plot_function(plotme,1:length(ind),curr_axis);

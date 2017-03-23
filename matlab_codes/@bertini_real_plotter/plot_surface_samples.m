@@ -47,7 +47,7 @@ if ~isempty(br_plotter.BRinfo.sampler_data)
 		
 		
 		
-		tmp_fv.faces = br_plotter.BRinfo.sampler_data{ii}+1;  %shift by 1 here to correct for 1-based indexing
+		tmp_fv.faces = br_plotter.BRinfo.sampler_data{ii};
 		tmp_fv.faces(any(br_plotter.fv.faces<=0,2),:) = []; % omit problematic faces.
 		
 		num_this_time = size(tmp_fv.faces,1);
@@ -97,7 +97,7 @@ if ~isempty(br_plotter.BRinfo.sampler_data)
 		
 		
 		
-		tmp_fv.faces = br_plotter.BRinfo.sampler_data{ii}+1;
+		tmp_fv.faces = br_plotter.BRinfo.sampler_data{ii};
 		tmp_fv.faces(any(br_plotter.fv.faces<=0,2),:) = []; % omit problematic faces.
 		
 		num_this_time = size(tmp_fv.faces,1);
@@ -146,7 +146,7 @@ if ~isempty(br_plotter.BRinfo.sampler_data)
 		
 		
 		
-		tmp_fv.faces = br_plotter.BRinfo.sampler_data{ii}+1;
+		tmp_fv.faces = br_plotter.BRinfo.sampler_data{ii};
 		tmp_fv.faces(any(br_plotter.fv.faces<=0,2),:) = []; % omit problematic faces.
 		
 		num_this_time = size(tmp_fv.faces,1);

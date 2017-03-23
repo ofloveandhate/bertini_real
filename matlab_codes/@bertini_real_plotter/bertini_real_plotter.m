@@ -400,6 +400,14 @@ classdef bertini_real_plotter < handle
 			
 			[br_plotter.options.containing, br_plotter.options.basename, ~] = fileparts(pwd);
 			br_plotter.dimension = br_plotter.BRinfo.dimension;
+
+			if isfield(br_plotter.BRinfo.run_metadata.version, 'gather')
+				if br_plotter.BRinfo.run_metadata.version.gather < 150
+				error('this version of bertini_real_plotter requires data gathered with gather_br_samples at least 150.  please re-gather');
+				end
+			else
+				error('this version of bertini_real_plotter requires data gathered with gather_br_samples at least 150.  please re-gather');
+			end
 		end
 		
 		

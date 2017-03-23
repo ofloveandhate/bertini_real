@@ -85,7 +85,7 @@ for kk = 1:num_crit_slices
 	color_index = 1+2*(kk-1);
 	
 	[handie_mc_handhand, refinement_handles, label_handles] ...
-		= plot_subcurve(br_plotter,br_plotter.BRinfo.critpoint_slices{kk},sprintf('crit.%d.',kk-1),style,'m',colors(color_index,:));
+		= plot_subcurve(br_plotter,br_plotter.BRinfo.critpoint_slices{kk},sprintf('crit.%d.',kk),style,'m',colors(color_index,:));
 	
 	br_plotter.handles.crittext = [br_plotter.handles.crittext;label_handles];
 	br_plotter.handles.critslices = [br_plotter.handles.critslices;handie_mc_handhand];
@@ -122,7 +122,7 @@ for kk = 1:length(br_plotter.BRinfo.midpoint_slices)
 	end
 	color_index = 2*(kk);
 	[handie_mc_handhand, refinement_handles, label_handles] ...
-		= plot_subcurve(br_plotter,br_plotter.BRinfo.midpoint_slices{kk},sprintf('mid.%d.',kk-1),style,'g',colors(color_index,:));
+		= plot_subcurve(br_plotter,br_plotter.BRinfo.midpoint_slices{kk},sprintf('mid.%d.',kk),style,'g',colors(color_index,:));
 	
 	br_plotter.handles.midtext = [br_plotter.handles.midtext;label_handles];
 	br_plotter.handles.midslices = [br_plotter.handles.midslices;handie_mc_handhand];
@@ -254,7 +254,7 @@ for ii =1:num_nondegen
 	
 	if br_plotter.options.labels
 		text_locations(ii,:) = curve_edge_points(2,:);
-		text_labels{ii} = sprintf('%s %d  ',name,curr_edge_index-1);
+		text_labels{ii} = sprintf('%s %d  ',name,curr_edge_index);
 	end
 	
 end
