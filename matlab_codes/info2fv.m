@@ -191,10 +191,6 @@ if ~isempty(BRinfo.sampler_data)
 		f = BRinfo.sampler_data{ii}+1;
 		f(any(f<=0,2),:) = []; % omit problematic faces.
 		faces = [faces;f];
-% 		h = patch(fv);
-% 		
-% 		set(h,'FaceColor',colors(ii,:),'FaceAlpha',0.7,'EdgeColor',0.985*colors(ii,:),'EdgeAlpha',0.5);%,'EdgeColor',0.985*colors(ii,:),'EdgeAlpha',0.5
-% 		plot_params.handles.surface_samples(ii) = h;
 	end
 end
 
