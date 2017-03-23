@@ -20,6 +20,13 @@
 %	'curves', 'curve'   - bool [true]
 %	'faces'             - bool [true]
 %
+%	'whichfaces'		- array [empty]  If you are plotting faces, and
+%							this is empty, all faces will be plotted.  
+%							if this is non-empty, only those faces with
+%							indices in this array will be rendered.
+%							IMPORTANT NOTE:  the indices in this array
+%							should be 0-based, not 1-based.  
+%
 %   'colorfn'           - handle to function of x, for generating color
 %                            data.  no default value.  if this is not
 %                            specified, then the colors for the faces
@@ -135,6 +142,7 @@ classdef bertini_real_plotter < handle
 			br_plotter.options.render_vertices = false;
 			br_plotter.options.render_curves = true;
 			br_plotter.options.render_faces = true;
+			br_plotter.options.which_faces = [];
 			
 			br_plotter.options.use_colorfn = false;
 			
@@ -369,7 +377,16 @@ classdef bertini_real_plotter < handle
 							end
 						end
 						
-												
+					case 'whichfaces'
+						
+						tentative_arg = command_line_options{ii+1};
+						whos tentative_arg
+						if ~isnumeric(tentative_arg)
+							error('argument for ''whichfaces'' must be integer array');
+						end
+						
+						br_plotter.options.which_faces = tentative_arg;
+						
 					otherwise
 						error('unexpected option name ''%s''',command_line_options{ii})
 				end
