@@ -26,6 +26,10 @@
 %							indices in this array will be rendered.
 %							IMPORTANT NOTE:  the indices in this array
 %							should be 0-based, not 1-based.  
+%	'touchingedgesonly'	- bool [true] Only render edges of curves touching 
+%							faces rendered.  Conditional on object being a
+%							surface.  For native curves, this will be false
+%							because there are no faces to touch
 %
 %   'colorfn'           - handle to function of x, for generating color
 %                            data.  no default value.  if this is not
@@ -143,6 +147,8 @@ classdef bertini_real_plotter < handle
 			br_plotter.options.render_curves = true;
 			br_plotter.options.render_faces = true;
 			br_plotter.options.which_faces = [];
+			br_plotter.options.touching_edges_only = true;
+			
 			
 			br_plotter.options.use_colorfn = false;
 			
@@ -376,7 +382,7 @@ classdef bertini_real_plotter < handle
 								error('bad option %f for faces',tentative_arg);
 							end
 						end
-						
+					
 					case 'whichfaces'
 						
 						tentative_arg = command_line_options{ii+1};
@@ -385,6 +391,10 @@ classdef bertini_real_plotter < handle
 						end
 						
 						br_plotter.options.which_faces = tentative_arg+1;
+						
+					case 'touchingedgesonly'
+						tentative_arg = command_line_options{ii+1};
+						br_plotter.options.touching_edges_only = tentative_arg;
 						
 					otherwise
 						error('unexpected option name ''%s''',command_line_options{ii})
@@ -424,6 +434,11 @@ classdef bertini_real_plotter < handle
 					max(br_plotter.options.which_faces),...
 					br_plotter.BRinfo.num_faces);
 			end
+			
+			if (br_plotter.BRinfo.dimension == 1)
+				br_plotter.options.touching_edges_only = false;
+			end
+			
 		end
 		
 		
