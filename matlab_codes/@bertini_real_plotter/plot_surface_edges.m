@@ -284,9 +284,9 @@ end
 
 if ~isempty(br_plotter.BRinfo.sampler_data)
 	if nargin==6
-		refinement_handles = plot_curve_samples(br_plotter,curve.sampler_data,style, desiredcolor);
+		refinement_handles = plot_curve_samples(br_plotter,curve,style, desiredcolor);
 	else
-		refinement_handles = plot_curve_samples(br_plotter,curve.sampler_data,style);
+		refinement_handles = plot_curve_samples(br_plotter,curve,style);
 	end
 end
 
@@ -296,53 +296,6 @@ end
 end
 
 
-% check whether an edge touches the rendered faces
-function val = edge_touches_faces(br_plotter, edge_index, curve)
-	
-	val = false;
-	e = curve.edges(edge_index,:); % the current edge
-	m = e(2); % the midpoint index
-	
-	for ii = 1:length(br_plotter.options.which_faces)
-		face_ind = br_plotter.options.which_faces(ii);
-
-		%sprintf('checking face %i for intersection with edge %i on %s', face_ind-1, edge_index, curve.inputfilename)
-		this_face_touches = false;
-
-		
-		f = br_plotter.BRinfo.faces(face_ind); % unpack the current face
-		
-		
-		if m == f.midpoint 
-			this_face_touches = true;
-			where = 'midpoint of face';
-		end
-
-		left_critslice = br_plotter.BRinfo.critpoint_slices{f.midslice_index};
-		for jj = 1:f.num_left
-			if m == left_critslice.edges(f.left(jj),2)
-				this_face_touches = true;
-				where = 'left critslice of face';
-			end
-		end
-
-		right_critslice = br_plotter.BRinfo.critpoint_slices{f.midslice_index+1};
-		for jj = 1:f.num_right
-			if m == right_critslice.edges(f.right(jj),2)
-				this_face_touches = true;
-				where = 'right critslice of face';
-			end
-		end
-
-		if this_face_touches
-			sprintf('face %i touches edge %i on %s at %s', face_ind, edge_index, curve.inputfilename, where)
-			val = this_face_touches;
-		end
-	end
-
-
-
-end
 
 
 

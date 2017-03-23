@@ -436,15 +436,15 @@ classdef bertini_real_plotter < handle
 				error('this version of bertini_real_plotter requires data gathered with gather_br_samples at least 150.  please re-gather');
 			end
 
-
-			if isempty(br_plotter.options.which_faces)
-				br_plotter.options.which_faces = 1:br_plotter.BRinfo.num_faces;
-			elseif max(br_plotter.options.which_faces) > br_plotter.BRinfo.num_faces
-				error('trying to plot faces which don''t exist. requested index %i > num faces %i',...
-					max(br_plotter.options.which_faces),...
-					br_plotter.BRinfo.num_faces);
+			if (br_plotter.BRinfo.dimension == 2)
+				if isempty(br_plotter.options.which_faces)
+					br_plotter.options.which_faces = 1:br_plotter.BRinfo.num_faces;
+				elseif max(br_plotter.options.which_faces) > br_plotter.BRinfo.num_faces
+					error('trying to plot faces which don''t exist. requested index %i > num faces %i',...
+						max(br_plotter.options.which_faces),...
+						br_plotter.BRinfo.num_faces);
+				end
 			end
-			
 				
 			
 			if (br_plotter.BRinfo.dimension == 1)
@@ -604,7 +604,7 @@ classdef bertini_real_plotter < handle
 
 		get_indices(br_plotter)
 		
-		
+		val = edge_touches_faces(br_plotter, edge_index, curve)
 		
 		
 		%functions specific to surfaces
