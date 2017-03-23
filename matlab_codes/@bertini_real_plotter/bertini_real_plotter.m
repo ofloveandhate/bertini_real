@@ -380,12 +380,11 @@ classdef bertini_real_plotter < handle
 					case 'whichfaces'
 						
 						tentative_arg = command_line_options{ii+1};
-						whos tentative_arg
 						if ~isnumeric(tentative_arg)
 							error('argument for ''whichfaces'' must be integer array');
 						end
 						
-						br_plotter.options.which_faces = tentative_arg;
+						br_plotter.options.which_faces = tentative_arg+1;
 						
 					otherwise
 						error('unexpected option name ''%s''',command_line_options{ii})
@@ -417,6 +416,14 @@ classdef bertini_real_plotter < handle
 			
 			[br_plotter.options.containing, br_plotter.options.basename, ~] = fileparts(pwd);
 			br_plotter.dimension = br_plotter.BRinfo.dimension;
+			
+			if isempty(br_plotter.options.which_faces)
+				br_plotter.options.which_faces = 1:br_plotter.BRinfo.num_faces;
+			elseif max(br_plotter.options.which_faces) > br_plotter.BRinfo.num_faces
+				error('trying to plot faces which don''t exist. requested index %i > num faces %i',...
+					max(br_plotter.options.which_faces),...
+					br_plotter.BRinfo.num_faces);
+			end
 		end
 		
 		

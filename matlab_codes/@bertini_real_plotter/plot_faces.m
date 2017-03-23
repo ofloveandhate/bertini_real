@@ -56,7 +56,8 @@ for ii = 1:size(local.vertices,1)
 	local_cdata(ii) = br_plotter.options.colorfn(local.vertices(ii,:));
 end
 
-for ii = 1:num_faces
+for cc = 1:length(br_plotter.options.which_faces)
+	ii = br_plotter.options.which_faces(cc);
 	if br_plotter.BRinfo.faces(ii).midslice_index == -1
 		continue
 	end
@@ -195,7 +196,7 @@ for ii = 1:num_faces
 	local.faces = local.faces(1:local_face_index-1,:);
 
 	try
-		br_plotter.handles.faces(ii) = patch(local,...
+		br_plotter.handles.faces(end+1) = patch(local,...
 			'FaceVertexCData', local_cdata, ...
 			'FaceColor', 'interp',...
 			'FaceAlpha',br_plotter.options.face_alpha,...
@@ -263,7 +264,8 @@ colors = br_plotter.options.colormap(num_faces);
 
 local.vertices = br_plotter.fv.vertices;
 
-for ii = 1:num_faces
+for cc = 1:length(br_plotter.options.which_faces)
+	ii = br_plotter.options.which_faces(cc);
 	if br_plotter.BRinfo.faces(ii).midslice_index == -1
 		continue
 	end
@@ -403,7 +405,7 @@ for ii = 1:num_faces
 	local.faces = local.faces(1:local_face_index-1,:);
 
 	try
-		br_plotter.handles.faces(ii) = patch(local,'FaceColor',colors(ii,:),'FaceAlpha',br_plotter.options.face_alpha,'EdgeColor',colors(ii,:),'EdgeAlpha',br_plotter.options.edge_alpha,'Parent',curr_axis);
+		br_plotter.handles.faces(end+1) = patch(local,'FaceColor',colors(ii,:),'FaceAlpha',br_plotter.options.face_alpha,'EdgeColor',colors(ii,:),'EdgeAlpha',br_plotter.options.edge_alpha,'Parent',curr_axis);
 	catch
 		ii
 		local_face_index
@@ -493,7 +495,8 @@ pos = zeros(br_plotter.BRinfo.num_faces,length(ind));
 
 
 
-for ii = 1:num_faces
+for cc = 1:length(br_plotter.options.which_faces)
+	ii = br_plotter.options.which_faces(cc);
 	if br_plotter.BRinfo.faces(ii).midslice_index == -1 % degenerate face, or there was a severe problem with the face
 		continue
 	end

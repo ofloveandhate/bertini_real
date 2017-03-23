@@ -43,7 +43,8 @@ end
 
 
 if ~isempty(br_plotter.BRinfo.sampler_data)
-	for ii = 1:length(br_plotter.BRinfo.sampler_data)
+	for cc = 1:length(br_plotter.options.which_faces)
+		ii = br_plotter.options.which_faces(cc);
 		
 		
 		
@@ -58,7 +59,7 @@ if ~isempty(br_plotter.BRinfo.sampler_data)
 			'FaceVertexCData', sample_cdata,...
 			'FaceColor', 'interp',...
 			'FaceAlpha',br_plotter.options.face_alpha,'EdgeColor','none','EdgeAlpha',br_plotter.options.edge_alpha);
-		br_plotter.handles.surface_samples(ii) = h;
+		br_plotter.handles.surface_samples(end+1) = h;
 		
 		% add the faces to the total face blabal
 		sampler_faces(ind_so_far:ind_so_far+num_this_time-1,:) = tmp_fv.faces;
@@ -79,7 +80,8 @@ function sampler_faces = plot_surf_samples_multicolor(br_plotter)
 colors = br_plotter.options.colormap(length(br_plotter.BRinfo.sampler_data));
 
 total_num_faces = 0;
-for ii = 1:length(br_plotter.BRinfo.sampler_data)
+for cc = 1:length(br_plotter.options.which_faces)
+	ii = br_plotter.options.which_faces(cc);
 	total_num_faces = total_num_faces+size(br_plotter.BRinfo.sampler_data{ii},1);
 end
 
@@ -93,7 +95,8 @@ ind_so_far = 1;
 tmp_fv = br_plotter.fv;
 
 if ~isempty(br_plotter.BRinfo.sampler_data)
-	for ii = 1:length(br_plotter.BRinfo.sampler_data)
+	for cc = 1:length(br_plotter.options.which_faces)
+		ii = br_plotter.options.which_faces(cc);
 		
 		
 		
@@ -105,7 +108,7 @@ if ~isempty(br_plotter.BRinfo.sampler_data)
 		%plot the BR face
 		h = patch(tmp_fv);
 		set(h,'FaceColor',colors(ii,:),'FaceAlpha',br_plotter.options.face_alpha,'EdgeColor',0.8*colors(ii,:),'EdgeAlpha',br_plotter.options.edge_alpha);
-		br_plotter.handles.surface_samples(ii) = h;
+		br_plotter.handles.surface_samples(end+1) = h;
 		
 		% add the faces to the total face blabal
 		sampler_faces(ind_so_far:ind_so_far+num_this_time-1,:) = tmp_fv.faces;
@@ -128,7 +131,8 @@ function sampler_faces = plot_surf_samples_monocolor(br_plotter)
 
 
 total_num_faces = 0;
-for ii = 1:length(br_plotter.BRinfo.sampler_data)
+for cc = 1:length(br_plotter.options.which_faces)
+	ii = br_plotter.options.which_faces(cc);
 	total_num_faces = total_num_faces+size(br_plotter.BRinfo.sampler_data{ii},1);
 end
 
@@ -142,7 +146,8 @@ ind_so_far = 1;
 tmp_fv = br_plotter.fv;
 
 if ~isempty(br_plotter.BRinfo.sampler_data)
-	for ii = 1:length(br_plotter.BRinfo.sampler_data)
+	for cc = 1:length(br_plotter.options.which_faces)
+		ii = br_plotter.options.which_faces(cc);
 		
 		
 		
