@@ -16,14 +16,12 @@ function val = edge_touches_faces(br_plotter, edge_index, curve)
 		
 		if m == f.midpoint 
 			this_face_touches = true;
-			where = 'midpoint of face';
 		end
 
 		left_critslice = br_plotter.BRinfo.critpoint_slices{f.midslice_index};
 		for jj = 1:f.num_left
 			if m == left_critslice.edges(f.left(jj),2)
 				this_face_touches = true;
-				where = 'left critslice of face';
 			end
 		end
 
@@ -31,10 +29,21 @@ function val = edge_touches_faces(br_plotter, edge_index, curve)
 		for jj = 1:f.num_right
 			if m == right_critslice.edges(f.right(jj),2)
 				this_face_touches = true;
-				where = 'right critslice of face';
 			end
 		end
-
+	
+		% check the top and bottom
+		
+		curve_top = curve_with_inputname(br_plotter.BRinfo, f.system_top);
+		if m == curve_top.edges(f.top,2)
+			this_face_touches = true;
+		end
+		
+		curve_bottom = curve_with_inputname(br_plotter.BRinfo, f.system_bottom);
+		if m == curve_bottom.edges(f.bottom,2)
+			this_face_touches = true;
+		end
+		
 		if this_face_touches
 			val = this_face_touches;
 			break;
@@ -44,3 +53,30 @@ function val = edge_touches_faces(br_plotter, edge_index, curve)
 
 
 end
+
+
+function curve = curve_with_inputname(BRinfo, name)
+
+
+if strcmp(BRinfo.crit_curve.inputfilename,name)
+	curve = BRinfo.crit_curve;
+	return
+elseif strcmp(BRinfo.sphere_curve.inputfilename,name)
+	curve = BRinfo.sphere_curve;
+	return
+else
+	for ii = 1:BRinfo.num_singular_curves
+		if strcmp(BRinfo.singular_curves{ii}.inputfilename,name)
+			curve = BRinfo.singular_curves{ii};
+			return
+		end
+	end
+end
+
+
+error('unable to find crit-like curve of name %s in BRinfo',name);
+
+end
+
+
+

@@ -69,7 +69,7 @@ for ii = 1:length(sampler_data.edge)
        continue; 
 	end
 
-    curr_samples = sampler_data.edge(ii).samples
+    curr_samples = sampler_data.edge(ii).samples;
 
 	plotme = br_plotter.fv.vertices(curr_samples,:);
 	
