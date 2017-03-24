@@ -16,6 +16,9 @@ void Curve::AdaptiveMovementSampler(VertexSet & V,
 										   sampler_configuration & sampler_options,
 										   SolverConfiguration & solve_options)
 {
+
+	adaptive_set_initial_sample_data();
+
 	std::cout << "adaptively refining curve with " << num_edges() << " edges by adaptive-movement method" << std::endl;
 	
 	for (unsigned int ii=0; ii<num_edges(); ii++) // for each of the edges
@@ -34,7 +37,9 @@ void Curve::AdaptiveDistanceSampler(VertexSet & V,
 													SolverConfiguration & solve_options)
 {
     
-	
+	adaptive_set_initial_sample_data();
+
+	std::cout << "adaptively refining curve with " << num_edges() << " edges by distance-movement method" << std::endl;
 
 	if (sampler_options.verbose_level()>=1)
 		std::cout << "sampling curve with " << num_edges() << " edges " << std::endl;
@@ -133,7 +138,7 @@ void Curve::SampleEdgeAdaptiveMovement(	int ii,
 	
 	
 	
-	adaptive_set_initial_sample_data();
+	
 	
 	
 	V.set_curr_projection(pi(0));
@@ -423,10 +428,6 @@ void Curve::SampleEdgeAdaptiveDistance(	int ii,
 	this->randomizer()->setup( W.num_variables()-W.num_patches()-1, solve_options.PPD.num_funcs);
 	
 	
-	
-	
-	
-	adaptive_set_initial_sample_data();
 	
 	
 	V.set_curr_projection(pi(0)); V.set_curr_input(input_filename());
