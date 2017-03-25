@@ -15,9 +15,8 @@ class BRplotter(object):
 
     def plot(self):
         print("plotting object of dimension " + str(self.decomposition.dimension))
+        print("NH selfdecomp: " + str(self.decomposition))
         self.fig = plt.figure()
-
-        #print(self.decomposition)
 
         if self.decomposition.num_variables==2:
             self.ax = self.fig.add_subplot(111)
@@ -52,27 +51,37 @@ class BRplotter(object):
         xs = []
         ys = []
         zs = []
-        print(self.decomposition.num_variables)
+        print "number of variables:", self.decomposition.num_variables
 
         for v in self.decomposition.vertices:
             xs.append(v['point'][0].real)
             ys.append(v['point'][1].real)
+
             if self.decomposition.num_variables>2:
                 zs.append(v['point'][2].real)
+
 
         if self.decomposition.num_variables==2:
             self.ax.scatter(xs, ys)#v['point'][
         else:
             self.ax.scatter(xs, ys, zs, zdir='z', s=20, c=None, depthshade=True)#v['point'][
-
+        #print xs, ys, zs
+        #for item in
     def PlotCurve(self, curve):
+        for i in range(curve.curve.num_edges):
+            self.PlotEdge(curve, i)
+
+    def PlotEdge(self, curve, edge_index):
 
         xs = []
         ys = []
         zs = []
 
-
-        for v in self.decomposition.vertices:
+        inds = self.decomposition.curve.sampler_data[edge_index]
+        for i in inds:
+            print self.decomposition.vertices
+            v = self.decomposition.vertices[i]
+            print v
             xs.append(v['point'][0].real)
             ys.append(v['point'][1].real)
             if self.decomposition.num_variables>2:
@@ -107,5 +116,3 @@ if __name__ == "__main__":
      b = BRplotter()
      b.ReadMostRecent()
      b.plot()
-
-#print(self.decomposition)
