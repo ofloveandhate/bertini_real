@@ -40,7 +40,7 @@ for ii=1:br_plotter.BRinfo.num_vertices
 	unpacked_vertex_types(ii) = br_plotter.BRinfo.vertices(ii).type;
 	
 	if br_plotter.options.labels
-		labels{ii} = [ '    ' num2str(ii-1)];
+		labels{ii} = [ '    ' num2str(ii)];
 	end
 end
 

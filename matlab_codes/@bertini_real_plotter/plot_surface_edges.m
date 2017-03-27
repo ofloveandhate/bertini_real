@@ -85,7 +85,7 @@ for kk = 1:num_crit_slices
 	color_index = 1+2*(kk-1);
 	
 	[handie_mc_handhand, refinement_handles, label_handles] ...
-		= plot_subcurve(br_plotter,br_plotter.BRinfo.critpoint_slices{kk},sprintf('crit.%d.',kk-1),style,'m',colors(color_index,:));
+		= plot_subcurve(br_plotter,br_plotter.BRinfo.critpoint_slices{kk},sprintf('crit.%d.',kk),style,'m',colors(color_index,:));
 	
 	br_plotter.handles.crittext = [br_plotter.handles.crittext;label_handles];
 	br_plotter.handles.critslices = [br_plotter.handles.critslices;handie_mc_handhand];
@@ -122,7 +122,7 @@ for kk = 1:length(br_plotter.BRinfo.midpoint_slices)
 	end
 	color_index = 2*(kk);
 	[handie_mc_handhand, refinement_handles, label_handles] ...
-		= plot_subcurve(br_plotter,br_plotter.BRinfo.midpoint_slices{kk},sprintf('mid.%d.',kk-1),style,'g',colors(color_index,:));
+		= plot_subcurve(br_plotter,br_plotter.BRinfo.midpoint_slices{kk},sprintf('mid.%d.',kk),style,'g',colors(color_index,:));
 	
 	br_plotter.handles.midtext = [br_plotter.handles.midtext;label_handles];
 	br_plotter.handles.midslices = [br_plotter.handles.midslices;handie_mc_handhand];
@@ -201,17 +201,32 @@ edge_handles = [];
 refinement_handles = [];
 text_handle = [];
 
+if br_plotter.options.touching_edges_only
+	num_touching = 0;
+	touching_edge_indices = zeros(curve.num_edges,1); %preallocate
+	for ii = 1:curve.num_edges
+		if edge_touches_faces(br_plotter, ii, curve)
+			num_touching = num_touching+1;
+			touching_edge_indices(num_touching) = ii;
+		end
+	end
+	touching_edge_indices = touching_edge_indices(1:num_touching); %trim the fat
+else
+	num_touching = curve.num_edges;
+	touching_edge_indices = 1:num_touching;
+end
 
 
 num_nondegen = 0;
-nondegen_edge_indices = zeros(curve.num_edges,1);
-for ii = 1:curve.num_edges
-	if curve.edges(ii,1)~=curve.edges(ii,3)
+nondegen_edge_indices = zeros(num_touching,1); %preallocate
+for ii = 1:length(touching_edge_indices)
+	curr_edge_index = touching_edge_indices(ii);
+	if curve.edges(curr_edge_index,1)~=curve.edges(curr_edge_index,3)
 		num_nondegen = num_nondegen+1;
-		nondegen_edge_indices(num_nondegen) = ii;
+		nondegen_edge_indices(num_nondegen) = curr_edge_index;
 	end
 end
-nondegen_edge_indices = nondegen_edge_indices(1:num_nondegen);
+nondegen_edge_indices = nondegen_edge_indices(1:num_nondegen); %trim the fat
 
 
 
@@ -254,7 +269,7 @@ for ii =1:num_nondegen
 	
 	if br_plotter.options.labels
 		text_locations(ii,:) = curve_edge_points(2,:);
-		text_labels{ii} = sprintf('%s %d  ',name,curr_edge_index-1);
+		text_labels{ii} = sprintf('%s %d  ',name,curr_edge_index);
 	end
 	
 end
@@ -269,9 +284,9 @@ end
 
 if ~isempty(br_plotter.BRinfo.sampler_data)
 	if nargin==6
-		refinement_handles = plot_curve_samples(br_plotter,curve.sampler_data,style, desiredcolor);
+		refinement_handles = plot_curve_samples(br_plotter,curve,style, desiredcolor);
 	else
-		refinement_handles = plot_curve_samples(br_plotter,curve.sampler_data,style);
+		refinement_handles = plot_curve_samples(br_plotter,curve,style);
 	end
 end
 
@@ -279,3 +294,8 @@ end
 		
 
 end
+
+
+
+
+

@@ -20,6 +20,17 @@
 %	'curves', 'curve'   - bool [true]
 %	'faces'             - bool [true]
 %
+%	'whichfaces'		- array [empty]  If you are plotting faces, and
+%							this is empty, all faces will be plotted.  
+%							if this is non-empty, only those faces with
+%							indices in this array will be rendered.
+%							IMPORTANT NOTE:  the indices in this array
+%							should be 1-based, not 0-based.  
+%	'touchingedgesonly'	- bool [true] Only render edges of curves touching 
+%							faces rendered.  Conditional on object being a
+%							surface.  For native curves, this will be false
+%							because there are no faces to touch
+%
 %   'colorfn'           - handle to function of x, for generating color
 %                            data.  no default value.  if this is not
 %                            specified, then the colors for the faces
@@ -135,6 +146,9 @@ classdef bertini_real_plotter < handle
 			br_plotter.options.render_vertices = false;
 			br_plotter.options.render_curves = true;
 			br_plotter.options.render_faces = true;
+			br_plotter.options.which_faces = [];
+			br_plotter.options.touching_edges_only = true;
+			
 			
 			br_plotter.options.use_colorfn = false;
 			
@@ -368,8 +382,20 @@ classdef bertini_real_plotter < handle
 								error('bad option %f for faces',tentative_arg);
 							end
 						end
+					
+					case 'whichfaces'
 						
-												
+						tentative_arg = command_line_options{ii+1};
+						if ~isnumeric(tentative_arg)
+							error('argument for ''whichfaces'' must be integer array');
+						end
+						
+						br_plotter.options.which_faces = tentative_arg;
+						
+					case 'touchingedgesonly'
+						tentative_arg = command_line_options{ii+1};
+						br_plotter.options.touching_edges_only = tentative_arg;
+						
 					otherwise
 						error('unexpected option name ''%s''',command_line_options{ii})
 				end
@@ -400,6 +426,35 @@ classdef bertini_real_plotter < handle
 			
 			[br_plotter.options.containing, br_plotter.options.basename, ~] = fileparts(pwd);
 			br_plotter.dimension = br_plotter.BRinfo.dimension;
+			
+			if isfield(br_plotter.BRinfo.run_metadata.version, 'gather')
+				if br_plotter.BRinfo.run_metadata.version.gather < 150
+					error('this version of bertini_real_plotter requires data gathered with gather_br_samples at least 150.  please re-gather');
+				end
+
+			else
+				error('this version of bertini_real_plotter requires data gathered with gather_br_samples at least 150.  please re-gather');
+			end
+
+			if (br_plotter.BRinfo.dimension == 2)
+				if isempty(br_plotter.options.which_faces)
+					br_plotter.options.which_faces = 1:br_plotter.BRinfo.num_faces;
+				elseif max(br_plotter.options.which_faces) > br_plotter.BRinfo.num_faces
+					error('trying to plot faces which don''t exist. requested index %i > num faces %i',...
+						max(br_plotter.options.which_faces),...
+						br_plotter.BRinfo.num_faces);
+				end
+			end
+				
+			
+			if (br_plotter.BRinfo.dimension == 1)
+				br_plotter.options.touching_edges_only = false;
+			elseif (br_plotter.BRinfo.dimension == 2)
+				if length(br_plotter.options.which_faces)==br_plotter.BRinfo.num_faces
+					br_plotter.options.touching_edges_only = false;
+				end
+			end
+			
 		end
 		
 		
@@ -549,7 +604,7 @@ classdef bertini_real_plotter < handle
 
 		get_indices(br_plotter)
 		
-		
+		val = edge_touches_faces(br_plotter, edge_index, curve)
 		
 		
 		%functions specific to surfaces
