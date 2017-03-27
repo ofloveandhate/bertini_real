@@ -27,8 +27,11 @@ for ii = 1:num_vars
 	vars(ii) = sym(system_variables{ii});
 	%vars is used in the jacobian call, so that only those derivatives are computed
 end
-
+b.subfunction
+b.functions
 ensure_fns_are_subfns(b);
+b.subfunction
+b.functions
 
 if ~isempty(b.subfunction)
 	subfunc_names = b.subfunction(:,1);
@@ -265,7 +268,7 @@ for ii = 1:size(b.functions,1)
         
         subfn_name = b.subfunction{jj,1};
         
-        if strcmp(fn_val,subfn_name)
+        if strcmp(strtrim(fn_val),strtrim(subfn_name))
             is_subf=true;
             break;
             
