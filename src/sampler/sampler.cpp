@@ -98,12 +98,15 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 			{"nd", no_argument,0,'d'},
 			{"m",		required_argument,			 0, 'M'},
 			{"mode",		required_argument,			 0, 'M'},
+			{"uniformcyclenum", no_argument, 0, 'u'},
+			{"nouniformcyclenum", no_argument, 0, 'U'},
+			{"cyclenum", required_argument, 0, 'c'},
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
 		
-		choice = getopt_long_only (argc, argv, "bdf:svt:g:V:l:m:R:r:hM:", // colon requires option, two is optional
+		choice = getopt_long_only (argc, argv, "bdf:svt:V:l:m:R:r:hM:uUc:", // colon requires option, two is optional
 															 long_options, &option_index);
 		
 		/* Detect the end of the options. */
@@ -190,8 +193,18 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 				
 				sampler_configuration::print_usage();
 				exit(0);
+			
+			case 'u':
+				this->use_uniform_cycle_num = true;
 				break;
-				
+			case 'U':
+				this->use_uniform_cycle_num = false;
+				break;
+
+			case 'c':
+				this->cycle_num = atoi(optarg);
+				break;
+
 			case '?':
 				/* getopt_long already printed an error message. */
 				break;

@@ -812,13 +812,21 @@ void Curve::SampleEdgeSemiFixed(	int ii,
 		// compute the raw proj value in [0,1]
 		add_mp(&pre_cycle_scaled_p->coord[qq],&pre_cycle_scaled_p->coord[qq-1],interval_width);
 
-		const auto c_nums = GetMetadata(ii);
-
-		// use the cycle numbers to scale toward the endpoints.
-		//c_nums.CycleNumLeft()
-		//c_nums.CycleNumRight()
-		int left_cycle_num = 2; // these really should be programmatically set rather than hard-coded.  changeme.
-		int right_cycle_num = 2;
+		int left_cycle_num, right_cycle_num;
+		if (sampler_options.use_uniform_cycle_num)
+		{
+			left_cycle_num = sampler_options.cycle_num;
+			right_cycle_num = sampler_options.cycle_num;
+		}
+		else
+		{
+			const auto c_nums = GetMetadata(ii);
+			// use the cycle numbers to scale toward the endpoints.
+			left_cycle_num = c_nums.CycleNumLeft();
+			right_cycle_num = c_nums.CycleNumRight();
+		}
+		
+		
 		ScaleByCycleNum(temp2, &pre_cycle_scaled_p->coord[qq], left_cycle_num, right_cycle_num);
 
 		// finally, scale the cycle-number-scaled values into the interval we are working on, 
