@@ -63,7 +63,6 @@ void sampler_configuration::print_usage()
 	std::cout << "-maxits \t\t\tint maximum number of passes for adaptive curve or surface refining\n";
 	std::cout << "-maxribs \t\t\tint maximum number of ribs for adaptive surface refining\n";
 	std::cout << "-minribs \t\t\tint minimum number of ribs for adaptive surface refining\n";
-	std::cout << "-gammatrick -g \t\t\tbool\n";
 	std::cout << "-numsamples \t\t\tint number samples per edge\n";
 	std::cout << "-mode -m \t\t\tchar sampling mode.  ['a'] adaptive by movement, 'd' adaptive by distance, 'f' fixed, \n";
 	std::cout << "\n\n\n";
@@ -95,8 +94,6 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 			{"maxits",		required_argument,			 0, 'm'},
 			{"maxribs",		required_argument,			 0, 'R'},
 			{"minribs",		required_argument,			 0, 'r'},
-			{"gammatrick",		required_argument,			 0, 'g'},
-			{"g",		required_argument,			 0, 'g'},
 			{"numsamples",		required_argument,			 0, 'n'},
 			{"nd", no_argument,0,'d'},
 			{"m",		required_argument,			 0, 'M'},
@@ -142,14 +139,6 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 			case 't':
 				
 				mpf_set_str(this->TOL,optarg,10);
-				break;
-				
-			case 'g':
-				this->use_gamma_trick = atoi(optarg);
-				if (! (this->use_gamma_trick==0 || this->use_gamma_trick==1) ) {
-					printf("value for 'gammatrick' or 'g' must be 1 or 0\n");
-					exit(0);
-				}
 				break;
 				
 			case 'V':
