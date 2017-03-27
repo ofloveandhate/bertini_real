@@ -37,8 +37,6 @@ switch br_plotter.dimension
 			br_plotter.switches.display_vertices = 1;
 		end
 		
-	%         plot_params.switches.display_faces = 1;
-	%         plot_params.switches.display_face_samples = 0;
 		if isempty(br_plotter.handles.surface_samples)
 			br_plotter.switches.display_faces = 1;
 			br_plotter.switches.display_face_samples = 0; 
@@ -60,9 +58,9 @@ switch br_plotter.dimension
 			br_plotter.switches.display_faces = 0;
 			br_plotter.switches.display_face_samples = 1;
 			
-			br_plotter.switches.curve_refinements.main = 0;
-			br_plotter.switches.curve_refinements.show_midslices = 0;
-			br_plotter.switches.curve_refinements.show_critslices = 0;
+			br_plotter.switches.curve_refinements.main = 1;
+			br_plotter.switches.curve_refinements.show_midslices = 1;
+			br_plotter.switches.curve_refinements.show_critslices = 1;
 			br_plotter.switches.curve_refinements.show_spherecurve = 1;
 			br_plotter.switches.curve_refinements.show_critcurve = 1;
 			br_plotter.switches.curve_refinements.show_singularcurve = 1;
