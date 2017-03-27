@@ -848,20 +848,26 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 	div_mp(interval_width,interval_width,num_intervals);
 	
 
+	int cycle_num_l, cycle_num_r;
 
-	auto top_left_cycle_num = top->GetMetadata(top_edge_index).CycleNumLeft();
-	auto bottom_left_cycle_num = bottom->GetMetadata(bottom_edge_index).CycleNumLeft();
+	if (sampler_options.use_uniform_cycle_num)
+	{
+		cycle_num_l = sampler_options.cycle_num;
+		cycle_num_r = sampler_options.cycle_num;
+	}
+	else
+	{
+		auto top_left_cycle_num = top->GetMetadata(top_edge_index).CycleNumLeft();
+		auto bottom_left_cycle_num = bottom->GetMetadata(bottom_edge_index).CycleNumLeft();
 
-	auto top_right_cycle_num = top->GetMetadata(top_edge_index).CycleNumRight();
-	auto bottom_right_cycle_num = bottom->GetMetadata(bottom_edge_index).CycleNumRight();
+		auto top_right_cycle_num = top->GetMetadata(top_edge_index).CycleNumRight();
+		auto bottom_right_cycle_num = bottom->GetMetadata(bottom_edge_index).CycleNumRight();
 
-	// auto cycle_num_l = boost::math::lcm(top_left_cycle_num, bottom_left_cycle_num);
-	// auto cycle_num_r = boost::math::lcm(top_right_cycle_num, bottom_right_cycle_num);
+		cycle_num_l = boost::math::lcm(top_left_cycle_num, bottom_left_cycle_num);
+		cycle_num_r = boost::math::lcm(top_right_cycle_num, bottom_right_cycle_num);
+	}
 	
-	auto cycle_num_l = 2;
-	auto cycle_num_r = 2;
 	// pi_out + (pi_mid - pi_out) * (1-p)^cycle_num;
-
 	vec_mp u_proj_values;  init_vec_mp(u_proj_values,num_ribs-1); u_proj_values->size = num_ribs-1;
 	set_zero_mp(&u_proj_values->coord[0]);
 	for (int ii=1; ii<num_ribs-1; ++ii)

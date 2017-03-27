@@ -868,6 +868,9 @@ public:
 	int max_num_ribs;
 	int min_num_ribs;
 	
+	bool use_uniform_cycle_num = true;
+	int cycle_num = 2;
+
 	/** 
 	 \brief get the sampler_configuration from the command line. */
 	int  parse_commandline(int argc, char **argv);
