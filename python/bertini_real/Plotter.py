@@ -79,9 +79,7 @@ class BRplotter(object):
 
         inds = self.decomposition.curve.sampler_data[edge_index]
         for i in inds:
-            print self.decomposition.vertices
             v = self.decomposition.vertices[i]
-            print v
             xs.append(v['point'][0].real)
             ys.append(v['point'][1].real)
             if self.decomposition.num_variables>2:

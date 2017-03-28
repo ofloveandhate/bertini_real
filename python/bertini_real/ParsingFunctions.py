@@ -204,10 +204,13 @@ def parse_Curve_Sampler(directory):
 		num_edges = int(f.readline().replace('\n', '')) 
 		f.readline() # read blank line.
 		sampler_data = []
-
+		temp = []
 		for ii in xrange(num_edges):
 			num_samples = int(f.readline().replace('\n', ''))
-			sampler_data.append(f.readline().replace('\n', '').split())
+			thing = f.readline().replace('\n', '').split()
+			for jj in thing:
+				temp.append(int(jj))
+			sampler_data.append(temp)
 			f.readline() # read blank line.
 			
 		return sampler_data
