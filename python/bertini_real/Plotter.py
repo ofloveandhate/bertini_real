@@ -76,6 +76,7 @@ class BRplotter(object):
         xs = []
         ys = []
         zs = []
+        color_list=['b','g','r','c','m','y','k','w']
 
         inds = self.decomposition.curve.sampler_data[edge_index]
         for i in inds:
@@ -88,15 +89,17 @@ class BRplotter(object):
                 zs.append(v['point'][2].real)
 
         if self.decomposition.num_variables==2:
-            self.ax.plot(xs, ys, c=None)#v['point'][
+            self.ax.plot(xs, ys, c=color_list[i])#v['point'][
         else:
-            self.ax.plot(xs, ys, zs, zdir='z', c=None)#v['point'][
+            self.ax.plot(xs, ys, zs, zdir='z', c=color_list[i])#v['point']
 
+    #def EdgeColors(self,edge_index)
 
+        #color_list=['b','g','r','c','m','y','k','w']
 
-        # get indicies from self.decomposition.curve.curve_sampler_data[]
+        #for i = range(0,edge_index):#what is edge index? int?
+            #plt.plot(x,y,color_list[i])
 
-        #those indicies index into self.decomposition.vertices
 
     def PlotSurface(self, surf):
         print("PlotSurface unimplemented yet")
