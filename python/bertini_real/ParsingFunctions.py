@@ -7,7 +7,7 @@ def parse_directory_name(directory_name = 'Dir_Name'):
 	"""
 	#os path manipulations. function returns true if path is an existing file
 	if not os.path.isfile(directory_name):
-		print "File does not exist, please run Bertini Real"
+		print "File does not exist, please run `bertini_real`"
 		return
 	#open file, reads each line for the directory, mp type, and dimension and returns it in a list
 	with open(directory_name, 'r') as f:
@@ -189,7 +189,7 @@ def parse_Edges(directory):
 				edges = f.readline()
 			edges = edges.replace(' \n', '').split(' ')
 			for jj in range(3):
-				curves['edges'][ii][jj] = int(edges[jj]) + 1
+				curves['edges'][ii][jj] = int(edges[jj])
 
 	return curves
 
