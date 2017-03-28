@@ -3,7 +3,7 @@ from BRdata import BRdata
 from Surface import Surface, Curve
 import Util
 import dill
-
+import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
@@ -68,6 +68,8 @@ class BRplotter(object):
         #print xs, ys, zs
         #for item in
     def PlotCurve(self, curve):
+        colormap = plt.cm.prism
+        self.ax.set_color_cycle([colormap(i) for i in np.linspace(0, 0.9, curve.curve.num_edges)])
         for i in range(curve.curve.num_edges):
             self.PlotEdge(curve, i)
 
@@ -80,6 +82,7 @@ class BRplotter(object):
 
         inds = self.decomposition.curve.sampler_data[edge_index]
         for i in inds:
+            print i
             v = self.decomposition.vertices[i]
             xs.append(v['point'][0].real)
             ys.append(v['point'][1].real)
@@ -87,16 +90,9 @@ class BRplotter(object):
                 zs.append(v['point'][2].real)
 
         if self.decomposition.num_variables==2:
-            self.ax.plot(xs, ys, c=color_list[i])#v['point'][
+            self.ax.plot(xs, ys, c=None)#v['point'][
         else:
-            self.ax.plot(xs, ys, zs, zdir='z', c=color_list[i])#v['point']
-
-    #def EdgeColors(self,edge_index)
-
-        #color_list=['b','g','r','c','m','y','k','w']
-
-        #for i = range(0,edge_index):#what is edge index? int?
-            #plt.plot(x,y,color_list[i])
+            self.ax.plot(xs, ys, zs, zdir='z', c=None)#v['point']
 
 
     def PlotSurface(self, surf):

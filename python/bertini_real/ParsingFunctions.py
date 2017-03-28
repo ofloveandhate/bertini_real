@@ -7,7 +7,7 @@ def parse_directory_name(directory_name = 'Dir_Name'):
 	"""
 	#os path manipulations. function returns true if path is an existing file
 	if not os.path.isfile(directory_name):
-		print "File does not exist, please run `bertini_real`"
+		print "File does not exist, please run Bertini Real"
 		return
 	#open file, reads each line for the directory, mp type, and dimension and returns it in a list
 	with open(directory_name, 'r') as f:
@@ -189,7 +189,7 @@ def parse_Edges(directory):
 				edges = f.readline()
 			edges = edges.replace(' \n', '').split(' ')
 			for jj in range(3):
-				curves['edges'][ii][jj] = int(edges[jj])
+				curves['edges'][ii][jj] = int(edges[jj]) + 1
 
 	return curves
 
@@ -201,18 +201,19 @@ def parse_Curve_Sampler(directory):
 		return [[]] #no curve sampling to parse, so return empty sampling
 
 	with open(filename, 'r') as f:
-		num_edges = int(f.readline().replace('\n', '')) 
+		num_edges = int(f.readline().replace('\n', ''))
 		f.readline() # read blank line.
 		sampler_data = []
-		temp = []
+
 		for ii in xrange(num_edges):
 			num_samples = int(f.readline().replace('\n', ''))
+			temp = []
 			thing = f.readline().replace('\n', '').split()
 			for jj in thing:
 				temp.append(int(jj))
 			sampler_data.append(temp)
 			f.readline() # read blank line.
-			
+
 		return sampler_data
 
 
