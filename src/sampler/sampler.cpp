@@ -28,7 +28,7 @@ void sampler_configuration::SetDefaults()
 	
 	use_gamma_trick = 0;
 
-	mode = Mode::Adaptive;
+	mode = Mode::AdaptivePredMovement;
 }
 
 
@@ -63,9 +63,8 @@ void sampler_configuration::print_usage()
 	std::cout << "-maxits \t\t\tint maximum number of passes for adaptive curve or surface refining\n";
 	std::cout << "-maxribs \t\t\tint maximum number of ribs for adaptive surface refining\n";
 	std::cout << "-minribs \t\t\tint minimum number of ribs for adaptive surface refining\n";
-	std::cout << "-gammatrick -g \t\t\tbool\n";
 	std::cout << "-numsamples \t\t\tint number samples per edge\n";
-	std::cout << "-mode -m \t\t\tchar sampling mode.  'f' fixed, ['a'] adaptive\n";
+	std::cout << "-mode -m \t\t\tchar sampling mode.  ['a'] adaptive by movement, 'd' adaptive by distance, 'f' fixed, \n";
 	std::cout << "\n\n\n";
 	std::cout.flush();
 	return;
@@ -95,18 +94,19 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 			{"maxits",		required_argument,			 0, 'm'},
 			{"maxribs",		required_argument,			 0, 'R'},
 			{"minribs",		required_argument,			 0, 'r'},
-			{"gammatrick",		required_argument,			 0, 'g'},
-			{"g",		required_argument,			 0, 'g'},
 			{"numsamples",		required_argument,			 0, 'n'},
 			{"nd", no_argument,0,'d'},
 			{"m",		required_argument,			 0, 'M'},
 			{"mode",		required_argument,			 0, 'M'},
+			{"uniformcyclenum", no_argument, 0, 'u'},
+			{"nouniformcyclenum", no_argument, 0, 'U'},
+			{"cyclenum", required_argument, 0, 'c'},
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
 		
-		choice = getopt_long_only (argc, argv, "bdf:svt:g:V:l:m:R:r:hM:", // colon requires option, two is optional
+		choice = getopt_long_only (argc, argv, "bdf:svt:V:l:m:R:r:hM:uUc:", // colon requires option, two is optional
 															 long_options, &option_index);
 		
 		/* Detect the end of the options. */
@@ -144,14 +144,6 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 				mpf_set_str(this->TOL,optarg,10);
 				break;
 				
-			case 'g':
-				this->use_gamma_trick = atoi(optarg);
-				if (! (this->use_gamma_trick==0 || this->use_gamma_trick==1) ) {
-					printf("value for 'gammatrick' or 'g' must be 1 or 0\n");
-					exit(0);
-				}
-				break;
-				
 			case 'V':
 				this->verbose_level(atoi(optarg));
 				break;
@@ -174,8 +166,12 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 				
 				switch (curr_opt[0])
 				{
+					case 'd':
+						mode = Mode::AdaptiveConsecDistance;
+						break;
+
 					case 'a':
-						mode = Mode::Adaptive;
+						mode = Mode::AdaptivePredMovement;
 						break;
 
 					case 'f':
@@ -197,8 +193,18 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 				
 				sampler_configuration::print_usage();
 				exit(0);
+			
+			case 'u':
+				this->use_uniform_cycle_num = true;
 				break;
-				
+			case 'U':
+				this->use_uniform_cycle_num = false;
+				break;
+
+			case 'c':
+				this->cycle_num = atoi(optarg);
+				break;
+
 			case '?':
 				/* getopt_long already printed an error message. */
 				break;
@@ -339,23 +345,23 @@ int main(int argC, char *args[])
 		{
 			switch (sampler_options.mode){
 				case sampler_configuration::Mode::Fixed:
-					C.fixed_sampler(V,
+					C.FixedSampler(V,
 									sampler_options,
 									solve_options,
 									sampler_options.target_num_samples);
 					break;
-				case sampler_configuration::Mode::Adaptive:
-				{
-					if (sampler_options.use_distance_condition) 
-						C.adaptive_sampler_distance(V,
-													sampler_options,
-													solve_options);
-					else
-						C.adaptive_sampler_movement(V,
-													sampler_options,
-													solve_options);
+				case sampler_configuration::Mode::AdaptiveConsecDistance:
+
+					C.AdaptiveDistanceSampler(V,
+												sampler_options,
+												solve_options);
 					break;
-				}
+
+				case sampler_configuration::Mode::AdaptivePredMovement:
+					C.AdaptiveMovementSampler(V,
+												sampler_options,
+												solve_options);
+					break;
 			} // switch
 			C.output_sampling_data(directoryName);
 			V.print(directoryName / "V_samp.vertex");
@@ -375,13 +381,16 @@ int main(int argC, char *args[])
 					
 					break;
 				}
-				case sampler_configuration::Mode::Adaptive:
+				case sampler_configuration::Mode::AdaptivePredMovement:
+					std::cout << "adaptive by movement not implemented for surfaces, using adaptive by distance\n\n";
+				case sampler_configuration::Mode::AdaptiveConsecDistance:
 				{
 					surf_input.AdaptiveSampler(V,
 											 sampler_options,
 											 solve_options);
 					break;
 				}
+
 			} // switch
 
 			surf_input.output_sampling_data(directoryName);

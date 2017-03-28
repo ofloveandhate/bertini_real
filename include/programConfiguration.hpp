@@ -7,7 +7,10 @@
 #include <map>
 #include <getopt.h> 
 #include <queue>
+
+#include <algorithm>
 #include <boost/timer/timer.hpp>
+
 
 #include "bertini1/bertini_extensions.hpp"
 
@@ -15,6 +18,8 @@
 
 
 enum {BERTINIREAL=-9000,CRIT=-8999};
+
+enum class SymEngine{Matlab, Python}; // this is to indicate which symbolic engine will run the decompositions; currently default is Matlab
 
 ///////////
 //
@@ -359,10 +364,13 @@ public:
 	*/
 	void PrintMetadata(boost::filesystem::path const& filename) const;
 
-	void PrintPointTypeMapping(boost::filesystem::path const& filename) const;
 };
 
 
+/**
+\brief Write a file contanining the indices of vertex types.
+*/
+void PrintPointTypeMapping(boost::filesystem::path const& filename);
 
 /**
  \brief holds the current state of configuration for Bertini_real.
@@ -405,10 +413,13 @@ class BertiniRealConfig : public ProgramConfigBase
 	
 	
 	std::string matlab_command_; ///< the string for how to call matlab.
-	
+	std::string python_command_; 
+
 	bool use_gamma_trick_; ///< indicator for whether to use the gamma trick in a particular solver.
 	
+    SymEngine engine_; ///< the symbolic class variable that indicates which symbolic engine the user desires. Default is currently Matlab	
 	
+	bool prevent_sym_substitution_;
 	
 	
 	
@@ -422,6 +433,17 @@ public:
 		return primary_mode_;
 	}
 	
+
+	bool sym_prevent_subst() const
+	{
+		return prevent_sym_substitution_;
+	}
+
+	void sym_prevent_subst(bool val)
+	{
+		prevent_sym_substitution_ = val;
+	}
+
 	/**
 	 get the path to the input_deflated file.
 	 
@@ -483,10 +505,45 @@ public:
 		return matlab_command_;
 	}
 	
+	/**
+	 get the command for calling Python via system(), which I hate doing anyway...  ugh.
+	 
+	 \return the string for calling Python.
+	 */
+	std::string python_command() const
+	{
+		return python_command_;
+	}
+
+
+	/**
+	run Matlab script
+	*/
+	int CallMatlab(std::string const& command) const
+	{
+		std::stringstream converter;
+		converter << matlab_command() << command;
+
+		if (verbose_level()>=1)
+			std::cout << "inkoving `" << converter.str() << "`\n";
+		return system(converter.str().c_str());
+	}
 	
+	/**
+	run Python script
+	*/
+	int CallPython(std::string const& command) const
+	{
+		
+		std::stringstream converter;
+		converter << python_command() << command;
+
+		if (verbose_level()>=1)
+			std::cout << "inkoving `" << converter.str() << "`\n";
+		return system(converter.str().c_str());
+	}
 	
-	
-	
+
 	/**
 	 get the target dimension.  by default, this is -1, which is 'ask the user'
 	 \return the dimension.
@@ -711,20 +768,28 @@ public:
 	{
 		return orthogonal_projection_;
 	}
-	
-	
-	
-	
-	
-	
 
-	
-	
-	
-	
-	
-	
-	
+    /**
+    \brief Get which symbolic engine is being used. 
+
+    The default (currently) is Matlab
+    
+    \return whether we are using Matlab or Python. default is Matlab
+    */
+
+    SymEngine symbolic_engine() const
+    {
+		return engine_;
+	}
+
+
+   /** 
+   \brief set which symbolic engine is being used. 
+   */
+  	void symbolic_engine(SymEngine new_engine)
+	{
+		engine_ = new_engine;
+	}
 	
 	/** 
 	 \brief  display options to user. */
@@ -768,7 +833,8 @@ public:
 	};
 	
 	void init();
-	
+
+
 }; //re: BertiniRealConfig
 
 
@@ -779,7 +845,8 @@ class sampler_configuration : public ProgramConfigBase
 public:
 	enum class Mode{
 		Fixed,
-		Adaptive
+		AdaptiveConsecDistance,
+		AdaptivePredMovement
 	};
 
 
@@ -801,6 +868,9 @@ public:
 	int max_num_ribs;
 	int min_num_ribs;
 	
+	bool use_uniform_cycle_num = true;
+	int cycle_num = 2;
+
 	/** 
 	 \brief get the sampler_configuration from the command line. */
 	int  parse_commandline(int argc, char **argv);

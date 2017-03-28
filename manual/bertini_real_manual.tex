@@ -1,14 +1,13 @@
-\documentclass[10pt]{article}
+\documentclass[10pt, twoside]{article}
 
 
 \input{br_manual_header.tex}
 
 
 \begin{document}
-\pagestyle{plain} 
+\pagestyle{front} 
 
-	\pagenumbering{roman} 
-	\setcounter{page}{1}
+	
 
 
 \begin{titlepage}
@@ -18,10 +17,14 @@
 	{\Large Bertini\_real}
 
 \vspace{\baselineskip}
-	{\large software for real algebraic sets}
-	
+	{\large Software for Real Algebraic Sets}
+
+
+
+	{\large A Comprehensive Guide}	
+
 	\vspace{3cm}
-	% \includegraphics[width=0.75\linewidth]{testlogo1}
+	\includegraphics[width=0.75\linewidth]{CayleyCubic}
 	\end{center}
 
 	\vfill
@@ -31,12 +34,12 @@
 	\begin{minipage}{0.4\linewidth}
 	\centering
 	This manual compiled \today \\
-	\copyright 2014--\the\year\ Daniel Brake
+	\copyright 2014--\the\year\ Dani Brake
 	\end{minipage}
 	\hfill
 	\begin{minipage}{0.4\linewidth}
 	\centering Manual written by \vspace{\baselineskip}
-	\\  Daniel Brake \\ Pierce Cunneen \\ Elizabeth Sudkamp 
+	\\  Dani Brake \\ Pierce Cunneen \\ Elizabeth Sudkamp \\ Christopher Lembo
 	\end{minipage}
 
 	\end{minipage}
@@ -45,21 +48,21 @@
 
 \end{titlepage}
 
+\afterpage{\blankpage}
 
-
-
-	\tableofcontents
-	\eject
-	\pagenumbering{arabic} 
+\pagenumbering{roman} 
 	\setcounter{page}{1}
-	\eject
+\begingroup\setlength{\parskip}{0pt plus .1pt}
+	\tableofcontents
+	\newpage
+\endgroup
 
 
 
-
-
-
-
+\pagestyle{main} 
+\pagenumbering{arabic} 
+	\setcounter{page}{1}
+\setlength{\parskip}{1em plus 0.1em minus 0.1em} %custom spacing between paragraphs 
 \input{introduction}
 
 
@@ -123,9 +126,11 @@
 
 
 \newpage
+
+\begingroup\setlength{\parskip}{0pt plus .1pt}
 \setglossarystyle{altlist}
 \printglossary[type=\acronymtype]
-
+\endgroup
 
 
 
