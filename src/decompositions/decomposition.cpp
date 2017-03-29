@@ -51,14 +51,8 @@ int Decomposition::index_in_vertices(VertexSet & V,
 #ifdef functionentry_output
 	std::cout << "Decomposition::index_in_vertices" << std::endl;
 #endif
-	int index = -1;
-	
-	
-	// first we search the non-removed points.
-	index = V.search_for_point(testpoint);
-    
-    
-	return index;
+
+	return V.search_for_point(testpoint);
 }
 
 

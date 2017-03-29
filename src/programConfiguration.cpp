@@ -358,7 +358,7 @@ void BertiniRealConfig::display_current_options()
 
 	std::cout << "stifle_text: " << stifle_text() << "\n";
 	std::cout << "matlab_command: " << matlab_command() << "\n";
-	std::cout << "output_directory base name: " << output_dir() << std::endl;
+	std::cout << "output_directory base name: " << output_dir() << '\n';
 
 	// Which symbolic Engine
 	switch(symbolic_engine())
@@ -371,7 +371,7 @@ void BertiniRealConfig::display_current_options()
 	    break;
 	  }
 
-
+	 std::cout << "same_point_tol: " << same_point_tol() << std::endl;
 }
 
 
@@ -406,12 +406,14 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 			{"symengine",required_argument,0,'E'},{"E",required_argument,0, 'E'},
 			{"symnosubst",	no_argument,			 0, 't'},
 			{"symallowsubst",	no_argument,			 0, 'T'},
+			{"samepointtol",	required_argument,		 0, 'e'},
+
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
 
-		choice = getopt_long_only (argc, argv, "d:c:Dg:V:o:smp:S:i:qvhM:E:tT", // if followed by colon, requires option.  two colons is optional
+		choice = getopt_long_only (argc, argv, "d:c:Dg:V:o:smp:S:i:qvhM:E:tTe:", // if followed by colon, requires option.  two colons is optional
 								   long_options, &option_index);
 
 		/* Detect the end of the options. */
@@ -552,6 +554,14 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 				break;
 			}
 
+			case 'e':
+			{
+				std::stringstream converter;
+				converter << optarg;
+				double d; converter >> d;
+				this->same_point_tol(d);
+				break;
+			}
 			case '?':
 				/* getopt_long already printed an error message. */
 				break;
@@ -606,6 +616,7 @@ void BertiniRealConfig::print_usage()
 	printf("-symengine -E\t\t\t 'symengine'\n");
 	printf("-symnosubst\t\t\t -- prevent substitution of subfunctions during deflation and other sym ops.  default.\n");
 	printf("-symallowsubst\t\t\t -- allow substitution of subfunctions during deflation and other sym ops\n");
+	printf("-samepointtol\t\t\t -- infinity-norm distance between two points to be considered distinct [1e-7]\n");
 	printf("\n\n\n");
 	return;
 }
@@ -649,6 +660,8 @@ void BertiniRealConfig::init()
 	primary_mode_ = BERTINIREAL;
 	engine_ = SymEngine::Matlab; // setting default to Matlab symbolic engine
 	prevent_sym_substitution_ = false;
+
+	same_point_tol_ = 1e-7;
 	return;
 }
 
