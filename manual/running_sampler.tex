@@ -83,11 +83,12 @@ This algorithm refines edge-by-edge until the predicted point, and the computed 
 \end{center}
 \end{figure}
  
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.5\textwidth]{curvesampler_adm.png}
-\caption{This is an example of sampling a curve using the adaptive by movement mode. To replicate this, when invoking sampler, type in {\tt sampler -m a}}
+
+\begin{figure}[!htb]\centering
+     \frame{\includegraphics[width=10cm]{curvesampler_adm.png}}
+     \caption{This is an example of sampling a curve using the adaptive by movement mode. To replicate this, when invoking sampler, type in {\tt sampler -m a}}
 \end{figure}
+
 
 \paragraph{Curve sampling algorithm: Adaptive by distance}
 
@@ -101,13 +102,10 @@ The adaptive-by-distance refinement algorithm refines the edge by bisection unti
 \end{center}
 \end{figure}
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.5\textwidth]{curvesampler_add.png}
-\caption{This is an example of sampling a curve using the adaptive by distance mode. To replicate this, when invoking sampler, type in { \tt sampler -m d}}
+\begin{figure}[!htb]\centering
+     \frame{\includegraphics[width=10cm]{curvesampler_add.png}}
+     \caption{This is an example of sampling a curve using the adaptive by distance mode. To replicate this, when invoking sampler, type in { \tt sampler -m d}}
 \end{figure}
-
-
 
 \paragraph{Curve sampling algorithm: Fixed number}
 
@@ -121,11 +119,11 @@ This curve sampling algorithm produces a fixed (by the user) number of sample po
 \end{center}
 \end{figure}
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.5\textwidth]{curvesampler_f.png}
-\caption{This is an example of sampling a curve using fixed mode. To replicate this, when invoking sampler, type in {\tt sampler -m f}}
+\begin{figure}[!htb]\centering
+     \frame{\includegraphics[width=10cm]{curvesampler_f.png}}
+     \caption{This is an example of sampling a curve using fixed mode. To replicate this, when invoking sampler, type in {\tt sampler -m f}}
 \end{figure}
+
 
 \subsection{Surfaces}
 \label{sec:sampler_surface}
@@ -179,8 +177,9 @@ There are currently about two surface sampling algorithms, one of which is gener
 
 \begin{enumerate}
 \item {\tt -m [a]} – Adaptive-movement – Default choice.  Will be adaptive on distance moved, once it's implemented.  Sorry, we're not there yet on this one.
-\item {\tt -m [d]} – Adaptive-distance – Also default choice, because adaptive-movement collapses to the adaptive-distance method, until movement is implemented.  The sampling of critical-like curves are non-uniform, having somewhat-uniformly spaced samplings in terms of projection value across the entire curve.  Slices and ribs are distance-adaptively sampled.
 \item {\tt -m f} – Fixed – every edge of every critical-like curve gets the same number of points, and slices and ribs are sampled distance-adaptively.
+\item {\tt -m [d]} – Adaptive-distance – Also default choice, because adaptive-movement collapses to the adaptive-distance method, until movement is implemented.  The sampling of critical-like curves are non-uniform, having somewhat-uniformly spaced samplings in terms of projection value across the entire curve.  Slices and ribs are distance-adaptively sampled.
+
 \end{enumerate}
 
 In short, the difference between distance-adaptive and fixed sampling is twofold:
@@ -247,14 +246,20 @@ In the fixed-number surface sampling algorithm,
 This method produces mediocre samplings around singularities, because there is too much space between ribs near the challenge points.  The adaptive methods are much better at producing a ``smooth'' sampling, because they use the cycle number of the critical points.
 
 
+\begin{figure}[!htb]\centering
+     \frame{\includegraphics[width=10cm]{surfacefixed_numsamples.png}}
+     \caption{This is an example of sampling a surface using the fixed numsamples mode. To replicate this, when invoking sampler, type in {\tt sampler -m f numsamples 5 -tol 0.7}}
+\end{figure}
 
+\begin{figure}[!htb]\centering
+     \frame{\includegraphics[width=10cm]{surfacefixed_minits.png}}
+     \caption{This is an example of sampling a surface using the fixed minits mode. To replicate this, when invoking sampler, type in {\tt sampler -m f minits 5 -tol 0.3}}
+\end{figure}
 
-
-
-
-
-
-
+\begin{figure}[!htb]\centering
+     \frame{\includegraphics[width=10cm]{surfacefixed_maxits.png}}
+     \caption{This is an example of sampling a surface using the fixed maxits mode. To replicate this, when invoking sampler, type in {\tt sampler -m f maxits 5 -tol 0.9}}
+\end{figure}
 
 \paragraph{Surface sampling algorithm: Adaptive by distance}
 
@@ -292,6 +297,30 @@ Also, the cycle number is presently hard-coded at 2.  Changing this to be a runt
 
 \item The faces are ribbed at the $\pi_0$ projection values for the samples on the crit-like edges forming the top and bottom boundaries of the face.  The ribbing process is distance-adaptive, with a min and max number of allowable refinement iterations ({\tt minits}, {\tt maxits}) to achieve the desired tolerance {\tt tol}.
 \end{enumerate}
+
+
+\begin{figure}[!htb]\centering
+     \frame{\includegraphics[width=10cm]{ad_dis_minribs.png}}
+     \caption{This is an example of sampling a surface using the adaptive by distance minribs mode. To replicate this, when invoking sampler, type in {\tt sampler -m d minribs 10 -tol 0.9}}
+\end{figure}
+
+\begin{figure}[!htb]\centering
+     \frame{\includegraphics[width=10cm]{ad_dis_maxribs.png}}
+     \caption{This is an example of sampling a surface using the adaptive by distance maxribs mode. To replicate this, when invoking sampler, type in {\tt sampler -m d maxribs 10 -tol 0.7}}
+\end{figure}
+
+
+\begin{figure}[!htb]\centering
+     \frame{\includegraphics[width=10cm]{ad_dis_minits.png}}
+     \caption{This is an example of sampling a surface using the adaptive by distance minits mode. To replicate this, when invoking sampler, type in {\tt sampler -m d minits 10 -tol 0.5}}
+\end{figure}
+
+
+\begin{figure}[!htb]\centering
+     \frame{\includegraphics[width=10cm]{ad_dis_maxits.png}}
+     \caption{This is an example of sampling a surface using the adaptive by distance maxits mode. To replicate this, when invoking sampler, type in {\tt sampler -m d maxits 10 -tol 0.3}}
+\end{figure}
+
 
 
 
