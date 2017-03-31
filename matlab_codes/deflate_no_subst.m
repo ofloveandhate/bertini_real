@@ -1,4 +1,4 @@
-% [] = deflate_no_subst(filename, defl_iteration, minorsize)
+% [] = deflate_no_subst(filename, defl_iteration, minorsize, degrees, OutputName)
 %
 % computes a deflated system from an input system.
 %
@@ -28,6 +28,7 @@ for ii = 1:num_vars
 	%vars is used in the jacobian call, so that only those derivatives are computed
 end
 
+ensure_fns_are_subfns(b);
 
 
 if ~isempty(b.subfunction)
@@ -249,5 +250,40 @@ end
 
 write_bertini_input_file(b.variable_group, b.functions,'filename',output_filename,'options',b.config,'constants',b.constant,'subfunctions',b.subfunction);
 
+
+end
+
+
+function ensure_fns_are_subfns(b)
+
+for ii = 1:size(b.functions,1)
+    
+    is_subf=false;
+    fn_val = b.functions{ii,2};
+    fn_name = b.functions{ii,1};
+    
+    for jj = 1:size(b.subfunction,1)
+        
+        subfn_name = b.subfunction{jj,1};
+        
+        if strcmp(strtrim(fn_val),strtrim(subfn_name))
+            is_subf=true;
+            break;
+            
+        end
+    end
+    
+    if is_subf == true
+        
+    elseif is_subf == false
+        
+        new_subf_sym = sprintf('subf_%s',fn_name);
+        f_sym = sprintf('%s',fn_name);
+        sym_val = b.functions{ii,2};
+        
+        b.declare_and_define(new_subf_sym,sym_val,'subfunction');
+        b.define_symbol(f_sym,new_subf_sym);
+    end
+end
 
 end
