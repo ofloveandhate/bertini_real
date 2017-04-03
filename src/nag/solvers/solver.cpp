@@ -907,7 +907,13 @@ void serial_tracker_loop(trackingStats *trackCount,
 			mp_to_d(time_to_compare, EG.PD_mp.time); }
 		
 		
-		if ((EG.retVal != 0 && time_to_compare->r > solve_options.T.minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
+		if (
+			(
+			 !(EG.retVal == 0 || EG.retVal == retVal_refining_failed) 
+			  && 
+			 time_to_compare->r > solve_options.T.minTrackT
+			) || !issoln) 
+		{  // <-- this is the real indicator of failure...
 			
 			trackCount->failures++;
 			
@@ -1399,7 +1405,9 @@ int receive_endpoints(trackingStats *trackCount,
 			mp_to_d(time_to_compare, (*EG_receives)[ii].PD_mp.time); }
 		
 		solve_options.increment_num_paths_tracked();
-		if (((*EG_receives)[ii].retVal != 0 && time_to_compare->r > solve_options.T.minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
+		if ((
+			!( (*EG_receives)[ii].retVal == 0 || (*EG_receives)[ii].retVal == retVal_refining_failed)
+			&& time_to_compare->r > solve_options.T.minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
 			
 			trackCount->failures++;
 			
@@ -1728,7 +1736,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 		// get how many times we have changed settings due to this type of failure.
 		int current_retval_counter = map_lookup_with_default( setting_increments, EG_out->retVal, 0 ); // how many times have we encountered this retval?
 		
-		if ( EG_out->retVal!=0 ) {  // ||   EG_out->retVal==-50
+		if ( !(EG_out->retVal==0 || EG_out->retVal==retVal_refining_failed) ) {  
 			
 			vec_d solution_as_double; init_vec_d(solution_as_double,0);
 			if (EG_out->prec < 64){
