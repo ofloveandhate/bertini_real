@@ -1881,7 +1881,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 	} // re: while
 	
 	if (solve_options.verbose_level()>=3) {
-		if (iterations==0 && EG_out->retVal==0) {
+		if (iterations==1 && EG_out->retVal==0) {
 			std::cout << "success path " << pathNum << std::endl;
 		}
 		if (iterations>1 && EG_out->retVal==0) {
