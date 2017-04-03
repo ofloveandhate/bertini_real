@@ -705,7 +705,7 @@ void Curve::MidSlice(int& edge_counter,
 		}
 		auto num_real_interior_midslice_points = midpoint_witness_sets[ii].num_points();
 
-		if (program_options.verbose_level()>=2) {
+		if (program_options.verbose_level()>=3) {
 			if (num_real_midslice_points - num_real_interior_midslice_points)
 			{
 				midpoint_witness_sets[ii].print_to_screen();
@@ -1130,7 +1130,7 @@ std::vector<int> Curve::GetMergeCandidates(const VertexSet & V) const
 				
 				
 				if (tentative_left_edge < 0) {
-					std::cout << "found that edge " << tentative_edge_list.back() << " has NEW leftpoint, but \\nexists edge w point " << edges_[tentative_edge_list.back()].left() << " as right point." << std::endl;
+					std::cout << color::red() << "found that edge " << tentative_edge_list.back() << " has NEW leftpoint, but \\nexists edge w point " << edges_[tentative_edge_list.back()].left() << " as right point." << color::console_default() << std::endl;
 					break;
 					//gotta do something careful here?   i suspect that this happens when two points are very near to each other...
 				}
