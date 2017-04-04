@@ -1,12 +1,15 @@
-% fv = info2fv(BRinfo)
+% fv = info2fv(BRinfo, which_faces)
 %
 % extract the faces from a bertini_real output.
-
+%
+% if which_faces is empty, or missing, all faces will be extracted
 
 function [fv] = info2fv(BRinfo, which_faces)
 
 
 if nargin<=1
+	which_faces = 1:BRinfo.num_faces;
+elseif isempty(which_faces)
 	which_faces = 1:BRinfo.num_faces;
 end
 
