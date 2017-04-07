@@ -1058,7 +1058,6 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 					{
 						std::cout << color::red() << "got non-real solution sample... something strange going on!\n\nnot refining this interval any more..." << color::console_default() << '\n';
 						refine_flags_next.push_back(false);
-						mypause();
 						continue;
 						
 					}
