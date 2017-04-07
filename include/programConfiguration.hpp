@@ -421,10 +421,20 @@ class BertiniRealConfig : public ProgramConfigBase
 	
 	bool prevent_sym_substitution_;
 	
+	double same_point_tol_;
 	
 	
 public:
 	
+	double same_point_tol() const
+	{
+		return same_point_tol_;
+	}
+
+	void same_point_tol(double t)
+	{
+		same_point_tol_ = t;
+	}
 	/**
 	 get the mode for the program.  by default, it's bertini_real
 	 */
