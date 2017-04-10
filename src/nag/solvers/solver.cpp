@@ -1347,7 +1347,6 @@ int receive_endpoints(trackingStats *trackCount,
 	
 	if (statty_mc_gatty.MPI_SOURCE>= int(solve_options.num_procs()) || statty_mc_gatty.MPI_SOURCE<0) {
 		std::cout << statty_mc_gatty.MPI_SOURCE << ", " << solve_options.num_procs() << std::endl;
-		mypause();
 	}
 	
 	bool randomized;

@@ -281,7 +281,6 @@ int Decomposition::read_sphere(const boost::filesystem::path & bounding_sphere_f
 	
 	if (num_variables_<2) {
 		std::cout << "during read of sphere, Decomposition of dimension	" << dimension() << " has " << num_variables() << " variables!" << std::endl;
-		mypause();
 	}
 
 	change_size_vec_mp(this->sphere_center_, num_variables()-1); //destructive resize

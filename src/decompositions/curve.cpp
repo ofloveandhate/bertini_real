@@ -906,7 +906,6 @@ void Curve::ConnectTheDots(
 
 							if (W_single_sharpened.num_points()==0) {
 								std::cout << "sharpening failed, which sucks because the sharpened point was theoretically generic with respect to the system currently being used" << std::endl;
-								mypause();
 							}
 							
 							solve_options.T.sharpenDigits = prev_sharpen_digits;
