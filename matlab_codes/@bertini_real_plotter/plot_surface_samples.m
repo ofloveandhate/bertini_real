@@ -21,8 +21,11 @@ end
 function sampler_faces = plot_surf_samples_colorfn(br_plotter)
 
 total_num_faces = 0;
-for ii = 1:length(br_plotter.BRinfo.sampler_data)
+if ~isempty(br_plotter.BRinfo.sampler_data)
+for cc = 1:length(br_plotter.options.which_faces)
+	ii = br_plotter.options.which_faces(cc);
 	total_num_faces = total_num_faces+size(br_plotter.BRinfo.sampler_data{ii},1);
+end
 end
 
 sampler_faces = zeros(total_num_faces,3);
@@ -132,9 +135,11 @@ function sampler_faces = plot_surf_samples_monocolor(br_plotter)
 
 
 total_num_faces = 0;
+if ~isempty(br_plotter.BRinfo.sampler_data)
 for cc = 1:length(br_plotter.options.which_faces)
 	ii = br_plotter.options.which_faces(cc);
 	total_num_faces = total_num_faces+size(br_plotter.BRinfo.sampler_data{ii},1);
+end
 end
 
 sampler_faces = zeros(total_num_faces,3);
