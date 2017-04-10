@@ -650,7 +650,7 @@ void Curve::MidSlice(int& edge_counter,
 
 		if (num_total_midslice_points - num_unique_midslice_points)
 		{
-			std::cout << color::red() << "there were non-unique midpoints.\n" << color::console_default();
+			std::cout << color::red() << "there were non-unique midpoints in interval " << ii << ".\n" << color::console_default();
 			std::cout << "trying to recover the failure by tightening tracking tolerances..." << std::endl;
 				
             solve_options.T.endgameNumber = 2;
@@ -676,7 +676,7 @@ void Curve::MidSlice(int& edge_counter,
 
 		if (num_total_midslice_points - num_unique_midslice_points)
 		{
-			std::cout << color::red() << "there were non-unique midpoints.  your decomposition is possibly incorrect about the missed points, if the path crossings obscured real points\n" << color::console_default();
+			std::cout << color::red() << "there were non-unique midpoints in interval " << ii << ".  your decomposition is possibly incorrect about the missed points, if the path crossings obscured real points\n" << color::console_default();
 		}
 
 
