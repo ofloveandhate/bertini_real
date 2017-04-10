@@ -514,18 +514,20 @@ void Surface::AdaptiveSampler(VertexSet & V,
 	for (unsigned int ii=0; ii<num_faces(); ii++) {
 		
 		if (faces_[ii].is_degenerate() || faces_[ii].is_malformed())
-			continue;
-		
-		std::cout << "Face " << ii << " of " << num_faces() << std::endl;
-		if (sampler_options.verbose_level()>=1)
-			std::cout << faces_[ii];
-
-		try{
-			AdaptiveSampleFace(ii, V, sampler_options, solve_options, num_ribs_between_crits);
-		}
-		catch (std::exception & e)
+			DegenerateSampleFace(ii,V,sampler_options, solve_options);
+		else
 		{
-			std::cout << "bailed out on face " << ii << ".  reason: " << e.what() << std::endl;
+			std::cout << "Face " << ii << " of " << num_faces() << std::endl;
+			if (sampler_options.verbose_level()>=1)
+				std::cout << faces_[ii];
+
+			try{
+				AdaptiveSampleFace(ii, V, sampler_options, solve_options, num_ribs_between_crits);
+			}
+			catch (std::exception & e)
+			{
+				std::cout << "bailed out on face " << ii << ".  reason: " << e.what() << std::endl;
+			}
 		}
 	} // re: for ii, that is for the faces
 	
@@ -1148,7 +1150,11 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 
 
 
-
+void Surface::DegenerateSampleFace(int face_index, VertexSet & V, sampler_configuration & sampler_options,
+										SolverConfiguration & solve_options)
+{
+	samples_.push_back(std::vector< Triangle >(0)); 
+}
 
 
 ////////////////////////
