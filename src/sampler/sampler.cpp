@@ -59,7 +59,7 @@ void sampler_configuration::print_usage()
 	auto line = [=](std::string name, std::string type, std::string def_val = " ", std::string note = " ")
 		{std::cout << std::setw(opt_w) << std::left << name << std::setw(type_w) << type << std::setw(def_w) << def_val <<  std::setw(note_w) << note << "\n";};
 
-	std::cout << "Bertini_real has the following options:\n\n";
+	std::cout << "Sampler has the following options:\n\n";
 	line("option","type","default","note");
 	std::cout << '\n';
 	line("-v -version",  " --  ");

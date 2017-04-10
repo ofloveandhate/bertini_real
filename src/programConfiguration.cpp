@@ -1,5 +1,5 @@
 #include "programConfiguration.hpp"
-
+#include <iomanip>
 
 
 
@@ -602,21 +602,30 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 
 void BertiniRealConfig::print_usage()
 {
-	printf("bertini_real has the following options:\n----------------------\n");
-	printf("option name(s)\t\t\targument\n\n");
-	printf("-p -pi -projection \t\t\t'filename'\n");
-	printf("-i -input\t\t\t'filename'\n");
-	printf("-ns -nostifle\t\t\t   --\n");
-	printf("-v -version\t\t\t   -- \n");
-	printf("-h -help\t\t\t   --\n");
-	printf("-sphere -b\t\t\t   'filename'\n");
-	printf("-q -quick\t\t\t --\n");
-	printf("-debug\t\t\t --\n");
-	printf("-gammatrick\t\t\t bool\n");
-	printf("-symengine -E\t\t\t 'symengine'\n");
-	printf("-symnosubst\t\t\t -- prevent substitution of subfunctions during deflation and other sym ops.  default.\n");
-	printf("-symallowsubst\t\t\t -- allow substitution of subfunctions during deflation and other sym ops\n");
-	printf("-samepointtol\t\t\t -- infinity-norm distance between two points to be considered distinct [1e-7]\n");
+	int opt_w = 20;
+	int type_w = 11;
+	int def_w = 9;
+	int note_w = 30;
+	auto line = [=](std::string name, std::string type, std::string def_val = " ", std::string note = " ")
+		{std::cout << std::setw(opt_w) << std::left << name << std::setw(type_w) << type << std::setw(def_w) << def_val <<  std::setw(note_w) << note << "\n";};
+
+	std::cout << "Bertini_real has the following options:\n\n";
+	line("option","type","default","note");
+	std::cout << '\n';
+
+	line("-p -pi -projection", 	"string", 	" -- ", "projection file name");
+	line("-i -input", 			"string", 	"input", "bertini input file name");
+	line("-ns -nostifle", 		" -- ", 	" ", "turn off stifling of screen out when running system calls");
+
+	line("-v -version", 		" -- ", 	" ", "get version number");
+	line("-h -help", 			" --", 		" ", "print this help menu");
+	line("-sphere -b", 			"string", 	" -- ", "name of sphere file");
+	line("-q -quick", 			" -- ", 	" ", "speed up computation, but get worse results, probably");
+	line("-debug", 				" -- ", 	" ", "make bertini_real wait 30 seconds for you to attach a debugger");
+	line("-symengine -E", 		"string", 	"matlab", "select a symbolic engine.  choices are 'matlab' and 'python'");
+	line("-symnosubst", 		" -- ", 	" ", "prevent substitution of subfunctions during deflation and other sym ops.");
+	line("-symallowsubst", 		" -- ", 	" ", "allow substitution of subfunctions during deflation and other sym ops.  default");
+	line("-samepointtol", 		"<double>", "1e-7" , "(scaled) infinity-norm distance between two points to be considered distinct");
 	printf("\n\n\n");
 	return;
 }
