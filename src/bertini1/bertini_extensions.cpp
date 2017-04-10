@@ -894,8 +894,7 @@ int isSamePoint_inhomogeneous_input(const point_mp left, const point_mp right, d
 		throw std::logic_error(ss.str());
 	}
 	
-	comp_mp temp1, temp2;  init_mp(temp1); init_mp(temp2);
-	comp_mp one;  init_mp(one); set_one_mp(one);
+	
 	
 	double A = infNormVec_mp(const_cast<_point_mp*>(left));
 	double B = infNormVec_mp(const_cast<_point_mp*>(right));
@@ -904,69 +903,7 @@ int isSamePoint_inhomogeneous_input(const point_mp left, const point_mp right, d
 	if (auto m = min(A,B)>1.0)
 		tolerance *= m;
 
-	for (int ii=0; ii<left->size; ii++) {
-		abs_mp(temp1, &left->coord[ii]);
-		abs_mp(temp2, &right->coord[ii]); // take the absolute values of the two coordinates.
-		
-		// compare them.
-		if ( mpf_cmp(temp1->r, temp2->r)<0 ) {  // if left smaller than right,
-			
-			if (mpf_cmp(temp2->r,one->r)>0) { // if the max abs value bigger than 1.
-											//scale by temp2
-				div_mp(temp1, &left->coord[ii], temp2);
-				div_mp(temp2, &right->coord[ii], temp2);
-				
-				sub_mp(temp1, temp1, temp2);  // temp1 = temp1-temp2
-				abs_mp(temp2, temp1);  // temp2 = |temp1|
-				
-				if (mpf_get_d(temp2->r) > tolerance) {
-					clear_mp(temp1); clear_mp(temp2); clear_mp(one);
-					return 0;
-				}
-				
-			}
-			else{ // no need to scale, because bigger coord was smaller than 1.
-				sub_mp(temp1, &left->coord[ii], &right->coord[ii]); // take difference
-				abs_mp(temp2, temp1); // absolute value that difference
-				if (mpf_get_d(temp2->r)> tolerance) { // if bigger than allowed tolerance, reject as not the same point.
-					clear_mp(temp1); clear_mp(temp2); clear_mp(one);
-					return 0;
-				}
-			}
-		}
-		else {  // if right smaller than left,
-			
-			if (mpf_cmp(temp1->r,one->r)>0) { // if the larger absolute value is bigger than 1.
-											//scale by temp1, cuz it was bigger than temp2 and > 1
-				
-				div_mp(temp2, &right->coord[ii], temp1);
-				div_mp(temp1, &left->coord[ii], temp1);
-				
-				sub_mp(temp1, temp1, temp2);
-				
-				abs_mp(temp2, temp1);  // temp2 = |temp1|
-				
-				if (mpf_get_d(temp2->r) > tolerance) {
-					clear_mp(temp1); clear_mp(temp2); clear_mp(one);
-					return 0;
-				}
-			}
-			else{
-				sub_mp(temp1, &left->coord[ii], &right->coord[ii]); // take difference
-				abs_mp(temp2, temp1); // absolute value that difference
-				if (mpf_get_d(temp2->r)> tolerance) { // if bigger than allowed tolerance, reject as not the same point.
-					clear_mp(temp1); clear_mp(temp2); clear_mp(one);
-					return 0;
-				}
-			}
-		}
-		
-		
-	}
-	
-	clear_mp(temp1); clear_mp(temp2); clear_mp(one);
-	return 1; //made it all the way down here, must be the same!!!
-	
+	return isSamePoint(NULL,const_cast<_point_mp*>(left),64,NULL,const_cast<_point_mp*>(right),64,tolerance);
 }
 
 
@@ -985,8 +922,8 @@ int isSamePoint_homogeneous_input(const point_d left, const point_d right, doubl
 	
 	dehomogenize(&dehom_left,left);
 	dehomogenize(&dehom_right,right);
-	
-	int indicator = isSamePoint(dehom_left,NULL,52,dehom_right,NULL,52,tolerance);
+
+	int indicator = isSamePoint_inhomogeneous_input(dehom_left, dehom_right, tolerance);
 	
 	clear_vec_d(dehom_left); clear_vec_d(dehom_right);
 	
@@ -1008,7 +945,7 @@ int isSamePoint_homogeneous_input(const point_mp left, const point_mp right, dou
 	
 	dehomogenize(&dehom_left,left);
 	dehomogenize(&dehom_right,right);
-	
+
 
 	int indicator = isSamePoint_inhomogeneous_input(dehom_left, dehom_right, tolerance);
 	
@@ -1071,9 +1008,9 @@ void real_threshold(mat_mp blabla, double threshold)
 	for (int jj=0; jj<blabla->cols; jj++) {
 		for (int ii=0; ii<blabla->rows; ii++) {
 			mp_to_d(temp, &blabla->entry[ii][jj]);
-//            if ( fabs(temp->r) < threshold) {
-//				mpf_set_str( blabla->entry[ii][jj].r, "0.0", 10);
-//			}
+           if ( fabs(temp->r) < threshold) {
+				mpf_set_str( blabla->entry[ii][jj].r, "0.0", 10);
+			}
 			if ( fabs(temp->i) < threshold) {
 				mpf_set_str( blabla->entry[ii][jj].i, "0.0", 10);
 			}
