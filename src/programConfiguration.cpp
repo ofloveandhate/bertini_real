@@ -626,6 +626,7 @@ void BertiniRealConfig::print_usage()
 	line("-symnosubst", 		" -- ", 	" ", "prevent substitution of subfunctions during deflation and other sym ops.");
 	line("-symallowsubst", 		" -- ", 	" ", "allow substitution of subfunctions during deflation and other sym ops.  default");
 	line("-samepointtol", 		"<double>", "1e-7" , "(scaled) infinity-norm distance between two points to be considered distinct");
+	line("-nomerge", 		" -- ", " " , "turn off merging for top-dimension-curve decompositions");
 	printf("\n\n\n");
 	return;
 }
