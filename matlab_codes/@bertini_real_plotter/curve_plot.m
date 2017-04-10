@@ -32,7 +32,7 @@ if ~isempty(br_plotter.BRinfo.sampler_data)
     end
 
 
-	br_plotter.handles.sample_edges = plot_curve_samples(br_plotter,br_plotter.BRinfo.sampler_data,style);
+	br_plotter.handles.sample_edges = plot_curve_samples(br_plotter,br_plotter.BRinfo,style);
 end
 
 sphere_plot(br_plotter);

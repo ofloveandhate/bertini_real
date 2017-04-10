@@ -293,11 +293,11 @@ void WitnessSet::print_to_screen() const
 	
 	std::stringstream varname;
 	
-	std::cout << "witness set has " << num_vars_ << " total variables, " << num_natty_vars_ << " natural variables." << std::endl;
+	// std::cout << "witness set has " << num_vars_ << " total variables, " << num_natty_vars_ << " natural variables." << std::endl;
 	
 	
-	std::cout << "dim " << dim_ << ", comp " << comp_num_ << std::endl;
-	std::cout << "input file name " << input_filename_ << std::endl;
+	// std::cout << "dim " << dim_ << ", comp " << comp_num_ << std::endl;
+	// std::cout << "input file name " << input_filename_ << std::endl;
 
 	
 	printf("******\n%zu points\n******\n",num_points());
@@ -313,31 +313,31 @@ void WitnessSet::print_to_screen() const
 	}
 	std::cout << color::console_default();
 	
-	std::cout << color::blue();
-	printf("******\n%zu linears\n******\n",num_linears());
+	// std::cout << color::blue();
+	// printf("******\n%zu linears\n******\n",num_linears());
 	
-	for (unsigned ii=0; ii<num_linears(); ii++) {
-		varname << "linear_" << ii;
-		print_point_to_screen_matlab(linear(ii),varname.str());
-		varname.str("");
-	}
-	std::cout << color::console_default();
+	// for (unsigned ii=0; ii<num_linears(); ii++) {
+	// 	varname << "linear_" << ii;
+	// 	print_point_to_screen_matlab(linear(ii),varname.str());
+	// 	varname.str("");
+	// }
+	// std::cout << color::console_default();
 	
-	std::cout << color::cyan();
-	printf("******\n%zu patches\n******\n",num_patches());
+	// std::cout << color::cyan();
+	// printf("******\n%zu patches\n******\n",num_patches());
 	
-	for (unsigned ii=0; ii<num_patches(); ii++) {
-		varname << "patch_" << ii;
-		print_point_to_screen_matlab(patch(ii),varname.str());
-		varname.str("");
-	}
-	std::cout << color::console_default();
+	// for (unsigned ii=0; ii<num_patches(); ii++) {
+	// 	varname << "patch_" << ii;
+	// 	print_point_to_screen_matlab(patch(ii),varname.str());
+	// 	varname.str("");
+	// }
+	// std::cout << color::console_default();
 	
-	std::cout << "variable names:\n";
-	for (unsigned ii=0; ii< num_var_names(); ii++) {
-		std::cout << name(ii) << "\n";
-	}
-	printf("\n\n");
+	// std::cout << "variable names:\n";
+	// for (unsigned ii=0; ii< num_var_names(); ii++) {
+	// 	std::cout << name(ii) << "\n";
+	// }
+	// printf("\n\n");
 	
 	
 	clear_vec_mp(dehom);

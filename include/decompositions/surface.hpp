@@ -829,7 +829,8 @@ public:
 	void AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configuration & sampler_options,
 										SolverConfiguration & solve_options, std::vector<int> const& num_ribs_between_crits);
 
-
+	void DegenerateSampleFace(int face_index, VertexSet & V, sampler_configuration & sampler_options,
+										SolverConfiguration & solve_options);
 
 	std::vector<int> AdaptiveNumSamplesPerRib(VertexSet const& V, sampler_configuration & sampler_options);
 
