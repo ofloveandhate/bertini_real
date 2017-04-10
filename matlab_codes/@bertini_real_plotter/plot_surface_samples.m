@@ -2,17 +2,15 @@
 
 function plot_surface_samples(br_plotter)
 
-
-if br_plotter.options.monocolor
-	sampler_faces = plot_surf_samples_monocolor(br_plotter);
-elseif br_plotter.options.use_colorfn
-	sampler_faces = plot_surf_samples_colorfn(br_plotter);
-else
-	sampler_faces = plot_surf_samples_multicolor(br_plotter);
-end
-
-
-if ~isempty(sampler_faces)
+if ~isempty(br_plotter.BRinfo.sampler_data)
+	if br_plotter.options.monocolor
+		sampler_faces = plot_surf_samples_monocolor(br_plotter);
+	elseif br_plotter.options.use_colorfn
+		sampler_faces = plot_surf_samples_colorfn(br_plotter);
+	else
+		sampler_faces = plot_surf_samples_multicolor(br_plotter);
+	end
+	
 	br_plotter.fv.faces = sampler_faces;
 end
 
