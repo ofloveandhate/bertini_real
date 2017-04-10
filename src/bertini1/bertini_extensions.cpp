@@ -871,18 +871,17 @@ void projection_value_homogeneous_input(comp_mp result, const vec_mp input, cons
 
 int isSamePoint_inhomogeneous_input(const point_d left, const point_d right, double tolerance){
 	
-	if (left->size!=right->size) {
-		printf("attempting to isSamePoint_inhom_d with disparate sized points.\n");
-		std::cout << "left: " << left->size << "\t right: " << right->size << std::endl;
-		deliberate_segfault();
-		//		exit(-287);
-	}
+	if (left->size!=right->size) 
+		throw std::logic_error("attempting to isSamePoint_inhom_d with disparate sized points.");
 	
-	
-	int indicator = isSamePoint(const_cast<_point_d*>(left),NULL,52,const_cast<_point_d*>(right),NULL,52,tolerance);
-	
-	
-	return indicator;
+	double A = infNormVec_d(const_cast<_point_d*>(left));
+	double B = infNormVec_d(const_cast<_point_d*>(right));
+
+	using std::min;
+	if (auto m = min(A,B)>1.0)
+		tolerance *= m;
+
+	return isSamePoint(const_cast<_point_d*>(left),NULL,52,const_cast<_point_d*>(right),NULL,52,tolerance);
 }
 
 
@@ -897,7 +896,14 @@ int isSamePoint_inhomogeneous_input(const point_mp left, const point_mp right, d
 	
 	comp_mp temp1, temp2;  init_mp(temp1); init_mp(temp2);
 	comp_mp one;  init_mp(one); set_one_mp(one);
-	//double infNormVec_mp(vec_mp X)
+	
+	double A = infNormVec_mp(const_cast<_point_mp*>(left));
+	double B = infNormVec_mp(const_cast<_point_mp*>(right));
+
+	using std::min;
+	if (auto m = min(A,B)>1.0)
+		tolerance *= m;
+
 	for (int ii=0; ii<left->size; ii++) {
 		abs_mp(temp1, &left->coord[ii]);
 		abs_mp(temp2, &right->coord[ii]); // take the absolute values of the two coordinates.
