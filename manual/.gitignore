@@ -10,3 +10,6 @@
 *.idx
 *.toc
 *.synctex.*
+*eps-converted-to*
+
+bertini_real_manual.pdf
