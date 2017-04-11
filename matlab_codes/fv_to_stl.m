@@ -1,3 +1,14 @@
+% fv_to_stl(src,hndl,fv)
+%
+% writes an fv to .stl file
+%
+% with interactive menu if you don't pass options as second argument
+%
+% example options structs:
+%
+% options.remove_duplicates = false;
+% options.filename = 'asdf.stl'
+%
 
 function fv_to_stl(src,hndl,fv)
 
@@ -5,17 +16,20 @@ if nargin==0
 	error('must pass an fv to this function');
 end
 
-if nargin==1
+if nargin<3
 	fv = src;
 end
-
-
-[options, user_cancelled] = getopt();
-			
-
-if user_cancelled
-	return;
+if nargin==2
+	options = hndl;
+else
+	[options, user_cancelled] = getopt();
+	if user_cancelled
+		return;
+	end
 end
+
+
+
 
 
 
@@ -73,6 +87,7 @@ if options.remove_duplicates
 			fv.faces(1,:) = fv.faces(1,[3 2 1]);
 end %re: remove duplicate points
 
+options.filename = adjust_name(options.filename);
 
 save(sprintf('%s.mat',options.filename),'fv');
 stlwrite(sprintf('%s.stl',options.filename),fv);
@@ -90,6 +105,13 @@ end
 end
 
 
+function name = adjust_name(old_name)
+if strcmp(old_name(end-3:end),'.stl')
+	name = old_name(1:end-4);
+else
+	name = old_name;
+end
+end
 
 %http://www.mathworks.com/matlabcentral/fileexchange/25862-inputsdlg--enhanced-input-dialog-box--v2-0-5-
 

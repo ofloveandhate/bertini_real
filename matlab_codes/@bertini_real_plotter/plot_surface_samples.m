@@ -2,17 +2,15 @@
 
 function plot_surface_samples(br_plotter)
 
-
-if br_plotter.options.monocolor
-	sampler_faces = plot_surf_samples_monocolor(br_plotter);
-elseif br_plotter.options.use_colorfn
-	sampler_faces = plot_surf_samples_colorfn(br_plotter);
-else
-	sampler_faces = plot_surf_samples_multicolor(br_plotter);
-end
-
-
-if ~isempty(sampler_faces)
+if ~isempty(br_plotter.BRinfo.sampler_data)
+	if br_plotter.options.monocolor
+		sampler_faces = plot_surf_samples_monocolor(br_plotter);
+	elseif br_plotter.options.use_colorfn
+		sampler_faces = plot_surf_samples_colorfn(br_plotter);
+	else
+		sampler_faces = plot_surf_samples_multicolor(br_plotter);
+	end
+	
 	br_plotter.fv.faces = sampler_faces;
 end
 
@@ -23,8 +21,11 @@ end
 function sampler_faces = plot_surf_samples_colorfn(br_plotter)
 
 total_num_faces = 0;
-for ii = 1:length(br_plotter.BRinfo.sampler_data)
+if ~isempty(br_plotter.BRinfo.sampler_data)
+for cc = 1:length(br_plotter.options.which_faces)
+	ii = br_plotter.options.which_faces(cc);
 	total_num_faces = total_num_faces+size(br_plotter.BRinfo.sampler_data{ii},1);
+end
 end
 
 sampler_faces = zeros(total_num_faces,3);
@@ -134,9 +135,11 @@ function sampler_faces = plot_surf_samples_monocolor(br_plotter)
 
 
 total_num_faces = 0;
+if ~isempty(br_plotter.BRinfo.sampler_data)
 for cc = 1:length(br_plotter.options.which_faces)
 	ii = br_plotter.options.which_faces(cc);
 	total_num_faces = total_num_faces+size(br_plotter.BRinfo.sampler_data{ii},1);
+end
 end
 
 sampler_faces = zeros(total_num_faces,3);
