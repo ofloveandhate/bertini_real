@@ -6,8 +6,8 @@
 
 \begin{document}
 \pagestyle{front} 
-
 	
+	\pagenumbering{Alph}
 
 
 \begin{titlepage}
@@ -24,7 +24,7 @@
 	{\large A Comprehensive Guide}	
 
 	\vspace{3cm}
-	\includegraphics[width=0.75\linewidth]{CayleyCubic}
+	\includegraphics[width=0.75\linewidth]{whitney_ss.png}
 	\end{center}
 
 	\vfill
@@ -48,7 +48,26 @@
 
 \end{titlepage}
 
-\afterpage{\blankpage}
+
+
+\clearpage
+
+\thispagestyle{empty}
+
+\quad 
+\vspace{2in}
+
+\begin{center}
+\includegraphics[width=0.75\linewidth]{chmutov_2}
+
+Brought to you by the power of numerical algebraic geometry
+\end{center}
+
+
+\vfill
+
+\clearpage
+
 
 \pagenumbering{roman} 
 	\setcounter{page}{1}
@@ -65,39 +84,19 @@
 \setlength{\parskip}{1em plus 0.1em minus 0.1em} %custom spacing between paragraphs 
 \input{introduction}
 
-
-
-
 \input{quick_summary}
-
-
-
-
 
 \input{input_files}
 
-
-
 \input{running_bertini}
-
 
 \input{running_bertini_real}
 
-
-
 \input{running_sampler}
-
-
 
 \input{visualization}
 
-
-
-
-
 \input{troubleshooting}
-
-
 
 \input{examples}
 
@@ -109,9 +108,6 @@
 
 
 
-\appendix
-
-
 %%%%%%%%%%%%%%%%%%
 %
 %  APPENDICES
@@ -119,8 +115,12 @@
 %%%%%%%%%%%%%%%%%%
 
 
-\input{install}
+\appendix
 
+
+\input{the_algorithm}
+
+\input{install}
 
 \input{output_files}
 
@@ -133,7 +133,12 @@
 \endgroup
 
 
-
 \printindex
 
+\vspace{1in}
+\begin{center}
+\includegraphics[height = 4in]{octdong_6}
+
+thanks for reading!
+\end{center}
 \end{document}
