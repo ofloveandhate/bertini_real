@@ -28,6 +28,13 @@ for ii = 1:num_vars
 	%vars is used in the jacobian call, so that only those derivatives are computed
 end
 
+system_constants = b.constant{:,1};
+num_constants = length(system_constants);
+
+for ii = 1:num_constants
+    eval(sprintf('syms %s',system_constants(ii)));
+end
+
 ensure_fns_are_subfns(b);
 
 

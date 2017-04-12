@@ -299,15 +299,6 @@ bool createMatlabDeflationNoSubst(std::string const& filename, int deflation_num
 
 	fclose(OUT);
 
-	// write to the file pointer OUT using fprintf statements,
-	// the content of the file should be a call to deflate_no_subst().
-	// no need to call matlab in here on the generated file, that's done at a higher level
-
-	// you probably need to rename the file generated from matlab, so that it is called inputOutputName
-	// so modify the matlab code, to take another argument, which is the name of the output file
-
-	//added argument to deflate_no_subst function in Matlab (line 15) and wrote another line for its use (line 245)
-
 	return false;// return false, indicating that there's no need to unify the two files
 	// for the declaration and definitions of the deflation polynomials.
 }
