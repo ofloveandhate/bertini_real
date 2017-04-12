@@ -52,20 +52,29 @@ void sampler_configuration::splash_screen()
 
 void sampler_configuration::print_usage()
 {
-	std::cout << "Bertini_real has the following options:\n";
-	std::cout << "option name(s)\t\t\targument\n\n";
-	std::cout << "-ns -nostifle\t\t\t   --\n";
-	std::cout << "-v -version\t\t\t   -- \n";
-	std::cout << "-h -help\t\t\t   --\n";
-	std::cout << "-t -tol -tolerance \t\tdouble > 0\n";
-	std::cout << "-verb\t\t\t\tint\n";
-	std::cout << "-minits \t\t\tint minimum number of passes for adaptive curve or surface refining\n";
-	std::cout << "-maxits \t\t\tint maximum number of passes for adaptive curve or surface refining\n";
-	std::cout << "-maxribs \t\t\tint maximum number of ribs for adaptive surface refining\n";
-	std::cout << "-minribs \t\t\tint minimum number of ribs for adaptive surface refining\n";
-	std::cout << "-gammatrick -g \t\t\tbool\n";
-	std::cout << "-numsamples \t\t\tint number samples per edge\n";
-	std::cout << "-mode -m \t\t\tchar sampling mode.  ['a'] adaptive by movement, 'd' adaptive by distance, 'f' fixed, \n";
+	int opt_w = 20;
+	int type_w = 10;
+	int def_w = 8;
+	int note_w = 30;
+	auto line = [=](std::string name, std::string type, std::string def_val = " ", std::string note = " ")
+		{std::cout << std::setw(opt_w) << std::left << name << std::setw(type_w) << type << std::setw(def_w) << def_val <<  std::setw(note_w) << note << "\n";};
+
+	std::cout << "Sampler has the following options:\n\n";
+	line("option","type","default","note");
+	std::cout << '\n';
+	line("-v -version",  " --  ");
+	line("-h -help",  " -- ");
+	line("-t -tol -tolerance" ,  "<double>", "0.1", " > 0");
+	line("-verb",  "<int>", "0", "how much stuff to print to screen");
+	line("-minits",  "<int>", "2","minimum number of passes for adaptive curve or surface refining");
+	line("-maxits",  "<int>", "10","maximum number of passes for adaptive curve or surface refining");
+	line("-maxribs ",  "<int>", "3","maximum number of ribs for adaptive surface refining");
+	line("-minribs",  "<int>", "20", "minimum number of ribs for adaptive surface refining");
+	line("-numsamples ",  "<int>", "10", "target number samples per edge");
+	line("-mode -m ",  "<char>", "a", "sampling mode.  'a' adaptive by movement, 'd' adaptive by distance, 'f' fixed, ");
+	line("-cyclenum",  "<int>", "2", "cycle number to use for rib spacing in face sampling");
+	line("-nouniformcyclenum",  " -- ", " ", "turn OFF uniform cycle number usage in surface sampling.  buggy.");
+	line("-uniformcyclenum",  " -- ", " ", "turn ON uniform cycle number usage in surface sampling.  works well.");
 	std::cout << "\n\n\n";
 	std::cout.flush();
 	return;
@@ -95,18 +104,19 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 			{"maxits",		required_argument,			 0, 'm'},
 			{"maxribs",		required_argument,			 0, 'R'},
 			{"minribs",		required_argument,			 0, 'r'},
-			{"gammatrick",		required_argument,			 0, 'g'},
-			{"g",		required_argument,			 0, 'g'},
 			{"numsamples",		required_argument,			 0, 'n'},
 			{"nd", no_argument,0,'d'},
 			{"m",		required_argument,			 0, 'M'},
 			{"mode",		required_argument,			 0, 'M'},
+			{"uniformcyclenum", no_argument, 0, 'u'},
+			{"nouniformcyclenum", no_argument, 0, 'U'},
+			{"cyclenum", required_argument, 0, 'c'},
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
 		
-		choice = getopt_long_only (argc, argv, "bdf:svt:g:V:l:m:R:r:hM:", // colon requires option, two is optional
+		choice = getopt_long_only (argc, argv, "bdf:svt:V:l:m:R:r:hM:uUc:", // colon requires option, two is optional
 															 long_options, &option_index);
 		
 		/* Detect the end of the options. */
@@ -142,14 +152,6 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 			case 't':
 				
 				mpf_set_str(this->TOL,optarg,10);
-				break;
-				
-			case 'g':
-				this->use_gamma_trick = atoi(optarg);
-				if (! (this->use_gamma_trick==0 || this->use_gamma_trick==1) ) {
-					printf("value for 'gammatrick' or 'g' must be 1 or 0\n");
-					exit(0);
-				}
 				break;
 				
 			case 'V':
@@ -201,8 +203,18 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 				
 				sampler_configuration::print_usage();
 				exit(0);
+			
+			case 'u':
+				this->use_uniform_cycle_num = true;
 				break;
-				
+			case 'U':
+				this->use_uniform_cycle_num = false;
+				break;
+
+			case 'c':
+				this->cycle_num = atoi(optarg);
+				break;
+
 			case '?':
 				/* getopt_long already printed an error message. */
 				break;
@@ -380,7 +392,7 @@ int main(int argC, char *args[])
 					break;
 				}
 				case sampler_configuration::Mode::AdaptivePredMovement:
-					std::cout << "adaptive by movement not implemented for surfaces, using adaptive by distance\n\n";
+					std::cout << color:: magenta() << "adaptive by movement not implemented for surfaces, using adaptive by distance" << color::console_default() << "\n\n";
 				case sampler_configuration::Mode::AdaptiveConsecDistance:
 				{
 					surf_input.AdaptiveSampler(V,

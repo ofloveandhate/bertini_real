@@ -51,14 +51,8 @@ int Decomposition::index_in_vertices(VertexSet & V,
 #ifdef functionentry_output
 	std::cout << "Decomposition::index_in_vertices" << std::endl;
 #endif
-	int index = -1;
-	
-	
-	// first we search the non-removed points.
-	index = V.search_for_point(testpoint);
-    
-    
-	return index;
+
+	return V.search_for_point(testpoint);
 }
 
 
@@ -287,7 +281,6 @@ int Decomposition::read_sphere(const boost::filesystem::path & bounding_sphere_f
 	
 	if (num_variables_<2) {
 		std::cout << "during read of sphere, Decomposition of dimension	" << dimension() << " has " << num_variables() << " variables!" << std::endl;
-		mypause();
 	}
 
 	change_size_vec_mp(this->sphere_center_, num_variables()-1); //destructive resize

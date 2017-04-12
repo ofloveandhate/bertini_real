@@ -131,8 +131,8 @@ classdef bertini_real_plotter < handle
 		function set_default_options(br_plotter)
 			br_plotter.options.use_custom_projection = false;
 			br_plotter.options.markersize = 10;
-			br_plotter.options.sample_alpha = 1;
-			br_plotter.options.face_alpha = 1;
+			br_plotter.options.sample_alpha = 0.1;
+			br_plotter.options.face_alpha = 0.1;
 			br_plotter.options.edge_alpha = 0.4;
 			br_plotter.options.fontsizes.legend = 12;
 			br_plotter.options.fontsizes.labels = 16;
@@ -248,8 +248,9 @@ classdef bertini_real_plotter < handle
 					case {'filename','file'}
 						br_plotter.filename = command_line_options{ii+1};
 						if ~ischar(br_plotter.filename)
-							error('filename argument must be a filename')
+							error('filename argument must be a string filename')
 						end
+						
 					case 'proj'
 
 
@@ -412,7 +413,11 @@ classdef bertini_real_plotter < handle
 			end
 			
 			if isempty(dir(br_plotter.filename))
-				error('nexists file with name ''%s''',br_plotter.filename);
+				if isempty(dir([br_plotter.filename '.mat']))
+					error('nexists file with name ''%s''',br_plotter.filename);
+				else
+					br_plotter.filename = [br_plotter.filename '.mat'];
+				end
 			end
 			
 			file_variables = whos('-file',br_plotter.filename);
@@ -458,9 +463,9 @@ classdef bertini_real_plotter < handle
 		end
 		
 		
-		function set_filename(br_plotter, new_filename)
+		function set_filename(br_plotter)
 			
-			if nargin==1
+			if isempty(br_plotter.filename)
 				prev_filenames = dir('BRinfo*.mat');
 				
 				if isempty(prev_filenames)
@@ -477,8 +482,6 @@ classdef bertini_real_plotter < handle
 					end
 					br_plotter.filename = ['BRinfo' num2str(max_found) '.mat'];
 				end
-			else	
-				br_plotter.filename = new_filename;
 			end
 			
 		end

@@ -1,17 +1,13 @@
 
 \section{Troubleshooting}
 
-	\subsection{Installation}
+\subsection{Helpful help}
 
-	\begin{itemize}
-	\item Compilation fails, with an error due to send calls for MPI.  
+\subsubsection{Compilation fails, with an error due to send calls for MPI}
 
-	You are probably using OpenMPI, and their implementation does not use {\tt const}-correctness.  Dani needs to modify the code in {\tt bertini\_extensions} to cast away constness for these send calls.  Send him an email to poke him.  Or, use a different implementation of MPI.  MPICH2, versions 3.04 and up are known to compile using the code as written. 
-	\end{itemize}
+You are probably using OpenMPI, and their implementation does not use {\tt const}-correctness.  Dani needs to modify the code in {\tt bertini\_extensions} to cast away constness for these send calls.  Send him an email to poke him.  Or, use a different implementation of MPI.  MPICH2, versions 3.04 and up are known to compile using the code as written. 
 
-\subsection{Bertini}
 
-\subsection{Bertini\_real}
 
 
 \subsubsection{\tt had a critical failure}
@@ -52,12 +48,6 @@ After tracking, for nonsingular endpoints Newton's method can be run to increase
 
 
 
-
-
-
-
-\subsection{Matlab}
-
 \subsubsection{\tt sh: matlab: command not found}
 
 If you get the message {\tt sh: matlab: command not found} from running Bertini\_real, then Matlab is not on your shell path.  Bertini\_real currently requires Matlab to run properly, and thus failure to include the Matlab executable on the path will cause bertini\_real to fail. Below is an example of the terminal output displayed when Bertini\_real is unable to locate the Matlab executable: 
@@ -77,7 +67,7 @@ Permanently fixing this error involves editing your profile, e.g. \texttt{bash\_
 Note that you cannot run Bertini\_real from within Matlab, even with the use of {\tt !}, because Bertini\_real currently calls Matlab using a {\tt system()} call. 
 
 
-\subsubsection{Removing dependency on Matlab's symbolic toolbox}
+\subsubsection*{Removing dependency on Matlab's symbolic toolbox}
 
 
 
