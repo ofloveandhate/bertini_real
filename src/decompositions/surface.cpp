@@ -64,43 +64,6 @@ void Surface::main(VertexSet & V,
 	
 	
 	
-	
-	
-	
-	// get the critical points and the sphere intersection points for the critical curve
-    WitnessSet W_critcurve_crit;
-    compute_critcurve_critpts(W_critcurve_crit, // the computed value
-                              W_critcurve,
-                              0,
-                              program_options,
-                              solve_options);
-    
-    
-    this->crit_curve_.add_witness_set(W_critcurve_crit,Critical,V);
-    
-    if (0)
-    {
-	    WitnessSet W_critcurve1;
-		std::map< int, WitnessSet> higher_multiplicity_witness_sets1;
-		
-		
-	    compute_critcurve_witness_set(W_critcurve1,
-									  higher_multiplicity_witness_sets1,
-	                                  W_surf,
-	                                  1,
-	                                  program_options,
-	                                  solve_options);
-		
-		
-	    compute_critcurve_critpts(W_critcurve_crit, // the computed value
-	                              W_critcurve1,
-	                              1,
-	                              program_options,
-	                              solve_options);
-    }
-	
-	
-	
 	///////////////////////////////
 	
 	WitnessSet points_which_needed_no_deflation;
@@ -113,7 +76,24 @@ void Surface::main(VertexSet & V,
 					  solve_options);
 	
 	
-	
+
+
+
+	///////////////////////////////////
+	// get the critical points and the sphere intersection points for the critical curve
+    WitnessSet W_critcurve_crit;
+    compute_critcurve_critpts(W_critcurve_crit, // the computed value
+                              W_critcurve,
+                              0,
+                              program_options,
+                              solve_options);
+    
+    
+    this->crit_curve_.add_witness_set(W_critcurve_crit,Critical,V);
+
+
+
+
 	WitnessSet W_singular_crit;
 	compute_singular_crit(W_singular_crit,
 						  split_sets,
