@@ -92,7 +92,7 @@ max_digits = 0;
 ii = 0;
 while ~feof(fid)
 	ii = ii+1;
-	pathid = fscanf(fid,'%i\n');
+	pathid = fscanf(fid,'%i\n',[1 1])+1;
 	for jj = 1:num_vars
 		tempstr = fgetl(fid);
 		parsed=strread(tempstr,'%s','delimiter',' ');
@@ -107,13 +107,13 @@ while ~feof(fid)
 	end
 	
 	if struct_output
-		solns(ii).soln = tempsoln;
+		solns(pathid).soln = tempsoln;
 	else
 		
 		if ~use_str
-			solns(:,ii) = tempsoln;
+			solns(:,pathid) = tempsoln;
 		else
-			solns{ii} = tempsoln;
+			solns{pathid} = tempsoln;
 		end
 		
 	end
