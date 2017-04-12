@@ -52,19 +52,29 @@ void sampler_configuration::splash_screen()
 
 void sampler_configuration::print_usage()
 {
-	std::cout << "Bertini_real has the following options:\n";
-	std::cout << "option name(s)\t\t\targument\n\n";
-	std::cout << "-ns -nostifle\t\t\t   --\n";
-	std::cout << "-v -version\t\t\t   -- \n";
-	std::cout << "-h -help\t\t\t   --\n";
-	std::cout << "-t -tol -tolerance \t\tdouble > 0\n";
-	std::cout << "-verb\t\t\t\tint\n";
-	std::cout << "-minits \t\t\tint minimum number of passes for adaptive curve or surface refining\n";
-	std::cout << "-maxits \t\t\tint maximum number of passes for adaptive curve or surface refining\n";
-	std::cout << "-maxribs \t\t\tint maximum number of ribs for adaptive surface refining\n";
-	std::cout << "-minribs \t\t\tint minimum number of ribs for adaptive surface refining\n";
-	std::cout << "-numsamples \t\t\tint number samples per edge\n";
-	std::cout << "-mode -m \t\t\tchar sampling mode.  ['a'] adaptive by movement, 'd' adaptive by distance, 'f' fixed, \n";
+	int opt_w = 20;
+	int type_w = 10;
+	int def_w = 8;
+	int note_w = 30;
+	auto line = [=](std::string name, std::string type, std::string def_val = " ", std::string note = " ")
+		{std::cout << std::setw(opt_w) << std::left << name << std::setw(type_w) << type << std::setw(def_w) << def_val <<  std::setw(note_w) << note << "\n";};
+
+	std::cout << "Sampler has the following options:\n\n";
+	line("option","type","default","note");
+	std::cout << '\n';
+	line("-v -version",  " --  ");
+	line("-h -help",  " -- ");
+	line("-t -tol -tolerance" ,  "<double>", "0.1", " > 0");
+	line("-verb",  "<int>", "0", "how much stuff to print to screen");
+	line("-minits",  "<int>", "2","minimum number of passes for adaptive curve or surface refining");
+	line("-maxits",  "<int>", "10","maximum number of passes for adaptive curve or surface refining");
+	line("-maxribs ",  "<int>", "3","maximum number of ribs for adaptive surface refining");
+	line("-minribs",  "<int>", "20", "minimum number of ribs for adaptive surface refining");
+	line("-numsamples ",  "<int>", "10", "target number samples per edge");
+	line("-mode -m ",  "<char>", "a", "sampling mode.  'a' adaptive by movement, 'd' adaptive by distance, 'f' fixed, ");
+	line("-cyclenum",  "<int>", "2", "cycle number to use for rib spacing in face sampling");
+	line("-nouniformcyclenum",  " -- ", " ", "turn OFF uniform cycle number usage in surface sampling.  buggy.");
+	line("-uniformcyclenum",  " -- ", " ", "turn ON uniform cycle number usage in surface sampling.  works well.");
 	std::cout << "\n\n\n";
 	std::cout.flush();
 	return;
@@ -382,7 +392,7 @@ int main(int argC, char *args[])
 					break;
 				}
 				case sampler_configuration::Mode::AdaptivePredMovement:
-					std::cout << "adaptive by movement not implemented for surfaces, using adaptive by distance\n\n";
+					std::cout << color:: magenta() << "adaptive by movement not implemented for surfaces, using adaptive by distance" << color::console_default() << "\n\n";
 				case sampler_configuration::Mode::AdaptiveConsecDistance:
 				{
 					surf_input.AdaptiveSampler(V,
