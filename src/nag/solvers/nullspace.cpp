@@ -1663,22 +1663,15 @@ void nullspace_slave_entry_point(SolverConfiguration & solve_options)
 	
     
 	
-	// call the file setup function
-	FILE *OUT = NULL, *midOUT = NULL;
-	
-	generic_setup_files(&OUT, "nullspace_left_output",
-                        &midOUT, "nullspace_left_midpath_data");
 	
 	trackingStats trackCount; init_trackingStats(&trackCount); // initialize trackCount to all 0
 	
 
-	worker_tracker_loop(&trackCount, OUT, midOUT,
+	worker_tracker_loop(&trackCount,
 						ED_d, ED_mp,
 						solve_options);
 	
-	
-	// close the files
-	fclose(midOUT);   fclose(OUT);
+
 	
 	
 	switch (solve_options.T.MPType) {

@@ -2185,14 +2185,11 @@ int receive_endpoints(trackingStats *trackCount,
  \brief as a worker, receive starts, track, and send the solutions
  
  \param trackCount keeps track of statistics
- \param OUT open file into which we can write
- \param MIDOUT open file into which to print midpath data.
  \param ED_d double format evaluator data.
  \param ED_mp MP format evaluator data.
  \param solve_options the current state of the Solver config.
  */
 void worker_tracker_loop(trackingStats *trackCount,
-						 FILE * OUT, FILE * MIDOUT,
 						 SolverDoublePrecision * ED_d, SolverMultiplePrecision * ED_mp,
 						 SolverConfiguration & solve_options);
 

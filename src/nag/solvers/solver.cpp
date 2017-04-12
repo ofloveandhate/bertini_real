@@ -658,22 +658,27 @@ void master_solver(SolverOutput & solve_out, const WitnessSet & W,
 	
 	
 	// call the file setup function
-	FILE *OUT = NULL, *midOUT = NULL;
+	FILE *OUT = NULL, *MIDOUT = NULL;
 	
-	generic_setup_files(&OUT, "output",
-						&midOUT, "midpath_data");
+	static int counter = 0;
+	std::stringstream out_name; out_name << "output_master_" << counter;
+	std::stringstream mid_name; mid_name << "midpath_master_" << counter;
+	counter++;
+	generic_setup_files(&OUT, out_name.str(),
+	                        &MIDOUT, mid_name.str());
+
 	
 	if (solve_options.use_parallel()) {
 		
 		
-		master_tracker_loop(&trackCount, OUT, midOUT,
+		master_tracker_loop(&trackCount, OUT, MIDOUT,
                             W,
                             endPoints,
                             ED_d, ED_mp,
                             solve_options);
 	}
 	else{
-		serial_tracker_loop(&trackCount, OUT, midOUT,
+		serial_tracker_loop(&trackCount, OUT, MIDOUT,
                              W,
                              endPoints,
                              ED_d, ED_mp,
@@ -683,7 +688,7 @@ void master_solver(SolverOutput & solve_out, const WitnessSet & W,
 	
 	
 	// close the files
-	fclose(midOUT);   fclose(OUT);
+	fclose(MIDOUT);   fclose(OUT);
 	
 	
 	
@@ -958,6 +963,18 @@ void serial_tracker_loop(trackingStats *trackCount,
 
 
 
+
+void ConcatenateForAllWorkers(FILE* OUT, std::string const& base_name, SolverConfiguration const& solve_options)
+{
+	for (int ii=1; ii<solve_options.num_procs(); ++ii)
+	{
+		std::stringstream ss; ss << base_name << ii;
+		FILE *IN = safe_fopen_read(ss.str());
+		copyfile(IN,OUT);
+		fclose(IN);
+	}
+}
+
 void master_tracker_loop(trackingStats *trackCount,
                          FILE * OUT, FILE * MIDOUT,
                          const WitnessSet & W,  // was the startpts file pointer.
@@ -1076,15 +1093,26 @@ void master_tracker_loop(trackingStats *trackCount,
 			break;
 	}
     
+    ConcatenateForAllWorkers(MIDOUT,"midpath_data_", solve_options);
+    ConcatenateForAllWorkers(OUT,"output_data_", solve_options);
 }
 
 
+
+
+
 void worker_tracker_loop(trackingStats *trackCount,
-                         FILE * OUT, FILE * MIDOUT,
                          SolverDoublePrecision * ED_d, SolverMultiplePrecision * ED_mp,
                          SolverConfiguration & solve_options)
 {
+	// call the file setup function
+	FILE *OUT = NULL, *MIDOUT = NULL;
 	
+	std::stringstream out_name; out_name << "output_data_" << solve_options.id();
+	std::stringstream mid_name; mid_name << "midpath_data_" << solve_options.id();
+	generic_setup_files(&OUT, out_name.str(),
+                        &MIDOUT, mid_name.str());
+
 	
 	int total_number_points;
 	int (*curr_eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *) = NULL;
@@ -1142,7 +1170,6 @@ void worker_tracker_loop(trackingStats *trackCount,
 	MPI_Bcast(&total_number_points, 1, MPI_INT, solve_options.head(), solve_options.comm());
 	while (1)
 	{
-        //		std::cout << "worker" << solve_options.id() << " receiving work" << std::endl;
 		MPI_Recv(&numStartPts, 1, MPI_INT, solve_options.head(), NUMPACKETS, solve_options.comm(), &statty_mc_gatty);
 		// recv next set of start points
 		
@@ -1280,6 +1307,9 @@ void worker_tracker_loop(trackingStats *trackCount,
 	}
 	free(EG);
 	free(indices_incoming);
+
+	// close the files
+	fclose(MIDOUT);   fclose(OUT);
 }
 
 

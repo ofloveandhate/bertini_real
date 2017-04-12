@@ -764,8 +764,7 @@ int midpoint_solver_master_entry_point(const WitnessSet						&W, // carries with
 			setup_retVal = ED_mp->setup(md_config,
                          W,
                          solve_options);
-			// initialize latest_newton_residual_mp
-//			mpf_init(solve_options.T.latest_newton_residual_mp);   //   <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+			
 			break;
 		case 2:
 			ED_d = new midpoint_eval_data_d(2);
@@ -849,8 +848,7 @@ void midpoint_slave_entry_point(SolverConfiguration & solve_options)
 			
 			
 			ED_mp->receive(solve_options);
-			// initialize latest_newton_residual_mp
-//			mpf_init(solve_options.T.latest_newton_residual_mp);   //  <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+
 			break;
 		case 2:
 			ED_d = new midpoint_eval_data_d(2);
@@ -859,34 +857,21 @@ void midpoint_slave_entry_point(SolverConfiguration & solve_options)
 			
 			ED_mp = ED_d->BED_mp;
             
-			
-			
-			
-			// initialize latest_newton_residual_mp
-//			mpf_init2(solve_options.T.latest_newton_residual_mp,solve_options.T.AMP_max_prec);   //   <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		default:
 			break;
 	}
 	
 	
-    
-	// call the file setup function
-	FILE *OUT = NULL, *midOUT = NULL;
-	
-	generic_setup_files(&OUT, "output",
-						&midOUT, "midpath_data");
-	
+   
 	trackingStats trackCount; init_trackingStats(&trackCount); // initialize trackCount to all 0
 	
     
-	worker_tracker_loop(&trackCount, OUT, midOUT,
+	worker_tracker_loop(&trackCount,
                         ED_d, ED_mp,
                         solve_options);
 	
 	
-	// close the files
-	fclose(midOUT);   fclose(OUT);
 	
 	
 	//clear data
