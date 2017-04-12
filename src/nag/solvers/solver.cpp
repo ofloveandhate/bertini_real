@@ -1092,7 +1092,9 @@ void master_tracker_loop(trackingStats *trackCount,
 			free(startPts_d);
 			break;
 	}
-    
+	
+	MPI_Barrier(solve_options.comm()); // this barrier is for file reading
+
     ConcatenateForAllWorkers(MIDOUT,"midpath_data_", solve_options);
     ConcatenateForAllWorkers(OUT,"output_data_", solve_options);
 }
@@ -1286,7 +1288,12 @@ void worker_tracker_loop(trackingStats *trackCount,
 		
 		
 	}
-    
+
+	fclose(MIDOUT);   fclose(OUT);
+	
+	MPI_Barrier(solve_options.comm());
+    // close the files
+	
 	
 	switch (solve_options.T.MPType) {
 		case 1:
@@ -1308,8 +1315,7 @@ void worker_tracker_loop(trackingStats *trackCount,
 	free(EG);
 	free(indices_incoming);
 
-	// close the files
-	fclose(MIDOUT);   fclose(OUT);
+	
 }
 
 
