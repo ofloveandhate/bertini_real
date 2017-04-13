@@ -140,7 +140,8 @@ void UbermasterProcess::bertini_real(WitnessSet & W, vec_mp *pi, VertexSet & V)
 	program_options.output_dir(temp_name);
 	
 	
-	
+	solve_options.use_midpoint_checker = true;
+	solve_options.use_sequential_filenames = true;
 	
 	switch (W.dimension()) {
 		case 1:
