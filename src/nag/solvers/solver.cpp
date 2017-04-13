@@ -102,7 +102,7 @@ void SolverConfiguration::init()
 	
 	use_gamma_trick = 0;
 	
-	
+	use_sequential_filenames = false;
 }
 
 
@@ -661,9 +661,18 @@ void master_solver(SolverOutput & solve_out, const WitnessSet & W,
 	FILE *OUT = NULL, *MIDOUT = NULL;
 	
 	static int counter = 0;
-	std::stringstream out_name; out_name << "output_master_" << counter;
-	std::stringstream mid_name; mid_name << "midpath_master_" << counter;
-	counter++;
+	std::stringstream out_name; 
+	std::stringstream mid_name; 
+
+	out_name << "output_br_master";
+	mid_name << "midpath_br_master";
+	if (solve_options.use_sequential_filenames)
+	{
+		out_name << '_' << counter;
+		mid_name << '_' <<counter;
+		counter++;
+	}
+
 	generic_setup_files(&OUT, out_name.str(),
 	                        &MIDOUT, mid_name.str());
 
@@ -851,9 +860,7 @@ void serial_tracker_loop(trackingStats *trackCount,
 		solve_options.increment_num_paths_tracked();
 		
 		
-		
-		//        print_point_to_screen_matlab(startPts_d[ii].point,"start");
-        
+	
 		if (solve_options.robust==true) {
 			robust_track_path(ii, &EG,
                               &startPts_d[ii], &startPts_mp[ii],
@@ -862,8 +869,6 @@ void serial_tracker_loop(trackingStats *trackCount,
                               curr_eval_d, curr_eval_mp, change_prec, find_dehom);
 		}
 		else{
-//            boost::timer::auto_cpu_timer t;
-            // track the path
 			generic_track_path(ii, &EG,
                                &startPts_d[ii], &startPts_mp[ii],
                                OUT, MIDOUT,
@@ -1095,8 +1100,11 @@ void master_tracker_loop(trackingStats *trackCount,
 	
 	MPI_Barrier(solve_options.comm()); // this barrier is for file reading
 
-    ConcatenateForAllWorkers(MIDOUT,"midpath_data_", solve_options);
-    ConcatenateForAllWorkers(OUT,"output_data_", solve_options);
+	if (solve_options.use_midpoint_checker)
+	{
+	    ConcatenateForAllWorkers(MIDOUT,"midpath_worker_", solve_options);
+	    ConcatenateForAllWorkers(OUT,"output_worker_", solve_options);
+	}
 }
 
 
@@ -1110,8 +1118,8 @@ void worker_tracker_loop(trackingStats *trackCount,
 	// call the file setup function
 	FILE *OUT = NULL, *MIDOUT = NULL;
 	
-	std::stringstream out_name; out_name << "output_data_" << solve_options.id();
-	std::stringstream mid_name; mid_name << "midpath_data_" << solve_options.id();
+	std::stringstream out_name; out_name << "output_worker_" << solve_options.id();
+	std::stringstream mid_name; mid_name << "midpath_worker_" << solve_options.id();
 	generic_setup_files(&OUT, out_name.str(),
                         &MIDOUT, mid_name.str());
 

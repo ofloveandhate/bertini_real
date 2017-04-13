@@ -1169,7 +1169,7 @@ public:
 	double midpoint_tol; ///< how far apart midpoints must be to be considered distinct.
 	
 	int use_gamma_trick;///< whether to use the gamma trick for start systems.
-	
+	bool use_sequential_filenames; ///< whether to increment generated filenames by 1 to preserve all of them from a run, or not.
 	
 	
 	/**
