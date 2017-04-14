@@ -1812,7 +1812,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
                     solve_options.T.endgameNumber = 2;
                     
 					
-					if (iterations>0) { // changing predictor
+					if (iterations>0 && solve_options.T.odePredictor !=8 ) { // changing predictor
 						solve_options.T.odePredictor  = (solve_options.T.odePredictor+1) %9;
 					}
 					if (iterations>=2) {
