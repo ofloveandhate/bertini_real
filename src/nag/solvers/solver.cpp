@@ -920,7 +920,7 @@ void serial_tracker_loop(trackingStats *trackCount,
 		
 		if (
 			(
-			 !(EG.retVal == 0 || EG.retVal == retVal_refining_failed) 
+			 !IsAcceptableRetval(EG.retVal) 
 			  && 
 			 time_to_compare->r > solve_options.T.minTrackT
 			) || !issoln) 

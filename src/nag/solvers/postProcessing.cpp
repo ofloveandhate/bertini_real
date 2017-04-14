@@ -449,7 +449,7 @@ void endgamedata_to_endpoint(post_process_t *endPoint, endgame_data_t *EG)
 	}
 	
 	
-	if (EG->retVal==0 || EG->retVal==-22 || EG->retVal==-50 || EG->retVal==-21) {//EG->retVal==-50
+	if (IsAcceptableRetval(EG->retVal)) {
 		endPoint->success = 1;
 	}
 	else if (EG->retVal == retVal_sharpening_failed){
