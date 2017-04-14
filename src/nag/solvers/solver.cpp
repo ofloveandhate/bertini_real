@@ -1602,42 +1602,6 @@ void generic_track_path(int pathNum, endgame_data_t *EG_out,
     }
     
 	
-//	if (EG_out->retVal !=0) {
-//		
-//		comp_d time_to_compare;
-//		if (EG_out->prec < 64) {
-//			set_d(time_to_compare,EG_out->PD_d.time);}
-//		else {
-//			mp_to_d(time_to_compare, EG_out->PD_mp.time); }
-//		
-//		
-//		vec_d solution_as_double; init_vec_d(solution_as_double,0);
-//		if (EG_out->prec < 64){
-//			int out_prec;
-//			SolverDoublePrecision * evalll = (SolverDoublePrecision *)ED_d;
-//			evalll->dehomogenizer(solution_as_double, NULL, &out_prec, EG_out->PD_d.point,NULL,52,evalll, NULL);
-//			
-//			
-//		}
-//		else{
-//			SolverMultiplePrecision * evalll = (SolverMultiplePrecision *)ED_mp;
-//			
-//			int out_prec;
-//			vec_mp temp2; init_vec_mp(temp2,0);
-//			evalll->dehomogenizer(NULL,temp2, &out_prec, NULL,EG_out->PD_mp.point,EG_out->prec,NULL,evalll);
-//			
-//			vec_mp_to_d(solution_as_double,temp2);
-//			clear_vec_mp(temp2);
-//			
-//		}
-//		
-//		if (1) {
-//			print_point_to_screen_matlab(solution_as_double,"failed_candidate_solution");
-//			print_comp_matlab(time_to_compare,"corresponding_time");
-//		}
-//		
-//		clear_vec_d(solution_as_double);
-//	}
 	
 	
 	return;
