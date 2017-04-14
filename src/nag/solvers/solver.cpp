@@ -703,12 +703,10 @@ void master_solver(SolverOutput & solve_out, const WitnessSet & W,
 	
 	
 	// check for path crossings
-	if (1){//(solve_options.use_midpoint_checker) {
+	if (solve_options.use_midpoint_checker) {
 		int num_crossings = 0;
 		std::vector<int> crossed_indices;
 		BRmidpointChecker(trackCount.numPoints, solve_options.T.numVars,solve_options.midpoint_tol*solve_options.T.final_tol_multiplier, &num_crossings, mid_name.str(), crossed_indices);
-		if (num_crossings>0)
-			mypause();
 	}
 	
 	
