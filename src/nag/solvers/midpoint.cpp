@@ -387,7 +387,7 @@ int midpoint_eval_data_mp::setup(MidpointConfiguration & md_config,
 	
 	
 	if (bail_out) {
-		return TOLERABLE_FAILURE;
+		throw std::runtime_error("unable to construct midpoint evaluator");
 	}
 	
 	
@@ -692,7 +692,7 @@ int midpoint_eval_data_d::setup(MidpointConfiguration & md_config,
 		int retVal = this->BED_mp->setup(md_config, W, solve_options); // must be called before the gamma line below.
 		
 		if (retVal!=SUCCESSFUL) {
-			return TOLERABLE_FAILURE;
+			throw std::runtime_error("failed to construct midpoint evaluator");
 		}
 		rat_to_d(this->gamma, this->BED_mp->gamma_rat);
 	}
@@ -747,7 +747,7 @@ int midpoint_solver_master_entry_point(const WitnessSet						&W, // carries with
 	midpoint_eval_data_d *ED_d = NULL;
 	midpoint_eval_data_mp *ED_mp = NULL;
 	
-	int setup_retVal = TOLERABLE_FAILURE;
+	int setup_retVal;
 	
 	switch (solve_options.T.MPType) {
 		case 0:
@@ -786,7 +786,7 @@ int midpoint_solver_master_entry_point(const WitnessSet						&W, // carries with
 	}
 	
 	if (setup_retVal != SUCCESSFUL) {
-		return TOLERABLE_FAILURE;
+		throw std::runtime_error("failed to correctly construct evaluators for midpoint tracking");
 	}
 	
 	master_solver(solve_out, W,

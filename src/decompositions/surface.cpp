@@ -945,7 +945,7 @@ int find_matching_singular_witness_points(WitnessSet & W_match,
 	
 	if (W.has_no_points()) {
 		std::cout << color::red() << "input witness set for find_matching_  has NO points, but hypothetically it does..." << color::console_default() << std::endl;
-		return TOLERABLE_FAILURE;
+		throw std::runtime_error("empty witness set for finding matching singular witness points");
 	}
 	
 	

@@ -21,16 +21,8 @@ std::string enum_lookup(int flag, int hint)
 	else
 	{
 	switch (flag) {
-		case SUCCESSFUL:
-			return "SUCCESSFUL";
-			break;
-			
-		case CRITICAL_FAILURE:
-			return "CRITICAL_FAILURE";
-			break;
-			
-		case TOLERABLE_FAILURE:
-			return "TOLERABLE_FAILURE";
+		case 0:
+			return "success";
 			break;
 			
 		case NULLSPACE:
