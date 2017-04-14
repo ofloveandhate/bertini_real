@@ -1641,8 +1641,9 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 	
 	
 	EG_out->retVal = -876; // set to bad return value
-	while ((iterations<max_iterations) && (EG_out->retVal!=0)) {
-		
+	while ((iterations<max_iterations) && 
+		   !IsAcceptableRetval(EG_out->retVal)) 
+	{
 		if (solve_options.verbose_level()>=4) {
 			std::cout << color::gray() << "\t\tpath " << pathNum << ", pass " << iterations << color::console_default() << std::endl;
 		}
@@ -1744,7 +1745,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 		// get how many times we have changed settings due to this type of failure.
 		int current_retval_counter = map_lookup_with_default( setting_increments, EG_out->retVal, 0 ); // how many times have we encountered this retval?
 		
-		if ( !(EG_out->retVal==0 || EG_out->retVal==retVal_refining_failed) ) {  
+		if ( !IsAcceptableRetval(EG_out->retVal) ) {  
 			
 			vec_d solution_as_double; init_vec_d(solution_as_double,0);
 			if (EG_out->prec < 64){

@@ -2251,6 +2251,10 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					   int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *));
 
 
+/**
+\brief Indicates which retvals from the bertini1 tracker are acceptable for use.
+*/
+bool IsAcceptableRetval(int);
 
 
 
