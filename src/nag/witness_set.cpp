@@ -455,7 +455,7 @@ void WitnessSet::only_first_vars(int num_vars)
 	if (trim_from_here==0) {
 		std::cerr << "problem: the sum of the patch sizes never equalled the number of variables to trim to...\nhence, the trimming operation could not complete." << std::endl;
 		this->print_to_screen();
-		deliberate_segfault();
+		throw std::runtime_error("the sum of the patch sizes never equalled the number of variables to trim to");
 	}
 	
 	for (unsigned int ii=trim_from_here; ii<num_patches(); ii++) {
@@ -678,6 +678,11 @@ void WitnessSet::sort_for_inside_sphere(comp_mp radius, vec_mp center)
 
 
 
+
+void WitnessSet::Realify(double tol)
+{
+
+}
 
 void WitnessSet::merge(const WitnessSet & W_in, tracker_config_t * T)
 {
