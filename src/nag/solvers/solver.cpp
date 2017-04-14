@@ -1921,6 +1921,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 
 	copyfile(TEMPOUT,OUT);
 	copyfile(TEMPMID,MIDOUT);
+	fclose(TEMPMID); fclose(TEMPOUT);
 	solve_options.restore_tracker_config("robust_init");
 	
 	return;
