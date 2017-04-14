@@ -1801,15 +1801,13 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 			}
 			
 			switch (EG_out->retVal) {
+				case retVal_reached_minTrackT: // some other failure
+				case retVal_EG_failed_to_converge:
 					
-				case -20: // // refining failed
-				case -50: // some other failure
-					
-					
-				case -100:   //this is higher precision needed.
+				case retVal_max_prec_reached:   //this is higher precision needed.
 							 // break deliberately omitted
 					
-				case 100:
+				case retVal_higher_prec_needed:
 					
                     solve_options.T.endgameNumber = 2;
                     
@@ -1823,13 +1821,13 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					
 					break;
 					
-				case -10:
+				case retVal_too_many_steps:
 					
 					solve_options.T.maxNumSteps *=2; // factor of 2 each time
 					break;
 					
 					
-				case -3: // minstepsize
+				case retVal_step_size_too_small: // minstepsize
 					
 					solve_options.T.minStepSizeBeforeEndGame *= 1e-1;
 					solve_options.T.minStepSizeDuringEndGame *= 1e-1;
@@ -1842,7 +1840,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					
 					break;
 					
-				case -4: // securitymax
+				case retVal_security_max: // securitymax
 					
 					if (iterations<2) {
 						solve_options.T.securityMaxNorm *= 10;  // exponential increase by 10's
@@ -1857,7 +1855,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
                     
 					
 					break;
-				case -2:
+				case retVal_going_to_infinity:
 					if (iterations<2) {
 						solve_options.T.goingToInfinity *= 10;  // exponential increase by 10's
 					}
@@ -1870,7 +1868,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					
 					break;
 					
-				case -200: // cycle number too high
+				case retVal_cycle_num_too_high: // cycle number too high
 					solve_options.T.endgameNumber = 2;
 					solve_options.T.cycle_num_max +=3 ;
 					break;
