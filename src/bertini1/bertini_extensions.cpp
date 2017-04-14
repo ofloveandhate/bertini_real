@@ -113,12 +113,46 @@ std::string enum_lookup(int flag, int hint)
 			return "INDICES";
 			break;
 			
+		case retVal_max_prec_reached:
+			return "retVal_max_prec_reached";
+		case retVal_reached_minTrackT:
+			return "retVal_reached_minTrackT";
+		case retVal_cycle_num_too_high:
+			return "retVal_cycle_num_too_high";
+		case retVal_PSEG_failed:
+			return "retVal_PSEG_failed";
+		case retVal_going_to_infinity:
+			return "retVal_going_to_infinity";
+		case retVal_security_max:
+			return "retVal_security_max";
+		case retVal_step_size_too_small:
+			return "retVal_step_size_too_small";
+		case retVal_too_many_steps:
+			return "retVal_too_many_steps";
+		case retVal_refining_failed:
+			return "retVal_refining_failed";
+		 case retVal_higher_prec_needed:
+		 	return "retVal_higher_prec_needed";
+		 case retVal_NAN:
+		 	return "retVal_NAN";
+		 case retVal_Bertini_Junk:
+		 	return "retVal_Bertini_Junk";
+		 case retVal_Failed_to_converge:
+		 	return "retVal_Failed_to_converge";
+		 case retVal_sharpening_singular_endpoint:
+		 	return "retVal_sharpening_singular_endpoint";
+		 case retVal_sharpening_failed:
+		 	return "retVal_sharpening_failed";
+		 case retVal_higher_dim:
+		 	return "retVal_higher_dim";
 			
 		default:
 			break;
 	}
 	}
-	return "unknown...  check out data_type.cpp";
+	std::stringstream ss;
+	ss << "unknown enum value " << flag << ", check out data_type.cpp or bertini.h";
+	return ss.str();
 }
 
 
