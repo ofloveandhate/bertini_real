@@ -615,7 +615,7 @@ void master_solver(SolverOutput & solve_out, const WitnessSet & W,
 	
 	initMP(mpf_get_default_prec());
 	
-    int num_crossings = 0;
+    
 	
 	solve_out.num_variables = W.num_variables();
 	solve_out.num_natural_vars = W.num_natural_variables();
@@ -703,9 +703,12 @@ void master_solver(SolverOutput & solve_out, const WitnessSet & W,
 	
 	
 	// check for path crossings
-	if (solve_options.use_midpoint_checker) {
+	if (1){//(solve_options.use_midpoint_checker) {
+		int num_crossings = 0;
 		std::vector<int> crossed_indices;
-		BRmidpointChecker(trackCount.numPoints, solve_options.T.numVars,solve_options.midpoint_tol, &num_crossings, mid_name.str(), crossed_indices);
+		BRmidpointChecker(trackCount.numPoints, solve_options.T.numVars,solve_options.midpoint_tol*solve_options.T.final_tol_multiplier, &num_crossings, mid_name.str(), crossed_indices);
+		if (num_crossings>0)
+			mypause();
 	}
 	
 	
@@ -1620,14 +1623,12 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
                        int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *))
 {
 	
-    //	std::cout << "using robust tracker" << std::endl;
 	EG_out->pathNum = pathNum;
 	EG_out->codim = 0; // this is ignored
 	
 	
 	tracker_config_t * T = &solve_options.T;
 	
-//	print_tracker(T);
 	
 	int iterations=0, max_iterations = 3;
 	
@@ -1639,11 +1640,24 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
     
 	solve_options.increment_num_paths_tracked();
 	
-	
+	FILE *TEMPMID;
+	FILE *TEMPOUT;
+
+		std::stringstream ss; ss<<"midpath_temp_"<<solve_options.id();
+		TEMPMID = safe_fopen_write(ss.str());
+		ss.clear(); ss.str("");
+		ss<<"output_temp_"<<solve_options.id();
+		TEMPOUT = safe_fopen_write(ss.str());
+		ss.clear(); ss.str("");
+
 	EG_out->retVal = -876; // set to bad return value
 	while ((iterations<max_iterations) && 
-		   !IsAcceptableRetval(EG_out->retVal)) 
+		   !IsAcceptableRetval(EG_out->retVal) &&
+		   !IsUnRetrackable(EG_out->retVal)) 
 	{
+		rewind(TEMPOUT); rewind(TEMPMID);
+
+
 		if (solve_options.verbose_level()>=4) {
 			std::cout << color::gray() << "\t\tpath " << pathNum << ", pass " << iterations << color::console_default() << std::endl;
 		}
@@ -1658,8 +1672,6 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 			
 			change_prec(ED_mp,64);
 			T->Precision = 64;
-			
-			
 			EG_out->prec = EG_out->last_approx_prec = 52;
 			
 			EG_out->retVal = endgame_amp(T->endgameNumber, EG_out->pathNum, &EG_out->prec, &EG_out->first_increase,
@@ -1667,7 +1679,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
                                          EG_out->last_approx_d, EG_out->last_approx_mp,
                                          Pin,
                                          T,
-                                         OUT, MIDOUT,
+                                         TEMPOUT, TEMPMID,
                                          ED_d, ED_mp,
                                          eval_func_d, eval_func_mp, change_prec, find_dehom);
 			
@@ -1703,7 +1715,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 		{ // track using double precision
 			EG_out->prec = EG_out->last_approx_prec = 52;
 			
-			EG_out->retVal = endgame_d(T->endgameNumber, EG_out->pathNum, &EG_out->PD_d, EG_out->last_approx_d, Pin, T, OUT, MIDOUT, ED_d, eval_func_d, find_dehom);  // WHERE THE ACTUAL TRACKING HAPPENS
+			EG_out->retVal = endgame_d(T->endgameNumber, EG_out->pathNum, &EG_out->PD_d, EG_out->last_approx_d, Pin, T, TEMPOUT, TEMPMID, ED_d, eval_func_d, find_dehom);  // WHERE THE ACTUAL TRACKING HAPPENS
 			EG_out->first_increase = 0;
 			// copy over values in double precision
 			EG_out->latest_newton_residual_d = T->latest_newton_residual_d;
@@ -1719,7 +1731,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 			T->first_step_of_path = 1;
 			
 			// track using MP
-			EG_out->retVal = endgame_mp(T->endgameNumber, EG_out->pathNum, &EG_out->PD_mp, EG_out->last_approx_mp, Pin_mp, T, OUT, MIDOUT, ED_mp, eval_func_mp, find_dehom);
+			EG_out->retVal = endgame_mp(T->endgameNumber, EG_out->pathNum, &EG_out->PD_mp, EG_out->last_approx_mp, Pin_mp, T, TEMPOUT, TEMPMID, ED_mp, eval_func_mp, find_dehom);
 			
 			
 			EG_out->prec = EG_out->last_approx_prec = T->Precision;
@@ -1797,11 +1809,11 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 			
 			if (solve_options.verbose_level()>=3){
 				print_path_retVal_message(EG_out->retVal);
-				std::cout << color::red() << "solution had non-zero retVal " << EG_out->retVal << " (" << current_retval_counter << ")th occurrence on iteration " << iterations << "." << color::console_default() << std::endl;
+				std::cout << color::red() << "solution had non-zero retVal " <<  enum_lookup(EG_out->retVal) << " (" << current_retval_counter << ")th occurrence on iteration " << iterations << "." << color::console_default() << std::endl;
 			}
 			
 			switch (EG_out->retVal) {
-				case retVal_reached_minTrackT: // some other failure
+				// case retVal_reached_minTrackT: // duplicate with next
 				case retVal_EG_failed_to_converge:
 					
 				case retVal_max_prec_reached:   //this is higher precision needed.
@@ -1900,6 +1912,17 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 		}
 	}
 
+	fclose(TEMPMID); fclose(TEMPOUT);
+
+		ss<<"midpath_temp_"<<solve_options.id();
+		TEMPMID = safe_fopen_read(ss.str());
+		ss.clear(); ss.str("");
+		ss<<"output_temp_"<<solve_options.id();
+		TEMPOUT = safe_fopen_read(ss.str());
+		ss.clear(); ss.str("");
+
+	copyfile(TEMPOUT,OUT);
+	copyfile(TEMPMID,MIDOUT);
 	solve_options.restore_tracker_config("robust_init");
 	
 	return;
