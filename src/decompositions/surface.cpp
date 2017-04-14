@@ -234,7 +234,8 @@ void Surface::main(VertexSet & V,
     
     
     
-    
+    this->output_main(program_options.output_dir());
+	V.print(program_options.output_dir()/ "V.vertex");
     
     
 	
@@ -277,11 +278,6 @@ void Surface::main(VertexSet & V,
                    program_options, solve_options, "mid");
 	
 	
-	
-	//incremental output
-	this->output_main(program_options.output_dir());
-	V.print(program_options.output_dir()/ "V.vertex");
-	
 	// get the critical slices
 	
 	program_options.merge_edges(true);
@@ -289,10 +285,6 @@ void Surface::main(VertexSet & V,
                    crit_downstairs, this->crit_slices_,
                    program_options, solve_options, "crit");
 	
-    
-	//incremental output
-	this->output_main(program_options.output_dir());
-	V.print(program_options.output_dir()/ "V.vertex");
 	
 	//connect the dots - the final routine
 	connect_the_dots(V, program_options, solve_options);
@@ -1431,6 +1423,7 @@ void Surface::compute_slices(const WitnessSet W_surf,
         // does it matter speedwise whether i do this before or after the copy immediately above?  i think the answer is no.
         V.assert_projection_value(slices[ii].all_edge_indices(), &projection_values_downstairs->coord[ii], 0); // the 0 is an index into the number of projections.
 		
+		// this full surface output is overkill.  just need to output the slice just decomposed.
 		this->output_main(program_options.output_dir());
 		V.print(program_options.output_dir()/ "V.vertex");
 		
