@@ -2257,8 +2257,10 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 bool IsAcceptableRetval(int);
 
 
-
-
+/**
+\brief Indicates which retvals from the bertini1 tracker are unretrackable in the robust solver.
+*/
+bool IsUnRetrackable(int);
 
 
 

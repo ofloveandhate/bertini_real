@@ -1910,9 +1910,19 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 
 
 
+bool IsAcceptableRetval(int retval)
+{
+	return  retval == 0 || 
+			retval == retVal_refining_failed ||
+			retval == retVal_sharpening_singular_endpoint ||
+			retval == retVal_sharpening_failed;
+			;
+}
 
-
-
+bool IsUnRetrackable(int retVal)
+{
+	return false;//retVal == retVal_security_max
+}
 
 void generic_setup_patch(patch_eval_data_d *P, const WitnessSet & W)
 {
