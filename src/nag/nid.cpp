@@ -372,7 +372,7 @@ WitnessSet NumericalIrreducibleDecomposition::best_possible_automatic_set(Bertin
 		// iterate over components for target dimension
 		if (iter->second.size()==0) {
 			std::cout << "detected a witness set with no points.  this should be impossible...  by definition a witness set has at least one point in it." << std::endl;
-			mypause();
+			throw std::runtime_error("witness set with no points");
 		}
 		else{
 			if (point_metadata[iter->second[0]].num_deflations_needed()==0) {

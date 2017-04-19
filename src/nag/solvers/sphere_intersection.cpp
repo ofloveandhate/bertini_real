@@ -997,7 +997,7 @@ int sphere_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat
 	if (offset+BED->num_static_linears != BED->num_variables-BED->patch.num_patches) {
 		std::cout << color::red() << "mismatch in offset!\nleft: " <<
 		offset+BED->num_static_linears << " right " << BED->num_variables-BED->patch.num_patches << color::console_default() << std::endl;
-		mypause();
+		throw std::runtime_error("mismatch in number of variables and patches in sphere solver");
 	}
 	
 	offset = BED->num_variables-BED->patch.num_patches;
@@ -1316,7 +1316,7 @@ int sphere_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv
 	if (offset+BED->num_static_linears != BED->num_variables-BED->patch.num_patches) {
 		std::cout << color::red() << "mismatch in offset!\nleft: " <<
 		offset+BED->num_static_linears << " right " << BED->num_variables-BED->patch.num_patches << color::console_default() << std::endl;
-		mypause();
+		throw std::runtime_error("mismatch in number of variables and patches in sphere solver");
 	}
 	
 	offset = BED->num_variables-BED->patch.num_patches;

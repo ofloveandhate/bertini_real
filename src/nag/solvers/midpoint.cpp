@@ -1239,9 +1239,9 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	
 	if (offset != BED->num_variables - BED->patch.num_patches) {
 		std::cout << color::red() << "appear to have offset " << offset << " but should be " << BED->num_variables - BED->patch.num_patches << color::console_default() << std::endl;
-        //		print_matrix_to_screen_matlab(Jv,"Jv");
-		mypause();
+		throw std::runtime_error("midmatch in number of variables in midtracker");
 	}
+	
     // evaluate the patch
     patch_eval_d(    patchValues, parVals, parDer, Jv_Patch, unused_Jp, current_variable_values, pathVars, &BED->patch);  // Jp is ignored
 	
@@ -1708,8 +1708,9 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	if (offset != BED->num_variables - BED->patch.num_patches) {
 		std::cout << "appear to have offset " << offset << " but should be " << BED->num_variables - BED->patch.num_patches << std::endl;
 		print_matrix_to_screen_matlab(Jv,"Jv");
-		mypause();
+		throw std::runtime_error("midmatch in number of variables in midtracker");
 	}
+	
     // evaluate the patch
     patch_eval_mp(    patchValues, parVals, parDer, Jv_Patch, unused_Jp, current_variable_values, pathVars, &BED->patch);  // Jp is ignored
 	
@@ -1755,7 +1756,6 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
         //
         //		//	std::cout << "\n\n**************\n\n";
         //		clear_vec_mp(result);
-        //		mypause();
 	}
 	
 	
@@ -2548,9 +2548,6 @@ void check_midpoint_evaluator(point_mp current_values,
 	printf("lambda = %lf+1i*%lf\n",lambda->r, lambda->i);
 	print_point_to_screen_matlab(e_d.funcVals,"f");
 	print_point_to_screen_matlab(e_d2.funcVals,"f2");
-	
-	
-	mypause();
 	
 	return;
 	

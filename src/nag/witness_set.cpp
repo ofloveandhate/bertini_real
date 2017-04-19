@@ -72,7 +72,7 @@ int WitnessSet::Parse(const boost::filesystem::path witness_set_file, const int 
 		std::cerr << temp_num_patches << " patches detected.  this probably indicates a problem." << std::endl;
 		std::cerr << "the file being read: " << witness_set_file << std::endl;
 		std::cerr << "trying to read " << num_vars << " variables." << std::endl;
-		mypause();
+		throw std::runtime_error("more than one patch in input witness set");
 	}
 	
 	

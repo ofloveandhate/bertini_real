@@ -809,21 +809,13 @@ int take_determinant_mp(comp_mp determinant, const mat_mp source_matrix)
 		set_zero_mp(&zerovec->coord[ii]);
 	}
 	
-	//  these should be for realsies
-	
+
 	// returns x, intermediate.
-	
-	//	print_matrix_to_screen_matlab(tempmat,"tempmat");
-	
 	
 	int retval = LU_matrixSolve_mp(garbage, intermediate, &rwnm, &sign, const_cast<_mat_mp*>(source_matrix), zerovec,tol,largeChange);
 	//the solution is in intermediate.
 	//error check.  solution failed if retval!=0
 	if (retval!=0) {
-		//		printf("LU decomposition failed (mp)\n");
-		//		print_matrix_to_screen_matlab_mp(intermediate,"failed_result");
-		//		print_matrix_to_screen_matlab_mp(source_matrix,"source_matrix");
-		//		deliberate_segfault();
 		set_zero_mp(determinant);
 	}
 	else{
@@ -837,9 +829,7 @@ int take_determinant_mp(comp_mp determinant, const mat_mp source_matrix)
 			neg_mp(determinant,determinant);
 		}
 	}
-	//	print_matrix_to_screen_matlab(source_matrix,"detme");
-	//	printf("candidate=%lf+1i*%lf;det(detme)\n",determinant->r,determinant->i);
-	//	mypause();
+
 	// this verified correct via 20 samples in matlab.  dab.
 	
 	free(rwnm);

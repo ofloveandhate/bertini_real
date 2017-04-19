@@ -293,11 +293,7 @@ void Curve::SampleEdgeAdaptiveMovement(	int ii,
 				if (sampler_options.verbose_level()>=5)
 					W.print_to_screen();
 				
-				if (sampler_options.verbose_level()>=10) {
-					mypause();
-				}
-				
-				
+
 				SolverOutput fillme;
 				multilin_solver_master_entry_point(W,         // WitnessSet
                                                    fillme, // the new data is put here!
@@ -577,9 +573,6 @@ void Curve::SampleEdgeAdaptiveDistance(	int ii,
 				if (sampler_options.verbose_level()>=5)
 					W.print_to_screen();
 				
-				if (sampler_options.verbose_level()>=10) {
-					mypause();
-				}
 				
 				
 				SolverOutput fillme;

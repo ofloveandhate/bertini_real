@@ -399,8 +399,7 @@ void Surface::beginning_stuff(const WitnessSet & W_surf,
                               &(this->pi()),
                               solve_options))
 	{
-		std::cout << "the projections being used appear to suffer rank deficiency with Jacobian matrix..." << std::endl;
-		mypause();
+		std::cout << color::red() << "the projections being used appear to suffer rank deficiency with Jacobian matrix..." << color::console_default() << std::endl;
 	}
     
 	
