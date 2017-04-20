@@ -142,8 +142,7 @@ void UbermasterProcess::bertini_real(WitnessSet & W, vec_mp *pi, VertexSet & V)
 		BackupDir(program_options.output_dir());
 	boost::filesystem::create_directory(program_options.output_dir());
 	program_options.PrintMetadata(program_options.output_dir() / "run_metadata");
-	solve_options.use_midpoint_checker = true;
-	solve_options.use_sequential_filenames = true;
+
 	
 	switch (W.dimension()) {
 		case 1:
