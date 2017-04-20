@@ -375,6 +375,13 @@ public:
 	 */
 	void sort_for_inside_sphere(comp_mp radius, vec_mp center);
 	
+
+	/**
+	Realify a point
+	*/
+	void RealifyPoint(int ind, double tol);
+
+
 	/**
 	\brief For those points which are 'real', throw away the imaginary part, but ensure they still satisfy the patch equation(s)
 	*/
