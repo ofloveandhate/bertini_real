@@ -687,11 +687,9 @@ void WitnessSet::RealifyPoint(int ind, double tol)
 	comp_mp t1; init_mp(t1);
 	comp_mp t2; init_mp(t2);
 
-	print_point_to_screen_matlab(temp, "before");
 	int offset = 0;
 	for (int ii=0; ii<this->num_patches(); ++ii)
 	{
-		std::cout << "realifying point " << ind << " group " << ii << "\n";
 		const vec_mp& p = patch(ii);
 		int curr_vargp_size = p->size;
 
@@ -716,12 +714,10 @@ void WitnessSet::RealifyPoint(int ind, double tol)
 		{
 			if (mpf_cmp_d(temp->coord[jj].i, tol) < 0)
 			{
-				std::cout << "coord " << jj << " zerod\n";
 				mpf_set_ui(temp->coord[jj].i, 0); // zero out the imaginary part
 			}
 		}
 
-		print_point_to_screen_matlab(temp, "during");
 		// now re-scale to match the patch again
 
 		// take the value of the point on the patch
@@ -738,7 +734,6 @@ void WitnessSet::RealifyPoint(int ind, double tol)
 
 		offset += curr_vargp_size;
 	}
-	print_point_to_screen_matlab(temp, "after");
 	vec_cp_mp(point(ind), temp);
 	clear_vec_mp(temp); clear_mp(t1);clear_mp(t2);
 }
@@ -747,7 +742,6 @@ void WitnessSet::RealifyPoint(int ind, double tol)
 void WitnessSet::Realify(double tol)
 {
 	for (unsigned int ii=0; ii<num_points(); ++ii) {
-		std::cout << "realifying point " << ii << "\n";
 		RealifyPoint(ii, tol);
 	}
 }
