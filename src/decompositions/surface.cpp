@@ -717,6 +717,10 @@ void Surface::deflate_and_split(std::map< SingularObjectMetadata, WitnessSet > &
 		return;
 	}
 
+  if (program_options.ignore_singular()) {
+    return;
+  }
+
 	points_which_needed_no_deflation.copy_skeleton(higher_multiplicity_witness_sets.begin()->second);
 	
 	for (auto iter = higher_multiplicity_witness_sets.begin(); iter!=higher_multiplicity_witness_sets.end(); ++iter) {
