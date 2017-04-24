@@ -86,7 +86,7 @@ void SamplerWorker(sampler_configuration & sampler_options);
 
 
 
-
+void WorkerSampleCurve(sampler_configuration & sampler_options, SolverConfiguration & solve_options);
 
 
 

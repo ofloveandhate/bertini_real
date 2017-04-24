@@ -658,7 +658,29 @@ public:
 						  SolverConfiguration & solve_options);
 	
 	
-	
+
+
+	void FixedSamplerSerial(VertexSet & V,
+									  sampler_configuration & sampler_options,
+									  SolverConfiguration & solve_options,
+									  int target_num_samples);
+	void FixedSamplerMaster(VertexSet & V,
+									  sampler_configuration & sampler_options,
+									  SolverConfiguration & solve_options,
+									  int target_num_samples);
+	void FixedSamplerWorker(VertexSet & V,
+									  sampler_configuration & sampler_options,
+									  SolverConfiguration & solve_options);
+	int ReportEdgeMaster(VertexSet & V, SolverConfiguration & solve_options);
+	void ReportEdgeWorker(int edge_index, VertexSet const& V, SolverConfiguration & solve_options);
+
+
+	void SynchronizeVertexSetMaster(int edge_index, VertexSet & V, int source, SolverConfiguration & solve_options);
+	void SynchronizeVertexSetWorker(VertexSet const& V, SolverConfiguration & solve_options);
+	void ReceiveEdgeSamples(int edge_index, int source, SolverConfiguration & solve_options);
+
+	void SendEdgeSamples(int edge_index, int target, SolverConfiguration & solve_options);
+
 	/**
 	 \brief sets up refinement flags to YES for every interval, for first pass of adaptive refinement.
 	 
@@ -821,7 +843,7 @@ protected:
 
 
 
-void WorkerSampleCurve(sampler_configuration & sampler_options, SolverConfiguration & solve_options);
+
 
 
 
