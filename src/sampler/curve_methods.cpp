@@ -4,8 +4,6 @@
 
 
 
-void WorkerSampleCurve(sampler_configuration & sampler_options, SolverConfiguration & solve_options)
-{}
 
 
 
@@ -85,14 +83,8 @@ void Curve::SemiFixedSampler(VertexSet & V,
 }
 
 
-
-void Curve::FixedSampler(VertexSet & V,
-									  sampler_configuration & sampler_options,
-									  SolverConfiguration & solve_options,
-									  int target_num_samples)
+void Curve::FixedSamplerSerial()
 {
-	
-	
 	fixed_set_initial_sample_data(target_num_samples);
 
 	for (unsigned int ii=0; ii<num_edges(); ii++) // for each of the edges
@@ -106,7 +98,194 @@ void Curve::FixedSampler(VertexSet & V,
 		SampleEdgeFixed(ii,V, sampler_options, solve_options, target_num_samples);
 	
 	}  // re: ii (for each edge)
+}
+
+
+
+void WorkerSampleCurve(sampler_configuration & sampler_options, SolverConfiguration & solve_options)
+{
+	// get call for help (happened a level above in worker sampler in sampler.cpp (~455))
+
+	// get vertex set
+	// get curve
+	VertexSet V;
+	V.set_tracker_config(&solve_options.T);
+	V.receive(solve_options.head(), solve_options);
+
+
+	Curve C;
+	C.receive(solve_options.head(), solve_options);
+
+	switch (sampler_options.mode)
+	{
+		case sampler_configuration::Mode::Fixed:
+		{
+			FixedSamplerWorker(V, sampler_options, solve_options); // gets number of samples per edge IN this call
+			break;
+		}
+		default:
+			std::cout << color::red() << "sorry, not implemented in parallel yet\n\n" << color::console_default();
+		// two (three) more cases for later
+	}
 	
+}
+
+
+void Curve::FixedSamplerMaster(VertexSet & V,
+									  sampler_configuration & sampler_options,
+									  SolverConfiguration & solve_options,
+									  int target_num_samples)
+{
+	solve_options.call_for_help(CURVE_SAMPLE); // sets available workers, too
+
+	// send all workers 
+	//     • vertex set
+	//     • curve decomposition
+	//     • which sampling method to use  
+	//        MPI_Bcast(sampler_options.mode..., solve_options.head(), solve_options.comm());
+	//seed the workers
+	for (int ii=1; ii<solve_options.num_procs(); ii++) {
+		V.send(ii, solve_options);
+		this->send(ii, solve_options); // `this` is the curve
+		MPI_Send(&target_num_samples, 1, MPI_INT, ii, 10, solve_options.comm());
+	}
+
+
+	// send workers target_num_samples
+
+	for (int ii=0; ii < num_edges(); ++ii)
+	{
+		int next_worker = solve_options.activate_next_worker();
+		MPI_Send(&ii, 1, MPI_INT, next_worker, 10, solve_options.comm());
+		//send positive edge_index to worker
+
+		if (solve_options.have_available())
+			continue;
+
+		ReportEdgeMaster();
+	}
+
+
+	//wait for everybody to finish
+
+	while (solve_options.have_active()) {// each active worker
+		// receive note from worker ___ that edge ___ is done
+		// synchronize curves, vertex set
+		// send negative edge_index 
+	}
+
+}
+
+
+void Curve::FixedSamplerWorker(VertexSet & V,
+									  sampler_configuration & sampler_options,
+									  SolverConfiguration & solve_options)
+{
+	int target_num_samples;
+	MPI_Recv(&target_num_samples, 1, MPI_INT, solve_options.head(), 10, solve_options.comm(), MPI_STATUS_UNUSED);
+
+	while (1) // while there is work to be done (an edge to sample)
+	{
+		int edge_index;
+		MPI_Recv(&edge_index, 1, MPI_INT, solve_options.head(), 10, solve_options.comm(), MPI_STATUS_UNUSED);
+
+		if (edge_index < 0)
+			break;
+
+		SampleEdgeFixed(edge_index, V, sampler_options, solve_options, target_num_samples);
+
+		ReportEdgeWorker(edge_index);
+	}
+
+
+}
+
+
+void Curve::ReportEdgeMaster(V,)
+{
+	// sam, here
+
+	// receive note from worker *** that edge ___ is done
+	// receive finished_edge_index
+	int finished_edge_index;
+	MPI_Status statty_mc_gatty;
+
+	MPI_Recv(&finished_edge_index,..., MPI_ANY_SOURCE,&statty_mc_gatty);
+	int whos_talking = statty_mc_gatty.MPI_SOURCE;
+
+	// get "old" edge sample indices
+	ReceiveEdgeSamples(edge_index,head()); // now this->
+
+	SynchronizeVertexSetMaster(edge_index, V,head());
+
+}
+
+
+void Curve::ReportEdgeWorker(int edge_index, V)
+{
+	// sam, here
+
+	// send to master that are done BY:
+	// send edge_index to master
+	MPI_Send(&edge_index, ..., head(), comm());
+
+	SendEdgeSamples(edge_index,head());
+
+	SynchronizeVertexSetWorker(edge_index, V, head());
+	// synchronize vertex set and curve
+}
+
+
+void Curve::SynchronizeVertexSetMaster(edge_index, VertexSet & V,int source)
+{
+	//
+	int num_to_recv;
+	MPI_Recv(&num_to_recv,...);
+	for (num_to_recv)
+	{
+		// get old_index INDEX
+
+		Vertex v_temp;
+		v_temp.receive(source);
+
+		//add to V, getting new index (as return val)
+		// int new_index = V.add_vertex(v_temp)
+
+		// adjust the indices in edge_samples 
+
+		// loop over the samples (indices), replace instances of old_index with new_index.
+	}
+}
+
+
+void Curve::SynchronizeVertexSetWorker(VertexSet & V,head())
+{
+	//
+	// send num 
+	for (num_prev, num_now)
+	{
+		// 
+		send old vertex INDEX
+		// send vertex to master
+		V[ind].send(head());
+	}
+	// send done
+}
+
+
+
+
+
+void Curve::FixedSampler(VertexSet & V,
+									  sampler_configuration & sampler_options,
+									  SolverConfiguration & solve_options,
+									  int target_num_samples)
+{
+	
+	if (sampler_options.use_parallel())
+		FixedSamplerMaster(V, sampler_options, solve_options, target_num_samples);
+	else
+		FixedSamplerSerial(V, sampler_options, solve_options, target_num_samples);
 }
 
 
