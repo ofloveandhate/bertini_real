@@ -30,6 +30,9 @@ class BRplotter(object):
         elif self.decomposition.dimension == 2:
             self.PlotSurface(self.decomposition)
 
+        plt.xlabel("x")
+        plt.ylabel("y")
+        plt.title('ParsingFunctions.directory')
         plt.show()
 
 
@@ -68,21 +71,32 @@ class BRplotter(object):
         #print xs, ys, zs
         #for item in
     def PlotCurve(self, curve):
-        colormap = plt.cm.prism
-        self.ax.set_color_cycle([colormap(i) for i in np.linspace(0, 0.9, curve.curve.num_edges)])
+        num_nondegen_edges=0
+        nondegen=[]
         for i in range(curve.curve.num_edges):
-            self.PlotEdge(curve, i)
+            e=curve.curve.edges[i]
+            if e[0]!=e[1]!=e[2]:
+                num_nondegen_edges=num_nondegen_edges+1
+                nondegen.append(i)
 
-    def PlotEdge(self, curve, edge_index):
+        colormap = plt.cm.inferno
+        color_list=([colormap(i) for i in np.linspace(0, 1,num_nondegen_edges)])
 
-        xs = []
-        ys = []
-        zs = []
-        color_list=['b','g','r','c','m','y','k','w']
+        for i in range(num_nondegen_edges):
+            color=color_list[i]
+            print(i,color_list[i])
+            self.PlotEdge(curve,nondegen[i],color)
+
+    def PlotEdge(self, curve, edge_index,color):
+
+        print("num edges: ", curve.curve.num_edges)
+        xs=[]
+        ys=[]
+        zx=[]
 
         inds = self.decomposition.curve.sampler_data[edge_index]
         for i in inds:
-            print i
+            #print i
             v = self.decomposition.vertices[i]
             xs.append(v['point'][0].real)
             ys.append(v['point'][1].real)
@@ -90,9 +104,9 @@ class BRplotter(object):
                 zs.append(v['point'][2].real)
 
         if self.decomposition.num_variables==2:
-            self.ax.plot(xs, ys, c=None)#v['point'][
+            self.ax.plot(xs, ys, c=color)#v['point'][
         else:
-            self.ax.plot(xs, ys, zs, zdir='z', c=None)#v['point']
+            self.ax.plot(xs, ys, zs, zdir='z', c=color)#v['point']
 
 
     def PlotSurface(self, surf):

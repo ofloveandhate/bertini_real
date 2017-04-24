@@ -190,6 +190,7 @@ def parse_Edges(directory):
 			edges = edges.replace(' \n', '').split(' ')
 			for jj in range(3):
 				curves['edges'][ii][jj] = int(edges[jj]) + 1
+				
 
 	return curves
 
