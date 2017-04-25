@@ -73,7 +73,7 @@ int main(int argC, char *args[])
 	
 	
 	if (solve_options.use_parallel()) { // everybody participates in this.
-		MPI_Bcast(&solve_options.path_number_modulus,1,MPI_INT,0,MPI_COMM_WORLD); // first is declaration that a parse is going to happen.
+		MPI_Bcast(&solve_options.path_number_modulus,1,MPI_INT,0,MPI_COMM_WORLD); 
 		bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
 	}
 	
