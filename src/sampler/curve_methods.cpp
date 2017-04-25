@@ -286,8 +286,6 @@ void Curve::FixedSamplerWorker(VertexSet & V,
 
 int Curve::ReportEdgeMaster(VertexSet & V, SolverConfiguration & solve_options)
 {
-	// sam, here
-
 	// receive note from worker *** that edge ___ is done
 	// receive finished_edge_index
 	int finished_edge_index;
@@ -297,8 +295,8 @@ int Curve::ReportEdgeMaster(VertexSet & V, SolverConfiguration & solve_options)
 	int whos_talking = statty_mc_gatty.MPI_SOURCE;
 
 	// get "old" edge sample indices
-	ReceiveEdgeSamples(finished_edge_index, whos_talking, solve_options); // now this->
-
+	ReceiveEdgeSamples(finished_edge_index, whos_talking, solve_options);
+	// get new vertices, and adjust old indices to match new ones
 	SynchronizeVertexSetMaster(finished_edge_index, V, whos_talking, solve_options);
 
 	solve_options.deactivate(whos_talking);
@@ -309,16 +307,11 @@ int Curve::ReportEdgeMaster(VertexSet & V, SolverConfiguration & solve_options)
 
 void Curve::ReportEdgeWorker(int edge_index, VertexSet const& V, SolverConfiguration & solve_options)
 {
-	// sam, here
-
-	// send to master that are done BY:
 	// send edge_index to master
 	MPI_Send(&edge_index, 1, MPI_INT, solve_options.head(), DATA_TRANSMISSION, solve_options.comm());
 
 	SendEdgeSamples(edge_index,solve_options.head(), solve_options);
-
-	SynchronizeVertexSetWorker(V, solve_options);
-	// synchronize vertex set and curve
+	SynchronizeVertexSetWorker(V, solve_options); // no need to pass edge_index, as we've already established that with the head
 }
 
 
@@ -328,26 +321,29 @@ void Curve::SynchronizeVertexSetMaster(int edge_index, VertexSet & V, int source
 	MPI_Recv(&num_to_recv,1, MPI_INT, source, 5542, solve_options.comm(), MPI_STATUS_IGNORE);
 	for (int ii=0; ii<num_to_recv; ++ii)
 	{
-		// get old_index INDEX
+		// 1. get `int old_index`
+		// CODE HERE
 
+		// 2. get vertex associated with `old_index`
 		Vertex v_temp;
 		v_temp.receive(source, solve_options);
 
-		//add to V, getting new index (as return val)
+		// 3. add to V, getting `int new_index` (as return val from the add call)
+		// CODE HERE, something like the below
 		// int new_index = V.add_vertex(v_temp)
 
-		// adjust the indices in edge_samples 
-		//this->sample_indices_[edge_index]   <<<<<  IN HERE
-
-		// loop over the samples (indices), replace instances of old_index with new_index.
+		// 4. adjust the indices in edge_samples 
+		// CODE HERE
+		// this->sample_indices_[edge_index]   <<<<<  IN HERE
+			// loop over the samples (indices), 
+			// replace instances of old_index with new_index.
 	}
 }
 
 
 void Curve::SynchronizeVertexSetWorker(VertexSet const& V, SolverConfiguration & solve_options)
 {
-	//
-	// send num 
+	// send num of vertices we'll be communicating
 	int num_prev = 0; //it's not really 0...
 	int num_now = 0;
 	int num_to_send = num_now - num_prev;
@@ -356,21 +352,31 @@ void Curve::SynchronizeVertexSetWorker(VertexSet const& V, SolverConfiguration &
 
 	for (int ii=num_prev; ii<num_now; ++ii)
 	{
-		//send old vertex INDEX
-		// send vertex to master
+		// 1 send old vertex INDEX
+		//CODE HERE
+
+		// 2 send vertex to master
 		V[ii].send(solve_options.head(), solve_options);
 	}
 }
 
-
+// sample indices are contained in `this->sample_indices_[edge_index]`
 void Curve::ReceiveEdgeSamples(int edge_index, int source, SolverConfiguration & solve_options)
 {
+	// 1 make room for the samples
+	// CODE HERE
 
+	// 2 actually get the samples
+	// CODE HERE
 }
 
 void Curve::SendEdgeSamples(int edge_index, int target, SolverConfiguration & solve_options)
 {
-	
+	// 1 send how many samples there are in this edge
+	// CODE HERE
+
+	// 2 send the indices
+	// CODE HERE
 }
 
 
