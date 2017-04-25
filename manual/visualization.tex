@@ -1,8 +1,13 @@
 
 \section{Visualization}
+\label{sec:visualization}
 
 
-\subsection{In Matlab}
+
+
+
+
+\subsection{Visualizing in Matlab}
 After running Bertini\_real, the output results can be visualized in Matlab.  This section assumes that the Matlab codes for Bertini\_real are already on the Matlab path.
 
 \begin{enumerate}
@@ -13,7 +18,7 @@ After running Bertini\_real, the output results can be visualized in Matlab.  Th
 \end{enumerate}
 
 
-\subsection{Visualization options}
+\subsubsection{Matlab visualization options}
 \noindent
 \begin{longtabu} to \textwidth {
     X[1,l]	% option
@@ -35,7 +40,7 @@ After running Bertini\_real, the output results can be visualized in Matlab.  Th
 \endhead
 \bottomrule \multicolumn{5}{r}{\textit{Continued on next page}} \\
 \endfoot
-\bottomrule \multicolumn{5}{r}{\textit{Br15}} \\
+\bottomrule \multicolumn{5}{r}{\textit{}} \\
 \endlastfoot
 
 
@@ -48,7 +53,7 @@ After running Bertini\_real, the output results can be visualized in Matlab.  Th
 \texttt{`labels'} & \texttt{`on'} & \texttt{`n'},\texttt{`no'}, \texttt{`none'}, \texttt{`false'}, \texttt{`0'}  & \texttt{bertini\_real\_plotter (`labels', `none')} off &  \texttt{bertini\_real\_plotter\-} by default lets user apply labels to the figure.\\  \\ \hline \\
 \texttt{`linestyle'} & \texttt{`-'} (solid line) & line options listed \href{http://www.mathworks.com/help/matlab/ref/primitiveline-properties.html}{here} & \texttt{bertini\_real\_plotter (`linestyle', `:')} & Used to change the line style of lines in the MATLAB figure. \\  \\ \hline \\
 \texttt{`monocolor'} or \texttt{`mono'} & \texttt{`off'} & \glspl{rgbt} listed \href{http://www.mathworks.com/help/matlab/ref/colorspec.html}{here} & \texttt{bertini\_real\_plotter (`mono', `r')} creates a red figure & Used to create a mono-color figure.\\  \\ \hline \\
-\texttt{`proj'} &  &  &  & Unsure of what proj does \\  \\ \hline \\
+\texttt{`proj'} &  &  &  & Use a function handle to pre-process the data, before plotting.  Lets you plot arbitrary projections of your data \\  \\ \hline \\
 \texttt{`vertices'} or \texttt{`vert'} & \texttt{`on'} & \texttt{`n'}, \texttt{`no'}, \texttt{`none'}, \texttt{`false'}, \texttt{`0'} & \texttt{bertini\_real\_plotter (`vertices', 0)} off & MATLAB can allow the user to place vertex markers and labels on the figure.  \\  \\ \hline
 \end{longtabu}
 
@@ -57,28 +62,31 @@ After running Bertini\_real, the output results can be visualized in Matlab.  Th
 
 
 
+\subsection{Visualizing in Python}
+
+This portion of visualization code is under active development.  There is some helper code currently available in {\tt bertini\_real/python/bertini\_real}.  Add the folder {\tt bertini\_real/python} to your Python path {\tt \$PYTHONPATH} environment variable to access it from your Python environment.  
 
 
 
-\clearpage
+
+
+
+
 
 \subsection{3D Printing}
-The following description on how to 3D print the surfaces that were decomposed from Bertini\_real is taken from \textit{Bertini\_real: Numerical Decomposition of Real Algebraic Curves and Surfaces}.\cite{BrN15} 
 
-We strive to make three-dimensional printing of surfaces decomposed using Bertini real almost
-trivial. Since even the unrefined surface decomposition is a triangulation, 3D printing is as simple as:
+We realized some time ago that the decomposition of surfaces produces triangulations, suitable for 3d printing with some post-processing.  Here's a rough overview of this:
 
-\begin{itemize}
-\item Convert data from plaintext
-\item Write to stereolithography (\gls{stl}) file
-\item If not compact, solidify the surface
-\item Process in model repair service
-\item Graphically ensure quality
+\begin{enumerate}
+\item Convert data from plaintext to stereolithography (\gls{stl}) file.  This may involve a projection
+\item If necessary, re-orient normals and solidify
+\item Process in your favorite model repair service to resolve any geometry problems you may have created in solidifying
 \item Print
-\end{itemize}
+\end{enumerate}
 
-We have been successful in printing surfaces, both compact and unbounded, those which are everywhere
-smooth, those which contain cusp singularity points, and even those containing singular
-curves.\cite{BrN15}
+Dani has been successful in printing a number of algebraic surfaces, including those either compact and unbounded, those which are everywhere
+smooth, those having cusp singularity points, and even those with singular
+curves.
 
+For examples of these, and advice on how to print surfaces, please take a gander at \href{http://www.danielthebrake.org/gallery/}{Dani's online gallery}.
 

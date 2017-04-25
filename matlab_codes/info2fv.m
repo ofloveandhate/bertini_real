@@ -81,7 +81,7 @@ for ii = 1:length(which_faces)
 					%do a lookup
 					for zz = 1:length(BRinfo.singular_curves)
 						if strcmp(BRinfo.singular_names{zz},curr_face.system_top)
-							curr_edge = BRinfo.singular_curves(zz).edges(curr_face.top,:);
+							curr_edge = BRinfo.singular_curves{zz}.edges(curr_face.top,:);
 						end
 					end
 					
@@ -109,7 +109,7 @@ for ii = 1:length(which_faces)
 					%do a lookup
 					for zz = 1:length(BRinfo.singular_curves)
 						if strcmp(BRinfo.singular_names{zz},curr_face.system_bottom)
-							curr_edge = BRinfo.singular_curves(zz).edges(curr_face.bottom,:);
+							curr_edge = BRinfo.singular_curves{zz}.edges(curr_face.bottom,:);
 						end
 					end
 					
