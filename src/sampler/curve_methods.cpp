@@ -317,6 +317,11 @@ void Curve::ReportEdgeWorker(int edge_index, VertexSet const& V, SolverConfigura
 
 void Curve::SynchronizeVertexSetMaster(int edge_index, VertexSet & V, int source, SolverConfiguration & solve_options)
 {
+	std::cout << "edge " << edge_index << " before adding / adjusting\n";
+	for (auto x : sample_indices_[edge_index])
+		std::cout << x << " ";
+	std::cout << '\n';
+
 	int num_to_recv;
 	MPI_Recv(&num_to_recv,1, MPI_INT, source, 5542, solve_options.comm(), MPI_STATUS_IGNORE);
 	for (int ii=0; ii<num_to_recv; ++ii)
@@ -338,13 +343,19 @@ void Curve::SynchronizeVertexSetMaster(int edge_index, VertexSet & V, int source
 			// loop over the samples (indices), 
 			// replace instances of old_index with new_index.
 	}
+
+	std::cout << "edge " << edge_index << " after adding / adjusting\n";
+	for (auto x : sample_indices_[edge_index])
+		std::cout << x << " ";
+	std::cout << "\n\n\n";
+
 }
 
 
 void Curve::SynchronizeVertexSetWorker(VertexSet const& V, SolverConfiguration & solve_options)
 {
 	// send num of vertices we'll be communicating
-	int num_prev = 0; //it's not really 0...
+	int num_prev = 0; //sam -- it's not really 0...
 	int num_now = 0;
 	int num_to_send = num_now - num_prev;
 
@@ -374,7 +385,7 @@ void Curve::SendEdgeSamples(int edge_index, int target, SolverConfiguration & so
 {
 	// 1 send how many samples there are in this edge
 	// CODE HERE
-
+	
 	// 2 send the indices
 	// CODE HERE
 }
