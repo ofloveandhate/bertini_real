@@ -471,7 +471,7 @@ void SamplerWorker(sampler_configuration & sampler_options)
 			case PARSING:
 			{
 				int single_int_buffer = 0;
-				MPI_Bcast(&single_int_buffer, 1, MPI_INT, 0, MPI_COMM_WORLD); // this catches a broadcast from Bertini's parser...
+				MPI_Bcast(&single_int_buffer, 1, MPI_INT, solve_options.head(), solve_options.comm()); // this catches a broadcast from Bertini's parser...
 				break;
 			}
 			case TRACKER_CONFIG:
