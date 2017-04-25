@@ -603,8 +603,7 @@ int sphere_solver_master_entry_point(const WitnessSet						&W, // carries with i
 			ED_mp->setup(config,
 						 W,
 						 solve_options);
-//			// initialize latest_newton_residual_mp
-//			mpf_init(solve_options.T.latest_newton_residual_mp);   //    <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+
 			break;
 		case 2:
 			ED_d = new sphere_eval_data_d(2);
@@ -695,19 +694,13 @@ int sphere_slave_entry_point(SolverConfiguration & solve_options)
 			ED_mp = new sphere_eval_data_mp(1);
 			ED_mp->receive(solve_options);
 			
-			// initialize latest_newton_residual_mp
-//			mpf_init(solve_options.T.latest_newton_residual_mp);   //   <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
+
 		case 2:
 			ED_d = new sphere_eval_data_d(2);
 			ED_mp = ED_d->BED_mp;
 			ED_d->receive(solve_options);
 			
-			
-			
-			
-			// initialize latest_newton_residual_mp
-//			mpf_init(solve_options.T.latest_newton_residual_mp);   //   <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		default:
 			break;
@@ -715,21 +708,14 @@ int sphere_slave_entry_point(SolverConfiguration & solve_options)
 	
     
 	
-	// call the file setup function
-	FILE *OUT = NULL, *midOUT = NULL;
 	
-	generic_setup_files(&OUT, "output",
-                        &midOUT, "midpath_data");
 	
 	trackingStats trackCount; init_trackingStats(&trackCount); // initialize trackCount to all 0
 	
-	worker_tracker_loop(&trackCount, OUT, midOUT,
+	worker_tracker_loop(&trackCount,
 						ED_d, ED_mp,
 						solve_options);
-	
-	
-	// close the files
-	fclose(midOUT);   fclose(OUT);
+
 	
 	//clear data
 	switch (solve_options.T.MPType) {
@@ -1011,7 +997,7 @@ int sphere_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat
 	if (offset+BED->num_static_linears != BED->num_variables-BED->patch.num_patches) {
 		std::cout << color::red() << "mismatch in offset!\nleft: " <<
 		offset+BED->num_static_linears << " right " << BED->num_variables-BED->patch.num_patches << color::console_default() << std::endl;
-		mypause();
+		throw std::runtime_error("mismatch in number of variables and patches in sphere solver");
 	}
 	
 	offset = BED->num_variables-BED->patch.num_patches;
@@ -1330,7 +1316,7 @@ int sphere_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv
 	if (offset+BED->num_static_linears != BED->num_variables-BED->patch.num_patches) {
 		std::cout << color::red() << "mismatch in offset!\nleft: " <<
 		offset+BED->num_static_linears << " right " << BED->num_variables-BED->patch.num_patches << color::console_default() << std::endl;
-		mypause();
+		throw std::runtime_error("mismatch in number of variables and patches in sphere solver");
 	}
 	
 	offset = BED->num_variables-BED->patch.num_patches;

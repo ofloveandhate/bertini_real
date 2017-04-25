@@ -64,43 +64,6 @@ void Surface::main(VertexSet & V,
 	
 	
 	
-	
-	
-	
-	// get the critical points and the sphere intersection points for the critical curve
-    WitnessSet W_critcurve_crit;
-    compute_critcurve_critpts(W_critcurve_crit, // the computed value
-                              W_critcurve,
-                              0,
-                              program_options,
-                              solve_options);
-    
-    
-    this->crit_curve_.add_witness_set(W_critcurve_crit,Critical,V);
-    
-    if (0)
-    {
-	    WitnessSet W_critcurve1;
-		std::map< int, WitnessSet> higher_multiplicity_witness_sets1;
-		
-		
-	    compute_critcurve_witness_set(W_critcurve1,
-									  higher_multiplicity_witness_sets1,
-	                                  W_surf,
-	                                  1,
-	                                  program_options,
-	                                  solve_options);
-		
-		
-	    compute_critcurve_critpts(W_critcurve_crit, // the computed value
-	                              W_critcurve1,
-	                              1,
-	                              program_options,
-	                              solve_options);
-    }
-	
-	
-	
 	///////////////////////////////
 	
 	WitnessSet points_which_needed_no_deflation;
@@ -113,7 +76,24 @@ void Surface::main(VertexSet & V,
 					  solve_options);
 	
 	
-	
+
+
+
+	///////////////////////////////////
+	// get the critical points and the sphere intersection points for the critical curve
+    WitnessSet W_critcurve_crit;
+    compute_critcurve_critpts(W_critcurve_crit, // the computed value
+                              W_critcurve,
+                              0,
+                              program_options,
+                              solve_options);
+    
+    
+    this->crit_curve_.add_witness_set(W_critcurve_crit,Critical,V);
+
+
+
+
 	WitnessSet W_singular_crit;
 	compute_singular_crit(W_singular_crit,
 						  split_sets,
@@ -254,7 +234,8 @@ void Surface::main(VertexSet & V,
     
     
     
-    
+    this->output_main(program_options.output_dir());
+	V.print(program_options.output_dir()/ "V.vertex");
     
     
 	
@@ -297,11 +278,6 @@ void Surface::main(VertexSet & V,
                    program_options, solve_options, "mid");
 	
 	
-	
-	//incremental output
-	this->output_main(program_options.output_dir());
-	V.print(program_options.output_dir()/ "V.vertex");
-	
 	// get the critical slices
 	
 	program_options.merge_edges(true);
@@ -309,10 +285,6 @@ void Surface::main(VertexSet & V,
                    crit_downstairs, this->crit_slices_,
                    program_options, solve_options, "crit");
 	
-    
-	//incremental output
-	this->output_main(program_options.output_dir());
-	V.print(program_options.output_dir()/ "V.vertex");
 	
 	//connect the dots - the final routine
 	connect_the_dots(V, program_options, solve_options);
@@ -427,8 +399,7 @@ void Surface::beginning_stuff(const WitnessSet & W_surf,
                               &(this->pi()),
                               solve_options))
 	{
-		std::cout << "the projections being used appear to suffer rank deficiency with Jacobian matrix..." << std::endl;
-		mypause();
+		std::cout << color::red() << "the projections being used appear to suffer rank deficiency with Jacobian matrix..." << color::console_default() << std::endl;
 	}
     
 	
@@ -717,6 +688,10 @@ void Surface::deflate_and_split(std::map< SingularObjectMetadata, WitnessSet > &
 		return;
 	}
 
+  if (program_options.ignore_singular()) {
+    return;
+  }
+
 	points_which_needed_no_deflation.copy_skeleton(higher_multiplicity_witness_sets.begin()->second);
 	
 	for (auto iter = higher_multiplicity_witness_sets.begin(); iter!=higher_multiplicity_witness_sets.end(); ++iter) {
@@ -973,7 +948,7 @@ int find_matching_singular_witness_points(WitnessSet & W_match,
 	
 	if (W.has_no_points()) {
 		std::cout << color::red() << "input witness set for find_matching_  has NO points, but hypothetically it does..." << color::console_default() << std::endl;
-		return TOLERABLE_FAILURE;
+		throw std::runtime_error("empty witness set for finding matching singular witness points");
 	}
 	
 	
@@ -1451,6 +1426,7 @@ void Surface::compute_slices(const WitnessSet W_surf,
         // does it matter speedwise whether i do this before or after the copy immediately above?  i think the answer is no.
         V.assert_projection_value(slices[ii].all_edge_indices(), &projection_values_downstairs->coord[ii], 0); // the 0 is an index into the number of projections.
 		
+		// this full surface output is overkill.  just need to output the slice just decomposed.
 		this->output_main(program_options.output_dir());
 		V.print(program_options.output_dir()/ "V.vertex");
 		
@@ -2273,6 +2249,8 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 				
 				SolverOutput fillme;
 				WitnessSet W_new;
+				W_midtrack.Realify(solve_options.T.real_threshold);
+				
 				midpoint_solver_master_entry_point(W_midtrack, // carries with it the start points, and the linears.
 												   fillme, // new data goes in here
 												   md_config,

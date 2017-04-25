@@ -375,7 +375,19 @@ public:
 	 */
 	void sort_for_inside_sphere(comp_mp radius, vec_mp center);
 	
-	
+
+	/**
+	Realify a point
+	*/
+	void RealifyPoint(int ind, double tol);
+
+
+	/**
+	\brief For those points which are 'real', throw away the imaginary part, but ensure they still satisfy the patch equation(s)
+	*/
+	void Realify(double tol);
+
+
 	/**
 	 \brief read in the witness set from a file, which MUST be formatted correctly.  for details on the format, see this code, or \see print_to_file()
 	 

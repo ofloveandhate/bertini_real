@@ -120,7 +120,7 @@ int VertexSet::compute_downstairs_crit_midpts(const WitnessSet & W,
 				
 				print_point_to_screen_matlab(pi,"pi");
 				std::cout << color::console_default();
-				return CRITICAL_FAILURE;
+				return retVal_NAN;
 			}
 			
 		}

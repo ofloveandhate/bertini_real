@@ -424,6 +424,8 @@ class BertiniRealConfig : public ProgramConfigBase
 	double same_point_tol_;
 	
 	
+
+	bool ignore_singular_;
 public:
 	
 	double same_point_tol() const
@@ -452,6 +454,16 @@ public:
 	void sym_prevent_subst(bool val)
 	{
 		prevent_sym_substitution_ = val;
+	}
+
+	bool ignore_singular() const
+	{
+		return ignore_singular_;
+	}
+
+	void ignore_singular(bool val)
+	{
+		ignore_singular_ = val;
 	}
 
 	/**

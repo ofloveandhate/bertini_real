@@ -1,11 +1,15 @@
 import os
+#def function_name(parameters)
+#function doc string under
 def parse_directory_name(directory_name = 'Dir_Name'):
 	""" Parses file that contains the directory name, the MPtype, and the dimension
 	 Returns a list [directory, MPtype, dimension]
 	"""
+	#os path manipulations. function returns true if path is an existing file
 	if not os.path.isfile(directory_name):
 		print "File does not exist, please run Bertini Real"
 		return
+	#open file, reads each line for the directory, mp type, and dimension and returns it in a list
 	with open(directory_name, 'r') as f:
 		directory = f.readline().replace('\n', '')
 		MPtype = f.readline().replace('\n', '')
@@ -15,7 +19,7 @@ def parse_directory_name(directory_name = 'Dir_Name'):
 
 
 
-
+#def defines function, name of function is parse_decomposition, parameter is the directory
 def parse_decomposition(directory):
 	"""
 	Reads data from decomp file.
@@ -25,6 +29,11 @@ def parse_decomposition(directory):
 		[Pi, Patch_Vectors, radius, center]
 
 	"""
+#checks if path file is a directory
+#what does '/decomp' and '/r' do?
+#reads for input file name, input variables and dimensions
+#splits into two separate parts, separate integers
+#turns them into integers
 	if not os.path.isfile(directory + '/decomp'):
 		print "did not find decomp at %s" %os.getcwd()
 		return {}
@@ -35,7 +44,7 @@ def parse_decomposition(directory):
 		dimension = int(num_variables_and_dimension[1])
 
 		Pi = [ [0,0] for i in xrange(num_variables - 1)]
-
+#im kinda confused as to what this is doing
 		for ii in xrange(dimension):
 			numVars = f.readline()
 			while numVars == '\n':
@@ -47,6 +56,8 @@ def parse_decomposition(directory):
 					continue
 				Pi[jj-1][ii] = complex(float(Pi_Nums[0]), float(Pi_Nums[1]))
 
+#can we talk about what patches are?
+#are patches extra blank lines?
 		# Getting number of Patches and then patch data
 		num_patches = f.readline()
 		while num_patches == '\n':
@@ -81,7 +92,8 @@ def parse_decomposition(directory):
 			center.append(complex(float(center_data[0]), float(center_data[1])))
 		return {'input file name':inputFileName,'Pi info': Pi, 'Patch Vectors':Patch_Vectors, "radius": radius, "center":center, "num patches":num_patches}
 
-
+#reads data from surf file, returns number of faces, edges, midpoint slices, critical point singular_curve_multiplicites
+#singular curves, and multiplicities
 def parse_Surf(directory):
 	""" Reads data from S.Surf file
 	Inputs: current directory
@@ -117,7 +129,7 @@ def parse_Surf(directory):
 def parse_Faces(directory):
 	""" Reads Faces data from F.faces
 	Inputs: current directory
-	Returns: list with each element being a dicitionary containing the face data
+	Returns: list with each element being a dictionary containing the face data
 		Keys for each dictionary:
 			"midpoint", "middle slice index", "top", "bottom"
 			"system top", "system bottom", "num left". "left"
@@ -178,6 +190,7 @@ def parse_Edges(directory):
 			edges = edges.replace(' \n', '').split(' ')
 			for jj in range(3):
 				curves['edges'][ii][jj] = int(edges[jj]) + 1
+				
 
 	return curves
 
@@ -186,10 +199,22 @@ def parse_Edges(directory):
 def parse_Curve_Sampler(directory):
 	filename = directory + '/samp.curvesamp'
 	if not os.path.isfile(filename):
-		return []
+		return [[]] #no curve sampling to parse, so return empty sampling
+
 	with open(filename, 'r') as f:
-		## Finish function when you have an example with curve sampler files
+		num_edges = int(f.readline().replace('\n', ''))
+		f.readline() # read blank line.
 		sampler_data = []
+
+		for ii in xrange(num_edges):
+			num_samples = int(f.readline().replace('\n', ''))
+			temp = []
+			thing = f.readline().replace('\n', '').split()
+			for jj in thing:
+				temp.append(int(jj))
+			sampler_data.append(temp)
+			f.readline() # read blank line.
+
 		return sampler_data
 
 

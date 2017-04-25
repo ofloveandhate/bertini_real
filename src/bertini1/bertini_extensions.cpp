@@ -21,112 +21,122 @@ std::string enum_lookup(int flag, int hint)
 	else
 	{
 	switch (flag) {
-		case SUCCESSFUL:
-			return "SUCCESSFUL";
-			break;
-			
-		case CRITICAL_FAILURE:
-			return "CRITICAL_FAILURE";
-			break;
-			
-		case TOLERABLE_FAILURE:
-			return "TOLERABLE_FAILURE";
+		case 0:
+			return "success";
 			break;
 			
 		case NULLSPACE:
 			return "NULLSPACE";
-			break;
 			
 		case LINPRODTODETJAC:
 			return "LINPRODTODETJAC";
-			break;
 			
 		case DETJACTODETJAC:
 			return "DETJACTODETJAC";
-			break;
 			
 		case LINTOLIN:
 			return "LINTOLIN";
-			break;
 			
 		case MULTILIN:
 			return "MULTILIN";
-			break;
 			
 		case MIDPOINT_SOLVER:
 			return "MIDPOINT_SOLVER";
-			break;
 			
 		case SPHERE_SOLVER:
 			return "SPHERE_SOLVER";
-			break;
 			
 		case BERTINI_MAIN:
 			return "BERTINI_MAIN";
-			break;
 		case TERMINATE:
 			return "TERMINATE";
-			break;
-			
+		case SAMPLE_CURVE:
+			return "SAMPLE_CURVE";
+		case SAMPLE_SURFACE:
+			return "SAMPLE_SURFACE";
+		case TRACKER_CONFIG:
+			return "TRACKER_CONFIG";
 		case INITIAL_STATE:
 			return "INITIAL_STATE";
-			break;
 			
 			
 		case PARSING:
 			return "PARSING";
-			break;
 			
 		case TYPE_CONFIRMATION:
 			return "TYPE_CONFIRMATION";
-			break;
 			
 		case DATA_TRANSMISSION:
 			return "DATA_TRANSMISSION";
-			break;
 			
 		case NUMPACKETS:
 			return "NUMPACKETS";
-			break;
 			
 		case INACTIVE:
 			return "INACTIVE";
-			break;
 			
 		case VEC_MP:
 			return "VEC_MP";
-			break;
 			
 		case VEC_D:
 			return "VEC_D";
-			break;
 			
 		case MAT_MP:
 			return "MAT_MP";
-			break;
 			
 		case MAT_D:
 			return "MAT_D";
-			break;
 			
 		case COMP_MP:
 			return "COMP_MP";
-			break;
 			
 		case COMP_D:
 			return "COMP_D";
-			break;
 			
 		case INDICES:
 			return "INDICES";
 			break;
 			
+		case retVal_max_prec_reached:
+			return "retVal_max_prec_reached";
+		case retVal_reached_minTrackT:
+			return "retVal_reached_minTrackT";
+		case retVal_cycle_num_too_high:
+			return "retVal_cycle_num_too_high";
+		case retVal_PSEG_failed:
+			return "retVal_PSEG_failed";
+		case retVal_going_to_infinity:
+			return "retVal_going_to_infinity";
+		case retVal_security_max:
+			return "retVal_security_max";
+		case retVal_step_size_too_small:
+			return "retVal_step_size_too_small";
+		case retVal_too_many_steps:
+			return "retVal_too_many_steps";
+		case retVal_refining_failed:
+			return "retVal_refining_failed";
+		 case retVal_higher_prec_needed:
+		 	return "retVal_higher_prec_needed";
+		 case retVal_NAN:
+		 	return "retVal_NAN";
+		 case retVal_Bertini_Junk:
+		 	return "retVal_Bertini_Junk";
+		 case retVal_Failed_to_converge:
+		 	return "retVal_Failed_to_converge";
+		 case retVal_sharpening_singular_endpoint:
+		 	return "retVal_sharpening_singular_endpoint";
+		 case retVal_sharpening_failed:
+		 	return "retVal_sharpening_failed";
+		 case retVal_higher_dim:
+		 	return "retVal_higher_dim";
 			
 		default:
 			break;
 	}
 	}
-	return "unknown...  check out data_type.cpp";
+	std::stringstream ss;
+	ss << "unknown enum value " << flag << ", check out data_type.cpp or bertini.h";
+	return ss.str();
 }
 
 
@@ -783,21 +793,13 @@ int take_determinant_mp(comp_mp determinant, const mat_mp source_matrix)
 		set_zero_mp(&zerovec->coord[ii]);
 	}
 	
-	//  these should be for realsies
-	
+
 	// returns x, intermediate.
-	
-	//	print_matrix_to_screen_matlab(tempmat,"tempmat");
-	
 	
 	int retval = LU_matrixSolve_mp(garbage, intermediate, &rwnm, &sign, const_cast<_mat_mp*>(source_matrix), zerovec,tol,largeChange);
 	//the solution is in intermediate.
 	//error check.  solution failed if retval!=0
 	if (retval!=0) {
-		//		printf("LU decomposition failed (mp)\n");
-		//		print_matrix_to_screen_matlab_mp(intermediate,"failed_result");
-		//		print_matrix_to_screen_matlab_mp(source_matrix,"source_matrix");
-		//		deliberate_segfault();
 		set_zero_mp(determinant);
 	}
 	else{
@@ -811,9 +813,7 @@ int take_determinant_mp(comp_mp determinant, const mat_mp source_matrix)
 			neg_mp(determinant,determinant);
 		}
 	}
-	//	print_matrix_to_screen_matlab(source_matrix,"detme");
-	//	printf("candidate=%lf+1i*%lf;det(detme)\n",determinant->r,determinant->i);
-	//	mypause();
+
 	// this verified correct via 20 samples in matlab.  dab.
 	
 	free(rwnm);
@@ -900,7 +900,8 @@ int isSamePoint_inhomogeneous_input(const point_mp left, const point_mp right, d
 	double B = infNormVec_mp(const_cast<_point_mp*>(right));
 
 	using std::min;
-	if (auto m = min(A,B)>1.0)
+	auto m = min(A,B);
+	if (m>1.0)
 		tolerance *= m;
 
 	return isSamePoint(NULL,const_cast<_point_mp*>(left),64,NULL,const_cast<_point_mp*>(right),64,tolerance);

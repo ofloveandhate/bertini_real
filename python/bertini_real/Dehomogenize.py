@@ -1,3 +1,4 @@
+#what does it mean to dehomogenize points
 def dehomogenize(points):
     """ Dehomogenizes points
         Still need to finish this function, but this works when the dehomogenizing index is 0

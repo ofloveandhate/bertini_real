@@ -449,7 +449,7 @@ void endgamedata_to_endpoint(post_process_t *endPoint, endgame_data_t *EG)
 	}
 	
 	
-	if (EG->retVal==0 || EG->retVal==-22 || EG->retVal==-50 || EG->retVal==-21) {//EG->retVal==-50
+	if (IsAcceptableRetval(EG->retVal)) {
 		endPoint->success = 1;
 	}
 	else if (EG->retVal == retVal_sharpening_failed){
@@ -545,4 +545,155 @@ void endpoint_to_vec_mp(vec_mp veccie, post_process_t *endPoint)
 			set_mp(&veccie->coord[jj],endPoint->sol_mp[jj]);
 		
 	}
+}
+
+
+
+void BRmidpointChecker(int num_paths, int num_vars, double tol, int *num_crossings, boost::filesystem::path const& filename, std::vector<int> & crossed_indices)
+{
+
+  FILE *midIN;
+  // read in the data and set up the structure that we'll be using to sort.
+	midIN = safe_fopen_read(filename);
+	if (midIN == NULL)
+	{
+	  std::stringstream ss; 
+	  ss << "file " << filename << " for midpath checking doesn't exist";
+	  throw std::runtime_error(ss.str());
+	}
+
+
+  int i, j, index;
+
+  if (num_paths < 2)
+    return;
+
+  if (tol > 1e-14)
+  { // check using double precision
+    point_d test_vec;
+    midpoint_data_d *midpoint_data = NULL;
+
+    init_vec_d(test_vec, 0);
+
+    
+
+    midpoint_data = (midpoint_data_d *)bcalloc(num_paths, sizeof(midpoint_data_d));
+    for (i = 0; i < num_paths; i++)
+    {
+      init_point_d(midpoint_data[i].point, num_vars);
+      midpoint_data[i].point->size = num_vars;
+      fscanf(midIN, "%d\n", &midpoint_data[i].path_num);
+      for (j = 0; j < num_vars; j++)
+        fscanf(midIN, "%lf%lf\n", &midpoint_data[i].point->coord[j].r, &midpoint_data[i].point->coord[j].i);
+      midpoint_data[i].norm = infNormVec_d(midpoint_data[i].point);
+    }
+
+    fclose(midIN);
+
+    // sort
+    qsort(midpoint_data, num_paths, sizeof(midpoint_data_d), norm_order_d);
+  
+    //Finally, we cycle through all of the midpoints and compare to the ones following it whose norms are within the specified tolerance.
+    //For each midpoint whose norm is within the specified tolerance, we check to see how close the points are (using the infinity norm).
+    //If there's no problem, we move on.  Otherwise, we print a warning (no automatic reruns for now!).
+    for (i = num_paths - 1; i >= 0; i--)  //Start at num_paths-1 since there is nothing to compare the last point to!
+    {
+      index = i + 1;
+      while ((index < num_paths) && (midpoint_data[index].norm - midpoint_data[i].norm < tol)) //Terminates if norm of the indexth midpt greater than norm of ith + tol.
+      {
+        vec_sub_d(test_vec, midpoint_data[index].point, midpoint_data[i].point);
+        if (infNormVec_d(test_vec) < tol)
+        {
+          printf("!!!WARNING!!!  Paths %d and %d may have crossed!!!\n", midpoint_data[i].path_num, midpoint_data[index].path_num);
+          *num_crossings = *num_crossings + 1;  //At the end, this will tell us how many crossings happened (NOTE:  WE DON'T ASSUME THIS STARTS AT 0!!!).
+        }
+
+        index++;
+      }
+    }
+
+    // clear memory
+    for (i = 0; i < num_paths; i++)
+      clear_point_d(midpoint_data[i].point);
+    free(midpoint_data);
+    clear_vec_d(test_vec);
+  }
+  else
+  { // check using multi precision
+    int curr_prec = (int) mpf_get_default_prec(), new_prec = digits_to_prec(2-log10(tol));
+    mpf_t norm_diff, tol_mp;
+    point_mp test_vec;
+    midpoint_data_mp *midpoint_data = NULL;
+
+    // set new precision
+    initMP(new_prec);
+
+    mpf_init(norm_diff);
+    mpf_init(tol_mp);
+    mpf_set_d(tol_mp, tol);
+    init_vec_mp(test_vec, 0);
+
+
+    midpoint_data = (midpoint_data_mp *)bcalloc(num_paths, sizeof(midpoint_data_mp));
+    for (i = 0; i < num_paths; i++)
+    {
+      mpf_init(midpoint_data[i].norm);
+      init_point_mp(midpoint_data[i].point, num_vars);
+      midpoint_data[i].point->size = num_vars;
+      fscanf(midIN, "%d\n", &midpoint_data[i].path_num);
+      for (j = 0; j < num_vars; j++)
+      {
+        mpf_inp_str(midpoint_data[i].point->coord[j].r, midIN, 10);
+        mpf_inp_str(midpoint_data[i].point->coord[j].i, midIN, 10);
+      }
+
+      infNormVec_mp2(midpoint_data[i].norm, midpoint_data[i].point);
+    }
+
+    fclose(midIN);
+
+    // sort
+    qsort(midpoint_data, num_paths, sizeof(midpoint_data_mp), norm_order_mp);
+
+    //Finally, we cycle through all of the midpoints and compare to the ones following it whose norms are within the specified tolerance.
+    //For each midpoint whose norm is within the specified tolerance, we check to see how close the points are (using the infinity norm).
+    //If there's no problem, we move on.  Otherwise, we print a warning (no automatic reruns for now!).
+    for (i = num_paths - 1; i >= 0; i--)  //Start at num_paths-1 since there is nothing to compare the last point to!
+    {
+      index = i + 1;
+      while (index < num_paths)
+      { // compute norm_diff
+        mpf_sub(norm_diff, midpoint_data[index].norm, midpoint_data[i].norm);
+        if (mpf_cmp(norm_diff, tol_mp) < 0)
+        {
+          vec_sub_mp(test_vec, midpoint_data[index].point, midpoint_data[i].point);
+          infNormVec_mp2(norm_diff, test_vec);
+          if (mpf_cmp(norm_diff, tol_mp) < 0)
+          {
+            printf("!!!WARNING!!!  Paths %d and %d may have crossed!!!\n", midpoint_data[i].path_num, midpoint_data[index].path_num);
+            *num_crossings = *num_crossings + 1;  //At the end, this will tell us how many crossings happened (NOTE:  WE DON'T ASSUME THIS STARTS AT 0!!!).
+          }
+
+          index++;
+        }
+        else
+        {
+          index = num_paths; // break out of loop
+        }
+      }
+    }
+
+    // clear memory
+    for (i = 0; i < num_paths; i++)
+      clear_point_mp(midpoint_data[i].point);
+    free(midpoint_data);
+    clear_vec_mp(test_vec);
+    mpf_clear(norm_diff);
+    mpf_clear(tol_mp);
+
+    // return to old precision
+    initMP(curr_prec);
+  }
+
+  return;
 }

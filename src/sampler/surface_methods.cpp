@@ -3,6 +3,8 @@
 #include <boost/math/common_factor.hpp>
 
 
+void WorkerSampleSurface(sampler_configuration & sampler_options, SolverConfiguration & solve_options)
+{}
 
 void Surface::fixed_sampler(VertexSet & V,
 							sampler_configuration & sampler_options,
