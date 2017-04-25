@@ -1,3 +1,8 @@
+
+#Nicolle Ho
+#University of Notre Dame
+#Spring 2017
+
 import os
 from BRdata import BRdata
 from Surface import Surface, Curve
