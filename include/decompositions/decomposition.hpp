@@ -607,7 +607,7 @@ protected:
 	
 	void init(){
 		
-		randomizer_ = std::make_shared<SystemRandomizer> (*(new SystemRandomizer()));
+		randomizer_ = std::make_shared<SystemRandomizer> ();
 
 		input_filename_ = "unset";
 		pi_ = NULL;

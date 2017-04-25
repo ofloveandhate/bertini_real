@@ -23,103 +23,83 @@ std::string enum_lookup(int flag, int hint)
 	switch (flag) {
 		case SUCCESSFUL:
 			return "SUCCESSFUL";
-			break;
 			
 		case CRITICAL_FAILURE:
 			return "CRITICAL_FAILURE";
-			break;
 			
 		case TOLERABLE_FAILURE:
 			return "TOLERABLE_FAILURE";
-			break;
 			
 		case NULLSPACE:
 			return "NULLSPACE";
-			break;
 			
 		case LINPRODTODETJAC:
 			return "LINPRODTODETJAC";
-			break;
 			
 		case DETJACTODETJAC:
 			return "DETJACTODETJAC";
-			break;
 			
 		case LINTOLIN:
 			return "LINTOLIN";
-			break;
 			
 		case MULTILIN:
 			return "MULTILIN";
-			break;
 			
 		case MIDPOINT_SOLVER:
 			return "MIDPOINT_SOLVER";
-			break;
 			
 		case SPHERE_SOLVER:
 			return "SPHERE_SOLVER";
-			break;
 			
 		case BERTINI_MAIN:
 			return "BERTINI_MAIN";
-			break;
 		case TERMINATE:
 			return "TERMINATE";
-			break;
-			
+		case SAMPLE_CURVE:
+			return "SAMPLE_CURVE";
+		case SAMPLE_SURFACE:
+			return "SAMPLE_SURFACE";
+		case TRACKER_CONFIG:
+			return "TRACKER_CONFIG";
 		case INITIAL_STATE:
 			return "INITIAL_STATE";
-			break;
 			
 			
 		case PARSING:
 			return "PARSING";
-			break;
 			
 		case TYPE_CONFIRMATION:
 			return "TYPE_CONFIRMATION";
-			break;
 			
 		case DATA_TRANSMISSION:
 			return "DATA_TRANSMISSION";
-			break;
 			
 		case NUMPACKETS:
 			return "NUMPACKETS";
-			break;
 			
 		case INACTIVE:
 			return "INACTIVE";
-			break;
 			
 		case VEC_MP:
 			return "VEC_MP";
-			break;
 			
 		case VEC_D:
 			return "VEC_D";
-			break;
 			
 		case MAT_MP:
 			return "MAT_MP";
-			break;
 			
 		case MAT_D:
 			return "MAT_D";
-			break;
 			
 		case COMP_MP:
 			return "COMP_MP";
-			break;
 			
 		case COMP_D:
 			return "COMP_D";
-			break;
 			
 		case INDICES:
 			return "INDICES";
-			break;
 			
 			
 		default:
@@ -900,7 +880,8 @@ int isSamePoint_inhomogeneous_input(const point_mp left, const point_mp right, d
 	double B = infNormVec_mp(const_cast<_point_mp*>(right));
 
 	using std::min;
-	if (auto m = min(A,B)>1.0)
+	auto m = min(A,B);
+	if (m>1.0)
 		tolerance *= m;
 
 	return isSamePoint(NULL,const_cast<_point_mp*>(left),64,NULL,const_cast<_point_mp*>(right),64,tolerance);
