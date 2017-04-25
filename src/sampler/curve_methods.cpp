@@ -230,6 +230,9 @@ void Curve::FixedSamplerMaster(VertexSet & V,
 
 	for (int ii=0; ii < num_edges(); ++ii)
 	{
+		if (get_edge(ii).is_degenerate()) 
+			continue;
+
 		int next_worker = solve_options.activate_next_worker();
 		MPI_Send(&ii, 1, MPI_INT, next_worker, NUMPACKETS, solve_options.comm());
 		//send positive edge_index to worker
