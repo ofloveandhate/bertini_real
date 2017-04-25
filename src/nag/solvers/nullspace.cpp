@@ -1663,22 +1663,15 @@ void nullspace_slave_entry_point(SolverConfiguration & solve_options)
 	
     
 	
-	// call the file setup function
-	FILE *OUT = NULL, *midOUT = NULL;
-	
-	generic_setup_files(&OUT, "nullspace_left_output",
-                        &midOUT, "nullspace_left_midpath_data");
 	
 	trackingStats trackCount; init_trackingStats(&trackCount); // initialize trackCount to all 0
 	
 
-	worker_tracker_loop(&trackCount, OUT, midOUT,
+	worker_tracker_loop(&trackCount,
 						ED_d, ED_mp,
 						solve_options);
 	
-	
-	// close the files
-	fclose(midOUT);   fclose(OUT);
+
 	
 	
 	switch (solve_options.T.MPType) {
@@ -2412,11 +2405,6 @@ int nullspacejac_right_eval_d(point_d funcVals, point_d parVals, vec_d parDer, m
 		//	print_matrix_to_screen_matlab(BED->jac_with_proj,"jacwithproj");
 		//			//these values are set in this function:  point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp
 		//		print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
-		//	std::cout << "\n\n**************\n\n";
-		if (BED->verbose_level()<0) {
-			mypause();
-		}
-		
 	}
 	
 	
@@ -3143,11 +3131,6 @@ int nullspacejac_right_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDe
 		//	print_matrix_to_screen_matlab(BED->jac_with_proj,"jacwithproj");
 		//			//these values are set in this function:  point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv, mat_mp Jp
 		//		print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
-		//	std::cout << "\n\n**************\n\n";
-		if (BED->verbose_level()<0) {
-			mypause();
-		}
-		
 	}
 	
 	
@@ -3863,11 +3846,6 @@ int nullspacejac_left_eval_d(point_d funcVals, point_d parVals, vec_d parDer, ma
 		//	print_matrix_to_screen_matlab(BED->jac_with_proj,"jacwithproj");
 		//			//these values are set in this function:  point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat_d Jp
 //		print_matrix_to_screen_matlab(BED->randomizer_matrix,"randomizer_matrix");
-		//	std::cout << "\n\n**************\n\n";
-		if (BED->verbose_level()<0) {
-			mypause();
-		}
-		
 	}
 	
 	

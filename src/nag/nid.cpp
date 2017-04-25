@@ -231,23 +231,7 @@ void NumericalIrreducibleDecomposition::populate(tracker_config_t * T)
 	fclose(IN);
 	
 	free(temp_rat);
-	
-	
-	
-	
-	clear_vec_mp(temp_vec);
-	clear_vec_mp(prev_approx);
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+	clear_vec_mp(temp_vec); clear_vec_mp(prev_approx);
 	
 	return;
 }
@@ -289,9 +273,6 @@ WitnessSet NumericalIrreducibleDecomposition::choose(BertiniRealConfig & options
 				}
 			}
 			else{ // want a specific witness set
-				
-//				std::cout << map_lookup_with_default(dimension_component_counter[target_dimension],target_component,0) << " " << dimension_component_counter[target_dimension][target_component] << std::endl;
-				
 				
 				if (map_lookup_with_default(dimension_component_counter[target_dimension],target_component,0)==0) {
 					std::cout << "you asked for component " << target_component << " (of dimension " << nonempty_dimensions[0] << ") which does not exist" << std::endl;
@@ -391,7 +372,7 @@ WitnessSet NumericalIrreducibleDecomposition::best_possible_automatic_set(Bertin
 		// iterate over components for target dimension
 		if (iter->second.size()==0) {
 			std::cout << "detected a witness set with no points.  this should be impossible...  by definition a witness set has at least one point in it." << std::endl;
-			mypause();
+			throw std::runtime_error("witness set with no points");
 		}
 		else{
 			if (point_metadata[iter->second[0]].num_deflations_needed()==0) {
@@ -455,7 +436,19 @@ WitnessSet NumericalIrreducibleDecomposition::best_possible_automatic_set(Bertin
 
 
 
+void NumericalIrreducibleDecomposition::DisplayComponentsOfDim(int dim)
+{
+	const auto& indices = index_tracker[dim];
+	for (auto jter = indices.begin(); jter!=indices.end(); ++jter) {
+		
+		int first_index = *(jter->second.begin());
+		auto comp = point_metadata[first_index].component_number();
+		auto deg = dimension_component_counter[dim][comp];
 
+		std::cout << "\tcomponent " << jter->first << ": degree " << deg << ", multiplicity " << point_metadata[first_index].multiplicity() << ", deflations needed: " << point_metadata[first_index].num_deflations_needed() << '\n';
+	}
+	std::cout << '\n';
+}
 
 
 
@@ -471,21 +464,15 @@ WitnessSet NumericalIrreducibleDecomposition::choose_set_interactive(BertiniReal
 	for (auto iter=nonempty_dimensions.begin(); iter!=nonempty_dimensions.end(); ++iter) {
 		std::cout << *iter << " ";
 	}
-	std::cout << std::endl;
+	std::cout << '\n';
 	
 	
 		
 	if (target_dimension==-1) { // display all dimensions, which is default
 		
 		for (auto iter=index_tracker.begin(); iter!=index_tracker.end(); ++iter) {
-			std::cout << "dimension " << iter->first << std::endl;
-			for (auto jter = iter->second.begin(); jter!=iter->second.end(); ++jter) {
-				
-				
-				int first_index = *(jter->second.begin());
-				std::cout << "\tcomponent " << jter->first << ": multiplicity " << point_metadata[first_index].multiplicity() << ", deflations needed: " << point_metadata[first_index].num_deflations_needed() << std::endl;
-			}
-			std::cout << std::endl;
+			DisplayComponentsOfDim(iter->first);
+			std::cout << '\n';
 		}
 		
 		std::set<int> valid_choices;
@@ -499,12 +486,8 @@ WitnessSet NumericalIrreducibleDecomposition::choose_set_interactive(BertiniReal
 		
 	
 	std::cout << "dimension " << target_dimension << std::endl;
-	for (auto jter = index_tracker[target_dimension].begin(); jter!= index_tracker[target_dimension].end(); ++jter) {
-		int first_index = *(jter->second.begin());
-		std::cout << "\tcomponent " << jter->first << ": multiplicity " << point_metadata[first_index].multiplicity() << ", deflations needed: " << point_metadata[first_index].num_deflations_needed() << ", degree " << dimension_component_counter[target_dimension][jter->first] << std::endl;
-		
-	}
-	std::cout << std::endl;
+	DisplayComponentsOfDim(target_dimension);
+	
 	
 	
 	

@@ -78,8 +78,16 @@ void getDehomPoint_comp_d(point_d dehomPoint, int *origErrorIsInf, double *origE
  */
 void getDehomPoint_comp_mp(point_mp dehomPoint, int *origErrorIsInf, double *origErrorEst, comp_mp *sol, int num_vars, preproc_data *PPD, double accuracyEstimate);
 
-	
-	
+/**
+ from the bertini library.  the prototype is not in any header file.
+ */
+int norm_order_d(const void *vp, const void *vq);
+
+/**
+ from the bertini library.  the prototype is not in any header file.
+ */
+int norm_order_mp(const void *vp, const void *vq);
+
 }
 
 

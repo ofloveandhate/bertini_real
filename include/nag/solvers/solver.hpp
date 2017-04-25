@@ -1169,7 +1169,7 @@ public:
 	double midpoint_tol; ///< how far apart midpoints must be to be considered distinct.
 	
 	int use_gamma_trick;///< whether to use the gamma trick for start systems.
-	
+	bool use_sequential_filenames; ///< whether to increment generated filenames by 1 to preserve all of them from a run, or not.
 	
 	
 	/**
@@ -2185,14 +2185,11 @@ int receive_endpoints(trackingStats *trackCount,
  \brief as a worker, receive starts, track, and send the solutions
  
  \param trackCount keeps track of statistics
- \param OUT open file into which we can write
- \param MIDOUT open file into which to print midpath data.
  \param ED_d double format evaluator data.
  \param ED_mp MP format evaluator data.
  \param solve_options the current state of the Solver config.
  */
 void worker_tracker_loop(trackingStats *trackCount,
-						 FILE * OUT, FILE * MIDOUT,
 						 SolverDoublePrecision * ED_d, SolverMultiplePrecision * ED_mp,
 						 SolverConfiguration & solve_options);
 
@@ -2254,10 +2251,16 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					   int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *));
 
 
+/**
+\brief Indicates which retvals from the bertini1 tracker are acceptable for use.
+*/
+bool IsAcceptableRetval(int);
 
 
-
-
+/**
+\brief Indicates which retvals from the bertini1 tracker are unretrackable in the robust solver.
+*/
+bool IsUnRetrackable(int);
 
 
 
