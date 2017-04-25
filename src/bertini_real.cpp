@@ -115,17 +115,17 @@ int main(int argC, char *args[])
 		try{
 			current_process.main_loop();
 		}
-		catch (std::runtime_error e)
+		catch (std::runtime_error& e)
 		{
 			std::cout << "uncaught runtime exception from ubermaster process caught in bertini_real;" << std::endl;
 			std::cout << e.what() << std::endl;
 		}
-		catch (std::logic_error e)
+		catch (std::logic_error& e)
 		{
 			std::cout << "uncaught logic exception from ubermaster process caught in bertini_real;" << std::endl;
 			std::cout << e.what() << std::endl;
 		}
-		catch (std::exception e){
+		catch (std::exception& e){
 			std::cout << "uncaught other exception from worker process caught in bertini_real;" << std::endl;
 			std::cout << e.what() << std::endl;
 		}
