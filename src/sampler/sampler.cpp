@@ -287,7 +287,7 @@ int main(int argC, char *args[])
 		SamplerWorker(sampler_options);
 	}
 	
-	
+	clearMP();
 	MPI_Finalize();
 	
 	return 0;
@@ -435,7 +435,6 @@ void SamplerMaster(sampler_configuration & sampler_options)
 	// dismiss the workers
 	int sendme = TERMINATE;
 	MPI_Bcast(&sendme, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	clearMP();
 }
 
 
@@ -492,7 +491,6 @@ void SamplerWorker(sampler_configuration & sampler_options)
 				break;
 		}
 	}
-	clearMP();
 }
 
 
