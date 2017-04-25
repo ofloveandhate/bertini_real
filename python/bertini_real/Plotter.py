@@ -15,15 +15,14 @@ class BRplotter(object):
 
     def plot(self):
         print("plotting object of dimension " + str(self.decomposition.dimension))
-        print("NH selfdecomp: " + str(self.decomposition))
         self.fig = plt.figure()
 
         if self.decomposition.num_variables==2:
             self.ax = self.fig.add_subplot(111)
         else:
             self.ax = self.fig.add_subplot(111, projection='3d')
+            self.ax.set_zlabel("z")
         self.PlotVertices()
-
 
         if self.decomposition.dimension == 1:
             self.PlotCurve(self.decomposition)
@@ -32,7 +31,8 @@ class BRplotter(object):
 
         plt.xlabel("x")
         plt.ylabel("y")
-        plt.title('ParsingFunctions.directory')
+        #plt.xlabel
+        plt.title(os.getcwd().split(os.sep)[-1])
         plt.show()
 
 
@@ -54,7 +54,6 @@ class BRplotter(object):
         xs = []
         ys = []
         zs = []
-        print "number of variables:", self.decomposition.num_variables
 
         for v in self.decomposition.vertices:
             xs.append(v['point'][0].real)
@@ -68,8 +67,7 @@ class BRplotter(object):
             self.ax.scatter(xs, ys)#v['point'][
         else:
             self.ax.scatter(xs, ys, zs, zdir='z', s=20, c=None, depthshade=True)#v['point'][
-        #print xs, ys, zs
-        #for item in
+
     def PlotCurve(self, curve):
         num_nondegen_edges=0
         nondegen=[]
@@ -84,19 +82,16 @@ class BRplotter(object):
 
         for i in range(num_nondegen_edges):
             color=color_list[i]
-            print(i,color_list[i])
             self.PlotEdge(curve,nondegen[i],color)
 
     def PlotEdge(self, curve, edge_index,color):
 
-        print("num edges: ", curve.curve.num_edges)
         xs=[]
         ys=[]
-        zx=[]
+        zs=[]
 
         inds = self.decomposition.curve.sampler_data[edge_index]
         for i in inds:
-            #print i
             v = self.decomposition.vertices[i]
             xs.append(v['point'][0].real)
             ys.append(v['point'][1].real)
