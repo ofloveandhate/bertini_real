@@ -255,7 +255,6 @@ void Curve::FixedSamplerMaster(VertexSet & V,
 }
 
 
-extern int mp_need_init;
 
 void Curve::FixedSamplerWorker(VertexSet & V,
 									  sampler_configuration & sampler_options,
