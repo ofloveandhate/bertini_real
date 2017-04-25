@@ -278,8 +278,6 @@ void Curve::FixedSamplerWorker(VertexSet & V,
 		if (edge_index < 0)
 			break;
 
-		if (sampler_options.verbose_level() >= 0)
-
 		SampleEdgeFixed(edge_index, V, sampler_options, solve_options, target_num_samples);
 		ReportEdgeWorker(edge_index, V, solve_options);
 	}
