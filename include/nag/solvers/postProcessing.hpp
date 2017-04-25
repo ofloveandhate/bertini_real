@@ -82,6 +82,19 @@ int BRfindRealSolns(post_process_t *endPoints, int num_sols, int num_vars,
 
 
 
+/**
+\brief Read a midpath-style file, get which paths appear to be crossed at the endgame boundary
+
+\param num_paths The number of paths to expect.  Not in header for the file.
+\param num_vars The number of variables per point.  Not in header for file.
+\param tol The tolerance for infinity-norm of difference in points to be labeled as crossing.
+\param [out] num_crossings The number of apparent path crossings
+\param filename The name of the file to open.
+\param crossed_indices The indices of the crossed paths.
+
+Derived directly from the bertini1 function midpoint_checker
+*/
+void BRmidpointChecker(int num_paths, int num_vars, double tol, int *num_crossings, boost::filesystem::path const& filename, std::vector<int> & crossed_indices);
 
 /**
  \brief Extract the solution from a post_process_t

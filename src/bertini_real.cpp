@@ -73,7 +73,7 @@ int main(int argC, char *args[])
 	
 	
 	if (solve_options.use_parallel()) { // everybody participates in this.
-		MPI_Bcast(&solve_options.path_number_modulus,1,MPI_INT,0,MPI_COMM_WORLD); // first is declaration that a parse is going to happen.
+		MPI_Bcast(&solve_options.path_number_modulus,1,MPI_INT,0,MPI_COMM_WORLD); 
 		bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
 	}
 	
@@ -94,17 +94,17 @@ int main(int argC, char *args[])
 		try{
 			current_process.main_loop();
 		}
-		catch (std::runtime_error e)
+		catch (std::runtime_error &e)
 		{
 			std::cout << "uncaught runtime exception from ubermaster process caught in bertini_real;" << std::endl;
 			std::cout << e.what() << std::endl;
 		}
-		catch (std::logic_error e)
+		catch (std::logic_error &e)
 		{
 			std::cout << "uncaught logic exception from ubermaster process caught in bertini_real;" << std::endl;
 			std::cout << e.what() << std::endl;
 		}
-		catch (std::exception e){
+		catch (std::exception &e){
 			std::cout << "uncaught other exception from ubermaster process caught in bertini_real;" << std::endl;
 			std::cout << e.what() << std::endl;
 		}
@@ -115,17 +115,17 @@ int main(int argC, char *args[])
 		try{
 			current_process.main_loop();
 		}
-		catch (std::runtime_error e)
+		catch (std::runtime_error& e)
 		{
 			std::cout << "uncaught runtime exception from ubermaster process caught in bertini_real;" << std::endl;
 			std::cout << e.what() << std::endl;
 		}
-		catch (std::logic_error e)
+		catch (std::logic_error& e)
 		{
 			std::cout << "uncaught logic exception from ubermaster process caught in bertini_real;" << std::endl;
 			std::cout << e.what() << std::endl;
 		}
-		catch (std::exception e){
+		catch (std::exception& e){
 			std::cout << "uncaught other exception from worker process caught in bertini_real;" << std::endl;
 			std::cout << e.what() << std::endl;
 		}

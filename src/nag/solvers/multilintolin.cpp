@@ -476,8 +476,6 @@ int multilin_solver_master_entry_point(const WitnessSet & W, // carries with it 
 						 W,
 						 target_linears,
 						 solve_options);
-			// initialize latest_newton_residual_mp
-//			mpf_init(solve_options.T.latest_newton_residual_mp);   //    <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		case 2:
 			ED_d = new multilintolin_eval_data_d(2);
@@ -572,19 +570,12 @@ int multilin_slave_entry_point(SolverConfiguration & solve_options)
 			ED_mp = new multilintolin_eval_data_mp(1);
 			ED_mp->receive(solve_options);
 			
-			// initialize latest_newton_residual_mp
-//			mpf_init(solve_options.T.latest_newton_residual_mp);   //    <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		case 2:
 			ED_d = new multilintolin_eval_data_d(2);
 			ED_mp = ED_d->BED_mp;
 			ED_d->receive(solve_options);
 			
-			
-			
-			
-			// initialize latest_newton_residual_mp
-//			mpf_init(solve_options.T.latest_newton_residual_mp);   //    <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		default:
 			break;
@@ -592,21 +583,14 @@ int multilin_slave_entry_point(SolverConfiguration & solve_options)
 	
     
 	
-	// call the file setup function
-	FILE *OUT = NULL, *midOUT = NULL;
-	
-	generic_setup_files(&OUT, "multilin_output",
-                        &midOUT, "midpath_data");
 	
 	trackingStats trackCount; init_trackingStats(&trackCount); // initialize trackCount to all 0
 	
-	worker_tracker_loop(&trackCount, OUT, midOUT,
+	worker_tracker_loop(&trackCount,
 						ED_d, ED_mp,
 						solve_options);
 	
-	
-	// close the files
-	fclose(midOUT);   fclose(OUT);
+
 	
 	//clear data
 	switch (solve_options.T.MPType) {
@@ -823,18 +807,13 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	
 	// done!  yay!
 	
-	if (BED->verbose_level()==12) {
+	if (abs(BED->verbose_level())==12) {
 		//uncomment to see screen output of important variables at each solve step.
-		printf("gamma = %lf+1i*%lf;\n", BED->gamma->r, BED->gamma->i);
 		printf("time = %lf+1i*%lf;\n", pathVars->r, pathVars->i);
 		print_matrix_to_screen_matlab( AtimesJ,"R*jac");
 		print_point_to_screen_matlab(current_variable_values,"currvars");
-		print_point_to_screen_matlab(BED->current_linear[0],"new");
-		print_point_to_screen_matlab(BED->old_linear[0],"old");
 		print_point_to_screen_matlab(funcVals,"F");
 		print_matrix_to_screen_matlab(Jv,"Jv");
-		print_matrix_to_screen_matlab(Jp,"Jp");
-		std::cout << BED->randomizer() << std::endl;//
 		
 	}
 	
@@ -1066,21 +1045,18 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	
 	// done!  yay!
 	
-	if (BED->verbose_level()==12) {
+	if (abs(BED->verbose_level())==12) {
 		//uncomment to see screen output of important variables at each solve step.
 		print_comp_matlab(pathVars, "t");
-		printf("BED->num_linears = %d\n",BED->num_linears);
-		print_point_to_screen_matlab(parVals,"parVals_mp");
 		print_matrix_to_screen_matlab( AtimesJ,"R*jac_mp");
 		print_point_to_screen_matlab(current_variable_values,"currvars_mp");
-		for (int ii=0; ii<BED->num_linears; ii++) {
-			print_point_to_screen_matlab(BED->current_linear[ii],"new_mp");
-			print_point_to_screen_matlab(BED->old_linear[ii],"old_mp");
-		}
+		// for (int ii=0; ii<BED->num_linears; ii++) {
+		// 	print_point_to_screen_matlab(BED->current_linear[ii],"new_mp");
+		// 	print_point_to_screen_matlab(BED->old_linear[ii],"old_mp");
+		// }
 		print_point_to_screen_matlab(funcVals,"F_mp");
 		print_matrix_to_screen_matlab(Jv,"Jv_mp");
-		print_matrix_to_screen_matlab(Jp,"Jp_mp");
-		std::cout << BED->randomizer() << std::endl;
+		// print_matrix_to_screen_matlab(Jp,"Jp_mp");
 	}
 	
 	

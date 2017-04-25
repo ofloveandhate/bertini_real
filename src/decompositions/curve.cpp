@@ -650,7 +650,7 @@ void Curve::MidSlice(int& edge_counter,
 
 		if (num_total_midslice_points - num_unique_midslice_points)
 		{
-			std::cout << color::red() << "there were non-unique midpoints.\n" << color::console_default();
+			std::cout << color::red() << "there were non-unique midpoints in interval " << ii << ".\n" << color::console_default();
 			std::cout << "trying to recover the failure by tightening tracking tolerances..." << std::endl;
 				
             solve_options.T.endgameNumber = 2;
@@ -676,7 +676,7 @@ void Curve::MidSlice(int& edge_counter,
 
 		if (num_total_midslice_points - num_unique_midslice_points)
 		{
-			std::cout << color::red() << "there were non-unique midpoints.  your decomposition is possibly incorrect about the missed points, if the path crossings obscured real points\n" << color::console_default();
+			std::cout << color::red() << "there were non-unique midpoints in interval " << ii << ".  your decomposition is possibly incorrect about the missed points, if the path crossings obscured real points\n" << color::console_default();
 		}
 
 
@@ -705,7 +705,7 @@ void Curve::MidSlice(int& edge_counter,
 		}
 		auto num_real_interior_midslice_points = midpoint_witness_sets[ii].num_points();
 
-		if (program_options.verbose_level()>=2) {
+		if (program_options.verbose_level()>=3) {
 			if (num_real_midslice_points - num_real_interior_midslice_points)
 			{
 				midpoint_witness_sets[ii].print_to_screen();
@@ -801,6 +801,8 @@ void Curve::ConnectTheDots(
 			SolverOutput fillme0;
 			// track left
 			neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii]);
+
+			midpoint_witness_sets[ii].Realify(solve_options.T.real_threshold);			
             multilin_solver_master_entry_point(midpoint_witness_sets[ii],         // input WitnessSet
                                                fillme0, // the new data is put here!
                                                &particular_projection,
@@ -906,7 +908,6 @@ void Curve::ConnectTheDots(
 
 							if (W_single_sharpened.num_points()==0) {
 								std::cout << "sharpening failed, which sucks because the sharpened point was theoretically generic with respect to the system currently being used" << std::endl;
-								mypause();
 							}
 							
 							solve_options.T.sharpenDigits = prev_sharpen_digits;
@@ -1130,7 +1131,7 @@ std::vector<int> Curve::GetMergeCandidates(const VertexSet & V) const
 				
 				
 				if (tentative_left_edge < 0) {
-					std::cout << "found that edge " << tentative_edge_list.back() << " has NEW leftpoint, but \\nexists edge w point " << edges_[tentative_edge_list.back()].left() << " as right point." << std::endl;
+					std::cout << color::red() << "found that edge " << tentative_edge_list.back() << " has NEW leftpoint, but \\nexists edge w point " << edges_[tentative_edge_list.back()].left() << " as right point." << color::console_default() << std::endl;
 					break;
 					//gotta do something careful here?   i suspect that this happens when two points are very near to each other...
 				}

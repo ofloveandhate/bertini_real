@@ -380,6 +380,11 @@ public:
 	
 	
 	/**
+	\brief Display degrees, etc, of all components of a dimension
+	*/
+	void DisplayComponentsOfDim(int dim);
+	
+	/**
 	 retreive from the NID the specific witness set of particular dimension and component number.  If either doesn't exist, then the returned witness set is empty.
 	 
 	 \return The specific witness set desired.  May be empty if the dimension or component number correspond to something don't exist.

@@ -3,8 +3,8 @@
 
 
 
-#we're building bertini_real, version 1.4.0, and the corresponding email is dani brake's
-AC_INIT([bertini_real], [1.4.0], [danielthebrake@gmail.com],[bertini_real], [http://www.danielthebrake.org/])
+#we're building bertini_real, version 1.6.0, and the corresponding email is dani brake's
+AC_INIT([bertini_real], [1.6.0], [danielthebrake@gmail.com],[bertini_real], [http://www.danielthebrake.org/])
 
 
 # Force autoconf to be at least this version number:
@@ -102,9 +102,10 @@ AX_BOOST_SYSTEM
 AX_BOOST_FILESYSTEM
 
 AX_BOOST_REGEX
+AX_BOOST_CHRONO
 AX_BOOST_TIMER
 
-AX_BOOST_CHRONO
+
 
 AM_CONFIG_HEADER(config.h)
 

@@ -615,12 +615,33 @@ public:
 	 \param sampler_options The current state of the sampler program.
 	 \param solve_options The current state of the solver and tracker configuration.
 	 */
-	void adaptive_sampler_movement(VertexSet &V,
+	void AdaptiveMovementSampler(VertexSet &V,
 								   sampler_configuration & sampler_options,
 								   SolverConfiguration & solve_options);
 	
 	
-	
+	void SampleEdgeAdaptiveMovement(	int ii,
+								VertexSet & V,
+								sampler_configuration & sampler_options,
+								SolverConfiguration & solve_options);
+
+	void SampleEdgeAdaptiveDistance(	int ii,
+								VertexSet & V,
+								sampler_configuration & sampler_options,
+								SolverConfiguration & solve_options);
+
+	void SampleEdgeSemiFixed(	int ii,
+								VertexSet & V,
+								sampler_configuration & sampler_options,
+								SolverConfiguration & solve_options,
+								std::vector<int> const& num_samples_per_interval);
+
+	void SampleEdgeFixed(	int ii,
+								VertexSet & V,
+								sampler_configuration & sampler_options,
+								SolverConfiguration & solve_options,
+									  int target_num_samples);
+
 	/**
 	\brief Sample a curve using adaptive method based on distance between computed samples, and a maximum number of refinement passes.
 	 
@@ -632,12 +653,34 @@ public:
 	 \param sampler_options The current state of the sampler program.
 	 \param solve_options The current state of the solver and tracker configuration.
 	*/
-	void adaptive_sampler_distance(VertexSet &V,
+	void AdaptiveDistanceSampler(VertexSet &V,
 						  sampler_configuration & sampler_options,
 						  SolverConfiguration & solve_options);
 	
 	
-	
+
+
+	void FixedSamplerSerial(VertexSet & V,
+									  sampler_configuration & sampler_options,
+									  SolverConfiguration & solve_options,
+									  int target_num_samples);
+	void FixedSamplerMaster(VertexSet & V,
+									  sampler_configuration & sampler_options,
+									  SolverConfiguration & solve_options,
+									  int target_num_samples);
+	void FixedSamplerWorker(VertexSet & V,
+									  sampler_configuration & sampler_options,
+									  SolverConfiguration & solve_options);
+	int ReportEdgeMaster(VertexSet & V, SolverConfiguration & solve_options);
+	void ReportEdgeWorker(int edge_index, VertexSet const& V, SolverConfiguration & solve_options);
+
+
+	void SynchronizeVertexSetMaster(int edge_index, VertexSet & V, int source, SolverConfiguration & solve_options);
+	void SynchronizeVertexSetWorker(VertexSet const& V, SolverConfiguration & solve_options);
+	void ReceiveEdgeSamples(int edge_index, int source, SolverConfiguration & solve_options);
+
+	void SendEdgeSamples(int edge_index, int target, SolverConfiguration & solve_options);
+
 	/**
 	 \brief sets up refinement flags to YES for every interval, for first pass of adaptive refinement.
 	 
@@ -663,7 +706,7 @@ public:
 	 */
 	int fixed_set_initial_sample_data(int target_num_samples);
 	
-	int fixed_set_initial_sample_data(std::vector<int> const& num_samples_per_interval, VertexSet const& V);
+	int semi_fixed_set_initial_sample_data(std::vector<int> const& num_samples_per_interval, VertexSet const& V);
 	/**
 	 \brief Sample a curve so it has an equal number of points per edge, including boundary points.
 	 
@@ -674,7 +717,7 @@ public:
 	 \param solve_options The current state of the solver.
 	 \param target_num_samples The number of points to get on each edge, including boundary points.
 	 */
-	void fixed_sampler(VertexSet &V,
+	void FixedSampler(VertexSet &V,
 					   sampler_configuration & sampler_options,
 					   SolverConfiguration & solve_options,
 					   int target_num_samples);
@@ -685,7 +728,7 @@ public:
 
 	while sampling, we look at each edge, and find the correct number of samples for the edge individually.
 
-	\see fixed_sampler
+	\see FixedSampler
 	*/
 	void SemiFixedSampler(VertexSet &V,
 					   sampler_configuration & sampler_options,

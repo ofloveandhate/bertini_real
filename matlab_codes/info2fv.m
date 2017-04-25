@@ -1,47 +1,57 @@
-% fv = info2fv(BRinfo)
+% fv = info2fv(BRinfo, which_faces)
 %
 % extract the faces from a bertini_real output.
+%
+% if which_faces is empty, or missing, all faces will be extracted
+
+function [fv] = info2fv(BRinfo, which_faces)
 
 
-function [fv] = info2fv(BRinfo)
+if nargin<=1
+	which_faces = 1:BRinfo.num_faces;
+elseif isempty(which_faces)
+	which_faces = 1:BRinfo.num_faces;
+end
 
+coord_ind = [1 2 3];
 
-ind = [1 2 3];
+fv.vertices = make_vertices(coord_ind, BRinfo);
 
-fv.vertices = make_vertices(ind, BRinfo);
-
-if isempty(BRinfo.sampler_data)
-	fv.faces = make_faces(BRinfo, ind);
+if ~isempty(BRinfo.sampler_data)
+	fv.faces = make_faces_sampled(BRinfo, which_faces);
 else
-	fv.faces = make_surface_faces(BRinfo);
+	fv.faces = make_faces_blocky(BRinfo, which_faces);
 end
 
 degen = any(diff(fv.faces(:,[1:3 1]),[],2)==0,2);
 fv.faces(degen,:) = [];
 
-% fv = unifyMeshNormals(fv,'alignTo',1);
 end
 
 
 
 
-function faces = make_faces(BRinfo, ind)
+function faces = make_faces_blocky(BRinfo, which_faces)
 
 %
 num_total_faces = 0;
-for ii = 1:BRinfo.num_faces
-	curr_face = BRinfo.faces(ii);
+for ii = 1:length(which_faces)
+	
+	curr_face = BRinfo.faces(which_faces(ii));
 	num_total_faces = num_total_faces + curr_face.num_left + curr_face.num_right + curr_face.top>=0 + curr_face.bottom>=0;
 end
 num_total_faces = num_total_faces*2;
-faces = zeros(num_total_faces, length(ind));
+faces = zeros(num_total_faces,3);
 curr_face_index = 1; %this will be incremented in the loop over the faces
 
 
 
 
-for ii = 1:BRinfo.num_faces
-	if BRinfo.faces(ii).midslice_index == -1
+for ii = 1:length(which_faces)
+	
+	curr_face = BRinfo.faces(which_faces(ii));
+	
+	if curr_face.midslice_index == -1
 		continue
 	end
 	
@@ -58,20 +68,20 @@ for ii = 1:BRinfo.num_faces
 				pass = pass+1;
 				
 				
-				if BRinfo.faces(ii).top<0
+				if curr_face.top<0
 					continue;
 				end
 				
 				curr_edge = -10;
-				if strcmp(BRinfo.faces(ii).system_top,'input_critical_curve')
-					curr_edge = BRinfo.crit_curve.edges(BRinfo.faces(ii).top+1,:);
-				elseif strcmp(BRinfo.faces(ii).system_top,'input_surf_sphere')
-					curr_edge = BRinfo.sphere_curve.edges(BRinfo.faces(ii).top+1,:);
+				if strcmp(curr_face.system_top,'input_critical_curve')
+					curr_edge = BRinfo.crit_curve.edges(curr_face.top,:);
+				elseif strcmp(curr_face.system_top,'input_surf_sphere')
+					curr_edge = BRinfo.sphere_curve.edges(curr_face.top,:);
 				else
 					%do a lookup
 					for zz = 1:length(BRinfo.singular_curves)
-						if strcmp(BRinfo.singular_names{zz},BRinfo.faces(ii).system_top)
-							curr_edge = BRinfo.singular_curves(zz).edges(BRinfo.faces(ii).top+1,:);
+						if strcmp(BRinfo.singular_names{zz},curr_face.system_top)
+							curr_edge = BRinfo.singular_curves{zz}.edges(curr_face.top,:);
 						end
 					end
 					
@@ -86,20 +96,20 @@ for ii = 1:BRinfo.num_faces
 			case 2  %the bottom edge
 				pass = pass+1;
 				
-				if BRinfo.faces(ii).bottom<0
+				if curr_face.bottom<0
 					continue;
 				end
 				
 				curr_edge = -10;
-				if strcmp(BRinfo.faces(ii).system_bottom,'input_critical_curve')
-					curr_edge = BRinfo.crit_curve.edges(BRinfo.faces(ii).bottom+1,:);
-				elseif strcmp(BRinfo.faces(ii).system_bottom,'input_surf_sphere')
-					curr_edge = BRinfo.sphere_curve.edges(BRinfo.faces(ii).bottom+1,:);
+				if strcmp(curr_face.system_bottom,'input_critical_curve')
+					curr_edge = BRinfo.crit_curve.edges(curr_face.bottom,:);
+				elseif strcmp(curr_face.system_bottom,'input_surf_sphere')
+					curr_edge = BRinfo.sphere_curve.edges(curr_face.bottom,:);
 				else
 					%do a lookup
 					for zz = 1:length(BRinfo.singular_curves)
-						if strcmp(BRinfo.singular_names{zz},BRinfo.faces(ii).system_bottom)
-							curr_edge = BRinfo.singular_curves(zz).edges(BRinfo.faces(ii).bottom+1,:);
+						if strcmp(BRinfo.singular_names{zz},curr_face.system_bottom)
+							curr_edge = BRinfo.singular_curves{zz}.edges(curr_face.bottom,:);
 						end
 					end
 					
@@ -111,13 +121,13 @@ for ii = 1:BRinfo.num_faces
 				end
 				
 			case 3
-				if left_edge_counter <= BRinfo.faces(ii).num_left
-					if BRinfo.faces(ii).left(left_edge_counter)<0 %an error check
+				if left_edge_counter <= curr_face.num_left
+					if curr_face.left(left_edge_counter)<0 %an error check
 						continue;
 					end
 					
-					slice_ind = BRinfo.faces(ii).midslice_index+1; %offset by 1.
-					edge_ind = BRinfo.faces(ii).left(left_edge_counter)+1; %offset by 1.
+					slice_ind = curr_face.midslice_index; %offset by 1.
+					edge_ind = curr_face.left(left_edge_counter); %offset by 1.
 					
 					curr_edge = BRinfo.critpoint_slices{slice_ind}.edges(edge_ind,:);
 					left_edge_counter = left_edge_counter +1; %increment
@@ -128,14 +138,14 @@ for ii = 1:BRinfo.num_faces
 					continue;
 				end
 			case 4
-				if right_edge_counter <= BRinfo.faces(ii).num_right
+				if right_edge_counter <= curr_face.num_right
 					
-					if BRinfo.faces(ii).right(right_edge_counter)<0
+					if curr_face.right(right_edge_counter)<0
 						continue;
 					end
 					
-					slice_ind = BRinfo.faces(ii).midslice_index+2;
-					edge_ind = BRinfo.faces(ii).right(right_edge_counter)+1;
+					slice_ind = curr_face.midslice_index+1;
+					edge_ind = curr_face.right(right_edge_counter);
 					curr_edge = BRinfo.critpoint_slices{slice_ind}.edges(edge_ind,:);
 					right_edge_counter = right_edge_counter +1;
 					
@@ -151,8 +161,8 @@ for ii = 1:BRinfo.num_faces
 		end
 		
 		
-		faces(curr_face_index,:) = [curr_edge(1) curr_edge(2) BRinfo.faces(ii).midpoint+1];
-		faces(curr_face_index+1,:) = [curr_edge(2) curr_edge(3) BRinfo.faces(ii).midpoint+1];
+		faces(curr_face_index,:) = [curr_edge(1) curr_edge(2) curr_face.midpoint];
+		faces(curr_face_index+1,:) = [curr_edge(2) curr_edge(3) curr_face.midpoint];
 		curr_face_index = curr_face_index+2;
 		
 		
@@ -179,22 +189,19 @@ end
 
 
 
-function [faces] = make_surface_faces(BRinfo)
+function [faces] = make_faces_sampled(BRinfo, which_faces)
 
 
 faces = [];
 
 if ~isempty(BRinfo.sampler_data)
-	for ii = 1:length(BRinfo.sampler_data)
+	for ii = 1:length(which_faces)
 		
+		curr_face = which_faces(ii);
 		
-		f = BRinfo.sampler_data{ii}+1;
+		f = BRinfo.sampler_data{curr_face};
 		f(any(f<=0,2),:) = []; % omit problematic faces.
 		faces = [faces;f];
-% 		h = patch(fv);
-% 		
-% 		set(h,'FaceColor',colors(ii,:),'FaceAlpha',0.7,'EdgeColor',0.985*colors(ii,:),'EdgeAlpha',0.5);%,'EdgeColor',0.985*colors(ii,:),'EdgeAlpha',0.5
-% 		plot_params.handles.surface_samples(ii) = h;
 	end
 end
 

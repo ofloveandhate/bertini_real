@@ -82,7 +82,7 @@ int UbermasterProcess::main_loop()
 	
 	V.set_tracker_config(&solve_options.T);
 	
-	V.set_same_point_tolerance(1e1*solve_options.T.real_threshold);
+	V.set_same_point_tolerance(program_options.same_point_tol());
 
 	
 	vec_mp *pi = (vec_mp *) br_malloc(W.dimension()*sizeof(vec_mp ));
@@ -138,9 +138,11 @@ void UbermasterProcess::bertini_real(WitnessSet & W, vec_mp *pi, VertexSet & V)
 	temp_name += converter.str();
 	
 	program_options.output_dir(temp_name);
-	
-	
-	
+	if (boost::filesystem::exists(program_options.output_dir()))
+		BackupDir(program_options.output_dir());
+	boost::filesystem::create_directory(program_options.output_dir());
+	program_options.PrintMetadata(program_options.output_dir() / "run_metadata");
+
 	
 	switch (W.dimension()) {
 		case 1:
@@ -169,7 +171,6 @@ void UbermasterProcess::bertini_real(WitnessSet & W, vec_mp *pi, VertexSet & V)
 			
 			
 			Surface S;
-			
 			// surface
 			S.main(V, W, pi, program_options, solve_options);
 			
@@ -190,6 +191,7 @@ void UbermasterProcess::bertini_real(WitnessSet & W, vec_mp *pi, VertexSet & V)
 	}
 	
 	program_options.PrintMetadata(program_options.output_dir() / "run_metadata");
+
 }
 
 

@@ -51,14 +51,8 @@ int Decomposition::index_in_vertices(VertexSet & V,
 #ifdef functionentry_output
 	std::cout << "Decomposition::index_in_vertices" << std::endl;
 #endif
-	int index = -1;
-	
-	
-	// first we search the non-removed points.
-	index = V.search_for_point(testpoint);
-    
-    
-	return index;
+
+	return V.search_for_point(testpoint);
 }
 
 
@@ -287,7 +281,6 @@ int Decomposition::read_sphere(const boost::filesystem::path & bounding_sphere_f
 	
 	if (num_variables_<2) {
 		std::cout << "during read of sphere, Decomposition of dimension	" << dimension() << " has " << num_variables() << " variables!" << std::endl;
-		mypause();
 	}
 
 	change_size_vec_mp(this->sphere_center_, num_variables()-1); //destructive resize
@@ -451,19 +444,11 @@ void Decomposition::output_main(const boost::filesystem::path base) const
 	std::cout << "Decomposition::output_main" << std::endl;
 #endif
 
-	FILE *OUT;
-	boost::filesystem::path backupdir = base;
-	backupdir += "_bak";
-	if (boost::filesystem::exists(base)) {
-		
-		if (boost::filesystem::exists(backupdir)) {
-			boost::filesystem::remove_all(backupdir);
-		}
-		boost::filesystem::rename(base, backupdir);
-	}
+	
+	
 	boost::filesystem::create_directory(base);
 	
-	
+	PrintPointTypeMapping(base / "vertex_types");
 	copyfile("witness_data",base / "witness_data"); // this is wrong for nested decompositions.
 	
 	W_.print_to_file(base / "witness_set");
@@ -480,9 +465,9 @@ void Decomposition::output_main(const boost::filesystem::path base) const
 	
 	this->print(base); // using polymorphism and virtualism here!
 	
-	PrintPointTypeMapping(base / "vertex_types");
+	
 
-
+	FILE *OUT;
 	OUT = safe_fopen_write("Dir_Name");
 	fprintf(OUT,"%s\n",base.c_str());
 	fprintf(OUT,"%d\n",2);//remove this
@@ -490,9 +475,6 @@ void Decomposition::output_main(const boost::filesystem::path base) const
 	fclose(OUT);
 	
 	
-//	if (boost::filesystem::exists(backupdir)) {
-//		boost::filesystem::remove_all(backupdir);
-//	}
 }
 
 

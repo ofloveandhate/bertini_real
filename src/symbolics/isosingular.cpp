@@ -3,7 +3,7 @@
 
 
 int isosingular_deflation(int *num_deflations, int **deflation_sequence,
-			  BertiniRealConfig & program_options,  
+			  BertiniRealConfig & program_options,
 						  boost::filesystem::path inputFile,
 						  boost::filesystem::path witness_point_filename,
 						  boost::filesystem::path output_name,
@@ -12,35 +12,35 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
 	int ii, success = 0, nullSpace = 0, *declarations = NULL;
 	char ch, *strStabilizationTest = NULL;
 	FILE *IN = NULL, *OUT = NULL;
-	
-	
+
+
 	// remove previous files.
-	
-	
+
+
 	//open the input file.
 	partition_parse(&declarations, inputFile, "func_input_real" , "config_real" ,0); // the 0 means not self conjugate mode
 																					 //why is this necessary?
-	
-	
+
+
 	// setup input file to test for stabilization
 	stabilization_input_file("input_stabilization_test", "func_input_real", "config_real");
-	
-	
-	std::cout << "Performing a stabilization test\n";
-	
-	remove("isosingular_summary");
-	
 
-	
+
+	std::cout << "Performing a stabilization test\n";
+
+	remove("isosingular_summary");
+
+
+
 	// you cannot call stabilization test in parallel
 	int blabla;
 	parse_input_file("input_stabilization_test", &blabla);
 	// seed, mptype, startName, my_id,  num_processes, headnode
 	witnessGeneration(0, blabla, const_cast<char*>(witness_point_filename.c_str()), 0,1,0);
 	initMP(mpf_get_default_prec());
-	
+
 	// read in the file
-	
+
 	IN = safe_fopen_read("isosingular_summary");
 	fscanf(IN, "%d%d", &nullSpace, &success);     // set the success flag
 	fclose(IN);
@@ -48,35 +48,35 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
 	*num_deflations = 0;
 	*deflation_sequence = (int *)br_malloc((*num_deflations + 1) * sizeof(int));
 	(*deflation_sequence)[*num_deflations] = nullSpace;
-	
+
 	// loop until successful or run out of iterations
 	while (*num_deflations < max_deflations && !success)
 	{ // create input file for deflation
 		isosingular_deflation_iteration(declarations, "func_input_real", program_options, nullSpace, *num_deflations + 1);
-		
+
 		// setup input file to test for stabilization
 		stabilization_input_file("input_stabilization_test", "func_input_real", "config_real");
-		
+
 		// you cannot call stabilization test in parallel
 		int blabla;
 		parse_input_file("input_stabilization_test", &blabla);
 					// seed, mptype, startName, my_id,  num_processes, headnode
 		witnessGeneration(2565279, blabla, const_cast<char*>(witness_point_filename.c_str()), 0,1,0);
 		initMP(mpf_get_default_prec());
-		
-		
 
-		
-		
+
+
+
+
 		// read in the file
 		IN = safe_fopen_read("isosingular_summary");
 		fscanf(IN, "%d%d", &nullSpace, &success); // get the success indicator
-		
+
 		// setup the next entry in the deflation sequence
 		(*num_deflations)++;
 		*deflation_sequence = (int *)br_realloc(*deflation_sequence, (*num_deflations + 1) * sizeof(int));
 		(*deflation_sequence)[*num_deflations] = nullSpace;
-		
+
 		if ((*deflation_sequence)[*num_deflations] > (*deflation_sequence)[*num_deflations - 1])
 		{
 			printf("ERROR: The deflation sequence must be a nonincreasing sequence of nonnegative integers!\n\n");
@@ -84,7 +84,7 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
 			break;
 		}
 	}
-	
+
 	if (success)
 	{ // print deflation sequence
 		printf("\nIsosingular deflation was successful!\n\n");
@@ -93,10 +93,10 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
 		for (ii = 0; ii < *num_deflations; ii++)
 			printf("%d, ", (*deflation_sequence)[ii]);
 		printf("%d, ...\n\n", (*deflation_sequence)[*num_deflations]);
-		
-		
+
+
 		// create deflated system
-		
+
 		OUT = safe_fopen_write(output_name);
 		fprintf(OUT, "CONFIG\n");
 		IN = safe_fopen_read("config_real");
@@ -110,9 +110,9 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
 		fclose(IN);
 		fprintf(OUT, "END;\n\n");
 		fclose(OUT);
-		
+
 		std::cout << "Deflated system printed to '" << output_name.string() << "'." << std::endl << std::endl;
-		
+
 	}
 	else if (*num_deflations >= max_deflations)
 	{
@@ -121,11 +121,11 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
 	// delete temporary files
 	remove("func_input_real");
 	remove("config_real");
-	
+
 	// clear memory
 	free(strStabilizationTest);
 	free(declarations);
-	
+
 	return success;
 }
 
@@ -140,7 +140,7 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
 
 void isosingular_deflation_iteration(int *declarations,
 									 boost::filesystem::path inputOutputName,
-				      BertiniRealConfig & program_options, 
+				      BertiniRealConfig & program_options,
 									 int nullSpaceDim,
 									 int deflation_number)
 {
@@ -148,11 +148,11 @@ void isosingular_deflation_iteration(int *declarations,
 	int *lineVars = NULL, *lineFuncs = NULL, *lineConstants = NULL, *degrees = NULL;
 	char ch, *str = NULL, **vars = NULL, **funcs = NULL, **consts = NULL;
 	FILE *IN = NULL, *OUT = NULL;
-	
+
 	// test for existence of input file
 	IN = safe_fopen_read(inputOutputName.c_str());
 	fclose(IN);
-	
+
 	// move the file & open it
 	rename(inputOutputName.c_str(), "deflation_input_file");
 	IN = safe_fopen_read("deflation_input_file");
@@ -165,11 +165,11 @@ void isosingular_deflation_iteration(int *declarations,
 	{ // using hom_variable_group
 		parse_names(&numVars, &vars, &lineVars, IN,const_cast< char *>("hom_variable_group"), declarations[1]);
 	}
-	
+
 	// setup constants
 	rewind(IN);
 	parse_names(&numConstants, &consts, &lineConstants, IN,const_cast< char *>("constant"), declarations[8]);
-	
+
 	// setup functions
 	rewind(IN);
 	parse_names(&numFuncs, &funcs, &lineFuncs, IN, const_cast< char *>("function"), declarations[9]);
@@ -186,70 +186,41 @@ void isosingular_deflation_iteration(int *declarations,
 
 	printf("\nPerforming an isosingular deflation\n");
 
+	bool need_run_tofinal;
+	minorSize = numVars - declarations[1] - nullSpaceDim + 1;
 	switch (program_options.symbolic_engine())
 	{
 		case SymEngine::Matlab:
 		{
 			// setup Matlab script
-			OUT = safe_fopen_write("matlab_deflate.m");
-			minorSize = numVars - declarations[1] - nullSpaceDim + 1;
-			createMatlabDeflation(OUT, numVars, vars, lineVars, numConstants, consts, lineConstants, numFuncs, funcs, lineFuncs, IN, minorSize, degrees, deflation_number);
+			if (program_options.sym_prevent_subst())
+				need_run_tofinal = createMatlabDeflationNoSubst("deflation_input_file", deflation_number, minorSize, degrees, numFuncs, inputOutputName);
+			else
+				need_run_tofinal = createMatlabDeflation(numVars, vars, lineVars, numConstants, consts, lineConstants, numFuncs, funcs, lineFuncs, IN, minorSize, degrees, deflation_number);
 
-			fclose(OUT);
+			// call the matlab script we just wrote
+			program_options.CallMatlab("matlab_deflate");
 
-			// run Matlab script
-			std::stringstream converter;
-			converter << program_options.matlab_command() << "matlab_deflate";
-			system(converter.str().c_str());
-			converter.clear(); converter.str("");
 			break;
 		}
 
     	case SymEngine::Python:
 		{
-			// Create Python Script
-			OUT = safe_fopen_write("python_deflate.py");	    
-			minorSize = numVars - declarations[1] - nullSpaceDim + 1;
-			createPythonDeflation(OUT, numVars, vars, lineVars, numConstants, consts, lineConstants, numFuncs, funcs, lineFuncs, IN, minorSize, degrees, deflation_number);
-			fclose(OUT);
+			// create a python script
+			need_run_tofinal = createPythonDeflation(numVars, vars, lineVars, numConstants, consts, lineConstants, numFuncs, funcs, lineFuncs, IN, minorSize, degrees, deflation_number);
 
 			//run Python script
-			std::cout << "inkoving `python python_deflate.py`\n";
-			system("python python_deflate.py");
+			program_options.CallPython("python_deflate.py");
+
 			break;
 		}
 	} // switch
-	
-	WaitOnGeneratedFile("deflation_polynomials_declaration");
-	WaitOnGeneratedFile("deflation_polynomials");
-	
-	
-	
-	// setup new file
-	OUT = safe_fopen_write(inputOutputName.c_str());
-	rewind(IN);
-	while ((ch = fgetc(IN)) != EOF)
-		fprintf(OUT, "%c", ch);
-	fclose(IN);
-	
-	
-	IN = safe_fopen_read("deflation_polynomials_declaration");
-	while ((ch = fgetc(IN)) != EOF)
-		fprintf(OUT, "%c", ch);
-	fclose(IN);
-	
-	
-	
-	
-	IN = safe_fopen_read("deflation_polynomials");
-	while ((ch = fgetc(IN)) != EOF)
-		fprintf(OUT, "%c", ch);
-	fclose(IN);
-	fclose(OUT);
-	
-	// increment the number of function declarations
-	declarations[9]++;
-	
+
+
+	if (need_run_tofinal)
+		DeflPolyDeclAndPolyToFinal(inputOutputName, IN, declarations);
+
+
 	// clear memory
 	free(str);
 	free(degrees);
@@ -265,11 +236,78 @@ void isosingular_deflation_iteration(int *declarations,
 		free(funcs[ii]);
 	free(funcs);
 	free(lineFuncs);
-	
+
 	return;
 }
 
-void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs, FILE *IN, int minorSize, int *degrees, int deflation_number)
+
+
+void DeflPolyDeclAndPolyToFinal(boost::filesystem::path inputOutputName, FILE* IN,
+				int *declarations)
+{
+	WaitOnGeneratedFile("deflation_polynomials_declaration");
+	WaitOnGeneratedFile("deflation_polynomials");
+
+	// setup new file
+	FILE * OUT = safe_fopen_write(inputOutputName.c_str());
+	rewind(IN);
+	char ch;
+	while ((ch = fgetc(IN)) != EOF)
+		fprintf(OUT, "%c", ch);
+	fclose(IN);
+
+
+	IN = safe_fopen_read("deflation_polynomials_declaration");
+	while ((ch = fgetc(IN)) != EOF)
+		fprintf(OUT, "%c", ch);
+	fclose(IN);
+
+
+
+
+	IN = safe_fopen_read("deflation_polynomials");
+	while ((ch = fgetc(IN)) != EOF)
+		fprintf(OUT, "%c", ch);
+	fclose(IN);
+	fclose(OUT);
+
+	// increment the number of function declarations
+	declarations[9]++;
+}
+
+
+bool createMatlabDeflationNoSubst(std::string const& filename, int deflation_number, int minorSize, int* degrees, int numFuncs, boost::filesystem::path inputOutputName)
+{
+
+	FILE* OUT = safe_fopen_write("matlab_deflate.m");
+
+	fprintf(OUT,"filename = '%s';\n",filename.c_str());
+	fprintf(OUT,"deflation_number = %d;\n",deflation_number);
+	fprintf(OUT,"minorSize = %d;\n",minorSize);
+	fprintf(OUT,"OutputName = '%s';\n\n",inputOutputName.c_str());
+
+	fprintf(OUT,"degrees = [");
+
+	for (int ii = 0; ii < numFuncs; ++ii)
+		fprintf(OUT,"%d ",degrees[ii]);
+	fprintf(OUT,"];\n\n");
+
+
+	fprintf(OUT, "deflate_no_subst(filename,deflation_number,minorSize,degrees,OutputName);\n\n");
+
+	fprintf(OUT, "exit");
+
+	fclose(OUT);
+
+	return false;// return false, indicating that there's no need to unify the two files
+	// for the declaration and definitions of the deflation polynomials.
+}
+
+
+
+
+
+bool createMatlabDeflation(int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs, FILE *IN, int minorSize, int *degrees, int deflation_number)
 /***************************************************************\
  * USAGE: setup a Matlab script to perform the deflation         *
  * ARGUMENTS: input file, declaration name, and number of lines  *
@@ -277,13 +315,15 @@ void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
  * NOTES:                                                        *
  \***************************************************************/
 {
+	FILE* OUT = safe_fopen_write("matlab_deflate.m");
+
 	int ii, lineNumber = 1, cont = 1, declares = 0, strLength = 0, strSize = 1;
 	char ch;
 	char *str = (char *)br_malloc(strSize * sizeof(char));
-	
+
 	// setup Bertini constants in Matlab
 	fprintf(OUT, "syms I Pi;\nI=1i;\n");
-	
+
 	// setup variables
 	fprintf(OUT, "syms");
 	for (ii = 0; ii < numVars; ii++)
@@ -292,7 +332,7 @@ void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 	for (ii = 0; ii < numVars; ii++)
 		fprintf(OUT, " %s", vars[ii]);
 	fprintf(OUT, "];\n");
-	
+
 	// setup constants
 	if (numConstants > 0)
 	{
@@ -301,13 +341,13 @@ void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 			fprintf(OUT, " %s", consts[ii]);
 		fprintf(OUT, ";\n");
 	}
-	
+
 	// setup degrees
 	fprintf(OUT, "deg = [");
 	for (ii = 0; ii < numFuncs; ii++)
 		fprintf(OUT, " %d", degrees[ii]);
 	fprintf(OUT, "];\n");
-	
+
 	// copy lines which do not declare items or define constants (keep these as symbolic objects)
 	while (cont)
 	{ // see if this line number declares items
@@ -321,7 +361,7 @@ void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 		for (ii = 0; ii < numFuncs; ii++)
 			if (lineNumber == lineFuncs[ii])
 				declares = 1;
-		
+
 		if (declares)
 		{ // move past this line
 			do
@@ -347,13 +387,13 @@ void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 				} while ((ch = fgetc(IN)) != '=');
 				str[strLength] = '\0';
 				strLength++;
-				
+
 				// compare against constants
 				declares = 0;
 				for (ii = 0; ii < numConstants; ii++)
 					if (strcmp(str, consts[ii]) == 0)
 						declares = 1;
-				
+
 				if (declares)
 				{ // move past this line
 					do
@@ -373,28 +413,28 @@ void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 				}
 			}
 		}
-		
+
 		// increment lineNumber
 		lineNumber++;
-		
+
 		// test for EOF
 		if (ch == EOF)
 			cont = 0;
 	}
-	
+
 	// setup functions
 	fprintf(OUT, "\nF = [");
 	for (ii = 0; ii < numFuncs; ii++)
 		fprintf(OUT, " %s", funcs[ii]);
 	fprintf(OUT, "];\n");
-	
+
 	// compute the jacobian
 	fprintf(OUT, "J = jacobian(F,X);\n");
-	
+
 	// find the combinations of the rows & columns
 	fprintf(OUT, "R = nchoosek(1:%d,%d);\nC = nchoosek(1:%d,%d);\n", numFuncs, minorSize, numVars, minorSize); // changed to nchoosek april 16, 2013 DAB.
 	fprintf(OUT, "r = size(R,1);\nc = size(C,1);\n");
-	
+
 	// loop over rows & columns printing the nonzero minors to a file
 	fprintf(OUT, "count = 0;\n");
 	fprintf(OUT, "OUT = fopen('deflation_polynomials','w');\n");
@@ -411,7 +451,7 @@ void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 	fprintf(OUT, "  end;\n");
 	fprintf(OUT, "end;\n");
 	fprintf(OUT, "fclose(OUT);\n");
-	
+
 	// print number of minors to a file
 	fprintf(OUT, "OUT = fopen('deflation_polynomials_declaration','w');\n");
 	fprintf(OUT, "fprintf(OUT, 'function ');\n");
@@ -426,12 +466,14 @@ void createMatlabDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 	fprintf(OUT, "\nexit\n");
 	// clear memory
 	free(str);
-	
-	return;
+
+	fclose(OUT);
+
+	return true;
 }
 
 
-void createPythonDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs, FILE *IN, int minorSize, int *degrees, int deflation_number)
+bool createPythonDeflation(int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs, FILE *IN, int minorSize, int *degrees, int deflation_number)
 /***************************************************************
  * USAGE: setup a Python script to perform the deflation         *
  * ARGUMENTS: input file, declaration name, and number of lines  *
@@ -439,6 +481,7 @@ void createPythonDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
  * NOTES:                                                        *
  ***************************************************************/
 {
+	FILE* OUT = safe_fopen_write("python_deflate.py");
 	int ii, lineNumber = 1, cont = 1, declares = 0, strLength = 0, strSize = 1;
 	char ch;
 	char *str = (char *)br_malloc(strSize * sizeof(char));
@@ -474,7 +517,7 @@ void createPythonDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 		if (ii < numVars-1)
 			fprintf(OUT,", ");
 	}
-  
+
 	fprintf(OUT, "')\nX = Matrix([");
 	for (ii = 0; ii < numVars; ii++)
 	{
@@ -483,7 +526,7 @@ void createPythonDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 			fprintf(OUT, ", ");
 	}
 	fprintf(OUT, "])\n");
-	
+
 	// setup constants
 	if (numConstants > 0)
 	{
@@ -535,7 +578,7 @@ void createPythonDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 			do
 			{ // read in character
 				ch = fgetc(IN);
-			} 
+			}
 			while (ch != '\n' && ch != EOF);
 		}
 		else
@@ -553,7 +596,7 @@ void createPythonDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 					}
 					str[strLength] = ch;
 					strLength++;
-				} 
+				}
 				while ((ch = fgetc(IN)) != '=');
 
 				str[strLength] = '\0';
@@ -572,7 +615,7 @@ void createPythonDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 					do
 					{ // read in character
 						ch = fgetc(IN);
-					} 
+					}
 					while (ch != '\n' && ch != EOF);
 				}
 				else
@@ -596,7 +639,7 @@ void createPythonDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 						fprintf(OUT, "%c", ch);
 						}
 						}
-					} 
+					}
 					while (ch != '\n' && ch != EOF);
 				} // else
 			} // if
@@ -622,10 +665,10 @@ void createPythonDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 	}
 
 	fprintf(OUT, "\n");
-	
+
 	// compute the jacobian
 	fprintf(OUT, "J = F.jacobian(X)\n");
-	
+
 	// find the combinations of the rows & columns
 	fprintf(OUT, "\n# getting combinations of the outputs\n");
 	fprintf(OUT, "R = my_nchoosek(%d,%d);\nC = my_nchoosek(%d,%d)\n", numFuncs, minorSize, numVars, minorSize); // changed to nchoosek april 16, 2013 DAB.
@@ -635,7 +678,7 @@ void createPythonDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 	fprintf(OUT, "rv = np.array([r_t])\ncv = np.array([c_t])\n");
 	fprintf(OUT, "\n# Getting the first element in the array of sizes\n");
 	fprintf(OUT, "r = rv.item(0)\nc = cv.item(0)\n");
-	
+
 	// loop over rows & columns printing the nonzero minors to a file
 	fprintf(OUT, "count = 0;\n");
 	fprintf(OUT, "\n# Opening the first output file\n");
@@ -683,7 +726,7 @@ void createPythonDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 				fprintf(OUT, "\t\t\tfunc_id = func_ida+func_idb+\";\\n\"\n");
 				fprintf(OUT, "\t\t\tfo.write(func_id.replace(\"**\",\"^\"))\n");
 	fprintf(OUT, "fo.close()\n\n");
-	
+
 	fprintf(OUT, "\n# Opening the second output file\n");
 	fprintf(OUT, "fo = open(\"deflation_polynomials_declaration\",\"wb\")\n");
 	fprintf(OUT, "mystr4 = \"\"\n");
@@ -704,8 +747,8 @@ void createPythonDeflation(FILE *OUT, int numVars, char **vars, int *lineVars, i
 
 	// clear memory
 	free(str);
-	
-	return;
+	fclose(OUT);
+	return true;
 }
 
 
@@ -717,16 +760,16 @@ void stabilization_input_file(boost::filesystem::path outputFile,
 {
 	char ch;
 	FILE *OUT = safe_fopen_write(outputFile.c_str());
-	
+
 	// setup configurations in OUT
 	fprintf(OUT, "CONFIG\n");
-	
+
 	FILE *IN = safe_fopen_read(configInput.c_str());
 	while ((ch = fgetc(IN)) != EOF)
 		fprintf(OUT, "%c", ch);
 	fclose(IN);
 	fprintf(OUT, "TrackType: 6;\nMultOneOnly: 1;\nDeleteTempFiles: 0;\nTargetTolMultiplier: 1e3; %% this line added so that computed solutions fed in from BR will not falsely cause to fail -- DAB\nEND;\nINPUT\n");
-	
+
 	// setup system in OUT
 	IN = safe_fopen_read(funcInput.c_str());
 	while ((ch = fgetc(IN)) != EOF)
@@ -734,7 +777,7 @@ void stabilization_input_file(boost::filesystem::path outputFile,
 	fclose(IN);
 	fprintf(OUT, "END;\n");
 	fclose(OUT);
-	
+
 	return;
 }
 
@@ -743,7 +786,7 @@ void stabilization_input_file(boost::filesystem::path outputFile,
 
 
 void check_declarations(int *declarations){
-	
+
 	// error check based on declarations
 	if ( (declarations[0] + declarations[1]) > 1)
 	{ // multiple variable groups
@@ -780,6 +823,5 @@ void check_declarations(int *declarations){
 		printf("\n\nERROR: The system should not involve 'random_real' numbers!\n\n");
 		bexit(ERROR_CONFIGURATION);
 	}
-	
-}
 
+}

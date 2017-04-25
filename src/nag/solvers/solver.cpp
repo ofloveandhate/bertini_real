@@ -102,7 +102,7 @@ void SolverConfiguration::init()
 	
 	use_gamma_trick = 0;
 	
-	
+	use_sequential_filenames = false;
 }
 
 
@@ -615,7 +615,7 @@ void master_solver(SolverOutput & solve_out, const WitnessSet & W,
 	
 	initMP(mpf_get_default_prec());
 	
-    int num_crossings = 0;
+    
 	
 	solve_out.num_variables = W.num_variables();
 	solve_out.num_natural_vars = W.num_natural_variables();
@@ -658,22 +658,36 @@ void master_solver(SolverOutput & solve_out, const WitnessSet & W,
 	
 	
 	// call the file setup function
-	FILE *OUT = NULL, *midOUT = NULL;
+	FILE *OUT = NULL, *MIDOUT = NULL;
 	
-	generic_setup_files(&OUT, "output",
-						&midOUT, "midpath_data");
+	static int counter = 0;
+	std::stringstream out_name; 
+	std::stringstream mid_name; 
+
+	out_name << "output_br_master";
+	mid_name << "midpath_br_master";
+	if (solve_options.use_sequential_filenames)
+	{
+		out_name << '_' << counter;
+		mid_name << '_' <<counter;
+		counter++;
+	}
+
+	generic_setup_files(&OUT, out_name.str(),
+	                        &MIDOUT, mid_name.str());
+
 	
 	if (solve_options.use_parallel()) {
 		
 		
-		master_tracker_loop(&trackCount, OUT, midOUT,
+		master_tracker_loop(&trackCount, OUT, MIDOUT,
                             W,
                             endPoints,
                             ED_d, ED_mp,
                             solve_options);
 	}
 	else{
-		serial_tracker_loop(&trackCount, OUT, midOUT,
+		serial_tracker_loop(&trackCount, OUT, MIDOUT,
                              W,
                              endPoints,
                              ED_d, ED_mp,
@@ -683,14 +697,16 @@ void master_solver(SolverOutput & solve_out, const WitnessSet & W,
 	
 	
 	// close the files
-	fclose(midOUT);   fclose(OUT);
+	fclose(MIDOUT);   fclose(OUT);
 	
 	
 	
 	
 	// check for path crossings
-	if (solve_options.use_midpoint_checker==1) {
-		midpoint_checker(trackCount.numPoints, solve_options.T.numVars,solve_options.midpoint_tol, &num_crossings);
+	if (solve_options.use_midpoint_checker) {
+		int num_crossings = 0;
+		std::vector<int> crossed_indices;
+		BRmidpointChecker(trackCount.numPoints, solve_options.T.numVars,solve_options.midpoint_tol*solve_options.T.final_tol_multiplier, &num_crossings, mid_name.str(), crossed_indices);
 	}
 	
 	
@@ -846,9 +862,7 @@ void serial_tracker_loop(trackingStats *trackCount,
 		solve_options.increment_num_paths_tracked();
 		
 		
-		
-		//        print_point_to_screen_matlab(startPts_d[ii].point,"start");
-        
+	
 		if (solve_options.robust==true) {
 			robust_track_path(ii, &EG,
                               &startPts_d[ii], &startPts_mp[ii],
@@ -857,8 +871,6 @@ void serial_tracker_loop(trackingStats *trackCount,
                               curr_eval_d, curr_eval_mp, change_prec, find_dehom);
 		}
 		else{
-//            boost::timer::auto_cpu_timer t;
-            // track the path
 			generic_track_path(ii, &EG,
                                &startPts_d[ii], &startPts_mp[ii],
                                OUT, MIDOUT,
@@ -907,7 +919,13 @@ void serial_tracker_loop(trackingStats *trackCount,
 			mp_to_d(time_to_compare, EG.PD_mp.time); }
 		
 		
-		if ((EG.retVal != 0 && time_to_compare->r > solve_options.T.minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
+		if (
+			(
+			 !IsAcceptableRetval(EG.retVal) 
+			  && 
+			 time_to_compare->r > solve_options.T.minTrackT
+			) || !issoln) 
+		{  // <-- this is the real indicator of failure...
 			
 			trackCount->failures++;
 			
@@ -951,6 +969,18 @@ void serial_tracker_loop(trackingStats *trackCount,
 }
 
 
+
+
+void ConcatenateForAllWorkers(FILE* OUT, std::string const& base_name, SolverConfiguration const& solve_options)
+{
+	for (int ii=1; ii<solve_options.num_procs(); ++ii)
+	{
+		std::stringstream ss; ss << base_name << ii;
+		FILE *IN = safe_fopen_read(ss.str());
+		copyfile(IN,OUT);
+		fclose(IN);
+	}
+}
 
 void master_tracker_loop(trackingStats *trackCount,
                          FILE * OUT, FILE * MIDOUT,
@@ -1069,16 +1099,32 @@ void master_tracker_loop(trackingStats *trackCount,
 			free(startPts_d);
 			break;
 	}
-    
+	
+	MPI_Barrier(solve_options.comm()); // this barrier is for file reading
+
+	if (solve_options.use_midpoint_checker)
+	{
+	    ConcatenateForAllWorkers(MIDOUT,"midpath_worker_", solve_options);
+	    ConcatenateForAllWorkers(OUT,"output_worker_", solve_options);
+	}
 }
 
 
+
+
+
 void worker_tracker_loop(trackingStats *trackCount,
-                         FILE * OUT, FILE * MIDOUT,
                          SolverDoublePrecision * ED_d, SolverMultiplePrecision * ED_mp,
                          SolverConfiguration & solve_options)
 {
+	// call the file setup function
+	FILE *OUT = NULL, *MIDOUT = NULL;
 	
+	std::stringstream out_name; out_name << "output_worker_" << solve_options.id();
+	std::stringstream mid_name; mid_name << "midpath_worker_" << solve_options.id();
+	generic_setup_files(&OUT, out_name.str(),
+                        &MIDOUT, mid_name.str());
+
 	
 	int total_number_points;
 	int (*curr_eval_d)(point_d, point_d, vec_d, mat_d, mat_d, point_d, comp_d, void const *) = NULL;
@@ -1136,7 +1182,6 @@ void worker_tracker_loop(trackingStats *trackCount,
 	MPI_Bcast(&total_number_points, 1, MPI_INT, solve_options.head(), solve_options.comm());
 	while (1)
 	{
-        //		std::cout << "worker" << solve_options.id() << " receiving work" << std::endl;
 		MPI_Recv(&numStartPts, 1, MPI_INT, solve_options.head(), NUMPACKETS, solve_options.comm(), &statty_mc_gatty);
 		// recv next set of start points
 		
@@ -1253,7 +1298,12 @@ void worker_tracker_loop(trackingStats *trackCount,
 		
 		
 	}
-    
+
+	fclose(MIDOUT);   fclose(OUT);
+	
+	MPI_Barrier(solve_options.comm());
+    // close the files
+	
 	
 	switch (solve_options.T.MPType) {
 		case 1:
@@ -1274,6 +1324,8 @@ void worker_tracker_loop(trackingStats *trackCount,
 	}
 	free(EG);
 	free(indices_incoming);
+
+	
 }
 
 
@@ -1341,7 +1393,6 @@ int receive_endpoints(trackingStats *trackCount,
 	
 	if (statty_mc_gatty.MPI_SOURCE>= int(solve_options.num_procs()) || statty_mc_gatty.MPI_SOURCE<0) {
 		std::cout << statty_mc_gatty.MPI_SOURCE << ", " << solve_options.num_procs() << std::endl;
-		mypause();
 	}
 	
 	bool randomized;
@@ -1399,7 +1450,9 @@ int receive_endpoints(trackingStats *trackCount,
 			mp_to_d(time_to_compare, (*EG_receives)[ii].PD_mp.time); }
 		
 		solve_options.increment_num_paths_tracked();
-		if (((*EG_receives)[ii].retVal != 0 && time_to_compare->r > solve_options.T.minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
+		if ((
+			!( (*EG_receives)[ii].retVal == 0 || (*EG_receives)[ii].retVal == retVal_refining_failed)
+			&& time_to_compare->r > solve_options.T.minTrackT) || !issoln) {  // <-- this is the real indicator of failure...
 			
 			trackCount->failures++;
 			
@@ -1550,42 +1603,6 @@ void generic_track_path(int pathNum, endgame_data_t *EG_out,
     }
     
 	
-//	if (EG_out->retVal !=0) {
-//		
-//		comp_d time_to_compare;
-//		if (EG_out->prec < 64) {
-//			set_d(time_to_compare,EG_out->PD_d.time);}
-//		else {
-//			mp_to_d(time_to_compare, EG_out->PD_mp.time); }
-//		
-//		
-//		vec_d solution_as_double; init_vec_d(solution_as_double,0);
-//		if (EG_out->prec < 64){
-//			int out_prec;
-//			SolverDoublePrecision * evalll = (SolverDoublePrecision *)ED_d;
-//			evalll->dehomogenizer(solution_as_double, NULL, &out_prec, EG_out->PD_d.point,NULL,52,evalll, NULL);
-//			
-//			
-//		}
-//		else{
-//			SolverMultiplePrecision * evalll = (SolverMultiplePrecision *)ED_mp;
-//			
-//			int out_prec;
-//			vec_mp temp2; init_vec_mp(temp2,0);
-//			evalll->dehomogenizer(NULL,temp2, &out_prec, NULL,EG_out->PD_mp.point,EG_out->prec,NULL,evalll);
-//			
-//			vec_mp_to_d(solution_as_double,temp2);
-//			clear_vec_mp(temp2);
-//			
-//		}
-//		
-//		if (1) {
-//			print_point_to_screen_matlab(solution_as_double,"failed_candidate_solution");
-//			print_comp_matlab(time_to_compare,"corresponding_time");
-//		}
-//		
-//		clear_vec_d(solution_as_double);
-//	}
 	
 	
 	return;
@@ -1604,14 +1621,12 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
                        int (*find_dehom)(point_d, point_mp, int *, point_d, point_mp, int, void const *, void const *))
 {
 	
-    //	std::cout << "using robust tracker" << std::endl;
 	EG_out->pathNum = pathNum;
 	EG_out->codim = 0; // this is ignored
 	
 	
 	tracker_config_t * T = &solve_options.T;
 	
-//	print_tracker(T);
 	
 	int iterations=0, max_iterations = 3;
 	
@@ -1623,10 +1638,24 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
     
 	solve_options.increment_num_paths_tracked();
 	
-	
+	FILE *TEMPMID;
+	FILE *TEMPOUT;
+
+		std::stringstream ss; ss<<"midpath_temp_"<<solve_options.id();
+		TEMPMID = safe_fopen_write(ss.str());
+		ss.clear(); ss.str("");
+		ss<<"output_temp_"<<solve_options.id();
+		TEMPOUT = safe_fopen_write(ss.str());
+		ss.clear(); ss.str("");
+
 	EG_out->retVal = -876; // set to bad return value
-	while ((iterations<max_iterations) && (EG_out->retVal!=0)) {
-		
+	while ((iterations<max_iterations) && 
+		   !IsAcceptableRetval(EG_out->retVal) &&
+		   !IsUnRetrackable(EG_out->retVal)) 
+	{
+		rewind(TEMPOUT); rewind(TEMPMID);
+
+
 		if (solve_options.verbose_level()>=4) {
 			std::cout << color::gray() << "\t\tpath " << pathNum << ", pass " << iterations << color::console_default() << std::endl;
 		}
@@ -1641,8 +1670,6 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 			
 			change_prec(ED_mp,64);
 			T->Precision = 64;
-			
-			
 			EG_out->prec = EG_out->last_approx_prec = 52;
 			
 			EG_out->retVal = endgame_amp(T->endgameNumber, EG_out->pathNum, &EG_out->prec, &EG_out->first_increase,
@@ -1650,7 +1677,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
                                          EG_out->last_approx_d, EG_out->last_approx_mp,
                                          Pin,
                                          T,
-                                         OUT, MIDOUT,
+                                         TEMPOUT, TEMPMID,
                                          ED_d, ED_mp,
                                          eval_func_d, eval_func_mp, change_prec, find_dehom);
 			
@@ -1686,7 +1713,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 		{ // track using double precision
 			EG_out->prec = EG_out->last_approx_prec = 52;
 			
-			EG_out->retVal = endgame_d(T->endgameNumber, EG_out->pathNum, &EG_out->PD_d, EG_out->last_approx_d, Pin, T, OUT, MIDOUT, ED_d, eval_func_d, find_dehom);  // WHERE THE ACTUAL TRACKING HAPPENS
+			EG_out->retVal = endgame_d(T->endgameNumber, EG_out->pathNum, &EG_out->PD_d, EG_out->last_approx_d, Pin, T, TEMPOUT, TEMPMID, ED_d, eval_func_d, find_dehom);  // WHERE THE ACTUAL TRACKING HAPPENS
 			EG_out->first_increase = 0;
 			// copy over values in double precision
 			EG_out->latest_newton_residual_d = T->latest_newton_residual_d;
@@ -1702,7 +1729,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 			T->first_step_of_path = 1;
 			
 			// track using MP
-			EG_out->retVal = endgame_mp(T->endgameNumber, EG_out->pathNum, &EG_out->PD_mp, EG_out->last_approx_mp, Pin_mp, T, OUT, MIDOUT, ED_mp, eval_func_mp, find_dehom);
+			EG_out->retVal = endgame_mp(T->endgameNumber, EG_out->pathNum, &EG_out->PD_mp, EG_out->last_approx_mp, Pin_mp, T, TEMPOUT, TEMPMID, ED_mp, eval_func_mp, find_dehom);
 			
 			
 			EG_out->prec = EG_out->last_approx_prec = T->Precision;
@@ -1728,7 +1755,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 		// get how many times we have changed settings due to this type of failure.
 		int current_retval_counter = map_lookup_with_default( setting_increments, EG_out->retVal, 0 ); // how many times have we encountered this retval?
 		
-		if ( EG_out->retVal!=0 ) {  // ||   EG_out->retVal==-50
+		if ( !IsAcceptableRetval(EG_out->retVal) ) {  
 			
 			vec_d solution_as_double; init_vec_d(solution_as_double,0);
 			if (EG_out->prec < 64){
@@ -1780,24 +1807,22 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 			
 			if (solve_options.verbose_level()>=3){
 				print_path_retVal_message(EG_out->retVal);
-				std::cout << color::red() << "solution had non-zero retVal " << EG_out->retVal << " (" << current_retval_counter << ")th occurrence on iteration " << iterations << "." << color::console_default() << std::endl;
+				std::cout << color::red() << "solution had non-zero retVal " <<  enum_lookup(EG_out->retVal) << " (" << current_retval_counter << ")th occurrence on iteration " << iterations << "." << color::console_default() << std::endl;
 			}
 			
 			switch (EG_out->retVal) {
+				// case retVal_reached_minTrackT: // duplicate with next
+				case retVal_EG_failed_to_converge:
 					
-				case -20: // // refining failed
-				case -50: // some other failure
-					
-					
-				case -100:   //this is higher precision needed.
+				case retVal_max_prec_reached:   //this is higher precision needed.
 							 // break deliberately omitted
 					
-				case 100:
+				case retVal_higher_prec_needed:
 					
                     solve_options.T.endgameNumber = 2;
                     
 					
-					if (iterations>0) { // changing predictor
+					if (iterations>0 && solve_options.T.odePredictor !=8 ) { // changing predictor
 						solve_options.T.odePredictor  = (solve_options.T.odePredictor+1) %9;
 					}
 					if (iterations>=2) {
@@ -1806,13 +1831,13 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					
 					break;
 					
-				case -10:
+				case retVal_too_many_steps:
 					
 					solve_options.T.maxNumSteps *=2; // factor of 2 each time
 					break;
 					
 					
-				case -3: // minstepsize
+				case retVal_step_size_too_small: // minstepsize
 					
 					solve_options.T.minStepSizeBeforeEndGame *= 1e-1;
 					solve_options.T.minStepSizeDuringEndGame *= 1e-1;
@@ -1825,7 +1850,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					
 					break;
 					
-				case -4: // securitymax
+				case retVal_security_max: // securitymax
 					
 					if (iterations<2) {
 						solve_options.T.securityMaxNorm *= 10;  // exponential increase by 10's
@@ -1840,7 +1865,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
                     
 					
 					break;
-				case -2:
+				case retVal_going_to_infinity:
 					if (iterations<2) {
 						solve_options.T.goingToInfinity *= 10;  // exponential increase by 10's
 					}
@@ -1853,7 +1878,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 					
 					break;
 					
-				case -200: // cycle number too high
+				case retVal_cycle_num_too_high: // cycle number too high
 					solve_options.T.endgameNumber = 2;
 					solve_options.T.cycle_num_max +=3 ;
 					break;
@@ -1873,20 +1898,30 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 	} // re: while
 	
 	if (solve_options.verbose_level()>=3) {
-		if (iterations==0 && EG_out->retVal==0) {
+		if (iterations==1 && IsAcceptableRetval(EG_out->retVal)) {
 			std::cout << "success path " << pathNum << std::endl;
 		}
-		if (iterations>1 && EG_out->retVal==0) {
+		if (iterations>1 && IsAcceptableRetval(EG_out->retVal)) {
 			std::cout << "resolution of " << pathNum << " was successful" << std::endl;
 		}
 		
-		if (iterations>1 && EG_out->retVal!=0) {
+		if (iterations>1 && !IsAcceptableRetval(EG_out->retVal)) {
 			std::cout << "resolution of path " << pathNum << " failed, terminal retVal " << EG_out->retVal << std::endl;
-			//		print_tracker(T);
-			//		mypause();
 		}
 	}
 
+	fclose(TEMPMID); fclose(TEMPOUT);
+
+		ss<<"midpath_temp_"<<solve_options.id();
+		TEMPMID = safe_fopen_read(ss.str());
+		ss.clear(); ss.str("");
+		ss<<"output_temp_"<<solve_options.id();
+		TEMPOUT = safe_fopen_read(ss.str());
+		ss.clear(); ss.str("");
+
+	copyfile(TEMPOUT,OUT);
+	copyfile(TEMPMID,MIDOUT);
+	fclose(TEMPMID); fclose(TEMPOUT);
 	solve_options.restore_tracker_config("robust_init");
 	
 	return;
@@ -1897,9 +1932,19 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 
 
 
+bool IsAcceptableRetval(int retval)
+{
+	return  retval == 0 || 
+			retval == retVal_refining_failed ||
+			retval == retVal_sharpening_singular_endpoint ||
+			retval == retVal_sharpening_failed;
+			;
+}
 
-
-
+bool IsUnRetrackable(int retVal)
+{
+	return false;//retVal == retVal_security_max
+}
 
 void generic_setup_patch(patch_eval_data_d *P, const WitnessSet & W)
 {

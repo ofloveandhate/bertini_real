@@ -56,7 +56,8 @@ for ii = 1:size(local.vertices,1)
 	local_cdata(ii) = br_plotter.options.colorfn(local.vertices(ii,:));
 end
 
-for ii = 1:num_faces
+for cc = 1:length(br_plotter.options.which_faces)
+	ii = br_plotter.options.which_faces(cc);
 	if br_plotter.BRinfo.faces(ii).midslice_index == -1
 		continue
 	end
@@ -68,10 +69,10 @@ for ii = 1:num_faces
 	
 	
 % 	% set the midpoint of the face for all triangles to be the first row
-	pt = transpose(br_plotter.BRinfo.vertices(br_plotter.BRinfo.faces(ii).midpoint+1).point(ind));
+	pt = transpose(br_plotter.BRinfo.vertices(br_plotter.BRinfo.faces(ii).midpoint).point(ind));
 
 	if br_plotter.options.labels
-		txt{ii} = ['\newline' num2str(ii-1)];
+		txt{ii} = ['\newline' num2str(ii)];
 		pos(ii,:) = pt(1:length(ind));
 	end
 	
@@ -93,14 +94,14 @@ for ii = 1:num_faces
 				
 				curr_edge = -10;
 				if strcmp(br_plotter.BRinfo.faces(ii).system_top,'input_critical_curve')
-					curr_edge = br_plotter.BRinfo.crit_curve.edges(br_plotter.BRinfo.faces(ii).top+1,:);
+					curr_edge = br_plotter.BRinfo.crit_curve.edges(br_plotter.BRinfo.faces(ii).top,:);
 				elseif strcmp(br_plotter.BRinfo.faces(ii).system_top,'input_surf_sphere')
-					curr_edge = br_plotter.BRinfo.sphere_curve.edges(br_plotter.BRinfo.faces(ii).top+1,:);
+					curr_edge = br_plotter.BRinfo.sphere_curve.edges(br_plotter.BRinfo.faces(ii).top,:);
 				else
 					%do a lookup (slower)
 					for zz = 1:length(br_plotter.BRinfo.singular_curves)
 						if strcmp(br_plotter.BRinfo.singular_names{zz},br_plotter.BRinfo.faces(ii).system_top)
-							curr_edge = br_plotter.BRinfo.singular_curves{zz}.edges(br_plotter.BRinfo.faces(ii).top+1,:);
+							curr_edge = br_plotter.BRinfo.singular_curves{zz}.edges(br_plotter.BRinfo.faces(ii).top,:);
 						end
 					end
 					
@@ -121,14 +122,14 @@ for ii = 1:num_faces
 				
 				curr_edge = -10;
 				if strcmp(br_plotter.BRinfo.faces(ii).system_bottom,'input_critical_curve')
-					curr_edge = br_plotter.BRinfo.crit_curve.edges(br_plotter.BRinfo.faces(ii).bottom+1,:);
+					curr_edge = br_plotter.BRinfo.crit_curve.edges(br_plotter.BRinfo.faces(ii).bottom,:);
 				elseif strcmp(br_plotter.BRinfo.faces(ii).system_bottom,'input_surf_sphere')
-					curr_edge = br_plotter.BRinfo.sphere_curve.edges(br_plotter.BRinfo.faces(ii).bottom+1,:);
+					curr_edge = br_plotter.BRinfo.sphere_curve.edges(br_plotter.BRinfo.faces(ii).bottom,:);
 				else
 					%do a lookup
 					for zz = 1:length(br_plotter.BRinfo.singular_curves)
 						if strcmp(br_plotter.BRinfo.singular_names{zz},br_plotter.BRinfo.faces(ii).system_bottom)
-							curr_edge = br_plotter.BRinfo.singular_curves{zz}.edges(br_plotter.BRinfo.faces(ii).bottom+1,:);
+							curr_edge = br_plotter.BRinfo.singular_curves{zz}.edges(br_plotter.BRinfo.faces(ii).bottom,:);
 						end
 					end
 					
@@ -145,8 +146,8 @@ for ii = 1:num_faces
 						continue;
 					end
 					
-					slice_ind = br_plotter.BRinfo.faces(ii).midslice_index+1; %offset by 1.
-					edge_ind = br_plotter.BRinfo.faces(ii).left(left_edge_counter)+1; %offset by 1.
+					slice_ind = br_plotter.BRinfo.faces(ii).midslice_index; 
+					edge_ind = br_plotter.BRinfo.faces(ii).left(left_edge_counter); 
 					
 					curr_edge = br_plotter.BRinfo.critpoint_slices{slice_ind}.edges(edge_ind,:);
 					left_edge_counter = left_edge_counter +1; %increment
@@ -163,8 +164,8 @@ for ii = 1:num_faces
 						continue;
 					end
 					
-					slice_ind = br_plotter.BRinfo.faces(ii).midslice_index+2;
-					edge_ind = br_plotter.BRinfo.faces(ii).right(right_edge_counter)+1;
+					slice_ind = br_plotter.BRinfo.faces(ii).midslice_index+1;
+					edge_ind = br_plotter.BRinfo.faces(ii).right(right_edge_counter);
 					curr_edge = br_plotter.BRinfo.critpoint_slices{slice_ind}.edges(edge_ind,:);
 					right_edge_counter = right_edge_counter +1;
 					
@@ -180,12 +181,12 @@ for ii = 1:num_faces
 		end
 		
 		
-		local.faces(local_face_index,:) = [curr_edge(1) curr_edge(2) br_plotter.BRinfo.faces(ii).midpoint+1];
-		local.faces(local_face_index+1,:) = [curr_edge(2) curr_edge(3) br_plotter.BRinfo.faces(ii).midpoint+1];
+		local.faces(local_face_index,:) = [curr_edge(1) curr_edge(2) br_plotter.BRinfo.faces(ii).midpoint];
+		local.faces(local_face_index+1,:) = [curr_edge(2) curr_edge(3) br_plotter.BRinfo.faces(ii).midpoint];
 		local_face_index = local_face_index+2;
 		
-		br_plotter.fv.faces(curr_face_index,:) = [curr_edge(1) curr_edge(2) br_plotter.BRinfo.faces(ii).midpoint+1];
-		br_plotter.fv.faces(curr_face_index+1,:) = [curr_edge(2) curr_edge(3) br_plotter.BRinfo.faces(ii).midpoint+1];
+		br_plotter.fv.faces(curr_face_index,:) = [curr_edge(1) curr_edge(2) br_plotter.BRinfo.faces(ii).midpoint];
+		br_plotter.fv.faces(curr_face_index+1,:) = [curr_edge(2) curr_edge(3) br_plotter.BRinfo.faces(ii).midpoint];
 		curr_face_index = curr_face_index+2;
 		
 		
@@ -195,7 +196,7 @@ for ii = 1:num_faces
 	local.faces = local.faces(1:local_face_index-1,:);
 
 	try
-		br_plotter.handles.faces(ii) = patch(local,...
+		br_plotter.handles.faces(end+1) = patch(local,...
 			'FaceVertexCData', local_cdata, ...
 			'FaceColor', 'interp',...
 			'FaceAlpha',br_plotter.options.face_alpha,...
@@ -263,7 +264,8 @@ colors = br_plotter.options.colormap(num_faces);
 
 local.vertices = br_plotter.fv.vertices;
 
-for ii = 1:num_faces
+for cc = 1:length(br_plotter.options.which_faces)
+	ii = br_plotter.options.which_faces(cc);
 	if br_plotter.BRinfo.faces(ii).midslice_index == -1
 		continue
 	end
@@ -275,10 +277,10 @@ for ii = 1:num_faces
 	
 	
 % 	% set the midpoint of the face for all triangles to be the first row
-	pt = transpose(br_plotter.BRinfo.vertices(br_plotter.BRinfo.faces(ii).midpoint+1).point(ind));
+	pt = transpose(br_plotter.BRinfo.vertices(br_plotter.BRinfo.faces(ii).midpoint).point(ind));
 
 	if br_plotter.options.labels
-		txt{ii} = ['\newline' num2str(ii-1)];
+		txt{ii} = ['\newline' num2str(ii)];
 		pos(ii,:) = pt(1:length(ind));
 	end
 	
@@ -300,14 +302,14 @@ for ii = 1:num_faces
 				
 				curr_edge = -10;
 				if strcmp(br_plotter.BRinfo.faces(ii).system_top,'input_critical_curve')
-					curr_edge = br_plotter.BRinfo.crit_curve.edges(br_plotter.BRinfo.faces(ii).top+1,:);
+					curr_edge = br_plotter.BRinfo.crit_curve.edges(br_plotter.BRinfo.faces(ii).top,:);
 				elseif strcmp(br_plotter.BRinfo.faces(ii).system_top,'input_surf_sphere')
-					curr_edge = br_plotter.BRinfo.sphere_curve.edges(br_plotter.BRinfo.faces(ii).top+1,:);
+					curr_edge = br_plotter.BRinfo.sphere_curve.edges(br_plotter.BRinfo.faces(ii).top,:);
 				else
 					%do a lookup (slower)
 					for zz = 1:length(br_plotter.BRinfo.singular_curves)
 						if strcmp(br_plotter.BRinfo.singular_names{zz},br_plotter.BRinfo.faces(ii).system_top)
-							curr_edge = br_plotter.BRinfo.singular_curves{zz}.edges(br_plotter.BRinfo.faces(ii).top+1,:);
+							curr_edge = br_plotter.BRinfo.singular_curves{zz}.edges(br_plotter.BRinfo.faces(ii).top,:);
 						end
 					end
 					
@@ -328,14 +330,14 @@ for ii = 1:num_faces
 				
 				curr_edge = -10;
 				if strcmp(br_plotter.BRinfo.faces(ii).system_bottom,'input_critical_curve')
-					curr_edge = br_plotter.BRinfo.crit_curve.edges(br_plotter.BRinfo.faces(ii).bottom+1,:);
+					curr_edge = br_plotter.BRinfo.crit_curve.edges(br_plotter.BRinfo.faces(ii).bottom,:);
 				elseif strcmp(br_plotter.BRinfo.faces(ii).system_bottom,'input_surf_sphere')
-					curr_edge = br_plotter.BRinfo.sphere_curve.edges(br_plotter.BRinfo.faces(ii).bottom+1,:);
+					curr_edge = br_plotter.BRinfo.sphere_curve.edges(br_plotter.BRinfo.faces(ii).bottom,:);
 				else
 					%do a lookup
 					for zz = 1:length(br_plotter.BRinfo.singular_curves)
 						if strcmp(br_plotter.BRinfo.singular_names{zz},br_plotter.BRinfo.faces(ii).system_bottom)
-							curr_edge = br_plotter.BRinfo.singular_curves{zz}.edges(br_plotter.BRinfo.faces(ii).bottom+1,:);
+							curr_edge = br_plotter.BRinfo.singular_curves{zz}.edges(br_plotter.BRinfo.faces(ii).bottom,:);
 						end
 					end
 					
@@ -352,8 +354,8 @@ for ii = 1:num_faces
 						continue;
 					end
 					
-					slice_ind = br_plotter.BRinfo.faces(ii).midslice_index+1; %offset by 1.
-					edge_ind = br_plotter.BRinfo.faces(ii).left(left_edge_counter)+1; %offset by 1.
+					slice_ind = br_plotter.BRinfo.faces(ii).midslice_index; 
+					edge_ind = br_plotter.BRinfo.faces(ii).left(left_edge_counter); 
 					
 					curr_edge = br_plotter.BRinfo.critpoint_slices{slice_ind}.edges(edge_ind,:);
 					left_edge_counter = left_edge_counter +1; %increment
@@ -370,8 +372,8 @@ for ii = 1:num_faces
 						continue;
 					end
 					
-					slice_ind = br_plotter.BRinfo.faces(ii).midslice_index+2;
-					edge_ind = br_plotter.BRinfo.faces(ii).right(right_edge_counter)+1;
+					slice_ind = br_plotter.BRinfo.faces(ii).midslice_index+1;
+					edge_ind = br_plotter.BRinfo.faces(ii).right(right_edge_counter);
 					curr_edge = br_plotter.BRinfo.critpoint_slices{slice_ind}.edges(edge_ind,:);
 					right_edge_counter = right_edge_counter +1;
 					
@@ -387,12 +389,12 @@ for ii = 1:num_faces
 		end
 		
 		
-		local.faces(local_face_index,:) = [curr_edge(1) curr_edge(2) br_plotter.BRinfo.faces(ii).midpoint+1];
-		local.faces(local_face_index+1,:) = [curr_edge(2) curr_edge(3) br_plotter.BRinfo.faces(ii).midpoint+1];
+		local.faces(local_face_index,:) = [curr_edge(1) curr_edge(2) br_plotter.BRinfo.faces(ii).midpoint];
+		local.faces(local_face_index+1,:) = [curr_edge(2) curr_edge(3) br_plotter.BRinfo.faces(ii).midpoint];
 		local_face_index = local_face_index+2;
 		
-		br_plotter.fv.faces(curr_face_index,:) = [curr_edge(1) curr_edge(2) br_plotter.BRinfo.faces(ii).midpoint+1];
-		br_plotter.fv.faces(curr_face_index+1,:) = [curr_edge(2) curr_edge(3) br_plotter.BRinfo.faces(ii).midpoint+1];
+		br_plotter.fv.faces(curr_face_index,:) = [curr_edge(1) curr_edge(2) br_plotter.BRinfo.faces(ii).midpoint];
+		br_plotter.fv.faces(curr_face_index+1,:) = [curr_edge(2) curr_edge(3) br_plotter.BRinfo.faces(ii).midpoint];
 		curr_face_index = curr_face_index+2;
 		
 		
@@ -403,7 +405,7 @@ for ii = 1:num_faces
 	local.faces = local.faces(1:local_face_index-1,:);
 
 	try
-		br_plotter.handles.faces(ii) = patch(local,'FaceColor',colors(ii,:),'FaceAlpha',br_plotter.options.face_alpha,'EdgeColor',colors(ii,:),'EdgeAlpha',br_plotter.options.edge_alpha,'Parent',curr_axis);
+		br_plotter.handles.faces(end+1) = patch(local,'FaceColor',colors(ii,:),'FaceAlpha',br_plotter.options.face_alpha,'EdgeColor',colors(ii,:),'EdgeAlpha',br_plotter.options.edge_alpha,'Parent',curr_axis);
 	catch
 		ii
 		local_face_index
@@ -493,7 +495,8 @@ pos = zeros(br_plotter.BRinfo.num_faces,length(ind));
 
 
 
-for ii = 1:num_faces
+for cc = 1:length(br_plotter.options.which_faces)
+	ii = br_plotter.options.which_faces(cc);
 	if br_plotter.BRinfo.faces(ii).midslice_index == -1 % degenerate face, or there was a severe problem with the face
 		continue
 	end
@@ -502,10 +505,10 @@ for ii = 1:num_faces
 	
 	
 % 	% set the midpoint of the face for all triangles to be the first row
-	pt = transpose(br_plotter.BRinfo.vertices(br_plotter.BRinfo.faces(ii).midpoint+1).point(ind));
+	pt = transpose(br_plotter.BRinfo.vertices(br_plotter.BRinfo.faces(ii).midpoint).point(ind));
 
 	if br_plotter.options.labels
-		txt{ii} = ['\newline' num2str(ii-1)];
+		txt{ii} = ['\newline' num2str(ii)];
 		pos(ii,:) = pt(1:length(ind));
 	end
 	
@@ -526,14 +529,14 @@ for ii = 1:num_faces
 				
 				curr_edge = -10;
 				if strcmp(br_plotter.BRinfo.faces(ii).system_top,'input_critical_curve')
-					curr_edge = br_plotter.BRinfo.crit_curve.edges(br_plotter.BRinfo.faces(ii).top+1,:);
+					curr_edge = br_plotter.BRinfo.crit_curve.edges(br_plotter.BRinfo.faces(ii).top,:);
 				elseif strcmp(br_plotter.BRinfo.faces(ii).system_top,'input_surf_sphere')
-					curr_edge = br_plotter.BRinfo.sphere_curve.edges(br_plotter.BRinfo.faces(ii).top+1,:);
+					curr_edge = br_plotter.BRinfo.sphere_curve.edges(br_plotter.BRinfo.faces(ii).top,:);
 				else
 					%do a lookup (slower)
 					for zz = 1:length(br_plotter.BRinfo.singular_curves)
 						if strcmp(br_plotter.BRinfo.singular_names{zz},br_plotter.BRinfo.faces(ii).system_top)
-							curr_edge = br_plotter.BRinfo.singular_curves{zz}.edges(br_plotter.BRinfo.faces(ii).top+1,:);
+							curr_edge = br_plotter.BRinfo.singular_curves{zz}.edges(br_plotter.BRinfo.faces(ii).top,:);
 						end
 					end
 					
@@ -554,14 +557,14 @@ for ii = 1:num_faces
 				
 				curr_edge = -10;
 				if strcmp(br_plotter.BRinfo.faces(ii).system_bottom,'input_critical_curve')
-					curr_edge = br_plotter.BRinfo.crit_curve.edges(br_plotter.BRinfo.faces(ii).bottom+1,:);
+					curr_edge = br_plotter.BRinfo.crit_curve.edges(br_plotter.BRinfo.faces(ii).bottom,:);
 				elseif strcmp(br_plotter.BRinfo.faces(ii).system_bottom,'input_surf_sphere')
-					curr_edge = br_plotter.BRinfo.sphere_curve.edges(br_plotter.BRinfo.faces(ii).bottom+1,:);
+					curr_edge = br_plotter.BRinfo.sphere_curve.edges(br_plotter.BRinfo.faces(ii).bottom,:);
 				else
 					%do a lookup
 					for zz = 1:length(br_plotter.BRinfo.singular_curves)
 						if strcmp(br_plotter.BRinfo.singular_names{zz},br_plotter.BRinfo.faces(ii).system_bottom)
-							curr_edge = br_plotter.BRinfo.singular_curves{zz}.edges(br_plotter.BRinfo.faces(ii).bottom+1,:);
+							curr_edge = br_plotter.BRinfo.singular_curves{zz}.edges(br_plotter.BRinfo.faces(ii).bottom,:);
 						end
 					end
 					
@@ -578,8 +581,8 @@ for ii = 1:num_faces
 						continue;
 					end
 					
-					slice_ind = br_plotter.BRinfo.faces(ii).midslice_index+1; %offset by 1.
-					edge_ind = br_plotter.BRinfo.faces(ii).left(left_edge_counter)+1; %offset by 1.
+					slice_ind = br_plotter.BRinfo.faces(ii).midslice_index; 
+					edge_ind = br_plotter.BRinfo.faces(ii).left(left_edge_counter); 
 					
 					curr_edge = br_plotter.BRinfo.critpoint_slices{slice_ind}.edges(edge_ind,:);
 					left_edge_counter = left_edge_counter +1; %increment
@@ -596,8 +599,8 @@ for ii = 1:num_faces
 						continue;
 					end
 					
-					slice_ind = br_plotter.BRinfo.faces(ii).midslice_index+2;
-					edge_ind = br_plotter.BRinfo.faces(ii).right(right_edge_counter)+1;
+					slice_ind = br_plotter.BRinfo.faces(ii).midslice_index+1;
+					edge_ind = br_plotter.BRinfo.faces(ii).right(right_edge_counter);
 					curr_edge = br_plotter.BRinfo.critpoint_slices{slice_ind}.edges(edge_ind,:);
 					right_edge_counter = right_edge_counter +1;
 					
@@ -614,8 +617,8 @@ for ii = 1:num_faces
 		
 		
 
-		br_plotter.fv.faces(curr_face_index,:) = [curr_edge(1) curr_edge(2) br_plotter.BRinfo.faces(ii).midpoint+1];
-		br_plotter.fv.faces(curr_face_index+1,:) = [curr_edge(2) curr_edge(3) br_plotter.BRinfo.faces(ii).midpoint+1];
+		br_plotter.fv.faces(curr_face_index,:) = [curr_edge(1) curr_edge(2) br_plotter.BRinfo.faces(ii).midpoint];
+		br_plotter.fv.faces(curr_face_index+1,:) = [curr_edge(2) curr_edge(3) br_plotter.BRinfo.faces(ii).midpoint];
 		curr_face_index = curr_face_index+2;
 		
 		

@@ -413,15 +413,30 @@ class BertiniRealConfig : public ProgramConfigBase
 	
 	
 	std::string matlab_command_; ///< the string for how to call matlab.
-	
+	std::string python_command_; 
+
 	bool use_gamma_trick_; ///< indicator for whether to use the gamma trick in a particular solver.
 	
-        SymEngine engine_; ///< the symbolic class variable that indicates which symbolic engine the user desires. Default is currently Matlab	
+    SymEngine engine_; ///< the symbolic class variable that indicates which symbolic engine the user desires. Default is currently Matlab	
+	
+	bool prevent_sym_substitution_;
+	
+	double same_point_tol_;
 	
 	
-	
+
+	bool ignore_singular_;
 public:
 	
+	double same_point_tol() const
+	{
+		return same_point_tol_;
+	}
+
+	void same_point_tol(double t)
+	{
+		same_point_tol_ = t;
+	}
 	/**
 	 get the mode for the program.  by default, it's bertini_real
 	 */
@@ -430,6 +445,27 @@ public:
 		return primary_mode_;
 	}
 	
+
+	bool sym_prevent_subst() const
+	{
+		return prevent_sym_substitution_;
+	}
+
+	void sym_prevent_subst(bool val)
+	{
+		prevent_sym_substitution_ = val;
+	}
+
+	bool ignore_singular() const
+	{
+		return ignore_singular_;
+	}
+
+	void ignore_singular(bool val)
+	{
+		ignore_singular_ = val;
+	}
+
 	/**
 	 get the path to the input_deflated file.
 	 
@@ -491,10 +527,45 @@ public:
 		return matlab_command_;
 	}
 	
+	/**
+	 get the command for calling Python via system(), which I hate doing anyway...  ugh.
+	 
+	 \return the string for calling Python.
+	 */
+	std::string python_command() const
+	{
+		return python_command_;
+	}
+
+
+	/**
+	run Matlab script
+	*/
+	int CallMatlab(std::string const& command) const
+	{
+		std::stringstream converter;
+		converter << matlab_command() << command;
+
+		if (verbose_level()>=1)
+			std::cout << "inkoving `" << converter.str() << "`\n";
+		return system(converter.str().c_str());
+	}
 	
+	/**
+	run Python script
+	*/
+	int CallPython(std::string const& command) const
+	{
+		
+		std::stringstream converter;
+		converter << python_command() << command;
+
+		if (verbose_level()>=1)
+			std::cout << "inkoving `" << converter.str() << "`\n";
+		return system(converter.str().c_str());
+	}
 	
-	
-	
+
 	/**
 	 get the target dimension.  by default, this is -1, which is 'ask the user'
 	 \return the dimension.
@@ -819,6 +890,9 @@ public:
 	int max_num_ribs;
 	int min_num_ribs;
 	
+	bool use_uniform_cycle_num = true;
+	int cycle_num = 2;
+
 	/** 
 	 \brief get the sampler_configuration from the command line. */
 	int  parse_commandline(int argc, char **argv);

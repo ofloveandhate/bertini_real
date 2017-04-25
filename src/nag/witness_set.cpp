@@ -72,7 +72,7 @@ int WitnessSet::Parse(const boost::filesystem::path witness_set_file, const int 
 		std::cerr << temp_num_patches << " patches detected.  this probably indicates a problem." << std::endl;
 		std::cerr << "the file being read: " << witness_set_file << std::endl;
 		std::cerr << "trying to read " << num_vars << " variables." << std::endl;
-		mypause();
+		throw std::runtime_error("more than one patch in input witness set");
 	}
 	
 	
@@ -293,11 +293,11 @@ void WitnessSet::print_to_screen() const
 	
 	std::stringstream varname;
 	
-	std::cout << "witness set has " << num_vars_ << " total variables, " << num_natty_vars_ << " natural variables." << std::endl;
+	// std::cout << "witness set has " << num_vars_ << " total variables, " << num_natty_vars_ << " natural variables." << std::endl;
 	
 	
-	std::cout << "dim " << dim_ << ", comp " << comp_num_ << std::endl;
-	std::cout << "input file name " << input_filename_ << std::endl;
+	// std::cout << "dim " << dim_ << ", comp " << comp_num_ << std::endl;
+	// std::cout << "input file name " << input_filename_ << std::endl;
 
 	
 	printf("******\n%zu points\n******\n",num_points());
@@ -313,31 +313,31 @@ void WitnessSet::print_to_screen() const
 	}
 	std::cout << color::console_default();
 	
-	std::cout << color::blue();
-	printf("******\n%zu linears\n******\n",num_linears());
+	// std::cout << color::blue();
+	// printf("******\n%zu linears\n******\n",num_linears());
 	
-	for (unsigned ii=0; ii<num_linears(); ii++) {
-		varname << "linear_" << ii;
-		print_point_to_screen_matlab(linear(ii),varname.str());
-		varname.str("");
-	}
-	std::cout << color::console_default();
+	// for (unsigned ii=0; ii<num_linears(); ii++) {
+	// 	varname << "linear_" << ii;
+	// 	print_point_to_screen_matlab(linear(ii),varname.str());
+	// 	varname.str("");
+	// }
+	// std::cout << color::console_default();
 	
-	std::cout << color::cyan();
-	printf("******\n%zu patches\n******\n",num_patches());
+	// std::cout << color::cyan();
+	// printf("******\n%zu patches\n******\n",num_patches());
 	
-	for (unsigned ii=0; ii<num_patches(); ii++) {
-		varname << "patch_" << ii;
-		print_point_to_screen_matlab(patch(ii),varname.str());
-		varname.str("");
-	}
-	std::cout << color::console_default();
+	// for (unsigned ii=0; ii<num_patches(); ii++) {
+	// 	varname << "patch_" << ii;
+	// 	print_point_to_screen_matlab(patch(ii),varname.str());
+	// 	varname.str("");
+	// }
+	// std::cout << color::console_default();
 	
-	std::cout << "variable names:\n";
-	for (unsigned ii=0; ii< num_var_names(); ii++) {
-		std::cout << name(ii) << "\n";
-	}
-	printf("\n\n");
+	// std::cout << "variable names:\n";
+	// for (unsigned ii=0; ii< num_var_names(); ii++) {
+	// 	std::cout << name(ii) << "\n";
+	// }
+	// printf("\n\n");
 	
 	
 	clear_vec_mp(dehom);
@@ -455,7 +455,7 @@ void WitnessSet::only_first_vars(int num_vars)
 	if (trim_from_here==0) {
 		std::cerr << "problem: the sum of the patch sizes never equalled the number of variables to trim to...\nhence, the trimming operation could not complete." << std::endl;
 		this->print_to_screen();
-		deliberate_segfault();
+		throw std::runtime_error("the sum of the patch sizes never equalled the number of variables to trim to");
 	}
 	
 	for (unsigned int ii=trim_from_here; ii<num_patches(); ii++) {
@@ -678,6 +678,73 @@ void WitnessSet::sort_for_inside_sphere(comp_mp radius, vec_mp center)
 
 
 
+void WitnessSet::RealifyPoint(int ind, double tol)
+{
+	vec_mp& pt = point(ind);
+	vec_mp temp; init_vec_mp(temp,0);
+	vec_cp_mp(temp, pt);
+
+	comp_mp t1; init_mp(t1);
+	comp_mp t2; init_mp(t2);
+
+	int offset = 0;
+	for (int ii=0; ii<this->num_patches(); ++ii)
+	{
+		const vec_mp& p = patch(ii);
+		int curr_vargp_size = p->size;
+
+		// find max coord for this variable group
+		int max_coord_ind;  double max_coord_val = 0;
+		for (int jj=offset; jj<offset + curr_vargp_size; ++jj)
+		{
+			auto v = d_abs_mp(&pt->coord[jj]);
+			if (v > max_coord_val)
+			{
+				max_coord_val = v;
+				max_coord_ind = jj;
+			}
+		}
+
+		// scale by max_coord_ind
+		for (int jj=offset; jj<offset + curr_vargp_size; ++jj)
+			div_mp(&temp->coord[jj], &temp->coord[jj], &pt->coord[max_coord_ind]);
+		
+		// real-threashold that mutha
+		for (int jj=offset; jj<offset + curr_vargp_size; ++jj)
+		{
+			if (mpf_cmp_d(temp->coord[jj].i, tol) < 0)
+			{
+				mpf_set_ui(temp->coord[jj].i, 0); // zero out the imaginary part
+			}
+		}
+
+		// now re-scale to match the patch again
+
+		// take the value of the point on the patch
+		set_zero_mp(t2);
+		for (int jj=0; jj< curr_vargp_size; ++jj)
+		{	
+			mul_mp(t1, &temp->coord[jj+offset], &p->coord[jj]);
+			add_mp(t2, t2, t1);
+		}
+
+		for (int jj=offset; jj<offset + curr_vargp_size; ++jj)
+			div_mp(&temp->coord[jj], &temp->coord[jj], t2);
+
+
+		offset += curr_vargp_size;
+	}
+	vec_cp_mp(point(ind), temp);
+	clear_vec_mp(temp); clear_mp(t1);clear_mp(t2);
+}
+
+
+void WitnessSet::Realify(double tol)
+{
+	for (unsigned int ii=0; ii<num_points(); ++ii) {
+		RealifyPoint(ii, tol);
+	}
+}
 
 void WitnessSet::merge(const WitnessSet & W_in, tracker_config_t * T)
 {

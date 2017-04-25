@@ -21,112 +21,122 @@ std::string enum_lookup(int flag, int hint)
 	else
 	{
 	switch (flag) {
-		case SUCCESSFUL:
-			return "SUCCESSFUL";
-			break;
-			
-		case CRITICAL_FAILURE:
-			return "CRITICAL_FAILURE";
-			break;
-			
-		case TOLERABLE_FAILURE:
-			return "TOLERABLE_FAILURE";
+		case 0:
+			return "success";
 			break;
 			
 		case NULLSPACE:
 			return "NULLSPACE";
-			break;
 			
 		case LINPRODTODETJAC:
 			return "LINPRODTODETJAC";
-			break;
 			
 		case DETJACTODETJAC:
 			return "DETJACTODETJAC";
-			break;
 			
 		case LINTOLIN:
 			return "LINTOLIN";
-			break;
 			
 		case MULTILIN:
 			return "MULTILIN";
-			break;
 			
 		case MIDPOINT_SOLVER:
 			return "MIDPOINT_SOLVER";
-			break;
 			
 		case SPHERE_SOLVER:
 			return "SPHERE_SOLVER";
-			break;
 			
 		case BERTINI_MAIN:
 			return "BERTINI_MAIN";
-			break;
 		case TERMINATE:
 			return "TERMINATE";
-			break;
-			
+		case SAMPLE_CURVE:
+			return "SAMPLE_CURVE";
+		case SAMPLE_SURFACE:
+			return "SAMPLE_SURFACE";
+		case TRACKER_CONFIG:
+			return "TRACKER_CONFIG";
 		case INITIAL_STATE:
 			return "INITIAL_STATE";
-			break;
 			
 			
 		case PARSING:
 			return "PARSING";
-			break;
 			
 		case TYPE_CONFIRMATION:
 			return "TYPE_CONFIRMATION";
-			break;
 			
 		case DATA_TRANSMISSION:
 			return "DATA_TRANSMISSION";
-			break;
 			
 		case NUMPACKETS:
 			return "NUMPACKETS";
-			break;
 			
 		case INACTIVE:
 			return "INACTIVE";
-			break;
 			
 		case VEC_MP:
 			return "VEC_MP";
-			break;
 			
 		case VEC_D:
 			return "VEC_D";
-			break;
 			
 		case MAT_MP:
 			return "MAT_MP";
-			break;
 			
 		case MAT_D:
 			return "MAT_D";
-			break;
 			
 		case COMP_MP:
 			return "COMP_MP";
-			break;
 			
 		case COMP_D:
 			return "COMP_D";
-			break;
 			
 		case INDICES:
 			return "INDICES";
 			break;
 			
+		case retVal_max_prec_reached:
+			return "retVal_max_prec_reached";
+		case retVal_reached_minTrackT:
+			return "retVal_reached_minTrackT";
+		case retVal_cycle_num_too_high:
+			return "retVal_cycle_num_too_high";
+		case retVal_PSEG_failed:
+			return "retVal_PSEG_failed";
+		case retVal_going_to_infinity:
+			return "retVal_going_to_infinity";
+		case retVal_security_max:
+			return "retVal_security_max";
+		case retVal_step_size_too_small:
+			return "retVal_step_size_too_small";
+		case retVal_too_many_steps:
+			return "retVal_too_many_steps";
+		case retVal_refining_failed:
+			return "retVal_refining_failed";
+		 case retVal_higher_prec_needed:
+		 	return "retVal_higher_prec_needed";
+		 case retVal_NAN:
+		 	return "retVal_NAN";
+		 case retVal_Bertini_Junk:
+		 	return "retVal_Bertini_Junk";
+		 case retVal_Failed_to_converge:
+		 	return "retVal_Failed_to_converge";
+		 case retVal_sharpening_singular_endpoint:
+		 	return "retVal_sharpening_singular_endpoint";
+		 case retVal_sharpening_failed:
+		 	return "retVal_sharpening_failed";
+		 case retVal_higher_dim:
+		 	return "retVal_higher_dim";
 			
 		default:
 			break;
 	}
 	}
-	return "unknown...  check out data_type.cpp";
+	std::stringstream ss;
+	ss << "unknown enum value " << flag << ", check out data_type.cpp or bertini.h";
+	return ss.str();
 }
 
 
@@ -617,7 +627,7 @@ void dot_product_d(comp_d result, const vec_d left, const vec_d right)
 {
 	if (left->size!=right->size) {
 		printf("attempting to dot_d two vectors not of the same size! (%d!=%d)\n",left->size,right->size);
-		br_exit(5901);
+		throw std::runtime_error("attempting to dot_d two vectors not of the same size");
 	}
 	
 	set_zero_d(result);
@@ -633,7 +643,7 @@ void dot_product_mp(comp_mp result, const vec_mp left, const vec_mp right)
 {
 	if (left->size!=right->size) {
 		printf("attempting to dot_mp two vectors not of the same size! (%d!=%d)\n",left->size,right->size);
-		br_exit(5902);
+		throw std::runtime_error("attempting to dot_mp two vectors not of the same size");
 	}
 	
 	set_zero_mp(result);
@@ -783,21 +793,13 @@ int take_determinant_mp(comp_mp determinant, const mat_mp source_matrix)
 		set_zero_mp(&zerovec->coord[ii]);
 	}
 	
-	//  these should be for realsies
-	
+
 	// returns x, intermediate.
-	
-	//	print_matrix_to_screen_matlab(tempmat,"tempmat");
-	
 	
 	int retval = LU_matrixSolve_mp(garbage, intermediate, &rwnm, &sign, const_cast<_mat_mp*>(source_matrix), zerovec,tol,largeChange);
 	//the solution is in intermediate.
 	//error check.  solution failed if retval!=0
 	if (retval!=0) {
-		//		printf("LU decomposition failed (mp)\n");
-		//		print_matrix_to_screen_matlab_mp(intermediate,"failed_result");
-		//		print_matrix_to_screen_matlab_mp(source_matrix,"source_matrix");
-		//		deliberate_segfault();
 		set_zero_mp(determinant);
 	}
 	else{
@@ -811,9 +813,7 @@ int take_determinant_mp(comp_mp determinant, const mat_mp source_matrix)
 			neg_mp(determinant,determinant);
 		}
 	}
-	//	print_matrix_to_screen_matlab(source_matrix,"detme");
-	//	printf("candidate=%lf+1i*%lf;det(detme)\n",determinant->r,determinant->i);
-	//	mypause();
+
 	// this verified correct via 20 samples in matlab.  dab.
 	
 	free(rwnm);
@@ -871,18 +871,17 @@ void projection_value_homogeneous_input(comp_mp result, const vec_mp input, cons
 
 int isSamePoint_inhomogeneous_input(const point_d left, const point_d right, double tolerance){
 	
-	if (left->size!=right->size) {
-		printf("attempting to isSamePoint_inhom_d with disparate sized points.\n");
-		std::cout << "left: " << left->size << "\t right: " << right->size << std::endl;
-		deliberate_segfault();
-		//		exit(-287);
-	}
+	if (left->size!=right->size) 
+		throw std::logic_error("attempting to isSamePoint_inhom_d with disparate sized points.");
 	
-	
-	int indicator = isSamePoint(const_cast<_point_d*>(left),NULL,52,const_cast<_point_d*>(right),NULL,52,tolerance);
-	
-	
-	return indicator;
+	double A = infNormVec_d(const_cast<_point_d*>(left));
+	double B = infNormVec_d(const_cast<_point_d*>(right));
+
+	using std::min;
+	if (auto m = min(A,B)>1.0)
+		tolerance *= m;
+
+	return isSamePoint(const_cast<_point_d*>(left),NULL,52,const_cast<_point_d*>(right),NULL,52,tolerance);
 }
 
 
@@ -895,72 +894,17 @@ int isSamePoint_inhomogeneous_input(const point_mp left, const point_mp right, d
 		throw std::logic_error(ss.str());
 	}
 	
-	comp_mp temp1, temp2;  init_mp(temp1); init_mp(temp2);
-	comp_mp one;  init_mp(one); set_one_mp(one);
-	//double infNormVec_mp(vec_mp X)
-	for (int ii=0; ii<left->size; ii++) {
-		abs_mp(temp1, &left->coord[ii]);
-		abs_mp(temp2, &right->coord[ii]); // take the absolute values of the two coordinates.
-		
-		// compare them.
-		if ( mpf_cmp(temp1->r, temp2->r)<0 ) {  // if left smaller than right,
-			
-			if (mpf_cmp(temp2->r,one->r)>0) { // if the max abs value bigger than 1.
-											//scale by temp2
-				div_mp(temp1, &left->coord[ii], temp2);
-				div_mp(temp2, &right->coord[ii], temp2);
-				
-				sub_mp(temp1, temp1, temp2);  // temp1 = temp1-temp2
-				abs_mp(temp2, temp1);  // temp2 = |temp1|
-				
-				if (mpf_get_d(temp2->r) > tolerance) {
-					clear_mp(temp1); clear_mp(temp2); clear_mp(one);
-					return 0;
-				}
-				
-			}
-			else{ // no need to scale, because bigger coord was smaller than 1.
-				sub_mp(temp1, &left->coord[ii], &right->coord[ii]); // take difference
-				abs_mp(temp2, temp1); // absolute value that difference
-				if (mpf_get_d(temp2->r)> tolerance) { // if bigger than allowed tolerance, reject as not the same point.
-					clear_mp(temp1); clear_mp(temp2); clear_mp(one);
-					return 0;
-				}
-			}
-		}
-		else {  // if right smaller than left,
-			
-			if (mpf_cmp(temp1->r,one->r)>0) { // if the larger absolute value is bigger than 1.
-											//scale by temp1, cuz it was bigger than temp2 and > 1
-				
-				div_mp(temp2, &right->coord[ii], temp1);
-				div_mp(temp1, &left->coord[ii], temp1);
-				
-				sub_mp(temp1, temp1, temp2);
-				
-				abs_mp(temp2, temp1);  // temp2 = |temp1|
-				
-				if (mpf_get_d(temp2->r) > tolerance) {
-					clear_mp(temp1); clear_mp(temp2); clear_mp(one);
-					return 0;
-				}
-			}
-			else{
-				sub_mp(temp1, &left->coord[ii], &right->coord[ii]); // take difference
-				abs_mp(temp2, temp1); // absolute value that difference
-				if (mpf_get_d(temp2->r)> tolerance) { // if bigger than allowed tolerance, reject as not the same point.
-					clear_mp(temp1); clear_mp(temp2); clear_mp(one);
-					return 0;
-				}
-			}
-		}
-		
-		
-	}
 	
-	clear_mp(temp1); clear_mp(temp2); clear_mp(one);
-	return 1; //made it all the way down here, must be the same!!!
 	
+	double A = infNormVec_mp(const_cast<_point_mp*>(left));
+	double B = infNormVec_mp(const_cast<_point_mp*>(right));
+
+	using std::min;
+	auto m = min(A,B);
+	if (m>1.0)
+		tolerance *= m;
+
+	return isSamePoint(NULL,const_cast<_point_mp*>(left),64,NULL,const_cast<_point_mp*>(right),64,tolerance);
 }
 
 
@@ -979,8 +923,8 @@ int isSamePoint_homogeneous_input(const point_d left, const point_d right, doubl
 	
 	dehomogenize(&dehom_left,left);
 	dehomogenize(&dehom_right,right);
-	
-	int indicator = isSamePoint(dehom_left,NULL,52,dehom_right,NULL,52,tolerance);
+
+	int indicator = isSamePoint_inhomogeneous_input(dehom_left, dehom_right, tolerance);
 	
 	clear_vec_d(dehom_left); clear_vec_d(dehom_right);
 	
@@ -1002,7 +946,7 @@ int isSamePoint_homogeneous_input(const point_mp left, const point_mp right, dou
 	
 	dehomogenize(&dehom_left,left);
 	dehomogenize(&dehom_right,right);
-	
+
 
 	int indicator = isSamePoint_inhomogeneous_input(dehom_left, dehom_right, tolerance);
 	
@@ -1065,9 +1009,9 @@ void real_threshold(mat_mp blabla, double threshold)
 	for (int jj=0; jj<blabla->cols; jj++) {
 		for (int ii=0; ii<blabla->rows; ii++) {
 			mp_to_d(temp, &blabla->entry[ii][jj]);
-//            if ( fabs(temp->r) < threshold) {
-//				mpf_set_str( blabla->entry[ii][jj].r, "0.0", 10);
-//			}
+           if ( fabs(temp->r) < threshold) {
+				mpf_set_str( blabla->entry[ii][jj].r, "0.0", 10);
+			}
 			if ( fabs(temp->i) < threshold) {
 				mpf_set_str( blabla->entry[ii][jj].i, "0.0", 10);
 			}

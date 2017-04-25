@@ -829,7 +829,8 @@ public:
 	void AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configuration & sampler_options,
 										SolverConfiguration & solve_options, std::vector<int> const& num_ribs_between_crits);
 
-
+	void DegenerateSampleFace(int face_index, VertexSet & V, sampler_configuration & sampler_options,
+										SolverConfiguration & solve_options);
 
 	std::vector<int> AdaptiveNumSamplesPerRib(VertexSet const& V, sampler_configuration & sampler_options);
 
@@ -968,7 +969,7 @@ protected:
 };
 
 
-
+void WorkerSampleSurface(sampler_configuration & sampler_options, SolverConfiguration & solve_options);
 
 
 //
@@ -977,7 +978,7 @@ protected:
  will compute a randomizer matrix since you don't provide one. must have current PPD in solve_options for this to work correctly
  Assumes the input file for W is already parsed.
  
- \return SUCCESSFUL, unless W has no points, in which case returns TOLERABLE_FAILURE.
+ \return SUCCESSFUL, unless W has no points, in which case throws.
  \param W_match A computed value, this contains all the points in W which satisfy its input file.
  \param W_reject A computed value, this contains all points in W which do NOT satisfy its input file.
  \param W Input witness set, which you want to split in terms of which points do/not satisfy its input file (which was produced by isosingular deflation).
