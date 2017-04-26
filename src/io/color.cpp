@@ -24,74 +24,74 @@ namespace color {
 				return "30";
 		}
 	}
-	
-	
+
+
 	std::string bold(char new_color)
 	{
 		return "\033[1;" + color_to_int(new_color) + "m";
 	}
-	
+
 	std::string dark(char new_color)
 	{
 		return "\033[2;" + color_to_int(new_color) + "m";
 	}
-	
-	
+
+
 	std::string underline(char new_color)
 	{
 		return "\033[4;" + color_to_int(new_color) + "m";
 	}
-	
-	
+
+
 	std::string background(char new_color)
 	{
 		return "\033[7;" + color_to_int(new_color) + "m";
 	}
-	
-	
+
+
 	std::string strike(char new_color)
 	{
 		return "\033[9;" + color_to_int(new_color) + "m";
 	}
-	
+
 	std::string console_default(){
 		return "\033[0m";
 	}
-	
+
 	std::string black(){
 		return "\033[0;30m";
 	}
-	
+
 	std::string red(){
 		return "\033[0;31m";
 	}
-	
+
 	std::string green(){
 		return "\033[0;32m";
 	}
-	
-	
+
+
 	std::string brown(){
 		return "\033[0;33m";
 	}
-	
+
 	std::string blue(){
 		return "\033[0;34m";
 	}
-	
+
 	std::string magenta(){
 		return "\033[0;35m";
 	}
-	
+
 	std::string cyan(){
 		return "\033[0;36m";
 	}
-	
+
 	std::string gray(){
 		return "\033[0;37m";
 	}
-	
-	
+
+
 	//black - 30
 	//red - 31
 	//green - 32
@@ -101,4 +101,3 @@ namespace color {
 	//cyan - 36
 	//lightgray - 37
 }
-

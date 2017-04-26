@@ -1,9 +1,9 @@
 #ifndef NULLSPACE_H_
 #define NULLSPACE_H_
 
-/** 
+/**
  \file nullspace.hpp
- 
+
  \brief Methods for computing points such that a vector is in the left or right nullspace of a jacobian matrix, coupled with the system which generated it, and several linear projections.
  */
 
@@ -15,7 +15,7 @@
 
 /**
  \brief the main function for computing critical sets.
- 
+
  \return SUCCESSFUL
  \param solve_out The output class for all solvers.
  \param W								input WitnessSet.
@@ -46,7 +46,7 @@ int compute_crit_nullspace(SolverOutput & solve_out, // the returned value
 
 /**
  \brief the main function for computing critical sets.
- 
+
  \return SUCCESSFUL
  \param solve_out The output class for all solvers.
  \param W								input WitnessSet.
@@ -83,7 +83,7 @@ int compute_crit_nullspace_left(SolverOutput & solve_out, // the returned value
 
 /**
  \brief performs the setup for the NullspaceConfiguration which is used in the compute_crit_nullspace method, and is passed into the solverNullspace.
- 
+
  \param ns_config						the data structure we are setting up.
  \param pi the projections to use.  there could be more than used.
  \param ambient_dim the dimension of the containing object.
@@ -119,7 +119,7 @@ void nullspace_config_setup_left(NullspaceConfiguration *ns_config,
 
 /**
  \brief the main function for computing critical sets via a single right nullspace vector.
- 
+
  \return SUCCESSFUL
  \param solve_out The output class for all solvers.
  \param W								input WitnessSet.
@@ -146,7 +146,7 @@ int compute_crit_nullspace_right(SolverOutput & solve_out, // the returned value
 
 /**
  \brief performs the setup for the NullspaceConfiguration which is used in the compute_crit_nullspace method, and is passed into the solverNullspace.
- 
+
  \param ns_config						the data structure we are setting up.
  \param pi the projections to use.  there could be more than used.
  \param ambient_dim the dimension of the containing object.
@@ -174,7 +174,7 @@ void nullspace_config_setup_right(NullspaceConfiguration *ns_config,
 
 /**
  \brief Put a few finishing details on the output from compute_crit_nullspace
- 
+
  \param solve_out Returning object from solver.
  \param W input witness set
  \param ns_config The nullspace solver config object.
@@ -192,7 +192,7 @@ void ns_concluding_modifications(SolverOutput & solve_out,
 
 /**
  \brief Create a Bertini input file with the nullspace system.
- 
+
  \param output_name The desired name of the output file.
  \param input_name The name of the file from which to construct the new file.
  \param program_options The current state of Bertini_real
@@ -203,14 +203,24 @@ void create_nullspace_system(boost::filesystem::path output_name,
 							 BertiniRealConfig & program_options,
 							 NullspaceConfiguration *ns_config);
 
+ /**
+  \brief Create a matlab file which will take the determinant of the jacobian matrix, and write it to a text file.
 
+  \param filename name of the input file that we take crit of
+  \param pi projection being used to decompose
+  \param output_name name of the output file being written
+  \param dim number of projections
+
+	\return whether to run finalize function
+  */
+bool create_Matlab_Crit_NoSubst(std::string const& filename,vec_mp *pi, boost::filesystem::path output_name, int dim);
 
 
 
 /**
  \brief Create a matlab file which will take the determinant of the jacobian matrix, and write it to a text file.
- 
- 
+
+
  \param output_name the desired output file's name
  \param input_name bertini input file out of which to create the new file.
  \param ns_config the nullspace configuration.
@@ -224,7 +234,7 @@ void create_nullspace_system(boost::filesystem::path output_name,
  \param funcs The names of the functions
  \param lineFuncs the lines on which the functions appear
  */
-void create_matlab_determinantal_system(boost::filesystem::path output_name,
+bool create_matlab_determinantal_system(boost::filesystem::path output_name,
 										boost::filesystem::path input_name,
 										NullspaceConfiguration *ns_config,
 										int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs);
@@ -232,8 +242,8 @@ void create_matlab_determinantal_system(boost::filesystem::path output_name,
 
 /**
  \brief Create a python file which will take the determinant of the jacobian matrix, and write it to a text file.
- 
- 
+
+
  \param output_name the desired output file's name
  \param input_name bertini input file out of which to create the new file.
  \param ns_config the nullspace configuration.
@@ -247,13 +257,17 @@ void create_matlab_determinantal_system(boost::filesystem::path output_name,
  \param funcs The names of the functions
  \param lineFuncs the lines on which the functions appear
  */
-void create_python_determinantal_system( FILE *OUT, FILE *IN,
+bool create_python_determinantal_system( FILE *OUT, FILE *IN,
 					 NullspaceConfiguration *ns_config,
 					 int numVars, char **vars, int *lineVars,
 					 int numConstants, char **consts, int *lineConstants,
 					 int numFuncs, char **funcs, int *lineFuncs);
 
 
+
+void FinalizeCritFile(boost::filesystem::path output_name,
+		 	NullspaceConfiguration *ns_config,
+		 	int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs);
+
+
 #endif
-
-
