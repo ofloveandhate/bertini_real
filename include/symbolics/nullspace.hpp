@@ -203,7 +203,17 @@ void create_nullspace_system(boost::filesystem::path output_name,
 							 BertiniRealConfig & program_options,
 							 NullspaceConfiguration *ns_config);
 
+ /**
+  \brief Create a matlab file which will take the determinant of the jacobian matrix, and write it to a text file.
 
+  \param filename name of the input file that we take crit of
+  \param pi projection being used to decompose
+  \param output_name name of the output file being written
+  \param dim number of projections
+
+	\return whether to run finalize function
+  */
+bool create_Matlab_Crit_NoSubst(std::string const& filename,vec_mp *pi, boost::filesystem::path output_name, int dim);
 
 
 
@@ -224,7 +234,7 @@ void create_nullspace_system(boost::filesystem::path output_name,
  \param funcs The names of the functions
  \param lineFuncs the lines on which the functions appear
  */
-void create_matlab_determinantal_system(boost::filesystem::path output_name,
+bool create_matlab_determinantal_system(boost::filesystem::path output_name,
 										boost::filesystem::path input_name,
 										NullspaceConfiguration *ns_config,
 										int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs);
@@ -247,13 +257,17 @@ void create_matlab_determinantal_system(boost::filesystem::path output_name,
  \param funcs The names of the functions
  \param lineFuncs the lines on which the functions appear
  */
-void create_python_determinantal_system( FILE *OUT, FILE *IN,
+bool create_python_determinantal_system( FILE *OUT, FILE *IN,
 					 NullspaceConfiguration *ns_config,
 					 int numVars, char **vars, int *lineVars,
 					 int numConstants, char **consts, int *lineConstants,
 					 int numFuncs, char **funcs, int *lineFuncs);
 
 
+
+void FinalizeCritFile(boost::filesystem::path output_name,
+		 	NullspaceConfiguration *ns_config,
+		 	int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs);
+
+
 #endif
-
-

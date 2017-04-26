@@ -1033,15 +1033,18 @@ void create_nullspace_system(boost::filesystem::path output_name,
 	parse_names(&numFuncs, &funcs, &lineFuncs, IN, const_cast< char *>("function"), declarations[9]);
 	rewind(IN);
 
+	bool need_run_tofinal;
 
 	switch (program_options.symbolic_engine())
 	{
 		case SymEngine::Matlab:
 		{
 			std::cout << "using matlab to create critical system\n\n";
-			
+			if (program_options.sym_prevent_subst())
+				need_run_tofinal = create_Matlab_Crit_NoSubst("func_input_real",ns_config->target_projection,output_name,ns_config->num_projections);
+			else
 			// setup Matlab script
-			create_matlab_determinantal_system("matlab_nullspace_system.m", "func_input_real",
+				need_run_tofinal = create_matlab_determinantal_system("matlab_nullspace_system.m", "func_input_real",
 							   ns_config, numVars, vars, lineVars, numConstants,
 							   consts, lineConstants, numFuncs, funcs, lineFuncs);
 
@@ -1059,7 +1062,7 @@ void create_nullspace_system(boost::filesystem::path output_name,
 
 			OUT = safe_fopen_write("python_nullspace_system.py");
 
-			create_python_determinantal_system(OUT, IN,
+			need_run_tofinal = create_python_determinantal_system(OUT, IN,
 							   ns_config, numVars, vars, lineVars, numConstants,
 							   consts, lineConstants, numFuncs, funcs, lineFuncs);
 
@@ -1074,56 +1077,10 @@ void create_nullspace_system(boost::filesystem::path output_name,
 
 	fclose(IN);
 
+if (need_run_tofinal)
+	FinalizeCritFile(output_name ,ns_config, numVars, vars, lineVars, numConstants,
+	consts, lineConstants, numFuncs, funcs, lineFuncs);
 
-	// setup new file	
-	OUT = safe_fopen_write(output_name.c_str());
-	fprintf(OUT, "\n\nINPUT\n");
-
-	std::string constants = just_constants("func_input_real",numConstants,consts,lineConstants);
-	
-	fprintf(OUT, "%s\n\n",constants.c_str());
-	
-	
-	fprintf(OUT,"variable_group ");
-	for (ii=0;ii<numVars; ii++){
-		fprintf(OUT,"%s",vars[ii]);
-		(ii==numVars-1) ? fprintf(OUT,";\n") : fprintf(OUT,", ");
-	}
-
-	
-	
-	for (ii=0; ii<ns_config->num_projections; ii++) {
-		std::stringstream projname;
-		projname << "pi_" << ii+1;
-		write_vector_as_constants(ns_config->target_projection[ii], projname.str(), OUT);
-	}
-	
-	if (!ns_config->randomizer()->is_square()) {
-		write_matrix_as_constants( *(ns_config->randomizer()->get_mat_full_prec()), "r", OUT);
-	}
-	
-	WaitOnGeneratedFile("derivative_polynomials_declaration");
-	
-	IN = safe_fopen_read("derivative_polynomials_declaration");
-	while ((ch = fgetc(IN)) != EOF)
-		fprintf(OUT, "%c", ch);
-	fclose(IN);
-	
-	// END; written in the above transciption
-	fprintf(OUT,"END;\n\n\n");
-	
-	write_vector_as_constants(ns_config->v_patch, "synthetic_var_patch", OUT);
-	fprintf(OUT,"function synth_var_patch;\n");
-	fprintf(OUT,"synth_var_patch = ");
-	for (ii=0; ii<(ns_config->num_v_vars); ii++) {
-		fprintf(OUT,"synthetic_var_patch_%d * synth%d",ii+1,ii+1);
-		(ii==ns_config->num_v_vars-1) ? fprintf(OUT,";\n") : fprintf(OUT," + ");
-	}
-	
-	
-	fprintf(OUT,"\n\nTODO: add natural variable patch");
-	
-	fclose(OUT);
 	// clear memory
 	free(str);
 	
@@ -1143,10 +1100,39 @@ void create_nullspace_system(boost::filesystem::path output_name,
 	return;
 }
 
+bool create_Matlab_Crit_NoSubst(std::string const& filename,vec_mp *pi, boost::filesystem::path inputOutputName, int dim)
+{
+
+	FILE* OUT = safe_fopen_write("matlab_nullspace_system.m");
+
+	fprintf(OUT,"filename = '%s';\n\n",filename.c_str());
+
+	int num_vars = pi[1]->size-1;
+
+	fprintf(OUT,"pi_vals = cell(%i,%i);\n\n",dim,num_vars);
+	for (int ii = 0; ii < dim; ++ii)
+	{
+		for (int jj = 1; jj < pi[ii]->size; ++jj)
+		{
+			fprintf(OUT,"pi_vals{%i,%i} = '",ii+1,jj);
+			mpf_out_str(OUT,10,0,pi[ii]->coord[jj].r);
+			fprintf(OUT,"';\n");
+		}
+	}
+
+	fprintf(OUT,"OutputName = '%s';\n\n",inputOutputName.c_str());
+
+	fprintf(OUT, "crit_no_subst(filename,pi_vals,OutputName);\n\n");
+
+	fprintf(OUT, "exit");
+
+	fclose(OUT);
+
+	return false;
+}
 
 
-
-void create_matlab_determinantal_system(boost::filesystem::path output_name,
+bool create_matlab_determinantal_system(boost::filesystem::path output_name,
 										boost::filesystem::path input_name,
 										NullspaceConfiguration *ns_config,
 										int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs)
@@ -1325,8 +1311,8 @@ void create_matlab_determinantal_system(boost::filesystem::path output_name,
 	
 	// clear memory
 	free(str);
-	
-	return;
+
+	return true;
 }
 
 
@@ -1335,7 +1321,7 @@ void create_matlab_determinantal_system(boost::filesystem::path output_name,
 
 
 
-void create_python_determinantal_system( FILE *OUT,
+bool create_python_determinantal_system( FILE *OUT,
 					FILE *IN,
 					NullspaceConfiguration *ns_config,
 					int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs)
@@ -1441,7 +1427,7 @@ void create_python_determinantal_system( FILE *OUT,
 	  }
 
 	// set up degrees
-	fprintf(OUT, "\n# Degrees of the equations\n");	
+	fprintf(OUT, "\n# Degrees of the equations\n");
 	fprintf(OUT, "num_projections = %i\n", ns_config->num_projections);
 	fprintf(OUT, "num_jac_equations = %i\n", ns_config->num_jac_equations);
 	fprintf(OUT, "num_randomized_eqns = %i\n", ns_config->randomizer()->num_rand_funcs());
@@ -1662,22 +1648,62 @@ void create_python_determinantal_system( FILE *OUT,
 	
 	// clear memory
 	free(str);
-	
-	return;
+
+	return true;
 }
 
+void FinalizeCritFile(boost::filesystem::path output_name,
+	NullspaceConfiguration *ns_config,
+	int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs)
+{
+	// setup new file
+	FILE *OUT = safe_fopen_write(output_name.c_str());
+	fprintf(OUT, "\n\nINPUT\n");
+
+	std::string constants = just_constants("func_input_real",numConstants,consts,lineConstants);
+
+	fprintf(OUT, "%s\n\n",constants.c_str());
+
+
+	fprintf(OUT,"variable_group ");
+	for (int ii=0;ii<numVars; ii++){
+		fprintf(OUT,"%s",vars[ii]);
+		(ii==numVars-1) ? fprintf(OUT,";\n") : fprintf(OUT,", ");
+	}
 
 
 
+	for (int ii=0; ii<ns_config->num_projections; ii++) {
+		std::stringstream projname;
+		projname << "pi_" << ii+1;
+		write_vector_as_constants(ns_config->target_projection[ii], projname.str(), OUT);
+	}
+
+	if (!ns_config->randomizer()->is_square()) {
+		write_matrix_as_constants( *(ns_config->randomizer()->get_mat_full_prec()), "r", OUT);
+	}
+
+	WaitOnGeneratedFile("derivative_polynomials_declaration");
+
+	FILE* IN = safe_fopen_read("derivative_polynomials_declaration");
+	char ch;
+	while ((ch = fgetc(IN)) != EOF)
+		fprintf(OUT, "%c", ch);
+	fclose(IN);
+
+	// END; written in the above transciption
+	fprintf(OUT,"END;\n\n\n");
+
+	write_vector_as_constants(ns_config->v_patch, "synthetic_var_patch", OUT);
+	fprintf(OUT,"function synth_var_patch;\n");
+	fprintf(OUT,"synth_var_patch = ");
+	for (int ii=0; ii<(ns_config->num_v_vars); ii++) {
+		fprintf(OUT,"synthetic_var_patch_%d * synth%d",ii+1,ii+1);
+		(ii==ns_config->num_v_vars-1) ? fprintf(OUT,";\n") : fprintf(OUT," + ");
+	}
 
 
+	fprintf(OUT,"\n\nTODO: add natural variable patch");
 
-
-
-
-
-
-
-
-
-
+	fclose(OUT);
+}
