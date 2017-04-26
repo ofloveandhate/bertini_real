@@ -267,8 +267,7 @@ int compute_crit_nullspace_left(SolverOutput & solve_out, // the returned value
 	int num_before = W_linprod.num_points();
 	W_linprod.sort_for_unique(&solve_options.T);
 	if (num_before - W_linprod.num_points()>0) {
-		std::cout << "there were non-unique start points" << std::endl;
-		mypause();
+		std::cout << color::red() << "there were non-unique start points" << color::console_default() << std::endl;
 	}
 	
 	W_linprod.set_num_natural_variables(ns_config->num_v_vars+ns_config->num_synth_vars);
@@ -748,8 +747,7 @@ int compute_crit_nullspace_right(SolverOutput & solve_out, // the returned value
 	int num_before = W_linprod.num_points();
 	W_linprod.sort_for_unique(&solve_options.T);
 	if (num_before - W_linprod.num_points()>0) {
-		std::cout << "there were non-unique start points" << std::endl;
-		mypause();
+		std::cout << color::red() << "there were non-unique start points" << color::console_default() << std::endl;
 	}
 	
 	

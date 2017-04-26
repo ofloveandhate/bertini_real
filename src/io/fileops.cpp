@@ -315,8 +315,24 @@ int get_int_choice(std::string display_string,const std::set<int> & valid_values
 
 
 
-
-
+void BackupDir(boost::filesystem::path const& dir, std::string suffix)
+{
+	boost::filesystem::path backupdir = dir;
+	backupdir += suffix;
+	if (!boost::filesystem::exists(dir))
+	{
+		std::stringstream ss;
+		ss << "trying to back up a directory " << dir << " which doesn't exist.";
+		throw std::runtime_error(ss.str());
+	} 
+	else
+	{
+		if (boost::filesystem::exists(backupdir)) {
+			boost::filesystem::remove_all(backupdir);
+		}
+		boost::filesystem::rename(dir, backupdir);
+	}
+}
 
 
 

@@ -192,6 +192,12 @@ int get_int_choice(std::string display_string,int min_value,int max_value);
  */
 int get_int_choice(std::string display_string, const std::set<int> & valid_values);
 
+/**
+\brief Move a directory to a new one.  
+
+Throws if target doesn't exist
+*/
+void BackupDir(boost::filesystem::path const& dir, std::string suffix = "_bak");
 
 
 #endif

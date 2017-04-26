@@ -3,20 +3,23 @@ import ParsingFunctions
 
 from Dehomogenize import dehomogenize
 from Surface import Surface, Curve
-from Util import next_filenumber
-
+import Util
+import dill
+import numpy as np
 
 class BRdata(object):
-    def __init__(self):
+    def __init__(self, autoload = True):
         self.filenames = []
         self.num_vertices = 0
         self.vertices = []
+        if autoload:
+            self.gather()
+
+    def gather(self):
         self.directory_info = ParsingFunctions.parse_directory_name()
         self.find_directory(self.directory_info[0])
         print("gathering data from " + self.directory)
-
         self.dimension = int(self.directory_info[2])
-
         # gather vertices
         self.gather_vertices()
         if self.dimension == 1:
@@ -25,7 +28,6 @@ class BRdata(object):
         elif self.dimension == 2:
             # polynomial is a surface
             self.gather_surface(self.directory)
-
         print("done gathering decomposition")
 
 
@@ -53,6 +55,7 @@ class BRdata(object):
             self.num_vertices = int(line[0])
             num_projections = int(line[1])
             num_natural_vars = int(line[2])
+            self.num_variables = num_natural_vars-1;
             num_filenames = int(line[3].replace('\n', ''))
 
             # Skips data not used
@@ -88,7 +91,7 @@ class BRdata(object):
                     temporary_point.append(complex(real_part, imaginary_part))
 
                 x = dehomogenize(temporary_point[0:num_natural_vars])
-                self.vertices[ii]['point'] = x
+                self.vertices[ii]['point'] = np.array(x)
                 line = f.readline()
 
                 while line == '\n':
@@ -126,21 +129,14 @@ class BRdata(object):
     def gather_curve(self, directory):
         self.curve =  Curve(directory)
 
-
-
-
+    def autosave(self):
+        fn = Util.next_filenumber()
+        fileName = "BRdata" + str(fn) + ".pkl"
+        fileObject = open(fileName,'wb')
+        dill.dump(b,fileObject)
+        fileObject.close()
 
 if __name__ == "__main__":
-
-    a = next_filenumber()
-
-    fileName = "BRdata" + str(a) + ".pkl"
-    fileObject = open(fileName,'wb')
-
     b = BRdata()
-
     print("saving to file " + fileName)
-
-    import pickle
-    pickle.dump(b,fileObject)
-    fileObject.close()
+    b.autosave()

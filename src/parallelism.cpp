@@ -138,9 +138,11 @@ void UbermasterProcess::bertini_real(WitnessSet & W, vec_mp *pi, VertexSet & V)
 	temp_name += converter.str();
 	
 	program_options.output_dir(temp_name);
-	
-	
-	
+	if (boost::filesystem::exists(program_options.output_dir()))
+		BackupDir(program_options.output_dir());
+	boost::filesystem::create_directory(program_options.output_dir());
+	program_options.PrintMetadata(program_options.output_dir() / "run_metadata");
+
 	
 	switch (W.dimension()) {
 		case 1:
@@ -169,7 +171,6 @@ void UbermasterProcess::bertini_real(WitnessSet & W, vec_mp *pi, VertexSet & V)
 			
 			
 			Surface S;
-			
 			// surface
 			S.main(V, W, pi, program_options, solve_options);
 			
@@ -190,6 +191,7 @@ void UbermasterProcess::bertini_real(WitnessSet & W, vec_mp *pi, VertexSet & V)
 	}
 	
 	program_options.PrintMetadata(program_options.output_dir() / "run_metadata");
+
 }
 
 

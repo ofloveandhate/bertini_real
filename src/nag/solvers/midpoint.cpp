@@ -387,7 +387,7 @@ int midpoint_eval_data_mp::setup(MidpointConfiguration & md_config,
 	
 	
 	if (bail_out) {
-		return TOLERABLE_FAILURE;
+		throw std::runtime_error("unable to construct midpoint evaluator");
 	}
 	
 	
@@ -692,7 +692,7 @@ int midpoint_eval_data_d::setup(MidpointConfiguration & md_config,
 		int retVal = this->BED_mp->setup(md_config, W, solve_options); // must be called before the gamma line below.
 		
 		if (retVal!=SUCCESSFUL) {
-			return TOLERABLE_FAILURE;
+			throw std::runtime_error("failed to construct midpoint evaluator");
 		}
 		rat_to_d(this->gamma, this->BED_mp->gamma_rat);
 	}
@@ -747,7 +747,7 @@ int midpoint_solver_master_entry_point(const WitnessSet						&W, // carries with
 	midpoint_eval_data_d *ED_d = NULL;
 	midpoint_eval_data_mp *ED_mp = NULL;
 	
-	int setup_retVal = TOLERABLE_FAILURE;
+	int setup_retVal;
 	
 	switch (solve_options.T.MPType) {
 		case 0:
@@ -764,8 +764,7 @@ int midpoint_solver_master_entry_point(const WitnessSet						&W, // carries with
 			setup_retVal = ED_mp->setup(md_config,
                          W,
                          solve_options);
-			// initialize latest_newton_residual_mp
-//			mpf_init(solve_options.T.latest_newton_residual_mp);   //   <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+			
 			break;
 		case 2:
 			ED_d = new midpoint_eval_data_d(2);
@@ -787,7 +786,7 @@ int midpoint_solver_master_entry_point(const WitnessSet						&W, // carries with
 	}
 	
 	if (setup_retVal != SUCCESSFUL) {
-		return TOLERABLE_FAILURE;
+		throw std::runtime_error("failed to correctly construct evaluators for midpoint tracking");
 	}
 	
 	master_solver(solve_out, W,
@@ -849,8 +848,7 @@ void midpoint_slave_entry_point(SolverConfiguration & solve_options)
 			
 			
 			ED_mp->receive(solve_options);
-			// initialize latest_newton_residual_mp
-//			mpf_init(solve_options.T.latest_newton_residual_mp);   //  <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
+
 			break;
 		case 2:
 			ED_d = new midpoint_eval_data_d(2);
@@ -859,34 +857,21 @@ void midpoint_slave_entry_point(SolverConfiguration & solve_options)
 			
 			ED_mp = ED_d->BED_mp;
             
-			
-			
-			
-			// initialize latest_newton_residual_mp
-//			mpf_init2(solve_options.T.latest_newton_residual_mp,solve_options.T.AMP_max_prec);   //   <------ THIS LINE IS ABSOLUTELY CRITICAL TO CALL
 			break;
 		default:
 			break;
 	}
 	
 	
-    
-	// call the file setup function
-	FILE *OUT = NULL, *midOUT = NULL;
-	
-	generic_setup_files(&OUT, "output",
-						&midOUT, "midpath_data");
-	
+   
 	trackingStats trackCount; init_trackingStats(&trackCount); // initialize trackCount to all 0
 	
     
-	worker_tracker_loop(&trackCount, OUT, midOUT,
+	worker_tracker_loop(&trackCount,
                         ED_d, ED_mp,
                         solve_options);
 	
 	
-	// close the files
-	fclose(midOUT);   fclose(OUT);
 	
 	
 	//clear data
@@ -1254,9 +1239,9 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 	
 	if (offset != BED->num_variables - BED->patch.num_patches) {
 		std::cout << color::red() << "appear to have offset " << offset << " but should be " << BED->num_variables - BED->patch.num_patches << color::console_default() << std::endl;
-        //		print_matrix_to_screen_matlab(Jv,"Jv");
-		mypause();
+		throw std::runtime_error("midmatch in number of variables in midtracker");
 	}
+	
     // evaluate the patch
     patch_eval_d(    patchValues, parVals, parDer, Jv_Patch, unused_Jp, current_variable_values, pathVars, &BED->patch);  // Jp is ignored
 	
@@ -1723,8 +1708,9 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	if (offset != BED->num_variables - BED->patch.num_patches) {
 		std::cout << "appear to have offset " << offset << " but should be " << BED->num_variables - BED->patch.num_patches << std::endl;
 		print_matrix_to_screen_matlab(Jv,"Jv");
-		mypause();
+		throw std::runtime_error("midmatch in number of variables in midtracker");
 	}
+	
     // evaluate the patch
     patch_eval_mp(    patchValues, parVals, parDer, Jv_Patch, unused_Jp, current_variable_values, pathVars, &BED->patch);  // Jp is ignored
 	
@@ -1770,7 +1756,6 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
         //
         //		//	std::cout << "\n\n**************\n\n";
         //		clear_vec_mp(result);
-        //		mypause();
 	}
 	
 	
@@ -2563,9 +2548,6 @@ void check_midpoint_evaluator(point_mp current_values,
 	printf("lambda = %lf+1i*%lf\n",lambda->r, lambda->i);
 	print_point_to_screen_matlab(e_d.funcVals,"f");
 	print_point_to_screen_matlab(e_d2.funcVals,"f2");
-	
-	
-	mypause();
 	
 	return;
 	

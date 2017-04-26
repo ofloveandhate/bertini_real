@@ -250,90 +250,111 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 
 int main(int argC, char *args[])
 {
-	
-	boost::timer::auto_cpu_timer t;
-	
-	
 	MPI_Init(&argC,&args);
 	
-	
-	boost::filesystem::path inputName, witnessSetName, samplingNamenew;
-	
-	
-	
-	
-	
-	
-	
 	sampler_configuration sampler_options;
-	
-	sampler_options.splash_screen();
 	sampler_options.parse_commandline(argC, args);
     
+
+	if (false) { // sampler_options.debugwait()
+		
+		if (sampler_options.is_head()) {
+			std::cout << "in debug mode, waiting to start so you can attach a debugger to this process" << std::endl;
+			std::cout << "master PID: " << getpid() << std::endl;
+			int duration = 15;
+			for (int ii=0; ii<duration; ii++) {
+				std::cout << "starting program in " << duration-ii << " seconds" << std::endl;
+				sleep(1);
+				std::cout << "\033[F"; // that's a line up movement.  only works with some terminals
+			}
+		}
+		
+		
+		if (sampler_options.use_parallel()) {
+			MPI_Barrier(MPI_COMM_WORLD);
+		}
+
+	}
+
+
+
+	if (sampler_options.is_head())
+	{
+		boost::timer::auto_cpu_timer t;
+		SamplerMaster(sampler_options);
+	}
+	else
+	{
+		SamplerWorker(sampler_options);
+	}
 	
+	clearMP();
+	MPI_Finalize();
 	
+	return 0;
+}
+
+
+
+void SamplerMaster(sampler_configuration & sampler_options)
+{
+	sampler_options.splash_screen();
+	
+	boost::filesystem::path inputName, witnessSetName, samplingNamenew;
 	int MPType, dimension;
 	
 	boost::filesystem::path directoryName;
 	
 	get_dir_mptype_dimen( directoryName, MPType, dimension);
-	
-	
-	
-	
-	
-    
-	
 	witnessSetName = directoryName / "WitnessSet";
 	samplingNamenew = directoryName;
 	
 	
-	SolverConfiguration solve_options;
 	
 	
-	//only one will be used.  i don't know how to avoid this duplicity.
-	Curve C;
-	Surface surf_input;
+	//only one will be used.  i don't know how to avoid this duplicity.  sorry.
+	// no, wait, i do.  it's by using polymorphism, i think.  that's not a pressing matter to me.
+	Curve curve;
+	Surface surf;
 	
 	Decomposition * decom_pointy; // this feels unnecessary
 	switch (dimension) {
 		case 1:
 		{
-			C.setup(directoryName);
-			decom_pointy = &C;
-			
-		}
+			curve.setup(directoryName);
+			decom_pointy = &curve;
 			break;
+		}
 			
 		case 2:
 		{
-			surf_input.setup(directoryName);
-			decom_pointy = &surf_input;
-			
-		}
+			surf.setup(directoryName);
+			decom_pointy = &surf;
 			break;
-		case -1:
-		{
-			std::cout << "sampler unable to proceed\n";
-			return 12461;
 		}
 		default:
 		{
-			std::cout << "sampler not capable of sampling anything but dimension 1 or 2.  this is of dim " << dimension << std::endl;
-			return 12462;
+			throw std::runtime_error("invalid dimension of object to sample.  you sure you have a valid decomposition?");
 		}
-			break;
 	}
 	
 	
 	
-	
+	SolverConfiguration solve_options;
+
 	common_sampler_startup(*decom_pointy,
 						   sampler_options,
 						   solve_options);
 	
 	
-	
+	if (solve_options.use_parallel())
+	{
+		int routine = TRACKER_CONFIG;
+		MPI_Bcast(&routine, 1, MPI_INT, solve_options.head(), MPI_COMM_WORLD);
+		bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
+	}
+
+
 	VertexSet V(decom_pointy->num_variables());
 	
 	V.set_tracker_config(&solve_options.T);
@@ -348,32 +369,32 @@ int main(int argC, char *args[])
 	//
 	//  Generate new sampling data
 	//
-    
+	   
 
 	switch (dimension) {
 		case 1:
 		{
 			switch (sampler_options.mode){
 				case sampler_configuration::Mode::Fixed:
-					C.FixedSampler(V,
+					curve.FixedSampler(V,
 									sampler_options,
 									solve_options,
 									sampler_options.target_num_samples);
 					break;
 				case sampler_configuration::Mode::AdaptiveConsecDistance:
 
-					C.AdaptiveDistanceSampler(V,
+					curve.AdaptiveDistanceSampler(V,
 												sampler_options,
 												solve_options);
 					break;
 
 				case sampler_configuration::Mode::AdaptivePredMovement:
-					C.AdaptiveMovementSampler(V,
+					curve.AdaptiveMovementSampler(V,
 												sampler_options,
 												solve_options);
 					break;
 			} // switch
-			C.output_sampling_data(directoryName);
+			curve.output_sampling_data(directoryName);
 			V.print(directoryName / "V_samp.vertex");
 			
 			break;
@@ -385,7 +406,7 @@ int main(int argC, char *args[])
 			switch (sampler_options.mode){
 				case sampler_configuration::Mode::Fixed:
 				{
-					surf_input.fixed_sampler(V,
+					surf.fixed_sampler(V,
 											 sampler_options,
 											 solve_options);
 					
@@ -395,7 +416,7 @@ int main(int argC, char *args[])
 					std::cout << color:: magenta() << "adaptive by movement not implemented for surfaces, using adaptive by distance" << color::console_default() << "\n\n";
 				case sampler_configuration::Mode::AdaptiveConsecDistance:
 				{
-					surf_input.AdaptiveSampler(V,
+					surf.AdaptiveSampler(V,
 											 sampler_options,
 											 solve_options);
 					break;
@@ -403,7 +424,7 @@ int main(int argC, char *args[])
 
 			} // switch
 
-			surf_input.output_sampling_data(directoryName);
+			surf.output_sampling_data(directoryName);
 			V.print(directoryName / "V_samp.vertex");
 
 			break;
@@ -411,22 +432,68 @@ int main(int argC, char *args[])
 		default:
 			break;
 	}
-    
+
+	// dismiss the workers
+	int sendme = TERMINATE;
+	MPI_Bcast(&sendme, 1, MPI_INT, 0, MPI_COMM_WORLD);
+}
+
+
+void SamplerWorker(sampler_configuration & sampler_options)
+{
 	
+	int routine = INITIAL_STATE;
 	
-	//
-	//   Done with the main call
-	////
-	/////
-	///////
-	////////
+	SolverConfiguration solve_options;
+	
+	bool have_tracker_config = false;
 
 	
-	clearMP();
-	MPI_Finalize();
-	
-	return 0;
+
+	while (routine != TERMINATE) {
+		// get the task to perform.  yes, everyone has to participate, because of B1 things.  ugh.
+		MPI_Bcast(&routine, 1, MPI_INT, solve_options.head(), MPI_COMM_WORLD);
+		
+		if ( (solve_options.id()==1) && (sampler_options.verbose_level()>=2)) { //(routine!=0) &&
+			std::cout << "sampler worker received call for help for solver " << enum_lookup(routine) << " (code " << routine << ")" << std::endl;
+		}
+		
+		switch (routine) {
+			case SAMPLE_CURVE:
+			{
+				WorkerSampleCurve(sampler_options, solve_options);
+				break;
+			}	
+			case SAMPLE_SURFACE:
+			{
+				WorkerSampleSurface(sampler_options, solve_options);
+				break;
+			}
+			case PARSING:
+			{
+				int single_int_buffer = 0;
+				MPI_Bcast(&single_int_buffer, 1, MPI_INT, solve_options.head(), solve_options.comm()); // this catches a broadcast from Bertini's parser...
+				break;
+			}
+			case TRACKER_CONFIG:
+			{
+				if (have_tracker_config)
+					throw std::runtime_error("worker getting tracker config AGAIN");
+
+				bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
+				have_tracker_config = true;
+				initMP(solve_options.T.Precision);
+				break;
+			}
+			case TERMINATE:
+				break;
+			default:
+				std::cout << "received unknown routine: " << enum_lookup(routine) << std::endl;
+				break;
+		}
+	}
 }
+
 
 
 
