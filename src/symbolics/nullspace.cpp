@@ -1085,7 +1085,7 @@ if (need_run_tofinal)
 
 	// clear memory
 	free(str);
-
+	
 	for (ii = 0; ii < numVars; ii++)
 		free(vars[ii]);
 	free(vars);
@@ -1650,15 +1650,28 @@ bool create_python_determinantal_system( FILE *OUT,
 	
 	// clear memory
 	free(str);
-	
-	return;
+
+	return true;
 }
 
 void FinalizeCritFile(boost::filesystem::path output_name,
+	NullspaceConfiguration *ns_config,
+	int numVars, char **vars, int *lineVars, int numConstants, char **consts, int *lineConstants, int numFuncs, char **funcs, int *lineFuncs)
+{
+	// setup new file
+	FILE *OUT = safe_fopen_write(output_name.c_str());
+	fprintf(OUT, "\n\nINPUT\n");
+
+	std::string constants = just_constants("func_input_real",numConstants,consts,lineConstants);
+
+	fprintf(OUT, "%s\n\n",constants.c_str());
 
 
-
-
+	fprintf(OUT,"variable_group ");
+	for (int ii=0;ii<numVars; ii++){
+		fprintf(OUT,"%s",vars[ii]);
+		(ii==numVars-1) ? fprintf(OUT,";\n") : fprintf(OUT,", ");
+	}
 
 
 
