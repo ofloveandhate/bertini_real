@@ -25,4 +25,3 @@ Dimension 1: 1 classified component
    degree 3: 1 component
 
 *****************************************************
-
