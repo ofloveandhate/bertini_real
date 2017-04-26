@@ -19,9 +19,9 @@ extern "C" {
 }
 
 extern "C" {
-	
+
 int change_prec_prog_deriv(void const *ED, int prec);
-	
+
 void start_system_eval_data_clear_d(start_system_eval_data_d *SSED);//actually lives in bertini library...  testing if this works.
 
 void patch_eval_data_clear_d(patch_eval_data_d *PED);//another which lives in bertini
@@ -43,7 +43,7 @@ int checkForReal_mp(point_mp Pt, double realTol);
  from the bertini library.  the prototype is not in any header file.
  */
 void findMultSol(post_process_t *endPoints, int num_sols, int num_vars, preproc_data *PPD, double finalTol);
-	
+
 	void bcast_prog_t(prog_t *Prog, int MPType, int my_id, int headnode);
 
 
@@ -92,4 +92,3 @@ int norm_order_mp(const void *vp, const void *vq);
 
 
 #endif
-
