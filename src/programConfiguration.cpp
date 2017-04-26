@@ -407,13 +407,14 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 			{"symnosubst",	no_argument,			 0, 't'},
 			{"symallowsubst",	no_argument,			 0, 'T'},
 			{"samepointtol",	required_argument,		 0, 'e'},
+			{"ignoresing", no_argument, 0, 'w'},
 
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
 
-		choice = getopt_long_only (argc, argv, "d:c:Dg:V:o:smp:S:i:qvhM:E:tTe:", // if followed by colon, requires option.  two colons is optional
+		choice = getopt_long_only (argc, argv, "d:c:Dg:V:o:smp:S:i:qvhM:E:tTe:w", // if followed by colon, requires option.  two colons is optional
 								   long_options, &option_index);
 
 		/* Detect the end of the options. */
@@ -562,6 +563,13 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 				this->same_point_tol(d);
 				break;
 			}
+
+			case 'w':
+			{
+				this->ignore_singular(true);
+				break;
+			}
+
 			case '?':
 				/* getopt_long already printed an error message. */
 				break;
@@ -627,6 +635,7 @@ void BertiniRealConfig::print_usage()
 	line("-symallowsubst", 		" -- ", 	" ", "allow substitution of subfunctions during deflation and other sym ops.  default");
 	line("-samepointtol", 		"<double>", "1e-7" , "(scaled) infinity-norm distance between two points to be considered distinct");
 	line("-nomerge", 		" -- ", " " , "turn off merging for top-dimension-curve decompositions");
+	line("-ignoresing", " -- ", " ", "ignore singular curve(s); only use if singular curves are naked");
 	printf("\n\n\n");
 	return;
 }
@@ -672,6 +681,8 @@ void BertiniRealConfig::init()
 	prevent_sym_substitution_ = false;
 
 	same_point_tol_ = 1e-7;
+
+	ignore_singular_ = false;
 	return;
 }
 
