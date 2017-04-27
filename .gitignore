@@ -30,6 +30,8 @@ bertini_real
 libpartitionParse*
 
 generated_documentation
+documentation/html
+documentation/latex
 
 *.cache*
 
