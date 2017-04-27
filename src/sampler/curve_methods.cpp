@@ -294,9 +294,6 @@ int Curve::ReportEdgeMaster(VertexSet & V, SolverConfiguration & solve_options)
 	MPI_Recv(&finished_edge_index, 1, MPI_INT, MPI_ANY_SOURCE, DATA_TRANSMISSION, solve_options.comm(), &statty_mc_gatty);
 	int whos_talking = statty_mc_gatty.MPI_SOURCE;
 
-	// get "old" edge sample indices
-	ReceiveEdgeSamples(finished_edge_index, whos_talking, solve_options);
-	// get new vertices, and adjust old indices to match new ones
 	SynchronizeVertexSetMaster(finished_edge_index, V, whos_talking, solve_options);
 
 	solve_options.deactivate(whos_talking);
@@ -310,85 +307,55 @@ void Curve::ReportEdgeWorker(int edge_index, VertexSet const& V, SolverConfigura
 	// send edge_index to master
 	MPI_Send(&edge_index, 1, MPI_INT, solve_options.head(), DATA_TRANSMISSION, solve_options.comm());
 
-	SendEdgeSamples(edge_index,solve_options.head(), solve_options);
-	SynchronizeVertexSetWorker(V, solve_options); // no need to pass edge_index, as we've already established that with the head
+	SynchronizeVertexSetWorker(edge_index, V, solve_options); // no need to pass edge_index, as we've already established that with the head
 }
 
 
 void Curve::SynchronizeVertexSetMaster(int edge_index, VertexSet & V, int source, SolverConfiguration & solve_options)
 {
-	std::cout << "edge " << edge_index << " before adding / adjusting\n";
-	for (auto x : sample_indices_[edge_index])
-		std::cout << x << " ";
-	std::cout << '\n';
 
-	int num_to_recv;
-	MPI_Recv(&num_to_recv,1, MPI_INT, source, 5542, solve_options.comm(), MPI_STATUS_IGNORE);
-	for (int ii=0; ii<num_to_recv; ++ii)
+
+	int num_to_recv; //recv size of sample_indices_[edge_index]
+	MPI_Recv(&num_to_recv, 1, MPI_INT, source, NUMPACKETS, solve_options.comm(), MPI_STATUS_IGNORE);
+	int left;
+	int right;
+	MPI_Recv(&left, 1, MPI_INT, source, DATA_TRANSMISSION, solve_options.comm(), MPI_STATUS_IGNORE);
+	MPI_Recv(&right, 1, MPI_INT, source, DATA_TRANSMISSION, solve_options.comm(), MPI_STATUS_IGNORE);
+
+	sample_indices_[edge_index].resize(num_to_recv);
+	sample_indices_[edge_index].front() = left;
+	sample_indices_[edge_index].back() = right;
+
+	Vertex temp_v;
+	for (int ii=1; ii<num_to_recv-1; ++ii)
 	{
-		// 1. get `int old_index`
-		// CODE HERE
+		temp_v.receive(source, solve_options);
+		auto new_index = V.add_vertex(temp_v);
+		sample_indices_[edge_index][ii] = new_index; 
 
-		// 2. get vertex associated with `old_index`
-		Vertex v_temp;
-		v_temp.receive(source, solve_options);
 
-		// 3. add to V, getting `int new_index` (as return val from the add call)
-		// CODE HERE, something like the below
-		// int new_index = V.add_vertex(v_temp)
-
-		// 4. adjust the indices in edge_samples 
-		// CODE HERE
-		// this->sample_indices_[edge_index]   <<<<<  IN HERE
-			// loop over the samples (indices), 
-			// replace instances of old_index with new_index.
 	}
-
-	std::cout << "edge " << edge_index << " after adding / adjusting\n";
-	for (auto x : sample_indices_[edge_index])
-		std::cout << x << " ";
-	std::cout << "\n\n\n";
-
 }
 
 
-void Curve::SynchronizeVertexSetWorker(VertexSet const& V, SolverConfiguration & solve_options)
+void Curve::SynchronizeVertexSetWorker(int edge_index, VertexSet const& V, SolverConfiguration & solve_options)
 {
 	// send num of vertices we'll be communicating
-	int num_prev = 0; //sam -- it's not really 0...
-	int num_now = 0;
-	int num_to_send = num_now - num_prev;
+	int num_to_send = sample_indices_[edge_index].size();
 
-	MPI_Send(&num_to_send, 1, MPI_INT, solve_options.head(), 5542, solve_options.comm());
-
-	for (int ii=num_prev; ii<num_now; ++ii)
+	MPI_Send(&num_to_send, 1, MPI_INT, solve_options.head(), NUMPACKETS, solve_options.comm());
+	int left = sample_indices_[edge_index].front();
+	int right = sample_indices_[edge_index].back();
+	MPI_Send(&left, 1, MPI_INT, solve_options.head(), DATA_TRANSMISSION, solve_options.comm());
+	MPI_Send(&right, 1, MPI_INT, solve_options.head(), DATA_TRANSMISSION, solve_options.comm());
+	for (int ii=1; ii<num_to_send-1; ++ii)
 	{
-		// 1 send old vertex INDEX
-		//CODE HERE
-
-		// 2 send vertex to master
-		V[ii].send(solve_options.head(), solve_options);
+		// 1 send vertex to master
+		V[sample_indices_[edge_index][ii]].send(solve_options.head(), solve_options);
 	}
 }
 
-// sample indices are contained in `this->sample_indices_[edge_index]`
-void Curve::ReceiveEdgeSamples(int edge_index, int source, SolverConfiguration & solve_options)
-{
-	// 1 make room for the samples
-	// CODE HERE
 
-	// 2 actually get the samples
-	// CODE HERE
-}
-
-void Curve::SendEdgeSamples(int edge_index, int target, SolverConfiguration & solve_options)
-{
-	// 1 send how many samples there are in this edge
-	// CODE HERE
-	
-	// 2 send the indices
-	// CODE HERE
-}
 
 
 		//////////////////////////////

@@ -676,14 +676,11 @@ public:
 
 
 	void SynchronizeVertexSetMaster(int edge_index, VertexSet & V, int source, SolverConfiguration & solve_options);
-	void SynchronizeVertexSetWorker(VertexSet const& V, SolverConfiguration & solve_options);
-	void ReceiveEdgeSamples(int edge_index, int source, SolverConfiguration & solve_options);
-
-	void SendEdgeSamples(int edge_index, int target, SolverConfiguration & solve_options);
+	void SynchronizeVertexSetWorker(int edge_index, VertexSet const& V, SolverConfiguration & solve_options);
 
 	/**
 	 \brief sets up refinement flags to YES for every interval, for first pass of adaptive refinement.
-	 
+
 	 \param num_refinements The number of intervals to refine.
 	 \param refine_flags The mutable vector of bools indicating whether to refine a particular interval.
 	 \param current_indices Indices of points between which to refine (or not).
