@@ -1,0 +1,22 @@
+CONFIG
+
+tracktype: 1;
+sharpendigits: 20;
+
+randomseed: 1;
+
+finaltol: 1e-14;
+
+endgamenum: 2;
+numsamplepoints: 4;
+END;
+
+INPUT
+
+variable_group x, y, z;
+
+function f;
+
+f = x^2+y^2*z+z^3;
+
+END;

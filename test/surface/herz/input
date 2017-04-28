@@ -1,0 +1,38 @@
+%  herz
+% irreducible, degree 4
+
+
+CONFIG
+tracktype: 1;
+
+
+odepredictor: 8;
+
+endgamenum: 2;
+numsamplepoints: 15;
+
+securitylevel: 1;
+
+sharpendigits: 20;
+
+tracktolbeforeeg: 1e-7;
+tracktolduringeg: 1e-8;
+
+finaltol: 1e-15;
+
+condnumthreshold: 1e300;
+
+maxstepsbeforenewton: 0;
+maxnewtonits: 1;
+
+END;
+
+
+INPUT
+variable_group x, y, z;
+
+function f1;
+
+f1 = y^2+z^3-z^4-x^2*z^2;
+
+END;

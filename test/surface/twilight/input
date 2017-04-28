@@ -1,0 +1,41 @@
+%this is input file for surface `twilight` from Herwig Hauser's gallery.
+
+CONFIG
+
+tracktype: 1;
+
+
+sharpendigits: 50; %sharpen nonsingular solutions to 50 digits or more using newton's method.
+% this helps reduce the chance that two solutions which are supposed to be the same are marked as different.
+
+randomseed: 4;  %fix the randomseed to eliminate changes run to run due to randseed.
+
+
+odepredictor: 8;
+
+endgamenum: 2;  %the cauchy endgame
+numsamplepoints: 10;
+
+finaltol: 1e-16;  %ask for at least 16 digits for all points, regardless of singularity;
+
+condnumthreshold: 1e300;  % label no points as singular due to condition number.  only due to multiplicity
+
+securitylevel: 1;  %track all paths to t=0, without truncating infinite paths.
+
+endpointfinitethreshold: 1e12;  %in case nullspace elements are large.
+
+maxnewtonits: 3;
+maxstepsbeforenewton: 0;  %take a newton corrector step every single time step.
+
+END;
+
+
+INPUT
+
+variable_group x, y, z;
+
+function F;
+
+F = (z^3-2)^2 +(x^2+y^2-3)^3;
+
+END;
