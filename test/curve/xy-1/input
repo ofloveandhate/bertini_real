@@ -7,6 +7,6 @@ INPUT
 
 variable_group x,y;
 function f1;
-f1=(x-0.3)*y-1;
+f1=x*y-1;
 
 END;
