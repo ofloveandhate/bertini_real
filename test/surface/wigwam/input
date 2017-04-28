@@ -1,0 +1,15 @@
+CONFIG
+
+tracktype: 1;
+
+END;
+
+
+
+INPUT
+variable_group x, y, z;
+function f;
+
+f = x^2+y^2*z^3;
+
+END;

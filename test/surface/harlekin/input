@@ -1,0 +1,37 @@
+%  harlekin
+% irreducible, degree 4
+CONFIG
+tracktype: 1;
+
+maxstepsize: 0.01;
+
+odepredictor: 8;
+
+endgamenum: 2;
+numsamplepoints: 16;
+
+securitylevel: 1;
+
+sharpendigits: 20;
+
+tracktolbeforeeg: 1e-8;
+tracktolduringeg: 1e-8;
+
+finaltol: 1e-15;
+
+condnumthreshold: 1e300;
+
+maxstepsbeforenewton: 0;
+maxnewtonits: 1;
+
+END;
+
+
+INPUT
+variable_group x, y, z;
+
+function f1;
+
+f1 = x^3*z + 10*x^2*y + x*y^2 + y*z^2 - z^3;
+
+END;

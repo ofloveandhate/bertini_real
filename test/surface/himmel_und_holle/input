@@ -1,0 +1,16 @@
+CONFIG
+
+tracktype: 1;
+
+END;
+
+
+INPUT
+
+variable_group x, y, z;
+
+function f1;
+
+f1 = x^2-y^2*z^2;
+
+END;
