@@ -16,4 +16,3 @@ sampler_LDADD = libbr_common.la $(BOOST_FILESYSTEM_LIB) $(BOOST_SYSTEM_LIB)  $(B
 
 rootinclude_HEADERS += \
 	include/sampler.hpp
-

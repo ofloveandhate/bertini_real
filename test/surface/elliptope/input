@@ -1,0 +1,49 @@
+%elliptope
+
+CONFIG
+
+tracktype: 1;
+
+tracktolbeforeeg: 1e-7;
+tracktolbeforeeg: 1e-8;
+
+condnumthreshold: 1e300;
+
+securitylevel: 1;
+odepredictor: 8;
+
+endgamenum: 2;
+
+numsamplepoints: 10;
+
+finaltol: 1e-13;
+
+sharpendigits: 30;
+
+endpointfinitethreshold: 1e8;
+
+
+
+END;
+
+
+INPUT
+
+variable_group x, y, z;
+function f;
+
+f = 1+2*x*y*z-x^2-y^2-z^2;
+
+
+END;
+
+%INPUT
+
+%variable_group x, y, z, r;
+%function f, sphere_constraint;
+
+%f = 1+2*x*y*z-x^2-y^2-z^2;
+
+%sphere_constraint = 1-(x^2 + y^2 + z^2) + r^2;
+
+%END;

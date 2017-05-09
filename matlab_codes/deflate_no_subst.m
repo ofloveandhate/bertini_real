@@ -107,7 +107,7 @@ for ii = 1:length(function_names)
 	f_user(ii) = eval(curr_func);
 end
 
-J = jacobian(f_user,vars);
+Jac = jacobian(f_user,vars);
 
 
 
@@ -152,22 +152,22 @@ for ii = 1:length(subfunc_names)
 	end
 end
 
-R = nchoosek(1:num_funcs,minorsize);
-C = nchoosek(1:num_vars,minorsize);
-r = size(R,1);
-c = size(C,1);
+R_minors = nchoosek(1:num_funcs,minorsize);
+C_minors = nchoosek(1:num_vars,minorsize);
+r_minors = size(R_minors,1);
+c_minors = size(C_minors,1);
 count = 0;
 
 
 defl_fns = sym([]);
 coeffs = defl_fns;
-for j = 1:r
-	for k = 1:c
-		A = det(J(R(j,:),C(k,:)));
-		if A ~= 0
+for jj = 1:r_minors
+	for kk = 1:c_minors
+		temp_fn = det(Jac(R_minors(jj,:),C_minors(kk,:)));
+		if temp_fn ~= 0
             count = count + 1;
-            defl_fns(end+1) = A;
-            coeffs(end+1) = 2/prod(degrees(R(j,:)));
+            defl_fns(end+1) = temp_fn;
+            coeffs(end+1) = 2/prod(degrees(R_minors(jj,:)));
 		end
 	end
 end
@@ -263,17 +263,17 @@ write_bertini_input_file(b_input.variable_group, b_input.functions,'filename',ou
 end
 
 
-function ensure_fns_are_subfns(b)
+function ensure_fns_are_subfns(b_input)
 
-for ii = 1:size(b.functions,1)
+for ii = 1:size(b_input.functions,1)
     
     is_subf=false;
-    fn_val = b.functions{ii,2};
-    fn_name = b.functions{ii,1};
+    fn_val = b_input.functions{ii,2};
+    fn_name = b_input.functions{ii,1};
     
-    for jj = 1:size(b.subfunction,1)
+    for jj = 1:size(b_input.subfunction,1)
         
-        subfn_name = b.subfunction{jj,1};
+        subfn_name = b_input.subfunction{jj,1};
         
         if strcmp(strtrim(fn_val),strtrim(subfn_name))
             is_subf=true;
@@ -288,10 +288,10 @@ for ii = 1:size(b.functions,1)
         
         new_subf_sym = sprintf('subf_%s',fn_name);
         f_sym = sprintf('%s',fn_name);
-        sym_val = b.functions{ii,2};
+        sym_val = b_input.functions{ii,2};
         
-        b.declare_and_define(new_subf_sym,sym_val,'subfunction');
-        b.define_symbol(f_sym,new_subf_sym);
+        b_input.declare_and_define(new_subf_sym,sym_val,'subfunction');
+        b_input.define_symbol(f_sym,new_subf_sym);
     end
 end
 

@@ -7,11 +7,11 @@ libpartitionParse_la_SOURCES = src/io/partitionParse.l
 
 io_sources = \
 	src/io/color.cpp \
-	src/io/fileops.cpp 
+	src/io/fileops.cpp
 
 io_headers = \
 	include/io/color.hpp \
-	include/io/fileops.hpp 
+	include/io/fileops.hpp
 
 io = $(io_headers) $(io_sources)
 

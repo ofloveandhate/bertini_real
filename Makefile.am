@@ -70,11 +70,3 @@ libbr_common_la_LIBADD = libpartitionParse.la $(BOOST_FILESYSTEM_LIB) $(BOOST_SY
 # the two programs built from this source code
 include src/bertini_real/Makemodule.am
 include src/sampler/Makemodule.am
-
-
-
-
-
-
-
-

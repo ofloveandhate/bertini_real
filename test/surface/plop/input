@@ -1,0 +1,34 @@
+% surface 'plop'
+% http://homepage.univie.ac.at/herwig.hauser/bildergalerie/gallery.html
+% http://homepage.univie.ac.at/herwig.hauser/bildergalerie/gallery/plop.jpg
+% a degree six surface in three variables.
+
+CONFIG
+
+tracktype: 1;
+securitylevel:0;
+
+sharpendigits: 60;
+
+condnumthreshold: 1e300;
+
+odepredictor: 2;
+
+finaltol: 1e-13;
+
+numsamplepoints: 8;
+endgamenum: 2;
+
+maxstepsbeforenewton: 1;
+maxnewtonits: 2;
+
+END;
+
+
+INPUT
+variable_group x, y, z;
+function f;
+
+f = x^2 + (z+y^2)^3;
+
+END;

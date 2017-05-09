@@ -1,0 +1,47 @@
+CONFIG
+outputlevel: 0;
+randomseed: 8;
+
+tracktype: 1;
+
+odepredictor: 8;
+
+finaltol: 1e-12;
+endgamenum: 2;
+numsamplepoints: 10;
+
+ampmaxprec: 3096;
+ampsafetydigits1: -3;
+ampsafetydigits2: -3;
+
+securitylevel: 1;
+EndpointFiniteThreshold: 1e7;
+pathtruncationthreshold: 1e10;
+
+endgamebdry: 0.001;
+
+
+functiontolerance: 1e-7;
+
+tracktolbeforeeg: 1e-8;
+tracktolduringeg: 1e-9;
+
+sharpendigits: 30;
+
+condnumthreshold: 1e300;
+
+maxstepsbeforenewton: 0;
+maxnewtonits: 1;
+
+%targettolmultiplier: 1e3;
+
+END;
+
+INPUT
+
+variable_group x, y, z;
+
+function f;
+f = x^2+y^4+y^3*z^2;
+
+END;
