@@ -618,6 +618,16 @@ public:
 	void AdaptiveMovementSampler(VertexSet &V,
 								   sampler_configuration & sampler_options,
 								   SolverConfiguration & solve_options);
+	void AdaptiveMovementSamplerSerial(VertexSet & V,
+									sampler_configuration & sampler_options,
+								 	SolverConfiguration & solve_options);
+	void AdaptiveMovementSamplerMaster(VertexSet & V,
+									sampler_configuration & sampler_options,
+									SolverConfiguration & solve_options);
+	void AdaptiveMovementSamplerWorker(VertexSet & V,
+									sampler_configuration & sampler_options,
+									SolverConfiguration & solve_options);
+
 
 
 	void SampleEdgeAdaptiveMovement(	int ii,
@@ -656,7 +666,15 @@ public:
 	void AdaptiveDistanceSampler(VertexSet &V,
 						  sampler_configuration & sampler_options,
 						  SolverConfiguration & solve_options);
-
+	void AdaptiveDistanceSamplerSerial(VertexSet & V,
+							sampler_configuration & sampler_options,
+							SolverConfiguration & solve_options);
+	void AdaptiveDistanceSamplerMaster(VertexSet & V,
+							sampler_configuration & sampler_options,
+							SolverConfiguration & solve_options);
+	void AdaptiveDistanceSamplerWorker(VertexSet & V,
+							sampler_configuration & sampler_options,
+							SolverConfiguration & solve_options);
 
 
 
