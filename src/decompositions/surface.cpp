@@ -466,6 +466,13 @@ void Surface::compute_critcurve_witness_set(WitnessSet & W_critcurve,
 	solve_out.get_multpos_full(higher_multiplicity_witness_sets);
 	//now we have a map of multiplicities and witness sets.  for each point of each multiplicity, we need to perform iso. defl.  this will enable us to get ahold of the singular curves.
 
+	// 20170604 
+	// there might also be multiplicity 1 singular witness points, in case
+	// of working on just one component of several.   so, we also need to check for 
+	// singular witness points among the nonsing_finite_multone points...
+	// a final note about this is that the user might have set the condnumthreshold
+	// very high, so that checking condition number for singularity is not 
+	// a useful thing to do.  thus, checking rank of jacobian of surface is necessary.
 
 	if (program_options.verbose_level()>=2) {
 		for (auto iter = higher_multiplicity_witness_sets.begin(); iter!=higher_multiplicity_witness_sets.end(); iter++) {
