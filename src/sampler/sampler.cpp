@@ -393,6 +393,10 @@ void SamplerMaster(sampler_configuration & sampler_options)
 												sampler_options,
 												solve_options);
 					break;
+
+				case sampler_configuration::Mode::SemiFixed:
+					throw std::runtime_error("semi fixed not available for root-level curves.");
+					break;
 			} // switch
 			curve.output_sampling_data(directoryName);
 			V.print(directoryName / "V_samp.vertex");
@@ -421,6 +425,10 @@ void SamplerMaster(sampler_configuration & sampler_options)
 											 solve_options);
 					break;
 				}
+
+				case sampler_configuration::Mode::SemiFixed:
+					throw std::runtime_error("semi fixed not available for root-level curves.");
+					break;
 
 			} // switch
 

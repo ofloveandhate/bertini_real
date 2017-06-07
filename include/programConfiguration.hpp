@@ -868,7 +868,8 @@ public:
 	enum class Mode{
 		Fixed,
 		AdaptiveConsecDistance,
-		AdaptivePredMovement
+		AdaptivePredMovement,
+		SemiFixed
 	};
 
 

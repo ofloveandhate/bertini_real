@@ -13,6 +13,8 @@ void Surface::fixed_sampler(VertexSet & V,
 
 	FixedSampleCurves(V, sampler_options, solve_options);
 
+	solve_options.force_no_parallel(true);
+
 	//once you have the fixed samples of the curves, down here is just making the integer triangles.
 	for (unsigned int ii=0; ii<num_faces(); ii++) {
 
@@ -512,6 +514,8 @@ void Surface::AdaptiveSampler(VertexSet & V,
 
 	auto num_ribs_between_crits = AdaptiveSampleCurves(V, sampler_options, solve_options);
 
+	solve_options.force_no_parallel(true);
+	
 	//once you have the fixed samples of the curves, down here is just making the integer triangles.
 	for (unsigned int ii=0; ii<num_faces(); ii++) {
 

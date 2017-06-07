@@ -618,6 +618,16 @@ public:
 	void AdaptiveMovementSampler(VertexSet &V,
 								   sampler_configuration & sampler_options,
 								   SolverConfiguration & solve_options);
+	void AdaptiveMovementSamplerSerial(VertexSet & V,
+									sampler_configuration & sampler_options,
+								 	SolverConfiguration & solve_options);
+	void AdaptiveMovementSamplerMaster(VertexSet & V,
+									sampler_configuration & sampler_options,
+									SolverConfiguration & solve_options);
+	void AdaptiveMovementSamplerWorker(VertexSet & V,
+									sampler_configuration & sampler_options,
+									SolverConfiguration & solve_options);
+
 
 
 	void SampleEdgeAdaptiveMovement(	int ii,
@@ -656,7 +666,15 @@ public:
 	void AdaptiveDistanceSampler(VertexSet &V,
 						  sampler_configuration & sampler_options,
 						  SolverConfiguration & solve_options);
-
+	void AdaptiveDistanceSamplerSerial(VertexSet & V,
+							sampler_configuration & sampler_options,
+							SolverConfiguration & solve_options);
+	void AdaptiveDistanceSamplerMaster(VertexSet & V,
+							sampler_configuration & sampler_options,
+							SolverConfiguration & solve_options);
+	void AdaptiveDistanceSamplerWorker(VertexSet & V,
+							sampler_configuration & sampler_options,
+							SolverConfiguration & solve_options);
 
 
 
@@ -676,10 +694,7 @@ public:
 
 
 	void SynchronizeVertexSetMaster(int edge_index, VertexSet & V, int source, SolverConfiguration & solve_options);
-	void SynchronizeVertexSetWorker(VertexSet const& V, SolverConfiguration & solve_options);
-	void ReceiveEdgeSamples(int edge_index, int source, SolverConfiguration & solve_options);
-
-	void SendEdgeSamples(int edge_index, int target, SolverConfiguration & solve_options);
+	void SynchronizeVertexSetWorker(int edge_index, VertexSet const& V, SolverConfiguration & solve_options);
 
 	/**
 	 \brief sets up refinement flags to YES for every interval, for first pass of adaptive refinement.
@@ -734,6 +749,18 @@ public:
 					   sampler_configuration & sampler_options,
 					   SolverConfiguration & solve_options,
 					   std::vector<int> const& target_num_samples);
+
+	void SemiFixedSamplerSerial(VertexSet & V,
+										  sampler_configuration & sampler_options,
+										  SolverConfiguration & solve_options,
+										  std::vector<int> const& num_samples_per_interval);
+	void SemiFixedSamplerMaster(VertexSet & V,
+										  sampler_configuration & sampler_options,
+										  SolverConfiguration & solve_options,
+										  std::vector<int> const& num_samples_per_interval);
+	void SemiFixedSamplerWorker(VertexSet & V,
+										  sampler_configuration & sampler_options,
+										  SolverConfiguration & solve_options);
 
 
 	/**
