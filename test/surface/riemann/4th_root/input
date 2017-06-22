@@ -1,0 +1,48 @@
+% the fourth root function
+
+CONFIG
+
+tracktype:1;
+tracktolbeforeeg: 1e-7;
+tracktolduringeg: 1e-8;
+finaltol: 1e-13;
+odepredictor: 7;
+
+
+endgamenum: 2;
+numsamplepoints: 5;
+
+securitylevel: 1;
+
+sharpendigits: 100;
+condnumthreshold: 1e60;
+pathtruncationthreshold: 1e20;
+
+endpointfinitethreshold: 1e15;
+
+maxcyclenum: 12;
+
+maxstepsize: 0.01;
+
+maxstepsbeforenewton: 0;
+
+securitymaxnorm: 1e15;
+
+END;
+
+
+INPUT
+
+variable_group xz, yz, xw, yw;
+
+function f_real, f_imag;
+
+
+
+f_real = xw^4 - 6*xw^2*yw^2 + yw^4 - xz;
+
+f_imag =  xw^3*yw*4 - xw*yw^3*4 - yz;
+
+END;
+
+% w = xw^4 + xw^3*yw*4i - 6*xw^2*yw^2 - xw*yw^3*4i + yw^4
