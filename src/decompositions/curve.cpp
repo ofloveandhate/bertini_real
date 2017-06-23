@@ -2040,7 +2040,7 @@ int Curve::ProjectionIntervalIndex(int edge_index, const VertexSet & V) const
 
 
 	const auto& v = V.GetVertex(edges_[edge_index].left());
-	const auto& ps = v.get_projection_values();
+	const auto& ps = v.projection_values();
 
 	double minval{1e200};
 	int loc = -1;
