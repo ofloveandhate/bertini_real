@@ -40,7 +40,7 @@ buttontext = sprintf('MarkerSize %i',br_plotter.options.markersize);
 
 
 if br_plotter.dimension == 2
-	buttontext = sprintf('Alpha (%i/%i)',mod(100*br_plotter.options.face_alpha,100),mod(100*br_plotter.options.sample_alpha,100));
+	buttontext = sprintf('FaceAlpha');
 	[curr_y, br_plotter.buttons.alpha] = make_button(buttontext, {@br_plotter.change_alpha}, horiz_pad, vert_spacing, curr_y, br_plotter.panels.buttons, height, width);
 end
 
