@@ -661,9 +661,22 @@ void estimate_new_projection_value(comp_mp result, vec_mp estimated_point, vec_m
 
 
 
+void UnpackProjvals(vec_mp projvals, const std::vector< int > & rib, int projind, const VertexSet & V)
+{
+	for (int ii=0; ii< rib.size(); ++ii)
+		set_mp(&(projvals->coord[ii]), &(V[rib[ii]].projection_values()->coord[projind]));
+}
 
+void ScaleToUnitInverval(vec_mp projvals)
+{
+	for (int ii=projvals->size-1; ii>=0; --ii)
+		sub_mp(&(projvals->coord[ii]), &(projvals->coord[ii]), &(projvals->coord[0]));
 
+	auto ind = projvals->size-1;
+	for (int ii=1; ii< projvals->size; ++ii)
+		div_mp(&(projvals->coord[ii]), &(projvals->coord[ii]), &(projvals->coord[ind]));
 
+}
 
 void triangulate_two_ribs_by_projection_binning(const std::vector< int > & rib1, const std::vector< int > & rib2,
 											  VertexSet & V, double real_thresh,
@@ -699,13 +712,11 @@ void triangulate_two_ribs_by_projection_binning(const std::vector< int > & rib1,
 	init_vec_mp(projvals1, rib1.size()); projvals1->size = rib1.size();
 	init_vec_mp(projvals2, rib2.size()); projvals2->size = rib2.size();
 
-	for (int ii=0; ii< rib1.size(); ++ii)
-		set_mp(&(projvals1->coord[ii]), &(V[rib1[ii]].projection_values()->coord[1]));
+	UnpackProjvals(projvals1, rib1, 1, V);
+	ScaleToUnitInverval(projvals1);
 
-	for (int ii=0; ii< rib2.size(); ++ii)
-		set_mp(&(projvals2->coord[ii]), &(V[rib2[ii]].projection_values()->coord[1]));
-
-
+	UnpackProjvals(projvals2, rib2, 1, V);
+	ScaleToUnitInverval(projvals2);
 
 	vec_mp *longer, *shorter;
 	if (projvals1->size >= projvals2->size)
@@ -718,7 +729,7 @@ void triangulate_two_ribs_by_projection_binning(const std::vector< int > & rib1,
 		longer = &projvals2;
 		shorter = &projvals1;	
 	}
-	// ok now we have the 
+	// ok now we have the projection values.  we're going to work from the outside in, left and right simultaneously, to connect the triangles.
 
 
 
