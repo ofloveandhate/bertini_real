@@ -678,6 +678,49 @@ void ScaleToUnitInverval(vec_mp projvals)
 
 }
 
+
+void TailEndOfRibs(const std::vector< int > & rib1, const std::vector< int > & rib2, int curr_index_rib1, int curr_index_rib2, std::vector< Triangle> & current_samples)
+{
+	const std::vector< int > *exhausted_rib, *rib_still_going;
+	unsigned int index_still_going, terminal_index;
+	bool flip;
+
+	if (curr_index_rib1==rib1.size()-1) {
+		exhausted_rib = &rib1;
+		rib_still_going = &rib2;
+		index_still_going = curr_index_rib2;
+		terminal_index = curr_index_rib1;
+		flip = false;
+	}
+	else
+	{
+		exhausted_rib = &rib2;
+		rib_still_going = &rib1;
+		index_still_going = curr_index_rib1;
+		terminal_index = curr_index_rib2;
+		flip = true;
+	}
+
+
+	for (; index_still_going < rib_still_going->size()-1; index_still_going++) { // initializer deliberately empty
+
+		long long v1, v2, v3;
+		if (flip) {
+			v1 = rib_still_going->at(index_still_going);
+			v2 = rib_still_going->at(index_still_going+1);
+		}
+		else
+		{
+			v1 = rib_still_going->at(index_still_going+1);
+			v2 = rib_still_going->at(index_still_going);
+		}
+		v3 = exhausted_rib->at(terminal_index);
+
+		current_samples.push_back( Triangle(v1,v2,v3) );
+	}
+}
+
+
 void triangulate_two_ribs_by_projection_binning(const std::vector< int > & rib1, const std::vector< int > & rib2,
 											  VertexSet & V, double real_thresh,
 											  std::vector< Triangle> & current_samples)
@@ -718,21 +761,57 @@ void triangulate_two_ribs_by_projection_binning(const std::vector< int > & rib1,
 	UnpackProjvals(projvals2, rib2, 1, V);
 	ScaleToUnitInverval(projvals2);
 
-	vec_mp *longer, *shorter;
+	vec_mp *pi_long, *pi_short;
+	const std::vector<int> *rib_long, *rib_short;
 	if (projvals1->size >= projvals2->size)
 	{
-		longer = &projvals1;
-		shorter = &projvals2;	
+		pi_long = &projvals1; rib_long = &rib1;
+		pi_short = &projvals2;	rib_short = &rib2;
 	}
 	else
 	{
-		longer = &projvals2;
-		shorter = &projvals1;	
+		pi_long = &projvals2; rib_long = &rib2;
+		pi_short = &projvals1;	rib_short = &rib1;
 	}
 	// ok now we have the projection values.  we're going to work from the outside in, left and right simultaneously, to connect the triangles.
 
 
+	print_point_to_screen_matlab(*pi_short, "pi_short");
+	print_point_to_screen_matlab(*pi_long, "pi_long");
 
+	std::cout << "t = [...\n";
+	int Q = 1;
+	auto offset = (*pi_short)->size;
+
+	for (int ii=1; ii<(*pi_short)->size; ii++)
+	{
+		int I = ii-1;
+
+		while (Q < (*pi_long)->size && mpf_cmp( (*pi_long)->coord[Q].r,(*pi_short)->coord[ii].r)<0)
+		{
+			current_samples.push_back(
+									  Triangle(
+											   (*rib_short)[I], 
+											   (*rib_long)[Q], 
+											   (*rib_long)[Q-1]
+											   ) 
+									  );
+			std::cout << "\t" << I << " " << Q+offset << " " << Q-1+offset << ";...\n";
+			Q++;
+		}
+
+		// then finish up the last one to advance
+		current_samples.push_back(
+								  Triangle(
+										   (*rib_short)[I], 
+										   (*rib_short)[ii],
+										   (*rib_long)[Q-1]
+										   ) 
+								  );
+		std::cout << "\t" << I << " " << ii << " " << Q-1+offset << ";...\n";
+	}
+
+	TailEndOfRibs((*rib_short), (*rib_long), rib_short->size()-1, Q-1, current_samples);
 }
 
 
@@ -1095,43 +1174,7 @@ void triangulate_two_ribs_by_angle_optimization(const std::vector< int > & rib1,
 
 	// now down here, we have triangulated until one of the ribs is on its last point, so there is no more testing that can be done.  you simply have to connect the rest into triangles.
 
-	const std::vector< int > *exhausted_rib, *rib_still_going;
-	unsigned int index_still_going, terminal_index;
-	bool flip;
-
-	if (curr_index_rib1==rib1.size()-1) {
-		exhausted_rib = &rib1;
-		rib_still_going = &rib2;
-		index_still_going = curr_index_rib2;
-		terminal_index = curr_index_rib1;
-		flip = false;
-	}
-	else
-	{
-		exhausted_rib = &rib2;
-		rib_still_going = &rib1;
-		index_still_going = curr_index_rib1;
-		terminal_index = curr_index_rib2;
-		flip = true;
-	}
-
-
-	for (; index_still_going < rib_still_going->size()-1; index_still_going++) { // initializer deliberately empty
-
-		long long v1, v2, v3;
-		if (flip) {
-			v1 = rib_still_going->at(index_still_going);
-			v2 = rib_still_going->at(index_still_going+1);
-		}
-		else
-		{
-			v1 = rib_still_going->at(index_still_going+1);
-			v2 = rib_still_going->at(index_still_going);
-		}
-		v3 = exhausted_rib->at(terminal_index);
-
-		current_samples.push_back( Triangle(v1,v2,v3) );
-	}
+	TailEndOfRibs(rib1, rib2, curr_index_rib1, curr_index_rib2, current_samples);
 
 
 
