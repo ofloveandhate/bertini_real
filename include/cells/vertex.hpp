@@ -59,7 +59,7 @@ public:
 	}
 
 
-	const vec_mp& get_projection_values() const
+	const vec_mp& projection_values() const
 	{
 		return projection_values_;
 	}
