@@ -307,7 +307,7 @@ void VertexSet::print_to_screen() const
 		temp->size = num_natural_variables()-1;
 
 		print_point_to_screen_matlab(temp,ss.str());
-		print_point_to_screen_matlab(vertices_[ii].get_projection_values(),"projection_values");
+		print_point_to_screen_matlab(vertices_[ii].projection_values(),"projection_values");
 		printf("type: %d\n", vertices_[ii].type());
 	}
 }
@@ -440,9 +440,9 @@ void VertexSet::print(boost::filesystem::path const& outputfile) const
 			fprintf(OUT,"\n");
 		}
 
-		fprintf(OUT,"%d\n",(vertices_[ii].get_projection_values())->size);
-		for(int jj=0;jj<(vertices_[ii].get_projection_values())->size;jj++) {
-			print_mp(OUT, 0, &(vertices_[ii].get_projection_values())->coord[jj]);
+		fprintf(OUT,"%d\n",(vertices_[ii].projection_values())->size);
+		for(int jj=0;jj<(vertices_[ii].projection_values())->size;jj++) {
+			print_mp(OUT, 0, &(vertices_[ii].projection_values())->coord[jj]);
 			fprintf(OUT,"\n");
 		}
 
