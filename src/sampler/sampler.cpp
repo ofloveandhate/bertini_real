@@ -665,9 +665,64 @@ void estimate_new_projection_value(comp_mp result, vec_mp estimated_point, vec_m
 
 
 
+void triangulate_two_ribs_by_projection_binning(const std::vector< int > & rib1, const std::vector< int > & rib2,
+											  VertexSet & V, double real_thresh,
+											  std::vector< Triangle> & current_samples)
+{
+#ifdef functionentry_output
+	std::cout << "triangulate_two_ribs_by_projection_binning" << std::endl;
+#endif
+
+	bool bail_out = false;
+
+	if (rib1.size()==0) {
+		std::cout << "rib1 had 0 size!" << std::endl;
+		bail_out = true;
+	}
+	if (rib2.size()==0) {
+		std::cout << "rib2 had 0 size!" << std::endl;
+		bail_out = true;
+	}
+
+	if (rib1.size()==1 && rib2.size()==1) {
+		std::cout << "both ribs have size 1!" << std::endl;
+		bail_out = true;
+	}
+
+	if (bail_out) {
+		return;
+	}
+
+	int num_vars = V.num_natural_variables();
+
+	vec_mp projvals1, projvals2;
+	init_vec_mp(projvals1, rib1.size()); projvals1->size = rib1.size();
+	init_vec_mp(projvals2, rib2.size()); projvals2->size = rib2.size();
+
+	for (int ii=0; ii< rib1.size(); ++ii)
+		set_mp(&(projvals1->coord[ii]), &(V[rib1[ii]].projection_values()->coord[1]));
+
+	for (int ii=0; ii< rib2.size(); ++ii)
+		set_mp(&(projvals2->coord[ii]), &(V[rib2[ii]].projection_values()->coord[1]));
 
 
 
+	vec_mp *longer, *shorter;
+	if (projvals1->size >= projvals2->size)
+	{
+		longer = &projvals1;
+		shorter = &projvals2;	
+	}
+	else
+	{
+		longer = &projvals2;
+		shorter = &projvals1;	
+	}
+	// ok now we have the 
+
+
+
+}
 
 
 
@@ -676,7 +731,7 @@ void triangulate_two_ribs_by_angle_optimization(const std::vector< int > & rib1,
 											  std::vector< Triangle> & current_samples)
 {
 #ifdef functionentry_output
-	std::cout << "triangulate_by_distance_binning" << std::endl;
+	std::cout << "triangulate_two_ribs_by_angle_optimization" << std::endl;
 #endif
 
 

@@ -137,6 +137,12 @@ void estimate_new_projection_value(comp_mp result, vec_mp estimated_point, vec_m
 
 
 
+void triangulate_two_ribs_by_projection_binning(const std::vector< int > & rib1, const std::vector< int > & rib2,
+											  VertexSet & V, double real_thresh,
+											  std::vector< Triangle> & current_samples);
+
+
+
 
 /**
  \brief triangulate two ribs, each with at least two entries, by iterating from left to right, and always constructing the more equilateral Triangle of the two candidates.
