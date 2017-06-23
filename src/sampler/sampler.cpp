@@ -776,10 +776,10 @@ void triangulate_two_ribs_by_projection_binning(const std::vector< int > & rib1,
 	// ok now we have the projection values.  we're going to work from the outside in, left and right simultaneously, to connect the triangles.
 
 
-	print_point_to_screen_matlab(*pi_short, "pi_short");
-	print_point_to_screen_matlab(*pi_long, "pi_long");
+	// print_point_to_screen_matlab(*pi_short, "pi_short");
+	// print_point_to_screen_matlab(*pi_long, "pi_long");
 
-	std::cout << "t = [...\n";
+	// std::cout << "t = [...\n";
 	int Q = 1;
 	auto offset = (*pi_short)->size;
 
@@ -796,7 +796,7 @@ void triangulate_two_ribs_by_projection_binning(const std::vector< int > & rib1,
 											   (*rib_long)[Q-1]
 											   ) 
 									  );
-			std::cout << "\t" << I << " " << Q+offset << " " << Q-1+offset << ";...\n";
+			// std::cout << "\t" << I << " " << Q+offset << " " << Q-1+offset << ";...\n";
 			Q++;
 		}
 
@@ -808,10 +808,12 @@ void triangulate_two_ribs_by_projection_binning(const std::vector< int > & rib1,
 										   (*rib_long)[Q-1]
 										   ) 
 								  );
-		std::cout << "\t" << I << " " << ii << " " << Q-1+offset << ";...\n";
+		// std::cout << "\t" << I << " " << ii << " " << Q-1+offset << ";...\n";
 	}
 
 	TailEndOfRibs((*rib_short), (*rib_long), rib_short->size()-1, Q-1, current_samples);
+
+	clear_vec_mp(projvals1); clear_vec_mp(projvals2);
 }
 
 
