@@ -36,17 +36,18 @@
 
 function plot_params = render_into_file(varargin)
 
-if isa(varargin{1},'char')
-	if strcmp(varargin,'gendef')
-		plot_params = generate_defaults();
-		return
+if ~isempty(varargin)
+	if isa(varargin{1},'char')
+		if strcmp(varargin,'gendef')
+			plot_params = generate_defaults();
+			return
+		end
 	end
 end
-	
 
 if isempty(varargin)
 	plot_params = generate_defaults();
-	
+	args = {};
 elseif and(ischar(varargin{1} ), length(varargin)==1)
 	
 	plot_params.format = 'eps';
@@ -87,9 +88,9 @@ function evalme = get_command(plot_params, args)
 
 final_name = get_final_name(plot_params);
 
-if strcmp(plot_params.format,'eps')
-	args = [args, {'-fillpage'}];
-end
+% if strcmp(plot_params.format,'eps')
+% 	args = [args, {'-fillpage'}];
+% end
 
 evalme = sprintf('print(plot_params.fig,''%s'',''-d%s'', ''-r%i''',final_name,plot_params.format_flag, plot_params.resolution);
 for ii = 1:length(args)
@@ -145,7 +146,7 @@ function plot_params = generate_defaults()
 plot_params.window = get(gcf,'Position');
 plot_params.basename = default_filename();
 plot_params.format = 'eps';
-plot_params.format_flag = 'deps';
+plot_params.format_flag = 'epsc2';
 plot_params.autoname = true;
 plot_params.resolution = 150;
 end
