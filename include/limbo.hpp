@@ -4,7 +4,7 @@
 
 /**
  a templated function for looking up a value in a map by key, without accidentally creating a key-value pair when it didn't previously exist, and when it doesn't exist, gives back a default value.
- 
+
  \return the value of the key, if it exists.  if nexists, returns default_value (which was input)
  \param mc_mapperson the map to look into.
  \param lookup_key the key to search for in the map.
@@ -21,5 +21,3 @@ value_type map_lookup_with_default(const  std::map <key_type,value_type> & mc_ma
 		return it->second;
 	}
 }
-
-

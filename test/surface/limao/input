@@ -1,0 +1,42 @@
+% surface 'limao'
+% http://homepage.univie.ac.at/herwig.hauser/bildergalerie/gallery.html
+% http://homepage.univie.ac.at/herwig.hauser/bildergalerie/gallery/limao.jpg
+% a degree six surface in three variables.
+
+CONFIG
+
+randomseed: 3;
+
+tracktype: 1;
+securitylevel:1;
+
+sharpendigits: 60;
+
+endpointfinitethreshold: 1e16;
+
+functiontolerance: 1e-8;
+
+condnumthreshold: 1e300;
+
+odepredictor: 5;
+
+imagthreshold: 1e-7;
+
+finaltol: 1e-14;
+
+numsamplepoints: 8;
+endgamenum: 2;
+
+maxstepsbeforenewton: 0;
+maxnewtonits: 2;
+
+END;
+
+
+INPUT
+variable_group x, y, z;
+function f;
+
+f = x^2-y^3*z^3;
+
+END;

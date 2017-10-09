@@ -9,29 +9,29 @@ int main(int argC, char *args[])
  \***************************************************************/
 {
 
-	
+
 
 	////
 	//  INITIALIZATION
 	////
 	MPI_Init(&argC,&args);
-	
-	
+
+
 	//instantiate options
 	BertiniRealConfig program_options;
 	SolverConfiguration solve_options;
 	int MPType;
-	
-	
+
+
 	program_options.parse_commandline(argC, args); // everybody gets to parse the command line.
-	
-	
-	
-	
-	
-	
+
+
+
+
+
+
 	if (program_options.debugwait()) {
-		
+
 		if (solve_options.is_head()) {
 			std::cout << "in debug mode, waiting to start so you can attach to this process" << std::endl;
 			std::cout << "master PID: " << getpid() << std::endl;
@@ -41,24 +41,24 @@ int main(int argC, char *args[])
 				std::cout << "\033[F"; // that's a line up movement.  only works with some terminals
 			}
 		}
-		
-		
+
+
 		if (solve_options.use_parallel()) {
 			MPI_Barrier(MPI_COMM_WORLD);
 		}
 
 	}
-	
-	
-	
-	
+
+
+
+
 	if (solve_options.is_head()) {
 		// split the input_file.  this must be called before setting up the solver config.
 		parse_input_file(program_options.input_filename(), &MPType);
-		
+
 		// set up the solver configuration
 		get_tracker_config(solve_options,MPType);
-		
+
 		solve_options.T.ratioTol = 0.9999999999999999999999999; // manually assert to be more permissive.  i don't really like this.
 	}
 	else
@@ -68,29 +68,29 @@ int main(int argC, char *args[])
 		MPI_Bcast(&arbitrary_int,1,MPI_INT,0,MPI_COMM_WORLD); // second is the bcast from the parse.
 															  //yes, you do have to do both of these.
 	}
-	
-	
-	
-	
+
+
+
+
 	if (solve_options.use_parallel()) { // everybody participates in this.
-		MPI_Bcast(&solve_options.path_number_modulus,1,MPI_INT,0,MPI_COMM_WORLD); 
+		MPI_Bcast(&solve_options.path_number_modulus,1,MPI_INT,0,MPI_COMM_WORLD);
 		bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
 	}
-	
-	
+
+
 	initMP(solve_options.T.Precision); // set up some globals.
-	
-	
+
+
 	solve_options.use_midpoint_checker = 0;
 	solve_options.verbose_level(program_options.verbose_level());
 	solve_options.use_gamma_trick = program_options.use_gamma_trick();
-	
 
-	
-	
+
+
+
 	if (solve_options.is_head()) {
 		UbermasterProcess current_process(program_options, solve_options);
-		
+
 		try{
 			current_process.main_loop();
 		}
@@ -111,7 +111,7 @@ int main(int argC, char *args[])
 	}
 	else{
 		WorkerProcess current_process(program_options, solve_options);
-		
+
 		try{
 			current_process.main_loop();
 		}
@@ -130,15 +130,12 @@ int main(int argC, char *args[])
 			std::cout << e.what() << std::endl;
 		}
 	}
-	
-	
+
+
 	clearMP();
 
 	MPI_Finalize();
-	
-	
+
+
 	return 0;
 }
-
-
-

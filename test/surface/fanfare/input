@@ -1,0 +1,34 @@
+CONFIG
+
+randomseed: 3;
+
+tracktype: 1;
+securitylevel:1;
+
+sharpendigits: 80;
+
+endpointfinitethreshold: 1e12;
+condnumthreshold: 1e300;
+
+%singvalzerotol: 1e-30;
+
+odepredictor: 8;
+
+finaltol: 1e-18;
+
+numsamplepoints: 16;
+endgamenum: 2;
+
+maxstepsbeforenewton: 0;
+maxnewtonits: 2;
+
+END;
+
+
+INPUT
+variable_group x, y, z;
+function f;
+
+f = -x^3+z^2+y^2;
+
+END;

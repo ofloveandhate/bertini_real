@@ -1,0 +1,34 @@
+% berg
+
+CONFIG
+tracktype: 1;
+
+
+odepredictor: 8;
+
+endgamenum: 2;
+numsamplepoints: 7;
+
+securitylevel: 1;
+
+sharpendigits: 20;
+
+tracktolbeforeeg: 1e-6;
+finaltol: 1e-13;
+
+numstepsbeforenewton: 0;
+
+maxstepsbeforenewton: 0;
+maxnewtonits: 1;
+
+END;
+
+
+INPUT
+variable_group x, y, z;
+
+function f1;
+
+f1 = x^2+y^2*z^2+z^3;
+
+END;

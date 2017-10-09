@@ -1,0 +1,46 @@
+%spitz
+
+CONFIG
+mptype: 2;
+
+randomseed: 6;
+
+finaltol: 1e-11;
+
+%imagthreshold: 1e-7;
+
+tracktype:1;
+securitylevel: 1;
+
+endpointfinitethreshold: 1e8;
+odepredictor: 2;
+
+endgamenum: 2;
+numsamplepoints: 16;
+
+samplefactor: 0.1;
+
+
+%sharpendigits: 50;
+
+tracktolbeforeeg: 1e-6;
+tracktolduringeg: 1e-7;
+
+maxstepsbeforenewton: 0;
+maxnewtonits: 3;
+
+ampsafetydigits1: 0;
+ampsafetydigits2: 0;
+
+functiontolerance: 1e-7;
+condnumthreshold: 1e300;
+END;
+
+INPUT
+variable_group x,y,z;
+function f1;
+
+f1=(y^3-x^2-z^2)^3 - 27*x^2*y^3*z^2;
+
+
+END;

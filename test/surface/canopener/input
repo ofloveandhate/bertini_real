@@ -1,0 +1,35 @@
+CONFIG
+
+randomseed: 3;
+mptype: 0;
+tracktype:1;
+tracktolbeforeeg: 1e-5;%
+securitylevel: 1;
+securitymaxnorm: 1e10;
+
+pathtruncationthreshold: 1e10;
+
+condnumthreshold: 1e30;
+
+odepredictor: 5;
+
+imagthreshold: 1e-8;
+
+MAXNEWTONITS:2;
+
+sharpendigits: 30;
+
+printpathmodulus: 40;
+
+END;
+
+INPUT
+
+variable_group x, y, z;
+
+function f1;
+
+f1 = ((x+0.35)^2*(1-x^2) - y^2)^2 + z^2 - 0.00531441;
+
+
+END;

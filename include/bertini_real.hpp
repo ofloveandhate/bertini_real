@@ -20,6 +20,3 @@
 #include "parallelism.hpp"
 
 #endif
-
-
-
