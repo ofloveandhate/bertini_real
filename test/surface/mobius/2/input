@@ -1,0 +1,36 @@
+CONFIG
+
+tracktype: 1;
+tracktolbeforeeg: 1e-5;
+tracktolduringeg: 1e-6;
+randomseed: 7;
+maxstepsbeforenewton: 0;
+maxnewtonits: 1;
+finaltol: 1e-10;
+functiontolerance: 1e-8;
+sharpendigits: 30;
+endgamenum: 2;
+numsamplepoints: 10;
+endgamebdry: 0.01;
+odepredictor: 5;
+targettolmultiplier: 10;
+
+securitylevel: 1;
+condnumthreshold: 1e300;
+
+
+END;
+
+INPUT
+
+constant a,b;
+a = 0.01;
+b = 0.23;
+
+variable_group x, y, z;
+
+function f;
+
+f = ((x^2+y^2+1)*(a*x^2+b*y^2)+z^2*(b*x^2+a*y^2)-2*(a-b)*x*y*z-a*b*(x^2+y^2))^2 - 4*(x^2+y^2)*(a*x^2+b*y^2-x*y*z*(a-b))^2;
+
+END;

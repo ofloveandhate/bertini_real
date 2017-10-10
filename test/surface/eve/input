@@ -1,0 +1,43 @@
+% surface 'eve'
+% http://homepage.univie.ac.at/herwig.hauser/bildergalerie/gallery.html
+% http://homepage.univie.ac.at/herwig.hauser/bildergalerie/gallery/eve.jpg
+% a degree six surface in three variables.
+
+CONFIG
+
+tracktype: 1;
+%securitylevel:1
+
+endpointfinitethreshold: 1e16;
+
+sharpendigits: 30;
+
+condnumthreshold: 1e300;
+
+odepredictor: 7;
+
+finaltol: 1e-16;
+
+numsamplepoints: 6;
+endgamenum: 2;
+
+maxstepsbeforenewton: 0;
+maxnewtonits: 2;
+
+END;
+
+
+INPUT
+variable_group x, y, z;
+function f;
+
+%correct equation, from the other mirror...
+%http://homepage.univie.ac.at/herwig.hauser/gallery.html
+f = 0.5*x^2 + 2*x*z^2 + 5*y^6 + 15*y^4 + 0.5*z^2 - (15*y^5 + 5*y^3);
+
+%incorrect equation from the gallery:
+%f = 5 * (x^2 + y^6 + 3*y^4 + z^2) + 2*x*z^2  - 5*y^3*(3*y^2 + 1);
+
+% in matlab, you can use f = @(x,y,z) 0.5*x.^2 + 2*x.*z.^2 + 5*y.^6 + 15*y.^4 + 0.5*z.^2 - (15*y.^5 + 5*y.^3);
+
+END;

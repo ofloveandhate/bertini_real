@@ -1,0 +1,32 @@
+CONFIG
+
+randomseed: 1;
+
+endgamebdry: 0.01;
+
+tracktype: 1;
+securitylevel:0;
+
+sharpendigits: 50;
+
+condnumthreshold: 1e300;
+
+odepredictor: 5;
+
+%finaltol: 1e-16;
+
+numsamplepoints: 4;
+endgamenum: 2;
+
+maxstepsbeforenewton: 1;
+maxnewtonits: 2;
+
+END;
+
+INPUT
+variable_group x, y, z;
+function f;
+
+f  = 400*(x^2*y^2 + y^2*z^2 + x^2*z^2) + ( x^2 + y^2 + z^2 - 1)^3;
+
+END;

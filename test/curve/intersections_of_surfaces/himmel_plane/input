@@ -1,0 +1,15 @@
+CONFIG
+
+tracktype:1;
+mptype:1;
+END;
+
+INPUT
+
+function f1, f2;
+variable_group x,y,z;
+
+f1 = x^3 + x^2*z^2 - y;
+f2 = x;
+
+END;

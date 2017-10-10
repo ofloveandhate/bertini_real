@@ -1,0 +1,29 @@
+CONFIG
+
+tracktype: 1;
+securitylevel:1
+
+sharpendigits: 30;
+
+condnumthreshold: 1e300;
+
+odepredictor: 7;
+
+finaltol: 1e-16;
+
+numsamplepoints: 6;
+endgamenum: 2;
+
+maxstepsbeforenewton: 0;
+maxnewtonits: 1;
+
+END;
+
+
+INPUT
+variable_group x, y, z;
+function f;
+
+f = x^4 - 3*x^2 + y^2+z^3 ;
+
+END;

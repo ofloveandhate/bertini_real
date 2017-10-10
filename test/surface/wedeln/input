@@ -1,0 +1,18 @@
+CONFIG
+
+tracktype: 1;
+
+
+END;
+
+
+INPUT
+
+variable_group x, y, z;
+
+function f;
+
+f = x^3 - y *(1-z^2)^2;
+
+END;
+

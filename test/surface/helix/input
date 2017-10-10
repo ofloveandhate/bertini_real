@@ -1,0 +1,32 @@
+CONFIG
+
+randomseed: 2;
+
+tracktype: 1;
+securitylevel:1;
+
+sharpendigits: 80;
+
+endpointfinitethreshold: 1e12;
+condnumthreshold: 1e300;
+
+odepredictor: 8;
+
+finaltol: 1e-18;
+
+numsamplepoints: 16;
+endgamenum: 2;
+
+maxstepsbeforenewton: 0;
+maxnewtonits: 1;
+
+END;
+
+
+INPUT
+variable_group x, y, z;
+function f;
+
+f = 6*x^2 - 2*x^4 - y^2*z^2;
+
+END;

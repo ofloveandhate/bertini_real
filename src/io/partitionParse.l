@@ -14,7 +14,7 @@ FILE *CONFIGFILEPARTITION = NULL, *FUNCFILEPARTITION = NULL, *FUNCFILEPARTITIONB
 
 /* %option nounput - do not warn about unput */
 %}
-%option nounput 
+%option nounput
 
 config "CONFIG"
 input "INPUT"
@@ -30,7 +30,7 @@ func "function"
 subfunc "definedSubfunction"
 rand "random"
 randReal "random_real"
-number ([0-9]+[\.]?([0-9]*)?([eE][-+]?[0-9]+)?)|([0-9]*\.[0-9]+([eE][-+]?[0-9]+)?) 
+number ([0-9]+[\.]?([0-9]*)?([eE][-+]?[0-9]+)?)|([0-9]*\.[0-9]+([eE][-+]?[0-9]+)?)
 I [I]
 name [a-zA-Z][a-zA-Z0-9_\[\]]*
 comments [%].+[\n]
@@ -115,7 +115,7 @@ other .
              { // print to FUNCFILEPARTITION
                num_constant++;
                fprintf(FUNCFILEPARTITION, "%s ", partitionParsetext);
-               if(For_NSC) 
+               if(For_NSC)
                  fprintf(FUNCFILEPARTITIONBAR, "%s ", partitionParsetext);
 
              }
@@ -318,7 +318,3 @@ int partitionParseerror(char *s)
 
   return 0;
 }
-
-
-
-
