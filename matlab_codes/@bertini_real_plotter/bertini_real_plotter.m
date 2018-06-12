@@ -50,8 +50,13 @@
 %
 %
 %
-% dani brake
-% danielthebrake@gmail.com
+% danielle brake
+% danielleamethystbrake@gmail.com
+%
+% university of wisconsin -- eau claire
+% mathematics
+% spring, summer 2018
+%
 % university of notre dame
 % applied and computational mathematics and statistics
 % 2014, 2015, 2016
