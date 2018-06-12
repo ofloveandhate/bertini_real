@@ -142,7 +142,7 @@ classdef bertini_real_plotter < handle
 			br_plotter.options.fontsizes.legend = 12;
 			br_plotter.options.fontsizes.labels = 16;
 			br_plotter.options.fontsizes.axis = 20;
-			br_plotter.options.line_thickness = 6;
+			br_plotter.options.linewidth = 2;
 			br_plotter.options.autosave = false;
 			
 			br_plotter.options.labels = true;
@@ -363,7 +363,9 @@ classdef bertini_real_plotter < handle
 					case 'linestyle'
 						br_plotter.options.linestyle = command_line_options{ii+1};
 						br_plotter.options.use_fixed_linestyle = true;
-						
+					
+                    case 'linewidth'
+						br_plotter.options.linewidth = command_line_options{ii+1};
 						
 					case 'faces'
 						
@@ -662,6 +664,7 @@ classdef bertini_real_plotter < handle
 		% for more info on associating callbacks with buttons, see e.g.
 		% http://www.mathworks.com/help/matlab/matlab_oop/class-methods-for-graphics-callbacks.html
 		change_alpha(br_plotter,source,event) % is a callback function
+        change_line_width(br_plotter,source,event) % is a callback function
 		change_text_size(br_plotter,source,event)% is a callback function
 		center_camera_on_selected_point(br_plotter,source, event)
 		save_routine(br_plotter,varargin) % is a callback function

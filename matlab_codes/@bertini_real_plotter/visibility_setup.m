@@ -96,10 +96,10 @@ cb_params.curr_y = cb_params.y_start;
 
 
 
-f = fieldnames(br_plotter.handles.refinements);
+f = fieldnames(br_plotter.handles.curves.refinements);
 have_refinements = 0;
 for ii = 1:length(f)
-	if ~isempty(br_plotter.handles.refinements.(f{ii}))
+	if ~isempty(br_plotter.handles.curves.refinements.(f{ii}))
 		have_refinements = 1;
 		break
 	end
@@ -146,7 +146,7 @@ if br_plotter.options.labels
 
 
 
-		if ~isempty(br_plotter.handles.singular_curves)
+		if ~isempty(br_plotter.handles.curves.raw.singular)
 			if ~isempty(br_plotter.handles.singtext)
 				new_color = get(br_plotter.handles.singtext);
 				new_color = new_color.Color;
@@ -191,7 +191,7 @@ if br_plotter.options.render_curves
 
 
 
-	if ~isempty(br_plotter.handles.singular_curves)
+	if ~isempty(br_plotter.handles.curves.raw.singular)
 		[br_plotter.checkboxes.show_singular, cb_params] = make_switch_checkbox('singular curves', 'show_singular', cb_params, h, br_plotter);
 	end
 
@@ -220,7 +220,7 @@ if have_refinements
 	%[checkbox_handle, cb_params] = make_switch_checkbox(switch_text, switch_name, cb_params, panel_handle, br_plotter, groupname)
 	
 	if br_plotter.options.render_curves
-		if ~isempty(br_plotter.handles.singular_curves)
+		if ~isempty(br_plotter.handles.curves.raw.singular)
 			[br_plotter.checkboxes.show_singcurve_refinement, cb_params] = make_switch_checkbox('singular curve refinements', 'show_singularcurve', cb_params, h, br_plotter,'curve_refinements');
 		end
 

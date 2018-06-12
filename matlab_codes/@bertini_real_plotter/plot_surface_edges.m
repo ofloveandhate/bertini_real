@@ -16,17 +16,17 @@ if br_plotter.BRinfo.crit_curve.num_edges>0
 			style = '-';
 	end
 		
-	[br_plotter.handles.critcurve, ...
-		br_plotter.handles.refinements.critcurve, ...
+	[br_plotter.handles.curves.raw.crit, ...
+		br_plotter.handles.curves.refinements.crit, ...
 		br_plotter.handles.critcurve_labels] ...
 		  = plot_subcurve(br_plotter,br_plotter.BRinfo.crit_curve,'critcurve',style,'r');
 	
 	
 
-	if ~isempty(br_plotter.handles.critcurve)
+	if ~isempty(br_plotter.handles.curves.raw.crit)
 		handle_counter = handle_counter+1;
-		br_plotter.legend.surface_edges.handles(handle_counter) = br_plotter.handles.critcurve(1);
-		br_plotter.legend.surface_edges.text{handle_counter} = 'crit curve';
+		br_plotter.legend.surface_edges.handles(handle_counter) = br_plotter.handles.curves.raw.crit(1);
+		br_plotter.legend.surface_edges.text{handle_counter} = 'critical curve';
 	end
 end
 
@@ -48,14 +48,14 @@ if isfield(br_plotter.BRinfo,'sphere_curve')
 			style = '-.';
 		end
 		
-		[br_plotter.handles.spherecurve, ...
-			br_plotter.handles.refinements.spherecurve, ...
+		[br_plotter.handles.curves.raw.sphere, ...
+			br_plotter.handles.curves.refinements.sphere, ...
 			br_plotter.handles.spherecurve_labels] ...
 			  = plot_subcurve(br_plotter,br_plotter.BRinfo.sphere_curve,'spherecurve',style,'c');
 	
-		if ~isempty(br_plotter.handles.spherecurve)
+		if ~isempty(br_plotter.handles.curves.raw.sphere)
 			handle_counter = handle_counter+1;
-			br_plotter.legend.surface_edges.handles(handle_counter) = br_plotter.handles.spherecurve(1);
+			br_plotter.legend.surface_edges.handles(handle_counter) = br_plotter.handles.curves.raw.sphere(1);
 			br_plotter.legend.surface_edges.text{handle_counter} = 'sphere curve';
 		end
 	end
@@ -88,14 +88,14 @@ for kk = 1:num_crit_slices
 		= plot_subcurve(br_plotter,br_plotter.BRinfo.critpoint_slices{kk},sprintf('crit.%d.',kk),style,'m',colors(color_index,:));
 	
 	br_plotter.handles.crittext = [br_plotter.handles.crittext;label_handles];
-	br_plotter.handles.critslices = [br_plotter.handles.critslices;handie_mc_handhand];
-	br_plotter.handles.refinements.critslice = [br_plotter.handles.refinements.critslice;refinement_handles];
+	br_plotter.handles.curves.raw.critslices = [br_plotter.handles.curves.raw.critslices;handie_mc_handhand];
+	br_plotter.handles.curves.refinements.critslices = [br_plotter.handles.curves.refinements.critslices;refinement_handles];
 	
 	if firstone
 		if ~isempty(handie_mc_handhand)
 			handle_counter = handle_counter+1;
 			br_plotter.legend.surface_edges.handles(handle_counter) = handie_mc_handhand(1);
-			br_plotter.legend.surface_edges.text{handle_counter} = 'critslices';
+			br_plotter.legend.surface_edges.text{handle_counter} = 'crit slices';
 			firstone = 0;
 		end
 	end
@@ -125,13 +125,13 @@ for kk = 1:length(br_plotter.BRinfo.midpoint_slices)
 		= plot_subcurve(br_plotter,br_plotter.BRinfo.midpoint_slices{kk},sprintf('mid.%d.',kk),style,'g',colors(color_index,:));
 	
 	br_plotter.handles.midtext = [br_plotter.handles.midtext;label_handles];
-	br_plotter.handles.midslices = [br_plotter.handles.midslices;handie_mc_handhand];
-	br_plotter.handles.refinements.midslice = [br_plotter.handles.refinements.midslice;refinement_handles];
+	br_plotter.handles.curves.raw.midslices = [br_plotter.handles.curves.raw.midslices;handie_mc_handhand];
+	br_plotter.handles.curves.refinements.midslices = [br_plotter.handles.curves.refinements.midslices;refinement_handles];
 	
 	if and(added==false,~isempty(handie_mc_handhand))
 		handle_counter = handle_counter+1;
 		br_plotter.legend.surface_edges.handles(handle_counter) = handie_mc_handhand(1);
-		br_plotter.legend.surface_edges.text{handle_counter} = 'midslices';
+		br_plotter.legend.surface_edges.text{handle_counter} = 'mid slices';
 		added = true;
 	end
 	
@@ -164,14 +164,14 @@ if isfield(br_plotter.BRinfo,'singular_curves')
 	
 
 		br_plotter.handles.singtext = [br_plotter.handles.singtext;label_handles];
-		br_plotter.handles.singular_curves = [br_plotter.handles.singular_curves;handie_mc_handhand];
-		br_plotter.handles.refinements.singularcurve = [br_plotter.handles.refinements.singularcurve;refinement_handles];
+		br_plotter.handles.curves.raw.singular = [br_plotter.handles.curves.raw.singular;handie_mc_handhand];
+		br_plotter.handles.curves.refinements.singular = [br_plotter.handles.curves.refinements.singular;refinement_handles];
 
 		if firstone
 			if ~isempty(handie_mc_handhand)
 				handle_counter = handle_counter+1;
 				br_plotter.legend.surface_edges.handles(handle_counter) = handie_mc_handhand(1);
-				br_plotter.legend.surface_edges.text{handle_counter} = 'singular_curves';
+				br_plotter.legend.surface_edges.text{handle_counter} = 'singular curves';
 				firstone = 0;
 			end
 		end
@@ -261,7 +261,7 @@ for ii =1:num_nondegen
 	h = plot3(curve_edge_points(:,1),curve_edge_points(:,2),curve_edge_points(:,3),'Parent',curr_axes);
 
 	set(h,'Color',colors(ii,:));
-	set(h,'LineStyle',style,'LineWidth',br_plotter.options.line_thickness);
+	set(h,'LineStyle',style,'LineWidth',br_plotter.options.linewidth);
 
 
 	

@@ -78,7 +78,7 @@ for ii = 1:length(sampler_data.edge)
 
 	
 	set(h,'Color',colors(counter,:));
-	set(h,'LineWidth',br_plotter.options.line_thickness);
+	set(h,'LineWidth',br_plotter.options.linewidth);
     set(h,'LineStyle',style);
 	
 	

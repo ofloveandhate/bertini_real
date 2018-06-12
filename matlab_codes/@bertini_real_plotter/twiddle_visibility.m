@@ -72,52 +72,49 @@ end
 if br_plotter.switches.curve_refinements.main
 	
 	if br_plotter.switches.curve_refinements.show_critslices
-		set(br_plotter.handles.refinements.critslice(:),'visible','on');
+		set(br_plotter.handles.curves.refinements.critslices,'visible','on');
 	else
-		set(br_plotter.handles.refinements.critslice(:),'visible','off');
+		set(br_plotter.handles.curves.refinements.critslices,'visible','off');
 	end
 	
 	
 	if br_plotter.switches.curve_refinements.show_midslices
-		set(br_plotter.handles.refinements.midslice(:),'visible','on');
+		set(br_plotter.handles.curves.refinements.midslices,'visible','on');
 	else
-		set(br_plotter.handles.refinements.midslice(:),'visible','off');
+		set(br_plotter.handles.curves.refinements.midslices,'visible','off');
 	end
 	
 	
 	if br_plotter.switches.curve_refinements.show_spherecurve
-		set(br_plotter.handles.refinements.spherecurve,'visible','on');
+		set(br_plotter.handles.curves.refinements.sphere,'visible','on');
 	else
-		set(br_plotter.handles.refinements.spherecurve,'visible','off');
+		set(br_plotter.handles.curves.refinements.sphere,'visible','off');
 	end
 	
 	
 	if br_plotter.switches.curve_refinements.show_critcurve
-		set(br_plotter.handles.refinements.critcurve,'visible','on');
+		set(br_plotter.handles.curves.refinements.crit,'visible','on');
 	else
-		set(br_plotter.handles.refinements.critcurve,'visible','off');
+		set(br_plotter.handles.curves.refinements.crit,'visible','off');
 	end
 	
 	
 	
 	if br_plotter.switches.curve_refinements.show_singularcurve
-		set(br_plotter.handles.refinements.singularcurve(:),'visible','on');
+		set(br_plotter.handles.curves.refinements.singular,'visible','on');
 	else
-		set(br_plotter.handles.refinements.singularcurve(:),'visible','off');
+		set(br_plotter.handles.curves.refinements.singular,'visible','off');
 	end
 	
 	
 	
 else
 	
-	
-	set(br_plotter.handles.refinements.critslice(:),'visible','off');
-	set(br_plotter.handles.refinements.midslice(:),'visible','off');
-	set(br_plotter.handles.refinements.spherecurve,'visible','off');
-	set(br_plotter.handles.refinements.critcurve,'visible','off');
-	set(br_plotter.handles.refinements.singularcurve(:),'visible','off');
-	
-	
+    f = fieldnames(br_plotter.handles.curves.refinements);
+    for ii = 1:length(f)
+        set(br_plotter.handles.curves.refinements.(f{ii}),'visible','off');
+    end
+
 	
 end
 
@@ -160,12 +157,12 @@ function [] = surface_subcurve_twiddle(br_plotter)
 
 if br_plotter.switches.raw_curves_main
 	if br_plotter.switches.show_critcurve == 0
-		set(br_plotter.handles.critcurve(:),'visible','off')
+		set(br_plotter.handles.curves.raw.crit,'visible','off')
 		if br_plotter.options.labels
 			set(br_plotter.handles.critcurve_labels,'visible','off');
 		end
 	else
-		set(br_plotter.handles.critcurve(:),'visible','on')
+		set(br_plotter.handles.curves.raw.crit,'visible','on')
 		if br_plotter.options.labels
 			if (br_plotter.switches.label_critcurve == 0)
 				set(br_plotter.handles.critcurve_labels,'visible','off');
@@ -178,12 +175,12 @@ if br_plotter.switches.raw_curves_main
 
 
 	if br_plotter.switches.show_spherecurve == 0
-		set(br_plotter.handles.spherecurve(:),'visible','off')
+		set(br_plotter.handles.curves.raw.sphere,'visible','off')
 		if br_plotter.options.labels
 			set(br_plotter.handles.spherecurve_labels,'visible','off');
 		end
 	else
-		set(br_plotter.handles.spherecurve(:),'visible','on')
+		set(br_plotter.handles.curves.raw.sphere,'visible','on')
 		if br_plotter.options.labels
 			if (br_plotter.switches.label_spherecurve == 0)
 				set(br_plotter.handles.spherecurve_labels,'visible','off');
@@ -194,13 +191,13 @@ if br_plotter.switches.raw_curves_main
 	end
 
 	if br_plotter.switches.show_critslices == 0
-		set(br_plotter.handles.critslices(:),'visible','off')
+		set(br_plotter.handles.curves.raw.critslices,'visible','off')
 		if br_plotter.options.labels
 			set(br_plotter.handles.crittext,'visible','off');
 		end
 	else
 
-		set(br_plotter.handles.critslices(:),'visible','on')
+		set(br_plotter.handles.curves.raw.critslices,'visible','on')
 		if br_plotter.options.labels
 			if (br_plotter.switches.label_critedges == 0)
 				set(br_plotter.handles.crittext,'visible','off');
@@ -213,12 +210,12 @@ if br_plotter.switches.raw_curves_main
 
 
 	if br_plotter.switches.show_singular == 0
-		set(br_plotter.handles.singular_curves(:),'visible','off')
+		set(br_plotter.handles.curves.raw.singular,'visible','off')
 		if br_plotter.options.labels
 			set(br_plotter.handles.singtext,'visible','off');
 		end
 	else
-		set(br_plotter.handles.singular_curves(:),'visible','on')
+		set(br_plotter.handles.curves.raw.singular,'visible','on')
 		if br_plotter.options.labels
 			if (br_plotter.switches.label_singular == 0)
 				set(br_plotter.handles.singtext,'visible','off');
@@ -232,12 +229,12 @@ if br_plotter.switches.raw_curves_main
 
 
 	if br_plotter.switches.show_midslices == 0
-		set(br_plotter.handles.midslices(:),'visible','off')
+		set(br_plotter.handles.curves.raw.midslices,'visible','off')
 		if br_plotter.options.labels
 			set(br_plotter.handles.midtext,'visible','off');
 		end
 	else
-		set(br_plotter.handles.midslices(:),'visible','on')
+		set(br_plotter.handles.curves.raw.midslices,'visible','on')
 		if br_plotter.options.labels
 			if (br_plotter.switches.label_midedges == 0)
 				set(br_plotter.handles.midtext,'visible','off');
@@ -250,20 +247,20 @@ if br_plotter.switches.raw_curves_main
 	end
 	
 else % turn off all curves and labels
-	set(br_plotter.handles.critcurve(:),'visible','off');
+    
+    f = fieldnames(br_plotter.handles.curves.raw);
+    for ii = 1:length(f)
+        set(br_plotter.handles.curves.raw.(f{ii}),'visible','off');
+    end
+    
+
 	set(br_plotter.handles.critcurve_labels,'visible','off');
-	
-	set(br_plotter.handles.spherecurve(:),'visible','off');
 	set(br_plotter.handles.spherecurve_labels,'visible','off');
-	
-	set(br_plotter.handles.critslices(:),'visible','off')
+    
 	set(br_plotter.handles.crittext,'visible','off');
-	
-	set(br_plotter.handles.midslices(:),'visible','off')
 	set(br_plotter.handles.midtext,'visible','off');
-	
-	set(br_plotter.handles.singular_curves(:),'visible','off')
 	set(br_plotter.handles.singtext,'visible','off');
+    
 end  % re main switch for raw curves
 
 
