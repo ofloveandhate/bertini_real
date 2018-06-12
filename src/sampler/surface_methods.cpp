@@ -654,7 +654,7 @@ std::vector<int> Surface::AdaptiveNumSamplesPerRib(VertexSet const& V, sampler_c
 		div_mp(temp2, &max_widths_found->coord[ii], temp1);
 		mp_to_d(temp_d, temp2);
 
-		int est_num = std::ceil(temp_d->r);
+		int est_num = ceil(temp_d->r);
 
 
 		{
