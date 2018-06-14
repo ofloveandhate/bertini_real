@@ -10,7 +10,9 @@ label_axes(br_plotter);
 
 sphere_plot(br_plotter);
 
-plot_vertices(br_plotter);
+% if br_plotter.options.render_vertices
+	plot_vertices(br_plotter);
+% end
 
 adjust_axes(br_plotter);
 

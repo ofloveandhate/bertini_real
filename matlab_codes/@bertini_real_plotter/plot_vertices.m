@@ -6,8 +6,7 @@ curr_axis = br_plotter.axes.main;
 fontsize = br_plotter.options.fontsizes.labels;
 
 %these should be made programmatic, after modding bertini_real to generate
-%the table of them for us.
-
+%the table of them for us.  this still stands as of 20180612
 [names, types] = vertex_type_indices(br_plotter);
 
 markers = {'x','o','s','d','^','v','>','<','p','h'};
@@ -19,39 +18,26 @@ for ii = 1:length(names)
 end
 
 
-
-
-
-
-
-if br_plotter.options.labels
-	labels = cell(br_plotter.BRinfo.num_vertices,1);
-end
-
-br_plotter.fv.vertices = zeros(br_plotter.BRinfo.num_vertices,length(ind));
-
-
-
 unpacked_vertex_types = zeros(br_plotter.BRinfo.num_vertices, 1);
 for ii=1:br_plotter.BRinfo.num_vertices
-	
-    br_plotter.fv.vertices(ii,:) = transpose(real(br_plotter.BRinfo.vertices(ii).point(ind)));
-	
 	unpacked_vertex_types(ii) = br_plotter.BRinfo.vertices(ii).type;
-	
-	if br_plotter.options.labels
-		labels{ii} = [ '    ' num2str(ii)];
-	end
 end
 
-using_bitor = isfield(br_plotter.BRinfo,'vertex_types');
-if using_bitor
-	has_type = @(x,y) bitand(x,y)>0;
-else
-	has_type = @(x,y) x==y;
-end
+
+
 
 if br_plotter.options.render_vertices
+	if br_plotter.options.labels
+		labels = cellstr(num2str((1:br_plotter.BRinfo.num_vertices)'));
+	end
+
+	using_bitor = isfield(br_plotter.BRinfo,'vertex_types');
+	if using_bitor
+		has_type = @(x,y) bitand(x,y)>0;
+	else
+		has_type = @(x,y) x==y;
+	end
+
 	rendered_counter = 0;
 	for ii = 1:length(types)
 

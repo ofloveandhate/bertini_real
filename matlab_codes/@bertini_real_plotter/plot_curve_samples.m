@@ -71,7 +71,7 @@ for ii = 1:length(sampler_data.edge)
 
     curr_samples = sampler_data.edge(ii).samples;
 
-	plotme = br_plotter.fv.vertices(curr_samples,:);
+	plotme = br_plotter.data.space.vertices(curr_samples,:);
 	
 
 	h = main_plot_function(plotme,1:length(ind),curr_axis);

@@ -123,8 +123,7 @@ if br_plotter.options.labels
 
 
 		if ~isempty(br_plotter.handles.midtext)
-			new_color = get(br_plotter.handles.midtext);
-			new_color = new_color.Color;
+			new_color = br_plotter.handles.midtext.Color;
 		else
 			new_color = [0 0 0];
 		end
@@ -135,8 +134,7 @@ if br_plotter.options.labels
 
 
 		if ~isempty(br_plotter.handles.crittext)
-			new_color = get(br_plotter.handles.crittext);
-			new_color = new_color.Color;
+			new_color = br_plotter.handles.crittext.Color;
 		else
 			new_color = [0 0 0];
 		end
@@ -148,8 +146,7 @@ if br_plotter.options.labels
 
 		if ~isempty(br_plotter.handles.curves.raw.singular)
 			if ~isempty(br_plotter.handles.singtext)
-				new_color = get(br_plotter.handles.singtext);
-				new_color = new_color.Color;
+ 				new_color = br_plotter.handles.singtext.Color;
 			else
 				new_color = [0 0 0];
 			end

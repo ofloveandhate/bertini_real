@@ -39,6 +39,12 @@
 %                            would be to pass a handle to a function
 %                            computing the distance between x and the
 %                            origin, perhaps.
+%    'colorfnprojdata'       - bool [false]  If true, then the data from
+%                            the projection function is used for the color 
+%                            function you passed in.  If false, the plain
+%                            old coordinates from space will be used for
+%                            color, even if you are passing them through a
+%                            projection to plot them.
 %
 %    'num_colors'        - integer [64] the number of colors used in the
 %							colormap, particularly used when you use the 
@@ -92,6 +98,7 @@ classdef bertini_real_plotter < handle
 		
 		is_bounded = [];
 		fv = [];
+		data = [];
 	end
 	
 	methods
@@ -126,12 +133,18 @@ classdef bertini_real_plotter < handle
 				br_plotter.BRinfo.run_metadata.version.number = 103;
 			end
 			
-			if br_plotter.options.use_custom_projection
-				preprocess_data(br_plotter);
-			end
 			
-			get_indices(br_plotter);
+			transform_space_data(br_plotter)
 		end
+		
+		function transform_space_data(br_plotter)
+			
+
+			preprocess_data(br_plotter);
+
+		end
+		
+		
 		
 		function set_default_options(br_plotter)
 			br_plotter.options.use_custom_projection = false;
@@ -156,6 +169,7 @@ classdef bertini_real_plotter < handle
 			
 			
 			br_plotter.options.use_colorfn = false;
+			br_plotter.options.colorfn_uses_raw = false;
             
 			br_plotter.options.num_colors = 256;
             if isempty(which('parula'))
@@ -284,7 +298,29 @@ classdef bertini_real_plotter < handle
 							br_plotter.options.use_colorfn = true;
 							br_plotter.options.colorfn = tmp;
 						else
-							error('value for ''colorfn'' must be a handle to a function accepting a vector and returning a scalar');
+							error('value for ''colorfn'' must be a handle to a function accepting a real matrix in which the rows are points, and returning a real vector');
+						end
+					
+                    case {'colorfn_uses_raw'}
+						tentative_arg = command_line_options{ii+1};
+						if ischar(tentative_arg)
+							switch tentative_arg
+								case {'y','yes','true'}
+									br_plotter.options.colorfn_uses_raw = true;
+								case {'n','no','none','false'}
+									br_plotter.options.colorfn_uses_raw = false;
+								otherwise
+									error('bad option %s for ''colorfn_uses_raw''',tentative_arg);
+							end
+							
+						else
+							if tentative_arg==1
+								br_plotter.options.colorfn_uses_raw = true;
+							elseif tentative_arg==0
+								br_plotter.options.colorfn_uses_raw = false;
+							else
+								error('bad option %f for ''colorfn_uses_raw''',tentative_arg);
+							end
 						end
 					
 					

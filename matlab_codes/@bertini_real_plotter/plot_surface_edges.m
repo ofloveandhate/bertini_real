@@ -255,8 +255,7 @@ for ii =1:num_nondegen
 	curr_edge_index = nondegen_edge_indices(ii);
 	curr_edge = curve.edges(curr_edge_index,:);
 	
-
-	curve_edge_points = br_plotter.fv.vertices(curr_edge,:);
+	curve_edge_points = br_plotter.data.space.vertices(curr_edge,:);
 
 	h = plot3(curve_edge_points(:,1),curve_edge_points(:,2),curve_edge_points(:,3),'Parent',curr_axes);
 
