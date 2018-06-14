@@ -156,8 +156,8 @@ classdef bertini_real_plotter < handle
 			
 			
 			br_plotter.options.use_colorfn = false;
-			
-			br_plotter.options.num_colors = 64;
+            
+			br_plotter.options.num_colors = 256;
             if isempty(which('parula'))
                 br_plotter.options.colormap = @jet;
             else
