@@ -682,7 +682,7 @@ bool createPythonDeflation(int numVars, char **vars, int *lineVars, int numConst
 	// loop over rows & columns printing the nonzero minors to a file
 	fprintf(OUT, "count = 0;\n");
 	fprintf(OUT, "\n# Opening the first output file\n");
-	fprintf(OUT, "fo = open(\"deflation_polynomials\",\"wb\")\n");
+	fprintf(OUT, "fo = open(\"deflation_polynomials\",\"w\")\n");
 	fprintf(OUT, "for j in range(1,r+1):\n");
 		fprintf(OUT, "\tfor k in range(1,c+1):\n");
 			fprintf(OUT, "\t\ttemp_R = np.array(R.row(j-1))\n");
@@ -728,7 +728,7 @@ bool createPythonDeflation(int numVars, char **vars, int *lineVars, int numConst
 	fprintf(OUT, "fo.close()\n\n");
 
 	fprintf(OUT, "\n# Opening the second output file\n");
-	fprintf(OUT, "fo = open(\"deflation_polynomials_declaration\",\"wb\")\n");
+	fprintf(OUT, "fo = open(\"deflation_polynomials_declaration\",\"w\")\n");
 	fprintf(OUT, "mystr4 = \"\"\n");
 	fprintf(OUT, "for j in range(1,count+1):\n");
 		fprintf(OUT, "\tmystr2a = \"f_%d_%%i\" %% (j)\n", deflation_number);

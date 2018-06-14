@@ -1610,7 +1610,7 @@ bool create_python_determinantal_system( FILE *OUT,
 	fprintf(OUT, "new_eqn = J2.det()\n");
 
 	fprintf(OUT, "\n# Opening the first output file\n");
-	fprintf(OUT, "fo = open(\"derivative_polynomials_declaration\",\"wb\")\n");
+	fprintf(OUT, "fo = open(\"derivative_polynomials_declaration\",\"w\")\n");
 	fprintf(OUT, "mystr1 = \"function \"\n");
 	fprintf(OUT, "fo.write(mystr1)\n");
 
