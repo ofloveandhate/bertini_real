@@ -19,7 +19,6 @@ num_plotted_vars = size(br_plotter.fv.vertices,2);
 
 if num_plotted_vars==3
     axis([lower(1) upper(1) lower(2) upper(2) lower(3) upper(3)]);
-	
 else
     axis([lower(1) upper(1) lower(2) upper(2)]);
 end
