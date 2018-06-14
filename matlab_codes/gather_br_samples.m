@@ -92,7 +92,7 @@ function md = gather_run_metadata(dirname)
 		md.version.subminor = str2num(md.version.string(pds(2)+1:end));
 		
 		md.version.number = 100*md.version.major + md.version.minor + 0.01 * md.version.subminor;
-		md.version.gather = 150;
+		md.version.gather = 151;
 	else
 		
 		md.version.string = 'earlier than 1.4';
@@ -470,6 +470,8 @@ for ii = 1:num_filenames
    BRinfo.input_filenames{ii} = fscanf(fid,'%s\n',[1 1]); 
 end
 
+BRinfo.compressed_data.fv.vertices = zeros(BRinfo.num_vertices,num_natural_vars-1);
+
 for ii = 1:BRinfo.num_vertices
 	tmp_num_variables = fscanf(fid,'%i',[1 1]); % number variables
 	tmpvertex = zeros(tmp_num_variables,1);
@@ -477,8 +479,8 @@ for ii = 1:BRinfo.num_vertices
 		tmp = fscanf(fid,'%e %e\n',[1 2]);
 		tmpvertex(jj) = tmp(1)+1i*tmp(2);
 	end
-	
-	
+
+	BRinfo.compressed_data.fv.vertices(ii,:) = real(dehomogenize(tmpvertex(1:num_natural_vars)))';
 	BRinfo.vertices(ii).point = [dehomogenize(tmpvertex(1:num_natural_vars));tmpvertex(num_natural_vars+1:end)];
 	
 	num_proj_vals = fscanf(fid,'%i\n',[1 1]);
