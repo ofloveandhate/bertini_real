@@ -357,8 +357,26 @@ classdef bertini_real_plotter < handle
 			
 		end
 		
+		function hide_panels(br_plotter)
+			f = fieldnames(br_plotter.panels);
+
+			for ii = 1:length(f)
+				set( findall(br_plotter.panels.(f{ii}), '-property', 'visible'), 'visible', 'off')
+				set(br_plotter.panels.(f{ii}),'visible','off');
+
+			end
+		end
 		
 		
+		function show_panels(br_plotter)
+			f = fieldnames(br_plotter.panels);
+
+			for ii = 1:length(f)
+				set( findall(br_plotter.panels.(f{ii}), '-property', 'visible'), 'visible', 'on')
+				set(br_plotter.panels.(f{ii}),'visible','on');
+
+			end
+		end
 		
 		
 		
