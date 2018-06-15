@@ -14,16 +14,22 @@ function preprocess_data(br_plotter)
 	
 	if br_plotter.options.use_custom_projection
 		try
-			blabla = vectorize(br_plotter.options.custom_projection);
-			br_plotter.data.space.vertices = blabla(br_plotter.data.raw.vertices);
-		catch
+% 			
+			proj = br_plotter.options.custom_projection;
+% 			proj = vectorize(proj);
+			br_plotter.data.space.vertices = proj(br_plotter.data.raw.vertices);
+		catch ME
+			disp('unsuccesful attempt to call function vectorized')
+			fprintf('caught error %s\n',ME.message)
+
 			% preallocate
-			br_plotter.data.space.vertices = zeros(br_plotter.BRinfo.num_vertices,...
-					length(br_plotter.options.custom_projection(br_plotter.BRinfo.vertices(1).point)));
+			test_point = br_plotter.options.custom_projection(transpose(br_plotter.BRinfo.vertices(1).point(1:br_plotter.BRinfo.num_variables-1)));
+			
+			br_plotter.data.space.vertices = zeros(br_plotter.BRinfo.num_vertices,size(test_point,2));
 			for ii = 1:br_plotter.BRinfo.num_vertices
-				br_plotter.data.space.vertices(ii,:) = br_plotter.options.custom_projection(real(br_plotter.BRinfo.vertices(ii).point));
+				br_plotter.data.space.vertices(ii,:) = br_plotter.options.custom_projection(transpose(real(br_plotter.BRinfo.vertices(ii).point(1:br_plotter.BRinfo.num_variables-1))));
 			end
-			br_plotter.BRinfo.num_variables = length(br_plotter.options.custom_projection(br_plotter.BRinfo.vertices(1).point))+1;
+			br_plotter.BRinfo.num_variables = length(br_plotter.options.custom_projection(br_plotter.BRinfo.vertices(1).point(1:br_plotter.BRinfo.num_variables-1)))+1;
 		end
 	else
 		br_plotter.data.space = br_plotter.data.raw;

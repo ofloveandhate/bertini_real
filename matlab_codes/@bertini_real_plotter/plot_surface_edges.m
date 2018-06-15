@@ -190,7 +190,7 @@ end
 
 
 
-
+%plots a single raw curve with a single style and color
 function [edge_handles, refinement_handles, text_handle] = plot_subcurve(br_plotter,curve,name,style,text_color,desiredcolor)
 
 ind = br_plotter.indices;
@@ -243,36 +243,37 @@ else
 end
 
 
-edge_handles = zeros(num_nondegen,1);
-
+% edge_handles = zeros(num_nondegen,1);
 if br_plotter.options.labels
 	text_locations = zeros(num_nondegen,3);
 	text_labels = cell(num_nondegen,1);
 end
-
-
+curve_edge_points = zeros(0,3);
 for ii =1:num_nondegen
 	curr_edge_index = nondegen_edge_indices(ii);
 	curr_edge = curve.edges(curr_edge_index,:);
 	
-	curve_edge_points = br_plotter.data.space.vertices(curr_edge,ind);
-
-	h = plot3(curve_edge_points(:,1),curve_edge_points(:,2),curve_edge_points(:,3),'Parent',curr_axes);
-
-	set(h,'Color',colors(ii,:));
-	set(h,'LineStyle',style,'LineWidth',br_plotter.options.linewidth);
-
-
-	
-	edge_handles(ii) = h;
+	temp = br_plotter.data.space.vertices(curr_edge,ind);
+	curve_edge_points = [curve_edge_points; nan nan nan; temp];
 	
 	if br_plotter.options.labels
-		text_locations(ii,:) = curve_edge_points(2,:);
+		text_locations(ii,:) = temp(2,:);
 		text_labels{ii} = sprintf('%s %d  ',name,curr_edge_index);
 	end
-	
+
 end
 
+
+
+h = plot3(curve_edge_points(:,1),curve_edge_points(:,2),curve_edge_points(:,3),'Parent',curr_axes);
+
+set(h,'Color',colors(ii,:));
+set(h,'LineStyle',style,'LineWidth',br_plotter.options.linewidth);
+edge_handles = h;
+
+
+	
+	
 if br_plotter.options.labels
 	text_handle = text(text_locations(:,1),text_locations(:,2),text_locations(:,3), text_labels,...
 				'HorizontalAlignment','right',...
