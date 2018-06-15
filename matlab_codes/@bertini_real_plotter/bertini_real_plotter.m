@@ -251,7 +251,7 @@ classdef bertini_real_plotter < handle
 			[FileName,PathName,FilterIndex] = uigetfile();
 			br_plotter.filename = [PathName FileName];
 			
-			load(br_plotter);
+			load_and_process(br_plotter);
 			plot(br_plotter);
 			
 		end
