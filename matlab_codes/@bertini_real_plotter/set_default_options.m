@@ -9,6 +9,7 @@ function set_default_options(br_plotter)
 	br_plotter.options.fontsizes.labels = 16;
 	br_plotter.options.fontsizes.axis = 20;
 	br_plotter.options.linewidth = 2;
+	br_plotter.options.edge_width = 1;
 	br_plotter.options.autosave = false;
 
 	br_plotter.options.labels = true;

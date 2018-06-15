@@ -420,6 +420,7 @@ classdef bertini_real_plotter < handle
 		% http://www.mathworks.com/help/matlab/matlab_oop/class-methods-for-graphics-callbacks.html
 		change_alpha(br_plotter,source,event) % is a callback function
 		change_edge_alpha(br_plotter,source,event) % is a callback function
+		change_edge_width(br_plotter,source,event) % is a callback function
         change_line_width(br_plotter,source,event) % is a callback function
 		change_text_size(br_plotter,source,event)% is a callback function
 		center_camera_on_selected_point(br_plotter,source, event)

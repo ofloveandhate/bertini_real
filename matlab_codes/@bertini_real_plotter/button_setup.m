@@ -48,8 +48,12 @@ if br_plotter.dimension == 2
 	buttontext = sprintf('EdgeAlpha');
 	[curr_y, br_plotter.buttons.edge_alpha] = make_button(buttontext, {@br_plotter.change_edge_alpha}, horiz_pad, vert_spacing, curr_y, br_plotter.panels.buttons, height, width);
 	
+	buttontext = sprintf('EdgeWidth');
+	[curr_y, br_plotter.buttons.edge_width] = make_button(buttontext, {@br_plotter.change_edge_width}, horiz_pad, vert_spacing, curr_y, br_plotter.panels.buttons, height, width);
+
 	buttontext = sprintf('FaceAlpha');
 	[curr_y, br_plotter.buttons.alpha] = make_button(buttontext, {@br_plotter.change_alpha}, horiz_pad, vert_spacing, curr_y, br_plotter.panels.buttons, height, width);
+
 end
 
 vertical_size = br_plotter.window(4);

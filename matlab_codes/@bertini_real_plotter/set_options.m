@@ -231,8 +231,8 @@ for ii = 1:2:length(command_line_options)-1
 		case 'linewidth'
 			br_plotter.options.linewidth = command_line_options{ii+1};
 
-		case 'edgecolor'
-			br_plotter.options.linewidth = command_line_options{ii+1};
+		case 'edgewidth'
+			br_plotter.options.edgewidth = command_line_options{ii+1};
 			
 		case 'faces'
 
