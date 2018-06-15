@@ -12,12 +12,13 @@ function set_default_options(br_plotter)
 	br_plotter.options.edge_width = 1;
 	br_plotter.options.autosave = false;
 
-	br_plotter.options.labels = true;
+	br_plotter.options.labels = false;
 	br_plotter.options.monocolor = false;
 
 	br_plotter.options.render_vertices = false;
 	br_plotter.options.render_curves = true;
 	br_plotter.options.render_faces = true;
+	br_plotter.options.render_samples = true;
 	br_plotter.options.which_faces = [];
 	br_plotter.options.touching_edges_only = true;
 

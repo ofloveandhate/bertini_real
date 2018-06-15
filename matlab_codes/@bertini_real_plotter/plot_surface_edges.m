@@ -281,7 +281,7 @@ if br_plotter.options.labels
 end
 
 
-if ~isempty(br_plotter.BRinfo.sampler_data)
+if and(~isempty(br_plotter.BRinfo.sampler_data),br_plotter.options.render_samples)
 	if nargin==6
 		refinement_handles = plot_curve_samples(br_plotter,curve,style, desiredcolor);
 	else

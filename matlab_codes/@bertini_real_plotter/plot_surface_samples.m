@@ -2,7 +2,7 @@
 
 function plot_surface_samples(br_plotter)
 
-if ~isempty(br_plotter.BRinfo.sampler_data)
+if and(~isempty(br_plotter.BRinfo.sampler_data),br_plotter.options.render_samples)
 	br_plotter.fv.faces = plot_surf_samples_main(br_plotter);
 end
 

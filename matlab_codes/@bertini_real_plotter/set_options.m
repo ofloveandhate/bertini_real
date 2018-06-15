@@ -258,6 +258,29 @@ for ii = 1:2:length(command_line_options)-1
 				end
 			end
 
+		case 'samples'
+			tentative_arg = command_line_options{ii+1};
+
+			if ischar(tentative_arg)
+				switch tentative_arg
+					case {'y','yes','true'}
+						br_plotter.options.render_samples = true;
+					case {'n','no','none','false'}
+						br_plotter.options.render_samples = false;
+					otherwise
+						error('bad option %s for samples',tentative_arg);
+				end
+
+			else
+				if tentative_arg==1
+					br_plotter.options.render_samples = true;
+				elseif tentative_arg==0
+					br_plotter.options.render_samples = false;
+				else
+					error('bad option %f for samples',tentative_arg);
+				end
+			end
+
 		case 'whichfaces'
 
 			tentative_arg = command_line_options{ii+1};
