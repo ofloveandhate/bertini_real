@@ -193,7 +193,7 @@ end
 
 function [edge_handles, refinement_handles, text_handle] = plot_subcurve(br_plotter,curve,name,style,text_color,desiredcolor)
 
-
+ind = br_plotter.indices;
 curr_axes = br_plotter.axes.main;
 
 
@@ -255,7 +255,7 @@ for ii =1:num_nondegen
 	curr_edge_index = nondegen_edge_indices(ii);
 	curr_edge = curve.edges(curr_edge_index,:);
 	
-	curve_edge_points = br_plotter.data.space.vertices(curr_edge,:);
+	curve_edge_points = br_plotter.data.space.vertices(curr_edge,ind);
 
 	h = plot3(curve_edge_points(:,1),curve_edge_points(:,2),curve_edge_points(:,3),'Parent',curr_axes);
 

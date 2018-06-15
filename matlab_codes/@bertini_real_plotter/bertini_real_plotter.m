@@ -10,7 +10,9 @@
 %	'autosave'          - bool [false]
 %	'vertices', 'vert'  - bool [false]  for large samplings, this causes
 %							rendering to be very slow.
-%	'filename', 'file'   - string [BRinfo*.mat]
+%	'filename'          - string [BRinfo*.mat]
+%	'file'              - struct.  no default. the result of reading
+%	                        gathered data
 %	'proj'              - handle to function.  no default
 %	'mono', 'monocolor' - color or RGB triple.  not on by default
 %	'labels'            - bool [true]
@@ -103,13 +105,18 @@ classdef bertini_real_plotter < handle
 	
 	methods
 		
-		
 		function br_plotter = bertini_real_plotter(varargin)
 			initialize(br_plotter);
 			set_default_options(br_plotter);
 			set_options(br_plotter,varargin);
-			set_filename(br_plotter);
-			load(br_plotter);
+			
+			if needs_data(br_plotter)
+				set_filename(br_plotter);
+				load_and_process(br_plotter);
+			else
+				just_process(br_plotter);
+			end
+
 			plot(br_plotter);
 		end %re: bertini_real_plotter() constructor
 		
@@ -117,372 +124,55 @@ classdef bertini_real_plotter < handle
 			initialize_handles_surface(br_plotter);
 		end
 		
+		%why is there not a symmetric one for the curve case? -20180614
 		initialize_handles_surface(br_plotter);
 			
 			
-		function load(br_plotter)
+		function does_it = needs_data(br_plotter)
+			if isempty(br_plotter.BRinfo)
+				does_it = true;
+			else
+				does_it = false;
+			end
+		end
+		
+		
+		function load_and_process(br_plotter)
 			load_data(br_plotter);
+			just_process(br_plotter);
+		end
+		
+		
+		function just_process(br_plotter)
+			sanity_checks(br_plotter)
+			adjust_version_numbers(br_plotter)
+			version_check(br_plotter);
+			set_options_from_BRinfo(br_plotter);
+			preprocess_data(br_plotter);
+		end
 			
+		
+		function sanity_checks(br_plotter)
 			if br_plotter.BRinfo.num_vertices==0
 				warning('your decomposition contains 0 vertices.  The real part appears to be empty.  Plotting will now terminate.')
 				display(br_plotter.BRinfo);
 				return;
 			end
-			
+		end
+		
+		
+		
+		function adjust_version_numbers(br_plotter)
 			if ~isfield(br_plotter.BRinfo,'run_metadata')
-				br_plotter.BRinfo.run_metadata.version.number = 103;
-			end
-			
-			
-			transform_space_data(br_plotter)
-		end
-		
-		function transform_space_data(br_plotter)
-			
-
-			preprocess_data(br_plotter);
-
-		end
-		
-		
-		
-		function set_default_options(br_plotter)
-			br_plotter.options.use_custom_projection = false;
-			br_plotter.options.markersize = 10;
-			br_plotter.options.sample_alpha = 1;
-			br_plotter.options.face_alpha = 1;
-			br_plotter.options.edge_alpha = 0.4;
-			br_plotter.options.fontsizes.legend = 12;
-			br_plotter.options.fontsizes.labels = 16;
-			br_plotter.options.fontsizes.axis = 20;
-			br_plotter.options.linewidth = 2;
-			br_plotter.options.autosave = false;
-			
-			br_plotter.options.labels = true;
-			br_plotter.options.monocolor = false;
-			
-			br_plotter.options.render_vertices = false;
-			br_plotter.options.render_curves = true;
-			br_plotter.options.render_faces = true;
-			br_plotter.options.which_faces = [];
-			br_plotter.options.touching_edges_only = true;
-			
-			
-			br_plotter.options.use_colorfn = false;
-			br_plotter.options.colorfn_uses_raw = false;
-            
-			br_plotter.options.num_colors = 256;
-            if isempty(which('parula'))
-                br_plotter.options.colormap = @jet;
-            else
-                br_plotter.options.colormap = @parula;
-            end
-		end
-		
-		%parses the command line options fed into the constructor.
-		function set_options(br_plotter,command_line_options)
-			
-			
-			if mod(length(command_line_options),2)~=0
-				error('must have option-value pairs');
-			end
-			
-			
-			for ii = 1:2:length(command_line_options)-1
-				
-				switch lower(command_line_options{ii})
-					case 'autosave'
-						
-						tentative_arg = command_line_options{ii+1};
-						
-						if ischar(tentative_arg)
-							switch tentative_arg
-								case {'y','yes','true'}
-									br_plotter.options.autosave = true;
-								case {'n','no','false'}
-									br_plotter.options.autosave = false;
-								otherwise
-									error('bad option %s for autosave',tentative_arg);
-							end
-							
-						else
-							if tentative_arg==1
-								br_plotter.options.autosave = true;
-							elseif tentative_arg==0
-								br_plotter.options.autosave = false;
-							else
-								error('bad option %f for autosave',tentative_arg);
-							end
-						end
-					
-					case {'curves','curve'}
-						tentative_arg = command_line_options{ii+1};
-						
-						if ischar(tentative_arg)
-							switch tentative_arg
-								case {'y','yes','true'}
-									br_plotter.options.render_curves = true;
-								case {'n','no','none','false'}
-									br_plotter.options.render_curves = false;
-								otherwise
-									error('bad option %s for curves',tentative_arg);
-							end
-							
-						else
-							if tentative_arg==1
-								br_plotter.options.render_curves = true;
-							elseif tentative_arg==0
-								br_plotter.options.render_curves = false;
-							else
-								error('bad option %f for curves',tentative_arg);
-							end
-						end
-						
-						
-					case {'vertices','vert'}
-						
-						tentative_arg = command_line_options{ii+1};
-						
-						if ischar(tentative_arg)
-							switch tentative_arg
-								case {'y','yes','true'}
-									br_plotter.options.render_vertices = true;
-								case {'n','no','none','false'}
-									br_plotter.options.render_vertices = false;
-								otherwise
-									error('bad option %s for vertices',tentative_arg);
-							end
-							
-						else
-							if tentative_arg==1
-								br_plotter.options.render_vertices = true;
-							elseif tentative_arg==0
-								br_plotter.options.render_vertices = false;
-							else
-								error('bad option %f for vertices',tentative_arg);
-							end
-						end
-						
-						
-					case {'filename','file'}
-						br_plotter.filename = command_line_options{ii+1};
-						if ~ischar(br_plotter.filename)
-							error('filename argument must be a string filename')
-						end
-						
-					case 'proj'
-
-
-						tmp = command_line_options{ii+1};
-
-						if isa(tmp,'function_handle')
-							br_plotter.options.custom_projection = tmp;
-							br_plotter.options.use_custom_projection = true;
-						elseif strcmpi(tmp,'natural')
-	
-						else
-							error('value for ''proj'' must be a function handle or ''natural''');
-						end
-
-					case {'colormap'}
-						tmp = command_line_options{ii+1};
-						if isa(tmp,'function_handle')
-							br_plotter.options.colormap = tmp;
-						else
-							error('value for ''colormap'' must be a handle to a function generating a colormap for an integer number of colors; e.g. @jet');
-						end
-						
-					case {'colorfn'}
-						tmp = command_line_options{ii+1};
-						if isa(tmp,'function_handle')
-							br_plotter.options.use_colorfn = true;
-							br_plotter.options.colorfn = tmp;
-						else
-							error('value for ''colorfn'' must be a handle to a function accepting a real matrix in which the rows are points, and returning a real vector');
-						end
-					
-                    case {'colorfn_uses_raw'}
-						tentative_arg = command_line_options{ii+1};
-						if ischar(tentative_arg)
-							switch tentative_arg
-								case {'y','yes','true'}
-									br_plotter.options.colorfn_uses_raw = true;
-								case {'n','no','none','false'}
-									br_plotter.options.colorfn_uses_raw = false;
-								otherwise
-									error('bad option %s for ''colorfn_uses_raw''',tentative_arg);
-							end
-							
-						else
-							if tentative_arg==1
-								br_plotter.options.colorfn_uses_raw = true;
-							elseif tentative_arg==0
-								br_plotter.options.colorfn_uses_raw = false;
-							else
-								error('bad option %f for ''colorfn_uses_raw''',tentative_arg);
-							end
-						end
-					
-					
-					case {'num_colors','numcolors'}
-						tmp = command_line_options{ii+1};
-						if ~isint(tmp)
-							error('value for ''num_colors'' must be in integer');
-						end
-						
-						br_plotter.options.num_colors = tmp;
-						
-					case {'mono','monocolor'}
-						br_plotter.options.monocolor = true;
-						
-						tentative_color = command_line_options{ii+1};
-						
-						
-						
-						if ischar(tentative_color)
-							switch tentative_color
-								case 'r'
-									br_plotter.options.monocolor_color = [1 0 0];
-								case 'g'
-									br_plotter.options.monocolor_color = [0 1 0];
-								case 'b'
-									br_plotter.options.monocolor_color = [0 0 1];
-								case 'm'
-									br_plotter.options.monocolor_color = [1 0 1];
-								case 'c'
-									br_plotter.options.monocolor_color = [0 1 1];
-								case 'y'
-									br_plotter.options.monocolor_color = [1 1 0];
-								case 'k'
-									br_plotter.options.monocolor_color = [0 0 0];
-								
-								otherwise
-									error('input color string for mono must be one of r g b m c y k.  you can also specify a 1x3 RGB color vector');
-							end
-						else
-							[m,n] = size(tentative_color);
-							if and(m==1,n==3)
-								br_plotter.options.monocolor_color = tentative_color;
-							else
-								error('explicit color for monocolor surfaces must be a 1x3 RGB vector');
-							end
-							
-						end
-						
-						
-						
-						br_plotter.options.colormap = @(num_colors) repmat(br_plotter.options.monocolor_color,num_colors,1);
-						
-					case 'labels'
-						tentative_arg = command_line_options{ii+1};
-						
-						if ischar(tentative_arg)
-							switch tentative_arg
-								case {'y','yes','true'}
-									br_plotter.options.labels = true;
-								case {'n','no','none','false'}
-									br_plotter.options.labels = false;
-								otherwise
-									error('bad option %s for labels',tentative_arg);
-							end
-							
-						else
-							if tentative_arg==1
-								br_plotter.options.labels = true;
-							elseif tentative_arg==0
-								br_plotter.options.labels = false;
-							else
-								error('bad option %f for labels',tentative_arg);
-							end
-						end
-						
-					case 'linestyle'
-						br_plotter.options.linestyle = command_line_options{ii+1};
-						br_plotter.options.use_fixed_linestyle = true;
-					
-                    case 'linewidth'
-						br_plotter.options.linewidth = command_line_options{ii+1};
-						
-					case 'faces'
-						
-						tentative_arg = command_line_options{ii+1};
-						
-						if ischar(tentative_arg)
-							switch tentative_arg
-								case {'y','yes','true'}
-									br_plotter.options.render_faces = true;
-								case {'n','no','none','false'}
-									br_plotter.options.render_faces = false;
-								otherwise
-									error('bad option %s for faces',tentative_arg);
-							end
-							
-						else
-							if tentative_arg==1
-								br_plotter.options.render_faces = true;
-							elseif tentative_arg==0
-								br_plotter.options.render_faces = false;
-							else
-								error('bad option %f for faces',tentative_arg);
-							end
-						end
-					
-					case 'whichfaces'
-						
-						tentative_arg = command_line_options{ii+1};
-						if ~isnumeric(tentative_arg)
-							error('argument for ''whichfaces'' must be integer array');
-						end
-						
-						br_plotter.options.which_faces = tentative_arg;
-						
-					case 'touchingedgesonly'
-						tentative_arg = command_line_options{ii+1};
-						br_plotter.options.touching_edges_only = tentative_arg;
-						
-					otherwise
-						error('unexpected option name ''%s''',command_line_options{ii})
-				end
+				br_plotter.BRinfo.run_metadata.version.number = 103; %never change this number.  realistically it should be a commit number for the repo, but... i'm lazy
 			end
 		end
 		
 		
 		
-		% uses internally set variable 'filename' to load a .mat file
-		% containing data gathered previously.
-		function load_data(br_plotter)
-			if isempty(br_plotter.filename)
-				error('unset filename in br_plotter object');
-			end
-			
-			if isempty(dir(br_plotter.filename))
-				if isempty(dir([br_plotter.filename '.mat']))
-					error('nexists file with name ''%s''',br_plotter.filename);
-				else
-					br_plotter.filename = [br_plotter.filename '.mat'];
-				end
-			end
-			
-			file_variables = whos('-file',br_plotter.filename);
-			
-			if ismember('BRinfo', {file_variables.name})
-				temp = load(br_plotter.filename);
-				br_plotter.BRinfo = temp.BRinfo;
-			else
-				error('file ''%s'' does not contain variable ''BRinfo''',br_plotter.filename);
-			end
-			
+		function set_options_from_BRinfo(br_plotter)
 			[br_plotter.options.containing, br_plotter.options.basename, ~] = fileparts(pwd);
 			br_plotter.dimension = br_plotter.BRinfo.dimension;
-			
-			if isfield(br_plotter.BRinfo.run_metadata.version, 'gather')
-				if br_plotter.BRinfo.run_metadata.version.gather < 150
-					error('this version of bertini_real_plotter requires data gathered with gather_br_samples at least 150.  please re-gather');
-				end
-
-			else
-				error('this version of bertini_real_plotter requires data gathered with gather_br_samples at least 150.  please re-gather');
-			end
 
 			if (br_plotter.BRinfo.dimension == 2)
 				if isempty(br_plotter.options.which_faces)
@@ -493,8 +183,7 @@ classdef bertini_real_plotter < handle
 						br_plotter.BRinfo.num_faces);
 				end
 			end
-				
-			
+
 			if (br_plotter.BRinfo.dimension == 1)
 				br_plotter.options.touching_edges_only = false;
 			elseif (br_plotter.BRinfo.dimension == 2)
@@ -502,8 +191,32 @@ classdef bertini_real_plotter < handle
 					br_plotter.options.touching_edges_only = false;
 				end
 			end
-			
 		end
+		
+		
+		
+		
+		function version_check(br_plotter)
+			if isfield(br_plotter.BRinfo.run_metadata.version, 'gather')
+				if br_plotter.BRinfo.run_metadata.version.gather < 150
+					error('this version of bertini_real_plotter requires data gathered with gather_br_samples at least 150.  please re-gather');
+				end
+			else
+				error('this version of bertini_real_plotter requires data gathered with gather_br_samples at least 150.  please re-gather');
+			end
+		end
+		
+		
+		
+		
+		set_default_options(br_plotter)
+
+		%parses the command line options fed into the constructor.
+		set_options(br_plotter,command_line_options)
+		
+		% uses internally set variable 'filename' to load a .mat file
+		% containing data gathered previously.
+		load_data(br_plotter)
 		
 		
 		function set_filename(br_plotter)
@@ -533,6 +246,8 @@ classdef bertini_real_plotter < handle
 		
 		function load_and_render(br_plotter,source, event)
 			
+			clear_for_load(br_plotter)
+			
 			[FileName,PathName,FilterIndex] = uigetfile();
 			br_plotter.filename = [PathName FileName];
 			
@@ -541,6 +256,10 @@ classdef bertini_real_plotter < handle
 			
 		end
 		
+		function clear_for_load(br_plotter)
+			
+			
+		end
 		
 		function plot(br_plotter)
 			
@@ -700,6 +419,7 @@ classdef bertini_real_plotter < handle
 		% for more info on associating callbacks with buttons, see e.g.
 		% http://www.mathworks.com/help/matlab/matlab_oop/class-methods-for-graphics-callbacks.html
 		change_alpha(br_plotter,source,event) % is a callback function
+		change_edge_alpha(br_plotter,source,event) % is a callback function
         change_line_width(br_plotter,source,event) % is a callback function
 		change_text_size(br_plotter,source,event)% is a callback function
 		center_camera_on_selected_point(br_plotter,source, event)

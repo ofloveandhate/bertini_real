@@ -44,8 +44,10 @@ buttontext = sprintf('MarkerSize %i',br_plotter.options.markersize);
 buttontext = sprintf('LineWidth %i',br_plotter.options.linewidth);
 [curr_y, br_plotter.buttons.linewidth] = make_button(buttontext, {@br_plotter.change_line_width}, horiz_pad, vert_spacing, curr_y, br_plotter.panels.buttons, height, width);
 
-
 if br_plotter.dimension == 2
+	buttontext = sprintf('EdgeAlpha');
+	[curr_y, br_plotter.buttons.edge_alpha] = make_button(buttontext, {@br_plotter.change_edge_alpha}, horiz_pad, vert_spacing, curr_y, br_plotter.panels.buttons, height, width);
+	
 	buttontext = sprintf('FaceAlpha');
 	[curr_y, br_plotter.buttons.alpha] = make_button(buttontext, {@br_plotter.change_alpha}, horiz_pad, vert_spacing, curr_y, br_plotter.panels.buttons, height, width);
 end
