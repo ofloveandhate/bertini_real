@@ -54,6 +54,10 @@
 %							specify a function used for coloring the surface.
 %							also, 'numcolors'
 %
+%    'view_through_pi'   - bool [false] use projection through that which 
+%                            was used for decomposition as space
+%                            coordinates.  can make some very pretty plots.
+%                            
 %
 %
 %
@@ -67,7 +71,7 @@
 %
 % university of notre dame
 % applied and computational mathematics and statistics
-% 2014, 2015, 2016
+% 2014, 2015, 2016, 2017
 
 
 
@@ -450,7 +454,9 @@ classdef bertini_real_plotter < handle
 	
 	end%re: methods
 	
-	
+	methods(Static)
+		y = project_through_pi(x,pi)
+	end%re: static methods
 
 	
 end

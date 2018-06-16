@@ -6,8 +6,8 @@ if mod(length(command_line_options),2)~=0
 	error('must have option-value pairs');
 end
 
-
-for ii = 1:2:length(command_line_options)-1
+ii=1;
+while ii < length(command_line_options)
 
 	switch lower(command_line_options{ii})
 		case 'autosave'
@@ -294,8 +294,17 @@ for ii = 1:2:length(command_line_options)-1
 			tentative_arg = command_line_options{ii+1};
 			br_plotter.options.touching_edges_only = tentative_arg;
 
+		case 'view_through_pi'
+			tentative_arg = command_line_options{ii+1};
+
+			if tentative_arg
+				command_line_options{end+1} = 'proj';
+				handle = @(x) br_plotter.project_through_pi(x,br_plotter.BRinfo.pi);
+				command_line_options{end+1} = handle;
+			end
 		otherwise
 			error('unexpected option name ''%s''',command_line_options{ii})
 	end
+	ii = ii+2;
 end
 end
