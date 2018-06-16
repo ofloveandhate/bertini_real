@@ -14,12 +14,17 @@ function preprocess_data(br_plotter)
 	
 	if br_plotter.options.use_custom_projection
 		try
-% 			
-			proj = br_plotter.options.custom_projection;
-% 			proj = vectorize(proj);
-			br_plotter.data.space.vertices = proj(br_plotter.data.raw.vertices);
+			try
+				proj = br_plotter.options.custom_projection;
+				br_plotter.data.space.vertices = proj(br_plotter.data.raw.vertices);
+			catch
+				disp('unsuccesful attempt to call function naturally on entire point set, rows as points. attempting vectorize')
+				proj = br_plotter.options.custom_projection;
+				proj = vectorize(proj);
+				br_plotter.data.space.vertices = proj(br_plotter.data.raw.vertices);
+			end
 		catch ME
-			disp('unsuccesful attempt to call function vectorized')
+			disp('unsuccesful attempt to call function naturally or vectorized.  calling one by one.  this can be slow for large data sets')
 			fprintf('caught error %s\n',ME.message)
 
 			% preallocate
