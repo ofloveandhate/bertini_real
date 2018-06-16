@@ -26,12 +26,9 @@ for ii = 1:br_plotter.BRinfo.num_edges
 	
 	if and(left_plot==mid_plot, mid_plot==right_plot)
 		degen(ii) = 1;
-	else
-		num_non_degen = num_non_degen+1;
 	end
 end
-num_non_degen = sum(degen);
-
+num_non_degen = br_plotter.BRinfo.num_edges - sum(degen);
 
 
 colors = br_plotter.options.colormap(num_non_degen);
