@@ -104,6 +104,9 @@ for ii = 1:length(f)
 		break
 	end
 end
+if ~isempty(br_plotter.handles.surface_samples)
+	have_refinements = 1;
+end
 
 
 
@@ -208,10 +211,6 @@ if or(br_plotter.options.render_faces,br_plotter.options.render_curves)
 end
 
 if have_refinements
-	
-	
-
-	
 	cb_params.x_pad = 10;
 	
 	%[checkbox_handle, cb_params] = make_switch_checkbox(switch_text, switch_name, cb_params, panel_handle, br_plotter, groupname)
@@ -233,7 +232,7 @@ if have_refinements
 		[br_plotter.checkboxes.curve_refinements, cb_params] = make_switch_checkbox('curve refinements', 'main', cb_params, h, br_plotter,'curve_refinements');
 	end%re: if render_curves
 	
-	if ~isempty(br_plotter.handles.faces)
+	if ~isempty(br_plotter.handles.surface_samples)
 		[br_plotter.checkboxes.display_face_samples, cb_params] = make_switch_checkbox('face samples', 'display_face_samples', cb_params, h, br_plotter);
 	end
 end
