@@ -657,7 +657,7 @@ void Curve::MidSlice(int& edge_counter,
             // what else can i do here to improve the probability of success?
             solve_options.T.basicNewtonTol   *= 1e-2; // tracktolbeforeeg
             solve_options.T.endgameNewtonTol *= 1e-2; // tracktolduringeg
-			std::cout << "new temporaary tracktolBEFOREeg: "	<< solve_options.T.basicNewtonTol << " tracktolDURINGeg: "	<< solve_options.T.endgameNewtonTol << std::endl;
+			std::cout << "new temporary tracktolBEFOREeg: "	<< solve_options.T.basicNewtonTol << " tracktolDURINGeg: "	<< solve_options.T.endgameNewtonTol << std::endl;
 
 			SolverOutput fillme2;
 			multilin_solver_master_entry_point(W_curve,         // WitnessSet
