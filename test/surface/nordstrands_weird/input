@@ -1,6 +1,42 @@
 CONFIG
+%randomseed: 43;
+
+endpointfinitethreshold: 1e10;
+pathtruncationthreshold: 1e10;
 
 tracktype:1;
+
+sharpendigits: 30;
+
+maxstepsbeforenewton: 0;
+maxnewtonits: 1;
+
+odepredictor: 5;
+
+
+
+
+securitylevel: 1;
+
+tracktolbeforeeg: 1e-7;
+tracktolduringeg: 1e-8;
+finaltol: 1e-13;
+
+endgamebdry: 1e-3;
+
+functiontolerance: 1e-7;
+
+endgamenum: 2;
+numsamplepoints: 5;
+maxcyclenum: 12;
+
+condnumthreshold: 1e30;
+
+maxnumbersteps: 10000000;
+
+ampsafetydigits1: 5;
+ampsafetydigits2: 5;
+
 END;
 
 

@@ -1,4 +1,6 @@
 CONFIG
+
+randomseed: 320;
 tracktype:1;
 
 condnumthreshold: 1e160;
@@ -8,9 +10,23 @@ functiontolerance: 1e-6;
 
 sharpendigits: 64;
 
+securitylevel: 1;
 securitymaxnorm: 1e10;
 
-tracktolbeforeeg: 1e-6;
+tracktolbeforeeg: 1e-7;
+tracktolduringeg: 1e-7;
+
+endgamenum: 2;
+numsamplepoints: 5;
+
+endgamebdry: 0.0001;
+
+maxstepsbeforenewton: 0;
+maxnewtonits: 2;
+
+endpointfinitethreshold: 1e8;
+
+maxstepsize: 0.05;
 
 END;
 

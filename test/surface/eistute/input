@@ -3,6 +3,20 @@ CONFIG
 %finaltol: 1e-6;
 tracktype:1;
 securitylevel: 1;
+endgamebdry: 0.0001;
+
+sharpendigits: 30;
+
+maxnewtonits:1;
+maxstepsbeforenewton: 0;
+
+tracktolbeforeeg: 1e-7;
+tracktolduringeg: 1e-8;
+
+endgamenum: 2;
+
+odepredictor: 6;
+
 END;
 
 INPUT
