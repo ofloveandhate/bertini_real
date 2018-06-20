@@ -11,6 +11,7 @@ odepredictor: 7;
 
 endgamenum: 2;
 numsamplepoints: 5;
+endgamebdry: 0.0001;
 
 securitylevel: 1;
 

@@ -17,13 +17,13 @@ new_face_alpha = alpha_options.blocky;
 new_sample_alpha = alpha_options.refinement;
 
 if br_plotter.options.face_alpha ~= new_face_alpha
-set(br_plotter.handles.faces(:),'FaceAlpha',new_face_alpha);
-br_plotter.options.face_alpha = new_face_alpha;
+	set(br_plotter.handles.faces.raw,'FaceAlpha',new_face_alpha);
+	br_plotter.options.face_alpha = new_face_alpha;
 end
 
 if br_plotter.options.sample_alpha ~= new_sample_alpha
-set(br_plotter.handles.surface_samples(:),'FaceAlpha',new_sample_alpha);
-br_plotter.options.sample_alpha = new_sample_alpha;
+	set(br_plotter.handles.faces.samples,'FaceAlpha',new_sample_alpha);
+	br_plotter.options.sample_alpha = new_sample_alpha;
 end
 
 set(br_plotter.buttons.alpha,'String',sprintf('FaceAlpha'));

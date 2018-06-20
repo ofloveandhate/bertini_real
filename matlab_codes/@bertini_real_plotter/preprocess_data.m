@@ -36,14 +36,16 @@ function preprocess_data(br_plotter)
 			end
 			br_plotter.BRinfo.num_variables = length(br_plotter.options.custom_projection(br_plotter.BRinfo.vertices(1).point(1:br_plotter.BRinfo.num_variables-1)))+1;
 		end
+		
+		br_plotter.BRinfo.var_names = {};
+		for ii = 1:length(br_plotter.BRinfo.vertices(1).point)
+			br_plotter.BRinfo.var_names{ii} = ['proj_' num2str(ii)];
+		end
 	else
 		br_plotter.data.space = br_plotter.data.raw;
 	end
     
-	br_plotter.BRinfo.var_names = {};
-	for ii = 1:length(br_plotter.BRinfo.vertices(1).point)
-		br_plotter.BRinfo.var_names{ii} = ['proj_' num2str(ii)];
-	end
+	
 
 	
 	get_indices(br_plotter);

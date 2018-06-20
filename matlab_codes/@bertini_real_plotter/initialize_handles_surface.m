@@ -1,12 +1,10 @@
 
 
-function intialize_handles_surface(br_plotter)
+function initialize_handles_surface(br_plotter)
 
-br_plotter.handles.faces = [];
+br_plotter.handles.faces.raw = [];
+br_plotter.handles.faces.samples = [];
 br_plotter.handles.face_labels = [];
-
-br_plotter.handles.surface_samples = [];
-
 
 br_plotter.handles.critcurve_labels = [];
 br_plotter.handles.spherecurve_labels = [];

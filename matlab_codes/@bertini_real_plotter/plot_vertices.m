@@ -1,10 +1,6 @@
 function br_plotter = plot_vertices(br_plotter)
 
 
-if ~br_plotter.options.render_vertices
-	return
-end
-
 markersize = br_plotter.options.markersize;
 ind = br_plotter.indices;
 curr_axis = br_plotter.axes.main;

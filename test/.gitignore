@@ -53,6 +53,7 @@ input_surf_sphere
 input_singcurve*
 deflation_input_file
 W_curve
+midpath_*
 
 nullspace_left_output
 nullspace_left_midpath_data

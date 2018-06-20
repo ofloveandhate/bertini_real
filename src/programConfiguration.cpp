@@ -482,15 +482,15 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 				break;
 
 			case 'v':
-				printf("\n BertiniReal(TM) v %s\n\n", VERSION);
+				printf("\n BertiniReal (TM) v %s\n\n", VERSION);
 				exit(0);
 				break;
 
 			case 'h':
 
-				printf("\nBertiniReal(TM) v %s.\n\n", VERSION);
+				printf("\nBertiniReal (TM) v %s.\n\n", VERSION);
 				printf("Online at bertinireal.com\n\n");
-				printf("For immediate support, send email to danielthebrake@gmail.com\n\n");
+				printf("For support, \nfile an issue on Github at github.com/ofloveandhate/bertini_real/issues\n\n");
 				BertiniRealConfig::print_usage();
 				exit(0);
 				break;

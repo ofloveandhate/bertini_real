@@ -17,7 +17,7 @@ new_val = alpha_options.all;
 
 if br_plotter.options.edge_width ~= new_val
 	set(br_plotter.handles.faces(:),'LineWidth',new_val); 
-	set(br_plotter.handles.surface_samples(:),'LineWidth',new_val);
+	set(br_plotter.handles.faces.samples,'LineWidth',new_val);
 	br_plotter.options.edge_width = new_val;
 end
 	

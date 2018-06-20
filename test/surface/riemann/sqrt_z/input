@@ -8,6 +8,8 @@ sharpendigits: 40;
 
 tracktype:1;
 
+endgamebdry: 0.01;
+
 END;
 
 INPUT

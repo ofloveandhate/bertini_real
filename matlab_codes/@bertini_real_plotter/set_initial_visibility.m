@@ -37,7 +37,7 @@ switch br_plotter.dimension
 			br_plotter.switches.display_vertices = 1;
 		end
 		
-		if isempty(br_plotter.handles.surface_samples)
+		if isempty(br_plotter.handles.faces.samples)
 			br_plotter.switches.display_faces = 1;
 			br_plotter.switches.display_face_samples = 0; 
 			
