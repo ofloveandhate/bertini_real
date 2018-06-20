@@ -1,4 +1,4 @@
-% fv_to_stl(src,hndl,fv)
+% fv2stl(src,hndl,fv)
 %
 % writes an fv to .stl file
 %
@@ -10,7 +10,7 @@
 % options.filename = 'asdf.stl'
 %
 
-function fv_to_stl(src,hndl,fv)
+function fv2stl(src,hndl,fv)
 
 if nargin==0
 	error('must pass an fv to this function');
@@ -89,7 +89,9 @@ end %re: remove duplicate points
 
 options.filename = adjust_name(options.filename);
 
-save(sprintf('%s.mat',options.filename),'fv');
+if options.save_mat
+	save(sprintf('%s.mat',options.filename),'fv');
+end
 stlwrite(sprintf('%s.stl',options.filename),fv);
 
 % Fix non-uniform face orientations
@@ -97,7 +99,9 @@ stlwrite(sprintf('%s.stl',options.filename),fv);
 
 if options.align
 	fv_unified = unifyMeshNormals(fv,'alignTo','in');
-	save(sprintf('%s.mat',options.filename),'fv_unified','-append');
+	if options.save_mat
+		save(sprintf('%s.mat',options.filename),'fv_unified','-append');
+	end
 	stlwrite(sprintf('%s_unified.stl',options.filename),fv_unified);
 end
 
@@ -111,6 +115,8 @@ if strcmp(old_name(end-3:end),'.stl')
 else
 	name = old_name;
 end
+
+name = increment_name(name);
 end
 
 %http://www.mathworks.com/matlabcentral/fileexchange/25862-inputsdlg--enhanced-input-dialog-box--v2-0-5-
@@ -166,6 +172,9 @@ formats(3,1).size = [200 0];
 formats(3,1).limits = [0 1];
 default_answers.filename = 'br_surf';
 
+prompt(5,:) = {'save .mat file, too', 'save_mat',''};
+formats(4,1).type = 'check';
+default_answers.save_mat = false;
 
 
 [answer,cancelled] = inputsdlg(prompt,Title,formats,default_answers,options);
