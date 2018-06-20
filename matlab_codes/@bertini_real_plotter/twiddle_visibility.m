@@ -140,13 +140,9 @@ end
 
 %faces
 if br_plotter.switches.display_faces == 0
-	for ii = 1:length(br_plotter.handles.faces)
-		set(br_plotter.handles.faces(ii),'visible','off');
-	end
+	set(br_plotter.handles.faces.raw,'visible','off');
 else
-	for ii = 1:length(br_plotter.handles.faces)
-		set(br_plotter.handles.faces(ii),'visible','on');
-	end
+	set(br_plotter.handles.faces.raw,'visible','on');
 end
 
 

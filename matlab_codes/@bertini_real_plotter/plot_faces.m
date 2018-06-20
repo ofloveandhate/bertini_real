@@ -10,52 +10,43 @@ end
 
 function plot_faces_main(br_plotter)
 
-num_faces = br_plotter.BRinfo.num_faces;
+num_faces = length(br_plotter.options.which_faces);
 ind = br_plotter.indices;
-
+curr_axis = br_plotter.axes.main;
 
 %
 num_total_faces = 0;
 for ii = 1:num_faces
-	curr_face = br_plotter.BRinfo.faces(ii);
-	num_total_faces = num_total_faces + curr_face.num_left + curr_face.num_right + curr_face.top>=0 + curr_face.bottom>=0;
+	curr_face = br_plotter.BRinfo.faces(br_plotter.options.which_faces(ii));
+	num_total_faces = num_total_faces + 2*(curr_face.num_left + curr_face.num_right + 2); %the 2 replaces c(urr_face.top>=0 + curr_face.bottom>=0)
 end
 num_total_faces = num_total_faces*2;
-br_plotter.fv.faces = zeros(num_total_faces, 3);
-curr_face_index = 1;
+br_plotter.fv.faces = nan(num_total_faces, 3);
 
-curr_axis = br_plotter.axes.main;
+
 
 txt = cell(br_plotter.BRinfo.num_faces,1);
 pos = zeros(br_plotter.BRinfo.num_faces,length(ind));
 
 
+face_colors = nan(num_total_faces,3); %used for the default colors
+default_face_colors = br_plotter.options.colormap(num_faces);
 
-by_face_colors = br_plotter.options.colormap(num_faces);
 
-
-local.vertices = br_plotter.data.space.vertices(:,ind);
-
+total_face_index = 1;
 for cc = 1:length(br_plotter.options.which_faces)
 	ii = br_plotter.options.which_faces(cc);
 	if br_plotter.BRinfo.faces(ii).midslice_index == -1
 		continue
 	end
 	
-	num_triangles= 2*(2 + br_plotter.BRinfo.faces(ii).num_left + br_plotter.BRinfo.faces(ii).num_right);
-	
-	local.faces = zeros(num_triangles,3); %overwrite
-	
-	
 	if br_plotter.options.labels
 		txt{ii} = ['\newline' num2str(ii)];
 		pos(ii,:) = br_plotter.data.space.vertices(br_plotter.BRinfo.faces(ii).midpoint,ind);
 	end
 	
-
-	pass = 1; left_edge_counter = 1;  right_edge_counter = 1;
 	
-	local_face_index = 1;
+	pass = 1; left_edge_counter = 1;  right_edge_counter = 1;
 	
 	while 1
 		
@@ -156,64 +147,56 @@ for cc = 1:length(br_plotter.options.which_faces)
 				
 		end
 		
+		t1 = [curr_edge(1) curr_edge(2) br_plotter.BRinfo.faces(ii).midpoint];
+		t2 = [curr_edge(2) curr_edge(3) br_plotter.BRinfo.faces(ii).midpoint];
 		
-		local.faces(local_face_index,:) = [curr_edge(1) curr_edge(2) br_plotter.BRinfo.faces(ii).midpoint];
-		local.faces(local_face_index+1,:) = [curr_edge(2) curr_edge(3) br_plotter.BRinfo.faces(ii).midpoint];
-		local_face_index = local_face_index+2;
+		br_plotter.fv.faces(total_face_index,:) = t1;
+		br_plotter.fv.faces(total_face_index+1,:) = t2;
 		
-		br_plotter.fv.faces(curr_face_index,:) = [curr_edge(1) curr_edge(2) br_plotter.BRinfo.faces(ii).midpoint];
-		br_plotter.fv.faces(curr_face_index+1,:) = [curr_edge(2) curr_edge(3) br_plotter.BRinfo.faces(ii).midpoint];
-		curr_face_index = curr_face_index+2;
-	end
-	
-	
-	% trim the fat
-	local.faces = local.faces(1:local_face_index-1,:);
-
-	try
 		if br_plotter.options.monocolor
-			% the mono color has a bug.  this is called once per face, but
-			% this should be done only once.  fix it. 20180614
-			br_plotter.handles.faces(end+1) = patch(br_plotter.fv,...
-				'FaceColor',br_plotter.options.monocolor_color,...
-				'FaceAlpha',br_plotter.options.face_alpha,...
-				'EdgeColor',br_plotter.options.monocolor_color,...
-				'EdgeAlpha',br_plotter.options.raw_triangulation_alpha,...
-				'LineWidth',br_plotter.options.edge_width,...
-				'Parent',curr_axis);
-			
-		elseif br_plotter.options.use_colorfn
-			br_plotter.handles.faces(end+1) = patch(local,...
-				'FaceVertexCData', br_plotter.data.color.vertices, ...
-				'FaceColor', 'interp',...
-				'FaceAlpha',br_plotter.options.face_alpha,...
-				'EdgeColor','interp',...
-				'EdgeAlpha',br_plotter.options.raw_triangulation_alpha,...
-				'LineWidth',br_plotter.options.edge_width,...
-				'Parent',curr_axis);
-
-			
-		else
-			br_plotter.handles.faces(end+1) = patch(local,...
-				'FaceColor',by_face_colors(ii,:),...
-				'FaceAlpha',br_plotter.options.face_alpha,...
-				'EdgeColor',by_face_colors(ii,:),...
-				'EdgeAlpha',br_plotter.options.raw_triangulation_alpha,...
-				'LineWidth',br_plotter.options.edge_width,...
-				'Parent',curr_axis);
+			face_colors(total_face_index:total_face_index+1,:) = repmat(br_plotter.options.monocolor_color,[2,1]);
+		elseif ~br_plotter.options.use_colorfn
+			face_colors(total_face_index:total_face_index+1,:) = repmat(default_face_colors(ii,:),[2,1]);
 		end
-
-	catch ME
-		disp(ME.identifier)
-		ii
-		local_face_index
-		local.faces
-		pause
+		
+		total_face_index = total_face_index+2;
 	end
-	
-	
 	
 end
+
+size(face_colors)
+size(br_plotter.fv.faces)
+size(br_plotter.fv.vertices)
+
+
+if br_plotter.options.monocolor
+	h = patch(br_plotter.fv,...
+		'FaceColor',br_plotter.options.monocolor_color,...
+		'FaceAlpha',br_plotter.options.face_alpha,...
+		'EdgeColor',br_plotter.options.monocolor_color,...
+		'EdgeAlpha',br_plotter.options.raw_triangulation_alpha,...
+		'LineWidth',br_plotter.options.edge_width,...
+		'Parent',curr_axis);
+elseif br_plotter.options.use_colorfn
+	h = patch(br_plotter.fv,...
+		'FaceVertexCData', br_plotter.data.color.vertices, ...
+		'FaceColor', 'interp',...
+		'FaceAlpha',br_plotter.options.face_alpha,...
+		'EdgeColor','interp',...
+		'EdgeAlpha',br_plotter.options.raw_triangulation_alpha,...
+		'LineWidth',br_plotter.options.edge_width,...
+		'Parent',curr_axis);
+else
+	h = patch(br_plotter.fv,...
+		'FaceVertexCData',face_colors,...
+		'FaceColor','flat',...
+		'FaceAlpha',br_plotter.options.face_alpha,...% 		
+		'EdgeAlpha',br_plotter.options.raw_triangulation_alpha,...
+		'LineWidth',br_plotter.options.edge_width,...
+		'Parent',curr_axis);
+end
+br_plotter.handles.faces.raw = h;
+
 
 
 if br_plotter.options.labels
