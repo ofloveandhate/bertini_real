@@ -164,11 +164,6 @@ for cc = 1:length(br_plotter.options.which_faces)
 	
 end
 
-size(face_colors)
-size(br_plotter.fv.faces)
-size(br_plotter.fv.vertices)
-
-
 if br_plotter.options.monocolor
 	h = patch(br_plotter.fv,...
 		'FaceColor',br_plotter.options.monocolor_color,...
