@@ -9,8 +9,8 @@
 % minorsize -- the size of the minors of which you take the determinant,
 % when adding more functions to the system to deflate
 %
-% dani brake
-% 2017
+% danielle brake
+% 2017 - 2018
 
 function deflate_no_subst(filename,defl_iteration, minorsize, degrees, OutputName)
 

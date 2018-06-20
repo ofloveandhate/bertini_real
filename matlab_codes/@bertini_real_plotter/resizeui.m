@@ -2,8 +2,8 @@
 %
 % keeps things looking nice as the window is resized.
 %
-% dani brake
-% danielthebrake@gmail.com
+% danielle brake
+% danielleamethystbrake@gmail.com
 % 2014-2016
 
 function resizeui(br_plotter,srcHandle,eventData,varargin)
