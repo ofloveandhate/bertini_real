@@ -57,14 +57,10 @@ function [] = surface_refinement_twiddle(br_plotter)
 
 
 %faces
-if br_plotter.switches.display_face_samples == 0
-	for ii = 1:length(br_plotter.handles.surface_samples)
-		set(br_plotter.handles.surface_samples(ii),'visible','off');
-	end
+if br_plotter.switches.display_face_samples
+	set(br_plotter.handles.faces.samples,'visible','on');
 else
-	for ii = 1:length(br_plotter.handles.surface_samples)
-		set(br_plotter.handles.surface_samples(ii),'visible','on');
-	end
+	set(br_plotter.handles.faces.samples,'visible','off');
 end
 
 

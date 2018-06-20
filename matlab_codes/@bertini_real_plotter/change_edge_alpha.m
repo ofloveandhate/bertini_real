@@ -22,7 +22,7 @@ if br_plotter.options.raw_triangulation_alpha ~= new_raw_alpha
 end
 
 if br_plotter.options.sample_triangulation_alpha ~= new_sample_alpha
-set(br_plotter.handles.surface_samples(:),'EdgeAlpha',new_sample_alpha);
+set(br_plotter.handles.faces.samples(:),'EdgeAlpha',new_sample_alpha);
 br_plotter.options.sample_triangulation_alpha = new_sample_alpha;
 end
 	

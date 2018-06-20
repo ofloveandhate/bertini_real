@@ -22,7 +22,7 @@ if br_plotter.options.face_alpha ~= new_face_alpha
 end
 
 if br_plotter.options.sample_alpha ~= new_sample_alpha
-	set(br_plotter.handles.surface_samples(:),'FaceAlpha',new_sample_alpha);
+	set(br_plotter.handles.faces.samples,'FaceAlpha',new_sample_alpha);
 	br_plotter.options.sample_alpha = new_sample_alpha;
 end
 
