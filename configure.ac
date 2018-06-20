@@ -3,8 +3,8 @@
 
 
 
-#we're building bertini_real, version 1.6.0, and the corresponding email is dani brake's
-AC_INIT([bertini_real], [1.6.0], [danielthebrake@gmail.com],[bertini_real], [http://www.danielthebrake.org/])
+#we're building bertini_real, version 1.6.0, and the corresponding email is danielle brake's
+AC_INIT([bertini_real], [1.6.0], [danielleamethystbrake@gmail.com],[bertini_real], [http://www.danibrake.org/])
 
 
 # Force autoconf to be at least this version number:
