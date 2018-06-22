@@ -93,7 +93,7 @@ curr_y = 0;
 
 
 vertical_size = br_plotter.window(4);
-set(br_plotter.panels.restore,'position',[horiz_pad    vertical_size-curr_y-vert_spacing-2     width+2*horiz_pad+2    curr_y+vert_spacing+2]);
+set(br_plotter.panels.restore,'position',[horiz_pad    vert_spacing     width+2*horiz_pad+2    curr_y+vert_spacing+2]);
 
 end
 
