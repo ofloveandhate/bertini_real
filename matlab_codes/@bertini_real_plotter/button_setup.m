@@ -27,7 +27,7 @@ curr_y = 0;
 
 
 if br_plotter.options.render_faces
-	[curr_y, br_plotter.buttons.stl] = make_button('Save to STL', {@fv_to_stl,br_plotter.fv}, horiz_pad, vert_spacing, curr_y, br_plotter.panels.buttons, height, width);
+	[curr_y, br_plotter.buttons.stl] = make_button('Save to STL', {@fv2stl,br_plotter.fv}, horiz_pad, vert_spacing, curr_y, br_plotter.panels.buttons, height, width);
 end
 
 % a little space
