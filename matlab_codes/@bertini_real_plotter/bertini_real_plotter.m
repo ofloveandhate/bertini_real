@@ -361,7 +361,7 @@ classdef bertini_real_plotter < handle
 			
 		end
 		
-		function hide_panels(br_plotter)
+		function hide_panels(br_plotter,varargin)
 			f = fieldnames(br_plotter.panels);
 
 			for ii = 1:length(f)
@@ -372,17 +372,40 @@ classdef bertini_real_plotter < handle
 		end
 		
 		
-		function show_panels(br_plotter)
+		function show_panels(br_plotter,varargin)
 			f = fieldnames(br_plotter.panels);
 
 			for ii = 1:length(f)
 				set( findall(br_plotter.panels.(f{ii}), '-property', 'visible'), 'visible', 'on')
 				set(br_plotter.panels.(f{ii}),'visible','on');
-
 			end
+			
+			hide_restore_panel(br_plotter)
 		end
 		
 		
+		function minimize_panels(br_plotter,varargin)
+			f = fieldnames(br_plotter.panels);
+
+			for ii = 1:length(f)
+				set( findall(br_plotter.panels.(f{ii}), '-property', 'visible'), 'visible', 'off')
+				set(br_plotter.panels.(f{ii}),'visible','off');
+			end
+			
+			br_plotter.show_restore_panel()
+		end
+		
+		
+		function show_restore_panel(br_plotter,varargin)
+			set( findall(br_plotter.panels.restore, '-property', 'visible'), 'visible', 'on')
+			set(br_plotter.panels.restore,'visible','on');
+		end
+		
+		
+		function hide_restore_panel(br_plotter,varargin)
+			set( findall(br_plotter.panels.restore, '-property', 'visible'), 'visible', 'off')
+			set(br_plotter.panels.restore,'visible','off');
+		end
 		
 		
 		% declared headers for functions in other files.
