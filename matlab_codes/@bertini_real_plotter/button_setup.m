@@ -91,8 +91,6 @@ curr_y = 0;
 
 [curr_y, br_plotter.buttons.restore] = make_button('Restore Tools', {@br_plotter.show_panels}, horiz_pad, vert_spacing, curr_y, br_plotter.panels.restore, height, width);
 
-
-vertical_size = br_plotter.window(4);
 set(br_plotter.panels.restore,'position',[horiz_pad    vert_spacing     width+2*horiz_pad+2    curr_y+vert_spacing+2]);
 
 end
