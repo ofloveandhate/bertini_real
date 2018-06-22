@@ -1,0 +1,73 @@
+% input file for "a projective surface of degree eight with 168 nodes"
+% by 
+% S. Endraﬂ
+% 
+% avail from the arxiv at https://arxiv.org/pdf/alg-geom/9507011.pdf
+
+
+CONFIG
+
+tracktype: 1;
+
+randomseed: 1234;
+
+odepredictor: 8;
+
+condnumthreshold: 1e300;
+
+endpointfinitethreshold: 1e10;
+pathtruncationthreshold: 1e10;
+
+securitylevel: 1;
+
+tracktolbeforeeg: 1e-8;
+tracktolduringeg: 1e-8;
+finaltol: 1e-11;
+sharpendigits: 30;
+
+endgamenum: 2;
+numsamplepoints: 5;
+
+maxnewtonits: 1;
+maxstepsbeforenewton: 0;
+
+maxnumsteps: 100000;
+
+endgamebdry: 0.0001;
+
+
+END;
+
+
+INPUT
+
+
+variable_group x,y,z;
+function f;
+constant w;
+w = 1;
+
+
+
+rt2 = 2^(1/2);
+w_2 = w^2;
+x_2 = x^2;
+y_2 = y^2;
+z_2 = z^2;
+
+f = 
+64*(x_2-w_2)*(y_2-w_2)*((x + y)^2 - 2*w_2)*
+	((x-y)^2-2*w_2)
+-
+( %square bracket
+	-4*
+	(1 + rt2)*(x_2+y_2)^2+
+8*(2 + rt2)*z_2 + 2*(2 + 7 * rt2)*w_2*(x_2 + y_2)
+-16 *z^4 + 8*(1 - 2*rt2)*z_2*w_2 -(1 + 12 *rt2)*w_2^2
+) %close square bracket
+^2;
+%implicit =0
+
+
+
+END;
