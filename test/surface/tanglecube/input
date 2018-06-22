@@ -1,0 +1,48 @@
+% The Tanglecube
+% 
+%
+%
+%
+%
+% contributed by 
+%
+% Maggie Regan
+% University of Notre Dame
+% Applied and Computational Mathematics and Statistics
+% 2018
+
+
+CONFIG
+tracktype: 1;
+
+randomseed: 1234;
+
+odepredictor: 6;
+
+condnumthreshold: 1e300;
+
+endpointfinitethreshold: 1e10;
+pathtruncationthreshold: 1e10;
+
+securitylevel: 1;
+
+tracktolbeforeeg: 1e-8;
+tracktolduringeg: 1e-8;
+finaltol: 1e-11;
+sharpendigits: 30;
+
+endgamenum: 2;
+numsamplepoints: 5;
+
+maxnewtonits: 1;
+maxstepsbeforenewton: 0;
+
+endgamebdry: 0.001;
+
+END;
+
+INPUT
+variable_group x, y, z;
+function f1;
+f1 = x^4-5*x^2+y^4-5*y^2+z^4-5*z^2+11.8;
+END;
