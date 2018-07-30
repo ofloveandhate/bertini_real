@@ -1323,7 +1323,7 @@ void Surface::compute_slices(const WitnessSet W_surf,
 	for (int ii=0; ii<projection_values_downstairs->size; ii++){
 
 		if (program_options.verbose_level()>=0) {
-			std::cout << color::magenta() << "decomposing " << kindofslice << " slice " << ii << " of " << projection_values_downstairs->size << color::console_default() << std::endl;
+			std::cout << color::magenta() << "decomposing " << kindofslice << "slice " << ii << " of " << projection_values_downstairs->size << color::console_default() << std::endl;
 			print_comp_matlab(&projection_values_downstairs->coord[ii], "target_proj");
 		}
 
