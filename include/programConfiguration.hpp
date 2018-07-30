@@ -956,8 +956,10 @@ public:
  and maybe others.
 
  \param filename the name of the file to parse.
+
+ \return random seed
  */
-void parse_input_file(boost::filesystem::path filename);
+unsigned int parse_input_file(boost::filesystem::path filename);
 
 /**
  \brief splits the bertini input file into several files for later use.
@@ -975,9 +977,11 @@ void parse_input_file(boost::filesystem::path filename);
 
  \param filename the name of the file to parse.
  \param MPType a set-integer by pointer, this function splits the file and gets the MPType
+
+ \return random seed
  */
 
-void parse_input_file(boost::filesystem::path filename, int * MPType);
+unsigned int parse_input_file(boost::filesystem::path filename, int * MPType);
 
 
 /**
