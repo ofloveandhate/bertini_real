@@ -277,11 +277,7 @@ int Curve::get_sphere_intersection_pts(WitnessSet *W_additional,
 
 
 
-	int blabla;
-
-
-
-	parse_input_file(W_curve.input_filename(), &blabla);
+	parse_input_file(W_curve.input_filename());
 	preproc_data_clear(&solve_options.PPD); // ugh this sucks
 	parse_preproc_data("preproc_data", &solve_options.PPD);
 
@@ -766,7 +762,8 @@ void Curve::ConnectTheDots(
     solve_options.use_gamma_trick = 0;
 
 	for (decltype(num_midpoints) ii=0; ii<num_midpoints; ++ii) {
-		std::cout << color::brown() << "connecting midpoint downstairs, " << ii << " of " << num_midpoints << color::console_default() << std::endl;
+		if (program_options.verbose_level()>=-1)
+			std::cout << color::brown() << "connecting midpoint downstairs, " << ii << " of " << num_midpoints << color::console_default() << std::endl;
 
         cycle_nums_left.clear();
 		cycle_nums_right.clear();
@@ -946,7 +943,7 @@ void Curve::ConnectTheDots(
 						if (W_single_left.num_points()==0)
 						{
 							c1.resize(0);
-							std::cout << "tracking left yielded a non-real point\n";
+							std::cout << color::red() << "tracking left yielded a non-real point\n" << color::console_default();
 						}
 					}
 
@@ -977,7 +974,7 @@ void Curve::ConnectTheDots(
 						if (W_single_right.num_points()==0)
 						{
 							c2.resize(0);
-							std::cout << "tracking right yielded a non-real point\n";
+							std::cout << color::red() << "tracking right yielded a non-real point\n" << color::console_default();
 						}
 					}
 
@@ -1074,7 +1071,8 @@ void Curve::ConnectTheDots(
 
 			if (program_options.verbose_level()>=2) {
 				printf("done connecting upstairs midpoint %d (downstairs midpoint %lu)\n",kk,ii);
-				std::cout << "constructed edge: " << temp_edge << std::endl << std::endl;;
+				if (program_options.verbose_level()>=1)
+					std::cout << "constructed edge: " << temp_edge << std::endl << std::endl;;
 			}
 		}
 		Wleft.reset();
@@ -1271,7 +1269,7 @@ void Curve::Merge(WitnessSet & W_midpt,
 		fillme.get_noninfinite_w_mult_full(W_temp); // should be ordered
 
 		if (W_temp.num_points()==0) {
-			std::cout << "merging multilin solver returned NO POINTS!!!" << std::endl;
+			std::cout << color::red() << "merging multilin solver returned NO POINTS!!!" << std::endl << color::console_default();
 			continue;
 //TODO:  IMMEDIATELY, insert some catch code for when this returns 0 points.
 		}
@@ -1491,7 +1489,7 @@ int verify_projection_ok(const WitnessSet & W,
 
 	if ( d_abs_mp(determinant) < 1e-2){
 		invalid_flag = 0;
-		std::cout << d_abs_mp(determinant) << "\n";
+		std::cout << color::red() << "determinant test revealed that your projection is probably inappropriate, and you should choose another one.\n" << d_abs_mp(determinant) << "\n" << color::console_default();
 		print_matrix_to_screen_matlab(ED.Jv,"Jv");
 		print_matrix_to_screen_matlab(detme,"detme");
 	}
@@ -2058,7 +2056,7 @@ int Curve::ProjectionIntervalIndex(int edge_index, const VertexSet & V) const
 	}
 
 	if (minval > 1e-5)
-		std::cout << "returned index for projection interval index is almost certainly wrong\n\n";
+		std::cout << color::red() << "returned index for projection interval index is almost certainly wrong\n\n" << color::console_default();
 
 	clear_mp(temp);
 	return loc;

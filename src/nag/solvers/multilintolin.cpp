@@ -1,8 +1,6 @@
 #include "nag/solvers/multilintolin.hpp"
 
 
-
-
 void multilintolin_eval_data_mp::init()
 {
 	this->is_solution_checker_d = &check_issoln_multilintolin_d;

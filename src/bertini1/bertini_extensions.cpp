@@ -1029,7 +1029,7 @@ void print_point_to_screen_matlab(const vec_d M, std::string name)
 	printf("%s = [...\n",name.c_str());
 	for (int kk = 0; kk < M->size; kk++)
 	{ // print kth coordinate
-		printf(" %.8le+1i*%.8le;\n",M->coord[kk].r,M->coord[kk].i);
+		printf("\t\t%.8le+1i*%.8le;\n",M->coord[kk].r,M->coord[kk].i);
 	}
 	printf("];\n\n");
 }
@@ -1040,6 +1040,7 @@ void print_point_to_screen_matlab(const vec_mp M, std::string name)
 	printf("%s = [...\n",name.c_str());
 	for (int kk = 0; kk < M->size; kk++)
 	{ // print kth coordinate
+		printf("\t\t");
 		mpf_out_str (NULL, 10, 8, M->coord[kk].r);
 		printf("+1i*");
 		mpf_out_str (NULL, 10, 8, M->coord[kk].i);
@@ -1058,6 +1059,7 @@ void print_matrix_to_screen_matlab(const mat_d M, std::string name)
 	printf("%s = [...\n",name.c_str());
 	for (int kk = 0; kk < M->rows; kk++)
 	{ // print kth row
+		printf("\t\t");
 		for (int jj = 0; jj < M->cols; jj++)
 		{
 			printf("%.4le+1i*%.4le ",M->entry[kk][jj].r,M->entry[kk][jj].i );
@@ -1077,6 +1079,7 @@ void print_matrix_to_screen_matlab(const mat_mp M, std::string name)
 	printf("%s = [...\n",name.c_str());
 	for (int kk = 0; kk < M->rows; kk++)
 	{ // print kth row
+		printf("\t\t");
 		for (int jj = 0; jj < M->cols; jj++)
 		{
 
