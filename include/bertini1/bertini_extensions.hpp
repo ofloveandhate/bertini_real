@@ -330,6 +330,13 @@ int isSamePoint_homogeneous_input(const point_mp left, const point_mp right, dou
 
 
 /**
+\brief Scale a point to fit a patch.  assumes the patch was written so that dot(point,patch) = 1.
+
+*/
+void RescaleToPatch(vec_mp point, const vec_mp patch);
+
+
+/**
  \brief thresholds a number \f$x\f$ so that if \f$|Im{x}|<\eps \f$, we set \f$Im(x) = 0\f$.
 
  \param blabla the input AND output value.  it changes the input directly.

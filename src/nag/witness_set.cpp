@@ -307,37 +307,40 @@ void WitnessSet::print_to_screen() const
 		dehomogenize(&dehom, point(ii), num_natty_vars_);
 
 		varname << "point_" << ii;
-
+		// print_point_to_screen_matlab(point(ii),varname.str());
 		print_point_to_screen_matlab(dehom,varname.str());
 		varname.str("");
 	}
 	std::cout << color::console_default();
 
-	// std::cout << color::blue();
-	// printf("******\n%zu linears\n******\n",num_linears());
+	if (1)
+	{
+		std::cout << color::blue();
+		printf("******\n%zu linears\n******\n",num_linears());
 
-	// for (unsigned ii=0; ii<num_linears(); ii++) {
-	// 	varname << "linear_" << ii;
-	// 	print_point_to_screen_matlab(linear(ii),varname.str());
-	// 	varname.str("");
-	// }
-	// std::cout << color::console_default();
+		for (unsigned ii=0; ii<num_linears(); ii++) {
+			varname << "linear_" << ii;
+			print_point_to_screen_matlab(linear(ii),varname.str());
+			varname.str("");
+		}
+		std::cout << color::console_default();
 
-	// std::cout << color::cyan();
-	// printf("******\n%zu patches\n******\n",num_patches());
+		std::cout << color::cyan();
+		printf("******\n%zu patches\n******\n",num_patches());
 
-	// for (unsigned ii=0; ii<num_patches(); ii++) {
-	// 	varname << "patch_" << ii;
-	// 	print_point_to_screen_matlab(patch(ii),varname.str());
-	// 	varname.str("");
-	// }
-	// std::cout << color::console_default();
+		for (unsigned ii=0; ii<num_patches(); ii++) {
+			varname << "patch_" << ii;
+			print_point_to_screen_matlab(patch(ii),varname.str());
+			varname.str("");
+		}
+		std::cout << color::console_default();
 
-	// std::cout << "variable names:\n";
-	// for (unsigned ii=0; ii< num_var_names(); ii++) {
-	// 	std::cout << name(ii) << "\n";
-	// }
-	// printf("\n\n");
+		std::cout << "variable names:\n";
+		for (unsigned ii=0; ii< num_var_names(); ii++) {
+			std::cout << name(ii) << "\n";
+		}
+		printf("\n\n");
+	}
 
 
 	clear_vec_mp(dehom);
@@ -745,6 +748,17 @@ void WitnessSet::Realify(double tol)
 		RealifyPoint(ii, tol);
 	}
 }
+
+
+void WitnessSet::RescaleToPatch(vec_mp patch)
+{
+	for (unsigned int ii=0; ii<num_points(); ++ii)
+		::RescaleToPatch(this->point(ii), patch);
+
+	this->reset_patches();
+	this->add_patch(patch);
+}
+
 
 void WitnessSet::merge(const WitnessSet & W_in, tracker_config_t * T)
 {

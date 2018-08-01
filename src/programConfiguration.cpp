@@ -314,7 +314,7 @@ int BertiniRealConfig::startup()
 	return 0;
 }
 
-void BertiniRealConfig::splash_screen()
+void BertiniRealConfig::splash_screen() const
 {
 	printf("\n BertiniReal(TM) v%s\n\n", VERSION);
 	printf(" D.A. Brake with\n D.J. Bates, W. Hao, J.D. Hauenstein,\n A.J. Sommese, C.W. Wampler\n\n");
@@ -332,7 +332,7 @@ void BertiniRealConfig::splash_screen()
 
 
 
-void BertiniRealConfig::display_current_options()
+void BertiniRealConfig::display_current_options() const
 {
 	std::cout << "current options:\n\n";
 
@@ -397,6 +397,7 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 			{"nomerge",no_argument,0,'m'}, {"nm",no_argument,0,'m'},
 			{"projection",required_argument,0, 'p'}, {"p",required_argument,0, 'p'}, {"pi",	required_argument,0,'p'},
 			{"sphere",required_argument, 0, 'S'}, {"s",required_argument, 0, 'S'},
+			{"patch",required_argument, 0, 'A'},
 			{"input",required_argument,	0, 'i'}, {"i",required_argument, 0, 'i'},
 			{"quick",no_argument,0,'q'}, {"q",no_argument,0,'Q'},
 			{"veryquick",no_argument,0,'q'}, {"vq",no_argument,0,'Q'},
@@ -415,7 +416,7 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
 
-		choice = getopt_long_only (argc, argv, "d:c:Dg:V:o:smp:S:i:qvhM:E:P:tTe:w", // if followed by colon, requires option.  two colons is optional
+		choice = getopt_long_only (argc, argv, "d:c:Dg:V:o:smp:S:i:rvhM:E:P:tTe:wA:", // if followed by colon, requires option.  two colons is optional
 								   long_options, &option_index);
 
 		/* Detect the end of the options. */
@@ -462,7 +463,10 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 				projection_filename_ = boost::filesystem::absolute(optarg);
 				break;
 
-
+			case 'A':
+				user_patch(true);
+				patch_filename_ = boost::filesystem::absolute(optarg);
+				break;
 
 			case 'S':
 				user_sphere(true);
@@ -614,7 +618,7 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 }
 
 
-void BertiniRealConfig::print_usage()
+void BertiniRealConfig::print_usage() const
 {
 	int opt_w = 20;
 	int type_w = 11;
@@ -634,6 +638,7 @@ void BertiniRealConfig::print_usage()
 	line("-v -version", 		" -- ", 	" ", "get version number");
 	line("-h -help", 			" --", 		" ", "print this help menu");
 	line("-sphere -b", 			"string", 	" -- ", "name of sphere file");
+	line("-patch", 				"string", 	" -- ", "name of patch file");
 	line("-q -quick", 			" -- ", 	" ", "speed up computation, but get worse results, probably");
 	line("-debug", 				" -- ", 	" ", "make bertini_real wait 30 seconds for you to attach a debugger");
 	line("-symengine -E", 		"string", 	"matlab", "select a symbolic engine.  choices are 'matlab' and 'python'");
@@ -660,6 +665,9 @@ void BertiniRealConfig::init()
 	projection_filename_ = "";
 
 	orthogonal_projection_ = true;
+
+	user_patch_ = false;
+	patch_filename_ = "";
 
 	user_sphere_ = false;
 	bounding_sphere_filename_ = "";
@@ -704,7 +712,7 @@ void BertiniRealConfig::init()
 
 
 void get_projection(vec_mp *pi,
-					BertiniRealConfig program_options,
+					BertiniRealConfig const& program_options,
 					int num_vars,
 					int num_projections)
 {
@@ -769,3 +777,49 @@ void get_projection(vec_mp *pi,
 
 	return;
 }
+
+
+
+void get_patch(vec_mp *patch,
+					BertiniRealConfig const& program_options,
+					int num_vars)
+{
+	int num_patches = 1;
+
+	for (int ii=0; ii<num_patches; ii++) {
+		change_size_vec_mp(patch[ii], num_vars);  patch[ii]->size = num_vars;
+	}
+
+
+
+	//assumes the vector patch is already initialized
+	if (program_options.user_patch()) {
+		FILE *IN = safe_fopen_read(program_options.patch_filename()); // we are already assured this file exists, but safe fopen anyway.
+		int tmp_num_vars;
+		fscanf(IN,"%d",&tmp_num_vars); scanRestOfLine(IN);
+		if (tmp_num_vars!=num_vars-1) {
+			printf("the number of variables declared in the patch\nis not equal to the number of homogenized variables in the problem (#affine +1)\n");
+			printf("please modify file to have %d real coordinates, one per line.\n(imaginary part will be ignored if provided).\n",num_vars);
+			abort();
+		}
+
+		for (int ii=0; ii<num_patches; ii++) {
+			for (int jj=0; jj<num_vars; jj++) {
+				set_zero_mp(&patch[ii]->coord[jj]);
+				mpf_inp_str(patch[ii]->coord[jj].r, IN, 10);
+				scanRestOfLine(IN);
+			}
+		}
+		fclose(IN);
+	}
+	else{
+		for (int ii=0; ii<num_patches; ii++) {
+			// set_zero_mp(&patch[ii]->coord[0]);
+			for (int jj=0; jj<num_vars; jj++)
+				get_comp_rand_real_mp(&patch[ii]->coord[jj]);
+
+		}
+
+	}
+}
+

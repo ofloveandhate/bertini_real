@@ -957,6 +957,22 @@ int isSamePoint_homogeneous_input(const point_mp left, const point_mp right, dou
 }
 
 
+void RescaleToPatch(vec_mp point, const vec_mp patch)
+{
+	if (point->size!=patch->size)
+	{
+		std::stringstream err;
+		err << "incompatible sizes in RescaleToPatch " << point->size << " != " << patch->size;
+		throw std::runtime_error(err.str());
+	}
+	comp_mp temp; init_mp(temp);
+	dot_product_mp(temp, point, patch);
+	for (int ii=0; ii<point->size; ++ii)
+		div_mp(&(point->coord[ii]), &(point->coord[ii]), temp);
+
+	clear_mp(temp);
+}
+
 
 void real_threshold(comp_mp blabla, double threshold)
 {

@@ -67,12 +67,22 @@ int UbermasterProcess::main_loop()
 	W.set_input_filename(program_options.input_filename());
 
 
+	vec_mp* patch = (vec_mp *) br_malloc(1*sizeof(vec_mp));
+    init_vec_mp2(*patch, W.num_variables(), solve_options.T.AMP_max_prec)
+	get_patch(patch, program_options, W.num_variables());
+
+	W.RescaleToPatch(*patch);
+
+
 
 
 	if (program_options.verbose_level()>=1) {
 		W.print_to_screen();
 	}
 
+
+
+	W.print_to_file("W_rescaled");
 
 
 
@@ -95,6 +105,9 @@ int UbermasterProcess::main_loop()
     for (int ii=0; ii<W.dimension(); ii++) {
         V.add_projection(pi[ii]);
     }
+
+
+
 
 
 	if (program_options.primary_mode()==BERTINIREAL) {

@@ -387,7 +387,14 @@ public:
 	*/
 	void Realify(double tol);
 
+	/**
+	\brief Adjust the scale of a witness set to fit the given patch.  
 
+	\throw if the patch's size doesn't match
+
+	\param patch The patch to which to rescale to fit
+	*/
+	void RescaleToPatch(vec_mp patch);
 	/**
 	 \brief read in the witness set from a file, which MUST be formatted correctly.  for details on the format, see this code, or \see print_to_file()
 

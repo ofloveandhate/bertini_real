@@ -379,6 +379,7 @@ void PrintPointTypeMapping(boost::filesystem::path const& filename);
 class BertiniRealConfig : public ProgramConfigBase
 {
 	bool orthogonal_projection_;
+
 	bool compute_cycle_numbers_ = false; ///< whether we should compute cycle numbers for edges and faces
 	bool debugwait_; ///< flag for whether to wait 30 seconds before starting, and print the master process ID to screen.
 	int max_deflations_; ///< the maximum allowable number of deflation iterations before it gives up.
@@ -393,6 +394,8 @@ class BertiniRealConfig : public ProgramConfigBase
 
 	bool user_projection_; ///< indicator for whether to read the projection from a file, rather than randomly choose it.
 
+	bool user_patch_; ///< indicator for whether to read the patch from a file, rather than randomly choose it.
+
 	bool merge_edges_; ///< a mode switch, indicates whether should be merging.
 
 
@@ -403,7 +406,7 @@ class BertiniRealConfig : public ProgramConfigBase
 	boost::filesystem::path bounding_sphere_filename_; ///< name of file to read if user_sphere==true
 	boost::filesystem::path projection_filename_; ///name of file to read if user_projection==true
 	boost::filesystem::path input_filename_; ///< name of the input file to read -- by default it's "input"
-
+	boost::filesystem::path patch_filename_; ///name of file to read if user_projection==true
 	boost::filesystem::path input_deflated_filename_; ///< the name of the file post-deflation
 
 
@@ -495,6 +498,15 @@ public:
 	 */
 	boost::filesystem::path projection_filename() const{
 		return projection_filename_;
+	}
+
+	/**
+	 get the path to the patch file.
+
+	 \return the path to the patch file.
+	 */
+	boost::filesystem::path patch_filename() const{
+		return patch_filename_;
 	}
 
 	/**
@@ -638,7 +650,7 @@ public:
 	 \brief whether to read projection from file.
 	 \return whether to read the projection from a user-created and specified file.
 	 */
-	bool user_projection()
+	bool user_projection() const
 	{
 		return user_projection_;
 	}
@@ -654,10 +666,29 @@ public:
 
 
 	/**
+	 \brief whether to read patch from file.
+	 \return whether to read the patch from a user-created and specified file.
+	 */
+	bool user_patch() const
+	{
+		return user_patch_;
+	}
+	
+	/**
+	 \brief set whether to read patch from file.
+	 \param new_val whether to read the patch from a user-created and specified file.
+	 */
+	void user_patch(bool new_val)
+	{
+		user_patch_ = new_val;
+	}
+
+
+	/**
 	 \brief whether to read sphere parameters from file.
 	 \return whether to read the sphere parameters from a user-created and specified file.
 	 */
-	bool user_sphere()
+	bool user_sphere() const
 	{
 		return user_sphere_;
 	}
@@ -677,7 +708,7 @@ public:
 	 \brief get the level of quick.  higher == faster (less robust)
 	 \return the level of quickness
 	 */
-	int quick_run()
+	int quick_run() const
 	{
 		return quick_run_;
 	}
@@ -786,7 +817,7 @@ public:
 	 get whether should use orthogonal projection.  default is yes
 	 \return whether we are using an orthogonal projection.  default internally is yes.
 	 */
-	bool orthogonal_projection()
+	bool orthogonal_projection() const
 	{
 		return orthogonal_projection_;
 	}
@@ -815,7 +846,7 @@ public:
 
 	/**
 	 \brief  display options to user. */
-	void print_usage();
+	void print_usage() const;
 
 
 	/**
@@ -841,11 +872,11 @@ public:
 
 	/**
 	 \brief displays the bertini_real splash screen */
-	void splash_screen();
+	void splash_screen() const;
 
 	/**
 	 \brief prints the current configuration to the screen, and pauses. */
-	void display_current_options();
+	void display_current_options() const;
 
 
 	BertiniRealConfig() : ProgramConfigBase()
@@ -1007,11 +1038,24 @@ void parse_preproc_data(boost::filesystem::path filename, preproc_data *PPD);
  \param num_projections how many proj vectors to set up.  again, these must already be allocated outside this call.
  */
 void get_projection(vec_mp *pi,
-					BertiniRealConfig program_options,
+					BertiniRealConfig const& program_options,
 					int num_vars,
 					int num_projections);
 
 
+
+/**
+ \brief reads in patch from file if user specified, creates one otherwise.
+
+ currently defaults to create a random real patch;
+
+ \param patch the patch vectors to fill.  must be initted already, but not necessarily the correct size.
+ \param program_options The current state of Bertini_real.
+ \param num_vars how many variables to set up, including the homogenizing variable.
+ */
+void get_patch(vec_mp *patch,
+					BertiniRealConfig const& program_options,
+					int num_vars);
 
 
 
