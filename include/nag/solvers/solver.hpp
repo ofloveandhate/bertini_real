@@ -1152,6 +1152,7 @@ class SolverConfiguration : public ParallelismConfig
 public:
 
 
+	int path_counter_modulus;
 
 	bool robust; ///< whether to use robust mode
 	tracker_config_t T; ///< the ubiquitous Bertini tracker configuration
@@ -1251,7 +1252,7 @@ public:
 	int increment_num_paths_tracked()
 	{
 		total_num_paths_tracked++;
-		if (verbose_level()>=0 && (total_num_paths_tracked%500)==0 && ParallelismConfig::is_head()) {
+		if (verbose_level()>=0 && (total_num_paths_tracked%path_counter_modulus)==0 && ParallelismConfig::is_head()) {
 			std::cout << "\t\t\t\t\ttracked " << total_num_paths_tracked << " paths total." << std::endl;
 		}
 		return total_num_paths_tracked;
@@ -1320,7 +1321,7 @@ public:
 	}
 
 
-
+	long long num_paths_tracked() const { return total_num_paths_tracked; }
 
 private:
 	long long total_num_paths_tracked;

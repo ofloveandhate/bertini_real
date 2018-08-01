@@ -86,7 +86,7 @@ int main(int argC, char *args[])
 	solve_options.use_midpoint_checker = 0;
 	solve_options.verbose_level(program_options.verbose_level());
 	solve_options.use_gamma_trick = program_options.use_gamma_trick();
-
+	solve_options.robust = program_options.robustness()>=1;
 
 
 

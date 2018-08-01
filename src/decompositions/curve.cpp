@@ -269,11 +269,6 @@ int Curve::get_sphere_intersection_pts(WitnessSet *W_additional,
 
 
 	//build up the start system
-	if (program_options.quick_run()<=1)
-		solve_options.robust = true;
-	else
-		solve_options.robust = false;
-
 
 
 
@@ -477,12 +472,6 @@ int Curve::interslice(const WitnessSet & W_curve,
 	vec_cp_mp(particular_projection,projections[0]);
 
 
-
-
-	if (program_options.quick_run()<=1)
-		solve_options.robust = true;
-	else
-		solve_options.robust = false;
 
 
 
@@ -770,11 +759,6 @@ void Curve::ConnectTheDots(
 
         solve_options.backup_tracker_config("midpoint_connect");
 
-
-        if (program_options.quick_run()<=1)
-			solve_options.robust = true;
-		else
-			solve_options.robust = false;
 
 
 
@@ -1249,11 +1233,6 @@ void Curve::Merge(WitnessSet & W_midpt,
 
 		neg_mp(&particular_projection->coord[0], new_proj_val); // set it in the linear for tracking
 
-
-		if (program_options.quick_run()<=1)
-			solve_options.robust = true;
-		else
-			solve_options.robust = false;
 
 
 

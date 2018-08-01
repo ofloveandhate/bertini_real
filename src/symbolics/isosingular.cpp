@@ -87,6 +87,8 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
 
 	if (success)
 	{ // print deflation sequence
+		if (program_options.verbose_level()>=0)
+		{
 		printf("\nIsosingular deflation was successful!\n\n");
 		printf("Number of deflations: %d\n", *num_deflations);
 		printf("Deflation sequence: ");
@@ -94,6 +96,8 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
 			printf("%d, ", (*deflation_sequence)[ii]);
 		printf("%d, ...\n\n", (*deflation_sequence)[*num_deflations]);
 
+		std::cout << "Deflated system printed to '" << output_name.string() << "'." << std::endl << std::endl;
+		}
 
 		// create deflated system
 
@@ -111,7 +115,7 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
 		fprintf(OUT, "END;\n\n");
 		fclose(OUT);
 
-		std::cout << "Deflated system printed to '" << output_name.string() << "'." << std::endl << std::endl;
+		
 
 	}
 	else if (*num_deflations >= max_deflations)

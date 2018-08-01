@@ -299,7 +299,7 @@ void Surface::main(VertexSet & V,
 
 
 	if (program_options.verbose_level()>=-1) {
-		std::cout << color::bold('k') << "\n\n decomposed surface has " << num_faces() << " faces\n\n" << color::console_default();
+		std::cout << color::green() << "\n\n decomposed surface has " << num_faces() << " faces\n\n" << color::console_default();
 	}
 
 
@@ -799,7 +799,7 @@ void Surface::deflate_and_split(std::map< SingularObjectMetadata, WitnessSet > &
 	if (program_options.verbose_level()>=-1)
 		std::cout << "deflated sets characterized by:\n";
 		for (auto iter = split_sets.begin(); iter!=split_sets.end(); ++iter) {
-			std::cout << "\tmultiplicity " << iter->first.multiplicity() << " " << iter->first.index() << std::endl;
+			std::cout << "\tmultiplicity " << iter->first.multiplicity() << std::endl;
 		}
 
 }
@@ -1080,7 +1080,6 @@ void Surface::compute_sphere_witness_set(const WitnessSet & W_surf,
 	}
 
 	//build up the start system
-	solve_options.robust = true;
 	solve_options.use_gamma_trick = 0;
 
 	int blabla;
@@ -1367,11 +1366,6 @@ void Surface::compute_slices(const WitnessSet W_surf,
 		}
 
 
-
-		if (program_options.quick_run()<=1)
-			solve_options.robust = true;
-		else
-			solve_options.robust = false;
 
 
 
@@ -1682,7 +1676,6 @@ void Surface::worker_connect(SolverConfiguration & solve_options, BertiniRealCon
 	bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
 
 	MPI_Barrier(solve_options.comm());
-	solve_options.robust = true;
 
 
 	MidpointConfiguration md_config;
