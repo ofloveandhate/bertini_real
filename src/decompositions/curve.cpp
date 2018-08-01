@@ -784,6 +784,7 @@ void Curve::ConnectTheDots(
 			neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii]);
 
 			midpoint_witness_sets[ii].Realify(solve_options.T.real_threshold);
+			midpoint_witness_sets[ii].RescaleToPatchHomVar1();
             multilin_solver_master_entry_point(midpoint_witness_sets[ii],         // input WitnessSet
                                                fillme0, // the new data is put here!
                                                &particular_projection,
@@ -1224,6 +1225,8 @@ void Curve::Merge(WitnessSet & W_midpt,
 		W_midpt.add_point(V[edges_[moving_edge].midpt()].point());
 		// I arbitrarily chose the left edge's midpoint as source to track to new midpoint.
 
+		W_midpt.RescaleToPatchHomVar1();
+		
 		projection_value_homogeneous_input(temp,V[edges_[leftmost_edge].left()].point(),projections[0]);
 		projection_value_homogeneous_input(temp2,V[edges_[rightmost_edge].right()].point(),projections[0]);
 

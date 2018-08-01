@@ -395,6 +395,14 @@ public:
 	\param patch The patch to which to rescale to fit
 	*/
 	void RescaleToPatch(vec_mp patch);
+
+	/**
+	\brief rescale all points so that the leading variable (homvar) is 1, use as patch
+	*/
+	void RescaleToPatchHomVar1();
+
+
+
 	/**
 	 \brief read in the witness set from a file, which MUST be formatted correctly.  for details on the format, see this code, or \see print_to_file()
 

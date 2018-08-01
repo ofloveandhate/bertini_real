@@ -750,6 +750,16 @@ void WitnessSet::Realify(double tol)
 }
 
 
+void WitnessSet::RescaleToPatchHomVar1()
+{
+	vec_mp patch; init_vec_mp2(patch,this->num_variables(),1024);
+	set_one_mp(&(patch->coord[0]));
+	for (int ii=1; ii<this->num_variables(); ++ii)
+		set_zero_mp(&(patch->coord[ii]));
+
+	RescaleToPatch(patch);
+}
+
 void WitnessSet::RescaleToPatch(vec_mp patch)
 {
 	for (unsigned int ii=0; ii<num_points(); ++ii)

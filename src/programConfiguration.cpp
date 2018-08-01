@@ -795,9 +795,9 @@ void get_patch(vec_mp *patch,
 	}
 	else{
 		for (int ii=0; ii<num_patches; ii++) {
-			// set_zero_mp(&patch[ii]->coord[0]);
-			for (int jj=0; jj<num_vars; jj++)
-				get_comp_rand_real_mp(&patch[ii]->coord[jj]);
+			set_one_mp(&patch[ii]->coord[0]);
+			for (int jj=1; jj<num_vars; jj++)
+				set_zero_mp(&patch[ii]->coord[jj]);
 
 		}
 

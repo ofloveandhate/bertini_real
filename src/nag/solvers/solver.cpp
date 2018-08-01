@@ -80,7 +80,7 @@ void adjust_tracker_AMP(tracker_config_t * T, int num_variables)
 
 void SolverConfiguration::init()
 {
-	path_counter_modulus = 2;
+	path_counter_modulus = 1000;
 	total_num_paths_tracked = 0;
 
 	robust = true;
