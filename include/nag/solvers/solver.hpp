@@ -1320,8 +1320,7 @@ public:
 		parse_preproc_data("preproc_data", &this->PPD);
 	}
 
-
-	long long num_paths_tracked() const { return total_num_paths_tracked; }
+	long long num_paths_tracked() const {return total_num_paths_tracked;}
 
 private:
 	long long total_num_paths_tracked;

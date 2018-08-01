@@ -386,6 +386,7 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 			{"projection",required_argument,0, 'p'}, {"p",required_argument,0, 'p'}, {"pi",	required_argument,0,'p'},
 			{"sphere",required_argument, 0, 'S'}, {"s",required_argument, 0, 'S'},
 			{"patch",required_argument, 0, 'A'},
+			{"robustness",required_argument, 0, 'r'},{"r",required_argument, 0, 'r'},
 			{"input",required_argument,	0, 'i'}, {"i",required_argument, 0, 'i'},
 			{"version",		no_argument,			 0, 'v'}, {"v",		no_argument,			 0, 'v'},
 			{"help",		no_argument,			 0, 'h'}, {"h",		no_argument,			 0, 'h'},
