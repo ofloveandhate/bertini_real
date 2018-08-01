@@ -454,6 +454,8 @@ void SamplerWorker(sampler_configuration & sampler_options)
 
 	SolverConfiguration solve_options;
 
+	solve_options.robust = sampler_options.robustness()>=1;
+	
 	bool have_tracker_config = false;
 
 
@@ -536,8 +538,6 @@ void common_sampler_startup(const Decomposition & D,
 
 	solve_options.use_midpoint_checker = 0;
 	solve_options.use_gamma_trick = 0;
-    solve_options.robust = true;
-
 }
 
 

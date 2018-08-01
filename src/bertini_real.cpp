@@ -51,10 +51,10 @@ int main(int argC, char *args[])
 
 
 
-
+	int seed;
 	if (solve_options.is_head()) {
 		// split the input_file.  this must be called before setting up the solver config.
-		parse_input_file(program_options.input_filename(), &MPType);
+		seed = parse_input_file(program_options.input_filename(), &MPType);
 
 		// set up the solver configuration
 		get_tracker_config(solve_options,MPType);
@@ -63,13 +63,15 @@ int main(int argC, char *args[])
 	}
 	else
 	{ // catch the bcast from parallel parsing (which cannot be disabled)
+		MPI_Bcast(&seed,1,MPI_INT,0,MPI_COMM_WORLD); // first is declaration that a parse is going to happen.
 		int arbitrary_int;
-		MPI_Bcast(&arbitrary_int,1,MPI_INT,0,MPI_COMM_WORLD); // first is declaration that a parse is going to happen.
 		MPI_Bcast(&arbitrary_int,1,MPI_INT,0,MPI_COMM_WORLD); // second is the bcast from the parse.
 															  //yes, you do have to do both of these.
 	}
 
 
+	// seed the random number generator
+  	srand(seed);
 
 
 	if (solve_options.use_parallel()) { // everybody participates in this.
@@ -84,7 +86,7 @@ int main(int argC, char *args[])
 	solve_options.use_midpoint_checker = 0;
 	solve_options.verbose_level(program_options.verbose_level());
 	solve_options.use_gamma_trick = program_options.use_gamma_trick();
-
+	solve_options.robust = program_options.robustness()>=1;
 
 
 

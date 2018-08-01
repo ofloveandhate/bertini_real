@@ -149,7 +149,7 @@ void MidpointConfiguration::bcast_receive(ParallelismConfig & mpi_config)
 	for (int ii=0; ii<num_systems_to_receive; ii++) {
 		num_chars += buffer[ii];
 		namelengths.push_back(buffer[ii]);
-		std::cout << "name-lengths_" << ii << " " << namelengths[ii] << std::endl;
+		// std::cout << "name-lengths_" << ii << " " << namelengths[ii] << std::endl;
 	}
 
 	delete [] buffer;
