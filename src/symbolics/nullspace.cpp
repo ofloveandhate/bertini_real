@@ -1047,9 +1047,7 @@ void create_nullspace_system(boost::filesystem::path output_name,
 
 			fclose(OUT);
 
-			// run Python script
-			std::cout << "calling `python python_nullspace_system.py`\n\n";
-			system("python python_nullspace_system.py");
+			program_options.CallPython("python_nullspace_system.pyy");
 			break;
 		}
 	}

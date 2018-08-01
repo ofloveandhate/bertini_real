@@ -391,6 +391,7 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 			{"help",		no_argument,			 0, 'h'}, {"h",		no_argument,			 0, 'h'},
 			{"mode",required_argument,0,'M'}, {"m",required_argument,0,'M'},
 			{"symengine",required_argument,0,'E'},{"E",required_argument,0, 'E'},
+			{"pycommand",required_argument,0,'P'},{"P",required_argument,0, 'P'},
 			{"symnosubst",	no_argument,			 0, 't'},
 			{"symallowsubst",	no_argument,			 0, 'T'},
 			{"samepointtol",	required_argument,		 0, 'e'},
@@ -401,7 +402,7 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
 
-		choice = getopt_long_only (argc, argv, "d:c:Dg:V:o:smp:S:i:qvhM:E:tTe:w", // if followed by colon, requires option.  two colons is optional
+		choice = getopt_long_only (argc, argv, "d:c:Dg:V:o:smp:S:i:qvhM:E:P:tTe:w", // if followed by colon, requires option.  two colons is optional
 								   long_options, &option_index);
 
 		/* Detect the end of the options. */
@@ -526,6 +527,11 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 				break;
 			}
 
+			case 'P':
+			{
+				this->python_command_ = std::string(optarg) + " ";
+			}
+
 			case 't':
 			{
 				this->sym_prevent_subst(true);
@@ -614,6 +620,7 @@ void BertiniRealConfig::print_usage()
 	line("-r -robustness", 			"int", 	" 1 ", "use lower robustness to speed up computation -- but get worse results, probably");
 	line("-debug", 				" -- ", 	" ", "make bertini_real wait 30 seconds for you to attach a debugger");
 	line("-symengine -E", 		"string", 	"matlab", "select a symbolic engine.  choices are 'matlab' and 'python'");
+	line("-pycommand -P", 		"string", 	"python", "indicate how python should be called.  default is 'python '");
 	line("-symnosubst", 		" -- ", 	" ", "prevent substitution of subfunctions during deflation and other sym ops.");
 	line("-symallowsubst", 		" -- ", 	" ", "allow substitution of subfunctions during deflation and other sym ops.  default");
 	line("-samepointtol", 		"<double>", "1e-7" , "(scaled) infinity-norm distance between two points to be considered distinct");
