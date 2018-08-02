@@ -773,12 +773,12 @@ void WitnessSet::RealifyPatches()
 		for (int jj=0; jj<num_points(); ++jj)
 		{
 			auto& pt = point(jj);
-			for (int kk=pt->size-1; kk>0; --kk)
+			for (int kk=n-1; kk>0; --kk)
 				div_mp(&(pt->coord[kk+var_counter]),&(pt->coord[kk+var_counter]),&(pt->coord[var_counter]))
 			set_one_mp(&(pt->coord[var_counter]));
 		}
 
-		var_counter+=p->size;
+		var_counter+=n;
 
 	}	
 }
