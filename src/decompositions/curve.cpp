@@ -751,7 +751,8 @@ void Curve::ConnectTheDots(
     solve_options.use_gamma_trick = 0;
 
 	for (decltype(num_midpoints) ii=0; ii<num_midpoints; ++ii) {
-		if (program_options.verbose_level()>=-1)
+		if ( (program_options.verbose_level()==0&&ii%solve_options.path_number_modulus==0) ||
+			 (program_options.verbose_level()>=1))
 			std::cout << color::brown() << "connecting midpoint downstairs, " << ii << " of " << num_midpoints << color::console_default() << std::endl;
 
         cycle_nums_left.clear();
@@ -784,7 +785,7 @@ void Curve::ConnectTheDots(
 			neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii]);
 
 			midpoint_witness_sets[ii].Realify(solve_options.T.real_threshold);
-			midpoint_witness_sets[ii].RescaleToPatchHomVar1();
+
             multilin_solver_master_entry_point(midpoint_witness_sets[ii],         // input WitnessSet
                                                fillme0, // the new data is put here!
                                                &particular_projection,
@@ -824,6 +825,8 @@ void Curve::ConnectTheDots(
             }
 
             if (!try_again) {
+            	if (iterations>1)
+            		std::cout << color::green() << "resolution successful\n";
                 // this is good, it means we have same number out as in, so we can do a full mapping.
                 break; // break the while
             }
@@ -1225,7 +1228,7 @@ void Curve::Merge(WitnessSet & W_midpt,
 		W_midpt.add_point(V[edges_[moving_edge].midpt()].point());
 		// I arbitrarily chose the left edge's midpoint as source to track to new midpoint.
 
-		W_midpt.RescaleToPatchHomVar1();
+		W_midpt.Realify(solve_options.T.real_threshold);
 		
 		projection_value_homogeneous_input(temp,V[edges_[leftmost_edge].left()].point(),projections[0]);
 		projection_value_homogeneous_input(temp2,V[edges_[rightmost_edge].right()].point(),projections[0]);

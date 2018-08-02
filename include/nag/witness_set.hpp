@@ -399,7 +399,7 @@ public:
 	/**
 	\brief rescale all points so that the leading variable (homvar) is 1, use as patch
 	*/
-	void RescaleToPatchHomVar1();
+	void RealifyPatches();
 
 
 
@@ -468,7 +468,7 @@ public:
 	 Print variable information, linears, and patches to screen
 	 This is potentially a very large amount of data depending on the set, and should be done sparingly
 	 */
-	void print_to_screen() const;
+	void print_to_screen(bool dehom_points = true, bool print_extras = false) const;
 
 	/**
 	 \brief print the witness set into a file, which can be read back in to the same format.

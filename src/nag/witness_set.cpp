@@ -286,14 +286,14 @@ void WitnessSet::read_patches_from_file(boost::filesystem::path filename)
 
 
 
-void WitnessSet::print_to_screen() const
+void WitnessSet::print_to_screen(bool dehom_points, bool print_extras) const
 {
 
 	vec_mp dehom;  init_vec_mp(dehom,1); dehom->size = 1;
 
 	std::stringstream varname;
 
-	// std::cout << "witness set has " << num_vars_ << " total variables, " << num_natty_vars_ << " natural variables." << std::endl;
+	std::cout << "witness set has " << num_vars_ << " total variables, " << num_natty_vars_ << " natural variables." << std::endl;
 
 
 	// std::cout << "dim " << dim_ << ", comp " << comp_num_ << std::endl;
@@ -303,17 +303,22 @@ void WitnessSet::print_to_screen() const
 	printf("******\n%zu points\n******\n",num_points());
 	std::cout << color::green();
 	for (unsigned ii=0; ii<num_points(); ii++) {
-
-		dehomogenize(&dehom, point(ii), num_natty_vars_);
-
 		varname << "point_" << ii;
+
+		if (dehom_points)
+		{
+			dehomogenize(&dehom, point(ii), num_natty_vars_);
+			print_point_to_screen_matlab(dehom,varname.str());
+		}
+		else
+			print_point_to_screen_matlab(point(ii),varname.str());
 		// print_point_to_screen_matlab(point(ii),varname.str());
-		print_point_to_screen_matlab(dehom,varname.str());
+		
 		varname.str("");
 	}
 	std::cout << color::console_default();
 
-	if (1)
+	if (print_extras)
 	{
 		std::cout << color::blue();
 		printf("******\n%zu linears\n******\n",num_linears());
@@ -744,24 +749,45 @@ void WitnessSet::RealifyPoint(int ind, double tol)
 
 void WitnessSet::Realify(double tol)
 {
+	RealifyPatches();
+
 	for (unsigned int ii=0; ii<num_points(); ++ii) {
 		RealifyPoint(ii, tol);
 	}
 }
 
 
-void WitnessSet::RescaleToPatchHomVar1()
+void WitnessSet::RealifyPatches()
 {
-	vec_mp patch; init_vec_mp2(patch,this->num_variables(),1024);
-	set_one_mp(&(patch->coord[0]));
-	for (int ii=1; ii<this->num_variables(); ++ii)
-		set_zero_mp(&(patch->coord[ii]));
+	int var_counter = 0;
+	for (int ii=0; ii<this->num_patches(); ++ii)
+	{
+		auto& p = patch(ii);
+		const auto& n = p->size;
 
-	RescaleToPatch(patch);
+		set_one_mp(&(p->coord[0])); 
+		for (int jj=1; jj<n; ++jj)
+			set_zero_mp(&(p->coord[jj]));
+
+
+		for (int jj=0; jj<num_points(); ++jj)
+		{
+			auto& pt = point(jj);
+			for (int kk=pt->size-1; kk>0; --kk)
+				div_mp(&(pt->coord[kk+var_counter]),&(pt->coord[kk+var_counter]),&(pt->coord[var_counter]))
+			set_one_mp(&(pt->coord[var_counter]));
+		}
+
+		var_counter+=p->size;
+
+	}	
 }
 
 void WitnessSet::RescaleToPatch(vec_mp patch)
 {
+	if (this->num_patches()!=1)
+		throw std::runtime_error("trying to rescale a witness set to a single patch, but set has !0 patches");
+
 	for (unsigned int ii=0; ii<num_points(); ++ii)
 		::RescaleToPatch(this->point(ii), patch);
 
