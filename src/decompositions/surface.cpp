@@ -1797,16 +1797,13 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 	Face F;
 
 
-	F.crit_slice_index(ii); // the index of which midslice this Face came from.
-	F.midpt( current_midslice.get_edge(jj).midpt() ); // index the point
-
-
-
 	if (current_midslice.get_edge(jj).is_degenerate()) {
 		return F;
 	}
 
 
+	F.crit_slice_index(ii); // the index of which midslice this Face came from.
+	F.midpt( current_midslice.get_edge(jj).midpt() ); // index the point
 
 
 	if (program_options.verbose_level()>=1)
