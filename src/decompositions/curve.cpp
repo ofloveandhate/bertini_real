@@ -208,8 +208,8 @@ int Curve::compute_critical_points(const WitnessSet & W_curve,
 
 
 	W_crit_real.only_first_vars(W_curve.num_variables()); // trim the fat, since we are at the lowest level.
-	W_crit_real.sort_for_real(&solve_options.T);
-	W_crit_real.sort_for_unique(&solve_options.T);
+	W_crit_real.sort_for_real(solve_options.T.real_threshold);
+	W_crit_real.sort_for_unique(program_options.same_point_tol());
 
 	if (program_options.verbose_level()>=2)
 	{
@@ -234,8 +234,8 @@ int Curve::compute_critical_points(const WitnessSet & W_curve,
                            program_options,
                            solve_options);
 
-    W_sphere_isect.sort_for_real(&solve_options.T);
-	W_sphere_isect.sort_for_unique(&solve_options.T);
+    W_sphere_isect.sort_for_real(solve_options.T.real_threshold);
+	W_sphere_isect.sort_for_unique(program_options.same_point_tol());
 
 
 	if (program_options.verbose_level()>=2)
@@ -245,7 +245,7 @@ int Curve::compute_critical_points(const WitnessSet & W_curve,
 	}
 
 
-    W_crit_real.merge(W_sphere_isect,&solve_options.T);
+    W_crit_real.merge(W_sphere_isect,program_options.same_point_tol());
 
 
 	return SUCCESSFUL;
@@ -326,7 +326,7 @@ int Curve::get_sphere_intersection_pts(WitnessSet *W_additional,
 
 		fillme.get_noninfinite_w_mult(W_temp); // should be ordered
 
-		W_sphere.merge(W_temp,&solve_options.T); // copy in the points
+		W_sphere.merge(W_temp,program_options.same_point_tol()); // copy in the points
 
 	}
 
@@ -640,12 +640,12 @@ void Curve::MidSlice(int& edge_counter,
             std::cout << "midpoint_downstairs " << ii << " had " << midpoint_witness_sets[ii].num_points() << " real and complex points total" << std::endl;
 		}
 
-		midpoint_witness_sets[ii].sort_for_unique(&solve_options.T);
+		midpoint_witness_sets[ii].sort_for_unique(program_options.same_point_tol());
 		auto num_unique_midslice_points = midpoint_witness_sets[ii].num_points();
 
 		if (num_total_midslice_points - num_unique_midslice_points)
 		{
-			std::cout << color::red() << "there were non-unique midpoints in interval " << ii << ".\n" << color::console_default();
+			std::cout << color::red() << "there were non-unique midslice points in interval " << ii << ".\n" << color::console_default();
 			std::cout << "trying to recover the failure by tightening tracking tolerances..." << std::endl;
 
             solve_options.T.endgameNumber = 2;
@@ -666,12 +666,12 @@ void Curve::MidSlice(int& edge_counter,
 			fillme2.get_noninfinite_w_mult_full(midpoint_witness_sets[ii]); // is ordered
 		}
 
-		midpoint_witness_sets[ii].sort_for_unique(&solve_options.T);
+		midpoint_witness_sets[ii].sort_for_unique(program_options.same_point_tol());
 		num_unique_midslice_points = midpoint_witness_sets[ii].num_points();
 
 		if (num_total_midslice_points - num_unique_midslice_points)
 		{
-			std::cout << color::red() << "there were non-unique midpoints in interval " << ii << ".  your decomposition is possibly incorrect about the missed points, if the path crossings obscured real points\n" << color::console_default();
+			std::cout << color::red() << "there were non-unique midslice points in interval " << ii << ".  your decomposition is possibly incorrect about the missed points, if the path crossings obscured real points\n" << color::console_default();
 		}
 
 
@@ -680,7 +680,7 @@ void Curve::MidSlice(int& edge_counter,
             std::cout << "midpoint_downstairs " << ii << " had " << midpoint_witness_sets[ii].num_points() << " real and complex points total" << std::endl;
 		}
 
-		midpoint_witness_sets[ii].sort_for_real(&solve_options.T);
+		midpoint_witness_sets[ii].sort_for_real(solve_options.T.real_threshold);
 		auto num_real_midslice_points = midpoint_witness_sets[ii].num_points();
 
 		if (program_options.verbose_level()>=3) {
@@ -821,8 +821,8 @@ void Curve::ConnectTheDots(
 			WitnessSet Wright_real = Wright; // this feels unnecessary
 			WitnessSet Wleft_real = Wleft;   // this feels unnecessary
 
-			Wright_real.sort_for_real(&solve_options.T);
-			Wleft_real.sort_for_real(&solve_options.T);
+			Wright_real.sort_for_real(solve_options.T.real_threshold);
+			Wleft_real.sort_for_real(solve_options.T.real_threshold);
 
             if (Wleft_real.num_points()!=midpoint_witness_sets[ii].num_points()) {
                 std::cout << color::red() << "had a critical failure\n moving left was deficient " << midpoint_witness_sets[ii].num_points()-Wleft_real.num_points() << " points" << color::console_default() << std::endl;
@@ -937,7 +937,7 @@ void Curve::ConnectTheDots(
 						fillme2.reset();
 
 						assert(c1.size()==W_single_left.num_points());
-						W_single_left.sort_for_real(&solve_options.T);
+						W_single_left.sort_for_real(solve_options.T.real_threshold);
 						if (W_single_left.num_points()==0)
 						{
 							c1.resize(0);
@@ -968,7 +968,7 @@ void Curve::ConnectTheDots(
 						c2 = fillme2.get_cyclenums_noninfinite_w_mult();
 						fillme2.reset();
 						assert(c2.size()==W_single_right.num_points());
-						W_single_right.sort_for_real(&solve_options.T);
+						W_single_right.sort_for_real(solve_options.T.real_threshold);
 						if (W_single_right.num_points()==0)
 						{
 							c2.resize(0);

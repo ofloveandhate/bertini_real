@@ -65,7 +65,7 @@ int VertexSet::search_for_removed_point(vec_mp testpoint)
 
     //	WTB: a faster comparison search.
 	int current_index = 0;
-	for (auto curr_vert = vertices_.begin(); curr_vert!=vertices_.end(); curr_vert++) {
+	for (auto curr_vert = vertices_.begin(); curr_vert!=vertices_.end(); ++curr_vert) {
 
 
 		if (vertices_[current_index].is_removed()) {
@@ -154,7 +154,7 @@ int VertexSet::compute_downstairs_crit_midpts(const WitnessSet & W,
 
 	change_size_vec_mp(crit_downstairs,1); // destructive resize
 	crit_downstairs->size = 1;
-	retVal = sort_increasing_by_real(crit_downstairs, projection_values, same_point_tolerance_);
+	retVal = sort_increasing_by_real(crit_downstairs, projection_values, 1e-30); //same_point_tolerance_
 
 	clear_vec_mp(projection_values); // done with this data.  clear it.
 

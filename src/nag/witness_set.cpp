@@ -483,7 +483,7 @@ void WitnessSet::only_first_vars(int num_vars)
 
 
 
-void WitnessSet::sort_for_real(tracker_config_t * T)
+void WitnessSet::sort_for_real(double tol)
 {
 
 
@@ -500,7 +500,7 @@ void WitnessSet::sort_for_real(tracker_config_t * T)
 		for (int jj=1; jj<num_natty_vars_; jj++) {
 			div_mp(&result->coord[jj-1], &curr_point->coord[jj], &curr_point->coord[0]);
 		}
-		real_indicator[ii] = checkForReal_mp(result, T->real_threshold);
+		real_indicator[ii] = checkForReal_mp(result, tol);
 
 		if (real_indicator[ii]==1) {
 			counter++;
@@ -545,7 +545,7 @@ void WitnessSet::sort_for_real(tracker_config_t * T)
 
 
 // T is necessary for the tolerances.
-void WitnessSet::sort_for_unique(tracker_config_t * T)
+void WitnessSet::sort_for_unique(double tol)
 {
 
 	if (num_vars_==0) {
@@ -566,7 +566,7 @@ void WitnessSet::sort_for_unique(tracker_config_t * T)
 		for (unsigned int jj=ii+1; jj<num_points(); ++jj) {
 			vec_mp & inner_point = point(jj);
 			int prev_size_2 = inner_point->size; inner_point->size = num_natty_vars_; // cache and change to natural number
-			if ( isSamePoint_homogeneous_input(curr_point,inner_point,T->final_tol_times_mult) ){
+			if ( isSamePoint_homogeneous_input(curr_point,inner_point,tol) ){
 				curr_uniqueness = 0;
 			}
 			inner_point->size = prev_size_2; // restore
@@ -796,7 +796,7 @@ void WitnessSet::RescaleToPatch(vec_mp patch)
 }
 
 
-void WitnessSet::merge(const WitnessSet & W_in, tracker_config_t * T)
+void WitnessSet::merge(const WitnessSet & W_in, double tol)
 {
 
 	//error checking first
@@ -834,7 +834,7 @@ void WitnessSet::merge(const WitnessSet & W_in, tracker_config_t * T)
 			in_point->size = this->num_natural_variables();
 			curr_point->size = this->num_natural_variables();
 
-			if (isSamePoint_homogeneous_input(curr_point, in_point, T->final_tol_times_mult)) {
+			if (isSamePoint_homogeneous_input(curr_point, in_point, tol)) {
 				is_new = 0;
 
 				in_point->size = in_size;
@@ -857,7 +857,7 @@ void WitnessSet::merge(const WitnessSet & W_in, tracker_config_t * T)
 
 		for (unsigned int jj = 0; jj<this->num_patches(); jj++){
 			if ( this->patch(jj)->size ==  W_in.patch(ii)->size) {
-				if (isSamePoint_inhomogeneous_input(patch(jj), W_in.patch(ii), T->final_tol_times_mult)) {
+				if (isSamePoint_inhomogeneous_input(patch(jj), W_in.patch(ii), tol)) {
 					is_new = 0;
 					break;
 				}

@@ -354,16 +354,16 @@ public:
 	/**
 	 \brief keep only the real points (upon dehomogenization)
 
-	 \param T the current state of the tracker, for the real tolerance.
+	 \param tol the tolerance for 0-ness
 	 */
-	void sort_for_real(tracker_config_t * T);
+	void sort_for_real(double tol);
 
 	/**
 	 \brief keep only the uniqie points (upon dehomogenization)
 
-	 \param T the current state of the tracker, for the unique tolerance.
+	 \param tol the tolerance for 0-ness
 	 */
-	void sort_for_unique(tracker_config_t * T);
+	void sort_for_unique(double tol);
 
 
 
@@ -455,9 +455,9 @@ public:
 	 Should you want to straight-up merge the contents of two witness sets with the same number of natural variables, you may, using this function.  All the points, linears, and patches will be copied from the input into the existing one on which you call this function.
 
 	 \param W_in The witness set containing data you want to copy.
-	 \param T Bertini's tracker_config_t object, with settings for telling whether two points are the same.
+	 \param tol the tolerance for telling whether two points are the same.
 	 */
-	void merge(const WitnessSet & W_in, tracker_config_t * T);
+	void merge(const WitnessSet & W_in, double tol);
 
 
 

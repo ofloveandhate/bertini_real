@@ -107,8 +107,8 @@ void Surface::main(VertexSet & V,
 	// merge together the critical points from both the critical curve and the sphere intersection curve.
     WitnessSet W_total_crit;
 
-	W_total_crit.merge(W_critcurve_crit,&solve_options.T);
-	W_total_crit.merge(W_singular_crit,&solve_options.T);
+	W_total_crit.merge(W_critcurve_crit,program_options.same_point_tol());
+	W_total_crit.merge(W_singular_crit,program_options.same_point_tol());
 
 
 
@@ -142,13 +142,13 @@ void Surface::main(VertexSet & V,
 
 
 
-	W_sphere_intersection.sort_for_real(&solve_options.T);
-	W_sphere_intersection.sort_for_unique(&solve_options.T);
+	W_sphere_intersection.sort_for_real(solve_options.T.real_threshold);
+	W_sphere_intersection.sort_for_unique(program_options.same_point_tol());
 
 
 	crit_curve_.add_witness_set(W_sphere_intersection,Critical,V);
 
-	W_total_crit.merge(W_sphere_intersection,&solve_options.T);
+	W_total_crit.merge(W_sphere_intersection,program_options.same_point_tol());
 
 
 
@@ -186,10 +186,10 @@ void Surface::main(VertexSet & V,
 
 
 
-	W_total_crit.merge(W_sphere_crit,&solve_options.T);
+	W_total_crit.merge(W_sphere_crit,program_options.same_point_tol());
 
 	W_total_crit.set_input_filename("W_total_crit_nonexistant_filename");
-	W_total_crit.sort_for_unique(&solve_options.T);
+	W_total_crit.sort_for_unique(program_options.same_point_tol());
 
 
 
@@ -600,14 +600,14 @@ void Surface::compute_critcurve_critpts(WitnessSet & W_critcurve_crit,  // the c
 	solve_out.get_noninfinite_w_mult_full(W_temp);
 	ns_config.clear();
 	solve_out.reset();
-	W_critcurve_crit.merge(W_temp,&solve_options.T);//(*&!@U#H*DB(F*&^@#*&$^(*#&YFNSD
+	W_critcurve_crit.merge(W_temp,program_options.same_point_tol());//(*&!@U#H*DB(F*&^@#*&$^(*#&YFNSD
 
 
 
 
 	W_critcurve_crit.set_input_filename("input_critical_curve");
-	W_critcurve_crit.sort_for_real(&solve_options.T);
-	W_critcurve_crit.sort_for_unique(&solve_options.T);
+	W_critcurve_crit.sort_for_real(solve_options.T.real_threshold);
+	W_critcurve_crit.sort_for_unique(program_options.same_point_tol());
 
 
 	if (have_sphere()) {
@@ -875,8 +875,8 @@ void Surface::compute_singular_crit(WitnessSet & W_singular_crit,
 
 		ns_config.clear();
 
-		W_this_round.sort_for_unique(&solve_options.T); // this could be made to be unnecessary, after rewriting a bit of solverout
-		W_this_round.sort_for_real(&solve_options.T);
+		W_this_round.sort_for_unique(program_options.same_point_tol()); // this could be made to be unnecessary, after rewriting a bit of solverout
+		W_this_round.sort_for_real(solve_options.T.real_threshold);
 		W_this_round.set_input_filename(iter->second.input_filename());
 
 		if (have_sphere()) {
@@ -884,7 +884,7 @@ void Surface::compute_singular_crit(WitnessSet & W_singular_crit,
 		}
 		singular_curves_[iter->first].add_witness_set(W_this_round,Critical,V); // creates the curve Decomposition for this multiplicity
 
-		W_singular_crit.merge(W_this_round,&solve_options.T);
+		W_singular_crit.merge(W_this_round,program_options.same_point_tol());
 
 	}
 
@@ -922,12 +922,12 @@ void Surface::compute_singular_curves(const WitnessSet & W_total_crit,
 
 
 //		W_sphere_intersection.only_first_vars(this->num_variables); // throw out the extra variables.
-		W_sphere_intersection.sort_for_real(&solve_options.T);
-		W_sphere_intersection.sort_for_unique(&solve_options.T);
+		W_sphere_intersection.sort_for_real(solve_options.T.real_threshold);
+		W_sphere_intersection.sort_for_unique(program_options.same_point_tol());
 
 		singular_curves_[iter->first].add_witness_set(W_sphere_intersection,Critical,V); // creates the curve Decomposition for this multiplicity
 
-		W_sphere_intersection.merge(W_total_crit,&solve_options.T);
+		W_sphere_intersection.merge(W_total_crit,program_options.same_point_tol());
 		W_sphere_intersection.set_input_filename("should_have_already_been_added_elsewhere");
 
 
@@ -1142,7 +1142,7 @@ void Surface::compute_sphere_witness_set(const WitnessSet & W_surf,
 		//get stuff from fillme into W_temp, or whatever
 		fillme.get_noninfinite_w_mult(W_temp);
 
-		W_sphere.merge(W_temp,&solve_options.T);
+		W_sphere.merge(W_temp,program_options.same_point_tol());
 
 	}
 
@@ -1234,8 +1234,8 @@ void Surface::compute_sphere_crit(const WitnessSet & W_intersection_sphere,
 
 	ns_config.clear();
 
-	W_sphere_crit.sort_for_unique(&solve_options.T);
-	W_sphere_crit.sort_for_real(&solve_options.T);
+	W_sphere_crit.sort_for_unique(program_options.same_point_tol());
+	W_sphere_crit.sort_for_real(solve_options.T.real_threshold);
 
 	W_sphere_crit.set_input_filename("input_surf_sphere");
 
@@ -2272,7 +2272,7 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 
 				// should get a single point back from this solver.
 
-				if (W_new.num_points()==-2) {
+				if (W_new.num_points()!=1) {
 					std::cout << color::red() << "midpoint tracker did not return any points :(" << color::console_default() << std::endl;
 					remaining_possible_edges.erase(current_edge);
 					continue;
@@ -2408,6 +2408,8 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 				}
 				else
 				{
+					std::cout << "failed to find edge completely, or had already found the edge once and it was rejected.\n";
+
 					//didn't find, so simply remove from the list of possibilities.
 					remaining_possible_edges.erase(current_edge);
 				}

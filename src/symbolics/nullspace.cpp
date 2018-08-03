@@ -193,7 +193,7 @@ int compute_crit_nullspace_left(SolverOutput & solve_out, // the returned value
 		WitnessSet Wtemp;
 		fillme.get_noninfinite_w_mult_full(Wtemp); // should be ordered
 
-		W_step_one.merge(Wtemp, &solve_options.T);
+		W_step_one.merge(Wtemp, program_options.same_point_tol());
 
 		Wtemp.reset();
 
@@ -260,7 +260,7 @@ int compute_crit_nullspace_left(SolverOutput & solve_out, // the returned value
 	clear_vec_mp(temppoint);
 
 	int num_before = W_linprod.num_points();
-	W_linprod.sort_for_unique(&solve_options.T);
+	W_linprod.sort_for_unique(program_options.same_point_tol());
 	if (num_before - W_linprod.num_points()>0) {
 		std::cout << color::red() << "there were non-unique start points" << color::console_default() << std::endl;
 	}
@@ -668,7 +668,7 @@ int compute_crit_nullspace_right(SolverOutput & solve_out, // the returned value
 				WitnessSet Wtemp;
 				fillme.get_noninfinite_w_mult_full(Wtemp); // should be ordered
 
-				W_step_one.merge(Wtemp, &solve_options.T);
+				W_step_one.merge(Wtemp, program_options.same_point_tol());
 
 				Wtemp.reset();
 			}
@@ -731,7 +731,7 @@ int compute_crit_nullspace_right(SolverOutput & solve_out, // the returned value
 
 
 	int num_before = W_linprod.num_points();
-	W_linprod.sort_for_unique(&solve_options.T);
+	W_linprod.sort_for_unique(program_options.same_point_tol());
 	if (num_before - W_linprod.num_points()>0) {
 		std::cout << color::red() << "there were non-unique start points" << color::console_default() << std::endl;
 	}
