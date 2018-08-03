@@ -248,10 +248,10 @@ void Surface::main(VertexSet & V,
 
 
 	// compute the downstairs crit and midpoints for slicing
-	vec_mp midpoints_downstairs, crit_downstairs;  std::vector< int > index_tracker;
+	vec_mp midpoints_downstairs, crit_downstairs;  
 	init_vec_mp(midpoints_downstairs,0); init_vec_mp(crit_downstairs,0);
 
-    V.compute_downstairs_crit_midpts(W_total_crit, crit_downstairs, midpoints_downstairs, index_tracker, pi[0],&solve_options.T);
+    V.compute_downstairs_crit_midpts(W_total_crit, crit_downstairs, midpoints_downstairs, pi[0],&solve_options.T);
 
 
 
@@ -638,7 +638,7 @@ void Surface::compute_critical_curve(const WitnessSet & W_critcurve,
     if (program_options.verbose_level() >= 3)
 		W_critpts.print_to_screen();
 
-	program_options.merge_edges(false);
+	program_options.merge_edges(false); //  false is safe.
 
 
 	//fluff up the projection to have 0 entries for all the synthetic variables.

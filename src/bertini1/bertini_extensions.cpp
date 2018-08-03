@@ -1391,7 +1391,6 @@ void print_tracker(const tracker_config_t * T)
 
 //TODO this sort should be optimized.  it is sloppy and wasteful right now.
 int sort_increasing_by_real(vec_mp projections_sorted,
-							std::vector< int > & index_tracker,
 							const vec_mp projections_input,
 							double distinct_thresh){
 
@@ -1469,7 +1468,6 @@ int sort_increasing_by_real(vec_mp projections_sorted,
 
 	change_size_vec_mp(projections_sorted,1); projections_sorted->size = 1;
 
-	index_tracker.push_back(index_tracker_non_unique[0]);
 	set_mp(&projections_sorted->coord[0],&projections_sorted_non_unique->coord[0])
 	int unique_counter = 1;
 	for (int ii=1; ii<projections_input->size; ii++) {
@@ -1493,8 +1491,6 @@ int sort_increasing_by_real(vec_mp projections_sorted,
 			increase_size_vec_mp(projections_sorted,unique_counter+1); projections_sorted->size = unique_counter+1;
 			set_mp(&projections_sorted->coord[unique_counter],&projections_sorted_non_unique->coord[ii]);
 			unique_counter++;
-
-			index_tracker.push_back(index_tracker_non_unique[ii]);
 		}
 	}
 

@@ -94,7 +94,6 @@ int VertexSet::search_for_removed_point(vec_mp testpoint)
 int VertexSet::compute_downstairs_crit_midpts(const WitnessSet & W,
                                                vec_mp crit_downstairs,
                                                vec_mp midpoints_downstairs,
-                                               std::vector< int > & index_tracker,
                                                vec_mp pi,
 											  tracker_config_t * T)
 {
@@ -155,8 +154,7 @@ int VertexSet::compute_downstairs_crit_midpts(const WitnessSet & W,
 
 	change_size_vec_mp(crit_downstairs,1); // destructive resize
 	crit_downstairs->size = 1;
-
-	retVal = sort_increasing_by_real(crit_downstairs, index_tracker, projection_values, 1e-30);
+	retVal = sort_increasing_by_real(crit_downstairs, projection_values, same_point_tolerance_);
 
 	clear_vec_mp(projection_values); // done with this data.  clear it.
 

@@ -115,6 +115,18 @@ public:
 	 \return the ith Vertex, or a reference to it.
 	 \param index The index of the vertex to get.
 	 */
+	Vertex& GetVertex(unsigned int index) 
+	{
+		if (index >= vertices_.size()) {
+			throw std::out_of_range("trying to access Vertex out of range in VertexSet.");
+		}
+		return vertices_[index];
+	}
+
+	/**
+	 \return the ith Vertex, or a reference to it.
+	 \param index The index of the vertex to get.
+	 */
 	const Vertex& GetVertex(unsigned int index) const
 	{
 		if (index >= vertices_.size()) {
@@ -339,8 +351,7 @@ public:
     int compute_downstairs_crit_midpts(const WitnessSet & W,
                                        vec_mp crit_downstairs,
                                        vec_mp midpoints_downstairs,
-                                       std::vector< int > & index_tracker,
-									   vec_mp pi,
+                                       vec_mp pi,
 									   tracker_config_t * T);
 
 
