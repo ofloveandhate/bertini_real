@@ -397,13 +397,14 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 			{"symallowsubst",	no_argument,			 0, 'T'},
 			{"samepointtol",	required_argument,		 0, 'e'},
 			{"ignoresing", no_argument, 0, 'w'},
+			{"realify", no_argument, 0, 'R'},
 
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
 
-		choice = getopt_long_only (argc, argv, "d:c:Dg:V:o:smp:S:i:rvhM:E:P:tTe:wA:", // if followed by colon, requires option.  two colons is optional
+		choice = getopt_long_only (argc, argv, "d:c:Dg:V:o:smp:S:i:rvhM:E:P:tTe:wA:R", // if followed by colon, requires option.  two colons is optional
 								   long_options, &option_index);
 
 		/* Detect the end of the options. */
@@ -467,6 +468,10 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 
 			case 'r':
 				robustness(atoi(optarg));
+				break;
+
+			case 'R':
+				realify_ = true;
 				break;
 
 			case 'v':
@@ -630,6 +635,7 @@ void BertiniRealConfig::print_usage() const
 	line("-samepointtol", 		"<double>", "1e-7" , "(scaled) infinity-norm distance between two points to be considered distinct");
 	line("-nomerge", 		" -- ", " " , "turn off merging for top-dimensional *curve* decompositions (does not affect surface decompositions)");
 	line("-ignoresing", " -- ", " ", "ignore singular curve(s); only use if singular curves are naked");
+	line("-realify", " -- ", " ", "change patch and discard imaginary parts where possible throughout decomposition");
 	printf("\n\n\n");
 	return;
 }
@@ -670,6 +676,7 @@ void BertiniRealConfig::init()
 
 	use_gamma_trick_ = false;
 
+	realify_ = false;
 	merge_edges_ = true;
 
 	primary_mode_ = BERTINIREAL;

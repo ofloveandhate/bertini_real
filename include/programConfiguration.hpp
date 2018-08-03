@@ -416,7 +416,7 @@ class BertiniRealConfig : public ProgramConfigBase
 
 	bool merge_edges_; ///< a mode switch, indicates whether should be merging.
 
-
+	bool realify_; ///< a mode switch, for whether known-real path startpoints and patches should be realified.
 
 	int primary_mode_; ///< mode of operation -- bertini_real is default, but there is also crit method for computing critical points.
 
@@ -485,6 +485,17 @@ public:
 	void ignore_singular(bool val)
 	{
 		ignore_singular_ = val;
+	}
+
+
+	bool Realify() const
+	{
+		return realify_;
+	}
+
+	void Realify(bool val)
+	{
+		realify_ = val;
 	}
 
 	/**

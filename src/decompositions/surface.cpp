@@ -2247,7 +2247,9 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 
 				SolverOutput fillme;
 				WitnessSet W_new;
-				W_midtrack.Realify(solve_options.T.real_threshold);
+
+				if (program_options.Realify())
+					W_midtrack.Realify(solve_options.T.real_threshold);
 
 				midpoint_solver_master_entry_point(W_midtrack, // carries with it the start points, and the linears.
 												   fillme, // new data goes in here
