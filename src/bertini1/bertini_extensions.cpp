@@ -878,7 +878,8 @@ int isSamePoint_inhomogeneous_input(const point_d left, const point_d right, dou
 	double B = infNormVec_d(const_cast<_point_d*>(right));
 
 	using std::min;
-	if (auto m = min(A,B)>1.0)
+	auto m = min(A,B);
+	if (m>1.0)
 		tolerance *= m;
 
 	return isSamePoint(const_cast<_point_d*>(left),NULL,52,const_cast<_point_d*>(right),NULL,52,tolerance);
