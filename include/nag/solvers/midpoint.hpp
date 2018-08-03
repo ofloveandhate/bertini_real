@@ -24,7 +24,8 @@ class midpoint_eval_data_d;
 
 
 
-
+extern bool print_this_path;
+extern FILE* g_path_file;
 
 
 
