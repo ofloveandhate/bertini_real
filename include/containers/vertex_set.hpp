@@ -31,7 +31,7 @@ protected:
 
 	double same_point_tolerance_;
 	mpf_t abs_;
-	mpf_t zerothresh_;
+
 	comp_mp diff_;
 	vec_mp checker_1_;
 	vec_mp checker_2_;

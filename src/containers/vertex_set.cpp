@@ -603,8 +603,6 @@ void VertexSet::init()
 	init_mp(this->diff_);
 
 	mpf_init(abs_);
-	mpf_init(zerothresh_);
-	mpf_set_d(zerothresh_, 1e-8);
 }
 
 
@@ -661,7 +659,7 @@ void VertexSet::clear()
 	clear_mp(diff_);
 
 	mpf_clear(abs_);
-	mpf_clear(zerothresh_);
+
 
 	for (int ii=0; ii<num_projections_; ii++) {
 		clear_vec_mp(projections_[ii]);
