@@ -1,5 +1,6 @@
 path_*
 *.stl
+*.svg
 
 *.eps
 *.png
