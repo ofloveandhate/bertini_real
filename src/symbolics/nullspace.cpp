@@ -1028,10 +1028,7 @@ void create_nullspace_system(boost::filesystem::path output_name,
 							   consts, lineConstants, numFuncs, funcs, lineFuncs);
 
 			// run Matlab script
-			std::stringstream converter;
-			converter << program_options.matlab_command() << " matlab_nullspace_system";
-			system(converter.str().c_str());
-			converter.clear(); converter.str("");
+			program_options.CallMatlab("matlab_nullspace_system");
 			break;
 		}
 
