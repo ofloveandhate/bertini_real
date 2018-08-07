@@ -65,7 +65,7 @@ int VertexSet::search_for_removed_point(vec_mp testpoint)
 
     //	WTB: a faster comparison search.
 	int current_index = 0;
-	for (auto curr_vert = vertices_.begin(); curr_vert!=vertices_.end(); curr_vert++) {
+	for (auto curr_vert = vertices_.begin(); curr_vert!=vertices_.end(); ++curr_vert) {
 
 
 		if (vertices_[current_index].is_removed()) {
@@ -94,7 +94,6 @@ int VertexSet::search_for_removed_point(vec_mp testpoint)
 int VertexSet::compute_downstairs_crit_midpts(const WitnessSet & W,
                                                vec_mp crit_downstairs,
                                                vec_mp midpoints_downstairs,
-                                               std::vector< int > & index_tracker,
                                                vec_mp pi,
 											  tracker_config_t * T)
 {
@@ -155,8 +154,7 @@ int VertexSet::compute_downstairs_crit_midpts(const WitnessSet & W,
 
 	change_size_vec_mp(crit_downstairs,1); // destructive resize
 	crit_downstairs->size = 1;
-
-	retVal = sort_increasing_by_real(crit_downstairs, index_tracker, projection_values, 1e-30);
+	retVal = sort_increasing_by_real(crit_downstairs, projection_values, 1e-30); //same_point_tolerance_
 
 	clear_vec_mp(projection_values); // done with this data.  clear it.
 
@@ -605,8 +603,6 @@ void VertexSet::init()
 	init_mp(this->diff_);
 
 	mpf_init(abs_);
-	mpf_init(zerothresh_);
-	mpf_set_d(zerothresh_, 1e-8);
 }
 
 
@@ -663,7 +659,7 @@ void VertexSet::clear()
 	clear_mp(diff_);
 
 	mpf_clear(abs_);
-	mpf_clear(zerothresh_);
+
 
 	for (int ii=0; ii<num_projections_; ii++) {
 		clear_vec_mp(projections_[ii]);

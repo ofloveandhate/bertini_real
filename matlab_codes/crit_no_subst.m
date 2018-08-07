@@ -79,7 +79,11 @@ for ii = 1:num_subfuncs
 	orig_subfunc_args{ii,1} = curr_subfunc_args; %store it.
 	orig_subfunc_args{ii,2} = curr_subfunc_args_for_regexp; %store it.
 
-	currstr = sprintf('syms %s(%s)',b_input.subfunction{ii,1},curr_subfunc_args);
+	if ~isempty(curr_subfunc_args)
+		currstr = sprintf('syms %s(%s)',b_input.subfunction{ii,1},curr_subfunc_args);
+	else
+		currstr = sprintf('syms %s',b_input.subfunction{ii,1});
+	end
 	eval(currstr);
 end
 

@@ -8,7 +8,9 @@ extern int *size_mp;  // size of mem_mp
 extern int *mem_needs_init_d; // determine if mem_d has been initialized
 extern int *mem_needs_init_mp; // determine if mem_mp has been initialized
 
-
+FILE* g_path_file;
+bool print_this_path;
+static const std::set<int> print_these_paths{344};
 
 
 
@@ -80,7 +82,7 @@ void adjust_tracker_AMP(tracker_config_t * T, int num_variables)
 
 void SolverConfiguration::init()
 {
-	path_counter_modulus = 2;
+	path_counter_modulus = 1000;
 	total_num_paths_tracked = 0;
 
 	robust = true;
@@ -862,7 +864,13 @@ void serial_tracker_loop(trackingStats *trackCount,
 
 		solve_options.increment_num_paths_tracked();
 
-
+		auto n = solve_options.num_paths_tracked();
+		print_this_path = 0;//print_these_paths.find(n)!=print_these_paths.end();
+		if (print_this_path){
+			std::stringstream ss;
+			ss << "paths/path_" << n;
+			g_path_file = safe_fopen_write(ss.str());
+		} 
 
 		if (solve_options.robust) {
 			robust_track_path(ii, &EG,
@@ -879,6 +887,8 @@ void serial_tracker_loop(trackingStats *trackCount,
                                curr_eval_d, curr_eval_mp, change_prec, find_dehom);
 
 		}
+
+		if (print_this_path) fclose(g_path_file);
 
 		// check to see if it should be sharpened
 		if (EG.retVal == 0 && solve_options.T.sharpenDigits > 0)
@@ -1922,6 +1932,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 	copyfile(TEMPMID,MIDOUT);
 	fclose(TEMPMID); fclose(TEMPOUT);
 	solve_options.restore_tracker_config("robust_init");
+
 
 	return;
 } // re: robust_track_path

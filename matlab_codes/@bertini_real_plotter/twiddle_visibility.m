@@ -11,16 +11,9 @@ vertex_twiddle(br_plotter);
 
 switch br_plotter.dimension
 	case 1
-		
-		
 		curve_twiddle(br_plotter);
-		
-		
 	case 2
-		
-		
 		surface_twiddle(br_plotter);
-		
 	otherwise
 		
 end
@@ -344,7 +337,7 @@ if br_plotter.options.render_vertices
 		if br_plotter.options.labels
 			for ii = 1:length(f)
 				
-				if br_plotter.switches.label_vertices == 0;
+				if br_plotter.switches.label_vertices == 0
 					
 					set(br_plotter.handles.vertex_text.(f{ii}),'visible','off')
 					

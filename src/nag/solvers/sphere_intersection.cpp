@@ -311,7 +311,7 @@ int sphere_eval_data_mp::setup(SphereConfiguration & config,
 
 	generic_setup_patch(&patch,W);
 
-	if (solve_options.use_gamma_trick==1)
+	if (solve_options.use_gamma_trick)
 		get_comp_rand_mp(this->gamma); // set gamma to be random complex value
 	else{
 		set_one_mp(this->gamma);
@@ -319,7 +319,7 @@ int sphere_eval_data_mp::setup(SphereConfiguration & config,
 
 	comp_d temp;
 	if (this->MPType==2) {
-		if (solve_options.use_gamma_trick==1){
+		if (solve_options.use_gamma_trick){
 			get_comp_rand_rat(temp, this->gamma, this->gamma_rat, 64, solve_options.T.AMP_max_prec, 0, 0);
 		}
 		else{
@@ -539,7 +539,7 @@ int sphere_eval_data_d::setup(SphereConfiguration & config,
 
 	generic_setup_patch(&patch,W);
 
-	if (solve_options.use_gamma_trick==1)
+	if (solve_options.use_gamma_trick)
 		get_comp_rand_d(this->gamma); // set gamma to be random complex value
 	else
 		set_one_d(this->gamma);
@@ -1046,17 +1046,15 @@ int sphere_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat
 	clear_mat_d(Jv_Patch);
 	clear_mat_d(AtimesJ);
 
-#ifdef printpathsphere
-	BED->num_steps++;
-	vec_d dehommed; init_vec_d(dehommed,BED->num_variables-1); dehommed->size = BED->num_variables-1;
-	dehomogenize(&dehommed,current_variable_values);
-	fprintf(BED->FOUT,"%.15lf %.15lf ", pathVars->r, pathVars->i);
-	for (ii=0; ii<BED->num_variables-1; ++ii) {
-		fprintf(BED->FOUT,"%.15lf %.15lf ",dehommed->coord[ii].r,dehommed->coord[ii].i);
+	if (print_this_path)
+	{
+		BED->num_steps++;
+		fprintf(g_path_file,"%.15g %.15g ", pathVars->r, pathVars->i);
+		for (int ii=0; ii<BED->num_variables; ++ii) {
+			fprintf(g_path_file,"%.15g %.15g ",current_variable_values->coord[ii].r,current_variable_values->coord[ii].i);
+		}
+		fprintf(g_path_file,"\n");
 	}
-	fprintf(BED->FOUT,"\n");
-	clear_vec_d(dehommed);
-#endif
 
 
 	return 0;
@@ -1351,6 +1349,24 @@ int sphere_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv
 
 	}
 
+	if (print_this_path)
+	{
+
+		BED->num_steps++;
+
+		mpf_out_str (g_path_file, 10, 0, pathVars->r);
+		fprintf(g_path_file," ");
+		mpf_out_str (g_path_file, 10, 0, pathVars->i);
+		fprintf(g_path_file," ");
+		for (int ii=0; ii<BED->num_variables; ++ii) {
+			mpf_out_str (g_path_file, 10, 0, current_variable_values->coord[ii].r);
+			fprintf(g_path_file," ");
+			mpf_out_str (g_path_file, 10, 0, current_variable_values->coord[ii].i);
+			fprintf(g_path_file," ");
+		}
+		fprintf(g_path_file,"\n");
+
+	}
 
 	BED->SLP_memory.set_globals_null();
 

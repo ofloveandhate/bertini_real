@@ -534,10 +534,7 @@ void common_sampler_startup(const Decomposition & D,
 
 	solve_options.T.ratioTol = 1; // manually assert to be more permissive.  i don't really like this.
 
-
-
 	solve_options.use_midpoint_checker = 0;
-	solve_options.use_gamma_trick = 0;
 }
 
 

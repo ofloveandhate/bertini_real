@@ -354,16 +354,16 @@ public:
 	/**
 	 \brief keep only the real points (upon dehomogenization)
 
-	 \param T the current state of the tracker, for the real tolerance.
+	 \param tol the tolerance for 0-ness
 	 */
-	void sort_for_real(tracker_config_t * T);
+	void sort_for_real(double tol);
 
 	/**
 	 \brief keep only the uniqie points (upon dehomogenization)
 
-	 \param T the current state of the tracker, for the unique tolerance.
+	 \param tol the tolerance for 0-ness
 	 */
-	void sort_for_unique(tracker_config_t * T);
+	void sort_for_unique(double tol);
 
 
 
@@ -386,6 +386,21 @@ public:
 	\brief For those points which are 'real', throw away the imaginary part, but ensure they still satisfy the patch equation(s)
 	*/
 	void Realify(double tol);
+
+	/**
+	\brief Adjust the scale of a witness set to fit the given patch.  
+
+	\throw if the patch's size doesn't match
+
+	\param patch The patch to which to rescale to fit
+	*/
+	void RescaleToPatch(vec_mp patch);
+
+	/**
+	\brief rescale all points so that the leading variable (homvar) is 1, use as patch
+	*/
+	void RealifyPatches();
+
 
 
 	/**
@@ -440,9 +455,9 @@ public:
 	 Should you want to straight-up merge the contents of two witness sets with the same number of natural variables, you may, using this function.  All the points, linears, and patches will be copied from the input into the existing one on which you call this function.
 
 	 \param W_in The witness set containing data you want to copy.
-	 \param T Bertini's tracker_config_t object, with settings for telling whether two points are the same.
+	 \param tol the tolerance for telling whether two points are the same.
 	 */
-	void merge(const WitnessSet & W_in, tracker_config_t * T);
+	void merge(const WitnessSet & W_in, double tol);
 
 
 
@@ -453,7 +468,7 @@ public:
 	 Print variable information, linears, and patches to screen
 	 This is potentially a very large amount of data depending on the set, and should be done sparingly
 	 */
-	void print_to_screen() const;
+	void print_to_screen(bool dehom_points = true, bool print_extras = false) const;
 
 	/**
 	 \brief print the witness set into a file, which can be read back in to the same format.

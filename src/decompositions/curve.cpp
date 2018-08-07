@@ -208,8 +208,8 @@ int Curve::compute_critical_points(const WitnessSet & W_curve,
 
 
 	W_crit_real.only_first_vars(W_curve.num_variables()); // trim the fat, since we are at the lowest level.
-	W_crit_real.sort_for_real(&solve_options.T);
-	W_crit_real.sort_for_unique(&solve_options.T);
+	W_crit_real.sort_for_real(solve_options.T.real_threshold);
+	W_crit_real.sort_for_unique(program_options.same_point_tol());
 
 	if (program_options.verbose_level()>=2)
 	{
@@ -227,19 +227,25 @@ int Curve::compute_critical_points(const WitnessSet & W_curve,
 	}
 
 
-    WitnessSet W_additional;
+    WitnessSet W_sphere_isect;
 	// now get the sphere intersection critical points and ends of the interval
-	get_sphere_intersection_pts(&W_additional,  // the returned value
+	get_sphere_intersection_pts(&W_sphere_isect,  // the returned value
                            W_curve,       // all else here is input
                            program_options,
                            solve_options);
 
-    W_additional.sort_for_real(&solve_options.T);
-	W_additional.sort_for_unique(&solve_options.T);
+    W_sphere_isect.sort_for_real(solve_options.T.real_threshold);
+	W_sphere_isect.sort_for_unique(program_options.same_point_tol());
 
 
+	if (program_options.verbose_level()>=2)
+	{
+		std::cout << color::green() << "the sphere intersection points of the curve:\n\n" << color::console_default();
+		W_sphere_isect.print_to_screen();
+	}
 
-    W_crit_real.merge(W_additional,&solve_options.T);
+
+    W_crit_real.merge(W_sphere_isect,program_options.same_point_tol());
 
 
 	return SUCCESSFUL;
@@ -320,7 +326,7 @@ int Curve::get_sphere_intersection_pts(WitnessSet *W_additional,
 
 		fillme.get_noninfinite_w_mult(W_temp); // should be ordered
 
-		W_sphere.merge(W_temp,&solve_options.T); // copy in the points
+		W_sphere.merge(W_temp,program_options.same_point_tol()); // copy in the points
 
 	}
 
@@ -419,31 +425,35 @@ int Curve::interslice(const WitnessSet & W_curve,
 
 
 	std::map<int, int> crit_point_counter;
+
+	WitnessSet W_canonicalized;
+	const auto num_to_start = V.num_vertices();
 	for (unsigned int ii=0; ii<W_crit_real.num_points(); ii++){
 
-		if (program_options.verbose_level()>=8)
-			printf("adding point %u of %zu from W_crit_real to vertices\n",ii,W_crit_real.num_points());
+		
 		temp_vertex.set_point( W_crit_real.point(ii));
 		temp_vertex.set_type(Critical); // set type
 
 		int I = index_in_vertices_with_add(V, temp_vertex);
 		crit_point_counter[I] = 0;
+
+		if (program_options.verbose_level()>=8)
+			printf("using point %u of %zu from W_crit_real in VertexSet as point %u\n",ii,W_crit_real.num_points(),I);
+
+		if (I>=num_to_start) // then it's new, never encountered before
+			W_canonicalized.add_point(W_crit_real.point(ii));
+		else // we've seen it before, use the cached copy
+			W_canonicalized.add_point(V.GetVertex(I).point());
+
 	}
 
-
-
-
-
-
-
 	vec_mp crit_downstairs; init_vec_mp(crit_downstairs,0);
-	vec_mp midpoints_downstairs; init_vec_mp(midpoints_downstairs,0);
-	std::vector< int > index_tracker; // apparently unused except in the following call
+	vec_mp mid_downstairs; init_vec_mp(mid_downstairs,0);
 
-    V.compute_downstairs_crit_midpts(W_crit_real,
+    V.compute_downstairs_crit_midpts(W_canonicalized,
                                      crit_downstairs,
-                                     midpoints_downstairs,
-                                     index_tracker, projections[0],&solve_options.T);
+                                     mid_downstairs,
+                                     projections[0],&solve_options.T);
 
 
 
@@ -461,7 +471,7 @@ int Curve::interslice(const WitnessSet & W_curve,
 	V.set_curr_input(W_curve.input_filename());
 
 
-	auto num_midpoints = midpoints_downstairs->size;
+	auto num_midpoints = mid_downstairs->size;
 
 	int edge_counter = 0; // set the counter
 	std::vector< WitnessSet> midpoint_witness_sets;
@@ -476,7 +486,7 @@ int Curve::interslice(const WitnessSet & W_curve,
 
 
 
-	MidSlice(edge_counter, midpoint_witness_sets, ml_config, W_curve, particular_projection,midpoints_downstairs,program_options,solve_options);
+	MidSlice(edge_counter, midpoint_witness_sets, ml_config, W_curve, particular_projection,mid_downstairs,program_options,solve_options);
 
 
 	std::vector< std::set< int > > found_indices_crit;
@@ -488,7 +498,7 @@ int Curve::interslice(const WitnessSet & W_curve,
 					crit_point_counter,
 					V,
 					crit_downstairs,
-					midpoints_downstairs,
+					mid_downstairs,
 					particular_projection,
 		midpoint_witness_sets,
 		ml_config,
@@ -500,7 +510,7 @@ int Curve::interslice(const WitnessSet & W_curve,
 	{
 	    for (int ii=0; ii<num_midpoints; ii++) {
 			std::vector<int> bad_crit = V.assert_projection_value(found_indices_crit[ii], &crit_downstairs->coord[ii]);
-	        std::vector<int> bad_mid = V.assert_projection_value(found_indices_mid[ii], &midpoints_downstairs->coord[ii]);
+	        std::vector<int> bad_mid = V.assert_projection_value(found_indices_mid[ii], &mid_downstairs->coord[ii]);
 	    }
 		std::vector<int> bad_crit = V.assert_projection_value(found_indices_crit[num_midpoints], &crit_downstairs->coord[num_midpoints]);
 	}
@@ -574,7 +584,7 @@ int Curve::interslice(const WitnessSet & W_curve,
 	clear_vec_mp(particular_projection);
 
 	clear_vec_mp(crit_downstairs);
-	clear_vec_mp(midpoints_downstairs);
+	clear_vec_mp(mid_downstairs);
 
 	return SUCCESSFUL;
 } // re: interslice
@@ -589,27 +599,27 @@ void Curve::MidSlice(int& edge_counter,
 					MultilinConfiguration& ml_config,
 					WitnessSet const& W_curve,
 					vec_mp& particular_projection,
-					vec_mp& midpoints_downstairs,
+					vec_mp& mid_downstairs,
 					BertiniRealConfig & program_options,
                     SolverConfiguration & solve_options)
 {
 	////////////////////////////
 	// slice between each pair of critical points
 	////////////////////////////
-	auto num_midpoints = midpoints_downstairs->size;
+	auto num_midpoints = mid_downstairs->size;
 
 
 
 	for (size_t ii=0; ii<num_midpoints; ++ii) {
 
-		neg_mp(&particular_projection->coord[0], &midpoints_downstairs->coord[ii]);
+		neg_mp(&particular_projection->coord[0], &mid_downstairs->coord[ii]);
 
 		real_threshold(&particular_projection->coord[0],solve_options.T.real_threshold);
 
 
 		if (program_options.verbose_level()>=2) {
 			printf("solving midpoints upstairs %zu, projection value ",ii);
-			print_comp_matlab(&midpoints_downstairs->coord[ii],"p");
+			print_comp_matlab(&mid_downstairs->coord[ii],"p");
 		}
 
 		solve_options.backup_tracker_config("getting_midpoints_" + std::to_string(ii));
@@ -630,12 +640,12 @@ void Curve::MidSlice(int& edge_counter,
             std::cout << "midpoint_downstairs " << ii << " had " << midpoint_witness_sets[ii].num_points() << " real and complex points total" << std::endl;
 		}
 
-		midpoint_witness_sets[ii].sort_for_unique(&solve_options.T);
+		midpoint_witness_sets[ii].sort_for_unique(program_options.same_point_tol());
 		auto num_unique_midslice_points = midpoint_witness_sets[ii].num_points();
 
 		if (num_total_midslice_points - num_unique_midslice_points)
 		{
-			std::cout << color::red() << "there were non-unique midpoints in interval " << ii << ".\n" << color::console_default();
+			std::cout << color::red() << "there were non-unique midslice points in interval " << ii << ".\n" << color::console_default();
 			std::cout << "trying to recover the failure by tightening tracking tolerances..." << std::endl;
 
             solve_options.T.endgameNumber = 2;
@@ -656,12 +666,12 @@ void Curve::MidSlice(int& edge_counter,
 			fillme2.get_noninfinite_w_mult_full(midpoint_witness_sets[ii]); // is ordered
 		}
 
-		midpoint_witness_sets[ii].sort_for_unique(&solve_options.T);
+		midpoint_witness_sets[ii].sort_for_unique(program_options.same_point_tol());
 		num_unique_midslice_points = midpoint_witness_sets[ii].num_points();
 
 		if (num_total_midslice_points - num_unique_midslice_points)
 		{
-			std::cout << color::red() << "there were non-unique midpoints in interval " << ii << ".  your decomposition is possibly incorrect about the missed points, if the path crossings obscured real points\n" << color::console_default();
+			std::cout << color::red() << "there were non-unique midslice points in interval " << ii << ".  your decomposition is possibly incorrect about the missed points, if the path crossings obscured real points\n" << color::console_default();
 		}
 
 
@@ -670,7 +680,7 @@ void Curve::MidSlice(int& edge_counter,
             std::cout << "midpoint_downstairs " << ii << " had " << midpoint_witness_sets[ii].num_points() << " real and complex points total" << std::endl;
 		}
 
-		midpoint_witness_sets[ii].sort_for_real(&solve_options.T);
+		midpoint_witness_sets[ii].sort_for_real(solve_options.T.real_threshold);
 		auto num_real_midslice_points = midpoint_witness_sets[ii].num_points();
 
 		if (program_options.verbose_level()>=3) {
@@ -720,7 +730,7 @@ void Curve::ConnectTheDots(
 					std::map<int, int> &crit_point_counter,
 					VertexSet& V,
 					vec_mp& crit_downstairs,
-					vec_mp& midpoints_downstairs,
+					vec_mp& mid_downstairs,
 					vec_mp& particular_projection,
 					std::vector<WitnessSet> &midpoint_witness_sets,
 					MultilinConfiguration & ml_config,
@@ -748,10 +758,11 @@ void Curve::ConnectTheDots(
     found_indices_mid.resize(num_midpoints);
     found_indices_crit.resize(num_midpoints+1);
 
-    solve_options.use_gamma_trick = 0;
+
 
 	for (decltype(num_midpoints) ii=0; ii<num_midpoints; ++ii) {
-		if (program_options.verbose_level()>=-1)
+		if ( (program_options.verbose_level()==0&&ii%solve_options.path_number_modulus==0) ||
+			 (program_options.verbose_level()>=1))
 			std::cout << color::brown() << "connecting midpoint downstairs, " << ii << " of " << num_midpoints << color::console_default() << std::endl;
 
         cycle_nums_left.clear();
@@ -783,7 +794,9 @@ void Curve::ConnectTheDots(
 			// track left
 			neg_mp(&particular_projection->coord[0], &crit_downstairs->coord[ii]);
 
-			midpoint_witness_sets[ii].Realify(solve_options.T.real_threshold);
+			if (program_options.Realify())
+				midpoint_witness_sets[ii].Realify(solve_options.T.real_threshold);
+
             multilin_solver_master_entry_point(midpoint_witness_sets[ii],         // input WitnessSet
                                                fillme0, // the new data is put here!
                                                &particular_projection,
@@ -809,8 +822,8 @@ void Curve::ConnectTheDots(
 			WitnessSet Wright_real = Wright; // this feels unnecessary
 			WitnessSet Wleft_real = Wleft;   // this feels unnecessary
 
-			Wright_real.sort_for_real(&solve_options.T);
-			Wleft_real.sort_for_real(&solve_options.T);
+			Wright_real.sort_for_real(solve_options.T.real_threshold);
+			Wleft_real.sort_for_real(solve_options.T.real_threshold);
 
             if (Wleft_real.num_points()!=midpoint_witness_sets[ii].num_points()) {
                 std::cout << color::red() << "had a critical failure\n moving left was deficient " << midpoint_witness_sets[ii].num_points()-Wleft_real.num_points() << " points" << color::console_default() << std::endl;
@@ -823,6 +836,8 @@ void Curve::ConnectTheDots(
             }
 
             if (!try_again) {
+            	if (iterations>1)
+            		std::cout << color::green() << "resolution successful\n" << color::console_default();
                 // this is good, it means we have same number out as in, so we can do a full mapping.
                 break; // break the while
             }
@@ -875,7 +890,7 @@ void Curve::ConnectTheDots(
 							int prev_sharpen_digits = solve_options.T.sharpenDigits;
 							solve_options.T.sharpenDigits = MIN(4*solve_options.T.sharpenDigits,300);
 
-							neg_mp(&particular_projection->coord[0], &midpoints_downstairs->coord[ii]);
+							neg_mp(&particular_projection->coord[0], &mid_downstairs->coord[ii]);
 
 							SolverOutput fillme1;
 							multilin_solver_master_entry_point(W_single,         // input WitnessSet
@@ -923,7 +938,7 @@ void Curve::ConnectTheDots(
 						fillme2.reset();
 
 						assert(c1.size()==W_single_left.num_points());
-						W_single_left.sort_for_real(&solve_options.T);
+						W_single_left.sort_for_real(solve_options.T.real_threshold);
 						if (W_single_left.num_points()==0)
 						{
 							c1.resize(0);
@@ -954,7 +969,7 @@ void Curve::ConnectTheDots(
 						c2 = fillme2.get_cyclenums_noninfinite_w_mult();
 						fillme2.reset();
 						assert(c2.size()==W_single_right.num_points());
-						W_single_right.sort_for_real(&solve_options.T);
+						W_single_right.sort_for_real(solve_options.T.real_threshold);
 						if (W_single_right.num_points()==0)
 						{
 							c2.resize(0);
@@ -1224,6 +1239,9 @@ void Curve::Merge(WitnessSet & W_midpt,
 		W_midpt.add_point(V[edges_[moving_edge].midpt()].point());
 		// I arbitrarily chose the left edge's midpoint as source to track to new midpoint.
 
+		if (program_options.Realify())
+			W_midpt.Realify(solve_options.T.real_threshold);
+		
 		projection_value_homogeneous_input(temp,V[edges_[leftmost_edge].left()].point(),projections[0]);
 		projection_value_homogeneous_input(temp2,V[edges_[rightmost_edge].right()].point(),projections[0]);
 
@@ -1248,8 +1266,8 @@ void Curve::Merge(WitnessSet & W_midpt,
 		fillme.get_noninfinite_w_mult_full(W_temp); // should be ordered
 
 		if (W_temp.num_points()==0) {
-			std::cout << color::red() << "merging multilin solver returned NO POINTS!!!" << std::endl << color::console_default();
-			continue;
+			std::cout << color::red() << "merging multilin solver returned NO POINTS!!!  unable to continue merging, sorry." << std::endl << color::console_default();
+			break;
 //TODO:  IMMEDIATELY, insert some catch code for when this returns 0 points.
 		}
 
