@@ -190,7 +190,7 @@ end
 
 
 
-%plots a single raw curve with a single style and color
+%plots a single surface subcurve
 function [edge_handles, refinement_handles, text_handle] = plot_subcurve(br_plotter,curve,name,style,text_color,desiredcolor)
 
 ind = br_plotter.indices;
