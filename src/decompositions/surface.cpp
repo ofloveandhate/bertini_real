@@ -441,8 +441,6 @@ void Surface::compute_critcurve_witness_set(WitnessSet & W_critcurve,
 
 
 
-	solve_options.use_gamma_trick = 0;
-
 
 	NullspaceConfiguration ns_config;
 
@@ -551,8 +549,6 @@ void Surface::compute_critcurve_critpts(WitnessSet & W_critcurve_crit,  // the c
 
 
 
-
-	solve_options.use_gamma_trick = 0;
 
 	NullspaceConfiguration ns_config; // this is set up in the nullspace call.
 
@@ -1080,7 +1076,7 @@ void Surface::compute_sphere_witness_set(const WitnessSet & W_surf,
 	}
 
 	//build up the start system
-	solve_options.use_gamma_trick = 0;
+
 
 	int blabla;
 
@@ -1210,7 +1206,7 @@ void Surface::compute_sphere_crit(const WitnessSet & W_intersection_sphere,
 
 
 
-	solve_options.use_gamma_trick = 0;
+
 
 	NullspaceConfiguration ns_config;
 
@@ -1791,8 +1787,7 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 	Curve & right_critslice = crit_slices_[ii+1];
 
 	// assert some solver options
-	solve_options.use_gamma_trick = 0;
-
+	
 	//create the Face
 	Face F;
 
@@ -2410,9 +2405,7 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 				}
 				else
 				{
-					std::cout << "failed to find edge completely, or had already found the edge once and it was rejected.\n";
-
-					//didn't find, so simply remove from the list of possibilities.
+					//didn't find edge as a possibility for whatever reason, so simply remove from the list of possibilities.  
 					remaining_possible_edges.erase(current_edge);
 				}
 

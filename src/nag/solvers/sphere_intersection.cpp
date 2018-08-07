@@ -311,7 +311,7 @@ int sphere_eval_data_mp::setup(SphereConfiguration & config,
 
 	generic_setup_patch(&patch,W);
 
-	if (solve_options.use_gamma_trick==1)
+	if (solve_options.use_gamma_trick)
 		get_comp_rand_mp(this->gamma); // set gamma to be random complex value
 	else{
 		set_one_mp(this->gamma);
@@ -319,7 +319,7 @@ int sphere_eval_data_mp::setup(SphereConfiguration & config,
 
 	comp_d temp;
 	if (this->MPType==2) {
-		if (solve_options.use_gamma_trick==1){
+		if (solve_options.use_gamma_trick){
 			get_comp_rand_rat(temp, this->gamma, this->gamma_rat, 64, solve_options.T.AMP_max_prec, 0, 0);
 		}
 		else{
@@ -539,7 +539,7 @@ int sphere_eval_data_d::setup(SphereConfiguration & config,
 
 	generic_setup_patch(&patch,W);
 
-	if (solve_options.use_gamma_trick==1)
+	if (solve_options.use_gamma_trick)
 		get_comp_rand_d(this->gamma); // set gamma to be random complex value
 	else
 		set_one_d(this->gamma);

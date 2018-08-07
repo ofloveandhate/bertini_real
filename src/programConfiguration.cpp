@@ -629,11 +629,12 @@ void BertiniRealConfig::print_usage() const
 	line("-r -robustness", 			"int", 	" 1 ", "use lower robustness to speed up computation -- but get worse results, probably");
 	line("-debug", 				" -- ", 	" ", "make bertini_real wait 30 seconds for you to attach a debugger");
 	line("-symengine -E", 		"string", 	"matlab", "select a symbolic engine.  choices are 'matlab' and 'python'");
-	line("-pycommand -P", 		"string", 	"python", "indicate how python should be called.  default is 'python '");
+	line("-pycommand -P", 		"string", 	"python", "indicate how python should be called.  default is 'python'");
 	line("-symnosubst", 		" -- ", 	" ", "prevent substitution of subfunctions during deflation and other sym ops.");
 	line("-symallowsubst", 		" -- ", 	" ", "allow substitution of subfunctions during deflation and other sym ops.  default");
 	line("-samepointtol", 		"<double>", "1e-7" , "(scaled) infinity-norm distance between two points to be considered distinct");
 	line("-nomerge", 		" -- ", " " , "turn off merging for top-dimensional *curve* decompositions (does not affect surface decompositions)");
+	line("-gammatrick -g", 		"bool", "0" , "use the complex gamma trick for all paths.  is this good?  does it even work at all?  does using this option produce complete garbage, or speed things up like racing stripes?  i don't know, but it's implemented and an option.  choose your own adventure.  enjoy.");
 	line("-ignoresing", " -- ", " ", "ignore singular curve(s); only use if singular curves are naked");
 	line("-realify", " -- ", " ", "change patch and discard imaginary parts where possible throughout decomposition");
 	printf("\n\n\n");

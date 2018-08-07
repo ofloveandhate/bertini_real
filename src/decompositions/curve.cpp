@@ -758,7 +758,7 @@ void Curve::ConnectTheDots(
     found_indices_mid.resize(num_midpoints);
     found_indices_crit.resize(num_midpoints+1);
 
-    solve_options.use_gamma_trick = 0;
+
 
 	for (decltype(num_midpoints) ii=0; ii<num_midpoints; ++ii) {
 		if ( (program_options.verbose_level()==0&&ii%solve_options.path_number_modulus==0) ||
