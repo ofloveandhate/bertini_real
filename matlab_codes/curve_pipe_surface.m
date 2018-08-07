@@ -36,17 +36,17 @@ fv_vertices_to_convhull = {};
 for edge_index = 1:BRinfo.num_edges
 	
 	if use_sampled_data
-		indices = BRinfo.sampler_data.edge(edge_index).samples+1;
+		vert_indices = BRinfo.sampler_data.edge(edge_index).samples+1;
 	else
-		indices = BRinfo.edges(edge_index,:);
+		vert_indices = BRinfo.edges(edge_index,:);
 	end
 	
-	if indices(1)==indices(end)
+	if vert_indices(1)==vert_indices(end) %degenerate edge
 		continue
 	end
 	
 	
-	edge = real([BRinfo.vertices(indices).point]);
+	edge = real([BRinfo.vertices(vert_indices).point]);
 	
 	
 	if BRinfo.num_variables-1==2
@@ -56,13 +56,13 @@ for edge_index = 1:BRinfo.num_edges
 	end
 	
 
-	match_left = raw_edges(:,1)==indices(1);
-	match_right = raw_edges(:,3)==indices(1);
+	match_left = raw_edges(:,1)==vert_indices(1);
+	match_right = raw_edges(:,3)==vert_indices(1);
 	closed_left = sum(and(match_left,~degenerate) + and(match_right,~degenerate))<=1;
 	
 	
-	match_left = raw_edges(:,1)==indices(end);
-	match_right = raw_edges(:,3)==indices(end);
+	match_left = raw_edges(:,1)==vert_indices(end);
+	match_right = raw_edges(:,3)==vert_indices(end);
 	closed_right = sum(and(match_left,~degenerate) + and(match_right,~degenerate))<=1;
 	
 	
@@ -76,7 +76,7 @@ for edge_index = 1:BRinfo.num_edges
 		closed_val = 'none';
 	end
 	
-	[h,temp_fv] = pipe_surface(edge(1,:),edge(2,:),edge(3,:),'r',opt.radius,'n',opt.n,'closed',closed_val,'render',false);
+	[h,temp_fv] = pipe_surface(edge(1,:),edge(2,:),edge(3,:),'r',opt.radius,'n',opt.n,'closed',closed_val,'render',opt.render);
 	
 	if sum(sum(isnan(temp_fv.vertices)))>0
 		warning('pipe surface has nans');
@@ -90,9 +90,9 @@ for edge_index = 1:BRinfo.num_edges
 		
 		%store the first n+1 vertex indices as those which need to have
 		%convhull done to them.
-		ind = find(br_vertices_needing_convhull==indices(1),1);
+		ind = find(br_vertices_needing_convhull==vert_indices(1),1);
 		if isempty(ind)
-			br_vertices_needing_convhull(end+1) = indices(1);
+			br_vertices_needing_convhull(end+1) = vert_indices(1);
 			ind = length(br_vertices_needing_convhull);
 			fv_vertices_to_convhull{ind} = [];
 		end
@@ -105,9 +105,9 @@ for edge_index = 1:BRinfo.num_edges
 
 		%store the first n+1 vertex indices as those which need to have
 		%convhull done to them.
-		ind = find(br_vertices_needing_convhull==indices(end),1);
+		ind = find(br_vertices_needing_convhull==vert_indices(end),1);
 		if isempty(ind)
-			br_vertices_needing_convhull(end+1) = indices(end);
+			br_vertices_needing_convhull(end+1) = vert_indices(end);
 			ind = length(br_vertices_needing_convhull);
 			fv_vertices_to_convhull{ind} = [];
 		end
