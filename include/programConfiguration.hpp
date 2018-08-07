@@ -255,7 +255,7 @@ class ProgramConfigBase : public ParallelismConfig
 
 private:
 
-
+	int robustness_ = 1;  ///< indicator of whether to use the robust solver wherever possible
 	int verbose_level_ = 0;
 
 	boost::filesystem::path called_dir_;
@@ -344,6 +344,25 @@ public:
 	}
 
 	/**
+	 \brief get the level of robustness to use when path traking.  higher == faster (less robust)
+	 \return the level of quickness
+	 */
+	int robustness()
+	{
+		return robustness_;
+	}
+
+	/**
+	 \brief set the level of quickness
+	 \param new_val the new level
+	 */
+	void robustness(int new_val)
+	{
+		robustness_ = new_val;
+	}
+
+
+	/**
 	 \brief set the level of verbosity
 
 	 \param new_level the new level of verbosity
@@ -386,7 +405,6 @@ class BertiniRealConfig : public ProgramConfigBase
 	bool stifle_membership_screen_; ///< boolean controlling whether stifle_text is empty or " > /dev/null"
 	std::string stifle_text_; ///<
 
-	int quick_run_ = false;  ///< indicator of whether to use the robust solver wherever possible
 
 
 	bool user_sphere_; ///< flag for whether to read the sphere from a file, rather than compute it.
@@ -673,23 +691,6 @@ public:
 		user_sphere_ = new_val;
 	}
 
-	/**
-	 \brief get the level of quick.  higher == faster (less robust)
-	 \return the level of quickness
-	 */
-	int quick_run()
-	{
-		return quick_run_;
-	}
-
-	/**
-	 \brief set the level of quickness
-	 \param new_val the new level
-	 */
-	void quick_run(int new_val)
-	{
-		quick_run_ = new_val;
-	}
 
 
 
@@ -956,8 +957,10 @@ public:
  and maybe others.
 
  \param filename the name of the file to parse.
+
+ \return random seed
  */
-void parse_input_file(boost::filesystem::path filename);
+unsigned int parse_input_file(boost::filesystem::path filename);
 
 /**
  \brief splits the bertini input file into several files for later use.
@@ -975,9 +978,11 @@ void parse_input_file(boost::filesystem::path filename);
 
  \param filename the name of the file to parse.
  \param MPType a set-integer by pointer, this function splits the file and gets the MPType
+
+ \return random seed
  */
 
-void parse_input_file(boost::filesystem::path filename, int * MPType);
+unsigned int parse_input_file(boost::filesystem::path filename, int * MPType);
 
 
 /**

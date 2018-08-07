@@ -113,7 +113,8 @@ void Surface::main(VertexSet & V,
 
 
 	if (have_sphere()) {
-		std::cout << "sorting for inside sphere" << std::endl;
+		if (program_options.verbose_level()>=1)
+			std::cout << "sorting for inside sphere" << std::endl;
 		W_total_crit.sort_for_inside_sphere(sphere_radius(), sphere_center());
 	}
 	else
@@ -125,7 +126,8 @@ void Surface::main(VertexSet & V,
 
 
 
-	std::cout << color::bold('m') << "intersecting critical curve with sphere" << color::console_default() << std::endl;
+	if (program_options.verbose_level()>=1)
+		std::cout << color::bold('m') << "intersecting critical curve with sphere" << color::console_default() << std::endl;
 
 	W_critcurve_crit.set_input_filename("input_critical_curve");
 
@@ -296,8 +298,8 @@ void Surface::main(VertexSet & V,
 	clear_vec_mp(crit_downstairs); clear_vec_mp(midpoints_downstairs);
 
 
-	if (program_options.verbose_level()>=0) {
-		std::cout << "decomposed surface has " << num_faces() << " faces" << std::endl;
+	if (program_options.verbose_level()>=-1) {
+		std::cout << color::green() << "\n\n decomposed surface has " << num_faces() << " faces\n\n" << color::console_default();
 	}
 
 
@@ -430,8 +432,8 @@ void Surface::compute_critcurve_witness_set(WitnessSet & W_critcurve,
 #endif
 
 
-
-	std::cout << color::bold('m') << "computing witness points for the critical curve" << color::console_default() << std::endl;
+	if (program_options.verbose_level()>=-1)
+		std::cout << color::bold('m') << "computing witness points for the critical curve" << color::console_default() << std::endl;
 
 
 
@@ -577,8 +579,8 @@ void Surface::compute_critcurve_critpts(WitnessSet & W_critcurve_crit,  // the c
 	fin.close();
 
 
-
-	std::cout << color::bold('m') << "\ncomputing critical points of the critical curve WRT pi_" << pi_ind <<  color::console_default() << std::endl;
+	if (program_options.verbose_level()>=-1)
+		std::cout << color::bold('m') << "\ncomputing critical points of the critical curve WRT pi_" << pi_ind <<  color::console_default() << std::endl;
 	solve_options.T.AMP_bound_on_degree = max_degree;
 	compute_crit_nullspace(solve_out, // the returned value
 						   W_critcurve,            // input the original witness set
@@ -629,8 +631,8 @@ void Surface::compute_critical_curve(const WitnessSet & W_critcurve,
 	std::cout << "surface::compute_critical_curve" << std::endl;
 #endif
 
-
-    std::cout << color::bold('m') << "interslicing critical curve" << color::console_default() << std::endl;
+	if (program_options.verbose_level()>=-1)
+    	std::cout << color::bold('m') << "interslicing critical curve" << color::console_default() << std::endl;
 
 
     if (program_options.verbose_level() >= 3)
@@ -642,7 +644,7 @@ void Surface::compute_critical_curve(const WitnessSet & W_critcurve,
 	//fluff up the projection to have 0 entries for all the synthetic variables.
 	vec_mp temp_proj; init_vec_mp2(temp_proj,0,1024);
 	vec_cp_mp(temp_proj, this->pi(0));
-	std::cout << temp_proj->size << std::endl;
+
 	increase_size_vec_mp(temp_proj, W_critcurve.num_variables()); // nondestructive increase in size
     temp_proj->size = W_critcurve.num_variables();
 
@@ -667,7 +669,9 @@ void Surface::compute_critical_curve(const WitnessSet & W_critcurve,
 
 	crit_curve_.set_num_variables(W_critcurve.num_variables());
 
-    std::cout << color::magenta() << "done decomposing critical curve" << color::console_default() << std::endl;
+	if (program_options.verbose_level()>=-2)
+    	std::cout << color::magenta() << "done decomposing critical curve" << color::console_default() << std::endl;
+
 	return;
 }
 
@@ -750,7 +754,7 @@ void Surface::deflate_and_split(std::map< SingularObjectMetadata, WitnessSet > &
 
 			if (num_deflations==0) {
 				points_which_needed_no_deflation.add_point(active_set.point(0));
-				std::cout << "found a point which did not need deflation!!!" << std::endl;
+				std::cout << color::red() << "found a point which did not need deflation!!!" << std::endl << color::console_default();
 				print_point_to_screen_matlab(active_set.point(0),"anomaly");
 			}
 			free(deflation_sequence);
@@ -763,7 +767,8 @@ void Surface::deflate_and_split(std::map< SingularObjectMetadata, WitnessSet > &
 			preproc_data_clear(&solve_options.PPD); // ugh this sucks
 			parse_preproc_data("preproc_data", &solve_options.PPD);
 
-			std::cout << "testing points for deflation validity" << std::endl;
+			if (program_options.verbose_level()>=2)
+				std::cout << "testing points for deflation validity" << std::endl;
 
 
 			find_matching_singular_witness_points(split_sets[curr_index],
@@ -775,7 +780,7 @@ void Surface::deflate_and_split(std::map< SingularObjectMetadata, WitnessSet > &
 
 
 			if (W_reject.has_points()) {
-				std::cout << "found that current singular witness set had " << W_reject.num_points() << " non-deflated points" << std::endl;
+				std::cout << color::red() << "found that current singular witness set had " << W_reject.num_points() << " non-deflated points" << std::endl << color::console_default();
 			}
 
 			//TODO: this is an ideal place for a swap operator.
@@ -791,9 +796,11 @@ void Surface::deflate_and_split(std::map< SingularObjectMetadata, WitnessSet > &
 
 	}
 
-	for (auto iter = split_sets.begin(); iter!=split_sets.end(); ++iter) {
-		std::cout << "multiplicity " << iter->first.multiplicity() << " " << iter->first.index() << std::endl;
-	}
+	if (program_options.verbose_level()>=-1)
+		std::cout << "deflated sets characterized by:\n";
+		for (auto iter = split_sets.begin(); iter!=split_sets.end(); ++iter) {
+			std::cout << "\tmultiplicity " << iter->first.multiplicity() << std::endl;
+		}
 
 }
 
@@ -813,7 +820,8 @@ void Surface::compute_singular_crit(WitnessSet & W_singular_crit,
 	W_singular_crit.copy_patches(*this);
 	for (auto iter = split_sets.begin(); iter!=split_sets.end(); ++iter) {
 
-		std::cout << std::endl << color::magenta() << "getting critical points for multiplicity " << iter->first.multiplicity() << " " << iter->first.index() << " singular curve" << color::console_default() << std::endl;
+		if (program_options.verbose_level()>=-2)
+			std::cout << std::endl << color::magenta() << "getting critical points for multiplicity " << iter->first.multiplicity() << " " << iter->first.index() << " singular curve" << color::console_default() << std::endl;
 
 
 
@@ -900,7 +908,9 @@ void Surface::compute_singular_curves(const WitnessSet & W_total_crit,
 		singular_curves_[iter->first].copy_sphere_bounds(*this);
 
 
-		std::cout << "getting sphere intersection with singular curve " << iter->first.multiplicity() << " " << iter->first.index() << std::endl;
+		if (program_options.verbose_level()>=-2)
+			std::cout << "getting sphere intersection with singular curve " << iter->first.multiplicity() << " " << iter->first.index() << std::endl;
+
 		WitnessSet W_sphere_intersection;
 		// now get the sphere intersection critical points and ends of the interval
 		singular_curves_[iter->first].get_sphere_intersection_pts(&W_sphere_intersection,  // the returned value
@@ -924,8 +934,8 @@ void Surface::compute_singular_curves(const WitnessSet & W_total_crit,
 
 
 
-
-		std::cout << "interslicing singular curve " << std::endl;
+		if (program_options.verbose_level()>=-1)
+			std::cout << "interslicing singular curve " << std::endl;
 
 		// we already know the component is self-conjugate (by entry condition), so we are free to call this function
 		singular_curves_[iter->first].interslice(iter->second,
@@ -1023,7 +1033,7 @@ int find_matching_singular_witness_points(WitnessSet & W_match,
 		}
 		else
 		{
-			std::cout << "adding reject point" << std::endl;
+			// std::cout << "adding reject point" << std::endl;
 			W_reject.add_point(W.point(zz));
 		}
 	}
@@ -1070,7 +1080,6 @@ void Surface::compute_sphere_witness_set(const WitnessSet & W_surf,
 	}
 
 	//build up the start system
-	solve_options.robust = true;
 	solve_options.use_gamma_trick = 0;
 
 	int blabla;
@@ -1205,7 +1214,8 @@ void Surface::compute_sphere_crit(const WitnessSet & W_intersection_sphere,
 
 	NullspaceConfiguration ns_config;
 
-	std::cout << color::magenta() << "computing critical points of sphere curve" << color::console_default() << std::endl;
+	if (program_options.verbose_level()>=1)
+		std::cout << color::magenta() << "computing critical points of sphere curve" << color::console_default() << std::endl;
 
 	SolverOutput solve_out;
 
@@ -1253,7 +1263,8 @@ void Surface::compute_bounding_sphere(const WitnessSet & W_intersection_sphere,
 	this->sphere_curve_.set_sphere_radius(temp);
 	this->sphere_curve_.set_sphere_center(this->sphere_center());
 
-	std::cout << color::magenta() << "entering interslice for sphere" << color::console_default() << std::endl;
+	if (program_options.verbose_level()>=0)
+		std::cout << color::magenta() << "interslicing sphere" << color::console_default() << std::endl;
 	// then feed it to the interslice algorithm
 	this->sphere_curve_.interslice(W_intersection_sphere, // the witness set with a single linear and some patches.
                                   W_crit, // the critical points
@@ -1267,7 +1278,8 @@ void Surface::compute_bounding_sphere(const WitnessSet & W_intersection_sphere,
 	this->sphere_curve_.set_num_variables(this->num_variables());
 
 
-	std::cout << color::magenta() << "done decomposing sphere curve" << color::console_default() << std::endl;
+	if (program_options.verbose_level()>=0)
+		std::cout << color::magenta() << "done decomposing sphere curve" << color::console_default() << std::endl;
 	return;
 }
 
@@ -1322,11 +1334,11 @@ void Surface::compute_slices(const WitnessSet W_surf,
 
 	for (int ii=0; ii<projection_values_downstairs->size; ii++){
 
-		if (program_options.verbose_level()>=0) {
-			std::cout << color::magenta() << "decomposing " << kindofslice << " slice " << ii << " of " << projection_values_downstairs->size << color::console_default() << std::endl;
-			print_comp_matlab(&projection_values_downstairs->coord[ii], "target_proj");
-		}
+		if (program_options.verbose_level()>=0) 
+			std::cout << color::magenta() << "decomposing " << kindofslice << "slice " << ii << " of " << projection_values_downstairs->size << color::console_default() << std::endl;
 
+		if (program_options.verbose_level()>=0)
+			print_comp_matlab(&projection_values_downstairs->coord[ii], "slice_projection_value ");
 
 		solve_options.backup_tracker_config("surface_slice");
 
@@ -1354,11 +1366,6 @@ void Surface::compute_slices(const WitnessSet W_surf,
 		}
 
 
-
-		if (program_options.quick_run()<=1)
-			solve_options.robust = true;
-		else
-			solve_options.robust = false;
 
 
 
@@ -1403,15 +1410,6 @@ void Surface::compute_slices(const WitnessSet W_surf,
 
 
 		// the memory for the multilin system will get erased in this call...
-
-
-
-
-		if (program_options.verbose_level()>=1) {
-			std::cout << color::green() << "computing slice" << color::console_default() << std::endl;
-		}
-
-
 
 		// we already know the component is self-conjugate (by entry condition), so we are free to call this function
 		slices[ii].computeCurveSelfConj(slice_witness_set,
@@ -1479,7 +1477,8 @@ void Surface::connect_the_dots(VertexSet & V,
 	std::cout << "surface::connect_the_dots" << std::endl;
 #endif
 
-	std::cout << color::bold('m') << "***\n\nCONNECT THE DOTS\n\n***" << color::console_default() << std::endl;
+	if (program_options.verbose_level()>=-1)
+		std::cout << color::bold('m') << "***\n\nCONNECT THE DOTS\n\n***" << color::console_default() << std::endl;
 
 
 	MidpointConfiguration md_config;
@@ -1511,16 +1510,13 @@ void Surface::serial_connect(VertexSet & V, MidpointConfiguration & md_config, S
 
 	for (unsigned int ii=0; ii!=mid_slices_.size(); ii++) { // each edge of each midslice will become a Face.  degenerate edge => degenerate Face.
 
+		if (program_options.verbose_level()>=0)
+			std::cout << "making faces for midslice " << ii << "\n";
 
 		for (unsigned int jj=0; jj<mid_slices_[ii].num_edges(); jj++) {
 
-
-
 			//make Face
-
 			Face F = make_face(ii, jj, V, md_config, solve_options, program_options);
-
-
 
 
 			if (!F.is_degenerate())
@@ -1587,6 +1583,8 @@ void Surface::master_connect(VertexSet & V, MidpointConfiguration & md_config, S
 	// this loop is semi-self-seeding
 	for (unsigned int ii=0; ii!=mid_slices_.size(); ii++) { // each edge of each midslice will become a Face.  degenerate edge => degenerate Face.
 
+		if (program_options.verbose_level()>=0)
+			std::cout << "making faces for midslice " << ii << "\n";
 
 		for (unsigned int jj=0; jj<mid_slices_[ii].num_edges(); jj++) {
 
@@ -1678,7 +1676,6 @@ void Surface::worker_connect(SolverConfiguration & solve_options, BertiniRealCon
 	bcast_tracker_config_t(&solve_options.T, solve_options.id(), solve_options.head() );
 
 	MPI_Barrier(solve_options.comm());
-	solve_options.robust = true;
 
 
 	MidpointConfiguration md_config;
@@ -1796,14 +1793,12 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 	// assert some solver options
 	solve_options.use_gamma_trick = 0;
 
-	if (program_options.quick_run()<=1)
-		solve_options.robust = true;
-	else
-		solve_options.robust = false;
-
-
 	//create the Face
 	Face F;
+
+
+	F.crit_slice_index(ii); // the index of which midslice this Face came from.
+	F.midpt( current_midslice.get_edge(jj).midpt() ); // index the point
 
 
 
@@ -1814,21 +1809,11 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 
 
 
+	if (program_options.verbose_level()>=1)
+		std::cout << color::magenta() << "\n\n\n*****************************\nmidslice " << ii << " / " << this->mid_slices_.size() <<  ", edge " << jj << " / " << current_midslice.num_edges() << color::console_default() << "\n";
 
-
-
-
-
-
-
-	F.crit_slice_index(ii); // the index of which midslice this Face came from.
-	F.midpt( current_midslice.get_edge(jj).midpt() ); // index the point
-
-
-	std::cout << color::magenta() << "\n\n\n*****************************\nmidslice " << ii << " / " << this->mid_slices_.size() <<  ", edge " << jj << " / " << current_midslice.num_edges() << color::console_default() << "\n";
-
-
-	std::cout << color::brown() << "current midpoint: " <<  current_midslice.get_edge(jj).midpt()  << " " << color::console_default() << "\n";
+	if (program_options.verbose_level()>=1)
+		std::cout << color::brown() << "current midpoint: " <<  current_midslice.get_edge(jj).midpt()  << " " << color::console_default() << "\n";
 
 
 
@@ -1842,11 +1827,13 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 
 	bool bail_out = false;
 	if (md_config.systems.find(V.filename(bottom_input_index).string())==md_config.systems.end()) {
-		std::cout << "bottom system is " << V.filename(bottom_input_index) << ", which is not in md_config" << std::endl;
+		if (program_options.verbose_level()>=1)
+			std::cout << "bottom system is " << V.filename(bottom_input_index) << ", which is not in md_config" << std::endl;
 		bail_out = true;
 	}
 	if (md_config.systems.find(V.filename(top_input_index).string())==md_config.systems.end()) {
-		std::cout << "top system is " << V.filename(top_input_index) << ", which is not in md_config" << std::endl;
+		if (program_options.verbose_level()>=1)
+			std::cout << "top system is " << V.filename(top_input_index) << ", which is not in md_config" << std::endl;
 		bail_out = true;
 	}
 
@@ -1856,8 +1843,8 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 	md_config.system_name_mid = this->input_filename().filename().string();
 
 
-	if (program_options.verbose_level()>=0) {
-		std::cout << md_config.system_name_top << " " << md_config.system_name_bottom << std::endl;
+	if (program_options.verbose_level()>=1) {
+		std::cout << "\ttop system: " << md_config.system_name_top << "\n\tbottom system: " << md_config.system_name_bottom << std::endl;
 	}
 
 
@@ -1865,7 +1852,7 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 	const Curve * top_curve = curve_with_name(md_config.system_name_top);
 	const Curve * bottom_curve = curve_with_name(md_config.system_name_bottom);
 
-	//man, i hate checking for null...
+	// i hate checking for null...
 
 	if (top_curve==NULL) {
 		std::cout << "did not find matching top curve: " << md_config.system_name_top << std::endl;
@@ -2015,14 +2002,18 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 	// the u direction corresponds to pi[0].
 	for (int zz=0; zz<2; zz++) { // go left (zz=0) and right (zz=1)
 		if (zz==0) {
-			std::cout << "\n      <<=========   going left" << std::endl;
-			std::cout << "tracking from these point indices:" << std::endl;
-			std::cout <<  current_midslice.get_edge(jj).left()  << " " << current_midslice.get_edge(jj).midpt()  << " "  << current_midslice.get_edge(jj).right() << std::endl;
+			if (program_options.verbose_level()>=1) {
+				std::cout << "\n      <<=========   going left" << std::endl;
+				std::cout << "tracking from these point indices:" << std::endl;
+				std::cout <<  current_midslice.get_edge(jj).left()  << " " << current_midslice.get_edge(jj).midpt()  << " "  << current_midslice.get_edge(jj).right() << std::endl;
+			}
 		}
 		else{
-			std::cout << "\n\n           going right   =======>> " << std::endl;
-			std::cout << "tracking from these point indices:" << std::endl;
-			std::cout <<  current_midslice.get_edge(jj).left()  << " " << current_midslice.get_edge(jj).midpt()  << " "  << current_midslice.get_edge(jj).right() << std::endl;
+			if (program_options.verbose_level()>=1) {
+				std::cout << "\n\n           going right   =======>> " << std::endl;
+				std::cout << "tracking from these point indices:" << std::endl;
+				std::cout <<  current_midslice.get_edge(jj).left()  << " " << current_midslice.get_edge(jj).midpt()  << " "  << current_midslice.get_edge(jj).right() << std::endl;
+			}
 		}
 
 
@@ -2053,7 +2044,9 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 		// check for degeneracy
 		if (final_bottom_ind==final_top_ind) {
 			// can simply set the top or bottom edge to be this one.  know it goes there.
-			std::cout << "current edge is degenerate, " << final_bottom_ind <<"=="<<final_top_ind << std::endl;
+			if (program_options.verbose_level()>=1) {
+				std::cout << "current edge is degenerate, " << final_bottom_ind <<"=="<<final_top_ind << std::endl;
+			}
 
 
 			int current_edge = target_critslice.edge_w_midpt(final_bottom_ind);
@@ -2076,7 +2069,9 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 			continue; // go to next zz value, or next midslice edge, or whatever
 		}
 
-		std::cout << "final top: " << final_top_ind << ", final bottom:	" << final_bottom_ind << std::endl;
+		if (program_options.verbose_level()>=1) {
+			std::cout << "final top: " << final_top_ind << ", final bottom:	" << final_bottom_ind << std::endl;
+		}
 
 		// get the projection values of top and bottom final points.
 		set_mp(proj_top, &(V[ final_top_ind ].projection_values())->coord[1]);
@@ -2111,7 +2106,9 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 		while ((current_top_ind != final_top_ind) && (remaining_possible_edges.size()>0)) // int yy=0; yy<target_critslice.num_edges; yy++
 		{
 
-			std::cout << "target bottom: " << final_bottom_ind << " current bottom: " << current_bottom_ind << " current top: " << current_top_ind << " final top: " << final_top_ind << std::endl;
+			if (program_options.verbose_level()>=1) {
+				std::cout << "target bottom: " << final_bottom_ind << " current bottom: " << current_bottom_ind << " current top: " << current_top_ind << " final top: " << final_top_ind << std::endl;
+			}
 
 
 
@@ -2152,7 +2149,7 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 				if ( (!already_found) && matches_end && correct_interval && (!degenerate) && within_bounds ) { //
 					candidates.push_back(qq);
 
-					if (program_options.verbose_level()>=1) {
+					if (program_options.verbose_level()>=2) {
 						std::cout << "candidate [" << candidate_counter << "] = " <<
 						target_critslice.get_edge(qq).left() << " " << target_critslice.get_edge(qq).midpt() << " " << target_critslice.get_edge(qq).right() <<  std::endl;
 					}
@@ -2167,7 +2164,7 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 					//                                print_comp_matlab(temp ,"critslices[].proj_val_1");
 					//                                print_comp_matlab(temp2,"final_bottom_proj_1");
 					//                            }
-					if (program_options.verbose_level()>=4) {
+					if (program_options.verbose_level()>=3) {
 						std::cout << "edge " << qq << " excluded: " << correct_interval << " correct_interval, " << matches_end << " matches_end, " << already_found << "  already_found" << std::endl;
 					}
 
@@ -2181,7 +2178,8 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 
 
 			if (candidate_counter==0) {
-				std::cout << color::red() << "found 0 candidates for bottom index " << current_bottom_ind << color::console_default() << std::endl;
+				if (program_options.verbose_level()>=2)
+					std::cout << color::red() << "found 0 candidates for bottom index " << current_bottom_ind << color::console_default() << std::endl;
 				break; // out of the while loop
 			}
 
@@ -2189,7 +2187,7 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 			{
 				int current_edge = candidates[qq];
 
-				if (program_options.verbose_level()>=0) {
+				if (program_options.verbose_level()>=2) {
 					//					std::cout << "Face #: " << this->num_faces << ", zz: " << zz << ", current_edge: " << current_edge << std::endl;
 					std::cout << "tracking to these indices: " << final_bottom_ind << " " << target_critslice.get_edge(current_edge).midpt() << " " << final_top_ind << std::endl;
 				}
@@ -2218,18 +2216,14 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 
 
 
-				if (solve_options.verbose_level() >= 0)
+				if (solve_options.verbose_level() >= 3)
 				{
-
-
 					print_comp_matlab(md_config.u_target,"u_target");
 					print_comp_matlab(md_config.v_target,"v_target");
-
-
 				}
 
 
-				if (solve_options.verbose_level() >= 1){
+				if (solve_options.verbose_level() >= 2){
 					print_comp_matlab(proj_top,"upper");
 					print_comp_matlab(proj_bottom,"lower");
 					print_comp_matlab(proj_mid,"mid");
@@ -2281,7 +2275,7 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 
 				// should get a single point back from this solver.
 
-				if (W_new.num_points()==0) {
+				if (W_new.num_points()==-2) {
 					std::cout << color::red() << "midpoint tracker did not return any points :(" << color::console_default() << std::endl;
 					remaining_possible_edges.erase(current_edge);
 					continue;
@@ -2304,7 +2298,7 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 
 
 
-				if (solve_options.verbose_level()>=0) {
+				if (solve_options.verbose_level()>=2) {
 					vec_mp top_found, bottom_found;  init_vec_mp(top_found,md_config.num_top_vars());
 					init_vec_mp(bottom_found,md_config.num_bottom_vars());
 
@@ -2327,7 +2321,7 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 					clear_vec_mp(top_found);
 				}
 
-				if (solve_options.verbose_level()>=1) {
+				if (solve_options.verbose_level()>=2) {
 
 					projection_value_homogeneous_input(temp, found_point, pi(1));
 					print_comp_matlab(temp, "found_point_proj_val");
@@ -2353,7 +2347,7 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 				if (index_in_set < 0) {
 					index_in_set = target_critslice.edge_w_removed(found_index);
 
-					if (index_in_set>=0 && solve_options.verbose_level()>=0) {
+					if (index_in_set>=0 && solve_options.verbose_level()>=2) {
 						std::cout << color::green() << "found point as removed point from edge " << index_in_set << color::console_default() << std::endl;
 					}
 				}
@@ -2369,7 +2363,7 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 					}
 				}
 
-				if (index_in_set < 0 && solve_options.verbose_level()>=0) {
+				if (index_in_set < 0 && solve_options.verbose_level()>=2) {
 					std::cout << color::blue() << "did not find the indexed point as the midpoint of any current possibility." << color::console_default() << std::endl;
 				}
 
@@ -2379,8 +2373,8 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 				{
 					int next_edge = index_in_set; // index the *edge*
 
-					if (program_options.verbose_level()>=0) {
-						std::cout << "added_edge " << next_edge << ", l m r: " << target_critslice.get_edge(next_edge).left() << " " << target_critslice.get_edge(next_edge).midpt() << " " << target_critslice.get_edge(next_edge).right() << "\n\n";
+					if (program_options.verbose_level()>=1) {
+						std::cout << "added edge " << next_edge << ", l m r: " << target_critslice.get_edge(next_edge).left() << " " << target_critslice.get_edge(next_edge).midpt() << " " << target_critslice.get_edge(next_edge).right() << "\n\n";
 					}
 
 

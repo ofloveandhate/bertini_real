@@ -80,9 +80,10 @@ void adjust_tracker_AMP(tracker_config_t * T, int num_variables)
 
 void SolverConfiguration::init()
 {
+	path_counter_modulus = 2;
 	total_num_paths_tracked = 0;
 
-	robust = false;
+	robust = true;
 
 	PPD.num_funcs = 0;
 	PPD.num_hom_var_gp = 0;
@@ -863,7 +864,7 @@ void serial_tracker_loop(trackingStats *trackCount,
 
 
 
-		if (solve_options.robust==true) {
+		if (solve_options.robust) {
 			robust_track_path(ii, &EG,
                               &startPts_d[ii], &startPts_mp[ii],
                               OUT, MIDOUT,
@@ -1261,7 +1262,7 @@ void worker_tracker_loop(trackingStats *trackCount,
 
 
 
-            if (solve_options.robust==true) {
+            if (solve_options.robust) {
 				//                boost::timer::auto_cpu_timer t;
                 robust_track_path(indices_incoming[ii], &EG[ii],
                                   &startPts_d[ii], &startPts_mp[ii],
@@ -1635,8 +1636,6 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 
 
 	std::map <int,int> setting_increments;
-
-	solve_options.increment_num_paths_tracked();
 
 	FILE *TEMPMID;
 	FILE *TEMPOUT;

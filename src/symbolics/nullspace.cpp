@@ -149,11 +149,6 @@ int compute_crit_nullspace_left(SolverOutput & solve_out, // the returned value
 	W_linprod.set_num_natural_variables(W.num_natural_variables());
 
 
-	if (program_options.quick_run()<=1)
-		solve_options.robust = true;
-	else
-		solve_options.robust = false;
-
 
 
 	DoubleOdometer odo(ns_config->num_jac_equations, target_crit_codim, max_degree);
@@ -276,10 +271,7 @@ int compute_crit_nullspace_left(SolverOutput & solve_out, // the returned value
 
 	//set some solver options
 
-	if (program_options.quick_run()<=0)
-		solve_options.robust = true;
-	else
-		solve_options.robust = false;
+
 
 
 
@@ -632,12 +624,6 @@ int compute_crit_nullspace_right(SolverOutput & solve_out, // the returned value
 	W_linprod.set_num_natural_variables(W.num_natural_variables());
 
 
-	if (program_options.quick_run()<=1)
-		solve_options.robust = true;
-	else
-		solve_options.robust = false;
-
-
 
 
 
@@ -757,13 +743,6 @@ int compute_crit_nullspace_right(SolverOutput & solve_out, // the returned value
 	W_linprod.copy_names(W);
 
 	//set some solver options
-
-	if (program_options.quick_run()<=0)
-		solve_options.robust = true;
-	else
-		solve_options.robust = false;
-
-
 
 	solve_options.use_midpoint_checker = 0;
 

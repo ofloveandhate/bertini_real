@@ -381,6 +381,7 @@ classdef bertini_real_plotter < handle
 			end
 			
 			hide_restore_panel(br_plotter)
+			cameratoolbar('show')
 		end
 		
 		
@@ -391,7 +392,7 @@ classdef bertini_real_plotter < handle
 				set( findall(br_plotter.panels.(f{ii}), '-property', 'visible'), 'visible', 'off')
 				set(br_plotter.panels.(f{ii}),'visible','off');
 			end
-			
+			cameratoolbar('hide')
 			br_plotter.show_restore_panel()
 		end
 		

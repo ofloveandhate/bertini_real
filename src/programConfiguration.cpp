@@ -14,27 +14,16 @@ void parse_preproc_data(boost::filesystem::path filename,  preproc_data *PPD)
 
 
 
-void parse_input_file(boost::filesystem::path filename)
+unsigned int parse_input_file(boost::filesystem::path filename)
 {
-
-	unsigned int currentSeed;
-	int trackType, genType = 0,  sharpenOnly, needToDiff, remove_temp, useParallelDiff = 0,userHom = 0;
-	int my_id = 0, num_processes = 1, headnode = 0; // headnode is always 0
 	int MPType;
-
-	int bcastme = PARSING;
-	MPI_Bcast(&bcastme, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	//end parser-bertini essentials
-
-
-	parse_input(const_cast< char*> (filename.c_str()), &trackType, &MPType, &genType, &userHom, &currentSeed, &sharpenOnly, &needToDiff, &remove_temp, useParallelDiff, my_id, num_processes, headnode);
-
+	return parse_input_file(filename, &MPType);
 }
 
 
 
 
-void parse_input_file(boost::filesystem::path filename, int * MPType)
+unsigned int parse_input_file(boost::filesystem::path filename, int * MPType)
 {
 
 	unsigned int currentSeed;
@@ -46,9 +35,8 @@ void parse_input_file(boost::filesystem::path filename, int * MPType)
 	MPI_Bcast(&bcastme, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	//end parser-bertini essentials
 
-
 	parse_input(const_cast< char*> (filename.c_str()), &trackType, MPType, &genType, &userHom, &currentSeed, &sharpenOnly, &needToDiff, &remove_temp, useParallelDiff, my_id, num_processes, headnode);
-
+	return currentSeed;
 }
 
 
@@ -398,8 +386,7 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 			{"projection",required_argument,0, 'p'}, {"p",required_argument,0, 'p'}, {"pi",	required_argument,0,'p'},
 			{"sphere",required_argument, 0, 'S'}, {"s",required_argument, 0, 'S'},
 			{"input",required_argument,	0, 'i'}, {"i",required_argument, 0, 'i'},
-			{"quick",no_argument,0,'q'}, {"q",no_argument,0,'Q'},
-			{"veryquick",no_argument,0,'q'}, {"vq",no_argument,0,'Q'},
+			{"robustness",required_argument,0,'r'}, {"r",required_argument,0,'r'},
 			{"version",		no_argument,			 0, 'v'}, {"v",		no_argument,			 0, 'v'},
 			{"help",		no_argument,			 0, 'h'}, {"h",		no_argument,			 0, 'h'},
 			{"mode",required_argument,0,'M'}, {"m",required_argument,0,'M'},
@@ -474,12 +461,8 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 				input_filename_ = optarg;
 				break;
 
-			case 'q':
-				quick_run(1);
-				break;
-
-			case 'Q':
-				quick_run(2);
+			case 'r':
+				robustness(atoi(optarg));
 				break;
 
 			case 'v':
@@ -634,14 +617,14 @@ void BertiniRealConfig::print_usage()
 	line("-v -version", 		" -- ", 	" ", "get version number");
 	line("-h -help", 			" --", 		" ", "print this help menu");
 	line("-sphere -b", 			"string", 	" -- ", "name of sphere file");
-	line("-q -quick", 			" -- ", 	" ", "speed up computation, but get worse results, probably");
+	line("-r -robustness", 			"int", 	" 1 ", "use lower robustness to speed up computation -- but get worse results, probably");
 	line("-debug", 				" -- ", 	" ", "make bertini_real wait 30 seconds for you to attach a debugger");
 	line("-symengine -E", 		"string", 	"matlab", "select a symbolic engine.  choices are 'matlab' and 'python'");
 	line("-pycommand -P", 		"string", 	"python", "indicate how python should be called.  default is 'python '");
 	line("-symnosubst", 		" -- ", 	" ", "prevent substitution of subfunctions during deflation and other sym ops.");
 	line("-symallowsubst", 		" -- ", 	" ", "allow substitution of subfunctions during deflation and other sym ops.  default");
 	line("-samepointtol", 		"<double>", "1e-7" , "(scaled) infinity-norm distance between two points to be considered distinct");
-	line("-nomerge", 		" -- ", " " , "turn off merging for top-dimension-curve decompositions");
+	line("-nomerge", 		" -- ", " " , "turn off merging for top-dimensional *curve* decompositions (does not affect surface decompositions)");
 	line("-ignoresing", " -- ", " ", "ignore singular curve(s); only use if singular curves are naked");
 	printf("\n\n\n");
 	return;
@@ -652,7 +635,6 @@ void BertiniRealConfig::init()
 	target_component_ = -2;
 	target_dimension_ = -1;
 
-	quick_run_ = 0;
 	debugwait_ = false;
 	max_deflations_ = 10;
 
