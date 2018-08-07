@@ -66,21 +66,14 @@ int UbermasterProcess::main_loop()
 	W.get_variable_names(num_vars);
 	W.set_input_filename(program_options.input_filename());
 
+	if (program_options.user_patch())
+	{
+		vec_mp* patch = (vec_mp *) br_malloc(1*sizeof(vec_mp));
+	    init_vec_mp2(*patch, W.num_variables(), solve_options.T.AMP_max_prec)
+		get_patch(patch, program_options, W.num_variables());
 
-	// vec_mp* patch = (vec_mp *) br_malloc(1*sizeof(vec_mp));
- //    init_vec_mp2(*patch, W.num_variables(), solve_options.T.AMP_max_prec)
-	// get_patch(patch, program_options, W.num_variables());
-
-	// W.RescaleToPatch(*patch);
-
-	// if (program_options.verbose_level()>=3) {
-	// 	W.print_to_screen();
-	// }
-
-
-
-	// W.print_to_file("W_rescaled");
-
+		W.RescaleToPatch(*patch);
+	}
 
 
 
