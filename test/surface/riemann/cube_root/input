@@ -1,4 +1,6 @@
-% the example from page 340, brown and churchill
+% an algebraic formulation of the cube root surface.
+
+% project this surface onto xz, yz, xw to view it as you would expect.
 
 CONFIG
 
