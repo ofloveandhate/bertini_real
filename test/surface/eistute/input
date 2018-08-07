@@ -1,6 +1,8 @@
 CONFIG
 
-%finaltol: 1e-6;
+randomseed: 691;
+
+finaltol: 1e-13;
 tracktype:1;
 securitylevel: 1;
 endgamebdry: 0.0001;
@@ -10,10 +12,12 @@ sharpendigits: 30;
 maxnewtonits:1;
 maxstepsbeforenewton: 0;
 
-tracktolbeforeeg: 1e-7;
-tracktolduringeg: 1e-8;
+tracktolbeforeeg: 1e-8;
+tracktolduringeg: 1e-9;
 
 endgamenum: 2;
+numsamplepoints: 5;
+maxcyclenum: 25;
 
 odepredictor: 6;
 
