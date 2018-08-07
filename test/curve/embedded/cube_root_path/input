@@ -1,6 +1,7 @@
-% an algebraic formulation of the cube root surface.
+% the intersection of the cube root surface and a circle in the downstairs 
+% space
 
-% project this surface onto xz, yz, xw to view it as you would expect.
+% project onto xz, yz, xw
 
 CONFIG
 
@@ -39,10 +40,11 @@ variable_group xz, yz, xw, yw;
 
 function f_real, f_imag;
 
-
+function f_isect;
 
 f_real = xw^3 - 3*xw*yw^2 - xz;
-
 f_imag =  xw^2*yw*3 - yw^3 - yz;
+
+f_isect = xz^2+yz^2-0.1;
 
 END;

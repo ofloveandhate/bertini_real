@@ -19,6 +19,8 @@ namespace nullspace_handedness{
 	enum {LEFT=0, RIGHT};
 }
 
+extern bool print_this_path;
+extern FILE* g_path_file;
 
 
 /**

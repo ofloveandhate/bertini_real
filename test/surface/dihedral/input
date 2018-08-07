@@ -7,35 +7,43 @@
 
 CONFIG
 
+printpathprogress: 100;
+
 tracktype: 1;
 
-randomseed: 1234;
+randomseed: 1237;
 
-odepredictor: 8;
+odepredictor: 7;
 
 condnumthreshold: 1e300;
 
-endpointfinitethreshold: 1e10;
-pathtruncationthreshold: 1e10;
+endpointfinitethreshold: 1e15;
+pathtruncationthreshold: 1e15;
 
 securitylevel: 1;
 
-tracktolbeforeeg: 1e-8;
-tracktolduringeg: 1e-8;
-finaltol: 1e-11;
+tracktolbeforeeg: 1e-10;
+tracktolduringeg: 1e-10;
+finaltol: 1e-14;
 sharpendigits: 30;
 
+functiontolerance: 1e-6;
+
 endgamenum: 2;
-numsamplepoints: 5;
+numsamplepoints: 10;
+samplefactor: 0.33333333333333333333333333333333333333333333333333;
+maxcyclenum: 25;
 
 maxnewtonits: 1;
 maxstepsbeforenewton: 0;
 
-maxnumsteps: 100000;
+maxnumbersteps: 1000000;
 
-endgamebdry: 0.0001;
+endgamebdry: 0.001;
 
+maxstepsize: 0.01;
 
+targettolmultiplier: 100000;
 END;
 
 

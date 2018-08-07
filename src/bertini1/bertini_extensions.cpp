@@ -878,7 +878,8 @@ int isSamePoint_inhomogeneous_input(const point_d left, const point_d right, dou
 	double B = infNormVec_d(const_cast<_point_d*>(right));
 
 	using std::min;
-	if (auto m = min(A,B)>1.0)
+	auto m = min(A,B);
+	if (m>1.0)
 		tolerance *= m;
 
 	return isSamePoint(const_cast<_point_d*>(left),NULL,52,const_cast<_point_d*>(right),NULL,52,tolerance);
@@ -956,6 +957,22 @@ int isSamePoint_homogeneous_input(const point_mp left, const point_mp right, dou
 	return indicator;
 }
 
+
+void RescaleToPatch(vec_mp point, const vec_mp patch)
+{
+	if (point->size!=patch->size)
+	{
+		std::stringstream err;
+		err << "incompatible sizes in RescaleToPatch " << point->size << " != " << patch->size;
+		throw std::runtime_error(err.str());
+	}
+	comp_mp temp; init_mp(temp);
+	dot_product_mp(temp, point, patch);
+	for (int ii=0; ii<point->size; ++ii)
+		div_mp(&(point->coord[ii]), &(point->coord[ii]), temp);
+
+	clear_mp(temp);
+}
 
 
 void real_threshold(comp_mp blabla, double threshold)
@@ -1375,7 +1392,6 @@ void print_tracker(const tracker_config_t * T)
 
 //TODO this sort should be optimized.  it is sloppy and wasteful right now.
 int sort_increasing_by_real(vec_mp projections_sorted,
-							std::vector< int > & index_tracker,
 							const vec_mp projections_input,
 							double distinct_thresh){
 
@@ -1453,7 +1469,6 @@ int sort_increasing_by_real(vec_mp projections_sorted,
 
 	change_size_vec_mp(projections_sorted,1); projections_sorted->size = 1;
 
-	index_tracker.push_back(index_tracker_non_unique[0]);
 	set_mp(&projections_sorted->coord[0],&projections_sorted_non_unique->coord[0])
 	int unique_counter = 1;
 	for (int ii=1; ii<projections_input->size; ii++) {
@@ -1477,8 +1492,6 @@ int sort_increasing_by_real(vec_mp projections_sorted,
 			increase_size_vec_mp(projections_sorted,unique_counter+1); projections_sorted->size = unique_counter+1;
 			set_mp(&projections_sorted->coord[unique_counter],&projections_sorted_non_unique->coord[ii]);
 			unique_counter++;
-
-			index_tracker.push_back(index_tracker_non_unique[ii]);
 		}
 	}
 

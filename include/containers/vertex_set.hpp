@@ -31,7 +31,7 @@ protected:
 
 	double same_point_tolerance_;
 	mpf_t abs_;
-	mpf_t zerothresh_;
+
 	comp_mp diff_;
 	vec_mp checker_1_;
 	vec_mp checker_2_;
@@ -109,6 +109,18 @@ public:
 	inline unsigned int num_vertices() const
 	{
 		return num_vertices_;
+	}
+
+	/**
+	 \return the ith Vertex, or a reference to it.
+	 \param index The index of the vertex to get.
+	 */
+	Vertex& GetVertex(unsigned int index) 
+	{
+		if (index >= vertices_.size()) {
+			throw std::out_of_range("trying to access Vertex out of range in VertexSet.");
+		}
+		return vertices_[index];
 	}
 
 	/**
@@ -339,8 +351,7 @@ public:
     int compute_downstairs_crit_midpts(const WitnessSet & W,
                                        vec_mp crit_downstairs,
                                        vec_mp midpoints_downstairs,
-                                       std::vector< int > & index_tracker,
-									   vec_mp pi,
+                                       vec_mp pi,
 									   tracker_config_t * T);
 
 

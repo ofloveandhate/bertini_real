@@ -1,11 +1,24 @@
 CONFIG
-randomseed: 1;
-tracktolbeforeeg: 1e-8;
+randomseed: 2;
+tracktolbeforeeg: 1e-7;
+tracktolduringeg: 1e-8;
+
+endgamebdry: 0.001;
+
+endgamenum: 2;
+numsamplepoints: 10;
+
+odepredictor: 8;
 tracktype:1;
+endpointfinitethreshold: 1e10;
+
 securitymaxnorm: 1e16;
 condnumthreshold: 1e160;
 SINGVALZEROTOL: 1e-140;
 sharpendigits: 24;
+
+maxnewtonits: 1;
+maxstepsbeforenewton: 0;
 END;
 
 INPUT

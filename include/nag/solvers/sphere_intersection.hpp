@@ -14,7 +14,8 @@
 
 
 
-
+extern bool print_this_path;
+extern FILE* g_path_file;
 
 
 /**

@@ -4,7 +4,7 @@ function visibility_setup(br_plotter)
 
 
 
-cb_params.y_start = 2;
+cb_params.y_start = 5;
 cb_params.x = 0;
 cb_params.w = 150;
 cb_params.h = 15;
@@ -164,13 +164,14 @@ if br_plotter.options.labels
 			[br_plotter.checkboxes.label_faces, cb_params] = make_switch_checkbox('face labels', 'label_faces', cb_params, h, br_plotter);
 		end
 	end
-
+	
+	cb_params.curr_y = cb_params.curr_y+10;
 end %if options.labels
 
 
 
 
-cb_params.curr_y = cb_params.curr_y+10;
+
 
 
 
@@ -202,13 +203,12 @@ end % re: if render_curves
 
 
 if ~isempty(br_plotter.handles.faces)
+	cb_params.curr_y = cb_params.curr_y+10;
 	[br_plotter.checkboxes.display_faces, cb_params] = make_switch_checkbox('raw faces', 'display_faces', cb_params, h, br_plotter);
 end
 
 
-if or(br_plotter.options.render_faces,br_plotter.options.render_curves)
-	cb_params.curr_y = cb_params.curr_y+10;
-end
+
 
 if have_refinements
 	cb_params.x_pad = 10;
@@ -295,6 +295,8 @@ end
 
 function cb_params = make_curve_checks(br_plotter, cb_params)
 
+cb_params.curr_y = cb_params.y_start;
+
 h = uipanel('units','pixels','visible','on');
 
 
@@ -335,7 +337,7 @@ else
 	start_y = 5;
 end
 	
-pos = [5 start_y cb_params.w+3*cb_params.x_pad cb_params.curr_y+cb_params.y_pad+cb_params.y_start+5];
+pos = [5 start_y cb_params.w+3*cb_params.x_pad cb_params.curr_y+cb_params.y_pad+cb_params.y_start];
 
 
 set(h,'Position',pos);

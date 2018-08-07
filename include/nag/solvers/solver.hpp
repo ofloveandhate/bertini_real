@@ -29,8 +29,8 @@ extern int *size_mp;  // size of mem_mp
 extern int *mem_needs_init_d; // determine if mem_d has been initialized
 extern int *mem_needs_init_mp; // determine if mem_mp has been initialized
 
-
-
+extern bool print_this_path;
+extern FILE* g_path_file;
 
 
 
@@ -1320,8 +1320,7 @@ public:
 		parse_preproc_data("preproc_data", &this->PPD);
 	}
 
-
-	long long num_paths_tracked() const { return total_num_paths_tracked; }
+	long long num_paths_tracked() const {return total_num_paths_tracked;}
 
 private:
 	long long total_num_paths_tracked;

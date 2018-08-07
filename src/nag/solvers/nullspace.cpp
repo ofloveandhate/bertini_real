@@ -646,7 +646,7 @@ int nullspacejac_eval_data_mp::setup(prog_t * _SLP,
 
 	comp_d temp;
 	if (this->MPType==2) {
-		if (solve_options.use_gamma_trick==1){
+		if (solve_options.use_gamma_trick){
 			get_comp_rand_rat(temp, this->gamma, this->gamma_rat, 64, solve_options.T.AMP_max_prec, 0, 0);
 		}
 		else{
@@ -655,7 +655,7 @@ int nullspacejac_eval_data_mp::setup(prog_t * _SLP,
 		}
 	}
 	else{
-        if (solve_options.use_gamma_trick==1)
+        if (solve_options.use_gamma_trick)
             get_comp_rand_mp(this->gamma); // set gamma to be random complex value
         else{
             set_one_mp(this->gamma);
@@ -1317,7 +1317,7 @@ int nullspacejac_eval_data_d::setup(prog_t * _SLP,
 
 
 
-	if (solve_options.use_gamma_trick==1)
+	if (solve_options.use_gamma_trick)
 		get_comp_rand_d(this->gamma); // set gamma to be random complex value
 	else
 		set_one_d(this->gamma);
@@ -2408,22 +2408,16 @@ int nullspacejac_right_eval_d(point_d funcVals, point_d parVals, vec_d parDer, m
 	}
 
 
-
-
-
-#ifdef printpathnullspace_left
-	BED->num_steps++;
-	vec_d dehommed; init_vec_d(dehommed,BED->num_variables-1); dehommed->size = BED->num_variables-1;
-	dehomogenize(&dehommed,curr_x_vars);
-	fprintf(BED->FOUT,"%.15lf %.15lf ", pathVars->r, pathVars->i);
-	for (ii=0; ii<BED->num_variables-1; ++ii) {
-		fprintf(BED->FOUT,"%.15lf %.15lf ",dehommed->coord[ii].r,dehommed->coord[ii].i);
+	if (print_this_path)
+	{
+		BED->num_steps++;
+		fprintf(g_path_file,"%.15g %.15g ", pathVars->r, pathVars->i);
+		for (int ii=0; ii<BED->num_variables; ++ii) {
+			fprintf(g_path_file,"%.15g %.15g ",current_variable_values->coord[ii].r,current_variable_values->coord[ii].i);
+		}
+		fprintf(g_path_file,"\n");
 	}
-	fprintf(BED->FOUT,"\n");
-	clear_vec_d(dehommed);
-#endif
 
-	//	printf("exiting eval\n");
 	return 0;
 }
 
@@ -3137,19 +3131,26 @@ int nullspacejac_right_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDe
 
 
 
-#ifdef printpathnullspace_left
-	BED->num_steps++;
-	vec_mp dehommed; init_vec_mp(dehommed,BED->num_variables-1); dehommed->size = BED->num_variables-1;
-	dehomogenize(&dehommed,curr_x_vars);
-	fprintf(BED->FOUT,"%.15lf %.15lf ", pathVars->r, pathVars->i);
-	for (ii=0; ii<BED->num_variables-1; ++ii) {
-		fprintf(BED->FOUT,"%.15lf %.15lf ",dehommed->coord[ii].r,dehommed->coord[ii].i);
-	}
-	fprintf(BED->FOUT,"\n");
-	clear_vec_mp(dehommed);
-#endif
+	if (print_this_path)
+	{
 
-	//	printf("exiting eval\n");
+		BED->num_steps++;
+
+		mpf_out_str (g_path_file, 10, BED->SLP->precision, pathVars->r);
+		fprintf(g_path_file," ");
+		mpf_out_str (g_path_file, 10, BED->SLP->precision, pathVars->i);
+		fprintf(g_path_file," ");
+		for (int ii=0; ii<BED->num_variables; ++ii) {
+			mpf_out_str (g_path_file, 10, BED->SLP->precision, current_variable_values->coord[ii].r);
+			fprintf(g_path_file," ");
+			mpf_out_str (g_path_file, 10, BED->SLP->precision, current_variable_values->coord[ii].i);
+			fprintf(g_path_file," ");
+		}
+		fprintf(g_path_file,"\n");
+
+	}
+
+
 	return 0;
 }
 
@@ -3851,18 +3852,15 @@ int nullspacejac_left_eval_d(point_d funcVals, point_d parVals, vec_d parDer, ma
 
 
 
-
-#ifdef printpathnullspace_left
-	BED->num_steps++;
-	vec_d dehommed; init_vec_d(dehommed,BED->num_variables-1); dehommed->size = BED->num_variables-1;
-	dehomogenize(&dehommed,curr_x_vars);
-	fprintf(BED->FOUT,"%.15lf %.15lf ", pathVars->r, pathVars->i);
-	for (ii=0; ii<BED->num_variables-1; ++ii) {
-		fprintf(BED->FOUT,"%.15lf %.15lf ",dehommed->coord[ii].r,dehommed->coord[ii].i);
+	if (print_this_path)
+	{
+		BED->num_steps++;
+		fprintf(g_path_file,"%.15g %.15g ", pathVars->r, pathVars->i);
+		for (int ii=0; ii<BED->num_variables; ++ii) {
+			fprintf(g_path_file,"%.15g %.15g ",current_variable_values->coord[ii].r,current_variable_values->coord[ii].i);
+		}
+		fprintf(g_path_file,"\n");
 	}
-	fprintf(BED->FOUT,"\n");
-	clear_vec_d(dehommed);
-#endif
 
 	//	printf("exiting eval\n");
 	return 0;
@@ -4558,25 +4556,24 @@ int nullspacejac_left_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer
 
 
 
+	if (print_this_path)
+	{
 
-#ifdef printpathnullspace_left
-	BED->num_steps++;
-	vec_mp dehommed; init_vec_mp(dehommed,BED->num_variables-1); dehommed->size = BED->num_variables-1;
-	dehomogenize_mp(&dehommed,curr_x_vars);
-	mpf_out_str (BED->FOUT, 10, 15, pathVars->r);
-	fprintf(BED->FOUT," ");
-	mpf_out_str (BED->FOUT, 10, 15, pathVars->i);
-	fprintf(BED->FOUT," ");
-	for (ii=0; ii<BED->num_variables-1; ++ii) {
-		mpf_out_str (BED->FOUT, 10, 15, dehommed->coord[ii].r);
-		fprintf(BED->FOUT," ");
-		mpf_out_str (BED->FOUT, 10, 15, dehommed->coord[ii].i);
-		fprintf(BED->FOUT," ");
+		BED->num_steps++;
+
+		mpf_out_str (g_path_file, 10, 0, pathVars->r);
+		fprintf(g_path_file," ");
+		mpf_out_str (g_path_file, 10, 0, pathVars->i);
+		fprintf(g_path_file," ");
+		for (int ii=0; ii<BED->num_variables; ++ii) {
+			mpf_out_str (g_path_file, 10, 0, current_variable_values->coord[ii].r);
+			fprintf(g_path_file," ");
+			mpf_out_str (g_path_file, 10, 0, current_variable_values->coord[ii].i);
+			fprintf(g_path_file," ");
+		}
+		fprintf(g_path_file,"\n");
 
 	}
-	fprintf(BED->FOUT,"\n");
-	clear_vec_mp(dehommed);
-#endif
 
 
 	return 0;

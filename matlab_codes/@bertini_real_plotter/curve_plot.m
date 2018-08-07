@@ -10,9 +10,9 @@ label_axes(br_plotter);
 % actually plot
 plot_projection(br_plotter);
 
-
-plot_vertices(br_plotter);
-
+if br_plotter.options.render_vertices
+	plot_vertices(br_plotter);
+end
 
 adjust_axes(br_plotter);
 

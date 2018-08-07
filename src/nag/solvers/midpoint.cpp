@@ -1281,17 +1281,15 @@ int midpoint_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, m
 
 	}
 
-#ifdef printpathnullspace_left
-	BED->num_steps++;
-	vec_d dehommed; init_vec_d(dehommed,BED->num_variables-1); dehommed->size = BED->num_variables-1;
-	dehomogenize(&dehommed,curr_mid_vars);
-	fprintf(BED->FOUT,"%.15lf %.15lf ", pathVars->r, pathVars->i);
-	for (ii=0; ii<BED->num_variables-1; ++ii) {
-		fprintf(BED->FOUT,"%.15lf %.15lf ",dehommed->coord[ii].r,dehommed->coord[ii].i);
+	if (print_this_path)
+	{
+		BED->num_steps++;
+		fprintf(g_path_file,"%.15g %.15g ", pathVars->r, pathVars->i);
+		for (int ii=0; ii<BED->num_variables; ++ii) {
+			fprintf(g_path_file,"%.15g %.15g ",current_variable_values->coord[ii].r,current_variable_values->coord[ii].i);
+		}
+		fprintf(g_path_file,"\n");
 	}
-	fprintf(BED->FOUT,"\n");
-	clear_vec_d(dehommed);
-#endif
 
 
 
@@ -1759,22 +1757,24 @@ int midpoint_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp 
 	}
 
 
+	if (print_this_path)
+	{
 
+		BED->num_steps++;
 
+		mpf_out_str (g_path_file, 10, 0, pathVars->r);
+		fprintf(g_path_file," ");
+		mpf_out_str (g_path_file, 10, 0, pathVars->i);
+		fprintf(g_path_file," ");
+		for (int ii=0; ii<BED->num_variables; ++ii) {
+			mpf_out_str (g_path_file, 10, 0, current_variable_values->coord[ii].r);
+			fprintf(g_path_file," ");
+			mpf_out_str (g_path_file, 10, 0, current_variable_values->coord[ii].i);
+			fprintf(g_path_file," ");
+		}
+		fprintf(g_path_file,"\n");
 
-
-
-#ifdef printpathnullspace_left
-	BED->num_steps++;
-	vec_mp dehommed; init_vec_mp(dehommed,BED->num_variables-1); dehommed->size = BED->num_variables-1;
-	dehomogenize(&dehommed,curr_mid_vars);
-	fprintf(BED->FOUT,"%.15lf %.15lf ", pathVars->r, pathVars->i);
-	for (ii=0; ii<BED->num_variables-1; ++ii) {
-		fprintf(BED->FOUT,"%.15lf %.15lf ",dehommed->coord[ii].r,dehommed->coord[ii].i);
 	}
-	fprintf(BED->FOUT,"\n");
-	clear_vec_mp(dehommed);
-#endif
 
 
 	clear_mp(temp);

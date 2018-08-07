@@ -286,14 +286,14 @@ void WitnessSet::read_patches_from_file(boost::filesystem::path filename)
 
 
 
-void WitnessSet::print_to_screen() const
+void WitnessSet::print_to_screen(bool dehom_points, bool print_extras) const
 {
 
 	vec_mp dehom;  init_vec_mp(dehom,1); dehom->size = 1;
 
 	std::stringstream varname;
 
-	// std::cout << "witness set has " << num_vars_ << " total variables, " << num_natty_vars_ << " natural variables." << std::endl;
+	std::cout << "witness set has " << num_vars_ << " total variables, " << num_natty_vars_ << " natural variables." << std::endl;
 
 
 	// std::cout << "dim " << dim_ << ", comp " << comp_num_ << std::endl;
@@ -303,41 +303,49 @@ void WitnessSet::print_to_screen() const
 	printf("******\n%zu points\n******\n",num_points());
 	std::cout << color::green();
 	for (unsigned ii=0; ii<num_points(); ii++) {
-
-		dehomogenize(&dehom, point(ii), num_natty_vars_);
-
 		varname << "point_" << ii;
 
-		print_point_to_screen_matlab(dehom,varname.str());
+		if (dehom_points)
+		{
+			dehomogenize(&dehom, point(ii), num_natty_vars_);
+			print_point_to_screen_matlab(dehom,varname.str());
+		}
+		else
+			print_point_to_screen_matlab(point(ii),varname.str());
+		// print_point_to_screen_matlab(point(ii),varname.str());
+		
 		varname.str("");
 	}
 	std::cout << color::console_default();
 
-	// std::cout << color::blue();
-	// printf("******\n%zu linears\n******\n",num_linears());
+	if (print_extras)
+	{
+		std::cout << color::blue();
+		printf("******\n%zu linears\n******\n",num_linears());
 
-	// for (unsigned ii=0; ii<num_linears(); ii++) {
-	// 	varname << "linear_" << ii;
-	// 	print_point_to_screen_matlab(linear(ii),varname.str());
-	// 	varname.str("");
-	// }
-	// std::cout << color::console_default();
+		for (unsigned ii=0; ii<num_linears(); ii++) {
+			varname << "linear_" << ii;
+			print_point_to_screen_matlab(linear(ii),varname.str());
+			varname.str("");
+		}
+		std::cout << color::console_default();
 
-	// std::cout << color::cyan();
-	// printf("******\n%zu patches\n******\n",num_patches());
+		std::cout << color::cyan();
+		printf("******\n%zu patches\n******\n",num_patches());
 
-	// for (unsigned ii=0; ii<num_patches(); ii++) {
-	// 	varname << "patch_" << ii;
-	// 	print_point_to_screen_matlab(patch(ii),varname.str());
-	// 	varname.str("");
-	// }
-	// std::cout << color::console_default();
+		for (unsigned ii=0; ii<num_patches(); ii++) {
+			varname << "patch_" << ii;
+			print_point_to_screen_matlab(patch(ii),varname.str());
+			varname.str("");
+		}
+		std::cout << color::console_default();
 
-	// std::cout << "variable names:\n";
-	// for (unsigned ii=0; ii< num_var_names(); ii++) {
-	// 	std::cout << name(ii) << "\n";
-	// }
-	// printf("\n\n");
+		std::cout << "variable names:\n";
+		for (unsigned ii=0; ii< num_var_names(); ii++) {
+			std::cout << name(ii) << "\n";
+		}
+		printf("\n\n");
+	}
 
 
 	clear_vec_mp(dehom);
@@ -475,7 +483,7 @@ void WitnessSet::only_first_vars(int num_vars)
 
 
 
-void WitnessSet::sort_for_real(tracker_config_t * T)
+void WitnessSet::sort_for_real(double tol)
 {
 
 
@@ -492,7 +500,7 @@ void WitnessSet::sort_for_real(tracker_config_t * T)
 		for (int jj=1; jj<num_natty_vars_; jj++) {
 			div_mp(&result->coord[jj-1], &curr_point->coord[jj], &curr_point->coord[0]);
 		}
-		real_indicator[ii] = checkForReal_mp(result, T->real_threshold);
+		real_indicator[ii] = checkForReal_mp(result, tol);
 
 		if (real_indicator[ii]==1) {
 			counter++;
@@ -537,7 +545,7 @@ void WitnessSet::sort_for_real(tracker_config_t * T)
 
 
 // T is necessary for the tolerances.
-void WitnessSet::sort_for_unique(tracker_config_t * T)
+void WitnessSet::sort_for_unique(double tol)
 {
 
 	if (num_vars_==0) {
@@ -558,7 +566,7 @@ void WitnessSet::sort_for_unique(tracker_config_t * T)
 		for (unsigned int jj=ii+1; jj<num_points(); ++jj) {
 			vec_mp & inner_point = point(jj);
 			int prev_size_2 = inner_point->size; inner_point->size = num_natty_vars_; // cache and change to natural number
-			if ( isSamePoint_homogeneous_input(curr_point,inner_point,T->final_tol_times_mult) ){
+			if ( isSamePoint_homogeneous_input(curr_point,inner_point,tol) ){
 				curr_uniqueness = 0;
 			}
 			inner_point->size = prev_size_2; // restore
@@ -741,12 +749,54 @@ void WitnessSet::RealifyPoint(int ind, double tol)
 
 void WitnessSet::Realify(double tol)
 {
+	RealifyPatches();
+
 	for (unsigned int ii=0; ii<num_points(); ++ii) {
 		RealifyPoint(ii, tol);
 	}
 }
 
-void WitnessSet::merge(const WitnessSet & W_in, tracker_config_t * T)
+
+void WitnessSet::RealifyPatches()
+{
+	int var_counter = 0;
+	for (int ii=0; ii<this->num_patches(); ++ii)
+	{
+		auto& p = patch(ii);
+		const auto& n = p->size;
+
+		set_one_mp(&(p->coord[0])); 
+		for (int jj=1; jj<n; ++jj)
+			set_zero_mp(&(p->coord[jj]));
+
+
+		for (int jj=0; jj<num_points(); ++jj)
+		{
+			auto& pt = point(jj);
+			for (int kk=n-1; kk>0; --kk)
+				div_mp(&(pt->coord[kk+var_counter]),&(pt->coord[kk+var_counter]),&(pt->coord[var_counter]))
+			set_one_mp(&(pt->coord[var_counter]));
+		}
+
+		var_counter+=n;
+
+	}	
+}
+
+void WitnessSet::RescaleToPatch(vec_mp patch)
+{
+	if (this->num_patches()!=1)
+		throw std::runtime_error("trying to rescale a witness set to a single patch, but set has !0 patches");
+
+	for (unsigned int ii=0; ii<num_points(); ++ii)
+		::RescaleToPatch(this->point(ii), patch);
+
+	this->reset_patches();
+	this->add_patch(patch);
+}
+
+
+void WitnessSet::merge(const WitnessSet & W_in, double tol)
 {
 
 	//error checking first
@@ -784,7 +834,7 @@ void WitnessSet::merge(const WitnessSet & W_in, tracker_config_t * T)
 			in_point->size = this->num_natural_variables();
 			curr_point->size = this->num_natural_variables();
 
-			if (isSamePoint_homogeneous_input(curr_point, in_point, T->final_tol_times_mult)) {
+			if (isSamePoint_homogeneous_input(curr_point, in_point, tol)) {
 				is_new = 0;
 
 				in_point->size = in_size;
@@ -807,7 +857,7 @@ void WitnessSet::merge(const WitnessSet & W_in, tracker_config_t * T)
 
 		for (unsigned int jj = 0; jj<this->num_patches(); jj++){
 			if ( this->patch(jj)->size ==  W_in.patch(ii)->size) {
-				if (isSamePoint_inhomogeneous_input(patch(jj), W_in.patch(ii), T->final_tol_times_mult)) {
+				if (isSamePoint_inhomogeneous_input(patch(jj), W_in.patch(ii), tol)) {
 					is_new = 0;
 					break;
 				}

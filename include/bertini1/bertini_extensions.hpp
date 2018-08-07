@@ -330,6 +330,13 @@ int isSamePoint_homogeneous_input(const point_mp left, const point_mp right, dou
 
 
 /**
+\brief Scale a point to fit a patch.  assumes the patch was written so that dot(point,patch) = 1.
+
+*/
+void RescaleToPatch(vec_mp point, const vec_mp patch);
+
+
+/**
  \brief thresholds a number \f$x\f$ so that if \f$|Im{x}|<\eps \f$, we set \f$Im(x) = 0\f$.
 
  \param blabla the input AND output value.  it changes the input directly.
@@ -425,11 +432,10 @@ void print_tracker(const tracker_config_t * T);
 
  \return The integer number 0.  Seems dumb.
  \param projections_sorted The output value.
- \param index_tracker The order the inputs get sorted into.  It's a permutation vector.
  \param projections_input The projection values you want to sort.
  \param distinct_thresh The separation value for determining if two values are distinct or not.  You should be able to set this pretty small, but it should also be a function of the level of sharpening /  accuracy requested from the tracker.
  */
-int sort_increasing_by_real(vec_mp projections_sorted, std::vector< int > & index_tracker, const vec_mp projections_input, double distinct_thresh);
+int sort_increasing_by_real(vec_mp projections_sorted, const vec_mp projections_input, double distinct_thresh);
 
 
 /**

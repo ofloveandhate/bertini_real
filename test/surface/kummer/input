@@ -1,5 +1,6 @@
 CONFIG
 
+randomseed: 43;
 tracktype: 1;
 
 securitylevel:1;
@@ -10,12 +11,18 @@ endpointfinitethreshold: 1e9;
 odepredictor: 6;
 
 endgamenum: 2;
-
 numsamplepoints: 4;
+
 
 sharpendigits: 30;
 
 condnumthreshold: 1e30;
+
+tracktolbeforeeg: 1e-6;
+tracktolduringeg: 1e-7;
+
+maxnewtonits: 1;
+numstepsbeforenewton: 0;
 
 END;
 
