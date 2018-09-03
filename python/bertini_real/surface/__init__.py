@@ -52,6 +52,8 @@ class Surface(Decomposition):
 
 	def gather_faces(self, directory):
 		self.faces = bertini_real.parse.parse_Faces(directory)
+
+		
 	def gather_curves(self, directory):
 		for ii in range(self.num_midpoint_slices):
 			new_curve = Curve(directory + '/curve_midslice_' + str(ii))
@@ -72,6 +74,6 @@ class Surface(Decomposition):
 
 
 	def gather_surface_samples(self, directory):
-		self.surface_sampler_data = bertini_real.parse.parse_surface_Sampler(directory)
+		self.surface_sampler_data = bertini_real.parse.parse_surface_Samples(directory)
 
 	

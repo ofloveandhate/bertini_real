@@ -15,11 +15,19 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 
+class RenderOptions(object):
+	def __init__(self):
+		self.vertices = True
+
+
+class VisibilityOptions(object):
+	def __init__(self):
+		self.labels = False
 
 class Options(object):
 	def __init__(self):
-		self.option1 = "value1"
-
+		self.render = RenderOptions()
+		self.visibility = VisibilityOptions()
 
 
 class Plotter(object):
@@ -43,14 +51,8 @@ class Plotter(object):
 		self.make_figure()
 		self.make_axes()
 			
-
-		# this should be conditionally done based on some flag
-		self.PlotVertices()
-
-		if self.decomposition.dimension == 1:
-			self.PlotCurve(self.decomposition)
-		elif self.decomposition.dimension == 2:
-			self.Plotsurface(self.decomposition)
+		self.main()
+		
 
 		self.label_axes()
 		self.apply_title()
@@ -60,6 +62,14 @@ class Plotter(object):
 
 
 
+	def main(self):
+		if self.options.render.vertices:
+			self.PlotVertices()
+
+		if self.decomposition.dimension == 1:
+			self.PlotCurve()
+		elif self.decomposition.dimension == 2:
+			self.Plotsurface()
 
 	def make_figure(self):
 		self.fig = plt.figure()
@@ -128,7 +138,9 @@ class Plotter(object):
 		else:
 			self.ax.scatter(xs, ys, zs, zdir='z', s=5, c=None, depthshade=True)#v['point'][
 
-	def PlotCurve(self, curve):
+	def PlotCurve(self):
+		curve = self.decomposition # a local unpacking
+
 		num_nondegen_edges=0
 		nondegen=[]
 		for i in range(curve.curve.num_edges):
@@ -142,9 +154,9 @@ class Plotter(object):
 
 		for i in range(num_nondegen_edges):
 			color=color_list[i]
-			self.PlotEdge(curve,nondegen[i],color)
+			self.PlotEdge(nondegen[i],color)
 
-	def PlotEdge(self, curve, edge_index,color):
+	def PlotEdge(self,edge_index,color):
 
 		xs=[]
 		ys=[]
@@ -164,7 +176,8 @@ class Plotter(object):
 			self.ax.plot(xs, ys, zs, zdir='z', c=color)#v['point']
 
 
-	def Plotsurface(self, surf):
+	def Plotsurface(self):
+		surf = self.decomposition # a local unpacking
 		print("Plotsurface unimplemented yet.")
 
 

@@ -21,7 +21,7 @@ class Curve(Decomposition):
 		# automatically parse data files to gather curve data
 		self.parse_decomp(self.directory)
 		self.parse_edge(self.directory)
-		self.parse_curve_sampler(self.directory)
+		self.parse_curve_samples(self.directory)
 		self.read_input(self.directory)
 
 
@@ -30,5 +30,5 @@ class Curve(Decomposition):
 		self.num_edges = edge_data['number of edges']
 		self.edges = edge_data['edges']
 
-	def parse_curve_sampler(self, directory):
-		self.sampler_data = bertini_real.parse.parse_Curve_Sampler(directory)
+	def parse_curve_samples(self, directory):
+		self.sampler_data = bertini_real.parse.parse_Curve_Samples(directory)

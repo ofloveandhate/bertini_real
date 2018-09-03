@@ -196,7 +196,7 @@ def parse_Edges(directory):
 
 
 
-def parse_Curve_Sampler(directory):
+def parse_Curve_Samples(directory):
 	filename = directory + '/samp.curvesamp'
 	if not os.path.isfile(filename):
 		return [[]] #no curve sampling to parse, so return empty sampling
@@ -219,7 +219,7 @@ def parse_Curve_Sampler(directory):
 
 
 
-def parse_surface_Sampler(directory):
+def parse_surface_Samples(directory):
 	filename = directory + '/samp.surfsamp'
 	if not os.path.isfile(filename):
 		return []
