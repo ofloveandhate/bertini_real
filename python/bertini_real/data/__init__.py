@@ -8,6 +8,17 @@ import bertini_real.util
 import dill
 import numpy as np
 
+
+'''
+implemented in a way such that every decomposition is is a BRData,
+and then if it's a curve, it gets a curve, and if its a surface, it gets a surface.
+
+i'd rather it was the data type itself, and modeled is-a rather than has-a, but this is what there is right now.  
+
+todo: re-implement so that is-a instead of has-a is the thing to do. 
+all related code could be much more generic.
+
+'''
 class BRData(object):
     def __init__(self, autoload = True):
         self.filenames = []
@@ -20,6 +31,7 @@ class BRData(object):
         result = ""
 
         result += "decomposition of dimension {}".format(self.dimension)
+
         return result
 
     def __repr__(self):
@@ -149,6 +161,9 @@ class BRData(object):
         return fileName
 
 
+'''
+Reads the most recent decomposition, and returns it.
+'''
 def ReadMostRecent():
         filenum = bertini_real.util.highest_filenumber()
 
@@ -163,8 +178,21 @@ def ReadMostRecent():
         return decomposition
 
 
-if __name__ == "__main__":
-    b = BRdata()
-    
-    fileName = b.autosave()
-    print("saving to file `" + fileName + "`")
+
+def gather():
+
+    a = bertini_real.util.next_filenumber()
+
+    fileName = "BRdata" + str(a) + ".pkl"
+    fileObject = open(fileName,'wb')
+#file parsing
+    b = BRData()
+
+    print("saving to file " + fileName)
+
+    import dill
+    #b is written to fileObject through dump function
+    dill.dump(b,fileObject)
+    #closes the file
+    fileObject.close()
+
