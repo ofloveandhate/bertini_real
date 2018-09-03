@@ -2,7 +2,7 @@ import os
 #def function_name(parameters)
 #function doc string under
 def parse_directory_name(directory_name = 'Dir_Name'):
-	""" Parses file that contains the directory name, the MPtype, and the dimension
+	""" parses file that contains the directory name, the MPtype, and the dimension
 	 Returns a list [directory, MPtype, dimension]
 	"""
 	#os path manipulations. function returns true if path is an existing file
@@ -219,7 +219,7 @@ def parse_Curve_Sampler(directory):
 
 
 
-def parse_Surface_Sampler(directory):
+def parse_surface_Sampler(directory):
 	filename = directory + '/samp.surfsamp'
 	if not os.path.isfile(filename):
 		return []

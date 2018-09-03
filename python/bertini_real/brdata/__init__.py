@@ -1,14 +1,14 @@
 from __future__ import print_function
 import os
-import ParsingFunctions
+import bertini_real.parse as parse
 
-from Dehomogenize import dehomogenize
-from Surface import Surface, Curve
-import Util
+from bertini_real.dehomogenize import dehomogenize
+from bertini_real.surface import Surface, Curve
+import bertini_real.util
 import dill
 import numpy as np
 
-class BRdata(object):
+class BRData(object):
     def __init__(self, autoload = True):
         self.filenames = []
         self.num_vertices = 0
@@ -17,7 +17,7 @@ class BRdata(object):
             self.gather()
 
     def gather(self):
-        self.directory_info = ParsingFunctions.parse_directory_name()
+        self.directory_info = bertini_real.parse.parse_directory_name()
         self.find_directory(self.directory_info[0])
         print("gathering data from " + self.directory)
         self.dimension = int(self.directory_info[2])
@@ -131,7 +131,7 @@ class BRdata(object):
         self.curve =  Curve(directory)
 
     def autosave(self):
-        fn = Util.next_filenumber()
+        fn = util.next_filenumber()
         fileName = "BRdata" + str(fn) + ".pkl"
         fileObject = open(fileName,'wb')
         dill.dump(b,fileObject)

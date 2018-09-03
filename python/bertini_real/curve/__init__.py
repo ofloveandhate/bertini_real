@@ -1,5 +1,5 @@
-import ParsingFunctions
-from Decomposition import Decomposition
+import bertini_real.parse
+from bertini_real.decomposition import Decomposition
 
 class Curve(Decomposition):
 	def __init__(self, directory):
@@ -26,9 +26,9 @@ class Curve(Decomposition):
 
 
 	def parse_edge(self, directory):
-		edge_data = ParsingFunctions.parse_Edges(directory)
+		edge_data = bertini_real.parse.parse_Edges(directory)
 		self.num_edges = edge_data['number of edges']
 		self.edges = edge_data['edges']
 
 	def parse_curve_sampler(self, directory):
-		self.sampler_data = ParsingFunctions.parse_Curve_Sampler(directory)
+		self.sampler_data = bertini_real.parse.parse_Curve_Sampler(directory)

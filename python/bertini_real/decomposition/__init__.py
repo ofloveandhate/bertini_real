@@ -1,9 +1,9 @@
-import ParsingFunctions
+import bertini_real.parse
 import os
 
 class Decomposition(object):
 	def parse_decomp(self, directory):
-		decomposition_data = ParsingFunctions.parse_decomposition(directory)
+		decomposition_data = bertini_real.parse.parse_decomposition(directory)
 		self.inputfilename = decomposition_data['input file name']
 		self.pi = decomposition_data['Pi info']
 		self.patch = decomposition_data['Patch Vectors']

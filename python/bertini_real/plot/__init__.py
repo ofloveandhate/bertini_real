@@ -1,18 +1,26 @@
-
 #Nicolle Ho
 #University of Notre Dame
 #Spring 2017
 
+# Danielle Brake
+# Fall 2018
+
+import bertini_real as br
+
+
+
+
+
 import os
 from BRdata import BRdata
-from Surface import Surface, Curve
+from surface import surface, Curve
 import Util
 import dill
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-class BRplotter(object):
+class Plotter(object):
 
     def __init__(self, data = []):
         self.decomposition = data
@@ -32,7 +40,7 @@ class BRplotter(object):
         if self.decomposition.dimension == 1:
             self.PlotCurve(self.decomposition)
         elif self.decomposition.dimension == 2:
-            self.PlotSurface(self.decomposition)
+            self.Plotsurface(self.decomposition)
 
         plt.xlabel("x")
         plt.ylabel("y")
@@ -44,7 +52,7 @@ class BRplotter(object):
 
 
     def ReadMostRecent(self):
-        filenum = Util.highest_filenumber()
+        filenum = util.highest_filenumber()
 
         fileName = "BRdata" + str(filenum) + ".pkl"
 
@@ -109,9 +117,21 @@ class BRplotter(object):
             self.ax.plot(xs, ys, zs, zdir='z', c=color)#v['point']
 
 
-    def PlotSurface(self, surf):
-        print("PlotSurface unimplemented yet")
+    def Plotsurface(self, surf):
+        print("Plotsurface unimplemented yet")
 
+
+
+
+
+def plot():
+
+    p = br.plot.Plotter()
+    #p takes the action ReadMostRecent()
+    p.ReadMostRecent()
+    #member functions have to be called as a member function
+    p.plot()
+    return p
 
 
 
@@ -119,7 +139,7 @@ class BRplotter(object):
 def plot(data):
     b = BRplotter(data)
     b.plot();
-
+    return b
 
 
 
@@ -127,3 +147,5 @@ if __name__ == "__main__":
      b = BRplotter()
      b.ReadMostRecent()
      b.plot()
+
+

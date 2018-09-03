@@ -1,8 +1,8 @@
-import ParsingFunctions
+import bertini_real.parse
 import os
 
-from Decomposition import Decomposition
-from Curve import Curve
+from bertini_real.decomposition import Decomposition
+from bertini_real.curve import Curve
 
 class Surface(Decomposition):
 	def __init__(self, directory):
@@ -42,7 +42,7 @@ class Surface(Decomposition):
 
 
 	def parse_surf(self, directory):
-		surf_data = ParsingFunctions.parse_Surf(directory)
+		surf_data = bertini_real.parse.parse_Surf(directory)
 		self.num_faces = surf_data[0]
 		self.num_edges = surf_data[1]
 		self.num_midpoint_slices = surf_data[2]
@@ -51,7 +51,7 @@ class Surface(Decomposition):
 		self.singular_curve_multiplicities = surf_data[5]
 
 	def gather_faces(self, directory):
-		self.faces = ParsingFunctions.parse_Faces(directory)
+		self.faces = bertini_real.parse.parse_Faces(directory)
 	def gather_curves(self, directory):
 		for ii in range(self.num_midpoint_slices):
 			new_curve = Curve(directory + '/curve_midslice_' + str(ii))
@@ -72,6 +72,6 @@ class Surface(Decomposition):
 
 
 	def gather_surface_samples(self, directory):
-		self.surface_sampler_data = ParsingFunctions.parse_Surface_Sampler(directory)
+		self.surface_sampler_data = bertini_real.parse.parse_surface_Sampler(directory)
 
 	
