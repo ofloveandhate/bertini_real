@@ -6,7 +6,7 @@
 # Fall 2018
 
 import os
-from bertini_real.brdata import BRData
+from bertini_real.data import BRData
 from bertini_real.surface import Surface, Curve
 import bertini_real.util
 import dill
@@ -18,6 +18,10 @@ from mpl_toolkits.mplot3d import Axes3D
 class RenderOptions(object):
 	def __init__(self):
 		self.vertices = True
+		self.samples = True
+		self.raw = False
+
+		self.colormap = plt.cm.inferno
 
 
 class VisibilityOptions(object):
@@ -36,7 +40,7 @@ class Plotter(object):
 	def __init__(self, data = None, options = Options()):
 
 		if data is None:
-			self.ReadMostRecent()
+			self.decomposition = bertini_real.data.ReadMostRecent()
 		else:
 			self.decomposition = data
 
@@ -69,7 +73,7 @@ class Plotter(object):
 		if self.decomposition.dimension == 1:
 			self.PlotCurve()
 		elif self.decomposition.dimension == 2:
-			self.Plotsurface()
+			self.PlotSurface()
 
 	def make_figure(self):
 		self.fig = plt.figure()
@@ -99,21 +103,6 @@ class Plotter(object):
 
 		
 
-
-
-
-	def ReadMostRecent(self):
-		filenum = bertini_real.util.highest_filenumber()
-
-		fileName = "BRdata" + str(filenum) + ".pkl"
-
-		print("reading from file " + fileName)
-
-		fileObject = open(fileName,'rb')
-		self.decomposition = dill.load(fileObject)
-		fileObject.close()
-
-
 	'''
 	renders all vertices
 
@@ -139,24 +128,24 @@ class Plotter(object):
 			self.ax.scatter(xs, ys, zs, zdir='z', s=5, c=None, depthshade=True)#v['point'][
 
 	def PlotCurve(self):
-		curve = self.decomposition # a local unpacking
+		curve = self.decomposition.curve # a local unpacking
 
 		num_nondegen_edges=0
 		nondegen=[]
-		for i in range(curve.curve.num_edges):
-			e=curve.curve.edges[i]
+		for i in range(curve.num_edges):
+			e=curve.edges[i]
 			if e[0]!=e[1]!=e[2]:
 				num_nondegen_edges=num_nondegen_edges+1
 				nondegen.append(i)
 
-		colormap = plt.cm.inferno
-		color_list=([colormap(i) for i in np.linspace(0, 1,num_nondegen_edges)])
+		colormap = self.options.render.colormap
+		color_list=[colormap(i) for i in np.linspace(0, 1,num_nondegen_edges)]
 
 		for i in range(num_nondegen_edges):
 			color=color_list[i]
-			self.PlotEdge(nondegen[i],color)
+			self.PlotEdgeSamples(nondegen[i],color)
 
-	def PlotEdge(self,edge_index,color):
+	def PlotEdgeSamples(self,edge_index,color):
 
 		xs=[]
 		ys=[]
@@ -176,13 +165,16 @@ class Plotter(object):
 			self.ax.plot(xs, ys, zs, zdir='z', c=color)#v['point']
 
 
-	def Plotsurface(self):
+	def PlotSurface(self):
 		surf = self.decomposition # a local unpacking
-		print("Plotsurface unimplemented yet.")
+		print("PlotSurface unimplemented yet.")
+
+		if self.options.render.samples:
+			self.PlotSurfaceSamples()
 
 
-
-
+	def PlotSurfaceSamples(self):
+		print("PlotSurfaceSamples unimplemented yet.")
 
 
 def plot(data = None):

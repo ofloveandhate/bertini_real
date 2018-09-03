@@ -1,5 +1,5 @@
 
-import bertini_real.brdata
+import bertini_real.data
 import bertini_real.surface
 import bertini_real.curve
 import bertini_real.util
@@ -13,7 +13,7 @@ def gather():
 	fileName = "BRdata" + str(a) + ".pkl"
 	fileObject = open(fileName,'wb')
 #file parsing
-	b = brdata.BRData()
+	b = data.BRData()
 
 	print("saving to file " + fileName)
 

@@ -16,9 +16,19 @@ class BRData(object):
         if autoload:
             self.gather()
 
+    def __str__(self):
+        result = ""
+
+        result += "decomposition of dimension {}".format(self.dimension)
+        return result
+
+    def __repr__(self):
+        return str(self)
+
     def gather(self):
         self.directory_info = bertini_real.parse.parse_directory_name()
         self.find_directory(self.directory_info[0])
+
         print("gathering data from " + self.directory)
         self.dimension = int(self.directory_info[2])
         # gather vertices
@@ -137,6 +147,21 @@ class BRData(object):
         dill.dump(b,fileObject)
         fileObject.close()
         return fileName
+
+
+def ReadMostRecent():
+        filenum = bertini_real.util.highest_filenumber()
+
+        fileName = "BRdata" + str(filenum) + ".pkl"
+
+        print("reading from file " + fileName)
+
+        fileObject = open(fileName,'rb')
+        decomposition = dill.load(fileObject)
+        fileObject.close()
+
+        return decomposition
+
 
 if __name__ == "__main__":
     b = BRdata()
