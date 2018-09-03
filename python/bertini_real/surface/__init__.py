@@ -39,7 +39,10 @@ class Surface(Decomposition):
 		self.gather_surface_samples(self.directory)
 		self.read_input(self.directory)
 
-
+	def __str__(self):
+		result = "surface with:\n"
+		result += "{} faces".format(self.num_faces)
+		return result
 
 	def parse_surf(self, directory):
 		surf_data = bertini_real.parse.parse_Surf(directory)

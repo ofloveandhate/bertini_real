@@ -32,3 +32,10 @@ class Curve(Decomposition):
 
 	def parse_curve_samples(self, directory):
 		self.sampler_data = bertini_real.parse.parse_Curve_Samples(directory)
+
+
+	def __str__(self):
+		result = "curve with:\n"
+		result += "{} edges".format(self.num_edges)
+		return result
+

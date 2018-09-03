@@ -30,8 +30,12 @@ class BRData(object):
     def __str__(self):
         result = ""
 
-        result += "decomposition of dimension {}".format(self.dimension)
-
+        result += "decomposition of dimension {}\n".format(self.dimension)
+        if self.dimension is 1:
+            result += str(self.curve)
+        elif self.dimension is 2:
+            result += str(self.surface)
+            
         return result
 
     def __repr__(self):
