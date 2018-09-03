@@ -36,7 +36,7 @@ fv_vertices_to_convhull = {};
 for edge_index = 1:BRinfo.num_edges
 	
 	if use_sampled_data
-		vert_indices = BRinfo.sampler_data.edge(edge_index).samples+1;
+		vert_indices = BRinfo.sampler_data.edge(edge_index).samples ;
 	else
 		vert_indices = BRinfo.edges(edge_index,:);
 	end
