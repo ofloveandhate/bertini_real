@@ -7,7 +7,7 @@ def parse_directory_name(directory_name = 'Dir_Name'):
 	"""
 	#os path manipulations. function returns true if path is an existing file
 	if not os.path.isfile(directory_name):
-		print "File does not exist, please run Bertini Real"
+		print("File does not exist, please run Bertini Real")
 		return
 	#open file, reads each line for the directory, mp type, and dimension and returns it in a list
 	with open(directory_name, 'r') as f:
@@ -35,7 +35,7 @@ def parse_decomposition(directory):
 #splits into two separate parts, separate integers
 #turns them into integers
 	if not os.path.isfile(directory + '/decomp'):
-		print "did not find decomp at %s" %os.getcwd()
+		print("did not find decomp at %s" %os.getcwd())
 		return {}
 	with open(directory + '/decomp', 'r') as f:
 		inputFileName = f.readline().replace('\n','')
@@ -43,14 +43,14 @@ def parse_decomposition(directory):
 		num_variables = int(num_variables_and_dimension[0])
 		dimension = int(num_variables_and_dimension[1])
 
-		Pi = [ [0,0] for i in xrange(num_variables - 1)]
+		Pi = [ [0,0] for i in range(num_variables - 1)]
 #im kinda confused as to what this is doing
-		for ii in xrange(dimension):
+		for ii in range(dimension):
 			numVars = f.readline()
 			while numVars == '\n':
 				numVars = f.readline()
 			numVars = int(numVars.replace('\n', ''))
-			for jj in xrange(numVars):
+			for jj in range(numVars):
 				Pi_Nums = f.readline().replace('\n', '').split(' ')
 				if jj == 0:
 					continue
@@ -66,13 +66,13 @@ def parse_decomposition(directory):
 
 
 		Patch_Vectors = []
-		for ii in xrange(num_patches):
+		for ii in range(num_patches):
 			Patch_Vectors.append([])
 			patch_size = f.readline()
 			while patch_size == '\n':
 				patch_size = f.readline()
 			patch_size = int(patch_size.replace('\n', ''))
-			for jj in xrange(patch_size):
+			for jj in range(patch_size):
 				Patch_Vectors_data = f.readline().replace('\n','').split(' ')
 				Patch_Vectors[ii].append(complex(float(Patch_Vectors_data[0]), float(Patch_Vectors_data[1])))
 		#Get radius
@@ -87,7 +87,7 @@ def parse_decomposition(directory):
 			centerSize = f.readline()
 		centerSize = int(centerSize.replace('\n', ''))
 		center = []
-		for ii in xrange(centerSize):
+		for ii in range(centerSize):
 			center_data = f.readline().replace('\n', '').split(' ')
 			center.append(complex(float(center_data[0]), float(center_data[1])))
 		return {'input file name':inputFileName,'Pi info': Pi, 'Patch Vectors':Patch_Vectors, "radius": radius, "center":center, "num patches":num_patches}
@@ -101,7 +101,7 @@ def parse_Surf(directory):
 	"""
 
 	if not os.path.isfile(directory + '/S.surf'):
-		print "S.surf does not exist in current directory: %s" %os.getcwd()
+		print("S.surf does not exist in current directory: %s" %os.getcwd())
 		return
 	with open(directory + "/S.surf", 'r') as f:
 		data = f.readline().replace('\n', '').split(' ')
@@ -113,11 +113,11 @@ def parse_Surf(directory):
 		while num_singular_curves == '\n':
 			num_singular_curves = f.readline()
 		num_singular_curves = int(num_singular_curves.replace('\n', ''))
-		singular_curve_multiplicites = [ [0,0] for i in xrange(num_singular_curves)]
+		singular_curve_multiplicites = [ [0,0] for i in range(num_singular_curves)]
 		multiplicites = f.readline().replace('\n', '').split(' ')
 		index = 0
-		for ii in xrange(num_singular_curves):
-			for jj in xrange(2):
+		for ii in range(num_singular_curves):
+			for jj in range(2):
 				singular_curve_multiplicites[ii][jj] = int(multiplicites[index])
 				index += 1
 
@@ -137,12 +137,12 @@ def parse_Faces(directory):
 
 	"""
 	if not os.path.isfile(directory + '/F.faces'):
-		print "F.faces file not found in current directory: %s" %os.getcwd()
+		print("F.faces file not found in current directory: %s" %os.getcwd())
 		return
 	with open(directory + '/F.faces') as f:
 		num_faces = int(f.readline().replace('\n', ''))
-		faces = [{} for i in xrange(num_faces)]
-		for ii in xrange(num_faces):
+		faces = [{} for i in range(num_faces)]
+		for ii in range(num_faces):
 			midpoint = f.readline()
 			while midpoint == '\n':
 				midpoint = f.readline()
@@ -176,14 +176,14 @@ def parse_Faces(directory):
 
 def parse_Edges(directory):
 	if not os.path.isfile(directory + '/E.edge'):
-		print "E.edge file not found in current directory: %s" %os.getcwd()
+		print("E.edge file not found in current directory: %s" %os.getcwd())
 		return {'number of edges': 0, 'edges': []}
 
 	with open(directory + '/E.edge', 'r') as f:
 		curves = {}
 		curves['number of edges'] = int(f.readline().replace('\n', ''))
-		curves['edges'] = [ [0,0,0] for i in xrange(curves['number of edges'])]
-		for ii in xrange(curves['number of edges']):
+		curves['edges'] = [ [0,0,0] for i in range(curves['number of edges'])]
+		for ii in range(curves['number of edges']):
 			edges = f.readline()
 			while edges == '\n':
 				edges = f.readline()
@@ -206,7 +206,7 @@ def parse_Curve_Sampler(directory):
 		f.readline() # read blank line.
 		sampler_data = []
 
-		for ii in xrange(num_edges):
+		for ii in range(num_edges):
 			num_samples = int(f.readline().replace('\n', ''))
 			temp = []
 			thing = f.readline().replace('\n', '').split()

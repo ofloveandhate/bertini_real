@@ -6,7 +6,7 @@ def dehomogenize(points):
     """
     index = 0
     new_points = []
-    for i in xrange(len(points)):
+    for i in range(len(points)):
         if i == index:
             continue
         else:

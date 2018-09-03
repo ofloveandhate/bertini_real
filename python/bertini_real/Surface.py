@@ -53,10 +53,10 @@ class Surface(Decomposition):
 	def gather_faces(self, directory):
 		self.faces = ParsingFunctions.parse_Faces(directory)
 	def gather_curves(self, directory):
-		for ii in xrange(self.num_midpoint_slices):
+		for ii in range(self.num_midpoint_slices):
 			new_curve = Curve(directory + '/curve_midslice_' + str(ii))
 			self.midpoint_slices.append(new_curve)
-		for ii in xrange(self.num_critical_slices):
+		for ii in range(self.num_critical_slices):
 			new_curve = Curve(directory + '/curve_critslice_' + str(ii))
 			self.critical_point_slices.append(new_curve)
 
@@ -64,7 +64,7 @@ class Surface(Decomposition):
 		self.critical_curve.append(critical_curve)
 		sphere_curve = Curve(directory + '/curve_crit')
 
-		for ii in xrange(self.num_singular_curves):
+		for ii in range(self.num_singular_curves):
 			filename = directory + '/curve_singular_mult_' + str(self.singular_curve_multiplicities[ii][0]) +'_' + str(self.singular_curve_multiplicities[ii][1])
 			new_curve = Curve(filename)
 			self.singular_curves.append(new_curve)

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import ParsingFunctions
 
@@ -59,7 +60,7 @@ class BRdata(object):
             num_filenames = int(line[3].replace('\n', ''))
 
             # Skips data not used
-            for i in xrange(0, (num_projections * num_natural_vars)):
+            for i in range(0, (num_projections * num_natural_vars)):
                 skip_this_line = f.readline()
                 while skip_this_line == '\n':
                         skip_this_line = f.readline()
@@ -69,13 +70,13 @@ class BRdata(object):
 
 
             # Gets file names and stores them in self.filenames
-            for ii in xrange(num_filenames):
+            for ii in range(num_filenames):
                 skip_line = f.readline()
                 self.filenames.append(f.readline().replace('\n', ''))
 
             self.vertices = [ {} for i in range(self.num_vertices)]
 
-            for ii in xrange(self.num_vertices):
+            for ii in range(self.num_vertices):
                 line = f.readline()
 
                 while line == '\n':
@@ -83,7 +84,7 @@ class BRdata(object):
                 number_of_variables = int(line)
                 self.vertices[ii]['point'] = []
                 temporary_point = []
-                for jj in xrange(number_of_variables):
+                for jj in range(number_of_variables):
                     complex_num = f.readline().split(' ')
                     real_part = float(complex_num[0])
                     imaginary_part = float(complex_num[1])
@@ -100,7 +101,7 @@ class BRdata(object):
 
                 num_projection_values = int(line)
                 self.vertices[ii]['projection_value'] = []
-                for ll in xrange(num_projection_values):
+                for ll in range(num_projection_values):
                     complex_num = f.readline().split(' ')
                     real_part = float(complex_num[0])
                     imaginary_part = float(complex_num[1])
@@ -135,8 +136,10 @@ class BRdata(object):
         fileObject = open(fileName,'wb')
         dill.dump(b,fileObject)
         fileObject.close()
+        return fileName
 
 if __name__ == "__main__":
     b = BRdata()
-    print("saving to file " + fileName)
-    b.autosave()
+    
+    fileName = b.autosave()
+    print("saving to file" + fileName)
