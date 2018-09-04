@@ -65,9 +65,8 @@ class Surface(Decomposition):
 			new_curve = Curve(directory + '/curve_critslice_' + str(ii))
 			self.critical_point_slices.append(new_curve)
 
-		critical_curve = Curve(directory + '/curve_crit')
-		self.critical_curve.append(critical_curve)
-		sphere_curve = Curve(directory + '/curve_crit')
+		self.critical_curve = Curve(directory + '/curve_crit')
+		self.sphere_curve = Curve(directory + '/curve_sphere')
 
 		for ii in range(self.num_singular_curves):
 			filename = directory + '/curve_singular_mult_' + str(self.singular_curve_multiplicities[ii][0]) +'_' + str(self.singular_curve_multiplicities[ii][1])

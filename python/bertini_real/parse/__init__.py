@@ -189,7 +189,7 @@ def parse_Edges(directory):
 				edges = f.readline()
 			edges = edges.replace(' \n', '').split(' ')
 			for jj in range(3):
-				curves['edges'][ii][jj] = int(edges[jj]) + 1
+				curves['edges'][ii][jj] = int(edges[jj])
 				
 
 	return curves
@@ -199,7 +199,7 @@ def parse_Edges(directory):
 def parse_Curve_Samples(directory):
 	filename = directory + '/samp.curvesamp'
 	if not os.path.isfile(filename):
-		return [[]] #no curve sampling to parse, so return empty sampling
+		raise FileNotFoundError("no samples found for this surface")
 
 	with open(filename, 'r') as f:
 		num_edges = int(f.readline().replace('\n', ''))

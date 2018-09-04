@@ -16,12 +16,16 @@ class Curve(Decomposition):
 		self.radius = 0
 		self.center_size = 0
 		self.center = []
-		self.sampler_data = []
+		self.sampler_data = None
 
 		# automatically parse data files to gather curve data
 		self.parse_decomp(self.directory)
 		self.parse_edge(self.directory)
-		self.parse_curve_samples(self.directory)
+		try:
+			self.parse_curve_samples(self.directory)
+		except FileNotFoundError:
+			print("no samples to gather")
+
 		self.read_input(self.directory)
 
 
