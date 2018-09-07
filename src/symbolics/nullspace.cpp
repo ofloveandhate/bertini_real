@@ -1044,7 +1044,7 @@ void create_nullspace_system(boost::filesystem::path output_name,
 
 			fclose(OUT);
 
-			program_options.CallPython("python_nullspace_system.pyy");
+			program_options.CallPython("python_nullspace_system.py");
 			break;
 		}
 	}
