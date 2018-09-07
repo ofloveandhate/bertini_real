@@ -36,7 +36,11 @@ class Surface(Decomposition):
 		self.parse_surf(self.directory)
 		self.gather_faces(self.directory)
 		self.gather_curves(self.directory)
-		self.gather_surface_samples(self.directory)
+		try:
+			self.gather_surface_samples(self.directory)
+		except:
+			print("no samples found")
+
 		self.read_input(self.directory)
 
 	def __str__(self):
