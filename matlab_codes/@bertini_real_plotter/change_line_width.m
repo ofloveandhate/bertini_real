@@ -33,7 +33,8 @@ prompt = {'Enter new line width:'};
                         
                     case {1}
                         
-                        
+                        set(br_plotter.handles.edges,'LineWidth',new_size);
+						set(br_plotter.handles.sample_edges,'LineWidth',new_size);
                     otherwise
                         
                 end
