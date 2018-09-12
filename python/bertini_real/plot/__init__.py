@@ -38,8 +38,6 @@ class Options(object):
 
 
 class Plotter(object):
-
-
 	def __init__(self, data = None, options = Options()):
 
 		if data is None:
@@ -71,17 +69,18 @@ class Plotter(object):
 
 	def main(self):
 		if self.options.visibility.vertices:
-			self.PlotVertices()
+			self.plot_vertices()
 
 		if self.decomposition.dimension == 1:
-			self.PlotCurve()
+			self.plot_curve()
 		elif self.decomposition.dimension == 2:
-			self.PlotSurface()
+			self.plot_surface()
+
+
+
 
 	def make_figure(self):
 		self.fig = plt.figure()
-
-
 
 
 	def make_axes(self):
@@ -91,10 +90,8 @@ class Plotter(object):
 			self.ax = self.fig.add_subplot(111, projection='3d')
 
 
-
 	def apply_title(self):
 		plt.title(os.getcwd().split(os.sep)[-1])
-
 
 
 	def label_axes(self):
@@ -104,14 +101,18 @@ class Plotter(object):
 		if self.decomposition.dimension is 2:
 			self.ax.set_zlabel("z")
 
-		
+	
+
+
+
+
 
 	'''
 	renders all vertices
 
 	todo: make them colored based on a function
 	'''
-	def PlotVertices(self):
+	def plot_vertices(self):
 
 		xs = []
 		ys = []
@@ -130,7 +131,12 @@ class Plotter(object):
 		else:
 			self.ax.scatter(xs, ys, zs, zdir='z', s=5, c=None, depthshade=True)#v['point'][
 
-	def PlotCurve(self):
+
+
+
+
+
+	def plot_curve(self):
 		
 		curve = self.decomposition.curve # a local unpacking
 
@@ -140,17 +146,17 @@ class Plotter(object):
 			if should_plot_samp:
 				should_plot_raw = False;
 
-		self.DetermineNondegenEdges()
+		self.determine_nondegen_edges()
 
 		if should_plot_raw:
-			self.PlotRawEdges()
+			self.plot_raw_edges()
 
 		
 		if should_plot_samp:
-			self.PlotEdgeSamples()
+			self.plot_edge_samples()
 	
 
-	def PlotRawEdges(self):
+	def plot_raw_edges(self):
 		curve = self.decomposition.curve # a local unpacking
 
 		num_nondegen_edges = len(self.nondegen)
@@ -178,7 +184,7 @@ class Plotter(object):
 				self.ax.plot(xs, ys, zs, zdir='z', c=color)#v['point']
 
 
-	def PlotEdgeSamples(self):
+	def plot_edge_samples(self):
 
 		num_nondegen_edges = len(self.nondegen)
 
@@ -204,7 +210,7 @@ class Plotter(object):
 			else:
 				self.ax.plot(xs, ys, zs, zdir='z', c=color)#v['point']
 	
-	def DetermineNondegenEdges(self):
+	def determine_nondegen_edges(self):
 		curve = self.decomposition.curve # a local unpacking
 		self.nondegen=[]
 		for i in range(curve.num_edges):
@@ -212,16 +218,28 @@ class Plotter(object):
 			if e[0]!=e[1]!=e[2]:
 				self.nondegen.append(i)
 
-	def PlotSurface(self):
+	
+
+
+
+	# what exactly is this supposed to do
+	def plot_surface(self):
 		surf = self.decomposition # a local unpacking
-		print("PlotSurface unimplemented yet.")
+		print("plot_surface unimplemented yet.")
 
 		if self.options.visibility.samples:
 			self.PlotSurfaceSamples()
 
+		if self.options.visibility.raw:
+			self.plot_surface_raw()
 
-	def PlotSurfaceSamples(self):
-		print("PlotSurfaceSamples unimplemented yet.")
+
+	def plot_surface_samples(self):
+		print("plot_surface_samples unimplemented yet.")
+
+
+	def plot_surface_raw(self):
+		print("plot_surface_raw unimplemented")
 
 
 def plot(data = None, options = Options()):
