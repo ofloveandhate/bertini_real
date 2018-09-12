@@ -228,7 +228,7 @@ class Plotter(object):
 		print("plot_surface unimplemented yet.")
 
 		if self.options.visibility.samples:
-			self.PlotSurfaceSamples()
+			self.plot_surface_samples()
 
 		if self.options.visibility.raw:
 			self.plot_surface_raw()
