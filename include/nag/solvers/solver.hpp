@@ -2265,8 +2265,8 @@ bool IsUnRetrackable(int);
 
 
 
+int print_path(comp_d pathVars, mat_d AtimesJ, vec_d current_variable_values, vec_d funcVals, mat_d Jv);
 
-
-
+int print_path(comp_mp pathVars, mat_mp AtimesJ, vec_mp current_variable_values, vec_mp funcVals, mat_mp Jv);
 
 #endif

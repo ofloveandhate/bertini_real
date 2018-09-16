@@ -124,6 +124,9 @@ bool is_identity(const mat_d M);
 bool is_identity(const mat_mp M);
 
 
+double ConditionNumber(mat_d mat);
+
+double ConditionNumber(mat_mp mat);
 
 
 

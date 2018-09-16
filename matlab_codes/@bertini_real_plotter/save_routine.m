@@ -18,6 +18,8 @@ try
 catch e
 	msg = getReport(e);
 	warning('unable to complete saving for this reason:\n\n%s',msg);
+	
+	fprintf('you probably just need to clone and add to the path https://github.com/ofloveandhate/brakelab');
 end
 
 show_panels(br_plotter)

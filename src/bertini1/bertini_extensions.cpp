@@ -392,6 +392,17 @@ bool is_identity(mat_mp M)
 
 
 
+double ConditionNumber(mat_d mat)
+{
+	return conditionNumber_d(mat);
+}
+
+double ConditionNumber(mat_mp mat)
+{
+	return conditionNumber_mp(mat);
+}
+
+
 
 
 void norm_of_difference(mpf_t result, const vec_mp left, const vec_mp right)
