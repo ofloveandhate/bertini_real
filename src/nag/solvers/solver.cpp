@@ -2087,3 +2087,40 @@ int generic_setup_files(FILE ** OUT, boost::filesystem::path outname,
 
 	return SUCCESSFUL;
 }
+
+
+
+
+
+int print_path(comp_d pathVars, mat_d AtimesJ, vec_d current_variable_values, vec_d funcVals, mat_d Jv)
+{
+	fprintf(g_path_file,"%.15g %.15g ", pathVars->r, pathVars->i);
+	for (int ii=0; ii<current_variable_values->size; ++ii) {
+		fprintf(g_path_file,"%.15g %.15g ",current_variable_values->coord[ii].r,current_variable_values->coord[ii].i);
+	}
+	fprintf(g_path_file, "%.15e  ", ConditionNumber(Jv));
+	fprintf(g_path_file,"\n");
+	return 0;
+}
+
+int print_path(comp_mp pathVars, mat_mp AtimesJ, vec_mp current_variable_values, vec_mp funcVals, mat_mp Jv)
+{
+	// the `g` is for global
+
+	mpf_out_str (g_path_file, 10, 0, pathVars->r);
+	fprintf(g_path_file," ");
+	mpf_out_str (g_path_file, 10, 0, pathVars->i);
+	fprintf(g_path_file," ");
+	for (int ii=0; ii<current_variable_values->size; ++ii) { 
+		mpf_out_str (g_path_file, 10, 0, current_variable_values->coord[ii].r);
+		fprintf(g_path_file," ");
+		mpf_out_str (g_path_file, 10, 0, current_variable_values->coord[ii].i);
+		fprintf(g_path_file," ");
+	}
+
+	fprintf(g_path_file, "%.15e ", ConditionNumber(Jv));
+	fprintf(g_path_file,"\n");
+	return 0;
+}
+
+
