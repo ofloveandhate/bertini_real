@@ -2408,15 +2408,9 @@ int nullspacejac_right_eval_d(point_d funcVals, point_d parVals, vec_d parDer, m
 	}
 
 
+	BED->num_steps++;
 	if (print_this_path)
-	{
-		BED->num_steps++;
-		fprintf(g_path_file,"%.15g %.15g ", pathVars->r, pathVars->i);
-		for (int ii=0; ii<BED->num_variables; ++ii) {
-			fprintf(g_path_file,"%.15g %.15g ",current_variable_values->coord[ii].r,current_variable_values->coord[ii].i);
-		}
-		fprintf(g_path_file,"\n");
-	}
+		print_path(pathVars, *AtimesJ, current_variable_values, funcVals, Jv);
 
 	return 0;
 }
@@ -3128,27 +3122,9 @@ int nullspacejac_right_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDe
 	}
 
 
-
-
-
+	BED->num_steps++;
 	if (print_this_path)
-	{
-
-		BED->num_steps++;
-
-		mpf_out_str (g_path_file, 10, BED->SLP->precision, pathVars->r);
-		fprintf(g_path_file," ");
-		mpf_out_str (g_path_file, 10, BED->SLP->precision, pathVars->i);
-		fprintf(g_path_file," ");
-		for (int ii=0; ii<BED->num_variables; ++ii) {
-			mpf_out_str (g_path_file, 10, BED->SLP->precision, current_variable_values->coord[ii].r);
-			fprintf(g_path_file," ");
-			mpf_out_str (g_path_file, 10, BED->SLP->precision, current_variable_values->coord[ii].i);
-			fprintf(g_path_file," ");
-		}
-		fprintf(g_path_file,"\n");
-
-	}
+		print_path(pathVars, *AtimesJ, current_variable_values, funcVals, Jv);
 
 
 	return 0;

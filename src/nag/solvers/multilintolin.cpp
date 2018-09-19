@@ -827,16 +827,9 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 	clear_mat_d(Jv_Patch);
 	clear_mat_d(AtimesJ);
 
-
+	BED->num_steps++;
 	if (print_this_path)
-	{
-		BED->num_steps++;
-		fprintf(g_path_file,"%.15g %.15g ", pathVars->r, pathVars->i);
-		for (int ii=0; ii<BED->num_variables; ++ii) {
-			fprintf(g_path_file,"%.15g %.15g ",current_variable_values->coord[ii].r,current_variable_values->coord[ii].i);
-		}
-		fprintf(g_path_file,"\n");
-	}
+		print_path(pathVars, AtimesJ, current_variable_values, funcVals, Jv);
 
 
 	return 0;
@@ -1079,27 +1072,10 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 	clear_mat_mp(Jv_Patch);
 	clear_mat_mp(AtimesJ);
 
-
+	BED->num_steps++;
 	if (print_this_path)
-	{
-
-		BED->num_steps++;
-
-		mpf_out_str (g_path_file, 10, 0, pathVars->r);
-		fprintf(g_path_file," ");
-		mpf_out_str (g_path_file, 10, 0, pathVars->i);
-		fprintf(g_path_file," ");
-		for (int ii=0; ii<BED->num_variables; ++ii) {
-			mpf_out_str (g_path_file, 10, 0, current_variable_values->coord[ii].r);
-			fprintf(g_path_file," ");
-			mpf_out_str (g_path_file, 10, 0, current_variable_values->coord[ii].i);
-			fprintf(g_path_file," ");
-		}
-		fprintf(g_path_file,"\n");
-
-	}
-
-
+		print_path(pathVars, AtimesJ, current_variable_values, funcVals, Jv);
+	
 
 
 

@@ -225,16 +225,22 @@ def parse_surface_Samples(directory):
 		raise FileNotFoundError("no samples found for this surface")
 	
 	with open(filename, 'r') as f:
-		dimension = int(f.readline().replace('\n', ''))
-		if dimension is not 2:
-			raise RuntimeError("file should have surface samples in it, but dimension is not 2...  uh oh!")
+		num_faces = int(f.readline().replace('\n', ''))
 		f.readline() # read blank line.
-		num_samples = int(f.readline().replace('\n', ''))
-		samples = [None] * num_samples
-		for ii in range(num_samples):
-			temp = f.readline().replace('\n', '').split()
-			if len(temp) is not 3:
-				raise RuntimeError("length of triangle indices is not three.")
-			samples[ii] = (temp[0],temp[1],temp[2])
+
+		samples = [None] * num_faces
+		for ii in range(num_faces):
+
+			num_samples = int(f.readline().replace('\n', ''))
+			curr_samples = [None] * num_samples
+
+			for jj in range(num_samples):
+				temp = f.readline().replace('\n', '').split()
+				if len(temp) is not 3:
+					raise RuntimeError("length of triangle indices is not three.")
+				curr_samples[jj] = (temp[0],temp[1],temp[2])
+				
+			samples[ii] =  curr_samples
+			f.readline() # read blank line.
 		
 		return samples
