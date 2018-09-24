@@ -238,7 +238,7 @@ def parse_surface_Samples(directory):
 				temp = f.readline().replace('\n', '').split()
 				if len(temp) is not 3:
 					raise RuntimeError("length of triangle indices is not three.")
-				curr_samples[jj] = (temp[0],temp[1],temp[2])
+				curr_samples[jj] = (int(temp[0]),int(temp[1]),int(temp[2]))
 				
 			samples[ii] =  curr_samples
 			f.readline() # read blank line.
