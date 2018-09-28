@@ -13,6 +13,8 @@ import dill
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+
 
 
 class StyleOptions(object):
@@ -68,6 +70,9 @@ class Plotter(object):
 
 
 	def main(self):
+
+		self.points = self.extractPoints()
+
 		if self.options.visibility.vertices:
 			self.plot_vertices()
 
@@ -76,8 +81,21 @@ class Plotter(object):
 		elif self.decomposition.dimension == 2:
 			self.plot_surface()
 
+	def extractPoints(self):
+		points = []
 
+		# get this from plot_samples.py
+		for v in self.decomposition.vertices:
+			#allocate 3 buckets to q
+			q=[None]*3
 
+			for i in range(3):
+				#q[0],q[1],q[2]
+				q[i]=v['point'][i].real
+			points.append(q)
+
+		return points
+		
 
 	def make_figure(self):
 		self.fig = plt.figure()
@@ -85,9 +103,9 @@ class Plotter(object):
 
 	def make_axes(self):
 		if self.decomposition.num_variables==2:
-			self.ax = self.fig.add_subplot(111)
+			self.ax = self.fig.add_subplot(1,1,1)
 		else:
-			self.ax = self.fig.add_subplot(111, projection='3d')
+			self.ax = self.fig.add_subplot(1,1,1, projection='3d')
 
 
 	def apply_title(self):
@@ -113,6 +131,17 @@ class Plotter(object):
 	todo: make them colored based on a function
 	'''
 	def plot_vertices(self):
+
+		# # refacotred version
+		# # this may have fucked it up??
+		# points = self.points
+		# edit: this does fuck it up
+
+		# if self.decomposition.num_variables==2:
+		# 	self.ax.scatter(points[0], points[1])
+		# else:
+		# 	self.ax.scatter(points[0], points[1], points[2],
+		# 					zdir='z', s=5, c=None, depthshade=True)
 
 		xs = []
 		ys = []
@@ -164,6 +193,7 @@ class Plotter(object):
 		colormap = self.options.style.colormap
 		color_list=[colormap(i) for i in np.linspace(0, 1,num_nondegen_edges)]
 
+		# instead of v['point']...etc look up into "self.points"
 		for i in range(num_nondegen_edges):
 			color=color_list[i]
 			edge_index = self.nondegen[i]
@@ -225,6 +255,8 @@ class Plotter(object):
 	# what exactly is this supposed to do
 	def plot_surface(self):
 		surf = self.decomposition # a local unpacking
+		print(surf)
+		# this isn't used, why is it here???
 		print("plot_surface unimplemented yet.")
 
 		if self.options.visibility.samples:
@@ -235,7 +267,24 @@ class Plotter(object):
 
 
 	def plot_surface_samples(self):
-		print("plot_surface_samples unimplemented yet.")
+		points = self.points
+
+		tuples = self.decomposition.surface.surface_sampler_data
+
+		T = []
+
+		for i in range(len(tuples)):
+
+			for tri in tuples[i]:
+				f = int(tri[0])
+				s = int(tri[1])
+				t = int(tri[2])
+
+				k = [points[f],points[s],points[t]]
+				T.append(k)
+
+		self.ax.add_collection3d(Poly3DCollection(T))
+
 
 
 	def plot_surface_raw(self):
