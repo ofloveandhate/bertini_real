@@ -271,9 +271,14 @@ class Plotter(object):
 
 		tuples = self.decomposition.surface.surface_sampler_data
 
+		colormap = self.options.style.colormap
+		color_list=[colormap(i) for i in np.linspace(0, 1,num_nondegen_edges)]
+
 		T = []
 
 		for i in range(len(tuples)):
+
+			# Initialize T here
 
 			for tri in tuples[i]:
 				f = int(tri[0])
@@ -282,6 +287,8 @@ class Plotter(object):
 
 				k = [points[f],points[s],points[t]]
 				T.append(k)
+
+		# add the collection here, with colors
 
 		self.ax.add_collection3d(Poly3DCollection(T))
 
