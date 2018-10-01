@@ -4,7 +4,7 @@
 
 This software implements a numerical algorithm for decomposing real surfaces of arbitrary dimension, using Bertini as the computational engine.  
 
-For documentation, please visit [bertinireal.com](bertinireal.com) and [doc.bertinireal.com](doc.bertinireal.com)
+For documentation, please visit [bertinireal.com](https://bertinireal.com) and [doc.bertinireal.com](https://doc.bertinireal.com)
 
 
 # Notes
@@ -83,4 +83,4 @@ The number of faces, the number of critical slices, and the number of midslices,
 * All curve sub-decompositions, written to their own sub-folders  critical curve, sphere curve, singular curves, and all mid and critslices.
 
 
-Full documentation of input and output for Bertini_real is in [the pdf manual](http://bertinireal.com/resources/bertini_real_manual.pdf), and detailed using Doxygen, and is available at [the Bertini_real documentation webpage](doc.bertinireal.com).
+Full documentation of input and output for Bertini_real is in [the pdf manual](https://bertinireal.com/resources/bertini_real_manual.pdf), and detailed using Doxygen, and is available at [the Bertini_real documentation webpage](https://doc.bertinireal.com).
