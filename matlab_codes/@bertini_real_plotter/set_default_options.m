@@ -32,4 +32,6 @@ function set_default_options(br_plotter)
 	else
 		br_plotter.options.colormap = @parula;
 	end
+	
+	br_plotter.options.figure_saving = render_into_file('generate');
 end

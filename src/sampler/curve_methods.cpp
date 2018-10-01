@@ -1539,8 +1539,8 @@ void Curve::SampleEdgeFixed(	int ii,
 
 	if (target_projection->size < W.num_variables()) {
 		increase_size_vec_mp(target_projection,W.num_variables()); target_projection->size = W.num_variables();
-		for (int ii=W.num_natural_variables(); ii<W.num_variables(); ii++) {
-			set_zero_mp(&target_projection->coord[ii]);
+		for (int qq=W.num_natural_variables(); qq<W.num_variables(); qq++) {
+			set_zero_mp(&target_projection->coord[qq]);
 		}
 	}
 
@@ -1560,8 +1560,8 @@ void Curve::SampleEdgeFixed(	int ii,
 	MultilinConfiguration ml_config(solve_options,this->randomizer());
 
 
-	comp_mp interval_width; init_mp2(interval_width,1024); set_zero_mp(interval_width);
-	comp_mp num_intervals;  init_mp2(num_intervals,1024); set_zero_mp(num_intervals);
+	
+	
 
 	neg_mp(& (W.linear(0))->coord[0],&(V[get_edge(ii).midpt()].projection_values())->coord[V.curr_projection()]);
 
@@ -1569,22 +1569,52 @@ void Curve::SampleEdgeFixed(	int ii,
 	W.add_point(V[get_edge(ii).midpt()].point());
 
 
-	mpf_set_d(num_intervals->r,double(target_num_samples-1));
-
+	comp_mp interval_width; init_mp2(interval_width,1024); set_zero_mp(interval_width);
 	sub_mp(interval_width,&(V[get_edge(ii).right()].projection_values())->coord[V.curr_projection()],&(V[get_edge(ii).left()].projection_values())->coord[V.curr_projection()]);
 
-	div_mp(interval_width,interval_width,num_intervals);
-
-	set_mp(target_projection_value,&(V[get_edge(ii).left()].projection_values())->coord[V.curr_projection()]);
-
-	//add once to get us off 0
-	add_mp(target_projection_value,target_projection_value,interval_width);
-
-	for (int jj=1; jj<target_num_samples-1; jj++) {
+	comp_mp pi_left;  init_mp2(pi_left,1024); set_mp(pi_left,&(V[get_edge(ii).left()].projection_values())->coord[V.curr_projection()]);
 
 
+	comp_mp unit_width; init_mp2(unit_width,1024); set_one_mp(unit_width);
+	comp_mp num_intervals;  init_mp2(num_intervals,1024); set_zero_mp(num_intervals);
 
-		neg_mp(&target_projection->coord[0],target_projection_value); // take the opposite :)
+	mpf_set_d(num_intervals->r,target_num_samples-1);
+	div_mp(unit_width,unit_width,num_intervals);
+
+	// pi_out + (pi_mid - pi_out) * (1-p)^cycle_num;
+	vec_mp u_proj_values;  init_vec_mp(u_proj_values,target_num_samples); u_proj_values->size = target_num_samples;
+	set_zero_mp(&u_proj_values->coord[0]);
+	for (int qq=1; qq<target_num_samples; ++qq)
+		add_mp(&u_proj_values->coord[qq], &u_proj_values->coord[qq-1] , unit_width);
+
+
+
+	for (int jj=1; jj<target_num_samples-1; jj++) {  // start at 1, and end -1, because the endpoints count, and were already set in initialization
+
+		if (jj*2==target_num_samples-1) // use the midpoint, duh
+		{
+			sample_indices_[ii][jj] = get_edge(ii).midpt();
+			continue; // skip, because no need to waste time
+		}
+
+
+		int left_cycle_num, right_cycle_num;
+		if (sampler_options.use_uniform_cycle_num)
+		{
+			left_cycle_num = sampler_options.cycle_num;
+			right_cycle_num = sampler_options.cycle_num;
+		}
+		else
+		{
+			const auto c_nums = GetMetadata(ii);
+			// use the cycle numbers to scale toward the endpoints.
+			left_cycle_num = c_nums.CycleNumLeft();
+			right_cycle_num = c_nums.CycleNumRight();
+		}
+		ScaleByCycleNum(&target_projection->coord[0], &u_proj_values->coord[jj], left_cycle_num, right_cycle_num);
+		mul_mp(&target_projection->coord[0],&target_projection->coord[0],interval_width);
+		add_mp(&target_projection->coord[0],&target_projection->coord[0],pi_left);
+		neg_mp(&target_projection->coord[0],&target_projection->coord[0]); // take the opposite :) because equals zero means the constant term is -whatyouexpect
 
 
 
@@ -1610,33 +1640,32 @@ void Curve::SampleEdgeFixed(	int ii,
 		if (Wnew.num_points()==0) {
 			std::cout << "curve sampler returned no points!" << std::endl;
 			//TODO: ah shit!  this ain't good.  how to deal with it?
+			continue; // i know, i'll continue and just ignore it.  yeah....
 		}
 
 		vec_cp_mp(temp_vertex.point(),Wnew.point(0));
 		temp_vertex.set_type(Curve_sample_point);
 
-		if (sampler_options.no_duplicates){
+		if (sampler_options.no_duplicates)
 			sample_indices_[ii][jj] = index_in_vertices_with_add(V, temp_vertex);
-		}
 		else
-		{
 			sample_indices_[ii][jj] = V.add_vertex(temp_vertex);
-		}
 
 
 		Wnew.reset();
-		add_mp(target_projection_value,target_projection_value,interval_width); // increment this thingy
-
 
 	} // re: jj
 
+	// and then the inevitable clear lines.  oh, c, you are so wasteful of my mental effort
+	clear_mp(pi_left);	
 	clear_mp(temp); clear_mp(temp1);
 	clear_vec_mp(target_projection);
-	clear_mp(target_projection_value);
+	clear_vec_mp(u_proj_values);
+
 	clear_mp(interval_width);
 	clear_mp(num_intervals);
 
-	solve_options.force_no_parallel(prev_state);
+	solve_options.force_no_parallel(prev_state); // be responsible, leave it like you found it.
 }
 
 
