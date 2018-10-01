@@ -71,7 +71,7 @@ class Plotter(object):
 
 	def main(self):
 
-		self.points = self.extractPoints()
+		self.points = self.extract_points()
 
 		if self.options.visibility.vertices:
 			self.plot_vertices()
@@ -81,20 +81,7 @@ class Plotter(object):
 		elif self.decomposition.dimension == 2:
 			self.plot_surface()
 
-	def extractPoints(self):
-		points = []
 
-		# get this from plot_samples.py
-		for v in self.decomposition.vertices:
-			#allocate 3 buckets to q
-			q=[None]*3
-
-			for i in range(3):
-				#q[0],q[1],q[2]
-				q[i]=v['point'][i].real
-			points.append(q)
-
-		return points
 		
 
 	def make_figure(self):
@@ -132,17 +119,21 @@ class Plotter(object):
 	'''
 	def plot_vertices(self):
 
-		# # refacotred version
-		# # this may have fucked it up??
-		# points = self.points
-		# edit: this does fuck it up
+		# refacotred version
+		xs,ys,zs = self.make_xyz()
 
-		# if self.decomposition.num_variables==2:
-		# 	self.ax.scatter(points[0], points[1])
-		# else:
-		# 	self.ax.scatter(points[0], points[1], points[2],
-		# 					zdir='z', s=5, c=None, depthshade=True)
 
+		if self.decomposition.num_variables==2:
+			self.ax.scatter(xs, ys)
+		else:
+			self.ax.scatter(xs, ys, zs,
+							zdir='z', s=5, c=None, depthshade=True)
+
+
+	# this works well for plot_vertices
+	# how can we make it work well for all the other methods???
+	# returns 3 separate lists
+	def make_xyz(self):
 		xs = []
 		ys = []
 		zs = []
@@ -150,23 +141,35 @@ class Plotter(object):
 		for v in self.decomposition.vertices:
 			xs.append(v['point'][0].real)
 			ys.append(v['point'][1].real)
-
-			if self.decomposition.num_variables>2:
+			if self.decomposition.num_variables>2:	
 				zs.append(v['point'][2].real)
 
-
-		if self.decomposition.num_variables==2:
-			self.ax.scatter(xs, ys)#v['point'][
-		else:
-			self.ax.scatter(xs, ys, zs, zdir='z', s=5, c=None, depthshade=True)#v['point'][
+		return xs,ys,zs
 
 
+
+	# would this be a better implementation than make_xyz???
+	# returns one list
+	def extract_points(self):
+		points = []
+
+		# get this from plot_samples.py
+		for v in self.decomposition.vertices:
+			#allocate 3 buckets to q
+			q=[None]*3
+
+			for i in range(3):
+				#q[0],q[1],q[2]
+				q[i]=v['point'][i].real
+			points.append(q)
+
+		return points
 
 
 
 
 	def plot_curve(self):
-		
+
 		curve = self.decomposition.curve # a local unpacking
 
 		should_plot_raw = self.options.visibility.raw
@@ -252,14 +255,11 @@ class Plotter(object):
 
 
 
-	# what exactly is this supposed to do
 	def plot_surface(self):
 		surf = self.decomposition # a local unpacking
-		print(surf)
-		# this isn't used, why is it here???
-		print("plot_surface unimplemented yet.")
 
 		if self.options.visibility.samples:
+			print("testing plot vertices")
 			self.plot_surface_samples()
 
 		if self.options.visibility.raw:
