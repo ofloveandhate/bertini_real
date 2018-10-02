@@ -1,6 +1,6 @@
 function gather_br_samples()
 
-
+path_sanity_check()
 
 [dirname,dimension] = parse_dirname;
 
