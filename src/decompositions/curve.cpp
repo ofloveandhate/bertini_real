@@ -761,7 +761,7 @@ void Curve::ConnectTheDots(
 
 
 	for (decltype(num_midpoints) ii=0; ii<num_midpoints; ++ii) {
-		if ( (program_options.verbose_level()==0&&ii%solve_options.path_number_modulus==0) ||
+		if ( (program_options.verbose_level()==0 && solve_options.path_number_modulus!=0 && ii%solve_options.path_number_modulus==0) ||
 			 (program_options.verbose_level()>=1))
 			std::cout << color::brown() << "connecting midpoint downstairs, " << ii << " of " << num_midpoints << color::console_default() << std::endl;
 
