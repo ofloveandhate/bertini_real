@@ -1,5 +1,6 @@
-**note** please clone this repository recursively (`git clone --recursive`) to pick up these submodules:
+**note:** please clone this repository recursively (`git clone --recursive`) to pick up these submodules:
 * [`brakelab`](https://github.com/ofloveandhate/brakelab)
+
 otherwise some Matlab code won't work correctly, and you'll get warnings and errors, and have to init them later.  
 
 ---
