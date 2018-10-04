@@ -26,7 +26,7 @@ The libraries against which Bertini_real compiles are:
 
 Bertini_real is built from source using standard methods, and requires the C++11 standard.
 
-
+**I do not recommend the use of Matlab 2018b for visualization on OSX.  It's unusably slow when adjusting options in the plot window**
 
 # Input and output formats
 
