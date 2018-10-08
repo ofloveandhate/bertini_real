@@ -126,8 +126,10 @@ class Plotter(object):
 		if self.decomposition.num_variables==2:
 			self.ax.scatter(xs, ys)
 		else:
+			# alpha=0 makes it so the verts are plotted but are invisible
+			# TODO: make this toggleable
 			self.ax.scatter(xs, ys, zs,
-							zdir='z', s=5, c=None, depthshade=True)
+							zdir='z', s=.01, alpha=0)
 
 
 	# this works well for plot_vertices
@@ -259,7 +261,6 @@ class Plotter(object):
 		surf = self.decomposition # a local unpacking
 
 		if self.options.visibility.samples:
-			print("testing plot vertices")
 			self.plot_surface_samples()
 
 		if self.options.visibility.raw:
@@ -272,14 +273,15 @@ class Plotter(object):
 		tuples = self.decomposition.surface.surface_sampler_data
 
 		colormap = self.options.style.colormap
-		color_list=[colormap(i) for i in np.linspace(0, 1,num_nondegen_edges)]
-
-		T = []
-
+		color_list=[colormap(i) for i in np.linspace(0, 1,len(tuples))]
+		
 		for i in range(len(tuples)):
-
+			color = color_list[i]
 			# Initialize T here
+			
 
+			T = []
+			
 			for tri in tuples[i]:
 				f = int(tri[0])
 				s = int(tri[1])
@@ -287,16 +289,16 @@ class Plotter(object):
 
 				k = [points[f],points[s],points[t]]
 				T.append(k)
-
-		# add the collection here, with colors
-
-		self.ax.add_collection3d(Poly3DCollection(T))
+			
+			
+			self.ax.add_collection3d(Poly3DCollection(T, facecolors=color))
 
 
 	def plot_surface_raw(self):
 
 		# get raw data from surface
 		print("plot_surface_raw unimplemented")
+		# found in plot_faces.m
 
 
 def plot(data = None, options = Options()):
