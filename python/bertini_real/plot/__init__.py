@@ -54,12 +54,12 @@ class Plotter(object):
 	def plot(self):
 
 		print("plotting object of dimension " + str(self.decomposition.dimension))
-		
+
 		self.make_figure()
 		self.make_axes()
-			
+
 		self.main()
-		
+
 
 		self.label_axes()
 		self.apply_title()
@@ -82,7 +82,7 @@ class Plotter(object):
 			self.plot_surface()
 
 
-		
+
 
 	def make_figure(self):
 		self.fig = plt.figure()
@@ -106,7 +106,7 @@ class Plotter(object):
 		if self.decomposition.dimension is 2:
 			self.ax.set_zlabel("z")
 
-	
+
 
 
 
@@ -141,7 +141,7 @@ class Plotter(object):
 		for v in self.decomposition.vertices:
 			xs.append(v['point'][0].real)
 			ys.append(v['point'][1].real)
-			if self.decomposition.num_variables>2:	
+			if self.decomposition.num_variables>2:
 				zs.append(v['point'][2].real)
 
 		return xs,ys,zs
@@ -183,10 +183,10 @@ class Plotter(object):
 		if should_plot_raw:
 			self.plot_raw_edges()
 
-		
+
 		if should_plot_samp:
 			self.plot_edge_samples()
-	
+
 
 	def plot_raw_edges(self):
 		curve = self.decomposition.curve # a local unpacking
@@ -242,7 +242,7 @@ class Plotter(object):
 				self.ax.plot(xs, ys, c=color)#v['point'][
 			else:
 				self.ax.plot(xs, ys, zs, zdir='z', c=color)#v['point']
-	
+
 	def determine_nondegen_edges(self):
 		curve = self.decomposition.curve # a local unpacking
 		self.nondegen=[]
@@ -251,7 +251,7 @@ class Plotter(object):
 			if e[0]!=e[1]!=e[2]:
 				self.nondegen.append(i)
 
-	
+
 
 
 
@@ -293,8 +293,9 @@ class Plotter(object):
 		self.ax.add_collection3d(Poly3DCollection(T))
 
 
-
 	def plot_surface_raw(self):
+
+		# get raw data from surface
 		print("plot_surface_raw unimplemented")
 
 
@@ -303,7 +304,3 @@ def plot(data = None, options = Options()):
 	b = Plotter(data, options=options)
 	b.plot();
 	return b
-
-
-
-
