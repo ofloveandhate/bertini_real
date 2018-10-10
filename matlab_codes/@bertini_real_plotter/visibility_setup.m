@@ -257,12 +257,14 @@ h = uipanel('units','pixels','visible','on');
 cb_params.curr_y = cb_params.y_start;
 
 
-
-[br_plotter.checkboxes.vertex_marker_visibility, cb_params] = make_switch_checkbox('vertex markers', 'display_vertices', cb_params, h, br_plotter);
-
 if br_plotter.options.labels
 	[br_plotter.checkboxes.vertex_label_visibility, cb_params] = make_switch_checkbox('vertex labels', 'label_vertices', cb_params, h, br_plotter);
+	p = br_plotter.checkboxes.vertex_label_visibility.Position;
+	br_plotter.checkboxes.vertex_label_visibility.Position(1) = p(1)+20;
 end %re if labels
+
+
+
 	f = br_plotter.legend.vertices.types;
 	for ii = 1:length(f)
 
@@ -274,9 +276,13 @@ end %re if labels
 
 		set(br_plotter.checkboxes.vertex_set_visibility(ii),'ForeGroundColor',new_color(1,:))
 
-
+		p = br_plotter.checkboxes.vertex_set_visibility(ii).Position;
+		br_plotter.checkboxes.vertex_set_visibility(ii).Position(1) = p(1)+20;
 
 	end
+
+
+	[br_plotter.checkboxes.vertex_marker_visibility, cb_params] = make_switch_checkbox('vertex markers', 'display_vertices', cb_params, h, br_plotter);
 
 
 set_pos(h,cb_params);
