@@ -317,6 +317,14 @@ end
 
 
 
+	if br_plotter.options.labels
+		[br_plotter.checkboxes.label_edges, cb_params] = make_switch_checkbox('edge midpoint labels', 'label_edges', cb_params, h, br_plotter);
+	end
+	
+	cb_params.curr_y = cb_params.curr_y+10;
+	
+
+
 set_pos(h,cb_params);
 
 cb_params.last_handle = h;

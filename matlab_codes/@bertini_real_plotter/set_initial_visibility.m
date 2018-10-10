@@ -12,11 +12,16 @@ br_plotter.switches.label_critcurve = 0;
 br_plotter.switches.label_critedges = 0;
 br_plotter.switches.label_midedges = 0;
 br_plotter.switches.label_singular = 0;
+
+
+br_plotter.switches.label.edges = br_plotter.options.labels;
 br_plotter.switches.show_edges = 0;
 br_plotter.switches.show_curve_samples = 0;
 
 br_plotter.switches.display_vertices = 0;
 br_plotter.switches.label_vertices = 0;
+
+br_plotter.switches.label_edges = 1;
 
 if br_plotter.options.render_vertices
 	f = br_plotter.legend.vertices.types;
