@@ -85,7 +85,7 @@ for ii = 1:br_plotter.BRinfo.num_edges
 	
 	
 	if br_plotter.options.labels
-		text_labels{ii} = sprintf('edge %d  ',ii);
+		text_labels{nondegen_index} = sprintf('edge %d  ',ii);
 	end
 	
 	br_plotter.handles.edges(nondegen_edge_ind) = h;
