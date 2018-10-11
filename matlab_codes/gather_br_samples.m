@@ -1,6 +1,6 @@
 function gather_br_samples()
 
-
+path_sanity_check()
 
 [dirname,dimension] = parse_dirname;
 
@@ -320,7 +320,7 @@ if isempty('Dir_Name')
 end
 
 fid = fopen('Dir_Name','r');
-dirname = fscanf(fid,'%s',[1 1]);
+dirname = fgetl(fid);
 MPtype = fscanf(fid,'%i',[1 1]);
 dimension = fscanf(fid,'%i',[1 1]);
 

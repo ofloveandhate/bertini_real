@@ -1,0 +1,25 @@
+% spacey surprise
+% i just kinda typed an equation into a text file, because i needed a thing to decompose in a folder with spaces in its path.  
+% ~danielle amethyst
+% fall 2018
+
+% love yourself, and love others
+% give of yourself freely, and accept from others when you need it
+% this is the only life we have, so live it fully
+
+CONFIG
+
+tracktype: 1;
+
+END;
+
+
+
+INPUT
+variable_group x, y, z;
+
+function f;
+
+f = x^2*y^2 - x^2*y + 3/2*x*y*z + (1/2)^(1/2)*(x-y-z^3*x);
+
+END;

@@ -1,6 +1,12 @@
-# Bertini_real: software for real algebraic sets
+**note:** please clone this repository recursively (`git clone --recursive`) to pick up these submodules:
+* [`brakelab`](https://github.com/ofloveandhate/brakelab)
+
+otherwise some Matlab code won't work correctly, and you'll get warnings and errors, and have to init them later.  
 
 ---
+
+# Bertini_real: software for real algebraic sets
+
 
 This software implements a numerical algorithm for decomposing real surfaces of arbitrary dimension, using Bertini as the computational engine.  
 
@@ -20,7 +26,7 @@ The libraries against which Bertini_real compiles are:
 
 Bertini_real is built from source using standard methods, and requires the C++11 standard.
 
-
+**I do not recommend the use of Matlab 2018b for visualization on OSX.  It's unusably slow when adjusting options in the plot window**
 
 # Input and output formats
 
@@ -39,7 +45,7 @@ Many systems have multiple components.  Bertini_real therefore processes `witnes
 
 Optionally, the user may supply:
 
-* a sphere file, consisting of the radius and center; and/or
+* a sphere file, consisting of the radius and center; and/or`
 * a projection file, prefaced by the number of variables, and containing the coefficients of the linear projections $\pi_i$.
 
 The user indicates the names of the files using flags to the command line; e.g., the calling sequence is:

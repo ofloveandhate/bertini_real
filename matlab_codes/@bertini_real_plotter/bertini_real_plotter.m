@@ -125,6 +125,7 @@ classdef bertini_real_plotter < handle
 		end %re: bertini_real_plotter() constructor
 		
 		function initialize(br_plotter)
+			path_sanity_check()
 			initialize_handles_surface(br_plotter);
 		end
 		

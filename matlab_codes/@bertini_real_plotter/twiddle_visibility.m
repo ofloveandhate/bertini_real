@@ -267,6 +267,14 @@ else
 	set(br_plotter.handles.sample_edges(:),'visible','on')
 end
 
+if br_plotter.options.labels
+	if br_plotter.switches.label_edges == 0
+		set(br_plotter.handles.label.edges,'visible','off')
+	else
+		set(br_plotter.handles.label.edges,'visible','on')
+	end
+end
+
 end
 
 

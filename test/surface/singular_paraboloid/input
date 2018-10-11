@@ -1,0 +1,22 @@
+% this example come from this SO post:
+% https://mathematica.stackexchange.com/questions/145283/how-to-create-parabolic-mesh
+% where u/David R asks how to create it in matlab, in the first quadrant.
+
+
+CONFIG
+
+tracktype: 1;
+
+
+END;
+
+
+INPUT
+
+variable_group x, y, z;
+
+function f;
+
+f = z*(x^4+y^2) - 2*x^2*y;
+
+END;

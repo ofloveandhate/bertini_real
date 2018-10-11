@@ -1,5 +1,5 @@
 
-\section{Install}
+\section{Installation}
 \label{sec:installation}
 
 
@@ -38,26 +38,30 @@ Before installing Bertini and then Bertini\_real, there are a number of packages
 \begin{itemize}[noitemsep]
 \item a C++ compiler capable of the C++11 standard
 \item Bertini, {\bf parallel version compiled from source and installed as library}.
-\item \gls{mpi} (same one as Bertini was compiled with)
+\item \gls{mpi} (Must be the same one as Bertini was compiled with)
 \item Boost $>$= 1.53
-\item {\tt autoconf}, {\tt automake}, {\tt make}, {\tt libtool}.  {\em Please use your package manager}.  Also, maybe {\tt pkg-config}.  If you hate the autotools, please set up CMake for Bertini\_real, and do a pull request.
+\item {\tt autoconf}, {\tt automake}, {\tt make}, {\tt libtool}.  {\em Please use your package manager}.  Also, maybe {\tt pkg-config}.  If you hate the autotools, please set up CMake for Bertini\_real, and do a pull request.  Seriously.
 \end{itemize} 
 
 
 
-Bertini\_real is parallel-enabled, using MPI.  {\bf You cannot build Bertini\_real without support for MPI at the current time.}  To use multiple processors to decompose a real object, call Bertini\_real as you would any other MPI program: \texttt{mpiexec [options] bertini\_real}.  It also works in serial, without being hosted by the mpi executor.  But you still have to have MPI.  
+Bertini\_real is parallel-enabled, using MPI.  {\bf You cannot build Bertini\_real without support for MPI at the current time.}  To use multiple processors to decompose a real object, call Bertini\_real as you would any other MPI program: \texttt{mpiexec [options] bertini\_real [options]}.  It also works in serial, without being hosted by the MPI executor.  But you still have to have MPI.  
 
 
 \subsubsection{Symbolic engine}
 
-One additional piece of software must be installed in order to decompose surfaces -- something to do symbolic work for us.  Two options are available at this time (spring 2017):  Matlab, and Python.  Matlab has much stronger visualization routines for Bertini\_real, and some nice options for improving produced Bertini input files.
+One additional piece of software must be installed in order to decompose surfaces -- something to do symbolic work for us.  Two options are available at this time (Fall 2018):  Matlab, and Python.  Matlab has much stronger visualization routines for Bertini\_real, and some nice options for improving produced Bertini input files.
 
 	\paragraph*{MATLAB}
 One option for symbolic engine for Bertini\_real is Matlab.  Instructions on how to install the program are not provided here. However, if you are associated with a university, or a research facility, they probably have download instructions on their technology support website.   Ensure you have access to the symbolic toolbox.  It's required.
 
+You must add Matlab to the terminal path -- you have to be able to type {\tt matlab} into a terminal and have it launch.  
+
+If you intend to use Matlab for visualization, you need to add {\tt path/to/bertini\_real/matlab\_codes} to the path, as well as several folders in there, namely {\tt matlab\_codes/brakelab/bertini1} and {\tt matlab\_codes/brakelab/rendering}
+
 \paragraph*{Python}
 
-Bertini\_real was improved in Fall 2016 to use Python as its symbolic engine, in addition to Matlab.  This allows for fully free software to do the decompositions.  Visualization routines in Python are in progress.  You need the following packages, ideally from {\tt pip}:
+Bertini\_real was improved in Fall 2016 to allow you to use Python as the symbolic engine, in alternative to Matlab.  This allows for fully free software to do the decompositions.  Visualization routines in Python are in progress, with surfaces being implemented 2018-19 academic year.  You need the following packages, ideally from {\tt pip}:
 \begin{itemize}[noitemsep]
 \item {\tt sympy}
 \item {\tt scipy}
@@ -104,7 +108,7 @@ and for visualization
 
 Now that everything has been installed, we can now do a test run, to make sure that everything is working properly. To test this program, we will try to generate a Cayley Cubic using the above programs, following a number of steps. The first step is to create an input file. Open up a text editor in your terminal and create a file called \texttt{input}. 
 
-Below is the text for this input file.. A key feature to notice is the second line, where the \texttt{tracktype} configuration is set to 1. This configuration setting is necessary for Bertini\_real to run. 
+Below is the text for this input file.  A key feature to notice is the second line, where the \texttt{tracktype} configuration is set to {\tt 1}. This configuration setting is necessary for Bertini to run, to run the needed {\tt witness\_data} file that Bertini\_real uses as input. 
 
 \begin{center}\begin{minipage}{0.9\linewidth}
 \begin{lstlisting}[language=c++, caption={\tt input} for the Cayley Cubic, captionpos=b]
@@ -120,14 +124,14 @@ END;
 \end{lstlisting}
 \end{minipage}\end{center}
 
-Once the input file is created, we can now run Bertini. Simply navigate in the command line to the directory of the input file and type \texttt{bertini} or \texttt{bertini input}.  You may need to type in the entire pathway to where Bertini is located, if it's not in the same folder, so the command line read \newline \texttt{/cygdrive/path/to/BertiniSource\_v1.5/bertini-serial.exe input}\- \\ \textbf{Cygwin users:} A user may also use \texttt{bertini-serial.exe} (or \texttt{bertini\_parallel.exe}). This will run Bertini, creating the Numerical Irreducible Decomposition needed for Bertini\_real. The following should print to the terminal or shell:
+Once the input file is created, we can now run Bertini. Simply navigate in the command line to the directory of the input file and type \texttt{bertini} or \texttt{bertini input}.  You may need to type in the entire pathway to where Bertini is located, if it's not in the same folder, so the command line read \newline \texttt{/cygdrive/path/to/BertiniSource\_v1.5/bertini-serial.exe input}\- \\ \textbf{Cygwin users:} A user may also use \texttt{bertini-serial.exe} (or \texttt{bertini\_parallel.exe}). This will run Bertini, creating the Numerical Irreducible Decomposition needed for Bertini\_real. Something like the following should print to the screen:
 
 \begin{center}\begin{minipage}{0.9\linewidth}
 \centering
 \includegraphics[width=0.6\textwidth]{CayleyCubicBertiniRun.png}
 \end{minipage}\end{center}
 
-Once Bertini is finished, the output can be verified as satisfactory (or not). Then, Bertini\_real can be run by calling \texttt{bertini\_real} in the command line. Cygwin users, the same rules that applied to Bertini also apply to Bertini\_real, so be sure to include that `.exe' at the end! However, if the input file used was named `input', no file name is needed at the end of the command line. This program should run for roughly 20-30 seconds, with the final terminal/shell output appearing below:
+Once Bertini is finished, the output can be verified as satisfactory (or not). Then, Bertini\_real can be run by calling \texttt{bertini\_real} in the command line. Cygwin users, the same rules that applied to Bertini also apply to Bertini\_real, so be sure to include that `.exe' at the end! However, if the input file used was named `input', no file name is needed at the end of the command line. This program should run for roughly 20-30 seconds (ymmv), with the final terminal/shell output appearing below:
 
 \begin{center}\begin{minipage}{0.9\linewidth}
 \centering
