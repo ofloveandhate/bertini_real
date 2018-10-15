@@ -254,9 +254,6 @@ class Plotter(object):
 				self.nondegen.append(i)
 
 
-
-
-
 	def plot_surface(self):
 		surf = self.decomposition # a local unpacking
 
@@ -274,14 +271,13 @@ class Plotter(object):
 
 		colormap = self.options.style.colormap
 		color_list=[colormap(i) for i in np.linspace(0, 1,len(tuples))]
-		
+
 		for i in range(len(tuples)):
 			color = color_list[i]
 			# Initialize T here
-			
 
 			T = []
-			
+
 			for tri in tuples[i]:
 				f = int(tri[0])
 				s = int(tri[1])
@@ -289,17 +285,73 @@ class Plotter(object):
 
 				k = [points[f],points[s],points[t]]
 				T.append(k)
-			
-			
+
+
 			self.ax.add_collection3d(Poly3DCollection(T, facecolors=color))
 
 
 	def plot_surface_raw(self):
 
-		# get raw data from surface
-		print("plot_surface_raw unimplemented")
-		# found in plot_faces.m
+		points = self.points;
+		surf = self.decomposition.surface
 
+		# store number of faces to num_faces
+		num_faces = surf.num_faces
+
+		## get raw data from surface
+		# curr_face =surf.faces[0]
+		num_total_faces = 0;
+
+		for ii in range(num_faces):
+			curr_face=surf.faces[ii]
+			num_total_faces=num_total_faces+2*(surf.faces[ii]['num left']+surf.faces[ii]['num right']+2)
+
+		num_total_faces = num_total_faces*2;
+
+		total_face_index = 0
+		# Q:
+		# 1. num left and left difference
+		# 2. which_faces
+		# 3. why put num left or middle sliece index with spaces?
+		# 4. br_plotter.BRinfo.faces VS br_plotter.options.which_faces(ii)
+		for cc in range(num_faces):
+			ii = surf.faces[cc]
+
+		# ERROR: list indices must be integers or slices, not dict	
+			if surf.faces[ii]['middle slice index'] == -1:
+				continue
+
+			case = 1
+			left_edge_counter = 1
+			right_edge_counter = 1
+
+			# while 1:
+
+				# if case == 1
+
+		#
+		#
+		# # # reference plot_faces.m
+		# # while 1:
+		# # 	# the top edge
+		# 	if case == 1:
+		# 		case += 1
+		#
+		# 		if surf.faces[ii]['top'] < 0:
+		# 			continue
+
+
+		#
+		# 	elif(pass == 2)
+
+		#	elif(pass == 3)
+
+		#	elif(pass == 4)
+
+		#	else
+		#		break
+
+		print("plot_surface_raw unimplemented")
 
 def plot(data = None, options = Options()):
 
