@@ -53,14 +53,14 @@ class Surface(Decomposition):
 		self.num_faces = surf_data[0]
 		self.num_edges = surf_data[1]
 		self.num_midpoint_slices = surf_data[2]
-		self.num_critical_point_slices = surf_data[3]
+		self.num_critical_slices = surf_data[3]
 		self.num_singular_curves = surf_data[4]
 		self.singular_curve_multiplicities = surf_data[5]
 
 	def gather_faces(self, directory):
 		self.faces = bertini_real.parse.parse_Faces(directory)
 
-		
+
 	def gather_curves(self, directory):
 		for ii in range(self.num_midpoint_slices):
 			new_curve = Curve(directory + '/curve_midslice_' + str(ii))
@@ -81,5 +81,3 @@ class Surface(Decomposition):
 
 	def gather_surface_samples(self, directory):
 		self.surface_sampler_data = bertini_real.parse.parse_surface_Samples(directory)
-
-	

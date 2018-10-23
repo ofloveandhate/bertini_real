@@ -303,53 +303,153 @@ class Plotter(object):
 		num_total_faces = 0;
 
 		for ii in range(num_faces):
+			# `for i in range(num_faces)`, you instead `for f_index in self.options.which_faces`
 			curr_face=surf.faces[ii]
 			num_total_faces=num_total_faces+2*(surf.faces[ii]['num left']+surf.faces[ii]['num right']+2)
 
 		num_total_faces = num_total_faces*2;
 
 		total_face_index = 0
-		# Q:
-		# 1. num left and left difference
-		# 2. which_faces
-		# 3. why put num left or middle sliece index with spaces?
-		# 4. br_plotter.BRinfo.faces VS br_plotter.options.which_faces(ii)
+		# num left and left difference
+		# which_faces
+		# br_plotter.BRinfo.faces
+		# br_plotter.options.which_faces(ii)
 		for cc in range(num_faces):
-			ii = surf.faces[cc]
-
-		# ERROR: list indices must be integers or slices, not dict	
-			if surf.faces[ii]['middle slice index'] == -1:
-				continue
+			face = surf.faces[cc]
+			print(face)
+			# list indices must be integers or slices, not dict
+			if (face['middle slice index']) == -1:
+			 	continue
 
 			case = 1
-			left_edge_counter = 1
-			right_edge_counter = 1
+			left_edge_counter = 0
+			right_edge_counter = 0
 
-			# while 1:
+			T = []
 
-				# if case == 1
+			while 1:
 
-		#
-		#
-		# # # reference plot_faces.m
-		# # while 1:
-		# # 	# the top edge
-		# 	if case == 1:
-		# 		case += 1
-		#
-		# 		if surf.faces[ii]['top'] < 0:
-		# 			continue
+				#top edge
+				if case == 1:
+					case += 1
+
+					if face['top']<0:
+						continue
+
+					curr_edge = -10
+					if(face['system top'] == 'input_critical_curve'):
+						# curr_edge = br_plotter.BRinfo.crit_curve.edges(br_plotter.BRinfo.faces(ii).top,:); # vector?
+						curr_edge = surf.critical_curve.edges[face['top']]
+					elif(face['system top'] == 'input_surf_sphere'):
+						# curr_edge = br_plotter.BRinfo.sphere_curve.edges(br_plotter.BRinfo.faces(ii).top,:);
+						curr_edge = surf.sphere_curve.edges[face['top']]
+					else:
+						for zz in range(len(surf.singular_curves)):
+								# if strcmp(br_plotter.BRinfo.singular_names{zz},br_plotter.BRinfo.faces(ii).system_top)
+								# cell array {zz} in python? (a list)
+							if(surf.faces.singular_names[zz] == face['system top']):
+								# hwo to grab edges from singular singular_curves
+								curr_edge = surf.faces.singular_curves[zz].edges[face['system top']]
+
+					# print(curr_edge)
+					# if curr_edge<0:
+					# 	continue
+
+					# normals
+					# reverse 3 elements list
+					# curr_edge = curr_edge.reverse()
+					# curr_edge = curr_edge[[2,1,0]]
+
+				## bottom edge ##
+				elif case == 2:
+					case += 1
+
+					if face['bottom']<0:
+						continue
+
+					curr_edge = -10
+					if(face['system bottom'] == 'input_critical_curve'):
+						# curr_edge = br_plotter.BRinfo.crit_curve.edges(br_plotter.BRinfo.faces(ii).bottom,:);
+						# vector?
+						curr_edge = surf.critical_curve.edges[face['bottom']]
+					elif(face['system bottom'] == 'input_surf_sphere'):
+						curr_edge = surf.sphere_curve.edges[face['bottom']]
+					else:
+						for zz in range(len(surf.singular_curves)):
+								# if strcmp(br_plotter.BRinfo.singular_names{zz},br_plotter.BRinfo.faces(ii).system_top)
+								# cell array {zz} in python? (a list)
+							if(surf.faces.singular_names[zz] == face['system bottom']):
+								# hwo to grab edges from singular singular_curves
+								curr_edge = surf.faces.singular_curves[zz].edges[face['system bottom']]
+
+					# if curr_edge < 0:
+					# 	continue
 
 
-		#
-		# 	elif(pass == 2)
+				## left edge ##
+				elif case == 3:
+					if left_edge_counter < face['num left']:
+						#if br_plotter.BRinfo.faces(ii).left(left_edge_counter)<0 %an error check
+						# how to pass the 'left_edge_counter'?
+						if face['left'][left_edge_counter]<0:
+							continue
 
-		#	elif(pass == 3)
+						slice_ind = face['middle slice index']
+						# edge_ind = br_plotter.BRinfo.faces(ii).left(left_edge_counter);
+						edge_ind = face['left'][left_edge_counter]
 
-		#	elif(pass == 4)
+						# curr_edge = br_plotter.BRinfo.critpoint_slices{slice_ind}.edges(edge_ind,:);
+						curr_edge = surf.critical_point_slices[slice_ind].edges[edge_ind]
 
-		#	else
-		#		break
+						left_edge_counter = left_edge_counter + 1; # increment
+					else:
+						case = case + 1
+						continue
+
+				## right edge ##
+				elif case == 4:
+					if right_edge_counter < face['num right']:
+						#if br_plotter.BRinfo.faces(ii).right(right_edge_counter)<0 %an error check
+						# how to pass the 'right_edge_counter'?
+						if face['right'][right_edge_counter] < 0:
+							continue
+
+						slice_ind = face['middle slice index']+1
+						# edge_ind = br_plotter.BRinfo.faces(ii).right(right_edge_counter);
+						edge_ind = face['right'][right_edge_counter]
+
+						 # curr_edge = br_plotter.BRinfo.critpoint_slices{slice_ind}.edges(edge_ind,:);
+						curr_edge = surf.critical_point_slices[slice_ind].edges[edge_ind]
+
+						right_edge_counter = right_edge_counter + 1; # increment
+
+						# curr_edge = curr_edge[[2,1,0]]
+						# curr_edge = curr_edge.reverse()
+
+						# ## how to translate
+
+					else:
+						case = case + 1
+						continue
+
+				## last case ##
+				elif case == 5:
+					break
+			# make two triangles , use the midpoint (swap the values for k)
+			# t1 = [curr_edge(1) curr_edge(2) br_plotter.BRinfo.faces(ii).midpoint];
+			# t2 = [curr_edge(2) curr_edge(3) br_plotter.BRinfo.faces(ii).midpoint];
+
+			# store them into objs, stl writing
+			# br_plotter.fv.faces(total_face_index,:) = t1;
+			# br_plotter.fv.faces(total_face_index+1,:) = t2;
+
+				print(curr_edge)
+				k = [points[curr_edge[0]],points[curr_edge[1]],points[curr_edge[2]]]
+				T.append(k)
+
+			self.ax.add_collection3d(Poly3DCollection(T))
+
+
 
 		print("plot_surface_raw unimplemented")
 
