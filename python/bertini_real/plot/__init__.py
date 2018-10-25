@@ -20,13 +20,14 @@ import bertini_real.util
 import dill
 import numpy as np
 import matplotlib
+# change backend with this line, if desired
 # matplotlib.use('macosx')
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from matplotlib.widgets import CheckButtons
 
-print("using {} backend".format(matplotlib.get_backend()))
+# print("using {} backend".format(matplotlib.get_backend()))
 
 
 class StyleOptions(object):
@@ -73,28 +74,39 @@ class Plotter(object):
         self.main()
 
         self.label_axes()
-        self.apply_title()
 
-        rax = plt.axes([0.05, 0.4, 0.1, 0.15])
-        check = CheckButtons(rax, ('showVerts', 'showSurface(unimplemented)'), (True, True))
+        # I would love to move this to its own method, but I
+        # don't think that is possible with the limiations of
+        # matplotlib
+
+        # can this be done with async??
+
+        # Create our check boxes
+
+        # These four coordinates specify the position of the checkboxes
+        rax = plt.axes([0.05, 0.4, 0.2, 0.15])
+        check = CheckButtons(rax, ('Vertices', 'Surface', 'Raw Surface'),
+                                    (True, True, False))
 
         def func(label):
-            if label == 'showVerts':
+            if label == 'Vertices':
                 # works but with hardcoded axes
                 self.options.visibility.vertices = (not self.options.visibility.vertices)
                 self.ax.clear()
-                self.main()
-            elif label == 'showSurface(unimplemented)':
-                if self.decomposition.dimension == 2:
-                    self.decomposition.dimension = 0
-                    print(self.decomposition.dimension)
-                else:
-                    self.decomposition.dimension = 2
+                self.replot()
+            elif label == 'Surface':
+                self.options.visibility.samples = (not self.options.visibility.samples)
                 self.ax.clear()
-                self.main()
-                print('unimplemented')
+                self.replot()
+            elif label == 'Raw Surface':
+                self.options.visibility.raw = (not self.options.visibility.raw)
+                self.ax.clear()
+                self.replot()
+
             plt.draw()
         check.on_clicked(func)
+
+        self.apply_title()
 
         plt.show()
 
@@ -122,6 +134,11 @@ class Plotter(object):
     def apply_title(self):
         plt.title(os.getcwd().split(os.sep)[-1])
 
+    def replot(self):
+        self.main()
+        self.label_axes()
+        self.apply_title()
+
     def label_axes(self):
         # todo: these should be set from the decomposition, not assumed to be x,y,z
         self.ax.set_xlabel("x")
@@ -143,13 +160,8 @@ class Plotter(object):
         if self.decomposition.num_variables == 2:
             verts = self.ax.scatter(xs, ys)
         else:
-            # alpha=0 makes it so the verts are plotted but are invisible
-            # TODO: make this toggleable
-            # https://matplotlib.org/examples/widgets/check_buttons.html
             verts = self.ax.scatter(xs, ys, zs,
                             zdir='z', s=.1, alpha=1)
-
-
 
     # this works well for plot_vertices
     # how can we make it work well for all the other methods???
@@ -269,7 +281,7 @@ class Plotter(object):
                 self.nondegen.append(i)
 
     def plot_surface(self):
-        surf = self.decomposition  # a local unpacking
+        surf = self.decomposition
 
         if self.options.visibility.samples:
             self.plot_surface_samples()
