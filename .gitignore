@@ -70,3 +70,5 @@ ltversion*
 *.o
 *.lo
 *.o-*
+
+\.DS_Store
