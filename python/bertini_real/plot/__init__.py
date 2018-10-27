@@ -323,7 +323,7 @@ class Plotter(object):
 
         for ii in range(num_faces):
             # `for i in range(num_faces)`, you instead `for f_index in self.options.which_faces`
-
+            # face = self.visibility.which_faces
             curr_face = surf.faces[ii]
             num_total_faces = num_total_faces + 2 * \
                 (surf.faces[ii]['num left'] + surf.faces[ii]['num right'] + 2)
