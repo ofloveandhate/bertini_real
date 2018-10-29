@@ -97,6 +97,9 @@ while ii < length(command_line_options)
 			end
 			
 			br_plotter.BRinfo = command_line_options{ii+1};
+		case {'indices'}
+			tmp = command_line_options{ii+1};
+			br_plotter.options.user_indices = tmp;
 			
 		case 'proj'
 

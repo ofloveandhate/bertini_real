@@ -20,6 +20,8 @@ function set_default_options(br_plotter)
 	br_plotter.options.render_faces = true;
 	br_plotter.options.render_samples = true;
 	br_plotter.options.which_faces = [];
+	br_plotter.options.user_indices = [];
+	
 	br_plotter.options.touching_edges_only = true;
 
 
