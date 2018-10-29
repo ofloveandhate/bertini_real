@@ -29,6 +29,7 @@ from matplotlib.widgets import CheckButtons
 
 # print("using {} backend".format(matplotlib.get_backend()))
 
+
 class StyleOptions(object):
     def __init__(self):
         self.line_thickness = 2  # there is no code using this yet.  write it.
@@ -42,7 +43,10 @@ class VisibilityOptions(object):
         self.raw = True
         self.autorawsamples = True
         self.labels = False
-        self.which_faces = []
+        # check with matlab output
+        self.which_faces = [0,1,2,3]
+        self.indices = []
+
 
 
 class Options(object):
@@ -68,8 +72,8 @@ class Plotter(object):
 
     def plot(self):
 
-        print("plotting object of dimension " +
-              str(self.decomposition.dimension))
+        print("plotting object of dimension "
+              + str(self.decomposition.dimension))
 
         self.make_figure()
         self.make_axes()
@@ -326,27 +330,29 @@ class Plotter(object):
         surf = self.decomposition.surface
         which_faces = self.options.visibility.which_faces
 
-
         # store number of faces to num_faces
         num_faces = surf.num_faces
 
+        # Check if which_faces is empty
         if not len(which_faces):
             which_faces = list(range(num_faces))
+
+        colormap = self.options.style.colormap
+        color_list = [colormap(i) for i in np.linspace(0, 1, len(which_faces))]
 
         # get raw data from surface
         num_total_faces = 0
         for ii in range(len(which_faces)):
             curr_face = surf.faces[which_faces[ii]]
-            num_total_faces = num_total_faces + 2 * (curr_face['num left'] + curr_face['num right'] + 2)
+            num_total_faces = num_total_faces + 2 *(curr_face['num left'] + curr_face['num right'] + 2)
         num_total_faces = num_total_faces * 2
         total_face_index = 0
 
         for cc in range(len(which_faces)):
-            # for cc in range(self.options.which_faces):
+            color = color_list[cc]
             ii = which_faces[cc]
             face = surf.faces[ii]
-            # print(face)
-            # list indices must be integers or slices, not dict
+
             if (face['middle slice index']) == -1:
                 continue
             case = 1
@@ -356,32 +362,34 @@ class Plotter(object):
             while 1:
                  # top edge
                 if case == 1:
+                    print('top')
                     case += 1
                     if face['top'] < 0:
                         continue
 
                     curr_edge = -10
                     if(face['system top'] == 'input_critical_curve'):
-                        # curr_edge = br_plotter.BRinfo.crit_curve.edges(br_plotter.BRinfo.faces(ii).top,:); # vector?
                         curr_edge = surf.critical_curve.edges[face['top']]
                     elif(face['system top'] == 'input_surf_sphere'):
-                        # curr_edge = br_plotter.BRinfo.sphere_curve.edges(br_plotter.BRinfo.faces(ii).top,:);
                         curr_edge = surf.sphere_curve.edges[face['top']]
                     else:
                         for zz in range(len(surf.singular_curves)):
-                            if(surf.faces.singular_names[zz] == face['system top']):
-                                curr_edge = surf.faces.singular_curves[zz].edges[face['system top']]
+                            if(surf.singular_names[zz] == face['system top']):
+                                curr_edge = surf.singular_curves[zz].edges[face['top']]
                      # print(curr_edge)
-                    if (curr_edge[0]<0 and curr_edge[1]<0 and curr_edge[2]<0):
+                    if (curr_edge[0] < 0 and curr_edge[1] < 0 and curr_edge[2] < 0):
                         continue
 
                     curr_edge = ReversableList(curr_edge)
                     curr_edge = curr_edge.reverse()
+                    # print(curr_edge)
                     # reverse() returns None
                     # curr_edge = curr_edge.reverse()
                     # curr_edge = curr_edge[[2,1,0]]
+
                  ## bottom edge ##
                 elif case == 2:
+                    print('bottom')
                     case += 1
                     if face['bottom'] < 0:
                         continue
@@ -393,15 +401,17 @@ class Plotter(object):
                         curr_edge = surf.sphere_curve.edges[face['bottom']]
                     else:
                         for zz in range(len(surf.singular_curves)):
-                            if(surf.faces.singular_names[zz] == face['system bottom']):
-                                curr_edge = surf.faces.singular_curves[zz].edges[face['system bottom']]
+                            if(surf.singular_names[zz] == face['system bottom']):
+                                curr_edge = surf.singular_curves[zz].edges[face['bottom']]
 
-                    if (curr_edge[0]<0 and curr_edge[1]<0 and curr_edge[2]<0):
+                    if (curr_edge[0] < 0 and curr_edge[1] < 0 and curr_edge[2] < 0):
                         continue
 
                  ## left edge ##
                 elif case == 3:
+                    print('left')
                     if left_edge_counter < face['num left']:
+                        # print('here1')
                         if face['left'][left_edge_counter] < 0:
                             continue
 
@@ -414,8 +424,10 @@ class Plotter(object):
                     else:
                         case = case + 1
                         continue
+
                  ## right edge ##
                 elif case == 4:
+                    print('right')
                     if right_edge_counter < face['num right']:
 
                         if face['right'][right_edge_counter] < 0:
@@ -428,37 +440,46 @@ class Plotter(object):
 
                         curr_edge = ReversableList(curr_edge)
                         curr_edge = curr_edge.reverse()
-                        # ## how to translate
+                        # print(curr_edge)
+
                     else:
-                        case = case + 1
+                        case += 1
                         continue
+
                  ## last case ##
                 elif case == 5:
                     break
-            # make two triangles , use the midpoint (swap the values for k)
-            # t1 = [curr_edge[0], curr_edge[1], face['midpoint']]
-            # t2 = [curr_edge[1], curr_edge[2], face['midpoint']]
-            t1 = [points[curr_edge[0]], points[curr_edge[1]],
-                  points[face['midpoint']]]
-            t2 = [points[curr_edge[1]], points[curr_edge[2]],
-                  points[face['midpoint']]]
-            t3 = [points[face['midpoint']],points[face['midpoint']],points[face['midpoint']]]
+                    # make two triangles , use the midpoint (swap the values for k)
 
-            # store them into objs, stl writing
-            # br_plotter.fv.faces(total_face_index,:) = t1;
-            # br_plotter.fv.faces(total_face_index+1,:) = t2;
-            k = [points[curr_edge[0]], points[curr_edge[1]], points[curr_edge[2]]]
-            T.append(k)
-            T.append(t1)
-            T.append(t2)
-            T.append(t3)
+                t1 = [points[curr_edge[0]], points[curr_edge[1]],
+                          points[face['midpoint']]]
+                t2 = [points[curr_edge[1]], points[curr_edge[2]],
+                          points[face['midpoint']]]
+                # print(curr_edge[0], curr_edge[1], face['midpoint'])
+                # print(curr_edge[1], curr_edge[2], face['midpoint'])
+                # print(t1)
 
+            # while loop end heree
+                # store them into objs, stl writing
+                # br_plotter.fv.faces(total_face_index,:) = t1;
+                # br_plotter.fv.faces(total_face_index+1,:) = t2;
 
-            self.ax.add_collection3d(Poly3DCollection(T))
+                # k = [points[curr_edge[0]], points[curr_edge[1]], points[curr_edge[2]]]
+                # T.append(k)
+                T.append(t1)
+                T.append(t2)
+
+            self.ax.add_collection3d(Poly3DCollection(T, facecolors=color))
             self.ax.set_xlim(-1, 1)
             self.ax.set_ylim(-1, 1)
             self.ax.set_zlim(-1, 1)
-            print("plot_surface_raw in progress")
+
+            # clean stuff
+            # add fvtostl fucntionality
+            # commit and push
+
+            # total_face_index += 2
+            # print("plot_surface_raw in progress")
 
 
 def plot(data=None, options=Options()):
