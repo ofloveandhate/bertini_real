@@ -45,10 +45,6 @@ function preprocess_data(br_plotter)
 		br_plotter.data.space = br_plotter.data.raw;
 	end
     
-	
-
-	
-	get_indices(br_plotter);
 
 	br_plotter.fv.vertices = br_plotter.data.space.vertices(:,br_plotter.indices);
 	% faces will be made later, if necessary

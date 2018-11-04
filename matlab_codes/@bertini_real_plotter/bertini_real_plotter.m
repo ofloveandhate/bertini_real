@@ -22,6 +22,13 @@
 %	'curves', 'curve'   - bool [true]
 %	'faces'             - bool [true]
 %
+%	'indices'		- array [empty]  plot these variables only.  if you use 
+%							more than 3, you will generate errors.
+%							this accomplishes coordinate projection onto these 
+%							coordinates
+%							IMPORTANT NOTE:  the indices in this array
+%							should be 1-based, not 0-based.  
+%
 %	'whichfaces'		- array [empty]  If you are plotting faces, and
 %							this is empty, all faces will be plotted.  
 %							if this is non-empty, only those faces with
@@ -176,6 +183,10 @@ classdef bertini_real_plotter < handle
 		
 		
 		function set_options_from_BRinfo(br_plotter)
+			
+			get_indices(br_plotter);
+
+			
 			[br_plotter.options.containing, br_plotter.options.basename, ~] = fileparts(pwd);
 			br_plotter.dimension = br_plotter.BRinfo.dimension;
 
