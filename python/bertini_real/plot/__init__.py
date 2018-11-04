@@ -48,7 +48,6 @@ class VisibilityOptions(object):
         self.indices = []
 
 
-
 class Options(object):
     def __init__(self):
         self.style = StyleOptions()
@@ -333,7 +332,7 @@ class Plotter(object):
         # store number of faces to num_faces
         num_faces = surf.num_faces
 
-        # Check if which_faces is empty
+        # check if which_faces is empty
         if not len(which_faces):
             which_faces = list(range(num_faces))
 
@@ -359,8 +358,9 @@ class Plotter(object):
             left_edge_counter = 0
             right_edge_counter = 0
             T = []
+
             while 1:
-                 # top edge
+                ## top edge ##
                 if case == 1:
                     print('top')
                     case += 1
@@ -380,14 +380,12 @@ class Plotter(object):
                     if (curr_edge[0] < 0 and curr_edge[1] < 0 and curr_edge[2] < 0):
                         continue
 
+                    # reverse() returns None, so use ReversableList
                     curr_edge = ReversableList(curr_edge)
                     curr_edge = curr_edge.reverse()
-                    # print(curr_edge)
-                    # reverse() returns None
-                    # curr_edge = curr_edge.reverse()
-                    # curr_edge = curr_edge[[2,1,0]]
 
-                 ## bottom edge ##
+
+                ## bottom edge ##
                 elif case == 2:
                     print('bottom')
                     case += 1
@@ -407,11 +405,11 @@ class Plotter(object):
                     if (curr_edge[0] < 0 and curr_edge[1] < 0 and curr_edge[2] < 0):
                         continue
 
-                 ## left edge ##
+                ## left edge ##
                 elif case == 3:
                     print('left')
                     if left_edge_counter < face['num left']:
-                        # print('here1')
+
                         if face['left'][left_edge_counter] < 0:
                             continue
 
@@ -425,7 +423,7 @@ class Plotter(object):
                         case = case + 1
                         continue
 
-                 ## right edge ##
+                ## right edge ##
                 elif case == 4:
                     print('right')
                     if right_edge_counter < face['num right']:
@@ -440,24 +438,21 @@ class Plotter(object):
 
                         curr_edge = ReversableList(curr_edge)
                         curr_edge = curr_edge.reverse()
-                        # print(curr_edge)
 
                     else:
                         case += 1
                         continue
 
-                 ## last case ##
+                ## last case ##
                 elif case == 5:
                     break
-                    # make two triangles , use the midpoint (swap the values for k)
 
+                # make two triangles , use the midpoint (swap the values for k)
                 t1 = [points[curr_edge[0]], points[curr_edge[1]],
                           points[face['midpoint']]]
                 t2 = [points[curr_edge[1]], points[curr_edge[2]],
                           points[face['midpoint']]]
-                # print(curr_edge[0], curr_edge[1], face['midpoint'])
-                # print(curr_edge[1], curr_edge[2], face['midpoint'])
-                # print(t1)
+
 
             # while loop end heree
                 # store them into objs, stl writing
@@ -474,9 +469,8 @@ class Plotter(object):
             self.ax.set_ylim(-1, 1)
             self.ax.set_zlim(-1, 1)
 
-            # clean stuff
             # add fvtostl fucntionality
-            # commit and push
+            # try pyplot
 
             # total_face_index += 2
             # print("plot_surface_raw in progress")
