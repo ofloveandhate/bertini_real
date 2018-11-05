@@ -44,7 +44,7 @@ class VisibilityOptions(object):
         self.autorawsamples = True
         self.labels = False
         # check with matlab output
-        self.which_faces = [0,1,2,3]
+        self.which_faces = []
         self.indices = []
 
 
