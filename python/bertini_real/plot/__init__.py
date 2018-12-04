@@ -20,12 +20,14 @@ import bertini_real.util
 import dill
 import numpy as np
 import matplotlib
+import openmesh as om
 # change backend with this line, if desired
 # matplotlib.use('macosx')
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from matplotlib.widgets import CheckButtons
+from matplotlib.widgets import Button
 
 # print("using {} backend".format(matplotlib.get_backend()))
 
@@ -57,8 +59,7 @@ class Options(object):
 class ReversableList(list):
     def reverse(self):
         return list(reversed(self))
-
-
+    
 class Plotter(object):
     def __init__(self, data=None, options=Options()):
 
@@ -91,8 +92,15 @@ class Plotter(object):
 
         # These four coordinates specify the position of the checkboxes
         rax = plt.axes([0.05, 0.4, 0.2, 0.15])
-        check = CheckButtons(rax, ('Vertices', 'Surface', 'Raw Surface'),
-                             (True, True, False))
+        check = CheckButtons(rax, ('Vertices', 'Surface', 'Raw Surface', 'STL'),
+                             (True, True, False, False))
+
+        # Export STL button
+        # exportstl = plt.axes([0.81, 0.01, 0.15, 0.075])
+        # bfvtostl = Button(exportstl,'Export STL')
+
+        # if(bfvtostl.on_clicked()):
+        #      print("Export successfully")
 
         def func(label):
             if label == 'Vertices':
@@ -110,6 +118,8 @@ class Plotter(object):
                 self.options.visibility.raw = (not self.options.visibility.raw)
                 self.ax.clear()
                 self.replot()
+            elif label == 'STL':
+                self.fvtostl()
 
             plt.draw()
         check.on_clicked(func)
@@ -300,29 +310,55 @@ class Plotter(object):
     def plot_surface_samples(self):
         points = self.points
 
-        tuples = self.decomposition.surface.surface_sampler_data
+        # faces = tuples
+        faces = self.decomposition.surface.surface_sampler_data
 
         colormap = self.options.style.colormap
-        color_list = [colormap(i) for i in np.linspace(0, 1, len(tuples))]
-
-        for i in range(len(tuples)):
+        color_list = [colormap(i) for i in np.linspace(0, 1, len(faces))]
+      
+        for i in range(len(faces)):
             color = color_list[i]
-            # Initialize T here
 
+            # Initialize T here
             T = []
 
-            for tri in tuples[i]:
+            for tri in faces[i]:
                 f = int(tri[0])
                 s = int(tri[1])
                 t = int(tri[2])
 
                 k = [points[f], points[s], points[t]]
+
                 T.append(k)
 
             self.ax.add_collection3d(Poly3DCollection(T, facecolors=color))
-            self.ax.set_xlim(-1, 1)
-            self.ax.set_ylim(-1, 1)
-            self.ax.set_zlim(-1, 1)
+            # change this limit (resize - dynamic)
+            self.ax.autoscale_view()
+            # self.ax.set_xlim(-5, 5)
+            # self.ax.set_ylim(-5, 5)
+            # self.ax.set_zlim(-5, 5)
+
+
+    def fvtostl(self):
+        points = self.points
+        faces = self.decomposition.surface.surface_sampler_data
+
+        # add vertex and surface to mesh
+        # use the vertex that's the result of adding vertex to mesh
+
+        mesh = om.TriMesh()
+
+        vertex = []
+        
+        for p in points:
+            vertex.append(mesh.add_vertex(p))
+
+        for f in faces: # for each face
+            for tri in f: # for triangle in face
+                mesh.add_face(vertex[tri[2]],vertex[tri[1]],vertex[tri[0]])
+
+        om.write_mesh('asurface.stl', mesh)
+        print("Export successfully")
 
     def plot_surface_raw(self):
         points = self.points
@@ -465,15 +501,10 @@ class Plotter(object):
                 T.append(t2)
 
             self.ax.add_collection3d(Poly3DCollection(T, facecolors=color))
-            self.ax.set_xlim(-1, 1)
-            self.ax.set_ylim(-1, 1)
-            self.ax.set_zlim(-1, 1)
-
-            # add fvtostl fucntionality
-            # try pyplot
-
-            # total_face_index += 2
-            # print("plot_surface_raw in progress")
+            self.ax.autoscale_view()
+            # self.ax.set_xlim(-5, 5)
+            # self.ax.set_ylim(-5, 5)
+            # self.ax.set_zlim(-5, 5)
 
 
 def plot(data=None, options=Options()):
