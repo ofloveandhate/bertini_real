@@ -19,6 +19,8 @@ bertini_real-*.tar.gz
 
 *sublime-workspace
 
+*.swp
+
 
 
 partitionParse.c
