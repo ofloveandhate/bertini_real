@@ -7,6 +7,7 @@ using OpenGL
 """
 import numpy as np
 from glumpy import app, gl, glm, gloo
+from glumpy.transforms import Trackball, Position
 import bertini_real
 
 THETA, PHI = 40, 30
@@ -65,7 +66,8 @@ class GlumpyPlotter(object):
         attribute vec3 a_position;      // Vertex position
         void main()
         {
-            gl_Position = u_projection * u_view * u_model * vec4(a_position,1.0);
+            // gl_Position = u_projection * u_view * u_model * vec4(a_position,1.0);
+            gl_position = <transform>;
         }
         """
 
@@ -75,6 +77,26 @@ class GlumpyPlotter(object):
             gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
         }
         """
+
+        #  vertex = """
+        #  uniform vec4 u_color;
+        #  attribute vec3 position;
+        #  attribute vec4 color;
+        #  varying vec4 v_color;
+        #  void main()
+        #  {
+            #  v_color = u_color * color;
+            #  gl_Position = <transform>;
+        #  }
+        #  """
+
+        #  fragment = """
+        #  varying vec4 v_color;
+        #  void main()
+        #  {
+            #  gl_FragColor = v_color;
+        #  }
+        #  """
 
         window = app.Window(width=1024, height=1024,
                             color=(0.30, 0.30, 0.35, 1.00))
@@ -92,7 +114,8 @@ class GlumpyPlotter(object):
         surface.bind(verts)
         surface['u_model'] = np.eye(4, dtype=np.float32)
         surface['u_view'] = glm.translation(0, 0, -5)
-        PHI, THETA = 40, 30
+        surface['transform'] = Trackball(Position("a_position"))
+        window.attach(surface['transform'])
 
         @window.event
         def on_draw(draw_triangles):
@@ -103,14 +126,9 @@ class GlumpyPlotter(object):
             #  surface.draw(gl.GL_TRIANGLES, indeces)
             surface.draw(gl.GL_LINES, indeces)
 
-            # TODO
-            # fix the scope of PHI, and THETA so we can do rotations
-
             #  Make surface rotate
             THETA += 0.5 # degrees
             PHI += 0.5 # degrees
-            #  THETA = 40
-            #  PHI = 30
             model = np.eye(4, dtype=np.float32)
             glm.rotate(model, THETA, 0, 0, 1)
             glm.rotate(model, PHI, 0, 1, 0)
@@ -128,6 +146,7 @@ class GlumpyPlotter(object):
             gl.glEnable(gl.GL_DEPTH_TEST)
 
 
+        #  app.run(interactive=True)
         app.run()
 
 def plot(data=None):
