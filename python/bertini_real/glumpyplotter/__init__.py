@@ -10,9 +10,6 @@ from glumpy import app, gl, glm, gloo
 from glumpy.transforms import Trackball, Position
 import bertini_real
 
-THETA, PHI = 40, 30
-
-
 class GlumpyPlotter(object):
     """ creates the glumpyplotter object """
     def __init__(self, data=None):
@@ -63,11 +60,10 @@ class GlumpyPlotter(object):
         uniform mat4   u_model;         // Model matrix
         uniform mat4   u_view;          // View matrix
         uniform mat4   u_projection;    // Projection matrix
-        attribute vec3 a_position;      // Vertex position
+        attribute vec3 position;      // Vertex position
         void main()
         {
-            // gl_Position = u_projection * u_view * u_model * vec4(a_position,1.0);
-            gl_position = <transform>;
+            gl_Position = <transform>;
         }
         """
 
@@ -78,32 +74,12 @@ class GlumpyPlotter(object):
         }
         """
 
-        #  vertex = """
-        #  uniform vec4 u_color;
-        #  attribute vec3 position;
-        #  attribute vec4 color;
-        #  varying vec4 v_color;
-        #  void main()
-        #  {
-            #  v_color = u_color * color;
-            #  gl_Position = <transform>;
-        #  }
-        #  """
-
-        #  fragment = """
-        #  varying vec4 v_color;
-        #  void main()
-        #  {
-            #  gl_FragColor = v_color;
-        #  }
-        #  """
-
         window = app.Window(width=1024, height=1024,
                             color=(0.30, 0.30, 0.35, 1.00))
 
 
-        verts = np.zeros(len(points), [("a_position", np.float32, 3)])
-        verts["a_position"] = points
+        verts = np.zeros(len(points), [("position", np.float32, 3)])
+        verts["position"] = points
 
 
         verts = verts.view(gloo.VertexBuffer)
@@ -114,36 +90,25 @@ class GlumpyPlotter(object):
         surface.bind(verts)
         surface['u_model'] = np.eye(4, dtype=np.float32)
         surface['u_view'] = glm.translation(0, 0, -5)
-        surface['transform'] = Trackball(Position("a_position"))
+        surface['transform'] = Trackball(Position("position"))
         window.attach(surface['transform'])
 
         @window.event
         def on_draw(draw_triangles):
-            """ draws and rotates the surface """
-            global PHI, THETA
+            """ draws the surface """
             window.clear()
 
             #  surface.draw(gl.GL_TRIANGLES, indeces)
             surface.draw(gl.GL_LINES, indeces)
 
-            #  Make surface rotate
-            THETA += 0.5 # degrees
-            PHI += 0.5 # degrees
-            model = np.eye(4, dtype=np.float32)
-            glm.rotate(model, THETA, 0, 0, 1)
-            glm.rotate(model, PHI, 0, 1, 0)
-            surface['u_model'] = model
-
-
-        @window.event
-        def on_resize(width, height):
-            """ deals with resizing the image """
-            surface['u_projection'] = glm.perspective(45.0, width / float(height), 2.0, 100.0)
-
         @window.event
         def on_init():
-            """ initializes opengl? """
+            """ settings for opengl, not sure what they all do """
+            
             gl.glEnable(gl.GL_DEPTH_TEST)
+            gl.glPolygonOffset(1, 1)
+            gl.glEnable(gl.GL_LINE_SMOOTH)
+            gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 
 
         #  app.run(interactive=True)
