@@ -9,6 +9,8 @@ import numpy as np
 from glumpy import app, gl, glm, gloo
 import bertini_real
 
+THETA, PHI = 40, 30
+
 
 class GlumpyPlotter(object):
     """ creates the glumpyplotter object """
@@ -90,28 +92,28 @@ class GlumpyPlotter(object):
         surface.bind(verts)
         surface['u_model'] = np.eye(4, dtype=np.float32)
         surface['u_view'] = glm.translation(0, 0, -5)
-        phi, theta = 40, 30
+        PHI, THETA = 40, 30
 
         @window.event
         def on_draw(draw_triangles):
             """ draws and rotates the surface """
-            global phi, theta
+            global PHI, THETA
             window.clear()
 
             #  surface.draw(gl.GL_TRIANGLES, indeces)
             surface.draw(gl.GL_LINES, indeces)
 
             # TODO
-            # fix the scope of phi, and theta so we can do rotations
+            # fix the scope of PHI, and THETA so we can do rotations
 
             #  Make surface rotate
-            #  theta += 0.5 # degrees
-            #  phi += 0.5 # degrees
-            theta = 40
-            phi = 30
+            THETA += 0.5 # degrees
+            PHI += 0.5 # degrees
+            #  THETA = 40
+            #  PHI = 30
             model = np.eye(4, dtype=np.float32)
-            glm.rotate(model, theta, 0, 0, 1)
-            glm.rotate(model, phi, 0, 1, 0)
+            glm.rotate(model, THETA, 0, 0, 1)
+            glm.rotate(model, PHI, 0, 1, 0)
             surface['u_model'] = model
 
 
