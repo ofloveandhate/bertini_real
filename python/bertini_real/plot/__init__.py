@@ -305,6 +305,9 @@ class Plotter(object):
         colormap = self.options.style.colormap
         color_list = [colormap(i) for i in np.linspace(0, 1, len(tuples))]
 
+        print(color_list)
+        print(len(color_list))
+
         for i in range(len(tuples)):
             color = color_list[i]
             # Initialize T here
@@ -362,7 +365,7 @@ class Plotter(object):
             while 1:
                 ## top edge ##
                 if case == 1:
-                    print('top')
+                    # print('top')
                     case += 1
                     if face['top'] < 0:
                         continue
@@ -387,7 +390,7 @@ class Plotter(object):
 
                 ## bottom edge ##
                 elif case == 2:
-                    print('bottom')
+                    # print('bottom')
                     case += 1
                     if face['bottom'] < 0:
                         continue
@@ -407,7 +410,7 @@ class Plotter(object):
 
                 ## left edge ##
                 elif case == 3:
-                    print('left')
+                    # print('left')
                     if left_edge_counter < face['num left']:
 
                         if face['left'][left_edge_counter] < 0:
@@ -425,7 +428,7 @@ class Plotter(object):
 
                 ## right edge ##
                 elif case == 4:
-                    print('right')
+                    # print('right')
                     if right_edge_counter < face['num right']:
 
                         if face['right'][right_edge_counter] < 0:
