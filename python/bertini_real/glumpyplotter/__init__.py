@@ -4,6 +4,15 @@ University of Wisconsin, Eau Claire
 Fall 2018
 Porting to Glumpy for faster surface rendering
 using OpenGL
+
+Current Version:
+    Surface agnostic
+    Mouse (trackball) implementation
+
+TODO:
+    Make surfaces colored
+    Make surfaces colored given a function
+    Play with making the app interactive
 """
 import numpy as np
 from glumpy import app, gl, glm, gloo
@@ -56,30 +65,62 @@ class GlumpyPlotter(object):
 
         triangle = np.asarray(triangle)
 
+# ------------------------------------------------------------------------------------- #
+
         vertex = """
+        attribute vec4 a_color;         // Vertex Color
         uniform mat4   u_model;         // Model matrix
         uniform mat4   u_view;          // View matrix
         uniform mat4   u_projection;    // Projection matrix
-        attribute vec3 position;      // Vertex position
+        attribute vec3 position;        // Vertex position
+        varying vec4   v_color;         // Interpolated fragment color (out)
         void main()
         {
+            v_color = a_color;
             gl_Position = <transform>;
         }
         """
 
         fragment = """
+        varying vec4  v_color;          // Interpolated fragment color (in)
         void main()
         {
-            gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+            // gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+            gl_FragColor = v_color;
         }
         """
+        def make_colors(points):
+            """
+            computes colors given a function!!!
+            """
+            # f(x) = x^2 + y^2 + z^2
+            colors = []
+
+            for i in range(len(points)):
+
+                x = points[i][0]
+                y = points[i][1]
+                z = points[i][2]
+
+                x = x**2
+                y = y**2
+                z = z**2
+
+                colors.append([x, y, z, 1])
+
+            return colors
 
         window = app.Window(width=1024, height=1024,
                             color=(0.30, 0.30, 0.35, 1.00))
 
 
-        verts = np.zeros(len(points), [("position", np.float32, 3)])
+        verts = np.zeros(len(points), [("position", np.float32, 3),
+                                        ("a_color", np.float32, 4)])
         verts["position"] = points
+        
+        # color code to go here
+        verts["a_color"] = make_colors(verts["position"])
+        # print(verts["position"][0][0])
 
 
         verts = verts.view(gloo.VertexBuffer)
@@ -93,17 +134,18 @@ class GlumpyPlotter(object):
         surface['transform'] = Trackball(Position("position"))
         window.attach(surface['transform'])
 
+
         @window.event
         def on_draw(draw_triangles):
             """ draws the surface """
             window.clear()
 
-            #  surface.draw(gl.GL_TRIANGLES, indeces)
-            surface.draw(gl.GL_LINES, indeces)
+            surface.draw(gl.GL_TRIANGLES, indeces)
+            # surface.draw(gl.GL_LINES, indeces)
 
         @window.event
         def on_init():
-            """ settings for opengl, not sure what they all do """
+            """ settings for OpenGL, not sure what they all do """
             
             gl.glEnable(gl.GL_DEPTH_TEST)
             gl.glPolygonOffset(1, 1)
@@ -113,6 +155,8 @@ class GlumpyPlotter(object):
 
         #  app.run(interactive=True)
         app.run()
+
+# ------------------------------------------------------------------------------------- #
 
 def plot(data=None):
     """ simply calls the plot method """
