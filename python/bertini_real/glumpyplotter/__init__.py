@@ -8,10 +8,13 @@ using OpenGL
 Current Version:
     Surface agnostic
     Mouse (trackball) implementation
+        Can rotate by dragging the mouse
+        Can zoom with the scroll wheel
     Now with color
     Minimal implementation to change the colors given a function
 
 TODO:
+    Make the color function better
     Play with making the app interactive
 
 """
@@ -52,22 +55,34 @@ class GlumpyPlotter(object):
 
         def make_colors(points):
             """
-            computes colors given a function!!!
+            computes colors according to a function!!!
+
+            TODO:
+                allow this to take in the function as a parameter
             """
+            
             # f(x) = x^2 + y^2 + z^2
             colors = []
 
             for i in range(len(points)):
 
-                x = points[i][0]
-                y = points[i][1]
-                z = points[i][2]
+                r = points[i][0]
+                g = points[i][1]
+                b = points[i][2]
 
-                x = x**2
-                y = y**2
-                z = z**2
+                # r = r**2 + g**2 + b**2
+                # g = r**2 + g**2 + b**2
+                # b = r**2 + g**2 + b**2
 
-                colors.append([x, y, z, 1])
+                # r = r**2 + g**2 + b**2
+                # g = r + g**2 + b**2
+                # b = r + g + b**2
+
+                r = r**2
+                g = g**2
+                b = b**2
+
+                colors.append([r, g, b, 1])
 
             return colors
 
