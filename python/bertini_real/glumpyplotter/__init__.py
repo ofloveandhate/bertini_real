@@ -8,11 +8,12 @@ using OpenGL
 Current Version:
     Surface agnostic
     Mouse (trackball) implementation
+    Now with color
+    Minimal implementation to change the colors given a function
 
 TODO:
-    Make surfaces colored
-    Make surfaces colored given a function
     Play with making the app interactive
+
 """
 import numpy as np
 from glumpy import app, gl, glm, gloo
@@ -48,6 +49,27 @@ class GlumpyPlotter(object):
                     point[j] = vertice['point'][j].real
                 points.append(point)
             return points
+
+        def make_colors(points):
+            """
+            computes colors given a function!!!
+            """
+            # f(x) = x^2 + y^2 + z^2
+            colors = []
+
+            for i in range(len(points)):
+
+                x = points[i][0]
+                y = points[i][1]
+                z = points[i][2]
+
+                x = x**2
+                y = y**2
+                z = z**2
+
+                colors.append([x, y, z, 1])
+
+            return colors
 
         points = extract_points(data)
 
@@ -89,26 +111,6 @@ class GlumpyPlotter(object):
             gl_FragColor = v_color;
         }
         """
-        def make_colors(points):
-            """
-            computes colors given a function!!!
-            """
-            # f(x) = x^2 + y^2 + z^2
-            colors = []
-
-            for i in range(len(points)):
-
-                x = points[i][0]
-                y = points[i][1]
-                z = points[i][2]
-
-                x = x**2
-                y = y**2
-                z = z**2
-
-                colors.append([x, y, z, 1])
-
-            return colors
 
         window = app.Window(width=1024, height=1024,
                             color=(0.30, 0.30, 0.35, 1.00))
@@ -117,11 +119,7 @@ class GlumpyPlotter(object):
         verts = np.zeros(len(points), [("position", np.float32, 3),
                                         ("a_color", np.float32, 4)])
         verts["position"] = points
-        
-        # color code to go here
         verts["a_color"] = make_colors(verts["position"])
-        # print(verts["position"][0][0])
-
 
         verts = verts.view(gloo.VertexBuffer)
         indeces = np.array(triangle).astype(np.uint32)
