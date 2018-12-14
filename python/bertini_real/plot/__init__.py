@@ -316,9 +316,14 @@ class Plotter(object):
         faces = self.decomposition.surface.surface_sampler_data
 
         colormap = self.options.style.colormap
+
         color_list = [colormap(i) for i in np.linspace(0, 1, len(faces))]
-      
+
+        print(color_list)
+        print(len(color_list))
+
         for i in range(len(faces)):
+
             color = color_list[i]
 
             # Initialize T here
@@ -334,12 +339,7 @@ class Plotter(object):
                 T.append(k)
 
             self.ax.add_collection3d(Poly3DCollection(T, facecolors=color))
-            
-            # change this limit (resize - dynamic)
             self.ax.autoscale_view()
-            # self.ax.set_xlim(-5, 5)
-            # self.ax.set_ylim(-5, 5)
-            # self.ax.set_zlim(-5, 5)
 
 
     def fvtostl(self):
@@ -347,9 +347,6 @@ class Plotter(object):
         faces = self.decomposition.surface.surface_sampler_data
 
         # add vertex and surface to mesh
-
-        # mesh = om.TriMesh()
-
         vertex = []
         
         for p in points:
@@ -371,7 +368,7 @@ class Plotter(object):
             for j in range(3):
                 obj.vectors[i][j] = vertex_np_array[f[j],:]
 
-        # fn = bertini_real.util.next_filenumber()
+        # get object filename
         fileName = os.getcwd().split(os.sep)[-1]
 
         obj.save('a' + fileName + '.stl')
@@ -386,8 +383,6 @@ class Plotter(object):
         normmesh.show()
         
         normmesh.export(file_obj='anorm' + fileName + '.stl', file_type='stl')
-
-        # fix_normals(normmesh,True)
 
 
         print("Export successfully")
@@ -535,9 +530,6 @@ class Plotter(object):
 
             self.ax.add_collection3d(Poly3DCollection(T, facecolors=color))
             self.ax.autoscale_view()
-            # self.ax.set_xlim(-5, 5)
-            # self.ax.set_ylim(-5, 5)
-            # self.ax.set_zlim(-5, 5)
 
 
 def plot(data=None, options=Options()):
