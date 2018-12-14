@@ -21,6 +21,8 @@ import dill
 import numpy as np
 import matplotlib
 import openmesh as om
+from stl import mesh
+import trimesh
 # change backend with this line, if desired
 # matplotlib.use('macosx')
 import matplotlib.pyplot as plt
@@ -332,6 +334,7 @@ class Plotter(object):
                 T.append(k)
 
             self.ax.add_collection3d(Poly3DCollection(T, facecolors=color))
+            
             # change this limit (resize - dynamic)
             self.ax.autoscale_view()
             # self.ax.set_xlim(-5, 5)
@@ -344,26 +347,56 @@ class Plotter(object):
         faces = self.decomposition.surface.surface_sampler_data
 
         # add vertex and surface to mesh
-        # use the vertex that's the result of adding vertex to mesh
 
-        mesh = om.TriMesh()
+        # mesh = om.TriMesh()
 
         vertex = []
         
         for p in points:
-            vertex.append(mesh.add_vertex(p))
+            vertex.append(p)
+
+        vertex_np_array = np.array(vertex)
+
+        face = []
 
         for f in faces: # for each face
             for tri in f: # for triangle in face
-                mesh.add_face(vertex[tri[2]],vertex[tri[1]],vertex[tri[0]])
+                face.append([tri[0],tri[1],tri[2]])
 
-        om.write_mesh('asurface.stl', mesh)
+        face_np_array = np.array(face)
+ 
+        obj = mesh.Mesh(np.zeros(face_np_array.shape[0], dtype=mesh.Mesh.dtype))
+
+        for i, f in enumerate(face_np_array):
+            for j in range(3):
+                obj.vectors[i][j] = vertex_np_array[f[j],:]
+
+        # fn = bertini_real.util.next_filenumber()
+        fileName = os.getcwd().split(os.sep)[-1]
+
+        obj.save('a' + fileName + '.stl')
+
+        normmesh = trimesh.load_mesh('a' + fileName + '.stl')
+
+        normmesh.fix_normals()
+
+        for facet in normmesh.facets:
+            normmesh.visual.face_colors[facet] = trimesh.visual.random_color()
+
+        normmesh.show()
+        
+        normmesh.export(file_obj='anorm' + fileName + '.stl', file_type='stl')
+
+        # fix_normals(normmesh,True)
+
+
         print("Export successfully")
 
     def plot_surface_raw(self):
         points = self.points
         surf = self.decomposition.surface
         which_faces = self.options.visibility.which_faces
+
 
         # store number of faces to num_faces
         num_faces = surf.num_faces
