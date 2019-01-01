@@ -1,7 +1,7 @@
 """
 Dan Hessler
 University of Wisconsin, Eau Claire
-Fall 2018
+Fall 2018 - Spring 2019
 Porting to Glumpy for faster surface rendering
 using OpenGL
 
@@ -11,11 +11,12 @@ Current Version:
         Can rotate by dragging the mouse
         Can zoom with the scroll wheel
     Now with color
-    Minimal implementation to change the colors given a function
+    Now requires a function
+        example code can be seen in the runner.py files
 
 TODO:
-    Make the color function better
     Play with making the app interactive
+        i.e. checkboxes, sliders, etc
 
 """
 import numpy as np
@@ -32,56 +33,47 @@ class GlumpyPlotter(object):
             self.decomposition = data
 
 
-    def plot(self):
+    def plot(self, color_function):
         """ method used to plot a surface """
         print("Plotting object of dimension: {}".format(self.decomposition.dimension))
 
-        data = bertini_real.data.ReadMostRecent()
+        data = self.decomposition
         tuples = data.surface.surface_sampler_data
 
         def extract_points(data):
             """Extract points from vertices"""
+
             points = []
 
-            for vertice in data.vertices:
+            for vertex in data.vertices:
                 """ we use 3 here because a triangle consists
                 of three points """
                 point = [None]*3
 
                 for j in range(3):
-                    point[j] = vertice['point'][j].real
+                    point[j] = vertex['point'][j].real
                 points.append(point)
             return points
 
         def make_colors(points):
             """
-            computes colors according to a function!!!
-
-            TODO:
-                allow this to take in the function as a parameter
+            computes colors according to a function
             """
-            
-            # f(x) = x^2 + y^2 + z^2
+
             colors = []
 
             for i in range(len(points)):
 
-                r = points[i][0]
-                g = points[i][1]
-                b = points[i][2]
+                x = points[i][0]
+                y = points[i][1]
+                z = points[i][2]
 
-                # r = r**2 + g**2 + b**2
-                # g = r**2 + g**2 + b**2
-                # b = r**2 + g**2 + b**2
+                f1, f2, f3 = color_function
 
-                # r = r**2 + g**2 + b**2
-                # g = r + g**2 + b**2
-                # b = r + g + b**2
-
-                r = r**2
-                g = g**2
-                b = b**2
-
+                r = f1(x,y,z)
+                g = f2(x,y,z)
+                b = f3(x,y,z)
+                
                 colors.append([r, g, b, 1])
 
             return colors
@@ -171,9 +163,12 @@ class GlumpyPlotter(object):
 
 # ------------------------------------------------------------------------------------- #
 
-def plot(data=None):
+def plot(color_function, data=None):
     """ simply calls the plot method """
+    """ color_function contains 3 functions to compute the colors
+        of the surface
+    """
 
     surface = GlumpyPlotter(data)
-    surface.plot()
+    surface.plot(color_function)
     
