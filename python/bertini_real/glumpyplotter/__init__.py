@@ -73,9 +73,7 @@ class GlumpyPlotter(object):
                 r = f1(x,y,z)
                 g = f2(x,y,z)
                 b = f3(x,y,z)
-                
                 colors.append([r, g, b, 1])
-
             return colors
 
         points = extract_points(data)
@@ -151,7 +149,6 @@ class GlumpyPlotter(object):
         @window.event
         def on_init():
             """ settings for OpenGL, not sure what they all do """
-            
             gl.glEnable(gl.GL_DEPTH_TEST)
             gl.glPolygonOffset(1, 1)
             gl.glEnable(gl.GL_LINE_SMOOTH)
@@ -164,11 +161,11 @@ class GlumpyPlotter(object):
 # ------------------------------------------------------------------------------------- #
 
 def plot(color_function, data=None):
-    """ simply calls the plot method """
-    """ color_function contains 3 functions to compute the colors
-        of the surface
+    """
+    simply calls the plot method
+    color_function contains 3 functions to compute the colors
+    of the surface
     """
 
     surface = GlumpyPlotter(data)
     surface.plot(color_function)
-    
