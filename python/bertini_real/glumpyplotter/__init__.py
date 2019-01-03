@@ -60,6 +60,7 @@ class GlumpyPlotter(object):
             computes colors according to a function
             """
 
+
             colors = []
 
             for i in range(len(points)):
@@ -160,12 +161,24 @@ class GlumpyPlotter(object):
 
 # ------------------------------------------------------------------------------------- #
 
-def plot(color_function, data=None):
+def plot(color_function=None, data=None):
     """
     simply calls the plot method
     color_function contains 3 functions to compute the colors
     of the surface
     """
+    # default colors if none are provided
+    # function = x^2 + y^2 + z^2
+    # sort of
+    if color_function == None:
+        def f1(x,y,z):
+            return x**2
+        def f2(x,y,z):
+            return y**2
+        def f3(x,y,z):
+            return z**2
+
+        color_function = f1, f2, f3
 
     surface = GlumpyPlotter(data)
     surface.plot(color_function)
