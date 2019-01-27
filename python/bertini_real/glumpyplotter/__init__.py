@@ -11,20 +11,27 @@ Current Version:
         Can rotate by dragging the mouse
         Can zoom with the scroll wheel
     Now with color
-    Now requires a function
+    Now with an optional color function
         example code can be seen in the runner.py files
 
 TODO:
     Play with making the app interactive
         i.e. checkboxes, sliders, etc
-
+        * this would be accomplished with the pyimgui pull request on the
+          glumpy repo
+          This may not be possible on machines without graphics cards though
+          requires OpenGL 3.2
+          Macbook Pro mid 2015 has OpenGL 2.1
+            * look into if this can be updated??
+              not looking too promising....
 """
+
 import numpy as np
 from glumpy import app, gl, glm, gloo
 from glumpy.transforms import Trackball, Position
 import bertini_real
 
-class GlumpyPlotter(object):
+class GlumpyPlotter():
     """ creates the glumpyplotter object """
     def __init__(self, data=None):
         if data is None:
@@ -60,11 +67,9 @@ class GlumpyPlotter(object):
             computes colors according to a function
             """
 
-
             colors = []
 
             for i in range(len(points)):
-
                 x = points[i][0]
                 y = points[i][1]
                 z = points[i][2]
@@ -82,7 +87,6 @@ class GlumpyPlotter(object):
         triangle = []
 
         for i in range(len(tuples)):
-
             for tri in tuples[i]:
                 f = int(tri[0])
                 s = int(tri[1])
@@ -94,6 +98,11 @@ class GlumpyPlotter(object):
         triangle = np.asarray(triangle)
 
 # ------------------------------------------------------------------------------------- #
+
+"""
+OpenGL code
+Used in Glumpy
+"""
 
         vertex = """
         attribute vec4 a_color;         // Vertex Color
