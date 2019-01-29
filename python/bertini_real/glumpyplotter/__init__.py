@@ -1,7 +1,7 @@
 """
 Dan Hessler
 University of Wisconsin, Eau Claire
-Fall 2018
+Fall 2018 - Spring 2019
 Porting to Glumpy for faster surface rendering
 using OpenGL
 
@@ -11,19 +11,27 @@ Current Version:
         Can rotate by dragging the mouse
         Can zoom with the scroll wheel
     Now with color
-    Minimal implementation to change the colors given a function
+    Now with an optional color function
+        example code can be seen in the runner.py files
 
 TODO:
-    Make the color function better
     Play with making the app interactive
-
+        i.e. checkboxes, sliders, etc
+        * this would be accomplished with the pyimgui pull request on the
+          glumpy repo
+          This may not be possible on machines without graphics cards though
+          requires OpenGL 3.2
+          Macbook Pro mid 2015 has OpenGL 2.1
+            * look into if this can be updated??
+              not looking too promising....
 """
+
 import numpy as np
 from glumpy import app, gl, glm, gloo
 from glumpy.transforms import Trackball, Position
 import bertini_real
 
-class GlumpyPlotter(object):
+class GlumpyPlotter():
     """ creates the glumpyplotter object """
     def __init__(self, data=None):
         if data is None:
@@ -32,58 +40,46 @@ class GlumpyPlotter(object):
             self.decomposition = data
 
 
-    def plot(self):
+    def plot(self, color_function):
         """ method used to plot a surface """
         print("Plotting object of dimension: {}".format(self.decomposition.dimension))
 
-        data = bertini_real.data.ReadMostRecent()
+        data = self.decomposition
         tuples = data.surface.surface_sampler_data
 
         def extract_points(data):
             """Extract points from vertices"""
+
             points = []
 
-            for vertice in data.vertices:
+            for vertex in data.vertices:
                 """ we use 3 here because a triangle consists
                 of three points """
                 point = [None]*3
 
                 for j in range(3):
-                    point[j] = vertice['point'][j].real
+                    point[j] = vertex['point'][j].real
                 points.append(point)
             return points
 
         def make_colors(points):
             """
-            computes colors according to a function!!!
-
-            TODO:
-                allow this to take in the function as a parameter
+            computes colors according to a function
             """
-            
-            # f(x) = x^2 + y^2 + z^2
+
             colors = []
 
             for i in range(len(points)):
+                x = points[i][0]
+                y = points[i][1]
+                z = points[i][2]
 
-                r = points[i][0]
-                g = points[i][1]
-                b = points[i][2]
+                f1, f2, f3 = color_function
 
-                # r = r**2 + g**2 + b**2
-                # g = r**2 + g**2 + b**2
-                # b = r**2 + g**2 + b**2
-
-                # r = r**2 + g**2 + b**2
-                # g = r + g**2 + b**2
-                # b = r + g + b**2
-
-                r = r**2
-                g = g**2
-                b = b**2
-
+                r = f1(x,y,z)
+                g = f2(x,y,z)
+                b = f3(x,y,z)
                 colors.append([r, g, b, 1])
-
             return colors
 
         points = extract_points(data)
@@ -91,7 +87,6 @@ class GlumpyPlotter(object):
         triangle = []
 
         for i in range(len(tuples)):
-
             for tri in tuples[i]:
                 f = int(tri[0])
                 s = int(tri[1])
@@ -103,6 +98,11 @@ class GlumpyPlotter(object):
         triangle = np.asarray(triangle)
 
 # ------------------------------------------------------------------------------------- #
+
+"""
+OpenGL code
+Used in Glumpy
+"""
 
         vertex = """
         attribute vec4 a_color;         // Vertex Color
@@ -159,7 +159,6 @@ class GlumpyPlotter(object):
         @window.event
         def on_init():
             """ settings for OpenGL, not sure what they all do """
-            
             gl.glEnable(gl.GL_DEPTH_TEST)
             gl.glPolygonOffset(1, 1)
             gl.glEnable(gl.GL_LINE_SMOOTH)
@@ -171,9 +170,24 @@ class GlumpyPlotter(object):
 
 # ------------------------------------------------------------------------------------- #
 
-def plot(data=None):
-    """ simply calls the plot method """
+def plot(color_function=None, data=None):
+    """
+    simply calls the plot method
+    color_function contains 3 functions to compute the colors
+    of the surface
+    """
+    # default colors if none are provided
+    # function = x^2 + y^2 + z^2
+    # sort of
+    if color_function == None:
+        def f1(x,y,z):
+            return x**2
+        def f2(x,y,z):
+            return y**2
+        def f3(x,y,z):
+            return z**2
+
+        color_function = f1, f2, f3
 
     surface = GlumpyPlotter(data)
-    surface.plot()
-    
+    surface.plot(color_function)
