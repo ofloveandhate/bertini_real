@@ -5,6 +5,11 @@ Fall 2018 - Spring 2019
 Porting to Glumpy for faster surface rendering
 using OpenGL
 
+Foong Min Wong
+University of Wisconsin, Eau Claire
+Fall 2018 - Spring 2019
+Implementing stereolithography export feature
+
 Current Version:
     Surface agnostic
     Mouse (trackball) implementation
