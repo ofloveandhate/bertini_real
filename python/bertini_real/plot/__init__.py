@@ -20,7 +20,7 @@ import bertini_real.util
 import dill
 import numpy as np
 import matplotlib
-import openmesh as om
+# import openmesh as om
 from stl import mesh
 import trimesh
 # change backend with this line, if desired
@@ -380,7 +380,7 @@ class Plotter(object):
         for facet in normmesh.facets:
             normmesh.visual.face_colors[facet] = trimesh.visual.random_color()
 
-        normmesh.show()
+        # normmesh.show()
         
         normmesh.export(file_obj='anorm' + fileName + '.stl', file_type='stl')
 
