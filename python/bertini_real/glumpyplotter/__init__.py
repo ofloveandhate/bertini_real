@@ -30,6 +30,7 @@ import numpy as np
 from glumpy import app, gl, glm, gloo
 from glumpy.transforms import Trackball, Position
 import bertini_real
+import math
 
 class GlumpyPlotter():
     """ creates the glumpyplotter object """
@@ -40,7 +41,7 @@ class GlumpyPlotter():
             self.decomposition = data
 
 
-    def plot(self, color_function):
+    def plot(self):
         """ method used to plot a surface """
         print("Plotting object of dimension: {}".format(self.decomposition.dimension))
 
@@ -65,21 +66,34 @@ class GlumpyPlotter():
         def make_colors(points):
             """
             computes colors according to a function
+            then applies a colormap from the matplotlib library
             """
+            import matplotlib.pyplot as plt
 
             colors = []
 
+            # first, loop through all of the points and get a list
+            # of values returned from this function
+            def new_color_function(x,y,z):
+                return math.sqrt(x**2 + y**2 + z**2)
+
+            data = []
             for i in range(len(points)):
-                x = points[i][0]
-                y = points[i][1]
-                z = points[i][2]
+                function_result = new_color_function(points[i][0],points[i][1],points[i][2])
+                data.append(function_result)
+            data = np.asarray(data)
 
-                f1, f2, f3 = color_function
+            # next, normalize the data
+            """
+            looks like its already normalized?? will come back to this later
+            """
+            # print(data)
 
-                r = f1(x,y,z)
-                g = f2(x,y,z)
-                b = f3(x,y,z)
-                colors.append([r, g, b, 1])
+            # finally, run that data through the mpl.pyplot colormap function
+            # and receive our rgb values
+            cmap = plt.cm.jet
+            colors = cmap(data)
+
             return colors
 
         points = extract_points(data)
@@ -98,11 +112,7 @@ class GlumpyPlotter():
         triangle = np.asarray(triangle)
 
 # ------------------------------------------------------------------------------------- #
-
-"""
-OpenGL code
-Used in Glumpy
-"""
+# Vertex and fragment are OpenGL code
 
         vertex = """
         attribute vec4 a_color;         // Vertex Color
@@ -127,7 +137,7 @@ Used in Glumpy
         }
         """
 
-        window = app.Window(width=1024, height=1024,
+        window = app.Window(width=2048, height=2048,
                             color=(0.30, 0.30, 0.35, 1.00))
 
 
@@ -146,6 +156,7 @@ Used in Glumpy
         surface['u_view'] = glm.translation(0, 0, -5)
         surface['transform'] = Trackball(Position("position"))
         window.attach(surface['transform'])
+        framebuffer = gloo.FrameBuffer()
 
 
         @window.event
@@ -153,8 +164,10 @@ Used in Glumpy
             """ draws the surface """
             window.clear()
 
+            #  framebuffer.activate()
             surface.draw(gl.GL_TRIANGLES, indeces)
             # surface.draw(gl.GL_LINES, indeces)
+            #  framebuffer.deactivate()
 
         @window.event
         def on_init():
@@ -170,24 +183,11 @@ Used in Glumpy
 
 # ------------------------------------------------------------------------------------- #
 
-def plot(color_function=None, data=None):
+def plot(data=None):
     """
     simply calls the plot method
     color_function contains 3 functions to compute the colors
     of the surface
     """
-    # default colors if none are provided
-    # function = x^2 + y^2 + z^2
-    # sort of
-    if color_function == None:
-        def f1(x,y,z):
-            return x**2
-        def f2(x,y,z):
-            return y**2
-        def f3(x,y,z):
-            return z**2
-
-        color_function = f1, f2, f3
-
     surface = GlumpyPlotter(data)
-    surface.plot(color_function)
+    surface.plot()
