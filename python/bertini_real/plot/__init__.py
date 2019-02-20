@@ -319,8 +319,8 @@ class Plotter(object):
 
         color_list = [colormap(i) for i in np.linspace(0, 1, len(faces))]
 
-        print(color_list)
-        print(len(color_list))
+        # print(color_list)
+        # print(len(color_list))
 
         for i in range(len(faces)):
 
