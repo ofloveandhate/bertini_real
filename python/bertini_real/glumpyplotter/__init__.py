@@ -63,6 +63,7 @@ class GlumpyPlotter():
                 points.append(point)
             return points
 
+        #  def make_colors(points, fn = default_color_function()):
         def make_colors(points):
             """
             computes colors according to a function
@@ -74,12 +75,12 @@ class GlumpyPlotter():
 
             # first, loop through all of the points and get a list
             # of values returned from this function
-            def new_color_function(x,y,z):
+            def default_color_function(x,y,z):
                 return math.sqrt(x**2 + y**2 + z**2)
 
             data = []
             for i in range(len(points)):
-                function_result = new_color_function(points[i][0],points[i][1],points[i][2])
+                function_result = default_color_function(points[i][0],points[i][1],points[i][2])
                 data.append(function_result)
             data = np.asarray(data)
 
@@ -87,11 +88,15 @@ class GlumpyPlotter():
             """
             looks like its already normalized?? will come back to this later
             """
+
+            # soething like
+            temp1 = data-min(data)
+            data = temp1 / max(temp1)
             # print(data)
 
             # finally, run that data through the mpl.pyplot colormap function
             # and receive our rgb values
-            cmap = plt.cm.jet
+            cmap = plt.cm.hsv
             colors = cmap(data)
 
             return colors
@@ -166,7 +171,7 @@ class GlumpyPlotter():
 
             #  framebuffer.activate()
             surface.draw(gl.GL_TRIANGLES, indeces)
-            # surface.draw(gl.GL_LINES, indeces)
+            #  surface.draw(gl.GL_LINES, indeces)
             #  framebuffer.deactivate()
 
         @window.event
