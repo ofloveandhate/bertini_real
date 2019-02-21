@@ -83,8 +83,8 @@ class NumpySTL():
 
         return points
 
-    def stl_raw(self):
-        print("stl_raw in progress")
+    def raw(self):
+        print("Generating raw STL surface...")
         points = self.extract_points()
 
         surf = self.decomposition.surface
@@ -101,7 +101,8 @@ class NumpySTL():
         num_total_faces = 0
         for ii in range(len(which_faces)):
             curr_face = surf.faces[which_faces[ii]]
-            num_total_faces = num_total_faces + 2 * (curr_face['num left'] + curr_face['num right'] + 2)
+            num_total_faces = num_total_faces + 2 * \
+                (curr_face['num left'] + curr_face['num right'] + 2)
         num_total_faces = num_total_faces * 2
         total_face_index = 0
         TT = []
@@ -116,7 +117,6 @@ class NumpySTL():
             left_edge_counter = 0
             right_edge_counter = 0
             T = []
-            
 
             while 1:
                 ## top edge ##
@@ -220,7 +220,7 @@ class NumpySTL():
 
                 TT.append(t3)
                 TT.append(t4)
-         
+
                 T.append(t1)
                 T.append(t2)
 
@@ -255,12 +255,14 @@ class NumpySTL():
 
         normmesh.fix_normals()
 
-        normmesh.export(file_obj='anormraw' + fileName + '.stl', file_type='stl')
+        normmesh.export(file_obj='anormraw' + fileName +
+                        '.stl', file_type='stl')
 
         print("Export " + '\x1b[2;30;45m' + "anormraw" +
               fileName + ".stl" + '\x1b[0m' + " successfully")
 
-    def stl_sampler(self):
+    def smooth(self):
+        print("Generating smooth STL surface...")
         points = self.extract_points()
         faces = self.decomposition.surface.surface_sampler_data
 
@@ -290,9 +292,9 @@ class NumpySTL():
         # get object filename
         fileName = os.getcwd().split(os.sep)[-1]
 
-        obj.save('asampler' + fileName + '.stl')
+        obj.save('asmooth' + fileName + '.stl')
 
-        normmesh = trimesh.load_mesh('asampler' + fileName + '.stl')
+        normmesh = trimesh.load_mesh('asmooth' + fileName + '.stl')
 
         normmesh.fix_normals()
 
@@ -301,9 +303,10 @@ class NumpySTL():
 
         # normmesh.show()
 
-        normmesh.export(file_obj='anormsampler' + fileName + '.stl', file_type='stl')
+        normmesh.export(file_obj='anormsmooth' +
+                        fileName + '.stl', file_type='stl')
 
-        print("Export " + '\x1b[2;30;45m' + "anormsampler" +
+        print("Export " + '\x1b[2;30;45m' + "anormsmooth" +
               fileName + ".stl" + '\x1b[0m' + " successfully")
 
 
@@ -312,11 +315,11 @@ class NumpySTL():
 
 # ------------------------------------------------------------------------------------- #
 
-def stl_sampler(data=None):
+def smooth(data=None):
     surface = NumpySTL(data)
-    surface.stl_sampler()
+    surface.smooth()
 
 
-def stl_raw(data=None):
+def raw(data=None):
     surface = NumpySTL(data)
-    surface.stl_raw()
+    surface.raw()
