@@ -2,7 +2,7 @@
 Foong Min Wong
 University of Wisconsin, Eau Claire
 Fall 2018 - Spring 2019
-Implementing stereolithography (STL) export feature for Bertini_real
+Implementing raw and smooth stereolithography (STL) surface export feature for Bertini_real
 
 Current Version:
 
@@ -22,43 +22,15 @@ import matplotlib
 from stl import mesh
 import trimesh
 
-
-class StyleOptions(object):
-
-    def __init__(self):
-        self.line_thickness = 2  # there is no code using this yet.  write it.
-
-
-class VisibilityOptions(object):
-
-    def __init__(self):
-        self.vertices = True
-        self.samples = True
-        self.raw = True
-        self.autorawsamples = True
-        self.labels = False
-        # check with matlab output
-        self.which_faces = []
-        self.indices = []
-
-
-class Options(object):
-
-    def __init__(self):
-        self.style = StyleOptions()
-        self.visibility = VisibilityOptions()
-
-
 class ReversableList(list):
 
     def reverse(self):
         return list(reversed(self))
 
-
 class NumpySTL():
     """ creates the glumpyplotter object """
 
-    def __init__(self, data=None, options=Options()):
+    def __init__(self, data=None):
         # can read from the memory
         # raw data
         if data is None:
@@ -66,7 +38,6 @@ class NumpySTL():
         else:
             self.decomposition = data
 
-        self.options = options
 
     def extract_points(self):
         points = []
@@ -84,15 +55,18 @@ class NumpySTL():
         return points
 
     def raw(self):
-        print("Generating raw STL surface...")
+
+        print('\n' + '\x1b[0;34;40m' +
+              'Generating raw STL surface...' + '\x1b[0m')
+
         points = self.extract_points()
 
         surf = self.decomposition.surface
-        which_faces = self.options.visibility.which_faces
-
         # store number of faces to num_faces
         num_faces = surf.num_faces
-
+        # which_faces = self.options.visibility.which_faces
+        which_faces = list(range(num_faces))
+        
         # check if which_faces is empty
         if not len(which_faces):
             which_faces = list(range(num_faces))
@@ -249,20 +223,21 @@ class NumpySTL():
         # get object filename
         fileName = os.getcwd().split(os.sep)[-1]
 
-        obj.save('araw' + fileName + '.stl')
+        obj.save('raw_' + fileName + '.stl')
 
-        normmesh = trimesh.load_mesh('araw' + fileName + '.stl')
+        normmesh = trimesh.load_mesh('raw_' + fileName + '.stl')
 
         normmesh.fix_normals()
 
-        normmesh.export(file_obj='anormraw' + fileName +
+        normmesh.export(file_obj='raw_' + fileName +
                         '.stl', file_type='stl')
 
-        print("Export " + '\x1b[2;30;45m' + "anormraw" +
+        print("Export " + '\x1b[0;35;40m' + "raw_" +
               fileName + ".stl" + '\x1b[0m' + " successfully")
 
     def smooth(self):
-        print("Generating smooth STL surface...")
+        print('\n' + '\x1b[0;34;40m' +
+              'Generating smooth STL surface...' + '\x1b[0m')
         points = self.extract_points()
         faces = self.decomposition.surface.surface_sampler_data
 
@@ -292,9 +267,9 @@ class NumpySTL():
         # get object filename
         fileName = os.getcwd().split(os.sep)[-1]
 
-        obj.save('asmooth' + fileName + '.stl')
+        obj.save('smooth_' + fileName + '.stl')
 
-        normmesh = trimesh.load_mesh('asmooth' + fileName + '.stl')
+        normmesh = trimesh.load_mesh('smooth_' + fileName + '.stl')
 
         normmesh.fix_normals()
 
@@ -303,10 +278,10 @@ class NumpySTL():
 
         # normmesh.show()
 
-        normmesh.export(file_obj='anormsmooth' +
+        normmesh.export(file_obj='smooth_' +
                         fileName + '.stl', file_type='stl')
 
-        print("Export " + '\x1b[2;30;45m' + "anormsmooth" +
+        print("Export " + '\x1b[0;35;40m' + "smooth_" +
               fileName + ".stl" + '\x1b[0m' + " successfully")
 
 
