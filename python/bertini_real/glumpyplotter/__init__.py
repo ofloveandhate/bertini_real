@@ -5,119 +5,57 @@ Fall 2018 - Spring 2019
 Porting to Glumpy for faster surface rendering
 using OpenGL
 
-Current Version:
-    Surface agnostic
-    Mouse (trackball) implementation
-        Can rotate by dragging the mouse
-        Can zoom with the scroll wheel
-    Now with color
-    Now with an optional color function
-        example code can be seen in the runner.py files
-
-TODO:
-    Play with making the app interactive
-        i.e. checkboxes, sliders, etc
-        * this would be accomplished with the pyimgui pull request on the
-          glumpy repo
-          This may not be possible on machines without graphics cards though
-          requires OpenGL 3.2
-          Macbook Pro mid 2015 has OpenGL 2.1
-            * look into if this can be updated??
-              not looking too promising....
+.. module:: glumpyplotter
+    :platform: Unix, Windows
+    :synopsis: The glumpy plotter uses OpenGL to render a decomposed
+               surface created using bertini_real.
 """
 
+import math
 import numpy as np
 from glumpy import app, gl, glm, gloo
 from glumpy.transforms import Trackball, Position
 import bertini_real
-import math
 
 class GlumpyPlotter():
-    """ creates the glumpyplotter object """
+    """ Creates the glumpyplotter object which is used to render
+        3d surfaces created from bertini_real
+    """
+
     def __init__(self, data=None):
+        """ Reads data from disk if it is not given any
+
+            Args:
+                data: the decomposition to be read
+        """
         if data is None:
             self.decomposition = bertini_real.data.ReadMostRecent()
         else:
             self.decomposition = data
 
-
-    def plot(self):
-        """ method used to plot a surface """
+    def plot(self, cmap=None, color_function=None):
+        """ Method used to plot a surface """
         print("Plotting object of dimension: {}".format(self.decomposition.dimension))
 
         data = self.decomposition
         tuples = data.surface.surface_sampler_data
-
-        def extract_points(data):
-            """Extract points from vertices"""
-
-            points = []
-
-            for vertex in data.vertices:
-                """ we use 3 here because a triangle consists
-                of three points """
-                point = [None]*3
-
-                for j in range(3):
-                    point[j] = vertex['point'][j].real
-                points.append(point)
-            return points
-
-        #  def make_colors(points, fn = default_color_function()):
-        def make_colors(points):
-            """
-            computes colors according to a function
-            then applies a colormap from the matplotlib library
-            """
-            import matplotlib.pyplot as plt
-
-            colors = []
-
-            # first, loop through all of the points and get a list
-            # of values returned from this function
-            def default_color_function(x,y,z):
-                return math.sqrt(x**2 + y**2 + z**2)
-
-            data = []
-            for i in range(len(points)):
-                function_result = default_color_function(points[i][0],points[i][1],points[i][2])
-                data.append(function_result)
-            data = np.asarray(data)
-
-            # next, normalize the data
-            """
-            looks like its already normalized?? will come back to this later
-            """
-
-            # soething like
-            temp1 = data-min(data)
-            data = temp1 / max(temp1)
-            # print(data)
-
-            # finally, run that data through the mpl.pyplot colormap function
-            # and receive our rgb values
-            cmap = plt.cm.hsv
-            colors = cmap(data)
-
-            return colors
-
         points = extract_points(data)
 
         triangle = []
-
         for i in range(len(tuples)):
             for tri in tuples[i]:
-                f = int(tri[0])
-                s = int(tri[1])
-                t = int(tri[2])
+                x_coordinate = int(tri[0])
+                y_coordinate = int(tri[1])
+                z_coordinate = int(tri[2])
 
-                k = [f, s, t]
-                triangle.append(k)
+                point = [x_coordinate, y_coordinate, z_coordinate]
+                triangle.append(point)
 
         triangle = np.asarray(triangle)
 
-# ------------------------------------------------------------------------------------- #
-# Vertex and fragment are OpenGL code
+# ----------------------------------------------------------------------------- #
+#                    Vertex and fragment are OpenGL code
+# ----------------------------------------------------------------------------- #
 
         vertex = """
         attribute vec4 a_color;         // Vertex Color
@@ -147,9 +85,9 @@ class GlumpyPlotter():
 
 
         verts = np.zeros(len(points), [("position", np.float32, 3),
-                                        ("a_color", np.float32, 4)])
+                                       ("a_color", np.float32, 4)])
         verts["position"] = points
-        verts["a_color"] = make_colors(verts["position"])
+        verts["a_color"] = make_colors(verts["position"], cmap, color_function)
 
         verts = verts.view(gloo.VertexBuffer)
         indeces = np.array(triangle).astype(np.uint32)
@@ -161,18 +99,18 @@ class GlumpyPlotter():
         surface['u_view'] = glm.translation(0, 0, -5)
         surface['transform'] = Trackball(Position("position"))
         window.attach(surface['transform'])
-        framebuffer = gloo.FrameBuffer()
 
 
         @window.event
         def on_draw(draw_triangles):
-            """ draws the surface """
+            """ draws the surface
+
+                :param draw_triangles: unsure what this does, was used in glumpy examples
+            """
             window.clear()
 
-            #  framebuffer.activate()
             surface.draw(gl.GL_TRIANGLES, indeces)
             #  surface.draw(gl.GL_LINES, indeces)
-            #  framebuffer.deactivate()
 
         @window.event
         def on_init():
@@ -182,17 +120,92 @@ class GlumpyPlotter():
             gl.glEnable(gl.GL_LINE_SMOOTH)
             gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 
-
-        #  app.run(interactive=True)
         app.run()
 
-# ------------------------------------------------------------------------------------- #
+# ----------------------------------------------------------------------------- #
 
-def plot(data=None):
+def plot(data=None, cmap=None, color_function=None):
     """
-    simply calls the plot method
-    color_function contains 3 functions to compute the colors
-    of the surface
+    sets default values for colormap and color_function if none are specified
     """
+    import matplotlib.pyplot as plt
+
+    if cmap is None:
+        cmap = plt.get_cmap('hsv')
+    else:
+        cmap = plt.get_cmap(cmap)
+
+
     surface = GlumpyPlotter(data)
-    surface.plot()
+    surface.plot(cmap, color_function)
+
+# ----------------------------------------------------------------------------- #
+#                               Helper Methods
+# ----------------------------------------------------------------------------- #
+
+
+def default_color_function(x_coordinate, y_coordinate, z_coordinate):
+    """ Helper method for make_colors()
+        The default color function that is used to compute
+        our points that will then be fed into the colormap.
+
+        :param x: x coordinate of triangle
+        :param y: y coordinate of traingle
+        :param z: z coordinate of triangle
+
+    """
+    return math.sqrt(x_coordinate**2 + y_coordinate**2 + z_coordinate**2)
+
+def make_colors(points, cmap, color_function):
+    """ Helper method for plot()
+        computes colors according to a function
+        then applies a colormap from the matplotlib library
+
+        :param points: The triangles that will be rendered
+        :param cmap: Matplotlib colormap to be used
+        :param color_function: Function used to compute colors with cmap
+    """
+    colors = []
+    data = []
+
+    if color_function is None:
+        for i in range(len(points)):
+            function_result = default_color_function(points[i][0],
+                                                     points[i][1],
+                                                     points[i][2])
+            data.append(function_result)
+    else:
+        for i in range(len(points)):
+            function_result = color_function(points[i][0],
+                                             points[i][1],
+                                             points[i][2])
+            data.append(function_result)
+
+    data = np.asarray(data)
+
+    # next, normalize the data
+    temp = data-min(data)
+    data = temp / max(temp)
+
+    # finally, run that data through the mpl.pyplot colormap function
+    # and receive our rgb values
+    colors = cmap(data)
+
+    return colors
+
+def extract_points(data):
+    """ Helper method for plot()
+        Extract points from vertices
+
+        :param data: the decomposition that we are rendering
+    """
+
+    points = []
+    for vertex in data.vertices:
+        point = [None]*3
+
+        for j in range(3):
+            point[j] = vertex['point'][j].real
+        points.append(point)
+
+    return points
