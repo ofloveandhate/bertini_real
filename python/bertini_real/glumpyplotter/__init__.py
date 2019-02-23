@@ -75,14 +75,12 @@ class GlumpyPlotter():
         varying vec4  v_color;          // Interpolated fragment color (in)
         void main()
         {
-            // gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
             gl_FragColor = v_color;
         }
         """
 
         window = app.Window(width=2048, height=2048,
                             color=(0.30, 0.30, 0.35, 1.00))
-
 
         verts = np.zeros(len(points), [("position", np.float32, 3),
                                        ("a_color", np.float32, 4)])
@@ -100,13 +98,8 @@ class GlumpyPlotter():
         surface['transform'] = Trackball(Position("position"))
         window.attach(surface['transform'])
 
-
         @window.event
         def on_draw(draw_triangles):
-            """ draws the surface
-
-                :param draw_triangles: unsure what this does, was used in glumpy examples
-            """
             window.clear()
 
             surface.draw(gl.GL_TRIANGLES, indeces)
@@ -114,7 +107,6 @@ class GlumpyPlotter():
 
         @window.event
         def on_init():
-            """ settings for OpenGL, not sure what they all do """
             gl.glEnable(gl.GL_DEPTH_TEST)
             gl.glPolygonOffset(1, 1)
             gl.glEnable(gl.GL_LINE_SMOOTH)
@@ -124,17 +116,13 @@ class GlumpyPlotter():
 
 # ----------------------------------------------------------------------------- #
 
-def plot(data=None, cmap=None, color_function=None):
+def plot(data=None, cmap='hsv', color_function=None):
     """
-    sets default values for colormap and color_function if none are specified
+    sets default values for colormap if none are specified
     """
     import matplotlib.pyplot as plt
 
-    if cmap is None:
-        cmap = plt.get_cmap('hsv')
-    else:
-        cmap = plt.get_cmap(cmap)
-
+    cmap = plt.get_cmap(cmap)
 
     surface = GlumpyPlotter(data)
     surface.plot(cmap, color_function)
@@ -142,7 +130,6 @@ def plot(data=None, cmap=None, color_function=None):
 # ----------------------------------------------------------------------------- #
 #                               Helper Methods
 # ----------------------------------------------------------------------------- #
-
 
 def default_color_function(x_coordinate, y_coordinate, z_coordinate):
     """ Helper method for make_colors()
