@@ -155,6 +155,7 @@ def make_colors(points, cmap, color_function):
     colors = []
     data = []
 
+    # run data through specified color function
     if color_function is None:
         for i in range(len(points)):
             function_result = default_color_function(points[i][0],
@@ -170,7 +171,7 @@ def make_colors(points, cmap, color_function):
 
     data = np.asarray(data)
 
-    # next, normalize the data
+    # normalize the data
     temp = data-min(data)
     data = temp / max(temp)
 

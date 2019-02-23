@@ -8,34 +8,3 @@ fn = function
 bertini_real.glumpyplotter.plot()
 #  bertini_real.glumpyplotter.plot(cmap='jet')
 #  bertini_real.glumpyplotter.plot(cmap='inferno', color_function=fn)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
