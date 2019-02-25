@@ -4,10 +4,9 @@ University of Wisconsin, Eau Claire
 Fall 2018 - Spring 2019
 Implementing raw and smooth stereolithography (STL) surface export feature for Bertini_real
 
-Current Version:
-
-
-TODO:
+.. module:: numpystl
+    :platform: Unix, Windows
+    :synopsis: The numpystl uses numpy-stl for STL export and trimesh for normal fixing.
 
 """
 import os
@@ -22,56 +21,54 @@ import matplotlib
 from stl import mesh
 import trimesh
 
+
 class ReversableList(list):
+    """ Create a ReversableList object for reversing order of data """
 
     def reverse(self):
+        """ A reverse function for raw surface data
+
+        Returns a reversed list
+        """
         return list(reversed(self))
 
+
 class NumpySTL():
-    """ creates the glumpyplotter object """
+    """ Create a NumpySTL object for exporting STL files """
 
     def __init__(self, data=None):
-        # can read from the memory
-        # raw data
+
+        """ Read data from disk
+
+            Args:
+                data: data of surface decomposition
+
+        """
+
         if data is None:
             self.decomposition = bertini_real.data.ReadMostRecent()
         else:
             self.decomposition = data
 
 
-    def extract_points(self):
-        points = []
-
-        # get this from plot_samples.py
-        for v in self.decomposition.vertices:
-            # allocate 3 buckets to q
-            q = [None] * 3
-
-            for i in range(3):
-                # q[0],q[1],q[2]
-                q[i] = v['point'][i].real
-            points.append(q)
-
-        return points
 
     def raw(self):
+        """ Export raw decomposition of surfaces"""
 
         print('\n' + '\x1b[0;34;40m' +
               'Generating raw STL surface...' + '\x1b[0m')
 
-        points = self.extract_points()
+        points = extract_points(self)
 
         surf = self.decomposition.surface
-        # store number of faces to num_faces
+
         num_faces = surf.num_faces
-        # which_faces = self.options.visibility.which_faces
+
         which_faces = list(range(num_faces))
-        
-        # check if which_faces is empty
+
         if not len(which_faces):
             which_faces = list(range(num_faces))
 
-        # get raw data from surface
         num_total_faces = 0
         for ii in range(len(which_faces)):
             curr_face = surf.faces[which_faces[ii]]
@@ -95,7 +92,7 @@ class NumpySTL():
             while 1:
                 ## top edge ##
                 if case == 1:
-                    # print('top')
+
                     case += 1
                     if face['top'] < 0:
                         continue
@@ -110,17 +107,16 @@ class NumpySTL():
                             if(surf.singular_names[zz] == face['system top']):
                                 curr_edge = surf.singular_curves[
                                     zz].edges[face['top']]
-                     # print(curr_edge)
+                    
                     if (curr_edge[0] < 0 and curr_edge[1] < 0 and curr_edge[2] < 0):
                         continue
 
-                    # reverse() returns None, so use ReversableList
                     curr_edge = ReversableList(curr_edge)
                     curr_edge = curr_edge.reverse()
 
                 ## bottom edge ##
                 elif case == 2:
-                    # print('bottom')
+
                     case += 1
                     if face['bottom'] < 0:
                         continue
@@ -141,7 +137,7 @@ class NumpySTL():
 
                 ## left edge ##
                 elif case == 3:
-                    # print('left')
+
                     if left_edge_counter < face['num left']:
 
                         if face['left'][left_edge_counter] < 0:
@@ -160,7 +156,7 @@ class NumpySTL():
 
                 ## right edge ##
                 elif case == 4:
-                    # print('right')
+
                     if right_edge_counter < face['num right']:
 
                         if face['right'][right_edge_counter] < 0:
@@ -170,7 +166,7 @@ class NumpySTL():
                         edge_ind = face['right'][right_edge_counter]
                         curr_edge = surf.critical_point_slices[
                             slice_ind].edges[edge_ind]
-                        right_edge_counter = right_edge_counter + 1  # increment
+                        right_edge_counter = right_edge_counter + 1
 
                         curr_edge = ReversableList(curr_edge)
                         curr_edge = curr_edge.reverse()
@@ -183,7 +179,6 @@ class NumpySTL():
                 elif case == 5:
                     break
 
-                # make two triangles , use the midpoint (swap the values for k)
                 t1 = [points[curr_edge[0]], points[curr_edge[1]],
                       points[face['midpoint']]]
                 t2 = [points[curr_edge[1]], points[curr_edge[2]],
@@ -192,11 +187,11 @@ class NumpySTL():
                 t3 = (curr_edge[0], curr_edge[1], face['midpoint'])
                 t4 = (curr_edge[0], curr_edge[2], face['midpoint'])
 
-                TT.append(t3)
-                TT.append(t4)
-
                 T.append(t1)
                 T.append(t2)
+
+                TT.append(t3)
+                TT.append(t4)
 
         faces = [TT]
         vertex = []
@@ -207,8 +202,8 @@ class NumpySTL():
         vertex_np_array = np.array(vertex)
         face = []
 
-        for f in faces:  # for each face
-            for tri in f:  # for each triangle in face
+        for f in faces:
+            for tri in f:
                 face.append([tri[0], tri[1], tri[2]])
 
         face_np_array = np.array(face)
@@ -220,7 +215,6 @@ class NumpySTL():
             for j in range(3):
                 obj.vectors[i][j] = vertex_np_array[f[j], :]
 
-        # get object filename
         fileName = os.getcwd().split(os.sep)[-1]
 
         obj.save('raw_' + fileName + '.stl')
@@ -236,12 +230,14 @@ class NumpySTL():
               fileName + ".stl" + '\x1b[0m' + " successfully")
 
     def smooth(self):
+        """ Export smooth decomposition of surfaces"""
+
         print('\n' + '\x1b[0;34;40m' +
               'Generating smooth STL surface...' + '\x1b[0m')
-        points = self.extract_points()
+
+        points = extract_points(self)
         faces = self.decomposition.surface.surface_sampler_data
 
-        # add vertex and surface to mesh
         vertex = []
 
         for p in points:
@@ -250,10 +246,9 @@ class NumpySTL():
         vertex_np_array = np.array(vertex)
         face = []
 
-        for f in faces:  # for each face
-            for tri in f:  # for each triangle in face
+        for f in faces:
+            for tri in f:
                 face.append([tri[0], tri[1], tri[2]])
-                # print(tri[0], tri[1], tri[2])
 
         face_np_array = np.array(face)
 
@@ -264,7 +259,6 @@ class NumpySTL():
             for j in range(3):
                 obj.vectors[i][j] = vertex_np_array[f[j], :]
 
-        # get object filename
         fileName = os.getcwd().split(os.sep)[-1]
 
         obj.save('smooth_' + fileName + '.stl')
@@ -273,28 +267,37 @@ class NumpySTL():
 
         normmesh.fix_normals()
 
-        for facet in normmesh.facets:
-            normmesh.visual.face_colors[facet] = trimesh.visual.random_color()
-
-        # normmesh.show()
-
         normmesh.export(file_obj='smooth_' +
                         fileName + '.stl', file_type='stl')
 
         print("Export " + '\x1b[0;35;40m' + "smooth_" +
               fileName + ".stl" + '\x1b[0m' + " successfully")
 
+def extract_points(self):
+    """ Extract points from vertices """
 
-# ------------------------------------------------------------------------------------- #
+    points = []
 
+    for v in self.decomposition.vertices:
+        q = [None] * 3
 
-# ------------------------------------------------------------------------------------- #
+        for i in range(3):
+            q[i] = v['point'][i].real
+        points.append(q)
+
+    return points
+
+def raw(data=None):
+    """ Create a NumpySTL object and export raw surface """
+
+    surface = NumpySTL(data)
+    surface.raw()
+
 
 def smooth(data=None):
+    """ Create a NumpySTL object and export smooth surface """
+
     surface = NumpySTL(data)
     surface.smooth()
 
 
-def raw(data=None):
-    surface = NumpySTL(data)
-    surface.raw()
