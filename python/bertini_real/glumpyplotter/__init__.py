@@ -2,8 +2,6 @@
 Dan Hessler
 University of Wisconsin, Eau Claire
 Fall 2018 - Spring 2019
-Porting to Glumpy for faster surface rendering
-using OpenGL
 
 .. module:: glumpyplotter
     :platform: Unix, Windows
@@ -23,10 +21,10 @@ class GlumpyPlotter():
     """
 
     def __init__(self, data=None):
-        """ Reads data from disk if it is not given any
+        """ Reads data from disk if it is not given any.
 
             Args:
-                data: the decomposition to be read
+                data: The decomposition to be read.
         """
         if data is None:
             self.decomposition = bertini_real.data.ReadMostRecent()
@@ -34,7 +32,7 @@ class GlumpyPlotter():
             self.decomposition = data
 
     def plot(self, cmap=None, color_function=None):
-        """ Method used to plot a surface """
+        """ Method used to plot a surface. """
         print("Plotting object of dimension: {}".format(self.decomposition.dimension))
 
         data = self.decomposition
@@ -96,7 +94,7 @@ class GlumpyPlotter():
         surface.bind(verts)
         surface['u_model'] = np.eye(4, dtype=np.float32)
         surface['u_view'] = glm.translation(0, 0, -5)
-        surface['transform'] = Trackball(Position("position"))
+        surface['transform'] = Trackball(Position("position"), znear=0)
         window.attach(surface['transform'])
 
         @window.event
@@ -119,7 +117,7 @@ class GlumpyPlotter():
 
 def plot(data=None, cmap='hsv', color_function=None):
     """
-    sets default values for colormap if none are specified
+    Sets default values for colormap if none are specified.
     """
     import matplotlib.pyplot as plt
 
@@ -137,21 +135,23 @@ def default_color_function(x_coordinate, y_coordinate, z_coordinate):
         The default color function that is used to compute
         our points that will then be fed into the colormap.
 
-        :param x: x coordinate of triangle
-        :param y: y coordinate of traingle
-        :param z: z coordinate of triangle
+        :param x: x coordinate of triangle.
+        :param y: y coordinate of traingle.
+        :param z: z coordinate of triangle.
+        :rtype: A function to be used to feed the points into a colormap.
 
     """
     return math.sqrt(x_coordinate**2 + y_coordinate**2 + z_coordinate**2)
 
 def make_colors(points, cmap, color_function):
     """ Helper method for plot()
-        computes colors according to a function
-        then applies a colormap from the matplotlib library
+        Computes colors according to a function
+        then applies a colormap from the matplotlib library.
 
-        :param points: The triangles that will be rendered
-        :param cmap: Matplotlib colormap to be used
-        :param color_function: Function used to compute colors with cmap
+        :param points: The triangles that will be rendered.
+        :param cmap: Matplotlib colormap to be used.
+        :param color_function: Function used to compute colors with colormap.
+        :rtype: A list of length 4 containing R,G,B, and Alpha values.
     """
     colors = []
     data = []
@@ -186,7 +186,8 @@ def extract_points(data):
     """ Helper method for plot()
         Extract points from vertices
 
-        :param data: the decomposition that we are rendering
+        :param data: The decomposition that we are rendering.
+        :rtype: List of tuples of length 3.
     """
 
     points = []
