@@ -4,12 +4,25 @@
    contain the root `toctree` directive.
 
 Welcome to Bertini_Real's Python documentation!
-===============================================
+****************************************************
 
 This is the module for NumpySTL
 
 Requirements:
 This project depends on several Python libraries such as numpy-stl and trimesh.
+
+Tutorials
+==========
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+   tutorials/glumpy
+
+
+Detailed
+=========
 
 .. toctree::
    :maxdepth: 2
