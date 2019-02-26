@@ -23,9 +23,9 @@ bertini_real-*.tar.gz
 
 
 
-partitionParse.c
+partitionParse.c 
 
-sampler
+sampler 
 !sampler/
 bertini_real
 !bertini_real/
@@ -37,7 +37,7 @@ documentation/latex
 
 *.cache*
 
-
+python/docs/_build/
 
 
 
