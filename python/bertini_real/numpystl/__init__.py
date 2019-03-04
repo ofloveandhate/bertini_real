@@ -41,7 +41,7 @@ class NumpySTL():
         """ Read data from disk
 
             Args:
-                data: data of surface decomposition
+                data: surface decomposition data
 
         """
 
@@ -75,6 +75,7 @@ class NumpySTL():
             num_total_faces = num_total_faces + 2 * \
                 (curr_face['num left'] + curr_face['num right'] + 2)
         num_total_faces = num_total_faces * 2
+        
         total_face_index = 0
         TT = []
 
@@ -84,9 +85,11 @@ class NumpySTL():
 
             if (face['middle slice index']) == -1:
                 continue
+
             case = 1
             left_edge_counter = 0
             right_edge_counter = 0
+
             T = []
 
             while 1:
@@ -118,6 +121,7 @@ class NumpySTL():
                 elif case == 2:
 
                     case += 1
+
                     if face['bottom'] < 0:
                         continue
 
@@ -185,7 +189,7 @@ class NumpySTL():
                       points[face['midpoint']]]
 
                 t3 = (curr_edge[0], curr_edge[1], face['midpoint'])
-                t4 = (curr_edge[0], curr_edge[2], face['midpoint'])
+                t4 = (curr_edge[1], curr_edge[2], face['midpoint'])
 
                 T.append(t1)
                 T.append(t2)
@@ -236,6 +240,7 @@ class NumpySTL():
               'Generating smooth STL surface...' + '\x1b[0m')
 
         points = extract_points(self)
+
         faces = self.decomposition.surface.surface_sampler_data
 
         vertex = []
