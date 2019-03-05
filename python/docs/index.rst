@@ -6,16 +6,13 @@
 Welcome to Bertini_Real's Python documentation!
 ****************************************************
 
-This is the module for NumpySTL
-
-Requirements:
-This project depends on several Python libraries such as numpy-stl and trimesh.
+This is the documentation for bertini_real's python implementation.
 
 Tutorials
 ==========
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
 
    tutorials/glumpy
@@ -29,6 +26,7 @@ Detailed
    :caption: Contents:
 
    code
+   glumpy
 
 Indices and tables
 ==================
