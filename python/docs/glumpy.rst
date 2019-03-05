@@ -3,13 +3,9 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-NumpySTL Documentation 😀
-================================
+Glumpy with bertini_real
+============================
 
-This is the documentation for NumpySTL.
-
-Requirements:
-My project depends on numpy-stl and trimesh Python libraries.
-
-.. automodule:: numpystl
+.. automodule:: glumpyplotter
    :members:
+
