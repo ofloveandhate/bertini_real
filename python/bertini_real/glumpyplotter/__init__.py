@@ -94,6 +94,7 @@ class GlumpyPlotter():
         verts["a_color"] = make_colors(verts["position"], cmap, color_function)
 
         verts = verts.view(gloo.VertexBuffer)
+        # these need to be removed depending on what we are rendering
         #  indices = np.array(triangle).astype(np.uint32)
         #  indices = indices.view(gloo.IndexBuffer)
 
