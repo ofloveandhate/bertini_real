@@ -94,8 +94,8 @@ class GlumpyPlotter():
         verts["a_color"] = make_colors(verts["position"], cmap, color_function)
 
         verts = verts.view(gloo.VertexBuffer)
-        indices = np.array(triangle).astype(np.uint32)
-        indices = indices.view(gloo.IndexBuffer)
+        #  indices = np.array(triangle).astype(np.uint32)
+        #  indices = indices.view(gloo.IndexBuffer)
 
         surface = gloo.Program(vertex, fragment)
         surface.bind(verts)
@@ -108,8 +108,8 @@ class GlumpyPlotter():
         def on_draw(draw_triangles):
             window.clear()
 
-            surface.draw(gl.GL_TRIANGLES, indices)
-            #  surface.draw(gl.GL_LINES, indices)
+            #  surface.draw(gl.GL_TRIANGLES, indices)
+            surface.draw(gl.GL_LINES, triangle)
 
         @window.event
         def on_init():
