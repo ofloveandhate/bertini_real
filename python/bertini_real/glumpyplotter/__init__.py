@@ -35,9 +35,11 @@ class GlumpyPlotter():
         """ Method used to plot a surface. """
         print("Plotting object of dimension: {}".format(self.decomposition.dimension))
 
+        # TODO add if statements here
+
         data = self.decomposition
         #  tuples = data.surface.surface_sampler_data
-        tuples = data.surface.critical_curve.sampler_data
+        tuples = data.surface.critical_curve.radius
         # critical point slices
         # midpoint slices
         # singlular curves
@@ -95,6 +97,7 @@ class GlumpyPlotter():
 
         verts = verts.view(gloo.VertexBuffer)
         # these need to be removed depending on what we are rendering
+        # TODO wrap this is in if statement
         #  indices = np.array(triangle).astype(np.uint32)
         #  indices = indices.view(gloo.IndexBuffer)
 
@@ -108,6 +111,8 @@ class GlumpyPlotter():
         @window.event
         def on_draw(draw_triangles):
             window.clear()
+
+            # TODO wrap these in if statements
 
             #  surface.draw(gl.GL_TRIANGLES, indices)
             surface.draw(gl.GL_LINES, triangle)
