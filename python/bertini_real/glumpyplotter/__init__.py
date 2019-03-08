@@ -39,15 +39,14 @@ class GlumpyPlotter():
 
         data = self.decomposition
         #  tuples = data.surface.surface_sampler_data
-        tuples = data.surface.critical_curve.radius
+        tuples = data.surface.critical_curve.sampler_data
         # critical point slices
         # midpoint slices
         # singlular curves
         # sphere curve
-        points = extract_points(data)
+        points = extract_curve_points(data)
 
-        triangle = tuples
-        #  triangle = []
+        triangle = []
         #  for i in range(len(tuples)):
             #  for tri in tuples[i]:
                 #  index_1 = int(tri[0])
@@ -57,8 +56,8 @@ class GlumpyPlotter():
                 #  triple = [index_1, index_2, index_3]
                 #  triangle.append(triple)
 
+        #  print(triangle)
         triangle = np.asarray(triangle)
-        print(triangle)
 
 
 # ----------------------------------------------------------------------------- #
@@ -115,6 +114,7 @@ class GlumpyPlotter():
             # TODO wrap these in if statements
 
             #  surface.draw(gl.GL_TRIANGLES, indices)
+            #  surface.draw(gl.GL_POINTS, triangle)
             surface.draw(gl.GL_LINES, triangle)
 
         @window.event
@@ -209,6 +209,18 @@ def extract_points(data):
 
         for j in range(3):
             point[j] = vertex['point'][j].real
+        points.append(point)
+
+    return points
+
+def extract_curve_points(data):
+
+    points = []
+    for vertex in data.surface.critical_curve.sampler_data:
+        point = [None]*3
+
+        for j in range(3):
+            point[j] = data.vertices[vertex[0]]['point'][j].real
         points.append(point)
 
     return points
