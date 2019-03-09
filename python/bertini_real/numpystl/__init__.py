@@ -111,6 +111,14 @@ class NumpySTL():
                                 curr_edge = surf.singular_curves[
                                     zz].edges[face['top']]
                     
+                    # print(curr_edge)
+                    # print(curr_edge[0],curr_edge[1],curr_edge[2])
+                    # print(type(curr_edge))
+
+                    if(curr_edge == -10):
+                        continue
+
+
                     if (curr_edge[0] < 0 and curr_edge[1] < 0 and curr_edge[2] < 0):
                         continue
 
@@ -135,6 +143,10 @@ class NumpySTL():
                             if(surf.singular_names[zz] == face['system bottom']):
                                 curr_edge = surf.singular_curves[
                                     zz].edges[face['bottom']]
+
+
+                    if(curr_edge == -10):
+                        continue
 
                     if (curr_edge[0] < 0 and curr_edge[1] < 0 and curr_edge[2] < 0):
                         continue
