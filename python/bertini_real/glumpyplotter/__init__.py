@@ -35,20 +35,28 @@ class GlumpyPlotter():
         """ Method used to plot a surface. """
         print("Plotting object of dimension: {}".format(self.decomposition.dimension))
 
+        # TODO add if statements here
+
         data = self.decomposition
-        tuples = data.surface.surface_sampler_data
-        points = extract_points(data)
+        #  tuples = data.surface.surface_sampler_data
+        tuples = data.surface.critical_curve.sampler_data
+        # critical point slices
+        # midpoint slices
+        # singlular curves
+        # sphere curve
+        points = extract_curve_points(data)
 
         triangle = []
-        for i in range(len(tuples)):
-            for tri in tuples[i]:
-                x_coordinate = int(tri[0])
-                y_coordinate = int(tri[1])
-                z_coordinate = int(tri[2])
+        #  for i in range(len(tuples)):
+            #  for tri in tuples[i]:
+                #  index_1 = int(tri[0])
+                #  index_2 = int(tri[1])
+                #  index_3 = int(tri[2])
 
-                point = [x_coordinate, y_coordinate, z_coordinate]
-                triangle.append(point)
+                #  triple = [index_1, index_2, index_3]
+                #  triangle.append(triple)
 
+        #  print(triangle)
         triangle = np.asarray(triangle)
 
 
@@ -87,8 +95,10 @@ class GlumpyPlotter():
         verts["a_color"] = make_colors(verts["position"], cmap, color_function)
 
         verts = verts.view(gloo.VertexBuffer)
-        indeces = np.array(triangle).astype(np.uint32)
-        indeces = indeces.view(gloo.IndexBuffer)
+        # these need to be removed depending on what we are rendering
+        # TODO wrap this is in if statement
+        #  indices = np.array(triangle).astype(np.uint32)
+        #  indices = indices.view(gloo.IndexBuffer)
 
         surface = gloo.Program(vertex, fragment)
         surface.bind(verts)
@@ -101,8 +111,11 @@ class GlumpyPlotter():
         def on_draw(draw_triangles):
             window.clear()
 
-            surface.draw(gl.GL_TRIANGLES, indeces)
-            #  surface.draw(gl.GL_LINES, indeces)
+            # TODO wrap these in if statements
+
+            #  surface.draw(gl.GL_TRIANGLES, indices)
+            #  surface.draw(gl.GL_POINTS, triangle)
+            surface.draw(gl.GL_LINES, triangle)
 
         @window.event
         def on_init():
@@ -196,6 +209,18 @@ def extract_points(data):
 
         for j in range(3):
             point[j] = vertex['point'][j].real
+        points.append(point)
+
+    return points
+
+def extract_curve_points(data):
+
+    points = []
+    for vertex in data.surface.critical_curve.sampler_data:
+        point = [None]*3
+
+        for j in range(3):
+            point[j] = data.vertices[vertex[0]]['point'][j].real
         points.append(point)
 
     return points
