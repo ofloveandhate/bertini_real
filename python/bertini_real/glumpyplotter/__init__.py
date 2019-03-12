@@ -36,24 +36,24 @@ class GlumpyPlotter():
         print("Plotting object of dimension: {}".format(self.decomposition.dimension))
 
         data = self.decomposition
-        #  tuples = data.surface.surface_sampler_data
-        tuples = data.surface.critical_curve.sampler_data
+        tuples = data.surface.surface_sampler_data
+        #  tuples = data.surface.critical_curve.sampler_data
         # critical point slices
         # midpoint slices
         # singlular curves
         # sphere curve
         points = extract_points(data)
 
-        triangle = tuples
-        #  triangle = []
-        #  for i in range(len(tuples)):
-            #  for tri in tuples[i]:
-                #  index_1 = int(tri[0])
-                #  index_2 = int(tri[1])
-                #  index_3 = int(tri[2])
+        #  triangle = tuples
+        triangle = []
+        for i in range(len(tuples)):
+            for tri in tuples[i]:
+                index_1 = int(tri[0])
+                index_2 = int(tri[1])
+                index_3 = int(tri[2])
 
-                #  triple = [index_1, index_2, index_3]
-                #  triangle.append(triple)
+                triple = [index_1, index_2, index_3]
+                triangle.append(triple)
 
         triangle = np.asarray(triangle)
         print(triangle)
@@ -95,8 +95,8 @@ class GlumpyPlotter():
 
         verts = verts.view(gloo.VertexBuffer)
         # these need to be removed depending on what we are rendering
-        #  indices = np.array(triangle).astype(np.uint32)
-        #  indices = indices.view(gloo.IndexBuffer)
+        indices = np.array(triangle).astype(np.uint32)
+        indices = indices.view(gloo.IndexBuffer)
 
         surface = gloo.Program(vertex, fragment)
         surface.bind(verts)
@@ -109,8 +109,8 @@ class GlumpyPlotter():
         def on_draw(draw_triangles):
             window.clear()
 
-            #  surface.draw(gl.GL_TRIANGLES, indices)
-            surface.draw(gl.GL_LINES, triangle)
+            surface.draw(gl.GL_TRIANGLES, indices)
+            #  surface.draw(gl.GL_LINES, triangle)
 
         @window.event
         def on_init():
