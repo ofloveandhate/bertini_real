@@ -35,6 +35,8 @@ class GlumpyPlotter():
         """ Method used to plot a surface. """
         print("Plotting object of dimension: {}".format(self.decomposition.dimension))
 
+        # TODO add if statements here
+
         data = self.decomposition
         tuples = data.surface.surface_sampler_data
         #  tuples = data.surface.critical_curve.sampler_data
@@ -42,9 +44,10 @@ class GlumpyPlotter():
         # midpoint slices
         # singlular curves
         # sphere curve
+        #  points = extract_curve_points(data)
         points = extract_points(data)
 
-        #  triangle = tuples
+        triangle = tuples
         triangle = []
         for i in range(len(tuples)):
             for tri in tuples[i]:
@@ -55,8 +58,8 @@ class GlumpyPlotter():
                 triple = [index_1, index_2, index_3]
                 triangle.append(triple)
 
+        #  print(triangle)
         triangle = np.asarray(triangle)
-        print(triangle)
 
 
 # ----------------------------------------------------------------------------- #
@@ -95,6 +98,7 @@ class GlumpyPlotter():
 
         verts = verts.view(gloo.VertexBuffer)
         # these need to be removed depending on what we are rendering
+        # TODO wrap this is in if statement
         indices = np.array(triangle).astype(np.uint32)
         indices = indices.view(gloo.IndexBuffer)
 
@@ -110,7 +114,7 @@ class GlumpyPlotter():
             window.clear()
 
             surface.draw(gl.GL_TRIANGLES, indices)
-            #  surface.draw(gl.GL_LINES, triangle)
+            #  surface.draw(gl.GL_POINTS, triangle)
 
         @window.event
         def on_init():
@@ -204,6 +208,18 @@ def extract_points(data):
 
         for j in range(3):
             point[j] = vertex['point'][j].real
+        points.append(point)
+
+    return points
+
+def extract_curve_points(data):
+
+    points = []
+    for vertex in data.surface.critical_curve.sampler_data:
+        point = [None]*3
+
+        for j in range(3):
+            point[j] = data.vertices[vertex[0]]['point'][j].real
         points.append(point)
 
     return points
