@@ -31,34 +31,37 @@ class GlumpyPlotter():
         else:
             self.decomposition = data
 
-    def plot(self, cmap=None, color_function=None):
+    def plot(self, cmap=None, color_function=None, critical_curve=False):
         """ Method used to plot a surface. """
         print("Plotting object of dimension: {}".format(self.decomposition.dimension))
-
-        # TODO add if statements here
-
         data = self.decomposition
-        tuples = data.surface.surface_sampler_data
-        #  tuples = data.surface.critical_curve.sampler_data
-        # critical point slices
-        # midpoint slices
-        # singlular curves
-        # sphere curve
-        #  points = extract_curve_points(data)
-        points = extract_points(data)
+        # TODO add functionality for:
+        #  critical point slices
+        #  midpoint slices
+        #  singlular curves
+        #  sphere curve
 
-        triangle = tuples
-        triangle = []
-        for i in range(len(tuples)):
-            for tri in tuples[i]:
-                index_1 = int(tri[0])
-                index_2 = int(tri[1])
-                index_3 = int(tri[2])
+        if critical_curve:
 
-                triple = [index_1, index_2, index_3]
-                triangle.append(triple)
+            tuples = data.surface.critical_curve.sampler_data
+            points = extract_curve_points(data)
+            triangle = tuples
 
-        #  print(triangle)
+        else:   # just plots the surface samples
+
+            tuples = data.surface.surface_sampler_data
+            points = extract_points(data)
+
+            triangle = []
+            for i in range(len(tuples)):
+                for tri in tuples[i]:
+                    index_1 = int(tri[0])
+                    index_2 = int(tri[1])
+                    index_3 = int(tri[2])
+
+                    triple = [index_1, index_2, index_3]
+                    triangle.append(triple)
+
         triangle = np.asarray(triangle)
 
 
@@ -99,8 +102,10 @@ class GlumpyPlotter():
         verts = verts.view(gloo.VertexBuffer)
         # these need to be removed depending on what we are rendering
         # TODO wrap this is in if statement
-        indices = np.array(triangle).astype(np.uint32)
-        indices = indices.view(gloo.IndexBuffer)
+
+        if critical_curve is False:
+            indices = np.array(triangle).astype(np.uint32)
+            indices = indices.view(gloo.IndexBuffer)
 
         surface = gloo.Program(vertex, fragment)
         surface.bind(verts)
@@ -113,8 +118,12 @@ class GlumpyPlotter():
         def on_draw(draw_triangles):
             window.clear()
 
-            surface.draw(gl.GL_TRIANGLES, indices)
-            #  surface.draw(gl.GL_POINTS, triangle)
+            if critical_curve:
+                surface.draw(gl.GL_LINES, triangle)
+            else:
+                surface.draw(gl.GL_TRIANGLES, indices)
+
+
 
         @window.event
         def on_init():
@@ -127,7 +136,7 @@ class GlumpyPlotter():
 
 # ----------------------------------------------------------------------------- #
 
-def plot(data=None, cmap='hsv', color_function=None):
+def plot(data=None, cmap='hsv', color_function=None, critical_curve=False):
     """
     Sets default values for colormap if none are specified.
     """
@@ -136,7 +145,7 @@ def plot(data=None, cmap='hsv', color_function=None):
     cmap = plt.get_cmap(cmap)
 
     surface = GlumpyPlotter(data)
-    surface.plot(cmap, color_function)
+    surface.plot(cmap, color_function, critical_curve)
 
 # ----------------------------------------------------------------------------- #
 #                               Helper Methods
