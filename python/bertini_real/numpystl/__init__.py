@@ -10,6 +10,7 @@ Implementing raw and smooth stereolithography (STL) surface export feature for B
 
 """
 import os
+import copy
 import numpy as np
 from bertini_real.data import BRData
 from bertini_real.surface import Surface, Curve
@@ -290,6 +291,83 @@ class NumpySTL():
         print("Export " + '\x1b[0;35;40m' + "smooth_" +
               fileName + ".stl" + '\x1b[0m' + " successfully")
 
+
+    def solidify(self, totalDist,offset):
+
+        # stl = input('Enter a STL filename:')
+        stl = "mystl.stl"
+
+        offset = 0.5
+        total = 1.5
+
+        tmesh = trimesh.load(str(stl))
+        A = copy.deepcopy(tmesh)
+        B = copy.deepcopy(tmesh)
+
+        # reverse every triangles and flip every normals
+        B.invert()
+
+        # calculate A, B vertex normals
+        vertexnormsA = A.vertex_normals
+        vertexnormsB = B.vertex_normals
+
+        distA =  (total/2)*(offset+1)
+        distB = 1 - distA
+
+        # create a list to store  amount of distance for A to move
+        amountDistA = []
+        
+        for vnorm in A.vertex_normals:
+            amountDistA.append(vnorm * distA)
+
+        # for each vertexA, move vertexA to corresponding A vertex normals
+        for v in A.vertices:
+            # for each amount of distance A
+            for i in range(len(amountDistA)):
+                v += amountDistA[i]
+
+        # create a list to store  amount of distance for B to move
+        amountDistB = []
+        
+        for vnorm in B.vertex_normals:
+            amountDistB.append(vnorm * distB)
+
+        # for each vertexA, move vertexB to corresponding B vertex normals
+        for v in B.vertices:
+            # for each amount of distance B
+            for i in range(len(amountDistB)):
+                v += amountDistB[i]
+
+
+        # add boundary faces
+        faces = self.decomposition.surface
+        # # indices of this point, bounding sphere
+        sphere_curve = faces.sphere_curve.sampler_data #[[x,x,x],[0],[1]]
+
+        numVerts = len(A.vertices)
+
+        for edge in sphere_curve:
+            for i in range(numVerts-1):
+                print(edge[i],edge[i+1],edge[i]+numVerts)
+                print(edge[i],edge[i]+numVerts,edge[i+1]+numVerts)
+
+                
+
+        # read mostrecent()
+        # x.surface.sphere_curve
+        # walk down the edge, add the triangles,
+        # trimesh add vertices
+        # for each edge, then for each consecutive pair
+        # https://github.com/mikedh/trimesh/blob/master/trimesh/creation.py
+
+        # Junk: testing some codes
+        # create a list to store new vertices B
+        # newvB = []
+        # # for each vertexA, move vertexB to corresponding B vertex normals
+        # for v in B.vertices:
+        #     for vnorm in vertexnormsB:
+        #         newvB.append(np.add(v,list(np.asarray(vnorm)*distB)))
+
 def extract_points(self):
     """ Extract points from vertices """
 
@@ -316,5 +394,10 @@ def smooth(data=None):
 
     surface = NumpySTL(data)
     surface.smooth()
+
+def solidify(data=None, totalDist=0, offset=0):
+    """ Create a NumpySTL object and solidify objects """
+    surface = NumpySTL(data)
+    surface.solidify(totalDist,offset)
 
 
