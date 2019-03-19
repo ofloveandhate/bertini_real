@@ -94,14 +94,14 @@ class GlumpyPlotter():
         window = app.Window(width=2048, height=2048,
                             color=(0.30, 0.30, 0.35, 1.00))
 
+        # DO THESE 4 LINES FOR EACH EDGE OF CRITICAL CURVE
         verts = np.zeros(len(points), [("position", np.float32, 3),
                                        ("a_color", np.float32, 4)])
         verts["position"] = points
         verts["a_color"] = make_colors(verts["position"], cmap, color_function)
 
         verts = verts.view(gloo.VertexBuffer)
-        # these need to be removed depending on what we are rendering
-        # TODO wrap this is in if statement
+        # stop looper here
 
         if critical_curve is False:
             indices = np.array(triangle).astype(np.uint32)
@@ -119,7 +119,7 @@ class GlumpyPlotter():
             window.clear()
 
             if critical_curve:
-                surface.draw(gl.GL_LINES, triangle)
+                surface.draw(gl.GL_LINE_STRIP, triangle)
             else:
                 surface.draw(gl.GL_TRIANGLES, indices)
 
@@ -222,13 +222,14 @@ def extract_points(data):
     return points
 
 def extract_curve_points(data):
-
     points = []
-    for vertex in data.surface.critical_curve.sampler_data:
-        point = [None]*3
-
-        for j in range(3):
-            point[j] = data.vertices[vertex[0]]['point'][j].real
-        points.append(point)
+    for edge in data.surface.critical_curve.sampler_data:
+        if len(edge) <= 1:
+            continue
+        for vertex in edge:
+            point = [None]*3
+            for i in range(3):
+                point[i] = data.vertices[vertex]['point'][i].real
+            points.append(point)
 
     return points
