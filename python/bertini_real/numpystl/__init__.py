@@ -10,7 +10,6 @@ Implementing raw and smooth stereolithography (STL) surface export feature for B
 
 """
 import os
-import copy
 import numpy as np
 from bertini_real.data import BRData
 from bertini_real.surface import Surface, Curve
@@ -313,46 +312,63 @@ class NumpySTL():
 
         distA =  (total/2)*(offset+1)
         distB = 1 - distA
-
-        # create a list to store  amount of distance for A to move
-        amountDistA = []
         
-        for vnorm in A.vertex_normals:
-            amountDistA.append(vnorm * distA)
+        print(len(A.vertices))
 
-        # for each vertexA, move vertexA to corresponding A vertex normals
+        # # create a list to store  amount of distance for A to move
+        # # amountDistA = []
+        
+        # for vnorm in A.vertex_normals:
+        #     amountDistA.append(vnorm * distA)
+
+        # # for each vertexA, move vertexA to distA corresponding to vertexnormals of A
         for v in A.vertices:
-            # for each amount of distance A
-            for i in range(len(amountDistA)):
-                v += amountDistA[i]
+            v += vnorm[v] * distA
 
-        # create a list to store  amount of distance for B to move
-        amountDistB = []
+        # # create a list to store  amount of distance for B to move
+        # amountDistB = []
         
-        for vnorm in B.vertex_normals:
-            amountDistB.append(vnorm * distB)
+        # for vnorm in B.vertex_normals:
+        #     amountDistB.append(vnorm * distB)
 
-        # for each vertexA, move vertexB to corresponding B vertex normals
-        for v in B.vertices:
-            # for each amount of distance B
-            for i in range(len(amountDistB)):
-                v += amountDistB[i]
+        # # for each vertexA, move vertexB to corresponding B vertex normals
+        # for v in B.vertices:
+        #     # for each amount of distance B
+        #     for i in range(len(amountDistB)):
+        #         v += amountDistB[i]
 
 
-        # add boundary faces
-        faces = self.decomposition.surface
-        # # indices of this point, bounding sphere
-        sphere_curve = faces.sphere_curve.sampler_data #[[x,x,x],[0],[1]]
+        # # add boundary faces
+        # # concatenate, add new faces, not adding new vertices
+        # faces = self.decomposition.surface
+        # # # indices of this point, bounding sphere
+        # sphere_curve = faces.sphere_curve.sampler_data #[[x,x,x],[0],[1]]
 
-        numVerts = len(A.vertices)
+        # numVerts = len(A.vertices) # 3309 for a plane
 
-        for edge in sphere_curve:
-            for i in range(numVerts-1):
-                print(edge[i],edge[i+1],edge[i]+numVerts)
-                print(edge[i],edge[i]+numVerts,edge[i+1]+numVerts)
+        # T = []
+        # for edge in sphere_curve:
+        #     for i in range(numVerts-1):
+        #         print(edge[i],edge[i+1],edge[i]+numVerts)
+                # t1 = [edge[i],edge[i+1],edge[i]+numVerts]
+                # t2 = [edge[i],edge[i]+numVerts,edge[i+1]+numVerts]
+                # T.append(t1)
+                # T.append(t2)
+        
+        # print(T)
 
-                
+#--------------------------------------------------------------------------------------------------------------------------------------------------#
+# Export stl
+        # newA = trimesh.Trimesh(A.vertices, A.faces)
 
+        # fileName = os.getcwd().split(os.sep)[-1]
+
+        # newA.export(file_obj='test_' +
+        #                 fileName + '.stl', file_type='stl')
+
+#---------------------------------------------------------------------------#
+
+ 
         # read mostrecent()
         # x.surface.sphere_curve
         # walk down the edge, add the triangles,
@@ -367,6 +383,16 @@ class NumpySTL():
         # for v in B.vertices:
         #     for vnorm in vertexnormsB:
         #         newvB.append(np.add(v,list(np.asarray(vnorm)*distB)))
+
+    # def test(self):
+    #     stl = "mystl.stl"
+    #     tmesh = trimesh.load(str(stl))
+    #     print(tmesh.vertices)
+    #     print(tmesh.faces)
+    #     nested_lst_of_tuples = [tuple(l) for l in tmesh.faces]
+    #     print([nested_lst_of_tuples])
+
+
 
 def extract_points(self):
     """ Extract points from vertices """
