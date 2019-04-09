@@ -15,10 +15,10 @@ from glumpy import app, gl, glm, gloo
 from glumpy.transforms import Trackball, Position
 import bertini_real
 
-# ----------------------------------------------------------------------------- #
+# --------------------------------------------------------------------------- #
 #                    Vertex and fragment are OpenGL code
 #                             Used by Glumpy
-# ----------------------------------------------------------------------------- #
+# --------------------------------------------------------------------------- #
 
 vertex = """
 attribute vec4 a_color;         // Vertex Color
@@ -42,6 +42,7 @@ void main()
 }
 """
 
+
 class GlumpyPlotter():
     """ Creates the glumpyplotter object which is used to render
         3d surfaces created from bertini_real
@@ -61,12 +62,11 @@ class GlumpyPlotter():
     def plot_surface_samples(self, cmap=None, color_function=None):
         """ Method used to plot a surface. """
 
-        print("Plotting object of dimension: {}".format(self.decomposition.dimension))
         data = self.decomposition
         sampler_data = data.surface.surface_sampler_data
         points = extract_points(data)
 
-        triangle = np.zeros(len(sampler_data))
+        triangles = np.zeros(len(sampler_data))
         for i in range(len(sampler_data)):
             for tri in sampler_data[i]:
                 index_1 = int(tri[0])
@@ -74,7 +74,7 @@ class GlumpyPlotter():
                 index_3 = int(tri[2])
 
                 triple = [index_1, index_2, index_3]
-                triangle = np.append(triangle,triple)
+                triangles = np.append(triangles, triple)
 
         window = app.Window(width=2048, height=2048,
                             color=(0.30, 0.30, 0.35, 1.00))
@@ -86,7 +86,7 @@ class GlumpyPlotter():
 
         verts = verts.view(gloo.VertexBuffer)
 
-        indices = np.array(triangle).astype(np.uint32)
+        indices = np.array(triangles).astype(np.uint32)
         indices = indices.view(gloo.IndexBuffer)
 
         surface = gloo.Program(vertex, fragment)
@@ -113,17 +113,11 @@ class GlumpyPlotter():
     def plot_critical_curve(self, cmap=None, color_function=None):
         """ Method used to plot a surface's critical curve. """
 
-        print("Plotting object of dimension: {}".format(self.decomposition.dimension))
         data = self.decomposition
 
         points = extract_curve_points(data)
-        crit_curve = data.surface.surface_sampler_data
-        crit_curve = np.asarray(crit_curve)
-
-        #  print('====================Curve==================')
-        #  print(curve[0])
-        #  print('====================Points==================')
-        #  print(points)
+        critical_curve = data.surface.surface_sampler_data
+        critical_curve = np.asarray(critical_curve)
 
         window = app.Window(width=2048, height=2048,
                             color=(0.30, 0.30, 0.35, 1.00))
@@ -133,7 +127,8 @@ class GlumpyPlotter():
             verts = np.zeros(len(edge), [("position", np.float32, 3),
                                          ("a_color", np.float32, 4)])
             verts["position"] = edge
-            verts["a_color"] = make_colors(verts["position"], cmap, color_function)
+            verts["a_color"] = make_colors(verts["position"],
+                                           cmap, color_function)
             verts = verts.view(gloo.VertexBuffer)
 
             surface.bind(verts)
@@ -146,7 +141,7 @@ class GlumpyPlotter():
         @window.event
         def on_draw(draw_triangles):
             window.clear()
-            surface.draw(gl.GL_LINE_STRIP, crit_curve)
+            surface.draw(gl.GL_LINE_STRIP, critical_curve)
 
         @window.event
         def on_init():
@@ -156,6 +151,7 @@ class GlumpyPlotter():
             gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 
         app.run()
+
 
 def plot_surface_samples(data=None, cmap='hsv', color_function=None):
     """
@@ -168,6 +164,7 @@ def plot_surface_samples(data=None, cmap='hsv', color_function=None):
     surface = GlumpyPlotter(data)
     surface.plot_surface_samples(cmap, color_function)
 
+
 def plot_critical_curve(data=None, cmap='hsv', color_function=None):
     """
     Sets default values for colormap if none are specified.
@@ -179,9 +176,10 @@ def plot_critical_curve(data=None, cmap='hsv', color_function=None):
     surface = GlumpyPlotter(data)
     surface.plot_critical_curve(cmap, color_function)
 
-# ----------------------------------------------------------------------------- #
+# --------------------------------------------------------------------------- #
 #                               Helper Methods
-# ----------------------------------------------------------------------------- #
+# --------------------------------------------------------------------------- #
+
 
 def default_color_function(x_coordinate, y_coordinate, z_coordinate):
     """ Helper method for make_colors()
@@ -195,6 +193,7 @@ def default_color_function(x_coordinate, y_coordinate, z_coordinate):
 
     """
     return math.sqrt(x_coordinate**2 + y_coordinate**2 + z_coordinate**2)
+
 
 def make_colors(points, cmap, color_function):
     """ Helper method for plot()
@@ -226,7 +225,7 @@ def make_colors(points, cmap, color_function):
     data = np.asarray(data)
 
     # normalize the data
-    temp = data-min(data)
+    temp = data - min(data)
     data = temp / max(temp)
 
     # finally, run that data through the mpl.pyplot colormap function
@@ -235,8 +234,9 @@ def make_colors(points, cmap, color_function):
 
     return colors
 
+
 def extract_points(data):
-    """ Helper method for plot()
+    """ Helper method for plot_surface_samples()
         Extract points from vertices
 
         :param data: The decomposition that we are rendering.
@@ -245,7 +245,7 @@ def extract_points(data):
 
     points = []
     for vertex in data.vertices:
-        point = [None]*3
+        point = [None] * 3
 
         for j in range(3):
             point[j] = vertex['point'][j].real
@@ -253,7 +253,15 @@ def extract_points(data):
 
     return points
 
+
 def extract_curve_points(data):
+    """ Helper method for plot_critical_curve()
+        Extract points from vertices
+
+        :param data: The decomposition that we are rendering.
+        :rtype: List of lists containing tuples of length 3.
+    """
+
     points = []
     all_points = []
     curve = []
@@ -270,6 +278,5 @@ def extract_curve_points(data):
         points = []
 
     # possibly fill with NaN's to show separators
-
     # return curve, all_points
     return curve
