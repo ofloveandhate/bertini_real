@@ -1,11 +1,14 @@
-import bertini_real
+#!/usr/local/bin/python3
+import bertini_real as br
 
-def function(x,y,z):
+
+def function(x, y, z):
     return x + y + z
+
 
 fn = function
 
-bertini_real.glumpyplotter.plot()
-#  bertini_real.glumpyplotter.plot(cmap='jet')
-#  bertini_real.glumpyplotter.plot(cmap='inferno', color_function=fn)
-#  bertini_real.glumpyplotter.plot(cmap='inferno', color_function=fn, critical_curve=True)
+br.glumpyplotter.plot_surface_samples()
+# br.glumpyplotter.plot_surface_samples(cmap='inferno')
+# br.glumpyplotter.plot_surface_samples(cmap='inferno', color_function=fn)
+# br.glumpyplotter.plot_critical_curve(cmap='inferno', color_function=fn)
