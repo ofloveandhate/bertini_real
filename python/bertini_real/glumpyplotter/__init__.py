@@ -76,7 +76,7 @@ class GlumpyPlotter():
                 triple = [index_1, index_2, index_3]
                 triangles = np.append(triangles, triple)
 
-        window = app.Window(width=2048, height=2048,
+        window = app.Window(width=1024, height=1024,
                             color=(0.30, 0.30, 0.35, 1.00))
 
         verts = np.zeros(len(points), [("position", np.float32, 3),
@@ -112,6 +112,21 @@ class GlumpyPlotter():
 
     def plot_critical_curve(self, cmap=None, color_function=None):
         """ Method used to plot a surface's critical curve. """
+        """
+        This method does not work as intended. In its current state
+        glumpy wants all of the edges to be ordered which simply can't be done.
+        The idea that Danielle and I have come up with is to try and separate
+        each edge with a NaN value. Instead of creating a numpy array of 0's,
+        we would make a numpy array of NaN's. This was her solution for this
+        problem when coding it in MATLAB. Currently, adding NaN's to the data
+        causes an error -- "TypeError: object of type 'float' has no len()".
+        This was caused when using the built in NaN in Python.
+
+        Essentially, if we are able to plot all edges of a surface as separate
+        entities, it should work as intended. There are examples in the glumpy
+        docs which show how to plot separate objects, but implementing this
+        with the current codebase seems messy...
+        """
 
         data = self.decomposition
 
@@ -119,7 +134,7 @@ class GlumpyPlotter():
         critical_curve = data.surface.surface_sampler_data
         critical_curve = np.asarray(critical_curve)
 
-        window = app.Window(width=2048, height=2048,
+        window = app.Window(width=1024, height=1024,
                             color=(0.30, 0.30, 0.35, 1.00))
 
         surface = gloo.Program(vertex, fragment)
@@ -175,6 +190,7 @@ def plot_critical_curve(data=None, cmap='hsv', color_function=None):
 
     surface = GlumpyPlotter(data)
     surface.plot_critical_curve(cmap, color_function)
+
 
 # --------------------------------------------------------------------------- #
 #                               Helper Methods
@@ -261,6 +277,8 @@ def extract_curve_points(data):
         :param data: The decomposition that we are rendering.
         :rtype: List of lists containing tuples of length 3.
     """
+    # TODO try using NaN's that are built into numpy
+    # TODO turn all lists into numpy arrays, mainly for consistency and speed
 
     points = []
     all_points = []
@@ -275,6 +293,7 @@ def extract_curve_points(data):
             points.append(point)
             all_points.append(point)
         curve.append(points)
+        # curve.append(float('nan'))
         points = []
 
     # possibly fill with NaN's to show separators
