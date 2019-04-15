@@ -2,9 +2,8 @@ from setuptools import find_packages, setup
 
 EXCLUDE_FROM_PACKAGES = []
 
-
 setup(name='bertini_real',
-      version='1.6', # TODO make this set programmatically
+      version='1.6',  # TODO make this set programmatically
       description='Python library for bertini_real',
       url='http://bertinireal.com',
       author='Dan Hessler, Foong Min Wong, Danielle Amethyst Brake',
@@ -12,11 +11,10 @@ setup(name='bertini_real',
       packages=find_packages(exclude=EXCLUDE_FROM_PACKAGES),
       install_requires=['glumpy',
                         'matplotlib',
-                        'stl',
                         'trimesh',
                         'numpy-stl',
                         'pyopengl',
                         'glfw',
                         'triangle'],
-      package_dir={'bertini_real' : 'bertini_real'},
+      package_dir={'bertini_real': 'bertini_real'},
       zip_safe=False)
