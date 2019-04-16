@@ -9,17 +9,14 @@ Implementing raw and smooth stereolithography (STL) surface export feature for B
     :synopsis: The numpystl uses numpy-stl for STL export and trimesh for normal fixing.
 
 """
-import os
-import numpy as np
-from bertini_real.data import BRData
-from bertini_real.surface import Surface, Curve
 import bertini_real
-import bertini_real.util
-import dill
+import copy
+import math
 import numpy as np
-import matplotlib
+import os
 from stl import mesh
 import trimesh
+from itertools import chain
 
 
 class ReversableList(list):
@@ -290,14 +287,14 @@ class NumpySTL():
         print("Export " + '\x1b[0;35;40m' + "smooth_" +
               fileName + ".stl" + '\x1b[0m' + " successfully")
 
-
     def solidify(self, totalDist,offset):
 
         # stl = input('Enter a STL filename:')
+
         stl = "mystl.stl"
 
-        offset = 0.5
-        total = 1.5
+        offset = 0
+        total = 0.1
 
         tmesh = trimesh.load(str(stl))
         A = copy.deepcopy(tmesh)
@@ -310,11 +307,10 @@ class NumpySTL():
         vertexnormsA = A.vertex_normals
         vertexnormsB = B.vertex_normals
 
-        distA =  (total/2)*(offset+1)
-        distB = 1 - distA
+        distA =  (total)*(offset+1)/2
+        distB = (total)*(1 - (offset+1)/2)
         
-        print(len(A.vertices))
-
+        # print(len(A.vertices))
         # # create a list to store  amount of distance for A to move
         # # amountDistA = []
         
@@ -322,8 +318,12 @@ class NumpySTL():
         #     amountDistA.append(vnorm * distA)
 
         # # for each vertexA, move vertexA to distA corresponding to vertexnormals of A
-        for v in A.vertices:
-            v += vnorm[v] * distA
+        # for v in A.vertices:
+        #     v += vnorm[v] * distA
+
+        # create A & B vertices that move corresponding to vertex normals and distance 
+        A.vertices = [v+vn*distA for v,vn in zip(A.vertices,A.vertex_normals)]
+        B.vertices = [v+vn*distB for v,vn in zip(B.vertices,B.vertex_normals)]
 
         # # create a list to store  amount of distance for B to move
         # amountDistB = []
@@ -340,31 +340,104 @@ class NumpySTL():
 
         # # add boundary faces
         # # concatenate, add new faces, not adding new vertices
-        # faces = self.decomposition.surface
+
+
+        ####
+
+        # FIND when it drops the point (two libraries)
+        # WHAT POINT IT THROWS AWAY THE DISCONNECTED THE EXTRA POINT
+        # 	WHEN YOUT TRIMESH
+        # unreferenced vertices
+
+
+        ####
+
+
+        faces = self.decomposition.surface
+
+        # print(self.decomposition.)
         # # # indices of this point, bounding sphere
-        # sphere_curve = faces.sphere_curve.sampler_data #[[x,x,x],[0],[1]]
+        sphere_curve = faces.sphere_curve.sampler_data #[[x,x,x],[0],[1]]
 
-        # numVerts = len(A.vertices) # 3309 for a plane
+        numVerts = len(A.vertices)
 
-        # T = []
-        # for edge in sphere_curve:
-        #     for i in range(numVerts-1):
-        #         print(edge[i],edge[i+1],edge[i]+numVerts)
-                # t1 = [edge[i],edge[i+1],edge[i]+numVerts]
-                # t2 = [edge[i],edge[i]+numVerts,edge[i+1]+numVerts]
-                # T.append(t1)
-                # T.append(t2)
-        
-        # print(T)
+        T = []
+
+        f = A.facets_boundary
+        ff = [l.tolist() for l in f]
+        ff = list(chain.from_iterable(ff))
+
+        # print(sphere_curve)
+
+
+
+        for edge in sphere_curve:
+        # for edge in ff:
+        	# for i in range(numVerts-1):
+        	for i in range(len(edge)-1):
+                 # t1 = [edge[i],edge[i+1],edge[i]+numVerts]
+                 # t2 = [edge[i],edge[i]+numVerts,edge[i+1]+numVerts]
+                 # t1 = [edge[i],edge[i+1],edge[i]+len(edge)]
+                 # t2 = [edge[i],edge[i]+len(edge),edge[i+1]+len(edge)]
+
+                 t1 = [edge[i],edge[i+1],edge[i]+numVerts]
+                 t2 = [edge[i+1],edge[i]+numVerts,edge[i+1]+numVerts]
+
+                 T.append(t1)
+                 T.append(t2)
+
+        # print(A.vertices)
+        # print(A.faces)
+
+        # points = extract_points(self)
+
+        # faces = self.decomposition.surface.surface_sampler_data
+
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------#
 # Export stl
-        # newA = trimesh.Trimesh(A.vertices, A.faces)
+        newA = trimesh.Trimesh(A.vertices, A.faces)
 
-        # fileName = os.getcwd().split(os.sep)[-1]
+        newA.fix_normals()
 
-        # newA.export(file_obj='test_' +
-        #                 fileName + '.stl', file_type='stl')
+        fileName1 = os.getcwd().split(os.sep)[-1]
+
+        newA.export(file_obj='newA_' +
+                        fileName1 + '.stl', file_type='stl')
+
+        newB = trimesh.Trimesh(B.vertices, B.faces)
+
+        fileName2 = os.getcwd().split(os.sep)[-1]
+
+        newB.fix_normals()
+
+        newB.export(file_obj='newB_' +
+                        fileName2 + '.stl', file_type='stl')
+        
+        
+        Q = np.concatenate((newA.vertices,newB.vertices),axis=0)
+
+        newBoundary = trimesh.Trimesh(Q,T)
+
+        newBoundary.fix_normals()
+
+        # newBoundary.fill_holes()
+
+        newBoundary.export(file_obj='newBoundary_' +
+                        fileName2 + '.stl', file_type='stl')
+
+        finalmesh = newA + newB + newB
+
+        finalmesh.export(file_obj='final_' +
+                        fileName2 + '.stl', file_type='stl')
+        # mesh1 = trimesh.load('newA_whitney.stl')
+
+        # mesh2 = trimesh.load('newB_whitney.stl')
+        # final = trimesh.load('final_whitney.stl')
+        # final.show()
+        # mesh1.show()
+
+        # (mesh2).show()
 
 #---------------------------------------------------------------------------#
 
@@ -421,7 +494,7 @@ def smooth(data=None):
     surface = NumpySTL(data)
     surface.smooth()
 
-def solidify(data=None, totalDist=0, offset=0):
+def solidify(data=None, totalDist=1, offset=1):
     """ Create a NumpySTL object and solidify objects """
     surface = NumpySTL(data)
     surface.solidify(totalDist,offset)
