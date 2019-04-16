@@ -15,33 +15,6 @@ from glumpy import app, gl, glm, gloo
 from glumpy.transforms import Trackball, Position
 import bertini_real
 
-# --------------------------------------------------------------------------- #
-#                    Vertex and fragment are OpenGL code
-#                             Used by Glumpy
-# --------------------------------------------------------------------------- #
-
-vertex = """
-attribute vec4 a_color;         // Vertex Color
-uniform mat4   u_model;         // Model matrix
-uniform mat4   u_view;          // View matrix
-uniform mat4   u_projection;    // Projection matrix
-attribute vec3 position;        // Vertex position
-varying vec4   v_color;         // Interpolated fragment color (out)
-void main()
-{
-    v_color = a_color;
-    gl_Position = <transform>;
-}
-"""
-
-fragment = """
-varying vec4  v_color;          // Interpolated fragment color (in)
-void main()
-{
-    gl_FragColor = v_color;
-}
-"""
-
 
 class GlumpyPlotter():
     """ Creates the glumpyplotter object which is used to render
@@ -63,6 +36,7 @@ class GlumpyPlotter():
         """ Method used to plot a surface. """
 
         data = self.decomposition
+        vertex, fragment = _open_gl_code()
         sampler_data = data.surface.surface_sampler_data
         points = extract_points(data)
 
@@ -82,7 +56,9 @@ class GlumpyPlotter():
         verts = np.zeros(len(points), [("position", np.float32, 3),
                                        ("a_color", np.float32, 4)])
         verts["position"] = points
-        verts["a_color"] = make_colors(verts["position"], cmap, color_function)
+        verts["a_color"] = _make_colors(verts["position"],
+                                        cmap,
+                                        color_function)
 
         verts = verts.view(gloo.VertexBuffer)
 
@@ -112,6 +88,7 @@ class GlumpyPlotter():
 
     def plot_critical_curve(self, cmap=None, color_function=None):
         """ Method used to plot a surface's critical curve. """
+
         """
         This method does not work as intended. In its current state
         glumpy wants all of the edges to be ordered which simply can't be done.
@@ -129,6 +106,7 @@ class GlumpyPlotter():
         """
 
         data = self.decomposition
+        vertex, fragment = _open_gl_code()
 
         points = extract_curve_points(data)
         critical_curve = data.surface.surface_sampler_data
@@ -142,10 +120,11 @@ class GlumpyPlotter():
             verts = np.zeros(len(edge), [("position", np.float32, 3),
                                          ("a_color", np.float32, 4)])
             verts["position"] = edge
-            verts["a_color"] = make_colors(verts["position"],
-                                           cmap, color_function)
+            verts["a_color"] = _make_colors(verts["position"],
+                                            cmap, color_function)
             verts = verts.view(gloo.VertexBuffer)
 
+            # i suspect this is the problem, in that only the last one is bound
             surface.bind(verts)
 
         surface['u_model'] = np.eye(4, dtype=np.float32)
@@ -211,7 +190,7 @@ def default_color_function(x_coordinate, y_coordinate, z_coordinate):
     return math.sqrt(x_coordinate**2 + y_coordinate**2 + z_coordinate**2)
 
 
-def make_colors(points, cmap, color_function):
+def _make_colors(points, cmap, color_function):
     """ Helper method for plot()
         Computes colors according to a function
         then applies a colormap from the matplotlib library.
@@ -292,10 +271,40 @@ def extract_curve_points(data):
                      data.vertices[vertex]['point'][2].real)
             points.append(point)
             all_points.append(point)
+        points.append([np.nan, np.nan, np.nan])
         curve.append(points)
         # curve.append(float('nan'))
         points = []
 
-    # possibly fill with NaN's to show separators
-    # return curve, all_points
     return curve
+
+
+def _open_gl_code():
+    # ----------------------------------------------------------------------- #
+    #                    Vertex and fragment are OpenGL code
+    #                             Used by Glumpy
+    # ----------------------------------------------------------------------- #
+
+    vertex = """
+    attribute vec4 a_color;         // Vertex Color
+    uniform mat4   u_model;         // Model matrix
+    uniform mat4   u_view;          // View matrix
+    uniform mat4   u_projection;    // Projection matrix
+    attribute vec3 position;        // Vertex position
+    varying vec4   v_color;         // Interpolated fragment color (out)
+    void main()
+    {
+        v_color = a_color;
+        gl_Position = <transform>;
+    }
+    """
+
+    fragment = """
+    varying vec4  v_color;          // Interpolated fragment color (in)
+    void main()
+    {
+        gl_FragColor = v_color;
+    }
+    """
+
+    return vertex, fragment
