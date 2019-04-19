@@ -4,9 +4,9 @@ University of Wisconsin, Eau Claire
 Fall 2018 - Spring 2019
 Implementing raw and smooth stereolithography (STL) surface export feature for Bertini_real
 
-.. module:: numpystl
+.. module:: tmesh
     :platform: Unix, Windows
-    :synopsis: The numpystl uses numpy-stl for STL export and trimesh for normal fixing.
+    :synopsis: The tmesh uses Trimesh for raw/smooth STL export and normal fixing.
 
 """
 import bertini_real
@@ -29,12 +29,11 @@ class ReversableList(list):
         """
         return list(reversed(self))
 
-
-class NumpySTL():
-    """ Create a NumpySTL object for exporting STL files """
+class TMesh():
+    """ Create a TMesh object for exporting STL files """
 
     def __init__(self, data=None):
-
+    	
         """ Read data from disk
 
             Args:
@@ -46,8 +45,6 @@ class NumpySTL():
             self.decomposition = bertini_real.data.ReadMostRecent()
         else:
             self.decomposition = data
-
-
 
     def raw(self):
         """ Export raw decomposition of surfaces"""
@@ -72,7 +69,7 @@ class NumpySTL():
             num_total_faces = num_total_faces + 2 * \
                 (curr_face['num left'] + curr_face['num right'] + 2)
         num_total_faces = num_total_faces * 2
-        
+
         total_face_index = 0
         TT = []
 
@@ -107,14 +104,13 @@ class NumpySTL():
                             if(surf.singular_names[zz] == face['system top']):
                                 curr_edge = surf.singular_curves[
                                     zz].edges[face['top']]
-                    
+
                     # print(curr_edge)
                     # print(curr_edge[0],curr_edge[1],curr_edge[2])
                     # print(type(curr_edge))
 
                     if(curr_edge == -10):
                         continue
-
 
                     if (curr_edge[0] < 0 and curr_edge[1] < 0 and curr_edge[2] < 0):
                         continue
@@ -140,7 +136,6 @@ class NumpySTL():
                             if(surf.singular_names[zz] == face['system bottom']):
                                 curr_edge = surf.singular_curves[
                                     zz].edges[face['bottom']]
-
 
                     if(curr_edge == -10):
                         continue
@@ -221,29 +216,19 @@ class NumpySTL():
 
         face_np_array = np.array(face)
 
-        obj = mesh.Mesh(np.zeros(face_np_array.shape[
-                        0], dtype=mesh.Mesh.dtype))
-
-        for i, f in enumerate(face_np_array):
-            for j in range(3):
-                obj.vectors[i][j] = vertex_np_array[f[j], :]
+        raw_mesh = trimesh.Trimesh(vertex_np_array, face_np_array)
 
         fileName = os.getcwd().split(os.sep)[-1]
 
-        obj.save('raw_' + fileName + '.stl')
+        raw_mesh.fix_normals()
 
-        normmesh = trimesh.load_mesh('raw_' + fileName + '.stl')
-
-        normmesh.fix_normals()
-
-        normmesh.export(file_obj='raw_' + fileName +
+        raw_mesh.export(file_obj='raw_' + fileName +
                         '.stl', file_type='stl')
 
         print("Export " + '\x1b[0;35;40m' + "raw_" +
               fileName + ".stl" + '\x1b[0m' + " successfully")
 
     def smooth(self):
-        """ Export smooth decomposition of surfaces"""
 
         print('\n' + '\x1b[0;34;40m' +
               'Generating smooth STL surface...' + '\x1b[0m')
@@ -258,6 +243,7 @@ class NumpySTL():
             vertex.append(p)
 
         vertex_np_array = np.array(vertex)
+
         face = []
 
         for f in faces:
@@ -266,28 +252,19 @@ class NumpySTL():
 
         face_np_array = np.array(face)
 
-        obj = mesh.Mesh(np.zeros(face_np_array.shape[
-                        0], dtype=mesh.Mesh.dtype))
-
-        for i, f in enumerate(face_np_array):
-            for j in range(3):
-                obj.vectors[i][j] = vertex_np_array[f[j], :]
+        smooth_mesh = trimesh.Trimesh(vertex_np_array, face_np_array)
 
         fileName = os.getcwd().split(os.sep)[-1]
 
-        obj.save('smooth_' + fileName + '.stl')
+        smooth_mesh.fix_normals()
 
-        normmesh = trimesh.load_mesh('smooth_' + fileName + '.stl')
-
-        normmesh.fix_normals()
-
-        normmesh.export(file_obj='smooth_' +
-                        fileName + '.stl', file_type='stl')
+        smooth_mesh.export(file_obj='smooth_' +
+                           fileName + '.stl', file_type='stl')
 
         print("Export " + '\x1b[0;35;40m' + "smooth_" +
               fileName + ".stl" + '\x1b[0m' + " successfully")
 
-    def solidify(self, totalDist,offset):
+    def solidify(self, totalDist, offset):
 
         # stl = input('Enter a STL filename:')
 
@@ -307,13 +284,13 @@ class NumpySTL():
         vertexnormsA = A.vertex_normals
         vertexnormsB = B.vertex_normals
 
-        distA =  (total)*(offset+1)/2
-        distB = (total)*(1 - (offset+1)/2)
-        
+        distA = (total) * (offset + 1) / 2
+        distB = (total) * (1 - (offset + 1) / 2)
+
         # print(len(A.vertices))
         # # create a list to store  amount of distance for A to move
         # # amountDistA = []
-        
+
         # for vnorm in A.vertex_normals:
         #     amountDistA.append(vnorm * distA)
 
@@ -321,13 +298,16 @@ class NumpySTL():
         # for v in A.vertices:
         #     v += vnorm[v] * distA
 
-        # create A & B vertices that move corresponding to vertex normals and distance 
-        A.vertices = [v+vn*distA for v,vn in zip(A.vertices,A.vertex_normals)]
-        B.vertices = [v+vn*distB for v,vn in zip(B.vertices,B.vertex_normals)]
+        # create A & B vertices that move corresponding to vertex normals and
+        # distance
+        A.vertices = [v + vn * distA for v,
+                      vn in zip(A.vertices, A.vertex_normals)]
+        B.vertices = [v + vn * distB for v,
+                      vn in zip(B.vertices, B.vertex_normals)]
 
         # # create a list to store  amount of distance for B to move
         # amountDistB = []
-        
+
         # for vnorm in B.vertex_normals:
         #     amountDistB.append(vnorm * distB)
 
@@ -337,10 +317,8 @@ class NumpySTL():
         #     for i in range(len(amountDistB)):
         #         v += amountDistB[i]
 
-
         # # add boundary faces
         # # concatenate, add new faces, not adding new vertices
-
 
         ####
 
@@ -349,15 +327,13 @@ class NumpySTL():
         # 	WHEN YOUT TRIMESH
         # unreferenced vertices
 
-
         ####
-
 
         faces = self.decomposition.surface
 
         # print(self.decomposition.)
         # # # indices of this point, bounding sphere
-        sphere_curve = faces.sphere_curve.sampler_data #[[x,x,x],[0],[1]]
+        sphere_curve = faces.sphere_curve.sampler_data  # [[x,x,x],[0],[1]]
 
         numVerts = len(A.vertices)
 
@@ -369,30 +345,21 @@ class NumpySTL():
 
         # print(sphere_curve)
 
-
-
+        print(sphere_curve)
         for edge in sphere_curve:
-        # for edge in ff:
-        	# for i in range(numVerts-1):
-        	for i in range(len(edge)-1):
-                 # t1 = [edge[i],edge[i+1],edge[i]+numVerts]
-                 # t2 = [edge[i],edge[i]+numVerts,edge[i+1]+numVerts]
-                 # t1 = [edge[i],edge[i+1],edge[i]+len(edge)]
-                 # t2 = [edge[i],edge[i]+len(edge),edge[i+1]+len(edge)]
+            # for edge in ff:
+                # for i in range(numVerts-1):
+            for i in range(len(edge) - 1):
+                # t1 = [edge[i],edge[i+1],edge[i]+numVerts]
+                # t2 = [edge[i],edge[i]+numVerts,edge[i+1]+numVerts]
+                # t1 = [edge[i],edge[i+1],edge[i]+len(edge)]
+                # t2 = [edge[i],edge[i]+len(edge),edge[i+1]+len(edge)]
 
-                 t1 = [edge[i],edge[i+1],edge[i]+numVerts]
-                 t2 = [edge[i+1],edge[i]+numVerts,edge[i+1]+numVerts]
+                t1 = [edge[i], edge[i + 1], edge[i] + numVerts]
+                t2 = [edge[i + 1], edge[i] + numVerts, edge[i + 1] + numVerts]
 
-                 T.append(t1)
-                 T.append(t2)
-
-        # print(A.vertices)
-        # print(A.faces)
-
-        # points = extract_points(self)
-
-        # faces = self.decomposition.surface.surface_sampler_data
-
+                T.append(t1)
+                T.append(t2)
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------#
 # Export stl
@@ -403,7 +370,7 @@ class NumpySTL():
         fileName1 = os.getcwd().split(os.sep)[-1]
 
         newA.export(file_obj='newA_' +
-                        fileName1 + '.stl', file_type='stl')
+                    fileName1 + '.stl', file_type='stl')
 
         newB = trimesh.Trimesh(B.vertices, B.faces)
 
@@ -412,24 +379,26 @@ class NumpySTL():
         newB.fix_normals()
 
         newB.export(file_obj='newB_' +
-                        fileName2 + '.stl', file_type='stl')
-        
-        
-        Q = np.concatenate((newA.vertices,newB.vertices),axis=0)
+                    fileName2 + '.stl', file_type='stl')
 
-        newBoundary = trimesh.Trimesh(Q,T)
+        Q = np.concatenate((newA.vertices, newB.vertices), axis=0)
+
+        newBoundary = trimesh.Trimesh(Q, T)
 
         newBoundary.fix_normals()
 
         # newBoundary.fill_holes()
 
         newBoundary.export(file_obj='newBoundary_' +
-                        fileName2 + '.stl', file_type='stl')
+                           fileName2 + '.stl', file_type='stl')
 
         finalmesh = newA + newB + newB
 
         finalmesh.export(file_obj='final_' +
-                        fileName2 + '.stl', file_type='stl')
+                         fileName2 + '.stl', file_type='stl')
+
+        #  python3 solidify.py && ~/stlviewer/./stlviewer final_whitney.stl
+
         # mesh1 = trimesh.load('newA_whitney.stl')
 
         # mesh2 = trimesh.load('newB_whitney.stl')
@@ -441,7 +410,6 @@ class NumpySTL():
 
 #---------------------------------------------------------------------------#
 
- 
         # read mostrecent()
         # x.surface.sphere_curve
         # walk down the edge, add the triangles,
@@ -466,7 +434,6 @@ class NumpySTL():
     #     print([nested_lst_of_tuples])
 
 
-
 def extract_points(self):
     """ Extract points from vertices """
 
@@ -481,22 +448,22 @@ def extract_points(self):
 
     return points
 
-def raw(data=None):
-    """ Create a NumpySTL object and export raw surface """
 
-    surface = NumpySTL(data)
+def raw(data=None):
+    """ Create a TMesh object and export raw surface """
+
+    surface = TMesh(data)
     surface.raw()
 
 
 def smooth(data=None):
-    """ Create a NumpySTL object and export smooth surface """
+    """ Create a TMesh object and export smooth surface """
 
-    surface = NumpySTL(data)
+    surface = TMesh(data)
     surface.smooth()
 
+
 def solidify(data=None, totalDist=1, offset=1):
-    """ Create a NumpySTL object and solidify objects """
-    surface = NumpySTL(data)
-    surface.solidify(totalDist,offset)
-
-
+    """ Create a TMesh object and solidify objects """
+    surface = TMesh(data)
+    surface.solidify(totalDist, offset)
