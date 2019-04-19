@@ -58,8 +58,8 @@ object.
 Python Scripting
 ******************
 
-At this point it I reccomend using an interactive Python shell, although you may
-also just create a .py file if you would like. I reccomend using ipython as it is
+At this point it I recommend using an interactive Python shell, although you may
+also just create a .py file if you would like. I recommend using ipython as it is
 far superior to the standard Python shell.
 
 The easiest way to get ipython is with pip.
@@ -86,7 +86,7 @@ At this point, if all you want to do is render your surface you can simply type:
 
 ::
 
-    bertini_real.glumpyplotter.plot(surface)
+    bertini_real.glumpyplotter.plot_surface_samples(surface)
 
 And your output will look like this:
 
@@ -102,14 +102,14 @@ colormap. To do this we just need to specify a new colormap when calling the plo
 
 ::
 
-    bertini_real.glumpyplotter.plot(surface, cmap='inferno')
+    bertini_real.glumpyplotter.plot_surface_samples(surface, cmap='inferno')
 
 And your output should look something like this:
 
 .. image:: glumpy_pictures/stern_inferno.png
    :width: 300
 
-Perfect, we've got cool new colors. Now lets change how they are computed. To do
+Perfect, we've got cool new colors. Now, let's change how the colors are computed. To do
 this we need to create our own color function. The default color function is:
 
 ::
@@ -118,7 +118,7 @@ this we need to create our own color function. The default color function is:
 
 Creating a new color function is very simple. All that is required is that it takes
 in an x, y, and z variable. Then it must return a value. This could be a constant value,
-but it is reccomended to compute a new value using the x, y, and z coordinates.
+but it is recommended to compute a new value using the x, y, and z coordinates.
 A simple function would look like:
 
 ::
@@ -131,7 +131,7 @@ a new function you just need to pass it as a parameter to the plot method.
 
 ::
 
-    bertini_real.glumpyplotter.plot(surface, cmap='inferno', color_function=custom_function)
+    bertini_real.glumpyplotter.plot_surface_samples(surface, cmap='inferno', color_function=custom_function)
 
 The result of this will be:
 
@@ -146,18 +146,21 @@ Complete script to copy and paste
 
 ::
 
-    import bertini_real
+  #!/usr/local/bin/python3
+  import bertini_real as br
 
-    surface = bertini_real.data.ReadMostRecent()
 
-    def custom_function(x,y,z):
-        return x+y+z
+  def function(x, y, z):
+      return x + y + z
 
-    bertini_real.glumpyplotter.plot(surface)
-    bertini_real.glumpyplotter.plot(surface, cmap='inferno')
-    bertini_real.glumpyplotter.plot(surface, cmap='inferno', color_function=custom_function)
+
+  fn = function
+
+  br.glumpyplotter.plot_surface_samples()
+  # br.glumpyplotter.plot_surface_samples(cmap='inferno')
+  # br.glumpyplotter.plot_surface_samples(cmap='inferno', color_function=fn)
 
 :Author:
     Dan Hessler
 
-:Version: 1.0 of 2019/02/26
+:Version: 1.0 of 2019/04/10

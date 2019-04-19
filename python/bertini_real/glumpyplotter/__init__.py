@@ -15,6 +15,7 @@ from glumpy import app, gl, glm, gloo
 from glumpy.transforms import Trackball, Position
 import bertini_real
 
+
 class GlumpyPlotter():
     """ Creates the glumpyplotter object which is used to render
         3d surfaces created from bertini_real
@@ -31,75 +32,37 @@ class GlumpyPlotter():
         else:
             self.decomposition = data
 
-    def plot(self, cmap=None, color_function=None):
+    def plot_surface_samples(self, cmap=None, color_function=None):
         """ Method used to plot a surface. """
-        print("Plotting object of dimension: {}".format(self.decomposition.dimension))
-
-        # TODO add if statements here
 
         data = self.decomposition
-        tuples = data.surface.surface_sampler_data
-        #  tuples = data.surface.critical_curve.sampler_data
-        # critical point slices
-        # midpoint slices
-        # singlular curves
-        # sphere curve
-        #  points = extract_curve_points(data)
+        vertex, fragment = _open_gl_code()
+        sampler_data = data.surface.surface_sampler_data
         points = extract_points(data)
 
-        triangle = tuples
-        triangle = []
-        for i in range(len(tuples)):
-            for tri in tuples[i]:
+        triangles = np.zeros(len(sampler_data))
+        for i in range(len(sampler_data)):
+            for tri in sampler_data[i]:
                 index_1 = int(tri[0])
                 index_2 = int(tri[1])
                 index_3 = int(tri[2])
 
                 triple = [index_1, index_2, index_3]
-                triangle.append(triple)
+                triangles = np.append(triangles, triple)
 
-        #  print(triangle)
-        triangle = np.asarray(triangle)
-
-
-# ----------------------------------------------------------------------------- #
-#                    Vertex and fragment are OpenGL code
-# ----------------------------------------------------------------------------- #
-
-        vertex = """
-        attribute vec4 a_color;         // Vertex Color
-        uniform mat4   u_model;         // Model matrix
-        uniform mat4   u_view;          // View matrix
-        uniform mat4   u_projection;    // Projection matrix
-        attribute vec3 position;        // Vertex position
-        varying vec4   v_color;         // Interpolated fragment color (out)
-        void main()
-        {
-            v_color = a_color;
-            gl_Position = <transform>;
-        }
-        """
-
-        fragment = """
-        varying vec4  v_color;          // Interpolated fragment color (in)
-        void main()
-        {
-            gl_FragColor = v_color;
-        }
-        """
-
-        window = app.Window(width=2048, height=2048,
+        window = app.Window(width=1024, height=1024,
                             color=(0.30, 0.30, 0.35, 1.00))
 
         verts = np.zeros(len(points), [("position", np.float32, 3),
                                        ("a_color", np.float32, 4)])
         verts["position"] = points
-        verts["a_color"] = make_colors(verts["position"], cmap, color_function)
+        verts["a_color"] = _make_colors(verts["position"],
+                                        cmap,
+                                        color_function)
 
         verts = verts.view(gloo.VertexBuffer)
-        # these need to be removed depending on what we are rendering
-        # TODO wrap this is in if statement
-        indices = np.array(triangle).astype(np.uint32)
+
+        indices = np.array(triangles).astype(np.uint32)
         indices = indices.view(gloo.IndexBuffer)
 
         surface = gloo.Program(vertex, fragment)
@@ -112,9 +75,7 @@ class GlumpyPlotter():
         @window.event
         def on_draw(draw_triangles):
             window.clear()
-
             surface.draw(gl.GL_TRIANGLES, indices)
-            #  surface.draw(gl.GL_POINTS, triangle)
 
         @window.event
         def on_init():
@@ -125,9 +86,68 @@ class GlumpyPlotter():
 
         app.run()
 
-# ----------------------------------------------------------------------------- #
+    def plot_critical_curve(self, cmap=None, color_function=None):
+        """ Method used to plot a surface's critical curve. """
 
-def plot(data=None, cmap='hsv', color_function=None):
+        """
+        This method does not work as intended. In its current state
+        glumpy wants all of the edges to be ordered which simply can't be done.
+        The idea that Danielle and I have come up with is to try and separate
+        each edge with a NaN value. Instead of creating a numpy array of 0's,
+        we would make a numpy array of NaN's. This was her solution for this
+        problem when coding it in MATLAB. Currently, adding NaN's to the data
+        causes an error -- "TypeError: object of type 'float' has no len()".
+        This was caused when using the built in NaN in Python.
+
+        Essentially, if we are able to plot all edges of a surface as separate
+        entities, it should work as intended. There are examples in the glumpy
+        docs which show how to plot separate objects, but implementing this
+        with the current codebase seems messy...
+        """
+
+        data = self.decomposition
+        vertex, fragment = _open_gl_code()
+
+        points = extract_curve_points(data)
+        critical_curve = data.surface.surface_sampler_data
+        critical_curve = np.asarray(critical_curve)
+
+        window = app.Window(width=1024, height=1024,
+                            color=(0.30, 0.30, 0.35, 1.00))
+
+        surface = gloo.Program(vertex, fragment)
+        for edge in points:
+            verts = np.zeros(len(edge), [("position", np.float32, 3),
+                                         ("a_color", np.float32, 4)])
+            verts["position"] = edge
+            verts["a_color"] = _make_colors(verts["position"],
+                                            cmap, color_function)
+            verts = verts.view(gloo.VertexBuffer)
+
+            # i suspect this is the problem, in that only the last one is bound
+            surface.bind(verts)
+
+        surface['u_model'] = np.eye(4, dtype=np.float32)
+        surface['u_view'] = glm.translation(0, 0, -5)
+        surface['transform'] = Trackball(Position("position"), znear=0)
+        window.attach(surface['transform'])
+
+        @window.event
+        def on_draw(draw_triangles):
+            window.clear()
+            surface.draw(gl.GL_LINE_STRIP, critical_curve)
+
+        @window.event
+        def on_init():
+            gl.glEnable(gl.GL_DEPTH_TEST)
+            gl.glPolygonOffset(1, 1)
+            gl.glEnable(gl.GL_LINE_SMOOTH)
+            gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+
+        app.run()
+
+
+def plot_surface_samples(data=None, cmap='hsv', color_function=None):
     """
     Sets default values for colormap if none are specified.
     """
@@ -136,11 +156,25 @@ def plot(data=None, cmap='hsv', color_function=None):
     cmap = plt.get_cmap(cmap)
 
     surface = GlumpyPlotter(data)
-    surface.plot(cmap, color_function)
+    surface.plot_surface_samples(cmap, color_function)
 
-# ----------------------------------------------------------------------------- #
+
+def plot_critical_curve(data=None, cmap='hsv', color_function=None):
+    """
+    Sets default values for colormap if none are specified.
+    """
+    import matplotlib.pyplot as plt
+
+    cmap = plt.get_cmap(cmap)
+
+    surface = GlumpyPlotter(data)
+    surface.plot_critical_curve(cmap, color_function)
+
+
+# --------------------------------------------------------------------------- #
 #                               Helper Methods
-# ----------------------------------------------------------------------------- #
+# --------------------------------------------------------------------------- #
+
 
 def default_color_function(x_coordinate, y_coordinate, z_coordinate):
     """ Helper method for make_colors()
@@ -155,7 +189,8 @@ def default_color_function(x_coordinate, y_coordinate, z_coordinate):
     """
     return math.sqrt(x_coordinate**2 + y_coordinate**2 + z_coordinate**2)
 
-def make_colors(points, cmap, color_function):
+
+def _make_colors(points, cmap, color_function):
     """ Helper method for plot()
         Computes colors according to a function
         then applies a colormap from the matplotlib library.
@@ -185,7 +220,7 @@ def make_colors(points, cmap, color_function):
     data = np.asarray(data)
 
     # normalize the data
-    temp = data-min(data)
+    temp = data - min(data)
     data = temp / max(temp)
 
     # finally, run that data through the mpl.pyplot colormap function
@@ -194,8 +229,9 @@ def make_colors(points, cmap, color_function):
 
     return colors
 
+
 def extract_points(data):
-    """ Helper method for plot()
+    """ Helper method for plot_surface_samples()
         Extract points from vertices
 
         :param data: The decomposition that we are rendering.
@@ -204,7 +240,7 @@ def extract_points(data):
 
     points = []
     for vertex in data.vertices:
-        point = [None]*3
+        point = [None] * 3
 
         for j in range(3):
             point[j] = vertex['point'][j].real
@@ -212,14 +248,63 @@ def extract_points(data):
 
     return points
 
+
 def extract_curve_points(data):
+    """ Helper method for plot_critical_curve()
+        Extract points from vertices
+
+        :param data: The decomposition that we are rendering.
+        :rtype: List of lists containing tuples of length 3.
+    """
+    # TODO try using NaN's that are built into numpy
+    # TODO turn all lists into numpy arrays, mainly for consistency and speed
 
     points = []
-    for vertex in data.surface.critical_curve.sampler_data:
-        point = [None]*3
+    all_points = []
+    curve = []
+    for edge in data.surface.critical_curve.sampler_data:
+        if len(edge) <= 1:
+            continue
+        for vertex in edge:
+            point = (data.vertices[vertex]['point'][0].real,
+                     data.vertices[vertex]['point'][1].real,
+                     data.vertices[vertex]['point'][2].real)
+            points.append(point)
+            all_points.append(point)
+        points.append([np.nan, np.nan, np.nan])
+        curve.append(points)
+        # curve.append(float('nan'))
+        points = []
 
-        for j in range(3):
-            point[j] = data.vertices[vertex[0]]['point'][j].real
-        points.append(point)
+    return curve
 
-    return points
+
+def _open_gl_code():
+    # ----------------------------------------------------------------------- #
+    #                    Vertex and fragment are OpenGL code
+    #                             Used by Glumpy
+    # ----------------------------------------------------------------------- #
+
+    vertex = """
+    attribute vec4 a_color;         // Vertex Color
+    uniform mat4   u_model;         // Model matrix
+    uniform mat4   u_view;          // View matrix
+    uniform mat4   u_projection;    // Projection matrix
+    attribute vec3 position;        // Vertex position
+    varying vec4   v_color;         // Interpolated fragment color (out)
+    void main()
+    {
+        v_color = a_color;
+        gl_Position = <transform>;
+    }
+    """
+
+    fragment = """
+    varying vec4  v_color;          // Interpolated fragment color (in)
+    void main()
+    {
+        gl_FragColor = v_color;
+    }
+    """
+
+    return vertex, fragment
