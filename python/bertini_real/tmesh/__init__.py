@@ -45,7 +45,7 @@ class TMesh():
         else:
             self.decomposition = data
 
-    def raw(self):
+    def stl_raw(self):
         """ Export raw decomposition of surfaces"""
 
         print('\n' + '\x1b[0;34;40m' +
@@ -221,13 +221,13 @@ class TMesh():
 
         raw_mesh.fix_normals()
 
-        raw_mesh.export(file_obj='raw_' + fileName +
+        raw_mesh.export(file_obj='stl_raw_' + fileName +
                         '.stl', file_type='stl')
 
-        print("Export " + '\x1b[0;35;40m' + "raw_" +
+        print("Export " + '\x1b[0;35;40m' + "stl_raw_" +
               fileName + ".stl" + '\x1b[0m' + " successfully")
 
-    def smooth(self):
+    def stl_smooth(self):
 
         print('\n' + '\x1b[0;34;40m' +
               'Generating smooth STL surface...' + '\x1b[0m')
@@ -257,13 +257,16 @@ class TMesh():
 
         A.fix_normals()
 
-        A.export(file_obj='smooth_' +
+        A.export(file_obj='stl_smooth_' +
                  fileName + '.stl', file_type='stl')
 
-        print("Export " + '\x1b[0;35;40m' + "smooth_" +
+        print("Export " + '\x1b[0;35;40m' + "stl_smooth_" +
               fileName + ".stl" + '\x1b[0m' + " successfully")
 
     def solidify_raw(self):
+
+        print('\n' + '\x1b[0;34;40m' +
+              'Solidiying raw STL surface...' + '\x1b[0m')
 
         points = extract_points(self)
 
@@ -455,7 +458,8 @@ class TMesh():
 
         T = []
 
-        boundary_groups = trimesh.grouping.group_rows(A.edges_sorted, require_count=1)
+        boundary_groups = trimesh.grouping.group_rows(
+            A.edges_sorted, require_count=1)
 
         boundary_edges = A.edges[boundary_groups]
 
@@ -474,23 +478,24 @@ class TMesh():
 
         newBoundary = trimesh.Trimesh(Q, T)
 
-        # newBoundary.fix_normals()
-
         finalmesh = A + newBoundary + B
 
-        finalmesh.fill_holes()
+        # finalmesh.fill_holes()
 
         finalmesh.fix_normals()
 
         fileName = os.getcwd().split(os.sep)[-1]
 
-        finalmesh.export(file_obj='solidify_smooth_' +
+        finalmesh.export(file_obj='solidify_raw_' +
                          fileName + '.stl', file_type='stl')
 
-        print("\nExport " + '\x1b[0;35;40m' + "solidify_raw_" +
+        print("Export " + '\x1b[0;35;40m' + "solidify_raw_" +
               fileName + ".stl" + '\x1b[0m' + " successfully")
 
     def solidify_smooth(self):
+
+        print('\n' + '\x1b[0;34;40m' +
+              'Solidiying smooth STL surface...' + '\x1b[0m')
 
         points = extract_points(self)
 
@@ -566,8 +571,7 @@ class TMesh():
 
         finalmesh = A + newBoundary + B
 
-        finalmesh.fill_holes()
-
+        # finalmesh.fill_holes()
         finalmesh.fix_normals()
 
         fileName = os.getcwd().split(os.sep)[-1]
@@ -575,7 +579,7 @@ class TMesh():
         finalmesh.export(file_obj='solidify_smooth_' +
                          fileName + '.stl', file_type='stl')
 
-        print("\nExport " + '\x1b[0;35;40m' + "solidify_smooth_" +
+        print("Export " + '\x1b[0;35;40m' + "solidify_smooth_" +
               fileName + ".stl" + '\x1b[0m' + " successfully")
 
 
@@ -594,33 +598,32 @@ def extract_points(self):
     return points
 
 
-def raw(data=None):
-    """ Create a TMesh object and export raw surface """
+def stl_raw(data=None):
+    """ Create a TMesh object and export raw surface STL"""
 
     surface = TMesh(data)
-    surface.raw()
+    surface.stl_raw()
 
 
-def smooth(data=None):
-    """ Create a TMesh object and export smooth surface """
+def stl_smooth(data=None):
+    """ Create a TMesh object and export smooth surface STL"""
 
     surface = TMesh(data)
-    surface.smooth()
+    surface.stl_smooth()
 
 
 def solidify_raw(data=None):
-    """ Create a TMesh object and export smooth surface """
+    """ Create a TMesh object and solidify raw surface STL"""
 
     surface = TMesh(data)
     surface.solidify_raw()
 
 
 def solidify_smooth(data=None):
-    """ Create a TMesh object and export smooth surface """
+    """ Create a TMesh object and solidify smooth surface STL"""
 
     surface = TMesh(data)
     surface.solidify_smooth()
-
 
 
 # def solidify(data=None, totalDist=0.1, offset=0):
