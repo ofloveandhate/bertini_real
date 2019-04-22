@@ -203,7 +203,6 @@ def _make_colors(points, cmap, color_function):
     colors = []
     data = []
 
-    # run data through specified color function
     if color_function is None:
         for i in range(len(points)):
             function_result = default_color_function(points[i][0],
@@ -223,8 +222,6 @@ def _make_colors(points, cmap, color_function):
     temp = data - min(data)
     data = temp / max(temp)
 
-    # finally, run that data through the mpl.pyplot colormap function
-    # and receive our rgb values
     colors = cmap(data)
 
     return colors
@@ -256,7 +253,6 @@ def extract_curve_points(data):
         :param data: The decomposition that we are rendering.
         :rtype: List of lists containing tuples of length 3.
     """
-    # TODO try using NaN's that are built into numpy
     # TODO turn all lists into numpy arrays, mainly for consistency and speed
 
     points = []
