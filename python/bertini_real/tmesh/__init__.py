@@ -2,11 +2,11 @@
 Foong Min Wong
 University of Wisconsin, Eau Claire
 Fall 2018 - Spring 2019
-Implementing raw and smooth stereolithography (STL) surface export feature for Bertini_real
+Raw and smooth stereolithography (STL) surface export & solidify feature for Bertini_real
 
 .. module:: tmesh
     :platform: Unix, Windows
-    :synopsis: The tmesh uses Trimesh for raw/smooth STL export and normal fixing.
+    :synopsis: The tmesh uses Trimesh to export and solidify raw/smooth STL and normal fixing.
 
 """
 import bertini_real
@@ -15,16 +15,19 @@ import math
 import numpy as np
 import os
 import trimesh
-from itertools import chain
 
 
 class ReversableList(list):
-    """ Create a ReversableList object for reversing order of data """
+    """ Create a ReversableList object for reversing order of data 
+
+        Args:
+            list: The list to be read.
+    """
 
     def reverse(self):
-        """ A reverse function for raw surface data
+        """ Reverse function for raw surface data
 
-        Returns a reversed list
+        Returns A reversed list
         """
         return list(reversed(self))
 
@@ -46,7 +49,7 @@ class TMesh():
             self.decomposition = data
 
     def stl_raw(self):
-        """ Export raw decomposition of surfaces"""
+        """ Export raw decomposition of surfaces to STL """
 
         print('\n' + '\x1b[0;34;40m' +
               'Generating raw STL surface...' + '\x1b[0m')
@@ -103,10 +106,6 @@ class TMesh():
                             if(surf.singular_names[zz] == face['system top']):
                                 curr_edge = surf.singular_curves[
                                     zz].edges[face['top']]
-
-                    # print(curr_edge)
-                    # print(curr_edge[0],curr_edge[1],curr_edge[2])
-                    # print(type(curr_edge))
 
                     if(curr_edge == -10):
                         continue
@@ -228,6 +227,7 @@ class TMesh():
               fileName + ".stl" + '\x1b[0m' + " successfully")
 
     def stl_smooth(self):
+        """ Export smooth decomposition of surfaces to STL """
 
         print('\n' + '\x1b[0;34;40m' +
               'Generating smooth STL surface...' + '\x1b[0m')
@@ -264,6 +264,7 @@ class TMesh():
               fileName + ".stl" + '\x1b[0m' + " successfully")
 
     def solidify_raw(self):
+        """ Solidify raw version of STL """
 
         print('\n' + '\x1b[0;34;40m' +
               'Solidiying raw STL surface...' + '\x1b[0m')
@@ -471,16 +472,11 @@ class TMesh():
                 T.append(t1)
                 T.append(t2)
 
-#--------------------------------------------------------------------------------------------------------------------------------------------------#
-# Export stl
-
         Q = np.concatenate((A.vertices, B.vertices), axis=0)
 
         newBoundary = trimesh.Trimesh(Q, T)
 
         finalmesh = A + newBoundary + B
-
-        # finalmesh.fill_holes()
 
         finalmesh.fix_normals()
 
@@ -493,6 +489,7 @@ class TMesh():
               fileName + ".stl" + '\x1b[0m' + " successfully")
 
     def solidify_smooth(self):
+        """ Solidify smooth version of STL """
 
         print('\n' + '\x1b[0;34;40m' +
               'Solidiying smooth STL surface...' + '\x1b[0m')
@@ -542,9 +539,6 @@ class TMesh():
         B.vertices = [v + vn * distB for v,
                       vn in zip(B.vertices, B.vertex_normals)]
 
-        # [[x,x,x],[0],[1]]
-        sphere_curve = self.decomposition.surface.sphere_curve.sampler_data
-
         numVerts = len(A.vertices)
 
         T = []
@@ -562,16 +556,12 @@ class TMesh():
                 T.append(t1)
                 T.append(t2)
 
-#--------------------------------------------------------------------------------------------------------------------------------------------------#
-# Export stl
-
         Q = np.concatenate((A.vertices, B.vertices), axis=0)
 
         newBoundary = trimesh.Trimesh(Q, T)
 
         finalmesh = A + newBoundary + B
 
-        # finalmesh.fill_holes()
         finalmesh.fix_normals()
 
         fileName = os.getcwd().split(os.sep)[-1]
@@ -584,7 +574,12 @@ class TMesh():
 
 
 def extract_points(self):
-    """ Extract points from vertices """
+    """ Helper method for plot_surface_samples()
+        Extract points from vertices
+
+        :param data: The decomposition that we are rendering.
+        :rtype: List of tuples of length 3.
+    """
 
     points = []
 
@@ -599,28 +594,40 @@ def extract_points(self):
 
 
 def stl_raw(data=None):
-    """ Create a TMesh object and export raw surface STL"""
+    """ Create a TMesh object and export raw surface STL
+
+       :param data: The decomposition that we are rendering.
+    """
 
     surface = TMesh(data)
     surface.stl_raw()
 
 
 def stl_smooth(data=None):
-    """ Create a TMesh object and export smooth surface STL"""
+    """ Create a TMesh object and export smooth surface STL
+
+        :param data: The decomposition that we are rendering.
+    """
 
     surface = TMesh(data)
     surface.stl_smooth()
 
 
 def solidify_raw(data=None):
-    """ Create a TMesh object and solidify raw surface STL"""
+    """ Create a TMesh object and solidify raw surface STL
+
+        :param data: The decomposition that we are rendering.
+    """
 
     surface = TMesh(data)
     surface.solidify_raw()
 
 
 def solidify_smooth(data=None):
-    """ Create a TMesh object and solidify smooth surface STL"""
+    """ Create a TMesh object and solidify smooth surface STL
+
+        :param data: The decomposition that we are rendering.
+    """
 
     surface = TMesh(data)
     surface.solidify_smooth()
