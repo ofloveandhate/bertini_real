@@ -13,6 +13,12 @@
 # University of Wisconsin, Eau Claire
 # Fall 2018
 
+"""
+This module is most likely depreciated as we can now plot surfaces
+using glumpy. Code is still useful for referencing though, as well as plotting
+raw surfaces
+"""
+
 import os
 from bertini_real.data import BRData
 from bertini_real.surface import Surface, Curve
@@ -20,16 +26,13 @@ import bertini_real.util
 import dill
 import numpy as np
 import matplotlib
-# import openmesh as om
 from stl import mesh
 import trimesh
 # change backend with this line, if desired
 # matplotlib.use('macosx')
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from matplotlib.widgets import CheckButtons
-from matplotlib.widgets import Button
 
 # print("using {} backend".format(matplotlib.get_backend()))
 
@@ -61,7 +64,8 @@ class Options(object):
 class ReversableList(list):
     def reverse(self):
         return list(reversed(self))
-    
+
+
 class Plotter(object):
     def __init__(self, data=None, options=Options()):
 
@@ -79,19 +83,14 @@ class Plotter(object):
 
         self.make_figure()
         self.make_axes()
-
         self.main()
-
         self.label_axes()
 
         # I would love to move this to its own method, but I
         # don't think that is possible with the limiations of
         # matplotlib
 
-        # can this be done with async??
-
         # Create our check boxes
-
         # These four coordinates specify the position of the checkboxes
         rax = plt.axes([0.05, 0.4, 0.2, 0.15])
         check = CheckButtons(rax, ('Vertices', 'Surface', 'Raw Surface', 'STL'),
@@ -163,7 +162,7 @@ class Plotter(object):
         # todo: these should be set from the decomposition, not assumed to be x,y,z
         self.ax.set_xlabel("x")
         self.ax.set_ylabel("y")
-        if self.decomposition.dimension is 2:
+        if self.decomposition.dimension == 2:
             self.ax.set_zlabel("z")
 
     '''
@@ -171,7 +170,6 @@ class Plotter(object):
 
 	todo: make them colored based on a function
 	'''
-
     def plot_vertices(self):
 
         # refactored version
@@ -200,19 +198,14 @@ class Plotter(object):
 
         return xs, ys, zs
 
-    # would this be a better implementation than make_xyz???
-    # returns one list
-
     def extract_points(self):
         points = []
 
-        # get this from plot_samples.py
         for v in self.decomposition.vertices:
             # allocate 3 buckets to q
             q = [None] * 3
 
             for i in range(3):
-                # q[0],q[1],q[2]
                 q[i] = v['point'][i].real
             points.append(q)
 
@@ -261,12 +254,11 @@ class Plotter(object):
                     zs.append(v['point'][2].real)
 
             if self.decomposition.num_variables == 2:
-                self.ax.plot(xs, ys, c=color)  # v['point'][
+                self.ax.plot(xs, ys, c=color)
             else:
-                self.ax.plot(xs, ys, zs, zdir='z', c=color)  # v['point']
+                self.ax.plot(xs, ys, zs, zdir='z', c=color)
 
     def plot_edge_samples(self):
-
         num_nondegen_edges = len(self.nondegen)
 
         colormap = self.options.style.colormap
@@ -319,16 +311,11 @@ class Plotter(object):
 
         color_list = [colormap(i) for i in np.linspace(0, 1, len(faces))]
 
-        # print(color_list)
-        # print(len(color_list))
-
         for i in range(len(faces)):
 
             color = color_list[i]
 
-            # Initialize T here
             T = []
-
             for tri in faces[i]:
                 f = int(tri[0])
                 s = int(tri[1])
@@ -341,14 +328,13 @@ class Plotter(object):
             self.ax.add_collection3d(Poly3DCollection(T, facecolors=color))
             self.ax.autoscale_view()
 
-
     def fvtostl(self):
         points = self.points
         faces = self.decomposition.surface.surface_sampler_data
 
         # add vertex and surface to mesh
         vertex = []
-        
+
         for p in points:
             vertex.append(p)
 
@@ -356,17 +342,18 @@ class Plotter(object):
 
         face = []
 
-        for f in faces: # for each face
-            for tri in f: # for triangle in face
-                face.append([tri[0],tri[1],tri[2]])
+        for f in faces:  # for each face
+            for tri in f:  # for triangle in face
+                face.append([tri[0], tri[1], tri[2]])
 
         face_np_array = np.array(face)
- 
-        obj = mesh.Mesh(np.zeros(face_np_array.shape[0], dtype=mesh.Mesh.dtype))
+
+        obj = mesh.Mesh(
+            np.zeros(face_np_array.shape[0], dtype=mesh.Mesh.dtype))
 
         for i, f in enumerate(face_np_array):
             for j in range(3):
-                obj.vectors[i][j] = vertex_np_array[f[j],:]
+                obj.vectors[i][j] = vertex_np_array[f[j], :]
 
         # get object filename
         fileName = os.getcwd().split(os.sep)[-1]
@@ -381,9 +368,8 @@ class Plotter(object):
             normmesh.visual.face_colors[facet] = trimesh.visual.random_color()
 
         # normmesh.show()
-        
-        normmesh.export(file_obj='anorm' + fileName + '.stl', file_type='stl')
 
+        normmesh.export(file_obj='anorm' + fileName + '.stl', file_type='stl')
 
         print("Export successfully")
 
@@ -391,7 +377,6 @@ class Plotter(object):
         points = self.points
         surf = self.decomposition.surface
         which_faces = self.options.visibility.which_faces
-
 
         # store number of faces to num_faces
         num_faces = surf.num_faces
@@ -407,7 +392,8 @@ class Plotter(object):
         num_total_faces = 0
         for ii in range(len(which_faces)):
             curr_face = surf.faces[which_faces[ii]]
-            num_total_faces = num_total_faces + 2 *(curr_face['num left'] + curr_face['num right'] + 2)
+            num_total_faces = num_total_faces + 2 * \
+                (curr_face['num left'] + curr_face['num right'] + 2)
         num_total_faces = num_total_faces * 2
         total_face_index = 0
 
@@ -424,7 +410,7 @@ class Plotter(object):
             T = []
 
             while 1:
-                ## top edge ##
+                # top edge
                 if case == 1:
                     # print('top')
                     case += 1
@@ -440,7 +426,7 @@ class Plotter(object):
                         for zz in range(len(surf.singular_curves)):
                             if(surf.singular_names[zz] == face['system top']):
                                 curr_edge = surf.singular_curves[zz].edges[face['top']]
-                     # print(curr_edge)
+                    # print(curr_edge)
                     if (curr_edge[0] < 0 and curr_edge[1] < 0 and curr_edge[2] < 0):
                         continue
 
@@ -448,8 +434,7 @@ class Plotter(object):
                     curr_edge = ReversableList(curr_edge)
                     curr_edge = curr_edge.reverse()
 
-
-                ## bottom edge ##
+                # bottom edge
                 elif case == 2:
                     # print('bottom')
                     case += 1
@@ -469,7 +454,7 @@ class Plotter(object):
                     if (curr_edge[0] < 0 and curr_edge[1] < 0 and curr_edge[2] < 0):
                         continue
 
-                ## left edge ##
+                # left edge
                 elif case == 3:
                     # print('left')
                     if left_edge_counter < face['num left']:
@@ -487,7 +472,7 @@ class Plotter(object):
                         case = case + 1
                         continue
 
-                ## right edge ##
+                # right edge
                 elif case == 4:
                     # print('right')
                     if right_edge_counter < face['num right']:
@@ -507,18 +492,17 @@ class Plotter(object):
                         case += 1
                         continue
 
-                ## last case ##
+                # last case
                 elif case == 5:
                     break
 
                 # make two triangles , use the midpoint (swap the values for k)
                 t1 = [points[curr_edge[0]], points[curr_edge[1]],
-                          points[face['midpoint']]]
+                      points[face['midpoint']]]
                 t2 = [points[curr_edge[1]], points[curr_edge[2]],
-                          points[face['midpoint']]]
+                      points[face['midpoint']]]
 
-
-            # while loop end heree
+            # while loop end here
                 # store them into objs, stl writing
                 # br_plotter.fv.faces(total_face_index,:) = t1;
                 # br_plotter.fv.faces(total_face_index+1,:) = t2;
