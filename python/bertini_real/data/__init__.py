@@ -52,7 +52,6 @@ class BRData(object):
 
         print("gathering data from " + self.directory)
         self.dimension = int(self.directory_info[2])
-        # gather vertices
         self.gather_vertices()
         if self.dimension == 1:
             # polynomial is a curve
@@ -71,14 +70,12 @@ class BRData(object):
 
     def gather_vertices(self):
         vertex_file_name = "V.vertex"
-        # print self.directory
         if os.path.isfile("%s/V_samp.vertex" % self.directory):
             vertex_file_name = "V_samp.vertex"
 
-        # open vertex file and read data from file in read mode
         with open("%s/%s" % (self.directory, vertex_file_name), 'r') as f:
             # read first line and get number of vertices, number of projections,
-            # number of natural vars,and number of file names
+            # number of natural vars, and number of file names
             line = f.readline().split(' ')
             self.num_vertices = int(line[0])
             num_projections = int(line[1])
@@ -91,13 +88,13 @@ class BRData(object):
                 skip_this_line = f.readline()
                 while skip_this_line == '\n':
                     skip_this_line = f.readline()
-            skip_line = f.readline()
+            _ = f.readline()
             if line == '\n':
-                skip_line = f.readline()
+                _ = f.readline()
 
             # Gets file names and stores them in self.filenames
             for ii in range(num_filenames):
-                skip_line = f.readline()
+                _ = f.readline()
                 self.filenames.append(f.readline().replace('\n', ''))
 
             self.vertices = [{} for i in range(self.num_vertices)]
@@ -131,8 +128,8 @@ class BRData(object):
                     real_part = float(complex_num[0])
                     imaginary_part = float(complex_num[1])
                     self.vertices[ii]['projection_value'].append(
-                                                        complex(real_part,
-                                                                imaginary_part))
+                        complex(real_part,
+                                imaginary_part))
 
                 line = f.readline().replace('\n', '')
 
@@ -150,7 +147,6 @@ class BRData(object):
         return
 
     def gather_surface(self, directory):
-        # creates new surface
         self.surface = Surface(directory)
 
     def gather_curve(self, directory):
@@ -185,13 +181,10 @@ def gather():
 
     fileName = "BRdata" + str(a) + ".pkl"
     fileObject = open(fileName, 'wb')
-    # file parsing
     b = BRData()
 
     print("saving to file " + fileName)
 
     import dill
-    # b is written to fileObject through dump function
     dill.dump(b, fileObject)
-    # closes the file
     fileObject.close()
