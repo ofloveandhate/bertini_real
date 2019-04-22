@@ -8,7 +8,6 @@ import bertini_real.glumpyplotter
 import bertini_real.numpystl
 
 
-
 def gather_and_plot():
-	bertini_real.data.gather()
-	return bertini_real.plot.plot()
+    bertini_real.data.gather()
+    return bertini_real.plot.plot()
