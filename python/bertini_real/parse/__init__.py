@@ -28,13 +28,12 @@ def parse_decomposition(directory):
 
     """
 
-    """
-	checks if path file is a directory
-	what does '/decomp' and '/r' do?
-	reads for input file name, input variables and dimensions
-	splits into two separate parts, separate integers
-	turns them into integers
-	"""
+    """ checks if path file is a directory
+    what does '/decomp' and '/r' do?
+    reads for input file name, input variables and dimensions
+    splits into two separate parts, separate integers
+    turns them into integers"""
+
     if not os.path.isfile(directory + '/decomp'):
         print("did not find decomp at %s" % os.getcwd())
         return {}
@@ -90,11 +89,11 @@ def parse_decomposition(directory):
             center.append(
                 complex(float(center_data[0]), float(center_data[1])))
         return {'input file name': inputFileName,
-				'Pi info': Pi,
-				'Patch Vectors': Patch_Vectors,
-				"radius": radius,
-				"center": center,
-				"num patches": num_patches}
+                'Pi info': Pi,
+                'Patch Vectors': Patch_Vectors,
+                "radius": radius,
+                "center": center,
+                "num patches": num_patches}
 
 # reads data from surf file, returns number of faces, edges, midpoint slices,
 # critical point singular_curve_multiplicites
@@ -103,7 +102,7 @@ def parse_decomposition(directory):
 
 def parse_Surf(directory):
     """ Reads data from S.Surf file
-    	Inputs: current directory """
+        Inputs: current directory """
 
     if not os.path.isfile(directory + '/S.surf'):
         print("S.surf does not exist in current directory: %s" % os.getcwd())
@@ -129,17 +128,17 @@ def parse_Surf(directory):
                 index += 1
 
     return [num_faces,
-			num_edges,
-			num_midpoint_slices,
-			num_critical_point_slices,
-			num_singular_curves,
-			singular_curve_multiplicites]
+            num_edges,
+            num_midpoint_slices,
+            num_critical_point_slices,
+            num_singular_curves,
+            singular_curve_multiplicites]
 
 
 def parse_Faces(directory):
     """ Reads Faces data from F.faces
-    	Inputs: current directory
-    	Returns: list with each element being a dictionary containing the face data
+        Inputs: current directory
+        Returns: list with each element being a dictionary containing the face data
             Keys for each dictionary:
                     "midpoint", "middle slice index", "top", "bottom"
                     "system top", "system bottom", "num left". "left"
