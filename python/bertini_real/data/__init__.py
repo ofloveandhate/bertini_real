@@ -47,7 +47,7 @@ class BRData(object):
         return str(self)
 
     def gather(self):
-        self.directory_info = bertini_real.parse.parse_directory_name()
+        self.directory_info = parse.parse_directory_name()
         self.find_directory(self.directory_info[0])
 
         print("gathering data from " + self.directory)
