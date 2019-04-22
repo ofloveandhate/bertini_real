@@ -1,6 +1,7 @@
 import bertini_real.parse
 import os
 
+
 class Decomposition(object):
 	def parse_decomp(self, directory):
 		decomposition_data = bertini_real.parse.parse_decomposition(directory)
@@ -14,7 +15,7 @@ class Decomposition(object):
 	def read_input(self, directory):
 		filename = directory + '/' + self.inputfilename
 		if not os.path.isfile(filename):
-			print("Could not find input file in current directory: %s" %(directory))
+			print("Could not find input file in current directory: %s" % (directory))
 		else:
 			with open(filename, 'r') as f:
 				self.input = f.read()
