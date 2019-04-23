@@ -2,14 +2,14 @@
 \section{Running Bertini\_real}
 \label{sec:running_br}
 
-Bertini\_real is called from the command line.   This is done simply by calling \texttt{bertini\_real} (or \texttt{bertini\_real.exe} for Cygwin users) from the command line. If the input file is called anything other than \texttt{input}, than the \texttt{-input} or \texttt{-i} option followed by the filename must be used. 
+Bertini\_real is called from the command line.   This is done simply by calling \texttt{bertini\_real} (or \texttt{bertini\_real.exe} for Cygwin users) from the command line. If the input file is called anything other than \texttt{input}, than the \texttt{-input} or \texttt{-i} option followed by the filename must be used.
 
 It is important to note that for Bertini\_real to run, the MATLAB executable must be on the path.
 
 
 Bertini\_real uses the tracker options for Bertini, which are set at the top of the input file, in the {\tt CONFIG} section.
 
-We suggest the following configuration options in the input file for Bertini\_real: 
+We suggest the following configuration options in the input file for Bertini\_real:
 \begin{itemize}
 \item {\tt sharpendigits} $\approx$ 30
 
@@ -17,7 +17,7 @@ helps keep regeneration start points on target, and helps identify points which 
 \end{itemize}
 
 
-Other options can improve performance and tighten up the produced decomposition. 
+Other options can improve performance and tighten up the produced decomposition.
 
 
 \subsection{Files Needed for Input}
@@ -31,8 +31,8 @@ There are a number of inline commands that can be used while running Bertini\_re
     X[1,c]	% option
     X[1,c]	% Modification options
     X[2,c]	% Command line appearance
-    X[2,c]}	% Description/definition		
- \\ 
+    X[2,c]}	% Description/definition
+ \\
 \caption{Bertini\_real command line options}\\
 \toprule
 \rowfont\bfseries
@@ -60,10 +60,12 @@ There are a number of inline commands that can be used while running Bertini\_re
 \texttt{-nomerge} or \texttt{-nm} & n/a & \texttt{bertini\_real -nm} & Indicates that Bertini\_real should not merge ends \\  \\ \hline \\
 \texttt{-output} or \texttt{-out} or \texttt{-o} & name of the output directory & \texttt{bertini\_real -out bertinir\_results} & Places the output files in a different directory \\  \\ \hline \\
 \texttt{-projection} or \texttt{-pi} or \texttt{-p} &  desired filename & \texttt{bertini\_real -p myprojection} & Indicator for whether to read the projection from a file, rather than randomly choose it \\  \\ \hline \\
+\textttt{-pycommand} or \texttt{-P} & how to call the Python3 library on your machine & \texttt{bertini\_real -P python3} & Indicate how Python should be called.  Default is 'python' \\   \\ \hline \\
 \texttt{-quick} or \texttt{-q} & n/a & \texttt{bertini\_real -q} & Solves problem quickly, but not as robust \\  \\ \hline \\
 \texttt{-veryquick} or \texttt{-vq} & n/a & \texttt{bertini\_real -vq} & Solves problem very quickly, but not as robust  \\  \\ \hline \\
 \texttt{-sphere} or \texttt{-s} & the name of the file for Bertini\_real to read & \texttt{bertini\_real -sphere mysphere} & Sets indicator that Bertini\_real should use sphere created by user rather than just compute sphere \\  \\ \hline \\
-\texttt{-verb} & the level of the verbosity & \texttt{bertini\_real -verb 2} & Shows or hides output text \\  \\ \hline \\ 
+\textttt{-symengine} or \texttt{-E} & choose the engine to run bertini\_real & \texttt{bertini\_real -E python} & select a symbolic engine.  choices are 'matlab' and 'python' \\   \\ \hline \\
+\texttt{-verb} & the level of the verbosity & \texttt{bertini\_real -verb 2} & Shows or hides output text \\  \\ \hline \\
 \texttt{-version} or \texttt{-v} & n/a & \texttt{bertini\_real -version} & Displays the version of Bertini\_real running on your computer \\  \\ \hline
 \end{longtabu}
 
@@ -87,7 +89,7 @@ Bertini\_real is parallel-enabled, using MPI (but not OpenMP or threads). To use
 \subsubsection{The user-defined projection, \texttt{pi}}
 \label{sec:pi}
 
-The {\tt pi} file, defining a specific projection to use for decomposing your curve or surface, has a simple format.  You indicate the number of variables, and then give the projection.  No punctuation or delimiters necessary.  
+The {\tt pi} file, defining a specific projection to use for decomposing your curve or surface, has a simple format.  You indicate the number of variables, and then give the projection.  No punctuation or delimiters necessary.
 
 Using a particular projection, contained in a file of arbitrary name, is indicated to Bertini\_real by passing the {\tt -pi} flag.  For example, {\tt bertini\_real -pi my\_projection}.
 
@@ -103,7 +105,7 @@ For decomposing surfaces, if you feel the need to supply your own projection, pl
 
 While Bertini\_real will happily compute a bounding sphere for you, containing all the interesting parts of your object, it may be very large, or kind of wonky in the case of some projections.  Hence, we allow the user to specify their sphere of interest by way of plain text file.
 
-The {\tt sphere} file allows the user to bound the space in which to decompose their object.  
+The {\tt sphere} file allows the user to bound the space in which to decompose their object.
 If there is a region of space you are interested in, you can compute your object inside a sphere of interest.
 
 To inform Bertini\_real that you are using your own sphere rather than the computed one, use the {\tt -sphere} flag.  For example, {\tt bertini\_real -sphere my\_sphere\_file}.  This generally will not speed up computation at all, since there's no way to know prior to point computation whether the endpoint will be in or out of the sphere.  All it will change is the bounded region.
