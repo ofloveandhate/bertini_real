@@ -20,14 +20,15 @@ import trimesh
 class ReversableList(list):
     """ Create a ReversableList object for reversing order of data 
 
-        Args:
-            list: The list to be read.
+        :param list: The list to be read.
+
     """
 
     def reverse(self):
         """ Reverse function for raw surface data
 
-        Returns A reversed list
+            :rtype: A reversed list
+
         """
         return list(reversed(self))
 
@@ -38,9 +39,7 @@ class TMesh():
     def __init__(self, data=None):
         """ Read data from disk
 
-            Args:
-                data: surface decomposition data
-
+           :param data: Surface decomposition data
         """
 
         if data is None:
@@ -577,7 +576,7 @@ def extract_points(self):
     """ Helper method for plot_surface_samples()
         Extract points from vertices
 
-        :param data: The decomposition that we are rendering.
+        :param data: Surface decomposition data
         :rtype: List of tuples of length 3.
     """
 
@@ -596,7 +595,7 @@ def extract_points(self):
 def stl_raw(data=None):
     """ Create a TMesh object and export raw surface STL
 
-       :param data: The decomposition that we are rendering.
+       :param data: Surface decomposition data
     """
 
     surface = TMesh(data)
@@ -606,7 +605,7 @@ def stl_raw(data=None):
 def stl_smooth(data=None):
     """ Create a TMesh object and export smooth surface STL
 
-        :param data: The decomposition that we are rendering.
+        :param data: Surface decomposition data
     """
 
     surface = TMesh(data)
@@ -616,7 +615,7 @@ def stl_smooth(data=None):
 def solidify_raw(data=None):
     """ Create a TMesh object and solidify raw surface STL
 
-        :param data: The decomposition that we are rendering.
+        :param data: Surface decomposition data
     """
 
     surface = TMesh(data)
@@ -626,7 +625,7 @@ def solidify_raw(data=None):
 def solidify_smooth(data=None):
     """ Create a TMesh object and solidify smooth surface STL
 
-        :param data: The decomposition that we are rendering.
+        :param data: Surface decomposition data
     """
 
     surface = TMesh(data)
