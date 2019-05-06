@@ -103,6 +103,12 @@ class GlumpyPlotter():
         entities, it should work as intended. There are examples in the glumpy
         docs which show how to plot separate objects, but implementing this
         with the current codebase seems messy...
+
+        5-6
+        I most likely will not be finishing this function
+        To whoever attempts this next: 
+            look into SegmentCollection on the glumpy docs, this is what the
+            creater, roguier, pointed me to.
         """
 
         data = self.decomposition
