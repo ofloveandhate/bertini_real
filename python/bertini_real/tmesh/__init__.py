@@ -2,7 +2,6 @@
 Foong Min Wong
 University of Wisconsin, Eau Claire
 Fall 2018 - Spring 2019
-Raw and smooth stereolithography (STL) surface export & solidify feature for Bertini_real
 
 .. module:: tmesh
     :platform: Unix, Windows
@@ -39,7 +38,7 @@ class TMesh():
     def __init__(self, data=None):
         """ Read data from disk
 
-           :param data: Surface decomposition data
+           :param data: Surface decomposition data. If data is None, then it reads the most recent BRData.pkl.
         """
 
         if data is None:
@@ -595,7 +594,7 @@ def extract_points(self):
 def stl_raw(data=None):
     """ Create a TMesh object and export raw surface STL
 
-       :param data: Surface decomposition data
+       :param data: Surface decomposition data. If data is None, then it reads the most recent BRData.pkl.
     """
 
     surface = TMesh(data)
@@ -605,7 +604,7 @@ def stl_raw(data=None):
 def stl_smooth(data=None):
     """ Create a TMesh object and export smooth surface STL
 
-        :param data: Surface decomposition data
+        :param data: Surface decomposition data. If data is None, then it reads the most recent BRData.pkl.
     """
 
     surface = TMesh(data)
@@ -615,7 +614,7 @@ def stl_smooth(data=None):
 def solidify_raw(data=None):
     """ Create a TMesh object and solidify raw surface STL
 
-        :param data: Surface decomposition data
+        :param data: Surface decomposition data. If data is None, then it reads the most recent BRData.pkl.
     """
 
     surface = TMesh(data)
@@ -625,7 +624,7 @@ def solidify_raw(data=None):
 def solidify_smooth(data=None):
     """ Create a TMesh object and solidify smooth surface STL
 
-        :param data: Surface decomposition data
+        :param data: Surface decomposition data. If data is None, then it reads the most recent BRData.pkl.
     """
 
     surface = TMesh(data)
