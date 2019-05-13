@@ -19,11 +19,13 @@ bertini_real-*.tar.gz
 
 *sublime-workspace
 
+*.swp
 
 
-partitionParse.c
 
-sampler
+partitionParse.c 
+
+sampler 
 !sampler/
 bertini_real
 !bertini_real/
@@ -35,7 +37,7 @@ documentation/latex
 
 *.cache*
 
-
+python/docs/_build/
 
 
 
@@ -70,3 +72,5 @@ ltversion*
 *.o
 *.lo
 *.o-*
+
+\.DS_Store

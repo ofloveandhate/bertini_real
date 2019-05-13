@@ -19,7 +19,6 @@ def next_filenumber():
     return highest_filenumber()+1
 
 
-
 def highest_filenumber():
     import fnmatch
     import os
