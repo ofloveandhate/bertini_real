@@ -606,11 +606,13 @@ def stl_smooth(data=None):
 
         :param data: Surface decomposition data. If data is None, then it reads the most recent BRData.pkl.
     """
+    try:
+        surface = TMesh(data)
+        surface.stl_smooth()
+    except:
+        print('\x1b[0;31;40m'+'Error running stl_smooth()! No samples found'+ '\x1b[0m')
 
-    surface = TMesh(data)
-    surface.stl_smooth()
-
-
+    
 def solidify_raw(data=None):
     """ Create a TMesh object and solidify raw surface STL
 
@@ -626,9 +628,11 @@ def solidify_smooth(data=None):
 
         :param data: Surface decomposition data. If data is None, then it reads the most recent BRData.pkl.
     """
-
-    surface = TMesh(data)
-    surface.solidify_smooth()
+    try:
+        surface = TMesh(data)
+        surface.solidify_smooth()
+    except:
+        print('\x1b[0;31;40m'+'Error running solidify_smooth()! No samples found'+ '\x1b[0m')
 
 
 # def solidify(data=None, totalDist=0.1, offset=0):
