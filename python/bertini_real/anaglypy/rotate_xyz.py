@@ -78,10 +78,10 @@ class Anaglyph():
         object_scale = object.scale
 
         # Scale them by z scale
-        object.scale = (object_scale[2], object_scale[2], object_scale[2])
+        object.scale = (object_scale[2]+0.2, object_scale[2]+0.2, object_scale[2]+0.2)
 
         # Rescale them (shoudl try ratio method?)
-        object.scale = (1.5, 1.5, 1.5)
+        # object.scale = (1.5, 1.5, 1.5)
 
         # go edit mode
         bpy.ops.object.mode_set(mode='EDIT')
