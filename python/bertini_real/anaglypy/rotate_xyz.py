@@ -130,7 +130,7 @@ class Anaglyph():
         # Retrieve filename
         fileName = os.getcwd().split(os.sep)[-1]
 
-        scene.render.filepath = "render/rotate_xyz_"
+        scene.render.filepath = "render/rotate_xyz_"+fileName+"_"
         scene.render.image_settings.file_format = "AVI_JPEG"
         bpy.ops.render.render(animation=True)
 
@@ -146,7 +146,6 @@ def create_movie(data=None):
 
 
 create_movie()
-
 
 bpy.ops.wm.quit_blender()
 
