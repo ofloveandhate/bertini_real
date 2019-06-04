@@ -26,7 +26,6 @@ import bertini_real.util
 import dill
 import numpy as np
 import matplotlib
-from stl import mesh
 import trimesh
 # change backend with this line, if desired
 # matplotlib.use('macosx')
@@ -38,12 +37,14 @@ from matplotlib.widgets import CheckButtons
 
 
 class StyleOptions(object):
+
     def __init__(self):
         self.line_thickness = 2  # there is no code using this yet.  write it.
         self.colormap = plt.cm.inferno
 
 
 class VisibilityOptions(object):
+
     def __init__(self):
         self.vertices = True
         self.samples = True
@@ -56,17 +57,20 @@ class VisibilityOptions(object):
 
 
 class Options(object):
+
     def __init__(self):
         self.style = StyleOptions()
         self.visibility = VisibilityOptions()
 
 
 class ReversableList(list):
+
     def reverse(self):
         return list(reversed(self))
 
 
 class Plotter(object):
+
     def __init__(self, data=None, options=Options()):
 
         if data is None:
@@ -115,12 +119,6 @@ class Plotter(object):
                     not self.options.visibility.samples)
                 self.ax.clear()
                 self.replot()
-            elif label == 'Raw Surface':
-                self.options.visibility.raw = (not self.options.visibility.raw)
-                self.ax.clear()
-                self.replot()
-            elif label == 'STL':
-                self.fvtostl()
 
             plt.draw()
         check.on_clicked(func)
@@ -159,7 +157,8 @@ class Plotter(object):
         self.apply_title()
 
     def label_axes(self):
-        # todo: these should be set from the decomposition, not assumed to be x,y,z
+        # todo: these should be set from the decomposition, not assumed to be
+        # x,y,z
         self.ax.set_xlabel("x")
         self.ax.set_ylabel("y")
         if self.decomposition.dimension == 2:
@@ -170,6 +169,7 @@ class Plotter(object):
 
 	todo: make them colored based on a function
 	'''
+
     def plot_vertices(self):
 
         # refactored version
@@ -324,193 +324,6 @@ class Plotter(object):
                 k = [points[f], points[s], points[t]]
 
                 T.append(k)
-
-            self.ax.add_collection3d(Poly3DCollection(T, facecolors=color))
-            self.ax.autoscale_view()
-
-    def fvtostl(self):
-        points = self.points
-        faces = self.decomposition.surface.surface_sampler_data
-
-        # add vertex and surface to mesh
-        vertex = []
-
-        for p in points:
-            vertex.append(p)
-
-        vertex_np_array = np.array(vertex)
-
-        face = []
-
-        for f in faces:  # for each face
-            for tri in f:  # for triangle in face
-                face.append([tri[0], tri[1], tri[2]])
-
-        face_np_array = np.array(face)
-
-        obj = mesh.Mesh(
-            np.zeros(face_np_array.shape[0], dtype=mesh.Mesh.dtype))
-
-        for i, f in enumerate(face_np_array):
-            for j in range(3):
-                obj.vectors[i][j] = vertex_np_array[f[j], :]
-
-        # get object filename
-        fileName = os.getcwd().split(os.sep)[-1]
-
-        obj.save('a' + fileName + '.stl')
-
-        normmesh = trimesh.load_mesh('a' + fileName + '.stl')
-
-        normmesh.fix_normals()
-
-        for facet in normmesh.facets:
-            normmesh.visual.face_colors[facet] = trimesh.visual.random_color()
-
-        # normmesh.show()
-
-        normmesh.export(file_obj='anorm' + fileName + '.stl', file_type='stl')
-
-        print("Export successfully")
-
-    def plot_surface_raw(self):
-        points = self.points
-        surf = self.decomposition.surface
-        which_faces = self.options.visibility.which_faces
-
-        # store number of faces to num_faces
-        num_faces = surf.num_faces
-
-        # check if which_faces is empty
-        if not len(which_faces):
-            which_faces = list(range(num_faces))
-
-        colormap = self.options.style.colormap
-        color_list = [colormap(i) for i in np.linspace(0, 1, len(which_faces))]
-
-        # get raw data from surface
-        num_total_faces = 0
-        for ii in range(len(which_faces)):
-            curr_face = surf.faces[which_faces[ii]]
-            num_total_faces = num_total_faces + 2 * \
-                (curr_face['num left'] + curr_face['num right'] + 2)
-        num_total_faces = num_total_faces * 2
-        total_face_index = 0
-
-        for cc in range(len(which_faces)):
-            color = color_list[cc]
-            ii = which_faces[cc]
-            face = surf.faces[ii]
-
-            if (face['middle slice index']) == -1:
-                continue
-            case = 1
-            left_edge_counter = 0
-            right_edge_counter = 0
-            T = []
-
-            while 1:
-                # top edge
-                if case == 1:
-                    # print('top')
-                    case += 1
-                    if face['top'] < 0:
-                        continue
-
-                    curr_edge = -10
-                    if(face['system top'] == 'input_critical_curve'):
-                        curr_edge = surf.critical_curve.edges[face['top']]
-                    elif(face['system top'] == 'input_surf_sphere'):
-                        curr_edge = surf.sphere_curve.edges[face['top']]
-                    else:
-                        for zz in range(len(surf.singular_curves)):
-                            if(surf.singular_names[zz] == face['system top']):
-                                curr_edge = surf.singular_curves[zz].edges[face['top']]
-                    # print(curr_edge)
-                    if (curr_edge[0] < 0 and curr_edge[1] < 0 and curr_edge[2] < 0):
-                        continue
-
-                    # reverse() returns None, so use ReversableList
-                    curr_edge = ReversableList(curr_edge)
-                    curr_edge = curr_edge.reverse()
-
-                # bottom edge
-                elif case == 2:
-                    # print('bottom')
-                    case += 1
-                    if face['bottom'] < 0:
-                        continue
-
-                    curr_edge = -10
-                    if(face['system bottom'] == 'input_critical_curve'):
-                        curr_edge = surf.critical_curve.edges[face['bottom']]
-                    elif(face['system bottom'] == 'input_surf_sphere'):
-                        curr_edge = surf.sphere_curve.edges[face['bottom']]
-                    else:
-                        for zz in range(len(surf.singular_curves)):
-                            if(surf.singular_names[zz] == face['system bottom']):
-                                curr_edge = surf.singular_curves[zz].edges[face['bottom']]
-
-                    if (curr_edge[0] < 0 and curr_edge[1] < 0 and curr_edge[2] < 0):
-                        continue
-
-                # left edge
-                elif case == 3:
-                    # print('left')
-                    if left_edge_counter < face['num left']:
-
-                        if face['left'][left_edge_counter] < 0:
-                            continue
-
-                        slice_ind = face['middle slice index']
-                        edge_ind = face['left'][left_edge_counter]
-
-                        curr_edge = surf.critical_point_slices[slice_ind].edges[edge_ind]
-                        left_edge_counter = left_edge_counter + 1  # increment
-
-                    else:
-                        case = case + 1
-                        continue
-
-                # right edge
-                elif case == 4:
-                    # print('right')
-                    if right_edge_counter < face['num right']:
-
-                        if face['right'][right_edge_counter] < 0:
-                            continue
-
-                        slice_ind = face['middle slice index'] + 1
-                        edge_ind = face['right'][right_edge_counter]
-                        curr_edge = surf.critical_point_slices[slice_ind].edges[edge_ind]
-                        right_edge_counter = right_edge_counter + 1  # increment
-
-                        curr_edge = ReversableList(curr_edge)
-                        curr_edge = curr_edge.reverse()
-
-                    else:
-                        case += 1
-                        continue
-
-                # last case
-                elif case == 5:
-                    break
-
-                # make two triangles , use the midpoint (swap the values for k)
-                t1 = [points[curr_edge[0]], points[curr_edge[1]],
-                      points[face['midpoint']]]
-                t2 = [points[curr_edge[1]], points[curr_edge[2]],
-                      points[face['midpoint']]]
-
-            # while loop end here
-                # store them into objs, stl writing
-                # br_plotter.fv.faces(total_face_index,:) = t1;
-                # br_plotter.fv.faces(total_face_index+1,:) = t2;
-
-                # k = [points[curr_edge[0]], points[curr_edge[1]], points[curr_edge[2]]]
-                # T.append(k)
-                T.append(t1)
-                T.append(t2)
 
             self.ax.add_collection3d(Poly3DCollection(T, facecolors=color))
             self.ax.autoscale_view()
