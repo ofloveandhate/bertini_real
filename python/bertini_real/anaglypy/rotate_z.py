@@ -11,6 +11,9 @@ bpy.ops.object.select_by_type(type=item)
 bpy.ops.object.delete()
 bpy.context.scene.render.use_overwrite = False
 
+# Retrieve filename
+fileName = os.getcwd().split(os.sep)[-1]
+
 
 def extract_points(self):
     points = []
@@ -23,6 +26,7 @@ def extract_points(self):
         points.append(q)
 
     return points
+
 
 class Anaglyph():
 
@@ -48,9 +52,6 @@ class Anaglyph():
         return vertex, faces
 
     def generate_obj_scene(self, vertex, faces):
-
-        # Retrieve filename
-        fileName = os.getcwd().split(os.sep)[-1]
 
         # Define mesh and object's name
         mesh = bpy.data.meshes.new(fileName)
@@ -81,7 +82,8 @@ class Anaglyph():
         object.scale = (object_scale[2], object_scale[2], object_scale[2])
 
         # Rescale them (should try ratio method?)
-        object.scale = (object_scale[2]+0.2, object_scale[2]+0.2, object_scale[2]+0.2)
+        object.scale = (object_scale[2] + 0.2,
+                        object_scale[2] + 0.2, object_scale[2] + 0.2)
 
         # go edit mode
         bpy.ops.object.mode_set(mode='EDIT')
@@ -107,26 +109,30 @@ class Anaglyph():
         return object, scene
 
     def rotate_z(self, object, scene):
-        object.rotation_mode = 'XYZ'
-        scene.frame_start = 1
-        scene.frame_end = 100
+        # object.rotation_mode = 'XYZ'
 
-        object.rotation_euler = (0, 0, 0)
-        object.keyframe_insert('rotation_euler', index=2, frame=1)
+        scene.frame_start = 0
+        scene.frame_end = 200
 
-        object.rotation_euler = (0, 0, math.radians(180))
-        object.keyframe_insert('rotation_euler', index=2, frame=100)
+        # rotate nothing
+        object.rotation_euler = (0.0, 0.0, 0.0)
+        object.keyframe_insert(data_path='rotation_euler', frame=0)
 
-        # Retrieve filename
-        fileName = os.getcwd().split(os.sep)[-1]
+        # rotate at the z-axis
+        object.rotation_euler = (0, 0, math.pi)
+        object.keyframe_insert(data_path='rotation_euler', frame=100)
 
-        scene.render.filepath = "render/rotate_z_"+fileName+"_"
+        # rotate at the z-axis
+        object.rotation_euler = (0, 0, math.pi * 2)
+        object.keyframe_insert(data_path='rotation_euler', frame=200)
+
+        scene.render.filepath = "render/" + fileName + "_rotate_z"
         scene.render.image_settings.file_format = "AVI_JPEG"
 
         bpy.ops.render.render(animation=True)
 
         print("Export " + '\x1b[0;33;40m' + "Anaglyph 3D " + '\x1b[0m' +
-              '\x1b[0;35;40m' + fileName + '\x1b[0m' + " successfully")
+              '\x1b[0;35;40m' + fileName + "_rotate_z.avi" + '\x1b[0m' + " successfully")
 
 
 def create_movie(data=None):
@@ -138,5 +144,8 @@ def create_movie(data=None):
 
 create_movie()
 
-bpy.ops.wm.quit_blender()
+bpy.ops.wm.save_as_mainfile(
+    filepath=os.getcwd() + "/render/" + fileName + "_rotate_z.blend")
 
+print("Done saving " + '\x1b[0;35;40m' +
+      fileName + "_rotate_z.blend " + '\x1b[0m' + " successfully")

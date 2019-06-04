@@ -10,6 +10,9 @@ bpy.ops.object.select_all(action='DESELECT')
 bpy.ops.object.select_by_type(type=item)
 bpy.ops.object.delete()
 
+# Retrieve filename
+fileName = os.getcwd().split(os.sep)[-1]
+
 
 def extract_points(self):
     points = []
@@ -49,9 +52,6 @@ class Anaglyph():
 
     def generate_obj_scene(self, vertex, faces):
 
-        # Retrieve filename
-        fileName = os.getcwd().split(os.sep)[-1]
-
         # Define mesh and object's name
         mesh = bpy.data.meshes.new(fileName)
         object = bpy.data.objects.new(fileName, mesh)
@@ -78,7 +78,8 @@ class Anaglyph():
         object_scale = object.scale
 
         # Scale them by z scale
-        object.scale = (object_scale[2]+0.2, object_scale[2]+0.2, object_scale[2]+0.2)
+        object.scale = (object_scale[2] + 0.2,
+                        object_scale[2] + 0.2, object_scale[2] + 0.2)
 
         # Rescale them (shoudl try ratio method?)
         # object.scale = (1.5, 1.5, 1.5)
@@ -127,15 +128,12 @@ class Anaglyph():
         object.rotation_euler = (math.pi * 2, math.pi * 2, math.pi * 2)
         object.keyframe_insert(data_path='rotation_euler', frame=300)
 
-        # Retrieve filename
-        fileName = os.getcwd().split(os.sep)[-1]
-
-        scene.render.filepath = "render/rotate_xyz_"+fileName+"_"
+        scene.render.filepath = "render/" + fileName + "_rotate_xyz"
         scene.render.image_settings.file_format = "AVI_JPEG"
         bpy.ops.render.render(animation=True)
 
         print("Export " + '\x1b[0;33;40m' + "Anaglyph 3D " + '\x1b[0m' +
-              '\x1b[0;35;40m' + fileName + '\x1b[0m' + " successfully")
+              '\x1b[0;35;40m' + fileName + "_rotate_xyz.avi" + '\x1b[0m' + " successfully")
 
 
 def create_movie(data=None):
@@ -147,5 +145,8 @@ def create_movie(data=None):
 
 create_movie()
 
-bpy.ops.wm.quit_blender()
+bpy.ops.wm.save_as_mainfile(
+    filepath=os.getcwd() + "/render/" + fileName + "_rotate_xyz.blend")
 
+print("Done saving " + '\x1b[0;35;40m' +
+      fileName + "_rotate_xyz.blend " + '\x1b[0m' + " successfully")
