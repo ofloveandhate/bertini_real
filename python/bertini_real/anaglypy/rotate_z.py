@@ -69,21 +69,19 @@ class Anaglyph():
         # bpy.context.scene.objects.active = object
 
         # Retrieve object dimensions
-        object_dimensions = object.dimensions
+        # object_dimensions = object.dimensions
 
         # Resize/ Scale object
-        bpy.context.object.dimensions = object.dimensions[
-            0], object.dimensions[1], 1.5  # resize z to 1.5
+        # bpy.context.object.dimensions = object.dimensions[0], object.dimensions[1], 1.5  # resize z to 1.5
 
         # Grab the current object scale
         object_scale = object.scale
 
         # Scale them by z scale
-        object.scale = (object_scale[2], object_scale[2], object_scale[2])
+        # object.scale = (object_scale[2], object_scale[2], object_scale[2])
 
         # Rescale them (should try ratio method?)
-        object.scale = (object_scale[2] + 0.2,
-                        object_scale[2] + 0.2, object_scale[2] + 0.2)
+        # object.scale = (object_scale[2] + 0.2, object_scale[2] + 0.2, object_scale[2] + 0.2)
 
         # go edit mode
         bpy.ops.object.mode_set(mode='EDIT')
