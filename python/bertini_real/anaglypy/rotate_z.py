@@ -84,16 +84,16 @@ class Anaglyph():
         # object.scale = (object_scale[2] + 0.2, object_scale[2] + 0.2, object_scale[2] + 0.2)
 
         # go edit mode
-        bpy.ops.object.mode_set(mode='EDIT')
+        # bpy.ops.object.mode_set(mode='EDIT')
 
         # select all faces
-        bpy.ops.mesh.select_all(action='SELECT')
+        # bpy.ops.mesh.select_all(action='SELECT')
 
         # recalculate outside normals
-        bpy.ops.mesh.normals_make_consistent(inside=False)
+        # bpy.ops.mesh.normals_make_consistent(inside=False)
 
         # go object mode again
-        bpy.ops.object.editmode_toggle()
+        # bpy.ops.object.editmode_toggle()
 
         context = bpy.context
         scene = context.scene
