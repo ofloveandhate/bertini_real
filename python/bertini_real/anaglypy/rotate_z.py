@@ -59,7 +59,7 @@ class Anaglyph():
 
         # Set location and scene of object
         object.location = bpy.context.scene.cursor.location
-        bpy.context.scene.objects.link(object)
+        bpy.context.scene.collection.objects.link(object)
 
         # Create mesh (error here, it works)
         mesh.from_pydata(vertex, [], faces)
