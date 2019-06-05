@@ -66,7 +66,7 @@ class Anaglyph():
         mesh.update()
 
         # Make object active
-        bpy.context.scene.collection.objects.active = object
+        # bpy.context.scene.objects.active = object
 
         # Retrieve object dimensions
         object_dimensions = object.dimensions
