@@ -16,6 +16,12 @@ fileName = os.getcwd().split(os.sep)[-1]
 
 
 def extract_points(self):
+    """ Helper method for plot_surface_samples()
+        Extract points from vertices
+
+        :param data: Surface decomposition data
+        :rtype: List of tuples of length 3.
+    """
     points = []
 
     for v in self.decomposition.vertices:
@@ -66,34 +72,36 @@ class Anaglyph():
         mesh.update()
 
         # Make object active
-        # bpy.context.scene.objects.active = object
+        bpy.context.view_layer.objects.active = object
 
         # Retrieve object dimensions
-        # object_dimensions = object.dimensions
+        object_dimensions = object.dimensions
 
         # Resize/ Scale object
-        # bpy.context.object.dimensions = object.dimensions[0], object.dimensions[1], 1.5  # resize z to 1.5
+        bpy.context.object.dimensions = object.dimensions[
+            0], object.dimensions[1], 1.5  # resize z to 1.5
 
         # Grab the current object scale
         object_scale = object.scale
 
         # Scale them by z scale
-        # object.scale = (object_scale[2], object_scale[2], object_scale[2])
+        object.scale = (object_scale[2], object_scale[2], object_scale[2])
 
         # Rescale them (should try ratio method?)
-        # object.scale = (object_scale[2] + 0.2, object_scale[2] + 0.2, object_scale[2] + 0.2)
+        object.scale = (object_scale[2] + 0.2,
+                        object_scale[2] + 0.2, object_scale[2] + 0.2)
 
         # go edit mode
-        # bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.object.mode_set(mode='EDIT')
 
         # select all faces
-        # bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.mesh.select_all(action='SELECT')
 
         # recalculate outside normals
-        # bpy.ops.mesh.normals_make_consistent(inside=False)
+        bpy.ops.mesh.normals_make_consistent(inside=False)
 
         # go object mode again
-        # bpy.ops.object.editmode_toggle()
+        bpy.ops.object.editmode_toggle()
 
         context = bpy.context
         scene = context.scene
@@ -124,6 +132,7 @@ class Anaglyph():
         object.rotation_euler = (0, 0, math.pi * 2)
         object.keyframe_insert(data_path='rotation_euler', frame=200)
 
+        scene.render.resolution_percentage = 80
         scene.render.filepath = "render/" + fileName + "_rotate_z"
         scene.render.image_settings.file_format = "AVI_JPEG"
 
@@ -147,3 +156,7 @@ bpy.ops.wm.save_as_mainfile(
 
 print("Done saving " + '\x1b[0;35;40m' +
       fileName + "_rotate_z.blend " + '\x1b[0m' + " successfully")
+
+
+bpy.ops.wm.quit_blender()
+bpy.ops.wm.window_close()
