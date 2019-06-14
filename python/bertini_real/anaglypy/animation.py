@@ -33,6 +33,20 @@ class ReversableList(list):
         return list(reversed(self))
 
 
+def user_pick(options):
+    print("Please choose:")
+    for idx, element in enumerate(options):
+        print("{}) {}".format(idx + 1, element))
+    i = input("Enter number: ")
+    print("\n")
+    try:
+        if 0 < int(i) <= len(options):
+            return int(i)
+    except:
+        pass
+    return None
+
+
 def extract_points(self):
     """ Helper method for plot_surface_samples()
         Extract points from vertices
@@ -287,11 +301,125 @@ class Anaglyph():
 
         return object, scene
 
+    def generate_multi_obj_scene(self, vertex, faces):
+
+        # Define mesh and object's name
+        mesh = bpy.data.meshes.new(fileName)
+        object = bpy.data.objects.new(fileName, mesh)
+
+        # Set location and scene of object
+        object.location = bpy.context.scene.cursor.location
+        bpy.context.scene.collection.objects.link(object)
+
+        # Create mesh (error here, it works)
+        mesh.from_pydata(vertex, [], faces)
+        mesh.update()
+
+        # Make object active
+        bpy.context.view_layer.objects.active = object
+
+        # Retrieve object dimensions
+        object_dimensions = object.dimensions
+
+        # Resize/ Scale object
+        bpy.context.object.dimensions = object.dimensions[
+            0], object.dimensions[1], 1.0  # resize z to 1.0
+
+        # Grab the current object scale
+        object_scale = object.scale
+
+        # Scale them by z scale
+        object.scale = (object_scale[2], object_scale[2], object_scale[2])
+
+        # Rescale them (should try ratio method?)
+        object.scale = (object_scale[2] + 0.1,
+                        object_scale[2] + 0.1, object_scale[2] + 0.1)
+
+        # go edit mode
+        bpy.ops.object.mode_set(mode='EDIT')
+
+        # select all faces
+        bpy.ops.mesh.select_all(action='SELECT')
+
+        # recalculate outside normals
+        bpy.ops.mesh.normals_make_consistent(inside=False)
+
+        object1 = bpy.data.objects.new(object.name, object.data.copy())
+
+        # adds the object to the active scene
+        bpy.context.collection.objects.link(object1)
+
+        # Make object active
+        bpy.context.view_layer.objects.active = object1
+
+        # Retrieve object dimensions
+        object1_dimensions = object1.dimensions
+
+        # Resize/ Scale object
+        bpy.context.object.dimensions = object.dimensions[
+            0], object.dimensions[1], 1.0  # resize z to 1.0
+
+        # Grab the current object scale
+        object1_scale = object1.scale
+
+        # Scale them by z scale
+        object1.scale = (object1_scale[2], object1_scale[2], object1_scale[2])
+
+        # Rescale them (should try ratio method?)
+        object1.scale = (object1_scale[2] + 0.1,
+                         object1_scale[2] + 0.1, object1_scale[2] + 0.1)
+
+        object1.location = (1.5, 1.5, 0)
+
+        object2 = bpy.data.objects.new(object.name, object.data.copy())
+
+        # adds the object to the active scene
+        bpy.context.collection.objects.link(object2)
+
+        # Make object active
+        bpy.context.view_layer.objects.active = object2
+
+        # Retrieve object dimensions
+        object2_dimensions = object2.dimensions
+
+        # Resize/ Scale object
+        bpy.context.object.dimensions = object.dimensions[
+            0], object.dimensions[1], 1.0  # resize z to 1.0
+
+        # Grab the current object scale
+        object2_scale = object2.scale
+
+        # Scale them by z scale
+        object2.scale = (object2_scale[2], object2_scale[2], object2_scale[2])
+
+        # Rescale them (should try ratio method?)
+        object2.scale = (object2_scale[2] + 0.1,
+                         object2_scale[2] + 0.1, object2_scale[2] + 0.1)
+
+        object2.location = (-1.5, -1.5, 0)
+
+        # go object mode again
+        bpy.ops.object.editmode_toggle()
+
+        context = bpy.context
+        scene = context.scene
+
+        scene.render.use_multiview = True
+
+        bpy.context.scene.render.image_settings.views_format = 'STEREO_3D'
+
+        bpy.context.scene.cycles.film_exposure = 4.5
+
+        bpy.data.cameras['Camera'].stereo.convergence_distance = 15
+        bpy.data.cameras['Camera'].stereo.interocular_distance = 0.15
+
+        return object, object1, object2, scene
+
     def rotate_z(self, object, scene):
         # object.rotation_mode = 'XYZ'
 
         scene.frame_start = 0
-        scene.frame_end = 1
+        scene.frame_end = 200
 
         # rotate nothing
         object.rotation_euler = (0.0, 0.0, 0.0)
@@ -326,7 +454,6 @@ class Anaglyph():
         object.rotation_euler = (math.pi * 2, math.pi * 2, math.pi * 2)
         object.keyframe_insert(data_path='rotation_euler', frame=300)
 
-
     def spin_bf(self, object, scene):
         # object.rotation_mode = 'XYZ'
 
@@ -345,18 +472,46 @@ class Anaglyph():
         object.rotation_euler = (0, 0, 0)
         object.keyframe_insert(data_path='rotation_euler', frame=200)
 
-def user_pick(options):
-    print("Please choose:")
-    for idx, element in enumerate(options):
-        print("{}) {}".format(idx+1,element))
-    i = input("Enter number: ")
-    print("\n")
-    try:
-        if 0 < int(i) <= len(options):
-            return int(i)
-    except:
-        pass
-    return None
+    def multi_rotate(self, object, object1, object2, scene):
+
+        scene.frame_start = 0
+        scene.frame_end = 150
+
+        # rotate nothing
+        object.rotation_euler = (0.0, 0.0, 0.0)
+        object.keyframe_insert(data_path='rotation_euler', frame=0)
+
+        # rotate at the y-axis
+        object.rotation_euler = (0, math.pi, 0)
+        object.keyframe_insert(data_path='rotation_euler', frame=50)
+
+        # rotate at the y-axis
+        object.rotation_euler = (0, math.pi * 2, 0)
+        object.keyframe_insert(data_path='rotation_euler', frame=150)
+
+        # rotate nothing
+        object1.rotation_euler = (0.0, 0.0, 0.0)
+        object1.keyframe_insert(data_path='rotation_euler', frame=0)
+
+        # rotate at the z-axis
+        object1.rotation_euler = (0, 0, math.pi)
+        object1.keyframe_insert(data_path='rotation_euler', frame=50)
+
+        # rotate at the z-axis
+        object1.rotation_euler = (0, 0, math.pi * 2)
+        object1.keyframe_insert(data_path='rotation_euler', frame=150)
+
+        # rotate nothing
+        object2.rotation_euler = (0.0, 0.0, 0.0)
+        object2.keyframe_insert(data_path='rotation_euler', frame=0)
+
+        # rotate at the x-axis
+        object2.rotation_euler = (math.pi, 0, 0)
+        object2.keyframe_insert(data_path='rotation_euler', frame=50)
+
+        # rotate at the x-axis
+        object2.rotation_euler = (math.pi * 2, 0, 0)
+        object2.keyframe_insert(data_path='rotation_euler', frame=150)
 
 
 def render(scene, directory):
@@ -371,12 +526,15 @@ def render(scene, directory):
     bpy.ops.render.render(animation=True)
 
     print("Export " + '\x1b[0;33;40m' + "Anaglyph 3D " + '\x1b[0m' +
-          '\x1b[0;35;40m' + fileName + directory+ ".avi" + '\x1b[0m' + " successfully")
+          '\x1b[0;35;40m' + fileName + directory + ".avi" + '\x1b[0m' + " successfully")
 
-    bpy.ops.wm.save_as_mainfile(filepath=os.getcwd() + "/render/" + fileName + directory + ".blend")
+    bpy.ops.wm.save_as_mainfile(
+        filepath=os.getcwd() + "/render/" + fileName + directory + ".blend")
 
 
-options = ["Rotate Z", "Rotate XYZ", "Spin Back & Forth", "Multimesh Rotate"]
+options = ["Rotate Z", "Rotate XYZ",
+           "Spin Back & Forth", "Multi Rotate"]
+
 
 def smooth(data=None):
     surface = Anaglyph(data)
@@ -387,33 +545,59 @@ def smooth(data=None):
 
     # wanna do switch/case or if/else statement?
 
-    if option  == 1:
+    if option == 1:
         directory = "_rotate_z_smooth"
         surface.rotate_z(object, scene)
-        render(scene,directory)
+        render(scene, directory)
 
     elif option == 2:
-        directory = "_rotate_xyz"
-        surface.rotate_xyz(object,scene)
-        render(scene,directory)
+        directory = "_rotate_xyz_smooth"
+        surface.rotate_xyz(object, scene)
+        render(scene, directory)
 
     elif option == 3:
-        directory = "_spin"
-        surface.rotate_xyz(object,scene)
-        render(scene,directory)
+        directory = "_spin_smooth"
+        surface.spin_bf(object, scene)
+        render(scene, directory)
 
-    else:
-        print("multimesh rotate")
+    elif option == 4:
+        directory = "_multi_rotate_smooth"
+        object, object1, object2, scene = surface.generate_multi_obj_scene(
+            vertex, faces)
+        surface.multi_rotate(object, object1, object2, scene)
+        render(scene, directory)
 
 
 def raw(data=None):
     surface = Anaglyph(data)
     vertex, faces = surface.generate_fv_raw()
     object, scene = surface.generate_obj_scene(vertex, faces)
-    surface.rotate_z(object, scene)
 
-    directory = "_rotate_z_raw"
-    render(scene,directory)
+    option = user_pick(options)
+
+    # wanna do switch/case or if/else statement?
+
+    if option == 1:
+        directory = "_rotate_z_raw"
+        surface.rotate_z(object, scene)
+        render(scene, directory)
+
+    elif option == 2:
+        directory = "_rotate_xyz_raw"
+        surface.rotate_xyz(object, scene)
+        render(scene, directory)
+
+    elif option == 3:
+        directory = "_spin_raw"
+        surface.spin_bf(object, scene)
+        render(scene, directory)
+
+    elif option == 4:
+        directory = "_multi_rotate_raw"
+        object, object1, object2, scene = surface.generate_multi_obj_scene(
+            vertex, faces)
+        surface.multi_rotate(object, object1, object2, scene)
+        render(scene, directory)
 
 
 # func_dict = {'smooth': smooth, 'raw': raw}
@@ -421,12 +605,11 @@ if __name__ == "__main__":
     choices = ["Raw", "Smooth"]
     choice = user_pick(choices)
 
-    if choice  == 1:
+    if choice == 1:
         raw()
 
     elif choice == 2:
         smooth()
-
 
     # command = input("Enter 'raw' or 'smooth': ")
     # func_dict[command]()
