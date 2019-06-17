@@ -519,7 +519,7 @@ class Anaglypy():
         object2.rotation_euler = (math.pi * 2, 0, 0)
         object2.keyframe_insert(data_path='rotation_euler', frame=150)
 
-    def random_move(self, object, scene):
+    def translate(self, object, scene):
         frame_num = 0
 
         positions = (0, 3, 2), (4, 1, 5), (3, -3, 1), (3, 3, 1), (1, 4, 1)
@@ -551,7 +551,7 @@ def render(scene, directory):
 
 
 options = ["Rotate Z", "Rotate XYZ",
-           "Spin Back & Forth", "Multi Rotate", "Random Move"]
+           "Spin Back & Forth", "Multi Rotate", "Translate"]
 
 
 def smooth(data=None):
@@ -590,7 +590,7 @@ def smooth(data=None):
     elif option == 5:
         object, scene = surface.generate_obj_scene(vertex, faces)
         directory = "_rwalk_smooth"
-        surface.random_move(object, scene)
+        surface.translate(object, scene)
         render(scene, directory)
 
 
@@ -630,7 +630,7 @@ def raw(data=None):
     elif option == 5:
         object, scene = surface.generate_obj_scene(vertex, faces)
         directory = "_rwalk_raw"
-        surface.random_move(object, scene)
+        surface.translate(object, scene)
         render(scene, directory)
 
 
