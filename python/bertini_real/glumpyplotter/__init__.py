@@ -102,8 +102,6 @@ class GlumpyPlotter():
 
         which_faces = list(range(num_faces))
 
-        print(which_faces)
-
         data = self.decomposition
 
         tuples = data.surface.surface_sampler_data
