@@ -265,12 +265,31 @@ class Anaglypy():
         # Make object active
         bpy.context.view_layer.objects.active = object
 
+        # bpy.context.space_data.viewport_shade = 'MATERIAL'
+
+        # Set new material to variable
+        mat = bpy.data.materials.new('MaterialName')
+
+        # assign material to object
+        bpy.context.object.data.materials.append(mat)
+
+        bpy.context.object.show_transparent = True
+
+        # bpy.context.object.active_material.diffuse_color = (0.8,0.8,0,5) #change color
+        bpy.context.object.active_material.diffuse_color = (0.182814, 0.0498273, 0.8, 1)
+
+        bpy.context.object.active_material.metallic = 1
+
+        # mat.use_transparency = True
+
+        # mat.transparency_method = 'Z_TRANSPARENCY'
+
         # Retrieve object dimensions
         object_dimensions = object.dimensions
 
         # Resize/ Scale object
         bpy.context.object.dimensions = object.dimensions[
-            0], object.dimensions[1], 1.5  # resize z to 1.5
+            0], object.dimensions[1], 3  # resize z to 1.5
 
         # Grab the current object scale
         object_scale = object.scale
@@ -306,6 +325,9 @@ class Anaglypy():
         bpy.data.cameras['Camera'].stereo.convergence_distance = 15
         bpy.data.cameras['Camera'].stereo.interocular_distance = 0.15
 
+        # bpy.context.preferences.themes[0].view_3d.space.gradients.high_gradient = (1,1,1)
+
+
         return object, scene
 
     def generate_multi_obj_scene(self, vertex, faces):
@@ -325,12 +347,85 @@ class Anaglypy():
         # Make object active
         bpy.context.view_layer.objects.active = object
 
+        # Set new material to variable
+        mat = bpy.data.materials.new('MaterialName')
+
+        bpy.data.materials['MaterialName'].use_nodes = True
+
+        met = mat.node_tree.nodes["Principled BSDF"]
+
+        nodes = mat.node_tree.nodes
+
+        met.inputs[0].default_value = (0.8, 0, 0.438115, 1)
+
+        met.inputs[4].default_value = 1
+
+        node_principle = nodes.get("Principled BSDF")
+
+        
+
+        # clear all nodes to start clear
+        # for node in nodes:
+        # 	nodes.remove(node)
+
+
+        node_text= nodes.new(type='ShaderNodeTexCoord')
+
+        node_map= nodes.new(type='ShaderNodeMapping')
+
+        mat.node_tree.links.new(node_text.outputs['Normal'],node_map.inputs['Vector'])
+
+        mat.node_tree.links.new(node_map.outputs['Vector'],node_principle.inputs['Base Color'])
+
+        # # create output node
+        # node_output = nodes.new(type='ShaderNodeOutputMaterial')
+
+        # # link nodes
+        # links = mat.node_tree.links
+        # link = links.new(node_text.outputs[0],)
+
+        # ShaderNodeBsdf
+
+
+
+
+
+        # bpy.data.node_groups["Shader Nodetree"].nodes["Principled BSDF"].inputs[0].default_value = (0.8, 0, 0.438115, 1)
+        # bpy.context.object.active_material.metallic = 1
+
+        # bpy.data.materials['MaterialName'].node_tree.nodes['Diffuse BSDF'].inputs[0].default_value = (0.323754, 0.323754, 0.323754, 1)
+        # assign material to object
+        bpy.context.object.data.materials.append(mat)
+        # bpy.context.object.active_material.diffuse_color = (0.8, 0, 0.18, 5)
+        
+
+        world = bpy.data.worlds['World']
+        world.use_nodes = True
+        bg = world.node_tree.nodes['Background']
+        bg.inputs[0].default_value[:3] = (0.59,10,9.9)
+        # bg.inputs[0].default_value[:3] = (0.0, .0, 0.0)
+
+        bg.inputs[1].default_value = 1.0
+
+
+       
+
+        # bpy.context.object.active_material.diffuse_color = (0.8,0.8,0,5) #change color
+        # bpy.context.object.active_material.diffuse_color = (0.182814, 0.0498273, 0.8, 1)
+        # bpy.context.object.active_material.diffuse_color = (10, 0, 0.615, 5)
+
+
+
+
+        # Change color
+        # bpy.context.object.active_material.diffuse_color = (255, 255, 0)
+
         # Retrieve object dimensions
         object_dimensions = object.dimensions
 
         # Resize/ Scale object
         bpy.context.object.dimensions = object.dimensions[
-            0], object.dimensions[1], 1.0  # resize z to 1.0
+            0], object.dimensions[1], 1.5  # resize z to 1.0
 
         # Grab the current object scale
         object_scale = object.scale
@@ -364,7 +459,7 @@ class Anaglypy():
 
         # Resize/ Scale object
         bpy.context.object.dimensions = object.dimensions[
-            0], object.dimensions[1], 1.0  # resize z to 1.0
+            0], object.dimensions[1], 1.5  # resize z to 1.0
 
         # Grab the current object scale
         object1_scale = object1.scale
@@ -376,7 +471,7 @@ class Anaglypy():
         object1.scale = (object1_scale[2] + 0.15,
                          object1_scale[2] + 0.15, object1_scale[2] + 0.15)
 
-        object1.location = (1.5, 1.5, 0)
+        object1.location = (1.65, 1.65, 0)
 
         object2 = bpy.data.objects.new(object.name, object.data.copy())
 
@@ -391,7 +486,7 @@ class Anaglypy():
 
         # Resize/ Scale object
         bpy.context.object.dimensions = object.dimensions[
-            0], object.dimensions[1], 1.0  # resize z to 1.0
+            0], object.dimensions[1], 1.5  # resize z to 1.0
 
         # Grab the current object scale
         object2_scale = object2.scale
@@ -403,7 +498,7 @@ class Anaglypy():
         object2.scale = (object2_scale[2] + 0.15,
                          object2_scale[2] + 0.15, object2_scale[2] + 0.15)
 
-        object2.location = (-1.5, -1.5, 0)
+        object2.location = (-1.65, -1.65, 0)
 
         # go object mode again
         bpy.ops.object.editmode_toggle()
@@ -413,9 +508,12 @@ class Anaglypy():
 
         scene.render.use_multiview = True
 
+        # bpy.context.scene.render.image_settings.color_mode ='RGB'
+
+
         bpy.context.scene.render.image_settings.views_format = 'STEREO_3D'
 
-        bpy.context.scene.cycles.film_exposure = 4.5
+        # bpy.context.scene.cycles.film_exposure = 4.5
 
         bpy.data.cameras['Camera'].stereo.convergence_distance = 15
         bpy.data.cameras['Camera'].stereo.interocular_distance = 0.15
@@ -481,7 +579,7 @@ class Anaglypy():
     def multi_rotate(self, object, object1, object2, scene):
 
         scene.frame_start = 0
-        scene.frame_end = 150
+        scene.frame_end = 1
 
         # rotate nothing
         object.rotation_euler = (0.0, 0.0, 0.0)
@@ -520,16 +618,26 @@ class Anaglypy():
         object2.keyframe_insert(data_path='rotation_euler', frame=150)
 
     def translate(self, object, scene):
-        frame_num = 0
 
-        positions = (0, 3, 2), (4, 1, 5), (3, -3, 1), (3, 3, 1), (1, 4, 1)
-        start_pos = (0, 0, 0)
+    	scene.frame_start = 0
+    	scene.frame_end = 5
 
-        for pos in positions:
-            bpy.context.scene.frame_set(frame_num)
-            object.location = pos
-            object.keyframe_insert(data_path="location", index=-1)
-            frame_num += 20
+    	object.location = (0.0, 0.0, 0.0)
+    	object.keyframe_insert(data_path='location', frame=0)
+
+    	object.location = (0,3,2)
+    	object.keyframe_insert(data_path='location', frame=5)
+        # frame_num = 0
+
+        # positions = (0, 3, 2), (4, 1, 5), (3, -3, 1), (3, 3, 1), (1, 4, 1)
+
+        # positions = (0, 3, 2), (4, 1, 5)
+
+        # for pos in positions:
+        #     bpy.context.scene.frame_set(frame_num)
+        #     object.location = pos
+        #     object.keyframe_insert(data_path="location", index=-1)
+        #     frame_num += 5
 
 
 def render(scene, directory):
@@ -589,7 +697,7 @@ def smooth(data=None):
 
     elif option == 5:
         object, scene = surface.generate_obj_scene(vertex, faces)
-        directory = "_rwalk_smooth"
+        directory = "_translate_smooth"
         surface.translate(object, scene)
         render(scene, directory)
 
@@ -629,7 +737,7 @@ def raw(data=None):
 
     elif option == 5:
         object, scene = surface.generate_obj_scene(vertex, faces)
-        directory = "_rwalk_raw"
+        directory = "_translate_raw"
         surface.translate(object, scene)
         render(scene, directory)
 
