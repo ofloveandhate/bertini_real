@@ -509,7 +509,7 @@ class Anaglypy():
         # object.rotation_mode = 'XYZ'
 
         scene.frame_start = 0
-        scene.frame_end = 100
+        scene.frame_end = 200
 
         # rotate nothing
         object.rotation_euler = (0.0, 0.0, 0.0)
