@@ -74,26 +74,46 @@ def extract_points(self):
 
 
 def diffuse():
-	# Set new material to variable
-	mat = bpy.data.materials.new('MaterialName')
+        # Set new material to variable
+    mat = bpy.data.materials.new('MaterialName')
 
-	# assign material to object
-	bpy.context.object.data.materials.append(mat)
+    bpy.data.materials['MaterialName'].use_nodes = True
 
-	# bpy.context.object.active_material.diffuse_color = (0.8,0.8,0,5) #change color
-	bpy.context.object.active_material.diffuse_color = (0.182814, 0.0498273, 0.8, 1)
-	bpy.context.object.active_material.metallic = 1
+    met = mat.node_tree.nodes["Principled BSDF"]
 
-	world = bpy.data.worlds['World']
-	world.use_nodes = True
-	bg = world.node_tree.nodes['Background']
-	bg.inputs[0].default_value[:3] = (0.8, 0.8, 0.8)
-	bg.inputs[1].default_value = 1.0
+    nodes = mat.node_tree.nodes
+
+    met.inputs[0].default_value = (0.8, 0.215, 0.498, 1)
+
+    met.inputs[4].default_value = 1
+
+    node_principle = nodes.get("Principled BSDF")
+
+    node_text = nodes.new(type='ShaderNodeTexCoord')
+
+    mat.node_tree.links.new(
+        node_text.outputs['Normal'], node_principle.inputs['Metallic'])
+
+
+    # assign material to object
+    bpy.context.object.data.materials.append(mat)
+
+    # bpy.context.object.active_material.diffuse_color = (
+    #     0.8, 0.8, 0, 5)  # change color
+    # bpy.context.object.active_material.diffuse_color = (0.182814, 0.0498273, 0.8, 1) #purple
+    # bpy.context.object.active_material.metallic = 1
+
+    world = bpy.data.worlds['World']
+    world.use_nodes = True
+    bg = world.node_tree.nodes['Background']
+    # bg.inputs[0].default_value[:3] = (0.6, 0.6, 0.6)
+    # bg.inputs[1].default_value = 1.0
+
 
 def bsdf():
 
-	# Set new material to variable
-	mat = bpy.data.materials.new('MaterialName')
+    # Set new material to variable
+    mat = bpy.data.materials.new('MaterialName')
 
     bpy.data.materials['MaterialName'].use_nodes = True
 
@@ -107,23 +127,26 @@ def bsdf():
 
     node_principle = nodes.get("Principled BSDF")
 
-    node_text= nodes.new(type='ShaderNodeTexCoord')
+    node_text = nodes.new(type='ShaderNodeTexCoord')
 
-    node_map= nodes.new(type='ShaderNodeMapping')
+    node_map = nodes.new(type='ShaderNodeMapping')
 
-    mat.node_tree.links.new(node_text.outputs['Normal'],node_map.inputs['Vector'])
+    mat.node_tree.links.new(
+        node_text.outputs['Normal'], node_map.inputs['Vector'])
 
-    mat.node_tree.links.new(node_map.outputs['Vector'],node_principle.inputs['Base Color'])
+    mat.node_tree.links.new(
+        node_map.outputs['Vector'], node_principle.inputs['Base Color'])
 
     # assign material to object
-    bpy.context.object.data.materials.append(mat)        
+    bpy.context.object.data.materials.append(mat)
 
     world = bpy.data.worlds['World']
     world.use_nodes = True
     bg = world.node_tree.nodes['Background']
     # bg.inputs[0].default_value[:3] = (0.59,10,9.9)
-    bg.inputs[0].default_value[:3] = (0.8, 0.8, 0.8)
-    bg.inputs[1].default_value = 1.0
+    # bg.inputs[0].default_value[:3] = (0.7, 0.7, 0.7)
+    # bg.inputs[1].default_value = 1.0
+
 
 class Anaglypy():
 
@@ -300,7 +323,6 @@ class Anaglypy():
 
         return vertex, faces
 
-
     def generate_obj_scene(self, vertex, faces):
 
         # Define mesh and object's name
@@ -319,6 +341,7 @@ class Anaglypy():
         bpy.context.view_layer.objects.active = object
 
         diffuse()
+        # bsdf()
 
         # Retrieve object dimensions
         object_dimensions = object.dimensions
@@ -380,6 +403,8 @@ class Anaglypy():
         # Make object active
         bpy.context.view_layer.objects.active = object
 
+        diffuse()
+        # bsdf()
 
         # Retrieve object dimensions
         object_dimensions = object.dimensions
@@ -469,8 +494,7 @@ class Anaglypy():
 
         scene.render.use_multiview = True
 
-        bpy.context.scene.render.image_settings.color_mode ='RGB'
-
+        bpy.context.scene.render.image_settings.color_mode = 'RGB'
 
         bpy.context.scene.render.image_settings.views_format = 'STEREO_3D'
 
@@ -485,7 +509,7 @@ class Anaglypy():
         # object.rotation_mode = 'XYZ'
 
         scene.frame_start = 0
-        scene.frame_end = 200
+        scene.frame_end = 100
 
         # rotate nothing
         object.rotation_euler = (0.0, 0.0, 0.0)
@@ -580,18 +604,18 @@ class Anaglypy():
 
     def translate(self, object, scene):
 
-    	scene.frame_start = 0
-    	scene.frame_end = 25
+        scene.frame_start = 0
+        scene.frame_end = 25
 
-    	object.location = (-1.7, -1.7, 0.0)
-    	object.rotation_euler = (0.0, 0.0, 0.0)
-    	object.keyframe_insert(data_path='location', frame=0)
-    	object.keyframe_insert(data_path='rotation_euler', frame=0)
+        object.location = (-1.7, -1.7, 0.0)
+        object.rotation_euler = (0.0, 0.0, 0.0)
+        object.keyframe_insert(data_path='location', frame=0)
+        object.keyframe_insert(data_path='rotation_euler', frame=0)
 
-    	object.location = (1.7, 1.7, 0.0)
-    	object.keyframe_insert(data_path='location', frame=25)
-    	object.rotation_euler = (0, 0, math.pi * 2)
-    	object.keyframe_insert(data_path='rotation_euler', frame=25)
+        object.location = (1.7, 1.7, 0.0)
+        object.keyframe_insert(data_path='location', frame=25)
+        object.rotation_euler = (0, 0, math.pi * 2)
+        object.keyframe_insert(data_path='rotation_euler', frame=25)
         # frame_num = 0
 
         # positions = (0, 3, 2), (4, 1, 5), (3, -3, 1), (3, 3, 1), (1, 4, 1)
