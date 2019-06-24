@@ -73,6 +73,58 @@ def extract_points(self):
     return points
 
 
+def diffuse():
+	# Set new material to variable
+	mat = bpy.data.materials.new('MaterialName')
+
+	# assign material to object
+	bpy.context.object.data.materials.append(mat)
+
+	# bpy.context.object.active_material.diffuse_color = (0.8,0.8,0,5) #change color
+	bpy.context.object.active_material.diffuse_color = (0.182814, 0.0498273, 0.8, 1)
+	bpy.context.object.active_material.metallic = 1
+
+	world = bpy.data.worlds['World']
+	world.use_nodes = True
+	bg = world.node_tree.nodes['Background']
+	bg.inputs[0].default_value[:3] = (0.8, 0.8, 0.8)
+	bg.inputs[1].default_value = 1.0
+
+def bsdf():
+
+	# Set new material to variable
+	mat = bpy.data.materials.new('MaterialName')
+
+    bpy.data.materials['MaterialName'].use_nodes = True
+
+    met = mat.node_tree.nodes["Principled BSDF"]
+
+    nodes = mat.node_tree.nodes
+
+    met.inputs[0].default_value = (0.8, 0, 0.438115, 1)
+
+    met.inputs[4].default_value = 1
+
+    node_principle = nodes.get("Principled BSDF")
+
+    node_text= nodes.new(type='ShaderNodeTexCoord')
+
+    node_map= nodes.new(type='ShaderNodeMapping')
+
+    mat.node_tree.links.new(node_text.outputs['Normal'],node_map.inputs['Vector'])
+
+    mat.node_tree.links.new(node_map.outputs['Vector'],node_principle.inputs['Base Color'])
+
+    # assign material to object
+    bpy.context.object.data.materials.append(mat)        
+
+    world = bpy.data.worlds['World']
+    world.use_nodes = True
+    bg = world.node_tree.nodes['Background']
+    # bg.inputs[0].default_value[:3] = (0.59,10,9.9)
+    bg.inputs[0].default_value[:3] = (0.8, 0.8, 0.8)
+    bg.inputs[1].default_value = 1.0
+
 class Anaglypy():
 
     def __init__(self, data=None):
@@ -248,6 +300,7 @@ class Anaglypy():
 
         return vertex, faces
 
+
     def generate_obj_scene(self, vertex, faces):
 
         # Define mesh and object's name
@@ -265,24 +318,7 @@ class Anaglypy():
         # Make object active
         bpy.context.view_layer.objects.active = object
 
-        # bpy.context.space_data.viewport_shade = 'MATERIAL'
-
-        # Set new material to variable
-        mat = bpy.data.materials.new('MaterialName')
-
-        # assign material to object
-        bpy.context.object.data.materials.append(mat)
-
-        bpy.context.object.show_transparent = True
-
-        # bpy.context.object.active_material.diffuse_color = (0.8,0.8,0,5) #change color
-        bpy.context.object.active_material.diffuse_color = (0.182814, 0.0498273, 0.8, 1)
-
-        bpy.context.object.active_material.metallic = 1
-
-        # mat.use_transparency = True
-
-        # mat.transparency_method = 'Z_TRANSPARENCY'
+        diffuse()
 
         # Retrieve object dimensions
         object_dimensions = object.dimensions
@@ -320,13 +356,10 @@ class Anaglypy():
 
         bpy.context.scene.render.image_settings.views_format = 'STEREO_3D'
 
-        bpy.context.scene.cycles.film_exposure = 4.5
+        bpy.context.scene.cycles.film_exposure = 3.5
 
-        bpy.data.cameras['Camera'].stereo.convergence_distance = 15
-        bpy.data.cameras['Camera'].stereo.interocular_distance = 0.15
-
-        # bpy.context.preferences.themes[0].view_3d.space.gradients.high_gradient = (1,1,1)
-
+        bpy.data.cameras['Camera'].stereo.convergence_distance = 1.95
+        bpy.data.cameras['Camera'].stereo.interocular_distance = 0.065
 
         return object, scene
 
@@ -347,78 +380,6 @@ class Anaglypy():
         # Make object active
         bpy.context.view_layer.objects.active = object
 
-        # Set new material to variable
-        mat = bpy.data.materials.new('MaterialName')
-
-        bpy.data.materials['MaterialName'].use_nodes = True
-
-        met = mat.node_tree.nodes["Principled BSDF"]
-
-        nodes = mat.node_tree.nodes
-
-        met.inputs[0].default_value = (0.8, 0, 0.438115, 1)
-
-        met.inputs[4].default_value = 1
-
-        node_principle = nodes.get("Principled BSDF")
-
-        
-
-        # clear all nodes to start clear
-        # for node in nodes:
-        # 	nodes.remove(node)
-
-
-        node_text= nodes.new(type='ShaderNodeTexCoord')
-
-        node_map= nodes.new(type='ShaderNodeMapping')
-
-        mat.node_tree.links.new(node_text.outputs['Normal'],node_map.inputs['Vector'])
-
-        mat.node_tree.links.new(node_map.outputs['Vector'],node_principle.inputs['Base Color'])
-
-        # # create output node
-        # node_output = nodes.new(type='ShaderNodeOutputMaterial')
-
-        # # link nodes
-        # links = mat.node_tree.links
-        # link = links.new(node_text.outputs[0],)
-
-        # ShaderNodeBsdf
-
-
-
-
-
-        # bpy.data.node_groups["Shader Nodetree"].nodes["Principled BSDF"].inputs[0].default_value = (0.8, 0, 0.438115, 1)
-        # bpy.context.object.active_material.metallic = 1
-
-        # bpy.data.materials['MaterialName'].node_tree.nodes['Diffuse BSDF'].inputs[0].default_value = (0.323754, 0.323754, 0.323754, 1)
-        # assign material to object
-        bpy.context.object.data.materials.append(mat)
-        # bpy.context.object.active_material.diffuse_color = (0.8, 0, 0.18, 5)
-        
-
-        world = bpy.data.worlds['World']
-        world.use_nodes = True
-        bg = world.node_tree.nodes['Background']
-        bg.inputs[0].default_value[:3] = (0.59,10,9.9)
-        # bg.inputs[0].default_value[:3] = (0.0, .0, 0.0)
-
-        bg.inputs[1].default_value = 1.0
-
-
-       
-
-        # bpy.context.object.active_material.diffuse_color = (0.8,0.8,0,5) #change color
-        # bpy.context.object.active_material.diffuse_color = (0.182814, 0.0498273, 0.8, 1)
-        # bpy.context.object.active_material.diffuse_color = (10, 0, 0.615, 5)
-
-
-
-
-        # Change color
-        # bpy.context.object.active_material.diffuse_color = (255, 255, 0)
 
         # Retrieve object dimensions
         object_dimensions = object.dimensions
@@ -508,15 +469,15 @@ class Anaglypy():
 
         scene.render.use_multiview = True
 
-        # bpy.context.scene.render.image_settings.color_mode ='RGB'
+        bpy.context.scene.render.image_settings.color_mode ='RGB'
 
 
         bpy.context.scene.render.image_settings.views_format = 'STEREO_3D'
 
-        # bpy.context.scene.cycles.film_exposure = 4.5
+        bpy.context.scene.cycles.film_exposure = 3.0
 
-        bpy.data.cameras['Camera'].stereo.convergence_distance = 15
-        bpy.data.cameras['Camera'].stereo.interocular_distance = 0.15
+        bpy.data.cameras['Camera'].stereo.convergence_distance = 1.95
+        bpy.data.cameras['Camera'].stereo.interocular_distance = 0.065
 
         return object, object1, object2, scene
 
@@ -579,7 +540,7 @@ class Anaglypy():
     def multi_rotate(self, object, object1, object2, scene):
 
         scene.frame_start = 0
-        scene.frame_end = 1
+        scene.frame_end = 150
 
         # rotate nothing
         object.rotation_euler = (0.0, 0.0, 0.0)
@@ -620,13 +581,17 @@ class Anaglypy():
     def translate(self, object, scene):
 
     	scene.frame_start = 0
-    	scene.frame_end = 5
+    	scene.frame_end = 25
 
-    	object.location = (0.0, 0.0, 0.0)
+    	object.location = (-1.7, -1.7, 0.0)
+    	object.rotation_euler = (0.0, 0.0, 0.0)
     	object.keyframe_insert(data_path='location', frame=0)
+    	object.keyframe_insert(data_path='rotation_euler', frame=0)
 
-    	object.location = (0,3,2)
-    	object.keyframe_insert(data_path='location', frame=5)
+    	object.location = (1.7, 1.7, 0.0)
+    	object.keyframe_insert(data_path='location', frame=25)
+    	object.rotation_euler = (0, 0, math.pi * 2)
+    	object.keyframe_insert(data_path='rotation_euler', frame=25)
         # frame_num = 0
 
         # positions = (0, 3, 2), (4, 1, 5), (3, -3, 1), (3, 3, 1), (1, 4, 1)
