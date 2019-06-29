@@ -83,7 +83,12 @@ def diffuse():
 
     nodes = mat.node_tree.nodes
 
-    met.inputs[0].default_value = (0.8, 0.215, 0.498, 1)
+    # met.inputs[0].default_value = (0.8, 0.215, 0.498, 1)
+    #met.inputs[0].default_value = (0.009, 0.07, 0.007, 1)
+    # met.inputs[0].default_value = (0.324, 0.0, 0.099, 1) # red-pink
+    # met.inputs[0].default_value = (0.771, 0.372, 0.605, 1) #light purple
+    # met.inputs[0].default_value = (0.148, 0.648, 0.892, 1) # light blue
+    met.inputs[0].default_value = (0.000, 0.002, 0.439, 1)
 
     met.inputs[4].default_value = 1
 
@@ -381,8 +386,9 @@ class Anaglypy():
 
         bpy.context.scene.cycles.film_exposure = 3.5
 
-        bpy.data.cameras['Camera'].stereo.convergence_distance = 1.95
-        bpy.data.cameras['Camera'].stereo.interocular_distance = 0.065
+
+        bpy.data.cameras['Camera'].stereo.convergence_distance = 11
+        bpy.data.cameras['Camera'].stereo.interocular_distance = 1.5 # 1-2
 
         return object, scene
 
@@ -500,8 +506,8 @@ class Anaglypy():
 
         bpy.context.scene.cycles.film_exposure = 3.0
 
-        bpy.data.cameras['Camera'].stereo.convergence_distance = 1.95
-        bpy.data.cameras['Camera'].stereo.interocular_distance = 0.065
+        bpy.data.cameras['Camera'].stereo.convergence_distance = 11
+        bpy.data.cameras['Camera'].stereo.interocular_distance = 1.5
 
         return object, object1, object2, scene
 
@@ -605,17 +611,23 @@ class Anaglypy():
     def translate(self, object, scene):
 
         scene.frame_start = 0
-        scene.frame_end = 25
+        scene.frame_end = 200
 
-        object.location = (-1.7, -1.7, 0.0)
+        # object.location = (-1.7, -1.7, 0.0)
+        object.location = (0,0, 0.0)
         object.rotation_euler = (0.0, 0.0, 0.0)
         object.keyframe_insert(data_path='location', frame=0)
         object.keyframe_insert(data_path='rotation_euler', frame=0)
 
-        object.location = (1.7, 1.7, 0.0)
-        object.keyframe_insert(data_path='location', frame=25)
+        object.location = (5.5, -4,2.5)
         object.rotation_euler = (0, 0, math.pi * 2)
-        object.keyframe_insert(data_path='rotation_euler', frame=25)
+        object.keyframe_insert(data_path='location', frame=100)
+        object.keyframe_insert(data_path='rotation_euler', frame=100)
+
+        object.location = (0, 0, 0.0)
+        object.rotation_euler = (0, 0, 0)
+        object.keyframe_insert(data_path='location', frame=200)
+        object.keyframe_insert(data_path='rotation_euler', frame=200)
         # frame_num = 0
 
         # positions = (0, 3, 2), (4, 1, 5), (3, -3, 1), (3, 3, 1), (1, 4, 1)
