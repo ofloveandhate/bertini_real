@@ -73,8 +73,12 @@ def extract_points(self):
     return points
 
 
+r, g, b = 0.000, 0.002, 0.439
+
+
 def diffuse():
-        # Set new material to variable
+
+    # Set new material to variable
     mat = bpy.data.materials.new('MaterialName')
 
     bpy.data.materials['MaterialName'].use_nodes = True
@@ -83,12 +87,7 @@ def diffuse():
 
     nodes = mat.node_tree.nodes
 
-    # met.inputs[0].default_value = (0.8, 0.215, 0.498, 1)
-    #met.inputs[0].default_value = (0.009, 0.07, 0.007, 1)
-    # met.inputs[0].default_value = (0.324, 0.0, 0.099, 1) # red-pink
-    # met.inputs[0].default_value = (0.771, 0.372, 0.605, 1) #light purple
-    # met.inputs[0].default_value = (0.148, 0.648, 0.892, 1) # light blue
-    met.inputs[0].default_value = (0.000, 0.002, 0.439, 1)
+    met.inputs[0].default_value = (r, g, b, 1)
 
     met.inputs[4].default_value = 1
 
@@ -102,30 +101,19 @@ def diffuse():
     # assign material to object
     bpy.context.object.data.materials.append(mat)
 
-    # bpy.context.object.active_material.diffuse_color = (
-    #     0.8, 0.8, 0, 5)  # change color
-    # bpy.context.object.active_material.diffuse_color = (0.182814, 0.0498273, 0.8, 1) #purple
-    # bpy.context.object.active_material.metallic = 1
 
-    world = bpy.data.worlds['World']
-    world.use_nodes = True
-    bg = world.node_tree.nodes['Background']
-    # bg.inputs[0].default_value[:3] = (0.6, 0.6, 0.6)
-    # bg.inputs[1].default_value = 1.0
-
-
-def bsdf():
+def diffuse2():
 
     # Set new material to variable
-    mat = bpy.data.materials.new('MaterialName')
+    mat = bpy.data.materials.new('MaterialName2')
 
-    bpy.data.materials['MaterialName'].use_nodes = True
+    bpy.data.materials['MaterialName2'].use_nodes = True
 
     met = mat.node_tree.nodes["Principled BSDF"]
 
     nodes = mat.node_tree.nodes
 
-    met.inputs[0].default_value = (0.8, 0, 0.438115, 1)
+    met.inputs[0].default_value = (r, g, b, 1)
 
     met.inputs[4].default_value = 1
 
@@ -133,23 +121,11 @@ def bsdf():
 
     node_text = nodes.new(type='ShaderNodeTexCoord')
 
-    node_map = nodes.new(type='ShaderNodeMapping')
-
     mat.node_tree.links.new(
-        node_text.outputs['Normal'], node_map.inputs['Vector'])
-
-    mat.node_tree.links.new(
-        node_map.outputs['Vector'], node_principle.inputs['Base Color'])
+        node_text.outputs['Normal'], node_principle.inputs['Metallic'])
 
     # assign material to object
     bpy.context.object.data.materials.append(mat)
-
-    world = bpy.data.worlds['World']
-    world.use_nodes = True
-    bg = world.node_tree.nodes['Background']
-    # bg.inputs[0].default_value[:3] = (0.59,10,9.9)
-    # bg.inputs[0].default_value[:3] = (0.7, 0.7, 0.7)
-    # bg.inputs[1].default_value = 1.0
 
 
 class Anaglypy():
@@ -345,7 +321,6 @@ class Anaglypy():
         bpy.context.view_layer.objects.active = object
 
         diffuse()
-        # bsdf()
 
         # Retrieve object dimensions
         object_dimensions = object.dimensions
@@ -408,7 +383,6 @@ class Anaglypy():
         bpy.context.view_layer.objects.active = object
 
         diffuse()
-        # bsdf()
 
         # Retrieve object dimensions
         object_dimensions = object.dimensions
@@ -509,6 +483,111 @@ class Anaglypy():
 
         return object, object1, object2, scene
 
+    def generate_both_scene(self, vertex, faces, vertex_raw, faces_raw):
+
+        # Define mesh and object's name
+        mesh = bpy.data.meshes.new(fileName)
+        object = bpy.data.objects.new(fileName, mesh)
+
+        # Set location and scene of object
+        object.location = bpy.context.scene.cursor.location
+        object.location = (1.15, 1.15, 0)
+        bpy.context.scene.collection.objects.link(object)
+
+        # Create mesh
+        mesh.from_pydata(vertex, [], faces)
+        mesh.update()
+
+        # Make object active
+        bpy.context.view_layer.objects.active = object
+
+        diffuse()
+
+        # Retrieve object dimensions
+        object_dimensions = object.dimensions
+
+        # Resize/ Scale object
+        bpy.context.object.dimensions = 1.15, object.dimensions[
+            1], object.dimensions[2]
+
+        # Grab the current object scale
+        object_scale = object.scale
+
+        # Scale them by z scale
+        object.scale = (object_scale[0], object_scale[0], object_scale[0])
+
+        # Rescale them (should try ratio method?)
+        object.scale = (object_scale[0] + 0.1,
+                        object_scale[0] + 0.1, object_scale[0] + 0.1)
+
+        # go edit mode
+        bpy.ops.object.mode_set(mode='EDIT')
+
+        # select all faces
+        bpy.ops.mesh.select_all(action='SELECT')
+
+        # recalculate outside normals
+        bpy.ops.mesh.normals_make_consistent(inside=False)
+
+        # Define 2nd mesh and object's name
+        mesh1 = bpy.data.meshes.new(fileName)
+        object1 = bpy.data.objects.new(fileName, mesh1)
+
+        # Set location and scene of object
+        object1.location = (-1.15, -1.15, 0)
+        bpy.context.scene.collection.objects.link(object1)
+
+        # Create mesh
+        mesh1.from_pydata(vertex_raw, [], faces_raw)
+        mesh1.update()
+
+        # Make object active
+        bpy.context.view_layer.objects.active = object1
+
+        diffuse2()
+
+        # Retrieve object dimensions
+        object1_dimensions = object1.dimensions
+
+        # Resize/ Scale object
+        bpy.context.object.dimensions = 1.15, object1.dimensions[
+            1], object1.dimensions[2]
+
+        # Grab the current object scale
+        object1_scale = object1.scale
+
+        # Scale them by z scale
+        object1.scale = (object1_scale[0], object1_scale[0], object1_scale[0])
+
+        # Rescale them (should try ratio method?)
+        object1.scale = (object1_scale[0] + 0.1,
+                         object1_scale[0] + 0.1, object1_scale[0] + 0.1)
+
+        # go edit mode
+        bpy.ops.object.mode_set(mode='EDIT')
+
+        # select all faces
+        bpy.ops.mesh.select_all(action='SELECT')
+
+        # recalculate outside normals
+        bpy.ops.mesh.normals_make_consistent(inside=False)
+
+        context = bpy.context
+        scene = context.scene
+
+        scene.render.use_multiview = True
+
+        bpy.context.scene.render.image_settings.color_mode = 'RGB'
+
+        bpy.context.scene.render.image_settings.views_format = 'STEREO_3D'
+
+        bpy.context.scene.cycles.film_exposure = 3.0
+
+        bpy.data.cameras['Camera'].stereo.convergence_distance = 11
+        bpy.data.cameras['Camera'].stereo.interocular_distance = 1.5
+
+        return object, object1, scene
+
     def rotate_z(self, object, scene):
         # object.rotation_mode = 'XYZ'
 
@@ -530,7 +609,7 @@ class Anaglypy():
     def rotate_xyz(self, object, scene):
 
         scene.frame_start = 0
-        scene.frame_end = 300
+        scene.frame_end = 150
 
         # rotate nothing
         object.rotation_euler = (0.0, 0.0, 0.0)
@@ -538,15 +617,15 @@ class Anaglypy():
 
         # rotate at the z-axis
         object.rotation_euler = (0, 0, math.pi * 2)
-        object.keyframe_insert(data_path='rotation_euler', frame=100)
+        object.keyframe_insert(data_path='rotation_euler', frame=50)
 
         # rotate at the y-axis
         object.rotation_euler = (0, math.pi * 2, math.pi * 2)
-        object.keyframe_insert(data_path='rotation_euler', frame=200)
+        object.keyframe_insert(data_path='rotation_euler', frame=100)
 
         # rotate at the x-axis
         object.rotation_euler = (math.pi * 2, math.pi * 2, math.pi * 2)
-        object.keyframe_insert(data_path='rotation_euler', frame=300)
+        object.keyframe_insert(data_path='rotation_euler', frame=150)
 
     def spin_bf(self, object, scene):
 
@@ -564,6 +643,27 @@ class Anaglypy():
         # rotate at the z-axis
         object.rotation_euler = (0, 0, 0)
         object.keyframe_insert(data_path='rotation_euler', frame=200)
+
+    def rotate_xyz_both(self, object, object1, scene):
+
+        scene.frame_start = 0
+        scene.frame_end = 1
+
+        # rotate nothing
+        object.rotation_euler = (0.0, 0.0, 0.0)
+        object.keyframe_insert(data_path='rotation_euler', frame=0)
+
+        # rotate at the z-axis
+        object.rotation_euler = (0, 0, math.pi * 2)
+        object.keyframe_insert(data_path='rotation_euler', frame=50)
+
+        # rotate at the y-axis
+        object.rotation_euler = (0, math.pi * 2, math.pi * 2)
+        object.keyframe_insert(data_path='rotation_euler', frame=100)
+
+        # rotate at the x-axis
+        object.rotation_euler = (math.pi * 2, math.pi * 2, math.pi * 2)
+        object.keyframe_insert(data_path='rotation_euler', frame=150)
 
     def multi_rotate(self, object, object1, object2, scene):
 
@@ -611,6 +711,9 @@ class Anaglypy():
         scene.frame_start = 0
         scene.frame_end = 200
 
+        bpy.data.cameras['Camera'].stereo.convergence_distance = 11
+        bpy.data.cameras['Camera'].stereo.interocular_distance = 0.5  # 1-2
+
         # object.location = (-1.7, -1.7, 0.0)
         object.location = (0, 0, 0.0)
         object.rotation_euler = (0.0, 0.0, 0.0)
@@ -626,17 +729,6 @@ class Anaglypy():
         object.rotation_euler = (0, 0, 0)
         object.keyframe_insert(data_path='location', frame=200)
         object.keyframe_insert(data_path='rotation_euler', frame=200)
-        # frame_num = 0
-
-        # positions = (0, 3, 2), (4, 1, 5), (3, -3, 1), (3, 3, 1), (1, 4, 1)
-
-        # positions = (0, 3, 2), (4, 1, 5)
-
-        # for pos in positions:
-        #     bpy.context.scene.frame_set(frame_num)
-        #     object.location = pos
-        #     object.keyframe_insert(data_path="location", index=-1)
-        #     frame_num += 5
 
 
 def render(scene, directory):
@@ -661,53 +753,11 @@ options = ["Rotate Z", "Rotate XYZ",
            "Spin Back & Forth", "Multi Rotate", "Translate"]
 
 
-def smooth(data=None):
-    surface = Anaglypy(data)
-    vertex, faces = surface.generate_fv()
-
-    option = user_pick(options)
-
-    # wanna do switch/case or if/else statement?
-
-    if option == 1:
-        object, scene = surface.generate_obj_scene(vertex, faces)
-        directory = "_rotate_z_smooth"
-        surface.rotate_z(object, scene)
-        render(scene, directory)
-
-    elif option == 2:
-        object, scene = surface.generate_obj_scene(vertex, faces)
-        directory = "_rotate_xyz_smooth"
-        surface.rotate_xyz(object, scene)
-        render(scene, directory)
-
-    elif option == 3:
-        object, scene = surface.generate_obj_scene(vertex, faces)
-        directory = "_spin_smooth"
-        surface.spin_bf(object, scene)
-        render(scene, directory)
-
-    elif option == 4:
-        object, object1, object2, scene = surface.generate_multi_obj_scene(
-            vertex, faces)
-        directory = "_multi_rotate_smooth"
-        surface.multi_rotate(object, object1, object2, scene)
-        render(scene, directory)
-
-    elif option == 5:
-        object, scene = surface.generate_obj_scene(vertex, faces)
-        directory = "_translate_smooth"
-        surface.translate(object, scene)
-        render(scene, directory)
-
-
 def raw(data=None):
     surface = Anaglypy(data)
     vertex, faces = surface.generate_fv_raw()
 
     option = user_pick(options)
-
-    # wanna do switch/case or if/else statement?
 
     if option == 1:
         object, scene = surface.generate_obj_scene(vertex, faces)
@@ -741,9 +791,62 @@ def raw(data=None):
         render(scene, directory)
 
 
-# func_dict = {'smooth': smooth, 'raw': raw}
+def smooth(data=None):
+    surface = Anaglypy(data)
+    vertex, faces = surface.generate_fv()
+
+    option = user_pick(options)
+
+    if option == 1:
+        object, scene = surface.generate_obj_scene(vertex, faces)
+        directory = "_rotate_z_smooth"
+        surface.rotate_z(object, scene)
+        render(scene, directory)
+
+    elif option == 2:
+        object, scene = surface.generate_obj_scene(vertex, faces)
+        directory = "_rotate_xyz_smooth"
+        surface.rotate_xyz(object, scene)
+        render(scene, directory)
+
+    elif option == 3:
+        object, scene = surface.generate_obj_scene(vertex, faces)
+        directory = "_spin_smooth"
+        surface.spin_bf(object, scene)
+        render(scene, directory)
+
+    elif option == 4:
+        object, object1, object2, scene = surface.generate_multi_obj_scene(
+            vertex, faces)
+        directory = "_multi_rotate_smooth"
+        surface.multi_rotate(object, object1, object2, scene)
+        render(scene, directory)
+
+    elif option == 5:
+        object, scene = surface.generate_obj_scene(vertex, faces)
+        directory = "_translate_smooth"
+        surface.translate(object, scene)
+        render(scene, directory)
+
+both_options = ["Rotate XYZ"]
+
+
+def both(data=None):
+    surface = Anaglypy(data)
+    vertex, faces = surface.generate_fv()
+    vertex_raw, faces_raw = surface.generate_fv_raw()
+
+    option = user_pick(both_options)
+
+    if option == 1:
+        object, object1, scene = surface.generate_both_scene(
+            vertex, faces, vertex_raw, faces_raw)
+        directory = "_rotate_xyz_both"
+        surface.rotate_xyz_both(object, object1, scene)
+        render(scene, directory)
+
 if __name__ == "__main__":
-    choices = ["Raw", "Smooth"]
+    choices = ["Raw", "Smooth", "Both"]
     choice = user_pick(choices)
 
     if choice == 1:
@@ -752,7 +855,8 @@ if __name__ == "__main__":
     elif choice == 2:
         smooth()
 
-    # command = input("Enter 'raw' or 'smooth': ")
-    # func_dict[command]()
+    elif choice == 3:
+        both()
+
 bpy.ops.wm.quit_blender()
 bpy.ops.wm.window_close()
