@@ -644,10 +644,27 @@ class Anaglypy():
         object.rotation_euler = (0, 0, 0)
         object.keyframe_insert(data_path='rotation_euler', frame=200)
 
+    def rotate_z_both(self, object, object1, scene):
+
+        scene.frame_start = 0
+        scene.frame_end = 200
+
+        # rotate nothing
+        object.rotation_euler = (0.0, 0.0, 0.0)
+        object.keyframe_insert(data_path='rotation_euler', frame=0)
+
+        # rotate at the z-axis
+        object.rotation_euler = (0, 0, math.pi)
+        object.keyframe_insert(data_path='rotation_euler', frame=100)
+
+        # rotate at the z-axis
+        object.rotation_euler = (0, 0, math.pi * 2)
+        object.keyframe_insert(data_path='rotation_euler', frame=200)
+
     def rotate_xyz_both(self, object, object1, scene):
 
         scene.frame_start = 0
-        scene.frame_end = 1
+        scene.frame_end = 150
 
         # rotate nothing
         object.rotation_euler = (0.0, 0.0, 0.0)
@@ -828,7 +845,7 @@ def smooth(data=None):
         surface.translate(object, scene)
         render(scene, directory)
 
-both_options = ["Rotate XYZ"]
+both_options = ["Rotate Z", "Rotate XYZ"]
 
 
 def both(data=None):
@@ -839,6 +856,13 @@ def both(data=None):
     option = user_pick(both_options)
 
     if option == 1:
+        object, object1, scene = surface.generate_both_scene(
+            vertex, faces, vertex_raw, faces_raw)
+        directory = "_rotate_z_both"
+        surface.rotate_z_both(object, object1, scene)
+        render(scene, directory)
+
+    elif option == 2:
         object, object1, scene = surface.generate_both_scene(
             vertex, faces, vertex_raw, faces_raw)
         directory = "_rotate_xyz_both"
