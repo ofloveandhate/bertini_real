@@ -424,8 +424,8 @@ class Anaglypy():
         object.scale = (object_scale[0], object_scale[0], object_scale[0])
 
         # Rescale them (should try ratio method?)
-        object.scale = (object_scale[0] + 0.15,
-                        object_scale[0] + 0.15, object_scale[0] + 0.15)
+        object.scale = (object_scale[0] + 0.1,
+                        object_scale[0] + 0.1, object_scale[0] + 0.1)
 
         # go edit mode
         bpy.ops.object.mode_set(mode='EDIT')
@@ -458,8 +458,8 @@ class Anaglypy():
         object1.scale = (object1_scale[0], object1_scale[0], object1_scale[0])
 
         # Rescale them (should try ratio method?)
-        object1.scale = (object1_scale[0] + 0.15,
-                         object1_scale[0] + 0.15, object1_scale[0] + 0.15)
+        object1.scale = (object1_scale[0] + 0.1,
+                         object1_scale[0] + 0.1, object1_scale[0] + 0.1)
 
         object1.location = (1.65, 1.65, 0)
 
@@ -485,8 +485,8 @@ class Anaglypy():
         object2.scale = (object2_scale[0], object2_scale[0], object2_scale[0])
 
         # Rescale them (should try ratio method?)
-        object2.scale = (object2_scale[0] + 0.15,
-                         object2_scale[0] + 0.15, object2_scale[0] + 0.15)
+        object2.scale = (object2_scale[0] + 0.1,
+                         object2_scale[0] + 0.1, object2_scale[0] + 0.1)
 
         object2.location = (-1.65, -1.65, 0)
 
