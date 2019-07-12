@@ -326,7 +326,7 @@ class Anaglypy():
         object_dimensions = object.dimensions
 
         # Resize/ Scale object
-        bpy.context.object.dimensions = 3, object.dimensions[
+        bpy.context.object.dimensions = 1.5, object.dimensions[
             1], object.dimensions[2]  # resize x to 3
 
         # Grab the current object scale
@@ -336,8 +336,8 @@ class Anaglypy():
         object.scale = (object_scale[0], object_scale[0], object_scale[0])
 
         # Rescale them (should try ratio method?)
-        object.scale = (object_scale[0] + 0.2,
-                        object_scale[0] + 0.2, object_scale[0] + 0.2)
+        object.scale = (object_scale[0] + 0.1,
+                        object_scale[0] + 0.1, object_scale[0] + 0.1)
 
         # go edit mode
         bpy.ops.object.mode_set(mode='EDIT')
@@ -753,10 +753,10 @@ class Anaglypy():
     def translate(self, object, scene):
 
         scene.frame_start = 0
-        scene.frame_end = 200
+        scene.frame_end = 2
 
         bpy.data.cameras['Camera'].stereo.convergence_distance = 11
-        bpy.data.cameras['Camera'].stereo.interocular_distance = 0.5  # 1-2
+        bpy.data.cameras['Camera'].stereo.interocular_distance = 0.1  # 1-2
 
         # object.location = (-1.7, -1.7, 0.0)
         object.location = (0, 0, 0.0)
@@ -764,15 +764,15 @@ class Anaglypy():
         object.keyframe_insert(data_path='location', frame=0)
         object.keyframe_insert(data_path='rotation_euler', frame=0)
 
-        object.location = (5.5, -4, 2.5)
+        object.location = (5.5, -5.5, 3.5)
         object.rotation_euler = (0, 0, math.pi * 2)
-        object.keyframe_insert(data_path='location', frame=100)
-        object.keyframe_insert(data_path='rotation_euler', frame=100)
+        object.keyframe_insert(data_path='location', frame=1)
+        object.keyframe_insert(data_path='rotation_euler', frame=1)
 
         object.location = (0, 0, 0.0)
         object.rotation_euler = (0, 0, 0)
-        object.keyframe_insert(data_path='location', frame=200)
-        object.keyframe_insert(data_path='rotation_euler', frame=200)
+        object.keyframe_insert(data_path='location', frame=2)
+        object.keyframe_insert(data_path='rotation_euler', frame=2)
 
 
 def render(scene, directory):
