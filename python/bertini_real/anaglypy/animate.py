@@ -326,7 +326,7 @@ class Anaglypy():
         object_dimensions = object.dimensions
 
         # Resize/ Scale object
-        bpy.context.object.dimensions = 1.5, object.dimensions[
+        bpy.context.object.dimensions = 1.15, object.dimensions[
             1], object.dimensions[2]  # resize x to 3
 
         # Grab the current object scale
@@ -388,7 +388,7 @@ class Anaglypy():
         object_dimensions = object.dimensions
 
         # Resize/ Scale object
-        bpy.context.object.dimensions = 1.5, object.dimensions[
+        bpy.context.object.dimensions = 1.15, object.dimensions[
             1], object.dimensions[2]
 
         # Grab the current object scale
@@ -422,7 +422,7 @@ class Anaglypy():
         object1_dimensions = object1.dimensions
 
         # Resize/ Scale object
-        bpy.context.object.dimensions = 1.5, object.dimensions[
+        bpy.context.object.dimensions = 1.15, object.dimensions[
             1], object.dimensions[2]
 
         # Grab the current object scale
@@ -449,7 +449,7 @@ class Anaglypy():
         object2_dimensions = object2.dimensions
 
         # Resize/ Scale object
-        bpy.context.object.dimensions = 1.5, object.dimensions[
+        bpy.context.object.dimensions = 1.15, object.dimensions[
             1], object.dimensions[2]  # resize z to 1.0
 
         # Grab the current object scale
@@ -592,7 +592,7 @@ class Anaglypy():
         # object.rotation_mode = 'XYZ'
 
         scene.frame_start = 0
-        scene.frame_end = 200
+        scene.frame_end = 100
 
         # rotate nothing
         object.rotation_euler = (0.0, 0.0, 0.0)
@@ -600,11 +600,11 @@ class Anaglypy():
 
         # rotate at the z-axis
         object.rotation_euler = (0, 0, math.pi)
-        object.keyframe_insert(data_path='rotation_euler', frame=100)
+        object.keyframe_insert(data_path='rotation_euler', frame=50)
 
         # rotate at the z-axis
         object.rotation_euler = (0, 0, math.pi * 2)
-        object.keyframe_insert(data_path='rotation_euler', frame=200)
+        object.keyframe_insert(data_path='rotation_euler', frame=100)
 
     def rotate_xyz(self, object, scene):
 
@@ -630,7 +630,7 @@ class Anaglypy():
     def spin_bf(self, object, scene):
 
         scene.frame_start = 0
-        scene.frame_end = 200
+        scene.frame_end = 100
 
         # rotate nothing
         object.rotation_euler = (0.0, 0.0, 0.0)
@@ -638,16 +638,16 @@ class Anaglypy():
 
         # rotate at the z-axis
         object.rotation_euler = (0, 0, math.pi * 2)
-        object.keyframe_insert(data_path='rotation_euler', frame=100)
+        object.keyframe_insert(data_path='rotation_euler', frame=50)
 
         # rotate at the z-axis
         object.rotation_euler = (0, 0, 0)
-        object.keyframe_insert(data_path='rotation_euler', frame=200)
+        object.keyframe_insert(data_path='rotation_euler', frame=100)
 
     def rotate_z_both(self, object, object1, scene):
 
         scene.frame_start = 0
-        scene.frame_end = 200
+        scene.frame_end = 100
 
         # rotate nothing
         object.rotation_euler = (0.0, 0.0, 0.0)
@@ -655,11 +655,11 @@ class Anaglypy():
 
         # rotate at the z-axis
         object.rotation_euler = (0, 0, math.pi)
-        object.keyframe_insert(data_path='rotation_euler', frame=100)
+        object.keyframe_insert(data_path='rotation_euler', frame=50)
 
         # rotate at the z-axis
         object.rotation_euler = (0, 0, math.pi * 2)
-        object.keyframe_insert(data_path='rotation_euler', frame=200)
+        object.keyframe_insert(data_path='rotation_euler', frame=100)
 
         # rotate nothing
         object1.rotation_euler = (0.0, 0.0, 0.0)
@@ -667,11 +667,11 @@ class Anaglypy():
 
         # rotate at the z-axis
         object1.rotation_euler = (0, 0, math.pi)
-        object1.keyframe_insert(data_path='rotation_euler', frame=100)
+        object1.keyframe_insert(data_path='rotation_euler', frame=50)
 
         # rotate at the z-axis
         object1.rotation_euler = (0, 0, math.pi * 2)
-        object1.keyframe_insert(data_path='rotation_euler', frame=200)
+        object1.keyframe_insert(data_path='rotation_euler', frame=100)
 
     def rotate_xyz_both(self, object, object1, scene):
 
