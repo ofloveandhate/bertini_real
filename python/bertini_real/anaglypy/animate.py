@@ -422,7 +422,7 @@ class Anaglypy():
         object1_dimensions = object1.dimensions
 
         # Resize/ Scale object
-        bpy.context.object.dimensions = 1object.dimensions[0], object.dimensions[
+        bpy.context.object.dimensions = object.dimensions[0], object.dimensions[
             1], 1.15
 
         # Grab the current object scale
