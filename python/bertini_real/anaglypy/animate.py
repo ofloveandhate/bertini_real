@@ -73,7 +73,7 @@ def extract_points(self):
     return points
 
 
-r, g, b = 0.015, 0.000, 1.000
+r, g, b = 0.350, 0.800, 0.660
 
 
 def diffuse():
@@ -609,7 +609,7 @@ class Anaglypy():
     def rotate_xyz(self, object, scene):
 
         scene.frame_start = 0
-        scene.frame_end = 150
+        scene.frame_end = 120
 
         # rotate nothing
         object.rotation_euler = (0.0, 0.0, 0.0)
@@ -617,15 +617,15 @@ class Anaglypy():
 
         # rotate at the z-axis
         object.rotation_euler = (0, 0, math.pi * 2)
-        object.keyframe_insert(data_path='rotation_euler', frame=50)
+        object.keyframe_insert(data_path='rotation_euler', frame=40)
 
         # rotate at the y-axis
         object.rotation_euler = (0, math.pi * 2, math.pi * 2)
-        object.keyframe_insert(data_path='rotation_euler', frame=100)
+        object.keyframe_insert(data_path='rotation_euler', frame=80)
 
         # rotate at the x-axis
         object.rotation_euler = (math.pi * 2, math.pi * 2, math.pi * 2)
-        object.keyframe_insert(data_path='rotation_euler', frame=150)
+        object.keyframe_insert(data_path='rotation_euler', frame=120)
 
     def spin_bf(self, object, scene):
 
@@ -676,7 +676,7 @@ class Anaglypy():
     def rotate_xyz_both(self, object, object1, scene):
 
         scene.frame_start = 0
-        scene.frame_end = 150
+        scene.frame_end = 120
 
         # rotate nothing
         object.rotation_euler = (0.0, 0.0, 0.0)
@@ -684,30 +684,30 @@ class Anaglypy():
 
         # rotate at the z-axis
         object.rotation_euler = (0, 0, math.pi * 2)
-        object.keyframe_insert(data_path='rotation_euler', frame=50)
+        object.keyframe_insert(data_path='rotation_euler', frame=40)
 
         # rotate at the y-axis
         object.rotation_euler = (0, math.pi * 2, math.pi * 2)
-        object.keyframe_insert(data_path='rotation_euler', frame=100)
+        object.keyframe_insert(data_path='rotation_euler', frame=80)
 
         # rotate at the x-axis
         object.rotation_euler = (math.pi * 2, math.pi * 2, math.pi * 2)
-        object.keyframe_insert(data_path='rotation_euler', frame=150)
+        object.keyframe_insert(data_path='rotation_euler', frame=120)
 
         object1.rotation_euler = (0.0, 0.0, 0.0)
         object1.keyframe_insert(data_path='rotation_euler', frame=0)
 
         # rotate at the z-axis
         object1.rotation_euler = (0, 0, math.pi * 2)
-        object1.keyframe_insert(data_path='rotation_euler', frame=50)
+        object1.keyframe_insert(data_path='rotation_euler', frame=40)
 
         # rotate at the y-axis
         object1.rotation_euler = (0, math.pi * 2, math.pi * 2)
-        object1.keyframe_insert(data_path='rotation_euler', frame=100)
+        object1.keyframe_insert(data_path='rotation_euler', frame=80)
 
         # rotate at the x-axis
         object1.rotation_euler = (math.pi * 2, math.pi * 2, math.pi * 2)
-        object1.keyframe_insert(data_path='rotation_euler', frame=150)
+        object1.keyframe_insert(data_path='rotation_euler', frame=120)
 
     def multi_rotate(self, object, object1, object2, scene):
 
