@@ -73,7 +73,7 @@ def extract_points(self):
     return points
 
 
-r, g, b = 0.350, 0.800, 0.660
+r, g, b = 0.354, 0.550, 1
 
 
 def diffuse():
@@ -326,18 +326,18 @@ class Anaglypy():
         object_dimensions = object.dimensions
 
         # Resize/ Scale object
-        bpy.context.object.dimensions = object.dimensions[0], object.dimensions[
-            1], 1.15  # resize z to 3
+        bpy.context.object.dimensions = object.dimensions[0], 1.5 , object.dimensions[
+            2]  # resize z to 3
 
         # Grab the current object scale
         object_scale = object.scale
 
         # Scale them by z scale
-        object.scale = (object_scale[2], object_scale[2], object_scale[2])
+        object.scale = (object_scale[1], object_scale[1], object_scale[1])
 
         # Rescale them (should try ratio method?)
-        object.scale = (object_scale[2] + 0.1,
-                        object_scale[2] + 0.1, object_scale[2] + 0.1)
+        object.scale = (object_scale[1] + 0.15,
+                        object_scale[1] + 0.15, object_scale[1] + 0.15)
 
         # go edit mode
         bpy.ops.object.mode_set(mode='EDIT')
@@ -388,18 +388,17 @@ class Anaglypy():
         object_dimensions = object.dimensions
 
         # Resize/ Scale object
-        bpy.context.object.dimensions = object.dimensions[0], object.dimensions[
-            1], 1.15
+        bpy.context.object.dimensions = object.dimensions[0], 1.15 , object.dimensions[2]
 
         # Grab the current object scale
         object_scale = object.scale
 
         # Scale them by z scale
-        object.scale = (object_scale[2], object_scale[2], object_scale[2])
+        object.scale = (object_scale[1], object_scale[1], object_scale[1])
 
         # Rescale them (should try ratio method?)
-        object.scale = (object_scale[2] + 0.1,
-                        object_scale[2] + 0.1, object_scale[2] + 0.1)
+        object.scale = (object_scale[1] + 0.15,
+                        object_scale[1] + 0.15, object_scale[1] + 0.15)
 
         # go edit mode
         bpy.ops.object.mode_set(mode='EDIT')
@@ -422,18 +421,18 @@ class Anaglypy():
         object1_dimensions = object1.dimensions
 
         # Resize/ Scale object
-        bpy.context.object.dimensions = object.dimensions[0], object.dimensions[
-            1], 1.15
+        bpy.context.object.dimensions = object.dimensions[0], 1.15 , object.dimensions[
+            2]
 
         # Grab the current object scale
         object1_scale = object1.scale
 
         # Scale them by z scale
-        object1.scale = (object1_scale[2], object1_scale[2], object1_scale[2])
+        object1.scale = (object1_scale[1], object1_scale[1], object1_scale[1])
 
         # Rescale them (should try ratio method?)
-        object1.scale = (object1_scale[2] + 0.1,
-                         object1_scale[2] + 0.1, object1_scale[2] + 0.1)
+        object1.scale = (object1_scale[1] + 0.15,
+                         object1_scale[1] + 0.15, object1_scale[1] + 0.15)
 
         object1.location = (1.65, 1.65, 0)
 
@@ -449,18 +448,18 @@ class Anaglypy():
         object2_dimensions = object2.dimensions
 
         # Resize/ Scale object
-        bpy.context.object.dimensions = object.dimensions[0], object.dimensions[
-            1], 1.15  # resize z to 1.0
+        bpy.context.object.dimensions = object.dimensions[0], 1.15 , object.dimensions[
+            2]  # resize z to 1.0
 
         # Grab the current object scale
         object2_scale = object2.scale
 
         # Scale them by z scale
-        object2.scale = (object2_scale[2], object2_scale[2], object2_scale[2])
+        object2.scale = (object2_scale[1], object2_scale[1], object2_scale[1])
 
         # Rescale them (should try ratio method?)
-        object2.scale = (object2_scale[2] + 0.1,
-                         object2_scale[2] + 0.1, object2_scale[2] + 0.1)
+        object2.scale = (object2_scale[1] + 0.15,
+                         object2_scale[1] + 0.15, object2_scale[1] + 0.15)
 
         object2.location = (-1.65, -1.65, 0)
 
@@ -507,18 +506,18 @@ class Anaglypy():
         object_dimensions = object.dimensions
 
         # Resize/ Scale object
-        bpy.context.object.dimensions = object.dimensions[0], object.dimensions[
-            1], 1.15
+        bpy.context.object.dimensions = object.dimensions[0], 1.15, object.dimensions[
+            2]
 
         # Grab the current object scale
         object_scale = object.scale
 
         # Scale them by z scale
-        object.scale = (object_scale[2], object_scale[2], object_scale[2])
+        object.scale = (object_scale[1], object_scale[1], object_scale[1])
 
         # Rescale them (should try ratio method?)
-        object.scale = (object_scale[2] + 0.1,
-                        object_scale[2] + 0.1, object_scale[2] + 0.1)
+        object.scale = (object_scale[1] + 0.15,
+                        object_scale[1] + 0.15, object_scale[1] + 0.15)
 
         # go edit mode
         bpy.ops.object.mode_set(mode='EDIT')
@@ -550,18 +549,18 @@ class Anaglypy():
         object1_dimensions = object1.dimensions
 
         # Resize/ Scale object
-        bpy.context.object.dimensions = object1.dimensions[0], object1.dimensions[
-            1], 1.15
+        bpy.context.object.dimensions = object1.dimensions[0], 1.15, object1.dimensions[
+            2]
 
         # Grab the current object scale
         object1_scale = object1.scale
 
         # Scale them by z scale
-        object1.scale = (object1_scale[2], object1_scale[2], object1_scale[2])
+        object1.scale = (object1_scale[1], object1_scale[1], object1_scale[1])
 
         # Rescale them (should try ratio method?)
-        object1.scale = (object1_scale[2] + 0.1,
-                         object1_scale[2] + 0.1, object1_scale[2] + 0.1)
+        object1.scale = (object1_scale[1] + 0.15,
+                         object1_scale[1] + 0.15, object1_scale[1] + 0.15)
 
         # go edit mode
         bpy.ops.object.mode_set(mode='EDIT')
