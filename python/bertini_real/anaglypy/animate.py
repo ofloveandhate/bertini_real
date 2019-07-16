@@ -73,7 +73,7 @@ def extract_points(self):
     return points
 
 
-r, g, b = 0.423, 0.8, 0.327
+r, g, b = 0.423, 1.0, 0.327
 
 
 def diffuse():
@@ -388,7 +388,7 @@ class Anaglypy():
         object_dimensions = object.dimensions
 
         # Resize/ Scale object
-        bpy.context.object.dimensions = object.dimensions[0], 1.15 , object.dimensions[2]
+        bpy.context.object.dimensions = object.dimensions[0], 1.0 , object.dimensions[2]
 
         # Grab the current object scale
         object_scale = object.scale
@@ -421,7 +421,7 @@ class Anaglypy():
         object1_dimensions = object1.dimensions
 
         # Resize/ Scale object
-        bpy.context.object.dimensions = object.dimensions[0], 1.15 , object.dimensions[
+        bpy.context.object.dimensions = object.dimensions[0], 1.0 , object.dimensions[
             2]
 
         # Grab the current object scale
@@ -448,7 +448,7 @@ class Anaglypy():
         object2_dimensions = object2.dimensions
 
         # Resize/ Scale object
-        bpy.context.object.dimensions = object.dimensions[0], 1.15 , object.dimensions[
+        bpy.context.object.dimensions = object.dimensions[0], 1.0 , object.dimensions[
             2]  # resize z to 1.0
 
         # Grab the current object scale
