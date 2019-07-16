@@ -73,7 +73,7 @@ def extract_points(self):
     return points
 
 
-r, g, b = 0.354, 0.550, 1
+r, g, b = 0.423, 0.8, 0.327
 
 
 def diffuse():
@@ -397,8 +397,8 @@ class Anaglypy():
         object.scale = (object_scale[1], object_scale[1], object_scale[1])
 
         # Rescale them (should try ratio method?)
-        object.scale = (object_scale[1] + 0.15,
-                        object_scale[1] + 0.15, object_scale[1] + 0.15)
+        object.scale = (object_scale[1] + 0.1,
+                        object_scale[1] + 0.1, object_scale[1] + 0.1)
 
         # go edit mode
         bpy.ops.object.mode_set(mode='EDIT')
@@ -431,8 +431,8 @@ class Anaglypy():
         object1.scale = (object1_scale[1], object1_scale[1], object1_scale[1])
 
         # Rescale them (should try ratio method?)
-        object1.scale = (object1_scale[1] + 0.15,
-                         object1_scale[1] + 0.15, object1_scale[1] + 0.15)
+        object1.scale = (object1_scale[1] + 0.1,
+                         object1_scale[1] + 0.1, object1_scale[1] + 0.1)
 
         object1.location = (1.65, 1.65, 0)
 
@@ -458,8 +458,8 @@ class Anaglypy():
         object2.scale = (object2_scale[1], object2_scale[1], object2_scale[1])
 
         # Rescale them (should try ratio method?)
-        object2.scale = (object2_scale[1] + 0.15,
-                         object2_scale[1] + 0.15, object2_scale[1] + 0.15)
+        object2.scale = (object2_scale[1] + 0.1,
+                         object2_scale[1] + 0.1, object2_scale[1] + 0.1)
 
         object2.location = (-1.65, -1.65, 0)
 
