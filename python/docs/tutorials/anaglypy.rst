@@ -1,7 +1,7 @@
 Introduction to Anaglypy with bertini_real
 ===========================================
 
-The Anaglypy class in bertini_real allows user to render 3d anaglyph movies of algebraic surfaces using Blender/Python API.
+The Anaglypy class in bertini_real allows user to render 3d anaglyph movies 📽 of algebraic surfaces using Blender/Python API. 
 
 Python Scripting
 *****************
