@@ -21,6 +21,7 @@ Tutorials ✏️
 
    tutorials/glumpy
    tutorials/tmesh
+   tutorials/anaglypy
 
 
 Details 📝
@@ -32,6 +33,7 @@ Details 📝
 
    glumpy
    tmesh
+   anaglypy
 
 
 Indices and tables 📋

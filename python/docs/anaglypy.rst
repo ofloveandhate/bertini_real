@@ -8,5 +8,5 @@ Anaglypy Documentation
 
 Python libraries used: Bpy (Blender), Numpy
 
-..automodule:: anaglypy
+.. automodule:: anaglypy.anaglypy
    :members:
