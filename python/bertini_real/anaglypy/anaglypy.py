@@ -84,7 +84,7 @@ def extract_points(self):
     return points
 
 
-r, g, b = 0.423, 1.0, 0.327
+r, g, b =  0.07, 0.024, 1.51
 
 
 def diffuse():
@@ -349,7 +349,7 @@ class Anaglypy():
         object_dimensions = object.dimensions
 
         # Resize/ Scale object
-        bpy.context.object.dimensions = object.dimensions[0], 1.5 , object.dimensions[
+        bpy.context.object.dimensions = object.dimensions[0], 1.5, object.dimensions[
             2]  # resize z to 3
 
         # Grab the current object scale
@@ -377,7 +377,7 @@ class Anaglypy():
         context = bpy.context
         scene = context.scene
 
-        scene.render.use_multiview = True
+        # scene.render.use_multiview = True
 
         bpy.context.scene.render.image_settings.views_format = 'STEREO_3D'
 
@@ -487,7 +487,7 @@ class Anaglypy():
         context = bpy.context
         scene = context.scene
 
-        scene.render.use_multiview = True
+        # scene.render.use_multiview = True
 
         bpy.context.scene.render.image_settings.color_mode = 'RGB'
 
@@ -529,7 +529,8 @@ class Anaglypy():
         object_dimensions = object.dimensions
 
         # Resize/ Scale object
-        bpy.context.object.dimensions = object.dimensions[0], 1.0 , object.dimensions[2]
+        bpy.context.object.dimensions = object.dimensions[
+            0], 1.0, object.dimensions[2]
 
         # Grab the current object scale
         object_scale = object.scale
@@ -562,7 +563,7 @@ class Anaglypy():
         object1_dimensions = object1.dimensions
 
         # Resize/ Scale object
-        bpy.context.object.dimensions = object.dimensions[0], 1.0 , object.dimensions[
+        bpy.context.object.dimensions = object.dimensions[0], 1.0, object.dimensions[
             2]
 
         # Grab the current object scale
@@ -589,7 +590,7 @@ class Anaglypy():
         object2_dimensions = object2.dimensions
 
         # Resize/ Scale object
-        bpy.context.object.dimensions = object.dimensions[0], 1.0 , object.dimensions[
+        bpy.context.object.dimensions = object.dimensions[0], 1.0, object.dimensions[
             2]  # resize z to 1.0
 
         # Grab the current object scale
@@ -610,7 +611,7 @@ class Anaglypy():
         context = bpy.context
         scene = context.scene
 
-        scene.render.use_multiview = True
+        # scene.render.use_multiview = True
 
         bpy.context.scene.render.image_settings.color_mode = 'RGB'
 
@@ -622,7 +623,6 @@ class Anaglypy():
         bpy.data.cameras['Camera'].stereo.interocular_distance = 1.5
 
         return object, object1, object2, scene
-
 
     def rotate_z(self, object, scene):
         """ Create a rotation around the object z-axis
@@ -672,7 +672,7 @@ class Anaglypy():
         object.rotation_euler = (math.pi * 2, math.pi * 2, math.pi * 2)
         object.keyframe_insert(data_path='rotation_euler', frame=120)
 
-    def spin_bf(self, object, scene):
+    def spin(self, object, scene):
         """ Create a spinning animation of object 
 
             :param object: meshes of faces, edges and/or vertices
@@ -773,6 +773,42 @@ class Anaglypy():
         object1.rotation_euler = (math.pi * 2, math.pi * 2, math.pi * 2)
         object1.keyframe_insert(data_path='rotation_euler', frame=120)
 
+    def spin_both(self, object, object1, scene):
+        """ Create a spinning animation of two objects
+
+            :param object: first meshes of faces, edges and/or vertices
+            :param object1: second meshes of faces, edges and/or vertices
+            :param scene: place to store objects and materials
+
+        """
+
+        scene.frame_start = 0
+        scene.frame_end = 100
+
+        # rotate nothing
+        object.rotation_euler = (0.0, 0.0, 0.0)
+        object.keyframe_insert(data_path='rotation_euler', frame=0)
+
+        # rotate at the z-axis
+        object.rotation_euler = (0, 0, math.pi * 2)
+        object.keyframe_insert(data_path='rotation_euler', frame=50)
+
+        # rotate at the z-axis
+        object.rotation_euler = (0, 0, 0)
+        object.keyframe_insert(data_path='rotation_euler', frame=100)
+
+        # rotate nothing
+        object1.rotation_euler = (0.0, 0.0, 0.0)
+        object1.keyframe_insert(data_path='rotation_euler', frame=0)
+
+        # rotate at the z-axis
+        object1.rotation_euler = (0, 0, math.pi * 2)
+        object1.keyframe_insert(data_path='rotation_euler', frame=50)
+
+        # rotate at the z-axis
+        object1.rotation_euler = (0, 0, 0)
+        object1.keyframe_insert(data_path='rotation_euler', frame=100)
+
     def multi_rotate(self, object, object1, object2, scene):
         """ Create XYZ rotation animation for three objects 
 
@@ -782,7 +818,7 @@ class Anaglypy():
             :param scene: place to store objects and materials
 
         """
-        
+
         scene.frame_start = 0
         scene.frame_end = 100
 
@@ -822,36 +858,48 @@ class Anaglypy():
         object2.rotation_euler = (math.pi * 2, 0, 0)
         object2.keyframe_insert(data_path='rotation_euler', frame=100)
 
-
     # ----------------------------------------------------------------------- #
     #                    Translate method
     #                       Not working
     # ----------------------------------------------------------------------- #
 
-    # def translate(self, object, scene):
+    def translate(self, object, scene):
 
-    #     scene.frame_start = 0
-    #     scene.frame_end = 1
+        scene.frame_start = 0
+        scene.frame_end = 1
 
-    #     bpy.data.cameras['Camera'].stereo.convergence_distance = 11
-    #     bpy.data.cameras['Camera'].stereo.interocular_distance = 0.1  # 1-2
+        bpy.data.cameras['Camera'].stereo.convergence_distance = 11
+        bpy.data.cameras['Camera'].stereo.interocular_distance = 0.1  # 1-2
 
-    #     # object.location = (-1.7, -1.7, 0.0)
-    #     object.location = (0, 0, 0.0)
-    #     object.rotation_euler = (0.0, 0.0, 0.0)
-    #     object.keyframe_insert(data_path='location', frame=0)
-    #     object.keyframe_insert(data_path='rotation_euler', frame=0)
+        # object.location = (-1.7, -1.7, 0.0)
+        object.location = (0, 0, 0.0)
+        object.rotation_euler = (0.0, 0.0, 0.0)
+        object.keyframe_insert(data_path='location', frame=0)
+        object.keyframe_insert(data_path='rotation_euler', frame=0)
 
-    #     object.location = (5.5, -5.5, 3.5)
-    #     object.rotation_euler = (0, 0, math.pi * 2)
-    #     object.keyframe_insert(data_path='location', frame=1)
-    #     object.keyframe_insert(data_path='rotation_euler', frame=1)
+        object.location = (5.5, -5.5, 3.5)
+        object.rotation_euler = (0, 0, math.pi * 2)
+        object.keyframe_insert(data_path='location', frame=1)
+        object.keyframe_insert(data_path='rotation_euler', frame=1)
 
-    #     object.location = (0, 0, 0.0)
-    #     object.rotation_euler = (0, 0, 0)
-    #     object.keyframe_insert(data_path='location', frame=2)
-    #     object.keyframe_insert(data_path='rotation_euler', frame=2)
+        object.location = (0, 0, 0.0)
+        object.rotation_euler = (0, 0, 0)
+        object.keyframe_insert(data_path='location', frame=2)
+        object.keyframe_insert(data_path='rotation_euler', frame=2)
 
+stereo_options = ["Anaglyph 3D", "Non-Anaglyph 3D"]
+
+
+def stereo_flag(scene, directory):
+    stereo_option = user_pick(stereo_options)
+    if stereo_option == 1:
+        scene.render.use_multiview = True
+        directory = directory + "_anaglyph"
+    else:
+        scene.render.use_multiview = False
+        directory = directory + "_non_anaglyph"
+
+    return directory
 
 def render(scene, directory):
     """ Create XYZ rotation animation for three objects 
@@ -865,10 +913,12 @@ def render(scene, directory):
     scene.render.resolution_x = 800
     scene.render.resolution_y = 600
 
+    directory = stereo_flag(scene, directory)
+
     scene.render.filepath = "render/" + fileName + directory
     scene.render.image_settings.file_format = "AVI_JPEG"
     scene.render.image_settings.color_mode = "RGB"
-
+    
     bpy.ops.render.render(animation=True)
 
     print("Export " + '\x1b[0;33;40m' + "Anaglyph 3D " + '\x1b[0m' +
@@ -879,7 +929,7 @@ def render(scene, directory):
 
 
 options = ["Rotate Z", "Rotate XYZ",
-           "Spin Back & Forth", "Multi Rotate"]
+           "Spin", "Multi Rotate", "T"]
 
 
 def raw(data=None):
@@ -904,7 +954,7 @@ def raw(data=None):
     elif option == 3:
         object, scene = surface.generate_obj_scene(vertex, faces)
         directory = "_spin_raw"
-        surface.spin_bf(object, scene)
+        surface.spin(object, scene)
         render(scene, directory)
 
     elif option == 4:
@@ -944,7 +994,7 @@ def smooth(data=None):
     elif option == 3:
         object, scene = surface.generate_obj_scene(vertex, faces)
         directory = "_spin_smooth"
-        surface.spin_bf(object, scene)
+        surface.spin(object, scene)
         render(scene, directory)
 
     elif option == 4:
@@ -960,7 +1010,7 @@ def smooth(data=None):
         surface.translate(object, scene)
         render(scene, directory)
 
-both_options = ["Rotate Z", "Rotate XYZ"]
+both_options = ["Rotate Z", "Rotate XYZ", "Spin"]
 
 
 def both(data=None):
@@ -984,6 +1034,13 @@ def both(data=None):
             vertex, faces, vertex_raw, faces_raw)
         directory = "_rotate_xyz_both"
         surface.rotate_xyz_both(object, object1, scene)
+        render(scene, directory)
+
+    elif option == 3:
+        object, object1, scene = surface.generate_both_scene(
+            vertex, faces, vertex_raw, faces_raw)
+        directory = "_rotate_xyz_both"
+        surface.spin_both(object, object1, scene)
         render(scene, directory)
 
 if __name__ == "__main__":
