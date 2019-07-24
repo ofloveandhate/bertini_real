@@ -194,7 +194,7 @@ You can modify the rgb values from this line of code in ``anaglypy.py``:
 
     r,g,b = 1.0, 0.0, 0.2
 
-You can convert videos into gifs and here's a gallery of 3d anaglyph and non-anaglyph animations!
+Here's a gallery of 3d anaglyph and non-anaglyph algebraic surface animations!
 
 .. image:: anaglypy_pictures/both_multi.gif
    :width: 100 %
