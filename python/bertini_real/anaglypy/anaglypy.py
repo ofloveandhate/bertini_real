@@ -11,6 +11,7 @@ Summer 2019
 import os
 import bpy
 import bertini_real
+import json
 import math
 import numpy as np
 
@@ -27,6 +28,9 @@ fileName = os.getcwd().split(os.sep)[-1]
 # Switch render mode to Cycle Render
 bpy.context.scene.render.engine = 'CYCLES'
 
+# Import movie data from JSON file
+with open(os.getcwd() + '/anaglypy.json') as movie_data:
+    data = json.load(movie_data)
 
 class ReversableList(list):
     """ Create a ReversableList object for reversing order of data
@@ -84,7 +88,7 @@ def extract_points(self):
     return points
 
 
-r, g, b =  0.07, 0.024, 1.51
+r, g, b =  data['r'], data['g'], data['b']
 
 
 def diffuse():
@@ -909,9 +913,9 @@ def render(scene, directory):
 
     """
 
-    scene.render.resolution_percentage = 100
-    scene.render.resolution_x = 800
-    scene.render.resolution_y = 600
+    scene.render.resolution_percentage = data['resolution_percentage']
+    scene.render.resolution_x = data['resolution_x']
+    scene.render.resolution_y = data['resolution_y']
 
     directory = stereo_flag(scene, directory)
 
