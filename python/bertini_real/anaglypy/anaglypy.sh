@@ -6,7 +6,7 @@ for D in *; do
     	if grep -Fxq "${D}" surfaces.txt
     	then
     		cd "${D}" # navigate to surface directory
-    		blender -b -P ../anaglypy.py < ../options.txt
+    		blender -b -P ../anaglypy.py -- anaglypy.json
     		cd ..
     	fi
     fi
