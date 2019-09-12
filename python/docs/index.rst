@@ -32,8 +32,7 @@ Details 📝
    :caption: Contents:
 
    glumpy
-   tmesh
-   anaglypy
+   tmesh 
 
 
 Indices and tables 📋
