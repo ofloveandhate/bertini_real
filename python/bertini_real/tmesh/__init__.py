@@ -5,7 +5,7 @@ Fall 2018 - Spring 2019
 
 .. module:: tmesh
     :platform: Unix, Windows
-    :synopsis: The tmesh uses Trimesh to export and solidify raw/smooth STL and normal fixing.
+    :synopsis: The tmesh uses Trimesh to export and solidify raw/smooth OBJ and normal fixing.
 
 """
 import bertini_real
@@ -33,7 +33,7 @@ class ReversableList(list):
 
 
 class TMesh():
-    """ Create a TMesh object for exporting STL files """
+    """ Create a TMesh object for exporting OBJ files """
 
     def __init__(self, data=None):
         """ Read data from disk
@@ -46,11 +46,11 @@ class TMesh():
         else:
             self.decomposition = data
 
-    def stl_raw(self):
-        """ Export raw decomposition of surfaces to STL """
+    def obj_raw(self):
+        """ Export raw decomposition of surfaces to OBJ """
 
         print('\n' + '\x1b[0;34;40m' +
-              'Generating raw STL surface...' + '\x1b[0m')
+              'Generating raw OBJ surface...' + '\x1b[0m')
 
         points = extract_points(self)
 
@@ -218,17 +218,17 @@ class TMesh():
 
         raw_mesh.fix_normals()
 
-        raw_mesh.export(file_obj='stl_raw_' + fileName +
-                        '.stl', file_type='stl')
+        raw_mesh.export(file_obj='obj_raw_' + fileName +
+                        '.obj', file_type='obj')
 
-        print("Export " + '\x1b[0;35;40m' + "stl_raw_" +
-              fileName + ".stl" + '\x1b[0m' + " successfully")
+        print("Export " + '\x1b[0;35;40m' + "obj_raw_" +
+              fileName + ".obj" + '\x1b[0m' + " successfully")
 
-    def stl_smooth(self):
-        """ Export smooth decomposition of surfaces to STL """
+    def obj_smooth(self):
+        """ Export smooth decomposition of surfaces to OBJ """
 
         print('\n' + '\x1b[0;34;40m' +
-              'Generating smooth STL surface...' + '\x1b[0m')
+              'Generating smooth OBJ surface...' + '\x1b[0m')
 
         points = extract_points(self)
 
@@ -255,17 +255,17 @@ class TMesh():
 
         A.fix_normals()
 
-        A.export(file_obj='stl_smooth_' +
-                 fileName + '.stl', file_type='stl')
+        A.export(file_obj='obj_smooth_' +
+                 fileName + '.obj', file_type='obj')
 
-        print("Export " + '\x1b[0;35;40m' + "stl_smooth_" +
-              fileName + ".stl" + '\x1b[0m' + " successfully")
+        print("Export " + '\x1b[0;35;40m' + "obj_smooth_" +
+              fileName + ".obj" + '\x1b[0m' + " successfully")
 
     def solidify_raw(self):
-        """ Solidify raw version of STL """
+        """ Solidify raw version of OBJ """
 
         print('\n' + '\x1b[0;34;40m' +
-              'Solidiying raw STL surface...' + '\x1b[0m')
+              'Solidiying raw OBJ surface...' + '\x1b[0m')
 
         points = extract_points(self)
 
@@ -481,16 +481,16 @@ class TMesh():
         fileName = os.getcwd().split(os.sep)[-1]
 
         finalmesh.export(file_obj='solidify_raw_' +
-                         fileName + '.stl', file_type='stl')
+                         fileName + '.obj', file_type='obj')
 
         print("Export " + '\x1b[0;35;40m' + "solidify_raw_" +
-              fileName + ".stl" + '\x1b[0m' + " successfully")
+              fileName + ".obj" + '\x1b[0m' + " successfully")
 
     def solidify_smooth(self):
-        """ Solidify smooth version of STL """
+        """ Solidify smooth version of OBJ """
 
         print('\n' + '\x1b[0;34;40m' +
-              'Solidiying smooth STL surface...' + '\x1b[0m')
+              'Solidiying smooth OBJ surface...' + '\x1b[0m')
 
         points = extract_points(self)
 
@@ -565,10 +565,10 @@ class TMesh():
         fileName = os.getcwd().split(os.sep)[-1]
 
         finalmesh.export(file_obj='solidify_smooth_' +
-                         fileName + '.stl', file_type='stl')
+                         fileName + '.obj', file_type='obj')
 
         print("Export " + '\x1b[0;35;40m' + "solidify_smooth_" +
-              fileName + ".stl" + '\x1b[0m' + " successfully")
+              fileName + ".obj" + '\x1b[0m' + " successfully")
 
 
 def extract_points(self):
@@ -591,30 +591,30 @@ def extract_points(self):
     return points
 
 
-def stl_raw(data=None):
-    """ Create a TMesh object and export raw surface STL
+def obj_raw(data=None):
+    """ Create a TMesh object and export raw surface OBJ
 
        :param data: Surface decomposition data. If data is None, then it reads the most recent BRData.pkl.
     """
 
     surface = TMesh(data)
-    surface.stl_raw()
+    surface.obj_raw()
 
 
-def stl_smooth(data=None):
-    """ Create a TMesh object and export smooth surface STL
+def obj_smooth(data=None):
+    """ Create a TMesh object and export smooth surface OBJ
 
         :param data: Surface decomposition data. If data is None, then it reads the most recent BRData.pkl.
     """
     try:
         surface = TMesh(data)
-        surface.stl_smooth()
+        surface.obj_smooth()
     except:
-        print('\x1b[0;31;40m'+'Error running stl_smooth()! No samples found'+ '\x1b[0m')
+        print('\x1b[0;31;40m'+'Error running obj_smooth()! No samples found'+ '\x1b[0m')
 
     
 def solidify_raw(data=None):
-    """ Create a TMesh object and solidify raw surface STL
+    """ Create a TMesh object and solidify raw surface OBJ
 
         :param data: Surface decomposition data. If data is None, then it reads the most recent BRData.pkl.
     """
@@ -624,7 +624,7 @@ def solidify_raw(data=None):
 
 
 def solidify_smooth(data=None):
-    """ Create a TMesh object and solidify smooth surface STL
+    """ Create a TMesh object and solidify smooth surface OBJ
 
         :param data: Surface decomposition data. If data is None, then it reads the most recent BRData.pkl.
     """
