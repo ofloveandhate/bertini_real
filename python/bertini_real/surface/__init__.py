@@ -1,5 +1,5 @@
 import bertini_real.parse
-
+import numpy as np
 from bertini_real.decomposition import Decomposition
 from bertini_real.curve import Curve
 
@@ -94,74 +94,95 @@ class Surface(Decomposition):
 
     def faces_nonsingularly_connected(self, seed_index):
         self.check_data()
+        # print(seed_index)
 
-        new_indices = seed_index
-        # connected = []
+        new_indices = [seed_index]
         connected = []
+
 
         while not(new_indices == []):
             # connected = concat([connected, new_indices])
-            connected = [connected, seed_index]
-            # print(connected)
-            [new_indices] = self.find_connected_faces(connected)
+            connected.extend(new_indices)
+            print('connected while loop',connected)
+            new_indices = self.find_connected_faces(connected)
+            print('new indices in while loop', new_indices)
 
-        connected = connected.sort()
-        set_num_faces = range(1, self.num_faces)
 
-        # unconnected = setdiff(arange(1, self.num_faces), connected)
+        print('connected  sort',connected)
+        connected.sort()
+        set_num_faces = list(range(self.num_faces))
+
+
+        print('num_faces',set_num_faces)
+        print('connected outside',connected)
+
         unconnected = list(set(set_num_faces) - set(connected))
+
+        # if(connected == None):
+        #     unconnected = set_num_faces
+        # else:
+        #     unconnected = list(set(set_num_faces) - set(connected))
 
         return connected, unconnected
 
     def find_connected_faces(self, current):
+        # perform a double loop over the faces
+        print('current',current)
         new_indices = []
-        # unexamined_indices = arrange(1, self.num_faces)
+
         unexamined_indices = list(range(self.num_faces))
 
-        # print(current)
-        # print(unexamined_indices)
-
         # delete the faces we already know connect.
-        # unexamined_indices[current] = []
-        unexamined_indices.pop(0)
-        current.pop(0)
-        print(current)
-        # print(unexamined_indices)
+        unexamined_indices = list(set(unexamined_indices)-set(current))
 
         for ii in range(len(current)):
             c = current[ii]
+            print('c = current[ii]', c)
             f = self.faces[c]  # unpack the current face
             deleteme = []
 
+
             for jj in range(len(unexamined_indices)):
                 d = unexamined_indices[jj]
+                # print('d', d)
                 g = self.faces[d]  # unpack the examined face
 
                 if self.faces_nonsingularly_connect(f, g):
                     new_indices.append(d)
                     deleteme.append(d)
 
+            print('new_indices after j loop', new_indices)
+
+
+
             unexamined_indices = list(set(unexamined_indices) - set(deleteme))
 
         return new_indices
 
-    def faces_nonsingularly_connect(self, f, g):
-        val = False
+    def faces_nonsingularly_connect(self, f, g): #queries whether faces f and g nonsingularly connect
+        val = False  # assume no
 
         if self.cannot_possibly_meet(f, g):
-            return  # assume no
-        else:
-            if self.meet_at_left(f, g):
-                val = True
-            else:
-                if self.meet_at_right(f, g):
-                    val = True
-                else:
-                    if self.meet_at_top(f, g):
-                        val = True
-                    else:
-                        if self.meet_at_bottom(f, g):
-                            val = True
+            # print('cannot_possibly_meet')
+            return val
+
+        elif self.meet_at_left(f, g):
+            print('meet_at_left')
+            val = True
+
+        elif self.meet_at_right(f, g):
+            print('meet_at_right')
+            val = True
+
+        elif self.meet_at_top(f, g):
+            print('meet_at_top')
+            val = True
+
+        elif self.meet_at_bottom(f, g):
+            print('meet_at_bottom')
+            val = True
+
+        # else:
         return val
 
     def cannot_possibly_meet(self, f, g):
@@ -170,9 +191,12 @@ class Surface(Decomposition):
         if abs(f['middle slice index'] - g['middle slice index']) >= 2:
             val = True
 
+        # print('cannot_possibly_meet', val)
+
         return val
 
     def meet_at_left(self, f, g):
+        # print('meet_at_left')
         val = False
 
         for ii in range(f['num left']):
@@ -187,7 +211,7 @@ class Surface(Decomposition):
 
                 if a == b and not(self.is_degenerate(e)) and not(self.is_degenerate(E)):
                     val = True
-                    return
+                    return val
 
             for jj in range(g['num right']):
                 E = self.critical_point_slices[
@@ -196,10 +220,11 @@ class Surface(Decomposition):
 
                 if a == b and not(self.is_degenerate(e)) and not(self.is_degenerate(E)):
                     val = True
-                    return
+                    return val
         return val
 
     def meet_at_right(self, f, g):
+        # print('meet_at_right')
         val = False
 
         for ii in range(f['num right']):
@@ -214,7 +239,7 @@ class Surface(Decomposition):
 
                 if a == b and not(self.is_degenerate(e)) and not(self.is_degenerate(E)):
                     val = True
-                    return
+                    return val
 
             for jj in range(g['num right']):
                 E = self.critical_point_slices[
@@ -223,59 +248,62 @@ class Surface(Decomposition):
 
                 if a == b and not(self.is_degenerate(e)) and not(self.is_degenerate(E)):
                     val = True
-                    return
+                    return val
         return val
 
     def meet_at_top(self, f, g):
+        # print('meet_at_top')
         val = False
 
-        if(f['system top'][1:15] == 'input_singcurve'):
-            return  # cannot meet singularly, because edge is singular
+        if(f['system top'][0:15] == 'input_singcurve'):
+            return val  # cannot meet singularly, because edge is singular
         else:
             # at least they are in the same interval
             if f['middle slice index'] != g['middle slice index']:
-                return
+                return val
 
         if (f['system top'] == g['system top']):
             if (self.critical_curve.inputfilename == f['system top']):
                 if (f['top'] == g['top']):
                     val = True
-                    return
+                    return val
 
         if (f['system top'] == g['system bottom']):
             if (self.critical_curve.inputfilename == f['system top']):
                 if (f['top'] == g['bottom']):
                     val = True
-                    return
+                    return val
 
         return val
 
     def meet_at_bottom(self, f, g):
+        # print('meet_at_bottom')
         val = False
 
-        if(f['system bottom'][1:15] == 'input_singcurve'):
-            return  # cannot meet singularly, because edge is singular
+        if(f['system bottom'][0:15] == 'input_singcurve'):
+            return val  # cannot meet singularly, because edge is singular
         else:
             # at least they are in the same interval
             if f['middle slice index'] != g['middle slice index']:
-                return
+                return val
 
         if (f['system bottom'] == g['system top']):
             if (self.critical_curve.inputfilename == f['system bottom']):
                 if (f['bottom'] == g['top']):
                     val = True
-                    return
+                    return val
 
-        if (f['system bottom'] == g['system top']):
+        if (f['system bottom'] == g['system bottom']):
             if (self.critical_curve.inputfilename == f['system bottom']):
-                if (f['bottom'] == g['top']):
+                if (f['bottom'] == g['bottom']):
                     val = True
-                    return
+                    return val
 
         return val
 
     def is_degenerate(self, e):
         val = (e[0] == e[1]) or (e[1] == e[2])
+        print('is_degenerate', val)
         return val
 
     def separate_into_nonsingular_pieces(self):
@@ -283,16 +311,17 @@ class Surface(Decomposition):
 
         indices = []
         connected = []
-        unconnected_this = [1]
+        unconnected_this = [0]
 
         while not(unconnected_this == []):
             seed = unconnected_this[0]
             [connected_this, unconnected_this] = self.faces_nonsingularly_connected(
                 seed)
-            indices[end() + 1] = connected_this
-            connected = [connected, connected_this]
-            unconnected_this = setdiff(unconnected_this, connected)
+            indices.append(connected_this)
+            connected.extend(connected_this)
+            unconnected_this = list(set(unconnected_this) - set(connected))
 
+        print('indices outside while', indices)
         return indices
 
 
