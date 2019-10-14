@@ -143,7 +143,7 @@ class BRData(object):
                 while line == '\n':
                     line = f.readline()
 
-                self.vertices[ii]['type'] = float(line.replace('\n', ''))
+                self.vertices[ii]['type'] = int(line.replace('\n', ''))
         return
 
     def gather_surface(self, directory):
