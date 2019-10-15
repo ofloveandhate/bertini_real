@@ -1,0 +1,47 @@
+%this config is such overkill
+
+CONFIG
+
+randomseed: 4;
+
+SHARPENDIGITS: 30;
+tracktype: 1;
+
+condnumthreshold: 1e300;
+
+mptype: 2;
+
+tracktolbeforeeg: 1e-7;
+tracktolbeforeeg: 1e-8;
+finaltol: 1e-13;
+
+securitylevel: 1;
+
+maxstepsize: 0.05;
+
+ODEPREDICTOR: 8;
+
+ENDGAMENUM: 2;
+numsamplepoints: 12;
+
+maxcyclenum: 15;
+
+maxnewtonits: 1;
+maxstepsbeforenewton: 0;
+
+FunctionTolerance: 1e-6;
+
+endgamebdry: 0.0001;
+
+END;
+
+INPUT
+
+variable_group xr, xi, yr, yi;
+
+function f1, f2;
+
+f1 = xr^2 - xi^2 - yi^2 + yr^2 - 1;
+f2 = 2*xi*xr + 2*yi*yr;
+
+END;
