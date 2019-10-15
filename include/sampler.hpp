@@ -176,9 +176,18 @@ double compute_square_of_difference_from_sixtydegrees(comp_mp temp, comp_mp leng
 void ScaleByCycleNum(comp_mp result, comp_mp input, int cycle_num_l, int cycle_num_r);
 
 
+/**
+\brief a function to save a vector of ribs to a file.
+*/
+void SaveRibs(std::vector<Rib> const& ribs, int face_index, sampler_configuration const& sampler_options);
 
 
+/**
+\brief A function that should be run before the sampling, when save_ribs is true
 
+Creates a folder for the ribs
+*/
+void PrepareForSavingRibs(sampler_configuration const& sampler_options);
 
 
 

@@ -313,7 +313,8 @@ void SamplerMaster(sampler_configuration & sampler_options)
 
 	boost::filesystem::path directoryName;
 
-	get_dir_mptype_dimen( directoryName, MPType, dimension);
+	get_dir_mptype_dimen( directoryName, MPType, dimension); // i really do hate this.
+	sampler_options.output_dir(directoryName);
 	witnessSetName = directoryName / "WitnessSet";
 	samplingNamenew = directoryName;
 

@@ -10,6 +10,8 @@ void Surface::fixed_sampler(VertexSet & V,
 							sampler_configuration & sampler_options,
 							SolverConfiguration & solve_options)
 {
+	if (sampler_options.save_ribs)
+		PrepareForSavingRibs(sampler_options);
 
 	FixedSampleCurves(V, sampler_options, solve_options);
 
@@ -482,7 +484,8 @@ void Surface::FixedSampleFace(int face_index, VertexSet & V, sampler_configurati
 	}
 
 	StitchRibs(ribs,V);
-
+	if (sampler_options.save_ribs)
+		SaveRibs(ribs, face_index, sampler_options);
 
 	clear_vec_mp(blank_point);
 	clear_mp(target_projection_value);
@@ -511,6 +514,8 @@ void Surface::AdaptiveSampler(VertexSet & V,
 							sampler_configuration & sampler_options,
 							SolverConfiguration & solve_options)
 {
+	if (sampler_options.save_ribs)
+		PrepareForSavingRibs(sampler_options);
 
 	auto num_ribs_between_crits = AdaptiveSampleCurves(V, sampler_options, solve_options);
 
@@ -1142,7 +1147,8 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 
 
 	StitchRibs(ribs,V);
-
+	if (sampler_options.save_ribs)
+		SaveRibs(ribs, face_index, sampler_options);
 
 	clear_vec_mp(blank_point);
 	clear_mp(target_projection_value);
@@ -1273,3 +1279,25 @@ std::ostream & operator<<(std::ostream &os, const Rib & r)
 	return os;
 }
 
+
+void PrepareForSavingRibs(sampler_configuration const& sampler_options)
+{
+	auto rib_dir = sampler_options.output_dir() / "ribs";
+	std::cout << "making rib directory: " << rib_dir << std::endl;
+
+	boost::filesystem::create_directory(rib_dir);
+}
+
+
+void SaveRibs(std::vector<Rib> const& ribs, int face_index, sampler_configuration const& sampler_options)
+{
+	std::stringstream converter;
+	converter << "face_" << face_index << ".ribs";
+
+	auto this_rib_file = sampler_options.output_dir() / "ribs" / converter.str();
+
+
+	std::cout << "saving ribs for face " << face_index << " as: " << this_rib_file << std::endl;
+
+
+}
