@@ -51,7 +51,7 @@ end
 function val = faces_nonsingularly_connect(BRsurf, f, g)
 	val = false; %assume no
 
-	if cannot_possibly_meet(BRsurf, f, g);
+	if cannot_possibly_meet(BRsurf, f, g)
 		return;
 	elseif meet_at_left(BRsurf,f,g)
 		val = true;
