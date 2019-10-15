@@ -10,38 +10,37 @@ class Piece():
         self.indices = indices
         self.surface = surface
 
-    # isCompact
-    # whether piece is  compact (no edges touching the bounding sphere) or non -compact (edge touches on bounding sphere)
-    # check top & bottom -> the bounding sphere , compare
-    # BRinfo
-    # dictionary - gather_vertex_types
-
+    # whether piece is  compact (no edges touching the bounding sphere) or non
+    # -compact (edge touches on bounding sphere)
     def isCompact(self):
-        num_faces = surf.num_faces
-        which_faces = list(range(num_faces))
-        surf = self.decomposition.surface
+        # bounding sphere
+        sphere_curve = self.surface.sphere_curve.sampler_data
 
-        for cc in range(len(which_faces)):
-            ii = which_faces[cc]
-            face = surf.faces[ii]
+        for ii in self.indices:
+            face = self.surface.faces[ii]
+            if face['system top'] == "input_surf_sphere":
+                return False
 
-            # if(cmp(surf.sphere_curve.edges[face['top']], )):
+            if face['system bottom'] == "input_surf_sphere":
+                return False
 
-        print("test")
+        # compact
+        return True
 
-    # how to ask for vertex if it has a type, in python
-    # output - vertex_types
+    # indices from separate fucntion
+    # sphere - compact (1 piece)
+    # dingdong (2 pieces) - one compact, one not
+    # octdong (2 pieces) - both compact
+    # whitney (2 pieces - both non-compact)
+    # paraboliod: 1 piece (non compact)
 
-    # parse the vertex type
-    # parse decomp happens, also parse the vertex type
+    # 1) setup vertex types from submodule (don't produce from a function!)
+    # 2) documentation - seprate, isCompact, tutorial (sphinx!)
+    # 3) __str__ curve, surface and piece etc
 
     # point_singularities
     # the points on a piece ,  left and right edge will be degenerated
     # type critical
-
-    # bitwise operator to check whetehr they are the same
-    # self.vertices[ii]['type'] = uint(line.replace('\n', ''))
-    # surf to surface
 
     # tell whether the rank of Jacobian is deficient at point living on the
 
