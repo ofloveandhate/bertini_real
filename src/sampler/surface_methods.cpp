@@ -1275,7 +1275,7 @@ void  Surface::output_sampling_data(boost::filesystem::path base_path) const
 std::ostream & operator<<(std::ostream &os, const Rib & r)
 {
 	for (const auto& ind : r)
-		os << r << " ";
+		os << ind << " ";
 	return os;
 }
 
@@ -1299,5 +1299,10 @@ void SaveRibs(std::vector<Rib> const& ribs, int face_index, sampler_configuratio
 
 	std::cout << "saving ribs for face " << face_index << " as: " << this_rib_file << std::endl;
 
+	std::ofstream fout(this_rib_file.string());
 
+	fout << ribs.size() << std::endl << std::endl;
+
+	for (auto const& r : ribs)
+		fout << r.size() << std::endl << r << std::endl << std::endl;
 }
