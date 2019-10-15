@@ -4,16 +4,17 @@
 %
 % if which_faces is empty, or missing, all faces will be extracted
 
-function [fv] = info2fv(BRinfo, which_faces)
+function [fv] = info2fv(BRinfo, which_faces, coord_ind)
 
 
 if nargin<=1
 	which_faces = 1:BRinfo.num_faces;
+	coord_ind = [1 2 3];
 elseif isempty(which_faces)
 	which_faces = 1:BRinfo.num_faces;
 end
 
-coord_ind = [1 2 3];
+
 
 fv.vertices = make_vertices(coord_ind, BRinfo);
 
