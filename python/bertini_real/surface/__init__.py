@@ -4,6 +4,62 @@ from bertini_real.decomposition import Decomposition
 from bertini_real.curve import Curve
 
 
+class Piece():
+
+    def __init__(self, indices, surface):
+        self.indices = indices
+        self.surface = surface
+
+    # isCompact
+    # whether piece is  compact (no edges touching the bounding sphere) or non -compact (edge touches on bounding sphere)
+    # check top & bottom -> the bounding sphere , compare
+    # BRinfo
+    # dictionary - gather_vertex_types
+
+    def isCompact(self):
+        num_faces = surf.num_faces
+        which_faces = list(range(num_faces))
+        surf = self.decomposition.surface
+
+        for cc in range(len(which_faces)):
+            ii = which_faces[cc]
+            face = surf.faces[ii]
+
+            # if(cmp(surf.sphere_curve.edges[face['top']], )):
+
+
+
+        print("test")
+
+    # how to ask for vertex if it has a type, in python
+    # output - vertex_types
+
+    # parse the vertex type
+    # parse decomp happens, also parse the vertex type
+
+    # point_singularities
+    # the points on a piece ,  left and right edge will be degenerated
+    # type critical
+
+    # bitwise operator to check whetehr they are the same
+    # self.vertices[ii]['type'] = uint(line.replace('\n', ''))
+    # surf to surface
+
+    # tell whether the rank of Jacobian is deficient at point living on the
+
+
+    # GOAL: list of singular points on the pieces
+
+    # take system for the surface
+    # take the jacobian system of the surface
+    # evaluate the jacboian of the system at each critical point
+    # if it is ranked-deficient, then that point is singular
+
+    def point_singularities(self):
+        surf = self.decomposition.surface
+        print("test")
+
+
 class Surface(Decomposition):
 
     def __init__(self, directory):
@@ -30,11 +86,13 @@ class Surface(Decomposition):
         self.singular_curves = []
         self.singular_names = []
         self.surface_sampler_data = []   # store all surface_sampler data
+        self.vertex_types = []
         self.input = None
 
         # automatically parse data files to gather curve data
         self.parse_decomp(self.directory)
         self.parse_surf(self.directory)
+        self.parse_vertex_types(self.directory)
         self.gather_faces(self.directory)
         self.gather_curves(self.directory)
         try:
@@ -57,6 +115,10 @@ class Surface(Decomposition):
         self.num_critical_slices = surf_data[3]
         self.num_singular_curves = surf_data[4]
         self.singular_curve_multiplicities = surf_data[5]
+
+    def parse_vertex_types(self,directory):
+        vertex_types_data = bertini_real.parse.parse_vertex_types(directory)
+        self.vertex_types = vertex_types_data
 
     def gather_faces(self, directory):
         self.faces = bertini_real.parse.parse_Faces(directory)
@@ -84,6 +146,14 @@ class Surface(Decomposition):
         self.surface_sampler_data = bertini_real.parse.parse_surface_Samples(
             directory)
 
+        # 0 - critical (see vertex type)
+        # index - index from the vertex set
+        # boolean (true, when the types matches - c++ bitwise AND, but python other way)
+        # bitwise operation in python
+    def is_vertex_of_type(self, index, type):
+        self.vertex_types = bertini_real.parse.parse_vertex_types(self.directory)
+        return bool((self.vertex_types[index] & type))
+
     def check_data(self):
         try:
             if self.dimension != 2:
@@ -99,22 +169,19 @@ class Surface(Decomposition):
         new_indices = [seed_index]
         connected = []
 
-
         while not(new_indices == []):
             # connected = concat([connected, new_indices])
             connected.extend(new_indices)
-            print('connected while loop',connected)
+            # print('connected while loop',connected)
             new_indices = self.find_connected_faces(connected)
-            print('new indices in while loop', new_indices)
+            # print('new indices in while loop', new_indices)
 
-
-        print('connected  sort',connected)
+        # print('connected  sort',connected)
         connected.sort()
         set_num_faces = list(range(self.num_faces))
 
-
-        print('num_faces',set_num_faces)
-        print('connected outside',connected)
+        # print('num_faces',set_num_faces)
+        # print('connected outside',connected)
 
         unconnected = list(set(set_num_faces) - set(connected))
 
@@ -127,20 +194,19 @@ class Surface(Decomposition):
 
     def find_connected_faces(self, current):
         # perform a double loop over the faces
-        print('current',current)
+        # print('current',current)
         new_indices = []
 
         unexamined_indices = list(range(self.num_faces))
 
         # delete the faces we already know connect.
-        unexamined_indices = list(set(unexamined_indices)-set(current))
+        unexamined_indices = list(set(unexamined_indices) - set(current))
 
         for ii in range(len(current)):
             c = current[ii]
-            print('c = current[ii]', c)
+            # print('c = current[ii]', c)
             f = self.faces[c]  # unpack the current face
             deleteme = []
-
 
             for jj in range(len(unexamined_indices)):
                 d = unexamined_indices[jj]
@@ -151,15 +217,14 @@ class Surface(Decomposition):
                     new_indices.append(d)
                     deleteme.append(d)
 
-            print('new_indices after j loop', new_indices)
-
-
+            # print('new_indices after j loop', new_indices)
 
             unexamined_indices = list(set(unexamined_indices) - set(deleteme))
 
         return new_indices
 
-    def faces_nonsingularly_connect(self, f, g): #queries whether faces f and g nonsingularly connect
+    # queries whether faces f and g nonsingularly connect
+    def faces_nonsingularly_connect(self, f, g):
         val = False  # assume no
 
         if self.cannot_possibly_meet(f, g):
@@ -167,19 +232,19 @@ class Surface(Decomposition):
             return val
 
         elif self.meet_at_left(f, g):
-            print('meet_at_left')
+            # print('meet_at_left')
             val = True
 
         elif self.meet_at_right(f, g):
-            print('meet_at_right')
+            # print('meet_at_right')
             val = True
 
         elif self.meet_at_top(f, g):
-            print('meet_at_top')
+            # print('meet_at_top')
             val = True
 
         elif self.meet_at_bottom(f, g):
-            print('meet_at_bottom')
+            # print('meet_at_bottom')
             val = True
 
         # else:
@@ -303,13 +368,13 @@ class Surface(Decomposition):
 
     def is_degenerate(self, e):
         val = (e[0] == e[1]) or (e[1] == e[2])
-        print('is_degenerate', val)
+        # print('is_degenerate', val)
         return val
 
     def separate_into_nonsingular_pieces(self):
         self.check_data()
 
-        indices = []
+        pieces = []
         connected = []
         unconnected_this = [0]
 
@@ -317,12 +382,12 @@ class Surface(Decomposition):
             seed = unconnected_this[0]
             [connected_this, unconnected_this] = self.faces_nonsingularly_connected(
                 seed)
-            indices.append(connected_this)
+            pieces.append(Piece(connected_this, self))
             connected.extend(connected_this)
             unconnected_this = list(set(unconnected_this) - set(connected))
 
-        print('indices outside while', indices)
-        return indices
+        # print('pieces outside while', pieces)
+        return pieces
 
 
 def separate_into_nonsingular_pieces(data=None, directory='Dir_Name'):

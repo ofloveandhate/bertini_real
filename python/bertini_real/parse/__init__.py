@@ -254,3 +254,71 @@ def parse_surface_Samples(directory):
             f.readline()  # read blank line.
 
         return samples
+
+def parse_vertex_types(directory):
+    filename = directory + '/V_samp.vertex'
+    vertex_types = []
+
+    if not os.path.isfile(filename):
+        raise FileNotFoundError("no V_samp.vertex found for this surface")
+
+    with open(filename, 'r') as f:
+            # read first line and get number of vertices, number of projections,
+            # number of natural vars, and number of file names
+            line = f.readline().split(' ')
+            num_vertices = int(line[0])
+            num_projections = int(line[1])
+            num_natural_vars = int(line[2])
+            num_variables = num_natural_vars - 1
+            num_filenames = int(line[3].replace('\n', ''))
+
+            # Skips data not used
+            for i in range(0, (num_projections * num_natural_vars)):
+                skip_this_line = f.readline()
+                while skip_this_line == '\n':
+                    skip_this_line = f.readline()
+            _ = f.readline()
+            if line == '\n':
+                _ = f.readline()
+
+            # Gets file names and stores them in filenames
+            for ii in range(num_filenames):
+                _ = f.readline()
+                f.readline()
+
+            vertices = [{} for i in range(num_vertices)]
+
+            for ii in range(num_vertices):
+                line = f.readline()
+
+                while line == '\n':
+                    line = f.readline()
+                number_of_variables = int(line)
+
+                for jj in range(number_of_variables):
+                    f.readline()
+
+                line = f.readline()
+
+                while line == '\n':
+                    line = f.readline().replace('\n', '')
+
+                num_projection_values = int(line)
+
+                for ll in range(num_projection_values):
+                    f.readline()
+
+                line = f.readline().replace('\n', '')
+
+                while line == '\n':
+                    line = f.readline()
+
+                line = f.readline()
+
+                while line == '\n':
+                    line = f.readline()
+
+                vertices[ii]['type'] = int(line.replace('\n', ''))
+                vertex_types.append(vertices[ii]['type'])
+
+    return vertex_types
