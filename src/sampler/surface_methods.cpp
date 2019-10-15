@@ -884,7 +884,7 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 
 
 	//we need to sample the ribs
-	std::vector< std::vector<int> > ribs;
+	std::vector< Rib > ribs;
 	ribs.resize(num_ribs);
 
 
@@ -1001,7 +1001,7 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 
 
 
-		std::vector<int> refined_rib(3);
+		Rib refined_rib(3);
 		refined_rib[0] = curr_bottom_index;
 		refined_rib[1] = startpt_index;
 		refined_rib[2] = curr_top_index;
@@ -1014,7 +1014,7 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 		{
 			assert( (refine_flags.size() == refined_rib.size()-1) && "refinement flags must be one less than num entries on rib");
 
-			std::vector<int> temp_rib;
+			Rib temp_rib;
 			std::vector<bool> refine_flags_next;
 			need_refinement = false; // reset to no, in case don't need.  will set to true if point too far apart
 
@@ -1169,7 +1169,7 @@ void Surface::DegenerateSampleFace(int face_index, VertexSet & V, sampler_config
 //
 ///////////////
 
-void Surface::StitchRibs(std::vector<std::vector<int> > const& ribs, VertexSet & V)
+void Surface::StitchRibs(std::vector<Rib> const& ribs, VertexSet & V)
 {
 	std::vector< Triangle > current_samples;
 	for (auto r = ribs.begin(); r!=ribs.end()-1; r++) {

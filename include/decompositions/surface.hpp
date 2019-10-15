@@ -16,6 +16,8 @@
 
 
 
+using Rib = std::vector<int>;
+
 
 /**
  \brief A simple Triangle class, holding three integers referring to points in a vertex set.
@@ -839,7 +841,7 @@ public:
 	/**
 	Given straight-line sampled ribs on a face, stitch together to form a triangulation, and add to the samples have for the surface.
 	*/
-	void StitchRibs(std::vector<std::vector<int> > const& ribs, VertexSet & V);
+	void StitchRibs(std::vector<Rib> const& ribs, VertexSet & V);
 
 	/**
 	 \brief Write the results of a sampling run to a folder.
