@@ -1263,3 +1263,13 @@ void  Surface::output_sampling_data(boost::filesystem::path base_path) const
 	}
 
 }
+
+
+
+std::ostream & operator<<(std::ostream &os, const Rib & r)
+{
+	for (const auto& ind : r)
+		os << r << " ";
+	return os;
+}
+

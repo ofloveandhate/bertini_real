@@ -18,6 +18,8 @@
 
 using Rib = std::vector<int>;
 
+std::ostream & operator<<(std::ostream &os, const Rib & r);
+
 
 /**
  \brief A simple Triangle class, holding three integers referring to points in a vertex set.
