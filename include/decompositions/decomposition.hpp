@@ -553,6 +553,9 @@ public:
 		return crit_slice_values;
 	}
 
+	inline bool IsEmbedded(){return is_embedded_;}
+	inline void SetEmbedded(bool val){is_embedded_ = val;}
+
 protected:
 
 	vec_mp crit_slice_values;
@@ -598,7 +601,7 @@ protected:
 
 	std::shared_ptr<SystemRandomizer> randomizer_; ///< the randomizer for the Decomposition.
 
-
+	bool is_embedded_ = false; ///< a flag for whether the decomposition is embedded in another decomposition
 
 
 	int add_vertex(VertexSet &V, Vertex source_vertex);

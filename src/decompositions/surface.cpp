@@ -247,7 +247,12 @@ void Surface::main(VertexSet & V,
 
 
 
-
+	if (!this->IsEmbedded())
+	{
+		V.add_type_to_points(W_singular_points_on_critical_curve,Singular);
+		V.add_type_to_points(W_singular_points_on_singular_curve,Singular);
+		V.add_type_to_points(W_singular_points_on_sphere_curve,Singular);
+	}
 
 
 
@@ -662,7 +667,7 @@ void Surface::compute_critical_curve(const WitnessSet & W_critcurve,
 
 
 
-
+	crit_curve_.SetEmbedded(true);
 
 	crit_curve_.interslice(W_critcurve,
                           W_critpts,
@@ -957,6 +962,7 @@ void Surface::compute_singular_curves(const WitnessSet & W_total_crit,
 			std::cout << "interslicing singular curve " << std::endl;
 
 		// we already know the component is self-conjugate (by entry condition), so we are free to call this function
+		singular_curves_[iter->first].SetEmbedded(true);
 		singular_curves_[iter->first].interslice(iter->second,
 												W_sphere_intersection,
 												&(this->pi()),
@@ -1290,6 +1296,8 @@ void Surface::compute_bounding_sphere(const WitnessSet & W_intersection_sphere,
 	if (program_options.verbose_level()>=0)
 		std::cout << color::magenta() << "interslicing sphere" << color::console_default() << std::endl;
 	// then feed it to the interslice algorithm
+
+	this->sphere_curve_.SetEmbedded(true);
 	this->sphere_curve_.interslice(W_intersection_sphere, // the witness set with a single linear and some patches.
                                   W_crit, // the critical points
                                   &(pi(0)),
@@ -1429,7 +1437,7 @@ void Surface::compute_slices(const WitnessSet W_surf,
 
 		slices[ii].set_input_filename(slicename);
 		slices[ii].copy_sphere_bounds(*this);
-
+		slices[ii].SetEmbedded(true);
 
 
 
