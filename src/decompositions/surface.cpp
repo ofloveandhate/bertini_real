@@ -82,7 +82,10 @@ void Surface::main(VertexSet & V,
 	///////////////////////////////////
 	// get the critical points and the sphere intersection points for the critical curve
     WitnessSet W_critcurve_crit;
+    WitnessSet W_singular_points_on_critical_curve, W_singular_points_on_singular_curve, W_singular_points_on_sphere_curve;
+
     compute_critcurve_critpts(W_critcurve_crit, // the computed value
+    						  W_singular_points_on_critical_curve, // another computed value.  a subset of the ones above, but we want these for labeling purposes
                               W_critcurve,
                               0,
                               program_options,
@@ -96,6 +99,7 @@ void Surface::main(VertexSet & V,
 
 	WitnessSet W_singular_crit;
 	compute_singular_crit(W_singular_crit,
+						  W_singular_points_on_singular_curve,
 						  split_sets,
 						  V,
 						  program_options,
@@ -177,6 +181,7 @@ void Surface::main(VertexSet & V,
     WitnessSet W_sphere_crit;
 	compute_sphere_crit(W_intersection_sphere,
                         W_sphere_crit, // output
+                        W_singular_points_on_sphere_curve, // also output
                         program_options,
                         solve_options);
 
@@ -533,6 +538,7 @@ void Surface::compute_critcurve_witness_set(WitnessSet & W_critcurve,
 
 
 void Surface::compute_critcurve_critpts(WitnessSet & W_critcurve_crit,  // the computed value
+									  WitnessSet & W_singular_points_on_critical_curve,  // another computed value
                                       WitnessSet & W_critcurve, // input witness set
                                       int pi_ind,
                                       BertiniRealConfig & program_options, //as usual, goes everywhere.
@@ -594,10 +600,10 @@ void Surface::compute_critcurve_critpts(WitnessSet & W_critcurve_crit,  // the c
 
 	WitnessSet W_temp;
 	solve_out.get_noninfinite_w_mult_full(W_temp);
+	solve_out.get_sing_finite(W_singular_points_on_critical_curve);
 	ns_config.clear();
 	solve_out.reset();
 	W_critcurve_crit.merge(W_temp,program_options.same_point_tol());//(*&!@U#H*DB(F*&^@#*&$^(*#&YFNSD
-
 
 
 
@@ -606,8 +612,14 @@ void Surface::compute_critcurve_critpts(WitnessSet & W_critcurve_crit,  // the c
 	W_critcurve_crit.sort_for_unique(program_options.same_point_tol());
 
 
+	W_singular_points_on_critical_curve.set_input_filename("input_critical_curve");
+	W_singular_points_on_critical_curve.sort_for_real(solve_options.T.real_threshold);
+	W_singular_points_on_critical_curve.sort_for_unique(program_options.same_point_tol());
+
+
 	if (have_sphere()) {
 		W_critcurve_crit.sort_for_inside_sphere(sphere_radius(), sphere_center());
+		W_singular_points_on_critical_curve.sort_for_inside_sphere(sphere_radius(), sphere_center());
 	}
 
 
@@ -802,7 +814,8 @@ void Surface::deflate_and_split(std::map< SingularObjectMetadata, WitnessSet > &
 
 
 
-void Surface::compute_singular_crit(WitnessSet & W_singular_crit,
+void Surface::compute_singular_crit(WitnessSet & W_singular_crit, // output
+									WitnessSet & W_singular_points_on_singular_curve, // output
 												  const std::map<SingularObjectMetadata, WitnessSet> & split_sets,
 												  VertexSet & V,
 												  BertiniRealConfig & program_options,
@@ -814,6 +827,10 @@ void Surface::compute_singular_crit(WitnessSet & W_singular_crit,
 	W_singular_crit.set_num_variables(this->num_variables());
 	W_singular_crit.set_num_natural_variables(this->num_variables());
 	W_singular_crit.copy_patches(*this);
+
+	W_singular_points_on_singular_curve.set_num_variables(this->num_variables());
+	W_singular_points_on_singular_curve.set_num_natural_variables(this->num_variables());
+	W_singular_points_on_singular_curve.copy_patches(*this);
 	for (auto iter = split_sets.begin(); iter!=split_sets.end(); ++iter) {
 
 		if (program_options.verbose_level()>=-2)
@@ -866,8 +883,9 @@ void Surface::compute_singular_crit(WitnessSet & W_singular_crit,
 
 		solve_options.T.AMP_bound_on_degree = temp_degree;
 
-		WitnessSet W_this_round;
+		WitnessSet W_this_round, W_sing_this_round;
 		solve_out.get_noninfinite_w_mult_full(W_this_round);
+		solve_out.get_sing_finite(W_sing_this_round);
 
 		ns_config.clear();
 
@@ -875,13 +893,18 @@ void Surface::compute_singular_crit(WitnessSet & W_singular_crit,
 		W_this_round.sort_for_real(solve_options.T.real_threshold);
 		W_this_round.set_input_filename(iter->second.input_filename());
 
+		W_sing_this_round.sort_for_unique(program_options.same_point_tol()); // this could be made to be unnecessary, after rewriting a bit of solverout
+		W_sing_this_round.sort_for_real(solve_options.T.real_threshold);
+		W_sing_this_round.set_input_filename(iter->second.input_filename());
+
 		if (have_sphere()) {
 			W_this_round.sort_for_inside_sphere(sphere_radius(), sphere_center());
+			W_sing_this_round.sort_for_inside_sphere(sphere_radius(), sphere_center());
 		}
 		singular_curves_[iter->first].add_witness_set(W_this_round,Critical,V); // creates the curve Decomposition for this multiplicity
 
 		W_singular_crit.merge(W_this_round,program_options.same_point_tol());
-
+		W_singular_points_on_singular_curve.merge(W_sing_this_round,program_options.same_point_tol());
 	}
 
 }
@@ -1183,9 +1206,10 @@ void Surface::compute_sphere_witness_set(const WitnessSet & W_surf,
 
 
 void Surface::compute_sphere_crit(const WitnessSet & W_intersection_sphere,
-                                                WitnessSet & W_sphere_crit,
-                                                BertiniRealConfig & program_options,
-                                                SolverConfiguration & solve_options)
+                                    WitnessSet & W_sphere_crit, //  output
+                                    WitnessSet & W_singular_points_on_sphere_curve, //  output
+                                    BertiniRealConfig & program_options,
+                                    SolverConfiguration & solve_options)
 {
 #ifdef functionentry_output
 	std::cout << "surface::compute_sphere_crit" << std::endl;
@@ -1227,13 +1251,17 @@ void Surface::compute_sphere_crit(const WitnessSet & W_intersection_sphere,
                            &ns_config);
 
 	solve_out.get_noninfinite_w_mult_full(W_sphere_crit);
+	solve_out.get_sing_finite(W_singular_points_on_sphere_curve);
 
 	ns_config.clear();
 
 	W_sphere_crit.sort_for_unique(program_options.same_point_tol());
 	W_sphere_crit.sort_for_real(solve_options.T.real_threshold);
-
 	W_sphere_crit.set_input_filename("input_surf_sphere");
+
+	W_singular_points_on_sphere_curve.sort_for_unique(program_options.same_point_tol());
+	W_singular_points_on_sphere_curve.sort_for_real(solve_options.T.real_threshold);
+	W_singular_points_on_sphere_curve.set_input_filename("input_surf_sphere");
 
 	return;
 }
@@ -1294,12 +1322,12 @@ void Surface::compute_bounding_sphere(const WitnessSet & W_intersection_sphere,
 
 
 void Surface::compute_slices(const WitnessSet W_surf,
-                                           VertexSet & V,
-                                           vec_mp projection_values_downstairs,
-                                           std::vector< Curve > & slices,
-                                           BertiniRealConfig & program_options,
-                                           SolverConfiguration & solve_options,
-                                           std::string kindofslice)
+                               VertexSet & V,
+                               vec_mp projection_values_downstairs,
+                               std::vector< Curve > & slices,
+                               BertiniRealConfig & program_options,
+                               SolverConfiguration & solve_options,
+                               std::string kindofslice)
 {
 #ifdef functionentry_output
 	std::cout << "surface::compute_slices" << std::endl;

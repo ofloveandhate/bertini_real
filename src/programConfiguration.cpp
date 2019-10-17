@@ -242,7 +242,7 @@ void PrintPointTypeMapping(boost::filesystem::path const& filename)
 
 	FILE *OUT = safe_fopen_write(filename);
 
-	fprintf(OUT,"10\n\n");
+	fprintf(OUT,"11\n\n");
 	fprintf(OUT,"Unset %d\n",Unset);
 	fprintf(OUT,"Critical %d\n",Critical);
 	fprintf(OUT,"Semicritical %d\n",Semicritical);
@@ -253,6 +253,7 @@ void PrintPointTypeMapping(boost::filesystem::path const& filename)
 	fprintf(OUT,"Surface_sample_point %d\n",Surface_sample_point);
 	fprintf(OUT,"Removed %d\n",Removed);
 	fprintf(OUT,"Problematic %d\n",Problematic);
+	fprintf(OUT,"Singular %d\n",Singular);
 
 	fclose(OUT);
 
