@@ -98,6 +98,10 @@ if opt.render
 	rotate3d on 
 end
 
+if opt.write_to_stl
+	fv2stl(fv)
+end
+
 hold off
 
 end

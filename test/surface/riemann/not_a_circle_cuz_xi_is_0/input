@@ -1,0 +1,16 @@
+CONFIG
+
+tracktype:1;
+
+END;
+
+INPUT
+
+variable_group xr, xi, yr, yi;
+
+function f1, f2;
+
+f1 = xr^2 - yi^2 + yr^2 - 1;
+f2 = 2*yi*yr;
+
+END;

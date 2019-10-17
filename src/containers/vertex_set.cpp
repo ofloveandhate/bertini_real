@@ -190,6 +190,21 @@ int VertexSet::compute_downstairs_crit_midpts(const WitnessSet & W,
 
 
 
+int VertexSet::add_type_to_points(const WitnessSet & W, VertexType type)
+{
+	for (int ii = 0; ii < W.num_points(); ++ii)
+	{
+		auto index = this->search_for_point(W.point(ii));
+		if (index<0)
+		{
+			throw std::runtime_error("trying to add a type to vertex which doesn't already exist in vertex set :(");
+		}
+		auto& v = this->GetVertex(index);
+		v.add_type(type);
+	}
+	return SUCCESSFUL;
+}
+
 
 std::vector<int> VertexSet::assert_projection_value(const std::set< int > & relevant_indices, comp_mp new_value)
 {
@@ -379,7 +394,7 @@ int VertexSet::setup_vertices(boost::filesystem::path INfile)
 		temp_vertex.set_input_filename_index(temp_int);
 
 		fscanf(IN,"%d\n",&temp_int);
-	   temp_vertex.set_type(static_cast<VertexType>(temp_int));
+	   temp_vertex.set_type(static_cast<VertexType>(temp_int)); // i believe that this is wrong -- vertices which have multiple types will lose this property.  which one will they become?  i don't know.  --dab, 20191015
 
 		VertexSet::add_vertex(temp_vertex);
 	}

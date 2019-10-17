@@ -16,6 +16,10 @@
 
 
 
+using Rib = std::vector<int>;
+
+std::ostream & operator<<(std::ostream &os, const Rib & r);
+
 
 /**
  \brief A simple Triangle class, holding three integers referring to points in a vertex set.
@@ -525,6 +529,7 @@ public:
 	 \param solve_options The current state of the Solver.
 	 */
 	void compute_singular_crit(WitnessSet & W_singular_crit,
+							   WitnessSet & W_singular_points_on_singular_curve, // output
 							   const std::map<SingularObjectMetadata, WitnessSet> & split_sets,
 							   VertexSet & V,
 							   BertiniRealConfig & program_options,
@@ -596,6 +601,7 @@ public:
 	 \param solve_options The current state of the solver.
 	 */
     void compute_critcurve_critpts(WitnessSet & W_critcurve_crit, // the computed value
+    							   WitnessSet & W_singular_points_on_critical_curve, // another computed value.  a subset of the ones above, but we want these for labeling purposes
                                    WitnessSet & W_critcurve,
                                    int pi_ind,
                                    BertiniRealConfig & program_options,
@@ -654,6 +660,7 @@ public:
 	 */
 	void compute_sphere_crit(const WitnessSet & W_intersection_sphere,
 													 WitnessSet & W_sphere_crit,
+													 WitnessSet & W_singular_points_on_sphere_curve, //  output
 													 BertiniRealConfig & program_options,
 													 SolverConfiguration & solve_options);
 
@@ -839,7 +846,7 @@ public:
 	/**
 	Given straight-line sampled ribs on a face, stitch together to form a triangulation, and add to the samples have for the surface.
 	*/
-	void StitchRibs(std::vector<std::vector<int> > const& ribs, VertexSet & V);
+	void StitchRibs(std::vector<Rib> const& ribs, VertexSet & V);
 
 	/**
 	 \brief Write the results of a sampling run to a folder.

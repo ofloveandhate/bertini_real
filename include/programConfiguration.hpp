@@ -937,6 +937,7 @@ public:
 	bool use_uniform_cycle_num = true;
 	int cycle_num = 2;
 
+	bool save_ribs; ///< whether to write the ribs to a file
 	/**
 	 \brief get the sampler_configuration from the command line. */
 	int  parse_commandline(int argc, char **argv);

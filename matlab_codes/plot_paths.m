@@ -4,7 +4,7 @@ function [handles,paths] = plot_path(n)
 % data_set = '_cauchy';
 % data_set = '_ps';
 data_set = '';
-use_text = 1;
+use_text = 0;
 noplot = 0;
 
 % if length(n) > 1
@@ -55,9 +55,11 @@ end
 
 function h = path_colored_by_cond(path,cond, use_text, path_num)
 
-	h = patch(path(:,1),path(:,2),path(:,3),log10(cond)); % ,abs(data(:,8))
-	set(h,'facecolor','none')
-	set(h, 'edgecolor', 'interp');
+% 	h = patch(path(:,1),path(:,2),path(:,3),log10(cond)); % ,abs(data(:,8))
+% 	set(h,'facecolor','none')
+% 	set(h, 'edgecolor', 'interp');
+% 	
+	h = color_line(path(:,1),path(:,2),path(:,3),log10(cond));
 	set(h, 'linewidth', 5);
 	if use_text
 		t = text(path(end,1),path(end,2),path(end,3),sprintf('path %i',path_num));

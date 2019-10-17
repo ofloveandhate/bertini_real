@@ -29,6 +29,8 @@ void sampler_configuration::SetDefaults()
 	use_gamma_trick = 0;
 
 	mode = Mode::AdaptivePredMovement;
+
+	save_ribs = false;
 }
 
 
@@ -75,6 +77,7 @@ void sampler_configuration::print_usage()
 	line("-cyclenum",  "<int>", "2", "cycle number to use for rib spacing in face sampling");
 	line("-nouniformcyclenum",  " -- ", " ", "turn OFF uniform cycle number usage in surface sampling.  buggy.");
 	line("-uniformcyclenum",  " -- ", " ", "turn ON uniform cycle number usage in surface sampling.  works well.");
+	line("-saveribs",  " -- ", " ", "turn ON saving of ribs for each face.  off by default.");
 	std::cout << "\n\n\n";
 	std::cout.flush();
 	return;
@@ -111,12 +114,13 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 			{"uniformcyclenum", no_argument, 0, 'u'},
 			{"nouniformcyclenum", no_argument, 0, 'U'},
 			{"cyclenum", required_argument, 0, 'c'},
+			{"saveribs", no_argument, 0, 'I'},
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
 
-		choice = getopt_long_only (argc, argv, "bdf:svt:V:l:m:R:r:hM:uUc:", // colon requires option, two is optional
+		choice = getopt_long_only (argc, argv, "bdf:svt:V:l:m:R:r:hM:uUc:I", // colon requires option, two is optional
 															 long_options, &option_index);
 
 		/* Detect the end of the options. */
@@ -215,6 +219,10 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 				this->cycle_num = atoi(optarg);
 				break;
 
+			case 'I':
+				this->save_ribs = true;
+				break;
+
 			case '?':
 				/* getopt_long already printed an error message. */
 				break;
@@ -305,7 +313,8 @@ void SamplerMaster(sampler_configuration & sampler_options)
 
 	boost::filesystem::path directoryName;
 
-	get_dir_mptype_dimen( directoryName, MPType, dimension);
+	get_dir_mptype_dimen( directoryName, MPType, dimension); // i really do hate this.
+	sampler_options.output_dir(directoryName);
 	witnessSetName = directoryName / "WitnessSet";
 	samplingNamenew = directoryName;
 
