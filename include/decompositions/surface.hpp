@@ -529,6 +529,7 @@ public:
 	 \param solve_options The current state of the Solver.
 	 */
 	void compute_singular_crit(WitnessSet & W_singular_crit,
+							   WitnessSet & W_singular_points_on_singular_curve, // output
 							   const std::map<SingularObjectMetadata, WitnessSet> & split_sets,
 							   VertexSet & V,
 							   BertiniRealConfig & program_options,
@@ -600,6 +601,7 @@ public:
 	 \param solve_options The current state of the solver.
 	 */
     void compute_critcurve_critpts(WitnessSet & W_critcurve_crit, // the computed value
+    							   WitnessSet & W_singular_points_on_critical_curve, // another computed value.  a subset of the ones above, but we want these for labeling purposes
                                    WitnessSet & W_critcurve,
                                    int pi_ind,
                                    BertiniRealConfig & program_options,
@@ -658,6 +660,7 @@ public:
 	 */
 	void compute_sphere_crit(const WitnessSet & W_intersection_sphere,
 													 WitnessSet & W_sphere_crit,
+													 WitnessSet & W_singular_points_on_sphere_curve, //  output
 													 BertiniRealConfig & program_options,
 													 SolverConfiguration & solve_options);
 

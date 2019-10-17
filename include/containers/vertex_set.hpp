@@ -354,7 +354,17 @@ public:
                                        vec_mp pi,
 									   tracker_config_t * T);
 
+    /**
+	\brief Adds a given type to all points in the input witness set, in the vertex set.  
 
+	Suggested use: label all points in some set as singular.  That's what I'm about to do.
+
+	\param W the witness set containing the points
+	\param type The type you want to add to the already-existing points in the witness set
+
+	Throws if any of the points aren't in the set already.
+    */
+    int add_type_to_points(const WitnessSet & W, VertexType type);
 	/**
 
 	 sets the value of the [current] projection for each Vertex which has index in the set of relevant indices.

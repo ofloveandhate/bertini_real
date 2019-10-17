@@ -35,11 +35,10 @@ constexpr VertexType Curve_sample_point = 32;
 constexpr VertexType Surface_sample_point = 64;
 constexpr VertexType Removed = 128;
 constexpr VertexType Problematic = 256;
+constexpr VertexType Singular = 512;
 
-// //The following lets us use words instead of numbers to indicate vertex type.
-// enum VertexType {Unset= 100, Critical, Semicritical, Midpoint, Isolated, New, Curve_sample_point, Surface_sample_point, Removed, Problematic};
 
-constexpr VertexType VertexTypes[]{Unset, Critical, Semicritical, Midpoint, Isolated, New, Curve_sample_point, Surface_sample_point, Removed, Problematic};
+constexpr VertexType VertexTypes[]{Unset, Critical, Semicritical, Midpoint, Isolated, New, Curve_sample_point, Surface_sample_point, Removed, Problematic, Singular};
 
 
 

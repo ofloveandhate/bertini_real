@@ -541,12 +541,14 @@ public:
 	 \param program_options The current state of Bertini_real
 	 \param solve_options The current state of the solver.
 	 \param W_crit_real The computed value, containing the real critical points of the curve.
+	 \param W_singular The a subset of the critical points, just the singular points.
 	 */
 	int compute_critical_points(const WitnessSet & W_curve,
 								vec_mp *pi,
 								BertiniRealConfig & program_options,
 								SolverConfiguration & solve_options,
-								WitnessSet & W_crit_real);
+								WitnessSet & W_crit_real,
+                            	WitnessSet & W_singular);
 
 
 

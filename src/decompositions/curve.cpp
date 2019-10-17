@@ -120,10 +120,10 @@ void Curve::main(VertexSet & V,
 
 
 void Curve::computeCurveSelfConj(const WitnessSet & W_curve,
-                                               vec_mp *projections,
-                                               VertexSet &V,
-                                               BertiniRealConfig & program_options,
-                                               SolverConfiguration & solve_options)
+	                               vec_mp *projections,
+	                               VertexSet &V,
+	                               BertiniRealConfig & program_options,
+	                               SolverConfiguration & solve_options)
 {
 
 #ifdef functionentry_output
@@ -142,14 +142,15 @@ void Curve::computeCurveSelfConj(const WitnessSet & W_curve,
 
 
     // 4) solve for critical conditions for random complex projection
-	WitnessSet W_crit_real;
+	WitnessSet W_crit_real, W_singular;
 
 
 	compute_critical_points(W_curve,
                             projections,
                             program_options,
                             solve_options,
-                            W_crit_real);
+                            W_crit_real,
+                            W_singular);
 
 
 
@@ -159,6 +160,9 @@ void Curve::computeCurveSelfConj(const WitnessSet & W_curve,
                program_options,
                solve_options,
                V);
+
+	if (!this->IsEmbedded())
+		V.add_type_to_points(W_singular,Singular);
 
 	return;
 } // re: computeCurveSelfConj
@@ -171,10 +175,11 @@ void Curve::computeCurveSelfConj(const WitnessSet & W_curve,
 
 //subfunctions
 int Curve::compute_critical_points(const WitnessSet & W_curve,
-                                                 vec_mp *projections,
-                                                 BertiniRealConfig & program_options,
-                                                 SolverConfiguration & solve_options,
-                                                 WitnessSet & W_crit_real)
+                                     vec_mp *projections,
+                                     BertiniRealConfig & program_options,
+                                     SolverConfiguration & solve_options,
+                                     WitnessSet & W_crit_real,
+                            		 WitnessSet & W_singular)
 {
 #ifdef functionentry_output
 	std::cout << "curve::compute_critical_points" << std::endl;
@@ -204,12 +209,19 @@ int Curve::compute_critical_points(const WitnessSet & W_curve,
 
 
 	solve_out.get_noninfinite_w_mult_full(W_crit_real);
-
+	solve_out.get_sing(W_singular);
 
 
 	W_crit_real.only_first_vars(W_curve.num_variables()); // trim the fat, since we are at the lowest level.
 	W_crit_real.sort_for_real(solve_options.T.real_threshold);
 	W_crit_real.sort_for_unique(program_options.same_point_tol());
+
+	W_singular.copy_patches(W_crit_real);
+	W_singular.only_first_vars(W_curve.num_variables()); // trim the fat, since we are at the lowest level.
+	W_singular.sort_for_real(solve_options.T.real_threshold);
+	W_singular.sort_for_unique(program_options.same_point_tol());
+
+
 
 	if (program_options.verbose_level()>=2)
 	{
@@ -219,6 +231,7 @@ int Curve::compute_critical_points(const WitnessSet & W_curve,
 
 	if (have_sphere()) {
 		W_crit_real.sort_for_inside_sphere(sphere_radius(), sphere_center());
+		W_singular.sort_for_inside_sphere(sphere_radius(), sphere_center());
 	}
 	else
 	{

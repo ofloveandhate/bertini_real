@@ -10,7 +10,7 @@ fontsize = br_plotter.options.fontsizes.labels;
 %the table of them for us.  this still stands as of 20180612
 [names, types] = vertex_type_indices(br_plotter);
 
-markers = {'x','o','s','d','^','v','>','<','p','h'};
+markers = {'x','o','s','d','^','v','>','<','p','*','h'};
 colors = [1 0 0;lines(length(names)-1)];
 
 for ii = 1:length(names)
