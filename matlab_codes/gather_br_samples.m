@@ -375,7 +375,7 @@ for ii = 1:BRinfo.num_faces
 	this_faces_ribs = cell(1,num_ribs);
 	for jj = 1:num_ribs
 		num_pts = fscanf(fid,'%i',[1 1]);
-		rib = fscanf(fid,'%i',[1 num_pts]);
+		rib = fscanf(fid,'%i',[1 num_pts])+1;
 		this_faces_ribs{jj} = rib;
 	end
 	ribs{ii} = this_faces_ribs;
