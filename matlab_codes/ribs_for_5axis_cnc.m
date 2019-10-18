@@ -5,7 +5,12 @@
 % the barth sextic on Edmund Harris' machine.  maybe it's useful for other
 % things, but probably not.
 %
-% 
+% options you can set:
+% * `which_faces`, `whichfaces` -- an array of indices of faces to use
+% * `render` -- a boolean, indicates whether we'll render the paths to the
+%			screen.  default is true.
+%
+% * `normals_mode`, `normals` -- modes: `outward_from_origin`;
 %
 % Danielle Amethyst, 2019
 
@@ -20,16 +25,28 @@ J = generate_evaluable_jacobian(BRinfo);
 ribs = cell(1,length(options.which_faces));
 for ii = 1:length(options.which_faces)
 	face_index = options.which_faces(ii);
-	ribs{ii} = generate_zigzag(BRinfo,face_index,J);
+	ribs{ii} = generate_zigzag(BRinfo,face_index,J,options);
 end
 
-visualize_ribs(ribs,options);
+if options.render
+	visualize_ribs(ribs,options);
+end
+
 write_ribs(ribs,options);
 
 end
 
 
-function output = generate_zigzag(BRinfo, face_index, J)
+function output = generate_zigzag(BRinfo, face_index, J, options)
+
+switch options.normals_mode
+	case 'outward_from_origin'
+		alignment_function = @align_normal_outward;
+	case 'none'
+		alignment_function = @(n,x) n;
+	otherwise
+		error('invalid choice of normals_mode');
+end
 
 ribs = BRinfo.ribs{face_index}; % unpack
 
@@ -53,7 +70,7 @@ for ii = 1:num_ribs
 	end
 	for jj = 1:length(r)
 		x = real(BRinfo.vertices(r(jj)).point(1:3));
-		n = compute_normal_vector(x,J);
+		n = compute_normal_vector(x,J,alignment_function);
 		
 		output(:,c) = [x;n];
 		c = c+1;
@@ -63,13 +80,19 @@ end
 end 
 
 
+function n = align_normal_outward(n,x)
 
+if dot(n,x) < 0
+	n = -n;
+end
 
-function n = compute_normal_vector(x,jac)
+end
+
+function n = compute_normal_vector(x,jac, alignment_function)
 
 nullspace = null(jac(x));
 n = cross(nullspace(:,1),nullspace(:,2));
-
+n = alignment_function(n,x);
 end
 
 
@@ -121,6 +144,10 @@ while opt_ind < length(varargin)
 	switch varargin{opt_ind}
 		case {'which_faces','whichfaces'}
 			options.which_faces = varargin{arg_ind};
+		case {'render'}
+			options.render = varargin{arg_ind};
+		case {'normals','normals_mode'}
+			options.normals_mode = varargin{arg_ind};
 	end
 	opt_ind = opt_ind + 2;
 end
@@ -132,8 +159,8 @@ end
 function options = default_options(BRinfo)
 
 options.which_faces = 1:BRinfo.num_faces;
-
-
+options.render = true; 
+options.normals_mode = 'outward_from_origin';
 end
 
 
