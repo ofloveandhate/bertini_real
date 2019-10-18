@@ -92,7 +92,7 @@ function md = gather_run_metadata(dirname)
 		md.version.subminor = str2num(md.version.string(pds(2)+1:end));
 		
 		md.version.number = 100*md.version.major + md.version.minor + 0.01 * md.version.subminor;
-		md.version.gather = 151;
+		md.version.gather = 152;
 	else
 		
 		md.version.string = 'earlier than 1.4';
@@ -201,7 +201,7 @@ else
 end
 
 BRinfo.sampler_data = gather_surface_samples(dirname);
-
+BRinfo.ribs = gather_ribs(BRinfo,dirname);
 
 BRinfo.input = read_input(dirname,BRinfo);
 end
@@ -357,7 +357,29 @@ end
 
 fclose(fid);
 
+end
 
+function ribs = gather_ribs(BRinfo,dirname)
+
+if isempty(dir([dirname '/ribs']))
+	ribs = [];
+    return
+end
+
+ribs = cell(1,BRinfo.num_faces);
+
+for ii = 1:BRinfo.num_faces
+	fname = sprintf('%s/ribs/face_%i.ribs',dirname,ii-1); % damn fencepost
+	fid = fopen(fname,'r');
+	num_ribs = fscanf(fid,'%i',[1 1]);
+	this_faces_ribs = cell(1,num_ribs);
+	for jj = 1:num_ribs
+		num_pts = fscanf(fid,'%i',[1 1]);
+		rib = fscanf(fid,'%i',[1 num_pts]);
+		this_faces_ribs{jj} = rib;
+	end
+	ribs{ii} = this_faces_ribs;
+end
 
 end
 
