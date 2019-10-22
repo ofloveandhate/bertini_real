@@ -26,6 +26,11 @@ for ii = 1:num_vars
 	syms_str = sprintf('%s %s',syms_str,b.variable_group{ii});
 end
 
+% now evaluate the constants so they're in memory.
+for ii = 1:size(b.constant,1)
+	eval(sprintf('%s = %s;',b.constant{ii,1},b.constant{ii,2}));
+end
+
 eval(syms_str); % groovy, now we have some symbols in memory.
 
 sys = sym([]);
