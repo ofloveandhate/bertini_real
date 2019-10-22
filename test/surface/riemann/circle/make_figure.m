@@ -3,13 +3,14 @@
 
 function [handles] = make_figure()
 
+save_figs = false;
 
-handles(1) = main_plot('stl/untitled-Xr_Xi_Yr.stl',1);
-handles(2) = main_plot('stl/untitled-Xr_Xi_Yi.stl',2);
+handles(1) = main_plot('stl/untitled-Xr_Xi_Yr.stl',1,save_figs);
+handles(2) = main_plot('stl/untitled-Xr_Xi_Yi.stl',2,save_figs);
 
 end
 
-function h = main_plot(stl_name,fig_ind)
+function h = main_plot(stl_name,fig_ind,save_figs)
 
 
 f = figure(fig_ind);
@@ -55,14 +56,17 @@ ylabel('imag(x)')
 
 view(116.3, 13);
 view(43, 17);
+view(21, 8);
 
-w = render_into_file('gendef');
-w.format = 'png';
-w.format_flag = 'png';
-w.resolution = 300;
-w.basename = 'circle_as_complex_curve';
+if save_figs
+	w = render_into_file('gendef');
+	w.format = 'png';
+	w.format_flag = 'png';
+	w.resolution = 300;
+	w.basename = 'circle_as_complex_curve';
 
-render_into_file(w)
+	render_into_file(w)
+end
 
 hold off
 
