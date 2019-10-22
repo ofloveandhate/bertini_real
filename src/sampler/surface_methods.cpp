@@ -1283,7 +1283,6 @@ std::ostream & operator<<(std::ostream &os, const Rib & r)
 void PrepareForSavingRibs(sampler_configuration const& sampler_options)
 {
 	auto rib_dir = sampler_options.output_dir() / "ribs";
-	std::cout << "making rib directory: " << rib_dir << std::endl;
 
 	boost::filesystem::create_directory(rib_dir);
 }
@@ -1295,9 +1294,6 @@ void SaveRibs(std::vector<Rib> const& ribs, int face_index, sampler_configuratio
 	converter << "face_" << face_index << ".ribs";
 
 	auto this_rib_file = sampler_options.output_dir() / "ribs" / converter.str();
-
-
-	std::cout << "saving ribs for face " << face_index << " as: " << this_rib_file << std::endl;
 
 	std::ofstream fout(this_rib_file.string());
 
