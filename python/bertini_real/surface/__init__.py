@@ -1,18 +1,55 @@
+# Danielle Brake
+
+# Foong Min Wong
+# University of Wisconsin, Eau Claire
+# Fall 2019
+
+"""
+This module contains Surface and Piece objects.
+
+"""
+
+import bertini_real.vertextype
 import bertini_real.parse
 import numpy as np
 from bertini_real.decomposition import Decomposition
 from bertini_real.curve import Curve
 
 
+
 class Piece():
+    """ Create a Piece object of a surface. A surface can be made of 1 piece or multiple pieces. """
 
     def __init__(self, indices, surface):
+        """ Initialize a Piece object with corresponding indices and surface
+
+            :param indices: A list of nonsingular pieces' indices
+            :param surface: Surface data
+        """
+
         self.indices = indices
         self.surface = surface
 
-    # whether piece is  compact (no edges touching the bounding sphere) or non
-    # -compact (edge touches on bounding sphere)
+    def __str__(self):
+        """ toString method for Piece """
+        result = "piece with indices:\n"
+        result += "{}".format(self.indices)
+        return result
+
     def isCompact(self):
+        """ Check whether a piece is:
+            (1) compact (no edges touch the bounding sphere) 
+            (2) non-compact (at least 1 edge touches bounding sphere)
+
+            Examples:
+            sphere: (1 piece) - compact
+            dingdong: (2 pieces) - one compact, one not compact
+            octdong: (2 pieces) - both compact
+            whitney: (2 pieces) - both non-compact
+            paraboloid: (1 piece) - non compact
+
+        """
+
         # bounding sphere
         sphere_curve = self.surface.sphere_curve.sampler_data
 
@@ -27,16 +64,6 @@ class Piece():
         # compact
         return True
 
-    # indices from separate fucntion
-    # sphere - compact (1 piece)
-    # dingdong (2 pieces) - one compact, one not
-    # octdong (2 pieces) - both compact
-    # whitney (2 pieces - both non-compact)
-    # paraboliod: 1 piece (non compact)
-
-    # 1) setup vertex types from submodule (don't produce from a function!)
-    # 2) documentation - seprate, isCompact, tutorial (sphinx!)
-    # 3) __str__ curve, surface and piece etc
 
     # point_singularities
     # the points on a piece ,  left and right edge will be degenerated
@@ -51,26 +78,38 @@ class Piece():
     # evaluate the jacboian of the system at each critical point
     # if it is ranked-deficient, then that point is singular
 
-#     very good!  i think a next step is to code in the vertex types somewhere.
-#     that way we can do `surface.vertex_is_of_type(0,surface_sample_point) instead of 32.
-#     i don't like the 32.
-#     i think perhaps the best place to store this name-integer pairing is in either in
-#     the surface itself so that we don't have to maintain a list of them somewhere, but that it's
-#     programmatically maintained from the file you parsed.  or, we just hardcode them in the bertini_real module,
-#     like bertini_real.vertex_type.  so bertini_real.vertex_type.surface_sample_point is one of the types.
-#     the second is probably a better approach.  let's do that.
-
-# we still need those helper methods, yes.  definitely is_compact().
-# we'll work on point_singularities() after that.
-
     def point_singularities(self):
-        surf = self.decomposition.surface
-        print("test")
+        """ Getter of singularity points from a Piece object """
+
+        point_singularities = []
+
+        pieces = self.surface.separate_into_nonsingular_pieces()
+        print(pieces)
+
+        # for ii in range(len(pieces)):
+        #     for jj in pieces[ii].indices:
+        #         print(self.surface.is_vertex_of_type(jj,self.vertex_type.singular))
+
+
+
+        # pieces[0].is_vertex_of_type
+
+        return point_singularities
+
 
 
 class Surface(Decomposition):
+    """ Create a Surface object based on the decomposition
+
+        :param Decomposition: Decomposition data from decomp file
+
+    """
 
     def __init__(self, directory):
+        """ Initialize a Surface Object
+
+            :param directory: Directory of the surface folder
+        """
         self.directory = directory
         self.inputfilename = None
         self.num_variables = 0
@@ -111,11 +150,16 @@ class Surface(Decomposition):
         self.read_input(self.directory)
 
     def __str__(self):
+        """ toString method for Surface """
         result = "surface with:\n"
         result += "{} faces".format(self.num_faces)
         return result
 
     def parse_surf(self, directory):
+        """ Parse and store into surface data 
+            
+            :param directory: Directory of the surface folder
+        """
         surf_data = bertini_real.parse.parse_Surf(directory)
         self.num_faces = surf_data[0]
         self.num_edges = surf_data[1]
@@ -125,13 +169,25 @@ class Surface(Decomposition):
         self.singular_curve_multiplicities = surf_data[5]
 
     def parse_vertex_types(self, directory):
+        """ Parse and store vertex types data
+
+        :param directory: Directory of the surface folder
+        """
         vertex_types_data = bertini_real.parse.parse_vertex_types(directory)
         self.vertex_types_data = vertex_types_data
 
     def gather_faces(self, directory):
+        """ Gather the faces of surface
+        
+            :param directory: Directory of the surface folder
+        """
         self.faces = bertini_real.parse.parse_Faces(directory)
 
     def gather_curves(self, directory):
+        """ Gather the curves of surface
+        
+            :param directory: Directory of the surface folder
+        """
         for ii in range(self.num_midpoint_slices):
             new_curve = Curve(directory + '/curve_midslice_' + str(ii))
             self.midpoint_slices.append(new_curve)
@@ -151,19 +207,27 @@ class Surface(Decomposition):
             self.singular_names.append(new_curve.inputfilename)
 
     def gather_surface_samples(self, directory):
+        """ Gather the surface samples of surface
+        
+            :param directory: Directory of the surface folder
+        """
         self.surface_sampler_data = bertini_real.parse.parse_surface_Samples(
             directory)
 
-        # 0 - critical (see vertex type)
-        # index - index from the vertex set
-        # boolean (true, when the types matches - c++ bitwise AND, but python other way)
-        # bitwise operation in python
     def is_vertex_of_type(self, index, type):
+        """ Check if a vertex matches certain VertexType 
+
+            :param index: Indices of a Piece object
+            :param type: A VertexType
+        """
+
         self.vertex_types_data = bertini_real.parse.parse_vertex_types(
             self.directory)
+        # print(self.vertex_types_data)
         return bool((self.vertex_types_data[index] & type))
 
     def check_data(self):
+        """ Check data """
         try:
             if self.dimension != 2:
                 print('This function designed to work on surfaces decomposed with bertini_real.  your object has dimension ' + self.dimension)
@@ -172,6 +236,11 @@ class Surface(Decomposition):
             return
 
     def faces_nonsingularly_connected(self, seed_index):
+        """ Compute the faces that are nonsingualrly connected
+
+            :param seed_index: Index of seed
+            :rtype: Two lists of connected and unconnected faces
+        """
         self.check_data()
 
         new_indices = [seed_index]
@@ -189,7 +258,7 @@ class Surface(Decomposition):
         return connected, unconnected
 
     def find_connected_faces(self, current):
-        # perform a double loop over the faces
+        
         new_indices = []
 
         unexamined_indices = list(range(self.num_faces))
@@ -321,6 +390,7 @@ class Surface(Decomposition):
         return val
 
     def meet_at_bottom(self, f, g):
+        """ Separate a surface into nonsingular pieces """
         val = False
 
         if(f['system bottom'][0:15] == 'input_singcurve'):
@@ -345,10 +415,13 @@ class Surface(Decomposition):
         return val
 
     def is_degenerate(self, e):
+        """ Check if  """
         val = (e[0] == e[1]) or (e[1] == e[2])
         return val
 
     def separate_into_nonsingular_pieces(self):
+        """ Separate a surface into nonsingular pieces """
+
         self.check_data()
 
         pieces = []
@@ -367,5 +440,10 @@ class Surface(Decomposition):
 
 
 def separate_into_nonsingular_pieces(data=None, directory='Dir_Name'):
+    """ Separate a surface into nonsingular pieces
+
+        :param data: Surface decomposition data. If data is None, then it reads the most recent BRData.pkl.
+        :param directory: The directory of the surface
+    """
     surface = Surface(data)
     surface.separate_into_nonsingular_pieces()
