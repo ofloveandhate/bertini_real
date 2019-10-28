@@ -28,12 +28,12 @@ Details 📝
 ================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
    :caption: Contents:
 
    glumpy
-   tmesh 
-
+   surface
+   tmesh
 
 Indices and tables 📋
 ==========================
