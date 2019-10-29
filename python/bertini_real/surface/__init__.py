@@ -1,20 +1,21 @@
+"""
+.. module:: surface
+    :platform: Unix, Windows
+    :synopsis: This module contains Surface and Piece objects.
+
+"""
+
 # Danielle Brake
 
 # Foong Min Wong
 # University of Wisconsin, Eau Claire
-# Fall 2019
-
-"""
-This module contains Surface and Piece objects.
-
-"""
+# Fall 2019 (Piece Object)
 
 import bertini_real.vertextype
 import bertini_real.parse
 import numpy as np
 from bertini_real.decomposition import Decomposition
 from bertini_real.curve import Curve
-
 
 
 class Piece():
@@ -64,7 +65,6 @@ class Piece():
         # compact
         return True
 
-
     # point_singularities
     # the points on a piece ,  left and right edge will be degenerated
     # type critical
@@ -79,23 +79,20 @@ class Piece():
     # if it is ranked-deficient, then that point is singular
 
     def point_singularities(self):
-        """ Getter of singularity points from a Piece object """
+        """ Compute singularity points from a Piece object 
+
+            :rtype: A list of indices of point singularities
+        """
 
         point_singularities = []
 
-        pieces = self.surface.separate_into_nonsingular_pieces()
-        print(pieces)
-
-        # for ii in range(len(pieces)):
-        #     for jj in pieces[ii].indices:
-        #         print(self.surface.is_vertex_of_type(jj,self.vertex_type.singular))
-
-
-
-        # pieces[0].is_vertex_of_type
+        for jj in self.indices:
+            # if vertex type is singular, returns true
+            if(self.surface.is_vertex_of_type(jj,bertini_real.vertextype.singular)):
+                point_singularities.append(jj)
+                print(self.surface.is_vertex_of_type(jj,bertini_real.vertextype.singular))
 
         return point_singularities
-
 
 
 class Surface(Decomposition):
@@ -157,7 +154,7 @@ class Surface(Decomposition):
 
     def parse_surf(self, directory):
         """ Parse and store into surface data 
-            
+
             :param directory: Directory of the surface folder
         """
         surf_data = bertini_real.parse.parse_Surf(directory)
@@ -178,14 +175,14 @@ class Surface(Decomposition):
 
     def gather_faces(self, directory):
         """ Gather the faces of surface
-        
+
             :param directory: Directory of the surface folder
         """
         self.faces = bertini_real.parse.parse_Faces(directory)
 
     def gather_curves(self, directory):
         """ Gather the curves of surface
-        
+
             :param directory: Directory of the surface folder
         """
         for ii in range(self.num_midpoint_slices):
@@ -208,7 +205,7 @@ class Surface(Decomposition):
 
     def gather_surface_samples(self, directory):
         """ Gather the surface samples of surface
-        
+
             :param directory: Directory of the surface folder
         """
         self.surface_sampler_data = bertini_real.parse.parse_surface_Samples(
@@ -223,7 +220,6 @@ class Surface(Decomposition):
 
         self.vertex_types_data = bertini_real.parse.parse_vertex_types(
             self.directory)
-        # print(self.vertex_types_data)
         return bool((self.vertex_types_data[index] & type))
 
     def check_data(self):
@@ -239,7 +235,7 @@ class Surface(Decomposition):
         """ Compute the faces that are nonsingualrly connected
 
             :param seed_index: Index of seed
-            :rtype: Two lists of connected and unconnected faces
+            :rtype: Two lists containing indices of connected and unconnected faces
         """
         self.check_data()
 
@@ -258,7 +254,13 @@ class Surface(Decomposition):
         return connected, unconnected
 
     def find_connected_faces(self, current):
-        
+        """ Find connected faces from current face
+
+            :param current: Current face
+            :rtype: List containing indices of connected faces
+
+        """
+
         new_indices = []
 
         unexamined_indices = list(range(self.num_faces))
@@ -282,9 +284,14 @@ class Surface(Decomposition):
 
         return new_indices
 
-    # queries whether faces f and g nonsingularly connect
     def faces_nonsingularly_connect(self, f, g):
-        val = False  # assume no
+        """ Check whether faces f and g are nonsingularly connected
+
+            :param f: Current face
+            :param g: Other face
+            :rtype: Return True if f and g are nonsingularly connected, else False
+        """
+        val = False
 
         if self.cannot_possibly_meet(f, g):
             return val
@@ -304,6 +311,12 @@ class Surface(Decomposition):
         return val
 
     def cannot_possibly_meet(self, f, g):
+        """ Check whether faces f and g meet
+
+            :param f: Current face
+            :param g: Other face
+            :rtype: Return True if f and g meet, else False
+        """
         val = False
 
         if abs(f['middle slice index'] - g['middle slice index']) >= 2:
@@ -312,6 +325,12 @@ class Surface(Decomposition):
         return val
 
     def meet_at_left(self, f, g):
+        """ Check whether faces f and g nonsingularly connected at left
+
+            :param f: Current face
+            :param g: Other face
+            :rtype: Return True if f and g nonsingularly connected at left, else False
+        """
         val = False
 
         for ii in range(f['num left']):
@@ -339,6 +358,12 @@ class Surface(Decomposition):
         return val
 
     def meet_at_right(self, f, g):
+        """ Check whether faces f and g nonsingularly connected at right
+
+            :param f: Current face
+            :param g: Other face
+            :rtype: Return True if f and g nonsingularly connected at right, else False
+        """
         val = False
 
         for ii in range(f['num right']):
@@ -366,6 +391,12 @@ class Surface(Decomposition):
         return val
 
     def meet_at_top(self, f, g):
+        """ Check whether faces f and g nonsingularly connected at top
+
+            :param f: Current face
+            :param g: Other face
+            :rtype: Return True if f and g nonsingularly connected at top, else False
+        """
         val = False
 
         if(f['system top'][0:15] == 'input_singcurve'):
@@ -390,7 +421,12 @@ class Surface(Decomposition):
         return val
 
     def meet_at_bottom(self, f, g):
-        """ Separate a surface into nonsingular pieces """
+        """ Check whether faces f and g nonsingularly connected at bottom
+
+            :param f: Current face
+            :param g: Other face
+            :rtype: Return True if f and g nonsingularly connected at bottom, else False
+        """
         val = False
 
         if(f['system bottom'][0:15] == 'input_singcurve'):
@@ -415,7 +451,11 @@ class Surface(Decomposition):
         return val
 
     def is_degenerate(self, e):
-        """ Check if  """
+        """ Check if critical point slices are degenerate
+
+            :param e: Critical point slices
+            :rtype: Return true if e is degenerate
+        """
         val = (e[0] == e[1]) or (e[1] == e[2])
         return val
 
