@@ -1,12 +1,3 @@
-"""
-.. module:: vertextype
-    :platform: Unix, Windows
-    :synopsis: This module contains different types of VertexType
-
-"""
-
-import bertini_real
-
 unset = 0
 critical = 1
 semicritical = 2
