@@ -26,7 +26,6 @@ import bertini_real.util
 import dill
 import numpy as np
 import matplotlib
-import trimesh
 # change backend with this line, if desired
 # matplotlib.use('macosx')
 import matplotlib.pyplot as plt
@@ -191,10 +190,10 @@ class Plotter(object):
         zs = []
 
         for v in self.decomposition.vertices:
-            xs.append(v['point'][0].real)
-            ys.append(v['point'][1].real)
+            xs.append(v[0].real)
+            ys.append(v[1].real)
             if self.decomposition.num_variables > 2:
-                zs.append(v['point'][2].real)
+                zs.append(v[2].real)
 
         return xs, ys, zs
 
@@ -206,7 +205,7 @@ class Plotter(object):
             q = [None] * 3
 
             for i in range(3):
-                q[i] = v['point'][i].real
+                q[i] = v[i].real
             points.append(q)
 
         return points
@@ -324,6 +323,152 @@ class Plotter(object):
                 k = [points[f], points[s], points[t]]
 
                 T.append(k)
+
+            self.ax.add_collection3d(Poly3DCollection(T, facecolors=color))
+            self.ax.autoscale_view()
+
+    def plot_surface_raw(self):
+        points = self.points
+        surf = self.decomposition.surface
+        which_faces = self.options.visibility.which_faces
+
+        # store number of faces to num_faces
+        num_faces = surf.num_faces
+
+        # check if which_faces is empty
+        if not len(which_faces):
+            which_faces = list(range(num_faces))
+
+        colormap = self.options.style.colormap
+        color_list = [colormap(i) for i in np.linspace(0, 1, len(which_faces))]
+
+        # get raw data from surface
+        num_total_faces = 0
+        for ii in range(len(which_faces)):
+            curr_face = surf.faces[which_faces[ii]]
+            num_total_faces = num_total_faces + 2 * \
+                (curr_face['num left'] + curr_face['num right'] + 2)
+        num_total_faces = num_total_faces * 2
+        total_face_index = 0
+
+        for cc in range(len(which_faces)):
+            color = color_list[cc]
+            ii = which_faces[cc]
+            face = surf.faces[ii]
+
+            if (face['middle slice index']) == -1:
+                continue
+            case = 1
+            left_edge_counter = 0
+            right_edge_counter = 0
+            T = []
+
+            while 1:
+                # top edge
+                if case == 1:
+                    # print('top')
+                    case += 1
+                    if face['top'] < 0:
+                        continue
+
+                    curr_edge = -10
+                    if(face['system top'] == 'input_critical_curve'):
+                        curr_edge = surf.critical_curve.edges[face['top']]
+                    elif(face['system top'] == 'input_surf_sphere'):
+                        curr_edge = surf.sphere_curve.edges[face['top']]
+                    else:
+                        for zz in range(len(surf.singular_curves)):
+                            if(surf.singular_names[zz] == face['system top']):
+                                curr_edge = surf.singular_curves[
+                                    zz].edges[face['top']]
+                    # print(curr_edge)
+                    if (curr_edge[0] < 0 and curr_edge[1] < 0 and curr_edge[2] < 0):
+                        continue
+
+                    # reverse() returns None, so use ReversableList
+                    curr_edge = ReversableList(curr_edge)
+                    curr_edge = curr_edge.reverse()
+
+                # bottom edge
+                elif case == 2:
+                    # print('bottom')
+                    case += 1
+                    if face['bottom'] < 0:
+                        continue
+
+                    curr_edge = -10
+                    if(face['system bottom'] == 'input_critical_curve'):
+                        curr_edge = surf.critical_curve.edges[face['bottom']]
+                    elif(face['system bottom'] == 'input_surf_sphere'):
+                        curr_edge = surf.sphere_curve.edges[face['bottom']]
+                    else:
+                        for zz in range(len(surf.singular_curves)):
+                            if(surf.singular_names[zz] == face['system bottom']):
+                                curr_edge = surf.singular_curves[
+                                    zz].edges[face['bottom']]
+
+                    if (curr_edge[0] < 0 and curr_edge[1] < 0 and curr_edge[2] < 0):
+                        continue
+
+                # left edge
+                elif case == 3:
+                    # print('left')
+                    if left_edge_counter < face['num left']:
+
+                        if face['left'][left_edge_counter] < 0:
+                            continue
+
+                        slice_ind = face['middle slice index']
+                        edge_ind = face['left'][left_edge_counter]
+
+                        curr_edge = surf.critical_point_slices[
+                            slice_ind].edges[edge_ind]
+                        left_edge_counter = left_edge_counter + 1  # increment
+
+                    else:
+                        case = case + 1
+                        continue
+
+                # right edge
+                elif case == 4:
+                    # print('right')
+                    if right_edge_counter < face['num right']:
+
+                        if face['right'][right_edge_counter] < 0:
+                            continue
+
+                        slice_ind = face['middle slice index'] + 1
+                        edge_ind = face['right'][right_edge_counter]
+                        curr_edge = surf.critical_point_slices[
+                            slice_ind].edges[edge_ind]
+                        right_edge_counter = right_edge_counter + 1  # increment
+
+                        curr_edge = ReversableList(curr_edge)
+                        curr_edge = curr_edge.reverse()
+
+                    else:
+                        case += 1
+                        continue
+
+                # last case
+                elif case == 5:
+                    break
+
+                # make two triangles , use the midpoint (swap the values for k)
+                t1 = [points[curr_edge[0]], points[curr_edge[1]],
+                      points[face['midpoint']]]
+                t2 = [points[curr_edge[1]], points[curr_edge[2]],
+                      points[face['midpoint']]]
+
+            # while loop end here
+                # store them into objs, stl writing
+                # br_plotter.fv.faces(total_face_index,:) = t1;
+                # br_plotter.fv.faces(total_face_index+1,:) = t2;
+
+                # k = [points[curr_edge[0]], points[curr_edge[1]], points[curr_edge[2]]]
+                # T.append(k)
+                T.append(t1)
+                T.append(t2)
 
             self.ax.add_collection3d(Poly3DCollection(T, facecolors=color))
             self.ax.autoscale_view()

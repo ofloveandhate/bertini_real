@@ -421,7 +421,7 @@ def extract_points(data):
         point = [None] * 3
 
         for j in range(3):
-            point[j] = vertex['point'][j].real
+            point[j] = vertex[j].real
         points.append(point)
 
     return points

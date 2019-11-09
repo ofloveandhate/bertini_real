@@ -585,7 +585,7 @@ def extract_points(self):
         q = [None] * 3
 
         for i in range(3):
-            q[i] = v['point'][i].real
+            q[i] = v[i].real
         points.append(q)
 
     return points
