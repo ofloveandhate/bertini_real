@@ -7,7 +7,6 @@ import bertini_real.plot
 import bertini_real.glumpyplotter
 import bertini_real.tmesh
 import bertini_real.anaglypy
-import bertini_real.vertextype
 
 
 def gather_and_plot():

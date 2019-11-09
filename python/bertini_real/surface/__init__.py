@@ -11,12 +11,11 @@
 # University of Wisconsin, Eau Claire
 # Fall 2019 (Piece Object)
 
-import bertini_real.vertextype
 import bertini_real.parse
 import numpy as np
 from bertini_real.decomposition import Decomposition
 from bertini_real.curve import Curve
-
+from bertini_real.vertex import Vertex
 
 class Piece():
     """ Create a Piece object of a surface. A surface can be made of 1 piece or multiple pieces. """
@@ -41,6 +40,7 @@ class Piece():
         """ Check whether a piece is:
             (1) compact (no edges touch the bounding sphere) 
             (2) non-compact (at least 1 edge touches bounding sphere)
+
 
             Examples:
             sphere: (1 piece) - compact
@@ -86,11 +86,56 @@ class Piece():
 
         point_singularities = []
 
-        for jj in self.indices:
+        for face_index in self.indices:
+            surf = self.surface
+
             # if vertex type is singular, returns true
-            if(self.surface.is_vertex_of_type(jj,bertini_real.vertextype.singular)):
-                point_singularities.append(jj)
-                print(self.surface.is_vertex_of_type(jj,bertini_real.vertextype.singular))
+            face = surf.faces[face_index]
+
+            curr_edge = -10
+
+            # top - make this to function (later)
+            # top is the index, system top is the where the index lives
+            if(face['system top'] == 'input_critical_curve'):
+                curr_edge = surf.critical_curve.edges[face['top']]
+            elif(face['system top'] == 'input_surf_sphere'):
+                curr_edge = surf.sphere_curve.edges[face['top']]
+            else:
+                for zz in range(len(surf.singular_curves)):
+                    if(surf.singular_names[zz] == face['system top']):
+                        curr_edge = surf.singular_curves[
+                            zz].edges[face['top']]
+
+            # vertices 
+            if(self.vertices[curr_edge[0]].is_of_type(bertini_real.vertextype.singular)):
+                point_singularities.append(curr_edge[0])
+
+            # remeber to change the other vertex type
+            # change vertex[][] to vertex.
+
+            if(self.surface.is_vertex_of_type(curr_edge[2],bertini_real.vertextype.singular)):
+                point_singularities.append(curr_edge[2])
+
+            # check bottom
+            if(face['system bottom'] == 'input_critical_curve'):
+                curr_edge = surf.critical_curve.edges[face['bottom']]
+            elif(face['system bottom'] == 'input_surf_sphere'):
+                curr_edge = surf.sphere_curve.edges[face['bottom']]
+            else:
+                for zz in range(len(surf.singular_curves)):
+                    if(surf.singular_names[zz] == face['system bottom']):
+                        curr_edge = surf.singular_curves[
+                            zz].edges[face['bottom']]
+
+            if(self.surface.is_vertex_of_type(curr_edge[0],bertini_real.vertextype.singular)):
+                point_singularities.append(curr_edge[0])
+
+            if(self.surface.is_vertex_of_type(curr_edge[2],bertini_real.vertextype.singular)):
+                point_singularities.append(curr_edge[2])
+
+            # get unique stuff
+
+
 
         return point_singularities
 
@@ -130,13 +175,15 @@ class Surface(Decomposition):
         self.singular_curves = []
         self.singular_names = []
         self.surface_sampler_data = []   # store all surface_sampler data
-        self.vertex_types_data = []
+        self.vertices = []
         self.input = None
 
         # automatically parse data files to gather curve data
         self.parse_decomp(self.directory)
         self.parse_surf(self.directory)
-        self.parse_vertex_types(self.directory)
+        # remove this
+        # get this from read most recent: example: x.vertices[0]['type']
+        # self.vertices = bertini_real.data.ReadMostRecent().vertices
         self.gather_faces(self.directory)
         self.gather_curves(self.directory)
         try:
@@ -165,13 +212,13 @@ class Surface(Decomposition):
         self.num_singular_curves = surf_data[4]
         self.singular_curve_multiplicities = surf_data[5]
 
-    def parse_vertex_types(self, directory):
-        """ Parse and store vertex types data
+    # def parse_vertex_types(self, directory):
+    #     """ Parse and store vertex types data
 
-        :param directory: Directory of the surface folder
-        """
-        vertex_types_data = bertini_real.parse.parse_vertex_types(directory)
-        self.vertex_types_data = vertex_types_data
+    #     :param directory: Directory of the surface folder
+    #     """
+    #     vertex_types_data = bertini_real.parse.parse_vertex_types(directory)
+    #     self.vertex_types_data = vertex_types_data
 
     def gather_faces(self, directory):
         """ Gather the faces of surface
@@ -211,16 +258,7 @@ class Surface(Decomposition):
         self.surface_sampler_data = bertini_real.parse.parse_surface_Samples(
             directory)
 
-    def is_vertex_of_type(self, index, type):
-        """ Check if a vertex matches certain VertexType 
 
-            :param index: Indices of a Piece object
-            :param type: A VertexType
-        """
-
-        self.vertex_types_data = bertini_real.parse.parse_vertex_types(
-            self.directory)
-        return bool((self.vertex_types_data[index] & type))
 
     def check_data(self):
         """ Check data """

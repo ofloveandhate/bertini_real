@@ -26,6 +26,7 @@ all related code could be much more generic.
 
 
 class BRData(object):
+
     def __init__(self, autoload=True):
         self.filenames = []
         self.num_vertices = 0
@@ -48,6 +49,7 @@ class BRData(object):
         return str(self)
 
     def gather(self):
+        # remove all self
         self.directory_info = parse.parse_directory_name()
         self.find_directory(self.directory_info[0])
 
@@ -106,7 +108,7 @@ class BRData(object):
                 while line == '\n':
                     line = f.readline()
                 number_of_variables = int(line)
-            
+
                 temporary_point = []
                 for jj in range(number_of_variables):
                     complex_num = f.readline().split(' ')
@@ -145,11 +147,12 @@ class BRData(object):
                     line = f.readline()
 
                 vertextype = int(line.replace('\n', ''))
-                v = Vertex(point,input_in,proj,vertextype)
+                v = Vertex(point, input_in, proj, vertextype)
                 self.vertices[ii] = v
         return
 
     def gather_surface(self, directory):
+        # return the Surface(directory)
         self.surface = Surface(directory)
 
     def gather_curve(self, directory):
