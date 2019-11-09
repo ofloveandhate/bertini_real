@@ -9,7 +9,7 @@
 
 # Foong Min Wong
 # University of Wisconsin, Eau Claire
-# Fall 2019 (Piece Object)
+# Fall 2019 (Piece Object) - need to fix vertices problem
 
 import bertini_real.parse
 import numpy as np
