@@ -28,12 +28,16 @@ Details 📝
 ================
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 10
    :caption: Contents:
 
+   curve
+   data
+   decomposition
    glumpy
-   surface
    tmesh
+   surface
+   vertex
 
 Indices and tables 📋
 ==========================

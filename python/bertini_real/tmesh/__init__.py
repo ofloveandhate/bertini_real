@@ -42,7 +42,7 @@ class TMesh():
         """
 
         if data is None:
-            self.decomposition = bertini_real.data.ReadMostRecent()
+            self.decomposition = bertini_real.data.gather()
         else:
             self.decomposition = data
 
@@ -54,7 +54,7 @@ class TMesh():
 
         points = extract_points(self)
 
-        surf = self.decomposition.surface
+        surf = self.decomposition
 
         num_faces = surf.num_faces
 
@@ -232,7 +232,7 @@ class TMesh():
 
         points = extract_points(self)
 
-        faces = self.decomposition.surface.surface_sampler_data
+        faces = self.decomposition.sampler_data
 
         vertex = []
 
@@ -269,7 +269,7 @@ class TMesh():
 
         points = extract_points(self)
 
-        surf = self.decomposition.surface
+        surf = self.decomposition
 
         num_faces = surf.num_faces
 
@@ -494,7 +494,7 @@ class TMesh():
 
         points = extract_points(self)
 
-        faces = self.decomposition.surface.surface_sampler_data
+        faces = self.decomposition.sampler_data
 
         vertex = []
 
@@ -585,7 +585,7 @@ def extract_points(self):
         q = [None] * 3
 
         for i in range(3):
-            q[i] = v[i].real
+            q[i] = v.point[i].real
         points.append(q)
 
     return points

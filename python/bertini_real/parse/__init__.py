@@ -1,9 +1,13 @@
 import os
 
+# put all these stuff into right place
 
 def parse_directory_name(directory_name='Dir_Name'):
-    """ parses file that contains the directory name, the MPtype, and the dimension
-    Returns a list [directory, MPtype, dimension]"""
+    """ Parse file that contains the directory name, the MPtype, and the dimension
+
+        :param directory_name: name of directory
+        :rtype: Ta list [directory, MPtype, dimension]
+    """
 
     # os path manipulations. function returns true if path is an existing file
     if not os.path.isfile(directory_name):
@@ -19,20 +23,17 @@ def parse_directory_name(directory_name='Dir_Name'):
 
 
 def parse_decomposition(directory):
-    """
-    Reads data from decomp file.
-    Inputs: current directory
+    """ Read data from decomp file
 
-    Returns: List containing data to be stored in BRinfo class instance
-            [Pi, Patch_Vectors, radius, center]
-
+        :param directory: name of directory
+        :rtype: List containing data to be stored in BRinfo class instance [Pi, Patch_Vectors, radius, center]
     """
 
     """ checks if path file is a directory
     what does '/decomp' and '/r' do?
     reads for input file name, input variables and dimensions
     splits into two separate parts, separate integers
-    turns them into integers"""
+    turns them into integers """
 
     if not os.path.isfile(directory + '/decomp'):
         print("did not find decomp at %s" % os.getcwd())
@@ -100,9 +101,12 @@ def parse_decomposition(directory):
 # singular curves, and multiplicities
 
 
-def parse_Surf(directory):
+def parse_surf(directory):
     """ Reads data from S.Surf file
-        Inputs: current directory """
+
+        :param directory: name of directory
+        :rtype: 
+    """
 
     if not os.path.isfile(directory + '/S.surf'):
         print("S.surf does not exist in current directory: %s" % os.getcwd())
@@ -135,7 +139,7 @@ def parse_Surf(directory):
             singular_curve_multiplicites]
 
 
-def parse_Faces(directory):
+def parse_faces(directory):
     """ Reads Faces data from F.faces
         Inputs: current directory
         Returns: list with each element being a dictionary containing the face data
@@ -186,7 +190,11 @@ def parse_Faces(directory):
     return faces
 
 
-def parse_Edges(directory):
+def parse_edges(directory):
+    """ Parse and store edges data
+
+        :param directory: Directory of the edge folder
+    """
     if not os.path.isfile(directory + '/E.edge'):
         print("E.edge file not found in current directory: %s" % os.getcwd())
         return {'number of edges': 0, 'edges': []}
@@ -206,7 +214,11 @@ def parse_Edges(directory):
     return curves
 
 
-def parse_Curve_Samples(directory):
+def parse_curve_samples(directory):
+    """ Parse and store curve samples data
+
+        :param directory: Directory of the curve folder
+    """
     filename = directory + '/samp.curvesamp'
     if not os.path.isfile(filename):
         raise FileNotFoundError("no samples found for this surface")
@@ -228,7 +240,11 @@ def parse_Curve_Samples(directory):
         return sampler_data
 
 
-def parse_surface_Samples(directory):
+def parse_surface_samples(directory):
+    """ Parse and store surface samples data
+
+        :param directory: Directory of the surface folder
+    """
     filename = directory + '/samp.surfsamp'
     if not os.path.isfile(filename):
         raise FileNotFoundError("no samples found for this surface")

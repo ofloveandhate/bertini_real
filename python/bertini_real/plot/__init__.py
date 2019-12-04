@@ -2,7 +2,7 @@
 # University of Notre Dame
 # Spring 2017
 
-# Danielle Brake
+# Silviana Amethyst
 # Fall 2018
 
 # Dan Hessler
@@ -20,7 +20,6 @@ raw surfaces
 """
 
 import os
-from bertini_real.data import BRData
 from bertini_real.surface import Surface, Curve
 import bertini_real.util
 import dill
@@ -98,13 +97,6 @@ class Plotter(object):
         rax = plt.axes([0.05, 0.4, 0.2, 0.15])
         check = CheckButtons(rax, ('Vertices', 'Surface', 'Raw Surface', 'STL'),
                              (True, True, False, False))
-
-        # Export STL button
-        # exportstl = plt.axes([0.81, 0.01, 0.15, 0.075])
-        # bfvtostl = Button(exportstl,'Export STL')
-
-        # if(bfvtostl.on_clicked()):
-        #      print("Export successfully")
 
         def func(label):
             if label == 'Vertices':

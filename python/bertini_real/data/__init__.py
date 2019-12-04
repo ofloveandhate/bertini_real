@@ -10,155 +10,109 @@ import dill
 import numpy as np
 
 
-'''
-implemented in a way such that every decomposition is is a BRData,
-and then if it's a curve, it gets a curve, and if its a surface,
-it gets a surface.
+def find_directory(directory_path):
+    """ Find the directory of decomposition data based on directory path
 
-i'd rather it was the data type itself, and modeled is-a rather than has-a,
-but this is what there is right now.
+        :param directory_path: The path of directory
 
+    """
+    directories = directory_path.split('/')
+    if len(directories) > 1:
+        directory = directories[-1]
+    else:
+        directory = directory_path
 
-todo: re-implement so that is-a instead of has-a is the thing to do.
-all related code could be much more generic.
+    return directory
 
-'''
+def gather_vertices(directory):
+    """ Gather vertices
 
+        :param directory: The path of directory
 
-class BRData(object):
+    """
+    vertex_file_name = "V.vertex"
+    if os.path.isfile("%s/V_samp.vertex" % directory):
+        vertex_file_name = "V_samp.vertex"
 
-    def __init__(self, autoload=True):
-        self.filenames = []
-        self.num_vertices = 0
-        self.vertices = []
-        if autoload:
-            self.gather()
+    with open("%s/%s" % (directory, vertex_file_name), 'r') as f:
+        # read first line and get number of vertices, number of projections,
+        # number of natural vars, and number of file names
+        line = f.readline().split(' ')
+        num_vertices = int(line[0])
+        num_projections = int(line[1])
+        num_natural_vars_incl_hom_coord = int(line[2])
+        num_variables = num_natural_vars_incl_hom_coord - 1
+        num_filenames = int(line[3].replace('\n', ''))
+        filenames = []
 
-    def __str__(self):
-        result = ""
-
-        result += "decomposition of dimension {}\n".format(self.dimension)
-        if self.dimension == 1:
-            result += str(self.curve)
-        elif self.dimension == 2:
-            result += str(self.surface)
-
-        return result
-
-    def __repr__(self):
-        return str(self)
-
-    def gather(self):
-        # remove all self
-        self.directory_info = parse.parse_directory_name()
-        self.find_directory(self.directory_info[0])
-
-        print("gathering data from " + self.directory)
-        self.dimension = int(self.directory_info[2])
-        self.gather_vertices()
-        if self.dimension == 1:
-            # polynomial is a curve
-            self.gather_curve(self.directory)
-        elif self.dimension == 2:
-            # polynomial is a surface
-            self.gather_surface(self.directory)
-        print("done gathering decomposition")
-
-    def find_directory(self, directory_path):
-        directories = directory_path.split('/')
-        if len(directories) > 1:
-            self.directory = directories[-1]
-        else:
-            self.directory = directory_path
-
-    def gather_vertices(self):
-        vertex_file_name = "V.vertex"
-        if os.path.isfile("%s/V_samp.vertex" % self.directory):
-            vertex_file_name = "V_samp.vertex"
-
-        with open("%s/%s" % (self.directory, vertex_file_name), 'r') as f:
-            # read first line and get number of vertices, number of projections,
-            # number of natural vars, and number of file names
-            line = f.readline().split(' ')
-            self.num_vertices = int(line[0])
-            num_projections = int(line[1])
-            num_natural_vars = int(line[2])
-            self.num_variables = num_natural_vars - 1
-            num_filenames = int(line[3].replace('\n', ''))
-
-            # Skips data not used
-            for i in range(0, (num_projections * num_natural_vars)):
+        # Skips data not used
+        for i in range(0, (num_projections * num_natural_vars_incl_hom_coord)):
+            skip_this_line = f.readline()
+            while skip_this_line == '\n':
                 skip_this_line = f.readline()
-                while skip_this_line == '\n':
-                    skip_this_line = f.readline()
+        _ = f.readline()
+        if line == '\n':
             _ = f.readline()
-            if line == '\n':
-                _ = f.readline()
 
-            # Gets file names and stores them in self.filenames
-            for ii in range(num_filenames):
-                _ = f.readline()
-                self.filenames.append(f.readline().replace('\n', ''))
+        # Gets file names and stores them in filenames
+        for ii in range(num_filenames):
+            _ = f.readline()
+            filenames.append(f.readline().replace('\n', ''))
 
-            self.vertices = [None for i in range(self.num_vertices)]
+        vertices = [None for i in range(num_vertices)]
 
-            for ii in range(self.num_vertices):
+        for ii in range(num_vertices):
+            line = f.readline()
+
+            while line == '\n':
                 line = f.readline()
+            number_of_variables = int(line)
 
-                while line == '\n':
-                    line = f.readline()
-                number_of_variables = int(line)
+            temporary_point = []
+            for jj in range(number_of_variables):
+                complex_num = f.readline().split(' ')
+                real_part = float(complex_num[0])
+                imaginary_part = float(complex_num[1])
 
-                temporary_point = []
-                for jj in range(number_of_variables):
-                    complex_num = f.readline().split(' ')
-                    real_part = float(complex_num[0])
-                    imaginary_part = float(complex_num[1])
+                temporary_point.append(complex(real_part, imaginary_part))
 
-                    temporary_point.append(complex(real_part, imaginary_part))
+            x = dehomogenize(temporary_point[0:num_natural_vars_incl_hom_coord])
+            point = np.array(x)
+            line = f.readline()
 
-                x = dehomogenize(temporary_point[0:num_natural_vars])
-                point = np.array(x)
-                line = f.readline()
-
-                while line == '\n':
-                    line = f.readline().replace('\n', '')
-
-                num_projection_values = int(line)
-                proj = []
-                for ll in range(num_projection_values):
-                    complex_num = f.readline().split(' ')
-                    real_part = float(complex_num[0])
-                    imaginary_part = float(complex_num[1])
-                    proj.append(
-                        complex(real_part,
-                                imaginary_part))
-
+            while line == '\n':
                 line = f.readline().replace('\n', '')
 
-                while line == '\n':
-                    line = f.readline()
+            num_projection_values = int(line)
+            proj = []
+            for ll in range(num_projection_values):
+                complex_num = f.readline().split(' ')
+                real_part = float(complex_num[0])
+                imaginary_part = float(complex_num[1])
+                proj.append(
+                    complex(real_part,
+                            imaginary_part))
 
-                input_in = float(
-                    line.replace('\n', ''))
+            line = f.readline().replace('\n', '')
+
+            while line == '\n':
                 line = f.readline()
 
-                while line == '\n':
-                    line = f.readline()
+            input_in = float(
+                line.replace('\n', ''))
+            line = f.readline()
 
-                vertextype = int(line.replace('\n', ''))
-                v = Vertex(point, input_in, proj, vertextype)
-                self.vertices[ii] = v
-        return
+            while line == '\n':
+                line = f.readline()
 
-    def gather_surface(self, directory):
-        # return the Surface(directory)
-        self.surface = Surface(directory)
+            vertextype = int(line.replace('\n', ''))
+            v = Vertex(point, input_in, proj, vertextype)
+            vertices[ii] = v
 
-    def gather_curve(self, directory):
-        self.curve = Curve(directory)
+        return vertices, filenames
 
     def autosave(self):
+        """ Going to remove this method """
         fn = util.next_filenumber()
         fileName = "BRdata" + str(fn) + ".pkl"
         fileObject = open(fileName, 'wb')
@@ -168,7 +122,7 @@ class BRData(object):
 
 
 def ReadMostRecent():
-    ''' Reads the most recent decomposition, and returns it.'''
+    """ Reads the most recent decomposition, and returns it."""
     filenum = bertini_real.util.highest_filenumber()
 
     fileName = "BRdata" + str(filenum) + ".pkl"
@@ -183,11 +137,30 @@ def ReadMostRecent():
 
 
 def gather():
+    """ Gather data 
+        
+        :rtype Either Curve or Surface decomposition
+
+    """
+    directory_info = parse.parse_directory_name()
+    directory = find_directory(directory_info[0])
+
+    print("gathering data from " + directory)
+    dimension = int(directory_info[2])
+    if dimension == 1:
+        # polynomial is a curve
+        return Curve(directory, False)
+    elif dimension == 2:
+        # polynomial is a surface
+        return Surface(directory, False)
+    print("done gathering decomposition")
+
+def gather_and_save():
     a = bertini_real.util.next_filenumber()
 
     fileName = "BRdata" + str(a) + ".pkl"
     fileObject = open(fileName, 'wb')
-    b = BRData()
+    b = gather()
 
     print("saving to file " + fileName)
 
