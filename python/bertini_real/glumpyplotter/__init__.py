@@ -35,16 +35,16 @@ class GlumpyPlotter():
         """
 
         if data is None:
-            self.decomposition = bertini_real.data.ReadMostRecent()
+            self.decomposition = bertini_real.data.read_most_recent()
         else:
             self.decomposition = data
 
     def plot_surface_samples(self, cmap=None, color_function=None):
         """Method used to plot a surface."""
-        data = self.decomposition
+        surf = self.decomposition
 
-        tuples = data.surface.surface_sampler_data
-        points = extract_points(data)
+        tuples = surf.sampler_data
+        points = extract_points(surf)
 
         triangle = []
         for i in range(len(tuples)):
@@ -96,16 +96,14 @@ class GlumpyPlotter():
 
     def plot_surface_raw(self, cmap=None, color_function=None):
         """Method used to plot a raw surface."""
-        surf = self.decomposition.surface
+        surf = self.decomposition
 
         num_faces = surf.num_faces
 
         which_faces = list(range(num_faces))
 
-        data = self.decomposition
-
-        tuples = data.surface.surface_sampler_data
-        points = extract_points(data)
+        tuples = surf.sampler_data
+        points = extract_points(surf)
 
         # store number of faces to num_faces
         num_faces = surf.num_faces
@@ -276,7 +274,7 @@ class GlumpyPlotter():
         """This function plots the critical curve of a surface."""
         data = self.decomposition
 
-        tuples = data.surface.critical_curve.sampler_data
+        tuples = data.critical_curve.sampler_data
         points = extract_curve_points(data)
         triangle = tuples
 
@@ -415,13 +413,13 @@ def extract_points(data):
         :param data: The decomposition that we are rendering.
         :rtype: List of tuples of length 3.
     """
-
     points = []
+
     for vertex in data.vertices:
         point = [None] * 3
 
-        for j in range(3):
-            point[j] = vertex[j].real
+        for i in range(3):
+            point[i] = vertex.point[i].real
         points.append(point)
 
     return points

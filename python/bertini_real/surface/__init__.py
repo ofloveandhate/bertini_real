@@ -35,7 +35,7 @@ class Piece():
         result += "{}".format(self.indices)
         return result
 
-    def isCompact(self):
+    def is_compact(self):
         """ Check whether a piece is:
             (1) compact (no edges touch the bounding sphere) 
             (2) non-compact (at least 1 edge touches bounding sphere)

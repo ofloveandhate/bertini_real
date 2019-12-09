@@ -1,7 +1,5 @@
 import os
 
-# put all these stuff into right place
-
 def parse_directory_name(directory_name='Dir_Name'):
     """ Parse file that contains the directory name, the MPtype, and the dimension
 
@@ -26,7 +24,7 @@ def parse_decomposition(directory):
     """ Read data from decomp file
 
         :param directory: name of directory
-        :rtype: List containing data to be stored in BRinfo class instance [Pi, Patch_Vectors, radius, center]
+        :rtype: List containing data to be stored in BRinfo class instance [pi, patch_vectors, radius, center]
     """
 
     """ checks if path file is a directory
@@ -44,17 +42,17 @@ def parse_decomposition(directory):
         num_variables = int(num_variables_and_dimension[0])
         dimension = int(num_variables_and_dimension[1])
 
-        Pi = [[0, 0] for i in range(num_variables - 1)]
+        pi = [[0, 0] for i in range(num_variables - 1)]
         for ii in range(dimension):
             numVars = f.readline()
             while numVars == '\n':
                 numVars = f.readline()
             numVars = int(numVars.replace('\n', ''))
             for jj in range(numVars):
-                Pi_Nums = f.readline().replace('\n', '').split(' ')
+                pi_nums = f.readline().replace('\n', '').split(' ')
                 if jj == 0:
                     continue
-                Pi[jj - 1][ii] = complex(float(Pi_Nums[0]), float(Pi_Nums[1]))
+                pi[jj - 1][ii] = complex(float(pi_nums[0]), float(pi_nums[1]))
 
         # Getting number of Patches and then patch data
         num_patches = f.readline()
@@ -62,17 +60,17 @@ def parse_decomposition(directory):
             num_patches = f.readline()
         num_patches = int(num_patches.replace('\n', ''))
 
-        Patch_Vectors = []
+        patch_vectors = []
         for ii in range(num_patches):
-            Patch_Vectors.append([])
+            patch_vectors.append([])
             patch_size = f.readline()
             while patch_size == '\n':
                 patch_size = f.readline()
             patch_size = int(patch_size.replace('\n', ''))
             for jj in range(patch_size):
-                Patch_Vectors_data = f.readline().replace('\n', '').split(' ')
-                Patch_Vectors[ii].append(complex(float(Patch_Vectors_data[0]),
-                                                 float(Patch_Vectors_data[1])))
+                patch_vectors_data = f.readline().replace('\n', '').split(' ')
+                patch_vectors[ii].append(complex(float(patch_vectors_data[0]),
+                                                 float(patch_vectors_data[1])))
         # Get radius
         radius = f.readline()
         while radius == '\n':
@@ -90,8 +88,8 @@ def parse_decomposition(directory):
             center.append(
                 complex(float(center_data[0]), float(center_data[1])))
         return {'input file name': inputFileName,
-                'Pi info': Pi,
-                'Patch Vectors': Patch_Vectors,
+                'pi info': pi,
+                'patch vectors': patch_vectors,
                 "radius": radius,
                 "center": center,
                 "num patches": num_patches}

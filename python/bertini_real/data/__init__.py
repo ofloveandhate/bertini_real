@@ -1,7 +1,6 @@
 from __future__ import print_function
 import os
 import bertini_real.parse as parse
-
 from bertini_real.dehomogenize import dehomogenize
 from bertini_real.surface import Surface, Curve
 import bertini_real.util
@@ -121,7 +120,7 @@ def gather_vertices(directory):
         return fileName
 
 
-def ReadMostRecent():
+def read_most_recent():
     """ Reads the most recent decomposition, and returns it."""
     filenum = bertini_real.util.highest_filenumber()
 
@@ -139,7 +138,7 @@ def ReadMostRecent():
 def gather():
     """ Gather data 
         
-        :rtype Either Curve or Surface decomposition
+        :rtype Either curve or surface decomposition
 
     """
     directory_info = parse.parse_directory_name()
@@ -156,6 +155,7 @@ def gather():
     print("done gathering decomposition")
 
 def gather_and_save():
+    """ Gather and save data """
     a = bertini_real.util.next_filenumber()
 
     fileName = "BRdata" + str(a) + ".pkl"

@@ -42,7 +42,7 @@ class TMesh():
         """
 
         if data is None:
-            self.decomposition = bertini_real.data.gather()
+            self.decomposition = bertini_real.data.read_most_recent()
         else:
             self.decomposition = data
 
@@ -581,12 +581,12 @@ def extract_points(self):
 
     points = []
 
-    for v in self.decomposition.vertices:
-        q = [None] * 3
+    for vertex in self.decomposition.vertices:
+        point = [None] * 3
 
         for i in range(3):
-            q[i] = v.point[i].real
-        points.append(q)
+            point[i] = vertex.point[i].real
+        points.append(point)
 
     return points
 

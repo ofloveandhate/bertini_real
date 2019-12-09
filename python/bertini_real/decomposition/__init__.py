@@ -51,8 +51,8 @@ class Decomposition(object):
         """
         decomposition_data = bertini_real.parse.parse_decomposition(directory)
         self.inputfilename = decomposition_data['input file name']
-        self.pi = decomposition_data['Pi info']
-        self.patch = decomposition_data['Patch Vectors']
+        self.pi = decomposition_data['pi info']
+        self.patch = decomposition_data['patch vectors']
         self.radius = decomposition_data["radius"]
         self.center = decomposition_data["center"]
         self.num_patches = decomposition_data['num patches']
