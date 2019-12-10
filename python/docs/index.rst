@@ -11,6 +11,13 @@ This is the documentation for `Bertini_Real <https://github.com/ofloveandhate/be
 .. image:: pictures/croissant_collage.png
    :width: 500
 
+Introduction
+============
+.. toctree::
+   :maxdepth:1
+   :caption: Bertini_real
+   
+   tutorials/bertini_real
 
 Tutorials ✏️
 ============
@@ -18,7 +25,7 @@ Tutorials ✏️
 .. toctree::
    :maxdepth: 1
    :caption: Contents:
-
+   
    tutorials/glumpy
    tutorials/tmesh
    tutorials/anaglypy
@@ -28,16 +35,22 @@ Details 📝
 ================
 
 .. toctree::
-   :maxdepth: 10
+   :maxdepth: 14
    :caption: Contents:
 
+   anaglypy
    curve
    data
    decomposition
+   dehomogenize
    glumpy
+   parse
+   plot
    tmesh
    surface
+   util
    vertex
+   vertextype
 
 Indices and tables 📋
 ==========================
@@ -50,7 +63,7 @@ Indices and tables 📋
 Contact 📧
 =================
 
-If you have any questions, feel free to email `Danielle <mailto:danielleamethystbrake@gmail.com>`_!
+If you have any questions, feel free to email `Silviana <mailto:silviana.amethyst@gmail.com>`_!
 
 .. image:: pictures/3dprints_collage2.png
    :width: 500

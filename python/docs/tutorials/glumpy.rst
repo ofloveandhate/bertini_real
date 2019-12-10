@@ -80,7 +80,7 @@ First we need to import bertini_real and save our data to a variable.
 
     import bertini_real
 
-    surface = bertini_real.data.ReadMostRecent()
+    surface = bertini_real.data.read_most_recent()
 
 At this point, if all you want to do is render your surface you can simply type:
 

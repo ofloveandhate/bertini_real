@@ -15,7 +15,7 @@ We are using a surface **"Whitney"** in this example ☂️ .
 
     bertini_real.data.gather()
 
-    surface = bertini_real.data.ReadMostRecent()
+    surface = bertini_real.data.read_most_recent()
 
 To export the raw version of OBJ, you can type:
 

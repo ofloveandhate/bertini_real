@@ -20,8 +20,8 @@ sys.path.insert(0, os.path.abspath('../bertini_real/'))
 # -- Project information -----------------------------------------------------
 
 project = u'Bertini_Real and Python'
-copyright = u'2019, Dan Hessler, Foong Min Wong, Danielle Amethyst Brake'
-author = u'Dan Hessler, Foong Min Wong, Danielle Amethyst Brake'
+copyright = u'2019, Dan Hessler, Foong Min Wong, Silviana Amethyst'
+author = u'Dan Hessler, Foong Min Wong, Silviana Amethyst'
 
 # The short X.Y version
 version = u''
