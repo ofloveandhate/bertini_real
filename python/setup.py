@@ -13,7 +13,7 @@ setup(name='bertini_real',
       version='1.6',  # TODO make this set programmatically
       description='Python library for bertini_real',
       url='http://bertinireal.com',
-      author='Dan Hessler, Foong Min Wong, Danielle Amethyst Brake',
+      author='Dan Hessler, Foong Min Wong, Silviana Amethyst',
       author_email='brakeda@uwec.edu',
       packages=find_packages(exclude=EXCLUDE_FROM_PACKAGES),
       install_requires=['matplotlib',
