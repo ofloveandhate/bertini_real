@@ -21,18 +21,19 @@ Tutorials ✏️
 
    tutorials/glumpy
    tutorials/tmesh
+   tutorials/anaglypy
 
 
 Details 📝
 ================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
    :caption: Contents:
 
    glumpy
+   surface
    tmesh
-
 
 Indices and tables 📋
 ==========================

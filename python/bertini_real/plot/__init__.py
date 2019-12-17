@@ -26,8 +26,6 @@ import bertini_real.util
 import dill
 import numpy as np
 import matplotlib
-from stl import mesh
-import trimesh
 # change backend with this line, if desired
 # matplotlib.use('macosx')
 import matplotlib.pyplot as plt
@@ -38,12 +36,14 @@ from matplotlib.widgets import CheckButtons
 
 
 class StyleOptions(object):
+
     def __init__(self):
         self.line_thickness = 2  # there is no code using this yet.  write it.
         self.colormap = plt.cm.inferno
 
 
 class VisibilityOptions(object):
+
     def __init__(self):
         self.vertices = True
         self.samples = True
@@ -56,17 +56,20 @@ class VisibilityOptions(object):
 
 
 class Options(object):
+
     def __init__(self):
         self.style = StyleOptions()
         self.visibility = VisibilityOptions()
 
 
 class ReversableList(list):
+
     def reverse(self):
         return list(reversed(self))
 
 
 class Plotter(object):
+
     def __init__(self, data=None, options=Options()):
 
         if data is None:
@@ -115,12 +118,6 @@ class Plotter(object):
                     not self.options.visibility.samples)
                 self.ax.clear()
                 self.replot()
-            elif label == 'Raw Surface':
-                self.options.visibility.raw = (not self.options.visibility.raw)
-                self.ax.clear()
-                self.replot()
-            elif label == 'STL':
-                self.fvtostl()
 
             plt.draw()
         check.on_clicked(func)
@@ -159,7 +156,8 @@ class Plotter(object):
         self.apply_title()
 
     def label_axes(self):
-        # todo: these should be set from the decomposition, not assumed to be x,y,z
+        # todo: these should be set from the decomposition, not assumed to be
+        # x,y,z
         self.ax.set_xlabel("x")
         self.ax.set_ylabel("y")
         if self.decomposition.dimension == 2:
@@ -170,6 +168,7 @@ class Plotter(object):
 
 	todo: make them colored based on a function
 	'''
+
     def plot_vertices(self):
 
         # refactored version
@@ -191,10 +190,10 @@ class Plotter(object):
         zs = []
 
         for v in self.decomposition.vertices:
-            xs.append(v['point'][0].real)
-            ys.append(v['point'][1].real)
+            xs.append(v[0].real)
+            ys.append(v[1].real)
             if self.decomposition.num_variables > 2:
-                zs.append(v['point'][2].real)
+                zs.append(v[2].real)
 
         return xs, ys, zs
 
@@ -206,7 +205,7 @@ class Plotter(object):
             q = [None] * 3
 
             for i in range(3):
-                q[i] = v['point'][i].real
+                q[i] = v[i].real
             points.append(q)
 
         return points
@@ -328,51 +327,6 @@ class Plotter(object):
             self.ax.add_collection3d(Poly3DCollection(T, facecolors=color))
             self.ax.autoscale_view()
 
-    def fvtostl(self):
-        points = self.points
-        faces = self.decomposition.surface.surface_sampler_data
-
-        # add vertex and surface to mesh
-        vertex = []
-
-        for p in points:
-            vertex.append(p)
-
-        vertex_np_array = np.array(vertex)
-
-        face = []
-
-        for f in faces:  # for each face
-            for tri in f:  # for triangle in face
-                face.append([tri[0], tri[1], tri[2]])
-
-        face_np_array = np.array(face)
-
-        obj = mesh.Mesh(
-            np.zeros(face_np_array.shape[0], dtype=mesh.Mesh.dtype))
-
-        for i, f in enumerate(face_np_array):
-            for j in range(3):
-                obj.vectors[i][j] = vertex_np_array[f[j], :]
-
-        # get object filename
-        fileName = os.getcwd().split(os.sep)[-1]
-
-        obj.save('a' + fileName + '.stl')
-
-        normmesh = trimesh.load_mesh('a' + fileName + '.stl')
-
-        normmesh.fix_normals()
-
-        for facet in normmesh.facets:
-            normmesh.visual.face_colors[facet] = trimesh.visual.random_color()
-
-        # normmesh.show()
-
-        normmesh.export(file_obj='anorm' + fileName + '.stl', file_type='stl')
-
-        print("Export successfully")
-
     def plot_surface_raw(self):
         points = self.points
         surf = self.decomposition.surface
@@ -425,7 +379,8 @@ class Plotter(object):
                     else:
                         for zz in range(len(surf.singular_curves)):
                             if(surf.singular_names[zz] == face['system top']):
-                                curr_edge = surf.singular_curves[zz].edges[face['top']]
+                                curr_edge = surf.singular_curves[
+                                    zz].edges[face['top']]
                     # print(curr_edge)
                     if (curr_edge[0] < 0 and curr_edge[1] < 0 and curr_edge[2] < 0):
                         continue
@@ -449,7 +404,8 @@ class Plotter(object):
                     else:
                         for zz in range(len(surf.singular_curves)):
                             if(surf.singular_names[zz] == face['system bottom']):
-                                curr_edge = surf.singular_curves[zz].edges[face['bottom']]
+                                curr_edge = surf.singular_curves[
+                                    zz].edges[face['bottom']]
 
                     if (curr_edge[0] < 0 and curr_edge[1] < 0 and curr_edge[2] < 0):
                         continue
@@ -465,7 +421,8 @@ class Plotter(object):
                         slice_ind = face['middle slice index']
                         edge_ind = face['left'][left_edge_counter]
 
-                        curr_edge = surf.critical_point_slices[slice_ind].edges[edge_ind]
+                        curr_edge = surf.critical_point_slices[
+                            slice_ind].edges[edge_ind]
                         left_edge_counter = left_edge_counter + 1  # increment
 
                     else:
@@ -482,7 +439,8 @@ class Plotter(object):
 
                         slice_ind = face['middle slice index'] + 1
                         edge_ind = face['right'][right_edge_counter]
-                        curr_edge = surf.critical_point_slices[slice_ind].edges[edge_ind]
+                        curr_edge = surf.critical_point_slices[
+                            slice_ind].edges[edge_ind]
                         right_edge_counter = right_edge_counter + 1  # increment
 
                         curr_edge = ReversableList(curr_edge)

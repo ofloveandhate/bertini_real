@@ -1,0 +1,51 @@
+
+{
+
+	"anaglyph": 1, 
+	"raw_smooth": "Both",
+	"animation": "Rotate_Z",
+
+	"color": {
+		"r": 1.5, 
+		"g": 1.5, 
+		"b": 0,
+		"alpha": 1
+	},
+
+	"video_settings":{
+		"num_frames": 5,
+		"film_exposure":3.5,
+		"file_format": "AVI_JPEG",
+		"color_mode": "RGB",
+		"views_format": "STEREO_3D"
+
+	},
+
+	"resolution":{
+		"percentage":100,
+		"x": 800,
+		"y": 700
+	},
+
+	"object":{
+		"dimension": 1.5,
+		"inflation":0.15
+	},
+
+	"object_both":{
+		"dimension": 1.15,
+		"inflation":0.15,
+		"location": 1.15
+	},
+
+	"object_multi":{
+		"dimension": 1.0,
+		"inflation":0.1,
+		"location": 1.65
+	},
+
+
+	"convergence_distance": 11,
+    "interocular_distance":1.5
+
+}

@@ -5,6 +5,7 @@ import bertini_real.parse as parse
 from bertini_real.dehomogenize import dehomogenize
 from bertini_real.surface import Surface, Curve
 import bertini_real.util
+from bertini_real.vertex import Vertex
 import dill
 import numpy as np
 
@@ -25,6 +26,7 @@ all related code could be much more generic.
 
 
 class BRData(object):
+
     def __init__(self, autoload=True):
         self.filenames = []
         self.num_vertices = 0
@@ -47,6 +49,7 @@ class BRData(object):
         return str(self)
 
     def gather(self):
+        # remove all self
         self.directory_info = parse.parse_directory_name()
         self.find_directory(self.directory_info[0])
 
@@ -97,7 +100,7 @@ class BRData(object):
                 _ = f.readline()
                 self.filenames.append(f.readline().replace('\n', ''))
 
-            self.vertices = [{} for i in range(self.num_vertices)]
+            self.vertices = [None for i in range(self.num_vertices)]
 
             for ii in range(self.num_vertices):
                 line = f.readline()
@@ -105,7 +108,7 @@ class BRData(object):
                 while line == '\n':
                     line = f.readline()
                 number_of_variables = int(line)
-                self.vertices[ii]['point'] = []
+
                 temporary_point = []
                 for jj in range(number_of_variables):
                     complex_num = f.readline().split(' ')
@@ -115,19 +118,19 @@ class BRData(object):
                     temporary_point.append(complex(real_part, imaginary_part))
 
                 x = dehomogenize(temporary_point[0:num_natural_vars])
-                self.vertices[ii]['point'] = np.array(x)
+                point = np.array(x)
                 line = f.readline()
 
                 while line == '\n':
                     line = f.readline().replace('\n', '')
 
                 num_projection_values = int(line)
-                self.vertices[ii]['projection_value'] = []
+                proj = []
                 for ll in range(num_projection_values):
                     complex_num = f.readline().split(' ')
                     real_part = float(complex_num[0])
                     imaginary_part = float(complex_num[1])
-                    self.vertices[ii]['projection_value'].append(
+                    proj.append(
                         complex(real_part,
                                 imaginary_part))
 
@@ -136,17 +139,20 @@ class BRData(object):
                 while line == '\n':
                     line = f.readline()
 
-                self.vertices[ii]['input_filename_index'] = float(
+                input_in = float(
                     line.replace('\n', ''))
                 line = f.readline()
 
                 while line == '\n':
                     line = f.readline()
 
-                self.vertices[ii]['type'] = float(line.replace('\n', ''))
+                vertextype = int(line.replace('\n', ''))
+                v = Vertex(point, input_in, proj, vertextype)
+                self.vertices[ii] = v
         return
 
     def gather_surface(self, directory):
+        # return the Surface(directory)
         self.surface = Surface(directory)
 
     def gather_curve(self, directory):
