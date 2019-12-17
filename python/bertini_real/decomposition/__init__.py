@@ -1,18 +1,11 @@
 """
 .. module:: decomposition
     :platform: Unix, Windows
-    :synopsis: The Decomposition co
+    :synopsis: The Decomposition contains methods to read input file and parse decomposition.
 
 """
 import bertini_real.parse
 import os
-
-# check the plotting and export 3d print
-# remove those BRData and update to the new one
-# pep8 class name and function name convention
-# change vertices stuff on other files
-# tutorial reaad most recent, gather, access data, all classes
-# check matlab code
 
 class Decomposition(object):
     """ Create a Decomposition object (Parent Class) based on the decomposition
@@ -56,6 +49,7 @@ class Decomposition(object):
         self.radius = decomposition_data["radius"]
         self.center = decomposition_data["center"]
         self.num_patches = decomposition_data['num patches']
+        self.num_variables = decomposition_data['num_variables']
 
     # parse edge here
 

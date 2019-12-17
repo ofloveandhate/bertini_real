@@ -6,8 +6,8 @@ Fall 2019
 .. module:: vertextype
     :platform: Unix, Windows
     :synopsis: The vertextype contains 11 VertexTypes of algebraic curves/surfaces.
-
 """
+
 unset = 0
 critical = 1
 semicritical = 2

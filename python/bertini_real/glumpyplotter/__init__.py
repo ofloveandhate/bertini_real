@@ -416,9 +416,9 @@ def extract_points(data):
     points = []
 
     for vertex in data.vertices:
-        point = [None] * 3
+        point = [None] * data.num_variables
 
-        for i in range(3):
+        for i in range(data.num_variables):
             point[i] = vertex.point[i].real
         points.append(point)
 

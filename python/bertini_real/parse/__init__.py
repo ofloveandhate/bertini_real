@@ -1,3 +1,8 @@
+"""
+.. module:: parse
+    :platform: Unix, Windows
+    :synopsis: The parse module contains methods that parse directory name, decomposition, faces, eges, curve samples, surface samples, 
+"""
 import os
 
 def parse_directory_name(directory_name='Dir_Name'):
@@ -92,7 +97,8 @@ def parse_decomposition(directory):
                 'patch vectors': patch_vectors,
                 "radius": radius,
                 "center": center,
-                "num patches": num_patches}
+                "num patches": num_patches,
+                "num_variables": num_variables-1}
 
 # reads data from surf file, returns number of faces, edges, midpoint slices,
 # critical point singular_curve_multiplicites

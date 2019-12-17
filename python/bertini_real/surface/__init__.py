@@ -31,9 +31,13 @@ class Piece():
 
     def __str__(self):
         """ toString method for Piece """
-        result = "piece with indices:\n"
+        result = "piece with indices:"
         result += "{}".format(self.indices)
+        result += "\n\n"
         return result
+
+    def __repr__(self):
+        return str(self)
 
     def is_compact(self):
         """ Check whether a piece is:
@@ -109,12 +113,10 @@ class Piece():
                             zz].edges[face['top']]
 
             # vertices 
-            # check whether the left end point is singular
-            if(self.surface.vertices[curr_edge[0]].is_of_type(bertini_real.vertextype.singular)):
-                point_singularities.append(curr_edge[0])
+            for ii in range(3): # 0 is left, 1 is mid, 2 is right
+                if(self.surface.vertices[curr_edge[ii]].is_of_type(bertini_real.vertextype.singular)):
+                    point_singularities.append(curr_edge[ii])
 
-            if(self.surface.vertices[curr_edge[2]].is_of_type(bertini_real.vertextype.singular)):
-                point_singularities.append(curr_edge[2])
 
             # check bottom is singular
             if(face['system bottom'] == 'input_critical_curve'):
@@ -127,14 +129,25 @@ class Piece():
                         curr_edge = surf.singular_curves[
                             zz].edges[face['bottom']]
             # vertices 
-            # check whether the left end point is singular
-            if(self.surface.vertices[curr_edge[0]].is_of_type(bertini_real.vertextype.singular)):
-                point_singularities.append(curr_edge[0])
+            for ii in range(3):
+                if(self.surface.vertices[curr_edge[ii]].is_of_type(bertini_real.vertextype.singular)):
+                    point_singularities.append(curr_edge[ii])
 
-            if(self.surface.vertices[curr_edge[2]].is_of_type(bertini_real.vertextype.singular)):
-                point_singularities.append(curr_edge[2])
+            # now we check to the left
+            for edge_ind in face['left']: # this thing itself is a list
+                curr_edge = surf.critical_point_slices[face['middle slice index']].edges[edge_ind]
+                for ii in range(3):
+                    if(self.surface.vertices[curr_edge[ii]].is_of_type(bertini_real.vertextype.singular)):
+                        point_singularities.append(curr_edge[ii])
 
-        return point_singularities
+                        # now we check to the right
+            for edge_ind in face['right']: # this thing itself is a list
+                curr_edge = surf.critical_point_slices[face['middle slice index']+1].edges[edge_ind]
+                for ii in range(3):
+                    if(self.surface.vertices[curr_edge[ii]].is_of_type(bertini_real.vertextype.singular)):
+                        point_singularities.append(curr_edge[ii])
+
+        return list(set(point_singularities))
 
 
 class Surface(Decomposition):
@@ -491,10 +504,6 @@ class Surface(Decomposition):
             seed = unconnected_this[0]
             [connected_this, unconnected_this] = self.faces_nonsingularly_connected(
                 seed)
-            print(seed)
-            print(connected_this)
-            print(unconnected_this)
-            print("\n\n")
             pieces.append(Piece(connected_this, self))
             connected.extend(connected_this)
             unconnected_this = list(set(unconnected_this) - set(connected))

@@ -582,9 +582,9 @@ def extract_points(self):
     points = []
 
     for vertex in self.decomposition.vertices:
-        point = [None] * 3
+        point = [None] * self.decomposition.num_variables
 
-        for i in range(3):
+        for i in range(self.decomposition.num_variables):
             point[i] = vertex.point[i].real
         points.append(point)
 

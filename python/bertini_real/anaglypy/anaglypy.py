@@ -60,12 +60,12 @@ def extract_points(self):
     """
     points = []
 
-    for v in self.decomposition.vertices:
-        q = [None] * 3
+    for vertex in self.decomposition.vertices:
+        point = [None] * self.decomposition.num_variables
 
-        for i in range(3):
-            q[i] = v[i].real
-        points.append(q)
+        for i in range(self.decomposition.num_variables):
+            point[i] = vertex.point[i].real
+        points.append(point)
 
     return points
 
@@ -137,7 +137,7 @@ class Anaglypy():
         """
 
         if data is None:
-            self.decomposition = bertini_real.data.ReadMostRecent()
+            self.decomposition = bertini_real.data.read_most_recent()
         else:
             self.decomposition = data
 
@@ -148,7 +148,7 @@ class Anaglypy():
         points = extract_points(self)
 
         # Extract face
-        face = self.decomposition.surface.surface_sampler_data
+        face = self.decomposition.sampler_data
 
         # Define vertices, faces
         vertex = [p for p in points]
@@ -161,7 +161,7 @@ class Anaglypy():
 
         points = extract_points(self)
 
-        surf = self.decomposition.surface
+        surf = self.decomposition
 
         num_faces = surf.num_faces
 
