@@ -7,7 +7,6 @@
 
 # Foong Min Wong
 # University of Wisconsin, Eau Claire
-# Fall 2019 (Piece Object) - need to fix vertices problem, need to change thow to read the vertices here
 
 import bertini_real.parse
 import numpy as np
@@ -33,7 +32,6 @@ class Piece():
         """ toString method for Piece """
         result = "piece with indices:"
         result += "{}".format(self.indices)
-        result += "\n\n"
         return result
 
     def __repr__(self):
@@ -74,15 +72,6 @@ class Piece():
     # point_singularities
     # the points on a piece ,  left and right edge will be degenerated
     # type critical
-
-    # tell whether the rank of Jacobian is deficient at point living on the
-
-    # GOAL: list of singular points on the pieces
-
-    # take system for the surface
-    # take the jacobian system of the surface
-    # evaluate the jacboian of the system at each critical point
-    # if it is ranked-deficient, then that point is singular
 
     def point_singularities(self):
         """ Compute singularity points from a Piece object 
@@ -162,8 +151,7 @@ class Surface(Decomposition):
 
             :param directory: Directory of the surface folder
         """
-        Decomposition.__init__(self, directory, is_embedded)
-        self.dimension = 9
+
         self.num_faces = 0
         self.num_midpoint_slices = 0
         self.num_critical_slices = 0
@@ -177,6 +165,9 @@ class Surface(Decomposition):
         self.singular_curves = []
         self.singular_names = []
         self.sampler_data = []   # store all surface_sampler data
+
+        Decomposition.__init__(self, directory, is_embedded)
+
 
         # automatically parse data files to gather curve data
         self.parse_surf(self.directory)

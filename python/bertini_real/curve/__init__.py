@@ -19,11 +19,13 @@ class Curve(Decomposition):
 
             :param directory: Directory of the curve folder
         """
-        Decomposition.__init__(self, directory, is_embedded)
+        
         self.num_edges = 0
         self.edges = []
-        self.dimension = 1
         self.sampler_data = None
+
+        Decomposition.__init__(self, directory, is_embedded)
+
 
         # automatically parse data files to gather curve data
         self.parse_edge(self.directory)

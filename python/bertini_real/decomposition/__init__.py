@@ -31,6 +31,7 @@ class Decomposition(object):
         self.radius = 0 
         self.center_size = 0 
         self.center = []
+        self.dimension = 0
         self.parse_decomp(self.directory)
         self.read_input(self.directory)
         if not self.is_embedded:
@@ -50,6 +51,7 @@ class Decomposition(object):
         self.center = decomposition_data["center"]
         self.num_patches = decomposition_data['num patches']
         self.num_variables = decomposition_data['num_variables']
+        self.dimension = decomposition_data['dimension']
 
     # parse edge here
 

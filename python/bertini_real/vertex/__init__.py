@@ -28,8 +28,8 @@ class Vertex:
 
     def __str__(self):
         """ toString method for Vertex """
-        val = str(self.point)
-        val += "\n{}".format(self.type)
+        val = "Vertex with coordinates: " + str(self.point)
+        val += "\n\nVertex Type: {}".format(self.type)
         # val += str(self.type)
         return val
 

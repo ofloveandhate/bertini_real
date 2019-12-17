@@ -23,12 +23,6 @@ raw surfaces
     :synopsis: This module contains Plot object.
 """
 
-# check the plotting and export 3d print
-# remove those BRData and update to the new one
-# fix plot!
-# docs tutorial to get the point singularities on a piece
-# add __str on other class
-
 import os
 from bertini_real.surface import Surface, Curve
 import bertini_real.util
@@ -162,8 +156,10 @@ class Plotter(object):
 
         if self.decomposition.dimension == 1:
             self.plot_curve()
-        elif self.decomposition.dimension > 2:
+        elif self.decomposition.dimension == 2:
             self.plot_surface()
+        else:
+            raise NotImplementedError
 
     def make_figure(self):
         self.fig = plt.figure()

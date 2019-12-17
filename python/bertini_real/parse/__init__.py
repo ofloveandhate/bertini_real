@@ -98,7 +98,8 @@ def parse_decomposition(directory):
                 "radius": radius,
                 "center": center,
                 "num patches": num_patches,
-                "num_variables": num_variables-1}
+                "num_variables": num_variables-1,
+                "dimension": dimension}
 
 # reads data from surf file, returns number of faces, edges, midpoint slices,
 # critical point singular_curve_multiplicites

@@ -13,8 +13,9 @@ This is the documentation for `Bertini_Real <https://github.com/ofloveandhate/be
 
 Introduction
 ============
+
 .. toctree::
-   :maxdepth:1
+   :maxdepth: 1
    :caption: Bertini_real
    
    tutorials/bertini_real
@@ -51,6 +52,15 @@ Details 📝
    util
    vertex
    vertextype
+
+Implementation notes
+======================
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Contents:
+
+   todo
 
 Indices and tables 📋
 ==========================
