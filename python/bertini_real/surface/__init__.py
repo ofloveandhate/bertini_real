@@ -5,17 +5,15 @@
 
 """
 
-# Danielle Brake
-
 # Foong Min Wong
 # University of Wisconsin, Eau Claire
-# Fall 2019 (Piece Object) - need to fix vertices problem
 
 import bertini_real.parse
 import numpy as np
 from bertini_real.decomposition import Decomposition
 from bertini_real.curve import Curve
 from bertini_real.vertex import Vertex
+import bertini_real.vertextype
 
 class Piece():
     """ Create a Piece object of a surface. A surface can be made of 1 piece or multiple pieces. """
@@ -32,11 +30,14 @@ class Piece():
 
     def __str__(self):
         """ toString method for Piece """
-        result = "piece with indices:\n"
+        result = "piece with indices:"
         result += "{}".format(self.indices)
         return result
 
-    def isCompact(self):
+    def __repr__(self):
+        return str(self)
+
+    def is_compact(self):
         """ Check whether a piece is:
             (1) compact (no edges touch the bounding sphere) 
             (2) non-compact (at least 1 edge touches bounding sphere)
@@ -44,8 +45,11 @@ class Piece():
 
             Examples:
             sphere: (1 piece) - compact
+
             dingdong: (2 pieces) - one compact, one not compact
+
             octdong: (2 pieces) - both compact
+            
             whitney: (2 pieces) - both non-compact
             paraboloid: (1 piece) - non compact
 
@@ -68,15 +72,6 @@ class Piece():
     # point_singularities
     # the points on a piece ,  left and right edge will be degenerated
     # type critical
-
-    # tell whether the rank of Jacobian is deficient at point living on the
-
-    # GOAL: list of singular points on the pieces
-
-    # take system for the surface
-    # take the jacobian system of the surface
-    # evaluate the jacboian of the system at each critical point
-    # if it is ranked-deficient, then that point is singular
 
     def point_singularities(self):
         """ Compute singularity points from a Piece object 
@@ -107,16 +102,12 @@ class Piece():
                             zz].edges[face['top']]
 
             # vertices 
-            if(self.vertices[curr_edge[0]].is_of_type(bertini_real.vertextype.singular)):
-                point_singularities.append(curr_edge[0])
+            for ii in range(3): # 0 is left, 1 is mid, 2 is right
+                if(self.surface.vertices[curr_edge[ii]].is_of_type(bertini_real.vertextype.singular)):
+                    point_singularities.append(curr_edge[ii])
 
-            # remeber to change the other vertex type
-            # change vertex[][] to vertex.
 
-            if(self.surface.is_vertex_of_type(curr_edge[2],bertini_real.vertextype.singular)):
-                point_singularities.append(curr_edge[2])
-
-            # check bottom
+            # check bottom is singular
             if(face['system bottom'] == 'input_critical_curve'):
                 curr_edge = surf.critical_curve.edges[face['bottom']]
             elif(face['system bottom'] == 'input_surf_sphere'):
@@ -126,42 +117,41 @@ class Piece():
                     if(surf.singular_names[zz] == face['system bottom']):
                         curr_edge = surf.singular_curves[
                             zz].edges[face['bottom']]
+            # vertices 
+            for ii in range(3):
+                if(self.surface.vertices[curr_edge[ii]].is_of_type(bertini_real.vertextype.singular)):
+                    point_singularities.append(curr_edge[ii])
 
-            if(self.surface.is_vertex_of_type(curr_edge[0],bertini_real.vertextype.singular)):
-                point_singularities.append(curr_edge[0])
+            # now we check to the left
+            for edge_ind in face['left']: # this thing itself is a list
+                curr_edge = surf.critical_point_slices[face['middle slice index']].edges[edge_ind]
+                for ii in range(3):
+                    if(self.surface.vertices[curr_edge[ii]].is_of_type(bertini_real.vertextype.singular)):
+                        point_singularities.append(curr_edge[ii])
 
-            if(self.surface.is_vertex_of_type(curr_edge[2],bertini_real.vertextype.singular)):
-                point_singularities.append(curr_edge[2])
+                        # now we check to the right
+            for edge_ind in face['right']: # this thing itself is a list
+                curr_edge = surf.critical_point_slices[face['middle slice index']+1].edges[edge_ind]
+                for ii in range(3):
+                    if(self.surface.vertices[curr_edge[ii]].is_of_type(bertini_real.vertextype.singular)):
+                        point_singularities.append(curr_edge[ii])
 
-            # get unique stuff
-
-
-
-        return point_singularities
+        return list(set(point_singularities))
 
 
 class Surface(Decomposition):
-    """ Create a Surface object based on the decomposition
+    """ Create a Surface object (Child class of Decomposition)
 
         :param Decomposition: Decomposition data from decomp file
 
     """
 
-    def __init__(self, directory):
+    def __init__(self, directory, is_embedded=False):
         """ Initialize a Surface Object
 
             :param directory: Directory of the surface folder
         """
-        self.directory = directory
-        self.inputfilename = None
-        self.num_variables = 0
-        self.dimension = 9
-        self.pi = []
-        self.num_patches = 0
-        self.patch = {}
-        self.radius = 0
-        self.center_size = 0
-        self.center = []
+
         self.num_faces = 0
         self.num_midpoint_slices = 0
         self.num_critical_slices = 0
@@ -174,24 +164,19 @@ class Surface(Decomposition):
         self.sphere_curve = []
         self.singular_curves = []
         self.singular_names = []
-        self.surface_sampler_data = []   # store all surface_sampler data
-        self.vertices = []
-        self.input = None
+        self.sampler_data = []   # store all surface_sampler data
+
+        Decomposition.__init__(self, directory, is_embedded)
+
 
         # automatically parse data files to gather curve data
-        self.parse_decomp(self.directory)
         self.parse_surf(self.directory)
-        # remove this
-        # get this from read most recent: example: x.vertices[0]['type']
-        # self.vertices = bertini_real.data.ReadMostRecent().vertices
         self.gather_faces(self.directory)
         self.gather_curves(self.directory)
         try:
             self.gather_surface_samples(self.directory)
         except:
             print("no samples found")
-
-        self.read_input(self.directory)
 
     def __str__(self):
         """ toString method for Surface """
@@ -204,7 +189,7 @@ class Surface(Decomposition):
 
             :param directory: Directory of the surface folder
         """
-        surf_data = bertini_real.parse.parse_Surf(directory)
+        surf_data = bertini_real.parse.parse_surf(directory)
         self.num_faces = surf_data[0]
         self.num_edges = surf_data[1]
         self.num_midpoint_slices = surf_data[2]
@@ -225,7 +210,7 @@ class Surface(Decomposition):
 
             :param directory: Directory of the surface folder
         """
-        self.faces = bertini_real.parse.parse_Faces(directory)
+        self.faces = bertini_real.parse.parse_faces(directory)
 
     def gather_curves(self, directory):
         """ Gather the curves of surface
@@ -233,20 +218,20 @@ class Surface(Decomposition):
             :param directory: Directory of the surface folder
         """
         for ii in range(self.num_midpoint_slices):
-            new_curve = Curve(directory + '/curve_midslice_' + str(ii))
+            new_curve = Curve(directory + '/curve_midslice_' + str(ii),is_embedded=True)
             self.midpoint_slices.append(new_curve)
         for ii in range(self.num_critical_slices):
-            new_curve = Curve(directory + '/curve_critslice_' + str(ii))
+            new_curve = Curve(directory + '/curve_critslice_' + str(ii),is_embedded=True)
             self.critical_point_slices.append(new_curve)
 
-        self.critical_curve = Curve(directory + '/curve_crit')
-        self.sphere_curve = Curve(directory + '/curve_sphere')
+        self.critical_curve = Curve(directory + '/curve_crit',is_embedded=True)
+        self.sphere_curve = Curve(directory + '/curve_sphere',is_embedded=True)
 
         for ii in range(self.num_singular_curves):
             filename = directory + '/curve_singular_mult_' + \
                 str(self.singular_curve_multiplicities[ii][0]) + '_' + str(
                     self.singular_curve_multiplicities[ii][1])
-            new_curve = Curve(filename)
+            new_curve = Curve(filename,is_embedded=True)
             self.singular_curves.append(new_curve)
             self.singular_names.append(new_curve.inputfilename)
 
@@ -255,7 +240,7 @@ class Surface(Decomposition):
 
             :param directory: Directory of the surface folder
         """
-        self.surface_sampler_data = bertini_real.parse.parse_surface_Samples(
+        self.sampler_data = bertini_real.parse.parse_surface_samples(
             directory)
 
 
@@ -373,13 +358,13 @@ class Surface(Decomposition):
 
         for ii in range(f['num left']):
             e = self.critical_point_slices[
-                f['middle slice index']].edges[f['left'][0]]
-            a = e[2]
+                f['middle slice index']].edges[f['left'][ii]]
+            a = e[1]
 
             for jj in range(g['num left']):
                 E = self.critical_point_slices[
-                    g['middle slice index']].edges[g['left'][0]]
-                b = E[2]
+                    g['middle slice index']].edges[g['left'][jj]]
+                b = E[1]
 
                 if a == b and not(self.is_degenerate(e)) and not(self.is_degenerate(E)):
                     val = True
@@ -387,8 +372,8 @@ class Surface(Decomposition):
 
             for jj in range(g['num right']):
                 E = self.critical_point_slices[
-                    g['middle slice index'] + 1].edges[g['right'][0]]
-                b = E[2]
+                    g['middle slice index'] + 1].edges[g['right'][jj]]
+                b = E[1]
 
                 if a == b and not(self.is_degenerate(e)) and not(self.is_degenerate(E)):
                     val = True
@@ -406,13 +391,13 @@ class Surface(Decomposition):
 
         for ii in range(f['num right']):
             e = self.critical_point_slices[
-                f['middle slice index'] + 1].edges[f['right'][0]]
-            a = e[2]
+                f['middle slice index'] + 1].edges[f['right'][ii]]
+            a = e[1]
 
             for jj in range(g['num left']):
                 E = self.critical_point_slices[
-                    g['middle slice index']].edges[g['left'][0]]
-                b = E[2]
+                    g['middle slice index']].edges[g['left'][jj]]
+                b = E[1]
 
                 if a == b and not(self.is_degenerate(e)) and not(self.is_degenerate(E)):
                     val = True
@@ -420,8 +405,8 @@ class Surface(Decomposition):
 
             for jj in range(g['num right']):
                 E = self.critical_point_slices[
-                    g['middle slice index'] + 1].edges[g['right'][0]]
-                b = E[2]
+                    g['middle slice index'] + 1].edges[g['right'][jj]]
+                b = E[1]
 
                 if a == b and not(self.is_degenerate(e)) and not(self.is_degenerate(E)):
                     val = True

@@ -2,7 +2,7 @@
 # University of Notre Dame
 # Spring 2017
 
-# Danielle Brake
+# Silviana Amethyst
 # Fall 2018
 
 # Dan Hessler
@@ -17,10 +17,13 @@
 This module is most likely depreciated as we can now plot surfaces
 using glumpy. Code is still useful for referencing though, as well as plotting
 raw surfaces
+
+.. module:: plot
+    :platform: Unix, Windows
+    :synopsis: This module contains Plot object.
 """
 
 import os
-from bertini_real.data import BRData
 from bertini_real.surface import Surface, Curve
 import bertini_real.util
 import dill
@@ -31,6 +34,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from matplotlib.widgets import CheckButtons
+from bertini_real.tmesh import TMesh
 
 # print("using {} backend".format(matplotlib.get_backend()))
 
@@ -63,23 +67,30 @@ class Options(object):
 
 
 class ReversableList(list):
+    """ Create a ReversableList object for reversing order of data 
+
+        :param list: The list to be read.
+
+    """
 
     def reverse(self):
         return list(reversed(self))
 
 
 class Plotter(object):
+    """ Create a Plotter object for Python visualization suite """
 
     def __init__(self, data=None, options=Options()):
 
         if data is None:
-            self.decomposition = bertini_real.data.ReadMostRecent()
+            self.decomposition = bertini_real.data.read_most_recent()
         else:
             self.decomposition = data
 
         self.options = options
 
     def plot(self):
+        """ Plot curves/surfaces, axes and figures """
 
         print("plotting object of dimension "
               + str(self.decomposition.dimension))
@@ -96,17 +107,10 @@ class Plotter(object):
         # Create our check boxes
         # These four coordinates specify the position of the checkboxes
         rax = plt.axes([0.05, 0.4, 0.2, 0.15])
-        check = CheckButtons(rax, ('Vertices', 'Surface', 'Raw Surface', 'STL'),
-                             (True, True, False, False))
-
-        # Export STL button
-        # exportstl = plt.axes([0.81, 0.01, 0.15, 0.075])
-        # bfvtostl = Button(exportstl,'Export STL')
-
-        # if(bfvtostl.on_clicked()):
-        #      print("Export successfully")
-
+        check = CheckButtons(rax, ('Vertices', 'Surface', 'Raw Surface', 'Smooth STL', 'Raw STL'),
+                             (True, True, True, False, False))
         def func(label):
+
             if label == 'Vertices':
                 # works but with hardcoded axes
                 self.options.visibility.vertices = (
@@ -118,8 +122,25 @@ class Plotter(object):
                     not self.options.visibility.samples)
                 self.ax.clear()
                 self.replot()
+            elif label == 'Raw Surface':
+                self.options.visibility.raw = (not self.options.visibility.raw)
+                self.ax.clear()
+                self.replot()
+            elif label == 'Smooth STL':
+                if(self.decomposition.dimension==1):
+                    print('\x1b[0;31;40m'+'Unable to export STL for Curve object'+'\x1b[0m')
+                else:
+                    mesh = TMesh(self.decomposition)
+                    mesh.obj_smooth()
+            elif label == 'Raw STL':
+                if(self.decomposition.dimension==1):
+                    print('\x1b[0;31;40m'+'Unable to export STL for Curve object'+'\x1b[0m')
+                else:
+                    mesh = TMesh(self.decomposition)
+                    mesh.obj_raw()
 
             plt.draw()
+        
         check.on_clicked(func)
 
         self.apply_title()
@@ -137,6 +158,8 @@ class Plotter(object):
             self.plot_curve()
         elif self.decomposition.dimension == 2:
             self.plot_surface()
+        else:
+            raise NotImplementedError
 
     def make_figure(self):
         self.fig = plt.figure()
@@ -170,6 +193,7 @@ class Plotter(object):
 	'''
 
     def plot_vertices(self):
+        """ Plot vertices """
 
         # refactored version
         xs, ys, zs = self.make_xyz()
@@ -177,8 +201,7 @@ class Plotter(object):
         if self.decomposition.num_variables == 2:
             verts = self.ax.scatter(xs, ys)
         else:
-            verts = self.ax.scatter(xs, ys, zs,
-                                    zdir='z', s=.1, alpha=1)
+            verts = self.ax.scatter(xs, ys, zs, zdir='z', s=.1, alpha=1)
 
     # this works well for plot_vertices
     # how can we make it work well for all the other methods???
@@ -190,29 +213,37 @@ class Plotter(object):
         zs = []
 
         for v in self.decomposition.vertices:
-            xs.append(v[0].real)
-            ys.append(v[1].real)
+            xs.append(v.point[0].real)
+            ys.append(v.point[1].real)
             if self.decomposition.num_variables > 2:
-                zs.append(v[2].real)
+                zs.append(v.point[2].real)
 
-        return xs, ys, zs
+        return np.array(xs), np.array(ys), np.array(zs)
 
     def extract_points(self):
+        """ Helper method for plot_surface_samples()
+            Extract points from vertices
+
+            :param data: Surface decomposition data
+            :rtype: List of tuples of length 3.
+
+        """
         points = []
 
-        for v in self.decomposition.vertices:
+        for vertex in self.decomposition.vertices:
             # allocate 3 buckets to q
-            q = [None] * 3
+            point = [None] * self.decomposition.num_variables
 
-            for i in range(3):
-                q[i] = v[i].real
-            points.append(q)
+            for i in range(self.decomposition.num_variables):
+                point[i] = vertex.point[i].real
+            points.append(point)
 
         return points
 
     def plot_curve(self):
+        """ Plot curves """
 
-        curve = self.decomposition.curve  # a local unpacking
+        curve = self.decomposition
 
         should_plot_raw = self.options.visibility.raw
         should_plot_samp = self.options.visibility.samples and curve.sampler_data is not None
@@ -229,7 +260,8 @@ class Plotter(object):
             self.plot_edge_samples()
 
     def plot_raw_edges(self):
-        curve = self.decomposition.curve  # a local unpacking
+        """ Plot raw edges """
+        curve = self.decomposition  # a local unpacking
 
         num_nondegen_edges = len(self.nondegen)
 
@@ -247,10 +279,11 @@ class Plotter(object):
             inds = curve.edges[edge_index]
             for i in inds:
                 v = self.decomposition.vertices[i]
-                xs.append(v['point'][0].real)
-                ys.append(v['point'][1].real)
+                print('hhee')
+                xs.append(v.point[0].real)
+                ys.append(v.point[1].real)
                 if self.decomposition.num_variables > 2:
-                    zs.append(v['point'][2].real)
+                    zs.append(v.point[2].real)
 
             if self.decomposition.num_variables == 2:
                 self.ax.plot(xs, ys, c=color)
@@ -258,6 +291,7 @@ class Plotter(object):
                 self.ax.plot(xs, ys, zs, zdir='z', c=color)
 
     def plot_edge_samples(self):
+        """ Plot sampled edges """
         num_nondegen_edges = len(self.nondegen)
 
         colormap = self.options.style.colormap
@@ -270,13 +304,13 @@ class Plotter(object):
             xs = []
             ys = []
             zs = []
-            inds = self.decomposition.curve.sampler_data[edge_index]
+            inds = self.decomposition.sampler_data[edge_index]
             for i in inds:
                 v = self.decomposition.vertices[i]
-                xs.append(v['point'][0].real)
-                ys.append(v['point'][1].real)
+                xs.append(v.point[0].real)
+                ys.append(v.point[1].real)
                 if self.decomposition.num_variables > 2:
-                    zs.append(v['point'][2].real)
+                    zs.append(v.point[2].real)
 
             if self.decomposition.num_variables == 2:
                 self.ax.plot(xs, ys, c=color)  # v['point'][
@@ -284,7 +318,8 @@ class Plotter(object):
                 self.ax.plot(xs, ys, zs, zdir='z', c=color)  # v['point']
 
     def determine_nondegen_edges(self):
-        curve = self.decomposition.curve  # a local unpacking
+        """ Determine nondegenerate edges """
+        curve = self.decomposition
         self.nondegen = []
         for i in range(curve.num_edges):
             e = curve.edges[i]
@@ -292,6 +327,7 @@ class Plotter(object):
                 self.nondegen.append(i)
 
     def plot_surface(self):
+        """ Plot surface"""
         surf = self.decomposition
 
         if self.options.visibility.samples:
@@ -301,10 +337,11 @@ class Plotter(object):
             self.plot_surface_raw()
 
     def plot_surface_samples(self):
+        """ Plot sampler surface """
         points = self.points
 
         # faces = tuples
-        faces = self.decomposition.surface.surface_sampler_data
+        faces = self.decomposition.sampler_data
 
         colormap = self.options.style.colormap
 
@@ -328,8 +365,9 @@ class Plotter(object):
             self.ax.autoscale_view()
 
     def plot_surface_raw(self):
+        """ Plot raw surface """
         points = self.points
-        surf = self.decomposition.surface
+        surf = self.decomposition
         which_faces = self.options.visibility.which_faces
 
         # store number of faces to num_faces
@@ -366,7 +404,6 @@ class Plotter(object):
             while 1:
                 # top edge
                 if case == 1:
-                    # print('top')
                     case += 1
                     if face['top'] < 0:
                         continue
@@ -381,7 +418,7 @@ class Plotter(object):
                             if(surf.singular_names[zz] == face['system top']):
                                 curr_edge = surf.singular_curves[
                                     zz].edges[face['top']]
-                    # print(curr_edge)
+
                     if (curr_edge[0] < 0 and curr_edge[1] < 0 and curr_edge[2] < 0):
                         continue
 
@@ -391,7 +428,7 @@ class Plotter(object):
 
                 # bottom edge
                 elif case == 2:
-                    # print('bottom')
+
                     case += 1
                     if face['bottom'] < 0:
                         continue
@@ -412,7 +449,7 @@ class Plotter(object):
 
                 # left edge
                 elif case == 3:
-                    # print('left')
+
                     if left_edge_counter < face['num left']:
 
                         if face['left'][left_edge_counter] < 0:
@@ -431,7 +468,7 @@ class Plotter(object):
 
                 # right edge
                 elif case == 4:
-                    # print('right')
+
                     if right_edge_counter < face['num right']:
 
                         if face['right'][right_edge_counter] < 0:
@@ -460,13 +497,6 @@ class Plotter(object):
                 t2 = [points[curr_edge[1]], points[curr_edge[2]],
                       points[face['midpoint']]]
 
-            # while loop end here
-                # store them into objs, stl writing
-                # br_plotter.fv.faces(total_face_index,:) = t1;
-                # br_plotter.fv.faces(total_face_index+1,:) = t2;
-
-                # k = [points[curr_edge[0]], points[curr_edge[1]], points[curr_edge[2]]]
-                # T.append(k)
                 T.append(t1)
                 T.append(t2)
 
@@ -475,7 +505,12 @@ class Plotter(object):
 
 
 def plot(data=None, options=Options()):
+    """ Plot curve/surface
 
+        :param data: 
+        :param options: style and visibility options
+        :rtype: a plot
+    """
     b = Plotter(data, options=options)
     b.plot()
     return b

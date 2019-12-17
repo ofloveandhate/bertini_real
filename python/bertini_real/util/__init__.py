@@ -1,4 +1,16 @@
+"""
+.. module:: util
+    :platform: Unix, Windows
+    :synopsis: This module contains utilities functions to generate BRData*.pkl 
+
+"""
+
 def next_filenumber():
+    """ Keep track on the next filenumber for BRData
+
+        :rtype: An integer which is the next file number of BRData*.pkl
+
+    """
     import fnmatch
     import os
 
@@ -20,6 +32,11 @@ def next_filenumber():
 
 
 def highest_filenumber():
+    """ Get the highest/most recent file number of BRData
+
+        :rtype: The highest integer of BRData*.pkl
+
+    """
     import fnmatch
     import os
 
