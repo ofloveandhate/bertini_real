@@ -153,13 +153,13 @@ def plot_pieces(pieces):
 
     colormap = plt.cm.inferno
     # colors = plt.cm.get_cmap('hsv', len(pieces))
-    # color_list = [colormap(i) for i in np.linspace(0, 1, len(pieces))]
-    color_list = [(1,1,0), (0,1,1)]
+    color_list = [colormap(i) for i in np.linspace(0, 1, len(pieces))]
 
     # colors = make_colors(len(pieces))
     for ii,p in enumerate(pieces):
         p.plot(color=color_list[ii], axes=ax)
-    # plt.show()
+
+    plt.show()
 
 
 class Surface(Decomposition):
@@ -524,23 +524,48 @@ class Surface(Decomposition):
 
         return pieces
 
+    def extract_points(self):
+        """ Helper method for plot_surface_samples()
+            Extract points from vertices
+
+            :param data: Surface decomposition data
+            :rtype: List of tuples of length 3.
+
+        """
+        points = []
+
+        for vertex in self.vertices:
+            # allocate 3 buckets to q
+            point = [None] * self.num_variables
+
+            for i in range(self.num_variables):
+                point[i] = vertex.point[i].real
+            points.append(point)
+
+        return points
+
     def plot(self, face_indices, color, axes):
+
+        # https://github.com/foongminwong/bertini_real/commit/34cf78e71af1529e0d27e4dd46a2cabbe5672e61
         """ Plot sampler surface """
-        points = self.points
+        points = self.extract_points()
 
         # faces = tuples
         faces = self.sampler_data
 
-        colormap = self.options.style.colormap
+        # set(face_indices).issubset(which_faces)
 
-        color_list = [colormap(i) for i in np.linspace(0, 1, len(faces))]
+        which_faces = list(range(self.num_faces))
 
-        for i in range(len(faces)):
+        print(face_indices)
 
-            color = color_list[i]
+        for idx, val in enumerate(face_indices):
+            print(idx)
+            print(val)
 
             T = []
-            for tri in faces[i]:
+
+            for tri in faces[val]:
                 f = int(tri[0])
                 s = int(tri[1])
                 t = int(tri[2])
@@ -549,8 +574,26 @@ class Surface(Decomposition):
 
                 T.append(k)
 
-            self.ax.add_collection3d(Poly3DCollection(T, facecolors=color))
-            self.ax.autoscale_view()
+            axes.add_collection3d(Poly3DCollection(T, facecolors=color))
+            axes.autoscale_view()
+
+
+
+        # for i in range(len(faces)):
+
+        #     T = []
+
+        #     for tri in faces[i]:
+        #         f = int(tri[0])
+        #         s = int(tri[1])
+        #         t = int(tri[2])
+
+        #         k = [points[f], points[s], points[t]]
+
+        #         T.append(k)
+
+        #     axes.add_collection3d(Poly3DCollection(T, facecolors=color))
+        #     axes.autoscale_view()
 
 def separate_into_nonsingular_pieces(data=None, directory='Dir_Name'):
     """ Separate a surface into nonsingular pieces
