@@ -15,6 +15,11 @@ from bertini_real.curve import Curve
 from bertini_real.vertex import Vertex
 import bertini_real.vertextype
 
+import enum
+import matplotlib
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+
 class Piece():
     """ Create a Piece object of a surface. A surface can be made of 1 piece or multiple pieces. """
 
@@ -137,6 +142,24 @@ class Piece():
                         point_singularities.append(curr_edge[ii])
 
         return list(set(point_singularities))
+
+    def plot(self, color, axes):
+        self.surface.plot(face_indices=self.indices, color=color, axes=axes)
+
+def plot_pieces(pieces):
+
+    # ax = make_axes()
+    ax = plt.figure().add_subplot(1, 1, 1, projection='3d')
+
+    colormap = plt.cm.inferno
+    # colors = plt.cm.get_cmap('hsv', len(pieces))
+    # color_list = [colormap(i) for i in np.linspace(0, 1, len(pieces))]
+    color_list = [(1,1,0), (0,1,1)]
+
+    # colors = make_colors(len(pieces))
+    for ii,p in enumerate(pieces):
+        p.plot(color=color_list[ii], axes=ax)
+    # plt.show()
 
 
 class Surface(Decomposition):
@@ -501,6 +524,33 @@ class Surface(Decomposition):
 
         return pieces
 
+    def plot(self, face_indices, color, axes):
+        """ Plot sampler surface """
+        points = self.points
+
+        # faces = tuples
+        faces = self.sampler_data
+
+        colormap = self.options.style.colormap
+
+        color_list = [colormap(i) for i in np.linspace(0, 1, len(faces))]
+
+        for i in range(len(faces)):
+
+            color = color_list[i]
+
+            T = []
+            for tri in faces[i]:
+                f = int(tri[0])
+                s = int(tri[1])
+                t = int(tri[2])
+
+                k = [points[f], points[s], points[t]]
+
+                T.append(k)
+
+            self.ax.add_collection3d(Poly3DCollection(T, facecolors=color))
+            self.ax.autoscale_view()
 
 def separate_into_nonsingular_pieces(data=None, directory='Dir_Name'):
     """ Separate a surface into nonsingular pieces
