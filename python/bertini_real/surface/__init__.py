@@ -15,10 +15,12 @@ from bertini_real.curve import Curve
 from bertini_real.vertex import Vertex
 import bertini_real.vertextype
 
+import os
 import enum
 import matplotlib
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+from matplotlib.widgets import CheckButtons
 
 class Piece():
     """ Create a Piece object of a surface. A surface can be made of 1 piece or multiple pieces. """
@@ -146,12 +148,41 @@ class Piece():
     def plot(self, color, axes):
         self.surface.plot(face_indices=self.indices, color=color, axes=axes)
 
+def make_figure():
+    return plt.figure()
+
+def make_axes(fig):
+    return fig.add_subplot(1, 1, 1, projection='3d')
+
+def label_axes(ax):
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.set_zlabel("z")
+
+def apply_title():
+    plt.title(os.getcwd().split(os.sep)[-1])
+
 def plot_pieces(pieces):
 
     # ax = make_axes()
-    ax = plt.figure().add_subplot(1, 1, 1, projection='3d')
+    # fig = plt.figure()
+    # ax = plt.axes(projection="3d")
+    fig = make_figure()
+    ax = make_axes(fig)
+    label_axes(ax)
+    # ax = plt.figure().add_subplot(1, 1, 1, projection='3d'
+    
+    rax = plt.axes([0.05, 0.4, 0.2, 0.15])
+    labels = ['piece'+str(ii) for ii,p in enumerate(pieces)]
+    visibility = [True for p in enumerate(pieces)]
+    check = CheckButtons(rax, labels, visibility)
 
-    colormap = plt.cm.inferno
+    def func(label):
+        plt.draw()
+
+    check.on_clicked(func)
+
+    colormap = plt.cm.plasma
     # colors = plt.cm.get_cmap('hsv', len(pieces))
     color_list = [colormap(i) for i in np.linspace(0, 1, len(pieces))]
 
@@ -159,7 +190,11 @@ def plot_pieces(pieces):
     for ii,p in enumerate(pieces):
         p.plot(color=color_list[ii], axes=ax)
 
+    # plt.title(os.getcwd().split(os.sep)[-1])
+    apply_title()
+
     plt.show()
+
 
 
 class Surface(Decomposition):
@@ -546,22 +581,14 @@ class Surface(Decomposition):
 
     def plot(self, face_indices, color, axes):
 
-        # https://github.com/foongminwong/bertini_real/commit/34cf78e71af1529e0d27e4dd46a2cabbe5672e61
-        """ Plot sampler surface """
+        """ Plot surface in pieces """
         points = self.extract_points()
 
         # faces = tuples
         faces = self.sampler_data
-
-        # set(face_indices).issubset(which_faces)
-
         which_faces = list(range(self.num_faces))
 
-        print(face_indices)
-
         for idx, val in enumerate(face_indices):
-            print(idx)
-            print(val)
 
             T = []
 
@@ -576,24 +603,6 @@ class Surface(Decomposition):
 
             axes.add_collection3d(Poly3DCollection(T, facecolors=color))
             axes.autoscale_view()
-
-
-
-        # for i in range(len(faces)):
-
-        #     T = []
-
-        #     for tri in faces[i]:
-        #         f = int(tri[0])
-        #         s = int(tri[1])
-        #         t = int(tri[2])
-
-        #         k = [points[f], points[s], points[t]]
-
-        #         T.append(k)
-
-        #     axes.add_collection3d(Poly3DCollection(T, facecolors=color))
-        #     axes.autoscale_view()
 
 def separate_into_nonsingular_pieces(data=None, directory='Dir_Name'):
     """ Separate a surface into nonsingular pieces
