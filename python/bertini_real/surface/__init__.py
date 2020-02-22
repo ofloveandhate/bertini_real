@@ -19,8 +19,15 @@ import os
 import enum
 import matplotlib
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from matplotlib.widgets import CheckButtons
+
+
+class VisibilityOptions(object):
+
+    def __init__(self):
+        self.pieceVisibility = True
 
 class Piece():
     """ Create a Piece object of a surface. A surface can be made of 1 piece or multiple pieces. """
@@ -34,6 +41,7 @@ class Piece():
 
         self.indices = indices
         self.surface = surface
+        self.visibility = VisibilityOptions()
 
     def __str__(self):
         """ toString method for Piece """
@@ -145,8 +153,8 @@ class Piece():
 
         return list(set(point_singularities))
 
-    def plot(self, color, axes):
-        self.surface.plot(face_indices=self.indices, color=color, axes=axes)
+    def plot(self, color, ax):
+        self.surface.plot(face_indices=self.indices, color=color, ax=ax)
 
 def make_figure():
     return plt.figure()
@@ -162,6 +170,21 @@ def label_axes(ax):
 def apply_title():
     plt.title(os.getcwd().split(os.sep)[-1])
 
+def replot(pieces, ax):
+    main(pieces, ax)
+    label_axes(ax)
+    apply_title()
+
+def main(pieces, ax):
+    colormap = plt.cm.plasma
+    # colors = plt.cm.get_cmap('hsv', len(pieces))
+    color_list = [colormap(i) for i in np.linspace(0, 1, len(pieces))]
+
+    # colors = make_colors(len(pieces))
+    for ii,p in enumerate(pieces):
+        if(p.visibility.pieceVisibility):
+            p.plot(color=color_list[ii], ax=ax)
+
 def plot_pieces(pieces):
 
     # ax = make_axes()
@@ -171,26 +194,27 @@ def plot_pieces(pieces):
     ax = make_axes(fig)
     label_axes(ax)
     # ax = plt.figure().add_subplot(1, 1, 1, projection='3d'
-    
-    rax = plt.axes([0.05, 0.4, 0.2, 0.15])
+    # left, bottom, width, height
+    rax = plt.axes([0.05, 0.4, 0.2, 0.05*len(pieces)])
     labels = ['piece'+str(ii) for ii,p in enumerate(pieces)]
     visibility = [True for p in enumerate(pieces)]
     check = CheckButtons(rax, labels, visibility)
 
+    main(pieces, ax)
+
     def func(label):
+        if label == labels[labels.index(label)]:
+            pieces[labels.index(label)].visibility.pieceVisibility = (not pieces[labels.index(label)].visibility.pieceVisibility)
+            ax.clear()
+            replot(pieces, ax)
+            print(pieces[labels.index(label)].visibility.pieceVisibility)
+            print(labels.index(label))
+
+
         plt.draw()
 
     check.on_clicked(func)
 
-    colormap = plt.cm.plasma
-    # colors = plt.cm.get_cmap('hsv', len(pieces))
-    color_list = [colormap(i) for i in np.linspace(0, 1, len(pieces))]
-
-    # colors = make_colors(len(pieces))
-    for ii,p in enumerate(pieces):
-        p.plot(color=color_list[ii], axes=ax)
-
-    # plt.title(os.getcwd().split(os.sep)[-1])
     apply_title()
 
     plt.show()
@@ -579,14 +603,15 @@ class Surface(Decomposition):
 
         return points
 
-    def plot(self, face_indices, color, axes):
+    def plot(self, face_indices, color, ax):
 
         """ Plot surface in pieces """
         points = self.extract_points()
 
         # faces = tuples
         faces = self.sampler_data
-        which_faces = list(range(self.num_faces))
+        # which_faces = self.options.visibility.which_faces
+        # which_faces = list(range(self.num_faces))
 
         for idx, val in enumerate(face_indices):
 
@@ -601,8 +626,8 @@ class Surface(Decomposition):
 
                 T.append(k)
 
-            axes.add_collection3d(Poly3DCollection(T, facecolors=color))
-            axes.autoscale_view()
+            ax.add_collection3d(Poly3DCollection(T, facecolors=color))
+            ax.autoscale_view()
 
 def separate_into_nonsingular_pieces(data=None, directory='Dir_Name'):
     """ Separate a surface into nonsingular pieces
