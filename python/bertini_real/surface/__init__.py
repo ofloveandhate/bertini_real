@@ -187,13 +187,10 @@ def main(pieces, ax):
 
 def plot_pieces(pieces):
 
-    # ax = make_axes()
-    # fig = plt.figure()
-    # ax = plt.axes(projection="3d")
     fig = make_figure()
     ax = make_axes(fig)
     label_axes(ax)
-    # ax = plt.figure().add_subplot(1, 1, 1, projection='3d'
+
     # left, bottom, width, height
     rax = plt.axes([0.05, 0.4, 0.2, 0.05*len(pieces)])
     labels = ['piece'+str(ii) for ii,p in enumerate(pieces)]
@@ -207,9 +204,6 @@ def plot_pieces(pieces):
             pieces[labels.index(label)].visibility.pieceVisibility = (not pieces[labels.index(label)].visibility.pieceVisibility)
             ax.clear()
             replot(pieces, ax)
-            print(pieces[labels.index(label)].visibility.pieceVisibility)
-            print(labels.index(label))
-
 
         plt.draw()
 
@@ -218,8 +212,6 @@ def plot_pieces(pieces):
     apply_title()
 
     plt.show()
-
-
 
 class Surface(Decomposition):
     """ Create a Surface object (Child class of Decomposition)
@@ -603,6 +595,26 @@ class Surface(Decomposition):
 
         return points
 
+    def make_xyz(self):
+        xs = []
+        ys = []
+        zs = []
+
+        for v in self.vertices:
+            xs.append(v.point[0].real)
+            ys.append(v.point[1].real)
+            zs.append(v.point[2].real)
+
+        return np.array(xs), np.array(ys), np.array(zs)
+
+    def plot_vertices(self, ax):
+        """ Plot vertices """
+
+        # refactored version
+        xs, ys, zs = self.make_xyz()
+
+        verts = ax.scatter(xs, ys, zs, zdir='z', s=.1, alpha=1)
+
     def plot(self, face_indices, color, ax):
 
         """ Plot surface in pieces """
@@ -628,6 +640,8 @@ class Surface(Decomposition):
 
             ax.add_collection3d(Poly3DCollection(T, facecolors=color))
             ax.autoscale_view()
+
+        self.plot_vertices(ax)
 
 def separate_into_nonsingular_pieces(data=None, directory='Dir_Name'):
     """ Separate a surface into nonsingular pieces
