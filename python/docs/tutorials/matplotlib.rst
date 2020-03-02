@@ -23,8 +23,17 @@ Example: Alpha Curve
     bertini_real.plot.plot()
 
 
-.. image:: matplotlib_pictures/alphacurve_collage.png
-   :width: 100 %
+.. image:: matplotlib_pictures/alphacurve.PNG
+   :width: 40 %
+
+.. image:: matplotlib_pictures/alphacurve_vertices.PNG
+   :width: 40 %
+
+.. image:: matplotlib_pictures/alphacurve_raw.PNG
+   :width: 40 %
+
+.. image:: matplotlib_pictures/alphacurve_smooth.PNG
+   :width: 40 %
 
 
 Example: Whitney
@@ -39,8 +48,17 @@ Example: Whitney
 
     bertini_real.plot.plot()
 
-.. image:: matplotlib_pictures/whitney_collage.png
-   :width: 100 %
+.. image:: matplotlib_pictures/whitney.PNG
+   :width: 40 %
+
+.. image:: matplotlib_pictures/whitney_vertices.PNG
+   :width: 40 %
+
+.. image:: matplotlib_pictures/whitney_raw.PNG
+   :width: 40 %
+
+.. image:: matplotlib_pictures/whitney_smooth.PNG
+   :width: 40 %
 
 Matplotlib: Plotting Pieces
 ****************************
@@ -58,8 +76,12 @@ Example: Whitney
 
     bertini_real.surface.plot_pieces(pieces)
 
-.. image:: matplotlib_pictures/whitney_pieces_collage.png
-   :width: 100 %
+
+.. image:: matplotlib_pictures/whitney_pieces.PNG
+   :width: 40 %
+
+.. image:: matplotlib_pictures/whitney_piece0.PNG
+   :width: 40 %
 
 
 :Author:
