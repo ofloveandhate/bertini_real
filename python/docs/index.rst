@@ -19,6 +19,7 @@ Introduction
    :caption: Bertini_real
    
    tutorials/bertini_real
+   tutorials/matplotlib
 
 Tutorials ✏️
 ============
@@ -30,7 +31,6 @@ Tutorials ✏️
    tutorials/glumpy
    tutorials/tmesh
    tutorials/anaglypy
-   tutorials/matplotlib
 
 
 Details 📝
