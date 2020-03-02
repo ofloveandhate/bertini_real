@@ -30,6 +30,7 @@ Tutorials ✏️
    tutorials/glumpy
    tutorials/tmesh
    tutorials/anaglypy
+   tutorials/matplotlib
 
 
 Details 📝
