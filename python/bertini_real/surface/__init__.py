@@ -15,6 +15,20 @@ from bertini_real.curve import Curve
 from bertini_real.vertex import Vertex
 import bertini_real.vertextype
 
+import os
+import enum
+import matplotlib
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+from matplotlib.widgets import CheckButtons
+
+
+class VisibilityOptions(object):
+
+    def __init__(self):
+        self.pieceVisibility = True
+
 class Piece():
     """ Create a Piece object of a surface. A surface can be made of 1 piece or multiple pieces. """
 
@@ -27,6 +41,7 @@ class Piece():
 
         self.indices = indices
         self.surface = surface
+        self.visibility = VisibilityOptions()
 
     def __str__(self):
         """ toString method for Piece """
@@ -138,6 +153,65 @@ class Piece():
 
         return list(set(point_singularities))
 
+    def plot(self, color, ax):
+        self.surface.plot(face_indices=self.indices, color=color, ax=ax)
+
+def make_figure():
+    return plt.figure()
+
+def make_axes(fig):
+    return fig.add_subplot(1, 1, 1, projection='3d')
+
+def label_axes(ax):
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.set_zlabel("z")
+
+def apply_title():
+    plt.title(os.getcwd().split(os.sep)[-1])
+
+def replot(pieces, ax):
+    main(pieces, ax)
+    label_axes(ax)
+    apply_title()
+
+def main(pieces, ax):
+    colormap = plt.cm.plasma
+    # colors = plt.cm.get_cmap('hsv', len(pieces))
+    color_list = [colormap(i) for i in np.linspace(0, 1, len(pieces))]
+
+    # colors = make_colors(len(pieces))
+    for ii,p in enumerate(pieces):
+        if(p.visibility.pieceVisibility):
+            p.plot(color=color_list[ii], ax=ax)
+
+def plot_pieces(pieces):
+
+    fig = make_figure()
+    ax = make_axes(fig)
+    label_axes(ax)
+
+    # left, bottom, width, height
+    rax = plt.axes([0.05, 0.4, 0.2, 0.05*len(pieces)])
+    labels = ['piece'+str(ii) for ii,p in enumerate(pieces)]
+    visibility = [True for p in enumerate(pieces)]
+    check = CheckButtons(rax, labels, visibility)
+
+    main(pieces, ax)
+
+    def func(label):
+        if label == labels[labels.index(label)]:
+            pieces[labels.index(label)].visibility.pieceVisibility = (not pieces[labels.index(label)].visibility.pieceVisibility)
+            ax.clear()
+            replot(pieces, ax)
+
+        plt.draw()
+
+    check.on_clicked(func)
+
+    apply_title()
+
+    plt.show()
 
 class Surface(Decomposition):
     """ Create a Surface object (Child class of Decomposition)
@@ -501,6 +575,73 @@ class Surface(Decomposition):
 
         return pieces
 
+    def extract_points(self):
+        """ Helper method for plot_surface_samples()
+            Extract points from vertices
+
+            :param data: Surface decomposition data
+            :rtype: List of tuples of length 3.
+
+        """
+        points = []
+
+        for vertex in self.vertices:
+            # allocate 3 buckets to q
+            point = [None] * self.num_variables
+
+            for i in range(self.num_variables):
+                point[i] = vertex.point[i].real
+            points.append(point)
+
+        return points
+
+    def make_xyz(self):
+        xs = []
+        ys = []
+        zs = []
+
+        for v in self.vertices:
+            xs.append(v.point[0].real)
+            ys.append(v.point[1].real)
+            zs.append(v.point[2].real)
+
+        return np.array(xs), np.array(ys), np.array(zs)
+
+    def plot_vertices(self, ax):
+        """ Plot vertices """
+
+        # refactored version
+        xs, ys, zs = self.make_xyz()
+
+        verts = ax.scatter(xs, ys, zs, zdir='z', s=.1, alpha=1)
+
+    def plot(self, face_indices, color, ax):
+
+        """ Plot surface in pieces """
+        points = self.extract_points()
+
+        # faces = tuples
+        faces = self.sampler_data
+        # which_faces = self.options.visibility.which_faces
+        # which_faces = list(range(self.num_faces))
+
+        for idx, val in enumerate(face_indices):
+
+            T = []
+
+            for tri in faces[val]:
+                f = int(tri[0])
+                s = int(tri[1])
+                t = int(tri[2])
+
+                k = [points[f], points[s], points[t]]
+
+                T.append(k)
+
+            ax.add_collection3d(Poly3DCollection(T, facecolors=color))
+            ax.autoscale_view()
+
+        self.plot_vertices(ax)
 
 def separate_into_nonsingular_pieces(data=None, directory='Dir_Name'):
     """ Separate a surface into nonsingular pieces

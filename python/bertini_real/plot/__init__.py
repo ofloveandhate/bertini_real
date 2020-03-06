@@ -279,7 +279,6 @@ class Plotter(object):
             inds = curve.edges[edge_index]
             for i in inds:
                 v = self.decomposition.vertices[i]
-                print('hhee')
                 xs.append(v.point[0].real)
                 ys.append(v.point[1].real)
                 if self.decomposition.num_variables > 2:

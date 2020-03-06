@@ -19,6 +19,7 @@ Introduction
    :caption: Bertini_real
    
    tutorials/bertini_real
+   tutorials/matplotlib
 
 Tutorials ✏️
 ============
