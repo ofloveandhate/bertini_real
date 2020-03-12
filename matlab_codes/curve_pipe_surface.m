@@ -75,8 +75,8 @@ for edge_index = 1:BRinfo.num_edges
 	else
 		closed_val = 'none';
 	end
-	
-	[h,temp_fv] = pipe_surface(edge(1,:),edge(2,:),edge(3,:),'r',opt.radius,'n',opt.n,'closed',closed_val,'render',opt.render);
+
+	[temp_fv] = tubeplot(edge(1,:),edge(2,:),edge(3,:),'render',opt.render,'radius',opt.radius,'n',opt.n,'closed',closed_val);
 	
 	if sum(sum(isnan(temp_fv.vertices)))>0
 		warning('pipe surface has nans');
@@ -155,7 +155,7 @@ if opt.render
 end
 
 if opt.write_to_stl
-	fv_to_stl(fv)
+	fv_to_stl(fv);
 end
 
 

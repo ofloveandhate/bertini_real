@@ -1,4 +1,4 @@
-% function [indices] = faces_with_midpoint(BRinfo)
+% function [indices] = faces_with_midpoint(BRinfo, predicate)
 % 
 % computes which faces on a surface have midpoints satisfying a
 % predicate

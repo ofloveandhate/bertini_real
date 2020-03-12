@@ -30,7 +30,7 @@ if opt.crit
 	curve.vertices = pc_vertices;
 	
 	temp_fv = curve_pipe_surface(curve,opt.use_sampled,...
-			'radius',opt.radius,'n',opt.n,'render',opt.render_curves,'write_stl',false);
+			'radius',opt.radius,'n',opt.n,'render',false,'write_stl',false); %opt.render_curves
 	
 	fv.faces = [fv.faces; temp_fv.faces+size(fv.vertices,1)];
 	fv.vertices = [fv.vertices; temp_fv.vertices];
@@ -112,8 +112,8 @@ end
 opt.crit = true;
 opt.sing = true;
 opt.sphere = true;
-opt.midslice = true;
-opt.critslice = true;
+opt.midslice = false;
+opt.critslice = false;
 
 opt.radius = 0.15;
 opt.n = 31;
@@ -144,7 +144,7 @@ for ii = 1:2:length(command_line_options)-1
 			opt.critslice = val;
 		case 'n'
 			opt.n = val;
-		case 'radius'
+		case {'radius','r'}
 			opt.radius = val;
 		case 'render'
 			opt.render = val;

@@ -1,25 +1,36 @@
-% fv = info2fv(BRinfo, which_faces)
+% fv = info2fv(BRinfo, which_faces,sampled_faces)
 %
 % extract the faces from a bertini_real output.
 %
 % if which_faces is empty, or missing, all faces will be extracted
+%
+% default mode is to export the smooth faces.  to change to raw mode, make
+% `sampled_faces` false.
 
-function [fv] = info2fv(BRinfo, which_faces)
+function [fv] = info2fv(BRinfo, which_faces, sampled_faces)
 
 
 if nargin<=1
 	which_faces = 1:BRinfo.num_faces;
+	
 elseif isempty(which_faces)
 	which_faces = 1:BRinfo.num_faces;
+end
+
+if nargin<=2
+	sampled_faces = true;
 end
 
 coord_ind = [1 2 3];
 
 fv.vertices = make_vertices(coord_ind, BRinfo);
 
-if ~isempty(BRinfo.sampler_data)
+if and(sampled_faces,~isempty(BRinfo.sampler_data))
 	fv.faces = make_faces_sampled(BRinfo, which_faces);
 else
+	if sampled_faces
+		message('no sampler data, exporting the raw faces');
+	end
 	fv.faces = make_faces_blocky(BRinfo, which_faces);
 end
 

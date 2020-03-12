@@ -4,9 +4,12 @@ tracktype: 1;
 mptype: 2;
 securitymaxnorm: 1e10;
 
-imagthreshold: 1e-5;
+imagthreshold: 1e-7;
 
 %securitylevel: 1;
+
+endgamenum: 1;
+
 END;
 INPUT
 
