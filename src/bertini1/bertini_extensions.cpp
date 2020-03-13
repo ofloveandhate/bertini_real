@@ -1069,9 +1069,9 @@ void print_point_to_screen_matlab(const vec_mp M, std::string name)
 	for (int kk = 0; kk < M->size; kk++)
 	{ // print kth coordinate
 		printf("\t\t");
-		mpf_out_str (NULL, 10, 8, M->coord[kk].r);
+		mpf_out_str(stdout, 10, 8, M->coord[kk].r);
 		printf("+1i*");
-		mpf_out_str (NULL, 10, 8, M->coord[kk].i);
+		mpf_out_str(stdout, 10, 8, M->coord[kk].i);
 		printf(";\n");
 	}
 	printf("];\n\n");
@@ -1111,9 +1111,9 @@ void print_matrix_to_screen_matlab(const mat_mp M, std::string name)
 		for (int jj = 0; jj < M->cols; jj++)
 		{
 
-			mpf_out_str (NULL, 10, 8, M->entry[kk][jj].r);
+			mpf_out_str(stdout, 10, 8, M->entry[kk][jj].r);
 			printf("+1i*");
-			mpf_out_str (NULL, 10, 8, M->entry[kk][jj].i); // base 10 , 7 digits
+			mpf_out_str(stdout, 10, 8, M->entry[kk][jj].i); // base 10 , 7 digits
 			printf("\t");
 		}
 		printf(";\n");
@@ -1124,9 +1124,9 @@ void print_matrix_to_screen_matlab(const mat_mp M, std::string name)
 
 void print_comp_matlab(const comp_mp M, std::string name){
 	printf("%s=",name.c_str());
-	mpf_out_str (NULL, 10, 8, M->r);
+	mpf_out_str(stdout, 10, 8, M->r);
 	printf("+1i*");
-	mpf_out_str (NULL, 10, 8, M->i); // base 10, 6 digits
+	mpf_out_str(stdout, 10, 8, M->i); // base 10, 6 digits
 	printf("\n");
 	return;
 }

@@ -4886,7 +4886,7 @@ int check_issoln_nullspacejac_mp(endgame_data_t *EG,
 		mpf_abs_mp(n1, &e.funcVals->coord[ii]);
 		mpf_abs_mp(n2, &f->coord[ii]);
 
-		//		mpf_out_str(NULL,10,9,n1);
+		//		mpf_out_str(stdout,10,9,n1);
 
 		if ( (mpf_cmp(zero_thresh, n1) <= 0) &&  (mpf_cmp(n1, n2) <= 0) )
 		{ // compare ratio
@@ -4894,7 +4894,7 @@ int check_issoln_nullspacejac_mp(endgame_data_t *EG,
 			if (mpf_cmp(n1, n2) > 0){
 				isSoln = 0;
 				printf("labeled as non_soln due to max_rat (mp) 1\n");
-				mpf_out_str(NULL,10,0,max_rat);
+				mpf_out_str(stdout,10,0,max_rat);
 			}
 		}
 		else if ( (mpf_cmp(zero_thresh, n2) <= 0) &&  (mpf_cmp(n2, n1) <= 0) )

@@ -1681,7 +1681,7 @@ int check_issoln_sphere_mp(endgame_data_t *EG,
 
 		print_point_to_screen_matlab(e.funcVals,"terminal_func_vals");
 		printf("tol was %le\nmax_rat was ",tol);
-		mpf_out_str(NULL,10,15,max_rat);
+		mpf_out_str(stdout,10,15,max_rat);
 		std::cout << "\n";
 	}
 

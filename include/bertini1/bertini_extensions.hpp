@@ -6,6 +6,7 @@
 
  \brief Direct extensions to Bertini, including single-target/source MPI sending and receiving
  */
+#include <stdio.h>
 
 #include "bertini1/bertini_headers.hpp"
 #include "io/fileops.hpp"
