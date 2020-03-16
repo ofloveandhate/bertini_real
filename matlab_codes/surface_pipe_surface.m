@@ -88,7 +88,7 @@ if opt.critslice
 	end
 end
 
-if opt.render
+if opt.render_curves
 	h = patch(fv);
 	set(h,'FaceAlpha',0.1);
 	set(h,'EdgeAlpha',0.1);
@@ -99,7 +99,7 @@ if opt.render
 end
 
 if opt.write_to_stl
-	fv2stl(fv)
+	fv2stl(fv,opt)
 end
 
 hold off
@@ -123,7 +123,8 @@ opt.radius = 0.15;
 opt.n = 31;
 
 opt.render_curves = true;
-opt.render = true;
+
+opt.filename = 'skeleton';
 opt.write_to_stl = false;
 
 if ~isempty(BRinfo.sampler_data)
@@ -151,11 +152,13 @@ for ii = 1:2:length(command_line_options)-1
 		case 'radius'
 			opt.radius = val;
 		case 'render'
-			opt.render = val;
+			opt.render_curves = val;
 		case 'write_stl'
 			opt.write_to_stl = val;
 		case 'sampled'
 			opt.use_sampled = val;
+        case 'filename'
+            opt.filename = val;
 		otherwise
 			error('bad option %s',command_line_options{ii});
 	end
