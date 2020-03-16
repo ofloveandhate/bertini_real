@@ -29,8 +29,8 @@ if opt.crit
 	curve = BRinfo.crit_curve;
 	curve.vertices = pc_vertices;
 	
-	temp_fv = curve_pipe_surface(curve,opt.use_sampled,...
-			'radius',opt.radius,'n',opt.n,'render',opt.render_curves,'write_stl',false);
+	temp_fv = curve_pipe_surface(curve,'sampled',opt.use_sampled,...
+			'radius',opt.radius,'n',opt.n,'render',false,'write_stl',false); %opt.render_curves
 	
 	fv.faces = [fv.faces; temp_fv.faces+size(fv.vertices,1)];
 	fv.vertices = [fv.vertices; temp_fv.vertices];
@@ -44,7 +44,7 @@ if opt.sphere
 	curve = BRinfo.sphere_curve;
 	curve.vertices = pc_vertices;
 	
-	temp_fv = curve_pipe_surface(curve,opt.use_sampled,...
+	temp_fv = curve_pipe_surface(curve,'sampled',opt.use_sampled,...
 			'radius',opt.radius,'n',opt.n,'render',opt.render_curves,'write_stl',false);
 	
 	fv.faces = [fv.faces; temp_fv.faces+size(fv.vertices,1)];
@@ -56,7 +56,7 @@ if opt.sing
 		curve = BRinfo.singular_curves{ii};
 		curve.vertices = pc_vertices;
 
-		temp_fv = curve_pipe_surface(curve,opt.use_sampled,...
+		temp_fv = curve_pipe_surface(curve,'sampled',opt.use_sampled,...
 			'radius',opt.radius,'n',opt.n,'render',opt.render_curves,'write_stl',false);
 
 		fv.faces = [fv.faces; temp_fv.faces+size(fv.vertices,1)];
@@ -68,7 +68,7 @@ if opt.midslice
 	for ii = 1:length(BRinfo.midpoint_slices)
 		curve = BRinfo.midpoint_slices{ii};
 		curve.vertices = pc_vertices;
-		temp_fv = curve_pipe_surface(curve,opt.use_sampled,...
+		temp_fv = curve_pipe_surface(curve,'sampled',opt.use_sampled,...
 			'radius',opt.radius,'n',opt.n,'render',opt.render_curves,'write_stl',false);
 
 		fv.faces = [fv.faces; temp_fv.faces+size(fv.vertices,1)];
@@ -80,7 +80,7 @@ if opt.critslice
 	for ii = 1:length(BRinfo.critpoint_slices)
 		curve = BRinfo.critpoint_slices{ii};
 		curve.vertices = pc_vertices;
-		temp_fv = curve_pipe_surface(curve,opt.use_sampled,...
+		temp_fv = curve_pipe_surface(curve,'sampled',opt.use_sampled,...
 			'radius',opt.radius,'n',opt.n,'render',opt.render_curves,'write_stl',false);
 
 		fv.faces = [fv.faces; temp_fv.faces+size(fv.vertices,1)];
@@ -116,8 +116,8 @@ end
 opt.crit = true;
 opt.sing = true;
 opt.sphere = true;
-opt.midslice = true;
-opt.critslice = true;
+opt.midslice = false;
+opt.critslice = false;
 
 opt.radius = 0.15;
 opt.n = 31;
@@ -149,7 +149,7 @@ for ii = 1:2:length(command_line_options)-1
 			opt.critslice = val;
 		case 'n'
 			opt.n = val;
-		case 'radius'
+		case {'radius','r'}
 			opt.radius = val;
 		case 'render'
 			opt.render_curves = val;

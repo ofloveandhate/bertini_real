@@ -5,14 +5,14 @@
 % possibly for 3d printing, or whatever; i don't get to tell
 % you what to do with your stl's
 % 
-% 
+% there's an internal bit you can flip to save the raw faces...
 
 function [] = info2stl(BRinfo, varargin)
 
 
 options = process_options(BRinfo, varargin);
 
-fv = info2fv(BRinfo, options.which_faces);
+fv = info2fv(BRinfo, options.which_faces, options.smooth_faces);
 fv2stl(fv,options);
 
 
@@ -37,4 +37,5 @@ end
 options.remove_duplicates = 0;
 options.align = 0;
 options.save_mat = 0;
+options.smooth_faces = 0;
 end

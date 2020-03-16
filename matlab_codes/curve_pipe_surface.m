@@ -1,4 +1,4 @@
-function fv = curve_pipe_surface(BRinfo, use_sampled_data, varargin)
+function fv = curve_pipe_surface(BRinfo, varargin)
 %  generate a pipe surface from a bertini_real decomposition of a curve
 %
 % the input BRinfo must be a curve.
@@ -35,7 +35,7 @@ br_vertices_needing_convhull = [];
 fv_vertices_to_convhull = {};
 for edge_index = 1:BRinfo.num_edges
 	
-	if use_sampled_data
+	if opt.use_sampled_data
 		vert_indices = BRinfo.sampler_data.edge(edge_index).samples ;
 	else
 		vert_indices = BRinfo.edges(edge_index,:);
@@ -75,8 +75,8 @@ for edge_index = 1:BRinfo.num_edges
 	else
 		closed_val = 'none';
 	end
-	
-	[h,temp_fv] = pipe_surface(edge(1,:),edge(2,:),edge(3,:),'r',opt.radius,'n',opt.n,'closed',closed_val,'render',opt.render);
+
+	[temp_fv] = tubeplot(edge(1,:),edge(2,:),edge(3,:),'render',opt.render,'radius',opt.radius,'n',opt.n,'closed',closed_val);
 	
 	if sum(sum(isnan(temp_fv.vertices)))>0
 		warning('pipe surface has nans');
@@ -155,7 +155,7 @@ if opt.render
 end
 
 if opt.write_to_stl
-	fv_to_stl(fv)
+	fv_to_stl(fv);
 end
 
 
@@ -175,6 +175,7 @@ opt.radius = 0.15;
 opt.n = 31;
 opt.render = true;
 opt.write_to_stl = false;
+opt.use_sampled_data = true;
 
 for ii = 1:2:length(command_line_options)-1
 	val = command_line_options{ii+1};
@@ -188,6 +189,8 @@ for ii = 1:2:length(command_line_options)-1
 			opt.render = val;
 		case 'write_stl'
 			opt.write_to_stl = val;
+        case 'sampled'
+            opt.use_sampled_data = val;
 		otherwise
 			error('bad option %s',command_line_options{ii});
 	end
