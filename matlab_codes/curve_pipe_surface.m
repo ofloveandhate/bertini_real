@@ -130,7 +130,7 @@ for ii = 1:length(fv_vertices_to_convhull)
 	local_indices = fv_vertices_to_convhull{ii};
 	
 	try
-		q = convhulln(fv.vertices(local_indices,:)); %(end:-1:1)
+		q = convhulln(fv.vertices(local_indices,:),{'QbB'}); %(end:-1:1)
 		q = local_indices(q);
 		q = q(:,[3 2 1]);
 		fv.faces = [fv.faces;q];
@@ -155,7 +155,7 @@ if opt.render
 end
 
 if opt.write_to_stl
-	fv_to_stl(fv);
+	fv2stl(fv, opt);
 end
 
 
@@ -176,6 +176,7 @@ opt.n = 31;
 opt.render = true;
 opt.write_to_stl = false;
 opt.use_sampled_data = true;
+opt.filename = 'curve_pipe_surface';
 
 for ii = 1:2:length(command_line_options)-1
 	val = command_line_options{ii+1};
@@ -191,6 +192,8 @@ for ii = 1:2:length(command_line_options)-1
 			opt.write_to_stl = val;
         case 'sampled'
             opt.use_sampled_data = val;
+        case 'filename'
+            opt.filename = val;
 		otherwise
 			error('bad option %s',command_line_options{ii});
 	end
