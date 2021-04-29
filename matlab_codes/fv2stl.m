@@ -18,11 +18,15 @@ end
 
 if nargin<3
 	fv = src;
+    options.filename = '';
 end
-
-
+ 
 if nargin==2
 	options = hndl;
+end
+
+if nargin==3
+    options.filename = 'BRsurf';
 end
 
 if nargin==4
@@ -41,7 +45,15 @@ end
 
 options.filename = adjust_name(options.filename);
 
+deleteme = [];
+for ii=1:size(fv.faces,1)
+    if all(isnan(fv.faces(ii,:)))
+        deleteme(end+1) = ii;
+    end
+end
+fv.faces(deleteme,:) = [];
 T = triangulation(fv.faces, fv.vertices);
+
 stlwrite(T,sprintf('%s.stl',options.filename));
 
 disp(sprintf('wrote to file %s',options.filename));
