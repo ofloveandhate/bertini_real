@@ -6,20 +6,11 @@
 Welcome to Bertini_real's Python visualization documentation!
 **************************************************************
 
-This is the documentation for `Bertini_Real <https://github.com/ofloveandhate/bertini_real>`_ python implementation for surface visualization. Follow the tutorials below to learn how to plot surfaces in Glumpy 🌈 & export 3D stereolithography (STL) for 3d printing 🧱 !
+This is the documentation for `Bertini_Real <https://github.com/ofloveandhate/bertini_real>`_ python implementation for surface visualization. Follow the tutorials below to learn how to plot surfaces in Glumpy 🌈 & export 3D stereolithography (STL) for 3d printing 🧱!
 
 .. image:: pictures/croissant_collage.png
    :width: 500
 
-Introduction
-============
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Bertini_real
-   
-   tutorials/bertini_real
-   tutorials/matplotlib
 
 Tutorials ✏️
 ============
@@ -28,6 +19,8 @@ Tutorials ✏️
    :maxdepth: 1
    :caption: Contents:
    
+   tutorials/bertini_real
+   tutorials/matplotlib
    tutorials/glumpy
    tutorials/tmesh
    tutorials/anaglypy
@@ -74,7 +67,7 @@ Indices and tables 📋
 Contact 📧
 =================
 
-If you have any questions, feel free to email `Silviana <mailto:silviana.amethyst@gmail.com>`_!
+If you have any questions or problems, please `submit an issue on github <https://github.com/ofloveandhate/bertini_real/issues>`_!
 
 .. image:: pictures/3dprints_collage2.png
    :width: 500

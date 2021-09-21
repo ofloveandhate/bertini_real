@@ -1,5 +1,5 @@
-Introduction to Glumpy with bertini_real
-=========================================
+Performant surface plotting --  bertinireal.glumpyplotter
+============================================================
 
 The Glumpyplotter class in bertini_real allows you to render the decompositions
 computed by bertini_real.

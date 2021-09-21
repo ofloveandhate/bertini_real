@@ -1,7 +1,7 @@
-Introduction to TMesh with bertini_real
-========================================
+Exporting and solidifying stl files for 3d printing -- bertinireal.tmesh
+===========================================================================
 
-The TMesh class in bertini_real allows user to export and solidify (raw & smooth surfaces) OBJ filesfor 3D printing.
+The TMesh class in bertini_real allows user to export and solidify (raw & smooth surfaces) OBJ files for 3D printing.
 
 Python Scripting
 *****************

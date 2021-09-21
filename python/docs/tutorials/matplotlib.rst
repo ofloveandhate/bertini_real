@@ -1,7 +1,7 @@
-Plotting in Matplotlib
-===========================================
+Plotting curves and surfaces using Matplotlib 
+==============================================
 
-The plot class in bertini_real uses matplotlib that allows you to render the decompositions
+The plot submodule in bertini_real uses matplotlib, and allows you to render the decompositions
 computed by bertini_real.
 
 Matplotlib: Plotting a Curve/Surface
