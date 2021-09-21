@@ -1,8 +1,6 @@
 """
-.. module:: vertex
     :platform: Unix, Windows
     :synopsis: This module contains Vertex object
-
 """
 
 

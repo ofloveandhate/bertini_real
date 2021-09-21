@@ -1,3 +1,10 @@
+"""
+    :platform: Unix, Windows
+    :synopsis: The data module contains methods to find diretcory, gather vertices,read msot recent, gather and gather & save.
+
+"""
+
+
 from __future__ import print_function
 import os
 import bertini_real.parse as parse
@@ -8,12 +15,7 @@ from bertini_real.vertex import Vertex
 import dill
 import numpy as np
 
-"""
-.. module:: data
-    :platform: Unix, Windows
-    :synopsis: The data module contains methods to find diretcory, gather vertices,read msot recent, gather and gather & save.
 
-"""
 
 def find_directory(directory_path):
     """ Find the directory of decomposition data based on directory path

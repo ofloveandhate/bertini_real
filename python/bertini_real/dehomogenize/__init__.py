@@ -1,8 +1,7 @@
 """
 
-.. module:: demohogenize
     :platform: Unix, Windows
-    :synopsis: The dehomogenize module makes points non-homogenized.
+    :synopsis: The dehomogenize module makes points in projective space non-homogenized, by dividing by the leading coordinate.
 
 """
 def dehomogenize(points, index = 0):

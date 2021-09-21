@@ -14,11 +14,10 @@
 # Fall 2018
 
 """
-This module is most likely depreciated as we can now plot surfaces
-using glumpy. Code is still useful for referencing though, as well as plotting
-raw surfaces
+Code is useful for plotting raw surfaces.  
 
-.. module:: plot
+This module is still useful, though we can now also plot surfaces using glumpy.
+
     :platform: Unix, Windows
     :synopsis: This module contains Plot object.
 """

@@ -1,8 +1,6 @@
 """
-.. module:: util
     :platform: Unix, Windows
     :synopsis: This module contains utilities functions to generate BRData*.pkl 
-
 """
 
 def next_filenumber():

@@ -1,7 +1,6 @@
 """
-.. module:: surface
     :platform: Unix, Windows
-    :synopsis: This module contains Surface and Piece objects.
+    :synopsis: This module contains Surface and Piece types.
 
 """
 
@@ -616,8 +615,19 @@ class Surface(Decomposition):
         verts = ax.scatter(xs, ys, zs, zdir='z', s=.1, alpha=1)
 
     def plot(self, face_indices, color, ax):
+        """ Plot surface in pieces 
+        
+        You probably actually want to use bertini_real.plot.plot(surface)
 
-        """ Plot surface in pieces """
+        :param face_indices: An iterable container of the indices of the faces you want to plot.
+        :param color: Gods, I wish I knew.  
+        :param ax: The axis object to plot into.
+
+        Seriously, you probably should use a different function for now, and ask Prof. Amethyst for help.
+        """
+
+        # i think that face_indices should have default of ` = list(range(self.num_faces))`. 2021-09-21.
+
         points = self.extract_points()
 
         # faces = tuples

@@ -1,8 +1,6 @@
 """
-.. module:: decomposition
     :platform: Unix, Windows
     :synopsis: The Decomposition contains methods to read input file and parse decomposition.
-
 """
 import bertini_real.parse
 import os

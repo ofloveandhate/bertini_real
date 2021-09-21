@@ -1,15 +1,19 @@
 """
-.. module:: parse
-    :platform: Unix, Windows
-    :synopsis: The parse module contains methods that parse directory name, decomposition, faces, eges, curve samples, surface samples, 
+    :platform: Unix, Windows, MacOS
+    :synopsis: Contains methods that parse directory name, decomposition, faces, eges, curve samples, surface samples, 
 """
+
+# .. module:: parse <-- not needed, as rst picks it up from the index.rst file's toctree, and parse.rst's automodule call
+
+
+
 import os
 
 def parse_directory_name(directory_name='Dir_Name'):
     """ Parse file that contains the directory name, the MPtype, and the dimension
 
         :param directory_name: name of directory
-        :rtype: Ta list [directory, MPtype, dimension]
+        :rtype: a list [directory, MPtype, dimension]
     """
 
     # os path manipulations. function returns true if path is an existing file
@@ -148,10 +152,11 @@ def parse_faces(directory):
     """ Reads Faces data from F.faces
         Inputs: current directory
         Returns: list with each element being a dictionary containing the face data
-            Keys for each dictionary:
-                    "midpoint", "middle slice index", "top", "bottom"
-                    "system top", "system bottom", "num left". "left"
-                    "num right", "right"
+            
+        Keys for each dictionary:
+        "midpoint", "middle slice index", "top", "bottom"
+        "system top", "system bottom", "num left". "left"
+        "num right", "right"
 
     """
     if not os.path.isfile(directory + '/F.faces'):

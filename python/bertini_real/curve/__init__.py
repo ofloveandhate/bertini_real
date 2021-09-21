@@ -1,8 +1,6 @@
 """
-.. module:: curve
     :platform: Unix, Windows
     :synopsis: The Curve is a child class of Decomposition. Curve contains methods that parse curve edge and samples data.
-
 """
 import bertini_real.parse
 from bertini_real.decomposition import Decomposition

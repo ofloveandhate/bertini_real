@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Bertini_Real's Python Visualization documentation!
+Welcome to Bertini_real's Python visualization documentation!
 **************************************************************
 
 This is the documentation for `Bertini_Real <https://github.com/ofloveandhate/bertini_real>`_ python implementation for surface visualization. Follow the tutorials below to learn how to plot surfaces in Glumpy 🌈 & export 3D stereolithography (STL) for 3d printing 🧱 !
@@ -45,7 +45,6 @@ Details 📝
    data
    decomposition
    dehomogenize
-   glumpy
    parse
    plot
    tmesh
@@ -53,6 +52,7 @@ Details 📝
    util
    vertex
    vertextype
+   glumpy
 
 Implementation notes
 ======================

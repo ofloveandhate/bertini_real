@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-VertexType Documentation
+bertinireal.vertextype
 ================================
 
 .. automodule:: vertextype
@@ -22,3 +22,5 @@ There are eleven VertexTypes of algebraic curves/surfaces in this module, which 
 * removed = 128
 * problematic = 256
 * singular = 512
+
+We use bit operations to indicate the various types, so that a vertex can be multiple types at once.

@@ -1,9 +1,8 @@
-"""
-Dan Hessler
-University of Wisconsin, Eau Claire
-Fall 2018 - Spring 2019
+# Dan Hessler
+# University of Wisconsin, Eau Claire
+# Fall 2018 - Spring 2019
 
-.. module:: glumpyplotter
+"""
     :platform: Unix, Windows
     :synopsis: The glumpy plotter uses OpenGL to render a decomposed
                surface created using bertini_real.

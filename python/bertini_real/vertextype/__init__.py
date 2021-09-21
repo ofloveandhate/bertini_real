@@ -1,10 +1,8 @@
-"""
-Foong Min Wong
-University of Wisconsin, Eau Claire
-Fall 2019
+# Foong Min Wong
+# University of Wisconsin, Eau Claire
+# Fall 2019
 
-.. module:: vertextype
-    :platform: Unix, Windows
+"""
     :synopsis: The vertextype contains 11 VertexTypes of algebraic curves/surfaces.
 """
 

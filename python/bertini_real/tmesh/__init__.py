@@ -1,9 +1,9 @@
-"""
-Foong Min Wong
-University of Wisconsin, Eau Claire
-Fall 2018 - Spring 2019
+# Foong Min Wong
+# University of Wisconsin, Eau Claire
+# Fall 2018 - Spring 2019
 
-.. module:: tmesh
+
+"""
     :platform: Unix, Windows
     :synopsis: The tmesh uses Trimesh to export and solidify raw/smooth OBJ and normal fixing.
 
