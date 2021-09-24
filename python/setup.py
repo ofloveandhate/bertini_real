@@ -2,15 +2,11 @@ from setuptools import find_packages, setup
 
 EXCLUDE_FROM_PACKAGES = []
 
-# as it turns out, glumpy is not in fact optional
-# because importing fails without it.
+extras = {
 
-# extras = {
-
-#     'optional': [
-#         'glumpy',
-#     ]
-# }
+    'optional': [
+    ]
+}
 
 setup(name='bertini_real',
       version='1.6',  # TODO make this set programmatically
