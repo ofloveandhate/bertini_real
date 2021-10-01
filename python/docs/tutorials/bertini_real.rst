@@ -11,7 +11,9 @@ There are two types of child classes for Decomposition (parent class): (1) Curve
 Gather and save decomposition
 ******************************
 
-Use an interactive Python shell, such as IPython, and you can run the following python codes to gather and save a decomposition of a curve/surface.
+Use an interactive Python shell, such as iPython.  Start the instance of iPython from the terminal, when you are already in the folder containing the data you want to process.  For example, if you have a folder called `data/whitney/', and in that folder is your bertini_real decomposition, then move to that folder and THEN launch iPython.
+
+One you're in, you can run the following python codes to gather and save a decomposition of a curve/surface.
 
 ::
 

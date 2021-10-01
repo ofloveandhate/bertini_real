@@ -110,28 +110,33 @@ class Plotter(object):
                              (True, True, True, False, False))
         def func(label):
 
-            if label == 'Vertices':
+            if label == 'Show Vertices':
                 # works but with hardcoded axes
                 self.options.visibility.vertices = (
                     not self.options.visibility.vertices)
                 self.ax.clear()
                 self.replot()
-            elif label == 'Surface':
+
+            elif label == 'Show Raw Surface':
+                self.options.visibility.raw = (not self.options.visibility.raw)
+                self.ax.clear()
+                self.replot()
+
+            elif label == 'Show Surface':
                 self.options.visibility.samples = (
                     not self.options.visibility.samples)
                 self.ax.clear()
                 self.replot()
-            elif label == 'Raw Surface':
-                self.options.visibility.raw = (not self.options.visibility.raw)
-                self.ax.clear()
-                self.replot()
-            elif label == 'Smooth STL':
+
+
+
+            elif label == 'Save Smooth STL to disk':
                 if(self.decomposition.dimension==1):
                     print('\x1b[0;31;40m'+'Unable to export STL for Curve object'+'\x1b[0m')
                 else:
                     mesh = TMesh(self.decomposition)
                     mesh.obj_smooth()
-            elif label == 'Raw STL':
+            elif label == 'Save Raw STL to disk':
                 if(self.decomposition.dimension==1):
                     print('\x1b[0;31;40m'+'Unable to export STL for Curve object'+'\x1b[0m')
                 else:
