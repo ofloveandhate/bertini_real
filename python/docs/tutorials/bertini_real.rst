@@ -11,7 +11,7 @@ There are two types of child classes for Decomposition (parent class): (1) Curve
 Gather and save decomposition
 ******************************
 
-Use an interactive Python shell, such as iPython.  Start the instance of iPython from the terminal, when you are already in the folder containing the data you want to process.  For example, if you have a folder called `data/whitney/', and in that folder is your bertini_real decomposition, then move to that folder and THEN launch iPython.
+Use an interactive Python shell, such as iPython.  Start the instance of iPython from the terminal, when you are already in the folder containing the data you want to process.  For example, if you have a folder called `data/whitney/`, and in that folder is your bertini_real decomposition, then move to that folder and THEN launch iPython.
 
 One you're in, you can run the following python codes to gather and save a decomposition of a curve/surface.
 
@@ -34,8 +34,6 @@ Plot curves and surfaces
 There are two plotting modules (Plotter and `GlumpyPlotter <glumpy.html>`_) in Bertini_real Python visualization suite. In this example, we ar going to demonstrate how to plot it using Plotter object with matplotlib.
 
 :: 
-
-    import bertini_real
 
     bertini_real.plot.plot()
 
@@ -61,31 +59,38 @@ We are working on the solidification feature for exporting singular algebraic su
 
     data = bertini_real.data.read_most_recent()
 
-    piece = data.separate_into_nonsingular_pieces()
+    pieces = data.separate_into_nonsingular_pieces()
 
-We can print out the piece and it should return 2 pieces for **Dingdong**  with its corresponding lists of indices for the 
+We can print out the piece and it should return 2 pieces for **Dingdong**  with its corresponding lists of indices:
 
 ::
 
-    piece
+    print(pieces)
+
+
+will output:
+
+:: 
 
     [piece with indices:[0, 1, 2, 3, 5, 6]
     , piece with indices:[4, 7, 8]
     ]
 
-We can access each piece by specifying their indices.
+We can access each piece by specifying their indices.  For example,
 
 ::
 
-    piece[0]
+    print(pieces[0])
+
+will output
+
+:: 
 
     piece with indices:[0, 1, 2, 3, 5, 6]
 
-    piece[1]
 
-    piece with indices:[4, 7, 8]
 
-There are a few properties and callable functions in a Piece object. You can run this command to generate a list of properties/functions for a Piece `dir(piece[0])`, and you will get the following output:
+There are a few properties and callable functions in a Piece object. You can run this command to generate a list of properties/functions for a Piece by running `dir(pieces[0])`, and you will get the following output:
 ::
 
     ['__doc__',
@@ -98,19 +103,19 @@ There are a few properties and callable functions in a Piece object. You can run
     'point_singularities',
     'surface']
 
-To access the indices of a Piece object, type `piece[0].indices` and it'll output:
+To access the indices of a Piece object, type `pieces[0].indices` and it'll output:
 
 ::
 
     [0, 1, 2, 3, 5, 6]
 
-To check whether a Piece object is compact, type `piece[0].is_compact()` and it'll output:
+To check whether a Piece object is compact, type `pieces[0].is_compact()` and it'll output:
 
 ::
 
     True
 
-To retrieve the list of point singularities from a Piece object, type `piece[0].point_singularities()` and we get:
+To retrieve the list of point singularities from a Piece object, type `pieces[0].point_singularities()` and we get:
 
 ::
 
