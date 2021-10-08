@@ -1,4 +1,4 @@
-Plotting curves and surfaces using Matplotlib 
+Plotting curves and surfaces using Matplotlib
 ==============================================
 
 The plot submodule in bertini_real uses matplotlib, and allows you to render the decompositions
@@ -6,8 +6,10 @@ computed by bertini_real.
 
 Matplotlib: Plotting a Curve/Surface
 *************************************
-After decomposing a surface, you can run the following python codes to plot curve/surface in the Python Shell. 
+After decomposing a surface, you can run the following python codes to plot curve/surface in the Python Shell.
 We are plotting a curve **Alpha Curve** and a surface  **"Whitney"** in this example ☂️ .
+
+Decomposition is covered in more detail in `Introduction to Bertini_real’s Python Visualization Suite <bertini_real.html>`_
 
 
 Example: Alpha Curve
@@ -35,7 +37,6 @@ Example: Alpha Curve
 .. image:: matplotlib_pictures/alphacurve_smooth.PNG
    :width: 40 %
 
-
 Example: Whitney
 *****************
 ::
@@ -59,6 +60,10 @@ Example: Whitney
 
 .. image:: matplotlib_pictures/whitney_smooth.PNG
    :width: 40 %
+
+Checking **Smooth STL** or **Raw STL** will export a 3D model to your current folder.
+
+**Caution** The plot pop-up must be closed before continuing in the shell.
 
 Matplotlib: Plotting Pieces
 ****************************
@@ -85,6 +90,6 @@ Example: Whitney
 
 
 :Author:
-	Foong Min Wong
+	Foong Min Wong, Caden Joergens
 
-:Version: 1.0 2020/03/01
+:Version: 1.0 2021-10-08
