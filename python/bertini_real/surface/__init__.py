@@ -44,7 +44,7 @@ class Piece():
 
     def __str__(self):
         """ toString method for Piece """
-        result = "piece with indices:"
+        result = "Piece of a surface with face indices:"
         result += "{}".format(self.indices)
         return result
 
@@ -274,11 +274,20 @@ class Surface(Decomposition):
         except:
             print("no samples found")
 
-    def __str__(self):
+    def __repr__(self):
         """ toString method for Surface """
-        result = "surface with:\n"
-        result += "{} faces".format(self.num_faces)
+        result = "Surface with:\n"
+        result += f"{self.num_faces} faces\n"
+        result += f"defined using {self.num_variables} variables\n"
+        result += f"center, radius of sphere: {self.center}, {self.radius}\n"
+        result += f"there are {self.num_critical_slices} crit slices\n"
+        result += f"and {self.num_singular_curves} singular_curves with multiplicities {self.singular_curve_multiplicities}\n\n"
+        result += f"computed point set has {len(self.vertices)} total points in it\n"
+        result += f"" 
         return result
+
+    def __str__(self):
+        return repr(self)
 
     def parse_surf(self, directory):
         """ Parse and store into surface data

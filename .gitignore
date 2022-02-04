@@ -38,8 +38,8 @@ documentation/latex
 *.cache*
 
 python/docs/_build/
-
-
+*.egg-info
+python/build
 
 traces*
 Makefile
