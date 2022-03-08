@@ -269,6 +269,13 @@ class Plotter(object):
 
         plt.sca(self.ax)
 
+        try:
+            self.ax.set_aspect(aspect='equal')
+        except NotImplementedError as e:
+            #print(e, " using `auto` instead :sadface:")
+            self.ax.set_aspect(aspect='auto')
+
+
         self._adjust_axis_bounds()
 
     def _adjust_axis_bounds(self):
