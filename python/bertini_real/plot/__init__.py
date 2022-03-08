@@ -41,21 +41,40 @@ class StyleOptions(object):
 
     def __init__(self):
         self.line_thickness = 2  # there is no code using this yet.  write it.
-        self.colormap = plt.cm.inferno
+        self.colormap = plt.cm.viridis
 
 
 class VisibilityOptions(object):
 
     def __init__(self):
-        self.vertices = True
-        self.samples = True
-        self.raw = True
-        self.autorawsamples = True
+        self.vertices = False
+        self.samples = False
+        self.raw = False
         self.labels = False
 
-        # check with matlab output
-        self.which_faces = []
-        self.indices = []
+        # for selective plotting
+        self.which_faces = [] # refers to the indices in a surface or edges in a curve
+        self.indices = [] #???
+
+        self.default_constructed = True
+
+    def auto_adjust(self, decomposition):
+        if decomposition.dimension==1:
+            self._adjust_for_curve(decomposition)
+        elif decomposition.dimension==2:
+            self._adjust_for_surface(decomposition)
+        else:
+            raise NotImplementedError(f"cannot auto_adjust VisibilityOptions for dimension {decomposition.dimension} components")
+
+    def _adjust_for_surface(self, surface):
+        if len(surface.sampler_data)==0:
+            self.raw = True
+        else:
+            self.samples = True
+
+    def _adjust_for_curve(self, curve):
+        pass
+
 
 
 class Options(object):
@@ -91,6 +110,10 @@ class Plotter(object):
         else:
             self.decomposition = data
 
+        if options.visibility.default_constructed:
+            options.visibility.auto_adjust(self.decomposition)
+
+        # cache that shit, yo
         self.options = options
 
     def plot(self):
@@ -99,11 +122,11 @@ class Plotter(object):
         print("plotting object of dimension "
               + str(self.decomposition.dimension))
 
-        self.make_figure()
-        self.make_axes()
-        self.main()
-        self.label_axes()
-        self.apply_title()
+        self._make_figure()
+        self._make_axes()
+        self._main()
+        self._label_axes()
+        self._apply_title()
 
 
         widgets = self._make_widgets_surface()
@@ -124,18 +147,18 @@ class Plotter(object):
                 self.options.visibility.vertices = (
                     not self.options.visibility.vertices)
                 self.ax.clear()
-                self.replot()
+                self._replot()
 
             elif label == 'Show Smooth Surface':
                 self.options.visibility.samples = (
                     not self.options.visibility.samples)
                 self.ax.clear()
-                self.replot()
+                self._replot()
 
             elif label == 'Show Raw Surface':
                 self.options.visibility.raw = (not self.options.visibility.raw)
                 self.ax.clear()
-                self.replot()
+                self._replot()
 
             plt.draw()
 
@@ -151,75 +174,123 @@ class Plotter(object):
             else:
                 self.decomposition.export_obj_raw()
 
+        # measurements are in inches
 
-        v_padding = 0.02
-        button_h = 0.05
-        button_w = 0.25
-        check_h = 0.05
-        check_w = 0.35
-        inset_x = 0.01
-        inset_y = 0.01
+        y_padding = 0.1
+
+        button_x = 1.4
+        button_y = 0.2
+
+        check_y = 0.2 # size for ONE check
+        check_x = 2.2
+
+        inset_x = 0.1
+        inset_y = 0.1
+
+        # see https://matplotlib.org/stable/gallery/axes_grid1/demo_fixed_size_axes.html
+        from mpl_toolkits.axes_grid1 import Divider, Size
+        # sizes are inches
+
+        
+
+        
+        # The width and height of the rectangle are ignored.
+        
 
         num_check_panels = 0
         num_buttons = 0
         # First, create our check boxes
-        # These four coordinates specify the position of the checkboxes
-        check_ax = plt.axes([inset_x, inset_y, check_w, 3*check_h]) # as [xpos, ypos   width of sorrunding, height of surrounding]
+
+        num_checks = 3
+
+        
+        x = [Size.Fixed(inset_x), Size.Fixed(check_x)]
+        y = [Size.Fixed(inset_y), Size.Fixed(check_y*num_checks)]
+        divider = Divider(self.fig, (0, 0, 1, 1), x, y, aspect=False)
+        check_ax = self.fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
+
         checks = widgets.CheckButtons(check_ax, ('Show Vertices', 'Show Smooth Surface', 'Show Raw Surface'),
                              (False, len(self.decomposition.sampler_data)>0, len(self.decomposition.sampler_data)==0))
-        num_checks = 3
         num_check_panels += 1
+        checks.on_clicked(_check_actions)
 
-        button_smooth_ax = plt.axes([inset_x, inset_y+num_checks*check_h+(num_check_panels+num_buttons)*v_padding, button_w, button_h]) # as [xpos, ypos   width of sorrunding, height of surrounding]
+
+
+        x = [Size.Fixed(inset_x), Size.Fixed(button_x)]
+        y = [Size.Fixed(inset_y+(num_buttons+num_check_panels)*y_padding + check_y*num_checks + button_y*num_buttons), Size.Fixed(button_y)]
+        divider = Divider(self.fig, (0, 0, 1, 1), x, y, aspect=False)
+        button_smooth_ax = self.fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
+        # button_smooth_ax = self.fig.add_axes([inset_x, inset_y+num_checks*check_y+(num_check_panels+num_buttons)*y_padding, button_x, button_y]) # as [xpos, ypos   width of sorrunding, height of surrounding]
         button_export_smooth = widgets.Button(button_smooth_ax, 'Export Smooth OBJ')
         num_buttons += 1
+        button_export_smooth.on_clicked(_export_smooth_action)
 
-        button_raw_ax = plt.axes([inset_x, inset_y+num_checks*check_h+num_buttons*button_h+(num_check_panels+num_buttons)*v_padding, button_w, button_h]) # as [xpos, ypos   width of sorrunding, height of surrounding]
+
+
+
+        x = [Size.Fixed(inset_x), Size.Fixed(button_x)]
+        y = [Size.Fixed(inset_y+(num_buttons+num_check_panels)*y_padding + check_y*num_checks + button_y*num_buttons), Size.Fixed(button_y)]
+        divider = Divider(self.fig, (0, 0, 1, 1), x, y, aspect=False)
+        button_raw_ax = self.fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
+
+        # button_raw_ax = self.fig.add_axes([inset_x, inset_y+num_checks*check_y+num_buttons*button_y+(num_check_panels+num_buttons)*y_padding, button_x, button_y]) # as [xpos, ypos   width of sorrunding, height of surrounding]
         button_export_raw = widgets.Button(button_raw_ax, 'Export Raw OBJ')
         num_buttons += 1
-        
-            
-            
-        checks.on_clicked(_check_actions)
-        button_export_smooth.on_clicked(_export_smooth_action)
         button_export_raw.on_clicked(_export_raw_action)
+
+
 
         return {'checks':checks, \
                 'buttons':{'button_export_raw':button_export_raw, 'button_export_smooth':button_export_smooth}}
 
-    def main(self):
+    def _main(self):
 
         self.points = self.extract_points()
 
         if self.options.visibility.vertices:
-            self.plot_vertices()
+            self._plot_vertices()
 
         if self.decomposition.dimension == 1:
-            self.plot_curve()
+            self._plot_curve()
         elif self.decomposition.dimension == 2:
-            self.plot_surface()
+            self._plot_surface()
         else:
             raise NotImplementedError
 
-    def make_figure(self):
-        self.fig = plt.figure()
+    def _make_figure(self):
 
-    def make_axes(self):
+        self.fig = plt.figure(figsize=(10,8))
+
+    def _make_axes(self):
         if self.decomposition.num_variables == 2:
             self.ax = self.fig.add_subplot(1, 1, 1)
         else:
             self.ax = self.fig.add_subplot(1, 1, 1, projection='3d')
 
-    def apply_title(self):
+        plt.sca(self.ax)
+
+        self._adjust_axis_bounds()
+
+    def _adjust_axis_bounds(self):
+        d = self.decomposition
+        self.ax.set_xlim((d.center[0]-d.radius, d.center[0]+d.radius))
+        self.ax.set_ylim((d.center[1]-d.radius, d.center[1]+d.radius))
+
+        if self.decomposition.num_variables == 3:
+            self.ax.set_zlim((d.center[2]-d.radius, d.center[2]+d.radius))
+
+
+    def _apply_title(self):
         plt.sca(self.ax)
         plt.title(os.getcwd().split(os.sep)[-1])
 
-    def replot(self):
-        self.main()
-        self.label_axes()
-        self.apply_title()
+    def _replot(self):
+        self._main()
+        self._label_axes()
+        self._apply_title()
+        self._adjust_axis_bounds()
 
-    def label_axes(self):
+    def _label_axes(self):
         # todo: these should be set from the decomposition, not assumed to be
         # x,y,z
         self.ax.set_xlabel("x")
@@ -233,7 +304,7 @@ class Plotter(object):
 	todo: make them colored based on a function
 	'''
 
-    def plot_vertices(self):
+    def _plot_vertices(self):
         """ Plot vertices """
 
         # refactored version
@@ -244,7 +315,7 @@ class Plotter(object):
         else:
             verts = self.ax.scatter(xs, ys, zs, zdir='z', s=.1, alpha=1)
 
-    # this works well for plot_vertices
+    # this works well for _plot_vertices
     # how can we make it work well for all the other methods???
     # returns 3 separate lists
 
@@ -262,7 +333,7 @@ class Plotter(object):
         return np.array(xs), np.array(ys), np.array(zs)
 
     def extract_points(self):
-        """ Helper method for plot_surface_samples()
+        """ Helper method for _plot_surface_samples()
             Extract points from vertices
 
             :param data: Surface decomposition data
@@ -281,26 +352,31 @@ class Plotter(object):
 
         return points
 
-    def plot_curve(self):
-        """ Plot curves """
+
+
+
+
+
+
+
+    def _plot_curve(self):
+        """ 
+        Plot curves 
+        assumes self.options is set.  
+        """
 
         curve = self.decomposition
 
-        should_plot_raw = self.options.visibility.raw
-        should_plot_samp = self.options.visibility.samples and curve.sampler_data is not None
-        if self.options.visibility.autorawsamples:
-            if should_plot_samp:
-                should_plot_raw = False
+        self._determine_nondegen_edges()
 
-        self.determine_nondegen_edges()
+        if self.options.visibility.raw:
+            self._plot_raw_edges()
 
-        if should_plot_raw:
-            self.plot_raw_edges()
+        if self.options.visibility.samples:
+            self._plot_edge_samples()
 
-        if should_plot_samp:
-            self.plot_edge_samples()
 
-    def plot_raw_edges(self):
+    def _plot_raw_edges(self):
         """ Plot raw edges """
         curve = self.decomposition  # a local unpacking
 
@@ -330,7 +406,7 @@ class Plotter(object):
             else:
                 self.ax.plot(xs, ys, zs, zdir='z', c=color)
 
-    def plot_edge_samples(self):
+    def _plot_edge_samples(self):
         """ Plot sampled edges """
         num_nondegen_edges = len(self.nondegen)
 
@@ -357,7 +433,7 @@ class Plotter(object):
             else:
                 self.ax.plot(xs, ys, zs, zdir='z', c=color)  # v['point']
 
-    def determine_nondegen_edges(self):
+    def _determine_nondegen_edges(self):
         """ Determine nondegenerate edges """
         curve = self.decomposition
         self.nondegen = []
@@ -366,17 +442,17 @@ class Plotter(object):
             if e[0] != e[1] != e[2]:
                 self.nondegen.append(i)
 
-    def plot_surface(self):
+    def _plot_surface(self):
         """ Plot surface"""
         surf = self.decomposition
 
         if self.options.visibility.samples:
-            self.plot_surface_samples()
+            self._plot_surface_samples()
 
         if self.options.visibility.raw:
-            self.plot_surface_raw()
+            self._plot_surface_raw()
 
-    def plot_surface_samples(self):
+    def _plot_surface_samples(self):
         """ Plot sampler surface """
         points = self.points
 
@@ -404,7 +480,7 @@ class Plotter(object):
             self.ax.add_collection3d(Poly3DCollection(T, facecolors=color))
             self.ax.autoscale_view()
 
-    def plot_surface_raw(self):
+    def _plot_surface_raw(self):
         """ Plot raw surface """
         points = self.points
         surf = self.decomposition

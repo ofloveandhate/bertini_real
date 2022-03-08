@@ -85,7 +85,7 @@ def parse_decomposition(directory):
         while radius == '\n':
             radius = f.readline()
         radius = radius.replace('\n', '').split(' ')
-        radius = complex(float(radius[0]), float(radius[1]))
+        radius = float(radius[0])#, float(radius[1]))  # discard the imaginary part
 
         centerSize = f.readline()
         while centerSize == '\n':
@@ -95,7 +95,7 @@ def parse_decomposition(directory):
         for ii in range(centerSize):
             center_data = f.readline().replace('\n', '').split(' ')
             center.append(
-                complex(float(center_data[0]), float(center_data[1])))
+                float(center_data[0]))#)# complex( # discard the imaginary part
         return {'input file name': inputFileName,
                 'pi info': pi,
                 'patch vectors': patch_vectors,
