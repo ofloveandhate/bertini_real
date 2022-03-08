@@ -6,7 +6,7 @@
 bertinireal.surface
 ================================
 
-Python libraries used: Numpy
+Python libraries used: numpy, trimesh, copy, os, math
 
 
 .. automodule:: surface

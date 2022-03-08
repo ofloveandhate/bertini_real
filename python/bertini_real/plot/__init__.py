@@ -3,7 +3,7 @@
 # Spring 2017
 
 # Silviana Amethyst
-# Fall 2018
+# Fall 2018, Spring 2022
 
 # Dan Hessler
 # University of Wisconsin, Eau Claire
@@ -32,8 +32,7 @@ import matplotlib
 # matplotlib.use('macosx')
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-from matplotlib.widgets import CheckButtons
-from bertini_real.tmesh import TMesh
+import matplotlib.widgets as widgets
 
 # print("using {} backend".format(matplotlib.get_backend()))
 
@@ -53,6 +52,7 @@ class VisibilityOptions(object):
         self.raw = True
         self.autorawsamples = True
         self.labels = False
+
         # check with matlab output
         self.which_faces = []
         self.indices = []
@@ -77,9 +77,14 @@ class ReversableList(list):
 
 
 class Plotter(object):
-    """ Create a Plotter object for Python visualization suite """
 
     def __init__(self, data=None, options=Options()):
+        """ 
+        Create a Plotter object for Python visualization suite 
+
+        If no decomposition is passed in (that is, data=None), then the most recent pickle file will be read.
+        """
+
 
         if data is None:
             self.decomposition = bertini_real.data.read_most_recent()
@@ -98,17 +103,21 @@ class Plotter(object):
         self.make_axes()
         self.main()
         self.label_axes()
+        self.apply_title()
 
-        # I would love to move this to its own method, but I
-        # don't think that is possible with the limiations of
-        # matplotlib
 
-        # Create our check boxes
-        # These four coordinates specify the position of the checkboxes
-        rax = plt.axes([0.05, 0.4, 0.2, 0.15])
-        check = CheckButtons(rax, ('Vertices', 'Surface', 'Raw Surface', 'Smooth STL', 'Raw STL'),
-                             (True, True, True, False, False))
-        def func(label):
+        widgets = self._make_widgets_surface()
+
+        plt.show()
+
+
+    def _make_widgets_surface(self):
+        """
+        You must capture and store the output of this function for it to work correctly.
+        """
+
+        # first, define some actions
+        def _check_actions(label):
 
             if label == 'Show Vertices':
                 # works but with hardcoded axes
@@ -117,39 +126,66 @@ class Plotter(object):
                 self.ax.clear()
                 self.replot()
 
-            elif label == 'Show Raw Surface':
-                self.options.visibility.raw = (not self.options.visibility.raw)
-                self.ax.clear()
-                self.replot()
-
-            elif label == 'Show Surface':
+            elif label == 'Show Smooth Surface':
                 self.options.visibility.samples = (
                     not self.options.visibility.samples)
                 self.ax.clear()
                 self.replot()
 
-
-
-            elif label == 'Save Smooth STL to disk':
-                if(self.decomposition.dimension==1):
-                    print('\x1b[0;31;40m'+'Unable to export STL for Curve object'+'\x1b[0m')
-                else:
-                    mesh = TMesh(self.decomposition)
-                    mesh.obj_smooth()
-            elif label == 'Save Raw STL to disk':
-                if(self.decomposition.dimension==1):
-                    print('\x1b[0;31;40m'+'Unable to export STL for Curve object'+'\x1b[0m')
-                else:
-                    mesh = TMesh(self.decomposition)
-                    mesh.obj_raw()
+            elif label == 'Show Raw Surface':
+                self.options.visibility.raw = (not self.options.visibility.raw)
+                self.ax.clear()
+                self.replot()
 
             plt.draw()
+
+        def _export_smooth_action(arg):
+            if(self.decomposition.dimension==1):
+                print('\x1b[0;31;40m'+'Unable to export OBJ file for Curve object'+'\x1b[0m')
+            else:
+                self.decomposition.export_obj_smooth()
+
+        def _export_raw_action(arg):
+            if(self.decomposition.dimension==1):
+                print('\x1b[0;31;40m'+'Unable to export OBJ file for Curve object'+'\x1b[0m')
+            else:
+                self.decomposition.export_obj_raw()
+
+
+        v_padding = 0.02
+        button_h = 0.05
+        button_w = 0.25
+        check_h = 0.05
+        check_w = 0.35
+        inset_x = 0.01
+        inset_y = 0.01
+
+        num_check_panels = 0
+        num_buttons = 0
+        # First, create our check boxes
+        # These four coordinates specify the position of the checkboxes
+        check_ax = plt.axes([inset_x, inset_y, check_w, 3*check_h]) # as [xpos, ypos   width of sorrunding, height of surrounding]
+        checks = widgets.CheckButtons(check_ax, ('Show Vertices', 'Show Smooth Surface', 'Show Raw Surface'),
+                             (False, len(self.decomposition.sampler_data)>0, len(self.decomposition.sampler_data)==0))
+        num_checks = 3
+        num_check_panels += 1
+
+        button_smooth_ax = plt.axes([inset_x, inset_y+num_checks*check_h+(num_check_panels+num_buttons)*v_padding, button_w, button_h]) # as [xpos, ypos   width of sorrunding, height of surrounding]
+        button_export_smooth = widgets.Button(button_smooth_ax, 'Export Smooth OBJ')
+        num_buttons += 1
+
+        button_raw_ax = plt.axes([inset_x, inset_y+num_checks*check_h+num_buttons*button_h+(num_check_panels+num_buttons)*v_padding, button_w, button_h]) # as [xpos, ypos   width of sorrunding, height of surrounding]
+        button_export_raw = widgets.Button(button_raw_ax, 'Export Raw OBJ')
+        num_buttons += 1
         
-        check.on_clicked(func)
+            
+            
+        checks.on_clicked(_check_actions)
+        button_export_smooth.on_clicked(_export_smooth_action)
+        button_export_raw.on_clicked(_export_raw_action)
 
-        self.apply_title()
-
-        plt.show()
+        return {'checks':checks, \
+                'buttons':{'button_export_raw':button_export_raw, 'button_export_smooth':button_export_smooth}}
 
     def main(self):
 
@@ -175,6 +211,7 @@ class Plotter(object):
             self.ax = self.fig.add_subplot(1, 1, 1, projection='3d')
 
     def apply_title(self):
+        plt.sca(self.ax)
         plt.title(os.getcwd().split(os.sep)[-1])
 
     def replot(self):

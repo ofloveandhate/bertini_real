@@ -3,13 +3,25 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Bertini_real's Python visualization documentation!
+Welcome!
 **************************************************************
 
-This is the documentation for `Bertini_Real <https://github.com/ofloveandhate/bertini_real>`_ python implementation for surface visualization. Follow the tutorials below to learn how to plot surfaces in Glumpy 🌈 & export 3D stereolithography (STL) for 3d printing 🧱!
+This is the documentation for the `Bertini_real <https://github.com/ofloveandhate/bertini_real>`_ python library for working with numerical cellular decompositions of algebraic curves and surfaces in any number of variables. 
+
+Follow the tutorials below to learn how to plot surfaces 🌈 & export files suitable for 3d printing 🧱!
 
 .. image:: pictures/croissant_collage.png
-   :width: 500
+   :width: 300
+
+As a super-quick-start, after successfully decomposing a surface in Bertini_real:
+
+::
+
+    import bertini_real
+
+    bertini_real.data.gather_and_save()
+    decomposition = bertini_real.data.read_most_recent()
+    decomposition.plot()
 
 
 Tutorials ✏️
@@ -22,7 +34,7 @@ Tutorials ✏️
    tutorials/bertini_real
    tutorials/matplotlib
    tutorials/glumpy
-   tutorials/tmesh
+   tutorials/mesh_export
    tutorials/anaglypy
 
 
@@ -40,7 +52,6 @@ Details 📝
    dehomogenize
    parse
    plot
-   tmesh
    surface
    util
    vertex
@@ -70,6 +81,6 @@ Contact 📧
 If you have any questions or problems, please `submit an issue on github <https://github.com/ofloveandhate/bertini_real/issues>`_!
 
 .. image:: pictures/3dprints_collage2.png
-   :width: 500
+   :width: 300
 
 
