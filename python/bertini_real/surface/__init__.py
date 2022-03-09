@@ -48,6 +48,10 @@ class Piece():
 
         self.indices = indices
         self.surface = surface
+        self.dimension = 2
+        self.num_variables = surface.num_variables
+        self.center = surface.center
+        self.radius = surface.radius
         self.visibility = VisibilityOptions()
 
     def __str__(self):

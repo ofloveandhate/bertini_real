@@ -23,7 +23,7 @@ This module is still useful, though we can now also plot surfaces using glumpy.
 """
 
 import os
-from bertini_real.surface import Surface, Curve
+from bertini_real.surface import Surface, Curve, Piece
 import bertini_real.util
 import dill
 import numpy as np
@@ -57,7 +57,9 @@ class VisibilityOptions(object):
         self.indices = [] #???
 
     def auto_adjust(self, decomposition):
-        if decomposition.dimension==1:
+        if isinstance(decomposition, Piece):
+            self._adjust_for_piece(decomposition)
+        elif decomposition.dimension==1:
             self._adjust_for_curve(decomposition)
         elif decomposition.dimension==2:
             self._adjust_for_surface(decomposition)
@@ -69,6 +71,12 @@ class VisibilityOptions(object):
             self.raw = True
         else:
             self.samples = True
+
+    def _adjust_for_piece(self, piece):
+        self.which_faces = piece.indices
+        self._adjust_for_surface(piece.surface)
+
+
 
     def _adjust_for_curve(self, curve):
         raise NotImplementedError("please implement adjusting visibility options for curves.  should be easy!")
@@ -108,15 +116,10 @@ class Plotter(object):
 
     def plot(self,decomposition):
         """ 
-        Plot curves/surfaces, axes and figures 
-
-        If no decomposition is passed in (that is, data=None), then the most recent pickle file will be read.
+        Plot Curves/Surfaces/Pieces, axes and figures 
         """
 
         self.options.visibility.auto_adjust(decomposition)
-
-        print("plotting object of dimension "
-              + str(decomposition.dimension))
 
         self._make_figure()
         self._make_axes(decomposition)
@@ -124,10 +127,8 @@ class Plotter(object):
         self._label_axes(decomposition)
         self._apply_title()
 
-
-        widgets = self._make_widgets_surface(decomposition)
-
-        plt.show()
+        if not self.defer_show:
+            plt.show()
 
 
     def _make_widgets_surface(self,decomposition):
@@ -241,12 +242,9 @@ class Plotter(object):
 
     def _main(self,decomposition):
 
-        self.points = self.extract_points(decomposition)
-
-        if self.options.visibility.vertices:
-            self._plot_vertices(decomposition)
-
-        if decomposition.dimension == 1:
+        if isinstance(decomposition,Piece):
+            self._plot_piece(decomposition)
+        elif decomposition.dimension == 1:
             self._plot_curve(decomposition)
         elif decomposition.dimension == 2:
             self._plot_surface(decomposition)
@@ -367,6 +365,9 @@ class Plotter(object):
         Plot curves 
         assumes self.options is set.  
         """
+        self.points = self.extract_points(curve)
+        if self.options.visibility.vertices:
+            self._plot_vertices(curve)
 
         self._determine_nondegen_edges()
 
@@ -375,6 +376,10 @@ class Plotter(object):
 
         if self.options.visibility.samples:
             self._plot_edge_samples()
+
+        
+
+        widgets = self._make_widgets_curve(curve)
 
 
     def _plot_raw_edges(self, curve):
@@ -449,22 +454,30 @@ class Plotter(object):
         """ 
         plots a Piece of a surface.  
         """
-        self.options.which_faces = p.indices
+        self.options.which_faces = piece.indices
         surf = piece.surface
 
         self._plot_surface(surf)
 
-        raise NotImplementedError("bummer.  i haven't implemented _plot_piece yet.")
 
 
     def _plot_surface(self, surf):
         """ Plot surface"""
+
+        self.points = self.extract_points(surf)
+        if self.options.visibility.vertices:
+            self._plot_vertices(surf)
+
 
         if self.options.visibility.samples:
             self._plot_surface_samples(surf)
 
         if self.options.visibility.raw:
             self._plot_surface_raw(surf)
+
+        
+
+        widgets = self._make_widgets_surface(surf)
 
     def _plot_surface_samples(self, surf):
         """ Plot sampler surface """
