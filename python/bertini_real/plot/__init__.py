@@ -45,6 +45,12 @@ class StyleOptions(object):
 
 
 class VisibilityOptions(object):
+    """
+    A struct-like class for serving options for the Plotter class.  
+
+    One curious setting is `defer_show`, which lets you stifle `show`ing results of plots.  A use of this is in case you are plotting in a loop.  
+    """
+
 
     def __init__(self):
         self.vertices = False
@@ -56,12 +62,16 @@ class VisibilityOptions(object):
         self.which_faces = [] # refers to the indices in a surface or edges in a curve
         self.indices = [] #???
 
+        self.defer_show = False
+
+
+
     def auto_adjust(self, decomposition):
         if isinstance(decomposition, Piece):
             self._adjust_for_piece(decomposition)
-        elif decomposition.dimension==1:
+        elif isinstance(decomposition,Curve):
             self._adjust_for_curve(decomposition)
-        elif decomposition.dimension==2:
+        elif isinstance(decomposition,Surface):
             self._adjust_for_surface(decomposition)
         else:
             raise NotImplementedError(f"cannot auto_adjust VisibilityOptions for dimension {decomposition.dimension} components")
@@ -71,6 +81,10 @@ class VisibilityOptions(object):
             self.raw = True
         else:
             self.samples = True
+
+        if len(self.which_faces)==0:
+            self.which_faces = range(surface.num_faces)
+
 
     def _adjust_for_piece(self, piece):
         self.which_faces = piece.indices
@@ -111,25 +125,65 @@ class Plotter(object):
 
         # cache that shit, yo
         self.options = options
+        self.fig = None
+        self.ax = None
+        self.plotted_decompositions = []
 
-
+    def show(self):
+        print('showing')
+        plt.draw()
+        plt.show()
 
     def plot(self,decomposition):
         """ 
         Plot Curves/Surfaces/Pieces, axes and figures 
         """
 
-        self.options.visibility.auto_adjust(decomposition)
+        if self.fig is None:
+            self._make_new_figure()
 
-        self._make_figure()
-        self._make_axes(decomposition)
+        if not isinstance(decomposition,list):
+            self.options.visibility.auto_adjust(decomposition)
+
+            if self.ax is None:
+                self._make_new_axes(decomposition)
+                self._label_axes(decomposition)
+                self._apply_title()
+
+
         self._main(decomposition)
-        self._label_axes(decomposition)
-        self._apply_title()
+            
 
-        if not self.defer_show:
-            plt.show()
+        if not self.options.visibility.defer_show:
+            self.show()
 
+
+
+    def _main(self,decomposition):
+
+        if isinstance(decomposition,list) and all([isinstance(p,Piece) for p in decomposition]):
+            self._plot_pieces(decomposition)
+        elif isinstance(decomposition,Piece):
+            self._plot_piece(decomposition)
+        elif isinstance(decomposition,Curve):
+            self._plot_curve(decomposition)
+        elif isinstance(decomposition,Surface):
+            self._plot_surface(decomposition)
+        else:
+            print(decomposition)
+            raise NotImplementedError
+
+
+
+
+
+
+
+
+    #  .----..----. .---. .-. .-..----.      .--.   .---.  .---. .-. .----. .-. .-. .----.
+    # { {__  | {_  {_   _}| { } || {}  }    / {} \ /  ___}{_   _}| |/  {}  \|  `| |{ {__  
+    # .-._} }| {__   | |  | {_} || .--'    /  /\  \\     }  | |  | |\      /| |\  |.-._} }
+    # `----' `----'  `-'  `-----'`-'       `-'  `-' `---'   `-'  `-' `----' `-' `-'`----' 
 
     def _make_widgets_surface(self,decomposition):
         """
@@ -143,21 +197,19 @@ class Plotter(object):
                 # works but with hardcoded axes
                 self.options.visibility.vertices = (
                     not self.options.visibility.vertices)
-                self.ax.clear()
-                self._replot(decomposition)
+                # self.ax.clear()
+                self.adjust_visibility()
 
             elif label == 'Show Smooth Surface':
                 self.options.visibility.samples = (
                     not self.options.visibility.samples)
-                self.ax.clear()
-                self._replot(decomposition)
+                # self.ax.clear()
+                self.adjust_visibility()
 
             elif label == 'Show Raw Surface':
                 self.options.visibility.raw = (not self.options.visibility.raw)
-                self.ax.clear()
-                self._replot(decomposition)
-
-            plt.draw()
+                # self.ax.clear()
+                self.adjust_visibility()
 
         def _export_smooth_action(arg):
             if(decomposition.dimension==1):
@@ -189,26 +241,24 @@ class Plotter(object):
         # sizes are inches
 
         
-
-        
-        # The width and height of the rectangle are ignored.
         
 
         num_check_panels = 0
         num_buttons = 0
+        num_checks = 0
         # First, create our check boxes
 
-        num_checks = 3
+        num_checks_this = 3
 
-        
         x = [Size.Fixed(inset_x), Size.Fixed(check_x)]
-        y = [Size.Fixed(inset_y), Size.Fixed(check_y*num_checks)]
+        y = [Size.Fixed(inset_y), Size.Fixed(check_y*num_checks_this)]
         divider = Divider(self.fig, (0, 0, 1, 1), x, y, aspect=False)
         check_ax = self.fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
 
         checks = widgets.CheckButtons(check_ax, ('Show Vertices', 'Show Smooth Surface', 'Show Raw Surface'),
                              (False, len(decomposition.sampler_data)>0, len(decomposition.sampler_data)==0))
         num_check_panels += 1
+        num_checks += num_checks_this
         checks.on_clicked(_check_actions)
 
 
@@ -240,22 +290,17 @@ class Plotter(object):
         return {'checks':checks, \
                 'buttons':{'button_export_raw':button_export_raw, 'button_export_smooth':button_export_smooth}}
 
-    def _main(self,decomposition):
 
-        if isinstance(decomposition,Piece):
-            self._plot_piece(decomposition)
-        elif decomposition.dimension == 1:
-            self._plot_curve(decomposition)
-        elif decomposition.dimension == 2:
-            self._plot_surface(decomposition)
-        else:
-            raise NotImplementedError
 
-    def _make_figure(self):
 
+
+
+
+
+    def _make_new_figure(self):
         self.fig = plt.figure(figsize=(10,8))
 
-    def _make_axes(self,decomposition):
+    def _make_new_axes(self,decomposition):
         if decomposition.num_variables == 2:
             self.ax = self.fig.add_subplot(1, 1, 1)
         else:
@@ -285,11 +330,14 @@ class Plotter(object):
         plt.sca(self.ax)
         plt.title(os.getcwd().split(os.sep)[-1])
 
-    def _replot(self, decomposition):
-        self._main(decomposition)
-        self._label_axes(decomposition)
-        self._apply_title()
-        self._adjust_axis_bounds(decomposition)
+    def adjust_visibility(self):
+
+        for d in self.plotted_decompositions:
+            self._main(d)
+
+        # self._label_axes(decomposition)
+        # self._apply_title()
+        # self._adjust_axis_bounds(decomposition)
 
     def _label_axes(self, decomposition):
         # todo: these should be set from the decomposition, not assumed to be
@@ -356,6 +404,14 @@ class Plotter(object):
 
 
 
+    ###############################
+    #
+    #  ,-.                 
+    # /                    
+    # |    . . ;-. . , ,-. 
+    # \    | | |   |/  |-' 
+    #  `-' `-` '   '   `-' 
+                         
 
 
 
@@ -365,6 +421,9 @@ class Plotter(object):
         Plot curves 
         assumes self.options is set.  
         """
+
+        self.plotted_decompositions.append(curve)
+
         self.points = self.extract_points(curve)
         if self.options.visibility.vertices:
             self._plot_vertices(curve)
@@ -450,23 +509,71 @@ class Plotter(object):
 
 
 
+    #####################################
+    #
+    # ;-.                
+    # |  ) o             
+    # |-'  . ,-. ,-. ,-. 
+    # |    | |-' |   |-' 
+    # '    ' `-' `-' `-' 
+                       
+    def _plot_pieces(self, pieces):
+        """
+        A conveniece function for plotting a list of pieces.
+        """
+
+        assert( isinstance(pieces,list) and all([isinstance(p,Piece) for p in pieces]) )
+        print(f"plotting pieces {pieces}")
+        self.options.visibility.defer_show = True
+
+        for p in pieces:
+            self._plot_piece(p)
+
+        self.show()
+
     def _plot_piece(self,piece):
         """ 
         plots a Piece of a surface.  
         """
-        self.options.which_faces = piece.indices
+
+        print(f"plotting piece {piece}")
+
+        self.plotted_decompositions.append(piece)
+
+        self.options.visibility.which_faces = piece.indices
         surf = piece.surface
 
         self._plot_surface(surf)
 
 
 
+
+
+
+    ###########################################
+    #
+    #  ,-.                          
+    # (   `          ,-             
+    #  `-.  . . ;-.  |  ,-: ,-. ,-. 
+    # .   ) | | |    |- | | |   |-' 
+    #  `-'  `-` '    |  `-` `-' `-' 
+    #               -'              
+
+
+
+
     def _plot_surface(self, surf):
         """ Plot surface"""
+
+
+        print(f"plotting surface {surf}, only faces {self.options.visibility.which_faces}")
+
+        self.plotted_decompositions.append(surf)
 
         self.points = self.extract_points(surf)
         if self.options.visibility.vertices:
             self._plot_vertices(surf)
+
 
 
         if self.options.visibility.samples:
@@ -481,6 +588,9 @@ class Plotter(object):
 
     def _plot_surface_samples(self, surf):
         """ Plot sampler surface """
+
+        which_faces = self.options.visibility.which_faces
+
         points = self.points
 
         # faces = tuples
@@ -488,14 +598,14 @@ class Plotter(object):
 
         colormap = self.options.style.colormap
 
-        color_list = [colormap(i) for i in np.linspace(0, 1, len(faces))]
+        color_list = [colormap(ii) for ii in np.linspace(0, 1, len(faces))]
 
-        for i in range(len(faces)):
+        for ii in which_faces:
 
-            color = color_list[i]
+            color = color_list[ii]
 
             T = []
-            for tri in faces[i]:
+            for tri in faces[ii]:
                 f = int(tri[0])
                 s = int(tri[1])
                 t = int(tri[2])
@@ -521,12 +631,12 @@ class Plotter(object):
             which_faces = list(range(num_faces))
 
         colormap = self.options.style.colormap
-        color_list = [colormap(i) for i in np.linspace(0, 1, len(which_faces))]
+        color_list = [colormap(ii) for ii in np.linspace(0, 1, len(which_faces))]
 
         # get raw data from surface
         num_total_faces = 0
-        for ii in range(len(which_faces)):
-            curr_face = surf.faces[which_faces[ii]]
+        for ii in which_faces:
+            curr_face = surf.faces[ii]
             num_total_faces = num_total_faces + 2 * \
                 (curr_face['num left'] + curr_face['num right'] + 2)
         num_total_faces = num_total_faces * 2
@@ -647,14 +757,30 @@ class Plotter(object):
             self.ax.autoscale_view()
 
 
+
+
+
+    #############################
+    #
+    # ,--.       .   ;-.  .     .   .           
+    # |          |   |  ) |     |   |           
+    # |-   ;-. ,-|   |-'  | ,-. |-  |-  ,-. ;-. 
+    # |    | | | |   |    | | | |   |   |-' |   
+    # `--' ' ' `-'   '    ' `-' `-' `-' `-' '   
+    #
+    ###################################
+
+
+
 def plot(data, options=Options()):
     """ Plot curve/surface
 
-        :param data: A Curve or Surface
+        :param data: A Curve, Surface, Piece, or list of things
         :param options: style and visibility options
         :rtype: a plot
     """
     b = Plotter(options=options)
 
     b.plot(data)
+
     return b
