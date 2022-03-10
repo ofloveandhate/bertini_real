@@ -122,7 +122,10 @@ class VisibilityOptions(object):
         if len(curve.vertices)>10000:
             self.vertices = False
 
-        raise NotImplementedError("please implement adjusting visibility options for curves.  should be easy!")
+        if len(curve.sampler_data)==0:
+            self.curve_raw = True
+        else:
+            self.curve_samples = True
 
 
 
@@ -153,7 +156,7 @@ class RenderOptions(object):
 
         # for selective plotting
         self.which_faces = [] # refers to the indices in a surface or edges in a curve
-
+        self.which_edges = []
 
         self.defer_show = False
 
@@ -183,8 +186,9 @@ class RenderOptions(object):
 
 
     def _adjust_for_curve(self, curve):
-        raise NotImplementedError("please implement adjusting render options for curves.  should be easy!")
-
+        
+        if len(self.which_edges)==0:
+            self.which_edges = range(curve.num_edges)
 
 
 
@@ -286,6 +290,10 @@ class Plotter(object):
     # { {__  | {_  {_   _}| { } || {}  }    / {} \ /  ___}{_   _}| |/  {}  \|  `| |{ {__  
     # .-._} }| {__   | |  | {_} || .--'    /  /\  \\     }  | |  | |\      /| |\  |.-._} }
     # `----' `----'  `-'  `-----'`-'       `-'  `-' `---'   `-'  `-' `----' `-' `-'`----' 
+
+    def _make_widgets_curve(self,decomposition):
+        pass
+
 
     def _make_widgets_surface(self,decomposition):
         """
@@ -536,13 +544,13 @@ class Plotter(object):
         if self.options.render.vertices and not curve.is_embedded:
             self._plot_vertices(curve)
 
-        self._determine_nondegen_edges()
+        self._determine_nondegen_edges(curve)
 
         if self.options.render.curve_raw:
-            self._plot_raw_edges()
+            self._plot_raw_edges(curve)
 
         if self.options.render.curve_samples:
-            self._plot_edge_samples()
+            self._plot_edge_samples(curve)
 
         
 
