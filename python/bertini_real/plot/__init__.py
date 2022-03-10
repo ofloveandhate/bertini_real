@@ -37,6 +37,7 @@ import matplotlib.widgets as widgets
 # print("using {} backend".format(matplotlib.get_backend()))
 
 from enum import Enum
+from collections import defaultdict
 
 class ColorMode(Enum):
     BY_CELL = 1
@@ -53,6 +54,12 @@ class StyleOptions(object):
         self.colormap = plt.cm.viridis
         self.colormode = ColorMode.BY_CELL
 
+        self.mono_color = None
+        self.color_function = None
+
+    def set_color_function(self, function):
+        self.colormode = BY_FUNCTION
+        self.color_function = function
 
 
 class VisibilityOptions(object):
@@ -144,7 +151,10 @@ class Plotter(object):
         self.options = options
         self.fig = None
         self.ax = None
+
         self.plotted_decompositions = []
+        self.widgets = {}
+        self.plot_results = defaultdict(list)
 
     def show(self):
         print('showing')
@@ -210,23 +220,18 @@ class Plotter(object):
         # first, define some actions
         def _check_actions(label):
 
-            if label == 'Show Vertices':
+            if label == 'Vertices':
                 # works but with hardcoded axes
-                self.options.visibility.vertices = (
-                    not self.options.visibility.vertices)
-                # self.ax.clear()
-                self.adjust_visibility()
+                self.options.visibility.vertices = not self.options.visibility.vertices
+                self.adjust_visibility('vertices',self.options.visibility.vertices)
 
-            elif label == 'Show Smooth Surface':
-                self.options.visibility.samples = (
-                    not self.options.visibility.samples)
-                # self.ax.clear()
-                self.adjust_visibility()
+            elif label == 'Smooth Surface':
+                self.options.visibility.samples = not self.options.visibility.samples
+                self.adjust_visibility('surface_samples',self.options.visibility.samples)
 
-            elif label == 'Show Raw Surface':
-                self.options.visibility.raw = (not self.options.visibility.raw)
-                # self.ax.clear()
-                self.adjust_visibility()
+            elif label == 'Raw Surface':
+                self.options.visibility.raw = not self.options.visibility.raw
+                self.adjust_visibility('surface_raw', self.options.visibility.raw)
 
         def _export_smooth_action(arg):
             if(decomposition.dimension==1):
@@ -272,7 +277,7 @@ class Plotter(object):
         divider = Divider(self.fig, (0, 0, 1, 1), x, y, aspect=False)
         check_ax = self.fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
 
-        checks = widgets.CheckButtons(check_ax, ('Show Vertices', 'Show Smooth Surface', 'Show Raw Surface'),
+        checks = widgets.CheckButtons(check_ax, ('Vertices', 'Smooth Surface', 'Raw Surface'),
                              (False, len(decomposition.sampler_data)>0, len(decomposition.sampler_data)==0))
         num_check_panels += 1
         num_checks += num_checks_this
@@ -303,13 +308,10 @@ class Plotter(object):
         button_export_raw.on_clicked(_export_raw_action)
 
 
-
-        return {'checks':checks, \
-                'buttons':{'button_export_raw':button_export_raw, 'button_export_smooth':button_export_smooth}}
-
-
-
-
+        self.widgets['checks'] = checks
+        self.widgets['buttons'] = {}
+        self.widgets['buttons']['export_raw'] = button_export_raw
+        self.widgets['buttons']['export_smooth'] = button_export_smooth
 
 
 
@@ -350,10 +352,19 @@ class Plotter(object):
         plt.sca(self.ax)
         plt.title(os.getcwd().split(os.sep)[-1])
 
-    def adjust_visibility(self):
+    def adjust_visibility(self, what, value):
 
-        for d in self.plotted_decompositions:
-            self._main(d)
+        if what not in self.plot_results:
+            raise NotImplementedError(f'unexpected value looking up things to twiddle to {value} in adjust_visibility.  key: `{what}`')
+
+        for h in self.plot_results[what]:
+            h.set_visible(value)
+
+        self.show()
+        # self.ax.clear()
+
+        # for d in self.plotted_decompositions:
+        #     self._main(d)
 
         # self._label_axes(decomposition)
         # self._apply_title()
@@ -380,9 +391,11 @@ class Plotter(object):
         xs, ys, zs = self.make_xyz(decomposition)
 
         if decomposition.num_variables == 2:
-            verts = self.ax.scatter(xs, ys)
+            h = self.ax.scatter(xs, ys)
         else:
-            verts = self.ax.scatter(xs, ys, zs, zdir='z', s=.1, alpha=1)
+            h = self.ax.scatter(xs, ys, zs, zdir='z', s=.1, alpha=1)
+
+        self.plot_results['vertices'].append(h)
 
     # this works well for _plot_vertices
     # how can we make it work well for all the other methods???
@@ -543,20 +556,32 @@ class Plotter(object):
         """
 
         assert( isinstance(pieces,list) and all([isinstance(p,Piece) for p in pieces]) )
-        print(f"plotting pieces {pieces}")
+
         self.options.visibility.defer_show = True
 
-        for p in pieces:
+
+        if not self.options.style.colormode is ColorMode.BY_FUNCTION:
+            colormap = self.options.style.colormap
+            colors = [colormap(ii) for ii in np.linspace(0, 1, len(pieces))]
+
+        self.options.style.colormode = ColorMode.MONO
+
+        for ii,p in enumerate(pieces):
+
+            if not self.options.style.colormode is ColorMode.BY_FUNCTION:
+                self.options.style.mono_color = colors[ii]
+
+            print(colors[ii])
             self.plot(p)
 
+
+        # finally, all done, so show.
         self.show()
 
     def _plot_piece(self,piece):
         """ 
         plots a Piece of a surface.  
         """
-
-        print(f"plotting piece {piece}")
 
         self.plotted_decompositions.append(piece)
 
@@ -583,10 +608,10 @@ class Plotter(object):
 
 
     def _plot_surface(self, surf):
-        """ Plot surface"""
+        """ 
+        Plot a surface with existing options in the Plotter
+        """
 
-
-        print(f"plotting surface {surf}, only faces {self.options.visibility.which_faces}")
 
         self.plotted_decompositions.append(surf)
 
@@ -607,26 +632,41 @@ class Plotter(object):
         widgets = self._make_widgets_surface(surf)
 
     def _plot_surface_samples(self, surf):
-        """ Plot sampler surface """
+        """ 
+        Plot surface samples 
+        """
 
+        # locally unpack
         which_faces = self.options.visibility.which_faces
-
         points = self.points
+        faces = surf.sampler_data # these are triples of integers, indexing into the vertex_set for the decomposition
 
-        # faces = tuples
-        faces = surf.sampler_data
 
-        colormap = self.options.style.colormap
 
-        color_list = [colormap(ii) for ii in np.linspace(0, 1, len(faces))]
+        if self.options.style.colormode is ColorMode.BY_CELL:
+            colormap = self.options.style.colormap
+            colors = [colormap(ii) for ii in np.linspace(0, 1, len(which_faces))]
 
-        for ii in which_faces:
+        elif self.options.style.colormode is ColorMode.BY_FUNCTION:
+            raise NotImplementedError("implement coloring by function, please")
 
-            color = color_list[ii]
+        elif self.options.style.colormode is ColorMode.MONO:
+            colors = [self.options.style.mono_color]*len(which_faces)
+            print(colors)
+
+        else:
+            raise NotImplementedError("unknown coloring method in style options")
+
+
+
+
+        for cc,ii in enumerate(which_faces):
+
+            color = colors[cc]
 
             T = []
             for tri in faces[ii]:
-                f = int(tri[0])
+                f = int(tri[0]) # i hate that these conversions are here.  this is bullshit. --sca
                 s = int(tri[1])
                 t = int(tri[2])
 
@@ -634,38 +674,54 @@ class Plotter(object):
 
                 T.append(k)
 
-            self.ax.add_collection3d(Poly3DCollection(T, facecolors=color))
-            self.ax.autoscale_view()
+            self.plot_results['surface_samples'].append(self.ax.add_collection3d(Poly3DCollection(T, facecolors=color)))
+            # self.ax.autoscale_view()
 
     def _plot_surface_raw(self, surf):
         """ Plot raw surface """
+
+
+        # unpack a bit
         points = self.points
-
         which_faces = self.options.visibility.which_faces
+        num_faces = surf.num_faces 
 
-        # store number of faces to num_faces
-        num_faces = surf.num_faces
 
-        # check if which_faces is empty
-        if not len(which_faces):
-            which_faces = list(range(num_faces))
 
-        colormap = self.options.style.colormap
-        color_list = [colormap(ii) for ii in np.linspace(0, 1, len(which_faces))]
+
+        # set up the colors for the faces
+
+        if self.options.style.colormode is ColorMode.BY_CELL:
+            colormap = self.options.style.colormap
+            colors = [colormap(ii) for ii in np.linspace(0, 1, len(which_faces))]
+
+        elif self.options.style.colormode is ColorMode.BY_FUNCTION:
+            raise NotImplementedError("implement coloring by function, please")
+
+        elif self.options.style.colormode is ColorMode.MONO:
+            colors = [self.options.style.mono_color]*len(which_faces)
+
+        else:
+            raise NotImplementedError("unknown coloring method in style options")
+
+
+
+
 
         # get raw data from surface
         num_total_faces = 0
         for ii in which_faces:
             curr_face = surf.faces[ii]
-            num_total_faces = num_total_faces + 2 * \
-                (curr_face['num left'] + curr_face['num right'] + 2)
-        num_total_faces = num_total_faces * 2
-        total_face_index = 0
 
-        for cc in range(len(which_faces)):
-            color = color_list[cc]
-            ii = which_faces[cc]
-            face = surf.faces[ii]
+            num_total_faces = num_total_faces + 2 * \
+                (curr_face['num left'] + curr_face['num right'] + 2) # the last +2 is for the up/down edges, split at midpoints.
+        num_total_faces = num_total_faces * 2
+
+
+        for ii in range(len(which_faces)):
+            color = colors[ii]
+            face_index = which_faces[ii]
+            face = surf.faces[face_index]
 
             if (face['middle slice index']) == -1:
                 continue
@@ -773,7 +829,7 @@ class Plotter(object):
                 T.append(t1)
                 T.append(t2)
 
-            self.ax.add_collection3d(Poly3DCollection(T, facecolors=color))
+            self.plot_results['surface_raw'].append(self.ax.add_collection3d(Poly3DCollection(T, facecolors=color)))
             self.ax.autoscale_view()
 
 
@@ -793,14 +849,21 @@ class Plotter(object):
 
 
 def plot(data, options=Options()):
-    """ Plot curve/surface
+    """ 
+    Plot any of:
+    * curve 
+    * surface
+    * piece
+    * a list of pieces
+
+
 
         :param data: A Curve, Surface, Piece, or list of things
         :param options: style and visibility options
-        :rtype: a plot
+        :rtype: a Plotter.  
     """
-    b = Plotter(options=options)
+    plotter = Plotter(options=options)
 
-    b.plot(data)
+    plotter.plot(data)
 
-    return b
+    return plotter
