@@ -36,12 +36,23 @@ import matplotlib.widgets as widgets
 
 # print("using {} backend".format(matplotlib.get_backend()))
 
+from enum import Enum
+
+class ColorMode(Enum):
+    BY_CELL = 1
+    MONO = 2
+    BY_FUNCTION = 3
 
 class StyleOptions(object):
 
     def __init__(self):
+        self.set_defaults()
+
+    def set_defaults(self):
         self.line_thickness = 2  # there is no code using this yet.  write it.
         self.colormap = plt.cm.viridis
+        self.colormode = ColorMode.BY_CELL
+
 
 
 class VisibilityOptions(object):
@@ -53,6 +64,11 @@ class VisibilityOptions(object):
 
 
     def __init__(self):
+        self.set_defaults()
+
+
+
+    def set_defaults(self):
         self.vertices = False
         self.samples = False
         self.raw = False
@@ -63,6 +79,7 @@ class VisibilityOptions(object):
         self.indices = [] #???
 
         self.defer_show = False
+
 
 
 
@@ -298,9 +315,12 @@ class Plotter(object):
 
 
     def _make_new_figure(self):
+        print('making new figure')
         self.fig = plt.figure(figsize=(10,8))
 
     def _make_new_axes(self,decomposition):
+
+        print('making new axes')
         if decomposition.num_variables == 2:
             self.ax = self.fig.add_subplot(1, 1, 1)
         else:
@@ -527,7 +547,7 @@ class Plotter(object):
         self.options.visibility.defer_show = True
 
         for p in pieces:
-            self._plot_piece(p)
+            self.plot(p)
 
         self.show()
 

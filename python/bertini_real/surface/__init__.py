@@ -832,12 +832,10 @@ class ObjHelper():
         fileName = os.getcwd().split(os.sep)[-1]
 
         raw_mesh.fix_normals()
+        outname = f'obj_raw_{fileName}.obj'
+        raw_mesh.export(file_obj=outname, file_type='obj')
 
-        raw_mesh.export(file_obj='obj_raw_' + fileName +
-                        '.obj', file_type='obj')
-
-        print("Export " + '\x1b[0;35;40m' + "obj_raw_" +
-              fileName + ".obj" + '\x1b[0m' + " successfully")
+        print("Export " + '\x1b[0;35;40m' + outname + '\x1b[0m' + " successfully")
 
     def export_obj_smooth(self):
         """ Export smooth decomposition of surfaces to OBJ """
@@ -869,9 +867,8 @@ class ObjHelper():
         fileName = os.getcwd().split(os.sep)[-1]
 
         A.fix_normals()
-
-        A.export(file_obj='obj_smooth_' +
-                 fileName + '.obj', file_type='obj')
+        outname = f'obj_smooth_{fileName}.obj'
+        A.export(file_obj=outname, file_type='obj')
 
         print("Export " + '\x1b[0;35;40m' + "obj_smooth_" +
               fileName + ".obj" + '\x1b[0m' + " successfully")
@@ -1095,11 +1092,11 @@ class ObjHelper():
 
         fileName = os.getcwd().split(os.sep)[-1]
 
-        finalmesh.export(file_obj='solidify_raw_' +
-                         fileName + '.obj', file_type='obj')
+        outname = f'solidify_raw_{fileName}.obj'
 
-        print("Exported " + '\x1b[0;35;40m' + "solidify_raw_" +
-              fileName + ".obj" + '\x1b[0m' + " successfully")
+        finalmesh.export(file_obj=outname, file_type='obj')
+
+        print("Exported " + '\x1b[0;35;40m' + outname + '\x1b[0m' + " successfully")
 
     def solidify_smooth(self):
         """ Solidify smooth version of OBJ """
