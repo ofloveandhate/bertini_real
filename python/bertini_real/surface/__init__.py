@@ -13,6 +13,7 @@
 # University of Wisconsin, Eau Claire
 
 import bertini_real.parse
+import bertini_real.exception as br_except
 import numpy as np
 from bertini_real.decomposition import Decomposition
 from bertini_real.curve import Curve
@@ -35,6 +36,14 @@ class VisibilityOptions(object):
 
     def __init__(self):
         self.pieceVisibility = True
+
+
+
+
+
+
+
+
 
 class Piece():
     """ Create a Piece object of a surface. A surface can be made of 1 piece or multiple pieces. """
@@ -167,6 +176,23 @@ class Piece():
     def plot(self, color, ax):
         self.surface.plot(face_indices=self.indices, color=color, ax=ax)
 
+
+    def export_obj_smooth(self, basename=f'br_piece_smooth'):
+        if basename=='br_piece_smooth':
+            basename = basename+'_'+ ('-'.join([str(i) for i in self.indices[:3]]))
+
+        self.surface.export_obj_smooth(self.indices,basename)
+
+    def export_obj_raw(self, basename=f'br_piece_raw'):
+        if basename=='br_piece_raw':
+            basename = basename+'_'+ ('-'.join([str(i) for i in self.indices[:3]]))
+            
+        self.surface.export_obj_raw(self.indices,basename)
+
+
+
+
+############   MOVE THIS CODE
 def make_figure():
     return plt.figure()
 
@@ -223,6 +249,14 @@ def plot_pieces(pieces):
     apply_title()
 
     plt.show()
+
+###########END MOVE THIS CODE
+
+
+
+
+
+
 
 class Surface(Decomposition):
     """ Create a Surface object (Child class of Decomposition)
@@ -615,11 +649,11 @@ class Surface(Decomposition):
         return points
 
 
-    def export_obj_raw(self):
-        return export_obj_raw(self)
+    def export_obj_raw(self, which_faces=None, basename='br_surface_smooth'):
+        return export_obj_raw(self, which_faces,basename)
 
-    def export_obj_smooth(self):
-        return export_obj_smooth(self)
+    def export_obj_smooth(self, which_faces=None, basename='br_surface_raw'):
+        return export_obj_smooth(self, which_faces,basename)
 
 
 def separate_into_nonsingular_pieces(data=None):
@@ -661,11 +695,15 @@ class ObjHelper():
         else:
             self.decomposition = data
 
-    def export_obj_raw(self):
+
+
+
+
+    def export_obj_raw(self, which_faces=None, basename='br_surface_smooth'):
         """ Export raw decomposition of surfaces to OBJ """
 
         print('\n' + '\x1b[0;34;40m' +
-              'Generating raw OBJ surface...' + '\x1b[0m')
+              'Generating raw surface...' + '\x1b[0m')
 
         points = extract_points(self)
 
@@ -673,10 +711,9 @@ class ObjHelper():
 
         num_faces = surf.num_faces
 
-        which_faces = list(range(num_faces))
+        if which_faces is None:
+            which_faces = range(num_faces)
 
-        if not len(which_faces):
-            which_faces = list(range(num_faces))
 
         num_total_faces = 0
         for ii in range(len(which_faces)):
@@ -687,6 +724,7 @@ class ObjHelper():
 
         total_face_index = 0
         TT = []
+
 
         for cc in range(len(which_faces)):
             ii = which_faces[cc]
@@ -832,23 +870,36 @@ class ObjHelper():
         fileName = os.getcwd().split(os.sep)[-1]
 
         raw_mesh.fix_normals()
-        outname = f'obj_raw_{fileName}.obj'
+
+
+        outname = f'{basename}_{fileName}.obj'
         raw_mesh.export(file_obj=outname, file_type='obj')
 
-        print("Export " + '\x1b[0;35;40m' + outname + '\x1b[0m' + " successfully")
+        print("Exported " + '\x1b[0;35;40m' + outname + '\x1b[0m' + " successfully")
 
-    def export_obj_smooth(self):
+
+
+
+    def export_obj_smooth(self, which_faces=None, basename='br_surface_smooth'):
         """ Export smooth decomposition of surfaces to OBJ """
 
         print('\n' + '\x1b[0;34;40m' +
-              'Generating smooth OBJ surface...' + '\x1b[0m')
+              'Generating smooth surface...' + '\x1b[0m')
+
+
+
+        if which_faces is None:
+            which_faces = range(num_faces)
+
 
         points = extract_points(self)
 
         faces = self.decomposition.sampler_data
 
-        vertex = []
+        if not faces:
+            raise br_except.SurfaceNotSampled('no surface samples found.  run sampler, or re-gather and pickle')
 
+        vertex = []
         for p in points:
             vertex.append(p)
 
@@ -856,7 +907,8 @@ class ObjHelper():
 
         face = []
 
-        for f in faces:
+        for ii in which_faces:
+            f = faces[ii]
             for tri in f:
                 face.append([tri[0], tri[1], tri[2]])
 
@@ -867,17 +919,19 @@ class ObjHelper():
         fileName = os.getcwd().split(os.sep)[-1]
 
         A.fix_normals()
-        outname = f'obj_smooth_{fileName}.obj'
+        outname = f'{basename}_{fileName}.obj'
         A.export(file_obj=outname, file_type='obj')
+        print("Exported " + '\x1b[0;35;40m' + outname + '\x1b[0m' + " successfully")
 
-        print("Export " + '\x1b[0;35;40m' + "obj_smooth_" +
-              fileName + ".obj" + '\x1b[0m' + " successfully")
 
-    def solidify_raw(self):
+
+
+
+    def solidify_raw(self, which_faces=None, basename='br_surface_solidified_raw'):
         """ Solidify raw version of OBJ """
 
         print('\n' + '\x1b[0;34;40m' +
-              'Solidiying raw OBJ surface...' + '\x1b[0m')
+              'Solidifying raw surface...' + '\x1b[0m')
 
         points = extract_points(self)
 
@@ -885,10 +939,10 @@ class ObjHelper():
 
         num_faces = surf.num_faces
 
-        which_faces = list(range(num_faces))
 
-        if not len(which_faces):
+        if which_faces is None:
             which_faces = list(range(num_faces))
+
 
         num_total_faces = 0
         for ii in range(len(which_faces)):
@@ -1098,26 +1152,37 @@ class ObjHelper():
 
         print("Exported " + '\x1b[0;35;40m' + outname + '\x1b[0m' + " successfully")
 
-    def solidify_smooth(self):
+
+
+
+
+    def solidify_smooth(self, which_faces=None, basename='br_surface_solidified_smooth'):
         """ Solidify smooth version of OBJ """
 
         print('\n' + '\x1b[0;34;40m' +
-              'Solidiying smooth OBJ surface...' + '\x1b[0m')
+              'Solidifying smooth surface...' + '\x1b[0m')
 
         points = extract_points(self)
 
         faces = self.decomposition.sampler_data
 
-        vertex = []
+        if not faces:
+            raise br_except.SurfaceNotSampled('no surface samples found.  run sampler, or re-gather and pickle')
 
+
+
+        if which_faces is None:
+            which_faces = list(range(num_faces))
+
+
+        vertex = []
         for p in points:
             vertex.append(p)
 
         vertex_np_array = np.array(vertex)
 
         face = []
-
-        for f in faces:
+        for f in which_faces:
             for tri in f:
                 face.append([tri[0], tri[1], tri[2]])
 
@@ -1176,11 +1241,10 @@ class ObjHelper():
 
         fileName = os.getcwd().split(os.sep)[-1]
 
-        finalmesh.export(file_obj='solidify_smooth_' +
-                         fileName + '.obj', file_type='obj')
+        outname = f'{basename}_{fileName}.obj'
+        finalmesh.export(file_obj=outname, file_type='obj')
 
-        print("Exported " + '\x1b[0;35;40m' + "solidify_smooth_" +
-              fileName + ".obj" + '\x1b[0m' + " successfully")
+        print("Exported " + '\x1b[0;35;40m' + outname + '\x1b[0m' + " successfully")
 
 
 
@@ -1206,48 +1270,44 @@ def extract_points(self):
     return points
 
 
-def export_obj_raw(data=None):
+def export_obj_raw(data=None, which_faces=None, basename='br_surface_raw'):
     """ Export raw surface to .obj
 
        :param data: `Surface`, or a `Piece` of a surface. If data is `None`, then it reads the most recent `BRdataN.pkl` file from the current folder.
     """
 
     obj_helper = ObjHelper(data)
-    obj_helper.export_obj_raw()
+    obj_helper.export_obj_raw(which_faces,basename)
 
 
-def export_obj_smooth(data=None):
+def export_obj_smooth(data=None, which_faces=None, basename='br_surface_smooth'):
     """ Export smooth surface to .obj.  Requires that the surface has been sampled.
 
         :param data: `Surface`, or a `Piece`. If data is `None`, then it reads the most recent `BRdataN.pkl` file from the current folder.
     """
-    try:
-        obj_helper = ObjHelper(data)
-        obj_helper.export_obj_smooth()
-    except:
-        print('\x1b[0;31;40m'+'Error running obj_smooth()! No samples found'+ '\x1b[0m')
+    obj_helper = ObjHelper(data)
+    obj_helper.export_obj_smooth(which_faces,basename)
 
     
-def solidify_raw(data=None):
+def solidify_raw(data=None, which_faces=None, basename='br_surface_solidified_raw'):
     """ Solidify raw surface OBJ by offsetting the faces.  
 
         :param data: `Surface` or `Piece`. If data is `None`, then it reads the most recent `BRdataN.pkl` file from the current folder.
     """
 
     obj_helper = ObjHelper(data)
-    obj_helper.solidify_raw()
+    obj_helper.solidify_raw(which_faces,basename)
 
 
-def solidify_smooth(data=None):
+def solidify_smooth(data=None, which_faces=None, basename='br_surface_solidified_smooth'):
     """ Solidify sampled surface OBJ by offsetting the faces.  Requires that the surface has been sampled.
 
         :param data: `Surface` or `Piece`. If data is `None`, then it reads the most recent `BRdataN.pkl` file from the current folder.
     """
-    try:
-        obj_helper = ObjHelper(data)
-        obj_helper.solidify_smooth()
-    except:
-        print('\x1b[0;31;40m'+'Error running solidify_smooth()! No samples found'+ '\x1b[0m')
+
+    obj_helper = ObjHelper(data)
+    obj_helper.solidify_smooth(which_faces,basename)
+
 
 
 # def solidify(data=None, totalDist=0.1, offset=0):
