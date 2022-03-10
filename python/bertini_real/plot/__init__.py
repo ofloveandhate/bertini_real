@@ -65,8 +65,6 @@ class StyleOptions(object):
 class VisibilityOptions(object):
     """
     A struct-like class for serving options for the Plotter class.  
-
-    One curious setting is `defer_show`, which lets you stifle `show`ing results of plots.  A use of this is in case you are plotting in a loop.  
     """
 
 
@@ -77,17 +75,82 @@ class VisibilityOptions(object):
 
     def set_defaults(self):
         self.vertices = False
-        self.samples = False
-        self.raw = False
+
+        self.surface_samples = False
+        self.surface_raw = False
+
+        self.curve_samples = False
+        self.curve_raw = False
+
         self.labels = False
+
+       
+
+    def auto_adjust(self, decomposition):
+        if isinstance(decomposition, Piece):
+            self._adjust_for_piece(decomposition)
+        elif isinstance(decomposition,Curve):
+            self._adjust_for_curve(decomposition)
+        elif isinstance(decomposition,Surface):
+            self._adjust_for_surface(decomposition)
+        else:
+            raise NotImplementedError(f"cannot auto_adjust VisibilityOptions for dimension {decomposition.dimension} components")
+
+
+        # things for all decomposition types
+        if len(decomposition.vertices)>10000:
+            self.vertices = False
+
+
+
+
+    def _adjust_for_surface(self, surface):
+        if len(surface.sampler_data)==0:
+            self.surface_raw = True
+        else:
+            self.surface_samples = True
+
+
+    def _adjust_for_piece(self, piece):
+        self._adjust_for_surface(piece.surface)
+
+
+
+    def _adjust_for_curve(self, curve):
+        raise NotImplementedError("please implement adjusting visibility options for curves.  should be easy!")
+
+
+
+
+class RenderOptions(object):
+    """
+    A struct-like class for serving options for the Plotter class.  
+
+    One curious setting is `defer_show`, which lets you stifle `show`ing results of plots.  A use of this is in case you are plotting in a loop.  
+    """
+
+    def __init__(self):
+        self.set_defaults()
+
+
+
+
+    def set_defaults(self):
+        self.vertices = True
+
+        self.surface_samples = True
+        self.surface_raw = True
+
+        self.curve_samples = True
+        self.curve_raw = True
+
+        self.labels = True
 
         # for selective plotting
         self.which_faces = [] # refers to the indices in a surface or edges in a curve
-        self.indices = [] #???
+
 
         self.defer_show = False
-
-
 
 
     def auto_adjust(self, decomposition):
@@ -100,11 +163,9 @@ class VisibilityOptions(object):
         else:
             raise NotImplementedError(f"cannot auto_adjust VisibilityOptions for dimension {decomposition.dimension} components")
 
+
+
     def _adjust_for_surface(self, surface):
-        if len(surface.sampler_data)==0:
-            self.raw = True
-        else:
-            self.samples = True
 
         if len(self.which_faces)==0:
             self.which_faces = range(surface.num_faces)
@@ -117,16 +178,24 @@ class VisibilityOptions(object):
 
 
     def _adjust_for_curve(self, curve):
-        raise NotImplementedError("please implement adjusting visibility options for curves.  should be easy!")
+        raise NotImplementedError("please implement adjusting render options for curves.  should be easy!")
 
 
 
 
+
+
+# aggregate the options.
 class Options(object):
 
     def __init__(self):
         self.style = StyleOptions()
         self.visibility = VisibilityOptions()
+        self.render = RenderOptions()
+
+
+
+
 
 
 class ReversableList(list):
@@ -157,8 +226,8 @@ class Plotter(object):
         self.plot_results = defaultdict(list)
 
     def show(self):
-        print('showing')
-        plt.draw()
+
+        plt.draw() # is this necessary???
         plt.show()
 
     def plot(self,decomposition):
@@ -171,6 +240,7 @@ class Plotter(object):
 
         if not isinstance(decomposition,list):
             self.options.visibility.auto_adjust(decomposition)
+            self.options.render.auto_adjust(decomposition)
 
             if self.ax is None:
                 self._make_new_axes(decomposition)
@@ -181,7 +251,8 @@ class Plotter(object):
         self._main(decomposition)
             
 
-        if not self.options.visibility.defer_show:
+        if not self.options.render.defer_show:
+            self._adjust_all_visibility()
             self.show()
 
 
@@ -223,15 +294,17 @@ class Plotter(object):
             if label == 'Vertices':
                 # works but with hardcoded axes
                 self.options.visibility.vertices = not self.options.visibility.vertices
-                self.adjust_visibility('vertices',self.options.visibility.vertices)
+                self._adjust_visibility('vertices')
 
             elif label == 'Smooth Surface':
-                self.options.visibility.samples = not self.options.visibility.samples
-                self.adjust_visibility('surface_samples',self.options.visibility.samples)
+                self.options.visibility.surface_samples = not self.options.visibility.surface_samples
+                self._adjust_visibility('surface_samples')
 
             elif label == 'Raw Surface':
-                self.options.visibility.raw = not self.options.visibility.raw
-                self.adjust_visibility('surface_raw', self.options.visibility.raw)
+                self.options.visibility.surface_raw = not self.options.visibility.surface_raw
+                self._adjust_visibility('surface_raw')
+
+            self.show()
 
         def _export_smooth_action(arg):
             if(decomposition.dimension==1):
@@ -352,23 +425,24 @@ class Plotter(object):
         plt.sca(self.ax)
         plt.title(os.getcwd().split(os.sep)[-1])
 
-    def adjust_visibility(self, what, value):
+    def _adjust_all_visibility(self):
+        for w in self.plot_results.keys():
+            self._adjust_visibility(w)
+
+
+    def _adjust_visibility(self, what):
+        """
+        self.show() must be called separately, otherwise get stupid results from calling this in a loop
+        """
 
         if what not in self.plot_results:
-            raise NotImplementedError(f'unexpected value looking up things to twiddle to {value} in adjust_visibility.  key: `{what}`')
+            raise RuntimeError(f"trying to adjust visibility of things in _adjust_visibility, but those things weren't rendered due to render options.  key: `{what}`")
 
         for h in self.plot_results[what]:
-            h.set_visible(value)
+            h.set_visible(eval( f'self.options.visibility.{what}' ))
 
-        self.show()
-        # self.ax.clear()
 
-        # for d in self.plotted_decompositions:
-        #     self._main(d)
 
-        # self._label_axes(decomposition)
-        # self._apply_title()
-        # self._adjust_axis_bounds(decomposition)
 
     def _label_axes(self, decomposition):
         # todo: these should be set from the decomposition, not assumed to be
@@ -458,15 +532,15 @@ class Plotter(object):
         self.plotted_decompositions.append(curve)
 
         self.points = self.extract_points(curve)
-        if self.options.visibility.vertices:
+        if self.options.render.vertices and not curve.is_embedded:
             self._plot_vertices(curve)
 
         self._determine_nondegen_edges()
 
-        if self.options.visibility.raw:
+        if self.options.render.curve_raw:
             self._plot_raw_edges()
 
-        if self.options.visibility.samples:
+        if self.options.render.curve_samples:
             self._plot_edge_samples()
 
         
@@ -557,23 +631,31 @@ class Plotter(object):
 
         assert( isinstance(pieces,list) and all([isinstance(p,Piece) for p in pieces]) )
 
-        self.options.visibility.defer_show = True
-
+        self.options.render.defer_show = True
+        init_value_render_vertices = self.options.render.vertices
+        self.options.render.vertices = False
 
         if not self.options.style.colormode is ColorMode.BY_FUNCTION:
             colormap = self.options.style.colormap
             colors = [colormap(ii) for ii in np.linspace(0, 1, len(pieces))]
 
-        self.options.style.colormode = ColorMode.MONO
+            self.options.style.colormode = ColorMode.MONO
+
+
 
         for ii,p in enumerate(pieces):
 
             if not self.options.style.colormode is ColorMode.BY_FUNCTION:
                 self.options.style.mono_color = colors[ii]
 
-            print(colors[ii])
             self.plot(p)
 
+
+        self.options.render.vertices = init_value_render_vertices
+
+        if self.options.render.vertices:
+            for s in np.unique([p.surface for p in pieces]):
+                self._plot_vertices(s)
 
         # finally, all done, so show.
         self.show()
@@ -585,7 +667,7 @@ class Plotter(object):
 
         self.plotted_decompositions.append(piece)
 
-        self.options.visibility.which_faces = piece.indices
+        self.options.render.which_faces = piece.indices
         surf = piece.surface
 
         self._plot_surface(surf)
@@ -616,28 +698,33 @@ class Plotter(object):
         self.plotted_decompositions.append(surf)
 
         self.points = self.extract_points(surf)
-        if self.options.visibility.vertices:
+
+        if self.options.render.vertices and not surf.is_embedded:
             self._plot_vertices(surf)
 
 
 
-        if self.options.visibility.samples:
+        if self.options.render.surface_samples:
             self._plot_surface_samples(surf)
 
-        if self.options.visibility.raw:
+        if self.options.render.surface_raw:
             self._plot_surface_raw(surf)
 
         
 
         widgets = self._make_widgets_surface(surf)
 
+
+
+
+
     def _plot_surface_samples(self, surf):
         """ 
         Plot surface samples 
         """
-
+        print('plotting surface smaples')
         # locally unpack
-        which_faces = self.options.visibility.which_faces
+        which_faces = self.options.render.which_faces
         points = self.points
         faces = surf.sampler_data # these are triples of integers, indexing into the vertex_set for the decomposition
 
@@ -656,7 +743,6 @@ class Plotter(object):
 
         else:
             raise NotImplementedError("unknown coloring method in style options")
-
 
 
 
@@ -683,7 +769,7 @@ class Plotter(object):
 
         # unpack a bit
         points = self.points
-        which_faces = self.options.visibility.which_faces
+        which_faces = self.options.render.which_faces
         num_faces = surf.num_faces 
 
 
