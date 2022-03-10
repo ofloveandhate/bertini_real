@@ -97,9 +97,7 @@ class VisibilityOptions(object):
             raise NotImplementedError(f"cannot auto_adjust VisibilityOptions for dimension {decomposition.dimension} components")
 
 
-        # things for all decomposition types
-        if len(decomposition.vertices)>10000:
-            self.vertices = False
+        
 
 
 
@@ -110,6 +108,9 @@ class VisibilityOptions(object):
         else:
             self.surface_samples = True
 
+        if len(surface.vertices)>10000:
+            self.vertices = False
+
 
     def _adjust_for_piece(self, piece):
         self._adjust_for_surface(piece.surface)
@@ -117,6 +118,10 @@ class VisibilityOptions(object):
 
 
     def _adjust_for_curve(self, curve):
+
+        if len(curve.vertices)>10000:
+            self.vertices = False
+
         raise NotImplementedError("please implement adjusting visibility options for curves.  should be easy!")
 
 
@@ -268,7 +273,6 @@ class Plotter(object):
         elif isinstance(decomposition,Surface):
             self._plot_surface(decomposition)
         else:
-            print(decomposition)
             raise NotImplementedError
 
 
@@ -308,13 +312,13 @@ class Plotter(object):
 
         def _export_smooth_action(arg):
             if(decomposition.dimension==1):
-                print('\x1b[0;31;40m'+'Unable to export OBJ file for Curve object'+'\x1b[0m')
+                raise NotImplementedError('Unable to export OBJ file for Curve object')
             else:
                 decomposition.export_obj_smooth()
 
         def _export_raw_action(arg):
             if(decomposition.dimension==1):
-                print('\x1b[0;31;40m'+'Unable to export OBJ file for Curve object'+'\x1b[0m')
+                raise NotImplementedError('Unable to export OBJ file for Curve object')
             else:
                 decomposition.export_obj_raw()
 
@@ -390,12 +394,9 @@ class Plotter(object):
 
 
     def _make_new_figure(self):
-        print('making new figure')
         self.fig = plt.figure(figsize=(10,8))
 
     def _make_new_axes(self,decomposition):
-
-        print('making new axes')
         if decomposition.num_variables == 2:
             self.ax = self.fig.add_subplot(1, 1, 1)
         else:
@@ -654,10 +655,18 @@ class Plotter(object):
         self.options.render.vertices = init_value_render_vertices
 
         if self.options.render.vertices:
-            for s in np.unique([p.surface for p in pieces]):
+
+            unique_surfaces_in_pieces = []
+
+            for p in pieces:
+                if p.surface not in unique_surfaces_in_pieces:
+                    unique_surfaces_in_pieces.append(p.surface)
+
+            for s in unique_surfaces_in_pieces: 
                 self._plot_vertices(s)
 
         # finally, all done, so show.
+        self._adjust_all_visibility()
         self.show()
 
     def _plot_piece(self,piece):
@@ -722,7 +731,7 @@ class Plotter(object):
         """ 
         Plot surface samples 
         """
-        print('plotting surface smaples')
+
         # locally unpack
         which_faces = self.options.render.which_faces
         points = self.points
@@ -739,7 +748,6 @@ class Plotter(object):
 
         elif self.options.style.colormode is ColorMode.MONO:
             colors = [self.options.style.mono_color]*len(which_faces)
-            print(colors)
 
         else:
             raise NotImplementedError("unknown coloring method in style options")
