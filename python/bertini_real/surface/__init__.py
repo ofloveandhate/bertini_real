@@ -74,7 +74,7 @@ class Piece():
 
     def is_compact(self):
         """ Check whether a piece is:
-            (1) compact (no edges touch the bounding sphere) 
+            (1) compact (no edges touch the bounding sphere)
             (2) non-compact (at least 1 edge touches bounding sphere)
 
 
@@ -84,7 +84,7 @@ class Piece():
             dingdong: (2 pieces) - one compact, one not compact
 
             octdong: (2 pieces) - both compact
-            
+
             whitney: (2 pieces) - both non-compact
             paraboloid: (1 piece) - non compact
 
@@ -104,12 +104,33 @@ class Piece():
         # compact
         return True
 
+    def centroid(self):
+        """Compute the centroid of each seperate piece"""
+
+        def flatten_and_unique(list_nD):
+            """helper fucntion for centroid to get a flat list of unique values"""
+            return list(set([inner for outer in list_nD for inner in outer]))
+
+        unique_point_indices_this_piece =[]
+        #face indices refer to a face on the piece
+        face_indices = self.indices
+        #deref the face indices to point indices and compile a list of point indices
+        for i in face_indices:
+             unique_point_indices_this_face=flatten_and_unique(self.surface.sampler_data[i]) #indices of points on the face
+             #append the point refs on the face to the the list of all point refs on the piece
+             unique_point_indices_this_piece.extend(unique_point_indices_this_face)
+        #deref each point index to its point
+        points = self.surface.extract_points()
+        coordinates_this_piece = np.array([points[ind] for ind in unique_point_indices_this_piece])
+        #return the mean as [x,y,z]
+        return coordinates_this_piece.mean(axis=0)
+
     # point_singularities
     # the points on a piece ,  left and right edge will be degenerated
     # type critical
 
     def point_singularities(self):
-        """ Compute singularity points from a Piece object 
+        """ Compute singularity points from a Piece object
 
             :rtype: A list of indices of point singularities
         """
@@ -136,7 +157,7 @@ class Piece():
                         curr_edge = surf.singular_curves[
                             zz].edges[face['top']]
 
-            # vertices 
+            # vertices
             for ii in range(3): # 0 is left, 1 is mid, 2 is right
                 if(self.surface.vertices[curr_edge[ii]].is_of_type(bertini_real.vertextype.singular)):
                     point_singularities.append(curr_edge[ii])
@@ -152,7 +173,7 @@ class Piece():
                     if(surf.singular_names[zz] == face['system bottom']):
                         curr_edge = surf.singular_curves[
                             zz].edges[face['bottom']]
-            # vertices 
+            # vertices
             for ii in range(3):
                 if(self.surface.vertices[curr_edge[ii]].is_of_type(bertini_real.vertextype.singular)):
                     point_singularities.append(curr_edge[ii])
@@ -313,7 +334,7 @@ class Surface(Decomposition):
         return repr(self)
 
     def parse_surf(self, directory):
-        """ Parse and store into surface data 
+        """ Parse and store into surface data
 
             :param directory: Directory of the surface folder
         """

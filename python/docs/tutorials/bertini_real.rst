@@ -21,8 +21,11 @@ One you're in, you can run the following python codes to gather and save a decom
 
     bertini_real.data.gather_and_save()
 
+It is only necessary to `import bertini_real` once per session.
 
-To retrieve the most recent BRdata*.pkl, you can type:
+**Caution** Using tab completion in a shell will not place `()` at the end of functions, make sure to include them.
+
+If you have multiple BRdata*.pkl files, you can retrieve the most recent. This can be done by typing:
 
 ::
 
@@ -31,9 +34,9 @@ To retrieve the most recent BRdata*.pkl, you can type:
 Plot curves and surfaces
 *************************
 
-There are two plotting modules (Plotter and `GlumpyPlotter <glumpy.html>`_) in Bertini_real Python visualization suite. In this example, we ar going to demonstrate how to plot it using Plotter object with matplotlib.
+There are two plotting modules (Plotter and `GlumpyPlotter <glumpy.html>`_) in Bertini_real Python visualization suite. In this example, we are going to demonstrate how to plot it using Plotter object with matplotlib.
 
-:: 
+::
 
     bertini_real.plot.plot()
 
@@ -49,17 +52,27 @@ Here are some of the plotted curve/surface examples
 .. image:: bertini_real_pictures/dingdong_plotter.PNG
    :width: 600
 
+Checking **Smooth STL** will generate and export an 3D object to your current folder. Checking **Raw STL** will do the same.
+**Caution** The plot pop-up screen must be closed to use the shell again.
+
 Separate surfaces into pieces
 ******************************
 We are working on the solidification feature for exporting singular algebraic surfaces STL in Bertini_real. We created a Piece object in Fall 2019 to separate surfaces into nonsingular pieces. In this example, we are going to separate surface **Dingdong** into nonsingular pieces.
 
-:: 
+If you have not yet done so in the current session you must import bertini_real and retrieve the most recent BRdata*.pkl:
+::
 
     import bertini_real
 
     data = bertini_real.data.read_most_recent()
 
+
+To separate into non singular pieces:
+::
+
     pieces = data.separate_into_nonsingular_pieces()
+
+
 
 We can print out the piece and it should return 2 pieces for **Dingdong**  with its corresponding lists of indices:
 
@@ -70,13 +83,13 @@ We can print out the piece and it should return 2 pieces for **Dingdong**  with 
 
 will output:
 
-:: 
+::
 
     [piece with indices:[0, 1, 2, 3, 5, 6]
     , piece with indices:[4, 7, 8]
     ]
 
-We can access each piece by specifying their indices.  For example,
+We can access each piece by specifying their indices. For example,
 
 ::
 
@@ -84,13 +97,20 @@ We can access each piece by specifying their indices.  For example,
 
 will output
 
-:: 
+::
 
     piece with indices:[0, 1, 2, 3, 5, 6]
 
 
+Properties and functions of a Piece object
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-There are a few properties and callable functions in a Piece object. You can run this command to generate a list of properties/functions for a Piece by running `dir(pieces[0])`, and you will get the following output:
+There are a few properties and callable functions in a Piece object. You can run this command to generate a list of properties/functions for a Piece by running
+::
+
+    dir(pieces[0])
+
+you will get the following output:
 ::
 
     ['__doc__',
@@ -103,7 +123,13 @@ There are a few properties and callable functions in a Piece object. You can run
     'point_singularities',
     'surface']
 
-To access the indices of a Piece object, type `pieces[0].indices` and it'll output:
+
+To access the indices of a Piece object, type
+::
+
+    pieces[0].indices
+
+to output:
 
 ::
 
@@ -118,7 +144,13 @@ To check whether a Piece object is compact, type `pieces[0].is_compact()` and it
 
     True
 
-To retrieve the list of point singularities from a Piece object, type `pieces[0].point_singularities()` and we get:
+
+To retrieve the list of point singularities from a Piece object, type:
+::
+
+    pieces[0].point_singularities()
+
+and we get:
 
 ::
 
@@ -136,7 +168,7 @@ Additionally, the Surface module contains methods for exporting files for 3d pri
 * `Surface <surface.html>`_ (The module has code to export obj files of surfaces for 3d printing using Trimesh)
 
 :Author:
-	Foong Min Wong, Silviana Amethyst
+	Foong Min Wong, Caden Joergens, Silviana Amethyst
 
 :Version: 1.2 2022/03/05
 
