@@ -177,17 +177,17 @@ class Piece():
         self.surface.plot(face_indices=self.indices, color=color, ax=ax)
 
 
-    def export_obj_smooth(self, basename=f'br_piece_smooth'):
+    def export_obj_smooth(self, basename=f'br_piece_smooth',autoname_using_folder=False,file_type='stl'):
         if basename=='br_piece_smooth':
             basename = basename+'_'+ ('-'.join([str(i) for i in self.indices[:3]]))
 
-        self.surface.export_obj_smooth(self.indices,basename)
+        self.surface.export_obj_smooth(self.indices,basename,autoname_using_folder,file_type)
 
-    def export_obj_raw(self, basename=f'br_piece_raw'):
+    def export_obj_raw(self, basename=f'br_piece_raw',autoname_using_folder=False,file_type='stl'):
         if basename=='br_piece_raw':
             basename = basename+'_'+ ('-'.join([str(i) for i in self.indices[:3]]))
             
-        self.surface.export_obj_raw(self.indices,basename)
+        self.surface.export_obj_raw(self.indices,basename,autoname_using_folder,file_type)
 
 
 
@@ -649,11 +649,11 @@ class Surface(Decomposition):
         return points
 
 
-    def export_obj_raw(self, which_faces=None, basename='br_surface_smooth'):
-        return export_obj_raw(self, which_faces,basename)
+    def export_obj_raw(self, which_faces=None, basename='br_surface_smooth', autoname_using_folder=False,file_type='stl'):
+        return export_obj_raw(self, which_faces,basename,autoname_using_folder,file_type)
 
-    def export_obj_smooth(self, which_faces=None, basename='br_surface_raw'):
-        return export_obj_smooth(self, which_faces,basename)
+    def export_obj_smooth(self, which_faces=None, basename='br_surface_raw', autoname_using_folder=False,file_type='stl'):
+        return export_obj_smooth(self, which_faces,basename,autoname_using_folder,file_type)
 
 
 def separate_into_nonsingular_pieces(data=None):
@@ -699,7 +699,7 @@ class ObjHelper():
 
 
 
-    def export_obj_raw(self, which_faces=None, basename='br_surface_smooth'):
+    def export_obj_raw(self, which_faces=None, basename='br_surface_raw', autoname_using_folder=False, file_type='stl'):
         """ Export raw decomposition of surfaces to OBJ """
 
         print('\n' + '\x1b[0;34;40m' +
@@ -867,20 +867,26 @@ class ObjHelper():
 
         raw_mesh = trimesh.Trimesh(vertex_np_array, face_np_array)
 
-        fileName = os.getcwd().split(os.sep)[-1]
+
 
         raw_mesh.fix_normals()
 
 
-        outname = f'{basename}_{fileName}.obj'
-        raw_mesh.export(file_obj=outname, file_type='obj')
+        if autoname_using_folder:
+            fileName = os.getcwd().split(os.sep)[-1]
+            outname = f'{basename}_{fileName}.{file_type}'
+        else:
+            outname = f'{basename}.{file_type}'
+
+
+        raw_mesh.export(file_obj=outname, file_type=file_type)
 
         print("Exported " + '\x1b[0;35;40m' + outname + '\x1b[0m' + " successfully")
 
 
 
 
-    def export_obj_smooth(self, which_faces=None, basename='br_surface_smooth'):
+    def export_obj_smooth(self, which_faces=None, basename='br_surface_smooth', autoname_using_folder=False, file_type='stl'):
         """ Export smooth decomposition of surfaces to OBJ """
 
         print('\n' + '\x1b[0;34;40m' +
@@ -916,18 +922,24 @@ class ObjHelper():
 
         A = trimesh.Trimesh(vertex_np_array, face_np_array)
 
-        fileName = os.getcwd().split(os.sep)[-1]
+        
 
         A.fix_normals()
-        outname = f'{basename}_{fileName}.obj'
-        A.export(file_obj=outname, file_type='obj')
+
+        if autoname_using_folder:
+            fileName = os.getcwd().split(os.sep)[-1]
+            outname = f'{basename}_{fileName}.{file_type}'
+        else:
+            outname = f'{basename}.{file_type}'
+
+        A.export(file_obj=outname, file_type=file_type)
         print("Exported " + '\x1b[0;35;40m' + outname + '\x1b[0m' + " successfully")
 
 
 
 
 
-    def solidify_raw(self, which_faces=None, basename='br_surface_solidified_raw'):
+    def solidify_raw(self, which_faces=None, basename='br_surface_solidified_raw', autoname_using_folder=False, file_type='stl'):
         """ Solidify raw version of OBJ """
 
         print('\n' + '\x1b[0;34;40m' +
@@ -1144,11 +1156,14 @@ class ObjHelper():
 
         finalmesh.fix_normals()
 
-        fileName = os.getcwd().split(os.sep)[-1]
 
-        outname = f'solidify_raw_{fileName}.obj'
+        if autoname_using_folder:
+            fileName = os.getcwd().split(os.sep)[-1]
+            outname = f'{basename}_{fileName}.{file_type}'
+        else:
+            outname = f'{basename}.{file_type}'
 
-        finalmesh.export(file_obj=outname, file_type='obj')
+        finalmesh.export(file_obj=outname, file_type=file_type)
 
         print("Exported " + '\x1b[0;35;40m' + outname + '\x1b[0m' + " successfully")
 
@@ -1156,7 +1171,7 @@ class ObjHelper():
 
 
 
-    def solidify_smooth(self, which_faces=None, basename='br_surface_solidified_smooth'):
+    def solidify_smooth(self, which_faces=None, basename='br_surface_solidified_smooth', autoname_using_folder=False, file_type='stl'):
         """ Solidify smooth version of OBJ """
 
         print('\n' + '\x1b[0;34;40m' +
@@ -1239,10 +1254,13 @@ class ObjHelper():
 
         finalmesh.fix_normals()
 
-        fileName = os.getcwd().split(os.sep)[-1]
+        if autoname_using_folder:
+            fileName = os.getcwd().split(os.sep)[-1]
+            outname = f'{basename}_{fileName}.{file_type}'
+        else:
+            outname = f'{basename}.{file_type}'
 
-        outname = f'{basename}_{fileName}.obj'
-        finalmesh.export(file_obj=outname, file_type='obj')
+        finalmesh.export(file_obj=outname, file_type=file_type)
 
         print("Exported " + '\x1b[0;35;40m' + outname + '\x1b[0m' + " successfully")
 
@@ -1270,43 +1288,43 @@ def extract_points(self):
     return points
 
 
-def export_obj_raw(data=None, which_faces=None, basename='br_surface_raw'):
+def export_obj_raw(data=None, which_faces=None, basename='br_surface_raw', autoname_using_folder=False, file_type='stl'):
     """ Export raw surface to .obj
 
        :param data: `Surface`, or a `Piece` of a surface. If data is `None`, then it reads the most recent `BRdataN.pkl` file from the current folder.
     """
 
     obj_helper = ObjHelper(data)
-    obj_helper.export_obj_raw(which_faces,basename)
+    obj_helper.export_obj_raw(which_faces,basename,autoname_using_folder,file_type)
 
 
-def export_obj_smooth(data=None, which_faces=None, basename='br_surface_smooth'):
+def export_obj_smooth(data=None, which_faces=None, basename='br_surface_smooth', autoname_using_folder=False, file_type='stl'):
     """ Export smooth surface to .obj.  Requires that the surface has been sampled.
 
         :param data: `Surface`, or a `Piece`. If data is `None`, then it reads the most recent `BRdataN.pkl` file from the current folder.
     """
     obj_helper = ObjHelper(data)
-    obj_helper.export_obj_smooth(which_faces,basename)
+    obj_helper.export_obj_smooth(which_faces,basename,autoname_using_folder,file_type)
 
     
-def solidify_raw(data=None, which_faces=None, basename='br_surface_solidified_raw'):
+def solidify_raw(data=None, which_faces=None, basename='br_surface_solidified_raw', autoname_using_folder=False, file_type='stl'):
     """ Solidify raw surface OBJ by offsetting the faces.  
 
         :param data: `Surface` or `Piece`. If data is `None`, then it reads the most recent `BRdataN.pkl` file from the current folder.
     """
 
     obj_helper = ObjHelper(data)
-    obj_helper.solidify_raw(which_faces,basename)
+    obj_helper.solidify_raw(which_faces,basename,autoname_using_folder,file_type)
 
 
-def solidify_smooth(data=None, which_faces=None, basename='br_surface_solidified_smooth'):
+def solidify_smooth(data=None, which_faces=None, basename='br_surface_solidified_smooth', autoname_using_folder=False, file_type='stl'):
     """ Solidify sampled surface OBJ by offsetting the faces.  Requires that the surface has been sampled.
 
         :param data: `Surface` or `Piece`. If data is `None`, then it reads the most recent `BRdataN.pkl` file from the current folder.
     """
 
     obj_helper = ObjHelper(data)
-    obj_helper.solidify_smooth(which_faces,basename)
+    obj_helper.solidify_smooth(which_faces,basename,autoname_using_folder,file_type)
 
 
 
