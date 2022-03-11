@@ -1,12 +1,12 @@
 
-Introduction to Bertini_real's Python Visualization Suite
+Introduction to Bertini_real
 ==========================================================
 
-Bertini_real is a software for real algebraic sets. There are two options available to decompose and visualize algebraic curves & surfaces either using (1) Matlab or (2) Python. In this documentation, we will focus on the Python visualization suite.
+Bertini_real is a software for real algebraic sets. There are two options available to decompose and visualize algebraic curves & surfaces either using (1) Matlab or (2) Python. Since this documentation is for the Python libraray, we will focus on the Python visualization suite.  
 
 Decomposition
 **************
-There are two types of child classes for Decomposition (parent class): (1) Curve and (2) Surface. Bertini_real will return either a Curve or Surface object decomposition data based on the given algebraic equations.
+There are two types of child classes for Decomposition (parent class): (1) Curve and (2) Surface. Bertini_real will return either a `Curve` or `Surface` object based on the given algebraic equations.  Bertini_real cannot currently decompose components of algebraic varieties with dimension higher than two.
 
 Gather and save decomposition
 ******************************
@@ -109,6 +109,9 @@ To access the indices of a Piece object, type `pieces[0].indices` and it'll outp
 
     [0, 1, 2, 3, 5, 6]
 
+
+These are the indices of the faces in the Surface, of which the Piece is a part.
+
 To check whether a Piece object is compact, type `pieces[0].is_compact()` and it'll output:
 
 ::
@@ -123,15 +126,19 @@ To retrieve the list of point singularities from a Piece object, type `pieces[0]
 
 
 
-There are three modules used to plot surfaces & export stereolithography and 3d animations. To learn more, check out the following modules:
+There are a few modules used to plot surfaces and do 3d animations. To learn more, check out the following modules:
 
 * `Anaglypy <anaglypy.html>`_ (A module that exports 3d anaglyph/non-anaglyph animations of algebraic surfaces)
 * `GlumpyPlotter <glumpy.html>`_ (A module that plot curves/surfaces using Glumpy)
-* `Tmesh <tmesh.html>`_ (A module that export stereolithography of surfaces for 3d printing using Trimesh)
+
+Additionally, the Surface module contains methods for exporting files for 3d printing
+
+* `Surface <surface.html>`_ (The module has code to export obj files of surfaces for 3d printing using Trimesh)
 
 :Author:
-	Foong Min Wong
+	Foong Min Wong, Silviana Amethyst
 
-:Version: 1.1 2019/12/08
+:Version: 1.2 2022/03/05
 
+.. :Version: 1.1 2019/12/08
 .. :Version: 1.0 2019/04/22
