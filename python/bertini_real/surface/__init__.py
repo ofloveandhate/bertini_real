@@ -19,6 +19,7 @@ from bertini_real.decomposition import Decomposition
 from bertini_real.curve import Curve
 from bertini_real.vertex import Vertex
 import bertini_real.vertextype
+from bertini_real.util import ReversableList
 
 import os
 import enum
@@ -32,10 +33,89 @@ import copy
 import math
 import trimesh
 
+
+
+
+
+
+
+def export_mesh(mesh, basename, autoname_using_folder=False, file_type='stl'):
+
+    if autoname_using_folder:
+        fileName = os.getcwd().split(os.sep)[-1]
+        outname = f'{basename}_{fileName}.{file_type}'
+    else:
+        outname = f'{basename}.{file_type}'
+
+    mesh.export(file_obj=outname, file_type=file_type)
+    print("Exported \x1b[0;35;40m " + outname + "\x1b[0m successfully")
+
+
+def solidify_mesh(mesh,distance):
+
+    A = mesh # relying on referenced nature of Python here
+
+    A.fix_normals()
+
+    B = copy.deepcopy(mesh)
+
+    # reverse every triangles and flip every normals
+    B.invert()
+
+    # calculate A, B vertex normals
+    vertexnormsA = A.vertex_normals
+    vertexnormsB = B.vertex_normals
+
+    offset = 0
+
+    distA = (distance) * (offset + 1) / 2
+    distB = (distance) * (1 - (offset + 1) / 2)
+
+    # create A & B vertices that move corresponding to vertex normals and
+    # distance
+    A.vertices = [v + vn * distA for v,
+                  vn in zip(A.vertices, A.vertex_normals)]
+    B.vertices = [v + vn * distB for v,
+                  vn in zip(B.vertices, B.vertex_normals)]
+
+    numVerts = len(A.vertices)
+
+    T = []
+
+    boundary_groups = trimesh.grouping.group_rows(
+        A.edges_sorted, require_count=1)
+
+    boundary_edges = A.edges[boundary_groups]
+
+    for edge in boundary_edges:
+        for i in range(len(edge) - 1):
+            t1 = [edge[i], edge[i + 1], edge[i] + numVerts]
+            t2 = [edge[i + 1], edge[i] + numVerts, edge[i + 1] + numVerts]
+
+            T.append(t1)
+            T.append(t2)
+
+    Q = np.concatenate((A.vertices, B.vertices), axis=0)
+
+    newBoundary = trimesh.Trimesh(Q, T)
+
+    finalmesh = A + newBoundary + B
+    finalmesh.fix_normals()
+
+    return finalmesh
+
+
+
+
+
+
+
 class VisibilityOptions(object):
 
     def __init__(self):
         self.pieceVisibility = True
+
+
 
 
 
@@ -198,80 +278,35 @@ class Piece():
         self.surface.plot(face_indices=self.indices, color=color, ax=ax)
 
 
-    def export_obj_smooth(self, basename=f'br_piece_smooth',autoname_using_folder=False,file_type='stl'):
+
+
+    def export_smooth(self, basename=f'br_piece_smooth',autoname_using_folder=False,file_type='stl'):
         if basename=='br_piece_smooth':
             basename = basename+'_'+ ('-'.join([str(i) for i in self.indices[:3]]))
 
-        self.surface.export_obj_smooth(self.indices,basename,autoname_using_folder,file_type)
+        self.surface.export_smooth(self.indices,basename,autoname_using_folder,file_type)
 
-    def export_obj_raw(self, basename=f'br_piece_raw',autoname_using_folder=False,file_type='stl'):
+    def export_raw(self, basename=f'br_piece_raw',autoname_using_folder=False,file_type='stl'):
         if basename=='br_piece_raw':
             basename = basename+'_'+ ('-'.join([str(i) for i in self.indices[:3]]))
             
-        self.surface.export_obj_raw(self.indices,basename,autoname_using_folder,file_type)
+        self.surface.export_raw(self.indices,basename,autoname_using_folder,file_type)
 
 
 
+    def solidify_raw(self, distance=0.1, basename='br_piece_raw', autoname_using_folder=False,file_type='stl'):
+        if basename=='br_piece_raw':
+            basename = basename+'_'+ ('-'.join([str(i) for i in self.indices[:3]]))
 
-############   MOVE THIS CODE
-def make_figure():
-    return plt.figure()
+        self.surface.solidify_raw(distance, self.indices,basename,autoname_using_folder,file_type)
 
-def make_axes(fig):
-    return fig.add_subplot(1, 1, 1, projection='3d')
+    def solidify_smooth(self, distance=0.1, basename='br_piece_smooth', autoname_using_folder=False,file_type='stl'):
 
-def label_axes(ax):
-    ax.set_xlabel("x")
-    ax.set_ylabel("y")
-    ax.set_zlabel("z")
+        if basename=='br_piece_smooth':
+            basename = basename+'_'+ ('-'.join([str(i) for i in self.indices[:3]]))
 
-def apply_title():
-    plt.title(os.getcwd().split(os.sep)[-1])
+        self.surface.solidify_smooth(distance, self.indices,basename,autoname_using_folder,file_type)
 
-def replot(pieces, ax):
-    main(pieces, ax)
-    label_axes(ax)
-    apply_title()
-
-def main(pieces, ax):
-    colormap = plt.cm.plasma
-    # colors = plt.cm.get_cmap('hsv', len(pieces))
-    color_list = [colormap(i) for i in np.linspace(0, 1, len(pieces))]
-
-    # colors = make_colors(len(pieces))
-    for ii,p in enumerate(pieces):
-        if(p.visibility.pieceVisibility):
-            p.plot(color=color_list[ii], ax=ax)
-
-def plot_pieces(pieces):
-
-    fig = make_figure()
-    ax = make_axes(fig)
-    label_axes(ax)
-
-    # left, bottom, width, height
-    rax = plt.axes([0.05, 0.4, 0.2, 0.05*len(pieces)])
-    labels = ['piece'+str(ii) for ii,p in enumerate(pieces)]
-    visibility = [True for p in enumerate(pieces)]
-    check = CheckButtons(rax, labels, visibility)
-
-    main(pieces, ax)
-
-    def func(label):
-        if label == labels[labels.index(label)]:
-            pieces[labels.index(label)].visibility.pieceVisibility = (not pieces[labels.index(label)].visibility.pieceVisibility)
-            ax.clear()
-            replot(pieces, ax)
-
-        plt.draw()
-
-    check.on_clicked(func)
-
-    apply_title()
-
-    plt.show()
-
-###########END MOVE THIS CODE
 
 
 
@@ -468,16 +503,16 @@ class Surface(Decomposition):
         if self.cannot_possibly_meet(f, g):
             return val
 
-        elif self.meet_at_left(f, g):
+        elif self.faces_meet_at_left(f, g):
             val = True
 
-        elif self.meet_at_right(f, g):
+        elif self.faces_meet_at_right(f, g):
             val = True
 
-        elif self.meet_at_top(f, g):
+        elif self.faces_meet_at_top(f, g):
             val = True
 
-        elif self.meet_at_bottom(f, g):
+        elif self.faces_meet_at_bottom(f, g):
             val = True
 
         return val
@@ -496,7 +531,7 @@ class Surface(Decomposition):
 
         return val
 
-    def meet_at_left(self, f, g):
+    def faces_meet_at_left(self, f, g):
         """ Check whether faces f and g nonsingularly connected at left
 
             :param f: Current face
@@ -515,7 +550,7 @@ class Surface(Decomposition):
                     g['middle slice index']].edges[g['left'][jj]]
                 b = E[1]
 
-                if a == b and not(self.is_degenerate(e)) and not(self.is_degenerate(E)):
+                if a == b and not(self.is_edge_degenerate(e)) and not(self.is_edge_degenerate(E)):
                     val = True
                     return val
 
@@ -524,12 +559,12 @@ class Surface(Decomposition):
                     g['middle slice index'] + 1].edges[g['right'][jj]]
                 b = E[1]
 
-                if a == b and not(self.is_degenerate(e)) and not(self.is_degenerate(E)):
+                if a == b and not(self.is_edge_degenerate(e)) and not(self.is_edge_degenerate(E)):
                     val = True
                     return val
         return val
 
-    def meet_at_right(self, f, g):
+    def faces_meet_at_right(self, f, g):
         """ Check whether faces f and g nonsingularly connected at right
 
             :param f: Current face
@@ -548,7 +583,7 @@ class Surface(Decomposition):
                     g['middle slice index']].edges[g['left'][jj]]
                 b = E[1]
 
-                if a == b and not(self.is_degenerate(e)) and not(self.is_degenerate(E)):
+                if a == b and not(self.is_edge_degenerate(e)) and not(self.is_edge_degenerate(E)):
                     val = True
                     return val
 
@@ -557,12 +592,12 @@ class Surface(Decomposition):
                     g['middle slice index'] + 1].edges[g['right'][jj]]
                 b = E[1]
 
-                if a == b and not(self.is_degenerate(e)) and not(self.is_degenerate(E)):
+                if a == b and not(self.is_edge_degenerate(e)) and not(self.is_edge_degenerate(E)):
                     val = True
                     return val
         return val
 
-    def meet_at_top(self, f, g):
+    def faces_meet_at_top(self, f, g):
         """ Check whether faces f and g nonsingularly connected at top
 
             :param f: Current face
@@ -592,7 +627,7 @@ class Surface(Decomposition):
 
         return val
 
-    def meet_at_bottom(self, f, g):
+    def faces_meet_at_bottom(self, f, g):
         """ Check whether faces f and g nonsingularly connected at bottom
 
             :param f: Current face
@@ -622,7 +657,7 @@ class Surface(Decomposition):
 
         return val
 
-    def is_degenerate(self, e):
+    def is_edge_degenerate(self, e):
         """ Check if critical point slices are degenerate (one of the endpoints is also the middle point)
 
             :param e: Critical point slices
@@ -649,6 +684,9 @@ class Surface(Decomposition):
 
         return pieces
 
+
+
+
     def extract_points(self):
         """ Helper method for plot_surface_samples()
             Extract points from vertices as a list
@@ -670,75 +708,59 @@ class Surface(Decomposition):
         return points
 
 
-    def export_obj_raw(self, which_faces=None, basename='br_surface_smooth', autoname_using_folder=False,file_type='stl'):
-        return export_obj_raw(self, which_faces,basename,autoname_using_folder,file_type)
-
-    def export_obj_smooth(self, which_faces=None, basename='br_surface_raw', autoname_using_folder=False,file_type='stl'):
-        return export_obj_smooth(self, which_faces,basename,autoname_using_folder,file_type)
-
-
-def separate_into_nonsingular_pieces(data=None):
-    """ Separate a surface into nonsingular pieces
-
-        :param data: Surface decomposition data. If data is None, then it reads the most recent BRData.pkl.
-    """
-    surface = Surface(data)
-    return surface.separate_into_nonsingular_pieces()
-
-
-class ReversableList(list):
-    """ Create a ReversableList object for reversing order of data 
-
-        :param list: The list to be read.
-
-    """
-
-    def reverse(self):
-        """ Reverse function for raw surface data
-
-            :rtype: A reversed list
-
-        """
-        return list(reversed(self))
-
-
-class ObjHelper():
-    """ Create a ObjHelper object for exporting OBJ files """
-
-    def __init__(self, data=None):
-        """ Read data from disk
-
-           :param data: Surface decomposition data. If data is None, then it reads the most recent BRData.pkl.
-        """
-
-        if data is None:
-            self.decomposition = bertini_real.data.read_most_recent()
-        else:
-            self.decomposition = data
 
 
 
 
 
-    def export_obj_raw(self, which_faces=None, basename='br_surface_raw', autoname_using_folder=False, file_type='stl'):
-        """ Export raw decomposition of surfaces to OBJ """
-
-        print('\n' + '\x1b[0;34;40m' +
-              'Generating raw surface...' + '\x1b[0m')
-
-        points = extract_points(self)
-
-        surf = self.decomposition
-
-        num_faces = surf.num_faces
+    def as_mesh_smooth(self,which_faces=None):
+        num_faces = self.num_faces
 
         if which_faces is None:
             which_faces = range(num_faces)
 
 
+        points = self.extract_points()
+
+        faces = self.sampler_data
+
+        if not faces:
+            raise br_except.SurfaceNotSampled('no surface samples found.  run sampler, or re-gather and pickle')
+
+        vertex = []
+        for p in points:
+            vertex.append(p)
+
+        vertex_np_array = np.array(vertex)
+
+        face = []
+
+        for ii in which_faces:
+            f = faces[ii]
+            for tri in f:
+                face.append([tri[0], tri[1], tri[2]])
+
+        face_np_array = np.array(face)
+
+        A = trimesh.Trimesh(vertex_np_array, face_np_array)
+        A.fix_normals()
+        return A
+
+
+    def as_mesh_raw(self, which_faces=None):
+
+        num_faces = self.num_faces
+
+        if which_faces is None:
+            which_faces = range(num_faces)
+
+        # unpack a few things
+        points = self.extract_points()
+        
+
         num_total_faces = 0
         for ii in range(len(which_faces)):
-            curr_face = surf.faces[which_faces[ii]]
+            curr_face = self.faces[which_faces[ii]]
             num_total_faces = num_total_faces + 2 * \
                 (curr_face['num left'] + curr_face['num right'] + 2)
         num_total_faces = num_total_faces * 2
@@ -749,7 +771,7 @@ class ObjHelper():
 
         for cc in range(len(which_faces)):
             ii = which_faces[cc]
-            face = surf.faces[ii]
+            face = self.faces[ii]
 
             if (face['middle slice index']) == -1:
                 continue
@@ -770,13 +792,13 @@ class ObjHelper():
 
                     curr_edge = -10
                     if(face['system top'] == 'input_critical_curve'):
-                        curr_edge = surf.critical_curve.edges[face['top']]
+                        curr_edge = self.critical_curve.edges[face['top']]
                     elif(face['system top'] == 'input_surf_sphere'):
-                        curr_edge = surf.sphere_curve.edges[face['top']]
+                        curr_edge = self.sphere_curve.edges[face['top']]
                     else:
-                        for zz in range(len(surf.singular_curves)):
-                            if(surf.singular_names[zz] == face['system top']):
-                                curr_edge = surf.singular_curves[
+                        for zz in range(len(self.singular_curves)):
+                            if(self.singular_names[zz] == face['system top']):
+                                curr_edge = self.singular_curves[
                                     zz].edges[face['top']]
 
                     if(curr_edge == -10):
@@ -798,13 +820,13 @@ class ObjHelper():
 
                     curr_edge = -10
                     if(face['system bottom'] == 'input_critical_curve'):
-                        curr_edge = surf.critical_curve.edges[face['bottom']]
+                        curr_edge = self.critical_curve.edges[face['bottom']]
                     elif(face['system bottom'] == 'input_surf_sphere'):
-                        curr_edge = surf.sphere_curve.edges[face['bottom']]
+                        curr_edge = self.sphere_curve.edges[face['bottom']]
                     else:
-                        for zz in range(len(surf.singular_curves)):
-                            if(surf.singular_names[zz] == face['system bottom']):
-                                curr_edge = surf.singular_curves[
+                        for zz in range(len(self.singular_curves)):
+                            if(self.singular_names[zz] == face['system bottom']):
+                                curr_edge = self.singular_curves[
                                     zz].edges[face['bottom']]
 
                     if(curr_edge == -10):
@@ -824,7 +846,7 @@ class ObjHelper():
                         slice_ind = face['middle slice index']
                         edge_ind = face['left'][left_edge_counter]
 
-                        curr_edge = surf.critical_point_slices[
+                        curr_edge = self.critical_point_slices[
                             slice_ind].edges[edge_ind]
                         left_edge_counter = left_edge_counter + 1  # increment
 
@@ -842,7 +864,7 @@ class ObjHelper():
 
                         slice_ind = face['middle slice index'] + 1
                         edge_ind = face['right'][right_edge_counter]
-                        curr_edge = surf.critical_point_slices[
+                        curr_edge = self.critical_point_slices[
                             slice_ind].edges[edge_ind]
                         right_edge_counter = right_edge_counter + 1
 
@@ -887,469 +909,175 @@ class ObjHelper():
         face_np_array = np.array(face)
 
         raw_mesh = trimesh.Trimesh(vertex_np_array, face_np_array)
-
-
-
         raw_mesh.fix_normals()
+        return raw_mesh
 
 
-        if autoname_using_folder:
-            fileName = os.getcwd().split(os.sep)[-1]
-            outname = f'{basename}_{fileName}.{file_type}'
-        else:
-            outname = f'{basename}.{file_type}'
-
-
-        raw_mesh.export(file_obj=outname, file_type=file_type)
-
-        print("Exported " + '\x1b[0;35;40m' + outname + '\x1b[0m' + " successfully")
-
-
-
-
-    def export_obj_smooth(self, which_faces=None, basename='br_surface_smooth', autoname_using_folder=False, file_type='stl'):
-        """ Export smooth decomposition of surfaces to OBJ """
-
-        print('\n' + '\x1b[0;34;40m' +
-              'Generating smooth surface...' + '\x1b[0m')
-
-
-
-        if which_faces is None:
-            which_faces = range(num_faces)
-
-
-        points = extract_points(self)
-
-        faces = self.decomposition.sampler_data
-
-        if not faces:
-            raise br_except.SurfaceNotSampled('no surface samples found.  run sampler, or re-gather and pickle')
-
-        vertex = []
-        for p in points:
-            vertex.append(p)
-
-        vertex_np_array = np.array(vertex)
-
-        face = []
-
-        for ii in which_faces:
-            f = faces[ii]
-            for tri in f:
-                face.append([tri[0], tri[1], tri[2]])
-
-        face_np_array = np.array(face)
-
-        A = trimesh.Trimesh(vertex_np_array, face_np_array)
-
-        
-
-        A.fix_normals()
-
-        if autoname_using_folder:
-            fileName = os.getcwd().split(os.sep)[-1]
-            outname = f'{basename}_{fileName}.{file_type}'
-        else:
-            outname = f'{basename}.{file_type}'
-
-        A.export(file_obj=outname, file_type=file_type)
-        print("Exported " + '\x1b[0;35;40m' + outname + '\x1b[0m' + " successfully")
-
-
-
-
-
-    def solidify_raw(self, which_faces=None, basename='br_surface_solidified_raw', autoname_using_folder=False, file_type='stl'):
-        """ Solidify raw version of OBJ """
-
-        print('\n' + '\x1b[0;34;40m' +
-              'Solidifying raw surface...' + '\x1b[0m')
-
-        points = extract_points(self)
-
-        surf = self.decomposition
-
-        num_faces = surf.num_faces
-
-
-        if which_faces is None:
-            which_faces = list(range(num_faces))
-
-
-        num_total_faces = 0
-        for ii in range(len(which_faces)):
-            curr_face = surf.faces[which_faces[ii]]
-            num_total_faces = num_total_faces + 2 * \
-                (curr_face['num left'] + curr_face['num right'] + 2)
-        num_total_faces = num_total_faces * 2
-
-        total_face_index = 0
-        TT = []
-
-        for cc in range(len(which_faces)):
-            ii = which_faces[cc]
-            face = surf.faces[ii]
-
-            if (face['middle slice index']) == -1:
-                continue
-
-            case = 1
-            left_edge_counter = 0
-            right_edge_counter = 0
-
-            T = []
-
-            while 1:
-                ## top edge ##
-                if case == 1:
-
-                    case += 1
-                    if face['top'] < 0:
-                        continue
-
-                    curr_edge = -10
-                    if(face['system top'] == 'input_critical_curve'):
-                        curr_edge = surf.critical_curve.edges[face['top']]
-                    elif(face['system top'] == 'input_surf_sphere'):
-                        curr_edge = surf.sphere_curve.edges[face['top']]
-                    else:
-                        for zz in range(len(surf.singular_curves)):
-                            if(surf.singular_names[zz] == face['system top']):
-                                curr_edge = surf.singular_curves[
-                                    zz].edges[face['top']]
-
-                    if(curr_edge == -10):
-                        continue
-
-                    if (curr_edge[0] < 0 and curr_edge[1] < 0 and curr_edge[2] < 0):
-                        continue
-
-                    curr_edge = ReversableList(curr_edge)
-                    curr_edge = curr_edge.reverse()
-
-                ## bottom edge ##
-                elif case == 2:
-
-                    case += 1
-
-                    if face['bottom'] < 0:
-                        continue
-
-                    curr_edge = -10
-                    if(face['system bottom'] == 'input_critical_curve'):
-                        curr_edge = surf.critical_curve.edges[face['bottom']]
-                    elif(face['system bottom'] == 'input_surf_sphere'):
-                        curr_edge = surf.sphere_curve.edges[face['bottom']]
-                    else:
-                        for zz in range(len(surf.singular_curves)):
-                            if(surf.singular_names[zz] == face['system bottom']):
-                                curr_edge = surf.singular_curves[
-                                    zz].edges[face['bottom']]
-
-                    if(curr_edge == -10):
-                        continue
-
-                    if (curr_edge[0] < 0 and curr_edge[1] < 0 and curr_edge[2] < 0):
-                        continue
-
-                ## left edge ##
-                elif case == 3:
-
-                    if left_edge_counter < face['num left']:
-
-                        if face['left'][left_edge_counter] < 0:
-                            continue
-
-                        slice_ind = face['middle slice index']
-                        edge_ind = face['left'][left_edge_counter]
-
-                        curr_edge = surf.critical_point_slices[
-                            slice_ind].edges[edge_ind]
-                        left_edge_counter = left_edge_counter + 1  # increment
-
-                    else:
-                        case = case + 1
-                        continue
-
-                ## right edge ##
-                elif case == 4:
-
-                    if right_edge_counter < face['num right']:
-
-                        if face['right'][right_edge_counter] < 0:
-                            continue
-
-                        slice_ind = face['middle slice index'] + 1
-                        edge_ind = face['right'][right_edge_counter]
-                        curr_edge = surf.critical_point_slices[
-                            slice_ind].edges[edge_ind]
-                        right_edge_counter = right_edge_counter + 1
-
-                        curr_edge = ReversableList(curr_edge)
-                        curr_edge = curr_edge.reverse()
-
-                    else:
-                        case += 1
-                        continue
-
-                ## last case ##
-                elif case == 5:
-                    break
-
-                t1 = [points[curr_edge[0]], points[curr_edge[1]],
-                      points[face['midpoint']]]
-                t2 = [points[curr_edge[1]], points[curr_edge[2]],
-                      points[face['midpoint']]]
-
-                t3 = (curr_edge[0], curr_edge[1], face['midpoint'])
-                t4 = (curr_edge[1], curr_edge[2], face['midpoint'])
-
-                T.append(t1)
-                T.append(t2)
-
-                TT.append(t3)
-                TT.append(t4)
-
-        faces = [TT]
-        vertex = []
-
-        for p in points:
-            vertex.append(p)
-
-        vertex_np_array = np.array(vertex)
-        face = []
-
-        for f in faces:
-            for tri in f:
-                face.append([tri[0], tri[1], tri[2]])
-
-        face_np_array = np.array(face)
-
-        A = trimesh.Trimesh(vertex_np_array, face_np_array)
-
-        A.fix_normals()
-
-        B = copy.deepcopy(A)
-
-        # reverse every triangles and flip every normals
-        B.invert()
-
-        # calculate A, B vertex normals
-        vertexnormsA = A.vertex_normals
-        vertexnormsB = B.vertex_normals
-
-        offset = 0
-        total = 0.1
-
-        distA = (total) * (offset + 1) / 2
-        distB = (total) * (1 - (offset + 1) / 2)
-
-        # create A & B vertices that move corresponding to vertex normals and
-        # distance
-        A.vertices = [v + vn * distA for v,
-                      vn in zip(A.vertices, A.vertex_normals)]
-        B.vertices = [v + vn * distB for v,
-                      vn in zip(B.vertices, B.vertex_normals)]
-
-        numVerts = len(A.vertices)
-
-        T = []
-
-        boundary_groups = trimesh.grouping.group_rows(
-            A.edges_sorted, require_count=1)
-
-        boundary_edges = A.edges[boundary_groups]
-
-        for edge in boundary_edges:
-            for i in range(len(edge) - 1):
-                t1 = [edge[i], edge[i + 1], edge[i] + numVerts]
-                t2 = [edge[i + 1], edge[i] + numVerts, edge[i + 1] + numVerts]
-
-                T.append(t1)
-                T.append(t2)
-
-        Q = np.concatenate((A.vertices, B.vertices), axis=0)
-
-        newBoundary = trimesh.Trimesh(Q, T)
-
-        finalmesh = A + newBoundary + B
-
-        finalmesh.fix_normals()
-
-
-        if autoname_using_folder:
-            fileName = os.getcwd().split(os.sep)[-1]
-            outname = f'{basename}_{fileName}.{file_type}'
-        else:
-            outname = f'{basename}.{file_type}'
-
-        finalmesh.export(file_obj=outname, file_type=file_type)
-
-        print("Exported " + '\x1b[0;35;40m' + outname + '\x1b[0m' + " successfully")
-
-
-
-
-
-    def solidify_smooth(self, which_faces=None, basename='br_surface_solidified_smooth', autoname_using_folder=False, file_type='stl'):
-        """ Solidify smooth version of OBJ """
-
-        print('\n' + '\x1b[0;34;40m' +
-              'Solidifying smooth surface...' + '\x1b[0m')
-
-        points = extract_points(self)
-
-        faces = self.decomposition.sampler_data
-
-        if not faces:
-            raise br_except.SurfaceNotSampled('no surface samples found.  run sampler, or re-gather and pickle')
-
-
-
-        if which_faces is None:
-            which_faces = list(range(num_faces))
-
-
-        vertex = []
-        for p in points:
-            vertex.append(p)
-
-        vertex_np_array = np.array(vertex)
-
-        face = []
-        for f in which_faces:
-            for tri in f:
-                face.append([tri[0], tri[1], tri[2]])
-
-        face_np_array = np.array(face)
-
-        A = trimesh.Trimesh(vertex_np_array, face_np_array)
-
-        A.fix_normals()
-
-        B = copy.deepcopy(A)
-
-        # reverse every triangles and flip every normals
-        B.invert()
-
-        # calculate A, B vertex normals
-        vertexnormsA = A.vertex_normals
-        vertexnormsB = B.vertex_normals
-
-        offset = 0
-        total = 0.1
-
-        distA = (total) * (offset + 1) / 2
-        distB = (total) * (1 - (offset + 1) / 2)
-
-        # create A & B vertices that move corresponding to vertex normals and
-        # distance
-        A.vertices = [v + vn * distA for v,
-                      vn in zip(A.vertices, A.vertex_normals)]
-        B.vertices = [v + vn * distB for v,
-                      vn in zip(B.vertices, B.vertex_normals)]
-
-        numVerts = len(A.vertices)
-
-        T = []
-
-        boundary_groups = trimesh.grouping.group_rows(
-            A.edges_sorted, require_count=1)
-
-        boundary_edges = A.edges[boundary_groups]
-
-        for edge in boundary_edges:
-            for i in range(len(edge) - 1):
-                t1 = [edge[i], edge[i + 1], edge[i] + numVerts]
-                t2 = [edge[i + 1], edge[i] + numVerts, edge[i + 1] + numVerts]
-
-                T.append(t1)
-                T.append(t2)
-
-        Q = np.concatenate((A.vertices, B.vertices), axis=0)
-
-        newBoundary = trimesh.Trimesh(Q, T)
-
-        finalmesh = A + newBoundary + B
-
-        finalmesh.fix_normals()
-
-        if autoname_using_folder:
-            fileName = os.getcwd().split(os.sep)[-1]
-            outname = f'{basename}_{fileName}.{file_type}'
-        else:
-            outname = f'{basename}.{file_type}'
-
-        finalmesh.export(file_obj=outname, file_type=file_type)
-
-        print("Exported " + '\x1b[0;35;40m' + outname + '\x1b[0m' + " successfully")
-
-
-
-
-
-def extract_points(self):
-    """ Helper method for plot_surface_samples()
-        Extract points from vertices
-
-        :param data: Surface decomposition data
-        :rtype: List of tuples of length 3.
-    """
-
-    points = []
-
-    for vertex in self.decomposition.vertices:
-        point = [None] * self.decomposition.num_variables
-
-        for i in range(self.decomposition.num_variables):
-            point[i] = vertex.point[i].real
-        points.append(point)
-
-    return points
-
-
-def export_obj_raw(data=None, which_faces=None, basename='br_surface_raw', autoname_using_folder=False, file_type='stl'):
-    """ Export raw surface to .obj
-
-       :param data: `Surface`, or a `Piece` of a surface. If data is `None`, then it reads the most recent `BRdataN.pkl` file from the current folder.
-    """
-
-    obj_helper = ObjHelper(data)
-    obj_helper.export_obj_raw(which_faces,basename,autoname_using_folder,file_type)
-
-
-def export_obj_smooth(data=None, which_faces=None, basename='br_surface_smooth', autoname_using_folder=False, file_type='stl'):
-    """ Export smooth surface to .obj.  Requires that the surface has been sampled.
-
-        :param data: `Surface`, or a `Piece`. If data is `None`, then it reads the most recent `BRdataN.pkl` file from the current folder.
-    """
-    obj_helper = ObjHelper(data)
-    obj_helper.export_obj_smooth(which_faces,basename,autoname_using_folder,file_type)
 
     
-def solidify_raw(data=None, which_faces=None, basename='br_surface_solidified_raw', autoname_using_folder=False, file_type='stl'):
-    """ Solidify raw surface OBJ by offsetting the faces.  
-
-        :param data: `Surface` or `Piece`. If data is `None`, then it reads the most recent `BRdataN.pkl` file from the current folder.
-    """
-
-    obj_helper = ObjHelper(data)
-    obj_helper.solidify_raw(which_faces,basename,autoname_using_folder,file_type)
-
-
-def solidify_smooth(data=None, which_faces=None, basename='br_surface_solidified_smooth', autoname_using_folder=False, file_type='stl'):
-    """ Solidify sampled surface OBJ by offsetting the faces.  Requires that the surface has been sampled.
-
-        :param data: `Surface` or `Piece`. If data is `None`, then it reads the most recent `BRdataN.pkl` file from the current folder.
-    """
-
-    obj_helper = ObjHelper(data)
-    obj_helper.solidify_smooth(which_faces,basename,autoname_using_folder,file_type)
 
 
 
-# def solidify(data=None, totalDist=0.1, offset=0):
-#     """ Create a ObjHelper object and solidify objects """
-#     surface = ObjHelper(data)
-#     surface.solidify(totalDist, offset)
+
+
+
+    def export_raw(self, which_faces=None, basename='br_surface_raw', autoname_using_folder=False, file_type='stl'):
+        """ Export raw decomposition of surfaces to OBJ """
+
+
+        mesh = self.as_mesh_raw(which_faces)
+        export_mesh(mesh, basename, autoname_using_folder, file_type)
+
+
+    def export_smooth(self, which_faces=None, basename='br_surface_smooth', autoname_using_folder=False, file_type='stl'):
+        """ Export smooth decomposition of surfaces to OBJ """
+
+        
+        mesh = self.as_mesh_smooth(which_faces)
+        export_mesh(mesh, basename, autoname_using_folder, file_type)
+        
+
+
+
+
+
+
+
+
+    def solidify_raw(self, distance=0.1, which_faces=None, basename='br_surface_solidified_raw', autoname_using_folder=False, file_type='stl'):
+        """ 
+        Solidify raw version of surface.  
+
+        Default format is `stl`.  Also can do `obj`.
+        """
+
+        mesh = self.as_mesh_raw(which_faces)
+        solid = solidify_mesh(mesh,distance)
+        export_mesh(solid, basename, autoname_using_folder, file_type)
+
+
+
+
+    def solidify_smooth(self, distance=0.1, which_faces=None, basename='br_surface_solidified_smooth', autoname_using_folder=False, file_type='stl'):
+        """ 
+        Solidify smooth version of surface.  Requires that the surface has been sampled using `sampler`
+
+        Default format is `stl`.  Also can do `obj`.
+        """
+ 
+        mesh = self.as_mesh_smooth(which_faces)
+        solid = solidify_mesh(mesh,distance)
+        export_mesh(solid, basename, autoname_using_folder, file_type)
+
+
+
+
+
+
+
+    #################
+
+
+    #  _______  _        ______     _______  _______    _______           _______  _______  _______  _______  _______ 
+    # (  ____ \( (    /|(  __  \   (  ___  )(  ____ \  (  ____ \|\     /|(  ____ )(  ____ \(  ___  )(  ____ \(  ____ \
+    # | (    \/|  \  ( || (  \  )  | (   ) || (    \/  | (    \/| )   ( || (    )|| (    \/| (   ) || (    \/| (    \/
+    # | (__    |   \ | || |   ) |  | |   | || (__      | (_____ | |   | || (____)|| (__    | (___) || |      | (__    
+    # |  __)   | (\ \) || |   | |  | |   | ||  __)     (_____  )| |   | ||     __)|  __)   |  ___  || |      |  __)   
+    # | (      | | \   || |   ) |  | |   | || (              ) || |   | || (\ (   | (      | (   ) || |      | (      
+    # | (____/\| )  \  || (__/  )  | (___) || )        /\____) || (___) || ) \ \__| )      | )   ( || (____/\| (____/\
+    # (_______/|/    )_)(______/   (_______)|/         \_______)(_______)|/   \__/|/       |/     \|(_______/(_______/
+                                                                                                                    
+
+
+    #############
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+############ 
+#  
+#  _______  _______           _______   _________         _________ _______    _______  _______  ______   _______ 
+# (       )(  ___  )|\     /|(  ____ \  \__   __/|\     /|\__   __/(  ____ \  (  ____ \(  ___  )(  __  \ (  ____ \
+# | () () || (   ) || )   ( || (    \/     ) (   | )   ( |   ) (   | (    \/  | (    \/| (   ) || (  \  )| (    \/
+# | || || || |   | || |   | || (__         | |   | (___) |   | |   | (_____   | |      | |   | || |   ) || (__    
+# | |(_)| || |   | |( (   ) )|  __)        | |   |  ___  |   | |   (_____  )  | |      | |   | || |   | ||  __)   
+# | |   | || |   | | \ \_/ / | (           | |   | (   ) |   | |         ) |  | |      | |   | || |   ) || (      
+# | )   ( || (___) |  \   /  | (____/\     | |   | )   ( |___) (___/\____) |  | (____/\| (___) || (__/  )| (____/\
+# |/     \|(_______)   \_/   (_______/     )_(   |/     \|\_______/\_______)  (_______/(_______)(______/ (_______/
+#                                                                                                     
+#################
+def make_figure():
+    return plt.figure()
+
+def make_axes(fig):
+    return fig.add_subplot(1, 1, 1, projection='3d')
+
+def label_axes(ax):
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.set_zlabel("z")
+
+def apply_title():
+    plt.title(os.getcwd().split(os.sep)[-1])
+
+def replot(pieces, ax):
+    main(pieces, ax)
+    label_axes(ax)
+    apply_title()
+
+def main(pieces, ax):
+    colormap = plt.cm.plasma
+    # colors = plt.cm.get_cmap('hsv', len(pieces))
+    color_list = [colormap(i) for i in np.linspace(0, 1, len(pieces))]
+
+    # colors = make_colors(len(pieces))
+    for ii,p in enumerate(pieces):
+        if(p.visibility.pieceVisibility):
+            p.plot(color=color_list[ii], ax=ax)
+
+def plot_pieces(pieces):
+
+    fig = make_figure()
+    ax = make_axes(fig)
+    label_axes(ax)
+
+    # left, bottom, width, height
+    rax = plt.axes([0.05, 0.4, 0.2, 0.05*len(pieces)])
+    labels = ['piece'+str(ii) for ii,p in enumerate(pieces)]
+    visibility = [True for p in enumerate(pieces)]
+    check = CheckButtons(rax, labels, visibility)
+
+    main(pieces, ax)
+
+    def func(label):
+        if label == labels[labels.index(label)]:
+            pieces[labels.index(label)].visibility.pieceVisibility = (not pieces[labels.index(label)].visibility.pieceVisibility)
+            ax.clear()
+            replot(pieces, ax)
+
+        plt.draw()
+
+    check.on_clicked(func)
+
+    apply_title()
+
+    plt.show()
+
+###########END MOVE THIS CODE
+
+
+
+

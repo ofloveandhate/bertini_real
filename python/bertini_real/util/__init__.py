@@ -1,6 +1,8 @@
 """
     :platform: Unix, Windows
-    :synopsis: This module contains utilities functions to generate BRData*.pkl 
+    :synopsis: This module contains utility functions for Bertini_real, including functions:
+      * to generate BRData*.pkl 
+      * to enhance lists
 """
 
 def next_filenumber():
@@ -53,3 +55,15 @@ def highest_filenumber():
                 continue
 
     return highest_number
+
+
+
+class ReversableList(list):
+    """ Create a ReversableList object for reversing order of data 
+
+        :param list: The list to be read.
+
+    """
+
+    def reverse(self):
+        return list(reversed(self))

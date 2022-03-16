@@ -25,6 +25,7 @@ This module is still useful, though we can now also plot surfaces using glumpy.
 import os
 from bertini_real.surface import Surface, Curve, Piece
 import bertini_real.util
+from bertini_real.util import ReversableList
 import dill
 import numpy as np
 import matplotlib
@@ -207,16 +208,6 @@ class Options(object):
 
 
 
-class ReversableList(list):
-    """ Create a ReversableList object for reversing order of data 
-
-        :param list: The list to be read.
-
-    """
-
-    def reverse(self):
-        return list(reversed(self))
-
 
 class Plotter(object):
 
@@ -322,13 +313,13 @@ class Plotter(object):
             if(decomposition.dimension==1):
                 raise NotImplementedError('Unable to export OBJ file for Curve object')
             else:
-                decomposition.export_obj_smooth()
+                decomposition.export_smooth()
 
         def _export_raw_action(arg):
             if(decomposition.dimension==1):
                 raise NotImplementedError('Unable to export OBJ file for Curve object')
             else:
-                decomposition.export_obj_raw()
+                decomposition.export_raw()
 
         # measurements are in inches
 
