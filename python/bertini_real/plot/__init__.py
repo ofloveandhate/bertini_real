@@ -59,7 +59,7 @@ class StyleOptions(object):
         self.color_function = None
 
     def set_color_function(self, function):
-        self.colormode = BY_FUNCTION
+        self.colormode = ColorMode.BY_FUNCTION
         self.color_function = function
 
 
