@@ -365,7 +365,6 @@ class Plotter(object):
         y = [Size.Fixed(inset_y+(num_buttons+num_check_panels)*y_padding + check_y*num_checks + button_y*num_buttons), Size.Fixed(button_y)]
         divider = Divider(self.fig, (0, 0, 1, 1), x, y, aspect=False)
         button_smooth_ax = self.fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
-        # button_smooth_ax = self.fig.add_axes([inset_x, inset_y+num_checks*check_y+(num_check_panels+num_buttons)*y_padding, button_x, button_y]) # as [xpos, ypos   width of sorrunding, height of surrounding]
         button_export_smooth = widgets.Button(button_smooth_ax, 'Export Smooth OBJ')
         num_buttons += 1
         button_export_smooth.on_clicked(_export_smooth_action)
@@ -377,8 +376,6 @@ class Plotter(object):
         y = [Size.Fixed(inset_y+(num_buttons+num_check_panels)*y_padding + check_y*num_checks + button_y*num_buttons), Size.Fixed(button_y)]
         divider = Divider(self.fig, (0, 0, 1, 1), x, y, aspect=False)
         button_raw_ax = self.fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
-
-        # button_raw_ax = self.fig.add_axes([inset_x, inset_y+num_checks*check_y+num_buttons*button_y+(num_check_panels+num_buttons)*y_padding, button_x, button_y]) # as [xpos, ypos   width of sorrunding, height of surrounding]
         button_export_raw = widgets.Button(button_raw_ax, 'Export Raw OBJ')
         num_buttons += 1
         button_export_raw.on_clicked(_export_raw_action)
