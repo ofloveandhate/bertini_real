@@ -12,7 +12,7 @@ class Curve(Decomposition):
         :param Decomposition: Decomposition data from decomp file
 
     """
-    def __init__(self, directory, is_embedded=False):
+    def __init__(self, directory, is_embedded=False,embedded_into=None):
         """ Initialize a Curve Object
 
             :param directory: Directory of the curve folder
@@ -22,7 +22,7 @@ class Curve(Decomposition):
         self.edges = []
         self.sampler_data = None
 
-        Decomposition.__init__(self, directory, is_embedded)
+        Decomposition.__init__(self, directory, is_embedded,embedded_into)
 
 
         # automatically parse data files to gather curve data

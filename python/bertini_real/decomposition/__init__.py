@@ -12,14 +12,18 @@ class Decomposition(object):
 
     """
 
-    def __init__(self, directory, is_embedded=False):
+    def __init__(self, directory, is_embedded=False, embedded_into=None):
         """ Initialize a Decomposition object
 
             :param directory: directory path
             :param is_embedded
+            :param 
         """
         self.directory = directory
+
         self.is_embedded = is_embedded
+        self.embedded_into = embedded_into
+
         self.input = None
         self.inputfilename = None
         self.num_variables = 0
@@ -32,8 +36,15 @@ class Decomposition(object):
         self.dimension = 0
         self.parse_decomp(self.directory)
         self.read_input(self.directory)
+
+        self.memoized_data = {}
+
         if not self.is_embedded:
             self.vertices, self.filenames = bertini_real.data.gather_vertices(self.directory)
+        else:
+            if self.embedded_into is None:
+                raise br_except.EmbeddedIssue("parameter `embedded_into` cannot be unset if the decomposition is embedded")
+            
 
     def parse_decomp(self, directory):
         """ Parse and store decomposition data
@@ -65,3 +76,34 @@ class Decomposition(object):
         else:
             with open(filename, 'r') as f:
                 self.input = f.read()
+
+
+
+    def extract_points(self):
+        """ Helper method
+            Extract points from vertices as a list
+
+            :rtype: List of tuples of length n.  This is probably terrible, and should use numpy.  Please fix this, silviana.
+
+        """
+
+        if self.is_embedded:
+            return self.embedded_into.extract_points()
+
+        if 'points' in self.memoized_data:
+            return self.memoized_data['points']
+
+
+
+        points = []
+
+        for vertex in self.vertices:
+            point = [None] * self.num_variables
+
+            for i in range(self.num_variables):
+                point[i] = vertex.point[i].real
+            points.append(point)
+
+        self.memoized_data['points'] = points
+
+        return points

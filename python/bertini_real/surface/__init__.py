@@ -318,7 +318,7 @@ class Surface(Decomposition):
 
     """
 
-    def __init__(self, directory, is_embedded=False):
+    def __init__(self, directory, is_embedded=False,embedded_into=None):
         """ Initialize a Surface Object
 
             :param directory: Directory of the surface folder
@@ -338,7 +338,7 @@ class Surface(Decomposition):
         self.singular_names = []
         self.sampler_data = []   # store all surface_sampler data
 
-        Decomposition.__init__(self, directory, is_embedded)
+        Decomposition.__init__(self, directory, is_embedded,embedded_into)
 
 
         # automatically parse data files to gather curve data
@@ -399,20 +399,20 @@ class Surface(Decomposition):
             :param directory: Directory of the surface folder
         """
         for ii in range(self.num_midpoint_slices):
-            new_curve = Curve(directory + '/curve_midslice_' + str(ii),is_embedded=True)
+            new_curve = Curve(directory + '/curve_midslice_' + str(ii),is_embedded=True,embedded_into=self)
             self.midpoint_slices.append(new_curve)
         for ii in range(self.num_critical_slices):
-            new_curve = Curve(directory + '/curve_critslice_' + str(ii),is_embedded=True)
+            new_curve = Curve(directory + '/curve_critslice_' + str(ii),is_embedded=True,embedded_into=self)
             self.critical_point_slices.append(new_curve)
 
-        self.critical_curve = Curve(directory + '/curve_crit',is_embedded=True)
-        self.sphere_curve = Curve(directory + '/curve_sphere',is_embedded=True)
+        self.critical_curve = Curve(directory + '/curve_crit',is_embedded=True,embedded_into=self)
+        self.sphere_curve = Curve(directory + '/curve_sphere',is_embedded=True,embedded_into=self)
 
         for ii in range(self.num_singular_curves):
             filename = directory + '/curve_singular_mult_' + \
                 str(self.singular_curve_multiplicities[ii][0]) + '_' + str(
                     self.singular_curve_multiplicities[ii][1])
-            new_curve = Curve(filename,is_embedded=True)
+            new_curve = Curve(filename,is_embedded=True,embedded_into=self)
             self.singular_curves.append(new_curve)
             self.singular_names.append(new_curve.inputfilename)
 
@@ -684,25 +684,7 @@ class Surface(Decomposition):
 
 
 
-    def extract_points(self):
-        """ Helper method for plot_surface_samples()
-            Extract points from vertices as a list
 
-            :param data: Surface decomposition data
-            :rtype: List of tuples of length n.  This is probably terrible, and should use numpy.  Please fix this, silviana.
-
-        """
-        points = []
-
-        for vertex in self.vertices:
-            # allocate n buckets to q
-            point = [None] * self.num_variables
-
-            for i in range(self.num_variables):
-                point[i] = vertex.point[i].real
-            points.append(point)
-
-        return points
 
 
 

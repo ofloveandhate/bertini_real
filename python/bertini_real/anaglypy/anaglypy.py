@@ -51,23 +51,6 @@ class ReversableList(list):
         return list(reversed(self))
 
 
-def extract_points(self):
-    """ Helper method for plot_surface_samples()
-        Extract points from vertices
-
-        :param data: Surface decomposition data
-        :rtype: List of tuples of length 3.
-    """
-    points = []
-
-    for vertex in self.decomposition.vertices:
-        point = [None] * self.decomposition.num_variables
-
-        for i in range(self.decomposition.num_variables):
-            point[i] = vertex.point[i].real
-        points.append(point)
-
-    return points
 
 
 # Define objects colors
@@ -145,7 +128,7 @@ class Anaglypy():
         """ Generate faces and vertices of smooth surface """
 
         # Extract points
-        points = extract_points(self)
+        points = self.decomposition.extract_points()
 
         # Extract face
         face = self.decomposition.sampler_data
@@ -159,7 +142,7 @@ class Anaglypy():
     def generate_fv_raw(self):
         """ Generate faces and vertices of raw surface """
 
-        points = extract_points(self)
+        points = self.decomposition.extract_points()
 
         surf = self.decomposition
 

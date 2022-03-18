@@ -43,7 +43,7 @@ class GlumpyPlotter():
         surf = self.decomposition
 
         tuples = surf.sampler_data
-        points = extract_points(surf)
+        points = surf.extract_points()
 
         triangle = []
         for i in range(len(tuples)):
@@ -102,7 +102,7 @@ class GlumpyPlotter():
         which_faces = list(range(num_faces))
 
         tuples = surf.sampler_data
-        points = extract_points(surf)
+        points = surf.extract_points()
 
         # store number of faces to num_faces
         num_faces = surf.num_faces
@@ -405,23 +405,7 @@ def make_colors(points, cmap, color_function):
     return colors
 
 
-def extract_points(data):
-    """ Helper method for plot()
-        Extract points from vertices
 
-        :param data: The decomposition that we are rendering.
-        :rtype: List of tuples of length 3.
-    """
-    points = []
-
-    for vertex in data.vertices:
-        point = [None] * data.num_variables
-
-        for i in range(data.num_variables):
-            point[i] = vertex.point[i].real
-        points.append(point)
-
-    return points
 
 
 def extract_curve_points(data):

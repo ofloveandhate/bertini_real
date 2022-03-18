@@ -485,25 +485,7 @@ class Plotter(object):
 
         return np.array(xs), np.array(ys), np.array(zs)
 
-    def extract_points(self, decomposition):
-        """ Helper method for _plot_surface_samples()
-            Extract points from vertices
 
-            :param data: Surface decomposition data
-            :rtype: List of tuples of length 3.
-
-        """
-        points = []
-
-        for vertex in decomposition.vertices:
-            # allocate 3 buckets to q
-            point = [None] * decomposition.num_variables
-
-            for i in range(decomposition.num_variables):
-                point[i] = vertex.point[i].real
-            points.append(point)
-
-        return points
 
 
 
@@ -528,7 +510,7 @@ class Plotter(object):
 
         self.plotted_decompositions.append(curve)
 
-        self.points = self.extract_points(curve)
+        self.points = curve.extract_points()
         if self.options.render.vertices and not curve.is_embedded:
             self._plot_vertices(curve)
 
@@ -702,7 +684,7 @@ class Plotter(object):
 
         self.plotted_decompositions.append(surf)
 
-        self.points = self.extract_points(surf)
+        self.points = surf.extract_points()
 
         if self.options.render.vertices and not surf.is_embedded:
             self._plot_vertices(surf)

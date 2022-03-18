@@ -14,3 +14,8 @@ class BertiniRealError(Exception):
 class SurfaceNotSampled(BertiniRealError):
     """Raised when a surface should be sampled before running the executed code"""
     pass
+
+
+class EmbeddedIssue(BertiniRealError):
+    """Indicates that there's an issue with a decomposition being embedded in another"""
+    pass
