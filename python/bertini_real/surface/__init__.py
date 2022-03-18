@@ -51,7 +51,7 @@ def export_mesh(mesh, basename, autoname_using_folder=False, file_type='stl'):
     print("Exported \x1b[0;35;40m " + outname + "\x1b[0m successfully")
 
 
-def solidify_mesh(mesh,distance):
+def solidify_mesh(mesh, distance, offset=0):
 
     A = mesh # relying on referenced nature of Python here
 
@@ -66,8 +66,6 @@ def solidify_mesh(mesh,distance):
     vertexnormsA = A.vertex_normals
     vertexnormsB = B.vertex_normals
 
-    offset = 0
-
     distA = (distance) * (offset + 1) / 2
     distB = (distance) * (1 - (offset + 1) / 2)
 
@@ -80,7 +78,7 @@ def solidify_mesh(mesh,distance):
 
     numVerts = len(A.vertices)
 
-    T = []
+    boundary_triangles = []
 
     boundary_groups = trimesh.grouping.group_rows(
         A.edges_sorted, require_count=1)
@@ -89,18 +87,17 @@ def solidify_mesh(mesh,distance):
 
     for edge in boundary_edges:
         for i in range(len(edge) - 1):
-            t1 = [edge[i], edge[i + 1], edge[i] + numVerts]
+            t1 = [edge[i+1], edge[i], edge[i] + numVerts]
             t2 = [edge[i + 1], edge[i] + numVerts, edge[i + 1] + numVerts]
 
-            T.append(t1)
-            T.append(t2)
+            boundary_triangles.append(t1)
+            boundary_triangles.append(t2)
 
     Q = np.concatenate((A.vertices, B.vertices), axis=0)
 
-    newBoundary = trimesh.Trimesh(Q, T)
+    newBoundary = trimesh.Trimesh(Q, boundary_triangles)
 
     finalmesh = A + newBoundary + B
-    finalmesh.fix_normals()
 
     return finalmesh
 
