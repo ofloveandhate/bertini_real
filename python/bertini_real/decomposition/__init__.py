@@ -3,6 +3,7 @@
     :synopsis: The Decomposition contains methods to read input file and parse decomposition.
 """
 import bertini_real.parse
+import numpy as np
 import os
 
 class Decomposition(object):
@@ -37,7 +38,7 @@ class Decomposition(object):
         self.parse_decomp(self.directory)
         self.read_input(self.directory)
 
-        self.memoized_data = {}
+        self._memoized_data = {}
 
         if not self.is_embedded:
             self.vertices, self.filenames = bertini_real.data.gather_vertices(self.directory)
@@ -90,8 +91,8 @@ class Decomposition(object):
         if self.is_embedded:
             return self.embedded_into.extract_points()
 
-        if 'points' in self.memoized_data:
-            return self.memoized_data['points']
+        if 'points' in self._memoized_data:
+            return self._memoized_data['points']
 
 
 
@@ -104,6 +105,8 @@ class Decomposition(object):
                 point[i] = vertex.point[i].real
             points.append(point)
 
-        self.memoized_data['points'] = points
+        points = np.array(points)
+
+        self._memoized_data['points'] = points.real
 
         return points

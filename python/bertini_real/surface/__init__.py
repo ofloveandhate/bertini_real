@@ -98,7 +98,6 @@ def solidify_mesh(mesh, distance, offset=0):
     newBoundary = trimesh.Trimesh(Q, boundary_triangles)
 
     finalmesh = A + newBoundary + B
-
     return finalmesh
 
 
@@ -198,7 +197,7 @@ class Piece():
              unique_point_indices_this_piece.extend(unique_point_indices_this_face)
         #deref each point index to its point
         points = self.surface.extract_points()
-        coordinates_this_piece = np.array([points[ind] for ind in unique_point_indices_this_piece])
+        coordinates_this_piece = np.array([points[ind,:] for ind in unique_point_indices_this_piece])
         #return the mean as [x,y,z]
         return coordinates_this_piece.mean(axis=0)
 

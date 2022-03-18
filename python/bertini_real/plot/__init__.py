@@ -510,7 +510,6 @@ class Plotter(object):
 
         self.plotted_decompositions.append(curve)
 
-        self.points = curve.extract_points()
         if self.options.render.vertices and not curve.is_embedded:
             self._plot_vertices(curve)
 
@@ -712,7 +711,7 @@ class Plotter(object):
 
         # locally unpack
         which_faces = self.options.render.which_faces
-        points = self.points
+        points = surf.extract_points()
         faces = surf.sampler_data # these are triples of integers, indexing into the vertex_set for the decomposition
 
 
@@ -742,7 +741,7 @@ class Plotter(object):
                 s = int(tri[1])
                 t = int(tri[2])
 
-                k = [points[f], points[s], points[t]]
+                k = [points[f,:], points[s,:], points[t,:]]
 
                 T.append(k)
 
