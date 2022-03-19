@@ -115,13 +115,8 @@ def copy_all_scad_files_here():
     import pkgutil
     import pkg_resources
     from os.path import join
-    import shutil
-
 
     scad_files = pkg_resources.resource_listdir("bertini_real", "surface/scad")
-
-    from datetime import datetime
-    today = datetime.today().strftime('%Y-%m-%d-%H:%M:%S')
 
     for s in scad_files:
         contents = pkgutil.get_data('bertini_real',join('surface/scad/',s))
