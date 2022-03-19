@@ -9,10 +9,10 @@ extras = {
 }
 
 setup(name='bertini_real',
-      version='1.6',  # TODO make this set programmatically
+      version='1.7',  # TODO make this set programmatically
       description='Python library for bertini_real',
-      url='http://bertinireal.com',
-      author='Silviana Amethyst, with students Caden Joergens, Dan Hessler, Foong Min Wong',
+      url='https://bertinireal.com',
+      author='silviana amethyst, with students Caden Joergens, Dan Hessler, Foong Min Wong',
       author_email='amethyst@uwec.edu',
       packages=find_packages(exclude=EXCLUDE_FROM_PACKAGES),
       install_requires=['matplotlib',
@@ -25,6 +25,8 @@ setup(name='bertini_real',
                         'scipy'],
       extras_require=extras,
       package_dir={'bertini_real': 'bertini_real'},
+      package_data={'bertini_real': ['surface/scad/*.scad']},
+      include_package_data=True,
       zip_safe=False)
 
 # on macos, i had to patch site-packages/OpenGL/platfomr/ctypesload.py
