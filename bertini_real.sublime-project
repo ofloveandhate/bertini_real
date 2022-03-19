@@ -49,7 +49,10 @@
 				".libs",
 				"autom4te.cache",
 				"generated_documentation",
-				"config"]
+				"config",
+				"*.egg-info",
+				"python/build",
+				"__pycache__"],
 		}
 	],
 

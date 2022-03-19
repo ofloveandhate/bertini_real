@@ -101,22 +101,33 @@ def solidify_mesh(mesh, distance, offset=0):
     return finalmesh
 
 
+# i used the following to help me solve this problem:
+#     https://stackoverflow.com/questions/61531935/irerate-over-package-data-files-and-copy-them-to-current-working-directory
+#    lol, the misspelled "iterate" is not my fault.
+#
+# also:
+#     https://stackoverflow.com/questions/32490629/getting-todays-date-in-yyyy-mm-dd-in-python
+def copy_all_scad_files_here():
+    """
+    copy all source .scad files provided in bertini_real to the current directory
+    """
+
+    import pkgutil
+    import pkg_resources
+    from os.path import join
+    import shutil
 
 
+    scad_files = pkg_resources.resource_listdir("bertini_real", "surface/scad")
 
+    from datetime import datetime
+    today = datetime.today().strftime('%Y-%m-%d-%H:%M:%S')
 
+    for s in scad_files:
+        contents = pkgutil.get_data('bertini_real',join('surface/scad/',s))
 
-class VisibilityOptions(object):
-
-    def __init__(self):
-        self.pieceVisibility = True
-
-
-
-
-
-
-
+        with open(s,'wb') as f:
+            f.write(contents)
 
 
 
