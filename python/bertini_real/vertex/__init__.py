@@ -17,6 +17,7 @@
 from enum import Flag
 
 # see https://docs.python.org/3/library/enum.html#intenum
+# these MUST match the flags from the C++ side.
 class VertexType(Flag):
     unset = 0
     critical = 1
