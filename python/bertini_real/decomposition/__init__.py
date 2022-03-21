@@ -36,7 +36,7 @@ class Decomposition(object):
         self.center = []
         self.dimension = 0
 
-        self.br_version = bertini_real.__version__
+        self.br_version = bertini_real.__version_info__
 
         self.parse_decomp(self.directory)
         self.read_input(self.directory)
