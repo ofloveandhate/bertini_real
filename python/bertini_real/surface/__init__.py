@@ -143,7 +143,6 @@ class Piece():
         self.num_variables = surface.num_variables
         self.center = surface.center
         self.radius = surface.radius
-        self.visibility = VisibilityOptions()
 
     def __str__(self):
         """ toString method for Piece """
@@ -1003,62 +1002,62 @@ class Surface(Decomposition):
 # |/     \|(_______)   \_/   (_______/     )_(   |/     \|\_______/\_______)  (_______/(_______)(______/ (_______/
 #                                                                                                     
 #################
-def make_figure():
-    return plt.figure()
+# def make_figure():
+#     return plt.figure()
 
-def make_axes(fig):
-    return fig.add_subplot(1, 1, 1, projection='3d')
+# def make_axes(fig):
+#     return fig.add_subplot(1, 1, 1, projection='3d')
 
-def label_axes(ax):
-    ax.set_xlabel("x")
-    ax.set_ylabel("y")
-    ax.set_zlabel("z")
+# def label_axes(ax):
+#     ax.set_xlabel("x")
+#     ax.set_ylabel("y")
+#     ax.set_zlabel("z")
 
-def apply_title():
-    plt.title(os.getcwd().split(os.sep)[-1])
+# def apply_title():
+#     plt.title(os.getcwd().split(os.sep)[-1])
 
-def replot(pieces, ax):
-    main(pieces, ax)
-    label_axes(ax)
-    apply_title()
+# def replot(pieces, ax):
+#     main(pieces, ax)
+#     label_axes(ax)
+#     apply_title()
 
-def main(pieces, ax):
-    colormap = plt.cm.plasma
-    # colors = plt.cm.get_cmap('hsv', len(pieces))
-    color_list = [colormap(i) for i in np.linspace(0, 1, len(pieces))]
+# def main(pieces, ax):
+#     colormap = plt.cm.plasma
+#     # colors = plt.cm.get_cmap('hsv', len(pieces))
+#     color_list = [colormap(i) for i in np.linspace(0, 1, len(pieces))]
 
-    # colors = make_colors(len(pieces))
-    for ii,p in enumerate(pieces):
-        if(p.visibility.pieceVisibility):
-            p.plot(color=color_list[ii], ax=ax)
+#     # colors = make_colors(len(pieces))
+#     for ii,p in enumerate(pieces):
+#         if(p.visibility.pieceVisibility):
+#             p.plot(color=color_list[ii], ax=ax)
 
-def plot_pieces(pieces):
+# def plot_pieces(pieces):
 
-    fig = make_figure()
-    ax = make_axes(fig)
-    label_axes(ax)
+#     fig = make_figure()
+#     ax = make_axes(fig)
+#     label_axes(ax)
 
-    # left, bottom, width, height
-    rax = plt.axes([0.05, 0.4, 0.2, 0.05*len(pieces)])
-    labels = ['piece'+str(ii) for ii,p in enumerate(pieces)]
-    visibility = [True for p in enumerate(pieces)]
-    check = CheckButtons(rax, labels, visibility)
+#     # left, bottom, width, height
+#     rax = plt.axes([0.05, 0.4, 0.2, 0.05*len(pieces)])
+#     labels = ['piece'+str(ii) for ii,p in enumerate(pieces)]
+#     visibility = [True for p in enumerate(pieces)]
+#     check = CheckButtons(rax, labels, visibility)
 
-    main(pieces, ax)
+#     main(pieces, ax)
 
-    def func(label):
-        if label == labels[labels.index(label)]:
-            pieces[labels.index(label)].visibility.pieceVisibility = (not pieces[labels.index(label)].visibility.pieceVisibility)
-            ax.clear()
-            replot(pieces, ax)
+#     def func(label):
+#         if label == labels[labels.index(label)]:
+#             pieces[labels.index(label)].visibility.pieceVisibility = (not pieces[labels.index(label)].visibility.pieceVisibility)
+#             ax.clear()
+#             replot(pieces, ax)
 
-        plt.draw()
+#         plt.draw()
 
-    check.on_clicked(func)
+#     check.on_clicked(func)
 
-    apply_title()
+#     apply_title()
 
-    plt.show()
+#     plt.show()
 
 ###########END MOVE THIS CODE
 
