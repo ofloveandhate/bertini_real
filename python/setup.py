@@ -8,8 +8,12 @@ extras = {
     ]
 }
 
+version = {}
+with open("bertini_real/__about__.py") as fp:
+      exec(fp.read(), version)
+
 setup(name='bertini_real',
-      version='1.7',  # TODO make this set programmatically
+      version=version["__version__"],  
       description='Python library for bertini_real',
       url='https://bertinireal.com',
       author='silviana amethyst, with students Caden Joergens, Dan Hessler, Foong Min Wong',
