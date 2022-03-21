@@ -4,6 +4,35 @@
 """
 
 
+# Foong Min Wong
+# University of Wisconsin, Eau Claire
+# Fall 2019
+#
+# silviana amethyst
+# University of Wisconsin, Eau Claire
+# Spring 2022
+
+
+
+from enum import Flag
+
+# see https://docs.python.org/3/library/enum.html#intenum
+# these MUST match the flags from the C++ side.
+class VertexType(Flag):
+    unset = 0
+    critical = 1
+    semicritical = 2
+    midpoint = 4
+    isolated = 8
+    new = 16
+    curve_sample_point = 32
+    surface_sample_point = 64
+    removed = 128
+    problematic = 256
+    singular = 512
+
+
+
 class Vertex:
     """ Create a Vertex object 
 
