@@ -7,12 +7,14 @@ from bertini_real.__about__ import (
     __uri__,
     __version__,
     __version_info__,
+    __author__,
+    __email__
 )
 
-    # __author__,
+    # 
     # __commit__,
     # __copyright__,
-    # __email__,
+    # ,
     # __license__,
 
 

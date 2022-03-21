@@ -3,21 +3,20 @@ from setuptools import find_packages, setup
 EXCLUDE_FROM_PACKAGES = []
 
 extras = {
-
     'optional': [
     ]
 }
 
-version = {}
+about = {}
 with open("bertini_real/__about__.py") as fp:
-      exec(fp.read(), version)
+      exec(fp.read(), about)
 
 setup(name='bertini_real',
-      version=version["__version__"],  
-      description='Python library for bertini_real',
-      url='https://bertinireal.com',
-      author='silviana amethyst, with students Caden Joergens, Dan Hessler, Foong Min Wong',
-      author_email='amethyst@uwec.edu',
+      version=about['__version__'],  
+      description=about['__summary__'],
+      url=about['__uri__'],
+      author=about['__author__'],
+      author_email=about['__email__'],
       packages=find_packages(exclude=EXCLUDE_FROM_PACKAGES),
       install_requires=['matplotlib',
                         'trimesh',
@@ -29,8 +28,8 @@ setup(name='bertini_real',
                         'scipy'],
       extras_require=extras,
       package_dir={'bertini_real': 'bertini_real'},
-      package_data={'bertini_real': ['surface/scad/*.scad']},
-      include_package_data=True,
+      package_data={'bertini_real': ['surface/scad/*.scad']}, # for plugs and sockets on pieces of surfaces
+      include_package_data=True, # for plugs and sockets on pieces of surfaces
       zip_safe=False)
 
 # on macos, i had to patch site-packages/OpenGL/platfomr/ctypesload.py
