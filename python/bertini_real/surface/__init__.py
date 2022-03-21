@@ -18,7 +18,7 @@ import numpy as np
 from bertini_real.decomposition import Decomposition
 from bertini_real.curve import Curve
 from bertini_real.vertex import Vertex
-import bertini_real.vertextype
+from bertini_real.vertex import VertexType
 from bertini_real.util import ReversableList
 
 import os
@@ -240,7 +240,7 @@ class Piece():
 
             # vertices
             for ii in range(3): # 0 is left, 1 is mid, 2 is right
-                if(self.surface.vertices[curr_edge[ii]].is_of_type(bertini_real.vertextype.singular)):
+                if(self.surface.vertices[curr_edge[ii]].is_of_type(VertexType.singular)):
                     point_singularities.append(curr_edge[ii])
 
 
@@ -256,21 +256,21 @@ class Piece():
                             zz].edges[face['bottom']]
             # vertices
             for ii in range(3):
-                if(self.surface.vertices[curr_edge[ii]].is_of_type(bertini_real.vertextype.singular)):
+                if(self.surface.vertices[curr_edge[ii]].is_of_type(VertexType.singular)):
                     point_singularities.append(curr_edge[ii])
 
             # now we check to the left
             for edge_ind in face['left']: # this thing itself is a list
                 curr_edge = surf.critical_point_slices[face['middle slice index']].edges[edge_ind]
                 for ii in range(3):
-                    if(self.surface.vertices[curr_edge[ii]].is_of_type(bertini_real.vertextype.singular)):
+                    if(self.surface.vertices[curr_edge[ii]].is_of_type(VertexType.singular)):
                         point_singularities.append(curr_edge[ii])
 
                         # now we check to the right
             for edge_ind in face['right']: # this thing itself is a list
                 curr_edge = surf.critical_point_slices[face['middle slice index']+1].edges[edge_ind]
                 for ii in range(3):
-                    if(self.surface.vertices[curr_edge[ii]].is_of_type(bertini_real.vertextype.singular)):
+                    if(self.surface.vertices[curr_edge[ii]].is_of_type(VertexType.singular)):
                         point_singularities.append(curr_edge[ii])
 
         return list(set(point_singularities))

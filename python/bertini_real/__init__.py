@@ -10,10 +10,10 @@ from bertini_real.__about__ import (
     __email__
 )
 
-    # 
     # __commit__,
     # __copyright__,
     # __license__,
+
 
 
 import bertini_real.data
