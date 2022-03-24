@@ -290,7 +290,7 @@ class Piece():
     def export_raw(self, basename=f'br_piece_raw',autoname_using_folder=False,file_type='stl'):
         if basename=='br_piece_raw':
             basename = basename+'_'+ ('-'.join([str(i) for i in self.indices[:3]]))
-            
+
         self.surface.export_raw(self.indices,basename,autoname_using_folder,file_type)
 
 
@@ -363,7 +363,7 @@ class Surface(Decomposition):
         result += f"there are {self.num_critical_slices} crit slices\n"
         result += f"and {self.num_singular_curves} singular_curves with multiplicities {self.singular_curve_multiplicities}\n\n"
         result += f"computed point set has {len(self.vertices)} total points in it\n"
-        result += f"" 
+        result += f""
         return result
 
     def __str__(self):
@@ -685,14 +685,88 @@ class Surface(Decomposition):
 
         return pieces
 
+    def write_piece_data(self):
+        pieces = self.separate_into_nonsingular_pieces()
 
+        # compute centroids
+        centroids = []
+        for p in pieces:
+        	centroids.append(p.centroid())
 
+        # compute a list of nodal singularities, and which pieces they're connected to
+        sing_connections = defaultdict(list)
 
+        for ii, p in enumerate(pieces):
+        	sing_this_piece = p.point_singularities()
 
+        	for s in sing_this_piece:
+        		sing_connections[s].append(ii)
+        		# a dictionary keyed by the integer index of the singularity,
+        		# with value a list of the pieces on which it is incident
 
+        # only put plug/socket at sing that's connected to two pieces
+        # filter out singularities with incorrect number of connections
+        wanted_sing_connections = {k:v for k,v in sing_connections.items() if len(v)==2}
 
+        """Helper function to find the unit vector"""
+        def unit_vector(vector):
 
+            magnitude = np.linalg.norm(vector)
+            unit=[]
+            for i in range(len(vector)):
+                unit.append(vector[i]/magnitude)
+            return unit
 
+        directions = defaultdict(list) # explicitly keyed by the singularities
+        sing_directions = []
+        sing_locations = []
+        for sing_index,connected_pieces in wanted_sing_connections.items():
+        	ind_connected_piece_0 = connected_pieces[0]
+        	ind_connected_piece_1 = connected_pieces[1]
+        	# use these two indices to look up centroids and compute the direction.
+
+        	centroid_0 = centroids[ind_connected_piece_0]
+        	centroid_1 = centroids[ind_connected_piece_1]
+
+        	sing_coords =self.vertices[sing_index].point.real
+
+        	# compute two unit vectors,
+        	# compute their "average"
+
+        	#unit vector from singularity to centorids
+        	unit_0 = unit_vector(np.subtract(centroid_0, sing_coords))
+        	unit_1 = unit_vector(np.subtract(centroid_1, sing_coords))
+        	#get unit vector for above
+        	#find unit vector resultant of unit_0 and flipped unit_1
+        	direction0 = unit_vector(np.add(unit_0, np.multiply(unit_1, -1)))
+        	direction1 = np.multiply(direction0,-1)
+        	directions[sing_index] = [direction0, direction1]
+
+        	sing_directions.append(direction0)
+        	sing_locations.append(list(sing_coords))
+
+        piece_indices = []
+        singularities_on_pieces = []
+        for ii,p in enumerate(pieces):
+        	sings_this_piece = []
+
+        	for sing_index,connected_pieces in wanted_sing_connections.items():
+        		sings_this_piece.append(sing_index)
+        	singularities_on_pieces.append(sings_this_piece)
+        	piece_indices.append(pieces[ii].indices)
+
+        with open("br_surf_piece_data.scad", "w") as f:
+        	f.write(f'piece_indices = {piece_indices};\n')
+        	f.write(f'singularities_on_pieces = {singularities_on_pieces};\n')
+        	f.write(f'sing_directions = {sing_directions};\n')
+        	f.write(f'sing_locations = {sing_locations};\n')
+
+        	f.write(f'parity_of_piece = [-1,1];\n')
+        	#need parity of singularity
+        	f.write(f'conn_size = 0.01;\n')
+
+        with open("br_surf_piece_data.scad", "r") as f:
+        	print(f.read())
 
 
 
@@ -739,7 +813,7 @@ class Surface(Decomposition):
 
         # unpack a few things
         points = self.extract_points()
-        
+
 
         num_total_faces = 0
         for ii in range(len(which_faces)):
@@ -897,7 +971,7 @@ class Surface(Decomposition):
 
 
 
-    
+
 
 
 
@@ -915,10 +989,10 @@ class Surface(Decomposition):
     def export_smooth(self, which_faces=None, basename='br_surface_smooth', autoname_using_folder=False, file_type='stl'):
         """ Export smooth decomposition of surfaces to OBJ """
 
-        
+
         mesh = self.as_mesh_smooth(which_faces)
         export_mesh(mesh, basename, autoname_using_folder, file_type)
-        
+
 
 
 
@@ -928,8 +1002,8 @@ class Surface(Decomposition):
 
 
     def solidify_raw(self, distance=0.1, which_faces=None, basename='br_surface_solidified_raw', autoname_using_folder=False, file_type='stl'):
-        """ 
-        Solidify raw version of surface.  
+        """
+        Solidify raw version of surface.
 
         Default format is `stl`.  Also can do `obj`.
         """
@@ -942,12 +1016,12 @@ class Surface(Decomposition):
 
 
     def solidify_smooth(self, distance=0.1, which_faces=None, basename='br_surface_solidified_smooth', autoname_using_folder=False, file_type='stl'):
-        """ 
+        """
         Solidify smooth version of surface.  Requires that the surface has been sampled using `sampler`
 
         Default format is `stl`.  Also can do `obj`.
         """
- 
+
         mesh = self.as_mesh_smooth(which_faces)
         solid = solidify_mesh(mesh,distance)
         export_mesh(solid, basename, autoname_using_folder, file_type)
@@ -961,25 +1035,15 @@ class Surface(Decomposition):
     #################
 
 
-    #  _______  _        ______     _______  _______    _______           _______  _______  _______  _______  _______ 
+    #  _______  _        ______     _______  _______    _______           _______  _______  _______  _______  _______
     # (  ____ \( (    /|(  __  \   (  ___  )(  ____ \  (  ____ \|\     /|(  ____ )(  ____ \(  ___  )(  ____ \(  ____ \
     # | (    \/|  \  ( || (  \  )  | (   ) || (    \/  | (    \/| )   ( || (    )|| (    \/| (   ) || (    \/| (    \/
-    # | (__    |   \ | || |   ) |  | |   | || (__      | (_____ | |   | || (____)|| (__    | (___) || |      | (__    
-    # |  __)   | (\ \) || |   | |  | |   | ||  __)     (_____  )| |   | ||     __)|  __)   |  ___  || |      |  __)   
-    # | (      | | \   || |   ) |  | |   | || (              ) || |   | || (\ (   | (      | (   ) || |      | (      
+    # | (__    |   \ | || |   ) |  | |   | || (__      | (_____ | |   | || (____)|| (__    | (___) || |      | (__
+    # |  __)   | (\ \) || |   | |  | |   | ||  __)     (_____  )| |   | ||     __)|  __)   |  ___  || |      |  __)
+    # | (      | | \   || |   ) |  | |   | || (              ) || |   | || (\ (   | (      | (   ) || |      | (
     # | (____/\| )  \  || (__/  )  | (___) || )        /\____) || (___) || ) \ \__| )      | )   ( || (____/\| (____/\
     # (_______/|/    )_)(______/   (_______)|/         \_______)(_______)|/   \__/|/       |/     \|(_______/(_______/
-                                                                                                                    
+
 
 
     #############
-
-
-
-
-
-
-
-
-
-
