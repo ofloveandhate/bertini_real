@@ -48,10 +48,11 @@ class Vertex:
             :param projection_value: value of projection
             :param vertex_type: vertextype
         """
+        
         self.point = point
         self.input_filename_index = input_filename_index
         self.projection_value = projection_value
-        self.type = vertex_type
+        self.type = VertexType(vertex_type)
 
     def __repr__(self):
         """ toString method for Vertex """
@@ -67,4 +68,5 @@ class Vertex:
             :param type: vertextype
         """
         # Check if a vertex matches certain VertexType
-        return bool((self.type & type))
+
+        return bool((VertexType(self.type) & VertexType(type)))
