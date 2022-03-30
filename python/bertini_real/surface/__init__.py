@@ -29,6 +29,8 @@ from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from matplotlib.widgets import CheckButtons
 
+from collections import defaultdict
+
 import copy
 import math
 import trimesh
@@ -235,8 +237,7 @@ class Piece():
             else:
                 for zz in range(len(surf.singular_curves)):
                     if(surf.singular_names[zz] == face['system top']):
-                        curr_edge = surf.singular_curves[
-                            zz].edges[face['top']]
+                        curr_edge = surf.singular_curves[zz].edges[face['top']]
 
             # vertices
             for ii in range(3): # 0 is left, 1 is mid, 2 is right
@@ -753,7 +754,7 @@ class Surface(Decomposition):
         	for sing_index,connected_pieces in wanted_sing_connections.items():
         		sings_this_piece.append(sing_index)
         	singularities_on_pieces.append(sings_this_piece)
-        	piece_indices.append(pieces[ii].indices)
+        	piece_indices.append(pieces[ii].indices[:4])
 
         with open("br_surf_piece_data.scad", "w") as f:
         	f.write(f'piece_indices = {piece_indices};\n')
