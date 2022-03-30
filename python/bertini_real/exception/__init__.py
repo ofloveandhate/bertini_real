@@ -19,3 +19,9 @@ class SurfaceNotSampled(BertiniRealError):
 class EmbeddedIssue(BertiniRealError):
     """Indicates that there's an issue with a decomposition being embedded in another"""
     pass
+
+class PleaseRegather(BertiniRealError):
+    """
+    Indicates that something changed in the code, and you need to re-gather from br's output
+    """
+    pass
