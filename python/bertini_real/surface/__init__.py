@@ -692,22 +692,24 @@ class Surface(Decomposition):
         # compute centroids
         centroids = []
         for p in pieces:
-        	centroids.append(p.centroid())
+            centroids.append(p.centroid())
 
         # compute a list of nodal singularities, and which pieces they're connected to
-        sing_connections = defaultdict(list)
+        pieces_connected_to_sing = defaultdict(list)
+        sings_on_pieces = {}
 
         for ii, p in enumerate(pieces):
-        	sing_this_piece = p.point_singularities()
+            sing_this_piece = p.point_singularities()
+            sings_on_pieces[ii] = sing_this_piece
 
-        	for s in sing_this_piece:
-        		sing_connections[s].append(ii)
-        		# a dictionary keyed by the integer index of the singularity,
-        		# with value a list of the pieces on which it is incident
+            for s in sing_this_piece:
+                pieces_connected_to_sing[s].append(ii)
+                # a dictionary keyed by the integer index of the singularity,
+                # with value a list of the pieces on which it is incident
 
         # only put plug/socket at sing that's connected to two pieces
         # filter out singularities with incorrect number of connections
-        wanted_sing_connections = {k:v for k,v in sing_connections.items() if len(v)==2}
+        wanted_sing_connections = {k:v for k,v in pieces_connected_to_sing.items() if len(v)==2}
 
         """Helper function to find the unit vector"""
         def unit_vector(vector):
@@ -719,52 +721,66 @@ class Surface(Decomposition):
             return unit
 
         directions = defaultdict(list) # explicitly keyed by the singularities
-        sing_directions = []
-        sing_locations = []
+        sing_directions = {}
+        sing_locations = {}
         for sing_index,connected_pieces in wanted_sing_connections.items():
-        	ind_connected_piece_0 = connected_pieces[0]
-        	ind_connected_piece_1 = connected_pieces[1]
-        	# use these two indices to look up centroids and compute the direction.
+            ind_connected_piece_0 = connected_pieces[0]
+            ind_connected_piece_1 = connected_pieces[1]
+            # use these two indices to look up centroids and compute the direction.
 
-        	centroid_0 = centroids[ind_connected_piece_0]
-        	centroid_1 = centroids[ind_connected_piece_1]
+            centroid_0 = centroids[ind_connected_piece_0]
+            centroid_1 = centroids[ind_connected_piece_1]
 
-        	sing_coords =self.vertices[sing_index].point.real
+            sing_coords =self.vertices[sing_index].point.real
 
-        	# compute two unit vectors,
-        	# compute their "average"
+            #unit vector from singularity to centorids
+            unit_0 = unit_vector(np.subtract(centroid_0, sing_coords))
+            unit_1 = unit_vector(np.subtract(centroid_1, sing_coords))
+            #get unit vector for above
+            #find unit vector resultant of unit_0 and flipped unit_1
+            direction0 = unit_vector(np.add(unit_0, np.multiply(unit_1, -1)))
+            direction1 = np.multiply(direction0,-1)
+            directions[sing_index] = [direction0, direction1]
 
-        	#unit vector from singularity to centorids
-        	unit_0 = unit_vector(np.subtract(centroid_0, sing_coords))
-        	unit_1 = unit_vector(np.subtract(centroid_1, sing_coords))
-        	#get unit vector for above
-        	#find unit vector resultant of unit_0 and flipped unit_1
-        	direction0 = unit_vector(np.add(unit_0, np.multiply(unit_1, -1)))
-        	direction1 = np.multiply(direction0,-1)
-        	directions[sing_index] = [direction0, direction1]
-
-        	sing_directions.append(direction0)
-        	sing_locations.append(list(sing_coords))
+            sing_directions[sing_index] = (direction0)
+            sing_locations[sing_index] = (list(sing_coords))
 
         piece_indices = []
         singularities_on_pieces = []
-        for ii,p in enumerate(pieces):
-        	sings_this_piece = []
 
-        	for sing_index,connected_pieces in wanted_sing_connections.items():
-        		sings_this_piece.append(sing_index)
-        	singularities_on_pieces.append(sings_this_piece)
-        	piece_indices.append(pieces[ii].indices[:4])
+
+        singindex2int = {sing_index:ii for ii,sing_index in enumerate(wanted_sing_connections.keys())}
+        int2singindex = {ii:sing_index for ii,sing_index in enumerate(wanted_sing_connections.keys())}
+
+        print(singindex2int)
+        print(int2singindex)
+
+        for ii,p in enumerate(pieces):
+            sings_this_piece = []
+
+            for sing_index,connected_pieces in wanted_sing_connections.items():
+                if sing_index in sings_on_pieces[ii]:
+                    sings_this_piece.append(singindex2int[sing_index])
+            singularities_on_pieces.append(sings_this_piece)
+            piece_indices.append(pieces[ii].indices[:4])
+
+        sing_directions_as_list = [sing_directions[sing_index] for sing_index in wanted_sing_connections.keys()]
+        sing_locations_as_list = [sing_locations[sing_index] for sing_index in wanted_sing_connections.keys()]
+
+        parity_of_sing_by_piece = [ [0 for jj in range(len(pieces))] for ii in range(len(wanted_sing_connections)) ]
+        for sing_index, ps in wanted_sing_connections.items():
+            parity_of_sing_by_piece[singindex2int[sing_index]][ps[0]] = -1
+            parity_of_sing_by_piece[singindex2int[sing_index]][ps[1]] = 1
 
         with open("br_surf_piece_data.scad", "w") as f:
-        	f.write(f'piece_indices = {piece_indices};\n')
-        	f.write(f'singularities_on_pieces = {singularities_on_pieces};\n')
-        	f.write(f'sing_directions = {sing_directions};\n')
-        	f.write(f'sing_locations = {sing_locations};\n')
+            f.write(f'piece_indices = {piece_indices};\n')
+            f.write(f'singularities_on_pieces = {singularities_on_pieces};\n')
+            f.write(f'sing_directions = {sing_directions_as_list};\n')
+            f.write(f'sing_locations = {sing_locations_as_list};\n')
 
-        	f.write(f'parity_of_piece = [-1,1];\n')
-        	#need parity of singularity
-        	f.write(f'conn_size = 0.01;\n')
+            f.write(f'parities = {parity_of_sing_by_piece};\n')
+            #need parity of singularity
+            f.write(f'conn_size = 0.01;\n')
 
         with open("br_surf_piece_data.scad", "r") as f:
         	print(f.read())
