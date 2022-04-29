@@ -6,7 +6,7 @@
 Welcome!
 **************************************************************
 
-This is the documentation for the `Bertini_real <https://github.com/ofloveandhate/bertini_real>`_ python library for working with numerical cellular decompositions of algebraic curves and surfaces in any number of variables. 
+This is the documentation for the `Bertini_real <https://github.com/ofloveandhate/bertini_real>`_ python library for working with numerical cellular decompositions of algebraic curves and surfaces in any number of variables.
 
 Follow the tutorials below to learn how to plot surfaces 🌈 & export files suitable for 3d printing 🧱!
 
@@ -30,13 +30,13 @@ Tutorials ✏️
 .. toctree::
    :maxdepth: 1
    :caption: Contents:
-   
+
    tutorials/bertini_real
    tutorials/matplotlib
    tutorials/glumpy
    tutorials/mesh_export
    tutorials/anaglypy
-
+   tutorials/snap_together
 
 Details 📝
 ================
@@ -82,5 +82,3 @@ If you have any questions or problems, please `submit an issue on github <https:
 
 .. image:: pictures/3dprints_collage2.png
    :width: 300
-
-
