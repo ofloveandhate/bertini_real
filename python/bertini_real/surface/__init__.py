@@ -687,32 +687,35 @@ class Surface(Decomposition):
         return pieces
 
     def write_piece_data(self):
+        """"Opens and edits current scad data to set the orientation and location of a plug and socket"""
+
         pieces = self.separate_into_nonsingular_pieces()
 
-        # compute centroids
-        centroids = []
+        #create a list of the centroid coordinates of each piece
+        centroids = [] 
         for p in pieces:
-            centroids.append(p.centroid())
+            centroids.append(p.centroid()) 
+
 
         # compute a list of nodal singularities, and which pieces they're connected to
         pieces_connected_to_sing = defaultdict(list)
-        sings_on_pieces = {}
+        sings_on_pieces = {} #sings are in order of the piece index
 
         for ii, p in enumerate(pieces):
-            sing_this_piece = p.point_singularities()
-            sings_on_pieces[ii] = sing_this_piece
+            sing_this_piece = p.point_singularities() 
+            sings_on_pieces[ii] = sing_this_piece 
 
-            for s in sing_this_piece:
-                pieces_connected_to_sing[s].append(ii)
-                # a dictionary keyed by the integer index of the singularity,
-                # with value a list of the pieces on which it is incident
+            # a dictionary keyed by the integer index of the singularity, with value a list of the pieces on which it is incident
+            for s in sing_this_piece: 
+                pieces_connected_to_sing[s].append(ii) 
+
 
         # only put plug/socket at sing that's connected to two pieces
-        # filter out singularities with incorrect number of connections
+        #then assign that sing to k(ey) and assign [piece1,piece2] to v(value)
         wanted_sing_connections = {k:v for k,v in pieces_connected_to_sing.items() if len(v)==2}
 
-        """Helper function to find the unit vector"""
         def unit_vector(vector):
+            """Helper function to find a unit vector of a vector"""
 
             magnitude = np.linalg.norm(vector)
             unit=[]
@@ -726,17 +729,17 @@ class Surface(Decomposition):
         for sing_index,connected_pieces in wanted_sing_connections.items():
             ind_connected_piece_0 = connected_pieces[0]
             ind_connected_piece_1 = connected_pieces[1]
-            # use these two indices to look up centroids and compute the direction.
 
+            # find the centroid of each piece by the index of the piece
             centroid_0 = centroids[ind_connected_piece_0]
             centroid_1 = centroids[ind_connected_piece_1]
 
             sing_coords =self.vertices[sing_index].point.real
 
-            #unit vector from singularity to centorids
+            #calculate the unit vectors by traveling from the centroid of the piece to the singularity
             unit_0 = unit_vector(np.subtract(centroid_0, sing_coords))
             unit_1 = unit_vector(np.subtract(centroid_1, sing_coords))
-            #get unit vector for above
+
             #find unit vector resultant of unit_0 and flipped unit_1
             direction0 = unit_vector(np.add(unit_0, np.multiply(unit_1, -1)))
             direction1 = np.multiply(direction0,-1)
@@ -755,14 +758,15 @@ class Surface(Decomposition):
         print(singindex2int)
         print(int2singindex)
 
+        #organize the data computed above to the scad files
         for ii,p in enumerate(pieces):
-            sings_this_piece = []
+            sings_this_piece = [] 
 
             for sing_index,connected_pieces in wanted_sing_connections.items():
-                if sing_index in sings_on_pieces[ii]:
+                if sing_index in sings_on_pieces[ii]: 
                     sings_this_piece.append(singindex2int[sing_index])
-            singularities_on_pieces.append(sings_this_piece)
-            piece_indices.append(pieces[ii].indices[:4])
+            singularities_on_pieces.append(sings_this_piece) 
+            piece_indices.append(pieces[ii].indices[:4]) 
 
         sing_directions_as_list = [sing_directions[sing_index] for sing_index in wanted_sing_connections.keys()]
         sing_locations_as_list = [sing_locations[sing_index] for sing_index in wanted_sing_connections.keys()]
@@ -771,7 +775,8 @@ class Surface(Decomposition):
         for sing_index, ps in wanted_sing_connections.items():
             parity_of_sing_by_piece[singindex2int[sing_index]][ps[0]] = -1
             parity_of_sing_by_piece[singindex2int[sing_index]][ps[1]] = 1
-
+        
+        #open and auto write the data(piece indices, all sings of pieces, sing directions in order of sing index, sing coords in order of sing index) of the piece
         with open("br_surf_piece_data.scad", "w") as f:
             f.write(f'piece_indices = {piece_indices};\n')
             f.write(f'singularities_on_pieces = {singularities_on_pieces};\n')
@@ -779,11 +784,11 @@ class Surface(Decomposition):
             f.write(f'sing_locations = {sing_locations_as_list};\n')
 
             f.write(f'parities = {parity_of_sing_by_piece};\n')
-            #need parity of singularity
-            f.write(f'conn_size = 0.01;\n')
+            f.write(f'conn_size = 0.01;\n') #hard coded, but needs to be automatically computed
 
+        #open up the file we just wrote to look over
         with open("br_surf_piece_data.scad", "r") as f:
-        	print(f.read())
+            print(f.read())
 
 
 
