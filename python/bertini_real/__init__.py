@@ -21,7 +21,11 @@ import bertini_real.surface
 import bertini_real.curve
 import bertini_real.util
 import bertini_real.plot
-import bertini_real.glumpyplotter
+try:
+    import bertini_real.glumpyplotter
+except ImportError as e:
+    print(f'unable to import bertini_real.glumpyplotter.  if you want to use opengl-accelerated rendering of surfaces, install the module `glumpy` (and probably an opengl library, too)')
+
 import bertini_real.anaglypy
 
 
