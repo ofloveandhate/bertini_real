@@ -37,14 +37,14 @@ cut = true; // cutouts help understand the inside of the surface
 
 
 difference(){ // the difference is for the cutout.
-for (ii=[0:len(piece_indices)-1]){
+for (ii=[0:len(piece_names)-1]){
 
-    indices = piece_indices[ii]; // this is a Piece property
+    piece_filename = piece_names[ii]; // this is a Piece property
 
     sings = singularities_on_pieces[ii];
 
     translate([ii*piece_offset_x,piece_offset_y,ii*piece_offset_z]) // to offset pieces from each other
-    Piece(indices, ii, parities, sings, sing_directions, sing_locations, conn_size);
+    Piece(piece_filename, ii, parities, sings, sing_directions, sing_locations, conn_size);
 
 }
     if (cut){
@@ -53,12 +53,12 @@ for (ii=[0:len(piece_indices)-1]){
     }
 }
 
-module Piece(indices, piece_index, parities, sings, directions, locations, conn_size){
-    echo(indices)
+module Piece(piece_filename, piece_index, parities, sings, directions, locations, conn_size){
+    echo("making",piece_filename)
 
 
     difference(){
-        import_piece(indices);
+        import_piece(piece_filename);
 
         for (ii=[0:len(sings)-1]){
 
