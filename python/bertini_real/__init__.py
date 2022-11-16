@@ -30,5 +30,5 @@ import bertini_real.anaglypy
 
 
 def gather_and_plot():
-    bertini_real.data.gather()
-    return bertini_real.plot.plot()
+    decomposition = bertini_real.data.gather()
+    return bertini_real.plot.plot(decomposition)
