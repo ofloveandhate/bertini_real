@@ -69,8 +69,8 @@
 %
 %
 %
-% danielle brake
-% danielleamethystbrake@gmail.com
+% silviana amethyst
+% silviana.amethyst@gmail.com
 %
 % university of wisconsin -- eau claire
 % mathematics
