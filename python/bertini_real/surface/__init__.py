@@ -294,23 +294,74 @@ class Piece():
 
         return list(set(point_singularities))
 
+
+    def write_skeleton_data(self):
+
+        pieces = self.separate_into_nonsingular_pieces()
+
+
+        with open(self.generate_filename_no_ext("skeleton_piece")+".scad", "w") as f:
+            pass
+
+
+        return
+
+
+
     def plot(self, color, ax):
-        self.surface.plot(face_indices=self.indices, color=color, ax=ax)
+        return self.surface.plot(face_indices=self.indices, color=color, ax=ax)
 
 
 
+    def edges_touching(self):
+        """
+        computes dictionary of the curve edges on this piece of surface.  includes crit, sing, mid, and sphere.  
+        this function will return a dict of sets of edge indices.  
+        """
+
+        from collections import defaultdict
+        touching_curve_edges = defaultdict(set)
+    
+
+        for face_index in self.indices:
+
+            face = self.surface.faces[face_index]
+
+            slice_ind = face['middle slice index']
+
+            left = self.surface.critical_point_slices[slice_ind]
+            for edge_ind in face['left']:
+                touching_curve_edges[left.inputfilename].add(edge_ind)
+                
+
+            right = self.surface.critical_point_slices[slice_ind+1]
+            for edge_ind in face['right']:
+                touching_curve_edges[right.inputfilename].add(edge_ind)
+
+            touching_curve_edges[face['system top']].add(face['top'])
+            touching_curve_edges[face['system bottom']].add(face['bottom'])
+
+
+            mid = self.surface.midpoint_slices[slice_ind]
+            for ind, e in enumerate(mid.edges):
+                if e[1]==face['midpoint']:
+                    touching_curve_edges[mid.inputfilename].add(ind)
+
+        return dict(touching_curve_edges)
+
+
+    def edges_to_points(self, touching_curve_edges):
+        return self.surface.edges_to_points(touching_curve_edges)
 
 
 
-
-
-    def generate_filename_no_ext(self,basename):
+    def generate_filename_no_ext(self,basename, ninds=3):
         """ 
         construct a filename for the piece, using face indices to make unique.  
         generates without an extension, so that it can be added later
         """
 
-        return basename+'_'+ ('-'.join([str(i) for i in self.indices[: min(len(self.indices),3) ]])) # have to use `min` in case piece has <3 faces on it
+        return basename+'_'+ ('-'.join([str(i) for i in self.indices[: min(len(self.indices),ninds) ]])) # have to use `min` in case piece has <ninds faces on it
 
 
     def generate_filename_smooth(self, file_type=_default_file_type):
@@ -727,6 +778,66 @@ class Surface(Decomposition):
             unconnected_this = list(set(unconnected_this) - set(connected))
 
         return pieces
+
+
+    def edges_to_points(self, dict_of_sets_of_edges):
+        """
+        computes a dict-of-sets-of-points, from a dict-of-sets-of-edge indices
+
+        the keys of the dict should be input filenames for curves in this surface.
+        """
+
+        vertices = self.vertices # these have already been dehomogenized
+
+
+        from collections import defaultdict
+        points_on_edges = defaultdict(dict)
+
+        for curve_name, edge_indices in dict_of_sets_of_edges.items():
+
+            c = self.curve_with_name(curve_name)
+
+
+            for edge_ind in edge_indices:
+
+                
+                
+
+                
+
+
+                if len(self.sampler_data)>0:
+                    point_indices = c.sampler_data[edge_ind]
+                else:
+                    point_indices = c.edges[edge_ind]
+
+
+                points_this_edge = [self.vertices[ii].point for ii in point_indices]
+                points_on_edges[curve_name][edge_ind] = np.array(points_this_edge).real
+
+        return points_on_edges
+
+    def curve_with_name(self, curve_name):
+
+        if curve_name == self.critical_curve.inputfilename:
+            return self.critical_curve
+
+        if curve_name == self.sphere_curve.inputfilename:
+            return self.sphere_curve
+
+        for c in self.critical_point_slices:
+            if curve_name == c.inputfilename:
+                return c
+
+        for c in self.midpoint_slices:
+            if curve_name == c.inputfilename:
+                return c 
+
+        for c in self.singular_curves:
+            if curve_name == c.inputfilename:
+                return c 
+
+        raise RuntimeError(f'unable to find a curve with name {curve_name} in this surface')
 
     def write_piece_data(self):
         """
