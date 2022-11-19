@@ -16,7 +16,7 @@ import bertini_real.parse
 import bertini_real.exception as br_except
 import numpy as np
 from bertini_real.decomposition import Decomposition
-from bertini_real.curve import Curve
+from bertini_real.curve import Curve, CurvePiece, is_edge_degenerate
 from bertini_real.vertex import Vertex
 from bertini_real.vertex import VertexType
 from bertini_real.util import ReversableList
@@ -49,6 +49,9 @@ _default_piece_basename_raw = 'br_piece_raw'
 
 _default_surface_basename_smooth = 'br_surface_smooth'
 _default_surface_basename_raw = 'br_surface_raw'
+
+
+
 
 
 
@@ -685,7 +688,7 @@ class Surface(Decomposition):
                     g['middle slice index']].edges[g['left'][jj]]
                 b = E[1]
 
-                if a == b and not(self.is_edge_degenerate(e)) and not(self.is_edge_degenerate(E)):
+                if a == b and not(is_edge_degenerate(e)) and not(is_edge_degenerate(E)):
                     val = True
                     return val
 
@@ -694,7 +697,7 @@ class Surface(Decomposition):
                     g['middle slice index'] + 1].edges[g['right'][jj]]
                 b = E[1]
 
-                if a == b and not(self.is_edge_degenerate(e)) and not(self.is_edge_degenerate(E)):
+                if a == b and not(is_edge_degenerate(e)) and not(is_edge_degenerate(E)):
                     val = True
                     return val
         return val
@@ -718,7 +721,7 @@ class Surface(Decomposition):
                     g['middle slice index']].edges[g['left'][jj]]
                 b = E[1]
 
-                if a == b and not(self.is_edge_degenerate(e)) and not(self.is_edge_degenerate(E)):
+                if a == b and not(is_edge_degenerate(e)) and not(is_edge_degenerate(E)):
                     val = True
                     return val
 
@@ -727,7 +730,7 @@ class Surface(Decomposition):
                     g['middle slice index'] + 1].edges[g['right'][jj]]
                 b = E[1]
 
-                if a == b and not(self.is_edge_degenerate(e)) and not(self.is_edge_degenerate(E)):
+                if a == b and not(is_edge_degenerate(e)) and not(is_edge_degenerate(E)):
                     val = True
                     return val
         return val
@@ -792,14 +795,7 @@ class Surface(Decomposition):
 
         return val
 
-    def is_edge_degenerate(self, e):
-        """ 
-        Check if critical point slices are degenerate (one of the endpoints is also the middle point)
 
-            :param e: Critical point slices
-            :rtype: Return True if e is degenerate
-        """
-        return (e[0] == e[1]) or (e[1] == e[2])
 
     def separate_into_nonsingular_pieces(self):
         """ 

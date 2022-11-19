@@ -9,8 +9,22 @@ import numpy as np
 import copy
 
 
+
+
+def is_edge_degenerate(e):
+    """ 
+    Check if critical point slices are degenerate (one of the endpoints is also the middle point)
+
+        :param e: Critical point slices
+        :rtype: Return True if e is degenerate
+    """
+    return (e[0] == e[1]) or (e[1] == e[2])
+
 from collections import namedtuple
 DirectedEdge = namedtuple('DirectedEdge', ['edge_index', 'direction'])
+
+
+
 
 
 from enum import Enum
@@ -74,7 +88,13 @@ class CurvePiece(object):
         c = self.curve
 
         points = np.empty((0,3))
+        prev_point_index = -1
+
         for edge_index, direction in self.directed_edges:
+
+            if is_edge_degenerate(c.edges[edge_index]):
+                continue
+
 
             if len(c.sampler_data)>0:
                 point_indices = c.sampler_data[edge_index]
@@ -85,7 +105,15 @@ class CurvePiece(object):
                 point_indices = point_indices[::-1] # i question the necessity of this deep copy
 
             print(point_indices)
-            points_this_edge = np.array([vertices[ii].point for ii in point_indices]).real
+
+            list_of_points = []
+            for ii in point_indices:
+                if ii != prev_point_index:
+                    list_of_points.append(vertices[ii].point)
+                    prev_point_index = ii
+
+
+            points_this_edge = np.array(list_of_points).real
             print(points_this_edge.shape)
             print(points.shape)
             points = np.vstack((points, points_this_edge))
