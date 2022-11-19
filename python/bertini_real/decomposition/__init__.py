@@ -48,6 +48,8 @@ class Decomposition(object):
         else:
             if self.embedded_into is None:
                 raise br_except.EmbeddedIssue("parameter `embedded_into` cannot be unset if the decomposition is embedded")
+
+            self.vertices = self.embedded_into.vertices
             
 
     def parse_decomp(self, directory):

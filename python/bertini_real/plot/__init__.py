@@ -23,7 +23,8 @@ This module is still useful, though we can now also plot surfaces using glumpy.
 """
 
 import os
-from bertini_real.surface import Surface, Curve, Piece
+from bertini_real.surface import Surface, SurfacePiece
+from bertini_real.curve import Curve, CurvePiece
 import bertini_real.util
 from bertini_real.util import ReversableList
 import dill

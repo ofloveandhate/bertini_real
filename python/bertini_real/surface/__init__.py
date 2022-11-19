@@ -1,6 +1,6 @@
 """
     :platform: Unix, Windows
-    :synopsis: This module contains Surface and Piece types.
+    :synopsis: This module contains Surface and SurfacePiece types.
 
 """
 
@@ -34,6 +34,8 @@ from collections import defaultdict
 import copy
 import math
 import trimesh
+
+
 
 
 
@@ -147,11 +149,11 @@ def copy_all_scad_files_here():
 
 
 
-class Piece():
-    """ Create a Piece object of a surface. A surface can be made of 1 piece or multiple pieces. """
+class SurfacePiece():
+    """ Create a SurfacePiece object of a surface. A surface can be made of 1 piece or multiple pieces. """
 
     def __init__(self, indices, surface):
-        """ Initialize a Piece object with corresponding indices and surface
+        """ Initialize a SurfacePiece object with corresponding indices and surface
 
             :param indices: A list of nonsingular pieces' indices
             :param surface: Surface data
@@ -164,9 +166,14 @@ class Piece():
         self.center = surface.center
         self.radius = surface.radius
 
+
+        # memoized members:
+        self.m_edge_pieces = None
+
+
     def __str__(self):
-        """ toString method for Piece """
-        result = "Piece of a surface with face indices:"
+        """ toString method for SurfacePiece """
+        result = "SurfacePiece with face indices:"
         result += "{}".format(self.indices)
         return result
 
@@ -231,7 +238,7 @@ class Piece():
     # type critical
 
     def point_singularities(self):
-        """ Compute singularity points from a Piece object
+        """ Compute singularity points from a SurfacePiece object
 
             :rtype: A list of indices of point singularities
         """
@@ -313,14 +320,16 @@ class Piece():
 
 
 
-    def edges_touching(self):
+    def _edges_touching(self):
         """
         computes dictionary of the curve edges on this piece of surface.  includes crit, sing, mid, and sphere.  
         this function will return a dict of sets of edge indices.  
+
+        the intention of this function is to convert them to CurvePieces in a subsequent step.
         """
 
         from collections import defaultdict
-        touching_curve_edges = defaultdict(set)
+        touching_curve_edge_indices = defaultdict(set)
     
 
         for face_index in self.indices:
@@ -331,27 +340,61 @@ class Piece():
 
             left = self.surface.critical_point_slices[slice_ind]
             for edge_ind in face['left']:
-                touching_curve_edges[left.inputfilename].add(edge_ind)
+                touching_curve_edge_indices[left.inputfilename].add(edge_ind)
                 
 
             right = self.surface.critical_point_slices[slice_ind+1]
             for edge_ind in face['right']:
-                touching_curve_edges[right.inputfilename].add(edge_ind)
+                touching_curve_edge_indices[right.inputfilename].add(edge_ind)
 
-            touching_curve_edges[face['system top']].add(face['top'])
-            touching_curve_edges[face['system bottom']].add(face['bottom'])
+            touching_curve_edge_indices[face['system top']].add(face['top'])
+            touching_curve_edge_indices[face['system bottom']].add(face['bottom'])
 
 
             mid = self.surface.midpoint_slices[slice_ind]
             for ind, e in enumerate(mid.edges):
                 if e[1]==face['midpoint']:
-                    touching_curve_edges[mid.inputfilename].add(ind)
+                    touching_curve_edge_indices[mid.inputfilename].add(ind)
 
-        return dict(touching_curve_edges)
+        return dict(touching_curve_edge_indices) # change from a default_dict of sets to a dict of sets
 
 
-    def edges_to_points(self, touching_curve_edges):
-        return self.surface.edges_to_points(touching_curve_edges)
+
+    
+
+
+
+
+
+    def edge_pieces(self):
+        """
+        takes a `dict` of `set`s of edge indices. 
+        produces a `list` of `CurvePiece`s
+
+
+        a kind of related note: the critical curve is very likely in the middle of the surface piece
+        the boundary of a `SurfacePiece` is probably sphere or singular `CurvePiece`s.  
+        it's possible the edges are degenerate, in case
+        of nodal singularity.
+        """
+
+        
+        # an act of memoization
+        if self.m_edge_pieces:
+            return self.m_edge_pieces
+
+
+        touching_curve_edge_indices = self._edges_touching()
+
+        self.m_edge_pieces = [] # will be a list of CurvePieces
+
+        for curve_name, edge_indices in touching_curve_edge_indices.items():
+            self.m_edge_pieces.extend( self.surface.curve_with_name(curve_name).break_into_pieces(edge_indices) )
+
+        return self.m_edge_pieces
+
+
+
 
 
 
@@ -773,50 +816,14 @@ class Surface(Decomposition):
             seed = unconnected_this[0]
             [connected_this, unconnected_this] = self.faces_nonsingularly_connected(
                 seed)
-            pieces.append(Piece(connected_this, self))
+            pieces.append(SurfacePiece(connected_this, self))
             connected.extend(connected_this)
             unconnected_this = list(set(unconnected_this) - set(connected))
 
         return pieces
 
 
-    def edges_to_points(self, dict_of_sets_of_edges):
-        """
-        computes a dict-of-sets-of-points, from a dict-of-sets-of-edge indices
-
-        the keys of the dict should be input filenames for curves in this surface.
-        """
-
-        vertices = self.vertices # these have already been dehomogenized
-
-
-        from collections import defaultdict
-        points_on_edges = defaultdict(dict)
-
-        for curve_name, edge_indices in dict_of_sets_of_edges.items():
-
-            c = self.curve_with_name(curve_name)
-
-
-            for edge_ind in edge_indices:
-
-                
-                
-
-                
-
-
-                if len(self.sampler_data)>0:
-                    point_indices = c.sampler_data[edge_ind]
-                else:
-                    point_indices = c.edges[edge_ind]
-
-
-                points_this_edge = [self.vertices[ii].point for ii in point_indices]
-                points_on_edges[curve_name][edge_ind] = np.array(points_this_edge).real
-
-        return points_on_edges
-
+    
     def curve_with_name(self, curve_name):
 
         if curve_name == self.critical_curve.inputfilename:
