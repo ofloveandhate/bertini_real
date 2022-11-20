@@ -73,10 +73,10 @@ class CurvePiece(object):
 
 
     def to_points(self):
-
-        print("\n\n--------\nnew to_points")
         """
-        computes a list of points
+        computes a numpy array of points, in order, for this piece of a curve.
+
+        generate edges are skipped, and adjacent endpoints are unified into one point.
         """
 
 
@@ -87,7 +87,7 @@ class CurvePiece(object):
         vertices = self.curve.vertices # these have already been dehomogenized
         c = self.curve
 
-        points = np.empty((0,3))
+        points = np.empty((0,3)) # built up over time.  difficult to pre-allocate.  yagni.
         prev_point_index = -1
 
         for edge_index, direction in self.directed_edges:
@@ -96,15 +96,14 @@ class CurvePiece(object):
                 continue
 
 
+
             if len(c.sampler_data)>0:
                 point_indices = c.sampler_data[edge_index]
             else:
                 point_indices = c.edges[edge_index]
 
             if direction==EdgeDirection.backward:
-                point_indices = point_indices[::-1] # i question the necessity of this deep copy
-
-            print(point_indices)
+                point_indices = point_indices[::-1]
 
             list_of_points = []
             for ii in point_indices:
@@ -114,18 +113,14 @@ class CurvePiece(object):
 
 
             points_this_edge = np.array(list_of_points).real
-            print(points_this_edge.shape)
-            print(points.shape)
             points = np.vstack((points, points_this_edge))
-            print(points)
-            print(f'{c.inputfilename} after vstacking',points.shape)
 
 
         return points
 
 
 class Curve(Decomposition):
-    """ Create a Curve object (Child class of Decomposition)
+    """ a Curve
 
         :param Decomposition: Decomposition data from decomp file
 
@@ -148,41 +143,31 @@ class Curve(Decomposition):
         try:
             self.parse_curve_samples(self.directory)
         except FileNotFoundError:
-            print("no samples to gather") 
+            if not self.is_embedded:
+                print("no samples to gather") 
 
 
-    def break_into_pieces(self, edge_indices):
+    def break_into_pieces(self, edge_indices = None):
         """
-        
-
         this function returns a list of CurvePieces
+
+        if edge_indices is not given, it will be all the indices for this curve.
+
+        if it is given, it should be an iterable of integers.  they probably come from pieces...
         """
 
-
-        print(f'\n\n-----------------\n\nbreak_into_pieces on curve "{self.inputfilename}"\n\n')
-        
         import copy
         unsorted_edges = copy.deepcopy(edge_indices) # this should be a list of integers
 
         list_of_pieces = [] # the thing we're computing
 
-        print(unsorted_edges)
 
         while len(unsorted_edges): 
-            # print('\n\n================\n\ngathering data for new CurvePiece')
-
             directed_edges = [DirectedEdge(unsorted_edges.pop(), EdgeDirection.forward)]
-
-
-
-            # print(edge_indices)
-            # print(unsorted_edges)
-            # print(directed_edges)
 
             added_edge = True
 
             while added_edge:
-                # print('so far have sorted: ',directed_edges)
                 added_edge = False # reset flag to keep going
 
                 first_edge = self.edges[directed_edges[0].edge_index]
@@ -194,52 +179,37 @@ class Curve(Decomposition):
                 last_edge_direction = directed_edges[-1].direction
                 last_point_index = last_edge[-1 if last_edge_direction==EdgeDirection.forward else 0]
 
-                # print(first_point_index, last_point_index, first_edge, last_edge, first_edge_direction, last_edge_direction)
+                used_edges_this = set()
 
-                
                 for edge_ind in unsorted_edges:
-                    # print("testing",self.edges[edge_ind])
 
                     if self.edges[edge_ind][0]==last_point_index:
-                        unsorted_edges.remove(edge_ind)
+                        used_edges_this.add(edge_ind)
                         directed_edges.append(DirectedEdge(edge_ind,EdgeDirection.forward))
-                        # print(f'A. added {edge_ind} going {EdgeDirection.forward}')
                         added_edge = True
-                        break
 
                     elif self.edges[edge_ind][0]==first_point_index:
-                        unsorted_edges.remove(edge_ind)
+                        used_edges_this.add(edge_ind)
                         directed_edges.insert(0,DirectedEdge(edge_ind,EdgeDirection.backward))
-                        # print(f'B. added {edge_ind} going {EdgeDirection.backward}')
                         added_edge = True
-                        break
 
                     elif self.edges[edge_ind][-1]==last_point_index:
-                        unsorted_edges.remove(edge_ind)
+                        used_edges_this.add(edge_ind)
                         directed_edges.append(DirectedEdge(edge_ind,EdgeDirection.backward))
-                        # print(f'C. added {edge_ind} going {EdgeDirection.backward}')
                         added_edge = True
-                        break
 
                     elif self.edges[edge_ind][-1]==first_point_index:
-                        unsorted_edges.remove(edge_ind)
+                        used_edges_this.add(edge_ind)
                         directed_edges.insert(0,DirectedEdge(edge_ind,EdgeDirection.forward))
-                        # print(f'D. added {edge_ind} going {EdgeDirection.forward}')
                         added_edge = True
-                        break
-            
+
+                unsorted_edges = unsorted_edges - used_edges_this
+
+
             list_of_pieces.append(CurvePiece(self, [e.edge_index for e in directed_edges], directed_edges))
 
 
 
-        print('\n\ndone sorting: \n\tunsorted')
-        for edge_index in unsorted_edges:
-            print(edge_index, self.edges[edge_index])
-
-        print(f'\tsorted into {len(list_of_pieces)} pieces:')
-        print(list_of_pieces)
-        
-        print('\n\n--------\n\n')
 
         return list_of_pieces
 
