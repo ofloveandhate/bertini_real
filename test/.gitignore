@@ -4,7 +4,8 @@ path_*
 
 *.eps
 *.png
-*.py
+python_deflate.py
+python_nullspace_system.py
 *.mat
 *.pkl
 *myexamples
