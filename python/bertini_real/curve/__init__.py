@@ -165,10 +165,10 @@ class Curve(Decomposition):
         while len(unsorted_edges): 
             directed_edges = [DirectedEdge(unsorted_edges.pop(), EdgeDirection.forward)]
 
-            added_edge = True
+            added_edge_indicator = True
 
-            while added_edge:
-                added_edge = False # reset flag to keep going
+            while added_edge_indicator:
+                added_edge_indicator = False # reset flag to keep going
 
                 first_edge = self.edges[directed_edges[0].edge_index]
                 first_edge_direction = directed_edges[0].direction
@@ -186,26 +186,25 @@ class Curve(Decomposition):
                     if self.edges[edge_ind][0]==last_point_index:
                         used_edges_this.add(edge_ind)
                         directed_edges.append(DirectedEdge(edge_ind,EdgeDirection.forward))
-                        added_edge = True
 
                     elif self.edges[edge_ind][0]==first_point_index:
                         used_edges_this.add(edge_ind)
                         directed_edges.insert(0,DirectedEdge(edge_ind,EdgeDirection.backward))
-                        added_edge = True
 
                     elif self.edges[edge_ind][-1]==last_point_index:
                         used_edges_this.add(edge_ind)
                         directed_edges.append(DirectedEdge(edge_ind,EdgeDirection.backward))
-                        added_edge = True
 
                     elif self.edges[edge_ind][-1]==first_point_index:
                         used_edges_this.add(edge_ind)
                         directed_edges.insert(0,DirectedEdge(edge_ind,EdgeDirection.forward))
-                        added_edge = True
 
-                unsorted_edges = unsorted_edges - used_edges_this
+                added_edge_indicator = len(used_edges_this)>0
+                unsorted_edges = unsorted_edges - used_edges_this # remove the edges that we used this iteration
 
 
+
+            # make a CurvePiece, and add it to the list
             list_of_pieces.append(CurvePiece(self, [e.edge_index for e in directed_edges], directed_edges))
 
 

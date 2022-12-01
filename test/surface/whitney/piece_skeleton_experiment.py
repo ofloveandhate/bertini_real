@@ -3,7 +3,7 @@ import bertini_real as br
 import json
 import numpy as np
 
-# br.data.gather_and_save()
+br.data.gather_and_save()
 surface = br.data.read_most_recent()
 surface_pieces = surface.separate_into_nonsingular_pieces()
 
@@ -25,10 +25,12 @@ class NumpyEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-        
+import os
+surface_name = os.getcwd().split('/')[-1]
 
 for surface_piece in surface_pieces:
-
+    surface_piece.export_smooth(basename="_thin_smooth")
+    surface_piece.solidify_smooth(0.08, basename="_solidified_smooth_0.08")
     edge_pieces = surface_piece.edge_pieces()
 
     edge_pieces_as_points = []
