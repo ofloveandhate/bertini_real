@@ -35,6 +35,7 @@ import copy
 import math
 import trimesh
 
+import json
 
 
 
@@ -790,6 +791,15 @@ class Surface(Decomposition):
         with open("br_surf_piece_data.scad", "r") as f:
             print(f.read())
 
+        #open and auto write piece data to a json file
+        with open("br_surf_piece_data.json", "w") as j:
+            j.write(json.dumps({"piece_indices": piece_indices,
+            "singularities_on_pieces": singularities_on_pieces,
+            "sing_directions": sing_directions,
+            "sing_locations": sing_locations,
+            "parities" : parity_of_sing_by_piece}))
+        with open("br_surf_piece_data.json", "r") as j:
+            print(j.read())
 
 
     def as_mesh_smooth(self,which_faces=None):
