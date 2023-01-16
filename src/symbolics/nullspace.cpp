@@ -733,7 +733,7 @@ int compute_crit_nullspace_right(SolverOutput & solve_out, // the returned value
 	int num_before = W_linprod.num_points();
 	W_linprod.sort_for_unique(program_options.same_point_tol());
 	if (num_before - W_linprod.num_points()>0) {
-		std::cout << color::red() << "there were non-unique start points" << color::console_default() << std::endl;
+		std::cout << color::red() << "there were non-unique start points in nullspace right method" << color::console_default() << std::endl;
 	}
 
 
