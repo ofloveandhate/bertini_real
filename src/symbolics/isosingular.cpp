@@ -707,7 +707,7 @@ bool createPythonDeflation(int numVars, char **vars, int *lineVars, int numConst
 				fprintf(OUT, "\t\t\tmyA_1 = np.array([[myA_1a.item(0),myA_1b.item(0)],[myA_1a.item(1),myA_1b.item(1)]])\n");
 			fprintf(OUT, "\t\telse:\n");
 				fprintf(OUT, "\t\t\tq = myJ_r.col(temp_C.item(0)-1)\n");
-				fprintf(OUT, "\t\t\tq = [q] if len(q.shape)==1 else q");
+				fprintf(OUT, "\t\t\tq = [q] if len(q.shape)==1 else q\n");
 				
 				fprintf(OUT, "\t\t\tmyA_1 = np.array(q)\n");
 			fprintf(OUT, "\t\tmyA = Matrix(myA_1)\n");
