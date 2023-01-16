@@ -567,7 +567,7 @@ int compute_crit_nullspace_right(SolverOutput & solve_out, // the returned value
 
 	//  2.  Do a bunch of homotopies in $x$, each set of which will be followed by a single linear solve in $v$.
 	if (program_options.verbose_level()>=3) {
-		std::cout << "building up linprod start system for left nullspace" << std::endl;
+		std::cout << "building up linprod start system for right nullspace" << std::endl;
 	}
 
 	// setup for the multilin moves
