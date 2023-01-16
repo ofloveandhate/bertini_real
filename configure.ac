@@ -4,11 +4,11 @@
 
 
 #we're building bertini_real, version 1.6.1, and the corresponding email is silviana's
-AC_INIT([bertini_real], [1.6.1], [silviana.amethyst@gmail.com],[bertini_real], [https://bertinireal.com/])
+AC_INIT([bertini_real],[1.6.1],[silviana.amethyst@gmail.com],[bertini_real],[https://bertinireal.com/])
 
 
 # Force autoconf to be at least this version number:
-AC_PREREQ([2.68])
+AC_PREREQ([2.71])
 
 
 #
@@ -39,7 +39,7 @@ AC_ENABLE_SHARED
 AC_ENABLE_STATIC
 
 #set up for building libraries
-AC_PROG_LIBTOOL
+LT_INIT
 
 #find flex / lex
 AC_PROG_LEX
@@ -98,13 +98,14 @@ AC_SEARCH_LIBS([cos], [m], [], [
 
 
 AX_BOOST_BASE([1.50],, [AC_MSG_ERROR([bertini_real needs Boost, but it was not found in your system])])
-AX_BOOST_SYSTEM
+
 AX_BOOST_FILESYSTEM
 
 AX_BOOST_REGEX
 AX_BOOST_CHRONO
 AX_BOOST_TIMER
 
+AX_BOOST_SYSTEM
 
 
 AM_CONFIG_HEADER(config.h)
