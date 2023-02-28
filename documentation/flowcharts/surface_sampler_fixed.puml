@@ -1,0 +1,170 @@
+@startuml
+
+
+state SurfaceSamplerFixed {
+
+state ComputePoints{
+
+
+	state SampleCurvesFixed
+	SampleCurvesFixed: left, right -- ≥1 edges each, may be degenerate \ntop, bottom -- 1 edge each 
+
+
+	state AllocateRibs
+	AllocateRibs: linear slices (fixed π_0 value)\nevenly spaced left-to-right
+
+	state PutEndsOnRibs
+	PutEndsOnRibs: Sample points from top and bottom\nare endpoints of ribs
+
+	state SampleRibs{
+		state ForEachRib
+
+		state ComputeMidpoint
+		ComputeMidpoint: Using the midpoint tracker\nto keep in projection square
+
+		state ComputeAdditionalPoints
+		ComputeAdditionalPoints: Using the multilin tracker\ncuz impossible to stray out of\n projection square\n(face may not be convex in natural space)
+
+
+		ForEachRib --> ComputeMidpoint
+
+		ComputeMidpoint --> ComputeAdditionalPoints
+
+
+		ComputeAdditionalPoints --> ForEachRib
+
+
+	}
+	SampleRibs: points are evenly spaced in\nprojection space (under π)
+
+
+
+	SampleCurvesFixed --> AllocateRibs
+
+
+	AllocateRibs --> PutEndsOnRibs
+
+	PutEndsOnRibs --> SampleRibs
+
+
+
+}
+
+
+state StitchRibs{
+	
+	state ForEachPairOfRibs
+	ForEachPairOfRibs: adjacent ribs, from left-to-right
+
+	state triangulate_two_ribs_by_projection_binning{
+		state CheckForEmptyRibsA
+
+		state CheckForLength1RibsA
+
+		state "Q=1" as Q
+
+		note right of Q : indexes into points on rib w more points
+
+
+		state LoopOverRibWithMorePoints{
+
+			
+			state "ii < pts on rib w fewer points" as ForFewerPtsRib{
+
+				state "I=ii-1" as I
+
+				note right of I : indexes into points on rib w fewer points
+
+				state "while Q < #points on rib w/more points && proj val on long < proj val on short" as W{
+
+					state "Q++" as Qplus
+					Qplus : advance along long rib
+
+					state "make triangle" as MakeT
+					MakeT: Triangle(\n\trib_short[I],\n\trib_long[Q],\n\trib_long[Q-1])
+
+					note right of MakeT : two points on long rib
+
+					MakeT --> Qplus
+
+
+
+				}
+
+
+				state "make advancing triangle" as MakeTAdvance
+				MakeTAdvance: Triangle(\n\trib_short[I],\n\trib_short[ii],\n\trib_long[Q-1])
+
+				note right of MakeTAdvance : two points on short rib
+
+				LoopOverRibWithMorePoints --> ForFewerPtsRib
+				ForFewerPtsRib --> I
+				I --> W
+				W --> MakeTAdvance
+			}
+			
+
+
+
+
+
+			state TailEndOfRibs{
+				state "triangulate to end of rib" as ToEnd
+				ToEnd: details in C++ code\nit's not good code
+			}
+
+			note right of TailEndOfRibs : go to next pair of adjcent ribs
+
+			MakeTAdvance --> TailEndOfRibs
+
+		}
+
+		CheckForEmptyRibsA --> CheckForLength1RibsA
+		CheckForLength1RibsA --> FigureOutPiIntervals
+		FigureOutPiIntervals --> Q
+		Q --> LoopOverRibWithMorePoints
+
+	}
+
+
+
+	state triangulate_two_ribs_by_angle_optimization{
+		state CheckForEmptyRibsB
+
+		state CheckForLength1RibsB
+
+
+		CheckForEmptyRibsB --> CheckForLength1RibsB
+
+		CheckForLength1RibsB --> Something
+	}
+
+	ForEachPairOfRibs -[#green]-> triangulate_two_ribs_by_projection_binning : currently used 😕
+
+
+
+	ForEachPairOfRibs -[#red]-> triangulate_two_ribs_by_angle_optimization : commented out...
+}
+
+
+
+
+
+ComputePoints --> StitchRibs
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+@enduml
