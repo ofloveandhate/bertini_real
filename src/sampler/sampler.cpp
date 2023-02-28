@@ -787,7 +787,7 @@ void triangulate_two_ribs_by_projection_binning(const std::vector< int > & rib1,
 
 	// std::cout << "t = [...\n";
 	int Q = 1;
-	auto offset = (*pi_short)->size;
+
 
 	for (int ii=1; ii<(*pi_short)->size; ii++)
 	{
@@ -802,7 +802,6 @@ void triangulate_two_ribs_by_projection_binning(const std::vector< int > & rib1,
 											   (*rib_long)[Q-1]
 											   ) 
 									  );
-			// std::cout << "\t" << I << " " << Q+offset << " " << Q-1+offset << ";...\n";
 			Q++;
 		}
 
@@ -814,7 +813,6 @@ void triangulate_two_ribs_by_projection_binning(const std::vector< int > & rib1,
 										   (*rib_long)[Q-1]
 										   ) 
 								  );
-		// std::cout << "\t" << I << " " << ii << " " << Q-1+offset << ";...\n";
 	}
 
 	TailEndOfRibs((*rib_short), (*rib_long), rib_short->size()-1, Q-1, current_samples);
