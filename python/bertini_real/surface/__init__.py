@@ -953,7 +953,16 @@ class Surface(Decomposition):
 
 
 
-    def as_mesh_smooth(self,which_faces=None):
+    def as_mesh_smooth(self, which_faces=None, keep_all_vertices=True):
+        """
+        Compute a `Trimesh` object from the `trimesh` library for the corresponding faces using sampled data.  Raises if the surface is not sampled.
+
+        which_faces: either None for all faces, or a list-like of ints indicating the indices of the surface faces you want.
+        keep_all_vertices: bool, by default True.  Unused vertices will be kept or merged.  This value influences `Trimesh`'s `process` parameter.  
+
+        See https://trimsh.org/trimesh.html#trimesh.Trimesh.
+        """
+
         num_faces = self.num_faces
 
         if which_faces is None:
@@ -982,12 +991,23 @@ class Surface(Decomposition):
 
         face_np_array = np.array(face)
 
-        A = trimesh.Trimesh(vertex_np_array, face_np_array)
+        should_trimesh_process = False if keep_all_vertices==True else True
+
+        A = trimesh.Trimesh(vertex_np_array, face_np_array, process=should_trimesh_process)
         A.fix_normals()
         return A
 
 
-    def as_mesh_raw(self, which_faces=None):
+    def as_mesh_raw(self, which_faces=None, keep_all_vertices=True):
+        """
+        Compute a `Trimesh` object from the `trimesh` library for the corresponding faces using raw (unsmoothed or blocky) data.
+
+        which_faces: either None for all faces, or a list-like of ints indicating the indices of the surface faces you want.
+        keep_all_vertices: bool, by default True.  Unused vertices will be kept or merged.  This value influences `Trimesh`'s `process` parameter.  
+
+        See https://trimsh.org/trimesh.html#trimesh.Trimesh.
+        """
+
 
         num_faces = self.num_faces
 
@@ -1022,7 +1042,7 @@ class Surface(Decomposition):
 
             T = []
 
-            while 1:
+            while True:
                 ## top edge ##
                 if case == 1:
 
@@ -1159,25 +1179,25 @@ class Surface(Decomposition):
 
 
 
-    def export_raw(self, which_faces=None, basename=_default_surface_basename_raw, autoname_using_folder=False, file_type=_default_file_type):
+    def export_raw(self, which_faces=None, basename=_default_surface_basename_raw, autoname_using_folder=False, file_type=_default_file_type, keep_all_vertices=True):
         """ 
         Export raw decomposition of surface
 
         returns the name of the file which was saved
         """
 
-        mesh = self.as_mesh_raw(which_faces)
+        mesh = self.as_mesh_raw(which_faces,keep_all_vertices)
         return export_mesh(mesh, basename, autoname_using_folder, file_type)
 
 
-    def export_smooth(self, which_faces=None, basename=_default_surface_basename_smooth, autoname_using_folder=False, file_type=_default_file_type):
+    def export_smooth(self, which_faces=None, basename=_default_surface_basename_smooth, autoname_using_folder=False, file_type=_default_file_type, keep_all_vertices=True):
         """ 
         Export smooth decomposition of surface
         
         returns the name of the file which was saved
         """
 
-        mesh = self.as_mesh_smooth(which_faces)
+        mesh = self.as_mesh_smooth(which_faces,keep_all_vertices)
         return export_mesh(mesh, basename, autoname_using_folder, file_type)
 
 
@@ -1188,7 +1208,7 @@ class Surface(Decomposition):
 
 
 
-    def solidify_raw(self, distance=_default_solidify_thickness, which_faces=None, basename=_default_surface_basename_raw+'solidified', autoname_using_folder=False, file_type=_default_file_type):
+    def solidify_raw(self, distance=_default_solidify_thickness, which_faces=None, basename=_default_surface_basename_raw+'solidified', autoname_using_folder=False, file_type=_default_file_type, keep_all_vertices=True):
         """
         Solidify raw version of surface.
 
@@ -1198,14 +1218,14 @@ class Surface(Decomposition):
         returns the name of the file which was saved
         """
 
-        mesh = self.as_mesh_raw(which_faces)
+        mesh = self.as_mesh_raw(which_faces,keep_all_vertices)
         solid = solidify_mesh(mesh,distance)
         return export_mesh(solid, basename, autoname_using_folder, file_type)
 
 
 
 
-    def solidify_smooth(self, distance=_default_solidify_thickness, which_faces=None, basename=_default_surface_basename_raw+'solidified', autoname_using_folder=False, file_type=_default_file_type):
+    def solidify_smooth(self, distance=_default_solidify_thickness, which_faces=None, basename=_default_surface_basename_raw+'solidified', autoname_using_folder=False, file_type=_default_file_type, keep_all_vertices=True):
         """
         Solidify smooth version of surface.  Requires that the surface has been sampled using `sampler`
 
@@ -1215,7 +1235,7 @@ class Surface(Decomposition):
         returns the name of the file which was saved
         """
 
-        mesh = self.as_mesh_smooth(which_faces)
+        mesh = self.as_mesh_smooth(which_faces,keep_all_vertices)
         solid = solidify_mesh(mesh,distance)
         return export_mesh(solid, basename, autoname_using_folder, file_type)
 
