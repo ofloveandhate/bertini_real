@@ -634,10 +634,10 @@ void BertiniRealConfig::print_usage() const
 	line("-symnosubst", 		" -- ", 	" ", "prevent substitution of subfunctions during deflation and other sym ops.");
 	line("-symallowsubst", 		" -- ", 	" ", "allow substitution of subfunctions during deflation and other sym ops.  default");
 	line("-samepointtol", 		"<double>", "1e-7" , "(scaled) infinity-norm distance between two points to be considered distinct");
-	line("-nomerge", 		" -- ", " " , "turn off merging for top-dimensional *curve* decompositions (does not affect surface decompositions)");
+	line("-nomerge", 		" -- ", "off" , "turn off merging for top-dimensional *curve* decompositions (does not affect surface decompositions).  no argument necessary, choosing this turns the nomerge option on.");
 	line("-gammatrick -g", 		"bool", "0" , "use the complex gamma trick for all paths.  is this good?  does it even work at all?  does using this option produce complete garbage, or speed things up like racing stripes?  i don't know, but it's implemented and an option.  choose your own adventure.  enjoy.");
-	line("-ignoresing", " -- ", " ", "ignore singular curve(s); only use if singular curves are naked");
-	line("-realify", " -- ", " ", "change patch and discard imaginary parts where possible throughout decomposition");
+	line("-ignoresing", " -- ", "off", "ignore singular curve(s); only use if singular curves are naked.  no argument necessary, choosing this turns it on.");
+	line("-realify", " -- ", "off", "change patch and discard imaginary parts where possible throughout decomposition.  no argument necessary, choosing this turns it on.");
 	printf("\n\n\n");
 	return;
 }
