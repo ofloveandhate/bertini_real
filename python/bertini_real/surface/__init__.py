@@ -153,7 +153,9 @@ def copy_all_scad_files_here():
 
 
 class SurfacePiece():
-    """ Create a SurfacePiece object of a surface. A surface can be made of 1 piece or multiple pieces. """
+    """ 
+    A "Piece" of an algebraic surface.  Essentially, a union of Faces, with some additional interface.  
+    """
 
     def __init__(self, indices, surface):
         """ Initialize a SurfacePiece object with corresponding indices and surface
@@ -445,8 +447,40 @@ class SurfacePiece():
 
 
 
+    def face_points(self, samples=True, as_indices = False):
+        """
+        Get the coordinates of the points on the Piece of a Surface.
+
+        if `samples`, then will return all samples on the Piece.  otherwise, will return the points of the raw faces.  
+
+        - the computed point set should have no duplicates.  
+        - i do not know what order the points will be in, sorry.
+        """
 
 
+        if samples:
+            self.surface._require_samples()
+
+            sample_point_indices = set() # using a set solves the duplicate problem
+
+            for ii in self.indices:
+                f = self.surface.sampler_data[ii] # unpack.   sampler data is a list of triples of indices into the vertex set.
+
+                for tri in f: 
+                    sample_point_indices.add(tri[0])
+                    sample_point_indices.add(tri[1])
+                    sample_point_indices.add(tri[2])
+
+            
+            if as_indices:
+                return sample_point_indices
+
+            else:# next, get the actual coordinates from the vertex set
+
+                return self.surface.extract_points(indices=sample_point_indices)
+
+        else:
+            raise NotImplementedError('implement this branch, probably by looking at the mesh code for blocky case')
 
 
 
@@ -505,6 +539,23 @@ class Surface(Decomposition):
 
     def __str__(self):
         return repr(self)
+
+
+
+    def is_sampled(self):
+        """
+        Query whether the surface has been sampled.  
+        """
+
+        return len(self.sampler_data) > 0
+
+
+    # this should be a decorator
+    def _require_samples(self):
+        if not self.is_sampled():
+            raise br_except.SurfaceNotSampled('trying to do something that requires samples, but surface is not sampled.  Sample and re-gather, or make do with raw / blocky data')
+
+
 
     def parse_surf(self, directory):
         """ Parse and store into surface data

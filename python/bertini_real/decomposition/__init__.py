@@ -85,29 +85,34 @@ class Decomposition(object):
 
 
 
-    def extract_points(self):
+    def extract_points(self, indices=None):
         """ Helper method
             Extract points from vertices as a list
 
-            :rtype: List of tuples of length n.  This is probably terrible, and should use numpy.  Please fix this, silviana.
+            :rtype: numpy 2d array.  
 
         """
+
+        if indices is None:
+            indices = np.arange(len(self.vertices))
 
         if self.is_embedded:
             return self.embedded_into.extract_points()
 
-        if 'points' in self._memoized_data:
+        if '_memoized_data' in dir(self) and 'points' in self._memoized_data:
             return self._memoized_data['points']
 
 
 
         points = []
 
-        for vertex in self.vertices:
+        for ii in indices:
+            vertex = self.vertices[ii] # unpack via a reference
+
             point = [None] * self.num_variables
 
-            for i in range(self.num_variables):
-                point[i] = vertex.point[i].real
+            for jj in range(self.num_variables):
+                point[jj] = vertex.point[jj].real
             points.append(point)
 
         points = np.array(points)
