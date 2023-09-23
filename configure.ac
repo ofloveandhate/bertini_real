@@ -31,6 +31,27 @@ AC_CONFIG_FILES([Makefile])
 #find the CC compiler
 AC_PROG_CXX
 
+#this calls a file in the m4/ directory, which sets up the MPI wrapper stuffs
+
+# If --with-mpi=auto is used, try to find MPI, but use standard C compiler if it is not found.
+# If --with-mpi=yes is used, try to find MPI and fail if it isn't found.
+# If --with-mpi=no is used, use a standard C compiler instead.
+AC_ARG_WITH(mpi, [AS_HELP_STRING([--with-mpi],
+    [compile with MPI (parallelization) support. If none is found,
+    MPI is not used. Default: auto])
+],,[with_mpi=auto])
+
+AX_PROG_CXX_MPI([test x"$with_mpi" != xno],[use_mpi=yes],[
+  use_mpi=no
+  if test x"$with_mpi" = xyes; then
+    AC_MSG_FAILURE([MPI compiler requested, but couldn't use MPI.])
+  else
+    AC_MSG_FAILURE([No MPI compiler found, won't use MPI.])
+  fi
+])
+
+
+
 
 #enable the creation of shared libraries
 AC_ENABLE_SHARED
@@ -60,13 +81,7 @@ LT_INIT
 AX_CXX_COMPILE_STDCXX_11
 
 
-#this calls a file in the m4/ directory, which sets up the MPI wrapper stuffs
-LX_FIND_MPI
 
-AS_IF([test "$have_CXX_mpi" = "yes"],
-	AC_MSG_NOTICE([mpi c++ appears to work correctly]),
-	AC_MSG_ERROR([it appears you do not have mpi installed])
-	)
 
 
 
