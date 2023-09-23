@@ -822,6 +822,312 @@ void triangulate_two_ribs_by_projection_binning(const std::vector< int > & rib1,
 
 
 
+void triangulate_two_ribs_by_angle_morgan(const std::vector< int > & rib1, const std::vector< int > & rib2,
+											  VertexSet & V, double real_thresh,
+											  std::vector< Triangle> & current_samples)
+{
+#ifdef functionentry_output
+	std::cout << "triangulate_two_ribs_by_angle_morgan" << std::endl;
+#endif
+
+	std::cout << "using morgan's triangulate method" << std::endl;
+
+	bool bail_out = false;
+
+	if (rib1.size()==0) {
+		std::cout << "rib1 had 0 size!" << std::endl;
+		bail_out = true;
+	}
+	if (rib2.size()==0) {
+		std::cout << "rib2 had 0 size!" << std::endl;
+		bail_out = true;
+	}
+
+	if (rib1.size()==1 && rib2.size()==1) {
+		std::cout << "both ribs have size 1!" << std::endl;
+		bail_out = true;
+	}
+
+	if (bail_out) {
+		return;
+	}
+
+
+	int num_vars = V.num_natural_variables();
+
+	unsigned int num_vectors_needed = 9;
+	vec_mp * bulk_vectors = (vec_mp *) br_malloc(num_vectors_needed* sizeof(vec_mp));
+
+	for (unsigned int ii=0; ii<num_vectors_needed; ii++) {
+		init_vec_mp(bulk_vectors[ii],num_vars);  bulk_vectors[ii]->size = num_vars;
+
+	}
+
+	vec_mp *A = &bulk_vectors[0], *B = &bulk_vectors[1], *C = &bulk_vectors[2], *D = &bulk_vectors[3];
+
+
+	vec_mp *AB = &bulk_vectors[4];
+	vec_mp *AC = &bulk_vectors[5];
+	vec_mp *BC = &bulk_vectors[6];
+	vec_mp *DA = &bulk_vectors[7];
+	vec_mp *DC = &bulk_vectors[8];
+
+
+
+	// seed the advancing loop.
+	dehomogenize(B, V[rib1[0]].point(), num_vars);
+	(*B)->size = num_vars-1;
+	real_threshold(*B,real_thresh);
+	dehomogenize(D, V[rib2[0]].point(), num_vars);
+	(*D)->size = num_vars-1;
+	real_threshold(*D,real_thresh);
+
+
+	comp_mp cos_angle_CAB, cos_angle_BCA, cos_angle_ABC;
+	init_mp(cos_angle_CAB); init_mp(cos_angle_BCA); init_mp(cos_angle_ABC);
+
+	comp_mp cos_angle_DCA, cos_angle_ADC, cos_angle_CAD;
+	init_mp(cos_angle_DCA); init_mp(cos_angle_ADC); init_mp(cos_angle_CAD);
+
+
+	comp_mp length_AB, length_AC, length_BC, length_DA, length_DC;
+	init_mp(length_AB); init_mp(length_AC); init_mp(length_BC); init_mp(length_DA); init_mp(length_DC);
+
+	comp_mp dot_CAB, dot_BCA, dot_ABC;
+	init_mp(dot_CAB); init_mp(dot_BCA); init_mp(dot_ABC);
+
+	comp_mp dot_DCA, dot_ADC, dot_CAD;
+	init_mp(dot_DCA); init_mp(dot_ADC); init_mp(dot_CAD);
+
+	comp_mp temp;  init_mp(temp);
+	comp_d temp_d;
+
+	unsigned int curr_index_rib1 = 0, curr_index_rib2 = 0;
+	bool moved_1 = true, moved_2 = true;  //this is an intial condition to get them both set properly.  all subsequent iterations have only one as moved==true, and the other is always false.
+	while (curr_index_rib1 < rib1.size()-1 // neither rib size is 0, so this -1 is ok, won't underflow
+		   &&
+		   curr_index_rib2 < rib2.size()-1)
+	{
+
+#ifdef debug_compile
+		int a =rib1[curr_index_rib1];
+		int b =rib1[curr_index_rib1+1];
+		int c =rib2[curr_index_rib2];
+		int d =rib2[curr_index_rib2+1];
+
+		std::cout << rib1[curr_index_rib1] << " " << rib1[curr_index_rib1+1] << std::endl;
+		std::cout << rib2[curr_index_rib2] << " " << rib2[curr_index_rib2+1] << std::endl;
+#endif
+
+
+		dehomogenize(A, V[rib1[curr_index_rib1]].point(), num_vars); (*A)->size = num_vars-1;
+		dehomogenize(B, V[rib1[curr_index_rib1+1]].point(), num_vars); (*B)->size = num_vars-1;
+
+		real_threshold(*A,real_thresh);
+		real_threshold(*B,real_thresh);
+
+
+		vec_sub_mp(*AB, *B,*A);
+
+		twoNormVec_mp(*AB, length_AB);
+
+
+
+
+		dehomogenize(C, V[rib2[curr_index_rib2]].point(), num_vars); (*C)->size = num_vars-1;
+		dehomogenize(D, V[rib2[curr_index_rib2+1]].point(), num_vars); (*D)->size = num_vars-1;
+
+		real_threshold(*C,real_thresh);
+		real_threshold(*D,real_thresh);
+
+		vec_sub_mp(*DC, *C,*D);
+		twoNormVec_mp(*DC, length_DC);
+
+
+
+
+//		A           --->           B
+//		  ***********************
+//		  *- <--              *
+//		  * -  --           *
+//		  *  -   --       *    --
+//		| *   -         *   ---
+//		| *    -      *  <--
+//		| *     -   *
+//		\/*      -*
+//		  *     * -
+//		  *   *    -
+//		  * *       -
+//		  *-----------
+//		C    <--       D
+
+
+
+//        AC, BC, DA,
+
+		vec_sub_mp(*AC, *C,*A);
+		vec_sub_mp(*BC, *C,*B);
+		vec_sub_mp(*DA, *A,*D);
+
+
+#ifdef debug_compile
+		print_point_to_screen_matlab(*A,"A");
+		print_point_to_screen_matlab(*B,"B");
+		print_point_to_screen_matlab(*C,"C");
+		print_point_to_screen_matlab(*D,"D");
+
+		print_point_to_screen_matlab(*AB,"AB");
+		print_point_to_screen_matlab(*AC,"AC");
+		print_point_to_screen_matlab(*BC,"BC");
+		print_point_to_screen_matlab(*DA,"DA");
+		print_point_to_screen_matlab(*DC,"DC");
+#endif
+
+
+		// now have the 5 vectors for the test computed.  (5 because the two triangles share a common leg)
+
+		dot_product_mp(dot_CAB, *AC, *AB);
+
+		dot_product_mp(dot_BCA, *AC, *BC);
+
+		dot_product_mp(dot_ABC, *AB, *BC);
+		neg_mp(dot_ABC,dot_ABC);
+
+		dot_product_mp(dot_DCA, *DC, *AC);
+
+		dot_product_mp(dot_ADC, *DA, *DC);
+
+
+		dot_product_mp(dot_CAD, *DA, *AC);
+		neg_mp(dot_CAD,dot_CAD);
+
+		twoNormVec_mp(*AC, length_AC);
+		twoNormVec_mp(*BC, length_BC);
+		twoNormVec_mp(*DA, length_DA);
+
+
+		
+
+		//CAB
+		double error_CAB = compute_abs_of_difference_from_sixtydegrees(temp, length_AC, length_AB, dot_CAB);
+
+		//BCA
+		double error_BCA = compute_abs_of_difference_from_sixtydegrees(temp, length_BC, length_AC, dot_BCA);
+
+		//ABC
+		double error_ABC = compute_abs_of_difference_from_sixtydegrees(temp, length_BC, length_AB, dot_ABC);
+
+
+		//DCA
+		double error_DCA = compute_abs_of_difference_from_sixtydegrees(temp, length_DC, length_AC, dot_DCA);
+
+		//ADC
+		double error_ADC = compute_abs_of_difference_from_sixtydegrees(temp, length_DA, length_DC, dot_ADC);
+
+		//CAD
+		double error_CAD = compute_abs_of_difference_from_sixtydegrees(temp, length_AC, length_DA, dot_CAD);
+
+
+
+
+#ifdef debug_compile
+		print_comp_matlab(dot_CAB,"CAB");
+		std::cout << c << " " << a << " " << b << " " << total_error_rib1 << std::endl;
+#endif
+
+#ifdef debug_compile
+		print_comp_matlab(dot_BCA,"BCA");
+		std::cout << b << " " << c << " " << a << " " << angle_BCA << std::endl;
+#endif
+#ifdef debug_compile
+		print_comp_matlab(dot_ABC,"ABC");
+		std::cout << a << " " << b << " " << c << " " << angle_ABC << std::endl;
+#endif
+#ifdef debug_compile
+		print_comp_matlab(dot_DCA,"DCA");
+		std::cout << d << " " << c << " " << a << " " << total_error_rib2 << std::endl;
+#endif
+#ifdef debug_compile
+		print_comp_matlab(dot_ADC,"ADC");
+		std::cout << a << " " << d << " " << c << " " << angle_ADC << std::endl;
+#endif
+#ifdef debug_compile
+		print_comp_matlab(dot_CAD,"CAD");
+		std::cout << c << " " << a << " " << d << " " << angle_CAD << std::endl;
+#endif
+
+
+
+
+		// logic for which one to advance
+		int advance = 0;
+		if (error_CAB < error_DCA){
+			advance = 1;
+		}
+		else
+		{	advance = 2;}
+
+
+
+
+		if (advance==1) { // if the 1 Triangle is more equilateral than the 2 Triangle.
+			current_samples.push_back(
+									  Triangle(// Triangle A B C
+											   rib1[curr_index_rib1], //A
+											   rib1[curr_index_rib1+1], //B
+											   rib2[curr_index_rib2]) //C
+									  );
+			moved_1 = true;  curr_index_rib1++;
+			moved_2 = false;
+
+		}
+		else
+		{
+			current_samples.push_back(
+									  Triangle(// Triangle C A D
+											   rib2[curr_index_rib2], //C
+											   rib1[curr_index_rib1], //A
+											   rib2[curr_index_rib2+1]) //D
+									  );
+			moved_1 = false;
+			moved_2 = true; curr_index_rib2++;
+		}
+
+	} // re: while loop.
+
+
+
+	// now down here, we have triangulated until one of the ribs is on its last point, so there is no more testing that can be done.  you simply have to connect the rest into triangles.
+
+	TailEndOfRibs(rib1, rib2, curr_index_rib1, curr_index_rib2, current_samples);
+
+
+
+
+	clear_mp(cos_angle_CAB); clear_mp(cos_angle_BCA); clear_mp(cos_angle_ABC);
+	clear_mp(cos_angle_DCA); clear_mp(cos_angle_ADC); clear_mp(cos_angle_CAD);
+
+
+	clear_mp(length_AB); clear_mp(length_AC); clear_mp(length_BC); clear_mp(length_DA); clear_mp(length_DC);
+	clear_mp(dot_CAB); clear_mp(dot_BCA); clear_mp(dot_ABC);
+	clear_mp(dot_DCA); clear_mp(dot_ADC); clear_mp(dot_CAD);
+
+	clear_mp(temp);
+	// clean up at the end.  i wish scope was deletion!
+
+	for (unsigned int ii=0; ii<num_vectors_needed; ii++) {
+		clear_vec_mp(bulk_vectors[ii]);
+	}
+	free(bulk_vectors);
+
+
+
+	return;
+}
+
+
+
+
 void triangulate_two_ribs_by_angle_optimization(const std::vector< int > & rib1, const std::vector< int > & rib2,
 											  VertexSet & V, double real_thresh,
 											  std::vector< Triangle> & current_samples)
@@ -1206,6 +1512,21 @@ void triangulate_two_ribs_by_angle_optimization(const std::vector< int > & rib1,
 	return;
 }
 
+
+
+
+double compute_abs_of_difference_from_sixtydegrees(comp_mp temp, comp_mp length1, comp_mp length2, comp_mp dot_prod)
+{
+	comp_d cos;
+
+	mul_mp(temp, length1, length2);
+	div_mp(temp, dot_prod, temp);
+	mp_to_d(cos, temp);
+	double error = fabs(cos->r - 0.5);
+
+
+	return error;
+}
 
 
 

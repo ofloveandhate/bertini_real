@@ -144,6 +144,23 @@ void triangulate_two_ribs_by_projection_binning(const std::vector< int > & rib1,
 
 
 
+
+
+/**
+ \brief triangulate two ribs, each with at least two entries, by iterating from left to right, and always constructing the more equilateral Triangle of the two candidates.
+
+ the end of the loop simply constructs every Triangle between the two ribs until it reaches the end.
+
+ \param rib1 a rib of integer indices in a VertexSet.
+ \param rib2 a rib adjacent to rib1, of integer indices in a VertexSet
+ \param V the vertex set into which the ribs index.
+ \param real_thresh The threshold of imaginary part, so that a point is thresholded to be real.
+ \param current_samples The triangulation being built.
+ */
+void triangulate_two_ribs_by_angle_morgan(const std::vector< int > & rib1, const std::vector< int > & rib2,
+												VertexSet & V, double real_thresh,
+												std::vector< Triangle> & current_samples);
+
 /**
  \brief triangulate two ribs, each with at least two entries, by iterating from left to right, and always constructing the more equilateral Triangle of the two candidates.
 
@@ -171,6 +188,21 @@ void triangulate_two_ribs_by_angle_optimization(const std::vector< int > & rib1,
  \return the square of the difference of the computed angle, and \f$\pi/3\f$.
  */
 double compute_square_of_difference_from_sixtydegrees(comp_mp temp, comp_mp length1, comp_mp length2, comp_mp dot_prod);
+
+
+
+/**
+ \brief compute absolute value of the difference between angle and \f$\pi/3\f$ radians.
+
+ \param temp a temporary variable.  comp_mp's are expensive to initialize and clear, so this is passed in for optimization.
+ \param length1 the length of one of the adjacent sides
+ \param length2 the length of the other adjacent side
+ \param dot_prod the dot product of the vectors representing the two adjacent legs of the Triangle.
+ \return the absolute value of the difference of the computed angle, and \f$\pi/3\f$.
+ */
+double compute_abs_of_difference_from_sixtydegrees(comp_mp temp, comp_mp length1, comp_mp length2, comp_mp dot_prod);
+
+
 
 
 void ScaleByCycleNum(comp_mp result, comp_mp input, int cycle_num_l, int cycle_num_r);

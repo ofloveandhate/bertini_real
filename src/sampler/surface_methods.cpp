@@ -1185,8 +1185,9 @@ void Surface::StitchRibs(std::vector<Rib> const& ribs, VertexSet & V)
 			continue;
 		}
 		
-		triangulate_two_ribs_by_projection_binning(*r, *(r+1), V, (V.T())->real_threshold, current_samples);
+		// triangulate_two_ribs_by_projection_binning(*r, *(r+1), V, (V.T())->real_threshold, current_samples);
 		// triangulate_two_ribs_by_angle_optimization(*r, *(r+1), V, (V.T())->real_threshold, current_samples);
+		triangulate_two_ribs_by_angle_morgan(*r, *(r+1), V, (V.T())->real_threshold, current_samples);
 	}
 
 	samples_.push_back(current_samples);
