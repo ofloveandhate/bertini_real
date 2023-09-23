@@ -17,10 +17,16 @@ from bertini_real.__about__ import (
 
 
 import bertini_real.data
-import bertini_real.surface
+
+import bertini_real.edge
+import bertini_real.face
+
 import bertini_real.curve
+import bertini_real.surface
+
 import bertini_real.util
 import bertini_real.plot
+
 try:
     import bertini_real.glumpyplotter
 except ImportError as e:
