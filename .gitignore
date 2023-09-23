@@ -76,3 +76,4 @@ ltversion*
 \.DS_Store
 configure~
 configure.ac~
+*.tmp
