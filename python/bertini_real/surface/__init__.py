@@ -788,6 +788,7 @@ class Surface(Decomposition):
             f.write(f'conn_size = 0.01;\n') #hard coded, but needs to be automatically computed
 
         #open up the file we just wrote to look over
+        print("SCAD File")
         with open("br_surf_piece_data.scad", "r") as f:
             print(f.read())
 
@@ -795,9 +796,11 @@ class Surface(Decomposition):
         with open("br_surf_piece_data.json", "w") as j:
             j.write(json.dumps({"piece_indices": piece_indices,
             "singularities_on_pieces": singularities_on_pieces,
-            "sing_directions": sing_directions,
-            "sing_locations": sing_locations,
+            "sing_directions": sing_directions_as_list,
+            "sing_locations": sing_locations_as_list,
             "parities" : parity_of_sing_by_piece}))
+
+        print("JSON File")
         with open("br_surf_piece_data.json", "r") as j:
             print(j.read())
 
