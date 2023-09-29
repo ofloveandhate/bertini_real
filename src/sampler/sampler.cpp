@@ -38,7 +38,7 @@ void sampler_configuration::SetDefaults()
 void sampler_configuration::splash_screen()
 {
 	printf("\n Sampler module for Bertini_real(TM) v%s\n\n", VERSION);
-	printf(" D.A. Brake, \n with D.J. Bates, W. Hao, \n J.D. Hauenstein, A.J. Sommese, and C.W. Wampler\n\n");
+	printf(" s. amethyst, \n with D.J. Bates, W. Hao, \n J.D. Hauenstein, A.J. Sommese, and C.W. Wampler\n\n");
 	printf("(using GMP v%d.%d.%d, MPFR v%s)\n\n",
 				 __GNU_MP_VERSION, __GNU_MP_VERSION_MINOR, __GNU_MP_VERSION_PATCHLEVEL, mpfr_get_version());
 	printf("See the website at www.bertinireal.com\n\n");
