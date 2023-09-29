@@ -1638,7 +1638,7 @@ void set_witness_set_mp(WitnessSet & W, vec_mp new_linear, vec_mp new_point)
 
 int get_dir_mptype_dimen(boost::filesystem::path & Dir_Name, int & MPType, int & dimension){
 
-	std::string tempstr;
+	
 	std::ifstream fin("Dir_Name");
 
 	if (!fin.is_open())
@@ -1650,11 +1650,13 @@ int get_dir_mptype_dimen(boost::filesystem::path & Dir_Name, int & MPType, int &
 		return MPType;
 	}
 
-	fin >> tempstr;
+	std::string line;
+	std::getline(fin, line);
+
 	fin >> MPType;
 	fin >> dimension;
 
-	Dir_Name = tempstr;
+	Dir_Name = line;
 	Dir_Name = Dir_Name.filename();
 	return MPType;
 }
