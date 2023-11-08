@@ -1,4 +1,4 @@
-import bertini_real.cell
+from bertini_real.cell import Cell
 
 
 class Face(Cell):
