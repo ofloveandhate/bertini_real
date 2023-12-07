@@ -124,9 +124,11 @@ class VisibilityOptions(object):
         if len(curve.vertices)>10000:
             self.vertices = False
 
-        if len(curve.sampler_data)==0:
+        if curve.sampler_data is None:
             self.curve_raw = True
+            self.curve_samples = False
         else:
+            self.curve_raw = False
             self.curve_samples = True
 
 
@@ -191,6 +193,13 @@ class RenderOptions(object):
         
         if len(self.which_edges)==0:
             self.which_edges = range(curve.num_edges)
+
+        if curve.sampler_data is None:
+            self.curve_raw = True
+            self.curve_samples = False
+        else:
+            self.curve_raw = False
+            self.curve_samples = True
 
 
 
