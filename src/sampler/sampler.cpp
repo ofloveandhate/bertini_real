@@ -78,6 +78,7 @@ void sampler_configuration::print_usage()
 	line("-nouniformcyclenum",  " -- ", " ", "turn OFF uniform cycle number usage in surface sampling.  buggy.");
 	line("-uniformcyclenum",  " -- ", " ", "turn ON uniform cycle number usage in surface sampling.  works well.");
 	line("-saveribs",  " -- ", " ", "turn ON saving of ribs for each face.  off by default.");
+	line("-stitchmethod -S", "<char>", "t (trailingangle)", "choose between methods for stitching together triangles. t (trailingangle), s (sumsquaresangles), p (projectionbinning)");
 	std::cout << "\n\n\n";
 	std::cout.flush();
 	return;
@@ -115,12 +116,13 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 			{"nouniformcyclenum", no_argument, 0, 'U'},
 			{"cyclenum", required_argument, 0, 'c'},
 			{"saveribs", no_argument, 0, 'I'},
+			{"stitchmethod", required_argument, 0, 'S'},
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
 
-		choice = getopt_long_only (argc, argv, "bdf:svt:V:l:m:R:r:hM:uUc:I", // colon requires option, two is optional
+		choice = getopt_long_only (argc, argv, "bdf:svt:V:l:m:R:r:hM:uUc:IS:", // colon requires option, two is optional
 															 long_options, &option_index);
 
 		/* Detect the end of the options. */
@@ -175,7 +177,7 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 				std::string curr_opt{optarg};
 				if (curr_opt.size()!=1){
 					std::cout << "option to 'mode' must be a single character.  valid modes are 'a' and 'f'\n";
-					exit(0);
+					exit(1);
 				}
 
 				switch (curr_opt[0])
@@ -223,13 +225,33 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 				this->save_ribs = true;
 				break;
 
+			case 'S':{
+				std::string curr_opt{optarg};
+				switch (curr_opt[0]){
+					case 't':
+						this->stitch_method = StitchMethod::TrailingAngle;
+						std::cout << "using Morgan's triangulate method" << std::endl;
+						break;
+					case 'p':
+						this->stitch_method = StitchMethod::ProjectionBinning;
+						break;
+					case 's':
+						this->stitch_method = StitchMethod::SumOfSquaresAnglesFrom60;
+						break;
+					default:
+						sampler_configuration::print_usage();
+						std::cout << "option to stitchmethod or S invalid.  See printed help." << std::endl;
+						exit(1);
+				}
+			}
+				
 			case '?':
 				/* getopt_long already printed an error message. */
 				break;
 
 			default:
 				sampler_configuration::print_usage();
-				exit(0);
+				exit(1);
 		}
 	}
 
@@ -822,15 +844,15 @@ void triangulate_two_ribs_by_projection_binning(const std::vector< int > & rib1,
 
 
 
-void triangulate_two_ribs_by_angle_morgan(const std::vector< int > & rib1, const std::vector< int > & rib2,
+void triangulate_two_ribs_by_trailing_angle(const std::vector< int > & rib1, const std::vector< int > & rib2,
 											  VertexSet & V, double real_thresh,
 											  std::vector< Triangle> & current_samples)
 {
 #ifdef functionentry_output
-	std::cout << "triangulate_two_ribs_by_angle_morgan" << std::endl;
+	std::cout << "triangulate_two_ribs_by_trailing_angle" << std::endl;
 #endif
 
-	std::cout << "using morgan's triangulate method" << std::endl;
+	
 
 	bool bail_out = false;
 

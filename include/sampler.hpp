@@ -147,9 +147,11 @@ void triangulate_two_ribs_by_projection_binning(const std::vector< int > & rib1,
 
 
 /**
- \brief triangulate two ribs, each with at least two entries, by iterating from left to right, and always constructing the more equilateral Triangle of the two candidates.
+ \brief triangulate two ribs, each with at least two entries, by iterating from left to right, and always take the Triangle where the trailing angle.
 
  the end of the loop simply constructs every Triangle between the two ribs until it reaches the end.
+
+Morgan Fiebig wrote this with silviana in September 2023.
 
  \param rib1 a rib of integer indices in a VertexSet.
  \param rib2 a rib adjacent to rib1, of integer indices in a VertexSet
@@ -157,7 +159,7 @@ void triangulate_two_ribs_by_projection_binning(const std::vector< int > & rib1,
  \param real_thresh The threshold of imaginary part, so that a point is thresholded to be real.
  \param current_samples The triangulation being built.
  */
-void triangulate_two_ribs_by_angle_morgan(const std::vector< int > & rib1, const std::vector< int > & rib2,
+void triangulate_two_ribs_by_trailing_angle(const std::vector< int > & rib1, const std::vector< int > & rib2,
 												VertexSet & V, double real_thresh,
 												std::vector< Triangle> & current_samples);
 
