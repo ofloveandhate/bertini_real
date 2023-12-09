@@ -626,7 +626,7 @@ class Plotter(object):
             if decomposition.num_variables == 2:
                 h = self.ax.scatter(xs[plot_these], ys[plot_these], marker=m)
             else:
-                h = self.ax.scatter(xs[plot_these], ys[plot_these], zs[plot_these], zdir='z', s=.1, alpha=1, marker=m)
+                h = self.ax.scatter(xs[plot_these], ys[plot_these], zs[plot_these], zdir='z', alpha=1, marker=m)
 
             self.plot_results['vertices'][h] = T  # these are indexed by the handles so that they can be looped over.  i agree, it would be nice if they were flipped.
 
