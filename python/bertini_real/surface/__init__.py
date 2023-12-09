@@ -804,7 +804,7 @@ class Surface(Decomposition):
         with open("br_surf_piece_data.json", "r") as j:
             print(j.read())
         with open("br_surf_piece_data.json", "w") as c:
-            c.write(json.dumps({"centroids": centroids,}))
+            c.write(json.dumps({"centroids": centroids}))
 
     def as_mesh_smooth(self,which_faces=None):
         num_faces = self.num_faces
