@@ -198,7 +198,7 @@ class RenderOptions(object):
             self.curve_raw = True
             self.curve_samples = False
         else:
-            self.curve_raw = False
+            self.curve_raw = True
             self.curve_samples = True
 
 
@@ -293,7 +293,70 @@ class Plotter(object):
     # `----' `----'  `-'  `-----'`-'       `-'  `-' `---'   `-'  `-' `----' `-' `-'`----' 
 
     def _make_widgets_curve(self,decomposition):
-        pass
+
+
+
+
+        # first, define some actions
+        def _check_actions(label):
+
+            if label == 'Vertices':
+                # works but with hardcoded axes
+                self.options.visibility.vertices = not self.options.visibility.vertices
+                self._adjust_visibility('vertices')
+
+            elif label == 'Smooth Curve':
+                self.options.visibility.curve_samples = not self.options.visibility.curve_samples
+                self._adjust_visibility('curve_samples')
+
+            elif label == 'Raw Curve':
+                self.options.visibility.curve_raw = not self.options.visibility.curve_raw
+                self._adjust_visibility('curve_raw')
+
+            self.show()
+
+
+
+        y_padding = 0.1
+
+        button_x = 1.4
+        button_y = 0.2
+
+        check_y = 0.2 # size for ONE check
+        check_x = 2.2
+
+        inset_x = 0.1
+        inset_y = 0.1
+
+        # see https://matplotlib.org/stable/gallery/axes_grid1/demo_fixed_size_axes.html
+        from mpl_toolkits.axes_grid1 import Divider, Size
+        # sizes are inches
+
+
+
+        num_check_panels = 0
+        num_buttons = 0
+        num_checks = 0
+        # First, create our check boxes
+
+        num_checks_this = 3
+
+        x = [Size.Fixed(inset_x), Size.Fixed(check_x)]
+        y = [Size.Fixed(inset_y), Size.Fixed(check_y*num_checks_this)]
+        divider = Divider(self.fig, (0, 0, 1, 1), x, y, aspect=False)
+        check_ax = self.fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
+
+
+
+        checks = widgets.CheckButtons(check_ax, ('Vertices', 'Smooth Curve', 'Raw Curve'),
+                             (False, decomposition.sampler_data is not None, decomposition.sampler_data is None) )
+
+        num_check_panels += 1
+        num_checks += num_checks_this
+        checks.on_clicked(_check_actions)
+
+        self.widgets['checks'] = checks
+
 
 
     def _make_widgets_surface(self,decomposition):
@@ -443,7 +506,7 @@ class Plotter(object):
         """
 
         if what not in self.plot_results:
-            raise RuntimeError(f"trying to adjust visibility of things in _adjust_visibility, but those things weren't rendered due to render options.  key: `{what}`")
+            raise RuntimeError(f"trying to adjust visibility of things in _adjust_visibility, but those things weren't rendered due to render options.  key: `{what}`.  current options: {dir(self.options.visibility)} {dir(self.options.render)}")
 
         for h in self.plot_results[what]:
             h.set_visible(eval( f'self.options.visibility.{what}' ))
@@ -527,9 +590,11 @@ class Plotter(object):
 
         if self.options.render.curve_raw:
             self._plot_raw_edges(curve)
+            self._adjust_visibility('curve_raw')
 
         if self.options.render.curve_samples:
             self._plot_edge_samples(curve)
+            self._adjust_visibility('curve_samples')
 
         
 
@@ -561,9 +626,13 @@ class Plotter(object):
                     zs.append(v.point[2].real)
 
             if curve.num_variables == 2:
-                self.ax.plot(xs, ys, c=color)
+                handle = self.ax.plot(xs, ys, c=color)
+                self.plot_results['curve_raw'].extend(handle)
             else:
-                self.ax.plot(xs, ys, zs, zdir='z', c=color)
+                handle = self.ax.plot(xs, ys, zs, zdir='z', c=color)
+                self.plot_results['curve_raw'].extend(handle)
+
+
 
     def _plot_edge_samples(self, curve):
         """ Plot sampled edges """
@@ -588,9 +657,11 @@ class Plotter(object):
                     zs.append(v.point[2].real)
 
             if curve.num_variables == 2:
-                self.ax.plot(xs, ys, c=color)  # v['point'][
+                handle = self.ax.plot(xs, ys, c=color)  # v['point'][
+                self.plot_results['curve_samples'].extend(handle)
             else:
-                self.ax.plot(xs, ys, zs, zdir='z', c=color)  # v['point']
+                handle = self.ax.plot(xs, ys, zs, zdir='z', c=color)  # v['point']
+                self.plot_results['curve_samples'].extend(handle)
 
     def _determine_nondegen_edges(self, decomposition):
         """ Determine nondegenerate edges """
