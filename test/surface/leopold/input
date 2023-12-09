@@ -11,6 +11,6 @@ variable_group x, y,z;
 
 function f1;
 
-f1 = x^2*y^2*z^2+3*x^2+3*y^2+z^2-1;
+f1 = 1000*x^2*y^2*z^2+3*x^2+3*y^2+z^2-1;
 
 END;

@@ -15,7 +15,7 @@
 % this list of options may be incomplete because i'm lazy.  see `parse_options`
 % in this .m file.s
 %
-% Danielle Amethyst, 2019
+% silviana Amethyst, 2019
 
 function [] = ribs_for_5axis_cnc(BRinfo,varargin)
 

@@ -3,12 +3,12 @@
 
 
 
-#we're building bertini_real, version 1.6.1, and the corresponding email is danielle brake's
-AC_INIT([bertini_real], [1.6.1], [danielleamethystbrake@gmail.com],[bertini_real], [https://bertinireal.com/])
+#we're building bertini_real, version 1.6.1, and the corresponding email is silviana's
+AC_INIT([bertini_real],[1.6.1],[silviana.amethyst@gmail.com],[bertini_real],[https://bertinireal.com/])
 
 
 # Force autoconf to be at least this version number:
-AC_PREREQ([2.68])
+AC_PREREQ([2.71])
 
 
 #
@@ -31,6 +31,27 @@ AC_CONFIG_FILES([Makefile])
 #find the CC compiler
 AC_PROG_CXX
 
+#this calls a file in the m4/ directory, which sets up the MPI wrapper stuffs
+
+# If --with-mpi=auto is used, try to find MPI, but use standard C compiler if it is not found.
+# If --with-mpi=yes is used, try to find MPI and fail if it isn't found.
+# If --with-mpi=no is used, use a standard C compiler instead.
+AC_ARG_WITH(mpi, [AS_HELP_STRING([--with-mpi],
+    [compile with MPI (parallelization) support. If none is found,
+    MPI is not used. Default: auto])
+],,[with_mpi=auto])
+
+AX_PROG_CXX_MPI([test x"$with_mpi" != xno],[use_mpi=yes],[
+  use_mpi=no
+  if test x"$with_mpi" = xyes; then
+    AC_MSG_FAILURE([MPI compiler requested, but couldn't use MPI.])
+  else
+    AC_MSG_FAILURE([No MPI compiler found, won't use MPI.])
+  fi
+])
+
+
+
 
 #enable the creation of shared libraries
 AC_ENABLE_SHARED
@@ -39,7 +60,7 @@ AC_ENABLE_SHARED
 AC_ENABLE_STATIC
 
 #set up for building libraries
-AC_PROG_LIBTOOL
+LT_INIT
 
 #find flex / lex
 AC_PROG_LEX
@@ -60,13 +81,7 @@ LT_INIT
 AX_CXX_COMPILE_STDCXX_11
 
 
-#this calls a file in the m4/ directory, which sets up the MPI wrapper stuffs
-LX_FIND_MPI
 
-AS_IF([test "$have_CXX_mpi" = "yes"],
-	AC_MSG_NOTICE([mpi c++ appears to work correctly]),
-	AC_MSG_ERROR([it appears you do not have mpi installed])
-	)
 
 
 
@@ -98,13 +113,14 @@ AC_SEARCH_LIBS([cos], [m], [], [
 
 
 AX_BOOST_BASE([1.50],, [AC_MSG_ERROR([bertini_real needs Boost, but it was not found in your system])])
-AX_BOOST_SYSTEM
+
 AX_BOOST_FILESYSTEM
 
 AX_BOOST_REGEX
 AX_BOOST_CHRONO
 AX_BOOST_TIMER
 
+AX_BOOST_SYSTEM
 
 
 AM_CONFIG_HEADER(config.h)

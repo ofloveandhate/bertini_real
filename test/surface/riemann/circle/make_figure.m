@@ -1,5 +1,5 @@
 % generates plots for the NAG undergrad book
-% danielle amethyst, 2019
+% silviana amethyst, 2019
 
 function [handles] = make_figure()
 

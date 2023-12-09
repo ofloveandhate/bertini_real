@@ -16,7 +16,7 @@ function [t,n,b]=frame(x,y,z,vec)
 % acquired from
 % http://www.aleph.se/Nada/Ray/Tubeplot/tubeplot.html
 % 
-% Danielle sent many many emails to many people, looking 
+% silviana sent many many emails to many people, looking 
 % for explicit permission from the author to mod & distribute this code.
 % There is no license attached, but the website used for distribution
 % says "The package is free for anybody to use."  

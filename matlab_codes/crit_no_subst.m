@@ -6,7 +6,7 @@
 % pi_vals - 
 % OutputName - the name of the file to create and write to
 %
-% danielle brake
+% silviana amethyst
 % 2017, 2018
 
 function crit_no_subst(filename,pi_vals,OutputName)

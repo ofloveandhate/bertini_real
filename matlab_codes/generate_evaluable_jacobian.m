@@ -9,7 +9,7 @@
 %  
 % i really do apologize for this code.
 %
-% danielle amethyst, 2019
+% silviana amethyst, 2019
 
 
 function jac_evaluable = generate_evaluable_jacobian(BRinfo)

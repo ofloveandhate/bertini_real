@@ -17,8 +17,8 @@
 % i have not paid attention to the direction of the produced normal vectors
 % -- this may ruin alignment of an aligned surface.
 
-% danielle brake, 2014.  north carolina state university, mathematics.
-% danielle brake, 2018.  university of wisconsin -- eau claire, mathematics.
+% silviana amethyst, 2014.  north carolina state university, mathematics.
+% silviana amethyst, 2018.  university of wisconsin -- eau claire, mathematics.
 
 function fv = trim_periodic(fv_in, split, nearness_threshold, indices_to_split)
 

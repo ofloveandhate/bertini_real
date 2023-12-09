@@ -567,7 +567,7 @@ int compute_crit_nullspace_right(SolverOutput & solve_out, // the returned value
 
 	//  2.  Do a bunch of homotopies in $x$, each set of which will be followed by a single linear solve in $v$.
 	if (program_options.verbose_level()>=3) {
-		std::cout << "building up linprod start system for left nullspace" << std::endl;
+		std::cout << "building up linprod start system for right nullspace" << std::endl;
 	}
 
 	// setup for the multilin moves
@@ -733,7 +733,7 @@ int compute_crit_nullspace_right(SolverOutput & solve_out, // the returned value
 	int num_before = W_linprod.num_points();
 	W_linprod.sort_for_unique(program_options.same_point_tol());
 	if (num_before - W_linprod.num_points()>0) {
-		std::cout << color::red() << "there were non-unique start points" << color::console_default() << std::endl;
+		std::cout << color::red() << "there were non-unique start points in nullspace right method" << color::console_default() << std::endl;
 	}
 
 

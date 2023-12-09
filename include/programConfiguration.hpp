@@ -915,6 +915,11 @@ public:
 		SemiFixed
 	};
 
+	enum class StitchMethod{
+		TrailingAngle, // default
+		ProjectionBinning,
+		SumOfSquaresAnglesFrom60
+	};
 
 	int stifle_membership_screen; ///< boolean controlling whether stifle_text is empty or " > /dev/null"
 	std::string stifle_text; ///< the text to append to system() commands to stifle screen output
@@ -929,6 +934,8 @@ public:
 
 	bool use_distance_condition; ///< switch for adaptive modes, between distance or movement breaking of while loop.
 	Mode mode; ///< mode switch between adaptive and fixed-number.
+	StitchMethod stitch_method = StitchMethod::TrailingAngle;  ///< the mode to use when stitching together ribs.
+
 	int target_num_samples; ///< the number of samples per cell, more or less.
 
 	int max_num_ribs;

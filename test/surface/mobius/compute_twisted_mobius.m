@@ -3,7 +3,7 @@
 % fn [out] : a symbolic function of x, y, z and parameters a, b
 % twist [in] : an integer describing the twist of the surface
 %
-% Created by Travis C. Wert at the University of Notre Dame under Danielle Brake
+% Created by Travis C. Wert at the University of Notre Dame under silviana amethyst
 % on 4.26.17
 %
 % this work is inspired by this paper:

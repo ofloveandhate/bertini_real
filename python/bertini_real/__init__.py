@@ -17,17 +17,24 @@ from bertini_real.__about__ import (
 
 
 import bertini_real.data
-import bertini_real.surface
+
+import bertini_real.edge
+import bertini_real.face
+
 import bertini_real.curve
+import bertini_real.surface
+
 import bertini_real.util
 import bertini_real.plot
-try: 
+
+try:
     import bertini_real.glumpyplotter
-except Exception as E:
-    print(f"failed to import glumpy with message {E}")
+except ImportError as e:
+    print(f'unable to import bertini_real.glumpyplotter.  if you want to use opengl-accelerated rendering of surfaces, install the module `glumpy` (and probably an opengl library, too)')
+
 import bertini_real.anaglypy
 
 
 def gather_and_plot():
-    bertini_real.data.gather()
-    return bertini_real.plot.plot()
+    decomposition = bertini_real.data.gather()
+    return bertini_real.plot.plot(decomposition)

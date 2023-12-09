@@ -1766,20 +1766,25 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 
 		if ( !IsAcceptableRetval(EG_out->retVal) ) {
 
-			vec_d solution_as_double; init_vec_d(solution_as_double,0);
-			if (EG_out->prec < 64){
+			auto const& last_prec = EG_out->last_approx_prec; // precision of the last approximation
+
+
+
+
+			vec_d latest_approx_as_double; init_vec_d(latest_approx_as_double,0);
+			if (last_prec < 64){
 				int out_prec;
 
-				ED_d->dehomogenizer(solution_as_double, NULL, &out_prec, EG_out->PD_d.point,NULL,52,ED_d, NULL);
+				ED_d->dehomogenizer(latest_approx_as_double, NULL, &out_prec, EG_out->last_approx_d,NULL,52,ED_d, NULL);
 
 
 			}
 			else{
 				int out_prec;
 				vec_mp temp2; init_vec_mp(temp2,0);
-				ED_mp->dehomogenizer(NULL,temp2, &out_prec, NULL,EG_out->PD_mp.point,EG_out->prec,NULL,ED_mp);
+				ED_mp->dehomogenizer(NULL,temp2, &out_prec, NULL,EG_out->last_approx_mp,last_prec,NULL,ED_mp);
 
-				vec_mp_to_d(solution_as_double,temp2);
+				vec_mp_to_d(latest_approx_as_double,temp2);
 				clear_vec_mp(temp2);
 
 			}
@@ -1794,16 +1799,16 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 
 
 			if (solve_options.verbose_level()>=4) {
-				print_point_to_screen_matlab(solution_as_double,"failed_candidate_solution");
+				print_point_to_screen_matlab(latest_approx_as_double,"failed_candidate_solution");
 				print_comp_matlab(time_to_compare,"time");
 			}
 
 
 
-			// if
-			if ( (time_to_compare->r < std::max(1e-3,1e-2*solve_options.T.endgameBoundary)) && (infNormVec_d(solution_as_double) > solve_options.T.finiteThreshold)) {
+			// if in endgame and have a big solution
+			if ( (time_to_compare->r < solve_options.T.endgameBoundary) && (infNormVec_d(latest_approx_as_double) > solve_options.T.finiteThreshold)) {
 				if (solve_options.verbose_level()>=2) {
-					print_point_to_screen_matlab(solution_as_double,"big_solution");
+					print_point_to_screen_matlab(latest_approx_as_double,"big_solution");
 					print_comp_matlab(time_to_compare,"at_time");
 					std::cout << "discarding non-finite solution.\n\n" << std::endl;
 				}
@@ -1811,7 +1816,7 @@ void robust_track_path(int pathNum, endgame_data_t *EG_out,
 				break;
 			}
 
-			clear_vec_d(solution_as_double);
+			clear_vec_d(latest_approx_as_double);
 
 
 			if (solve_options.verbose_level()>=3){

@@ -483,7 +483,7 @@ void Surface::FixedSampleFace(int face_index, VertexSet & V, sampler_configurati
 		}
 	}
 
-	StitchRibs(ribs,V);
+	StitchRibs(ribs,V, sampler_options);
 	if (sampler_options.save_ribs)
 		SaveRibs(ribs, face_index, sampler_options);
 
@@ -1146,7 +1146,7 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 	}
 
 
-	StitchRibs(ribs,V);
+	StitchRibs(ribs,V, sampler_options);
 	if (sampler_options.save_ribs)
 		SaveRibs(ribs, face_index, sampler_options);
 
@@ -1175,7 +1175,7 @@ void Surface::DegenerateSampleFace(int face_index, VertexSet & V, sampler_config
 //
 ///////////////
 
-void Surface::StitchRibs(std::vector<Rib> const& ribs, VertexSet & V)
+void Surface::StitchRibs(std::vector<Rib> const& ribs, VertexSet & V, sampler_configuration & sampler_options)
 {
 	std::vector< Triangle > current_samples;
 	for (auto r = ribs.begin(); r!=ribs.end()-1; r++) {
@@ -1184,9 +1184,18 @@ void Surface::StitchRibs(std::vector<Rib> const& ribs, VertexSet & V)
 			std::cout << "empty rib!" << std::endl;
 			continue;
 		}
-		
-		triangulate_two_ribs_by_projection_binning(*r, *(r+1), V, (V.T())->real_threshold, current_samples);
-		// triangulate_two_ribs_by_angle_optimization(*r, *(r+1), V, (V.T())->real_threshold, current_samples);
+
+		switch (sampler_options.stitch_method){
+			case sampler_configuration::StitchMethod::TrailingAngle:
+				triangulate_two_ribs_by_trailing_angle(*r, *(r+1), V, (V.T())->real_threshold, current_samples);
+				break;
+			case sampler_configuration::StitchMethod::ProjectionBinning:
+				triangulate_two_ribs_by_projection_binning(*r, *(r+1), V, (V.T())->real_threshold, current_samples);
+				break;
+			case sampler_configuration::StitchMethod::SumOfSquaresAnglesFrom60:
+				triangulate_two_ribs_by_angle_optimization(*r, *(r+1), V, (V.T())->real_threshold, current_samples);
+				break;
+			}
 	}
 
 	samples_.push_back(current_samples);

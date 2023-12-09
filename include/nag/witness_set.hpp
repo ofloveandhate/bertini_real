@@ -383,7 +383,9 @@ public:
 
 
 	/**
-	\brief For those points which are 'real', throw away the imaginary part, but ensure they still satisfy the patch equation(s)
+	\brief Realify the patches, then realify the points.  
+
+	First, patches are set so that they're essentially "homvar=1".  Then, points are rescaled to satisfy the patches.  Then, points are realified.
 	*/
 	void Realify(double tol);
 
@@ -398,6 +400,8 @@ public:
 
 	/**
 	\brief rescale all points so that the leading variable (homvar) is 1, use as patch
+
+	For each patch, sets patch to be "leading variable is 1", and then re-scales each point to satisfy the new patches.
 	*/
 	void RealifyPatches();
 

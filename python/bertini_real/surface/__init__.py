@@ -1,6 +1,6 @@
 """
     :platform: Unix, Windows
-    :synopsis: This module contains Surface and Piece types.
+    :synopsis: This module contains Surface and SurfacePiece types.
 
 """
 
@@ -8,7 +8,7 @@
 # Fall 2018 - Spring 2019
 #
 # Silviana Amethyst
-# Spring 2022
+# Spring 2022, Summer 2022
 #
 # University of Wisconsin, Eau Claire
 
@@ -16,7 +16,7 @@ import bertini_real.parse
 import bertini_real.exception as br_except
 import numpy as np
 from bertini_real.decomposition import Decomposition
-from bertini_real.curve import Curve
+from bertini_real.curve import Curve, CurvePiece, is_edge_degenerate
 from bertini_real.vertex import Vertex
 from bertini_real.vertex import VertexType
 from bertini_real.util import ReversableList
@@ -41,8 +41,27 @@ import json
 
 
 
+_default_file_type = 'stl'
 
-def export_mesh(mesh, basename, autoname_using_folder=False, file_type='stl'):
+_default_solidify_thickness =  0.1
+
+_default_piece_basename_smooth = 'br_piece_smooth'
+_default_piece_basename_raw = 'br_piece_raw'
+
+_default_surface_basename_smooth = 'br_surface_smooth'
+_default_surface_basename_raw = 'br_surface_raw'
+
+
+
+
+
+
+def export_mesh(mesh, basename, autoname_using_folder=False, file_type=_default_file_type, verbose=True):
+    """
+    Saves a mesh (generated elsewhere) to disk,
+    and returns the name of the file which was saved
+    """
+
 
     if autoname_using_folder:
         fileName = os.getcwd().split(os.sep)[-1]
@@ -51,7 +70,11 @@ def export_mesh(mesh, basename, autoname_using_folder=False, file_type='stl'):
         outname = f'{basename}.{file_type}'
 
     mesh.export(file_obj=outname, file_type=file_type)
-    print("Exported \x1b[0;35;40m " + outname + "\x1b[0m successfully")
+
+    if verbose:
+        print("Exported \x1b[0;35;40m " + outname + "\x1b[0m successfully")
+
+    return outname
 
 
 def solidify_mesh(mesh, distance, offset=0):
@@ -130,11 +153,13 @@ def copy_all_scad_files_here():
 
 
 
-class Piece():
-    """ Create a Piece object of a surface. A surface can be made of 1 piece or multiple pieces. """
+class SurfacePiece():
+    """ 
+    A "Piece" of an algebraic surface.  Essentially, a union of Faces, with some additional interface.  
+    """
 
     def __init__(self, indices, surface):
-        """ Initialize a Piece object with corresponding indices and surface
+        """ Initialize a SurfacePiece object with corresponding indices and surface
 
             :param indices: A list of nonsingular pieces' indices
             :param surface: Surface data
@@ -147,9 +172,14 @@ class Piece():
         self.center = surface.center
         self.radius = surface.radius
 
+
+        # memoized members:
+        self.m_edge_pieces = None
+
+
     def __str__(self):
-        """ toString method for Piece """
-        result = "Piece of a surface with face indices:"
+        """ toString method for SurfacePiece """
+        result = "SurfacePiece with face indices:"
         result += "{}".format(self.indices)
         return result
 
@@ -214,7 +244,7 @@ class Piece():
     # type critical
 
     def point_singularities(self):
-        """ Compute singularity points from a Piece object
+        """ Compute singularity points from a SurfacePiece object
 
             :rtype: A list of indices of point singularities
         """
@@ -277,41 +307,181 @@ class Piece():
 
         return list(set(point_singularities))
 
+
+    def write_skeleton_data(self):
+
+        pieces = self.separate_into_nonsingular_pieces()
+
+
+        with open(self.generate_filename_no_ext("skeleton_piece")+".scad", "w") as f:
+            pass
+
+
+        return
+
+
+
     def plot(self, color, ax):
-        self.surface.plot(face_indices=self.indices, color=color, ax=ax)
+        return self.surface.plot(face_indices=self.indices, color=color, ax=ax)
+
+
+
+    def _edges_touching(self):
+        """
+        computes dictionary of the curve edges on this piece of surface.  includes crit, sing, mid, and sphere.  
+        this function will return a dict of sets of edge indices.  
+
+        the intention of this function is to convert them to CurvePieces in a subsequent step.
+        """
+
+        from collections import defaultdict
+        touching_curve_edge_indices = defaultdict(set)
+    
+
+        for face_index in self.indices:
+
+            face = self.surface.faces[face_index]
+
+            slice_ind = face['middle slice index']
+
+            left = self.surface.critical_point_slices[slice_ind]
+            for edge_ind in face['left']:
+                touching_curve_edge_indices[left.inputfilename].add(edge_ind)
+                
+
+            right = self.surface.critical_point_slices[slice_ind+1]
+            for edge_ind in face['right']:
+                touching_curve_edge_indices[right.inputfilename].add(edge_ind)
+
+            touching_curve_edge_indices[face['system top']].add(face['top'])
+            touching_curve_edge_indices[face['system bottom']].add(face['bottom'])
+
+
+            mid = self.surface.midpoint_slices[slice_ind]
+            for ind, e in enumerate(mid.edges):
+                if e[1]==face['midpoint']:
+                    touching_curve_edge_indices[mid.inputfilename].add(ind)
+
+        return dict(touching_curve_edge_indices) # change from a default_dict of sets to a dict of sets
+
+
+
+    
 
 
 
 
-    def export_smooth(self, basename=f'br_piece_smooth',autoname_using_folder=False,file_type='stl'):
-        if basename=='br_piece_smooth':
-            basename = basename+'_'+ ('-'.join([str(i) for i in self.indices[:3]]))
 
-        self.surface.export_smooth(self.indices,basename,autoname_using_folder,file_type)
-
-    def export_raw(self, basename=f'br_piece_raw',autoname_using_folder=False,file_type='stl'):
-        if basename=='br_piece_raw':
-            basename = basename+'_'+ ('-'.join([str(i) for i in self.indices[:3]]))
-
-        self.surface.export_raw(self.indices,basename,autoname_using_folder,file_type)
+    def edge_pieces(self):
+        """
+        takes a `dict` of `set`s of edge indices. 
+        produces a `list` of `CurvePiece`s
 
 
+        a kind of related note: the critical curve is very likely in the middle of the surface piece
+        the boundary of a `SurfacePiece` is probably sphere or singular `CurvePiece`s.  
+        it's possible the edges are degenerate, in case
+        of nodal singularity.
+        """
 
-    def solidify_raw(self, distance=0.1, basename='br_piece_raw', autoname_using_folder=False,file_type='stl'):
-        if basename=='br_piece_raw':
-            basename = basename+'_'+ ('-'.join([str(i) for i in self.indices[:3]]))
-
-        self.surface.solidify_raw(distance, self.indices,basename,autoname_using_folder,file_type)
-
-    def solidify_smooth(self, distance=0.1, basename='br_piece_smooth', autoname_using_folder=False,file_type='stl'):
-
-        if basename=='br_piece_smooth':
-            basename = basename+'_'+ ('-'.join([str(i) for i in self.indices[:3]]))
-
-        self.surface.solidify_smooth(distance, self.indices,basename,autoname_using_folder,file_type)
+        
+        # an act of memoization
+        if self.m_edge_pieces:
+            return self.m_edge_pieces
 
 
+        touching_curve_edge_indices = self._edges_touching()
 
+        self.m_edge_pieces = [] # will be a list of CurvePieces
+
+        for curve_name, edge_indices in touching_curve_edge_indices.items():
+            self.m_edge_pieces.extend( self.surface.curve_with_name(curve_name).break_into_pieces(edge_indices) )
+
+        return self.m_edge_pieces
+
+
+
+
+
+
+    def generate_filename_no_ext(self,basename, ninds=3):
+        """ 
+        construct a filename for the piece, using face indices to make unique.  
+        generates without an extension, so that it can be added later
+        """
+
+        return basename+'_'+ ('-'.join([str(i) for i in self.indices[: min(len(self.indices),ninds) ]])) # have to use `min` in case piece has <ninds faces on it
+
+
+    def generate_filename_smooth(self, file_type=_default_file_type):
+        return '{}.{}'.format( self.generate_filename_no_ext(basename=_default_piece_basename_smooth), file_type)
+
+    def generate_filename_raw(self, file_type=_default_file_type):
+        return '{}.{}'.format( self.generate_filename_no_ext(basename=_default_piece_basename_raw), file_type)
+
+
+    def export_smooth(self, basename=_default_piece_basename_smooth,autoname_using_folder=False,file_type=_default_file_type):
+
+        filename_no_ext = self.generate_filename_no_ext(basename)
+        self.surface.export_smooth(self.indices,filename_no_ext,autoname_using_folder,file_type)
+
+
+    def export_raw(self, basename=_default_piece_basename_raw,autoname_using_folder=False,file_type=_default_file_type):
+
+        filename_no_ext = self.generate_filename_no_ext(basename)
+        self.surface.export_raw(self.indices,filename_no_ext,autoname_using_folder,file_type)
+
+
+
+
+    def solidify_smooth(self, distance=_default_solidify_thickness, basename=_default_piece_basename_smooth, autoname_using_folder=False,file_type=_default_file_type):
+
+        filename_no_ext = self.generate_filename_no_ext(basename)
+        self.surface.solidify_smooth(distance, self.indices,filename_no_ext,autoname_using_folder,file_type)
+
+
+    def solidify_raw(self, distance=_default_solidify_thickness, basename=_default_piece_basename_raw, autoname_using_folder=False,file_type=_default_file_type):
+
+        filename_no_ext = self.generate_filename_no_ext(basename)
+        self.surface.solidify_raw(distance, self.indices,filename_no_ext,autoname_using_folder,file_type)
+
+
+
+
+    def face_points(self, samples=True, as_indices = False):
+        """
+        Get the coordinates of the points on the Piece of a Surface.
+
+        if `samples`, then will return all samples on the Piece.  otherwise, will return the points of the raw faces.  
+
+        - the computed point set should have no duplicates.  
+        - i do not know what order the points will be in, sorry.
+        """
+
+
+        if samples:
+            self.surface._require_samples()
+
+            sample_point_indices = set() # using a set solves the duplicate problem
+
+            for ii in self.indices:
+                f = self.surface.sampler_data[ii] # unpack.   sampler data is a list of triples of indices into the vertex set.
+
+                for tri in f: 
+                    sample_point_indices.add(tri[0])
+                    sample_point_indices.add(tri[1])
+                    sample_point_indices.add(tri[2])
+
+            
+            if as_indices:
+                return sample_point_indices
+
+            else:# next, get the actual coordinates from the vertex set
+
+                return self.surface.extract_points(indices=sample_point_indices)
+
+        else:
+            raise NotImplementedError('implement this branch, probably by looking at the mesh code for blocky case')
 
 
 
@@ -370,6 +540,23 @@ class Surface(Decomposition):
 
     def __str__(self):
         return repr(self)
+
+
+
+    def is_sampled(self):
+        """
+        Query whether the surface has been sampled.  
+        """
+
+        return len(self.sampler_data) > 0
+
+
+    # this should be a decorator
+    def _require_samples(self):
+        if not self.is_sampled():
+            raise br_except.SurfaceNotSampled('trying to do something that requires samples, but surface is not sampled.  Sample and re-gather, or make do with raw / blocky data')
+
+
 
     def parse_surf(self, directory):
         """ Parse and store into surface data
@@ -521,7 +708,7 @@ class Surface(Decomposition):
         return val
 
     def cannot_possibly_meet(self, f, g):
-        """ Check whether faces f and g meet
+        """ Check whether faces f and g cannot possibly meet (because they are in different fiber intervals of the projection)
 
             :param f: Current face
             :param g: Other face
@@ -553,7 +740,7 @@ class Surface(Decomposition):
                     g['middle slice index']].edges[g['left'][jj]]
                 b = E[1]
 
-                if a == b and not(self.is_edge_degenerate(e)) and not(self.is_edge_degenerate(E)):
+                if a == b and not(is_edge_degenerate(e)) and not(is_edge_degenerate(E)):
                     val = True
                     return val
 
@@ -562,7 +749,7 @@ class Surface(Decomposition):
                     g['middle slice index'] + 1].edges[g['right'][jj]]
                 b = E[1]
 
-                if a == b and not(self.is_edge_degenerate(e)) and not(self.is_edge_degenerate(E)):
+                if a == b and not(is_edge_degenerate(e)) and not(is_edge_degenerate(E)):
                     val = True
                     return val
         return val
@@ -586,7 +773,7 @@ class Surface(Decomposition):
                     g['middle slice index']].edges[g['left'][jj]]
                 b = E[1]
 
-                if a == b and not(self.is_edge_degenerate(e)) and not(self.is_edge_degenerate(E)):
+                if a == b and not(is_edge_degenerate(e)) and not(is_edge_degenerate(E)):
                     val = True
                     return val
 
@@ -595,7 +782,7 @@ class Surface(Decomposition):
                     g['middle slice index'] + 1].edges[g['right'][jj]]
                 b = E[1]
 
-                if a == b and not(self.is_edge_degenerate(e)) and not(self.is_edge_degenerate(E)):
+                if a == b and not(is_edge_degenerate(e)) and not(is_edge_degenerate(E)):
                     val = True
                     return val
         return val
@@ -660,16 +847,12 @@ class Surface(Decomposition):
 
         return val
 
-    def is_edge_degenerate(self, e):
-        """ Check if critical point slices are degenerate (one of the endpoints is also the middle point)
 
-            :param e: Critical point slices
-            :rtype: Return True if e is degenerate
-        """
-        return (e[0] == e[1]) or (e[1] == e[2])
 
     def separate_into_nonsingular_pieces(self):
-        """ Separate a surface into nonsingular pieces """
+        """ 
+        Separate a surface into a list of pieces, connected at singularities
+        """
 
         self.check_data()
 
@@ -681,14 +864,40 @@ class Surface(Decomposition):
             seed = unconnected_this[0]
             [connected_this, unconnected_this] = self.faces_nonsingularly_connected(
                 seed)
-            pieces.append(Piece(connected_this, self))
+            pieces.append(SurfacePiece(connected_this, self))
             connected.extend(connected_this)
             unconnected_this = list(set(unconnected_this) - set(connected))
 
         return pieces
 
+
+    
+    def curve_with_name(self, curve_name):
+
+        if curve_name == self.critical_curve.inputfilename:
+            return self.critical_curve
+
+        if curve_name == self.sphere_curve.inputfilename:
+            return self.sphere_curve
+
+        for c in self.critical_point_slices:
+            if curve_name == c.inputfilename:
+                return c
+
+        for c in self.midpoint_slices:
+            if curve_name == c.inputfilename:
+                return c 
+
+        for c in self.singular_curves:
+            if curve_name == c.inputfilename:
+                return c 
+
+        raise RuntimeError(f'unable to find a curve with name {curve_name} in this surface')
+
     def write_piece_data(self):
-        """"Opens and edits current scad data to set the orientation and location of a plug and socket"""
+        """
+        Opens and edits current scad data to set the orientation and location of a plug and socket
+        """
 
         pieces = self.separate_into_nonsingular_pieces()
 
@@ -749,15 +958,15 @@ class Surface(Decomposition):
             sing_directions[sing_index] = (direction0)
             sing_locations[sing_index] = (list(sing_coords))
 
-        piece_indices = []
+        piece_names = []
         singularities_on_pieces = []
 
 
         singindex2int = {sing_index:ii for ii,sing_index in enumerate(wanted_sing_connections.keys())}
         int2singindex = {ii:sing_index for ii,sing_index in enumerate(wanted_sing_connections.keys())}
 
-        print(singindex2int)
-        print(int2singindex)
+        # print(singindex2int)
+        # print(int2singindex)
 
         #organize the data computed above to the scad files
         for ii,p in enumerate(pieces):
@@ -767,7 +976,7 @@ class Surface(Decomposition):
                 if sing_index in sings_on_pieces[ii]: 
                     sings_this_piece.append(singindex2int[sing_index])
             singularities_on_pieces.append(sings_this_piece) 
-            piece_indices.append(pieces[ii].indices[:4]) 
+            piece_names.append(pieces[ii].generate_filename_smooth()) 
 
         sing_directions_as_list = [sing_directions[sing_index] for sing_index in wanted_sing_connections.keys()]
         sing_locations_as_list = [sing_locations[sing_index] for sing_index in wanted_sing_connections.keys()]
@@ -777,9 +986,12 @@ class Surface(Decomposition):
             parity_of_sing_by_piece[singindex2int[sing_index]][ps[0]] = -1
             parity_of_sing_by_piece[singindex2int[sing_index]][ps[1]] = 1
         
-        #open and auto write the data(piece indices, all sings of pieces, sing directions in order of sing index, sing coords in order of sing index) of the piece
+        #open and auto write the data(piece file names (without extensions), all sings of pieces, sing directions in order of sing index, sing coords in order of sing index) of the piece
         with open("br_surf_piece_data.scad", "w") as f:
-            f.write(f'piece_indices = {piece_indices};\n')
+            f.write(f'piece_names = [')
+            f.write('"{}"'.format( '","'.join(piece_names) ))
+
+            f.write('];\n')
             f.write(f'singularities_on_pieces = {singularities_on_pieces};\n')
             f.write(f'sing_directions = {sing_directions_as_list};\n')
             f.write(f'sing_locations = {sing_locations_as_list};\n')
@@ -806,7 +1018,16 @@ class Surface(Decomposition):
         with open("br_surf_piece_data.json", "w") as c:
             c.write(json.dumps({"centroids": centroids}))
 
-    def as_mesh_smooth(self,which_faces=None):
+    def as_mesh_smooth(self, which_faces=None, keep_all_vertices=True):
+        """
+        Compute a `Trimesh` object from the `trimesh` library for the corresponding faces using sampled data.  Raises if the surface is not sampled.
+
+        which_faces: either None for all faces, or a list-like of ints indicating the indices of the surface faces you want.
+        keep_all_vertices: bool, by default True.  Unused vertices will be kept or merged.  This value influences `Trimesh`'s `process` parameter.  
+
+        See https://trimsh.org/trimesh.html#trimesh.Trimesh.
+        """
+
         num_faces = self.num_faces
 
         if which_faces is None:
@@ -835,12 +1056,23 @@ class Surface(Decomposition):
 
         face_np_array = np.array(face)
 
-        A = trimesh.Trimesh(vertex_np_array, face_np_array)
+        should_trimesh_process = False if keep_all_vertices==True else True
+
+        A = trimesh.Trimesh(vertex_np_array, face_np_array, process=should_trimesh_process)
         A.fix_normals()
         return A
 
 
-    def as_mesh_raw(self, which_faces=None):
+    def as_mesh_raw(self, which_faces=None, keep_all_vertices=True):
+        """
+        Compute a `Trimesh` object from the `trimesh` library for the corresponding faces using raw (unsmoothed or blocky) data.
+
+        which_faces: either None for all faces, or a list-like of ints indicating the indices of the surface faces you want.
+        keep_all_vertices: bool, by default True.  Unused vertices will be kept or merged.  This value influences `Trimesh`'s `process` parameter.  
+
+        See https://trimsh.org/trimesh.html#trimesh.Trimesh.
+        """
+
 
         num_faces = self.num_faces
 
@@ -875,7 +1107,7 @@ class Surface(Decomposition):
 
             T = []
 
-            while 1:
+            while True:
                 ## top edge ##
                 if case == 1:
 
@@ -1012,22 +1244,26 @@ class Surface(Decomposition):
 
 
 
+    def export_raw(self, which_faces=None, basename=_default_surface_basename_raw, autoname_using_folder=False, file_type=_default_file_type, keep_all_vertices=True):
+        """ 
+        Export raw decomposition of surface
+
+        returns the name of the file which was saved
+        """
+
+        mesh = self.as_mesh_raw(which_faces,keep_all_vertices)
+        return export_mesh(mesh, basename, autoname_using_folder, file_type)
 
 
-    def export_raw(self, which_faces=None, basename='br_surface_raw', autoname_using_folder=False, file_type='stl'):
-        """ Export raw decomposition of surfaces to OBJ """
+    def export_smooth(self, which_faces=None, basename=_default_surface_basename_smooth, autoname_using_folder=False, file_type=_default_file_type, keep_all_vertices=True):
+        """ 
+        Export smooth decomposition of surface
+        
+        returns the name of the file which was saved
+        """
 
-
-        mesh = self.as_mesh_raw(which_faces)
-        export_mesh(mesh, basename, autoname_using_folder, file_type)
-
-
-    def export_smooth(self, which_faces=None, basename='br_surface_smooth', autoname_using_folder=False, file_type='stl'):
-        """ Export smooth decomposition of surfaces to OBJ """
-
-
-        mesh = self.as_mesh_smooth(which_faces)
-        export_mesh(mesh, basename, autoname_using_folder, file_type)
+        mesh = self.as_mesh_smooth(which_faces,keep_all_vertices)
+        return export_mesh(mesh, basename, autoname_using_folder, file_type)
 
 
 
@@ -1037,30 +1273,36 @@ class Surface(Decomposition):
 
 
 
-    def solidify_raw(self, distance=0.1, which_faces=None, basename='br_surface_solidified_raw', autoname_using_folder=False, file_type='stl'):
+    def solidify_raw(self, distance=_default_solidify_thickness, which_faces=None, basename=_default_surface_basename_raw+'solidified', autoname_using_folder=False, file_type=_default_file_type, keep_all_vertices=True):
         """
         Solidify raw version of surface.
 
-        Default format is `stl`.  Also can do `obj`.
+        Available formats include {'stl', 'obj'}.
+        Default file format given by `_default_file_type`
+
+        returns the name of the file which was saved
         """
 
-        mesh = self.as_mesh_raw(which_faces)
+        mesh = self.as_mesh_raw(which_faces,keep_all_vertices)
         solid = solidify_mesh(mesh,distance)
-        export_mesh(solid, basename, autoname_using_folder, file_type)
+        return export_mesh(solid, basename, autoname_using_folder, file_type)
 
 
 
 
-    def solidify_smooth(self, distance=0.1, which_faces=None, basename='br_surface_solidified_smooth', autoname_using_folder=False, file_type='stl'):
+    def solidify_smooth(self, distance=_default_solidify_thickness, which_faces=None, basename=_default_surface_basename_raw+'solidified', autoname_using_folder=False, file_type=_default_file_type, keep_all_vertices=True):
         """
         Solidify smooth version of surface.  Requires that the surface has been sampled using `sampler`
 
-        Default format is `stl`.  Also can do `obj`.
+        Available formats include {'stl', 'obj'}.
+        Default file format given by `_default_file_type`
+
+        returns the name of the file which was saved
         """
 
-        mesh = self.as_mesh_smooth(which_faces)
+        mesh = self.as_mesh_smooth(which_faces,keep_all_vertices)
         solid = solidify_mesh(mesh,distance)
-        export_mesh(solid, basename, autoname_using_folder, file_type)
+        return export_mesh(solid, basename, autoname_using_folder, file_type)
 
 
 

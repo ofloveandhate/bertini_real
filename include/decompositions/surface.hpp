@@ -846,7 +846,7 @@ public:
 	/**
 	Given straight-line sampled ribs on a face, stitch together to form a triangulation, and add to the samples have for the surface.
 	*/
-	void StitchRibs(std::vector<Rib> const& ribs, VertexSet & V);
+	void StitchRibs(std::vector<Rib> const& ribs, VertexSet & V, sampler_configuration & sampler_options);
 
 	/**
 	 \brief Write the results of a sampling run to a folder.

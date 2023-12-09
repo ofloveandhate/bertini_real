@@ -23,7 +23,8 @@ This module is still useful, though we can now also plot surfaces using glumpy.
 """
 
 import os
-from bertini_real.surface import Surface, Curve, Piece
+from bertini_real.surface import Surface, SurfacePiece
+from bertini_real.curve import Curve, CurvePiece
 import bertini_real.util
 from bertini_real.util import ReversableList
 import dill
@@ -88,7 +89,7 @@ class VisibilityOptions(object):
        
 
     def auto_adjust(self, decomposition):
-        if isinstance(decomposition, Piece):
+        if isinstance(decomposition, SurfacePiece):
             self._adjust_for_piece(decomposition)
         elif isinstance(decomposition,Curve):
             self._adjust_for_curve(decomposition)
@@ -123,9 +124,11 @@ class VisibilityOptions(object):
         if len(curve.vertices)>10000:
             self.vertices = False
 
-        if len(curve.sampler_data)==0:
+        if curve.sampler_data is None:
             self.curve_raw = True
+            self.curve_samples = False
         else:
+            self.curve_raw = False
             self.curve_samples = True
 
 
@@ -163,7 +166,7 @@ class RenderOptions(object):
 
 
     def auto_adjust(self, decomposition):
-        if isinstance(decomposition, Piece):
+        if isinstance(decomposition, SurfacePiece):
             self._adjust_for_piece(decomposition)
         elif isinstance(decomposition,Curve):
             self._adjust_for_curve(decomposition)
@@ -190,6 +193,13 @@ class RenderOptions(object):
         
         if len(self.which_edges)==0:
             self.which_edges = range(curve.num_edges)
+
+        if curve.sampler_data is None:
+            self.curve_raw = True
+            self.curve_samples = False
+        else:
+            self.curve_raw = False
+            self.curve_samples = True
 
 
 
@@ -259,9 +269,9 @@ class Plotter(object):
 
     def _main(self,decomposition):
 
-        if isinstance(decomposition,list) and all([isinstance(p,Piece) for p in decomposition]):
+        if isinstance(decomposition,list) and all([isinstance(p,SurfacePiece) for p in decomposition]):
             self._plot_pieces(decomposition)
-        elif isinstance(decomposition,Piece):
+        elif isinstance(decomposition,SurfacePiece):
             self._plot_piece(decomposition)
         elif isinstance(decomposition,Curve):
             self._plot_curve(decomposition)
@@ -607,7 +617,7 @@ class Plotter(object):
         A conveniece function for plotting a list of pieces.
         """
 
-        assert( isinstance(pieces,list) and all([isinstance(p,Piece) for p in pieces]) )
+        assert( isinstance(pieces,list) and all([isinstance(p,SurfacePiece) for p in pieces]) )
 
         self.options.render.defer_show = True
         init_value_render_vertices = self.options.render.vertices
@@ -709,6 +719,9 @@ class Plotter(object):
         Plot surface samples 
         """
 
+        if len(surf.sampler_data)==0:
+            return
+            
         # locally unpack
         which_faces = self.options.render.which_faces
         points = surf.extract_points()
@@ -929,7 +942,7 @@ def plot(data, options=Options()):
 
 
 
-        :param data: A Curve, Surface, Piece, or list of things
+        :param data: A Curve, Surface, SurfacePiece, or list of things
         :param options: style and visibility options
         :rtype: a Plotter.  
     """
