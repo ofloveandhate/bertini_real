@@ -21,7 +21,10 @@ import bertini_real.surface
 import bertini_real.curve
 import bertini_real.util
 import bertini_real.plot
-import bertini_real.glumpyplotter
+try: 
+    import bertini_real.glumpyplotter
+except Exception as E:
+    print(f"failed to import glumpy with message {E}")
 import bertini_real.anaglypy
 
 
