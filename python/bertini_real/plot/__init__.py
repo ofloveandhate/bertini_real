@@ -78,6 +78,11 @@ class VisibilityOptions(object):
     def set_defaults(self):
         self.vertices = False
 
+        from bertini_real.vertex import VertexType
+        names = [str(T).split('.')[1] for T in VertexType]
+
+        self.vertices_by_type = {n:True for n in names}
+
         self.surface_samples = False
         self.surface_raw = False
 
@@ -233,6 +238,9 @@ class Plotter(object):
 
         self.plotted_decompositions = []
         self.widgets = {}
+
+        self.widgets['buttons'] = {}
+
         self.plot_results = defaultdict(list)
 
     def show(self):
@@ -355,8 +363,65 @@ class Plotter(object):
         num_checks += num_checks_this
         checks.on_clicked(_check_actions)
 
-        self.widgets['checks'] = checks
+        self.widgets['checks_curve'] = checks
 
+
+
+
+    def _make_widgets_vertices(self, decomposition):
+
+
+        def _check_actions_vertices(vertex_type):
+            # flip the bit
+            self.options.visibility.vertices_by_type[vertex_type] = not self.options.visibility.vertices_by_type[vertex_type]
+            
+            # adjust visibility
+            self._adjust_visibility_vertex_type(vertex_type)
+
+            self.show()
+
+        x_padding = 0.1
+        y_padding = 0.1
+
+        button_x = 1.4
+        button_y = 0.2
+
+        check_y = 0.2 # size for ONE check
+        check_x = 2.2
+
+        inset_x = 0.1+check_x+x_padding
+        inset_y = 0.1
+
+
+        # see https://matplotlib.org/stable/gallery/axes_grid1/demo_fixed_size_axes.html
+        from mpl_toolkits.axes_grid1 import Divider, Size
+        # sizes are inches
+
+        from bertini_real.vertex import VertexType
+
+        num_check_panels = 0
+        num_checks = 0
+
+        num_checks_this = len(self.plot_results['vertices'])
+
+
+        x = [Size.Fixed(inset_x), Size.Fixed(check_x)]
+        y = [Size.Fixed(inset_y), Size.Fixed(check_y*num_checks_this)]
+        divider = Divider(self.fig, (0, 0, 1, 1), x, y, aspect=False)
+        check_ax = self.fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
+
+        
+        names = [str(T).split('.')[1] for T in self.plot_results['vertices'].values()]
+        initial_state = [True for n in names]
+
+        checks = widgets.CheckButtons(check_ax, names, initial_state)
+
+        checks.on_clicked(_check_actions_vertices)
+
+        num_check_panels += 1
+        num_checks += num_checks_this
+        
+        self.widgets['checks_vertices'] = checks
 
 
     def _make_widgets_surface(self,decomposition):
@@ -454,8 +519,7 @@ class Plotter(object):
         button_export_raw.on_clicked(_export_raw_action)
 
 
-        self.widgets['checks'] = checks
-        self.widgets['buttons'] = {}
+        self.widgets['checks_surface'] = checks
         self.widgets['buttons']['export_raw'] = button_export_raw
         self.widgets['buttons']['export_smooth'] = button_export_smooth
 
@@ -508,10 +572,23 @@ class Plotter(object):
         if what not in self.plot_results:
             raise RuntimeError(f"trying to adjust visibility of things in _adjust_visibility, but those things weren't rendered due to render options.  key: `{what}`.  current options: {dir(self.options.visibility)} {dir(self.options.render)}")
 
-        for h in self.plot_results[what]:
-            h.set_visible(eval( f'self.options.visibility.{what}' ))
+        if what == 'vertices':
+            for T in self.plot_results['vertices'].values():
+                self._adjust_visibility_vertex_type(str(T).split('.')[1])
+
+        else:
+            for h in self.plot_results[what]:
+                h.set_visible(eval( f'self.options.visibility.{what}' ))
 
 
+    def _adjust_visibility_vertex_type(self, vertex_type):
+        from bertini_real.vertex import VertexType
+
+        T = eval(f'VertexType.{vertex_type}')
+
+        for h,t in self.plot_results['vertices'].items():  # this is a dict we're looping over
+            if t == T:
+                h.set_visible(self.options.visibility.vertices_by_type[vertex_type] and self.options.visibility.vertices)
 
 
     def _label_axes(self, decomposition):
@@ -531,19 +608,30 @@ class Plotter(object):
     def _plot_vertices(self, decomposition):
         """ Plot vertices """
 
-        # refactored version
+        from bertini_real.vertex import VertexType
+        import numpy as np
+        
         xs, ys, zs = self.make_xyz(decomposition)
 
-        if decomposition.num_variables == 2:
-            h = self.ax.scatter(xs, ys)
-        else:
-            h = self.ax.scatter(xs, ys, zs, zdir='z', s=.1, alpha=1)
+        markers = matplotlib.markers.MarkerStyle('').markers
+        self.plot_results['vertices'] = {}
 
-        self.plot_results['vertices'].append(h)
+        for T,m in zip(VertexType, markers.keys()):
 
-    # this works well for _plot_vertices
-    # how can we make it work well for all the other methods???
-    # returns 3 separate lists
+            plot_these = np.array([v.type == T for v in decomposition.vertices])
+
+            if not np.any(plot_these):
+                continue
+
+            if decomposition.num_variables == 2:
+                h = self.ax.scatter(xs[plot_these], ys[plot_these], marker=m)
+            else:
+                h = self.ax.scatter(xs[plot_these], ys[plot_these], zs[plot_these], zdir='z', s=.1, alpha=1, marker=m)
+
+            self.plot_results['vertices'][h] = T  # these are indexed by the handles so that they can be looped over.  i agree, it would be nice if they were flipped.
+
+        widgets = self._make_widgets_vertices(decomposition)
+
 
     def make_xyz(self, decomposition):
         xs = []
@@ -583,8 +671,7 @@ class Plotter(object):
 
         self.plotted_decompositions.append(curve)
 
-        if self.options.render.vertices and not curve.is_embedded:
-            self._plot_vertices(curve)
+
 
         self._determine_nondegen_edges(curve)
 
@@ -592,13 +679,19 @@ class Plotter(object):
             self._plot_raw_edges(curve)
             self._adjust_visibility('curve_raw')
 
+
         if self.options.render.curve_samples:
             self._plot_edge_samples(curve)
             self._adjust_visibility('curve_samples')
 
         
+        if self.options.render.vertices and not curve.is_embedded:
+            self._plot_vertices(curve)
+            self._adjust_visibility('vertices')
 
-        widgets = self._make_widgets_curve(curve)
+
+        if not curve.is_embedded:
+            widgets = self._make_widgets_curve(curve)
 
 
     def _plot_raw_edges(self, curve):
