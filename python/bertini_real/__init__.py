@@ -31,6 +31,8 @@ try:
     import bertini_real.glumpyplotter
 except ImportError as e:
     print(f'unable to import bertini_real.glumpyplotter.  if you want to use opengl-accelerated rendering of surfaces, install the module `glumpy` (and probably an opengl library, too)')
+except Exception as e:
+    print(f'unable to import glumpy.  reason: {e}')
 
 import bertini_real.anaglypy
 
