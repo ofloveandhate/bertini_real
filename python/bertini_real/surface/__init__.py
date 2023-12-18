@@ -237,7 +237,7 @@ class SurfacePiece():
         points = self.surface.extract_points()
         coordinates_this_piece = np.array([points[ind,:] for ind in unique_point_indices_this_piece])
         #return the mean as [x,y,z]
-        return coordinates_this_piece.mean(axis=0)
+        return coordinates_this_piece
 
     # point_singularities
     # the points on a piece ,  left and right edge will be degenerated
@@ -900,11 +900,13 @@ class Surface(Decomposition):
         """
 
         pieces = self.separate_into_nonsingular_pieces()
-
+        allPoints=[]
         #create a list of the centroid coordinates of each piece
         centroids = [] 
         for p in pieces:
-            centroids.append(p.centroid()) 
+            allPoints.append(p.centroid())
+            centroids.append(p.centroid().mean(axis=0)) 
+            
 
 
         # compute a list of nodal singularities, and which pieces they're connected to
@@ -1006,7 +1008,7 @@ class Surface(Decomposition):
 
         #open and auto write piece data to a json file
         with open("br_surf_piece_data.json", "w") as j:
-            j.write(json.dumps({"piece_indices": piece_indices,
+            j.write(json.dumps({"piece_names": piece_names,
             "singularities_on_pieces": singularities_on_pieces,
             "sing_directions": sing_directions_as_list,
             "sing_locations": sing_locations_as_list,
@@ -1015,9 +1017,18 @@ class Surface(Decomposition):
         print("JSON File")
         with open("br_surf_piece_data.json", "r") as j:
             print(j.read())
-        with open("br_surf_piece_data.json", "w") as c:
-            c.write(json.dumps({"centroids": centroids}))
 
+
+        with open("centroids.json", "w") as c:
+            for centroid in centroids:
+                
+                c.write(" ".join([str(s) for s in centroid])+"\n")
+                #c.write("[".join([str(s) for s in centroid]) + "]\n")
+        
+        with open("allPoints.json", "w") as a:
+            for point in allPoints:
+                a.write("\n".join([str(s) for s in point]) + "\n")
+        
     def as_mesh_smooth(self, which_faces=None, keep_all_vertices=True):
         """
         Compute a `Trimesh` object from the `trimesh` library for the corresponding faces using sampled data.  Raises if the surface is not sampled.
