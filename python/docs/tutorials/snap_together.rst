@@ -1,25 +1,27 @@
-Snap together pieces 🧩
+Snap together pieces via openSCAD🧩
 ===========================================================================
 
 Attaching plug and sockets to pieces of nodally singular algebraic surfaces.
+⚠️This implementation is no longer being persued, check out Snap together pieces in grasshopper⚠️
 
 Exporting complete surfaces
 *****************************
 
 After decomposing a surface, you can run the following python codes to export and solidify OBJ in the Python Shell.
-We are using a surface **"octdong"** in this example, so you will be running the code in your octodong directory .
+We are using a surface **"octdong"** in this example. First, you should navigate to your octodong directory via terminal. 
+Then using an interactive python shell, execute the following lines.
+If you have previously run *"gather()"* on the surface and have a **BRdata.pkl** file for the surface you can skip line 2
 
 ::
 
     import bertini_real as br
 
-    br.data.gather() # do this once after decomposing and sampling the surface.
+    br.data.gather() # do this once after decomposing and sampling the surface. If 
 
     surface = br.data.read_most_recent()
 
     pieces = surface.separate_into_nonsingular_pieces()
 
-This will only need to be done once per surface
 
 For each surface you will also need several scad files. We will take a closer look at each of these files later.
 for now, copy these files into the current directory by running:
@@ -28,7 +30,7 @@ for now, copy these files into the current directory by running:
 
   surface.copy_all_scad_files_here()
 
-Next we need to write to those files with the data of each piece of the surface.
+Next we need to write to those files with the data of each piece of the surface. 
 ::
 
   surf.write_piece_data()
@@ -54,12 +56,14 @@ Awesome! now we are ready to jump into openSCAD!
 
 Viewing in openSCAD
 *****************************
+
+⚠️OpenSCAD is no longer being pursed in this project. It does not support the boolean difference required⚠️
 opening the file **br_surf_complete.scad** in openSCAD will preview the surface!
 Rendering will return the following
 
 
 .. image:: snap_together_pictures/br_surf_complete_ding_dong.png
-   :width: 300
+  :width: 300
 
 Now lets take a quick look at the other .scad files
 
@@ -80,4 +84,4 @@ To do work 🚧
 :Author:
 	Caden Joergens
 
-:Version: 1.0 2022/05/13
+:Version: 1.1 2023/10/12
