@@ -19,7 +19,7 @@ namespace BertiniReal
     public BertiniRealComponent()
       : base("BertiniRealComponent", "bertinireal",
         "Tools for working with algebraic curves and surfaces computed by bertini_real",
-        "Mathematics", "Computational Geometry")
+        "BertiniReal", "Computational Geometry")
     {
     }
 
