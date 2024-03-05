@@ -1174,10 +1174,43 @@ void Surface::DegenerateSampleFace(int face_index, VertexSet & V, sampler_config
 //   common methods
 //
 ///////////////
+// we will attempt to flip only if two vertices of one triangle live on the rib adjacent to the two vertices of the other triangle
+std::vector<Triangle> make_triangles_better(std::vector<Triangle> const& triangles_this_pair_of_ribs, VertexSet const& V)
+{
+	std::vector<Triangle> better_triangles;
+	for (auto t1 = triangles_this_pair_of_ribs.begin(); t1!=triangles_this_pair_of_ribs.end()-1; ++t1){
+		auto t2 = t1+1;
+
+		if (t1.v1() == t2.v1() && t1.v2() == t2.v2())
+
+		if (t1.v1() == t2.v2() && t1.v2() == t2.v3())
+
+		if (t1.v1() == t2.v3() && t1.v2() == t2.v1())
+
+		if (t1.v1() == t2.v1() && t1.v2() == t2.v2())
+
+		if (t1.v1() == t2.v2() && t1.v2() == t2.v3())
+
+		if (t1.v1() == t2.v3() && t1.v2() == t2.v1())
+
+		auto a=t1.v1();
+		auto b=t1.v2();
+		auto c=t1.v3();
+
+		auto a2=t2.v1();
+		auto b2=t2.v2();
+		auto c2=t2.v3();
+
+
+
+	}
+	return better_triangles;
+}
+
 
 void Surface::StitchRibs(std::vector<Rib> const& ribs, VertexSet & V, sampler_configuration & sampler_options)
 {
-	std::vector< Triangle > current_samples;
+	std::vector< Triangle > triangles_this_face;
 	for (auto r = ribs.begin(); r!=ribs.end()-1; r++) {
 
 		if (r->size()==0 || (r+1)->size()==0) {
@@ -1185,20 +1218,27 @@ void Surface::StitchRibs(std::vector<Rib> const& ribs, VertexSet & V, sampler_co
 			continue;
 		}
 
+		std::vector< Triangle > triangles_this_pair_of_ribs;
 		switch (sampler_options.stitch_method){
 			case sampler_configuration::StitchMethod::TrailingAngle:
-				triangulate_two_ribs_by_trailing_angle(*r, *(r+1), V, (V.T())->real_threshold, current_samples);
+				triangulate_two_ribs_by_trailing_angle(*r, *(r+1), V, (V.T())->real_threshold, triangles_this_pair_of_ribs);
 				break;
 			case sampler_configuration::StitchMethod::ProjectionBinning:
-				triangulate_two_ribs_by_projection_binning(*r, *(r+1), V, (V.T())->real_threshold, current_samples);
+				triangulate_two_ribs_by_projection_binning(*r, *(r+1), V, (V.T())->real_threshold, triangles_this_pair_of_ribs);
 				break;
 			case sampler_configuration::StitchMethod::SumOfSquaresAnglesFrom60:
-				triangulate_two_ribs_by_angle_optimization(*r, *(r+1), V, (V.T())->real_threshold, current_samples);
+				triangulate_two_ribs_by_angle_optimization(*r, *(r+1), V, (V.T())->real_threshold, triangles_this_pair_of_ribs);
 				break;
 			}
+		auto better_triangles = make_triangles_better(triangles_this_pair_of_ribs, V);
+		for (const auto t: better_triangles){
+			triangles_this_face.push_back(t);
+		}
+
 	}
 
-	samples_.push_back(current_samples);
+	this->samples_.push_back(triangles_this_face);
+
 }
 
 
