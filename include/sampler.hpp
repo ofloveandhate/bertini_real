@@ -179,6 +179,22 @@ void triangulate_two_ribs_by_angle_optimization(const std::vector< int > & rib1,
 												std::vector< Triangle> & current_samples);
 
 
+/**
+ \brief triangulate two ribs, each with at least two entries, by iterating from left to right.  build the triangle that has aspect ratio of side lengths between 1/sqrt(2) and sqrt(2), if possible.  if not, choose the triangle that has side length ratio closer to 1.
+
+ the end of the loop simply constructs every Triangle between the two ribs until it reaches the end.
+
+ \param rib1 a rib of integer indices in a VertexSet.
+ \param rib2 a rib adjacent to rib1, of integer indices in a VertexSet
+ \param V the vertex set into which the ribs index.
+ \param real_thresh The threshold of imaginary part, so that a point is thresholded to be real.
+ \param current_samples The triangulation being built.
+ */
+void triangulate_two_ribs_by_aspect_ratio(const std::vector< int > & rib1, const std::vector< int > & rib2,
+												VertexSet & V, double real_thresh,
+												std::vector< Triangle> & current_samples);
+
+
 
 /**
  \brief compute square of difference between angle and \f$\pi/3\f$ radians.

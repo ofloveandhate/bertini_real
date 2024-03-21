@@ -1097,8 +1097,9 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 									   dehom_left, // the current new point
 									   dehom_right);
 
+					bool distance_is_less_than_tol = mpf_cmp(dist_away, sampler_options.TOL)>0;
 
-					refine_flags_next.push_back(mpf_cmp(dist_away, sampler_options.TOL)>0);
+					refine_flags_next.push_back(distance_is_less_than_tol);
 					if (refine_flags_next.back())
 						need_refinement = true;
 				} // re: if refine_flags[rr]
@@ -1175,37 +1176,37 @@ void Surface::DegenerateSampleFace(int face_index, VertexSet & V, sampler_config
 //
 ///////////////
 // we will attempt to flip only if two vertices of one triangle live on the rib adjacent to the two vertices of the other triangle
-std::vector<Triangle> make_triangles_better(std::vector<Triangle> const& triangles_this_pair_of_ribs, VertexSet const& V)
-{
-	std::vector<Triangle> better_triangles;
-	for (auto t1 = triangles_this_pair_of_ribs.begin(); t1!=triangles_this_pair_of_ribs.end()-1; ++t1){
-		auto t2 = t1+1;
+// std::vector<Triangle> make_triangles_better(std::vector<Triangle> const& triangles_this_pair_of_ribs, VertexSet const& V)
+// {
+// 	std::vector<Triangle> better_triangles;
+// 	for (auto t1 = triangles_this_pair_of_ribs.begin(); t1!=triangles_this_pair_of_ribs.end()-1; ++t1){
+// 		auto t2 = t1+1;
 
-		if (t1.v1() == t2.v1() && t1.v2() == t2.v2())
+// 		if (t1.v1() == t2.v1() && t1.v2() == t2.v2())
 
-		if (t1.v1() == t2.v2() && t1.v2() == t2.v3())
+// 		if (t1.v1() == t2.v2() && t1.v2() == t2.v3())
 
-		if (t1.v1() == t2.v3() && t1.v2() == t2.v1())
+// 		if (t1.v1() == t2.v3() && t1.v2() == t2.v1())
 
-		if (t1.v1() == t2.v1() && t1.v2() == t2.v2())
+// 		if (t1.v1() == t2.v1() && t1.v2() == t2.v2())
 
-		if (t1.v1() == t2.v2() && t1.v2() == t2.v3())
+// 		if (t1.v1() == t2.v2() && t1.v2() == t2.v3())
 
-		if (t1.v1() == t2.v3() && t1.v2() == t2.v1())
+// 		if (t1.v1() == t2.v3() && t1.v2() == t2.v1())
 
-		auto a=t1.v1();
-		auto b=t1.v2();
-		auto c=t1.v3();
+// 		auto a=t1.v1();
+// 		auto b=t1.v2();
+// 		auto c=t1.v3();
 
-		auto a2=t2.v1();
-		auto b2=t2.v2();
-		auto c2=t2.v3();
+// 		auto a2=t2.v1();
+// 		auto b2=t2.v2();
+// 		auto c2=t2.v3();
 
 
 
-	}
-	return better_triangles;
-}
+// 	}
+// 	return better_triangles;
+// }
 
 
 void Surface::StitchRibs(std::vector<Rib> const& ribs, VertexSet & V, sampler_configuration & sampler_options)
@@ -1229,12 +1230,15 @@ void Surface::StitchRibs(std::vector<Rib> const& ribs, VertexSet & V, sampler_co
 			case sampler_configuration::StitchMethod::SumOfSquaresAnglesFrom60:
 				triangulate_two_ribs_by_angle_optimization(*r, *(r+1), V, (V.T())->real_threshold, triangles_this_pair_of_ribs);
 				break;
+			case sampler_configuration::StitchMethod::AspectRatio:
+				triangulate_two_ribs_by_aspect_ratio(*r, *(r+1), V, (V.T())->real_threshold, triangles_this_pair_of_ribs);
+				break;
 			}
-		auto better_triangles = make_triangles_better(triangles_this_pair_of_ribs, V);
-		for (const auto t: better_triangles){
-			triangles_this_face.push_back(t);
-		}
 
+		// add the triangles from this pair of ribs to the growing list for the entire face.
+		triangles_this_face.insert(triangles_this_face.end(), triangles_this_pair_of_ribs.begin(), triangles_this_pair_of_ribs.end());
+		// i dislike this, because it loses the ribby-ness of the triangles, and would be a pain to reconstruct later if needed.
+		// wtb: keep the triangles per-intercostal region.
 	}
 
 	this->samples_.push_back(triangles_this_face);

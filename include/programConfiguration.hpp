@@ -918,7 +918,8 @@ public:
 	enum class StitchMethod{
 		TrailingAngle, // default
 		ProjectionBinning,
-		SumOfSquaresAnglesFrom60
+		SumOfSquaresAnglesFrom60,
+		AspectRatio
 	};
 
 	int stifle_membership_screen; ///< boolean controlling whether stifle_text is empty or " > /dev/null"
