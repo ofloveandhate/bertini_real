@@ -1143,7 +1143,8 @@ std::vector<int> Curve::GetMergeCandidates(const VertexSet & V) const
 
 
 				if (tentative_left_edge < 0) {
-					std::cout << color::red() << "found that edge " << tentative_edge_list.back() << " has NEW leftpoint, but \\nexists edge w point " << edges_[tentative_edge_list.back()].left() << " as right point." << color::console_default() << std::endl;
+					std::cout << color::red() << "found that edge " << tentative_edge_list.back() << " with points " << edges_[tentative_edge_list.back()] << " has NEW leftpoint, but \\nexists edge w point " << edges_[tentative_edge_list.back()].left() << " as right point." << color::console_default() << std::endl;
+					V.GetVertex(edges_[tentative_edge_list.back()].left()).print();
 					break;
 					//gotta do something careful here?   i suspect that this happens when two points are very near to each other...
 				}
