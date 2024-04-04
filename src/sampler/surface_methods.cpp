@@ -659,13 +659,13 @@ std::vector<int> Surface::AdaptiveNumSamplesPerRib(VertexSet const& V, sampler_c
 		div_mp(temp2, &max_widths_found->coord[ii], temp1);
 		mp_to_d(temp_d, temp2);
 
-		int est_num = ceil(temp_d->r);
+		int est_num = ceil(temp_d->r*1.41421356);
 
 
 		{
 			auto M = std::min(est_num, sampler_options.max_num_ribs);
 			auto m = std::max(est_num, sampler_options.min_num_ribs);
-			num.push_back(std::max(m, M)+2);
+			num.push_back(std::max(m, M));
 		}
 	}
 
