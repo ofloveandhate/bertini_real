@@ -66,9 +66,9 @@ AC_DEFUN([AX_BOOST_TIMER],
 		AC_CACHE_CHECK(whether the Boost::Timer library is available,
 			ax_cv_boost_timer,
 			[AC_LANG_PUSH([C++])
-			AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[@%:@include <boost/timer.hpp>
+			AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[@%:@include <boost/timer/timer.hpp>
 			]],
-			[[boost::timer r(); return 0;]])],
+			[[boost::timer::auto_cpu_timer r(); return 0;]])],
 			ax_cv_boost_timer=yes, ax_cv_boost_timer=no)
 			AC_LANG_POP([C++])
 		])
