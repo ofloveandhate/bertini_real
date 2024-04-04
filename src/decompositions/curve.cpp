@@ -1123,8 +1123,10 @@ std::vector<int> Curve::GetMergeCandidates(const VertexSet & V) const
 		if (V[edges_[tentative_right_edge].left()].type() == New && V[edges_[tentative_right_edge].right()].type() != New) {
 			// found a starting point for the merges
 
-			if (edges_[tentative_right_edge].is_degenerate())
+			if (edges_[tentative_right_edge].is_degenerate()){
+				std::cout << color::red() << "found a degenerate edge.  the comment says this should never happen.  " << color::console_default() << std::endl;
 				continue; // degenerate edge, should not blabla, but i think hypothetically this will never happen?
+			}
 
 			std::vector<int> tentative_edge_list;
 			tentative_edge_list.push_back(tentative_right_edge);
