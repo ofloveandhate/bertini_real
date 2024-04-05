@@ -82,11 +82,11 @@ void Surface::FixedSampleFace(int face_index, VertexSet & V, sampler_configurati
 	vec_mp dehom_left, dehom_right; init_vec_mp(dehom_left,0);  dehom_left->size  = 0; init_vec_mp(dehom_right,0); dehom_right->size = 0;
 	vec_mp blank_point;  init_vec_mp2(blank_point, 0,1024);
 
-	comp_mp interval_width; init_mp2(interval_width,1024); set_one_mp(interval_width);
-	comp_mp num_intervals;  init_mp2(num_intervals,1024); set_zero_mp(num_intervals);
+	comp_mp interval_width_u; init_mp2(interval_width_u,1024); set_one_mp(interval_width_u);
+	comp_mp num_intervals_u;  init_mp2(num_intervals_u,1024); set_zero_mp(num_intervals_u);
 
-	mpf_set_d(num_intervals->r,double(target_num_samples-1));
-	div_mp(interval_width,interval_width,num_intervals);
+	mpf_set_d(num_intervals_u->r,double(target_num_samples-1));
+	div_mp(interval_width_u,interval_width_u,num_intervals_u);
 
 	mpf_t dist_away; mpf_init(dist_away);
 	comp_mp target_projection_value; init_mp2(target_projection_value,1024);
@@ -295,7 +295,7 @@ void Surface::FixedSampleFace(int face_index, VertexSet & V, sampler_configurati
 		if (sampler_options.verbose_level()>=1)
 			std::cout << "sampling rib " << jj << std::endl;
 
-		add_mp(md_config.u_target,md_config.u_target,interval_width);
+		add_mp(md_config.u_target,md_config.u_target,interval_width_u);
 		set_mp(md_config.v_target,half); // start on the bottom one
 
 
@@ -490,7 +490,7 @@ void Surface::FixedSampleFace(int face_index, VertexSet & V, sampler_configurati
 	clear_vec_mp(blank_point);
 	clear_mp(target_projection_value);
 	mpf_clear(dist_away);
-	clear_mp(temp); clear_mp(temp2); clear_mp(interval_width); clear_mp(num_intervals);
+	clear_mp(temp); clear_mp(temp2); clear_mp(interval_width_u); clear_mp(num_intervals_u);
 
 	clear_vec_mp(target_multilin_linears[0]); clear_vec_mp(target_multilin_linears[1]); free(target_multilin_linears);
 
@@ -533,7 +533,8 @@ void Surface::AdaptiveSampler(VertexSet & V,
 				std::cout << faces_[ii];
 
 			try{
-				AdaptiveSampleFace(ii, V, sampler_options, solve_options, num_ribs_between_crits);
+				CycleNumSampleFace(ii, V, sampler_options, solve_options, num_ribs_between_crits);
+				// AdaptiveSampleFace(ii, V, sampler_options, solve_options, num_ribs_between_crits);  // silviana here april 2024
 			}
 			catch (std::exception & e)
 			{
@@ -854,11 +855,11 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 	auto interval_ind = bottom->ProjectionIntervalIndex(bottom_edge_index,V);
 	auto num_ribs = num_ribs_between_crits[interval_ind];
 
-	comp_mp interval_width; init_mp2(interval_width,1024); set_one_mp(interval_width);
-	comp_mp num_intervals;  init_mp2(num_intervals,1024); set_zero_mp(num_intervals);
+	comp_mp interval_width_u; init_mp2(interval_width_u,1024); set_one_mp(interval_width_u);
+	comp_mp num_intervals_u;  init_mp2(num_intervals_u,1024); set_zero_mp(num_intervals_u);
 
-	mpf_set_d(num_intervals->r,num_ribs-1);
-	div_mp(interval_width,interval_width,num_intervals);
+	mpf_set_d(num_intervals_u->r,num_ribs-1);
+	div_mp(interval_width_u,interval_width_u,num_intervals_u);
 
 
 	int cycle_num_l, cycle_num_r;
@@ -884,7 +885,7 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 	vec_mp u_proj_values;  init_vec_mp(u_proj_values,num_ribs-1); u_proj_values->size = num_ribs-1;
 	set_zero_mp(&u_proj_values->coord[0]);
 	for (int ii=1; ii<num_ribs-1; ++ii)
-		add_mp(&u_proj_values->coord[ii], &u_proj_values->coord[ii-1] , interval_width);
+		add_mp(&u_proj_values->coord[ii], &u_proj_values->coord[ii-1] , interval_width_u);
 
 
 
@@ -1154,7 +1155,7 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 	clear_vec_mp(blank_point);
 	clear_mp(target_projection_value);
 	mpf_clear(dist_away);
-	clear_mp(temp); clear_mp(temp2); clear_mp(interval_width); clear_mp(num_intervals);
+	clear_mp(temp); clear_mp(temp2); clear_mp(interval_width_u); clear_mp(num_intervals_u);
 
 	clear_vec_mp(target_multilin_linears[0]); clear_vec_mp(target_multilin_linears[1]); free(target_multilin_linears);
 
@@ -1180,7 +1181,7 @@ void Surface::CycleNumSampleFace(int face_index, VertexSet & V, sampler_configur
 	vec_mp blank_point;  init_vec_mp2(blank_point, 0,1024);
 
 
-
+	comp_mp temp_real; init_mp(temp_real); set_zero_mp(temp_real); // do not ever make the imaginary part of this non-zero
 
 
 	mpf_t dist_away; mpf_init(dist_away);
@@ -1191,13 +1192,13 @@ void Surface::CycleNumSampleFace(int face_index, VertexSet & V, sampler_configur
 	mpf_set_d(half->r, 0.5); mpf_set_d(half->i, 0.0);
 
 
-
+	comp_d temp_d;
 
 	auto slice_ind = curr_face.crit_slice_index();
 
 	const Curve & current_midslice = mid_slices_[slice_ind];
 	const Curve & left_critslice = crit_slices_[slice_ind];
-	const Curve & right_critslice = crit_slices_[slice_ind+1];
+	const Curve & right_critslice = crit_slices_[slice_ind+1]; // this +1 is erroneous once we merge!!!
 
 
 	const Curve* bottom = curve_with_name(curr_face.system_name_bottom());
@@ -1289,18 +1290,18 @@ void Surface::CycleNumSampleFace(int face_index, VertexSet & V, sampler_configur
 		var_counter++;
 	}
 
-	int mid_edge = current_midslice.nondegenerate_edge_w_midpt(curr_face.midpt());
+	int mid_edge_index = current_midslice.nondegenerate_edge_w_midpt(curr_face.midpt());
 	// bottom
 	int offset = var_counter;
 	for (int kk=0; kk<num_bottom_vars; kk++) {
-		set_mp(& W_midtrack.point(0)->coord[kk+offset], &(V[current_midslice.get_edge(mid_edge).left()].point())->coord[kk]); // y0
+		set_mp(& W_midtrack.point(0)->coord[kk+offset], &(V[current_midslice.get_edge(mid_edge_index).left()].point())->coord[kk]); // y0
 		var_counter++;
 	}
 
 	// top
 	offset = var_counter;
 	for (int kk=0; kk<num_top_vars; kk++) {
-		set_mp(& W_midtrack.point(0)->coord[kk+offset], &(V[current_midslice.get_edge(mid_edge).right()].point())->coord[kk]); // y2
+		set_mp(& W_midtrack.point(0)->coord[kk+offset], &(V[current_midslice.get_edge(mid_edge_index).right()].point())->coord[kk]); // y2
 		var_counter++;
 	}
 
@@ -1317,34 +1318,41 @@ void Surface::CycleNumSampleFace(int face_index, VertexSet & V, sampler_configur
 
 
 
-	auto top_edge_index    = top->   nondegenerate_edge_w_midpt(current_midslice.get_edge(mid_edge).right());
-	auto bottom_edge_index = bottom->nondegenerate_edge_w_midpt(current_midslice.get_edge(mid_edge).left());
+	auto top_edge_index    = top->   nondegenerate_edge_w_midpt(current_midslice.get_edge(mid_edge_index).right());
+	auto bottom_edge_index = bottom->nondegenerate_edge_w_midpt(current_midslice.get_edge(mid_edge_index).left());
 
 	if (bottom_edge_index<0)
 	{
-		std::cout << color::red() << "unable to find bottom edge w midpoint index " << current_midslice.get_edge(mid_edge).left() << color::console_default() << std::endl;
+		std::cout << color::red() << "unable to find bottom edge w midpoint index " << current_midslice.get_edge(mid_edge_index).left() << color::console_default() << std::endl;
 		throw std::runtime_error("bad bottom index");
 	}
 
 	if (top_edge_index<0)
 	{
-		std::cout << color::red() << "unable to find top edge w midpoint index " << current_midslice.get_edge(mid_edge).right() << color::console_default() << std::endl;
+		std::cout << color::red() << "unable to find top edge w midpoint index " << current_midslice.get_edge(mid_edge_index).right() << color::console_default() << std::endl;
 		throw std::runtime_error("bad top index");
 	}
 
+	comp_mp curr_v_val; init_mp(curr_v_val); 
+	comp_mp scaled_v_val; init_mp(scaled_v_val); set_zero_mp(scaled_v_val);
+	comp_mp proj_val_bottom; init_mp(proj_val_bottom); 
+	comp_mp proj_val_top; init_mp(proj_val_top); 
 
 	auto interval_ind = bottom->ProjectionIntervalIndex(bottom_edge_index,V);
 	auto num_ribs = num_ribs_between_crits[interval_ind];
 
-	comp_mp interval_width; init_mp2(interval_width,1024); set_one_mp(interval_width);
-	comp_mp num_intervals;  init_mp2(num_intervals,1024); set_zero_mp(num_intervals);
+	comp_mp interval_width_u; init_mp2(interval_width_u,1024); set_one_mp(interval_width_u);
+	comp_mp num_intervals_u;  init_mp2(num_intervals_u,1024); set_zero_mp(num_intervals_u);
 
-	mpf_set_d(num_intervals->r,num_ribs-1);
-	div_mp(interval_width,interval_width,num_intervals);
+	mpf_set_d(num_intervals_u->r,num_ribs-1);
+	div_mp(interval_width_u,interval_width_u,num_intervals_u);
 
 
-	int cycle_num_l, cycle_num_r;
+	int cycle_num_l, cycle_num_r, cycle_num_top, cycle_num_bottom;
 
+
+	// the left and right need to be uniform across all faces that meet on those edges, 
+	// so this if/else tries to make this happen
 	if (sampler_options.use_uniform_cycle_num)
 	{
 		cycle_num_l = sampler_options.cycle_num;
@@ -1362,13 +1370,23 @@ void Surface::CycleNumSampleFace(int face_index, VertexSet & V, sampler_configur
 		cycle_num_r = boost::math::lcm(top_right_cycle_num, bottom_right_cycle_num);
 	}
 
+
+	//the top/bottom cycle numbers are determined by the mid edge, 
+	// and determine only the spacing of in-face rib samples,
+	// so we don't need to be careful to make them match across anything
+
+	cycle_num_bottom = current_midslice.GetMetadata(mid_edge_index).CycleNumLeft();
+	cycle_num_top = current_midslice.GetMetadata(mid_edge_index).CycleNumRight();
+
+
 	// pi_out + (pi_mid - pi_out) * (1-p)^cycle_num;
 	vec_mp u_proj_values;  init_vec_mp(u_proj_values,num_ribs-1); u_proj_values->size = num_ribs-1;
 	set_zero_mp(&u_proj_values->coord[0]);
 	for (int ii=1; ii<num_ribs-1; ++ii)
-		add_mp(&u_proj_values->coord[ii], &u_proj_values->coord[ii-1] , interval_width);
+		add_mp(&u_proj_values->coord[ii], &u_proj_values->coord[ii-1] , interval_width_u);
 
 
+	comp_mp v_proj_value; init_mp(v_proj_value); set_zero_mp(v_proj_value);
 
 	//we need to sample the ribs
 	std::vector< Rib > ribs;
@@ -1453,7 +1471,7 @@ void Surface::CycleNumSampleFace(int face_index, VertexSet & V, sampler_configur
 																   md_config,
 															   solve_options);
 
-		int startpt_index;
+
 		if (success_indicator!=SUCCESSFUL) {
 			std::cout << color::red() << "midpoint solver unsuccesful at generating first point on rib" << color::console_default() << std::endl;
 			continue;
@@ -1468,7 +1486,7 @@ void Surface::CycleNumSampleFace(int face_index, VertexSet & V, sampler_configur
 
 		temp_vertex.set_type(Surface_sample_point);
 		temp_vertex.set_point(W_new.point(0));
-		startpt_index = V.add_vertex(temp_vertex);
+		int startpt_index = V.add_vertex(temp_vertex);
 
 		// need to set the values of the projections in the linears -- they are not unit-scaled as is the midpoint tracker.
 
@@ -1487,127 +1505,233 @@ void Surface::CycleNumSampleFace(int face_index, VertexSet & V, sampler_configur
 		// projection value 1 will be set later, when contructing the rib.
 
 
-
+		// put the first points on the rib
 		Rib refined_rib(3);
-		refined_rib[0] = curr_bottom_index;
-		refined_rib[1] = startpt_index;
-		refined_rib[2] = curr_top_index;
+		refined_rib[0] = curr_bottom_index; // point on the bottom edge
+		refined_rib[1] = startpt_index; // midpoint
+		refined_rib[2] = curr_top_index; // point on the top edge
 
 
-		std::vector<bool> refine_flags(2, true); // guarantee at least 5 points on the rib.  seems reasonable
-		bool need_refinement = true;
-		unsigned pass_number = 0;
-		while ( need_refinement && (pass_number < sampler_options.maximum_num_iterations) )
-		{
-			assert( (refine_flags.size() == refined_rib.size()-1) && "refinement flags must be one less than num entries on rib");
 
-			Rib temp_rib;
-			std::vector<bool> refine_flags_next;
-			need_refinement = false; // reset to no, in case don't need.  will set to true if point too far apart
+		// next, estimate how many points it will take on the rib, to get them less than tolerance apart.  (we try to over-estimate)
 
-			for (unsigned rr=0; rr<refine_flags.size(); ++rr) {
-				temp_rib.push_back(refined_rib[rr]);
-				if (refine_flags[rr]) {
-					estimate_new_projection_value(target_projection_value,		// the new value
-												  V[refined_rib[rr]].point(),	//
-												  V[refined_rib[rr+1]].point(), // two points input
-												  pi(1));
-
-					neg_mp(&target_multilin_linears[1]->coord[0],target_projection_value);
-
-					if (sampler_options.verbose_level()>=4)
-					{
-						std::cout << "refining rib, tracking from\n";
-						print_point_to_screen_matlab(W_multilin.point(0),"startpt");
-
-						print_point_to_screen_matlab(W_multilin.linear(0),"start_linear0");
-						print_point_to_screen_matlab(W_multilin.linear(1),"start_linear1");
-
-						print_point_to_screen_matlab(target_multilin_linears[0],"target_linear0");
-						print_point_to_screen_matlab(target_multilin_linears[1],"target_linear1");
-
-						print_comp_matlab(&V[refined_rib[rr]].projection_values()->coord[1],"left proj val");
-						print_comp_matlab(&V[refined_rib[rr+1]].projection_values()->coord[1],"right proj val");
-					}
-
-					SolverOutput track_result;
-					success_indicator = multilin_solver_master_entry_point(W_multilin,         // WitnessSet
-																		   track_result, // the new data is put here!
-																		   target_multilin_linears,
-																		   ml_config,
-																		   solve_options);
-
-					WitnessSet W_new;
-					track_result.get_noninfinite_w_mult_full(W_new);
+		// set the tolerance, for dividing
+		set_zero_mp(temp); // will be the tolerance for sampling, for now.
+		mpf_set(temp->r, sampler_options.TOL);  // mpreal
 
 
-					if (W_new.num_points()==0) {
-						std::cout << color::red() << "multilin tracker did not return any noninfinite points :(" << color::console_default() << std::endl;
-						refine_flags_next.push_back(false);
-						continue;
-					}
+		dehomogenize(&dehom_left,V[curr_bottom_index].point());
+		dehomogenize(&dehom_right,V[startpt_index].point());
+
+		// compute how far apart the mid and bottom points are
+		norm_of_difference_mindim(temp_real->r,
+						   dehom_left, // the current new point
+						   dehom_right);
+
+		div_mp(temp_real, temp_real, temp);  // divide distance between midpoint by the user's tolerance
+
+		mp_to_d(temp_d, temp_real); // convert from mp to double
+
+		int num_samples_bottom_side = std::max(ceil(temp_d->r*1.41421356), ceil(sampler_options.min_num_ribs/2) ); // estimate the number of points on this half-edge
 
 
-					dehomogenize(&dehom_right,W_new.point(0));
-					if (!checkForReal_mp(dehom_right, (V.T())->real_threshold))
-					{
-						std::cout << color::red() << "got non-real solution sample... something strange going on!\n\nnot refining this interval any more..." << color::console_default() << '\n';
-						refine_flags_next.push_back(false);
-						continue;
 
-					}
+		dehomogenize(&dehom_left,V[startpt_index].point()); 
+		dehomogenize(&dehom_right,V[curr_top_index].point()); 
 
+		norm_of_difference_mindim(temp_real->r,
+						   dehom_left, // the current new point
+						   dehom_right);
+		
+		div_mp(temp_real, temp_real, temp);  // divide distance between midpoint by the user's tolerance
 
-					temp_vertex.set_point(W_new.point(0));
-					temp_vertex.set_type(Surface_sample_point);
-					temp_rib.push_back(V.add_vertex(temp_vertex));
+		mp_to_d(temp_d, temp_real); // convert from mp to double
 
-					dehomogenize(&dehom_left,V[refined_rib[rr]].point());
-					norm_of_difference_mindim(dist_away,
-									   dehom_left, // the current new point
-									   dehom_right);
+		int num_samples_top_side = std::max(ceil(temp_d->r*1.41421356), ceil(sampler_options.min_num_ribs/2) ); // estimate the number of points on this half-edge
+
+		// note:
+		// num_samples_top_side and num_samples_bottom_side are the number IN THE RIB, not including the midpoint, or the sample points on the bottom or top edges
 
 
-					refine_flags_next.push_back(mpf_cmp(dist_away, sampler_options.TOL)>0);
-					if (refine_flags_next.back())
-						need_refinement = true;
+		// make a rib, and seed it with the bottom sample point
+		Rib temp_rib;
+		temp_rib.push_back(curr_bottom_index);
+
+		// next, compute the width in projection space between samples, BEFORE scaling by cycle number.
+
+		// interval_width_v = 1/2
+		comp_mp interval_width_v; init_mp(interval_width_v); 
+		set_mp(interval_width_v, half);
+
+		// n = num_samples+1
+		comp_mp num_intervals_v;  init_mp2(num_intervals_v,1024); set_zero_mp(num_intervals_v);
+		mpf_set_d(num_intervals_v->r,num_samples_bottom_side+1);
+
+		div_mp(interval_width_v,interval_width_v,num_intervals_v);
 
 
-					dehomogenize(&dehom_left,V[refined_rib[rr+1]].point());
 
-					norm_of_difference_mindim(dist_away,
-									   dehom_left, // the current new point
-									   dehom_right);
+		set_zero_mp(curr_v_val);
+		set_mp(proj_val_bottom, &V[curr_bottom_index].projection_values()->coord[1]);
+		set_mp(proj_val_top, &V[curr_top_index].projection_values()->coord[1]);
+		for (int rr=0; rr<num_samples_bottom_side; ++rr){
 
-					bool distance_is_less_than_tol = mpf_cmp(dist_away, sampler_options.TOL)>0;
 
-					refine_flags_next.push_back(distance_is_less_than_tol);
-					if (refine_flags_next.back())
-						need_refinement = true;
-				} // re: if refine_flags[rr]
-				else
-					refine_flags_next.push_back(false);
+			// increment to the next UNSCALED projection value (between 0 and 1)
+			add_mp(curr_v_val, curr_v_val, interval_width_v);
 
-			} // re: for (unsigned rr=0
-			temp_rib.push_back(refined_rib.back());
-			swap(temp_rib,refined_rib);
+			// gives a number between 0 and 1 (on bottom half, should be between 0 and 1/2)
+			ScaleByCycleNum(scaled_v_val, curr_v_val, cycle_num_bottom, cycle_num_top);
 
-			if (pass_number<sampler_options.minimum_num_iterations)
+			// next, scale to be in real projection space
+
+			// want to write this code, but this C flavored shit makes it impossible...
+			// scaled_v_val*(proj_val_top - proj_val_bottom) + proj_val_bottom
+
+			sub_mp(target_projection_value, proj_val_top, proj_val_bottom);
+			mul_mp(target_projection_value, scaled_v_val, target_projection_value);
+			add_mp(target_projection_value, target_projection_value, proj_val_bottom);
+
+			// finally, set the target projection value into the linears for the solve.
+			neg_mp(&target_multilin_linears[1]->coord[0],target_projection_value);
+
+			if (sampler_options.verbose_level()>=4)
 			{
-				for (int uu = 0; uu < refine_flags_next.size(); ++uu)
-					refine_flags_next[uu] = true;
+				std::cout << "refining rib, tracking from\n";
+				print_point_to_screen_matlab(W_multilin.point(0),"startpt");
 
-				need_refinement = true;
+				print_point_to_screen_matlab(W_multilin.linear(0),"start_linear0");
+				print_point_to_screen_matlab(W_multilin.linear(1),"start_linear1");
+
+				print_point_to_screen_matlab(target_multilin_linears[0],"target_linear0");
+				print_point_to_screen_matlab(target_multilin_linears[1],"target_linear1");
+
+				print_comp_matlab(&V[refined_rib[rr]].projection_values()->coord[1],"left proj val");
+				print_comp_matlab(&V[refined_rib[rr+1]].projection_values()->coord[1],"right proj val");
 			}
 
-			swap(refine_flags_next,refine_flags);
+			SolverOutput track_result;
+			success_indicator = multilin_solver_master_entry_point(W_multilin,         // WitnessSet
+																   track_result, // the new data is put here!
+																   target_multilin_linears,
+																   ml_config,
+																   solve_options);
+
+			WitnessSet W_new;
+			track_result.get_noninfinite_w_mult_full(W_new);
+
+
+			if (W_new.num_points()==0) {
+				std::cout << color::red() << "multilin tracker did not return any noninfinite points :(\n\n" << color::console_default() << std::endl;
+				continue;
+			}
+
+
+			dehomogenize(&dehom_right,W_new.point(0));
+			if (!checkForReal_mp(dehom_right, (V.T())->real_threshold))
+			{
+				std::cout << color::red() << "got non-real solution sample... something strange going on!\n\n" << color::console_default() << '\n';
+				continue;
+
+			}
+
+			temp_vertex.set_point(W_new.point(0));
+			temp_vertex.set_type(Surface_sample_point);
+			temp_rib.push_back(V.add_vertex(temp_vertex));
+		} // ends the bottom half of the rib.  next is the top half.
+
+		// add the midpoint of the edge to the rib
+		temp_rib.push_back(startpt_index);
+
+
+		// do the top half of the rib
+		set_mp(curr_v_val, half); // reset v to 1/2.  we'll add to it repeatedly in the loop below.
+
+
+		set_mp(interval_width_v, half); // reset to 1/2.
+
+		// n = num_samples+1
+		set_zero_mp(num_intervals_v);
+		mpf_set_d(num_intervals_v->r,num_samples_top_side+1);
+
+		div_mp(interval_width_v,interval_width_v,num_intervals_v);
+
+		for (int rr=0; rr<num_samples_top_side; ++rr){
+
+
+			// increment to the next UNSCALED projection value (between 0 and 1)
+			add_mp(curr_v_val, curr_v_val, interval_width_v);
+
+			// gives a number between 0 and 1 (on bottom half, should be between 0 and 1/2)
+			ScaleByCycleNum(scaled_v_val, curr_v_val, cycle_num_bottom, cycle_num_top);
+
+			// next, scale to be in real projection space
+
+			// want to write this code, but this C flavored shit makes it impossible...
+			// scaled_v_val*(proj_val_top - proj_val_bottom) + proj_val_bottom
+
+			sub_mp(target_projection_value, proj_val_top, proj_val_bottom);
+			mul_mp(target_projection_value, scaled_v_val, target_projection_value);
+			add_mp(target_projection_value, target_projection_value, proj_val_bottom);
+
+			// finally, set the target projection value into the linears for the solve.
+			neg_mp(&target_multilin_linears[1]->coord[0],target_projection_value);
+
+			if (sampler_options.verbose_level()>=4)
+			{
+				std::cout << "refining rib, tracking from\n";
+				print_point_to_screen_matlab(W_multilin.point(0),"startpt");
+
+				print_point_to_screen_matlab(W_multilin.linear(0),"start_linear0");
+				print_point_to_screen_matlab(W_multilin.linear(1),"start_linear1");
+
+				print_point_to_screen_matlab(target_multilin_linears[0],"target_linear0");
+				print_point_to_screen_matlab(target_multilin_linears[1],"target_linear1");
+
+				print_comp_matlab(&V[refined_rib[rr]].projection_values()->coord[1],"left proj val");
+				print_comp_matlab(&V[refined_rib[rr+1]].projection_values()->coord[1],"right proj val");
+			}
+
+			SolverOutput track_result;
+			success_indicator = multilin_solver_master_entry_point(W_multilin,         // WitnessSet
+																   track_result, // the new data is put here!
+																   target_multilin_linears,
+																   ml_config,
+																   solve_options);
+
+			WitnessSet W_new;
+			track_result.get_noninfinite_w_mult_full(W_new);
+
+
+			if (W_new.num_points()==0) {
+				std::cout << color::red() << "multilin tracker did not return any noninfinite points :(\n\n" << color::console_default() << std::endl;
+				continue;
+			}
+
+
+			dehomogenize(&dehom_right,W_new.point(0));
+			if (!checkForReal_mp(dehom_right, (V.T())->real_threshold))
+			{
+				std::cout << color::red() << "got non-real solution sample... something strange going on!\n\n" << color::console_default() << '\n';
+				continue;
+
+			}
+
+			temp_vertex.set_point(W_new.point(0));
+			temp_vertex.set_type(Surface_sample_point);
+			temp_rib.push_back(V.add_vertex(temp_vertex));
+		} // ends the bottom half of the rib.  next is the top half.
 
 
 
-			++pass_number;
-		} // re: while
 
-		swap(ribs[jj], refined_rib);
+
+
+
+		// finally, add the point from the top edge to the rib.
+		temp_rib.push_back(curr_top_index);
+
+		swap(ribs[jj], temp_rib);
 	}
 
 	//check the ribs.
@@ -1625,7 +1749,7 @@ void Surface::CycleNumSampleFace(int face_index, VertexSet & V, sampler_configur
 	if (num_ribs%2==0)
 	{
 		// need to insert the sampling from the midslice into the mix.
-		ribs.insert(ribs.begin() + num_ribs/2, current_midslice.SamplesOnEdge(mid_edge));
+		ribs.insert(ribs.begin() + num_ribs/2, current_midslice.SamplesOnEdge(mid_edge_index));
 	}
 
 
@@ -1636,11 +1760,14 @@ void Surface::CycleNumSampleFace(int face_index, VertexSet & V, sampler_configur
 	clear_vec_mp(blank_point);
 	clear_mp(target_projection_value);
 	mpf_clear(dist_away);
-	clear_mp(temp); clear_mp(temp2); clear_mp(interval_width); clear_mp(num_intervals);
+	clear_mp(temp); clear_mp(temp2); clear_mp(interval_width_u); clear_mp(num_intervals_u);
 
 	clear_vec_mp(target_multilin_linears[0]); clear_vec_mp(target_multilin_linears[1]); free(target_multilin_linears);
-
+	clear_mp(temp_real); clear_mp(v_proj_value);
 	clear_vec_mp(dehom_right); clear_vec_mp(dehom_left);
+
+	clear_mp(curr_v_val);  clear_mp(scaled_v_val);
+	clear_mp(proj_val_bottom); clear_mp(proj_val_top);
 }
 
 
