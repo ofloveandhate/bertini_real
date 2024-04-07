@@ -20,6 +20,8 @@ void sampler_configuration::SetDefaults()
 	max_num_ribs = 20;
 	min_num_ribs = 3;
 
+	// min_num_samples_per_rib = 5; this is set in the class definition in the header.
+
 	minimum_num_iterations = 2;
 	maximum_num_iterations = 10;
 
@@ -70,10 +72,11 @@ void sampler_configuration::print_usage()
 	line("-verb",  "<int>", "0", "how much stuff to print to screen");
 	line("-minits",  "<int>", "2","minimum number of passes for adaptive curve or surface refining");
 	line("-maxits",  "<int>", "10","maximum number of passes for adaptive curve or surface refining");
-	line("-maxribs ",  "<int>", "3","maximum number of ribs for adaptive surface refining");
-	line("-minribs",  "<int>", "20", "minimum number of ribs for adaptive surface refining");
+	line("-maxribs ",  "<int>", "20","maximum number of ribs for adaptive surface refining");
+	line("-minribs",  "<int>", "3", "minimum number of ribs for adaptive surface refining");
 	line("-numsamples ",  "<int>", "10", "target number samples per edge");
-	line("-mode -m ",  "<char>", "a", "sampling mode.  'a' adaptive by movement, 'd' adaptive by distance, 'f' fixed, ");
+	line("-minsamplesperrib -i ", "<int>", "5", "mininum number of points on ribs during face sampling when using cycle-num or adaptive sampling.  must be at least 3.");
+	line("-mode -m ",  "<char>", "a", "sampling mode.  'a' adaptive by movement, 'd' adaptive by distance, 'f' fixed, 'c' use cycle number wherever possible");
 	line("-cyclenum",  "<int>", "2", "cycle number to use for rib spacing in face sampling");
 	line("-nouniformcyclenum",  " -- ", " ", "turn OFF uniform cycle number usage in surface sampling.  buggy.");
 	line("-uniformcyclenum",  " -- ", " ", "turn ON uniform cycle number usage in surface sampling.  works well.");
@@ -94,6 +97,7 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 		static struct option long_options[] =
 		{
 			/* These options set a flag. */
+			// if you add one here, you must add one below in the list that starts "bdf:"..., and in the switch too.
 			{"nostifle", no_argument,       0, 's'},
 			{"ns", no_argument,       0, 's'},
 			{"help",		no_argument,			 0, 'h'},
@@ -109,6 +113,7 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 			{"maxribs",		required_argument,			 0, 'R'},
 			{"minribs",		required_argument,			 0, 'r'},
 			{"numsamples",		required_argument,			 0, 'n'},
+			{"minsamplesperrib", required_argument, 0, 'i'},
 			{"nd", no_argument,0,'d'},
 			{"m",		required_argument,			 0, 'M'},
 			{"mode",		required_argument,			 0, 'M'},
@@ -122,7 +127,7 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
 
-		choice = getopt_long_only (argc, argv, "bdf:svt:V:l:m:R:r:hM:uUc:IS:", // colon requires option, two is optional
+		choice = getopt_long_only (argc, argv, "bdf:svt:V:l:m:R:r:hM:uUc:IS:i:", // colon requires option, two is optional
 															 long_options, &option_index);
 
 		/* Detect the end of the options. */
@@ -141,10 +146,16 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 
 				if (target_num_samples <= 3) {
 					std::cout << "The number of desired samples must be larger than 3, but you provided " << target_num_samples << std::endl;
-					exit(0);
+					exit(-7);
 				}
 				break;
-
+			case 'i':
+				min_num_samples_per_rib = atoi(optarg);
+				if (min_num_samples_per_rib < 3){
+					std::cout << "min number of samples per rib must be at least 3 (one on either side of the midpoint, plus the midpoint).  you have " << min_num_samples_per_rib << std::endl;
+					exit(-7);
+				}
+				break;
 			case 's':
 				this->stifle_text = "\0";
 				break;
@@ -192,6 +203,10 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 
 					case 'f':
 						mode = Mode::Fixed;
+						break;
+
+					case 'c':
+						mode = Mode::CycleNum;
 						break;
 				}
 				break;
@@ -425,6 +440,12 @@ void SamplerMaster(sampler_configuration & sampler_options)
 
 				case sampler_configuration::Mode::AdaptivePredMovement:
 					curve.AdaptiveMovementSampler(V,
+												sampler_options,
+												solve_options);
+					break;
+
+				case sampler_configuration::Mode::CycleNum:
+					curve.CycleNumSampler(V,
 												sampler_options,
 												solve_options);
 					break;

@@ -554,7 +554,7 @@ std::vector<int> Surface::AdaptiveSampleCurves(VertexSet & V,
 
 	// first we need to compute the set of numbers of ribs per face.
 	// this is determined by the widths in terms of projection value.
-	std::vector<int> num_slices_between_crits = AdaptiveNumSamplesPerRib(V, sampler_options);
+	std::vector<int> num_slices_between_crits = AdaptiveNumRibsPerCritInterval(V, sampler_options);
 	assert(num_slices_between_crits.size()==NumMidSlices());
 
 
@@ -566,12 +566,12 @@ std::vector<int> Surface::AdaptiveSampleCurves(VertexSet & V,
 
 	std::cout << "sampling mid slices" << std::endl;
 	for (auto ii=mid_slices_iter_begin(); ii!=mid_slices_iter_end(); ii++) {
-		ii->AdaptiveDistanceSampler(V,sampler_options,solve_options);
+		ii->CycleNumSampler(V,sampler_options,solve_options);
 	}
 
 	std::cout << "sampling critical slices" << std::endl;
 	for (auto ii=crit_slices_iter_begin(); ii!=crit_slices_iter_end(); ii++) {
-		ii->AdaptiveDistanceSampler(V,sampler_options,solve_options);
+		ii->CycleNumSampler(V,sampler_options,solve_options);
 	}
 
 	if (num_singular_curves()>0) {
@@ -586,7 +586,7 @@ std::vector<int> Surface::AdaptiveSampleCurves(VertexSet & V,
 
 
 
-std::vector<int> Surface::AdaptiveNumSamplesPerRib(VertexSet const& V, sampler_configuration & sampler_options)
+std::vector<int> Surface::AdaptiveNumRibsPerCritInterval(VertexSet const& V, sampler_configuration & sampler_options)
 {
 	std::vector<int> num;
 	auto n = NumMidSlices();
@@ -1532,9 +1532,7 @@ void Surface::CycleNumSampleFace(int face_index, VertexSet & V, sampler_configur
 
 		mp_to_d(temp_d, temp_real); // convert from mp to double
 
-		int num_samples_bottom_side = std::max(ceil(temp_d->r*1.41421356), ceil(sampler_options.min_num_ribs/2) ); // estimate the number of points on this half-edge
-
-
+		int num_samples_bottom_side = std::max(ceil(temp_d->r*1.41421356), floor(sampler_options.min_num_samples_per_rib/2) ); // estimate the number of points on this half-edge
 
 		dehomogenize(&dehom_left,V[startpt_index].point()); 
 		dehomogenize(&dehom_right,V[curr_top_index].point()); 
@@ -1547,7 +1545,7 @@ void Surface::CycleNumSampleFace(int face_index, VertexSet & V, sampler_configur
 
 		mp_to_d(temp_d, temp_real); // convert from mp to double
 
-		int num_samples_top_side = std::max(ceil(temp_d->r*1.41421356), ceil(sampler_options.min_num_ribs/2) ); // estimate the number of points on this half-edge
+		int num_samples_top_side = std::max(ceil(temp_d->r*1.41421356), floor(sampler_options.min_num_samples_per_rib/2) ); // estimate the number of points on this half-edge
 
 		// note:
 		// num_samples_top_side and num_samples_bottom_side are the number IN THE RIB, not including the midpoint, or the sample points on the bottom or top edges
@@ -1664,7 +1662,6 @@ void Surface::CycleNumSampleFace(int face_index, VertexSet & V, sampler_configur
 
 			// gives a number between 0 and 1 (on bottom half, should be between 0 and 1/2)
 			ScaleByCycleNum(scaled_v_val, curr_v_val, cycle_num_bottom, cycle_num_top);
-
 			// next, scale to be in real projection space
 
 			// want to write this code, but this C flavored shit makes it impossible...
@@ -1720,7 +1717,7 @@ void Surface::CycleNumSampleFace(int face_index, VertexSet & V, sampler_configur
 			temp_vertex.set_point(W_new.point(0));
 			temp_vertex.set_type(Surface_sample_point);
 			temp_rib.push_back(V.add_vertex(temp_vertex));
-		} // ends the bottom half of the rib.  next is the top half.
+		} // ends the top half of the rib. 
 
 
 

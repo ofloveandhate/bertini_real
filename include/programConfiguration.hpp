@@ -912,7 +912,8 @@ public:
 		Fixed,
 		AdaptiveConsecDistance,
 		AdaptivePredMovement,
-		SemiFixed
+		SemiFixed,
+		CycleNum
 	};
 
 	enum class StitchMethod{
@@ -941,6 +942,8 @@ public:
 
 	int max_num_ribs;
 	int min_num_ribs;
+
+	int min_num_samples_per_rib = 5; ///< min number per rib when sampling.  includes the midpoint of the rib, so two on each side is default.  endpoints, on top/bottom are NOT included in this number
 
 	bool use_uniform_cycle_num = true;
 	int cycle_num = 2;
