@@ -468,7 +468,8 @@ void SamplerMaster(sampler_configuration & sampler_options)
 		{
 			switch (sampler_options.mode){
 				case sampler_configuration::Mode::Fixed:
-				{
+				{	
+					std::cout << "sampling surface using fixed number per cell method.  (cycle num method produces better results)." << std::endl;
 					surf.FixedSampler(V,
 											 sampler_options,
 											 solve_options);
