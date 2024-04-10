@@ -6,7 +6,7 @@
 void WorkerSampleSurface(sampler_configuration & sampler_options, SolverConfiguration & solve_options)
 {}
 
-void Surface::fixed_sampler(VertexSet & V,
+void Surface::FixedSampler(VertexSet & V,
 							sampler_configuration & sampler_options,
 							SolverConfiguration & solve_options)
 {
@@ -533,7 +533,7 @@ void Surface::AdaptiveSampler(VertexSet & V,
 				std::cout << faces_[ii];
 
 			try{
-				CycleNumSampleFace(ii, V, sampler_options, solve_options, num_ribs_between_crits);
+				AdaptiveSampleFace(ii, V, sampler_options, solve_options, num_ribs_between_crits);
 				// AdaptiveSampleFace(ii, V, sampler_options, solve_options, num_ribs_between_crits);  // silviana here april 2024
 			}
 			catch (std::exception & e)
@@ -566,12 +566,12 @@ std::vector<int> Surface::AdaptiveSampleCurves(VertexSet & V,
 
 	std::cout << "sampling mid slices" << std::endl;
 	for (auto ii=mid_slices_iter_begin(); ii!=mid_slices_iter_end(); ii++) {
-		ii->CycleNumSampler(V,sampler_options,solve_options);
+		ii->AdaptiveDistanceSampler(V,sampler_options,solve_options);
 	}
 
 	std::cout << "sampling critical slices" << std::endl;
 	for (auto ii=crit_slices_iter_begin(); ii!=crit_slices_iter_end(); ii++) {
-		ii->CycleNumSampler(V,sampler_options,solve_options);
+		ii->AdaptiveDistanceSampler(V,sampler_options,solve_options);
 	}
 
 	if (num_singular_curves()>0) {
@@ -1161,6 +1161,100 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 
 	clear_vec_mp(dehom_right); clear_vec_mp(dehom_left);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void Surface::CycleNumSampler(VertexSet & V,
+							sampler_configuration & sampler_options,
+							SolverConfiguration & solve_options)
+{
+	if (sampler_options.save_ribs)
+		PrepareForSavingRibs(sampler_options);
+
+	auto num_ribs_between_crits = CycleNumSampleCurves(V, sampler_options, solve_options);
+
+	solve_options.force_no_parallel(true);
+	
+	//once you have the fixed samples of the curves, down here is just making the integer triangles.
+	for (unsigned int ii=0; ii<num_faces(); ii++) {
+
+		if (faces_[ii].is_degenerate() || faces_[ii].is_malformed())
+			DegenerateSampleFace(ii,V,sampler_options, solve_options);
+		else
+		{
+			std::cout << "Face " << ii << " of " << num_faces() << std::endl;
+			if (sampler_options.verbose_level()>=1)
+				std::cout << faces_[ii];
+
+			try{
+				CycleNumSampleFace(ii, V, sampler_options, solve_options, num_ribs_between_crits);
+				// AdaptiveSampleFace(ii, V, sampler_options, solve_options, num_ribs_between_crits);  // silviana here april 2024
+			}
+			catch (std::exception & e)
+			{
+				std::cout << "bailed out on face " << ii << ".  reason: " << e.what() << std::endl;
+			}
+		}
+	} // re: for ii, that is for the faces
+
+	return;
+}
+
+
+std::vector<int> Surface::CycleNumSampleCurves(VertexSet & V,
+								sampler_configuration & sampler_options,
+								SolverConfiguration & solve_options)
+{
+
+	// first we need to compute the set of numbers of ribs per face.
+	// this is determined by the widths in terms of projection value.
+	std::vector<int> num_slices_between_crits = AdaptiveNumRibsPerCritInterval(V, sampler_options);
+	assert(num_slices_between_crits.size()==NumMidSlices());
+
+
+	std::cout << "sampling critical curve" << std::endl;
+	crit_curve().SemiFixedSampler(V,sampler_options,solve_options,num_slices_between_crits);
+
+	std::cout << "sampling sphere curve" << std::endl;
+	sphere_curve().SemiFixedSampler(V,sampler_options,solve_options,num_slices_between_crits);
+
+	std::cout << "sampling mid slices" << std::endl;
+	for (auto ii=mid_slices_iter_begin(); ii!=mid_slices_iter_end(); ii++) {
+		ii->CycleNumSampler(V,sampler_options,solve_options);
+	}
+
+	std::cout << "sampling critical slices" << std::endl;
+	for (auto ii=crit_slices_iter_begin(); ii!=crit_slices_iter_end(); ii++) {
+		ii->CycleNumSampler(V,sampler_options,solve_options);
+	}
+
+	if (num_singular_curves()>0) {
+		std::cout << "sampling singular curves" << std::endl;
+		for (auto iter = singular_curves_iter_begin(); iter!= singular_curves_iter_end(); ++iter) {
+			iter->second.SemiFixedSampler(V,sampler_options,solve_options,num_slices_between_crits);
+		}
+	}
+
+	return num_slices_between_crits;
+}
+
+
+
+
 
 
 void Surface::CycleNumSampleFace(int face_index, VertexSet & V, sampler_configuration & sampler_options,

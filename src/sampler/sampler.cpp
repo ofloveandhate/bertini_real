@@ -20,7 +20,12 @@ void sampler_configuration::SetDefaults()
 	max_num_ribs = 20;
 	min_num_ribs = 3;
 
-	// min_num_samples_per_rib = 5; this is set in the class definition in the header.
+	min_num_samples_per_rib = 5; 
+
+	use_uniform_cycle_num = true;
+	cycle_num = 2;
+
+	stitch_method = StitchMethod::SumOfSquaresAnglesFrom60;
 
 	minimum_num_iterations = 2;
 	maximum_num_iterations = 10;
@@ -30,7 +35,7 @@ void sampler_configuration::SetDefaults()
 
 	use_gamma_trick = 0;
 
-	mode = Mode::AdaptivePredMovement;
+	mode = Mode::CycleNum;
 
 	save_ribs = false;
 }
@@ -76,12 +81,12 @@ void sampler_configuration::print_usage()
 	line("-minribs",  "<int>", "3", "minimum number of ribs for adaptive surface refining");
 	line("-numsamples ",  "<int>", "10", "target number samples per edge");
 	line("-minsamplesperrib -i ", "<int>", "5", "mininum number of points on ribs during face sampling when using cycle-num or adaptive sampling.  must be at least 3.");
-	line("-mode -m ",  "<char>", "a", "sampling mode.  'a' adaptive by movement, 'd' adaptive by distance, 'f' fixed, 'c' use cycle number wherever possible");
+	line("-mode -m ",  "<char>", "c", "sampling mode.  'a' adaptive by movement, 'd' adaptive by distance, 'f' fixed, 'c' use cycle number wherever possible");
 	line("-cyclenum",  "<int>", "2", "cycle number to use for rib spacing in face sampling");
 	line("-nouniformcyclenum",  " -- ", " ", "turn OFF uniform cycle number usage in surface sampling.  buggy.");
 	line("-uniformcyclenum",  " -- ", " ", "turn ON uniform cycle number usage in surface sampling.  works well.");
 	line("-saveribs",  " -- ", " ", "turn ON saving of ribs for each face.  off by default.");
-	line("-stitchmethod -S", "<char>", "t (trailingangle)", "choose between methods for stitching together triangles. t (trailingangle), s (sumsquaresangles), p (projectionbinning), r (aspectratio)");
+	line("-stitchmethod -S", "<char>", "s (sumsquaresangles)", "choose between methods for stitching together triangles. t (trailingangle), s (sumsquaresangles), p (projectionbinning), r (aspectratio)");
 	std::cout << "\n\n\n";
 	std::cout.flush();
 	return;
@@ -245,7 +250,6 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 				switch (curr_opt[0]){
 					case 't':
 						this->stitch_method = StitchMethod::TrailingAngle;
-						std::cout << "using Morgan's triangulate method" << std::endl;
 						break;
 					case 'p':
 						this->stitch_method = StitchMethod::ProjectionBinning;
@@ -253,13 +257,12 @@ int  sampler_configuration::parse_commandline(int argc, char **argv)
 					case 's':
 						this->stitch_method = StitchMethod::SumOfSquaresAnglesFrom60;
 						break;
-						break;
 					case 'r':
 						this->stitch_method = StitchMethod::AspectRatio;
 						break;
 					default:
 						sampler_configuration::print_usage();
-						std::cout << "option to stitchmethod or S invalid.  See printed help." << std::endl;
+						std::cout << "Your selected option `" << curr_opt[0] << "` to -stitchmethod or -S is invalid.  The four valid options are t p s r, with s being default." << std::endl;
 						exit(1);
 				}
 			}
@@ -466,17 +469,27 @@ void SamplerMaster(sampler_configuration & sampler_options)
 			switch (sampler_options.mode){
 				case sampler_configuration::Mode::Fixed:
 				{
-					surf.fixed_sampler(V,
+					surf.FixedSampler(V,
 											 sampler_options,
 											 solve_options);
 
 					break;
 				}
+
+				// these two collapse to the same thing
 				case sampler_configuration::Mode::AdaptivePredMovement:
 					std::cout << color:: magenta() << "adaptive by movement not implemented for surfaces, using adaptive by distance" << color::console_default() << "\n\n";
 				case sampler_configuration::Mode::AdaptiveConsecDistance:
 				{
 					surf.AdaptiveSampler(V,
+											 sampler_options,
+											 solve_options);
+					break;
+				}
+
+				case sampler_configuration::Mode::CycleNum:
+				{
+					surf.CycleNumSampler(V,
 											 sampler_options,
 											 solve_options);
 					break;
