@@ -1123,8 +1123,10 @@ std::vector<int> Curve::GetMergeCandidates(const VertexSet & V) const
 		if (V[edges_[tentative_right_edge].left()].type() == New && V[edges_[tentative_right_edge].right()].type() != New) {
 			// found a starting point for the merges
 
-			if (edges_[tentative_right_edge].is_degenerate())
+			if (edges_[tentative_right_edge].is_degenerate()){
+				std::cout << color::red() << "found a degenerate edge.  the comment says this should never happen.  " << color::console_default() << std::endl;
 				continue; // degenerate edge, should not blabla, but i think hypothetically this will never happen?
+			}
 
 			std::vector<int> tentative_edge_list;
 			tentative_edge_list.push_back(tentative_right_edge);
@@ -1141,7 +1143,8 @@ std::vector<int> Curve::GetMergeCandidates(const VertexSet & V) const
 
 
 				if (tentative_left_edge < 0) {
-					std::cout << color::red() << "found that edge " << tentative_edge_list.back() << " has NEW leftpoint, but \\nexists edge w point " << edges_[tentative_edge_list.back()].left() << " as right point." << color::console_default() << std::endl;
+					std::cout << color::red() << "found that edge " << tentative_edge_list.back() << " with points " << edges_[tentative_edge_list.back()] << " has NEW leftpoint, but \\nexists edge w point " << edges_[tentative_edge_list.back()].left() << " as right point." << color::console_default() << std::endl;
+					V.GetVertex(edges_[tentative_edge_list.back()].left()).print();
 					break;
 					//gotta do something careful here?   i suspect that this happens when two points are very near to each other...
 				}

@@ -2,10 +2,11 @@
 function [handles,paths] = plot_paths(n)
 
 % data_set = '_cauchy';
-% data_set = '_ps';
-data_set = '';
-use_text = 0;
+data_set = '_ps';
+% data_set = '';
+use_text = true;
 noplot = 0;
+method = 'complex'; % or 'complex'
 
 method = 'mono';
 
@@ -22,50 +23,64 @@ hold off
 for ii = 1:length(n)
 	p = n(ii);
 	
+    display(p)
 	[time, path, cond] = get_data(p,data_set);
 	
-	paths{ii} = struct('time',time,'path',path,'cond',cond,'pathnum',p);
 
-
-	path = real( dehomogenize( path(:,1:end), 2) );
+	path = dehomogenize(path(:,1:end),2);
     
 	if meh(path)
 			continue
-	end
-	
-
-	if ~noplot
-           
-        switch method
-            case 'cond'
-                handles(ii) = path_colored_by_cond(path,cond, use_text,p);
-            case 'mono'
-                handles(ii) = path_mono(path,'k', use_text,p);
-            otherwise
-                error('invalid plot method')
-        end
-
-		hold on
-%         display(p)
-%         pause
-	end
+    end
+      
+    if strcmp(method,'real')
+        [h,path_as_plotted] = path_colored_by_cond(path, time, cond, use_text,p);
+    end
+    if strcmp(method,'complex')
+        [h,path_as_plotted] = path_x_complex(path, time, cond, use_text,p);
+    end
+    hold on
+    
+    
+    if use_text
+        plot_text(path_as_plotted, time)
+    end
+    paths{ii} = struct('time',time,'path',path,'cond',cond,'pathnum',p,'as_plotted',path_as_plotted, 'handle',h);
 	
 end
 	
-set(handles,'linewidth',1);
-
-	
+hold off
 if ~noplot
 % 	title('real part of path')
+    
+    endpoint = paths{end}.as_plotted(end,:);
+%     
+	a = 1;
+	axis([-a+endpoint(1) a+endpoint(1) -a+endpoint(2) a+endpoint(2) -a+endpoint(3) a+endpoint(3)])
 
-% 	a = 10;
-% 	axis([-a a -a a -a a])
-% 	cameratoolbar
+    view(2)
+	cameratoolbar
+
 end
 
 view(2)
 axis off
 axis square
+end
+
+function h = plot_text(path, time)
+    h = [];
+    for ii = 0:100
+        n = length(path(:,1)) - ii;
+        t = time(n);
+        if imag(t)==0
+            txt = sprintf('      $t = %1.3d$',t);
+        else
+            txt = sprintf('      $t = %1.3d+%1.3d i$',real(t), imag(t));
+        end
+        
+        h(end+1) = text(path(n,1),path(n,2),path(n,3),txt, interpreter='latex',fontsize=20, margin=10);
+    end
 end
 
 
@@ -83,19 +98,48 @@ function h = path_mono(path,color, use_text, path_num)
 	end
 end
 
-function h = path_colored_by_cond(path,cond, use_text, path_num)
+
+function [h,path] = path_colored_by_cond(path, time, cond, use_text, path_num)
+
 
 % 	h = patch(path(:,1),path(:,2),path(:,3),log10(cond)); % ,abs(data(:,8))
 % 	set(h,'facecolor','none')
 % 	set(h, 'edgecolor', 'interp');
 % 	
-	h = color_line(path(:,1),path(:,2),path(:,3),log10(cond));
-	set(h, 'linewidth', 5);
+    path = real(path);
+	h = color_line(path(:,1),path(:,2),path(:,3),-log10(abs(time)));
+    set(h, 'linewidth', 5);
+    hold on
+    h2 = plot3(path(:,1),path(:,2),path(:,3),'x');
+    set(h2, 'MarkerSize', 20);
+    
+    
 	if use_text
 		t = text(path(end,1),path(end,2),path(end,3),sprintf('path %i',path_num));
 % 		t.Color = colors(ii,:);
 	end
 end
+
+function [h,path] = path_x_complex(path, time, cond, use_text, path_num)
+
+% 	h = patch(path(:,1),path(:,2),path(:,3),log10(cond)); % ,abs(data(:,8))
+% 	set(h,'facecolor','none')
+% 	set(h, 'edgecolor', 'interp');
+%      
+    ind = 1;
+    
+    path = [real(path(:,ind)) imag(path(:,ind)) zeros(length(path(:,ind)),1)]; 
+    
+    
+    
+	h = color_line(path(:,1),path(:,2), path(:,3), -log10(abs(time)));
+    set(h, 'linewidth', 5);
+    hold on
+    scatter3(path(:,1),path(:,2),path(:,3),100)
+    
+    view(2)
+end
+
 
 function [time, path, cond] = get_data(n,data_set)
 
@@ -139,12 +183,13 @@ tol = 1e-11;
 c = false;
 
 if isempty(path)
-	warning('empty path %i',p);
+	warning('empty path');
 	c = true;
 end
 
-if abs(imag(path(end-1,1)))> tol
-	c = true;
-end
+% if abs(imag(path(end-1,1)))> tol
+%     warning('something else');
+% 	c = true;
+% end
 
 end
