@@ -1,0 +1,1 @@
+sampler -t 0.2 -maxits 20 -minits 4 -maxribs 30 -numsamples 15
