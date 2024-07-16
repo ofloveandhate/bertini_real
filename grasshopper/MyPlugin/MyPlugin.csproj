@@ -10,7 +10,7 @@
   
   <ItemGroup>
     <PackageReference Include="Grasshopper" Version="8.2.23346.13001" IncludeAssets="compile;build" />
-    <PackageReference Include="System.Text.Json" Version="8.0.0" />
+    <PackageReference Include="System.Text.Json" Version="8.0.4" />
   </ItemGroup>
   
   <ItemGroup>
