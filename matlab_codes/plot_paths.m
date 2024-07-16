@@ -1,11 +1,13 @@
 % plot some of the set of paths saved in 'paths'
-function [handles,paths] = plot_path(n)
+function [handles,paths] = plot_paths(n)
 
 % data_set = '_cauchy';
 % data_set = '_ps';
 data_set = '';
 use_text = 0;
 noplot = 0;
+
+method = 'mono';
 
 % if length(n) > 1
 % colors = jet(length(n));
@@ -15,6 +17,8 @@ noplot = 0;
 
 paths = cell(1,length(n));
 handles = zeros(1,length(n));
+
+hold off
 for ii = 1:length(n)
 	p = n(ii);
 	
@@ -23,35 +27,61 @@ for ii = 1:length(n)
 	paths{ii} = struct('time',time,'path',path,'cond',cond,'pathnum',p);
 
 
-	path = real(dehomogenize(path(:,1:end),2));
-
+	path = real( dehomogenize( path(:,1:end), 2) );
+    
 	if meh(path)
 			continue
 	end
 	
 
 	if ~noplot
-		handles(ii) = path_colored_by_cond(path,cond, use_text,p);
-		hold on
-		
-		
+           
+        switch method
+            case 'cond'
+                handles(ii) = path_colored_by_cond(path,cond, use_text,p);
+            case 'mono'
+                handles(ii) = path_mono(path,'k', use_text,p);
+            otherwise
+                error('invalid plot method')
+        end
 
+		hold on
+%         display(p)
+%         pause
 	end
 	
 end
 	
+set(handles,'linewidth',1);
 
 	
 if ~noplot
-	title('real part of path')
+% 	title('real part of path')
 
-	a = 10000;
-	axis([-a a -a a -a a])
-	cameratoolbar
+% 	a = 10;
+% 	axis([-a a -a a -a a])
+% 	cameratoolbar
 end
 
+view(2)
+axis off
+axis square
 end
 
+
+function h = path_mono(path,color, use_text, path_num)
+
+% 	h = patch(path(:,1),path(:,2),path(:,3),log10(cond)); % ,abs(data(:,8))
+% 	set(h,'facecolor','none')
+% 	set(h, 'edgecolor', 'interp');
+% 	
+	h = plot(path(:,1),path(:,2),color);
+% 	set(h, 'linewidth', 5);
+	if use_text
+		t = text(path(end,1),path(end,2),path(end,3),sprintf('path %i',path_num));
+% 		t.Color = colors(ii,:);
+	end
+end
 
 function h = path_colored_by_cond(path,cond, use_text, path_num)
 
@@ -87,7 +117,8 @@ path = [];
 
 	cond = path(:,end);
 	time = path(:,1)+1i*path(:,2);
-	path = path(:,3:2:end-1)+1i*path(:,4:2:end-1);
+    path = path(:,[3,5,7])+1i*path(:,[4,6,8]);
+% 	path = path(:,3:2:end-1)+1i*path(:,4:2:end-1);
 	
 	
 end
