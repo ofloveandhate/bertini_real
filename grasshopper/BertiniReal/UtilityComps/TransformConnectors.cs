@@ -89,13 +89,13 @@ namespace BertiniReal.UtilityComps
             Brep negPlug = new Brep();
             Brep posPlug = new Brep();
             Brep negSocket = new Brep();
-            Brep posSocket = new Brep();
+            Brep posSocket= new Brep();
             Double size = 0;
             Point3d locationPlay = new Point3d();
             List<Vector3d> locVectors = new List<Vector3d>();
             List<Vector3d> dirVectors = new List<Vector3d>();
             string jsonPath = "";
-
+            
             List<Brep> transformedNegPlugs = new List<Brep>();
             List<Brep> transformedPosPlugs = new List<Brep>();
             List<Brep> transformedNegSockets = new List<Brep>();
@@ -114,12 +114,10 @@ namespace BertiniReal.UtilityComps
 
             ///Error checking inputs. Including a RuntimeMessage in script will automaticall generate an 'o' output on the component 
             ///The component should not run in there are no prefab geometries
-            if ((!negPlug.IsValid && posPlug.IsValid) || (!negSocket.IsValid && posSocket.IsValid))
-            {
-                this.AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "Only positive geos inputted, ensure matching negative connectors are placed before combining with piece!");
+            if ((!negPlug.IsValid && posPlug.IsValid) || (!negSocket.IsValid && posSocket.IsValid)) {
+                this.AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "Only positive geos inputted, ensure matching negative connectors are placed before combining with piece!"); 
             } //Remind the user if they only have positive geometries inputted that they will need negative geos if they want to combine with piece
-            else if (!negPlug.IsValid && !posPlug.IsValid && !negSocket.IsValid && !posSocket.IsValid)
-            {
+            else if(!negPlug.IsValid && !posPlug.IsValid && !negSocket.IsValid && !posSocket.IsValid) {
                 this.AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No input geos! Include at least 1 geo to transform");
                 return;
             }
@@ -128,7 +126,7 @@ namespace BertiniReal.UtilityComps
             string text = File.ReadAllText(jsonPath);
             ///this parses the JSON by key. The Data class must have properties the same name as the keys in the JSON file
             ///Should Eventually include some runtimeMessage error handeling
-            var content = JsonSerializer.Deserialize<Data>(text);
+            var content = JsonSerializer.Deserialize<Data>(text); 
             ///JSON file is structured: {piece_indices:[[i1,i2,i3,i4],[i1,i2,i3,i4],[...]], singularities_on_pieces[[s1,s2,s3],[s1,s2,s3],[...], ...}
             ///where each property is a list of N lists, where N is the number of pieces. 
             ///Each list  in a property corresponds to the property of the piece
@@ -136,29 +134,28 @@ namespace BertiniReal.UtilityComps
             ///ex. piece 2 has piece_indices[1], singularities_on_piece[1], sing_directions[1], etc
             ///This is a silly way of using JSON because now we need to sort the JSON into each piece
             ///How we make the JSON in bertini_real write_piece_data really should be rewritten to organize by Sing or Piece where each Sing (or piece) has properties
-
+            
             /* parse JSON data Piece objects */
             ///list for all the pieces
             List<PieceData> allPieces = new List<PieceData>();
             ///each piece is represented by a list of indices. the number of peices = length of piece_indices
-            for (int pieceIndex = 0; pieceIndex < content.piece_indices.Length; pieceIndex++)
-            {
+            for (int pieceIndex= 0; pieceIndex < content.piece_indices.Length; pieceIndex++) {
                 //⚠️I would like to try just pass content to PieceData and have it do the work for me!
                 PieceData newPiece = new PieceData();
-                newPiece.piece_index = pieceIndex;
-                newPiece.indices = content.piece_indices[pieceIndex];
+                newPiece.piece_index = pieceIndex; 
+                newPiece.indices = content.piece_indices[pieceIndex]; 
                 newPiece.singsOnPiece = content.singularities_on_pieces[pieceIndex];
-
+                
                 //there are vectors for each sing on the piece, need to turn the vectors from vectors into lists
                 //also append the vectors to the direction and location vector lists
-                for (int j = 0; j < newPiece.singsOnPiece.Length; j++)
+                for (int j = 0; j <newPiece.singsOnPiece.Length ; j++)
                 {
                     int singIndex = newPiece.singsOnPiece[j];
 
                     ///these vector lists are now defunct but kept for setimental and debugging
                     Vector3d dirVect = new Vector3d(content.sing_directions[singIndex][0], content.sing_directions[singIndex][1], content.sing_directions[singIndex][2]);
                     Vector3d locVect = new Vector3d(content.sing_locations[singIndex][0], content.sing_locations[singIndex][1], content.sing_locations[singIndex][2]);
-
+                    
                     /*Place correct connector on the piece at the singularity
                      * if the piece has positive polarity on the singularity, place a negative and positive Plug
                      * if it has negative polarity, add both socket pieces
@@ -170,13 +167,11 @@ namespace BertiniReal.UtilityComps
                         dirVectors.Add(dirVect);
                         locVectors.Add(locVect);
 
-                        if (negPlug.IsValid)
-                        {
+                        if (negPlug.IsValid) { 
                             ///Create a new plug at this location and add it to the plug list
-                            transformedNegPlugs.Add(moveComponents(newPiece.indices, locationPlay, size, dirVect, locVect, negPlug));
+                            transformedNegPlugs.Add(moveComponents(newPiece.indices,locationPlay,size,dirVect,locVect,negPlug));
                         }
-                        if (posPlug.IsValid)
-                        {
+                        if (posPlug.IsValid) {
                             ///Create a new plug at this location and add it to the plug list
                             transformedPosPlugs.Add(moveComponents(newPiece.indices, locationPlay, size, dirVect, locVect, posPlug));
                         }
@@ -198,13 +193,13 @@ namespace BertiniReal.UtilityComps
                         {
                             ///Create a new plug at this location and add it to the plug list
                             transformedPosSockets.Add(moveComponents(newPiece.indices, locationPlay, size, dirVect, locVect, posSocket));
-                        }
+                        }                        
                     }
                 }
             }
 
-
-
+            
+            
             /* Set output data
              * Set to the list of Geos
              * 0 - Out must be text
@@ -225,24 +220,23 @@ namespace BertiniReal.UtilityComps
         /// <param name="location">Location of the singularity where the connector belongs</param>
         /// <param name="geo">Geometry of the connector prefab to be created</param>
         /// <returns>A new connector Brep at a singularity</returns>
-        private Brep moveComponents(int[] pieceIndices, Point3d locationPlay, double size, Vector3d direction, Vector3d location, Brep geo)
-        {
+        private Brep moveComponents(int[] pieceIndices, Point3d locationPlay, double size, Vector3d direction, Vector3d location, Brep geo) {
             ///create a new connector
-            Brep newConnector = geo.DuplicateBrep();
-
+            Brep newConnector = geo.DuplicateBrep(); 
+            
             ///find our angles
             double phi = Math.Acos(direction[2] / direction.Length);
             double theta = Math.Atan2(direction[1], direction[0]);
 
             ///create some transformation matricies and then tranform the connector
             var sf = Transform.Scale(Point3d.Origin + locationPlay, size);
-            var rf = Transform.Rotation(phi, Vector3d.YAxis, Point3d.Origin);
-
+            var rf = Transform.Rotation(phi, Vector3d.YAxis, Point3d.Origin); 
+            
             newConnector.Transform(sf);
             newConnector.Transform(rf);
-
+            
             rf = Transform.Unset; //clear the rotation matrix to be reused
-
+            
             rf = Transform.Rotation(theta, Vector3d.ZAxis, Point3d.Origin);
             newConnector.Transform(rf);
 
@@ -255,7 +249,7 @@ namespace BertiniReal.UtilityComps
             return newConnector;
 
         }
-
+        
         /// <summary>
         /// Provides an Icon for the component.
         /// </summary>

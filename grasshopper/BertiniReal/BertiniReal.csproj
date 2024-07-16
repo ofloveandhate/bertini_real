@@ -1,31 +1,43 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	
   <PropertyGroup>
-    <TargetFramework>net48</TargetFramework>
+    <TargetFramework>net8</TargetFramework>
     <Version>1.0</Version>
     <Title>BertiniReal</Title>
     <Description>Description of BertiniReal</Description>
     <TargetExt>.gha</TargetExt>
+    <RhinoMacLauncher>8</RhinoMacLauncher>
   </PropertyGroup>
   
   <ItemGroup>
-    <PackageReference Include="Grasshopper" Version="7.13.21348.13001" IncludeAssets="compile;build" />
+    <PackageReference Include="Grasshopper" Version="8.8.24170.13001" IncludeAssets="compile;build" />
+    <PackageReference Include="System.Text.Json" Version="8.0.4" />
     <PackageReference Include="System.Resources.Extensions" Version="8.0.0" />
-    <PackageReference Include="System.Text.Encodings.Web" Version="8.0.0" />
-    <PackageReference Include="System.Text.Json" Version="8.0.0" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.7" />
   </ItemGroup>
-
+  
   <ItemGroup>
-    <None Remove="UtilityComps\" />
+    <Compile Update="Properties\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
   </ItemGroup>
+  
   <ItemGroup>
-    <Folder Include="UtilityComps\" />
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
   </ItemGroup>
-
-
-  <PropertyGroup>
-    <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
-  </PropertyGroup>
-
+  
+  <ItemGroup>
+    <None Update="Resources\plus_icon.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\telephone_icon.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 
 </Project>

@@ -126,20 +126,20 @@ namespace BertiniReal.UtilityComps
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddNumberParameter("wedgeHeight", "WH", "height of tab wedge", GH_ParamAccess.item, 4.0);
-            pManager.AddNumberParameter("wedgeLength", "WL", "length of tab wedge", GH_ParamAccess.item, 2.0);
-            pManager.AddNumberParameter("wedgeWidth", "WW", "width of tab wedge", GH_ParamAccess.item, 2.0);
-            pManager.AddNumberParameter("tabCutoutThickness", "CT", "space between tab and center of plug", GH_ParamAccess.item, 1.40);
-            pManager.AddNumberParameter("tabCutoutDepth", "CD", "how far down do the tabs go", GH_ParamAccess.item, 10.0);
-            pManager.AddNumberParameter("tabThickness", "TT", "thickness of both tabs", GH_ParamAccess.item, 2.76);
-            pManager.AddNumberParameter("taperfactor", "TF", "how much smaller the tapered radius is to the plug radius", GH_ParamAccess.item, 0.70);
-            pManager.AddNumberParameter("TaperLength", "TL", "distance between the smaller radius and main body cyllinder", GH_ParamAccess.item, 5.0);
-            pManager.AddNumberParameter("socketCylDia", "SD", "Diameter of socket", GH_ParamAccess.item, 15.00);
-            pManager.AddNumberParameter("socketWallThickness", "ST", "thickness from the outer diameter of the socket inward", GH_ParamAccess.item, 2.00);
-            pManager.AddNumberParameter("connectionPlay", "CP", "an adjustable amount to tweak the snuggness of the plugs fit into the socket", GH_ParamAccess.item, 0.20);
-            pManager.AddNumberParameter("socketLength", "SL", "height of the socket", GH_ParamAccess.item, 7.0);
-            pManager.AddNumberParameter("bodyOverlap", "BO", "how much the plug and socket overlap", GH_ParamAccess.item, 7.0);
-            pManager.AddNumberParameter("lengthOverage", "LO", "how much excess hangover between the plug and socket", GH_ParamAccess.item, 7.0);
-            pManager.AddNumberParameter("eps", "E", "an adjusment value default 0.01", GH_ParamAccess.item, 0.1);
+            pManager.AddNumberParameter("wedgeLength","WL", "length of tab wedge", GH_ParamAccess.item,2.0);
+            pManager.AddNumberParameter("wedgeWidth","WW","width of tab wedge",GH_ParamAccess.item,2.0);
+            pManager.AddNumberParameter("tabCutoutThickness","CT","space between tab and center of plug",GH_ParamAccess.item,1.40);
+            pManager.AddNumberParameter("tabCutoutDepth","CD","how far down do the tabs go",GH_ParamAccess.item,10.0);
+            pManager.AddNumberParameter("tabThickness","TT","thickness of both tabs",GH_ParamAccess.item,2.76);
+            pManager.AddNumberParameter("taperfactor", "TF", "how much smaller the tapered radius is to the plug radius", GH_ParamAccess.item,0.70);
+            pManager.AddNumberParameter("TaperLength","TL", "distance between the smaller radius and main body cyllinder", GH_ParamAccess.item,5.0);
+            pManager.AddNumberParameter("socketCylDia", "SD","Diameter of socket",GH_ParamAccess.item,15.00);
+            pManager.AddNumberParameter("socketWallThickness","ST", "thickness from the outer diameter of the socket inward", GH_ParamAccess.item,2.00);
+            pManager.AddNumberParameter("connectionPlay","CP", "an adjustable amount to tweak the snuggness of the plugs fit into the socket", GH_ParamAccess.item,0.20);
+            pManager.AddNumberParameter("socketLength","SL", "height of the socket",GH_ParamAccess.item,7.0);
+            pManager.AddNumberParameter("bodyOverlap","BO", "how much the plug and socket overlap", GH_ParamAccess.item,7.0);
+            pManager.AddNumberParameter("lengthOverage", "LO", "how much excess hangover between the plug and socket", GH_ParamAccess.item,7.0);
+            pManager.AddNumberParameter("eps","E", "an adjusment value default 0.01", GH_ParamAccess.item,0.1);
             pManager.AddPlaneParameter("base", "B", "base xy plane to build upon", GH_ParamAccess.item, Plane.WorldXY);
 
         }
@@ -150,11 +150,11 @@ namespace BertiniReal.UtilityComps
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddGeometryParameter("plugBody", "G", "cylinder brep to be subtracted from the surface", GH_ParamAccess.item);
-            pManager.AddGeometryParameter("PBOneWedge", "P1", "first wedge", GH_ParamAccess.item);
-            pManager.AddGeometryParameter("PBTwoWedge", "P2", "second wedge", GH_ParamAccess.item);
+            pManager.AddGeometryParameter("PBOneWedge", "P1","first wedge", GH_ParamAccess.item);
+            pManager.AddGeometryParameter("PBTwoWedge", "P2","second wedge", GH_ParamAccess.item);
             pManager.AddGeometryParameter("wedge1", "W1", "first cutout", GH_ParamAccess.item);
             pManager.AddGeometryParameter("wedge2", "W2", "seocnd cutout", GH_ParamAccess.item);
-            // pManager.AddIntegerParameter("length", "L", "seocnd cutout", GH_ParamAccess.item);
+           // pManager.AddIntegerParameter("length", "L", "seocnd cutout", GH_ParamAccess.item);
 
         }
 
@@ -180,29 +180,29 @@ namespace BertiniReal.UtilityComps
             double lengthOverage = 0;
             double eps = 0;
             Plane b = Plane.Unset;
-
-            if (!DA.GetData(0, ref wedgeHeight)) return;
-            if (!DA.GetData(1, ref wedgeLength)) return;
-            if (!DA.GetData(2, ref wedgeWidth)) return;
-            if (!DA.GetData(3, ref tabCutoutThickness)) return;
-            if (!DA.GetData(4, ref tabCutoutDepth)) return;
-            if (!DA.GetData(5, ref tabThickness)) return;
-            if (!DA.GetData(6, ref taperfactor)) return;
-            if (!DA.GetData(7, ref plugTaperLength)) return;
-            if (!DA.GetData(8, ref socketCylDia)) return;
-            if (!DA.GetData(9, ref socketWallThickness)) return;
-            if (!DA.GetData(10, ref connectionPlay)) return;
-            if (!DA.GetData(11, ref socketLength)) return;
-            if (!DA.GetData(12, ref bodyOverlap)) return;
-            if (!DA.GetData(13, ref lengthOverage)) return;
-            if (!DA.GetData(14, ref eps)) return;
-            if (!DA.GetData(15, ref b)) return;
-
+            
+            if(!DA.GetData(0, ref wedgeHeight)) return;
+            if(!DA.GetData(1, ref wedgeLength)) return;
+            if(!DA.GetData(2, ref wedgeWidth)) return;
+            if(!DA.GetData(3, ref tabCutoutThickness)) return;
+            if(!DA.GetData(4, ref tabCutoutDepth)) return;
+            if(!DA.GetData(5, ref tabThickness)) return;
+            if(!DA.GetData(6, ref taperfactor)) return;
+            if(!DA.GetData(7, ref plugTaperLength)) return;
+            if(!DA.GetData(8, ref socketCylDia)) return;
+            if(!DA.GetData(9, ref socketWallThickness)) return;
+            if(!DA.GetData(10, ref connectionPlay)) return;
+            if(!DA.GetData(11, ref socketLength)) return;
+            if(!DA.GetData(12, ref bodyOverlap)) return;
+            if(!DA.GetData(13, ref lengthOverage)) return;
+            if(!DA.GetData(14, ref eps)) return;
+            if(!DA.GetData(15, ref b)) return;
+            
             double plugR = (socketCylDia / 2) - socketWallThickness - connectionPlay; //radius of the plug shuld fit snug into the socket
             double taperedR = taperfactor * plugR;
             //main body height fits entirely into the socket plus some overlap and excess length, minus the taper length
             double bodyHeight = socketLength + bodyOverlap - plugTaperLength + lengthOverage;
-
+            
             /**Send data to objects for creation*/
             PlugBody plugBody = new PlugBody(taperedR, plugTaperLength, plugR, bodyHeight); //used to create the plug body
             PlugTabs plugTabs = new PlugTabs(wedgeHeight, wedgeLength, wedgeWidth, tabCutoutThickness, tabCutoutDepth, tabThickness); //used to create cuoutBoxes and Wedges
@@ -216,39 +216,39 @@ namespace BertiniReal.UtilityComps
              * Cutout boxes should be equi distance from the center of the plug
              */
             // var mf = Transform.Mirror(Plane.WorldZX); //create mirror transformation vector matrix
-            Brep[] cutouts = new Brep[2] { plugTabs.cutoutBox(plugR, b, eps), plugTabs.cutoutBox(plugR, b, eps) }; //create two new cutout boxes
+            Brep[] cutouts= new Brep[2] { plugTabs.cutoutBox(plugR, b, eps), plugTabs.cutoutBox(plugR, b, eps) }; //create two new cutout boxes
             plugBodyBrep = cutoutBoxes(cutouts, plugBodyBrep);
-
-
+        
+            
             /**Create and place wedges onto outside of plug body
              * Vertical Face should be parrallel to cutout box long face*/
             Brep[] wedges = new Brep[2] { plugTabs.rawWedge(), plugTabs.rawWedge() }; //Create 2 wedges
-            ;
+           ;
             plugBodyBrep = addWedges(wedges, plugR, tabThickness, plugTaperLength, plugBodyBrep);
             DA.SetData(2, plugBodyBrep);
-
+            
         }
 
-        public Brep addWedges(Brep[] wedges, double plugR, double tabThickness, double plugTaperLength, Brep plugBodyBrep)
+        public Brep addWedges(Brep[] wedges,double plugR,double tabThickness, double plugTaperLength, Brep plugBodyBrep)
         {
             /**Create and place wedges onto outside of plug body
              * Vertical Face should be parrallel to cutout box long face*/
             var xf = Transform.Translation(0, plugR - tabThickness, plugTaperLength); //create transformation matrix for both wedges
             wedges[0].Transform(xf); //move wedges into place
-
+            
             wedges[1].Transform(xf);
             wedges[1].Transform(Transform.Mirror(Plane.WorldZX)); //Flip one wedge to the other side of the plug
-
+            
             //Brep[] thingsToUnion = new Brep[2] { plugBodyBrep, wedges[0] };
             //plugBodyBrep = Brep.CreateBooleanUnion(thingsToUnion, 0.01)[0];
-
+            
             wedges[1].Faces.SplitKinkyFaces(RhinoMath.DefaultAngleTolerance, true);
             if (BrepSolidOrientation.Inward == wedges[1].SolidOrientation)
             {
                 wedges[1].Flip();
             }
             Brep[] thingsToUnion = new Brep[3] { plugBodyBrep, wedges[0], wedges[1] };
-
+            
             //thingsToUnion[1] = wedges[1];
             plugBodyBrep = Brep.CreateBooleanUnion(thingsToUnion, 0.01)[0];
             return plugBodyBrep;
@@ -260,8 +260,8 @@ namespace BertiniReal.UtilityComps
                  * Cutout boxes should be equi distance from the center of the plug
                  */
             var mf = Transform.Mirror(Plane.WorldZX); //create mirror transformation vector matrix
-                                                      //Brep[] cutouts = new Brep[2] { plugTabs.cutoutBox(plugR, b, eps), plugTabs.cutoutBox(plugR, b, eps) }; //create two new cutout boxes
-                                                      //DA.SetData(3, cutouts[0]); //send the cutout geometry to outparamter "cutout1" for debugging
+            //Brep[] cutouts = new Brep[2] { plugTabs.cutoutBox(plugR, b, eps), plugTabs.cutoutBox(plugR, b, eps) }; //create two new cutout boxes
+                                                                                                                   //DA.SetData(3, cutouts[0]); //send the cutout geometry to outparamter "cutout1" for debugging
             cutouts[1].Transform(mf); //mirror the second cutout to the other side of the plug body
                                       //DA.SetData(4, cutouts[1]); //send the cutout geometry to outparamter "cutout2" for debugging
 

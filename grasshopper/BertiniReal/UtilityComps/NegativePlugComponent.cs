@@ -62,14 +62,14 @@ namespace BertiniReal.UtilityComps
             if (!DA.GetData(1, ref plugFactor)) return;
             if (!DA.GetData(22, ref socketLength)) return;
             if (!DA.GetData(3, ref lengthOverage)) return;
-            if (!DA.GetData(4, ref bodyOverlap)) return;
-            if (!DA.GetData(5, ref eps)) return;
-            if (!DA.GetData(6, ref b)) return;
+            if (!DA.GetData(4, ref bodyOverlap))return;
+            if(!DA.GetData(5, ref eps))return;
+            if(!DA.GetData(6, ref b))return;
 
             /* Create a cylinder  */
             double cuttingR = wireHoleDia / 2; //set the radius
             double length = plugFactor * (socketLength + lengthOverage + bodyOverlap); //set the length
-
+            
             ///Create the actual cyllinder in gh
             Brep cylinder = new Cylinder(new Circle(b, cuttingR), length).ToBrep(true, true); //create a cyllinder Brep with caps (can remove caps by changing true values) 
             var xf = Transform.Translation(0, 0, -eps - (length / 2)); //move it down to the center so transformations work easily later

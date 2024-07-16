@@ -34,11 +34,11 @@ namespace BertiniReal.UtilityComps
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddNumberParameter("Socket Diameter", "SD", "Outer diameter of the socket", GH_ParamAccess.item, 15.00);
-            pManager.AddNumberParameter("Socket Factor", "SF", "multiplier for negative socket length default", GH_ParamAccess.item, 3.00);
-            pManager.AddNumberParameter("Socket Wall Thickness", "ST", "thickness of socket from the socket_cyl_dia default", GH_ParamAccess.item, 2.00);
-            pManager.AddNumberParameter("Socket Length", "SL", "length of positive socket default", GH_ParamAccess.item, 10.00);
-            pManager.AddNumberParameter("eps", "E", "an adjusment value default 0.01", GH_ParamAccess.item, 0.01);
-            pManager.AddPlaneParameter("base", "B", "base xy plane to build upon", GH_ParamAccess.item, Plane.WorldXY);
+            pManager.AddNumberParameter("Socket Factor","SF", "multiplier for negative socket length default", GH_ParamAccess.item,3.00);
+            pManager.AddNumberParameter("Socket Wall Thickness","ST", "thickness of socket from the socket_cyl_dia default", GH_ParamAccess.item,2.00);
+            pManager.AddNumberParameter("Socket Length","SL", "length of positive socket default", GH_ParamAccess.item,10.00);
+            pManager.AddNumberParameter("eps","E","an adjusment value default 0.01",GH_ParamAccess.item,0.01);
+            pManager.AddPlaneParameter("base", "B", "base xy plane to build upon", GH_ParamAccess.item,Plane.WorldXY);
         }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace BertiniReal.UtilityComps
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             //Send out the negative socket geometry 
-            pManager.AddGeometryParameter("Negative Socket", "G", "cylinder brep to be subtracted from the surface", GH_ParamAccess.item);
+            pManager.AddGeometryParameter("Negative Socket", "G", "cylinder brep to be subtracted from the surface",GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -56,7 +56,7 @@ namespace BertiniReal.UtilityComps
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-
+          
             //define place holder vars
             double socketDiameter = 0;
             double socketNegFactor = 0;
@@ -66,28 +66,28 @@ namespace BertiniReal.UtilityComps
             Plane b = Plane.Unset;
 
             //retrieve inputs allow to get data even if not set because they have defaults)
-            if (!DA.GetData(0, ref socketDiameter)) return;
-            if (!DA.GetData(1, ref socketNegFactor)) return;
-            if (!DA.GetData(2, ref socketThickness)) return;
-            if (!DA.GetData(3, ref socketLength)) return;
-            if (!DA.GetData(4, ref eps)) return;
-            if (!DA.GetData(5, ref b)) return;
+            if(!DA.GetData(0, ref socketDiameter))return;
+            if(!DA.GetData(1, ref socketNegFactor))return;
+            if(!DA.GetData(2, ref socketThickness))return;
+            if(!DA.GetData(3, ref socketLength))return;
+            if(!DA.GetData(4, ref eps))return;
+            if(!DA.GetData(5, ref b))return;
 
             //Point3d origin = rg.Point3d(0, 0, 0)
             //yaxis = rg.Vector3d(0, 1, 0)
-            double length = socketNegFactor * socketLength + eps;
+            double length = socketNegFactor * socketLength+ eps;
             // length of cyllinder is the length of the socket plus some excess, scaled up the socket_neg_factor
             //create the the socket as a cyllinder from a base circle that has a radius of the inner socket 
-            Brep cylinder = new Cylinder(new Circle(b, (socketDiameter / 2) - socketThickness), length).ToBrep(true, true);
+            Brep cylinder = new Cylinder(new Circle(b, (socketDiameter / 2) - socketThickness), length).ToBrep(true,true);
             //rotate and move the cyllinder into correct position
-            var xf = Transform.Translation(0, 0, -length / 2);
+            var xf = Transform.Translation(0, 0, -length/2);
             cylinder.Transform(xf);
             var rf = Transform.Rotation(Math.PI, Vector3d.YAxis, Point3d.Origin);
             cylinder.Transform(rf);
             DA.SetData(0, cylinder);
 
         }
-
+      
         /// <summary>
         /// Provides an Icon for the component.
         /// </summary>

@@ -1,8 +1,8 @@
-﻿{
+{
   "profiles": {
     "BertiniReal": {
       "commandName": "Executable",
-      "executablePath": "C:\\Program Files\\Rhino 7\\System\\Rhino.exe",
+      "executablePath": "/Users/amethyst/Applications/Rhino 8.app",
       "commandLineArgs": ""
     }
   }

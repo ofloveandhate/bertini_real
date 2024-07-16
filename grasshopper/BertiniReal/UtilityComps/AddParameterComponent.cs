@@ -12,7 +12,7 @@ namespace BertiniReal.UtilityComps
         /// </summary>
         public AddParameterComponent()
           : base("Add Params", "Params",
-              "Autocreating new sliders.  A work in progress by Caden.  Would be nice to have implemented on connectors so we can have easy ability to change default parameters without having to create a crapton of new sliders by hand",
+              "Description",
               "BertiniReal", "Utilites")
         {
         }
@@ -28,7 +28,7 @@ namespace BertiniReal.UtilityComps
             pManager.AddNumberParameter("v", "n", "trying", GH_ParamAccess.item);
             Params.Input[2].Optional = true;
             pManager.AddBooleanParameter("Reset", "R", "delete the params", GH_ParamAccess.item, false);
-
+            
         }
 
         /// <summary>
@@ -45,12 +45,12 @@ namespace BertiniReal.UtilityComps
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         /// Using Mahdiyar June 2019 post on https://discourse.mcneel.com/t/c-creating-automatic-sliders/84502
         protected override void SolveInstance(IGH_DataAccess DA)
-        {
+        { 
             // <Custom additional code>   
             Boolean run = false;
             Boolean reset = false;
             if (!DA.GetData(0, ref run)) return;
-            if (!DA.GetData(Params.Input.Count - 1, ref reset)) return;
+            if (!DA.GetData(Params.Input.Count-1, ref reset)) return;
             if (Params.Input[1].SourceCount > 0)
             {
                 List<IGH_Param> sources = new List<IGH_Param>(Params.Input[1].Sources);
@@ -92,15 +92,13 @@ namespace BertiniReal.UtilityComps
             }
 
             //if reset is run then delete all the connected params
-            if (reset)
-            {
+            if (reset) {
                 //loop through all automated inputs (run and reset are at the first and least indices so skip those)
-                for (int i = 1; i < Params.Input.Count - 1; i++)
-                {
+                for (int i = 1; i < Params.Input.Count-1; i++) {
                     Params.Input[i].RemoveAllSources();
                     //TO DO select all the sources being removed and delete them. currently this only un wires them
                     //either get their ids and remove or select all and delete
-
+                    
                 }
             }
 

@@ -15,11 +15,11 @@ namespace BertiniReal.UtilityComps
     public class ImportPieces : GH_Component
     {
         /// <summary>
-        /// Initializes a new instance of the ImportPieces class.
+        /// Initializes a new instance of the StringConcatComponent class.
         /// </summary>
         public ImportPieces()
           : base("Import Pieces", "Import",
-              "Import STL piece files from a list of filepaths (from grasshopper)",
+              "Concate two Strings",
               "BertiniReal", "Utilites")
         {
         }

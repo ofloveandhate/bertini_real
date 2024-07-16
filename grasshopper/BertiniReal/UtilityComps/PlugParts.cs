@@ -21,15 +21,15 @@ namespace BertiniReal.UtilityComps
     /// NOTE: The JSON no longer has piece_indicies, but now piece_names which are file name strings 
     /// </summary>
     /// <see cref="TransformConnectors.cs"/>
-    public class Data
+    public class Data 
     {
         public int[][] piece_indices { get; set; } //this will need to change
-        public int[][] singularities_on_pieces { get; set; }
+        public int[][] singularities_on_pieces { get; set; } 
         public double[][] sing_directions { get; set; }
         public double[][] sing_locations { get; set; }
         public int[][] parities { get; set; }
     }
-
+    
     /// <summary>
     /// Store data parsed from the Data class by peice
     /// </summary>
@@ -107,13 +107,13 @@ namespace BertiniReal.UtilityComps
             Interval intervalX = new Interval(-plugR, plugR + 1);
             Interval intervalY = new Interval(-tabCutoutThickness / 2, tabCutoutThickness / 2);
             Interval intervalZ = new Interval(-(1 + eps + tabCutoutDepth) / 2, (eps + tabCutoutDepth) / 2);
-
+            
             ///create the physical box from the bounds
             Brep cutoutBox = new Box(b, intervalX, intervalY, intervalZ).ToBrep();
             ///Transform to the center to easy transformation
             var xf = Transform.Translation(0, ell, tabCutoutDepth / 2);
             cutoutBox.Transform(xf);
-
+            
             return cutoutBox;
         }
 
@@ -130,7 +130,7 @@ namespace BertiniReal.UtilityComps
 
             //build the wedge profile in the 4th quad by connecting the points 
             PolylineCurve profile = new PolylineCurve(new Point3dList(p1, p0, p2, p1));
-
+            
             ///Create the wedge by extruding the profile to plug_wedge_w
             Brep wedge = Extrusion.Create(profile, wedgeWidth, true).ToBrep();
 

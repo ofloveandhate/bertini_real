@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MyPlugin.Utils
+namespace BertiniReal.Utils
 {
     /* Set some properties for the plugin tab*/
     public class TabProperties : GH_AssemblyPriority
@@ -14,9 +14,9 @@ namespace MyPlugin.Utils
         {
             /*Register our plug in icon*/
             var server = Grasshopper.Instances.ComponentServer;
-            server.AddCategoryShortName("MyPlugin", "MP");
-            server.AddCategorySymbolName("MyPlugin", 'P');
-            server.AddCategoryIcon("MyPlugin", Properties.Resources.telephone_icon);
+            server.AddCategoryShortName("BertiniReal", "MP");
+            server.AddCategorySymbolName("BertiniReal", 'P');
+            server.AddCategoryIcon("BertiniReal", Properties.Resources.telephone_icon);
 
             return GH_LoadingInstruction.Proceed;
         }

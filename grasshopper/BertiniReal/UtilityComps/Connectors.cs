@@ -16,7 +16,7 @@ namespace BertiniReal.UtilityComps
         /// </summary>
         public Connectors()
           : base("Connnectors ", "Conn",
-              "All of the connetor prefabs for nodes",
+              "All of the connetor prefabs for for nodes",
               "BertiniReal", "Utilites")
         {
         }
@@ -62,7 +62,7 @@ namespace BertiniReal.UtilityComps
             pManager.AddGeometryParameter("Debug", "NP", "cylinder brep to be subtracted from the surface", GH_ParamAccess.item);
         }
 
-
+        
         /// <summary>
         /// This is the method that actually does the work.
         /// </summary>
@@ -113,7 +113,7 @@ namespace BertiniReal.UtilityComps
 
             /**Build Positive plug*/
 
-            double plugR = (socketDiameter / 2) - socketWallThickeness - connectionPlay; //radius of the plug shuld fit snug into the socket
+            double plugR = (socketDiameter / 2) - socketWallThickeness- connectionPlay; //radius of the plug shuld fit snug into the socket
             double taperedR = taperFactor * plugR;
             //main body height fits entirely into the socket plus some overlap and excess length, minus the taper length
             double bodyHeight = socketLength + bodyOverlap - taperLength + lengthOverage;
@@ -159,7 +159,7 @@ namespace BertiniReal.UtilityComps
             DA.SetData(2, negativeSocket);
 
             //unset transformation vectors
-            xf = Transform.Unset;
+            xf=Transform.Unset;
             rf = Transform.Unset;
 
             /**Positive Socket*/
@@ -184,7 +184,7 @@ namespace BertiniReal.UtilityComps
             xf = Transform.Translation(0, 0, -eps - (scaledPlugLength / 2));
             negativePlug.Transform(xf);
             DA.SetData(0, negativePlug);
-            DA.SetData(4, negativePlug);
+            DA.SetData(4,negativePlug);
         }
 
         private Brep addWedges(Brep[] wedges, double plugR, double tabThickness, double plugTaperLength, Brep plugBodyBrep)
