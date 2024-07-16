@@ -2,6 +2,16 @@ CONFIG
 
 tracktype: 1;
 
+tracktolbeforeeg: 1e-6;
+
+odepredictor: 7;
+
+endgamenum: 2;
+
+sharpendigits: 30;
+
+condnumthreshold: 1e10;
+
 END;
 
 INPUT

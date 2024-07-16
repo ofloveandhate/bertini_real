@@ -912,13 +912,15 @@ public:
 		Fixed,
 		AdaptiveConsecDistance,
 		AdaptivePredMovement,
-		SemiFixed
+		SemiFixed,
+		CycleNum
 	};
 
 	enum class StitchMethod{
-		TrailingAngle, // default
+		TrailingAngle, 
 		ProjectionBinning,
-		SumOfSquaresAnglesFrom60
+		SumOfSquaresAnglesFrom60, // default
+		AspectRatio
 	};
 
 	int stifle_membership_screen; ///< boolean controlling whether stifle_text is empty or " > /dev/null"
@@ -934,15 +936,17 @@ public:
 
 	bool use_distance_condition; ///< switch for adaptive modes, between distance or movement breaking of while loop.
 	Mode mode; ///< mode switch between adaptive and fixed-number.
-	StitchMethod stitch_method = StitchMethod::TrailingAngle;  ///< the mode to use when stitching together ribs.
+	StitchMethod stitch_method;  ///< the mode to use when stitching together ribs.
 
 	int target_num_samples; ///< the number of samples per cell, more or less.
 
 	int max_num_ribs;
 	int min_num_ribs;
 
-	bool use_uniform_cycle_num = true;
-	int cycle_num = 2;
+	int min_num_samples_per_rib; ///< min number per rib when sampling.  includes the midpoint of the rib, so two on each side is default.  endpoints, on top/bottom are NOT included in this number
+
+	bool use_uniform_cycle_num;
+	int cycle_num;
 
 	bool save_ribs; ///< whether to write the ribs to a file
 	/**

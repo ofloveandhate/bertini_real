@@ -642,6 +642,11 @@ public:
 								sampler_configuration & sampler_options,
 								SolverConfiguration & solve_options);
 
+	void SampleEdgeCycleNum(	int ii,
+								VertexSet & V,
+								sampler_configuration & sampler_options,
+								SolverConfiguration & solve_options);
+
 	void SampleEdgeSemiFixed(	int ii,
 								VertexSet & V,
 								sampler_configuration & sampler_options,
@@ -691,6 +696,23 @@ public:
 	void FixedSamplerWorker(VertexSet & V,
 									  sampler_configuration & sampler_options,
 									  SolverConfiguration & solve_options);
+
+
+	void CycleNumSampler(VertexSet &V,
+						  sampler_configuration & sampler_options,
+						  SolverConfiguration & solve_options);
+
+	void CycleNumSamplerSerial(VertexSet & V,
+									  sampler_configuration & sampler_options,
+									  SolverConfiguration & solve_options);
+	void CycleNumSamplerMaster(VertexSet & V,
+									  sampler_configuration & sampler_options,
+									  SolverConfiguration & solve_options);
+	void CycleNumSamplerWorker(VertexSet & V,
+									  sampler_configuration & sampler_options,
+									  SolverConfiguration & solve_options);
+
+
 	int ReportEdgeMaster(VertexSet & V, SolverConfiguration & solve_options);
 	void ReportEdgeWorker(int edge_index, VertexSet const& V, SolverConfiguration & solve_options);
 
@@ -722,6 +744,7 @@ public:
 	 \return The number 0.
 	 */
 	int fixed_set_initial_sample_data(int target_num_samples);
+	int CycleNumset_initial_sample_data();
 
 	int semi_fixed_set_initial_sample_data(std::vector<int> const& num_samples_per_interval, VertexSet const& V);
 	/**

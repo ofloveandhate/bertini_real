@@ -8,6 +8,8 @@ use_text = true;
 noplot = 0;
 method = 'complex'; % or 'complex'
 
+method = 'mono';
+
 % if length(n) > 1
 % colors = jet(length(n));
 % else 
@@ -16,6 +18,8 @@ method = 'complex'; % or 'complex'
 
 paths = cell(1,length(n));
 handles = zeros(1,length(n));
+
+hold off
 for ii = 1:length(n)
 	p = n(ii);
 	
@@ -56,8 +60,12 @@ if ~noplot
 
     view(2)
 	cameratoolbar
+
 end
 
+view(2)
+axis off
+axis square
 end
 
 function h = plot_text(path, time)
@@ -75,7 +83,24 @@ function h = plot_text(path, time)
     end
 end
 
+
+function h = path_mono(path,color, use_text, path_num)
+
+% 	h = patch(path(:,1),path(:,2),path(:,3),log10(cond)); % ,abs(data(:,8))
+% 	set(h,'facecolor','none')
+% 	set(h, 'edgecolor', 'interp');
+% 	
+	h = plot(path(:,1),path(:,2),color);
+% 	set(h, 'linewidth', 5);
+	if use_text
+		t = text(path(end,1),path(end,2),path(end,3),sprintf('path %i',path_num));
+% 		t.Color = colors(ii,:);
+	end
+end
+
+
 function [h,path] = path_colored_by_cond(path, time, cond, use_text, path_num)
+
 
 % 	h = patch(path(:,1),path(:,2),path(:,3),log10(cond)); % ,abs(data(:,8))
 % 	set(h,'facecolor','none')
@@ -136,7 +161,8 @@ path = [];
 
 	cond = path(:,end);
 	time = path(:,1)+1i*path(:,2);
-	path = path(:,3:2:end-1)+1i*path(:,4:2:end-1);
+    path = path(:,[3,5,7])+1i*path(:,[4,6,8]);
+% 	path = path(:,3:2:end-1)+1i*path(:,4:2:end-1);
 	
 	
 end

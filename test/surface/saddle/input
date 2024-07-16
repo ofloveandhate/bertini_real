@@ -1,0 +1,17 @@
+CONFIG
+
+tracktype: 1;
+
+securitylevel: 1;
+
+END;
+
+INPUT
+
+variable_group x, y, z;
+function f;
+
+f = x*y-z;
+
+
+END;

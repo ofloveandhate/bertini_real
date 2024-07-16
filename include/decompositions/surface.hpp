@@ -794,7 +794,7 @@ public:
 	 \param sampler_options The current state of the sampler program.
 	 \param solve_options The current state of the solver.
 	 */
-	void fixed_sampler(VertexSet &V,
+	void FixedSampler(VertexSet &V,
 					   sampler_configuration & sampler_options,
 					   SolverConfiguration & solve_options);
 
@@ -816,17 +816,12 @@ public:
 
 
 
+
+
+
 	void AdaptiveSampler(VertexSet &V,
 					   sampler_configuration & sampler_options,
 					   SolverConfiguration & solve_options);
-
-	/**
-	\brief Sample the member curves.
-.
-	*/
-	std::vector<int> AdaptiveSampleCurves(VertexSet & V, sampler_configuration & sampler_options,
-										SolverConfiguration & solve_options);
-
 
 	/**
 	\brief Sample a face of the surface.
@@ -836,10 +831,41 @@ public:
 	void AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configuration & sampler_options,
 										SolverConfiguration & solve_options, std::vector<int> const& num_ribs_between_crits);
 
+	/**
+	\brief Sample the member curves.
+.
+	*/
+	std::vector<int> AdaptiveSampleCurves(VertexSet & V, sampler_configuration & sampler_options,
+										SolverConfiguration & solve_options);
+
+
+
+
+
+
+	/**
+	\brief Sample the member curves.
+.
+	*/
+	std::vector<int> CycleNumSampleCurves(VertexSet & V, sampler_configuration & sampler_options,
+										SolverConfiguration & solve_options);
+
+	void CycleNumSampler(VertexSet &V,
+					   sampler_configuration & sampler_options,
+					   SolverConfiguration & solve_options);
+
+	void CycleNumSampleFace(int face_index, VertexSet & V, sampler_configuration & sampler_options,
+										SolverConfiguration & solve_options, std::vector<int> const& num_ribs_between_crits);
+
+
+
+
+
+
 	void DegenerateSampleFace(int face_index, VertexSet & V, sampler_configuration & sampler_options,
 										SolverConfiguration & solve_options);
 
-	std::vector<int> AdaptiveNumSamplesPerRib(VertexSet const& V, sampler_configuration & sampler_options);
+	std::vector<int> AdaptiveNumRibsPerCritInterval(VertexSet const& V, sampler_configuration & sampler_options);
 
 
 
