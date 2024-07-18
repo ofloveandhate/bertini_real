@@ -17,7 +17,7 @@ br.data.gather_and_save()
 surf = br.data.read_most_recent()
 surf.write_piece_data()
 pieces = surf.separate_into_nonsingular_pieces()
-br.surface.copy_all_scad_files_here()
+# br.surface.copy_all_scad_files_here()
 
 for p in pieces:
 	p.export_smooth()
