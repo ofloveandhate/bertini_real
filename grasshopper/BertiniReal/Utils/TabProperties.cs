@@ -14,9 +14,9 @@ namespace BertiniReal.Utils
         {
             /*Register our plug in icon*/
             var server = Grasshopper.Instances.ComponentServer;
-            server.AddCategoryShortName("BertiniReal", "MP");
-            server.AddCategorySymbolName("BertiniReal", 'P');
-            server.AddCategoryIcon("BertiniReal", Properties.Resources.telephone_icon);
+            server.AddCategoryShortName("BertiniReal", "BR");
+            server.AddCategorySymbolName("BertiniReal", 'B');
+            server.AddCategoryIcon("BertiniReal", Properties.Resources.plugin_icon);
 
             return GH_LoadingInstruction.Proceed;
         }

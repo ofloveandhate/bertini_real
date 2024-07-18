@@ -37,16 +37,16 @@ namespace BertiniReal.UtilityComps
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             ///File to get data from. should be br_complete.json which is generated using write_piece() in python
-            pManager.AddTextParameter("File Path", "F", "Path of br complete file", GH_ParamAccess.item);
+            pManager.AddTextParameter("JSON file (File Path)", "JSON", "JSON file to get data from. should be `br_surf_piece_data.json`, which is generated using `Surface.write_piece_data()` in python", GH_ParamAccess.item);
             ///Size and location play to adjust connectors. No inputs required by user because it has a default value
             pManager.AddNumberParameter("Size", "S", "Scale factor for components", GH_ParamAccess.item, 0.01);
             ///If no Location play is given default to no location Play (origin)
             pManager.AddPointParameter("Location Play", "L", "direction to adjust the connectors uniformly", GH_ParamAccess.item, Point3d.Origin);
             ///The connector Brep prefabs place. At least one is required for the component to run, but it does not matter which one so all should be optional
-            pManager.AddGeometryParameter("Neg Plug", "NP", "Connector Prefab to place and tansform", GH_ParamAccess.item);
-            pManager.AddGeometryParameter("Pos Plug", "PP", "Connector Prefab to place and tansform", GH_ParamAccess.item);
-            pManager.AddGeometryParameter("Neg Socket", "NS", "Connector Prefab to place and tansform", GH_ParamAccess.item);
-            pManager.AddGeometryParameter("Pos Socket", "PS", "Connector Prefab to place and tansform", GH_ParamAccess.item);
+            pManager.AddGeometryParameter("Neg Plug", "NP", "Connector Prefab to place and transform", GH_ParamAccess.item);
+            pManager.AddGeometryParameter("Pos Plug", "PP", "Connector Prefab to place and transform", GH_ParamAccess.item);
+            pManager.AddGeometryParameter("Neg Socket", "NS", "Connector Prefab to place and transform", GH_ParamAccess.item);
+            pManager.AddGeometryParameter("Pos Socket", "PS", "Connector Prefab to place and transform", GH_ParamAccess.item);
             ///All the geometries should be optional. We check that there is at least 1 geo input in the SolveInstance
             Params.Input[3].Optional = true;
             Params.Input[4].Optional = true;
@@ -127,7 +127,7 @@ namespace BertiniReal.UtilityComps
             ///this parses the JSON by key. The Data class must have properties the same name as the keys in the JSON file
             ///Should Eventually include some runtimeMessage error handeling
             var content = JsonSerializer.Deserialize<Data>(text); 
-            ///JSON file is structured: {piece_indices:[[i1,i2,i3,i4],[i1,i2,i3,i4],[...]], singularities_on_pieces[[s1,s2,s3],[s1,s2,s3],[...], ...}
+            ///JSON file is structured: {piece_names:["piecename1.stl","piecename2.stl",...], singularities_on_pieces[[s1,s2,s3],[s1,s2,s3],[...], ...}
             ///where each property is a list of N lists, where N is the number of pieces. 
             ///Each list  in a property corresponds to the property of the piece
             ///each piece is defined by the properties at the same index in each property list
@@ -138,12 +138,13 @@ namespace BertiniReal.UtilityComps
             /* parse JSON data Piece objects */
             ///list for all the pieces
             List<PieceData> allPieces = new List<PieceData>();
-            ///each piece is represented by a list of indices. the number of peices = length of piece_indices
-            for (int pieceIndex= 0; pieceIndex < content.piece_indices.Length; pieceIndex++) {
+            ///each piece is represented by a filename. the number of pieces = length of piece_names
+            for (int pieceIndex= 0; pieceIndex < content.piece_names.Length; pieceIndex++) {
                 //⚠️I would like to try just pass content to PieceData and have it do the work for me!
                 PieceData newPiece = new PieceData();
-                newPiece.piece_index = pieceIndex; 
-                newPiece.indices = content.piece_indices[pieceIndex]; 
+
+                newPiece.pieceIndex = pieceIndex; 
+                newPiece.stlName = content.piece_names[pieceIndex]; 
                 newPiece.singsOnPiece = content.singularities_on_pieces[pieceIndex];
                 
                 //there are vectors for each sing on the piece, need to turn the vectors from vectors into lists
@@ -169,11 +170,11 @@ namespace BertiniReal.UtilityComps
 
                         if (negPlug.IsValid) { 
                             ///Create a new plug at this location and add it to the plug list
-                            transformedNegPlugs.Add(moveComponents(newPiece.indices,locationPlay,size,dirVect,locVect,negPlug));
+                            transformedNegPlugs.Add(moveComponents(newPiece.stlName,locationPlay,size,dirVect,locVect,negPlug));
                         }
                         if (posPlug.IsValid) {
                             ///Create a new plug at this location and add it to the plug list
-                            transformedPosPlugs.Add(moveComponents(newPiece.indices, locationPlay, size, dirVect, locVect, posPlug));
+                            transformedPosPlugs.Add(moveComponents(newPiece.stlName, locationPlay, size, dirVect, locVect, posPlug));
                         }
                     }
 
@@ -187,12 +188,12 @@ namespace BertiniReal.UtilityComps
                         if (negSocket.IsValid)
                         {
                             ///Create a new plug at this location and add it to the plug list
-                            transformedNegSockets.Add(moveComponents(newPiece.indices, locationPlay, size, dirVect, locVect, negSocket));
+                            transformedNegSockets.Add(moveComponents(newPiece.stlName, locationPlay, size, dirVect, locVect, negSocket));
                         }
                         if (posSocket.IsValid)
                         {
                             ///Create a new plug at this location and add it to the plug list
-                            transformedPosSockets.Add(moveComponents(newPiece.indices, locationPlay, size, dirVect, locVect, posSocket));
+                            transformedPosSockets.Add(moveComponents(newPiece.stlName, locationPlay, size, dirVect, locVect, posSocket));
                         }                        
                     }
                 }
@@ -220,7 +221,7 @@ namespace BertiniReal.UtilityComps
         /// <param name="location">Location of the singularity where the connector belongs</param>
         /// <param name="geo">Geometry of the connector prefab to be created</param>
         /// <returns>A new connector Brep at a singularity</returns>
-        private Brep moveComponents(int[] pieceIndices, Point3d locationPlay, double size, Vector3d direction, Vector3d location, Brep geo) {
+        private Brep moveComponents(string pieceName, Point3d locationPlay, double size, Vector3d direction, Vector3d location, Brep geo) {
             ///create a new connector
             Brep newConnector = geo.DuplicateBrep(); 
             
@@ -244,7 +245,7 @@ namespace BertiniReal.UtilityComps
             newConnector.Transform(xf);
 
             ///add user data so the piece the the connector is attached to can later be identified
-            newConnector.SetUserString("pieceID", pieceIndices.ToString());
+            newConnector.SetUserString("pieceID", pieceName.ToString());
             ///send back the connector
             return newConnector;
 

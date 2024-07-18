@@ -1,21 +1,25 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	
   <PropertyGroup>
-    <TargetFramework>net8</TargetFramework>
+    <TargetFramework>net48</TargetFramework>
     <Version>1.0</Version>
     <Title>BertiniReal</Title>
     <Description>Description of BertiniReal</Description>
     <TargetExt>.gha</TargetExt>
     <RhinoMacLauncher>8</RhinoMacLauncher>
+
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+    <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources> 
   </PropertyGroup>
-  
+
   <ItemGroup>
-    <PackageReference Include="Grasshopper" Version="8.8.24170.13001" IncludeAssets="compile;build" />
-    <PackageReference Include="System.Text.Json" Version="8.0.4" />
-    <PackageReference Include="System.Resources.Extensions" Version="8.0.0" />
-    <PackageReference Include="System.Drawing.Common" Version="8.0.7" />
+    <PackageReference Include="Grasshopper" Version="8.9.24194.18121" IncludeAssets="compile;build" />
+    <PackageReference Include="System.Resources.Extensions" Version="8.0.0" IncludeAssets="compile;build" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.7" IncludeAssets="compile;build" />
+    <PackageReference Include="System.Text.Json" Version="7.0.0" IncludeAssets="compile;build" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <Compile Update="Properties\Resources.Designer.cs">
       <DesignTime>True</DesignTime>
@@ -31,12 +35,34 @@
     </EmbeddedResource>
   </ItemGroup>
   
+  
   <ItemGroup>
     <None Update="Resources\plus_icon.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Resources\telephone_icon.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\plugin_icon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\import_icon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\lego.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\negative_plug_icon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\positive_plug_icon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\SocketPositive.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\transform_icon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 

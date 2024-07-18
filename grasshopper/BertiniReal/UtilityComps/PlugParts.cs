@@ -23,7 +23,7 @@ namespace BertiniReal.UtilityComps
     /// <see cref="TransformConnectors.cs"/>
     public class Data 
     {
-        public int[][] piece_indices { get; set; } //this will need to change
+        public string[] piece_names { get; set; } 
         public int[][] singularities_on_pieces { get; set; } 
         public double[][] sing_directions { get; set; }
         public double[][] sing_locations { get; set; }
@@ -36,8 +36,8 @@ namespace BertiniReal.UtilityComps
     /// <see cref="TransformConnectors.cs"/>
     public class PieceData
     {
-        public int piece_index { get; set; }
-        public int[] indices { get; set; }
+        public int pieceIndex { get; set; }
+        public string stlName { get; set; }
         public int[] singsOnPiece { get; set; }
         public Vector3d[] directions { get; set; }
         public Vector3d[] locations { get; set; }

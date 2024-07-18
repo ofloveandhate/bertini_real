@@ -23,12 +23,12 @@ namespace BertiniReal.UtilityComps
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddNumberParameter("Wire Hole Diameter", "D", "diameter of hole required for a wire", GH_ParamAccess.item, 7.0);
-            pManager.AddNumberParameter("Plug Length Factor", "PF", "multiplier for length of plug neg", GH_ParamAccess.item, 3.40);
+            pManager.AddNumberParameter("Wire Hole Diameter", "D", "diameter of hole required for a wirg.  ", GH_ParamAccess.item, 7.0);
+            pManager.AddNumberParameter("Plug Length Factor", "PF", "multiplier for length of plug neg.  ", GH_ParamAccess.item, 3.40);
             pManager.AddNumberParameter("Socket Length", "SL", "height of the socket", GH_ParamAccess.item, 7.0);
             pManager.AddNumberParameter("Length Overage", "LO", "how much excess hangover between the plug and socket", GH_ParamAccess.item, 7.0);
             pManager.AddNumberParameter("Body Overlap", "BO", "how much the plug and socket overlap", GH_ParamAccess.item, 7.0);
-            pManager.AddNumberParameter("eps", "E", "an adjusment value default 0.01", GH_ParamAccess.item, 0.01);
+            pManager.AddNumberParameter("eps", "E", "a small number used to prevent coplanar faces, which mess up booleans. default: 0.01", GH_ParamAccess.item, 0.01);
             pManager.AddPlaneParameter("base", "B", "base xy plane to build upon", GH_ParamAccess.item, Plane.WorldXY);
 
         }
@@ -48,7 +48,7 @@ namespace BertiniReal.UtilityComps
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             ///define place holder vars
-            ///These names can vary and are used within the code , but if you cnage their name ensure you change it throughout the code
+            ///These names can vary and are used within the code , but if you change their name ensure you change it throughout the code
             double wireHoleDia = 0;
             double plugFactor = 0;
             double socketLength = 0;
