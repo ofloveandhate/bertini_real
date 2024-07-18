@@ -1,9 +1,8 @@
 {
   "profiles": {
     "BertiniReal": {
-      "commandName": "Executable",
-      "executablePath": "/Users/amethyst/Applications/Rhino 8.app",
-      "commandLineArgs": ""
+      "commandName": "Project",
+      "commandLineArgs": "-runscript=\"_New _Grasshopper\""
     }
   }
 }
