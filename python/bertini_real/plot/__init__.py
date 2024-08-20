@@ -985,16 +985,7 @@ class Plotter(object):
                     if face['top'] < 0:
                         continue
 
-                    curr_edge = -10
-                    if(face['system top'] == 'input_critical_curve'):
-                        curr_edge = surf.critical_curve.edges[face['top']]
-                    elif(face['system top'] == 'input_surf_sphere'):
-                        curr_edge = surf.sphere_curve.edges[face['top']]
-                    else:
-                        for zz in range(len(surf.singular_curves)):
-                            if(surf.singular_names[zz] == face['system top']):
-                                curr_edge = surf.singular_curves[
-                                    zz].edges[face['top']]
+                    curr_edge = surf.curve_with_name(face['system top']).edges[face['top']]
 
                     if (curr_edge[0] < 0 and curr_edge[1] < 0 and curr_edge[2] < 0):
                         continue
@@ -1010,16 +1001,7 @@ class Plotter(object):
                     if face['bottom'] < 0:
                         continue
 
-                    curr_edge = -10
-                    if(face['system bottom'] == 'input_critical_curve'):
-                        curr_edge = surf.critical_curve.edges[face['bottom']]
-                    elif(face['system bottom'] == 'input_surf_sphere'):
-                        curr_edge = surf.sphere_curve.edges[face['bottom']]
-                    else:
-                        for zz in range(len(surf.singular_curves)):
-                            if(surf.singular_names[zz] == face['system bottom']):
-                                curr_edge = surf.singular_curves[
-                                    zz].edges[face['bottom']]
+                    curr_edge = surf.curve_with_name(face['system bottom']).edges[face['bottom']]
 
                     if (curr_edge[0] < 0 and curr_edge[1] < 0 and curr_edge[2] < 0):
                         continue
