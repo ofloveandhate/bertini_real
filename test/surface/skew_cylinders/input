@@ -1,0 +1,32 @@
+CONFIG
+
+tracktype:1;
+
+ODEpredictor: 5;
+
+tracktolbeforeeg: 1e-8;
+
+tracktolduringeg: 1e-10;
+
+maxstepsbeforenewton: 0;
+maxnewtonits: 2;
+
+numsamplepoints: 5;
+
+
+
+END;
+
+
+INPUT
+
+variable_group x, y, z;
+
+function f;
+
+c1 = x^2+y^2-1;
+c2 = (x-3)^2+(z-3)^2-1;
+
+f = c1*c2;
+
+END;
