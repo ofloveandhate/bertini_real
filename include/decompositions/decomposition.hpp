@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "containers/holders.hpp"
 #include "nag/system_randomizer.hpp"
 #include "nag/witness_set.hpp"
