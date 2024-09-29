@@ -53,6 +53,9 @@
 				"*.egg-info",
 				"python/build",
 				"__pycache__"],
+			"binary_exclude_patterns": [
+				"test"
+			]
 		}
 	],
 
