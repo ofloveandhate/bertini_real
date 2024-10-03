@@ -106,6 +106,8 @@ void SolverConfiguration::init()
 	use_gamma_trick = 0;
 
 	use_sequential_filenames = false;
+
+	save_all_paths_to_disk = false;
 }
 
 
@@ -115,8 +117,8 @@ std::vector<int> SolverOutput::get_cyclenums_noninfinite_w_mult()
 
 	for (auto index = ordering.begin(); index != ordering.end(); ++index) {
 		//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
-		if (metadata[index->first].is_finite)
-			cycle_nums.push_back(metadata[index->first].CycleNumber());
+		if (point_metadata_[index->first].is_finite)
+			cycle_nums.push_back(point_metadata_[index->first].CycleNumber());
 	}
 	return cycle_nums;
 }
@@ -137,8 +139,9 @@ void SolverOutput::get_noninfinite_w_mult(WitnessSet & W_transfer)
 {
 	for (auto index = ordering.begin(); index != ordering.end(); ++index) {
 		//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
-		if (metadata[index->first].is_finite) {
-			W_transfer.add_point(vertices_[index->first].point());
+		if (point_metadata_[index->first].is_finite) {
+			W_transfer.add_point(vertices_[index->first].point(), this->point_metadata_[index->first]);  // v1.8.0
+
 		}
 	}
 
@@ -150,8 +153,9 @@ void SolverOutput::get_nonsing_finite_multone(WitnessSet & W_transfer)
 {
 	for (auto index = ordering.begin(); index != ordering.end(); ++index) {
 		//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
-		if ( (metadata[index->first].is_finite) && (!metadata[index->first].is_singular) && (metadata[index->first].multiplicity==1) ) {
-			W_transfer.add_point(vertices_[index->first].point());
+		if ( (point_metadata_[index->first].is_finite) && (!point_metadata_[index->first].is_singular) && (point_metadata_[index->first].multiplicity==1) ) {
+			W_transfer.add_point(vertices_[index->first].point(), this->point_metadata_[index->first]); // v1.8.0
+			
 		}
 	}
 
@@ -165,9 +169,10 @@ void SolverOutput::get_multpos(std::map<int, WitnessSet> & W_transfer)
 	for (auto mult_ind = occuring_multiplicities.begin(); mult_ind!=occuring_multiplicities.end(); ++mult_ind) {
 
 		int num_added_points = 0;
-		for (auto index = metadata.begin(); index != metadata.end(); ++index) {
+		for (auto index = point_metadata_.begin(); index != point_metadata_.end(); ++index) {
 			if ((index->multiplicity== *mult_ind) && (index->is_finite))  {
-				W_transfer[*mult_ind].add_point(vertices_[index->output_index].point());
+				W_transfer[*mult_ind].add_point(vertices_[index->output_index].point(), this->point_metadata_[index->output_index]); // v1.8.0
+
 				num_added_points++;
 			}
 		}
@@ -199,8 +204,8 @@ void SolverOutput::get_sing(WitnessSet & W_transfer)
 {
 	for (auto index = ordering.begin(); index != ordering.end(); ++index) {
 		//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
-		if ( (metadata[index->first].is_singular) ) {
-			W_transfer.add_point(vertices_[index->first].point());
+		if ( (point_metadata_[index->first].is_singular) ) {
+			W_transfer.add_point(vertices_[index->first].point(), this->point_metadata_[index->first]); // v1.8.0
 		}
 	}
 	set_witness_set_nvars(W_transfer);
@@ -211,8 +216,8 @@ void SolverOutput::get_sing_finite(WitnessSet & W_transfer)
 {
 	for (auto index = ordering.begin(); index != ordering.end(); ++index) {
 		//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
-		if ( (metadata[index->first].is_singular && metadata[index->first].is_finite) ) {
-			W_transfer.add_point(vertices_[index->first].point());
+		if ( (point_metadata_[index->first].is_singular && point_metadata_[index->first].is_finite) ) {
+			W_transfer.add_point(vertices_[index->first].point(), this->point_metadata_[index->first]); // v1.8.0
 		}
 	}
 	set_witness_set_nvars(W_transfer);
@@ -618,7 +623,8 @@ void master_solver(SolverOutput & solve_out, const WitnessSet & W,
 
 	initMP(mpf_get_default_prec());
 
-
+	// cache the starting path number.  this is to be able to store the absolute path numbers for the endpoints / solutions
+	long long starting_absolute_pathnum = solve_options.num_paths_tracked(); // 1.8.0
 
 	solve_out.num_variables = W.num_variables();
 	solve_out.num_natural_vars = W.num_natural_variables();
@@ -716,11 +722,11 @@ void master_solver(SolverOutput & solve_out, const WitnessSet & W,
 	// post process
 	switch (solve_options.T.MPType) {
 		case 0:
-			solve_out.post_process(endPoints, trackCount.successes, &ED_d->preProcData, &solve_options.T, solve_options);
+			solve_out.post_process(endPoints, trackCount.successes, &ED_d->preProcData, &solve_options.T, solve_options, starting_absolute_pathnum);
 			break;
 
 		default:
-			solve_out.post_process(endPoints, trackCount.successes, &ED_mp->preProcData, &solve_options.T, solve_options);
+			solve_out.post_process(endPoints, trackCount.successes, &ED_mp->preProcData, &solve_options.T, solve_options, starting_absolute_pathnum);
 			break;
 	}
 
@@ -865,7 +871,7 @@ void serial_tracker_loop(trackingStats *trackCount,
 		solve_options.increment_num_paths_tracked();
 
 		auto n = solve_options.num_paths_tracked();
-		print_this_path = 0;//print_these_paths.find(n)!=print_these_paths.end();
+		print_this_path = solve_options.save_all_paths_to_disk;  
 		if (print_this_path){
 			std::stringstream ss;
 			ss << "paths/path_" << n;

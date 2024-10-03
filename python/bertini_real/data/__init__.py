@@ -113,7 +113,13 @@ def gather_vertices(directory):
                 line = f.readline()
 
             vertextype = int(line.replace('\n', ''))
-            v = Vertex(point, input_in, proj, vertextype)
+
+            path_numbers_ending_here = "feature added in 1.8, your data is too old.  run a new decomposition using 1.8 or higher"
+            if bertini_real_version >= 1.8
+                line = f.readline()
+                path_numbers_ending_here = [int(n) for n in line.split()]
+
+            v = Vertex(point, input_in, proj, vertextype, path_numbers_ending_here)
             vertices[ii] = v
 
         return vertices, filenames

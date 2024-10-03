@@ -375,7 +375,7 @@ WitnessSet NumericalIrreducibleDecomposition::best_possible_automatic_set(Bertin
 			throw std::runtime_error("witness set with no points");
 		}
 		else{
-			if (point_metadata[iter->second[0]].num_deflations_needed()==0) {
+			if (point_metadata_[iter->second[0]].num_deflations_needed()==0) {
 				components_with_no_deflations_needed.push_back(iter->first);
 			}
 		}
@@ -398,7 +398,7 @@ WitnessSet NumericalIrreducibleDecomposition::best_possible_automatic_set(Bertin
 		if (checkSelfConjugate(point(current_index), options, options.input_filename())==true) {
 			std::cout << "dim " << target_dimension << ", comp " << *iter << " is self-conjugate" << std::endl;
 			for (int ii=0; ii<dimension_component_counter[target_dimension][*iter]; ++ii) {
-				W.add_point( point(index_tracker[target_dimension][*iter][ii]) );
+				W.add_point( point(index_tracker[target_dimension][*iter][ii]), SolutionMetadata());
 			}
 			sc_counter++;
 		}
@@ -442,10 +442,10 @@ void NumericalIrreducibleDecomposition::DisplayComponentsOfDim(int dim)
 	for (auto jter = indices.begin(); jter!=indices.end(); ++jter) {
 
 		int first_index = *(jter->second.begin());
-		auto comp = point_metadata[first_index].component_number();
+		auto comp = point_metadata_[first_index].component_number();
 		auto deg = dimension_component_counter[dim][comp];
 
-		std::cout << "\tcomponent " << jter->first << ": degree " << deg << ", multiplicity " << point_metadata[first_index].multiplicity() << ", deflations needed: " << point_metadata[first_index].num_deflations_needed() << '\n';
+		std::cout << "\tcomponent " << jter->first << ": degree " << deg << ", multiplicity " << point_metadata_[first_index].multiplicity() << ", deflations needed: " << point_metadata_[first_index].num_deflations_needed() << '\n';
 	}
 	std::cout << '\n';
 }
@@ -498,7 +498,7 @@ WitnessSet NumericalIrreducibleDecomposition::choose_set_interactive(BertiniReal
 
 	if (num_components==0) {
 		for (unsigned int ii=0; ii<dimension_component_counter[target_dimension].size(); ++ii) {
-			if (point_metadata[index_tracker[target_dimension][ii][0]].multiplicity()==1) {
+			if (point_metadata_[index_tracker[target_dimension][ii][0]].multiplicity()==1) {
 				chosen_few.insert(ii);
 			}
 
@@ -536,7 +536,7 @@ WitnessSet NumericalIrreducibleDecomposition::choose_set_interactive(BertiniReal
 
 		//iterate over each point in the component
 		for (auto jter=index_tracker[target_dimension][*iter].begin(); jter!=index_tracker[target_dimension][*iter].end(); ++jter) {
-			W.add_point( point(*jter) );
+			W.add_point( point(*jter) , SolutionMetadata());
 		}
 
 	}
@@ -585,7 +585,7 @@ WitnessSet NumericalIrreducibleDecomposition::form_specific_witness_set(int dim,
 
 	for (auto iter = index_tracker[dim][comp].begin(); iter!= index_tracker[dim][comp].end(); ++iter) {
 		//iter points to an index into the vertices stored in the Vertex set.
-		W.add_point( point(*iter) );
+		W.add_point( point(*iter), SolutionMetadata());
 	}
 
 

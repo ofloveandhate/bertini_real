@@ -838,11 +838,12 @@ void Curve::SynchronizeVertexSetMaster(int edge_index, VertexSet & V, int source
 	sample_indices_[edge_index].front() = left;
 	sample_indices_[edge_index].back() = right;
 
-	Vertex temp_v;
+	Vertex temp_v; SolutionMetadata temp_meta;
 	for (int ii=1; ii<num_to_recv-1; ++ii)
 	{
 		temp_v.receive(source, solve_options);
-		auto new_index = V.add_vertex(temp_v);
+		temp_meta.receive(source, solve_options);
+		auto new_index = V.add_vertex(temp_v, temp_meta);
 		sample_indices_[edge_index][ii] = new_index;
 
 
@@ -864,6 +865,7 @@ void Curve::SynchronizeVertexSetWorker(int edge_index, VertexSet const& V, Solve
 	{
 		// 1 send vertex to master
 		V[sample_indices_[edge_index][ii]].send(solve_options.head(), solve_options);
+		V.point_meta(sample_indices_[edge_index][ii]).send(solve_options.head(), solve_options);
 	}
 }
 
@@ -1093,10 +1095,10 @@ void Curve::SampleEdgeAdaptiveMovement(	int ii,
 				temp_vertex.set_type(Curve_sample_point);
 
                 if (sampler_options.no_duplicates){
-					new_indices[sample_counter] = index_in_vertices_with_add(V, temp_vertex);
+					new_indices[sample_counter] = index_in_vertices_with_add(V, temp_vertex, Wnew.point_meta(0));
 				}
 				else{
-					new_indices[sample_counter] = V.add_vertex(temp_vertex);
+					new_indices[sample_counter] = V.add_vertex(temp_vertex, Wnew.point_meta(0));
 				}
 
 				sample_counter++;
@@ -1390,10 +1392,10 @@ void Curve::SampleEdgeAdaptiveDistance(	int ii,
 				temp_vertex.set_type(Curve_sample_point);
 
                 if (sampler_options.no_duplicates){
-					new_indices[sample_counter] = index_in_vertices_with_add(V, temp_vertex);
+					new_indices[sample_counter] = index_in_vertices_with_add(V, temp_vertex, Wnew.point_meta(0));
 				}
 				else{
-					new_indices[sample_counter] = V.add_vertex(temp_vertex);
+					new_indices[sample_counter] = V.add_vertex(temp_vertex, Wnew.point_meta(0));
 				}
 
 				sample_counter++;
@@ -1644,9 +1646,9 @@ void Curve::SampleEdgeCycleNum(	int ii,
 		temp_vertex.set_type(Curve_sample_point);
 
 	    if (sampler_options.no_duplicates)
-			current_indices.push_back(index_in_vertices_with_add(V, temp_vertex));
+			current_indices.push_back(index_in_vertices_with_add(V, temp_vertex, Wnew.point_meta(0)));
 		else
-			current_indices.push_back(V.add_vertex(temp_vertex));
+			current_indices.push_back(V.add_vertex(temp_vertex, Wnew.point_meta(0)));
 	} // for rr, left half
 
 	// add the midpoint to the edge
@@ -1720,9 +1722,9 @@ void Curve::SampleEdgeCycleNum(	int ii,
 		temp_vertex.set_type(Curve_sample_point);
 
 	    if (sampler_options.no_duplicates)
-			current_indices.push_back(index_in_vertices_with_add(V, temp_vertex));
+			current_indices.push_back(index_in_vertices_with_add(V, temp_vertex, Wnew.point_meta(0)));
 		else
-			current_indices.push_back(V.add_vertex(temp_vertex));
+			current_indices.push_back(V.add_vertex(temp_vertex, Wnew.point_meta(0)));
 	} // for rr, right half
 
 	// add the right to the edge
@@ -1832,7 +1834,7 @@ void Curve::SampleEdgeSemiFixed(	int ii,
 	// set up the starting linear and point
 	neg_mp(& (W.linear(0))->coord[0],&(V[get_edge(ii).midpt()].projection_values())->coord[V.curr_projection()]);
 	W.reset_points();
-	W.add_point(V[get_edge(ii).midpt()].point());
+	W.add_point(V[get_edge(ii).midpt()].point(), SolutionMetadata());
 
 
 
@@ -1928,11 +1930,11 @@ void Curve::SampleEdgeSemiFixed(	int ii,
 		temp_vertex.set_type(Curve_sample_point);
 
 		if (sampler_options.no_duplicates){
-			sample_indices_[ii][jj] = index_in_vertices_with_add(V, temp_vertex);
+			sample_indices_[ii][jj] = index_in_vertices_with_add(V, temp_vertex, Wnew.point_meta(0));
 		}
 		else
 		{
-			sample_indices_[ii][jj] = V.add_vertex(temp_vertex);
+			sample_indices_[ii][jj] = V.add_vertex(temp_vertex, Wnew.point_meta(0));
 		}
 
 
@@ -2026,7 +2028,7 @@ void Curve::SampleEdgeFixed(	int ii,
 	neg_mp(& (W.linear(0))->coord[0],&(V[get_edge(ii).midpt()].projection_values())->coord[V.curr_projection()]);
 
 	W.reset_points();
-	W.add_point(V[get_edge(ii).midpt()].point());
+	W.add_point(V[get_edge(ii).midpt()].point(), SolutionMetadata());
 
 
 	comp_mp interval_width; init_mp2(interval_width,1024); set_zero_mp(interval_width);
@@ -2107,9 +2109,9 @@ void Curve::SampleEdgeFixed(	int ii,
 		temp_vertex.set_type(Curve_sample_point);
 
 		if (sampler_options.no_duplicates)
-			sample_indices_[ii][jj] = index_in_vertices_with_add(V, temp_vertex);
+			sample_indices_[ii][jj] = index_in_vertices_with_add(V, temp_vertex, Wnew.point_meta(0));
 		else
-			sample_indices_[ii][jj] = V.add_vertex(temp_vertex);
+			sample_indices_[ii][jj] = V.add_vertex(temp_vertex, Wnew.point_meta(0));
 
 
 		Wnew.reset();

@@ -361,6 +361,7 @@ void BertiniRealConfig::display_current_options() const
 	  }
 
 	 std::cout << "same_point_tol: " << same_point_tol() << std::endl;
+	 std::cout << "save_all_paths_to_disk: " << save_all_paths_to_disk() << std::endl;
 }
 
 
@@ -376,36 +377,37 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 		static struct option long_options[] =
 		{
 			/* These options set a flag. */
-			{"debug", no_argument, 0, 'D'},
-			{"dim",required_argument,0,'d'}, {"d",required_argument,0,'d'},
-			{"component",required_argument,0,'c'}, {"comp",required_argument,0,'c'}, {"c",required_argument,0,'c'},
-			{"gammatrick",required_argument,0, 'g'}, {"g",required_argument, 0, 'g'},
-			{"verb",	required_argument,0, 'V'},
-			{"output",	required_argument,0, 'o'}, {"out",required_argument, 0, 'o'}, {"o",	required_argument, 0, 'o'},
-			{"nostifle", no_argument,       0, 's'}, {"ns", no_argument, 0, 's'},
-			{"nomerge",no_argument,0,'m'}, {"nm",no_argument,0,'m'},
-			{"projection",required_argument,0, 'p'}, {"p",required_argument,0, 'p'}, {"pi",	required_argument,0,'p'},
-			{"sphere",required_argument, 0, 'S'}, {"s",required_argument, 0, 'S'},
-			{"patch",required_argument, 0, 'A'},
+			{"debug", no_argument, 0, 					'D'},
+			{"dim",required_argument,0,					'd'}, {"d",required_argument,0,'d'},
+			{"component",required_argument,0,		'c'}, {"comp",required_argument,0,'c'}, {"c",required_argument,0,'c'},
+			{"gammatrick",required_argument,0, 	'g'}, {"g",required_argument, 0, 'g'},
+			{"verb",	required_argument,0, 			'V'},
+			{"output",	required_argument,0, 		'o'}, {"out",required_argument, 0, 'o'}, {"o",	required_argument, 0, 'o'},
+			{"nostifle", no_argument,       0, 	's'}, {"ns", no_argument, 0, 's'},
+			{"nomerge",no_argument,0,						'm'}, {"nm",no_argument,0,'m'},
+			{"projection",required_argument,0, 	'p'}, {"p",required_argument,0, 'p'}, {"pi",	required_argument,0,'p'},
+			{"sphere",required_argument, 0, 		'S'}, {"s",required_argument, 0, 'S'},
+			{"patch",required_argument, 0, 			'A'},
 			{"robustness",required_argument, 0, 'r'},{"r",required_argument, 0, 'r'},
-			{"input",required_argument,	0, 'i'}, {"i",required_argument, 0, 'i'},
+			{"input",required_argument,	0, 			'i'}, {"i",required_argument, 0, 'i'},
 			{"version",		no_argument,			 0, 'v'}, {"v",		no_argument,			 0, 'v'},
-			{"help",		no_argument,			 0, 'h'}, {"h",		no_argument,			 0, 'h'},
-			{"mode",required_argument,0,'M'}, {"m",required_argument,0,'M'},
-			{"symengine",required_argument,0,'E'},{"E",required_argument,0, 'E'},
-			{"pycommand",required_argument,0,'P'},{"P",required_argument,0, 'P'},
-			{"symnosubst",	no_argument,			 0, 't'},
-			{"symallowsubst",	no_argument,			 0, 'T'},
-			{"samepointtol",	required_argument,		 0, 'e'},
-			{"ignoresing", no_argument, 0, 'w'},
-			{"realify", no_argument, 0, 'R'},
+			{"help",		no_argument,			 0, 	'h'}, {"h",		no_argument,			 0, 'h'},
+			{"mode",required_argument,0,				'M'}, {"m",required_argument,0,'M'},
+			{"symengine",required_argument,0,		'E'},{"E",required_argument,0, 'E'},
+			{"pycommand",required_argument,0,		'P'},{"P",required_argument,0, 'P'},
+			{"symnosubst",	no_argument,		0, 	't'},
+			{"symallowsubst",	no_argument,	0, 	'T'},
+			{"samepointtol",required_argument,0,'e'},
+			{"ignoresing", no_argument, 0, 			'w'},
+			{"realify", no_argument, 0, 				'R'},
+			{"savepaths", no_argument, 0, 			'z'},
 
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
 
-		choice = getopt_long_only (argc, argv, "d:c:Dg:V:o:smp:S:i:rvhM:E:P:tTe:wA:R", // if followed by colon, requires option.  two colons is optional
+		choice = getopt_long_only (argc, argv, "d:c:Dg:V:o:smp:S:i:rvhM:E:P:tTe:wA:Rz", // if followed by colon, requires option.  two colons is optional
 								   long_options, &option_index);
 
 		/* Detect the end of the options. */
@@ -473,6 +475,10 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 
 			case 'R':
 				realify_ = true;
+				break;
+
+			case 'z':
+				save_all_paths_to_disk_ = true;
 				break;
 
 			case 'v':
@@ -638,6 +644,7 @@ void BertiniRealConfig::print_usage() const
 	line("-gammatrick -g", 		"bool", "0" , "use the complex gamma trick for all paths.  is this good?  does it even work at all?  does using this option produce complete garbage, or speed things up like racing stripes?  i don't know, but it's implemented and an option.  choose your own adventure.  enjoy.");
 	line("-ignoresing", " -- ", "off", "ignore singular curve(s); only use if singular curves are naked.  no argument necessary, choosing this turns it on.");
 	line("-realify", " -- ", "off", "change patch and discard imaginary parts where possible throughout decomposition.  no argument necessary, choosing this turns it on.");
+	line("-savepaths"," -- ","off","turn on saving of all paths to disk. no arg necessary, choosing turns it on.  this makes on file per path with integer filenumbers.  you probably don't want this for large decompositions.");
 	printf("\n\n\n");
 	return;
 }

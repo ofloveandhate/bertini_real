@@ -8,12 +8,40 @@
 
 
 
+
+
+
+template <typename MetaT>
+class PointMetadataHolder{
+protected:
+	std::vector< MetaT > point_metadata_;
+
+public:
+	void reset_metadata(){ point_metadata_.clear();}
+
+
+	void add_metadata(MetaT const& m){
+		this->point_metadata_.push_back(m);
+	}
+
+	void copy_metadata(const PointMetadataHolder & other){
+		this->point_metadata_ = other.point_metadata_;
+	}
+
+	const MetaT point_meta(typename std::vector<MetaT>::size_type ind) const
+	{return point_metadata_[ind];} 
+};
+
+
+
+
 /**
  \brief base class for holding a set of vec_mp's.
 
  This class gives a way to commit vec_mp's into a class object.  The major data members are pts_mp and num_pts.  The most important member function is add_point(p)
  */
-class PointHolder
+template <typename MetaT>
+class PointHolder : public PointMetadataHolder<MetaT>
 {
 
 
@@ -21,6 +49,40 @@ protected:
 
 	vec_mp *pts_mp_; ///< an array of vec_mp, which are structs and require manual initialization and clearing.
 	size_t num_pts_; ///< the number of stored points.
+
+	/**
+	 An internally-used  function that just adds points, but not the associated metadata
+	 */
+	int add_point_just_point(vec_mp new_point)
+	{
+
+		if (num_pts_!=0 && this->pts_mp_==NULL) {
+			printf("trying to add point to PointHolder with non-zero num_points and NULL container!\n");
+			br_exit(9713);
+		}
+
+		if (num_pts_==0 && this->pts_mp_!=NULL) {
+			printf("trying to add point to PointHolder with num_points==0 and non-NULL container!\n");
+			br_exit(9713);
+		}
+
+
+		if (num_pts_==0) {
+			pts_mp_ = (vec_mp *)br_malloc(sizeof(vec_mp));
+		}
+		else{
+			pts_mp_ = (vec_mp *)br_realloc(pts_mp_, (num_pts_+1) * sizeof(vec_mp));
+		}
+
+		init_vec_mp2(pts_mp_[num_pts_], new_point->size, new_point->curr_prec);
+		pts_mp_[num_pts_]->size = new_point->size;
+		vec_cp_mp(pts_mp_[num_pts_], new_point);
+
+
+		num_pts_++;
+
+		return num_pts_-1;
+	}
 
 public:
 
@@ -65,7 +127,9 @@ public:
 	{
 
         for (unsigned int ii=0; ii<other.num_pts_; ii++)
-			add_point(other.pts_mp_[ii]);
+			add_point_just_point(other.pts_mp_[ii]);
+
+		PointMetadataHolder<MetaT>::copy_metadata(other);
     }
 
 
@@ -117,6 +181,8 @@ public:
 
 		num_pts_ = 0;
 		pts_mp_ = NULL;
+
+		PointMetadataHolder<MetaT>::reset_metadata();
 	}
 
 	void real_threshold_points(double threshold)
@@ -130,8 +196,18 @@ public:
 
 	 \return the index of the new point.
 	 \param new_point the point to add.
+	 \parame meta the metadata that corresponds to the point
 	 */
-	int add_point(vec_mp new_point);
+	int add_point(vec_mp new_point, MetaT const& meta)
+	{
+
+		auto n = add_point_just_point(new_point);
+
+		PointMetadataHolder<MetaT>::add_metadata(meta);
+
+		return n;
+	}
+
 
 
 	/**
@@ -183,6 +259,7 @@ public:
 	void copy(const PointHolder & other)
 	{
 		copy_points(other);
+		copy_metadata(other);
 	}
 
 

@@ -15,8 +15,8 @@ BRinfo.dimension = dimension;
 
 
 
-
-
+% do this first so that we can use the metadata to conditionally do some parsing
+BRinfo.run_metadata = gather_run_metadata(BRinfo.dirname); 
 
 BRinfo = gather_vertices(BRinfo);
 
@@ -38,7 +38,7 @@ switch BRinfo.dimension
 	
 end
 
-BRinfo.run_metadata = gather_run_metadata(BRinfo.dirname);
+
 BRinfo.vertex_types = gather_vertex_types(BRinfo.dirname);
 
 tmpnames = get_names(BRinfo.num_variables);
@@ -92,7 +92,7 @@ function md = gather_run_metadata(dirname)
 		md.version.subminor = str2num(md.version.string(pds(2)+1:end));
 		
 		md.version.number = 100*md.version.major + md.version.minor + 0.01 * md.version.subminor;
-		md.version.gather = 152;
+		md.version.gather = 180;
 	else
 		
 		md.version.string = 'earlier than 1.4';
@@ -512,6 +512,13 @@ for ii = 1:BRinfo.num_vertices
 	end
     BRinfo.vertices(ii).input_filename_index = fscanf(fid,'%i',[1 1]);
 	BRinfo.vertices(ii).type = fscanf(fid,'%i',[1 1]);
+
+	% this feature was introduced in v 1.8
+	if BRinfo.version.gather >= 180
+		BRinfo.vertices(ii).path_numbers_ending_here = % read a line and split.  this is deliberately a syntax error
+	end
+
+
 end
 fclose(fid);
 

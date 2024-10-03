@@ -5,7 +5,7 @@
 
 void SolverOutput::post_process(post_process_t *endPoints, int num_pts_to_check,
 								 preproc_data *preProcData, tracker_config_t *T,
-								 const SolverConfiguration & solve_options)
+								 const SolverConfiguration & solve_options, long long min_path_number)
 {
 
 	int num_nat_vars = num_natural_vars;
@@ -171,8 +171,11 @@ void SolverOutput::post_process(post_process_t *endPoints, int num_pts_to_check,
 		meta.set_successful(endPoints[curr_ind].success);
 		meta.SetCycleNumber(endPoints[curr_ind].cycle_num);
 		meta.set_output_index(this->num_vertices_);
-		meta.add_input_index(endPoints[curr_ind].path_num);
+		meta.add_path_number_zero_based(endPoints[curr_ind].path_num);  // v1.8.0   these are 0-based path numbers every time.  but we need the absolute path numbers for my goals.  v1.8.0.
+		meta.add_path_number_absolute(endPoints[curr_ind].path_num+min_path_number); // the offset here corrects for the 0-based of the above.  this will let us refer to saved paths (in external files)
 
+		temp_vertex.reset_path_numbers();
+		temp_vertex.add_path_number_ending_here(endPoints[curr_ind].path_num+min_path_number);
 		add_solution(temp_vertex, meta);
 	}
 
@@ -193,7 +196,8 @@ void SolverOutput::post_process(post_process_t *endPoints, int num_pts_to_check,
 			continue;
 		}
 
-
+		temp_vertex.reset_path_numbers();
+		
 
 		if ( find(occuring_multiplicities.begin(),occuring_multiplicities.end(),endPoints[curr_ind].multiplicity)==occuring_multiplicities.end()) {
 			occuring_multiplicities.push_back(endPoints[curr_ind].multiplicity);
@@ -212,18 +216,20 @@ void SolverOutput::post_process(post_process_t *endPoints, int num_pts_to_check,
 			int inner_ind = soln_indices[jj].first;
 
 			if (endPoints[inner_ind].sol_num==endPoints[curr_ind].sol_num) {
-				meta.add_input_index(endPoints[inner_ind].path_num);
+				meta.add_path_number_zero_based(endPoints[inner_ind].path_num);  // these are just path numbers ("input").  output numbers are solution numbers.
+				meta.add_path_number_absolute(endPoints[inner_ind].path_num+min_path_number);
+
+				temp_vertex.add_path_number_ending_here(endPoints[inner_ind].path_num+min_path_number);
 			}
 		}
 		meta.set_output_index(this->num_vertices());
-
 		add_solution(temp_vertex, meta);
 	}
 
 
 	std::sort(occuring_multiplicities.begin(), occuring_multiplicities.end());
 	for (unsigned int ii=0; ii<num_vertices(); ii++) {
-		for (auto jj = metadata[ii].input_index.begin(); jj!=metadata[ii].input_index.end(); ++jj) {
+		for (auto jj = point_metadata_[ii].path_numbers_zero_based.begin(); jj!=point_metadata_[ii].path_numbers_zero_based.end(); ++jj) {
 			ordering.push_back(std::pair<long long, long long>(ii,*jj));
 		}
 	}

@@ -146,6 +146,10 @@ void UbermasterProcess::bertini_real(WitnessSet & W, vec_mp *pi, VertexSet & V)
 	boost::filesystem::create_directory(program_options.output_dir());
 	program_options.PrintMetadata(program_options.output_dir() / "run_metadata");
 
+	if (program_options.save_all_paths_to_disk()){
+		std::cout << "something" << std::endl;
+		boost::filesystem::create_directory(boost::filesystem::path("paths"));
+	}
 
 	switch (W.dimension()) {
 		case 1:

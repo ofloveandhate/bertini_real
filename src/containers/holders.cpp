@@ -6,36 +6,6 @@
 
 
 
-int PointHolder::add_point(vec_mp new_point)
-{
-
-	if (num_pts_!=0 && this->pts_mp_==NULL) {
-		printf("trying to add point to PointHolder with non-zero num_points and NULL container!\n");
-		br_exit(9713);
-	}
-
-	if (num_pts_==0 && this->pts_mp_!=NULL) {
-		printf("trying to add point to PointHolder with num_points==0 and non-NULL container!\n");
-		br_exit(9713);
-	}
-
-
-	if (num_pts_==0) {
-		pts_mp_ = (vec_mp *)br_malloc(sizeof(vec_mp));
-	}
-	else{
-		pts_mp_ = (vec_mp *)br_realloc(pts_mp_, (num_pts_+1) * sizeof(vec_mp));
-	}
-
-	init_vec_mp2(pts_mp_[num_pts_], new_point->size, new_point->curr_prec);
-	pts_mp_[num_pts_]->size = new_point->size;
-	vec_cp_mp(pts_mp_[num_pts_], new_point);
-
-	num_pts_++;
-
-	return num_pts_-1;
-}
-
 int PatchHolder::add_patch(vec_mp new_patch)
 {
 

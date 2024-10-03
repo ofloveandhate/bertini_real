@@ -417,6 +417,7 @@ class BertiniRealConfig : public ProgramConfigBase
 	bool merge_edges_; ///< a mode switch, indicates whether should be merging.
 
 	bool realify_; ///< a mode switch, for whether known-real path startpoints and patches should be realified.
+	bool save_all_paths_to_disk_; ///< a mode switch, for whether the paths should be written to disk during decomposition.  
 
 	int primary_mode_; ///< mode of operation -- bertini_real is default, but there is also crit method for computing critical points.
 
@@ -498,6 +499,8 @@ public:
 		realify_ = val;
 	}
 
+	inline bool save_all_paths_to_disk() const{return save_all_paths_to_disk_;}
+	inline void save_all_paths_to_disk(bool val){save_all_paths_to_disk_ = val;}
 	/**
 	 get the path to the input_deflated file.
 

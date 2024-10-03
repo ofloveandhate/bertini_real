@@ -143,7 +143,7 @@ void Surface::FixedSampleFace(int face_index, VertexSet & V, sampler_configurati
 	WitnessSet W_multilin;
 	W_multilin.set_num_variables(this->num_variables());
 	W_multilin.set_num_natural_variables(this->num_variables());
-	W_multilin.add_point(blank_point);
+	W_multilin.add_point(blank_point, SolutionMetadata());
 	W_multilin.add_linear(pi(0)); W_multilin.add_linear(pi(1));
 	W_multilin.add_patch(this->patch(0));
 
@@ -178,7 +178,7 @@ void Surface::FixedSampleFace(int face_index, VertexSet & V, sampler_configurati
 
 
 	WitnessSet W_midtrack;
-	W_midtrack.add_point(blank_point);
+	W_midtrack.add_point(blank_point, SolutionMetadata());
 
 	//copy in the start point as three points concatenated.
 	W_midtrack.set_num_variables(this->num_variables() + num_bottom_vars + num_top_vars);
@@ -339,7 +339,7 @@ void Surface::FixedSampleFace(int face_index, VertexSet & V, sampler_configurati
 
 				temp_vertex.set_type(Surface_sample_point);
 				temp_vertex.set_point(W_new.point(0));
-				startpt_index = V.add_vertex(temp_vertex);
+				startpt_index = V.add_vertex(temp_vertex, W_new.point_meta(0));
 
 				// need to set the values of the projections in the linears -- they are not unit-scaled as is the midpoint tracker.
 
@@ -433,7 +433,7 @@ void Surface::FixedSampleFace(int face_index, VertexSet & V, sampler_configurati
 
 					temp_vertex.set_point(W_new.point(0));
 					temp_vertex.set_type(Surface_sample_point);
-					temp_rib.push_back(V.add_vertex(temp_vertex));
+					temp_rib.push_back(V.add_vertex(temp_vertex, W_new.point_meta(0)));
 
 					dehomogenize(&dehom_left,V[refined_rib[rr]].point());
 					norm_of_difference_mindim(dist_away,
@@ -757,7 +757,7 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 	WitnessSet W_multilin;
 	W_multilin.set_num_variables(this->num_variables());
 	W_multilin.set_num_natural_variables(this->num_variables());
-	W_multilin.add_point(blank_point);
+	W_multilin.add_point(blank_point, SolutionMetadata());
 	W_multilin.add_linear(pi(0)); W_multilin.add_linear(pi(1));
 	W_multilin.add_patch(this->patch(0));
 
@@ -792,7 +792,7 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 
 
 	WitnessSet W_midtrack;
-	W_midtrack.add_point(blank_point);
+	W_midtrack.add_point(blank_point, SolutionMetadata());
 
 	//copy in the start point as three points concatenated.
 	W_midtrack.set_num_variables(this->num_variables() + num_bottom_vars + num_top_vars);
@@ -987,7 +987,7 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 
 		temp_vertex.set_type(Surface_sample_point);
 		temp_vertex.set_point(W_new.point(0));
-		startpt_index = V.add_vertex(temp_vertex);
+		startpt_index = V.add_vertex(temp_vertex, W_new.point_meta(0));
 
 		// need to set the values of the projections in the linears -- they are not unit-scaled as is the midpoint tracker.
 
@@ -1079,7 +1079,7 @@ void Surface::AdaptiveSampleFace(int face_index, VertexSet & V, sampler_configur
 
 					temp_vertex.set_point(W_new.point(0));
 					temp_vertex.set_type(Surface_sample_point);
-					temp_rib.push_back(V.add_vertex(temp_vertex));
+					temp_rib.push_back(V.add_vertex(temp_vertex, W_new.point_meta(0)));
 
 					dehomogenize(&dehom_left,V[refined_rib[rr]].point());
 					norm_of_difference_mindim(dist_away,
@@ -1333,7 +1333,7 @@ void Surface::CycleNumSampleFace(int face_index, VertexSet & V, sampler_configur
 	WitnessSet W_multilin;
 	W_multilin.set_num_variables(this->num_variables());
 	W_multilin.set_num_natural_variables(this->num_variables());
-	W_multilin.add_point(blank_point);
+	W_multilin.add_point(blank_point, SolutionMetadata());
 	W_multilin.add_linear(pi(0)); W_multilin.add_linear(pi(1));
 	W_multilin.add_patch(this->patch(0));
 
@@ -1368,7 +1368,7 @@ void Surface::CycleNumSampleFace(int face_index, VertexSet & V, sampler_configur
 
 
 	WitnessSet W_midtrack;
-	W_midtrack.add_point(blank_point);
+	W_midtrack.add_point(blank_point, SolutionMetadata());
 
 	//copy in the start point as three points concatenated.
 	W_midtrack.set_num_variables(this->num_variables() + num_bottom_vars + num_top_vars);
@@ -1580,7 +1580,7 @@ void Surface::CycleNumSampleFace(int face_index, VertexSet & V, sampler_configur
 
 		temp_vertex.set_type(Surface_sample_point);
 		temp_vertex.set_point(W_new.point(0));
-		int startpt_index = V.add_vertex(temp_vertex);
+		int startpt_index = V.add_vertex(temp_vertex, W_new.point_meta(0));
 
 		// need to set the values of the projections in the linears -- they are not unit-scaled as is the midpoint tracker.
 
@@ -1729,7 +1729,7 @@ void Surface::CycleNumSampleFace(int face_index, VertexSet & V, sampler_configur
 
 			temp_vertex.set_point(W_new.point(0));
 			temp_vertex.set_type(Surface_sample_point);
-			temp_rib.push_back(V.add_vertex(temp_vertex));
+			temp_rib.push_back(V.add_vertex(temp_vertex, W_new.point_meta(0)));
 		} // ends the bottom half of the rib.  next is the top half.
 
 		// add the midpoint of the edge to the rib
@@ -1810,7 +1810,7 @@ void Surface::CycleNumSampleFace(int face_index, VertexSet & V, sampler_configur
 
 			temp_vertex.set_point(W_new.point(0));
 			temp_vertex.set_type(Surface_sample_point);
-			temp_rib.push_back(V.add_vertex(temp_vertex));
+			temp_rib.push_back(V.add_vertex(temp_vertex, W_new.point_meta(0)));
 		} // ends the top half of the rib. 
 
 

@@ -301,12 +301,11 @@ public:
 
  This class reads in witness_data, and produces witness_sets based on user's choice.
  */
-class NumericalIrreducibleDecomposition : public PatchHolder, public LinearHolder, public PointHolder
+class NumericalIrreducibleDecomposition : public PatchHolder, public LinearHolder, public PointHolder<WitnessPointMetadata>
 {
 
 private:
 
-	std::vector< WitnessPointMetadata > point_metadata;
 	std::vector< WitnessLinearMetadata > linear_metadata;
 	std::vector< WitnessPatchMetadata > patch_metadata;
 
@@ -337,7 +336,6 @@ public:
 		reset_linears();
 		reset_patches();
 
-		point_metadata.resize(0);
 		linear_metadata.resize(0);
 		patch_metadata.resize(0);
 
@@ -489,12 +487,12 @@ private:
 		patch_metadata.push_back(meta);
 	}
 
-
+	// v1.8.0 i think this can be removed as the metadata has been factored into the base PointHolder class
+	// replacement: add_point
 	int add_solution(vec_mp pt, const WitnessPointMetadata & meta)
 	{
 
-		int ind = add_point(pt);
-		point_metadata.push_back(meta);
+		int ind = add_point(pt, meta);
 		return ind;
 	}
 
