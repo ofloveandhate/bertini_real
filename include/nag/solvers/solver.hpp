@@ -13,6 +13,7 @@
 #include "nag/system_randomizer.hpp"
 #include "decompositions/decomposition.hpp"
 #include "limbo.hpp"
+#include "containers/holders.hpp"
 
 ///////////
 //
@@ -1172,6 +1173,7 @@ public:
 	int use_gamma_trick;///< whether to use the gamma trick for start systems.
 	bool use_sequential_filenames; ///< whether to increment generated filenames by 1 to preserve all of them from a run, or not.
 
+	bool save_all_paths_to_disk; ///< whether to write the computed points to disk at every step.
 
 	/**
 	 \brief get the level of verbosity
@@ -1304,7 +1306,7 @@ public:
 		this->midpoint_tol = other.midpoint_tol;
 
 		this->use_gamma_trick = other.use_gamma_trick;
-
+		this->save_all_paths_to_disk = other.save_all_paths_to_disk;
 
 	}
 
@@ -1332,113 +1334,6 @@ private:
 
 
 
-class SolverOutput; //  that'd be a forward declaration, jim.
-
-
-
-/**
- \brief Metadata for solutions produced by the tracker, and stored in SolverOutput.
- */
-class SolutionMetadata
-{
-
-friend SolverOutput;
-
-	std::vector<long long> input_index; ///< the indices of the start points which ended here.
-	long long output_index; ///< the output index of the endpoint solution
-	int multiplicity; ///< how many paths ended here.
-	bool is_finite; ///< flag for whether has been declared finite.
-	bool is_singular;///< flag for whether has been declared singular.
-	bool is_successful;///< flag for whether tracker was successful, or gave up for some reason -- wish this stored the reason too.
-	bool is_real;///< flag for whether has been declared real.
-	int cycle_number_ = -1;  ///< the cycle number of the path taken to the solution.  This number can regularize the path, if used correctly.
-
-public:
-
-	void SetCycleNumber(int c)
-	{
-		cycle_number_ = c;
-	}
-
-	int CycleNumber() const
-	{
-		return cycle_number_;
-	}
-
-	/**
-	 \brief set the finiteness state
-	 \param state set is_finite to the state.
-	 */
-	void set_finite(bool state){
-		is_finite = state;
-	}
-
-	/**
-	  \brief set the singularness state
-	  \param state set is_singular to the state.
-	  */
-	void set_singular(bool state){
-		is_singular = state;
-	}
-
-	/**
-	 \brief set the successfulness state
-	 \param state set is_successful to the state.
-	 */
-	void set_successful(bool state){
-		is_successful = state;
-	}
-
-	/**
-	 \brief set the multiplicity
-	 \param state set multiplicity to the state.
-	 */
-	void set_multiplicity(int state){
-		multiplicity = state;
-	}
-
-	/**
-	 \brief set the realness state
-	 \param state set is_real to the state.
-	 */
-	void set_real(int state) {
-		is_real = state;
-	}
-
-	/**
-	 \brief add another input start index which tracked to this solution
-	 \param new_ind the index to add.
-	 */
-	void add_input_index(long long new_ind){
-		input_index.push_back(new_ind);
-	}
-
-	/**
-	 \brief set the output index for the found solution.  multiplicity>1 solutions are stored only once...
-	 \param new_ind the index to assert
-	 */
-	void set_output_index(long long new_ind){
-		output_index = new_ind;
-	}
-
-
-	friend std::ostream & operator<<(std::ostream &os, const SolutionMetadata & t)
-	{
-
-
-		os << t.output_index << std::endl;
-		for (auto iter=t.input_index.begin(); iter!=t.input_index.end(); ++iter) {
-			os << *iter << ' ';
-		}
-		os << '\n';
-
-		os << t.multiplicity << ' ' << t.is_finite << ' ' << t.is_singular << ' ' << t.is_successful << ' ' << t.CycleNumber();
-
-		return os;
-	}
-};
-
-
 /**
  \brief Class for turning the output from a solver into a more useable form, namely into witness sets ultimately.
 
@@ -1451,10 +1346,8 @@ class SolverOutput : public PatchHolder, public LinearHolder, public NameHolder,
 
 private:
 
-	std::vector< SolutionMetadata > metadata;
 
 	std::vector< std::pair<long long, long long> > ordering; /// created in the post-processing.
-
 	std::vector< int > occuring_multiplicities;
 
 public:
@@ -1474,9 +1367,9 @@ public:
 		reset_names();
 		reset_linears();
 		reset_patches();
+		reset_metadata();
 
 		ordering.resize(0);
-		metadata.resize(0);
 		occuring_multiplicities.resize(0);
 
 
@@ -1505,9 +1398,7 @@ public:
 	void add_solution(const Vertex & temp_vert, const SolutionMetadata & meta)
 	{
 
-		add_vertex(temp_vert);
-		metadata.push_back(meta);
-
+		add_vertex(temp_vert, meta);
 	}
 
 	/**
@@ -1618,10 +1509,11 @@ public:
 	 \param preProcData structure containing the variable groups.
 	 \param T The current tracker configuration.
 	 \param solve_options The current state of the solver.
+	 \param min_path_number the absolute path number of the first path, relative to the complete solve (not just this system, but all of them in a regenerative process)
 	 */
 	void post_process(post_process_t *endPoints, int num_pts_to_check,
 					  preproc_data *preProcData, tracker_config_t *T,
-					  const SolverConfiguration & solve_options);
+					  const SolverConfiguration & solve_options, long long min_path_number);
 
 
 };
@@ -2265,8 +2157,15 @@ bool IsUnRetrackable(int);
 
 
 
-int print_path(comp_d pathVars, mat_d AtimesJ, vec_d current_variable_values, vec_d funcVals, mat_d Jv);
+int print_path(comp_d pathVars, mat_d AtimesJ, vec_d current_variable_values, vec_d funcVals, mat_d Jv, mat_d Jp);
 
-int print_path(comp_mp pathVars, mat_mp AtimesJ, vec_mp current_variable_values, vec_mp funcVals, mat_mp Jv);
+int print_path(comp_mp pathVars, mat_mp AtimesJ, vec_mp current_variable_values, vec_mp funcVals, mat_mp Jv, mat_mp Jp);
 
+
+/**
+ \brief writes a `post_process_t` struct from Bertini 1 to an already-open file.
+
+ \param OUT the file to write to
+ */
+void write_post_process_t(FILE* OUT, post_process_t* endPoint);
 #endif

@@ -751,7 +751,7 @@ void Surface::deflate_and_split(std::map< SingularObjectMetadata, WitnessSet > &
 
 
 			W_only_one_witness_point.reset_points();
-			W_only_one_witness_point.add_point( active_set.point(0) ); // exists by entrance condition
+			W_only_one_witness_point.add_point( active_set.point(0), SolutionMetadata()); // exists by entrance condition
 			W_only_one_witness_point.real_threshold_points(solve_options.T.real_threshold);
 			W_only_one_witness_point.write_dehomogenized_coordinates("singular_witness_points_dehomogenized"); // write the points to file
 
@@ -766,7 +766,7 @@ void Surface::deflate_and_split(std::map< SingularObjectMetadata, WitnessSet > &
 
 
 			if (num_deflations==0) {
-				points_which_needed_no_deflation.add_point(active_set.point(0));
+				points_which_needed_no_deflation.add_point(active_set.point(0), SolutionMetadata());
 				std::cout << color::red() << "found a point which did not need deflation!!!" << std::endl << color::console_default();
 				print_point_to_screen_matlab(active_set.point(0),"anomaly");
 			}
@@ -1054,12 +1054,12 @@ int find_matching_singular_witness_points(WitnessSet & W_match,
 
 	for (unsigned int zz=0; zz<W.num_points(); zz++) {
 		if (validity_flag[zz]==true) { // trivially true for first point -- it generated the deflation!
-			W_match.add_point(W.point(zz));
+			W_match.add_point(W.point(zz), SolutionMetadata());
 		}
 		else
 		{
 			// std::cout << "adding reject point" << std::endl;
-			W_reject.add_point(W.point(zz));
+			W_reject.add_point(W.point(zz), SolutionMetadata());
 		}
 	}
 
@@ -1960,7 +1960,7 @@ Face Surface::make_face(int ii, int jj, VertexSet & V,
 	//copy in the start point as three points concatenated.
 	WitnessSet W_midtrack;
 	vec_mp blank_point;  init_vec_mp2(blank_point, 0,1024);
-	W_midtrack.add_point(blank_point);
+	W_midtrack.add_point(blank_point, SolutionMetadata());
 	clear_vec_mp(blank_point);
 
 	W_midtrack.set_num_variables(this->num_variables() + num_bottom_vars + num_top_vars);

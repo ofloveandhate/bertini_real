@@ -23,9 +23,31 @@ private:
 
 	VertexType type_;  ///< See enum.
 	int input_filename_index_; ///< index into the vertex_set's vector of filenames.
+	std::vector<int> path_numbers_ending_here_; ///< the integer indices of the path numbers ending at this vertex.   added v 1.8.0
 
 public:
 
+	/**
+	 add another path number that computes this vertex.
+	 */
+	inline void add_path_number_ending_here(int path_num)
+	{
+		path_numbers_ending_here_.push_back(path_num);
+	}
+
+	inline const std::vector<int>& path_numbers_ending_here() const
+	{
+		return this->path_numbers_ending_here_;
+	}
+
+	inline int num_paths_ending_here() const
+	{
+		return this->path_numbers_ending_here_.size();
+	}
+
+	inline void reset_path_numbers(){
+		path_numbers_ending_here_.clear();
+	}
 
 	/**
 	 \brief get the index of the originating file name
@@ -173,6 +195,10 @@ public:
 		print_point_to_screen_matlab(pt_mp_,"point");
 		print_point_to_screen_matlab(projection_values_,"projection_values");
 		std::cout << "type: " << type_ << std::endl;
+		std::cout << "paths ending here: ";
+		for (auto p: path_numbers_ending_here_)
+			std::cout << p << " ";
+		std::cout << std::endl;
 	}
 
 
@@ -254,6 +280,8 @@ private:
 		this->type_ = other.type_;
 
 		this->input_filename_index_ = other.input_filename_index_;
+
+		this->path_numbers_ending_here_ = other.path_numbers_ending_here_;
 	}
 
 

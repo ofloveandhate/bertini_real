@@ -72,7 +72,7 @@ public:
 	 \param testpoint the point for which to search
 	 */
 	int index_in_vertices(VertexSet &V,
-                          vec_mp testpoint) const;
+                          vec_mp const& testpoint) const;
 
 
 	/**
@@ -85,7 +85,7 @@ public:
 	 \param vert a Vertex with point for which to search.
 	 */
 	int index_in_vertices_with_add(VertexSet &V,
-                                   Vertex vert);
+                                   Vertex const& vert, SolutionMetadata const& meta);
 
 	/**
 	 set up the base decomposition class from a file
@@ -606,7 +606,7 @@ protected:
 	bool is_embedded_ = false; ///< a flag for whether the decomposition is embedded in another decomposition
 
 
-	int add_vertex(VertexSet &V, Vertex source_vertex);
+	int add_vertex(VertexSet &V, Vertex const& source_vertex, SolutionMetadata const& meta);
 
 
 

@@ -88,7 +88,17 @@ int norm_order_d(const void *vp, const void *vq);
  */
 int norm_order_mp(const void *vp, const void *vq);
 
-}
+
+void printMainDataPointHeader_d(FILE *OUT, int sol_num, int path_num, double cond_num, double function_resid, double newton_resid, double final_T, double function_error, int prec, double first_increase, int cycle_num, int success, int origErrorIsInf, double origErrorEst);
+
+void printMainDataPointHeader_mp(FILE *OUT, int sol_num, int path_num, double cond_num, mpf_t function_resid, mpf_t newton_resid, double final_T, double function_error, int prec, double first_increase, int cycle_num, int success, int origErrorIsInf, double origErrorEst);
+
+void printRefinedPoint_d(FILE *OUT, point_d Pt);
+
+void printRefinedPoint_mp(FILE *OUT, point_mp Pt);
+
+
+} // extern c
 
 
 #endif

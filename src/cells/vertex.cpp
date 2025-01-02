@@ -21,6 +21,10 @@ void Vertex::send(int target, ParallelismConfig & mpi_config) const
 	buffer[1] = input_filename_index_;
 
 	MPI_Send(buffer, 2, MPI_INT, target, VERTEX, mpi_config.comm());
+
+	// send the path numbers v1.8.0
+
+
 	free(buffer);
 
 }
@@ -39,6 +43,8 @@ void Vertex::receive(int source, ParallelismConfig & mpi_config)
 
 	type_ = static_cast<VertexType>(buffer[0]);
 	input_filename_index_ = buffer[1];
+
+	// need to receive the path numbers v1.8.0
 
 	free(buffer);
 }

@@ -87,7 +87,7 @@ int main(int argC, char *args[])
 	solve_options.verbose_level(program_options.verbose_level());
 	solve_options.use_gamma_trick = program_options.use_gamma_trick();
 	solve_options.robust = program_options.robustness()>=1;
-
+	solve_options.save_all_paths_to_disk = program_options.save_all_paths_to_disk();
 
 
 	if (solve_options.is_head()) {

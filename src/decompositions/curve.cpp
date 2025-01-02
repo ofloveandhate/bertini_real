@@ -447,16 +447,16 @@ int Curve::interslice(const WitnessSet & W_curve,
 		temp_vertex.set_point( W_crit_real.point(ii));
 		temp_vertex.set_type(Critical); // set type
 
-		int I = index_in_vertices_with_add(V, temp_vertex);
+		int I = index_in_vertices_with_add(V, temp_vertex, W_crit_real.point_meta(ii));
 		crit_point_counter[I] = 0;
 
 		if (program_options.verbose_level()>=8)
 			printf("using point %u of %zu from W_crit_real in VertexSet as point %u\n",ii,W_crit_real.num_points(),I);
 
 		if (I>=num_to_start) // then it's new, never encountered before
-			W_canonicalized.add_point(W_crit_real.point(ii));
+			W_canonicalized.add_point(W_crit_real.point(ii),SolutionMetadata());
 		else // we've seen it before, use the cached copy
-			W_canonicalized.add_point(V.GetVertex(I).point());
+			W_canonicalized.add_point(V.GetVertex(I).point(),SolutionMetadata());
 
 	}
 
@@ -897,7 +897,7 @@ void Curve::ConnectTheDots(
 
 					//sharpen up the initial point.
 
-					W_single.add_point( midpoint_witness_sets[ii].point(kk));
+					W_single.add_point( midpoint_witness_sets[ii].point(kk), SolutionMetadata());
 
 
 							int prev_sharpen_digits = solve_options.T.sharpenDigits;
@@ -997,16 +997,16 @@ void Curve::ConnectTheDots(
 
 					if ( (W_single_right.num_points()==1) && (W_single_left.num_points()==1)) {
 
-						W_midpoint_replacement.add_point( midpoint_witness_sets[ii].point(kk));
-						Wleft.add_point(W_single_left.point(0));
-						Wright.add_point(W_single_right.point(0));
+						W_midpoint_replacement.add_point( midpoint_witness_sets[ii].point(kk), SolutionMetadata());
+						Wleft.add_point(W_single_left.point(0), SolutionMetadata());
+						Wright.add_point(W_single_right.point(0), SolutionMetadata());
 						cycle_nums_left.push_back(c1.back());
 						cycle_nums_right.push_back(c2.back());
 					}
 					else{
 						temp_vertex.set_point( midpoint_witness_sets[ii].point(kk) ) ;
 						temp_vertex.set_type(Problematic); // set type
-						index_in_vertices_with_add(V, temp_vertex);
+						index_in_vertices_with_add(V, temp_vertex, midpoint_witness_sets[ii].point_meta(kk));
 					}
 				} // for each midpoint in this fiber
 
@@ -1031,18 +1031,18 @@ void Curve::ConnectTheDots(
 			temp_vertex.set_point( midpoint_witness_sets[ii].point(kk) );
 			temp_vertex.set_type(Midpoint); // set type
 
-			temp_edge.midpt(index_in_vertices_with_add(V, temp_vertex)); // gets the index of the new midpoint as it is added
+			temp_edge.midpt(index_in_vertices_with_add(V, temp_vertex, midpoint_witness_sets[ii].point_meta(kk))); // gets the index of the new midpoint as it is added
 
 			temp_vertex.set_point( Wleft.point(kk) );
 			temp_vertex.set_type(New); // set type
 
-			temp_edge.left(index_in_vertices_with_add(V, temp_vertex));
+			temp_edge.left(index_in_vertices_with_add(V, temp_vertex, Wleft.point_meta(kk)));
 
 
 			temp_vertex.set_point( Wright.point(kk) );
 			temp_vertex.set_type(New); // set type
 
-			temp_edge.right(index_in_vertices_with_add(V, temp_vertex));
+			temp_edge.right(index_in_vertices_with_add(V, temp_vertex, Wright.point_meta(kk)));
 
 			// keep track of those indices we found.
 
@@ -1252,7 +1252,7 @@ void Curve::Merge(WitnessSet & W_midpt,
 		W_midpt.add_linear(particular_projection);
 
 		W_midpt.reset_points();
-		W_midpt.add_point(V[edges_[moving_edge].midpt()].point());
+		W_midpt.add_point(V[edges_[moving_edge].midpt()].point(), SolutionMetadata());
 		// I arbitrarily chose the left edge's midpoint as source to track to new midpoint.
 
 		if (program_options.Realify())
@@ -1297,7 +1297,7 @@ void Curve::Merge(WitnessSet & W_midpt,
 
 		//set the left, mid and right points
 		temp_edge.left(edges_[leftmost_edge].left());
-		temp_edge.midpt(index_in_vertices_with_add(V, temp_vertex));
+		temp_edge.midpt(index_in_vertices_with_add(V, temp_vertex, W_temp.point_meta(0)));
 		temp_edge.right(edges_[rightmost_edge].right());
 
 
@@ -1800,7 +1800,7 @@ void Curve::computeCurveNotSelfConj(const WitnessSet		&W_in,
         if (isSamePoint_homogeneous_input(cur_sol,cur_sol_bar,solve_options.T.final_tol_times_mult)) { // x=x_bar
 			temp_vertex.set_point(cur_sol);
 
-			index_in_vertices_with_add(V, temp_vertex);
+			index_in_vertices_with_add(V, temp_vertex, SolutionMetadata()); // this default-constructed metadata is almost certainly wrong.  v1.8.0
 
 		}
 	}

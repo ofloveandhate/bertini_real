@@ -235,7 +235,7 @@ int compute_crit_nullspace_left(SolverOutput & solve_out, // the returned value
 				for (int jj=0; jj<ns_config->num_natural_vars+ns_config->num_synth_vars; jj++) {
 					set_mp(&temppoint->coord[jj], & W_step_one.point(ii)->coord[jj]);
 				}
-				W_linprod.add_point(temppoint);
+				W_linprod.add_point(temppoint, SolutionMetadata());
 			}
 
 
@@ -701,7 +701,7 @@ int compute_crit_nullspace_right(SolverOutput & solve_out, // the returned value
 				for (int mm=0; mm<ns_config->num_natural_vars+ns_config->num_synth_vars; mm++) {
 					set_mp(&temppoint->coord[mm], & W_step_one.point(kk)->coord[mm]);
 				}
-				W_linprod.add_point(temppoint);
+				W_linprod.add_point(temppoint, SolutionMetadata());
 			}
 
 

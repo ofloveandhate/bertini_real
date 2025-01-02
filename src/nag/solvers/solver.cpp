@@ -10,7 +10,6 @@ extern int *mem_needs_init_mp; // determine if mem_mp has been initialized
 
 FILE* g_path_file;
 bool print_this_path;
-static const std::set<int> print_these_paths{344};
 
 
 
@@ -106,6 +105,8 @@ void SolverConfiguration::init()
 	use_gamma_trick = 0;
 
 	use_sequential_filenames = false;
+
+	save_all_paths_to_disk = false;
 }
 
 
@@ -115,8 +116,8 @@ std::vector<int> SolverOutput::get_cyclenums_noninfinite_w_mult()
 
 	for (auto index = ordering.begin(); index != ordering.end(); ++index) {
 		//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
-		if (metadata[index->first].is_finite)
-			cycle_nums.push_back(metadata[index->first].CycleNumber());
+		if (point_metadata_[index->first].is_finite)
+			cycle_nums.push_back(point_metadata_[index->first].CycleNumber());
 	}
 	return cycle_nums;
 }
@@ -137,8 +138,9 @@ void SolverOutput::get_noninfinite_w_mult(WitnessSet & W_transfer)
 {
 	for (auto index = ordering.begin(); index != ordering.end(); ++index) {
 		//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
-		if (metadata[index->first].is_finite) {
-			W_transfer.add_point(vertices_[index->first].point());
+		if (point_metadata_[index->first].is_finite) {
+			W_transfer.add_point(vertices_[index->first].point(), this->point_metadata_[index->first]);  // v1.8.0
+
 		}
 	}
 
@@ -150,8 +152,9 @@ void SolverOutput::get_nonsing_finite_multone(WitnessSet & W_transfer)
 {
 	for (auto index = ordering.begin(); index != ordering.end(); ++index) {
 		//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
-		if ( (metadata[index->first].is_finite) && (!metadata[index->first].is_singular) && (metadata[index->first].multiplicity==1) ) {
-			W_transfer.add_point(vertices_[index->first].point());
+		if ( (point_metadata_[index->first].is_finite) && (!point_metadata_[index->first].is_singular) && (point_metadata_[index->first].multiplicity==1) ) {
+			W_transfer.add_point(vertices_[index->first].point(), this->point_metadata_[index->first]); // v1.8.0
+			
 		}
 	}
 
@@ -165,9 +168,10 @@ void SolverOutput::get_multpos(std::map<int, WitnessSet> & W_transfer)
 	for (auto mult_ind = occuring_multiplicities.begin(); mult_ind!=occuring_multiplicities.end(); ++mult_ind) {
 
 		int num_added_points = 0;
-		for (auto index = metadata.begin(); index != metadata.end(); ++index) {
+		for (auto index = point_metadata_.begin(); index != point_metadata_.end(); ++index) {
 			if ((index->multiplicity== *mult_ind) && (index->is_finite))  {
-				W_transfer[*mult_ind].add_point(vertices_[index->output_index].point());
+				W_transfer[*mult_ind].add_point(vertices_[index->output_index].point(), this->point_metadata_[index->output_index]); // v1.8.0
+
 				num_added_points++;
 			}
 		}
@@ -199,8 +203,8 @@ void SolverOutput::get_sing(WitnessSet & W_transfer)
 {
 	for (auto index = ordering.begin(); index != ordering.end(); ++index) {
 		//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
-		if ( (metadata[index->first].is_singular) ) {
-			W_transfer.add_point(vertices_[index->first].point());
+		if ( (point_metadata_[index->first].is_singular) ) {
+			W_transfer.add_point(vertices_[index->first].point(), this->point_metadata_[index->first]); // v1.8.0
 		}
 	}
 	set_witness_set_nvars(W_transfer);
@@ -211,8 +215,8 @@ void SolverOutput::get_sing_finite(WitnessSet & W_transfer)
 {
 	for (auto index = ordering.begin(); index != ordering.end(); ++index) {
 		//index->second is the input index.  index->first is the index in vertices.  sorted by input index.
-		if ( (metadata[index->first].is_singular && metadata[index->first].is_finite) ) {
-			W_transfer.add_point(vertices_[index->first].point());
+		if ( (point_metadata_[index->first].is_singular && point_metadata_[index->first].is_finite) ) {
+			W_transfer.add_point(vertices_[index->first].point(), this->point_metadata_[index->first]); // v1.8.0
 		}
 	}
 	set_witness_set_nvars(W_transfer);
@@ -618,7 +622,8 @@ void master_solver(SolverOutput & solve_out, const WitnessSet & W,
 
 	initMP(mpf_get_default_prec());
 
-
+	// cache the starting path number.  this is to be able to store the absolute path numbers for the endpoints / solutions
+	long long starting_absolute_pathnum = solve_options.num_paths_tracked(); // 1.8.0
 
 	solve_out.num_variables = W.num_variables();
 	solve_out.num_natural_vars = W.num_natural_variables();
@@ -716,11 +721,11 @@ void master_solver(SolverOutput & solve_out, const WitnessSet & W,
 	// post process
 	switch (solve_options.T.MPType) {
 		case 0:
-			solve_out.post_process(endPoints, trackCount.successes, &ED_d->preProcData, &solve_options.T, solve_options);
+			solve_out.post_process(endPoints, trackCount.successes, &ED_d->preProcData, &solve_options.T, solve_options, starting_absolute_pathnum);
 			break;
 
 		default:
-			solve_out.post_process(endPoints, trackCount.successes, &ED_mp->preProcData, &solve_options.T, solve_options);
+			solve_out.post_process(endPoints, trackCount.successes, &ED_mp->preProcData, &solve_options.T, solve_options, starting_absolute_pathnum);
 			break;
 	}
 
@@ -862,14 +867,16 @@ void serial_tracker_loop(trackingStats *trackCount,
 
 		}
 
+		auto path_num = solve_options.num_paths_tracked();
 		solve_options.increment_num_paths_tracked();
 
-		auto n = solve_options.num_paths_tracked();
-		print_this_path = 0;//print_these_paths.find(n)!=print_these_paths.end();
+		print_this_path = solve_options.save_all_paths_to_disk;  
 		if (print_this_path){
 			std::stringstream ss;
-			ss << "paths/path_" << n;
+			ss << "paths/path_" << path_num;
 			g_path_file = safe_fopen_write(ss.str());
+
+			fprintf(g_path_file,"%lld\n\n",path_num);
 		} 
 
 		if (solve_options.robust) {
@@ -888,7 +895,7 @@ void serial_tracker_loop(trackingStats *trackCount,
 
 		}
 
-		if (print_this_path) fclose(g_path_file);
+		
 
 		// check to see if it should be sharpened
 		if (EG.retVal == 0 && solve_options.T.sharpenDigits > 0)
@@ -958,9 +965,20 @@ void serial_tracker_loop(trackingStats *trackCount,
 		{
 			//otherwise converged, but may have still had non-zero retval due to other reasons.
 			endgamedata_to_endpoint(&endPoints[solution_counter], &EG);
+
+			if (print_this_path){
+				fprintf(OUT,"\n");
+
+				write_post_process_t(g_path_file, &(endPoints[solution_counter]) );
+
+				fclose(g_path_file);
+			}
+
 			trackCount->successes++;
 			solution_counter++; // probably this could be eliminated
 		}
+
+
 
 	}// re: for (ii=0; ii<W.num_points ;ii++)
 	clear_endgame_data(&EG);
@@ -2097,18 +2115,22 @@ int generic_setup_files(FILE ** OUT, boost::filesystem::path outname,
 
 
 
-int print_path(comp_d pathVars, mat_d AtimesJ, vec_d current_variable_values, vec_d funcVals, mat_d Jv)
+int print_path(comp_d pathVars, mat_d AtimesJ, vec_d current_variable_values, vec_d funcVals, mat_d Jv, mat_d Jp)
 {
-	fprintf(g_path_file,"%.15g %.15g ", pathVars->r, pathVars->i);
+	fprintf(g_path_file,"%.17g %.17g ", pathVars->r, pathVars->i);
 	for (int ii=0; ii<current_variable_values->size; ++ii) {
-		fprintf(g_path_file,"%.15g %.15g ",current_variable_values->coord[ii].r,current_variable_values->coord[ii].i);
+		fprintf(g_path_file,"%.17g %.17g ",current_variable_values->coord[ii].r,current_variable_values->coord[ii].i);
 	}
-	fprintf(g_path_file, "%.15e  ", ConditionNumber(Jv));
+	fprintf(g_path_file, "%.17e  ", ConditionNumber(Jv));
 	fprintf(g_path_file,"\n");
+
+	print_mat_out_d(g_path_file, Jv);
+	print_mat_out_d(g_path_file, Jp);
+
 	return 0;
 }
 
-int print_path(comp_mp pathVars, mat_mp AtimesJ, vec_mp current_variable_values, vec_mp funcVals, mat_mp Jv)
+int print_path(comp_mp pathVars, mat_mp AtimesJ, vec_mp current_variable_values, vec_mp funcVals, mat_mp Jv, mat_mp Jp)
 {
 	// the `g` is for global
 
@@ -2125,7 +2147,64 @@ int print_path(comp_mp pathVars, mat_mp AtimesJ, vec_mp current_variable_values,
 
 	fprintf(g_path_file, "%.15e ", ConditionNumber(Jv));
 	fprintf(g_path_file,"\n");
+
+	print_mat_out_mp(g_path_file, Jv);
+	print_mat_out_mp(g_path_file, Jp);
 	return 0;
 }
 
 
+
+
+
+// an post_process_t has these fields:
+
+// int path_num;     // path number of the solution
+// int sol_num;      // solution number
+// comp_d  *sol_d;   // solution
+// comp_mp *sol_mp;
+// int sol_prec;     // precision of the solution
+// int size_sol;     // the number of entries in sol
+// double function_resid_d;  // the function residual
+// mpf_t  function_resid_mp; 
+// double cond_est;  // the estimate of the condition number
+// double newton_resid_d;    // the newton residual
+// mpf_t  newton_resid_mp;
+// double final_t;   // the final value of time
+// double accuracy_estimate; // accuracy estimate between extrapolations
+// double first_increase;    // time value of the first increase in precision
+// int cycle_num;    // cycle number used in extrapolations
+// int success;      // success flag 
+// int multiplicity; // multiplicity
+// int isReal;       // real flag:  0 - not real, 1 - real
+// int isFinite;     // finite flag: -1 - no finite/infinite distinction, 0 - infinite, 1 - finite
+// int isSing;       // singular flag: 0 - non-sigular, 1 - singular
+
+void write_post_process_t(FILE* OUT, post_process_t* endPoint)
+{
+	post_process_t& pp = *endPoint;
+
+    if (pp.sol_prec < 64)
+    { // print header for the solution
+      printMainDataPointHeader_d(OUT, pp.sol_num, pp.path_num, pp.cond_est, pp.function_resid_d, pp.newton_resid_d, pp.final_t, pp.accuracy_estimate, pp.sol_prec, pp.first_increase, pp.cycle_num, pp.success, pp.isFinite, pp.accuracy_estimate);
+      // print the point
+
+      for (auto ii(0); ii< pp.size_sol; ++ii)
+
+      	fprintf(OUT,"%.15g %.15g \n",pp.sol_d[ii]->r,pp.sol_d[ii]->i);
+    }
+    else
+    { // print header for the solution
+      printMainDataPointHeader_mp(OUT, pp.sol_num, pp.path_num, pp.cond_est, pp.function_resid_mp, pp.newton_resid_mp, pp.final_t, pp.accuracy_estimate, pp.sol_prec, pp.first_increase, pp.cycle_num, pp.success, pp.isFinite, pp.accuracy_estimate);
+      // print the point
+      
+      for (auto ii(0); ii< pp.size_sol; ++ii)
+      {
+      		mpf_out_str (OUT, 10, 0, pp.sol_mp[ii]->r);
+      		fprintf(OUT," ");
+      		mpf_out_str (OUT, 10, 0, pp.sol_mp[ii]->i);
+      		fprintf(OUT," \n");
+      }
+    }
+
+}

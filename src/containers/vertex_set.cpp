@@ -4,7 +4,7 @@
 
 
 
-int VertexSet::search_for_point(vec_mp testpoint)
+int VertexSet::search_for_point(vec_mp const& testpoint)
 {
     int index = -1;
 
@@ -18,7 +18,7 @@ int VertexSet::search_for_point(vec_mp testpoint)
 }
 
 
-int VertexSet::search_for_active_point(vec_mp testpoint)
+int VertexSet::search_for_active_point(vec_mp const& testpoint)
 {
 
     // dehomogenize the testpoint into the internal temp container.
@@ -53,7 +53,7 @@ int VertexSet::search_for_active_point(vec_mp testpoint)
 
 
 
-int VertexSet::search_for_removed_point(vec_mp testpoint)
+int VertexSet::search_for_removed_point(vec_mp const& testpoint)
 {
 
     // dehomogenize the testpoint into the internal temp container.
@@ -251,7 +251,7 @@ std::vector<int> VertexSet::assert_projection_value(const std::set< int > & rele
 
 
 
-int VertexSet::add_vertex(const Vertex & source_vertex)
+int VertexSet::add_vertex(const Vertex & source_vertex, SolutionMetadata const& meta)
 {
 
 
@@ -267,6 +267,10 @@ int VertexSet::add_vertex(const Vertex & source_vertex)
 
 
 	vertices_.push_back(source_vertex);
+	point_metadata_.push_back(meta);
+
+	for (auto n: meta.get_path_numbers_absolute())
+		vertices_.back().add_path_number_ending_here(n);
 
 
 	if ((vertices_[num_vertices_].projection_values())->size < num_projections_) {
@@ -365,10 +369,13 @@ int VertexSet::setup_vertices(boost::filesystem::path INfile)
 
 
 
-	Vertex temp_vertex;
+	
 
 	for (unsigned int ii=0; ii<temp_num_vertices; ii++)
 	{
+		Vertex temp_vertex;
+		SolutionMetadata temp_meta;
+		
 		fscanf(IN, "%d\n", &num_vars);
 		if ((temp_vertex.point())->size != num_vars) {
 			change_size_vec_mp(temp_vertex.point(),num_vars); (temp_vertex.point())->size = num_vars;
@@ -394,9 +401,20 @@ int VertexSet::setup_vertices(boost::filesystem::path INfile)
 		temp_vertex.set_input_filename_index(temp_int);
 
 		fscanf(IN,"%d\n",&temp_int);
-	   temp_vertex.set_type(static_cast<VertexType>(temp_int)); // i believe that this is wrong -- vertices which have multiple types will lose this property.  which one will they become?  i don't know.  --dab, 20191015
+	    temp_vertex.set_type(static_cast<VertexType>(temp_int)); // i believe that this is wrong -- vertices which have multiple types will lose this property.  which one will they become?  i don't know.  --dab, 20191015
 
-		VertexSet::add_vertex(temp_vertex);
+	    // read in the path numbers ending here
+	    // v1.8.0
+	    int num_paths_ending_here;
+	    fscanf(IN,"%d\n",&num_paths_ending_here);
+	    for (int jj=0; jj<num_paths_ending_here; ++jj){
+	    	fscanf(IN,"%d ",&temp_int);
+	    	temp_vertex.add_path_number_ending_here(temp_int);
+	    }
+	    
+	    // temp_meta.read_from_file(IN);
+
+		VertexSet::add_vertex(temp_vertex, temp_meta);
 	}
 
 
@@ -461,8 +479,20 @@ void VertexSet::print(boost::filesystem::path const& outputfile) const
 
 		fprintf(OUT,"%d\n",vertices_[ii].input_filename_index());
 
-		fprintf(OUT,"\n");
-		fprintf(OUT,"%d\n\n",vertices_[ii].type());
+		// fprintf(OUT,"\n"); // removed 1.8.0.  i hope this doesn't cause problems.
+		fprintf(OUT,"%d\n",vertices_[ii].type());
+
+		
+
+		// save the path numbers ending at this point.
+		fprintf(OUT,"%d\n",vertices_[ii].num_paths_ending_here());
+		for (int jj=0; jj<vertices_[ii].num_paths_ending_here(); ++jj){
+			fprintf(OUT,"%d ",vertices_[ii].path_numbers_ending_here()[jj]);
+		}
+
+		fprintf(OUT,"\n\n");
+
+		// point_metadata_[ii].write_to_file(OUT);
 	}
 
 
@@ -736,6 +766,7 @@ void VertexSet::send(int target, ParallelismConfig & mpi_config) const
 
 	for (unsigned int ii=0; ii<num_vertices_; ii++) {
 		GetVertex(ii).send(target, mpi_config);
+		point_metadata_[ii].send(target, mpi_config);
 	}
 
 
@@ -819,7 +850,11 @@ void VertexSet::receive(int source, ParallelismConfig & mpi_config)
 	for (unsigned int ii=0; ii<temp_num_vertices; ii++) {
 		Vertex tempvert;
 		tempvert.receive(source, mpi_config);
-		add_vertex(tempvert);
+
+		SolutionMetadata temp_meta;
+		temp_meta.receive(source, mpi_config);
+
+		add_vertex(tempvert, temp_meta);
 	}
 
 	if (num_vertices_ != temp_num_vertices) {
