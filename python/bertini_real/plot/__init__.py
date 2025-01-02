@@ -116,6 +116,7 @@ class VisibilityOptions(object):
             self.surface_samples = True
 
         if len(surface.vertices)>10000:
+            print(f'have {len(surface.vertices)} vertices, so turning them off')
             self.vertices = False
 
 
@@ -127,6 +128,7 @@ class VisibilityOptions(object):
     def _adjust_for_curve(self, curve):
 
         if len(curve.vertices)>10000:
+            print(f'have {len(curve.vertices)} vertices, so turning them off')
             self.vertices = False
 
         if curve.sampler_data is None:
@@ -971,6 +973,8 @@ class Plotter(object):
 
             remap = lambda x: (x-lower)/(upper-lower)
 
+            colormap = self.options.style.colormap
+
             for ii in range(len(all_colors)):
                 all_colors[ii] = colormap(remap(np.array(all_colors[ii])))
 
@@ -991,10 +995,10 @@ class Plotter(object):
 
                 # if the min and max are the same, then we don't need to rescale, just to shift
                 if u==l:
-                    if l<0: return 0, 1
-                    if l>1: return 1, 1
+                    if l<0: return l, 1
+                    if l>1: return l, 1
 
-                    return l, 1
+                    return 0, 1
 
                 # this channel actually has span, so we need to both shift and rescale
                 return l, u-l 
