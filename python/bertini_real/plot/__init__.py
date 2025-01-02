@@ -920,6 +920,8 @@ class Plotter(object):
 
             if self.options.style.colormode is ColorMode.BY_FUNCTION:
                 colors_this_face = []
+            else:
+                colors_this_face = user_colors[cc]
 
             triangles_this_face = []
 
@@ -943,8 +945,20 @@ class Plotter(object):
             all_colors.append(colors_this_face)
 
         # now have all the triangles we need.  but the colors might still need some help, if using a colorfunction.
-        a_point_on_surface = all_triangles[0][0][0]
-        colorfunresult = color_function(a_point_on_surface)
+        if self.options.style.colormode is ColorMode.BY_FUNCTION:
+            self._remap_colors_colorfn(all_colors)
+
+        # finally, ready to plot
+        for T,color in zip(all_triangles,all_colors):
+            handle = self.ax.add_collection3d(Poly3DCollection(T, facecolors=color))
+            self.plot_results['surface_samples'].append(handle)
+
+
+
+
+    def _remap_colors_colorfn(self, all_colors):
+        
+        colorfunresult = all_colors[0][0]
 
         import numbers # https://stackoverflow.com/questions/31627321/testing-if-a-value-is-numeric
 
@@ -960,7 +974,7 @@ class Plotter(object):
             for ii in range(len(all_colors)):
                 all_colors[ii] = colormap(remap(np.array(all_colors[ii])))
 
-        elif isinstance(colorfunresult,list) or isinstance(colorfunresult, np.array):
+        elif isinstance(colorfunresult,list) or isinstance(colorfunresult, np.ndarray):
             # this lets the user specify a function that returns 4 different values
 
             # first, check that we actually have 4.
@@ -996,10 +1010,6 @@ class Plotter(object):
             for ii in range(len(all_colors)):
                 all_colors[ii] = remap(np.array(all_colors[ii]))
 
-        # finally, ready to plot
-        for T,color in zip(all_triangles,all_colors):
-            handle = self.ax.add_collection3d(Poly3DCollection(T, facecolors=color))
-            self.plot_results['surface_samples'].append(handle)
 
 
 
@@ -1019,13 +1029,14 @@ class Plotter(object):
 
         if self.options.style.colormode is ColorMode.BY_CELL:
             colormap = self.options.style.colormap
-            colors = [colormap(ii) for ii in np.linspace(0, 1, len(which_faces))]
+            user_colors = [colormap(ii) for ii in np.linspace(0, 1, len(which_faces))]
 
         elif self.options.style.colormode is ColorMode.BY_FUNCTION:
-            raise NotImplementedError("implement coloring by function, please")
+            colormap = self.options.style.colormap
+            color_function = self.options.style.color_function
 
         elif self.options.style.colormode is ColorMode.MONO:
-            colors = [self.options.style.mono_color]*len(which_faces)
+            user_colors = [self.options.style.mono_color]*len(which_faces)
 
         else:
             raise NotImplementedError("unknown coloring method in style options")
@@ -1043,9 +1054,10 @@ class Plotter(object):
                 (curr_face['num left'] + curr_face['num right'] + 2) # the last +2 is for the up/down edges, split at midpoints.
         num_total_faces = num_total_faces * 2
 
+        all_triangles = []
+        all_colors = []
 
         for ii in range(len(which_faces)):
-            color = colors[ii]
             face_index = which_faces[ii]
             face = surf.faces[face_index]
 
@@ -1054,8 +1066,15 @@ class Plotter(object):
             case = 1
             left_edge_counter = 0
             right_edge_counter = 0
-            T = []
 
+
+            triangles_this_face = []
+            if self.options.style.colormode is ColorMode.BY_FUNCTION:
+                colors_this_face = []
+            else:
+                colors_this_face = user_colors[ii]
+
+                    
             while 1:
                 # top edge
                 if case == 1:
@@ -1134,11 +1153,25 @@ class Plotter(object):
                 t2 = [points[curr_edge[1]], points[curr_edge[2]],
                       points[face['midpoint']]]
 
-                T.append(t1)
-                T.append(t2)
+                triangles_this_face.append(t1)
+                triangles_this_face.append(t2)
 
+                if self.options.style.colormode is ColorMode.BY_FUNCTION:
+                    colors_this_face.append( np.mean([color_function(t1[0]),color_function(t1[1]),color_function(t1[2])], axis=0) )
+                    colors_this_face.append( np.mean([color_function(t2[0]),color_function(t2[1]),color_function(t2[2])], axis=0) )
+
+            all_triangles.append(triangles_this_face)
+            all_colors.append(colors_this_face)
+
+
+
+        if self.options.style.colormode is ColorMode.BY_FUNCTION:
+            self._remap_colors_colorfn(all_colors)
+
+        for T,color in zip(all_triangles,all_colors):
             self.plot_results['surface_raw'].append(self.ax.add_collection3d(Poly3DCollection(T, facecolors=color)))
-            self.ax.autoscale_view()
+
+        self.ax.autoscale_view()
 
 
 
