@@ -321,7 +321,8 @@ class Plotter(object):
                 self.options.visibility.curve_raw = not self.options.visibility.curve_raw
                 self._adjust_visibility('curve_raw')
 
-            self.show()
+            if not self.options.render.defer_show:
+                self.show()
 
 
 
@@ -378,7 +379,8 @@ class Plotter(object):
             # adjust visibility
             self._adjust_visibility_vertex_type(vertex_type)
 
-            self.show()
+            if not self.options.render.defer_show:
+                self.show()
 
         x_padding = 0.1
         y_padding = 0.1
@@ -445,7 +447,8 @@ class Plotter(object):
                 self.options.visibility.surface_raw = not self.options.visibility.surface_raw
                 self._adjust_visibility('surface_raw')
 
-            self.show()
+            if not self.options.render.defer_show:
+                self.show()
 
         def _export_smooth_action(arg):
             if(decomposition.dimension==1):
@@ -818,7 +821,9 @@ class Plotter(object):
 
         # finally, all done, so show.
         self._adjust_all_visibility()
-        self.show()
+        
+        if not self.options.render.defer_show:
+            self.show()
 
     def _plot_piece(self,piece):
         """ 

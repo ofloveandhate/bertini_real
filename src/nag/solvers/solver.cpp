@@ -10,7 +10,6 @@ extern int *mem_needs_init_mp; // determine if mem_mp has been initialized
 
 FILE* g_path_file;
 bool print_this_path;
-static const std::set<int> print_these_paths{344};
 
 
 
@@ -868,14 +867,16 @@ void serial_tracker_loop(trackingStats *trackCount,
 
 		}
 
+		auto path_num = solve_options.num_paths_tracked();
 		solve_options.increment_num_paths_tracked();
 
-		auto n = solve_options.num_paths_tracked();
 		print_this_path = solve_options.save_all_paths_to_disk;  
 		if (print_this_path){
 			std::stringstream ss;
-			ss << "paths/path_" << n;
+			ss << "paths/path_" << path_num;
 			g_path_file = safe_fopen_write(ss.str());
+
+			fprintf(g_path_file,"%lld\n\n",path_num);
 		} 
 
 		if (solve_options.robust) {
@@ -894,7 +895,7 @@ void serial_tracker_loop(trackingStats *trackCount,
 
 		}
 
-		if (print_this_path) fclose(g_path_file);
+		
 
 		// check to see if it should be sharpened
 		if (EG.retVal == 0 && solve_options.T.sharpenDigits > 0)
@@ -964,9 +965,20 @@ void serial_tracker_loop(trackingStats *trackCount,
 		{
 			//otherwise converged, but may have still had non-zero retval due to other reasons.
 			endgamedata_to_endpoint(&endPoints[solution_counter], &EG);
+
+			if (print_this_path){
+				fprintf(OUT,"\n");
+
+				write_post_process_t(g_path_file, &(endPoints[solution_counter]) );
+
+				fclose(g_path_file);
+			}
+
 			trackCount->successes++;
 			solution_counter++; // probably this could be eliminated
 		}
+
+
 
 	}// re: for (ii=0; ii<W.num_points ;ii++)
 	clear_endgame_data(&EG);
@@ -2103,18 +2115,22 @@ int generic_setup_files(FILE ** OUT, boost::filesystem::path outname,
 
 
 
-int print_path(comp_d pathVars, mat_d AtimesJ, vec_d current_variable_values, vec_d funcVals, mat_d Jv)
+int print_path(comp_d pathVars, mat_d AtimesJ, vec_d current_variable_values, vec_d funcVals, mat_d Jv, mat_d Jp)
 {
-	fprintf(g_path_file,"%.15g %.15g ", pathVars->r, pathVars->i);
+	fprintf(g_path_file,"%.17g %.17g ", pathVars->r, pathVars->i);
 	for (int ii=0; ii<current_variable_values->size; ++ii) {
-		fprintf(g_path_file,"%.15g %.15g ",current_variable_values->coord[ii].r,current_variable_values->coord[ii].i);
+		fprintf(g_path_file,"%.17g %.17g ",current_variable_values->coord[ii].r,current_variable_values->coord[ii].i);
 	}
-	fprintf(g_path_file, "%.15e  ", ConditionNumber(Jv));
+	fprintf(g_path_file, "%.17e  ", ConditionNumber(Jv));
 	fprintf(g_path_file,"\n");
+
+	print_mat_out_d(g_path_file, Jv);
+	print_mat_out_d(g_path_file, Jp);
+
 	return 0;
 }
 
-int print_path(comp_mp pathVars, mat_mp AtimesJ, vec_mp current_variable_values, vec_mp funcVals, mat_mp Jv)
+int print_path(comp_mp pathVars, mat_mp AtimesJ, vec_mp current_variable_values, vec_mp funcVals, mat_mp Jv, mat_mp Jp)
 {
 	// the `g` is for global
 
@@ -2131,7 +2147,64 @@ int print_path(comp_mp pathVars, mat_mp AtimesJ, vec_mp current_variable_values,
 
 	fprintf(g_path_file, "%.15e ", ConditionNumber(Jv));
 	fprintf(g_path_file,"\n");
+
+	print_mat_out_mp(g_path_file, Jv);
+	print_mat_out_mp(g_path_file, Jp);
 	return 0;
 }
 
 
+
+
+
+// an post_process_t has these fields:
+
+// int path_num;     // path number of the solution
+// int sol_num;      // solution number
+// comp_d  *sol_d;   // solution
+// comp_mp *sol_mp;
+// int sol_prec;     // precision of the solution
+// int size_sol;     // the number of entries in sol
+// double function_resid_d;  // the function residual
+// mpf_t  function_resid_mp; 
+// double cond_est;  // the estimate of the condition number
+// double newton_resid_d;    // the newton residual
+// mpf_t  newton_resid_mp;
+// double final_t;   // the final value of time
+// double accuracy_estimate; // accuracy estimate between extrapolations
+// double first_increase;    // time value of the first increase in precision
+// int cycle_num;    // cycle number used in extrapolations
+// int success;      // success flag 
+// int multiplicity; // multiplicity
+// int isReal;       // real flag:  0 - not real, 1 - real
+// int isFinite;     // finite flag: -1 - no finite/infinite distinction, 0 - infinite, 1 - finite
+// int isSing;       // singular flag: 0 - non-sigular, 1 - singular
+
+void write_post_process_t(FILE* OUT, post_process_t* endPoint)
+{
+	post_process_t& pp = *endPoint;
+
+    if (pp.sol_prec < 64)
+    { // print header for the solution
+      printMainDataPointHeader_d(OUT, pp.sol_num, pp.path_num, pp.cond_est, pp.function_resid_d, pp.newton_resid_d, pp.final_t, pp.accuracy_estimate, pp.sol_prec, pp.first_increase, pp.cycle_num, pp.success, pp.isFinite, pp.accuracy_estimate);
+      // print the point
+
+      for (auto ii(0); ii< pp.size_sol; ++ii)
+
+      	fprintf(OUT,"%.15g %.15g \n",pp.sol_d[ii]->r,pp.sol_d[ii]->i);
+    }
+    else
+    { // print header for the solution
+      printMainDataPointHeader_mp(OUT, pp.sol_num, pp.path_num, pp.cond_est, pp.function_resid_mp, pp.newton_resid_mp, pp.final_t, pp.accuracy_estimate, pp.sol_prec, pp.first_increase, pp.cycle_num, pp.success, pp.isFinite, pp.accuracy_estimate);
+      // print the point
+      
+      for (auto ii(0); ii< pp.size_sol; ++ii)
+      {
+      		mpf_out_str (OUT, 10, 0, pp.sol_mp[ii]->r);
+      		fprintf(OUT," ");
+      		mpf_out_str (OUT, 10, 0, pp.sol_mp[ii]->i);
+      		fprintf(OUT," \n");
+      }
+    }
+
+}
