@@ -1048,7 +1048,7 @@ int sphere_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_d Jv, mat
 
 	BED->num_steps++;
 	if (print_this_path)
-		print_path(pathVars, AtimesJ, current_variable_values, funcVals, Jv);
+		print_path(pathVars, AtimesJ, current_variable_values, funcVals, Jv, Jp);
 
 
 	return 0;
@@ -1345,7 +1345,7 @@ int sphere_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, mat_mp Jv
 
 	BED->num_steps++;
 	if (print_this_path)
-		print_path(pathVars, AtimesJ, current_variable_values, funcVals, Jv);
+		print_path(pathVars, AtimesJ, current_variable_values, funcVals, Jv, Jp);
 
 	BED->SLP_memory.set_globals_null();
 

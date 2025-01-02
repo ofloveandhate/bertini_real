@@ -11,7 +11,7 @@
 
  there are methods in place to add vertices, and perform lookups.
  */
-class VertexSet
+class VertexSet : public PointMetadataHolder<SolutionMetadata>
 {
 
 protected:
@@ -180,7 +180,7 @@ public:
 	 \param new_vertex Vertex to add to the set.
 	 \return the index of the added Vertex
 	 */
-	int add_vertex(const Vertex & new_vertex);
+	int add_vertex(const Vertex & new_vertex, SolutionMetadata const& meta);
 
 
 	/**
@@ -305,7 +305,7 @@ public:
 	 \return the index of the testpoint, or -1 if it is not found.
 	 \param testpoint the mp point to find.
 	 */
-    int search_for_point(vec_mp testpoint);
+    int search_for_point(vec_mp const& testpoint);
 
 
 	/**
@@ -317,7 +317,7 @@ public:
 	 \return the index of the testpoint, or -1 if it is not found.
 	 \param testpoint the mp point to find.
 	 */
-    int search_for_active_point(vec_mp testpoint);
+    int search_for_active_point(vec_mp const& testpoint);
 
 
 
@@ -330,7 +330,7 @@ public:
 	 \return the index of the testpoint, or -1 if it is not found.
 	 \param testpoint the mp point to find.
 	 */
-    int search_for_removed_point(vec_mp testpoint);
+    int search_for_removed_point(vec_mp const& testpoint);
 
 
 	/**

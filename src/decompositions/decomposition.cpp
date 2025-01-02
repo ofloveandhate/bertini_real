@@ -21,20 +21,20 @@ int Decomposition::add_witness_set(const WitnessSet & W, VertexType add_type, Ve
 
     for (unsigned int ii=0; ii<W.num_points(); ii++) {
         vec_cp_mp(temp_vertex.point(), W.point(ii));
-        this->index_in_vertices_with_add(V, temp_vertex);
+        this->index_in_vertices_with_add(V, temp_vertex, W.point_meta(ii));
     }
 
     return 0;
 }
 
 
-int Decomposition::add_vertex(VertexSet & V, Vertex source_vertex)
+int Decomposition::add_vertex(VertexSet & V, Vertex const& source_vertex, SolutionMetadata const& meta)
 {
 #ifdef functionentry_output
 	std::cout << "Decomposition::add_vertex" << std::endl;
 #endif
 
-	int current_index = V.add_vertex(source_vertex);
+	int current_index = V.add_vertex(source_vertex, meta);
 
 
 	return current_index;
@@ -46,7 +46,7 @@ int Decomposition::add_vertex(VertexSet & V, Vertex source_vertex)
 
 
 int Decomposition::index_in_vertices(VertexSet & V,
-									 vec_mp testpoint) const
+									 vec_mp const& testpoint) const
 {
 #ifdef functionentry_output
 	std::cout << "Decomposition::index_in_vertices" << std::endl;
@@ -61,12 +61,16 @@ int Decomposition::index_in_vertices(VertexSet & V,
 
 
 int Decomposition::index_in_vertices_with_add(VertexSet &V,
-											  Vertex vert)
+											  Vertex const& vert, SolutionMetadata const& meta)
 {
 	int index = Decomposition::index_in_vertices(V, vert.point());
 
 	if (index==-1) {
-		index = Decomposition::add_vertex(V, vert);
+		index = Decomposition::add_vertex(V, vert, meta);
+	}
+	else{
+		for (auto n: meta.get_path_numbers_absolute())
+			V[index].add_path_number_ending_here(n);
 	}
 
 	return index;

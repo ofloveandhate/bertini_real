@@ -2410,7 +2410,7 @@ int nullspacejac_right_eval_d(point_d funcVals, point_d parVals, vec_d parDer, m
 
 	BED->num_steps++;
 	if (print_this_path)
-		print_path(pathVars, *AtimesJ, current_variable_values, funcVals, Jv);
+		print_path(pathVars, *AtimesJ, current_variable_values, funcVals, Jv, Jp);
 
 	return 0;
 }
@@ -3124,7 +3124,7 @@ int nullspacejac_right_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDe
 
 	BED->num_steps++;
 	if (print_this_path)
-		print_path(pathVars, *AtimesJ, current_variable_values, funcVals, Jv);
+		print_path(pathVars, *AtimesJ, current_variable_values, funcVals, Jv, Jp);
 
 
 	return 0;

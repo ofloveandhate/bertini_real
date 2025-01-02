@@ -27,6 +27,8 @@ import bertini_real.surface
 import bertini_real.util
 import bertini_real.plot
 
+import bertini_real.paths
+
 try:
     import bertini_real.glumpyplotter
 except ImportError as e:

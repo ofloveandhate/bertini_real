@@ -2365,7 +2365,7 @@ void ScaleByCycleNum(comp_mp result, comp_mp input, int cycle_num_l, int cycle_n
 void set_witness_set_mp(WitnessSet & W, vec_mp new_linear, vec_mp new_point)
 {
 	W.reset_points();
-	W.add_point(new_point);
+	W.add_point(new_point, SolutionMetadata());
 
 	W.reset_linears();
 	W.add_linear(new_linear);

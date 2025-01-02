@@ -40,7 +40,7 @@ class Vertex:
 
     """
 
-    def __init__(self, point, input_filename_index, projection_value, vertex_type):
+    def __init__(self, point, input_filename_index, projection_value, vertex_type, path_numbers_ending_here):
         """ Initialize a Vertex object
 
             :param point: coordinates
@@ -53,10 +53,11 @@ class Vertex:
         self.input_filename_index = input_filename_index
         self.projection_value = projection_value
         self.type = VertexType(vertex_type)
+        self.path_numbers_ending_here = path_numbers_ending_here
 
     def __repr__(self):
         """ toString method for Vertex """
-        val = f"Vertex({self.point},{self.input_filename_index},{self.type})"
+        val = f"Vertex({self.point},{self.input_filename_index},{self.type},{self.path_numbers_ending_here})"
         return val
 
     def __str__(self):

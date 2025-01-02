@@ -1,5 +1,108 @@
 #include "nag/witness_set.hpp"
 
+void SolutionMetadata::write_to_file(FILE* OUT) const
+{
+
+	fprintf(OUT,"%zu\n",path_numbers_zero_based.size());
+	for (auto n: path_numbers_zero_based)
+		fprintf(OUT,"%lld ",n);
+
+	fprintf(OUT,"\n%zu\n",path_numbers_absolute.size());
+	for (auto n: path_numbers_absolute)
+		fprintf(OUT,"%lld ",n);
+
+	fprintf(OUT,"\n%lld\n",output_index);
+	fprintf(OUT,"%d\n",multiplicity);
+	fprintf(OUT,"%d\n",is_finite);
+	fprintf(OUT,"%d\n",is_singular);
+	fprintf(OUT,"%d\n",is_successful);
+	fprintf(OUT,"%d\n",is_real);
+	fprintf(OUT,"%d\n",cycle_number_);
+}
+
+void SolutionMetadata::read_from_file(FILE* IN)
+{
+	decltype(path_numbers_zero_based.size()) size;
+	long long val;
+
+	fscanf(IN,"%zu\n",&size);
+
+	for (decltype(path_numbers_zero_based.size()) ii(0); ii<size; ++ii){
+		fscanf(IN,"%lld ",&val);
+		path_numbers_zero_based.push_back(val);
+	}
+
+	fscanf(IN,"\n%zu\n",&size);
+
+	for (decltype(path_numbers_zero_based.size()) ii(0); ii<size; ++ii){
+		fscanf(IN,"%lld ",&val);
+		path_numbers_absolute.push_back(val);
+	}
+
+	int temp_int;
+
+	fscanf(IN,"\n%lld\n",&output_index);
+	fscanf(IN,"%d\n",&multiplicity);
+	fscanf(IN,"%d\n",&temp_int); is_finite = static_cast<bool>(temp_int);
+	fscanf(IN,"%d\n",&temp_int); is_singular = static_cast<bool>(temp_int);
+	fscanf(IN,"%d\n",&temp_int); is_successful = static_cast<bool>(temp_int);
+	fscanf(IN,"%d\n",&temp_int); is_real = static_cast<bool>(temp_int);
+	fscanf(IN,"%d\n",&cycle_number_);
+}
+
+
+void SolutionMetadata::send(int target, ParallelismConfig & mpi_config) const
+{
+    //send all the data to the other party
+
+
+    long long *buffer = (long long *) br_malloc(9*sizeof(long long));
+    buffer[0] = path_numbers_zero_based.size();
+    buffer[1] = path_numbers_absolute.size();
+    buffer[2] = output_index;
+    buffer[3] = multiplicity;
+    buffer[4] = is_finite;
+    buffer[5] = is_singular;
+    buffer[6] = is_successful;
+    buffer[7] = is_real;
+    buffer[8] = cycle_number_;
+
+    MPI_Send(buffer, 9, MPI_LONG_LONG, SOLUTION_METADATA, target, mpi_config.comm());
+
+    free(buffer);
+
+    MPI_Send(&path_numbers_zero_based[0], path_numbers_zero_based.size(), MPI_LONG_LONG, SOLUTION_METADATA, target, mpi_config.comm());
+    MPI_Send(&path_numbers_absolute[0], path_numbers_absolute.size(), MPI_LONG_LONG, SOLUTION_METADATA, target, mpi_config.comm());
+
+    return;
+}
+
+void SolutionMetadata::receive(int source, ParallelismConfig & mpi_config)
+{
+    MPI_Status statty_mc_gatty;
+
+	int *buffer = new int[9];
+
+    MPI_Recv(buffer, 9, MPI_LONG_LONG, SOLUTION_METADATA, source, mpi_config.comm(), &statty_mc_gatty);
+
+    path_numbers_zero_based.resize(buffer[0]);
+    path_numbers_absolute.resize(buffer[1]);
+
+    output_index = buffer[2];
+    multiplicity = buffer[3];
+    is_finite = buffer[4];
+    is_singular = buffer[5];
+    is_successful = buffer[6];
+    is_real = buffer[7];
+    cycle_number_ = buffer[8];
+
+    MPI_Recv(&path_numbers_zero_based[0], buffer[0], MPI_LONG_LONG, SOLUTION_METADATA, source, mpi_config.comm(), &statty_mc_gatty);
+    MPI_Recv(&path_numbers_absolute[0], buffer[1], MPI_LONG_LONG, SOLUTION_METADATA, source, mpi_config.comm(), &statty_mc_gatty);
+
+    delete[] buffer; // silviana, it makes me angry that in the send you malloc, and here you delete.  this sucks.
+
+    return;
+}
 
 
 
@@ -39,7 +142,7 @@ int WitnessSet::Parse(const boost::filesystem::path witness_set_file, const int 
 			scanRestOfLine(IN);
 		}
 
-		add_point(temp_vec);
+		add_point(temp_vec, SolutionMetadata());
 	}
 
 
@@ -488,13 +591,13 @@ void WitnessSet::sort_for_real(double tol)
 
 
 
-
 	int *real_indicator = new int[num_points()];
 	int counter = 0;
 
 	vec_mp result; init_vec_mp(result,num_natty_vars_-1);
 	result->size = num_natty_vars_-1;
 
+	// this should just use the metadata, that would be much stronger.  v1.8.0
 	for (unsigned int ii=0; ii<num_points(); ii++) {
 		vec_mp & curr_point = point(ii);
 		for (int jj=1; jj<num_natty_vars_; jj++) {
@@ -508,15 +611,17 @@ void WitnessSet::sort_for_real(double tol)
 	}
 
 
-	vec_mp *tempvec = (vec_mp *)br_malloc(counter * sizeof(vec_mp));
+	vec_mp *just_the_real_points = (vec_mp *)br_malloc(counter * sizeof(vec_mp));
+	std::vector<SolutionMetadata> just_the_real_metadata;
 
 	counter = 0;  // reset
 	for (unsigned int ii=0; ii<num_points(); ii++) {
 		vec_mp & curr_point = point(ii);
 		if (real_indicator[ii]==1) {
 
-			init_vec_mp2(tempvec[counter],this->num_vars_,1024); tempvec[counter]->size = this->num_vars_;
-			vec_cp_mp(tempvec[counter],curr_point);
+			init_vec_mp2(just_the_real_points[counter],this->num_vars_,1024); just_the_real_points[counter]->size = this->num_vars_;
+			vec_cp_mp(just_the_real_points[counter],curr_point);
+			just_the_real_metadata.push_back(point_metadata_[ii]);
 			counter++;
 		}
 		else{
@@ -532,7 +637,9 @@ void WitnessSet::sort_for_real(double tol)
 	}
 	free(pts_mp_);
 
-	pts_mp_ = tempvec;
+	std::swap(point_metadata_, just_the_real_metadata); // v1.8.0
+
+	pts_mp_ = just_the_real_points;
 	num_pts_ = counter;
 
 	delete[] real_indicator;
@@ -553,7 +660,7 @@ void WitnessSet::sort_for_unique(double tol)
 	}
 
 	int curr_uniqueness;
-	int num_good_pts = 0;
+	int num_unique_pts = 0;
 	std::vector<int> is_unique;
 
 	for (unsigned int ii = 0; ii<num_points(); ++ii) {
@@ -575,7 +682,7 @@ void WitnessSet::sort_for_unique(double tol)
 
 		if (curr_uniqueness==1) {
 			is_unique.push_back(1);
-			num_good_pts++;
+			num_unique_pts++;
 		}
 		else {
 			is_unique.push_back(0);
@@ -585,18 +692,21 @@ void WitnessSet::sort_for_unique(double tol)
 
 
 
-	vec_mp *transferme = (vec_mp *)br_malloc(num_good_pts*sizeof(vec_mp));
+	vec_mp *just_the_unique_points = (vec_mp *)br_malloc(num_unique_pts*sizeof(vec_mp));
+	std::vector<SolutionMetadata> just_the_unique_metadata;
+
 	int counter = 0;
 	for (unsigned int ii=0; ii<num_points(); ++ii) {
 		if (is_unique[ii]==1) {
 
-			init_vec_mp2(transferme[counter],num_vars_,1024);  transferme[counter]->size = num_vars_;
-			vec_cp_mp(transferme[counter], point(ii));
+			init_vec_mp2(just_the_unique_points[counter],num_vars_,1024);  just_the_unique_points[counter]->size = num_vars_;
+			vec_cp_mp(just_the_unique_points[counter], point(ii));
+			just_the_unique_metadata.push_back(point_metadata_[ii]);
 			counter++;
 		}
 	}
 
-	if (counter!= num_good_pts) {
+	if (counter!= num_unique_pts) {
 		std::logic_error("counter mismatch");
 	}
 
@@ -607,9 +717,9 @@ void WitnessSet::sort_for_unique(double tol)
 		free(pts_mp_);
 	}
 
-
-	num_pts_ = num_good_pts;
-	pts_mp_ = transferme;
+	std::swap(point_metadata_, just_the_unique_metadata); // v1.8.0
+	num_pts_ = num_unique_pts;
+	pts_mp_ = just_the_unique_points;
 
 	return;
 }
@@ -656,11 +766,14 @@ void WitnessSet::sort_for_inside_sphere(comp_mp radius, vec_mp center)
 
 
 	vec_mp *transferme = (vec_mp *)br_malloc(num_good_pts*sizeof(vec_mp));
+	std::vector<SolutionMetadata> just_the_insphere_metadata;
+
 	int counter = 0;
 	for (unsigned int ii=0; ii<num_points(); ++ii) {
 		if (is_ok[ii]==1) {
 			init_vec_mp2(transferme[counter],0,1024);  transferme[counter]->size = 0;
 			vec_cp_mp(transferme[counter], point(ii));
+			just_the_insphere_metadata.push_back(point_metadata_[ii]);
 			counter++;
 		}
 	}
@@ -675,7 +788,7 @@ void WitnessSet::sort_for_inside_sphere(comp_mp radius, vec_mp center)
 	}
 	free(pts_mp_);
 
-
+	std::swap(point_metadata_,just_the_insphere_metadata);
 	num_pts_ = num_good_pts;
 	pts_mp_ = transferme;
 
@@ -823,6 +936,8 @@ void WitnessSet::merge(const WitnessSet & W_in, double tol)
 	for (unsigned int ii = 0; ii<W_in.num_points(); ii++) {
 		int is_new = 1;
 		vec_mp & in_point = W_in.point(ii);
+		SolutionMetadata const& in_meta = W_in.point_metadata_[ii];
+
 		for (unsigned int jj = 0; jj<num_points(); jj++){
 			vec_mp & curr_point = this->point(jj);
 
@@ -848,7 +963,7 @@ void WitnessSet::merge(const WitnessSet & W_in, double tol)
 		}
 
 		if (is_new==1)
-			WitnessSet::add_point( (in_point) );
+			WitnessSet::add_point( (in_point), in_meta);
 	}
 
 
@@ -923,6 +1038,7 @@ void WitnessSet::send(ParallelismConfig & mpi_config, int target) const
     }
     for (unsigned int ii=0; ii<num_points(); ii++) {
         send_vec_mp( point(ii) ,target);
+        point_meta(ii).send(target, mpi_config);
     }
 
     char * namebuffer = (char *) br_malloc(1024*sizeof(char));
@@ -953,6 +1069,7 @@ void WitnessSet::receive(int source, ParallelismConfig & mpi_config)
 	delete [] buffer;
 
     vec_mp tempvec; init_vec_mp2(tempvec,0,1024);
+    SolutionMetadata temp_meta;
 
     for (unsigned int ii=0; ii<temp_num_linears; ii++) {
         receive_vec_mp(tempvec,source);
@@ -966,7 +1083,9 @@ void WitnessSet::receive(int source, ParallelismConfig & mpi_config)
 
 	for (unsigned int ii=0; ii<temp_num_pts; ii++) {
         receive_vec_mp(tempvec,source);
-        add_point(tempvec);
+        temp_meta.receive(source, mpi_config);
+
+        add_point(tempvec, temp_meta);
     }
 
     clear_vec_mp(tempvec);

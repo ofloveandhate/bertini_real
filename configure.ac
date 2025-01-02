@@ -3,8 +3,8 @@
 
 
 
-#we're building bertini_real, version 1.6.1, and the corresponding email is silviana's
-AC_INIT([bertini_real],[1.6.1],[silviana.amethyst@gmail.com],[bertini_real],[https://bertinireal.com/])
+#we're building bertini_real, version 1.8, and the corresponding email is silviana's
+AC_INIT([bertini_real],[1.8],[silviana.amethyst@gmail.com],[bertini_real],[https://bertinireal.com/])
 
 
 # Force autoconf to be at least this version number:
@@ -78,7 +78,7 @@ AC_PROG_MKDIR_P
 LT_INIT
 
 
-AX_CXX_COMPILE_STDCXX_11
+AX_CXX_COMPILE_STDCXX_14
 
 
 

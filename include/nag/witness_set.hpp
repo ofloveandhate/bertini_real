@@ -18,14 +18,157 @@ class Function
 
 
 
+
+class SolverOutput; //  that'd be a forward declaration, jim.
+
+
+
+/**
+ \brief Metadata for solutions produced by the tracker, and stored in SolverOutput.
+ */
+class SolutionMetadata
+{
+
+friend SolverOutput;
+
+	std::vector<long long> path_numbers_zero_based; ///< the indices of the start points which ended here, relative to the one system used to solve it
+	std::vector<long long> path_numbers_absolute; ///< the indices of the start points which ended here, relative to the complete process, including many other systems and solves
+	long long output_index; ///< the output index of the endpoint solution
+	int multiplicity; ///< how many paths ended here.
+	bool is_finite; ///< flag for whether has been declared finite.
+	bool is_singular;///< flag for whether has been declared singular.
+	bool is_successful;///< flag for whether tracker was successful, or gave up for some reason -- wish this stored the reason too.
+	bool is_real;///< flag for whether has been declared real.
+	int cycle_number_ = -1;  ///< the cycle number of the path taken to the solution.  This number can regularize the path, if used correctly.
+
+public:
+
+	void SetCycleNumber(int c)
+	{
+		cycle_number_ = c;
+	}
+
+	int CycleNumber() const
+	{
+		return cycle_number_;
+	}
+
+	/**
+	 \brief set the finiteness state
+	 \param state set is_finite to the state.
+	 */
+	void set_finite(bool state){
+		is_finite = state;
+	}
+
+	/**
+	  \brief set the singularness state
+	  \param state set is_singular to the state.
+	  */
+	void set_singular(bool state){
+		is_singular = state;
+	}
+
+	/**
+	 \brief set the successfulness state
+	 \param state set is_successful to the state.
+	 */
+	void set_successful(bool state){
+		is_successful = state;
+	}
+
+	/**
+	 \brief set the multiplicity
+	 \param state set multiplicity to the state.
+	 */
+	void set_multiplicity(int state){
+		multiplicity = state;
+	}
+
+	/**
+	 \brief set the realness state
+	 \param state set is_real to the state.
+	 */
+	void set_real(int state) {
+		is_real = state;
+	}
+
+	/**
+	 \brief add relative path index which tracked to this solution
+	 \param path_num the index to add.
+	 */
+	void add_path_number_zero_based(long long path_num){
+		path_numbers_zero_based.push_back(path_num);
+	}
+
+	/**
+	 \brief add an absolute path number which tracked to this solution
+	 \param path_num the index to add.
+	 */
+	void add_path_number_absolute(long long path_num){
+		path_numbers_absolute.push_back(path_num);
+	}
+
+	auto const get_path_numbers_absolute() const{ return path_numbers_absolute;}
+
+
+	/**
+	 \brief set the output index for the found solution.  multiplicity>1 solutions are stored only once...
+	 \param soln_num the index to assert
+	 */
+	void set_output_index(long long soln_num){
+		output_index = soln_num;
+	}
+
+
+	friend std::ostream & operator<<(std::ostream &os, const SolutionMetadata & t)
+	{
+
+
+		os << t.output_index << std::endl;
+		for (auto iter=t.path_numbers_absolute.begin(); iter!=t.path_numbers_absolute.end(); ++iter) {
+			os << *iter << ' ';
+		}
+		os << '\n';
+
+		os << t.multiplicity << ' ' << t.is_finite << ' ' << t.is_singular << ' ' << t.is_successful << ' ' << t.CycleNumber();
+
+		return os;
+	}
+
+
+	/**
+	 individual send, relative to MPI_COMM_WORLD
+
+	 \param target the ID target of the communication
+	 \param mpi_config the current MPI state, as implemented in bertini_real
+	 */
+    void send(int target, ParallelismConfig & mpi_config) const;
+
+	/**
+	 individual receive, relative to MPI_COMM_WORLD
+
+	 \param source the ID source of the communication
+	 \param mpi_config the current MPI state, as implemented in bertini_real
+	 */
+    void receive(int source, ParallelismConfig & mpi_config);
+
+
+    void write_to_file(FILE* OUT) const;
+
+    void read_from_file(FILE* IN);
+};
+
+
+
 /**
  \brief witness set holds points, patches, and linears, with the names of the variables.
 
  The witness set class collects points, patches, and linears into one object.  It offers methods for sorting for real points only, for sorting to contain only unique points.
 
- A witness set gets two numbers of variables, one is the total number appearing in it, and the other [more importantly] is the numebr of natural variables contained therein.  The witness set is assumed to be in correspondence to a variable group with a single leading homogenizing variable, and automatically dehomogenizes points for uniqueness and reality testing.
+ A witness set gets two numbers of variables, one is the total number appearing in it, and the other [more importantly] is the number of natural variables contained therein.  The witness set is assumed to be in correspondence to a variable group with a single leading homogenizing variable, and automatically dehomogenizes points for uniqueness and reality testing.
  */
-class WitnessSet : public PatchHolder, public LinearHolder, public PointHolder, public NameHolder
+class WitnessSet : public PatchHolder, public LinearHolder, public PointHolder<SolutionMetadata>, public NameHolder
 {
 
 protected:
@@ -41,10 +184,8 @@ protected:
 	int num_natty_vars_;
 
 
-
 	boost::filesystem::path input_filename_;
 	Function input_file_;
-
 
 	// end data members
 
@@ -303,6 +444,7 @@ public:
 		copy_points(other);
 		copy_patches(other);
 		copy_linears(other);
+		copy_metadata(other);
 	}
 
 
@@ -442,6 +584,8 @@ public:
 
 		reset_patches();
 
+		reset_metadata();
+		
 		init();
 	}
 

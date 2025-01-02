@@ -829,7 +829,7 @@ int multilin_to_lin_eval_d(point_d funcVals, point_d parVals, vec_d parDer, mat_
 
 	BED->num_steps++;
 	if (print_this_path)
-		print_path(pathVars, AtimesJ, current_variable_values, funcVals, Jv);
+		print_path(pathVars, AtimesJ, current_variable_values, funcVals, Jv, Jp);
 
 
 	return 0;
@@ -1074,7 +1074,7 @@ int multilin_to_lin_eval_mp(point_mp funcVals, point_mp parVals, vec_mp parDer, 
 
 	BED->num_steps++;
 	if (print_this_path)
-		print_path(pathVars, AtimesJ, current_variable_values, funcVals, Jv);
+		print_path(pathVars, AtimesJ, current_variable_values, funcVals, Jv, Jp);
 	
 
 
