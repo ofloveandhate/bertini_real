@@ -52,12 +52,17 @@ class StyleOptions(object):
         self.set_defaults()
 
     def set_defaults(self):
-        self.line_thickness = 2  # there is no code using this yet.  write it.
+        self.linewidth = 4  # there is no code using this yet.  write it.
         self.colormap = plt.cm.viridis
         self.colormode = ColorMode.BY_CELL
 
-        self.mono_color = None
+        self.mono_color = 'k'
         self.color_function = None
+
+        self.surface_edge_color = None
+
+        self.autotitle = True
+
 
     def set_color_function(self, function):
         self.colormode = ColorMode.BY_FUNCTION
@@ -85,6 +90,8 @@ class VisibilityOptions(object):
 
         self.surface_samples = False
         self.surface_raw = False
+
+        self.surface_curves = False
 
         self.curve_samples = False
         self.curve_raw = False
@@ -115,6 +122,9 @@ class VisibilityOptions(object):
         else:
             self.surface_samples = True
 
+        self.surface_curves = True
+
+        self.curve_samples = True
         if len(surface.vertices)>10000:
             print(f'have {len(surface.vertices)} vertices, so turning them off')
             self.vertices = False
@@ -159,6 +169,8 @@ class RenderOptions(object):
 
         self.surface_samples = True
         self.surface_raw = True
+
+        self.surface_curves = True
 
         self.curve_samples = True
         self.curve_raw = True
@@ -247,6 +259,8 @@ class Plotter(object):
 
     def show(self):
 
+        self.options.render.defer_show = False
+        self._adjust_all_visibility()
         plt.draw() # is this necessary???
         plt.show()
 
@@ -562,7 +576,9 @@ class Plotter(object):
 
     def _apply_title(self):
         plt.sca(self.ax)
-        plt.title(os.getcwd().split(os.sep)[-1])
+
+        if self.options.style.autotitle:
+            plt.title(os.getcwd().split(os.sep)[-1])
 
     def _adjust_all_visibility(self):
         for w in self.plot_results.keys():
@@ -704,9 +720,16 @@ class Plotter(object):
 
         num_nondegen_edges = len(self.nondegen)
 
-        colormap = self.options.style.colormap
-        color_list = [colormap(i)
-                      for i in np.linspace(0, 1, num_nondegen_edges)]
+        if self.options.style.colormode is ColorMode.BY_CELL:
+            colormap = self.options.style.colormap
+            color_list = [colormap(i)
+                          for i in np.linspace(0, 1, num_nondegen_edges)]
+        elif self.options.style.colormode is ColorMode.MONO:
+            color_list = [self.options.style.mono_color]*num_nondegen_edges
+        else:
+            print("warning, trying to use colorfun mode for curve, but it's not implemented, thunking to mono")
+            color_list = [self.options.style.mono_color]*num_nondegen_edges
+
 
         # instead of v['point']...etc look up into "self.points"
         for i in range(num_nondegen_edges):
@@ -732,13 +755,19 @@ class Plotter(object):
 
 
 
-    def _plot_edge_samples(self, curve):
+    def _plot_edge_samples(self, curve, results_name='curve_samples'):
         """ Plot sampled edges """
         num_nondegen_edges = len(self.nondegen)
 
-        colormap = self.options.style.colormap
-        color_list = [colormap(i)
-                      for i in np.linspace(0, 1, num_nondegen_edges)]
+        if self.options.style.colormode is ColorMode.BY_CELL:
+            colormap = self.options.style.colormap
+            color_list = [colormap(i)
+                          for i in np.linspace(0, 1, num_nondegen_edges)]
+        elif self.options.style.colormode is ColorMode.MONO:
+            color_list = [self.options.style.mono_color]*num_nondegen_edges
+        else:
+            print("warning, trying to use colorfun mode for curve, but it's not implemented, thunking to mono")
+            color_list = [self.options.style.mono_color]*num_nondegen_edges
 
         for i in range(num_nondegen_edges):
             color = color_list[i]
@@ -755,11 +784,11 @@ class Plotter(object):
                     zs.append(v.point[2].real)
 
             if curve.num_variables == 2:
-                handle = self.ax.plot(xs, ys, c=color)  # v['point'][
-                self.plot_results['curve_samples'].extend(handle)
+                handle = self.ax.plot(xs, ys, c=color, linewidth=self.options.style.linewidth)  # v['point'][
+                self.plot_results[results_name].extend(handle)
             else:
-                handle = self.ax.plot(xs, ys, zs, zdir='z', c=color)  # v['point']
-                self.plot_results['curve_samples'].extend(handle)
+                handle = self.ax.plot(xs, ys, zs, zdir='z', c=color, linewidth=self.options.style.linewidth)  # v['point']
+                self.plot_results[results_name].extend(handle)
 
     def _determine_nondegen_edges(self, decomposition):
         """ Determine nondegenerate edges """
@@ -869,21 +898,25 @@ class Plotter(object):
         if self.options.render.vertices and not surf.is_embedded:
             self._plot_vertices(surf)
 
-
-
         if self.options.render.surface_samples:
             self._plot_surface_samples(surf)
 
         if self.options.render.surface_raw:
             self._plot_surface_raw(surf)
 
-        
+        if self.options.render.surface_curves:
+            self._plot_surface_curves(surf)
 
         widgets = self._make_widgets_surface(surf)
 
 
 
-
+    def _plot_surface_curves(self,surf):
+        """
+        plot the embedded curves in a surface
+        """
+        self.options.style.colormode = ColorMode.MONO
+        self._plot_curve(surf.critical_curve)
 
     def _plot_surface_samples(self, surf):
         """ 
