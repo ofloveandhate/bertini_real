@@ -250,6 +250,8 @@ class Plotter(object):
         self.fig = None
         self.ax = None
 
+        self.widget_fig = None
+
         self.plotted_decompositions = []
         self.widgets = {}
 
@@ -268,9 +270,13 @@ class Plotter(object):
         """ 
         Plot Curves/Surfaces/Pieces, axes and figures 
         """
+        
+        if self.widget_fig is None:
+            self._make_new_widget_figure()
+
 
         if self.fig is None:
-            self._make_new_figure()
+            self._make_new_main_figure()
 
         if not isinstance(decomposition,list):
             self.options.visibility.auto_adjust(decomposition)
@@ -368,8 +374,8 @@ class Plotter(object):
 
         x = [Size.Fixed(inset_x), Size.Fixed(check_x)]
         y = [Size.Fixed(inset_y), Size.Fixed(check_y*num_checks_this)]
-        divider = Divider(self.fig, (0, 0, 1, 1), x, y, aspect=False)
-        check_ax = self.fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
+        divider = Divider(self.widget_fig, (0, 0, 1, 1), x, y, aspect=False)
+        check_ax = self.widget_fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
 
 
 
@@ -425,8 +431,8 @@ class Plotter(object):
 
         x = [Size.Fixed(inset_x), Size.Fixed(check_x)]
         y = [Size.Fixed(inset_y), Size.Fixed(check_y*num_checks_this)]
-        divider = Divider(self.fig, (0, 0, 1, 1), x, y, aspect=False)
-        check_ax = self.fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
+        divider = Divider(self.widget_fig, (0, 0, 1, 1), x, y, aspect=False)
+        check_ax = self.widget_fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
 
         
         names = [str(T).split('.')[1] for T in self.plot_results['vertices'].values()]
@@ -478,6 +484,20 @@ class Plotter(object):
             else:
                 decomposition.export_raw()
 
+        def _save_png(arg):
+            basename = os.getcwd().split(os.sep)[-1]
+
+            from bertini_real.util import next_filenumber
+            pattern=f'{basename}*.png'
+            n = next_filenumber(pattern)
+
+            filename = f'{basename}{n}.png'
+            self.fig.savefig(filename,dpi=300)
+
+            print(f'saved with filename {filename}')
+
+
+
         # measurements are in inches
 
         y_padding = 0.1
@@ -507,8 +527,8 @@ class Plotter(object):
 
         x = [Size.Fixed(inset_x), Size.Fixed(check_x)]
         y = [Size.Fixed(inset_y), Size.Fixed(check_y*num_checks_this)]
-        divider = Divider(self.fig, (0, 0, 1, 1), x, y, aspect=False)
-        check_ax = self.fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
+        divider = Divider(self.widget_fig, (0, 0, 1, 1), x, y, aspect=False)
+        check_ax = self.widget_fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
 
         checks = widgets.CheckButtons(check_ax, ('Vertices', 'Smooth Surface', 'Raw Surface'),
                              (False, len(decomposition.sampler_data)>0, len(decomposition.sampler_data)==0))
@@ -520,8 +540,8 @@ class Plotter(object):
 
         x = [Size.Fixed(inset_x), Size.Fixed(button_x)]
         y = [Size.Fixed(inset_y+(num_buttons+num_check_panels)*y_padding + check_y*num_checks + button_y*num_buttons), Size.Fixed(button_y)]
-        divider = Divider(self.fig, (0, 0, 1, 1), x, y, aspect=False)
-        button_smooth_ax = self.fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
+        divider = Divider(self.widget_fig, (0, 0, 1, 1), x, y, aspect=False)
+        button_smooth_ax = self.widget_fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
         button_export_smooth = widgets.Button(button_smooth_ax, 'Export Smooth OBJ')
         num_buttons += 1
         button_export_smooth.on_clicked(_export_smooth_action)
@@ -531,22 +551,33 @@ class Plotter(object):
 
         x = [Size.Fixed(inset_x), Size.Fixed(button_x)]
         y = [Size.Fixed(inset_y+(num_buttons+num_check_panels)*y_padding + check_y*num_checks + button_y*num_buttons), Size.Fixed(button_y)]
-        divider = Divider(self.fig, (0, 0, 1, 1), x, y, aspect=False)
-        button_raw_ax = self.fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
+        divider = Divider(self.widget_fig, (0, 0, 1, 1), x, y, aspect=False)
+        button_raw_ax = self.widget_fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
         button_export_raw = widgets.Button(button_raw_ax, 'Export Raw OBJ')
         num_buttons += 1
         button_export_raw.on_clicked(_export_raw_action)
+
+        # a button to save with high quality
+        x = [Size.Fixed(inset_x), Size.Fixed(button_x)]
+        y = [Size.Fixed(inset_y+(num_buttons+num_check_panels)*y_padding + check_y*num_checks + button_y*num_buttons), Size.Fixed(button_y)]
+        divider = Divider(self.widget_fig, (0, 0, 1, 1), x, y, aspect=False)
+        button_raw_ax = self.widget_fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
+        button_save_png = widgets.Button(button_raw_ax, 'Save PNG')
+        num_buttons += 1
+        button_save_png.on_clicked(_save_png)
 
 
         self.widgets['checks_surface'] = checks
         self.widgets['buttons']['export_raw'] = button_export_raw
         self.widgets['buttons']['export_smooth'] = button_export_smooth
+        self.widgets['buttons']['save_png'] = button_save_png
 
 
+    def _make_new_widget_figure(self, figsize = (10,8)):
+        self.widget_fig = plt.figure(figsize=figsize)
 
-
-    def _make_new_figure(self):
-        self.fig = plt.figure(figsize=(10,8))
+    def _make_new_main_figure(self, figsize = (10,8)):
+        self.fig = plt.figure(figsize=figsize)
 
     def _make_new_axes(self,decomposition):
         if decomposition.num_variables == 2:
