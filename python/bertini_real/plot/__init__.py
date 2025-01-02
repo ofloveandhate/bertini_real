@@ -895,35 +895,108 @@ class Plotter(object):
 
         if self.options.style.colormode is ColorMode.BY_CELL:
             colormap = self.options.style.colormap
-            colors = [colormap(ii) for ii in np.linspace(0, 1, len(which_faces))]
+            user_colors = [colormap(ii) for ii in np.linspace(0, 1, len(which_faces))]
 
         elif self.options.style.colormode is ColorMode.BY_FUNCTION:
-            raise NotImplementedError("implement coloring by function, please")
+            colormap = self.options.style.colormap
+            color_function = self.options.style.color_function
 
         elif self.options.style.colormode is ColorMode.MONO:
-            colors = [self.options.style.mono_color]*len(which_faces)
+            user_colors = [self.options.style.mono_color]*len(which_faces)
 
         else:
             raise NotImplementedError("unknown coloring method in style options")
 
 
+        all_triangles = []
+        all_colors = []
 
         for cc,ii in enumerate(which_faces):
 
-            color = colors[cc]
+            if self.options.style.colormode is ColorMode.BY_FUNCTION:
+                colors_this_face = []
 
-            T = []
+            triangles_this_face = []
+
+
             for tri in faces[ii]:
                 f = int(tri[0]) # i hate that these conversions are here.  this is bullshit. --sca
                 s = int(tri[1])
                 t = int(tri[2])
 
-                k = [points[f,:], points[s,:], points[t,:]]
+                a = points[f,:]
+                b = points[s,:]
+                c = points[t,:]
 
-                T.append(k)
+                triangles_this_face.append([a,b,c])
 
-            self.plot_results['surface_samples'].append(self.ax.add_collection3d(Poly3DCollection(T, facecolors=color)))
-            # self.ax.autoscale_view()
+                if self.options.style.colormode is ColorMode.BY_FUNCTION:
+                    colors_this_face.append( np.mean([color_function(a),color_function(b),color_function(c)], axis=0) )
+            
+
+            all_triangles.append(triangles_this_face)
+            all_colors.append(colors_this_face)
+
+        # now have all the triangles we need.  but the colors might still need some help, if using a colorfunction.
+        a_point_on_surface = all_triangles[0][0][0]
+        colorfunresult = color_function(a_point_on_surface)
+
+        import numbers # https://stackoverflow.com/questions/31627321/testing-if-a-value-is-numeric
+
+        if isinstance(colorfunresult, numbers.Number):
+
+            # this is the 1-channel case.  it needs to get passed through the colormap.  
+            # for this, the values need to be between 0 and 1 :(
+            upper = max([max(c) for c in all_colors])
+            lower = min([min(c) for c in all_colors])
+
+            remap = lambda x: (x-lower)/(upper-lower)
+
+            for ii in range(len(all_colors)):
+                all_colors[ii] = colormap(remap(np.array(all_colors[ii])))
+
+        elif isinstance(colorfunresult,list) or isinstance(colorfunresult, np.array):
+            # this lets the user specify a function that returns 4 different values
+
+            # first, check that we actually have 4.
+            num_channels = len(colorfunresult)
+            assert num_channels==4 and "your color function should return exactly 4 channels (rgba) or a scalar number (to be passed through the colormap), nothing in between"
+
+            # do remapping to get inside 0,1
+            upper = np.max([np.max(c,axis=0) for c in all_colors],axis=0)
+            lower = np.min([np.min(c,axis=0) for c in all_colors],axis=0)
+
+
+            def deal_with_channel(l, u):
+                # get the shift, scale values for a channel
+
+                # if the min and max are the same, then we don't need to rescale, just to shift
+                if u==l:
+                    if l<0: return 0, 1
+                    if l>1: return 1, 1
+
+                    return l, 1
+
+                # this channel actually has span, so we need to both shift and rescale
+                return l, u-l 
+
+
+            subtractme = np.array([deal_with_channel(l,u)[0] for l,u in zip(lower, upper)])
+            denom = np.array([deal_with_channel(l,u)[1] for l,u in zip(lower, upper)])
+
+            # define a lambda to do the remapping into 0,1
+            remap = lambda x: (x-subtractme)/denom
+
+            # replace the colors
+            for ii in range(len(all_colors)):
+                all_colors[ii] = remap(np.array(all_colors[ii]))
+
+        # finally, ready to plot
+        for T,color in zip(all_triangles,all_colors):
+            handle = self.ax.add_collection3d(Poly3DCollection(T, facecolors=color))
+            self.plot_results['surface_samples'].append(handle)
+
+
 
     def _plot_surface_raw(self, surf):
         """ Plot raw surface """
