@@ -313,7 +313,6 @@ class Plotter(object):
     def show(self):
 
         self.options.render.defer_show = False
-        self._adjust_all_visibility()
         plt.draw() # is this necessary???
         plt.show()
 
@@ -342,8 +341,8 @@ class Plotter(object):
         self._main(decomposition)
             
 
+        self._adjust_all_visibility()
         if not self.options.render.defer_show:
-            self._adjust_all_visibility()
             self.show()
 
 
@@ -471,6 +470,31 @@ class Plotter(object):
             if not self.options.render.defer_show:
                 self.show()
 
+        def _surface_curve_action(_):
+            self.options.visibility.surface_curves = not self.options.visibility.surface_curves
+            self._adjust_visibility_surface_curves("surface_curves")
+
+            if not self.options.render.defer_show:
+                self.show()
+
+        def _surface_curve_action_kind(label):
+            self.options.visibility.surface_curves_by_type[label] = not self.options.visibility.surface_curves_by_type[label]
+            self._adjust_visibility_surface_curves("surface_curves")
+
+            if not self.options.render.defer_show:
+                self.show()
+
+        def _surface_curve_action_raw_smooth(label):
+            if 'raw' in label.lower():
+                self.options.visibility.surface_curves_raw = not self.options.visibility.surface_curves_raw
+            else:
+                self.options.visibility.surface_curves_samples = not self.options.visibility.surface_curves_samples
+                
+            self._adjust_visibility_surface_curves("surface_curves")
+
+            if not self.options.render.defer_show:
+                self.show()
+
         def _export_smooth_action(arg):
                 decomposition.export_smooth()
 
@@ -499,7 +523,17 @@ class Plotter(object):
         self._add_button_to_controller(0,'export_raw','Export Raw OBJ',_export_raw_action)
         self._add_button_to_controller(0,'save_png','Save PNG',_save_png)
 
+        self._add_checks_to_controller(1, 'surface curves kind',
+            self.options.visibility.surface_curves_by_type.keys(),
+            self.options.visibility.surface_curves_by_type.values(),_surface_curve_action_kind)
 
+        self._add_checks_to_controller(1, 'surface curves raw/samples',
+            ('Smooth Surface curves','Raw Surface curves'),
+            (self.options.visibility.surface_curves_samples,self.options.visibility.surface_curves_raw),_surface_curve_action_raw_smooth)
+
+        self._add_checks_to_controller(1, 'surface curves',
+            ('Surface Curves',),
+            (self.options.visibility.surface_curves,),_surface_curve_action)
 
     def _add_button_to_controller(self, column, widget_name, text, on_clicked):
         from mpl_toolkits.axes_grid1 import Divider, Size
@@ -638,9 +672,8 @@ class Plotter(object):
         """
         self.show() must be called separately, otherwise get stupid results from calling this in a loop
         """
-
-        # if what not in self.plot_results:
-        #     raise RuntimeError(f"trying to adjust visibility of things in _adjust_visibility, but those things weren't rendered due to render options.  key: `{what}`.  current options: {dir(self.options.visibility)} {dir(self.options.render)}")
+        if what not in self.plot_results:
+            raise RuntimeError(f"trying to adjust visibility of things in _adjust_visibility, but those things weren't rendered due to render options.  key: `{what}`.  current options: {dir(self.options.visibility)} {dir(self.options.render)}")
 
         if what == 'vertices':
             for T in self.plot_results['vertices'].values():
@@ -663,21 +696,31 @@ class Plotter(object):
             if t == T:
                 h.set_visible(self.options.visibility.vertices_by_type[vertex_type] and self.options.visibility.vertices)
 
-    def _adjust_visibility_surface_curves(self, what):
+    def _adjust_visibility_surface_curves(self, _):
+        """
+        I'm pretty happy with this function, it deals with the three aspects of surface curve visibility:
+        1. main
+        2. raw/samples (this is not either/or)
+        3. which kinds of curves (crit, sing, critslice, midslice)
 
-        if not self.options.visibility.surface_curves:
-            # this is the easy case, just turn them all off
-            for kind,handles in self.plot_results['surface_curves'].items():
-                for h in handles:
-                    h.set_visible(False)
+        The cost a bit of a doozy of a line, where i compute the variable `visibility`.  But it's not that bad.  Just a double-and.
+        """
 
-        else:
-            if not self.options.visibility.surface_curves_raw:
-                for kind,handles in self.plot_results['surface_curves'].items():
+        # loop over all the lists of handles.  they're like `critical_raw` or `midslice_samples`
+        for kind_subkind,handles in self.plot_results['surface_curves'].items():
 
-                    if kind.endswith('raw'):
-                        for h in handles:
-                            h.set_visible(False)
+            # unpack from the name
+            kind, raw_or_samples = kind_subkind.split('_') 
+            # kind: critical, singular, midslice, critslice
+            # raw or samples
+
+            # get the bits from the options
+            visibility = self.options.visibility.surface_curves_by_type[kind] and eval(f'self.options.visibility.surface_curves_{raw_or_samples}') and self.options.visibility.surface_curves
+            
+            # actually make this thing visible or not.
+            for h in handles:
+                h.set_visible(visibility)
+
 
 
     def _label_axes(self, decomposition):
@@ -843,13 +886,13 @@ class Plotter(object):
             if curve.num_variables == 2:
                 handle = self.ax.plot(xs, ys, c=color)
                 if isinstance(curve_name,tuple):
-                    self.plot_results[curve_name[0]][curve_name[1]] = handle
+                    self.plot_results[curve_name[0]][curve_name[1]].extend(handle)
                 else:
                     self.plot_results[curve_name].extend(handle)
             else:
                 handle = self.ax.plot(xs, ys, zs, zdir='z', c=color)
                 if isinstance(curve_name,tuple):
-                    self.plot_results[curve_name[0]][curve_name[1]] = handle
+                    self.plot_results[curve_name[0]][curve_name[1]].extend(handle)
                 else:
                     self.plot_results[curve_name].extend(handle)
 
@@ -887,13 +930,13 @@ class Plotter(object):
             if curve.num_variables == 2:
                 handle = self.ax.plot(xs, ys, c=color, linewidth=self.options.style.linewidth)  # v['point'][
                 if isinstance(curve_name,tuple):
-                    self.plot_results[curve_name[0]][curve_name[1]] = handle
+                    self.plot_results[curve_name[0]][curve_name[1]].extend(handle)
                 else:
                     self.plot_results[curve_name].extend(handle)
             else:
                 handle = self.ax.plot(xs, ys, zs, zdir='z', c=color, linewidth=self.options.style.linewidth)  # v['point']
                 if isinstance(curve_name,tuple):
-                    self.plot_results[curve_name[0]][curve_name[1]] = handle
+                    self.plot_results[curve_name[0]][curve_name[1]].extend(handle)
                 else:
                     self.plot_results[curve_name].extend(handle)
 
@@ -1027,22 +1070,22 @@ class Plotter(object):
         
 
         if self.options.render.surface_curves:
-            self.plot_results['surface_curves'] = {} # because I want to hold a dict of lists of handles
+            self.plot_results['surface_curves'] = defaultdict(list) # because I want to hold a dict of lists of handles
 
             if self.options.render.surface_critical_curve:
-                self._plot_embedded_curve(surf.critical_curve, 'surface_critical_curve')
+                self._plot_embedded_curve(surf.critical_curve, 'critical')
 
             if self.options.render.surface_singular_curves:
                 for c,m in zip(surf.singular_curves, surf.singular_names):
-                    self._plot_embedded_curve(c, 'surface_singular_curve')
+                    self._plot_embedded_curve(c, 'singular')
 
             if self.options.render.surface_critical_slices:
                 for ii,c in enumerate(surf.critical_point_slices):
-                    self._plot_embedded_curve(c, f'surface_critical_slice')
+                    self._plot_embedded_curve(c, 'critslice')
 
             if self.options.render.surface_midslices:
                 for ii,c in enumerate(surf.midpoint_slices):
-                    self._plot_embedded_curve(c, f'surface_mid_slice')
+                    self._plot_embedded_curve(c, 'midslice')
 
             self._adjust_visibility('surface_curves')
 
