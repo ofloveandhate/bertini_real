@@ -52,7 +52,7 @@ class StyleOptions(object):
         self.set_defaults()
 
     def set_defaults(self):
-        self.linewidth = 4  # there is no code using this yet.  write it.
+        self.linewidth = 2
         self.colormap = plt.cm.viridis
         self.colormode = ColorMode.BY_CELL
 
@@ -86,12 +86,18 @@ class VisibilityOptions(object):
         from bertini_real.vertex import VertexType
         names = [str(T).split('.')[1] for T in VertexType]
 
-        self.vertices_by_type = {n:True for n in names}
+        self.vertices_by_type = {n:False for n in names}
 
         self.surface_samples = False
         self.surface_raw = False
 
         self.surface_curves = False
+
+        self.surface_curves_raw = False
+        self.surface_curves_samples = False
+
+        surface_curve_types = ['critical','singular','midslice','critslice']
+        self.surface_curves_by_type = {n:False for n in surface_curve_types}
 
         self.curve_samples = False
         self.curve_raw = False
@@ -123,10 +129,17 @@ class VisibilityOptions(object):
             self.surface_samples = True
 
         self.surface_curves = True
+        self.surface_curves_by_type['singular'] = True
+        self.surface_curves_by_type['critical'] = True
+
+        if len(surface.sampler_data)==0:
+            self.surface_curves_raw = True
+        else:
+            self.surface_curves_samples = True
 
         self.curve_samples = True
         if len(surface.vertices)>10000:
-            print(f'have {len(surface.vertices)} vertices, so turning them off')
+            print(f'have {len(surface.vertices)} vertices, so setting to invisible to start')
             self.vertices = False
 
 
@@ -138,7 +151,7 @@ class VisibilityOptions(object):
     def _adjust_for_curve(self, curve):
 
         if len(curve.vertices)>10000:
-            print(f'have {len(curve.vertices)} vertices, so turning them off')
+            print(f'have {len(curve.vertices)} vertices, so setting to invisible to start')
             self.vertices = False
 
         if curve.sampler_data is None:
@@ -170,8 +183,18 @@ class RenderOptions(object):
         self.surface_samples = True
         self.surface_raw = True
 
-        self.surface_curves = True
+        self.surface_curves = True # turn off all curves in one stroke with this one.
 
+        self.surface_curves_raw = True # turn off all raw curves in one stroke with this one.
+        self.surface_curves_samples = True # turn off all sampled curves in one stroke with this one.
+
+        self.surface_critical_curve = True
+        self.surface_singular_curves = True
+        self.surface_critical_slices = True
+        self.surface_midslices = True
+
+
+        # for just curves, not embedded
         self.curve_samples = True
         self.curve_raw = True
 
@@ -249,15 +272,43 @@ class Plotter(object):
         self.options = options
         self.fig = None
         self.ax = None
+        self.plotted_decompositions = []
+
+
+        self.init_widgets()
+
+        self.plot_results = defaultdict(list)
+
+
+
+
+    def init_widgets(self):
 
         self.widget_fig = None
-
-        self.plotted_decompositions = []
         self.widgets = {}
 
         self.widgets['buttons'] = {}
+        self.widgets['checks'] = {}
 
-        self.plot_results = defaultdict(list)
+        self.widget_props = {}
+
+        self.widget_props['x_padding'] = 0.1 # space between groups of items
+        self.widget_props['y_padding'] = 0.1 # space between groups of items
+
+        self.widget_props['button_x'] = 1.4
+        self.widget_props['button_y'] = 0.2
+
+        self.widget_props['check_y'] = 0.2 # size for ONE check
+        self.widget_props['check_x'] = 2.2
+
+        self.widget_props['inset_x'] = 0.1
+        self.widget_props['inset_y'] = 0.1
+
+        self.widget_props['column_x'] = 2.2 # this must be wider than any widget drawn into the columns.
+        self.widget_props['column_next_y'] = defaultdict(lambda : self.widget_props['inset_y'])
+
+
+
 
     def show(self):
 
@@ -301,14 +352,18 @@ class Plotter(object):
 
         if isinstance(decomposition,list) and all([isinstance(p,SurfacePiece) for p in decomposition]):
             self._plot_pieces(decomposition)
+
         elif isinstance(decomposition,SurfacePiece):
             self._plot_piece(decomposition)
+
         elif isinstance(decomposition,Curve):
             self._plot_curve(decomposition)
+
         elif isinstance(decomposition,Surface):
             self._plot_surface(decomposition)
+
         else:
-            raise NotImplementedError
+            raise NotImplementedError("I don't know how to plot whatever you have there in that decomposition of yours.  Where did you get it?")
 
 
 
@@ -323,8 +378,6 @@ class Plotter(object):
     # `----' `----'  `-'  `-----'`-'       `-'  `-' `---'   `-'  `-' `----' `-' `-'`----' 
 
     def _make_widgets_curve(self,decomposition):
-
-
 
 
         # first, define some actions
@@ -346,54 +399,32 @@ class Plotter(object):
             if not self.options.render.defer_show:
                 self.show()
 
+        def _save_pdf(arg):
+            basename = os.getcwd().split(os.sep)[-1]
 
+            from bertini_real.util import next_filenumber
+            pattern=f'{basename}*.pdf'
+            n = next_filenumber(pattern)
 
-        y_padding = 0.1
+            filename = f'{basename}{n}.pdf'
+            self.fig.savefig(filename,dpi=300)
 
-        button_x = 1.4
-        button_y = 0.2
-
-        check_y = 0.2 # size for ONE check
-        check_x = 2.2
-
-        inset_x = 0.1
-        inset_y = 0.1
-
-        # see https://matplotlib.org/stable/gallery/axes_grid1/demo_fixed_size_axes.html
-        from mpl_toolkits.axes_grid1 import Divider, Size
-        # sizes are inches
+            print(f'saved with filename {filename}')
 
 
 
-        num_check_panels = 0
-        num_buttons = 0
-        num_checks = 0
-        # First, create our check boxes
+        self._add_checks_to_controller(1, 'curve_main',
+            ('Smooth Curve', 'Raw Curve'),
+            (decomposition.sampler_data is not None, decomposition.sampler_data is None), _check_actions)
 
-        num_checks_this = 3
-
-        x = [Size.Fixed(inset_x), Size.Fixed(check_x)]
-        y = [Size.Fixed(inset_y), Size.Fixed(check_y*num_checks_this)]
-        divider = Divider(self.widget_fig, (0, 0, 1, 1), x, y, aspect=False)
-        check_ax = self.widget_fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
-
-
-
-        checks = widgets.CheckButtons(check_ax, ('Vertices', 'Smooth Curve', 'Raw Curve'),
-                             (False, decomposition.sampler_data is not None, decomposition.sampler_data is None) )
-
-        num_check_panels += 1
-        num_checks += num_checks_this
-        checks.on_clicked(_check_actions)
-
-        self.widgets['checks_curve'] = checks
-
+        self._add_button_to_controller(0,'save_pdf','Save PDF',_save_pdf)
 
 
 
     def _make_widgets_vertices(self, decomposition):
 
 
+        # otherwise, we can keep going.
         def _check_actions_vertices(vertex_type):
             # flip the bit
             self.options.visibility.vertices_by_type[vertex_type] = not self.options.visibility.vertices_by_type[vertex_type]
@@ -404,49 +435,22 @@ class Plotter(object):
             if not self.options.render.defer_show:
                 self.show()
 
-        x_padding = 0.1
-        y_padding = 0.1
+        def _check_actions_vertices_main(label):
+            # flip the bit
+            self.options.visibility.vertices = not self.options.visibility.vertices
+            self._adjust_visibility('vertices')
 
-        button_x = 1.4
-        button_y = 0.2
+            if not self.options.render.defer_show:
+                self.show()
 
-        check_y = 0.2 # size for ONE check
-        check_x = 2.2
-
-        inset_x = 0.1+check_x+x_padding
-        inset_y = 0.1
-
-
-        # see https://matplotlib.org/stable/gallery/axes_grid1/demo_fixed_size_axes.html
-        from mpl_toolkits.axes_grid1 import Divider, Size
-        # sizes are inches
-
-        from bertini_real.vertex import VertexType
-
-        num_check_panels = 0
-        num_checks = 0
-
-        num_checks_this = len(self.plot_results['vertices'])
-
-
-        x = [Size.Fixed(inset_x), Size.Fixed(check_x)]
-        y = [Size.Fixed(inset_y), Size.Fixed(check_y*num_checks_this)]
-        divider = Divider(self.widget_fig, (0, 0, 1, 1), x, y, aspect=False)
-        check_ax = self.widget_fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
-
-        
         names = [str(T).split('.')[1] for T in self.plot_results['vertices'].values()]
-        initial_state = [True for n in names]
+        initial_state = [self.options.visibility.vertices_by_type[n] for n in names]
 
-        checks = widgets.CheckButtons(check_ax, names, initial_state)
+        self._add_checks_to_controller(0,'vertices_by_type',names,initial_state,_check_actions_vertices)
 
-        checks.on_clicked(_check_actions_vertices)
-
-        num_check_panels += 1
-        num_checks += num_checks_this
-        
-        self.widgets['checks_vertices'] = checks
-
+        self._add_checks_to_controller(0, 'vertices_main',
+            ('Vertices',),
+            (self.options.visibility.vertices,), _check_actions_vertices_main)
 
     def _make_widgets_surface(self,decomposition):
         """
@@ -456,12 +460,7 @@ class Plotter(object):
         # first, define some actions
         def _check_actions(label):
 
-            if label == 'Vertices':
-                # works but with hardcoded axes
-                self.options.visibility.vertices = not self.options.visibility.vertices
-                self._adjust_visibility('vertices')
-
-            elif label == 'Smooth Surface':
+            if label == 'Smooth Surface':
                 self.options.visibility.surface_samples = not self.options.visibility.surface_samples
                 self._adjust_visibility('surface_samples')
 
@@ -473,15 +472,9 @@ class Plotter(object):
                 self.show()
 
         def _export_smooth_action(arg):
-            if(decomposition.dimension==1):
-                raise NotImplementedError('Unable to export OBJ file for Curve object')
-            else:
                 decomposition.export_smooth()
 
         def _export_raw_action(arg):
-            if(decomposition.dimension==1):
-                raise NotImplementedError('Unable to export OBJ file for Curve object')
-            else:
                 decomposition.export_raw()
 
         def _save_png(arg):
@@ -496,88 +489,113 @@ class Plotter(object):
 
             print(f'saved with filename {filename}')
 
+        
+
+        self._add_checks_to_controller(1, 'surface main',
+            ('Smooth Surface', 'Raw Surface'),
+            (len(decomposition.sampler_data)>0, len(decomposition.sampler_data)==0),_check_actions)
+
+        self._add_button_to_controller(0,'export_smooth','Export Smooth OBJ',_export_smooth_action)
+        self._add_button_to_controller(0,'export_raw','Export Raw OBJ',_export_raw_action)
+        self._add_button_to_controller(0,'save_png','Save PNG',_save_png)
 
 
-        # measurements are in inches
 
-        y_padding = 0.1
-
-        button_x = 1.4
-        button_y = 0.2
-
-        check_y = 0.2 # size for ONE check
-        check_x = 2.2
-
-        inset_x = 0.1
-        inset_y = 0.1
-
-        # see https://matplotlib.org/stable/gallery/axes_grid1/demo_fixed_size_axes.html
+    def _add_button_to_controller(self, column, widget_name, text, on_clicked):
         from mpl_toolkits.axes_grid1 import Divider, Size
-        # sizes are inches
 
-        
-        
+        x = [Size.Fixed(self.widget_props['inset_x'] +column*(self.widget_props['column_x']+self.widget_props['x_padding'])), # the start position
+             Size.Fixed(self.widget_props['check_x'])] # the size
 
-        num_check_panels = 0
-        num_buttons = 0
-        num_checks = 0
-        # First, create our check boxes
+        next_y = self.widget_props['column_next_y'][column]
+        height = self.widget_props['button_y']
 
-        num_checks_this = 3
+        y = [Size.Fixed(next_y), 
+             Size.Fixed(height)] 
 
-        x = [Size.Fixed(inset_x), Size.Fixed(check_x)]
-        y = [Size.Fixed(inset_y), Size.Fixed(check_y*num_checks_this)]
         divider = Divider(self.widget_fig, (0, 0, 1, 1), x, y, aspect=False)
-        check_ax = self.widget_fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
+        button_ax = self.widget_fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
+        widget = widgets.Button(button_ax, text)
 
-        checks = widgets.CheckButtons(check_ax, ('Vertices', 'Smooth Surface', 'Raw Surface'),
-                             (False, len(decomposition.sampler_data)>0, len(decomposition.sampler_data)==0))
-        num_check_panels += 1
-        num_checks += num_checks_this
-        checks.on_clicked(_check_actions)
+        widget.on_clicked(on_clicked)
+
+        # store it so it's usable.
+        self.widgets['buttons'][widget_name] = widget
+
+        # bump so the next block in the column gets placed correctly.
+        self.widget_props['column_next_y'][column] += height + self.widget_props['y_padding']
+        self._resize_controller()
 
 
 
-        x = [Size.Fixed(inset_x), Size.Fixed(button_x)]
-        y = [Size.Fixed(inset_y+(num_buttons+num_check_panels)*y_padding + check_y*num_checks + button_y*num_buttons), Size.Fixed(button_y)]
+
+    def _add_checks_to_controller(self, column, widget_name, check_names, initial_values, action):
+        from mpl_toolkits.axes_grid1 import Divider, Size
+
+        assert len(check_names) == len(initial_values) # sanity check
+
+        # compute sizes of things
+        num_checks = len(check_names)
+
+        next_y = self.widget_props['column_next_y'][column]
+
+        x = [Size.Fixed(self.widget_props['inset_x'] +column*(self.widget_props['column_x']+self.widget_props['x_padding'])), # the start position
+             Size.Fixed(self.widget_props['check_x'])] # the size
+
+        height = self.widget_props['check_y']*num_checks + self.widget_props['y_padding']
+
+        y = [Size.Fixed(next_y), 
+             Size.Fixed(height)] 
+
+        # make space, in a divider and axes object
         divider = Divider(self.widget_fig, (0, 0, 1, 1), x, y, aspect=False)
-        button_smooth_ax = self.widget_fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
-        button_export_smooth = widgets.Button(button_smooth_ax, 'Export Smooth OBJ')
-        num_buttons += 1
-        button_export_smooth.on_clicked(_export_smooth_action)
+        ax = self.widget_fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
+
+        # make the widget
+        widget = widgets.CheckButtons(ax, check_names, initial_values)
+        widget.on_clicked(action)
+
+        # finally, store it
+        self.widgets['checks'][widget_name] = widget
+
+        # bump so the next block in the column gets placed correctly.
+        self.widget_props['column_next_y'][column] += height + self.widget_props['y_padding']
+        self._resize_controller()
+
+    def _resize_controller(self):
+        """
+        makes the controller window nice and tight around the widgets we put into it :)
+        """
+        x = self.widget_props['column_x']*len(self.widget_props['column_next_y']) \
+             + self.widget_props['x_padding']*(len(self.widget_props['column_next_y'])-1) \
+             + 2*self.widget_props['inset_x']
+        y = max(q for q in self.widget_props['column_next_y'].values())
+
+        self.widget_fig.set_size_inches(x,y)
 
 
 
-
-        x = [Size.Fixed(inset_x), Size.Fixed(button_x)]
-        y = [Size.Fixed(inset_y+(num_buttons+num_check_panels)*y_padding + check_y*num_checks + button_y*num_buttons), Size.Fixed(button_y)]
-        divider = Divider(self.widget_fig, (0, 0, 1, 1), x, y, aspect=False)
-        button_raw_ax = self.widget_fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
-        button_export_raw = widgets.Button(button_raw_ax, 'Export Raw OBJ')
-        num_buttons += 1
-        button_export_raw.on_clicked(_export_raw_action)
-
-        # a button to save with high quality
-        x = [Size.Fixed(inset_x), Size.Fixed(button_x)]
-        y = [Size.Fixed(inset_y+(num_buttons+num_check_panels)*y_padding + check_y*num_checks + button_y*num_buttons), Size.Fixed(button_y)]
-        divider = Divider(self.widget_fig, (0, 0, 1, 1), x, y, aspect=False)
-        button_raw_ax = self.widget_fig.add_axes(divider.get_position(), axes_locator=divider.new_locator(nx=1, ny=1))
-        button_save_png = widgets.Button(button_raw_ax, 'Save PNG')
-        num_buttons += 1
-        button_save_png.on_clicked(_save_png)
-
-
-        self.widgets['checks_surface'] = checks
-        self.widgets['buttons']['export_raw'] = button_export_raw
-        self.widgets['buttons']['export_smooth'] = button_export_smooth
-        self.widgets['buttons']['save_png'] = button_save_png
-
-
-    def _make_new_widget_figure(self, figsize = (10,8)):
+    def _make_new_widget_figure(self, figsize = (5,2)):
+        """
+        The default size is not very meaningful, it will be autoresized as items are put into it
+        """
         self.widget_fig = plt.figure(figsize=figsize)
 
-    def _make_new_main_figure(self, figsize = (10,8)):
+        self.widget_fig.canvas.mpl_connect('close_event', lambda event: plt.close(self.fig))
+
+    def _make_new_main_figure(self, figsize = (8,8)):
+        """
+        One can easily override the default size by deferring showing, and setting the figure size before `plotter.show()`ing, like:
+
+        ```
+        fig = plotter.fig
+        fig.set_size_inches(4, 2.75)
+        ```
+        """
         self.fig = plt.figure(figsize=figsize)
+
+        self.fig.canvas.mpl_connect('close_event', lambda event: plt.close(self.widget_fig))
+        print('closing one window will close both!')
 
     def _make_new_axes(self,decomposition):
         if decomposition.num_variables == 2:
@@ -621,12 +639,15 @@ class Plotter(object):
         self.show() must be called separately, otherwise get stupid results from calling this in a loop
         """
 
-        if what not in self.plot_results:
-            raise RuntimeError(f"trying to adjust visibility of things in _adjust_visibility, but those things weren't rendered due to render options.  key: `{what}`.  current options: {dir(self.options.visibility)} {dir(self.options.render)}")
+        # if what not in self.plot_results:
+        #     raise RuntimeError(f"trying to adjust visibility of things in _adjust_visibility, but those things weren't rendered due to render options.  key: `{what}`.  current options: {dir(self.options.visibility)} {dir(self.options.render)}")
 
         if what == 'vertices':
             for T in self.plot_results['vertices'].values():
                 self._adjust_visibility_vertex_type(str(T).split('.')[1])
+
+        elif what == 'surface_curves':
+            self._adjust_visibility_surface_curves(what)
 
         else:
             for h in self.plot_results[what]:
@@ -642,6 +663,22 @@ class Plotter(object):
             if t == T:
                 h.set_visible(self.options.visibility.vertices_by_type[vertex_type] and self.options.visibility.vertices)
 
+    def _adjust_visibility_surface_curves(self, what):
+
+        if not self.options.visibility.surface_curves:
+            # this is the easy case, just turn them all off
+            for kind,handles in self.plot_results['surface_curves'].items():
+                for h in handles:
+                    h.set_visible(False)
+
+        else:
+            if not self.options.visibility.surface_curves_raw:
+                for kind,handles in self.plot_results['surface_curves'].items():
+
+                    if kind.endswith('raw'):
+                        for h in handles:
+                            h.set_visible(False)
+
 
     def _label_axes(self, decomposition):
         # todo: these should be set from the decomposition, not assumed to be
@@ -651,14 +688,18 @@ class Plotter(object):
         if decomposition.dimension == 2:
             self.ax.set_zlabel("z")
 
-    '''
-	renders all vertices
 
-	todo: make them colored based on a function
-	'''
+
+
+
+
+
 
     def _plot_vertices(self, decomposition):
-        """ Plot vertices """
+        """ 
+        Plot vertices 
+        todo: make them colored based on a function
+        """
 
         from bertini_real.vertex import VertexType
         import numpy as np
@@ -727,27 +768,49 @@ class Plotter(object):
 
         self._determine_nondegen_edges(curve)
 
+        handle_name = "curve_raw"
         if self.options.render.curve_raw:
-            self._plot_raw_edges(curve)
-            self._adjust_visibility('curve_raw')
+            self._plot_raw_edges(curve,handle_name)
+            self._adjust_visibility(handle_name)
 
-
+        handle_name = "curve_samples"
         if self.options.render.curve_samples:
-            self._plot_edge_samples(curve)
-            self._adjust_visibility('curve_samples')
+            self._plot_edge_samples(curve,handle_name)
+            self._adjust_visibility(handle_name)
 
         
-        if self.options.render.vertices and not curve.is_embedded:
+        if self.options.render.vertices:
             self._plot_vertices(curve)
             self._adjust_visibility('vertices')
 
-
-        if not curve.is_embedded:
-            widgets = self._make_widgets_curve(curve)
+        widgets = self._make_widgets_curve(curve)
 
 
-    def _plot_raw_edges(self, curve):
+
+    def _plot_embedded_curve(self, curve, curve_name):
+        """ 
+        Plot an embedded curve
+        assumes self.options is set.  
+        """
+
+        self.plotted_decompositions.append(curve)
+
+        self._determine_nondegen_edges(curve)
+
+        handle_name = curve_name+"_raw"
+        if self.options.render.surface_curves_raw:
+            self._plot_raw_edges(curve, curve_name=('surface_curves',handle_name))
+            # self._adjust_visibility(handle_name) # for embedded, this is done at a higher level
+
+        handle_name = curve_name+"_samples"
+        if self.options.render.surface_curves_samples:
+            self._plot_edge_samples(curve, curve_name=('surface_curves',handle_name))
+            # self._adjust_visibility(handle_name) # for embedded, this is done at a higher level
+
+
+    def _plot_raw_edges(self, curve, curve_name):
         """ Plot raw edges """
+
 
         num_nondegen_edges = len(self.nondegen)
 
@@ -779,15 +842,22 @@ class Plotter(object):
 
             if curve.num_variables == 2:
                 handle = self.ax.plot(xs, ys, c=color)
-                self.plot_results['curve_raw'].extend(handle)
+                if isinstance(curve_name,tuple):
+                    self.plot_results[curve_name[0]][curve_name[1]] = handle
+                else:
+                    self.plot_results[curve_name].extend(handle)
             else:
                 handle = self.ax.plot(xs, ys, zs, zdir='z', c=color)
-                self.plot_results['curve_raw'].extend(handle)
+                if isinstance(curve_name,tuple):
+                    self.plot_results[curve_name[0]][curve_name[1]] = handle
+                else:
+                    self.plot_results[curve_name].extend(handle)
 
 
 
-    def _plot_edge_samples(self, curve, results_name='curve_samples'):
+    def _plot_edge_samples(self, curve, curve_name):
         """ Plot sampled edges """
+
         num_nondegen_edges = len(self.nondegen)
 
         if self.options.style.colormode is ColorMode.BY_CELL:
@@ -816,10 +886,16 @@ class Plotter(object):
 
             if curve.num_variables == 2:
                 handle = self.ax.plot(xs, ys, c=color, linewidth=self.options.style.linewidth)  # v['point'][
-                self.plot_results[results_name].extend(handle)
+                if isinstance(curve_name,tuple):
+                    self.plot_results[curve_name[0]][curve_name[1]] = handle
+                else:
+                    self.plot_results[curve_name].extend(handle)
             else:
                 handle = self.ax.plot(xs, ys, zs, zdir='z', c=color, linewidth=self.options.style.linewidth)  # v['point']
-                self.plot_results[results_name].extend(handle)
+                if isinstance(curve_name,tuple):
+                    self.plot_results[curve_name[0]][curve_name[1]] = handle
+                else:
+                    self.plot_results[curve_name].extend(handle)
 
     def _determine_nondegen_edges(self, decomposition):
         """ Determine nondegenerate edges """
@@ -947,7 +1023,28 @@ class Plotter(object):
         plot the embedded curves in a surface
         """
         self.options.style.colormode = ColorMode.MONO
-        self._plot_curve(surf.critical_curve)
+
+        
+
+        if self.options.render.surface_curves:
+            self.plot_results['surface_curves'] = {} # because I want to hold a dict of lists of handles
+
+            if self.options.render.surface_critical_curve:
+                self._plot_embedded_curve(surf.critical_curve, 'surface_critical_curve')
+
+            if self.options.render.surface_singular_curves:
+                for c,m in zip(surf.singular_curves, surf.singular_names):
+                    self._plot_embedded_curve(c, 'surface_singular_curve')
+
+            if self.options.render.surface_critical_slices:
+                for ii,c in enumerate(surf.critical_point_slices):
+                    self._plot_embedded_curve(c, f'surface_critical_slice')
+
+            if self.options.render.surface_midslices:
+                for ii,c in enumerate(surf.midpoint_slices):
+                    self._plot_embedded_curve(c, f'surface_mid_slice')
+
+            self._adjust_visibility('surface_curves')
 
     def _plot_surface_samples(self, surf):
         """ 
@@ -1023,7 +1120,6 @@ class Plotter(object):
 
 
     def _remap_colors_colorfn(self, all_colors):
-        
         colorfunresult = all_colors[0][0]
 
         import numbers # https://stackoverflow.com/questions/31627321/testing-if-a-value-is-numeric
@@ -1050,9 +1146,8 @@ class Plotter(object):
             assert num_channels==4 and "your color function should return exactly 4 channels (rgba) or a scalar number (to be passed through the colormap), nothing in between"
 
             # do remapping to get inside 0,1
-            upper = np.max([np.max(c,axis=0) for c in all_colors],axis=0)
-            lower = np.min([np.min(c,axis=0) for c in all_colors],axis=0)
-
+            upper = np.max([np.max(c,axis=0) for c in all_colors if c],axis=0) # the `if c` is because there might be broken faces
+            lower = np.min([np.min(c,axis=0) for c in all_colors if c],axis=0)
 
             def deal_with_channel(l, u):
                 # get the shift, scale values for a channel
@@ -1076,9 +1171,14 @@ class Plotter(object):
 
             # replace the colors
             for ii in range(len(all_colors)):
+
+                if not all_colors[ii]: # to tolerate broken faces.  
+                    continue
+
                 all_colors[ii] = remap(np.array(all_colors[ii]))
 
-
+        else:
+            raise TypeError(f"I don't know what to do with a color function that returns an object of type {type(colorfunresult)}")
 
 
     def _plot_surface_raw(self, surf):
