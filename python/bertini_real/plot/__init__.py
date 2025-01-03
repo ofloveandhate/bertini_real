@@ -489,7 +489,7 @@ class Plotter(object):
                 self.options.visibility.surface_curves_raw = not self.options.visibility.surface_curves_raw
             else:
                 self.options.visibility.surface_curves_samples = not self.options.visibility.surface_curves_samples
-                
+
             self._adjust_visibility_surface_curves("surface_curves")
 
             if not self.options.render.defer_show:
@@ -830,27 +830,6 @@ class Plotter(object):
 
 
 
-    def _plot_embedded_curve(self, curve, curve_name):
-        """ 
-        Plot an embedded curve
-        assumes self.options is set.  
-        """
-
-        self.plotted_decompositions.append(curve)
-
-        self._determine_nondegen_edges(curve)
-
-        handle_name = curve_name+"_raw"
-        if self.options.render.surface_curves_raw:
-            self._plot_raw_edges(curve, curve_name=('surface_curves',handle_name))
-            # self._adjust_visibility(handle_name) # for embedded, this is done at a higher level
-
-        handle_name = curve_name+"_samples"
-        if self.options.render.surface_curves_samples:
-            self._plot_edge_samples(curve, curve_name=('surface_curves',handle_name))
-            # self._adjust_visibility(handle_name) # for embedded, this is done at a higher level
-
-
     def _plot_raw_edges(self, curve, curve_name):
         """ Plot raw edges """
 
@@ -1089,6 +1068,28 @@ class Plotter(object):
 
             self._adjust_visibility('surface_curves')
 
+
+
+
+    def _plot_embedded_curve(self, curve, curve_name):
+        """ 
+        Plot an embedded curve.  Not intended to be called outside of plot_surface.
+        """
+
+        self._determine_nondegen_edges(curve)
+
+        handle_name = curve_name+"_raw"
+        if self.options.render.surface_curves_raw:
+            self._plot_raw_edges(curve, curve_name=('surface_curves',handle_name))
+            # self._adjust_visibility(handle_name) # for embedded, this is done at a higher level
+
+        handle_name = curve_name+"_samples"
+        if self.options.render.surface_curves_samples:
+            self._plot_edge_samples(curve, curve_name=('surface_curves',handle_name))
+            # self._adjust_visibility(handle_name) # for embedded, this is done at a higher level
+
+
+
     def _plot_surface_samples(self, surf):
         """ 
         Plot surface samples 
@@ -1159,69 +1160,6 @@ class Plotter(object):
             handle = self.ax.add_collection3d(Poly3DCollection(T, facecolors=color))
             self.plot_results['surface_samples'].append(handle)
 
-
-
-
-    def _remap_colors_colorfn(self, all_colors):
-        colorfunresult = all_colors[0][0]
-
-        import numbers # https://stackoverflow.com/questions/31627321/testing-if-a-value-is-numeric
-
-        if isinstance(colorfunresult, numbers.Number):
-
-            # this is the 1-channel case.  it needs to get passed through the colormap.  
-            # for this, the values need to be between 0 and 1 :(
-            upper = max([max(c) for c in all_colors])
-            lower = min([min(c) for c in all_colors])
-
-            remap = lambda x: (x-lower)/(upper-lower)
-
-            colormap = self.options.style.colormap
-
-            for ii in range(len(all_colors)):
-                all_colors[ii] = colormap(remap(np.array(all_colors[ii])))
-
-        elif isinstance(colorfunresult,list) or isinstance(colorfunresult, np.ndarray):
-            # this lets the user specify a function that returns 4 different values
-
-            # first, check that we actually have 4.
-            num_channels = len(colorfunresult)
-            assert num_channels==4 and "your color function should return exactly 4 channels (rgba) or a scalar number (to be passed through the colormap), nothing in between"
-
-            # do remapping to get inside 0,1
-            upper = np.max([np.max(c,axis=0) for c in all_colors if c],axis=0) # the `if c` is because there might be broken faces
-            lower = np.min([np.min(c,axis=0) for c in all_colors if c],axis=0)
-
-            def deal_with_channel(l, u):
-                # get the shift, scale values for a channel
-
-                # if the min and max are the same, then we don't need to rescale, just to shift
-                if u==l:
-                    if l<0: return l, 1
-                    if l>1: return l, 1
-
-                    return 0, 1
-
-                # this channel actually has span, so we need to both shift and rescale
-                return l, u-l 
-
-
-            subtractme = np.array([deal_with_channel(l,u)[0] for l,u in zip(lower, upper)])
-            denom = np.array([deal_with_channel(l,u)[1] for l,u in zip(lower, upper)])
-
-            # define a lambda to do the remapping into 0,1
-            remap = lambda x: (x-subtractme)/denom
-
-            # replace the colors
-            for ii in range(len(all_colors)):
-
-                if not all_colors[ii]: # to tolerate broken faces.  
-                    continue
-
-                all_colors[ii] = remap(np.array(all_colors[ii]))
-
-        else:
-            raise TypeError(f"I don't know what to do with a color function that returns an object of type {type(colorfunresult)}")
 
 
     def _plot_surface_raw(self, surf):
@@ -1385,7 +1323,82 @@ class Plotter(object):
         self.ax.autoscale_view()
 
 
+    def _remap_colors_colorfn(self, all_colors):
+        """
+        A helper function that remaps values to all lie between 0 and 1, for use as colors.  Pass it a list-of-lists-of-values.
 
+        The inner values can be either 
+        * scalars, in which case they are passed through the active colormap in the options
+        * length-4 arrays, interpreted as rgba values
+
+        again, the actual values in these are just mapped into 0,1.
+
+        if one of the channels is uniform, it is left unmapped, except if it is <0 --> 0, and >1 --> 1.  (mapping to 0,1 would case division by 0)
+        this is so that you can make the colorfun produce things like 
+
+        ```
+        lambda x: [x[0], x[1], x[2], 1] to use the xyz values as rgb, and use all-1 for alpha (solid).
+        ```
+        """
+        colorfunresult = all_colors[0][0]
+
+        import numbers # https://stackoverflow.com/questions/31627321/testing-if-a-value-is-numeric
+
+        if isinstance(colorfunresult, numbers.Number):
+
+            # this is the 1-channel case.  it needs to get passed through the colormap.  
+            # for this, the values need to be between 0 and 1 :(
+            upper = max([max(c) for c in all_colors])
+            lower = min([min(c) for c in all_colors])
+
+            remap = lambda x: (x-lower)/(upper-lower)
+
+            colormap = self.options.style.colormap
+
+            for ii in range(len(all_colors)):
+                all_colors[ii] = colormap(remap(np.array(all_colors[ii])))
+
+        elif isinstance(colorfunresult,list) or isinstance(colorfunresult, np.ndarray):
+            # this lets the user specify a function that returns 4 different values
+
+            # first, check that we actually have 4.
+            num_channels = len(colorfunresult)
+            assert num_channels==4 and "your color function should return exactly 4 channels (rgba) or a scalar number (to be passed through the colormap), nothing in between"
+
+            # do remapping to get inside 0,1
+            upper = np.max([np.max(c,axis=0) for c in all_colors if c],axis=0) # the `if c` is because there might be broken faces
+            lower = np.min([np.min(c,axis=0) for c in all_colors if c],axis=0)
+
+            def deal_with_channel(l, u):
+                # get the shift, scale values for a channel
+
+                # if the min and max are the same, then we don't need to rescale, just to shift
+                if u==l:
+                    if l<0: return l, 1
+                    if l>1: return l, 1
+
+                    return 0, 1
+
+                # this channel actually has span, so we need to both shift and rescale
+                return l, u-l 
+
+
+            subtractme = np.array([deal_with_channel(l,u)[0] for l,u in zip(lower, upper)])
+            denom = np.array([deal_with_channel(l,u)[1] for l,u in zip(lower, upper)])
+
+            # define a lambda to do the remapping into 0,1
+            remap = lambda x: (x-subtractme)/denom
+
+            # replace the colors
+            for ii in range(len(all_colors)):
+
+                if not all_colors[ii]: # to tolerate broken faces.  
+                    continue
+
+                all_colors[ii] = remap(np.array(all_colors[ii]))
+
+        else:
+            raise TypeError(f"I don't know what to do with a color function that returns an object of type {type(colorfunresult)}")
 
 
     #############################
