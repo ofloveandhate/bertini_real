@@ -129,34 +129,39 @@ def gather_vertices(directory):
     def autosave(self):
         """ Going to remove this method """
         fn = util.next_filenumber()
-        fileName = "BRdata" + str(fn) + ".pkl"
-        fileObject = open(fileName, 'wb')
+        filename = "BRdata" + str(fn) + ".pkl"
+        fileObject = open(filename, 'wb')
         dill.dump(b, fileObject)
         fileObject.close()
-        return fileName
+        return filename
 
+def read(filename):
+    """
+    a nifty function for using dill to load a decomposition from a pickle file, given its name
+    """
 
-def read_most_recent():
-    """ Reads the most recent decomposition, and returns it."""
-    filenum = bertini_real.util.highest_filenumber()
+    print("reading from file " + filename)
 
-    fileName = "BRdata" + str(filenum) + ".pkl"
-
-    print("reading from file " + fileName)
-
-    fileObject = open(fileName, 'rb')
+    fileObject = open(filename, 'rb')
     decomposition = dill.load(fileObject)
     fileObject.close()
 
     return decomposition
 
+def read_most_recent():
+    """ Reads the most recent decomposition, and returns it."""
+    filenum = bertini_real.util.highest_filenumber()
+
+    filename = "BRdata" + str(filenum) + ".pkl"
+
+    return read(filename)
+
 
 def gather():
-    """ Gather data 
-        
-        :rtype Either curve or surface decomposition
-
+    """ 
+    reads a decomposition from raw bertini_real output into memory, BUT NOT TO DISK.  use `gather_and_save` if you want to combine the steps.
     """
+    
     directory_info = parse.parse_directory_name()
     directory = find_directory(directory_info[0])
 
@@ -168,17 +173,16 @@ def gather():
     elif dimension == 2:
         # polynomial is a surface
         return Surface(directory, False)
-    print("done gathering decomposition")
 
 def gather_and_save():
     """ Gather and save data """
     a = bertini_real.util.next_filenumber()
 
-    fileName = "BRdata" + str(a) + ".pkl"
-    fileObject = open(fileName, 'wb')
+    filename = "BRdata" + str(a) + ".pkl"
+    fileObject = open(filename, 'wb')
     b = gather()
 
-    print("saving to file " + fileName)
+    print("saving to file " + filename)
 
     import dill
     dill.dump(b, fileObject)
