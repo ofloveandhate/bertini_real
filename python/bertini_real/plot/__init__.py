@@ -36,6 +36,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import matplotlib.widgets as widgets
 
+from functools import partial # https://docs.python.org/3/library/functools.html
+
 # print("using {} backend".format(matplotlib.get_backend()))
 
 from enum import Enum
@@ -270,22 +272,41 @@ class Plotter(object):
 
         # cache that shit, yo
         self.options = options
+
         self.fig = None
         self.ax = None
-        self.plotted_decompositions = []
-
-
-        self.init_widgets()
-
-        self.plot_results = defaultdict(list)
-
-
-
-
-    def init_widgets(self):
-
         self.widget_fig = None
-        self.widgets = {}
+        self.widgets = None
+
+        self.plotted_decompositions = []
+        self.plot_results = None
+
+        self.all_widgets = []
+        self.all_widget_figs = []
+        self.all_plot_results = []
+        self.all_visibility_states = []
+        
+
+
+    def _get_ready_for_new_decomposition(self):
+
+        self._widgets_for_new_decomposition()
+
+        # do this so that we can keep the results separate, per-decomposition plotted.
+        self.all_plot_results.append(defaultdict(list)) # keep a reference
+        self.plot_results = self.all_plot_results[-1]
+
+        import copy
+
+        self.all_visibility_states.append(copy.deepcopy(self.options.visibility))
+        self.visibility_state = self.all_visibility_states[-1]
+
+
+    def _widgets_for_new_decomposition(self):
+
+        # make a new dict for the widgets, so they stay alive through multiple plots of decompositions.
+        self.all_widgets.append({})
+        self.widgets = self.all_widgets[-1]
 
         self.widgets['buttons'] = {}
         self.widgets['checks'] = {}
@@ -307,6 +328,7 @@ class Plotter(object):
         self.widget_props['column_x'] = 2.2 # this must be wider than any widget drawn into the columns.
         self.widget_props['column_next_y'] = defaultdict(lambda : self.widget_props['inset_y'])
 
+        self._make_another_widget_figure()
 
 
 
@@ -321,15 +343,13 @@ class Plotter(object):
         Plot Curves/Surfaces/Pieces, axes and figures 
         """
         
-        if self.widget_fig is None:
-            self._make_new_widget_figure()
-
+        self._get_ready_for_new_decomposition()
 
         if self.fig is None:
             self._make_new_main_figure()
 
         if not isinstance(decomposition,list):
-            self.options.visibility.auto_adjust(decomposition)
+            self.visibility_state.auto_adjust(decomposition)
             self.options.render.auto_adjust(decomposition)
 
             if self.ax is None:
@@ -341,7 +361,7 @@ class Plotter(object):
         self._main(decomposition)
             
 
-        self._adjust_all_visibility()
+        self._adjust_all_visibility(self.plot_results, self.visibility_state)
         if not self.options.render.defer_show:
             self.show()
 
@@ -380,20 +400,20 @@ class Plotter(object):
 
 
         # first, define some actions
-        def _check_actions(label):
+        def _check_actions(label, handles, visibility):
 
             if label == 'Vertices':
                 # works but with hardcoded axes
-                self.options.visibility.vertices = not self.options.visibility.vertices
-                self._adjust_visibility('vertices')
+                visibility.vertices = not visibility.vertices
+                self._adjust_visibility('vertices', handles, visibility)
 
             elif label == 'Smooth Curve':
-                self.options.visibility.curve_samples = not self.options.visibility.curve_samples
-                self._adjust_visibility('curve_samples')
+                visibility.curve_samples = not visibility.curve_samples
+                self._adjust_visibility('curve_samples', handles, visibility)
 
             elif label == 'Raw Curve':
-                self.options.visibility.curve_raw = not self.options.visibility.curve_raw
-                self._adjust_visibility('curve_raw')
+                visibility.curve_raw = not visibility.curve_raw
+                self._adjust_visibility('curve_raw', handles, visibility)
 
             if not self.options.render.defer_show:
                 self.show()
@@ -414,7 +434,7 @@ class Plotter(object):
 
         self._add_checks_to_controller(1, 'curve_main',
             ('Smooth Curve', 'Raw Curve'),
-            (decomposition.sampler_data is not None, decomposition.sampler_data is None), _check_actions)
+            (decomposition.sampler_data is not None, decomposition.sampler_data is None), partial(_check_actions, handles=self.plot_results, visibility=self.visibility_state))
 
         self._add_button_to_controller(0,'save_pdf','Save PDF',_save_pdf)
 
@@ -424,73 +444,73 @@ class Plotter(object):
 
 
         # otherwise, we can keep going.
-        def _check_actions_vertices(vertex_type):
+        def _check_actions_vertices(vertex_type, handles, visibility):
             # flip the bit
-            self.options.visibility.vertices_by_type[vertex_type] = not self.options.visibility.vertices_by_type[vertex_type]
+            visibility.vertices_by_type[vertex_type] = not visibility.vertices_by_type[vertex_type]
             
             # adjust visibility
-            self._adjust_visibility_vertex_type(vertex_type)
+            self._adjust_visibility_vertex_type(vertex_type,handles, visibility)
 
             if not self.options.render.defer_show:
                 self.show()
 
-        def _check_actions_vertices_main(label):
+        def _check_actions_vertices_main(label, handles, visibility):
             # flip the bit
-            self.options.visibility.vertices = not self.options.visibility.vertices
-            self._adjust_visibility('vertices')
+            visibility.vertices = not visibility.vertices
+            self._adjust_visibility('vertices',handles, visibility)
 
             if not self.options.render.defer_show:
                 self.show()
 
         names = [str(T).split('.')[1] for T in self.plot_results['vertices'].values()]
-        initial_state = [self.options.visibility.vertices_by_type[n] for n in names]
+        initial_state = [self.visibility_state.vertices_by_type[n] for n in names]
 
-        self._add_checks_to_controller(0,'vertices_by_type',names,initial_state,_check_actions_vertices)
+        self._add_checks_to_controller(0,'vertices_by_type',names,initial_state,partial(_check_actions_vertices,handles=self.plot_results, visibility=self.visibility_state))
 
         self._add_checks_to_controller(0, 'vertices_main',
             ('Vertices',),
-            (self.options.visibility.vertices,), _check_actions_vertices_main)
+            (self.visibility_state.vertices,), partial(_check_actions_vertices_main, handles=self.plot_results, visibility=self.visibility_state))
 
     def _make_widgets_surface(self,decomposition):
         """
-        You must capture and store the output of this function for it to work correctly.
+        makes the buttons and checkboxes for interacting with a surface
         """
 
         # first, define some actions
-        def _check_actions(label):
+        def _check_actions(label, handles, visibility):
 
             if label == 'Smooth Surface':
-                self.options.visibility.surface_samples = not self.options.visibility.surface_samples
-                self._adjust_visibility('surface_samples')
+                visibility.surface_samples = not visibility.surface_samples
+                self._adjust_visibility('surface_samples', handles, visibility)
 
             elif label == 'Raw Surface':
-                self.options.visibility.surface_raw = not self.options.visibility.surface_raw
-                self._adjust_visibility('surface_raw')
+                visibility.surface_raw = not visibility.surface_raw
+                self._adjust_visibility('surface_raw', handles, visibility)
 
             if not self.options.render.defer_show:
                 self.show()
 
-        def _surface_curve_action(_):
-            self.options.visibility.surface_curves = not self.options.visibility.surface_curves
-            self._adjust_visibility_surface_curves("surface_curves")
+        def _surface_curve_action(_, handles, visibility):
+            visibility.surface_curves = not visibility.surface_curves
+            self._adjust_visibility_surface_curves("surface_curves", handles, visibility)
 
             if not self.options.render.defer_show:
                 self.show()
 
-        def _surface_curve_action_kind(label):
-            self.options.visibility.surface_curves_by_type[label] = not self.options.visibility.surface_curves_by_type[label]
-            self._adjust_visibility_surface_curves("surface_curves")
+        def _surface_curve_action_kind(label, handles, visibility):
+            visibility.surface_curves_by_type[label] = not visibility.surface_curves_by_type[label]
+            self._adjust_visibility_surface_curves("surface_curves", handles, visibility)
 
             if not self.options.render.defer_show:
                 self.show()
 
-        def _surface_curve_action_raw_smooth(label):
+        def _surface_curve_action_raw_smooth(label, handles, visibility):
             if 'raw' in label.lower():
-                self.options.visibility.surface_curves_raw = not self.options.visibility.surface_curves_raw
+                visibility.surface_curves_raw = not visibility.surface_curves_raw
             else:
-                self.options.visibility.surface_curves_samples = not self.options.visibility.surface_curves_samples
+                visibility.surface_curves_samples = not visibility.surface_curves_samples
 
-            self._adjust_visibility_surface_curves("surface_curves")
+            self._adjust_visibility_surface_curves("surface_curves", handles, visibility)
 
             if not self.options.render.defer_show:
                 self.show()
@@ -517,23 +537,24 @@ class Plotter(object):
 
         self._add_checks_to_controller(1, 'surface main',
             ('Smooth Surface', 'Raw Surface'),
-            (len(decomposition.sampler_data)>0, len(decomposition.sampler_data)==0),_check_actions)
+            (len(decomposition.sampler_data)>0, len(decomposition.sampler_data)==0),partial(_check_actions,handles=self.plot_results, visibility=self.visibility_state))
 
         self._add_button_to_controller(0,'export_smooth','Export Smooth OBJ',_export_smooth_action)
         self._add_button_to_controller(0,'export_raw','Export Raw OBJ',_export_raw_action)
         self._add_button_to_controller(0,'save_png','Save PNG',_save_png)
 
         self._add_checks_to_controller(1, 'surface curves kind',
-            self.options.visibility.surface_curves_by_type.keys(),
-            self.options.visibility.surface_curves_by_type.values(),_surface_curve_action_kind)
+            self.visibility_state.surface_curves_by_type.keys(),
+            self.visibility_state.surface_curves_by_type.values(),partial(_surface_curve_action_kind,handles=self.plot_results, visibility=self.visibility_state))
 
         self._add_checks_to_controller(1, 'surface curves raw/samples',
             ('Smooth Surface curves','Raw Surface curves'),
-            (self.options.visibility.surface_curves_samples,self.options.visibility.surface_curves_raw),_surface_curve_action_raw_smooth)
+            (self.visibility_state.surface_curves_samples,self.visibility_state.surface_curves_raw),
+            partial(_surface_curve_action_raw_smooth,handles=self.plot_results, visibility=self.visibility_state))
 
         self._add_checks_to_controller(1, 'surface curves',
             ('Surface Curves',),
-            (self.options.visibility.surface_curves,),_surface_curve_action)
+            (self.visibility_state.surface_curves,),partial(_surface_curve_action,handles=self.plot_results, visibility=self.visibility_state))
 
     def _add_button_to_controller(self, column, widget_name, text, on_clicked):
         from mpl_toolkits.axes_grid1 import Divider, Size
@@ -609,13 +630,15 @@ class Plotter(object):
 
 
 
-    def _make_new_widget_figure(self, figsize = (5,2)):
+    def _make_another_widget_figure(self, figsize = (5,2)):
         """
         The default size is not very meaningful, it will be autoresized as items are put into it
         """
-        self.widget_fig = plt.figure(figsize=figsize)
+        self.all_widget_figs.append(plt.figure(figsize=figsize))
+        self.widget_fig = self.all_widget_figs[-1]
 
         self.widget_fig.canvas.mpl_connect('close_event', lambda event: plt.close(self.fig))
+
 
     def _make_new_main_figure(self, figsize = (8,8)):
         """
@@ -663,40 +686,40 @@ class Plotter(object):
         if self.options.style.autotitle:
             plt.title(os.getcwd().split(os.sep)[-1])
 
-    def _adjust_all_visibility(self):
+    def _adjust_all_visibility(self, handles, visibility):
         for w in self.plot_results.keys():
-            self._adjust_visibility(w)
+            self._adjust_visibility(w, handles, visibility)
 
 
-    def _adjust_visibility(self, what):
+    def _adjust_visibility(self, what, handles, visibility):
         """
         self.show() must be called separately, otherwise get stupid results from calling this in a loop
         """
-        if what not in self.plot_results:
-            raise RuntimeError(f"trying to adjust visibility of things in _adjust_visibility, but those things weren't rendered due to render options.  key: `{what}`.  current options: {dir(self.options.visibility)} {dir(self.options.render)}")
+        if what not in handles:
+            raise RuntimeError(f"trying to adjust visibility of things in _adjust_visibility, but those things weren't rendered due to render options.  key: `{what}`.  \n\ncurrent state:\n{dir(self.visibility_state)}\n\nhandles:\n{handles}")
 
         if what == 'vertices':
-            for T in self.plot_results['vertices'].values():
-                self._adjust_visibility_vertex_type(str(T).split('.')[1])
+            for T in handles['vertices'].values():
+                self._adjust_visibility_vertex_type(str(T).split('.')[1], handles, visibility)
 
         elif what == 'surface_curves':
-            self._adjust_visibility_surface_curves(what)
+            self._adjust_visibility_surface_curves(what, handles, visibility)
 
         else:
-            for h in self.plot_results[what]:
-                h.set_visible(eval( f'self.options.visibility.{what}' ))
+            for h in handles[what]:
+                h.set_visible(eval( f'visibility.{what}' ))
 
 
-    def _adjust_visibility_vertex_type(self, vertex_type):
+    def _adjust_visibility_vertex_type(self, vertex_type, handles, visibility):
         from bertini_real.vertex import VertexType
 
         T = eval(f'VertexType.{vertex_type}')
 
-        for h,t in self.plot_results['vertices'].items():  # this is a dict we're looping over
+        for h,t in handles['vertices'].items():  # this is a dict we're looping over
             if t == T:
-                h.set_visible(self.options.visibility.vertices_by_type[vertex_type] and self.options.visibility.vertices)
+                h.set_visible(visibility.vertices_by_type[vertex_type] and visibility.vertices)
 
-    def _adjust_visibility_surface_curves(self, _):
+    def _adjust_visibility_surface_curves(self, _, handles, visibility):
         """
         I'm pretty happy with this function, it deals with the three aspects of surface curve visibility:
         1. main
@@ -707,7 +730,7 @@ class Plotter(object):
         """
 
         # loop over all the lists of handles.  they're like `critical_raw` or `midslice_samples`
-        for kind_subkind,handles in self.plot_results['surface_curves'].items():
+        for kind_subkind,handles in handles['surface_curves'].items():
 
             # unpack from the name
             kind, raw_or_samples = kind_subkind.split('_') 
@@ -715,11 +738,11 @@ class Plotter(object):
             # raw or samples
 
             # get the bits from the options
-            visibility = self.options.visibility.surface_curves_by_type[kind] and eval(f'self.options.visibility.surface_curves_{raw_or_samples}') and self.options.visibility.surface_curves
+            is_vis = visibility.surface_curves_by_type[kind] and eval(f'visibility.surface_curves_{raw_or_samples}') and visibility.surface_curves
             
             # actually make this thing visible or not.
             for h in handles:
-                h.set_visible(visibility)
+                h.set_visible(is_vis)
 
 
 
@@ -814,17 +837,17 @@ class Plotter(object):
         handle_name = "curve_raw"
         if self.options.render.curve_raw:
             self._plot_raw_edges(curve,handle_name)
-            self._adjust_visibility(handle_name)
+            self._adjust_visibility(handle_name, self.plot_results, self.visibility_state)
 
         handle_name = "curve_samples"
         if self.options.render.curve_samples:
             self._plot_edge_samples(curve,handle_name)
-            self._adjust_visibility(handle_name)
+            self._adjust_visibility(handle_name, self.plot_results, self.visibility_state)
 
         
         if self.options.render.vertices:
             self._plot_vertices(curve)
-            self._adjust_visibility('vertices')
+            self._adjust_visibility('vertices', self.plot_results, self.visibility_state)
 
         widgets = self._make_widgets_curve(curve)
 
@@ -1036,6 +1059,7 @@ class Plotter(object):
         if self.options.render.surface_curves:
             self._plot_surface_curves(surf)
 
+        self._adjust_all_visibility(self.plot_results, self.visibility_state)
         widgets = self._make_widgets_surface(surf)
 
 
@@ -1066,7 +1090,7 @@ class Plotter(object):
                 for ii,c in enumerate(surf.midpoint_slices):
                     self._plot_embedded_curve(c, 'midslice')
 
-            self._adjust_visibility('surface_curves')
+            self._adjust_visibility('surface_curves', self.plot_results, self.visibility_state)
 
 
 
