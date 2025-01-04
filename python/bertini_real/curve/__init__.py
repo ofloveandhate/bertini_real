@@ -238,6 +238,9 @@ class Curve(Decomposition):
 
     def __str__(self):
         """ toString method for Curve """
-        result = "curve with:\n"
+        result = "Curve with:\n"
         result += "{} edges".format(self.num_edges)
         return result
+
+    def __repr__(self):
+        return str(self)
