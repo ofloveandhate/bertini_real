@@ -502,7 +502,6 @@ for ii = 1:BRinfo.num_vertices
 		tmpvertex(jj) = tmp(1)+1i*tmp(2);
 	end
     
-    disp(tmpvertex)
 	BRinfo.compressed_data.fv.vertices(ii,:) = real(dehomogenize(tmpvertex(1:num_natural_vars)))';
 	BRinfo.vertices(ii).point = [dehomogenize(tmpvertex(1:num_natural_vars));tmpvertex(num_natural_vars+1:end)];
 	
