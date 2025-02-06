@@ -3,8 +3,9 @@
 
 
 
-#we're building bertini_real, version 1.8, and the corresponding email is silviana's
-AC_INIT([bertini_real],[1.8],[silviana.amethyst@gmail.com],[bertini_real],[https://bertinireal.com/])
+#we're building bertini_real, version 1.8.0, and the corresponding email is silviana's
+# please make sure the version number always has three entries.
+AC_INIT([bertini_real],[1.8.0],[silviana.amethyst@gmail.com],[bertini_real],[https://bertinireal.com/])
 
 
 # Force autoconf to be at least this version number:

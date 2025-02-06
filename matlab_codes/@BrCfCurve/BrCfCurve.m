@@ -170,7 +170,7 @@ classdef BrCfCurve < handle
 			prev_filenames = dir('BRinfo*.mat');
 
 			if isempty(prev_filenames)
-				error('no obvious BRinfo files to load');
+				error('no obvious BRinfo files to load, I think you need to `gather_br_samples`');
 			end
 
 			max_found = -1;

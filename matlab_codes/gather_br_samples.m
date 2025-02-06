@@ -501,7 +501,8 @@ for ii = 1:BRinfo.num_vertices
 		tmp = fscanf(fid,'%e %e\n',[1 2]);
 		tmpvertex(jj) = tmp(1)+1i*tmp(2);
 	end
-
+    
+    disp(tmpvertex)
 	BRinfo.compressed_data.fv.vertices(ii,:) = real(dehomogenize(tmpvertex(1:num_natural_vars)))';
 	BRinfo.vertices(ii).point = [dehomogenize(tmpvertex(1:num_natural_vars));tmpvertex(num_natural_vars+1:end)];
 	
@@ -513,9 +514,11 @@ for ii = 1:BRinfo.num_vertices
     BRinfo.vertices(ii).input_filename_index = fscanf(fid,'%i',[1 1]);
 	BRinfo.vertices(ii).type = fscanf(fid,'%i',[1 1]);
 
-	% this feature was introduced in v 1.8
-	if BRinfo.version.gather >= 180
-		BRinfo.vertices(ii).path_numbers_ending_here = % read a line and split.  this is deliberately a syntax error
+	% this feature was introduced in v 1.8.0
+	if BRinfo.run_metadata.version.gather >= 180
+        num_paths_ending_here = fscanf(fid,'%i\n',[1 1]);
+        paths_ending_here = fscanf(fid,'%i',[1 num_paths_ending_here]);
+		BRinfo.vertices(ii).path_numbers_ending_here = paths_ending_here;% read a line and split.  this is deliberately a syntax error
 	end
 
 
