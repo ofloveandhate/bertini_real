@@ -1,6 +1,6 @@
 % input file for "a projective surface of degree eight with 168 nodes"
 % by 
-% S. Endraﬂ
+% S. Endra√ü
 % 
 % avail from the arxiv at https://arxiv.org/pdf/alg-geom/9507011.pdf
 
@@ -24,7 +24,7 @@ securitylevel: 1;
 
 tracktolbeforeeg: 1e-10;
 tracktolduringeg: 1e-10;
-finaltol: 1e-14;
+finaltol: 1e-12;
 sharpendigits: 30;
 
 functiontolerance: 1e-6;
@@ -56,22 +56,23 @@ constant w;
 w = 1;
 
 
-
+constant rt2;
 rt2 = 2^(1/2);
-w_2 = w^2;
-x_2 = x^2;
-y_2 = y^2;
-z_2 = z^2;
+
+%w^2 = w^2;
+%x^2 = x^2;
+%y^2 = y^2;
+%z^2 = z^2;
 
 f = 
-64*(x_2-w_2)*(y_2-w_2)*((x + y)^2 - 2*w_2)*
-	((x-y)^2-2*w_2)
+64*(x^2-w^2)*(y^2-w^2)*((x + y)^2 - 2*w^2)*
+	((x-y)^2-2*w^2)
 -
 ( %square bracket
 	-4*
-	(1 + rt2)*(x_2+y_2)^2+
-8*(2 + rt2)*z_2 + 2*(2 + 7 * rt2)*w_2*(x_2 + y_2)
--16 *z^4 + 8*(1 - 2*rt2)*z_2*w_2 -(1 + 12 *rt2)*w_2^2
+	(1 + rt2)*(x^2+y^2)^2+
+8*(2 + rt2)*z^2 + 2*(2 + 7 * rt2)*w^2*(x^2 + y^2)
+-16 *z^4 + 8*(1 - 2*rt2)*z^2*w^2 -(1 + 12 *rt2)*w^2^2
 ) %close square bracket
 ^2;
 %implicit =0
