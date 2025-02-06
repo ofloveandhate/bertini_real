@@ -19,8 +19,8 @@ set(curve_handles,'LineWidth',8,'Color','w');
 curve_handles = plot(C);
 set(curve_handles,'LineWidth',2,'Color','k');
 
-
-[max_vals,max_locations] = min(C,f,'local');
+C.set_function(f)
+[max_vals,max_locations] = min(C,'local');
 
 max_handles = plot(max_locations(:,1),max_locations(:,2));
 set(max_handles,'MarkerSize',14,'LineStyle','none','Marker','o','MarkerFaceColor',[0.94 0.94 0.94],'LineWidth',2,'Color','k');
