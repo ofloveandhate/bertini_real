@@ -22,6 +22,7 @@ sharpendigits: 30;
 
 endpointfinitethreshold: 1e8;
 
+endgamebdry: 0.001;
 
 
 END;
