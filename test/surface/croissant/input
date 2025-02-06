@@ -1,0 +1,42 @@
+CONFIG
+
+tracktype: 1;
+
+maxnewtonits: 2;
+
+maxstepsbeforenewton: 0;
+
+ODEPREDICTOR: 7;
+
+TRACKTOLBEFOREEG: 1e-8;
+tracktolduringeg: 1e-9;
+
+egbdry: 1e-2;
+
+numsamplepoints: 5;
+
+maxstepsize: 0.01;
+
+finaltol: 1e-13;
+
+sharpendigits: 30;
+
+condnumthreshold: 1e15;
+
+endgamenum: 2;
+
+END;
+
+INPUT
+
+variable_group x,y,z;
+
+function f;
+
+constant sqrt5;
+
+sqrt5 = 5^(1/2);
+
+f = (x^2+y^2+z^2+7*sqrt5/2-11/2)^2-((1+sqrt5)*x-7+3*sqrt5)^2-(1+sqrt5)^2*y^2;
+
+END;
