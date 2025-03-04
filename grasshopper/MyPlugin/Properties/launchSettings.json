@@ -1,9 +1,0 @@
-{
-  "profiles": {
-    "MyPlugin": {
-      "commandName": "Executable",
-      "executablePath": "/Users/amethyst/Applications/Rhino 7.app",
-      "commandLineArgs": ""
-    }
-  }
-}
