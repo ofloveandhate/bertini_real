@@ -6,6 +6,10 @@ using System.Numerics;
 using System.Windows.Forms;
 using Grasshopper.Kernel;
 using Rhino.Geometry;
+using Rhino.Collections;
+using Grasshopper;
+using Grasshopper.Kernel.Data;
+using Grasshopper.Kernel.Components;
 
 namespace bertini_real
 {
@@ -36,8 +40,8 @@ namespace bertini_real
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGeometryParameter("Vertices", "V", "the complete set of vertices of the curve.  Discards imaginary parts!!!", GH_ParamAccess.list);
-            pManager.AddGeometryParameter("Curve edges", "E", "the edges of the curve", GH_ParamAccess.list);
+            pManager.AddGeometryParameter("Vertices", "Vs", "the complete set of vertices of the curve.  Discards imaginary parts!!!", GH_ParamAccess.list);
+            pManager.AddNumberParameter("Edge indices", "EIs", "the edges of the curve", GH_ParamAccess.tree);
         }
 
         /// <summary>
@@ -53,8 +57,10 @@ namespace bertini_real
             folder = Path.Combine(folder, "output_dim_1_comp_0");
 
             List<Point3d> vertices = read_vertices(folder);
+            var edge_sample_indices = read_sampled_edges(folder);
             
             DA.SetDataList(0, vertices);
+            DA.SetDataTree(1, edge_sample_indices);
         }
 
         private List<Point3d> read_vertices(string folder) {
@@ -143,6 +149,43 @@ namespace bertini_real
 
             return vertices;
         }
+
+        private DataTree<object> read_sampled_edges(string folder) {
+
+
+
+            var edges = new DataTree<object>();
+
+            using (var reader = new StreamReader(Path.Combine(folder, "samp.curvesamp")))
+            {
+                // Read first line and get number of vertices, projections, etc.
+                var topline = reader.ReadLine();
+                var numEdges = int.Parse(topline);
+
+                
+
+                // Skip unused data
+                for (int i = 0; i < numEdges; i++)
+                {
+                    var edge = new List<object>();
+
+                    reader.ReadLine(); // burn a blank line
+                    var line = reader.ReadLine();
+                    var num_pts_this_edge = int.Parse(line.Trim());
+                    var indices_this_edge_as_str = reader.ReadLine().Trim().Split(' ');
+                    for (int j = 0; j < num_pts_this_edge; j++)
+                    {   
+                        int p = int.Parse(indices_this_edge_as_str[j]);
+                        edge.Add(p);
+                        // edges.Add(p, new GH_Path(i,j));
+                        // see https://www.grasshopper3d.com/forum/topics/gh-structure-list-of-lists-output
+                    }
+                    edges.AddRange(edge, new GH_Path(i));
+                }
+            }
+            return edges;
+        }
+
 
         private Point3d ConvertToPoint3d(List<Complex> point){
             Point3d result = new Point3d();
