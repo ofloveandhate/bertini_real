@@ -778,7 +778,7 @@ class Plotter(object):
 
         for T,m in zip(VertexType, markers.keys()):
 
-            plot_these = np.array([v.type == T for v in decomposition.vertices])
+            plot_these = np.array([v.is_of_type(T) for v in decomposition.vertices])
 
             if not np.any(plot_these):
                 continue
