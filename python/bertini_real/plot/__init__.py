@@ -1108,7 +1108,7 @@ class Plotter(object):
             # self._adjust_visibility(handle_name) # for embedded, this is done at a higher level
 
         handle_name = curve_name+"_samples"
-        if self.options.render.surface_curves_samples:
+        if self.options.render.surface_curves_samples and curve.sampler_data:
             self._plot_edge_samples(curve, curve_name=('surface_curves',handle_name))
             # self._adjust_visibility(handle_name) # for embedded, this is done at a higher level
 
