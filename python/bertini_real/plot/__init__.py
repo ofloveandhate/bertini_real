@@ -98,7 +98,7 @@ class VisibilityOptions(object):
         self.surface_curves_raw = False
         self.surface_curves_samples = False
 
-        surface_curve_types = ['critical','singular','midslice','critslice']
+        surface_curve_types = ['critical','singular','midslice','critslice','sphere']
         self.surface_curves_by_type = {n:False for n in surface_curve_types}
 
         self.curve_samples = False
@@ -194,6 +194,7 @@ class RenderOptions(object):
         self.surface_singular_curves = True
         self.surface_critical_slices = True
         self.surface_midslices = True
+        self.surface_sphere_curve = True
 
 
         # for just curves, not embedded
@@ -1078,6 +1079,9 @@ class Plotter(object):
             if self.options.render.surface_critical_curve:
                 self._plot_embedded_curve(surf.critical_curve, 'critical')
 
+            if self.options.render.surface_sphere_curve:
+                self._plot_embedded_curve(surf.sphere_curve, 'sphere')
+
             if self.options.render.surface_singular_curves:
                 for c,m in zip(surf.singular_curves, surf.singular_names):
                     self._plot_embedded_curve(c, 'singular')
@@ -1089,6 +1093,8 @@ class Plotter(object):
             if self.options.render.surface_midslices:
                 for ii,c in enumerate(surf.midpoint_slices):
                     self._plot_embedded_curve(c, 'midslice')
+
+
 
             self._adjust_visibility('surface_curves', self.plot_results, self.visibility_state)
 
