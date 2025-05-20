@@ -306,6 +306,7 @@ int VertexSet::add_vertex(const Vertex & source_vertex, SolutionMetadata const& 
 	{
 		vertices_[num_vertices_].set_input_filename_index(curr_input_index_);
 	}
+	vertices_[num_vertices_].add_input_filename_index(curr_input_index_);
 
 
 	this->num_vertices_++;

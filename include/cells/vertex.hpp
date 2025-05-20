@@ -23,6 +23,7 @@ private:
 
 	VertexType type_;  ///< See enum.
 	int input_filename_index_; ///< index into the vertex_set's vector of filenames.
+	std::vector<int> input_filename_indices_; ///< indices into the vertex_set's vector of filenames, every time it is found.  added 1.9
 	std::vector<int> path_numbers_ending_here_; ///< the integer indices of the path numbers ending at this vertex.   added v 1.8.0
 
 public:
@@ -59,6 +60,15 @@ public:
 		return input_filename_index_;
 	}
 
+	/**
+	 \brief get the indices of all systems on which this point is incident
+
+	 \return the indices
+	 */
+	inline const std::vector<int>& input_filename_indices() const
+	{
+		return input_filename_indices_;
+	}
 
 	/**
 	 \brief set the index
@@ -68,6 +78,16 @@ public:
 	void set_input_filename_index(int new_index)
 	{
 		input_filename_index_ = new_index;
+	}
+
+	/**
+	 \brief add another index, for a system on which this vertex lives
+
+	 \param new_index the new index to set in the Vertex
+	 */
+	void add_input_filename_index(int new_index)
+	{
+		input_filename_indices_.push_back(new_index);
 	}
 
 
@@ -195,6 +215,10 @@ public:
 		print_point_to_screen_matlab(pt_mp_,"point");
 		print_point_to_screen_matlab(projection_values_,"projection_values");
 		std::cout << "type: " << type_ << std::endl;
+		std::cout << "originating filename index: " << input_filename_index_ << std::endl;
+		std::cout << "all filename indices: ";
+		for (auto f: input_filename_indices_) 
+			std::cout << f << " ";
 		std::cout << "paths ending here: ";
 		for (auto p: path_numbers_ending_here_)
 			std::cout << p << " ";
@@ -280,6 +304,7 @@ private:
 		this->type_ = other.type_;
 
 		this->input_filename_index_ = other.input_filename_index_;
+		this->input_filename_indices_ = other.input_filename_indices_;
 
 		this->path_numbers_ending_here_ = other.path_numbers_ending_here_;
 	}
