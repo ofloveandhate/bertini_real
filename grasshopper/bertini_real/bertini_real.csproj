@@ -19,7 +19,7 @@
     <Version>1.0</Version>
     <Title>bertini_real</Title>
     <Company>bertini_real Authors</Company>
-    <Description>software for real algebraic sets computed with bertini_real</Description>
+    <Description>Software for real algebraic sets</Description>
   </PropertyGroup>
   
   <ItemGroup>
