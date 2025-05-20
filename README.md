@@ -13,7 +13,18 @@ This software implements a numerical algorithm for decomposing real surfaces of 
 For documentation, please visit [bertinireal.com](https://bertinireal.com) and [doc.bertinireal.com](https://doc.bertinireal.com)
 
 
+---
+
 # Notes
+
+
+On my Mac, I use this line to configure
+
+```
+./configure CPPFLAGS=-I/opt/homebrew/include LDFLAGS=-L/opt/homebrew/lib --no-create --no-recursion
+```
+
+---
 
 Bertini_real is implemented in C++ and compiles against a number of libraries.  It has been developed and tested in Linux and OSX, and been tested in Cygwin.  It has never been compiled in Windows without another helper environment like MinGW or Cygwin.
 
