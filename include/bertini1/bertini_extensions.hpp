@@ -738,28 +738,28 @@ void receive_comp_num_rat(const mpq_t c[][2], int num, int source);
  \param M the vector to print
  \param name the string of the name to give it.
  */
-void print_point_to_screen_matlab(const vec_d M, std::string name);
+void print_point_to_screen_matlab(const vec_d M, std::string name, int digits=8);
 /**
  \brief Print a vector to the screen for copypasta into Matlab's command window or a file.
 
  \param M the vector to print
  \param name the string of the name to give it.
  */
-void print_point_to_screen_matlab(const vec_mp M, std::string name);
+void print_point_to_screen_matlab(const vec_mp M, std::string name, int digits=8);
 /**
  \brief Print a matrix to the screen for copypasta into Matlab's command window or a file.
 
  \param M the matrix to print
  \param name the string of the name to give it.
  */
-void print_matrix_to_screen_matlab(const mat_d M, std::string name);
+void print_matrix_to_screen_matlab(const mat_d M, std::string name, int digits=8);
 /**
  \brief Print a matrix to the screen for copypasta into Matlab's command window or a file.
 
  \param M the matrix to print
  \param name the string of the name to give it.
  */
-void print_matrix_to_screen_matlab(const mat_mp M, std::string name);
+void print_matrix_to_screen_matlab(const mat_mp M, std::string name, int digits=8);
 
 
 
@@ -769,14 +769,14 @@ void print_matrix_to_screen_matlab(const mat_mp M, std::string name);
  \param M the number to print
  \param name the string of the name to give it.
  */
-void print_comp_matlab(const comp_mp M,std::string name);
+void print_comp_matlab(const comp_mp M,std::string name, int digits=8);
 /**
  \brief Print a complex number to the screen for copypasta into Matlab's command window or a file.
 
  \param M the number to print
  \param name the string of the name to give it.
  */
-void print_comp_matlab(const comp_d M,std::string name);
+void print_comp_matlab(const comp_d M,std::string name, int digits=8);
 
 
 

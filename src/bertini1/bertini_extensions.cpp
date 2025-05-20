@@ -1051,27 +1051,30 @@ void real_threshold(mat_mp blabla, double threshold)
 
 
 
-void print_point_to_screen_matlab(const vec_d M, std::string name)
-{
+void print_point_to_screen_matlab(const vec_d M, std::string name, int digits)
+{	
+	std::stringstream format;
+	format << "\t\t%." << digits << "le+1i*%." << digits << "le;\n";
 
 	printf("%s = [...\n",name.c_str());
 	for (int kk = 0; kk < M->size; kk++)
 	{ // print kth coordinate
-		printf("\t\t%.8le+1i*%.8le;\n",M->coord[kk].r,M->coord[kk].i);
+
+		printf(format.str().c_str(),M->coord[kk].r,M->coord[kk].i);
 	}
 	printf("];\n\n");
 }
 
-void print_point_to_screen_matlab(const vec_mp M, std::string name)
+void print_point_to_screen_matlab(const vec_mp M, std::string name, int digits)
 {
 
 	printf("%s = [...\n",name.c_str());
 	for (int kk = 0; kk < M->size; kk++)
 	{ // print kth coordinate
 		printf("\t\t");
-		mpf_out_str(stdout, 10, 8, M->coord[kk].r);
+		mpf_out_str(stdout, 10, digits, M->coord[kk].r);
 		printf("+1i*");
-		mpf_out_str(stdout, 10, 8, M->coord[kk].i);
+		mpf_out_str(stdout, 10, digits, M->coord[kk].i);
 		printf(";\n");
 	}
 	printf("];\n\n");
@@ -1079,9 +1082,10 @@ void print_point_to_screen_matlab(const vec_mp M, std::string name)
 
 
 
-void print_matrix_to_screen_matlab(const mat_d M, std::string name)
+void print_matrix_to_screen_matlab(const mat_d M, std::string name, int digits)
 {
-
+	std::stringstream format;
+	format << "%." << digits << "le+1i*%." << digits << "le ";
 
 	printf("%%matrix '%s' has dimensions %dx%d\n", name.c_str(), M->rows,M->cols);
 	printf("%s = [...\n",name.c_str());
@@ -1090,7 +1094,7 @@ void print_matrix_to_screen_matlab(const mat_d M, std::string name)
 		printf("\t\t");
 		for (int jj = 0; jj < M->cols; jj++)
 		{
-			printf("%.4le+1i*%.4le ",M->entry[kk][jj].r,M->entry[kk][jj].i );
+			printf(format.str().c_str(),M->entry[kk][jj].r,M->entry[kk][jj].i );
 		}
 		if (kk!= M->rows-1) {
 			printf(";...\n");
@@ -1099,7 +1103,7 @@ void print_matrix_to_screen_matlab(const mat_d M, std::string name)
 	}
 	printf("];\n\n");
 }
-void print_matrix_to_screen_matlab(const mat_mp M, std::string name)
+void print_matrix_to_screen_matlab(const mat_mp M, std::string name, int digits)
 {
 
 
@@ -1111,9 +1115,9 @@ void print_matrix_to_screen_matlab(const mat_mp M, std::string name)
 		for (int jj = 0; jj < M->cols; jj++)
 		{
 
-			mpf_out_str(stdout, 10, 8, M->entry[kk][jj].r);
+			mpf_out_str(stdout, 10, digits, M->entry[kk][jj].r);
 			printf("+1i*");
-			mpf_out_str(stdout, 10, 8, M->entry[kk][jj].i); // base 10 , 7 digits
+			mpf_out_str(stdout, 10, digits, M->entry[kk][jj].i); // base 10 , 7 digits
 			printf("\t");
 		}
 		printf(";\n");
@@ -1122,17 +1126,20 @@ void print_matrix_to_screen_matlab(const mat_mp M, std::string name)
 }
 
 
-void print_comp_matlab(const comp_mp M, std::string name){
+void print_comp_matlab(const comp_mp M, std::string name, int digits){
 	printf("%s=",name.c_str());
-	mpf_out_str(stdout, 10, 8, M->r);
+	mpf_out_str(stdout, 10, digits, M->r);
 	printf("+1i*");
-	mpf_out_str(stdout, 10, 8, M->i); // base 10, 6 digits
+	mpf_out_str(stdout, 10, digits, M->i); // base 10, digits digits
 	printf("\n");
 	return;
 }
 
-void print_comp_matlab(const comp_d M, std::string name){
-	printf("%s=%.5le+1i*%.5le\n",name.c_str(),M->r,M->i);
+void print_comp_matlab(const comp_d M, std::string name, int digits){
+	std::stringstream format;
+	format << "%s=%." << digits << "le+1i*%." << digits << "le\n";
+
+	printf(format.str().c_str(),name.c_str(),M->r,M->i);
 	return;
 }
 
