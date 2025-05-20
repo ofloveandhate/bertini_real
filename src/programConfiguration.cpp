@@ -346,7 +346,6 @@ void BertiniRealConfig::display_current_options() const
 
 
 	std::cout << "stifle_text: " << stifle_text() << "\n";
-	std::cout << "matlab_command: " << matlab_command() << "\n";
 	std::cout << "output_directory base name: " << output_dir() << '\n';
 
 	// Which symbolic Engine
@@ -354,6 +353,7 @@ void BertiniRealConfig::display_current_options() const
 	  {
 	  case SymEngine::Matlab:
 	    std::cout << "Using Matlab as the symbolic engine.\n";
+	    std::cout << "matlab_command: " << matlab_command() << "\n";
 	    break;
 	  case SymEngine::Python:
 	    std::cout << "Using Python as the symbolic engine.\n";
@@ -635,7 +635,7 @@ void BertiniRealConfig::print_usage() const
 	line("-sphere -b", 			"string", 	" -- ", "name of sphere file");
 	line("-r -robustness", 			"int", 	" 1 ", "use lower robustness to speed up computation -- but get worse results, probably");
 	line("-debug", 				" -- ", 	" ", "make bertini_real wait 30 seconds for you to attach a debugger");
-	line("-symengine -E", 		"string", 	"matlab", "select a symbolic engine.  choices are 'matlab' and 'python'");
+	line("-symengine -E", 		"string", 	"python", "select a symbolic engine.  choices are 'matlab' and 'python'");
 	line("-pycommand -P", 		"string", 	"python", "indicate how python should be called.  default is 'python'");
 	line("-symnosubst", 		" -- ", 	" ", "prevent substitution of subfunctions during deflation and other sym ops.");
 	line("-symallowsubst", 		" -- ", 	" ", "allow substitution of subfunctions during deflation and other sym ops.  default");
@@ -689,7 +689,7 @@ void BertiniRealConfig::init()
 	merge_edges_ = true;
 
 	primary_mode_ = BERTINIREAL;
-	engine_ = SymEngine::Matlab; // setting default to Matlab symbolic engine
+	engine_ = SymEngine::Python; // setting default to python symbolic engine
 	prevent_sym_substitution_ = false;
 
 	same_point_tol_ = 1e-7;
