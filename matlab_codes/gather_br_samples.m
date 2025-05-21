@@ -92,7 +92,7 @@ function md = gather_run_metadata(dirname)
 		md.version.subminor = str2num(md.version.string(pds(2)+1:end));
 		
 		md.version.number = 100*md.version.major + md.version.minor + 0.01 * md.version.subminor;
-		md.version.gather = 180;
+		md.version.gather = 190;
 	else
 		
 		md.version.string = 'earlier than 1.4';
