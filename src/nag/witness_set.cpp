@@ -55,8 +55,7 @@ void SolutionMetadata::send(int target, ParallelismConfig & mpi_config) const
 {
     //send all the data to the other party
 
-
-    long long *buffer = (long long *) br_malloc(9*sizeof(long long));
+    long long *buffer = new long long[9];
     buffer[0] = path_numbers_zero_based.size();
     buffer[1] = path_numbers_absolute.size();
     buffer[2] = output_index;
@@ -67,12 +66,12 @@ void SolutionMetadata::send(int target, ParallelismConfig & mpi_config) const
     buffer[7] = is_real;
     buffer[8] = cycle_number_;
 
-    MPI_Send(buffer, 9, MPI_LONG_LONG, SOLUTION_METADATA, target, mpi_config.comm());
+    MPI_Send(buffer, 9, MPI_LONG_LONG, target, SOLUTION_METADATA, mpi_config.comm());
 
-    free(buffer);
+    delete[] buffer;
 
-    MPI_Send(&path_numbers_zero_based[0], path_numbers_zero_based.size(), MPI_LONG_LONG, SOLUTION_METADATA, target, mpi_config.comm());
-    MPI_Send(&path_numbers_absolute[0], path_numbers_absolute.size(), MPI_LONG_LONG, SOLUTION_METADATA, target, mpi_config.comm());
+    MPI_Send(&path_numbers_zero_based[0], path_numbers_zero_based.size(), MPI_LONG_LONG, target, SOLUTION_METADATA, mpi_config.comm());
+    MPI_Send(&path_numbers_absolute[0], path_numbers_absolute.size(), MPI_LONG_LONG, target, SOLUTION_METADATA, mpi_config.comm());
 
     return;
 }
@@ -81,9 +80,9 @@ void SolutionMetadata::receive(int source, ParallelismConfig & mpi_config)
 {
     MPI_Status statty_mc_gatty;
 
-	int *buffer = new int[9];
+	long long *buffer = new long long[9];
 
-    MPI_Recv(buffer, 9, MPI_LONG_LONG, SOLUTION_METADATA, source, mpi_config.comm(), &statty_mc_gatty);
+    MPI_Recv(buffer, 9, MPI_LONG_LONG, source, SOLUTION_METADATA, mpi_config.comm(), &statty_mc_gatty);
 
     path_numbers_zero_based.resize(buffer[0]);
     path_numbers_absolute.resize(buffer[1]);
@@ -96,10 +95,10 @@ void SolutionMetadata::receive(int source, ParallelismConfig & mpi_config)
     is_real = buffer[7];
     cycle_number_ = buffer[8];
 
-    MPI_Recv(&path_numbers_zero_based[0], buffer[0], MPI_LONG_LONG, SOLUTION_METADATA, source, mpi_config.comm(), &statty_mc_gatty);
-    MPI_Recv(&path_numbers_absolute[0], buffer[1], MPI_LONG_LONG, SOLUTION_METADATA, source, mpi_config.comm(), &statty_mc_gatty);
+    delete[] buffer; 
 
-    delete[] buffer; // silviana, it makes me angry that in the send you malloc, and here you delete.  this sucks.
+    MPI_Recv(&path_numbers_zero_based[0], buffer[0], MPI_LONG_LONG, source, SOLUTION_METADATA, mpi_config.comm(), &statty_mc_gatty);
+    MPI_Recv(&path_numbers_absolute[0], buffer[1], MPI_LONG_LONG, source, SOLUTION_METADATA, mpi_config.comm(), &statty_mc_gatty);
 
     return;
 }
