@@ -68,10 +68,10 @@ void SolutionMetadata::send(int target, ParallelismConfig & mpi_config) const
 
     MPI_Send(buffer, 9, MPI_LONG_LONG, target, SOLUTION_METADATA, mpi_config.comm());
 
-    delete[] buffer;
 
     MPI_Send(&path_numbers_zero_based[0], path_numbers_zero_based.size(), MPI_LONG_LONG, target, SOLUTION_METADATA, mpi_config.comm());
     MPI_Send(&path_numbers_absolute[0], path_numbers_absolute.size(), MPI_LONG_LONG, target, SOLUTION_METADATA, mpi_config.comm());
+    delete[] buffer;
 
     return;
 }
@@ -95,10 +95,11 @@ void SolutionMetadata::receive(int source, ParallelismConfig & mpi_config)
     is_real = buffer[7];
     cycle_number_ = buffer[8];
 
-    delete[] buffer; 
 
     MPI_Recv(&path_numbers_zero_based[0], buffer[0], MPI_LONG_LONG, source, SOLUTION_METADATA, mpi_config.comm(), &statty_mc_gatty);
     MPI_Recv(&path_numbers_absolute[0], buffer[1], MPI_LONG_LONG, source, SOLUTION_METADATA, mpi_config.comm(), &statty_mc_gatty);
+
+    delete[] buffer; 
 
     return;
 }
