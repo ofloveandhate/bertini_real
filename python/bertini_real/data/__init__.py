@@ -105,12 +105,19 @@ def gather_vertices(directory):
             while line == '\n':
                 line = f.readline()
 
-            input_in = float(
-                line.replace('\n', ''))
-            line = f.readline()
+            filename_index = int(line.replace('\n', ''))
 
-            while line == '\n':
+
+            all_filename_indices = "feature added in 1.9, your data is too old.  run a new decomposition using 1.9 or higher"
+            if bertini_real.__version_info__ >= (1,9):
                 line = f.readline()
+                num_filename_indices = int(line)
+                line = f.readline()
+                all_filename_indices = [int(n) for n in line.split()]
+                if len(all_filename_indices) != num_filename_indices:
+                    raise RuntimeError(f"incorrect number of filename indices read, expected {num_filename_indices} but got {len(all_filename_indices)}")
+            
+            line = f.readline()
 
             vertextype = int(line.replace('\n', ''))
 
@@ -121,8 +128,7 @@ def gather_vertices(directory):
                 line = f.readline()
                 path_numbers_ending_here = [int(n) for n in line.split()]
 
-            v = Vertex(point, input_in, proj, vertextype, path_numbers_ending_here)
-            vertices[ii] = v
+            vertices[ii] = Vertex(point, filename_index, proj, vertextype, path_numbers_ending_here, all_filename_indices)
 
         return vertices, filenames
 
