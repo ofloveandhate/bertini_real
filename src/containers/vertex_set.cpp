@@ -480,6 +480,13 @@ void VertexSet::print(boost::filesystem::path const& outputfile) const
 
 		fprintf(OUT,"%d\n",vertices_[ii].input_filename_index());
 
+		// added in 1.9
+		fprintf(OUT,"%d\n",vertices_[ii].input_filename_indices().size());
+		for (auto ind : vertices_[ii].input_filename_indices())
+			fprintf(OUT,"%d",ind);
+		fprintf(OUT,"\n");
+
+
 		// fprintf(OUT,"\n"); // removed 1.8.0.  i hope this doesn't cause problems.
 		fprintf(OUT,"%d\n",vertices_[ii].type());
 
