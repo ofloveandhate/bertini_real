@@ -1,0 +1,16 @@
+CONFIG
+
+tracktype: 1;
+
+
+END;
+
+INPUT
+
+variable_group x, y;
+
+function f;
+
+f = 12^2 * (x^4 + y^4) - 15^2 * (x^2 + y^2) + 350 * x^2 * y^2 + 81;
+
+END;
