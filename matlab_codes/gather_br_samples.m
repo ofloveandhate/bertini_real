@@ -510,7 +510,15 @@ for ii = 1:BRinfo.num_vertices
 		tmp = fscanf(fid,'%e %e\n',[1 2]);
 		BRinfo.vertices(ii).projection_value(jj) = tmp(1)+1i*tmp(2);
 	end
-    BRinfo.vertices(ii).input_filename_index = fscanf(fid,'%i',[1 1]);
+    BRinfo.vertices(ii).input_filename_index = fscanf(fid,'%i\n',[1 1]);
+
+
+    num_input_filename_indices = fscanf(fid,'%i\n',[1 1]);
+    BRinfo.vertices(ii).all_input_filename_indices = zeros(num_input_filename_indices,1);
+    for jj = 1:num_input_filename_indices
+        BRinfo.vertices(ii).all_input_filename_indices(end+1) =  fscanf(fid,'%i',[1 1]);
+    end
+
 	BRinfo.vertices(ii).type = fscanf(fid,'%i',[1 1]);
 
 	% this feature was introduced in v 1.8.0
