@@ -473,7 +473,7 @@ int Curve::interslice(const WitnessSet & W_curve,
 	SetCritSliceValues(crit_downstairs);
 
 	if (program_options.verbose_level()>=0) {
-		print_point_to_screen_matlab(crit_downstairs,"curve_interslice_crit_downstairs");
+		print_point_to_screen_matlab(crit_downstairs,"curve_interslice_crit_downstairs", 15);
 	}
 
 
