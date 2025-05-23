@@ -1,0 +1,14 @@
+CONFIG
+tracktype: 1;
+
+END;
+
+INPUT
+
+variable_group x, y;
+
+function f;
+
+f = y^2 - x^2*(x+1);
+
+END;
