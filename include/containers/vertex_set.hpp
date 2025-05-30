@@ -89,6 +89,7 @@ public:
 
 
 
+	void add_current_input_index_to_vertex(unsigned int index);
 
 	/**
 	 \brief get the number of natural variables

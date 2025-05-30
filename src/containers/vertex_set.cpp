@@ -90,6 +90,11 @@ int VertexSet::search_for_removed_point(vec_mp const& testpoint)
 
 
 
+void VertexSet::add_current_input_index_to_vertex(unsigned int index)
+{
+	vertices_[index].add_input_filename_index(this->curr_input_index_);
+}
+
 
 int VertexSet::compute_downstairs_crit_midpts(const WitnessSet & W,
                                                vec_mp crit_downstairs,
@@ -306,6 +311,7 @@ int VertexSet::add_vertex(const Vertex & source_vertex, SolutionMetadata const& 
 	{
 		vertices_[num_vertices_].set_input_filename_index(curr_input_index_);
 	}
+	vertices_[num_vertices_].add_input_filename_index(curr_input_index_);
 
 
 	this->num_vertices_++;
@@ -396,10 +402,21 @@ int VertexSet::setup_vertices(boost::filesystem::path INfile)
 			mpf_inp_str((temp_vertex.projection_values())->coord[jj].i, IN, 10);
 		}
 
+		// read the main filename index, this is the first system where this point was encountered
 		int temp_int;
 		fscanf(IN,"%d\n",&temp_int);
 		temp_vertex.set_input_filename_index(temp_int);
 
+
+		// read all the filename indices.  every time we find it, we record it.  the first should be `input_filename_index`
+		fscanf(IN,"%d\n",&tmp_num_filenames); // the number of indices
+		for (int ii=0; ii<tmp_num_filenames; ++ii)
+		{
+			fscanf(IN,"%d",&temp_int);
+			temp_vertex.add_input_filename_index(temp_int);
+		}
+
+		// read the type of the vertex.  silviana notes, the type should really be recorded per-input file, just having the type without this is loss of valuable information
 		fscanf(IN,"%d\n",&temp_int);
 	    temp_vertex.set_type(static_cast<VertexType>(temp_int)); // i believe that this is wrong -- vertices which have multiple types will lose this property.  which one will they become?  i don't know.  --dab, 20191015
 
@@ -478,6 +495,13 @@ void VertexSet::print(boost::filesystem::path const& outputfile) const
 		}
 
 		fprintf(OUT,"%d\n",vertices_[ii].input_filename_index());
+
+		// added in 1.9
+		fprintf(OUT,"%zu\n",vertices_[ii].input_filename_indices().size());
+		for (auto ind : vertices_[ii].input_filename_indices())
+			fprintf(OUT,"%d ",ind);
+		fprintf(OUT,"\n");
+
 
 		// fprintf(OUT,"\n"); // removed 1.8.0.  i hope this doesn't cause problems.
 		fprintf(OUT,"%d\n",vertices_[ii].type());

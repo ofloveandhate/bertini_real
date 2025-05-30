@@ -92,7 +92,7 @@ function md = gather_run_metadata(dirname)
 		md.version.subminor = str2num(md.version.string(pds(2)+1:end));
 		
 		md.version.number = 100*md.version.major + md.version.minor + 0.01 * md.version.subminor;
-		md.version.gather = 180;
+		md.version.gather = 190;
 	else
 		
 		md.version.string = 'earlier than 1.4';
@@ -510,7 +510,22 @@ for ii = 1:BRinfo.num_vertices
 		tmp = fscanf(fid,'%e %e\n',[1 2]);
 		BRinfo.vertices(ii).projection_value(jj) = tmp(1)+1i*tmp(2);
 	end
-    BRinfo.vertices(ii).input_filename_index = fscanf(fid,'%i',[1 1]);
+    BRinfo.vertices(ii).input_filename_index = fscanf(fid,'%i\n',[1 1]);
+
+    
+    % this feature was introduced in v 1.9.0
+    if BRinfo.run_metadata.version.gather >= 190
+        num_input_filename_indices = fscanf(fid,'%i\n',[1 1]);
+
+        % preallocate
+        BRinfo.vertices(ii).all_input_filename_indices = zeros(num_input_filename_indices,1);
+
+        % read into the container
+        for jj = 1:num_input_filename_indices
+            BRinfo.vertices(ii).all_input_filename_indices(jj) =  fscanf(fid,'%i',[1 1])+1; % adding 1 because matlab is 1-based, not 0-based like the c++ core is
+        end
+    end
+
 	BRinfo.vertices(ii).type = fscanf(fid,'%i',[1 1]);
 
 	% this feature was introduced in v 1.8.0
