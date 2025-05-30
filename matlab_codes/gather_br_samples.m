@@ -512,11 +512,18 @@ for ii = 1:BRinfo.num_vertices
 	end
     BRinfo.vertices(ii).input_filename_index = fscanf(fid,'%i\n',[1 1]);
 
+    
+    % this feature was introduced in v 1.9.0
+    if BRinfo.run_metadata.version.gather >= 190
+        num_input_filename_indices = fscanf(fid,'%i\n',[1 1]);
 
-    num_input_filename_indices = fscanf(fid,'%i\n',[1 1]);
-    BRinfo.vertices(ii).all_input_filename_indices = zeros(num_input_filename_indices,1);
-    for jj = 1:num_input_filename_indices
-        BRinfo.vertices(ii).all_input_filename_indices(jj) =  fscanf(fid,'%i',[1 1])+1;
+        % preallocate
+        BRinfo.vertices(ii).all_input_filename_indices = zeros(num_input_filename_indices,1);
+
+        % read into the container
+        for jj = 1:num_input_filename_indices
+            BRinfo.vertices(ii).all_input_filename_indices(jj) =  fscanf(fid,'%i',[1 1])+1; % adding 1 because matlab is 1-based, not 0-based like the c++ core is
+        end
     end
 
 	BRinfo.vertices(ii).type = fscanf(fid,'%i',[1 1]);
