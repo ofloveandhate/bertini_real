@@ -69,6 +69,8 @@ int Decomposition::index_in_vertices_with_add(VertexSet &V,
 		index = Decomposition::add_vertex(V, vert, meta);
 	}
 	else{
+		V.add_current_input_index_to_vertex(index);
+
 		for (auto n: meta.get_path_numbers_absolute())
 			V[index].add_path_number_ending_here(n);
 	}

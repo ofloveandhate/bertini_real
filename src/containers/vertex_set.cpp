@@ -90,6 +90,11 @@ int VertexSet::search_for_removed_point(vec_mp const& testpoint)
 
 
 
+void VertexSet::add_current_input_index_to_vertex(unsigned int index)
+{
+	vertices_[index].add_input_filename_index(this->curr_input_index_);
+}
+
 
 int VertexSet::compute_downstairs_crit_midpts(const WitnessSet & W,
                                                vec_mp crit_downstairs,
