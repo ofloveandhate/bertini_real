@@ -494,7 +494,7 @@ void VertexSet::print(boost::filesystem::path const& outputfile) const
 		// added in 1.9
 		fprintf(OUT,"%zu\n",vertices_[ii].input_filename_indices().size());
 		for (auto ind : vertices_[ii].input_filename_indices())
-			fprintf(OUT,"%d",ind);
+			fprintf(OUT,"%d ",ind);
 		fprintf(OUT,"\n");
 
 
