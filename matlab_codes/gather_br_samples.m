@@ -516,7 +516,7 @@ for ii = 1:BRinfo.num_vertices
     num_input_filename_indices = fscanf(fid,'%i\n',[1 1]);
     BRinfo.vertices(ii).all_input_filename_indices = zeros(num_input_filename_indices,1);
     for jj = 1:num_input_filename_indices
-        BRinfo.vertices(ii).all_input_filename_indices(jj) =  fscanf(fid,'%i',[1 1]);
+        BRinfo.vertices(ii).all_input_filename_indices(jj) =  fscanf(fid,'%i',[1 1])+1;
     end
 
 	BRinfo.vertices(ii).type = fscanf(fid,'%i',[1 1]);
