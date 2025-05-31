@@ -219,25 +219,28 @@ class SurfacePiece():
         return True
 
     def centroid(self):
-        """Compute the centroid of each seperate piece"""
+        """Compute the centroid of a piece"""
 
         def flatten_and_unique(list_nD):
             """helper fucntion for centroid to get a flat list of unique values"""
             return list(set([inner for outer in list_nD for inner in outer]))
 
+
         unique_point_indices_this_piece =[]
         #face indices refer to a face on the piece
-        face_indices = self.indices
-        #deref the face indices to point indices and compile a list of point indices
-        for i in face_indices:
-             unique_point_indices_this_face=flatten_and_unique(self.surface.sampler_data[i]) #indices of points on the face
-             #append the point refs on the face to the the list of all point refs on the piece
-             unique_point_indices_this_piece.extend(unique_point_indices_this_face)
+        if self.surface.is_sampled():
+            #deref the face indices to point indices and compile a list of point indices
+            for ii in self.indices:
+                unique_point_indices_this_face = flatten_and_unique(self.surface.sampler_data[ii]) #indices of points on the face                
+            #append the point refs on the face to the the list of all point refs on the piece
+            unique_point_indices_this_piece.extend(unique_point_indices_this_face)
+        else:
+            unique_point_indices_this_piece = self.face_points(samples=False,as_indices=True,unique=True)
         #deref each point index to its point
         points = self.surface.extract_points()
         coordinates_this_piece = np.array([points[ind,:] for ind in unique_point_indices_this_piece])
         #return the mean as [x,y,z]
-        return coordinates_this_piece
+        return coordinates_this_piece.mean(axis=0)
 
     # point_singularities
     # the points on a piece ,  left and right edge will be degenerated
@@ -309,6 +312,7 @@ class SurfacePiece():
 
 
     def write_skeleton_data(self):
+        raise NotImplementedError
 
         pieces = self.separate_into_nonsingular_pieces()
 
@@ -448,9 +452,9 @@ class SurfacePiece():
 
 
 
-    def face_points(self, samples=True, as_indices = False):
+    def face_points(self, samples=True, as_indices = False, unique = True):
         """
-        Get the coordinates of the points on the Piece of a Surface.
+        Get the coordinates of the points on all the faces of the Piece of a Surface.
 
         if `samples`, then will return all samples on the Piece.  otherwise, will return the points of the raw faces.  
 
@@ -458,32 +462,35 @@ class SurfacePiece():
         - i do not know what order the points will be in, sorry.
         """
 
+        point_indices = list()
 
         if samples:
             self.surface._require_samples()
 
-            sample_point_indices = set() # using a set solves the duplicate problem
+            for face_index in self.indices:
+                f_samples = self.surface.sampler_data[face_index] # unpack.   sampler data is a list of triples of indices into the vertex set.
 
-            for ii in self.indices:
-                f = self.surface.sampler_data[ii] # unpack.   sampler data is a list of triples of indices into the vertex set.
-
-                for tri in f: 
-                    sample_point_indices.add(tri[0])
-                    sample_point_indices.add(tri[1])
-                    sample_point_indices.add(tri[2])
-
-            
-            if as_indices:
-                return sample_point_indices
-
-            else:# next, get the actual coordinates from the vertex set
-
-                return self.surface.extract_points(indices=sample_point_indices)
+                for tri in f_samples: 
+                    point_indices.extend(tri)
 
         else:
-            raise NotImplementedError('implement this branch, probably by looking at the mesh code for blocky case')
 
+            # need the midpoint of the face (comes from the mid of the mid), and the left/right/mid of all edges.
+            touching_curve_edge_indices = self._edges_touching() # this is a dict of strings and lists-of-ints
 
+            for curve_name, edge_indices in touching_curve_edge_indices.items():
+                curve = self.surface.curve_with_name(curve_name)
+                for e in edge_indices:
+                    point_indices.extend(curve.edges[e])
+
+        if unique:
+            point_indices = list(set(point_indices))
+
+        if as_indices:
+            return point_indices
+
+        else:# next, get the actual coordinates from the vertex set
+            return self.surface.extract_points(indices=point_indices)
 
 
 
@@ -904,8 +911,7 @@ class Surface(Decomposition):
         #create a list of the centroid coordinates of each piece
         centroids = [] 
         for p in pieces:
-            allPoints.append(p.centroid())
-            centroids.append(p.centroid().mean(axis=0)) 
+            centroids.append(p.centroid()) 
             
 
 
@@ -1000,11 +1006,7 @@ class Surface(Decomposition):
 
             f.write(f'parities = {parity_of_sing_by_piece};\n')
             f.write(f'conn_size = 0.01;\n') #hard coded, but needs to be automatically computed
-
-        #open up the file we just wrote to look over
-        print("SCAD File")
-        with open("br_surf_piece_data.scad", "r") as f:
-            print(f.read())
+        print('br_surf_piece_data.scad')
 
         #open and auto write piece data to a json file
         with open("br_surf_piece_data.json", "w") as j:
@@ -1012,22 +1014,21 @@ class Surface(Decomposition):
             "singularities_on_pieces": singularities_on_pieces,
             "sing_directions": sing_directions_as_list,
             "sing_locations": sing_locations_as_list,
-            "parities" : parity_of_sing_by_piece}))
-
-        print("JSON File")
-        with open("br_surf_piece_data.json", "r") as j:
-            print(j.read())
+            "parities" : parity_of_sing_by_piece},indent=4))
+        print('wrote br_surf_piece_data.json')
 
 
         with open("centroids.json", "w") as c:
             for centroid in centroids:
-                
-                c.write(" ".join([str(s) for s in centroid])+"\n")
-                #c.write("[".join([str(s) for s in centroid]) + "]\n")
-        
+                c.write(str(centroid)+"\n")
+        print('wrote centroids.json')
+
+
+
         with open("allPoints.json", "w") as a:
             for point in allPoints:
                 a.write("\n".join([str(s) for s in point]) + "\n")
+        print('wrote allPoints.json')
         
     def as_mesh_smooth(self, which_faces=None, keep_all_vertices=True):
         """
