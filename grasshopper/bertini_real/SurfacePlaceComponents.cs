@@ -43,11 +43,11 @@ namespace bertini_real
             pManager.AddNumberParameter("Size", "S", "Scale factor for components", GH_ParamAccess.item, 0.01);
 
             ///The connector Brep prefabs place. At least one is required for the component to run, but it does not matter which one so all should be optional
-            pManager.AddGeometryParameter("Plug Negative", "PN", "Plug negative geometry", GH_ParamAccess.item);
-            pManager.AddGeometryParameter("Plug Positive", "PP", "Plug positive geometry", GH_ParamAccess.item);
+            pManager.AddGeometryParameter("Plug Positive", "Plug+", "Plug positive geometry", GH_ParamAccess.item);
+            pManager.AddGeometryParameter("Plug Negative", "Plug-", "Plug negative geometry", GH_ParamAccess.item);
 
-            pManager.AddGeometryParameter("Socket Negative", "SN", "Socket negative geometry", GH_ParamAccess.item);
-            pManager.AddGeometryParameter("Socket Positive", "SP", "Socket positive geometry", GH_ParamAccess.item);
+            pManager.AddGeometryParameter("Socket Positive", "Socket+", "Socket positive geometry", GH_ParamAccess.item);
+            pManager.AddGeometryParameter("Socket Negative", "Socket-", "Socket negative geometry", GH_ParamAccess.item);
             ///All the geometries should be optional. We check that there is at least 1 geo input in the SolveInstance
             Params.Input[1].Optional = true;
             Params.Input[2].Optional = true;
@@ -67,12 +67,12 @@ namespace bertini_real
         {
             ///Note: only the connector geometries with an inputted prefab should be sent to output
             ///Output a list of the negative Brep connectors transformed to every singularity
-            pManager.AddGeometryParameter("Plugs negative", "PN", "negative transformed geos", GH_ParamAccess.list);
+            pManager.AddGeometryParameter("Plugs positive", "Plugs+", "Pos geos transofrmed", GH_ParamAccess.list);
+            pManager.AddGeometryParameter("Plugs negative", "Plugs-", "negative transformed geos", GH_ParamAccess.list);
             ///Output a list of the positive Brep connectors transformed to every singularity
-            pManager.AddGeometryParameter("Plugs pos", "PP", "Pos geos transofrmed", GH_ParamAccess.list);
-            pManager.AddGeometryParameter("Sockets neg", "SN", "negative transformed", GH_ParamAccess.list);
+            pManager.AddGeometryParameter("Sockets positive", "Sockets+", "Pos geos transformed", GH_ParamAccess.list);
+            pManager.AddGeometryParameter("Sockets negative", "Sockets-", "negative transformed", GH_ParamAccess.list);
             ///Output a list of the positive Brep connectors transformed to every singularity
-            pManager.AddGeometryParameter("Socket pos", "SP", "Pos geos transformed", GH_ParamAccess.list);
             pManager.AddTextParameter("Piece filenames", "Fs", "Piece filenames", GH_ParamAccess.list);
         }
 
@@ -89,20 +89,20 @@ namespace bertini_real
              * pass the data from the input parameters to the variables */
 
             ///empty variables
-            Brep negPlug = new Brep();
-            Brep posPlug = new Brep();
-            Brep negSocket = new Brep();
-            Brep posSocket= new Brep();
+            Brep plugPos = new Brep();
+            Brep plugNeg = new Brep();
+            Brep socketPos= new Brep();
+            Brep socketNeg = new Brep();
             Double size = 0.01;
             Point3d locationPlay = new Point3d();
             List<Vector3d> locVectors = new List<Vector3d>();
             List<Vector3d> dirVectors = new List<Vector3d>();
             string jsonPath = "";
             
-            List<Brep> transformedNegPlugs = new List<Brep>();
             List<Brep> transformedPosPlugs = new List<Brep>();
-            List<Brep> transformedNegSockets = new List<Brep>();
+            List<Brep> transformedNegPlugs = new List<Brep>();
             List<Brep> transformedPosSockets = new List<Brep>();
+            List<Brep> transformedNegSockets = new List<Brep>();
 
             List<String> piece_filenames = new List<String>();
 
@@ -111,17 +111,17 @@ namespace bertini_real
             ///Do NOT want to change the order of these once published/finalized 
             if (!DA.GetData(0, ref jsonPath)) return;
             DA.GetData(1, ref size);
-            if (!DA.GetData(2, ref negPlug)) return;
-            if (!DA.GetData(3, ref posPlug)) return;
-            if (!DA.GetData(4, ref negSocket)) return;
-            if (!DA.GetData(5, ref posSocket)) return;
-
+            if (!DA.GetData(2, ref plugPos)) return;
+            if (!DA.GetData(3, ref plugNeg)) return;
+            if (!DA.GetData(5, ref socketNeg)) return;
+            if (!DA.GetData(4, ref socketPos)) return;
             ///Error checking inputs. Including a RuntimeMessage in script will automaticall generate an 'o' output on the component 
+
             ///The component should not run in there are no prefab geometries
-            if ((!negPlug.IsValid && posPlug.IsValid) || (!negSocket.IsValid && posSocket.IsValid)) {
+            if ((!plugNeg.IsValid && plugPos.IsValid) || (!socketNeg.IsValid && socketPos.IsValid)) {
                 this.AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "Only positive geos inputted, ensure matching negative connectors are placed before combining with piece!"); 
             } //Remind the user if they only have positive geometries inputted that they will need negative geos if they want to combine with piece
-            else if(!negPlug.IsValid && !posPlug.IsValid && !negSocket.IsValid && !posSocket.IsValid) {
+            else if(!plugNeg.IsValid && !plugPos.IsValid && !socketNeg.IsValid && !socketPos.IsValid) {
                 this.AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "At least one of the plug/socket pos/neg geometries is invalid!");
                 return;
             }
@@ -183,13 +183,13 @@ namespace bertini_real
                         dirVectors.Add(dirVect);
                         locVectors.Add(locVect);
 
-                        if (negPlug.IsValid) { 
+                        if (plugNeg.IsValid) { 
                             ///Create a new plug at this location and add it to the plug list
-                            transformedNegPlugs.Add(moveComponents(newPiece.piece_name,locationPlay,size,dirVect,locVect,negPlug));
+                            transformedNegPlugs.Add(moveComponents(newPiece.piece_name,locationPlay,size,dirVect,locVect,plugNeg));
                         }
-                        if (posPlug.IsValid) {
+                        if (plugPos.IsValid) {
                             ///Create a new plug at this location and add it to the plug list
-                            transformedPosPlugs.Add(moveComponents(newPiece.piece_name, locationPlay, size, dirVect, locVect, posPlug));
+                            transformedPosPlugs.Add(moveComponents(newPiece.piece_name, locationPlay, size, dirVect, locVect, plugPos));
                         }
                     }
 
@@ -200,15 +200,15 @@ namespace bertini_real
                         ///these lists are now unused and can be deleted, but I am keeping them for debugging
                         dirVectors.Add(dirVect);
                         locVectors.Add(locVect);
-                        if (negSocket.IsValid)
+                        if (socketNeg.IsValid)
                         {
                             ///Create a new plug at this location and add it to the plug list
-                            transformedNegSockets.Add(moveComponents(newPiece.piece_name, locationPlay, size, dirVect, locVect, negSocket));
+                            transformedNegSockets.Add(moveComponents(newPiece.piece_name, locationPlay, size, dirVect, locVect, socketNeg));
                         }
-                        if (posSocket.IsValid)
+                        if (socketPos.IsValid)
                         {
                             ///Create a new plug at this location and add it to the plug list
-                            transformedPosSockets.Add(moveComponents(newPiece.piece_name, locationPlay, size, dirVect, locVect, posSocket));
+                            transformedPosSockets.Add(moveComponents(newPiece.piece_name, locationPlay, size, dirVect, locVect, socketPos));
                         }                        
                     }
                 }
@@ -221,10 +221,10 @@ namespace bertini_real
              * 0 - Out must be text
              * 1 - negComponents List
              * 2 - posCompoents List */
-            DA.SetDataList(0, transformedNegPlugs);
-            DA.SetDataList(1, transformedPosPlugs);
-            DA.SetDataList(2, transformedNegSockets);
-            DA.SetDataList(3, transformedPosSockets);
+            DA.SetDataList(0, transformedPosPlugs);
+            DA.SetDataList(1, transformedNegPlugs);
+            DA.SetDataList(2, transformedPosSockets);
+            DA.SetDataList(3, transformedNegSockets);
             DA.SetDataList(4, piece_filenames);
         }
 

@@ -27,26 +27,26 @@ namespace bertini_real
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             ///PLUG PARAMS
-            pManager.AddNumberParameter("Wire Hole Diameter", "D", "diameter of hole required for a wire", GH_ParamAccess.item, 7.0);
-            pManager.AddNumberParameter("Plug Length Factor", "PF", "multiplier for length of plug neg", GH_ParamAccess.item, 3.40);
-            pManager.AddNumberParameter("Wedge Height", "WH", "height of tab wedge", GH_ParamAccess.item, 4.0);
-            pManager.AddNumberParameter("Wedge Length", "WL", "length of tab wedge", GH_ParamAccess.item, 2.0);
-            pManager.AddNumberParameter("Wedge Width", "WW", "width of tab wedge", GH_ParamAccess.item, 2.0);
-            pManager.AddNumberParameter("Cutout Thickness", "CT", "space between tab and center of plug", GH_ParamAccess.item, 1.40);
-            pManager.AddNumberParameter("Cutout Depth", "CD", "how far down do the tabs go", GH_ParamAccess.item, 10.0);
-            pManager.AddNumberParameter("Tab Thickness", "TT", "thickness of both tabs", GH_ParamAccess.item, 2.76);
-            pManager.AddNumberParameter("Taper Factor", "TF", "how much smaller the tapered radius is to the plug radius", GH_ParamAccess.item, 0.70);
-            pManager.AddNumberParameter("Taper Length", "TL", "distance between the smaller radius and main body cyllinder", GH_ParamAccess.item, 5.0);
+            pManager.AddNumberParameter("Wire Hole Diameter", "D", "diameter of hole required for a wire, default 7.0", GH_ParamAccess.item, 7.0);
+            pManager.AddNumberParameter("Plug Length Factor", "PF", "multiplier for length of plug neg, default 3.4", GH_ParamAccess.item, 3.40);
+            pManager.AddNumberParameter("Wedge Height", "WH", "height of tab wedge, default 4.0", GH_ParamAccess.item, 4.0);
+            pManager.AddNumberParameter("Wedge Length", "WL", "length of tab wedge, default 2.0", GH_ParamAccess.item, 2.0);
+            pManager.AddNumberParameter("Wedge Width", "WW", "width of tab wedge, default 2.0", GH_ParamAccess.item, 2.0);
+            pManager.AddNumberParameter("Cutout Thickness", "CT", "space between tab and center of plug, default 1.4", GH_ParamAccess.item, 1.40);
+            pManager.AddNumberParameter("Cutout Depth", "CD", "how far down do the tabs go, default 10.0", GH_ParamAccess.item, 10.0);
+            pManager.AddNumberParameter("Tab Thickness", "TT", "thickness of both tabs, default 2.75", GH_ParamAccess.item, 2.75);
+            pManager.AddNumberParameter("Taper Factor", "TF", "how much smaller the tapered radius is to the plug radius, default 0.7", GH_ParamAccess.item, 0.70);
+            pManager.AddNumberParameter("Taper Length", "TL", "distance between the smaller radius and main body cylinder, default 5.0", GH_ParamAccess.item, 5.0);
             ///SOCKET PARAMS
-            pManager.AddNumberParameter("Socket Diameter", "SD", "Diameter of socket", GH_ParamAccess.item, 15.00);
-            pManager.AddNumberParameter("Socket Wall Thickness", "ST", "thickness from the outer diameter of the socket inward", GH_ParamAccess.item, 2.00);
-            pManager.AddNumberParameter("Socket Length", "SL", "height of the socket", GH_ParamAccess.item, 7.0);
-            pManager.AddNumberParameter("Socket Length Factor", "SF", "height of the socket", GH_ParamAccess.item, 3.0);
+            pManager.AddNumberParameter("Socket Diameter", "SD", "Diameter of socket, default 15.0", GH_ParamAccess.item, 15.00);
+            pManager.AddNumberParameter("Socket Wall Thickness", "ST", "thickness from the outer diameter of the socket inward, default 2.0", GH_ParamAccess.item, 2.00);
+            pManager.AddNumberParameter("Socket Length", "SL", "height of the socket, default 7.0", GH_ParamAccess.item, 7.0);
+            pManager.AddNumberParameter("Socket Length Factor", "SF", "height of the socket, default 3.0", GH_ParamAccess.item, 3.0);
             ///SHARED PARAMS
-            pManager.AddNumberParameter("Connection Play", "CP", "an adjustable amount to tweak the snuggness of the plugs fit into the socket", GH_ParamAccess.item, 0.20);
-            pManager.AddNumberParameter("Body Overlap", "BO", "how much the plug and socket overlap", GH_ParamAccess.item, 7.0);
-            pManager.AddNumberParameter("Length Overage", "LO", "how much excess hangover between the plug and socket", GH_ParamAccess.item, 7.0);
-            pManager.AddNumberParameter("eps", "E", "an adjusment value default 0.01", GH_ParamAccess.item, 0.1);
+            pManager.AddNumberParameter("Connection Play", "CP", "an adjustable amount to tweak the snugness of the plugs fit into the socket, default 0.2", GH_ParamAccess.item, 0.20);
+            pManager.AddNumberParameter("Body Overlap", "BO", "how much the plug and socket overlap, default 7.0", GH_ParamAccess.item, 7.0);
+            pManager.AddNumberParameter("Length Overage", "LO", "how much excess hangover between the plug and socket, default 7.0", GH_ParamAccess.item, 7.0);
+            pManager.AddNumberParameter("eps", "E", "an adjusment value, default 0.01", GH_ParamAccess.item, 0.01);
             pManager.AddPlaneParameter("Base", "B", "base xy plane to build upon", GH_ParamAccess.item, Plane.WorldXY);
         }
 
@@ -55,11 +55,10 @@ namespace bertini_real
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGeometryParameter("Negative Plug", "NP", "cylinder brep to be subtracted from the surface", GH_ParamAccess.item);
-            pManager.AddGeometryParameter("Positive Plug", "PP", "cylinder brep to be subtracted from the surface", GH_ParamAccess.item);
-            pManager.AddGeometryParameter("Negative Socket", "NS", "cylinder brep to be subtracted from the surface", GH_ParamAccess.item);
-            pManager.AddGeometryParameter("Positive Socket", "PS", "cylinder brep to be subtracted from the surface", GH_ParamAccess.item);
-            pManager.AddGeometryParameter("Debug", "NP", "cylinder brep to be subtracted from the surface", GH_ParamAccess.item);
+            pManager.AddGeometryParameter("Plus Positive", "Plug+", "cylinder brep to be subtracted from the surface", GH_ParamAccess.item);
+            pManager.AddGeometryParameter("Plug Negative", "Plug-", "cylinder brep to be subtracted from the surface", GH_ParamAccess.item);
+            pManager.AddGeometryParameter("Socket Positive", "Socket+", "cylinder brep to be subtracted from the surface", GH_ParamAccess.item);
+            pManager.AddGeometryParameter("Socket Negative", "Socket-", "cylinder brep to be subtracted from the surface", GH_ParamAccess.item);
         }
 
         
@@ -113,7 +112,7 @@ namespace bertini_real
 
             /**Build Positive plug*/
 
-            double plugR = (socketDiameter / 2) - socketWallThickeness- connectionPlay; //radius of the plug shuld fit snug into the socket
+            double plugR = (socketDiameter / 2) - socketWallThickeness- connectionPlay; //radius of the plug should fit snug into the socket
             double taperedR = taperFactor * plugR;
             //main body height fits entirely into the socket plus some overlap and excess length, minus the taper length
             double bodyHeight = socketLength + bodyOverlap - taperLength + lengthOverage;
@@ -124,11 +123,10 @@ namespace bertini_real
 
             /** create the overall plug body*/
             Brep plugBodyBrep = plugBody.plugBodyGeo();
-            //DA.SetData(0, plugBodyBrep); //send the plug body geometry to "plugBody" output for debugging
 
             /**Create and place cutout boxes to create the tabs
              * The difference of the boxes will be taken from the plugbody
-             * Cutout boxes should be equi distance from the center of the plug
+             * Cutout boxes should be equidistant from the center of the plug
              */
             // var mf = Transform.Mirror(Plane.WorldZX); //create mirror transformation vector matrix
             Brep[] cutouts = new Brep[2] { plugTabs.cutoutBox(plugR, b, eps), plugTabs.cutoutBox(plugR, b, eps) }; //create two new cutout boxes
@@ -140,7 +138,7 @@ namespace bertini_real
             Brep[] wedges = new Brep[2] { plugTabs.rawWedge(), plugTabs.rawWedge() }; //Create 2 wedges
             ;
             plugBodyBrep = addWedges(wedges, plugR, tabThickness, taperLength, plugBodyBrep);
-            DA.SetData(1, plugBodyBrep);
+            DA.SetData(0, plugBodyBrep);
 
 
             /**Negative Socket
@@ -156,7 +154,7 @@ namespace bertini_real
             negativeSocket.Transform(xf);
             var rf = Transform.Rotation(Math.PI, Vector3d.YAxis, Point3d.Origin);
             negativeSocket.Transform(rf);
-            DA.SetData(2, negativeSocket);
+            DA.SetData(3, negativeSocket);
 
             //unset transformation vectors
             xf=Transform.Unset;
@@ -170,7 +168,7 @@ namespace bertini_real
             Brep[] socket = Brep.CreateBooleanDifference(outerCylinder, innerCylinder, 0.01);
             rf = Transform.Rotation(Math.PI, Vector3d.YAxis, Point3d.Origin);
             socket[0].Transform(rf);
-            DA.SetData(3, socket[0]);
+            DA.SetData(2, socket[0]);
 
             //unset transformation vectors
             xf = Transform.Unset;
@@ -183,8 +181,8 @@ namespace bertini_real
             Brep negativePlug = new Cylinder(new Circle(b, cuttingR), scaledPlugLength).ToBrep(true, true);
             xf = Transform.Translation(0, 0, -eps - (scaledPlugLength / 2));
             negativePlug.Transform(xf);
-            DA.SetData(0, negativePlug);
-            DA.SetData(4,negativePlug);
+            DA.SetData(1, negativePlug);
+
         }
 
         private Brep addWedges(Brep[] wedges, double plugR, double tabThickness, double plugTaperLength, Brep plugBodyBrep)
