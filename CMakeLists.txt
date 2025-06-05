@@ -17,6 +17,12 @@ configure_file(brconfig.h.in config.h)
 # Append the cmake/ directory to the CMAKE_MODULE_PATH
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+
+
+
+FIND_PACKAGE(FLEX REQUIRED)
+FIND_PACKAGE(BISON REQUIRED)
+
 # sadly, these don't have cmake-provided find calls.
 find_package(GMP REQUIRED)
 find_package(MPFR REQUIRED)
@@ -69,11 +75,43 @@ include_directories(
 
 
 # Source files
-file(GLOB_RECURSE HDR_FILES include/*.hpp)
-file(GLOB_RECURSE SRC_FILES src/*.cpp)
+
+INCLUDE(files.cmake)
+
+
+
+
+# https://cmake.org/cmake/help/latest/module/FindFLEX.html
+
+
+flex_target(MyScanner  src/io/partitionParse.l ${CMAKE_CURRENT_BINARY_DIR}/partitionParse.yy.c
+            OPTIONS -s --prefix=partitionParse)
+
+#bison_target(MyParser ${CMAKE_CURRENT_BINARY_DIR}/partitionParse.yy.c ${CMAKE_CURRENT_BINARY_DIR}/parser.cpp)
+#add_flex_bison_dependency(MyScanner MyParser)
+
+
+
+
 
 # Executable
-add_executable(bertini_real ${SRC_FILES} ${HDR_FILES})
+add_executable(bertini_real 
+                 ${common_headers} 
+                 ${common_src}
+                 ${br_headers}
+                 ${br_src}
+                 ${FLEX_MyScanner_OUTPUTS}
+                 )
+
+add_executable(sampler 
+                 ${common_headers} 
+                 ${common_src}
+                 ${sampler_headers}
+                 ${sampler_src}
+                 ${FLEX_MyScanner_OUTPUTS}
+                 )
+
+
 target_link_libraries(bertini_real
     ${MPI_CXX_LIBRARIES}
     ${Boost_LIBRARIES}
@@ -82,6 +120,15 @@ target_link_libraries(bertini_real
     ${Bertini1_LIBRARIES}
 )
 
+
+
+target_link_libraries(sampler
+    ${MPI_CXX_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${MPFR_LIBRARIES}
+    ${GMP_LIBRARIES}
+    ${Bertini1_LIBRARIES}
+)
 
 
 
