@@ -21,18 +21,18 @@ void WaitOnGeneratedFile(const std::string & name)
 
 
 int partition_parse(int **declarations,
-										boost::filesystem::path input_filename,
-										boost::filesystem::path functions_filename,
-										boost::filesystem::path config_filename,
-										int not_sc_flag)
+					boost::filesystem::path input_filename,
+					boost::filesystem::path functions_filename,
+					boost::filesystem::path config_filename,
+					int not_sc_flag)
 {
 
 	FILE *IN = safe_fopen_read(input_filename);
 
 	int retval = partitionParse(declarations, IN,
-															const_cast<char *> (functions_filename.c_str()),
-															const_cast<char *> (config_filename.c_str()),
-															not_sc_flag); // the 0 means not self conjugate.
+						const_cast<char *> (functions_filename.c_str()),
+						const_cast<char *> (config_filename.c_str()),
+						not_sc_flag); // the 0 means not self conjugate.
 	fclose(IN);
 
 	return retval;
