@@ -133,4 +133,4 @@ target_link_libraries(sampler
 
 
 # Installation
-install(TARGETS bertini_real DESTINATION bin)
+install(TARGETS bertini_real sampler DESTINATION bin)
