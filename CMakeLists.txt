@@ -86,7 +86,7 @@ INCLUDE(files.cmake)
 
 
 flex_target(MyScanner  src/io/partitionParse.l ${CMAKE_CURRENT_BINARY_DIR}/partitionParse.yy.c
-            OPTIONS -s --prefix=partitionParse)
+            COMPILE_FLAGS "-s --prefix=partitionParse")
 
 #bison_target(MyParser ${CMAKE_CURRENT_BINARY_DIR}/partitionParse.yy.c ${CMAKE_CURRENT_BINARY_DIR}/parser.cpp)
 #add_flex_bison_dependency(MyScanner MyParser)
