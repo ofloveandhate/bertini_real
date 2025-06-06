@@ -65,6 +65,7 @@ include_directories(
 
     ${Boost_INCLUDE_DIRS}
 
+    ${MPI_INCLUDE_PATH}
 
     ${GMP_INCLUDES}
     ${MPFR_INCLUDE_DIR}
