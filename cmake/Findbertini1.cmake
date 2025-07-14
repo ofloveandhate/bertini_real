@@ -15,7 +15,7 @@ elseif(UNIX)
             PATHS "$ENV{BERTINI1_DIR}/lib" ${LIB_INSTALL_DIR}
             REQUIRED)
 endif()
-set(Bertini1_INCLUDES ${Bertini1_INCLUDE_DIR})
+set(bertini1_INCLUDE_DIR ${Bertini1_INCLUDE_DIR})
 set(Bertini1_LIBRARIES ${Bertini1_LIBRARY})
 set(Bertini1_CPP_FLAGS "-D_HAVE_MPI")
 

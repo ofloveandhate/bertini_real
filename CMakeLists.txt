@@ -10,6 +10,7 @@ configure_file(brconfig.h.in config.h)
 
 
 
+option(BERTINI_WAS_INSTALLED_BY_CMAKE "look for a version of Bertini installed by cmake" ON)
 
 
 
@@ -30,9 +31,15 @@ find_package(MPFR REQUIRED)
 
 
 # i wrote this one, and my code for finding it probably sucks
-find_package(bertini1 REQUIRED)
 
 
+
+if (BERTINI_WAS_INSTALLED_BY_CMAKE)
+    message("finding Bertini 1, assuming it was installed via cmake. If you didn't install it via cmake, then use `cmake -DBERTINI_WAS_INSTALLED_BY_CMAKE=OFF ..`")
+    find_package(bertini1 1.6.1 REQUIRED CONFIG)
+else()
+    find_package(bertini1 REQUIRED) # this version uses the custom Findbertini1.cmake
+endif(BERTINI_WAS_INSTALLED_BY_CMAKE)
 
 
 # Find required packages
@@ -46,18 +53,40 @@ find_package(Boost 1.53 REQUIRED
 
 
 
-set(CMAKE_CXX_FLAGS ${Bertini1_CPP_FLAGS})
+set(CMAKE_CXX_FLAGS ${bertini1_PARALLEL_C_FLAGS})
 
 include(CMakePrintHelpers)
 cmake_print_variables(GMP_INCLUDES)
 cmake_print_variables(MPFR_INCLUDES)
-cmake_print_variables(Bertini1_INCLUDES)
-cmake_print_variables(Bertini1_LIBRARIES)
-message("include dir is " ${CMAKE_CURRENT_SOURCE_DIR}/include)
+cmake_print_variables(bertini1_INCLUDE_DIR)
+# cmake_print_variables(bertini1_LIBRARIES)
+message("build include dir is " ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 
 
 # Include directories
+
+
+
+if (BERTINI_WAS_INSTALLED_BY_CMAKE)
+    # nothing, the generated exports from the cmake-built bertini 1 will already bring the correct includes
+    include_directories(
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+
+        "${PROJECT_BINARY_DIR}" 
+
+        ${Boost_INCLUDE_DIRS}
+
+        ${MPI_INCLUDE_PATH}
+
+        ${GMP_INCLUDES}
+        ${MPFR_INCLUDE_DIR}
+    )
+else()
+
+endif(BERTINI_WAS_INSTALLED_BY_CMAKE)
+
+
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 
@@ -70,10 +99,8 @@ include_directories(
     ${GMP_INCLUDES}
     ${MPFR_INCLUDE_DIR}
 
-    ${Bertini1_INCLUDES}
+    ${bertini1_INCLUDE_DIR}
 )
-
-
 
 # Source files
 
@@ -113,12 +140,15 @@ add_executable(sampler
                  )
 
 
+target_compile_definitions(bertini_real PUBLIC _HAVE_MPI=1)
+target_compile_definitions(sampler PUBLIC _HAVE_MPI=1)
+
 target_link_libraries(bertini_real
     ${MPI_CXX_LIBRARIES}
     ${Boost_LIBRARIES}
     ${MPFR_LIBRARIES}
     ${GMP_LIBRARIES}
-    ${Bertini1_LIBRARIES}
+    bertini-parallel
 )
 
 
@@ -128,10 +158,11 @@ target_link_libraries(sampler
     ${Boost_LIBRARIES}
     ${MPFR_LIBRARIES}
     ${GMP_LIBRARIES}
-    ${Bertini1_LIBRARIES}
+    bertini-parallel
 )
 
 
 
 # Installation
 install(TARGETS bertini_real sampler DESTINATION bin)
+install(FILES ${common_headers}  ${br_headers} ${sampler_headers} DESTINATION include/bertini_real)
