@@ -1,3 +1,4 @@
+%!TEX root = bertini_real_manual.tex
 
 \section{Visualization}
 \label{sec:visualization}
@@ -20,42 +21,33 @@ After running Bertini\_real, the output results can be visualized in Matlab.  Th
 
 \subsubsection{Matlab visualization options}
 \noindent
-\begin{longtabu} to \textwidth {
-    X[1,l]	% option
-    X[1,r]	% alternatives
-    X[1,c]	% Modification options
-    X[3,c]	% Command line appearance
-    X[2,r]}	% Description/definition
- \\ \hline
-\caption{MATLAB Visualization Options}\\
-\toprule
-\rowfont\bfseries
-\textbf{Option} & \textbf{Default} & \textbf{Alter} & \textbf{Command Line} & \textbf{Description}  \\
- \\ \hline  \\
-\endfirsthead
-\caption[]{\textit{Continued from previous page}}\\
- \\ \hline
-\textbf{Option} & \textbf{Default} &  \textbf{Alter} & \textbf{Command Line} & \textbf{Description}  \\
- \\ \hline \\
-\endhead
-\bottomrule \multicolumn{5}{r}{\textit{Continued on next page}} \\
-\endfoot
-\bottomrule \multicolumn{5}{r}{\textit{}} \\
-\endlastfoot
 
-
-\texttt{`autosave'} & \texttt{`on'} & \texttt{`false'}, \texttt{`0'} & \texttt{bertini\_real\_plotter (`autosave', `false')} off & Users can automatically save a figure to the working directory or not. \\  \\ \hline \\
-\texttt{`\gls{cmap}'} & \texttt{`jet'} & full list \href{http://www.mathworks.com/help/matlab/ref/colormap.html}{here} & \texttt{bertini\_real\_plotter (`colormap', @summer)}  summer colormap & Users can change the \gls{cmap} by changing the handle.  \\  \\ \hline \\
-\texttt{`curve'} or \texttt{`curves'} & \texttt{`true'} & \texttt{`n'}, \texttt{`no'}, \texttt{`none'}, \texttt{`false'}, \texttt{`0'} & \texttt{bertini\_real\_plotter (`curve', `false')} disables the curves option & \texttt{bertini\_real\_plotter\-} by default lets the user display the figure's raw curves.\\  \\ \hline \\
-\texttt{`faces'} & \texttt{`true'} & \texttt{`n'}, \texttt{`no'}, \texttt{`none'}, \texttt{`false'}, \texttt{`0'}  & \texttt{bertini\_real\_plotter (`faces', 'none')} makes only the option to display the raw curves will be given. & By default, the figure created in MATLAB will show both the raw curves and faces. \\  \\ \hline \\
+\begin{longtblr}
+{
+    colspec={X[1,l]X[1,r]X[1,c]X[3,c]X[2,r]},
+    caption={MATLAB Visualization Options}
+}   
+\textbf{Option} & \textbf{Default} & \textbf{Alter} & \textbf{Command Line} & \textbf{Description} \\ \hline 
+% \endfirsthead
+% \caption[]{\textit{Continued from previous page}} \\ \hline
+% \textbf{Option} & \textbf{Default} &  \textbf{Alter} & \textbf{Command Line} & \textbf{Description} \\ \hline
+% \endhead
+% \bottomrule \multicolumn{5}{r}{\textit{Continued on next page}} \\
+% \endfoot
+% \bottomrule \multicolumn{5}{r}{\textit{}} \\
+% \endlastfoot
+\texttt{`autosave'} & \texttt{`on'} & \texttt{`false'}, \texttt{`0'} & \texttt{bertini\_real\_plotter (`autosave', `false')} off & Users can automatically save a figure to the working directory or not. \\  \hline 
+\texttt{`\gls{cmap}'} & \texttt{`jet'} & full list \href{http://www.mathworks.com/help/matlab/ref/colormap.html}{here} & \texttt{bertini\_real\_plotter (`colormap', @summer)}  summer colormap & Users can change the \gls{cmap} by changing the handle.  \\  \hline 
+\texttt{`curve'} or \texttt{`curves'} & \texttt{`true'} & \texttt{`n'}, \texttt{`no'}, \texttt{`none'}, \texttt{`false'}, \texttt{`0'} & \texttt{bertini\_real\_plotter (`curve', `false')} disables the curves option & \texttt{bertini\_real\_plotter\-} by default lets the user display the figure's raw curves.\\  \\ \hline 
+\texttt{`faces'} & \texttt{`true'} & \texttt{`n'}, \texttt{`no'}, \texttt{`none'}, \texttt{`false'}, \texttt{`0'}  & \texttt{bertini\_real\_plotter (`faces', 'none')} makes only the option to display the raw curves will be given. & By default, the figure created in MATLAB will show both the raw curves and faces. \\  \hline 
 \texttt{`filename'} or \texttt{`file'} &  &  & \texttt{bertini\_real\_plotter (`filename', `Example\_File\_Name.mat')} & \texttt{bertini\_real\_plotter\-} first searches files named \texttt{BRinfo\textasteriskcentered.mat}; if more than one, uses most recent
- \\  \\ \hline \\
-\texttt{`labels'} & \texttt{`on'} & \texttt{`n'},\texttt{`no'}, \texttt{`none'}, \texttt{`false'}, \texttt{`0'}  & \texttt{bertini\_real\_plotter (`labels', `none')} off &  \texttt{bertini\_real\_plotter\-} by default lets user apply labels to the figure.\\  \\ \hline \\
-\texttt{`linestyle'} & \texttt{`-'} (solid line) & line options listed \href{http://www.mathworks.com/help/matlab/ref/primitiveline-properties.html}{here} & \texttt{bertini\_real\_plotter (`linestyle', `:')} & Used to change the line style of lines in the MATLAB figure. \\  \\ \hline \\
-\texttt{`monocolor'} or \texttt{`mono'} & \texttt{`off'} & \glspl{rgbt} listed \href{http://www.mathworks.com/help/matlab/ref/colorspec.html}{here} & \texttt{bertini\_real\_plotter (`mono', `r')} creates a red figure & Used to create a mono-color figure.\\  \\ \hline \\
-\texttt{`proj'} &  &  &  & Use a function handle to pre-process the data, before plotting.  Lets you plot arbitrary projections of your data \\  \\ \hline \\
-\texttt{`vertices'} or \texttt{`vert'} & \texttt{`on'} & \texttt{`n'}, \texttt{`no'}, \texttt{`none'}, \texttt{`false'}, \texttt{`0'} & \texttt{bertini\_real\_plotter (`vertices', 0)} off & MATLAB can allow the user to place vertex markers and labels on the figure.  \\  \\ \hline
-\end{longtabu}
+ \\  \hline 
+\texttt{`labels'} & \texttt{`on'} & \texttt{`n'},\texttt{`no'}, \texttt{`none'}, \texttt{`false'}, \texttt{`0'}  & \texttt{bertini\_real\_plotter (`labels', `none')} off &  \texttt{bertini\_real\_plotter\-} by default lets user apply labels to the figure.\\  \\ \hline 
+\texttt{`linestyle'} & \texttt{`-'} (solid line) & line options listed \href{http://www.mathworks.com/help/matlab/ref/primitiveline-properties.html}{here} & \texttt{bertini\_real\_plotter (`linestyle', `:')} & Used to change the line style of lines in the MATLAB figure. \\  \hline 
+\texttt{`monocolor'} or \texttt{`mono'} & \texttt{`off'} & \glspl{rgbt} listed \href{http://www.mathworks.com/help/matlab/ref/colorspec.html}{here} & \texttt{bertini\_real\_plotter (`mono', `r')} creates a red figure & Used to create a mono-color figure.\\  \\ \hline 
+\texttt{`proj'} &  &  &  & Use a function handle to pre-process the data, before plotting.  Lets you plot arbitrary projections of your data \\  \hline 
+\texttt{`vertices'} or \texttt{`vert'} & \texttt{`on'} & \texttt{`n'}, \texttt{`no'}, \texttt{`none'}, \texttt{`false'}, \texttt{`0'} & \texttt{bertini\_real\_plotter (`vertices', 0)} off & MATLAB can allow the user to place vertex markers and labels on the figure.  \\  \hline
+\end{longtblr}
 
 
 

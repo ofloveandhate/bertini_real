@@ -1,3 +1,5 @@
+%!TEX root = bertini_real_manual.tex
+
 \subsection{Instructions for Windows}
 Unlike Linux or Mac computers, Windows users have additional pre-requisites that they need to install in order to use Bertini and Bertini\_real --- they need to first install the program Cygwin.\footnote{These Windows install instructions prepared by Beth Sudkamp.  Thanks Beth!}  Or, maybe MinGW.  Alternatively, with Windows 10 and Bash support upcoming, consider using Chocolatey or bash itself.  Last checked (fall 2016), Chocolatey did not provide Boost, so that was a bummer.  
 
@@ -9,32 +11,21 @@ The other two operating systems that were discussed above were developed with so
 
 Cygwin can be found at \href{https://cygwin.com/install.html}{cygwin.com/install.html}. Please make sure to choose the version (either 32-bit or 64-bit) that is appropriate for your laptop. After the setup-x86.exe (or setup-x86\_64.exe) has downloaded, run it, and follow the instructions.
 
-\begin{longtabu} to \textwidth {
-    X[1,c,m]
-    X[1,c,m]}
-\hline
-\rowfont\bfseries
-\textbf{Instructions} & \textbf{Screen Shot} \\
-\hline  \\
-\endfirsthead
-\caption[]{\textit{Continued from previous page}}\\
-\hline
-\textbf{Instructions} & \textbf{Screen Shot} \\
-\hline \\
-\endhead
-\bottomrule \multicolumn{2}{r}{\textit{Continued on next page}} \\
-\endfoot
-\bottomrule \multicolumn{2}{r}{\textit{}} \\
-\endlastfoot
-Click `next' on the first screen. & \includegraphics[width=0.4\textwidth]{CygwinInstall1}  \\  \\  \\ 
-Select the `Install from Internet' option; click `next'. & \includegraphics[width=0.4\textwidth]{CygwinInstall2}  \\  \\  \\ 
-Enter the preferred installation directory; click `next'. & \includegraphics[width=0.4\textwidth]{CygwinInstall3}  \\  \\  \\ 
-Choose a temporary installation folder; click `next'. & \includegraphics[width=0.4\textwidth]{CygwinInstall4}  \\  \\  \\ 
-Select the `Direct Connection' option; click `next'. & \includegraphics[width=0.4\textwidth]{CygwinInstall5}  \\  \\  \\ 
-Choose a download site; click `next'. & \includegraphics[width=0.4\textwidth]{CygwinInstall6} \\  \\  \\ 
-Select the packages that you will need. , then click `next'. See below for more instructions & \includegraphics[width=0.4\textwidth]{CygwinInstall7}  \\  \\  \\ 
-If during the course of installation, a message pops up and says that certain dependencies are required for the packages, click the `yes' button. When it has installed everything, select `finish'. &  You're done! \\  \\   
-\end{longtabu}
+\begin{longtblr}
+{
+    colspec={X[1,c,m]X[1,c,m]},
+    caption={Bertini\_real command line options}
+}  
+\textbf{Instructions} & \textbf{Screen Shot} \\ \hline
+Click `next' on the first screen. & \includegraphics[width=0.4\textwidth]{CygwinInstall1}  \\ \hline
+Select the `Install from Internet' option; click `next'. & \includegraphics[width=0.4\textwidth]{CygwinInstall2}  \\ \hline
+Enter the preferred installation directory; click `next'. & \includegraphics[width=0.4\textwidth]{CygwinInstall3}  \\ \hline
+Choose a temporary installation folder; click `next'. & \includegraphics[width=0.4\textwidth]{CygwinInstall4}  \\ \hline
+Select the `Direct Connection' option; click `next'. & \includegraphics[width=0.4\textwidth]{CygwinInstall5}  \\ \hline
+Choose a download site; click `next'. & \includegraphics[width=0.4\textwidth]{CygwinInstall6} \\ \hline
+Select the packages that you will need. , then click `next'. See below for more instructions & \includegraphics[width=0.4\textwidth]{CygwinInstall7}  \\ \hline
+If during the course of installation, a message pops up and says that certain dependencies are required for the packages, click the `yes' button. When it has installed everything, select `finish'. &  You're done! 
+\end{longtblr}
 
 
 		\subsubsection{Selecting packages for Cygwin}
