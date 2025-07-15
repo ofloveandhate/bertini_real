@@ -1,7 +1,13 @@
 %!TEX root = bertini_real_manual.tex
 
 \subsection{Instructions for Windows}
-Unlike Linux or Mac computers, Windows users have additional pre-requisites that they need to install in order to use Bertini and Bertini\_real --- they need to first install the program Cygwin.\footnote{These Windows install instructions prepared by Beth Sudkamp.  Thanks Beth!}  Or, maybe MinGW.  Alternatively, with Windows 10 and Bash support upcoming, consider using Chocolatey or bash itself.  Last checked (fall 2016), Chocolatey did not provide Boost, so that was a bummer.  
+
+
+These instructions were last updated in 2016.  They need updating.  Version numbers are almost certainly incorrect.
+
+
+
+Unlike Linux or Mac computers, Windows users have additional pre-requisites that they need to install in order to use Bertini and Bertini\_real --- they need to first install the program Cygwin.\footnote{These Windows install instructions prepared by Beth Sudkamp.  Thanks Beth!}  Or, maybe MinGW. 
 
 
 The other two operating systems that were discussed above were developed with some flavor of *nix, while Windows was not. So, in order to run applications like Bertini that appear to need Linux, we need an intermediary program. Cygwin is a Linux-like environment for Windows. 
@@ -57,7 +63,7 @@ In order to properly run Cygwin, you need to add Cygwin to the PATH variable. In
 
 \item Select the `Advanced System Settings', and then the `Environment Variables' option. 
 
-\item In the window that appears, select the system variable "PATH' and append \texttt{; C:\textbackslash{cygwin}\textbackslash {bin}} to the end of the PATH variable. When you are doing this, you can also append \texttt{; C:\textbackslash{path}\textbackslash{to}\textbackslash{matlab.exe}} to the end of the PATH as well.
+\item In the window that appears, select the system variable `PATH' and append \texttt{; C:\textbackslash{cygwin}\textbackslash {bin}} to the end of the PATH variable. When you are doing this, you can also append \texttt{; C:\textbackslash{path}\textbackslash{to}\textbackslash{matlab.exe}} to the end of the PATH as well.
 
 After installing MATLAB, please be sure to add \texttt{C:\textbackslash{User}\textbackslash{username}\textbackslash{\ldots}\textbackslash{matlab.exe}} to your PATH variable. 
 
@@ -80,7 +86,7 @@ When setting up Cygwin, I found that in order to install the dependencies that a
 
 
 
-	\subsubsection{Installing Dependencies}
+\subsubsection{Installing Dependencies}
 As stated earlier, the dependencies that need to be downloaded are: 
 
 \begin{tabular}{ l r c }
@@ -103,7 +109,7 @@ Once you have downloaded the programs from the sites, put the zipped files in th
 
 
 
-	\subsubsection{Linking Cygwin Environment Paths}
+\subsubsection{Linking Cygwin Environment Paths}
 After logging into Cygwin, a user needs to set up their environment paths inside the terminal before they set up the files they downloaded. In order to see how the paths currently are set up, either type the following code into the terminal, or copy it and paste it into the terminal: 
 
 \begin{center}\begin{minipage}{0.9\linewidth}
