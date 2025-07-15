@@ -225,7 +225,7 @@ void ProgramConfigBase::PrintMetadata(boost::filesystem::path const& filename) c
 {
 	FILE *OUT = safe_fopen_write(filename);
 
-	fprintf(OUT, "%s\n", VERSION);
+	fprintf(OUT, "%s\n", BERTINI_REAL_VERSION);
 	fprintf(OUT, "%s\n", called_dir_.c_str());
 	fprintf(OUT, "%s\n", timer_.format().c_str());
 	fprintf(OUT, "%d\n", this->num_procs());
@@ -305,7 +305,7 @@ int BertiniRealConfig::startup()
 
 void BertiniRealConfig::splash_screen() const
 {
-	printf("\n BertiniReal(TM) v%s\n\n", VERSION);
+	printf("\n BertiniReal(TM) v%s\n\n", BERTINI_REAL_VERSION);
 	printf(" S. Amethyst with\n D.J. Bates, W. Hao, J.D. Hauenstein,\n A.J. Sommese, C.W. Wampler\n\n");
 	printf("(using GMP v%d.%d.%d, MPFR v%s)\n\n", __GNU_MP_VERSION, __GNU_MP_VERSION_MINOR, __GNU_MP_VERSION_PATCHLEVEL, mpfr_get_version());
 
@@ -482,13 +482,13 @@ int  BertiniRealConfig::parse_commandline(int argc, char **argv)
 				break;
 
 			case 'v':
-				printf("\n BertiniReal (TM) v %s\n\n", VERSION);
+				printf("\n BertiniReal (TM) v %s\n\n", BERTINI_REAL_VERSION);
 				exit(0);
 				break;
 
 			case 'h':
 
-				printf("\nBertiniReal (TM) v %s.\n\n", VERSION);
+				printf("\nBertiniReal (TM) v %s.\n\n", BERTINI_REAL_VERSION);
 				printf("Online at bertinireal.com\n\n");
 				printf("For support, \nfile an issue on Github at github.com/ofloveandhate/bertini_real/issues\n\n");
 				BertiniRealConfig::print_usage();

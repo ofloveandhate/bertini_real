@@ -1,7 +1,7 @@
 %{
 /* This will take an input file and partition it into a configurations file and a function file */
 
-#include "bertini.h"
+#include <bertini1/bertini.h>
 
 
 // settings to switch between config & function
@@ -211,7 +211,7 @@ other .
              else if (!endofFuncPartition)
              { // print to FUNCFILEPARTITION
                fprintf(FUNCFILEPARTITION, "%s", partitionParsetext);
-	       if(!add_in & For_NSC)
+	       if( (!add_in) & For_NSC)
                  fprintf(FUNCFILEPARTITIONBAR, "%s", partitionParsetext);
              }
            }

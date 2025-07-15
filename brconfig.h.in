@@ -1,9 +1,9 @@
 // the configured options and settings for bertini_real
-#define bertini_real_VERSION_MAJOR @bertini_real_VERSION_MAJOR@
-#define bertini_real_VERSION_MINOR @bertini_real_VERSION_MINOR@
-#define bertini_real_VERSION_PATCH @bertini_real_VERSION_PATCH@
+#define BERTINI_REAL_VERSION_VERSION_MAJOR @BERTINI_REAL_VERSION_VERSION_MAJOR@
+#define BERTINI_REAL_VERSION_VERSION_MINOR @BERTINI_REAL_VERSION_VERSION_MINOR@
+#define BERTINI_REAL_VERSION_VERSION_PATCH @BERTINI_REAL_VERSION_VERSION_PATCH@
 
 
-#define PACKAGE_BUGREPORT "silviana.amethyst@gmail.com"
+#define BERTINI_REAL_VERSION_PACKAGE_BUGREPORT "silviana.amethyst@gmail.com"
 
-#define VERSION "@bertini_real_VERSION_MAJOR@.@bertini_real_VERSION_MINOR@.@bertini_real_VERSION_PATCH@"
+#define BERTINI_REAL_VERSION "@bertini_real_VERSION_MAJOR@.@bertini_real_VERSION_MINOR@.@bertini_real_VERSION_PATCH@"

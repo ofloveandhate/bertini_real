@@ -30,16 +30,8 @@ find_package(MPFR REQUIRED)
 
 
 
-# i wrote this one, and my code for finding it probably sucks
+find_package(bertini1 1.7 REQUIRED CONFIG)
 
-
-
-if (BERTINI_WAS_INSTALLED_BY_CMAKE)
-    message("finding Bertini 1, assuming it was installed via cmake. If you didn't install it via cmake, then use `cmake -DBERTINI_WAS_INSTALLED_BY_CMAKE=OFF ..`")
-    find_package(bertini1 1.6.1 REQUIRED CONFIG)
-else()
-    find_package(bertini1 REQUIRED) # this version uses the custom Findbertini1.cmake
-endif(BERTINI_WAS_INSTALLED_BY_CMAKE)
 
 
 # Find required packages

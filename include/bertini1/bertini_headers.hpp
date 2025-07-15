@@ -12,10 +12,10 @@
 #include <mpi.h> // this *cannot* be inside an extern "C"{} wrapper.
 
 extern "C" {
-#include <bertini.h>
-#include <cascade.h>
-#include <parallel.h>
-#include <localdim.h>
+#include <bertini1/bertini.h>
+#include <bertini1/cascade.h>
+#include <bertini1/parallel.h>
+#include <bertini1/localdim.h>
 }
 
 extern "C" {
