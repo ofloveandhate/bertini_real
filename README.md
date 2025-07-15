@@ -12,32 +12,18 @@ This software implements a numerical algorithm for decomposing real surfaces of 
 
 For documentation, please visit [bertinireal.com](https://bertinireal.com) and [doc.bertinireal.com](https://doc.bertinireal.com)
 
-
 ---
 
-# Notes
-
-
-On my Mac, I use this line to configure
-
-```
-./configure CPPFLAGS=-I/opt/homebrew/include LDFLAGS=-L/opt/homebrew/lib --no-create --no-recursion
-```
-
----
-
-Bertini_real is implemented in C++ and compiles against a number of libraries.  It has been developed and tested in Linux and OSX, and been tested in Cygwin.  It has never been compiled in Windows without another helper environment like MinGW or Cygwin.
+Bertini_real is implemented in C++ and compiles against a number of libraries.  It has been developed and tested in Linux and OSX, and been lightly tested in Cygwin.  It has never been compiled in Windows without another helper environment like MinGW or Cygwin.
 
 The libraries against which Bertini_real compiles are:
 * MPFR,
 * GMP,
-* Bertini, compiled from source into a library,
+* Bertini 1, compiled from source into a library, min version 1.7
 * Boost,
 * MPI.
 
-Bertini_real is built from source using standard methods, and requires the C++11 standard.
-
-**I do not recommend the use of Matlab 2018b for visualization on OSX.  It's unusably slow when adjusting options in the plot window**
+Bertini_real is built from source using CMake and requires a modern C++ compiler.
 
 # Input and output formats
 
@@ -48,7 +34,7 @@ Input and output are through plain-text files written to disk.
  The necessary input files for Bertini_real are:
 
 1. The same Bertini `input` file from which the user acquires a numerical irreducible decomposition;
-2. The `witness_data` file created by Bertini after computing a numerical irreducible decomposition.
+2. The `witness_data` file created by Bertini 1 after computing a numerical irreducible decomposition (`tracktype: 1`).
 
 
 Many systems have multiple components.  Bertini_real therefore processes `witness_data` for each component, and offers the user a choice if there is one.  That is, if there is a single component of dimension one or two, Bertini_real will automatically and implicitly decompose that component.  If there are multiple components, Bertini_real will prompt the user for their choice.  They may only decompose a single dimension at a time, but they may elect to decompose as many components as they wish simultaneously, provided that they all have the same deflation sequence.  For example, the system in \S\ref{sec:curveexamplefrompaper}  has multiple components of dimension one, some of which are nonsingular, and several of which must be deflated.  The images in this example were produced by decomposing several components at the same time.
@@ -100,4 +86,41 @@ The number of faces, the number of critical slices, and the number of midslices,
 * All curve sub-decompositions, written to their own sub-folders  critical curve, sphere curve, singular curves, and all mid and critslices.
 
 
-Full documentation of input and output for Bertini_real is in [the pdf manual](https://bertinireal.com/resources/bertini_real_manual.pdf), and detailed using Doxygen, and is available at [the Bertini_real documentation webpage](https://doc.bertinireal.com).
+Full documentation of input and output for Bertini_real is in [the pdf manual](https://bertinireal.com/resources/bertini_real_manual.pdf), with detailed source C++ documentation using Doxygen available at [the Bertini_real documentation webpage](https://doc.bertinireal.com).
+
+
+
+# Quick guide to building
+
+As of July 2025 bertini_real now uses CMake, and thus requires version 1.7 of Bertini 1, which now also uses Cmake.
+
+## 1. Install dependencies
+
+bertini_real requires several libraries to successfully install.  These libraries are:
+
+* mpfr
+* gmp
+* bertini-parallel (>=1.7)
+* boost (>= 1.53)
+* mpi, any implementation, probably openmpi or mpich
+
+**important note:** Bertini 1 must have been built and installed from source with the same libraries, so just compile it yourself.  Due to some changes in Bertini 1.7 (install location, build system, and header files location), bertini_real now requires Bertini 1.7 or later.
+
+## 2. Download bertini_real source
+
+Use git to clone the repo.
+
+## 3. Standard CMake build and install
+
+Move to directory.
+
+`mkdir build && cd build`
+
+`cmake ../`
+
+`make`
+
+`make install`, possibly with `sudo`
+
+
+
