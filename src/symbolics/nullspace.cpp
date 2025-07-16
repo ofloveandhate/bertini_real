@@ -1402,7 +1402,7 @@ bool create_python_determinantal_system( FILE *OUT,
 	  }
 
 	// set up degrees
-	fprintf(OUT, "\n# Degrees of the equations\n");
+	fprintf(OUT, "\n# numbers of equations\n");
 	fprintf(OUT, "num_projections = %i\n", ns_config->num_projections);
 	fprintf(OUT, "num_jac_equations = %i\n", ns_config->num_jac_equations);
 	fprintf(OUT, "num_randomized_eqns = %i\n", ns_config->randomizer()->num_rand_funcs());
@@ -1508,7 +1508,7 @@ bool create_python_determinantal_system( FILE *OUT,
 	  {
 		for (int jj=0; jj < ns_config->randomizer()->num_base_funcs(); jj++)
 		  {
-		fprintf(OUT,"r_%i%i", ii+1, jj+1);
+		fprintf(OUT,"r_%i_%i", ii+1, jj+1);
 		if(jj < (ns_config->randomizer()->num_base_funcs()-1))
 		  {
 			fprintf(OUT,",");
@@ -1523,7 +1523,7 @@ bool create_python_determinantal_system( FILE *OUT,
 	  {
 		for (int jj=0; jj < ns_config->randomizer()->num_base_funcs(); jj++)
 		  {
-		fprintf(OUT,"r_%i%i", ii+1, jj+1);
+		fprintf(OUT,"r_%i_%i", ii+1, jj+1);
 		if(jj < (ns_config->randomizer()->num_base_funcs()-1))
 		  {
 			fprintf(OUT,",");
