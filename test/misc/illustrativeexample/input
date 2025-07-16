@@ -12,12 +12,12 @@ INPUT
 
 variable_group x,y,z;
 function f1, f2, f3;
-constant power1;
+
 constant coeff1;
-power1=3;
+
 coeff1 = 0.5;
 f1=(y-x^2)*(x^2+y^2+z^2-1)*(x-coeff1);
-f2=(z-x^power1)*(x^2+y^2+z^2-1)*(y-coeff1);
-f3=(z-x^power1)*(x^2+y^2+z^2-1)*(z-coeff1)*(y-x^2);
+f2=(z-x^3)*(x^2+y^2+z^2-1)*(y-coeff1);
+f3=(z-x^3)*(x^2+y^2+z^2-1)*(z-coeff1)*(y-x^2);
 
 END;
