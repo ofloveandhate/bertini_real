@@ -166,9 +166,9 @@ void copyfile(boost::filesystem::path input_file, boost::filesystem::path OUTfil
 
 void copyfile(FILE *IN,FILE *OUT)
 {
-	char ch;
+	int ch;
 	while ((ch = fgetc(IN)) != EOF)
-		fprintf(OUT, "%c", ch);
+		fprintf(OUT, "%c", (char) ch);
 
 }
 

@@ -987,7 +987,8 @@ void create_nullspace_system(boost::filesystem::path output_name,
 
 	int ii, numVars = 0, numFuncs = 0, numConstants = 0;
 	int *lineVars = NULL, *lineFuncs = NULL, *lineConstants = NULL;
-	char ch, *str = NULL, **vars = NULL, **funcs = NULL, **consts = NULL;
+	int ch;
+	char *str = NULL, **vars = NULL, **funcs = NULL, **consts = NULL;
 	FILE *IN = NULL, *OUT = NULL;
 
 
@@ -1309,7 +1310,7 @@ bool create_python_determinantal_system( FILE *OUT,
 	int ii, lineNumber = 1, declares = 0, strSize = 1, cont = 1, strLength = 0;
 	char *str = (char *)br_malloc(strSize * sizeof(char));
 
-	char ch;
+	int ch;
 
 	// set up Python libraries
 	fprintf(OUT, "import numpy as np\nfrom numpy import array\n");
@@ -1486,7 +1487,7 @@ bool create_python_determinantal_system( FILE *OUT,
 				  }
 				else
 				  {
-					fprintf(OUT, "%c", ch);
+					fprintf(OUT, "%c",(char) ch);
 				  }
 				  }
 			  } while (ch != '\n' && ch != EOF);
@@ -1660,9 +1661,9 @@ void FinalizeCritFile(boost::filesystem::path output_name,
 	WaitOnGeneratedFile("derivative_polynomials_declaration");
 
 	FILE* IN = safe_fopen_read("derivative_polynomials_declaration");
-	char ch;
+	int ch;
 	while ((ch = fgetc(IN)) != EOF)
-		fprintf(OUT, "%c", ch);
+		fprintf(OUT, "%c",(char) ch);
 	fclose(IN);
 
 	// END; written in the above transciption

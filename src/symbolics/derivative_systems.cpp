@@ -13,7 +13,7 @@ void parse_names(int *numItems, char ***itemNames, int **itemLines, FILE *IN, ch
  \***************************************************************/
 {
 	int lineNumber = 1, lengthName = strlen(name), strLength = 0, strSize = 1;
-	char ch;
+	int ch;
 	char *str = (char *)br_malloc(strSize * sizeof(char));
 
 	// move through the file looking for the items
@@ -59,7 +59,7 @@ void addItems(int *numItems, char ***itemNames, int **itemLines, FILE *IN, int l
  \***************************************************************/
 {
 	int strLength = 0, strSize = 1, cont = 1;
-	char ch;
+	int ch;
 	char *str = (char *)br_malloc(strSize * sizeof(char));
 
 	// initialize ch

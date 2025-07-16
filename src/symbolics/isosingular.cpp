@@ -10,7 +10,7 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
 						  int max_deflations)
 {
 	int ii, success = 0, nullSpace = 0, *declarations = NULL;
-	char ch, *strStabilizationTest = NULL;
+	int ch, *strStabilizationTest = NULL;
 	FILE *IN = NULL, *OUT = NULL;
 
 
@@ -105,12 +105,12 @@ int isosingular_deflation(int *num_deflations, int **deflation_sequence,
 		fprintf(OUT, "CONFIG\n");
 		IN = safe_fopen_read("config_real");
 		while ((ch = fgetc(IN)) != EOF)
-			fprintf(OUT, "%c", ch);
+			fprintf(OUT, "%c", (char) ch);
 		fclose(IN);
 		fprintf(OUT, "END;\nINPUT\n");
 		IN = safe_fopen_read("func_input_real");
 		while ((ch = fgetc(IN)) != EOF)
-			fprintf(OUT, "%c", ch);
+			fprintf(OUT, "%c", (char) ch);
 		fclose(IN);
 		fprintf(OUT, "END;\n\n");
 		fclose(OUT);
@@ -150,7 +150,8 @@ void isosingular_deflation_iteration(int *declarations,
 {
 	int ii, numVars = 0, numFuncs = 0, numConstants = 0, minorSize = 0;
 	int *lineVars = NULL, *lineFuncs = NULL, *lineConstants = NULL, *degrees = NULL;
-	char ch, *str = NULL, **vars = NULL, **funcs = NULL, **consts = NULL;
+	int ch; 
+	char *str = NULL, **vars = NULL, **funcs = NULL, **consts = NULL;
 	FILE *IN = NULL, *OUT = NULL;
 
 	// test for existence of input file
@@ -255,15 +256,15 @@ void DeflPolyDeclAndPolyToFinal(boost::filesystem::path inputOutputName, FILE* I
 	// setup new file
 	FILE * OUT = safe_fopen_write(inputOutputName.c_str());
 	rewind(IN);
-	char ch;
+	int ch;
 	while ((ch = fgetc(IN)) != EOF)
-		fprintf(OUT, "%c", ch);
+		fprintf(OUT, "%c", (char) ch);
 	fclose(IN);
 
 
 	IN = safe_fopen_read("deflation_polynomials_declaration");
 	while ((ch = fgetc(IN)) != EOF)
-		fprintf(OUT, "%c", ch);
+		fprintf(OUT, "%c", (char) ch);
 	fclose(IN);
 
 
@@ -271,7 +272,7 @@ void DeflPolyDeclAndPolyToFinal(boost::filesystem::path inputOutputName, FILE* I
 
 	IN = safe_fopen_read("deflation_polynomials");
 	while ((ch = fgetc(IN)) != EOF)
-		fprintf(OUT, "%c", ch);
+		fprintf(OUT, "%c", (char) ch);
 	fclose(IN);
 	fclose(OUT);
 
@@ -322,7 +323,7 @@ bool createMatlabDeflation(int numVars, char **vars, int *lineVars, int numConst
 	FILE* OUT = safe_fopen_write("matlab_deflate.m");
 
 	int ii, lineNumber = 1, cont = 1, declares = 0, strLength = 0, strSize = 1;
-	char ch;
+	int ch;
 	char *str = (char *)br_malloc(strSize * sizeof(char));
 
 	// setup Bertini constants in Matlab
@@ -412,7 +413,7 @@ bool createMatlabDeflation(int numVars, char **vars, int *lineVars, int numConst
 					{ // read in character & print it
 						ch = fgetc(IN);
 						if (ch != EOF)
-							fprintf(OUT, "%c", ch);
+							fprintf(OUT, "%c", (char) ch);
 					} while (ch != '\n' && ch != EOF);
 				}
 			}
@@ -487,7 +488,7 @@ bool createPythonDeflation(int numVars, char **vars, int *lineVars, int numConst
 {
 	FILE* OUT = safe_fopen_write("python_deflate.py");
 	int ii, lineNumber = 1, cont = 1, declares = 0, strLength = 0, strSize = 1;
-	char ch;
+	int ch;
 	char *str = (char *)br_malloc(strSize * sizeof(char));
 
 	//setup Python libraries
@@ -640,7 +641,7 @@ bool createPythonDeflation(int numVars, char **vars, int *lineVars, int numConst
 						}
 						else
 						{
-						fprintf(OUT, "%c", ch);
+						fprintf(OUT, "%c", (char) ch);
 						}
 						}
 					}
@@ -765,7 +766,7 @@ void stabilization_input_file(boost::filesystem::path outputFile,
 							  boost::filesystem::path funcInput,
 							  boost::filesystem::path configInput)
 {
-	char ch;
+	int ch;
 	FILE *OUT = safe_fopen_write(outputFile.c_str());
 
 	// setup configurations in OUT
@@ -773,14 +774,14 @@ void stabilization_input_file(boost::filesystem::path outputFile,
 
 	FILE *IN = safe_fopen_read(configInput.c_str());
 	while ((ch = fgetc(IN)) != EOF)
-		fprintf(OUT, "%c", ch);
+		fprintf(OUT, "%c", (char) ch);
 	fclose(IN);
 	fprintf(OUT, "TrackType: 6;\nMultOneOnly: 1;\nDeleteTempFiles: 0;\nTargetTolMultiplier: 1e3; %% this line added so that computed solutions fed in from BR will not falsely cause to fail -- DAB\nEND;\nINPUT\n");
 
 	// setup system in OUT
 	IN = safe_fopen_read(funcInput.c_str());
 	while ((ch = fgetc(IN)) != EOF)
-		fprintf(OUT, "%c", ch);
+		fprintf(OUT, "%c", (char) ch);
 	fclose(IN);
 	fprintf(OUT, "END;\n");
 	fclose(OUT);

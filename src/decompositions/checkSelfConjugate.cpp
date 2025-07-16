@@ -202,7 +202,7 @@ void membership_test_input_file(boost::filesystem::path outputFile,
                                 boost::filesystem::path configInput,
                                 int  tracktype)
 {
-	char ch;
+	int ch;
 	FILE *OUT = safe_fopen_write(outputFile), *IN = NULL;
 
 
@@ -212,7 +212,7 @@ void membership_test_input_file(boost::filesystem::path outputFile,
 
 
 	while ((ch = fgetc(IN)) != EOF)
-		fprintf(OUT, "%c", ch);
+		fprintf(OUT, "%c", (char) ch);
 	fclose(IN);
 
 	fprintf(OUT, "TrackType: %d;\nDeleteTempFiles: 0;\nEND;\nINPUT\n",tracktype);
@@ -222,7 +222,7 @@ void membership_test_input_file(boost::filesystem::path outputFile,
 	IN = safe_fopen_read(funcInput);
 
 	while ((ch = fgetc(IN)) != EOF)
-		fprintf(OUT, "%c", ch);
+		fprintf(OUT, "%c", (char) ch);
 	fclose(IN);
 	fprintf(OUT, "END;\n");
 	fclose(OUT);

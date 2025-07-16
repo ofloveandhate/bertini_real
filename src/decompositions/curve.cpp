@@ -1837,7 +1837,8 @@ void diag_homotopy_input_file(boost::filesystem::path outputFile,
  * NOTES:                                                        *
  \***************************************************************/
 {
-    char ch,**str,*fmt = NULL;
+    int ch;
+    char **str,*fmt = NULL;
     int ii,jj,size;
     mat_d A;
 
@@ -1860,13 +1861,13 @@ void diag_homotopy_input_file(boost::filesystem::path outputFile,
     // setup variables in OUT
     IN = safe_fopen_read(funcInputx);
     while ((ch = fgetc(IN)) != EOF )
-        fprintf(OUT, "%c", ch);
+        fprintf(OUT, "%c",(char) ch);
     fclose(IN);
 
 	//setup the function name in OUT
 	IN = safe_fopen_read(funcInputy);
     while ((ch = fgetc(IN)) != EOF )
-        fprintf(OUT, "%c", ch);
+        fprintf(OUT, "%c",(char) ch);
     fclose(IN);
 
 
