@@ -10,9 +10,6 @@ configure_file(brconfig.h.in config.h)
 
 
 
-option(BERTINI_WAS_INSTALLED_BY_CMAKE "look for a version of Bertini installed by cmake" ON)
-
-
 
 
 # Append the cmake/ directory to the CMAKE_MODULE_PATH
@@ -60,24 +57,6 @@ message("build include dir is " ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 
 
-if (BERTINI_WAS_INSTALLED_BY_CMAKE)
-    # nothing, the generated exports from the cmake-built bertini 1 will already bring the correct includes
-    include_directories(
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-
-        "${PROJECT_BINARY_DIR}" 
-
-        ${Boost_INCLUDE_DIRS}
-
-        ${MPI_INCLUDE_PATH}
-
-        ${GMP_INCLUDES}
-        ${MPFR_INCLUDE_DIR}
-    )
-else()
-
-endif(BERTINI_WAS_INSTALLED_BY_CMAKE)
-
 
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -90,9 +69,10 @@ include_directories(
 
     ${GMP_INCLUDES}
     ${MPFR_INCLUDE_DIR}
-
-    ${bertini1_INCLUDE_DIR}
 )
+
+
+
 
 # Source files
 
@@ -132,8 +112,7 @@ add_executable(sampler
                  )
 
 
-target_compile_definitions(bertini_real PUBLIC _HAVE_MPI=1)
-target_compile_definitions(sampler PUBLIC _HAVE_MPI=1)
+
 
 target_link_libraries(bertini_real
     ${MPI_CXX_LIBRARIES}
