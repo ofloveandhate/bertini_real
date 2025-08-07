@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath('../bertini_real/'))
 # -- Project information -----------------------------------------------------
 
 project = u'Bertini_real and Python'
-copyright = u'2019-2022, Silviana Amethyst'
+copyright = u'2019-2025, Silviana Amethyst'
 author = u'Silviana Amethyst, with Dan Hessler, Foong Min Wong, Caden Joergens'
 
 # The short X.Y version
@@ -88,7 +88,7 @@ html_theme = 'bizstyle'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['']
+html_static_path = []
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
