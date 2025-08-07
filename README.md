@@ -1,3 +1,14 @@
+# Bertini_real: software for real algebraic sets
+
+
+This software implements a numerical algorithm for decomposing real surfaces of arbitrary dimension, using Bertini as the computational engine.  
+
+* The main website is at [bertinireal.com](https://bertinireal.com).
+* The manual is in a PDF in the repo, in the `manual` folder.
+* For documentation, [doc.bertinireal.com](https://doc.bertinireal.com).
+
+---
+
 **note:** please clone this repository recursively (`git clone --recursive`) to pick up these submodules:
 * [`brakelab`](https://github.com/ofloveandhate/brakelab)
 
@@ -5,25 +16,47 @@ otherwise some Matlab code won't work correctly, and you'll get warnings and err
 
 ---
 
-# Bertini_real: software for real algebraic sets
 
 
-This software implements a numerical algorithm for decomposing real surfaces of arbitrary dimension, using Bertini as the computational engine.  
-
-For documentation, please visit [bertinireal.com](https://bertinireal.com) and [doc.bertinireal.com](https://doc.bertinireal.com)
-
----
+# Quick guide to building
 
 Bertini_real is implemented in C++ and compiles against a number of libraries.  It has been developed and tested in Linux and OSX, and been lightly tested in Cygwin.  It has never been compiled in Windows without another helper environment like MinGW or Cygwin.
 
-The libraries against which Bertini_real compiles are:
-* MPFR,
-* GMP,
-* Bertini 1, compiled from source into a library, min version 1.7
-* Boost,
-* MPI.
+✨ As of July 2025 bertini_real now uses CMake, and thus requires version 1.7 of Bertini 1, which now also uses Cmake.
 
-Bertini_real is built from source using CMake and requires a modern C++ compiler.
+## 1. Install dependencies
+
+bertini_real requires several libraries to successfully install.  These libraries are:
+
+* MPFR
+* GMP
+* bertini-parallel (>=1.7)
+* Boost (>= 1.53)
+* MPI, any implementation, probably openmpi or mpich
+
+It also requires these tools:
+
+* CMake
+* Flex
+* Bison
+
+**important note:** Bertini 1 *must* have been built and installed from source with the same libraries, so just compile it yourself.  Due to some changes in Bertini 1.7 (install location, build system, and header files location), bertini_real now requires Bertini 1.7 or later.
+
+## 2. Download bertini_real source
+
+Use git to clone the repo.
+
+## 3. Standard CMake build and install
+
+1. Move to directory.
+2. `mkdir build && cd build`
+3. `cmake ../`
+4. `make`.  Use parallel for more joy.
+5. `make install`, possibly with `sudo`
+
+
+
+---
 
 # Input and output formats
 
@@ -42,7 +75,7 @@ Many systems have multiple components.  Bertini_real therefore processes `witnes
 
 Optionally, the user may supply:
 
-* a sphere file, consisting of the radius and center; and/or`
+* a sphere file, consisting of the radius and center; and/or
 * a projection file, prefaced by the number of variables, and containing the coefficients of the linear projections $\pi_i$.
 
 The user indicates the names of the files using flags to the command line; e.g., the calling sequence is:
@@ -85,42 +118,11 @@ Contains all edges of the curve, listed as integers into `vertex_set`, being lin
 The number of faces, the number of critical slices, and the number of midslices, along with the number of singular curves, their `multiplicities', and the number of each multiplicity.
 * All curve sub-decompositions, written to their own sub-folders  critical curve, sphere curve, singular curves, and all mid and critslices.
 
+### More documentation
 
-Full documentation of input and output for Bertini_real is in [the pdf manual](https://bertinireal.com/resources/bertini_real_manual.pdf), with detailed source C++ documentation using Doxygen available at [the Bertini_real documentation webpage](https://doc.bertinireal.com).
-
-
-
-# Quick guide to building
-
-As of July 2025 bertini_real now uses CMake, and thus requires version 1.7 of Bertini 1, which now also uses Cmake.
-
-## 1. Install dependencies
-
-bertini_real requires several libraries to successfully install.  These libraries are:
-
-* mpfr
-* gmp
-* bertini-parallel (>=1.7)
-* boost (>= 1.53)
-* mpi, any implementation, probably openmpi or mpich
-
-**important note:** Bertini 1 must have been built and installed from source with the same libraries, so just compile it yourself.  Due to some changes in Bertini 1.7 (install location, build system, and header files location), bertini_real now requires Bertini 1.7 or later.
-
-## 2. Download bertini_real source
-
-Use git to clone the repo.
-
-## 3. Standard CMake build and install
-
-Move to directory.
-
-`mkdir build && cd build`
-
-`cmake ../`
-
-`make`
-
-`make install`, possibly with `sudo`
+* Full documentation of input and output for Bertini_real in the manual here in this repo.  See `/manual/bertini_real_manual.pdf`, 
+* Detailed source C++ documentation available at [the Bertini_real documentation webpage](https://doc.bertinireal.com/cpp)
+* Detailed source Python documentation available at [the Bertini_real documentation webpage](https://doc.bertinireal.com/python)
 
 
 
