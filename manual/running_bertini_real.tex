@@ -5,8 +5,6 @@
 
 Bertini\_real is called from the command line.   This is done simply by calling \texttt{bertini\_real} (or \texttt{bertini\_real.exe} for Cygwin users) from the command line. If the input file is called anything other than \texttt{input}, then the \texttt{-input} or \texttt{-i} option followed by the filename must be used.
 
-It is important to note that for Bertini\_real to run, the MATLAB executable must be on the path.
-
 
 Bertini\_real uses the tracker options for Bertini, which are set at the top of the input file, in the {\tt CONFIG} section.
 
@@ -16,10 +14,10 @@ We suggest the following configuration options in the input file for Bertini\_re
 
 helps keep regeneration start points on target, and helps identify points which are supposed to be the same point.
 \end{itemize}
-
-
 Other options can improve performance and tighten up the produced decomposition.
 
+
+Bertini\_real requires some symbolic operations at times.  These are handled either by Matlab or by Python.  The default is Python.  It's controlled by a flag at call time, eg \verb|bertini_real -symengine matlab|.  
 If you do not have MATLAB installed you may run Bertini\_real using python. To run Bertini\_real using Python run the command  \texttt{bertini\_real \-symengine python \-P python3}
 
 
@@ -52,9 +50,10 @@ There are a number of inline commands that can be used while running Bertini\_re
 %     % \endlastfoot
 %     % %
 \texttt{-component} & integer index of the component & \texttt{bertini\_real -component 1} & Decomposes only one component of the entire figure \\ \hline 
-\texttt{-debug} &  n/a  & \texttt{bertini\_real -debug} &  If used, program will pause for 30 seconds before running for debugging purposes \\ \hline 
+\texttt{-debug} &  n/a  & \texttt{bertini\_real -debug} &  If used, program will pause for 30 seconds before running for debugging purposes, so you can attach a debugger before it proceeds \\ \hline 
 \texttt{-dim} or \texttt{-d} & target dimension of solution & \texttt{bertini\_real -d 2} &  Sets a target dimension to be used for the solution \\ \hline 
-\texttt{-gammatrick} or \texttt{-g} & \texttt{1} (if you'd like Bertini\_real to use the gamma trick) or \texttt{0} (if not) & \texttt{bertini\_real -g 1} &  Indicator for whether Bertini\_real should use the gamma trick in a particular solver \\ \hline 
+% \texttt{-gammatrick} or \texttt{-g} & \texttt{1} (if you'd like Bertini\_real to use the gamma trick) or \texttt{0} (if not) & \texttt{bertini\_real -g 1} &  Indicator for whether Bertini\_real should use the gamma trick in a particular solver \\ \hline 
+% i took out the gamma trick option because it should be used according to theory, not user pref.
 \texttt{-help} or \texttt{-h} & n/a & \texttt{bertini\_real -h} & Displays a help message containing the version of Bertini\_real, where Bertini\_real can be found online, support information, and finally the command line options. \\ \hline 
 \texttt{-input} or \texttt{-i} & filename & \texttt{bertini\_real -i myfile} & Used if input file is named something other than `input'  \\ \hline 
 \texttt{-mode} or \texttt{-m} & \texttt{bertini\_real} (default) or \texttt{crit}  & \texttt{bertini\_real -m crit} &  Sets the mode of Bertini\_real to be used \\ \hline 
@@ -64,9 +63,9 @@ There are a number of inline commands that can be used while running Bertini\_re
 \texttt{-projection} or \texttt{-pi} or \texttt{-p} &  desired filename & \texttt{bertini\_real -p myprojection} & Indicator for whether to read the projection from a file, rather than randomly choose it \\ \hline 
 \texttt{-pycommand} or \texttt{-P} & how to call the Python3 library on your machine & \texttt{bertini\_real -P python3} & Indicate how Python should be called.  Default is 'python' \\ \hline 
 \texttt{-quick} or \texttt{-q} & n/a & \texttt{bertini\_real -q} & Solves problem quickly, but not as robust \\ \hline 
-\texttt{-veryquick} or \texttt{-vq} & n/a & \texttt{bertini\_real -vq} & Solves problem very quickly, but not as robust  \\ \hline 
+\texttt{-veryquick} or \texttt{-vq} & n/a & \texttt{bertini\_real -vq} & Solves problem more quickly (probably still not as fast as you want), but not as robust  \\ \hline 
 \texttt{-sphere} or \texttt{-s} & the name of the file for Bertini\_real to read & \texttt{bertini\_real -sphere mysphere} & Sets indicator that Bertini\_real should use sphere created by user rather than just compute sphere \\ \hline 
-\texttt{-symengine} or \texttt{-E} & choose the engine to run bertini\_real & \texttt{bertini\_real -E python} & select a symbolic engine.  choices are 'matlab' and 'python'    \\ \hline
+\texttt{-symengine} or \texttt{-E} & choose the engine to run bertini\_real & \texttt{bertini\_real -E python} & select a symbolic engine.  choices are 'matlab' and 'python'  \\ \hline
 \texttt{-verb} & the level of the verbosity & \texttt{bertini\_real -verb 2} & Shows or hides output text \\ \hline 
 \texttt{-version} or \texttt{-v} & n/a & \texttt{bertini\_real -version} & Displays the version of Bertini\_real running on your computer \\ \hline
 \end{longtblr}
