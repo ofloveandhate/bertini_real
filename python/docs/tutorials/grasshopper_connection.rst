@@ -15,7 +15,7 @@ If you have previously run *"gather()"* on the surface and have a **BRdata.pkl**
 
     import bertini_real as br
 
-    br.data.gather() # do this once after decomposing and sampling the surface. If 
+    br.data.gather() # do this once after decomposing and sampling the surface.
 
     surface = br.data.read_most_recent()
 
@@ -44,7 +44,7 @@ The .json and .scad files are very similar and contain only syntax difference. T
 Awesome! You are now ready to *hop* over to grasshopper
 
 Viewing Connectors in Rhino3D and Grasshopper
-*****************************
+*************************************************
 
 Launch Rhino3D and navigate to a Grasshopper editor. When creating connectors for a surface there are 6 primary componets required. They can be found in the plug_socket_library.
 
@@ -63,7 +63,8 @@ They taken in an assortment of variables, primarily numbers. By using sliders as
 
 *base* and *eps* are used by all connector part components. *base* is a plane object set at the origin
 Place these 4 components and connect all their inputs. Some input variables are used for more than one component.
-Go ahead and try messing with the sliders and figuring out what they change
+Go ahead and try messing with the sliders and figuring out what they change.
+
 (Need to insert image)
 .. image:: snap_together_pictures/hold
     :width: 300
