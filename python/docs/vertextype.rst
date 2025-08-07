@@ -3,11 +3,12 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-bertinireal.vertextype
+bertinireal.vertex.VertexType
 ================================
 
-.. automodule:: vertextype
+.. automodule:: vertex.VertexType
    :members:
+   :no-index:
 
 There are eleven VertexTypes of algebraic curves/surfaces in this module, which are:
 
