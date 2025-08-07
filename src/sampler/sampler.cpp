@@ -333,7 +333,7 @@ int main(int argC, char *args[])
 	if (sampler_options.is_head())
 	{
 		boost::timer::auto_cpu_timer t;
-		SamplerMaster(sampler_options);
+		SamplerMain(sampler_options);
 	}
 	else
 	{
@@ -348,7 +348,7 @@ int main(int argC, char *args[])
 
 
 
-void SamplerMaster(sampler_configuration & sampler_options)
+void SamplerMain(sampler_configuration & sampler_options)
 {
 	sampler_options.splash_screen();
 

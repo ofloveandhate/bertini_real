@@ -560,12 +560,12 @@ int multilin_solver_master_entry_point(const WitnessSet & W, // carries with it 
 /**
  \brief how to get a worker to cooperate to move linears around.
 
- a slave comes to this function empty-handed and leaves empty-handed, but helps do the work to move from one set of linears to another, by tracking some of the paths and sending the results to the head.
+ a worker comes to this function empty-handed and leaves empty-handed, but helps do the work to move from one set of linears to another, by tracking some of the paths and sending the results to the head.
 
  \return SUCCESSFUL
  \param solve_options the current state of the solver config.
  */
-int multilin_slave_entry_point(SolverConfiguration & solve_options);
+int multilin_worker_entry_point(SolverConfiguration & solve_options);
 
 
 

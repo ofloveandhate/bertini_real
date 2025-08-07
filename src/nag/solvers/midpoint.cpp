@@ -820,7 +820,7 @@ int midpoint_solver_master_entry_point(const WitnessSet						&W, // carries with
 
 
 
-void midpoint_slave_entry_point(SolverConfiguration & solve_options)
+void midpoint_worker_entry_point(SolverConfiguration & solve_options)
 {
 
 

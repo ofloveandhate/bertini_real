@@ -998,13 +998,13 @@ void check_midpoint_evaluator(point_mp current_values,
 
 
 /**
- \brief slave entry point, though it should not be used currently, as the solver is NOT parallel functional.
+ \brief worker entry point, though it should not be used currently, as the solver is NOT parallel functional.
 
  The mid tracker is called in a loop, indeed, but is not called in parallel, because you only track one point for one set of parameter values.  Nontetheless, this function is here.
 
  \param solve_options The current state of the solver.
  */
-void midpoint_slave_entry_point(SolverConfiguration & solve_options);
+void midpoint_worker_entry_point(SolverConfiguration & solve_options);
 
 
 

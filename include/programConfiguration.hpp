@@ -44,7 +44,7 @@ protected:
 	int numprocs_;
 	MPI_Comm   my_communicator_;
 
-	int worker_level_; // higher worker level means more tedious work, in a sense.  worker_level 0 is uber-master.  worker_level 1 will be the next level down in management, etc.  the exact usage of this is relative to the process being run.
+	int worker_level_; // higher worker level means more tedious work, in a sense.  worker_level 0 is main.  worker_level 1 will be the next level down in management, etc.  the exact usage of this is relative to the process being run.
 
 
 
@@ -400,7 +400,7 @@ class BertiniRealConfig : public ProgramConfigBase
 	bool orthogonal_projection_;
 
 	bool compute_cycle_numbers_ = false; ///< whether we should compute cycle numbers for edges and faces
-	bool debugwait_; ///< flag for whether to wait 30 seconds before starting, and print the master process ID to screen.
+	bool debugwait_; ///< flag for whether to wait 30 seconds before starting, and print the main process ID to screen.
 	int max_deflations_; ///< the maximum allowable number of deflation iterations before it gives up.
 
 	bool stifle_membership_screen_; ///< boolean controlling whether stifle_text is empty or " > /dev/null"

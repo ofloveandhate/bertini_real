@@ -91,23 +91,23 @@ int main(int argC, char *args[])
 
 
 	if (solve_options.is_head()) {
-		UbermasterProcess current_process(program_options, solve_options);
+		MainProcess current_process(program_options, solve_options);
 
 		try{
 			current_process.main_loop();
 		}
 		catch (std::runtime_error &e)
 		{
-			std::cout << "uncaught runtime exception from ubermaster process caught in bertini_real;" << std::endl;
+			std::cout << "uncaught runtime exception from Main process caught in bertini_real;" << std::endl;
 			std::cout << e.what() << std::endl;
 		}
 		catch (std::logic_error &e)
 		{
-			std::cout << "uncaught logic exception from ubermaster process caught in bertini_real;" << std::endl;
+			std::cout << "uncaught logic exception from Main process caught in bertini_real;" << std::endl;
 			std::cout << e.what() << std::endl;
 		}
 		catch (std::exception &e){
-			std::cout << "uncaught other exception from ubermaster process caught in bertini_real;" << std::endl;
+			std::cout << "uncaught other exception from Main process caught in bertini_real;" << std::endl;
 			std::cout << e.what() << std::endl;
 		}
 	}
@@ -119,12 +119,12 @@ int main(int argC, char *args[])
 		}
 		catch (std::runtime_error& e)
 		{
-			std::cout << "uncaught runtime exception from ubermaster process caught in bertini_real;" << std::endl;
+			std::cout << "uncaught runtime exception from Main process caught in bertini_real;" << std::endl;
 			std::cout << e.what() << std::endl;
 		}
 		catch (std::logic_error& e)
 		{
-			std::cout << "uncaught logic exception from ubermaster process caught in bertini_real;" << std::endl;
+			std::cout << "uncaught logic exception from Main process caught in bertini_real;" << std::endl;
 			std::cout << e.what() << std::endl;
 		}
 		catch (std::exception& e){

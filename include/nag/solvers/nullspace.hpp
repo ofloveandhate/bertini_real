@@ -1147,7 +1147,7 @@ void check_nullspace_evaluator(point_mp current_values,
  this function is called *after* the worker has received the call-for-help broadcast from the master.
  \param solve_options The current state of the solver.
  */
-void nullspace_slave_entry_point(SolverConfiguration & solve_options);
+void nullspace_worker_entry_point(SolverConfiguration & solve_options);
 
 
 

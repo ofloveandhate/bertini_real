@@ -70,11 +70,11 @@ int get_dir_mptype_dimen(boost::filesystem::path & Dir_Name, int & MPType, int &
 
 
 /**
- \brief Master process function for sampler module
+ \brief Main process function for sampler module
 
  \ingroup samplermethods
  */
-void SamplerMaster(sampler_configuration & sampler_options);
+void SamplerMain(sampler_configuration & sampler_options);
 
 
 /**

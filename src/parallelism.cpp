@@ -23,7 +23,7 @@
 
 
 
-int UbermasterProcess::main_loop()
+int MainProcess::main_loop()
 {
 
 	boost::timer::auto_cpu_timer t;
@@ -129,7 +129,7 @@ int UbermasterProcess::main_loop()
 
 
 
-void UbermasterProcess::bertini_real(WitnessSet & W, vec_mp *pi, VertexSet & V)
+void MainProcess::bertini_real(WitnessSet & W, vec_mp *pi, VertexSet & V)
 {
 
 
@@ -203,7 +203,7 @@ void UbermasterProcess::bertini_real(WitnessSet & W, vec_mp *pi, VertexSet & V)
 
 
 
-void UbermasterProcess::critreal(WitnessSet & W, vec_mp *pi, VertexSet & V)
+void MainProcess::critreal(WitnessSet & W, vec_mp *pi, VertexSet & V)
 {
 
 
@@ -302,7 +302,7 @@ int WorkerProcess::main_loop()
 
 		switch (solver_choice) {
 			case NULLSPACE:
-				nullspace_slave_entry_point(this->solve_options);
+				nullspace_worker_entry_point(this->solve_options);
 				break;
 
 			case MIDPOINT_SOLVER:
@@ -320,11 +320,11 @@ int WorkerProcess::main_loop()
 				break;
 
 			case MULTILIN:
-				multilin_slave_entry_point(this->solve_options);
+				multilin_worker_entry_point(this->solve_options);
 				break;
 
 			case SPHERE_SOLVER:
-				sphere_slave_entry_point(this->solve_options);
+				sphere_worker_entry_point(this->solve_options);
 				break;
 
 			case BERTINI_MAIN:

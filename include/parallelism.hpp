@@ -62,21 +62,21 @@ public:
 
 
 /**
- \brief Master process, level 0.
+ \brief Main process, level 0.
  */
-class UbermasterProcess : public Process
+class MainProcess : public Process
 {
 
 public:
 
-	UbermasterProcess(BertiniRealConfig & new_options, SolverConfiguration & new_solve_options){
+	MainProcess(BertiniRealConfig & new_options, SolverConfiguration & new_solve_options){
 		this->program_options = new_options;
 		this->solve_options = new_solve_options;
 	}
 
 
 	/**
-	 \brief Master Bertini_real procedure.
+	 \brief Main Bertini_real procedure.
 
 	 Loads the witness_data, tracker config, and decomposes components of the user's choosing.
 	 \return An integer flag indicating the success of the loop.
@@ -91,7 +91,7 @@ public:
 
 
 
-	~UbermasterProcess()
+	~MainProcess()
 	{
 
 	}

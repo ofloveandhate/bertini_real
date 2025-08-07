@@ -667,7 +667,7 @@ int sphere_solver_master_entry_point(const WitnessSet						&W, // carries with i
 
 
 
-int sphere_slave_entry_point(SolverConfiguration & solve_options)
+int sphere_worker_entry_point(SolverConfiguration & solve_options)
 {
 
 

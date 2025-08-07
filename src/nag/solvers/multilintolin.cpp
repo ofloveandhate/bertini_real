@@ -541,7 +541,7 @@ int multilin_solver_master_entry_point(const WitnessSet & W, // carries with it 
 
 
 
-int multilin_slave_entry_point(SolverConfiguration & solve_options)
+int multilin_worker_entry_point(SolverConfiguration & solve_options)
 {
 
 

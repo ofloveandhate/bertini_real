@@ -80,7 +80,7 @@ void Curve::AdaptiveMovementSampler(VertexSet & V,
 										   SolverConfiguration & solve_options)
 {
 	if (sampler_options.use_parallel())
-		AdaptiveMovementSamplerMaster(V, sampler_options, solve_options);
+		AdaptiveMovementSamplerMain(V, sampler_options, solve_options);
 	else
 		AdaptiveMovementSamplerSerial(V, sampler_options, solve_options);
 }
@@ -116,7 +116,7 @@ void Curve::AdaptiveMovementSamplerSerial(VertexSet & V,
 }
 
 
-void Curve::AdaptiveMovementSamplerMaster(VertexSet & V,
+void Curve::AdaptiveMovementSamplerMain(VertexSet & V,
 										   sampler_configuration & sampler_options,
 										   SolverConfiguration & solve_options)
 {
@@ -162,14 +162,14 @@ void Curve::AdaptiveMovementSamplerMaster(VertexSet & V,
 		if (solve_options.have_available())
 			continue;
 
-		ReportEdgeMaster(V, solve_options);
+		ReportEdgeMain(V, solve_options);
 	}
 
 
 	//wait for everybody to finish
 
 	while (solve_options.have_active()) {// each active worker
-		int source = ReportEdgeMaster(V, solve_options);
+		int source = ReportEdgeMain(V, solve_options);
 	}
 
 	solve_options.send_all_available(-1);
@@ -210,7 +210,7 @@ void Curve::AdaptiveDistanceSampler(VertexSet & V,   //when go into parallel or 
 													SolverConfiguration & solve_options)
 {
 	if (sampler_options.use_parallel())
-		AdaptiveDistanceSamplerMaster(V, sampler_options, solve_options);
+		AdaptiveDistanceSamplerMain(V, sampler_options, solve_options);
 	else
 		AdaptiveDistanceSamplerSerial(V, sampler_options, solve_options);
 }
@@ -253,7 +253,7 @@ void Curve::AdaptiveDistanceSamplerSerial(VertexSet & V,
 }
 
 
-void Curve::AdaptiveDistanceSamplerMaster(VertexSet & V,
+void Curve::AdaptiveDistanceSamplerMain(VertexSet & V,
 													sampler_configuration & sampler_options,
 													SolverConfiguration & solve_options)
 {
@@ -299,14 +299,14 @@ void Curve::AdaptiveDistanceSamplerMaster(VertexSet & V,
 		if (solve_options.have_available())
 			continue;
 
-		ReportEdgeMaster(V, solve_options);
+		ReportEdgeMain(V, solve_options);
 	}
 
 
 	//wait for everybody to finish
 
 	while (solve_options.have_active()) {// each active worker
-		int source = ReportEdgeMaster(V, solve_options);
+		int source = ReportEdgeMain(V, solve_options);
 	}
 
 	solve_options.send_all_available(-1);
@@ -347,7 +347,7 @@ void Curve::SemiFixedSampler(VertexSet & V,   //create when go into parallel whe
 {
 
 	if (sampler_options.use_parallel())
-		SemiFixedSamplerMaster(V, sampler_options, solve_options, num_samples_per_interval);
+		SemiFixedSamplerMain(V, sampler_options, solve_options, num_samples_per_interval);
 	else
 		SemiFixedSamplerSerial(V, sampler_options, solve_options, num_samples_per_interval);
 }
@@ -393,7 +393,7 @@ void Curve::SemiFixedSamplerSerial(VertexSet & V,  //change this original one to
 
 
 
-void Curve::SemiFixedSamplerMaster(VertexSet & V,  //master in parallel for semifixed
+void Curve::SemiFixedSamplerMain(VertexSet & V,  //master in parallel for semifixed
 									  sampler_configuration & sampler_options,
 									  SolverConfiguration & solve_options,
 									  std::vector<int> const& num_samples_per_interval)
@@ -440,14 +440,14 @@ void Curve::SemiFixedSamplerMaster(VertexSet & V,  //master in parallel for semi
 		if (solve_options.have_available())
 			continue;
 
-		ReportEdgeMaster(V, solve_options);
+		ReportEdgeMain(V, solve_options);
 	}
 
 
 	//wait for everybody to finish
 
 	while (solve_options.have_active()) {// each active worker
-		int source = ReportEdgeMaster(V, solve_options);
+		int source = ReportEdgeMain(V, solve_options);
 	}
 
 	solve_options.send_all_available(-1);
@@ -504,7 +504,7 @@ void Curve::FixedSampler(VertexSet & V,
 {
 
 	if (sampler_options.use_parallel())
-		FixedSamplerMaster(V, sampler_options, solve_options, target_num_samples);
+		FixedSamplerMain(V, sampler_options, solve_options, target_num_samples);
 	else
 		FixedSamplerSerial(V, sampler_options, solve_options, target_num_samples);
 }
@@ -518,7 +518,7 @@ void Curve::CycleNumSampler(VertexSet & V,
 {
 
 	if (sampler_options.use_parallel())
-		CycleNumSamplerMaster(V, sampler_options, solve_options);
+		CycleNumSamplerMain(V, sampler_options, solve_options);
 	else
 		CycleNumSamplerSerial(V, sampler_options, solve_options);
 }
@@ -560,7 +560,7 @@ void Curve::FixedSamplerSerial(VertexSet & V,
 
 
 
-void Curve::FixedSamplerMaster(VertexSet & V,
+void Curve::FixedSamplerMain(VertexSet & V,
 							  sampler_configuration & sampler_options,
 							  SolverConfiguration & solve_options,
 							  int target_num_samples)
@@ -615,14 +615,14 @@ void Curve::FixedSamplerMaster(VertexSet & V,
 		if (solve_options.have_available())
 			continue;
 
-		ReportEdgeMaster(V, solve_options);
+		ReportEdgeMain(V, solve_options);
 	}
 
 
 	//wait for everybody to finish
 
 	while (solve_options.have_active()) {// each active worker
-		int source = ReportEdgeMaster(V, solve_options);
+		int source = ReportEdgeMain(V, solve_options);
 	}
 
 	solve_options.send_all_available(-1);
@@ -704,7 +704,7 @@ void Curve::CycleNumSamplerSerial(VertexSet & V,
 
 
 
-void Curve::CycleNumSamplerMaster(VertexSet & V,
+void Curve::CycleNumSamplerMain(VertexSet & V,
 							  sampler_configuration & sampler_options,
 							  SolverConfiguration & solve_options)
 {
@@ -756,14 +756,14 @@ void Curve::CycleNumSamplerMaster(VertexSet & V,
 		if (solve_options.have_available())
 			continue;
 
-		ReportEdgeMaster(V, solve_options);
+		ReportEdgeMain(V, solve_options);
 	}
 
 
 	//wait for everybody to finish
 
 	while (solve_options.have_active()) {// each active worker
-		int source = ReportEdgeMaster(V, solve_options);
+		int source = ReportEdgeMain(V, solve_options);
 	}
 
 	solve_options.send_all_available(-1);
@@ -796,7 +796,7 @@ void Curve::CycleNumSamplerWorker(VertexSet & V,
 }
 
 
-int Curve::ReportEdgeMaster(VertexSet & V, SolverConfiguration & solve_options)
+int Curve::ReportEdgeMain(VertexSet & V, SolverConfiguration & solve_options)
 {
 	// receive note from worker *** that edge ___ is done
 	// receive finished_edge_index
@@ -806,7 +806,7 @@ int Curve::ReportEdgeMaster(VertexSet & V, SolverConfiguration & solve_options)
 	MPI_Recv(&finished_edge_index, 1, MPI_INT, MPI_ANY_SOURCE, DATA_TRANSMISSION, solve_options.comm(), &statty_mc_gatty);
 	int whos_talking = statty_mc_gatty.MPI_SOURCE;
 
-	SynchronizeVertexSetMaster(finished_edge_index, V, whos_talking, solve_options);
+	SynchronizeVertexSetMain(finished_edge_index, V, whos_talking, solve_options);
 
 	solve_options.deactivate(whos_talking);
 
@@ -823,7 +823,7 @@ void Curve::ReportEdgeWorker(int edge_index, VertexSet const& V, SolverConfigura
 }
 
 
-void Curve::SynchronizeVertexSetMaster(int edge_index, VertexSet & V, int source, SolverConfiguration & solve_options)
+void Curve::SynchronizeVertexSetMain(int edge_index, VertexSet & V, int source, SolverConfiguration & solve_options)
 {
 
 

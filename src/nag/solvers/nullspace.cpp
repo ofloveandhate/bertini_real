@@ -1623,7 +1623,7 @@ int nullspacejac_solver_master_entry_point(int							MPType,
 
 
 
-void nullspace_slave_entry_point(SolverConfiguration & solve_options)
+void nullspace_worker_entry_point(SolverConfiguration & solve_options)
 {
 
 
