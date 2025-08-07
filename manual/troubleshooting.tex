@@ -51,7 +51,7 @@ After tracking, for nonsingular endpoints Newton's method can be run to increase
 
 \subsubsection{\tt sh: matlab: command not found}
 
-If you get the message {\tt sh: matlab: command not found} from running Bertini\_real, then Matlab is not on your shell path.  Bertini\_real currently requires Matlab to run properly, and thus failure to include the Matlab executable on the path will cause bertini\_real to fail. Below is an example of the terminal output displayed when Bertini\_real is unable to locate the Matlab executable: 
+If you get the message {\tt sh: matlab: command not found} from running Bertini\_real, then Matlab is not on your shell path.  If Matlab is used as your symbolic engine, then it will require Matlab to run properly. Below is an example of the terminal output displayed when Bertini\_real is unable to locate the Matlab executable: 
  
 \begin{center}\begin{minipage}{0.9\linewidth}
 \centering
@@ -68,8 +68,3 @@ Permanently fixing this error involves editing your profile, e.g. \texttt{bash\_
 Note that you cannot run Bertini\_real from within Matlab, even with the use of {\tt !}, because Bertini\_real currently calls Matlab using a {\tt system()} call. 
 
 
-\subsubsection*{Removing dependency on Matlab's symbolic toolbox}
-
-
-
-Removal of Matlab as a dependency is ongoing work.  Please consider helping me move to Python or another open source language for the symbolic computations, required for deflation of singular curves, and the writing of the input file for critical curves of surfaces.
