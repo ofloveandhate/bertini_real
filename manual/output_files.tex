@@ -86,6 +86,8 @@ END FOR
 bertini_real_version
 /path/to/containing/folder
 timing statistics from Boost.Chrono
+
+num_processors_used
 \end{lstlisting}
 \end{minipage}\end{center}
 
@@ -106,6 +108,7 @@ FOR  // num is num_projections
 	FOR // num is num coords incl homvar
 		proj_coord_real proj_coord_imag
 	END FOR
+
 END FOR
 
 
@@ -113,7 +116,6 @@ FOR  // each filename
 	num_chars_in_filename
 	filename
 END FOR
-
 FOR // each vertex
 	num_coords // may include synthetic variables
 	FOR
@@ -125,8 +127,16 @@ FOR // each vertex
 		proj_val_real proj_val_imag
 	END FOR
 
-	input_filename_index
-	vertex_type  // see file vertex_types
+	input_filename_index    // this is the first one
+	FOR each filename this point was found in
+		input_filename_index // all on one line
+	END FOR
+	vertex_type  // see file vertex_types.  bits represent types.
+
+	num_paths_ending_here
+	FOR each path ending here
+		path_num
+	END FOR
 END FOR
 \end{lstlisting}
 \end{minipage}\end{center}
@@ -136,12 +146,14 @@ END FOR
 \label{sec:vertex_types}
 
 
+The vertex types are represented by powers of 2, so that you can use bit ops to see all the types.
+
 \begin{center}\begin{minipage}{0.9\linewidth}
 \begin{lstlisting}[language=c++, caption={\tt output/vertex\_types}, captionpos=b]
 num_vertex_types
 
 FOR
-	VertexType value
+	VertexType integer
 END FOR
 \end{lstlisting}
 \end{minipage}\end{center}
@@ -284,6 +296,7 @@ FOR // each edge
 	FOR // each sample on edge
 		sample_index
 	END FOR
+
 END FOR
 \end{lstlisting}
 \end{minipage}\end{center}
@@ -359,6 +372,7 @@ FOR // each face
 	FOR // each triangle
 		vert_1 vert_2 vert_3
 	END FOR
+	
 END FOR
 \end{lstlisting}
 \end{minipage}\end{center}
