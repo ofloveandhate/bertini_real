@@ -10,7 +10,7 @@ jobs:
     - name: Sync to GitLab
       # You may pin to the exact commit or the version.
       # uses: kujov/gitlab-sync@b19399d43e81ac88acb6eefd5588e6ebde3d7d88
-      uses: kujov/gitlab-sync@2.1.0
+      uses: kujov/gitlab-sync@2.2.1
       with:
         # The URL of the GitLab repository (e.g., https://gitlab.com/user/repo.git)
         gitlab_url: ${{ secrets.GITLAB_URL }}
