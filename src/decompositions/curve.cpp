@@ -213,6 +213,14 @@ int Curve::compute_critical_points(const WitnessSet & W_curve,
 
 
 	W_crit_real.only_first_vars(W_curve.num_variables()); // trim the fat, since we are at the lowest level.
+	
+	if (program_options.verbose_level()>=2)
+	{
+		std::cout << color::green() << "the critical points of the curve before filtering and sorting:\n\n" << color::console_default();
+		W_crit_real.print_to_screen();
+	}
+
+
 	W_crit_real.sort_for_real(solve_options.T.real_threshold);
 	W_crit_real.sort_for_unique(program_options.same_point_tol());
 
@@ -225,7 +233,7 @@ int Curve::compute_critical_points(const WitnessSet & W_curve,
 
 	if (program_options.verbose_level()>=2)
 	{
-		std::cout << color::green() << "the critical points of the curve:\n\n" << color::console_default();
+		std::cout << color::green() << "the critical points of the curve after filtering and sorting:\n\n" << color::console_default();
 		W_crit_real.print_to_screen();
 	}
 
@@ -246,6 +254,12 @@ int Curve::compute_critical_points(const WitnessSet & W_curve,
                            W_curve,       // all else here is input
                            program_options,
                            solve_options);
+
+	if (program_options.verbose_level()>=2)
+	{
+		std::cout << color::green() << "the sphere intersection points of the curve before filtering:\n\n" << color::console_default();
+		W_sphere_isect.print_to_screen();
+	}
 
     W_sphere_isect.sort_for_real(solve_options.T.real_threshold);
 	W_sphere_isect.sort_for_unique(program_options.same_point_tol());
