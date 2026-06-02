@@ -1,0 +1,32 @@
+CONFIG
+
+randomseed: 74;
+
+endgamenum: 1;
+
+%imagthreshold: 1e-4;
+%sharpendigits: 30;
+tracktype: 1;
+%securitylevel: 1;
+%securitymaxnorm: 1e15;
+
+%tracktolbeforeeg:1e-10;
+
+%maxstepsbeforenewton: 0;
+
+%CondNumThreshold: 1e20;
+
+%tracktolduringeg: 1e-12;
+%finaltol:1e-8;
+
+
+END;
+
+INPUT
+
+variable_group x, y, z;
+function f1;
+
+f1 = x^2-y^2*z;
+
+END;
