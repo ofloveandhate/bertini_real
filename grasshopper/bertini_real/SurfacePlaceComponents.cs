@@ -74,6 +74,8 @@ namespace bertini_real
             pManager.AddGeometryParameter("Sockets negative", "Sockets-", "negative transformed", GH_ParamAccess.list);
             ///Output a list of the positive Brep connectors transformed to every singularity
             pManager.AddTextParameter("Piece filenames", "Fs", "Piece filenames", GH_ParamAccess.list);
+            pManager.AddVectorParameter("Locations", "Locs", "Singularity locations as vectors", GH_ParamAccess.list);  // index 5
+            pManager.AddVectorParameter("Directions", "Dirs", "Singularity directions as vectors", GH_ParamAccess.list); // index 6
         }
 
         /// <summary>
@@ -109,12 +111,12 @@ namespace bertini_real
             ///The parameters are stored an array. 
             ///To set a variable to a parameter we need to reference the parameter by its index
             ///Do NOT want to change the order of these once published/finalized 
-            if (!DA.GetData(0, ref jsonPath)) return;
+            if (!DA.GetData(0, ref jsonPath)) return; // required, keep the return
             DA.GetData(1, ref size);
-            if (!DA.GetData(2, ref plugPos)) return;
-            if (!DA.GetData(3, ref plugNeg)) return;
-            if (!DA.GetData(5, ref socketNeg)) return;
-            if (!DA.GetData(4, ref socketPos)) return;
+            DA.GetData(2, ref plugPos);    // optional, drop the return
+            DA.GetData(3, ref plugNeg);    // optional, drop the return
+            DA.GetData(4, ref socketPos);  // optional, drop the return
+            DA.GetData(5, ref socketNeg);  // optional, drop the return
             ///Error checking inputs. Including a RuntimeMessage in script will automaticall generate an 'o' output on the component 
 
             ///The component should not run in there are no prefab geometries
@@ -128,9 +130,30 @@ namespace bertini_real
 
             /* Read and Parse the JSON File into a Data Object (defined in PlugParts.cs) */
             string text = File.ReadAllText(jsonPath);
+            string text;
+            try {
+                text = File.ReadAllText(jsonPath);
+            } catch (Exception e) {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, $"Could not read JSON file: {e.Message}");
+                return;
+            }
+
+
             ///this parses the JSON by key. The Data class must have properties the same name as the keys in the JSON file
             ///Should Eventually include some runtimeMessage error handeling
             var content = JsonSerializer.Deserialize<Data>(text); 
+            
+            Data content;
+            try
+            {
+                content = JsonSerializer.Deserialize<Data>(text);
+            }
+            catch (Exception e)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, $"Could not parse JSON: {e.Message}");
+                return;
+            }
+
             ///JSON file is structured: 
             // {
             // "piece_names":['filename1.stl', 'filename2.stl', ...], 
@@ -226,6 +249,8 @@ namespace bertini_real
             DA.SetDataList(2, transformedPosSockets);
             DA.SetDataList(3, transformedNegSockets);
             DA.SetDataList(4, piece_filenames);
+            DA.SetDataList(5, locVectors);
+            DA.SetDataList(6, dirVectors);
         }
 
         /// <summary>
