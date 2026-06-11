@@ -37,6 +37,7 @@ Tutorials ✏️
    tutorials/mesh_export
    tutorials/anaglypy
    tutorials/snap_together
+   .. tutorials/grasshopper_connection
 
 Details 📝
 ================
