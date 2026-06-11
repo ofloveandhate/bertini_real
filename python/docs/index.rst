@@ -57,7 +57,7 @@ Details 📝
    util
    vertex
    vertextype
-   glumpy
+   .. glumpy
 
 Implementation notes
 ======================
