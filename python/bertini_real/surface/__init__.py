@@ -1624,19 +1624,15 @@ class Surface(Decomposition):
                 elif case == 5:
                     break
 
-                t1 = [points[curr_edge[0]], points[curr_edge[1]],
-                      points[face['midpoint']]]
-                t2 = [points[curr_edge[1]], points[curr_edge[2]],
-                      points[face['midpoint']]]
-
-                t3 = (curr_edge[0], curr_edge[1], face['midpoint'])
-                t4 = (curr_edge[1], curr_edge[2], face['midpoint'])
-
-                T.append(t1)
-                T.append(t2)
-
-                TT.append(t3)
-                TT.append(t4)
+                # fan the curve edge to the face midpoint; skip degenerate triangles (a repeated
+                # vertex index, e.g. from a degenerate curve edge).  these are zero-area, and if
+                # kept they make the mesh non-manifold -- an (a, a, mid) face contributes the
+                # {a, mid} edge twice, which is what produced the 4-shared edges and duplicate
+                # faces in the raw mesh.
+                for tri in ((curr_edge[0], curr_edge[1], face['midpoint']),
+                            (curr_edge[1], curr_edge[2], face['midpoint'])):
+                    if len(set(tri)) == 3:
+                        TT.append(tri)
 
         faces = [TT]
         vertex = []
@@ -1653,7 +1649,11 @@ class Surface(Decomposition):
 
         face_np_array = np.array(face)
 
-        raw_mesh = trimesh.Trimesh(vertex_np_array, face_np_array)
+        # honor keep_all_vertices like as_mesh_smooth: process=False keeps the full global
+        # vertex set so the faces index into extract_points() (the unified set), and does not
+        # merge coincident-but-distinct vertices (which would fuse sheets at singularities).
+        should_trimesh_process = False if keep_all_vertices == True else True
+        raw_mesh = trimesh.Trimesh(vertex_np_array, face_np_array, process=should_trimesh_process)
         raw_mesh.fix_normals()
         return raw_mesh
 
