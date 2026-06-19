@@ -81,6 +81,11 @@ namespace bertini_real
                     Mesh feature = featureMeshes[i];
                     bool union = signs[i] > 0;
 
+                    if (!feature.IsClosed)
+                        AddRuntimeMessage(GH_RuntimeMessageLevel.Warning,
+                            $"Piece at path {path}: feature {i} is not a closed mesh; the boolean may do nothing. " +
+                            "Check the feature is a closed solid and actually overlaps the piece.");
+
                     Mesh[] next = union
                         ? Mesh.CreateBooleanUnion(current.Concat(new[] { feature }))
                         : Mesh.CreateBooleanDifference(current, new[] { feature });
@@ -128,8 +133,14 @@ namespace bertini_real
                     Mesh[] fromBrep = Mesh.CreateFromBrep(brep, MeshingParameters.Default);
                     if (fromBrep != null && fromBrep.Length > 0)
                     {
+                        // CreateFromBrep returns one mesh per face; appending leaves the cap
+                        // seams unwelded (an open mesh), which makes mesh booleans no-op. Weld
+                        // coincident vertices so a capped Brep becomes a closed cutter.
                         var combined = new Mesh();
                         foreach (var mm in fromBrep) combined.Append(mm);
+                        combined.Vertices.CombineIdentical(true, true);
+                        combined.RebuildNormals();
+                        combined.Compact();
                         meshes.Add(combined);
                     }
                 }
