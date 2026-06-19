@@ -16,7 +16,7 @@ import bertini_real.parse
 import bertini_real.exception as br_except
 import numpy as np
 from bertini_real.decomposition import Decomposition
-from bertini_real.curve import Curve, CurvePiece, is_edge_degenerate
+from bertini_real.curve import Curve, CurvePiece, is_edge_degenerate, _points_to_xyz
 from bertini_real.vertex import Vertex
 from bertini_real.vertex import VertexType
 from bertini_real.util import ReversableList
@@ -54,6 +54,24 @@ _default_surface_basename_raw = 'br_surface_raw'
 
 
 
+
+
+def _mesh_triangles(mesh):
+    """
+    flatten a `trimesh.Trimesh`'s faces into a dict for the Grasshopper JSON export.
+
+    the triangle entries are indices into the surface's unified (global) vertex set,
+    because `as_mesh_raw`/`as_mesh_smooth` build the mesh from `extract_points()` with
+    `keep_all_vertices=True` (so trimesh does not reindex).  returns None if mesh is None.
+    """
+    if mesh is None:
+        return None
+
+    triangles = np.asarray(mesh.faces, dtype=int).reshape(-1).tolist()
+    return {
+        "triangles": triangles,
+        "triangle_count": len(mesh.faces),
+    }
 
 
 def export_mesh(mesh, basename, autoname_using_folder=False, file_type=_default_file_type, verbose=True):
@@ -405,6 +423,39 @@ class SurfacePiece():
 
 
 
+    def to_gh_dict(self, piece_index, include_smooth=True):
+        """
+        assemble this piece's data for the Grasshopper JSON export.
+
+        meshes are expressed purely as triangle indices into the surface's unified vertex
+        set; embedded curves as ordered vertex-index lists into the same set.  no vertex
+        coordinates live here -- they are shared at the top level of the export.
+        """
+
+        mesh_raw = _mesh_triangles(self.surface.as_mesh_raw(self.indices))
+
+        mesh_smooth = None
+        if include_smooth and self.surface.is_sampled():
+            try:
+                mesh_smooth = _mesh_triangles(self.surface.as_mesh_smooth(self.indices))
+            except br_except.SurfaceNotSampled:
+                mesh_smooth = None
+
+        curves = []
+        for cp in self.edge_pieces():
+            curves.append({
+                "type": self.surface._curve_type_for_name(cp.curve.inputfilename),
+                "curve_name": cp.curve.inputfilename,
+                "vertex_indices": cp.to_point_indices(),
+            })
+
+        return {
+            "piece_index": piece_index,
+            "face_indices": list(self.indices),
+            "mesh_smooth": mesh_smooth,
+            "mesh_raw": mesh_raw,
+            "curves": curves,
+        }
 
 
 
@@ -900,6 +951,66 @@ class Surface(Decomposition):
                 return c 
 
         raise RuntimeError(f'unable to find a curve with name {curve_name} in this surface')
+
+
+    def _curve_type_for_name(self, curve_name):
+        """
+        classify an embedded curve by its `inputfilename` into one of the closed-vocabulary
+        type tags used by the Grasshopper export.  match order mirrors `curve_with_name`.
+        """
+
+        if curve_name == self.critical_curve.inputfilename:
+            return "critical"
+
+        if curve_name == self.sphere_curve.inputfilename:
+            return "sphere"
+
+        for c in self.critical_point_slices:
+            if curve_name == c.inputfilename:
+                return "critslice"
+
+        for c in self.midpoint_slices:
+            if curve_name == c.inputfilename:
+                return "midslice"
+
+        if curve_name in self.singular_names:
+            return "singular"
+
+        return "unknown"
+
+
+    def export_gh_json(self, filename="br_gh_export.json", include_smooth=True):
+        """
+        write a self-contained JSON describing this surface for the Grasshopper plugin.
+
+        the file holds one unified vertex set (`vertices`); each nonsingular piece carries
+        only triangle indices (raw and, when sampled, smooth) and the embedded curve pieces
+        as ordered vertex-index lists -- all indices into the shared `vertices`.  this keeps
+        the surface mesh and its embedded curves referring to the same points in Rhino.
+        """
+
+        # prime the extract_points memo cache with the full (no-arg) point set first, so
+        # later per-piece mesh construction does not poison it with a partial set.
+        points = self.extract_points()
+
+        pieces = self.separate_into_nonsingular_pieces()
+
+        contents = {
+            "format_version": 2,
+            "decomposition_type": "surface",
+            "source_directory": self.directory,
+            "num_variables": self.num_variables,
+            "vertices": _points_to_xyz(points),
+            "vertex_count": len(points),
+            "is_sampled": self.is_sampled(),
+            "pieces": [p.to_gh_dict(ii, include_smooth) for ii, p in enumerate(pieces)],
+        }
+
+        with open(filename, "w") as f:
+            json.dump(contents, f, indent=2)
+
+        print("wrote " + filename)
+        return filename
 
     def write_piece_data(self):
         """

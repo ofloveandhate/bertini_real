@@ -4,6 +4,9 @@ EXCLUDE_FROM_PACKAGES = []
 
 extras = {
     'optional': [
+    ],
+    'test': [
+        'pytest',
     ]
 }
 

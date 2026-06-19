@@ -50,6 +50,60 @@ namespace bertini_real
         }
     }
 
+    /// <summary>
+    /// DTOs for the self-contained br_gh_export.json written by Python's
+    /// Surface.export_gh_json / Curve.export_gh_json.  Property names must match the JSON
+    /// keys exactly (System.Text.Json matches by name).  The single `vertices` array is the
+    /// unified vertex set; meshes carry only triangle indices into it, and curves carry only
+    /// ordered vertex-index lists into it -- so meshes and embedded curves refer to the same
+    /// points in Rhino.
+    /// </summary>
+    /// <see cref="SurfaceReadGhJson.cs"/>
+    /// <see cref="CurveReadGhJson.cs"/>
+    public class GhExport
+    {
+        public int format_version { get; set; }
+        public string decomposition_type { get; set; }   // "surface" | "curve"
+        public string source_directory { get; set; }
+        public int num_variables { get; set; }
+        public int vertex_count { get; set; }
+        public double[][] vertices { get; set; }          // the unified set; each is [x,y,z]
+        public bool is_sampled { get; set; }              // surface only
+        public GhPiece[] pieces { get; set; }             // surface only
+        public GhCurvePiece[] curve_pieces { get; set; }  // curve only
+    }
+
+    public class GhPiece
+    {
+        public int piece_index { get; set; }
+        public int[] face_indices { get; set; }
+        public GhMesh mesh_smooth { get; set; }           // null when not sampled
+        public GhMesh mesh_raw { get; set; }
+        public GhEmbeddedCurve[] curves { get; set; }
+    }
+
+    public class GhMesh
+    {
+        public int[] triangles { get; set; }              // flat ijk, index into GhExport.vertices
+        public int triangle_count { get; set; }
+    }
+
+    public class GhEmbeddedCurve
+    {
+        public string type { get; set; }                  // critical|sphere|singular|midslice|critslice|unknown
+        public string curve_name { get; set; }
+        public int[] vertex_indices { get; set; }         // ordered, index into GhExport.vertices
+    }
+
+    public class GhCurvePiece
+    {
+        public int piece_index { get; set; }
+        public string type { get; set; }                  // "standalone"
+        public string curve_name { get; set; }
+        public int[] vertex_indices { get; set; }
+    }
+
+
     /* Used to Create the different parts of a positive plug */
     public class PlugBody
     {

@@ -193,3 +193,13 @@ def gather_and_save():
     import dill
     dill.dump(b, fileObject)
     fileObject.close()
+
+
+def gather_and_export_gh(filename="br_gh_export.json"):
+    """
+    gather a decomposition from the current directory and write a self-contained JSON
+    for the Grasshopper plugin.  works for both curves and surfaces (both expose
+    `export_gh_json`).  returns the filename written.
+    """
+    d = gather()
+    return d.export_gh_json(filename)
