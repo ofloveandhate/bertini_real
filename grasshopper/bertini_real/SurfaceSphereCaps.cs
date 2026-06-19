@@ -34,7 +34,9 @@ namespace bertini_real
             pManager.AddMeshParameter("Meshes", "M", "Surface piece meshes (from Surface Read GH JSON)", GH_ParamAccess.tree);
             pManager.AddBrepParameter("Sphere", "S", "Bounding sphere Brep (from Surface Read GH JSON)", GH_ParamAccess.item);
             pManager.AddNumberParameter("Tolerance", "T", "Distance tolerance for testing whether a boundary vertex lies on the sphere", GH_ParamAccess.item, 1e-3);
+            pManager.AddIntegerParameter("Resolution", "R", "Radial subdivisions of the cap (rings from boundary to pole); higher = smoother, follows the sphere", GH_ParamAccess.item, 4);
             Params.Input[2].Optional = true;
+            Params.Input[3].Optional = true;
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
@@ -56,6 +58,10 @@ namespace bertini_real
 
             double tol = 1e-3;
             DA.GetData(2, ref tol);
+
+            int resolution = 4;
+            DA.GetData(3, ref resolution);
+            if (resolution < 1) resolution = 1;
 
             // recover center/radius from the sphere Brep's bounding box (exact for a sphere)
             BoundingBox bb = sphereBrep.GetBoundingBox(true);
@@ -87,7 +93,7 @@ namespace bertini_real
 
                     foreach (var loop in loops)
                     {
-                        Mesh cap = BuildSmallerCap(mesh, loop, center, radius, tol);
+                        Mesh cap = BuildSmallerCap(mesh, loop, center, radius, tol, resolution);
                         if (cap != null && cap.Faces.Count > 0)
                             caps.Add(cap, path);
                     }
@@ -173,60 +179,119 @@ namespace bertini_real
         }
 
         /// <summary>
-        /// Builds the smaller-area fan cap over a closed loop of topology-vertex indices, with the
-        /// apex on the sphere.  Skips degenerate (near-zero-area) triangles.
+        /// Builds the smaller-area cap over a closed loop of topology-vertex indices.  The pole is
+        /// placed on the sphere along the loop's mean direction; the cap is subdivided into
+        /// <paramref name="resolution"/> radial rings, each slerped along the sphere from the
+        /// (fixed, shared) boundary toward the pole, so it follows the sphere instead of pinching
+        /// to a flat point.  Ring 0 keeps the exact boundary vertices so a later join welds
+        /// watertight.  Degenerate (near-zero-area) triangles are skipped.
         /// </summary>
-        private static Mesh BuildSmallerCap(Mesh mesh, List<int> loop, Point3d center, double radius, double tol)
+        private static Mesh BuildSmallerCap(Mesh mesh, List<int> loop, Point3d center, double radius, double tol, int resolution)
         {
             var topo = mesh.TopologyVertices;
             int n = loop.Count;
 
-            var pts = new Point3d[n];
+            var pts = new Point3d[n];      // exact boundary points (ring 0)
+            var dirs = new Vector3d[n];    // unit directions from center
             var mean = new Vector3d(0, 0, 0);
             for (int k = 0; k < n; k++)
             {
                 pts[k] = topo[loop[k]];
-                mean += pts[k] - center;
+                Vector3d d = pts[k] - center;
+                dirs[k] = d;
+                dirs[k].Unitize();
+                mean += d;
             }
             if (mean.IsTiny()) mean = new Vector3d(0, 0, 1);
             mean.Unitize();
 
-            Mesh best = null;
-            double bestArea = double.MaxValue;
+            // pick the pole side that yields the smaller cap
+            int sign = SmallerCapSign(pts, center, radius, mean);
+            Vector3d poleDir = sign * mean;
+            Point3d pole = center + radius * poleDir;
 
-            foreach (int sign in new[] { 1, -1 })
+            int R = Math.Max(1, resolution);
+            var cap = new Mesh();
+
+            // ring 0: exact boundary; rings 1..R-1: slerped toward the pole
+            for (int k = 0; k < n; k++) cap.Vertices.Add(pts[k]);
+            for (int r = 1; r < R; r++)
             {
-                Point3d apex = center + sign * radius * mean;
-
-                var cap = new Mesh();
-                cap.Vertices.AddVertices(pts);
-                int apexIdx = cap.Vertices.Add(apex);
-
-                double area = 0.0;
+                double t = (double)r / R;
                 for (int k = 0; k < n; k++)
                 {
-                    int a = k, c = (k + 1) % n;
-                    double triArea = 0.5 * Vector3d.CrossProduct(pts[a] - apex, pts[c] - apex).Length;
-                    if (triArea < tol * tol) continue;   // degenerate triangle -> skip
-                    cap.Faces.AddFace(a, c, apexIdx);
-                    area += triArea;
-                }
-
-                if (cap.Faces.Count == 0) continue;
-
-                if (area < bestArea)
-                {
-                    bestArea = area;
-                    best = cap;
+                    Vector3d dir = Slerp(dirs[k], poleDir, t);
+                    cap.Vertices.Add(center + radius * dir);
                 }
             }
+            int poleIdx = cap.Vertices.Add(pole);
 
-            if (best != null)
+            int Idx(int r, int k) => r * n + k;
+
+            // quad strips between consecutive full rings
+            for (int r = 0; r < R - 1; r++)
             {
-                best.Normals.ComputeNormals();
-                best.Compact();
+                for (int k = 0; k < n; k++)
+                {
+                    int k2 = (k + 1) % n;
+                    AddTri(cap, Idx(r, k), Idx(r, k2), Idx(r + 1, k2), tol);
+                    AddTri(cap, Idx(r, k), Idx(r + 1, k2), Idx(r + 1, k), tol);
+                }
             }
-            return best;
+            // innermost ring fans to the pole
+            for (int k = 0; k < n; k++)
+            {
+                int k2 = (k + 1) % n;
+                AddTri(cap, Idx(R - 1, k), Idx(R - 1, k2), poleIdx, tol);
+            }
+
+            if (cap.Faces.Count == 0) return null;
+            cap.Normals.ComputeNormals();
+            cap.Compact();
+            return cap;
+        }
+
+        private static int SmallerCapSign(Point3d[] pts, Point3d center, double radius, Vector3d mean)
+        {
+            double Area(int sign)
+            {
+                Point3d apex = center + sign * radius * mean;
+                double area = 0.0;
+                int n = pts.Length;
+                for (int k = 0; k < n; k++)
+                {
+                    int k2 = (k + 1) % n;
+                    area += 0.5 * Vector3d.CrossProduct(pts[k] - apex, pts[k2] - apex).Length;
+                }
+                return area;
+            }
+            return Area(1) <= Area(-1) ? 1 : -1;
+        }
+
+        private static void AddTri(Mesh m, int i, int j, int k, double tol)
+        {
+            Point3d a = m.Vertices[i];
+            Point3d b = m.Vertices[j];
+            Point3d c = m.Vertices[k];
+            double area = 0.5 * Vector3d.CrossProduct(b - a, c - a).Length;
+            if (area < tol * tol) return;   // degenerate -> skip
+            m.Faces.AddFace(i, j, k);
+        }
+
+        /// <summary>Spherical interpolation of two unit vectors; linear fallback when (anti)parallel.</summary>
+        private static Vector3d Slerp(Vector3d v0, Vector3d v1, double t)
+        {
+            double dot = Math.Max(-1.0, Math.Min(1.0, v0 * v1));
+            double omega = Math.Acos(dot);
+            double so = Math.Sin(omega);
+            if (omega < 1e-9 || so < 1e-9)
+            {
+                Vector3d lin = (1.0 - t) * v0 + t * v1;
+                if (lin.IsTiny()) return v0;
+                lin.Unitize();
+                return lin;
+            }
+            return (Math.Sin((1.0 - t) * omega) / so) * v0 + (Math.Sin(t * omega) / so) * v1;
         }
 
         protected override System.Drawing.Bitmap Icon => IconLoader.GetIcon("lego.png");
