@@ -75,6 +75,12 @@ namespace bertini_real
 
             if (paths.Count == 0) return;
 
+            if (paths.Count == 1)
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning,
+                    "Only one tree branch received, so there is nothing to spread (one piece per branch). " +
+                    "The per-piece tree structure was probably flattened upstream (Scale, a wire, or a Flatten on this input) -- " +
+                    "keep one branch per piece coming in.");
+
             // overall center: explicit input, else the average of the piece centers
             Point3d origin;
             if (hasCenter)
