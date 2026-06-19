@@ -1007,6 +1007,17 @@ class Surface(Decomposition):
             "pieces": [p.to_gh_dict(ii, include_smooth) for ii, p in enumerate(pieces)],
         }
 
+        # verify each piece's sphere curves are closed loops (they always should be, barring a
+        # decomposition problem); warn loudly if not, so the issue is visible before Grasshopper.
+        for pc in contents["pieces"]:
+            for cv in pc["curves"]:
+                if cv["type"] == "sphere":
+                    vi = cv["vertex_indices"]
+                    if len(vi) < 2 or vi[0] != vi[-1]:
+                        print("WARNING: piece {} has a non-closed sphere curve ({}); "
+                              "the decomposition may be incomplete".format(
+                                  pc["piece_index"], cv["curve_name"]))
+
         with open(filename, "w") as f:
             json.dump(contents, f, indent=2)
 
