@@ -34,35 +34,44 @@ rectangle "**Untangle Curves By Type**\l--\lout (each tree {piece}):\l• Critic
 READER --> UNTANGLE : Curves\n+ Curve Types
 
 ' ======================================================================
-' Branch 2 — geometry: cap -> close -> (spread)
+' Branch 2 — geometry: cap -> close -> boolean -> (spread)
 ' ======================================================================
 rectangle "**Sphere Caps**\l--\lin: Meshes, Sphere,\l    Tolerance, Resolution\lout: Caps  (tree {piece})\l" as CAPS
 
 rectangle "**Close Piece**\l--\lin: Meshes, Caps, Tolerance\lout:\l• Closed  (tree {piece})\l• Is Closed  (tree {piece})\l• Naked Edges  (tree {piece})\l" as CLOSE
 
-rectangle "**Spread Pieces**\l--\lin: Meshes, Factor, Center\lout: Meshes, Translations, Center\l" as SPREAD
+rectangle "**Boolean Piece**\l--\lin: Solid, Features, Operations(±1)\lout:\l• Result  (tree {piece})\l• Is Closed  (tree {piece})\l• Report  (tree {piece})\l" as BOOL
+
+rectangle "**Spread Pieces**\l--\lin: Geometry, Factor, Center\lout: Geometry, Translations, Center\l" as SPREAD
 
 READER --> CAPS : Meshes
 READER --> CAPS : Sphere
 READER --> CLOSE : Meshes
 CAPS --> CLOSE : Caps
-CLOSE --> SPREAD : Closed
-READER ..> SPREAD : Meshes\n(or feed Closed)
+CLOSE --> BOOL : Closed  (as Solid)
 
 ' ======================================================================
-' Branch 3 — singularity connectors
+' Branch 3 — singularity connectors -> features -> boolean
 ' ======================================================================
-rectangle "**Surface Place Components**\l--\lin: Sing Locations, Sing Directions,\l    Sing Parities, Sing On Pieces,\l    Size, Plug+/-, Socket+/-\lout (each tree {piece}):\l• Plugs positive / negative\l• Sockets positive / negative\l• per-piece diagnostics\l" as PLACE
+rectangle "**Surface Place Components**\l--\lin: Sing Locations, Sing Directions,\l    Sing Parities, Sing On Pieces,\l    Size, Plug+/-, Socket+/-\lout (each tree {piece}):\l• Plugs positive / negative\l• Sockets positive / negative\l" as PLACE
+
+rectangle "**Connectors To Features**\l--\lin: Plugs+/-, Sockets+/-\lout:\l• Features  (tree {piece}, ordered)\l• Operations  (tree {piece}, signs ±1)\l" as CONNFEAT
 
 READER --> PLACE : Sing Locations\nSing Directions\nSing Parities\nSing On Pieces
+PLACE --> CONNFEAT : Plugs+/-\nSockets+/-
+CONNFEAT --> BOOL : Features\n+ Operations
 
 ' ======================================================================
-' Join — group each piece's mesh with its connectors
+' Grouping / viewing
 ' ======================================================================
 rectangle "**Surface Group By Piece**\l--\lin: Meshes, Plugs+/-, Sockets+/-\lout:\l• Pieces with connectors\l   (tree {piece}: mesh + connectors)\l• Piece Indices\l" as GROUP
 
-CLOSE --> GROUP : Closed\n(or Meshes)
+CLOSE ..> GROUP : Meshes\n(or Boolean Result)
 PLACE --> GROUP : Plugs+/-\nSockets+/-
+
+BOOL --> SPREAD : Result
+GROUP ..> SPREAD : Pieces with connectors
+CLOSE ..> SPREAD : Closed  (alt.)
 
 ' ---- notes ----
 note right of READER
@@ -72,20 +81,24 @@ note right of READER
   single component (no second JSON).
 end note
 
-note bottom of GROUP
-  **Per-piece data travels as a DataTree
-  keyed {piece_index}.** Any per-piece
-  output plugs into any per-piece input,
-  aligned automatically by branch.
+note bottom of BOOL
+  **Boolean Piece is an ordered fold.**
+  Start from Solid, then apply each Feature
+  in order: +1 union, -1 subtract (default
+  subtract). Order matters -- each step acts
+  on the running result. (Python twin:
+  surface.mesh_boolean_fold, manifold3d.)
 end note
 
 note as LEGEND
   **Data-shape conventions**
-  • per-piece      -> tree {piece}
-  • per-singularity-> flat list (index = sing id)
-  • per-curve idx  -> tree {piece, curve}
+  • per-piece       -> tree {piece}
+  • per-singularity -> flat list (index = sing id)
+  • per-curve idx   -> tree {piece, curve}
   • Vertices is one shared Point list;
     meshes/curves index into it.
+  • per-piece geometry -> "Geometry"/"G"
+    (any type); meshes -> "Meshes"/"M".
   solid arrow = typical wire,  dashed = alternative
 end note
 LEGEND .. SPREAD
