@@ -345,6 +345,47 @@ def spread_pieces(meshes, factor=0.5, center=None):
     return out
 
 
+def mesh_boolean_fold(solid, features, signs=None):
+    """
+    Fold an ordered sequence of boolean operations onto a solid mesh -- the Python twin of the
+    Grasshopper "Boolean Piece" component.
+
+    solid: a trimesh.Trimesh (should be watertight; booleans on open meshes are unreliable).
+    features: list of trimesh.Trimesh to boolean in, IN ORDER.  ("Feature" in the solid-modeling
+              sense -- an ordered additive/subtractive operation on a body.)
+    signs: list parallel to features; +1 = union, <=0 = subtract.  Defaults to all subtract.
+
+    Order matters: each step acts on the result of the previous, e.g. signs [+1, -1, +1, -1]
+    means union(f0), then subtract(f1), then union(f2), then subtract(f3).  Uses trimesh's
+    exact 'manifold' backend (the manifold3d package), which is robust on clean manifolds.
+    Returns the resulting trimesh.Trimesh.
+    """
+    try:
+        import manifold3d  # noqa: F401  -- the exact boolean backend trimesh will use
+    except ImportError as e:
+        raise ImportError(
+            "mesh booleans need the 'manifold3d' package (pip install manifold3d)") from e
+
+    import warnings
+
+    features = list(features)
+    if signs is None:
+        signs = [-1] * len(features)
+    if len(signs) != len(features):
+        raise ValueError("signs must be parallel to features")
+
+    if not solid.is_watertight:
+        warnings.warn("boolean solid is not watertight; the result may be wrong")
+
+    result = solid.copy()
+    for feature, sign in zip(features, signs):
+        if sign > 0:
+            result = trimesh.boolean.union([result, feature], engine='manifold')
+        else:
+            result = trimesh.boolean.difference([result, feature], engine='manifold')
+    return result
+
+
 class SurfacePiece():
     """
     A "Piece" of an algebraic surface.  Essentially, a union of Faces, with some additional interface.
