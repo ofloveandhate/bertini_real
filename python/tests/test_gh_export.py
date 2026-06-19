@@ -140,6 +140,22 @@ def test_index_polyline_matches_points_whitney():
                 assert np.allclose(via_idx, via_pts)
 
 
+@pytest.mark.skipif(not WHITNEY, reason="whitney decomposition not present")
+def test_piece_as_closed_mesh_and_spread():
+    """Rhino-free pipeline: sampled pieces cap+join to watertight solids, and spread moves them."""
+    from bertini_real.surface import Surface, spread_pieces
+    s = Surface(WHITNEY)
+    pieces = s.separate_into_nonsingular_pieces()
+    closed = [p.as_closed_mesh(resolution=4) for p in pieces]
+    assert all(m is not None and m.is_watertight for m in closed)
+
+    moved = spread_pieces(closed, factor=0.5)
+    assert len(moved) == len(closed)
+    # spreading must actually displace at least one piece, and leave the originals untouched
+    assert any(not np.allclose(a.bounds.mean(axis=0), b.bounds.mean(axis=0))
+               for a, b in zip(closed, moved))
+
+
 @pytest.mark.skipif(not SPHERE, reason="unsampled sphere decomposition not present")
 def test_unsampled_surface_has_null_smooth(tmp_path):
     from bertini_real.surface import Surface

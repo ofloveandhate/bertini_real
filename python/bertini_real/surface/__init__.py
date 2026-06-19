@@ -171,9 +171,183 @@ def copy_all_scad_files_here():
 
 
 
+def _slerp(v0, v1, t):
+    """Spherical interpolation of two unit vectors; linear fallback when (anti)parallel."""
+    dot = np.clip(np.dot(v0, v1), -1.0, 1.0)
+    omega = np.arccos(dot)
+    so = np.sin(omega)
+    if omega < 1e-9 or so < 1e-9:
+        lin = (1.0 - t) * v0 + t * v1
+        n = np.linalg.norm(lin)
+        return v0 if n < 1e-12 else lin / n
+    return np.sin((1.0 - t) * omega) / so * v0 + np.sin(t * omega) / so * v1
+
+
+def _on_sphere_boundary_loops(mesh, center, radius, tol):
+    """
+    Ordered loops (lists of vertex indices) of `mesh`'s naked boundary edges that lie on the
+    sphere of the given center/radius.  Only clean degree-2 cycles are returned; open arcs or
+    non-manifold junctions are dropped.
+    """
+    from collections import Counter, defaultdict
+
+    V = np.asarray(mesh.vertices)
+    edge_count = Counter()
+    for tri in mesh.faces:
+        a, b, c = int(tri[0]), int(tri[1]), int(tri[2])
+        for u, v in ((a, b), (b, c), (c, a)):
+            edge_count[frozenset((u, v))] += 1
+    naked = [tuple(e) for e, cnt in edge_count.items() if cnt == 1 and len(e) == 2]
+
+    def on_sphere(i):
+        return abs(np.linalg.norm(V[i][:3] - center) - radius) < tol
+
+    adj = defaultdict(list)
+    for e in naked:
+        a, b = tuple(e)
+        if a != b and on_sphere(a) and on_sphere(b):
+            adj[a].append(b)
+            adj[b].append(a)
+
+    loops = []
+    seen = set()
+    for start in list(adj):
+        if start in seen:
+            continue
+        loop = [start]
+        seen.add(start)
+        prev, cur, ok = -1, start, True
+        while True:
+            nbrs = adj[cur]
+            if len(nbrs) != 2:
+                ok = False
+                break
+            nxt = nbrs[0] if nbrs[0] != prev else nbrs[1]
+            if nxt == start:
+                break
+            if nxt in seen:
+                ok = False
+                break
+            loop.append(nxt)
+            seen.add(nxt)
+            prev, cur = cur, nxt
+        if ok and len(loop) >= 3:
+            loops.append(loop)
+    return loops
+
+
+def sphere_cap_meshes(mesh, center, radius, resolution=4, tol=1e-3):
+    """
+    Faceted spherical caps that close `mesh`'s naked boundary loops lying on the sphere.
+
+    The Python twin of the Grasshopper "Sphere Caps" component: it caps the mesh's OWN
+    boundary (so the caps share its vertices and weld watertight), keeps the smaller-area
+    side of each loop, and subdivides each cap into `resolution` radial rings slerped along
+    the sphere.  Returns a list of `trimesh.Trimesh`.
+    """
+    center = np.asarray(center, dtype=float)[:3]
+    V = np.asarray(mesh.vertices)
+    caps = []
+
+    for loop in _on_sphere_boundary_loops(mesh, center, radius, tol):
+        pts = np.array([V[i][:3] for i in loop])
+        dirs = np.array([(p - center) / np.linalg.norm(p - center) for p in pts])
+        mean = pts.mean(axis=0) - center
+        nrm = np.linalg.norm(mean)
+        mean = mean / nrm if nrm > 1e-12 else np.array([0.0, 0.0, 1.0])
+
+        def fan_area(sign):
+            apex = center + sign * radius * mean
+            return sum(np.linalg.norm(np.cross(pts[k] - apex, pts[(k + 1) % len(pts)] - apex)) / 2.0
+                       for k in range(len(pts)))
+
+        sign = 1 if fan_area(1) <= fan_area(-1) else -1
+        pole_dir = sign * mean
+        pole = center + radius * pole_dir
+
+        R = max(1, int(resolution))
+        n = len(loop)
+        verts = [p for p in pts]
+        for r in range(1, R):
+            t = r / R
+            for k in range(n):
+                verts.append(center + radius * _slerp(dirs[k], pole_dir, t))
+        pole_i = len(verts)
+        verts.append(pole)
+        verts = np.array(verts)
+
+        def vid(r, k):
+            return r * n + k
+
+        faces = []
+
+        def add(i, j, k):
+            # skip only truly degenerate (collapsed-edge) triangles; keep thin ones
+            if (np.linalg.norm(verts[i] - verts[j]) < 1e-9 or
+                    np.linalg.norm(verts[j] - verts[k]) < 1e-9 or
+                    np.linalg.norm(verts[i] - verts[k]) < 1e-9):
+                return
+            faces.append([i, j, k])
+
+        for r in range(R - 1):
+            for k in range(n):
+                k2 = (k + 1) % n
+                add(vid(r, k), vid(r, k2), vid(r + 1, k2))
+                add(vid(r, k), vid(r + 1, k2), vid(r + 1, k))
+        for k in range(n):
+            add(vid(R - 1, k), vid(R - 1, (k + 1) % n), pole_i)
+
+        if faces:
+            caps.append(trimesh.Trimesh(verts, np.array(faces), process=False))
+
+    return caps
+
+
+def join_meshes(meshes):
+    """
+    Concatenate meshes and merge coincident vertices into one (ideally watertight) trimesh.
+    The Python twin of the Grasshopper "Close Piece" weld.  Returns None if nothing to join.
+    """
+    meshes = [m for m in meshes if m is not None and len(m.faces) > 0]
+    if not meshes:
+        return None
+
+    all_v = []
+    all_f = []
+    for m in meshes:
+        base = len(all_v)
+        all_v.extend(np.asarray(m.vertices).tolist())
+        for f in np.asarray(m.faces):
+            all_f.append([int(f[0]) + base, int(f[1]) + base, int(f[2]) + base])
+
+    # process=True merges coincident vertices, welding the shared cap/piece boundary
+    return trimesh.Trimesh(np.array(all_v), np.array(all_f), process=True)
+
+
+def spread_pieces(meshes, factor=0.5, center=None):
+    """
+    Move each mesh radially away from the common center by factor*(its center - overall center),
+    for an exploded view (the Python twin of "Spread Pieces").  Returns new translated copies;
+    the inputs are left untouched.
+    """
+    meshes = list(meshes)
+    centers = [np.asarray(m.bounds).mean(axis=0) for m in meshes]
+    if center is None:
+        center = np.mean(centers, axis=0) if centers else np.zeros(3)
+    else:
+        center = np.asarray(center, dtype=float)[:3]
+
+    out = []
+    for m, c in zip(meshes, centers):
+        moved = m.copy()
+        moved.apply_translation(factor * (c - center))
+        out.append(moved)
+    return out
+
+
 class SurfacePiece():
-    """ 
-    A "Piece" of an algebraic surface.  Essentially, a union of Faces, with some additional interface.  
+    """
+    A "Piece" of an algebraic surface.  Essentially, a union of Faces, with some additional interface.
     """
 
     def __init__(self, indices, surface):
@@ -487,6 +661,36 @@ class SurfacePiece():
         self.surface.export_raw(self.indices,filename_no_ext,autoname_using_folder,file_type)
 
 
+    def as_mesh(self, smooth=None):
+        """
+        The `trimesh.Trimesh` for this piece.  smooth=None picks smooth when the surface is
+        sampled, else raw (raw with raw, sampled with sampled).
+        """
+        if smooth is None:
+            smooth = self.surface.is_sampled()
+        if smooth:
+            return self.surface.as_mesh_smooth(self.indices)
+        return self.surface.as_mesh_raw(self.indices)
+
+
+    def sphere_caps(self, smooth=None, resolution=4, tol=1e-3):
+        """
+        The faceted spherical cap mesh(es) closing this piece where it meets the bounding
+        sphere.  See the module-level `sphere_cap_meshes`.  Returns a list of trimesh.
+        """
+        return sphere_cap_meshes(self.as_mesh(smooth), self.center, self.radius, resolution, tol)
+
+
+    def as_closed_mesh(self, smooth=None, resolution=4, tol=1e-3):
+        """
+        This piece joined with its sphere cap(s) into a single welded (ideally watertight)
+        `trimesh.Trimesh` -- the Rhino-free equivalent of Sphere Caps + Close Piece.  A piece
+        bounded only by the sphere comes out watertight; one abutting a singular curve stays
+        open there (check `.is_watertight`).
+        """
+        mesh = self.as_mesh(smooth)
+        caps = sphere_cap_meshes(mesh, self.center, self.radius, resolution, tol)
+        return join_meshes([mesh] + caps)
 
 
     def solidify_smooth(self, distance=_default_solidify_thickness, basename=_default_piece_basename_smooth, autoname_using_folder=False,file_type=_default_file_type):
