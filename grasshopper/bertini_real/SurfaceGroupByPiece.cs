@@ -1,123 +1,99 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using System.Text.Json;
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Data;
 using Grasshopper.Kernel.Types;
-using Rhino.Geometry;
 
 namespace bertini_real
 {
+    /// <summary>
+    /// Groups each piece's mesh with its connectors into one branch per piece.  Everything
+    /// upstream is already keyed per piece by tree branch (Surface Read GH JSON meshes,
+    /// Surface Place Components connectors), so this just merges those trees branch-by-branch
+    /// -- no JSON file, no pieceID-string routing.  Each output branch is: the mesh(es) for that
+    /// piece followed by its connectors.
+    /// </summary>
     public class SurfaceGroupByPiece : GH_Component
     {
         public SurfaceGroupByPiece()
           : base("Surface Group By Piece", "SurfGroupPiece",
-              "Groups piece meshes with their transformed connectors",
+              "Group each piece's mesh with its connectors (one branch per piece)",
               "bertini_real", "Surface")
         {
         }
 
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddTextParameter("File Path", "F", "Path of json file with surface specs", GH_ParamAccess.item);
-            pManager.AddGeometryParameter("Meshes", "Ms", "Piece meshes in piece order from SurfaceImportStlPieces", GH_ParamAccess.list);
-            pManager.AddGeometryParameter("Plugs positive", "Plugs+", "Transformed positive plugs", GH_ParamAccess.list);
-            pManager.AddGeometryParameter("Plugs negative", "Plugs-", "Transformed negative plugs", GH_ParamAccess.list);
-            pManager.AddGeometryParameter("Sockets positive", "Sockets+", "Transformed positive sockets", GH_ParamAccess.list);
-            pManager.AddGeometryParameter("Sockets negative", "Sockets-", "Transformed negative sockets", GH_ParamAccess.list);
+            pManager.AddGeometryParameter("Meshes", "M", "Piece meshes, one branch per piece (from Surface Read GH JSON)", GH_ParamAccess.tree);
+            pManager.AddGeometryParameter("Plugs positive", "Plugs+", "Positive plugs per piece (from Surface Place Components)", GH_ParamAccess.tree);
+            pManager.AddGeometryParameter("Plugs negative", "Plugs-", "Negative plugs per piece", GH_ParamAccess.tree);
+            pManager.AddGeometryParameter("Sockets positive", "Sockets+", "Positive sockets per piece", GH_ParamAccess.tree);
+            pManager.AddGeometryParameter("Sockets negative", "Sockets-", "Negative sockets per piece", GH_ParamAccess.tree);
 
+            Params.Input[1].Optional = true;
             Params.Input[2].Optional = true;
             Params.Input[3].Optional = true;
             Params.Input[4].Optional = true;
-            Params.Input[5].Optional = true;
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddGeometryParameter("Pieces with connectors", "PCs",
-                "DataTree: each branch is one piece. Item 0 is the mesh, remaining items are its connectors.",
+                "DataTree, one branch per piece: the mesh(es) followed by that piece's connectors.",
                 GH_ParamAccess.tree);
-            pManager.AddTextParameter("Piece names", "Ns", "Piece names in branch order", GH_ParamAccess.list);
+            pManager.AddIntegerParameter("Piece Indices", "Is", "Piece index of each output branch, in branch order", GH_ParamAccess.list);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            string jsonPath = "";
-            if (!DA.GetData(0, ref jsonPath)) return;
+            GH_Structure<IGH_GeometricGoo> meshes, plugsPos, plugsNeg, socketsPos, socketsNeg;
+            if (!DA.GetDataTree(0, out meshes)) return;
+            DA.GetDataTree(1, out plugsPos);
+            DA.GetDataTree(2, out plugsNeg);
+            DA.GetDataTree(3, out socketsPos);
+            DA.GetDataTree(4, out socketsNeg);
 
-            if (!File.Exists(jsonPath)) {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, $"JSON file not found: {jsonPath}");
-                return;
-            }
+            // piece index -> geometry (mesh first because meshes are ingested first)
+            var grouped = new SortedDictionary<int, List<IGH_GeometricGoo>>();
 
-            string text;
-            try {
-                text = File.ReadAllText(jsonPath);
-            } catch (Exception e) {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, $"Could not read JSON: {e.Message}");
-                return;
-            }
+            void ingest(GH_Structure<IGH_GeometricGoo> tree)
+            {
+                if (tree == null) return;
+                for (int b = 0; b < tree.PathCount; b++)
+                {
+                    GH_Path path = tree.get_Path(b);
+                    int pieceIndex = path.Indices.Length > 0 ? path.Indices[path.Indices.Length - 1] : b;
 
-            Data content;
-            try {
-                content = JsonSerializer.Deserialize<Data>(text);
-            } catch (Exception e) {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, $"Could not parse JSON: {e.Message}");
-                return;
-            }
-
-            var meshGoos = new List<IGH_GeometricGoo>();
-            if (!DA.GetDataList(1, meshGoos)) return;
-
-            var plugsPos   = new List<IGH_GeometricGoo>(); DA.GetDataList(2, plugsPos);
-            var plugsNeg   = new List<IGH_GeometricGoo>(); DA.GetDataList(3, plugsNeg);
-            var socketsPos = new List<IGH_GeometricGoo>(); DA.GetDataList(4, socketsPos);
-            var socketsNeg = new List<IGH_GeometricGoo>(); DA.GetDataList(5, socketsNeg);
-
-            // build lookup: piece name -> connectors
-            var connectorsByPiece = new Dictionary<string, List<IGH_GeometricGoo>>();
-            foreach (var name in content.piece_names)
-                connectorsByPiece[name] = new List<IGH_GeometricGoo>();
-
-            void routeConnectors(List<IGH_GeometricGoo> goos) {
-                foreach (var goo in goos) {
-                    if (goo == null) continue;
-                    var geo = goo.IsValid ? GH_Convert.ToGeometryBase(goo) : null;
-                    if (geo == null) continue;
-                    string pieceID = geo.GetUserString("pieceID");
-                    if (pieceID != null && connectorsByPiece.ContainsKey(pieceID))
-                        connectorsByPiece[pieceID].Add(goo);
+                    if (!grouped.TryGetValue(pieceIndex, out var items))
+                    {
+                        items = new List<IGH_GeometricGoo>();
+                        grouped[pieceIndex] = items;
+                    }
+                    foreach (var goo in tree.get_Branch(path))
+                        if (goo is IGH_GeometricGoo gg)
+                            items.Add(gg);
                 }
             }
 
-            routeConnectors(plugsPos);
-            routeConnectors(plugsNeg);
-            routeConnectors(socketsPos);
-            routeConnectors(socketsNeg);
+            ingest(meshes);
+            ingest(plugsPos);
+            ingest(plugsNeg);
+            ingest(socketsPos);
+            ingest(socketsNeg);
 
-            var tree = new GH_Structure<IGH_GeometricGoo>();
-            var pieceNames = new List<string>();
-
-            for (int i = 0; i < content.piece_names.Length; i++) {
-                string pieceName = content.piece_names[i];
-                var path = new GH_Path(i);
-
-                // mesh at index i
-                if (i < meshGoos.Count && meshGoos[i] != null)
-                    tree.Append(meshGoos[i], path);
-                else
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, $"No mesh at index {i} for piece {pieceName}");
-
-                // connectors routed to this piece
-                foreach (var goo in connectorsByPiece[pieceName])
-                    tree.Append(goo, path);
-
-                pieceNames.Add(pieceName);
+            var outTree = new GH_Structure<IGH_GeometricGoo>();
+            var pieceIndices = new List<int>();
+            foreach (var kv in grouped)
+            {
+                GH_Path path = new GH_Path(kv.Key);
+                foreach (var goo in kv.Value)
+                    outTree.Append(goo, path);
+                pieceIndices.Add(kv.Key);
             }
 
-            DA.SetDataTree(0, tree);
-            DA.SetDataList(1, pieceNames);
+            DA.SetDataTree(0, outTree);
+            DA.SetDataList(1, pieceIndices);
         }
 
         protected override System.Drawing.Bitmap Icon => IconLoader.GetIcon("lego.png");

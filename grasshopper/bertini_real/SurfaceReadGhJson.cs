@@ -25,7 +25,7 @@ namespace bertini_real
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddTextParameter("File Path", "F", "Path to br_gh_export.json (a surface export)", GH_ParamAccess.item);
-            pManager.AddTextParameter("Mesh Mode", "M", "auto | smooth | raw  (auto = smooth when sampled, else raw)", GH_ParamAccess.item, "auto");
+            pManager.AddTextParameter("Mesh Mode", "MM", "auto | smooth | raw  (auto = smooth when sampled, else raw)", GH_ParamAccess.item, "auto");
             Params.Input[1].Optional = true;
         }
 

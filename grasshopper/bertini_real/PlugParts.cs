@@ -4,52 +4,14 @@ using System;
 
 
 /*
- * A Sanity File to hold all the classes used in the code. 
- * 
- * Data used in transformConnectors to store data from the JSON
- * PieceData hold data on individual piece objects which has been parsed in TransformConnectors
- * The rest are used to create the parts of a plug in Connectors.cs or PositivePlugComponent.cs
- * plugBody create the main section of the plug with the tapered top
- * plugtabs create the cutout box or wedges for the plug
- * 
- * 
+ * A Sanity File to hold helper classes used in the code.
+ *
+ * GhExport / GhPiece / GhMesh / GhSphere / GhSingularities / GhEmbeddedCurve / GhCurvePiece
+ *   are the DTOs for br_gh_export.json (see GhJsonIO and the *ReadGhJson components).
+ * PlugBody / PlugTabs build the parts of a plug in Connectors.cs.
  */
 namespace bertini_real
 {
-    /// <summary>
-    /// Organize and store data from br_surf_piece_data.json file
-    /// NOTE: The JSON no longer has piece_indicies, but now piece_names which are file name strings 
-    /// </summary>
-    /// <see cref="SurfacePlaceComponents.cs"/>
-    public class Data 
-    {
-        public string[] piece_names { get; set; } //this will need to change
-        public int[][] singularities_on_pieces { get; set; } 
-        public double[][] sing_directions { get; set; }
-        public double[][] sing_locations { get; set; }
-        public int[][] parities { get; set; }
-    }
-    
-    /// <summary>
-    /// Store data parsed from the Data class by peice
-    /// </summary>
-    /// <see cref="SurfacePlaceComponents.cs"/>
-    public class PieceData
-    {
-        public string piece_name { get; set; }
-        public int piece_index { get; set; }
-        // public int[] indices { get; set; }
-        public int[] singsOnPiece { get; set; }
-        public Vector3d[] directions { get; set; }
-        public Vector3d[] locations { get; set; }
-        public int[] parities { get; set; }
-
-        public PieceData()
-        {
-
-        }
-    }
-
     /// <summary>
     /// DTOs for the self-contained br_gh_export.json written by Python's
     /// Surface.export_gh_json / Curve.export_gh_json.  Property names must match the JSON
