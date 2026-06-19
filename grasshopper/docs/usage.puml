@@ -1,0 +1,93 @@
+@startuml
+' Bertini_real Grasshopper components — single-source usage graph.
+' Render with PlantUML:  plantuml grasshopper/docs/usage.puml   (-> usage.png/svg)
+
+title Bertini_real Grasshopper — single-source pipeline
+
+skinparam backgroundColor #FDFDFD
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam ArrowColor #5A6B7B
+skinparam rectangle {
+  BorderColor #3A5A78
+  BackgroundColor #EAF2FA
+  RoundCorner 12
+}
+skinparam artifact {
+  BorderColor #7A6A3A
+  BackgroundColor #FBF4DD
+}
+
+' ---- the one source ----
+artifact "br_gh_export.json\n(written by Python\nexport_gh_json / scripts)" as JSON
+
+' ---- the one reader ----
+rectangle "**Surface Read GH JSON**\l--\lout:\l• Vertices  (Point list)\l• Meshes  (tree {piece})\l• Mesh Faces  (tree {piece})\l• Curves  (tree {piece})\l• Curve Types  (tree {piece})\l• Curve Indices  (tree {piece,curve})\l• Face Indices  (tree {piece})\l• Sphere  (Brep)\l• Sing Locations  (list)\l• Sing Directions  (list)\l• Sing Parities  (tree {sing})\l• Sing On Pieces  (tree {piece})\l" as READER
+
+JSON --> READER : File Path
+
+' ======================================================================
+' Branch 1 — curves
+' ======================================================================
+rectangle "**Untangle Curves By Type**\l--\lout (each tree {piece}):\l• Critical • Sphere • Singular\l• Midslice • Critslice • Other\l" as UNTANGLE
+
+READER --> UNTANGLE : Curves\n+ Curve Types
+
+' ======================================================================
+' Branch 2 — geometry: cap -> close -> (spread)
+' ======================================================================
+rectangle "**Sphere Caps**\l--\lin: Meshes, Sphere,\l    Tolerance, Resolution\lout: Caps  (tree {piece})\l" as CAPS
+
+rectangle "**Close Piece**\l--\lin: Meshes, Caps, Tolerance\lout:\l• Closed  (tree {piece})\l• Is Closed  (tree {piece})\l• Naked Edges  (tree {piece})\l" as CLOSE
+
+rectangle "**Spread Pieces**\l--\lin: Meshes, Factor, Center\lout: Meshes, Translations, Center\l" as SPREAD
+
+READER --> CAPS : Meshes
+READER --> CAPS : Sphere
+READER --> CLOSE : Meshes
+CAPS --> CLOSE : Caps
+CLOSE --> SPREAD : Closed
+READER ..> SPREAD : Meshes\n(or feed Closed)
+
+' ======================================================================
+' Branch 3 — singularity connectors
+' ======================================================================
+rectangle "**Surface Place Components**\l--\lin: Sing Locations, Sing Directions,\l    Sing Parities, Sing On Pieces,\l    Size, Plug+/-, Socket+/-\lout (each tree {piece}):\l• Plugs positive / negative\l• Sockets positive / negative\l• per-piece diagnostics\l" as PLACE
+
+READER --> PLACE : Sing Locations\nSing Directions\nSing Parities\nSing On Pieces
+
+' ======================================================================
+' Join — group each piece's mesh with its connectors
+' ======================================================================
+rectangle "**Surface Group By Piece**\l--\lin: Meshes, Plugs+/-, Sockets+/-\lout:\l• Pieces with connectors\l   (tree {piece}: mesh + connectors)\l• Piece Indices\l" as GROUP
+
+CLOSE --> GROUP : Closed\n(or Meshes)
+PLACE --> GROUP : Plugs+/-\nSockets+/-
+
+' ---- notes ----
+note right of READER
+  **One file, one reader.**
+  The whole graph is fed by
+  br_gh_export.json through this
+  single component (no second JSON).
+end note
+
+note bottom of GROUP
+  **Per-piece data travels as a DataTree
+  keyed {piece_index}.** Any per-piece
+  output plugs into any per-piece input,
+  aligned automatically by branch.
+end note
+
+note as LEGEND
+  **Data-shape conventions**
+  • per-piece      -> tree {piece}
+  • per-singularity-> flat list (index = sing id)
+  • per-curve idx  -> tree {piece, curve}
+  • Vertices is one shared Point list;
+    meshes/curves index into it.
+  solid arrow = typical wire,  dashed = alternative
+end note
+LEGEND .. SPREAD
+
+@enduml
