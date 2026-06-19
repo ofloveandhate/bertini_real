@@ -90,6 +90,8 @@ def _check_surface_invariants(contents, surface):
     assert contents["decomposition_type"] == "surface"
     assert contents["vertex_count"] == len(contents["vertices"])
     assert all(len(v) == 3 for v in contents["vertices"])
+    assert len(contents["sphere"]["center"]) == 3
+    assert contents["sphere"]["radius"] > 0
     assert len(contents["pieces"]) == len(surface.separate_into_nonsingular_pieces())
 
     vc = contents["vertex_count"]
@@ -155,6 +157,8 @@ def test_curve_export_invariants(tmp_path):
     contents = json.load(open(c.export_gh_json(str(tmp_path / "c.json"))))
     assert contents["decomposition_type"] == "curve"
     assert contents["vertex_count"] == len(contents["vertices"])
+    assert len(contents["sphere"]["center"]) == 3
+    assert contents["sphere"]["radius"] > 0
     vc = contents["vertex_count"]
     for p in contents["curve_pieces"]:
         assert p["type"] in VOCAB

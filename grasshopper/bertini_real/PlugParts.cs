@@ -68,9 +68,16 @@ namespace bertini_real
         public int num_variables { get; set; }
         public int vertex_count { get; set; }
         public double[][] vertices { get; set; }          // the unified set; each is [x,y,z]
+        public GhSphere sphere { get; set; }              // bounding sphere of the decomposition
         public bool is_sampled { get; set; }              // surface only
         public GhPiece[] pieces { get; set; }             // surface only
         public GhCurvePiece[] curve_pieces { get; set; }  // curve only
+    }
+
+    public class GhSphere
+    {
+        public double[] center { get; set; }              // [x,y,z]
+        public double radius { get; set; }
     }
 
     public class GhPiece

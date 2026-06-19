@@ -303,6 +303,7 @@ class Curve(Decomposition):
             "num_variables": self.num_variables,
             "vertices": _points_to_xyz(points),
             "vertex_count": len(points),
+            "sphere": self._sphere_dict(),
             "curve_pieces": curve_pieces,
         }
 

@@ -1002,6 +1002,7 @@ class Surface(Decomposition):
             "num_variables": self.num_variables,
             "vertices": _points_to_xyz(points),
             "vertex_count": len(points),
+            "sphere": self._sphere_dict(),
             "is_sampled": self.is_sampled(),
             "pieces": [p.to_gh_dict(ii, include_smooth) for ii, p in enumerate(pieces)],
         }

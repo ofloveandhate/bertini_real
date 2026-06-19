@@ -85,6 +85,18 @@ class Decomposition(object):
 
 
 
+    def _sphere_dict(self):
+        """
+        the bounding sphere of the decomposition (center + radius from the decomp file),
+        as a plain dict for the Grasshopper export.  center is padded/truncated to [x, y, z].
+        """
+        c = list(self.center)
+        x = float(c[0]) if len(c) > 0 else 0.0
+        y = float(c[1]) if len(c) > 1 else 0.0
+        z = float(c[2]) if len(c) > 2 else 0.0
+        return {"center": [x, y, z], "radius": float(self.radius)}
+
+
     def extract_points(self, indices=None):
         """ Helper method
             Extract points from vertices as a list

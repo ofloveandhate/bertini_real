@@ -38,6 +38,7 @@ namespace bertini_real
             pManager.AddTextParameter("Curve Types", "T", "Type tag per curve (critical/sphere/singular/midslice/critslice), parallel to Curves", GH_ParamAccess.tree);
             pManager.AddIntegerParameter("Curve Indices", "CI", "Per curve: vertex indices into Vertices (path {piece, curve})", GH_ParamAccess.tree);
             pManager.AddIntegerParameter("Face Indices", "FI", "Global surface face ids per piece", GH_ParamAccess.tree);
+            pManager.AddBrepParameter("Sphere", "S", "Bounding sphere of the decomposition as a closed Brep", GH_ParamAccess.item);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
@@ -119,6 +120,12 @@ namespace bertini_real
             DA.SetDataTree(4, types);
             DA.SetDataTree(5, curveIdx);
             DA.SetDataTree(6, faceIdx);
+
+            Brep sphere = GhJsonIO.ToSphereBrep(content.sphere);
+            if (sphere != null)
+                DA.SetData(7, sphere);
+            else
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No valid bounding sphere in the export.");
         }
 
         private static GhMesh PickMesh(GhPiece piece, string mode)

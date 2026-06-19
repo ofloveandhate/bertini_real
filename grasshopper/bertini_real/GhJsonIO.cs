@@ -77,5 +77,22 @@ namespace bertini_real
             if (pts.Count < 2) return null;
             return new PolylineCurve(pts);
         }
+
+        /// <summary>
+        /// The decomposition's bounding sphere as a closed Brep (ready for boolean / capping
+        /// operations), or null if the sphere data is missing or degenerate.
+        /// </summary>
+        public static Brep ToSphereBrep(GhSphere s)
+        {
+            if (s == null || s.center == null || s.radius <= 0.0) return null;
+
+            double[] c = s.center;
+            var center = new Point3d(
+                c.Length > 0 ? c[0] : 0.0,
+                c.Length > 1 ? c[1] : 0.0,
+                c.Length > 2 ? c[2] : 0.0);
+
+            return new Sphere(center, s.radius).ToBrep();
+        }
     }
 }
