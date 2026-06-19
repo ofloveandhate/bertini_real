@@ -60,7 +60,7 @@ namespace bertini_real
             //retrieve inputs
             if (!DA.GetData(0, ref wireHoleDia)) return;
             if (!DA.GetData(1, ref plugFactor)) return;
-            if (!DA.GetData(22, ref socketLength)) return;
+            if (!DA.GetData(2, ref socketLength)) return;
             if (!DA.GetData(3, ref lengthOverage)) return;
             if (!DA.GetData(4, ref bodyOverlap))return;
             if(!DA.GetData(5, ref eps))return;
