@@ -39,6 +39,7 @@ namespace bertini_real
         {
             pManager.AddMeshParameter("Closed", "M", "Piece joined with its cap(s), welded", GH_ParamAccess.tree);
             pManager.AddBooleanParameter("Is Closed", "X", "Whether the joined mesh is a closed solid", GH_ParamAccess.tree);
+            pManager.AddCurveParameter("Naked Edges", "N", "Remaining naked (unwelded/open) edges, for diagnosing why a piece isn't closed", GH_ParamAccess.tree);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
@@ -53,6 +54,7 @@ namespace bertini_real
 
             var outMesh = new DataTree<Mesh>();
             var outClosed = new DataTree<bool>();
+            var outNaked = new DataTree<Polyline>();
 
             for (int b = 0; b < pieces.PathCount; b++)
             {
@@ -81,16 +83,21 @@ namespace bertini_real
                 combined.UnifyNormals();
 
                 bool closed = combined.IsClosed;
+                Polyline[] naked = combined.GetNakedEdges() ?? Array.Empty<Polyline>();
                 if (!closed)
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Remark,
-                        $"Piece at path {path} is not a closed solid (likely abuts a singular curve, or a cap is missing).");
+                        $"Piece at path {path} is not a closed solid: {naked.Length} naked edge loop(s) remain " +
+                        "(see Naked Edges output; likely an unwelded cap seam, an uncapped singular boundary, or a missing cap).");
 
                 outMesh.Add(combined, path);
                 outClosed.Add(closed, path);
+                foreach (var pl in naked)
+                    outNaked.Add(pl, path);
             }
 
             DA.SetDataTree(0, outMesh);
             DA.SetDataTree(1, outClosed);
+            DA.SetDataTree(2, outNaked);
         }
 
         protected override System.Drawing.Bitmap Icon => IconLoader.GetIcon("lego.png");

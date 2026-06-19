@@ -234,15 +234,15 @@ namespace bertini_real
                 for (int k = 0; k < n; k++)
                 {
                     int k2 = (k + 1) % n;
-                    AddTri(cap, Idx(r, k), Idx(r, k2), Idx(r + 1, k2), tol);
-                    AddTri(cap, Idx(r, k), Idx(r + 1, k2), Idx(r + 1, k), tol);
+                    AddTri(cap, Idx(r, k), Idx(r, k2), Idx(r + 1, k2));
+                    AddTri(cap, Idx(r, k), Idx(r + 1, k2), Idx(r + 1, k));
                 }
             }
             // innermost ring fans to the pole
             for (int k = 0; k < n; k++)
             {
                 int k2 = (k + 1) % n;
-                AddTri(cap, Idx(R - 1, k), Idx(R - 1, k2), poleIdx, tol);
+                AddTri(cap, Idx(R - 1, k), Idx(R - 1, k2), poleIdx);
             }
 
             if (cap.Faces.Count == 0) return null;
@@ -268,13 +268,20 @@ namespace bertini_real
             return Area(1) <= Area(-1) ? 1 : -1;
         }
 
-        private static void AddTri(Mesh m, int i, int j, int k, double tol)
+        // a tiny absolute distance below which two cap vertices are treated as the same point
+        private const double CoincidentTol = 1e-9;
+
+        private static void AddTri(Mesh m, int i, int j, int k)
         {
             Point3d a = m.Vertices[i];
             Point3d b = m.Vertices[j];
             Point3d c = m.Vertices[k];
-            double area = 0.5 * Vector3d.CrossProduct(b - a, c - a).Length;
-            if (area < tol * tol) return;   // degenerate -> skip
+            // skip only TRULY degenerate triangles (a collapsed edge); thin-but-valid triangles
+            // must be kept, or high-resolution caps develop tiny holes near the boundary.
+            if (a.DistanceTo(b) < CoincidentTol ||
+                b.DistanceTo(c) < CoincidentTol ||
+                a.DistanceTo(c) < CoincidentTol)
+                return;
             m.Faces.AddFace(i, j, k);
         }
 
