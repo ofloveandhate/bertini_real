@@ -39,6 +39,10 @@ namespace bertini_real
             pManager.AddIntegerParameter("Curve Indices", "CI", "Per curve: vertex indices into Vertices (path {piece, curve})", GH_ParamAccess.tree);
             pManager.AddIntegerParameter("Face Indices", "FI", "Global surface face ids per piece", GH_ParamAccess.tree);
             pManager.AddBrepParameter("Sphere", "S", "Bounding sphere of the decomposition as a closed Brep", GH_ParamAccess.item);
+            pManager.AddPointParameter("Sing Locations", "SL", "Nodal singularity locations (one per singularity)", GH_ParamAccess.list);
+            pManager.AddVectorParameter("Sing Directions", "SD", "Nodal singularity connector axis directions (one per singularity)", GH_ParamAccess.list);
+            pManager.AddIntegerParameter("Sing Parities", "SP", "Per singularity: parity (-1/0/1) on each piece", GH_ParamAccess.tree);
+            pManager.AddIntegerParameter("Sing On Pieces", "SOP", "Per piece: indices of the singularities on it", GH_ParamAccess.tree);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
@@ -126,6 +130,41 @@ namespace bertini_real
                 DA.SetData(7, sphere);
             else
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No valid bounding sphere in the export.");
+
+            // singularity / connector data (folded into the same JSON)
+            var singLocations = new List<Point3d>();
+            var singDirections = new List<Vector3d>();
+            var singParities = new DataTree<int>();
+            var singOnPieces = new DataTree<int>();
+
+            var sg = content.singularities;
+            if (sg != null)
+            {
+                if (sg.locations != null)
+                    foreach (var p in sg.locations)
+                        if (p != null && p.Length >= 3)
+                            singLocations.Add(new Point3d(p[0], p[1], p[2]));
+
+                if (sg.directions != null)
+                    foreach (var d in sg.directions)
+                        if (d != null && d.Length >= 3)
+                            singDirections.Add(new Vector3d(d[0], d[1], d[2]));
+
+                if (sg.parities != null)
+                    for (int s = 0; s < sg.parities.Length; s++)
+                        if (sg.parities[s] != null)
+                            singParities.AddRange(sg.parities[s], new GH_Path(s));
+
+                if (sg.on_pieces != null)
+                    for (int pc = 0; pc < sg.on_pieces.Length; pc++)
+                        if (sg.on_pieces[pc] != null)
+                            singOnPieces.AddRange(sg.on_pieces[pc], new GH_Path(pc));
+            }
+
+            DA.SetDataList(8, singLocations);
+            DA.SetDataList(9, singDirections);
+            DA.SetDataTree(10, singParities);
+            DA.SetDataTree(11, singOnPieces);
         }
 
         private static GhMesh PickMesh(GhPiece piece, string mode)

@@ -69,6 +69,7 @@ namespace bertini_real
         public int vertex_count { get; set; }
         public double[][] vertices { get; set; }          // the unified set; each is [x,y,z]
         public GhSphere sphere { get; set; }              // bounding sphere of the decomposition
+        public GhSingularities singularities { get; set; } // nodal-singularity connector data (surface)
         public bool is_sampled { get; set; }              // surface only
         public GhPiece[] pieces { get; set; }             // surface only
         public GhCurvePiece[] curve_pieces { get; set; }  // curve only
@@ -78,6 +79,15 @@ namespace bertini_real
     {
         public double[] center { get; set; }              // [x,y,z]
         public double radius { get; set; }
+    }
+
+    public class GhSingularities
+    {
+        public string[] piece_names { get; set; }         // per piece
+        public double[][] locations { get; set; }         // per singularity [x,y,z]
+        public double[][] directions { get; set; }        // per singularity [x,y,z]
+        public int[][] parities { get; set; }             // per singularity: value per piece (-1/0/1)
+        public int[][] on_pieces { get; set; }            // per piece: compact singularity indices
     }
 
     public class GhPiece

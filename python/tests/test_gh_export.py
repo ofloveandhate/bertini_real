@@ -28,6 +28,7 @@ def _decomp(rel):
 WHITNEY = _decomp("test/surface/whitney/output_dim_2_comp_0")     # sampled, has a singular curve
 SPHERE = _decomp("test/surface/sphere/output_dim_2_comp_0")       # unsampled
 EISTUTE = _decomp("test/curve/intersections_of_surfaces/eistute_sphere/output_dim_1_comp_0")
+NORDSTRAND = _decomp("test/surface/nordstrands_weird/output_dim_2_comp_0")  # nodal singularities
 
 
 # --------------------------------------------------------------------------- #
@@ -148,6 +149,34 @@ def test_unsampled_surface_has_null_smooth(tmp_path):
     _check_surface_invariants(contents, s)
     for p in contents["pieces"]:
         assert p["mesh_smooth"] is None
+
+
+@pytest.mark.skipif(not NORDSTRAND, reason="nordstrand decomposition not present")
+def test_surface_export_singularities(tmp_path):
+    pytest.importorskip("bertini")  # tangent-cone directions need the bertini parser
+    from bertini_real.surface import Surface
+    s = Surface(NORDSTRAND)
+    contents = json.load(open(s.export_gh_json(str(tmp_path / "n.json"))))
+    sg = contents["singularities"]
+    n_pieces = len(contents["pieces"])
+
+    # one direction per singularity, both xyz
+    assert len(sg["locations"]) == len(sg["directions"])
+    assert all(len(p) == 3 for p in sg["locations"])
+    assert all(len(d) == 3 for d in sg["directions"])
+
+    # one parity row per singularity, one entry per piece; a connector joins exactly two pieces
+    assert len(sg["parities"]) == len(sg["locations"])
+    for row in sg["parities"]:
+        assert len(row) == n_pieces
+        assert row.count(-1) == 1 and row.count(1) == 1
+
+    # on_pieces is per piece; its singularity ids are in range
+    assert len(sg["on_pieces"]) == n_pieces
+    n_sing = len(sg["locations"])
+    for ids in sg["on_pieces"]:
+        for i in ids:
+            assert 0 <= i < n_sing
 
 
 @pytest.mark.skipif(not EISTUTE, reason="eistute_sphere curve decomposition not present")

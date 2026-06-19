@@ -1007,6 +1007,23 @@ class Surface(Decomposition):
             "pieces": [p.to_gh_dict(ii, include_smooth) for ii, p in enumerate(pieces)],
         }
 
+        # fold the singularity / connector data (locations, tangent-cone directions, parities)
+        # into the same file, so Grasshopper has a single source instead of a second JSON.
+        try:
+            sing = self.singularity_connector_data()
+        except Exception as e:
+            print("WARNING: could not compute singularity connector data ({}); "
+                  "exporting without singularities".format(e))
+            sing = {"piece_names": [], "on_pieces": [], "locations": [],
+                    "directions": [], "parities": []}
+        contents["singularities"] = {
+            "piece_names": sing["piece_names"],
+            "locations": sing["locations"],
+            "directions": sing["directions"],
+            "parities": sing["parities"],
+            "on_pieces": sing["on_pieces"],
+        }
+
         # verify each piece's sphere curves are closed loops (they always should be, barring a
         # decomposition problem); warn loudly if not, so the issue is visible before Grasshopper.
         for pc in contents["pieces"]:
@@ -1071,175 +1088,101 @@ class Surface(Decomposition):
         return the_singularites
 
 
+    def singularity_connector_data(self):
+        """
+        Compute the data needed to place plug/socket connectors at nodal singularities.
+
+        For each nodal singularity that joins exactly two nonsingular pieces, find its
+        location, the connector axis direction (the tangent-cone direction, from the Hessian
+        of the defining polynomial at the singularity), and the per-piece parity (which side
+        gets the plug vs the socket); also record which singularities lie on each piece.
+
+        Needs the `bertini` parser and `sympy`, but only when there is at least one qualifying
+        singularity.  Returns a dict of pure-Python (JSON-safe) values:
+          { "piece_names": [str, ...],          # per piece
+            "on_pieces":   [[int, ...], ...],    # per piece: compact singularity indices
+            "locations":   [[x, y, z], ...],     # per singularity
+            "directions":  [[x, y, z], ...],     # per singularity
+            "parities":    [[int, ...], ...] }   # per singularity: a value per piece (-1/0/1)
+        All lists are empty when there are no qualifying singularities.
+        """
+
+        pieces = self.separate_into_nonsingular_pieces()
+        piece_names = [p.generate_filename_smooth() for p in pieces]
+
+        # nodal singularities and which pieces each is incident to
+        sings_on_pieces = {}
+        pieces_connected_to_sing = defaultdict(list)
+        for ii, p in enumerate(pieces):
+            sings_this_piece = p.point_singularities()  # indices into the vertex set
+            sings_on_pieces[ii] = sings_this_piece
+            for s in sings_this_piece:
+                pieces_connected_to_sing[s].append(ii)
+
+        # only singularities joining exactly two pieces receive a connector
+        wanted = {k: v for k, v in pieces_connected_to_sing.items() if len(v) == 2}
+        singindex2int = {s: i for i, s in enumerate(wanted.keys())}
+
+        on_pieces = []
+        for ii in range(len(pieces)):
+            on_pieces.append([singindex2int[s] for s in wanted if s in sings_on_pieces[ii]])
+
+        def unit_vector(vector):
+            return vector / np.linalg.norm(vector)
+
+        locations = []
+        directions = []
+
+        if wanted:
+            import bertini as b2
+            import sympy
+
+            bsys = b2.parse.system(self.input.split('INPUT')[1])
+            f = bsys.function(0)
+            F = sympy.S(str(f).replace('unnamed_function', '').replace('function', '').replace('f', ''))
+            variables = sorted(F.free_symbols, key=lambda s: s.name)
+            H = sympy.hessian(F, variables)
+            hessian_evalme = sympy.lambdify(variables, H, modules='numpy')
+
+            for sing_index in wanted.keys():
+                sing_coords = self.vertices[sing_index].point.real
+
+                # tangent-cone direction: eigenvector of the Hessian belonging to the
+                # odd-one-out (smallest) eigenvalue
+                M = hessian_evalme(*sing_coords)
+                q = np.linalg.eig(M)
+                axis = np.real(q.eigenvectors[:, np.argmin(q.eigenvalues)])
+                direction0 = unit_vector(np.asarray(axis, dtype=float))
+
+                directions.append([float(x) for x in direction0])
+                locations.append([float(x) for x in sing_coords])
+
+        parities = [[0 for _ in range(len(pieces))] for _ in range(len(wanted))]
+        for s, ps in wanted.items():
+            parities[singindex2int[s]][ps[0]] = -1
+            parities[singindex2int[s]][ps[1]] = 1
+
+        return {
+            "piece_names": piece_names,
+            "on_pieces": on_pieces,
+            "locations": locations,
+            "directions": directions,
+            "parities": parities,
+        }
+
+
     def write_piece_data(self):
         """
         Opens and edits current scad data to set the orientation and location of a plug and socket
         """
 
-        import os
-        surface_name = os.getcwd().split('/')[-1]
-        
-        import bertini as b2
-        import sympy
-        sys = b2.parse.system(self.input.split('INPUT')[1])
-        f = sys.function(0)
-
-
-        F = sympy.S(str(f).replace('unnamed_function','').replace('function','').replace('f',''))
-        variables = list(F.free_symbols)
-
-        variables = sorted(F.free_symbols, key=lambda s: s.name)
-        H = sympy.hessian(F,variables)
-
-
-        hessian_evalme = sympy.lambdify(variables, H, modules='numpy')
-
-
-        vertices = self.vertices
-        SINGDIR_METHOD = 'tangentcone'
-
-        pieces = self.separate_into_nonsingular_pieces()
-        allPoints=[]
-
-            
-
-
-        # compute a list of nodal singularities, and which pieces they're connected to
-        pieces_connected_to_sing = defaultdict(list)
-        sings_on_pieces = {} # dict of integer index of piece : the point singularitites on that piece.  
-        #sings are in order of the piece index
-
-        ####
-        ##
-        ##  start the keeper function, to move into the surface type.
-        ##
-
-
-
-        for ii, p in enumerate(pieces):
-            sings_this_piece = p.point_singularities() # these are the indices of them within the vertex set
-            sings_on_pieces[ii] = sings_this_piece 
-
-            # a dictionary keyed by the integer index of the singularity, with value a list of the pieces on which it is incident
-            for s in sings_this_piece: 
-                pieces_connected_to_sing[s].append(ii) # relying on the default dict up there ;)
-
-
-
-
-
-        # only put plug/socket at sing that's connected to two pieces
-        #then assign that sing to k(ey) and assign [piece1,piece2] to v(value)
-        wanted_sing_connections = {k:v for k,v in pieces_connected_to_sing.items() if len(v)==2}
-
-        def unit_vector(vector):
-            """Helper function to find a unit vector of a vector"""
-
-            return vector / np.linalg.norm(vector)
-
-        directions = defaultdict(list) # explicitly keyed by the singularities
-        sing_directions = {}
-        sing_locations = {}
-
-
-
-
-
-
-        if SINGDIR_METHOD == 'centroid':
-            #create a list of the centroid coordinates of each piece
-            centroids = [] 
-            for p in pieces:
-                centroids.append(p.centroid()) 
-
-
-        for sing_index,connected_pieces in wanted_sing_connections.items():
-
-            print('singularity',sing_index)
-
-            sing_coords = vertices[sing_index].point.real
-
-
-            if SINGDIR_METHOD == 'centroid':
-                ind_connected_piece_0 = connected_pieces[0]
-                ind_connected_piece_1 = connected_pieces[1]
-
-                # find the centroid of each piece by the index of the piece
-                centroid_0 = centroids[ind_connected_piece_0]
-                centroid_1 = centroids[ind_connected_piece_1]
-
-                
-
-                #calculate the unit vectors by traveling from the centroid of the piece to the singularity
-                unit_0 = unit_vector(np.subtract(centroid_0, sing_coords))
-                unit_1 = unit_vector(np.subtract(centroid_1, sing_coords))
-
-                #find unit vector resultant of unit_0 and flipped unit_1
-                direction0 = unit_vector(np.add(unit_0, np.multiply(unit_1, -1)))
-
-
-            elif SINGDIR_METHOD == 'tangentcone':
-
-                print('using tangentcone method')
-                M = hessian_evalme(*sing_coords)
-
-
-                print(sing_coords)
-                q = np.linalg.eig(M)
-
-                # print(M)
-                # print(q.eigenvectors,q.eigenvalues)
-
-                # eigenvalues, eigenvectors = np.linalg.eigh(H)
-                # find the eigenvector whose eigenvalue has opposite sign from the others
-                axis = q.eigenvectors[:, np.argmin(q.eigenvalues)]
-                direction0 = unit_vector(axis)
-
-
-                # from scipy.linalg import null_space
-
-                # ns = null_space(M)  # columns are the nullspace basis vectors
-
-
-                
-
-                # print(ns,ns.shape)
-                # direction0 = ns[:,0]
-
-            direction1 = -direction0
-            directions[sing_index] = [direction0, direction1]  # smells duplicate...
-
-                
-            sing_directions[sing_index] = (direction0)
-            sing_locations[sing_index] = (list(sing_coords))
-
-        piece_names = []
-        singularities_on_pieces = []
-
-
-        singindex2int = {sing_index:ii for ii,sing_index in enumerate(wanted_sing_connections.keys())}
-        int2singindex = {ii:sing_index for ii,sing_index in enumerate(wanted_sing_connections.keys())}
-
-        # print(singindex2int)
-        # print(int2singindex)
-
-        #organize the data computed above to the scad files
-        for ii,p in enumerate(pieces):
-            sings_this_piece = [] 
-
-            for sing_index,connected_pieces in wanted_sing_connections.items():
-                if sing_index in sings_on_pieces[ii]: 
-                    sings_this_piece.append(singindex2int[sing_index])
-            singularities_on_pieces.append(sings_this_piece) 
-            piece_names.append(pieces[ii].generate_filename_smooth()) 
-
-        sing_directions_as_list = [sing_directions[sing_index] for sing_index in wanted_sing_connections.keys()]
-        sing_locations_as_list = [sing_locations[sing_index] for sing_index in wanted_sing_connections.keys()]
-
-        parity_of_sing_by_piece = [ [0 for jj in range(len(pieces))] for ii in range(len(wanted_sing_connections)) ]
-        for sing_index, ps in wanted_sing_connections.items():
-            parity_of_sing_by_piece[singindex2int[sing_index]][ps[0]] = -1
-            parity_of_sing_by_piece[singindex2int[sing_index]][ps[1]] = 1
+        data = self.singularity_connector_data()
+        piece_names = data["piece_names"]
+        singularities_on_pieces = data["on_pieces"]
+        sing_directions_as_list = data["directions"]
+        sing_locations_as_list = data["locations"]
+        parity_of_sing_by_piece = data["parities"]
+        allPoints = []
 
         #open and auto write the data(piece file names (without extensions), all sings of pieces, sing directions in order of sing index, sing coords in order of sing index) of the piece
         with open("br_surf_piece_data.scad", "w") as f:
