@@ -247,7 +247,7 @@ class SurfacePiece():
     # type critical
 
     def point_singularities(self):
-        """ Compute singularity points from a SurfacePiece object
+        """ Compute the indices of the singularity points from a SurfacePiece object
 
             :rtype: A list of indices of point singularities
         """
@@ -901,31 +901,108 @@ class Surface(Decomposition):
 
         raise RuntimeError(f'unable to find a curve with name {curve_name} in this surface')
 
+    def all_curves(self):
+
+        the_curves = []
+
+        the_curves.append(self.critical_curve)
+
+        the_curves.append(self.sphere_curve)
+
+        for c in self.singular_curves:
+            the_curves.append(c)
+
+        for c in self.critical_point_slices:
+            the_curves.append(c)
+
+        for c in self.midpoint_slices:
+            the_curves.append(c)
+
+        return the_curves
+
+
+    def all_singular_points(self):
+        """
+        get absolutely all of the singular points.  
+        """
+
+        # there's a baked-in assumption that this surface is NOT contained in a higher-dimensional object.  this is valid right now because the top-dimensional thing Bertini_real can decompose is a surface.
+
+
+        the_singularites = []
+        for v in self.vertices:
+            if v.is_of_type(VertexType.singular):
+                the_singularites.append(v)
+
+        return the_singularites
+
+    def isolated_singularities(self):
+        VertexType = bertini_real.vertex.VertexType
+
+        the_singularites = []
+        for v in self.vertices:
+            if v.is_of_type(VertexType.singular) and v.is_of_type(VertexType.singular):
+                the_singularites.append(v)
+
+        return the_singularites
+
+
+
     def write_piece_data(self):
         """
         Opens and edits current scad data to set the orientation and location of a plug and socket
         """
 
+        import os
+        surface_name = os.getcwd().split('/')[-1]
+        
+        import bertini as b2
+        import sympy
+        sys = b2.parse.system(self.input.split('INPUT')[1])
+        f = sys.function(0)
+
+
+        F = sympy.S(str(f).replace('unnamed_function','').replace('function','').replace('f',''))
+        variables = list(F.free_symbols)
+
+        variables = sorted(F.free_symbols, key=lambda s: s.name)
+        H = sympy.hessian(F,variables)
+
+
+        hessian_evalme = sympy.lambdify(variables, H, modules='numpy')
+
+
+        vertices = self.vertices
+        SINGDIR_METHOD = 'tangentcone'
+
         pieces = self.separate_into_nonsingular_pieces()
         allPoints=[]
-        #create a list of the centroid coordinates of each piece
-        centroids = [] 
-        for p in pieces:
-            centroids.append(p.centroid()) 
+
             
 
 
         # compute a list of nodal singularities, and which pieces they're connected to
         pieces_connected_to_sing = defaultdict(list)
-        sings_on_pieces = {} #sings are in order of the piece index
+        sings_on_pieces = {} # dict of integer index of piece : the point singularitites on that piece.  
+        #sings are in order of the piece index
+
+        ####
+        ##
+        ##  start the keeper function, to move into the surface type.
+        ##
+
+
 
         for ii, p in enumerate(pieces):
-            sing_this_piece = p.point_singularities() 
-            sings_on_pieces[ii] = sing_this_piece 
+            sings_this_piece = p.point_singularities() # these are the indices of them within the vertex set
+            sings_on_pieces[ii] = sings_this_piece 
 
             # a dictionary keyed by the integer index of the singularity, with value a list of the pieces on which it is incident
-            for s in sing_this_piece: 
-                pieces_connected_to_sing[s].append(ii) 
+            for s in sings_this_piece: 
+                pieces_connected_to_sing[s].append(ii) # relying on the default dict up there ;)
+
+
+
 
 
         # only put plug/socket at sing that's connected to two pieces
@@ -935,34 +1012,81 @@ class Surface(Decomposition):
         def unit_vector(vector):
             """Helper function to find a unit vector of a vector"""
 
-            magnitude = np.linalg.norm(vector)
-            unit=[]
-            for i in range(len(vector)):
-                unit.append(vector[i]/magnitude)
-            return unit
+            return vector / np.linalg.norm(vector)
 
         directions = defaultdict(list) # explicitly keyed by the singularities
         sing_directions = {}
         sing_locations = {}
+
+
+
+
+
+
+        if SINGDIR_METHOD == 'centroid':
+            #create a list of the centroid coordinates of each piece
+            centroids = [] 
+            for p in pieces:
+                centroids.append(p.centroid()) 
+
+
         for sing_index,connected_pieces in wanted_sing_connections.items():
-            ind_connected_piece_0 = connected_pieces[0]
-            ind_connected_piece_1 = connected_pieces[1]
 
-            # find the centroid of each piece by the index of the piece
-            centroid_0 = centroids[ind_connected_piece_0]
-            centroid_1 = centroids[ind_connected_piece_1]
+            print('singularity',sing_index)
 
-            sing_coords =self.vertices[sing_index].point.real
+            sing_coords = vertices[sing_index].point.real
 
-            #calculate the unit vectors by traveling from the centroid of the piece to the singularity
-            unit_0 = unit_vector(np.subtract(centroid_0, sing_coords))
-            unit_1 = unit_vector(np.subtract(centroid_1, sing_coords))
 
-            #find unit vector resultant of unit_0 and flipped unit_1
-            direction0 = unit_vector(np.add(unit_0, np.multiply(unit_1, -1)))
-            direction1 = np.multiply(direction0,-1)
-            directions[sing_index] = [direction0, direction1]
+            if SINGDIR_METHOD == 'centroid':
+                ind_connected_piece_0 = connected_pieces[0]
+                ind_connected_piece_1 = connected_pieces[1]
 
+                # find the centroid of each piece by the index of the piece
+                centroid_0 = centroids[ind_connected_piece_0]
+                centroid_1 = centroids[ind_connected_piece_1]
+
+                
+
+                #calculate the unit vectors by traveling from the centroid of the piece to the singularity
+                unit_0 = unit_vector(np.subtract(centroid_0, sing_coords))
+                unit_1 = unit_vector(np.subtract(centroid_1, sing_coords))
+
+                #find unit vector resultant of unit_0 and flipped unit_1
+                direction0 = unit_vector(np.add(unit_0, np.multiply(unit_1, -1)))
+
+
+            elif SINGDIR_METHOD == 'tangentcone':
+
+                print('using tangentcone method')
+                M = hessian_evalme(*sing_coords)
+
+
+                print(sing_coords)
+                q = np.linalg.eig(M)
+
+                # print(M)
+                # print(q.eigenvectors,q.eigenvalues)
+
+                # eigenvalues, eigenvectors = np.linalg.eigh(H)
+                # find the eigenvector whose eigenvalue has opposite sign from the others
+                axis = q.eigenvectors[:, np.argmin(q.eigenvalues)]
+                direction0 = unit_vector(axis)
+
+
+                # from scipy.linalg import null_space
+
+                # ns = null_space(M)  # columns are the nullspace basis vectors
+
+
+                
+
+                # print(ns,ns.shape)
+                # direction0 = ns[:,0]
+
+            direction1 = -direction0
+            directions[sing_index] = [direction0, direction1]  # smells duplicate...
+
+                
             sing_directions[sing_index] = (direction0)
             sing_locations[sing_index] = (list(sing_coords))
 
@@ -993,7 +1117,7 @@ class Surface(Decomposition):
         for sing_index, ps in wanted_sing_connections.items():
             parity_of_sing_by_piece[singindex2int[sing_index]][ps[0]] = -1
             parity_of_sing_by_piece[singindex2int[sing_index]][ps[1]] = 1
-        
+
         #open and auto write the data(piece file names (without extensions), all sings of pieces, sing directions in order of sing index, sing coords in order of sing index) of the piece
         with open("br_surf_piece_data.scad", "w") as f:
             f.write(f'piece_names = [')
@@ -1008,20 +1132,33 @@ class Surface(Decomposition):
             f.write(f'conn_size = 0.01;\n') #hard coded, but needs to be automatically computed
         print('br_surf_piece_data.scad')
 
+        # Option 2: custom JSON encoder
+        class NumpyEncoder(json.JSONEncoder):
+            def default(self, obj):
+                if isinstance(obj, np.ndarray):
+                    return obj.tolist()
+                if isinstance(obj, np.integer):
+                    return int(obj)
+                if isinstance(obj, np.floating):
+                    return float(obj)
+                return super().default(obj)
+
+
+
         #open and auto write piece data to a json file
         with open("br_surf_piece_data.json", "w") as j:
             j.write(json.dumps({"piece_names": piece_names,
             "singularities_on_pieces": singularities_on_pieces,
             "sing_directions": sing_directions_as_list,
             "sing_locations": sing_locations_as_list,
-            "parities" : parity_of_sing_by_piece},indent=4))
+            "parities" : parity_of_sing_by_piece},indent=4,cls=NumpyEncoder))
         print('wrote br_surf_piece_data.json')
 
 
-        with open("centroids.json", "w") as c:
-            for centroid in centroids:
-                c.write(str(centroid)+"\n")
-        print('wrote centroids.json')
+        # with open("centroids.json", "w") as c:
+        #     for centroid in centroids:
+        #         c.write(str(centroid)+"\n")
+        # print('wrote centroids.json')
 
 
 
@@ -1029,6 +1166,7 @@ class Surface(Decomposition):
             for point in allPoints:
                 a.write("\n".join([str(s) for s in point]) + "\n")
         print('wrote allPoints.json')
+
         
     def as_mesh_smooth(self, which_faces=None, keep_all_vertices=True):
         """

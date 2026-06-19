@@ -70,13 +70,55 @@ class CurvePiece(object):
 
 
 
+    def to_vertices(self):
+        """
+        a list of all the Vertices on this piece of a curve.  See also to_points, which gives them as numpy points
+
+        degenerate edges are skipped, and adjacent endpoints are unified into one point.  loses all edge or connectivity structure.
+        """
+
+
+        if not self.directed_edges:
+            raise NotImplementedError('insert code memoizing / computing the directed edges')
+
+        # unpack a few things
+        vertices = self.curve.vertices # these have already been dehomogenized
+        c = self.curve
+
+        the_vertices = [] # built up over time.  difficult to pre-allocate.  yagni.
+        prev_point_index = -1
+
+        for edge_index, direction in self.directed_edges:
+
+            if is_edge_degenerate(c.edges[edge_index]):
+                continue
+
+
+
+            if len(c.sampler_data)>0:
+                point_indices = c.sampler_data[edge_index]
+            else:
+                point_indices = c.edges[edge_index]
+
+            if direction==EdgeDirection.backward:
+                point_indices = point_indices[::-1]
+
+            vertices_this_edge = []
+            for ii in point_indices:
+                if ii != prev_point_index:
+                    vertices_this_edge.append(vertices[ii])
+                    prev_point_index = ii
+
+            the_vertices.extend(vertices_this_edge)
+
+        return the_vertices
 
 
     def to_points(self):
         """
         computes a numpy array of points, in order, for this piece of a curve.
 
-        generate edges are skipped, and adjacent endpoints are unified into one point.
+        degenerate edges are skipped, and adjacent endpoints are unified into one point.
         """
 
 
@@ -214,7 +256,40 @@ class Curve(Decomposition):
 
 
 
-    
+    def to_vertices(self):
+        """
+        a list of all the Vertices on this piece of a curve.  See also to_points, which gives them as numpy points
+
+        degenerate edges are skipped, and adjacent endpoints are unified into one point.  loses all edge or connectivity structure.
+        """
+
+        # unpack a few things
+        vertices = self.vertices # these have already been dehomogenized
+        c = self
+
+        the_vertices = [] # built up over time.  difficult to pre-allocate.  yagni.
+        prev_point_index = -1
+
+        for edge_index in range(self.num_edges):
+            e = self.edges[edge_index]
+
+            if is_edge_degenerate(e):
+                continue
+
+            if len(c.sampler_data)>0:
+                point_indices = c.sampler_data[edge_index]
+            else:
+                point_indices = e
+
+            vertices_this_edge = []
+            for ii in point_indices:
+                if ii != prev_point_index:
+                    vertices_this_edge.append(vertices[ii])
+                    prev_point_index = ii
+
+            the_vertices.extend(vertices_this_edge)
+
+        return the_vertices
 
 
 
