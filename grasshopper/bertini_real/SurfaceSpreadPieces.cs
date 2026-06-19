@@ -11,10 +11,13 @@ namespace bertini_real
     /// <summary>
     /// Spreads the pieces of a decomposition apart so they can be seen individually without
     /// touching.  (Named "Spread" rather than "Explode" to avoid Grasshopper's sense of explode =
-    /// decompose into constituents.)  Each piece (one tree branch) is translated radially away
-    /// from the common center by Factor times its offset from that center: Factor = 0 leaves
-    /// everything in place, larger Factor spreads them further.  All meshes in a branch move
-    /// together, so a piece stays intact.
+    /// decompose into constituents.)  Each piece is one tree branch and is translated radially
+    /// away from the common center by Factor times its offset: Factor = 0 leaves everything in
+    /// place, larger Factor spreads them further.
+    ///
+    /// Operates on any per-piece GEOMETRY tree, so it accepts bare meshes (Surface Read GH JSON /
+    /// Close Piece) or a piece's mesh together with its connectors (Surface Group By Piece) -- all
+    /// items in a branch move together, so a piece and its connectors stay assembled.
     /// </summary>
     public class SurfaceSpreadPieces : GH_Component
     {
@@ -27,7 +30,7 @@ namespace bertini_real
 
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddMeshParameter("Meshes", "M", "Per-piece meshes (one branch per piece)", GH_ParamAccess.tree);
+            pManager.AddGeometryParameter("Geometry", "G", "Per-piece geometry, one branch per piece: meshes, or a piece's mesh + connectors from Surface Group By Piece", GH_ParamAccess.tree);
             pManager.AddNumberParameter("Factor", "F", "Spread amount: each piece moves by Factor x (its center - the overall center). 0 = no move.", GH_ParamAccess.item, 0.5);
             pManager.AddPointParameter("Center", "C", "Center to spread away from (default: average of the piece centers)", GH_ParamAccess.item);
             Params.Input[2].Optional = true;
@@ -35,15 +38,15 @@ namespace bertini_real
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddMeshParameter("Meshes", "M", "Spread-apart piece meshes (same tree structure)", GH_ParamAccess.tree);
+            pManager.AddGeometryParameter("Geometry", "G", "Spread-apart geometry (same tree structure)", GH_ParamAccess.tree);
             pManager.AddVectorParameter("Translations", "T", "Translation applied to each piece", GH_ParamAccess.tree);
             pManager.AddPointParameter("Center", "C", "The center the pieces were spread from", GH_ParamAccess.item);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            GH_Structure<GH_Mesh> meshes;
-            if (!DA.GetDataTree(0, out meshes)) return;
+            GH_Structure<IGH_GeometricGoo> geometry;
+            if (!DA.GetDataTree(0, out geometry)) return;
 
             double factor = 0.5;
             DA.GetData(1, ref factor);
@@ -51,20 +54,20 @@ namespace bertini_real
             Point3d center = Point3d.Unset;
             bool hasCenter = DA.GetData(2, ref center);
 
-            // per-branch (per-piece) center = center of the branch's combined bounding box
+            // per-piece center = center of the branch's combined bounding box (all geometry in it)
             var paths = new List<GH_Path>();
             var pieceCenter = new List<Point3d>();
-            for (int b = 0; b < meshes.PathCount; b++)
+            for (int b = 0; b < geometry.PathCount; b++)
             {
-                GH_Path path = meshes.get_Path(b);
+                GH_Path path = geometry.get_Path(b);
                 BoundingBox bb = BoundingBox.Empty;
                 bool any = false;
-                foreach (var goo in meshes.get_Branch(path))
-                    if (goo is GH_Mesh gm && gm.Value != null)
-                    {
-                        bb.Union(gm.Value.GetBoundingBox(false));
-                        any = true;
-                    }
+                foreach (var goo in geometry.get_Branch(path))
+                {
+                    if (!(goo is IGH_GeometricGoo gg) || !gg.IsValid) continue;
+                    bb.Union(gg.Boundingbox);
+                    any = true;
+                }
                 if (!any) continue;
                 paths.Add(path);
                 pieceCenter.Add(bb.Center);
@@ -85,7 +88,7 @@ namespace bertini_real
                 origin = new Point3d(x / pieceCenter.Count, y / pieceCenter.Count, z / pieceCenter.Count);
             }
 
-            var outMesh = new DataTree<Mesh>();
+            var outGeo = new DataTree<IGH_GeometricGoo>();
             var outVec = new DataTree<Vector3d>();
 
             for (int i = 0; i < paths.Count; i++)
@@ -94,18 +97,19 @@ namespace bertini_real
                 Vector3d t = factor * (pieceCenter[i] - origin);
                 Transform xf = Transform.Translation(t);
 
-                foreach (var goo in meshes.get_Branch(path))
-                    if (goo is GH_Mesh gm && gm.Value != null)
-                    {
-                        Mesh m = gm.Value.DuplicateMesh();
-                        m.Transform(xf);
-                        outMesh.Add(m, path);
-                    }
+                foreach (var goo in geometry.get_Branch(path))
+                {
+                    if (!(goo is IGH_GeometricGoo gg) || !gg.IsValid) continue;
+                    // duplicate so the input geometry is left untouched, then translate
+                    IGH_GeometricGoo moved = gg.DuplicateGeometry();
+                    moved = moved.Transform(xf);
+                    outGeo.Add(moved, path);
+                }
 
                 outVec.Add(t, path);
             }
 
-            DA.SetDataTree(0, outMesh);
+            DA.SetDataTree(0, outGeo);
             DA.SetDataTree(1, outVec);
             DA.SetData(2, origin);
         }
