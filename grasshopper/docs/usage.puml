@@ -36,7 +36,7 @@ READER --> UNTANGLE : Curves\n+ Curve Types
 ' ======================================================================
 ' Branch 2 — geometry: cap -> close -> boolean -> (spread)
 ' ======================================================================
-rectangle "**Sphere Caps**\l--\lin: Meshes, Sphere,\l    Tolerance, Resolution\lout: Caps  (tree {piece})\l" as CAPS
+rectangle "**Sphere Caps**  /  **Flat Caps**\l--\lin: Meshes, Sphere,\l    Tolerance, Resolution\lout: Caps  (tree {piece})\l(Flat Caps fans to the loop centroid;\l drop-in alternative to Sphere Caps)\l" as CAPS
 
 rectangle "**Close Piece**\l--\lin: Meshes, Caps, Tolerance\lout:\l• Closed  (tree {piece})\l• Is Closed  (tree {piece})\l• Naked Edges  (tree {piece})\l" as CLOSE
 

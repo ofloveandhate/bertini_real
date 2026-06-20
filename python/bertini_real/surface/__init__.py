@@ -376,7 +376,11 @@ def join_meshes(meshes):
             all_f.append([int(f[0]) + base, int(f[1]) + base, int(f[2]) + base])
 
     # process=True merges coincident vertices, welding the shared cap/piece boundary
-    return trimesh.Trimesh(np.array(all_v), np.array(all_f), process=True)
+    joined = trimesh.Trimesh(np.array(all_v), np.array(all_f), process=True)
+    # make winding consistent / normals outward, so a watertight result is a proper "volume"
+    # (manifold3d booleans require this, and it fixes inverted/negative-volume pieces)
+    joined.fix_normals()
+    return joined
 
 
 def spread_pieces(meshes, factor=0.5, center=None):

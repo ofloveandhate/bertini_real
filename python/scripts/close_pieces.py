@@ -21,7 +21,8 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description="Close surface pieces with sphere caps and export STLs (no Rhino needed).")
     ap.add_argument("folder", nargs="?", default=None,
                     help="path to an output_dim_2_comp_0 folder; omit to gather() from the current directory")
-    ap.add_argument("--resolution", type=int, default=4, help="radial subdivisions of each sphere cap (default 4)")
+    ap.add_argument("--resolution", type=int, default=None, help="cap subdivisions (default 4 spherical, 1 flat)")
+    ap.add_argument("--flat", action="store_true", help="flat caps (fan to the loop centroid) instead of spherical")
     ap.add_argument("--spread", type=float, default=0.0, help="exploded-view factor; 0 = pieces in place (default 0)")
     ap.add_argument("--smooth", dest="smooth", action="store_true", default=None, help="force sampled (smooth) meshes")
     ap.add_argument("--raw", dest="smooth", action="store_false", help="force raw (blocky) meshes")
@@ -42,7 +43,7 @@ def main(argv=None):
 
     closed = []
     for i, piece in enumerate(pieces):
-        mesh = piece.as_closed_mesh(smooth=args.smooth, resolution=args.resolution)
+        mesh = piece.as_closed_mesh(smooth=args.smooth, resolution=args.resolution, flat=args.flat)
         closed.append(mesh)
         if mesh is None:
             print("  piece {}: empty".format(i))
