@@ -12,8 +12,8 @@ namespace bertini_real
     /// Spreads the pieces of a decomposition apart so they can be seen individually without
     /// touching.  (Named "Spread" rather than "Explode" to avoid Grasshopper's sense of explode =
     /// decompose into constituents.)  Each piece is one tree branch and is translated radially
-    /// away from the common center by Factor times its offset: Factor = 0 leaves everything in
-    /// place, larger Factor spreads them further.
+    /// outward from the common center by Factor model units (an absolute distance, matching Spread
+    /// By Connectors): Factor = 0 leaves everything in place, larger Factor spreads them further.
     ///
     /// Operates on any per-piece GEOMETRY tree, so it accepts bare meshes (Surface Read GH JSON /
     /// Close Piece) or a piece's mesh together with its connectors (Surface Group By Piece) -- all
@@ -31,7 +31,7 @@ namespace bertini_real
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddGeometryParameter("Geometry", "G", "Per-piece geometry, one branch per piece: meshes, or a piece's mesh + connectors from Surface Group By Piece", GH_ParamAccess.tree);
-            pManager.AddNumberParameter("Factor", "F", "Spread amount: each piece moves by Factor x (its center - the overall center). 0 = no move.", GH_ParamAccess.item, 0.5);
+            pManager.AddNumberParameter("Factor", "F", "Distance each piece moves outward from the center (model units). 0 = no move.", GH_ParamAccess.item, 1.0);
             pManager.AddPointParameter("Center", "C", "Center to spread away from (default: average of the piece centers)", GH_ParamAccess.item);
             Params.Input[2].Optional = true;
         }
@@ -100,7 +100,10 @@ namespace bertini_real
             for (int i = 0; i < paths.Count; i++)
             {
                 GH_Path path = paths[i];
-                Vector3d t = factor * (pieceCenter[i] - origin);
+                // absolute distance: move each piece Factor units along its outward (unit) direction
+                Vector3d dir = pieceCenter[i] - origin;
+                if (!dir.IsTiny()) dir.Unitize();
+                Vector3d t = factor * dir;
                 Transform xf = Transform.Translation(t);
 
                 foreach (var goo in geometry.get_Branch(path))
