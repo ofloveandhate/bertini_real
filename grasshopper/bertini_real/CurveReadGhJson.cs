@@ -23,6 +23,8 @@ namespace bertini_real
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddTextParameter("File Path", "F", "Path to br_gh_export.json (a curve export)", GH_ParamAccess.item);
+            pManager.AddNumberParameter("Scale", "Sc", "Uniform scale applied on import (about the world origin), so the curve comes in bigger without a Scale component", GH_ParamAccess.item, 1.0);
+            Params.Input[1].Optional = true;
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
@@ -37,6 +39,9 @@ namespace bertini_real
         {
             string path = "";
             if (!DA.GetData(0, ref path)) return;
+
+            double scale = 1.0;
+            DA.GetData(1, ref scale);
 
             GhExport content;
             try
@@ -56,6 +61,9 @@ namespace bertini_real
             }
 
             var verts = GhJsonIO.ToVertices(content);
+            if (scale != 1.0)
+                for (int i = 0; i < verts.Count; i++)
+                    verts[i] = verts[i] * scale;
 
             var curves = new DataTree<Curve>();
             var types = new DataTree<string>();

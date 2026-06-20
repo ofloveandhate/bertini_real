@@ -26,7 +26,9 @@ namespace bertini_real
         {
             pManager.AddTextParameter("File Path", "F", "Path to br_gh_export.json (a surface export)", GH_ParamAccess.item);
             pManager.AddTextParameter("Mesh Mode", "MM", "auto | smooth | raw  (auto = smooth when sampled, else raw)", GH_ParamAccess.item, "auto");
+            pManager.AddNumberParameter("Scale", "Sc", "Uniform scale applied on import (about the world origin), so the whole model -- meshes, curves, sphere, singularities -- comes in bigger without a Scale component", GH_ParamAccess.item, 1.0);
             Params.Input[1].Optional = true;
+            Params.Input[2].Optional = true;
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
@@ -53,6 +55,9 @@ namespace bertini_real
             DA.GetData(1, ref mode);
             mode = (mode ?? "auto").Trim().ToLowerInvariant();
 
+            double scale = 1.0;
+            DA.GetData(2, ref scale);
+
             GhExport content;
             try
             {
@@ -71,6 +76,11 @@ namespace bertini_real
             }
 
             var verts = GhJsonIO.ToVertices(content);
+            // scale the unified vertex set about the world origin; meshes and curves built from
+            // these points then come out scaled automatically (indices are unaffected)
+            if (scale != 1.0)
+                for (int i = 0; i < verts.Count; i++)
+                    verts[i] = verts[i] * scale;
 
             var meshes = new DataTree<Mesh>();
             var meshFaces = new DataTree<int>();
@@ -126,6 +136,8 @@ namespace bertini_real
             DA.SetDataTree(6, faceIdx);
 
             Brep sphere = GhJsonIO.ToSphereBrep(content.sphere);
+            if (sphere != null && scale != 1.0)
+                sphere.Transform(Transform.Scale(Point3d.Origin, scale));
             if (sphere != null)
                 DA.SetData(7, sphere);
             else
@@ -143,7 +155,7 @@ namespace bertini_real
                 if (sg.locations != null)
                     foreach (var p in sg.locations)
                         if (p != null && p.Length >= 3)
-                            singLocations.Add(new Point3d(p[0], p[1], p[2]));
+                            singLocations.Add(new Point3d(p[0] * scale, p[1] * scale, p[2] * scale));
 
                 if (sg.directions != null)
                     foreach (var d in sg.directions)
