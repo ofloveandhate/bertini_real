@@ -34,6 +34,7 @@ namespace bertini_real
             pManager.AddMeshParameter("Solid", "S", "Closed piece mesh per piece (from Close Piece)", GH_ParamAccess.tree);
             pManager.AddGeometryParameter("Features", "F", "Geometry to boolean in, in order, per piece (meshes or Breps)", GH_ParamAccess.tree);
             pManager.AddIntegerParameter("Operations", "O", "Sign per feature, parallel to Features: +1 union, -1 subtract. Defaults to subtract.", GH_ParamAccess.tree);
+            Params.Input[1].Optional = true;   // no features -> pass the solid through unchanged
             Params.Input[2].Optional = true;
         }
 
@@ -50,8 +51,8 @@ namespace bertini_real
             GH_Structure<IGH_GeometricGoo> features;
             GH_Structure<GH_Integer> ops;
             if (!DA.GetDataTree(0, out solids)) return;
-            if (!DA.GetDataTree(1, out features)) return;
-            DA.GetDataTree(2, out ops);   // optional; default sign is -1 (subtract)
+            DA.GetDataTree(1, out features);  // optional; no features -> solid passes through
+            DA.GetDataTree(2, out ops);       // optional; default sign is -1 (subtract)
 
             var resultTree = new DataTree<Mesh>();
             var closedTree = new DataTree<bool>();
@@ -73,7 +74,7 @@ namespace bertini_real
                         $"Piece at path {path}: solid is not closed; boolean results are unreliable on open meshes.");
 
                 // features + signs for this piece, in order
-                var featureMeshes = features.PathExists(path) ? ToMeshList(features.get_Branch(path)) : new List<Mesh>();
+                var featureMeshes = (features != null && features.PathExists(path)) ? ToMeshList(features.get_Branch(path)) : new List<Mesh>();
                 var signs = SignsForPath(ops, path, featureMeshes.Count);
 
                 for (int i = 0; i < featureMeshes.Count; i++)
