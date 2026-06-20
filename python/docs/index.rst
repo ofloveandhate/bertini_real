@@ -35,6 +35,7 @@ Tutorials ✏️
    tutorials/matplotlib
    tutorials/glumpy
    tutorials/mesh_export
+   tutorials/capping_and_joining
    tutorials/anaglypy
    tutorials/snap_together
    .. tutorials/grasshopper_connection

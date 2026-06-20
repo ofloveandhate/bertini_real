@@ -7,6 +7,22 @@ from bertini_real.decomposition import Decomposition
 import numpy as np
 
 import copy
+import json
+
+
+def _points_to_xyz(points):
+    """
+    convert an iterable of points (each of length 1, 2, or 3+) into a list of [x, y, z]
+    triples, padding missing coordinates with 0.  used by the Grasshopper JSON export so
+    the unified vertex set is always 3d for Rhino.
+    """
+    out = []
+    for p in points:
+        x = float(p[0]) if len(p) > 0 else 0.0
+        y = float(p[1]) if len(p) > 1 else 0.0
+        z = float(p[2]) if len(p) > 2 else 0.0
+        out.append([x, y, z])
+    return out
 
 
 
@@ -70,13 +86,55 @@ class CurvePiece(object):
 
 
 
+    def to_vertices(self):
+        """
+        a list of all the Vertices on this piece of a curve.  See also to_points, which gives them as numpy points
+
+        degenerate edges are skipped, and adjacent endpoints are unified into one point.  loses all edge or connectivity structure.
+        """
+
+
+        if not self.directed_edges:
+            raise NotImplementedError('insert code memoizing / computing the directed edges')
+
+        # unpack a few things
+        vertices = self.curve.vertices # these have already been dehomogenized
+        c = self.curve
+
+        the_vertices = [] # built up over time.  difficult to pre-allocate.  yagni.
+        prev_point_index = -1
+
+        for edge_index, direction in self.directed_edges:
+
+            if is_edge_degenerate(c.edges[edge_index]):
+                continue
+
+
+
+            if len(c.sampler_data)>0:
+                point_indices = c.sampler_data[edge_index]
+            else:
+                point_indices = c.edges[edge_index]
+
+            if direction==EdgeDirection.backward:
+                point_indices = point_indices[::-1]
+
+            vertices_this_edge = []
+            for ii in point_indices:
+                if ii != prev_point_index:
+                    vertices_this_edge.append(vertices[ii])
+                    prev_point_index = ii
+
+            the_vertices.extend(vertices_this_edge)
+
+        return the_vertices
 
 
     def to_points(self):
         """
         computes a numpy array of points, in order, for this piece of a curve.
 
-        generate edges are skipped, and adjacent endpoints are unified into one point.
+        degenerate edges are skipped, and adjacent endpoints are unified into one point.
         """
 
 
@@ -97,7 +155,8 @@ class CurvePiece(object):
 
 
 
-            if len(c.sampler_data)>0:
+            # an unsampled curve has sampler_data == None; fall back to the raw edge indices
+            if c.sampler_data and len(c.sampler_data)>0:
                 point_indices = c.sampler_data[edge_index]
             else:
                 point_indices = c.edges[edge_index]
@@ -117,6 +176,46 @@ class CurvePiece(object):
 
 
         return points
+
+
+    def to_point_indices(self):
+        """
+        computes the ordered list of global vertex indices for this piece of a curve.
+
+        this is the index-space twin of `to_points`: degenerate edges are skipped, and
+        adjacent duplicate endpoints are unified.  the returned indices point into
+        `self.curve.vertices` (the unified, shared vertex set), so an embedded curve and the
+        surface mesh refer to the same points.  used by the Grasshopper JSON export.
+        """
+
+        if not self.directed_edges:
+            raise NotImplementedError('insert code memoizing / computing the directed edges')
+
+        c = self.curve
+
+        indices = []
+        prev_point_index = -1
+
+        for edge_index, direction in self.directed_edges:
+
+            if is_edge_degenerate(c.edges[edge_index]):
+                continue
+
+            # an unsampled curve has sampler_data == None; fall back to the raw edge indices
+            if c.sampler_data and len(c.sampler_data) > 0:
+                point_indices = c.sampler_data[edge_index]
+            else:
+                point_indices = c.edges[edge_index]
+
+            if direction == EdgeDirection.backward:
+                point_indices = point_indices[::-1]
+
+            for ii in point_indices:
+                if ii != prev_point_index:
+                    indices.append(int(ii))
+                    prev_point_index = ii
+
+        return indices
 
 
 class Curve(Decomposition):
@@ -214,8 +313,80 @@ class Curve(Decomposition):
 
 
 
-    
+    def to_vertices(self):
+        """
+        a list of all the Vertices on this piece of a curve.  See also to_points, which gives them as numpy points
 
+        degenerate edges are skipped, and adjacent endpoints are unified into one point.  loses all edge or connectivity structure.
+        """
+
+        # unpack a few things
+        vertices = self.vertices # these have already been dehomogenized
+        c = self
+
+        the_vertices = [] # built up over time.  difficult to pre-allocate.  yagni.
+        prev_point_index = -1
+
+        for edge_index in range(self.num_edges):
+            e = self.edges[edge_index]
+
+            if is_edge_degenerate(e):
+                continue
+
+            if len(c.sampler_data)>0:
+                point_indices = c.sampler_data[edge_index]
+            else:
+                point_indices = e
+
+            vertices_this_edge = []
+            for ii in point_indices:
+                if ii != prev_point_index:
+                    vertices_this_edge.append(vertices[ii])
+                    prev_point_index = ii
+
+            the_vertices.extend(vertices_this_edge)
+
+        return the_vertices
+
+
+
+    def export_gh_json(self, filename="br_gh_export.json"):
+        """
+        write a self-contained JSON describing this curve for the Grasshopper plugin.
+
+        the file holds one unified vertex set (`vertices`); each curve piece is an ordered
+        list of indices into that set.  see `Surface.export_gh_json` for the surface analogue.
+        """
+
+        points = self.extract_points()
+
+        pieces = self.break_into_pieces(set(range(self.num_edges)))
+
+        curve_pieces = []
+        for ii, p in enumerate(pieces):
+            curve_pieces.append({
+                "piece_index": ii,
+                "type": "standalone",
+                "curve_name": self.inputfilename,
+                "vertex_indices": p.to_point_indices(),
+            })
+
+        contents = {
+            "format_version": 2,
+            "decomposition_type": "curve",
+            "source_directory": self.directory,
+            "num_variables": self.num_variables,
+            "vertices": _points_to_xyz(points),
+            "vertex_count": len(points),
+            "sphere": self._sphere_dict(),
+            "curve_pieces": curve_pieces,
+        }
+
+        with open(filename, "w") as f:
+            json.dump(contents, f, indent=2)
+
+        print("wrote " + filename)
+        return filename
 
 
     def parse_edge(self, directory):
