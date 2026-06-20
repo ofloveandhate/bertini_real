@@ -156,6 +156,16 @@ def test_piece_as_closed_mesh_and_spread():
                for a, b in zip(closed, moved))
 
 
+@pytest.mark.skipif(not WHITNEY, reason="whitney decomposition not present")
+def test_piece_flat_caps_watertight():
+    """The flat-cap alternative also welds to a watertight solid."""
+    from bertini_real.surface import Surface
+    s = Surface(WHITNEY)
+    for p in s.separate_into_nonsingular_pieces():
+        flat = p.as_closed_mesh(flat=True)
+        assert flat is not None and flat.is_watertight
+
+
 @pytest.mark.skipif(not SPHERE, reason="unsampled sphere decomposition not present")
 def test_unsampled_surface_has_null_smooth(tmp_path):
     from bertini_real.surface import Surface

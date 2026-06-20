@@ -303,6 +303,61 @@ def sphere_cap_meshes(mesh, center, radius, resolution=4, tol=1e-3):
     return caps
 
 
+def flat_cap_meshes(mesh, center, radius, resolution=1, tol=1e-3):
+    """
+    Flat caps that close `mesh`'s on-sphere boundary loops with a fan to each loop's centroid --
+    the flat alternative to sphere_cap_meshes, and the Python twin of the "Flat Caps" component.
+
+    Same on-sphere boundary as sphere_cap_meshes, but the apex is the loop centroid (a flat fill)
+    rather than a point on the sphere, so e.g. a Bertini cylinder gets flat disk ends.  Caps the
+    mesh's OWN boundary (welds watertight), with `resolution` concentric linearly-interpolated
+    rings (1 = a single flat fan).  Returns a list of trimesh.Trimesh.
+    """
+    center = np.asarray(center, dtype=float)[:3]
+    V = np.asarray(mesh.vertices)
+    caps = []
+
+    for loop in _on_sphere_boundary_loops(mesh, center, radius, tol):
+        pts = np.array([V[i][:3] for i in loop])
+        centroid = pts.mean(axis=0)
+
+        R = max(1, int(resolution))
+        n = len(loop)
+        verts = [p for p in pts]
+        for r in range(1, R):
+            t = r / R
+            for k in range(n):
+                verts.append(pts[k] + t * (centroid - pts[k]))
+        apex_i = len(verts)
+        verts.append(centroid)
+        verts = np.array(verts)
+
+        def vid(r, k):
+            return r * n + k
+
+        faces = []
+
+        def add(i, j, k):
+            if (np.linalg.norm(verts[i] - verts[j]) < 1e-9 or
+                    np.linalg.norm(verts[j] - verts[k]) < 1e-9 or
+                    np.linalg.norm(verts[i] - verts[k]) < 1e-9):
+                return
+            faces.append([i, j, k])
+
+        for r in range(R - 1):
+            for k in range(n):
+                k2 = (k + 1) % n
+                add(vid(r, k), vid(r, k2), vid(r + 1, k2))
+                add(vid(r, k), vid(r + 1, k2), vid(r + 1, k))
+        for k in range(n):
+            add(vid(R - 1, k), vid(R - 1, (k + 1) % n), apex_i)
+
+        if faces:
+            caps.append(trimesh.Trimesh(verts, np.array(faces), process=False))
+
+    return caps
+
+
 def join_meshes(meshes):
     """
     Concatenate meshes and merge coincident vertices into one (ideally watertight) trimesh.
@@ -722,15 +777,32 @@ class SurfacePiece():
         return sphere_cap_meshes(self.as_mesh(smooth), self.center, self.radius, resolution, tol)
 
 
-    def as_closed_mesh(self, smooth=None, resolution=4, tol=1e-3):
+    def flat_caps(self, smooth=None, resolution=1, tol=1e-3):
         """
-        This piece joined with its sphere cap(s) into a single welded (ideally watertight)
-        `trimesh.Trimesh` -- the Rhino-free equivalent of Sphere Caps + Close Piece.  A piece
-        bounded only by the sphere comes out watertight; one abutting a singular curve stays
+        The faceted FLAT cap mesh(es) closing this piece where it meets the bounding sphere, with
+        the apex at each loop's centroid.  See the module-level `flat_cap_meshes`.  Returns a list
+        of trimesh.
+        """
+        return flat_cap_meshes(self.as_mesh(smooth), self.center, self.radius, resolution, tol)
+
+
+    def as_closed_mesh(self, smooth=None, resolution=None, tol=1e-3, flat=False):
+        """
+        This piece joined with its cap(s) into a single welded (ideally watertight)
+        `trimesh.Trimesh` -- the Rhino-free equivalent of (Sphere|Flat) Caps + Close Piece.  A
+        piece bounded only by the sphere comes out watertight; one abutting a singular curve stays
         open there (check `.is_watertight`).
+
+        flat=False uses spherical caps (hugging the sphere); flat=True uses flat fans to the loop
+        centroid.  resolution defaults to 4 for spherical, 1 for flat.
         """
+        if resolution is None:
+            resolution = 1 if flat else 4
         mesh = self.as_mesh(smooth)
-        caps = sphere_cap_meshes(mesh, self.center, self.radius, resolution, tol)
+        if flat:
+            caps = flat_cap_meshes(mesh, self.center, self.radius, resolution, tol)
+        else:
+            caps = sphere_cap_meshes(mesh, self.center, self.radius, resolution, tol)
         return join_meshes([mesh] + caps)
 
 
