@@ -21,6 +21,14 @@ skinparam artifact {
 ' ---- the one source ----
 artifact "br_gh_export.json\n(written by Python\nexport_gh_json / scripts)" as JSON
 
+note top of JSON
+  **No Rhino?** The same pipeline
+  (pieces -> caps -> close -> boolean)
+  is available in pure Python -- see
+  python/docs/tutorials/capping_and_joining.rst
+  (and scripts/close_pieces.py).
+end note
+
 ' ---- the one reader ----
 rectangle "**Surface Read GH JSON**\l--\lout:\l• Vertices  (Point list)\l• Meshes  (tree {piece})\l• Mesh Faces  (tree {piece})\l• Curves  (tree {piece})\l• Curve Types  (tree {piece})\l• Curve Indices  (tree {piece,curve})\l• Face Indices  (tree {piece})\l• Sphere  (Brep)\l• Sing Locations  (list)\l• Sing Directions  (list)\l• Sing Parities  (tree {sing})\l• Sing On Pieces  (tree {piece})\l" as READER
 
