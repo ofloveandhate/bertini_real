@@ -82,7 +82,16 @@ namespace bertini_real
                 combined.RebuildNormals();
                 combined.UnifyNormals();
 
+                // UnifyNormals makes the faces mutually consistent but seeds from an arbitrary face,
+                // so a closed solid can come out uniformly inside-out.  Mesh.Volume() is signed by
+                // normal orientation, so a negative volume means the normals point inward -- flip the
+                // whole mesh outward (matches the Python pipeline's trimesh.fix_normals()).
                 bool closed = combined.IsClosed;
+                if (closed && combined.Volume() < 0.0)
+                {
+                    combined.Flip(true, true, true);
+                    combined.RebuildNormals();
+                }
                 Polyline[] naked = combined.GetNakedEdges() ?? Array.Empty<Polyline>();
                 if (!closed)
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Remark,

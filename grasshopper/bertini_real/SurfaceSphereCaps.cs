@@ -135,6 +135,17 @@ namespace bertini_real
             Vector3d poleDir = sign * mean;
             Point3d pole = center + radius * poleDir;
 
+            // The loop is traversed in an arbitrary direction, so the natural winding below may
+            // come out facing the sphere center (inward).  The cap closes a solid that sits INSIDE
+            // the sphere, so its outward normal must point radially away from the center.  Reverse
+            // the loop order when the winding would be inward, so the cap is outward by construction
+            // and agrees with the (outward) piece -- no seam fold for the later UnifyNormals to fix.
+            if (CapWindsInward(pts, pole, center))
+            {
+                Array.Reverse(pts);
+                Array.Reverse(dirs);
+            }
+
             int R = Math.Max(1, resolution);
             var cap = new Mesh();
 
@@ -174,6 +185,28 @@ namespace bertini_real
             cap.Normals.ComputeNormals();
             cap.Compact();
             return cap;
+        }
+
+        /// <summary>
+        /// True when the cap built from <paramref name="pts"/> (in their current order, fanned toward
+        /// <paramref name="pole"/>) would have its faces pointing toward the sphere center instead of
+        /// away from it.  The actual cap triangles share the orientation of the simple cone fan
+        /// (pts[k] -> pts[k+1] -> pole), so we sum that fan's face normals dotted with the outward
+        /// radial direction; a negative total means the winding is inward and the loop should reverse.
+        /// </summary>
+        private static bool CapWindsInward(Point3d[] pts, Point3d pole, Point3d center)
+        {
+            int n = pts.Length;
+            double radialDot = 0.0;
+            for (int k = 0; k < n; k++)
+            {
+                int k2 = (k + 1) % n;
+                Vector3d nrm = Vector3d.CrossProduct(pts[k2] - pts[k], pole - pts[k]);
+                Point3d mid = 0.5 * (pts[k] + pts[k2]);   // edge midpoint
+                Vector3d outward = mid - center;          // radially outward from the sphere center
+                radialDot += nrm * outward;
+            }
+            return radialDot < 0.0;
         }
 
         private static int SmallerCapSign(Point3d[] pts, Point3d center, double radius, Vector3d mean)
