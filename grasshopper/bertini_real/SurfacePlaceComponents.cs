@@ -33,18 +33,16 @@ namespace bertini_real
             pManager.AddIntegerParameter("Sing Parities", "SP", "Per singularity: parity (-1/0/1) on each piece (from Surface Read GH JSON)", GH_ParamAccess.tree);
             pManager.AddIntegerParameter("Sing On Pieces", "SOP", "Per piece: indices of the singularities on it (from Surface Read GH JSON)", GH_ParamAccess.tree);
 
-            pManager.AddNumberParameter("Size", "S", "Scale factor for components", GH_ParamAccess.item, 0.01);
-
+            // connector geometry is placed at true size -- orient + translate only, no scaling.
             pManager.AddGeometryParameter("Plug Positive", "Plug+", "Plug positive geometry", GH_ParamAccess.item);
             pManager.AddGeometryParameter("Plug Negative", "Plug-", "Plug negative geometry", GH_ParamAccess.item);
             pManager.AddGeometryParameter("Socket Positive", "Socket+", "Socket positive geometry", GH_ParamAccess.item);
             pManager.AddGeometryParameter("Socket Negative", "Socket-", "Socket negative geometry", GH_ParamAccess.item);
 
-            Params.Input[4].Optional = true;  // Size has a default
-            Params.Input[5].Optional = true;  // geometries are individually optional; we require >=1
+            Params.Input[4].Optional = true;  // geometries are individually optional; we require >=1
+            Params.Input[5].Optional = true;
             Params.Input[6].Optional = true;
             Params.Input[7].Optional = true;
-            Params.Input[8].Optional = true;
         }
 
         /// <summary>
@@ -76,13 +74,10 @@ namespace bertini_real
             if (!DA.GetDataTree(2, out parities)) return;
             if (!DA.GetDataTree(3, out onPieces)) return;
 
-            double size = 0.01;
-            DA.GetData(4, ref size);
-
-            Brep plugPos = BrepFromInput(DA, 5);
-            Brep plugNeg = BrepFromInput(DA, 6);
-            Brep socketPos = BrepFromInput(DA, 7);
-            Brep socketNeg = BrepFromInput(DA, 8);
+            Brep plugPos = BrepFromInput(DA, 4);
+            Brep plugNeg = BrepFromInput(DA, 5);
+            Brep socketPos = BrepFromInput(DA, 6);
+            Brep socketNeg = BrepFromInput(DA, 7);
 
             if (plugPos == null && plugNeg == null && socketPos == null && socketNeg == null)
             {
@@ -103,8 +98,6 @@ namespace bertini_real
             var paritiesPerPiece = new GH_Structure<GH_Integer>();
             var dirsPerPiece = new GH_Structure<GH_Vector>();
             var locsPerPiece = new GH_Structure<GH_Vector>();
-
-            Point3d locationPlay = new Point3d();
 
             // one branch per piece, from the Sing On Pieces tree
             for (int b = 0; b < onPieces.PathCount; b++)
@@ -141,16 +134,16 @@ namespace bertini_real
                     if (parity == 1)
                     {
                         if (plugNeg != null)
-                            plugsNeg.Append(new GH_Brep(moveComponents(pieceIndex.ToString(), locationPlay, size, direction, new Vector3d(location), plugNeg)), piecePath);
+                            plugsNeg.Append(new GH_Brep(moveComponents(pieceIndex.ToString(), direction, new Vector3d(location), plugNeg)), piecePath);
                         if (plugPos != null)
-                            plugsPos.Append(new GH_Brep(moveComponents(pieceIndex.ToString(), locationPlay, size, direction, new Vector3d(location), plugPos)), piecePath);
+                            plugsPos.Append(new GH_Brep(moveComponents(pieceIndex.ToString(), direction, new Vector3d(location), plugPos)), piecePath);
                     }
                     else if (parity == -1)
                     {
                         if (socketNeg != null)
-                            socketsNeg.Append(new GH_Brep(moveComponents(pieceIndex.ToString(), locationPlay, size, direction, new Vector3d(location), socketNeg)), piecePath);
+                            socketsNeg.Append(new GH_Brep(moveComponents(pieceIndex.ToString(), direction, new Vector3d(location), socketNeg)), piecePath);
                         if (socketPos != null)
-                            socketsPos.Append(new GH_Brep(moveComponents(pieceIndex.ToString(), locationPlay, size, direction, new Vector3d(location), socketPos)), piecePath);
+                            socketsPos.Append(new GH_Brep(moveComponents(pieceIndex.ToString(), direction, new Vector3d(location), socketPos)), piecePath);
                     }
                 }
             }
@@ -185,20 +178,18 @@ namespace bertini_real
         }
 
         /// <summary>
-        /// Make a new connector and place it at a singularity: scale, orient to the direction
-        /// (phi about Y, theta about Z), and translate to the location.
+        /// Make a new connector and place it at a singularity: orient to the direction
+        /// (phi about Y, theta about Z) and translate to the location.  The connector keeps its
+        /// own (true) size -- no scaling here; size it upstream.
         /// </summary>
-        private Brep moveComponents(string piece_name, Point3d locationPlay, double size, Vector3d direction, Vector3d location, Brep geo)
+        private Brep moveComponents(string piece_name, Vector3d direction, Vector3d location, Brep geo)
         {
             Brep newConnector = geo.DuplicateBrep();
 
             double phi = Math.Acos(direction[2] / direction.Length);
             double theta = Math.Atan2(direction[1], direction[0]);
 
-            var sf = Transform.Scale(Point3d.Origin + locationPlay, size);
             var rf = Transform.Rotation(phi, Vector3d.YAxis, Point3d.Origin);
-
-            newConnector.Transform(sf);
             newConnector.Transform(rf);
 
             rf = Transform.Rotation(theta, Vector3d.ZAxis, Point3d.Origin);
