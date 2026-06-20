@@ -50,7 +50,9 @@ rectangle "**Close Piece**\l--\lin: Meshes, Caps, Tolerance\lout:\l• Closed  (
 
 rectangle "**Boolean Piece**\l--\lin: Solid, Features, Operations(±1)\lout:\l• Result  (tree {piece})\l• Is Closed  (tree {piece})\l• Report  (tree {piece})\l" as BOOL
 
-rectangle "**Spread Pieces**\l--\lin: Geometry, Factor, Center\lout: Geometry, Translations, Center\l" as SPREAD
+rectangle "**Color By Function**\l--\lin: Meshes, Function(x,y,z),\l    Colours, Domain\lout: Meshes (vertex-colored),\l    Values, Domain\l" as COLOR
+
+rectangle "**Spread Pieces**  /  **Spread By Connectors**\l--\lin: Geometry, Distance\l    (By Connectors also takes Sing\l    Locations/Directions/On Pieces, Root)\lout: Geometry, Translations\l(radial  vs.  assembly explosion\l along the connector axes)\l" as SPREAD
 
 READER --> CAPS : Meshes
 READER --> CAPS : Sphere
@@ -61,13 +63,17 @@ CLOSE --> BOOL : Closed  (as Solid)
 ' ======================================================================
 ' Branch 3 — singularity connectors -> features -> boolean
 ' ======================================================================
-rectangle "**Surface Place Components**\l--\lin: Sing Locations, Sing Directions,\l    Sing Parities, Sing On Pieces,\l    Size, Plug+/-, Socket+/-\lout (each tree {piece}):\l• Plugs positive / negative\l• Sockets positive / negative\l" as PLACE
+rectangle "**Surface Place Components**\l--\lin: Sing Locations, Sing Directions,\l    Sing Parities, Sing On Pieces,\l    Plug+/-, Socket+/- (any subset)\lout (each tree {piece}):\l• Plugs positive / negative\l• Sockets positive / negative\l" as PLACE
 
 rectangle "**Connectors To Features**\l--\lin: Plugs+/-, Sockets+/-\lout:\l• Features  (tree {piece}, ordered)\l• Operations  (tree {piece}, signs ±1)\l" as CONNFEAT
 
+rectangle "**Utility: Centered Closed Cylinder**\l--\lin: Radius, Length, Sides, Plane\lout: closed Brep (round, or N-gon prism)\l" as UTIL
+
 READER --> PLACE : Sing Locations\nSing Directions\nSing Parities\nSing On Pieces
+UTIL --> PLACE : Plug+ / Socket+\n(connector geometry, true size)
 PLACE --> CONNFEAT : Plugs+/-\nSockets+/-
 CONNFEAT --> BOOL : Features\n+ Operations
+UTIL ..> BOOL : Features (direct)
 
 ' ======================================================================
 ' Grouping / viewing
@@ -77,8 +83,10 @@ rectangle "**Surface Group By Piece**\l--\lin: Meshes, Plugs+/-, Sockets+/-\lout
 CLOSE ..> GROUP : Meshes\n(or Boolean Result)
 PLACE --> GROUP : Plugs+/-\nSockets+/-
 
-BOOL --> SPREAD : Result
+BOOL --> COLOR : Result
+COLOR --> SPREAD : Meshes (colored)
 GROUP ..> SPREAD : Pieces with connectors
+CLOSE ..> COLOR : Closed  (alt.)
 CLOSE ..> SPREAD : Closed  (alt.)
 
 ' ---- notes ----
@@ -96,6 +104,12 @@ note bottom of BOOL
   subtract). Order matters -- each step acts
   on the running result. (Python twin:
   surface.mesh_boolean_fold, manifold3d.)
+end note
+
+note bottom of COLOR
+  Colors meshes by a scalar f(x,y,z) at
+  each vertex. Mesh vertex colors survive
+  Spread, so color before or after spreading.
 end note
 
 note as LEGEND
