@@ -14,7 +14,7 @@ namespace bertini_real
     ///
     /// For each piece, every incident singularity contributes a unit vector along its connector
     /// direction, oriented AWAY from the singularity (the way the piece slides off its rod); the
-    /// piece is translated by Factor times the sum.  A piece connected on opposite sides (e.g. a
+    /// piece is translated by Distance times the sum.  A piece connected on opposite sides (e.g. a
     /// central hub) barely moves because its axes cancel, while leaf pieces slide out along their
     /// rods.  Wire Sing Locations / Sing Directions / Sing On Pieces straight from the reader.
     /// </summary>
@@ -33,7 +33,7 @@ namespace bertini_real
             pManager.AddPointParameter("Sing Locations", "SL", "Singularity locations (from Surface Read GH JSON)", GH_ParamAccess.list);
             pManager.AddVectorParameter("Sing Directions", "SD", "Singularity connector directions (from Surface Read GH JSON)", GH_ParamAccess.list);
             pManager.AddIntegerParameter("Sing On Pieces", "SOP", "Per piece: indices of the singularities on it (from Surface Read GH JSON)", GH_ParamAccess.tree);
-            pManager.AddNumberParameter("Factor", "F", "Separation distance per connector (model units). 0 = no move.", GH_ParamAccess.item, 1.0);
+            pManager.AddNumberParameter("Distance", "D", "Separation distance per connector (model units). 0 = no move.", GH_ParamAccess.item, 1.0);
             Params.Input[4].Optional = true;
         }
 
@@ -55,8 +55,8 @@ namespace bertini_real
             DA.GetDataList(2, directions);
             if (!DA.GetDataTree(3, out onPieces)) return;
 
-            double factor = 1.0;
-            DA.GetData(4, ref factor);
+            double distance = 1.0;
+            DA.GetData(4, ref distance);
 
             var outGeo = new DataTree<IGH_GeometricGoo>();
             var outVec = new DataTree<Vector3d>();
@@ -93,7 +93,7 @@ namespace bertini_real
                     }
                 }
 
-                disp *= factor;
+                disp *= distance;
                 Transform xf = Transform.Translation(disp);
 
                 foreach (var goo in geometry.get_Branch(path))
