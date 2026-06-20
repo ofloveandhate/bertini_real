@@ -79,16 +79,8 @@ namespace bertini_real
             Brep socketPos = BrepFromInput(DA, 6);
             Brep socketNeg = BrepFromInput(DA, 7);
 
-            if (plugPos == null && plugNeg == null && socketPos == null && socketNeg == null)
-            {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "At least one plug/socket geometry is required.");
-                return;
-            }
-            if ((plugPos != null && plugNeg == null) || (socketPos != null && socketNeg == null))
-            {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Remark,
-                    "Only positive geometry supplied for a connector; add the matching negative before combining with the piece.");
-            }
+            // any subset of the four connector geometries is fine (none through all); we simply
+            // place whatever is supplied and leave the rest empty.
 
             var plugsPos = new GH_Structure<GH_Brep>();
             var plugsNeg = new GH_Structure<GH_Brep>();
