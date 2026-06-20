@@ -86,7 +86,7 @@ namespace bertini_real
                     if (gm?.Value == null) continue;
                     Mesh mesh = gm.Value;
 
-                    List<List<int>> loops = OnSphereBoundaryLoops(mesh, center, radius, tol, out bool unclean);
+                    List<List<int>> loops = Capping.OnSphereBoundaryLoops(mesh, center, radius, tol, out bool unclean);
                     if (unclean)
                         AddRuntimeMessage(GH_RuntimeMessageLevel.Warning,
                             $"Piece at path {path}: on-sphere boundary is not all clean closed loops (open arc or non-manifold junction); those parts were not capped.");
@@ -101,81 +101,6 @@ namespace bertini_real
             }
 
             DA.SetDataTree(0, caps);
-        }
-
-        /// <summary>
-        /// Returns the closed loops (as ordered lists of TopologyVertex indices) of the mesh's
-        /// naked boundary that lie on the sphere.  Sets <paramref name="unclean"/> if some on-sphere
-        /// boundary did not form clean degree-2 cycles.  Works in topology space (coincident
-        /// vertices merged); zero-length edges collapse and are ignored.
-        /// </summary>
-        private static List<List<int>> OnSphereBoundaryLoops(Mesh mesh, Point3d center, double radius, double tol, out bool unclean)
-        {
-            unclean = false;
-            var result = new List<List<int>>();
-
-            var topo = mesh.TopologyVertices;
-            var edges = mesh.TopologyEdges;
-
-            bool OnSphere(int tv)
-            {
-                Point3d p = topo[tv];
-                return Math.Abs(p.DistanceTo(center) - radius) < tol;
-            }
-
-            // adjacency among on-sphere naked topology edges
-            var adj = new Dictionary<int, List<int>>();
-            void Link(int u, int v)
-            {
-                if (!adj.TryGetValue(u, out var lu)) { lu = new List<int>(); adj[u] = lu; }
-                if (!lu.Contains(v)) lu.Add(v);
-            }
-
-            for (int e = 0; e < edges.Count; e++)
-            {
-                if (edges.GetConnectedFaces(e).Length != 1) continue; // not naked
-                IndexPair ip = edges.GetTopologyVertices(e);
-                int i = ip.I, j = ip.J;
-                if (i == j) continue;                 // degenerate (collapsed) edge
-                if (!OnSphere(i) || !OnSphere(j)) continue;
-                Link(i, j);
-                Link(j, i);
-            }
-
-            if (adj.Count == 0) return result;
-
-            // walk connected components into ordered cycles
-            var visited = new HashSet<int>();
-            foreach (int start in adj.Keys)
-            {
-                if (visited.Contains(start)) continue;
-
-                var loop = new List<int>();
-                int prev = -1, cur = start;
-                bool clean = true;
-
-                while (true)
-                {
-                    visited.Add(cur);
-                    loop.Add(cur);
-
-                    var nbrs = adj[cur];
-                    if (nbrs.Count != 2) { clean = false; break; } // junction or dead-end
-
-                    int next = nbrs[0] != prev ? nbrs[0] : nbrs[1];
-                    if (next == start) break;          // closed the loop
-                    if (visited.Contains(next)) { clean = false; break; }
-                    prev = cur;
-                    cur = next;
-                }
-
-                if (clean && loop.Count >= 3)
-                    result.Add(loop);
-                else
-                    unclean = true;
-            }
-
-            return result;
         }
 
         /// <summary>
@@ -234,15 +159,15 @@ namespace bertini_real
                 for (int k = 0; k < n; k++)
                 {
                     int k2 = (k + 1) % n;
-                    AddTri(cap, Idx(r, k), Idx(r, k2), Idx(r + 1, k2));
-                    AddTri(cap, Idx(r, k), Idx(r + 1, k2), Idx(r + 1, k));
+                    Capping.AddTri(cap, Idx(r, k), Idx(r, k2), Idx(r + 1, k2));
+                    Capping.AddTri(cap, Idx(r, k), Idx(r + 1, k2), Idx(r + 1, k));
                 }
             }
             // innermost ring fans to the pole
             for (int k = 0; k < n; k++)
             {
                 int k2 = (k + 1) % n;
-                AddTri(cap, Idx(R - 1, k), Idx(R - 1, k2), poleIdx);
+                Capping.AddTri(cap, Idx(R - 1, k), Idx(R - 1, k2), poleIdx);
             }
 
             if (cap.Faces.Count == 0) return null;
@@ -266,23 +191,6 @@ namespace bertini_real
                 return area;
             }
             return Area(1) <= Area(-1) ? 1 : -1;
-        }
-
-        // a tiny absolute distance below which two cap vertices are treated as the same point
-        private const double CoincidentTol = 1e-9;
-
-        private static void AddTri(Mesh m, int i, int j, int k)
-        {
-            Point3d a = m.Vertices[i];
-            Point3d b = m.Vertices[j];
-            Point3d c = m.Vertices[k];
-            // skip only TRULY degenerate triangles (a collapsed edge); thin-but-valid triangles
-            // must be kept, or high-resolution caps develop tiny holes near the boundary.
-            if (a.DistanceTo(b) < CoincidentTol ||
-                b.DistanceTo(c) < CoincidentTol ||
-                a.DistanceTo(c) < CoincidentTol)
-                return;
-            m.Faces.AddFace(i, j, k);
         }
 
         /// <summary>Spherical interpolation of two unit vectors; linear fallback when (anti)parallel.</summary>
