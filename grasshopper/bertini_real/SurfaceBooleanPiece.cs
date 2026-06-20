@@ -136,10 +136,13 @@ namespace bertini_real
                     {
                         // CreateFromBrep returns one mesh per face; appending leaves the cap
                         // seams unwelded (an open mesh), which makes mesh booleans no-op. Weld
-                        // coincident vertices so a capped Brep becomes a closed cutter.
+                        // coincident vertices, and if it's still open (an uncapped tube, or a
+                        // non-conforming seam between lateral + caps), fill the holes so the
+                        // cutter becomes a closed solid.
                         var combined = new Mesh();
                         foreach (var mm in fromBrep) combined.Append(mm);
                         combined.Vertices.CombineIdentical(true, true);
+                        if (!combined.IsClosed) combined.FillHoles();
                         combined.RebuildNormals();
                         combined.Compact();
                         meshes.Add(combined);
