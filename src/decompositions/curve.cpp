@@ -1296,8 +1296,18 @@ void Curve::Merge(WitnessSet & W_midpt,
 		Edge temp_edge; // create new empty edge
 
 		//set the left, mid and right points
+		int new_midpoint_index = index_in_vertices_with_add(V, temp_vertex, W_temp.point_meta(0));
+		// the tracked midpoint can land ON an existing vertex and be identified
+		// with it: for a symmetric span, the average of the outer projection
+		// values coincides with an interior chain value, so the fiber there IS
+		// the old joint.  it may even be a vertex removed by an earlier merge
+		// round (search_for_point searches removed vertices too).  either way it
+		// is now this edge's live midpoint: resurrect it if needed, and below,
+		// never mark it removed.  (set_removed(false) XOR-toggles, so guard it.)
+		if (V[new_midpoint_index].is_removed())
+			V[new_midpoint_index].set_removed(false);
 		temp_edge.left(edges_[leftmost_edge].left());
-		temp_edge.midpt(index_in_vertices_with_add(V, temp_vertex, W_temp.point_meta(0)));
+		temp_edge.midpt(new_midpoint_index);
 		temp_edge.right(edges_[rightmost_edge].right());
 
 
@@ -1306,28 +1316,37 @@ void Curve::Merge(WitnessSet & W_midpt,
 		EdgeMetaData md(edge_metadata_[leftmost_edge].CycleNumLeft(),
 						edge_metadata_[rightmost_edge].CycleNumRight());
 
+		// mark a chain vertex merged-away -- UNLESS it is the merged edge's own
+		// midpoint.  when the freshly tracked midpoint was identified with an
+		// existing chain vertex (symmetric span: the average projection value
+		// lands exactly on an interior joint), removing it here would kill the
+		// midpoint we just created; consumers that skip removed vertices (the
+		// sampler, the face machinery) would then find an edge with no midpoint.
+		auto remove_guarded = [&](int vertex_index) {
+			if (vertex_index == new_midpoint_index)
+				return;
+			temp_edge.add_removed_point(vertex_index);
+			V[vertex_index].set_removed(true);
+		};
+
 		for (unsigned int zz=0; zz!=edges_to_merge.size(); zz++) {
 			int merge_me_away = edges_to_merge[zz];  //set an index into the merge edges
 			for (auto vec_iter = edges_[merge_me_away].removed_begin(); vec_iter!=edges_[merge_me_away].removed_end(); vec_iter++)
 			{
-				temp_edge.add_removed_point( *vec_iter );
+				if (*vec_iter != new_midpoint_index)
+					temp_edge.add_removed_point( *vec_iter );
 			}
 
 			if (zz==0){ // rightmost edge
-				temp_edge.add_removed_point(edges_[merge_me_away].left());
-				temp_edge.add_removed_point(edges_[merge_me_away].midpt());
-				V[edges_[merge_me_away].midpt()].set_removed(true);
-				V[edges_[merge_me_away].left()].set_removed(true);
+				remove_guarded(edges_[merge_me_away].left());
+				remove_guarded(edges_[merge_me_away].midpt());
 			}
 			else if (zz==edges_to_merge.size()-1){ // leftmost edge
-				temp_edge.add_removed_point(edges_[merge_me_away].midpt());
-				V[edges_[merge_me_away].midpt()].set_removed(true);
+				remove_guarded(edges_[merge_me_away].midpt());
 			}
 			else {
-				temp_edge.add_removed_point(edges_[merge_me_away].left());
-				temp_edge.add_removed_point(edges_[merge_me_away].midpt());
-				V[edges_[merge_me_away].midpt()].set_removed(true);
-				V[edges_[merge_me_away].left()].set_removed(true);
+				remove_guarded(edges_[merge_me_away].left());
+				remove_guarded(edges_[merge_me_away].midpt());
 			}
 		}
 
