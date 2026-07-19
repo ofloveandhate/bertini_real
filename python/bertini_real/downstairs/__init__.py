@@ -60,16 +60,23 @@ def _projections_for(decomposition, projections):
     if projections is not None:
         return [np.asarray([complex(c).real for c in pi], dtype=float)
                 for pi in projections]
-    pis = []
-    for pi in decomposition.pi:
-        arr = np.asarray([complex(c).real for c in np.ravel(pi)], dtype=float)
-        # stored pi carries the homogenizing slot first; drop it
-        pis.append(arr[1:] if len(arr) == decomposition.num_variables else arr)
-    if len(pis) < 2:
+    # Decomposition.pi is stored VARIABLE-major by parse_decomposition --
+    # pi[variable][projection_index], natural variables only (num_variables in
+    # the decomp file already excludes the homogenizing coordinate).  BEWARE:
+    # the parser pads pi to two columns regardless of dimension, so a curve
+    # decomposition carries a phantom all-zero second projection -- only
+    # `dimension` columns are real.  Embedded curves defer to their surface.
+    src = decomposition
+    if getattr(src, 'dimension', 0) < 2 \
+            and getattr(src, 'embedded_into', None) is not None:
+        src = src.embedded_into
+    mat = np.asarray([[complex(c).real for c in np.ravel(row)]
+                      for row in src.pi], dtype=float)
+    if getattr(src, 'dimension', 0) < 2 or mat.ndim != 2 or mat.shape[1] < 2:
         raise ValueError(
             "need two projections for a downstairs plot; a curve decomposition "
             "stores only one -- pass projections=(pi0, pi1) explicitly")
-    return pis[:2]
+    return [mat[:, j] for j in range(2)]
 
 
 def edge_polyline(curve, edge_index, projections):
