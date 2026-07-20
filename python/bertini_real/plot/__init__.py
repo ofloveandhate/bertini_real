@@ -48,6 +48,13 @@ class ColorMode(Enum):
     MONO = 2
     BY_FUNCTION = 3
 
+# per-type colors for surface boundary curves, shared by the upstairs and the
+# downstairs panels so a curve reads the same in both views.
+SURFACE_CURVE_COLORS = {
+    'critical': 'k', 'sphere': '0.55', 'singular': 'purple',
+    'preimage': 'red', 'critslice': 'tab:blue', 'midslice': 'tab:green',
+}
+
 class StyleOptions(object):
 
     def __init__(self):
@@ -201,6 +208,11 @@ class RenderOptions(object):
         self.surface_midslices = True
         self.surface_sphere_curve = True
 
+        # when True (surfaces only), show a linked second panel with the DOWNSTAIRS
+        # (pi0, pi1) projection beside the rotatable 3D upstairs view, so one can
+        # see where upstairs features project while rotating.
+        self.downstairs = False
+
 
         # for just curves, not embedded
         self.curve_samples = True
@@ -281,6 +293,7 @@ class Plotter(object):
 
         self.fig = None
         self.ax = None
+        self.ax_down = None   # optional downstairs (pi0,pi1) projection panel
         self.widget_fig = None
         self.widgets = None
 
@@ -661,8 +674,22 @@ class Plotter(object):
         print('closing one window will close both!')
 
     def _make_new_axes(self,decomposition):
+        want_down = (getattr(self.options.render, 'downstairs', False)
+                     and decomposition.num_variables == 3
+                     and isinstance(decomposition, Surface))
+        self.ax_down = None
         if decomposition.num_variables == 2:
             self.ax = self.fig.add_subplot(1, 1, 1)
+        elif want_down:
+            # rotatable 3D upstairs (left) + fixed 2D downstairs projection (right)
+            self.ax = self.fig.add_subplot(1, 2, 1, projection='3d')
+            self.ax_down = self.fig.add_subplot(1, 2, 2)
+            self.ax_down.set_title('downstairs (pi0, pi1)')
+            self.ax_down.set_xlabel('pi0'); self.ax_down.set_ylabel('pi1')
+            try:
+                self.ax_down.set_aspect('equal', 'box')
+            except Exception:
+                pass
         else:
             self.ax = self.fig.add_subplot(1, 1, 1, projection='3d')
 
@@ -1078,8 +1105,50 @@ class Plotter(object):
         if self.options.render.surface_curves:
             self._plot_surface_curves(surf)
 
+        if getattr(self.options.render, 'downstairs', False) and self.ax_down is not None:
+            self._plot_downstairs(surf)
+
         self._adjust_all_visibility(self.plot_results, self.visibility_state)
         widgets = self._make_widgets_surface(surf)
+
+    def _plot_downstairs(self, surf):
+        """Draw the DOWNSTAIRS (pi0, pi1) projection of the surface's boundary
+        curves and vertices in the second panel, color-matched to upstairs, so a
+        feature can be located in the projection while the 3D view is rotated."""
+        axd = self.ax_down
+        if axd is None:
+            return
+
+        def dxy(idx):
+            pv = surf.vertices[idx].projection_value
+            return (complex(pv[0]).real, complex(pv[1]).real)
+
+        curve_groups = ([(surf.critical_curve, 'critical'),
+                         (surf.sphere_curve, 'sphere')]
+                        + [(c, 'singular') for c in surf.singular_curves]
+                        + [(c, 'preimage') for c in surf.preimage_curves]
+                        + [(c, 'critslice') for c in surf.critical_point_slices]
+                        + [(c, 'midslice') for c in surf.midpoint_slices])
+        for curve, kind in curve_groups:
+            col = SURFACE_CURVE_COLORS.get(kind, 'orange')
+            for e in curve.edges:
+                if e[0] == e[-1]:
+                    continue                       # degenerate edge -> a point
+                pts = [dxy(v) for v in e]
+                axd.plot([p[0] for p in pts], [p[1] for p in pts],
+                         color=col, linewidth=1.1, zorder=2)
+
+        from bertini_real.vertex import VertexType
+        vis_markers = ['o', '^', 's', 'D', 'v', 'P', 'X', '*', '<', '>', 'h', 'p']
+        size = getattr(self.options.style, 'vertex_size', 40)
+        for ti, T in enumerate(VertexType):
+            pts = [dxy(i) for i, v in enumerate(surf.vertices) if v.is_of_type(T)]
+            if not pts:
+                continue
+            axd.scatter([p[0] for p in pts], [p[1] for p in pts],
+                        marker=vis_markers[ti % len(vis_markers)], s=size,
+                        color=plt.cm.tab10(ti % 10), edgecolors='k',
+                        linewidths=0.4, zorder=3)
 
 
 
@@ -1124,9 +1193,14 @@ class Plotter(object):
 
 
     def _plot_embedded_curve(self, curve, curve_name):
-        """ 
+        """
         Plot an embedded curve.  Not intended to be called outside of plot_surface.
         """
+
+        # color the upstairs boundary curves by type so they match the downstairs
+        # panel (MONO colormode otherwise draws every curve the same color)
+        if self.options.style.colormode is ColorMode.MONO and curve_name in SURFACE_CURVE_COLORS:
+            self.options.style.mono_color = SURFACE_CURVE_COLORS[curve_name]
 
         self._determine_nondegen_edges(curve)
 
