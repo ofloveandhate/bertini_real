@@ -519,6 +519,13 @@ class Surface(Decomposition):
         self.sphere_curve = []
         self.singular_curves = []
         self.singular_names = []
+        # preimage (semicritical) curves: a bertini2-backend addition -- the
+        # shadow arcs of the critical curve's image on the non-fold sheets.  Not
+        # produced by classic bertini_real, so they are discovered by globbing
+        # curve_preimage_* rather than counted in S.surf (backward compatible:
+        # a classic decomposition simply has none).
+        self.preimage_curves = []
+        self.preimage_names = []
         self.sampler_data = []   # store all surface_sampler data
 
         Decomposition.__init__(self, directory, is_embedded,embedded_into)
@@ -615,6 +622,18 @@ class Surface(Decomposition):
             new_curve = Curve(filename,is_embedded=True,embedded_into=self)
             self.singular_curves.append(new_curve)
             self.singular_names.append(new_curve.inputfilename)
+
+        # preimage (semicritical) curves are not counted in S.surf (a bertini2
+        # addition); discover them by globbing curve_preimage_N in index order
+        import glob, os, re
+        preimage_dirs = glob.glob(os.path.join(directory, 'curve_preimage_*'))
+        def _preimage_index(path):
+            m = re.search(r'curve_preimage_(\d+)$', path)
+            return int(m.group(1)) if m else 0
+        for d in sorted(preimage_dirs, key=_preimage_index):
+            new_curve = Curve(d, is_embedded=True, embedded_into=self)
+            self.preimage_curves.append(new_curve)
+            self.preimage_names.append(new_curve.inputfilename)
 
     def gather_surface_samples(self, directory):
         """ Gather the surface samples of surface
@@ -897,7 +916,11 @@ class Surface(Decomposition):
 
         for c in self.singular_curves:
             if curve_name == c.inputfilename:
-                return c 
+                return c
+
+        for c in self.preimage_curves:
+            if curve_name == c.inputfilename:
+                return c
 
         raise RuntimeError(f'unable to find a curve with name {curve_name} in this surface')
 

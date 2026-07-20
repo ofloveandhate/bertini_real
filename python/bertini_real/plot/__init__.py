@@ -98,7 +98,7 @@ class VisibilityOptions(object):
         self.surface_curves_raw = False
         self.surface_curves_samples = False
 
-        surface_curve_types = ['critical','singular','midslice','critslice','sphere']
+        surface_curve_types = ['critical','singular','midslice','critslice','sphere','preimage']
         self.surface_curves_by_type = {n:False for n in surface_curve_types}
 
         self.curve_samples = False
@@ -192,6 +192,7 @@ class RenderOptions(object):
 
         self.surface_critical_curve = True
         self.surface_singular_curves = True
+        self.surface_preimage_curves = True   # bertini2-backend semicritical curves
         self.surface_critical_slices = True
         self.surface_midslices = True
         self.surface_sphere_curve = True
@@ -1085,6 +1086,10 @@ class Plotter(object):
             if self.options.render.surface_singular_curves:
                 for c,m in zip(surf.singular_curves, surf.singular_names):
                     self._plot_embedded_curve(c, 'singular')
+
+            if self.options.render.surface_preimage_curves:
+                for c in surf.preimage_curves:
+                    self._plot_embedded_curve(c, 'preimage')
 
             if self.options.render.surface_critical_slices:
                 for ii,c in enumerate(surf.critical_point_slices):
