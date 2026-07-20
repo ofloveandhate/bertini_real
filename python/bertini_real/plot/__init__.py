@@ -63,6 +63,10 @@ class StyleOptions(object):
 
         self.surface_edge_color = None
 
+        self.face_alpha = 1.0          # opacity of surface face cells (1 opaque,
+                                       # <1 lets the skeleton curves/vertices show)
+        self.vertex_size = 40          # scatter marker size for vertices
+
         self.autotitle = True
 
 
@@ -774,22 +778,35 @@ class Plotter(object):
         
         xs, ys, zs = self.make_xyz(decomposition)
 
-        markers = matplotlib.markers.MarkerStyle('').markers
+        # The raw MarkerStyle('').markers dict includes blank markers (' ',
+        # 'None', ',') that render NOTHING, so zipping it with VertexType left
+        # several present types invisible.  Cycle a curated, always-visible set
+        # (distinct marker + tab10 color, sized via style.vertex_size) so every
+        # present type is actually drawn.
+        vis_markers = ['o', '^', 's', 'D', 'v', 'P', 'X', '*', '<', '>', 'h', 'p']
+        palette = plt.cm.tab10
+        size = getattr(self.options.style, 'vertex_size', 40)
         self.plot_results['vertices'] = {}
 
-        for T,m in zip(VertexType, markers.keys()):
+        for ti, T in enumerate(VertexType):
 
             plot_these = np.array([v.is_of_type(T) for v in decomposition.vertices])
 
             if not np.any(plot_these):
                 continue
 
-            if decomposition.num_variables == 2:
-                h = self.ax.scatter(xs[plot_these], ys[plot_these], marker=m)
-            else:
-                h = self.ax.scatter(xs[plot_these], ys[plot_these], zs[plot_these], zdir='z', alpha=1, marker=m)
+            m = vis_markers[ti % len(vis_markers)]
+            col = palette(ti % 10)
 
-            self.plot_results['vertices'][h] = T  # these are indexed by the handles so that they can be looped over.  i agree, it would be nice if they were flipped.
+            if decomposition.num_variables == 2:
+                h = self.ax.scatter(xs[plot_these], ys[plot_these], marker=m,
+                                    s=size, color=col, edgecolors='k', linewidths=0.4)
+            else:
+                h = self.ax.scatter(xs[plot_these], ys[plot_these], zs[plot_these],
+                                    zdir='z', marker=m, s=size, color=col,
+                                    edgecolors='k', linewidths=0.4, depthshade=False)
+
+            self.plot_results['vertices'][h] = T  # indexed by handle for looping
 
         widgets = self._make_widgets_vertices(decomposition)
 
@@ -1353,7 +1370,7 @@ class Plotter(object):
             self._remap_colors_colorfn(all_colors)
 
         for T,color in zip(all_triangles,all_colors):
-            self.plot_results['surface_raw'].append(self.ax.add_collection3d(Poly3DCollection(T, facecolors=color)))
+            self.plot_results['surface_raw'].append(self.ax.add_collection3d(Poly3DCollection(T, facecolors=color, alpha=self.options.style.face_alpha)))
 
         self.ax.autoscale_view()
 
