@@ -13,3 +13,7 @@
 *.png binary
 *.jpg binary
 *.bmp binary
+
+# Grasshopper documents: .gh is binary (no diff/merge); .ghx is XML text (diffable).
+*.gh binary
+*.ghx text

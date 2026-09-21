@@ -4,51 +4,84 @@ using System;
 
 
 /*
- * A Sanity File to hold all the classes used in the code. 
- * 
- * Data used in transformConnectors to store data from the JSON
- * PieceData hold data on individual piece objects which has been parsed in TransformConnectors
- * The rest are used to create the parts of a plug in Connectors.cs or PositivePlugComponent.cs
- * plugBody create the main section of the plug with the tapered top
- * plugtabs create the cutout box or wedges for the plug
- * 
- * 
+ * A Sanity File to hold helper classes used in the code.
+ *
+ * GhExport / GhPiece / GhMesh / GhSphere / GhSingularities / GhEmbeddedCurve / GhCurvePiece
+ *   are the DTOs for br_gh_export.json (see GhJsonIO and the *ReadGhJson components).
+ * PlugBody / PlugTabs build the parts of a plug in Connectors.cs.
  */
 namespace bertini_real
 {
     /// <summary>
-    /// Organize and store data from br_surf_piece_data.json file
-    /// NOTE: The JSON no longer has piece_indicies, but now piece_names which are file name strings 
+    /// DTOs for the self-contained br_gh_export.json written by Python's
+    /// Surface.export_gh_json / Curve.export_gh_json.  Property names must match the JSON
+    /// keys exactly (System.Text.Json matches by name).  The single `vertices` array is the
+    /// unified vertex set; meshes carry only triangle indices into it, and curves carry only
+    /// ordered vertex-index lists into it -- so meshes and embedded curves refer to the same
+    /// points in Rhino.
     /// </summary>
-    /// <see cref="SurfacePlaceComponents.cs"/>
-    public class Data 
+    /// <see cref="SurfaceReadGhJson.cs"/>
+    /// <see cref="CurveReadGhJson.cs"/>
+    public class GhExport
     {
-        public string[] piece_names { get; set; } //this will need to change
-        public int[][] singularities_on_pieces { get; set; } 
-        public double[][] sing_directions { get; set; }
-        public double[][] sing_locations { get; set; }
-        public int[][] parities { get; set; }
+        public int format_version { get; set; }
+        public string decomposition_type { get; set; }   // "surface" | "curve"
+        public string source_directory { get; set; }
+        public int num_variables { get; set; }
+        public int vertex_count { get; set; }
+        public double[][] vertices { get; set; }          // the unified set; each is [x,y,z]
+        public GhSphere sphere { get; set; }              // bounding sphere of the decomposition
+        public GhSingularities singularities { get; set; } // nodal-singularity connector data (surface)
+        public bool is_sampled { get; set; }              // surface only
+        public GhPiece[] pieces { get; set; }             // surface only
+        public GhCurvePiece[] curve_pieces { get; set; }  // curve only
     }
-    
-    /// <summary>
-    /// Store data parsed from the Data class by peice
-    /// </summary>
-    /// <see cref="SurfacePlaceComponents.cs"/>
-    public class PieceData
+
+    public class GhSphere
     {
-        public string piece_name { get; set; }
+        public double[] center { get; set; }              // [x,y,z]
+        public double radius { get; set; }
+    }
+
+    public class GhSingularities
+    {
+        public string[] piece_names { get; set; }         // per piece
+        public double[][] locations { get; set; }         // per singularity [x,y,z]
+        public double[][] directions { get; set; }        // per singularity [x,y,z]
+        public int[][] parities { get; set; }             // per singularity: value per piece (-1/0/1)
+        public int[][] on_pieces { get; set; }            // per piece: compact singularity indices
+    }
+
+    public class GhPiece
+    {
         public int piece_index { get; set; }
-        // public int[] indices { get; set; }
-        public int[] singsOnPiece { get; set; }
-        public Vector3d[] directions { get; set; }
-        public Vector3d[] locations { get; set; }
-        public int[] parities { get; set; }
-
-        public PieceData()
-        {
-
-        }
+        public int[] face_indices { get; set; }
+        public GhMesh mesh_smooth { get; set; }           // null when not sampled
+        public GhMesh mesh_raw { get; set; }
+        public GhEmbeddedCurve[] curves { get; set; }
     }
+
+    public class GhMesh
+    {
+        public int[] triangles { get; set; }              // flat ijk, index into GhExport.vertices
+        public int triangle_count { get; set; }
+    }
+
+    public class GhEmbeddedCurve
+    {
+        public string type { get; set; }                  // critical|sphere|singular|midslice|critslice|unknown
+        public string curve_name { get; set; }
+        public int[] vertex_indices { get; set; }         // ordered, index into GhExport.vertices
+    }
+
+    public class GhCurvePiece
+    {
+        public int piece_index { get; set; }
+        public string type { get; set; }                  // "standalone"
+        public string curve_name { get; set; }
+        public int[] vertex_indices { get; set; }
+    }
+
 
     /* Used to Create the different parts of a positive plug */
     public class PlugBody

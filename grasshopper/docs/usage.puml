@@ -1,0 +1,128 @@
+@startuml
+' Bertini_real Grasshopper components — single-source usage graph.
+' Render with PlantUML:  plantuml grasshopper/docs/usage.puml   (-> usage.png/svg)
+
+title Bertini_real Grasshopper — single-source pipeline
+
+skinparam backgroundColor #FDFDFD
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam ArrowColor #5A6B7B
+skinparam rectangle {
+  BorderColor #3A5A78
+  BackgroundColor #EAF2FA
+  RoundCorner 12
+}
+skinparam artifact {
+  BorderColor #7A6A3A
+  BackgroundColor #FBF4DD
+}
+
+' ---- the one source ----
+artifact "br_gh_export.json\n(written by Python\nexport_gh_json / scripts)" as JSON
+
+note top of JSON
+  **No Rhino?** The same pipeline
+  (pieces -> caps -> close -> boolean)
+  is available in pure Python -- see
+  python/docs/tutorials/capping_and_joining.rst
+  (and scripts/close_pieces.py).
+end note
+
+' ---- the one reader ----
+rectangle "**Surface Read GH JSON**\l--\lout:\l• Vertices  (Point list)\l• Meshes  (tree {piece})\l• Mesh Faces  (tree {piece})\l• Curves  (tree {piece})\l• Curve Types  (tree {piece})\l• Curve Indices  (tree {piece,curve})\l• Face Indices  (tree {piece})\l• Sphere  (Brep)\l• Sing Locations  (list)\l• Sing Directions  (list)\l• Sing Parities  (tree {sing})\l• Sing On Pieces  (tree {piece})\l" as READER
+
+JSON --> READER : File Path
+
+' ======================================================================
+' Branch 1 — curves
+' ======================================================================
+rectangle "**Untangle Curves By Type**\l--\lout (each tree {piece}):\l• Critical • Sphere • Singular\l• Midslice • Critslice • Other\l" as UNTANGLE
+
+READER --> UNTANGLE : Curves\n+ Curve Types
+
+' ======================================================================
+' Branch 2 — geometry: cap -> close -> boolean -> (spread)
+' ======================================================================
+rectangle "**Sphere Caps**  /  **Flat Caps**\l--\lin: Meshes, Sphere,\l    Tolerance, Resolution\lout: Caps  (tree {piece})\l(Flat Caps fans to the loop centroid;\l drop-in alternative to Sphere Caps)\l" as CAPS
+
+rectangle "**Close Piece**\l--\lin: Meshes, Caps, Tolerance\lout:\l• Closed  (tree {piece})\l• Is Closed  (tree {piece})\l• Naked Edges  (tree {piece})\l" as CLOSE
+
+rectangle "**Boolean Piece**\l--\lin: Solid, Features, Operations(±1)\lout:\l• Result  (tree {piece})\l• Is Closed  (tree {piece})\l• Report  (tree {piece})\l" as BOOL
+
+rectangle "**Color By Function**\l--\lin: Meshes, Function(x,y,z),\l    Colours, Domain\lout: Meshes (vertex-colored),\l    Values, Domain\l" as COLOR
+
+rectangle "**Spread Pieces**  /  **Spread By Connectors**\l--\lin: Geometry, Distance\l    (By Connectors also takes Sing\l    Locations/Directions/On Pieces, Root)\lout: Geometry, Translations\l(radial  vs.  assembly explosion\l along the connector axes)\l" as SPREAD
+
+READER --> CAPS : Meshes
+READER --> CAPS : Sphere
+READER --> CLOSE : Meshes
+CAPS --> CLOSE : Caps
+CLOSE --> BOOL : Closed  (as Solid)
+
+' ======================================================================
+' Branch 3 — singularity connectors -> features -> boolean
+' ======================================================================
+rectangle "**Surface Place Components**\l--\lin: Sing Locations, Sing Directions,\l    Sing Parities, Sing On Pieces,\l    Plug+/-, Socket+/- (any subset)\lout (each tree {piece}):\l• Plugs positive / negative\l• Sockets positive / negative\l" as PLACE
+
+rectangle "**Connectors To Features**\l--\lin: Plugs+/-, Sockets+/-\lout:\l• Features  (tree {piece}, ordered)\l• Operations  (tree {piece}, signs ±1)\l" as CONNFEAT
+
+rectangle "**Utility: Centered Closed Cylinder**\l--\lin: Radius, Length, Sides, Plane\lout: closed Brep (round, or N-gon prism)\l" as UTIL
+
+READER --> PLACE : Sing Locations\nSing Directions\nSing Parities\nSing On Pieces
+UTIL --> PLACE : Plug+ / Socket+\n(connector geometry, true size)
+PLACE --> CONNFEAT : Plugs+/-\nSockets+/-
+CONNFEAT --> BOOL : Features\n+ Operations
+UTIL ..> BOOL : Features (direct)
+
+' ======================================================================
+' Grouping / viewing
+' ======================================================================
+rectangle "**Surface Group By Piece**\l--\lin: Meshes, Plugs+/-, Sockets+/-\lout:\l• Pieces with connectors\l   (tree {piece}: mesh + connectors)\l• Piece Indices\l" as GROUP
+
+CLOSE ..> GROUP : Meshes\n(or Boolean Result)
+PLACE --> GROUP : Plugs+/-\nSockets+/-
+
+BOOL --> COLOR : Result
+COLOR --> SPREAD : Meshes (colored)
+GROUP ..> SPREAD : Pieces with connectors
+CLOSE ..> COLOR : Closed  (alt.)
+CLOSE ..> SPREAD : Closed  (alt.)
+
+' ---- notes ----
+note right of READER
+  **One file, one reader.**
+  The whole graph is fed by
+  br_gh_export.json through this
+  single component (no second JSON).
+end note
+
+note bottom of BOOL
+  **Boolean Piece is an ordered fold.**
+  Start from Solid, then apply each Feature
+  in order: +1 union, -1 subtract (default
+  subtract). Order matters -- each step acts
+  on the running result. (Python twin:
+  surface.mesh_boolean_fold, manifold3d.)
+end note
+
+note bottom of COLOR
+  Colors meshes by a scalar f(x,y,z) at
+  each vertex. Mesh vertex colors survive
+  Spread, so color before or after spreading.
+end note
+
+note as LEGEND
+  **Data-shape conventions**
+  • per-piece       -> tree {piece}
+  • per-singularity -> flat list (index = sing id)
+  • per-curve idx   -> tree {piece, curve}
+  • Vertices is one shared Point list;
+    meshes/curves index into it.
+  • per-piece geometry -> "Geometry"/"G"
+    (any type); meshes -> "Meshes"/"M".
+  solid arrow = typical wire,  dashed = alternative
+end note
+LEGEND .. SPREAD
+
+@enduml
