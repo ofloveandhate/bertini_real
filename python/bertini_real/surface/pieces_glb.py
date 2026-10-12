@@ -34,7 +34,7 @@ import trimesh
 NODE_GRADIENT_FRACTION = 1e-6
 
 #: the colorings :func:`hues` knows
-COLORINGS = ('azimuth', 'height', 'spread')
+COLORINGS = ('contrast', 'azimuth', 'height', 'spread')
 
 _GOLDEN = (math.sqrt(5) - 1) / 2
 
@@ -88,11 +88,70 @@ def gradient_from_input(input_text):
     return gradient
 
 
-def hues(centroids, coloring):
-    """One hue in [0, 1) per piece: ``azimuth`` by the angle of its centroid about the z axis (a
-    rainbow sweeping around), ``height`` by its centroid's z (red at the bottom to violet at the
+def neighbours_at_nodes(node_lists):
+    """{piece: set of pieces} joined by a shared node, from each piece's list of nodes."""
+    at = {}
+    for k, nodes in enumerate(node_lists):
+        for n in nodes:
+            at.setdefault(n, []).append(k)
+    out = {k: set() for k in range(len(node_lists))}
+    for ks in at.values():
+        for a in ks:
+            out[a].update(b for b in ks if b != a)
+    return out
+
+
+def contrasting_hues(neighbours, count, seed=0, sweeps=400):
+    """One hue per piece, every piece its own (``count`` hues evenly around the circle), placed so
+    pieces that meet at a node are far apart in hue: simulated annealing over the assignment,
+    swapping two pieces' hues, against a soft minimum of the hue distances across shared nodes.
+    Deterministic for a given ``seed``."""
+    import random
+    rng = random.Random(seed)
+    hue = [k / count for k in range(count)]
+    rng.shuffle(hue)
+    sigma = 0.08                                       # about 30 degrees
+
+    def distance(a, b):
+        d = abs(hue[a] - hue[b]) % 1.0
+        return min(d, 1.0 - d)
+
+    def penalty(k):
+        return sum(math.exp(-distance(k, j) / sigma) for j in neighbours[k])
+
+    steps = sweeps * count
+    temperature, cooling = 1.0, (1e-4 / 1.0) ** (1.0 / steps)   # from 1 down to 1e-4
+    for _ in range(steps):
+        a, b = rng.randrange(count), rng.randrange(count)
+        temperature *= cooling
+        if a == b:
+            continue
+        before = penalty(a) + penalty(b)
+        hue[a], hue[b] = hue[b], hue[a]
+        after = penalty(a) + penalty(b)
+        if after > before and rng.random() >= math.exp((before - after) / temperature):
+            hue[a], hue[b] = hue[b], hue[a]
+    return hue
+
+
+def closest_neighbour_hues(hue, neighbours):
+    """The smallest hue distance, in degrees, between any two pieces that meet at a node."""
+    worst = 180.0
+    for a, bs in neighbours.items():
+        for b in bs:
+            d = abs(hue[a] - hue[b]) % 1.0
+            worst = min(worst, 360.0 * min(d, 1.0 - d))
+    return worst
+
+
+def hues(centroids, coloring, neighbours=None):
+    """One hue in [0, 1) per piece: ``contrast`` every piece its own hue, pieces meeting at a node
+    far apart (:func:`contrasting_hues`), ``azimuth`` by the angle of its centroid about the z axis
+    (a rainbow sweeping around), ``height`` by its centroid's z (red at the bottom to violet at the
     top), ``spread`` by piece order, each 0.618 of a turn from the last (neighbours in the list
     contrast)."""
+    if coloring == 'contrast':
+        return contrasting_hues(neighbours, len(centroids))
     if coloring == 'azimuth':
         return [math.atan2(c[1], c[0]) / (2 * math.pi) % 1.0 for c in centroids]
     if coloring == 'height':
@@ -101,6 +160,14 @@ def hues(centroids, coloring):
     if coloring == 'spread':
         return [(k * _GOLDEN) % 1.0 for k in range(len(centroids))]
     raise ValueError(f"coloring must be one of {COLORINGS}, not {coloring!r}")
+
+
+def srgb_to_linear(channel):
+    """One sRGB channel in [0, 1] as linear light: glTF's baseColorFactor is linear, and a color
+    chosen in sRGB and written as it is comes out washed toward white."""
+    if channel <= 0.04045:
+        return channel / 12.92
+    return ((channel + 0.055) / 1.055) ** 2.4
 
 
 def signed_volume(mesh, about):
@@ -167,18 +234,32 @@ def check(meshes, compact, center):
                 area_facing_normals=facing_area / total_area if total_area else 1.0)
 
 
-def export(surface, filename, coloring='azimuth', compact_only=False, flip=False, pieces=None,
-           saturation=0.78, value=0.95, roughness=0.55):
+def node_markers(points, radius):
+    """One mesh of small spheres, one at each of ``points``."""
+    sphere = trimesh.creation.icosphere(subdivisions=2, radius=radius)
+    return trimesh.util.concatenate([sphere.copy().apply_translation(p) for p in points])
+
+
+def export(surface, filename, coloring='contrast', compact_only=False, flip=False, pieces=None,
+           saturation=0.9, value=0.8, roughness=0.55, markers=True, marker_radius=None):
     """Write the surface's nonsingular pieces to ``filename`` (a .glb) and a .json beside it naming
     every piece: its faces, whether it is compact, its centroid, its color, and the nodes on it.
+    Colors are chosen in HSV with ``saturation`` and ``value`` (deep jewel tones by default; lower
+    the saturation for pastels) as sRGB, and written as the linear colors glTF expects, so a viewer
+    shows the color chosen.  The JSON gives each color as sRGB hex.  With ``markers``, a separate
+    mesh named ``nodes`` holds a small gold sphere at every node where two pieces meet
+    (``marker_radius``, by default 0.6% of the bounding sphere's radius), to toggle in a viewer.
     Returns a summary: pieces, triangles, how many point outward, the area fraction that faces its
-    normals, and whether the normals are exact.  See the module docstring."""
+    normals, whether the normals are exact, and for ``contrast`` the closest hues across a node.
+    See the module docstring."""
     if pieces is None:
         pieces = surface.separate_into_nonsingular_pieces()
     gradient = gradient_from_input(surface.input)
     meshes = [oriented_piece_mesh(surface, p, gradient, flip) for p in pieces]
     centroids = [np.asarray(m.centroid) for m in meshes]
-    piece_hues = hues(centroids, coloring)
+    node_lists = [sorted(int(n) for n in p.point_singularities()) for p in pieces]
+    neighbours = neighbours_at_nodes(node_lists)
+    piece_hues = hues(centroids, coloring, neighbours)
 
     scene = trimesh.Scene()
     kept, record = [], []
@@ -186,8 +267,9 @@ def export(surface, filename, coloring='azimuth', compact_only=False, flip=False
         compact = piece.is_compact()
         if compact_only and not compact:
             continue
-        r, g, b = colorsys.hsv_to_rgb(hue, saturation, value)
-        rgba = [int(round(255 * t)) for t in (r, g, b)] + [255]
+        srgb = colorsys.hsv_to_rgb(hue, saturation, value)
+        rgba = [int(round(255 * srgb_to_linear(t))) for t in srgb] + [255]
+        hex_color = '#%02x%02x%02x' % tuple(int(round(255 * t)) for t in srgb)
         name = f"piece_{k:03d}" + ('_compact' if compact else '_cut')
         material = trimesh.visual.material.PBRMaterial(
             name=name, baseColorFactor=rgba, metallicFactor=0.0, roughnessFactor=roughness,
@@ -199,9 +281,22 @@ def export(surface, filename, coloring='azimuth', compact_only=False, flip=False
         kept.append((colored, name, compact))
         record.append(dict(piece=k, name=name, compact=compact, faces=list(piece.indices),
                            centroid=[float(c) for c in centroid],
-                           color='#%02x%02x%02x' % tuple(rgba[:3]),
-                           nodes=sorted(int(n) for n in piece.point_singularities()),
-                           triangles=int(len(mesh.faces))))
+                           color=hex_color,
+                           nodes=node_lists[k], triangles=int(len(mesh.faces))))
+
+    shared = sorted({n for k, ns in enumerate(node_lists) for n in ns
+                     if not compact_only or pieces[k].is_compact()
+                     if sum(n in other for other in node_lists) >= 2})
+    if markers and shared:
+        radius = marker_radius or 0.006 * float(surface.radius)
+        points = [np.real(np.asarray(surface.vertices[n].point[:3])).astype(float) for n in shared]
+        gold = trimesh.visual.material.PBRMaterial(
+            name='nodes', baseColorFactor=[255, 196, 64, 255], metallicFactor=1.0,
+            roughnessFactor=0.25)
+        dots = node_markers(points, radius)
+        dots = trimesh.Trimesh(dots.vertices, dots.faces, vertex_normals=dots.vertex_normals,
+                               visual=trimesh.visual.TextureVisuals(material=gold), process=False)
+        scene.add_geometry(dots, node_name='nodes', geom_name='nodes')
 
     scene.export(filename, include_normals=True)
     json_name = re.sub(r'\.glb$', '', filename) + '.json'
@@ -212,5 +307,7 @@ def export(surface, filename, coloring='azimuth', compact_only=False, flip=False
     summary = check([m for m, _, _ in kept], [c for _, _, c in kept],
                     np.asarray(surface.center, dtype=float))
     summary.update(triangles=sum(r['triangles'] for r in record),
-                   exact_normals=gradient is not None, filename=filename, json=json_name)
+                   exact_normals=gradient is not None, filename=filename, json=json_name,
+                   node_markers=len(shared) if markers else 0,
+                   closest_hues_across_a_node=closest_neighbour_hues(piece_hues, neighbours))
     return summary
