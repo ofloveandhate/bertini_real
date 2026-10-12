@@ -876,25 +876,57 @@ class Surface(Decomposition):
 
 
     def separate_into_nonsingular_pieces(self):
-        """ 
-        Separate a surface into a list of pieces, connected at singularities
+        """
+        Separate a surface into a list of pieces, connected at singularities.
+
+        Two faces are in one piece when they share a nondegenerate edge of a critical slice (a
+        side of each), or an edge of the critical curve in the same interval (the top or bottom
+        of each), as `faces_nonsingularly_connect` decides for one pair; edges of the sphere and
+        of singular curves join nothing.  Each face is indexed once by the edges it could share,
+        and the pieces are the connected components, so the cost grows with the number of faces,
+        not with its square: on a barth10 decomposition of 18636 faces, the pairwise search
+        took over an hour.
+
+        Pieces are ordered by their smallest face index, and each piece's face indices are
+        sorted.
         """
 
         self.check_data()
 
-        pieces = []
-        connected = []
-        unconnected_this = [0]
+        parent = list(range(self.num_faces))
 
-        while not(unconnected_this == []):
-            seed = unconnected_this[0]
-            [connected_this, unconnected_this] = self.faces_nonsingularly_connected(
-                seed)
-            pieces.append(SurfacePiece(connected_this, self))
-            connected.extend(connected_this)
-            unconnected_this = list(set(unconnected_this) - set(connected))
+        def find(i):
+            while parent[i] != i:
+                parent[i] = parent[parent[i]]
+                i = parent[i]
+            return i
 
-        return pieces
+        first_with = {}  # an edge a face could share -> the first face seen with it
+
+        def join(face_index, shared):
+            other = first_with.setdefault(shared, face_index)
+            a, b = find(face_index), find(other)
+            if a != b:
+                parent[max(a, b)] = min(a, b)
+
+        crit_name = self.critical_curve.inputfilename
+        for ii, f in enumerate(self.faces):
+            s = f['middle slice index']
+            for slice_index, sides in ((s, f['left']), (s + 1, f['right'])):
+                edges = self.critical_point_slices[slice_index].edges
+                for k in sides or []:
+                    e = edges[k]
+                    if not is_edge_degenerate(e):
+                        join(ii, ('slice edge midpoint', e[1]))
+            for which in ('top', 'bottom'):
+                if f['system ' + which] == crit_name:
+                    join(ii, ('critical curve edge', s, f[which]))
+
+        groups = defaultdict(list)
+        for ii in range(self.num_faces):
+            groups[find(ii)].append(ii)
+
+        return [SurfacePiece(sorted(g), self) for g in sorted(groups.values(), key=min)]
 
 
     
