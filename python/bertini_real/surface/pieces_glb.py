@@ -241,7 +241,8 @@ def node_markers(points, radius):
 
 
 def export(surface, filename, coloring='contrast', compact_only=False, flip=False, pieces=None,
-           saturation=0.9, value=0.8, roughness=0.55, markers=True, marker_radius=None):
+           saturation=0.9, value=0.8, roughness=0.55, markers=True, marker_radius=None,
+           piece_colors=None):
     """Write the surface's nonsingular pieces to ``filename`` (a .glb) and a .json beside it naming
     every piece: its faces, whether it is compact, its centroid, its color, and the nodes on it.
     Colors are chosen in HSV with ``saturation`` and ``value`` (deep jewel tones by default; lower
@@ -249,6 +250,8 @@ def export(surface, filename, coloring='contrast', compact_only=False, flip=Fals
     shows the color chosen.  The JSON gives each color as sRGB hex.  With ``markers``, a separate
     mesh named ``nodes`` holds a small gold sphere at every node where two pieces meet
     (``marker_radius``, by default 0.6% of the bounding sphere's radius), to toggle in a viewer.
+    ``piece_colors``, one (r, g, b) in [0, 1] per piece as seen (sRGB), in the order of
+    ``pieces``, overrides ``coloring``, ``saturation`` and ``value``.
     Returns a summary: pieces, triangles, how many point outward, the area fraction that faces its
     normals, whether the normals are exact, and for ``contrast`` the closest hues across a node.
     See the module docstring."""
@@ -259,15 +262,22 @@ def export(surface, filename, coloring='contrast', compact_only=False, flip=Fals
     centroids = [np.asarray(m.centroid) for m in meshes]
     node_lists = [sorted(int(n) for n in p.point_singularities()) for p in pieces]
     neighbours = neighbours_at_nodes(node_lists)
-    piece_hues = hues(centroids, coloring, neighbours)
+    if piece_colors is not None:
+        if len(piece_colors) != len(pieces):
+            raise ValueError(f"piece_colors has {len(piece_colors)} colors for {len(pieces)} pieces")
+        coloring = 'given'
+        chosen = [tuple(float(t) for t in c[:3]) for c in piece_colors]
+        piece_hues = [colorsys.rgb_to_hsv(*c)[0] for c in chosen]
+    else:
+        piece_hues = hues(centroids, coloring, neighbours)
+        chosen = [colorsys.hsv_to_rgb(h, saturation, value) for h in piece_hues]
 
     scene = trimesh.Scene()
     kept, record = [], []
-    for k, (piece, mesh, centroid, hue) in enumerate(zip(pieces, meshes, centroids, piece_hues)):
+    for k, (piece, mesh, centroid, srgb) in enumerate(zip(pieces, meshes, centroids, chosen)):
         compact = piece.is_compact()
         if compact_only and not compact:
             continue
-        srgb = colorsys.hsv_to_rgb(hue, saturation, value)
         rgba = [int(round(255 * srgb_to_linear(t))) for t in srgb] + [255]
         hex_color = '#%02x%02x%02x' % tuple(int(round(255 * t)) for t in srgb)
         name = f"piece_{k:03d}" + ('_compact' if compact else '_cut')
