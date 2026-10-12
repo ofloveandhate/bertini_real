@@ -1311,6 +1311,30 @@ class Surface(Decomposition):
 
 
 
+    def export_pieces_glb(self, filename='br_pieces.glb', coloring='azimuth', compact_only=False, flip=False, pieces=None):
+        """
+        Write the surface's nonsingular pieces to one GLB file (glTF), each piece its own named mesh
+        (`piece_017_compact`, `piece_142_cut`, ...) with its own colored material, for Blender and
+        other viewers, and a .json beside it naming every piece's faces, compactness, centroid,
+        color and nodes.
+
+        Every piece points outward with uniform normals, exact from the input's polynomial when the
+        surface is one function of three variables; see `bertini_real.surface.pieces_glb`.
+
+        coloring: 'azimuth' (hue by the angle of a piece's centroid about the z axis), 'height'
+            (by its z) or 'spread' (by piece order, neighbours contrasting).
+        compact_only: only the pieces that do not touch the bounding sphere.
+        flip: point every piece inward instead.
+        pieces: the pieces to write, if already separated.
+
+        Returns a summary: pieces, triangles, how many point outward, the fraction of the area that
+        faces its normals, and whether the normals are exact.
+        """
+        from bertini_real.surface import pieces_glb
+        return pieces_glb.export(self, filename, coloring=coloring, compact_only=compact_only,
+                                 flip=flip, pieces=pieces)
+
+
     def export_raw(self, which_faces=None, basename=_default_surface_basename_raw, autoname_using_folder=False, file_type=_default_file_type, keep_all_vertices=True):
         """ 
         Export raw decomposition of surface
