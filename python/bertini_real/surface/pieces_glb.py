@@ -178,13 +178,16 @@ def signed_volume(mesh, about):
     return float(np.einsum('ij,ij->i', np.cross(b - a, c - a), a).sum()) / 6.0
 
 
-def oriented_piece_mesh(surface, piece, gradient=None, flip=False):
+def oriented_piece_mesh(surface, piece, gradient=None, flip=False, facets='panels'):
     """A piece's raw mesh, its own vertices only, wound consistently and pointing outward, with
-    exact normals when ``gradient`` is given (see the module docstring)."""
+    exact normals when ``gradient`` is given (see the module docstring).  ``facets='merged'``
+    triangulates the piece's merged faces instead of its panels."""
     import contextlib
     import io
+    merged = facets == 'merged'
+    which = surface.merged_faces_of(piece.indices) if merged else piece.indices
     with contextlib.redirect_stdout(io.StringIO()):
-        mesh = surface.as_mesh_raw(which_faces=piece.indices, keep_all_vertices=False)
+        mesh = surface.as_mesh_raw(which_faces=which, keep_all_vertices=False, merged=merged)
     mesh.remove_unreferenced_vertices()
     about = mesh.centroid if piece.is_compact() else np.asarray(surface.center, dtype=float)
     if gradient is None:
@@ -242,7 +245,7 @@ def node_markers(points, radius):
 
 def export(surface, filename, coloring='contrast', compact_only=False, flip=False, pieces=None,
            saturation=0.9, value=0.8, roughness=0.55, markers=True, marker_radius=None,
-           piece_colors=None):
+           piece_colors=None, facets='panels'):
     """Write the surface's nonsingular pieces to ``filename`` (a .glb) and a .json beside it naming
     every piece: its faces, whether it is compact, its centroid, its color, and the nodes on it.
     Colors are chosen in HSV with ``saturation`` and ``value`` (deep jewel tones by default; lower
@@ -251,14 +254,17 @@ def export(surface, filename, coloring='contrast', compact_only=False, flip=Fals
     mesh named ``nodes`` holds a small gold sphere at every node where two pieces meet
     (``marker_radius``, by default 0.6% of the bounding sphere's radius), to toggle in a viewer.
     ``piece_colors``, one (r, g, b) in [0, 1] per piece as seen (sRGB), in the order of
-    ``pieces``, overrides ``coloring``, ``saturation`` and ``value``.
+    ``pieces``, overrides ``coloring``, ``saturation`` and ``value``.  ``facets='merged'``
+    triangulates each piece's merged faces (``Surface.merged_faces``) instead of its panels.
     Returns a summary: pieces, triangles, how many point outward, the area fraction that faces its
     normals, whether the normals are exact, and for ``contrast`` the closest hues across a node.
     See the module docstring."""
+    if facets not in ('panels', 'merged'):
+        raise ValueError(f"facets must be 'panels' or 'merged', not {facets!r}")
     if pieces is None:
         pieces = surface.separate_into_nonsingular_pieces()
     gradient = gradient_from_input(surface.input)
-    meshes = [oriented_piece_mesh(surface, p, gradient, flip) for p in pieces]
+    meshes = [oriented_piece_mesh(surface, p, gradient, flip, facets) for p in pieces]
     centroids = [np.asarray(m.centroid) for m in meshes]
     node_lists = [sorted(int(n) for n in p.point_singularities()) for p in pieces]
     neighbours = neighbours_at_nodes(node_lists)
@@ -312,11 +318,11 @@ def export(surface, filename, coloring='contrast', compact_only=False, flip=Fals
     json_name = re.sub(r'\.glb$', '', filename) + '.json'
     with open(json_name, 'w') as f:
         json.dump(dict(decomposition=surface.directory, coloring=coloring,
-                       compact_only=compact_only, flipped=flip,
+                       compact_only=compact_only, flipped=flip, facets=facets,
                        exact_normals=gradient is not None, pieces=record), f, indent=1)
     summary = check([m for m, _, _ in kept], [c for _, _, c in kept],
                     np.asarray(surface.center, dtype=float))
-    summary.update(triangles=sum(r['triangles'] for r in record),
+    summary.update(triangles=sum(r['triangles'] for r in record), facets=facets,
                    exact_normals=gradient is not None, filename=filename, json=json_name,
                    node_markers=len(shared) if markers else 0,
                    closest_hues_across_a_node=closest_neighbour_hues(piece_hues, neighbours))
