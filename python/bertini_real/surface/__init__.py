@@ -1282,7 +1282,7 @@ class Surface(Decomposition):
 
 
 
-    def export_pieces_glb(self, filename='br_pieces.glb', coloring='contrast', compact_only=False, flip=False, pieces=None, saturation=0.9, value=0.8, markers=True, piece_colors=None, facets='panels'):
+    def export_pieces_glb(self, filename='br_pieces.glb', coloring='contrast', compact_only=False, flip=False, pieces=None, saturation=0.9, value=0.8, markers=True, piece_colors=None, facets='panels', group=None):
         """
         Write the surface's nonsingular pieces to one GLB file (glTF), each piece its own named mesh
         (`piece_017_compact`, `piece_142_cut`, ...) with its own colored material, for Blender and
@@ -1306,6 +1306,9 @@ class Surface(Decomposition):
             `pieces`; overrides coloring, saturation and value.
         facets: 'panels' triangulates every face of F.faces; 'merged' triangulates the merged
             faces (F.merged) instead, so each stone has a few big facets rather than slivers.
+        group: the name of the root node every piece is parented under, and of the glTF scene
+            (by default the file's name): in Blender, one empty, or with 4.2 and later one
+            collection, whose eye shows or hides the whole subject.
 
         Returns a summary: pieces, triangles, how many point outward, the fraction of the area that
         faces its normals, and whether the normals are exact.
@@ -1313,7 +1316,8 @@ class Surface(Decomposition):
         from bertini_real.surface import pieces_glb
         return pieces_glb.export(self, filename, coloring=coloring, compact_only=compact_only,
                                  flip=flip, pieces=pieces, saturation=saturation, value=value,
-                                 markers=markers, piece_colors=piece_colors, facets=facets)
+                                 markers=markers, piece_colors=piece_colors, facets=facets,
+                                 group=group)
 
 
     def export_raw(self, which_faces=None, basename=_default_surface_basename_raw, autoname_using_folder=False, file_type=_default_file_type, keep_all_vertices=True):

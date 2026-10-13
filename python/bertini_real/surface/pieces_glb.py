@@ -25,7 +25,9 @@ through its edges as well as they allow.
 import colorsys
 import json
 import math
+import os
 import re
+import struct
 
 import numpy as np
 import trimesh
@@ -243,9 +245,33 @@ def node_markers(points, radius):
     return trimesh.util.concatenate([sphere.copy().apply_translation(p) for p in points])
 
 
+def name_glb_scene(filename, name):
+    """Give the one scene in a written GLB the name ``name``, in place.  A GLB is a 12-byte
+    header, a JSON chunk and a binary chunk; the JSON chunk is rewritten (padded to four bytes
+    with spaces, as the format asks) and the header's total length updated.  Blender 4.2 and
+    later import a glTF scene as a collection of that name."""
+    with open(filename, 'rb') as f:
+        data = f.read()
+    magic, version, _length = struct.unpack_from('<III', data, 0)
+    if magic != 0x46546C67:
+        raise ValueError(f"{filename} is not a GLB")
+    json_length, json_type = struct.unpack_from('<II', data, 12)
+    if json_type != 0x4E4F534A:
+        raise ValueError(f"{filename}: the first chunk is not JSON")
+    tree = json.loads(data[20:20 + json_length].decode('utf-8'))
+    for scene in tree.get('scenes', []):
+        scene['name'] = name
+    text = json.dumps(tree, separators=(',', ':')).encode('utf-8')
+    text += b' ' * (-len(text) % 4)
+    rest = data[20 + json_length:]
+    body = struct.pack('<II', len(text), json_type) + text + rest
+    with open(filename, 'wb') as f:
+        f.write(struct.pack('<III', magic, version, 12 + len(body)) + body)
+
+
 def export(surface, filename, coloring='contrast', compact_only=False, flip=False, pieces=None,
            saturation=0.9, value=0.8, roughness=0.55, markers=True, marker_radius=None,
-           piece_colors=None, facets='panels'):
+           piece_colors=None, facets='panels', group=None):
     """Write the surface's nonsingular pieces to ``filename`` (a .glb) and a .json beside it naming
     every piece: its faces, whether it is compact, its centroid, its color, and the nodes on it.
     Colors are chosen in HSV with ``saturation`` and ``value`` (deep jewel tones by default; lower
@@ -256,11 +282,18 @@ def export(surface, filename, coloring='contrast', compact_only=False, flip=Fals
     ``piece_colors``, one (r, g, b) in [0, 1] per piece as seen (sRGB), in the order of
     ``pieces``, overrides ``coloring``, ``saturation`` and ``value``.  ``facets='merged'``
     triangulates each piece's merged faces (``Surface.merged_faces``) instead of its panels.
+    Everything is parented under one root node named ``group`` (by default the file's name
+    without its extension), which Blender imports as an empty whose eye icon, Shift-clicked
+    in the outliner, shows or hides the whole subject; the glTF scene gets the same name, so
+    Blender 4.2 and later import the subject as a collection of that name, whose eye does the
+    same.  Several subjects imported into one scene can then share its lights and camera.
     Returns a summary: pieces, triangles, how many point outward, the area fraction that faces its
     normals, whether the normals are exact, and for ``contrast`` the closest hues across a node.
     See the module docstring."""
     if facets not in ('panels', 'merged'):
         raise ValueError(f"facets must be 'panels' or 'merged', not {facets!r}")
+    if group is None:
+        group = re.sub(r'\.glb$', '', os.path.basename(filename))
     if pieces is None:
         pieces = surface.separate_into_nonsingular_pieces()
     gradient = gradient_from_input(surface.input)
@@ -278,7 +311,7 @@ def export(surface, filename, coloring='contrast', compact_only=False, flip=Fals
         piece_hues = hues(centroids, coloring, neighbours)
         chosen = [colorsys.hsv_to_rgb(h, saturation, value) for h in piece_hues]
 
-    scene = trimesh.Scene()
+    scene = trimesh.Scene(base_frame=group)
     kept, record = [], []
     for k, (piece, mesh, centroid, srgb) in enumerate(zip(pieces, meshes, centroids, chosen)):
         compact = piece.is_compact()
@@ -315,10 +348,11 @@ def export(surface, filename, coloring='contrast', compact_only=False, flip=Fals
         scene.add_geometry(dots, node_name='nodes', geom_name='nodes')
 
     scene.export(filename, include_normals=True)
+    name_glb_scene(filename, group)
     json_name = re.sub(r'\.glb$', '', filename) + '.json'
     with open(json_name, 'w') as f:
         json.dump(dict(decomposition=surface.directory, coloring=coloring,
-                       compact_only=compact_only, flipped=flip, facets=facets,
+                       compact_only=compact_only, flipped=flip, facets=facets, group=group,
                        exact_normals=gradient is not None, pieces=record), f, indent=1)
     summary = check([m for m, _, _ in kept], [c for _, _, c in kept],
                     np.asarray(surface.center, dtype=float))
