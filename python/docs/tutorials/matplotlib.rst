@@ -89,6 +89,28 @@ Example: Whitney
    :width: 40 %
 
 
+Matplotlib: Merged faces
+*************************
+
+A decomposition from the bertini2 backend may carry merged faces beside its panels
+(``F.merged``: faces joined across the critical slices that cut nothing between them, so a
+surface with hundreds of critical values has a sane number of cells).  When it does, the
+plotter draws the merged faces, raw and sampled, and ``which_faces`` indexes them; set
+``options.render.merged_faces = False`` to draw the panels instead, or ``True`` to insist on
+the merged faces.
+
+::
+
+    import bertini_real
+
+    surface = bertini_real.data.read_most_recent()
+
+    options = bertini_real.plot.Options()
+    options.render.merged_faces = False      # the panels, as before
+
+    bertini_real.plot.plot(surface, options)
+
+
 :Author:
 	Foong Min Wong, Caden Joergens
 
