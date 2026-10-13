@@ -226,16 +226,10 @@ class SurfacePiece():
             return list(set([inner for outer in list_nD for inner in outer]))
 
 
-        unique_point_indices_this_piece =[]
-        #face indices refer to a face on the piece
-        if self.surface.is_sampled():
-            #deref the face indices to point indices and compile a list of point indices
-            for ii in self.indices:
-                unique_point_indices_this_face = flatten_and_unique(self.surface.sampler_data[ii]) #indices of points on the face                
-            #append the point refs on the face to the the list of all point refs on the piece
-            unique_point_indices_this_piece.extend(unique_point_indices_this_face)
-        else:
-            unique_point_indices_this_piece = self.face_points(samples=False,as_indices=True,unique=True)
+        # the point indices on the piece: its samples when it has them (every face's, not
+        # the last face's alone, as it was), else the raw faces' points
+        unique_point_indices_this_piece = self.face_points(
+            samples=self.surface.is_sampled(), as_indices=True, unique=True)
         #deref each point index to its point
         points = self.surface.extract_points()
         coordinates_this_piece = np.array([points[ind,:] for ind in unique_point_indices_this_piece])
@@ -465,13 +459,12 @@ class SurfacePiece():
         point_indices = list()
 
         if samples:
-            self.surface._require_samples()
-
-            for face_index in self.indices:
-                f_samples = self.surface.sampler_data[face_index] # unpack.   sampler data is a list of triples of indices into the vertex set.
-
-                for tri in f_samples: 
-                    point_indices.extend(tri)
+            # the samples may have been taken of the merged faces: then take this piece's
+            for tri in self.surface.sample_triangles(
+                    self.surface.merged_faces_of(self.indices)
+                    if self.surface.samples_of == 'merged' else self.indices,
+                    merged=self.surface.samples_of == 'merged'):
+                point_indices.extend(tri)
 
         else:
 
@@ -530,6 +523,7 @@ class Surface(Decomposition):
         self.merged_faces = None
         self.edge_runs = {}
         self.sampler_data = []   # store all surface_sampler data
+        self.samples_of = 'panels'   # what sampler_data is per: 'panels' or 'merged' faces
 
         Decomposition.__init__(self, directory, is_embedded,embedded_into)
 
@@ -752,12 +746,33 @@ class Surface(Decomposition):
         return [e for e in around if not (e[0] < 0 and e[1] < 0 and e[2] < 0)]
 
     def gather_surface_samples(self, directory):
-        """ Gather the surface samples of surface
+        """ Gather the surface samples of surface: one list of triangles per face of F.faces,
+            or, when the samples were taken of the merged faces (a bertini2-backend sampling of
+            F.merged, one list per merged face), per merged face; `samples_of` says which,
+            'panels' or 'merged'.
 
             :param directory: Directory of the surface folder
         """
         self.sampler_data = bertini_real.parse.parse_surface_samples(
             directory)
+        self.samples_of = 'panels'
+        if (self.merged_faces is not None and len(self.sampler_data) == len(self.merged_faces)
+                and len(self.sampler_data) != self.num_faces):
+            self.samples_of = 'merged'
+
+    def sample_triangles(self, face_indices, merged=False):
+        """The sampled triangles (global vertex index triples) of the given faces, panels or,
+        with `merged`, merged faces.  Samples taken of the panels serve a merged face as the
+        union of its panels' samples; samples taken of the merged faces cannot be split into
+        panels, so asking for panels then is an error."""
+        self._require_samples()
+        if merged == (self.samples_of == 'merged'):
+            return [tri for ii in face_indices for tri in self.sampler_data[ii]]
+        if merged:
+            return [tri for ii in face_indices for p in self.merged_faces[ii]['panels']
+                    for tri in self.sampler_data[p]]
+        raise RuntimeError('the samples were taken of the merged faces, which do not split '
+                           'into panels; ask for merged faces (merged=True)')
 
 
 
@@ -1201,47 +1216,30 @@ class Surface(Decomposition):
                 a.write("\n".join([str(s) for s in point]) + "\n")
         print('wrote allPoints.json')
         
-    def as_mesh_smooth(self, which_faces=None, keep_all_vertices=True):
+    def as_mesh_smooth(self, which_faces=None, keep_all_vertices=True, merged=None):
         """
         Compute a `Trimesh` object from the `trimesh` library for the corresponding faces using sampled data.  Raises if the surface is not sampled.
 
         which_faces: either None for all faces, or a list-like of ints indicating the indices of the surface faces you want.
-        keep_all_vertices: bool, by default True.  Unused vertices will be kept or merged.  This value influences `Trimesh`'s `process` parameter.  
+        keep_all_vertices: bool, by default True.  Unused vertices will be kept or merged.  This value influences `Trimesh`'s `process` parameter.
+        merged: `which_faces` indexes the merged faces (`merged_faces`) rather than the panels; by default, whichever the samples were taken of (`samples_of`).  See `sample_triangles`.
 
         See https://trimsh.org/trimesh.html#trimesh.Trimesh.
         """
-
-        num_faces = self.num_faces
-
+        if not self.sampler_data:
+            raise br_except.SurfaceNotSampled('no surface samples found.  run sampler, or re-gather and pickle')
+        if merged is None:
+            merged = self.samples_of == 'merged'
         if which_faces is None:
-            which_faces = range(num_faces)
-
+            which_faces = range(len(self._faces(merged)))
 
         points = self.extract_points()
-
-        faces = self.sampler_data
-
-        if not faces:
-            raise br_except.SurfaceNotSampled('no surface samples found.  run sampler, or re-gather and pickle')
-
-        vertex = []
-        for p in points:
-            vertex.append(p)
-
-        vertex_np_array = np.array(vertex)
-
-        face = []
-
-        for ii in which_faces:
-            f = faces[ii]
-            for tri in f:
-                face.append([tri[0], tri[1], tri[2]])
-
-        face_np_array = np.array(face)
+        triangles = [[tri[0], tri[1], tri[2]]
+                     for tri in self.sample_triangles(which_faces, merged=merged)]
 
         should_trimesh_process = False if keep_all_vertices==True else True
 
-        A = trimesh.Trimesh(vertex_np_array, face_np_array, process=should_trimesh_process)
+        A = trimesh.Trimesh(np.array(points), np.array(triangles), process=should_trimesh_process)
         A.fix_normals()
         return A
 
@@ -1305,7 +1303,8 @@ class Surface(Decomposition):
         piece_colors: one (r, g, b) in [0, 1] per piece, as seen (sRGB), in the order of
             `pieces`; overrides coloring, saturation and value.
         facets: 'panels' triangulates every face of F.faces; 'merged' triangulates the merged
-            faces (F.merged) instead, so each stone has a few big facets rather than slivers.
+            faces (F.merged) instead, so each stone has a few big facets rather than slivers;
+            'smooth' uses the surface's samples (samp.surfsamp), when it has them.
         group: the name of the root node every piece is parented under, and of the glTF scene
             (by default the file's name): in Blender, one empty, or with 4.2 and later one
             collection, whose eye shows or hides the whole subject.

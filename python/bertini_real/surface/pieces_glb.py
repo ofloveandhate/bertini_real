@@ -186,10 +186,17 @@ def oriented_piece_mesh(surface, piece, gradient=None, flip=False, facets='panel
     triangulates the piece's merged faces instead of its panels."""
     import contextlib
     import io
-    merged = facets == 'merged'
-    which = surface.merged_faces_of(piece.indices) if merged else piece.indices
     with contextlib.redirect_stdout(io.StringIO()):
-        mesh = surface.as_mesh_raw(which_faces=which, keep_all_vertices=False, merged=merged)
+        if facets == 'smooth':
+            merged = surface.samples_of == 'merged'
+            which = surface.merged_faces_of(piece.indices) if merged else piece.indices
+            mesh = surface.as_mesh_smooth(which_faces=which, keep_all_vertices=False,
+                                          merged=merged)
+        else:
+            merged = facets == 'merged'
+            which = surface.merged_faces_of(piece.indices) if merged else piece.indices
+            mesh = surface.as_mesh_raw(which_faces=which, keep_all_vertices=False,
+                                       merged=merged)
     mesh.remove_unreferenced_vertices()
     about = mesh.centroid if piece.is_compact() else np.asarray(surface.center, dtype=float)
     if gradient is None:
@@ -281,7 +288,8 @@ def export(surface, filename, coloring='contrast', compact_only=False, flip=Fals
     (``marker_radius``, by default 0.6% of the bounding sphere's radius), to toggle in a viewer.
     ``piece_colors``, one (r, g, b) in [0, 1] per piece as seen (sRGB), in the order of
     ``pieces``, overrides ``coloring``, ``saturation`` and ``value``.  ``facets='merged'``
-    triangulates each piece's merged faces (``Surface.merged_faces``) instead of its panels.
+    triangulates each piece's merged faces (``Surface.merged_faces``) instead of its panels, and
+    ``facets='smooth'`` uses the surface's samples (``Surface.as_mesh_smooth``).
     Everything is parented under one root node named ``group`` (by default the file's name
     without its extension), which Blender imports as an empty whose eye icon, Shift-clicked
     in the outliner, shows or hides the whole subject; the glTF scene gets the same name, so
@@ -290,8 +298,8 @@ def export(surface, filename, coloring='contrast', compact_only=False, flip=Fals
     Returns a summary: pieces, triangles, how many point outward, the area fraction that faces its
     normals, whether the normals are exact, and for ``contrast`` the closest hues across a node.
     See the module docstring."""
-    if facets not in ('panels', 'merged'):
-        raise ValueError(f"facets must be 'panels' or 'merged', not {facets!r}")
+    if facets not in ('panels', 'merged', 'smooth'):
+        raise ValueError(f"facets must be 'panels', 'merged' or 'smooth', not {facets!r}")
     if group is None:
         group = re.sub(r'\.glb$', '', os.path.basename(filename))
     if pieces is None:
