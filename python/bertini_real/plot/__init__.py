@@ -224,6 +224,14 @@ class RenderOptions(object):
         self.which_faces = [] # refers to the indices in a surface or edges in a curve
         self.which_edges = []
 
+        # which faces of a surface are drawn: its merged faces (F.merged, a bertini2-backend
+        # addition: faces joined across the critical slices that cut nothing between them) or
+        # its panels (F.faces).  None draws the merged faces when the surface has them;
+        # `which_faces` then indexes them.  Samples taken of the merged faces can only be
+        # drawn that way.
+        self.merged_faces = None
+        self.draw_merged = False     # resolved per surface by auto_adjust
+
         self.defer_show = False
 
 
@@ -240,14 +248,24 @@ class RenderOptions(object):
 
 
     def _adjust_for_surface(self, surface):
-
+        has_merged = surface.merged_faces is not None
+        self.draw_merged = has_merged if self.merged_faces is None else bool(self.merged_faces)
+        if self.draw_merged and not has_merged:
+            raise RuntimeError('merged faces asked for, but this decomposition carries none '
+                               '(no F.merged)')
+        if not self.draw_merged and getattr(surface, 'samples_of', 'panels') == 'merged':
+            raise RuntimeError('the samples were taken of the merged faces, which do not split '
+                               'into panels; draw the merged faces (render.merged_faces = True)')
         if len(self.which_faces)==0:
-            self.which_faces = range(surface.num_faces)
+            self.which_faces = range(len(surface.merged_faces) if self.draw_merged
+                                     else surface.num_faces)
 
 
     def _adjust_for_piece(self, piece):
-        self.which_faces = piece.indices
+        self.which_faces = []
         self._adjust_for_surface(piece.surface)
+        self.which_faces = (piece.surface.merged_faces_of(piece.indices) if self.draw_merged
+                            else piece.indices)
 
 
 
@@ -1061,7 +1079,7 @@ class Plotter(object):
 
         self.plotted_decompositions.append(piece)
 
-        self.options.render.which_faces = piece.indices
+        self.options.render._adjust_for_piece(piece)
         surf = piece.surface
 
         self._plot_surface(surf)
@@ -1223,11 +1241,11 @@ class Plotter(object):
 
         if len(surf.sampler_data)==0:
             return
-            
+
         # locally unpack
         which_faces = self.options.render.which_faces
+        merged = self.options.render.draw_merged
         points = surf.extract_points()
-        faces = surf.sampler_data # these are triples of integers, indexing into the vertex_set for the decomposition
 
 
 
@@ -1259,7 +1277,9 @@ class Plotter(object):
             triangles_this_face = []
 
 
-            for tri in faces[ii]:
+            # the face's sampled triangles, whether the samples were taken per panel or
+            # per merged face (Surface.sample_triangles)
+            for tri in surf.sample_triangles([ii], merged=merged):
                 f = int(tri[0]) # i hate that these conversions are here.  this is bullshit. --sca
                 s = int(tri[1])
                 t = int(tri[2])
@@ -1289,13 +1309,15 @@ class Plotter(object):
 
 
     def _plot_surface_raw(self, surf):
-        """ Plot raw surface """
+        """ Plot raw surface: every edge around a face makes two triangles with the face's
+        midpoint (Surface.boundary_edges), for the panels or, with render.draw_merged, the
+        merged faces, each a few big triangles about its seed. """
 
 
         # unpack a bit
         points = self.points
         which_faces = self.options.render.which_faces
-        num_faces = surf.num_faces 
+        faces = surf.merged_faces if self.options.render.draw_merged else surf.faces
 
 
 
@@ -1317,31 +1339,14 @@ class Plotter(object):
             raise NotImplementedError("unknown coloring method in style options")
 
 
-
-
-
-        # get raw data from surface
-        num_total_faces = 0
-        for ii in which_faces:
-            curr_face = surf.faces[ii]
-
-            num_total_faces = num_total_faces + 2 * \
-                (curr_face['num left'] + curr_face['num right'] + 2) # the last +2 is for the up/down edges, split at midpoints.
-        num_total_faces = num_total_faces * 2
-
         all_triangles = []
         all_colors = []
 
         for ii in range(len(which_faces)):
-            face_index = which_faces[ii]
-            face = surf.faces[face_index]
+            face = faces[which_faces[ii]]
 
-            if (face['middle slice index']) == -1:
+            if not self.options.render.draw_merged and face['middle slice index'] == -1:
                 continue
-            case = 1
-            left_edge_counter = 0
-            right_edge_counter = 0
-
 
             triangles_this_face = []
             if self.options.style.colormode is ColorMode.BY_FUNCTION:
@@ -1349,79 +1354,7 @@ class Plotter(object):
             else:
                 colors_this_face = user_colors[ii]
 
-                    
-            while 1:
-                # top edge
-                if case == 1:
-                    case += 1
-                    if face['top'] < 0:
-                        continue
-
-                    curr_edge = surf.curve_with_name(face['system top']).edges[face['top']]
-
-                    if (curr_edge[0] < 0 and curr_edge[1] < 0 and curr_edge[2] < 0):
-                        continue
-
-                    # reverse() returns None, so use ReversableList
-                    curr_edge = ReversableList(curr_edge)
-                    curr_edge = curr_edge.reverse()
-
-                # bottom edge
-                elif case == 2:
-
-                    case += 1
-                    if face['bottom'] < 0:
-                        continue
-
-                    curr_edge = surf.curve_with_name(face['system bottom']).edges[face['bottom']]
-
-                    if (curr_edge[0] < 0 and curr_edge[1] < 0 and curr_edge[2] < 0):
-                        continue
-
-                # left edge
-                elif case == 3:
-
-                    if left_edge_counter < face['num left']:
-
-                        if face['left'][left_edge_counter] < 0:
-                            continue
-
-                        slice_ind = face['middle slice index']
-                        edge_ind = face['left'][left_edge_counter]
-
-                        curr_edge = surf.critical_point_slices[
-                            slice_ind].edges[edge_ind]
-                        left_edge_counter = left_edge_counter + 1  # increment
-
-                    else:
-                        case = case + 1
-                        continue
-
-                # right edge
-                elif case == 4:
-
-                    if right_edge_counter < face['num right']:
-
-                        if face['right'][right_edge_counter] < 0:
-                            continue
-
-                        slice_ind = face['middle slice index'] + 1
-                        edge_ind = face['right'][right_edge_counter]
-                        curr_edge = surf.critical_point_slices[
-                            slice_ind].edges[edge_ind]
-                        right_edge_counter = right_edge_counter + 1  # increment
-
-                        curr_edge = ReversableList(curr_edge)
-                        curr_edge = curr_edge.reverse()
-
-                    else:
-                        case += 1
-                        continue
-
-                # last case
-                elif case == 5:
-                    break
-
+            for curr_edge in surf.boundary_edges(face):
                 # make two triangles , use the midpoint (swap the values for k)
                 t1 = [points[curr_edge[0]], points[curr_edge[1]],
                       points[face['midpoint']]]
