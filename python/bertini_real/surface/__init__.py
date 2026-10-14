@@ -419,9 +419,14 @@ class SurfacePiece():
 
 
     def export_smooth(self, basename=_default_piece_basename_smooth,autoname_using_folder=False,file_type=_default_file_type):
-
+        """Write the piece's smooth mesh; returns the file name.  Samples taken of the merged
+        faces are asked for by the piece's merged faces (`Surface.merged_faces_of`), since
+        `as_mesh_smooth` then reads its face indices as merged ones."""
         filename_no_ext = self.generate_filename_no_ext(basename)
-        self.surface.export_smooth(self.indices,filename_no_ext,autoname_using_folder,file_type)
+        which = self.indices
+        if getattr(self.surface, 'samples_of', 'faces') == 'merged':
+            which = self.surface.merged_faces_of(self.indices)
+        return self.surface.export_smooth(which,filename_no_ext,autoname_using_folder,file_type)
 
 
     def export_raw(self, basename=_default_piece_basename_raw,autoname_using_folder=False,file_type=_default_file_type):
