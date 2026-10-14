@@ -205,14 +205,14 @@ def parse_faces(directory):
 def parse_merged_faces(directory):
     """ Reads merged faces from F.merged, a bertini2-backend addition: faces joined across
         the critical slices that cut nothing between them.  Each merged face is a group of
-        the panels in F.faces, left to right, with the seams between them; the file also
+        the faces in F.faces, left to right, with the seams between them; the file also
         lists, per boundary curve, the runs of edges welded together where a joint no
         remaining slice edge touches was merged away.
         Inputs: current directory
         Returns: (list of merged faces, edge runs), or None when there is no F.merged
 
         Keys for each merged face:
-        "midpoint", "left slice index", "right slice index", "panels" (face indices),
+        "midpoint", "left slice index", "right slice index", "faces" (face indices),
         "seams" (list of (slice index, list of edge indices))
 
         Edge runs: {curve input name: [[edge index, ...], ...]}
@@ -223,7 +223,7 @@ def parse_merged_faces(directory):
 
             <seed vertex>                                   per merged face
             <left slice> <right slice>
-            <panels> <panel face index> ...                 left to right
+            <faces> <face index> ...                      left to right
             <seams>
             <slice> <edges> <slice edge index> ...          per seam, left to right
 
@@ -246,8 +246,8 @@ def parse_merged_faces(directory):
             left, right = words()
             face['left slice index'] = int(left)
             face['right slice index'] = int(right)
-            panels = words()
-            face['panels'] = [int(p) for p in panels[1:1 + int(panels[0])]]
+            members = words()
+            face['faces'] = [int(p) for p in members[1:1 + int(members[0])]]
             seams = []
             for _ in range(int(words()[0])):
                 seam = words()

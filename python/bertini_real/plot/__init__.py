@@ -226,7 +226,7 @@ class RenderOptions(object):
 
         # which faces of a surface are drawn: its merged faces (F.merged, a bertini2-backend
         # addition: faces joined across the critical slices that cut nothing between them) or
-        # its panels (F.faces).  None draws the merged faces when the surface has them;
+        # its faces (F.faces).  None draws the merged faces when the surface has them;
         # `which_faces` then indexes them.  Samples taken of the merged faces can only be
         # drawn that way.
         self.merged_faces = None
@@ -253,9 +253,9 @@ class RenderOptions(object):
         if self.draw_merged and not has_merged:
             raise RuntimeError('merged faces asked for, but this decomposition carries none '
                                '(no F.merged)')
-        if not self.draw_merged and getattr(surface, 'samples_of', 'panels') == 'merged':
+        if not self.draw_merged and getattr(surface, 'samples_of', 'faces') == 'merged':
             raise RuntimeError('the samples were taken of the merged faces, which do not split '
-                               'into panels; draw the merged faces (render.merged_faces = True)')
+                               'into faces; draw the merged faces (render.merged_faces = True)')
         if len(self.which_faces)==0:
             self.which_faces = range(len(surface.merged_faces) if self.draw_merged
                                      else surface.num_faces)
@@ -1277,7 +1277,7 @@ class Plotter(object):
             triangles_this_face = []
 
 
-            # the face's sampled triangles, whether the samples were taken per panel or
+            # the face's sampled triangles, whether the samples were taken per face or
             # per merged face (Surface.sample_triangles)
             for tri in surf.sample_triangles([ii], merged=merged):
                 f = int(tri[0]) # i hate that these conversions are here.  this is bullshit. --sca

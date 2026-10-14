@@ -180,10 +180,10 @@ def signed_volume(mesh, about):
     return float(np.einsum('ij,ij->i', np.cross(b - a, c - a), a).sum()) / 6.0
 
 
-def oriented_piece_mesh(surface, piece, gradient=None, flip=False, facets='panels'):
+def oriented_piece_mesh(surface, piece, gradient=None, flip=False, facets='faces'):
     """A piece's raw mesh, its own vertices only, wound consistently and pointing outward, with
     exact normals when ``gradient`` is given (see the module docstring).  ``facets='merged'``
-    triangulates the piece's merged faces instead of its panels."""
+    triangulates the piece's merged faces instead of its faces."""
     import contextlib
     import io
     with contextlib.redirect_stdout(io.StringIO()):
@@ -278,7 +278,7 @@ def name_glb_scene(filename, name):
 
 def export(surface, filename, coloring='contrast', compact_only=False, flip=False, pieces=None,
            saturation=0.9, value=0.8, roughness=0.55, markers=True, marker_radius=None,
-           piece_colors=None, facets='panels', group=None):
+           piece_colors=None, facets='faces', group=None):
     """Write the surface's nonsingular pieces to ``filename`` (a .glb) and a .json beside it naming
     every piece: its faces, whether it is compact, its centroid, its color, and the nodes on it.
     Colors are chosen in HSV with ``saturation`` and ``value`` (deep jewel tones by default; lower
@@ -288,7 +288,7 @@ def export(surface, filename, coloring='contrast', compact_only=False, flip=Fals
     (``marker_radius``, by default 0.6% of the bounding sphere's radius), to toggle in a viewer.
     ``piece_colors``, one (r, g, b) in [0, 1] per piece as seen (sRGB), in the order of
     ``pieces``, overrides ``coloring``, ``saturation`` and ``value``.  ``facets='merged'``
-    triangulates each piece's merged faces (``Surface.merged_faces``) instead of its panels, and
+    triangulates each piece's merged faces (``Surface.merged_faces``) instead of its faces, and
     ``facets='smooth'`` uses the surface's samples (``Surface.as_mesh_smooth``).
     Everything is parented under one root node named ``group`` (by default the file's name
     without its extension), which Blender imports as an empty whose eye icon, Shift-clicked
@@ -298,8 +298,8 @@ def export(surface, filename, coloring='contrast', compact_only=False, flip=Fals
     Returns a summary: pieces, triangles, how many point outward, the area fraction that faces its
     normals, whether the normals are exact, and for ``contrast`` the closest hues across a node.
     See the module docstring."""
-    if facets not in ('panels', 'merged', 'smooth'):
-        raise ValueError(f"facets must be 'panels', 'merged' or 'smooth', not {facets!r}")
+    if facets not in ('faces', 'merged', 'smooth'):
+        raise ValueError(f"facets must be 'faces', 'merged' or 'smooth', not {facets!r}")
     if group is None:
         group = re.sub(r'\.glb$', '', os.path.basename(filename))
     if pieces is None:

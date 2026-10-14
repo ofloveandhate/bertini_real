@@ -523,7 +523,7 @@ class Surface(Decomposition):
         self.merged_faces = None
         self.edge_runs = {}
         self.sampler_data = []   # store all surface_sampler data
-        self.samples_of = 'panels'   # what sampler_data is per: 'panels' or 'merged' faces
+        self.samples_of = 'faces'   # what sampler_data is per: 'faces' or 'merged' faces
 
         Decomposition.__init__(self, directory, is_embedded,embedded_into)
 
@@ -638,8 +638,8 @@ class Surface(Decomposition):
             (a bertini2-backend addition, see `parse_merged_faces`): faces joined across the
             critical slices that cut nothing between them.  Each is a dict with the keys of a
             face in F.faces widened: 'top' and 'bottom' are lists of edge indices, one per
-            panel left to right; 'left' and 'right' are the sides on 'left slice index' and
-            'right slice index'; plus 'panels' (its faces in F.faces), 'seams' and 'seeds'.
+            face left to right; 'left' and 'right' are the sides on 'left slice index' and
+            'right slice index'; plus 'faces' (its faces in F.faces), 'seams' and 'seeds'.
             `merged_faces` is None for a decomposition without them, and `edge_runs` holds
             per curve the runs of edges welded at the merged-away joints.
 
@@ -651,23 +651,23 @@ class Surface(Decomposition):
             return
         merged, self.edge_runs = parsed
         for m in merged:
-            panels = [self.faces[p] for p in m['panels']]
+            faces = [self.faces[p] for p in m['faces']]
             for which in ('top', 'bottom'):
-                systems = {f['system ' + which] for f in panels}
+                systems = {f['system ' + which] for f in faces}
                 if len(systems) != 1:
-                    raise RuntimeError(f"merged face with panels {m['panels']} has its {which} "
+                    raise RuntimeError(f"merged face with faces {m['faces']} has its {which} "
                                        f"on several curves: {sorted(systems)}")
-                m[which] = [f[which] for f in panels]
-                m['system ' + which] = panels[0]['system ' + which]
-            m['left'] = list(panels[0]['left'])
-            m['right'] = list(panels[-1]['right'])
+                m[which] = [f[which] for f in faces]
+                m['system ' + which] = faces[0]['system ' + which]
+            m['left'] = list(faces[0]['left'])
+            m['right'] = list(faces[-1]['right'])
             m['num left'] = len(m['left'])
             m['num right'] = len(m['right'])
-            m['seeds'] = [f['midpoint'] for f in panels]
+            m['seeds'] = [f['midpoint'] for f in faces]
         self.merged_faces = merged
 
     def _faces(self, merged):
-        """The panels, or the merged faces when asked, which the decomposition must carry."""
+        """The faces, or the merged faces when asked, which the decomposition must carry."""
         if not merged:
             return self.faces
         if self.merged_faces is None:
@@ -677,17 +677,17 @@ class Surface(Decomposition):
         return self.merged_faces
 
     def merged_faces_of(self, face_indices):
-        """The indices of the merged faces whose panels are among `face_indices` (a piece's
+        """The indices of the merged faces whose faces are among `face_indices` (a piece's
         faces, say).  A merged face lies within one piece, since no seam passes through a
-        singular point; one with panels on both sides of the given set is an error."""
+        singular point; one with faces on both sides of the given set is an error."""
         wanted = set(face_indices)
         out = []
         for k, m in enumerate(self._faces(True)):
-            inside = [p in wanted for p in m['panels']]
+            inside = [p in wanted for p in m['faces']]
             if all(inside):
                 out.append(k)
             elif any(inside):
-                raise RuntimeError(f"merged face {k} has panels {m['panels']} only partly among "
+                raise RuntimeError(f"merged face {k} has faces {m['faces']} only partly among "
                                    f"the given faces")
         return out
 
@@ -727,7 +727,7 @@ class Surface(Decomposition):
         """The edges around a face as (left, midpoint, right) vertex triples, each as the curve
         stores it, in the order the raw triangulation walks them: the top reversed, the bottom,
         the left side, the right side reversed; a degenerate edge is left out.  For a merged
-        face (`merged_faces`) the top and bottom are their runs of panel edges with the welded
+        face (`merged_faces`) the top and bottom are their runs of face edges with the welded
         runs collapsed (`_collapsed_run_edges`), and the sides lie on its outer slices."""
         if isinstance(face['top'], list):
             top = self._collapsed_run_edges(face['system top'], face['top'])
@@ -749,30 +749,30 @@ class Surface(Decomposition):
         """ Gather the surface samples of surface: one list of triangles per face of F.faces,
             or, when the samples were taken of the merged faces (a bertini2-backend sampling of
             F.merged, one list per merged face), per merged face; `samples_of` says which,
-            'panels' or 'merged'.
+            'faces' or 'merged'.
 
             :param directory: Directory of the surface folder
         """
         self.sampler_data = bertini_real.parse.parse_surface_samples(
             directory)
-        self.samples_of = 'panels'
+        self.samples_of = 'faces'
         if (self.merged_faces is not None and len(self.sampler_data) == len(self.merged_faces)
                 and len(self.sampler_data) != self.num_faces):
             self.samples_of = 'merged'
 
     def sample_triangles(self, face_indices, merged=False):
-        """The sampled triangles (global vertex index triples) of the given faces, panels or,
-        with `merged`, merged faces.  Samples taken of the panels serve a merged face as the
-        union of its panels' samples; samples taken of the merged faces cannot be split into
-        panels, so asking for panels then is an error."""
+        """The sampled triangles (global vertex index triples) of the given faces, or with
+        `merged` of the given merged faces.  Samples taken of the faces serve a merged face
+        as the union of its faces' samples; samples taken of the merged faces cannot be
+        split into faces, so asking for faces then is an error."""
         self._require_samples()
         if merged == (self.samples_of == 'merged'):
             return [tri for ii in face_indices for tri in self.sampler_data[ii]]
         if merged:
-            return [tri for ii in face_indices for p in self.merged_faces[ii]['panels']
+            return [tri for ii in face_indices for p in self.merged_faces[ii]['faces']
                     for tri in self.sampler_data[p]]
         raise RuntimeError('the samples were taken of the merged faces, which do not split '
-                           'into panels; ask for merged faces (merged=True)')
+                           'into faces; ask for merged faces (merged=True)')
 
 
 
@@ -1222,7 +1222,7 @@ class Surface(Decomposition):
 
         which_faces: either None for all faces, or a list-like of ints indicating the indices of the surface faces you want.
         keep_all_vertices: bool, by default True.  Unused vertices will be kept or merged.  This value influences `Trimesh`'s `process` parameter.
-        merged: `which_faces` indexes the merged faces (`merged_faces`) rather than the panels; by default, whichever the samples were taken of (`samples_of`).  See `sample_triangles`.
+        merged: `which_faces` indexes the merged faces (`merged_faces`) rather than the faces; by default, whichever the samples were taken of (`samples_of`).  See `sample_triangles`.
 
         See https://trimsh.org/trimesh.html#trimesh.Trimesh.
         """
@@ -1250,7 +1250,7 @@ class Surface(Decomposition):
 
         which_faces: either None for all faces, or a list-like of ints indicating the indices of the surface faces you want.
         keep_all_vertices: bool, by default True.  Unused vertices will be kept or merged.  This value influences `Trimesh`'s `process` parameter.
-        merged: triangulate the merged faces (`merged_faces`, a decomposition carrying F.merged) instead of the panels; `which_faces` then indexes them.  A merged face spanning many slices becomes a few big triangles about its seed, the facets of a cut stone, where its panels were many slivers.
+        merged: triangulate the merged faces (`merged_faces`, a decomposition carrying F.merged) instead of the faces; `which_faces` then indexes them.  A merged face spanning many slices becomes a few big triangles about its seed, the facets of a cut stone, where its faces were many slivers.
 
         See https://trimsh.org/trimesh.html#trimesh.Trimesh.
         """
@@ -1280,7 +1280,7 @@ class Surface(Decomposition):
 
 
 
-    def export_pieces_glb(self, filename='br_pieces.glb', coloring='contrast', compact_only=False, flip=False, pieces=None, saturation=0.9, value=0.8, markers=True, piece_colors=None, facets='panels', group=None):
+    def export_pieces_glb(self, filename='br_pieces.glb', coloring='contrast', compact_only=False, flip=False, pieces=None, saturation=0.9, value=0.8, markers=True, piece_colors=None, facets='faces', group=None):
         """
         Write the surface's nonsingular pieces to one GLB file (glTF), each piece its own named mesh
         (`piece_017_compact`, `piece_142_cut`, ...) with its own colored material, for Blender and
@@ -1302,7 +1302,7 @@ class Surface(Decomposition):
             pieces meet.
         piece_colors: one (r, g, b) in [0, 1] per piece, as seen (sRGB), in the order of
             `pieces`; overrides coloring, saturation and value.
-        facets: 'panels' triangulates every face of F.faces; 'merged' triangulates the merged
+        facets: 'faces' triangulates every face of F.faces; 'merged' triangulates the merged
             faces (F.merged) instead, so each stone has a few big facets rather than slivers;
             'smooth' uses the surface's samples (samp.surfsamp), when it has them.
         group: the name of the root node every piece is parented under, and of the glTF scene
