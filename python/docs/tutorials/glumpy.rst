@@ -1,6 +1,15 @@
 Performant surface plotting --  bertinireal.glumpyplotter
 ============================================================
 
+.. warning::
+
+   ``bertini_real.glumpyplotter`` is deprecated (October 2026) and will be removed.  It needs
+   ``glumpy`` and a working OpenGL stack, which has become too hard to get running.  It is no
+   longer imported by ``bertini_real`` itself; import it explicitly if you have ``glumpy``.
+   For interactive plots use ``bertini_real.plot`` (matplotlib); for fast, good-looking
+   rendering export the surface's pieces with ``Surface.export_pieces_glb`` and open the GLB
+   in a viewer such as Blender.
+
 The Glumpyplotter class in bertini_real allows you to render the decompositions
 computed by bertini_real.
 

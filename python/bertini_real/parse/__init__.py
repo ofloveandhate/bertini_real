@@ -202,6 +202,69 @@ def parse_faces(directory):
     return faces
 
 
+def parse_merged_faces(directory):
+    """ Reads merged faces from F.merged, a bertini2-backend addition: faces joined across
+        the critical slices that cut nothing between them.  Each merged face is a group of
+        the faces in F.faces, left to right, with the seams between them; the file also
+        lists, per boundary curve, the runs of edges welded together where a joint no
+        remaining slice edge touches was merged away.
+        Inputs: current directory
+        Returns: (list of merged faces, edge runs), or None when there is no F.merged
+
+        Keys for each merged face:
+        "midpoint", "left slice index", "right slice index", "faces" (face indices),
+        "seams" (list of (slice index, list of edge indices))
+
+        Edge runs: {curve input name: [[edge index, ...], ...]}
+
+        The format::
+
+            <merged faces> <curves with runs>
+
+            <seed vertex>                                   per merged face
+            <left slice> <right slice>
+            <faces> <face index> ...                      left to right
+            <seams>
+            <slice> <edges> <slice edge index> ...          per seam, left to right
+
+            <curve input name> <runs>                       per curve with runs
+            <edges> <edge index> ...                        per run, left to right
+    """
+    if not os.path.isfile(directory + '/F.merged'):
+        return None
+    with open(directory + '/F.merged') as f:
+        def words():
+            line = f.readline()
+            while line == '\n':
+                line = f.readline()
+            return line.split()
+        num_faces, num_curves = (int(w) for w in words())
+        faces = []
+        for _ in range(num_faces):
+            face = {}
+            face['midpoint'] = int(words()[0])
+            left, right = words()
+            face['left slice index'] = int(left)
+            face['right slice index'] = int(right)
+            members = words()
+            face['faces'] = [int(p) for p in members[1:1 + int(members[0])]]
+            seams = []
+            for _ in range(int(words()[0])):
+                seam = words()
+                seams.append((int(seam[0]), [int(k) for k in seam[2:2 + int(seam[1])]]))
+            face['seams'] = seams
+            faces.append(face)
+        edge_runs = {}
+        for _ in range(num_curves):
+            name, num_runs = words()
+            runs = []
+            for _ in range(int(num_runs)):
+                run = words()
+                runs.append([int(k) for k in run[1:1 + int(run[0])]])
+            edge_runs[name] = runs
+    return faces, edge_runs
+
+
 def parse_edges(directory):
     """ Parse and store edges data
 

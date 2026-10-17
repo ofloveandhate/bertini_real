@@ -6,10 +6,22 @@
     :platform: Unix, Windows
     :synopsis: The glumpy plotter uses OpenGL to render a decomposed
                surface created using bertini_real.
+
+    Deprecated (2026-10): glumpy and the OpenGL stack under it have become too hard to get
+    running, and this module will be removed.  It is no longer imported by bertini_real
+    itself.  Use bertini_real.plot (matplotlib), or Surface.export_pieces_glb and a viewer
+    such as Blender.
 """
 
 import math
+import warnings
+
 import numpy as np
+
+warnings.warn('bertini_real.glumpyplotter is deprecated and will be removed: use '
+              'bertini_real.plot, or Surface.export_pieces_glb with a viewer such as Blender',
+              DeprecationWarning, stacklevel=2)
+
 from glumpy import app, gl, glm, gloo
 from glumpy.transforms import Trackball, Position
 import bertini_real

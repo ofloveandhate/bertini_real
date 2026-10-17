@@ -29,12 +29,10 @@ import bertini_real.plot
 
 import bertini_real.paths
 
-try:
-    import bertini_real.glumpyplotter
-except ImportError as e:
-    print(f'unable to import bertini_real.glumpyplotter.  if you want to use opengl-accelerated rendering of surfaces, install the module `glumpy` (and probably an opengl library, too)')
-except Exception as e:
-    print(f'unable to import glumpy.  reason: {e}')
+# bertini_real.glumpyplotter is deprecated (2026-10): it needs glumpy and a working OpenGL
+# stack, which has become too hard to get running.  It is no longer imported here; import it
+# explicitly if you have glumpy installed, and expect it to be removed.  Use
+# bertini_real.plot (matplotlib) or Surface.export_pieces_glb for a viewer such as Blender.
 
 import bertini_real.anaglypy
 

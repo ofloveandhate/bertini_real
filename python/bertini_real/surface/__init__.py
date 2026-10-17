@@ -518,16 +518,10 @@ class SurfacePiece():
             return list(set([inner for outer in list_nD for inner in outer]))
 
 
-        unique_point_indices_this_piece =[]
-        #face indices refer to a face on the piece
-        if self.surface.is_sampled():
-            #deref the face indices to point indices and compile a list of point indices
-            for ii in self.indices:
-                unique_point_indices_this_face = flatten_and_unique(self.surface.sampler_data[ii]) #indices of points on the face                
-            #append the point refs on the face to the the list of all point refs on the piece
-            unique_point_indices_this_piece.extend(unique_point_indices_this_face)
-        else:
-            unique_point_indices_this_piece = self.face_points(samples=False,as_indices=True,unique=True)
+        # the point indices on the piece: its samples when it has them (every face's, not
+        # the last face's alone, as it was), else the raw faces' points
+        unique_point_indices_this_piece = self.face_points(
+            samples=self.surface.is_sampled(), as_indices=True, unique=True)
         #deref each point index to its point
         points = self.surface.extract_points()
         coordinates_this_piece = np.array([points[ind,:] for ind in unique_point_indices_this_piece])
@@ -710,8 +704,13 @@ class SurfacePiece():
 
         mesh_smooth = None
         if include_smooth and self.surface.is_sampled():
+            # samples taken of the merged faces are asked for by the piece's merged faces, as in
+            # export_smooth: as_mesh_smooth then reads its face indices as merged ones
+            which = self.indices
+            if getattr(self.surface, 'samples_of', 'faces') == 'merged':
+                which = self.surface.merged_faces_of(self.indices)
             try:
-                mesh_smooth = _mesh_triangles(self.surface.as_mesh_smooth(self.indices))
+                mesh_smooth = _mesh_triangles(self.surface.as_mesh_smooth(which))
             except br_except.SurfaceNotSampled:
                 mesh_smooth = None
 
@@ -750,9 +749,14 @@ class SurfacePiece():
 
 
     def export_smooth(self, basename=_default_piece_basename_smooth,autoname_using_folder=False,file_type=_default_file_type):
-
+        """Write the piece's smooth mesh; returns the file name.  Samples taken of the merged
+        faces are asked for by the piece's merged faces (`Surface.merged_faces_of`), since
+        `as_mesh_smooth` then reads its face indices as merged ones."""
         filename_no_ext = self.generate_filename_no_ext(basename)
-        self.surface.export_smooth(self.indices,filename_no_ext,autoname_using_folder,file_type)
+        which = self.indices
+        if getattr(self.surface, 'samples_of', 'faces') == 'merged':
+            which = self.surface.merged_faces_of(self.indices)
+        return self.surface.export_smooth(which,filename_no_ext,autoname_using_folder,file_type)
 
 
     def export_raw(self, basename=_default_piece_basename_raw,autoname_using_folder=False,file_type=_default_file_type):
@@ -837,13 +841,12 @@ class SurfacePiece():
         point_indices = list()
 
         if samples:
-            self.surface._require_samples()
-
-            for face_index in self.indices:
-                f_samples = self.surface.sampler_data[face_index] # unpack.   sampler data is a list of triples of indices into the vertex set.
-
-                for tri in f_samples: 
-                    point_indices.extend(tri)
+            # the samples may have been taken of the merged faces: then take this piece's
+            for tri in self.surface.sample_triangles(
+                    self.surface.merged_faces_of(self.indices)
+                    if self.surface.samples_of == 'merged' else self.indices,
+                    merged=self.surface.samples_of == 'merged'):
+                point_indices.extend(tri)
 
         else:
 
@@ -898,7 +901,11 @@ class Surface(Decomposition):
         # a classic decomposition simply has none).
         self.preimage_curves = []
         self.preimage_names = []
+        # merged faces (F.merged, a bertini2-backend addition): None without them
+        self.merged_faces = None
+        self.edge_runs = {}
         self.sampler_data = []   # store all surface_sampler data
+        self.samples_of = 'faces'   # what sampler_data is per: 'faces' or 'merged' faces
 
         Decomposition.__init__(self, directory, is_embedded,embedded_into)
 
@@ -906,6 +913,7 @@ class Surface(Decomposition):
         # automatically parse data files to gather curve data
         self.parse_surf(self.directory)
         self.gather_faces(self.directory)
+        self.gather_merged_faces(self.directory)
         self.gather_curves(self.directory)
         try:
             self.gather_surface_samples(self.directory)
@@ -1007,13 +1015,146 @@ class Surface(Decomposition):
             self.preimage_curves.append(new_curve)
             self.preimage_names.append(new_curve.inputfilename)
 
+    def gather_merged_faces(self, directory):
+        """ Gather the merged faces of the surface, when the decomposition carries F.merged
+            (a bertini2-backend addition, see `parse_merged_faces`): faces joined across the
+            critical slices that cut nothing between them.  Each is a dict with the keys of a
+            face in F.faces widened: 'top' and 'bottom' are lists of edge indices, one per
+            face left to right; 'left' and 'right' are the sides on 'left slice index' and
+            'right slice index'; plus 'faces' (its faces in F.faces), 'seams' and 'seeds'.
+            `merged_faces` is None for a decomposition without them, and `edge_runs` holds
+            per curve the runs of edges welded at the merged-away joints.
+
+            :param directory: Directory of the surface folder
+        """
+        parsed = bertini_real.parse.parse_merged_faces(directory)
+        if parsed is None:
+            self.merged_faces, self.edge_runs = None, {}
+            return
+        merged, self.edge_runs = parsed
+        for m in merged:
+            faces = [self.faces[p] for p in m['faces']]
+            for which in ('top', 'bottom'):
+                systems = {f['system ' + which] for f in faces}
+                if len(systems) != 1:
+                    raise RuntimeError(f"merged face with faces {m['faces']} has its {which} "
+                                       f"on several curves: {sorted(systems)}")
+                m[which] = [f[which] for f in faces]
+                m['system ' + which] = faces[0]['system ' + which]
+            m['left'] = list(faces[0]['left'])
+            m['right'] = list(faces[-1]['right'])
+            m['num left'] = len(m['left'])
+            m['num right'] = len(m['right'])
+            m['seeds'] = [f['midpoint'] for f in faces]
+        self.merged_faces = merged
+
+    def _faces(self, merged):
+        """The faces, or the merged faces when asked, which the decomposition must carry."""
+        if not merged:
+            return self.faces
+        if self.merged_faces is None:
+            raise RuntimeError('this decomposition carries no merged faces (no F.merged); '
+                               'merge its bundle with python -m cellular.merge_faces and '
+                               'export it with --merged')
+        return self.merged_faces
+
+    def merged_faces_of(self, face_indices):
+        """The indices of the merged faces whose faces are among `face_indices` (a piece's
+        faces, say).  A merged face lies within one piece, since no seam passes through a
+        singular point; one with faces on both sides of the given set is an error."""
+        wanted = set(face_indices)
+        out = []
+        for k, m in enumerate(self._faces(True)):
+            inside = [p in wanted for p in m['faces']]
+            if all(inside):
+                out.append(k)
+            elif any(inside):
+                raise RuntimeError(f"merged face {k} has faces {m['faces']} only partly among "
+                                   f"the given faces")
+        return out
+
+    def _collapsed_run_edges(self, curve_name, edge_indices):
+        """The edges `edge_indices` of the named curve as (left, midpoint, right) triples, with
+        each run of edges welded at merged-away joints (`edge_runs`) collapsed to one triple:
+        the run's outer ends with the midpoint of its middle edge, the vertex the merge keeps."""
+        edges = self.curve_with_name(curve_name).edges
+        run_of = {}
+        for run in self.edge_runs.get(curve_name, []):
+            for k in run:
+                run_of[k] = tuple(run)
+        out = []
+        group, group_run = [], None
+        for k in list(edge_indices) + [None]:
+            run = run_of.get(k) if k is not None else None
+            if group and (k is None or run is None or run != group_run):
+                if group_run is None:
+                    out.extend([edges[j] for j in group])
+                else:
+                    keep = group_run if list(group_run) == group else tuple(group)
+                    out.append([edges[group[0]][0], edges[keep[len(keep) // 2]][1],
+                                edges[group[-1]][2]])
+                group, group_run = [], None
+            if k is None:
+                break
+            if k < 0:
+                continue
+            if run is None:
+                out.append(edges[k])
+            else:
+                group.append(k)
+                group_run = run
+        return out
+
+    def boundary_edges(self, face):
+        """The edges around a face as (left, midpoint, right) vertex triples, each as the curve
+        stores it, in the order the raw triangulation walks them: the top reversed, the bottom,
+        the left side, the right side reversed; a degenerate edge is left out.  For a merged
+        face (`merged_faces`) the top and bottom are their runs of face edges with the welded
+        runs collapsed (`_collapsed_run_edges`), and the sides lie on its outer slices."""
+        if isinstance(face['top'], list):
+            top = self._collapsed_run_edges(face['system top'], face['top'])
+            bottom = self._collapsed_run_edges(face['system bottom'], face['bottom'])
+            left_slice, right_slice = face['left slice index'], face['right slice index']
+        else:
+            top = ([self.curve_with_name(face['system top']).edges[face['top']]]
+                   if face['top'] >= 0 else [])
+            bottom = ([self.curve_with_name(face['system bottom']).edges[face['bottom']]]
+                      if face['bottom'] >= 0 else [])
+            left_slice, right_slice = face['middle slice index'], face['middle slice index'] + 1
+        left = [self.critical_point_slices[left_slice].edges[k] for k in face['left'] if k >= 0]
+        right = [self.critical_point_slices[right_slice].edges[k] for k in face['right'] if k >= 0]
+        around = ([list(reversed(e)) for e in top] + list(bottom) + list(left)
+                  + [list(reversed(e)) for e in right])
+        return [e for e in around if not (e[0] < 0 and e[1] < 0 and e[2] < 0)]
+
     def gather_surface_samples(self, directory):
-        """ Gather the surface samples of surface
+        """ Gather the surface samples of surface: one list of triangles per face of F.faces,
+            or, when the samples were taken of the merged faces (a bertini2-backend sampling of
+            F.merged, one list per merged face), per merged face; `samples_of` says which,
+            'faces' or 'merged'.
 
             :param directory: Directory of the surface folder
         """
         self.sampler_data = bertini_real.parse.parse_surface_samples(
             directory)
+        self.samples_of = 'faces'
+        if (self.merged_faces is not None and len(self.sampler_data) == len(self.merged_faces)
+                and len(self.sampler_data) != self.num_faces):
+            self.samples_of = 'merged'
+
+    def sample_triangles(self, face_indices, merged=False):
+        """The sampled triangles (global vertex index triples) of the given faces, or with
+        `merged` of the given merged faces.  Samples taken of the faces serve a merged face
+        as the union of its faces' samples; samples taken of the merged faces cannot be
+        split into faces, so asking for faces then is an error."""
+        self._require_samples()
+        if merged == (self.samples_of == 'merged'):
+            return [tri for ii in face_indices for tri in self.sampler_data[ii]]
+        if merged:
+            return [tri for ii in face_indices for p in self.merged_faces[ii]['faces']
+                    for tri in self.sampler_data[p]]
+        raise RuntimeError('the samples were taken of the merged faces, which do not split '
+                           'into faces; ask for merged faces (merged=True)')
 
 
 
@@ -1464,7 +1605,7 @@ class Surface(Decomposition):
         return the_singularites
 
 
-    def singularity_connector_data(self):
+    def singularity_connector_data(self, pieces=None):
         """
         Compute the data needed to place plug/socket connectors at nodal singularities.
 
@@ -1472,6 +1613,10 @@ class Surface(Decomposition):
         location, the connector axis direction (the tangent-cone direction, from the Hessian
         of the defining polynomial at the singularity), and the per-piece parity (which side
         gets the plug vs the socket); also record which singularities lie on each piece.
+
+        pieces: the pieces to consider, if already separated (all of them by default).  Only
+        these count: a singularity where one of them meets a piece left out joins one piece
+        here, not two, so it gets no connector.
 
         Needs the `bertini` parser and `sympy`, but only when there is at least one qualifying
         singularity.  Returns a dict of pure-Python (JSON-safe) values:
@@ -1483,7 +1628,7 @@ class Surface(Decomposition):
         All lists are empty when there are no qualifying singularities.
         """
 
-        pieces = self.separate_into_nonsingular_pieces()
+        pieces = self.separate_into_nonsingular_pieces() if pieces is None else list(pieces)
         piece_names = [p.generate_filename_smooth() for p in pieces]
 
         # nodal singularities and which pieces each is incident to
@@ -1513,7 +1658,9 @@ class Surface(Decomposition):
             import bertini as b2
             import sympy
 
-            bsys = b2.parse.system(self.input.split('INPUT')[1])
+            # the whole input file: b2's parser takes the CONFIG and INPUT sections as they are,
+            # and the text after 'INPUT' alone ends in a bare END; that it rejects
+            bsys = b2.parse.system(self.input)
             f = bsys.function(0)
             F = sympy.S(str(f).replace('unnamed_function', '').replace('function', '').replace('f', ''))
             variables = sorted(F.free_symbols, key=lambda s: s.name)
@@ -1547,12 +1694,25 @@ class Surface(Decomposition):
         }
 
 
-    def write_piece_data(self):
+    def write_piece_data(self, pieces=None, compact_only=False):
         """
-        Opens and edits current scad data to set the orientation and location of a plug and socket
+        Writes the piece data for the plugs and sockets (br_surf_piece_data.scad and .json, in
+        the working directory): the pieces' smooth mesh file names, the nodes at which two of the
+        pieces meet, with a direction and a location for each, and which side of each node each
+        piece is on.
+
+        pieces: the pieces to write, if already separated (all of them by default).
+        compact_only: only the pieces that do not touch the bounding sphere.  A node where a kept
+            piece meets a left-out one is then no longer a node between two pieces, so it gets no
+            plug and socket: the finite pieces can be printed and joined on their own.
+
+        Returns the list of pieces written, in the order the files index them.
         """
 
-        data = self.singularity_connector_data()
+        pieces = self.separate_into_nonsingular_pieces() if pieces is None else list(pieces)
+        if compact_only:
+            pieces = [p for p in pieces if p.is_compact()]
+        data = self.singularity_connector_data(pieces)
         piece_names = data["piece_names"]
         singularities_on_pieces = data["on_pieces"]
         sing_directions_as_list = data["directions"]
@@ -1608,224 +1768,73 @@ class Surface(Decomposition):
             for point in allPoints:
                 a.write("\n".join([str(s) for s in point]) + "\n")
         print('wrote allPoints.json')
+        return pieces
 
-        
-    def as_mesh_smooth(self, which_faces=None, keep_all_vertices=True):
+
+    def as_mesh_smooth(self, which_faces=None, keep_all_vertices=True, merged=None):
         """
         Compute a `Trimesh` object from the `trimesh` library for the corresponding faces using sampled data.  Raises if the surface is not sampled.
 
         which_faces: either None for all faces, or a list-like of ints indicating the indices of the surface faces you want.
-        keep_all_vertices: bool, by default True.  Unused vertices will be kept or merged.  This value influences `Trimesh`'s `process` parameter.  
+        keep_all_vertices: bool, by default True.  Unused vertices will be kept or merged.  This value influences `Trimesh`'s `process` parameter.
+        merged: `which_faces` indexes the merged faces (`merged_faces`) rather than the faces; by default, whichever the samples were taken of (`samples_of`).  See `sample_triangles`.
 
         See https://trimsh.org/trimesh.html#trimesh.Trimesh.
         """
-
-        num_faces = self.num_faces
-
+        if not self.sampler_data:
+            raise br_except.SurfaceNotSampled('no surface samples found.  run sampler, or re-gather and pickle')
+        if merged is None:
+            merged = self.samples_of == 'merged'
         if which_faces is None:
-            which_faces = range(num_faces)
-
+            which_faces = range(len(self._faces(merged)))
 
         points = self.extract_points()
-
-        faces = self.sampler_data
-
-        if not faces:
-            raise br_except.SurfaceNotSampled('no surface samples found.  run sampler, or re-gather and pickle')
-
-        vertex = []
-        for p in points:
-            vertex.append(p)
-
-        vertex_np_array = np.array(vertex)
-
-        face = []
-
-        for ii in which_faces:
-            f = faces[ii]
-            for tri in f:
-                face.append([tri[0], tri[1], tri[2]])
-
-        face_np_array = np.array(face)
+        triangles = [[tri[0], tri[1], tri[2]]
+                     for tri in self.sample_triangles(which_faces, merged=merged)]
 
         should_trimesh_process = False if keep_all_vertices==True else True
 
-        A = trimesh.Trimesh(vertex_np_array, face_np_array, process=should_trimesh_process)
+        A = trimesh.Trimesh(np.array(points), np.array(triangles), process=should_trimesh_process)
         A.fix_normals()
         return A
 
 
-    def as_mesh_raw(self, which_faces=None, keep_all_vertices=True):
+    def as_mesh_raw(self, which_faces=None, keep_all_vertices=True, merged=False):
         """
-        Compute a `Trimesh` object from the `trimesh` library for the corresponding faces using raw (unsmoothed or blocky) data.
+        Compute a `Trimesh` object from the `trimesh` library for the corresponding faces using raw (unsmoothed or blocky) data: every edge around a face makes two triangles with the face's midpoint (`boundary_edges`).
 
         which_faces: either None for all faces, or a list-like of ints indicating the indices of the surface faces you want.
-        keep_all_vertices: bool, by default True.  Unused vertices will be kept or merged.  This value influences `Trimesh`'s `process` parameter.  
+        keep_all_vertices: bool, by default True.  Unused vertices will be kept or merged.  This value influences `Trimesh`'s `process` parameter.
+        merged: triangulate the merged faces (`merged_faces`, a decomposition carrying F.merged) instead of the faces; `which_faces` then indexes them.  A merged face spanning many slices becomes a few big triangles about its seed, the facets of a cut stone, where its faces were many slivers.
 
         See https://trimsh.org/trimesh.html#trimesh.Trimesh.
         """
-
-
-        num_faces = self.num_faces
-
+        faces = self._faces(merged)
         if which_faces is None:
-            which_faces = range(num_faces)
+            which_faces = range(len(faces))
 
-        # unpack a few things
         points = self.extract_points()
 
-
-        num_total_faces = 0
-        for ii in range(len(which_faces)):
-            curr_face = self.faces[which_faces[ii]]
-            num_total_faces = num_total_faces + 2 * \
-                (curr_face['num left'] + curr_face['num right'] + 2)
-        num_total_faces = num_total_faces * 2
-
-        total_face_index = 0
-        TT = []
-
-
-        for cc in range(len(which_faces)):
-            ii = which_faces[cc]
-            face = self.faces[ii]
-
-            if (face['middle slice index']) == -1:
+        triangles = []
+        for ii in which_faces:
+            face = faces[ii]
+            if not merged and face['middle slice index'] == -1:
                 continue
-
-            case = 1
-            left_edge_counter = 0
-            right_edge_counter = 0
-
-            T = []
-
-            while True:
-                ## top edge ##
-                if case == 1:
-
-                    case += 1
-                    if face['top'] < 0:
-                        continue
-
-                    curr_edge = -10
-                    if(face['system top'] == 'input_critical_curve'):
-                        curr_edge = self.critical_curve.edges[face['top']]
-                    elif(face['system top'] == 'input_surf_sphere'):
-                        curr_edge = self.sphere_curve.edges[face['top']]
-                    else:
-                        for zz in range(len(self.singular_curves)):
-                            if(self.singular_names[zz] == face['system top']):
-                                curr_edge = self.singular_curves[
-                                    zz].edges[face['top']]
-
-                    if(curr_edge == -10):
-                        continue
-
-                    if (curr_edge[0] < 0 and curr_edge[1] < 0 and curr_edge[2] < 0):
-                        continue
-
-                    curr_edge = ReversableList(curr_edge)
-                    curr_edge = curr_edge.reverse()
-
-                ## bottom edge ##
-                elif case == 2:
-
-                    case += 1
-
-                    if face['bottom'] < 0:
-                        continue
-
-                    curr_edge = -10
-                    if(face['system bottom'] == 'input_critical_curve'):
-                        curr_edge = self.critical_curve.edges[face['bottom']]
-                    elif(face['system bottom'] == 'input_surf_sphere'):
-                        curr_edge = self.sphere_curve.edges[face['bottom']]
-                    else:
-                        for zz in range(len(self.singular_curves)):
-                            if(self.singular_names[zz] == face['system bottom']):
-                                curr_edge = self.singular_curves[
-                                    zz].edges[face['bottom']]
-
-                    if(curr_edge == -10):
-                        continue
-
-                    if (curr_edge[0] < 0 and curr_edge[1] < 0 and curr_edge[2] < 0):
-                        continue
-
-                ## left edge ##
-                elif case == 3:
-
-                    if left_edge_counter < face['num left']:
-
-                        if face['left'][left_edge_counter] < 0:
-                            continue
-
-                        slice_ind = face['middle slice index']
-                        edge_ind = face['left'][left_edge_counter]
-
-                        curr_edge = self.critical_point_slices[
-                            slice_ind].edges[edge_ind]
-                        left_edge_counter = left_edge_counter + 1  # increment
-
-                    else:
-                        case = case + 1
-                        continue
-
-                ## right edge ##
-                elif case == 4:
-
-                    if right_edge_counter < face['num right']:
-
-                        if face['right'][right_edge_counter] < 0:
-                            continue
-
-                        slice_ind = face['middle slice index'] + 1
-                        edge_ind = face['right'][right_edge_counter]
-                        curr_edge = self.critical_point_slices[
-                            slice_ind].edges[edge_ind]
-                        right_edge_counter = right_edge_counter + 1
-
-                        curr_edge = ReversableList(curr_edge)
-                        curr_edge = curr_edge.reverse()
-
-                    else:
-                        case += 1
-                        continue
-
-                ## last case ##
-                elif case == 5:
-                    break
-
-                # fan the curve edge to the face midpoint; skip degenerate triangles (a repeated
-                # vertex index, e.g. from a degenerate curve edge).  these are zero-area, and if
-                # kept they make the mesh non-manifold -- an (a, a, mid) face contributes the
-                # {a, mid} edge twice, which is what produced the 4-shared edges and duplicate
-                # faces in the raw mesh.
-                for tri in ((curr_edge[0], curr_edge[1], face['midpoint']),
-                            (curr_edge[1], curr_edge[2], face['midpoint'])):
+            # fan each edge around the face to the face midpoint; skip degenerate triangles (a
+            # repeated vertex index, e.g. from a degenerate curve edge).  these are zero-area,
+            # and if kept they make the mesh non-manifold -- an (a, a, mid) face contributes the
+            # {a, mid} edge twice.
+            for e in self.boundary_edges(face):
+                for tri in ((e[0], e[1], face['midpoint']), (e[1], e[2], face['midpoint'])):
                     if len(set(tri)) == 3:
-                        TT.append(tri)
-
-        faces = [TT]
-        vertex = []
-
-        for p in points:
-            vertex.append(p)
-
-        vertex_np_array = np.array(vertex)
-        face = []
-
-        for f in faces:
-            for tri in f:
-                face.append([tri[0], tri[1], tri[2]])
-
-        face_np_array = np.array(face)
+                        triangles.append(list(tri))
 
         # honor keep_all_vertices like as_mesh_smooth: process=False keeps the full global
         # vertex set so the faces index into extract_points() (the unified set), and does not
         # merge coincident-but-distinct vertices (which would fuse sheets at singularities).
         should_trimesh_process = False if keep_all_vertices == True else True
-        raw_mesh = trimesh.Trimesh(vertex_np_array, face_np_array, process=should_trimesh_process)
+        raw_mesh = trimesh.Trimesh(np.array(points), np.array(triangles),
+                                   process=should_trimesh_process)
         raw_mesh.fix_normals()
         return raw_mesh
 
@@ -1836,7 +1845,7 @@ class Surface(Decomposition):
 
 
 
-    def export_pieces_glb(self, filename='br_pieces.glb', coloring='contrast', compact_only=False, flip=False, pieces=None, saturation=0.9, value=0.8, markers=True, piece_colors=None):
+    def export_pieces_glb(self, filename='br_pieces.glb', coloring='contrast', compact_only=False, flip=False, pieces=None, saturation=0.9, value=0.8, markers=True, piece_colors=None, facets='faces', group=None):
         """
         Write the surface's nonsingular pieces to one GLB file (glTF), each piece its own named mesh
         (`piece_017_compact`, `piece_142_cut`, ...) with its own colored material, for Blender and
@@ -1858,6 +1867,12 @@ class Surface(Decomposition):
             pieces meet.
         piece_colors: one (r, g, b) in [0, 1] per piece, as seen (sRGB), in the order of
             `pieces`; overrides coloring, saturation and value.
+        facets: 'faces' triangulates every face of F.faces; 'merged' triangulates the merged
+            faces (F.merged) instead, so each stone has a few big facets rather than slivers;
+            'smooth' uses the surface's samples (samp.surfsamp), when it has them.
+        group: the name of the root node every piece is parented under, and of the glTF scene
+            (by default the file's name): in Blender, one empty, or with 4.2 and later one
+            collection, whose eye shows or hides the whole subject.
 
         Returns a summary: pieces, triangles, how many point outward, the fraction of the area that
         faces its normals, and whether the normals are exact.
@@ -1865,7 +1880,8 @@ class Surface(Decomposition):
         from bertini_real.surface import pieces_glb
         return pieces_glb.export(self, filename, coloring=coloring, compact_only=compact_only,
                                  flip=flip, pieces=pieces, saturation=saturation, value=value,
-                                 markers=markers, piece_colors=piece_colors)
+                                 markers=markers, piece_colors=piece_colors, facets=facets,
+                                 group=group)
 
 
     def export_raw(self, which_faces=None, basename=_default_surface_basename_raw, autoname_using_folder=False, file_type=_default_file_type, keep_all_vertices=True):
