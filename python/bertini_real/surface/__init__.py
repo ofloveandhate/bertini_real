@@ -1836,6 +1836,38 @@ class Surface(Decomposition):
 
 
 
+    def export_pieces_glb(self, filename='br_pieces.glb', coloring='contrast', compact_only=False, flip=False, pieces=None, saturation=0.9, value=0.8, markers=True, piece_colors=None):
+        """
+        Write the surface's nonsingular pieces to one GLB file (glTF), each piece its own named mesh
+        (`piece_017_compact`, `piece_142_cut`, ...) with its own colored material, for Blender and
+        other viewers, and a .json beside it naming every piece's faces, compactness, centroid,
+        color and nodes.
+
+        Every piece points outward with uniform normals, exact from the input's polynomial when the
+        surface is one function of three variables; see `bertini_real.surface.pieces_glb`.
+
+        coloring: 'contrast' (every piece its own hue, pieces meeting at a node far apart in hue),
+            'azimuth' (hue by the angle of a piece's centroid about the z axis), 'height' (by its
+            z) or 'spread' (by piece order).
+        compact_only: only the pieces that do not touch the bounding sphere.
+        flip: point every piece inward instead.
+        pieces: the pieces to write, if already separated.
+        saturation, value: the colors' HSV saturation and value, as seen (sRGB); the defaults are
+            deep jewel tones, and a lower saturation gives pastels.
+        markers: a separate mesh named `nodes`, a small gold sphere at every node where two
+            pieces meet.
+        piece_colors: one (r, g, b) in [0, 1] per piece, as seen (sRGB), in the order of
+            `pieces`; overrides coloring, saturation and value.
+
+        Returns a summary: pieces, triangles, how many point outward, the fraction of the area that
+        faces its normals, and whether the normals are exact.
+        """
+        from bertini_real.surface import pieces_glb
+        return pieces_glb.export(self, filename, coloring=coloring, compact_only=compact_only,
+                                 flip=flip, pieces=pieces, saturation=saturation, value=value,
+                                 markers=markers, piece_colors=piece_colors)
+
+
     def export_raw(self, which_faces=None, basename=_default_surface_basename_raw, autoname_using_folder=False, file_type=_default_file_type, keep_all_vertices=True):
         """ 
         Export raw decomposition of surface
