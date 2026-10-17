@@ -138,6 +138,21 @@ namespace bertini_real
                     var input_file_index = int.Parse(line.Trim());
 
                     line = reader.ReadLine(); // read a line
+                    var num_input_file_indices = int.Parse(line.Trim());
+
+                    line = reader.ReadLine(); // read a line
+                    // for (int i = 0;) commented out cuz not using
+                    // this is the line that reads all the input filename indices, 
+                    // but i'm not doing anything with them right now, so no conversion is here
+                    // i note. i feel frustrated that a single index is written,
+                    // and then a bunch of indices are written.  
+                    // the first is the first time it's discovered,
+                    // and then the rest are all the time's its discovered
+                    // but it leaves a lot of mystery.  so what's up with that?
+                    // it's because during connect the dots the points are computed multiple times
+                    // so the same index can appear many times.
+
+                    line = reader.ReadLine(); // read a line
                     var vertexType = int.Parse(line.Trim());
 
                     var numPathNumbersEndingHere = int.Parse(reader.ReadLine().Trim());
