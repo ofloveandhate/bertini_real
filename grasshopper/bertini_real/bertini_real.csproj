@@ -28,6 +28,15 @@
   </ItemGroup>
 
 
+<ItemGroup>
+    <Reference Include="Grasshopper">
+        <HintPath>/Applications/Rhino 8.app/Contents/Frameworks/RhCore.framework/Versions/A/Resources/ref/net48/Grasshopper.dll</HintPath>
+    </Reference>
+    <Reference Include="RhinoCommon">
+        <HintPath>/Applications/Rhino 8.app/Contents/Frameworks/RhCore.framework/Versions/A/Resources/ref/net48/RhinoCommon.dll</HintPath>
+    </Reference>
+</ItemGroup>
+
   
   <!-- For Windows only builds -->
   <PropertyGroup Condition="$(TargetFramework.Contains('-windows')) or $(TargetFramework.StartsWith('net4'))">

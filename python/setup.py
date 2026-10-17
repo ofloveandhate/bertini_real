@@ -4,6 +4,9 @@ EXCLUDE_FROM_PACKAGES = []
 
 extras = {
     'optional': [
+    ],
+    'test': [
+        'pytest',
     ]
 }
 
@@ -28,7 +31,9 @@ setup(name='bertini_real',
                         'algopy',
                         'sympy',
                         'scipy',
-                        'networkx'],
+                        'networkx',
+                        'bertini2>=3.0.0',
+                        'manifold3d'],
       extras_require=extras,
       package_dir={'bertini_real': 'bertini_real'},
       package_data={'bertini_real': ['surface/scad/*.scad']}, # for plugs and sockets on pieces of surfaces
