@@ -1092,12 +1092,24 @@ class Surface(Decomposition):
 
         raise RuntimeError(f'unable to find a curve with name {curve_name} in this surface')
 
-    def write_piece_data(self):
+    def write_piece_data(self, pieces=None, compact_only=False):
         """
-        Opens and edits current scad data to set the orientation and location of a plug and socket
+        Writes the piece data for the plugs and sockets (br_surf_piece_data.scad and .json, and
+        centroids.json, in the working directory): the pieces' smooth mesh file names, the nodes
+        at which two of the pieces meet, with a direction and a location for each, and which side
+        of each node each piece is on.
+
+        pieces: the pieces to write, if already separated (all of them by default).
+        compact_only: only the pieces that do not touch the bounding sphere.  A node where a kept
+            piece meets a left-out one is then no longer a node between two pieces, so it gets no
+            plug and socket: the finite pieces can be printed and joined on their own.
+
+        Returns the list of pieces written, in the order the files index them.
         """
 
-        pieces = self.separate_into_nonsingular_pieces()
+        pieces = self.separate_into_nonsingular_pieces() if pieces is None else list(pieces)
+        if compact_only:
+            pieces = [p for p in pieces if p.is_compact()]
         allPoints=[]
         #create a list of the centroid coordinates of each piece
         centroids = [] 
@@ -1213,6 +1225,7 @@ class Surface(Decomposition):
             for centroid in centroids:
                 c.write(str(centroid)+"\n")
         print('wrote centroids.json')
+        return pieces
 
 
 
