@@ -181,9 +181,11 @@ def parse_faces(directory):
             faces[ii]['system top'] = system_data[0]
             faces[ii]['system bottom'] = system_data[1]
 
+            # an empty side (a wedge face, whose corners meet) is an empty list, so code that
+            # walks a face's sides needs no special case for it
             faces[ii]['num left'] = int(f.readline().replace('\n', ''))
             if faces[ii]['num left'] == 0:
-                faces[ii]['left'] = None
+                faces[ii]['left'] = []
                 f.readline()
             else:
                 faces[ii]['left'] = [
@@ -191,7 +193,7 @@ def parse_faces(directory):
 
             faces[ii]['num right'] = int(f.readline().replace('\n', ''))
             if faces[ii]['num right'] == 0:
-                faces[ii]['right'] = None
+                faces[ii]['right'] = []
                 f.readline()
             else:
                 faces[ii]['right'] = [
