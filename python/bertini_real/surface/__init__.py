@@ -704,8 +704,13 @@ class SurfacePiece():
 
         mesh_smooth = None
         if include_smooth and self.surface.is_sampled():
+            # samples taken of the merged faces are asked for by the piece's merged faces, as in
+            # export_smooth: as_mesh_smooth then reads its face indices as merged ones
+            which = self.indices
+            if getattr(self.surface, 'samples_of', 'faces') == 'merged':
+                which = self.surface.merged_faces_of(self.indices)
             try:
-                mesh_smooth = _mesh_triangles(self.surface.as_mesh_smooth(self.indices))
+                mesh_smooth = _mesh_triangles(self.surface.as_mesh_smooth(which))
             except br_except.SurfaceNotSampled:
                 mesh_smooth = None
 
@@ -1653,7 +1658,9 @@ class Surface(Decomposition):
             import bertini as b2
             import sympy
 
-            bsys = b2.parse.system(self.input.split('INPUT')[1])
+            # the whole input file: b2's parser takes the CONFIG and INPUT sections as they are,
+            # and the text after 'INPUT' alone ends in a bare END; that it rejects
+            bsys = b2.parse.system(self.input)
             f = bsys.function(0)
             F = sympy.S(str(f).replace('unnamed_function', '').replace('function', '').replace('f', ''))
             variables = sorted(F.free_symbols, key=lambda s: s.name)
