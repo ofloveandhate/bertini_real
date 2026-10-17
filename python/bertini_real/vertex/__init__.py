@@ -30,6 +30,12 @@ class VertexType(Flag):
     removed = 128
     problematic = 256
     singular = 512
+    # event types (2026): an apparent crossing is one of two distinct upstairs
+    # points over a shared downstairs point; a distance anchor is a critical
+    # point of the distance to a center (anchors components with no
+    # projection-critical points; not critical itself, hence mergeable)
+    apparent_crossing = 1024
+    distance_anchor = 2048
 
 
 

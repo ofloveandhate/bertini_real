@@ -37,9 +37,15 @@ constexpr VertexType Surface_sample_point = 64;
 constexpr VertexType Removed = 128;
 constexpr VertexType Problematic = 256;
 constexpr VertexType Singular = 512;
+// event types: an apparent crossing is one of two distinct upstairs points over a
+// shared downstairs point (its projection values join the critical values); a
+// distance anchor is a critical point of the distance to a center, anchoring
+// components with no projection-critical points (NOT critical itself: mergeable).
+constexpr VertexType Apparent_crossing = 1024;
+constexpr VertexType Distance_anchor = 2048;
 
 
-constexpr VertexType VertexTypes[]{Unset, Critical, Semicritical, Midpoint, Isolated, New, Curve_sample_point, Surface_sample_point, Removed, Problematic, Singular};
+constexpr VertexType VertexTypes[]{Unset, Critical, Semicritical, Midpoint, Isolated, New, Curve_sample_point, Surface_sample_point, Removed, Problematic, Singular, Apparent_crossing, Distance_anchor};
 
 
 
