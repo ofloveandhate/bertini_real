@@ -16,7 +16,7 @@ import bertini_real.parse
 import bertini_real.exception as br_except
 import numpy as np
 from bertini_real.decomposition import Decomposition
-from bertini_real.curve import Curve, CurvePiece, is_edge_degenerate
+from bertini_real.curve import Curve, CurvePiece, is_edge_degenerate, _points_to_xyz
 from bertini_real.vertex import Vertex
 from bertini_real.vertex import VertexType
 from bertini_real.util import ReversableList
@@ -54,6 +54,24 @@ _default_surface_basename_raw = 'br_surface_raw'
 
 
 
+
+
+def _mesh_triangles(mesh):
+    """
+    flatten a `trimesh.Trimesh`'s faces into a dict for the Grasshopper JSON export.
+
+    the triangle entries are indices into the surface's unified (global) vertex set,
+    because `as_mesh_raw`/`as_mesh_smooth` build the mesh from `extract_points()` with
+    `keep_all_vertices=True` (so trimesh does not reindex).  returns None if mesh is None.
+    """
+    if mesh is None:
+        return None
+
+    triangles = np.asarray(mesh.faces, dtype=int).reshape(-1).tolist()
+    return {
+        "triangles": triangles,
+        "triangle_count": len(mesh.faces),
+    }
 
 
 def export_mesh(mesh, basename, autoname_using_folder=False, file_type=_default_file_type, verbose=True):
@@ -153,9 +171,283 @@ def copy_all_scad_files_here():
 
 
 
+def _slerp(v0, v1, t):
+    """Spherical interpolation of two unit vectors; linear fallback when (anti)parallel."""
+    dot = np.clip(np.dot(v0, v1), -1.0, 1.0)
+    omega = np.arccos(dot)
+    so = np.sin(omega)
+    if omega < 1e-9 or so < 1e-9:
+        lin = (1.0 - t) * v0 + t * v1
+        n = np.linalg.norm(lin)
+        return v0 if n < 1e-12 else lin / n
+    return np.sin((1.0 - t) * omega) / so * v0 + np.sin(t * omega) / so * v1
+
+
+def _on_sphere_boundary_loops(mesh, center, radius, tol):
+    """
+    Ordered loops (lists of vertex indices) of `mesh`'s naked boundary edges that lie on the
+    sphere of the given center/radius.  Only clean degree-2 cycles are returned; open arcs or
+    non-manifold junctions are dropped.
+    """
+    from collections import Counter, defaultdict
+
+    V = np.asarray(mesh.vertices)
+    edge_count = Counter()
+    for tri in mesh.faces:
+        a, b, c = int(tri[0]), int(tri[1]), int(tri[2])
+        for u, v in ((a, b), (b, c), (c, a)):
+            edge_count[frozenset((u, v))] += 1
+    naked = [tuple(e) for e, cnt in edge_count.items() if cnt == 1 and len(e) == 2]
+
+    def on_sphere(i):
+        return abs(np.linalg.norm(V[i][:3] - center) - radius) < tol
+
+    adj = defaultdict(list)
+    for e in naked:
+        a, b = tuple(e)
+        if a != b and on_sphere(a) and on_sphere(b):
+            adj[a].append(b)
+            adj[b].append(a)
+
+    loops = []
+    seen = set()
+    for start in list(adj):
+        if start in seen:
+            continue
+        loop = [start]
+        seen.add(start)
+        prev, cur, ok = -1, start, True
+        while True:
+            nbrs = adj[cur]
+            if len(nbrs) != 2:
+                ok = False
+                break
+            nxt = nbrs[0] if nbrs[0] != prev else nbrs[1]
+            if nxt == start:
+                break
+            if nxt in seen:
+                ok = False
+                break
+            loop.append(nxt)
+            seen.add(nxt)
+            prev, cur = cur, nxt
+        if ok and len(loop) >= 3:
+            loops.append(loop)
+    return loops
+
+
+def sphere_cap_meshes(mesh, center, radius, resolution=4, tol=1e-3):
+    """
+    Faceted spherical caps that close `mesh`'s naked boundary loops lying on the sphere.
+
+    The Python twin of the Grasshopper "Sphere Caps" component: it caps the mesh's OWN
+    boundary (so the caps share its vertices and weld watertight), keeps the smaller-area
+    side of each loop, and subdivides each cap into `resolution` radial rings slerped along
+    the sphere.  Returns a list of `trimesh.Trimesh`.
+    """
+    center = np.asarray(center, dtype=float)[:3]
+    V = np.asarray(mesh.vertices)
+    caps = []
+
+    for loop in _on_sphere_boundary_loops(mesh, center, radius, tol):
+        pts = np.array([V[i][:3] for i in loop])
+        dirs = np.array([(p - center) / np.linalg.norm(p - center) for p in pts])
+        mean = pts.mean(axis=0) - center
+        nrm = np.linalg.norm(mean)
+        mean = mean / nrm if nrm > 1e-12 else np.array([0.0, 0.0, 1.0])
+
+        def fan_area(sign):
+            apex = center + sign * radius * mean
+            return sum(np.linalg.norm(np.cross(pts[k] - apex, pts[(k + 1) % len(pts)] - apex)) / 2.0
+                       for k in range(len(pts)))
+
+        sign = 1 if fan_area(1) <= fan_area(-1) else -1
+        pole_dir = sign * mean
+        pole = center + radius * pole_dir
+
+        R = max(1, int(resolution))
+        n = len(loop)
+        verts = [p for p in pts]
+        for r in range(1, R):
+            t = r / R
+            for k in range(n):
+                verts.append(center + radius * _slerp(dirs[k], pole_dir, t))
+        pole_i = len(verts)
+        verts.append(pole)
+        verts = np.array(verts)
+
+        def vid(r, k):
+            return r * n + k
+
+        faces = []
+
+        def add(i, j, k):
+            # skip only truly degenerate (collapsed-edge) triangles; keep thin ones
+            if (np.linalg.norm(verts[i] - verts[j]) < 1e-9 or
+                    np.linalg.norm(verts[j] - verts[k]) < 1e-9 or
+                    np.linalg.norm(verts[i] - verts[k]) < 1e-9):
+                return
+            faces.append([i, j, k])
+
+        for r in range(R - 1):
+            for k in range(n):
+                k2 = (k + 1) % n
+                add(vid(r, k), vid(r, k2), vid(r + 1, k2))
+                add(vid(r, k), vid(r + 1, k2), vid(r + 1, k))
+        for k in range(n):
+            add(vid(R - 1, k), vid(R - 1, (k + 1) % n), pole_i)
+
+        if faces:
+            caps.append(trimesh.Trimesh(verts, np.array(faces), process=False))
+
+    return caps
+
+
+def flat_cap_meshes(mesh, center, radius, resolution=1, tol=1e-3):
+    """
+    Flat caps that close `mesh`'s on-sphere boundary loops with a fan to each loop's centroid --
+    the flat alternative to sphere_cap_meshes, and the Python twin of the "Flat Caps" component.
+
+    Same on-sphere boundary as sphere_cap_meshes, but the apex is the loop centroid (a flat fill)
+    rather than a point on the sphere, so e.g. a Bertini cylinder gets flat disk ends.  Caps the
+    mesh's OWN boundary (welds watertight), with `resolution` concentric linearly-interpolated
+    rings (1 = a single flat fan).  Returns a list of trimesh.Trimesh.
+    """
+    center = np.asarray(center, dtype=float)[:3]
+    V = np.asarray(mesh.vertices)
+    caps = []
+
+    for loop in _on_sphere_boundary_loops(mesh, center, radius, tol):
+        pts = np.array([V[i][:3] for i in loop])
+        centroid = pts.mean(axis=0)
+
+        R = max(1, int(resolution))
+        n = len(loop)
+        verts = [p for p in pts]
+        for r in range(1, R):
+            t = r / R
+            for k in range(n):
+                verts.append(pts[k] + t * (centroid - pts[k]))
+        apex_i = len(verts)
+        verts.append(centroid)
+        verts = np.array(verts)
+
+        def vid(r, k):
+            return r * n + k
+
+        faces = []
+
+        def add(i, j, k):
+            if (np.linalg.norm(verts[i] - verts[j]) < 1e-9 or
+                    np.linalg.norm(verts[j] - verts[k]) < 1e-9 or
+                    np.linalg.norm(verts[i] - verts[k]) < 1e-9):
+                return
+            faces.append([i, j, k])
+
+        for r in range(R - 1):
+            for k in range(n):
+                k2 = (k + 1) % n
+                add(vid(r, k), vid(r, k2), vid(r + 1, k2))
+                add(vid(r, k), vid(r + 1, k2), vid(r + 1, k))
+        for k in range(n):
+            add(vid(R - 1, k), vid(R - 1, (k + 1) % n), apex_i)
+
+        if faces:
+            caps.append(trimesh.Trimesh(verts, np.array(faces), process=False))
+
+    return caps
+
+
+def join_meshes(meshes):
+    """
+    Concatenate meshes and merge coincident vertices into one (ideally watertight) trimesh.
+    The Python twin of the Grasshopper "Close Piece" weld.  Returns None if nothing to join.
+    """
+    meshes = [m for m in meshes if m is not None and len(m.faces) > 0]
+    if not meshes:
+        return None
+
+    all_v = []
+    all_f = []
+    for m in meshes:
+        base = len(all_v)
+        all_v.extend(np.asarray(m.vertices).tolist())
+        for f in np.asarray(m.faces):
+            all_f.append([int(f[0]) + base, int(f[1]) + base, int(f[2]) + base])
+
+    # process=True merges coincident vertices, welding the shared cap/piece boundary
+    joined = trimesh.Trimesh(np.array(all_v), np.array(all_f), process=True)
+    # make winding consistent / normals outward, so a watertight result is a proper "volume"
+    # (manifold3d booleans require this, and it fixes inverted/negative-volume pieces)
+    joined.fix_normals()
+    return joined
+
+
+def spread_pieces(meshes, factor=0.5, center=None):
+    """
+    Move each mesh radially away from the common center by factor*(its center - overall center),
+    for an exploded view (the Python twin of "Spread Pieces").  Returns new translated copies;
+    the inputs are left untouched.
+    """
+    meshes = list(meshes)
+    centers = [np.asarray(m.bounds).mean(axis=0) for m in meshes]
+    if center is None:
+        center = np.mean(centers, axis=0) if centers else np.zeros(3)
+    else:
+        center = np.asarray(center, dtype=float)[:3]
+
+    out = []
+    for m, c in zip(meshes, centers):
+        moved = m.copy()
+        moved.apply_translation(factor * (c - center))
+        out.append(moved)
+    return out
+
+
+def mesh_boolean_fold(solid, features, signs=None):
+    """
+    Fold an ordered sequence of boolean operations onto a solid mesh -- the Python twin of the
+    Grasshopper "Boolean Piece" component.
+
+    solid: a trimesh.Trimesh (should be watertight; booleans on open meshes are unreliable).
+    features: list of trimesh.Trimesh to boolean in, IN ORDER.  ("Feature" in the solid-modeling
+              sense -- an ordered additive/subtractive operation on a body.)
+    signs: list parallel to features; +1 = union, <=0 = subtract.  Defaults to all subtract.
+
+    Order matters: each step acts on the result of the previous, e.g. signs [+1, -1, +1, -1]
+    means union(f0), then subtract(f1), then union(f2), then subtract(f3).  Uses trimesh's
+    exact 'manifold' backend (the manifold3d package), which is robust on clean manifolds.
+    Returns the resulting trimesh.Trimesh.
+    """
+    try:
+        import manifold3d  # noqa: F401  -- the exact boolean backend trimesh will use
+    except ImportError as e:
+        raise ImportError(
+            "mesh booleans need the 'manifold3d' package (pip install manifold3d)") from e
+
+    import warnings
+
+    features = list(features)
+    if signs is None:
+        signs = [-1] * len(features)
+    if len(signs) != len(features):
+        raise ValueError("signs must be parallel to features")
+
+    if not solid.is_watertight:
+        warnings.warn("boolean solid is not watertight; the result may be wrong")
+
+    result = solid.copy()
+    for feature, sign in zip(features, signs):
+        if sign > 0:
+            result = trimesh.boolean.union([result, feature], engine='manifold')
+        else:
+            result = trimesh.boolean.difference([result, feature], engine='manifold')
+    return result
+
+
 class SurfacePiece():
-    """ 
-    A "Piece" of an algebraic surface.  Essentially, a union of Faces, with some additional interface.  
+    """
+    A "Piece" of an algebraic surface.  Essentially, a union of Faces, with some additional interface.
     """
 
     def __init__(self, indices, surface):
@@ -247,7 +539,7 @@ class SurfacePiece():
     # type critical
 
     def point_singularities(self):
-        """ Compute singularity points from a SurfacePiece object
+        """ Compute the indices of the singularity points from a SurfacePiece object
 
             :rtype: A list of indices of point singularities
         """
@@ -405,6 +697,39 @@ class SurfacePiece():
 
 
 
+    def to_gh_dict(self, piece_index, include_smooth=True):
+        """
+        assemble this piece's data for the Grasshopper JSON export.
+
+        meshes are expressed purely as triangle indices into the surface's unified vertex
+        set; embedded curves as ordered vertex-index lists into the same set.  no vertex
+        coordinates live here -- they are shared at the top level of the export.
+        """
+
+        mesh_raw = _mesh_triangles(self.surface.as_mesh_raw(self.indices))
+
+        mesh_smooth = None
+        if include_smooth and self.surface.is_sampled():
+            try:
+                mesh_smooth = _mesh_triangles(self.surface.as_mesh_smooth(self.indices))
+            except br_except.SurfaceNotSampled:
+                mesh_smooth = None
+
+        curves = []
+        for cp in self.edge_pieces():
+            curves.append({
+                "type": self.surface._curve_type_for_name(cp.curve.inputfilename),
+                "curve_name": cp.curve.inputfilename,
+                "vertex_indices": cp.to_point_indices(),
+            })
+
+        return {
+            "piece_index": piece_index,
+            "face_indices": list(self.indices),
+            "mesh_smooth": mesh_smooth,
+            "mesh_raw": mesh_raw,
+            "curves": curves,
+        }
 
 
 
@@ -436,6 +761,53 @@ class SurfacePiece():
         self.surface.export_raw(self.indices,filename_no_ext,autoname_using_folder,file_type)
 
 
+    def as_mesh(self, smooth=None):
+        """
+        The `trimesh.Trimesh` for this piece.  smooth=None picks smooth when the surface is
+        sampled, else raw (raw with raw, sampled with sampled).
+        """
+        if smooth is None:
+            smooth = self.surface.is_sampled()
+        if smooth:
+            return self.surface.as_mesh_smooth(self.indices)
+        return self.surface.as_mesh_raw(self.indices)
+
+
+    def sphere_caps(self, smooth=None, resolution=4, tol=1e-3):
+        """
+        The faceted spherical cap mesh(es) closing this piece where it meets the bounding
+        sphere.  See the module-level `sphere_cap_meshes`.  Returns a list of trimesh.
+        """
+        return sphere_cap_meshes(self.as_mesh(smooth), self.center, self.radius, resolution, tol)
+
+
+    def flat_caps(self, smooth=None, resolution=1, tol=1e-3):
+        """
+        The faceted FLAT cap mesh(es) closing this piece where it meets the bounding sphere, with
+        the apex at each loop's centroid.  See the module-level `flat_cap_meshes`.  Returns a list
+        of trimesh.
+        """
+        return flat_cap_meshes(self.as_mesh(smooth), self.center, self.radius, resolution, tol)
+
+
+    def as_closed_mesh(self, smooth=None, resolution=None, tol=1e-3, flat=False):
+        """
+        This piece joined with its cap(s) into a single welded (ideally watertight)
+        `trimesh.Trimesh` -- the Rhino-free equivalent of (Sphere|Flat) Caps + Close Piece.  A
+        piece bounded only by the sphere comes out watertight; one abutting a singular curve stays
+        open there (check `.is_watertight`).
+
+        flat=False uses spherical caps (hugging the sphere); flat=True uses flat fans to the loop
+        centroid.  resolution defaults to 4 for spherical, 1 for flat.
+        """
+        if resolution is None:
+            resolution = 1 if flat else 4
+        mesh = self.as_mesh(smooth)
+        if flat:
+            caps = flat_cap_meshes(mesh, self.center, self.radius, resolution, tol)
+        else:
+            caps = sphere_cap_meshes(mesh, self.center, self.radius, resolution, tol)
+        return join_meshes([mesh] + caps)
 
 
     def solidify_smooth(self, distance=_default_solidify_thickness, basename=_default_piece_basename_smooth, autoname_using_folder=False,file_type=_default_file_type):
@@ -901,99 +1273,238 @@ class Surface(Decomposition):
 
         raise RuntimeError(f'unable to find a curve with name {curve_name} in this surface')
 
+
+    def _curve_type_for_name(self, curve_name):
+        """
+        classify an embedded curve by its `inputfilename` into one of the closed-vocabulary
+        type tags used by the Grasshopper export.  match order mirrors `curve_with_name`.
+        """
+
+        if curve_name == self.critical_curve.inputfilename:
+            return "critical"
+
+        if curve_name == self.sphere_curve.inputfilename:
+            return "sphere"
+
+        for c in self.critical_point_slices:
+            if curve_name == c.inputfilename:
+                return "critslice"
+
+        for c in self.midpoint_slices:
+            if curve_name == c.inputfilename:
+                return "midslice"
+
+        if curve_name in self.singular_names:
+            return "singular"
+
+        return "unknown"
+
+
+    def export_gh_json(self, filename="br_gh_export.json", include_smooth=True):
+        """
+        write a self-contained JSON describing this surface for the Grasshopper plugin.
+
+        the file holds one unified vertex set (`vertices`); each nonsingular piece carries
+        only triangle indices (raw and, when sampled, smooth) and the embedded curve pieces
+        as ordered vertex-index lists -- all indices into the shared `vertices`.  this keeps
+        the surface mesh and its embedded curves referring to the same points in Rhino.
+        """
+
+        # prime the extract_points memo cache with the full (no-arg) point set first, so
+        # later per-piece mesh construction does not poison it with a partial set.
+        points = self.extract_points()
+
+        pieces = self.separate_into_nonsingular_pieces()
+
+        contents = {
+            "format_version": 2,
+            "decomposition_type": "surface",
+            "source_directory": self.directory,
+            "num_variables": self.num_variables,
+            "vertices": _points_to_xyz(points),
+            "vertex_count": len(points),
+            "sphere": self._sphere_dict(),
+            "is_sampled": self.is_sampled(),
+            "pieces": [p.to_gh_dict(ii, include_smooth) for ii, p in enumerate(pieces)],
+        }
+
+        # fold the singularity / connector data (locations, tangent-cone directions, parities)
+        # into the same file, so Grasshopper has a single source instead of a second JSON.
+        try:
+            sing = self.singularity_connector_data()
+        except Exception as e:
+            print("WARNING: could not compute singularity connector data ({}); "
+                  "exporting without singularities".format(e))
+            sing = {"piece_names": [], "on_pieces": [], "locations": [],
+                    "directions": [], "parities": []}
+        contents["singularities"] = {
+            "piece_names": sing["piece_names"],
+            "locations": sing["locations"],
+            "directions": sing["directions"],
+            "parities": sing["parities"],
+            "on_pieces": sing["on_pieces"],
+        }
+
+        # verify each piece's sphere curves are closed loops (they always should be, barring a
+        # decomposition problem); warn loudly if not, so the issue is visible before Grasshopper.
+        for pc in contents["pieces"]:
+            for cv in pc["curves"]:
+                if cv["type"] == "sphere":
+                    vi = cv["vertex_indices"]
+                    if len(vi) < 2 or vi[0] != vi[-1]:
+                        print("WARNING: piece {} has a non-closed sphere curve ({}); "
+                              "the decomposition may be incomplete".format(
+                                  pc["piece_index"], cv["curve_name"]))
+
+        with open(filename, "w") as f:
+            json.dump(contents, f, indent=2)
+
+        print("wrote " + filename)
+        return filename
+
+
+    def all_curves(self):
+
+        the_curves = []
+
+        the_curves.append(self.critical_curve)
+
+        the_curves.append(self.sphere_curve)
+
+        for c in self.singular_curves:
+            the_curves.append(c)
+
+        for c in self.critical_point_slices:
+            the_curves.append(c)
+
+        for c in self.midpoint_slices:
+            the_curves.append(c)
+
+        return the_curves
+
+
+    def all_singular_points(self):
+        """
+        get absolutely all of the singular points.  
+        """
+
+        # there's a baked-in assumption that this surface is NOT contained in a higher-dimensional object.  this is valid right now because the top-dimensional thing Bertini_real can decompose is a surface.
+
+
+        the_singularites = []
+        for v in self.vertices:
+            if v.is_of_type(VertexType.singular):
+                the_singularites.append(v)
+
+        return the_singularites
+
+    def isolated_singularities(self):
+        VertexType = bertini_real.vertex.VertexType
+
+        the_singularites = []
+        for v in self.vertices:
+            if v.is_of_type(VertexType.singular) and v.is_of_type(VertexType.singular):
+                the_singularites.append(v)
+
+        return the_singularites
+
+
+    def singularity_connector_data(self):
+        """
+        Compute the data needed to place plug/socket connectors at nodal singularities.
+
+        For each nodal singularity that joins exactly two nonsingular pieces, find its
+        location, the connector axis direction (the tangent-cone direction, from the Hessian
+        of the defining polynomial at the singularity), and the per-piece parity (which side
+        gets the plug vs the socket); also record which singularities lie on each piece.
+
+        Needs the `bertini` parser and `sympy`, but only when there is at least one qualifying
+        singularity.  Returns a dict of pure-Python (JSON-safe) values:
+          { "piece_names": [str, ...],          # per piece
+            "on_pieces":   [[int, ...], ...],    # per piece: compact singularity indices
+            "locations":   [[x, y, z], ...],     # per singularity
+            "directions":  [[x, y, z], ...],     # per singularity
+            "parities":    [[int, ...], ...] }   # per singularity: a value per piece (-1/0/1)
+        All lists are empty when there are no qualifying singularities.
+        """
+
+        pieces = self.separate_into_nonsingular_pieces()
+        piece_names = [p.generate_filename_smooth() for p in pieces]
+
+        # nodal singularities and which pieces each is incident to
+        sings_on_pieces = {}
+        pieces_connected_to_sing = defaultdict(list)
+        for ii, p in enumerate(pieces):
+            sings_this_piece = p.point_singularities()  # indices into the vertex set
+            sings_on_pieces[ii] = sings_this_piece
+            for s in sings_this_piece:
+                pieces_connected_to_sing[s].append(ii)
+
+        # only singularities joining exactly two pieces receive a connector
+        wanted = {k: v for k, v in pieces_connected_to_sing.items() if len(v) == 2}
+        singindex2int = {s: i for i, s in enumerate(wanted.keys())}
+
+        on_pieces = []
+        for ii in range(len(pieces)):
+            on_pieces.append([singindex2int[s] for s in wanted if s in sings_on_pieces[ii]])
+
+        def unit_vector(vector):
+            return vector / np.linalg.norm(vector)
+
+        locations = []
+        directions = []
+
+        if wanted:
+            import bertini as b2
+            import sympy
+
+            bsys = b2.parse.system(self.input.split('INPUT')[1])
+            f = bsys.function(0)
+            F = sympy.S(str(f).replace('unnamed_function', '').replace('function', '').replace('f', ''))
+            variables = sorted(F.free_symbols, key=lambda s: s.name)
+            H = sympy.hessian(F, variables)
+            hessian_evalme = sympy.lambdify(variables, H, modules='numpy')
+
+            for sing_index in wanted.keys():
+                sing_coords = self.vertices[sing_index].point.real
+
+                # tangent-cone direction: eigenvector of the Hessian belonging to the
+                # odd-one-out (smallest) eigenvalue
+                M = hessian_evalme(*sing_coords)
+                q = np.linalg.eig(M)
+                axis = np.real(q.eigenvectors[:, np.argmin(q.eigenvalues)])
+                direction0 = unit_vector(np.asarray(axis, dtype=float))
+
+                directions.append([float(x) for x in direction0])
+                locations.append([float(x) for x in sing_coords])
+
+        parities = [[0 for _ in range(len(pieces))] for _ in range(len(wanted))]
+        for s, ps in wanted.items():
+            parities[singindex2int[s]][ps[0]] = -1
+            parities[singindex2int[s]][ps[1]] = 1
+
+        return {
+            "piece_names": piece_names,
+            "on_pieces": on_pieces,
+            "locations": locations,
+            "directions": directions,
+            "parities": parities,
+        }
+
+
     def write_piece_data(self):
         """
         Opens and edits current scad data to set the orientation and location of a plug and socket
         """
 
-        pieces = self.separate_into_nonsingular_pieces()
-        allPoints=[]
-        #create a list of the centroid coordinates of each piece
-        centroids = [] 
-        for p in pieces:
-            centroids.append(p.centroid()) 
-            
+        data = self.singularity_connector_data()
+        piece_names = data["piece_names"]
+        singularities_on_pieces = data["on_pieces"]
+        sing_directions_as_list = data["directions"]
+        sing_locations_as_list = data["locations"]
+        parity_of_sing_by_piece = data["parities"]
+        allPoints = []
 
-
-        # compute a list of nodal singularities, and which pieces they're connected to
-        pieces_connected_to_sing = defaultdict(list)
-        sings_on_pieces = {} #sings are in order of the piece index
-
-        for ii, p in enumerate(pieces):
-            sing_this_piece = p.point_singularities() 
-            sings_on_pieces[ii] = sing_this_piece 
-
-            # a dictionary keyed by the integer index of the singularity, with value a list of the pieces on which it is incident
-            for s in sing_this_piece: 
-                pieces_connected_to_sing[s].append(ii) 
-
-
-        # only put plug/socket at sing that's connected to two pieces
-        #then assign that sing to k(ey) and assign [piece1,piece2] to v(value)
-        wanted_sing_connections = {k:v for k,v in pieces_connected_to_sing.items() if len(v)==2}
-
-        def unit_vector(vector):
-            """Helper function to find a unit vector of a vector"""
-
-            magnitude = np.linalg.norm(vector)
-            unit=[]
-            for i in range(len(vector)):
-                unit.append(vector[i]/magnitude)
-            return unit
-
-        directions = defaultdict(list) # explicitly keyed by the singularities
-        sing_directions = {}
-        sing_locations = {}
-        for sing_index,connected_pieces in wanted_sing_connections.items():
-            ind_connected_piece_0 = connected_pieces[0]
-            ind_connected_piece_1 = connected_pieces[1]
-
-            # find the centroid of each piece by the index of the piece
-            centroid_0 = centroids[ind_connected_piece_0]
-            centroid_1 = centroids[ind_connected_piece_1]
-
-            sing_coords =self.vertices[sing_index].point.real
-
-            #calculate the unit vectors by traveling from the centroid of the piece to the singularity
-            unit_0 = unit_vector(np.subtract(centroid_0, sing_coords))
-            unit_1 = unit_vector(np.subtract(centroid_1, sing_coords))
-
-            #find unit vector resultant of unit_0 and flipped unit_1
-            direction0 = unit_vector(np.add(unit_0, np.multiply(unit_1, -1)))
-            direction1 = np.multiply(direction0,-1)
-            directions[sing_index] = [direction0, direction1]
-
-            sing_directions[sing_index] = (direction0)
-            sing_locations[sing_index] = (list(sing_coords))
-
-        piece_names = []
-        singularities_on_pieces = []
-
-
-        singindex2int = {sing_index:ii for ii,sing_index in enumerate(wanted_sing_connections.keys())}
-        int2singindex = {ii:sing_index for ii,sing_index in enumerate(wanted_sing_connections.keys())}
-
-        # print(singindex2int)
-        # print(int2singindex)
-
-        #organize the data computed above to the scad files
-        for ii,p in enumerate(pieces):
-            sings_this_piece = [] 
-
-            for sing_index,connected_pieces in wanted_sing_connections.items():
-                if sing_index in sings_on_pieces[ii]: 
-                    sings_this_piece.append(singindex2int[sing_index])
-            singularities_on_pieces.append(sings_this_piece) 
-            piece_names.append(pieces[ii].generate_filename_smooth()) 
-
-        sing_directions_as_list = [sing_directions[sing_index] for sing_index in wanted_sing_connections.keys()]
-        sing_locations_as_list = [sing_locations[sing_index] for sing_index in wanted_sing_connections.keys()]
-
-        parity_of_sing_by_piece = [ [0 for jj in range(len(pieces))] for ii in range(len(wanted_sing_connections)) ]
-        for sing_index, ps in wanted_sing_connections.items():
-            parity_of_sing_by_piece[singindex2int[sing_index]][ps[0]] = -1
-            parity_of_sing_by_piece[singindex2int[sing_index]][ps[1]] = 1
-        
         #open and auto write the data(piece file names (without extensions), all sings of pieces, sing directions in order of sing index, sing coords in order of sing index) of the piece
         with open("br_surf_piece_data.scad", "w") as f:
             f.write(f'piece_names = [')
@@ -1008,20 +1519,33 @@ class Surface(Decomposition):
             f.write(f'conn_size = 0.01;\n') #hard coded, but needs to be automatically computed
         print('br_surf_piece_data.scad')
 
+        # Option 2: custom JSON encoder
+        class NumpyEncoder(json.JSONEncoder):
+            def default(self, obj):
+                if isinstance(obj, np.ndarray):
+                    return obj.tolist()
+                if isinstance(obj, np.integer):
+                    return int(obj)
+                if isinstance(obj, np.floating):
+                    return float(obj)
+                return super().default(obj)
+
+
+
         #open and auto write piece data to a json file
         with open("br_surf_piece_data.json", "w") as j:
             j.write(json.dumps({"piece_names": piece_names,
             "singularities_on_pieces": singularities_on_pieces,
             "sing_directions": sing_directions_as_list,
             "sing_locations": sing_locations_as_list,
-            "parities" : parity_of_sing_by_piece},indent=4))
+            "parities" : parity_of_sing_by_piece},indent=4,cls=NumpyEncoder))
         print('wrote br_surf_piece_data.json')
 
 
-        with open("centroids.json", "w") as c:
-            for centroid in centroids:
-                c.write(str(centroid)+"\n")
-        print('wrote centroids.json')
+        # with open("centroids.json", "w") as c:
+        #     for centroid in centroids:
+        #         c.write(str(centroid)+"\n")
+        # print('wrote centroids.json')
 
 
 
@@ -1029,6 +1553,7 @@ class Surface(Decomposition):
             for point in allPoints:
                 a.write("\n".join([str(s) for s in point]) + "\n")
         print('wrote allPoints.json')
+
         
     def as_mesh_smooth(self, which_faces=None, keep_all_vertices=True):
         """
@@ -1216,19 +1741,15 @@ class Surface(Decomposition):
                 elif case == 5:
                     break
 
-                t1 = [points[curr_edge[0]], points[curr_edge[1]],
-                      points[face['midpoint']]]
-                t2 = [points[curr_edge[1]], points[curr_edge[2]],
-                      points[face['midpoint']]]
-
-                t3 = (curr_edge[0], curr_edge[1], face['midpoint'])
-                t4 = (curr_edge[1], curr_edge[2], face['midpoint'])
-
-                T.append(t1)
-                T.append(t2)
-
-                TT.append(t3)
-                TT.append(t4)
+                # fan the curve edge to the face midpoint; skip degenerate triangles (a repeated
+                # vertex index, e.g. from a degenerate curve edge).  these are zero-area, and if
+                # kept they make the mesh non-manifold -- an (a, a, mid) face contributes the
+                # {a, mid} edge twice, which is what produced the 4-shared edges and duplicate
+                # faces in the raw mesh.
+                for tri in ((curr_edge[0], curr_edge[1], face['midpoint']),
+                            (curr_edge[1], curr_edge[2], face['midpoint'])):
+                    if len(set(tri)) == 3:
+                        TT.append(tri)
 
         faces = [TT]
         vertex = []
@@ -1245,7 +1766,11 @@ class Surface(Decomposition):
 
         face_np_array = np.array(face)
 
-        raw_mesh = trimesh.Trimesh(vertex_np_array, face_np_array)
+        # honor keep_all_vertices like as_mesh_smooth: process=False keeps the full global
+        # vertex set so the faces index into extract_points() (the unified set), and does not
+        # merge coincident-but-distinct vertices (which would fuse sheets at singularities).
+        should_trimesh_process = False if keep_all_vertices == True else True
+        raw_mesh = trimesh.Trimesh(vertex_np_array, face_np_array, process=should_trimesh_process)
         raw_mesh.fix_normals()
         return raw_mesh
 
